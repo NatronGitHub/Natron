@@ -35,7 +35,7 @@ CLANG_DIAG_ON(deprecated-declarations)
 
 #define kRotoLayerBaseName "Layer"
 #define kRotoBezierBaseName "Bezier"
-#define kRotoBSplineBaseName "B-Spline"
+#define kRotoBSplineBaseName "BSpline"
 #define kRotoEllipseBaseName "Ellipse"
 #define kRotoRectangleBaseName "Rectangle"
 
@@ -1056,7 +1056,6 @@ public:
     boost::shared_ptr<Color_Knob> getColorKnob() const;
 
 
-    void setLastItemLocked(const boost::shared_ptr<RotoItem> & item);
     boost::shared_ptr<RotoItem> getLastItemLocked() const;
     boost::shared_ptr<RotoLayer> getDeepestSelectedLayer() const;
 

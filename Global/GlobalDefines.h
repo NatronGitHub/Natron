@@ -32,6 +32,7 @@
 #undef toupper
 #undef tolower
 #undef isalpha
+#undef isalnum
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/cstdint.hpp>

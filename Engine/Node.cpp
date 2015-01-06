@@ -480,13 +480,22 @@ Node::load(const std::string & parentMultiInstanceName,
         updateEffectLabelKnob(getName().c_str());
     }
     
-    //declareNodeVariableToPython(getFullySpecifiedName());
     declarePythonFields();
     
     boost::shared_ptr<NodeCollection> group = getGroup();
     if (group) {
         group->notifyNodeActivated(thisShared);
     }
+    
+    if (isMultiInstanceChild) {
+        assert(_imp->multiInstanceParent.lock());
+        NodePtr parent = _imp->multiInstanceParent.lock();
+        boost::shared_ptr<NodeGuiI> gui_i = parent->getNodeGui();
+        if (gui_i) {
+            gui_i->onChildInstanceCreated(thisShared);
+        }
+    }
+    
     
     computeHash();
     assert(_imp->liveInstance);
@@ -503,16 +512,18 @@ Node::fetchParentMultiInstancePointer()
 {
     NodeList nodes = _imp->group.lock()->getNodes();
     
+    NodePtr thisShared = shared_from_this();
     for (NodeList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
         if ((*it)->getName() == _imp->multiInstanceParentName) {
             ///no need to store the boost pointer because the main instance lives the same time
             ///as the child
             _imp->multiInstanceParent = *it;
-            (*it)->_imp->children.push_back(shared_from_this());
+            (*it)->_imp->children.push_back(thisShared);
             QObject::connect(it->get(), SIGNAL(inputChanged(int)), this, SLOT(onParentMultiInstanceInputChanged(int)));
             break;
         }
     }
+    
 }
 
 boost::shared_ptr<Natron::Node>

@@ -954,10 +954,12 @@ RotoPanelPrivate::buildTreeFromContext()
     int time = context->getTimelineCurrentTime();
     const std::list< boost::shared_ptr<RotoLayer> > & layers = context->getLayers();
 
+    tree->blockSignals(true);
     if ( !layers.empty() ) {
         const boost::shared_ptr<RotoLayer> & base = layers.front();
         insertItemRecursively(time, base);
     }
+    tree->blockSignals(false);
 }
 
 void
@@ -1071,7 +1073,6 @@ RotoPanel::onItemClicked(QTreeWidgetItem* item,
             for (int i = 0; i < selected.size(); ++i) {
                 TreeItems::iterator found = _imp->findItem(selected[i]);
                 assert( found != _imp->items.end() );
-                _imp->context->setLastItemLocked(found->rotoItem);
                 found->rotoItem->setLocked(locked,true);
                 _imp->setChildrenLockedRecursively(locked, found->treeItem);
             }
@@ -1184,7 +1185,9 @@ RotoPanel::onItemChanged(QTreeWidgetItem* item,
     if ( it != _imp->items.end() ) {
         std::string newName = item->text(column).toStdString();
         if (!it->rotoItem->setName(newName)) {
-            Natron::warningDialog( "", tr("An item with the name ").toStdString() + newName + tr(" already exists. Please pick something else.").toStdString() );
+            Natron::warningDialog(tr("Invalid name ").toStdString(), tr("The name must be unique and cannot contain and should contain "
+                                                                        "only letters [a-z][A-Z] and numbers [0-9]. "
+                                                                        "It cannot start wih a digit, for scripting purposes.").toStdString() );
             item->setText( COL_NAME, _imp->editedItemName.c_str() );
         }
     }

@@ -556,14 +556,18 @@ boost::shared_ptr<Natron::Node> MultiInstancePanel::addInstanceInternal(bool use
                         CreateNodeArgs::DefaultValuesList(),
                         mainInstance->getGroup());
     boost::shared_ptr<Node> newInstance = _imp->getMainInstance()->getApp()->createNode(args);
-
-    _imp->addTableRow(newInstance);
     
     if (useUndoRedoStack) {
         _imp->pushUndoCommand( new AddNodeCommand(this,newInstance) );
     }
 
     return newInstance;
+}
+
+void
+MultiInstancePanel::onChildCreated(const boost::shared_ptr<Natron::Node>& node)
+{
+    _imp->addTableRow(node);
 }
 
 const std::list< std::pair<boost::weak_ptr<Natron::Node>,bool> > &
@@ -583,6 +587,12 @@ MultiInstancePanel::addRow(const boost::shared_ptr<Natron::Node> & node)
 void
 MultiInstancePanelPrivate::addTableRow(const boost::shared_ptr<Natron::Node> & node)
 {
+    for (Nodes::iterator it = instances.begin(); it!=instances.end(); ++it) {
+        if (it->first.lock() == node) {
+            return;
+        }
+    }
+    
     instances.push_back( std::make_pair(node,false) );
     int newRowIndex = view->rowCount();
     model->insertRow(newRowIndex);

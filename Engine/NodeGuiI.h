@@ -13,6 +13,9 @@
 #define NODEGUII_H
 
 
+namespace Natron {
+class Node;
+}
 
 class NodeGuiI
 {
@@ -45,6 +48,11 @@ public :
     virtual void getSize(double* w, double* h) const = 0;
     
     virtual void exportGroupAsPythonScript() = 0;
+
+    /**
+     * @brief Called when a child is created for multi-instance, like a new Track
+     **/
+    virtual void onChildInstanceCreated(const boost::shared_ptr<Natron::Node>& node) = 0;
 };
 
 #endif // NODEGUII_H

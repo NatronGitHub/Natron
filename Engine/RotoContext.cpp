@@ -13,6 +13,7 @@
 
 #include <algorithm>
 #include <sstream>
+#include <locale>
 
 #include <boost/bind.hpp>
 #include <boost/shared_ptr.hpp>
@@ -979,10 +980,25 @@ RotoItem::setName(const std::string & name)
 {
     ///called on the main-thread only
     assert( QThread::currentThread() == qApp->thread() );
+    
+    if (name.empty()) {
+        return false;
+    }
+    
+    std::locale loc;
+    for (std::size_t i = 0; i < name.size(); ++i) {
+        if (i == 0 && std::isdigit(name[i], loc)) {
+            return false;
+        } else if (!std::isalnum(name[i],loc)) {
+            return false;
+        }
+    }
     boost::shared_ptr<RotoItem> existingItem = getContext()->getItemByName(name);
     if ( existingItem && (existingItem.get() != this) ) {
         return false;
     }
+    
+    
     {
         QMutexLocker l(&itemMutex);
         _imp->name = name;
@@ -1027,6 +1043,12 @@ RotoItem::load(const RotoItemSerialization &obj)
         _imp->globallyActivated = obj.activated;
         _imp->locked = obj.locked;
         _imp->name = obj.name;
+        std::locale loc;
+        for (std::size_t i = 0; i < _imp->name.size(); ++i) {
+            if (!std::isalnum(_imp->name[i],loc) || ( i == 0 && std::isdigit(_imp->name[i],loc))) {
+                _imp->name[i] = '_';
+            }
+        }
     }
     boost::shared_ptr<RotoLayer> parent = getContext()->getLayerByName(obj.parentLayerName);
 
@@ -3840,7 +3862,7 @@ RotoContext::addLayer()
             no = 1;
         }
         std::stringstream ss;
-        ss << kRotoLayerBaseName << ' ' << no;
+        ss << kRotoLayerBaseName << no;
 
         boost::shared_ptr<RotoLayer> deepestLayer = findDeepestSelectedLayer();
         boost::shared_ptr<RotoLayer> parentLayer;
@@ -4006,7 +4028,7 @@ RotoContext::makeBezier(double x,
             no = 1;
         }
 
-        ss << baseName << ' ' << no;
+        ss << baseName  << no;
 
         boost::shared_ptr<RotoLayer> deepestLayer = findDeepestSelectedLayer();
 
@@ -4642,15 +4664,6 @@ RotoContext::deselectInternal(boost::shared_ptr<RotoItem> b)
     
 } // deselectInternal
 
-void
-RotoContext::setLastItemLocked(const boost::shared_ptr<RotoItem> &item)
-{
-    {
-        QMutexLocker l(&_imp->rotoContextMutex);
-        _imp->lastLockedItem = item;
-    }
-    Q_EMIT itemLockedChanged();
-}
 
 boost::shared_ptr<RotoItem>
 RotoContext::getLastItemLocked() const
@@ -5029,7 +5042,7 @@ RotoContext::onItemLockedChanged(const boost::shared_ptr<RotoItem>& item)
 #ifdef NATRON_ROTO_INVERTIBLE
     _imp->inverted->setAllDimensionsEnabled(enabled);
 #endif
-
+    _imp->lastLockedItem = item;
     Q_EMIT itemLockedChanged();
 }
 

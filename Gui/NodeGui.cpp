@@ -2721,3 +2721,12 @@ NodeGui::exportGroupAsPythonScript()
     ExportGroupTemplateDialog dialog(isGroup,getDagGui()->getGui(),getDagGui());
     dialog.exec();
 }
+
+void
+NodeGui::onChildInstanceCreated(const boost::shared_ptr<Natron::Node>& node)
+{
+    assert(getNode()->isMultiInstance());
+    boost::shared_ptr<MultiInstancePanel> panel = getMultiInstancePanel();
+    assert(panel);
+    panel->onChildCreated(node);
+}

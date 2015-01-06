@@ -136,6 +136,7 @@ Param* createParamWrapperForKnob(const boost::shared_ptr<KnobI>& knob)
     boost::shared_ptr<Button_Knob> isButton = boost::dynamic_pointer_cast<Button_Knob>(knob);
     boost::shared_ptr<Group_Knob> isGroup = boost::dynamic_pointer_cast<Group_Knob>(knob);
     boost::shared_ptr<Page_Knob> isPage = boost::dynamic_pointer_cast<Page_Knob>(knob);
+    boost::shared_ptr<Parametric_Knob> isParametric = boost::dynamic_pointer_cast<Parametric_Knob>(knob);
     
     if (isInt) {
         switch (dims) {
@@ -177,6 +178,8 @@ Param* createParamWrapperForKnob(const boost::shared_ptr<KnobI>& knob)
         return new GroupParam(isGroup);
     } else if (isPage) {
         return new PageParam(isPage);
+    } else if (isParametric) {
+        return new ParametricParam(isParametric);
     }
     return NULL;
 }

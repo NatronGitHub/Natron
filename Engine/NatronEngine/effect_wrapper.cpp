@@ -342,10 +342,14 @@ static PyObject* Sbk_EffectFunc_createChild(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // createChild()
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            // Begin code injection
+
             Effect * cppResult = cppSelf->createChild();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_EFFECT_IDX], cppResult);
+
+            // End of code injection
+
+
 
             // Ownership transferences.
             Shiboken::Object::getOwnership(pyResult);

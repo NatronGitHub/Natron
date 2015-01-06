@@ -314,6 +314,9 @@ public:
     virtual void refreshStateIndicator();
     
     virtual void exportGroupAsPythonScript() OVERRIDE FINAL;
+    
+    virtual void onChildInstanceCreated(const boost::shared_ptr<Natron::Node>& node) OVERRIDE FINAL;
+    
 public Q_SLOTS:
 
     void onSettingsPanelClosed(bool closed);

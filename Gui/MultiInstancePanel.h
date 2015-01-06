@@ -84,6 +84,8 @@ public:
     void removeInstances(const std::list<boost::shared_ptr<Natron::Node> >& instances);
     void addInstances(const std::list<boost::shared_ptr<Natron::Node> >& instances);
 
+    void onChildCreated(const boost::shared_ptr<Natron::Node>& node);
+    
 public Q_SLOTS:
 
     void onAddButtonClicked();

@@ -1494,13 +1494,19 @@ static void exportRotoLayer(const std::list<boost::shared_ptr<RotoItem> >& items
                 if (track) {
                     Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(track->getHolder());
                     assert(effect && effect->getNode()->isTrackerNode());
-                    std::string trackerName = effect->getNode()->getFullySpecifiedName();
+                    std::string trackerName = effect->getNode()->getName_mt_safe();
                     int trackTime = (*it2)->getOffsetTime();
-                    
+                    WRITE_INDENT(1); WRITE_STRING("tracker = group.getNode(\"" + QString(trackerName.c_str()) + "\")");
+                    WRITE_INDENT(1); WRITE_STRING("center = tracker.getParam(\"" + QString(track->getName().c_str()) + "\")");
                     WRITE_INDENT(1); WRITE_STRING("bezier.slavePointToTrack(" + NUM(idx) + ", " +
-                                                  NUM(trackTime) + ", "  + "app." + QString(trackerName.c_str()) + "." +
-                                                  QString(track->getName().c_str()) + ")");
+                                                  NUM(trackTime) + ",center)");
+                    WRITE_INDENT(1); WRITE_STATIC_LINE("del center");
+                    WRITE_INDENT(1); WRITE_STATIC_LINE("del tracker");
                 }
+                
+            }
+            if (isBezier->isCurveFinished()) {
+                WRITE_INDENT(1); WRITE_STRING("bezier.setCurveFinished(True)");
             }
             
             WRITE_INDENT(1); WRITE_STATIC_LINE("del bezier");
@@ -1627,7 +1633,20 @@ static void exportGroupInternal(NodeGroup* group,const QString& groupName, QText
     
     NodeList nodes = group->getNodes();
     NodeList exportedNodes;
+    
+    ///Re-order nodes so we're sure Roto nodes get exported in the end since they may depend on Trackers
+    NodeList rotos;
+    NodeList newNodes;
     for (NodeList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        if ((*it)->isRotoNode()) {
+            rotos.push_back(*it);
+        } else {
+            newNodes.push_back(*it);
+        }
+    }
+    newNodes.insert(newNodes.end(), rotos.begin(),rotos.end());
+    
+    for (NodeList::iterator it = newNodes.begin(); it != newNodes.end(); ++it) {
         
         ///Don't create viewer while exporting
         ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>((*it)->getLiveInstance());
@@ -1668,7 +1687,7 @@ static void exportGroupInternal(NodeGroup* group,const QString& groupName, QText
             WRITE_INDENT(1); WRITE_STATIC_LINE("#Create children if the node is a multi-instance such as a tracker");
             for (std::list< NodePtr > ::iterator it2 = children.begin(); it2 != children.end(); ++it2) {
                 WRITE_INDENT(1); WRITE_STRING("lastNode = " + nodeNameInScript + ".createChild()");
-                WRITE_INDENT(1); WRITE_STRING("lastNode.setName(" + QString((*it2)->getName_mt_safe().c_str()) + ")");
+                WRITE_INDENT(1); WRITE_STRING("lastNode.setName(\"" + QString((*it2)->getName_mt_safe().c_str()) + "\")");
                 exportAllNodeKnobs(*it2,ts);
                 WRITE_INDENT(1); WRITE_STRING(groupName + QString((*it2)->getName_mt_safe().c_str()) + " = lastNode");
                 WRITE_INDENT(1); WRITE_STRING("del lastNode");
