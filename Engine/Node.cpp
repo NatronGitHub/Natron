@@ -379,15 +379,6 @@ Node::load(const std::string & parentMultiInstanceName,
     bool isMultiInstanceChild = false;
     if ( !parentMultiInstanceName.empty() ) {
         _imp->multiInstanceParentName = parentMultiInstanceName;
-        
-        ///Fetch the parent pointer ONLY when not loading (otherwise parent node might still node be created
-        ///at that time)
-        if ( serialization.isNull() && fixedName.isEmpty() ) {
-            std::string name;
-            getGroup()->initNodeName(name + "_", &name);
-            setName(name.c_str());
-            nameSet = true;
-        }
         isMultiInstanceChild = true;
         _imp->isMultiInstance = false;
     }
@@ -474,8 +465,9 @@ Node::load(const std::string & parentMultiInstanceName,
     if (!nameSet) {
         if (fixedName.isEmpty()) {
             std::string name;
-            getGroup()->initNodeName(getPluginLabel(),&name);
+            getGroup()->initNodeName(isMultiInstanceChild ? parentMultiInstanceName + '_' : getPluginLabel(),&name);
             setName(name.c_str());
+            nameSet = true;
         } else {
             setName(fixedName);
         }

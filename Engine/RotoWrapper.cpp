@@ -10,8 +10,9 @@
 
 #include "RotoWrapper.h"
 #include "Engine/RotoContext.h"
-
-
+#include "Engine/EffectInstance.h"
+#include "Engine/Node.h"
+#include "Engine/KnobTypes.h"
 
 ItemBase::ItemBase(const boost::shared_ptr<RotoItem>& item)
 : _item(item)
@@ -199,6 +200,65 @@ BezierCurve::setFeatherPointAtIndex(int index,int time,double x,double y,double 
 {
     _bezier->setPointAtIndex(true, index, time, x, y, lx, ly, rx, ry);
 }
+
+void
+BezierCurve::slavePointToTrack(int index, int trackTime, DoubleParam* trackCenter)
+{
+    if (!trackCenter) {
+        return;
+    }
+    boost::shared_ptr<KnobI> internalKnob = trackCenter->getInternalKnob();
+    if (!internalKnob) {
+        return;
+    }
+    
+    boost::shared_ptr<Double_Knob> isDouble = boost::dynamic_pointer_cast<Double_Knob>(internalKnob);
+    if (!isDouble) {
+        return;
+    }
+    
+    Natron::EffectInstance* parent = dynamic_cast<Natron::EffectInstance*>(isDouble->getHolder());
+    if (!parent) {
+        return;
+    }
+    if (!parent->getNode()->isTrackerNode()) {
+        return;
+    }
+    
+    if (isDouble->getName() != std::string("center") || isDouble->getDimension() != 2) {
+        return;
+    }
+    
+    boost::shared_ptr<BezierCP> cp = _bezier->getControlPointAtIndex(index);
+    if (!cp) {
+        return;
+    }
+    
+    cp->slaveTo(trackTime, isDouble);
+    
+    boost::shared_ptr<BezierCP> fp = _bezier->getFeatherPointAtIndex(index);
+    if (!fp) {
+        return;
+    }
+    
+    fp->slaveTo(trackTime, isDouble);
+}
+
+DoubleParam*
+BezierCurve::getPointMasterTrack(int index) const
+{
+    boost::shared_ptr<BezierCP> cp = _bezier->getControlPointAtIndex(index);
+    if (!cp) {
+        return 0;
+    }
+    
+    boost::shared_ptr<Double_Knob>  knob = cp->isSlaved();
+    if (!knob) {
+        return 0;
+    }
+    return new DoubleParam(knob);
+}
+
 
 int
 BezierCurve::getNumControlPoints() const

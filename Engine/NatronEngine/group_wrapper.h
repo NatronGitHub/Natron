@@ -10,6 +10,7 @@
 class GroupWrapper : public Group
 {
 public:
+    GroupWrapper();
     virtual ~GroupWrapper();
 };
 

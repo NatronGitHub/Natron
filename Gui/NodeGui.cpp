@@ -700,7 +700,7 @@ NodeGui::refreshDashedStateOfEdges()
                 ++nbInputsConnected;
             }
         }
-        if (nbInputsConnected == 0) {
+        if (nbInputsConnected == 0 && !_inputEdges.empty()) {
             if (_inputEdges[0]) {
                 _inputEdges[0]->setDashed(false);
             }
@@ -2115,17 +2115,20 @@ NodeGui::setNameItemHtml(const QString & name,
             assert(endCustomData != -1);
             labelCopy.remove( endCustomData, endCustomTag.size() );
         }
-
+        
         ///add the node name into the html encoded label
         int startFontTag = labelCopy.indexOf("<font size=");
         hasFontData = startFontTag != -1;
-
-        QString toFind("\">");
-        int endFontTag = labelCopy.indexOf(toFind,startFontTag);
-        int i = endFontTag += toFind.size();
-        labelCopy.insert(i == -1 ? 0 : i, name + "<br>");
-
+        if (hasFontData) {
+            QString toFind("\">");
+            int endFontTag = labelCopy.indexOf(toFind,startFontTag);
+            int i = endFontTag += toFind.size();
+            labelCopy.insert(i == -1 ? 0 : i, name + "<br>");
+        } else {
+            labelCopy.prepend(name + "<br>");
+        }
         textLabel.append(labelCopy);
+        
     } else {
         ///Default to something not too bad
         QString fontTag = QString("<font size=\"%1\" color=\"%2\" face=\"%3\">")
@@ -2620,11 +2623,13 @@ ExportGroupTemplateDialog::onButtonClicked()
 {
     std::vector<std::string> filters;
     
-    QString path = appPTR->getSystemNonOFXPluginsPath();
+    const QString& path = _imp->gui->getLastPluginDirectory();
     SequenceFileDialog dialog(this,filters,false,SequenceFileDialog::DIR_DIALOG,path.toStdString(),_imp->gui,false);
     if (dialog.exec()) {
         std::string selection = dialog.selectedFiles();
         _imp->fileEdit->setText(selection.c_str());
+        QDir d = dialog.currentDirectory();
+        _imp->gui->updateLastPluginDirectory(d.absolutePath());
     }
 }
 

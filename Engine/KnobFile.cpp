@@ -274,7 +274,7 @@ Path_Knob::generateUniquePathID(const std::list<std::pair<std::string,std::strin
         ss << baseName;
         ss << idx;
         name = ss.str();
-        
+        found = false;
         for (std::list<std::pair<std::string,std::string> >::const_iterator it = paths.begin(); it != paths.end(); ++it) {
             if (it->first == name) {
                 found = true;

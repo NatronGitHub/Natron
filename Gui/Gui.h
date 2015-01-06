@@ -456,6 +456,10 @@ public:
     
     const QString& getLastSaveProjectDirectory() const;
     
+    const QString& getLastPluginDirectory() const;
+    
+    void updateLastPluginDirectory(const QString& str);
+    
     
     /**
      * @brief Returns in nodes all the nodes that can draw an overlay in their order of appearance in the properties bin.

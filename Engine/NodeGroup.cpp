@@ -1025,7 +1025,17 @@ static bool exportKnobValues(const boost::shared_ptr<KnobI> knob,
     Parametric_Knob* isParametric = dynamic_cast<Parametric_Knob*>(knob.get());
     Choice_Knob* isChoice = dynamic_cast<Choice_Knob*>(knob.get());
     Group_Knob* isGrp = dynamic_cast<Group_Knob*>(knob.get());
+    String_Knob* isStringKnob = dynamic_cast<String_Knob*>(knob.get());
     
+    ///Don't export this kind of parameter. Mainly this is the html label of the node which is 99% of times empty
+    if (isStringKnob &&
+        isStringKnob->isMultiLine() &&
+        isStringKnob->usesRichText() &&
+        !isStringKnob->hasContentWithoutHtmlTags() &&
+        !isStringKnob->isAnimationEnabled() &&
+        isStringKnob->getExpression(0).empty()) {
+        return false;
+    }
     for (int i = 0; i < knob->getDimension(); ++i) {
         
         if (isParametric) {
@@ -1480,6 +1490,17 @@ static void exportRotoLayer(const std::list<boost::shared_ptr<RotoItem> >& items
                     exportBezierPointAtTime(*it2, false, time, idx, ts);
                     exportBezierPointAtTime(*fpIt, true, time, idx, ts);
                 }
+                boost::shared_ptr<Double_Knob> track = (*it2)->isSlaved();
+                if (track) {
+                    Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(track->getHolder());
+                    assert(effect && effect->getNode()->isTrackerNode());
+                    std::string trackerName = effect->getNode()->getFullySpecifiedName();
+                    int trackTime = (*it2)->getOffsetTime();
+                    
+                    WRITE_INDENT(1); WRITE_STRING("bezier.slavePointToTrack(" + NUM(idx) + ", " +
+                                                  NUM(trackTime) + ", "  + "app." + QString(trackerName.c_str()) + "." +
+                                                  QString(track->getName().c_str()) + ")");
+                }
             }
             
             WRITE_INDENT(1); WRITE_STATIC_LINE("del bezier");
@@ -1645,7 +1666,7 @@ static void exportGroupInternal(NodeGroup* group,const QString& groupName, QText
         (*it)->getChildrenMultiInstance(&children);
         if (!children.empty()) {
             WRITE_INDENT(1); WRITE_STATIC_LINE("#Create children if the node is a multi-instance such as a tracker");
-            for (std::list< NodePtr > ::iterator it2 = children.begin(); it2 != children.end(); ++it) {
+            for (std::list< NodePtr > ::iterator it2 = children.begin(); it2 != children.end(); ++it2) {
                 WRITE_INDENT(1); WRITE_STRING("lastNode = " + nodeNameInScript + ".createChild()");
                 WRITE_INDENT(1); WRITE_STRING("lastNode.setName(" + QString((*it2)->getName_mt_safe().c_str()) + ")");
                 exportAllNodeKnobs(*it2,ts);

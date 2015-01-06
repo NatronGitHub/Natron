@@ -262,6 +262,7 @@ struct GuiPrivate
     QString _lastLoadProjectOpenedDir;
     QString _lastSaveSequenceOpenedDir;
     QString _lastSaveProjectOpenedDir;
+    QString _lastPluginDir;
 
     // this one is a ptr to others TabWidget.
     //It tells where to put the viewer when making a new one
@@ -417,6 +418,7 @@ struct GuiPrivate
           , _lastLoadProjectOpenedDir()
           , _lastSaveSequenceOpenedDir()
           , _lastSaveProjectOpenedDir()
+          , _lastPluginDir()
           , _nextViewerTabPlace(0)
           , _leftRightSplitter(0)
           , _viewerTabsMutex()
@@ -1624,6 +1626,18 @@ const QString&
 Gui::getLastSaveProjectDirectory() const
 {
     return _imp->_lastSaveProjectOpenedDir;
+}
+
+const QString&
+Gui::getLastPluginDirectory() const
+{
+    return _imp->_lastPluginDir;
+}
+
+void
+Gui::updateLastPluginDirectory(const QString& str)
+{
+    _imp->_lastPluginDir = str;
 }
 
 void
@@ -3443,6 +3457,9 @@ GuiPrivate::restoreGuiGeometry()
     if ( settings.contains("LastSaveSequenceDialogPath") ) {
         _lastLoadSequenceOpenedDir = settings.value("LastSaveSequenceDialogPath").toString();
     }
+    if (settings.contains("LastPluginDir")) {
+        _lastPluginDir = settings.value("LastPluginDir").toString();
+    }
 }
 
 void
@@ -3461,6 +3478,7 @@ GuiPrivate::saveGuiGeometry()
     settings.setValue("LastSaveProjectDialogPath", _lastSaveProjectOpenedDir);
     settings.setValue("LastLoadSequenceDialogPath", _lastLoadSequenceOpenedDir);
     settings.setValue("LastSaveSequenceDialogPath", _lastSaveSequenceOpenedDir);
+    settings.setValue("LastPluginDir", _lastPluginDir);
 }
 
 void

@@ -619,6 +619,12 @@ public:
     {
         return _isCustom;
     }
+    
+    /**
+     * @brief Relevant for multi-lines with rich text enables. It tells if
+     * the string has content without the html tags
+     **/
+    bool hasContentWithoutHtmlTags() const;
 
 private:
 

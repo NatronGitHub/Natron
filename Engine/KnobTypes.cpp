@@ -832,6 +832,37 @@ String_Knob::typeName() const
     return typeNameStatic();
 }
 
+bool
+String_Knob::hasContentWithoutHtmlTags() const
+{
+    std::string str = getValue();
+    if (str.empty()) {
+        return false;
+    }
+    
+    std::size_t foundOpen = str.find("<");
+    if (foundOpen == std::string::npos) {
+        return true;
+    }
+    while (foundOpen != std::string::npos) {
+        std::size_t foundClose = str.find(">",foundOpen);
+        if (foundClose == std::string::npos) {
+            return true;
+        }
+        
+        if (foundClose + 1 < str.size()) {
+            if (str[foundClose + 1] == '<') {
+                foundOpen = foundClose + 1;
+            } else {
+                return true;
+            }
+        } else {
+            return false;
+        }
+    }
+    return true;
+}
+
 /******************************GROUP_KNOB**************************************/
 
 Group_Knob::Group_Knob(KnobHolder* holder,

@@ -17,6 +17,10 @@
 
 // Native ---------------------------------------------------------
 
+GroupWrapper::GroupWrapper() : Group() {
+    // ... middle
+}
+
 GroupWrapper::~GroupWrapper()
 {
     SbkObject* wrapper = Shiboken::BindingManager::instance().retrieveWrapper(this);
@@ -26,6 +30,38 @@ GroupWrapper::~GroupWrapper()
 // Target ---------------------------------------------------------
 
 extern "C" {
+static int
+Sbk_Group_Init(PyObject* self, PyObject* args, PyObject* kwds)
+{
+    SbkObject* sbkSelf = reinterpret_cast<SbkObject*>(self);
+    if (Shiboken::Object::isUserType(self) && !Shiboken::ObjectType::canCallConstructor(self->ob_type, Shiboken::SbkType< ::Group >()))
+        return -1;
+
+    ::GroupWrapper* cptr = 0;
+
+    // Call function/method
+    {
+
+        if (!PyErr_Occurred()) {
+            // Group()
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            cptr = new ::GroupWrapper();
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+        }
+    }
+
+    if (PyErr_Occurred() || !Shiboken::Object::setCppPointer(sbkSelf, Shiboken::SbkType< ::Group >(), cptr)) {
+        delete cptr;
+        return -1;
+    }
+    Shiboken::Object::setValidCpp(sbkSelf, true);
+    Shiboken::Object::setHasCppWrapper(sbkSelf, true);
+    Shiboken::BindingManager::instance().registerWrapper(sbkSelf, cptr);
+
+
+    return 1;
+}
+
 static PyObject* Sbk_GroupFunc_getChildren(PyObject* self)
 {
     ::Group* cppSelf = 0;
@@ -155,7 +191,7 @@ static SbkObjectType Sbk_Group_Type = { { {
     /*tp_getattro*/         0,
     /*tp_setattro*/         0,
     /*tp_as_buffer*/        0,
-    /*tp_flags*/            Py_TPFLAGS_DEFAULT|Py_TPFLAGS_CHECKTYPES|Py_TPFLAGS_HAVE_GC,
+    /*tp_flags*/            Py_TPFLAGS_DEFAULT|Py_TPFLAGS_BASETYPE|Py_TPFLAGS_CHECKTYPES|Py_TPFLAGS_HAVE_GC,
     /*tp_doc*/              0,
     /*tp_traverse*/         Sbk_Group_traverse,
     /*tp_clear*/            Sbk_Group_clear,
@@ -171,9 +207,9 @@ static SbkObjectType Sbk_Group_Type = { { {
     /*tp_descr_get*/        0,
     /*tp_descr_set*/        0,
     /*tp_dictoffset*/       0,
-    /*tp_init*/             0,
+    /*tp_init*/             Sbk_Group_Init,
     /*tp_alloc*/            0,
-    /*tp_new*/              0,
+    /*tp_new*/              SbkObjectTpNew,
     /*tp_free*/             0,
     /*tp_is_gc*/            0,
     /*tp_bases*/            0,
