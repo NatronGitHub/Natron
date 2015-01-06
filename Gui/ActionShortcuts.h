@@ -134,6 +134,12 @@
 #define kShortcutIDActionDefaultLayout "restoreDefaultLayout"
 #define kShortcutDescActionDefaultLayout "Restore default layout"
 
+#define kShortcutIDActionNextTab "nextTab"
+#define kShortcutDescActionNextTab "Next Tab"
+
+#define kShortcutIDActionCloseTab "closeTab"
+#define kShortcutDescActionCloseTab "Close Tab"
+
 /////////VIEWER SHORTCUTS
 #define kShortcutIDActionLuminance "luminance"
 #define kShortcutDescActionLuminance "Luminance"

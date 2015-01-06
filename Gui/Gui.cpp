@@ -251,7 +251,9 @@ struct GuiPrivate
     ActionWithShortcut* actionImportLayout;
     ActionWithShortcut* actionExportLayout;
     ActionWithShortcut* actionRestoreDefaultLayout;
-
+    ActionWithShortcut* actionNextTab;
+    ActionWithShortcut* actionCloseTab;
+    
     ///the main "central" widget
     QWidget *_centralWidget;
     QHBoxLayout* _mainLayout; //< its layout
@@ -360,6 +362,8 @@ struct GuiPrivate
     bool leftToolBarDisplayedOnHoverOnly;
     
     ScriptEditor* _scriptEditor;
+    
+    TabWidget* _lastEnteredTabWidget;
 
     GuiPrivate(GuiAppInstance* app,
                Gui* gui)
@@ -412,6 +416,8 @@ struct GuiPrivate
           , actionImportLayout(0)
           , actionExportLayout(0)
           , actionRestoreDefaultLayout(0)
+          , actionNextTab(0)
+          , actionCloseTab(0)
           , _centralWidget(0)
           , _mainLayout(0)
           , _lastLoadSequenceOpenedDir()
@@ -469,6 +475,7 @@ struct GuiPrivate
           , shortcutEditor(0)
           , leftToolBarDisplayedOnHoverOnly(false)
           , _scriptEditor(0)
+          , _lastEnteredTabWidget(0)
     {
     }
 
@@ -937,7 +944,12 @@ Gui::createMenuActions()
 
     _imp->actionRestoreDefaultLayout = new ActionWithShortcut(kShortcutGroupGlobal,kShortcutIDActionDefaultLayout,kShortcutDescActionDefaultLayout,this);
     QObject::connect( _imp->actionRestoreDefaultLayout, SIGNAL( triggered() ),this,SLOT( restoreDefaultLayout() ) );
-
+    
+    _imp->actionNextTab = new ActionWithShortcut(kShortcutGroupGlobal,kShortcutIDActionNextTab,kShortcutDescActionNextTab,this);
+    QObject::connect( _imp->actionNextTab, SIGNAL( triggered() ),this,SLOT( onNextTabTriggered() ) );
+    _imp->actionCloseTab = new ActionWithShortcut(kShortcutGroupGlobal,kShortcutIDActionCloseTab,kShortcutDescActionCloseTab,this);
+    QObject::connect( _imp->actionCloseTab, SIGNAL( triggered() ),this,SLOT( onCloseTabTriggered() ) );
+    
     _imp->menubar->addAction( _imp->menuFile->menuAction() );
     _imp->menubar->addAction( _imp->menuEdit->menuAction() );
     _imp->menubar->addAction( _imp->menuLayout->menuAction() );
@@ -967,6 +979,8 @@ Gui::createMenuActions()
     _imp->menuLayout->addAction(_imp->actionImportLayout);
     _imp->menuLayout->addAction(_imp->actionExportLayout);
     _imp->menuLayout->addAction(_imp->actionRestoreDefaultLayout);
+    _imp->menuLayout->addAction(_imp->actionNextTab);
+    _imp->menuLayout->addAction(_imp->actionCloseTab);
 
     _imp->menuOptions->addAction(_imp->actionProject_settings);
     _imp->menuOptions->addAction(_imp->actionShowOfxLog);
@@ -2245,6 +2259,9 @@ Gui::unregisterPane(TabWidget* pane)
         std::list<TabWidget*>::iterator found = std::find(_imp->_panes.begin(), _imp->_panes.end(), pane);
         
         if ( found != _imp->_panes.end() ) {
+            if (_imp->_lastEnteredTabWidget == pane) {
+                _imp->_lastEnteredTabWidget = 0;
+            }
             _imp->_panes.erase(found);
         }
         
@@ -4795,3 +4812,32 @@ Gui::centerAllNodeGraphsWithTimer()
     }
 }
 
+void
+Gui::setLastEnteredTabWidget(TabWidget* tab)
+{
+    _imp->_lastEnteredTabWidget = tab;
+}
+
+TabWidget*
+Gui::getLastEnteredTabWidget() const
+{
+    return _imp->_lastEnteredTabWidget;
+}
+
+void
+Gui::onNextTabTriggered()
+{
+    TabWidget* t = getLastEnteredTabWidget();
+    if (t) {
+        t->moveToNextTab();
+    }
+}
+
+void
+Gui::onCloseTabTriggered()
+{
+    TabWidget* t = getLastEnteredTabWidget();
+    if (t) {
+        t->closeCurrentWidget();
+    }
+}

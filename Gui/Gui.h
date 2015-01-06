@@ -481,6 +481,12 @@ public:
     void getNodeBackDrops(std::list<NodeBackDrop*>& backdrops) const;
     
     void centerAllNodeGraphsWithTimer();
+    
+    void setLastEnteredTabWidget(TabWidget* tab);
+    
+    TabWidget* getLastEnteredTabWidget() const;
+    
+    
 Q_SIGNALS:
 
 
@@ -590,6 +596,10 @@ public Q_SLOTS:
     void onFreezeUIButtonClicked(bool clicked);
 
 	void onPropertiesScrolled();
+    
+    void onNextTabTriggered();
+    
+    void onCloseTabTriggered();
 private:
 
     /**

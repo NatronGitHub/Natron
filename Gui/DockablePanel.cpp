@@ -1045,22 +1045,24 @@ DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI> & knob,
                 
                 } else {
                     
-                    ///the plug-in didn't specify any page
-                    ///for this param, put it in the first page that is not the default page.
-                    ///If there is still no page, put it in the default tab.
-                    for (PageMap::iterator it = _pages.begin(); it != _pages.end(); ++it) {
-                        if (it->first != _defaultPageName) {
-                            page = it;
+                    const std::vector< boost::shared_ptr<KnobI> > & knobs = _holder->getKnobs();
+                    ///find in all knobs a page param to set this param into
+                    for (U32 i = 0; i < knobs.size(); ++i) {
+                        Page_Knob* p = dynamic_cast<Page_Knob*>( knobs[i].get() );
+                        if ( p && (p->getDescription() != NATRON_EXTRA_PARAMETER_PAGE_NAME) ) {
+                            page = addPage(p,  p->getDescription().c_str() );
+                            p->addKnob(knob);
                             break;
                         }
                     }
+                   
                     if ( page == _pages.end() ) {
-                        const std::vector< boost::shared_ptr<KnobI> > & knobs = _holder->getKnobs();
-                        ///find in all knobs a page param to set this param into
-                        for (U32 i = 0; i < knobs.size(); ++i) {
-                            Page_Knob* p = dynamic_cast<Page_Knob*>( knobs[i].get() );
-                            if ( p && (p->getDescription() != NATRON_EXTRA_PARAMETER_PAGE_NAME) ) {
-                                page = addPage(p,  p->getDescription().c_str() );
+                        ///the plug-in didn't specify any page
+                        ///for this param, put it in the first page that is not the default page.
+                        ///If there is still no page, put it in the default tab.
+                        for (PageMap::iterator it = _pages.begin(); it != _pages.end(); ++it) {
+                            if (it->first != _defaultPageName) {
+                                page = it;
                                 break;
                             }
                         }

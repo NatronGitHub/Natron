@@ -147,36 +147,6 @@ TabWidget::setClosable(bool closable)
     _floatButton->setEnabled(closable);
 }
 
-void
-TabWidget::destroyTabs()
-{
-    for (U32 i = 0; i < _tabs.size(); ++i) {
-        destroyTab(_tabs[i]);
-    }
-}
-
-
-
-void
-TabWidget::destroyTab(QWidget* tab)
-{
-    /*special care is taken if this is a viewer: we also
-       need to delete the viewer node.*/
-    ViewerTab* isViewer = dynamic_cast<ViewerTab*>(tab);
-    Histogram* isHisto = dynamic_cast<Histogram*>(tab);
-    NodeGraph* isGraph = dynamic_cast<NodeGraph*>(tab);
-    if (isViewer) {
-        _gui->removeViewerTab(isViewer,false,false);
-    } else if (isHisto) {
-        _gui->removeHistogram(isHisto);
-    } else {
-        ///Do not delete unique widgets such as the properties bin, node graph or curve editor
-        tab->setVisible(false);
-    }
-    if (isGraph && _gui->getLastSelectedGraph() == isGraph) {
-        _gui->setLastSelectedGraph(0);
-    }
-}
 
 void
 TabWidget::createMenu()
@@ -253,6 +223,28 @@ void
 TabWidget::onHideLeftToolBarActionTriggered()
 {
     _gui->setLeftToolBarDisplayedOnMouseHoverOnly(!_gui->isLeftToolBarDisplayedOnMouseHoverOnly());
+}
+
+void
+TabWidget::moveToNextTab()
+{
+    int nextTab = -1;
+    {
+        QMutexLocker l(&_tabWidgetStateMutex);
+        
+        for (U32 i = 0; i < _tabs.size(); ++i) {
+            if (_tabs[i] == _currentWidget) {
+                if (i == _tabs.size() -1) {
+                    nextTab = 0;
+                } else {
+                    nextTab = i + 1;
+                }
+            }
+        }
+    }
+    if (nextTab != -1) {
+        makeCurrentTab(nextTab);
+    }
 }
 
 void
@@ -504,7 +496,6 @@ TabWidget::closeCurrentWidget()
         return;
     }
     removeTab(_currentWidget);
-    destroyTab(_currentWidget);
     
 }
 
@@ -515,7 +506,6 @@ TabWidget::closeTab(int index)
     QWidget *tab = _tabs[index];
     assert(_tabs[index]);
     removeTab(tab);
-    destroyTab(tab);
     
     _gui->getApp()->triggerAutoSave();
 }
@@ -727,7 +717,25 @@ TabWidget::removeTab(int index)
         }
     }
     tab->setParent(NULL);
+    
+    /*special care is taken if this is a viewer: we also
+     need to delete the viewer node.*/
+    ViewerTab* isViewer = dynamic_cast<ViewerTab*>(tab);
+    Histogram* isHisto = dynamic_cast<Histogram*>(tab);
+    NodeGraph* isGraph = dynamic_cast<NodeGraph*>(tab);
+    if (isViewer) {
+        _gui->removeViewerTab(isViewer,false,false);
+    } else if (isHisto) {
+        _gui->removeHistogram(isHisto);
+    } else {
+        ///Do not delete unique widgets such as the properties bin, node graph or curve editor
+        tab->setVisible(false);
+    }
+    if (isGraph && _gui->getLastSelectedGraph() == isGraph) {
+        _gui->setLastSelectedGraph(0);
+    }
 
+    
     return tab;
 }
 
@@ -1174,6 +1182,10 @@ TabWidget::keyPressEvent (QKeyEvent* e)
             _gui->maximize(this);
         }
         e->accept();
+    } else if (isKeybind(kShortcutGroupGlobal, kShortcutIDActionNextTab, e->modifiers(), e->key())) {
+        moveToNextTab();
+    } else if (isKeybind(kShortcutGroupGlobal, kShortcutIDActionCloseTab, e->modifiers(), e->key())) {
+        closeCurrentWidget();
     } else if (isFloatingWindowChild() && isKeybind(kShortcutGroupGlobal, kShortcutIDActionFullscreen, e->modifiers(), e->key())) {
         _gui->toggleFullScreen();
         e->accept();
@@ -1331,6 +1343,15 @@ void
 TabWidget::leaveEvent(QEvent* e)
 {
     onTabBarMouseLeft();
+    QFrame::leaveEvent(e);
+}
+
+void
+TabWidget::enterEvent(QEvent* e)
+{
+    if (_gui) {
+        _gui->setLastEnteredTabWidget(this);
+    }
     QFrame::leaveEvent(e);
 }
 

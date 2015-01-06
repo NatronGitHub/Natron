@@ -188,8 +188,6 @@ public:
 
     QStringList getTabNames() const;
 
-    void destroyTabs();
-
     QWidget* currentWidget() const
     {
         QMutexLocker l(&_tabWidgetStateMutex);
@@ -302,6 +300,9 @@ public Q_SLOTS:
     void onTabBarMouseLeft();
     
     void onHideLeftToolBarActionTriggered();
+    
+    void moveToNextTab();
+    
 private:
 
 
@@ -310,7 +311,8 @@ private:
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
     virtual void mouseMoveEvent(QMouseEvent* e) OVERRIDE FINAL;
     virtual void leaveEvent(QEvent* e) OVERRIDE FINAL;
-    void destroyTab(QWidget* tab);
+    virtual void enterEvent(QEvent* e) OVERRIDE FINAL;
+    
 
 private:
 
