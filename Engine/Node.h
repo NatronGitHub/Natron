@@ -290,6 +290,11 @@ public:
      * DO NOT CALL THIS ON THE SERIALIZATION THREAD, INSTEAD PREFER USING getInputNames()
      **/
     boost::shared_ptr<Node> getInput(int index) const;
+    
+    /**
+     * @brief Same as getInput except that it doesn't do group redirections for Inputs/Outputs
+     **/
+    boost::shared_ptr<Node> getRealInput(int index) const;
 
     /**
      * @brief Returns true if the node is currently executing the onInputChanged handler.
@@ -801,12 +806,12 @@ public:
     /**
      * @brief Returns a script defining the variable thisNode
      **/
-    std::string declareCurrentNodeVariable_Python() const;
+    std::string declareCurrentNodeVariable_Python(std::string* deleteScript) const;
     
     /**
      * @brief Return a script defining all nodes variables that could be accessed through expressions by this node.
      **/
-    std::string declareAllNodesVariableInScope_Python() const;
+    std::string declareAllNodesVariableInScope_Python(std::string* deleteScript) const;
 
     bool isForceCachingEnabled() const;
     
@@ -964,7 +969,7 @@ private:
     void declareNodeVariableToPython(const std::string& nodeName);
     void setNodeVariableToPython(const std::string& oldName,const std::string& newName);
     void deleteNodeVariableToPython(const std::string& nodeName);
-    void declareParameterAsNodeField(const std::string& nodeName,const std::string& parameterName);
+    void declareParameterAsNodeField(const std::string& nodeName,PyObject* nodeObj,const std::string& parameterName);
 
     boost::scoped_ptr<Implementation> _imp;
 };

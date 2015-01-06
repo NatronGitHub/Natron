@@ -206,7 +206,7 @@ public:
     /**
      * @brief Set an expression on the Param. This is a Python script, see documentation for more infos.
      **/
-    void setExpression(const std::string& expr,bool hasRetVariable,int dimension = 0);
+    bool setExpression(const std::string& expr,bool hasRetVariable,int dimension = 0);
     std::string getExpression(int dimension,bool* hasRetVariable) const;
 };
 
@@ -666,25 +666,25 @@ public:
      * @brief Returns the value held by the parameter. If it is animated, getValueAtTime
      * will be called instead at the current's timeline position.
      **/
-    int getValue(int dimension = 0) const;
+    int getValue() const;
     
     /**
      * @brief Set the value held by the parameter. If it is animated
      * this function will either add a new keyframe or modify a keyframe already existing at the current time.
      **/
-    void setValue(int value,int dimension = 0);
+    void setValue(int value);
     
     /**
      * @brief If this parameter is animated for the given dimension, this function returns a value interpolated between the
      * 2 keyframes surrounding the given time. If time is exactly one keyframe then the value of the keyframe is returned.
      * If this parameter is not animated for the given dimension, then this function returns the same as getValue(int)
      **/
-    int getValueAtTime(int time,int dimension = 0) const;
+    int getValueAtTime(int time) const;
     
     /**
      * @brief Set a new keyframe on the parameter at the given time. If a keyframe already exists, it will modify it.
      **/
-    void setValueAtTime(int value,int time,int dimension = 0);
+    void setValueAtTime(int value,int time);
     
     /**
      * @brief Set the default value for the given dimension
@@ -997,6 +997,12 @@ public:
      * @brief Set this group as a tab. If the holding node doesn't have a tab to contain this tab, it will create then a tab widget container.
      **/
     void setAsTab();
+    
+    /**
+     * @brief Set whether the group should be folded or expanded.
+     **/
+    void setOpened(bool opened);
+    bool getIsOpened() const;
 };
 
 class PageParam : public Param

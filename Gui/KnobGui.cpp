@@ -2112,8 +2112,11 @@ EditScriptDialog::compileAndSetResult(const QString& script)
 QString
 EditScriptDialog::getHelpPart1()
 {
-    return tr("<br>Each node in the current project already has a variable declared with its name, e.g if you have a node named "
+    return tr("<br>Each node in the scope already has a variable declared with its name, e.g if you have a node named "
               "<b>Transform1</b> in your project, then you can type <i>Transform1</i> to reference that node.</br>"
+              "<br>Note that the scope includes all nodes within the same group as thisNode and the parent group node itself, "
+              "if the node belongs to a group. If the node itself is a group, then it can also have expressions depending "
+              "on parameters of its children.</br>"
               "<br/>"
               "<br>Each node has all its parameters declared as fields and you can reference a specific parameter by typing it's <b>script name</b>, e.g:</br>"
               "<br>Transform1.rotate</br>"
@@ -2125,6 +2128,13 @@ QString
 EditScriptDialog::getHelpThisNodeVariable()
 {
     return tr("<br>The current node which expression is being edited can be referenced by the variable <i>thisNode</i> for convenience.</br>");
+}
+
+QString
+EditScriptDialog::getHelpThisGroupVariable()
+{
+     return tr("<br>The parent group containing the thisNode can be referenced by the variable <i>thisGroup</i> for convenience, if and "
+               "only if thisNode belongs to a group.</br>");
 }
 
 QString
@@ -2269,7 +2279,12 @@ EditExpressionDialog::compileExpression(const QString& expr)
 QString
 EditExpressionDialog::getCustomHelp()
 {
-    return getHelpPart1() + "<br/>" + getHelpThisNodeVariable() + "<br/>" + getHelpThisParamVariable() + "<br/>" + getHelpDimensionVariable() + "<br/>" + getHelpPart2();
+    return getHelpPart1() + "<br/>" +
+    getHelpThisNodeVariable() + "<br/>" +
+    getHelpThisGroupVariable() + "<br/>" +
+    getHelpThisParamVariable() + "<br/>" +
+    getHelpDimensionVariable() + "<br/>" +
+    getHelpPart2();
 }
 
 
@@ -2283,6 +2298,7 @@ void
 EditExpressionDialog::getDeclaredVariables(std::list<std::pair<QString,QString> >& variables) const
 {
     variables.push_back(std::make_pair("thisNode", tr("the current node")));
+    variables.push_back(std::make_pair("thisGroup", tr("Defined only if thisNode belongs to a group, it references the parent group node")));
     variables.push_back(std::make_pair("thisParam", tr("the current param being edited")));
     variables.push_back(std::make_pair("dimension", tr("Defined only if the parameter is multi-dimensional, it references the dimension of the parameter being edited (0-based index")));
     variables.push_back(std::make_pair("frame", tr("the current time on the timeline")));

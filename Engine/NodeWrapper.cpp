@@ -18,11 +18,17 @@
 #include "Engine/NodeGroup.h"
 #include "Engine/RotoWrapper.h"
 Effect::Effect(const boost::shared_ptr<Natron::Node>& node)
-: Group(boost::dynamic_pointer_cast<NodeCollection>(
-                                                               boost::dynamic_pointer_cast<NodeGroup>(node->getLiveInstance()->shared_from_this())))
+: Group()
 , _node(node)
 {
-
+    if (node) {
+        boost::shared_ptr<NodeGroup> grp;
+        if (node->getLiveInstance()) {
+            grp = boost::dynamic_pointer_cast<NodeGroup>(node->getLiveInstance()->shared_from_this());
+            init(boost::dynamic_pointer_cast<NodeCollection>(grp));
+        }
+        
+    }
 }
 
 Effect::~Effect()

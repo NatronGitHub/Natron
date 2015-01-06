@@ -302,7 +302,10 @@ RemoveMultipleNodesCommand::~RemoveMultipleNodesCommand()
 {
     if (_isRedone) {
         for (std::list<NodeToRemove>::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
-            _graph->deleteNodepluginsly(it->node.lock());
+            boost::shared_ptr<NodeGui> n = it->node.lock();
+            if (n) {
+                _graph->deleteNodepluginsly(n);
+            }
         }
 
         for (std::list<NodeBackDrop*>::iterator it = _bds.begin(); it != _bds.end(); ++it) {

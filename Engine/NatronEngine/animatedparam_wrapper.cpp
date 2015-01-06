@@ -720,6 +720,7 @@ static PyObject* Sbk_AnimatedParamFunc_setExpression(PyObject* self, PyObject* a
     if (!Shiboken::Object::isValid(self))
         return 0;
     cppSelf = ((::AnimatedParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_ANIMATEDPARAM_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { 0, 0, 0 };
     SBK_UNUSED(pythonToCpp)
@@ -777,16 +778,22 @@ static PyObject* Sbk_AnimatedParamFunc_setExpression(PyObject* self, PyObject* a
 
         if (!PyErr_Occurred()) {
             // setExpression(std::string,bool,int)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            cppSelf->setExpression(cppArg0, cppArg1, cppArg2);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            // Begin code injection
+
+            bool cppResult = cppSelf->setExpression(cppArg0,cppArg1,cppArg2);
+            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), &cppResult);
+
+            // End of code injection
+
+
         }
     }
 
-    if (PyErr_Occurred()) {
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
         return 0;
     }
-    Py_RETURN_NONE;
+    return pyResult;
 
     Sbk_AnimatedParamFunc_setExpression_TypeError:
         const char* overloads[] = {"std::string, bool, int = 0", 0};

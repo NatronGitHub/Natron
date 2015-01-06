@@ -71,6 +71,34 @@ static PyObject* Sbk_GroupParamFunc_addParam(PyObject* self, PyObject* pyArg)
         return 0;
 }
 
+static PyObject* Sbk_GroupParamFunc_getIsOpened(PyObject* self)
+{
+    ::GroupParam* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::GroupParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_GROUPPARAM_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+
+    // Call function/method
+    {
+
+        if (!PyErr_Occurred()) {
+            // getIsOpened()const
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            bool cppResult = const_cast<const ::GroupParam*>(cppSelf)->getIsOpened();
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), &cppResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+}
+
 static PyObject* Sbk_GroupParamFunc_setAsTab(PyObject* self)
 {
     ::GroupParam* cppSelf = 0;
@@ -96,9 +124,55 @@ static PyObject* Sbk_GroupParamFunc_setAsTab(PyObject* self)
     Py_RETURN_NONE;
 }
 
+static PyObject* Sbk_GroupParamFunc_setOpened(PyObject* self, PyObject* pyArg)
+{
+    ::GroupParam* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::GroupParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_GROUPPARAM_IDX], (SbkObject*)self));
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp;
+    SBK_UNUSED(pythonToCpp)
+
+    // Overloaded function decisor
+    // 0: setOpened(bool)
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), (pyArg)))) {
+        overloadId = 0; // setOpened(bool)
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_GroupParamFunc_setOpened_TypeError;
+
+    // Call function/method
+    {
+        bool cppArg0;
+        pythonToCpp(pyArg, &cppArg0);
+
+        if (!PyErr_Occurred()) {
+            // setOpened(bool)
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            cppSelf->setOpened(cppArg0);
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+        }
+    }
+
+    if (PyErr_Occurred()) {
+        return 0;
+    }
+    Py_RETURN_NONE;
+
+    Sbk_GroupParamFunc_setOpened_TypeError:
+        const char* overloads[] = {"bool", 0};
+        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.GroupParam.setOpened", overloads);
+        return 0;
+}
+
 static PyMethodDef Sbk_GroupParam_methods[] = {
     {"addParam", (PyCFunction)Sbk_GroupParamFunc_addParam, METH_O},
+    {"getIsOpened", (PyCFunction)Sbk_GroupParamFunc_getIsOpened, METH_NOARGS},
     {"setAsTab", (PyCFunction)Sbk_GroupParamFunc_setAsTab, METH_NOARGS},
+    {"setOpened", (PyCFunction)Sbk_GroupParamFunc_setOpened, METH_O},
 
     {0} // Sentinel
 };

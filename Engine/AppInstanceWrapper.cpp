@@ -19,10 +19,12 @@
 #include "Engine/NodeGroup.h"
 #include "Engine/EffectInstance.h"
 App::App(AppInstance* instance)
-: Group(instance->getProject())
+: Group()
 , _instance(instance)
 {
-    
+    if (instance->getProject()) {
+        init(instance->getProject());
+    }
 }
 
 int

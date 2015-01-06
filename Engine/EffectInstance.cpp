@@ -381,7 +381,6 @@ struct EffectInstance::Implementation
         knobChangedCallback.originalExpression.clear();
         Py_XDECREF(knobChangedCallback.code); //< new ref
         knobChangedCallback.code = 0;
-        knobChangedCallback.global_dict = 0; //< python borrowed ref!
     }
     
     void executeKnobChangedCallback(KnobI* k);

@@ -240,10 +240,15 @@ Param::_addAsDependencyOf(int fromExprDimension,Param* param)
     _knob->addListener(true,fromExprDimension, param->_knob.get());
 }
 
-void
+bool
 AnimatedParam::setExpression(const std::string& expr,bool hasRetVariable,int dimension)
 {
-    (void)_knob->setExpression(dimension,expr,hasRetVariable);
+    try {
+        (void)_knob->setExpression(dimension,expr,hasRetVariable);
+    } catch (...) {
+        return false;
+    }
+    return true;
 }
 
 std::string
@@ -911,27 +916,27 @@ ChoiceParam::set(int x, int frame)
 }
 
 int
-ChoiceParam::getValue(int dimension) const
+ChoiceParam::getValue() const
 {
-    return _choiceKnob->getValue(dimension);
+    return _choiceKnob->getValue(0);
 }
 
 void
-ChoiceParam::setValue(int value,int dimension)
+ChoiceParam::setValue(int value)
 {
-    _choiceKnob->setValue(value, dimension);
+    _choiceKnob->setValue(value, 0);
 }
 
 int
-ChoiceParam::getValueAtTime(int time,int dimension) const
+ChoiceParam::getValueAtTime(int time) const
 {
-    return _choiceKnob->getValueAtTime(time,dimension);
+    return _choiceKnob->getValueAtTime(time, 0);
 }
 
 void
-ChoiceParam::setValueAtTime(int value,int time,int dimension)
+ChoiceParam::setValueAtTime(int value,int time)
 {
-    _choiceKnob->setValueAtTime(time, value, dimension);
+    _choiceKnob->setValueAtTime(time, value, 0);
 }
 
 void
@@ -1364,6 +1369,19 @@ GroupParam::setAsTab()
     }
     _groupKnob->setAsTab();
 }
+
+void
+GroupParam::setOpened(bool opened)
+{
+    _groupKnob->setValue(opened, 0);
+}
+
+bool
+GroupParam::getIsOpened() const
+{
+    return _groupKnob->getValue();
+}
+
 
 //////////////////////PageParam
 

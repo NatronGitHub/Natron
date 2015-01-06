@@ -37,6 +37,16 @@ getNumInstances()
     return Natron::getNumInstances();
 }
 
+inline std::list<std::string>
+getNatronPath()
+{
+    return Natron::getNatronPath();
+}
 
+inline void
+appendToNatronPath(const std::string& path)
+{
+    Natron::appendToNatronPath(path);
+}
 
 #endif // GLOBALFUNCTIONSWRAPPER_H

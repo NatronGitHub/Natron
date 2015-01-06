@@ -14,10 +14,16 @@
 #include "Engine/NodeGroup.h"
 #include "Engine/NodeWrapper.h"
 
-Group::Group(const boost::shared_ptr<NodeCollection>& collection)
-: _collection(collection)
+Group::Group()
+: _collection()
 {
     
+}
+
+void
+Group::init(const boost::shared_ptr<NodeCollection>& collection)
+{
+    _collection = collection;
 }
 
 Group::~Group()

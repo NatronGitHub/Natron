@@ -970,7 +970,7 @@ NodeGui::setOptionalInputsVisible(bool visible)
         _optionalInputsVisible = visible;
         for (U32 i = 0; i < _inputEdges.size() ; ++i) {
             if (node->getLiveInstance()->isInputOptional(i) &&
-                !node->getInput(i) &&
+                !node->getRealInput(i) &&
                 !_inputEdges[i]->isRotoEdge()) {
                 _inputEdges[i]->setVisible(visible);
             }
@@ -1258,18 +1258,6 @@ NodeGui::activate(bool triggerRender)
 {
     ///first activate all child instance if any
     NodePtr node = getNode();
-    if ( node->isMultiInstance() && node->getParentMultiInstanceName().empty() ) {
-        boost::shared_ptr<MultiInstancePanel> panel = getMultiInstancePanel();
-        const std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> > & childrenInstances = panel->getInstances();
-        for (std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> >::const_iterator it = childrenInstances.begin();
-             it != childrenInstances.end(); ++it) {
-            NodePtr instance = it->first.lock();
-            if (instance == node) {
-                continue;
-            }
-            instance->activate(std::list< Natron::Node* >(),false);
-        }
-    }
 
     bool isMultiInstanceChild = !node->getParentMultiInstanceName().empty();
 
@@ -1358,25 +1346,7 @@ NodeGui::deactivate(bool triggerRender)
     ///first deactivate all child instance if any
     NodePtr node = getNode();
     
-    NodePtr parentMultiInstance = node->getParentMultiInstance();
-    if ( node->isMultiInstance() && !parentMultiInstance ) {
-        boost::shared_ptr<MultiInstancePanel> panel = getMultiInstancePanel();
-        assert(panel);
-
-        ///Remove keyframes since the settings panel is already closed anyway
-        const std::list< std::pair<boost::weak_ptr<Natron::Node>,bool> > & childrenInstances = panel->getInstances();
-
-        for (std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> >::const_iterator it = childrenInstances.begin();
-             it != childrenInstances.end(); ++it) {
-            NodePtr instance = it->first.lock();
-            if (instance == node) {
-                continue;
-            }
-            instance->deactivate(std::list< Natron::Node* >(),false,false);
-        }
-    }
-
-    bool isMultiInstanceChild = parentMultiInstance.get() != NULL;
+    bool isMultiInstanceChild = node->getParentMultiInstance().get() != NULL;
     if (!isMultiInstanceChild) {
         hideGui();
     }

@@ -448,6 +448,8 @@ protected:
     
     static QString getHelpThisNodeVariable();
     
+    static QString getHelpThisGroupVariable();
+    
     static QString getHelpThisParamVariable();
     
     static QString getHelpDimensionVariable();

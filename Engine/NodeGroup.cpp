@@ -848,9 +848,10 @@ NodeGroup::initializeKnobs()
     assert(nodePage);
     Page_Knob* isPage = dynamic_cast<Page_Knob*>(nodePage.get());
     assert(isPage);
-    _imp->exportAsTemplate = Natron::createKnob<Button_Knob>(this, "Export as template");
-    _imp->exportAsTemplate->setName("exportAsTemplate");
-    _imp->exportAsTemplate->setHintToolTip("Export this group as a Python template script that can be later on re-used as a plug-in.");
+    _imp->exportAsTemplate = Natron::createKnob<Button_Knob>(this, "Export as Python plug-in");
+    _imp->exportAsTemplate->setName("exportAsGroup");
+    _imp->exportAsTemplate->setHintToolTip("Export this group as a Python group script that can be shared and/or later "
+                                           "on re-used as a plug-in.");
     isPage->addKnob(_imp->exportAsTemplate);
 }
 
@@ -1022,6 +1023,8 @@ static bool exportKnobValues(const boost::shared_ptr<KnobI> knob,
     Knob<int>* isInt = dynamic_cast<Knob<int>*>(knob.get());
     Knob<bool>* isBool = dynamic_cast<Knob<bool>*>(knob.get());
     Parametric_Knob* isParametric = dynamic_cast<Parametric_Knob*>(knob.get());
+    Choice_Knob* isChoice = dynamic_cast<Choice_Knob*>(knob.get());
+    Group_Knob* isGrp = dynamic_cast<Group_Knob*>(knob.get());
     
     for (int i = 0; i < knob->getDimension(); ++i) {
         
@@ -1067,16 +1070,20 @@ static bool exportKnobValues(const boost::shared_ptr<KnobI> knob,
                     if (isAnimatedStr) {
                         std::string value = isAnimatedStr->getValueAtTime(it3->getTime(),i, true);
                         WRITE_INDENT(1); WRITE_STRING("param.setValueAtTime(" + ESC(value) + ", "
-                                                      + NUM(it3->getTime()) + ", " + NUM(i) + ")");
+                                                      + NUM(it3->getTime())+ ")");
                         
                     } else if (isBool) {
                         int v = std::min(1., std::max(0.,std::floor(it3->getValue() + 0.5)));
                         QString vStr = v ? "True" : "False";
                         WRITE_INDENT(1); WRITE_STRING("param.setValueAtTime(" + vStr + ", "
-                                                      + NUM(it3->getTime()) + ", " + NUM(i) + ")");
+                                                      + NUM(it3->getTime())  + ")");
+                    } else if (isChoice) {
+                        WRITE_INDENT(1); WRITE_STRING("param.setValueAtTime(" + NUM(it3->getValue()) + ", "
+                                                      + NUM(it3->getTime()) + ")");
                     } else {
                         WRITE_INDENT(1); WRITE_STRING("param.setValueAtTime(" + NUM(it3->getValue()) + ", "
                                                       + NUM(it3->getTime()) + ", " + NUM(i) + ")");
+
                     }
                 }
             }
@@ -1089,19 +1096,26 @@ static bool exportKnobValues(const boost::shared_ptr<KnobI> knob,
                     }
                 }
                 
-                if (isStr) {
+                if (isGrp) {
+                    int v = std::min(1., std::max(0.,std::floor(isGrp->getValue(i, true) + 0.5)));
+                    QString vStr = v ? "True" : "False";
+                    WRITE_INDENT(1); WRITE_STRING("param.setOpened(" + vStr + ")");
+                } else if (isStr) {
                     std::string v = isStr->getValue(i, true);
-                    WRITE_INDENT(1); WRITE_STRING("param.setValue(" + ESC(v) + ", " + NUM(i) + ")");
+                    WRITE_INDENT(1); WRITE_STRING("param.setValue(" + ESC(v)  + ")");
                 } else if (isDouble) {
                     double v = isDouble->getValue(i, true);
                     WRITE_INDENT(1); WRITE_STRING("param.setValue(" + NUM(v) + ", " + NUM(i) + ")");
+                } else if (isChoice) {
+                    int v = isInt->getValue(i, true);
+                    WRITE_INDENT(1); WRITE_STRING("param.setValue(" + NUM(v) + ")");
                 } else if (isInt) {
                     int v = isInt->getValue(i, true);
                     WRITE_INDENT(1); WRITE_STRING("param.setValue(" + NUM(v) + ", " + NUM(i) + ")");
                 } else if (isBool) {
                     int v = std::min(1., std::max(0.,std::floor(isBool->getValue(i, true) + 0.5)));
                     QString vStr = v ? "True" : "False";
-                    WRITE_INDENT(1); WRITE_STRING("param.setValue(" + vStr + ", " + NUM(i) + ")");
+                    WRITE_INDENT(1); WRITE_STRING("param.setValue(" + vStr + ")");
                 }
             }
         }
@@ -1499,7 +1513,7 @@ static void exportAllNodeKnobs(const boost::shared_ptr<Natron::Node>& node,QText
     std::list<Page_Knob*> userPages;
     for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it2 = knobs.begin(); it2 != knobs.end(); ++it2) {
         if ((*it2)->getIsPersistant() && !(*it2)->isUserKnob()) {
-            if (exportKnobValues(*it2,"lastNode." + QString((*it2)->getName().c_str()), true, ts)) {
+            if (exportKnobValues(*it2,"lastNode.getParam(\"" + QString((*it2)->getName().c_str()) + "\")", true, ts)) {
                 WRITE_STATIC_LINE("");
             }
             
@@ -1524,6 +1538,11 @@ static void exportAllNodeKnobs(const boost::shared_ptr<Natron::Node>& node,QText
         for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it3 = children.begin(); it3 != children.end(); ++it3) {
             exportUserKnob(*it3, "lastNode", 0, *it2, ts);
         }
+    }
+    
+    if (!userPages.empty()) {
+        WRITE_INDENT(1); WRITE_STATIC_LINE("#Refresh the GUI with the newly created parameters");
+        WRITE_INDENT(1); WRITE_STATIC_LINE("lastNode.refreshUserParamsGUI()");
     }
     
     boost::shared_ptr<RotoContext> roto = node->getRotoContext();
@@ -1557,16 +1576,25 @@ static bool exportKnobLinks(const boost::shared_ptr<Natron::Node>& node,
     bool hasExportedLink = false;
     const std::vector<boost::shared_ptr<KnobI> >& knobs = node->getKnobs();
     for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it2 = knobs.begin(); it2 != knobs.end(); ++it2) {
-        QString paramName = nodeName + "." + QString((*it2)->getName().c_str());
+        QString paramName = nodeName + ".getParam(\"" + QString((*it2)->getName().c_str()) + "\")";
+        
+        bool hasDefined = false;
         for (int i = 0; i < (*it2)->getDimension(); ++i) {
             std::string expr = (*it2)->getExpression(i);
             QString hasRetVar = (*it2)->isExpressionUsingRetVariable(i) ? "True" : "False";
             if (!expr.empty()) {
+                if (!hasDefined) {
+                    WRITE_INDENT(1); WRITE_STRING("param = " + paramName);
+                    hasDefined = true;
+                }
                 hasExportedLink = true;
-                WRITE_INDENT(1); WRITE_STRING(paramName + ".setExpression(" + ESC(expr) + ", " +
+                WRITE_INDENT(1); WRITE_STRING("param.setExpression(" + ESC(expr) + ", " +
                                               hasRetVar + ", " + NUM(i) + ")");
             }
             
+        }
+        if (hasDefined) {
+            WRITE_INDENT(1); WRITE_STATIC_LINE("del param");
         }
     }
     return hasExportedLink;
@@ -1605,7 +1633,7 @@ static void exportGroupInternal(NodeGroup* group,const QString& groupName, QText
         (*it)->getPosition(&x,&y);
         WRITE_INDENT(1); WRITE_STRING("lastNode.setPosition(" + NUM(x) + ", " + NUM(y) + ")");
         
-        QString nodeNameInScript = groupName + "." + QString((*it)->getName_mt_safe().c_str());
+        QString nodeNameInScript = groupName + QString((*it)->getName_mt_safe().c_str());
         WRITE_INDENT(1); WRITE_STRING(nodeNameInScript + " = lastNode");
         WRITE_STATIC_LINE("");
         exportAllNodeKnobs(*it,ts);
@@ -1621,7 +1649,7 @@ static void exportGroupInternal(NodeGroup* group,const QString& groupName, QText
                 WRITE_INDENT(1); WRITE_STRING("lastNode = " + nodeNameInScript + ".createChild()");
                 WRITE_INDENT(1); WRITE_STRING("lastNode.setName(" + QString((*it2)->getName_mt_safe().c_str()) + ")");
                 exportAllNodeKnobs(*it2,ts);
-                WRITE_INDENT(1); WRITE_STRING(groupName + "." + QString((*it2)->getName_mt_safe().c_str()) + " = lastNode");
+                WRITE_INDENT(1); WRITE_STRING(groupName + QString((*it2)->getName_mt_safe().c_str()) + " = lastNode");
                 WRITE_INDENT(1); WRITE_STRING("del lastNode");
             }
         }
@@ -1631,8 +1659,8 @@ static void exportGroupInternal(NodeGroup* group,const QString& groupName, QText
         
         NodeGroup* isGrp = dynamic_cast<NodeGroup*>((*it)->getLiveInstance());
         if (isGrp) {
-            WRITE_INDENT(1); WRITE_STRING(groupName + ".group = " + nodeNameInScript);
-            exportGroupInternal(isGrp, groupName + ".group", ts);
+            WRITE_INDENT(1); WRITE_STRING(groupName + "group = " + nodeNameInScript);
+            exportGroupInternal(isGrp, groupName + "group", ts);
         }
         WRITE_STATIC_LINE("");
         
@@ -1647,14 +1675,14 @@ static void exportGroupInternal(NodeGroup* group,const QString& groupName, QText
     WRITE_INDENT(1); WRITE_STATIC_LINE("#Now that all nodes are created we can connect them together, restore expressions");
     for (NodeList::iterator it = exportedNodes.begin(); it != exportedNodes.end(); ++it) {
         
-        QString nodeQualifiedName(groupName + "." + (*it)->getName_mt_safe().c_str());
+        QString nodeQualifiedName(groupName + (*it)->getName_mt_safe().c_str());
         bool hasConnected = false;
         if (!(*it)->getParentMultiInstance()) {
             for (int i = 0; i < (*it)->getMaxInputCount(); ++i) {
-                NodePtr inputNode = (*it)->getInput(i);
+                NodePtr inputNode = (*it)->getRealInput(i);
                 if (inputNode) {
                     hasConnected = true;
-                    QString inputQualifiedName(groupName + "." + inputNode->getName_mt_safe().c_str());
+                    QString inputQualifiedName(groupName  + inputNode->getName_mt_safe().c_str());
                     WRITE_INDENT(1); WRITE_STRING(nodeQualifiedName + ".connectInput(" + NUM(i) +
                                                   ", " + inputQualifiedName + ")");
                 }

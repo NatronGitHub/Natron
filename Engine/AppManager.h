@@ -466,9 +466,8 @@ struct PyCallback
     std::string originalExpression; //< the one input by the user
     
     PyObject* code;
-    PyObject* global_dict;
     
-    PyCallback() : expression(), originalExpression(),  code(0), global_dict(0) {}
+    PyCallback() : expression(), originalExpression(),  code(0){}
 };
     
 void errorDialog(const std::string & title,const std::string & message, bool useHtml = false);
@@ -620,7 +619,7 @@ PyObject* getMainModule();
 bool interpretPythonScript(const std::string& script,std::string* error,std::string* output);
 
     
-void compilePyScript(const std::string& script,PyObject** code,PyObject** globalDict);
+void compilePyScript(const std::string& script,PyObject** code);
 
 std::string PY3String_asString(PyObject* obj);
 } // namespace Natron

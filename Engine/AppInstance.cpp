@@ -376,12 +376,12 @@ AppInstance::createNodeInternal(const QString & pluginID,
         return node;
     }
     
-    NodeGroup* isCollectionGroup = dynamic_cast<NodeGroup*>(group.get());
-    if (isCollectionGroup && isCollectionGroup->getPluginID() == pluginID.toStdString()) {
-        Natron::errorDialog(tr("Plugin error").toStdString(),
-                            tr("You cannot nest the same group within an instance of that group, that would create an infinite recursion.").toStdString());
-        return node;
-    }
+//    NodeGroup* isCollectionGroup = dynamic_cast<NodeGroup*>(group.get());
+//    if (isCollectionGroup && isCollectionGroup->getPluginID() == pluginID.toStdString()) {
+//        Natron::errorDialog(tr("Plugin error").toStdString(),
+//                            tr("You cannot nest the same group within an instance of that group, that would create an infinite recursion.").toStdString());
+//        return node;
+//    }
 
     const QString& pythonModule = plugin->getPythonModule();
     if (!pythonModule.isEmpty()) {

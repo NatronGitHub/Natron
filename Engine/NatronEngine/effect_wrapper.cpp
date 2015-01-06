@@ -1783,9 +1783,13 @@ static PyObject* Sbk_EffectFunc_refreshUserParamsGUI(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // refreshUserParamsGUI()
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            // Begin code injection
+
             cppSelf->refreshUserParamsGUI();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+
+            // End of code injection
+
+
         }
     }
 

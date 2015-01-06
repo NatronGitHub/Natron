@@ -14,6 +14,45 @@ PyTypeObject** SbkNatronEngineTypes;
 // Current module's converter array.
 SbkConverter** SbkNatronEngineTypeConverters;
 // Global functions ------------------------------------------------------------
+static PyObject* SbkNatronEngineModule_appendToNatronPath(PyObject* self, PyObject* pyArg)
+{
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp;
+    SBK_UNUSED(pythonToCpp)
+
+    // Overloaded function decisor
+    // 0: appendToNatronPath(std::string)
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArg)))) {
+        overloadId = 0; // appendToNatronPath(std::string)
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto SbkNatronEngineModule_appendToNatronPath_TypeError;
+
+    // Call function/method
+    {
+        ::std::string cppArg0;
+        pythonToCpp(pyArg, &cppArg0);
+
+        if (!PyErr_Occurred()) {
+            // appendToNatronPath(std::string)
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            appendToNatronPath(cppArg0);
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+        }
+    }
+
+    if (PyErr_Occurred()) {
+        return 0;
+    }
+    Py_RETURN_NONE;
+
+    SbkNatronEngineModule_appendToNatronPath_TypeError:
+        const char* overloads[] = {"std::string", 0};
+        Shiboken::setErrorAboutWrongArguments(pyArg, "appendToNatronPath", overloads);
+        return 0;
+}
+
 static PyObject* SbkNatronEngineModule_getInstance(PyObject* self, PyObject* pyArg)
 {
     PyObject* pyResult = 0;
@@ -54,6 +93,29 @@ static PyObject* SbkNatronEngineModule_getInstance(PyObject* self, PyObject* pyA
         const char* overloads[] = {"int", 0};
         Shiboken::setErrorAboutWrongArguments(pyArg, "getInstance", overloads);
         return 0;
+}
+
+static PyObject* SbkNatronEngineModule_getNatronPath(PyObject* self)
+{
+    PyObject* pyResult = 0;
+
+    // Call function/method
+    {
+
+        if (!PyErr_Occurred()) {
+            // getNatronPath()
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            std::list<std::string > cppResult = getNatronPath();
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            pyResult = Shiboken::Conversions::copyToPython(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_LIST_STD_STRING_IDX], &cppResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
 }
 
 static PyObject* SbkNatronEngineModule_getNumInstances(PyObject* self)
@@ -104,7 +166,9 @@ static PyObject* SbkNatronEngineModule_getPluginIDs(PyObject* self)
 
 
 static PyMethodDef NatronEngine_methods[] = {
+    {"appendToNatronPath", (PyCFunction)SbkNatronEngineModule_appendToNatronPath, METH_O},
     {"getInstance", (PyCFunction)SbkNatronEngineModule_getInstance, METH_O},
+    {"getNatronPath", (PyCFunction)SbkNatronEngineModule_getNatronPath, METH_NOARGS},
     {"getNumInstances", (PyCFunction)SbkNatronEngineModule_getNumInstances, METH_NOARGS},
     {"getPluginIDs", (PyCFunction)SbkNatronEngineModule_getPluginIDs, METH_NOARGS},
     {0} // Sentinel

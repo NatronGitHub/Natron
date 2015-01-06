@@ -487,6 +487,8 @@ Node::load(const std::string & parentMultiInstanceName,
         assert(nameSet);
         updateEffectLabelKnob(getName().c_str());
     }
+    
+    //declareNodeVariableToPython(getFullySpecifiedName());
     declarePythonFields();
     
     boost::shared_ptr<NodeCollection> group = getGroup();
@@ -1279,46 +1281,49 @@ Node::setNameInternal(const QString& name)
         _imp->name = newName;
     }
     
-    std::string fullySpecifiedName = getFullySpecifiedName();
-    
-    if (!oldName.empty() && getGroup()) {
-        
-        try {
-             setNodeVariableToPython(fullOldName,fullySpecifiedName);
-        } catch (const std::exception& e) {
-            qDebug() << e.what();
-        }
-        
-        const std::vector<boost::shared_ptr<KnobI> > & knobs = getKnobs();
-        
-        for (U32 i = 0; i < knobs.size(); ++i) {
-            std::list<KnobI*> listeners;
-            knobs[i]->getListeners(listeners);
-            ///For all listeners make sure they belong to a node
-            bool foundEffect = false;
-            for (std::list<KnobI*>::iterator it2 = listeners.begin(); it2 != listeners.end(); ++it2) {
-                EffectInstance* isEffect = dynamic_cast<EffectInstance*>( (*it2)->getHolder() );
-                if ( isEffect && ( isEffect != _imp->liveInstance.get() ) ) {
-                    foundEffect = true;
-                    break;
+    boost::shared_ptr<NodeCollection> collection = getGroup();
+    if (collection) {
+        std::string fullySpecifiedName = getFullySpecifiedName();
+        if (!oldName.empty()) {
+            
+            if (fullOldName != fullySpecifiedName) {
+                try {
+                    setNodeVariableToPython(fullOldName,fullySpecifiedName);
+                } catch (const std::exception& e) {
+                    qDebug() << e.what();
+                }
+                
+                const std::vector<boost::shared_ptr<KnobI> > & knobs = getKnobs();
+                
+                for (U32 i = 0; i < knobs.size(); ++i) {
+                    std::list<KnobI*> listeners;
+                    knobs[i]->getListeners(listeners);
+                    ///For all listeners make sure they belong to a node
+                    bool foundEffect = false;
+                    for (std::list<KnobI*>::iterator it2 = listeners.begin(); it2 != listeners.end(); ++it2) {
+                        EffectInstance* isEffect = dynamic_cast<EffectInstance*>( (*it2)->getHolder() );
+                        if ( isEffect && ( isEffect != _imp->liveInstance.get() ) ) {
+                            foundEffect = true;
+                            break;
+                        }
+                    }
+                    if (foundEffect) {
+                        Natron::warningDialog( tr("Rename").toStdString(), tr("This node has one or several "
+                                                                              "parameters from which other parameters "
+                                                                              "of the project rely on through expressions "
+                                                                              "or links. Changing the name of this node will probably "
+                                                                              "break these expressions. You should carefully update them. ")
+                                              .toStdString() );
+                        break;
+                    }
                 }
             }
-            if (foundEffect) {
-                Natron::warningDialog( tr("Rename").toStdString(), tr("This node has one or several "
-                                                                      "parameters from which other parameters "
-                                                                      "of the project rely on through expressions "
-                                                                      "or links. Changing the name of this node will probably "
-                                                                      "break these expressions. You should carefully update them. ")
-                                      .toStdString() );
-                break;
-            }
+        } else { //if (!oldName.empty()) {
+            declareNodeVariableToPython(fullySpecifiedName);
         }
-        
+        collection->notifyNodeNameChanged(shared_from_this());
     }
     
-    if (getGroup()) {
-        _imp->group.lock()->notifyNodeNameChanged(shared_from_this());
-    }
     Q_EMIT nameChanged(name);
 }
 
@@ -1820,6 +1825,25 @@ Node::getInput(int index) const
         
     }
     return ret;
+}
+
+boost::shared_ptr<Node>
+Node::getRealInput(int index) const
+{
+    NodePtr parent = _imp->multiInstanceParent.lock();
+    if (parent) {
+        return parent->getInput(index);
+    }
+    if (!_imp->inputsInitialized) {
+        qDebug() << "Node::getInput(): inputs not initialized";
+    }
+    QMutexLocker l(&_imp->inputsMutex);
+    if ( ( index >= (int)_imp->inputs.size() ) || (index < 0) ) {
+        return boost::shared_ptr<Node>();
+    }
+    
+    return _imp->inputs[index];
+
 }
 
 const std::vector<boost::shared_ptr<Natron::Node> > &
@@ -2426,8 +2450,22 @@ Node::deactivate(const std::list< Node* > & outputsToDisconnect,
     ///Only called by the main-thread
     assert( QThread::currentThread() == qApp->thread() );
     
-    if (!_imp->liveInstance) {
+    if (!_imp->liveInstance || !isActivated()) {
         return;
+    }
+    
+    ///If the node is a group, deactivate all nodes within the group first
+    NodeGroup* isGrp = dynamic_cast<NodeGroup*>(getLiveInstance());
+    if (isGrp) {
+        NodeList nodes = isGrp->getNodes();
+        for (NodeList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+            (*it)->deactivate(std::list< Node* >(),false,false,true,false);
+        }
+    }
+    
+    ///If the node has children (i.e it is a multi-instance), deactivate its children
+    for (std::list<boost::weak_ptr<Node> >::iterator it = _imp->children.begin(); it != _imp->children.end(); ++it) {
+        it->lock()->deactivate(std::list< Node* >(),false,false,true,false);
     }
     
     //first tell the gui to clear any persistent message linked to this node
@@ -2579,6 +2617,21 @@ Node::activate(const std::list< Node* > & outputsToRestore,
         return;
     }
     
+    
+    ///If the node is a group, activate all nodes within the group first
+    NodeGroup* isGrp = dynamic_cast<NodeGroup*>(getLiveInstance());
+    if (isGrp) {
+        NodeList nodes = isGrp->getNodes();
+        for (NodeList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+            (*it)->activate(std::list< Node* >(),false,false);
+        }
+    }
+    
+    ///If the node has children (i.e it is a multi-instance), activate its children
+    for (std::list<boost::weak_ptr<Node> >::iterator it = _imp->children.begin(); it != _imp->children.end(); ++it) {
+        it->lock()->activate(std::list< Node* >(),false,false);
+    }
+
     
     ///No need to lock, guiInputs is only written to by the main-thread
     
@@ -4073,71 +4126,6 @@ Node::dequeueActions()
     _imp->nodeIsDequeuingCond.wakeAll();
 }
 
-std::string
-Node::declareCurrentNodeVariable_Python() const
-{
-    if (!getGroup()) {
-        return std::string();
-    }
-        ///Now define the thisNode variable
-    std::stringstream ss;
-    ss << "thisNode = " << "app" << getApp()->getAppID() + 1 << "." << getFullySpecifiedName() <<  "\n";
-    return ss.str();
-}
-
-std::string
-Node::declareAllNodesVariableInScope_Python() const
-{
-    if (!getGroup()) {
-        return std::string();
-    }
-    
-    int appID = getApp()->getAppID() + 1;
-    
-    boost::shared_ptr<NodeCollection> collection = getGroup();
-    NodeGroup* isContainerGrp = dynamic_cast<NodeGroup*>(collection.get());
-    std::stringstream ss;
-    if (isContainerGrp) {
-        ss << isContainerGrp->getNode()->getFullySpecifiedName() << " = app" << appID << "." <<
-        isContainerGrp->getNode()->getFullySpecifiedName() << "\n";
-    }
-    
-    NodeList siblings = collection->getNodes();
-    for (NodeList::iterator it = siblings.begin(); it != siblings.end(); ++it) {
-        ss << (*it)->getFullySpecifiedName() << " = app" << appID << "." <<
-        (*it)->getFullySpecifiedName() << "\n";
-    }
-    
-    NodeGroup* isGrp = dynamic_cast<NodeGroup*>(getLiveInstance());
-    if (isGrp) {
-        NodeList children = isGrp->getNodes();
-        for (NodeList::iterator it = children.begin(); it != children.end(); ++it) {
-            ss << (*it)->getFullySpecifiedName() << " = app" << appID << "." <<
-            (*it)->getFullySpecifiedName() << "\n";
-        }
-    }
-    return ss.str();
-}
-
-void
-Node::declarePythonFields()
-{
-    if (!getGroup()) {
-        return ;
-    }
-    
-    std::locale locale;
-    std::string fullName = getFullySpecifiedName();
-    declareNodeVariableToPython(fullName);
-    const std::vector<boost::shared_ptr<KnobI> >& knobs = getKnobs();
-    for (U32 i = 0; i < knobs.size(); ++i) {
-        const std::string& knobName = knobs[i]->getName();
-        if (!knobName.empty() && knobName.find(" ") == std::string::npos && !std::isdigit(knobName[0],locale)) {
-            declareParameterAsNodeField(fullName, knobName);
-        }
-    }
-}
-
 bool
 Node::shouldCacheOutput() const
 {
@@ -4273,29 +4261,150 @@ Node::restoreClipPreferencesRecursive(std::list<Natron::Node*>& markedNodes)
     
 }
 
+std::string
+Node::declareCurrentNodeVariable_Python(std::string* deleteScript) const
+{
+    boost::shared_ptr<NodeCollection> collection = getGroup();
+    if (!collection) {
+        return std::string();
+    }
+    
+    NodeGroup* isParentGrp = dynamic_cast<NodeGroup*>(collection.get());
+    
+    int appID = getApp()->getAppID() + 1 ;
+    ///Now define the thisNode variable
+    std::stringstream ss;
+    if (isParentGrp) {
+        ss << "thisGroup = " << "app" << appID << "." << isParentGrp->getNode()->getFullySpecifiedName() << "\n";
+        deleteScript->append("del thisGroup\n");
+    }
+    ss << "thisNode = " << "app" << appID << "." << getFullySpecifiedName() <<  "\n";
+    deleteScript->append("del thisNode\n");
+    return ss.str();
+}
+
+std::string
+Node::declareAllNodesVariableInScope_Python(std::string* deleteScript) const
+{
+    if (!getGroup()) {
+        return std::string();
+    }
+    
+    int appID = getApp()->getAppID() + 1;
+    
+    boost::shared_ptr<NodeCollection> collection = getGroup();
+    NodeGroup* isContainerGrp = dynamic_cast<NodeGroup*>(collection.get());
+    std::stringstream ss;
+    
+    std::string mustDeleteContainer;
+    if (isContainerGrp) {
+        std::string containerName = isContainerGrp->getNode()->getFullySpecifiedName();
+        ss << containerName  << " = app" << appID << "." <<
+        containerName  << "\n";
+        mustDeleteContainer = "del " + containerName + "\n";
+    } else {
+        
+        NodeList siblings = collection->getNodes();
+        for (NodeList::iterator it = siblings.begin(); it != siblings.end(); ++it) {
+            std::string name = (*it)->getFullySpecifiedName();
+            ss << name << " = app" << appID << "." <<
+            name << "\n";
+            deleteScript->append("del " + name + "\n");
+        }
+        
+        NodeGroup* isGrp = dynamic_cast<NodeGroup*>(getLiveInstance());
+        if (isGrp) {
+            NodeList children = isGrp->getNodes();
+            for (NodeList::iterator it = children.begin(); it != children.end(); ++it) {
+                std::string name = (*it)->getFullySpecifiedName();
+                ss << name << " = app" << appID << "." <<
+                name << "\n";
+                deleteScript->append("del " + name + "\n");
+            }
+        }
+    }
+    if (!mustDeleteContainer.empty()) {
+        ///Delete the group after all children
+        deleteScript->append(mustDeleteContainer);
+    }
+    
+    return ss.str();
+}
+
+
+
+/**
+ * @brief Given a fullyQualifiedName, e.g: app1.Group1.Blur1
+ * this function returns the PyObject attribute of Blur1 if it is defined, or Group1 otherwise
+ * If app1 or Group1 does not exist at this point, this is a failure.
+ **/
+static PyObject* getAttrRecursive(const std::string& fullyQualifiedName,PyObject* parentObj,bool* isDefined)
+{
+    std::size_t foundDot = fullyQualifiedName.find(".");
+    std::string attrName = foundDot == std::string::npos ? fullyQualifiedName : fullyQualifiedName.substr(0, foundDot);
+    PyObject* obj = 0;
+    if (PyObject_HasAttrString(parentObj, attrName.c_str())) {
+        obj = PyObject_GetAttrString(parentObj, attrName.c_str());
+    }
+    
+    ///We either found the parent object or we are on the last object in which case we return the parent
+    if (!obj) {
+        assert(fullyQualifiedName.find(".") == std::string::npos);
+        *isDefined = false;
+        return parentObj;
+    } else {
+        assert(obj);
+        std::string recurseName;
+        if (foundDot != std::string::npos) {
+            recurseName = fullyQualifiedName;
+            recurseName.erase(0, foundDot + 1);
+        }
+        if (!recurseName.empty()) {
+            return getAttrRecursive(recurseName, obj, isDefined);
+        } else {
+            *isDefined = true;
+            return obj;
+        }
+    }
+    
+}
+
+
 void
 Node::declareNodeVariableToPython(const std::string& nodeName)
 {
-   
-    QString str = QString("app%1.%2 = app%1.getNode(\"%2\")").arg(getApp()->getAppID() + 1).arg(nodeName.c_str());
-    std::string script = str.toStdString();
-    std::string err;
-    if (!interpretPythonScript(script, &err, 0)) {
-        qDebug() << err.c_str();
+    PyObject* mainModule = appPTR->getMainModule();
+    assert(mainModule);
+    
+    std::string appID = QString("app%1").arg(getApp()->getAppID() + 1).toStdString();
+    
+    std::string varName = appID + "." + nodeName;
+    bool alreadyDefined;
+    (void)getAttrRecursive(varName, mainModule, &alreadyDefined);
+    
+    if (!alreadyDefined) {
+        std::string script = varName + " = " + appID + ".getNode(\"";
+        script.append(nodeName);
+        script.append("\")\n");
+        std::string err;
+        if (!interpretPythonScript(script, &err, 0)) {
+            qDebug() << err.c_str();
+        }
     }
 }
 
 void
 Node::setNodeVariableToPython(const std::string& oldName,const std::string& newName)
 {
+
     QString appID = QString("app%1").arg(getApp()->getAppID() + 1);
-    QString str = QString(appID + ".%1 = " + appID + ".%2 \ndel " + appID + ".%2\n").arg(newName.c_str()).arg(oldName.c_str());
+    QString str = QString(appID + ".%1 = " + appID + ".%2\ndel " + appID + ".%2\n").arg(newName.c_str()).arg(oldName.c_str());
     std::string script = str.toStdString();
     std::string err;
     if (!interpretPythonScript(script, &err, 0)) {
         qDebug() << err.c_str();
     }
-
+    
 }
 
 void
@@ -4310,12 +4419,44 @@ Node::deleteNodeVariableToPython(const std::string& nodeName)
     }
 }
 
+
+
+
 void
-Node::declareParameterAsNodeField(const std::string& nodeName,const std::string& parameterName)
+Node::declarePythonFields()
 {
-    QString appID = QString("app%1").arg(getApp()->getAppID() + 1);
-    QString str = QString(appID + ".%1.%2 = " + appID + ".%1.getParam(\"%2\")").arg(nodeName.c_str()).arg(parameterName.c_str());
-    std::string script = str.toStdString();
+    if (!getGroup()) {
+        return ;
+    }
+    
+    std::locale locale;
+    std::string fullName = getFullySpecifiedName();
+    
+    std::string appID = QString("app%1").arg(getApp()->getAppID() + 1).toStdString();
+    bool alreadyDefined;
+    
+    std::string nodeFullName = appID + "." + fullName;
+    PyObject* nodeObj = getAttrRecursive(nodeFullName, getMainModule(), &alreadyDefined);
+    assert(alreadyDefined);
+    
+    const std::vector<boost::shared_ptr<KnobI> >& knobs = getKnobs();
+    for (U32 i = 0; i < knobs.size(); ++i) {
+        const std::string& knobName = knobs[i]->getName();
+        if (!knobName.empty() && knobName.find(" ") == std::string::npos && !std::isdigit(knobName[0],locale)) {
+            declareParameterAsNodeField(nodeFullName,nodeObj, knobName);
+        }
+    }
+}
+
+
+void
+Node::declareParameterAsNodeField(const std::string& nodeName,PyObject* nodeObj,const std::string& parameterName)
+{
+    if (PyObject_HasAttrString(nodeObj, parameterName.c_str())) {
+        return;
+    }
+    std::string script = nodeName +  "." + parameterName + " = " +
+    nodeName + ".getParam(\"" + parameterName + "\")\n";
     std::string err;
     if (!interpretPythonScript(script, &err, 0)) {
         qDebug() << err.c_str();

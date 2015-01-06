@@ -2757,9 +2757,8 @@ bool isPluginCreatable(const std::string& pluginID)
     return true;
 }
     
-void compilePyScript(const std::string& script,PyObject** code,PyObject** globalDict)
+void compilePyScript(const std::string& script,PyObject** code)
 {
-    *globalDict = PyModule_GetDict(PyImport_AddModule("__main__"));
     *code = (PyObject*)Py_CompileString(script.c_str(), "<string>", Py_file_input);
     if (PyErr_Occurred() || !*code) {
 #ifdef DEBUG

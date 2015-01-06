@@ -385,6 +385,11 @@
                 <define-ownership class="target" owner="target"/>
             </modify-argument>
         </modify-function>
+        <modify-function signature="refreshUserParamsGUI()">
+            <inject-code class="target" position="beginning">
+                %CPPSELF.%FUNCTION_NAME();
+            </inject-code>
+        </modify-function>
         <modify-function signature="createChild()">
             <modify-argument index="return">
                 <define-ownership class="target" owner="target"/>
@@ -404,6 +409,12 @@
         </modify-function>
     </object-type>
     <object-type name="AnimatedParam">
+        <modify-function signature="setExpression(std::string,bool,int)">
+            <inject-code class="target" position="beginning">
+                %RETURN_TYPE %0 = %CPPSELF.%FUNCTION_NAME(%1,%2,%3);
+                %PYARG_0 = %CONVERTTOPYTHON[%RETURN_TYPE](%0);
+            </inject-code>
+        </modify-function>
         <modify-function signature="getKeyTime(int,int,double*)const">
             <modify-argument index="3">
                 <remove-argument/>
@@ -724,7 +735,7 @@
     <function signature="getNumInstances()"/>
     <function signature="getInstance(int)"/>
     <function signature="getNatronPath()"/>
-    
+    <function signature="appendToNatronPath(std::string)"/>
 
 </typesystem>
 

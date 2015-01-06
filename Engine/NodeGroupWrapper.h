@@ -27,7 +27,9 @@ class Group
     
 public:
     
-    Group(const boost::shared_ptr<NodeCollection>& collection);
+    Group();
+    
+    void init(const boost::shared_ptr<NodeCollection>& collection);
     
     virtual ~Group();
     

@@ -197,9 +197,8 @@ struct Expr
     std::list<KnobI*> dependencies;
     
     PyObject* code;
-    PyObject* global_dict;
     
-    Expr() : expression(), originalExpression(), hasRet(false),  code(0), global_dict(0) {}
+    Expr() : expression(), originalExpression(), hasRet(false),  code(0){}
 };
 
 
@@ -1222,7 +1221,8 @@ KnobI::declareCurrentKnobVariable_Python(KnobI* knob,int dimension,std::string& 
         
         std::size_t firstLineAfterImport = findNewLineStartAfterImports(script);
         
-        std::string thisNodeStr = effect->getNode()->declareCurrentNodeVariable_Python();
+        std::string deleteThisNodeStr;
+        std::string thisNodeStr = effect->getNode()->declareCurrentNodeVariable_Python(&deleteThisNodeStr);
         ///Now define the variables in the scope
         std::stringstream ss;
         ss << thisNodeStr;
@@ -1232,12 +1232,21 @@ KnobI::declareCurrentKnobVariable_Python(KnobI* knob,int dimension,std::string& 
             ss << "dimension = " << dimension << "\n";
         }
         
+        std::string deleteNodesInScope;
         ///define the nodes that are in the scope of this knob
-        std::string nodesInScope = effect->getNode()->declareAllNodesVariableInScope_Python();
+        std::string nodesInScope = effect->getNode()->declareAllNodesVariableInScope_Python(&deleteNodesInScope);
         ss << nodesInScope;
         
         std::string toInsert = ss.str();
         script.insert(firstLineAfterImport, toInsert);
+        script.append("\n");
+        script.append("del thisParam\n");
+        script.append("del frame\n");
+        if (dimension != -1) {
+            script.append("del dimension\n");
+        }
+        script.append(deleteThisNodeStr);
+        script.append(deleteNodesInScope);
         return firstLineAfterImport + toInsert.size();
     } else {
         return std::string::npos;
@@ -1434,6 +1443,7 @@ KnobHelper::validateExpression(const std::string& expression,int dimension,bool 
         exprCpy.insert(0, toInsert);
     }
     
+    
     declareCurrentKnobVariable_Python(this,dimension,exprCpy);
     
     ///Try to compile the expression and evaluate it, if it doesn't have a good syntax, throw an exception
@@ -1507,7 +1517,7 @@ KnobHelper::setExpression(int dimension,const std::string& expression,bool hasRe
         _imp->expressions[dimension].hasRet = hasRetVariable;
         
         ///This may throw an exception upon failure
-        compilePyScript(exprCpy, &_imp->expressions[dimension].code, &_imp->expressions[dimension].global_dict);
+        compilePyScript(exprCpy, &_imp->expressions[dimension].code);
     }
     
     
@@ -1572,7 +1582,6 @@ KnobHelper::clearExpression(int dimension)
         _imp->expressions[dimension].originalExpression.clear();
         Py_XDECREF(_imp->expressions[dimension].code); //< new ref
         _imp->expressions[dimension].code = 0;
-        _imp->expressions[dimension].global_dict = 0; //< python borrowed ref!
     }
     {
         std::list<KnobI*> dependencies;
@@ -1639,7 +1648,9 @@ KnobHelper::executeExpression(int dimension) const
     }
     //returns a new ref, this function's documentation is not clear onto what it returns...
     //https://docs.python.org/2/c-api/veryhigh.html
-    PyObject* evalRet = PyEval_EvalCode(exp.code, exp.global_dict, exp.global_dict);
+    PyObject* mainModule = getMainModule();
+    PyObject* globalDict = PyModule_GetDict(mainModule);
+    PyObject* evalRet = PyEval_EvalCode(exp.code, globalDict, 0);
     Py_XDECREF(evalRet);
     
     if (PyErr_Occurred()) {
@@ -1648,7 +1659,6 @@ KnobHelper::executeExpression(int dimension) const
 #endif
         throw std::runtime_error("Failed to execute compiled Python code");
     }
-    PyObject* mainModule = PyImport_ImportModule("__main__");
     PyObject *ret = PyObject_GetAttrString(mainModule,"ret"); //get our ret variable created above
     
     if (!ret || PyErr_Occurred()) {
