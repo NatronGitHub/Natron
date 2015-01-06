@@ -155,7 +155,8 @@ RenderingProgressDialog::onProcessFinished(int retCode)
         if (showLog) {
             assert(_imp->_process);
             LogWindow log(_imp->_process->getProcessLog(),this);
-            log.exec();
+            int status = log.exec();
+            assert(status == QDialog::Accepted);
         }
     }
 	close();

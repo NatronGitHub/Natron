@@ -2741,8 +2741,21 @@ SequenceFileDialog::createViewerPreviewNode()
     _preview->viewerNode = _gui->getApp()->getNodeGui(viewer);
     assert(_preview->viewerNode);
     _preview->viewerNode->hideGui();
-    _preview->viewerUI = dynamic_cast<ViewerGL*>(dynamic_cast<ViewerInstance*>(viewer->getLiveInstance())->getUiContext())->getViewerTab();
+    ViewerInstance* viewerInstance = dynamic_cast<ViewerInstance*>(viewer->getLiveInstance());
+    assert(viewerInstance);
+    if (!viewerInstance) {
+        return;
+    }
+    ViewerGL* viewerGL = dynamic_cast<ViewerGL*>(viewerInstance->getUiContext());
+    assert(viewerGL);
+    if (!viewerGL) {
+        return;
+    }
+    _preview->viewerUI = viewerGL->getViewerTab();
     assert(_preview->viewerUI);
+    if (!_preview->viewerUI) {
+        return;
+    }
     _preview->viewerUI->setAsFileDialogViewer();
     
     ///Set a custom timeline so that it is not in synced with the rest of the viewers of the app

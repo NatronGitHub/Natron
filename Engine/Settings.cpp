@@ -1046,7 +1046,12 @@ Settings::tryLoadOpenColorIOConfig()
 
     if ( _customOcioConfigFile->isEnabled(0) ) {
         ///try to load from the file
-        std::string file = _customOcioConfigFile->getValue();
+        std::string file;
+        try {
+            file = _customOcioConfigFile->getValue();
+        } catch (...) {
+            // ignore exceptions
+        }
         if ( file.empty() ) {
             return false;
         }

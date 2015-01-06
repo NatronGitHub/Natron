@@ -555,6 +555,7 @@ boost::shared_ptr<KnobI> Int_KnobGui::getKnob() const
 Bool_KnobGui::Bool_KnobGui(boost::shared_ptr<KnobI> knob,
                            DockablePanel *container)
     : KnobGui(knob, container)
+    , _checkBox(0)
 {
     _knob = boost::dynamic_pointer_cast<Bool_Knob>(knob);
 }
@@ -1306,6 +1307,7 @@ boost::shared_ptr<KnobI> Button_KnobGui::getKnob() const
 Choice_KnobGui::Choice_KnobGui(boost::shared_ptr<KnobI> knob,
                                DockablePanel *container)
     : KnobGui(knob, container)
+    , _comboBox(0)
 {
     _knob = boost::dynamic_pointer_cast<Choice_Knob>(knob);
     _entries = _knob->getEntries_mt_safe();
@@ -1443,6 +1445,7 @@ boost::shared_ptr<KnobI> Choice_KnobGui::getKnob() const
 Separator_KnobGui::Separator_KnobGui(boost::shared_ptr<KnobI> knob,
                                      DockablePanel *container)
     : KnobGui(knob, container)
+    , _line(0)
 {
     _knob = boost::dynamic_pointer_cast<Separator_Knob>(knob);
 }
@@ -2460,6 +2463,9 @@ String_KnobGui::String_KnobGui(boost::shared_ptr<KnobI> knob,
       , _setItalicButton(0)
       , _fontSizeSpinBox(0)
       , _fontColorButton(0)
+      , _fontSize(0)
+      , _boldActivated(false)
+      , _italicActivated(false)
       , _label(0)
 {
     _knob = boost::dynamic_pointer_cast<String_Knob>(knob);

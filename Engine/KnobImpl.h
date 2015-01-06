@@ -343,7 +343,7 @@ Knob<T>::getValue(int dimension,bool clamp) const
         Knob<int>* isInt = dynamic_cast<Knob<int>* >( master.second.get() );
         Knob<bool>* isBool = dynamic_cast<Knob<bool>* >( master.second.get() );
         Knob<double>* isDouble = dynamic_cast<Knob<double>* >( master.second.get() );
-        assert(isInt || isBool || isDouble); //< other data types aren't supported
+        assert(master.second->isTypePOD() && (isInt || isBool || isDouble)); //< other data types aren't supported
         if (isInt) {
             return (T)isInt->getValue(master.first,clamp);
         } else if (isBool) {
@@ -431,7 +431,7 @@ Knob<T>::getValueAtTime(double time,
         Knob<int>* isInt = dynamic_cast<Knob<int>* >( master.second.get() );
         Knob<bool>* isBool = dynamic_cast<Knob<bool>* >( master.second.get() );
         Knob<double>* isDouble = dynamic_cast<Knob<double>* >( master.second.get() );
-        assert(isInt || isBool || isDouble); //< other data types aren't supported
+        assert(master.second->isTypePOD() && (isInt || isBool || isDouble)); //< other data types aren't supported
         if (isInt) {
             return isInt->getValueAtTime(time,master.first);
         } else if (isBool) {
@@ -451,7 +451,7 @@ Knob<T>::getValueAtTime(double time,
             Knob<int>* isInt = dynamic_cast<Knob<int>* >( master.second.get() );
             Knob<bool>* isBool = dynamic_cast<Knob<bool>* >( master.second.get() );
             Knob<double>* isDouble = dynamic_cast<Knob<double>* >( master.second.get() );
-            assert(isInt || isBool || isDouble); //< other data types aren't supported
+            assert(master.second->isTypePOD() && (isInt || isBool || isDouble)); //< other data types aren't supported
             if (isInt) {
                 return isInt->getValue(master.first);
             } else if (isBool) {
@@ -1012,7 +1012,7 @@ Knob<T>::getKeyFrameValueByIndex(int dimension,
         Knob<int>* isInt = dynamic_cast<Knob<int>* >( master.second.get() );
         Knob<bool>* isBool = dynamic_cast<Knob<bool>* >( master.second.get() );
         Knob<double>* isDouble = dynamic_cast<Knob<double>* >( master.second.get() );
-        assert(isInt || isBool || isDouble); //< other data types aren't supported
+        assert(master.second->isTypePOD() && (isInt || isBool || isDouble)); //< other data types aren't supported
         if (isInt) {
             return isInt->getKeyFrameValueByIndex(master.first,index,ok);
         } else if (isBool) {
@@ -1136,40 +1136,37 @@ Knob<T>::populate()
 
 template<typename T>
 bool
+Knob<T>::isTypePOD() const
+{
+    return false;
+}
+
+template<>
+bool
+Knob<int>::isTypePOD() const
+{
+    return true;
+}
+
+template<>
+bool
+Knob<bool>::isTypePOD() const
+{
+    return true;
+}
+
+template<>
+bool
+Knob<double>::isTypePOD() const
+{
+    return true;
+}
+
+template<typename T>
+bool
 Knob<T>::isTypeCompatible(const boost::shared_ptr<KnobI> & other) const
 {
-    assert(other);
-    const Knob<int>* isInt = dynamic_cast<const Knob<int>* >(this);
-    const Knob<bool>* isBool = dynamic_cast<const Knob<bool>* >(this);
-    const Knob<double>* isDouble = dynamic_cast<const Knob<double>* >(this);
-    const Knob<std::string>* isString = dynamic_cast<const Knob<std::string>* >(this);
-    bool isPod = false;
-    if (isInt || isBool || isDouble) {
-        isPod = true;
-    } else if (isString) {
-        isPod = false;
-    } else {
-        ///unrecognized type
-        assert(false);
-    }
-
-    // No need to use dynamic_pointer_cast here, we don't need to create another shared_ptr,
-    // we just need to check the type.
-    const Knob<int>* otherIsInt = dynamic_cast<const Knob<int>* >(other.get());
-    const Knob<bool>* otherIsBool = dynamic_cast<const Knob<bool>* >(other.get());
-    const Knob<double>* otherIsDouble = dynamic_cast<const Knob<double>* >(other.get());
-    const Knob<std::string>* otherIsString = dynamic_cast<const Knob<std::string>* >(other.get());
-    bool otherIsPod = false;
-    if (otherIsInt || otherIsBool || otherIsDouble) {
-        otherIsPod = true;
-    } else if (otherIsString) {
-        otherIsPod = false;
-    } else {
-        ///unrecognized type
-        assert(false);
-    }
-
-    return isPod == otherIsPod;
+    return isTypePOD() == other->isTypePOD();
 }
 
 template<typename T>
@@ -1257,16 +1254,9 @@ Knob<T>::getIntegrateFromTimeToTime(double time1,
     ///if the knob is slaved to another knob, returns the other knob value
     std::pair<int,boost::shared_ptr<KnobI> > master = getMaster(dimension);
     if (master.second) {
-        Knob<int>* isInt = dynamic_cast<Knob<int>* >( master.second.get() );
-        Knob<bool>* isBool = dynamic_cast<Knob<bool>* >( master.second.get() );
-        Knob<double>* isDouble = dynamic_cast<Knob<double>* >( master.second.get() );
-        assert(isInt || isBool || isDouble); //< other data types aren't supported
-        if (isInt) {
-            return isInt->getIntegrateFromTimeToTime(time1, time2, master.first);
-        } else if (isBool) {
-            return isBool->getIntegrateFromTimeToTime(time1, time2, master.first);
-        } else if (isDouble) {
-            return isDouble->getIntegrateFromTimeToTime(time1, time2, master.first);
+        assert(master.second->isTypePOD()); //< other data types aren't supported
+        if (master.second->isTypePOD()) {
+            return master.second->getIntegrateFromTimeToTime(time1, time2, master.first);
         }
     }
 
@@ -1405,7 +1395,7 @@ Knob<bool>::cloneValues(KnobI* other)
     Knob<int>* isInt = dynamic_cast<Knob<int>* >(other);
     Knob<bool>* isBool = dynamic_cast<Knob<bool>* >(other);
     Knob<double>* isDouble = dynamic_cast<Knob<double>* >(other);
-    assert(isInt || isBool || isDouble);
+    assert(other->isTypePOD() && (isInt || isBool || isDouble)); //< other data types aren't supported
     QWriteLocker k(&_valueMutex);
     if (isInt) {
         std::vector<int> v = isInt->getValueForEachDimension_mt_safe_vector();
@@ -1433,7 +1423,7 @@ Knob<double>::cloneValues(KnobI* other)
     Knob<double>* isDouble = dynamic_cast<Knob<double>* >(other);
     
     ///can only clone pod
-    assert(isInt || isBool || isDouble);
+    assert(other->isTypePOD() && (isInt || isBool || isDouble)); //< other data types aren't supported
     QWriteLocker k(&_valueMutex);
     if (isInt) {
         std::vector<int> v = isInt->getValueForEachDimension_mt_safe_vector();

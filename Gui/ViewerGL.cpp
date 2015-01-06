@@ -201,6 +201,7 @@ struct ViewerGL::Implementation
           , checkerboardTextureID(0)
           , checkerboardTileSize(0)
           , savedTexture(0)
+          , prevBoundTexture(0)
           , lastRenderedImageMutex()
           , lastRenderedImage()
           , memoryHeldByLastRenderedImages()

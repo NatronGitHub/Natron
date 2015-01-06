@@ -693,9 +693,11 @@ NodeGui::refreshEdges()
     
     for (NodeGui::InputEdgesMap::const_iterator i = _inputEdges.begin(); i != _inputEdges.end(); ++i) {
         assert(i->first < (int)nodeInputs.size() && i->first >= 0);
-        boost::shared_ptr<NodeGui> nodeInputGui = _graph->getGui()->getApp()->getNodeGui(nodeInputs[i->first]);
-        i->second->setSource(nodeInputGui);
-        i->second->initLine();
+        if (_graph) {
+            boost::shared_ptr<NodeGui> nodeInputGui = _graph->getGui()->getApp()->getNodeGui(nodeInputs[i->first]);
+            i->second->setSource(nodeInputGui);
+            i->second->initLine();
+        }
     }
     if (_outputEdge) {
         _outputEdge->initLine();

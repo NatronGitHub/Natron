@@ -836,6 +836,11 @@ public:
     virtual void resetToDefaultValue(int dimension) = 0;
 
     /**
+     * @brief Must return true if this Lnob holds a POD (plain old data) type, i.e. int, bool, or double.
+     **/
+    virtual bool isTypePOD() const = 0;
+
+    /**
      * @brief Must return true if the other knobs type can convert to this knob's type.
      **/
     virtual bool isTypeCompatible(const boost::shared_ptr<KnobI> & other) const = 0;
@@ -1215,6 +1220,7 @@ public:
 
     /// You must implement it
     virtual bool canAnimate() const OVERRIDE;
+    virtual bool isTypePOD() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isTypeCompatible(const boost::shared_ptr<KnobI> & other) const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     ///Cannot be overloaded by KnobHelper as it requires setValueAtTime
@@ -1286,7 +1292,7 @@ private:
     void makeKeyFrame(Curve* curve,double time,const T& v,KeyFrame* key);
     
     void queueSetValue(const T& v,int dimension);
-
+    
     //////////////////////////////////////////////////////////////////////
     /////////////////////////////////// End implementation of KnobI
     //////////////////////////////////////////////////////////////////////

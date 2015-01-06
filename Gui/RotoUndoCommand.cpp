@@ -1267,6 +1267,7 @@ MakeEllipseUndoCommand::MakeEllipseUndoCommand(RotoGui* roto,
     : QUndoCommand()
       , _firstRedoCalled(false)
       , _roto(roto)
+      , _indexInLayer(-1)
       , _curve()
       , _create(create)
       , _fromCenter(fromCenter)

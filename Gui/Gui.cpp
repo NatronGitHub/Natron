@@ -3031,7 +3031,8 @@ Gui::onDoDialog(int type,
                 layout->addWidget(edit, 0, 1);
             }
         }
-        info.exec();
+        int status = info.exec();
+        assert(status == QDialog::Accepted);
     } else {
         QMessageBox ques(QMessageBox::Question, title, msg, QtEnumConvert::toQtStandarButtons(buttons),
                          this, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint | Qt::WindowStaysOnTopHint);
@@ -3432,7 +3433,8 @@ void
 Gui::showAbout()
 {
     _imp->_aboutWindow->show();
-    _imp->_aboutWindow->exec();
+    int status = _imp->_aboutWindow->exec();
+    assert(status == QDialog::Accepted);
 }
 
 void
@@ -3913,11 +3915,15 @@ Gui::getCairoVersion() const
 void
 Gui::onNodeNameChanged(const QString & /*name*/)
 {
-    NodeGui* node = qobject_cast<NodeGui*>( sender() );
+    NodeGui* nodegui = qobject_cast<NodeGui*>( sender() );
+    if (!nodegui) {
+        return;
+    }
+    boost::shared_ptr<Natron::Node> node = nodegui->getNode();
     if (!node) {
         return;
     }
-    ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>(node->getNode()->getLiveInstance());
+    ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>(node->getLiveInstance());
     if (isViewer) {
         emit viewersChanged();
     }
@@ -3979,7 +3985,8 @@ Gui::showOfxLog()
     LogWindow lw(log,this);
 
     lw.setWindowTitle( tr("Errors log") );
-    lw.exec();
+    int status = lw.exec();
+    assert(status == QDialog::Accepted);
 }
 
 

@@ -231,8 +231,9 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
         if ( n->isOutputNode() ) {
             hasProjectAWriter = true;
         }
-        if (serializedNodes.size() > 0) {
-            _publicInterface->getApp()->progressUpdate(_publicInterface, (0.2 * nodesRestored) / serializedNodes.size());
+        const size_t serializedNb = serializedNodes.size();
+        if (serializedNb > 0) {
+            _publicInterface->getApp()->progressUpdate(_publicInterface, (0.2 * nodesRestored) / serializedNb);
         }
     }
 

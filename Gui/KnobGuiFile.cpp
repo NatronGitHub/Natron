@@ -417,6 +417,8 @@ File_KnobGui::onSimplifyTriggered()
 OutputFile_KnobGui::OutputFile_KnobGui(boost::shared_ptr<KnobI> knob,
                                        DockablePanel *container)
     : KnobGui(knob, container)
+    , _lineEdit(0)
+    , _openFileButton(0)
 {
     _knob = boost::dynamic_pointer_cast<OutputFile_Knob>(knob);
     assert(_knob);
@@ -682,7 +684,13 @@ PathKnobTableItemDelegate::paint(QPainter * painter,
         
         return;
     }
-    TableItem* item = dynamic_cast<TableModel*>( _view->model() )->item(index);
+    TableModel* model = dynamic_cast<TableModel*>( _view->model() );
+    assert(model);
+    if (!model) {
+        QStyledItemDelegate::paint(painter,option,index);
+        return;
+    }
+    TableItem* item = model->item(index);
     if (!item) {
         QStyledItemDelegate::paint(painter,option,index);
         return;

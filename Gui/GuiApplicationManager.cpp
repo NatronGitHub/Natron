@@ -987,7 +987,11 @@ GuiApplicationManager::updateAllRecentFileMenus()
     const std::map<int,AppInstanceRef> & instances = getAppInstances();
 
     for (std::map<int,AppInstanceRef>::const_iterator it = instances.begin(); it != instances.end(); ++it) {
-        dynamic_cast<GuiAppInstance*>(it->second.app)->getGui()->updateRecentFileActions();
+        GuiAppInstance* appInstance = dynamic_cast<GuiAppInstance*>(it->second.app);
+        assert(appInstance);
+        Gui* gui = appInstance->getGui();
+        assert(gui);
+        gui->updateRecentFileActions();
     }
 }
 
@@ -1273,7 +1277,7 @@ GuiApplicationManager::exitApp()
 
     for (std::map<int,AppInstanceRef>::const_iterator it = instances.begin(); it != instances.end(); ++it) {
         GuiAppInstance* app = dynamic_cast<GuiAppInstance*>(it->second.app);
-        if ( !app->getGui()->closeInstance() ) {
+        if ( app && !app->getGui()->closeInstance() ) {
             return;
         }
     }

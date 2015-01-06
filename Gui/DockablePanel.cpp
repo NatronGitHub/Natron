@@ -536,7 +536,9 @@ DockablePanel::~DockablePanel()
     for (std::map<boost::shared_ptr<KnobI>,KnobGui*>::const_iterator it = _imp->_knobs.begin(); it != _imp->_knobs.end(); ++it) {
         if (it->second) {
             KnobHelper* helper = dynamic_cast<KnobHelper*>( it->first.get() );
-            QObject::disconnect( helper->getSignalSlotHandler().get(),SIGNAL( deleted() ),this,SLOT( onKnobDeletion() ) );
+            if (helper) {
+                QObject::disconnect( helper->getSignalSlotHandler().get(),SIGNAL( deleted() ),this,SLOT( onKnobDeletion() ) );
+            }
             it->first->setKnobGuiPointer(0);
             it->second->deleteLater();
         }
@@ -1326,7 +1328,7 @@ DockablePanel::onKnobDeletion()
     if (handler) {
         for (std::map<boost::shared_ptr<KnobI>,KnobGui*>::iterator it = _imp->_knobs.begin(); it != _imp->_knobs.end(); ++it) {
             KnobHelper* helper = dynamic_cast<KnobHelper*>( it->first.get() );
-            if (helper->getSignalSlotHandler().get() == handler) {
+            if (helper && helper->getSignalSlotHandler().get() == handler) {
                 if (it->second) {
                     it->second->deleteLater();
                 }
