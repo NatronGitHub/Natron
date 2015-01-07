@@ -44,7 +44,7 @@ private:
         return false;
     }
     
-    virtual void resizeExtraContent(int w,int h) OVERRIDE FINAL;
+    virtual void resizeExtraContent(int w,int h,bool forceResize) OVERRIDE FINAL;
     
     virtual bool mustFrameName() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {

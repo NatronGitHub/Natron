@@ -329,6 +329,13 @@ ProjectGui::load(boost::archive::xml_iarchive & archive)
                 nGui->setDefaultColor(color);
                 nGui->setCurrentColor(color);
             }
+            
+            BackDropGui* isBd = dynamic_cast<BackDropGui*>(nGui.get());
+            if (isBd) {
+                double w,h;
+                isBd->getSize(&w, &h);
+                isBd->resize(w, h, true);
+            }
         }
 
         ViewerInstance* viewer = dynamic_cast<ViewerInstance*>( nGui->getNode()->getLiveInstance() );

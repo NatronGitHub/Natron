@@ -670,7 +670,9 @@ NodeGraph::createNodeGUI(QVBoxLayout *dockContainer,
             QPointF pos = node_ui->mapToParent( node_ui->mapFromScene( QPointF(xPosHint,yPosHint) ) );
             node_ui->refreshPosition( pos.x(),pos.y(), true );
         } else {
-            moveNodesForIdealPosition(node_ui,autoConnect);
+            if (!isBd) {
+                moveNodesForIdealPosition(node_ui,autoConnect);
+            }
         }
     }
 
@@ -693,6 +695,11 @@ NodeGraph::createNodeGUI(QVBoxLayout *dockContainer,
 void
 NodeGraph::moveNodesForIdealPosition(boost::shared_ptr<NodeGui> node,bool autoConnect)
 {
+    BackDropGui* isBd = dynamic_cast<BackDropGui*>(node.get());
+    if (isBd) {
+        return;
+    }
+    
     QRectF viewPos = visibleSceneRect();
 
     ///3 possible values:
@@ -1080,17 +1087,18 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
             }
             if (_imp->_evtState != BACKDROP_RESIZING) {
                 _imp->_evtState = NODE_DRAGGING;
-            } else {
-                ///build the _nodesWithinBDAtPenDown map
-                _imp->_nodesWithinBDAtPenDown.clear();
-                for (NodeGuiList::iterator it = _imp->_selection.begin(); it != _imp->_selection.end(); ++it) {
-                    BackDropGui* isBd = dynamic_cast<BackDropGui*>(it->get());
-                    if (isBd) {
-                        NodeGuiList nodesWithin = getNodesWithinBackDrop(*it);
-                        _imp->_nodesWithinBDAtPenDown.insert(std::make_pair(*it,nodesWithin));
-                    }
+            }
+            ///build the _nodesWithinBDAtPenDown map
+            _imp->_nodesWithinBDAtPenDown.clear();
+            for (NodeGuiList::iterator it = _imp->_selection.begin(); it != _imp->_selection.end(); ++it) {
+                BackDropGui* isBd = dynamic_cast<BackDropGui*>(it->get());
+                if (isBd) {
+                    NodeGuiList nodesWithin = getNodesWithinBackDrop(*it);
+                    _imp->_nodesWithinBDAtPenDown.insert(std::make_pair(*it,nodesWithin));
                 }
             }
+
+            
             _imp->_lastNodeDragStartPoint = selected->pos();
         } else if ( buttonDownIsRight(e) ) {
             if ( !selected->getIsSelected() ) {

@@ -531,7 +531,8 @@ NodeGui::adjustSizeToContent(int* /*w*/,int *h)
 
 void
 NodeGui::resize(int width,
-                int height)
+                int height,
+                bool forceSize )
 {
     if (!canResize()) {
         return;
@@ -541,6 +542,7 @@ NodeGui::resize(int width,
     QRectF labelBbox = _nameItem->boundingRect();
 
     adjustSizeToContent(&width,&height);
+    
     
     {
         QMutexLocker k(&_mtSafeSizeMutex);
@@ -557,11 +559,11 @@ NodeGui::resize(int width,
     int nameWidth = labelBbox.width();
     _nameItem->setX( topLeft.x() + (width / 2) - (nameWidth / 2) );
     
-    double mh = metrics.height();
+    double mh = labelBbox.height();
     _nameItem->setY(topLeft.y() + mh / 4.);
     
     if (mustFrameName()) {
-        QRectF nameFrameBox(topLeft.x(),topLeft.y(), width, labelBbox.height() + 2 * mh);
+        QRectF nameFrameBox(topLeft.x(),topLeft.y(), width, 1.5 * mh);
         _nameFrame->setRect(nameFrameBox);
     }
     
@@ -595,7 +597,7 @@ NodeGui::resize(int width,
     _disabledBtmLeftTopRight->setLine( QLineF( bbox.bottomLeft(),bbox.topRight() ) );
     _disabledTopLeftBtmRight->setLine( QLineF( bbox.topLeft(),bbox.bottomRight() ) );
     
-    resizeExtraContent(width,height);
+    resizeExtraContent(width,height,forceSize);
     
     refreshPosition( pos().x(), pos().y(), true );
 }

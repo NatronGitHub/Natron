@@ -45,7 +45,7 @@ BackDrop::getDescription() const
 void
 BackDrop::initializeKnobs()
 {
-    boost::shared_ptr<Page_Knob> page = Natron::createKnob<Page_Knob>(this, "Settings");
+    boost::shared_ptr<Page_Knob> page = Natron::createKnob<Page_Knob>(this, "Controls");
     
     _imp->knobLabel = Natron::createKnob<String_Knob>( this, "Label");
     _imp->knobLabel->setAnimationEnabled(false);

@@ -49,7 +49,6 @@
 #include "Engine/NodeGuiI.h"
 #include "Engine/NodeGroup.h"
 #include "Engine/BackDrop.h"
-#include "Engine/NoOp.h"
 ///The flickering of edges/nodes in the nodegraph will be refreshed
 ///at most every...
 #define NATRON_RENDER_GRAPHS_HINTS_REFRESH_RATE_SECONDS 0.5
@@ -1448,142 +1447,151 @@ Node::initializeKnobs(int renderScaleSupportPref)
     assert( QThread::currentThread() == qApp->thread() );
     assert(!_imp->knobsInitialized);
     
-    ///If the effect has a mask, add additionnal mask controls
-    int inputsCount = getMaxInputCount();
-    for (int i = 0; i < inputsCount; ++i) {
-        if ( _imp->liveInstance->isInputMask(i) && !_imp->liveInstance->isInputRotoBrush(i) ) {
-            std::string maskName = _imp->liveInstance->getInputLabel(i);
-            boost::shared_ptr<Bool_Knob> enableMaskKnob = Natron::createKnob<Bool_Knob>(_imp->liveInstance.get(), maskName,1,false);
-            _imp->enableMaskKnob.insert( std::make_pair(i,enableMaskKnob) );
-            enableMaskKnob->setDefaultValue(false, 0);
-            enableMaskKnob->turnOffNewLine();
-            std::string enableMaskName(std::string(kEnableMaskKnobName) + std::string("_") + maskName);
-            enableMaskKnob->setName(enableMaskName);
-            enableMaskKnob->setAnimationEnabled(false);
-            enableMaskKnob->setHintToolTip("Enable the mask to come from the channel named by the choice parameter on the right. "
-                                           "Turning this off will act as though the mask was disconnected.");
-            
-            boost::shared_ptr<Choice_Knob> maskChannelKnob = Natron::createKnob<Choice_Knob>(_imp->liveInstance.get(), "",1,false);
-            _imp->maskChannelKnob.insert( std::make_pair(i,maskChannelKnob) );
-            std::vector<std::string> choices;
-            choices.push_back("None");
-            choices.push_back("Red");
-            choices.push_back("Green");
-            choices.push_back("Blue");
-            choices.push_back("Alpha");
-            maskChannelKnob->populateChoices(choices);
-            maskChannelKnob->setDefaultValue(4, 0);
-            maskChannelKnob->setAnimationEnabled(false);
-            maskChannelKnob->turnOffNewLine();
-            maskChannelKnob->setHintToolTip("Use this channel from the original input to mix the output with the original input. "
-                                            "Setting this to None is the same as disabling the mask.");
-            std::string channelMaskName(kMaskChannelKnobName + std::string("_") + maskName);
-            maskChannelKnob->setName(channelMaskName);
-        }
-    }
-    
-    _imp->nodeSettingsPage = Natron::createKnob<Page_Knob>(_imp->liveInstance.get(), NATRON_EXTRA_PARAMETER_PAGE_NAME,1,false);
-    
-    _imp->nodeLabelKnob = Natron::createKnob<String_Knob>(_imp->liveInstance.get(), "Label",1,false);
-    assert(_imp->nodeLabelKnob);
-    _imp->nodeLabelKnob->setName(kUserLabelKnobName);
-    _imp->nodeLabelKnob->setAnimationEnabled(false);
-    _imp->nodeLabelKnob->setEvaluateOnChange(false);
-    _imp->nodeLabelKnob->setAsMultiLine();
-    _imp->nodeLabelKnob->setUsesRichText(true);
-    _imp->nodeLabelKnob->setHintToolTip("This label gets appended to the node name on the node graph.");
-    _imp->nodeSettingsPage->addKnob(_imp->nodeLabelKnob);
-    
-    _imp->forceCaching = Natron::createKnob<Bool_Knob>(_imp->liveInstance.get(), "Force caching", 1, false);
-    _imp->forceCaching->setName("forceCaching");
-    _imp->forceCaching->setDefaultValue(false);
-    _imp->forceCaching->setAnimationEnabled(false);
-    _imp->forceCaching->turnOffNewLine();
-    _imp->forceCaching->setIsPersistant(true);
-    _imp->forceCaching->setEvaluateOnChange(false);
-    _imp->forceCaching->setHintToolTip("When checked, the output of this node will always be kept in the RAM cache for fast access of already computed "
-                                       "images.");
-    _imp->nodeSettingsPage->addKnob(_imp->forceCaching);
-    
-    _imp->previewEnabledKnob = Natron::createKnob<Bool_Knob>(_imp->liveInstance.get(), "Preview enabled",1,false);
-    assert(_imp->previewEnabledKnob);
-    _imp->previewEnabledKnob->setDefaultValue( makePreviewByDefault() );
-    _imp->previewEnabledKnob->setName(kEnablePreviewKnobName);
-    _imp->previewEnabledKnob->setAnimationEnabled(false);
-    _imp->previewEnabledKnob->turnOffNewLine();
-    _imp->previewEnabledKnob->setIsPersistant(false);
-    _imp->previewEnabledKnob->setEvaluateOnChange(false);
-    _imp->previewEnabledKnob->setHintToolTip("Whether to show a preview on the node box in the node-graph.");
-    _imp->nodeSettingsPage->addKnob(_imp->previewEnabledKnob);
-    
-    _imp->disableNodeKnob = Natron::createKnob<Bool_Knob>(_imp->liveInstance.get(), "Disable",1,false);
-    assert(_imp->disableNodeKnob);
-    _imp->disableNodeKnob->setAnimationEnabled(false);
-    _imp->disableNodeKnob->setDefaultValue(false);
-    _imp->disableNodeKnob->setName(kDisableNodeKnobName);
-    _imp->disableNodeKnob->turnOffNewLine();
-    _imp->disableNodeKnob->setHintToolTip("When disabled, this node acts as a pass through.");
-    _imp->nodeSettingsPage->addKnob(_imp->disableNodeKnob);
-    
-    _imp->useFullScaleImagesWhenRenderScaleUnsupported = Natron::createKnob<Bool_Knob>(_imp->liveInstance.get(), "Render high def. upstream",1,false);
-    _imp->useFullScaleImagesWhenRenderScaleUnsupported->setAnimationEnabled(false);
-    _imp->useFullScaleImagesWhenRenderScaleUnsupported->setDefaultValue(false);
-    _imp->useFullScaleImagesWhenRenderScaleUnsupported->setName("highDefUpstream");
-    _imp->useFullScaleImagesWhenRenderScaleUnsupported->setHintToolTip("This node doesn't support rendering images at a scale lower than 1, it "
-                                                                       "can only render high definition images. When checked this parameter controls "
-                                                                       "whether the rest of the graph upstream should be rendered with a high quality too or at "
-                                                                       "the most optimal resolution for the current viewer's viewport. Typically checking this "
-                                                                       "means that an image will be slow to be rendered, but once rendered it will stick in the cache "
-                                                                       "whichever zoom level you're using on the Viewer, whereas when unchecked it will be much "
-                                                                       "faster to render but will have to be recomputed when zooming in/out in the Viewer.");
-    if (renderScaleSupportPref == 0 && getLiveInstance()->supportsRenderScaleMaybe() == EffectInstance::eSupportsYes) {
-        _imp->useFullScaleImagesWhenRenderScaleUnsupported->setSecret(true);
-    }
-    _imp->nodeSettingsPage->addKnob(_imp->useFullScaleImagesWhenRenderScaleUnsupported);
-    
-    _imp->infoPage = Natron::createKnob<Page_Knob>(_imp->liveInstance.get(), "Info",1,false);
-    _imp->infoPage->setName("info");
-    
-    _imp->infoDisclaimer = Natron::createKnob<String_Knob>(_imp->liveInstance.get(), "Input and output informations",1,false);
-    _imp->infoDisclaimer->setName("infoDisclaimer");
-    _imp->infoDisclaimer->setAnimationEnabled(false);
-    _imp->infoDisclaimer->setIsPersistant(false);
-    _imp->infoDisclaimer->setAsLabel();
-    _imp->infoDisclaimer->hideDescription();
-    _imp->infoDisclaimer->setEvaluateOnChange(false);
-    _imp->infoDisclaimer->setDefaultValue(tr("Input and output informations, press Refresh to update them with current values").toStdString());
-    _imp->infoPage->addKnob(_imp->infoDisclaimer);
-    
-    for (int i = 0; i < inputsCount; ++i) {
-        std::string inputLabel = getInputLabel(i);
-        boost::shared_ptr<String_Knob> inputInfo = Natron::createKnob<String_Knob>(_imp->liveInstance.get(), std::string(inputLabel + " Info"), 1, false);
-        inputInfo->setName(inputLabel + "Info");
-        inputInfo->setAnimationEnabled(false);
-        inputInfo->setIsPersistant(false);
-        inputInfo->setEvaluateOnChange(false);
-        inputInfo->hideDescription();
-        inputInfo->setAsLabel();
-        _imp->inputFormats.push_back(inputInfo);
-        _imp->infoPage->addKnob(inputInfo);
-    }
-    
-    std::string outputLabel("Output");
-    _imp->outputFormat = Natron::createKnob<String_Knob>(_imp->liveInstance.get(), std::string(outputLabel + " Info"), 1, false);
-    _imp->outputFormat->setName(outputLabel + "Info");
-    _imp->outputFormat->setAnimationEnabled(false);
-    _imp->outputFormat->setIsPersistant(false);
-    _imp->outputFormat->setEvaluateOnChange(false);
-    _imp->outputFormat->hideDescription();
-    _imp->outputFormat->setAsLabel();
-    _imp->infoPage->addKnob(_imp->outputFormat);
-    
-    _imp->refreshInfoButton = Natron::createKnob<Button_Knob>(_imp->liveInstance.get(), "Refresh Info");
-    _imp->refreshInfoButton->setName("refreshButton");
-    _imp->refreshInfoButton->setEvaluateOnChange(false);
-    _imp->infoPage->addKnob(_imp->refreshInfoButton);
+    BackDrop* isBd = dynamic_cast<BackDrop*>(_imp->liveInstance.get());
+    Dot* isDot = dynamic_cast<Dot*>(_imp->liveInstance.get());
     
     _imp->liveInstance->initializeKnobsPublic();
 
+    ///If the effect has a mask, add additionnal mask controls
+    int inputsCount = getMaxInputCount();
+    if (!isBd && !isDot) {
+        for (int i = 0; i < inputsCount; ++i) {
+            if ( _imp->liveInstance->isInputMask(i) && !_imp->liveInstance->isInputRotoBrush(i) ) {
+                std::string maskName = _imp->liveInstance->getInputLabel(i);
+                boost::shared_ptr<Bool_Knob> enableMaskKnob = Natron::createKnob<Bool_Knob>(_imp->liveInstance.get(), maskName,1,false);
+                _imp->enableMaskKnob.insert( std::make_pair(i,enableMaskKnob) );
+                enableMaskKnob->setDefaultValue(false, 0);
+                enableMaskKnob->turnOffNewLine();
+                std::string enableMaskName(std::string(kEnableMaskKnobName) + std::string("_") + maskName);
+                enableMaskKnob->setName(enableMaskName);
+                enableMaskKnob->setAnimationEnabled(false);
+                enableMaskKnob->setHintToolTip("Enable the mask to come from the channel named by the choice parameter on the right. "
+                                               "Turning this off will act as though the mask was disconnected.");
+                
+                boost::shared_ptr<Choice_Knob> maskChannelKnob = Natron::createKnob<Choice_Knob>(_imp->liveInstance.get(), "",1,false);
+                _imp->maskChannelKnob.insert( std::make_pair(i,maskChannelKnob) );
+                std::vector<std::string> choices;
+                choices.push_back("None");
+                choices.push_back("Red");
+                choices.push_back("Green");
+                choices.push_back("Blue");
+                choices.push_back("Alpha");
+                maskChannelKnob->populateChoices(choices);
+                maskChannelKnob->setDefaultValue(4, 0);
+                maskChannelKnob->setAnimationEnabled(false);
+                maskChannelKnob->turnOffNewLine();
+                maskChannelKnob->setHintToolTip("Use this channel from the original input to mix the output with the original input. "
+                                                "Setting this to None is the same as disabling the mask.");
+                std::string channelMaskName(kMaskChannelKnobName + std::string("_") + maskName);
+                maskChannelKnob->setName(channelMaskName);
+            }
+        }
+    }
+    
+    if (!isDot) {
+        _imp->nodeSettingsPage = Natron::createKnob<Page_Knob>(_imp->liveInstance.get(), NATRON_EXTRA_PARAMETER_PAGE_NAME,1,false);
+        
+        _imp->nodeLabelKnob = Natron::createKnob<String_Knob>(_imp->liveInstance.get(),
+                                                              isBd ? "Name label" : "Label",1,false);
+        assert(_imp->nodeLabelKnob);
+        _imp->nodeLabelKnob->setName(kUserLabelKnobName);
+        _imp->nodeLabelKnob->setAnimationEnabled(false);
+        _imp->nodeLabelKnob->setEvaluateOnChange(false);
+        _imp->nodeLabelKnob->setAsMultiLine();
+        _imp->nodeLabelKnob->setUsesRichText(true);
+        _imp->nodeLabelKnob->setHintToolTip("This label gets appended to the node name on the node graph.");
+        _imp->nodeSettingsPage->addKnob(_imp->nodeLabelKnob);
+    }
+    if (!isBd && !isDot) {
+        _imp->forceCaching = Natron::createKnob<Bool_Knob>(_imp->liveInstance.get(), "Force caching", 1, false);
+        _imp->forceCaching->setName("forceCaching");
+        _imp->forceCaching->setDefaultValue(false);
+        _imp->forceCaching->setAnimationEnabled(false);
+        _imp->forceCaching->turnOffNewLine();
+        _imp->forceCaching->setIsPersistant(true);
+        _imp->forceCaching->setEvaluateOnChange(false);
+        _imp->forceCaching->setHintToolTip("When checked, the output of this node will always be kept in the RAM cache for fast access of already computed "
+                                           "images.");
+        _imp->nodeSettingsPage->addKnob(_imp->forceCaching);
+        
+        _imp->previewEnabledKnob = Natron::createKnob<Bool_Knob>(_imp->liveInstance.get(), "Preview enabled",1,false);
+        assert(_imp->previewEnabledKnob);
+        _imp->previewEnabledKnob->setDefaultValue( makePreviewByDefault() );
+        _imp->previewEnabledKnob->setName(kEnablePreviewKnobName);
+        _imp->previewEnabledKnob->setAnimationEnabled(false);
+        _imp->previewEnabledKnob->turnOffNewLine();
+        _imp->previewEnabledKnob->setIsPersistant(false);
+        _imp->previewEnabledKnob->setEvaluateOnChange(false);
+        _imp->previewEnabledKnob->setHintToolTip("Whether to show a preview on the node box in the node-graph.");
+        _imp->nodeSettingsPage->addKnob(_imp->previewEnabledKnob);
+        
+        _imp->disableNodeKnob = Natron::createKnob<Bool_Knob>(_imp->liveInstance.get(), "Disable",1,false);
+        assert(_imp->disableNodeKnob);
+        _imp->disableNodeKnob->setAnimationEnabled(false);
+        _imp->disableNodeKnob->setDefaultValue(false);
+        _imp->disableNodeKnob->setName(kDisableNodeKnobName);
+        _imp->disableNodeKnob->turnOffNewLine();
+        _imp->disableNodeKnob->setHintToolTip("When disabled, this node acts as a pass through.");
+        _imp->nodeSettingsPage->addKnob(_imp->disableNodeKnob);
+        
+        _imp->useFullScaleImagesWhenRenderScaleUnsupported = Natron::createKnob<Bool_Knob>(_imp->liveInstance.get(), "Render high def. upstream",1,false);
+        _imp->useFullScaleImagesWhenRenderScaleUnsupported->setAnimationEnabled(false);
+        _imp->useFullScaleImagesWhenRenderScaleUnsupported->setDefaultValue(false);
+        _imp->useFullScaleImagesWhenRenderScaleUnsupported->setName("highDefUpstream");
+        _imp->useFullScaleImagesWhenRenderScaleUnsupported->setHintToolTip("This node doesn't support rendering images at a scale lower than 1, it "
+                                                                           "can only render high definition images. When checked this parameter controls "
+                                                                           "whether the rest of the graph upstream should be rendered with a high quality too or at "
+                                                                           "the most optimal resolution for the current viewer's viewport. Typically checking this "
+                                                                           "means that an image will be slow to be rendered, but once rendered it will stick in the cache "
+                                                                           "whichever zoom level you're using on the Viewer, whereas when unchecked it will be much "
+                                                                           "faster to render but will have to be recomputed when zooming in/out in the Viewer.");
+        if (renderScaleSupportPref == 0 && getLiveInstance()->supportsRenderScaleMaybe() == EffectInstance::eSupportsYes) {
+            _imp->useFullScaleImagesWhenRenderScaleUnsupported->setSecret(true);
+        }
+        _imp->nodeSettingsPage->addKnob(_imp->useFullScaleImagesWhenRenderScaleUnsupported);
+        
+        _imp->infoPage = Natron::createKnob<Page_Knob>(_imp->liveInstance.get(), "Info",1,false);
+        _imp->infoPage->setName("info");
+        
+        _imp->infoDisclaimer = Natron::createKnob<String_Knob>(_imp->liveInstance.get(), "Input and output informations",1,false);
+        _imp->infoDisclaimer->setName("infoDisclaimer");
+        _imp->infoDisclaimer->setAnimationEnabled(false);
+        _imp->infoDisclaimer->setIsPersistant(false);
+        _imp->infoDisclaimer->setAsLabel();
+        _imp->infoDisclaimer->hideDescription();
+        _imp->infoDisclaimer->setEvaluateOnChange(false);
+        _imp->infoDisclaimer->setDefaultValue(tr("Input and output informations, press Refresh to update them with current values").toStdString());
+        _imp->infoPage->addKnob(_imp->infoDisclaimer);
+        
+        for (int i = 0; i < inputsCount; ++i) {
+            std::string inputLabel = getInputLabel(i);
+            boost::shared_ptr<String_Knob> inputInfo = Natron::createKnob<String_Knob>(_imp->liveInstance.get(), std::string(inputLabel + " Info"), 1, false);
+            inputInfo->setName(inputLabel + "Info");
+            inputInfo->setAnimationEnabled(false);
+            inputInfo->setIsPersistant(false);
+            inputInfo->setEvaluateOnChange(false);
+            inputInfo->hideDescription();
+            inputInfo->setAsLabel();
+            _imp->inputFormats.push_back(inputInfo);
+            _imp->infoPage->addKnob(inputInfo);
+        }
+        
+        std::string outputLabel("Output");
+        _imp->outputFormat = Natron::createKnob<String_Knob>(_imp->liveInstance.get(), std::string(outputLabel + " Info"), 1, false);
+        _imp->outputFormat->setName(outputLabel + "Info");
+        _imp->outputFormat->setAnimationEnabled(false);
+        _imp->outputFormat->setIsPersistant(false);
+        _imp->outputFormat->setEvaluateOnChange(false);
+        _imp->outputFormat->hideDescription();
+        _imp->outputFormat->setAsLabel();
+        _imp->infoPage->addKnob(_imp->outputFormat);
+        
+        _imp->refreshInfoButton = Natron::createKnob<Button_Knob>(_imp->liveInstance.get(), "Refresh Info");
+        _imp->refreshInfoButton->setName("refreshButton");
+        _imp->refreshInfoButton->setEvaluateOnChange(false);
+        _imp->infoPage->addKnob(_imp->refreshInfoButton);
+    }
+    
     
     _imp->knobsInitialized = true;
     _imp->liveInstance->unblockEvaluation();
@@ -3765,13 +3773,15 @@ Node::replaceCustomDataInlabel(const QString & data)
 bool
 Node::isNodeDisabled() const
 {
-    return _imp->disableNodeKnob->getValue();
+    return _imp->disableNodeKnob ? _imp->disableNodeKnob->getValue() : false;
 }
 
 void
 Node::setNodeDisabled(bool disabled)
 {
-    _imp->disableNodeKnob->setValue(disabled, 0);
+    if (_imp->disableNodeKnob) {
+        _imp->disableNodeKnob->setValue(disabled, 0);
+    }
 }
 
 void
@@ -3882,7 +3892,11 @@ Node::isSupportedBitDepth(Natron::ImageBitDepthEnum depth) const
 std::string
 Node::getNodeExtraLabel() const
 {
-    return _imp->nodeLabelKnob->getValue();
+    if (_imp->nodeLabelKnob) {
+        return _imp->nodeLabelKnob->getValue();
+    } else {
+        return std::string();
+    }
 }
 
 bool

@@ -88,6 +88,8 @@ BackDropGui::createGui()
     assert(isBd);
     
     QObject::connect(isBd,SIGNAL(labelChanged(QString)),this, SLOT(onLabelChanged(QString)));
+    
+    refreshTextLabelFromKnob();
 }
 
 void
@@ -104,19 +106,21 @@ BackDropGui::adjustSizeToContent(int *w,int *h)
     NodeGui::adjustSizeToContent(w, h);
     QRectF labelBbox = _imp->label->boundingRect();
     *h = std::max((double)*h,labelBbox.height() * 1.5);
+    *w = std::max((double)*w, _imp->label->textWidth());
 }
 
 void
-BackDropGui::resizeExtraContent(int w,int /*h*/)
+BackDropGui::resizeExtraContent(int /*w*/,int /*h*/,bool forceResize)
 {
     QPointF p = pos();
     QPointF thisItemPos = mapFromParent(p);
     
     int nameHeight = getFrameNameHeight();
     
-    _imp->label->setPos(thisItemPos.x(), thisItemPos.y() + nameHeight + 20);
-    _imp->label->setTextWidth(w);
-    
+    _imp->label->setPos(thisItemPos.x(), thisItemPos.y() + nameHeight + 10);
+    if (!forceResize) {
+        _imp->label->adjustSize();
+    }
 }
 
 void
@@ -143,9 +147,10 @@ BackDropGuiPrivate::refreshLabelText(int nameHeight,const QString &text)
 
     QRectF labelBbox = label->boundingRect();
     QRectF bbox = _publicInterface->boundingRect();
-    int w = std::max( bbox.width(), labelBbox.width() );
+    int w = std::max( bbox.width(), label->textWidth() );
     int h = std::max( labelBbox.height() + nameHeight + 10, bbox.height() );
     _publicInterface->resize(w, h);
     _publicInterface->update();
+    
 }
 
