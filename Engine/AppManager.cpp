@@ -508,6 +508,8 @@ AppManager::loadInternal(const QString & projectFilename,
     // https://qt-project.org/doc/qt-5/qcoreapplication.html#locale-settings
     //std::setlocale(LC_NUMERIC,"C"); // set the locale for LC_NUMERIC only
     // set the locale for everything
+#if 0
+    // the following only sets the C locale
     char *category = std::setlocale(LC_ALL,"en_US.UTF-8");
     if (category == NULL) {
         category = std::setlocale(LC_ALL,"UTF-8");
@@ -518,6 +520,33 @@ AppManager::loadInternal(const QString & projectFilename,
     if (category == NULL) {
         qDebug() << "Could not set locale!";
     }
+#else
+    // Set the C and C++ locales
+    // see http://en.cppreference.com/w/cpp/locale/locale/global
+    // Maybe this can also workaround the OSX crash in loadlocale():
+    // https://discussions.apple.com/thread/3479591
+    // https://github.com/cth103/dcpomatic/blob/master/src/lib/safe_stringstream.h
+    // stringstreams don't seem to be thread-safe on OSX because the change the locale.
+    try {
+        std::locale::global(std::locale("en_US.UTF-8"));
+    } catch (std::runtime_error) {
+        try {
+            std::locale::global(std::locale("UTF8"));
+        } catch (std::runtime_error) {
+            try {
+                std::locale::global(std::locale("C"));
+            } catch (std::runtime_error) {
+                qDebug() << "Could not set locale!";
+            }
+        }
+    }
+    // We also set explicitely the LC_NUMERIC locale to "C" to avoid juggling
+    // between locales when using stringstreams.
+    // See function __convert_from_v(...) in
+    // /usr/include/c++/4.2.1/x86_64-apple-darwin10/bits/c++locale.h
+    std::setlocale(LC_NUMERIC,"C"); // set the locale for LC_NUMERIC only
+#endif
+
     Natron::Log::instance(); //< enable logging
 
     _imp->_settings->initializeKnobsPublic();
