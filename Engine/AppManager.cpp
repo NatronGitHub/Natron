@@ -544,6 +544,8 @@ AppManager::loadInternal(const QString & projectFilename,
     // between locales when using stringstreams.
     // See function __convert_from_v(...) in
     // /usr/include/c++/4.2.1/x86_64-apple-darwin10/bits/c++locale.h
+    // https://www.opensource.apple.com/source/libstdcxx/libstdcxx-104.1/include/c++/4.2.1/bits/c++locale.h
+    // See also https://stackoverflow.com/questions/22753707/is-ostream-operator-in-libstdc-thread-hostile
     std::setlocale(LC_NUMERIC,"C"); // set the locale for LC_NUMERIC only
 #endif
 
