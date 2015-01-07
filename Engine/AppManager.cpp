@@ -508,7 +508,7 @@ AppManager::loadInternal(const QString & projectFilename,
     // https://qt-project.org/doc/qt-5/qcoreapplication.html#locale-settings
     //std::setlocale(LC_NUMERIC,"C"); // set the locale for LC_NUMERIC only
     // set the locale for everything
-#if 0
+#if 1
     // the following only sets the C locale
     char *category = std::setlocale(LC_ALL,"en_US.UTF-8");
     if (category == NULL) {
