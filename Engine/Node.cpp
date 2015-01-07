@@ -48,6 +48,7 @@
 #include "Engine/Settings.h"
 #include "Engine/NodeGuiI.h"
 #include "Engine/NodeGroup.h"
+#include "Engine/BackDrop.h"
 #include "Engine/NoOp.h"
 ///The flickering of edges/nodes in the nodegraph will be refreshed
 ///at most every...
@@ -3915,6 +3916,12 @@ Node::isTrackerNode() const
     return getPluginID() == PLUGINID_OFX_TRACKERPM;
 }
 
+bool
+Node::isBackDropNode() const
+{
+    return getPluginID() == PLUGINID_NATRON_BACKDROP;
+}
+
 void
 Node::updateEffectLabelKnob(const QString & name)
 {
@@ -3931,6 +3938,9 @@ Node::updateEffectLabelKnob(const QString & name)
 bool
 Node::canOthersConnectToThisNode() const
 {
+    if (dynamic_cast<BackDrop*>(_imp->liveInstance.get())) {
+        return false;
+    }
     ///In debug mode only allow connections to Writer nodes
 # ifdef DEBUG
     

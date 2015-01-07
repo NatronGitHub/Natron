@@ -12,7 +12,7 @@
 #define NODEGRAPHUNDOREDO_H
 
 #include "Global/GlobalDefines.h"
-
+#include <list>
 #include <vector>
 #include <QPointF>
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
@@ -29,8 +29,11 @@
 class Edge;
 class NodeGui;
 class NodeGraph;
-class NodeBackDrop;
 class NodeSerialization;
+
+typedef boost::shared_ptr<NodeGui> NodeGuiPtr;
+typedef std::list<NodeGuiPtr> NodeGuiList;
+
 namespace Natron {
 class Node;
 }
@@ -48,7 +51,6 @@ public:
     };
 
     MoveMultipleNodesCommand(const std::list<NodeToMove> & nodes,
-                             const std::list<NodeBackDrop*> & bds,
                              double dx,
                              double dy,
                              bool doMerge,
@@ -69,7 +71,6 @@ private:
 
     bool _firstRedoCalled;
     std::list<NodeToMove> _nodes;
-    std::list<NodeBackDrop*> _bds;
     QPointF _mouseScenePos;
     double _dx,_dy;
     bool _doMerge;
@@ -89,16 +90,12 @@ public:
 
     AddMultipleNodesCommand(NodeGraph* graph,
                             const std::list<boost::shared_ptr<NodeGui> > & nodes,
-                            const std::list<NodeBackDrop*> & bds,
                             QUndoCommand *parent = 0);
 
     AddMultipleNodesCommand(NodeGraph* graph,
                             const boost::shared_ptr<NodeGui> & node,
                             QUndoCommand* parent = 0);
 
-    AddMultipleNodesCommand(NodeGraph* graph,
-                            NodeBackDrop* bd,
-                            QUndoCommand* parent = 0);
 
     virtual ~AddMultipleNodesCommand();
 
@@ -108,7 +105,6 @@ public:
 private:
 
     std::list<boost::weak_ptr<NodeGui> > _nodes;
-    std::list<NodeBackDrop*> _bds;
     NodeGraph* _graph;
     bool _firstRedoCalled;
     bool _isUndone;
@@ -122,7 +118,6 @@ public:
 
     RemoveMultipleNodesCommand(NodeGraph* graph,
                                const std::list<boost::shared_ptr<NodeGui> > & nodes,
-                               const std::list<NodeBackDrop*> & bds,
                                QUndoCommand *parent = 0);
 
     virtual ~RemoveMultipleNodesCommand();
@@ -141,7 +136,6 @@ private:
     };
 
     std::list<NodeToRemove> _nodes;
-    std::list<NodeBackDrop*> _bds;
     NodeGraph* _graph;
     bool _isRedone;
 };
@@ -176,7 +170,7 @@ class ResizeBackDropCommand
 {
 public:
 
-    ResizeBackDropCommand(NodeBackDrop* bd,
+    ResizeBackDropCommand(const NodeGuiPtr& bd,
                           int w,
                           int h,
                           QUndoCommand *parent = 0);
@@ -193,7 +187,7 @@ public:
 
 private:
 
-    NodeBackDrop* _bd;
+    NodeGuiPtr _bd;
     int _w,_h;
     int _oldW,_oldH;
 };
@@ -206,7 +200,6 @@ public:
 
     DecloneMultipleNodesCommand(NodeGraph* graph,
                                 const std::list<boost::shared_ptr<NodeGui> > & nodes,
-                                const std::list<NodeBackDrop*> & bds,
                                 QUndoCommand *parent = 0);
 
 
@@ -223,14 +216,9 @@ private:
         boost::weak_ptr<Natron::Node> master;
     };
 
-    struct BDToDeclone
-    {
-        NodeBackDrop* bd;
-        NodeBackDrop* master;
-    };
+  
 
     std::list<NodeToDeclone> _nodes;
-    std::list<BDToDeclone> _bds;
     NodeGraph* _graph;
 };
 
@@ -319,7 +307,6 @@ class RenameNodeUndoRedoCommand
 public:
     
     RenameNodeUndoRedoCommand(const boost::shared_ptr<NodeGui> & node,
-                              NodeBackDrop* bd,
                               const QString& oldName,
                               const QString& newName);
     
@@ -330,7 +317,6 @@ public:
 private:
     
     boost::weak_ptr<NodeGui> _node;
-    NodeBackDrop* _bd;
     QString _oldName,_newName;
     bool _firstRedoCalled;
 };

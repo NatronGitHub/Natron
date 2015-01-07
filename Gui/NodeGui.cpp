@@ -48,6 +48,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/Button.h"
 #include "Gui/NodeGraphUndoRedo.h"
 #include "Gui/SequenceFileDialog.h"
+#include "Gui/BackDropGui.h"
 
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/ViewerInstance.h"
@@ -57,6 +58,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/NodeSerialization.h"
 #include "Engine/Image.h"
 #include "Engine/Settings.h"
+#include "Engine/BackDrop.h"
 #include "Engine/Knob.h"
 #define NATRON_STATE_INDICATOR_OFFSET 5
 
@@ -92,43 +94,48 @@ replaceLineBreaksWithHtmlParagraph(QString txt)
 }
 
 NodeGui::NodeGui(QGraphicsItem *parent)
-    : QObject()
-      , QGraphicsItem(parent)
-      , _graph(NULL)
-      , _internalNode()
-      , _selected(false)
-      , _settingNameFromGui(false)
-      , _nameItem(NULL)
-      , _boundingBox(NULL)
-      , _channelsPixmap(NULL)
-      , _previewPixmap(NULL)
-      , _persistentMessage(NULL)
-      , _stateIndicator(NULL)
-      , _mergeHintActive(false)
-      , _bitDepthWarning(NULL)
-      , _disabledTopLeftBtmRight(NULL)
-      , _disabledBtmLeftTopRight(NULL)
-      , _inputEdges()
-      , _outputEdge(NULL)
-      , _settingsPanel(NULL)
-      , _mainInstancePanel(NULL)
-      , _defaultColor()
-      , _clonedColor()
-      , _wasBeginEditCalled(false)
-      , positionMutex()
-      , _slaveMasterLink(NULL)
-      , _masterNodeGui()
-      , _knobsLinks()
-      , _expressionIndicator(NULL)
-      , _magnecEnabled()
-      , _magnecDistance()
-      , _updateDistanceSinceLastMagnec()
-      , _distanceSinceLastMagnec()
-      , _magnecStartingPos()
-      , _nodeLabel()
-      , _parentMultiInstance()
-      , _renderingStartedCount(0)
-      , _optionalInputsVisible(false)
+: QObject()
+, QGraphicsItem(parent)
+, _graph(NULL)
+, _internalNode()
+, _selected(false)
+, _settingNameFromGui(false)
+, _nameItem(NULL)
+, _nameFrame(NULL)
+, _resizeHandle(NULL)
+, _boundingBox(NULL)
+, _channelsPixmap(NULL)
+, _previewPixmap(NULL)
+, _persistentMessage(NULL)
+, _stateIndicator(NULL)
+, _mergeHintActive(false)
+, _bitDepthWarning(NULL)
+, _disabledTopLeftBtmRight(NULL)
+, _disabledBtmLeftTopRight(NULL)
+, _inputEdges()
+, _outputEdge(NULL)
+, _settingsPanel(NULL)
+, _mainInstancePanel(NULL)
+, _defaultColor()
+, _clonedColor()
+, _wasBeginEditCalled(false)
+, positionMutex()
+, _slaveMasterLink(NULL)
+, _masterNodeGui()
+, _knobsLinks()
+, _expressionIndicator(NULL)
+, _magnecEnabled()
+, _magnecDistance()
+, _updateDistanceSinceLastMagnec()
+, _distanceSinceLastMagnec()
+, _magnecStartingPos()
+, _nodeLabel()
+, _parentMultiInstance()
+, _renderingStartedCount(0)
+, _optionalInputsVisible(false)
+, _mtSafeSizeMutex()
+, _mtSafeWidth(0)
+, _mtSafeHeight(0)
 {
 }
 
@@ -177,7 +184,6 @@ NodeGui::initialize(NodeGraph* dag,
     QObject::connect( internalNode.get(), SIGNAL( nodeExtraLabelChanged(QString) ),this,SLOT( onNodeExtraLabelChanged(QString) ) );
 
     setCacheMode(DeviceCoordinateCache);
-    setZValue(4);
     
     OutputEffectInstance* isOutput = dynamic_cast<OutputEffectInstance*>(internalNode->getLiveInstance());
     if (isOutput) {
@@ -209,7 +215,9 @@ NodeGui::initialize(NodeGraph* dag,
         ///It calls updateShape
         togglePreview_internal(false);
     } else {
-        initializeShape();
+        int w,h;
+        getInitialSize(&w, &h);
+        resize(w,h);
     }
 
     QColor defaultColor = getCurrentColor();
@@ -228,7 +236,8 @@ NodeGui::initialize(NodeGraph* dag,
     onInternalNameChanged( internalNode->getName().c_str() );
 
     ///Make the output edge
-    if ( !internalNode->isOutputNode() ) {
+    BackDrop* isBd = dynamic_cast<BackDrop*>(internalNode->getLiveInstance());
+    if ( !isBd && !internalNode->isOutputNode() ) {
         _outputEdge = new Edge( thisAsShared,parentItem() );
     }
 
@@ -265,12 +274,6 @@ NodeGui::onSettingsPanelClosed(bool closed)
         }
     }
     Q_EMIT settingsPanelClosed(closed);
-}
-
-void
-NodeGui::initializeShape()
-{
-    updateShape(NODE_WIDTH,NODE_HEIGHT);
 }
 
 NodeSettingsPanel*
@@ -322,25 +325,44 @@ NodeGui::createPanel(QVBoxLayout* container,
 }
 
 void
+NodeGui::getInitialSize(int *w, int *h)
+{
+    *w = NODE_WIDTH;
+    *h = NODE_HEIGHT;
+}
+
+void
 NodeGui::createGui()
 {
+    int depth = getBaseDepth();
+    setZValue(depth);
     _boundingBox = new QGraphicsRectItem(this);
-    _boundingBox->setZValue(0);
+    _boundingBox->setZValue(depth);
 
+    if (mustFrameName()) {
+        _nameFrame = new QGraphicsRectItem(this);
+        _nameFrame->setZValue(depth + 1);
+    }
+    
+    if (mustAddResizeHandle()) {
+        _resizeHandle = new QGraphicsPolygonItem(this);
+        _resizeHandle->setZValue(depth + 1);
+    }
+    
     _nameItem = new QGraphicsTextItem(getNode()->getName().c_str(),this);
     _nameItem->setDefaultTextColor( QColor(0,0,0,255) );
     _nameItem->setFont( QFont(appFont,appFontSize) );
-    _nameItem->setZValue(1);
+    _nameItem->setZValue(depth+ 1);
 
     _persistentMessage = new QGraphicsTextItem("",this);
-    _persistentMessage->setZValue(3);
+    _persistentMessage->setZValue(depth + 3);
     QFont f = _persistentMessage->font();
     f.setPixelSize(25);
     _persistentMessage->setFont(f);
     _persistentMessage->hide();
 
     _stateIndicator = new QGraphicsRectItem(this);
-    _stateIndicator->setZValue(-1);
+    _stateIndicator->setZValue(depth -1);
     _stateIndicator->hide();
 
     QRectF bbox = boundingRect();
@@ -398,7 +420,9 @@ NodeGui::togglePreview_internal(bool refreshPreview)
         if (_previewPixmap) {
             _previewPixmap->hide();
         }
-        updateShape(NODE_WIDTH,NODE_HEIGHT);
+        int w,h;
+        getInitialSize(&w, &h);
+        resize(w,h);
     }
 }
 
@@ -410,13 +434,13 @@ NodeGui::ensurePreviewCreated()
         prev.fill(Qt::black);
         QPixmap prev_pixmap = QPixmap::fromImage(prev);
         _previewPixmap = new QGraphicsPixmapItem(prev_pixmap,this);
-        _previewPixmap->setZValue(1);
+        _previewPixmap->setZValue(getBaseDepth() + 1);
         
     }
     QSize size = getSize();
     if (size.width() < NODE_WITH_PREVIEW_WIDTH ||
         size.height() < NODE_WITH_PREVIEW_HEIGHT) {
-        updateShape(NODE_WITH_PREVIEW_WIDTH,NODE_WITH_PREVIEW_HEIGHT);
+        resize(NODE_WITH_PREVIEW_WIDTH,NODE_WITH_PREVIEW_HEIGHT);
         _previewPixmap->stackBefore(_nameItem);
         _previewPixmap->show();
     }
@@ -457,14 +481,74 @@ NodeGui::removeSettingsPanel()
     _settingsPanel = NULL;
 }
 
+
 void
-NodeGui::updateShape(int width,
-                     int height)
+NodeGui::refreshSize()
 {
+    QRectF bbox = boundingRect();
+    resize(bbox.width(),bbox.height());
+}
+
+int
+NodeGui::getFrameNameHeight() const
+{
+    if (mustFrameName()) {
+        return _nameFrame->boundingRect().height();
+    } else {
+        return boundingRect().height();
+    }
+}
+
+bool
+NodeGui::isNearbyNameFrame(const QPointF& pos) const
+{
+    if (!mustFrameName()) {
+        return _boundingBox->boundingRect().contains(pos);
+    } else {
+        QRectF headerBbox = _nameFrame->boundingRect();
+        headerBbox.adjust(-5, -5, 5, 5);
+        return headerBbox.contains(pos);
+    }
+}
+
+bool
+NodeGui::isNearbyResizeHandle(const QPointF& pos) const
+{
+    if (!mustAddResizeHandle()) {
+        return false;
+    }
+    
+    QPolygonF resizePoly = _resizeHandle->polygon();
+    return resizePoly.containsPoint(pos,Qt::OddEvenFill);
+}
+
+void
+NodeGui::adjustSizeToContent(int* /*w*/,int *h)
+{
+    QRectF labelBbox = _nameItem->boundingRect();
+    *h = std::max((double)*h, labelBbox.height());
+}
+
+void
+NodeGui::resize(int width,
+                int height)
+{
+    if (!canResize()) {
+        return;
+    }
+    
     QPointF topLeft = mapFromParent( pos() );
     QRectF labelBbox = _nameItem->boundingRect();
-    double realHeight =  std::max( (double)height,labelBbox.height() );
-    QRectF bbox(topLeft.x(),topLeft.y(),width,realHeight);
+
+    adjustSizeToContent(&width,&height);
+    
+    {
+        QMutexLocker k(&_mtSafeSizeMutex);
+        _mtSafeWidth = width;
+        _mtSafeHeight = height;
+    }
+    
+    QRectF bbox(topLeft.x(),topLeft.y(),width,height);
 
     _boundingBox->setRect(bbox);
 
@@ -472,7 +556,24 @@ NodeGui::updateShape(int width,
     QFontMetrics metrics(f);
     int nameWidth = labelBbox.width();
     _nameItem->setX( topLeft.x() + (width / 2) - (nameWidth / 2) );
-    _nameItem->setY(topLeft.y() + 10 - metrics.height() / 2);
+    
+    double mh = metrics.height();
+    _nameItem->setY(topLeft.y() + mh / 4.);
+    
+    if (mustFrameName()) {
+        QRectF nameFrameBox(topLeft.x(),topLeft.y(), width, labelBbox.height() + 2 * mh);
+        _nameFrame->setRect(nameFrameBox);
+    }
+    
+    if (mustAddResizeHandle()) {
+        QPolygonF poly;
+        QPointF bottomRight(topLeft.x() + width,topLeft.y() + height);
+        poly.push_back( QPointF( bottomRight.x() - 20,bottomRight.y() ) );
+        poly.push_back(bottomRight);
+        poly.push_back( QPointF(bottomRight.x(), bottomRight.y() - 20) );
+        _resizeHandle->setPolygon(poly);
+
+    }
 
     QString persistentMessage = _persistentMessage->toPlainText();
     f.setPixelSize(25);
@@ -493,6 +594,9 @@ NodeGui::updateShape(int width,
 
     _disabledBtmLeftTopRight->setLine( QLineF( bbox.bottomLeft(),bbox.topRight() ) );
     _disabledTopLeftBtmRight->setLine( QLineF( bbox.topLeft(),bbox.bottomRight() ) );
+    
+    resizeExtraContent(width,height);
+    
     refreshPosition( pos().x(), pos().y(), true );
 }
 
@@ -656,7 +760,7 @@ NodeGui::refreshPosition(double x,
 void
 NodeGui::setAboveItem(QGraphicsItem* item)
 {
-    if (!isVisible()) {
+    if (!isVisible() || dynamic_cast<BackDropGui*>(this)) {
         return;
     }
     item->stackBefore(this);
@@ -1027,6 +1131,12 @@ void
 NodeGui::applyBrush(const QBrush & brush)
 {
     _boundingBox->setBrush(brush);
+    if (mustFrameName()) {
+        _nameFrame->setBrush(brush);
+    }
+    if (mustAddResizeHandle()) {
+        _resizeHandle->setBrush(brush);
+    }
 }
 
 void
@@ -1434,8 +1544,7 @@ NodeGui::onPersistentMessageChanged()
         
         setToolTip(message);
         
-        QRectF rect = _boundingBox->rect();
-        updateShape( rect.width(), rect.height() );
+        refreshSize();
     }
     refreshStateIndicator();
 
@@ -1515,6 +1624,9 @@ NodeGui::copyFrom(const NodeGuiSerialization & obj)
     if ( getNode()->isPreviewEnabled() != obj.isPreviewEnabled() ) {
         togglePreview();
     }
+    double w,h;
+    obj.getSize(&w,&h);
+    resize(w,h);
 }
 
 QUndoStack*
@@ -1901,9 +2013,13 @@ NodeGui::deleteReferences()
 QSize
 NodeGui::getSize() const
 {
-    QRectF bbox = boundingRect();
-
-    return QSize( bbox.width(),bbox.height() );
+    if (QThread::currentThread() == qApp->thread()) {
+        QRectF bbox = boundingRect();
+        return QSize( bbox.width(),bbox.height() );
+    } else {
+        QMutexLocker k(&_mtSafeSizeMutex);
+        return QSize(_mtSafeWidth,_mtSafeHeight);
+    }
 }
 
 void
@@ -2151,12 +2267,10 @@ NodeGui::setNameItemHtml(const QString & name,
     }
     _nameItem->setFont(f);
 
-
-    bool hasPreview =  getNode()->isPreviewEnabled();
-    double nodeHeight = hasPreview ? NODE_WITH_PREVIEW_HEIGHT : NODE_HEIGHT;
-    double nodeWidth = hasPreview ? NODE_WITH_PREVIEW_WIDTH : NODE_WIDTH;
-    QRectF labelBbox = _nameItem->boundingRect();
-    updateShape( nodeWidth, std::max( nodeHeight,labelBbox.height() ) );
+    refreshSize();
+//    QRectF currentBbox = boundingRect();
+//    QRectF labelBbox = _nameItem->boundingRect();
+//    resize( currentBbox.width(), std::max( currentBbox.height(),labelBbox.height() ) );
 } // setNameItemHtml
 
 void

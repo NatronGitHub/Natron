@@ -317,6 +317,28 @@ public:
     
     virtual void onChildInstanceCreated(const boost::shared_ptr<Natron::Node>& node) OVERRIDE FINAL;
     
+    bool isNearbyNameFrame(const QPointF& pos) const;
+    
+    bool isNearbyResizeHandle(const QPointF& pos) const;
+    
+    int getFrameNameHeight() const;
+
+protected:
+    
+    virtual int getBaseDepth() const { return 0; }
+    
+    virtual bool canResize() { return true; }
+    
+    virtual bool mustFrameName() const { return false; }
+    
+    virtual bool mustAddResizeHandle() const { return false; }
+    
+    virtual void getInitialSize(int *w, int *h);
+    
+    virtual void adjustSizeToContent(int *w,int *h);
+    
+    virtual void resizeExtraContent(int /*w*/,int /*h*/) {}
+    
 public Q_SLOTS:
 
     void onSettingsPanelClosed(bool closed);
@@ -333,7 +355,9 @@ public Q_SLOTS:
      * @brief Updates the position of the items contained by the node to fit into
      * the new width and height.
      **/
-    void updateShape(int width,int height);
+    void resize(int width,int height);
+    
+    void refreshSize();
 
     /*Updates the preview image, only if the project is in auto-preview mode*/
     void updatePreviewImage(int time);
@@ -415,7 +439,6 @@ Q_SIGNALS:
 protected:
 
     virtual void createGui();
-    virtual void initializeShape();
     virtual NodeSettingsPanel* createPanel(QVBoxLayout* container,bool requestedByLoad,const boost::shared_ptr<NodeGui> & thisAsShared);
     virtual bool canMakePreview()
     {
@@ -425,6 +448,7 @@ protected:
     virtual void applyBrush(const QBrush & brush);
 
 private:
+
 
     void refreshPositionEnd(double x,double y);
 
@@ -457,6 +481,9 @@ private:
     /*A pointer to the graphical text displaying the name.*/
     bool _settingNameFromGui;
     QGraphicsTextItem *_nameItem;
+    QGraphicsRectItem *_nameFrame;
+    
+    QGraphicsPolygonItem* _resizeHandle;
 
     /*A pointer to the rectangle of the node.*/
     QGraphicsRectItem* _boundingBox;
@@ -513,6 +540,10 @@ private:
     std::map<int,int> _inputNRenderingStartedCount;
     
     bool _optionalInputsVisible;
+    
+    ///For the serialization thread
+    mutable QMutex _mtSafeSizeMutex;
+    int _mtSafeWidth,_mtSafeHeight;
       
 };
 
@@ -538,11 +569,8 @@ private:
     virtual void refreshStateIndicator() OVERRIDE FINAL;
     
     virtual void applyBrush(const QBrush & brush) OVERRIDE FINAL;
-
-    ///Doesn't do anything, preview cannot be activated
-    virtual void initializeShape() OVERRIDE FINAL
-    {
-    }
+    
+    virtual bool canResize() OVERRIDE FINAL WARN_UNUSED_RETURN { return false; }
     
     virtual QRectF boundingRect() const OVERRIDE FINAL;
     virtual QPainterPath shape() const OVERRIDE FINAL;

@@ -57,6 +57,7 @@ CLANG_DIAG_ON(unused-parameter)
 #include "Engine/Settings.h"
 #include "Engine/Plugin.h"
 #include "Engine/Image.h"
+#include "Engine/BackDrop.h"
 #include "Engine/NodeSerialization.h"
 
 #include "Gui/ActionShortcuts.h"
@@ -77,7 +78,6 @@ CLANG_DIAG_ON(unused-parameter)
 #include "Gui/Gui.h"
 #include "Gui/TabWidget.h"
 #include "Gui/RotoPanel.h"
-#include "Gui/NodeBackDrop.h"
 #include "Gui/MultiInstancePanel.h"
 #include "Gui/KnobUndoCommand.h"
 #include "Gui/CurveEditorUndoRedo.h"
@@ -398,19 +398,22 @@ DockablePanel::DockablePanel(Gui* gui
             boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
             float r,g,b;
             
-            NodeBackDrop* backdrop = dynamic_cast<NodeBackDrop*>(holder);
             MultiInstancePanel* isMultiInstance = dynamic_cast<MultiInstancePanel*>(holder);
             if (isMultiInstance) {
                 iseffect = isMultiInstance->getMainInstance()->getLiveInstance();
                 assert(iseffect);
             }
             if (iseffect) {
+                BackDrop* isBd = dynamic_cast<BackDrop*>(iseffect);
+                
                 std::list<std::string> grouping;
                 iseffect->getPluginGrouping(&grouping);
                 std::string majGroup = grouping.empty() ? "" : grouping.front();
 
                 if ( iseffect->isReader() ) {
                     settings->getReaderColor(&r, &g, &b);
+                } else if (isBd) {
+                    settings->getDefaultBackDropColor(&r, &g, &b);
                 } else if ( iseffect->isWriter() ) {
                     settings->getWriterColor(&r, &g, &b);
                 } else if ( iseffect->isGenerator() ) {
@@ -438,9 +441,7 @@ DockablePanel::DockablePanel(Gui* gui
                 } else {
                     settings->getDefaultNodeColor(&r, &g, &b);
                 }
-            } else if (backdrop) {
-                appPTR->getCurrentSettings()->getDefaultBackDropColor(&r, &g, &b);
-            } else {
+            }  else {
                 r = g = b = 0.7;
             }
             
@@ -759,25 +760,17 @@ DockablePanel::onLineEditNameEditingFinished()
         oldName = QString(node->getNode()->getName().c_str());
         
     }
-    NodeBackDrop* bd = dynamic_cast<NodeBackDrop*>(_imp->_holder);
-    if (bd) {
-        oldName = bd->getName();
-    }
     
     if (oldName == newName) {
         return;
     }
 
-    assert(node || bd);
+    assert(node);
     if (node) {
         if (node->trySetName(newName)) {
-            pushUndoCommand(new RenameNodeUndoRedoCommand(node, bd, oldName, newName));
+            pushUndoCommand(new RenameNodeUndoRedoCommand(node, oldName, newName));
         }
-    } else if (bd) {
-        if (bd->trySetName(newName)) {
-            pushUndoCommand(new RenameNodeUndoRedoCommand(node, bd, oldName, newName));
-        }
-    }
+    } 
    
 }
 
@@ -2166,38 +2159,6 @@ NodeSettingsPanel::onExportPresetsActionTriggered()
         return;
     }
  
-}
-
-NodeBackDropSettingsPanel::NodeBackDropSettingsPanel(NodeBackDrop* backdrop,
-                                                     Gui* gui,
-                                                     QVBoxLayout* container,
-                                                     const QString& name,
-                                                     QWidget* parent)
-: DockablePanel(gui,
-                backdrop,
-                container,
-                DockablePanel::FULLY_FEATURED,
-                false,
-                name,
-                QObject::tr("The node backdrop is useful to group nodes and identify them in the node graph. You can also "
-                   "move all the nodes inside the backdrop."),
-                false, //< no default page
-                QObject::tr("BackDrop"), //< default page name
-                parent)
-, _backdrop(backdrop)
-{
-    
-}
-
-NodeBackDropSettingsPanel::~NodeBackDropSettingsPanel()
-{
-    
-}
-
-void
-NodeBackDropSettingsPanel::centerOnItem()
-{
-    _backdrop->centerOnIt();
 }
 
 struct TreeItem

@@ -141,7 +141,6 @@ public Q_SLOTS:
     void projectFormatChanged(const Format& f);
 private:
 
-    virtual void createBackDrop() OVERRIDE FINAL;
     virtual void createNodeGui(const boost::shared_ptr<Natron::Node> &node,
                                const boost::shared_ptr<Natron::Node>&  parentMultiInstance,
                                bool loadRequest,

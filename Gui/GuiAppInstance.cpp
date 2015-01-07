@@ -19,7 +19,6 @@
 #include "Gui/NodeGraph.h"
 #include "Gui/NodeGui.h"
 #include "Gui/MultiInstancePanel.h"
-#include "Gui/NodeBackDropSerialization.h"
 #include "Gui/ViewerTab.h"
 #include "Gui/ViewerGL.h"
 
@@ -698,14 +697,6 @@ GuiAppInstance::onMaxPanelsOpenedChanged(int maxPanels)
 {
     _imp->_gui->onMaxVisibleDockablePanelChanged(maxPanels);
 }
-
-void
-GuiAppInstance::createBackDrop()
-{
-    ///This function is not used when loading a project, rather we use the one directly in Gui (@see ProjectGui::load)
-    _imp->_gui->createBackDrop( false,NodeBackDropSerialization() );
-}
-
 
 
 void

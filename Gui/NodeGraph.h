@@ -41,7 +41,6 @@ class QDragEnterEvent;
 class NodeSerialization;
 class NodeGuiSerialization;
 class NodeBackDropSerialization;
-class NodeBackDrop;
 class NodeCollection;
 struct NodeGraphPrivate;
 namespace Natron {
@@ -72,8 +71,6 @@ public:
     void setSelection(const std::list<boost::shared_ptr<NodeGui> >& nodes);
     
     void clearSelection();
-
-    void selectBackDrop(NodeBackDrop* bd,bool addToSelection);
 
     ///The visible portion of the graph, in scene coordinates.
     QRectF visibleSceneRect() const;
@@ -116,30 +113,7 @@ public:
 
     void deleteNodepluginsly(boost::shared_ptr<NodeGui> n);
 
-    NodeBackDrop* createBackDrop(QVBoxLayout *dockContainer,bool requestedByLoad,const NodeBackDropSerialization & serialization);
-
-    ///Returns true if it already exists
-    bool checkIfBackDropNameExists(const QString & n,const NodeBackDrop* bd) const;
-
-    std::list<NodeBackDrop*> getBackDrops() const;
-    
-    NodeBackDrop* getBackdropByName(const std::string& name) const;
-    
-    NodeBackDrop* getBackdropByFullySpecifiedName(const std::string& fullName) const;
-    
-    std::list<NodeBackDrop*> getActiveBackDrops() const;
-
-    /**
-     * @brief This function just inserts the given backdrop in the list
-     **/
-    void insertNewBackDrop(NodeBackDrop* bd);
-
-    /**
-     * @brief This function just removes the given backdrop from the list, it does not delete it or anything.
-     **/
-    void removeBackDrop(NodeBackDrop* bd);
-
-    std::list<boost::shared_ptr<NodeGui> > getNodesWithinBackDrop(const NodeBackDrop* bd) const;
+    std::list<boost::shared_ptr<NodeGui> > getNodesWithinBackDrop(const boost::shared_ptr<NodeGui>& node) const;
 
     void selectAllNodes(bool onlyInVisiblePortion);
 
@@ -302,7 +276,7 @@ class EditNodeNameDialog: public QDialog
     
 public:
     
-    EditNodeNameDialog(NodeGraph* graph,const boost::shared_ptr<NodeGui>& node,NodeBackDrop* bd,QWidget* parent);
+    EditNodeNameDialog(NodeGraph* graph,const boost::shared_ptr<NodeGui>& node,QWidget* parent);
     
     virtual ~EditNodeNameDialog();
     

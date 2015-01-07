@@ -1085,13 +1085,6 @@ GuiApplicationManager::loadBuiltinNodePlugins(std::map<std::string,std::vector< 
 
     }
 
-    {
-        QString label(NATRON_BACKDROP_NODE_NAME);
-        QStringList backdropGrouping(PLUGIN_GROUP_OTHER);
-        
-        registerPlugin(backdropGrouping, label, label,NATRON_IMAGES_PATH "backdrop_icon.png", "", "", false, false, NULL, false, 1, 0);
-    }
-
     ///Also load the plug-ins of the AppManager
     AppManager::loadBuiltinNodePlugins(readersMap, writersMap);
 } // loadBuiltinNodePlugins

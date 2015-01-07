@@ -31,6 +31,7 @@ NodeGuiSerialization::initialize(const NodeGui*  n)
     QPointF pos = n->getPos_mt_safe();
     _posX = pos.x();
     _posY = pos.y();
+    n->getSize(&_width, &_height);
     _previewEnabled = n->getNode()->isPreviewEnabled();
     QColor color = n->getCurrentColor();
     _r = color.redF();

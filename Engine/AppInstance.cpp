@@ -535,14 +535,6 @@ AppInstance::createNodeInternal(const QString & pluginID,
 boost::shared_ptr<Natron::Node>
 AppInstance::createNode(const CreateNodeArgs & args)
 {
-    ///use the same entry point to create backdrops.
-    ///Since they are purely GUI we don't actually return a node.
-    if ( args.pluginID == QString(NATRON_BACKDROP_NODE_NAME) ) {
-        createBackDrop();
-
-        return boost::shared_ptr<Natron::Node>();
-    }
-
     return createNodeInternal(args.pluginID,
                               args.multiInstanceParentName,
                               args.majorV, args.minorV,

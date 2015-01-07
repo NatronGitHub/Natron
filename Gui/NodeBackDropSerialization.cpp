@@ -6,33 +6,8 @@
 
 #include "NodeBackDropSerialization.h"
 
-#include "Gui/NodeBackDrop.h"
-
 NodeBackDropSerialization::NodeBackDropSerialization()
     : posX(0),posY(0),width(0),height(0),name(),label(),r(0),g(0),b(0),selected(false), _isNull(true)
 {
-}
-
-void
-NodeBackDropSerialization::initialize(const NodeBackDrop* n)
-{
-    QPointF pos = n->getPos_mt_safe();
-
-    posX = pos.x();
-    posY = pos.y();
-    n->getSize(width,height);
-
-    label.reset(new KnobSerialization(n->getLabelKnob(),false));
-    QColor color = n->getCurrentColor();
-    r = color.redF();
-    g = color.greenF();
-    b = color.blueF();
-    name = n->getFullySpecifiedName();
-    NodeBackDrop* master = n->getMaster();
-    if (master) {
-        masterBackdropName = master->getFullySpecifiedName();
-    }
-    selected = n->getIsSelected();
-    _isNull = false;
 }
 

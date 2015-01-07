@@ -47,9 +47,9 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/NodeGraph.h"
 #include "Gui/Splitter.h"
 #include "Gui/Histogram.h"
-#include "Gui/NodeBackDrop.h"
 #include "Gui/MultiInstancePanel.h"
 #include "Gui/CurveEditor.h"
+#include "Gui/BackDropGui.h"
 #include "Gui/ScriptEditor.h"
 
 ProjectGui::ProjectGui(Gui* gui)
@@ -375,38 +375,43 @@ ProjectGui::load(boost::archive::xml_iarchive & archive)
         (*it)->refreshKnobLinks();
     }
     
-    ///now restore the backdrops
+    ///now restore the backdrops from old version prior to Natron 1.1
     const std::list<NodeBackDropSerialization> & backdrops = obj.getBackdrops();
     for (std::list<NodeBackDropSerialization>::const_iterator it = backdrops.begin(); it != backdrops.end(); ++it) {
-        NodeBackDrop* bd = _gui->createBackDrop(true,*it);
         
-        if ( it->isSelected() ) {
-            _gui->getNodeGraph()->selectBackDrop(bd, true);
-        }
+        double x,y;
+        it->getPos(x, y);
+        int w,h;
+        it->getSize(w, h);
+        
+        boost::shared_ptr<KnobI> labelSerialization = it->getLabelSerialization();
+        
+        CreateNodeArgs args(PLUGINID_NATRON_BACKDROP,
+                            "",
+                            -1,
+                            -1,
+                            false,
+                            x,
+                            y,
+                            false,
+                            true,
+                            QString(),
+                            CreateNodeArgs::DefaultValuesList(),
+                            _project.lock());
+        boost::shared_ptr<Natron::Node> node = getGui()->getApp()->createNode(args);
+        boost::shared_ptr<NodeGuiI> gui_i = node->getNodeGui();
+        assert(gui_i);
+        BackDropGui* bd = dynamic_cast<BackDropGui*>(gui_i.get());
+        assert(bd);
+        bd->resize(w,h);
+        String_Knob* iStr = dynamic_cast<String_Knob*>(labelSerialization.get());
+        bd->onLabelChanged(iStr->getValue().c_str());
+        float r,g,b;
+        it->getColor(r, g, b);
+        QColor c;
+        c.setRgbF(r,g,b);
+        bd->setDefaultColor(c);
     }
-    
-    ///now restore backdrops slave/master links
-    std::list<NodeBackDrop*> newBDs = _gui->getNodeGraph()->getBackDrops();
-    for (std::list<NodeBackDrop*>::iterator it = newBDs.begin(); it != newBDs.end(); ++it) {
-        ///find its serialization
-        for (std::list<NodeBackDropSerialization>::const_iterator it2 = backdrops.begin(); it2 != backdrops.end(); ++it2) {
-            if ( it2->getFullySpecifiedName() == (*it)->getFullySpecifiedName() ) {
-                std::string masterName = it2->getMasterBackdropName();
-                if ( !masterName.empty() ) {
-                    ///search the master backdrop by name
-                    for (std::list<NodeBackDrop*>::iterator it3 = newBDs.begin(); it3 != newBDs.end(); ++it3) {
-                        if ( (*it3)->getName_mt_safe() == masterName ) {
-                            (*it)->slaveTo(*it3);
-                            break;
-                        }
-                    }
-                }
-                break;
-            }
-        }
-    }
-
-
 
     ///now restore opened settings panels
     const std::list<std::string> & openedPanels = obj.getOpenedPanels();
@@ -425,14 +430,6 @@ ProjectGui::load(boost::archive::xml_iarchive & archive)
                 NodeSettingsPanel* panel = nodeGui->getSettingPanel();
                 if (panel) {
                     nodeGui->setVisibleSettingsPanel(true);
-                }
-            } else {
-                NodeBackDrop* bd = getGui()->getBackdropByFullySpecifiedName(*it);
-                if (bd) {
-                    DockablePanel* panel = bd->getSettingsPanel();
-                    if (panel) {
-                        panel->setClosed(false);
-                    }
                 }
             }
         }

@@ -347,12 +347,6 @@ protected:
 
 private:
 
-    /**
-     * @brief Override to create a backdrop node. This is purely GUI.
-     **/
-    virtual void createBackDrop()
-    {
-    }
 
     boost::shared_ptr<Natron::Node> createNodeInternal(const QString & pluginID,const std::string & multiInstanceParentName,
                                                        int majorVersion,int minorVersion,

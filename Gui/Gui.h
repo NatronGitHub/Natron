@@ -43,7 +43,6 @@ class xml_oarchive;
 class Splitter;
 class QUndoStack;
 class QScrollArea;
-class NodeBackDrop;
 class QToolButton;
 class QVBoxLayout;
 class QMutex;
@@ -59,7 +58,6 @@ class DockablePanel;
 class NodeGraph;
 class CurveEditor;
 class Histogram;
-class NodeBackDropSerialization;
 class RotoGui;
 class FloatingWidget;
 class BoundAction;
@@ -422,10 +420,6 @@ public:
 
     void addVisibleDockablePanel(DockablePanel* panel);
     void removeVisibleDockablePanel(DockablePanel* panel);
-
-    NodeBackDrop* createBackDrop(bool requestedByLoad,const NodeBackDropSerialization & serialization);
-    
-    NodeBackDrop* getBackdropByFullySpecifiedName(const std::string& fullySpecifiedName) const;
     
     std::list<ToolButton*> getToolButtonsOrdered() const;
 
@@ -477,8 +471,6 @@ public:
     void redrawAllViewers();
     
     void toggleAutoHideGraphInputs();
-
-    void getNodeBackDrops(std::list<NodeBackDrop*>& backdrops) const;
     
     void centerAllNodeGraphsWithTimer();
     

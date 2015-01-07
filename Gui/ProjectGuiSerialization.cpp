@@ -34,7 +34,6 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/NodeGraph.h"
 #include "Gui/Histogram.h"
 #include "Gui/Splitter.h"
-#include "Gui/NodeBackDrop.h"
 #include "Gui/DockablePanel.h"
 #include "Gui/ScriptEditor.h"
 
@@ -99,14 +98,6 @@ ProjectGuiSerialization::initialize(const ProjectGui* projectGui)
         _histograms.push_back( (*it)->objectName().toStdString() );
     }
 
-    std::list<NodeBackDrop*> backdrops;
-    projectGui->getGui()->getNodeBackDrops(backdrops);
-    for (std::list<NodeBackDrop*>::iterator it = backdrops.begin(); it != backdrops.end(); ++it) {
-        NodeBackDropSerialization s;
-        s.initialize(*it);
-        _backdrops.push_back(s);
-    }
-
     ///save opened panels by order
     QVBoxLayout* propLayout = projectGui->getGui()->getPropertiesLayout();
     for (int i = 0; i < propLayout->count(); ++i) {
@@ -116,16 +107,13 @@ ProjectGuiSerialization::initialize(const ProjectGui* projectGui)
             assert(holder);
             
             Natron::EffectInstance* isEffect = dynamic_cast<Natron::EffectInstance*>(holder);
-            NodeBackDrop* isBd = dynamic_cast<NodeBackDrop*>(holder);
             Natron::Project* isProject = dynamic_cast<Natron::Project*>(holder);
 
             if (isProject) {
                 _openedPanelsOrdered.push_back(kNatronProjectSettingsPanelSerializationName);
             } else if (isEffect) {
                 _openedPanelsOrdered.push_back(isEffect->getNode()->getFullySpecifiedName());
-            } else if (isBd) {
-                _openedPanelsOrdered.push_back(isBd->getFullySpecifiedName());
-            }
+            } 
         }
     }
     

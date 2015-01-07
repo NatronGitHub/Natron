@@ -24,7 +24,8 @@ CLANG_DIAG_ON(unused-parameter)
 #endif
 #define NODE_GUI_INTRODUCES_COLOR 2
 #define NODE_GUI_INTRODUCES_SELECTED 3
-#define NODE_GUI_SERIALIZATION_VERSION NODE_GUI_INTRODUCES_SELECTED
+#define NODE_GUI_MERGE_BACKDROP 4
+#define NODE_GUI_SERIALIZATION_VERSION NODE_GUI_MERGE_BACKDROP
 
 class NodeGui;
 class NodeGuiSerialization
@@ -53,6 +54,12 @@ public:
     double getY() const
     {
         return _posY;
+    }
+    
+    void getSize(double* w,double *h) const
+    {
+        *w = _width;
+        *h = _height;
     }
 
     bool isPreviewEnabled() const
@@ -88,6 +95,7 @@ private:
 
     std::string _nodeName;
     double _posX,_posY;
+    double _width,_height;
     bool _previewEnabled;
     float _r,_g,_b; //< color
     bool _colorWasFound;
@@ -111,6 +119,11 @@ private:
         }
         if (version >= NODE_GUI_INTRODUCES_SELECTED) {
             ar & boost::serialization::make_nvp("Selected",_selected);
+        }
+        
+        if (version >= NODE_GUI_MERGE_BACKDROP) {
+            ar & boost::serialization::make_nvp("Width",_width);
+            ar & boost::serialization::make_nvp("Height",_width);
         }
     }
 };

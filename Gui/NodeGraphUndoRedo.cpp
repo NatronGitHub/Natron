@@ -27,14 +27,12 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/Gui.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/Edge.h"
-#include "Gui/NodeBackDrop.h"
 #include "Gui/MultiInstancePanel.h"
 #define MINIMUM_VERTICAL_SPACE_BETWEEN_NODES 10
 
-typedef boost::shared_ptr<NodeGui> NodeGuiPtr;
+
 
 MoveMultipleNodesCommand::MoveMultipleNodesCommand(const std::list<NodeToMove> & nodes,
-                                                   const std::list<NodeBackDrop*> & bds,
                                                    double dx,
                                                    double dy,
                                                    bool doMerge,
@@ -43,13 +41,12 @@ MoveMultipleNodesCommand::MoveMultipleNodesCommand(const std::list<NodeToMove> &
     : QUndoCommand(parent)
       , _firstRedoCalled(false)
       , _nodes(nodes)
-      , _bds(bds)
       , _mouseScenePos(mouseScenePos)
       , _dx(dx)
       , _dy(dy)
       , _doMerge(doMerge)
 {
-    assert( !nodes.empty() || !bds.empty() );
+    assert( !nodes.empty() );
 }
 
 void
@@ -61,11 +58,6 @@ MoveMultipleNodesCommand::move(bool skipMagnet,
         NodeGuiPtr node = it->node.lock();
         QPointF pos = node->getPos_mt_safe();
         node->refreshPosition(pos.x() + dx, pos.y() + dy,it->isWithinBD || _nodes.size() > 1 || skipMagnet,_mouseScenePos);
-    }
-    for (std::list<NodeBackDrop*>::iterator it = _bds.begin(); it != _bds.end(); ++it) {
-        QPointF pos = (*it)->getPos_mt_safe();
-        pos += QPointF(dx,dy);
-        (*it)->setPos_mt_safe(pos);
     }
 }
 
@@ -95,21 +87,13 @@ MoveMultipleNodesCommand::mergeWith(const QUndoCommand *command)
     if (!mvCmd->_doMerge || !_doMerge) {
         return false;
     }
-    if ( ( mvCmd->_bds.size() != _bds.size() ) || ( mvCmd->_nodes.size() != _nodes.size() ) ) {
+    if (( mvCmd->_nodes.size() != _nodes.size() ) ) {
         return false;
     }
     {
         std::list<NodeToMove >::const_iterator itOther = mvCmd->_nodes.begin();
         for (std::list<NodeToMove>::const_iterator it = _nodes.begin(); it != _nodes.end(); ++it,++itOther) {
             if (it->node.lock() != itOther->node.lock()) {
-                return false;
-            }
-        }
-    }
-    {
-        std::list<NodeBackDrop*>::const_iterator itOther = mvCmd->_bds.begin();
-        for (std::list<NodeBackDrop*>::const_iterator it = _bds.begin(); it != _bds.end(); ++it,++itOther) {
-            if (*itOther != *it) {
                 return false;
             }
         }
@@ -122,11 +106,9 @@ MoveMultipleNodesCommand::mergeWith(const QUndoCommand *command)
 
 AddMultipleNodesCommand::AddMultipleNodesCommand(NodeGraph* graph,
                                                  const std::list<boost::shared_ptr<NodeGui> > & nodes,
-                                                 const std::list<NodeBackDrop*> & bds,
                                                  QUndoCommand *parent)
     : QUndoCommand(parent)
       , _nodes()
-      , _bds(bds)
       , _graph(graph)
       , _firstRedoCalled(false)
       , _isUndone(false)
@@ -141,7 +123,6 @@ AddMultipleNodesCommand::AddMultipleNodesCommand(NodeGraph* graph,
                                                  QUndoCommand* parent)
     : QUndoCommand(parent)
       , _nodes()
-      , _bds()
       , _graph(graph)
       , _firstRedoCalled(false)
       , _isUndone(false)
@@ -149,30 +130,13 @@ AddMultipleNodesCommand::AddMultipleNodesCommand(NodeGraph* graph,
     _nodes.push_back(node);
 }
 
-AddMultipleNodesCommand::AddMultipleNodesCommand(NodeGraph* graph,
-                                                 NodeBackDrop* bd,
-                                                 QUndoCommand* parent)
-    : QUndoCommand(parent)
-      , _nodes()
-      , _bds()
-      , _graph(graph)
-      , _firstRedoCalled(false)
-      , _isUndone(false)
-{
-    _bds.push_back(bd);
-}
+
 
 AddMultipleNodesCommand::~AddMultipleNodesCommand()
 {
     if (_isUndone) {
         for (std::list<boost::weak_ptr<NodeGui> >::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
             _graph->deleteNodepluginsly(it->lock());
-        }
-
-        for (std::list<NodeBackDrop*>::iterator it = _bds.begin(); it != _bds.end(); ++it) {
-            (*it)->setParentItem(NULL);
-            _graph->removeBackDrop(*it);
-            delete *it;
         }
     }
 }
@@ -183,9 +147,6 @@ AddMultipleNodesCommand::undo()
     _isUndone = true;
     std::list<ViewerInstance*> viewersToRefresh;
 
-    for (std::list<NodeBackDrop*>::iterator it = _bds.begin(); it != _bds.end(); ++it) {
-        (*it)->deactivate();
-    }
 
     for (std::list<boost::weak_ptr<NodeGui> >::const_iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
         NodeGuiPtr node = it->lock();
@@ -227,10 +188,7 @@ AddMultipleNodesCommand::redo()
         nodes.push_back(it->lock());
     }
     if (_firstRedoCalled) {
-        for (std::list<NodeBackDrop*>::iterator it = _bds.begin(); it != _bds.end(); ++it) {
-            (*it)->activate();
-        }
-
+  
         for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
             (*it)->getNode()->activate(std::list< Natron::Node* >(), //inputs to restore
                                        true, //restore all inputs ?
@@ -268,11 +226,9 @@ AddMultipleNodesCommand::redo()
 
 RemoveMultipleNodesCommand::RemoveMultipleNodesCommand(NodeGraph* graph,
                                                        const std::list<boost::shared_ptr<NodeGui> > & nodes,
-                                                       const std::list<NodeBackDrop*> & bds,
                                                        QUndoCommand *parent)
     : QUndoCommand(parent)
       , _nodes()
-      , _bds(bds)
       , _graph(graph)
       , _isRedone(false)
 {
@@ -306,12 +262,6 @@ RemoveMultipleNodesCommand::~RemoveMultipleNodesCommand()
             if (n) {
                 _graph->deleteNodepluginsly(n);
             }
-        }
-
-        for (std::list<NodeBackDrop*>::iterator it = _bds.begin(); it != _bds.end(); ++it) {
-            (*it)->setParentItem(NULL);
-            _graph->removeBackDrop(*it);
-            delete *it;
         }
     }
 }
@@ -347,10 +297,6 @@ RemoveMultipleNodesCommand::undo()
             --next;
         }
     }
-    for (std::list<NodeBackDrop*>::iterator it = _bds.begin(); it != _bds.end(); ++it) {
-        (*it)->activate();
-    }
-
     for (std::list<ViewerInstance* >::iterator it = viewersToRefresh.begin(); it != viewersToRefresh.end(); ++it) {
         (*it)->renderCurrentFrame(true);
     }
@@ -431,9 +377,6 @@ RemoveMultipleNodesCommand::redo()
         if ( next == _nodes.end() ) {
             --next;
         }
-    }
-    for (std::list<NodeBackDrop*>::iterator it = _bds.begin(); it != _bds.end(); ++it) {
-        (*it)->deactivate();
     }
 
     for (std::list<ViewerInstance* >::iterator it = viewersToRefresh.begin(); it != viewersToRefresh.end(); ++it) {
@@ -550,7 +493,7 @@ ConnectCommand::doConnect(const boost::shared_ptr<Natron::Node> &oldSrc,
 
 }
 
-ResizeBackDropCommand::ResizeBackDropCommand(NodeBackDrop* bd,
+ResizeBackDropCommand::ResizeBackDropCommand(const NodeGuiPtr& bd,
                                              int w,
                                              int h,
                                              QUndoCommand *parent)
@@ -575,14 +518,14 @@ void
 ResizeBackDropCommand::undo()
 {
     _bd->resize(_oldW, _oldH);
-    setText( QObject::tr("Resize %1").arg( _bd->getName() ) );
+    setText( QObject::tr("Resize %1").arg( _bd->getNode()->getName().c_str() ) );
 }
 
 void
 ResizeBackDropCommand::redo()
 {
     _bd->resize(_w, _h);
-    setText( QObject::tr("Resize %1").arg( _bd->getName() ) );
+    setText( QObject::tr("Resize %1").arg( _bd->getNode()->getName().c_str() ) );
 }
 
 bool
@@ -604,11 +547,9 @@ ResizeBackDropCommand::mergeWith(const QUndoCommand *command)
 
 DecloneMultipleNodesCommand::DecloneMultipleNodesCommand(NodeGraph* graph,
                                                          const std::list<boost::shared_ptr<NodeGui> > & nodes,
-                                                         const std::list<NodeBackDrop*> & bds,
                                                          QUndoCommand *parent)
     : QUndoCommand(parent)
       , _nodes()
-      , _bds()
       , _graph(graph)
 {
     for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
@@ -619,13 +560,7 @@ DecloneMultipleNodesCommand::DecloneMultipleNodesCommand(NodeGraph* graph,
         _nodes.push_back(n);
     }
 
-    for (std::list<NodeBackDrop*>::const_iterator it = bds.begin(); it != bds.end(); ++it) {
-        BDToDeclone b;
-        b.bd = *it;
-        b.master = (*it)->getMaster();
-        assert(b.master);
-        _bds.push_back(b);
-    }
+
 }
 
 DecloneMultipleNodesCommand::~DecloneMultipleNodesCommand()
@@ -638,9 +573,7 @@ DecloneMultipleNodesCommand::undo()
     for (std::list<NodeToDeclone>::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
         it->node.lock()->getNode()->getLiveInstance()->slaveAllKnobs( it->master.lock()->getLiveInstance() );
     }
-    for (std::list<BDToDeclone>::iterator it = _bds.begin(); it != _bds.end(); ++it) {
-        it->bd->slaveTo(it->master);
-    }
+
     _graph->getGui()->getApp()->triggerAutoSave();
     setText( QObject::tr("Declone node") );
 }
@@ -651,9 +584,7 @@ DecloneMultipleNodesCommand::redo()
     for (std::list<NodeToDeclone>::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
         it->node.lock()->getNode()->getLiveInstance()->unslaveAllKnobs();
     }
-    for (std::list<BDToDeclone>::iterator it = _bds.begin(); it != _bds.end(); ++it) {
-        it->bd->unslave();
-    }
+
     _graph->getGui()->getApp()->triggerAutoSave();
     setText( QObject::tr("Declone node") );
 }
@@ -1142,17 +1073,15 @@ LoadNodePresetsCommand::redo()
 
 
 RenameNodeUndoRedoCommand::RenameNodeUndoRedoCommand(const boost::shared_ptr<NodeGui> & node,
-                                                     NodeBackDrop* bd,
                                                      const QString& oldName,
                                                      const QString& newName)
 : QUndoCommand()
 , _node(node)
-, _bd(bd)
 , _oldName(oldName)
 , _newName(newName)
 , _firstRedoCalled(false)
 {
-    assert(node || bd);
+    assert(node);
    
 }
 
@@ -1165,11 +1094,7 @@ void
 RenameNodeUndoRedoCommand::undo()
 {
     NodeGuiPtr node = _node.lock();
-    if (node) {
-        node->trySetName(_oldName);
-    } else if (_bd) {
-        _bd->trySetName(_oldName);
-    }
+    node->trySetName(_oldName);
     setText(QObject::tr("Rename node"));
 }
 
@@ -1177,12 +1102,8 @@ void RenameNodeUndoRedoCommand::redo()
 {
     if (_firstRedoCalled) {
         NodeGuiPtr node = _node.lock();
-        
-        if (node) {
-            node->trySetName(_newName);
-        } else if (_bd) {
-            _bd->trySetName(_newName);
-        }
+        node->trySetName(_newName);
+       
     }
     _firstRedoCalled = true;
     setText(QObject::tr("Rename node"));

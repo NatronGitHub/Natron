@@ -25,14 +25,15 @@ CLANG_DIAG_ON(unused-parameter)
 #define NODE_BACKDROP_INTRODUCES_SELECTED 2
 #define NODE_BACKDROP_SERIALIZATION_VERSION NODE_BACKDROP_INTRODUCES_SELECTED
 
-class NodeBackDrop;
+/**
+  This class is completly deprecated do not use it.
+  We keep it for backward compatibility with old projects prior to Natron v1.1
+ **/
 
 class NodeBackDropSerialization
 {
 public:
     NodeBackDropSerialization();
-
-    void initialize(const NodeBackDrop* n);
 
     std::string getFullySpecifiedName() const
     {

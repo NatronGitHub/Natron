@@ -49,6 +49,7 @@ SOURCES += \
     ActionShortcuts.cpp \
     AnimatedCheckBox.cpp \
     AnimationButton.cpp \
+    BackDropGui.cpp \
     Button.cpp \
     ClickableLabel.cpp \
     ComboBox.cpp \
@@ -73,7 +74,6 @@ SOURCES += \
     MessageBox.cpp \
     MenuWithToolTips.cpp \
     MultiInstancePanel.cpp \
-    NodeBackDrop.cpp \
     NodeBackDropSerialization.cpp \
     NodeCreationDialog.cpp \
     NodeGraph.cpp \
@@ -114,6 +114,7 @@ HEADERS += \
     ActionShortcuts.h \
     AnimatedCheckBox.h \
     AnimationButton.h \
+    BackDropGui.h \
     Button.h \
     ClickableLabel.h \
     ComboBox.h \
@@ -140,7 +141,6 @@ HEADERS += \
     MessageBox.h \
     MenuWithToolTips.h \
     MultiInstancePanel.h \
-    NodeBackDrop.h \
     NodeBackDropSerialization.h \
     NodeCreationDialog.h \
     NodeGraph.h \

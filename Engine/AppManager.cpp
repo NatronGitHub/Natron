@@ -50,6 +50,7 @@
 #include "Engine/DiskCacheNode.h"
 #include "Engine/NoOp.h"
 #include "Engine/Project.h"
+#include "Engine/BackDrop.h"
 
 BOOST_CLASS_EXPORT(Natron::FrameParams)
 BOOST_CLASS_EXPORT(Natron::ImageParams)
@@ -925,6 +926,22 @@ AppManager::loadBuiltinNodePlugins(std::map<std::string,std::vector< std::pair<s
                                    std::map<std::string,std::vector< std::pair<std::string,double> > >* /*writersMap*/)
 {
     {
+        boost::shared_ptr<EffectInstance> node( BackDrop::BuildEffect( boost::shared_ptr<Natron::Node>() ) );
+        std::map<std::string,void*> functions;
+        functions.insert( std::make_pair("BuildEffect", (void*)&BackDrop::BuildEffect) );
+        LibraryBinary *binary = new LibraryBinary(functions);
+        assert(binary);
+        
+        std::list<std::string> grouping;
+        node->getPluginGrouping(&grouping);
+        QStringList qgrouping;
+        
+        for (std::list<std::string>::iterator it = grouping.begin(); it != grouping.end(); ++it) {
+            qgrouping.push_back( it->c_str() );
+        }
+        registerPlugin(qgrouping, node->getPluginID().c_str(), node->getPluginLabel().c_str(), "", "", "", false, false, binary, false, node->getMajorVersion(), node->getMinorVersion());
+    }
+    {
         boost::shared_ptr<EffectInstance> node( GroupOutput::BuildEffect( boost::shared_ptr<Natron::Node>() ) );
         std::map<std::string,void*> functions;
         functions.insert( std::make_pair("BuildEffect", (void*)&GroupOutput::BuildEffect) );
@@ -1430,6 +1447,8 @@ AppManager::getPluginBinaryFromOldID(const QString & pluginId,int majorVersion,i
         return _imp->findPluginById(PLUGINID_NATRON_DOT,majorVersion, minorVersion );
     } else if (pluginId == "DiskCache") {
         return _imp->findPluginById(PLUGINID_NATRON_DISKCACHE, majorVersion, minorVersion);
+    } else if (pluginId == "BackDrop") {
+        return _imp->findPluginById(PLUGINID_NATRON_BACKDROP, majorVersion, minorVersion);
     }
     
     ///Try remapping these ids to old ids we had in Natron < 1.0 for backward-compat

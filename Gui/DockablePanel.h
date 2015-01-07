@@ -40,7 +40,6 @@ class Page_Knob;
 class QVBoxLayout;
 class Button;
 class QUndoStack;
-class NodeBackDrop;
 class QUndoCommand;
 class RotoPanel;
 class MultiInstancePanel;
@@ -361,25 +360,6 @@ public Q_SLOTS:
     void onExportPresetsActionTriggered();
 };
 
-class NodeBackDropSettingsPanel : public DockablePanel
-{
-    
-public:
-    
-    NodeBackDropSettingsPanel(NodeBackDrop* backdrop,
-                              Gui* gui,
-                              QVBoxLayout* container,
-                              const QString& name,
-                              QWidget* parent);
-    
-    virtual ~NodeBackDropSettingsPanel();
-    
-private:
-    
-    virtual void centerOnItem() OVERRIDE FINAL;
-    
-    NodeBackDrop* _backdrop;
-};
 
 
 struct ManageUserParamsDialogPrivate;

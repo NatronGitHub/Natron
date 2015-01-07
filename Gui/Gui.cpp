@@ -98,7 +98,6 @@ CLANG_DIAG_ON(unused-parameter)
 #include "Gui/ProjectGuiSerialization.h"
 #include "Gui/ActionShortcuts.h"
 #include "Gui/ShortCutEditor.h"
-#include "Gui/NodeBackDrop.h"
 #include "Gui/MessageBox.h"
 #include "Gui/MultiInstancePanel.h"
 #include "Gui/ScriptEditor.h"
@@ -1555,18 +1554,6 @@ Gui::restoreLayout(bool wipePrevious,
                         ( (*it2)->getSettingPanel()->floatPanel() );
                         panel = (*it2)->getSettingPanel();
                         break;
-                    }
-                }
-
-                if (!panel) {
-                    ///try with backdrops setting panels
-                    const std::list<NodeBackDrop*> backdrops = getNodeGraph()->getActiveBackDrops();
-                    for (std::list<NodeBackDrop*>::const_iterator it2 = backdrops.begin(); it2 != backdrops.end(); ++it2) {
-                        if ( (*it2)->getName_mt_safe() == (*it)->child_asDockablePanel ) {
-                            ( (*it2)->getSettingsPanel()->floatPanel() );
-                            panel = (*it2)->getSettingsPanel();
-                            break;
-                        }
                     }
                 }
                 if (panel) {
@@ -4451,48 +4438,6 @@ Gui::clearAllVisiblePanels()
     }
 	getApp()->redrawAllViewers();
 }
-
-NodeBackDrop*
-Gui::createBackDrop(bool requestedByLoad,
-                    const NodeBackDropSerialization & serialization)
-{
-    
-    std::string toFind;
-    std::string recurseName;
-    if (!serialization.isNull()) {
-        NodeGroup::getNodeNameAndRemainder_RightToLeft(serialization.getFullySpecifiedName(), toFind, recurseName);
-    }
-    
-    if (recurseName.empty()) {
-        //The backdrop is in the root project
-        NodeGraph* graph = _imp->_lastFocusedGraph ? _imp->_lastFocusedGraph : _imp->_nodeGraphArea;
-        return graph->createBackDrop(_imp->_layoutPropertiesBin,requestedByLoad,serialization);
-        
-    } else {
-        ///Get the node group found
-        boost::shared_ptr<Natron::Node> node = getApp()->getProject()->getNodeByFullySpecifiedName(recurseName);
-        
-        ///The node should exist so far
-        assert(node);
-        
-        NodeGroup* isGrp = dynamic_cast<NodeGroup*>(node->getLiveInstance());
-        NodeGraphI* graph_i = isGrp->getNodeGraph();
-        assert(graph_i);
-        NodeGraph* graph = dynamic_cast<NodeGraph*>(graph_i);
-        assert(graph);
-        
-        return graph->createBackDrop(_imp->_layoutPropertiesBin, requestedByLoad, serialization);
-    }
-    
-    
-}
-
-NodeBackDrop*
-Gui::getBackdropByFullySpecifiedName(const std::string& fullySpecifiedName) const
-{
-    return _imp->_nodeGraphArea->getBackdropByFullySpecifiedName(fullySpecifiedName);
-}
-
 void
 Gui::connectViewersToViewerCache()
 {
@@ -4790,18 +4735,6 @@ Gui::toggleAutoHideGraphInputs()
     _imp->_nodeGraphArea->toggleAutoHideInputs(false);
 }
 
-void
-Gui::getNodeBackDrops(std::list<NodeBackDrop*>& backdrops) const
-{
-    if (_imp->_nodeGraphArea) {
-        std::list<NodeBackDrop*> bds = _imp->_nodeGraphArea->getActiveBackDrops();
-        backdrops.insert(backdrops.begin(), bds.begin(), bds.end());
-    }
-    for (std::list<NodeGraph*>::iterator it = _imp->_groups.begin(); it != _imp->_groups.end(); ++it) {
-        std::list<NodeBackDrop*> bds = (*it)->getActiveBackDrops();
-        backdrops.insert(backdrops.begin(), bds.begin(), bds.end());
-    }
-}
 
 void
 Gui::centerAllNodeGraphsWithTimer()

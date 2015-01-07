@@ -46,7 +46,8 @@ CLANG_DIAG_ON(unused-parameter)
 #define PROJECT_GUI_SERIALIZATION_MAJOR_OVERHAUL 7
 #define PROJECT_GUI_SERIALIZATION_NODEGRAPH_ZOOM_TO_POINT 8
 #define PROJECT_GUI_SERIALIZATION_SCRIPT_EDITOR 9
-#define PROJECT_GUI_SERIALIZATION_VERSION PROJECT_GUI_SERIALIZATION_SCRIPT_EDITOR
+#define PROJECT_GUI_SERIALIZATION_MERGE_BACKDROP 10
+#define PROJECT_GUI_SERIALIZATION_VERSION PROJECT_GUI_SERIALIZATION_MERGE_BACKDROP
 
 #define PANE_SERIALIZATION_INTRODUCES_CURRENT_TAB 2
 #define PANE_SERIALIZATION_INTRODUCES_SIZE 3
@@ -528,9 +529,9 @@ class ProjectGuiSerialization
     ///Active histograms
     std::list<std::string> _histograms;
 
-    ///Active backdrops
+    ///Active backdrops (kept here for bw compatibility with Natron < 1.1
     std::list<NodeBackDropSerialization> _backdrops;
-
+    
     ///All properties panels opened
     std::list<std::string> _openedPanelsOrdered;
 
@@ -550,7 +551,6 @@ class ProjectGuiSerialization
         ar & boost::serialization::make_nvp("Gui_Layout",_layoutSerialization);
         ar & boost::serialization::make_nvp("ViewersData",_viewersData);
         ar & boost::serialization::make_nvp("Histograms",_histograms);
-        ar & boost::serialization::make_nvp("Backdrops",_backdrops);
         ar & boost::serialization::make_nvp("OpenedPanels",_openedPanelsOrdered);
         ar & boost::serialization::make_nvp("ScriptEditorInput",_scriptEditorInput);
     }
@@ -577,7 +577,7 @@ class ProjectGuiSerialization
             ar & boost::serialization::make_nvp("PreviewsTurnedOffGlobaly",tmp);
         }
         ar & boost::serialization::make_nvp("Histograms",_histograms);
-        if (version >= PROJECT_GUI_INTRODUCES_BACKDROPS) {
+        if (version >= PROJECT_GUI_INTRODUCES_BACKDROPS && version < PROJECT_GUI_SERIALIZATION_MERGE_BACKDROP) {
             ar & boost::serialization::make_nvp("Backdrops",_backdrops);
         }
         if (version >= PROJECT_GUI_INTRODUCES_PANELS) {
