@@ -986,7 +986,7 @@ Knob<T>::setValueAtTime(int time,
 {
     KeyFrame k;
 
-    (void)setValueAtTime(time,v,dimension,Natron::eValueChangedReasonNatronInternalEdited,&k);
+    ignore_result(setValueAtTime(time,v,dimension,Natron::eValueChangedReasonNatronInternalEdited,&k));
 }
 
 template<typename T>
@@ -995,7 +995,7 @@ Knob<T>::setValueAtTimeFromPlugin(int time,const T & v,int dimension)
 {
     KeyFrame k;
     
-    (void)setValueAtTime(time,v,dimension,Natron::eValueChangedReasonPluginEdited,&k);
+    ignore_result(setValueAtTime(time,v,dimension,Natron::eValueChangedReasonPluginEdited,&k));
 
 }
 
@@ -1309,7 +1309,7 @@ Knob<T>::resetToDefaultValue(int dimension)
         QReadLocker l(&_valueMutex);
         defaultV = _defaultValues[dimension];
     }
-    (void)setValue(defaultV, dimension,Natron::eValueChangedReasonRestoreDefault,NULL);
+    ignore_result(setValue(defaultV, dimension,Natron::eValueChangedReasonRestoreDefault,NULL));
     if (_signalSlotHandler) {
         _signalSlotHandler->s_valueChanged(dimension,Natron::eValueChangedReasonRestoreDefault);
     }
@@ -1356,7 +1356,7 @@ Knob<double>::resetToDefaultValue(int dimension)
         assert(holder);
         isDouble->denormalize(dimension, holder->getThreadLocalRenderTime(), &def);
     }
-    (void)setValue(def, dimension,Natron::eValueChangedReasonRestoreDefault,NULL);
+    ignore_result(setValue(def, dimension,Natron::eValueChangedReasonRestoreDefault,NULL));
     if (_signalSlotHandler) {
         _signalSlotHandler->s_valueChanged(dimension,Natron::eValueChangedReasonRestoreDefault);
     }

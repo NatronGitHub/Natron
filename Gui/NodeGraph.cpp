@@ -890,7 +890,7 @@ NodeGraph::moveNodesForIdealPosition(boost::shared_ptr<NodeGui> node,bool autoCo
                         bool ok = proj->disconnectNodes(selectedNodeInternal.get(), it->first);
                         assert(ok);
                         
-                        (void)proj->connectNodes(it->second, createdNodeInternal, it->first);
+                        ignore_result(proj->connectNodes(it->second, createdNodeInternal, it->first));
                         //assert(ok); Might not be ok if the disconnectNodes() action above was queued
                     }
                 }

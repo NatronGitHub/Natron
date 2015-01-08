@@ -846,12 +846,12 @@ OutputSchedulerThread::stopRender()
         
         RenderScale scaleOne;
         scaleOne.x = scaleOne.y = 1.;
-        (void)_imp->outputEffect->endSequenceRender_public(firstFrame, lastFrame,
+        ignore_result(_imp->outputEffect->endSequenceRender_public(firstFrame, lastFrame,
                                                            1,
                                                            !appPTR->isBackground(),
                                                            scaleOne, true,
                                                            !appPTR->isBackground(),
-                                                           _imp->outputEffect->getApp()->getMainView());
+                                                           _imp->outputEffect->getApp()->getMainView()));
            
         
     }
@@ -1185,7 +1185,7 @@ OutputSchedulerThread::notifyFrameRendered(int frame,
             ///Notify the scheduler rendering is finished by append a fake frame to the buffer
             {
                 QMutexLocker bufLocker (&_imp->bufMutex);
-                (void)_imp->appendBufferedFrame(0, 0, boost::shared_ptr<BufferableObject>());
+                ignore_result(_imp->appendBufferedFrame(0, 0, boost::shared_ptr<BufferableObject>()));
                 _imp->bufCondition.wakeOne();
             }
         } else {
@@ -1222,7 +1222,7 @@ OutputSchedulerThread::appendToBuffer_internal(double time,int view,const boost:
         ///Called by the scheduler thread when an image is rendered
         
         QMutexLocker l(&_imp->bufMutex);
-        (void)_imp->appendBufferedFrame(time, view, frame);
+        ignore_result(_imp->appendBufferedFrame(time, view, frame));
         if (wakeThread) {
             ///Wake up the scheduler thread that an image is available if it is asleep so it can process it.
             _imp->bufCondition.wakeOne();
@@ -1891,7 +1891,7 @@ DefaultScheduler::processFrame(const BufferedFrames& frames)
     bool canOnlyHandleOneView = sequentiallity == Natron::eSequentialPreferenceOnlySequential || sequentiallity == Natron::eSequentialPreferencePreferSequential;
     
     for (BufferedFrames::const_iterator it = frames.begin(); it != frames.end(); ++it) {
-        (void)_effect->getRegionOfDefinition_public(hash,it->time, scale, it->view, &rod, &isProjectFormat);
+        ignore_result(_effect->getRegionOfDefinition_public(hash,it->time, scale, it->view, &rod, &isProjectFormat));
         rod.toPixelEnclosing(0, par, &roi);
         
         Node::ParallelRenderArgsSetter frameRenderARgs(_effect->getNode().get(),
@@ -1921,7 +1921,7 @@ DefaultScheduler::processFrame(const BufferedFrames& frames)
                                                    false,
                                                    inputImages);
         try {
-            (void)_effect->renderRoI(args);
+            ignore_result(_effect->renderRoI(args));
         } catch (const std::exception& e) {
             notifyRenderFailure(e.what());
         }
