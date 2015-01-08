@@ -1003,7 +1003,7 @@ NodeGraph::moveNodesForIdealPosition(boost::shared_ptr<NodeGui> node,bool autoCo
     }
     position = node->mapFromScene(position);
     position = node->mapToParent(position);
-    node->setPos( position.x(), position.y() );
+    node->setPosition( position.x(), position.y() );
 } // moveNodesForIdealPosition
 
 void
@@ -1524,28 +1524,27 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
         {
             bool optionalInputsAutoHidden = areOptionalInputsAutoHidden();
             QMutexLocker l(&_imp->_nodesMutex);
-            for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
-                boost::shared_ptr<NodeGui> & n = *it;
-                QPointF evpt = n->mapFromScene(newPos);
+            for (NodeGuiList::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
+                QPointF evpt = (*it)->mapFromScene(newPos);
                 
-                QRectF bbox = n->mapToScene(n->boundingRect()).boundingRect();
-                if (n->isActive() && bbox.intersects(sceneR)) {
-                    if (n->contains(evpt)) {
-                        selected = n;
+                QRectF bbox = (*it)->mapToScene((*it)->boundingRect()).boundingRect();
+                if ((*it)->isActive() && bbox.intersects(sceneR)) {
+                    if ((*it)->contains(evpt)) {
+                        selected = (*it);
                         if (optionalInputsAutoHidden) {
-                            n->setOptionalInputsVisible(true);
+                            (*it)->setOptionalInputsVisible(true);
                         } else {
                             break;
                         }
                     } else {
-                        Edge* edge = n->hasEdgeNearbyPoint(newPos);
+                        Edge* edge = (*it)->hasEdgeNearbyPoint(newPos);
                         if (edge) {
                             selectedEdge = edge;
                             if (!optionalInputsAutoHidden) {
                                 break;
                             }
-                        } else if (optionalInputsAutoHidden && !n->getIsSelected()) {
-                            n->setOptionalInputsVisible(false);
+                        } else if (optionalInputsAutoHidden && !(*it)->getIsSelected()) {
+                            (*it)->setOptionalInputsVisible(false);
                         }
                     }
                 }

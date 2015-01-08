@@ -2555,10 +2555,11 @@ Node::deactivate(const std::list< Node* > & outputsToDisconnect,
     
     
     std::vector<boost::shared_ptr<Node> > inputsQueueCopy;
-    
-    for (U32 i = 0; i < _imp->inputs.size(); ++i) {
-        if (_imp->inputs[i]) {
-            _imp->inputs[i]->disconnectOutput(this);
+    if (hideGui || !_imp->isMultiInstance) {
+        for (U32 i = 0; i < _imp->inputs.size(); ++i) {
+            if (_imp->inputs[i]) {
+                _imp->inputs[i]->disconnectOutput(this);
+            }
         }
     }
     

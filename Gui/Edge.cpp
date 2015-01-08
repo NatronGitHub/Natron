@@ -65,8 +65,8 @@ Edge::Edge(int inputNb_,
     }
     setAcceptedMouseButtons(Qt::LeftButton);
     initLine();
-    setFlag(QGraphicsItem::ItemStacksBehindParent);
-    setZValue(4);
+    //setFlag(QGraphicsItem::ItemStacksBehindParent);
+    setZValue(15);
     Natron::EffectInstance* effect = dest_ ? dest_->getNode()->getLiveInstance() : 0;
     if (effect) {
         
@@ -115,8 +115,8 @@ Edge::Edge(const boost::shared_ptr<NodeGui> & src,
     setPen( QPen(Qt::black, 2, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin) );
     setAcceptedMouseButtons(Qt::LeftButton);
     initLine();
-    setFlag(QGraphicsItem::ItemStacksBehindParent);
-    setZValue(4);
+    //setFlag(QGraphicsItem::ItemStacksBehindParent);
+    setZValue(15);
 }
 
 Edge::~Edge()

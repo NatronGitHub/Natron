@@ -370,7 +370,7 @@ NodeGui::createGui()
     bitDepthGrad.push_back( qMakePair( 0., QColor(Qt::white) ) );
     bitDepthGrad.push_back( qMakePair( 0.3, QColor(Qt::yellow) ) );
     bitDepthGrad.push_back( qMakePair( 1., QColor(243,137,0) ) );
-    _bitDepthWarning = new NodeGuiIndicator("C",bbox.topLeft(),NATRON_ELLIPSE_WARN_DIAMETER,NATRON_ELLIPSE_WARN_DIAMETER,
+    _bitDepthWarning = new NodeGuiIndicator(depth + 2, "C",bbox.topLeft(),NATRON_ELLIPSE_WARN_DIAMETER,NATRON_ELLIPSE_WARN_DIAMETER,
                                             bitDepthGrad,QColor(0,0,0,255),this);
     _bitDepthWarning->setActive(false);
 
@@ -379,7 +379,7 @@ NodeGui::createGui()
     exprGrad.push_back( qMakePair( 0., QColor(Qt::white) ) );
     exprGrad.push_back( qMakePair( 0.3, QColor(Qt::green) ) );
     exprGrad.push_back( qMakePair( 1., QColor(69,96,63) ) );
-    _expressionIndicator = new NodeGuiIndicator("E",bbox.topRight(),NATRON_ELLIPSE_WARN_DIAMETER,NATRON_ELLIPSE_WARN_DIAMETER,
+    _expressionIndicator = new NodeGuiIndicator(depth + 2,"E",bbox.topRight(),NATRON_ELLIPSE_WARN_DIAMETER,NATRON_ELLIPSE_WARN_DIAMETER,
                                                 exprGrad,QColor(255,255,255),this);
     _expressionIndicator->setToolTip( tr("This node has one or several expression(s) involving values of parameters of other "
                                          "nodes in the project. Hover the mouse on the green connections to see what are the effective links.") );
@@ -610,9 +610,9 @@ NodeGui::refreshPositionEnd(double x,
     setPos(x, y);
     if (_graph) {
         QRectF bbox = mapRectToScene(boundingRect());
-        const std::list<boost::shared_ptr<NodeGui> > & allNodes = _graph->getAllActiveNodes();
+        const NodeGuiList & allNodes = _graph->getAllActiveNodes();
 
-        for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = allNodes.begin(); it != allNodes.end(); ++it) {
+        for (NodeGuiList::const_iterator it = allNodes.begin(); it != allNodes.end(); ++it) {
             if ((*it)->isVisible() && (it->get() != this) && (*it)->intersects(bbox)) {
                 setAboveItem( it->get() );
             }
@@ -763,7 +763,7 @@ NodeGui::refreshPosition(double x,
 void
 NodeGui::setAboveItem(QGraphicsItem* item)
 {
-    if (!isVisible() || dynamic_cast<BackDropGui*>(this)) {
+    if (!isVisible() || dynamic_cast<BackDropGui*>(this) || dynamic_cast<BackDropGui*>(item)) {
         return;
     }
     item->stackBefore(this);
@@ -957,7 +957,7 @@ NodeGui::initializeInputs()
     
     int emptyInputsCount = 0;
     for (U32 i = 0; i < inputs.size(); ++i) {
-        Edge* edge = new Edge( i,0.,thisShared,parentItem() );
+        Edge* edge = new Edge( i,0.,thisShared,parentItem());
         if ( node->getLiveInstance()->isInputRotoBrush(i) || !isVisible()) {
             edge->setActive(false);
             edge->hide();
@@ -985,13 +985,14 @@ NodeGui::initializeInputs()
         ///if the node is an inspector and it has only 1 empty input, display it aside
         if ( (emptyInputsCount == 1) && (node->getMaxInputCount() > 1) ) {
             for (InputEdges::iterator it = _inputEdges.begin(); it != _inputEdges.end(); ++it) {
-                if ( (*it) && !(*it)->hasSource() ) {
-                    (*it)->setAngle(M_PI);
+                if ( (*it) ) {
+                    if (!(*it)->hasSource()) {
+                        (*it)->setAngle(M_PI);
+                    }
                     (*it)->initLine();
-
-                    return;
                 }
             }
+            return;
         }
     }
 
@@ -2065,7 +2066,8 @@ struct NodeGuiIndicatorPrivate
     QGraphicsTextItem* textItem;
     QGradientStops gradStops;
 
-    NodeGuiIndicatorPrivate(const QString & text,
+    NodeGuiIndicatorPrivate(int depth,
+                            const QString & text,
                             const QPointF & topLeft,
                             int width,
                             int height,
@@ -2081,7 +2083,7 @@ struct NodeGuiIndicatorPrivate
         QPoint ellipsePos(topLeft.x() + (width / 2) - ellipseRad, -ellipseRad);
         QRectF ellipseRect(ellipsePos.x(),ellipsePos.y(),width,height);
         ellipse->setRect(ellipseRect);
-        ellipse->setZValue(2);
+        ellipse->setZValue(depth);
 
         QPointF ellipseCenter = ellipseRect.center();
         QRadialGradient radialGrad(ellipseCenter,ellipseRad);
@@ -2095,7 +2097,7 @@ struct NodeGuiIndicatorPrivate
         textItem->setPos(topLeft.x()  - 2 * width / 3, topLeft.y() - 2 * fm.height() / 3);
         textItem->setFont(font);
         textItem->setDefaultTextColor(textColor);
-        textItem->setZValue(2);
+        textItem->setZValue(depth);
 #if QT_VERSION < 0x050000
         textItem->scale(0.8, 0.8);
 #else
@@ -2104,14 +2106,15 @@ struct NodeGuiIndicatorPrivate
     }
 };
 
-NodeGuiIndicator::NodeGuiIndicator(const QString & text,
+NodeGuiIndicator::NodeGuiIndicator(int depth,
+                                   const QString & text,
                                    const QPointF & topLeft,
                                    int width,
                                    int height,
                                    const QGradientStops & gradient,
                                    const QColor & textColor,
                                    QGraphicsItem* parent)
-    : _imp( new NodeGuiIndicatorPrivate(text,topLeft,width,height,gradient,textColor,parent) )
+    : _imp( new NodeGuiIndicatorPrivate(depth,text,topLeft,width,height,gradient,textColor,parent) )
 {
 }
 

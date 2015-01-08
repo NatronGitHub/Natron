@@ -62,7 +62,8 @@ class NodeGuiIndicator
 {
 public:
 
-    NodeGuiIndicator(const QString & text,
+    NodeGuiIndicator(int depth,
+                     const QString & text,
                      const QPointF & topLeft,
                      int width,
                      int height,
@@ -325,7 +326,7 @@ public:
 
 protected:
     
-    virtual int getBaseDepth() const { return 0; }
+    virtual int getBaseDepth() const { return 20; }
     
     virtual bool canResize() { return true; }
     

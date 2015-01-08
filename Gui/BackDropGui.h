@@ -35,7 +35,7 @@ public Q_SLOTS:
         
 private:
     
-    virtual int getBaseDepth() const OVERRIDE FINAL { return -10; }
+    virtual int getBaseDepth() const OVERRIDE FINAL { return 10; }
     
     virtual void createGui() OVERRIDE FINAL;
     
