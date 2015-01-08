@@ -1,5 +1,5 @@
 #ifndef NATRON_GITVERSION_H_
 #define NATRON_GITVERSION_H_
 #define GIT_BRANCH "python"
-#define GIT_COMMIT "53955646e7d2b6d71ca0b051a6f39017b8dbb62c"
+#define GIT_COMMIT "5ed41e8876e45e09344b601eb84c742fa7f0f4bf"
 #endif

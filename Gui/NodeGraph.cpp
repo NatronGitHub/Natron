@@ -353,7 +353,9 @@ struct NodeGraphPrivate
      **/
     boost::shared_ptr<NodeGui> pasteNode(const NodeSerialization & internalSerialization,
                                          const NodeGuiSerialization & guiSerialization,
-                                         const QPointF & offset);
+                                         const QPointF & offset,
+                                         const boost::shared_ptr<NodeCollection>& group,
+                                         bool clone);
 
 
     /**
@@ -3225,30 +3227,11 @@ NodeGraphPrivate::copyNodesInternal(NodeClipBoard & clipboard)
     }
     
     for (NodeGuiList::iterator it = nodesToCopy.begin(); it != nodesToCopy.end(); ++it) {
-        {
-            boost::shared_ptr<NodeSerialization> ns( new NodeSerialization( (*it)->getNode(), true ) );
-            boost::shared_ptr<NodeGuiSerialization> nGuiS(new NodeGuiSerialization);
-            (*it)->serialize( nGuiS.get() );
-            clipboard.nodes.push_back(ns);
-            clipboard.nodesUI.push_back(nGuiS);
-        }
-        NodeGroup* isGrp = dynamic_cast<NodeGroup*>((*it)->getNode()->getLiveInstance());
-        if (isGrp) {
-            NodeList nodes = isGrp->getNodes();
-            for (NodeList::iterator it2 = nodes.begin(); it2 != nodes.end(); ++it2) {
-                boost::shared_ptr<NodeGuiI> gui_i = (*it2)->getNodeGui();
-                assert(gui_i);
-                NodeGuiPtr gui = boost::dynamic_pointer_cast<NodeGui>(gui_i);
-                assert(gui);
-                
-                boost::shared_ptr<NodeSerialization> ns( new NodeSerialization(*it2, true ) );
-                boost::shared_ptr<NodeGuiSerialization> nGuiS(new NodeGuiSerialization);
-                gui->serialize( nGuiS.get() );
-                clipboard.nodes.push_back(ns);
-                clipboard.nodesUI.push_back(nGuiS);
-
-            }
-        }
+        boost::shared_ptr<NodeSerialization> ns( new NodeSerialization( (*it)->getNode(), true ) );
+        boost::shared_ptr<NodeGuiSerialization> nGuiS(new NodeGuiSerialization);
+        (*it)->serialize( nGuiS.get() );
+        clipboard.nodes.push_back(ns);
+        clipboard.nodesUI.push_back(nGuiS);
     }
 }
 
@@ -3289,7 +3272,7 @@ NodeGraphPrivate::pasteNodesInternal(const NodeClipBoard & clipboard,const QPoin
         std::list<boost::shared_ptr<NodeSerialization> >::const_iterator itOther = clipboard.nodes.begin();
         for (std::list<boost::shared_ptr<NodeGuiSerialization> >::const_iterator it = clipboard.nodesUI.begin();
              it != clipboard.nodesUI.end(); ++it,++itOther) {
-            boost::shared_ptr<NodeGui> node = pasteNode( **itOther,**it,offset);
+            boost::shared_ptr<NodeGui> node = pasteNode( **itOther,**it,offset,group.lock(), false);
             newNodes.push_back(node);
         }
         assert( clipboard.nodes.size() == newNodes.size() );
@@ -3305,35 +3288,42 @@ NodeGraphPrivate::pasteNodesInternal(const NodeClipBoard & clipboard,const QPoin
 boost::shared_ptr<NodeGui>
 NodeGraphPrivate::pasteNode(const NodeSerialization & internalSerialization,
                             const NodeGuiSerialization & guiSerialization,
-                            const QPointF & offset)
+                            const QPointF & offset,
+                            const boost::shared_ptr<NodeCollection>& grp,
+                            bool clone)
 {
     boost::shared_ptr<Natron::Node> n = _gui->getApp()->loadNode( LoadNodeArgs(internalSerialization.getPluginID().c_str(),
                                                                                "",
                                                                                internalSerialization.getPluginMajorVersion(),
                                                                                internalSerialization.getPluginMinorVersion(),&internalSerialization,false,
-                                                                               group.lock()) );
-
+                                                                               grp) );
+    
     assert(n);
     boost::shared_ptr<NodeGuiI> gui_i = n->getNodeGui();
     boost::shared_ptr<NodeGui> gui = boost::dynamic_pointer_cast<NodeGui>(gui_i);
     assert(gui);
-
-    int no = 1;
     
-    std::stringstream ss;
-    ss << internalSerialization.getPluginLabel();
-    ss << '_';
-    ss << no;
-    while ( group.lock()->checkIfNodeNameExists( ss.str(),n.get() ) ) {
-        ++no;
-        ss.str( std::string() );
-        ss.clear();
+    std::string name;
+    if (grp != group.lock()) {
+        name = n->getName();
+    } else {
+        int no = 1;
+        std::stringstream ss;
         ss << internalSerialization.getPluginLabel();
         ss << '_';
         ss << no;
+        name = ss.str();
+        while ( grp->checkIfNodeNameExists( name,n.get() ) ) {
+            ++no;
+            ss.str( std::string() );
+            ss.clear();
+            ss << internalSerialization.getPluginLabel();
+            ss << '_';
+            ss << no;
+            name = ss.str();
+        }
     }
-
-    n->setName( ss.str().c_str() );
+    n->setName( name.c_str() );
 
     const std::string & masterNodeName = internalSerialization.getMasterNodeName();
     if ( masterNodeName.empty() ) {
@@ -3356,7 +3346,38 @@ NodeGraphPrivate::pasteNode(const NodeSerialization & internalSerialization,
     QPointF newPos = gui->pos() + offset;
     gui->setPosition( newPos.x(), newPos.y() );
     gui->forceComputePreview( _gui->getApp()->getProject()->currentFrame() );
-
+    
+    if (clone) {
+        DotGui* isDot = dynamic_cast<DotGui*>( gui.get() );
+        ///Dots cannot be cloned, just copy them
+        if (!isDot) {
+            n->getLiveInstance()->slaveAllKnobs( internalSerialization.getNode()->getLiveInstance() );
+        }
+    }
+    
+    ///Recurse if this is a group
+    NodePtr serializedNode = internalSerialization.getNode();
+    assert(serializedNode);
+    boost::shared_ptr<NodeGroup> isGrp =
+    boost::dynamic_pointer_cast<NodeGroup>(n->getLiveInstance()->shared_from_this());
+    if (isGrp) {
+        const std::list<boost::shared_ptr<NodeSerialization> >& nodes = internalSerialization.getNodesCollection();
+        std::list<NodeGuiPtr> newNodes;
+        for (std::list<boost::shared_ptr<NodeSerialization> >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+            NodePtr child = (*it)->getNode();
+            assert(child);
+            boost::shared_ptr<NodeGuiI> child_gui_i = child->getNodeGui();
+            NodeGui* child_gui = dynamic_cast<NodeGui*>(child_gui_i.get());
+            NodeGuiSerialization gS;
+            gS.initialize(child_gui);
+            NodeGuiPtr newChild = pasteNode(**it, gS, QPointF(0,0),isGrp,clone);
+            if (newChild) {
+                newNodes.push_back(newChild);
+            }
+        }
+        restoreConnections(nodes, newNodes);
+    }
+    
     return gui;
 }
 
@@ -3481,13 +3502,9 @@ NodeGraph::cloneSelectedNodes()
         boost::shared_ptr<NodeSerialization>  internalSerialization( new NodeSerialization( (*it)->getNode() ) );
         NodeGuiSerialization guiSerialization;
         (*it)->serialize(&guiSerialization);
-        boost::shared_ptr<NodeGui> clone = _imp->pasteNode( *internalSerialization, guiSerialization, offset );
-        DotGui* isDot = dynamic_cast<DotGui*>( clone.get() );
-        ///Dots cannot be cloned, just copy them
-        if (!isDot) {
-            clone->getNode()->getLiveInstance()->slaveAllKnobs( (*it)->getNode()->getLiveInstance() );
-        }
-
+        boost::shared_ptr<NodeGui> clone = _imp->pasteNode( *internalSerialization, guiSerialization, offset,
+                                                           _imp->group.lock(),true );
+      
         newNodes.push_back(clone);
         serializations.push_back(internalSerialization);
     }
@@ -4250,6 +4267,8 @@ NodeGraph::onGroupNameChanged(const QString& name)
     TabWidget* parent = dynamic_cast<TabWidget*>(parentWidget() );
     if (parent) {
         parent->setTabName(this, name);
+    } else {
+        setObjectName(name);
     }
     getGui()->registerTab(this);
 }
