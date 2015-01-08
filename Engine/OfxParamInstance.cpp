@@ -1420,7 +1420,7 @@ OfxDouble2DInstance::set(double x1,
     bool doEditEnd = false;
 
     if ( _node->isDoingInteractAction() ) {
-        (void)_node->effectInstance()->editBegin( getName() );
+        ignore_result(_node->effectInstance()->editBegin( getName() ));
         doEditEnd = true;
     }
     _knob->blockEvaluation();
@@ -1442,7 +1442,7 @@ OfxDouble2DInstance::set(OfxTime time,
     bool doEditEnd = false;
 
     if ( _node->isDoingInteractAction() ) {
-        (void)_node->effectInstance()->editBegin( getName() );
+        ignore_result(_node->effectInstance()->editBegin( getName() ));
         doEditEnd = true;
     }
     _knob->blockEvaluation();
@@ -1664,7 +1664,7 @@ OfxInteger2DInstance::set(int x1,
     bool doEditEnd = false;
 
     if ( _node->isDoingInteractAction() ) {
-        (void)_node->effectInstance()->editBegin( getName() );
+        ignore_result(_node->effectInstance()->editBegin( getName() ));
         doEditEnd = true;
     }
 
@@ -1674,7 +1674,7 @@ OfxInteger2DInstance::set(int x1,
     _knob->setValueFromPlugin(x2,1);
 
     if (doEditEnd) {
-        (void)_node->effectInstance()->editEnd();
+        ignore_result(_node->effectInstance()->editEnd());
     }
 
     return kOfxStatOK;
@@ -1688,7 +1688,7 @@ OfxInteger2DInstance::set(OfxTime time,
     bool doEditEnd = false;
 
     if ( _node->isDoingInteractAction() ) {
-        (void)_node->effectInstance()->editBegin( getName() );
+        ignore_result(_node->effectInstance()->editBegin( getName() ));
         doEditEnd = true;
     }
     _knob->blockEvaluation();
@@ -1697,7 +1697,7 @@ OfxInteger2DInstance::set(OfxTime time,
     _knob->setValueAtTimeFromPlugin(time,x2,1);
 
     if (doEditEnd) {
-        (void)_node->effectInstance()->editEnd();
+        ignore_result(_node->effectInstance()->editEnd());
     }
 
     return kOfxStatOK;
@@ -1890,7 +1890,7 @@ OfxDouble3DInstance::set(double x1,
     bool doEditEnd = false;
 
     if ( _node->isDoingInteractAction() ) {
-        (void)_node->effectInstance()->editBegin( getName() );
+        ignore_result(_node->effectInstance()->editBegin( getName() ));
         doEditEnd = true;
     }
     _knob->blockEvaluation();
@@ -1899,7 +1899,7 @@ OfxDouble3DInstance::set(double x1,
     _knob->unblockEvaluation();
     _knob->setValueFromPlugin(x3,2);
     if (doEditEnd) {
-        (void)_node->effectInstance()->editEnd();
+        ignore_result(_node->effectInstance()->editEnd());
     }
 
     return kOfxStatOK;
@@ -1914,7 +1914,7 @@ OfxDouble3DInstance::set(OfxTime time,
     bool doEditEnd = false;
 
     if ( _node->isDoingInteractAction() ) {
-        (void)_node->effectInstance()->editBegin( getName() );
+        ignore_result(_node->effectInstance()->editBegin( getName() ));
         doEditEnd = true;
     }
     _knob->blockEvaluation();
@@ -1923,7 +1923,7 @@ OfxDouble3DInstance::set(OfxTime time,
     _knob->unblockEvaluation();
     _knob->setValueAtTimeFromPlugin(time,x3,2);
     if (doEditEnd) {
-        (void)_node->effectInstance()->editEnd();
+        ignore_result(_node->effectInstance()->editEnd());
     }
 
     return kOfxStatOK;
@@ -2153,7 +2153,7 @@ OfxInteger3DInstance::set(int x1,
     bool doEditEnd = false;
 
     if ( _node->isDoingInteractAction() ) {
-        (void)_node->effectInstance()->editBegin( getName() );
+        ignore_result(_node->effectInstance()->editBegin( getName() ));
         doEditEnd = true;
     }
     _knob->blockEvaluation();
@@ -2162,7 +2162,7 @@ OfxInteger3DInstance::set(int x1,
     _knob->unblockEvaluation();
     _knob->setValueFromPlugin(x3,2);
     if (doEditEnd) {
-        (void)_node->effectInstance()->editEnd();
+        ignore_result(_node->effectInstance()->editEnd());
     }
 
     return kOfxStatOK;
@@ -2177,7 +2177,7 @@ OfxInteger3DInstance::set(OfxTime time,
     bool doEditEnd = false;
 
     if ( _node->isDoingInteractAction() ) {
-        (void)_node->effectInstance()->editBegin( getName() );
+        ignore_result(_node->effectInstance()->editBegin( getName() ));
         doEditEnd = true;
     }
     _knob->blockEvaluation();
@@ -2186,7 +2186,7 @@ OfxInteger3DInstance::set(OfxTime time,
     _knob->unblockEvaluation();
     _knob->setValueAtTimeFromPlugin(time,x3,2);
     if (doEditEnd) {
-        (void)_node->effectInstance()->editEnd();
+        ignore_result(_node->effectInstance()->editEnd());
     }
 
     return kOfxStatOK;

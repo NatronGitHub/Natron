@@ -541,7 +541,7 @@ boost::shared_ptr<Natron::Node> MultiInstancePanel::createNewInstance(bool useUn
 void
 MultiInstancePanel::onAddButtonClicked()
 {
-    (void)addInstanceInternal(true);
+    ignore_result(addInstanceInternal(true));
 }
 
 boost::shared_ptr<Natron::Node> MultiInstancePanel::addInstanceInternal(bool useUndoRedoStack)

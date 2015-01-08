@@ -2640,7 +2640,7 @@ Gui::saveAndIncrVersion()
 void
 Gui::createNewViewer()
 {
-    (void)_imp->_appInstance->createNode( CreateNodeArgs(PLUGINID_NATRON_VIEWER,
+    ignore_result(_imp->_appInstance->createNode( CreateNodeArgs(PLUGINID_NATRON_VIEWER,
                                                          "",
                                                          -1,-1,
                                                          -1,
@@ -2649,7 +2649,7 @@ Gui::createNewViewer()
                                                          true,
                                                          true,
                                                          QString(),
-                                                         CreateNodeArgs::DefaultValuesList()) );
+                                                         CreateNodeArgs::DefaultValuesList()) ));
 }
 
 boost::shared_ptr<Natron::Node>
