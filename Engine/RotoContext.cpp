@@ -2052,7 +2052,8 @@ Bezier::~Bezier()
 
 boost::shared_ptr<BezierCP>
 Bezier::addControlPoint(double x,
-                        double y)
+                        double y,
+                        int time)
 {
     
     ///only called on the main-thread
@@ -2061,6 +2062,19 @@ Bezier::addControlPoint(double x,
     if (isCurveFinished()) {
         return boost::shared_ptr<BezierCP>();
     }
+    
+    int keyframeTime;
+    ///if the curve is empty make a new keyframe at the current timeline's time
+    ///otherwise re-use the time at which the keyframe was set on the first control point
+    if ( _imp->points.empty() ) {
+        keyframeTime = time;
+    } else {
+        keyframeTime = _imp->points.front()->getKeyframeTime(0);
+        if (keyframeTime == INT_MAX) {
+            keyframeTime = getContext()->getTimelineCurrentTime();
+        }
+    }
+    
     boost::shared_ptr<BezierCP> p;
     boost::shared_ptr<Bezier> this_shared = boost::dynamic_pointer_cast<Bezier>(shared_from_this());
     assert(this_shared);
@@ -2069,17 +2083,7 @@ Bezier::addControlPoint(double x,
         QMutexLocker l(&itemMutex);
         assert(!_imp->finished);
 
-        int keyframeTime;
-        ///if the curve is empty make a new keyframe at the current timeline's time
-        ///otherwise re-use the time at which the keyframe was set on the first control point
-        if ( _imp->points.empty() ) {
-            keyframeTime = getContext()->getTimelineCurrentTime();
-        } else {
-            keyframeTime = _imp->points.front()->getKeyframeTime(0);
-            if (keyframeTime == INT_MAX) {
-                keyframeTime = getContext()->getTimelineCurrentTime();
-            }
-        }
+    
         p.reset( new BezierCP(this_shared) );
         if (autoKeying) {
             p->setPositionAtTime(keyframeTime, x, y);
@@ -4008,7 +4012,8 @@ RotoContext::getTimelineCurrentTime() const
 boost::shared_ptr<Bezier>
 RotoContext::makeBezier(double x,
                         double y,
-                        const std::string & baseName)
+                        const std::string & baseName,
+                        int time)
 {
     ///MT-safe: only called on the main-thread
     assert( QThread::currentThread() == qApp->thread() );
@@ -4059,24 +4064,24 @@ RotoContext::makeBezier(double x,
     if ( isAutoKeyingEnabled() ) {
         curve->setKeyframe( getTimelineCurrentTime() );
     }
-    curve->addControlPoint(x, y);
+    curve->addControlPoint(x, y, time);
 
     return curve;
 } // makeBezier
 
 boost::shared_ptr<Bezier>
-RotoContext::makeEllipse(double x,double y,double diameter,bool fromCenter)
+RotoContext::makeEllipse(double x,double y,double diameter,bool fromCenter, int time)
 {
     double half = diameter / 2.;
-    boost::shared_ptr<Bezier> curve = makeBezier(x , fromCenter ? y - half : y ,kRotoEllipseBaseName);
+    boost::shared_ptr<Bezier> curve = makeBezier(x , fromCenter ? y - half : y ,kRotoEllipseBaseName, time);
     if (fromCenter) {
-        curve->addControlPoint(x + half,y);
-        curve->addControlPoint(x,y + half);
-        curve->addControlPoint(x - half,y);
+        curve->addControlPoint(x + half,y, time);
+        curve->addControlPoint(x,y + half, time);
+        curve->addControlPoint(x - half,y, time);
     } else {
-        curve->addControlPoint(x + diameter,y - diameter);
-        curve->addControlPoint(x,y - diameter);
-        curve->addControlPoint(x - diameter,y - diameter);
+        curve->addControlPoint(x + diameter,y - diameter, time);
+        curve->addControlPoint(x,y - diameter, time);
+        curve->addControlPoint(x - diameter,y - diameter, time);
     }
     
     boost::shared_ptr<BezierCP> top = curve->getControlPointAtIndex(0);
@@ -4084,7 +4089,6 @@ RotoContext::makeEllipse(double x,double y,double diameter,bool fromCenter)
     boost::shared_ptr<BezierCP> bottom = curve->getControlPointAtIndex(2);
     boost::shared_ptr<BezierCP> left = curve->getControlPointAtIndex(3);
 
-    int time = getTimelineCurrentTime();
     double topX,topY,rightX,rightY,btmX,btmY,leftX,leftY;
     top->getPositionAtTime(time, &topX, &topY);
     right->getPositionAtTime(time, &rightX, &rightY);
@@ -4108,12 +4112,12 @@ RotoContext::makeEllipse(double x,double y,double diameter,bool fromCenter)
 }
 
 boost::shared_ptr<Bezier>
-RotoContext::makeSquare(double x,double y,double initialSize)
+RotoContext::makeSquare(double x,double y,double initialSize,int time)
 {
-    boost::shared_ptr<Bezier> curve = makeBezier(x,y,kRotoRectangleBaseName);
-    curve->addControlPoint(x + initialSize,y);
-    curve->addControlPoint(x + initialSize,y - initialSize);
-    curve->addControlPoint(x,y - initialSize);
+    boost::shared_ptr<Bezier> curve = makeBezier(x,y,kRotoRectangleBaseName,time);
+    curve->addControlPoint(x + initialSize,y, time);
+    curve->addControlPoint(x + initialSize,y - initialSize, time);
+    curve->addControlPoint(x,y - initialSize, time);
     curve->setCurveFinished(true);
     
     return curve;

@@ -1436,9 +1436,18 @@ static void exportRotoLayer(const std::list<boost::shared_ptr<RotoItem> >& items
         boost::shared_ptr<Bezier> isBezier = boost::dynamic_pointer_cast<Bezier>(*it);
         
         if (isBezier) {
-            int time = isBezier->getContext()->getTimelineCurrentTime();
-
-            WRITE_INDENT(1); WRITE_STATIC_LINE("bezier = roto.createBezier(0,0)");
+            int time;
+            
+            const std::list<boost::shared_ptr<BezierCP> >& cps = isBezier->getControlPoints();
+            const std::list<boost::shared_ptr<BezierCP> >& fps = isBezier->getFeatherPoints();
+            
+            if (cps.empty()) {
+                continue;
+            }
+            
+            time = cps.front()->getKeyframeTime(0);
+            
+            WRITE_INDENT(1); WRITE_STATIC_LINE("bezier = roto.createBezier(0,0, " + NUM(time) + ")");
             WRITE_INDENT(1); WRITE_STATIC_LINE("bezier.setName(" + ESC(isBezier->getName_mt_safe()) + ")");
             QString lockedStr = isBezier->getLocked() ? "True" : "False";
             WRITE_INDENT(1); WRITE_STRING("bezier.setLocked(" + lockedStr + ")");
@@ -1466,8 +1475,7 @@ static void exportRotoLayer(const std::list<boost::shared_ptr<RotoItem> >& items
             
             WRITE_INDENT(1); WRITE_STRING(parentLayerName + ".addItem(bezier)");
             WRITE_INDENT(1); WRITE_STATIC_LINE("");
-            const std::list<boost::shared_ptr<BezierCP> >& cps = isBezier->getControlPoints();
-            const std::list<boost::shared_ptr<BezierCP> >& fps = isBezier->getFeatherPoints();
+           
             assert(cps.size() == fps.size());
             
             std::set<int> kf;

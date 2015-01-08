@@ -528,7 +528,7 @@ public:
      * This function is used to build-up the curve as opposed to addControlPointAfterIndex which is there to
      * edit an already fully shaped spline.
      **/
-    boost::shared_ptr<BezierCP> addControlPoint(double x,double y);
+    boost::shared_ptr<BezierCP> addControlPoint(double x,double y,int time);
 
     /**
      * @brief Adds a new control point to the curve after the control point at the given index.
@@ -925,9 +925,9 @@ public:
      * @brief Make a new bezier curve and append it into the currently selected layer.
      * @param baseName A hint to name the item. It can be something like "Bezier", "Ellipse", "Rectangle" , etc...
      **/
-    boost::shared_ptr<Bezier> makeBezier(double x,double y,const std::string & baseName);
-    boost::shared_ptr<Bezier> makeEllipse(double x,double y,double diameter,bool fromCenter);
-    boost::shared_ptr<Bezier> makeSquare(double x,double y,double initialSize);
+    boost::shared_ptr<Bezier> makeBezier(double x,double y,const std::string & baseName,int time);
+    boost::shared_ptr<Bezier> makeEllipse(double x,double y,double diameter,bool fromCenter,int time);
+    boost::shared_ptr<Bezier> makeSquare(double x,double y,double initialSize,int time);
     
     /**
      * @brief Removes the given item from the context. This also removes the item from the selection

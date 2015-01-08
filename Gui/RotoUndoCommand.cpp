@@ -1180,11 +1180,12 @@ MakeBezierUndoCommand::redo()
     if (_firstRedoCalled) {
         _roto->setCurrentTool(RotoGui::DRAW_BEZIER,true);
     }
+    
 
     if (!_firstRedoCalled) {
         if (_createdPoint) {
             if (!_newCurve) {
-                _newCurve = _roto->getContext()->makeBezier(_x, _y, kRotoBezierBaseName);
+                _newCurve = _roto->getContext()->makeBezier(_x, _y, kRotoBezierBaseName,_time);
                 assert(_newCurve);
                 _oldCurve.reset( new Bezier(_newCurve->getContext(), _newCurve->getName_mt_safe(), _newCurve->getParentLayer()) );
                 _oldCurve->clone(_newCurve.get());
@@ -1192,7 +1193,7 @@ MakeBezierUndoCommand::redo()
                 _curveNonExistant = false;
             } else {
                 _oldCurve->clone(_newCurve.get());
-                _newCurve->addControlPoint(_x, _y);
+                _newCurve->addControlPoint(_x, _y,_time);
                 int lastIndex = _newCurve->getControlPointsCount() - 1;
                 assert(lastIndex > 0);
                 _lastPointAdded = lastIndex;
@@ -1301,12 +1302,13 @@ MakeEllipseUndoCommand::redo()
         _roto->getContext()->addItem(_parentLayer, _indexInLayer, _curve,RotoContext::OVERLAY_INTERACT);
         _roto->evaluate(true);
     } else {
+        
         if (_create) {
-            _curve = _roto->getContext()->makeBezier(_x,_y,kRotoEllipseBaseName);
+            _curve = _roto->getContext()->makeBezier(_x,_y,kRotoEllipseBaseName, _time);
             assert(_curve);
-            _curve->addControlPoint(_x + 1,_y - 1);
-            _curve->addControlPoint(_x,_y - 2);
-            _curve->addControlPoint(_x - 1,_y - 1);
+            _curve->addControlPoint(_x + 1,_y - 1, _time);
+            _curve->addControlPoint(_x,_y - 2, _time);
+            _curve->addControlPoint(_x - 1,_y - 1, _time);
             _curve->setCurveFinished(true);
         } else {
             boost::shared_ptr<BezierCP> top = _curve->getControlPointAtIndex(0);
@@ -1443,11 +1445,11 @@ MakeRectangleUndoCommand::redo()
         _roto->evaluate(true);
     } else {
         if (_create) {
-            _curve = _roto->getContext()->makeBezier(_x,_y,kRotoRectangleBaseName);
+            _curve = _roto->getContext()->makeBezier(_x,_y,kRotoRectangleBaseName,_time);
             assert(_curve);
-            _curve->addControlPoint(_x + 1,_y);
-            _curve->addControlPoint(_x + 1,_y - 1);
-            _curve->addControlPoint(_x,_y - 1);
+            _curve->addControlPoint(_x + 1,_y,_time);
+            _curve->addControlPoint(_x + 1,_y - 1,_time);
+            _curve->addControlPoint(_x,_y - 1,_time);
             _curve->setCurveFinished(true);
         } else {
             _curve->movePointByIndex(1,_time, _dx, 0);

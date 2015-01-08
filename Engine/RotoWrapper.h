@@ -200,11 +200,11 @@ public:
     
     Layer* createLayer();
     
-    BezierCurve* createBezier(double x,double y);
+    BezierCurve* createBezier(double x,double y, int time);
     
-    BezierCurve* createEllipse(double x,double y,double diameter,bool fromCenter);
+    BezierCurve* createEllipse(double x,double y,double diameter,bool fromCenter,int time);
     
-    BezierCurve* createRectangle(double x,double y,double size);
+    BezierCurve* createRectangle(double x,double y,double size, int time);
     
 private:
     

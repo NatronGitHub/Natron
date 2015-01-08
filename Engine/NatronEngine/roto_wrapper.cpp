@@ -27,24 +27,25 @@ static PyObject* Sbk_RotoFunc_createBezier(PyObject* self, PyObject* args)
     cppSelf = ((::Roto*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_ROTO_IDX], (SbkObject*)self));
     PyObject* pyResult = 0;
     int overloadId = -1;
-    PythonToCppFunc pythonToCpp[] = { 0, 0 };
+    PythonToCppFunc pythonToCpp[] = { 0, 0, 0 };
     SBK_UNUSED(pythonToCpp)
     int numArgs = PyTuple_GET_SIZE(args);
-    PyObject* pyArgs[] = {0, 0};
+    PyObject* pyArgs[] = {0, 0, 0};
 
     // invalid argument lengths
 
 
-    if (!PyArg_UnpackTuple(args, "createBezier", 2, 2, &(pyArgs[0]), &(pyArgs[1])))
+    if (!PyArg_UnpackTuple(args, "createBezier", 3, 3, &(pyArgs[0]), &(pyArgs[1]), &(pyArgs[2])))
         return 0;
 
 
     // Overloaded function decisor
-    // 0: createBezier(double,double)
-    if (numArgs == 2
+    // 0: createBezier(double,double,int)
+    if (numArgs == 3
         && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[0])))
-        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[1])))) {
-        overloadId = 0; // createBezier(double,double)
+        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[1])))
+        && (pythonToCpp[2] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[2])))) {
+        overloadId = 0; // createBezier(double,double,int)
     }
 
     // Function signature not found.
@@ -56,11 +57,13 @@ static PyObject* Sbk_RotoFunc_createBezier(PyObject* self, PyObject* args)
         pythonToCpp[0](pyArgs[0], &cppArg0);
         double cppArg1;
         pythonToCpp[1](pyArgs[1], &cppArg1);
+        int cppArg2;
+        pythonToCpp[2](pyArgs[2], &cppArg2);
 
         if (!PyErr_Occurred()) {
-            // createBezier(double,double)
+            // createBezier(double,double,int)
             PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            BezierCurve * cppResult = cppSelf->createBezier(cppArg0, cppArg1);
+            BezierCurve * cppResult = cppSelf->createBezier(cppArg0, cppArg1, cppArg2);
             PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_BEZIERCURVE_IDX], cppResult);
 
@@ -76,7 +79,7 @@ static PyObject* Sbk_RotoFunc_createBezier(PyObject* self, PyObject* args)
     return pyResult;
 
     Sbk_RotoFunc_createBezier_TypeError:
-        const char* overloads[] = {"float, float", 0};
+        const char* overloads[] = {"float, float, int", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.Roto.createBezier", overloads);
         return 0;
 }
@@ -90,26 +93,27 @@ static PyObject* Sbk_RotoFunc_createEllipse(PyObject* self, PyObject* args)
     cppSelf = ((::Roto*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_ROTO_IDX], (SbkObject*)self));
     PyObject* pyResult = 0;
     int overloadId = -1;
-    PythonToCppFunc pythonToCpp[] = { 0, 0, 0, 0 };
+    PythonToCppFunc pythonToCpp[] = { 0, 0, 0, 0, 0 };
     SBK_UNUSED(pythonToCpp)
     int numArgs = PyTuple_GET_SIZE(args);
-    PyObject* pyArgs[] = {0, 0, 0, 0};
+    PyObject* pyArgs[] = {0, 0, 0, 0, 0};
 
     // invalid argument lengths
 
 
-    if (!PyArg_UnpackTuple(args, "createEllipse", 4, 4, &(pyArgs[0]), &(pyArgs[1]), &(pyArgs[2]), &(pyArgs[3])))
+    if (!PyArg_UnpackTuple(args, "createEllipse", 5, 5, &(pyArgs[0]), &(pyArgs[1]), &(pyArgs[2]), &(pyArgs[3]), &(pyArgs[4])))
         return 0;
 
 
     // Overloaded function decisor
-    // 0: createEllipse(double,double,double,bool)
-    if (numArgs == 4
+    // 0: createEllipse(double,double,double,bool,int)
+    if (numArgs == 5
         && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[0])))
         && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[1])))
         && (pythonToCpp[2] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[2])))
-        && (pythonToCpp[3] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), (pyArgs[3])))) {
-        overloadId = 0; // createEllipse(double,double,double,bool)
+        && (pythonToCpp[3] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), (pyArgs[3])))
+        && (pythonToCpp[4] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[4])))) {
+        overloadId = 0; // createEllipse(double,double,double,bool,int)
     }
 
     // Function signature not found.
@@ -125,11 +129,13 @@ static PyObject* Sbk_RotoFunc_createEllipse(PyObject* self, PyObject* args)
         pythonToCpp[2](pyArgs[2], &cppArg2);
         bool cppArg3;
         pythonToCpp[3](pyArgs[3], &cppArg3);
+        int cppArg4;
+        pythonToCpp[4](pyArgs[4], &cppArg4);
 
         if (!PyErr_Occurred()) {
-            // createEllipse(double,double,double,bool)
+            // createEllipse(double,double,double,bool,int)
             PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            BezierCurve * cppResult = cppSelf->createEllipse(cppArg0, cppArg1, cppArg2, cppArg3);
+            BezierCurve * cppResult = cppSelf->createEllipse(cppArg0, cppArg1, cppArg2, cppArg3, cppArg4);
             PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_BEZIERCURVE_IDX], cppResult);
 
@@ -145,7 +151,7 @@ static PyObject* Sbk_RotoFunc_createEllipse(PyObject* self, PyObject* args)
     return pyResult;
 
     Sbk_RotoFunc_createEllipse_TypeError:
-        const char* overloads[] = {"float, float, float, bool", 0};
+        const char* overloads[] = {"float, float, float, bool, int", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.Roto.createEllipse", overloads);
         return 0;
 }
@@ -190,25 +196,26 @@ static PyObject* Sbk_RotoFunc_createRectangle(PyObject* self, PyObject* args)
     cppSelf = ((::Roto*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_ROTO_IDX], (SbkObject*)self));
     PyObject* pyResult = 0;
     int overloadId = -1;
-    PythonToCppFunc pythonToCpp[] = { 0, 0, 0 };
+    PythonToCppFunc pythonToCpp[] = { 0, 0, 0, 0 };
     SBK_UNUSED(pythonToCpp)
     int numArgs = PyTuple_GET_SIZE(args);
-    PyObject* pyArgs[] = {0, 0, 0};
+    PyObject* pyArgs[] = {0, 0, 0, 0};
 
     // invalid argument lengths
 
 
-    if (!PyArg_UnpackTuple(args, "createRectangle", 3, 3, &(pyArgs[0]), &(pyArgs[1]), &(pyArgs[2])))
+    if (!PyArg_UnpackTuple(args, "createRectangle", 4, 4, &(pyArgs[0]), &(pyArgs[1]), &(pyArgs[2]), &(pyArgs[3])))
         return 0;
 
 
     // Overloaded function decisor
-    // 0: createRectangle(double,double,double)
-    if (numArgs == 3
+    // 0: createRectangle(double,double,double,int)
+    if (numArgs == 4
         && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[0])))
         && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[1])))
-        && (pythonToCpp[2] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[2])))) {
-        overloadId = 0; // createRectangle(double,double,double)
+        && (pythonToCpp[2] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[2])))
+        && (pythonToCpp[3] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[3])))) {
+        overloadId = 0; // createRectangle(double,double,double,int)
     }
 
     // Function signature not found.
@@ -222,11 +229,13 @@ static PyObject* Sbk_RotoFunc_createRectangle(PyObject* self, PyObject* args)
         pythonToCpp[1](pyArgs[1], &cppArg1);
         double cppArg2;
         pythonToCpp[2](pyArgs[2], &cppArg2);
+        int cppArg3;
+        pythonToCpp[3](pyArgs[3], &cppArg3);
 
         if (!PyErr_Occurred()) {
-            // createRectangle(double,double,double)
+            // createRectangle(double,double,double,int)
             PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            BezierCurve * cppResult = cppSelf->createRectangle(cppArg0, cppArg1, cppArg2);
+            BezierCurve * cppResult = cppSelf->createRectangle(cppArg0, cppArg1, cppArg2, cppArg3);
             PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_BEZIERCURVE_IDX], cppResult);
 
@@ -242,7 +251,7 @@ static PyObject* Sbk_RotoFunc_createRectangle(PyObject* self, PyObject* args)
     return pyResult;
 
     Sbk_RotoFunc_createRectangle_TypeError:
-        const char* overloads[] = {"float, float, float", 0};
+        const char* overloads[] = {"float, float, float, int", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.Roto.createRectangle", overloads);
         return 0;
 }

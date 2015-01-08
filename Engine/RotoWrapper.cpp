@@ -150,7 +150,14 @@ BezierCurve::isCurveFinished() const
 void
 BezierCurve::addControlPoint(double x, double y)
 {
-    _bezier->addControlPoint(x, y);
+    const std::list<boost::shared_ptr<BezierCP> >& cps = _bezier->getControlPoints();
+    int keyframeTime;
+    if (!cps.empty()) {
+        keyframeTime = cps.front()->getKeyframeTime(0);
+    } else {
+        keyframeTime = _bezier->getContext()->getTimelineCurrentTime();
+    }
+    _bezier->addControlPoint(x, y, keyframeTime);
 }
 
 void
@@ -472,9 +479,9 @@ Roto::createLayer()
 }
 
 BezierCurve*
-Roto::createBezier(double x,double y)
+Roto::createBezier(double x,double y,int time)
 {
-    boost::shared_ptr<Bezier>  ret = _ctx->makeBezier(x, y, kRotoBezierBaseName);
+    boost::shared_ptr<Bezier>  ret = _ctx->makeBezier(x, y, kRotoBezierBaseName, time);
     if (ret) {
         return new BezierCurve(ret);
     }
@@ -482,9 +489,9 @@ Roto::createBezier(double x,double y)
 }
 
 BezierCurve*
-Roto::createEllipse(double x,double y,double diameter,bool fromCenter)
+Roto::createEllipse(double x,double y,double diameter,bool fromCenter,int time)
 {
-    boost::shared_ptr<Bezier>  ret = _ctx->makeEllipse(x, y, diameter, fromCenter);
+    boost::shared_ptr<Bezier>  ret = _ctx->makeEllipse(x, y, diameter, fromCenter, time);
     if (ret) {
         return new BezierCurve(ret);
     }
@@ -492,9 +499,9 @@ Roto::createEllipse(double x,double y,double diameter,bool fromCenter)
 }
 
 BezierCurve*
-Roto::createRectangle(double x,double y,double size)
+Roto::createRectangle(double x,double y,double size,int time)
 {
-    boost::shared_ptr<Bezier>  ret = _ctx->makeSquare(x, y, size);
+    boost::shared_ptr<Bezier>  ret = _ctx->makeSquare(x, y, size, time);
     if (ret) {
         return new BezierCurve(ret);
     }

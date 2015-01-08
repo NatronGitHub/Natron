@@ -1655,17 +1655,16 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
                 Edge* edge = 0;
                 {
                     QMutexLocker l(&_imp->_nodesMutex);
-                    for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
-                        boost::shared_ptr<NodeGui> & n = *it;
+                    for (NodeGuiList::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
                         
-                        QRectF nodeBbox = n->mapToScene(n->boundingRect()).boundingRect();
-                        if ( n != selectedNode && n->isVisible() && nodeBbox.intersects(sceneR)) {
+                        QRectF nodeBbox = (*it)->mapToScene((*it)->boundingRect()).boundingRect();
+                        if ( (*it) != selectedNode && (*it)->isVisible() && nodeBbox.intersects(sceneR)) {
                             
                             if (doMergeHints) {
                                 
-                                QRectF nodeRect = n->mapToParent(n->boundingRect()).boundingRect();
+                                QRectF nodeRect = (*it)->mapToParent((*it)->boundingRect()).boundingRect();
                                 
-                                boost::shared_ptr<Natron::Node> internalNode = n->getNode();
+                                boost::shared_ptr<Natron::Node> internalNode = (*it)->getNode();
                                 
                                 
                                 if (!internalNode->isOutputNode() && nodeRect.intersects(rect)) {
@@ -1689,15 +1688,15 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
                                         }
                                     }
                                     if (isValid) {
-                                        nodeToShowMergeRect = n;
+                                        nodeToShowMergeRect = *it;
                                     }
                                 } else {
-                                    n->setMergeHintActive(false);
+                                    (*it)->setMergeHintActive(false);
                                 }
                                 
                             } else {
                                 
-                                edge = n->hasEdgeNearbyRect(rect);
+                                edge = (*it)->hasEdgeNearbyRect(rect);
                                 
                                 ///if the edge input is the selected node don't continue
                                 if ( edge && ( edge->getSource() == selectedNode) ) {

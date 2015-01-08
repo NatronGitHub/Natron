@@ -388,7 +388,7 @@ Node::load(const std::string & parentMultiInstanceName,
         nameSet = true;
     }
     
-    if (serialization.isNull() && !parentMultiInstanceName.empty()) {
+    if (!parentMultiInstanceName.empty()) {
         fetchParentMultiInstancePointer();
     }
     
@@ -1954,14 +1954,36 @@ Node::hasOutputConnected() const
     ////Only called by the main-thread
     NodePtr parent = _imp->multiInstanceParent.lock();
     if (parent) {
-        return parent->hasInputConnected();
+        return parent->hasOutputConnected();
     }
     if ( QThread::currentThread() == qApp->thread() ) {
+        if (_imp->outputs.size() == 1) {
+            if (_imp->outputs.front()->isTrackerNode() && _imp->outputs.front()->isMultiInstance()) {
+                return false;
+            } else {
+                return true;
+            }
+        } else if (_imp->outputs.size() > 1) {
+            return true;
+        } else {
+            return false;
+        }
         return _imp->outputs.size() > 0;
     } else {
         QMutexLocker l(&_imp->outputsMutex);
-        
+        if (_imp->outputs.size() == 1) {
+            if (_imp->outputs.front()->isTrackerNode() && _imp->outputs.front()->isMultiInstance()) {
+                return false;
+            } else {
+                return true;
+            }
+        } else if (_imp->outputs.size() > 1) {
+            return true;
+        } else {
+            return false;
+        }
         return _imp->outputs.size() > 0;
+
     }
 }
 

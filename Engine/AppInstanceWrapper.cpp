@@ -77,3 +77,20 @@ App::createNode(const std::string& pluginID,
     }
 }
 
+int
+App::timelineGetTime() const
+{
+    return _instance->getTimeLine()->currentFrame();
+}
+
+int
+App::timelineGetLeftBound() const
+{
+    return _instance->getTimeLine()->leftBound();
+}
+
+int
+App::timelineGetRightBound() const
+{
+    return _instance->getTimeLine()->rightBound();
+}

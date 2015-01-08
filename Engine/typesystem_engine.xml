@@ -718,17 +718,17 @@
                 <define-ownership class="target" owner="target"/>
             </modify-argument>
         </modify-function>
-        <modify-function signature="createBezier(double,double)">
+        <modify-function signature="createBezier(double,double,int)">
             <modify-argument index="return">
                 <define-ownership class="target" owner="target"/>
             </modify-argument>
         </modify-function>
-        <modify-function signature="createEllipse(double,double,double,bool)">
+        <modify-function signature="createEllipse(double,double,double,bool,int)">
             <modify-argument index="return">
                 <define-ownership class="target" owner="target"/>
             </modify-argument>
         </modify-function>
-        <modify-function signature="createRectangle(double,double,double)">
+        <modify-function signature="createRectangle(double,double,double,int)">
             <modify-argument index="return">
                 <define-ownership class="target" owner="target"/>
             </modify-argument>

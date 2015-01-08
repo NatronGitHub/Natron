@@ -41,14 +41,14 @@ struct AppInstancePrivate
     int _appID; //< the unique ID of this instance (or window)
     bool _projectCreatedWithLowerCaseIDs;
     
-    bool _createNextGroupInitialInputOutput;
+    bool _creatingGroup;
     
     AppInstancePrivate(int appID,
                        AppInstance* app)
     : _currentProject( new Natron::Project(app) )
     , _appID(appID)
     , _projectCreatedWithLowerCaseIDs(false)
-    , _createNextGroupInitialInputOutput(true)
+    , _creatingGroup(false)
     {
     }
     
@@ -310,18 +310,18 @@ AppInstance::load(const QString & projectName,
 
 class FlagSetter {
     
-    AppInstancePrivate* p;
+    bool* p;
 public:
     
-    FlagSetter(AppInstancePrivate* p)
+    FlagSetter(bool initialValue,bool* p)
     : p(p)
     {
-        p->_createNextGroupInitialInputOutput = false;
+        *p = initialValue;
     }
     
     ~FlagSetter()
     {
-        p->_createNextGroupInitialInputOutput = true;
+        *p = !*p;
     }
 };
 
@@ -386,7 +386,7 @@ AppInstance::createNodeInternal(const QString & pluginID,
     const QString& pythonModule = plugin->getPythonModule();
     if (!pythonModule.isEmpty()) {
         
-        FlagSetter fs(_imp.get());
+        FlagSetter fs(true,&_imp->_creatingGroup);
         
         CreateNodeArgs groupArgs(PLUGINID_NATRON_GROUP,
                                  "",
@@ -407,20 +407,24 @@ AppInstance::createNodeInternal(const QString & pluginID,
         containerNode->setName(containerName.c_str());
         containerNode->switchInternalPlugin(plugin);
         
-        std::string containerFullySpecifiedName = containerNode->getFullySpecifiedName();
-        
-        int appID = getAppID() + 1;
-        
-        std::stringstream ss;
-        ss << pythonModule.toStdString();
-        ss << ".createInstance(app" << appID;
-        ss << ", app" << appID << "." << containerFullySpecifiedName;
-        ss << ")\n";
-        std::string err;
-        if (!Natron::interpretPythonScript(ss.str(), &err, NULL)) {
-            Natron::errorDialog(tr("Group plugin creation error").toStdString(), err);
-            containerNode->destroyNode(false);
-            return node;
+        if (!requestedByLoad) {
+            std::string containerFullySpecifiedName = containerNode->getFullySpecifiedName();
+            
+            int appID = getAppID() + 1;
+            
+            std::stringstream ss;
+            ss << pythonModule.toStdString();
+            ss << ".createInstance(app" << appID;
+            ss << ", app" << appID << "." << containerFullySpecifiedName;
+            ss << ")\n";
+            std::string err;
+            if (!Natron::interpretPythonScript(ss.str(), &err, NULL)) {
+                Natron::errorDialog(tr("Group plugin creation error").toStdString(), err);
+                containerNode->destroyNode(false);
+                return node;
+            } else {
+                return containerNode;
+            }
         } else {
             return containerNode;
         }
@@ -488,7 +492,7 @@ AppInstance::createNodeInternal(const QString & pluginID,
     
     boost::shared_ptr<NodeGroup> isGrp = boost::dynamic_pointer_cast<NodeGroup>(node->getLiveInstance()->shared_from_this());
 
-    if (isGrp && !requestedByLoad && _imp->_createNextGroupInitialInputOutput) {
+    if (isGrp && !requestedByLoad && !_imp->_creatingGroup) {
         
         //if the node is a group and we're not loading the project, create one input and one output
         NodePtr input,output;
@@ -840,3 +844,10 @@ AppInstance::wasProjectCreatedWithLowerCaseIDs() const
 {
     return _imp->_projectCreatedWithLowerCaseIDs;
 }
+
+bool
+AppInstance::isCreatingPythonGroup() const
+{
+    return _imp->_creatingGroup;
+}
+

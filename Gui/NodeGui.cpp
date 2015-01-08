@@ -305,7 +305,7 @@ NodeGui::createPanel(QVBoxLayout* container,
         panel = new NodeSettingsPanel( multiPanel,_graph->getGui(),thisAsShared,container,container->parentWidget() );
 
         if (!requestedByLoad) {
-            if ( node->getParentMultiInstanceName().empty() ) {
+            if ( node->getParentMultiInstanceName().empty() && !getDagGui()->getGui()->getApp()->isCreatingPythonGroup()) {
                 
                 std::string pluginID = node->getPluginID();
                 if (pluginID == PLUGINID_NATRON_OUTPUT) {

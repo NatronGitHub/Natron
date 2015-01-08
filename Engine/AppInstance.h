@@ -308,7 +308,9 @@ public:
      **/
     void setProjectWasCreatedWithLowerCaseIDs(bool b);
     bool wasProjectCreatedWithLowerCaseIDs() const;
-       
+    
+    bool isCreatingPythonGroup() const;
+    
 public Q_SLOTS:
 
 

@@ -2760,7 +2760,9 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool canAbort)
     Natron::StatusEnum status[2] = {
         eStatusFailed, eStatusFailed
     };
-    
+    if (!_imp->viewer->getUiContext()) {
+        return;
+    }
     boost::shared_ptr<ViewerInstance::ViewerArgs> args[2];
     for (int i = 0; i < 2; ++i) {
         args[i].reset(new ViewerInstance::ViewerArgs);

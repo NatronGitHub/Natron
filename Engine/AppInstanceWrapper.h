@@ -42,6 +42,12 @@ public:
     Effect* createNode(const std::string& pluginID,
                        int majorVersion = -1,
                        Effect* group = 0) const;
+    
+    int timelineGetTime() const;
+    
+    int timelineGetLeftBound() const;
+    
+    int timelineGetRightBound() const;
 };
 
 
