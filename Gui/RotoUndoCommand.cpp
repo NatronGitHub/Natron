@@ -205,7 +205,10 @@ TransformUndoCommand::TransformUndoCommand(RotoGui* roto,
     std::list< std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> > > selected;
     roto->getSelection(&_selectedCurves, &selected);
     
-    if (type != eTransformAllPoints) {
+    if (type == eTransformAllPoints) {
+        _selectedPoints = selected;
+
+    } else {
         QPointF bboxCenter = bbox.center();
         double x,y;
         for (std::list< std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> > >::iterator it = selected.begin(); it != selected.end(); ++it) {
@@ -234,15 +237,12 @@ TransformUndoCommand::TransformUndoCommand(RotoGui* roto,
                         _selectedPoints.push_back(*it);
                     }
                     break;
-                case eTransformAllPoints:
                 default:
                     break;
             }
         }
-    } else {
-        _selectedPoints = selected;
     }
-    
+
     *_matrix = Transform::matTransformCanonical(tx, ty, sx, sy, skewX, skewY, true, (rot), centerX, centerY);
     ///we make a copy of the points
     for (SelectedCpList::iterator it = _selectedPoints.begin(); it != _selectedPoints.end(); ++it) {
