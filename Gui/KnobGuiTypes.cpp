@@ -73,8 +73,16 @@ CLANG_DIAG_ON(uninitialized)
 using namespace Natron;
 using std::make_pair;
 
-// convenience private classes
 
+static bool shouldSliderBeVisible(int sliderMin,int sliderMax)
+{
+    return (sliderMax > sliderMin) && ( (sliderMax - sliderMin) < SLIDER_MAX_RANGE ) && (sliderMax < INT_MAX) && (sliderMin > INT_MIN);
+}
+
+static bool shouldSliderBeVisible(double sliderMin,double sliderMax)
+{
+    return (sliderMax > sliderMin) && ( (sliderMax - sliderMin) < SLIDER_MAX_RANGE ) && (sliderMax < DBL_MAX) && (sliderMin > -DBL_MAX);
+}
 
 //==========================INT_KNOB_GUI======================================
 Int_KnobGui::Int_KnobGui(boost::shared_ptr<KnobI> knob,
@@ -178,16 +186,17 @@ Int_KnobGui::createWidget(QHBoxLayout* layout)
         _spinBoxes.push_back( make_pair(box, subDesc) );
     }
     
+    bool sliderVisible = false;
     if (!_knob->isSliderDisabled()) {
         int dispmin = displayMins[0];
         int dispmax = displayMaxs[0];
         
-        if (dispmin < -SLIDER_MAX_RANGE) {
-            dispmin = -SLIDER_MAX_RANGE;
-        }
-        if (dispmax > SLIDER_MAX_RANGE) {
-            dispmax = SLIDER_MAX_RANGE;
-        }
+//        if (dispmin < -SLIDER_MAX_RANGE) {
+//            dispmin = -SLIDER_MAX_RANGE;
+//        }
+//        if (dispmax > SLIDER_MAX_RANGE) {
+//            dispmax = SLIDER_MAX_RANGE;
+//        }
         
         _slider = new ScaleSliderQWidget( dispmin, dispmax,_knob->getValue(0,false),
                                          ScaleSliderQWidget::eDataTypeInt,Natron::eScaleTypeLinear, layout->parentWidget() );
@@ -200,9 +209,10 @@ Int_KnobGui::createWidget(QHBoxLayout* layout)
         
         containerLayout->addWidget(_slider);
         onDisplayMinMaxChanged(dispmin, dispmax);
+        sliderVisible = shouldSliderBeVisible(dispmin, dispmax);
     }
 
-    if (dim > 1 && !_knob->isSliderDisabled() ) {
+    if (dim > 1 && !_knob->isSliderDisabled() && sliderVisible) {
         _dimensionSwitchButton = new Button(QIcon(),QString::number(dim),container);
         _dimensionSwitchButton->setToolTip(Qt::convertFromPlainText(tr("Switch between a single value for all dimensions and multiple values"), Qt::WhiteSpaceNormal));
         _dimensionSwitchButton->setFocusPolicy(Qt::NoFocus);
@@ -313,7 +323,6 @@ Int_KnobGui::foldAllDimensions()
 }
 
 
-
 void
 Int_KnobGui::onDisplayMinMaxChanged(double mini,
                                     double maxi,
@@ -333,7 +342,7 @@ Int_KnobGui::onDisplayMinMaxChanged(double mini,
                 sliderMax = max;
             }
         }
-        if ( (sliderMax > sliderMin) && ( (sliderMax - sliderMin) < SLIDER_MAX_RANGE ) && (sliderMax < INT_MAX) && (sliderMin > INT_MIN) ) {
+        if (shouldSliderBeVisible(sliderMin,sliderMax)) {
             _slider->show();
         } else {
             _slider->hide();
@@ -749,6 +758,7 @@ Double_KnobGui::createWidget(QHBoxLayout* layout)
     layout->parentWidget()->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
     QWidget *container = new QWidget( layout->parentWidget() );
     QHBoxLayout *containerLayout = new QHBoxLayout(container);
+    layout->addWidget(container);
 
     container->setLayout(containerLayout);
     containerLayout->setContentsMargins(0, 0, 0, 0);
@@ -821,7 +831,7 @@ Double_KnobGui::createWidget(QHBoxLayout* layout)
         _spinBoxes.push_back( make_pair(box, subDesc) );
     }
     
-    
+    bool sliderVisible = false;
     if ( !_knob->isSliderDisabled()) {
         double dispmin = displayMins[0];
         double dispmax = displayMaxs[0];
@@ -857,13 +867,13 @@ Double_KnobGui::createWidget(QHBoxLayout* layout)
         QObject::connect( _slider, SIGNAL( positionChanged(double) ), this, SLOT( onSliderValueChanged(double) ) );
         QObject::connect( _slider, SIGNAL( editingFinished() ), this, SLOT( onSliderEditingFinished() ) );
         containerLayout->addWidget(_slider);
-        
+        sliderVisible = shouldSliderBeVisible(dispmin, dispmax);
         onDisplayMinMaxChanged(dispmin, dispmax);
         
     }
     
     
-    if (dim > 1 && !_knob->isSliderDisabled() ) {
+    if (dim > 1 && !_knob->isSliderDisabled() && sliderVisible ) {
         _dimensionSwitchButton = new Button(QIcon(),QString::number(dim),container);
         _dimensionSwitchButton->setToolTip(Qt::convertFromPlainText(tr("Switch between a single value for all dimensions and multiple values"), Qt::WhiteSpaceNormal));
         _dimensionSwitchButton->setFixedSize(17, 17);
@@ -889,7 +899,6 @@ Double_KnobGui::createWidget(QHBoxLayout* layout)
         QObject::connect( _dimensionSwitchButton, SIGNAL( clicked(bool) ), this, SLOT( onDimensionSwitchClicked() ) );
 
     }
-    layout->addWidget(container);
 
 } // createWidget
 
@@ -989,11 +998,11 @@ Double_KnobGui::onDisplayMinMaxChanged(double mini,
             }
         }
         
-        if ( (sliderMax > sliderMin) && ( (sliderMax - sliderMin) < SLIDER_MAX_RANGE ) && (sliderMax < DBL_MAX) && (sliderMin > -DBL_MAX) ) {
+        if (shouldSliderBeVisible(sliderMin, sliderMax)) {
             _digits = std::max(0., std::ceil(-std::log10(sliderMax - sliderMin) + 2.));
-            _slider->show();
+            _slider->setVisible(true);
         } else {
-            _slider->hide();
+            _slider->setVisible(false);
         }
         
         _slider->setMinimumAndMaximum(sliderMin, sliderMax);
