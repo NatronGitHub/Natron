@@ -853,6 +853,7 @@ NodeGui::initializeInputs()
                     it->second->initLine();
                 }
             }
+            return;
         }
     }
 
