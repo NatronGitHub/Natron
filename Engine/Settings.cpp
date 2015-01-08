@@ -908,27 +908,31 @@ Settings::saveSettings()
         const std::string& name = knobs[i]->getName();
         for (int j = 0; j < knobs[i]->getDimension(); ++j) {
             std::string dimensionName = knobs[i]->getDimension() > 1 ? name + '.' + knobs[i]->getDimensionName(j) : name;
-            if (isString) {
-                settings.setValue(dimensionName.c_str(), QVariant(isString->getValue(j).c_str()));
-            } else if (isInt) {
-                if (isChoice) {
-                    ///For choices,serialize the choice name instead
-                    int index = isChoice->getValue(j);
+            try {
+                if (isString) {
+                    settings.setValue(dimensionName.c_str(), QVariant(isString->getValue(j).c_str()));
+                } else if (isInt) {
+                    if (isChoice) {
+                        ///For choices,serialize the choice name instead
+                        int index = isChoice->getValue(j);
 
-                    const std::vector<std::string> entries = isChoice->getEntries_mt_safe();
-                    if (index < (int)entries.size() ) {
-                        settings.setValue(dimensionName.c_str(), QVariant(entries[index].c_str()));
+                        const std::vector<std::string> entries = isChoice->getEntries_mt_safe();
+                        if (index < (int)entries.size() ) {
+                            settings.setValue(dimensionName.c_str(), QVariant(entries[index].c_str()));
+                        }
+                    } else {
+                        settings.setValue(dimensionName.c_str(), QVariant(isInt->getValue(j)));
                     }
-                } else {
-                    settings.setValue(dimensionName.c_str(), QVariant(isInt->getValue(j)));
-                }
 
-            } else if (isDouble) {
-                settings.setValue(dimensionName.c_str(), QVariant(isDouble->getValue(j)));
-            } else if (isBool) {
-                settings.setValue(dimensionName.c_str(), QVariant(isBool->getValue(j)));
-            } else {
-                assert(false);
+                } else if (isDouble) {
+                    settings.setValue(dimensionName.c_str(), QVariant(isDouble->getValue(j)));
+                } else if (isBool) {
+                    settings.setValue(dimensionName.c_str(), QVariant(isBool->getValue(j)));
+                } else {
+                    assert(false);
+                }
+            } catch (std::logic_error) {
+                // ignore
             }
         }
     }
