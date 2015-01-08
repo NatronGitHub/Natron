@@ -1205,6 +1205,9 @@ ViewerTab::abortRendering()
 void
 ViewerTab::onEngineStopped()
 {
+    if (!_imp->gui) {
+        return;
+    }
     _imp->play_Forward_Button->setDown(false);
     _imp->play_Backward_Button->setDown(false);
     _imp->play_Forward_Button->setChecked(false);

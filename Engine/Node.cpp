@@ -2014,9 +2014,13 @@ Node::deactivate(const std::list< Node* > & outputsToDisconnect,
     
     std::vector<boost::shared_ptr<Node> > inputsQueueCopy;
     
-    for (U32 i = 0; i < _imp->inputs.size(); ++i) {
-        if (_imp->inputs[i]) {
-            _imp->inputs[i]->disconnectOutput(this);
+    ///For multi-instances, if we deactivate the main instance without hiding the GUI (the default state of the tracker node)
+    ///then don't remove it from outputs of the inputs
+    if (hideGui || !_imp->isMultiInstance) {
+        for (U32 i = 0; i < _imp->inputs.size(); ++i) {
+            if (_imp->inputs[i]) {
+                _imp->inputs[i]->disconnectOutput(this);
+            }
         }
     }
     

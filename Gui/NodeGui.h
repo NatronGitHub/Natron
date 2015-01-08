@@ -240,6 +240,8 @@ public:
     void changePosition(double dx,double dy);
 
     bool isSettingsPanelVisible() const;
+    
+    bool isSettingsPanelMinimized() const;
 
     void removeSettingsPanel();
 

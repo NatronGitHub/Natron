@@ -913,6 +913,7 @@ MultiInstancePanel::isSettingsPanelVisible() const
     return !panel->isClosed();
 }
 
+
 void
 MultiInstancePanel::onSettingsPanelClosed(bool closed)
 {

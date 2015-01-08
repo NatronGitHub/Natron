@@ -625,7 +625,7 @@ NodeGraph::createNodeGUI(QVBoxLayout *dockContainer,
         node_ui.reset( new DotGui(_imp->_nodeRoot) );
     }
     node_ui->initialize(this, node_ui, dockContainer, node, requestedByLoad);
-
+    getGui()->getApp()->insertInNodeMapping(node_ui);
     
     {
         QMutexLocker l(&_imp->_nodesMutex);
@@ -830,7 +830,7 @@ NodeGraph::moveNodesForIdealPosition(boost::shared_ptr<NodeGui> node,bool autoCo
                                     false, //< don't autoconnect
                                     INT_MIN,
                                     INT_MIN,
-                                    false, //<< don't push an undo command
+                                    true,
                                     true,
                                     QString(),
                                     CreateNodeArgs::DefaultValuesList());
@@ -927,7 +927,7 @@ NodeGraph::moveNodesForIdealPosition(boost::shared_ptr<NodeGui> node,bool autoCo
                                     false, //< don't autoconnect
                                     INT_MIN,
                                     INT_MIN,
-                                    false, //<< don't push an undo command
+                                    true,
                                     true,
                                     QString(),
                                     CreateNodeArgs::DefaultValuesList());
@@ -955,7 +955,7 @@ NodeGraph::moveNodesForIdealPosition(boost::shared_ptr<NodeGui> node,bool autoCo
     }
     position = node->mapFromScene(position);
     position = node->mapToParent(position);
-    node->setPos( position.x(), position.y() );
+    node->setPosition( position.x(), position.y() );
 } // moveNodesForIdealPosition
 
 void
