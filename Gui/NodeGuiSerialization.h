@@ -123,7 +123,7 @@ private:
         
         if (version >= NODE_GUI_MERGE_BACKDROP) {
             ar & boost::serialization::make_nvp("Width",_width);
-            ar & boost::serialization::make_nvp("Height",_width);
+            ar & boost::serialization::make_nvp("Height",_height);
         }
     }
 };

@@ -140,9 +140,11 @@ BackDropGuiPrivate::refreshLabelText(int nameHeight,const QString &text)
     textLabel.append("</div>");
     QFont f;
     QColor color;
-    String_KnobGui::parseFont(textLabel, f, color);
-    label->setFont(f);
-
+    if (!text.isEmpty()) {
+        String_KnobGui::parseFont(textLabel, f, color);
+        label->setFont(f);
+    }
+    
     label->setHtml(textLabel);
 
     QRectF labelBbox = label->boundingRect();

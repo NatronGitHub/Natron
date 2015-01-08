@@ -1247,7 +1247,7 @@ Gui::removeGroupGui(NodeGraph* tab,bool deleteData)
     }
     TabWidget* container = dynamic_cast<TabWidget*>( tab->parentWidget() );
     if (container) {
-        container->removeTab(tab);
+        container->removeTab(tab, true);
     }
     
     if (deleteData) {
@@ -1329,7 +1329,7 @@ Gui::wipeLayout()
     for (std::list<TabWidget*>::iterator it = panesCpy.begin(); it != panesCpy.end(); ++it) {
         ///Conserve tabs by removing them from the tab widgets. This way they will not be deleted.
         while ( (*it)->count() > 0 ) {
-            (*it)->removeTab(0);
+            (*it)->removeTab(0, false);
         }
         (*it)->setParent(NULL);
         delete *it;
@@ -2159,7 +2159,7 @@ Gui::removeViewerTab(ViewerTab* tab,
 
         TabWidget* container = dynamic_cast<TabWidget*>( tab->parentWidget() );
         if (container) {
-            container->removeTab(tab);
+            container->removeTab(tab,false);
         }
 
         if (deleteData) {

@@ -354,7 +354,7 @@ TabWidget::closePane()
         }
     } else {
         while (count() > 0) {
-            removeTab( tabAt(0) );
+            removeTab( tabAt(0), true );
         }
     }
 
@@ -495,7 +495,7 @@ TabWidget::closeCurrentWidget()
     if (!_currentWidget) {
         return;
     }
-    removeTab(_currentWidget);
+    removeTab(_currentWidget,true);
     
 }
 
@@ -505,7 +505,7 @@ TabWidget::closeTab(int index)
     assert( index < (int)_tabs.size() );
     QWidget *tab = _tabs[index];
     assert(_tabs[index]);
-    removeTab(tab);
+    removeTab(tab, true);
     
     _gui->getApp()->triggerAutoSave();
 }
@@ -691,7 +691,7 @@ TabWidget::insertTab(int index,
 }
 
 QWidget*
-TabWidget::removeTab(int index)
+TabWidget::removeTab(int index,bool userAction)
 {
     QMutexLocker l(&_tabWidgetStateMutex);
 
@@ -718,17 +718,22 @@ TabWidget::removeTab(int index)
     }
     tab->setParent(NULL);
     
-    /*special care is taken if this is a viewer: we also
-     need to delete the viewer node.*/
     ViewerTab* isViewer = dynamic_cast<ViewerTab*>(tab);
     Histogram* isHisto = dynamic_cast<Histogram*>(tab);
     NodeGraph* isGraph = dynamic_cast<NodeGraph*>(tab);
-    if (isViewer) {
-        _gui->removeViewerTab(isViewer,false,false);
-    } else if (isHisto) {
-        _gui->removeHistogram(isHisto);
+    /*special care is taken if this is a viewer: we also
+     need to delete the viewer node.*/
+    if (userAction) {
+      
+        if (isViewer) {
+            _gui->removeViewerTab(isViewer,false,false);
+        } else if (isHisto) {
+            _gui->removeHistogram(isHisto);
+        } else {
+            ///Do not delete unique widgets such as the properties bin, node graph or curve editor
+            tab->setVisible(false);
+        }
     } else {
-        ///Do not delete unique widgets such as the properties bin, node graph or curve editor
         tab->setVisible(false);
     }
     if (isGraph && _gui->getLastSelectedGraph() == isGraph) {
@@ -740,7 +745,7 @@ TabWidget::removeTab(int index)
 }
 
 void
-TabWidget::removeTab(QWidget* widget)
+TabWidget::removeTab(QWidget* widget,bool userAction)
 {
     int index = -1;
 
@@ -755,7 +760,7 @@ TabWidget::removeTab(QWidget* widget)
     }
 
     if (index != -1) {
-        QWidget* tab = removeTab(index);
+        QWidget* tab = removeTab(index,userAction);
         assert(tab == widget);
         (void)tab;
     }
@@ -1084,7 +1089,7 @@ TabWidget::startDragTab(int index)
 
     _gui->startDragPanel(selectedTab);
 
-    removeTab(selectedTab);
+    removeTab(selectedTab, true);
     selectedTab->hide();
 }
 
@@ -1216,7 +1221,7 @@ TabWidget::moveTab(QWidget* what,
     }
 
     if (from) {
-        from->removeTab(what);
+        from->removeTab(what, false);
     }
     assert(where);
     where->appendTab(what);

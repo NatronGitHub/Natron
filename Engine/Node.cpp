@@ -1449,12 +1449,17 @@ Node::initializeKnobs(int renderScaleSupportPref)
     
     BackDrop* isBd = dynamic_cast<BackDrop*>(_imp->liveInstance.get());
     Dot* isDot = dynamic_cast<Dot*>(_imp->liveInstance.get());
+    ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>(_imp->liveInstance.get());
+    NodeGroup* isGroup = dynamic_cast<NodeGroup*>(_imp->liveInstance.get());
     
-    _imp->liveInstance->initializeKnobsPublic();
+    ///For groups, declare the plugin knobs after the node knobs because we want to use the Node page
+    if (!isGroup) {
+        _imp->liveInstance->initializeKnobsPublic();
+    }
 
     ///If the effect has a mask, add additionnal mask controls
     int inputsCount = getMaxInputCount();
-    if (!isBd && !isDot) {
+    if (!isBd && !isDot && !isViewer) {
         for (int i = 0; i < inputsCount; ++i) {
             if ( _imp->liveInstance->isInputMask(i) && !_imp->liveInstance->isInputRotoBrush(i) ) {
                 std::string maskName = _imp->liveInstance->getInputLabel(i);
@@ -1488,7 +1493,7 @@ Node::initializeKnobs(int renderScaleSupportPref)
         }
     }
     
-    if (!isDot) {
+    if (!isDot &&!isViewer) {
         _imp->nodeSettingsPage = Natron::createKnob<Page_Knob>(_imp->liveInstance.get(), NATRON_EXTRA_PARAMETER_PAGE_NAME,1,false);
         
         _imp->nodeLabelKnob = Natron::createKnob<String_Knob>(_imp->liveInstance.get(),
@@ -1502,7 +1507,7 @@ Node::initializeKnobs(int renderScaleSupportPref)
         _imp->nodeLabelKnob->setHintToolTip("This label gets appended to the node name on the node graph.");
         _imp->nodeSettingsPage->addKnob(_imp->nodeLabelKnob);
     }
-    if (!isBd && !isDot) {
+    if (!isBd && !isDot && !isViewer) {
         _imp->forceCaching = Natron::createKnob<Bool_Knob>(_imp->liveInstance.get(), "Force caching", 1, false);
         _imp->forceCaching->setName("forceCaching");
         _imp->forceCaching->setDefaultValue(false);
@@ -1592,7 +1597,9 @@ Node::initializeKnobs(int renderScaleSupportPref)
         _imp->infoPage->addKnob(_imp->refreshInfoButton);
     }
     
-    
+    if (isGroup) {
+        _imp->liveInstance->initializeKnobsPublic();
+    }
     _imp->knobsInitialized = true;
     _imp->liveInstance->unblockEvaluation();
     

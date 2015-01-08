@@ -2761,7 +2761,7 @@ SequenceFileDialog::createViewerPreviewNode()
     _preview->viewerUI->setPlayerVisible(false);
     TabWidget* parent = dynamic_cast<TabWidget*>(_preview->viewerUI->parentWidget());
     if (parent) {
-        parent->removeTab(_preview->viewerUI);
+        parent->removeTab(_preview->viewerUI,true);
     }
     _preview->viewerUI->setParent(NULL);
 }

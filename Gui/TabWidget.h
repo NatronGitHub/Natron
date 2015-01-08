@@ -159,7 +159,7 @@ public:
 
     /*Removes from the TabWidget, but does not delete the widget.
        Returns NULL if the index is not in a good range.*/
-    QWidget* removeTab(int index);
+    QWidget* removeTab(int index,bool userAction);
 
     /*Get the header name of the tab at index "index".*/
     QString getTabName(int index) const;
@@ -170,7 +170,7 @@ public:
     void setTabName(QWidget* tab,const QString & name);
 
     /*Removes from the TabWidget, but does not delete the widget.*/
-    void removeTab(QWidget* widget);
+    void removeTab(QWidget* widget,bool userAction);
 
     int count() const
     {

@@ -565,6 +565,7 @@ NodeGui::resize(int width,
     if (mustFrameName()) {
         QRectF nameFrameBox(topLeft.x(),topLeft.y(), width, 1.5 * mh);
         _nameFrame->setRect(nameFrameBox);
+        height = std::max((double)height, nameFrameBox.height());
     }
     
     if (mustAddResizeHandle()) {
