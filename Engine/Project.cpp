@@ -2169,34 +2169,38 @@ Project::onOCIOConfigPathChanged(const std::string& path,bool block)
     if (block) {
         blockEvaluation();
     }
-    std::string env = _imp->envVars->getValue();
-    std::map<std::string, std::string> envMap;
-    makeEnvMap(env, envMap);
-    
-    ///If there was already a OCIO variable, update it, otherwise create it
-    
-    std::map<std::string, std::string>::iterator foundOCIO = envMap.find(NATRON_OCIO_ENV_VAR_NAME);
-    if (foundOCIO != envMap.end()) {
-        foundOCIO->second = path;
-    } else {
-        envMap.insert(std::make_pair(NATRON_OCIO_ENV_VAR_NAME, path));
-    }
+    try {
+        std::string env = _imp->envVars->getValue();
+        std::map<std::string, std::string> envMap;
+        makeEnvMap(env, envMap);
 
-    std::string newEnv;
-    for (std::map<std::string, std::string>::iterator it = envMap.begin(); it!=envMap.end();++it) {
-        // In order to use XML tags, the text inside the tags has to be escaped.
-        newEnv += NATRON_ENV_VAR_NAME_START_TAG;
-        newEnv += Project::escapeXML(it->first);
-        newEnv += NATRON_ENV_VAR_NAME_END_TAG;
-        newEnv += NATRON_ENV_VAR_VALUE_START_TAG;
-        newEnv += Project::escapeXML(it->second);
-        newEnv += NATRON_ENV_VAR_VALUE_END_TAG;
-    }
-    if (env != newEnv) {
-        if (appPTR->getCurrentSettings()->isAutoFixRelativeFilePathEnabled()) {
-            fixRelativeFilePaths(NATRON_OCIO_ENV_VAR_NAME, path,block);
+        ///If there was already a OCIO variable, update it, otherwise create it
+
+        std::map<std::string, std::string>::iterator foundOCIO = envMap.find(NATRON_OCIO_ENV_VAR_NAME);
+        if (foundOCIO != envMap.end()) {
+            foundOCIO->second = path;
+        } else {
+            envMap.insert(std::make_pair(NATRON_OCIO_ENV_VAR_NAME, path));
         }
-        _imp->envVars->setValue(newEnv, 0);
+
+        std::string newEnv;
+        for (std::map<std::string, std::string>::iterator it = envMap.begin(); it!=envMap.end();++it) {
+            // In order to use XML tags, the text inside the tags has to be escaped.
+            newEnv += NATRON_ENV_VAR_NAME_START_TAG;
+            newEnv += Project::escapeXML(it->first);
+            newEnv += NATRON_ENV_VAR_NAME_END_TAG;
+            newEnv += NATRON_ENV_VAR_VALUE_START_TAG;
+            newEnv += Project::escapeXML(it->second);
+            newEnv += NATRON_ENV_VAR_VALUE_END_TAG;
+        }
+        if (env != newEnv) {
+            if (appPTR->getCurrentSettings()->isAutoFixRelativeFilePathEnabled()) {
+                fixRelativeFilePaths(NATRON_OCIO_ENV_VAR_NAME, path,block);
+            }
+            _imp->envVars->setValue(newEnv, 0);
+        }
+    } catch (std::logic_error) {
+        // ignore
     }
     if (block) {
         unblockEvaluation();
