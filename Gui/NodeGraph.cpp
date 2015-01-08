@@ -3223,13 +3223,32 @@ NodeGraphPrivate::copyNodesInternal(NodeClipBoard & clipboard)
             return;
         }
     }
+    
+    for (NodeGuiList::iterator it = nodesToCopy.begin(); it != nodesToCopy.end(); ++it) {
+        {
+            boost::shared_ptr<NodeSerialization> ns( new NodeSerialization( (*it)->getNode(), true ) );
+            boost::shared_ptr<NodeGuiSerialization> nGuiS(new NodeGuiSerialization);
+            (*it)->serialize( nGuiS.get() );
+            clipboard.nodes.push_back(ns);
+            clipboard.nodesUI.push_back(nGuiS);
+        }
+        NodeGroup* isGrp = dynamic_cast<NodeGroup*>((*it)->getNode()->getLiveInstance());
+        if (isGrp) {
+            NodeList nodes = isGrp->getNodes();
+            for (NodeList::iterator it2 = nodes.begin(); it2 != nodes.end(); ++it2) {
+                boost::shared_ptr<NodeGuiI> gui_i = (*it2)->getNodeGui();
+                assert(gui_i);
+                NodeGuiPtr gui = boost::dynamic_pointer_cast<NodeGui>(gui_i);
+                assert(gui);
+                
+                boost::shared_ptr<NodeSerialization> ns( new NodeSerialization(*it2, true ) );
+                boost::shared_ptr<NodeGuiSerialization> nGuiS(new NodeGuiSerialization);
+                gui->serialize( nGuiS.get() );
+                clipboard.nodes.push_back(ns);
+                clipboard.nodesUI.push_back(nGuiS);
 
-    for (std::list<boost::shared_ptr<NodeGui> >::iterator it = nodesToCopy.begin(); it != nodesToCopy.end(); ++it) {
-        boost::shared_ptr<NodeSerialization> ns( new NodeSerialization( (*it)->getNode(), true ) );
-        boost::shared_ptr<NodeGuiSerialization> nGuiS(new NodeGuiSerialization);
-        (*it)->serialize( nGuiS.get() );
-        clipboard.nodes.push_back(ns);
-        clipboard.nodesUI.push_back(nGuiS);
+            }
+        }
     }
 }
 
