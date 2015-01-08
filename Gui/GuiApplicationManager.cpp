@@ -1257,8 +1257,11 @@ GuiApplicationManager::handleOpenFileRequest()
 
     AppInstance* mainApp = getAppInstance(0);
     GuiAppInstance* guiApp = dynamic_cast<GuiAppInstance*>(mainApp);
-    guiApp->getGui()->openProject(_imp->_openFileRequest.toStdString());
-    _imp->_openFileRequest.clear();
+    assert(guiApp);
+    if (guiApp) {
+        guiApp->getGui()->openProject(_imp->_openFileRequest.toStdString());
+        _imp->_openFileRequest.clear();
+    }
 }
 
 void

@@ -327,10 +327,13 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
     }
     
     int count = 0;
-    for (std::list<Natron::Node*>::iterator it = nodesToRestorePreferences.begin(); it!=nodesToRestorePreferences.end(); ++it,++count) {
-        (*it)->restoreClipPreferencesRecursive(markedNodes);
-        _publicInterface->getApp()->progressUpdate(_publicInterface,
-                                                   ((double)(count+1) / (double)nodesToRestorePreferences.size()) * 0.5 + 0.25);
+    size_t nodesToRestorePreferencesNb = nodesToRestorePreferences.size();
+    if (nodesToRestorePreferencesNb) {
+        for (std::list<Natron::Node*>::iterator it = nodesToRestorePreferences.begin(); it!=nodesToRestorePreferences.end(); ++it,++count) {
+            (*it)->restoreClipPreferencesRecursive(markedNodes);
+            _publicInterface->getApp()->progressUpdate(_publicInterface,
+                                                       ((double)(count+1) / nodesToRestorePreferencesNb) * 0.5 + 0.25);
+        }
     }
     
     ///We should be now at 75% progress...

@@ -434,8 +434,11 @@ AppManager::~AppManager()
         delete _imp->_backgroundIPC;
     }
 
-    _imp->saveCaches();
-
+    try {
+        _imp->saveCaches();
+    } catch (std::runtime_error) {
+        // ignore errors
+    }
 
     _instance = 0;
 

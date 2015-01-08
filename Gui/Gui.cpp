@@ -3015,11 +3015,13 @@ Gui::onDoDialog(int type,
     if (type == 0) {
         QMessageBox critical(QMessageBox::Critical, title, msg, QMessageBox::NoButton, this, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint | Qt::WindowStaysOnTopHint);
         critical.setTextFormat(Qt::RichText);   //this is what makes the links clickable
-        critical.exec();
+        int status = critical.exec();
+        assert(status == QDialog::Accepted);
     } else if (type == 1) {
         QMessageBox warning(QMessageBox::Warning, title, msg, QMessageBox::NoButton, this, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint | Qt::WindowStaysOnTopHint);
         warning.setTextFormat(Qt::RichText);
-        warning.exec();
+        int status = warning.exec();
+        assert(status == QDialog::Accepted);
     } else if (type == 2) {
         QMessageBox info(QMessageBox::Information, title, (msg.count() > 1000 ? msg.left(1000) : msg), QMessageBox::NoButton, this, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint | Qt::WindowStaysOnTopHint);
         info.setTextFormat(Qt::RichText);
