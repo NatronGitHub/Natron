@@ -71,7 +71,10 @@ public:
     boost::shared_ptr<NodeGui> getNodeGui(Natron::Node* n) const WARN_UNUSED_RETURN;
     boost::shared_ptr<NodeGui> getNodeGui(const std::string & nodeName) const WARN_UNUSED_RETURN;
     boost::shared_ptr<Natron::Node> getNode(const boost::shared_ptr<NodeGui> & n) const WARN_UNUSED_RETURN;
-
+    
+    ////To be removed in Natron 1.1, this is temporary to workaround a bug
+    void insertInNodeMapping(const boost::shared_ptr<NodeGui>& node);
+    
     /**
      * @brief Remove the node n from the mapping in GuiAppInstance and from the project so the pointer is no longer
      * referenced anywhere. This function is called on nodes that were already deleted by the user but were kept into
@@ -153,7 +156,7 @@ private:
                                bool autoConnect,
                                double xPosHint,double yPosHint,
                                bool pushUndoRedoCommand) OVERRIDE FINAL;
-
+    
 
     boost::scoped_ptr<GuiAppInstancePrivate> _imp;
 };

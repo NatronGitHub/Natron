@@ -4485,17 +4485,26 @@ Gui::getNodesEntitledForOverlays(std::list<boost::shared_ptr<Natron::Node> >& no
                 if (multiInstance) {
                     const std::list< std::pair<boost::shared_ptr<Natron::Node>,bool > >& instances = multiInstance->getInstances();
                     for (std::list< std::pair<boost::shared_ptr<Natron::Node>,bool > >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
-                        if (node->isSettingsPanelVisible() && it->first->isActivated() && it->second && !it->first->isNodeDisabled()) {
+                        if (node->isSettingsPanelVisible() &&
+                            !node->isSettingsPanelMinimized() &&
+                            it->first->isActivated() &&
+                            it->second &&
+                            !it->first->isNodeDisabled()) {
                             nodes.push_back(it->first);
                         }
                     }
                     boost::shared_ptr<Natron::Node> internalNode = node->getNode();
-                    if (!internalNode->isNodeDisabled() && node->isSettingsPanelVisible()) {
+                    if (!internalNode->isNodeDisabled() &&
+                        node->isSettingsPanelVisible() &&
+                        !node->isSettingsPanelMinimized() ) {
                         nodes.push_back(node->getNode());
                     }
                 } else {
                     boost::shared_ptr<Natron::Node> internalNode = node->getNode();
-                    if (!internalNode->isNodeDisabled() && internalNode->isActivated() && node->isSettingsPanelVisible()) {
+                    if (!internalNode->isNodeDisabled() &&
+                        internalNode->isActivated() &&
+                        node->isSettingsPanelVisible() &&
+                        !node->isSettingsPanelMinimized() ) {
                         nodes.push_back(node->getNode());
                     }
                 }

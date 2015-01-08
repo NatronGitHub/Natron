@@ -246,6 +246,12 @@ GuiAppInstance::load(const QString & projectName,
 } // load
 
 void
+GuiAppInstance::insertInNodeMapping(const boost::shared_ptr<NodeGui>& node)
+{
+    _imp->_nodeMapping.insert( std::make_pair(node->getNode(),node) );
+}
+
+void
 GuiAppInstance::createNodeGui(boost::shared_ptr<Natron::Node> node,
                               const std::string & multiInstanceParentName,
                               bool loadRequest,
@@ -267,7 +273,7 @@ GuiAppInstance::createNodeGui(boost::shared_ptr<Natron::Node> node,
         boost::shared_ptr<NodeGui> parentNodeGui = getNodeGui(multiInstanceParentName);
         nodegui->setParentMultiInstance(parentNodeGui);
     }
-    _imp->_nodeMapping.insert( std::make_pair(node,nodegui) );
+    
 
     ///It needs to be here because we rely on the _nodeMapping member
     bool isViewer = dynamic_cast<ViewerInstance*>(node->getLiveInstance());

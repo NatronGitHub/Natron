@@ -846,11 +846,11 @@ NodeGui::initializeInputs()
         ///if the node is an inspector and it has only 1 empty input, display it aside
         if ( (emptyInputsCount == 1) && (_internalNode->getMaxInputCount() > 1) ) {
             for (InputEdgesMap::iterator it = _inputEdges.begin(); it != _inputEdges.end(); ++it) {
-                if ( it->second && !it->second->hasSource() ) {
-                    it->second->setAngle(M_PI);
+                if ( it->second ) {
+                    if (!it->second->hasSource()) {
+                        it->second->setAngle(M_PI);
+                    }
                     it->second->initLine();
-
-                    return;
                 }
             }
         }
@@ -1416,6 +1416,12 @@ NodeGui::isSettingsPanelVisible() const
     } else {
         return false;
     }
+}
+
+bool
+NodeGui::isSettingsPanelMinimized() const
+{
+    return _settingsPanel ? _settingsPanel->isMinimized() : false;
 }
 
 void
