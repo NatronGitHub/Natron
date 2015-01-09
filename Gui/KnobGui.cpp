@@ -124,7 +124,7 @@ struct KnobGui::KnobGuiPrivate
     
     void removeFromKnobsOnSameLineVector(const boost::shared_ptr<KnobI>& knob)
     {
-        for (std::vector< boost::shared_ptr< KnobI > >::const_iterator it = knobsOnSameLine.begin(); it != knobsOnSameLine.end(); ++it) {
+        for (std::vector< boost::shared_ptr< KnobI > >::iterator it = knobsOnSameLine.begin(); it != knobsOnSameLine.end(); ++it) {
             if (*it == knob) {
                 knobsOnSameLine.erase(it);
                 break;
