@@ -29,20 +29,20 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     sudo add-apt-repository -y ppa:xorg-edgers/ppa 
     if [ "$CC" = "$TEST_CC" ]; then sudo pip install cpp-coveralls --use-mirrors; fi
     # Python 3.4
-    sudo add-apt-repository --yes ppa:fkrull/deadsnakes # python3.x
+    #sudo add-apt-repository --yes ppa:fkrull/deadsnakes # python3.x
     # we get libyaml-cpp-dev from kubuntu backports (for OpenColorIO)
     if [ "$CC" = "$TEST_CC" ]; then sudo add-apt-repository -y ppa:kubuntu-ppa/backports; fi
     sudo apt-get update
     sudo apt-get update -qq
 
-    sudo apt-get install libqt4-dev libglew-dev libboost-serialization-dev libexpat1-dev gdb libcairo2-dev python3.4-dev
+    sudo apt-get install libqt4-dev libglew-dev libboost-serialization-dev libexpat1-dev gdb libcairo2-dev python3-dev python3-pyside
 
     python --version
     pip --version
-    python3 --version
-    pip3 --version
-    python3.4 --version
-    pip3.4 --version
+    python3 --version || /bin/true
+    pip3 --version || /bin/true
+    python3.4 --version || /bin/true
+    pip3.4 --version || /bin/true
 
     # PySide
     # see https://stackoverflow.com/questions/24489588/how-can-i-install-pyside-on-travis/24545890#24545890
