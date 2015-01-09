@@ -33,7 +33,7 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     sudo apt-get update
     sudo apt-get update -qq
 
-    sudo apt-get install libqt4-dev libglew-dev libboost-serialization-dev libexpat1-dev gdb libcairo2-dev python3-dev python3-pyside libshiboken-dev
+    sudo apt-get install libqt4-dev libglew-dev libboost-serialization-dev libexpat1-dev gdb libcairo2-dev python3-dev python3-pyside libpyside-dev libshiboken-dev
 
     python3 --version
     python3 -c "from PySide import QtGui, QtCore, QtOpenGL"
