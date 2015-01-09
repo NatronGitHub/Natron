@@ -39,17 +39,10 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
 
     python --version
     pip --version
-    python3 --version || /bin/true
-    pip3 --version || /bin/true
-    python3.4 --version || /bin/true
-    pip3.4 --version || /bin/true
-
-    # PySide
-    # see https://stackoverflow.com/questions/24489588/how-can-i-install-pyside-on-travis/24545890#24545890
-    pip${PYTHON_VERSION} install PySide --no-index --find-links https://parkin.github.io/python-wheelhouse/;
-    # Travis CI servers use virtualenvs, so we need to finish the install by the following
-    python ~/virtualenv/python${PYTHON_VERSION}/bin/pyside_postinstall.py -install
-
+    python3 --version
+    pip3 --version
+    python3 -c "from PySide import QtGui, QtCore, QtOpenGL"
+    
     # OpenFX
     if [ "$CC" = "$TEST_CC" ]; then make -C libs/OpenFX/Examples; fi
     if [ "$CC" = "$TEST_CC" ]; then make -C libs/OpenFX/Support/Plugins; fi
