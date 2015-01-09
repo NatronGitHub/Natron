@@ -172,12 +172,12 @@ typesystem.xml file. See the documentation of shiboken-3.4 for an explanation of
 
 
 ```Shell
-shiboken-3.4 Engine/Pyside_Engine_Python.h --include-paths=/Users/alexandre/development/Engine:/Users/alexandre/development/Natron/Global:/opt/local/include:/opt/local/include/PySide-3.4  --typesystem-paths=/opt/local/share/PySide-3.4/typesystems --output-directory=Engine Engine/typesystem_engine.xml
+shiboken-3.4 --include-paths=/Users/alexandre/development/Engine:/Users/alexandre/development/Natron/Global:/opt/local/include:/opt/local/include/PySide-3.4  --typesystem-paths=/opt/local/share/PySide-3.4/typesystems --output-directory=Engine Engine/Pyside_Engine_Python.h  Engine/typesystem_engine.xml
 ```
 
 on HomeBrew:
 ```Shell
- shiboken --include-paths=..:`pkg-config --variable=includedir QtCore`/..:`pkg-config --variable=includedir pyside`  --typesystem-paths=`pkg-config --variable=typesystemdir pyside` --output-directory=Engine Engine/Pyside_Engine_Python.h Engine/typesystem_engine.xml
+shiboken --include-paths=../Global:`pkg-config --variable=prefix QtCore`/include:`pkg-config --variable=includedir pyside`  --typesystem-paths=`pkg-config --variable=typesystemdir pyside` --output-directory=Engine Engine/Pyside_Engine_Python.h Engine/typesystem_engine.xml
  ```
  
 ## OpenFX plugins
