@@ -573,8 +573,8 @@ public:
     Qt::MouseButton button; //< the button that must be held down for the action. This cannot be edited!
 
     MouseAction()
-        : button(Qt::NoButton)
-        , BoundAction()
+        : BoundAction()
+        , button(Qt::NoButton)
     {
     }
 

@@ -112,9 +112,9 @@ struct MultiInstancePanelPrivate
           , addButton(0)
           , removeButton(0)
           , selectAll(0)
+          , resetTracksButton(0)
           , executingKnobValueChanged(false)
           , knobValueRecursion(0)
-          , resetTracksButton(0)
     {
     }
 
