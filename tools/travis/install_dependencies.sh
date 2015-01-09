@@ -5,6 +5,12 @@ set -e
 # Print commands and their arguments as they are executed.
 set -x
 
+env
+python --version
+pip --version
+python3.4 --version
+pip3.4 --version
+
 # enable testing locally or on forks without multi-os enabled
 if [[ "${TRAVIS_OS_NAME:-false}" == false ]]; then
     if [[ $(uname -s) == "Darwin" ]]; then

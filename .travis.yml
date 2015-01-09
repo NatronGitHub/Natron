@@ -22,7 +22,7 @@ compiler:
   - clang
 
 python:
-  - 3.4
+  - "3.4"
 
 matrix:
   exclude:
