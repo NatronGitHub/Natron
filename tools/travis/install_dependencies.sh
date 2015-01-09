@@ -32,6 +32,11 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     sudo apt-get update -qq
 
     sudo apt-get install libqt4-dev libglew-dev libboost-serialization-dev libexpat1-dev gdb libcairo2-dev
+
+    # PySide
+    # see https://stackoverflow.com/questions/24489588/how-can-i-install-pyside-on-travis/24545890#24545890
+    pip install PySide
+
     # OpenFX
     if [ "$CC" = "$TEST_CC" ]; then make -C libs/OpenFX/Examples; fi
     if [ "$CC" = "$TEST_CC" ]; then make -C libs/OpenFX/Support/Plugins; fi
@@ -94,10 +99,10 @@ elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
     #brew install scons swig ilmbase openexr jasper little-cms2 glew freetype fontconfig ffmpeg imagemagick libcaca aces_container ctl jpeg-turbo libraw seexpr openjpeg opencolorio openimageio
     if [ "$CC" = "$TEST_CC" ]; then
 	# Natron's dependencies for building all OpenFX plugins
-	brew install qt expat cairo ilmbase openexr glew freetype fontconfig ffmpeg opencolorio openimageio
+	brew install qt expat cairo glew pyside --with-python3 ilmbase openexr freetype fontconfig ffmpeg opencolorio openimageio
     else
 	# Natron's dependencies only
-	brew install qt expat cairo glew
+	brew install qt expat cairo glew pyside --with-python3
     fi
 
     # OpenFX

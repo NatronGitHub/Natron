@@ -21,6 +21,9 @@ compiler:
   - gcc
   - clang
 
+python:
+  - 3.4
+
 matrix:
   exclude:
     - os: osx
