@@ -300,6 +300,7 @@ struct GuiPrivate
     ///the vertical layout for the properties dock container.
     QVBoxLayout *_layoutPropertiesBin;
     Button* _clearAllPanelsButton;
+    Button* _minimizeAllPanelsButtons;
     SpinBox* _maxPanelsOpenedSpinBox;
     
     QMutex _isGUIFrozenMutex;
@@ -426,6 +427,7 @@ struct GuiPrivate
 		  , _propertiesContainer(0)
           , _layoutPropertiesBin(0)
           , _clearAllPanelsButton(0)
+          , _minimizeAllPanelsButtons(0)
           , _maxPanelsOpenedSpinBox(0)
           , _isGUIFrozenMutex()
           , _isGUIFrozen(false)
@@ -1096,8 +1098,21 @@ GuiPrivate::createPropertiesBinGui()
                                                                 Qt::WhiteSpaceNormal) );
     _clearAllPanelsButton->setFocusPolicy(Qt::NoFocus);
     QObject::connect( _clearAllPanelsButton,SIGNAL( clicked(bool) ),_gui,SLOT( clearAllVisiblePanels() ) );
-
-
+    
+    QPixmap minimizePix,maximizePix;
+    appPTR->getIcon(NATRON_PIXMAP_MINIMIZE_WIDGET, &minimizePix);
+    appPTR->getIcon(NATRON_PIXMAP_MAXIMIZE_WIDGET, &maximizePix);
+    QIcon mIc;
+    mIc.addPixmap(minimizePix,QIcon::Normal, QIcon::On);
+    mIc.addPixmap(maximizePix,QIcon::Normal, QIcon::Off);
+    _minimizeAllPanelsButtons = new Button(mIc,"",propertiesAreaButtonsContainer);
+    _minimizeAllPanelsButtons->setCheckable(true);
+    _minimizeAllPanelsButtons->setChecked(false);
+    _minimizeAllPanelsButtons->setFixedSize(NATRON_SMALL_BUTTON_SIZE,NATRON_SMALL_BUTTON_SIZE);
+    _minimizeAllPanelsButtons->setToolTip(Qt::convertFromPlainText(_gui->tr("Minimize / Maximize all panels"),Qt::WhiteSpaceNormal));
+    _minimizeAllPanelsButtons->setFocusPolicy(Qt::NoFocus);
+    QObject::connect( _minimizeAllPanelsButtons,SIGNAL( clicked(bool) ),_gui,SLOT( minimizeMaximizeAllPanels(bool) ) );
+    
     _maxPanelsOpenedSpinBox = new SpinBox(propertiesAreaButtonsContainer);
     _maxPanelsOpenedSpinBox->setMaximumSize(NATRON_SMALL_BUTTON_SIZE,NATRON_SMALL_BUTTON_SIZE);
     _maxPanelsOpenedSpinBox->setMinimum(0);
@@ -1111,6 +1126,7 @@ GuiPrivate::createPropertiesBinGui()
     
     propertiesAreaButtonsLayout->addWidget(_maxPanelsOpenedSpinBox);
     propertiesAreaButtonsLayout->addWidget(_clearAllPanelsButton);
+    propertiesAreaButtonsLayout->addWidget(_minimizeAllPanelsButtons);
     propertiesAreaButtonsLayout->addStretch();
     
     mainPropertiesLayout->addWidget(propertiesAreaButtonsContainer);
@@ -4219,6 +4235,23 @@ Gui::clearAllVisiblePanels()
         }
     }
 	getApp()->redrawAllViewers();
+}
+
+void
+Gui::minimizeMaximizeAllPanels(bool clicked)
+{
+    for (std::list<DockablePanel*>::iterator it = _imp->openedPanels.begin() ; it != _imp->openedPanels.end(); ++it) {
+        if (clicked) {
+            if (!(*it)->isMinimized()) {
+                (*it)->minimizeOrMaximize(true);
+            }
+        } else {
+            if ((*it)->isMinimized()) {
+                (*it)->minimizeOrMaximize(false);
+            }
+        }
+    }
+    getApp()->redrawAllViewers();
 }
 
 NodeBackDrop*
