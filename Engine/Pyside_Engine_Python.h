@@ -22,15 +22,15 @@
 #include <pyside_global.h>
 
 //Global
-#include <GlobalDefines.h>
-#include <Enums.h>
+#include <Global/GlobalDefines.h>
+#include <Global/Enums.h>
 
 //Engine
-#include <GlobalFunctionsWrapper.h>
-#include <NodeGroupWrapper.h>
-#include <AppInstanceWrapper.h>
-#include <RotoWrapper.h>
-#include <NodeWrapper.h>
-#include <ParameterWrapper.h>
+#include "GlobalFunctionsWrapper.h"
+#include "NodeGroupWrapper.h"
+#include "AppInstanceWrapper.h"
+#include "RotoWrapper.h"
+#include "NodeWrapper.h"
+#include "ParameterWrapper.h"
 
 #endif // PYSIDE_ENGINE_PYTHON_H
