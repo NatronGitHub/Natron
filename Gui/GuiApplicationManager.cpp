@@ -377,6 +377,14 @@ GuiApplicationManager::getIcon(Natron::PixmapEnum e,
                 img.load(NATRON_IMAGES_PATH "colorwheel.png");
                 *pix = QPixmap::fromImage(img);
                 break;
+            case NATRON_PIXMAP_OVERLAY:
+                img.load(NATRON_IMAGES_PATH "colorwheel_overlay.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_ROTO_MERGE:
+                img.load(NATRON_IMAGES_PATH "roto_merge.png");
+                *pix = QPixmap::fromImage(img);
+                break;
             case NATRON_PIXMAP_COLOR_PICKER:
                 img.load(NATRON_IMAGES_PATH "color_picker.png");
                 *pix = QPixmap::fromImage(img);

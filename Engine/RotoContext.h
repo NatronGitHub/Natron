@@ -628,6 +628,11 @@ public:
      * @brief Removes the feather point at the given index by making it equal the "true" control point.
      **/
     void removeFeatherAtIndex(int index);
+    
+    /**
+     * @brief Expand the feather point in the direction of the feather distance by the given distance.
+     **/
+    //void expandFeatherAtIndex(int index,double distance);
 
     /**
      * @brief Smooth the curvature of the bezier at the given index by expanding the tangents.

@@ -67,23 +67,6 @@ CLANG_DIAG_ON(uninitialized)
 using namespace Natron;
 
 
-static QPixmap
-getColorButtonDefaultPixmap()
-{
-    QImage img(15,15,QImage::Format_ARGB32);
-    QColor gray(Qt::gray);
-
-    img.fill( gray.rgba() );
-    QPainter p(&img);
-    QPen pen;
-    pen.setColor(Qt::black);
-    pen.setWidth(2);
-    p.setPen(pen);
-    p.drawLine(0, 0, 14, 14);
-
-    return QPixmap::fromImage(img);
-}
-
 class TreeWidget
     : public QTreeWidget
 {
@@ -384,9 +367,8 @@ RotoPanel::RotoPanel(NodeGui* n,
     appPTR->getIcon(NATRON_PIXMAP_INVERTED, &pixInverted);
     appPTR->getIcon(NATRON_PIXMAP_UNINVERTED, &pixUninverted);
     appPTR->getIcon(NATRON_PIXMAP_COLORWHEEL, &pixWheel);
-    appPTR->getIcon(NATRON_PIXMAP_MERGE_GROUPING, &pixmerge);
-    pixmerge = pixmerge.scaled(15, 15);
-    pixDefault = getColorButtonDefaultPixmap();
+    appPTR->getIcon(NATRON_PIXMAP_ROTO_MERGE, &pixmerge);
+    appPTR->getIcon(NATRON_PIXMAP_OVERLAY, &pixDefault);
 
     _imp->iconLayer.addPixmap(pixLayer);
     _imp->iconBezier.addPixmap(pixBezier);
@@ -400,7 +382,7 @@ RotoPanel::RotoPanel(NodeGui* n,
 
     _imp->treeHeader->setIcon(COL_ACTIVATED, _imp->iconVisible);
     _imp->treeHeader->setIcon(COL_LOCKED, _imp->iconLocked);
-    _imp->treeHeader->setIcon( COL_OVERLAY, QIcon(pixDefault) );
+    _imp->treeHeader->setIcon(COL_OVERLAY, QIcon(pixDefault) );
     _imp->treeHeader->setIcon(COL_COLOR, _imp->iconWheel);
 #ifdef NATRON_ROTO_INVERTIBLE
     _imp->treeHeader->setIcon(COL_INVERTED, _imp->iconUninverted);
@@ -788,7 +770,8 @@ RotoPanelPrivate::insertItemRecursively(int time,
     treeItem->setText( COL_NAME, item->getName_mt_safe().c_str() );
     treeItem->setToolTip( COL_NAME, Qt::convertFromPlainText(kRotoNameHint, Qt::WhiteSpaceNormal) );
     treeItem->setIcon(COL_ACTIVATED, item->isGloballyActivated() ? iconVisible : iconUnvisible);
-    treeItem->setToolTip( COL_ACTIVATED, Qt::convertFromPlainText(kRotoActivatedHint, Qt::WhiteSpaceNormal) );
+    treeItem->setToolTip( COL_ACTIVATED, Qt::convertFromPlainText("Controls whether the overlay should be visible on the viewer for "
+                                                                  "the shape.", Qt::WhiteSpaceNormal) );
     treeItem->setIcon(COL_LOCKED, item->getLocked() ? iconLocked : iconUnlocked);
     treeItem->setToolTip( COL_LOCKED, Qt::convertFromPlainText(kRotoLockedHint, Qt::WhiteSpaceNormal) );
 

@@ -63,7 +63,7 @@
 #define kRotoActivatedParam "activated"
 #define kRotoActivatedParamLabel "Activated"
 #define kRotoActivatedHint \
-    "Controls whether the selected shape(s) should be visible and rendered or not." \
+    "Controls whether the selected shape(s) should be rendered or not." \
     "Note that you can animate this parameter so you can activate/deactive the shape " \
     "throughout the time."
 

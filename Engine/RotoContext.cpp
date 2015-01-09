@@ -1137,12 +1137,12 @@ RotoDrawableItem::load(const RotoItemSerialization &obj)
 bool
 RotoDrawableItem::isActivated(int time) const
 {
-    bool deactivated = isDeactivatedRecursive();
-    if (deactivated) {
-        return false;
-    } else {
+//    bool deactivated = isDeactivatedRecursive();
+//    if (deactivated) {
+//        return false;
+//    } else {
         return _imp->activated->getValueAtTime(time);
-    }
+//    }
 }
 
 double
