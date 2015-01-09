@@ -35,11 +35,14 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
 
     sudo apt-get install libqt4-dev libglew-dev libboost-serialization-dev libexpat1-dev gdb libcairo2-dev python3-dev python3-pyside libpyside-dev libshiboken-dev
 
-    echo "Python version:"
+    echo "*** Python version:"
     python3 --version
     python3 -c "from PySide import QtGui, QtCore, QtOpenGL"
-    echo "PySide libs:"
+    echo "*** PySide:"
     env PKG_CONFIG_PATH=`python3-config --prefix`/lib/pkgconfig pkg-config --libs pyside
+    echo "*** Shiboken:"
+    pkg-config --libs shiboken
+    cat /usr/lib/x86_64-linux-gnu/pkgconfig/shiboken.pc
     
     # OpenFX
     if [ "$CC" = "$TEST_CC" ]; then make -C libs/OpenFX/Examples; fi
