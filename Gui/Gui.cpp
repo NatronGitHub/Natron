@@ -3031,13 +3031,11 @@ Gui::onDoDialog(int type,
     if (type == 0) {
         QMessageBox critical(QMessageBox::Critical, title, msg, QMessageBox::NoButton, this, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint | Qt::WindowStaysOnTopHint);
         critical.setTextFormat(Qt::RichText);   //this is what makes the links clickable
-        int status = critical.exec();
-        assert(status == QDialog::Accepted);
+        ignore_result(critical.exec());
     } else if (type == 1) {
         QMessageBox warning(QMessageBox::Warning, title, msg, QMessageBox::NoButton, this, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint | Qt::WindowStaysOnTopHint);
         warning.setTextFormat(Qt::RichText);
-        int status = warning.exec();
-        assert(status == QDialog::Accepted);
+        ignore_result(warning.exec());
     } else if (type == 2) {
         QMessageBox info(QMessageBox::Information, title, (msg.count() > 1000 ? msg.left(1000) : msg), QMessageBox::NoButton, this, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint | Qt::WindowStaysOnTopHint);
         info.setTextFormat(Qt::RichText);
@@ -3049,8 +3047,7 @@ Gui::onDoDialog(int type,
                 layout->addWidget(edit, 0, 1);
             }
         }
-        int status = info.exec();
-        assert(status == QDialog::Accepted);
+        ignore_result(info.exec());
     } else {
         QMessageBox ques(QMessageBox::Question, title, msg, QtEnumConvert::toQtStandarButtons(buttons),
                          this, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint | Qt::WindowStaysOnTopHint);
