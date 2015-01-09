@@ -829,10 +829,10 @@ EffectInstance::aborted() const
                     ///Rendering issued by RenderEngine::renderCurrentFrame, if time or hash changed, abort
                     bool ret = args.nodeHash != getHash() ||
                     args.time != args.timeline->currentFrame() ||
-                    !_node->isActivated();
+                    !getNode()->isActivated();
                     return ret;
                 } else {
-                    bool ret = !_node->isActivated();
+                    bool ret = !getNode()->isActivated();
                     return ret;
                 }
                 

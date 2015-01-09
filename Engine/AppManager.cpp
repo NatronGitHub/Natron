@@ -1077,7 +1077,7 @@ static void findAndRunScriptFile(const QString& path,const QStringList& files,co
 QString
 AppManager::getSystemNonOFXPluginsPath() const
 {
-    return  Natron::StandardPaths::writableLocation(Natron::StandardPaths::DataLocation) +
+    return  Natron::StandardPaths::writableLocation(Natron::StandardPaths::eStandardLocationData) +
       QDir::separator() + "Plugins";
 }
 
@@ -1086,7 +1086,7 @@ AppManager::getAllNonOFXPluginsPaths() const
 {
     QStringList templatesSearchPath;
     
-    QString dataLocation = Natron::StandardPaths::writableLocation(Natron::StandardPaths::DataLocation);
+    QString dataLocation = Natron::StandardPaths::writableLocation(Natron::StandardPaths::eStandardLocationData);
     QString mainPath = dataLocation + QDir::separator() + "Plugins";
     
     QDir mainPathDir(mainPath);

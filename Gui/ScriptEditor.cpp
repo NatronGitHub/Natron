@@ -259,7 +259,7 @@ ScriptEditor::onSourceScriptClicked()
 {
     std::vector<std::string> filters;
     filters.push_back("py");
-    SequenceFileDialog dialog(this,filters,false,SequenceFileDialog::OPEN_DIALOG,_imp->gui->getLastLoadProjectDirectory().toStdString(),
+    SequenceFileDialog dialog(this,filters,false,SequenceFileDialog::eFileDialogModeDir,_imp->gui->getLastLoadProjectDirectory().toStdString(),
                               _imp->gui,false);
     
     if (dialog.exec()) {
@@ -286,7 +286,7 @@ ScriptEditor::onLoadScriptClicked()
 {
     std::vector<std::string> filters;
     filters.push_back("py");
-    SequenceFileDialog dialog(this,filters,false,SequenceFileDialog::OPEN_DIALOG,_imp->gui->getLastLoadProjectDirectory().toStdString(),
+    SequenceFileDialog dialog(this,filters,false,SequenceFileDialog::eFileDialogModeDir,_imp->gui->getLastLoadProjectDirectory().toStdString(),
                               _imp->gui,false);
     
     if (dialog.exec()) {
@@ -311,7 +311,7 @@ ScriptEditor::onSaveScriptClicked()
 {
     std::vector<std::string> filters;
     filters.push_back("py");
-    SequenceFileDialog dialog(this,filters,false,SequenceFileDialog::SAVE_DIALOG,_imp->gui->getLastSaveProjectDirectory().toStdString(),
+    SequenceFileDialog dialog(this,filters,false,SequenceFileDialog::eFileDialogModeSave,_imp->gui->getLastSaveProjectDirectory().toStdString(),
                               _imp->gui,false);
     
     if (dialog.exec()) {

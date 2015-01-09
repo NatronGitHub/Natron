@@ -3157,13 +3157,13 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,const boost::shared_ptr<KnobI>
         _imp->minLabel = new QLabel(tr("Minimum:"),minMaxContainer);
         _imp->minLabel->setFont(font);
         
-        _imp->minBox = new SpinBox(minMaxContainer,SpinBox::DOUBLE_SPINBOX);
+        _imp->minBox = new SpinBox(minMaxContainer,SpinBox::eSpinBoxTypeDouble);
         _imp->minBox->setToolTip(Qt::convertFromPlainText(tr("Set the minimum value for the parameter")));
         minMaxLayout->addWidget(_imp->minBox);
         
         _imp->maxLabel = new QLabel(tr("Maximum:"),minMaxContainer);
         _imp->maxLabel->setFont(font);
-        _imp->maxBox = new SpinBox(minMaxContainer,SpinBox::DOUBLE_SPINBOX);
+        _imp->maxBox = new SpinBox(minMaxContainer,SpinBox::eSpinBoxTypeDouble);
         _imp->maxBox->setToolTip(Qt::convertFromPlainText(tr("Set the maximum value for the parameter")));
         minMaxLayout->addWidget(_imp->maxLabel);
         minMaxLayout->addWidget(_imp->maxBox);

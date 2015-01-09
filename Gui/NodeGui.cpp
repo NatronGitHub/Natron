@@ -2753,7 +2753,7 @@ ExportGroupTemplateDialog::onButtonClicked()
     std::vector<std::string> filters;
     
     const QString& path = _imp->gui->getLastPluginDirectory();
-    SequenceFileDialog dialog(this,filters,false,SequenceFileDialog::DIR_DIALOG,path.toStdString(),_imp->gui,false);
+    SequenceFileDialog dialog(this,filters,false,SequenceFileDialog::eFileDialogModeDir,path.toStdString(),_imp->gui,false);
     if (dialog.exec()) {
         std::string selection = dialog.selectedFiles();
         _imp->fileEdit->setText(selection.c_str());
