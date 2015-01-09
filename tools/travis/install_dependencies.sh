@@ -5,8 +5,6 @@ set -e
 # Print commands and their arguments as they are executed.
 set -x
 
-PYTHON_VERSION=3.4
-
 # enable testing locally or on forks without multi-os enabled
 if [[ "${TRAVIS_OS_NAME:-false}" == false ]]; then
     if [[ $(uname -s) == "Darwin" ]]; then
@@ -37,10 +35,7 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
 
     sudo apt-get install libqt4-dev libglew-dev libboost-serialization-dev libexpat1-dev gdb libcairo2-dev python3-dev python3-pyside
 
-    python --version
-    pip --version
     python3 --version
-    pip3 --version
     python3 -c "from PySide import QtGui, QtCore, QtOpenGL"
     
     # OpenFX
