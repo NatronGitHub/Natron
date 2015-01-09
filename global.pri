@@ -151,12 +151,18 @@ unix {
      CONFIG += link_pkgconfig
      glew:      PKGCONFIG += glew
      expat:     PKGCONFIG += expat
-     cairo:     PKGCONFIG += cairo
+     cairo:     PKGCONFIG += cairo    
      !macx {
          LIBS +=  -lGLU
      }
      linux {
          LIBS += -ldl
+     }
+
+     python {
+         PYTHON_CONFIG = python3.4-config
+         QMAKE_LIBS += $$system($$PYTHON_CONFIG --ldflags)
+         QMAKE_CXXFLAGS += $$system($$PYTHON_CONFIG --includes)
      }
 } #unix
 
