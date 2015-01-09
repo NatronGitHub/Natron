@@ -171,9 +171,10 @@ unix {
      }
      shiboken:  PKGCONFIG += shiboken
      pyside {
-         INCLUDEPATH += $$system(pkg-config --variable=includedir pyside)
-         INCLUDEPATH += $$system(pkg-config --variable=includedir pyside)/QtCore
-         INCLUDEPATH += $$system(pkg-config --variable=includedir pyside)/QtGui
+     	 PYSIDE_PKG_CONFIG_PATH = $$system($$PYTHON_CONFIG --prefix)/lib/pkgconfig
+         INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside)
+         INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside)/QtCore
+         INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside)/QtGui
 	 # QtGui include are needed because it looks for Qt::convertFromPlainText which is defined in
 	 # qtextdocument.h in the QtGui module.
          INCLUDEPATH += $$system(pkg-config --variable=includedir QtGui)
