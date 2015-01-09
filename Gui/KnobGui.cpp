@@ -140,6 +140,7 @@ KnobGui::KnobGui(boost::shared_ptr<KnobI> knob,
 {
     knob->setKnobGuiPointer(this);
     KnobHelper* helper = dynamic_cast<KnobHelper*>( knob.get() );
+    assert(helper);
     KnobSignalSlotHandler* handler = helper->getSignalSlotHandler().get();
     QObject::connect( handler,SIGNAL( refreshGuiCurve(int)),this,SLOT( onRefreshGuiCurve(int) ) );
     QObject::connect( handler,SIGNAL( valueChanged(int,int) ),this,SLOT( onInternalValueChanged(int,int) ) );
@@ -159,6 +160,7 @@ KnobGui::KnobGui(boost::shared_ptr<KnobI> knob,
     QObject::connect( handler,SIGNAL( frozenChanged(bool) ),this,SLOT( onFrozenChanged(bool) ) );
     QObject::connect( handler,SIGNAL( helpChanged() ),this,SLOT( onHelpChanged() ) );
     QObject::connect( handler,SIGNAL( expressionChanged(int) ),this,SLOT( onExprChanged(int) ) );
+
     _imp->guiCurves.resize(knob->getDimension());
     if (knob->canAnimate()) {
         for (int i = 0; i < knob->getDimension(); ++i) {

@@ -991,7 +991,11 @@ GuiApplicationManager::updateAllRecentFileMenus()
     const std::map<int,AppInstanceRef> & instances = getAppInstances();
 
     for (std::map<int,AppInstanceRef>::const_iterator it = instances.begin(); it != instances.end(); ++it) {
-        dynamic_cast<GuiAppInstance*>(it->second.app)->getGui()->updateRecentFileActions();
+        GuiAppInstance* appInstance = dynamic_cast<GuiAppInstance*>(it->second.app);
+        assert(appInstance);
+        Gui* gui = appInstance->getGui();
+        assert(gui);
+        gui->updateRecentFileActions();
     }
 }
 
@@ -1250,8 +1254,11 @@ GuiApplicationManager::handleOpenFileRequest()
 
     AppInstance* mainApp = getAppInstance(0);
     GuiAppInstance* guiApp = dynamic_cast<GuiAppInstance*>(mainApp);
-    guiApp->getGui()->openProject(_imp->_openFileRequest.toStdString());
-    _imp->_openFileRequest.clear();
+    assert(guiApp);
+    if (guiApp) {
+        guiApp->getGui()->openProject(_imp->_openFileRequest.toStdString());
+        _imp->_openFileRequest.clear();
+    }
 }
 
 void
@@ -1270,7 +1277,7 @@ GuiApplicationManager::exitApp()
 
     for (std::map<int,AppInstanceRef>::const_iterator it = instances.begin(); it != instances.end(); ++it) {
         GuiAppInstance* app = dynamic_cast<GuiAppInstance*>(it->second.app);
-        if ( !app->getGui()->closeInstance() ) {
+        if ( app && !app->getGui()->closeInstance() ) {
             return;
         }
     }
@@ -1619,6 +1626,12 @@ GuiApplicationManager::populateShortcuts()
     registerKeybind(kShortcutGroupRoto, kShortcutIDActionRotoSmooth, kShortcutDescActionRotoSmooth, Qt::NoModifier, Qt::Key_Z);
     registerKeybind(kShortcutGroupRoto, kShortcutIDActionRotoCuspBezier, kShortcutDescActionRotoCuspBezier, Qt::ShiftModifier, Qt::Key_Z);
     registerKeybind(kShortcutGroupRoto, kShortcutIDActionRotoRemoveFeather, kShortcutDescActionRotoRemoveFeather, Qt::ShiftModifier, Qt::Key_E);
+    registerKeybind(kShortcutGroupRoto, kShortcutIDActionRotoLinkToTrack, kShortcutDescActionRotoLinkToTrack, Qt::NoModifier, (Qt::Key)0);
+    registerKeybind(kShortcutGroupRoto, kShortcutIDActionRotoUnlinkToTrack, kShortcutDescActionRotoUnlinkToTrack,
+                    Qt::NoModifier, (Qt::Key)0);
+    registerKeybind(kShortcutGroupRoto, kShortcutIDActionRotoLockCurve, kShortcutDescActionRotoLockCurve,
+                    Qt::ShiftModifier, Qt::Key_L);
+
 
     ///Tracking
     registerKeybind(kShortcutGroupTracking, kShortcutIDActionTrackingSelectAll, kShortcutDescActionTrackingSelectAll, Qt::ControlModifier, Qt::Key_A);

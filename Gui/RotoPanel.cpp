@@ -149,11 +149,11 @@ typedef std::list< TreeItem > TreeItems;
 typedef std::list< boost::shared_ptr<RotoItem> > SelectedItems;
 typedef std::map<boost::shared_ptr<RotoItem>, std::set<int> > ItemKeys;
 
-enum ColorDialogEdition
+enum ColorDialogEditingEnum
 {
-    EDITING_NOTHING = 0,
-    EDITING_OVERLAY_COLOR,
-    EDITING_SHAPE_COLOR
+    eColorDialogEditingNothing = 0,
+    eColorDialogEditingOverlayColor,
+    eColorDialogEditingShapeColor
 };
 
 struct RotoPanelPrivate
@@ -187,17 +187,47 @@ struct RotoPanelPrivate
     QList<QTreeWidgetItem*> clipBoard;
 
     ItemKeys keyframes; //< track of all keyframes for items
-    ColorDialogEdition dialogEdition;
+    ColorDialogEditingEnum dialogEdition;
 
     RotoPanelPrivate(RotoPanel* publicInter,
                      const boost::shared_ptr<NodeGui>&   n)
         : publicInterface(publicInter)
-          , node(n)
-          , context( n->getNode()->getRotoContext())
-          , editedItem(NULL)
-          , lastRightClickedItem(NULL)
-          , clipBoard()
-          , dialogEdition(EDITING_NOTHING)
+        , node(n)
+        , context( n->getNode()->getRotoContext())
+        , mainLayout(0)
+        , splineContainer(0)
+        , splineLayout(0)
+        , splineLabel(0)
+        , currentKeyframe(0)
+        , ofLabel(0)
+        , totalKeyframes(0)
+        , prevKeyframe(0)
+        , nextKeyframe(0)
+        , addKeyframe(0)
+        , removeKeyframe(0)
+        , buttonContainer(0)
+        , buttonLayout(0)
+        , addLayerButton(0)
+        , removeItemButton(0)
+        , iconLayer()
+        , iconBezier()
+        , iconVisible()
+        , iconUnvisible()
+        , iconLocked()
+        , iconUnlocked()
+        , iconInverted()
+        , iconUninverted()
+        , iconWheel()
+        , tree(0)
+        , treeHeader(0)
+        , selectedItems()
+        , items()
+        , editedItem(NULL)
+        , editedItemName()
+        , lastRightClickedItem(NULL)
+        , clipBoard()
+        , keyframes()
+        , dialogEdition(eColorDialogEditingNothing)
     {
         assert(n && context);
     }
@@ -273,7 +303,7 @@ RotoPanel::RotoPanel(const boost::shared_ptr<NodeGui>&  n,
     _imp->splineLabel->setEnabled(false);
     _imp->splineLayout->addWidget(_imp->splineLabel);
 
-    _imp->currentKeyframe = new SpinBox(_imp->splineContainer,SpinBox::DOUBLE_SPINBOX);
+    _imp->currentKeyframe = new SpinBox(_imp->splineContainer,SpinBox::eSpinBoxTypeDouble);
     _imp->currentKeyframe->setEnabled(false);
     _imp->currentKeyframe->setReadOnly(true);
     _imp->currentKeyframe->setToolTip( tr("The current keyframe for the selected shape(s)") );
@@ -283,7 +313,7 @@ RotoPanel::RotoPanel(const boost::shared_ptr<NodeGui>&  n,
     _imp->ofLabel->setEnabled(false);
     _imp->splineLayout->addWidget(_imp->ofLabel);
 
-    _imp->totalKeyframes = new SpinBox(_imp->splineContainer,SpinBox::INT_SPINBOX);
+    _imp->totalKeyframes = new SpinBox(_imp->splineContainer,SpinBox::eSpinBoxTypeInt);
     _imp->totalKeyframes->setEnabled(false);
     _imp->totalKeyframes->setReadOnly(true);
     _imp->totalKeyframes->setToolTip( tr("The keyframe count for all the selected shapes.") );
@@ -412,7 +442,7 @@ RotoPanel::RotoPanel(const boost::shared_ptr<NodeGui>&  n,
     _imp->buildTreeFromContext();
 
     ///refresh selection
-    onSelectionChanged(RotoContext::OTHER);
+    onSelectionChanged(RotoContext::eSelectionReasonOther);
 }
 
 RotoPanel::~RotoPanel()
@@ -521,7 +551,7 @@ RotoPanel::onSelectionChangedInternal()
 void
 RotoPanel::onSelectionChanged(int reason)
 {
-    if ( (RotoContext::SelectionReason)reason == RotoContext::SETTINGS_PANEL ) {
+    if ( (RotoContext::SelectionReasonEnum)reason == RotoContext::eSelectionReasonSettingsPanel ) {
         return;
     }
 
@@ -911,7 +941,7 @@ RotoPanelPrivate::insertItemInternal(int reason,
             node.lock()->getNode()->getApp()->getTimeLine()->addMultipleKeyframeIndicatorsAdded(markers,true);
         }
     }
-    if ( (RotoContext::SelectionReason)reason == RotoContext::SETTINGS_PANEL ) {
+    if ( (RotoContext::SelectionReasonEnum)reason == RotoContext::eSelectionReasonSettingsPanel ) {
         boost::shared_ptr<RotoDrawableItem> drawable = boost::dynamic_pointer_cast<RotoDrawableItem>(item);
         if (drawable) {
             publicInterface->makeCustomWidgetsForItem(drawable);
@@ -942,7 +972,7 @@ RotoPanel::onItemRemoved(const boost::shared_ptr<RotoItem>& item,
             _imp->keyframes.erase(it);
         }
     }
-    if ( (RotoContext::SelectionReason)reason == RotoContext::SETTINGS_PANEL ) {
+    if ( (RotoContext::SelectionReasonEnum)reason == RotoContext::eSelectionReasonSettingsPanel ) {
         return;
     }
     _imp->removeItemRecursively(item);
@@ -974,8 +1004,8 @@ RotoPanel::onCurrentItemCompOperatorChanged(int index)
             assert(drawable);
             boost::shared_ptr<Choice_Knob> op = drawable->getOperatorKnob();
             op->setValue(index, 0);
-            _imp->context->clearSelection(RotoContext::OTHER);
-            _imp->context->select(it->rotoItem, RotoContext::OTHER);
+            _imp->context->clearSelection(RotoContext::eSelectionReasonOther);
+            _imp->context->select(it->rotoItem, RotoContext::eSelectionReasonOther);
             _imp->context->evaluateChange();
             break;
         }
@@ -1123,7 +1153,7 @@ RotoPanel::onItemColorDialogEdited(const QColor & color)
         assert( found != _imp->items.end() );
         RotoDrawableItem* drawable = dynamic_cast<RotoDrawableItem*>( found->rotoItem.get() );
         if (drawable) {
-            if (_imp->dialogEdition == EDITING_SHAPE_COLOR) {
+            if (_imp->dialogEdition == eColorDialogEditingShapeColor) {
                 boost::shared_ptr<Color_Knob> colorKnob = drawable->getColorKnob();
                 colorKnob->setValue(color.redF(), 0);
                 colorKnob->setValue(color.greenF(), 1);
@@ -1139,7 +1169,7 @@ RotoPanel::onItemColorDialogEdited(const QColor & color)
                 _imp->context->getColorKnob()->setValue(colorArray[0], 0);
                 _imp->context->getColorKnob()->setValue(colorArray[1], 1);
                 _imp->context->getColorKnob()->setValue(colorArray[2], 2);
-            } else if (_imp->dialogEdition == EDITING_OVERLAY_COLOR) {
+            } else if (_imp->dialogEdition == eColorDialogEditingOverlayColor) {
                 double colorArray[4];
                 colorArray[0] = color.redF();
                 colorArray[1] = color.greenF();
@@ -1212,7 +1242,7 @@ RotoPanel::onItemDoubleClicked(QTreeWidgetItem* item,
                 RotoDrawableItem* drawable = dynamic_cast<RotoDrawableItem*>( it->rotoItem.get() );
                 if (drawable) {
                     QColorDialog dialog;
-                    _imp->dialogEdition = EDITING_OVERLAY_COLOR;
+                    _imp->dialogEdition = eColorDialogEditingOverlayColor;
                     double oc[4];
                     drawable->getOverlayColor(oc);
                     QColor color;
@@ -1227,7 +1257,7 @@ RotoPanel::onItemDoubleClicked(QTreeWidgetItem* item,
                         oc[2] = color.blueF();
                         oc[3] = color.alphaF();
                     }
-                    _imp->dialogEdition = EDITING_NOTHING;
+                    _imp->dialogEdition = eColorDialogEditingNothing;
                     QPixmap pix(15,15);
                     pix.fill(color);
                     QList<QTreeWidgetItem*> selected = _imp->tree->selectedItems();
@@ -1252,7 +1282,7 @@ RotoPanel::onItemDoubleClicked(QTreeWidgetItem* item,
                 double shapeColor[3];
                 if (drawable) {
                     QColorDialog dialog;
-                    _imp->dialogEdition = EDITING_SHAPE_COLOR;
+                    _imp->dialogEdition = eColorDialogEditingShapeColor;
                     drawable->getColor(time,shapeColor);
                     QColor color;
                     color.setRgbF(shapeColor[0], shapeColor[1], shapeColor[2]);
@@ -1264,7 +1294,7 @@ RotoPanel::onItemDoubleClicked(QTreeWidgetItem* item,
                         shapeColor[1] = color.greenF();
                         shapeColor[2] = color.blueF();
                     }
-                    _imp->dialogEdition = EDITING_NOTHING;
+                    _imp->dialogEdition = eColorDialogEditingNothing;
                     QIcon icon;
                     makeSolidIcon(shapeColor, icon);
                     colorChosen = true;
@@ -1334,7 +1364,7 @@ RotoPanelPrivate::insertSelectionRecursively(const boost::shared_ptr<RotoLayer> 
         boost::shared_ptr<RotoLayer> l = boost::dynamic_pointer_cast<RotoLayer>(*it);
         SelectedItems::iterator found = std::find(selectedItems.begin(), selectedItems.end(), *it);
         if ( found == selectedItems.end() ) {
-            context->select(*it, RotoContext::SETTINGS_PANEL);
+            context->select(*it, RotoContext::eSelectionReasonSettingsPanel);
             selectedItems.push_back(*it);
         }
         if (l) {
@@ -1361,7 +1391,7 @@ RotoPanel::onItemSelectionChanged()
             QObject::disconnect( isBezier.get(), SIGNAL( animationRemoved() ), this, SLOT( onSelectedBeizerAnimationRemoved() ) );
         }
     }
-    _imp->context->deselect(_imp->selectedItems, RotoContext::SETTINGS_PANEL);
+    _imp->context->deselect(_imp->selectedItems, RotoContext::eSelectionReasonSettingsPanel);
     _imp->selectedItems.clear();
 
     ///Don't allow any selection to be made if the roto is a clone of another roto  node.
@@ -1396,7 +1426,7 @@ RotoPanel::onItemSelectionChanged()
             _imp->insertSelectionRecursively(layer);
         }
     }
-    _imp->context->select(_imp->selectedItems, RotoContext::SETTINGS_PANEL);
+    _imp->context->select(_imp->selectedItems, RotoContext::eSelectionReasonSettingsPanel);
 
     bool enabled = selectedBeziersCount > 0;
 
@@ -1458,7 +1488,7 @@ TreeWidget::dragMoveEvent(QDragMoveEvent* e)
 }
 
 static void
-checkIfTreatedRecursive(QTreeWidgetItem* matcher,
+checkIfProcessedRecursive(QTreeWidgetItem* matcher,
                         QTreeWidgetItem* item,
                         bool *ret)
 {
@@ -1466,7 +1496,7 @@ checkIfTreatedRecursive(QTreeWidgetItem* matcher,
         *ret = true;
     } else {
         if ( item->parent() ) {
-            checkIfTreatedRecursive(matcher,item->parent(),ret);
+            checkIfProcessedRecursive(matcher,item->parent(),ret);
         }
     }
 }
@@ -1483,7 +1513,7 @@ TreeWidget::dragAndDropHandler(const QMimeData* mime,
 
         ///list of items we already handled d&d for. If we find an item whose parent
         ///is already in this list we don't handle it
-        std::list<QTreeWidgetItem*> treatedItems;
+        std::list<QTreeWidgetItem*> processedItems;
         while ( !stream.atEnd() ) {
             int row, col;
             QMap<int,QVariant> roleDataMap;
@@ -1509,14 +1539,14 @@ TreeWidget::dragAndDropHandler(const QMimeData* mime,
                 ///the dropped item
                 ret->dropped = foundDropped[0];
 
-                bool treated = false;
-                for (std::list<QTreeWidgetItem*>::iterator treatedIt = treatedItems.begin(); treatedIt != treatedItems.end(); ++treatedIt) {
-                    checkIfTreatedRecursive(*treatedIt,ret->dropped,&treated);
-                    if (treated) {
+                bool processed = false;
+                for (std::list<QTreeWidgetItem*>::iterator processedIt = processedItems.begin(); processedIt != processedItems.end(); ++processedIt) {
+                    checkIfProcessedRecursive(*processedIt, ret->dropped, &processed);
+                    if (processed) {
                         break;
                     }
                 }
-                if (treated) {
+                if (processed) {
                     continue;
                 }
 
@@ -1612,7 +1642,7 @@ TreeWidget::dragAndDropHandler(const QMimeData* mime,
                     return false;
                 } // switch
                 dropped.push_back(ret);
-                treatedItems.push_back(ret->dropped);
+                processedItems.push_back(ret->dropped);
             } //  if (it != roleDataMap.end())
         } // while (!stream.atEnd())
     } //if (mime->hasFormat("application/x-qabstractitemmodeldatalist"))
@@ -1686,7 +1716,7 @@ void
 RotoPanel::clearSelection()
 {
     _imp->selectedItems.clear();
-    _imp->context->clearSelection(RotoContext::SETTINGS_PANEL);
+    _imp->context->clearSelection(RotoContext::eSelectionReasonSettingsPanel);
 }
 
 void

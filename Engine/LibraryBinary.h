@@ -37,12 +37,13 @@ class LibraryBinary
 
 public:
 
-    enum LibraryType
+    enum LibraryTypeEnum
     {
-        EXTERNAL = 0,BUILTIN = 1
+        eLibraryTypeExternal,
+        eLibraryTypeBuiltin
     };
 
-    LibraryBinary(LibraryBinary::LibraryType type);
+    LibraryBinary(LibraryBinary::LibraryTypeEnum type);
 
     LibraryBinary(const std::map<std::string,void*> & functions);
 
@@ -85,7 +86,7 @@ public:
 
 private:
 
-    LibraryType _type;
+    LibraryTypeEnum _type;
 #ifdef __NATRON_WIN32__
     HINSTANCE _library;
 #elif defined(__NATRON_UNIX__)

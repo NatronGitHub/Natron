@@ -100,7 +100,7 @@ MoveControlPointsUndoCommand::undo()
     }
 
     _roto->evaluate(true);
-    _roto->setCurrentTool( (RotoGui::Roto_Tool)_selectedTool,true );
+    _roto->setCurrentTool( (RotoGui::RotoToolEnum)_selectedTool,true );
     _roto->setSelection(_selectedCurves, _selectedPoints);
     setText( QObject::tr("Move points of %1").arg( _roto->getNodeName() ) );
 }
@@ -115,15 +115,15 @@ MoveControlPointsUndoCommand::redo()
     try {
         for (std::list<int>::iterator it = _indexesToMove.begin(); it != _indexesToMove.end(); ++it,++itPoints) {
             if ( itPoints->first->isFeatherPoint() ) {
-                if ( ( (RotoGui::Roto_Tool)_selectedTool == RotoGui::SELECT_FEATHER_POINTS ) ||
-                     ( (RotoGui::Roto_Tool)_selectedTool == RotoGui::SELECT_ALL ) ||
-                     ( (RotoGui::Roto_Tool)_selectedTool == RotoGui::DRAW_BEZIER ) ) {
+                if ( ( (RotoGui::RotoToolEnum)_selectedTool == RotoGui::eRotoToolSelectFeatherPoints ) ||
+                     ( (RotoGui::RotoToolEnum)_selectedTool == RotoGui::eRotoToolSelectAll ) ||
+                     ( (RotoGui::RotoToolEnum)_selectedTool == RotoGui::eRotoToolDrawBezier ) ) {
                     itPoints->first->getBezier()->moveFeatherByIndex(*it,_time, _dx, _dy);
                 }
             } else {
-                if ( ( (RotoGui::Roto_Tool)_selectedTool == RotoGui::SELECT_POINTS ) ||
-                     ( (RotoGui::Roto_Tool)_selectedTool == RotoGui::SELECT_ALL ) ||
-                     ( (RotoGui::Roto_Tool)_selectedTool == RotoGui::DRAW_BEZIER ) ) {
+                if ( ( (RotoGui::RotoToolEnum)_selectedTool == RotoGui::eRotoToolSelectPoints ) ||
+                     ( (RotoGui::RotoToolEnum)_selectedTool == RotoGui::eRotoToolSelectAll ) ||
+                     ( (RotoGui::RotoToolEnum)_selectedTool == RotoGui::eRotoToolDrawBezier ) ) {
                     itPoints->first->getBezier()->movePointByIndex(*it,_time, _dx, _dy);
                 }
             }
@@ -205,7 +205,10 @@ TransformUndoCommand::TransformUndoCommand(RotoGui* roto,
     std::list< std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> > > selected;
     roto->getSelection(&_selectedCurves, &selected);
     
-    if (type != eTransformAllPoints) {
+    if (type == eTransformAllPoints) {
+        _selectedPoints = selected;
+
+    } else {
         QPointF bboxCenter = bbox.center();
         double x,y;
         for (std::list< std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> > >::iterator it = selected.begin(); it != selected.end(); ++it) {
@@ -234,15 +237,12 @@ TransformUndoCommand::TransformUndoCommand(RotoGui* roto,
                         _selectedPoints.push_back(*it);
                     }
                     break;
-                case eTransformAllPoints:
                 default:
                     break;
             }
         }
-    } else {
-        _selectedPoints = selected;
     }
-    
+
     *_matrix = Transform::matTransformCanonical(tx, ty, sx, sy, skewX, skewY, true, (rot), centerX, centerY);
     ///we make a copy of the points
     for (SelectedCpList::iterator it = _selectedPoints.begin(); it != _selectedPoints.end(); ++it) {
@@ -267,7 +267,7 @@ TransformUndoCommand::undo()
     }
 
     _roto->evaluate(true);
-    _roto->setCurrentTool( (RotoGui::Roto_Tool)_selectedTool,true );
+    _roto->setCurrentTool( (RotoGui::RotoToolEnum)_selectedTool,true );
     _roto->setSelection(_selectedCurves, _selectedPoints);
     setText( QObject::tr("Transform points of %1").arg( _roto->getNodeName() ) );
 }
@@ -469,7 +469,7 @@ RemovePointUndoCommand::undo()
         ///clone the curve
         it->curve->clone(it->oldCurve.get());
         if (it->curveRemoved) {
-            _roto->getContext()->addItem(it->parentLayer, it->indexInLayer, it->curve,RotoContext::OVERLAY_INTERACT);
+            _roto->getContext()->addItem(it->parentLayer, it->indexInLayer, it->curve, RotoContext::eSelectionReasonOverlayInteract);
         }
         selection.push_back(it->curve);
     }
@@ -548,7 +548,7 @@ RemoveCurveUndoCommand::undo()
     BezierList selection;
 
     for (std::list<RemovedCurve>::iterator it = _curves.begin(); it != _curves.end(); ++it) {
-        _roto->getContext()->addItem(it->layer, it->indexInLayer, it->curve, RotoContext::OVERLAY_INTERACT);
+        _roto->getContext()->addItem(it->layer, it->indexInLayer, it->curve, RotoContext::eSelectionReasonOverlayInteract);
         selection.push_back(it->curve);
     }
 
@@ -971,8 +971,8 @@ void
 OpenCloseUndoCommand::undo()
 {
     if (_firstRedoCalled) {
-        _roto->setCurrentTool( (RotoGui::Roto_Tool)_selectedTool,true );
-        if ( (RotoGui::Roto_Tool)_selectedTool == RotoGui::DRAW_BEZIER ) {
+        _roto->setCurrentTool( (RotoGui::RotoToolEnum)_selectedTool,true );
+        if ( (RotoGui::RotoToolEnum)_selectedTool == RotoGui::eRotoToolDrawBezier ) {
             _roto->setBuiltBezier(_curve);
         }
     }
@@ -986,7 +986,7 @@ void
 OpenCloseUndoCommand::redo()
 {
     if (_firstRedoCalled) {
-        _roto->setCurrentTool( (RotoGui::Roto_Tool)_selectedTool,true );
+        _roto->setCurrentTool( (RotoGui::RotoToolEnum)_selectedTool,true );
     }
     _curve->setCurveFinished( !_curve->isCurveFinished() );
     _roto->evaluate(_firstRedoCalled);
@@ -1155,7 +1155,7 @@ void
 MakeBezierUndoCommand::undo()
 {
     assert(_createdPoint);
-    _roto->setCurrentTool(RotoGui::DRAW_BEZIER,true);
+    _roto->setCurrentTool(RotoGui::eRotoToolDrawBezier,true);
     assert(_lastPointAdded != -1);
     _oldCurve->clone(_newCurve.get());
     if (_newCurve->getControlPointsCount() == 1) {
@@ -1178,7 +1178,7 @@ void
 MakeBezierUndoCommand::redo()
 {
     if (_firstRedoCalled) {
-        _roto->setCurrentTool(RotoGui::DRAW_BEZIER,true);
+        _roto->setCurrentTool(RotoGui::eRotoToolDrawBezier,true);
     }
     
 
@@ -1214,7 +1214,7 @@ MakeBezierUndoCommand::redo()
     } else {
         _newCurve->clone(_oldCurve.get());
         if (_curveNonExistant) {
-            _roto->getContext()->addItem(_parentLayer, _indexInLayer, _newCurve, RotoContext::OVERLAY_INTERACT);
+            _roto->getContext()->addItem(_parentLayer, _indexInLayer, _newCurve, RotoContext::eSelectionReasonOverlayInteract);
         }
     }
 
@@ -1268,6 +1268,7 @@ MakeEllipseUndoCommand::MakeEllipseUndoCommand(RotoGui* roto,
     : QUndoCommand()
       , _firstRedoCalled(false)
       , _roto(roto)
+      , _indexInLayer(-1)
       , _curve()
       , _create(create)
       , _fromCenter(fromCenter)
@@ -1299,7 +1300,7 @@ void
 MakeEllipseUndoCommand::redo()
 {
     if (_firstRedoCalled) {
-        _roto->getContext()->addItem(_parentLayer, _indexInLayer, _curve,RotoContext::OVERLAY_INTERACT);
+        _roto->getContext()->addItem(_parentLayer, _indexInLayer, _curve, RotoContext::eSelectionReasonOverlayInteract);
         _roto->evaluate(true);
     } else {
         
@@ -1441,7 +1442,7 @@ void
 MakeRectangleUndoCommand::redo()
 {
     if (_firstRedoCalled) {
-        _roto->getContext()->addItem(_parentLayer, _indexInLayer, _curve, RotoContext::OVERLAY_INTERACT);
+        _roto->getContext()->addItem(_parentLayer, _indexInLayer, _curve, RotoContext::eSelectionReasonOverlayInteract);
         _roto->evaluate(true);
     } else {
         if (_create) {
@@ -1529,7 +1530,7 @@ RemoveItemsUndoCommand::undo()
         if (it->parentTreeItem) {
             it->parentTreeItem->addChild(it->treeItem);
         }
-        _roto->getContext()->addItem(it->parentLayer, it->indexInLayer, it->item,RotoContext::SETTINGS_PANEL);
+        _roto->getContext()->addItem(it->parentLayer, it->indexInLayer, it->item, RotoContext::eSelectionReasonSettingsPanel);
 
         it->treeItem->setHidden(false);
     }
@@ -1541,7 +1542,7 @@ void
 RemoveItemsUndoCommand::redo()
 {
     for (std::list<RemovedItem>::iterator it = _items.begin(); it != _items.end(); ++it) {
-        _roto->getContext()->removeItem(it->item, RotoContext::SETTINGS_PANEL);
+        _roto->getContext()->removeItem(it->item, RotoContext::eSelectionReasonSettingsPanel);
         it->treeItem->setHidden(true);
         if ( it->treeItem->isSelected() ) {
             it->treeItem->setSelected(false);
@@ -1581,7 +1582,7 @@ AddLayerUndoCommand::undo()
     if (_parentTreeItem) {
         _parentTreeItem->removeChild(_treeItem);
     }
-    _roto->getContext()->removeItem(_layer,RotoContext::SETTINGS_PANEL);
+    _roto->getContext()->removeItem(_layer, RotoContext::eSelectionReasonSettingsPanel);
     _roto->clearSelection();
     _roto->getContext()->evaluateChange();
     setText( QObject::tr("Add layer to %2").arg( _roto->getNodeName().c_str() ) );
@@ -1602,12 +1603,12 @@ AddLayerUndoCommand::redo()
         _roto->getContext()->addLayer(_layer);
         _treeItem->setHidden(false);
         if (_parentLayer) {
-            _roto->getContext()->addItem(_parentLayer, _indexInParentLayer, _layer,RotoContext::SETTINGS_PANEL);
+            _roto->getContext()->addItem(_parentLayer, _indexInParentLayer, _layer, RotoContext::eSelectionReasonSettingsPanel);
             _parentTreeItem->addChild(_treeItem);
         }
     }
     _roto->clearSelection();
-    _roto->getContext()->select(_layer, RotoContext::OTHER);
+    _roto->getContext()->select(_layer, RotoContext::eSelectionReasonOther);
     _roto->getContext()->evaluateChange();
     setText( QObject::tr("Add layer to %2").arg( _roto->getNodeName().c_str() ) );
     _firstRedoCalled = true;
@@ -1672,7 +1673,7 @@ DragItemsUndoCommand::undo()
 
             assert(it->oldParentLayer);
             it->dropped->droppedRotoItem->setParentLayer(it->oldParentLayer);
-            _roto->getContext()->addItem(it->oldParentLayer, it->indexInOldLayer, it->dropped->droppedRotoItem, RotoContext::SETTINGS_PANEL);
+            _roto->getContext()->addItem(it->oldParentLayer, it->indexInOldLayer, it->dropped->droppedRotoItem, RotoContext::eSelectionReasonSettingsPanel);
         } else {
             it->dropped->droppedRotoItem->setParentLayer(boost::shared_ptr<RotoLayer>());
         }
@@ -1761,11 +1762,11 @@ PasteItemUndoCommand::PasteItemUndoCommand(RotoPanel* roto,
     boost::shared_ptr<Bezier> isBezier = boost::dynamic_pointer_cast<Bezier>(_targetItem);
 
     if (isBezier) {
-        _mode = CopyToItem;
+        _mode = ePasteModeCopyToItem;
         assert(source.size() == 1 && _pastedItems.size() == 1);
         assert( dynamic_cast<RotoDrawableItem*>( _pastedItems.front().rotoItem.get() ) );
     } else {
-        _mode = CopyToLayer;
+        _mode = ePasteModeCopyToLayer;
         for (std::list<PastedItem>::iterator it = _pastedItems.begin(); it != _pastedItems.end(); ++it) {
             boost::shared_ptr<Bezier> srcBezier = boost::dynamic_pointer_cast<Bezier>(it->rotoItem);
             boost::shared_ptr<RotoLayer> srcLayer = boost::dynamic_pointer_cast<RotoLayer>(it->rotoItem);
@@ -1793,20 +1794,20 @@ PasteItemUndoCommand::~PasteItemUndoCommand()
 void
 PasteItemUndoCommand::undo()
 {
-    if (_mode == CopyToItem) {
+    if (_mode == ePasteModeCopyToItem) {
         Bezier* isBezier = dynamic_cast<Bezier*>( _targetItem.get() );
         assert(isBezier);
         assert(_oldTargetItem);
-        _roto->getContext()->deselect(_targetItem, RotoContext::OTHER);
+        _roto->getContext()->deselect(_targetItem, RotoContext::eSelectionReasonOther);
         boost::shared_ptr<Bezier> old = boost::dynamic_pointer_cast<Bezier>(_oldTargetItem);
         isBezier->clone(old.get());
         _roto->updateItemGui(_targetTreeItem);
-        _roto->getContext()->select(_targetItem, RotoContext::OTHER);
+        _roto->getContext()->select(_targetItem, RotoContext::eSelectionReasonOther);
     } else {
         // check that it is a RotoLayer
         assert( dynamic_cast<RotoLayer*>( _targetItem.get() ) );
         for (std::list<PastedItem>::iterator it = _pastedItems.begin(); it != _pastedItems.end(); ++it) {
-            _roto->getContext()->removeItem(it->itemCopy, RotoContext::OTHER);
+            _roto->getContext()->removeItem(it->itemCopy, RotoContext::eSelectionReasonOther);
         }
     }
     _roto->getContext()->evaluateChange();
@@ -1816,7 +1817,7 @@ PasteItemUndoCommand::undo()
 void
 PasteItemUndoCommand::redo()
 {
-    if (_mode == CopyToItem) {
+    if (_mode == ePasteModeCopyToItem) {
         Bezier* isBezier = dynamic_cast<Bezier*>( _targetItem.get() );
         assert(isBezier);
         _oldTargetItem.reset( new Bezier(isBezier->getContext(),isBezier->getName_mt_safe(),isBezier->getParentLayer()) );
@@ -1827,18 +1828,18 @@ PasteItemUndoCommand::redo()
 
         ///If we don't deselct the updateItemGUI call will not function correctly because the knobs GUI
         ///have not been refreshed and the selected item is linked to those dirty knobs
-        _roto->getContext()->deselect(_targetItem, RotoContext::OTHER);
+        _roto->getContext()->deselect(_targetItem, RotoContext::eSelectionReasonOther);
         isBezier->clone(toCopy);
         isBezier->setName( _oldTargetItem->getName_mt_safe() );
         _roto->updateItemGui(_targetTreeItem);
-        _roto->getContext()->select(_targetItem, RotoContext::OTHER);
+        _roto->getContext()->select(_targetItem, RotoContext::eSelectionReasonOther);
     } else {
         boost::shared_ptr<RotoLayer> isLayer = boost::dynamic_pointer_cast<RotoLayer>(_targetItem);
         assert(isLayer);
         for (std::list<PastedItem>::iterator it = _pastedItems.begin(); it != _pastedItems.end(); ++it) {
             assert(it->itemCopy);
             it->itemCopy->setParentLayer(isLayer);
-            _roto->getContext()->addItem(isLayer, isLayer->getItems().size(), it->itemCopy, RotoContext::OTHER);
+            _roto->getContext()->addItem(isLayer, isLayer->getItems().size(), it->itemCopy, RotoContext::eSelectionReasonOther);
         }
     }
 
@@ -1878,7 +1879,7 @@ DuplicateItemUndoCommand::~DuplicateItemUndoCommand()
 void
 DuplicateItemUndoCommand::undo()
 {
-    _roto->getContext()->removeItem(_item.duplicatedItem, RotoContext::OTHER);
+    _roto->getContext()->removeItem(_item.duplicatedItem, RotoContext::eSelectionReasonOther);
     _roto->getContext()->evaluateChange();
     setText( QObject::tr("Duplicate item(s) of %2").arg( _roto->getNodeName().c_str() ) );
 }
@@ -1887,7 +1888,7 @@ void
 DuplicateItemUndoCommand::redo()
 {
     _roto->getContext()->addItem(_item.item->getParentLayer(),
-                                 _item.item->getParentLayer()->getItems().size(), _item.duplicatedItem, RotoContext::OTHER);
+                                 _item.item->getParentLayer()->getItems().size(), _item.duplicatedItem, RotoContext::eSelectionReasonOther);
 
     _roto->getContext()->evaluateChange();
     setText( QObject::tr("Duplicate item(s) of %2").arg( _roto->getNodeName().c_str() ) );

@@ -662,11 +662,12 @@ public:
                 QMutexLocker locker(&_lock);
                 didGetSucceed = getInternal(key,&entries);
             }
-            
-            for (typename std::list<EntryTypePtr>::iterator it = entries.begin(); it != entries.end(); ++it) {
-                if (*(*it)->getParams() == *params) {
-                    *returnValue = *it;
-                    return true;
+            if (didGetSucceed) {
+                for (typename std::list<EntryTypePtr>::iterator it = entries.begin(); it != entries.end(); ++it) {
+                    if (*(*it)->getParams() == *params) {
+                        *returnValue = *it;
+                        return true;
+                    }
                 }
             }
             

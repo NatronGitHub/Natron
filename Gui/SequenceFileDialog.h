@@ -278,9 +278,11 @@ class SequenceFileDialog
     Q_OBJECT
 
 public:
-    enum FileDialogMode
+    enum FileDialogModeEnum
     {
-        OPEN_DIALOG = 0,SAVE_DIALOG = 1,DIR_DIALOG = 2
+        eFileDialogModeOpen,
+        eFileDialogModeSave,
+        eFileDialogModeDir,
     };
 
 
@@ -291,7 +293,7 @@ public:
     SequenceFileDialog(QWidget* parent, // necessary to transmit the stylesheet to the dialog
                        const std::vector<std::string> & filters, // the user accepted file types. Empty means it supports everything
                        bool isSequenceDialog, // true if this dialog can display sequences
-                       FileDialogMode mode, // if it is an open or save dialog
+                       FileDialogModeEnum mode, // if it is an open or save dialog
                        const std::string & currentDirectory,  // the directory to show first
                        Gui* gui,
                        bool allowRelativePaths);
@@ -305,12 +307,12 @@ public:
     static QString getFilePath(const QString & str);
 
     ///Returns the selected pattern sequence or file name.
-    ///Works only in OPEN_DIALOG mode.
+    ///Works only in eFileDialogModeOpen mode.
     std::string selectedFiles();
 
 
     ///Returns  the content of the selection line edit.
-    ///Works only in SAVE_DIALOG mode.
+    ///Works only in eFileDialogModeSave mode.
     std::string filesToSave();
 
     ///Returns the path of the directory returned by currentDirectory() but whose path has been made
@@ -318,7 +320,7 @@ public:
     std::string selectedDirectory() const;
     
     ///Returns the current directory of the dialog.
-    ///This can be used for a DIR_DIALOG to retrieve the value selected by the user.
+    ///This can be used for a eFileDialogModeDir to retrieve the value selected by the user.
     QDir currentDirectory() const;
 
     void addFavorite(const QString & name,const QString & path);
@@ -371,7 +373,7 @@ public:
 
     QString getEnvironmentVariable(const QString &string);
 
-    FileDialogMode getDialogMode() const
+    FileDialogModeEnum getDialogMode() const
     {
         return _dialogMode;
     }
@@ -438,7 +440,7 @@ public Q_SLOTS:
     ///Slot called when the user pressed the "Open" or "Save" button.
     void openSelectedFiles();
 
-    ///Slot called when the user pressed the "Open" button in DIR_DIALOG mode
+    ///Slot called when the user pressed the "Open" button in eFileDialogModeDir mode
     void selectDirectory();
 
     ///Cancel button slot
@@ -483,7 +485,7 @@ public Q_SLOTS:
     ///when the user types, this function tries to automatically select  corresponding
     void autoCompleteFileName(const QString &);
 
-    ///if it is a SAVE_DIALOG then it will append the file extension to what the user typed in
+    ///if it is a eFileDialogModeSave then it will append the file extension to what the user typed in
     ///when editing is finished.
     void onSelectionLineEditing(const QString &);
 
@@ -583,7 +585,7 @@ private:
     int _currentHistoryLocation;
     QAction* _showHiddenAction;
     QAction* _newFolderAction;
-    FileDialogMode _dialogMode;
+    FileDialogModeEnum _dialogMode;
     QWidget* _centerArea;
     QHBoxLayout* _centerAreaLayout;
     Button* _togglePreviewButton;

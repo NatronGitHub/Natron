@@ -5,6 +5,8 @@ set -e
 # Print commands and their arguments as they are executed.
 set -x
 
+PYTHON_VERSION=3.4
+
 # enable testing locally or on forks without multi-os enabled
 if [[ "${TRAVIS_OS_NAME:-false}" == false ]]; then
     if [[ $(uname -s) == "Darwin" ]]; then
@@ -26,12 +28,28 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     # the PPA xorg-edgers contains cairo 1.12 (required for rotoscoping)
     sudo add-apt-repository -y ppa:xorg-edgers/ppa 
     if [ "$CC" = "$TEST_CC" ]; then sudo pip install cpp-coveralls --use-mirrors; fi
+    # Python 3.4
+    sudo add-apt-repository --yes ppa:fkrull/deadsnakes # python3.x
     # we get libyaml-cpp-dev from kubuntu backports (for OpenColorIO)
     if [ "$CC" = "$TEST_CC" ]; then sudo add-apt-repository -y ppa:kubuntu-ppa/backports; fi
     sudo apt-get update
     sudo apt-get update -qq
 
-    sudo apt-get install libqt4-dev libglew-dev libboost-serialization-dev libexpat1-dev gdb libcairo2-dev
+    sudo apt-get install libqt4-dev libglew-dev libboost-serialization-dev libexpat1-dev gdb libcairo2-dev python3.4-dev
+
+    python --version
+    pip --version
+    python3 --version
+    pip3 --version
+    python3.4 --version
+    pip3.4 --version
+
+    # PySide
+    # see https://stackoverflow.com/questions/24489588/how-can-i-install-pyside-on-travis/24545890#24545890
+    pip${PYTHON_VERSION} install PySide --no-index --find-links https://parkin.github.io/python-wheelhouse/;
+    # Travis CI servers use virtualenvs, so we need to finish the install by the following
+    python ~/virtualenv/python${PYTHON_VERSION}/bin/pyside_postinstall.py -install
+
     # OpenFX
     if [ "$CC" = "$TEST_CC" ]; then make -C libs/OpenFX/Examples; fi
     if [ "$CC" = "$TEST_CC" ]; then make -C libs/OpenFX/Support/Plugins; fi
@@ -94,10 +112,10 @@ elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
     #brew install scons swig ilmbase openexr jasper little-cms2 glew freetype fontconfig ffmpeg imagemagick libcaca aces_container ctl jpeg-turbo libraw seexpr openjpeg opencolorio openimageio
     if [ "$CC" = "$TEST_CC" ]; then
 	# Natron's dependencies for building all OpenFX plugins
-	brew install qt expat cairo ilmbase openexr glew freetype fontconfig ffmpeg opencolorio openimageio
+	brew install qt expat cairo glew pyside --with-python3 ilmbase openexr freetype fontconfig ffmpeg opencolorio openimageio
     else
 	# Natron's dependencies only
-	brew install qt expat cairo glew
+	brew install qt expat cairo glew pyside --with-python3
     fi
 
     # OpenFX

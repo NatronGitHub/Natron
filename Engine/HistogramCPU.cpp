@@ -111,7 +111,7 @@ HistogramCPU::~HistogramCPU()
 }
 
 void
-HistogramCPU::computeHistogram(int mode,      //< corresponds to the enum Histogram::DisplayMode
+HistogramCPU::computeHistogram(int mode,      //< corresponds to the enum Histogram::DisplayModeEnum
                                const boost::shared_ptr<Natron::Image> & image,
                                const RectI & rect,
                                int binsCount,
@@ -419,7 +419,7 @@ computeHistogramStatic(const HistogramRequest & request,
     }
     assert(histo);
 
-    /// keep the mode parameter in sync with Histogram::DisplayMode
+    /// keep the mode parameter in sync with Histogram::DisplayModeEnum
 
     int mode = request.mode;
 

@@ -87,7 +87,7 @@ ProjectGui::create(boost::shared_ptr<Natron::Project> projectInternal,
     _panel = new DockablePanel(_gui,
                                projectInternal.get(),
                                container,
-                               DockablePanel::READ_ONLY_NAME,
+                               DockablePanel::eHeaderModeReadOnlyName,
                                false,
                                tr("Project Settings"),
                                tr("The settings of the current project."),
@@ -163,7 +163,7 @@ AddFormatDialog::AddFormatDialog(Natron::Project *project,
 
     _widthLabel = new QLabel("w:",_parametersLine);
     _parametersLineLayout->addWidget(_widthLabel);
-    _widthSpinBox = new SpinBox(this,SpinBox::INT_SPINBOX);
+    _widthSpinBox = new SpinBox(this,SpinBox::eSpinBoxTypeInt);
     _widthSpinBox->setMaximum(99999);
     _widthSpinBox->setMinimum(1);
     _widthSpinBox->setValue(1);
@@ -172,7 +172,7 @@ AddFormatDialog::AddFormatDialog(Natron::Project *project,
 
     _heightLabel = new QLabel("h:",_parametersLine);
     _parametersLineLayout->addWidget(_heightLabel);
-    _heightSpinBox = new SpinBox(this,SpinBox::INT_SPINBOX);
+    _heightSpinBox = new SpinBox(this,SpinBox::eSpinBoxTypeInt);
     _heightSpinBox->setMaximum(99999);
     _heightSpinBox->setMinimum(1);
     _heightSpinBox->setValue(1);
@@ -181,7 +181,7 @@ AddFormatDialog::AddFormatDialog(Natron::Project *project,
 
     _pixelAspectLabel = new QLabel(tr("pixel aspect:"),_parametersLine);
     _parametersLineLayout->addWidget(_pixelAspectLabel);
-    _pixelAspectSpinBox = new SpinBox(this,SpinBox::DOUBLE_SPINBOX);
+    _pixelAspectSpinBox = new SpinBox(this,SpinBox::eSpinBoxTypeDouble);
     _pixelAspectSpinBox->setMinimum(0.);
     _pixelAspectSpinBox->setValue(1.);
     _parametersLineLayout->addWidget(_pixelAspectSpinBox);

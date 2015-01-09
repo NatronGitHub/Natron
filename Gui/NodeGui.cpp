@@ -834,7 +834,7 @@ NodeGui::refreshEdges()
         } else {
             _inputEdges[i]->initLine();
         }
-        
+
     }
     if (_outputEdge) {
         _outputEdge->initLine();
@@ -1508,6 +1508,12 @@ NodeGui::isSettingsPanelVisible() const
     } else {
         return false;
     }
+}
+
+bool
+NodeGui::isSettingsPanelMinimized() const
+{
+    return _settingsPanel ? _settingsPanel->isMinimized() : false;
 }
 
 void

@@ -35,14 +35,14 @@ class Histogram
 
 public:
 
-    enum DisplayMode
+    enum DisplayModeEnum
     {
-        RGB = 0,
-        A,
-        Y,
-        R,
-        G,
-        B
+        eDisplayModeRGB = 0,
+        eDisplayModeA,
+        eDisplayModeY,
+        eDisplayModeR,
+        eDisplayModeG,
+        eDisplayModeB
     };
 
     Histogram(Gui* gui,

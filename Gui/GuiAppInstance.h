@@ -147,7 +147,7 @@ private:
                                bool autoConnect,
                                double xPosHint,double yPosHint,
                                bool pushUndoRedoCommand) OVERRIDE FINAL;
-
+    
 
     boost::scoped_ptr<GuiAppInstancePrivate> _imp;
 };

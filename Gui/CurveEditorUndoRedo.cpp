@@ -532,7 +532,7 @@ SetKeysInterpolationCommand::redo()
 /////////////////////////// MoveTangentCommand
 
 MoveTangentCommand::MoveTangentCommand(CurveWidget* widget,
-                                       SelectedDerivative deriv,
+                                       SelectedTangentEnum deriv,
                                        const KeyPtr& key,
                                        double dx,double dy, //< dx dy relative to the center of the keyframe
                                        bool updateOnFirstRedo,
@@ -574,7 +574,7 @@ MoveTangentCommand::MoveTangentCommand(CurveWidget* widget,
     _setBoth = keyframeIsFirstOrLast ? interpIsCatmullRomOrCubicOrFree : interpIsNotBroken;
 
     bool isLeft;
-    if (deriv == LEFT_TANGENT) {
+    if (deriv == eSelectedTangentLeft) {
         //if dx is not of the good sign it would make the curve uncontrollable
         if (dx <= 0) {
             dx = 0.0001;
@@ -606,7 +606,7 @@ MoveTangentCommand::MoveTangentCommand(CurveWidget* widget,
 }
 
 MoveTangentCommand::MoveTangentCommand(CurveWidget* widget,
-                   SelectedDerivative deriv,
+                   SelectedTangentEnum deriv,
                    const KeyPtr& key,
                    double derivative,
                    QUndoCommand *parent)
@@ -625,7 +625,7 @@ MoveTangentCommand::MoveTangentCommand(CurveWidget* widget,
     _setBoth = _newInterp == Natron::eKeyframeTypeFree;
     
     switch (deriv) {
-        case LEFT_TANGENT:
+        case eSelectedTangentLeft:
             _newLeft = derivative;
             if (_newInterp == Natron::eKeyframeTypeBroken) {
                 _newRight = _oldRight;
@@ -633,7 +633,7 @@ MoveTangentCommand::MoveTangentCommand(CurveWidget* widget,
                 _newRight = derivative;
             }
             break;
-        case RIGHT_TANGENT:
+        case eSelectedTangentRight:
             _newRight = derivative;
             if (_newInterp == Natron::eKeyframeTypeBroken) {
                 _newLeft = _oldLeft;
@@ -666,8 +666,8 @@ MoveTangentCommand::setNewDerivatives(bool undo)
                 attachedKnob->moveDerivativesAtTime(isKnobCurve->getDimension(), _key->key.getTime(), left, right);
             } else {
                 attachedKnob->moveDerivativeAtTime(isKnobCurve->getDimension(), _key->key.getTime(),
-                                                   _deriv == LEFT_TANGENT ? left : right,
-                                                   _deriv == LEFT_TANGENT);
+                                                   _deriv == eSelectedTangentLeft ? left : right,
+                                                   _deriv == eSelectedTangentLeft);
                 
             }
             attachedKnob->setInterpolationAtTime(isKnobCurve->getDimension(), _key->key.getTime(), interp, &_key->key);

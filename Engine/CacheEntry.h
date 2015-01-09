@@ -74,7 +74,7 @@ public:
             _storageMode = eStorageModeDisk;
             _path = path;
             try {
-                _backingFile.reset( new MemoryFile(_path,MemoryFile::if_exists_keep_if_dont_exists_create) );
+                _backingFile.reset( new MemoryFile(_path,MemoryFile::eFileOpenModeEnumIfExistsKeepElseCreate) );
             } catch (const std::runtime_error & r) {
                 std::cout << r.what() << std::endl;
 
@@ -121,7 +121,7 @@ public:
     {
         assert(!_backingFile && _storageMode == eStorageModeDisk);
         try{
-            _backingFile.reset( new MemoryFile(_path,MemoryFile::if_exists_keep_if_dont_exists_create) );
+            _backingFile.reset( new MemoryFile(_path,MemoryFile::eFileOpenModeEnumIfExistsKeepElseCreate) );
         } catch (const std::exception & e) {
             _backingFile.reset();
             throw std::bad_alloc();

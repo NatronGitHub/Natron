@@ -110,11 +110,11 @@ class DockablePanel
 
 public:
 
-    enum HeaderMode
+    enum HeaderModeEnum
     {
-        FULLY_FEATURED = 0,
-        READ_ONLY_NAME,
-        NO_HEADER
+        eHeaderModeFullyFeatured = 0,
+        eHeaderModeReadOnlyName,
+        eHeaderModeNoHeader
     };
 
     explicit DockablePanel(Gui* gui
@@ -123,7 +123,7 @@ public:
                            ,
                            QVBoxLayout* container
                            ,
-                           HeaderMode headerMode
+                           HeaderModeEnum headerMode
                            ,
                            bool useScrollAreasForTabs
                            ,

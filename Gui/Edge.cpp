@@ -132,10 +132,18 @@ Edge::setSource(const boost::shared_ptr<NodeGui> & src)
 {
     _source = src;
     bool autoHide = areOptionalInputsAutoHidden();
+
     boost::shared_ptr<NodeGui> dst = _dest.lock();
     assert(dst);
     bool isSelected = dst->getIsSelected();
-    if (autoHide && _optional  && !_isRotoMask) {
+    
+    bool isViewer = false;
+    if (src) {
+        boost::shared_ptr<Natron::Node> internalNode = src->getNode();
+        isViewer = dynamic_cast<InspectorNode*>(internalNode.get());
+    }
+    if (autoHide && _optional  && !_isRotoMask && !isViewer) {
+
         if (src || isSelected) {
             show();
         } else {

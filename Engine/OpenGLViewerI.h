@@ -30,11 +30,11 @@ class OpenGLViewerI
 {
 public:
 
-    enum BitDepth
+    enum BitDepthEnum
     {
-        BYTE = 0,
-        HALF_FLOAT,
-        FLOAT
+        eBitDepthByte = 0,
+        eBitDepthHalf,
+        eBitDepthFloat
     };
 
     OpenGLViewerI()
@@ -71,7 +71,7 @@ public:
     /**
      * @brief Must return the bit depth of the texture used to render. (Byte, half or float)
      **/
-    virtual BitDepth getBitDepth() const = 0;
+    virtual BitDepthEnum getBitDepth() const = 0;
 
     /**
      * @brief Returns true if the user has enabled the region of interest

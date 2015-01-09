@@ -1573,7 +1573,7 @@ Gui::exportLayout()
     std::vector<std::string> filters;
 
     filters.push_back(NATRON_LAYOUT_FILE_EXT);
-    SequenceFileDialog dialog( this,filters,false,SequenceFileDialog::SAVE_DIALOG,_imp->_lastSaveProjectOpenedDir.toStdString(),this,false );
+    SequenceFileDialog dialog( this,filters,false,SequenceFileDialog::eFileDialogModeSave,_imp->_lastSaveProjectOpenedDir.toStdString(),this,false );
     if ( dialog.exec() ) {
         std::string filename = dialog.filesToSave();
         QString filenameCpy( filename.c_str() );
@@ -1647,7 +1647,7 @@ Gui::importLayout()
     std::vector<std::string> filters;
 
     filters.push_back(NATRON_LAYOUT_FILE_EXT);
-    SequenceFileDialog dialog( this,filters,false,SequenceFileDialog::OPEN_DIALOG,_imp->_lastLoadProjectOpenedDir.toStdString(),this,false );
+    SequenceFileDialog dialog( this,filters,false,SequenceFileDialog::eFileDialogModeOpen,_imp->_lastLoadProjectOpenedDir.toStdString(),this,false );
     if ( dialog.exec() ) {
         std::string filename = dialog.selectedFiles();
         std::ifstream ifile;
@@ -2827,7 +2827,7 @@ Gui::createNewViewer()
 {
     NodeGraph* graph = _imp->_lastFocusedGraph ? _imp->_lastFocusedGraph : _imp->_nodeGraphArea;
     assert(graph);
-    (void)_imp->_appInstance->createNode( CreateNodeArgs(PLUGINID_NATRON_VIEWER,
+    ignore_result(_imp->_appInstance->createNode( CreateNodeArgs(PLUGINID_NATRON_VIEWER,
                                                          "",
                                                          -1,-1,
                                                          true,
@@ -2836,7 +2836,8 @@ Gui::createNewViewer()
                                                          true,
                                                          QString(),
                                                          CreateNodeArgs::DefaultValuesList(),
-                                                         graph->getGroup()) );
+                                                         graph->getGroup())));
+
 }
 
 boost::shared_ptr<Natron::Node>
@@ -2950,7 +2951,7 @@ Gui::popOpenFileDialog(bool sequenceDialog,
                        const std::string & initialDir,
                        bool allowRelativePaths)
 {
-    SequenceFileDialog dialog(this, initialfilters, sequenceDialog, SequenceFileDialog::OPEN_DIALOG, initialDir,this,allowRelativePaths);
+    SequenceFileDialog dialog(this, initialfilters, sequenceDialog, SequenceFileDialog::eFileDialogModeOpen, initialDir,this,allowRelativePaths);
 
     if ( dialog.exec() ) {
         return dialog.selectedFiles();
@@ -2993,7 +2994,7 @@ Gui::popSaveFileDialog(bool sequenceDialog,
                        const std::string & initialDir,
                        bool allowRelativePaths)
 {
-    SequenceFileDialog dialog(this,initialfilters,sequenceDialog,SequenceFileDialog::SAVE_DIALOG,initialDir,this,allowRelativePaths);
+    SequenceFileDialog dialog(this,initialfilters,sequenceDialog,SequenceFileDialog::eFileDialogModeSave,initialDir,this,allowRelativePaths);
 
     if ( dialog.exec() ) {
         return dialog.filesToSave();
@@ -3233,11 +3234,13 @@ Gui::onDoDialog(int type,
     if (type == 0) {
         QMessageBox critical(QMessageBox::Critical, title, msg, QMessageBox::NoButton, this, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint | Qt::WindowStaysOnTopHint);
         critical.setTextFormat(Qt::RichText);   //this is what makes the links clickable
-        critical.exec();
+        int status = critical.exec();
+        assert(status == QDialog::Accepted);
     } else if (type == 1) {
         QMessageBox warning(QMessageBox::Warning, title, msg, QMessageBox::NoButton, this, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint | Qt::WindowStaysOnTopHint);
         warning.setTextFormat(Qt::RichText);
-        warning.exec();
+        int status = warning.exec();
+        assert(status == QDialog::Accepted);
     } else if (type == 2) {
         QMessageBox info(QMessageBox::Information, title, (msg.count() > 1000 ? msg.left(1000) : msg), QMessageBox::NoButton, this, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint | Qt::WindowStaysOnTopHint);
         info.setTextFormat(Qt::RichText);
@@ -3251,7 +3254,8 @@ Gui::onDoDialog(int type,
                 layout->addWidget(edit, 0, 1);
             }
         }
-        info.exec();
+        int status = info.exec();
+        assert(status == QDialog::Accepted);
     } else {
         QMessageBox ques(QMessageBox::Question, title, msg, QtEnumConvert::toQtStandarButtons(buttons),
                          this, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint | Qt::WindowStaysOnTopHint);
@@ -3640,7 +3644,8 @@ void
 Gui::showAbout()
 {
     _imp->_aboutWindow->show();
-    _imp->_aboutWindow->exec();
+    int status = _imp->_aboutWindow->exec();
+    assert(status == QDialog::Accepted);
 }
 
 void
@@ -4041,7 +4046,7 @@ Gui::debugImage(const Natron::Image* image,
     ///offset the pointer to 0,0
     from -= ( ( rod.bottom() * image->getRowElements() ) + rod.left() * image->getComponentsCount() );
     lut->to_byte_packed(output.bits(), from, rod, rod, rod,
-                        Natron::Color::PACKING_RGBA,Natron::Color::PACKING_BGRA, true,false);
+                        Natron::Color::ePixelPackingRGBA,Natron::Color::ePixelPackingBGRA, true,false);
     U64 hashKey = image->getHashKey();
     QString hashKeyStr = QString::number(hashKey);
     QString realFileName = filename.isEmpty() ? QString(hashKeyStr + ".png") : filename;
@@ -4140,7 +4145,6 @@ void
 Gui::onNodeNameChanged(const QString & /*name*/)
 {
     Natron::Node* node = qobject_cast<Natron::Node*>( sender() );
-
     if (!node) {
         return;
     }
@@ -4206,7 +4210,8 @@ Gui::showOfxLog()
     LogWindow lw(log,this);
 
     lw.setWindowTitle( tr("Errors log") );
-    lw.exec();
+    int status = lw.exec();
+    assert(status == QDialog::Accepted);
 }
 
 
@@ -4701,15 +4706,26 @@ Gui::getNodesEntitledForOverlays(std::list<boost::shared_ptr<Natron::Node> >& no
                     const std::list< std::pair<boost::weak_ptr<Natron::Node>,bool > >& instances = multiInstance->getInstances();
                     for (std::list< std::pair<boost::weak_ptr<Natron::Node>,bool > >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
                         NodePtr instance = it->first.lock();
-                        if (node->isSettingsPanelVisible() && instance->isActivated() && it->second && !instance->isNodeDisabled()) {
+                        if (node->isSettingsPanelVisible() &&
+                            !node->isSettingsPanelMinimized() &&
+                            instance->isActivated() &&
+                            it->second &&
+                            !instance->isNodeDisabled()) {
                             nodes.push_back(instance);
                         }
                     }
-                    if (!internalNode->isNodeDisabled() && node->isSettingsPanelVisible()) {
+                    if (!internalNode->isNodeDisabled() &&
+                        node->isSettingsPanelVisible() &&
+                        !node->isSettingsPanelMinimized() ) {
                         nodes.push_back(node->getNode());
                     }
+
                 } else {
-                    if (!internalNode->isNodeDisabled() && internalNode->isActivated() && node->isSettingsPanelVisible()) {
+                    if (!internalNode->isNodeDisabled() &&
+                        internalNode->isActivated() &&
+                        node->isSettingsPanelVisible() &&
+                        !node->isSettingsPanelMinimized() ) {
+
                         nodes.push_back(node->getNode());
                     }
                 }

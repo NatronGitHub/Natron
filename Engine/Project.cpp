@@ -412,7 +412,7 @@ Project::saveProjectInternal(const QString & path,
     }
 
     ///Use a temporary file to save, so if Natron crashes it doesn't corrupt the user save.
-    QString tmpFilename = StandardPaths::writableLocation(StandardPaths::TempLocation);
+    QString tmpFilename = StandardPaths::writableLocation(StandardPaths::eStandardLocationTemp);
     tmpFilename.append( QDir::separator() );
     tmpFilename.append( QString::number( time.toMSecsSinceEpoch() ) );
 
@@ -784,29 +784,29 @@ Project::initializeKnobs()
     colorSpaces.push_back("sRGB");
     colorSpaces.push_back("Linear");
     colorSpaces.push_back("Rec.709");
-    _imp->colorSpace8bits = Natron::createKnob<Choice_Knob>(this, "Colorspace for 8 bits images");
-    _imp->colorSpace8bits->setName("8bitCS");
-    _imp->colorSpace8bits->setHintToolTip("Defines the color-space in which 8 bits images are assumed to be by default.");
-    _imp->colorSpace8bits->setAnimationEnabled(false);
-    _imp->colorSpace8bits->populateChoices(colorSpaces);
-    _imp->colorSpace8bits->setDefaultValue(0);
-    page->addKnob(_imp->colorSpace8bits);
+    _imp->colorSpace8u = Natron::createKnob<Choice_Knob>(this, "Colorspace for 8-bit integer images");
+    _imp->colorSpace8u->setName("defaultColorSpace8u");
+    _imp->colorSpace8u->setHintToolTip("Defines the color-space in which 8-bit images are assumed to be by default.");
+    _imp->colorSpace8u->setAnimationEnabled(false);
+    _imp->colorSpace8u->populateChoices(colorSpaces);
+    _imp->colorSpace8u->setDefaultValue(0);
+    page->addKnob(_imp->colorSpace8u);
     
-    _imp->colorSpace16bits = Natron::createKnob<Choice_Knob>(this, "Colorspace for 16 bits images");
-    _imp->colorSpace16bits->setName("16bitCS");
-    _imp->colorSpace16bits->setHintToolTip("Defines the color-space in which 16 bits images are assumed to be by default.");
-    _imp->colorSpace16bits->setAnimationEnabled(false);
-    _imp->colorSpace16bits->populateChoices(colorSpaces);
-    _imp->colorSpace16bits->setDefaultValue(2);
-    page->addKnob(_imp->colorSpace16bits);
+    _imp->colorSpace16u = Natron::createKnob<Choice_Knob>(this, "Colorspace for 16-bit integer images");
+    _imp->colorSpace16u->setName("defaultColorSpace16u");
+    _imp->colorSpace16u->setHintToolTip("Defines the color-space in which 16-bit integer images are assumed to be by default.");
+    _imp->colorSpace16u->setAnimationEnabled(false);
+    _imp->colorSpace16u->populateChoices(colorSpaces);
+    _imp->colorSpace16u->setDefaultValue(2);
+    page->addKnob(_imp->colorSpace16u);
     
-    _imp->colorSpace32bits = Natron::createKnob<Choice_Knob>(this, "Colorspace for 32 bits fp images");
-    _imp->colorSpace32bits->setName("32bitCS");
-    _imp->colorSpace32bits->setHintToolTip("Defines the color-space in which 32 bits floating point images are assumed to be by default.");
-    _imp->colorSpace32bits->setAnimationEnabled(false);
-    _imp->colorSpace32bits->populateChoices(colorSpaces);
-    _imp->colorSpace32bits->setDefaultValue(1);
-    page->addKnob(_imp->colorSpace32bits);
+    _imp->colorSpace32f = Natron::createKnob<Choice_Knob>(this, "Colorspace for 32-bit floating point images");
+    _imp->colorSpace32f->setName("defaultColorSpace32f");
+    _imp->colorSpace32f->setHintToolTip("Defines the color-space in which 32-bit floating point images are assumed to be by default.");
+    _imp->colorSpace32f->setAnimationEnabled(false);
+    _imp->colorSpace32f->populateChoices(colorSpaces);
+    _imp->colorSpace32f->setDefaultValue(1);
+    page->addKnob(_imp->colorSpace32f);
     
     _imp->frameRate = Natron::createKnob<Double_Knob>(this, "Frame rate");
     _imp->frameRate->setName("frameRate");
@@ -1252,7 +1252,7 @@ Project::removeAutoSaves()
 QString
 Project::autoSavesDir()
 {
-    return Natron::StandardPaths::writableLocation(Natron::StandardPaths::DataLocation) + QDir::separator() + "Autosaves";
+    return Natron::StandardPaths::writableLocation(Natron::StandardPaths::eStandardLocationData) + QDir::separator() + "Autosaves";
 }
 
 void
@@ -1364,17 +1364,19 @@ Project::getDefaultColorSpaceForBitDepth(Natron::ImageBitDepthEnum bitdepth) con
     switch (bitdepth) {
     case Natron::eImageBitDepthByte:
 
-        return (Natron::ViewerColorSpaceEnum)_imp->colorSpace8bits->getValue();
+        return (Natron::ViewerColorSpaceEnum)_imp->colorSpace8u->getValue();
     case Natron::eImageBitDepthShort:
 
-        return (Natron::ViewerColorSpaceEnum)_imp->colorSpace16bits->getValue();
+        return (Natron::ViewerColorSpaceEnum)_imp->colorSpace16u->getValue();
     case Natron::eImageBitDepthFloat:
 
-        return (Natron::ViewerColorSpaceEnum)_imp->colorSpace32bits->getValue();
+        return (Natron::ViewerColorSpaceEnum)_imp->colorSpace32f->getValue();
     case Natron::eImageBitDepthNone:
         assert(false);
         break;
     }
+
+    return eViewerColorSpaceLinear;
 }
 
 // Functions to escape / unescape characters from XML strings
@@ -1722,34 +1724,38 @@ Project::onOCIOConfigPathChanged(const std::string& path,bool block)
     if (block) {
         blockEvaluation();
     }
-    std::string env = _imp->envVars->getValue();
-    std::map<std::string, std::string> envMap;
-    makeEnvMap(env, envMap);
-    
-    ///If there was already a OCIO variable, update it, otherwise create it
-    
-    std::map<std::string, std::string>::iterator foundOCIO = envMap.find(NATRON_OCIO_ENV_VAR_NAME);
-    if (foundOCIO != envMap.end()) {
-        foundOCIO->second = path;
-    } else {
-        envMap.insert(std::make_pair(NATRON_OCIO_ENV_VAR_NAME, path));
-    }
+    try {
+        std::string env = _imp->envVars->getValue();
+        std::map<std::string, std::string> envMap;
+        makeEnvMap(env, envMap);
 
-    std::string newEnv;
-    for (std::map<std::string, std::string>::iterator it = envMap.begin(); it!=envMap.end();++it) {
-        // In order to use XML tags, the text inside the tags has to be escaped.
-        newEnv += NATRON_ENV_VAR_NAME_START_TAG;
-        newEnv += Project::escapeXML(it->first);
-        newEnv += NATRON_ENV_VAR_NAME_END_TAG;
-        newEnv += NATRON_ENV_VAR_VALUE_START_TAG;
-        newEnv += Project::escapeXML(it->second);
-        newEnv += NATRON_ENV_VAR_VALUE_END_TAG;
-    }
-    if (env != newEnv) {
-        if (appPTR->getCurrentSettings()->isAutoFixRelativeFilePathEnabled()) {
-            fixRelativeFilePaths(NATRON_OCIO_ENV_VAR_NAME, path,block);
+        ///If there was already a OCIO variable, update it, otherwise create it
+
+        std::map<std::string, std::string>::iterator foundOCIO = envMap.find(NATRON_OCIO_ENV_VAR_NAME);
+        if (foundOCIO != envMap.end()) {
+            foundOCIO->second = path;
+        } else {
+            envMap.insert(std::make_pair(NATRON_OCIO_ENV_VAR_NAME, path));
         }
-        _imp->envVars->setValue(newEnv, 0);
+
+        std::string newEnv;
+        for (std::map<std::string, std::string>::iterator it = envMap.begin(); it!=envMap.end();++it) {
+            // In order to use XML tags, the text inside the tags has to be escaped.
+            newEnv += NATRON_ENV_VAR_NAME_START_TAG;
+            newEnv += Project::escapeXML(it->first);
+            newEnv += NATRON_ENV_VAR_NAME_END_TAG;
+            newEnv += NATRON_ENV_VAR_VALUE_START_TAG;
+            newEnv += Project::escapeXML(it->second);
+            newEnv += NATRON_ENV_VAR_VALUE_END_TAG;
+        }
+        if (env != newEnv) {
+            if (appPTR->getCurrentSettings()->isAutoFixRelativeFilePathEnabled()) {
+                fixRelativeFilePaths(NATRON_OCIO_ENV_VAR_NAME, path,block);
+            }
+            _imp->envVars->setValue(newEnv, 0);
+        }
+    } catch (std::logic_error) {
+        // ignore
     }
     if (block) {
         unblockEvaluation();

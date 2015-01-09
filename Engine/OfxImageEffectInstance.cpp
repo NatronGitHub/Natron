@@ -637,7 +637,7 @@ OfxImageEffectInstance::addParamsToTheirParents()
 OfxStatus
 OfxImageEffectInstance::editBegin(const std::string & /*name*/)
 {
-    _ofxEffectInstance->setMultipleParamsEditLevel(KnobHolder::PARAM_EDIT_ON_CREATE_NEW_COMMAND);
+    _ofxEffectInstance->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOnCreateNewCommand);
 
     return kOfxStatOK;
 }
@@ -648,7 +648,7 @@ OfxImageEffectInstance::editBegin(const std::string & /*name*/)
 OfxStatus
 OfxImageEffectInstance::editEnd()
 {
-    _ofxEffectInstance->setMultipleParamsEditLevel(KnobHolder::PARAM_EDIT_OFF);
+    _ofxEffectInstance->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOff);
 
     return kOfxStatOK;
 }

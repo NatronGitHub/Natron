@@ -28,17 +28,17 @@ class MemoryFile
 {
 public:
 
-    enum FileOpenMode
+    enum FileOpenModeEnum
     {
-        if_exists_fail_if_not_exists_create = 0,
+        eFileOpenModeEnumIfExistsFailElseCreate = 0,
 
-        if_exists_keep_if_dont_exists_fail,
+        eFileOpenModeEnumIfExistsKeepElseFail,
 
-        if_exists_keep_if_dont_exists_create,
+        eFileOpenModeEnumIfExistsKeepElseCreate,
 
-        if_exists_truncate_if_not_exists_fail,
+        eFileOpenModeEnumIfExistsTruncateElseFail,
 
-        if_exists_truncate_if_not_exists_create
+        eFileOpenModeEnumIfExistsTruncateElseCreate
     };
 
     /**
@@ -59,7 +59,7 @@ public:
      * http://www.parashift.com/c++-faq-lite/ctors-can-throw.html
      **/
     MemoryFile(const std::string & filepath,
-               FileOpenMode open_mode);
+               FileOpenModeEnum open_mode);
 
     /**
      * @brief The constructor attemps to create the file if the file
@@ -74,7 +74,7 @@ public:
      **/
     MemoryFile(const std::string & filepath,
                size_t size,
-               FileOpenMode open_mode);
+               FileOpenModeEnum open_mode);
 
     /**
      * @brief The destructor closes the mapping, effectively removing the RAM portion but not the file.
@@ -90,7 +90,7 @@ public:
      * WARNING: Calling this function whilst the mapping is already opened has no effect
      * This function might throw an exception upon failure to open the file.
      **/
-    void open(const std::string & filepath,FileOpenMode open_mode);
+    void open(const std::string & filepath,FileOpenModeEnum open_mode);
 
     /**
      * @brief Returns a pointer to the beginning of the file,

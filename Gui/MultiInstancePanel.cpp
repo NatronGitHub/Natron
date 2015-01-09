@@ -113,6 +113,7 @@ struct MultiInstancePanelPrivate
           , addButton(0)
           , removeButton(0)
           , selectAll(0)
+          , resetTracksButton(0)
           , executingKnobValueChanged(false)
           , knobValueRecursion(0)
     {
@@ -297,8 +298,16 @@ TableItemDelegate::paint(QPainter * painter,
 
         return;
     }
-    TableItem* item = dynamic_cast<TableModel*>( _view->model() )->item(index);
+    TableModel* model = dynamic_cast<TableModel*>( _view->model() );
+    assert(model);
+    if (!model) {
+        return;
+    }
+    TableItem* item = model->item(index);
     assert(item);
+    if (!item) {
+        return;
+    }
     int dim;
     boost::shared_ptr<KnobI> knob = _panel->getKnobForItem(item, &dim);
     assert(knob);
@@ -539,7 +548,7 @@ boost::shared_ptr<Natron::Node> MultiInstancePanel::createNewInstance(bool useUn
 void
 MultiInstancePanel::onAddButtonClicked()
 {
-    (void)addInstanceInternal(true);
+    ignore_result(addInstanceInternal(true));
 }
 
 boost::shared_ptr<Natron::Node> MultiInstancePanel::addInstanceInternal(bool useUndoRedoStack)
@@ -920,6 +929,7 @@ MultiInstancePanel::isSettingsPanelVisible() const
 
     return !panel->isClosed();
 }
+
 
 void
 MultiInstancePanel::onSettingsPanelClosed(bool closed)
@@ -1330,13 +1340,29 @@ MultiInstancePanel::onInstanceKnobValueChanged(int dim,
                         Knob<double>* isDouble = dynamic_cast<Knob<double>*>( knob.get() );
                         Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>( knob.get() );
                         if (isInt) {
-                            dynamic_cast<Knob<int>*>( master.second.get() )->clone( knob.get() );
+                            Knob<int>* masterKnob = dynamic_cast<Knob<int>*>( master.second.get() );
+                            assert(masterKnob);
+                            if (masterKnob) {
+                                masterKnob->clone( knob.get() );
+                            }
                         } else if (isBool) {
-                            dynamic_cast<Knob<bool>*>( master.second.get() )->clone( knob.get() );
+                            Knob<bool>* masterKnob = dynamic_cast<Knob<bool>*>( master.second.get() );
+                            assert(masterKnob);
+                            if (masterKnob) {
+                                masterKnob->clone( knob.get() );
+                            }
                         } else if (isDouble) {
-                            dynamic_cast<Knob<double>*>( master.second.get() )->clone( knob.get() );
+                            Knob<double>* masterKnob = dynamic_cast<Knob<double>*>( master.second.get() );
+                            assert(masterKnob);
+                            if (masterKnob) {
+                                masterKnob->clone( knob.get() );
+                            }
                         } else if (isString) {
-                            dynamic_cast<Knob<std::string>*>( master.second.get() )->clone( knob.get() );
+                            Knob<std::string>* masterKnob = dynamic_cast<Knob<std::string>*>( master.second.get() );
+                            assert(masterKnob);
+                            if (masterKnob) {
+                                masterKnob->clone( knob.get() );
+                            }
                         }
                         knob->slaveTo(dim, master.second, master.first,true);
                         --_imp->knobValueRecursion;
@@ -1460,7 +1486,11 @@ MultiInstancePanel::onKnobValueChanged(KnobI* k,
 {
     if ( !k->isDeclaredByPlugin() ) {
         if (k->getName() == kDisableNodeKnobName) {
-            _imp->mainInstance.lock()->onDisabledKnobToggled( dynamic_cast<Bool_Knob*>(k)->getValue() );
+            Bool_Knob* boolKnob = dynamic_cast<Bool_Knob*>(k);
+            assert(boolKnob);
+            if (boolKnob) {
+                _imp->mainInstance.lock()->onDisabledKnobToggled( boolKnob->getValue() );
+            }
         }
     } else {
         if (reason == Natron::eValueChangedReasonUserEdited) {
@@ -1497,10 +1527,10 @@ MultiInstancePanel::onKnobValueChanged(KnobI* k,
 }
 
 namespace  {
-enum ExportTransformType
+enum ExportTransformTypeEnum
 {
-    STABILIZE,
-    MATCHMOVE
+    eExportTransformTypeStabilize,
+    eExportTransformTypeMatchMove
 };
 }
 
@@ -1531,17 +1561,18 @@ struct TrackerPanelPrivate
           , averageTracksButton(0)
           , updateViewerMutex()
           , updateViewerOnTrackingEnabled(true)
-          , exportLabel(NULL)
-          , exportLayout(NULL)
-          , exportChoice(NULL)
-          , exportButton(NULL)
+          , exportLabel(0)
+          , exportContainer(0)
+          , exportLayout(0)
+          , exportChoice(0)
+          , exportButton(0)
           , transformPage()
           , referenceFrame()
           , scheduler(publicInterface)
     {
     }
 
-    void createTransformFromSelection(const std::list<Node*> & selection,bool linked,ExportTransformType type);
+    void createTransformFromSelection(const std::list<Node*> & selection,bool linked,ExportTransformTypeEnum type);
 
     void createCornerPinFromSelection(const std::list<Node*> & selection,bool linked,bool useTransformRefFrame,bool invert);
     
@@ -1737,19 +1768,22 @@ TrackerPanel::onAverageTracksButtonClicked()
         std::pair<double,double> average;
         average.first = 0;
         average.second = 0;
-        for (std::list<boost::shared_ptr<Double_Knob> >::iterator it = centers.begin(); it != centers.end(); ++it) {
-            double x = (*it)->getValueAtTime(t,0);
-            double y = (*it)->getValueAtTime(t,1);
-            average.first += x;
-            average.second += y;
+        const size_t centersNb = centers.size();
+        if (centersNb) {
+            for (std::list<boost::shared_ptr<Double_Knob> >::iterator it = centers.begin(); it != centers.end(); ++it) {
+                double x = (*it)->getValueAtTime(t,0);
+                double y = (*it)->getValueAtTime(t,1);
+                average.first += x;
+                average.second += y;
+            }
+            average.first /= centersNb;
+            average.second /= centersNb;
+            newInstanceCenter->setValueAtTime(t, average.first, 0);
+            if (t == keyframesRange.max) {
+                newInstanceCenter->unblockEvaluation();
+            }
+            newInstanceCenter->setValueAtTime(t, average.second, 1);
         }
-        average.first /= (double)centers.size();
-        average.second /= (double)centers.size();
-        newInstanceCenter->setValueAtTime(t, average.first, 0);
-        if (t == keyframesRange.max) {
-            newInstanceCenter->unblockEvaluation();
-        }
-        newInstanceCenter->setValueAtTime(t, average.second, 1);
     }
 } // onAverageTracksButtonClicked
 
@@ -2031,16 +2065,16 @@ TrackerPanel::onExportButtonClicked()
 //            _imp->createCornerPinFromSelection(selection, false, true);
 //            break;
 //        case 4:
-//            _imp->createTransformFromSelection(selection, true, STABILIZE);
+//            _imp->createTransformFromSelection(selection, true, eExportTransformTypeStabilize);
 //            break;
 //        case 5:
-//            _imp->createTransformFromSelection(selection, true, MATCHMOVE);
+//            _imp->createTransformFromSelection(selection, true, eExportTransformTypeMatchMove);
 //            break;
 //        case 6:
-//            _imp->createTransformFromSelection(selection, false, STABILIZE);
+//            _imp->createTransformFromSelection(selection, false, eExportTransformTypeStabilize);
 //            break;
 //        case 7:
-//            _imp->createTransformFromSelection(selection, false, MATCHMOVE);
+//            _imp->createTransformFromSelection(selection, false, eExportTransformTypeMatchMove);
 //            break;
 //        default:
 //            break;
@@ -2069,7 +2103,7 @@ TrackerPanel::onExportButtonClicked()
 void
 TrackerPanelPrivate::createTransformFromSelection(const std::list<Node*> & /*selection*/,
                                                   bool /*linked*/,
-                                                  ExportTransformType /*type*/)
+                                                  ExportTransformTypeEnum /*type*/)
 {
 }
 

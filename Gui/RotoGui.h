@@ -71,37 +71,37 @@ class RotoGui
 
 public:
 
-    enum Roto_Type
+    enum RotoTypeEnum
     {
-        ROTOSCOPING = 0,
-        ROTOPAINTING
+        eRotoTypeRotoscoping = 0,
+        eRotoTypeRotopainting
     };
 
-    enum Roto_Role
+    enum RotoRoleEnum
     {
-        SELECTION_ROLE = 0,
-        POINTS_EDITION_ROLE,
-        BEZIER_EDITION_ROLE
+        eRotoRoleSelection = 0,
+        eRotoRolePointsEdition,
+        eRotoRoleBezierEdition
     };
 
-    enum Roto_Tool
+    enum RotoToolEnum
     {
-        SELECT_ALL = 0,
-        SELECT_POINTS,
-        SELECT_CURVES,
-        SELECT_FEATHER_POINTS,
+        eRotoToolSelectAll = 0,
+        eRotoToolSelectPoints,
+        eRotoToolSelectCurves,
+        eRotoToolSelectFeatherPoints,
 
-        ADD_POINTS,
-        REMOVE_POINTS,
-        REMOVE_FEATHER_POINTS,
-        OPEN_CLOSE_CURVE,
-        SMOOTH_POINTS,
-        CUSP_POINTS,
+        eRotoToolAddPoints,
+        eRotoToolRemovePoints,
+        eRotoToolRemoveFeatherPoints,
+        eRotoToolOpenCloseCurve,
+        eRotoToolSmoothPoints,
+        eRotoToolCuspPoints,
 
-        DRAW_BEZIER,
-        DRAW_B_SPLINE,
-        DRAW_ELLIPSE,
-        DRAW_RECTANGLE,
+        eRotoToolDrawBezier,
+        eRotoToolDrawBSpline,
+        eRotoToolDrawEllipse,
+        eRotoToolDrawRectangle,
     };
 
     RotoGui(NodeGui* node,
@@ -116,7 +116,7 @@ public:
     /**
      * @brief Return the horizontal buttons bar for the given role
      **/
-    QWidget* getButtonsBar(RotoGui::Roto_Role role) const;
+    QWidget* getButtonsBar(RotoGui::RotoRoleEnum role) const;
 
     /**
      * @brief Same as getButtonsBar(getCurrentRole())
@@ -126,16 +126,16 @@ public:
     /**
      * @brief The currently used tool
      **/
-    RotoGui::Roto_Tool getSelectedTool() const;
+    RotoGui::RotoToolEnum getSelectedTool() const;
 
-    void setCurrentTool(RotoGui::Roto_Tool tool,bool emitSignal);
+    void setCurrentTool(RotoGui::RotoToolEnum tool,bool emitSignal);
 
     QToolBar* getToolBar() const;
 
     /**
      * @brief The selected role (selection,draw,add points, etc...)
      **/
-    RotoGui::Roto_Role getCurrentRole() const;
+    RotoGui::RotoRoleEnum getCurrentRole() const;
 
     void drawOverlays(double scaleX, double scaleY) const;
 
@@ -250,7 +250,8 @@ public Q_SLOTS:
     void smoothSelectedCurve();
     void cuspSelectedCurve();
     void removeFeatherForSelectedCurve();
-
+    void lockSelectedCurves();
+    
 private:
 
     void showMenuForCurve(const boost::shared_ptr<Bezier> & curve);
@@ -273,7 +274,7 @@ private:
                               const QString & text,
                               const QString & tooltip,
                               const QKeySequence & shortcut,
-                              RotoGui::Roto_Tool tool);
+                              RotoGui::RotoToolEnum tool);
     struct RotoGuiPrivate;
     boost::scoped_ptr<RotoGuiPrivate> _imp;
 };

@@ -715,11 +715,11 @@ public:
      **/
     const std::list< boost::shared_ptr<BezierCP> > & getFeatherPoints() const;
     std::list< boost::shared_ptr<BezierCP> > getFeatherPoints_mt_safe() const;
-    enum ControlPointSelectionPref
+    enum ControlPointSelectionPrefEnum
     {
-        FEATHER_FIRST = 0,
-        CONTROL_POINT_FIRST,
-        WHATEVER_FIRST
+        eControlPointSelectionPrefFeatherFirst = 0,
+        eControlPointSelectionPrefControlPointFirst,
+        eControlPointSelectionPrefWhateverFirst
     };
 
     /**
@@ -728,7 +728,7 @@ public:
      * if the first is a control point, or the other way around).
      **/
     std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> >
-    isNearbyControlPoint(double x,double y,double acceptance,ControlPointSelectionPref pref,int* index) const;
+    isNearbyControlPoint(double x,double y,double acceptance,ControlPointSelectionPrefEnum pref,int* index) const;
 
     /**
      * @brief Given the control point in parameter, return its index in the curve's control points list.
@@ -789,10 +789,10 @@ public:
                                                  std::list<boost::shared_ptr<BezierCP> >::const_iterator prevFp, //< iterator pointing to the feather before curFp
                                                  std::list<boost::shared_ptr<BezierCP> >::const_iterator curFp, //< iterator pointing to fp
                                                  std::list<boost::shared_ptr<BezierCP> >::const_iterator nextFp); //< iterator pointing after curFp
-    enum FillRule
+    enum FillRuleEnum
     {
-        OddEvenFill,
-        WindingFill
+        eFillRuleOddEven,
+        eFillRuleWinding
     };
 
 #pragma message WARN("pointInPolygon should not be used, see comment")
@@ -808,8 +808,8 @@ public:
        Of course an 8-shaped polygon doesn't have an outside, but it still has an orientation. The feather direction
        should follow this orientation.
      */
-    static bool pointInPolygon(const Natron::Point & p,const std::list<Natron::Point> & polygon,
-                               const RectD & featherPolyBBox,FillRule rule);
+    static bool pointInPolygon(const Natron::Point & p, const std::list<Natron::Point> & polygon,
+                               const RectD & featherPolyBBox, FillRuleEnum rule);
 
     /**
      * @brief Must be implemented by the derived class to save the state into
@@ -875,11 +875,11 @@ class RotoContext
 
 public:
 
-    enum SelectionReason
+    enum SelectionReasonEnum
     {
-        OVERLAY_INTERACT = 0, ///when the user presses an interact
-        SETTINGS_PANEL, ///when the user interacts with the settings panel
-        OTHER ///when the project loader restores the selection
+        eSelectionReasonOverlayInteract = 0, ///when the user presses an interact
+        eSelectionReasonSettingsPanel, ///when the user interacts with the settings panel
+        eSelectionReasonOther ///when the project loader restores the selection
     };
 
     RotoContext(const boost::shared_ptr<Natron::Node>& node);
@@ -933,10 +933,10 @@ public:
      * @brief Removes the given item from the context. This also removes the item from the selection
      * if it was selected. If the item has children, this will also remove all the children.
      **/
-    void removeItem(const boost::shared_ptr<RotoItem>& item, SelectionReason reason = OTHER);
+    void removeItem(const boost::shared_ptr<RotoItem>& item, SelectionReasonEnum reason = eSelectionReasonOther);
 
     ///This is here for undo/redo purpose. Do not call this
-    void addItem(const boost::shared_ptr<RotoLayer>& layer, int indexInLayer, const boost::shared_ptr<RotoItem> & item,SelectionReason reason);
+    void addItem(const boost::shared_ptr<RotoLayer>& layer, int indexInLayer, const boost::shared_ptr<RotoItem> & item,SelectionReasonEnum reason);
     /**
      * @brief Returns a const ref to the layers list. This can only be called from
      * the main thread.
@@ -995,22 +995,22 @@ public:
     /**
      * @brief This must be called by the GUI whenever an item is selected. This is recursive for layers.
      **/
-    void select(const boost::shared_ptr<RotoItem> & b,RotoContext::SelectionReason reason);
+    void select(const boost::shared_ptr<RotoItem> & b, RotoContext::SelectionReasonEnum reason);
 
     ///for convenience
-    void select(const std::list<boost::shared_ptr<Bezier> > & beziers,RotoContext::SelectionReason reason);
-    void select(const std::list<boost::shared_ptr<RotoItem> > & items,RotoContext::SelectionReason reason);
+    void select(const std::list<boost::shared_ptr<Bezier> > & beziers, RotoContext::SelectionReasonEnum reason);
+    void select(const std::list<boost::shared_ptr<RotoItem> > & items, RotoContext::SelectionReasonEnum reason);
 
     /**
      * @brief This must be called by the GUI whenever an item is deselected. This is recursive for layers.
      **/
-    void deselect(const boost::shared_ptr<RotoItem> & b,RotoContext::SelectionReason reason);
+    void deselect(const boost::shared_ptr<RotoItem> & b, RotoContext::SelectionReasonEnum reason);
 
     ///for convenience
-    void deselect(const std::list<boost::shared_ptr<Bezier> > & beziers,RotoContext::SelectionReason reason);
-    void deselect(const std::list<boost::shared_ptr<RotoItem> > & items,RotoContext::SelectionReason reason);
+    void deselect(const std::list<boost::shared_ptr<Bezier> > & beziers, RotoContext::SelectionReasonEnum reason);
+    void deselect(const std::list<boost::shared_ptr<RotoItem> > & items, RotoContext::SelectionReasonEnum reason);
 
-    void clearSelection(RotoContext::SelectionReason reason);
+    void clearSelection(RotoContext::SelectionReasonEnum reason);
 
     ///only callable on main-thread
     void setKeyframeOnSelectedCurves();
@@ -1078,7 +1078,7 @@ Q_SIGNALS:
 
     /**
      * Emitted when the selection is changed. The integer corresponds to the
-     * RotoContext::SelectionReason enum.
+     * RotoContext::SelectionReasonEnum enum.
      **/
     void selectionChanged(int);
 
@@ -1109,7 +1109,7 @@ private:
     void selectInternal(const boost::shared_ptr<RotoItem>& b);
     void deselectInternal(boost::shared_ptr<RotoItem> b);
 
-    void removeItemRecursively(const boost::shared_ptr<RotoItem>& item,SelectionReason reason);
+    void removeItemRecursively(const boost::shared_ptr<RotoItem>& item,SelectionReasonEnum reason);
 
     /**
      * @brief First searches through the selected layer which one is the deepest in the hierarchy.

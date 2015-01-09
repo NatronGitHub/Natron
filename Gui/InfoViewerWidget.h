@@ -75,7 +75,6 @@ private:
     Format format;
     QLabel* coordDispWindow;
     QLabel* coordMouse;
-    QLabel* rectUserLabel;
     QLabel* rgbaValues;
     QLabel* color;
     QLabel* hvl_lastOption;

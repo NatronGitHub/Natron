@@ -259,7 +259,7 @@ QtWriter::render(SequenceTime time,
     }
 
     _lut->to_byte_packed(buf, (const float*)src->pixelAt(0, 0), roi, src->getBounds(), roi,
-                         Natron::Color::PACKING_RGBA, Natron::Color::PACKING_BGRA, true, premult);
+                         Natron::Color::ePixelPackingRGBA, Natron::Color::ePixelPackingBGRA, true, premult);
 
     QImage img(buf,roi.width(),roi.height(),type);
     std::string filename = _fileKnob->getValue();

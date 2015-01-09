@@ -39,14 +39,14 @@ public:
     
     
     
-    enum DisplayChannels
+    enum DisplayChannelsEnum
     {
-        RGB = 0,
-        R,
-        G,
-        B,
-        A,
-        LUMINANCE
+        eDisplayChannelsRGB = 0,
+        eDisplayChannelsR,
+        eDisplayChannelsG,
+        eDisplayChannelsB,
+        eDisplayChannelsA,
+        eDisplayChannelsY
     };
 
 public:
@@ -119,7 +119,7 @@ public:
 
     int getMipMapLevelFromZoomFactor() const WARN_UNUSED_RETURN;
 
-    DisplayChannels getChannels() const WARN_UNUSED_RETURN;
+    DisplayChannelsEnum getChannels() const WARN_UNUSED_RETURN;
 
     /**
      * @brief This is a short-cut, this is primarily used when the user switch the
@@ -134,7 +134,7 @@ public:
     }
 
 
-    void setDisplayChannels(DisplayChannels channels);
+    void setDisplayChannels(DisplayChannelsEnum channels);
 
 
     bool isAutoContrastEnabled() const WARN_UNUSED_RETURN;

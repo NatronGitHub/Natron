@@ -412,7 +412,7 @@ AppManager::load(int &argc,
     _imp->idealThreadCount = QThread::idealThreadCount();
     QThreadPool::globalInstance()->setExpiryTimeout(-1); //< make threads never exit on their own
     //otherwise it might crash with thread local storage
-    _imp->diskCachesLocation = Natron::StandardPaths::writableLocation(Natron::StandardPaths::CacheLocation) ;
+    _imp->diskCachesLocation = Natron::StandardPaths::writableLocation(Natron::StandardPaths::eStandardLocationCache) ;
 
 #if QT_VERSION < 0x050000
     QTextCodec::setCodecForCStrings(QTextCodec::codecForName("UTF-8"));
@@ -449,8 +449,11 @@ AppManager::~AppManager()
         delete _imp->_backgroundIPC;
     }
 
-    _imp->saveCaches();
-
+    try {
+        _imp->saveCaches();
+    } catch (std::runtime_error) {
+        // ignore errors
+    }
 
     _instance = 0;
 
@@ -523,8 +526,38 @@ AppManager::loadInternal(const QString & projectFilename,
     //
     // this must be done after initializing the QCoreApplication, see
     // https://qt-project.org/doc/qt-5/qcoreapplication.html#locale-settings
-    //std::setlocale(LC_NUMERIC,"C"); // set the locale for LC_NUMERIC only
-    // set the locale for everything
+
+    // Set the C and C++ locales
+    // see http://en.cppreference.com/w/cpp/locale/locale/global
+    // Maybe this can also workaround the OSX crash in loadlocale():
+    // https://discussions.apple.com/thread/3479591
+    // https://github.com/cth103/dcpomatic/blob/master/src/lib/safe_stringstream.h
+    // stringstreams don't seem to be thread-safe on OSX because the change the locale.
+
+    // We also set explicitely the LC_NUMERIC locale to "C" to avoid juggling
+    // between locales when using stringstreams.
+    // See function __convert_from_v(...) in
+    // /usr/include/c++/4.2.1/x86_64-apple-darwin10/bits/c++locale.h
+    // https://www.opensource.apple.com/source/libstdcxx/libstdcxx-104.1/include/c++/4.2.1/bits/c++locale.h
+    // See also https://stackoverflow.com/questions/22753707/is-ostream-operator-in-libstdc-thread-hostile
+
+    // set the C++ locale first
+    try {
+        std::locale::global(std::locale(std::locale("en_US.UTF-8"), "C", std::locale::numeric));
+    } catch (std::runtime_error) {
+        try {
+            std::locale::global(std::locale(std::locale("UTF8"), "C", std::locale::numeric));
+        } catch (std::runtime_error) {
+            try {
+                std::locale::global(std::locale("C"));
+            } catch (std::runtime_error) {
+                qDebug() << "Could not set C++ locale!";
+            }
+        }
+    }
+
+    // set the C locale second, because it will not overwrite the changes you made to the C++ locale
+    // see https://stackoverflow.com/questions/12373341/does-stdlocaleglobal-make-affect-to-printf-function
     char *category = std::setlocale(LC_ALL,"en_US.UTF-8");
     if (category == NULL) {
         category = std::setlocale(LC_ALL,"UTF-8");
@@ -533,8 +566,10 @@ AppManager::loadInternal(const QString & projectFilename,
         category = std::setlocale(LC_ALL,"C");
     }
     if (category == NULL) {
-        qDebug() << "Could not set locale!";
+        qDebug() << "Could not set C locale!";
     }
+    std::setlocale(LC_NUMERIC,"C"); // set the locale for LC_NUMERIC only
+
     Natron::Log::instance(); //< enable logging
 
     _imp->_settings->initializeKnobsPublic();
@@ -1742,7 +1777,7 @@ AppManager::setDiskCacheLocation(const QString& path)
     if (d.exists() && !path.isEmpty()) {
         _imp->diskCachesLocation = path;
     } else {
-        _imp->diskCachesLocation = Natron::StandardPaths::writableLocation(Natron::StandardPaths::CacheLocation);
+        _imp->diskCachesLocation = Natron::StandardPaths::writableLocation(Natron::StandardPaths::eStandardLocationCache);
     }
     
 }

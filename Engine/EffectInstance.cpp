@@ -426,17 +426,19 @@ struct EffectInstance::Implementation
         bool isBeingRenderedElseWhere = false;
         img->getRestToRender_trimap(roi,restToRender, &isBeingRenderedElseWhere);
         
+        bool ab = _publicInterface->aborted();
         {
             QMutexLocker kk(&ibr->lock);
-            while (isBeingRenderedElseWhere && !ibr->renderFailed) {
+            while (!ab && isBeingRenderedElseWhere && !ibr->renderFailed) {
                 ibr->cond.wait(&ibr->lock);
                 isBeingRenderedElseWhere = false;
                 img->getRestToRender_trimap(roi, restToRender, &isBeingRenderedElseWhere);
+                ab = _publicInterface->aborted();
             }
         }
         
         ///Everything should be rendered now.
-        assert(restToRender.empty());
+        assert(ab || restToRender.empty());
 
         {
             QMutexLocker k(&imagesBeingRenderedMutex);
@@ -445,6 +447,7 @@ struct EffectInstance::Implementation
             
             QMutexLocker kk(&ibr->lock);
             --ibr->refCount;
+            found->second->cond.wakeAll();
             if (found != imagesBeingRendered.end() && !ibr->refCount) {
                 imagesBeingRendered.erase(found);
             }
@@ -825,10 +828,12 @@ EffectInstance::aborted() const
                 if (args.canAbort) {
                     ///Rendering issued by RenderEngine::renderCurrentFrame, if time or hash changed, abort
                     bool ret = args.nodeHash != getHash() ||
-                    args.time != args.timeline->currentFrame();
+                    args.time != args.timeline->currentFrame() ||
+                    !_node->isActivated();
                     return ret;
                 } else {
-                    return false;
+                    bool ret = !_node->isActivated();
+                    return ret;
                 }
                 
             } else {
@@ -2454,11 +2459,18 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
 #if NATRON_ENABLE_TRIMAP
         if (!frameRenderArgs.canAbort && frameRenderArgs.isRenderResponseToUserInteraction) {
             ///Only use trimap system if the render cannot be aborted.
-            assert(!aborted());
-            if (renderRetCode == eRenderRoIStatusRenderFailed || !isBeingRenderedElsewhere) {
-                _imp->unmarkImageAsBeingRendered(useImageAsOutput ? image : downscaledImage,renderRetCode == eRenderRoIStatusRenderFailed);
+            ///If we were aborted after all (because the node got deleted) then return a NULL image and empty the cache
+            ///of this image
+            if (!aborted()) {
+                if (renderRetCode == eRenderRoIStatusRenderFailed || !isBeingRenderedElsewhere) {
+                    _imp->unmarkImageAsBeingRendered(useImageAsOutput ? image : downscaledImage,renderRetCode == eRenderRoIStatusRenderFailed);
+                } else {
+                    _imp->waitForImageBeingRenderedElsewhereAndUnmark(roi, useImageAsOutput ? image: downscaledImage);
+                }
             } else {
-                _imp->waitForImageBeingRenderedElsewhereAndUnmark(roi, useImageAsOutput ? image: downscaledImage);
+                 _imp->unmarkImageAsBeingRendered(useImageAsOutput ? image : downscaledImage,true);
+                appPTR->removeFromNodeCache(useImageAsOutput ? image : downscaledImage);
+                return ImagePtr();
             }
         }
 #endif
@@ -2957,7 +2969,7 @@ EffectInstance::renderRoIInternal(SequenceTime time,
             tiledArgs.renderFullScaleThenDownscale = renderFullScaleThenDownscale;
             
             // the bitmap is checked again at the beginning of EffectInstance::tiledRenderingFunctor()
-            QFuture<EffectInstance::RenderingFunctorRet> ret = QtConcurrent::mapped( splitRects,
+            QFuture<EffectInstance::RenderingFunctorRetEnum> ret = QtConcurrent::mapped( splitRects,
                                                                                     boost::bind(&EffectInstance::tiledRenderingFunctor,
                                                                                                 this,
                                                                                                 tiledArgs,
@@ -2979,13 +2991,13 @@ EffectInstance::renderRoIInternal(SequenceTime time,
                 }
             }
             
-            for (QFuture<EffectInstance::RenderingFunctorRet>::const_iterator it2 = ret.begin(); it2 != ret.end(); ++it2) {
-                if ( (*it2) == EffectInstance::eRenderingFunctorFailed ) {
+            for (QFuture<EffectInstance::RenderingFunctorRetEnum>::const_iterator it2 = ret.begin(); it2 != ret.end(); ++it2) {
+                if ( (*it2) == EffectInstance::eRenderingFunctorRetFailed ) {
                     renderStatus = eStatusFailed;
                     break;
                 }
 #if NATRON_ENABLE_TRIMAP
-                else if ((*it2) == EffectInstance::eRenderingFunctorTakeImageLock) {
+                else if ((*it2) == EffectInstance::eRenderingFunctorRetTakeImageLock) {
                     *isBeingRenderedElsewhere = true;
                 }
 #endif
@@ -3018,7 +3030,7 @@ EffectInstance::renderRoIInternal(SequenceTime time,
             ///For eRenderSafetyFullySafe, don't take any lock, the image already has a lock on itself so we're sure it can't be written to by 2 different threads.
             
             
-            RenderingFunctorRet functorRet = tiledRenderingFunctor(args,
+            RenderingFunctorRetEnum functorRet = tiledRenderingFunctor(args,
                                                                    frameArgs,
                                                                    inputImages,
                                                                    false,
@@ -3034,11 +3046,11 @@ EffectInstance::renderRoIInternal(SequenceTime time,
 
             delete locker;
             
-            if (functorRet == eRenderingFunctorFailed) {
+            if (functorRet == eRenderingFunctorRetFailed) {
                 renderStatus = eStatusFailed;
-            } else if (functorRet == eRenderingFunctorOK) {
+            } else if (functorRet == eRenderingFunctorRetOK) {
                 renderStatus = eStatusOK;
-            } else if  (functorRet == eRenderingFunctorTakeImageLock) {
+            } else if  (functorRet == eRenderingFunctorRetTakeImageLock) {
                 renderStatus = eStatusOK;
 #if NATRON_ENABLE_TRIMAP
                 *isBeingRenderedElsewhere = true;
@@ -3064,7 +3076,7 @@ EffectInstance::renderRoIInternal(SequenceTime time,
     return retCode;
 } // renderRoIInternal
 
-EffectInstance::RenderingFunctorRet
+EffectInstance::RenderingFunctorRetEnum
 EffectInstance::tiledRenderingFunctor(const TiledRenderingFunctorArgs& args,
                                       const ParallelRenderArgs& frameArgs,
                                      bool setThreadLocalStorage,
@@ -3085,7 +3097,7 @@ EffectInstance::tiledRenderingFunctor(const TiledRenderingFunctorArgs& args,
                                  args.renderMappedImage);
 }
 
-EffectInstance::RenderingFunctorRet
+EffectInstance::RenderingFunctorRetEnum
 EffectInstance::tiledRenderingFunctor(const RenderArgs & args,
                                       const ParallelRenderArgs& frameArgs,
                                       const std::list<boost::shared_ptr<Natron::Image> >& inputImages,
@@ -3210,7 +3222,7 @@ EffectInstance::tiledRenderingFunctor(const RenderArgs & args,
     
     if ( renderRectToRender.isNull() ) {
         ///We've got nothing to do
-        return isBeingRenderedElseWhere ? eRenderingFunctorTakeImageLock : eRenderingFunctorOK;
+        return isBeingRenderedElseWhere ? eRenderingFunctorRetTakeImageLock : eRenderingFunctorRetOK;
     }
     
 #if NATRON_ENABLE_TRIMAP
@@ -3248,7 +3260,7 @@ EffectInstance::tiledRenderingFunctor(const RenderArgs & args,
             }
         }
 #endif
-        return eRenderingFunctorFailed;
+        return eRenderingFunctorRetFailed;
         
     }
     
@@ -3281,7 +3293,7 @@ EffectInstance::tiledRenderingFunctor(const RenderArgs & args,
     }
   
     
-    return isBeingRenderedElseWhere ? eRenderingFunctorTakeImageLock : eRenderingFunctorOK;
+    return isBeingRenderedElseWhere ? eRenderingFunctorRetTakeImageLock : eRenderingFunctorRetOK;
 } // tiledRenderingFunctor
 
 void
@@ -4538,7 +4550,7 @@ OutputEffectInstance::renderFullSequence(BlockingBackgroundRender* renderControl
         }
     }
     ///If you want writers to render backward (from last to first), just change the flag in parameter here
-    _engine->renderFrameRange(first,last,OutputSchedulerThread::RENDER_FORWARD);
+    _engine->renderFrameRange(first,last,OutputSchedulerThread::eRenderDirectionForward);
 
 }
 

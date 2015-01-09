@@ -1826,7 +1826,11 @@ convertToFormatInternal_sameComps(const RectI & renderWindow,
 
             while ( x != end && x >= 0 && x < intersection.width() ) {
                 for (int k = 0; k < nComp; ++k) {
-                    if ( (k <= 2) && (srcLut || dstLut) ) {
+                    if ( k == 3 || (!srcLut && !dstLut) ) {
+                        DSTPIX pix = convertPixelDepth<SRCPIX, DSTPIX>(srcPixels[k]);
+                        dstPixels[k] = invert ? dstMaxValue - pix : pix;
+
+                    } else {
                         float pixFloat;
 
                         if (srcLut) {
@@ -1857,9 +1861,6 @@ convertToFormatInternal_sameComps(const RectI & renderWindow,
                             }
                             pix = convertPixelDepth<float, DSTPIX>(pixFloat);
                         }
-                        dstPixels[k] = invert ? dstMaxValue - pix : pix;
-                    } else {
-                        DSTPIX pix = convertPixelDepth<SRCPIX, DSTPIX>(srcPixels[k]);
                         dstPixels[k] = invert ? dstMaxValue - pix : pix;
                     }
                 }
@@ -2015,6 +2016,19 @@ convertToFormatInternal(const RectI & renderWindow,
                                 ///For alpha channel, fill with 1, we reach here only if converting RGB-->RGBA
                                 DSTPIX pix = convertPixelDepth<float, DSTPIX>(0.f);
                                 dstPixels[k] = invert ? dstMaxValue - pix : pix;
+
+                            } else if (!srcLut && !dstLut) {
+                                DSTPIX pix;
+                                if (dstDepth == eImageBitDepthByte) {
+                                    float pixFloat = convertPixelDepth<SRCPIX, float>(srcPixels[k]);
+                                    error[k] = (error[k] & 0xff) + ( dstLut ? dstLut->toColorSpaceUint8xxFromLinearFloatFast(pixFloat) :
+                                                                    Color::floatToInt<0xff01>(pixFloat) );
+                                    pix = error[k] >> 8;
+
+                                } else {
+                                    pix = convertPixelDepth<SRCPIX, DSTPIX>(srcPixels[k]);
+                                }
+                                dstPixels[k] = invert ? dstMaxValue - pix : pix;
                             } else {
                                 ///For RGB channels
                                 float pixFloat;
@@ -2026,36 +2040,35 @@ convertToFormatInternal(const RectI & renderWindow,
                                     if (srcLut) {
                                         pixFloat = srcLut->fromColorSpaceFloatToLinearFloat(pixFloat);
                                     }
-                                } else {
-                                    
-                                    if (srcLut) {
-                                        if (srcDepth == eImageBitDepthByte) {
-                                            pixFloat = srcLut->fromColorSpaceUint8ToLinearFloatFast(srcPixels[k]);
-                                        } else if (srcDepth == eImageBitDepthShort) {
-                                            pixFloat = srcLut->fromColorSpaceUint16ToLinearFloatFast(srcPixels[k]);
-                                        } else {
-                                            pixFloat = srcLut->fromColorSpaceFloatToLinearFloat(srcPixels[k]);
-                                        }
+
+                                } else if (srcLut) {
+                                    if (srcDepth == eImageBitDepthByte) {
+                                        pixFloat = srcLut->fromColorSpaceUint8ToLinearFloatFast(srcPixels[k]);
+                                    } else if (srcDepth == eImageBitDepthShort) {
+                                        pixFloat = srcLut->fromColorSpaceUint16ToLinearFloatFast(srcPixels[k]);
                                     } else {
-                                        pixFloat = convertPixelDepth<SRCPIX, float>(srcPixels[k]);
+                                        pixFloat = srcLut->fromColorSpaceFloatToLinearFloat(srcPixels[k]);
                                     }
+                                } else {
+                                    pixFloat = convertPixelDepth<SRCPIX, float>(srcPixels[k]);
                                 }
-                                
+
                                 ///Apply dst color-space
                                 DSTPIX pix;
                                 if (dstDepth == eImageBitDepthByte) {
                                     error[k] = (error[k] & 0xff) + ( dstLut ? dstLut->toColorSpaceUint8xxFromLinearFloatFast(pixFloat) :
                                                                     Color::floatToInt<0xff01>(pixFloat) );
                                     pix = error[k] >> 8;
+
                                 } else if (dstDepth == eImageBitDepthShort) {
                                     pix = dstLut ? dstLut->toColorSpaceUint16FromLinearFloatFast(pixFloat) :
                                     convertPixelDepth<float, DSTPIX>(pixFloat);
+
                                 } else {
                                     if (dstLut) {
                                         pixFloat = dstLut->toColorSpaceFloatFromLinearFloat(pixFloat);
-                                    } else {
-                                        pix = convertPixelDepth<float, DSTPIX>(pixFloat);
                                     }
+                                    pix = convertPixelDepth<float, DSTPIX>(pixFloat);
                                 }
                                 dstPixels[k] = invert ? dstMaxValue - pix : pix;
                             }

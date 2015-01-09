@@ -66,7 +66,7 @@ gettimeofday (struct timeval *tv,
 
 
 Timer::Timer ()
-    : playState (RUNNING),
+    : playState (ePlayStateRunning),
       _spf (1 / 24.0),
       _timingError (0),
       _framesSinceLastFpsFrame (0),
@@ -85,7 +85,7 @@ Timer::~Timer()
 void
 Timer::waitUntilNextFrameIsDue ()
 {
-    if (playState != RUNNING) {
+    if (playState != ePlayStateRunning) {
         //
         // If we are not running, reset all timing state
         // variables and return without waiting.

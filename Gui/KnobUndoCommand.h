@@ -163,12 +163,12 @@ private:
                 refreshGui = _refreshGuiFirstTime;
             }
             _valueChangedReturnCode[i] = _knob->setValue(dimension,*it,&_newKeys[i],refreshGui,Natron::eValueChangedReasonUserEdited);
-            if (_valueChangedReturnCode[i] != KnobHelper::NO_KEYFRAME_ADDED) {
+            if (_valueChangedReturnCode[i] != KnobHelper::eValueChangedReturnCodeNoKeyframeAdded) {
                 modifiedKeyFrames = true;
             }
 
             ///if we added a keyframe, prevent this command to merge with any other command
-            if (_valueChangedReturnCode[i] == KnobHelper::KEYFRAME_ADDED) {
+            if (_valueChangedReturnCode[i] == KnobHelper::eValueChangedReturnCodeKeyframeAdded) {
                 _merge = false;
             }
             ++i;

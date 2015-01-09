@@ -233,6 +233,8 @@ private:
     virtual void focusOutEvent(QFocusEvent* e) OVERRIDE FINAL;
 
 private:
+    
+    void wheelEventInternal(bool ctrlDown,double delta);
 
     boost::scoped_ptr<NodeGraphPrivate> _imp;
 };

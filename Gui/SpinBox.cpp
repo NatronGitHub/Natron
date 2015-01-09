@@ -31,7 +31,7 @@ CLANG_DIAG_ON(unused-private-field)
 
 struct SpinBoxPrivate
 {
-    SpinBox::SPINBOX_TYPE type;
+    SpinBox::SpinBoxTypeEnum type;
     
     /*the precision represents the number of digits after the decimal point.
      For the 'g' and 'G' formats, the precision represents the maximum number
@@ -47,7 +47,7 @@ struct SpinBoxPrivate
     double valueAfterLastValidation;
     bool valueInitialized; //< false when setValue has never been called yet.
     
-    SpinBoxPrivate(SpinBox::SPINBOX_TYPE type)
+    SpinBoxPrivate(SpinBox::SpinBoxTypeEnum type)
     : type(type)
     , decimals(2)
     , increment(1.0)
@@ -67,21 +67,21 @@ struct SpinBoxPrivate
 };
 
 SpinBox::SpinBox(QWidget* parent,
-                 SPINBOX_TYPE type)
+                 SpinBoxTypeEnum type)
 : LineEdit(parent)
 , animation(0)
 , dirty(false)
 , _imp( new SpinBoxPrivate(type) )
 {
     switch (_imp->type) {
-        case DOUBLE_SPINBOX:
+        case eSpinBoxTypeDouble:
             _imp->mini.setValue<double>(-DBL_MAX);
             _imp->maxi.setValue<double>(DBL_MAX);
             _imp->doubleValidator = new QDoubleValidator;
             _imp->doubleValidator->setTop(DBL_MAX);
             _imp->doubleValidator->setBottom(-DBL_MAX);
             break;
-        case INT_SPINBOX:
+        case eSpinBoxTypeInt:
             _imp->intValidator = new QIntValidator;
             _imp->mini.setValue<int>(INT_MIN);
             _imp->maxi.setValue<int>(INT_MAX);
@@ -100,10 +100,10 @@ SpinBox::SpinBox(QWidget* parent,
 SpinBox::~SpinBox()
 {
     switch (_imp->type) {
-        case DOUBLE_SPINBOX:
+        case eSpinBoxTypeDouble:
             delete _imp->doubleValidator;
             break;
-        case INT_SPINBOX:
+        case eSpinBoxTypeInt:
             delete _imp->intValidator;
             break;
     }
@@ -121,14 +121,14 @@ SpinBox::setValue_internal(double d,
     int pos = cursorPosition();
     QString str;
     switch (_imp->type) {
-        case DOUBLE_SPINBOX: {
+        case eSpinBoxTypeDouble: {
             str.setNum(d, 'f', _imp->decimals);
             double toDouble = str.toDouble();
             if (d != toDouble) {
                 str.setNum(d, 'g', 15);
             }
         }   break;
-        case INT_SPINBOX:
+        case eSpinBoxTypeInt:
             str.setNum( (int)d );
             break;
     }
@@ -213,10 +213,10 @@ QString
 SpinBoxPrivate::setNum(double cur)
 {
     switch (type) {
-        case SpinBox::INT_SPINBOX:
+        case SpinBox::eSpinBoxTypeInt:
             
             return QString().setNum( (int)cur );
-        case SpinBox::DOUBLE_SPINBOX:
+        case SpinBox::eSpinBoxTypeDouble:
         default:
             
             return QString().setNum(cur,'f',decimals);
@@ -249,14 +249,14 @@ SpinBox::increment(int delta,
         double maxiD = 0.;
         double miniD = 0.;
         switch (_imp->type) {
-            case DOUBLE_SPINBOX: {
+            case eSpinBoxTypeDouble: {
                 maxiD = _imp->maxi.toDouble();
                 miniD = _imp->mini.toDouble();
                 val += inc;
                 _imp->currentDelta = 0;
                 break;
             }
-            case INT_SPINBOX: {
+            case eSpinBoxTypeInt: {
                 maxiD = _imp->maxi.toInt();
                 miniD = _imp->mini.toInt();
                 val += (int)inc;     // round towards zero
@@ -338,7 +338,7 @@ SpinBox::increment(int delta,
     assert( oldVal == str.toDouble() ); // check that the value hasn't changed due to whitespace manipulation
     
     // On int types, there should not be any dot
-    if ( (_imp->type == INT_SPINBOX) && (len > dot) ) {
+    if ( (_imp->type == eSpinBoxTypeInt) && (len > dot) ) {
         // Remove anything after the dot, including the dot
         str.resize(dot);
         len = dot;
@@ -363,7 +363,7 @@ SpinBox::increment(int delta,
     // Trailing zeroes:
     // (No trailing zeroes on int, of course)
     assert( len == str.size() );
-    if ( (_imp->type == INT_SPINBOX) && (pos >= len) ) {
+    if ( (_imp->type == eSpinBoxTypeInt) && (pos >= len) ) {
         // If this is an int and we are beyond the last position, change the last digit
         pos = len - 1;
         // also reset the shift if it was negative
@@ -372,7 +372,7 @@ SpinBox::increment(int delta,
         }
     }
     while ( pos >= str.size() ) {
-        assert(_imp->type == DOUBLE_SPINBOX);
+        assert(_imp->type == eSpinBoxTypeDouble);
         // Add trailing zero, maybe preceded by a dot
         if (pos == dot) {
             str.append('.');
@@ -404,7 +404,7 @@ SpinBox::increment(int delta,
         noDotStr.remove(dot, 1);
         --noDotLen;
     }
-    assert( (_imp->type == INT_SPINBOX && noDotLen == dot) || noDotLen >= dot );
+    assert( (_imp->type == eSpinBoxTypeInt && noDotLen == dot) || noDotLen >= dot );
     double val = oldVal; // The value, as a double
     if (noDotLen > 16 && 16 >= dot) {
         // don't handle more than 16 significant digits (this causes over/underflows in the following)
@@ -426,7 +426,7 @@ SpinBox::increment(int delta,
     // If pos is at the end
     if ( pos == str.size() ) {
         switch (_imp->type) {
-            case DOUBLE_SPINBOX:
+            case eSpinBoxTypeDouble:
                 if ( dot == str.size() ) {
                     str += ".0";
                     len += 2;
@@ -436,7 +436,7 @@ SpinBox::increment(int delta,
                     ++len;
                 }
                 break;
-            case INT_SPINBOX:
+            case eSpinBoxTypeInt:
                 // take the character before
                 --pos;
                 break;
@@ -449,7 +449,7 @@ SpinBox::increment(int delta,
     assert( 0 <= pos && pos < len && str[pos].isDigit() );
     
     int powerOfTen = dot - pos - (pos < dot); // the power of ten
-    assert( (_imp->type == DOUBLE_SPINBOX) || ( powerOfTen >= 0 && dot == str.size() ) );
+    assert( (_imp->type == eSpinBoxTypeDouble) || ( powerOfTen >= 0 && dot == str.size() ) );
 
     if (powerOfTen - llpowerOfTen > 16) {
         // too many digits to handle, don't do anything
@@ -462,11 +462,11 @@ SpinBox::increment(int delta,
     // Check that we are within the authorized range
     double maxiD,miniD;
     switch (_imp->type) {
-        case INT_SPINBOX:
+        case eSpinBoxTypeInt:
             maxiD = _imp->maxi.toInt();
             miniD = _imp->mini.toInt();
             break;
-        case DOUBLE_SPINBOX:
+        case eSpinBoxTypeDouble:
         default:
             maxiD = _imp->maxi.toDouble();
             miniD = _imp->mini.toDouble();
@@ -502,7 +502,7 @@ SpinBox::increment(int delta,
     assert( 0 <= newDot && newDot <= newStr.size() );
     assert( newDot == newStr.size() || newStr[newDot].isDigit() );
     if ( newDot != newStr.size() ) {
-        assert(_imp->type == DOUBLE_SPINBOX);
+        assert(_imp->type == eSpinBoxTypeDouble);
         newStr.insert(newDot, '.');
     }
     // Check that the backed string is close to the wanted value (relative error should be less than 1e-8)
@@ -522,7 +522,7 @@ SpinBox::increment(int delta,
     // (beware of the sign!)
     // Trailing zeroes:
     while ( newPos >= newStr.size() ) {
-        assert(_imp->type == DOUBLE_SPINBOX);
+        assert(_imp->type == eSpinBoxTypeDouble);
         // Add trailing zero, maybe preceded by a dot
         if (newPos == newDot) {
             newStr.append('.');
@@ -638,11 +638,11 @@ SpinBox::validateText()
     
     double maxiD,miniD;
     switch (_imp->type) {
-        case INT_SPINBOX:
+        case eSpinBoxTypeInt:
             maxiD = _imp->maxi.toInt();
             miniD = _imp->mini.toInt();
             break;
-        case DOUBLE_SPINBOX:
+        case eSpinBoxTypeDouble:
         default:
             maxiD = _imp->maxi.toDouble();
             miniD = _imp->mini.toDouble();
@@ -650,7 +650,7 @@ SpinBox::validateText()
     }
     
     switch (_imp->type) {
-        case DOUBLE_SPINBOX: {
+        case eSpinBoxTypeDouble: {
             QString txt = text();
             int tmp;
             QValidator::State st = _imp->doubleValidator->validate(txt,tmp);
@@ -668,7 +668,7 @@ SpinBox::validateText()
             }
             break;
         }
-        case INT_SPINBOX: {
+        case eSpinBoxTypeInt: {
             QString txt = text();
             int tmp;
             QValidator::State st = _imp->intValidator->validate(txt,tmp);
@@ -699,11 +699,11 @@ void
 SpinBox::setMaximum(double t)
 {
     switch (_imp->type) {
-        case DOUBLE_SPINBOX:
+        case eSpinBoxTypeDouble:
             _imp->maxi.setValue<double>(t);
             _imp->doubleValidator->setTop(t);
             break;
-        case INT_SPINBOX:
+        case eSpinBoxTypeInt:
             _imp->maxi.setValue<int>( (int)t );
             _imp->intValidator->setTop(t);
             break;
@@ -714,11 +714,11 @@ void
 SpinBox::setMinimum(double b)
 {
     switch (_imp->type) {
-        case DOUBLE_SPINBOX:
+        case eSpinBoxTypeDouble:
             _imp->mini.setValue<double>(b);
             _imp->doubleValidator->setBottom(b);
             break;
-        case INT_SPINBOX:
+        case eSpinBoxTypeInt:
             _imp->mini.setValue<int>(b);
             _imp->intValidator->setBottom(b);
             break;

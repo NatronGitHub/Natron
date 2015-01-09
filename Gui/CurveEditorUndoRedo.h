@@ -219,21 +219,22 @@ class MoveTangentCommand
 {
 public:
     
-    enum SelectedDerivative
+    enum SelectedTangentEnum
     {
-        LEFT_TANGENT = 0,RIGHT_TANGENT = 1
+        eSelectedTangentLeft = 0,
+        eSelectedTangentRight
     };
 
     
     MoveTangentCommand(CurveWidget* widget,
-                       SelectedDerivative deriv,
+                       SelectedTangentEnum deriv,
                        const KeyPtr& key,
                        double dx,double dy,
                        bool updateOnFirstRedo,
                        QUndoCommand *parent = 0);
     
     MoveTangentCommand(CurveWidget* widget,
-                       SelectedDerivative deriv,
+                       SelectedTangentEnum deriv,
                        const KeyPtr& key,
                        double derivative,
                        QUndoCommand *parent = 0);
@@ -255,7 +256,7 @@ private:
     
     CurveWidget* _widget;
     KeyPtr _key;
-    SelectedDerivative _deriv;
+    SelectedTangentEnum _deriv;
     Natron::KeyframeTypeEnum _oldInterp,_newInterp;
     double _oldLeft,_oldRight,_newLeft,_newRight;
     bool _setBoth;

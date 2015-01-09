@@ -20,7 +20,7 @@
 
 using namespace Natron;
 
-LibraryBinary::LibraryBinary(LibraryBinary::LibraryType type)
+LibraryBinary::LibraryBinary(LibraryBinary::LibraryTypeEnum type)
     : _type(type)
       , _library(0)
       , _valid(false)
@@ -28,7 +28,7 @@ LibraryBinary::LibraryBinary(LibraryBinary::LibraryType type)
 }
 
 LibraryBinary::LibraryBinary(const std::map<std::string, void *> &functions)
-    : _type(LibraryBinary::BUILTIN)
+    : _type(LibraryBinary::eLibraryTypeBuiltin)
       , _library(0)
       , _valid(false)
 {
@@ -44,7 +44,7 @@ LibraryBinary::LibraryBinary(const std::map<std::string, void *> &functions)
 }
 
 LibraryBinary::LibraryBinary(const std::string & binaryPath)
-    : _type(LibraryBinary::EXTERNAL)
+    : _type(LibraryBinary::eLibraryTypeExternal)
       , _library(0)
       , _valid(false)
 {
@@ -53,7 +53,7 @@ LibraryBinary::LibraryBinary(const std::string & binaryPath)
 
 LibraryBinary::LibraryBinary(const std::string & binaryPath,
                              const std::vector<std::string> & funcNames)
-    : _type(LibraryBinary::EXTERNAL)
+    : _type(LibraryBinary::eLibraryTypeExternal)
       , _library(0)
       , _valid(false)
 {
@@ -67,7 +67,7 @@ bool
 LibraryBinary::loadBinary(const std::string & binaryPath)
 {
     assert(!_valid);
-    if (_type != EXTERNAL) {
+    if (_type != eLibraryTypeExternal) {
         std::cout << "Trying to load a binary but the library is a built-in library." << std::endl;
 
         return false;

@@ -368,8 +368,19 @@ NATRON_VERSION_REVISION)
 
 #if COMPILER(GCC)
 #define WARN_UNUSED_RETURN __attribute__ ( (warn_unused_result) )
+// a very simple template function to actually ignore the return value of functions define with WARN_UNUSED_RETURN
+template<typename T>
+inline T ignore_result(T x __attribute__((unused)))
+{
+    return x;
+}
 #else
 #define WARN_UNUSED_RETURN
+template<typename T>
+inline T ignore_result(T x)
+{
+    return x;
+}
 #endif
 
 /* OVERRIDE and FINAL */

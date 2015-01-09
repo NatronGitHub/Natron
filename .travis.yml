@@ -21,6 +21,9 @@ compiler:
   - gcc
   - clang
 
+python:
+  - "3.4"
+
 matrix:
   exclude:
     - os: osx
@@ -46,7 +49,9 @@ install:
     then
         exit 0;
     fi
-  - tools/travis/install_dependencies.sh > install_dependencies.log 2>&1
+  - tools/travis/install_dependencies.sh
+
+#> install_dependencies.log 2>&1
 
 script:
   - if [[ ${COVERITY_SCAN_BRANCH} == 1 ]];

@@ -125,18 +125,18 @@ public:
     
     friend class RenderThreadTask;
     
-    enum RenderDirection {
-        RENDER_FORWARD = 0,
-        RENDER_BACKWARD
+    enum RenderDirectionEnum {
+        eRenderDirectionForward = 0,
+        eRenderDirectionBackward
     };
     
-    enum Mode
+    enum ProcessFrameModeEnum
     {
-        TREAT_ON_SCHEDULER_THREAD = 0, //< the treatFrame_blocking function will be called by the OutputSchedulerThread thread.
-        TREAT_ON_MAIN_THREAD //< the treatFrame_blocking function will be called by the application's main-thread.
+        eProcessFrameBySchedulerThread = 0, //< the processFrame function will be called by the OutputSchedulerThread thread.
+        eProcessFrameByMainThread //< the processFrame function will be called by the application's main-thread.
     };
     
-    OutputSchedulerThread(RenderEngine* engine,Natron::OutputEffectInstance* effect,Mode mode);
+    OutputSchedulerThread(RenderEngine* engine,Natron::OutputEffectInstance* effect,ProcessFrameModeEnum mode);
     
     virtual ~OutputSchedulerThread();
     
@@ -170,14 +170,14 @@ public:
     /**
      * @brief Call this to render from firstFrame to lastFrame included.
      **/
-    void renderFrameRange(int firstFrame,int lastFrame,RenderDirection forward);
+    void renderFrameRange(int firstFrame,int lastFrame,RenderDirectionEnum forward);
 
     /**
      * @brief Same as renderFrameRange except that the frame range will be computed automatically and it will
      * start from the current frame.
      * This is not appropriate to call this function from a writer.
      **/
-    void renderFromCurrentFrame(RenderDirection forward);
+    void renderFromCurrentFrame(RenderDirectionEnum forward);
 
     
     /**
@@ -210,7 +210,7 @@ public:
      * @brief Returns the render direction as set in the livingRunArgs, @see startRender()
      * This can only be called on the scheduler thread (this)
      **/
-    RenderDirection getDirectionRequestedToRender() const;
+    RenderDirectionEnum getDirectionRequestedToRender() const;
     
     /**
      * @brief Returns the current number of render threads
@@ -259,7 +259,7 @@ public:
     
 public Q_SLOTS:
     
-    void doTreatFrameMainThread(const BufferedFrames& frames,bool mustSeekTimeline,int time);
+    void doProcessFrameMainThread(const BufferedFrames& frames,bool mustSeekTimeline,int time);
     
     /**
      @brief Aborts all computations. This turns on the flag abortRequested and will inform the engine that it needs to stop.
@@ -278,7 +278,7 @@ public Q_SLOTS:
     void abortRendering(bool blocking);
 Q_SIGNALS:
     
-    void s_doTreatOnMainThread(const BufferedFrames& frames,bool mustSeekTimeline,int time);
+    void s_doProcessOnMainThread(const BufferedFrames& frames,bool mustSeekTimeline,int time);
     
     void s_abortRenderingOnMainThread(bool blocking);
     
@@ -287,19 +287,19 @@ protected:
     
     
     /**
-     * @brief Called whenever there are images available to treat in the buffer.
-     * Once treated, the frame will be removed from the buffer.
+     * @brief Called whenever there are images available to process in the buffer.
+     * Once processed, the frame will be removed from the buffer.
      *
-     * According to the Mode given to the scheduler this function will be called either by the scheduler thread (this)
+     * According to the ProcessFrameModeEnum given to the scheduler this function will be called either by the scheduler thread (this)
      * or by the application's main-thread (typically to do OpenGL rendering).
      **/
-    virtual void treatFrame(const BufferedFrames& frames) = 0;
+    virtual void processFrame(const BufferedFrames& frames) = 0;
     
     /**
      * @brief Must be implemented to increment/decrement the timeline by one frame.
      * @param forward If true, must increment otherwise must decrement
      **/
-    virtual void timelineStepOne(RenderDirection direction) = 0;
+    virtual void timelineStepOne(RenderDirectionEnum direction) = 0;
     
     /**
      * @brief Set the timeline to the next frame to be rendered, this is used by startSchedulerAtFrame() when starting rendering
@@ -434,9 +434,9 @@ public:
     
 private:
     
-    virtual void treatFrame(const BufferedFrames& frames) OVERRIDE FINAL;
+    virtual void processFrame(const BufferedFrames& frames) OVERRIDE FINAL;
     
-    virtual void timelineStepOne(RenderDirection direction) OVERRIDE FINAL;
+    virtual void timelineStepOne(RenderDirectionEnum direction) OVERRIDE FINAL;
     
     virtual void timelineGoTo(int time) OVERRIDE FINAL;
     
@@ -475,9 +475,9 @@ public:
     
 private:
 
-    virtual void treatFrame(const BufferedFrames& frames) OVERRIDE FINAL;
+    virtual void processFrame(const BufferedFrames& frames) OVERRIDE FINAL;
     
-    virtual void timelineStepOne(RenderDirection direction) OVERRIDE FINAL;
+    virtual void timelineStepOne(RenderDirectionEnum direction) OVERRIDE FINAL;
     
     virtual void timelineGoTo(int time) OVERRIDE FINAL;
     
@@ -506,7 +506,7 @@ private:
 
 /**
  * @brief The OutputSchedulerThread class (and its derivatives) are meant to be used for playback/render on disk and regulates the output ordering.
- * This class achieves kinda the same goal: it provides the ability to give it a work queue and treat the work queue in the same order.
+ * This class achieves kinda the same goal: it provides the ability to give it a work queue and process the work queue in the same order.
  * Typically when zooming, you want to launch as many thread as possible for each zoom increment and update the viewer in the same order that the one
  * in which you launched the thread in the first place.
  * Instead of re-using the OutputSchedulerClass and adding extra handling for special cases we separated it in a different class, specialized for this kind
@@ -535,11 +535,11 @@ public:
     
 public Q_SLOTS:
     
-    void doTreatProducedFrameOnMainThread(const BufferableObjectList& frames);
+    void doProcessProducedFrameOnMainThread(const BufferableObjectList& frames);
     
 Q_SIGNALS:
     
-    void s_treatProducedFrameOnMainThread(const BufferableObjectList& frames);
+    void s_processProducedFrameOnMainThread(const BufferableObjectList& frames);
     
 private:
     
@@ -551,7 +551,7 @@ private:
 
 
 /**
- * @brief This class manages multiple OutputThreadScheduler so that each render request gets treated as soon as possible.
+ * @brief This class manages multiple OutputThreadScheduler so that each render request gets processed as soon as possible.
  **/
 struct RenderEnginePrivate;
 class RenderEngine : public QObject
@@ -573,14 +573,14 @@ public:
     /**
      * @brief Call this to render from firstFrame to lastFrame included.
      **/
-    void renderFrameRange(int firstFrame,int lastFrame,OutputSchedulerThread::RenderDirection forward);
+    void renderFrameRange(int firstFrame,int lastFrame,OutputSchedulerThread::RenderDirectionEnum forward);
     
     /**
      * @brief Same as renderFrameRange except that the frame range will be computed automatically and it will
      * start from the current frame.
      * This is not appropriate to call this function from a writer.
      **/
-    void renderFromCurrentFrame(OutputSchedulerThread::RenderDirection forward);
+    void renderFromCurrentFrame(OutputSchedulerThread::RenderDirectionEnum forward);
     
     /**
      * @brief Basically it just renders with the current frame on the timeline.

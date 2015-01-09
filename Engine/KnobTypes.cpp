@@ -160,8 +160,8 @@ Double_Knob::Double_Knob(KnobHolder* holder,
 , _defaultStoredNormalized(false)
 
 {
-    _normalizationXY.first = NORMALIZATION_NONE;
-    _normalizationXY.second = NORMALIZATION_NONE;
+    _normalizationXY.first = eNormalizedStateNone;
+    _normalizationXY.second = eNormalizedStateNone;
     
     for (int i = 0; i < dimension; ++i) {
         _increments[i] = 1.;

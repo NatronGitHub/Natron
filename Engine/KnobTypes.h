@@ -138,11 +138,11 @@ class Double_Knob
 
 public:
 
-    enum NormalizedState
+    enum NormalizedStateEnum
     {
-        NORMALIZATION_NONE = 0, ///< indicating that the dimension holds a  non-normalized value.
-        NORMALIZATION_X, ///< indicating that the dimension holds a value normalized against the X dimension of the project format
-        NORMALIZATION_Y ///< indicating that the dimension holds a value normalized against the Y dimension of the project format
+        eNormalizedStateNone = 0, ///< indicating that the dimension holds a  non-normalized value.
+        eNormalizedStateX, ///< indicating that the dimension holds a value normalized against the X dimension of the project format
+        eNormalizedStateY ///< indicating that the dimension holds a value normalized against the Y dimension of the project format
     };
 
     static KnobHelper * BuildKnob(KnobHolder* holder,
@@ -177,7 +177,7 @@ public:
 
     static const std::string & typeNameStatic();
 
-    NormalizedState getNormalizedState(int dimension) const
+    NormalizedStateEnum getNormalizedState(int dimension) const
     {
         assert(dimension < 2 && dimension >= 0);
         if (dimension == 0) {
@@ -188,7 +188,7 @@ public:
     }
 
     void setNormalizedState(int dimension,
-                            NormalizedState state)
+                            NormalizedStateEnum state)
     {
         assert(dimension < 2 && dimension >= 0);
         if (dimension == 0) {
@@ -310,8 +310,8 @@ private:
 
     /// to support ofx deprecated normalizd params:
     /// the first and second dimensions of the double param( hence a pair ) have a normalized state.
-    /// BY default they have NORMALIZATION_NONE
-    std::pair<NormalizedState, NormalizedState> _normalizationXY;
+    /// BY default they have eNormalizedStateNone
+    std::pair<NormalizedStateEnum, NormalizedStateEnum> _normalizationXY;
 
     ///For double params respecting the kOfxParamCoordinatesNormalised
     ///This tells us that only the default value is stored normalized.

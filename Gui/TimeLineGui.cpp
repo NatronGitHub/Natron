@@ -61,7 +61,6 @@ struct ZoomContext
     double bottom; /// the bottom edge of orthographic projection
     double left; /// the left edge of the orthographic projection
     double zoomFactor; /// the zoom factor applied to the current image
-    double lastOrthoLeft, lastOrthoBottom, lastOrthoRight, lastOrthoTop; //< remembers the last values passed to the glOrtho call
 };
 
 struct CachedFrame
@@ -265,10 +264,6 @@ TimeLineGui::paintGL()
 
             return;
         }
-        _imp->_zoomCtx.lastOrthoLeft = left;
-        _imp->_zoomCtx.lastOrthoRight = right;
-        _imp->_zoomCtx.lastOrthoBottom = bottom;
-        _imp->_zoomCtx.lastOrthoTop = top;
         glOrtho(left, right, bottom, top, -1, 1);
 
 

@@ -2375,7 +2375,7 @@ struct KnobHolder::KnobHolderPrivate
     
     EvaluationRequest evaluateQueue;
     mutable QMutex paramsEditLevelMutex;
-    KnobHolder::MultipleParamsEditLevel paramsEditLevel;
+    KnobHolder::MultipleParamsEditEnum paramsEditLevel;
     mutable QMutex evaluationBlockedMutex;
     int evaluationBlocked;
     
@@ -2397,7 +2397,7 @@ struct KnobHolder::KnobHolderPrivate
     , overlayRedrawStackMutex()
     , overlayRedrawStack(0)
     , evaluateQueue()
-    , paramsEditLevel(PARAM_EDIT_OFF)
+    , paramsEditLevel(eMultipleParamsEditOff)
     , evaluationBlockedMutex(QMutex::Recursive)
     , evaluationBlocked(0)
     , knobsFrozenMutex()
@@ -2811,7 +2811,7 @@ KnobHolder::isEvaluationBlocked() const
     return _imp->evaluationBlocked > 0;
 }
 
-KnobHolder::MultipleParamsEditLevel
+KnobHolder::MultipleParamsEditEnum
 KnobHolder::getMultipleParamsEditLevel() const
 {
     QMutexLocker l(&_imp->paramsEditLevelMutex);
@@ -2820,7 +2820,7 @@ KnobHolder::getMultipleParamsEditLevel() const
 }
 
 void
-KnobHolder::setMultipleParamsEditLevel(KnobHolder::MultipleParamsEditLevel level)
+KnobHolder::setMultipleParamsEditLevel(KnobHolder::MultipleParamsEditEnum level)
 {
     QMutexLocker l(&_imp->paramsEditLevelMutex);
     

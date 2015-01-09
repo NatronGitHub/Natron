@@ -183,7 +183,7 @@ struct DockablePanelPrivate
     PageMap _pages;
     QString _defaultPageName;
     bool _useScrollAreasForTabs;
-    DockablePanel::HeaderMode _mode;
+    DockablePanel::HeaderModeEnum _mode;
     mutable QMutex _isClosedMutex;
     bool _isClosed; //< accessed by serialization thread too
     
@@ -195,7 +195,7 @@ struct DockablePanelPrivate
                          ,
                          QVBoxLayout* container
                          ,
-                         DockablePanel::HeaderMode headerMode
+                         DockablePanel::HeaderModeEnum headerMode
                          ,
                          bool useScrollAreasForTabs
                          ,
@@ -264,7 +264,7 @@ DockablePanel::DockablePanel(Gui* gui
                              ,
                              QVBoxLayout* container
                              ,
-                             HeaderMode headerMode
+                             HeaderModeEnum headerMode
                              ,
                              bool useScrollAreasForTabs
                              ,
@@ -302,7 +302,7 @@ DockablePanel::DockablePanel(Gui* gui
     }
     
     
-    if (headerMode != NO_HEADER) {
+    if (headerMode != eHeaderModeNoHeader) {
         _imp->_headerWidget = new QFrame(this);
         _imp->_headerWidget->setFrameShape(QFrame::Box);
         _imp->_headerLayout = new QHBoxLayout(_imp->_headerWidget);
@@ -394,7 +394,7 @@ DockablePanel::DockablePanel(Gui* gui
         _imp->_cross->setFocusPolicy(Qt::NoFocus);
         QObject::connect( _imp->_cross,SIGNAL( clicked() ),this,SLOT( closePanel() ) );
 
-        if (headerMode != READ_ONLY_NAME) {
+        if (headerMode != eHeaderModeReadOnlyName) {
             boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
             float r,g,b;
             
@@ -502,7 +502,7 @@ DockablePanel::DockablePanel(Gui* gui
         QObject::connect( _imp->_undoButton, SIGNAL( clicked() ),this, SLOT( onUndoClicked() ) );
         QObject::connect( _imp->_redoButton, SIGNAL( clicked() ),this, SLOT( onRedoPressed() ) );
 
-        if (headerMode != READ_ONLY_NAME) {
+        if (headerMode != eHeaderModeReadOnlyName) {
             _imp->_nameLineEdit = new LineEdit(_imp->_headerWidget);
             _imp->_nameLineEdit->setText(initialName);
             QObject::connect( _imp->_nameLineEdit,SIGNAL( editingFinished() ),this,SLOT( onLineEditNameEditingFinished() ) );
@@ -515,7 +515,7 @@ DockablePanel::DockablePanel(Gui* gui
 
         _imp->_headerLayout->addStretch();
 
-        if (headerMode != READ_ONLY_NAME) {
+        if (headerMode != eHeaderModeReadOnlyName) {
             _imp->_headerLayout->addWidget(_imp->_colorButton);
         }
         _imp->_headerLayout->addWidget(_imp->_undoButton);
@@ -1576,6 +1576,7 @@ DockablePanel::deleteKnobGui(const boost::shared_ptr<KnobI>& knob)
                 if (page->second.tabWidget->count() == 0) {
                     page->second.tabWidget->deleteLater();
                     _imp->_pages.erase(page);
+
                 }
             }
         } else {
@@ -1601,7 +1602,7 @@ void
 DockablePanel::insertHeaderWidget(int index,
                                   QWidget* widget)
 {
-    if (_imp->_mode != NO_HEADER) {
+    if (_imp->_mode != eHeaderModeNoHeader) {
         _imp->_headerLayout->insertWidget(index, widget);
     }
 }
@@ -1609,7 +1610,7 @@ DockablePanel::insertHeaderWidget(int index,
 void
 DockablePanel::appendHeaderWidget(QWidget* widget)
 {
-    if (_imp->_mode != NO_HEADER) {
+    if (_imp->_mode != eHeaderModeNoHeader) {
         _imp->_headerLayout->addWidget(widget);
     }
 }
@@ -1659,7 +1660,7 @@ DockablePanel::isFloating() const
 void
 DockablePanel::onColorDialogColorChanged(const QColor & color)
 {
-    if (_imp->_mode != READ_ONLY_NAME) {
+    if (_imp->_mode != eHeaderModeReadOnlyName) {
         QPixmap p(15,15);
         p.fill(color);
         _imp->_colorButton->setIcon( QIcon(p) );
@@ -1936,7 +1937,7 @@ NodeSettingsPanel::NodeSettingsPanel(const boost::shared_ptr<MultiInstancePanel>
     : DockablePanel(gui,
                     multiPanel.get() != NULL ? dynamic_cast<KnobHolder*>( multiPanel.get() ) : NodeUi->getNode()->getLiveInstance(),
                     container,
-                    DockablePanel::FULLY_FEATURED,
+                    DockablePanel::eHeaderModeFullyFeatured,
                     false,
                     NodeUi->getNode()->getName().c_str(),
                     NodeUi->getNode()->getDescription().c_str(),

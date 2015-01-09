@@ -29,7 +29,7 @@ public:
 
     virtual ~HistogramCPU();
 
-    void computeHistogram(int mode, //< corresponds to the enum Histogram::DisplayMode
+    void computeHistogram(int mode, //< corresponds to the enum Histogram::DisplayModeEnum
                           const boost::shared_ptr<Natron::Image> & image,
                           const RectI & rect,
                           int binsCount,

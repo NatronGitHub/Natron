@@ -208,7 +208,12 @@ static void createElementsForKnob(QTreeWidgetItem* parent,KnobGui* kgui,boost::s
         return;
     }
 
-    boost::shared_ptr<KnobSignalSlotHandler> handler = dynamic_cast<KnobHelper*>( k.get() )->getSignalSlotHandler();
+    KnobHelper* helper = dynamic_cast<KnobHelper*>( k.get() );
+    assert(helper);
+    if (!helper) {
+        return;
+    }
+    boost::shared_ptr<KnobSignalSlotHandler> handler = helper->getSignalSlotHandler();
     
     if (kgui) {
         QObject::connect( kgui,SIGNAL( keyFrameSet() ),curveWidget,SLOT( onCurveChanged() ) );
