@@ -111,16 +111,14 @@ LIBS += -L/opt/local/lib  -lpyside.cpython-34m -lshiboken.cpython-34m
 EOF
 ```
 
-###Build with Makefile
-
 If you installed libraries using Homebrew, use the following
 config.pri:
 
 ```Shell
  # copy and paste the following in a terminal
 cat > config.pri << EOF
-boost: INCLUDEPATH += /opt/local/include
-boost: LIBS += LIBS += -L/opt/local/lib -lboost_serialization-mt -lboost_thread-mt -lboost_system-mt
+boost: INCLUDEPATH += /usr/local/include
+boost: LIBS += LIBS += -L/usr/local/lib -lboost_serialization-mt -lboost_thread-mt -lboost_system-mt
 expat: PKGCONFIG -= expat
 expat: INCLUDEPATH += /usr/local/opt/expat/include
 expat: LIBS += -L/usr/local/opt/expat/lib -lexpat
@@ -173,8 +171,15 @@ This is not required as generated files are already in the repository. You would
 typesystem.xml file. See the documentation of shiboken-3.4 for an explanation of the command line arguments.
 
 
+```Shell
 shiboken-3.4 Engine/Pyside_Engine_Python.h --include-paths=/Users/alexandre/development/Engine:/Users/alexandre/development/Natron/Global:/opt/local/include:/opt/local/include/PySide-3.4  --typesystem-paths=/opt/local/share/PySide-3.4/typesystems --output-directory=Engine Engine/typesystem_engine.xml
+```
 
+on HomeBrew:
+```Shell
+ shiboken --include-paths=..:`pkg-config --variable=includedir QtCore`/..:`pkg-config --variable=includedir pyside`  --typesystem-paths=`pkg-config --variable=typesystemdir pyside` --output-directory=Engine Engine/Pyside_Engine_Python.h Engine/typesystem_engine.xml
+ ```
+ 
 ## OpenFX plugins
 
 Instructions to build the [openfx-io](https://github.com/MrKepzie/openfx-io) and [openfx-misc](https://github.com/devernay/openfx-misc) sets of plugins can also be found in the [tools/packageOSX.sh](https://github.com/MrKepzie/Natron/blob/workshop/tools/packageOSX.sh) script if you are using MacPorts, or in the .travis.yml file in their respective github repositories if you are using homebrew ([openfx-misc/.travis.yml](https://github.com/devernay/openfx-misc/blob/master/.travis.yml), [openfx-io/.travis.yml](https://github.com/MrKepzie/openfx-io/blob/master/.travis.yml).
