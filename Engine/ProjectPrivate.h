@@ -80,7 +80,9 @@ struct ProjectPrivate
     boost::shared_ptr<Int_Knob> viewsCount;
     boost::shared_ptr<Int_Knob> mainView;
     boost::shared_ptr<Bool_Knob> previewMode; //< auto or manual
-    boost::shared_ptr<Choice_Knob> colorSpace8bits,colorSpace16bits,colorSpace32bits;
+    boost::shared_ptr<Choice_Knob> colorSpace8u;
+    boost::shared_ptr<Choice_Knob> colorSpace16u;
+    boost::shared_ptr<Choice_Knob> colorSpace32f;
     boost::shared_ptr<Double_Knob> frameRate;
     
     boost::shared_ptr<String_Knob> natronVersion;
