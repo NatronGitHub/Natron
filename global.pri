@@ -151,7 +151,7 @@ unix {
      CONFIG += link_pkgconfig
      glew:      PKGCONFIG += glew
      expat:     PKGCONFIG += expat
-     cairo:     PKGCONFIG += cairo    
+     cairo:     PKGCONFIG += cairo
      !macx {
          LIBS +=  -lGLU
      }
@@ -164,10 +164,19 @@ unix {
      isEmpty(PYTHON_CONFIG) {
          PYTHON_CONFIG = python3-config
      }
-     message(PYTHON_CONFIG = $$PYTHON_CONFIG)
+     #message(PYTHON_CONFIG = $$PYTHON_CONFIG)
      python {
          QMAKE_LIBS += $$system($$PYTHON_CONFIG --ldflags)
          INCLUDEPATH += $$system($$PYTHON_CONFIG --includes)
+     }
+     shiboken:  PKGCONFIG += shiboken
+     pyside {
+         INCLUDEPATH += $$system(pkg-config --variable=includedir pyside)
+         INCLUDEPATH += $$system(pkg-config --variable=includedir pyside)/QtCore
+         INCLUDEPATH += $$system(pkg-config --variable=includedir pyside)/QtGui
+	 # QtGui include are needed because it looks for Qt::convertFromPlainText which is defined in
+	 # qtextdocument.h in the QtGui module.
+         INCLUDEPATH += $$system(pkg-config --variable=includedir QtGui)
      }
 } #unix
 
