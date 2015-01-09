@@ -160,7 +160,7 @@ unix {
      }
 
      python {
-         PYTHON_CONFIG = python3.4-config
+         PYTHON_CONFIG = python3-config
          QMAKE_LIBS += $$system($$PYTHON_CONFIG --ldflags)
          QMAKE_CXXFLAGS += $$system($$PYTHON_CONFIG --includes)
      }
