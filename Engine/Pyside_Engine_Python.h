@@ -22,8 +22,8 @@
 #include <pyside_global.h>
 
 //Global
-#include <Global/GlobalDefines.h>
-#include <Global/Enums.h>
+#include <GlobalDefines.h>
+#include <Enums.h>
 
 //Engine
 #include "GlobalFunctionsWrapper.h"

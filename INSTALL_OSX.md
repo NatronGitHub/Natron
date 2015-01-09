@@ -118,7 +118,7 @@ config.pri:
  # copy and paste the following in a terminal
 cat > config.pri << EOF
 boost: INCLUDEPATH += /usr/local/include
-boost: LIBS += LIBS += -L/usr/local/lib -lboost_serialization-mt -lboost_thread-mt -lboost_system-mt
+boost: LIBS += -L/usr/local/lib -lboost_serialization-mt -lboost_thread-mt -lboost_system-mt
 expat: PKGCONFIG -= expat
 expat: INCLUDEPATH += /usr/local/opt/expat/include
 expat: LIBS += -L/usr/local/opt/expat/lib -lexpat
