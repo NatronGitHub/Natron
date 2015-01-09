@@ -167,7 +167,7 @@ unix {
      #message(PYTHON_CONFIG = $$PYTHON_CONFIG)
      python {
          QMAKE_LIBS += $$system($$PYTHON_CONFIG --ldflags)
-         INCLUDEPATH += $$system($$PYTHON_CONFIG --includes)
+         QMAKE_CXXFLAGS += $$system($$PYTHON_CONFIG --includes)
      }
      shiboken:  PKGCONFIG += shiboken
      pyside {
