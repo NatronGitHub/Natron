@@ -68,6 +68,8 @@ public slots:
     void onAddKeyframeButtonClicked();
 
     void onRemoveKeyframeButtonClicked();
+    
+    void onRemoveAnimationButtonClicked();
 
     void onAddLayerButtonClicked();
 
@@ -79,6 +81,8 @@ public slots:
     void onSelectedBezierKeyframeSet(int time);
 
     void onSelectedBezierKeyframeRemoved(int time);
+    
+    void onSelectedBezierAnimationRemoved();
 
     void onSelectedBezierAboutToClone();
 

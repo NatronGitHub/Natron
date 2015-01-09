@@ -122,6 +122,8 @@ public:
     void setRightBezierStaticPosition(double x,double y);
 
     void removeKeyframe(int time);
+    
+    void removeAnimation(int currentTime);
 
     ///returns true if a keyframe was set
     bool cuspPoint(int time,bool autoKeying,bool rippleEdit,const std::pair<double,double>& pixelScale);
@@ -661,6 +663,11 @@ public:
     void removeKeyframe(int time);
     
     /**
+     * @brief Removes all animation
+     **/
+    void removeAnimation();
+    
+    /**
      * @brief Moves a keyframe
      **/
     void moveKeyframe(int oldTime,int newTime);
@@ -843,6 +850,8 @@ signals:
 
     void keyframeRemoved(int time);
     
+    void animationRemoved();
+    
     void controlPointAdded();
     
     void controlPointRemoved();
@@ -1007,6 +1016,8 @@ public:
 
     ///only callable on main-thread
     void removeKeyframeOnSelectedCurves();
+    
+    void removeAnimationOnSelectedCurves();
 
     ///only callable on main-thread
     void goToPreviousKeyframe();
