@@ -35,7 +35,7 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
 
     # PySide
     # see https://stackoverflow.com/questions/24489588/how-can-i-install-pyside-on-travis/24545890#24545890
-    pip install PySide --no-index --find-links https://parkin.github.io/python-wheelhouse/;
+    pip${TRAVIS_PYTHON_VERSION} install PySide --no-index --find-links https://parkin.github.io/python-wheelhouse/;
     # Travis CI servers use virtualenvs, so we need to finish the install by the following
     python ~/virtualenv/python${TRAVIS_PYTHON_VERSION}/bin/pyside_postinstall.py -install
 
