@@ -33,10 +33,11 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     sudo apt-get update
     sudo apt-get update -qq
 
-    sudo apt-get install libqt4-dev libglew-dev libboost-serialization-dev libexpat1-dev gdb libcairo2-dev python3-dev python3-pyside
+    sudo apt-get install libqt4-dev libglew-dev libboost-serialization-dev libexpat1-dev gdb libcairo2-dev
 
-    python3 --version
-    python3 -c "from PySide import QtGui, QtCore, QtOpenGL"
+    #sudo apt-get install python3-dev python3-pyside
+    #python3 --version
+    #python3 -c "from PySide import QtGui, QtCore, QtOpenGL"
     
     # OpenFX
     if [ "$CC" = "$TEST_CC" ]; then make -C libs/OpenFX/Examples; fi
@@ -101,22 +102,22 @@ elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
     # Natron's dependencies only
     brew install qt expat cairo glew
     # pyside/shiboken take a long time to compile, see https://github.com/travis-ci/travis-ci/issues/1961
-    brew install pyside --with-python3 &
-    while true; do
-	ps -p$! 2>& 1>/dev/null
-	if [ $? = 0 ]; then
-	    echo "still going"; sleep 10
-	else
-	    break
-	fi
-    done
+    #brew install pyside --with-python3 &
+    #while true; do
+    #	ps -p$! 2>& 1>/dev/null
+    #	if [ $? = 0 ]; then
+    #      echo "still going"; sleep 10
+    #	else
+    #	    break
+    #	fi
+    #done
+    #python3 --version
+    #python3 -c "from PySide import QtGui, QtCore, QtOpenGL"
     if [ "$CC" = "$TEST_CC" ]; then
 	# dependencies for building all OpenFX plugins
 	brew install ilmbase openexr freetype fontconfig ffmpeg opencolorio openimageio
     fi
 
-    python3 --version
-    python3 -c "from PySide import QtGui, QtCore, QtOpenGL"
 
     # OpenFX
     if [ "$CC" = "$TEST_CC" ]; then make -C libs/OpenFX/Examples; fi
