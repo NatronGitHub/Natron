@@ -802,6 +802,15 @@ public:
         Page_Knob* isPage = dynamic_cast<Page_Knob*>(knob.get());
         assert(isGrp || isPage);
         
+        _name = knob->getName();
+        _label = knob->getDescription();
+        _secret = _knob->getIsSecret();
+        
+        if (isGrp) {
+            _isSetAsTab = isGrp->isTab();
+            _isOpened = isGrp->getValue();
+        }
+        
         std::vector<boost::shared_ptr<KnobI> > children;
         
         if (isGrp) {
@@ -890,24 +899,11 @@ private:
               const unsigned int /*version*/) const
     {
         assert(_knob);
-        
-        
-        std::string name = _knob->getName();
-        std::string label = _knob->getDescription();
-        bool isSecret = _knob->getIsSecret();
-        bool setAsTab = false;
-        bool isOpened = false;
-        Group_Knob* isGrp = dynamic_cast<Group_Knob*>(_knob.get());
-        if (isGrp && isGrp->isTab()) {
-            setAsTab = true;
-        } else if (isGrp) {
-            isOpened = isGrp->getValue();
-        }
-        ar & boost::serialization::make_nvp("Name",name);
-        ar & boost::serialization::make_nvp("Label",label);
-        ar & boost::serialization::make_nvp("Secret",isSecret);
-        ar & boost::serialization::make_nvp("IsTab",setAsTab);
-        ar & boost::serialization::make_nvp("IsOpened",isOpened);
+        ar & boost::serialization::make_nvp("Name",_name);
+        ar & boost::serialization::make_nvp("Label",_label);
+        ar & boost::serialization::make_nvp("Secret",_secret);
+        ar & boost::serialization::make_nvp("IsTab",_isSetAsTab);
+        ar & boost::serialization::make_nvp("IsOpened",_isOpened);
         
         int nbChildren = (int)_children.size();
         ar & boost::serialization::make_nvp("NbChildren",nbChildren);

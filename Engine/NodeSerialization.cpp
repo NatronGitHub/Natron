@@ -90,7 +90,7 @@ NodeSerialization::NodeSerialization(const boost::shared_ptr<Natron::Node> & n,b
 
         boost::shared_ptr<Natron::Node> masterNode = n->getMasterNode();
         if (masterNode) {
-            _masterNodeName = masterNode->getName_mt_safe();
+            _masterNodeName = masterNode->getFullySpecifiedName();
         }
 
         boost::shared_ptr<RotoContext> roto = n->getRotoContext();

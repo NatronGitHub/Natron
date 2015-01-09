@@ -628,11 +628,12 @@ LinkArrow::LinkArrow(const NodeGui* master,
       , _headColor(Qt::white)
       , _lineWidth(1)
 {
+    assert(master && slave);
     QObject::connect( master,SIGNAL( positionChanged(int,int) ),this,SLOT( refreshPosition() ) );
     QObject::connect( slave,SIGNAL( positionChanged(int,int) ),this,SLOT( refreshPosition() ) );
 
     refreshPosition();
-    setZValue(0);
+    setZValue(master->zValue() - 5);
 }
 
 LinkArrow::~LinkArrow()

@@ -738,7 +738,7 @@ Settings::initializeKnobs()
     _templatesPluginPaths->setName("groupPluginsSearchPath");
     _templatesPluginPaths->setHintToolTip("Search path where " NATRON_APPLICATION_NAME " should scan for Python group scripts. "
                                           "The search paths for groups can also be specified using the "
-                                          "NATRON_PATH environment variable.");
+                                          "NATRON_PLUGIN_PATH environment variable.");
     _templatesPluginPaths->setMultiPath(true);
     _pluginsTab->addKnob(_templatesPluginPaths);
     

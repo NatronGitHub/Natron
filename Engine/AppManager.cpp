@@ -1081,7 +1081,7 @@ AppManager::getAllNonOFXPluginsPaths() const
     ///look-in the main system wide plugin path
     templatesSearchPath.push_back(mainPath);
     
-    ///look-in the locations indicated by NATRON_PATH
+    ///look-in the locations indicated by NATRON_PLUGIN_PATH
     for (int i = 0; i < splitDirs.size(); ++i) {
         if (!splitDirs[i].isEmpty()) {
             templatesSearchPath.push_back(splitDirs[i]);

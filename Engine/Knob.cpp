@@ -1923,8 +1923,11 @@ KnobHelper::slaveTo(int dimension,
                     Natron::ValueChangedReasonEnum reason,
                     bool ignoreMasterPersistence)
 {
+    assert(other.get() != this);
     assert( 0 <= dimension && dimension < (int)_imp->masters.size() );
-    assert( !other->isSlave(otherDimension) );
+    if (other->isSlave(otherDimension)) {
+        return false;
+    }
 
     {
         QWriteLocker l(&_imp->mastersMutex);
@@ -2915,7 +2918,7 @@ KnobHolder::slaveAllKnobs(KnobHolder* other)
     const std::vector<boost::shared_ptr<KnobI> > & thisKnobs = getKnobs();
     for (U32 i = 0; i < otherKnobs.size(); ++i) {
         
-        if (otherKnobs[i]->isDeclaredByPlugin()) {
+        if (otherKnobs[i]->isDeclaredByPlugin() || otherKnobs[i]->isUserKnob()) {
             boost::shared_ptr<KnobI> foundKnob;
             for (U32 j = 0; j < thisKnobs.size(); ++j) {
                 if ( thisKnobs[j]->getName() == otherKnobs[i]->getName() ) {

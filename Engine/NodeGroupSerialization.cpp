@@ -152,13 +152,14 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
         const std::string & masterNodeName = (*it)->getMasterNodeName();
         if ( !masterNodeName.empty() ) {
             ///find such a node
-            boost::shared_ptr<Natron::Node> masterNode = group->getNodeByName(masterNodeName);
+            boost::shared_ptr<Natron::Node> masterNode = thisNode->getApp()->getNodeByFullySpecifiedName(masterNodeName);
             
             if (!masterNode) {
                 appPTR->writeToOfxLog_mt_safe(QString("Cannot restore the link between " + QString((*it)->getPluginLabel().c_str()) + " and " + masterNodeName.c_str()));
                 mustShowErrorsLog = true;
+            } else {
+                thisNode->getLiveInstance()->slaveAllKnobs( masterNode->getLiveInstance() );
             }
-            thisNode->getLiveInstance()->slaveAllKnobs( masterNode->getLiveInstance() );
         } else {
             thisNode->restoreKnobsLinks(**it,nodes);
         }

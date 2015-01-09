@@ -412,48 +412,12 @@ KnobGui::showRightClickMenuForDimension(const QPoint &,
             ///find-out to which node that master knob belongs to
             std::string nodeName("Linked to: ");
             
-            boost::shared_ptr<NodeCollection> group = effect->getNode()->getGroup();
-            NodeList allNodes;
-            group->getActiveNodes(&allNodes);
-            bool shouldStop = false;
-            for (NodeList::iterator it = allNodes.begin(); it != allNodes.end() ;++it) {
-                const std::vector< boost::shared_ptr<KnobI> > & knobs = (*it)->getKnobs();
-                
-                for (U32 j = 0; j < knobs.size(); ++j) {
-                    if ( knobs[j].get() == master.second.get() ) {
-                        nodeName.append( (*it)->getName() );
-                        shouldStop = true;
-                        break;
-                    }
-                }
-                if (shouldStop) {
-                    break;
-                }
-            }
             
-            ///A Knob of a group might be linked to a knob of an internal node of the group
-            NodeGroup* isGroupNode = dynamic_cast<NodeGroup*>(effect);
-            if (isGroupNode && !shouldStop) {
-                isGroupNode->getActiveNodes(&allNodes);
-                for (NodeList::iterator it = allNodes.begin(); it != allNodes.end() ;++it) {
-                    const std::vector< boost::shared_ptr<KnobI> > & knobs = (*it)->getKnobs();
-                    bool shouldStop = false;
-                    for (U32 j = 0; j < knobs.size(); ++j) {
-                        if ( knobs[j].get() == master.second.get() ) {
-                            nodeName.append( (*it)->getName() );
-                            shouldStop = true;
-                            break;
-                        }
-                    }
-                    if (shouldStop) {
-                        break;
-                    }
-                }
-
-            }
-            
+            Natron::EffectInstance* masterEffect = dynamic_cast<Natron::EffectInstance*>(master.second->getHolder());
+            assert(masterEffect);
+            nodeName.append(masterEffect->getNode()->getFullySpecifiedName());
             nodeName.append(".");
-            nodeName.append( master.second->getDescription() );
+            nodeName.append( master.second->getName() );
             if (master.second->getDimension() > 1) {
                 nodeName.append(".");
                 nodeName.append( master.second->getDimensionName(master.first) );

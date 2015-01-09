@@ -1029,14 +1029,17 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
     Edge* selectedBendPoint = 0;
     {
         QMutexLocker l(&_imp->_nodesMutex);
+        
+        ///Find matches, sorted by depth
+        std::map<double,NodeGuiPtr> matches;
         for (NodeGuiList::reverse_iterator it = _imp->_nodes.rbegin(); it != _imp->_nodes.rend(); ++it) {
             QPointF evpt = (*it)->mapFromScene(_imp->_lastScenePosClick);
             if ( (*it)->isVisible() && (*it)->isActive() ) {
+                
                 BackDropGui* isBd = dynamic_cast<BackDropGui*>(it->get());
                 if (isBd) {
                     if (isBd->isNearbyNameFrame(evpt)) {
-                        selected  = *it;
-                        break;
+                        matches.insert(std::make_pair((*it)->zValue(),*it));
                     } else if (isBd->isNearbyResizeHandle(evpt)) {
                         selected = *it;
                         _imp->_backdropResized = *it;
@@ -1045,11 +1048,15 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
                     }
                 } else {
                     if ((*it)->contains(evpt)) {
-                        selected = *it;
-                        break;
+                        matches.insert(std::make_pair((*it)->zValue(),*it));
                     }
                 }
+
+                
             }
+        }
+        if (!matches.empty() && _imp->_evtState != BACKDROP_RESIZING) {
+            selected = matches.rbegin()->second;
         }
         if (!selected) {
             ///try to find a selected edge
@@ -1898,45 +1905,49 @@ NodeGraphPrivate::editSelectionFromSelectionRectangle(bool addToSelection)
 void
 NodeGraph::mouseDoubleClickEvent(QMouseEvent* /*e*/)
 {
-    std::list<boost::shared_ptr<NodeGui> > nodes = getAllActiveNodes_mt_safe();
-
-    for (std::list<boost::shared_ptr<NodeGui> >::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+    NodeGuiList nodes = getAllActiveNodes_mt_safe();
+    
+    ///Matches sorted by depth
+    std::map<double,NodeGuiPtr> matches;
+    for (NodeGuiList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
         QPointF evpt = (*it)->mapFromScene(_imp->_lastScenePosClick);
         if ( (*it)->isVisible() && (*it)->isActive() && (*it)->contains(evpt) && (*it)->getSettingPanel() ) {
-            if ( !(*it)->isSettingsPanelVisible() ) {
-                (*it)->setVisibleSettingsPanel(true);
-            }
-            if ( !(*it)->wasBeginEditCalled() ) {
-                (*it)->beginEditKnobs();
-            }
-            _imp->_gui->putSettingsPanelFirst( (*it)->getSettingPanel() );
-            
-            NodeGroup* isGrp = dynamic_cast<NodeGroup*>((*it)->getNode()->getLiveInstance());
-            if (isGrp) {
-                NodeGraphI* graph_i = isGrp->getNodeGraph();
-                assert(graph_i);
-                NodeGraph* graph = dynamic_cast<NodeGraph*>(graph_i);
-                if (graph) {
-                    TabWidget* isParentTab = dynamic_cast<TabWidget*>(graph->parentWidget());
-                    if (isParentTab) {
-                        isParentTab->setCurrentWidget(graph);
-                    } else {
-                        NodeGraph* lastSelectedGraph = _imp->_gui->getLastSelectedGraph();
-                        QTimer::singleShot(25, graph, SLOT(centerOnAllNodes()));
-                        ///We're in the double click event, it should've entered the focus in event beforehand!
-                        assert(lastSelectedGraph == this);
-                        
-                        isParentTab = dynamic_cast<TabWidget*>(lastSelectedGraph->parentWidget());
-                        assert(isParentTab);
-                        isParentTab->setCurrentWidget(graph);
-                    }
-                }
-            }
-            
-            getGui()->getApp()->redrawAllViewers();
-
-            return;
+            matches.insert(std::make_pair((*it)->zValue(), *it));
         }
+    }
+    if (!matches.empty()) {
+        const NodeGuiPtr& node = matches.rbegin()->second;
+        if ( !node->isSettingsPanelVisible() ) {
+            node->setVisibleSettingsPanel(true);
+        }
+        if ( !node->wasBeginEditCalled() ) {
+            node->beginEditKnobs();
+        }
+        _imp->_gui->putSettingsPanelFirst( node->getSettingPanel() );
+        
+        NodeGroup* isGrp = dynamic_cast<NodeGroup*>(node->getNode()->getLiveInstance());
+        if (isGrp) {
+            NodeGraphI* graph_i = isGrp->getNodeGraph();
+            assert(graph_i);
+            NodeGraph* graph = dynamic_cast<NodeGraph*>(graph_i);
+            if (graph) {
+                TabWidget* isParentTab = dynamic_cast<TabWidget*>(graph->parentWidget());
+                if (isParentTab) {
+                    isParentTab->setCurrentWidget(graph);
+                } else {
+                    NodeGraph* lastSelectedGraph = _imp->_gui->getLastSelectedGraph();
+                    ///We're in the double click event, it should've entered the focus in event beforehand!
+                    assert(lastSelectedGraph == this);
+                    
+                    isParentTab = dynamic_cast<TabWidget*>(lastSelectedGraph->parentWidget());
+                    assert(isParentTab);
+                    isParentTab->setCurrentWidget(graph);
+                }
+                QTimer::singleShot(25, graph, SLOT(centerOnAllNodes()));
+            }
+        }
+        
+        getGui()->getApp()->redrawAllViewers();
     }
 
 }
@@ -3295,7 +3306,9 @@ NodeGraphPrivate::pasteNode(const NodeSerialization & internalSerialization,
     boost::shared_ptr<Natron::Node> n = _gui->getApp()->loadNode( LoadNodeArgs(internalSerialization.getPluginID().c_str(),
                                                                                "",
                                                                                internalSerialization.getPluginMajorVersion(),
-                                                                               internalSerialization.getPluginMinorVersion(),&internalSerialization,false,
+                                                                               internalSerialization.getPluginMinorVersion(),
+                                                                               &internalSerialization,
+                                                                               true,
                                                                                grp) );
     
     assert(n);

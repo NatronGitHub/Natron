@@ -26,6 +26,7 @@ namespace Natron {
 class Node;
 }
 class NodeGraphI;
+class KnobI;
 class ViewerInstance;
 struct NodeCollectionPrivate;
 class NodeCollection : public QObject
@@ -212,6 +213,7 @@ public:
      * @brief Callback called when a node of the collection is being activated
      **/
     virtual void notifyNodeNameChanged(const boost::shared_ptr<Natron::Node>& /*node*/) {}
+    
     
 Q_SIGNALS:
     

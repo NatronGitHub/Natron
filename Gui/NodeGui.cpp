@@ -1829,20 +1829,23 @@ NodeGui::onAllKnobsSlaved(bool b)
         boost::shared_ptr<NodeGui> masterNodeGui = boost::dynamic_pointer_cast<NodeGui>(masterNodeGui_i);
         _masterNodeGui = masterNodeGui;
         assert(!_slaveMasterLink);
-
-        _slaveMasterLink = new LinkArrow( masterNodeGui.get(),this,parentItem() );
-        _slaveMasterLink->setColor( QColor(200,100,100) );
-        _slaveMasterLink->setArrowHeadColor( QColor(243,137,20) );
-        _slaveMasterLink->setWidth(3);
+        
+        if (masterNode->getGroup() == node->getGroup()) {
+            _slaveMasterLink = new LinkArrow( masterNodeGui.get(),this,parentItem() );
+            _slaveMasterLink->setColor( QColor(200,100,100) );
+            _slaveMasterLink->setArrowHeadColor( QColor(243,137,20) );
+            _slaveMasterLink->setWidth(3);
+        }
         if ( !node->isNodeDisabled() ) {
             if ( !isSelected() ) {
                 applyBrush(_clonedColor);
             }
         }
     } else {
-        assert(_slaveMasterLink);
-        delete _slaveMasterLink;
-        _slaveMasterLink = 0;
+        if (_slaveMasterLink) {
+            delete _slaveMasterLink;
+            _slaveMasterLink = 0;
+        }
         _masterNodeGui.reset();
         if ( !node->isNodeDisabled() ) {
             if ( !isSelected() ) {

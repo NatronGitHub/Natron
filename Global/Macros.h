@@ -90,7 +90,7 @@ NATRON_VERSION_MINOR, \
 NATRON_VERSION_REVISION)
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#define NATRON_PATH_ENV_VAR "NATRON_PATH"
+#define NATRON_PATH_ENV_VAR "NATRON_PLUGIN_PATH"
 #define NATRON_IMAGES_PATH ":/Resources/Images/"
 #define NATRON_APPLICATION_ICON_PATH NATRON_IMAGES_PATH "natronIcon256_linux.png"
 
