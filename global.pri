@@ -159,10 +159,15 @@ unix {
          LIBS += -ldl
      }
 
-     python {
+     # User may specify an alternate python3-config from the command-line,
+     # as in "qmake PYTHON_CONFIG=python3.4-config"
+     isEmpty(PYTHON_CONFIG) {
          PYTHON_CONFIG = python3-config
+     }
+     message(PYTHON_CONFIG = $$PYTHON_CONFIG)
+     python {
          QMAKE_LIBS += $$system($$PYTHON_CONFIG --ldflags)
-         QMAKE_CXXFLAGS += $$system($$PYTHON_CONFIG --includes)
+         INCLUDEPATH += $$system($$PYTHON_CONFIG --includes)
      }
 } #unix
 
