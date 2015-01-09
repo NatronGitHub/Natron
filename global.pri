@@ -178,7 +178,7 @@ unix {
 	 # QtGui include are needed because it looks for Qt::convertFromPlainText which is defined in
 	 # qtextdocument.h in the QtGui module.
          INCLUDEPATH += $$system(pkg-config --variable=includedir QtGui)
-	 QMAKE_LIBS += $$system(pkg-config -libs pyside)
+	 QMAKE_LIBS += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --libs pyside)
      }
 } #unix
 
