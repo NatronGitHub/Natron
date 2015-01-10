@@ -1697,52 +1697,26 @@ Node::hasViewersConnected(std::list<ViewerInstance* >* viewers) const
 void
 Node::getOutputsWithGroupRedirection(std::list<Node*>& outputs) const
 {
-
-    QMutexLocker l(&_imp->outputsMutex);
-    
-    for (std::list<Node*>::iterator it = _imp->outputs.begin(); it != _imp->outputs.end(); ++it) {
-        assert(*it);
-        NodeGroup* isGrp = dynamic_cast<NodeGroup*>((*it)->getLiveInstance());
-        GroupOutput* isOutput = dynamic_cast<GroupOutput*>((*it)->getLiveInstance());
-        if (isGrp) {
-            
-            int indexInGroupInput = -1;
-            for (int i = 0; i < isGrp->getMaxInputCount(); ++i) {
-                if ((*it)->getInput(i).get() == this) {
-                    indexInGroupInput = i;
-                    break;
-                }
-            }
-            if (indexInGroupInput != -1) {
-                std::vector<boost::shared_ptr<Natron::Node> > groupInputs;
-                isGrp->getInputs(&groupInputs);
-                assert((int)groupInputs.size() == isGrp->getMaxInputCount());
-                
-                NodePtr groupInput = groupInputs[indexInGroupInput];
-                if (groupInput) {
-                    std::list<Node*> nodeOutputs;
-                    groupInput->getOutputs_mt_safe(nodeOutputs);
-                    for (std::list<Node*>::iterator it2 = nodeOutputs.begin(); it2 != nodeOutputs.end(); ++it2) {
-                        outputs.push_back(*it2);
-                    }
-                }
-            }
-        } else if (isOutput){
-            boost::shared_ptr<NodeCollection> collection = isOutput->getNode()->getGroup();
-            assert(collection);
-            isGrp = dynamic_cast<NodeGroup*>(collection.get());
-            assert(isGrp);
-            
-            std::list<Node*> groupOutputs;
-            isGrp->getNode()->getOutputs_mt_safe(groupOutputs);
-            for (std::list<Node*>::iterator it2 = groupOutputs.begin(); it2 != groupOutputs.end(); ++it2) {
-                outputs.push_back(*it2);
-            }
-        } else {
-            outputs.push_back(*it);
+    NodeGroup* isGrp = dynamic_cast<NodeGroup*>(_imp->liveInstance.get());
+    GroupOutput* isOutput = dynamic_cast<GroupOutput*>(_imp->liveInstance.get());
+    if (isGrp) {
+        isGrp->getInputsOutputs(&outputs);
+    } else if (isOutput) {
+        boost::shared_ptr<NodeCollection> collection = isOutput->getNode()->getGroup();
+        assert(collection);
+        isGrp = dynamic_cast<NodeGroup*>(collection.get());
+        assert(isGrp);
+        
+        std::list<Node*> groupOutputs;
+        isGrp->getNode()->getOutputs_mt_safe(groupOutputs);
+        for (std::list<Node*>::iterator it2 = groupOutputs.begin(); it2 != groupOutputs.end(); ++it2) {
+            outputs.push_back(*it2);
         }
+    } else {
+        QMutexLocker l(&_imp->outputsMutex);
+        outputs.insert(outputs.begin(), _imp->outputs.begin(), _imp->outputs.end());
     }
-
+    
 }
 
 void
