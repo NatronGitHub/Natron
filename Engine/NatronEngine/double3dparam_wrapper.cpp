@@ -152,9 +152,13 @@ static PyObject* Sbk_Double3DParamFunc_set(PyObject* self, PyObject* args)
 
             if (!PyErr_Occurred()) {
                 // set(double,double,double)
-                PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-                cppSelf->set(cppArg0, cppArg1, cppArg2);
-                PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+                // Begin code injection
+
+                cppSelf->set(cppArg0,cppArg1,cppArg2);
+
+                // End of code injection
+
+
             }
             break;
         }
@@ -171,9 +175,13 @@ static PyObject* Sbk_Double3DParamFunc_set(PyObject* self, PyObject* args)
 
             if (!PyErr_Occurred()) {
                 // set(double,double,double,int)
-                PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-                cppSelf->set(cppArg0, cppArg1, cppArg2, cppArg3);
-                PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+                // Begin code injection
+
+                cppSelf->set(cppArg0,cppArg1,cppArg2,cppArg3);
+
+                // End of code injection
+
+
             }
             break;
         }

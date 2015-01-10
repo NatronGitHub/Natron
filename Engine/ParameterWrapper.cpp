@@ -772,6 +772,18 @@ ColorParam::set(double r, double g, double b, double a, int frame)
 
 }
 
+void
+ColorParam::set(double r, double g, double b)
+{
+    set(r,g,b,1.);
+}
+
+void
+ColorParam::set(double r, double g, double b, int frame)
+{
+    set(r,g,b,1.,frame);
+}
+
 
 double
 ColorParam::getValue(int dimension) const
@@ -940,21 +952,21 @@ ChoiceParam::setValueAtTime(int value,int time)
 }
 
 void
-ChoiceParam::setDefaultValue(int value,int dimension)
+ChoiceParam::setDefaultValue(int value)
 {
-    _choiceKnob->setDefaultValue(value,dimension);
+    _choiceKnob->setDefaultValue(value,0);
 }
 
 int
-ChoiceParam::getDefaultValue(int dimension) const
+ChoiceParam::getDefaultValue() const
 {
-    return _choiceKnob->getDefaultValues_mt_safe()[dimension];
+    return _choiceKnob->getDefaultValues_mt_safe()[0];
 }
 
 void
-ChoiceParam::restoreDefaultValue(int dimension)
+ChoiceParam::restoreDefaultValue()
 {
-    _choiceKnob->resetToDefaultValue(dimension);
+    _choiceKnob->resetToDefaultValue(0);
 }
 
 void

@@ -130,6 +130,8 @@ public:
 
     virtual void clearViewersLastRenderedTexture() OVERRIDE FINAL;
     
+    virtual void appendToScriptEditor(const std::string& str) OVERRIDE FINAL;
+    
 public Q_SLOTS:
 
     virtual void toggleAutoHideGraphInputs() OVERRIDE FINAL;

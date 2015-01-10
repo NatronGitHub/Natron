@@ -259,7 +259,7 @@ ScriptEditor::onSourceScriptClicked()
 {
     std::vector<std::string> filters;
     filters.push_back("py");
-    SequenceFileDialog dialog(this,filters,false,SequenceFileDialog::eFileDialogModeDir,_imp->gui->getLastLoadProjectDirectory().toStdString(),
+    SequenceFileDialog dialog(this,filters,false,SequenceFileDialog::eFileDialogModeOpen,_imp->gui->getLastLoadProjectDirectory().toStdString(),
                               _imp->gui,false);
     
     if (dialog.exec()) {
@@ -286,7 +286,7 @@ ScriptEditor::onLoadScriptClicked()
 {
     std::vector<std::string> filters;
     filters.push_back("py");
-    SequenceFileDialog dialog(this,filters,false,SequenceFileDialog::eFileDialogModeDir,_imp->gui->getLastLoadProjectDirectory().toStdString(),
+    SequenceFileDialog dialog(this,filters,false,SequenceFileDialog::eFileDialogModeOpen,_imp->gui->getLastLoadProjectDirectory().toStdString(),
                               _imp->gui,false);
     
     if (dialog.exec()) {
@@ -448,4 +448,10 @@ ScriptEditor::getAutoSavedScript() const
 {
     QMutexLocker k(&_imp->autoSavedScriptMutex);
     return _imp->autoSavedScript;
+}
+
+void
+ScriptEditor::appendToScriptEditor(const QString& str)
+{
+    _imp->outputEdit->append(str + "\n");
 }

@@ -40,6 +40,8 @@ public:
     
     QString getAutoSavedScript() const;
     
+    void appendToScriptEditor(const QString& str);
+    
 public Q_SLOTS:
 
     void onShowHideOutputClicked(bool clicked);

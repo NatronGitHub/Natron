@@ -682,9 +682,13 @@ static PyObject* Sbk_IntParamFunc_restoreDefaultValue(PyObject* self, PyObject* 
 
         if (!PyErr_Occurred()) {
             // restoreDefaultValue(int)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            // Begin code injection
+
             cppSelf->restoreDefaultValue(cppArg0);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+
+            // End of code injection
+
+
         }
     }
 
@@ -743,9 +747,13 @@ static PyObject* Sbk_IntParamFunc_set(PyObject* self, PyObject* args)
 
             if (!PyErr_Occurred()) {
                 // set(int)
-                PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+                // Begin code injection
+
                 cppSelf->set(cppArg0);
-                PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+
+                // End of code injection
+
+
             }
             break;
         }
@@ -758,9 +766,13 @@ static PyObject* Sbk_IntParamFunc_set(PyObject* self, PyObject* args)
 
             if (!PyErr_Occurred()) {
                 // set(int,int)
-                PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-                cppSelf->set(cppArg0, cppArg1);
-                PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+                // Begin code injection
+
+                cppSelf->set(cppArg0,cppArg1);
+
+                // End of code injection
+
+
             }
             break;
         }
@@ -1222,9 +1234,13 @@ static PyObject* Sbk_IntParamFunc_setValue(PyObject* self, PyObject* args, PyObj
 
         if (!PyErr_Occurred()) {
             // setValue(int,int)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            cppSelf->setValue(cppArg0, cppArg1);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            // Begin code injection
+
+            cppSelf->setValue(cppArg0,cppArg1);
+
+            // End of code injection
+
+
         }
     }
 
@@ -1303,9 +1319,13 @@ static PyObject* Sbk_IntParamFunc_setValueAtTime(PyObject* self, PyObject* args,
 
         if (!PyErr_Occurred()) {
             // setValueAtTime(int,int,int)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            cppSelf->setValueAtTime(cppArg0, cppArg1, cppArg2);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            // Begin code injection
+
+            cppSelf->setValueAtTime(cppArg0,cppArg1,cppArg2);
+
+            // End of code injection
+
+
         }
     }
 

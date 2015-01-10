@@ -33,8 +33,7 @@ CLANG_DIAG_ON(unused-parameter)
 #define NODE_SERIALIZATION_INTRODUCES_MULTI_INSTANCE 3
 #define NODE_SERIALIZATION_INTRODUCES_USER_KNOBS 4
 #define NODE_SERIALIZATION_INTRODUCES_GROUPS 5
-#define NODE_SERIALIZATION_INTRODUCES_KNOB_CHANGED_CB 6
-#define NODE_SERIALIZATION_CURRENT_VERSION NODE_SERIALIZATION_INTRODUCES_KNOB_CHANGED_CB
+#define NODE_SERIALIZATION_CURRENT_VERSION NODE_SERIALIZATION_INTRODUCES_GROUPS
 
 namespace Natron {
 class Node;
@@ -148,10 +147,6 @@ public:
         return _children;
     }
     
-    const std::string& getKnobChangedCallback() const
-    {
-        return _knobChangedCallback;
-    }
 private:
 
     bool _isNull;
@@ -173,8 +168,6 @@ private:
     ///If this node is a group, this is the children
     std::list< boost::shared_ptr<NodeSerialization> > _children;
     
-    std::string _knobChangedCallback;
-
     friend class boost::serialization::access;
     template<class Archive>
     void save(Archive & ar,
@@ -213,7 +206,6 @@ private:
             ar & boost::serialization::make_nvp("item",**it);
         }
         
-        ar & boost::serialization::make_nvp("ParamChangedCallback",_knobChangedCallback);
     }
     
     template<class Archive>
@@ -270,10 +262,7 @@ private:
                 _children.push_back(s);
             }
         }
-        
-        if (version >= NODE_SERIALIZATION_INTRODUCES_KNOB_CHANGED_CB) {
-            ar & boost::serialization::make_nvp("ParamChangedCallback",_knobChangedCallback);
-        }
+
     }
     
     BOOST_SERIALIZATION_SPLIT_MEMBER()

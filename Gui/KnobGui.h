@@ -500,32 +500,4 @@ private:
 
 };
 
-class EditKnobChangedCBDialog : public EditScriptDialog
-{
-    
-    boost::shared_ptr<NodeGui> _node;
-    
-public:
-    
-    EditKnobChangedCBDialog(const boost::shared_ptr<NodeGui>& node,QWidget* parent);
-    
-    virtual ~EditKnobChangedCBDialog()
-    {
-    }
-    
-private:
-    
-    virtual void getImportedModules(QStringList& modules) const OVERRIDE FINAL;
-    
-    virtual void getDeclaredVariables(std::list<std::pair<QString,QString> >& variables) const OVERRIDE FINAL;
-    
-    virtual void setTitle() OVERRIDE FINAL;
-    
-    virtual QString compileExpression(const QString& expr) OVERRIDE FINAL;
-    
-    virtual QString getCustomHelp() OVERRIDE FINAL;
-    
-};
-
-
 #endif // NATRON_GUI_KNOBGUI_H_

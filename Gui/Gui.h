@@ -478,7 +478,7 @@ public:
     
     TabWidget* getLastEnteredTabWidget() const;
     
-    
+    void appendToScriptEditor(const std::string& str);
 Q_SIGNALS:
 
 

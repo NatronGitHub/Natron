@@ -244,12 +244,6 @@ public Q_SLOTS:
     
     void onManageUserParametersActionTriggered();
     
-    void onSetKnobChangedCallbackActionTriggered();
-    
-    void onClearKnobChangedCallbackActionTriggered();
-    
-    void onEditKnobChangedCallbackDialogFinished();
-    
 Q_SIGNALS:
 
     /*emitted when the panel is clicked*/

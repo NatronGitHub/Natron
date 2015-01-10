@@ -426,6 +426,10 @@ AppInstance::createNodeInternal(const QString & pluginID,
                 return containerNode;
             }
         } else {
+            containerNode->loadKnobs(serialization);
+            if (!serialization.isNull() && !serialization.getUserPages().empty()) {
+                containerNode->getLiveInstance()->refreshKnobs();
+            }
             return containerNode;
         }
     }

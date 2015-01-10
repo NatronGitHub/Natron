@@ -222,7 +222,7 @@ static PyObject* Sbk_ChoiceParamFunc_get(PyObject* self, PyObject* args)
         return 0;
 }
 
-static PyObject* Sbk_ChoiceParamFunc_getDefaultValue(PyObject* self, PyObject* args, PyObject* kwds)
+static PyObject* Sbk_ChoiceParamFunc_getDefaultValue(PyObject* self)
 {
     ::ChoiceParam* cppSelf = 0;
     SBK_UNUSED(cppSelf)
@@ -230,54 +230,14 @@ static PyObject* Sbk_ChoiceParamFunc_getDefaultValue(PyObject* self, PyObject* a
         return 0;
     cppSelf = ((::ChoiceParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_CHOICEPARAM_IDX], (SbkObject*)self));
     PyObject* pyResult = 0;
-    int overloadId = -1;
-    PythonToCppFunc pythonToCpp[] = { 0 };
-    SBK_UNUSED(pythonToCpp)
-    int numNamedArgs = (kwds ? PyDict_Size(kwds) : 0);
-    int numArgs = PyTuple_GET_SIZE(args);
-    PyObject* pyArgs[] = {0};
-
-    // invalid argument lengths
-    if (numArgs + numNamedArgs > 1) {
-        PyErr_SetString(PyExc_TypeError, "NatronEngine.ChoiceParam.getDefaultValue(): too many arguments");
-        return 0;
-    }
-
-    if (!PyArg_ParseTuple(args, "|O:getDefaultValue", &(pyArgs[0])))
-        return 0;
-
-
-    // Overloaded function decisor
-    // 0: getDefaultValue(int)const
-    if (numArgs == 0) {
-        overloadId = 0; // getDefaultValue(int)const
-    } else if ((pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[0])))) {
-        overloadId = 0; // getDefaultValue(int)const
-    }
-
-    // Function signature not found.
-    if (overloadId == -1) goto Sbk_ChoiceParamFunc_getDefaultValue_TypeError;
 
     // Call function/method
     {
-        if (kwds) {
-            PyObject* value = PyDict_GetItemString(kwds, "dimension");
-            if (value && pyArgs[0]) {
-                PyErr_SetString(PyExc_TypeError, "NatronEngine.ChoiceParam.getDefaultValue(): got multiple values for keyword argument 'dimension'.");
-                return 0;
-            } else if (value) {
-                pyArgs[0] = value;
-                if (!(pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[0]))))
-                    goto Sbk_ChoiceParamFunc_getDefaultValue_TypeError;
-            }
-        }
-        int cppArg0 = 0;
-        if (pythonToCpp[0]) pythonToCpp[0](pyArgs[0], &cppArg0);
 
         if (!PyErr_Occurred()) {
-            // getDefaultValue(int)const
+            // getDefaultValue()const
             PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            int cppResult = const_cast<const ::ChoiceParam*>(cppSelf)->getDefaultValue(cppArg0);
+            int cppResult = const_cast<const ::ChoiceParam*>(cppSelf)->getDefaultValue();
             PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<int>(), &cppResult);
         }
@@ -288,11 +248,6 @@ static PyObject* Sbk_ChoiceParamFunc_getDefaultValue(PyObject* self, PyObject* a
         return 0;
     }
     return pyResult;
-
-    Sbk_ChoiceParamFunc_getDefaultValue_TypeError:
-        const char* overloads[] = {"int = 0", 0};
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.ChoiceParam.getDefaultValue", overloads);
-        return 0;
 }
 
 static PyObject* Sbk_ChoiceParamFunc_getOption(PyObject* self, PyObject* pyArg)
@@ -417,62 +372,26 @@ static PyObject* Sbk_ChoiceParamFunc_getValueAtTime(PyObject* self, PyObject* py
         return 0;
 }
 
-static PyObject* Sbk_ChoiceParamFunc_restoreDefaultValue(PyObject* self, PyObject* args, PyObject* kwds)
+static PyObject* Sbk_ChoiceParamFunc_restoreDefaultValue(PyObject* self)
 {
     ::ChoiceParam* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
     cppSelf = ((::ChoiceParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_CHOICEPARAM_IDX], (SbkObject*)self));
-    int overloadId = -1;
-    PythonToCppFunc pythonToCpp[] = { 0 };
-    SBK_UNUSED(pythonToCpp)
-    int numNamedArgs = (kwds ? PyDict_Size(kwds) : 0);
-    int numArgs = PyTuple_GET_SIZE(args);
-    PyObject* pyArgs[] = {0};
-
-    // invalid argument lengths
-    if (numArgs + numNamedArgs > 1) {
-        PyErr_SetString(PyExc_TypeError, "NatronEngine.ChoiceParam.restoreDefaultValue(): too many arguments");
-        return 0;
-    }
-
-    if (!PyArg_ParseTuple(args, "|O:restoreDefaultValue", &(pyArgs[0])))
-        return 0;
-
-
-    // Overloaded function decisor
-    // 0: restoreDefaultValue(int)
-    if (numArgs == 0) {
-        overloadId = 0; // restoreDefaultValue(int)
-    } else if ((pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[0])))) {
-        overloadId = 0; // restoreDefaultValue(int)
-    }
-
-    // Function signature not found.
-    if (overloadId == -1) goto Sbk_ChoiceParamFunc_restoreDefaultValue_TypeError;
 
     // Call function/method
     {
-        if (kwds) {
-            PyObject* value = PyDict_GetItemString(kwds, "dimension");
-            if (value && pyArgs[0]) {
-                PyErr_SetString(PyExc_TypeError, "NatronEngine.ChoiceParam.restoreDefaultValue(): got multiple values for keyword argument 'dimension'.");
-                return 0;
-            } else if (value) {
-                pyArgs[0] = value;
-                if (!(pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[0]))))
-                    goto Sbk_ChoiceParamFunc_restoreDefaultValue_TypeError;
-            }
-        }
-        int cppArg0 = 0;
-        if (pythonToCpp[0]) pythonToCpp[0](pyArgs[0], &cppArg0);
 
         if (!PyErr_Occurred()) {
-            // restoreDefaultValue(int)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            cppSelf->restoreDefaultValue(cppArg0);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            // restoreDefaultValue()
+            // Begin code injection
+
+            cppSelf->restoreDefaultValue();
+
+            // End of code injection
+
+
         }
     }
 
@@ -480,11 +399,6 @@ static PyObject* Sbk_ChoiceParamFunc_restoreDefaultValue(PyObject* self, PyObjec
         return 0;
     }
     Py_RETURN_NONE;
-
-    Sbk_ChoiceParamFunc_restoreDefaultValue_TypeError:
-        const char* overloads[] = {"int = 0", 0};
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.ChoiceParam.restoreDefaultValue", overloads);
-        return 0;
 }
 
 static PyObject* Sbk_ChoiceParamFunc_set(PyObject* self, PyObject* args)
@@ -531,9 +445,13 @@ static PyObject* Sbk_ChoiceParamFunc_set(PyObject* self, PyObject* args)
 
             if (!PyErr_Occurred()) {
                 // set(int)
-                PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+                // Begin code injection
+
                 cppSelf->set(cppArg0);
-                PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+
+                // End of code injection
+
+
             }
             break;
         }
@@ -546,9 +464,13 @@ static PyObject* Sbk_ChoiceParamFunc_set(PyObject* self, PyObject* args)
 
             if (!PyErr_Occurred()) {
                 // set(int,int)
-                PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-                cppSelf->set(cppArg0, cppArg1);
-                PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+                // Begin code injection
+
+                cppSelf->set(cppArg0,cppArg1);
+
+                // End of code injection
+
+
             }
             break;
         }
@@ -565,7 +487,7 @@ static PyObject* Sbk_ChoiceParamFunc_set(PyObject* self, PyObject* args)
         return 0;
 }
 
-static PyObject* Sbk_ChoiceParamFunc_setDefaultValue(PyObject* self, PyObject* args, PyObject* kwds)
+static PyObject* Sbk_ChoiceParamFunc_setDefaultValue(PyObject* self, PyObject* pyArg)
 {
     ::ChoiceParam* cppSelf = 0;
     SBK_UNUSED(cppSelf)
@@ -573,33 +495,13 @@ static PyObject* Sbk_ChoiceParamFunc_setDefaultValue(PyObject* self, PyObject* a
         return 0;
     cppSelf = ((::ChoiceParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_CHOICEPARAM_IDX], (SbkObject*)self));
     int overloadId = -1;
-    PythonToCppFunc pythonToCpp[] = { 0, 0 };
+    PythonToCppFunc pythonToCpp;
     SBK_UNUSED(pythonToCpp)
-    int numNamedArgs = (kwds ? PyDict_Size(kwds) : 0);
-    int numArgs = PyTuple_GET_SIZE(args);
-    PyObject* pyArgs[] = {0, 0};
-
-    // invalid argument lengths
-    if (numArgs + numNamedArgs > 2) {
-        PyErr_SetString(PyExc_TypeError, "NatronEngine.ChoiceParam.setDefaultValue(): too many arguments");
-        return 0;
-    } else if (numArgs < 1) {
-        PyErr_SetString(PyExc_TypeError, "NatronEngine.ChoiceParam.setDefaultValue(): not enough arguments");
-        return 0;
-    }
-
-    if (!PyArg_ParseTuple(args, "|OO:setDefaultValue", &(pyArgs[0]), &(pyArgs[1])))
-        return 0;
-
 
     // Overloaded function decisor
-    // 0: setDefaultValue(int,int)
-    if ((pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[0])))) {
-        if (numArgs == 1) {
-            overloadId = 0; // setDefaultValue(int,int)
-        } else if ((pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[1])))) {
-            overloadId = 0; // setDefaultValue(int,int)
-        }
+    // 0: setDefaultValue(int)
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArg)))) {
+        overloadId = 0; // setDefaultValue(int)
     }
 
     // Function signature not found.
@@ -607,26 +509,13 @@ static PyObject* Sbk_ChoiceParamFunc_setDefaultValue(PyObject* self, PyObject* a
 
     // Call function/method
     {
-        if (kwds) {
-            PyObject* value = PyDict_GetItemString(kwds, "dimension");
-            if (value && pyArgs[1]) {
-                PyErr_SetString(PyExc_TypeError, "NatronEngine.ChoiceParam.setDefaultValue(): got multiple values for keyword argument 'dimension'.");
-                return 0;
-            } else if (value) {
-                pyArgs[1] = value;
-                if (!(pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[1]))))
-                    goto Sbk_ChoiceParamFunc_setDefaultValue_TypeError;
-            }
-        }
         int cppArg0;
-        pythonToCpp[0](pyArgs[0], &cppArg0);
-        int cppArg1 = 0;
-        if (pythonToCpp[1]) pythonToCpp[1](pyArgs[1], &cppArg1);
+        pythonToCpp(pyArg, &cppArg0);
 
         if (!PyErr_Occurred()) {
-            // setDefaultValue(int,int)
+            // setDefaultValue(int)
             PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            cppSelf->setDefaultValue(cppArg0, cppArg1);
+            cppSelf->setDefaultValue(cppArg0);
             PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
         }
     }
@@ -637,8 +526,8 @@ static PyObject* Sbk_ChoiceParamFunc_setDefaultValue(PyObject* self, PyObject* a
     Py_RETURN_NONE;
 
     Sbk_ChoiceParamFunc_setDefaultValue_TypeError:
-        const char* overloads[] = {"int, int = 0", 0};
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.ChoiceParam.setDefaultValue", overloads);
+        const char* overloads[] = {"int", 0};
+        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.ChoiceParam.setDefaultValue", overloads);
         return 0;
 }
 
@@ -713,9 +602,13 @@ static PyObject* Sbk_ChoiceParamFunc_setValue(PyObject* self, PyObject* pyArg)
 
         if (!PyErr_Occurred()) {
             // setValue(int)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            // Begin code injection
+
             cppSelf->setValue(cppArg0);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+
+            // End of code injection
+
+
         }
     }
 
@@ -770,9 +663,13 @@ static PyObject* Sbk_ChoiceParamFunc_setValueAtTime(PyObject* self, PyObject* ar
 
         if (!PyErr_Occurred()) {
             // setValueAtTime(int,int)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            cppSelf->setValueAtTime(cppArg0, cppArg1);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            // Begin code injection
+
+            cppSelf->setValueAtTime(cppArg0,cppArg1);
+
+            // End of code injection
+
+
         }
     }
 
@@ -791,13 +688,13 @@ static PyMethodDef Sbk_ChoiceParam_methods[] = {
     {"addAsDependencyOf", (PyCFunction)Sbk_ChoiceParamFunc_addAsDependencyOf, METH_VARARGS},
     {"addOption", (PyCFunction)Sbk_ChoiceParamFunc_addOption, METH_VARARGS},
     {"get", (PyCFunction)Sbk_ChoiceParamFunc_get, METH_VARARGS},
-    {"getDefaultValue", (PyCFunction)Sbk_ChoiceParamFunc_getDefaultValue, METH_VARARGS|METH_KEYWORDS},
+    {"getDefaultValue", (PyCFunction)Sbk_ChoiceParamFunc_getDefaultValue, METH_NOARGS},
     {"getOption", (PyCFunction)Sbk_ChoiceParamFunc_getOption, METH_O},
     {"getValue", (PyCFunction)Sbk_ChoiceParamFunc_getValue, METH_NOARGS},
     {"getValueAtTime", (PyCFunction)Sbk_ChoiceParamFunc_getValueAtTime, METH_O},
-    {"restoreDefaultValue", (PyCFunction)Sbk_ChoiceParamFunc_restoreDefaultValue, METH_VARARGS|METH_KEYWORDS},
+    {"restoreDefaultValue", (PyCFunction)Sbk_ChoiceParamFunc_restoreDefaultValue, METH_NOARGS},
     {"set", (PyCFunction)Sbk_ChoiceParamFunc_set, METH_VARARGS},
-    {"setDefaultValue", (PyCFunction)Sbk_ChoiceParamFunc_setDefaultValue, METH_VARARGS|METH_KEYWORDS},
+    {"setDefaultValue", (PyCFunction)Sbk_ChoiceParamFunc_setDefaultValue, METH_O},
     {"setOptions", (PyCFunction)Sbk_ChoiceParamFunc_setOptions, METH_O},
     {"setValue", (PyCFunction)Sbk_ChoiceParamFunc_setValue, METH_O},
     {"setValueAtTime", (PyCFunction)Sbk_ChoiceParamFunc_setValueAtTime, METH_VARARGS},

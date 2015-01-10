@@ -311,6 +311,8 @@ public:
     
     bool isCreatingPythonGroup() const;
     
+    virtual void appendToScriptEditor(const std::string& /*str*/) {}
+    
 public Q_SLOTS:
 
 

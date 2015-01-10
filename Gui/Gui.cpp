@@ -4821,3 +4821,9 @@ Gui::onCloseTabTriggered()
         t->closeCurrentWidget();
     }
 }
+
+void
+Gui::appendToScriptEditor(const std::string& str)
+{
+    _imp->_scriptEditor->appendToScriptEditor(str.c_str());
+}

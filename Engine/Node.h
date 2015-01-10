@@ -423,6 +423,9 @@ public:
      **/
     void setPosition(double x,double y);
     void getPosition(double *x,double *y) const;
+    
+    
+    std::string getKnobChangedCallback() const;
 private:
     
     /**

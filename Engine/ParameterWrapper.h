@@ -547,6 +547,9 @@ public:
     void set(double r, double g, double b, double a);
     void set(double r, double g, double b, double a, int frame);
     
+    void set(double r, double g, double b);
+    void set(double r, double g, double b, int frame);
+    
     /**
      * @brief Returns the value held by the parameter. If it is animated, getValueAtTime
      * will be called instead at the current's timeline position.
@@ -689,17 +692,17 @@ public:
     /**
      * @brief Set the default value for the given dimension
      **/
-    void setDefaultValue(int value,int dimension = 0);
+    void setDefaultValue(int value);
     
     /**
      * @brief Return the default value for the given dimension
      **/
-    int getDefaultValue(int dimension = 0) const;
+    int getDefaultValue() const;
     
     /**
      * @brief Restores the default value for the given dimension
      **/
-    void restoreDefaultValue(int dimension = 0);
+    void restoreDefaultValue();
     
     /**
      * @brief Add a new option to the drop-down menu

@@ -452,7 +452,33 @@
             </inject-code>
         </modify-function>
     </object-type>
-    <object-type name="IntParam"/>
+    <object-type name="IntParam">
+        <modify-function signature="set(int)">
+            <inject-code class="target" position="beginning">
+                %CPPSELF.%FUNCTION_NAME(%1);
+            </inject-code>
+        </modify-function>
+        <modify-function signature="set(int,int)">
+            <inject-code class="target" position="beginning">
+                %CPPSELF.%FUNCTION_NAME(%1,%2);
+            </inject-code>
+        </modify-function>
+        <modify-function signature="setValue(int,int)">
+            <inject-code class="target" position="beginning">
+                %CPPSELF.%FUNCTION_NAME(%1,%2);
+            </inject-code>
+        </modify-function>
+        <modify-function signature="setValueAtTime(int,int,int)">
+            <inject-code class="target" position="beginning">
+                %CPPSELF.%FUNCTION_NAME(%1,%2,%3);
+            </inject-code>
+        </modify-function>
+        <modify-function signature="restoreDefaultValue(int)">
+            <inject-code class="target" position="beginning">
+                %CPPSELF.%FUNCTION_NAME(%1);
+            </inject-code>
+        </modify-function>
+    </object-type>
     <object-type name="Int2DTuple">
         <add-function signature="__getitem__(int)"  return-type="PyObject*">
             <inject-code class="target" position="beginning">
@@ -475,6 +501,16 @@
         </add-function>
     </object-type>
     <object-type name="Int2DParam">
+        <modify-function signature="set(int,int)">
+            <inject-code class="target" position="beginning">
+                %CPPSELF.%FUNCTION_NAME(%1,%2);
+            </inject-code>
+        </modify-function>
+        <modify-function signature="set(int,int,int)">
+            <inject-code class="target" position="beginning">
+                %CPPSELF.%FUNCTION_NAME(%1,%2,%3);
+            </inject-code>
+        </modify-function>
     </object-type>
     <object-type name="Int3DTuple">
         <add-function signature="__getitem__(int)"  return-type="PyObject*">
@@ -501,8 +537,45 @@
         </add-function>
     </object-type>
     <object-type name="Int3DParam">
+        <modify-function signature="set(int,int,int)">
+            <inject-code class="target" position="beginning">
+                %CPPSELF.%FUNCTION_NAME(%1,%2,%3);
+            </inject-code>
+        </modify-function>
+        <modify-function signature="set(int,int,int,int)">
+            <inject-code class="target" position="beginning">
+                %CPPSELF.%FUNCTION_NAME(%1,%2,%3,%4);
+            </inject-code>
+        </modify-function>
     </object-type>
-    <object-type name="DoubleParam"/>
+    <object-type name="DoubleParam">
+        <modify-function signature="set(double)">
+            <inject-code class="target" position="beginning">
+                %CPPSELF.%FUNCTION_NAME(%1);
+            </inject-code>
+        </modify-function>
+        <modify-function signature="set(double,int)">
+            <inject-code class="target" position="beginning">
+                %CPPSELF.%FUNCTION_NAME(%1,%2);
+            </inject-code>
+        </modify-function>
+        <modify-function signature="setValue(double,int)">
+            <inject-code class="target" position="beginning">
+                %CPPSELF.%FUNCTION_NAME(%1,%2);
+            </inject-code>
+        </modify-function>
+        <modify-function signature="setValueAtTime(double,int,int)">
+            <inject-code class="target" position="beginning">
+                %CPPSELF.%FUNCTION_NAME(%1,%2,%3);
+            </inject-code>
+        </modify-function>
+        <modify-function signature="restoreDefaultValue(int)">
+            <inject-code class="target" position="beginning">
+                %CPPSELF.%FUNCTION_NAME(%1);
+            </inject-code>
+        </modify-function>
+
+    </object-type>
     <object-type name="Double2DTuple">
         <add-function signature="__getitem__(int)"  return-type="PyObject*">
             <inject-code class="target" position="beginning">
@@ -525,6 +598,16 @@
         </add-function>
     </object-type>
     <object-type name="Double2DParam">
+        <modify-function signature="set(double,double)">
+            <inject-code class="target" position="beginning">
+                %CPPSELF.%FUNCTION_NAME(%1,%2);
+            </inject-code>
+        </modify-function>
+        <modify-function signature="set(double,double,int)">
+            <inject-code class="target" position="beginning">
+                %CPPSELF.%FUNCTION_NAME(%1,%2,%3);
+            </inject-code>
+        </modify-function>
     </object-type>
     <object-type name="Double3DTuple">
         <add-function signature="__getitem__(int)"  return-type="PyObject*">
@@ -551,6 +634,16 @@
         </add-function>
     </object-type>
     <object-type name="Double3DParam">
+        <modify-function signature="set(double,double,double)">
+            <inject-code class="target" position="beginning">
+                %CPPSELF.%FUNCTION_NAME(%1,%2,%3);
+            </inject-code>
+        </modify-function>
+        <modify-function signature="set(double,double,double,int)">
+            <inject-code class="target" position="beginning">
+                %CPPSELF.%FUNCTION_NAME(%1,%2,%3,%4);
+            </inject-code>
+        </modify-function>
     </object-type>
     <object-type name="ColorTuple">
         <add-function signature="__getitem__(int)"  return-type="PyObject*">
@@ -581,11 +674,124 @@
         </add-function>
     </object-type>
     <object-type name="ColorParam">
+        <modify-function signature="set(double,double,double)">
+            <inject-code class="target" position="beginning">
+                %CPPSELF.%FUNCTION_NAME(%1,%2,%3);
+            </inject-code>
+        </modify-function>
+        <modify-function signature="set(double,double,double,int)">
+            <inject-code class="target" position="beginning">
+                %CPPSELF.%FUNCTION_NAME(%1,%2,%3,%4);
+            </inject-code>
+        </modify-function>
+        <modify-function signature="set(double,double,double,double)">
+            <inject-code class="target" position="beginning">
+                %CPPSELF.%FUNCTION_NAME(%1,%2,%3,%4);
+            </inject-code>
+        </modify-function>
+        <modify-function signature="set(double,double,double,double,int)">
+            <inject-code class="target" position="beginning">
+                %CPPSELF.%FUNCTION_NAME(%1,%2,%3,%4,%5);
+            </inject-code>
+        </modify-function>
+        <modify-function signature="setValue(double,int)">
+            <inject-code class="target" position="beginning">
+                %CPPSELF.%FUNCTION_NAME(%1,%2);
+            </inject-code>
+        </modify-function>
+        <modify-function signature="setValueAtTime(double,int,int)">
+            <inject-code class="target" position="beginning">
+                %CPPSELF.%FUNCTION_NAME(%1,%2,%3);
+            </inject-code>
+        </modify-function>
+        <modify-function signature="restoreDefaultValue(int)">
+            <inject-code class="target" position="beginning">
+                %CPPSELF.%FUNCTION_NAME(%1);
+            </inject-code>
+        </modify-function>
     </object-type>
-    <object-type name="BooleanParam"/>
-    <object-type name="ChoiceParam"/>
+    <object-type name="BooleanParam">
+        <modify-function signature="set(bool)">
+            <inject-code class="target" position="beginning">
+                %CPPSELF.%FUNCTION_NAME(%1);
+            </inject-code>
+        </modify-function>
+        <modify-function signature="set(bool,int)">
+            <inject-code class="target" position="beginning">
+                %CPPSELF.%FUNCTION_NAME(%1,%2);
+            </inject-code>
+        </modify-function>
+        <modify-function signature="setValue(bool)">
+            <inject-code class="target" position="beginning">
+                %CPPSELF.%FUNCTION_NAME(%1);
+            </inject-code>
+        </modify-function>
+        <modify-function signature="setValueAtTime(bool,int)">
+            <inject-code class="target" position="beginning">
+                %CPPSELF.%FUNCTION_NAME(%1,%2);
+            </inject-code>
+        </modify-function>
+        <modify-function signature="restoreDefaultValue()">
+            <inject-code class="target" position="beginning">
+                %CPPSELF.%FUNCTION_NAME();
+            </inject-code>
+        </modify-function>
+    </object-type>
+    <object-type name="ChoiceParam">
+        <modify-function signature="set(int)">
+            <inject-code class="target" position="beginning">
+                %CPPSELF.%FUNCTION_NAME(%1);
+            </inject-code>
+        </modify-function>
+        <modify-function signature="set(int,int)">
+            <inject-code class="target" position="beginning">
+                %CPPSELF.%FUNCTION_NAME(%1,%2);
+            </inject-code>
+        </modify-function>
+        <modify-function signature="setValue(int)">
+            <inject-code class="target" position="beginning">
+                %CPPSELF.%FUNCTION_NAME(%1);
+            </inject-code>
+        </modify-function>
+        <modify-function signature="setValueAtTime(int,int)">
+            <inject-code class="target" position="beginning">
+                %CPPSELF.%FUNCTION_NAME(%1,%2);
+            </inject-code>
+        </modify-function>
+        <modify-function signature="restoreDefaultValue()">
+            <inject-code class="target" position="beginning">
+                %CPPSELF.%FUNCTION_NAME();
+            </inject-code>
+        </modify-function>
+    </object-type>
     <object-type name="ButtonParam"/>
-    <object-type name="StringParamBase"/>
+    <object-type name="StringParamBase">
+        <modify-function signature="set(std::string)">
+            <inject-code class="target" position="beginning">
+                %CPPSELF.%FUNCTION_NAME(%1);
+            </inject-code>
+        </modify-function>
+        <modify-function signature="set(std::string,int)">
+            <inject-code class="target" position="beginning">
+                %CPPSELF.%FUNCTION_NAME(%1,%2);
+            </inject-code>
+        </modify-function>
+        <modify-function signature="setValue(std::string)">
+            <inject-code class="target" position="beginning">
+                %CPPSELF.%FUNCTION_NAME(%1);
+            </inject-code>
+        </modify-function>
+        <modify-function signature="setValueAtTime(std::string,int)">
+            <inject-code class="target" position="beginning">
+                %CPPSELF.%FUNCTION_NAME(%1,%2);
+            </inject-code>
+        </modify-function>
+        <modify-function signature="restoreDefaultValue()">
+            <inject-code class="target" position="beginning">
+                %CPPSELF.%FUNCTION_NAME();
+            </inject-code>
+        </modify-function>
+    </object-type>
     <object-type name="StringParam">
         <enum-type name="TypeEnum"/>
     </object-type>
@@ -637,6 +843,12 @@
         </modify-function>
     </object-type>
     <object-type name="GroupParam">
+        <modify-function signature="setOpened(bool)">
+            <inject-code class="target" position="beginning">
+                %CPPSELF.%FUNCTION_NAME(%1);
+            </inject-code>
+        </modify-function>
+
     </object-type>
     <object-type name="PageParam">
     </object-type>

@@ -1045,6 +1045,12 @@ void init_Natron(PyObject* module)
         &Sbk_Natron_Type, "NATRON_PIXMAP_COLORWHEEL", (long) Natron::NATRON_PIXMAP_COLORWHEEL))
         return ;
     if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_PIXMAPENUM_IDX],
+        &Sbk_Natron_Type, "NATRON_PIXMAP_OVERLAY", (long) Natron::NATRON_PIXMAP_OVERLAY))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_PIXMAPENUM_IDX],
+        &Sbk_Natron_Type, "NATRON_PIXMAP_ROTO_MERGE", (long) Natron::NATRON_PIXMAP_ROTO_MERGE))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_PIXMAPENUM_IDX],
         &Sbk_Natron_Type, "NATRON_PIXMAP_COLOR_PICKER", (long) Natron::NATRON_PIXMAP_COLOR_PICKER))
         return ;
     if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_PIXMAPENUM_IDX],

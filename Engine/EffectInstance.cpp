@@ -310,8 +310,6 @@ struct EffectInstance::Implementation
     , imagesBeingRenderedMutex()
     , imagesBeingRendered()
 #endif
-    , knobChangedCallbackMutex()
-    , knobChangedCallback()
     {
     }
 
@@ -370,20 +368,8 @@ struct EffectInstance::Implementation
     IBRMap imagesBeingRendered;
 #endif
     
+    void runChangedParamCallback(KnobI* k,bool userEdited,const std::string& callback);
     
-    QMutex knobChangedCallbackMutex;
-    PyCallback knobChangedCallback;
-    
-    void clearKnobChangedCallback()
-    {
-        assert(!knobChangedCallbackMutex.tryLock());
-        knobChangedCallback.expression.clear();
-        knobChangedCallback.originalExpression.clear();
-        Py_XDECREF(knobChangedCallback.code); //< new ref
-        knobChangedCallback.code = 0;
-    }
-    
-    void executeKnobChangedCallback(KnobI* k);
     
     void setDuringInteractAction(bool b)
     {
@@ -4111,6 +4097,23 @@ EffectInstance::updateThreadLocalRenderTime(int time)
     }
 }
 
+void
+EffectInstance::Implementation::runChangedParamCallback(KnobI* k,bool userEdited,const std::string& callback)
+{
+    std::string script = callback;
+    script.append("()\n");
+    KnobI::declareCurrentKnobVariable_Python(k, -1, script);
+    script.append("userEdited = ");
+    if (userEdited) {
+        script.append("True\n");
+    } else {
+        script.append("False\n");
+    }
+    std::string err;
+    if (!Natron::interpretPythonScript(script, &err,NULL)) {
+        _publicInterface->getApp()->appendToScriptEditor("Failed to execute callback: " + err);
+    }
+}
 
 void
 EffectInstance::onKnobValueChanged_public(KnobI* k,
@@ -4147,19 +4150,12 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
     }
     
     ///If there's a knobChanged Python callback, run it
-    bool hasPythonCB;
-    {
-        QMutexLocker k(&_imp->knobChangedCallbackMutex);
-        hasPythonCB = !_imp->knobChangedCallback.expression.empty();
-    }
+    std::string pythonCB = getNode()->getKnobChangedCallback();
     
-    if (hasPythonCB && k) {
-        
-        try {
-            _imp->executeKnobChangedCallback(k);
-        } catch (const std::exception& e) {
-            qDebug() << "Failure to execute paramChanged callback: " << e.what();
-        }
+    if (!pythonCB.empty()) {
+        bool userEdited = reason == eValueChangedReasonNatronGuiEdited ||
+        reason == eValueChangedReasonUserEdited;
+        _imp->runChangedParamCallback(k,userEdited,pythonCB);
     }
 
     
@@ -4394,80 +4390,6 @@ EffectInstance::isFrameVaryingOrAnimated_Recursive() const
     bool ret = false;
     isFrameVaryingOrAnimated_impl(this,&ret);
     return ret;
-}
-
-bool
-EffectInstance::hasKnobChangedCallback() const
-{
-    QMutexLocker k(&_imp->knobChangedCallbackMutex);
-    return !_imp->knobChangedCallback.originalExpression.empty();
-}
-
-std::string
-EffectInstance::getKnobsChangedCallback() const
-{
-    QMutexLocker k(&_imp->knobChangedCallbackMutex);
-    return _imp->knobChangedCallback.originalExpression;
-}
-
-void
-EffectInstance::Implementation::executeKnobChangedCallback(KnobI* k)
-{
-    std::string script;
-    {
-        QMutexLocker k(&knobChangedCallbackMutex);
-        script = knobChangedCallback.expression;
-    }
-   // std::size_t firstLine =  _publicInterface->getNode()->declareCurrentNodeVariable_Python(script);
-
-    std::stringstream ss;
-    ss << "thisParam = thisNode.getParam(\"" << k->getName() << "\") \n";
-    ss << "frame = thisNode.getCurrentTime() \n";
-    std::string toInsert = ss.str();
-    //script.insert(firstLine, toInsert);
-    
-    ///Try to interpret the script, throw an exception upon failure
-    std::string error;
-    if (!interpretPythonScript(script, &error, NULL)) {
-        throw std::runtime_error(error);
-    }
-
-}
-
-void
-EffectInstance::setKnobChangedCallback(const std::string & callback)
-{
-    const std::vector<boost::shared_ptr<KnobI> >& knobs = getKnobs();
-    if (knobs.empty()) {
-        return;
-    }
-    
-    {
-        QMutexLocker k(&_imp->knobChangedCallbackMutex);
-        _imp->clearKnobChangedCallback();
-    }
-    if (callback.empty()) {
-        return;
-    }
-    
-    ///We cannot compile the script because we need the "thisParam" variable to be dynamic and compiled code embeds declarations into it.
-    {
-        QMutexLocker k(&_imp->knobChangedCallbackMutex);
-        _imp->knobChangedCallback.expression = callback;
-        _imp->knobChangedCallback.originalExpression = callback;
-    }
-
-    
-    ///This may throw an exc upon failure
-    try {
-        _imp->executeKnobChangedCallback(knobs.front().get());
-    } catch (std::exception& e) {
-        QMutexLocker k(&_imp->knobChangedCallbackMutex);
-        _imp->knobChangedCallback.expression.clear();
-        _imp->knobChangedCallback.originalExpression.clear();
-    }
-
-    
 }
 
 

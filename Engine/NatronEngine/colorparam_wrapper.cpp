@@ -682,9 +682,13 @@ static PyObject* Sbk_ColorParamFunc_restoreDefaultValue(PyObject* self, PyObject
 
         if (!PyErr_Occurred()) {
             // restoreDefaultValue(int)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            // Begin code injection
+
             cppSelf->restoreDefaultValue(cppArg0);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+
+            // End of code injection
+
+
         }
     }
 
@@ -715,23 +719,31 @@ static PyObject* Sbk_ColorParamFunc_set(PyObject* self, PyObject* args)
     // invalid argument lengths
 
 
-    if (!PyArg_UnpackTuple(args, "set", 4, 5, &(pyArgs[0]), &(pyArgs[1]), &(pyArgs[2]), &(pyArgs[3]), &(pyArgs[4])))
+    if (!PyArg_UnpackTuple(args, "set", 3, 5, &(pyArgs[0]), &(pyArgs[1]), &(pyArgs[2]), &(pyArgs[3]), &(pyArgs[4])))
         return 0;
 
 
     // Overloaded function decisor
-    // 0: set(double,double,double,double)
-    // 1: set(double,double,double,double,int)
-    if (numArgs >= 4
+    // 0: set(double,double,double)
+    // 1: set(double,double,double,double)
+    // 2: set(double,double,double,double,int)
+    // 3: set(double,double,double,int)
+    if (numArgs >= 3
         && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[0])))
         && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[1])))
-        && (pythonToCpp[2] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[2])))
-        && (pythonToCpp[3] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[3])))) {
-        if (numArgs == 4) {
-            overloadId = 0; // set(double,double,double,double)
-        } else if (numArgs == 5
-            && (pythonToCpp[4] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[4])))) {
-            overloadId = 1; // set(double,double,double,double,int)
+        && (pythonToCpp[2] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[2])))) {
+        if (numArgs == 3) {
+            overloadId = 0; // set(double,double,double)
+        } else if (PyFloat_Check(pyArgs[3]) && (pythonToCpp[3] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[3])))) {
+            if (numArgs == 4) {
+                overloadId = 1; // set(double,double,double,double)
+            } else if (numArgs == 5
+                && (pythonToCpp[4] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[4])))) {
+                overloadId = 2; // set(double,double,double,double,int)
+            }
+        } else if (numArgs == 4
+            && (pythonToCpp[3] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[3])))) {
+            overloadId = 3; // set(double,double,double,int)
         }
     }
 
@@ -740,7 +752,28 @@ static PyObject* Sbk_ColorParamFunc_set(PyObject* self, PyObject* args)
 
     // Call function/method
     switch (overloadId) {
-        case 0: // set(double r, double g, double b, double a)
+        case 0: // set(double r, double g, double b)
+        {
+            double cppArg0;
+            pythonToCpp[0](pyArgs[0], &cppArg0);
+            double cppArg1;
+            pythonToCpp[1](pyArgs[1], &cppArg1);
+            double cppArg2;
+            pythonToCpp[2](pyArgs[2], &cppArg2);
+
+            if (!PyErr_Occurred()) {
+                // set(double,double,double)
+                // Begin code injection
+
+                cppSelf->set(cppArg0,cppArg1,cppArg2);
+
+                // End of code injection
+
+
+            }
+            break;
+        }
+        case 1: // set(double r, double g, double b, double a)
         {
             double cppArg0;
             pythonToCpp[0](pyArgs[0], &cppArg0);
@@ -753,13 +786,17 @@ static PyObject* Sbk_ColorParamFunc_set(PyObject* self, PyObject* args)
 
             if (!PyErr_Occurred()) {
                 // set(double,double,double,double)
-                PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-                cppSelf->set(cppArg0, cppArg1, cppArg2, cppArg3);
-                PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+                // Begin code injection
+
+                cppSelf->set(cppArg0,cppArg1,cppArg2,cppArg3);
+
+                // End of code injection
+
+
             }
             break;
         }
-        case 1: // set(double r, double g, double b, double a, int frame)
+        case 2: // set(double r, double g, double b, double a, int frame)
         {
             double cppArg0;
             pythonToCpp[0](pyArgs[0], &cppArg0);
@@ -774,9 +811,36 @@ static PyObject* Sbk_ColorParamFunc_set(PyObject* self, PyObject* args)
 
             if (!PyErr_Occurred()) {
                 // set(double,double,double,double,int)
-                PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-                cppSelf->set(cppArg0, cppArg1, cppArg2, cppArg3, cppArg4);
-                PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+                // Begin code injection
+
+                cppSelf->set(cppArg0,cppArg1,cppArg2,cppArg3,cppArg4);
+
+                // End of code injection
+
+
+            }
+            break;
+        }
+        case 3: // set(double r, double g, double b, int frame)
+        {
+            double cppArg0;
+            pythonToCpp[0](pyArgs[0], &cppArg0);
+            double cppArg1;
+            pythonToCpp[1](pyArgs[1], &cppArg1);
+            double cppArg2;
+            pythonToCpp[2](pyArgs[2], &cppArg2);
+            int cppArg3;
+            pythonToCpp[3](pyArgs[3], &cppArg3);
+
+            if (!PyErr_Occurred()) {
+                // set(double,double,double,int)
+                // Begin code injection
+
+                cppSelf->set(cppArg0,cppArg1,cppArg2,cppArg3);
+
+                // End of code injection
+
+
             }
             break;
         }
@@ -788,7 +852,7 @@ static PyObject* Sbk_ColorParamFunc_set(PyObject* self, PyObject* args)
     Py_RETURN_NONE;
 
     Sbk_ColorParamFunc_set_TypeError:
-        const char* overloads[] = {"float, float, float, float", "float, float, float, float, int", 0};
+        const char* overloads[] = {"float, float, float", "float, float, float, float", "float, float, float, float, int", "float, float, float, int", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.ColorParam.set", overloads);
         return 0;
 }
@@ -1238,9 +1302,13 @@ static PyObject* Sbk_ColorParamFunc_setValue(PyObject* self, PyObject* args, PyO
 
         if (!PyErr_Occurred()) {
             // setValue(double,int)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            cppSelf->setValue(cppArg0, cppArg1);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            // Begin code injection
+
+            cppSelf->setValue(cppArg0,cppArg1);
+
+            // End of code injection
+
+
         }
     }
 
@@ -1319,9 +1387,13 @@ static PyObject* Sbk_ColorParamFunc_setValueAtTime(PyObject* self, PyObject* arg
 
         if (!PyErr_Occurred()) {
             // setValueAtTime(double,int,int)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            cppSelf->setValueAtTime(cppArg0, cppArg1, cppArg2);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            // Begin code injection
+
+            cppSelf->setValueAtTime(cppArg0,cppArg1,cppArg2);
+
+            // End of code injection
+
+
         }
     }
 

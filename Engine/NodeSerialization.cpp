@@ -117,8 +117,6 @@ NodeSerialization::NodeSerialization(const boost::shared_ptr<Natron::Node> & n,b
 
         }
         
-        _knobChangedCallback = n->getLiveInstance()->getKnobsChangedCallback();
-
         _isNull = false;
     }
 }

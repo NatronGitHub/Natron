@@ -258,6 +258,7 @@ struct Node::Implementation
     boost::shared_ptr<String_Knob> nodeLabelKnob;
     boost::shared_ptr<Bool_Knob> previewEnabledKnob;
     boost::shared_ptr<Bool_Knob> disableNodeKnob;
+    boost::shared_ptr<String_Knob> knobChangedCallback;
     
     boost::shared_ptr<Page_Knob> infoPage;
     boost::shared_ptr<String_Knob> infoDisclaimer;
@@ -771,8 +772,6 @@ Node::restoreKnobsLinks(const NodeSerialization & serialization,
         _imp->restoreKnobLinksRecursive(it->get(), allNodes);
     }
     
-    _imp->liveInstance->setKnobChangedCallback(serialization.getKnobChangedCallback());
-
 }
 
 void
@@ -1554,6 +1553,20 @@ Node::initializeKnobs(int renderScaleSupportPref)
             _imp->useFullScaleImagesWhenRenderScaleUnsupported->setSecret(true);
         }
         _imp->nodeSettingsPage->addKnob(_imp->useFullScaleImagesWhenRenderScaleUnsupported);
+        
+        _imp->knobChangedCallback = Natron::createKnob<String_Knob>(_imp->liveInstance.get(), "On param changed callback");
+        _imp->knobChangedCallback->setHintToolTip("Set here the name of a function defined in Python which will be called for each  "
+                                                  "parameter change. Either define this function in the Script Editor "
+                                                  "or in the init.py script or even in the script of a Python group plug-in. "
+                                                  "Several variables are declared for convenience when the callback is called, namely:\n"
+                                                  "- thisParam: The parameter which just had its value changed\n"
+                                                  "- userEdited: A boolean informing whether the change was due to user interaction or "
+                                                  "because something internally triggered the change.\n"
+                                                  "- thisNode: The node holding the parameter\n"
+                                                  "- thisGroup: The group holding thisNode (only if thisNode belongs to a group)");
+        _imp->knobChangedCallback->setAnimationEnabled(false);
+        _imp->knobChangedCallback->setName("onParamChanged");
+        _imp->nodeSettingsPage->addKnob(_imp->knobChangedCallback);
         
         _imp->infoPage = Natron::createKnob<Page_Knob>(_imp->liveInstance.get(), "Info",1,false);
         _imp->infoPage->setName("info");
@@ -4391,7 +4404,6 @@ Node::declareAllNodesVariableInScope_Python(std::string* deleteScript) const
                 std::string name = (*it)->getFullySpecifiedName();
                 ss << name << " = app" << appID << "." <<
                 name << "\n";
-                deleteScript->append("del " + name + "\n");
             }
         }
     }
@@ -4534,6 +4546,12 @@ Node::declareParameterAsNodeField(const std::string& nodeName,PyObject* nodeObj,
         qDebug() << err.c_str();
     }
 
+}
+
+std::string
+Node::getKnobChangedCallback() const
+{
+    return _imp->knobChangedCallback ? _imp->knobChangedCallback->getValue() : std::string();
 }
 
 //////////////////////////////////
