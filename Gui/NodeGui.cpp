@@ -388,9 +388,11 @@ NodeGui::createGui()
     _expressionIndicator->setActive(false);
 
     _disabledBtmLeftTopRight = new QGraphicsLineItem(this);
+    _disabledBtmLeftTopRight->setZValue(depth + 1);
     _disabledBtmLeftTopRight->hide();
     _disabledTopLeftBtmRight = new QGraphicsLineItem(this);
     _disabledTopLeftBtmRight->hide();
+    _disabledTopLeftBtmRight->setZValue(depth + 1);
 }
 
 void
