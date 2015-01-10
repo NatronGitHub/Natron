@@ -3047,26 +3047,6 @@ Bezier::setKeyframe(int time)
 }
 
 void
-Bezier::removeAnimation()
-{
-    ///only called on the main-thread
-    assert( QThread::currentThread() == qApp->thread() );
-    
-    {
-        QMutexLocker l(&itemMutex);
-       
-        assert( _imp->featherPoints.size() == _imp->points.size() );
-        
-        BezierCPs::iterator fp = _imp->featherPoints.begin();
-        for (BezierCPs::iterator it = _imp->points.begin(); it != _imp->points.end(); ++it,++fp) {
-            (*it)->removeAnimation();
-            (*fp)->removeAnimation();
-        }
-    }
-    Q_EMIT animationRemoved();
-}
-
-void
 Bezier::removeKeyframe(int time)
 {
     ///only called on the main-thread
@@ -3107,7 +3087,7 @@ Bezier::removeAnimation()
             (*fp)->removeAnimation(time);
         }
     }
-    emit animationRemoved();
+    Q_EMIT animationRemoved();
 }
 
 void
