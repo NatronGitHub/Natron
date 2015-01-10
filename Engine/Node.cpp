@@ -3831,7 +3831,12 @@ Node::replaceCustomDataInlabel(const QString & data)
 bool
 Node::isNodeDisabled() const
 {
-    return _imp->disableNodeKnob ? _imp->disableNodeKnob->getValue() : false;
+    bool thisDisabled = _imp->disableNodeKnob ? _imp->disableNodeKnob->getValue() : false;
+    NodeGroup* isContainerGrp = dynamic_cast<NodeGroup*>(getGroup().get());
+    if (isContainerGrp) {
+        return thisDisabled || isContainerGrp->getNode()->isNodeDisabled();
+    }
+    return thisDisabled;
 }
 
 void
