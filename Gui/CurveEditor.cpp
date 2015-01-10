@@ -38,7 +38,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Gui/KnobGui.h"
 #include "Gui/LineEdit.h"
 #include "Gui/GuiApplicationManager.h"
-
+#include "Gui/GuiMacros.h"
 
 using std::make_pair;
 using std::cout;
@@ -106,7 +106,7 @@ CurveEditor::CurveEditor(Gui* gui,
     _imp->splitter = new QSplitter(Qt::Horizontal,this);
     _imp->splitter->setObjectName("CurveEditorSplitter");
 
-    _imp->curveWidget = new CurveWidget(gui,timeline,_imp->splitter);
+    _imp->curveWidget = new CurveWidget(gui,this, timeline,_imp->splitter);
     _imp->curveWidget->setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Expanding);
 
     _imp->leftPaneContainer = new QWidget(_imp->splitter);
@@ -194,7 +194,9 @@ CurveEditor::recursiveSelect(QTreeWidgetItem* cur,
     if (!cur) {
         return;
     }
-    cur->setSelected(true);
+    if (!cur->isSelected()) {
+        cur->setSelected(true);
+    }
     for (std::list<NodeCurveEditorContext*>::const_iterator it = _imp->nodes.begin();
          it != _imp->nodes.end(); ++it) {
         NodeCurveEditorElement* elem = (*it)->findElement(cur);
@@ -658,6 +660,17 @@ CurveEditor::centerOn(const std::vector<boost::shared_ptr<Curve> > & curves)
 }
 
 void
+CurveEditor::getSelectedCurves(std::vector<CurveGui*>* selection)
+{
+    
+    QList<QTreeWidgetItem*> selectedItems = _imp->tree->selectedItems();
+    for (int i = 0; i < selectedItems.size(); ++i) {
+        recursiveSelect(selectedItems[i],selection);
+    }
+    
+}
+
+void
 CurveEditor::onCurrentItemChanged(QTreeWidgetItem* current,
                                   QTreeWidgetItem* /*previous*/)
 {
@@ -670,7 +683,7 @@ CurveEditor::onCurrentItemChanged(QTreeWidgetItem* current,
     recursiveSelect(current,&curves);
 
     _imp->curveWidget->showCurvesAndHideOthers(curves);
-    _imp->curveWidget->centerOn(curves); //remove this if you don't want the editor to switch to a curve on a selection change
+    //_imp->curveWidget->centerOn(curves); //remove this if you don't want the editor to switch to a curve on a selection change
 }
 
 NodeCurveEditorElement*
@@ -1185,4 +1198,12 @@ RotoCurveEditorContext::findElement(KnobGui* knob,int dimension) const
         
     }
     return ret;
+}
+
+void
+CurveEditor::keyPressEvent(QKeyEvent* e)
+{
+    if (e->key() == Qt::Key_F && modCASIsControl(e)) {
+        _imp->filterEdit->setFocus();
+    }
 }

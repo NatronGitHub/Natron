@@ -57,6 +57,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Gui/ViewerGL.h"
 #include "Gui/NodeGraph.h"
 #include "Gui/Histogram.h"
+#include "Gui/CurveSelection.h"
 
 // warning: 'gluErrorString' is deprecated: first deprecated in OS X 10.9 [-Wdeprecated-declarations]
 CLANG_DIAG_OFF(deprecated-declarations)
@@ -654,6 +655,7 @@ class CurveWidgetPrivate
 public:
 
     CurveWidgetPrivate(Gui* gui,
+                       CurveSelection* selection,
                        boost::shared_ptr<TimeLine> timeline,
                        CurveWidget* widget);
 
@@ -760,9 +762,14 @@ private:
     QPolygonF _timelineTopPoly;
     QPolygonF _timelineBtmPoly;
     CurveWidget* _widget;
+    
+public:
+    
+    CurveSelection* _selectionModel;
 };
 
 CurveWidgetPrivate::CurveWidgetPrivate(Gui* gui,
+                                       CurveSelection* selectionModel,
                                        boost::shared_ptr<TimeLine> timeline,
                                        CurveWidget* widget)
     : _oldClick()
@@ -801,6 +808,7 @@ CurveWidgetPrivate::CurveWidgetPrivate(Gui* gui,
       , _timelineTopPoly()
       , _timelineBtmPoly()
       , _widget(widget)
+      , _selectionModel(selectionModel)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
@@ -1891,11 +1899,12 @@ CurveWidgetPrivate::setSelectedKeysInterpolation(Natron::KeyframeTypeEnum type)
 //
 
 CurveWidget::CurveWidget(Gui* gui,
+                         CurveSelection* selection,
                          boost::shared_ptr<TimeLine> timeline,
                          QWidget* parent,
                          const QGLWidget* shareWidget)
     : QGLWidget(parent,shareWidget)
-      , _imp( new CurveWidgetPrivate(gui,timeline,this) )
+      , _imp( new CurveWidgetPrivate(gui,selection,timeline,this) )
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
@@ -3218,16 +3227,12 @@ CurveWidget::frameSelectedCurve()
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
-    for (Curves::iterator it = _imp->_curves.begin(); it != _imp->_curves.end(); ++it) {
-        if ( (*it)->isSelected() ) {
-            std::vector<CurveGui*> curves;
-            curves.push_back(*it);
-            centerOn(curves);
-
-            return;
-        }
+    std::vector<CurveGui*> selection;
+    _imp->_selectionModel->getSelectedCurves(&selection);
+    centerOn(selection);
+    if (selection.empty()) {
+        warningDialog( tr("Curve Editor").toStdString(),tr("You must select a curve first in the left pane.").toStdString() );
     }
-    warningDialog( tr("Curve Editor").toStdString(),tr("You must select a curve first.").toStdString() );
 }
 
 void

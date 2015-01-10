@@ -25,6 +25,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Global/GlobalDefines.h"
 #include "Global/Macros.h"
 
+#include "Gui/CurveSelection.h"
 #include "Gui/CurveEditorUndoRedo.h"
 
 class RectD;
@@ -271,6 +272,7 @@ private:
 struct CurveEditorPrivate;
 class CurveEditor
     : public QWidget
+    , public CurveSelection
 {
     Q_OBJECT
 
@@ -304,6 +306,7 @@ public:
 
     CurveWidget* getCurveWidget() const WARN_UNUSED_RETURN;
 
+    virtual void getSelectedCurves(std::vector<CurveGui*>* selection) OVERRIDE FINAL;
 public slots:
 
     void onFilterTextChanged(const QString& filter);
@@ -312,7 +315,8 @@ public slots:
 
 private:
 
-
+    virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
+    
     void recursiveSelect(QTreeWidgetItem* cur,std::vector<CurveGui*> *curves,bool inspectRotos = true);
 
     boost::scoped_ptr<CurveEditorPrivate> _imp;

@@ -3539,7 +3539,7 @@ Parametric_KnobGui::createWidget(QHBoxLayout* layout)
 
     layout->addWidget(treeColumn);
 
-    _curveWidget = new CurveWidget( getGui(),boost::shared_ptr<TimeLine>(),layout->parentWidget() );
+    _curveWidget = new CurveWidget( getGui(),this, boost::shared_ptr<TimeLine>(),layout->parentWidget() );
     _curveWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     if ( hasToolTip() ) {
         _curveWidget->setToolTip( toolTip() );
@@ -3642,6 +3642,20 @@ Parametric_KnobGui::onItemsSelectionChanged()
 
     _curveWidget->showCurvesAndHideOthers(curves);
     _curveWidget->centerOn(curves); //remove this if you don't want the editor to switch to a curve on a selection change
+}
+
+void
+Parametric_KnobGui::getSelectedCurves(std::vector<CurveGui*>* selection)
+{
+    QList<QTreeWidgetItem*> selected = _tree->selectedItems();
+    for (int i = 0; i < selected.size(); ++i) {
+        //find the items in the curves
+        for (CurveGuis::iterator it = _curves.begin(); it != _curves.end(); ++it) {
+            if ( it->second.treeItem == selected.at(i) ) {
+                selection->push_back(it->second.curve);
+            }
+        }
+    }
 }
 
 void
