@@ -299,6 +299,11 @@ public:
      * @brief Same as getInput except that it doesn't do group redirections for Inputs/Outputs
      **/
     boost::shared_ptr<Node> getRealInput(int index) const;
+    
+    /**
+     * @brief Returns the input index of the node if it is an input of this node, -1 otherwise.
+     **/
+    int getInputIndex(const Natron::Node* node) const;
 
     /**
      * @brief Returns true if the node is currently executing the onInputChanged handler.

@@ -1865,6 +1865,18 @@ Node::getRealInput(int index) const
 
 }
 
+int
+Node::getInputIndex(const Natron::Node* node) const
+{
+    QMutexLocker l(&_imp->inputsMutex);
+    for (U32 i = 0; i < _imp->inputs.size(); ++i) {
+        if (_imp->inputs[i].get() == node) {
+            return i;
+        }
+    }
+    return -1;
+}
+
 const std::vector<boost::shared_ptr<Natron::Node> > &
 Node::getInputs_mt_safe() const
 {

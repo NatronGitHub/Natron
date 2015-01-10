@@ -858,6 +858,7 @@ NodeGroup::initializeKnobs()
 void
 NodeGroup::notifyNodeDeactivated(const boost::shared_ptr<Natron::Node>& node)
 {
+    NodePtr thisNode = getNode();
     GroupInput* isInput = dynamic_cast<GroupInput*>(node->getLiveInstance());
     if (isInput) {
         for (U32 i = 0; i < _imp->inputs.size(); ++i) {
@@ -865,10 +866,10 @@ NodeGroup::notifyNodeDeactivated(const boost::shared_ptr<Natron::Node>& node)
             if (node == input) {
                 
                 ///Also disconnect the real input
-                getNode()->disconnectInput(i);
+                thisNode->disconnectInput(i);
                 
                 _imp->inputs.erase(_imp->inputs.begin() + i);
-                getNode()->initializeInputs();
+                thisNode->initializeInputs();
                 return;
             }
         }
@@ -879,20 +880,38 @@ NodeGroup::notifyNodeDeactivated(const boost::shared_ptr<Natron::Node>& node)
     if (isOutput) {
         _imp->output.reset();
     }
+    
+    ///Notify outputs of the group nodes that their inputs may have changed
+    const std::list<Natron::Node*>& outputs = thisNode->getOutputs();
+    for (std::list<Natron::Node*>::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
+        int idx = (*it)->getInputIndex(thisNode.get());
+        assert(idx != -1);
+        (*it)->onInputChanged(idx);
+    }
 
 }
 
 void
 NodeGroup::notifyNodeActivated(const boost::shared_ptr<Natron::Node>& node)
 {
+    NodePtr thisNode = getNode();
+
     GroupInput* isInput = dynamic_cast<GroupInput*>(node->getLiveInstance());
     if (isInput) {
         _imp->inputs.push_back(node);
-        getNode()->initializeInputs();
+        thisNode->initializeInputs();
     }
     GroupOutput* isOutput = dynamic_cast<GroupOutput*>(node->getLiveInstance());
     if (isOutput) {
         _imp->output = node;
+    }
+    
+    ///Notify outputs of the group nodes that their inputs may have changed
+    const std::list<Natron::Node*>& outputs = thisNode->getOutputs();
+    for (std::list<Natron::Node*>::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
+        int idx = (*it)->getInputIndex(thisNode.get());
+        assert(idx != -1);
+        (*it)->onInputChanged(idx);
     }
 }
 
@@ -1662,6 +1681,10 @@ static void exportGroupInternal(NodeGroup* group,const QString& groupName, QText
             continue;
         }
         
+        if (!(*it)->isActivated()) {
+            continue;
+        }
+        
         exportedNodes.push_back(*it);
         
         
@@ -1694,11 +1717,13 @@ static void exportGroupInternal(NodeGroup* group,const QString& groupName, QText
         if (!children.empty()) {
             WRITE_INDENT(1); WRITE_STATIC_LINE("#Create children if the node is a multi-instance such as a tracker");
             for (std::list< NodePtr > ::iterator it2 = children.begin(); it2 != children.end(); ++it2) {
-                WRITE_INDENT(1); WRITE_STRING("lastNode = " + nodeNameInScript + ".createChild()");
-                WRITE_INDENT(1); WRITE_STRING("lastNode.setName(\"" + QString((*it2)->getName_mt_safe().c_str()) + "\")");
-                exportAllNodeKnobs(*it2,ts);
-                WRITE_INDENT(1); WRITE_STRING(groupName + QString((*it2)->getName_mt_safe().c_str()) + " = lastNode");
-                WRITE_INDENT(1); WRITE_STRING("del lastNode");
+                if ((*it2)->isActivated()) {
+                    WRITE_INDENT(1); WRITE_STRING("lastNode = " + nodeNameInScript + ".createChild()");
+                    WRITE_INDENT(1); WRITE_STRING("lastNode.setName(\"" + QString((*it2)->getName_mt_safe().c_str()) + "\")");
+                    exportAllNodeKnobs(*it2,ts);
+                    WRITE_INDENT(1); WRITE_STRING(groupName + QString((*it2)->getName_mt_safe().c_str()) + " = lastNode");
+                    WRITE_INDENT(1); WRITE_STRING("del lastNode");
+                }
             }
         }
         
