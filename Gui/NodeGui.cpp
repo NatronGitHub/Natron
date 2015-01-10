@@ -58,6 +58,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/NodeSerialization.h"
 #include "Engine/Image.h"
 #include "Engine/Settings.h"
+#include "Engine/Plugin.h"
 #include "Engine/BackDrop.h"
 #include "Engine/Knob.h"
 #define NATRON_STATE_INDICATOR_OFFSET 5
@@ -303,19 +304,20 @@ NodeGui::createPanel(QVBoxLayout* container,
             _mainInstancePanel->initializeKnobs();
         }
         panel = new NodeSettingsPanel( multiPanel,_graph->getGui(),thisAsShared,container,container->parentWidget() );
+        
+        if (panel) {
+            if (!requestedByLoad) {
+                bool isCreatingPythonGroup = getDagGui()->getGui()->getApp()->isCreatingPythonGroup();
 
-        if (!requestedByLoad) {
-            if ( node->getParentMultiInstanceName().empty() && !getDagGui()->getGui()->getApp()->isCreatingPythonGroup()) {
-                
                 std::string pluginID = node->getPluginID();
-                if (pluginID == PLUGINID_NATRON_OUTPUT) {
+                if (pluginID == PLUGINID_NATRON_OUTPUT ||
+                    (isCreatingPythonGroup && pluginID != PLUGINID_NATRON_GROUP) ||
+                    !node->getParentMultiInstanceName().empty()) {
                     panel->setClosed(true);
                 } else {
                     _graph->getGui()->addVisibleDockablePanel(panel);
                 }
-            }
-        } else {
-            if (panel) {
+            } else {
                 panel->setClosed(true);
             }
         }

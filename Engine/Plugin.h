@@ -301,7 +301,7 @@ public:
         _pythonModule = module;
     }
     
-    const QString& getPythonModule() {
+    const QString& getPythonModule() const {
         return _pythonModule;
     }
 };
