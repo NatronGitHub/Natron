@@ -299,7 +299,7 @@ NodeCurveEditorContext::NodeCurveEditorContext(QTreeWidget* tree,
 
     nameItem->setText( 0,_node->getNode()->getName().c_str() );
 
-    QObject::connect( node.get(),SIGNAL( nameChanged(QString) ),this,SLOT( onNameChanged(QString) ) );
+    QObject::connect( node->getNode().get(),SIGNAL( nameChanged(QString) ),this,SLOT( onNameChanged(QString) ) );
     const std::map<boost::shared_ptr<KnobI>,KnobGui*> & knobs = node->getKnobs();
 
     bool hasAtLeast1KnobWithACurveShown = false;
@@ -928,7 +928,7 @@ RotoCurveEditorContext::RotoCurveEditorContext(CurveWidget* widget,
     
     _imp->nameItem = new QTreeWidgetItem(tree);
     _imp->nameItem->setText( 0,_imp->node->getNode()->getName().c_str() );
-    QObject::connect( node.get(),SIGNAL( nameChanged(QString) ),this,SLOT( onNameChanged(QString) ) );
+    QObject::connect( node->getNode().get(),SIGNAL( nameChanged(QString) ),this,SLOT( onNameChanged(QString) ) );
     QObject::connect( rotoCtx.get(),SIGNAL( itemRemoved(boost::shared_ptr<RotoItem>,int) ),this,
                      SLOT( onItemRemoved(boost::shared_ptr<RotoItem>,int) ) );
     QObject::connect( rotoCtx.get(),SIGNAL( itemInserted(int) ),this,SLOT( itemInserted(int) ) );

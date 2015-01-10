@@ -1164,11 +1164,17 @@ MultiInstancePanel::onItemDataChanged(TableItem* item)
     if (modelIndex.column() == 0) {
         return;
     }
+    
     int time = getApp()->getTimeLine()->currentFrame();
     
     assert( modelIndex.row() < (int)_imp->instances.size() );
     Nodes::iterator nIt = _imp->instances.begin();
     std::advance( nIt, modelIndex.row() );
+    
+    if (modelIndex.column() == 1) {
+        nIt->first->setName(data.toString());
+    }
+    
     const std::vector<boost::shared_ptr<KnobI> > & knobs = nIt->first->getKnobs();
     int instanceSpecificIndex = 1; //< 1 because we skip the enable cell
     for (U32 i = 0; i < knobs.size(); ++i) {
