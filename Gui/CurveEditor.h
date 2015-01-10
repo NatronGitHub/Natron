@@ -31,6 +31,7 @@ class RectD;
 class NodeGui;
 class QTreeWidget;
 class QTreeWidgetItem;
+class QVBoxLayout;
 class CurveWidget;
 class Curve;
 class CurveGui;
@@ -40,6 +41,8 @@ class KnobGui;
 class KnobI;
 class BezierCP;
 class Bezier;
+class LineEdit;
+class QLabel;
 class RotoItem;
 class RotoContext;
 class KeyFrame;
@@ -97,6 +100,8 @@ public:
     {
         return _curveDisplayed;
     }
+    
+    void setVisible(bool visible);
 
     int getDimension() const WARN_UNUSED_RETURN
     {
@@ -109,6 +114,9 @@ public:
     }
     
     boost::shared_ptr<KnobI> getInternalKnob() const WARN_UNUSED_RETURN;
+    
+    void checkVisibleState(bool autoSelectOnShow);
+    
 public slots:
 
     /**
@@ -154,6 +162,10 @@ public:
     {
         return _nodeElements;
     }
+    
+    bool isVisible() const;
+    
+    void setVisible(bool visible);
 
     NodeCurveEditorElement* findElement(CurveGui* curve) const WARN_UNUSED_RETURN;
     NodeCurveEditorElement* findElement(KnobGui* knob,int dimension) const WARN_UNUSED_RETURN;
@@ -235,6 +247,8 @@ public:
     
     void recursiveSelectRoto(QTreeWidgetItem* cur,
                              std::vector<CurveGui*> *curves);
+    
+    void setVisible(bool visible);
 
     std::list<NodeCurveEditorElement*> findElement(KnobGui* knob,int dimension) const;
     
@@ -254,6 +268,7 @@ private:
     
 };
 
+struct CurveEditorPrivate;
 class CurveEditor
     : public QWidget
 {
@@ -291,23 +306,18 @@ public:
 
 public slots:
 
+    void onFilterTextChanged(const QString& filter);
+    
     void onCurrentItemChanged(QTreeWidgetItem*,QTreeWidgetItem*);
 
 private:
 
 
-    // FIXME: PIMPL
     void recursiveSelect(QTreeWidgetItem* cur,std::vector<CurveGui*> *curves,bool inspectRotos = true);
 
-    std::list<NodeCurveEditorContext*> _nodes;
-    std::list<RotoCurveEditorContext*> _rotos;
-    QHBoxLayout* _mainLayout;
-    QSplitter* _splitter;
-    CurveWidget* _curveWidget;
-    QTreeWidget* _tree;
-    boost::scoped_ptr<QUndoStack> _undoStack;
-    QAction* _undoAction,*_redoAction;
+    boost::scoped_ptr<CurveEditorPrivate> _imp;
 };
+
 
 
 #endif // CURVEEDITOR_H
