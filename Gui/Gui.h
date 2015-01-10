@@ -576,6 +576,8 @@ public Q_SLOTS:
     void onMaxVisibleDockablePanelChanged(int maxPanels);
 
     void clearAllVisiblePanels();
+    
+    void minimizeMaximizeAllPanels(bool clicked);
 
     void onMaxPanelsSpinBoxValueChanged(double val);
 

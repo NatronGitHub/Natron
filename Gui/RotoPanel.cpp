@@ -67,23 +67,6 @@ CLANG_DIAG_ON(uninitialized)
 using namespace Natron;
 
 
-static QPixmap
-getColorButtonDefaultPixmap()
-{
-    QImage img(15,15,QImage::Format_ARGB32);
-    QColor gray(Qt::gray);
-
-    img.fill( gray.rgba() );
-    QPainter p(&img);
-    QPen pen;
-    pen.setColor(Qt::black);
-    pen.setWidth(2);
-    p.setPen(pen);
-    p.drawLine(0, 0, 14, 14);
-
-    return QPixmap::fromImage(img);
-}
-
 class TreeWidget
     : public QTreeWidget
 {
@@ -172,6 +155,7 @@ struct RotoPanelPrivate
     Button* nextKeyframe;
     Button* addKeyframe;
     Button* removeKeyframe;
+    Button* clearAnimation;
     QWidget* buttonContainer;
     QHBoxLayout* buttonLayout;
     Button* addLayerButton;
@@ -205,6 +189,7 @@ struct RotoPanelPrivate
         , nextKeyframe(0)
         , addKeyframe(0)
         , removeKeyframe(0)
+        , clearAnimation(0)
         , buttonContainer(0)
         , buttonLayout(0)
         , addLayerButton(0)
@@ -319,11 +304,12 @@ RotoPanel::RotoPanel(const boost::shared_ptr<NodeGui>&  n,
     _imp->totalKeyframes->setToolTip( tr("The keyframe count for all the selected shapes.") );
     _imp->splineLayout->addWidget(_imp->totalKeyframes);
 
-    QPixmap prevPix,nextPix,addPix,removePix;
+    QPixmap prevPix,nextPix,addPix,removePix,clearAnimPix;
     appPTR->getIcon(Natron::NATRON_PIXMAP_PLAYER_PREVIOUS_KEY, &prevPix);
     appPTR->getIcon(Natron::NATRON_PIXMAP_PLAYER_NEXT_KEY, &nextPix);
     appPTR->getIcon(Natron::NATRON_PIXMAP_ADD_KEYFRAME, &addPix);
     appPTR->getIcon(Natron::NATRON_PIXMAP_REMOVE_KEYFRAME, &removePix);
+    appPTR->getIcon(Natron::NATRON_PIXMAP_CLEAR_ALL_ANIMATION, &clearAnimPix);
 
     _imp->prevKeyframe = new Button(QIcon(prevPix),"",_imp->splineContainer);
     _imp->prevKeyframe->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE,NATRON_MEDIUM_BUTTON_SIZE);
@@ -352,7 +338,17 @@ RotoPanel::RotoPanel(const boost::shared_ptr<NodeGui>&  n,
     _imp->removeKeyframe->setEnabled(false);
     QObject::connect( _imp->removeKeyframe, SIGNAL( clicked(bool) ), this, SLOT( onRemoveKeyframeButtonClicked() ) );
     _imp->splineLayout->addWidget(_imp->removeKeyframe);
+    
+    _imp->clearAnimation = new Button(QIcon(clearAnimPix),"",_imp->splineContainer);
+    _imp->clearAnimation->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE,NATRON_MEDIUM_BUTTON_SIZE);
+    _imp->clearAnimation->setToolTip( tr("Remove all animation for the selected shape(s)") );
+    _imp->clearAnimation->setEnabled(false);
+    QObject::connect( _imp->clearAnimation, SIGNAL( clicked(bool) ), this, SLOT( onRemoveAnimationButtonClicked() ) );
+    _imp->splineLayout->addWidget(_imp->clearAnimation);
+
+    
     _imp->splineLayout->addStretch();
+
 
     _imp->tree = new TreeWidget(this,this);
     _imp->tree->setEditTriggers(QAbstractItemView::DoubleClicked | QAbstractItemView::EditKeyPressed);
@@ -386,9 +382,8 @@ RotoPanel::RotoPanel(const boost::shared_ptr<NodeGui>&  n,
     appPTR->getIcon(NATRON_PIXMAP_INVERTED, &pixInverted);
     appPTR->getIcon(NATRON_PIXMAP_UNINVERTED, &pixUninverted);
     appPTR->getIcon(NATRON_PIXMAP_COLORWHEEL, &pixWheel);
-    appPTR->getIcon(NATRON_PIXMAP_MERGE_GROUPING, &pixmerge);
-    pixmerge = pixmerge.scaled(15, 15);
-    pixDefault = getColorButtonDefaultPixmap();
+    appPTR->getIcon(NATRON_PIXMAP_ROTO_MERGE, &pixmerge);
+    appPTR->getIcon(NATRON_PIXMAP_OVERLAY, &pixDefault);
 
     _imp->iconLayer.addPixmap(pixLayer);
     _imp->iconBezier.addPixmap(pixBezier);
@@ -402,7 +397,7 @@ RotoPanel::RotoPanel(const boost::shared_ptr<NodeGui>&  n,
 
     _imp->treeHeader->setIcon(COL_ACTIVATED, _imp->iconVisible);
     _imp->treeHeader->setIcon(COL_LOCKED, _imp->iconLocked);
-    _imp->treeHeader->setIcon( COL_OVERLAY, QIcon(pixDefault) );
+    _imp->treeHeader->setIcon(COL_OVERLAY, QIcon(pixDefault) );
     _imp->treeHeader->setIcon(COL_COLOR, _imp->iconWheel);
 #ifdef NATRON_ROTO_INVERTIBLE
     _imp->treeHeader->setIcon(COL_INVERTED, _imp->iconUninverted);
@@ -491,6 +486,12 @@ RotoPanel::onAddKeyframeButtonClicked()
 }
 
 void
+RotoPanel::onRemoveAnimationButtonClicked()
+{
+    _imp->context->removeAnimationOnSelectedCurves();
+}
+
+void
 RotoPanel::onRemoveKeyframeButtonClicked()
 {
     _imp->context->removeKeyframeOnSelectedCurves();
@@ -505,7 +506,7 @@ RotoPanel::onSelectionChangedInternal()
         if (isBezier) {
             QObject::disconnect( isBezier.get(), SIGNAL( keyframeSet(int) ), this, SLOT( onSelectedBezierKeyframeSet(int) ) );
             QObject::disconnect( isBezier.get(), SIGNAL( keyframeRemoved(int) ), this, SLOT( onSelectedBezierKeyframeRemoved(int) ) );
-            QObject::disconnect( isBezier.get(), SIGNAL( animationRemoved() ), this, SLOT( onSelectedBeizerAnimationRemoved() ) );
+            QObject::disconnect( isBezier.get(), SIGNAL( animationRemoved() ), this, SLOT( onSelectedBezierAnimationRemoved() ) );
             QObject::disconnect( isBezier.get(), SIGNAL( aboutToClone() ), this, SLOT( onSelectedBezierAboutToClone() ) );
             QObject::disconnect( isBezier.get(), SIGNAL( cloned() ), this, SLOT( onSelectedBezierCloned() ) );
         }
@@ -522,7 +523,7 @@ RotoPanel::onSelectionChangedInternal()
         if (isBezier) {
             QObject::connect( isBezier.get(), SIGNAL( keyframeSet(int) ), this, SLOT( onSelectedBezierKeyframeSet(int) ) );
             QObject::connect( isBezier.get(), SIGNAL( keyframeRemoved(int) ), this, SLOT( onSelectedBezierKeyframeRemoved(int) ) );
-            QObject::connect( isBezier.get(), SIGNAL( animationRemoved() ), this, SLOT( onSelectedBeizerAnimationRemoved() ) );
+            QObject::connect( isBezier.get(), SIGNAL( animationRemoved() ), this, SLOT( onSelectedBezierAnimationRemoved() ) );
             QObject::connect( isBezier.get(), SIGNAL( aboutToClone() ), this, SLOT( onSelectedBezierAboutToClone() ) );
             QObject::connect( isBezier.get(), SIGNAL( cloned() ), this, SLOT( onSelectedBezierCloned() ) );
             ++selectedBeziersCount;
@@ -541,6 +542,7 @@ RotoPanel::onSelectionChangedInternal()
     _imp->nextKeyframe->setEnabled(enabled);
     _imp->addKeyframe->setEnabled(enabled);
     _imp->removeKeyframe->setEnabled(enabled);
+    _imp->clearAnimation->setEnabled(enabled);
 
     int time = _imp->context->getTimelineCurrentTime();
 
@@ -600,18 +602,18 @@ RotoPanel::onSelectedBezierKeyframeRemoved(int time)
 }
 
 void
-RotoPanel::onSelectedBeizerAnimationRemoved()
+RotoPanel::onSelectedBezierAnimationRemoved()
 {
     Bezier* b = qobject_cast<Bezier*>( sender() );
     boost::shared_ptr<Bezier> isBezier ;
     if (b) {
         isBezier = boost::dynamic_pointer_cast<Bezier>(b->shared_from_this());
     }
-    _imp->updateSplinesInfoGUI(getContext()->getTimelineCurrentTime());
-    if (isBezier) {
-        _imp->removeItemAnimation(isBezier);
-    }
 
+    _imp->updateSplinesInfoGUI(_imp->context->getTimelineCurrentTime());
+    if (isBezier) {
+       _imp->removeItemAnimation(isBezier);
+    }
 }
 
 void
@@ -807,7 +809,8 @@ RotoPanelPrivate::insertItemRecursively(int time,
     treeItem->setText( COL_NAME, item->getName_mt_safe().c_str() );
     treeItem->setToolTip( COL_NAME, Qt::convertFromPlainText(kRotoNameHint, Qt::WhiteSpaceNormal) );
     treeItem->setIcon(COL_ACTIVATED, item->isGloballyActivated() ? iconVisible : iconUnvisible);
-    treeItem->setToolTip( COL_ACTIVATED, Qt::convertFromPlainText(kRotoActivatedHint, Qt::WhiteSpaceNormal) );
+    treeItem->setToolTip( COL_ACTIVATED, Qt::convertFromPlainText("Controls whether the overlay should be visible on the viewer for "
+                                                                  "the shape.", Qt::WhiteSpaceNormal) );
     treeItem->setIcon(COL_LOCKED, item->getLocked() ? iconLocked : iconUnlocked);
     treeItem->setToolTip( COL_LOCKED, Qt::convertFromPlainText(kRotoLockedHint, Qt::WhiteSpaceNormal) );
 
@@ -1388,7 +1391,7 @@ RotoPanel::onItemSelectionChanged()
                                 SIGNAL( keyframeRemoved(int) ),
                                 this,
                                 SLOT( onSelectedBezierKeyframeRemoved(int) ) );
-            QObject::disconnect( isBezier.get(), SIGNAL( animationRemoved() ), this, SLOT( onSelectedBeizerAnimationRemoved() ) );
+            QObject::disconnect( isBezier.get(), SIGNAL( animationRemoved() ), this, SLOT( onSelectedBezierAnimationRemoved() ) );
         }
     }
     _imp->context->deselect(_imp->selectedItems, RotoContext::eSelectionReasonSettingsPanel);
@@ -1438,7 +1441,8 @@ RotoPanel::onItemSelectionChanged()
     _imp->nextKeyframe->setEnabled(enabled);
     _imp->addKeyframe->setEnabled(enabled);
     _imp->removeKeyframe->setEnabled(enabled);
-
+    _imp->clearAnimation->setEnabled(enabled);
+    
     int time = _imp->context->getTimelineCurrentTime();
 
     ///update the splines info GUI
@@ -1920,6 +1924,7 @@ RotoPanelPrivate::removeItemAnimation(const boost::shared_ptr<RotoItem>& item)
         node.lock()->getNode()->getApp()->getTimeLine()->removeMultipleKeyframeIndicator(toRemove, true);
     }
 }
+
 
 void
 RotoPanel::onSettingsPanelClosed(bool closed)

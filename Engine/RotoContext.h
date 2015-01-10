@@ -123,7 +123,7 @@ public:
 
     void removeKeyframe(int time);
     
-    void removeAnimation();
+    void removeAnimation(int currentTime);
 
     ///returns true if a keyframe was set
     bool cuspPoint(int time,bool autoKeying,bool rippleEdit,const std::pair<double,double>& pixelScale);
@@ -637,6 +637,11 @@ public:
      * @brief Removes the feather point at the given index by making it equal the "true" control point.
      **/
     void removeFeatherAtIndex(int index);
+    
+    /**
+     * @brief Expand the feather point in the direction of the feather distance by the given distance.
+     **/
+    //void expandFeatherAtIndex(int index,double distance);
 
     /**
      * @brief Smooth the curvature of the bezier at the given index by expanding the tangents.
@@ -663,7 +668,10 @@ public:
      * @brief Removes a keyframe at the given time if any.
      **/
     void removeKeyframe(int time);
-    
+        
+    /**
+     * @brief Removes all animation
+     **/
     void removeAnimation();
     
     /**
@@ -1017,6 +1025,8 @@ public:
 
     ///only callable on main-thread
     void removeKeyframeOnSelectedCurves();
+    
+    void removeAnimationOnSelectedCurves();
 
     ///only callable on main-thread
     void goToPreviousKeyframe();

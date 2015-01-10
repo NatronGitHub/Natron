@@ -301,9 +301,19 @@ BezierCP::setRightBezierPointAtTime(int time,
     }
 }
 
+
 void
-BezierCP::removeAnimation()
+BezierCP::removeAnimation(int currentTime)
 {
+    {
+        QMutexLocker k(&_imp->staticPositionMutex);
+        _imp->x = _imp->curveX->getValueAt(currentTime);
+        _imp->y = _imp->curveY->getValueAt(currentTime);
+        _imp->leftX = _imp->curveLeftBezierX->getValueAt(currentTime);
+        _imp->leftY = _imp->curveLeftBezierY->getValueAt(currentTime);
+        _imp->rightX = _imp->curveRightBezierX->getValueAt(currentTime);
+        _imp->rightY = _imp->curveRightBezierY->getValueAt(currentTime);
+    }
     _imp->curveX->clearKeyFrames();
     _imp->curveY->clearKeyFrames();
     _imp->curveLeftBezierX->clearKeyFrames();
@@ -339,6 +349,8 @@ BezierCP::removeKeyframe(int time)
     } catch (...) {
     }
 }
+
+
 
 bool
 BezierCP::hasKeyFrameAtTime(int time) const
@@ -3078,6 +3090,27 @@ Bezier::removeKeyframe(int time)
 }
 
 void
+Bezier::removeAnimation()
+{
+    ///only called on the main-thread
+    assert( QThread::currentThread() == qApp->thread() );
+    
+    int time = getContext()->getTimelineCurrentTime();
+    {
+        QMutexLocker l(&itemMutex);
+        
+        assert( _imp->featherPoints.size() == _imp->points.size() );
+        
+        BezierCPs::iterator fp = _imp->featherPoints.begin();
+        for (BezierCPs::iterator it = _imp->points.begin(); it != _imp->points.end(); ++it,++fp) {
+            (*it)->removeAnimation(time);
+            (*fp)->removeAnimation(time);
+        }
+    }
+    emit animationRemoved();
+}
+
+void
 Bezier::moveKeyframe(int oldTime,int newTime)
 {
     
@@ -4684,7 +4717,8 @@ RotoContext::getLastItemLocked() const
 static void
 addOrRemoveKeyRecursively(const boost::shared_ptr<RotoLayer>& isLayer,
                           int time,
-                          bool add)
+                          bool add,
+                          bool removeAll)
 {
     const RotoItems & items = isLayer->getItems();
 
@@ -4694,11 +4728,15 @@ addOrRemoveKeyRecursively(const boost::shared_ptr<RotoLayer>& isLayer,
         if (isBezier) {
             if (add) {
                 isBezier->setKeyframe(time);
-            } else if (layer) {
-                isBezier->removeKeyframe(time);
+            } else {
+                if (!removeAll) {
+                    isBezier->removeKeyframe(time);
+                } else {
+                    isBezier->removeAnimation();
+                }
             }
         } else if (layer) {
-            addOrRemoveKeyRecursively(layer, time, add);
+            addOrRemoveKeyRecursively(layer, time, add,removeAll);
         }
     }
 }
@@ -4717,9 +4755,29 @@ RotoContext::setKeyframeOnSelectedCurves()
         if (isBezier) {
             isBezier->setKeyframe(time);
         } else if (isLayer) {
-            addOrRemoveKeyRecursively(isLayer,time, true);
+            addOrRemoveKeyRecursively(isLayer,time, true, false);
         }
     }
+}
+
+void
+RotoContext::removeAnimationOnSelectedCurves()
+{
+    ///only called on the main-thread
+    assert( QThread::currentThread() == qApp->thread() );
+    
+    int time = getTimelineCurrentTime();
+    QMutexLocker l(&_imp->rotoContextMutex);
+    for (std::list<boost::shared_ptr<RotoItem> >::iterator it = _imp->selectedItems.begin(); it != _imp->selectedItems.end(); ++it) {
+        boost::shared_ptr<RotoLayer> isLayer = boost::dynamic_pointer_cast<RotoLayer>(*it);
+        boost::shared_ptr<Bezier> isBezier = boost::dynamic_pointer_cast<Bezier>(*it);
+        if (isBezier) {
+            isBezier->removeAnimation();
+        } else if (isLayer) {
+            addOrRemoveKeyRecursively(isLayer,time, false, true);
+        }
+    }
+
 }
 
 void
@@ -4736,7 +4794,7 @@ RotoContext::removeKeyframeOnSelectedCurves()
         if (isBezier) {
             isBezier->removeKeyframe(time);
         } else if (isLayer) {
-            addOrRemoveKeyRecursively(isLayer,time, false);
+            addOrRemoveKeyRecursively(isLayer,time, false, false);
         }
     }
 }

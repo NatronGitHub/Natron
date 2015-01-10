@@ -794,6 +794,7 @@ RotoGui::drawOverlays(double /*scaleX*/,
                 continue;
             }
             ///draw the bezier
+<<<<<<< HEAD
 #pragma message WARN("Roto drawing: please update this algorithm")
             // Please update this algorithm:
             // It should first compute the bbox (this is cheap)
@@ -827,6 +828,41 @@ RotoGui::drawOverlays(double /*scaleX*/,
             if ( isFeatherVisible() ) {
                 ///Draw feather only if visible (button is toggled in the user interface)
 #pragma message WARN("Roto drawing: please update this algorithm")
+=======
+#pragma message WARN("Roto drawing: please update this algorithm")
+            // Please update this algorithm:
+            // It should first compute the bbox (this is cheap)
+            // then check if the bbox is visible
+            // if the bbox is visible, compute the polygon and draw it.
+            std::list< Point > points;
+            (*it)->evaluateAtTime_DeCasteljau(time,0, 100, &points, NULL);
+            
+            bool locked = (*it)->isLockedRecursive();
+            double curveColor[4];
+            if (!locked) {
+                (*it)->getOverlayColor(curveColor);
+            } else {
+                curveColor[0] = 0.8; curveColor[1] = 0.8; curveColor[2] = 0.8; curveColor[3] = 1.;
+            }
+            glColor4dv(curveColor);
+            
+            glBegin(GL_LINE_STRIP);
+            for (std::list<Point >::const_iterator it2 = points.begin(); it2 != points.end(); ++it2) {
+                glVertex2f(it2->x, it2->y);
+            }
+            glEnd();
+            
+            ///draw the feather points
+            std::list< Point > featherPoints;
+            RectD featherBBox( std::numeric_limits<double>::infinity(),
+                              std::numeric_limits<double>::infinity(),
+                              -std::numeric_limits<double>::infinity(),
+                              -std::numeric_limits<double>::infinity() );
+            
+            if ( isFeatherVisible() ) {
+                ///Draw feather only if visible (button is toggled in the user interface)
+#pragma message WARN("Roto drawing: please update this algorithm")
+>>>>>>> workshop
                 // Plese update this algorithm:
                 // It should first compute the bbox (this is cheap)
                 // then check if the bbox is visible
@@ -925,7 +961,6 @@ RotoGui::drawOverlays(double /*scaleX*/,
                             isHovered = _imp->rotoData->featherBarBeingHovered.first == *itF;
                         } else if ( _imp->rotoData->featherBarBeingHovered.second->isFeatherPoint() ) {
                             isHovered = _imp->rotoData->featherBarBeingHovered.second == *itF;
-
                         }
                     }
                     
@@ -1021,6 +1056,7 @@ RotoGui::drawOverlays(double /*scaleX*/,
                     }
                     
                 }
+                
             }
             glCheckError();
         }

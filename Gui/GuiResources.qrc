@@ -187,5 +187,7 @@
         <file>Resources/Images/backdrop_icon.png</file>
         <file>Resources/Images/diskcache_icon.png</file>
         <file>Resources/Images/dot_icon.png</file>
+        <file>Resources/Images/colorwheel_overlay.png</file>
+        <file>Resources/Images/roto_merge.png</file>
     </qresource>
 </RCC>
