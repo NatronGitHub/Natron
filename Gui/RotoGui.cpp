@@ -1636,10 +1636,6 @@ RotoGui::penDown(double /*scaleX*/,
                 _imp->handleControlPointSelection(_imp->rotoData->featherBarBeingDragged, e);
                 _imp->state = eEventStateDraggingFeatherBar;
                 didSomething = true;
-            } else if (nearbySelectedBeziersBbox) {
-                _imp->rotoData->transformMode = _imp->rotoData->transformMode == eSelectedCpsTransformModeTranslateAndScale ?
-                                                eSelectedCpsTransformModeRotateAndSkew : eSelectedCpsTransformModeTranslateAndScale;
-                didSomething = true;
             }
             if (_imp->state == eEventStateNone) {
                 _imp->state = _imp->isMouseInteractingWithCPSBbox(pos,cpSelectionTolerance,pixelScale);
