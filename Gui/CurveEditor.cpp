@@ -39,6 +39,9 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Gui/LineEdit.h"
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/GuiMacros.h"
+#include "Gui/Gui.h"
+#include "Gui/DockablePanel.h"
+#include "Gui/GuiAppInstance.h"
 
 using std::make_pair;
 using std::cout;
@@ -48,6 +51,8 @@ using std::endl;
 
 struct CurveEditorPrivate
 {
+    
+    Gui* gui;
     
     std::list<NodeCurveEditorContext*> nodes;
     std::list<RotoCurveEditorContext*> rotos;
@@ -66,8 +71,9 @@ struct CurveEditorPrivate
     boost::scoped_ptr<QUndoStack> undoStack;
     QAction* undoAction,*redoAction;
     
-    CurveEditorPrivate()
-    : nodes()
+    CurveEditorPrivate(Gui* gui)
+    : gui(gui)
+    , nodes()
     , rotos()
     , mainLayout(0)
     , splitter(0)
@@ -90,7 +96,7 @@ CurveEditor::CurveEditor(Gui* gui,
                          boost::shared_ptr<TimeLine> timeline,
                          QWidget *parent)
 : QWidget(parent)
-, _imp(new CurveEditorPrivate())
+, _imp(new CurveEditorPrivate(gui))
 {
     setObjectName("CurveEditor");
     _imp->undoAction = _imp->undoStack->createUndoAction( this,tr("&Undo") );
@@ -131,7 +137,7 @@ CurveEditor::CurveEditor(Gui* gui,
     
     _imp->tree = new QTreeWidget(_imp->leftPaneContainer);
     _imp->tree->setObjectName("tree");
-    _imp->tree->setSelectionMode(QAbstractItemView::NoSelection);
+    _imp->tree->setSelectionMode(QAbstractItemView::ExtendedSelection);
     _imp->tree->setColumnCount(1);
     _imp->tree->header()->close();
     _imp->tree->setSizePolicy(QSizePolicy::Minimum,QSizePolicy::Expanding);
@@ -145,8 +151,10 @@ CurveEditor::CurveEditor(Gui* gui,
 
     _imp->mainLayout->addWidget(_imp->splitter);
 
-    QObject::connect( _imp->tree, SIGNAL( currentItemChanged(QTreeWidgetItem*, QTreeWidgetItem*) ),
-                      this, SLOT( onCurrentItemChanged(QTreeWidgetItem*,QTreeWidgetItem*) ) );
+    QObject::connect( _imp->tree, SIGNAL( itemSelectionChanged() ),
+                      this, SLOT( onItemSelectionChanged() ) );
+    QObject::connect( _imp->tree, SIGNAL( itemDoubleClicked(QTreeWidgetItem*,int) ),
+                     this, SLOT( onItemDoubleClicked(QTreeWidgetItem*,int) ) );
 }
 
 CurveEditor::~CurveEditor()
@@ -169,7 +177,7 @@ CurveEditor::onFilterTextChanged(const QString& filter)
     for (std::list<NodeCurveEditorContext*>::iterator it = _imp->nodes.begin();
          it != _imp->nodes.end(); ++it) {
         if (filter.isEmpty() ||
-            ((*it)->isVisible() && QString((*it)->getNode()->getNode()->getName().c_str()).contains(filter))) {
+            QString((*it)->getNode()->getNode()->getName().c_str()).contains(filter,Qt::CaseInsensitive)) {
             (*it)->setVisible(true);
         } else {
             (*it)->setVisible(false);
@@ -178,7 +186,7 @@ CurveEditor::onFilterTextChanged(const QString& filter)
     
     for (std::list<RotoCurveEditorContext*>::iterator it = _imp->rotos.begin(); it != _imp->rotos.end(); ++it) {
         if (filter.isEmpty() ||
-            (QString((*it)->getNode()->getNode()->getName().c_str()).contains(filter))) {
+            QString((*it)->getNode()->getNode()->getName().c_str()).contains(filter,Qt::CaseInsensitive)) {
             (*it)->setVisible(true);
         } else {
             (*it)->setVisible(false);
@@ -671,19 +679,94 @@ CurveEditor::getSelectedCurves(std::vector<CurveGui*>* selection)
 }
 
 void
-CurveEditor::onCurrentItemChanged(QTreeWidgetItem* current,
-                                  QTreeWidgetItem* /*previous*/)
+CurveEditor::onItemSelectionChanged()
 {
+    _imp->tree->blockSignals(true);
     std::vector<CurveGui*> curves;
-
     QList<QTreeWidgetItem*> selectedItems = _imp->tree->selectedItems();
     for (int i = 0; i < selectedItems.size(); ++i) {
-        selectedItems.at(i)->setSelected(false);
+        selectedItems[i]->setSelected(false);
+        recursiveSelect(selectedItems[i],&curves);
     }
-    recursiveSelect(current,&curves);
-
+    
     _imp->curveWidget->showCurvesAndHideOthers(curves);
-    //_imp->curveWidget->centerOn(curves); //remove this if you don't want the editor to switch to a curve on a selection change
+    _imp->tree->blockSignals(false);
+    //_imp->curveWidget->centerOn(curves); //this will reframe the view on the curves
+}
+
+
+void
+CurveEditor::onItemDoubleClicked(QTreeWidgetItem* item,int)
+{
+    boost::shared_ptr<NodeGui> node;
+    for (std::list<NodeCurveEditorContext*>::const_iterator it = _imp->nodes.begin();
+         it != _imp->nodes.end(); ++it) {
+        
+        if (item == (*it)->getItem()) {
+            node = (*it)->getNode();
+            break;
+        }
+        
+        const NodeCurveEditorContext::Elements & elems = (*it)->getElements();
+        for (NodeCurveEditorContext::Elements::const_iterator it2 = elems.begin() ; it2 != elems.end(); ++it2) {
+            if ((*it2)->getTreeItem() == item) {
+                node = (*it)->getNode();
+                break;
+            }
+        }
+        if (node) {
+            break;
+        }
+    }
+    
+    
+    for (std::list<RotoCurveEditorContext*>::const_iterator it = _imp->rotos.begin();
+         it != _imp->rotos.end(); ++it) {
+        
+        if ((*it)->getItem() == item) {
+            node = (*it)->getNode();
+            break;
+        }
+        const std::list<BezierEditorContext*> & beziers = (*it)->getElements();
+        for (std::list<BezierEditorContext*>::const_iterator it2 = beziers.begin(); it2 != beziers.end(); ++it2) {
+            
+            if ((*it2)->getItem() == item) {
+                node = (*it)->getNode();
+                break;
+            }
+            const std::list<NodeCurveEditorElement*> elements = (*it2)->getElements();
+            for (std::list<NodeCurveEditorElement*> ::const_iterator it3 = elements.begin(); it3 != elements.end(); ++it3) {
+                if ((*it3)->getTreeItem() == item) {
+                    node = (*it)->getNode();
+                    break;
+                }
+            }
+            if (node) {
+                break;
+            }
+        }
+        if (node) {
+            break;
+        }
+    }
+    
+    
+    DockablePanel* panel = 0;
+    if (node && node->getParentMultiInstance()) {
+        panel = node->getParentMultiInstance()->getSettingPanel();
+    } else {
+        panel = node->getSettingPanel();
+    }
+    if (node && panel && node->isVisible()) {
+        if ( !node->isSettingsPanelVisible() ) {
+            node->setVisibleSettingsPanel(true);
+        }
+        if ( !node->wasBeginEditCalled() ) {
+            node->beginEditKnobs();
+        }
+        _imp->gui->putSettingsPanelFirst( node->getSettingPanel() );
+        _imp->gui->getApp()->redrawAllViewers();
+    }
 }
 
 NodeCurveEditorElement*
@@ -1020,6 +1103,12 @@ BezierEditorContext::recursiveSelectBezier(QTreeWidgetItem* cur,bool mustSelect,
     }
 }
 
+const std::list<NodeCurveEditorElement*>&
+BezierEditorContext::getElements() const
+{
+    return _imp->knobs;
+}
+
 NodeCurveEditorElement*
 BezierEditorContext::findElement(KnobGui* knob,int dimension) const
 {
@@ -1159,6 +1248,12 @@ RotoCurveEditorContext::recursiveSelectRoto(QTreeWidgetItem* cur,
             (*it)->recursiveSelectBezier(cur,false, curves);
         }
     }
+}
+
+const std::list<BezierEditorContext*>&
+RotoCurveEditorContext::getElements() const
+{
+    return _imp->curves;
 }
 
 std::list<NodeCurveEditorElement*>

@@ -158,6 +158,11 @@ public:
     {
         return _node;
     }
+    
+    QTreeWidgetItem* getItem() const
+    {
+        return _nameItem;
+    }
 
     const Elements & getElements() const WARN_UNUSED_RETURN
     {
@@ -210,6 +215,8 @@ public:
     
     boost::shared_ptr<RotoContext> getContext() const;
     
+    const std::list<NodeCurveEditorElement*>& getElements() const;
+    
     void recursiveSelectBezier(QTreeWidgetItem* cur,bool mustSelect,
                              std::vector<CurveGui*> *curves);
     
@@ -250,6 +257,8 @@ public:
                              std::vector<CurveGui*> *curves);
     
     void setVisible(bool visible);
+    
+    const std::list<BezierEditorContext*>& getElements() const;
 
     std::list<NodeCurveEditorElement*> findElement(KnobGui* knob,int dimension) const;
     
@@ -311,8 +320,10 @@ public slots:
 
     void onFilterTextChanged(const QString& filter);
     
-    void onCurrentItemChanged(QTreeWidgetItem*,QTreeWidgetItem*);
-
+    void onItemSelectionChanged();
+        
+    void onItemDoubleClicked(QTreeWidgetItem* item,int);
+    
 private:
 
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;

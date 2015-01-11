@@ -285,7 +285,12 @@ public:
 
     void setParentMultiInstance(const boost::shared_ptr<NodeGui> & parent);
 
-
+    boost::shared_ptr<NodeGui> getParentMultiInstance() const
+    {
+        return _parentMultiInstance;
+    }
+    
+    
     void setKnobLinksVisible(bool visible);
     
     /**
@@ -307,7 +312,8 @@ public:
     void setVisibleDetails(bool visible);
     
     virtual void refreshStateIndicator();
-        
+    
+    
 public slots:
 
     void onSettingsPanelClosed(bool closed);
