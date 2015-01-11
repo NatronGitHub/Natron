@@ -201,4 +201,7 @@ Tests/Plugins
 pch
 *.filters
 
+# Python
+*.pyc
+
 Renderer/NatronRenderer

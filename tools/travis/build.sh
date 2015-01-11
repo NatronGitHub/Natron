@@ -37,5 +37,5 @@ elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
     export PKG_CONFIG_PATH=/opt/X11/lib/pkgconfig
     if [ "$CC" = "gcc" ]; then qmake -r -spec unsupported/macx-clang-libc++ QMAKE_CC=gcc QMAKE_CXX=g++; else qmake -spec unsupported/macx-clang-libc++; fi
     make $J
-    if [ "$CC" = "clang" ]; then cd Tests; env OFX_PLUGIN_PATH=Plugins PYTHON_PATH=../Python ./Tests; cd ..; fi
+    if [ "$CC" = "clang" ]; then cd Tests; env OFX_PLUGIN_PATH=Plugins PYTHONPATH=../Python:../Engine ./Tests; cd ..; fi
 fi
