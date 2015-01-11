@@ -166,7 +166,7 @@ unix {
      }
      #message(PYTHON_CONFIG = $$PYTHON_CONFIG)
      python {
-         QMAKE_LIBS += $$system($$PYTHON_CONFIG --ldflags)
+         LIBS += $$system($$PYTHON_CONFIG --ldflags)
          QMAKE_CXXFLAGS += $$system($$PYTHON_CONFIG --includes)
      }
      shiboken:  PKGCONFIG += shiboken
@@ -178,7 +178,7 @@ unix {
          INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside)
          INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside)/QtCore
          INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside)/QtGui
-         QMAKE_LIBS += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --libs pyside)
+         LIBS += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --libs pyside)
        }
      }
      !macx {
