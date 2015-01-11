@@ -11,6 +11,10 @@
 #ifndef NATRON_GLOBAL_GLOBALDEFINES_H_
 #define NATRON_GLOBAL_GLOBALDEFINES_H_
 
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
 #include <utility>
 #if defined(_WIN32)
 #include <string>
@@ -21,14 +25,9 @@
 
 #include "Global/Macros.h"
 
-
-
 #include <ofxhImageEffect.h>
 #include <ofxPixels.h>
 
-///Inlude python before any Qt include otherwise the definition of "slot" might cause an error.
-///http://stackoverflow.com/questions/15078060/embedding-python-in-qt-5/15078676#15078676
-#include <Python.h>
 #undef toupper
 #undef tolower
 #undef isalpha

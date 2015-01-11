@@ -9,6 +9,10 @@
  *
  */
 
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
 #include "NodeGroup.h"
 
 #include <set>
@@ -31,6 +35,7 @@
 #include "Engine/NodeGuiI.h"
 #include "Engine/Curve.h"
 #include "Engine/RotoContext.h"
+
 using namespace Natron;
 
 struct NodeCollectionPrivate

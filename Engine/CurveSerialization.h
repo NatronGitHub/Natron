@@ -13,6 +13,10 @@
 #ifndef NATRON_ENGINE_CURVESERIALIZATION_H_
 #define NATRON_ENGINE_CURVESERIALIZATION_H_
 
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
 #include "Global/Macros.h"
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 CLANG_DIAG_OFF(unused-parameter)

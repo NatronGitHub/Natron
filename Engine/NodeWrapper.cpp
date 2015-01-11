@@ -8,8 +8,12 @@
  *
  */
 
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
 
 #include "NodeWrapper.h"
+
 #include "Engine/Node.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/KnobFile.h"
@@ -17,6 +21,7 @@
 #include "Engine/EffectInstance.h"
 #include "Engine/NodeGroup.h"
 #include "Engine/RotoWrapper.h"
+
 Effect::Effect(const boost::shared_ptr<Natron::Node>& node)
 : Group()
 , _node(node)
