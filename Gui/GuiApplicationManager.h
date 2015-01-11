@@ -13,6 +13,7 @@
 #ifndef GUIAPPLICATIONMANAGER_H
 #define GUIAPPLICATIONMANAGER_H
 
+#include <list>
 #include "Engine/AppManager.h"
 #include "Engine/Variant.h"
 
@@ -51,6 +52,26 @@ class Curve;
 class BoundAction;
 class KeyBoundAction;
 class QAction;
+class NodeSerialization;
+class NodeGuiSerialization;
+
+
+struct NodeClipBoard
+{
+    std::list<boost::shared_ptr<NodeSerialization> > nodes;
+    std::list<boost::shared_ptr<NodeGuiSerialization> > nodesUI;
+    
+    NodeClipBoard()
+    : nodes()
+    , nodesUI()
+    {
+    }
+    
+    bool isEmpty() const
+    {
+        return nodes.empty() && nodesUI.empty();
+    }
+};
 
 
 
@@ -148,6 +169,11 @@ public:
     
     virtual int getAppFontSize() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     
+    bool isNodeClipBoardEmpty() const;
+    
+    NodeClipBoard& getNodeClipBoard();
+    
+    void clearNodeClipBoard();
     
 public Q_SLOTS:
 

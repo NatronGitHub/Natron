@@ -321,6 +321,26 @@ private:
     bool _firstRedoCalled;
 };
 
+struct ExtractedOutput
+{
+    boost::weak_ptr<NodeGui> node;
+    std::list<std::pair<int,Natron::Node*> > outputs;
+};
+
+struct ExtractedInput
+{
+    boost::weak_ptr<NodeGui> node;
+    std::vector<boost::weak_ptr<Natron::Node> > inputs;
+};
+
+struct ExtractedTree
+{
+    ExtractedOutput output;
+    std::list<ExtractedInput> inputs;
+    std::list<boost::weak_ptr<NodeGui> > inbetweenNodes;
+};
+
+
 class ExtractNodeUndoRedoCommand
 : public QUndoCommand
 {
@@ -333,31 +353,34 @@ public:
     virtual void redo();
     
     
-    struct ExtractedOutput
-    {
-        boost::weak_ptr<NodeGui> node;
-        std::list<std::pair<int,Natron::Node*> > outputs;
-    };
-    
-    struct ExtractedInput
-    {
-        boost::weak_ptr<NodeGui> node;
-        std::vector<boost::weak_ptr<Natron::Node> > inputs;
-    };
-    
-    struct ExtractedTree
-    {
-        ExtractedOutput output;
-        std::list<ExtractedInput> inputs;
-        std::list<boost::weak_ptr<NodeGui> > inbetweenNodes;
-    };
-private:
+    private:
     
   
     NodeGraph* _graph;
     std::list<ExtractedTree> _trees;
 };
 
+class GroupFromSelectionCommand
+: public QUndoCommand
+{
+    
+public:
+    
+    GroupFromSelectionCommand(NodeGraph* graph,const std::list<boost::shared_ptr<NodeGui> > & nodes);
+    
+    virtual ~GroupFromSelectionCommand();
+    
+    virtual void undo();
+    virtual void redo();
+    
+private:
+    
+    NodeGraph* _graph;
+    std::list<boost::weak_ptr<NodeGui> > _originalNodes;
+    boost::weak_ptr<NodeGui> _group;
+    bool _firstRedoCalled;
+    bool _isRedone;
+};
 
 
 #endif // NODEGRAPHUNDOREDO_H

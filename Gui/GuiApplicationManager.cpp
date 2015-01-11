@@ -117,18 +117,21 @@ struct GuiApplicationManagerPrivate
     QString _fontFamily;
     int _fontSize;
     
+    NodeClipBoard _nodeCB;
+    
     GuiApplicationManagerPrivate(GuiApplicationManager* publicInterface)
         :   _publicInterface(publicInterface)
-          , _topLevelToolButtons()
-          , _knobsClipBoard(new KnobsClipBoard)
-          , _knobGuiFactory( new KnobGuiFactory() )
-          , _colorPickerCursor(NULL)
-          , _splashScreen(NULL)
-          , _openFileRequest()
-          , _actionShortcuts()
-          , _shortcutsChangedVersion(false)
-          , _fontFamily()
-          , _fontSize(0)
+    , _topLevelToolButtons()
+    , _knobsClipBoard(new KnobsClipBoard)
+    , _knobGuiFactory( new KnobGuiFactory() )
+    , _colorPickerCursor(NULL)
+    , _splashScreen(NULL)
+    , _openFileRequest()
+    , _actionShortcuts()
+    , _shortcutsChangedVersion(false)
+    , _fontFamily()
+    , _fontSize(0)
+    , _nodeCB()
     {
     }
 
@@ -1683,7 +1686,9 @@ GuiApplicationManager::populateShortcuts()
     registerKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphRenameNode, kShortcutDescActionGraphRenameNode, Qt::NoModifier, Qt::Key_N);
     registerKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphExtractNode, kShortcutDescActionGraphExtractNode, Qt::ControlModifier | Qt::ShiftModifier,
                     Qt::Key_X);
-
+    registerKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphMakeGroup, kShortcutDescActionGraphMakeGroup, Qt::ControlModifier | Qt::ShiftModifier,
+                    Qt::Key_G);
+    
     ///CurveEditor
     registerKeybind(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorRemoveKeys, kShortcutDescActionCurveEditorRemoveKeys, Qt::NoModifier,Qt::Key_Backspace);
     registerKeybind(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorConstant, kShortcutDescActionCurveEditorConstant, Qt::NoModifier, Qt::Key_K);
@@ -1967,4 +1972,23 @@ GuiApplicationManager::clearLastRenderedTextures()
             guiApp->clearAllLastRenderedImages();
         }
     }
+}
+
+bool
+GuiApplicationManager::isNodeClipBoardEmpty() const
+{
+    return _imp->_nodeCB.isEmpty();
+}
+
+NodeClipBoard&
+GuiApplicationManager::getNodeClipBoard()
+{
+    return _imp->_nodeCB;
+}
+
+void
+GuiApplicationManager::clearNodeClipBoard()
+{
+    _imp->_nodeCB.nodes.clear();
+    _imp->_nodeCB.nodesUI.clear();
 }

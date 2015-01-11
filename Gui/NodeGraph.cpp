@@ -110,22 +110,7 @@ using std::cout; using std::endl;
 
 
 namespace {
-struct NodeClipBoard
-{
-    std::list<boost::shared_ptr<NodeSerialization> > nodes;
-    std::list<boost::shared_ptr<NodeGuiSerialization> > nodesUI;
 
-    NodeClipBoard()
-        : nodes()
-        , nodesUI()
-    {
-    }
-
-    bool isEmpty() const
-    {
-        return nodes.empty() && nodesUI.empty();
-    }
-};
 
 
 enum EventStateEnum
@@ -269,7 +254,7 @@ struct NodeGraphPrivate
     QMenu* _menu;
     QGraphicsItem *_tL,*_tR,*_bR,*_bL;
     bool _refreshOverlays;
-    NodeClipBoard _nodeClipBoard;
+
     Edge* _highLightedEdge;
     NodeGuiPtr _mergeHintNode;
 
@@ -323,7 +308,6 @@ struct NodeGraphPrivate
     , _bR(NULL)
     , _bL(NULL)
     , _refreshOverlays(false)
-    , _nodeClipBoard()
     , _highLightedEdge(NULL)
     , _mergeHintNode()
     , _hintInputEdge(NULL)
@@ -346,7 +330,7 @@ struct NodeGraphPrivate
 
     QRectF calcNodesBoundingRect();
 
-    void copyNodesInternal(NodeClipBoard & clipboard);
+    void copyNodesInternal(const NodeGuiList& selection,NodeClipBoard & clipboard);
     void pasteNodesInternal(const NodeClipBoard & clipboard,const QPointF& scenPos);
 
     /**
@@ -2078,6 +2062,8 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
         selectAllNodes(false);
     } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphSelectAllVisible, modifiers, key) ) {
         selectAllNodes(true);
+    } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphMakeGroup, modifiers, key) ) {
+        createGroupFromSelection();
     } else if (key == Qt::Key_Control) {
         _imp->setNodesBendPointsVisible(true);
     } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphSelectUp, modifiers, key) ||
@@ -2935,7 +2921,7 @@ NodeGraph::showMenu(const QPoint & pos)
     
     QAction* pasteAction = new ActionWithShortcut(kShortcutGroupNodegraph,kShortcutIDActionGraphPaste,
                                                   kShortcutDescActionGraphPaste,editMenu);
-    pasteAction->setEnabled( !_imp->_nodeClipBoard.isEmpty() );
+    pasteAction->setEnabled( !appPTR->isNodeClipBoardEmpty() );
     QObject::connect( pasteAction,SIGNAL( triggered() ),this,SLOT( pasteNodeClipBoards() ) );
     editMenu->addAction(pasteAction);
     
@@ -2974,6 +2960,10 @@ NodeGraph::showMenu(const QPoint & pos)
     QObject::connect( disableNodes, SIGNAL( triggered() ), this, SLOT( toggleSelectedNodesEnabled() ) );
     editMenu->addAction(disableNodes);
     
+    QAction* groupFromSel = new ActionWithShortcut(kShortcutGroupNodegraph, kShortcutIDActionGraphMakeGroup,
+                                                   kShortcutDescActionGraphMakeGroup,editMenu);
+    QObject::connect( groupFromSel, SIGNAL( triggered() ), this, SLOT( createGroupFromSelection() ) );
+    editMenu->addAction(groupFromSel);
     
     QAction* displayCacheInfoAction = new ActionWithShortcut(kShortcutGroupNodegraph,kShortcutIDActionGraphShowCacheSize,
                                                              kShortcutDescActionGraphShowCacheSize,_imp->_menu);
@@ -3184,14 +3174,13 @@ NodeGraph::copySelectedNodes()
         return;
     }
 
-    _imp->copyNodesInternal(_imp->_nodeClipBoard);
+    _imp->copyNodesInternal(_imp->_selection,appPTR->getNodeClipBoard());
 }
 
 void
 NodeGraphPrivate::resetAllClipboards()
 {
-    _nodeClipBoard.nodesUI.clear();
-    _nodeClipBoard.nodes.clear();
+    appPTR->clearNodeClipBoard();
 }
 
 void
@@ -3210,17 +3199,17 @@ void
 NodeGraph::pasteNodeClipBoards()
 {
     QPointF position = _imp->_root->mapFromScene(mapToScene(mapFromGlobal(QCursor::pos())));
-    _imp->pasteNodesInternal(_imp->_nodeClipBoard,position);
+    _imp->pasteNodesInternal(appPTR->getNodeClipBoard(),position);
 }
 
 void
-NodeGraphPrivate::copyNodesInternal(NodeClipBoard & clipboard)
+NodeGraphPrivate::copyNodesInternal(const NodeGuiList& selection,NodeClipBoard & clipboard)
 {
     ///Clear clipboard
     clipboard.nodes.clear();
     clipboard.nodesUI.clear();
 
-    NodeGuiList nodesToCopy = _selection;
+    NodeGuiList nodesToCopy = selection;
     for (NodeGuiList::iterator it = nodesToCopy.begin(); it != nodesToCopy.end(); ++it) {
         ///Also copy all nodes within the backdrop
         std::list<boost::shared_ptr<NodeGui> > nodesWithinBD = _publicInterface->getNodesWithinBackDrop(*it);
@@ -3321,8 +3310,8 @@ NodeGraphPrivate::pasteNode(const NodeSerialization & internalSerialization,
     assert(gui);
     
     std::string name;
-    if (grp != group.lock()) {
-        name = n->getName();
+    if (internalSerialization.getNode()->getGroup() != group.lock() || grp != group.lock()) {
+        name = internalSerialization.getPluginLabel();
     } else {
         int no = 1;
         std::stringstream ss;
@@ -3437,7 +3426,7 @@ NodeGraph::duplicateSelectedNodes()
 
     ///Don't use the member clipboard as the user might have something copied
     NodeClipBoard tmpClipboard;
-    _imp->copyNodesInternal(tmpClipboard);
+    _imp->copyNodesInternal(_imp->_selection,tmpClipboard);
     QPointF scenePos = _imp->_root->mapFromScene(mapToScene(mapFromGlobal(QCursor::pos())));
     _imp->pasteNodesInternal(tmpClipboard,scenePos);
 }
@@ -3629,18 +3618,19 @@ NodeGraph::deleteNodepluginsly(boost::shared_ptr<NodeGui> n)
     
     if (internalNode) {
         ///remove the node from the clipboard if it is
-        for (std::list< boost::shared_ptr<NodeSerialization> >::iterator it = _imp->_nodeClipBoard.nodes.begin();
-             it != _imp->_nodeClipBoard.nodes.end(); ++it) {
+        NodeClipBoard &cb = appPTR->getNodeClipBoard();
+        for (std::list< boost::shared_ptr<NodeSerialization> >::iterator it = cb.nodes.begin();
+             it != cb.nodes.end(); ++it) {
             if ( (*it)->getNode() == internalNode ) {
-                _imp->_nodeClipBoard.nodes.erase(it);
+                cb.nodes.erase(it);
                 break;
             }
         }
         
-        for (std::list<boost::shared_ptr<NodeGuiSerialization> >::iterator it = _imp->_nodeClipBoard.nodesUI.begin();
-             it != _imp->_nodeClipBoard.nodesUI.end(); ++it) {
+        for (std::list<boost::shared_ptr<NodeGuiSerialization> >::iterator it = cb.nodesUI.begin();
+             it != cb.nodesUI.end(); ++it) {
             if ( (*it)->getFullySpecifiedName() == internalNode->getFullySpecifiedName() ) {
-                _imp->_nodeClipBoard.nodesUI.erase(it);
+                cb.nodesUI.erase(it);
                 break;
             }
         }
@@ -4277,6 +4267,12 @@ NodeGraph::extractSelectedNode()
 }
 
 void
+NodeGraph::createGroupFromSelection()
+{
+    pushUndoCommand(new GroupFromSelectionCommand(this,_imp->_selection));
+}
+
+void
 NodeGraph::onGroupNameChanged(const QString& name)
 {
     assert( qApp && qApp->thread() == QThread::currentThread() );
@@ -4288,4 +4284,25 @@ NodeGraph::onGroupNameChanged(const QString& name)
         setObjectName(name);
     }
     getGui()->registerTab(this);
+}
+
+void
+NodeGraph::copyNodesAndCreateInGroup(const std::list<boost::shared_ptr<NodeGui> >& nodes,
+                                     const boost::shared_ptr<NodeCollection>& group)
+{
+    NodeClipBoard clipboard;
+    _imp->copyNodesInternal(nodes,clipboard);
+    
+    NodeGuiList newNodes;
+    std::list<boost::shared_ptr<NodeSerialization> >::const_iterator itOther = clipboard.nodes.begin();
+    for (std::list<boost::shared_ptr<NodeGuiSerialization> >::const_iterator it = clipboard.nodesUI.begin();
+         it != clipboard.nodesUI.end(); ++it,++itOther) {
+        boost::shared_ptr<NodeGui> node = _imp->pasteNode( **itOther,**it,QPointF(0,0),group, false);
+        newNodes.push_back(node);
+    }
+    assert( clipboard.nodes.size() == newNodes.size() );
+    
+    ///Now that all nodes have been duplicated, try to restore nodes connections
+    _imp->restoreConnections(clipboard.nodes, newNodes);
+
 }

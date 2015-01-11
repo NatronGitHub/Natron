@@ -129,6 +129,9 @@ public:
     void pushUndoCommand(QUndoCommand* command);
     
     bool areOptionalInputsAutoHidden() const;
+    
+    void copyNodesAndCreateInGroup(const std::list<boost::shared_ptr<NodeGui> >& nodes,
+                                   const boost::shared_ptr<NodeCollection>& group);
 
    public Q_SLOTS:
 
@@ -157,6 +160,8 @@ public:
     void switchInputs1and2ForSelectedNodes();
     
     void extractSelectedNode();
+    
+    void createGroupFromSelection();
 
     ///All these actions also work for backdrops
     /////////////////////////////////////////////

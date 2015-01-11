@@ -1119,7 +1119,7 @@ sharedToWeak(const std::vector<boost::shared_ptr<Natron::Node> >& shared,
 }
 
 
-static void addTreeInputs(const std::list<boost::shared_ptr<NodeGui> >& nodes,const boost::shared_ptr<NodeGui>& node,ExtractNodeUndoRedoCommand::ExtractedTree& tree,
+static void addTreeInputs(const std::list<boost::shared_ptr<NodeGui> >& nodes,const boost::shared_ptr<NodeGui>& node,ExtractedTree& tree,
                           std::list<boost::shared_ptr<NodeGui> >& markedNodes)
 {
     if (std::find(markedNodes.begin(), markedNodes.end(), node) != markedNodes.end()) {
@@ -1131,7 +1131,7 @@ static void addTreeInputs(const std::list<boost::shared_ptr<NodeGui> >& nodes,co
     }
     
     if (!hasNodeInputsInList(nodes,node)) {
-        ExtractNodeUndoRedoCommand::ExtractedInput input;
+        ExtractedInput input;
         input.node = node;
         sharedToWeak(node->getNode()->getInputs_mt_safe(),input.inputs);
         tree.inputs.push_back(input);
@@ -1149,16 +1149,10 @@ static void addTreeInputs(const std::list<boost::shared_ptr<NodeGui> >& nodes,co
     }
 }
 
-
-///////////////
-
-ExtractNodeUndoRedoCommand::ExtractNodeUndoRedoCommand(NodeGraph* graph,const std::list<boost::shared_ptr<NodeGui> >& nodes)
-: QUndoCommand()
-, _graph(graph)
-, _trees()
+static void extractTreesFromNodes(const std::list<boost::shared_ptr<NodeGui> >& nodes,std::list<ExtractedTree>& trees)
 {
     std::list<boost::shared_ptr<NodeGui> > markedNodes;
-
+    
     for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = nodes.begin(); it!=nodes.end(); ++it) {
         bool isOutput = !hasNodeOutputsInList(nodes, *it);
         if (isOutput) {
@@ -1186,11 +1180,22 @@ ExtractNodeUndoRedoCommand::ExtractNodeUndoRedoCommand(NodeGraph* graph,const st
                 tree.inputs.push_back(input);
             }
             
-            _trees.push_back(tree);
+            trees.push_back(tree);
         }
     }
 
+}
+
+
+///////////////
+
+ExtractNodeUndoRedoCommand::ExtractNodeUndoRedoCommand(NodeGraph* graph,const std::list<boost::shared_ptr<NodeGui> >& nodes)
+: QUndoCommand()
+, _graph(graph)
+, _trees()
+{
     
+    extractTreesFromNodes(nodes, _trees);
 }
 
 ExtractNodeUndoRedoCommand::~ExtractNodeUndoRedoCommand()
@@ -1341,4 +1346,96 @@ ExtractNodeUndoRedoCommand::redo()
     
 
     setText(QObject::tr("Extract node"));
+}
+
+
+GroupFromSelectionCommand::GroupFromSelectionCommand(NodeGraph* graph,const NodeGuiList & nodes)
+: QUndoCommand()
+, _graph(graph)
+, _group()
+, _firstRedoCalled(false)
+, _isRedone(false)
+{
+    
+    NodeGuiList selection = nodes;
+    for (NodeGuiList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        _originalNodes.push_back(*it);
+    }
+    CreateNodeArgs groupArgs(PLUGINID_NATRON_GROUP,
+                             "",
+                             -1,-1,
+                             true, //< autoconnect
+                             INT_MIN,INT_MIN,
+                             false, //< push undo/redo command
+                             true, // add to project
+                             QString(),
+                             CreateNodeArgs::DefaultValuesList(),
+                             _graph->getGroup());
+    NodePtr containerNode = _graph->getGui()->getApp()->createNode(groupArgs);
+    boost::shared_ptr<NodeGroup> isGrp = boost::dynamic_pointer_cast<NodeGroup>(containerNode->getLiveInstance()->shared_from_this());
+    assert(isGrp);
+    boost::shared_ptr<NodeGuiI> container_i = containerNode->getNodeGui();
+    assert(container_i);
+    _group = boost::dynamic_pointer_cast<NodeGui>(container_i);
+    assert(_group.lock());
+    _graph->copyNodesAndCreateInGroup(selection,isGrp);
+    
+}
+
+GroupFromSelectionCommand::~GroupFromSelectionCommand()
+{
+    
+}
+
+void
+GroupFromSelectionCommand::undo()
+{
+    
+    for (std::list<boost::weak_ptr<NodeGui> >::iterator it = _originalNodes.begin(); it != _originalNodes.end(); ++it) {
+        NodeGuiPtr node = it->lock();
+        node->getNode()->activate(std::list< Natron::Node* >(),true,false);
+    }
+    _group.lock()->getNode()->deactivate(std::list< Natron::Node* >(),
+                                         true,
+                                         false,
+                                         true,
+                                         true);
+
+    _isRedone = false;
+    setText(QObject::tr("Group from selection"));
+}
+
+void
+GroupFromSelectionCommand::redo()
+{
+   
+    for (std::list<boost::weak_ptr<NodeGui> >::iterator it = _originalNodes.begin(); it != _originalNodes.end(); ++it) {
+        NodeGuiPtr node = it->lock();
+        node->getNode()->deactivate(std::list< Natron::Node* >(),
+                                    true,
+                                    false,
+                                    true,
+                                    false);
+    }
+    
+    if (_firstRedoCalled) {
+        _group.lock()->getNode()->activate(std::list< Natron::Node* >(),true,false);
+    }
+    
+    std::list<ViewerInstance*> viewers;
+    _graph->getGroup()->getViewers(&viewers);
+    for (std::list<ViewerInstance*>::iterator it = viewers.begin(); it != viewers.end(); ++it) {
+        (*it)->renderCurrentFrame(true);
+    }
+    NodeGroup* isGrp = dynamic_cast<NodeGroup*>(_group.lock()->getNode()->getLiveInstance());
+    assert(isGrp);
+    NodeGraphI* graph_i = isGrp->getNodeGraph();
+    assert(graph_i);
+    NodeGraph* graph = dynamic_cast<NodeGraph*>(graph_i);
+    assert(graph);
+    graph->centerOnAllNodes();
+    
+    _firstRedoCalled = true;
+    _isRedone = true;
+    setText(QObject::tr("Group from selection"));
 }

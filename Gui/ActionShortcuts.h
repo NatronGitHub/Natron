@@ -420,6 +420,10 @@
 
 #define kShortcutIDActionGraphExtractNode "extractNode"
 #define kShortcutDescActionGraphExtractNode "Extract node"
+
+#define kShortcutIDActionGraphMakeGroup "makeGroup"
+#define kShortcutDescActionGraphMakeGroup "Group from selection"
+
 ///////////CURVEEDITOR SHORTCUTS
 #define kShortcutIDActionCurveEditorRemoveKeys "remove"
 #define kShortcutDescActionCurveEditorRemoveKeys "Delete keyframes"
