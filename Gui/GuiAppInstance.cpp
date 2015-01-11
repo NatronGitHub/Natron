@@ -98,13 +98,13 @@ GuiAppInstance::deletePreviewProvider()
             assert(liveInstance);
             node->deactivate(std::list< Natron::Node* > (),false,false,true,false);
             liveInstance->invalidateUiContext();
-            node->removeReferences();
+            node->removeReferences(false);
             _imp->_previewProvider->viewerNode->deleteReferences();
         }
         
         for (std::map<std::string,boost::shared_ptr<NodeGui> >::iterator it = _imp->_previewProvider->readerNodes.begin();
              it != _imp->_previewProvider->readerNodes.end(); ++it) {
-            it->second->getNode()->removeReferences();
+            it->second->getNode()->removeReferences(false);
             it->second->deleteReferences();
         }
         _imp->_previewProvider->readerNodes.clear();

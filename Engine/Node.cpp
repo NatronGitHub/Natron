@@ -792,12 +792,16 @@ Node::~Node()
 }
 
 void
-Node::removeReferences()
+Node::removeReferences(bool ensureThreadsFinished)
 {
-    OutputEffectInstance* isOutput = dynamic_cast<OutputEffectInstance*>(_imp->liveInstance);
-    
-    if (isOutput) {
-        isOutput->getRenderEngine()->quitEngine();
+    if (ensureThreadsFinished) {
+        getApp()->getProject()->ensureAllProcessingThreadsFinished();
+    } else {
+        OutputEffectInstance* isOutput = dynamic_cast<OutputEffectInstance*>(_imp->liveInstance);
+        
+        if (isOutput) {
+            isOutput->getRenderEngine()->quitEngine();
+        }
     }
     appPTR->removeAllImagesFromCacheWithMatchingKey( getHashValue() );
     delete _imp->liveInstance;

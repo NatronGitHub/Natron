@@ -65,7 +65,6 @@ AppInstance::AppInstance(int appID)
 AppInstance::~AppInstance()
 {
     appPTR->removeInstance(_imp->_appID);
-    QThreadPool::globalInstance()->waitForDone();
 
     ///Clear nodes now, not in the destructor of the project as
     ///deleting nodes might reference the project.

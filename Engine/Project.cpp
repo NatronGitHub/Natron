@@ -1004,7 +1004,22 @@ Project::removeNodeFromProject(const boost::shared_ptr<Natron::Node> & n)
             }
         }
     }
-    n->removeReferences();
+    n->removeReferences(true);
+}
+    
+void
+Project::ensureAllProcessingThreadsFinished()
+{
+    std::vector<boost::shared_ptr<Natron::Node> > nodesToDelete;
+    {
+        QMutexLocker l(&_imp->nodesLock);
+        nodesToDelete = _imp->currentNodes;
+    }
+    for (U32 i = 0; i < nodesToDelete.size(); ++i) {
+        nodesToDelete[i]->quitAnyProcessing();
+    }
+    
+    QThreadPool::globalInstance()->waitForDone();
 }
 
 void
@@ -1030,7 +1045,7 @@ Project::clearNodes(bool emitSignal)
     }
 
     for (U32 i = 0; i < nodesToDelete.size(); ++i) {
-        nodesToDelete[i]->removeReferences();
+        nodesToDelete[i]->removeReferences(false);
     }
 
 

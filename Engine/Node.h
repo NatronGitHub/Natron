@@ -109,7 +109,7 @@ public:
     void createRotoContextConditionnally();
 
     ///called by Project::removeNode, never call this
-    void removeReferences();
+    void removeReferences(bool ensureThreadsFinished);
 
     ///function called by EffectInstance to create a knob
     template <class K>
