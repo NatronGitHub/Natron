@@ -9,6 +9,10 @@
 #ifndef Gui_GuiMacros_h
 #define Gui_GuiMacros_h
 
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
 // the following macro only tests the Control, Alt, and Shift modifiers, and discards the others
 #define modCAS(e) ( (e)->modifiers() & (Qt::ControlModifier | Qt::AltModifier | Qt::ShiftModifier) )
 

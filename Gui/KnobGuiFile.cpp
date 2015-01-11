@@ -8,7 +8,11 @@
  *
  */
 
-#include "Gui/KnobGuiFile.h"
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
+#include "KnobGuiFile.h"
 
 #include <QLabel> // in QtGui on Qt4, in QtWidgets on Qt5
 #include <QFormLayout> // in QtGui on Qt4, in QtWidgets on Qt5
