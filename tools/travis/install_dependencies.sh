@@ -68,7 +68,7 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     echo 'pyside: INCLUDEPATH += $$system(pkg-config --variable=includedir pyside)' >> config.pri
     echo 'pyside: INCLUDEPATH += $$system(pkg-config --variable=includedir pyside)/QtCore' >> config.pri
     echo 'pyside: INCLUDEPATH += $$system(pkg-config --variable=includedir pyside)/QtGui' >> config.pri
-    echo 'pyside: QMAKE_LIBS += -lpyside.cpython-32m' >> config.pri
+    echo 'pyside: QMAKE_LIBS += -lpyside.cpython-32mu' >> config.pri
     echo 'shiboken: PKGCONFIG -= shiboken' >> config.pri
     echo 'shiboken: INCLUDEPATH += $$system(pkg-config --variable=includedir shiboken)' >> config.pri
     echo 'shiboken: QMAKE_LIBS += -lshiboken.cpython-32mu' >> config.pri
