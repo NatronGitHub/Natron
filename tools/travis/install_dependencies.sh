@@ -120,12 +120,13 @@ elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
     # pyside/shiboken take a long time to compile, see https://github.com/travis-ci/travis-ci/issues/1961
     brew install pyside --with-python3 --without-python &
     while true; do
-    	ps -p$! 2>& 1>/dev/null
-    	if [ $? = 0 ]; then
+        #ps -p$! 2>& 1>/dev/null
+        #if [ $? = 0 ]; then
+        if ps -p$! 2>& 1>/dev/null; then
           echo "still going"; sleep 10
-    	else
-    	    break
-    	fi
+        else
+            break
+        fi
     done
     if [ "$CC" = "$TEST_CC" ]; then
 	# dependencies for building all OpenFX plugins
