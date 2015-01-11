@@ -30,12 +30,12 @@ git submodule update --init --recursive
 if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     if [ "$CC" = "gcc" ]; then qmake -r CONFIG+="coverage debug"; else qmake -spec unsupported/linux-clang; fi
     make $J
-    if [ "$CC" = "gcc" ]; then cd Tests; env OFX_PLUGIN_PATH=Plugins ./Tests; cd ..; fi
+    if [ "$CC" = "gcc" ]; then cd Tests; env OFX_PLUGIN_PATH=Plugins PYTHON_PATH=../Python ./Tests; cd ..; fi
 elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
     # on OSX, the tests are done on the clang configuration
     # cairo requires xcb-shm, which has its pkg-config file in /opt/X11
     export PKG_CONFIG_PATH=/opt/X11/lib/pkgconfig
     if [ "$CC" = "gcc" ]; then qmake -r -spec unsupported/macx-clang-libc++ QMAKE_CC=gcc QMAKE_CXX=g++; else qmake -spec unsupported/macx-clang-libc++; fi
     make $J
-    if [ "$CC" = "clang" ]; then cd Tests; env OFX_PLUGIN_PATH=Plugins ./Tests; cd ..; fi
+    if [ "$CC" = "clang" ]; then cd Tests; env OFX_PLUGIN_PATH=Plugins PYTHON_PATH=../Python ./Tests; cd ..; fi
 fi
