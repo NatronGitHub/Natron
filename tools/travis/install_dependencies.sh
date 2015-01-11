@@ -118,17 +118,15 @@ elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
     # Natron's dependencies only
     brew install qt expat cairo glew
     # pyside/shiboken take a long time to compile, see https://github.com/travis-ci/travis-ci/issues/1961
-    #brew install pyside --with-python3 &
-    #while true; do
-    #	ps -p$! 2>& 1>/dev/null
-    #	if [ $? = 0 ]; then
-    #      echo "still going"; sleep 10
-    #	else
-    #	    break
-    #	fi
-    #done
-    #python3 --version
-    #python3 -c "from PySide import QtGui, QtCore, QtOpenGL"
+    brew install pyside --with-python3 &
+    while true; do
+    	ps -p$! 2>& 1>/dev/null
+    	if [ $? = 0 ]; then
+          echo "still going"; sleep 10
+    	else
+    	    break
+    	fi
+    done
     if [ "$CC" = "$TEST_CC" ]; then
 	# dependencies for building all OpenFX plugins
 	brew install ilmbase openexr freetype fontconfig ffmpeg opencolorio openimageio
