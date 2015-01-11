@@ -160,7 +160,7 @@ unix {
      }
 
      # User may specify an alternate python3-config from the command-line,
-     # as in "qmake PYTHON_CONFIG=python3.4-config"
+     # as in "qmake PYTHON_CONFIG=python3.4-config" (MacPorts doesn't have a python3-config)
      isEmpty(PYTHON_CONFIG) {
          PYTHON_CONFIG = python3-config
      }
@@ -170,15 +170,26 @@ unix {
          QMAKE_CXXFLAGS += $$system($$PYTHON_CONFIG --includes)
      }
      shiboken:  PKGCONFIG += shiboken
-     pyside {
+     macx {
+       # MacPorts has different pyside.pc for different versions of python.
+       # The following hack also works with Homebrew if pyside is installed with option --with-python3
+       pyside {
      	 PYSIDE_PKG_CONFIG_PATH = $$system($$PYTHON_CONFIG --prefix)/lib/pkgconfig
          INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside)
          INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside)/QtCore
          INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside)/QtGui
-	 # QtGui include are needed because it looks for Qt::convertFromPlainText which is defined in
+         QMAKE_LIBS += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --libs pyside)
+       }
+     }
+     !macx {
+     	# This probably fails on most systems which use python2, but can be easily fixed in config.pri
+	# Note that ArchLinux has a pyside-py3.pc pkg-config file 
+        pyside: PKGCONFIG += pyside
+     }
+     pyside {
+     	 # QtGui include are needed because it looks for Qt::convertFromPlainText which is defined in
 	 # qtextdocument.h in the QtGui module.
          INCLUDEPATH += $$system(pkg-config --variable=includedir QtGui)
-	 QMAKE_LIBS += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --libs pyside)
      }
 } #unix
 
