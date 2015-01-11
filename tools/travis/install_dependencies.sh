@@ -118,7 +118,7 @@ elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
     # Natron's dependencies only
     brew install qt expat cairo glew
     # pyside/shiboken take a long time to compile, see https://github.com/travis-ci/travis-ci/issues/1961
-    brew install pyside --with-python3 &
+    brew install pyside --with-python3 --without-python &
     while true; do
     	ps -p$! 2>& 1>/dev/null
     	if [ $? = 0 ]; then
