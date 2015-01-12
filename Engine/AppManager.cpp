@@ -2521,7 +2521,8 @@ AppManager::initPython(int argc,char* argv[])
     
     PySys_SetArgv(argc,_imp->args.data()); /// relative module import
     
-    bool ok = interpretPythonScript("import sys\nfrom NatronEngine import*", 0, 0);
+    std::string err;
+    bool ok = interpretPythonScript("import sys\nfrom NatronEngine import*", &err, 0);
     assert(ok);
     
     if (!isBackground()) {
@@ -2538,7 +2539,7 @@ AppManager::initPython(int argc,char* argv[])
         "catchErr = StreamCatcher()\n"
         "sys.stdout = catchOut\n"
         "sys.stderr = catchErr\n");
-        ok = interpretPythonScript(script,0,0);
+        ok = interpretPythonScript(script,&err,0);
         assert(ok);
     }
 }
@@ -2812,7 +2813,7 @@ bool interpretPythonScript(const std::string& script,std::string* error,std::str
             Py_DECREF(outCatcher);
         }
 
-        if (!error->empty()) {
+        if (error && !error->empty()) {
             return false;
         }
         return true;
