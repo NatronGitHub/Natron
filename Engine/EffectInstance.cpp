@@ -1480,8 +1480,7 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool useCache,
                                                     Natron::ImageComponentsEnum components,
                                                     Natron::ImageBitDepthEnum nodePrefDepth,
                                                     Natron::ImageComponentsEnum nodePrefComps,
-                                                    int /*channelForAlpha*/,
-                                                    /*const RectD& rod,*/
+                                                    const RectI& renderWindow,
                                                     const std::list<boost::shared_ptr<Natron::Image> >& inputImages,
                                                     boost::shared_ptr<Natron::Image>* image)
 {
@@ -1565,6 +1564,7 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool useCache,
         
         if (imageToConvert && !*image) {
 
+            
             //Take the lock after getting the image from the cache
             ///to make sure a thread will not attempt to write to the image while its being allocated.
             ///When calling allocateMemory() on the image, the cache already has the lock since it added it
@@ -1583,6 +1583,10 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool useCache,
                                                                                oldParams->getComponents(),
                                                                                oldParams->getBitDepth(),
                                                                                oldParams->getFramesNeeded());
+                
+                if (!imageParams->getBounds().contains(renderWindow)) {
+                    return;
+                }
                 
                 imageParams->setMipMapLevel(mipMapLevel);
                 
@@ -2029,7 +2033,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
     
     bool isBeingRenderedElsewhere = false;
     getImageFromCacheAndConvertIfNeeded(createInCache, useDiskCacheNode, key, renderMappedMipMapLevel,args.bitdepth, args.components,
-                                        outputDepth, outputComponents,args.channelForAlpha,/*rod,*/args.inputImagesList, &image);
+                                        outputDepth, outputComponents,args.roi,args.inputImagesList, &image);
 
     
     if (byPassCache) {
@@ -2198,7 +2202,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
         getImageFromCacheAndConvertIfNeeded(createInCache, useDiskCacheNode, key, renderMappedMipMapLevel,
                                             args.bitdepth, args.components,
                                             outputDepth,outputComponents,
-                                            args.channelForAlpha,/*rod,*/args.inputImagesList, &image);
+                                            args.roi,args.inputImagesList, &image);
         if (image) {
             cachedImgParams = image->getParams();
             ///We check what is left to render.

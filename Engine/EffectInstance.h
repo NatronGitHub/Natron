@@ -478,8 +478,7 @@ public:
                                              Natron::ImageComponentsEnum components,
                                              Natron::ImageBitDepthEnum nodeBitDepthPref,
                                              Natron::ImageComponentsEnum nodeComponentsPref,
-                                             int channelForAlpha,
-                                             /*const RectD& rod,*/
+                                             const RectI& renderWindow,
                                              const std::list<boost::shared_ptr<Natron::Image> >& inputImages,
                                              boost::shared_ptr<Natron::Image>* image);
 
