@@ -30,7 +30,7 @@ git submodule update --init --recursive
 if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     if [ "$CC" = "gcc" ]; then qmake -r CONFIG+="coverage debug"; else qmake -spec unsupported/linux-clang; fi
     make $J
-    if [ "$CC" = "gcc" ]; then cd Tests; ls ../Python; env OFX_PLUGIN_PATH=Plugins PYTHONPATH=../Python ./Tests; cd ..; fi
+    if [ "$CC" = "gcc" ]; then cd Tests; env OFX_PLUGIN_PATH=Plugins PYTHONPATH=../Python ./Tests; cd ..; fi
     
 elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
     # on OSX, the tests are done on the clang configuration
@@ -38,5 +38,5 @@ elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
     export PKG_CONFIG_PATH=/opt/X11/lib/pkgconfig
     if [ "$CC" = "gcc" ]; then qmake -r -spec unsupported/macx-clang-libc++ QMAKE_CC=gcc QMAKE_CXX=g++; else qmake -spec unsupported/macx-clang-libc++; fi
     make $J
-    if [ "$CC" = "clang" ]; then cd Tests; ls ../Python; env OFX_PLUGIN_PATH=Plugins PYTHONPATH=../Python ./Tests; cd ..; fi
+    if [ "$CC" = "clang" ]; then cd Tests; env OFX_PLUGIN_PATH=Plugins PYTHONPATH=../Python ./Tests; cd ..; fi
 fi
