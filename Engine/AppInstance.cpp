@@ -821,7 +821,7 @@ AppInstancePrivate::declareCurrentAppVariable_Python()
 {
     /// define the app variable
     std::stringstream ss;
-    ss << "app" << _appID + 1 << " = natron.getInstance(" << _appID << ") \n";
+    ss << "app" << _appID + 1 << " = getInstance(" << _appID << ") \n";
     std::string script = ss.str();
     std::string err;
     bool ok = Natron::interpretPythonScript(script, &err, 0);

@@ -164,15 +164,10 @@ SOURCES += \
 
 INSTALLS += target
 
-Plugins.files = $$PWD/../Python/natron
-Plugins.files += $$PWD/../Python/init.py
-Plugins.files += $$PWD/../Python/initGui.py
 Resources.files = $$PWD/../Gui/Resources/OpenColorIO-Configs
 macx {
     Resources.path = Contents/Resources
-    Plugins.path = Contents/Plugins
     QMAKE_BUNDLE_DATA += Resources
-    QMAKE_BUNDLE_DATA += Plugins
 }
 !macx {
     Resources.path = $$OUT_PWD

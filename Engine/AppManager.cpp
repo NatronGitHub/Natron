@@ -1170,10 +1170,7 @@ AppManager::loadPythonGroups()
     PyObject* mainModule = getMainModule();
     
     QStringList allPlugins;
-    // module Natron must be imported even if there is no init.py at all
-    bool ok  = interpretPythonScript("import sys\n"
-                                     "import natron\n", &err, 0);
-    assert(ok);
+
     ///For all search paths, first add the path to the python path, then run in order the init.py and initGui.py
     for (int i = 0; i < templatesSearchPath.size(); ++i) {
         
@@ -2524,6 +2521,26 @@ AppManager::initPython(int argc,char* argv[])
     
     PySys_SetArgv(argc,_imp->args.data()); /// relative module import
     
+    bool ok = interpretPythonScript("import sys\nfrom NatronEngine import*", 0, 0);
+    assert(ok);
+    
+    if (!isBackground()) {
+        //redirect stdout/stderr
+        std::string script(
+        "class StreamCatcher:\n"
+        "   def __init__(self):\n"
+        "       self.value = ''\n"
+        "   def write(self,txt):\n"
+        "       self.value += txt\n"
+        "   def clear(self):\n"
+        "       self.value = ''\n"
+        "catchOut = StreamCatcher()\n"
+        "catchErr = StreamCatcher()\n"
+        "sys.stdout = catchOut\n"
+        "sys.stderr = catchErr\n");
+        ok = interpretPythonScript(script,0,0);
+        assert(ok);
+    }
 }
 
 void
