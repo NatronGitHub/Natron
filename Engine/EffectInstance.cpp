@@ -867,15 +867,15 @@ EffectInstance::setKnobsAge(U64 age)
 }
 
 const std::string &
-EffectInstance::getName() const
+EffectInstance::getScriptName() const
 {
-    return getNode()->getName();
+    return getNode()->getScriptName();
 }
 
 std::string
-EffectInstance::getName_mt_safe() const
+EffectInstance::getScriptName_mt_safe() const
 {
-    return getNode()->getName_mt_safe();
+    return getNode()->getScriptName_mt_safe();
 }
 
 void
@@ -940,7 +940,7 @@ EffectInstance::retrieveGetImageDataUponFailure(const int time,
 //#ifdef DEBUG
 //    if (QThread::currentThread() != qApp->thread()) {
 //        ///This is a bad plug-in
-//        qDebug() << getNode()->getName_mt_safe().c_str() << " is trying to call clipGetImage during an unauthorized time. "
+//        qDebug() << getNode()->getScriptName_mt_safe().c_str() << " is trying to call clipGetImage during an unauthorized time. "
 //        "Developers of that plug-in should fix it. \n Reminder from the OpenFX spec: \n "
 //        "Images may be fetched from an attached clip in the following situations... \n"
 //        "- in the kOfxImageEffectActionRender action\n"
@@ -1209,8 +1209,8 @@ EffectInstance::getImage(int inputNb,
     unsigned int inputImgMipMapLevel = inputImg->getMipMapLevel();
     
     if (inputImg->getPixelAspectRatio() != par) {
-        qDebug() << "WARNING: " << getName_mt_safe().c_str() << " requested an image with a pixel aspect ratio of " << par <<
-        " but " << n->getName_mt_safe().c_str() << " rendered an image with a pixel aspect ratio of " << inputImg->getPixelAspectRatio();
+        qDebug() << "WARNING: " << getScriptName_mt_safe().c_str() << " requested an image with a pixel aspect ratio of " << par <<
+        " but " << n->getScriptName_mt_safe().c_str() << " rendered an image with a pixel aspect ratio of " << inputImg->getPixelAspectRatio();
     }
     
     ///If the plug-in doesn't support the render scale, but the image is downscaled, up-scale it.
@@ -2419,7 +2419,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
         if (!rectsToRender.empty()) {
             
 # ifdef DEBUG
-            qDebug() << getNode()->getName_mt_safe().c_str() << ": render " << rectsToRender.size() << " rectangles";
+            qDebug() << getNode()->getScriptName_mt_safe().c_str() << ": render " << rectsToRender.size() << " rectangles";
             for (std::list<RectI>::const_iterator it = rectsToRender.begin(); it != rectsToRender.end(); ++it) {
                 qDebug() << "rect: " << "x1= " <<  it->x1 << " , x2= " << it->x2 << " , y1= " << it->y1 << " , y2= " << it->y2;
             }
@@ -2555,7 +2555,7 @@ EffectInstance::renderInputImagesForRoI(bool createImageInCache,
     getRegionsOfInterest_public(time, renderMappedScale, rod, canonicalRenderWindow, view,inputsRoi);
 #ifdef DEBUG
     if (!inputsRoi->empty() && framesNeeded.empty() && !isReader()) {
-        qDebug() << getNode()->getName_mt_safe().c_str() << ": getRegionsOfInterestAction returned 1 or multiple input RoI(s) but returned "
+        qDebug() << getNode()->getScriptName_mt_safe().c_str() << ": getRegionsOfInterestAction returned 1 or multiple input RoI(s) but returned "
         << "an empty list with getFramesNeededAction";
     }
 #endif
@@ -3260,7 +3260,7 @@ EffectInstance::tiledRenderingFunctor(const RenderArgs & args,
         
         //Check for NaNs
         if (renderMappedImage->checkForNaNs(renderRectToRender)) {
-            qDebug() << getNode()->getName_mt_safe().c_str() << ": rendered rectangle (" << renderRectToRender.x1 << ',' << renderRectToRender.y1 << ")-(" << renderRectToRender.x2 << ',' << renderRectToRender.y2 << ") contains invalid values.";
+            qDebug() << getNode()->getScriptName_mt_safe().c_str() << ": rendered rectangle (" << renderRectToRender.x1 << ',' << renderRectToRender.y1 << ")-(" << renderRectToRender.x2 << ',' << renderRectToRender.y2 << ") contains invalid values.";
         }
         
         ///copy the rectangle rendered in the full scale image to the downscaled output
@@ -4365,7 +4365,7 @@ void
 EffectInstance::checkCanSetValueAndWarn() const
 {
     if (!checkCanSetValue()) {
-        qDebug() << getName_mt_safe().c_str() << ": setValue()/setValueAtTime() was called during an action that is not allowed to call this function.";
+        qDebug() << getScriptName_mt_safe().c_str() << ": setValue()/setValueAtTime() was called during an action that is not allowed to call this function.";
     }
 }
 #endif

@@ -345,6 +345,7 @@ struct NodeGraphPrivate
                                          const NodeGuiSerialization & guiSerialization,
                                          const QPointF & offset,
                                          const boost::shared_ptr<NodeCollection>& group,
+                                         const std::string& parentName,
                                          bool clone);
 
 
@@ -3224,22 +3225,15 @@ NodeGraphPrivate::copyNodesInternal(const NodeGuiList& selection,NodeClipBoard &
             }
         }
     }
-
-    for (std::list<boost::shared_ptr<NodeGui> >::iterator it = nodesToCopy.begin(); it != nodesToCopy.end(); ++it) {
-        if ( (*it)->getNode()->isMultiInstance() ) {
-            QString err = QString("%1 cannot be copied.").arg( (*it)->getNode()->getName().c_str() );
-            Natron::errorDialog( "Copy", err.toStdString() );
-
-            return;
-        }
-    }
     
     for (NodeGuiList::iterator it = nodesToCopy.begin(); it != nodesToCopy.end(); ++it) {
-        boost::shared_ptr<NodeSerialization> ns( new NodeSerialization( (*it)->getNode(), true ) );
-        boost::shared_ptr<NodeGuiSerialization> nGuiS(new NodeGuiSerialization);
-        (*it)->serialize( nGuiS.get() );
-        clipboard.nodes.push_back(ns);
-        clipboard.nodesUI.push_back(nGuiS);
+        if ((*it)->isVisible()) {
+            boost::shared_ptr<NodeSerialization> ns( new NodeSerialization( (*it)->getNode(), true ) );
+            boost::shared_ptr<NodeGuiSerialization> nGuiS(new NodeGuiSerialization);
+            (*it)->serialize( nGuiS.get() );
+            clipboard.nodes.push_back(ns);
+            clipboard.nodesUI.push_back(nGuiS);
+        }
     }
 }
 
@@ -3280,7 +3274,7 @@ NodeGraphPrivate::pasteNodesInternal(const NodeClipBoard & clipboard,const QPoin
         std::list<boost::shared_ptr<NodeSerialization> >::const_iterator itOther = clipboard.nodes.begin();
         for (std::list<boost::shared_ptr<NodeGuiSerialization> >::const_iterator it = clipboard.nodesUI.begin();
              it != clipboard.nodesUI.end(); ++it,++itOther) {
-            boost::shared_ptr<NodeGui> node = pasteNode( **itOther,**it,offset,group.lock(), false);
+            boost::shared_ptr<NodeGui> node = pasteNode( **itOther,**it,offset,group.lock(),std::string(), false);
             newNodes.push_back(node);
         }
         assert( clipboard.nodes.size() == newNodes.size() );
@@ -3298,10 +3292,11 @@ NodeGraphPrivate::pasteNode(const NodeSerialization & internalSerialization,
                             const NodeGuiSerialization & guiSerialization,
                             const QPointF & offset,
                             const boost::shared_ptr<NodeCollection>& grp,
+                            const std::string& parentName,
                             bool clone)
 {
     boost::shared_ptr<Natron::Node> n = _gui->getApp()->loadNode( LoadNodeArgs(internalSerialization.getPluginID().c_str(),
-                                                                               "",
+                                                                               parentName,
                                                                                internalSerialization.getPluginMajorVersion(),
                                                                                internalSerialization.getPluginMinorVersion(),
                                                                                &internalSerialization,
@@ -3349,7 +3344,7 @@ NodeGraphPrivate::pasteNode(const NodeSerialization & internalSerialization,
         }
     }
 
-    //We don't want the clone to have the same hash has the original
+    //We don't want the clone to have the same hash as the original
     n->incrementKnobsAge();
     
     gui->copyFrom(guiSerialization);
@@ -3365,13 +3360,25 @@ NodeGraphPrivate::pasteNode(const NodeSerialization & internalSerialization,
         }
     }
     
-    ///Recurse if this is a group
+    ///Recurse if this is a group or multi-instance
     NodePtr serializedNode = internalSerialization.getNode();
     assert(serializedNode);
     boost::shared_ptr<NodeGroup> isGrp =
     boost::dynamic_pointer_cast<NodeGroup>(n->getLiveInstance()->shared_from_this());
-    if (isGrp) {
-        const std::list<boost::shared_ptr<NodeSerialization> >& nodes = internalSerialization.getNodesCollection();
+    
+    const std::list<boost::shared_ptr<NodeSerialization> >& nodes = internalSerialization.getNodesCollection();
+    
+    if (!nodes.empty()) {
+        
+        std::string parentName;
+        boost::shared_ptr<NodeCollection> collection;
+        if (isGrp) {
+            collection = isGrp;
+        } else {
+            assert(n->isMultiInstance());
+            collection = n->getGroup();
+            parentName = n->getName_mt_safe();
+        }
         std::list<NodeGuiPtr> newNodes;
         for (std::list<boost::shared_ptr<NodeSerialization> >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
             NodePtr child = (*it)->getNode();
@@ -3380,14 +3387,13 @@ NodeGraphPrivate::pasteNode(const NodeSerialization & internalSerialization,
             NodeGui* child_gui = dynamic_cast<NodeGui*>(child_gui_i.get());
             NodeGuiSerialization gS;
             gS.initialize(child_gui);
-            NodeGuiPtr newChild = pasteNode(**it, gS, QPointF(0,0),isGrp,clone);
+            NodeGuiPtr newChild = pasteNode(**it, gS, QPointF(0,0),collection,parentName,clone);
             if (newChild) {
                 newNodes.push_back(newChild);
             }
         }
         restoreConnections(nodes, newNodes);
     }
-    
     return gui;
 }
 
@@ -3513,7 +3519,7 @@ NodeGraph::cloneSelectedNodes()
         NodeGuiSerialization guiSerialization;
         (*it)->serialize(&guiSerialization);
         boost::shared_ptr<NodeGui> clone = _imp->pasteNode( *internalSerialization, guiSerialization, offset,
-                                                           _imp->group.lock(),true );
+                                                           _imp->group.lock(),std::string(),true );
       
         newNodes.push_back(clone);
         serializations.push_back(internalSerialization);
@@ -4301,7 +4307,7 @@ NodeGraph::copyNodesAndCreateInGroup(const std::list<boost::shared_ptr<NodeGui> 
     std::list<boost::shared_ptr<NodeSerialization> >::const_iterator itOther = clipboard.nodes.begin();
     for (std::list<boost::shared_ptr<NodeGuiSerialization> >::const_iterator it = clipboard.nodesUI.begin();
          it != clipboard.nodesUI.end(); ++it,++itOther) {
-        boost::shared_ptr<NodeGui> node = _imp->pasteNode( **itOther,**it,QPointF(0,0),group, false);
+        boost::shared_ptr<NodeGui> node = _imp->pasteNode( **itOther,**it,QPointF(0,0),group,std::string(), false);
         newNodes.push_back(node);
     }
     assert( clipboard.nodes.size() == newNodes.size() );

@@ -257,8 +257,8 @@ public:
     /**
      * @brief Forwarded to the node's name
      **/
-    const std::string & getName() const WARN_UNUSED_RETURN;
-    virtual std::string getName_mt_safe() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    const std::string & getScriptName() const WARN_UNUSED_RETURN;
+    virtual std::string getScriptName_mt_safe() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     /**
      * @brief Forwarded to the node's render format

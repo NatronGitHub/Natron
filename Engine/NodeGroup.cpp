@@ -324,44 +324,61 @@ NodeCollection::clearNodes(bool emitSignal)
     nodesToDelete.clear();
 }
 
-void
-NodeCollection::initNodeName(const std::string& pluginLabel,std::string* nodeName)
+bool
+NodeCollection::setNodeName(const std::string& baseName,bool appendDigit,bool errorIfExists,std::string* nodeName)
 {
-    int no = 1;
-    std::string baseName(pluginLabel);
-    if (baseName.size() > 3 &&
-        baseName[baseName.size() - 1] == 'X' &&
-        baseName[baseName.size() - 2] == 'F' &&
-        baseName[baseName.size() - 3] == 'O') {
-        baseName = baseName.substr(0,baseName.size() - 3);
+    if (baseName.empty()) {
+        return false;
     }
-    
     ///Remove any non alpha-numeric characters from the baseName
     std::locale loc;
     std::string cpy;
     for (std::size_t i = 0; i < baseName.size(); ++i) {
-        if (std::isalnum(baseName[i], loc)) {
+        
+        ///Ignore starting digits
+        if (cpy.empty() && std::isdigit(baseName[i])) {
+            continue;
+        }
+        
+        ///Spaces becomes underscores
+        if (std::isspace(baseName[i])){
+            cpy.push_back('_');
+        }
+        
+        ///Non alpha-numeric characters are not allowed in python
+        else if (baseName[i] == '_' || std::isalnum(baseName[i], loc)) {
             cpy.push_back(baseName[i]);
         }
     }
     
-    bool foundNodeWithName = false;
+    if (cpy.empty()) {
+        return false;
+    }
     
+    bool foundNodeWithName = false;
+    int no = 1;
+
     {
         std::stringstream ss;
-        ss << cpy << no;
+        ss << cpy;
+        if (appendDigit) {
+            ss << no;
+        }
         *nodeName = ss.str();
     }
     do {
         foundNodeWithName = false;
         QMutexLocker l(&_imp->nodesMutex);
         for (NodeList::iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
-            if ((*it)->getName_mt_safe() == *nodeName) {
+            if ((*it)->getScriptName_mt_safe() == *nodeName) {
                 foundNodeWithName = true;
                 break;
             }
         }
         if (foundNodeWithName) {
+            if (errorIfExists || !appendDigit) {
+                return false;
+            }
             ++no;
             {
                 std::stringstream ss;
@@ -370,6 +387,23 @@ NodeCollection::initNodeName(const std::string& pluginLabel,std::string* nodeNam
             }
         }
     } while (foundNodeWithName);
+    return true;
+}
+
+void
+NodeCollection::initNodeName(const std::string& pluginLabel,std::string* nodeName)
+{
+    std::string baseName(pluginLabel);
+    if (baseName.size() > 3 &&
+        baseName[baseName.size() - 1] == 'X' &&
+        baseName[baseName.size() - 2] == 'F' &&
+        baseName[baseName.size() - 3] == 'O') {
+        baseName = baseName.substr(0,baseName.size() - 3);
+    }
+
+    if (!setNodeName(baseName,true, false, nodeName)) {
+        throw std::invalid_argument(QObject::tr("Invalid plugin label: ").toStdString() + pluginLabel);
+    }
 }
 
 bool
@@ -408,7 +442,7 @@ NodeCollection::connectNodes(int inputNumber,const std::string & inputName,Natro
     
     for (NodeList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
         assert(*it);
-        if ((*it)->getName() == inputName) {
+        if ((*it)->getScriptName() == inputName) {
             return connectNodes(inputNumber,*it, output);
         }
     }
@@ -558,7 +592,7 @@ NodeCollectionPrivate::findNodeInternal(const std::string& name,const std::strin
 {
     QMutexLocker k(&nodesMutex);
     for (NodeList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        if ((*it)->getName_mt_safe() == name) {
+        if ((*it)->getScriptName_mt_safe() == name) {
             if (!recurseName.empty()) {
                 NodeGroup* isGrp = dynamic_cast<NodeGroup*>((*it)->getLiveInstance());
                 assert(isGrp);
@@ -724,7 +758,7 @@ NodeCollection::checkIfNodeNameExists(const std::string & n,const Natron::Node* 
 {
     QMutexLocker k(&_imp->nodesMutex);
     for (NodeList::const_iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
-        if ( (it->get() != caller) && ( (*it)->getName_mt_safe() == n ) ) {
+        if ( (it->get() != caller) && ( (*it)->getScriptName_mt_safe() == n ) ) {
             return true;
         }
     }
@@ -808,7 +842,7 @@ NodeGroup::getInputLabel(int inputNb) const
     if (!input) {
         return std::string();
     }
-    QString inputName(input->getName_mt_safe().c_str());
+    QString inputName(input->getLabel_mt_safe().c_str());
     if (inputName.startsWith("input",Qt::CaseInsensitive)) {
         inputName.remove(0, 5);
     }
@@ -1536,7 +1570,7 @@ static void exportRotoLayer(const std::list<boost::shared_ptr<RotoItem> >& items
                 if (track) {
                     Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(track->getHolder());
                     assert(effect && effect->getNode()->isTrackerNode());
-                    std::string trackerName = effect->getNode()->getName_mt_safe();
+                    std::string trackerName = effect->getNode()->getScriptName_mt_safe();
                     int trackTime = (*it2)->getOffsetTime();
                     WRITE_INDENT(1); WRITE_STRING("tracker = group.getNode(\"" + QString(trackerName.c_str()) + "\")");
                     WRITE_INDENT(1); WRITE_STRING("center = tracker.getParam(\"" + QString(track->getName().c_str()) + "\")");
@@ -1714,12 +1748,12 @@ static void exportGroupInternal(NodeGroup* group,const QString& groupName, QText
         WRITE_INDENT(1); WRITE_STRING("lastNode = app.createNode(" + ESC(nodeName) + ", " +
                                       NUM((*it)->getPlugin()->getMajorVersion()) + ", " + groupName +
                                       ")");
-        WRITE_INDENT(1); WRITE_STRING("lastNode.setName(" + ESC((*it)->getName_mt_safe()) + ")");
+        WRITE_INDENT(1); WRITE_STRING("lastNode.setName(" + ESC((*it)->getScriptName_mt_safe()) + ")");
         double x,y;
         (*it)->getPosition(&x,&y);
         WRITE_INDENT(1); WRITE_STRING("lastNode.setPosition(" + NUM(x) + ", " + NUM(y) + ")");
         
-        QString nodeNameInScript = groupName + QString((*it)->getName_mt_safe().c_str());
+        QString nodeNameInScript = groupName + QString((*it)->getScriptName_mt_safe().c_str());
         WRITE_INDENT(1); WRITE_STRING(nodeNameInScript + " = lastNode");
         WRITE_STATIC_LINE("");
         exportAllNodeKnobs(*it,ts);
@@ -1734,9 +1768,9 @@ static void exportGroupInternal(NodeGroup* group,const QString& groupName, QText
             for (std::list< NodePtr > ::iterator it2 = children.begin(); it2 != children.end(); ++it2) {
                 if ((*it2)->isActivated()) {
                     WRITE_INDENT(1); WRITE_STRING("lastNode = " + nodeNameInScript + ".createChild()");
-                    WRITE_INDENT(1); WRITE_STRING("lastNode.setName(\"" + QString((*it2)->getName_mt_safe().c_str()) + "\")");
+                    WRITE_INDENT(1); WRITE_STRING("lastNode.setName(\"" + QString((*it2)->getScriptName_mt_safe().c_str()) + "\")");
                     exportAllNodeKnobs(*it2,ts);
-                    WRITE_INDENT(1); WRITE_STRING(groupName + QString((*it2)->getName_mt_safe().c_str()) + " = lastNode");
+                    WRITE_INDENT(1); WRITE_STRING(groupName + QString((*it2)->getScriptName_mt_safe().c_str()) + " = lastNode");
                     WRITE_INDENT(1); WRITE_STRING("del lastNode");
                 }
             }
@@ -1763,14 +1797,14 @@ static void exportGroupInternal(NodeGroup* group,const QString& groupName, QText
     WRITE_INDENT(1); WRITE_STATIC_LINE("#Now that all nodes are created we can connect them together, restore expressions");
     for (NodeList::iterator it = exportedNodes.begin(); it != exportedNodes.end(); ++it) {
         
-        QString nodeQualifiedName(groupName + (*it)->getName_mt_safe().c_str());
+        QString nodeQualifiedName(groupName + (*it)->getScriptName_mt_safe().c_str());
         bool hasConnected = false;
         if (!(*it)->getParentMultiInstance()) {
             for (int i = 0; i < (*it)->getMaxInputCount(); ++i) {
                 NodePtr inputNode = (*it)->getRealInput(i);
                 if (inputNode) {
                     hasConnected = true;
-                    QString inputQualifiedName(groupName  + inputNode->getName_mt_safe().c_str());
+                    QString inputQualifiedName(groupName  + inputNode->getScriptName_mt_safe().c_str());
                     WRITE_INDENT(1); WRITE_STRING(nodeQualifiedName + ".connectInput(" + NUM(i) +
                                                   ", " + inputQualifiedName + ")");
                 }

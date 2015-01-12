@@ -105,7 +105,6 @@ NodeSerialization::NodeSerialization(const boost::shared_ptr<Natron::Node> & n,b
             _hasRotoContext = false;
         }
 
-        _multiInstanceParentName = n->getParentMultiInstanceName();
         
         NodeGroup* isGrp = dynamic_cast<NodeGroup*>(n->getLiveInstance());
         if (isGrp) {
@@ -119,6 +118,18 @@ NodeSerialization::NodeSerialization(const boost::shared_ptr<Natron::Node> & n,b
                 _children.push_back(state);
             }
 
+        }
+
+         _multiInstanceParentName = n->getParentMultiInstanceName();
+        
+        std::list<NodePtr> childrenMultiInstance;
+        _node->getChildrenMultiInstance(&childrenMultiInstance);
+        if (!childrenMultiInstance.empty()) {
+            assert(!isGrp);
+            for (NodeList::iterator it = childrenMultiInstance.begin(); it != childrenMultiInstance.end() ; ++it) {
+                boost::shared_ptr<NodeSerialization> state(new NodeSerialization(*it));
+                _children.push_back(state);
+            }
         }
         
         _isNull = false;

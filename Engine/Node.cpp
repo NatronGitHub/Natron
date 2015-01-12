@@ -111,7 +111,8 @@ struct Node::Implementation
     , inputsComponents()
     , outputComponents()
     , inputLabels()
-    , name()
+    , scriptName()
+    , label()
     , deactivatedState()
     , activatedMutex()
     , activated(true)
@@ -152,6 +153,7 @@ struct Node::Implementation
     , supportedDepths()
     , isMultiInstance(false)
     , multiInstanceParent()
+    , childrenMutex()
     , children()
     , multiInstanceParentName()
     , duringInputChangedAction(false)
@@ -200,6 +202,8 @@ struct Node::Implementation
     
     void runOnNodeDeleteCB();
     
+    void appendChild(const boost::shared_ptr<Natron::Node>& child);
+    
     Node* _publicInterface;
     
     boost::weak_ptr<NodeCollection> group;
@@ -232,7 +236,8 @@ struct Node::Implementation
     
     mutable QMutex nameMutex;
     std::vector<std::string> inputLabels; // inputs name
-    std::string name; //node name set by the user
+    std::string scriptName; //node name internally and as visible to python
+    std::string label; // node label as visible in the GUI
     
     DeactivatedState deactivatedState;
     mutable QMutex activatedMutex;
@@ -296,6 +301,7 @@ struct Node::Implementation
     ///True when several effect instances are represented under the same node.
     bool isMultiInstance;
     boost::weak_ptr<Natron::Node> multiInstanceParent;
+    mutable QMutex childrenMutex;
     std::list<boost::weak_ptr<Natron::Node> > children;
     
     ///the name of the parent at the time this node was created
@@ -401,7 +407,7 @@ Node::load(const std::string & parentMultiInstanceName,
     }
     
     if (!serialization.isNull() && !dontLoadName && !nameSet && fixedName.isEmpty()) {
-        setName_no_error_check( serialization.getPluginLabel().c_str() );
+        setScriptName_no_error_check( serialization.getPluginLabel().c_str() );
         nameSet = true;
     }
     
@@ -483,18 +489,18 @@ Node::load(const std::string & parentMultiInstanceName,
         if (fixedName.isEmpty()) {
             std::string name;
             getGroup()->initNodeName(isMultiInstanceChild ? parentMultiInstanceName + '_' : getPluginLabel(),&name);
-            setName(name.c_str());
+            setNameInternal(name.c_str());
             nameSet = true;
         } else {
-            setName(fixedName);
+            setScriptName(fixedName.toStdString());
         }
         if (!isMultiInstanceChild && _imp->isMultiInstance) {
-            updateEffectLabelKnob( getName().c_str() );
+            updateEffectLabelKnob( getScriptName().c_str() );
         }
     }
     if ( isMultiInstanceChild && serialization.isNull() ) {
         assert(nameSet);
-        updateEffectLabelKnob(getName().c_str());
+        updateEffectLabelKnob(getScriptName().c_str());
     }
     
     declarePythonFields();
@@ -528,17 +534,24 @@ Node::getGroup() const
 }
 
 void
+Node::Implementation::appendChild(const boost::shared_ptr<Natron::Node>& child)
+{
+    QMutexLocker k(&childrenMutex);
+    children.push_back(child);
+}
+
+void
 Node::fetchParentMultiInstancePointer()
 {
     NodeList nodes = _imp->group.lock()->getNodes();
     
     NodePtr thisShared = shared_from_this();
     for (NodeList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        if ((*it)->getName() == _imp->multiInstanceParentName) {
+        if ((*it)->getScriptName() == _imp->multiInstanceParentName) {
             ///no need to store the boost pointer because the main instance lives the same time
             ///as the child
             _imp->multiInstanceParent = *it;
-            (*it)->_imp->children.push_back(thisShared);
+            (*it)->_imp->appendChild(thisShared);
             QObject::connect(it->get(), SIGNAL(inputChanged(int)), this, SLOT(onParentMultiInstanceInputChanged(int)));
             break;
         }
@@ -568,7 +581,7 @@ Node::getParentMultiInstanceName() const
 void
 Node::getChildrenMultiInstance(std::list<boost::shared_ptr<Natron::Node> >* children) const
 {
-    assert(QThread::currentThread() == qApp->thread());
+    QMutexLocker k(&_imp->childrenMutex);
     for (std::list<boost::weak_ptr<Natron::Node> >::const_iterator it = _imp->children.begin(); it != _imp->children.end(); ++it) {
         children->push_back(it->lock());
     }
@@ -628,7 +641,7 @@ Node::computeHash()
         }
         
         ///Also append the effect's label to distinguish 2 instances with the same parameters
-        ::Hash64_appendQString( &_imp->hash, QString( getName().c_str() ) );
+        ::Hash64_appendQString( &_imp->hash, QString( getScriptName().c_str() ) );
         
         
         ///Also append the project's creation time in the hash because 2 projects openend concurrently
@@ -1089,7 +1102,7 @@ Node::removeReferences()
         isOutput->getRenderEngine()->quitEngine();
     }
     appPTR->removeAllImagesFromCacheWithMatchingKey( getHashValue() );
-    deleteNodeVariableToPython(getFullySpecifiedName());
+    deleteNodeVariableToPython(getFullyQualifiedName());
     _imp->liveInstance.reset();
     getGroup()->removeNode(shared_from_this());
 }
@@ -1137,7 +1150,7 @@ Node::getInputNames(std::vector<std::string> & inputNames) const
     QMutexLocker l(&_imp->inputsMutex);
     for (int i = 0; i < maxInp; ++i) {
         if (_imp->inputs[i]) {
-            inputNames.push_back( _imp->inputs[i]->getName_mt_safe() );
+            inputNames.push_back( _imp->inputs[i]->getScriptName_mt_safe() );
         } else {
             inputNames.push_back("");
         }
@@ -1238,27 +1251,27 @@ Node::getOutputsConnectedToThisNode(std::map<Node*,int>* outputs)
 }
 
 const std::string &
-Node::getName() const
+Node::getScriptName() const
 {
     ////Only called by the main-thread
     assert( QThread::currentThread() == qApp->thread() );
     QMutexLocker l(&_imp->nameMutex);
     
-    return _imp->name;
+    return _imp->scriptName;
 }
 
 std::string
-Node::getName_mt_safe() const
+Node::getScriptName_mt_safe() const
 {
     QMutexLocker l(&_imp->nameMutex);
     
-    return _imp->name;
+    return _imp->scriptName;
 }
 
 static void prependGroupNameRecursive(const boost::shared_ptr<NodeGroup>& group,std::string& name)
 {
     name.insert(0,".");
-    name.insert(0, group->getName_mt_safe());
+    name.insert(0, group->getScriptName_mt_safe());
     boost::shared_ptr<NodeCollection> hasParentGroup = group->getNode()->getGroup();
     boost::shared_ptr<NodeGroup> isGrp = boost::dynamic_pointer_cast<NodeGroup>(hasParentGroup);
     if (isGrp) {
@@ -1267,9 +1280,9 @@ static void prependGroupNameRecursive(const boost::shared_ptr<NodeGroup>& group,
 }
 
 std::string
-Node::getFullySpecifiedName() const
+Node::getFullyQualifiedName() const
 {
-    std::string ret = getName_mt_safe();
+    std::string ret = getScriptName_mt_safe();
     boost::shared_ptr<NodeCollection> hasParentGroup = getGroup();
     boost::shared_ptr<NodeGroup> isGrp = boost::dynamic_pointer_cast<NodeGroup>(hasParentGroup);
     if (isGrp) {
@@ -1279,32 +1292,57 @@ Node::getFullySpecifiedName() const
 }
 
 void
-Node::setName_no_error_check(const QString & name)
+Node::setLabel(const std::string& label)
+{
+    assert(QThread::currentThread() == qApp->thread());
+    {
+        QMutexLocker k(&_imp->nameMutex);
+        _imp->label = label;
+    }
+    Q_EMIT labelChanged(QString(label.c_str()));
+
+}
+
+const std::string&
+Node::getLabel() const
+{
+    assert(QThread::currentThread() == qApp->thread());
+    QMutexLocker k(&_imp->nameMutex);
+    return _imp->label;
+}
+
+std::string
+Node::getLabel_mt_safe() const
+{
+    QMutexLocker k(&_imp->nameMutex);
+    return _imp->label;
+}
+
+void
+Node::setScriptName_no_error_check(const std::string & name)
 {
     setNameInternal(name);
 }
 
 void
-Node::setNameInternal(const QString& name)
+Node::setNameInternal(const std::string& name)
 {
-    std::string oldName = getName_mt_safe();
-    std::string fullOldName = getFullySpecifiedName();
-    std::string newName = name.toStdString();
+    std::string oldName = getScriptName_mt_safe();
+    std::string fullOldName = getFullyQualifiedName();
+    std::string newName = name;
     
-    ///Replace any '.' by a '_' to avoid Python syntax errors
-    for (std::size_t i = 0; i < newName.size(); ++i) {
-        if (newName[i] == '.') {
-            newName[i] = '_';
-        }
-    }
+    getGroup()->setNodeName(name,false, false, &newName);
+    
     {
         QMutexLocker l(&_imp->nameMutex);
-        _imp->name = newName;
+        _imp->scriptName = newName;
+        ///Set the label at the same time
+        _imp->label = newName;
     }
     
     boost::shared_ptr<NodeCollection> collection = getGroup();
     if (collection) {
-        std::string fullySpecifiedName = getFullySpecifiedName();
+        std::string fullySpecifiedName = getFullyQualifiedName();
         if (!oldName.empty()) {
             
             if (fullOldName != fullySpecifiedName) {
@@ -1344,40 +1382,17 @@ Node::setNameInternal(const QString& name)
         }
         collection->notifyNodeNameChanged(shared_from_this());
     }
-    
-    Q_EMIT nameChanged(name);
+    Q_EMIT labelChanged(newName.c_str());
 }
 
 bool
-Node::setName(const QString& name)
+Node::setScriptName(const std::string& name)
 {
-    bool nameHasDot = false;
-    bool nameOnlyComposedOfDigits = true;
-    for (int i = 0; i < name.size(); ++i) {
-        if (!name[i].isDigit()) {
-            nameOnlyComposedOfDigits = false;
-        }
-        if (name[i] == '.') {
-            nameHasDot = true;
-            break;
-        }
-    }
-    if ( name.isEmpty() ) {
-        Natron::errorDialog( tr("Node name").toStdString(), tr("A node must have a unique name.").toStdString() );
-        return false;
-    } else if (nameHasDot) {
-        Natron::errorDialog( tr("Node name").toStdString(), tr("A node name cannot contain a '.' for scripting purposes.").toStdString() );
-        return false;
-    } else if (nameOnlyComposedOfDigits) {
-        Natron::errorDialog( tr("Node name").toStdString(), tr("A node name cannot be composed only of digits.").toStdString() );
-        return false;
-    } else if (getGroup() && getGroup()->checkIfNodeNameExists( name.toStdString(), this)) {
-        Natron::errorDialog( tr("Node name").toStdString(), tr("A node with the same name already exists in the graph.").toStdString() );
+    std::string newName;
+    if (!getGroup()->setNodeName(name,false, true, &newName)) {
         return false;
     }
-    
-    
-    setNameInternal(name);
+    setNameInternal(newName);
     return true;
 }
 
@@ -2125,7 +2140,7 @@ Node::canConnectInput(const boost::shared_ptr<Node>& input,int inputNumber) cons
     }
     
     if (_imp->liveInstance->isInputRotoBrush(inputNumber)) {
-        qDebug() << "Debug: Attempt to connect " << input->getName_mt_safe().c_str() << " to Roto brush";
+        qDebug() << "Debug: Attempt to connect " << input->getScriptName_mt_safe().c_str() << " to Roto brush";
         return eCanConnectInput_indexOutOfRange;
     }
     
@@ -2178,7 +2193,7 @@ Node::connectInput(const boost::shared_ptr<Node> & input,
         return false;
     }
     if (_imp->liveInstance->isInputRotoBrush(inputNumber)) {
-        qDebug() << "Debug: Attempt to connect " << input->getName_mt_safe().c_str() << " to Roto brush";
+        qDebug() << "Debug: Attempt to connect " << input->getScriptName_mt_safe().c_str() << " to Roto brush";
         return false;
     }
     {
@@ -2205,7 +2220,7 @@ Node::connectInput(const boost::shared_ptr<Node> & input,
     }
     
     ///Get notified when the input name has changed
-    QObject::connect( input.get(), SIGNAL( nameChanged(QString) ), this, SLOT( onInputNameChanged(QString) ) );
+    QObject::connect( input.get(), SIGNAL( labelChanged(QString) ), this, SLOT( onInputLabelChanged(QString) ) );
     
     ///Notify the GUI
     Q_EMIT inputChanged(inputNumber);
@@ -2249,7 +2264,7 @@ Node::replaceInput(const boost::shared_ptr<Node>& input,int inputNumber)
         return false;
     }
     if (_imp->liveInstance->isInputRotoBrush(inputNumber)) {
-        qDebug() << "Debug: Attempt to connect " << input->getName_mt_safe().c_str() << " to Roto brush";
+        qDebug() << "Debug: Attempt to connect " << input->getScriptName_mt_safe().c_str() << " to Roto brush";
         return false;
     }
     {
@@ -2272,7 +2287,7 @@ Node::replaceInput(const boost::shared_ptr<Node>& input,int inputNumber)
         
         ///Set the input
         if (_imp->inputs[inputNumber]) {
-            QObject::connect( _imp->inputs[inputNumber].get(), SIGNAL( nameChanged(QString) ), this, SLOT( onInputNameChanged(QString) ) );
+            QObject::connect( _imp->inputs[inputNumber].get(), SIGNAL( labelChanged(QString) ), this, SLOT( onInputLabelChanged(QString) ) );
             _imp->inputs[inputNumber]->disconnectOutput(this);
         }
         _imp->inputs[inputNumber] = input;
@@ -2280,7 +2295,7 @@ Node::replaceInput(const boost::shared_ptr<Node>& input,int inputNumber)
     }
     
     ///Get notified when the input name has changed
-    QObject::connect( input.get(), SIGNAL( nameChanged(QString) ), this, SLOT( onInputNameChanged(QString) ) );
+    QObject::connect( input.get(), SIGNAL( labelChanged(QString) ), this, SLOT( onInputLabelChanged(QString) ) );
     
     ///Notify the GUI
     Q_EMIT inputChanged(inputNumber);
@@ -2379,7 +2394,7 @@ Node::switchInput0And1()
 } // switchInput0And1
 
 void
-Node::onInputNameChanged(const QString & name)
+Node::onInputLabelChanged(const QString & name)
 {
     assert( QThread::currentThread() == qApp->thread() );
     assert(_imp->inputsInitialized);
@@ -2399,7 +2414,7 @@ Node::onInputNameChanged(const QString & name)
     }
     
     if (inputNb != -1) {
-        Q_EMIT inputNameChanged(inputNb, name);
+        Q_EMIT inputLabelChanged(inputNb, name);
     }
 }
 
@@ -2441,7 +2456,7 @@ Node::disconnectInput(int inputNumber)
             }
         }
         
-        QObject::disconnect( _imp->inputs[inputNumber].get(), SIGNAL( nameChanged(QString) ), this, SLOT( onInputNameChanged(QString) ) );
+        QObject::disconnect( _imp->inputs[inputNumber].get(), SIGNAL( labelChanged(QString) ), this, SLOT( onInputLabelChanged(QString) ) );
         _imp->inputs[inputNumber]->disconnectOutput(this);
         _imp->inputs[inputNumber].reset();
         
@@ -3209,20 +3224,20 @@ Node::message(MessageTypeEnum type,
     
     switch (type) {
         case eMessageTypeInfo:
-            informationDialog(getName_mt_safe(), content);
+            informationDialog(getLabel_mt_safe(), content);
             
             return true;
         case eMessageTypeWarning:
-            warningDialog(getName_mt_safe(), content);
+            warningDialog(getLabel_mt_safe(), content);
             
             return true;
         case eMessageTypeError:
-            errorDialog(getName_mt_safe(), content);
+            errorDialog(getLabel_mt_safe(), content);
             
             return true;
         case eMessageTypeQuestion:
             
-            return questionDialog(getName_mt_safe(), content, false) == eStandardButtonYes;
+            return questionDialog(getLabel_mt_safe(), content, false) == eStandardButtonYes;
         default:
             
             return false;
@@ -3245,7 +3260,7 @@ Node::setPersistentMessage(MessageTypeEnum type,
             QMutexLocker k(&_imp->persistentMessageMutex);
             
             QString message;
-            message.append( getName_mt_safe().c_str() );
+            message.append( getLabel_mt_safe().c_str() );
             if (type == eMessageTypeError) {
                 message.append(" error: ");
                 _imp->persistentMessageType = 1;
@@ -4017,7 +4032,7 @@ Node::hasSequentialOnlyNodeUpstream(std::string & nodeName) const
 {
     ///Just take into account sequentiallity for writers
     if ( (_imp->liveInstance->getSequentialPreference() == Natron::eSequentialPreferenceOnlySequential) && _imp->liveInstance->isWriter() ) {
-        nodeName = getName_mt_safe();
+        nodeName = getScriptName_mt_safe();
         
         return true;
     } else {
@@ -4027,7 +4042,7 @@ Node::hasSequentialOnlyNodeUpstream(std::string & nodeName) const
         
         for (InputsV::iterator it = _imp->inputs.begin(); it != _imp->inputs.end(); ++it) {
             if ( (*it) && (*it)->hasSequentialOnlyNodeUpstream(nodeName) && (*it)->getLiveInstance()->isWriter() ) {
-                nodeName = (*it)->getName();
+                nodeName = (*it)->getScriptName_mt_safe();
                 
                 return true;
             }
@@ -4415,10 +4430,10 @@ Node::declareCurrentNodeVariable_Python(std::string* deleteScript) const
     ///Now define the thisNode variable
     std::stringstream ss;
     if (isParentGrp) {
-        ss << "thisGroup = " << "app" << appID << "." << isParentGrp->getNode()->getFullySpecifiedName() << "\n";
+        ss << "thisGroup = " << "app" << appID << "." << isParentGrp->getNode()->getFullyQualifiedName() << "\n";
         deleteScript->append("del thisGroup\n");
     }
-    ss << "thisNode = " << "app" << appID << "." << getFullySpecifiedName() <<  "\n";
+    ss << "thisNode = " << "app" << appID << "." << getFullyQualifiedName() <<  "\n";
     deleteScript->append("del thisNode\n");
     return ss.str();
 }
@@ -4438,7 +4453,7 @@ Node::declareAllNodesVariableInScope_Python(std::string* deleteScript) const
     
     std::string mustDeleteContainer;
     if (isContainerGrp) {
-        std::string containerName = isContainerGrp->getNode()->getFullySpecifiedName();
+        std::string containerName = isContainerGrp->getNode()->getFullyQualifiedName();
         ss << containerName  << " = app" << appID << "." <<
         containerName  << "\n";
         mustDeleteContainer = "del " + containerName + "\n";
@@ -4446,7 +4461,7 @@ Node::declareAllNodesVariableInScope_Python(std::string* deleteScript) const
         
         NodeList siblings = collection->getNodes();
         for (NodeList::iterator it = siblings.begin(); it != siblings.end(); ++it) {
-            std::string name = (*it)->getFullySpecifiedName();
+            std::string name = (*it)->getFullyQualifiedName();
             ss << name << " = app" << appID << "." <<
             name << "\n";
             deleteScript->append("del " + name + "\n");
@@ -4456,7 +4471,7 @@ Node::declareAllNodesVariableInScope_Python(std::string* deleteScript) const
         if (isGrp) {
             NodeList children = isGrp->getNodes();
             for (NodeList::iterator it = children.begin(); it != children.end(); ++it) {
-                std::string name = (*it)->getFullySpecifiedName();
+                std::string name = (*it)->getFullyQualifiedName();
                 ss << name << " = app" << appID << "." <<
                 name << "\n";
             }
@@ -4571,7 +4586,7 @@ Node::declarePythonFields()
     }
     
     std::locale locale;
-    std::string fullName = getFullySpecifiedName();
+    std::string fullName = getFullyQualifiedName();
     
     std::string appID = QString("app%1").arg(getApp()->getAppID() + 1).toStdString();
     bool alreadyDefined = false;

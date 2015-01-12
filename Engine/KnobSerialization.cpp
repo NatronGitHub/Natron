@@ -48,7 +48,7 @@ ValueSerialization::ValueSerialization(const boost::shared_ptr<KnobI> & knob,
         NamedKnobHolder* holder = dynamic_cast<NamedKnobHolder*>( m.second->getHolder() );
         
         assert(holder);
-        _master.masterNodeName = holder ? holder->getName_mt_safe() : "";
+        _master.masterNodeName = holder ? holder->getScriptName_mt_safe() : "";
         _master.masterKnobName = m.second->getName();
     } else {
         _master.masterDimension = -1;
@@ -102,7 +102,7 @@ KnobSerialization::restoreKnobLinks(const boost::shared_ptr<KnobI> & knob,
             ///we need to cycle through all the nodes of the project to find the real master
             boost::shared_ptr<Natron::Node> masterNode;
             for (std::list<boost::shared_ptr<Natron::Node> >::const_iterator it2 = allNodes.begin(); it2 != allNodes.end() ;++it2) {
-                if ((*it2)->getName() == it->masterNodeName) {
+                if ((*it2)->getScriptName() == it->masterNodeName) {
                     masterNode = *it2;
                     break;
                 }

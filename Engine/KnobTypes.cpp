@@ -346,8 +346,8 @@ Double_Knob::restoreTracks(const std::list <SerializedTrack> & tracks,
             roto = lastRoto;
         } else {
             for (std::list<boost::shared_ptr<Node> >::const_iterator it2 = activeNodes.begin(); it2 != activeNodes.end() ;++it2) {
-                if ((*it2)->getName() == it->rotoNodeName) {
-                    lastNodeName = (*it2)->getName();
+                if ((*it2)->getScriptName() == it->rotoNodeName) {
+                    lastNodeName = (*it2)->getScriptName();
                     boost::shared_ptr<RotoContext> rotoCtx = (*it2)->getRotoContext();
                     assert(rotoCtx);
                     lastRoto = rotoCtx.get();

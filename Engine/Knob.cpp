@@ -3098,7 +3098,7 @@ KnobHolder::incrementRecursionLevel()
     
     /*NamedKnobHolder* named = dynamic_cast<NamedKnobHolder*>(this);
      if (named) {
-     std::cout << named->getName_mt_safe() <<  " INCR: " << _imp->actionsRecursionLevel.localData() <<  " ( "<<
+     std::cout << named->getScriptName_mt_safe() <<  " INCR: " << _imp->actionsRecursionLevel.localData() <<  " ( "<<
      QThread::currentThread() <<
      " ) main-thread = " << (QThread::currentThread() == qApp->thread()) << std::endl;
      }
@@ -3112,7 +3112,7 @@ KnobHolder::decrementRecursionLevel()
     _imp->actionsRecursionLevel.localData() -= 1;
     /*NamedKnobHolder* named = dynamic_cast<NamedKnobHolder*>(this);
      if (named) {
-     std::cout << named->getName_mt_safe() << " DECR: "<< _imp->actionsRecursionLevel.localData() <<  " ( "<<QThread::currentThread() <<
+     std::cout << named->getScriptName_mt_safe() << " DECR: "<< _imp->actionsRecursionLevel.localData() <<  " ( "<<QThread::currentThread() <<
      " ) main-thread = " << (QThread::currentThread() == qApp->thread()) << std::endl;
      }
      */
@@ -3125,7 +3125,7 @@ KnobHolder::getRecursionLevel() const
     if ( _imp->actionsRecursionLevel.hasLocalData() ) {
         /* const NamedKnobHolder* named = dynamic_cast<const NamedKnobHolder*>(this);
          if (named) {
-         std::cout << named->getName_mt_safe() << " GET: "<< _imp->actionsRecursionLevel.localData() <<  " ( "<<
+         std::cout << named->getScriptName_mt_safe() << " GET: "<< _imp->actionsRecursionLevel.localData() <<  " ( "<<
          QThread::currentThread() <<
          " ) main-thread = " << (QThread::currentThread() == qApp->thread()) << std::endl;
          }*/
@@ -3133,7 +3133,7 @@ KnobHolder::getRecursionLevel() const
     } else {
         /*const NamedKnobHolder* named = dynamic_cast<const NamedKnobHolder*>(this);
          if (named) {
-         std::cout << named->getName_mt_safe() << "GET: "<< 0 <<  "( "<< QThread::currentThread() <<
+         std::cout << named->getScriptName_mt_safe() << "GET: "<< 0 <<  "( "<< QThread::currentThread() <<
          " ) main-thread = " << (QThread::currentThread() == qApp->thread()) << std::endl;
          }
          */

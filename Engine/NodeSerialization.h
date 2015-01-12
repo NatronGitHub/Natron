@@ -37,7 +37,8 @@ CLANG_DIAG_ON(unused-parameter)
 #define NODE_SERIALIZATION_INTRODUCES_MULTI_INSTANCE 3
 #define NODE_SERIALIZATION_INTRODUCES_USER_KNOBS 4
 #define NODE_SERIALIZATION_INTRODUCES_GROUPS 5
-#define NODE_SERIALIZATION_CURRENT_VERSION NODE_SERIALIZATION_INTRODUCES_GROUPS
+#define NODE_SERIALIZATION_EMBEDS_MULTI_INSTANCE_CHILDREN 6
+#define NODE_SERIALIZATION_CURRENT_VERSION NODE_SERIALIZATION_EMBEDS_MULTI_INSTANCE_CHILDREN
 
 namespace Natron {
 class Node;
@@ -169,7 +170,7 @@ private:
     std::string _multiInstanceParentName;
     std::list<boost::shared_ptr<GroupKnobSerialization> > _userPages;
     
-    ///If this node is a group, this is the children
+    ///If this node is a group or a multi-instance, this is the children
     std::list< boost::shared_ptr<NodeSerialization> > _children;
     
     friend class boost::serialization::access;
@@ -193,6 +194,7 @@ private:
         if (_hasRotoContext) {
             ar & boost::serialization::make_nvp("RotoContext",_rotoContext);
         }
+        
         ar & boost::serialization::make_nvp("MultiInstanceParent",_multiInstanceParentName);
         
         int userPagesCount = (int)_userPages.size();

@@ -1947,7 +1947,7 @@ public:
     {
     }
 
-    virtual std::string getName_mt_safe() const = 0;
+    virtual std::string getScriptName_mt_safe() const = 0;
 };
 
 

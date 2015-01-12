@@ -83,6 +83,8 @@ public:
      **/
     void initNodeName(const std::string& pluginLabel,std::string* nodeName);
     
+    bool setNodeName(const std::string& baseName,bool appendDigit,bool errorIfExists,std::string* nodeName);
+    
     /**
      * @brief Returns true if there is one or more nodes in the collection.
      **/

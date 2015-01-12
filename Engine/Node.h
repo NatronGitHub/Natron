@@ -451,20 +451,6 @@ public:
     /*============================*/
 
     /**
-     * @brief The node unique name.
-     **/
-    const std::string & getName() const;
-    std::string getName_mt_safe() const;
-
-    /**
-     @brief Returns the name of the node, prepended by the name of all the group containing it, e.g:
-     * - a node in the "root" project would be: Blur1
-     * - a node within the group 1 of the project would be : <g>group1</g>Blur1
-     * - a node within the group 1 of the group 1 of the project would be : <g>group1</g><g>group1</g>Blur1
-     **/
-    std::string getFullySpecifiedName() const;
-
-    /**
      * @brief Forwarded to the live effect instance
      **/
     std::string getPluginID() const;
@@ -842,9 +828,30 @@ public:
      * @brief Set the node name.
      * @returns True upon success, false otherwise. An error dialog will be displayed upon error.
      **/
-    bool setName(const QString & name);
+    bool setScriptName(const std::string & name);
 
-    void setName_no_error_check(const QString & name);
+    void setScriptName_no_error_check(const std::string & name);
+    
+    
+    /**
+     * @brief The node unique name.
+     **/
+    const std::string & getScriptName() const;
+    std::string getScriptName_mt_safe() const;
+    
+    /**
+     @brief Returns the name of the node, prepended by the name of all the group containing it, e.g:
+     * - a node in the "root" project would be: Blur1
+     * - a node within the group 1 of the project would be : <g>group1</g>Blur1
+     * - a node within the group 1 of the group 1 of the project would be : <g>group1</g><g>group1</g>Blur1
+     **/
+    std::string getFullyQualifiedName() const;
+
+    void setLabel(const std::string& label);
+    
+    const std::string& getLabel() const;
+    
+    std::string getLabel_mt_safe() const;
     
     std::string getBeforeRenderCallback() const;
     std::string getBeforeFrameRenderCallback() const;
@@ -853,7 +860,7 @@ public:
     
 private:
     
-    void setNameInternal(const QString& name);
+    void setNameInternal(const std::string& name);
 
 public Q_SLOTS:
 
@@ -880,7 +887,7 @@ public Q_SLOTS:
 
     void onMasterNodeDeactivated();
 
-    void onInputNameChanged(const QString & name);
+    void onInputLabelChanged(const QString & name);
 
     void notifySettingsPanelClosed(bool closed )
     {
@@ -915,8 +922,9 @@ Q_SIGNALS:
 
     void canRedoChanged(bool);
 
-    void nameChanged(QString);
-    void inputNameChanged(int,QString);
+    void labelChanged(QString);
+    
+    void inputLabelChanged(int,QString);
 
     void refreshEdgesGUI();
 
