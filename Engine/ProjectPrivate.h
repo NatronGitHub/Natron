@@ -94,6 +94,12 @@ struct ProjectPrivate
     boost::shared_ptr<String_Knob> projectCreationDate;
     boost::shared_ptr<String_Knob> saveDate;
     
+    boost::shared_ptr<String_Knob> onProjectLoadCB;
+    boost::shared_ptr<String_Knob> onProjectSaveCB;
+    boost::shared_ptr<String_Knob> onProjectCloseCB;
+    boost::shared_ptr<String_Knob> onNodeCreated;
+    boost::shared_ptr<String_Knob> onNodeDeleted;
+    
     boost::shared_ptr<TimeLine> timeline; // global timeline
     bool autoSetProjectFormat;
     Natron::OutputEffectInstance* lastTimelineSeekCaller;
@@ -104,7 +110,7 @@ struct ProjectPrivate
     bool isSavingProject; //< true when the project is saving
     boost::shared_ptr<QTimer> autoSaveTimer;
     std::list<boost::shared_ptr<QFutureWatcher<void> > > autoSaveFutures;
-
+    bool projectClosing;
     
     ProjectPrivate(Natron::Project* project);
 

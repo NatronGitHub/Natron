@@ -192,6 +192,10 @@ struct Node::Implementation
     
     void ifGroupForceHashChangeOfInputs();
     
+    void runOnNodeCreatedCB();
+    
+    void runOnNodeDeleteCB();
+    
     Node* _publicInterface;
     
     boost::weak_ptr<NodeCollection> group;
@@ -500,9 +504,12 @@ Node::load(const std::string & parentMultiInstanceName,
         }
     }
     
-    
     computeHash();
     assert(_imp->liveInstance);
+    
+    if (serialization.isNull()) {
+        _imp->runOnNodeCreatedCB();
+    }
 } // load
 
 boost::shared_ptr<NodeCollection>
@@ -2651,6 +2658,10 @@ Node::deactivate(const std::list< Node* > & outputsToDisconnect,
         _imp->activated = false;
     }
     
+    if (!getApp()->getProject()->isProjectClosing()) {
+        _imp->runOnNodeDeleteCB();
+    }
+    
 } // deactivate
 
 void
@@ -2732,8 +2743,9 @@ Node::activate(const std::list< Node* > & outputsToRestore,
     if (group) {
         group->notifyNodeActivated(shared_from_this());
     }
-
     Q_EMIT activated(triggerRender);
+    
+    _imp->runOnNodeCreatedCB();
 } // activate
 
 void
@@ -4534,6 +4546,46 @@ std::string
 Node::getKnobChangedCallback() const
 {
     return _imp->knobChangedCallback ? _imp->knobChangedCallback->getValue() : std::string();
+}
+
+void
+Node::Implementation::runOnNodeCreatedCB()
+{
+    std::string cb = _publicInterface->getApp()->getProject()->getOnNodeCreatedCB();
+    if (cb.empty()) {
+        return;
+    }
+    std::string delScript;
+    std::string thisNode = _publicInterface->declareCurrentNodeVariable_Python(&delScript);
+    cb = thisNode + cb + delScript;
+    
+    std::string err;
+    std::string output;
+    if (!Natron::interpretPythonScript(cb, &err, &output)) {
+        _publicInterface->getApp()->appendToScriptEditor("Failed to run onNodeCreated callback: " + err);
+    } else if (!output.empty()) {
+        _publicInterface->getApp()->appendToScriptEditor(output);
+    }
+}
+
+void
+Node::Implementation::runOnNodeDeleteCB()
+{
+    std::string cb = _publicInterface->getApp()->getProject()->getOnNodeDeleteCB();
+    if (cb.empty()) {
+        return;
+    }
+    std::string delScript;
+    std::string thisNode = _publicInterface->declareCurrentNodeVariable_Python(&delScript);
+    cb = thisNode + cb + delScript;
+    
+    std::string err;
+    std::string output;
+    if (!Natron::interpretPythonScript(cb, &err, &output)) {
+        _publicInterface->getApp()->appendToScriptEditor("Failed to run onNodeDelete callback: " + err);
+    } else if (!output.empty()) {
+        _publicInterface->getApp()->appendToScriptEditor(output);
+    }
 }
 
 //////////////////////////////////

@@ -276,6 +276,17 @@ Project::loadProjectInternal(const QString & path,
     _imp->natronVersion->setValue(generateUserFriendlyNatronVersionName(),0);
     getApp()->endProgress(this);
     Q_EMIT projectNameChanged(name);
+    
+    std::string onProjectLoad = getOnProjectLoadCB();
+    if (!onProjectLoad.empty()) {
+        std::string err,output;
+        if (!Natron::interpretPythonScript(onProjectLoad + "()\n", &err, &output)) {
+            getApp()->appendToScriptEditor("Failed to run onProjectLoad callback: " + err);
+        } else {
+            getApp()->appendToScriptEditor(output);
+        }
+    }
+    
     return ret;
 }
 
@@ -413,6 +424,28 @@ Project::saveProjectInternal(const QString & path,
         _imp->lastAutoSaveFilePath = filePath;
     } else {
         filePath = path + actualFileName;
+    }
+    
+    std::string onProjectSave = getOnProjectSaveCB();
+    if (!onProjectSave.empty()) {
+        onProjectSave = "filename = " + filePath.toStdString() + "\nret = "
+        + onProjectSave + "()\ndel filename";
+        std::string err;
+        std::string output;
+        if (!Natron::interpretPythonScript(onProjectSave, &err, &output)) {
+            getApp()->appendToScriptEditor("Failed to run onProjectSave callback: " + err);
+        } else {
+            PyObject* mainModule = getMainModule();
+            assert(mainModule);
+            PyObject* ret = PyObject_GetAttrString(mainModule, "ret");
+            assert(ret);
+            if (ret) {
+                filePath = QString(PY3String_asString(ret).c_str());
+            }
+            if (!output.empty()) {
+                getApp()->appendToScriptEditor(output);
+            }
+        }
     }
 
     ///Use a temporary file to save, so if Natron crashes it doesn't corrupt the user save.
@@ -879,6 +912,71 @@ Project::initializeKnobs()
     comments->setAnimationEnabled(false);
     infoPage->addKnob(comments);
     
+    boost::shared_ptr<Page_Knob> pythonPage = Natron::createKnob<Page_Knob>(this, "Python");
+    _imp->onProjectLoadCB = Natron::createKnob<String_Knob>(this, "On project loaded");
+    _imp->onProjectLoadCB->setName("onProjectLoad");
+    _imp->onProjectLoadCB->setHintToolTip("Add here the name of a Python-defined function that will be called each time this project "
+                                          "is loaded either from an auto-save or by a user action. It will be called immediately after all "
+                                          "nodes are re-created. This callback will not be called "
+                                          "when creating new projects. No special variable is preset prior to calling this function.");
+    _imp->onProjectLoadCB->setAnimationEnabled(false);
+    std::string onProjectLoad = appPTR->getCurrentSettings()->getDefaultOnProjectLoadedCB();
+    _imp->onProjectLoadCB->setValue(onProjectLoad, 0);
+    pythonPage->addKnob(_imp->onProjectLoadCB);
+    
+    
+    _imp->onProjectSaveCB = Natron::createKnob<String_Knob>(this, "On project save");
+    _imp->onProjectSaveCB->setName("onProjectSave");
+    _imp->onProjectSaveCB->setHintToolTip("Add here the name of a Python-defined function that will be called each time this project "
+                                          "is saved by the user. This will be called prior to actually saving the project and can be used "
+                                          "to change the filename of the file.\n"
+                                          "The global variable \"filename\" will be declared beforehand. This function should then "
+                                          "return the filename under which the file should be saved.");
+    _imp->onProjectSaveCB->setAnimationEnabled(false);
+    std::string onProjectSave = appPTR->getCurrentSettings()->getDefaultOnProjectSaveCB();
+    _imp->onProjectSaveCB->setValue(onProjectSave, 0);
+    pythonPage->addKnob(_imp->onProjectSaveCB);
+    
+    _imp->onProjectCloseCB = Natron::createKnob<String_Knob>(this, "On project close");
+    _imp->onProjectCloseCB->setName("onProjectClose");
+    _imp->onProjectCloseCB->setHintToolTip("Add here the name of a Python-defined function that will be called each time this project "
+                                          "is closed or if the user closes the application while this project is opened. This is called "
+                                           "prior to removing anything from the project. No special variable is preset prior to calling "
+                                           "this function.");
+    _imp->onProjectCloseCB->setAnimationEnabled(false);
+    std::string onProjectClose = appPTR->getCurrentSettings()->getDefaultOnProjectCloseCB();
+    _imp->onProjectCloseCB->setValue(onProjectClose, 0);
+    pythonPage->addKnob(_imp->onProjectCloseCB);
+    
+    _imp->onNodeCreated = Natron::createKnob<String_Knob>(this, "On node created");
+    _imp->onNodeCreated->setName("onNodeCreated");
+    _imp->onNodeCreated->setHintToolTip("Add here the name of a Python-defined function that will be called each time a node "
+                                           "is created. The boolean variable userEdited will be set to True if the node was created "
+                                        "by the user or False otherwise (such as when loading a project, or pasting a node).\n"
+                                        "The global variable \"thisNode\" will be declared beforhand, referencing the node that has "
+                                        "created.");
+    _imp->onNodeCreated->setAnimationEnabled(false);
+    std::string onNodeCreated = appPTR->getCurrentSettings()->getDefaultOnNodeCreatedCB();
+    _imp->onNodeCreated->setValue(onNodeCreated, 0);
+    pythonPage->addKnob(_imp->onNodeCreated);
+    
+    _imp->onNodeDeleted = Natron::createKnob<String_Knob>(this, "On node delete");
+    _imp->onNodeDeleted->setName("onNodeDeleted");
+    _imp->onNodeDeleted->setHintToolTip("Add here the name of a Python-defined function that will be called each time a node "
+                                        "is about to be deleted. \n"
+                                        "The global variable \"thisNode\" will be declared beforhand, referencing the node that is to be "
+                                        "deleted. \n"
+                                        "Note that this function will not be called when the project is closing.");
+    _imp->onNodeDeleted->setAnimationEnabled(false);
+    std::string onNodeDelete = appPTR->getCurrentSettings()->getDefaultOnNodeDeleteCB();
+    _imp->onNodeDeleted->setValue(onNodeDelete, 0);
+    pythonPage->addKnob(_imp->onNodeDeleted);
+
+    
+    comments->setAsMultiLine();
+    comments->setAnimationEnabled(false);
+    infoPage->addKnob(comments);
+    
     Q_EMIT knobsInitialized();
 } // initializeKnobs
 
@@ -1262,6 +1360,19 @@ Project::autoSavesDir()
 void
 Project::reset()
 {
+    assert(QThread::currentThread() == qApp->thread());
+    
+    _imp->projectClosing = true;
+    std::string onProjectClose = getOnProjectCloseCB();
+    if (!onProjectClose.empty()) {
+        std::string err;
+        if (!Natron::interpretPythonScript(onProjectClose + "()\n", &err, 0)) {
+            Natron::errorDialog(tr("Callback failure").toStdString(), tr("Error when running the onProjectClose callback: ").toStdString()
+                                + err);
+        }
+        
+    }
+    
     {
         QMutexLocker l(&_imp->projectLock);
         _imp->autoSetProjectFormat = appPTR->getCurrentSettings()->isAutoProjectFormatEnabled();
@@ -1289,6 +1400,7 @@ Project::reset()
     
     Q_EMIT projectNameChanged(NATRON_PROJECT_UNTITLED);
     clearNodes(true);
+    _imp->projectClosing = false;
 }
 
 bool
@@ -1776,6 +1888,45 @@ boost::shared_ptr<Path_Knob>
 Project::getEnvVarKnob() const
 {
     return _imp->envVars;
+}
+    
+    
+    
+std::string
+Project::getOnProjectLoadCB() const
+{
+    return _imp->onProjectLoadCB->getValue();
+}
+    
+std::string
+Project::getOnProjectSaveCB() const
+{
+    return _imp->onProjectSaveCB->getValue();
+}
+    
+std::string
+Project::getOnProjectCloseCB() const
+{
+    return _imp->onProjectCloseCB->getValue();
+}
+
+std::string
+Project::getOnNodeCreatedCB() const
+{
+    return _imp->onNodeCreated->getValue();
+}
+    
+std::string
+Project::getOnNodeDeleteCB() const
+{
+    return _imp->onNodeDeleted->getValue();
+}
+    
+bool
+Project::isProjectClosing() const
+{
+    assert(QThread::currentThread() == qApp->thread());
+    return _imp->projectClosing;
 }
     
 } //namespace Natron

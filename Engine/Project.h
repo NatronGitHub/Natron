@@ -246,7 +246,14 @@ public:
     
     boost::shared_ptr<Path_Knob> getEnvVarKnob() const;
     
+    std::string getOnProjectLoadCB() const;
+    std::string getOnProjectSaveCB() const;
+    std::string getOnProjectCloseCB() const;
     
+    std::string getOnNodeCreatedCB() const;
+    std::string getOnNodeDeleteCB() const;
+    
+    bool isProjectClosing() const;
 public Q_SLOTS:
 
     void onAutoSaveTimerTriggered();

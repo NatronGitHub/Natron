@@ -233,6 +233,12 @@ public:
     void getPythonGroupsSearchPaths(std::list<std::string>* templates) const;
     void appendPythonGroupsPath(const std::string& path);
     
+    std::string getDefaultOnProjectLoadedCB();
+    std::string getDefaultOnProjectSaveCB();
+    std::string getDefaultOnProjectCloseCB();
+    std::string getDefaultOnNodeCreatedCB();
+    std::string getDefaultOnNodeDeleteCB();
+    
 private:
 
     virtual void initializeKnobs() OVERRIDE FINAL;
@@ -338,6 +344,13 @@ private:
     boost::shared_ptr<Bool_Knob> _preferBundledPlugins;
     boost::shared_ptr<Bool_Knob> _loadBundledPlugins;
     boost::shared_ptr<Page_Knob> _pluginsTab;
+    
+    boost::shared_ptr<Page_Knob> _pythonPage;
+    boost::shared_ptr<String_Knob> _defaultOnProjectLoaded;
+    boost::shared_ptr<String_Knob> _defaultOnProjectSave;
+    boost::shared_ptr<String_Knob> _defaultOnProjectClose;
+    boost::shared_ptr<String_Knob> _defaultOnNodeCreated;
+    boost::shared_ptr<String_Knob> _defaultOnNodeDelete;
     
     std::map<std::string,boost::shared_ptr<Choice_Knob> > _perPluginRenderScaleSupport;
     bool _wereChangesMadeSinceLastSave;

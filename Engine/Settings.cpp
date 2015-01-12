@@ -764,6 +764,42 @@ Settings::initializeKnobs()
     _pluginsTab->addKnob(_preferBundledPlugins);
     
     
+    _pythonPage = Natron::createKnob<Page_Knob>(this, "Python");
+    
+    _defaultOnProjectLoaded = Natron::createKnob<String_Knob>(this, "Default onProjectLoaded");
+    _defaultOnProjectLoaded->setName("defOnProjectLoaded");
+    _defaultOnProjectLoaded->setHintToolTip("The default onProjectLoaded callback that will be set for new projects.");
+    _defaultOnProjectLoaded->setAnimationEnabled(false);
+    _pythonPage->addKnob(_defaultOnProjectLoaded);
+    
+    _defaultOnProjectSave = Natron::createKnob<String_Knob>(this, "Default onProjectSave");
+    _defaultOnProjectSave->setName("defOnProjectSave");
+    _defaultOnProjectSave->setHintToolTip("The default onProjectSave callback that will be set for new projects.");
+    _defaultOnProjectSave->setAnimationEnabled(false);
+    _pythonPage->addKnob(_defaultOnProjectSave);
+
+    
+    _defaultOnProjectClose = Natron::createKnob<String_Knob>(this, "Default onProjectClose");
+    _defaultOnProjectClose->setName("defOnProjectClose");
+    _defaultOnProjectClose->setHintToolTip("The default onProjectClose callback that will be set for new projects.");
+    _defaultOnProjectClose->setAnimationEnabled(false);
+    _pythonPage->addKnob(_defaultOnProjectClose);
+
+    
+    _defaultOnNodeCreated = Natron::createKnob<String_Knob>(this, "Default onNodeCreated");
+    _defaultOnNodeCreated->setName("defOnNodeCreated");
+    _defaultOnNodeCreated->setHintToolTip("The default onNodeCreated callback that will be set for new projects.");
+    _defaultOnNodeCreated->setAnimationEnabled(false);
+    _pythonPage->addKnob(_defaultOnNodeCreated);
+
+    
+    _defaultOnNodeDelete = Natron::createKnob<String_Knob>(this, "Default onNodeDelete");
+    _defaultOnNodeDelete->setName("defOnNodeDelete");
+    _defaultOnNodeDelete->setHintToolTip("The default onNodeDelete callback that will be set for new projects.");
+    _defaultOnNodeDelete->setAnimationEnabled(false);
+    _pythonPage->addKnob(_defaultOnNodeDelete);
+
+    
     setDefaultValues();
 } // initializeKnobs
 
@@ -2210,4 +2246,34 @@ Settings::appendPythonGroupsPath(const std::string& path)
     _templatesPluginPaths->appendPath(path);
     QSettings settings(NATRON_ORGANIZATION_NAME,NATRON_APPLICATION_NAME);
     settings.setValue(_templatesPluginPaths->getName().c_str(), QVariant(_templatesPluginPaths->getValue(0).c_str()));
+}
+
+std::string
+Settings::getDefaultOnProjectLoadedCB()
+{
+    return _defaultOnProjectLoaded->getValue();
+}
+
+std::string
+Settings::getDefaultOnProjectSaveCB()
+{
+    return _defaultOnProjectSave->getValue();
+}
+
+std::string
+Settings::getDefaultOnProjectCloseCB()
+{
+    return _defaultOnProjectClose->getValue();
+}
+
+std::string
+Settings::getDefaultOnNodeCreatedCB()
+{
+    return _defaultOnNodeCreated->getValue();
+}
+
+std::string
+Settings::getDefaultOnNodeDeleteCB()
+{
+    return _defaultOnNodeDelete->getValue();
 }
