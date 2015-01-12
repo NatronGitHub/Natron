@@ -335,11 +335,21 @@ NodeCollection::initNodeName(const std::string& pluginLabel,std::string* nodeNam
         baseName[baseName.size() - 3] == 'O') {
         baseName = baseName.substr(0,baseName.size() - 3);
     }
+    
+    ///Remove any non alpha-numeric characters from the baseName
+    std::locale loc;
+    std::string cpy;
+    for (std::size_t i = 0; i < baseName.size(); ++i) {
+        if (std::isalnum(baseName[i], loc)) {
+            cpy.push_back(baseName[i]);
+        }
+    }
+    
     bool foundNodeWithName = false;
     
     {
         std::stringstream ss;
-        ss << baseName << no;
+        ss << cpy << no;
         *nodeName = ss.str();
     }
     do {
@@ -355,7 +365,7 @@ NodeCollection::initNodeName(const std::string& pluginLabel,std::string* nodeNam
             ++no;
             {
                 std::stringstream ss;
-                ss << baseName << no;
+                ss << cpy << no;
                 *nodeName = ss.str();
             }
         }
