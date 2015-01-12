@@ -314,9 +314,11 @@ public:
     
     /**
      * @brief Called by the Histogram when it wants to refresh. It returns a pointer to the last
-     * rendered image by the viewer.
+     * rendered image by the viewer. It doesn't re-render the image if it is not present.
      **/
     boost::shared_ptr<Natron::Image> getLastRenderedImage(int textureIndex) const;
+    
+    boost::shared_ptr<Natron::Image> getLastRenderedImageByMipMapLevel(int textureIndex,unsigned int mipMapLevel) const;
 
     /**
      * @brief Get the color of the currently displayed image at position x,y.

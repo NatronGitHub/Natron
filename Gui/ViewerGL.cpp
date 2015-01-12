@@ -90,6 +90,8 @@ GCC_DIAG_OFF(deprecated-declarations)
 #define M_LN2       0.693147180559945309417232121458176568  /* loge(2)        */
 #endif
 
+
+#define MAX_MIP_MAP_LEVELS 20
 /*This class is the the core of the viewer : what displays images, overlays, etc...
    Everything related to OpenGL will (almost always) be in this class */
 
@@ -218,6 +220,7 @@ struct ViewerGL::Implementation
         displayingImageOffset[0] = displayingImageOffset[1] = 0.;
         for (int i = 0; i < 2 ; ++i) {
             displayingImageTime[i] = 0;
+            lastRenderedImage[i].resize(MAX_MIP_MAP_LEVELS);
         }
         assert( qApp && qApp->thread() == QThread::currentThread() );
         menu->setFont( QFont(appFont,appFontSize) );
@@ -310,7 +313,7 @@ struct ViewerGL::Implementation
     GLuint prevBoundTexture; // @see bindTextureAndActivateShader/unbindTextureAndReleaseShader
 
     mutable QMutex lastRenderedImageMutex; //protects lastRenderedImage & memoryHeldByLastRenderedImages
-    boost::shared_ptr<Natron::Image> lastRenderedImage[2]; //<  last image passed to transferRAMBuffer
+    std::vector<boost::shared_ptr<Natron::Image> > lastRenderedImage[2]; //<  last image passed to transferRAMBuffer
     U64 memoryHeldByLastRenderedImages[2];
     
     QSize sizeH;
@@ -2401,7 +2404,7 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
         }
         {
             QMutexLocker k(&_imp->lastRenderedImageMutex);
-            _imp->lastRenderedImage[textureIndex] = image;
+            _imp->lastRenderedImage[textureIndex][mipMapLevel] = image;
         }
         _imp->memoryHeldByLastRenderedImages[textureIndex] = image->size();
         internalNode->registerPluginMemory(_imp->memoryHeldByLastRenderedImages[textureIndex]);
@@ -2419,7 +2422,9 @@ ViewerGL::clearLastRenderedImage()
     ViewerInstance* internalNode = getInternalNode();
 
     for (int i = 0; i < 2; ++i) {
-        _imp->lastRenderedImage[i].reset();
+        for (U32 j = 0; j < _imp->lastRenderedImage[i].size(); ++j) {
+            _imp->lastRenderedImage[i][j].reset();
+        }
         if (_imp->memoryHeldByLastRenderedImages[i] > 0) {
             internalNode->unregisterPluginMemory(_imp->memoryHeldByLastRenderedImages[i]);
             _imp->memoryHeldByLastRenderedImages[i] = 0;
@@ -4471,7 +4476,9 @@ ViewerGL::clearLastRenderedTexture()
         QMutexLocker l(&_imp->lastRenderedImageMutex);
         U64 toUnRegister = 0;
         for (int i = 0; i < 2; ++i) {
-            _imp->lastRenderedImage[i].reset();
+            for (U32 j = 0; j < _imp->lastRenderedImage[i].size(); ++j) {
+                _imp->lastRenderedImage[i][j].reset();
+            }
             toUnRegister += _imp->memoryHeldByLastRenderedImages[i];
         }
         if (toUnRegister > 0) {
@@ -4492,8 +4499,49 @@ ViewerGL::getLastRenderedImage(int textureIndex) const
         return boost::shared_ptr<Natron::Image>();
     }
     QMutexLocker l(&_imp->lastRenderedImageMutex);
+    for (U32 i = 0; i < _imp->lastRenderedImage[textureIndex].size(); ++i) {
+        if (_imp->lastRenderedImage[textureIndex][i]) {
+            return _imp->lastRenderedImage[textureIndex][i];
+        }
+    }
+    return boost::shared_ptr<Natron::Image>();
+}
+
+boost::shared_ptr<Natron::Image>
+ViewerGL::getLastRenderedImageByMipMapLevel(int textureIndex,unsigned int mipMapLevel) const
+{
+    // always running in the main thread
+    assert( qApp && qApp->thread() == QThread::currentThread() );
     
-    return _imp->lastRenderedImage[textureIndex];
+    if ( !getInternalNode()->getNode()->isActivated() ) {
+        return boost::shared_ptr<Natron::Image>();
+    }
+    
+    QMutexLocker l(&_imp->lastRenderedImageMutex);
+    assert(_imp->lastRenderedImage[textureIndex].size() > mipMapLevel);
+    
+    if (_imp->lastRenderedImage[textureIndex][mipMapLevel]) {
+        return _imp->lastRenderedImage[textureIndex][mipMapLevel];
+    }
+    
+    //Find an image at higher scale
+    if (mipMapLevel > 0) {
+        for (int i = (int)mipMapLevel - 1; i >= 0; --i) {
+            if (_imp->lastRenderedImage[textureIndex][i]) {
+                return _imp->lastRenderedImage[textureIndex][i];
+            }
+        }
+    }
+    
+    //Find an image at lower scale
+    for (U32 i = mipMapLevel + 1; i < _imp->lastRenderedImage[textureIndex].size(); ++i) {
+        if (_imp->lastRenderedImage[textureIndex][i]) {
+            return _imp->lastRenderedImage[textureIndex][i];
+        }
+    }
+    
+    return boost::shared_ptr<Natron::Image>();
+
 }
 
 #ifndef M_LN2
@@ -4598,14 +4646,11 @@ ViewerGL::getColorAt(double x,
     assert(r && g && b && a);
     assert(textureIndex == 0 || textureIndex == 1);
     
-    boost::shared_ptr<Image> img;
-    {
-        QMutexLocker l(&_imp->lastRenderedImageMutex);
-        img = _imp->lastRenderedImage[textureIndex];
-    }
-
     unsigned int mipMapLevel = (unsigned int)getMipMapLevelCombinedToZoomFactor();
-    if ( !img || (img->getMipMapLevel() != mipMapLevel) ) {
+    boost::shared_ptr<Image> img = getLastRenderedImageByMipMapLevel(textureIndex,mipMapLevel);
+
+    
+    if (!img) {
         double colorGPU[4];
         getTextureColorAt(x, y, &colorGPU[0], &colorGPU[1], &colorGPU[2], &colorGPU[3]);
         *a = colorGPU[3];
@@ -4638,7 +4683,7 @@ ViewerGL::getColorAt(double x,
     
     const double par = img->getPixelAspectRatio();
     
-    double scale = 1. / (1 << mipMapLevel);
+    double scale = 1. / (1 << img->getMipMapLevel());
     
     ///Convert to pixel coords
     int xPixel = std::floor(x  * scale / par);
@@ -4690,13 +4735,14 @@ ViewerGL::getColorAtRect(const RectD &rect, // rectangle in canonical coordinate
     assert(r && g && b && a);
     assert(textureIndex == 0 || textureIndex == 1);
     
-    boost::shared_ptr<Image> img;
-    {
-        QMutexLocker l(&_imp->lastRenderedImageMutex);
-        img = _imp->lastRenderedImage[textureIndex];
-    }
-  
     unsigned int mipMapLevel = (unsigned int)getMipMapLevelCombinedToZoomFactor();
+
+    boost::shared_ptr<Image> img = getLastRenderedImageByMipMapLevel(textureIndex, mipMapLevel);
+  
+    if (img) {
+        mipMapLevel = img->getMipMapLevel();
+    }
+    
     ///Convert to pixel coords
     RectI rectPixel;
     rectPixel.set_left(  int( std::floor( rect.left() ) ) >> mipMapLevel);
@@ -4709,7 +4755,7 @@ ViewerGL::getColorAtRect(const RectD &rect, // rectangle in canonical coordinate
     double gSum = 0.;
     double bSum = 0.;
     double aSum = 0.;
-    if ( !img || (img->getMipMapLevel() != mipMapLevel) ) {
+    if ( !img ) {
         
         Texture::DataTypeEnum type;
         if (_imp->displayTextures[0]) {
