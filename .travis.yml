@@ -63,7 +63,8 @@ script:
   - tools/travis/build.sh
 
 after_success:
-  - if [ "$CC" = "gcc" ]; then cd Tests; gcov *.gcno > /dev/null; cd ..; coveralls -n --exclude 'Tests/google-test' --exclude 'Tests/google-mock' --exclude 'libs/OpenFX' --exclude-pattern '.*/moc_.*\.cpp' --exclude-pattern='.*/Tests/.*\.cpp' --exclude-pattern='.*/Tests/.*\.h'; fi
+  - if [ "$CC" = "gcc" -a "$TRAVIS_OS_NAME" == "linux"  ]; then ln -s Tests/google-mock Tests/google-test .; cd Tests; gcov -lp *.gcno > /dev/null; cd ..; coveralls -n --exclude /usr/include --exclude 'Tests/google-test' --exclude 'Tests/google-mock' --exclude 'google-test' --exclude 'google-mock' --exclude 'libs/OpenFX' --exclude-pattern '.*/moc_.*\.cpp' --exclude-pattern='.*/Tests/.*\.cpp' --exclude-pattern='.*/Tests/.*\.h'; fi
+#  - if [ "$CC" = "gcc" -a "$TRAVIS_OS_NAME" == "linux" ]; then ln -s Tests/google-mock Tests/google-test .; coveralls --exclude /usr/include --exclude 'Tests/google-test' --exclude 'Tests/google-mock' --exclude 'google-test' --exclude 'google-mock' --exclude 'libs/OpenFX' --exclude-pattern '.*/moc_.*\.cpp' --exclude-pattern='.*/Tests/.*\.cpp' --exclude-pattern='.*/Tests/.*\.h' --gcov-options '\-lp'; fi
 
 after_failure:
   - cat install_dependencies.log || true
