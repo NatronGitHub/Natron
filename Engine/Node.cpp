@@ -4445,9 +4445,11 @@ Node::declareNodeVariableToPython(const std::string& nodeName)
     std::string appID = QString("app%1").arg(getApp()->getAppID() + 1).toStdString();
     
     std::string varName = appID + "." + nodeName;
-    bool alreadyDefined;
-    (void)getAttrRecursive(varName, mainModule, &alreadyDefined);
-    
+    bool alreadyDefined = false;
+    PyObject* nodeObj = getAttrRecursive(varName, mainModule, &alreadyDefined);
+    assert(nodeObj);
+    (void)nodeObj;
+
     if (!alreadyDefined) {
         std::string script = varName + " = " + appID + ".getNode(\"";
         script.append(nodeName);
@@ -4499,17 +4501,21 @@ Node::declarePythonFields()
     std::string fullName = getFullySpecifiedName();
     
     std::string appID = QString("app%1").arg(getApp()->getAppID() + 1).toStdString();
-    bool alreadyDefined;
+    bool alreadyDefined = false;
     
     std::string nodeFullName = appID + "." + fullName;
     PyObject* nodeObj = getAttrRecursive(nodeFullName, getMainModule(), &alreadyDefined);
-    assert(alreadyDefined);
-    
+    assert(nodeObj);
+    (void)nodeObj;
+    if (!alreadyDefined) {
+        qDebug() << QString("declarePythonFields(): attribute ") + nodeFullName.c_str() + " is not defined";
+        throw std::logic_error(std::string("declarePythonFields(): attribute ") + nodeFullName + " is not defined");
+    }
     const std::vector<boost::shared_ptr<KnobI> >& knobs = getKnobs();
     for (U32 i = 0; i < knobs.size(); ++i) {
         const std::string& knobName = knobs[i]->getName();
         if (!knobName.empty() && knobName.find(" ") == std::string::npos && !std::isdigit(knobName[0],locale)) {
-            declareParameterAsNodeField(nodeFullName,nodeObj, knobName);
+            declareParameterAsNodeField(nodeFullName, nodeObj, knobName);
         }
     }
 }
