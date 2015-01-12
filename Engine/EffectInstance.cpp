@@ -533,7 +533,7 @@ struct EffectInstance::Implementation
             args._firstFrame = firstFrame;
             args._lastFrame = lastFrame;
             args._validArgs = true;
-            _dst->setLocalData(args);
+            _dst->localData() = args;
 
         }
         
@@ -551,8 +551,9 @@ struct EffectInstance::Implementation
             : args(a)
               , _dst(dst)
         {
-            args._validArgs = true;
-            _dst->setLocalData(args);
+            RenderArgs& tls = _dst->localData();
+            args._validArgs = false;
+            tls._validArgs = true;
         }
 
         ~ScopedRenderArgs()
@@ -560,7 +561,9 @@ struct EffectInstance::Implementation
             assert( _dst->hasLocalData() );
             args._outputImage.reset();
             args._validArgs = false;
-            _dst->setLocalData(args);
+            RenderArgs& tls = _dst->localData();
+            tls._outputImage.reset();
+            tls._validArgs = false;
         }
 
         /**
@@ -594,7 +597,7 @@ struct EffectInstance::Implementation
             args._identityInputNb = inputNbIdentity;
             args._outputImage = outputImage;
             args._validArgs = true;
-            _dst->setLocalData(args);
+            _dst->localData() = args;
         }
         
         void setArgs_secondPass(const RoIMap & roiMap,
@@ -604,7 +607,7 @@ struct EffectInstance::Implementation
             args._firstFrame = firstFrame;
             args._lastFrame = lastFrame;
             args._validArgs = true;
-            _dst->setLocalData(args);
+            _dst->localData() = args;
         }
         
 
@@ -633,12 +636,8 @@ public:
     : storage(storage)
     {
         if (!imgs.empty()) {
-            if (storage->hasLocalData()) {
-                std::list<boost::shared_ptr<Natron::Image> >& data = storage->localData();
-                data.insert(data.begin(), imgs.begin(),imgs.end());
-            } else {
-                storage->setLocalData(imgs);
-            }
+            std::list<boost::shared_ptr<Natron::Image> >& data = storage->localData();
+            data.insert(data.begin(), imgs.begin(),imgs.end());
         } else {
             this->storage = 0;
         }

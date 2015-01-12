@@ -1744,7 +1744,7 @@ struct KnobHolder::KnobHolderPrivate
         // Initialize local data on the main-thread
         ///Don't remove the if condition otherwise this will crash because QApp is not initialized yet for Natron settings.
         if (appInstance_) {
-            actionsRecursionLevel.setLocalData(0);
+            actionsRecursionLevel.localData() = 0;
         }
     }
 };
@@ -2072,7 +2072,7 @@ void
 KnobHolder::incrementRecursionLevel()
 {
     if ( !_imp->actionsRecursionLevel.hasLocalData() ) {
-        _imp->actionsRecursionLevel.setLocalData(1);
+        _imp->actionsRecursionLevel.localData() = 1;
     } else {
         _imp->actionsRecursionLevel.localData() += 1;
     }

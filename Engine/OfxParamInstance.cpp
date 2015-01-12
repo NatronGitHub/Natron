@@ -2579,14 +2579,10 @@ OfxStringInstance::getV(va_list arg)
     const char **value = va_arg(arg, const char **);
     OfxStatus stat;
 
-    if ( _localString.hasLocalData() ) {
-        stat = get( _localString.localData() );
-    } else {
-        std::string localD;
-        stat = get(localD);
-        _localString.setLocalData(localD);
-    }
-    *value = _localString.localData().c_str();
+    std::string& tls = _localString.localData();
+    stat = get(tls);
+
+    *value = tls.c_str();
 
     return stat;
 }
@@ -2598,14 +2594,9 @@ OfxStringInstance::getV(OfxTime time,
     const char **value = va_arg(arg, const char **);
     OfxStatus stat;
 
-    if ( _localString.hasLocalData() ) {
-        stat = get( time,_localString.localData() );
-    } else {
-        std::string localD;
-        stat = get(time,localD);
-        _localString.setLocalData(localD);
-    }
-    *value = _localString.localData().c_str();
+    std::string& tls = _localString.localData();
+    stat = get( time,tls);
+    *value = tls.c_str();
 
     return stat;
 }
