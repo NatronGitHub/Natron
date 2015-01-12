@@ -1170,13 +1170,16 @@ AppManager::loadPythonGroups()
     PyObject* mainModule = getMainModule();
     
     QStringList allPlugins;
+    // module Natron must be imported even if there is no init.py at all
+    bool ok  = interpretPythonScript("import sys\n"
+                                     "import natron\n", &err, 0);
+    assert(ok);
     ///For all search paths, first add the path to the python path, then run in order the init.py and initGui.py
     for (int i = 0; i < templatesSearchPath.size(); ++i) {
         
-        std::string addToPythonPath("import sys\n"
-                                    "sys.path.append(\"");
-        addToPythonPath.append(templatesSearchPath[i].toStdString());
-        addToPythonPath.append("\")\n");
+        std::string addToPythonPath("sys.path.append(\"");
+        addToPythonPath += templatesSearchPath[i].toStdString();
+        addToPythonPath += "\")\n";
         
         bool ok  = interpretPythonScript(addToPythonPath, &err, 0);
         assert(ok);
