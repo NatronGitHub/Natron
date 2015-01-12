@@ -261,7 +261,8 @@ public:
     void getPluginFrameRange(int& first,int &last) const;
     
     
-    
+    void runCallbackWithVariables(const QString& callback);
+
 public Q_SLOTS:
     
     void doProcessFrameMainThread(const BufferedFrames& frames,bool mustSeekTimeline,int time);
@@ -281,12 +282,16 @@ public Q_SLOTS:
      * If you want to abortRendering() from one of those threads, call doAbortRenderingOnMainThreadInstead
      **/
     void abortRendering(bool blocking);
+    
+    void onExecuteCallbackOnMainThread(QString callback);
+    
 Q_SIGNALS:
     
     void s_doProcessOnMainThread(const BufferedFrames& frames,bool mustSeekTimeline,int time);
     
     void s_abortRenderingOnMainThread(bool blocking);
     
+    void s_executeCallbackOnMainThread(QString);
     
 protected:
     
@@ -385,6 +390,9 @@ protected:
     
     RenderEngine* getEngine() const;
     
+    void runCallback(const QString& callback);
+    
+
 private:
     
     virtual void run() OVERRIDE FINAL;
@@ -437,6 +445,7 @@ public:
     
     virtual ~DefaultScheduler();
     
+
 private:
     
     virtual void processFrame(const BufferedFrames& frames) OVERRIDE FINAL;
@@ -460,6 +469,8 @@ private:
     virtual void aboutToStartRender() OVERRIDE FINAL;
     
     virtual void onRenderStopped() OVERRIDE FINAL;
+    
+
     
     Natron::OutputEffectInstance* _effect;
 };

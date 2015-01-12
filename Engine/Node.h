@@ -846,6 +846,11 @@ public:
 
     void setName_no_error_check(const QString & name);
     
+    std::string getBeforeRenderCallback() const;
+    std::string getBeforeFrameRenderCallback() const;
+    std::string getAfterRenderCallback() const;
+    std::string getAfterFrameRenderCallback() const;
+    
 private:
     
     void setNameInternal(const QString& name);

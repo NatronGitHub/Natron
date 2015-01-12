@@ -141,6 +141,10 @@ struct Node::Implementation
     , refreshInfoButton()
     , useFullScaleImagesWhenRenderScaleUnsupported()
     , forceCaching()
+    , beforeFrameRender()
+    , beforeRender()
+    , afterFrameRender()
+    , afterRender()
     , rotoContext()
     , imagesBeingRenderedMutex()
     , imageBeingRenderedCond()
@@ -275,6 +279,11 @@ struct Node::Implementation
     
     boost::shared_ptr<Bool_Knob> useFullScaleImagesWhenRenderScaleUnsupported;
     boost::shared_ptr<Bool_Knob> forceCaching;
+    
+    boost::shared_ptr<String_Knob> beforeFrameRender;
+    boost::shared_ptr<String_Knob> beforeRender;
+    boost::shared_ptr<String_Knob> afterFrameRender;
+    boost::shared_ptr<String_Knob> afterRender;
     
     boost::shared_ptr<RotoContext> rotoContext; //< valid when the node has a rotoscoping context (i.e: paint context)
     
@@ -1618,11 +1627,63 @@ Node::initializeKnobs(int renderScaleSupportPref)
         _imp->refreshInfoButton->setName("refreshButton");
         _imp->refreshInfoButton->setEvaluateOnChange(false);
         _imp->infoPage->addKnob(_imp->refreshInfoButton);
+        
+        if (_imp->liveInstance->isWriter()) {
+            boost::shared_ptr<Page_Knob> pythonPage = Natron::createKnob<Page_Knob>(_imp->liveInstance.get(), "Python");
+            
+            _imp->beforeFrameRender =  Natron::createKnob<String_Knob>(_imp->liveInstance.get(), "Before frame render");
+            _imp->beforeFrameRender->setName("beforeFrameRender");
+            _imp->beforeFrameRender->setAnimationEnabled(false);
+            _imp->beforeFrameRender->setHintToolTip("Add here the name of a Python defined function that will be called before rendering "
+                                                    "any frame.\n The \"isBackground\" global variable is a boolean defined that indicates "
+                                                    "whether the render is called from a background instance of " NATRON_APPLICATION_NAME
+                                                    " or from an interactive session."
+                                                    "\nThe global variable \"thisNode\" will be declared when calling the function, "
+                                                    "referencing the writer node.");
+            pythonPage->addKnob(_imp->beforeFrameRender);
+            
+            _imp->beforeRender =  Natron::createKnob<String_Knob>(_imp->liveInstance.get(), "Before render");
+            _imp->beforeRender->setName("beforeRender");
+            _imp->beforeRender->setAnimationEnabled(false);
+            _imp->beforeRender->setHintToolTip("Add here the name of a Python defined function that will be called once when "
+                                               "starting rendering.\n "
+                                                    "The \"isBackground\" global variable is a boolean defined that indicates "
+                                                    "whether the render is called from a background instance of " NATRON_APPLICATION_NAME
+                                                    " or from an interactive session."
+                                               "\nThe global variable \"thisNode\" will be declared when calling the function, "
+                                               "referencing the writer node.");
+            pythonPage->addKnob(_imp->beforeRender);
+            
+            _imp->afterFrameRender =  Natron::createKnob<String_Knob>(_imp->liveInstance.get(), "After frame render");
+            _imp->afterFrameRender->setName("afterFrameRender");
+            _imp->afterFrameRender->setAnimationEnabled(false);
+            _imp->afterFrameRender->setHintToolTip("Add here the name of a Python defined function that will be called after rendering "
+                                                    "any frame.\n The \"isBackground\" global variable is a boolean defined that indicates "
+                                                    "whether the render is called from a background instance of " NATRON_APPLICATION_NAME
+                                                    " or from an interactive session."
+                                                   "\nThe global variable \"thisNode\" will be declared when calling the function, "
+                                                   "referencing the writer node.");
+            pythonPage->addKnob(_imp->afterFrameRender);
+            
+            _imp->afterRender =  Natron::createKnob<String_Knob>(_imp->liveInstance.get(), "After render");
+            _imp->afterRender->setName("afterRender");
+            _imp->afterRender->setAnimationEnabled(false);
+            _imp->afterRender->setHintToolTip("Add here the name of a Python defined function that will be called once when the rendering "
+                                                    "is finished.\n The \"isBackground\" global variable is a boolean defined that indicates "
+                                                    "whether the render is called from a background instance of " NATRON_APPLICATION_NAME
+                                                    " or from an interactive session."
+                                              "\nThe global variable \"thisNode\" will be declared when calling the function, "
+                                              "referencing the writer node.");
+            pythonPage->addKnob(_imp->afterRender);
+        }
+        
     }
     
+
     if (isGroup) {
         _imp->liveInstance->initializeKnobsPublic();
     }
+    
     _imp->knobsInitialized = true;
     _imp->liveInstance->unblockEvaluation();
     
@@ -4586,6 +4647,30 @@ Node::Implementation::runOnNodeDeleteCB()
     } else if (!output.empty()) {
         _publicInterface->getApp()->appendToScriptEditor(output);
     }
+}
+
+std::string
+Node::getBeforeRenderCallback() const
+{
+    return _imp->beforeRender ? _imp->beforeRender->getValue() : std::string();
+}
+
+std::string
+Node::getBeforeFrameRenderCallback() const
+{
+    return _imp->beforeFrameRender ? _imp->beforeFrameRender->getValue() : std::string();
+}
+
+std::string
+Node::getAfterRenderCallback() const
+{
+    return _imp->afterRender ? _imp->afterRender->getValue() : std::string();
+}
+
+std::string
+Node::getAfterFrameRenderCallback() const
+{
+    return _imp->afterFrameRender ? _imp->afterFrameRender->getValue() : std::string();
 }
 
 //////////////////////////////////

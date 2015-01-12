@@ -205,6 +205,9 @@ struct OutputSchedulerThreadPrivate
     Natron::OutputEffectInstance* outputEffect; //< The effect used as output device
     RenderEngine* engine;
 
+    bool runningCallback;
+    QMutex runningCallbackMutex;
+    QWaitCondition runningCallbackCond;
     
     OutputSchedulerThreadPrivate(RenderEngine* engine,Natron::OutputEffectInstance* effect,OutputSchedulerThread::ProcessFrameModeEnum mode)
     : buf()
@@ -245,6 +248,9 @@ struct OutputSchedulerThreadPrivate
     , framesToRenderNotEmptyCond()
     , outputEffect(effect)
     , engine(engine)
+    , runningCallback(false)
+    , runningCallbackMutex()
+    , runningCallbackCond()
     {
        
     }
@@ -429,6 +435,8 @@ OutputSchedulerThread::OutputSchedulerThread(RenderEngine* engine,Natron::Output
     QObject::connect(_imp->timer.get(), SIGNAL(fpsChanged(double,double)), _imp->engine, SIGNAL(fpsChanged(double,double)));
     
     QObject::connect(this, SIGNAL(s_abortRenderingOnMainThread(bool)), this, SLOT(abortRendering(bool)));
+    
+    QObject::connect(this, SIGNAL(s_executeCallbackOnMainThread(QString)), this, SLOT(onExecuteCallbackOnMainThread(QString)));
     
     setObjectName("Scheduler thread");
 }
@@ -1201,6 +1209,10 @@ OutputSchedulerThread::notifyFrameRendered(int frame,
             adjustNumberOfThreads(&newNThreads);
         }
     }
+    
+    std::string afterFrameRender = _imp->outputEffect->getNode()->getAfterFrameRenderCallback();
+    runCallbackWithVariables(afterFrameRender.c_str());
+    
     if ( appPTR->isBackground() ) {
         QString frameStr = QString::number(frame);
         appPTR->writeToOutputPipe(kFrameRenderedStringLong + frameStr,kFrameRenderedStringShort + frameStr);
@@ -1337,6 +1349,13 @@ OutputSchedulerThread::abortRendering(bool blocking)
                 _imp->processRunning = false;
                 _imp->processCondition.wakeOne();
             }
+            
+            {
+                QMutexLocker l3(&_imp->runningCallbackMutex);
+                _imp->runningCallback = false;
+                _imp->runningCallbackCond.wakeAll();
+            }
+            
         }
         ///If the scheduler is asleep waiting for the buffer to be filling up, we post a fake request
         ///that will not be processed anyway because the first thing it does is checking for abort
@@ -1599,6 +1618,54 @@ OutputSchedulerThread::getEngine() const
     return _imp->engine;
 }
 
+void
+OutputSchedulerThread::onExecuteCallbackOnMainThread(QString callback)
+{
+    assert(QThread::currentThread() == qApp->thread());
+    std::string err,output;
+    if (!Natron::interpretPythonScript(callback.toStdString(), &err, &output)) {
+        _imp->outputEffect->getApp()->appendToScriptEditor("Failed to run callback: " + err);
+    } else {
+        _imp->outputEffect->getApp()->appendToScriptEditor(output);
+    }
+    
+    QMutexLocker k(&_imp->runningCallbackMutex);
+    _imp->runningCallback = false;
+    _imp->runningCallbackCond.wakeAll();
+}
+
+void
+OutputSchedulerThread::runCallback(const QString& callback)
+{
+    QMutexLocker k(&_imp->runningCallbackMutex);
+    _imp->runningCallback = true;
+    Q_EMIT s_executeCallbackOnMainThread(callback);
+    
+    while (_imp->runningCallback) {
+        _imp->runningCallbackCond.wait(&_imp->runningCallbackMutex);
+    }
+
+}
+void
+OutputSchedulerThread::runCallbackWithVariables(const QString& callback)
+{
+    if (!callback.isEmpty()) {
+        std::string deleteScript;
+        std::string thisNode = _imp->outputEffect->getNode()->declareCurrentNodeVariable_Python(&deleteScript);
+        
+        QString script;
+        script.append("isBackground = ");
+        script.append(appPTR->isBackground() ? "True\n" : "False\n");
+        script.append(thisNode.c_str());
+        script.append(callback);
+        script.append("()\n");
+        script.append("del isBackground\n");
+        script.append(deleteScript.c_str());
+        Q_EMIT s_executeCallbackOnMainThread(script);
+    }
+}
+
+
 ////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////
 //////////////////////// RenderThreadTask ////////////
@@ -1747,6 +1814,9 @@ private:
     
     virtual void
     renderFrame(int time) {
+        
+        std::string beforeFrameRender = _imp->output->getNode()->getBeforeFrameRenderCallback();
+        _imp->scheduler->runCallbackWithVariables(beforeFrameRender.c_str());
         
         try {
             ////Writers always render at scale 1.
@@ -1987,6 +2057,7 @@ DefaultScheduler::getSchedulingPolicy() const
     }
 }
 
+
 void
 DefaultScheduler::aboutToStartRender()
 {
@@ -2002,22 +2073,31 @@ DefaultScheduler::aboutToStartRender()
         _effect->setCurrentFrame(last);
     }
     
+    bool isBackGround = appPTR->isBackground();
     
-    if ( !appPTR->isBackground() ) {
+    if (!isBackGround) {
         _effect->setKnobsFrozen(true);
     } else {
         appPTR->writeToOutputPipe(kRenderingStartedLong, kRenderingStartedShort);
     }
+    
+    std::string beforeRender = _effect->getNode()->getBeforeRenderCallback();
+    runCallbackWithVariables(beforeRender.c_str());
 }
 
 void
 DefaultScheduler::onRenderStopped()
 {
-    if ( !appPTR->isBackground() ) {
+    bool isBackGround = appPTR->isBackground();
+    if (!isBackGround) {
         _effect->setKnobsFrozen(false);
     } else {
         _effect->notifyRenderFinished();
     }
+    
+    std::string afterRender = _effect->getNode()->getAfterRenderCallback();
+    runCallbackWithVariables(afterRender.c_str());
+
 }
 
 ////////////////////////////////////////////////////////////

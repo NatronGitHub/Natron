@@ -852,3 +852,8 @@ AppInstance::isCreatingPythonGroup() const
     return _imp->_creatingGroup;
 }
 
+void
+AppInstance::appendToScriptEditor(const std::string& str)
+{
+    std::cout << str <<  std::endl;
+}
