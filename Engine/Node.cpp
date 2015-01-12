@@ -4624,7 +4624,7 @@ Node::Implementation::runOnNodeCreatedCB()
     }
     std::string delScript;
     std::string thisNode = _publicInterface->declareCurrentNodeVariable_Python(&delScript);
-    cb = thisNode + cb + delScript;
+    cb = thisNode + cb + "()\n" + delScript;
     
     std::string err;
     std::string output;
@@ -4644,7 +4644,7 @@ Node::Implementation::runOnNodeDeleteCB()
     }
     std::string delScript;
     std::string thisNode = _publicInterface->declareCurrentNodeVariable_Python(&delScript);
-    cb = thisNode + cb + delScript;
+    cb = thisNode + cb + "()\n" + delScript;
     
     std::string err;
     std::string output;
