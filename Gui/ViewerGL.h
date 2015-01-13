@@ -221,6 +221,8 @@ public slots:
     void clearColorBuffer(double r = 0.,double g = 0.,double b = 0.,double a = 1.);
 
     void toggleOverlays();
+    
+    void toggleWipe();
 
     void onProjectFormatChanged(const Format & format);
     

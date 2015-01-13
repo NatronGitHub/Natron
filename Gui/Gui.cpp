@@ -2298,7 +2298,7 @@ Gui::findOrCreateToolButton(const boost::shared_ptr<PluginGroupNode>& plugin)
         QPixmap writeImagePix;
         appPTR->getIcon(Natron::NATRON_PIXMAP_WRITE_IMAGE, &writeImagePix);
         createWriterAction->setIcon( QIcon(writeImagePix) );
-        createReaderAction->setShortcutContext(Qt::WidgetShortcut);
+        createWriterAction->setShortcutContext(Qt::WidgetShortcut);
         createWriterAction->setShortcut( QKeySequence(Qt::Key_W) );
         imageMenu->addAction(createWriterAction);
     }

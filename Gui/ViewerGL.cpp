@@ -1239,6 +1239,17 @@ ViewerGL::toggleOverlays()
 }
 
 void
+ViewerGL::toggleWipe()
+{
+    if (getViewerTab()->getCompositingOperator() != Natron::eViewerCompositingOperatorNone) {
+        getViewerTab()->setCompositingOperator(Natron::eViewerCompositingOperatorNone);
+    } else {
+        getViewerTab()->setCompositingOperator(Natron::eViewerCompositingOperatorWipe);
+    }
+}
+
+
+void
 ViewerGL::drawOverlay(unsigned int mipMapLevel)
 {
     // always running in the main thread
@@ -3546,6 +3557,8 @@ ViewerGL::keyPressEvent(QKeyEvent* e)
     
     if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionHideOverlays, modifiers, key) ) {
         toggleOverlays();
+    } else if (isKeybind(kShortcutGroupViewer, kShortcutIDToggleWipe, modifiers, key)) {
+        toggleWipe();
     } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionHideAll, modifiers, key) ) {
         _imp->viewerTab->hideAllToolbars();
         accept = true;
@@ -3633,12 +3646,20 @@ ViewerGL::populateMenu()
     QAction* displayOverlaysAction = new ActionWithShortcut(kShortcutGroupViewer,kShortcutIDActionHideOverlays,kShortcutDescActionHideOverlays, _imp->menu);
 
     displayOverlaysAction->setCheckable(true);
-    displayOverlaysAction->setChecked(true);
+    displayOverlaysAction->setChecked(_imp->overlay);
     QObject::connect( displayOverlaysAction,SIGNAL( triggered() ),this,SLOT( toggleOverlays() ) );
+    
+    
+    QAction* toggleWipe = new ActionWithShortcut(kShortcutGroupViewer,kShortcutIDToggleWipe,kShortcutDescToggleWipe, _imp->menu);
+    toggleWipe->setCheckable(true);
+    toggleWipe->setChecked(getViewerTab()->getCompositingOperator() != Natron::eViewerCompositingOperatorNone);
+    QObject::connect( toggleWipe,SIGNAL( triggered() ),this,SLOT( toggleWipe() ) );
+    _imp->menu->addAction(toggleWipe);
     
     QMenu* showHideMenu = new QMenu(tr("Show/Hide"),_imp->menu);
     showHideMenu->setFont(QFont(appFont,appFontSize));
     _imp->menu->addAction(showHideMenu->menuAction());
+    
     
     QAction* showHidePlayer,*showHideLeftToolbar,*showHideRightToolbar,*showHideTopToolbar,*showHideInfobar,*showHideTimeline;
     QAction* showAll,*hideAll;
