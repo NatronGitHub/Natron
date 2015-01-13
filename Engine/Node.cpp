@@ -3159,7 +3159,9 @@ Node::onEffectKnobValueChanged(KnobI* what,
         if (!isLocked) {
             int first,last;
             _imp->liveInstance->getFrameRange_public(getHashValue(), &first, &last);
-            getApp()->getProject()->unionFrameRangeWith(first, last);
+            if (first != INT_MIN && last != INT_MAX) {
+                getApp()->getProject()->unionFrameRangeWith(first, last);
+            }
         }
         
     } else if ( what == _imp->refreshInfoButton.get() ) {

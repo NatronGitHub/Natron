@@ -1480,7 +1480,6 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
 
     _imp->_hasMovedOnce = true;
 
-    
     QRectF sceneR = visibleSceneRect();
     if (_imp->_evtState != eEventStateSelectionRect && _imp->_evtState != eEventStateDraggingArrow) {
         ///set cursor
@@ -1828,7 +1827,7 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
         _imp->_refreshOverlays = true;
     }
 
-    update();
+    //update();
     QGraphicsView::mouseMoveEvent(e);
 } // mouseMoveEvent
 
