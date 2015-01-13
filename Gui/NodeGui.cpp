@@ -811,8 +811,8 @@ NodeGui::initializeInputs()
     _inputEdges.clear();
 
     ///Make new edge for all non existing inputs
+    int inputsCount = 0;
     int emptyInputsCount = 0;
-
     boost::shared_ptr<Natron::Node> internalNode = getNode();
     boost::shared_ptr<NodeGui> thisShared = _graph->getNodeGuiSharedPtr(this);
     for (int i = 0; i < inputnb; ++i) {
@@ -829,9 +829,11 @@ NodeGui::initializeInputs()
                 if (gui) {
                     edge->setSource(gui);
                 }
-            } else {
-                if (!internalNode->getLiveInstance()->isInputMask(i) &&
-                    !internalNode->getLiveInstance()->isInputRotoBrush(i)) {
+            }
+            if (!internalNode->getLiveInstance()->isInputMask(i) &&
+                !internalNode->getLiveInstance()->isInputRotoBrush(i)) {
+                ++inputsCount;
+                if (!input) {
                     ++emptyInputsCount;
                 }
             }
@@ -858,13 +860,12 @@ NodeGui::initializeInputs()
     }
 
 
-    double piDividedbyX = M_PI / (emptyInputsCount + 1);
+    double piDividedbyX = M_PI / (inputsCount + 1);
     double angle = M_PI - piDividedbyX;
   
     int maskIndex = 0;
     for (InputEdgesMap::iterator it = _inputEdges.begin(); it != _inputEdges.end(); ++it) {
-        if (!it->second->hasSource() &&
-            !_internalNode->getLiveInstance()->isInputRotoBrush(it->first)) {
+        if (!_internalNode->getLiveInstance()->isInputRotoBrush(it->first)) {
             double edgeAngle;
             bool decrAngle = true;
             if (_internalNode->getLiveInstance()->isInputMask(it->first)) {
@@ -886,7 +887,9 @@ NodeGui::initializeInputs()
             if (decrAngle) {
                 angle -= piDividedbyX;
             }
-            it->second->initLine();
+            if (!it->second->hasSource()) {
+                it->second->initLine();
+            }
         }
     }
 } // initializeInputs

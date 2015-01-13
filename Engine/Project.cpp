@@ -844,7 +844,8 @@ Project::initializeKnobs()
     _imp->frameRange->setEvaluateOnChange(false);
     _imp->frameRange->setName("frameRange");
     _imp->frameRange->setHintToolTip("The frame range of the project as seen by the plug-ins. New viewers are created automatically "
-                                     "this frame-range. By default when a new Reader node is created, its frame range is unioned to this "
+                                     "with this frame-range. By default when a new Reader node is created, its frame range "
+                                     "is unioned to this "
                                      "frame-range, unless the Lock frame range parameter is checked.");
     _imp->frameRange->setAnimationEnabled(false);
     _imp->frameRange->turnOffNewLine();
