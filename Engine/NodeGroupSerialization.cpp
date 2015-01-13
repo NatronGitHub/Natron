@@ -28,8 +28,10 @@ NodeCollectionSerialization::initialize(const NodeCollection& group)
     _serializedNodes.clear();
     
     for (NodeList::iterator it = nodes.begin(); it != nodes.end() ; ++it) {
-        boost::shared_ptr<NodeSerialization> state(new NodeSerialization(*it));
-        _serializedNodes.push_back(state);
+        if (!(*it)->getParentMultiInstance()) {
+            boost::shared_ptr<NodeSerialization> state(new NodeSerialization(*it));
+            _serializedNodes.push_back(state);
+        }
     }
 }
 

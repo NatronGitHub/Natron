@@ -1093,7 +1093,7 @@ TabWidget::startDragTab(int index)
 
     _gui->startDragPanel(selectedTab);
 
-    removeTab(selectedTab, true);
+    removeTab(selectedTab, false);
     selectedTab->hide();
 }
 
