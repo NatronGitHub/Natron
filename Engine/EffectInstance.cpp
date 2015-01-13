@@ -283,6 +283,7 @@ struct EffectInstance::RenderArgs
     , _firstFrame(o._firstFrame)
     , _lastFrame(o._lastFrame)
     {
+        assert(_outputImage);
     }
 };
 
@@ -519,6 +520,7 @@ struct EffectInstance::Implementation
               , _dst(dst)
         {
             assert(_dst);
+            assert(outputImage);
 
             args._rod = rod;
             args._renderWindowPixel = renderWindow;
@@ -587,6 +589,7 @@ struct EffectInstance::Implementation
                                int inputNbIdentity,
                                const boost::shared_ptr<Image>& outputImage)
         {
+            assert(outputImage);
             args._rod = rod;
             args._renderWindowPixel = renderWindow;
             args._time = time;
@@ -4078,6 +4081,7 @@ EffectInstance::getThreadLocalRenderedImage(boost::shared_ptr<Natron::Image>* im
     if (_imp->renderArgs.hasLocalData()) {
         const RenderArgs& args = _imp->renderArgs.localData();
         if (args._validArgs) {
+            assert(args._outputImage);
             *image = args._outputImage;
             *renderWindow = args._renderWindowPixel;
             return true;
