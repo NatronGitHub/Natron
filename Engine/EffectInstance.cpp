@@ -554,8 +554,8 @@ struct EffectInstance::Implementation
               , _dst(dst)
         {
             RenderArgs& tls = _dst->localData();
-            args._validArgs = false;
-            tls._validArgs = true;
+            args._validArgs = true;
+            tls = args;
         }
 
         ~ScopedRenderArgs()
