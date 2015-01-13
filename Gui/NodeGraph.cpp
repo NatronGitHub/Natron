@@ -3982,11 +3982,12 @@ NodeGraph::onTimeChanged(SequenceTime time,
         }
         (*it)->refreshKnobsAfterTimeChange(time);
     }
-    Natron::OutputEffectInstance* lastTimelineSeekCaller = project->getLastTimelineSeekCaller();
+    
+    ViewerInstance* leadViewer = getGui()->getApp()->getLastViewerUsingTimeline();
 
     ///Syncrhronize viewers
     for (U32 i = 0; i < viewers.size(); ++i) {
-        if ( (viewers[i] != lastTimelineSeekCaller) || (reason == eTimelineChangeReasonUserSeek) ) {
+        if ( (viewers[i] != leadViewer) || (reason == eTimelineChangeReasonUserSeek) ) {
             viewers[i]->renderCurrentFrame(reason != eTimelineChangeReasonPlaybackSeek);
         }
     }

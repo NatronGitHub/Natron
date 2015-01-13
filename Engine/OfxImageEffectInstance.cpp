@@ -712,7 +712,7 @@ OfxImageEffectInstance::timeLineGotoTime(double t)
     bool redrawNeeded = _ofxEffectInstance->checkIfOverlayRedrawNeeded();
     (void)redrawNeeded;
     
-    _ofxEffectInstance->getApp()->getTimeLine()->seekFrame( (int)t,NULL, Natron::eTimelineChangeReasonPlaybackSeek);
+    _ofxEffectInstance->getApp()->getTimeLine()->seekFrame( (int)t, false, 0, Natron::eTimelineChangeReasonPlaybackSeek);
 }
 
 /// get the first and last times available on the effect's timeline
@@ -720,8 +720,10 @@ void
 OfxImageEffectInstance::timeLineGetBounds(double &t1,
                                           double &t2)
 {
-    t1 = _ofxEffectInstance->getApp()->getTimeLine()->leftBound();
-    t2 = _ofxEffectInstance->getApp()->getTimeLine()->rightBound();
+    int first,last;
+    _ofxEffectInstance->getApp()->getFrameRange(&first, &last);
+    t1 = first;
+    t2 = last;
 }
 
 // override this to make processing abort, return 1 to abort processing

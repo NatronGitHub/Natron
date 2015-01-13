@@ -35,6 +35,7 @@ class TimeLine;
 struct AppInstancePrivate;
 class KnobSerialization;
 class KnobHolder;
+class ViewerInstance;
 class ProcessHandler;
 namespace Natron {
 class Node;
@@ -314,6 +315,12 @@ public:
      **/
     void setProjectWasCreatedWithLowerCaseIDs(bool b);
     bool wasProjectCreatedWithLowerCaseIDs() const;
+    
+    void getFrameRange(int* first,int* last) const;
+    
+    virtual void setLastViewerUsingTimeline(const boost::shared_ptr<Natron::Node>& /*node*/) {}
+    
+    virtual ViewerInstance* getLastViewerUsingTimeline() const { return 0; }
     
 public slots:
 

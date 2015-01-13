@@ -295,6 +295,8 @@ ProjectGui::load(boost::archive::xml_iarchive & archive)
         }
     }
 
+    int leftBound,rightBound;
+    _project->getFrameRange(&leftBound, &rightBound);
 
     ///default color for nodes
     float defR,defG,defB;
@@ -379,7 +381,6 @@ ProjectGui::load(boost::archive::xml_iarchive & archive)
                 tab->setMipMapLevel(found->second.mipMapLevel);
                 tab->setCompositingOperator( (Natron::ViewerCompositingOperatorEnum)found->second.wipeCompositingOp );
                 tab->setZoomOrPannedSinceLastFit(found->second.zoomOrPanSinceLastFit);
-                tab->setFrameRangeLocked(found->second.frameRangeLocked);
                 tab->setTopToolbarVisible(found->second.topToolbarVisible);
                 tab->setLeftToolbarVisible(found->second.leftToolbarVisible);
                 tab->setRightToolbarVisible(found->second.rightToolbarVisible);
@@ -387,6 +388,8 @@ ProjectGui::load(boost::archive::xml_iarchive & archive)
                 tab->setInfobarVisible(found->second.infobarVisible);
                 tab->setTimelineVisible(found->second.timelineVisible);
                 tab->setCheckerboardEnabled(found->second.checkerboardEnabled);
+                tab->setTimelineBounds(found->second.leftBound, found->second.rightBound);
+                tab->setFrameRangeEdited(leftBound != found->second.leftBound || rightBound != found->second.rightBound);
                 if (!found->second.fpsLocked) {
                     tab->setDesiredFps(found->second.fps);
                 }

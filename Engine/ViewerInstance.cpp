@@ -366,7 +366,6 @@ Natron::StatusEnum
 ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time, int view, int textureIndex, U64 viewerHash,
                                                  ViewerArgs* outArgs)
 {
-    
     if (textureIndex == 0) {
         QMutexLocker l(&_imp->activeInputsMutex);
         outArgs->activeInputIndex =  _imp->activeInputs[0];
@@ -1854,12 +1853,6 @@ ViewerInstance::setInputB(int inputNb)
     emit refreshOptionalState();
 }
 
-bool
-ViewerInstance::isFrameRangeLocked() const
-{
-    return _imp->uiContext ? _imp->uiContext->isFrameRangeLocked() : true;
-}
-
 int
 ViewerInstance::getLastRenderedTime() const
 {
@@ -1870,6 +1863,17 @@ boost::shared_ptr<TimeLine>
 ViewerInstance::getTimeline() const
 {
     return _imp->uiContext ? _imp->uiContext->getTimeline() : getApp()->getTimeLine();
+}
+
+void
+ViewerInstance::getTimelineBounds(int* first,int* last) const
+{
+    if (_imp->uiContext) {
+        _imp->uiContext->getViewerFrameRange(first, last);
+    } else {
+        *first = 0;
+        *last = 0;
+    }
 }
 
 

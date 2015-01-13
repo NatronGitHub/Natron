@@ -559,6 +559,7 @@ public slots:
     void onFreezeUIButtonClicked(bool clicked);
 
 	void onPropertiesScrolled();
+    
 private:
 
     /**

@@ -140,6 +140,12 @@ public:
     
     virtual void toggleAutoHideGraphInputs() OVERRIDE FINAL;
     
+    virtual void setLastViewerUsingTimeline(const boost::shared_ptr<Natron::Node>& node) OVERRIDE FINAL;
+    
+    virtual ViewerInstance* getLastViewerUsingTimeline() const OVERRIDE FINAL;
+    
+    void discardLastViewerUsingTimeline();
+    
 public slots:
     
     virtual void redrawAllViewers() OVERRIDE FINAL;

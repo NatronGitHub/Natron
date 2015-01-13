@@ -55,15 +55,20 @@ struct GuiAppInstancePrivate
 
     boost::shared_ptr<FileDialogPreviewProvider> _previewProvider;
 
+    mutable QMutex lastTimelineViewerMutex;
+    boost::shared_ptr<Natron::Node> lastTimelineViewer;
+    
     GuiAppInstancePrivate()
-        : _gui(NULL)
-          , _nodeMapping()
-          , _activeBgProcesses()
-          , _activeBgProcessesMutex()
-          , _isClosing(false)
-          , _showingDialog(false)
-          , _showingDialogMutex()
-          , _previewProvider(new FileDialogPreviewProvider)
+    : _gui(NULL)
+    , _nodeMapping()
+    , _activeBgProcesses()
+    , _activeBgProcessesMutex()
+    , _isClosing(false)
+    , _showingDialog(false)
+    , _showingDialogMutex()
+    , _previewProvider(new FileDialogPreviewProvider)
+    , lastTimelineViewerMutex()
+    , lastTimelineViewer()
     {
     }
     
@@ -607,11 +612,13 @@ GuiAppInstance::startRenderingFullSequence(const AppInstance::RenderWork& w,bool
     if (w.firstFrame == INT_MIN || w.lastFrame == INT_MAX) {
         w.writer->getFrameRange_public(w.writer->getHash(),&firstFrame, &lastFrame, true);
         //if firstframe and lastframe are infinite clamp them to the timeline bounds
+        int projectFirst,projectLast;
+        getFrameRange(&projectFirst, &projectLast);
         if (firstFrame == INT_MIN) {
-            firstFrame = getTimeLine()->firstFrame();
+            firstFrame = projectFirst;
         }
         if (lastFrame == INT_MAX) {
-            lastFrame = getTimeLine()->lastFrame();
+            lastFrame = projectLast;
         }
         if (firstFrame > lastFrame) {
             Natron::errorDialog( w.writer->getNode()->getName_mt_safe(),
@@ -807,4 +814,33 @@ void
 GuiAppInstance::toggleAutoHideGraphInputs()
 {
     _imp->_gui->toggleAutoHideGraphInputs();
+}
+
+void
+GuiAppInstance::setLastViewerUsingTimeline(const boost::shared_ptr<Natron::Node>& node)
+{
+    assert(QThread::currentThread() == qApp->thread());
+    
+    if (dynamic_cast<ViewerInstance*>(node->getLiveInstance())) {
+        QMutexLocker k(&_imp->lastTimelineViewerMutex);
+        _imp->lastTimelineViewer = node;
+    }
+}
+
+ViewerInstance*
+GuiAppInstance::getLastViewerUsingTimeline() const
+{
+    QMutexLocker k(&_imp->lastTimelineViewerMutex);
+    if (!_imp->lastTimelineViewer) {
+        return 0;
+    }
+    return dynamic_cast<ViewerInstance*>(_imp->lastTimelineViewer->getLiveInstance());
+}
+
+void
+GuiAppInstance::discardLastViewerUsingTimeline()
+{
+ 
+    QMutexLocker k(&_imp->lastTimelineViewerMutex);
+    _imp->lastTimelineViewer.reset();
 }

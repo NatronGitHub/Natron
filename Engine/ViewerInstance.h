@@ -159,12 +159,12 @@ public:
     void setInputB(int inputNb);
 
     void getActiveInputs(int & a,int &b) const;
-
-    bool isFrameRangeLocked() const;
     
     int getLastRenderedTime() const;
 
     boost::shared_ptr<TimeLine> getTimeline() const;
+    
+    void getTimelineBounds(int* first,int* last) const;
     
     static const Natron::Color::Lut* lutFromColorspace(Natron::ViewerColorSpaceEnum cs) WARN_UNUSED_RETURN;
     

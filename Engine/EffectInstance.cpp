@@ -4111,8 +4111,6 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
     if ( isEvaluationBlocked() ) {
         return;
     }
-
-    _node->onEffectKnobValueChanged(k, reason);
     
     KnobHelper* kh = dynamic_cast<KnobHelper*>(k);
     assert(kh);
@@ -4133,6 +4131,9 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
         RECURSIVE_ACTION();
         knobChanged(k, reason, /*view*/ 0, time, originatedFromMainThread);
     }
+    
+    _node->onEffectKnobValueChanged(k, reason);
+
     
     ///Clear input images pointers that were stored in getImage() for the main-thread.
     ///This is safe to do so because if this is called while in render() it won't clear the input images

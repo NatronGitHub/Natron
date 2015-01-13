@@ -277,8 +277,10 @@ OfxClipInstance::getFrameRange(double &startFrame,
         assert(_nodeInstance);
         assert( _nodeInstance->getApp() );
         assert( _nodeInstance->getApp()->getTimeLine() );
-        startFrame = _nodeInstance->getApp()->getTimeLine()->leftBound();
-        endFrame = _nodeInstance->getApp()->getTimeLine()->rightBound();
+        int first,last;
+        _nodeInstance->getApp()->getFrameRange(&first, &last);
+        startFrame = first;
+        endFrame = last;
     }
 }
 

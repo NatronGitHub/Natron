@@ -188,6 +188,8 @@ public:
     void updatePersistentMessage();
     void updatePersistentMessageToWidth(int w);
     
+    virtual void getViewerFrameRange(int* first,int* last) const OVERRIDE FINAL;
+    
 public slots:
 
 
@@ -221,6 +223,12 @@ public slots:
     void toggleOverlays();
 
     void onProjectFormatChanged(const Format & format);
+    
+private:
+    
+    void onProjectFormatChangedInternal(const Format & format,bool triggerRender);
+public:
+    
 
     virtual void makeOpenGLcontextCurrent() OVERRIDE FINAL;
     virtual void onViewerNodeNameChanged(const QString & name) OVERRIDE FINAL;
@@ -297,7 +305,6 @@ public:
     bool getZoomOrPannedSinceLastFit() const;
 
     virtual Natron::ViewerCompositingOperatorEnum getCompositingOperator() const OVERRIDE FINAL;
-    virtual bool isFrameRangeLocked() const OVERRIDE FINAL;
 
     ///Not MT-Safe
     void getSelectionRectangle(double &left,double &right,double &bottom,double &top) const;

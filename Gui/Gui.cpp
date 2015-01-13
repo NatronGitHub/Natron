@@ -1987,6 +1987,13 @@ Gui::removeViewerTab(ViewerTab* tab,
     assert(tab);
     unregisterTab(tab);
 
+    ViewerInstance* internalViewer = tab->getInternalNode();
+    if (internalViewer) {
+        if (getApp()->getLastViewerUsingTimeline() == internalViewer) {
+            getApp()->discardLastViewerUsingTimeline();
+        }
+    }
+    
     if (!initiatedFromNode) {
         assert(_imp->_nodeGraphArea);
         ///call the deleteNode which will call this function again when the node will be deactivated.

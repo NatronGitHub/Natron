@@ -56,7 +56,6 @@ ProjectPrivate::ProjectPrivate(Natron::Project* project)
       , autoSetProjectFormat(appPTR->getCurrentSettings()->isAutoProjectFormatEnabled())
       , currentNodes()
       , project(project)
-      , lastTimelineSeekCaller()
       , isLoadingProjectMutex()
       , isLoadingProject(false)
       , isLoadingProjectInternal(false)
@@ -149,8 +148,7 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
     }
 
     /// 2) restore the timeline
-    timeline->setBoundaries( obj.getLeftBoundTime(), obj.getRightBoundTime() );
-    timeline->seekFrame(obj.getCurrentTime(),NULL,Natron::eTimelineChangeReasonPlaybackSeek);
+    timeline->seekFrame(obj.getCurrentTime(), false, 0, Natron::eTimelineChangeReasonPlaybackSeek);
 
     ///On our tests restoring nodes + connections takes approximatively 20% of loading time of a project, hence we update progress
     ///for each node of 0.2 / nbNodes

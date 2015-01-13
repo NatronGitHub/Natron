@@ -3152,6 +3152,16 @@ Node::onEffectKnobValueChanged(KnobI* what,
         ///Refresh the preview automatically if the filename changed
         incrementKnobsAge(); //< since evaluate() is called after knobChanged we have to do this  by hand
         computePreviewImage( getApp()->getTimeLine()->currentFrame() );
+        
+        
+        ///union the project frame range if not locked with the reader frame range
+        bool isLocked = getApp()->getProject()->isFrameRangeLocked();
+        if (!isLocked) {
+            int first,last;
+            _imp->liveInstance->getFrameRange_public(getHashValue(), &first, &last);
+            getApp()->getProject()->unionFrameRangeWith(first, last);
+        }
+        
     } else if ( what == _imp->refreshInfoButton.get() ) {
         int maxinputs = getMaxInputCount();
         for (int i = 0; i < maxinputs; ++i) {
@@ -3160,6 +3170,7 @@ Node::onEffectKnobValueChanged(KnobI* what,
         }
         std::string outputInfo = makeInfoForInput(-1);
         _imp->outputFormat->setValue(outputInfo, 0);
+ 
     }
 }
 

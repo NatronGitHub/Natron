@@ -350,7 +350,7 @@ public slots:
 
     void onTimeLineFrameChanged(SequenceTime time, int reason);
 
-    void onTimeLineBoundariesChanged(SequenceTime left, SequenceTime right, int);
+    void onTimeLineBoundariesChanged(int,int);
 
     void onCurveChanged();
 

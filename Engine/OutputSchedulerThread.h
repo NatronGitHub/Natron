@@ -245,12 +245,6 @@ public:
     double getDesiredFPS() const;
     
     /**
-     * @brief Must return whether the user has unlocked the timeline range.
-     * If true then the scheduler should not attempt to calculate it automatically
-     **/
-    virtual bool isTimelineRangeSetByUser() const { return false; }
-    
-    /**
      * @brief Returns the frame range of the output node, as given by the getFrameRange action
      **/
     void getPluginFrameRange(int& first,int &last) const;
@@ -330,18 +324,6 @@ protected:
      * @brief Return the frame expected to be rendered
      **/
     virtual int timelineGetTime() const = 0;
-    
-    
-    /**
-     * @brief Typically if the user has changed the timeline bounds on the GUI, we want to update the frame range on which the scheduler
-     * is rendering. For writers, it never changes.
-     **/
-    virtual bool isTimelineRangeSettable() const { return false; }
-    
-    /**
-     * @brief Must set the timeline range
-     **/
-    virtual void timelineSetBounds(int left,int right) = 0;
     
     /**
      * @brief Must create a runnable task that will render 1 frame in a separate thread.
@@ -444,8 +426,6 @@ private:
     
     virtual int timelineGetTime() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     
-    virtual void timelineSetBounds(int left,int right) OVERRIDE FINAL;
-    
     virtual RenderThreadTask* createRunnable() OVERRIDE FINAL WARN_UNUSED_RETURN;
     
     virtual void handleRenderFailure(const std::string& errorMessage) OVERRIDE FINAL;
@@ -470,8 +450,6 @@ public:
     
     virtual ~ViewerDisplayScheduler();
     
-    virtual bool isTimelineRangeSetByUser() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    
     
 private:
 
@@ -482,12 +460,8 @@ private:
     virtual void timelineGoTo(int time) OVERRIDE FINAL;
     
     virtual int timelineGetTime() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    
-    virtual void timelineSetBounds(int left,int right) OVERRIDE FINAL;
-    
+        
     virtual bool isFPSRegulationNeeded() const OVERRIDE FINAL WARN_UNUSED_RETURN { return true; }
-    
-    virtual bool isTimelineRangeSettable() const OVERRIDE FINAL WARN_UNUSED_RETURN { return true; }
     
     virtual void getFrameRangeToRender(int& first,int& last) const OVERRIDE FINAL;
     

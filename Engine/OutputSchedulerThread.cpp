@@ -977,14 +977,10 @@ OutputSchedulerThread::run()
                     {
                         QMutexLocker l(&_imp->runArgsMutex);
                         
-                        if ( isTimelineRangeSettable() && !isTimelineRangeSetByUser() ) {
-                            
-                            ///Refresh the firstframe/lastFrame as they might have changed on the timeline
-                            _imp->livingRunArgs.firstFrame = firstFrame;
-                            _imp->livingRunArgs.lastFrame = lastFrame;
-                            
-                            timelineSetBounds(firstFrame, lastFrame);
-                        }
+                        ///Refresh the firstframe/lastFrame as they might have changed on the timeline
+                        _imp->livingRunArgs.firstFrame = firstFrame;
+                        _imp->livingRunArgs.lastFrame = lastFrame;
+                        
                         
                         
                         timelineDirection = _imp->livingRunArgs.timelineDirection;
@@ -1453,14 +1449,8 @@ OutputSchedulerThread::renderFromCurrentFrame(RenderDirectionEnum timelineDirect
         QMutexLocker l(&_imp->runArgsMutex);
 
         int firstFrame,lastFrame;
-        if (isTimelineRangeSettable() && !isTimelineRangeSetByUser()) {
-            getPluginFrameRange(firstFrame,lastFrame);
-            timelineSetBounds(firstFrame, lastFrame);
-        } else {
-            getFrameRangeToRender(firstFrame, lastFrame);
-        }
-        
-        
+        getFrameRangeToRender(firstFrame, lastFrame);
+  
         ///Make sure current frame is in the frame range
         int currentTime = timelineGetTime();
         OutputSchedulerThreadPrivate::getNearestInSequence(timelineDirection, currentTime, firstFrame, lastFrame, &currentTime);
@@ -1959,12 +1949,6 @@ DefaultScheduler::getFrameRangeToRender(int& first,int& last) const
     last = _effect->getLastFrame();
 }
 
-void
-DefaultScheduler::timelineSetBounds(int left,int right)
-{
-    _effect->setFirstFrame(left);
-    _effect->setLastFrame(right);
-}
 
 void
 DefaultScheduler::handleRenderFailure(const std::string& errorMessage)
@@ -2061,9 +2045,9 @@ ViewerDisplayScheduler::timelineStepOne(OutputSchedulerThread::RenderDirectionEn
 {
     assert(_viewer);
     if (direction == OutputSchedulerThread::eRenderDirectionForward) {
-        _viewer->getTimeline()->incrementCurrentFrame(_viewer);
+        _viewer->getTimeline()->incrementCurrentFrame();
     } else {
-        _viewer->getTimeline()->decrementCurrentFrame(_viewer);
+        _viewer->getTimeline()->decrementCurrentFrame();
     }
 }
 
@@ -2071,7 +2055,7 @@ void
 ViewerDisplayScheduler::timelineGoTo(int time)
 {
     assert(_viewer);
-    _viewer->getTimeline()->seekFrame(time, _viewer, Natron::eTimelineChangeReasonPlaybackSeek);
+    _viewer->getTimeline()->seekFrame(time, false, 0, Natron::eTimelineChangeReasonPlaybackSeek);
 }
 
 int
@@ -2083,9 +2067,10 @@ ViewerDisplayScheduler::timelineGetTime() const
 void
 ViewerDisplayScheduler::getFrameRangeToRender(int &first, int &last) const
 {
-    boost::shared_ptr<TimeLine> timeline = _viewer->getTimeline();
-    first = timeline->leftBound();
-    last = timeline->rightBound();
+    ViewerInstance* leadViewer = _viewer->getApp()->getLastViewerUsingTimeline();
+    ViewerInstance* viewer = leadViewer ? leadViewer : _viewer;
+    assert(viewer);
+    viewer->getTimelineBounds(&first, &last);
 }
 
 
@@ -2196,18 +2181,6 @@ ViewerDisplayScheduler::onRenderStopped()
     }
 }
 
-bool
-ViewerDisplayScheduler::isTimelineRangeSetByUser() const
-{
-    return !_viewer->isFrameRangeLocked();
-}
-
-void
-ViewerDisplayScheduler::timelineSetBounds(int left, int right)
-{
-    _viewer->getTimeline()->setFrameRange(left, right);
-}
-
 int
 ViewerDisplayScheduler::getLastRenderedTime() const
 {
@@ -2310,14 +2283,6 @@ RenderEngine::renderCurrentFrame(bool canAbort)
         QMutexLocker k(&_imp->schedulerCreationLock);
         if (!_imp->scheduler) {
             _imp->scheduler = createScheduler(_imp->output);
-        }
-    }
-    
-    {
-        if ( !_imp->scheduler->isTimelineRangeSetByUser() ) {
-            int firstFrame,lastFrame;
-            _imp->scheduler->getPluginFrameRange(firstFrame,lastFrame);
-            isViewer->getTimeline()->setFrameRange(firstFrame, lastFrame);
         }
     }
     

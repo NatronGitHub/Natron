@@ -838,6 +838,27 @@ Project::initializeKnobs()
     _imp->colorSpace32f->setDefaultValue(1);
     page->addKnob(_imp->colorSpace32f);
     
+    _imp->frameRange = Natron::createKnob<Int_Knob>(this, "Frame range",2);
+    _imp->frameRange->setDefaultValue(1,0);
+    _imp->frameRange->setDefaultValue(1,1);
+    _imp->frameRange->setEvaluateOnChange(false);
+    _imp->frameRange->setName("frameRange");
+    _imp->frameRange->setHintToolTip("The frame range of the project as seen by the plug-ins. New viewers are created automatically "
+                                     "this frame-range. By default when a new Reader node is created, its frame range is unioned to this "
+                                     "frame-range, unless the Lock frame range parameter is checked.");
+    _imp->frameRange->setAnimationEnabled(false);
+    _imp->frameRange->turnOffNewLine();
+    page->addKnob(_imp->frameRange);
+    
+    _imp->lockFrameRange = Natron::createKnob<Bool_Knob>(this, "Lock range");
+    _imp->lockFrameRange->setName("lockRange");
+    _imp->lockFrameRange->setDefaultValue(false);
+    _imp->lockFrameRange->setAnimationEnabled(false);
+    _imp->lockFrameRange->setHintToolTip("By default when a new Reader node is created, its frame range is unioned to the "
+                                         "project frame-range, unless this parameter is checked.");
+    _imp->lockFrameRange->setEvaluateOnChange(false);
+    page->addKnob(_imp->lockFrameRange);
+    
     _imp->frameRate = Natron::createKnob<Double_Knob>(this, "Frame rate");
     _imp->frameRate->setName("frameRate");
     _imp->frameRate->setHintToolTip("The frame rate of the project. This will serve as a default value for all effects that don't produce "
@@ -1061,12 +1082,6 @@ Project::clearNodes(bool emitSignal)
     }
 }
 
-void
-Project::setFrameRange(int first,
-                       int last)
-{
-    _imp->timeline->setFrameRange(first,last);
-}
 
 int
 Project::currentFrame() const
@@ -1074,29 +1089,6 @@ Project::currentFrame() const
     return _imp->timeline->currentFrame();
 }
 
-int
-Project::firstFrame() const
-{
-    return _imp->timeline->firstFrame();
-}
-
-int
-Project::lastFrame() const
-{
-    return _imp->timeline->lastFrame();
-}
-
-int
-Project::leftBound() const
-{
-    return _imp->timeline->leftBound();
-}
-
-int
-Project::rightBound() const
-{
-    return _imp->timeline->rightBound();
-}
 
 int
 Project::tryAddProjectFormat(const Format & f)
@@ -1254,21 +1246,6 @@ Project::getAdditionalFormats(std::list<Format> *formats) const
     *formats = _imp->additionalFormats;
 }
 
-void
-Project::setLastTimelineSeekCaller(Natron::OutputEffectInstance* output)
-{
-    QMutexLocker l(&_imp->projectLock);
-
-    _imp->lastTimelineSeekCaller = output;
-}
-
-Natron::OutputEffectInstance*
-Project::getLastTimelineSeekCaller() const
-{
-    QMutexLocker l(&_imp->projectLock);
-
-    return _imp->lastTimelineSeekCaller;
-}
 
 bool
 Project::isSaveUpToDate() const
@@ -1355,6 +1332,10 @@ Project::onKnobValueChanged(KnobI* knob,
                 
         }
 
+    } else if (knob == _imp->frameRange.get()) {
+        int first = _imp->frameRange->getValue(0);
+        int last = _imp->frameRange->getValue(1);
+        emit frameRangeChanged(first, last);
     }
 }
 
@@ -2236,6 +2217,35 @@ double
 Project::getProjectFrameRate() const
 {
     return _imp->frameRate->getValue();
+}
+    
+bool
+Project::isFrameRangeLocked() const
+{
+    return _imp->lockFrameRange->getValue();
+}
+    
+void
+Project::getFrameRange(int* first,int* last) const
+{
+    *first = _imp->frameRange->getValue(0);
+    *last = _imp->frameRange->getValue(1);
+}
+    
+void
+Project::unionFrameRangeWith(int first,int last)
+{
+    
+    int curFirst,curLast;
+    curFirst = _imp->frameRange->getValue(0);
+    curLast = _imp->frameRange->getValue(1);
+    curFirst = std::min(first, curFirst);
+    curLast = std::max(last, curLast);
+    blockEvaluation();
+    _imp->frameRange->setValue(curFirst, 0);
+    unblockEvaluation();
+    _imp->frameRange->setValue(curLast, 1);
+
 }
     
 } //namespace Natron

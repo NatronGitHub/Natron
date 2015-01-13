@@ -889,7 +889,7 @@ ViewerGL::ViewerGL(ViewerTab* parent,
     _imp->blankViewerInfo.setDisplayWindow(projectFormat);
     setRegionOfDefinition(_imp->blankViewerInfo.getRoD(),_imp->blankViewerInfo.getDisplayWindow().getPixelAspectRatio(),0);
     setRegionOfDefinition(_imp->blankViewerInfo.getRoD(),_imp->blankViewerInfo.getDisplayWindow().getPixelAspectRatio(),1);
-    onProjectFormatChanged(projectFormat);
+    onProjectFormatChangedInternal(projectFormat,false);
     resetWipeControls();
     populateMenu();
 
@@ -3363,7 +3363,7 @@ ViewerGL::setRegionOfDefinition(const RectD & rod,
 }
 
 void
-ViewerGL::onProjectFormatChanged(const Format & format)
+ViewerGL::onProjectFormatChangedInternal(const Format & format,bool triggerRender)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
@@ -3388,17 +3388,17 @@ ViewerGL::onProjectFormatChanged(const Format & format)
     _imp->currentViewerInfo_resolutionOverlay.append( QString::number(format.width() ) );
     _imp->currentViewerInfo_resolutionOverlay.append("x");
     _imp->currentViewerInfo_resolutionOverlay.append( QString::number(format.height() ) );
-
+    
     bool loadingProject = _imp->viewerTab->getGui()->getApp()->getProject()->isLoadingProject();
-    if ( !loadingProject ) {
+    if ( !loadingProject && triggerRender) {
         fitImageToFormat();
         if ( _imp->viewerTab->getInternalNode()) {
             _imp->viewerTab->getInternalNode()->renderCurrentFrame(false);
         }
     }
-
-  
-
+    
+    
+    
     if (!_imp->isUserRoISet) {
         {
             QMutexLocker l(&_imp->userRoIMutex);
@@ -3409,6 +3409,13 @@ ViewerGL::onProjectFormatChanged(const Format & format)
     if (!loadingProject) {
         updateGL();
     }
+
+}
+
+void
+ViewerGL::onProjectFormatChanged(const Format & format)
+{
+    onProjectFormatChangedInternal(format, true);
 }
 
 void
@@ -4329,11 +4336,6 @@ ViewerGL::getCompositingOperator() const
     return _imp->viewerTab->getCompositingOperator();
 }
 
-bool
-ViewerGL::isFrameRangeLocked() const
-{
-    return _imp->viewerTab->isFrameRangeLocked();
-}
 
 void
 ViewerGL::getTextureColorAt(int x,
@@ -4918,5 +4920,11 @@ ViewerGL::getCurrentlyDisplayedTime() const
     } else {
         return _imp->viewerTab->getTimeLine()->currentFrame();
     }
+}
+
+void
+ViewerGL::getViewerFrameRange(int* first,int* last) const
+{
+    _imp->viewerTab->getTimelineBounds(first, last);
 }
 

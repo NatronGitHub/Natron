@@ -38,6 +38,8 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Engine/Curve.h"
 #include "Engine/Settings.h"
 #include "Engine/RotoContext.h"
+#include "Engine/Project.h"
+
 
 #include "Gui/LineEdit.h"
 #include "Gui/SpinBox.h"
@@ -57,6 +59,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Gui/ViewerGL.h"
 #include "Gui/NodeGraph.h"
 #include "Gui/Histogram.h"
+#include "Gui/GuiAppInstance.h"
 #include "Gui/CurveSelection.h"
 
 // warning: 'gluErrorString' is deprecated: first deprecated in OS X 10.9 [-Wdeprecated-declarations]
@@ -1047,11 +1050,13 @@ CurveWidgetPrivate::drawTimelineMarkers()
         glHint(GL_LINE_SMOOTH_HINT,GL_DONT_CARE);
         glColor4f(0.8,0.3,0.,1.);
 
+        int leftBound,rightBound;
+        _gui->getApp()->getFrameRange(&leftBound, &rightBound);
         glBegin(GL_LINES);
-        glVertex2f( _timeline->leftBound(),btmRight.y() );
-        glVertex2f( _timeline->leftBound(),topLeft.y() );
-        glVertex2f( _timeline->rightBound(),btmRight.y() );
-        glVertex2f( _timeline->rightBound(),topLeft.y() );
+        glVertex2f( leftBound,btmRight.y() );
+        glVertex2f( leftBound,topLeft.y() );
+        glVertex2f( rightBound,btmRight.y() );
+        glVertex2f( rightBound,topLeft.y() );
         glColor4f(0.95,0.58,0.,1.);
         glVertex2f( _timeline->currentFrame(),btmRight.y() );
         glVertex2f( _timeline->currentFrame(),topLeft.y() );
@@ -1913,10 +1918,15 @@ CurveWidget::CurveWidget(Gui* gui,
     setMouseTracking(true);
 
     if (timeline) {
+        boost::shared_ptr<Natron::Project> project = gui->getApp()->getProject();
+        assert(project);
         QObject::connect( timeline.get(),SIGNAL( frameChanged(SequenceTime,int) ),this,SLOT( onTimeLineFrameChanged(SequenceTime,int) ) );
-        QObject::connect( timeline.get(),SIGNAL( boundariesChanged(SequenceTime,SequenceTime,int) ),this,SLOT( onTimeLineBoundariesChanged(SequenceTime,SequenceTime,int) ) );
+        QObject::connect( project.get(),SIGNAL( frameRangeChanged(int,int) ),this,SLOT( onTimeLineBoundariesChanged(int,int) ) );
         onTimeLineFrameChanged(timeline->currentFrame(), Natron::eValueChangedReasonNatronGuiEdited);
-        onTimeLineBoundariesChanged(timeline->leftBound(), timeline->rightBound(), Natron::eValueChangedReasonNatronGuiEdited);
+        
+        int left,right;
+        project->getFrameRange(&left, &right);
+        onTimeLineBoundariesChanged(left, right);
     }
     
     if (parent->objectName() == "CurveEditorSplitter") {
@@ -2755,8 +2765,9 @@ CurveWidget::mouseMoveEvent(QMouseEvent* e)
         break;
 
     case eEventStateDraggingTimeline:
-        _imp->_timeline->seekFrame( (SequenceTime)newClick_opengl.x(),NULL, Natron::eTimelineChangeReasonCurveEditorSeek );
-        break;
+            _imp->_gui->getApp()->setLastViewerUsingTimeline(boost::shared_ptr<Natron::Node>());
+            _imp->_timeline->seekFrame( (SequenceTime)newClick_opengl.x(), false, 0,  Natron::eTimelineChangeReasonCurveEditorSeek );
+            break;
     case eEventStateZooming: {
         int delta = 2*((e->x() - _imp->_oldClick.x()) - (e->y() - _imp->_oldClick.y()));
         // Wheel: zoom values and time, keep point under mouse
@@ -3276,9 +3287,7 @@ CurveWidget::isTabVisible() const
 }
 
 void
-CurveWidget::onTimeLineBoundariesChanged(SequenceTime,
-                                         SequenceTime,
-                                         int)
+CurveWidget::onTimeLineBoundariesChanged(int,int)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
