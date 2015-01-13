@@ -445,7 +445,7 @@ QString
 TabWidget::getTabName(int index) const
 {
     if ( index >= _tabBar->count() ) {
-        return "";
+        return QString();
     }
 
     return _tabBar->tabText(index);

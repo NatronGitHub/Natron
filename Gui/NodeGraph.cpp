@@ -1889,16 +1889,42 @@ NodeGraph::mouseDoubleClickEvent(QMouseEvent* e)
 
     for (std::list<boost::shared_ptr<NodeGui> >::iterator it = nodes.begin(); it != nodes.end(); ++it) {
         QPointF evpt = (*it)->mapFromScene(_imp->_lastScenePosClick);
-        if ( (*it)->isVisible() && (*it)->isActive() && (*it)->contains(evpt) && (*it)->getSettingPanel() ) {
-            if ( !(*it)->isSettingsPanelVisible() ) {
-                (*it)->setVisibleSettingsPanel(true);
+        if ( (*it)->isVisible() && (*it)->isActive() && (*it)->contains(evpt) ) {
+            
+            if ((*it)->getSettingPanel()) {
+                if ( !(*it)->isSettingsPanelVisible() ) {
+                    (*it)->setVisibleSettingsPanel(true);
+                }
+                if ( !(*it)->wasBeginEditCalled() ) {
+                    (*it)->beginEditKnobs();
+                }
+                _imp->_gui->putSettingsPanelFirst( (*it)->getSettingPanel() );
+                getGui()->getApp()->redrawAllViewers();
             }
-            if ( !(*it)->wasBeginEditCalled() ) {
-                (*it)->beginEditKnobs();
+            
+            ///For viewers, double click make the tab current in the TabWidget
+            ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>((*it)->getNode()->getLiveInstance());
+            if (isViewer) {
+                OpenGLViewerI* oglViewer = isViewer->getUiContext();
+                if (oglViewer) {
+                    ViewerGL* glViewer = dynamic_cast<ViewerGL*>(oglViewer);
+                    assert(glViewer);
+                    ViewerTab* tab = glViewer->getViewerTab();
+                    assert(tab);
+                    QWidget* parent = tab->parentWidget();
+                    if (parent) {
+                        TabWidget* isTabWidget = dynamic_cast<TabWidget*>(parent);
+                        if (isTabWidget) {
+                            for (int i = 0; i < isTabWidget->count(); ++i) {
+                                if (isTabWidget->tabAt(i) == tab) {
+                                    isTabWidget->makeCurrentTab(i);
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
             }
-            _imp->_gui->putSettingsPanelFirst( (*it)->getSettingPanel() );
-            getGui()->getApp()->redrawAllViewers();
-
             return;
         }
     }
