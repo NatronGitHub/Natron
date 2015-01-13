@@ -109,11 +109,19 @@ public:
     Effect* getInput(int inputNumber) const;
     
     /**
-     * @brief Returns the name of the Effect as displayed on the GUI.
+     * @brief Returns the name of the Effect as used internally
      **/
-    std::string getName() const;
+    std::string getScriptName() const;
     
-    bool setName(const std::string& name);
+    /**
+     * @brief Returns the name of the Effect as displayed on the GUI
+     **/
+    std::string getLabel() const;
+    
+    /**
+     * @brief Set the name of the Effect as used on the GUI
+     **/
+    void setLabel(const std::string& name);
     
     /**
      * @brief Returns the ID of the plug-in embedded into the Effect

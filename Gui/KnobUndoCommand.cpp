@@ -325,7 +325,7 @@ MultipleKnobEditsUndoCommand::undo()
         if (effect) {
             effect->evaluate_public(NULL, true, Natron::eValueChangedReasonUserEdited);
 
-            holderName = effect->getName().c_str();
+            holderName = effect->getNode()->getLabel().c_str();
         }
     }
     setText( QObject::tr("Multiple edits for %1").arg(holderName) );
@@ -393,7 +393,7 @@ MultipleKnobEditsUndoCommand::redo()
             } else {
                 effect->getApp()->triggerAutoSave();
             }
-            holderName = effect->getName().c_str();
+            holderName = effect->getNode()->getLabel().c_str();
         }
     }
     firstRedoCalled = true;

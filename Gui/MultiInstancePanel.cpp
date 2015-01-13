@@ -364,9 +364,9 @@ MultiInstancePanel::getGui() const
 }
 
 std::string
-MultiInstancePanel::getName_mt_safe() const
+MultiInstancePanel::getScriptName_mt_safe() const
 {
-    return _imp->getMainInstance()->getName_mt_safe();
+    return _imp->getMainInstance()->getScriptName_mt_safe();
 }
 
 void
@@ -529,7 +529,7 @@ public:
         _panel->removeRow(index);
         _node->deactivate();
         _panel->getMainInstance()->getApp()->redrawAllViewers();
-        setText( QObject::tr("Add %1").arg( _node->getName().c_str() ) );
+        setText( QObject::tr("Add %1").arg( _node->getLabel().c_str() ) );
     }
 
     virtual void redo() OVERRIDE FINAL
@@ -540,7 +540,7 @@ public:
         }
         _panel->getMainInstance()->getApp()->redrawAllViewers();
         _firstRedoCalled = true;
-        setText( QObject::tr("Add %1").arg( _node->getName().c_str() ) );
+        setText( QObject::tr("Add %1").arg( _node->getLabel().c_str() ) );
     }
 };
 
@@ -559,7 +559,7 @@ boost::shared_ptr<Natron::Node> MultiInstancePanel::addInstanceInternal(bool use
 {
     boost::shared_ptr<Natron::Node> mainInstance = _imp->getMainInstance();
     CreateNodeArgs args( mainInstance->getPluginID().c_str(),
-                         mainInstance->getName(),
+                         mainInstance->getScriptName(),
                          -1,-1,
                         true,
                         INT_MIN,INT_MIN,
@@ -1727,12 +1727,12 @@ TrackerPanel::onAverageTracksButtonClicked()
     const std::list< std::pair<boost::weak_ptr<Natron::Node>,bool > > & allInstances = getInstances();
     for (std::list< std::pair<boost::weak_ptr<Natron::Node>,bool > >::const_iterator it = allInstances.begin();
          it != allInstances.end(); ++it) {
-        if ( QString( it->first.lock()->getName().c_str() ).contains("average",Qt::CaseInsensitive) ) {
+        if ( QString( it->first.lock()->getScriptName().c_str() ).contains("average",Qt::CaseInsensitive) ) {
             ++avgIndex;
         }
     }
     QString newName = QString("Average%1").arg(avgIndex + 1);
-    newInstance->setName(newName);
+    newInstance->setScriptName(newName.toStdString());
     newInstance->updateEffectLabelKnob(newName);
 
     boost::shared_ptr<Double_Knob> newInstanceCenter = getCenterKnobForTracker( newInstance.get() );

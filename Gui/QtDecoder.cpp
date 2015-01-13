@@ -88,7 +88,7 @@ QtReader::getDescription() const
 void
 QtReader::initializeKnobs()
 {
-    Natron::warningDialog( getName(), QObject::tr("This plugin exists only to help the developers team to test %1"
+    Natron::warningDialog( getScriptName_mt_safe(), QObject::tr("This plugin exists only to help the developers team to test %1"
                                                   ". You cannot use it when rendering a project.").arg(NATRON_APPLICATION_NAME).toStdString() );
 
 

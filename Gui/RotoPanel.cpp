@@ -1710,7 +1710,7 @@ RotoPanel::pushUndoCommand(QUndoCommand* cmd)
 std::string
 RotoPanel::getNodeName() const
 {
-    return getNode()->getNode()->getName();
+    return getNode()->getNode()->getScriptName();
 }
 
 boost::shared_ptr<RotoContext>

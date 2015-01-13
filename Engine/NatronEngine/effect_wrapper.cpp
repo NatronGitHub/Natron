@@ -1510,6 +1510,34 @@ static PyObject* Sbk_EffectFunc_getInput(PyObject* self, PyObject* pyArg)
         return 0;
 }
 
+static PyObject* Sbk_EffectFunc_getLabel(PyObject* self)
+{
+    ::Effect* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::Effect*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+
+    // Call function/method
+    {
+
+        if (!PyErr_Occurred()) {
+            // getLabel()const
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            std::string cppResult = const_cast<const ::Effect*>(cppSelf)->getLabel();
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), &cppResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+}
+
 static PyObject* Sbk_EffectFunc_getMaxInputCount(PyObject* self)
 {
     ::Effect* cppSelf = 0;
@@ -1528,34 +1556,6 @@ static PyObject* Sbk_EffectFunc_getMaxInputCount(PyObject* self)
             int cppResult = const_cast<const ::Effect*>(cppSelf)->getMaxInputCount();
             PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<int>(), &cppResult);
-        }
-    }
-
-    if (PyErr_Occurred() || !pyResult) {
-        Py_XDECREF(pyResult);
-        return 0;
-    }
-    return pyResult;
-}
-
-static PyObject* Sbk_EffectFunc_getName(PyObject* self)
-{
-    ::Effect* cppSelf = 0;
-    SBK_UNUSED(cppSelf)
-    if (!Shiboken::Object::isValid(self))
-        return 0;
-    cppSelf = ((::Effect*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], (SbkObject*)self));
-    PyObject* pyResult = 0;
-
-    // Call function/method
-    {
-
-        if (!PyErr_Occurred()) {
-            // getName()const
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            std::string cppResult = const_cast<const ::Effect*>(cppSelf)->getName();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
-            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), &cppResult);
         }
     }
 
@@ -1715,6 +1715,34 @@ static PyObject* Sbk_EffectFunc_getRotoContext(PyObject* self)
     return pyResult;
 }
 
+static PyObject* Sbk_EffectFunc_getScriptName(PyObject* self)
+{
+    ::Effect* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::Effect*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+
+    // Call function/method
+    {
+
+        if (!PyErr_Occurred()) {
+            // getScriptName()const
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            std::string cppResult = const_cast<const ::Effect*>(cppSelf)->getScriptName();
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), &cppResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+}
+
 static PyObject* Sbk_EffectFunc_getUserPageParam(PyObject* self)
 {
     ::Effect* cppSelf = 0;
@@ -1803,26 +1831,25 @@ static PyObject* Sbk_EffectFunc_refreshUserParamsGUI(PyObject* self)
     Py_RETURN_NONE;
 }
 
-static PyObject* Sbk_EffectFunc_setName(PyObject* self, PyObject* pyArg)
+static PyObject* Sbk_EffectFunc_setLabel(PyObject* self, PyObject* pyArg)
 {
     ::Effect* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
     cppSelf = ((::Effect*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], (SbkObject*)self));
-    PyObject* pyResult = 0;
     int overloadId = -1;
     PythonToCppFunc pythonToCpp;
     SBK_UNUSED(pythonToCpp)
 
     // Overloaded function decisor
-    // 0: setName(std::string)
+    // 0: setLabel(std::string)
     if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArg)))) {
-        overloadId = 0; // setName(std::string)
+        overloadId = 0; // setLabel(std::string)
     }
 
     // Function signature not found.
-    if (overloadId == -1) goto Sbk_EffectFunc_setName_TypeError;
+    if (overloadId == -1) goto Sbk_EffectFunc_setLabel_TypeError;
 
     // Call function/method
     {
@@ -1830,11 +1857,10 @@ static PyObject* Sbk_EffectFunc_setName(PyObject* self, PyObject* pyArg)
         pythonToCpp(pyArg, &cppArg0);
 
         if (!PyErr_Occurred()) {
-            // setName(std::string)
+            // setLabel(std::string)
             // Begin code injection
 
-            bool cppResult =  cppSelf->setName(cppArg0);
-            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), &cppResult);
+            cppSelf->setLabel(cppArg0);
 
             // End of code injection
 
@@ -1842,15 +1868,14 @@ static PyObject* Sbk_EffectFunc_setName(PyObject* self, PyObject* pyArg)
         }
     }
 
-    if (PyErr_Occurred() || !pyResult) {
-        Py_XDECREF(pyResult);
+    if (PyErr_Occurred()) {
         return 0;
     }
-    return pyResult;
+    Py_RETURN_NONE;
 
-    Sbk_EffectFunc_setName_TypeError:
+    Sbk_EffectFunc_setLabel_TypeError:
         const char* overloads[] = {"std::string", 0};
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.Effect.setName", overloads);
+        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.Effect.setLabel", overloads);
         return 0;
 }
 
@@ -1938,16 +1963,17 @@ static PyMethodDef Sbk_Effect_methods[] = {
     {"disconnectInput", (PyCFunction)Sbk_EffectFunc_disconnectInput, METH_O},
     {"getCurrentTime", (PyCFunction)Sbk_EffectFunc_getCurrentTime, METH_NOARGS},
     {"getInput", (PyCFunction)Sbk_EffectFunc_getInput, METH_O},
+    {"getLabel", (PyCFunction)Sbk_EffectFunc_getLabel, METH_NOARGS},
     {"getMaxInputCount", (PyCFunction)Sbk_EffectFunc_getMaxInputCount, METH_NOARGS},
-    {"getName", (PyCFunction)Sbk_EffectFunc_getName, METH_NOARGS},
     {"getParam", (PyCFunction)Sbk_EffectFunc_getParam, METH_O},
     {"getParams", (PyCFunction)Sbk_EffectFunc_getParams, METH_NOARGS},
     {"getPluginID", (PyCFunction)Sbk_EffectFunc_getPluginID, METH_NOARGS},
     {"getRotoContext", (PyCFunction)Sbk_EffectFunc_getRotoContext, METH_NOARGS},
+    {"getScriptName", (PyCFunction)Sbk_EffectFunc_getScriptName, METH_NOARGS},
     {"getUserPageParam", (PyCFunction)Sbk_EffectFunc_getUserPageParam, METH_NOARGS},
     {"isNull", (PyCFunction)Sbk_EffectFunc_isNull, METH_NOARGS},
     {"refreshUserParamsGUI", (PyCFunction)Sbk_EffectFunc_refreshUserParamsGUI, METH_NOARGS},
-    {"setName", (PyCFunction)Sbk_EffectFunc_setName, METH_O},
+    {"setLabel", (PyCFunction)Sbk_EffectFunc_setLabel, METH_O},
     {"setPosition", (PyCFunction)Sbk_EffectFunc_setPosition, METH_VARARGS},
 
     {0} // Sentinel

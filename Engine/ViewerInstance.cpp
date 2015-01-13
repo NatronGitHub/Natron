@@ -152,7 +152,7 @@ ViewerInstance::ViewerInstance(boost::shared_ptr<Node> node)
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
     if (node) {
-        connect( node.get(),SIGNAL( nameChanged(QString) ),this,SLOT( onNodeNameChanged(QString) ) );
+        connect( node.get(),SIGNAL( labelChanged(QString) ),this,SLOT( onNodeNameChanged(QString) ) );
     }
     QObject::connect( this,SIGNAL( disconnectTextureRequest(int) ),this,SLOT( executeDisconnectTextureRequestOnMainThread(int) ) );
     QObject::connect( _imp.get(),SIGNAL( mustRedrawViewer() ),this,SLOT( redrawViewer() ) );
@@ -523,7 +523,7 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time, int view, in
         outArgs->params->gain = _imp->viewerParamsGain;
         outArgs->params->lut = _imp->viewerParamsLut;
     }
-    std::string inputToRenderName = outArgs->activeInputToRender->getNode()->getName_mt_safe();
+    std::string inputToRenderName = outArgs->activeInputToRender->getNode()->getScriptName_mt_safe();
     
     outArgs->key.reset(new FrameKey(time,
                  viewerHash,

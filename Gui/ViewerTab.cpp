@@ -349,7 +349,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
       , _imp( new ViewerTabPrivate(gui,node) )
 {
     installEventFilter(this);
-    setObjectName( node->getName().c_str() );
+    setObjectName( node->getNode()->getScriptName().c_str() );
     _imp->mainLayout = new QVBoxLayout(this);
     setLayout(_imp->mainLayout);
     _imp->mainLayout->setSpacing(0);
@@ -995,7 +995,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     
     boost::shared_ptr<Node> wrapperNode = _imp->viewerNode->getNode();
     QObject::connect( wrapperNode.get(),SIGNAL( inputChanged(int) ),this,SLOT( onInputChanged(int) ) );
-    QObject::connect( wrapperNode.get(),SIGNAL( inputNameChanged(int,QString) ),this,SLOT( onInputNameChanged(int,QString) ) );
+    QObject::connect( wrapperNode.get(),SIGNAL( inputLabelChanged(int,QString) ),this,SLOT( onInputNameChanged(int,QString) ) );
     QObject::connect( _imp->viewerNode,SIGNAL(clipPreferencesChanged()), this, SLOT(onClipPreferencesChanged()));
     QObject::connect( _imp->viewerNode,SIGNAL( activeInputsChanged() ),this,SLOT( onActiveInputsChanged() ) );
     QObject::connect( _imp->viewerColorSpace, SIGNAL( currentIndexChanged(int) ), this,
@@ -2769,18 +2769,18 @@ ViewerTab::onInputChanged(int inputNb)
     if (inp) {
         InputNamesMap::iterator found = _imp->inputNamesMap.find(inputNb);
         if ( found != _imp->inputNamesMap.end() ) {
-            const std::string & curInputName = found->second.input->getName();
+            const std::string & curInputName = found->second.input->getNode()->getLabel();
             found->second.input = inp;
             int indexInA = _imp->firstInputImage->itemIndex( curInputName.c_str() );
             int indexInB = _imp->secondInputImage->itemIndex( curInputName.c_str() );
             assert(indexInA != -1 && indexInB != -1);
-            found->second.name = inp->getName().c_str();
+            found->second.name = inp->getNode()->getLabel().c_str();
             _imp->firstInputImage->setItemText(indexInA, found->second.name);
             _imp->secondInputImage->setItemText(indexInB, found->second.name);
         } else {
             InputName inpName;
             inpName.input = inp;
-            inpName.name = inp->getName().c_str();
+            inpName.name = inp->getNode()->getLabel().c_str();
             _imp->inputNamesMap.insert( std::make_pair(inputNb,inpName) );
             _imp->firstInputImage->addItem(inpName.name);
             _imp->secondInputImage->addItem(inpName.name);
@@ -2790,7 +2790,7 @@ ViewerTab::onInputChanged(int inputNb)
 
         ///The input has been disconnected
         if ( found != _imp->inputNamesMap.end() ) {
-            const std::string & curInputName = found->second.input->getName();
+            const std::string & curInputName = found->second.input->getNode()->getLabel();
             _imp->firstInputImage->blockSignals(true);
             _imp->secondInputImage->blockSignals(true);
             _imp->firstInputImage->removeItem( curInputName.c_str() );

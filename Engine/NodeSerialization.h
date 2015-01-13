@@ -38,7 +38,8 @@ CLANG_DIAG_ON(unused-parameter)
 #define NODE_SERIALIZATION_INTRODUCES_USER_KNOBS 4
 #define NODE_SERIALIZATION_INTRODUCES_GROUPS 5
 #define NODE_SERIALIZATION_EMBEDS_MULTI_INSTANCE_CHILDREN 6
-#define NODE_SERIALIZATION_CURRENT_VERSION NODE_SERIALIZATION_EMBEDS_MULTI_INSTANCE_CHILDREN
+#define NODE_SERIALIZATION_INTRODUCES_SCRIPT_NAME 7
+#define NODE_SERIALIZATION_CURRENT_VERSION NODE_SERIALIZATION_INTRODUCES_SCRIPT_NAME
 
 namespace Natron {
 class Node;
@@ -59,7 +60,8 @@ public:
         , _nbKnobs(0)
         , _knobsValues()
         , _knobsAge(0)
-        , _pluginLabel()
+        , _nodeLabel()
+        , _nodeScriptName()
         , _pluginID()
         , _pluginMajorVersion(-1)
         , _pluginMinorVersion(-1)
@@ -78,9 +80,14 @@ public:
         return _knobsValues;
     }
 
-    const std::string & getPluginLabel() const
+    const std::string & getNodeLabel() const
     {
-        return _pluginLabel;
+        return _nodeLabel;
+    }
+    
+    const std::string & getNodeScriptName() const
+    {
+        return _nodeScriptName;
     }
 
     const std::string & getPluginID() const
@@ -158,7 +165,7 @@ private:
     int _nbKnobs;
     KnobValues _knobsValues;
     U64 _knobsAge;
-    std::string _pluginLabel;
+    std::string _nodeLabel,_nodeScriptName;
     std::string _pluginID;
     int _pluginMajorVersion;
     int _pluginMinorVersion;
@@ -178,7 +185,8 @@ private:
     void save(Archive & ar,
               const unsigned int /*version*/) const
     {
-        ar & boost::serialization::make_nvp("Plugin_label",_pluginLabel);
+        ar & boost::serialization::make_nvp("Plugin_label",_nodeLabel);
+        ar & boost::serialization::make_nvp("Plugin_script_name",_nodeScriptName);
         ar & boost::serialization::make_nvp("Plugin_id",_pluginID);
         ar & boost::serialization::make_nvp("Plugin_major_version",_pluginMajorVersion);
         ar & boost::serialization::make_nvp("Plugin_minor_version",_pluginMinorVersion);
@@ -223,7 +231,10 @@ private:
                                         "version of Natron, which makes it unreadable");
         }
         
-        ar & boost::serialization::make_nvp("Plugin_label",_pluginLabel);
+        ar & boost::serialization::make_nvp("Plugin_label",_nodeLabel);
+        if (version >= NODE_SERIALIZATION_INTRODUCES_SCRIPT_NAME) {
+            ar & boost::serialization::make_nvp("Plugin_script_name",_nodeScriptName);
+        }
         ar & boost::serialization::make_nvp("Plugin_id",_pluginID);
         ar & boost::serialization::make_nvp("Plugin_major_version",_pluginMajorVersion);
         ar & boost::serialization::make_nvp("Plugin_minor_version",_pluginMinorVersion);

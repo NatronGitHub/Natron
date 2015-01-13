@@ -422,7 +422,7 @@ KnobGui::showRightClickMenuForDimension(const QPoint &,
             
             Natron::EffectInstance* masterEffect = dynamic_cast<Natron::EffectInstance*>(master.second->getHolder());
             assert(masterEffect);
-            nodeName.append(masterEffect->getNode()->getFullySpecifiedName());
+            nodeName.append(masterEffect->getNode()->getFullyQualifiedName());
             nodeName.append(".");
             nodeName.append( master.second->getName() );
             if (master.second->getDimension() > 1) {
@@ -1453,7 +1453,7 @@ LinkToKnobDialog::LinkToKnobDialog(KnobGui* from,
     group->getActiveNodes(&_imp->allNodes);
     QStringList nodeNames;
     for (NodeList::iterator it = _imp->allNodes.begin(); it != _imp->allNodes.end(); ++it) {
-        QString name( (*it)->getName().c_str() );
+        QString name( (*it)->getLabel().c_str() );
         nodeNames.push_back(name);
         //_imp->nodeSelectionCombo->addItem(name);
     }
@@ -1487,7 +1487,7 @@ LinkToKnobDialog::onNodeComboEditingFinished()
     boost::shared_ptr<Natron::Node> selectedNode;
     std::string currentNodeName = index.toStdString();
     for (NodeList::iterator it = _imp->allNodes.begin(); it != _imp->allNodes.end(); ++it) {
-        if ((*it)->getName() == currentNodeName) {
+        if ((*it)->getLabel() == currentNodeName) {
             selectedNode = *it;
             break;
         }

@@ -576,7 +576,7 @@ GuiAppInstance::startRenderingFullSequence(const AppInstance::RenderWork& w,bool
             lastFrame = getTimeLine()->lastFrame();
         }
         if (firstFrame > lastFrame) {
-            Natron::errorDialog( w.writer->getNode()->getName_mt_safe(),
+            Natron::errorDialog( w.writer->getNode()->getLabel_mt_safe(),
                                 tr("First frame in the sequence is greater than the last frame").toStdString(), false );
             
             return;
@@ -591,7 +591,7 @@ GuiAppInstance::startRenderingFullSequence(const AppInstance::RenderWork& w,bool
     
     DiskCacheNode* isDiskCache = dynamic_cast<DiskCacheNode*>(w.writer);
     if (isDiskCache) {
-        outputFileSequence = isDiskCache->getName_mt_safe().c_str();
+        outputFileSequence = isDiskCache->getNode()->getLabel_mt_safe().c_str();
     } else {
         boost::shared_ptr<KnobI> fileKnob = w.writer->getKnobByName(kOfxImageEffectFileParamName);
         if (fileKnob) {
@@ -614,9 +614,11 @@ GuiAppInstance::startRenderingFullSequence(const AppInstance::RenderWork& w,bool
                 _imp->_activeBgProcesses.push_back(process);
             }
         } catch (const std::exception & e) {
-            Natron::errorDialog( w.writer->getName(), tr("Error while starting rendering").toStdString() + ": " + e.what(), false );
+            Natron::errorDialog( w.writer->getNode()->getLabel(),
+                                tr("Error while starting rendering").toStdString() + ": " + e.what(), false );
         } catch (...) {
-            Natron::errorDialog( w.writer->getName(), tr("Error while starting rendering").toStdString(),false  );
+            Natron::errorDialog( w.writer->getNode()->getLabel(),
+                                tr("Error while starting rendering").toStdString(),false  );
         }
     } else {
         _imp->_gui->onWriterRenderStarted(outputFileSequence, firstFrame, lastFrame, w.writer);

@@ -1314,7 +1314,7 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
             
             if (n->isActive() && n->isVisible() && bbox.intersects(sceneR) &&
                 n->isNearby(ep) &&
-                n->getNode()->getName() != nodeHoldingEdge->getNode()->getName()) {
+                n->getNode()->getScriptName() != nodeHoldingEdge->getNode()->getScriptName()) {
                 
                 if ( !_imp->_arrowSelected->isOutputEdge() ) {
                     
@@ -1325,16 +1325,16 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
                             
                             QString error = QString(tr("You cannot connect ") +  "%1" + " to " + "%2"  + tr(" because they don't have the same pixel aspect ratio (")
                                                     + "%3 / %4 " +  tr(") and ") + "%1 " + " doesn't support inputs with different pixel aspect ratio.")
-                            .arg(nodeHoldingEdge->getNode()->getName().c_str())
-                            .arg(n->getNode()->getName().c_str())
+                            .arg(nodeHoldingEdge->getNode()->getLabel().c_str())
+                            .arg(n->getNode()->getLabel().c_str())
                             .arg(nodeHoldingEdge->getNode()->getLiveInstance()->getPreferredAspectRatio())
                             .arg(n->getNode()->getLiveInstance()->getPreferredAspectRatio());
                             Natron::errorDialog(tr("Different pixel aspect").toStdString(),
                                                 error.toStdString());
                         } else if (linkRetCode == Natron::Node::eCanConnectInput_differentFPS) {
                             QString error = QString(tr("You cannot connect ") +  "%1" + " to " + "%2"  + tr(" because they don't have the same frame rate (") + "%3 / %4)")
-                            .arg(nodeHoldingEdge->getNode()->getName().c_str())
-                            .arg(n->getNode()->getName().c_str())
+                            .arg(nodeHoldingEdge->getNode()->getLabel().c_str())
+                            .arg(n->getNode()->getLabel().c_str())
                             .arg(nodeHoldingEdge->getNode()->getLiveInstance()->getPreferredFrameRate())
                             .arg(n->getNode()->getLiveInstance()->getPreferredFrameRate());
                             Natron::errorDialog(tr("Different frame rate").toStdString(),
@@ -1359,16 +1359,16 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
                                 
                                 QString error = QString(tr("You cannot connect ") +  "%1" + " to " + "%2"  + tr(" because they don't have the same pixel aspect ratio (")
                                                         + "%3 / %4 " +  tr(") and ") + "%1 " + " doesn't support inputs with different pixel aspect ratio.")
-                                .arg(n->getNode()->getName().c_str())
-                                .arg(nodeHoldingEdge->getNode()->getName().c_str())
+                                .arg(n->getNode()->getLabel().c_str())
+                                .arg(nodeHoldingEdge->getNode()->getLabel().c_str())
                                 .arg(n->getNode()->getLiveInstance()->getPreferredAspectRatio())
                                 .arg(nodeHoldingEdge->getNode()->getLiveInstance()->getPreferredAspectRatio());
                                 Natron::errorDialog(tr("Different pixel aspect").toStdString(),
                                                     error.toStdString());
                             } else if (linkRetCode == Natron::Node::eCanConnectInput_differentFPS) {
                                 QString error = QString(tr("You cannot connect ") +  "%1" + " to " + "%2"  + tr(" because they don't have the same frame rate (") + "%3 / %4)")
-                                .arg(nodeHoldingEdge->getNode()->getName().c_str())
-                                .arg(n->getNode()->getName().c_str())
+                                .arg(nodeHoldingEdge->getNode()->getLabel().c_str())
+                                .arg(n->getNode()->getLabel().c_str())
                                 .arg(nodeHoldingEdge->getNode()->getLiveInstance()->getPreferredFrameRate())
                                 .arg(n->getNode()->getLiveInstance()->getPreferredFrameRate());
                                 Natron::errorDialog(tr("Different frame rate").toStdString(),
@@ -3310,11 +3310,13 @@ NodeGraphPrivate::pasteNode(const NodeSerialization & internalSerialization,
     
     std::string name;
     if (internalSerialization.getNode()->getGroup() != group.lock() || grp != group.lock()) {
-        name = internalSerialization.getPluginLabel();
+        name = internalSerialization.getNodeScriptName();
+        n->setScriptName( name);
+        n->setLabel(internalSerialization.getNodeLabel());
     } else {
         int no = 1;
         std::stringstream ss;
-        ss << internalSerialization.getPluginLabel();
+        ss << internalSerialization.getNodeScriptName();
         ss << '_';
         ss << no;
         name = ss.str();
@@ -3322,13 +3324,13 @@ NodeGraphPrivate::pasteNode(const NodeSerialization & internalSerialization,
             ++no;
             ss.str( std::string() );
             ss.clear();
-            ss << internalSerialization.getPluginLabel();
+            ss << internalSerialization.getNodeScriptName();
             ss << '_';
             ss << no;
             name = ss.str();
         }
+        n->setScriptName( name);
     }
-    n->setName( name.c_str() );
 
     const std::string & masterNodeName = internalSerialization.getMasterNodeName();
     if ( masterNodeName.empty() ) {
@@ -3377,7 +3379,7 @@ NodeGraphPrivate::pasteNode(const NodeSerialization & internalSerialization,
         } else {
             assert(n->isMultiInstance());
             collection = n->getGroup();
-            parentName = n->getName_mt_safe();
+            parentName = n->getScriptName_mt_safe();
         }
         std::list<NodeGuiPtr> newNodes;
         for (std::list<boost::shared_ptr<NodeSerialization> >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
@@ -3415,7 +3417,7 @@ NodeGraphPrivate::restoreConnections(const std::list<boost::shared_ptr<NodeSeria
             ///find a node with the containing the same name. It should not match exactly because there's already
             /// the "-copy" that was added to its name
             for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it2 = newNodes.begin(); it2 != newNodes.end(); ++it2) {
-                if ( (*it2)->getNode()->getName().find(inputNames[i]) != std::string::npos ) {
+                if ( (*it2)->getNode()->getScriptName().find(inputNames[i]) != std::string::npos ) {
                     _publicInterface->getGui()->getApp()->getProject()->connectNodes( i, (*it2)->getNode(), (*it)->getNode().get() );
                     break;
                 }
@@ -3502,7 +3504,7 @@ NodeGraph::cloneSelectedNodes()
             return;
         }
         if ( (*it)->getNode()->isMultiInstance() ) {
-            QString err = QString("%1 cannot be cloned.").arg( (*it)->getNode()->getName_mt_safe().c_str() );
+            QString err = QString("%1 cannot be cloned.").arg( (*it)->getNode()->getLabel().c_str() );
             Natron::errorDialog( tr("Clone").toStdString(),
                                  tr( err.toStdString().c_str() ).toStdString() );
 
@@ -3639,7 +3641,7 @@ NodeGraph::deleteNodepluginsly(boost::shared_ptr<NodeGui> n)
         
         for (std::list<boost::shared_ptr<NodeGuiSerialization> >::iterator it = cb.nodesUI.begin();
              it != cb.nodesUI.end(); ++it) {
-            if ( (*it)->getFullySpecifiedName() == internalNode->getFullySpecifiedName() ) {
+            if ( (*it)->getFullySpecifiedName() == internalNode->getFullyQualifiedName() ) {
                 cb.nodesUI.erase(it);
                 break;
             }
@@ -4089,13 +4091,13 @@ FindNodeDialog::updateFindResults(const QString& filter)
         
         
         for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = activeNodes.begin(); it!=activeNodes.end(); ++it) {
-            if ((*it)->isVisible() && exp.exactMatch((*it)->getNode()->getName().c_str())) {
+            if ((*it)->isVisible() && exp.exactMatch((*it)->getNode()->getLabel().c_str())) {
                 _imp->nodeResults.push_back(*it);
             }
         }
     } else {
         for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = activeNodes.begin(); it!=activeNodes.end(); ++it) {
-            if ((*it)->isVisible() && QString((*it)->getNode()->getName().c_str()).contains(filter,sensitivity)) {
+            if ((*it)->isVisible() && QString((*it)->getNode()->getLabel().c_str()).contains(filter,sensitivity)) {
                 _imp->nodeResults.push_back(*it);
             }
         }
@@ -4249,10 +4251,8 @@ EditNodeNameDialog::keyPressEvent(QKeyEvent* e)
 {
     if ( (e->key() == Qt::Key_Return) || (e->key() == Qt::Key_Enter) ) {
         QString newName = _imp->field->text();
-        QString oldName = QString(_imp->node->getNode()->getName().c_str());
-        if (_imp->node->trySetName(newName)) {
-            _imp->graph->pushUndoCommand(new RenameNodeUndoRedoCommand(_imp->node,oldName,newName));
-        }
+        QString oldName = QString(_imp->node->getNode()->getLabel().c_str());
+        _imp->graph->pushUndoCommand(new RenameNodeUndoRedoCommand(_imp->node,oldName,newName));
         accept();
     } else if (e->key() == Qt::Key_Escape) {
         reject();

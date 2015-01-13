@@ -109,15 +109,22 @@ Effect::getInput(int inputNumber) const
 }
 
 std::string
-Effect::getName() const
+Effect::getScriptName() const
 {
-    return _node->getName_mt_safe();
+    return _node->getScriptName_mt_safe();
 }
 
-bool
-Effect::setName(const std::string& name)
+std::string
+Effect::getLabel() const
 {
-    return _node->setName(name.c_str());
+    return _node->getLabel_mt_safe();
+}
+
+
+void
+Effect::setLabel(const std::string& name)
+{
+    return _node->setLabel(name);
 }
 
 std::string
@@ -449,7 +456,7 @@ Effect::createChild()
         return 0;
     }
     CreateNodeArgs args( _node->getPluginID().c_str(),
-                        _node->getName(),
+                        _node->getScriptName(),
                         -1,-1,
                         true,
                         INT_MIN,INT_MIN,

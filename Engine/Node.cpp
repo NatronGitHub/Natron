@@ -407,7 +407,8 @@ Node::load(const std::string & parentMultiInstanceName,
     }
     
     if (!serialization.isNull() && !dontLoadName && !nameSet && fixedName.isEmpty()) {
-        setScriptName_no_error_check( serialization.getPluginLabel().c_str() );
+        setScriptName_no_error_check(serialization.getNodeScriptName());
+        setLabel(serialization.getNodeLabel());
         nameSet = true;
     }
     
@@ -1382,7 +1383,10 @@ Node::setNameInternal(const std::string& name)
         }
         collection->notifyNodeNameChanged(shared_from_this());
     }
-    Q_EMIT labelChanged(newName.c_str());
+    
+    QString qnewName(newName.c_str());
+    Q_EMIT scriptNameChanged(qnewName);
+    Q_EMIT labelChanged(qnewName);
 }
 
 bool

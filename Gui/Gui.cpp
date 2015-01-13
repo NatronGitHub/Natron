@@ -741,7 +741,7 @@ Gui::createNodeGUI( boost::shared_ptr<Node> node,
     }
     boost::shared_ptr<NodeGui> nodeGui = graph->createNodeGUI(_imp->_layoutPropertiesBin,node,requestedByLoad,
                                                               xPosHint,yPosHint,pushUndoRedoCommand,autoConnect);
-    QObject::connect( node.get(),SIGNAL( nameChanged(QString) ),this,SLOT( onNodeNameChanged(QString) ) );
+    QObject::connect( node.get(),SIGNAL( labelChanged(QString) ),this,SLOT( onNodeNameChanged(QString) ) );
     assert(nodeGui);
 
     return nodeGui;
@@ -1233,7 +1233,7 @@ Gui::createGroupGui(const boost::shared_ptr<Natron::Node>& group,bool requestedB
     QGraphicsScene* scene = new QGraphicsScene(this);
     scene->setItemIndexMethod(QGraphicsScene::NoIndex);
     NodeGraph* nodeGraph = new NodeGraph(this,collection,scene,this);
-    nodeGraph->setObjectName(group->getName_mt_safe().c_str());
+    nodeGraph->setObjectName(group->getLabel().c_str());
     _imp->_groups.push_back(nodeGraph);
     if (!requestedByLoad && !getApp()->isCreatingPythonGroup()) {
         where->appendTab(nodeGraph);
@@ -1570,7 +1570,7 @@ Gui::restoreLayout(bool wipePrevious,
                 const std::list<boost::shared_ptr<NodeGui> > & nodes = getNodeGraph()->getAllActiveNodes();
                 DockablePanel* panel = 0;
                 for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it2 = nodes.begin(); it2 != nodes.end(); ++it2) {
-                    if ( (*it2)->getNode()->getName_mt_safe() == (*it)->child_asDockablePanel ) {
+                    if ( (*it2)->getNode()->getScriptName() == (*it)->child_asDockablePanel ) {
                         ( (*it2)->getSettingPanel()->floatPanel() );
                         panel = (*it2)->getSettingPanel();
                         break;
@@ -4333,7 +4333,7 @@ Gui::startProgress(KnobHolder* effect,
     dialog->setMinimumWidth(250);
     NamedKnobHolder* isNamed = dynamic_cast<NamedKnobHolder*>(effect);
     if (isNamed) {
-        dialog->setWindowTitle( isNamed->getName_mt_safe().c_str() );
+        dialog->setWindowTitle( isNamed->getScriptName_mt_safe().c_str() );
     }
     std::map<KnobHolder*,QProgressDialog*>::iterator found = _imp->_progressBars.find(effect);
 
@@ -4381,7 +4381,7 @@ Gui::progressUpdate(KnobHolder* effect,
     if ( found == _imp->_progressBars.end() ) {
         NamedKnobHolder* isNamed = dynamic_cast<NamedKnobHolder*>(effect);
         if (isNamed) {
-            qDebug() << isNamed->getName_mt_safe().c_str() <<  " called progressUpdate but didn't called startProgress first.";
+            qDebug() << isNamed->getScriptName_mt_safe().c_str() <<  " called progressUpdate but didn't called startProgress first.";
         }
     } else {
         if ( found->second->wasCanceled() ) {

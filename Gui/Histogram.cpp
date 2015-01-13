@@ -449,7 +449,7 @@ boost::shared_ptr<Natron::Image> HistogramPrivate::getHistogramImage(RectI* imag
         boost::shared_ptr<Natron::Image> ret;
         const std::list<ViewerTab*> & viewerTabs = gui->getViewersList();
         for (std::list<ViewerTab*>::const_iterator it = viewerTabs.begin(); it != viewerTabs.end(); ++it) {
-            if ( (*it)->getInternalNode()->getName() == viewerName ) {
+            if ( (*it)->getInternalNode()->getScriptName_mt_safe() == viewerName ) {
                 ret = (*it)->getViewer()->getLastRenderedImage(textureIndex);
                 if (ret) {
                     if (!useImageRoD) {
@@ -515,7 +515,7 @@ Histogram::populateViewersChoices()
     for (std::list<ViewerTab*>::const_iterator it = viewerTabs.begin(); it != viewerTabs.end(); ++it) {
         if ( (*it)->getInternalNode()->getNode()->isActivated() ) {
             QAction* ac = new QAction(_imp->histogramSelectionGroup);
-            ac->setText( (*it)->getInternalNode()->getName().c_str() );
+            ac->setText( (*it)->getInternalNode()->getScriptName_mt_safe().c_str() );
             ac->setCheckable(true);
             ac->setChecked(false);
             ac->setData(c);
@@ -558,11 +558,11 @@ Histogram::onViewerImageChanged(ViewerGL* viewer,
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
     if (viewer) {
-        QString viewerName = viewer->getInternalNode()->getName().c_str();
+        QString viewerName = viewer->getInternalNode()->getScriptName_mt_safe().c_str();
         ViewerTab* lastSelectedViewer = _imp->gui->getLastSelectedViewer();
         QString currentViewerName;
         if (lastSelectedViewer) {
-            currentViewerName = lastSelectedViewer->getInternalNode()->getName().c_str();
+            currentViewerName = lastSelectedViewer->getInternalNode()->getScriptName_mt_safe().c_str();
         }
 
         QAction* selectedHistAction = _imp->histogramSelectionGroup->checkedAction();

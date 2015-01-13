@@ -1050,17 +1050,17 @@ clipPrefsProxy(OfxEffectInstance* self,
             }
             ///Otherwise if the bit-depth conversion will be lossy, warn the user
             else if ( Image::isBitDepthConversionLossy(input_outputNatronDepth, outputClipDepthNatron) ) {
-                bitDepthWarning.append( instance->getName().c_str() );
+                bitDepthWarning.append( instance->getNode()->getLabel_mt_safe().c_str() );
                 bitDepthWarning.append(" (" + QString( Image::getDepthString(input_outputNatronDepth).c_str() ) + ")");
                 bitDepthWarning.append(" ----> ");
-                bitDepthWarning.append( self->getName_mt_safe().c_str() );
+                bitDepthWarning.append( self->getNode()->getLabel_mt_safe().c_str() );
                 bitDepthWarning.append(" (" + QString( Image::getDepthString(outputClipDepthNatron).c_str() ) + ")");
                 bitDepthWarning.append('\n');
                 setBitDepthWarning = true;
             }
             
             if (!self->effectInstance()->supportsMultipleClipPARs() && foundClipPrefs->second.par != outputAspectRatio && foundClipPrefs->first->getConnected()) {
-                qDebug() << self->getName_mt_safe().c_str() << ": An input clip ("<< foundClipPrefs->first->getName().c_str()
+                qDebug() << self->getScriptName_mt_safe().c_str() << ": An input clip ("<< foundClipPrefs->first->getName().c_str()
                 << ") has a pixel aspect ratio (" << foundClipPrefs->second.par
                 << ") different than the output clip (" << outputAspectRatio << ") but it doesn't support multiple clips PAR. "
                 << "This should have been handled earlier before connecting the nodes, @see Node::canConnectInput.";
@@ -1451,7 +1451,7 @@ OfxEffectInstance::getRegionsOfInterest(SequenceTime time,
 
 
     if ( (stat != kOfxStatOK) && (stat != kOfxStatReplyDefault) ) {
-        appPTR->writeToOfxLog_mt_safe(QString( getNode()->getName_mt_safe().c_str() ) + "Failed to specify the region of interest from inputs.");
+        appPTR->writeToOfxLog_mt_safe(QString( getNode()->getScriptName_mt_safe().c_str() ) + "Failed to specify the region of interest from inputs.");
     }
     if (stat != kOfxStatReplyDefault) {
         
@@ -1510,7 +1510,7 @@ OfxEffectInstance::getFramesNeeded(SequenceTime time)
         stat = _effect->getFrameNeededAction( (OfxTime)time, inputRanges );
     }
     if ( (stat != kOfxStatOK) && (stat != kOfxStatReplyDefault) ) {
-        Natron::errorDialog( getName(), QObject::tr("Failed to specify the frame ranges needed from inputs.").toStdString() );
+        Natron::errorDialog( getScriptName_mt_safe(), QObject::tr("Failed to specify the frame ranges needed from inputs.").toStdString() );
     } else if (stat == kOfxStatOK) {
         for (OFX::Host::ImageEffect::RangeMap::iterator it = inputRanges.begin(); it != inputRanges.end(); ++it) {
             OfxClipInstance* clip = dynamic_cast<OfxClipInstance*>(it->first);
@@ -2435,7 +2435,7 @@ OfxEffectInstance::knobChanged(KnobI* k,
         }
     }
     if ( (stat != kOfxStatOK) && (stat != kOfxStatReplyDefault) ) {
-        QString err( QString( getNode()->getName_mt_safe().c_str() ) + ": An error occured while changing parameter " +
+        QString err( QString( getNode()->getScriptName_mt_safe().c_str() ) + ": An error occured while changing parameter " +
                     k->getDescription().c_str() );
         appPTR->writeToOfxLog_mt_safe(err);
         

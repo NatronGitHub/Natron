@@ -248,6 +248,8 @@ public Q_SLOTS:
     
     void onManageUserParametersActionTriggered();
     
+    void onNodeScriptChanged(const QString& label);
+    
 Q_SIGNALS:
 
     /*emitted when the panel is clicked*/

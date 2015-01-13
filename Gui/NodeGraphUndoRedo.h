@@ -322,7 +322,6 @@ private:
     
     boost::weak_ptr<NodeGui> _node;
     QString _oldName,_newName;
-    bool _firstRedoCalled;
 };
 
 struct ExtractedOutput

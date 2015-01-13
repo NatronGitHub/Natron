@@ -284,10 +284,9 @@
                 %CPPSELF.%FUNCTION_NAME(%1);
             </inject-code>
         </modify-function>
-        <modify-function signature="setName(std::string)">
+        <modify-function signature="setLabel(std::string)">
             <inject-code class="target" position="beginning">
-                %RETURN_TYPE %0 =  %CPPSELF.%FUNCTION_NAME(%1);
-                %PYARG_0 = %CONVERTTOPYTHON[%RETURN_TYPE](%0);
+                %CPPSELF.%FUNCTION_NAME(%1);
             </inject-code>
         </modify-function>
         <!-- It doesn't seem that Shiboken allows to remove an overload:

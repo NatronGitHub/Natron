@@ -166,7 +166,7 @@ NodeGui::initialize(NodeGraph* dag,
 
     internalNode->setNodeGuiPointer(thisAsShared);
 
-    QObject::connect( internalNode.get(), SIGNAL( nameChanged(QString) ), this, SLOT( onInternalNameChanged(QString) ) );
+    QObject::connect( internalNode.get(), SIGNAL( labelChanged(QString) ), this, SLOT( onInternalNameChanged(QString) ) );
     QObject::connect( internalNode.get(), SIGNAL( refreshEdgesGUI() ),this,SLOT( refreshEdges() ) );
     QObject::connect( internalNode.get(), SIGNAL( knobsInitialized() ),this,SLOT( initializeKnobs() ) );
     QObject::connect( internalNode.get(), SIGNAL( inputsInitialized() ),this,SLOT( initializeInputs() ) );
@@ -238,7 +238,7 @@ NodeGui::initialize(NodeGraph* dag,
 
 
     ///Refresh the name in the line edit
-    onInternalNameChanged( internalNode->getName().c_str() );
+    onInternalNameChanged( internalNode->getLabel().c_str() );
 
     ///Make the output edge
     BackDrop* isBd = dynamic_cast<BackDrop*>(internalNode->getLiveInstance());
@@ -355,7 +355,7 @@ NodeGui::createGui()
         _resizeHandle->setZValue(depth + 1);
     }
     
-    _nameItem = new QGraphicsTextItem(getNode()->getName().c_str(),this);
+    _nameItem = new QGraphicsTextItem(getNode()->getLabel().c_str(),this);
     _nameItem->setDefaultTextColor( QColor(0,0,0,255) );
     _nameItem->setFont( QFont(appFont,appFontSize) );
     _nameItem->setZValue(depth+ 1);
@@ -876,8 +876,8 @@ NodeGui::updatePreviewImage(int time)
     NodePtr node = getNode();
     if ( isVisible() && node->isPreviewEnabled()  && node->getApp()->getProject()->isAutoPreviewEnabled() ) {
         
-        if (node->getName().find(NATRON_FILE_DIALOG_PREVIEW_READER_NAME) != std::string::npos ||
-            node->getName().find(NATRON_FILE_DIALOG_PREVIEW_VIEWER_NAME) != std::string::npos) {
+        if (node->getScriptName().find(NATRON_FILE_DIALOG_PREVIEW_READER_NAME) != std::string::npos ||
+            node->getScriptName().find(NATRON_FILE_DIALOG_PREVIEW_VIEWER_NAME) != std::string::npos) {
             return;
         }
         
@@ -893,8 +893,8 @@ NodeGui::forceComputePreview(int time)
     NodePtr node = getNode();
     if ( isVisible() && node->isPreviewEnabled() ) {
         
-        if (node->getName().find(NATRON_FILE_DIALOG_PREVIEW_READER_NAME) != std::string::npos ||
-            node->getName().find(NATRON_FILE_DIALOG_PREVIEW_VIEWER_NAME) != std::string::npos) {
+        if (node->getScriptName().find(NATRON_FILE_DIALOG_PREVIEW_READER_NAME) != std::string::npos ||
+            node->getScriptName().find(NATRON_FILE_DIALOG_PREVIEW_VIEWER_NAME) != std::string::npos) {
             return;
         }
         
@@ -1873,7 +1873,7 @@ NodeGui::onAllKnobsSlaved(bool b)
 static QString makeLinkString(Natron::Node* masterNode,KnobI* master,Natron::Node* slaveNode,KnobI* slave)
 {
     QString tt("<br>");
-    tt.append(masterNode->getName().c_str());
+    tt.append(masterNode->getLabel().c_str());
     tt.append(".");
     tt.append(master->getName().c_str());
     
@@ -1882,7 +1882,7 @@ static QString makeLinkString(Natron::Node* masterNode,KnobI* master,Natron::Nod
     
     tt.append("------->");
     
-    tt.append(slaveNode->getName().c_str());
+    tt.append(slaveNode->getLabel().c_str());
     tt.append(".");
     tt.append(slave->getName().c_str());
     
@@ -2311,7 +2311,7 @@ NodeGui::onNodeExtraLabelChanged(const QString & label)
         _nodeLabel = String_KnobGui::removeNatronHtmlTag(_nodeLabel);
     }
     _nodeLabel = replaceLineBreaksWithHtmlParagraph(_nodeLabel); ///< maybe we should do this in the knob itself when the user writes ?
-    setNameItemHtml(node->getName().c_str(),_nodeLabel);
+    setNameItemHtml(node->getLabel().c_str(),_nodeLabel);
 }
 
 QColor
@@ -2596,24 +2596,13 @@ NodeGui::onInternalNameChanged(const QString & s)
 }
 
 void
-NodeGui::setName(const QString & name_)
-{
-    trySetName(name_);
-}
-
-bool
-NodeGui::trySetName(const QString& newName)
+NodeGui::setName(const QString & newName)
 {
     _settingNameFromGui = true;
-    if (!getNode()->setName(newName)) {
-        _settingNameFromGui = false;
-        return false;
-    }
+    getNode()->setLabel(newName.toStdString());
     _settingNameFromGui = false;
     
     onInternalNameChanged(newName);
-    return true;
-   
 }
 
 bool

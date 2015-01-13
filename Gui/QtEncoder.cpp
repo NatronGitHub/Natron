@@ -122,7 +122,7 @@ QtWriter::getFrameRange(SequenceTime *first,
 void
 QtWriter::initializeKnobs()
 {
-    Natron::warningDialog( getName(), QObject::tr("This plugin exists only to help the developpers team to test %1"
+    Natron::warningDialog( getScriptName_mt_safe(), QObject::tr("This plugin exists only to help the developpers team to test %1"
                                                   ". You cannot use it to render a project.").arg(NATRON_APPLICATION_NAME).toStdString() );
 
 

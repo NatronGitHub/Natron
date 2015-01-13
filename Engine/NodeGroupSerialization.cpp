@@ -68,7 +68,7 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
             for (std::list< boost::shared_ptr<NodeSerialization> >::const_iterator it2 = serializedNodes.begin();
                  it2 != serializedNodes.end(); ++it2) {
                 
-                if ( (*it2)->getPluginLabel() == (*it)->getMultiInstanceParentName() ) {
+                if ( (*it2)->getNodeScriptName() == (*it)->getMultiInstanceParentName() ) {
                     foundParent = true;
                     break;
                 }
@@ -95,7 +95,7 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
                                                                                                         QString(),
                                                                                                         CreateNodeArgs::DefaultValuesList(),
                                                                                                         group));
-                    parent->setName( (*it)->getMultiInstanceParentName().c_str() );
+                    parent->setScriptName( (*it)->getMultiInstanceParentName().c_str() );
                     parentsToReconnect.insert( std::make_pair(parent, it) );
                 }
             }
@@ -144,7 +144,7 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
         }
         
         
-        boost::shared_ptr<Natron::Node> thisNode = group->getNodeByName((*it)->getPluginLabel());
+        boost::shared_ptr<Natron::Node> thisNode = group->getNodeByName((*it)->getNodeScriptName());
         
         if (!thisNode) {
             continue;
@@ -163,7 +163,7 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
             boost::shared_ptr<Natron::Node> masterNode = thisNode->getApp()->getNodeByFullySpecifiedName(masterNodeName);
             
             if (!masterNode) {
-                appPTR->writeToOfxLog_mt_safe(QString("Cannot restore the link between " + QString((*it)->getPluginLabel().c_str()) + " and " + masterNodeName.c_str()));
+                appPTR->writeToOfxLog_mt_safe(QString("Cannot restore the link between " + QString((*it)->getNodeScriptName().c_str()) + " and " + masterNodeName.c_str()));
                 mustShowErrorsLog = true;
             } else {
                 thisNode->getLiveInstance()->slaveAllKnobs( masterNode->getLiveInstance() );
@@ -175,7 +175,7 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
         const std::vector<std::string> & inputs = (*it)->getInputs();
         for (U32 j = 0; j < inputs.size(); ++j) {
             if ( !inputs[j].empty() && !group->connectNodes(j, inputs[j],thisNode.get()) ) {
-                std::string message = std::string("Failed to connect node ") + (*it)->getPluginLabel() + " to " + inputs[j];
+                std::string message = std::string("Failed to connect node ") + (*it)->getNodeScriptName() + " to " + inputs[j];
                 appPTR->writeToOfxLog_mt_safe(message.c_str());
                 mustShowErrorsLog =true;
             }

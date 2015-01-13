@@ -30,7 +30,7 @@ void
 NodeGuiSerialization::initialize(const NodeGui*  n)
 {
     ////All this code is MT-safe
-    _nodeName = n->getNode()->getFullySpecifiedName();
+    _nodeName = n->getNode()->getFullyQualifiedName();
     QPointF pos = n->getPos_mt_safe();
     _posX = pos.x();
     _posY = pos.y();

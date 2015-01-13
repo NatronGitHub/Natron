@@ -149,7 +149,7 @@ AddFormatDialog::AddFormatDialog(Natron::Project *project,
     
 
     for (std::list<ViewerInstance*>::iterator it = _viewers.begin(); it != _viewers.end(); ++it) {
-        _copyFromViewerCombo->addItem( (*it)->getName().c_str() );
+        _copyFromViewerCombo->addItem( (*it)->getNode()->getLabel().c_str() );
     }
     _fromViewerLineLayout->addWidget(_copyFromViewerCombo);
 
@@ -224,7 +224,7 @@ AddFormatDialog::onCopyFromViewer()
     QString activeText = _copyFromViewerCombo->itemText( _copyFromViewerCombo->activeIndex() );
 
     for (std::list<ViewerInstance*>::iterator it = _viewers.begin(); it != _viewers.end(); ++it) {
-        if ( (*it)->getName() == activeText.toStdString() ) {
+        if ( (*it)->getNode()->getLabel() == activeText.toStdString() ) {
             ViewerTab* tab = _gui->getViewerTabForInstance(*it);
             RectD f = tab->getViewer()->getRoD(0);
             Format format = tab->getViewer()->getDisplayWindow();

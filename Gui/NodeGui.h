@@ -307,9 +307,7 @@ public:
     void serializeInternal(std::list<boost::shared_ptr<NodeSerialization> >& internalSerialization,bool copyKnobs) const;
     void restoreInternal(const boost::shared_ptr<NodeGui>& thisShared,
                          const std::list<boost::shared_ptr<NodeSerialization> >& internalSerialization) ;
-    
-    bool trySetName(const QString& newName);
-    
+        
     void setMergeHintActive(bool active);
     
     /**

@@ -402,10 +402,10 @@ AppInstance::createNodeInternal(const QString & pluginID,
         }
         std::string containerName;
         group->initNodeName(plugin->getPluginLabel().toStdString(),&containerName);
-        containerNode->setName(containerName.c_str());
+        containerNode->setScriptName(containerName);
         
         if (!requestedByLoad) {
-            std::string containerFullySpecifiedName = containerNode->getFullySpecifiedName();
+            std::string containerFullySpecifiedName = containerNode->getFullyQualifiedName();
             
             int appID = getAppID() + 1;
             
@@ -512,7 +512,7 @@ AppInstance::createNodeInternal(const QString & pluginID,
                                 CreateNodeArgs::DefaultValuesList(),
                                 isGrp);
             output = createNode(args);
-            output->setName("Output");
+            output->setScriptName("Output");
             assert(output);
         }
         {
@@ -682,7 +682,7 @@ AppInstance::startWritersRendering(const std::list<RenderRequest>& writers)
             std::string writerName =  it->writerName.toStdString();
             
             for (NodeList::const_iterator it2 = projectNodes.begin(); it2 != projectNodes.end(); ++it2) {
-                if ( (*it2)->getName() == writerName) {
+                if ( (*it2)->getScriptName() == writerName) {
                     node = *it2;
                     break;
                 }

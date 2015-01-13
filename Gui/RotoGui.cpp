@@ -3041,7 +3041,7 @@ RotoGui::pushUndoCommand(QUndoCommand* cmd)
 QString
 RotoGui::getNodeName() const
 {
-    return _imp->node->getNode()->getName().c_str();
+    return _imp->node->getNode()->getScriptName().c_str();
 }
 
 RotoContext*

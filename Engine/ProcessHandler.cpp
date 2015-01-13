@@ -26,6 +26,7 @@
 
 #include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
+#include "Engine/Node.h"
 #include "Engine/EffectInstance.h"
 
 ProcessHandler::ProcessHandler(AppInstance* app,
@@ -55,7 +56,7 @@ ProcessHandler::ProcessHandler(AppInstance* app,
     _ipcServer->listen(serverName);
 
 
-    _processArgs << projectPath << "-b" << "-w" << writer->getName().c_str();
+    _processArgs << projectPath << "-b" << "-w" << writer->getScriptName_mt_safe().c_str();
     _processArgs << "--IPCpipe" << ( _ipcServer->fullServerName() );
 
     ///connect the useful slots of the process
@@ -194,7 +195,7 @@ void
 ProcessHandler::onProcessError(QProcess::ProcessError err)
 {
     if (err == QProcess::FailedToStart) {
-        Natron::errorDialog( _writer->getName(),QObject::tr("The render process failed to start").toStdString() );
+        Natron::errorDialog( _writer->getScriptName(),QObject::tr("The render process failed to start").toStdString() );
     } else if (err == QProcess::Crashed) {
         //@TODO: find out a way to get the backtrace
     }

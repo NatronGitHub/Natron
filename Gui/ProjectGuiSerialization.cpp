@@ -88,7 +88,7 @@ ProjectGuiSerialization::initialize(const ProjectGui* projectGui)
                 viewerData.checkerboardEnabled = tab->isCheckerboardEnabled();
                 viewerData.fps = tab->getDesiredFps();
                 viewerData.fpsLocked = tab->isFPSLocked();
-                _viewersData.insert( std::make_pair(viewer->getNode()->getName_mt_safe(),viewerData) );
+                _viewersData.insert( std::make_pair(viewer->getNode()->getScriptName_mt_safe(),viewerData) );
             }
         }
     }
@@ -116,7 +116,7 @@ ProjectGuiSerialization::initialize(const ProjectGui* projectGui)
             if (isProject) {
                 _openedPanelsOrdered.push_back(kNatronProjectSettingsPanelSerializationName);
             } else if (isEffect) {
-                _openedPanelsOrdered.push_back(isEffect->getNode()->getFullySpecifiedName());
+                _openedPanelsOrdered.push_back(isEffect->getNode()->getFullyQualifiedName());
             } 
         }
     }
@@ -218,7 +218,7 @@ ApplicationWindowSerialization::initialize(bool mainWindow,
             ///A named knob holder is a knob holder which has a unique name.
             NamedKnobHolder* isNamedHolder = dynamic_cast<NamedKnobHolder*>( isPanel->getHolder() );
             if (isNamedHolder) {
-                child_asDockablePanel = isNamedHolder->getName_mt_safe();
+                child_asDockablePanel = isNamedHolder->getScriptName_mt_safe();
             } else {
                 ///This must be the project settings panel
                 child_asDockablePanel = kNatronProjectSettingsPanelSerializationName;

@@ -28,7 +28,8 @@ NodeSerialization::NodeSerialization(const boost::shared_ptr<Natron::Node> & n,b
     , _nbKnobs(0)
     , _knobsValues()
     , _knobsAge(0)
-    , _pluginLabel()
+    , _nodeLabel()
+    , _nodeScriptName()
     , _pluginID()
     , _pluginMajorVersion(-1)
     , _pluginMinorVersion(-1)
@@ -80,7 +81,9 @@ NodeSerialization::NodeSerialization(const boost::shared_ptr<Natron::Node> & n,b
 
         _knobsAge = n->getKnobsAge();
 
-        _pluginLabel = n->getName_mt_safe();
+        _nodeLabel = n->getLabel_mt_safe();
+        
+        _nodeScriptName = n->getScriptName_mt_safe();
 
         _pluginID = n->getPluginID();
 
@@ -94,7 +97,7 @@ NodeSerialization::NodeSerialization(const boost::shared_ptr<Natron::Node> & n,b
 
         boost::shared_ptr<Natron::Node> masterNode = n->getMasterNode();
         if (masterNode) {
-            _masterNodeName = masterNode->getFullySpecifiedName();
+            _masterNodeName = masterNode->getFullyQualifiedName();
         }
 
         boost::shared_ptr<RotoContext> roto = n->getRotoContext();

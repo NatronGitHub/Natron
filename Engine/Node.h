@@ -924,6 +924,8 @@ Q_SIGNALS:
 
     void labelChanged(QString);
     
+    void scriptNameChanged(QString);
+    
     void inputLabelChanged(int,QString);
 
     void refreshEdgesGUI();

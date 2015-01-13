@@ -742,7 +742,7 @@ OfxImageEffectInstance::newMemoryInstance(size_t nBytes)
     bool allocated = ret->alloc(nBytes);
 
     if ((nBytes != 0 && !ret->getPtr()) || !allocated) {
-        Natron::errorDialog(QObject::tr("Out of memory").toStdString(), getOfxEffectInstance()->getNode()->getName_mt_safe() + QObject::tr(" failed to allocate memory (").toStdString() + printAsRAM(nBytes).toStdString() + ").");
+        Natron::errorDialog(QObject::tr("Out of memory").toStdString(), getOfxEffectInstance()->getNode()->getLabel_mt_safe() + QObject::tr(" failed to allocate memory (").toStdString() + printAsRAM(nBytes).toStdString() + ").");
     }
 
     return ret;
@@ -852,7 +852,7 @@ OfxImageEffectInstance::getClipPreferences_safe(std::map<OfxClipInstance*, ClipP
     if (mustWarnPar) {
         qDebug()
         << "WARNING: getClipPreferences() for "
-        << _ofxEffectInstance->getName_mt_safe().c_str()
+        << _ofxEffectInstance->getScriptName_mt_safe().c_str()
         << ": This node has several input clips with different pixel aspect ratio but it does "
         "not support multiple input clips PAR. Your script or the GUI should have handled this "
         "earlier (before connecting the node @see Node::canConnectInput) .";
@@ -863,23 +863,23 @@ OfxImageEffectInstance::getClipPreferences_safe(std::map<OfxClipInstance*, ClipP
     if (mustWarnFPS) {
         qDebug()
         << "WARNING: getClipPreferences() for "
-        << _ofxEffectInstance->getName_mt_safe().c_str()
+        << _ofxEffectInstance->getScriptName_mt_safe().c_str()
         << ": This node has several input clips with different frame rates but it does "
         "not support it. Your script or the GUI should have handled this "
         "earlier (before connecting the node @see Node::canConnectInput) .";
         outArgs.setDoubleProperty(kOfxImageEffectPropFrameRate, getFrameRate());
-        std::string name = _ofxEffectInstance->getName_mt_safe();
+        std::string name = _ofxEffectInstance->getScriptName_mt_safe();
         _ofxEffectInstance->setPersistentMessage(Natron::eMessageTypeWarning, "Several input clips with different pixel aspect ratio or different frame rates but it cannot handle it.");
     }
 
     if (mustWarnPar && !mustWarnFPS) {
-        std::string name = _ofxEffectInstance->getName_mt_safe();
+        std::string name = _ofxEffectInstance->getNode()->getLabel_mt_safe();
         _ofxEffectInstance->setPersistentMessage(Natron::eMessageTypeWarning, "Several input clips with different pixel aspect ratio but it cannot handle it.");
     } else if (!mustWarnPar && mustWarnFPS) {
-        std::string name = _ofxEffectInstance->getName_mt_safe();
+        std::string name = _ofxEffectInstance->getNode()->getLabel_mt_safe();
         _ofxEffectInstance->setPersistentMessage(Natron::eMessageTypeWarning, "Several input clips with different frame rates but it cannot handle it.");
     } else if (mustWarnPar && mustWarnFPS) {
-        std::string name = _ofxEffectInstance->getName_mt_safe();
+        std::string name = _ofxEffectInstance->getNode()->getLabel_mt_safe();
         _ofxEffectInstance->setPersistentMessage(Natron::eMessageTypeWarning, "Several input clips with different pixel aspect ratio and different frame rates but it cannot handle it.");
     } else {
         if (_ofxEffectInstance->getNode()->hasPersistentMessage()) {

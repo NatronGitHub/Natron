@@ -508,6 +508,10 @@ DockablePanel::DockablePanel(Gui* gui
 
         if (headerMode != eHeaderModeReadOnlyName) {
             _imp->_nameLineEdit = new LineEdit(_imp->_headerWidget);
+            if (iseffect) {
+                _imp->_nameLineEdit->setToolTip("<b>Script name: </b>" + QString(iseffect->getScriptName().c_str()));
+                QObject::connect(iseffect->getNode().get(),SIGNAL(scriptNameChanged(QString)),this, SLOT(onNodeScriptChanged(QString)));
+            }
             _imp->_nameLineEdit->setText(initialName);
             QObject::connect( _imp->_nameLineEdit,SIGNAL( editingFinished() ),this,SLOT( onLineEditNameEditingFinished() ) );
             _imp->_headerLayout->addWidget(_imp->_nameLineEdit);
@@ -579,6 +583,14 @@ DockablePanel::~DockablePanel()
         }
     }
 }
+                                 
+void
+DockablePanel::onNodeScriptChanged(const QString& label)
+{
+    if (_imp->_nameLineEdit) {
+        _imp->_nameLineEdit->setToolTip("<b>Script name: </b>" + label);
+    }
+}
 
 void
 DockablePanel::setUserPageActiveIndex()
@@ -628,6 +640,7 @@ DockablePanel::rebuildUserPages()
     }
 
 }
+                                 
 
 
 void
@@ -761,7 +774,7 @@ DockablePanel::onLineEditNameEditingFinished()
     if (panel) {
         node = panel->getNode();
         assert(node);
-        oldName = QString(node->getNode()->getName().c_str());
+        oldName = QString(node->getNode()->getLabel().c_str());
         
     }
     
@@ -771,9 +784,7 @@ DockablePanel::onLineEditNameEditingFinished()
 
     assert(node);
     if (node) {
-        if (node->trySetName(newName)) {
-            pushUndoCommand(new RenameNodeUndoRedoCommand(node, oldName, newName));
-        }
+        pushUndoCommand(new RenameNodeUndoRedoCommand(node, oldName, newName));
     } 
    
 }
@@ -1925,7 +1936,7 @@ NodeSettingsPanel::NodeSettingsPanel(const boost::shared_ptr<MultiInstancePanel>
                     container,
                     DockablePanel::eHeaderModeFullyFeatured,
                     false,
-                    NodeUi->getNode()->getName().c_str(),
+                    NodeUi->getNode()->getLabel().c_str(),
                     NodeUi->getNode()->getDescription().c_str(),
                     false,
                     "Settings",

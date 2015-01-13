@@ -437,10 +437,10 @@ ConnectCommand::doConnect(const boost::shared_ptr<Natron::Node> &oldSrc,
     
     if (newSrc) {
         setText( QObject::tr("Connect %1 to %2")
-                .arg(internalDst->getName().c_str() ).arg( newSrc->getName().c_str() ) );
+                .arg(internalDst->getLabel().c_str() ).arg( newSrc->getLabel().c_str() ) );
     } else {
         setText( QObject::tr("Disconnect %1")
-                .arg(internalDst->getName().c_str() ) );
+                .arg(internalDst->getLabel().c_str() ) );
     }
 
     
@@ -522,14 +522,14 @@ void
 ResizeBackDropCommand::undo()
 {
     _bd->resize(_oldW, _oldH);
-    setText( QObject::tr("Resize %1").arg( _bd->getNode()->getName().c_str() ) );
+    setText( QObject::tr("Resize %1").arg( _bd->getNode()->getLabel().c_str() ) );
 }
 
 void
 ResizeBackDropCommand::redo()
 {
     _bd->resize(_w, _h);
-    setText( QObject::tr("Resize %1").arg( _bd->getNode()->getName().c_str() ) );
+    setText( QObject::tr("Resize %1").arg( _bd->getNode()->getLabel().c_str() ) );
 }
 
 bool
@@ -1083,7 +1083,6 @@ RenameNodeUndoRedoCommand::RenameNodeUndoRedoCommand(const boost::shared_ptr<Nod
 , _node(node)
 , _oldName(oldName)
 , _newName(newName)
-, _firstRedoCalled(false)
 {
     assert(node);
    
@@ -1098,18 +1097,14 @@ void
 RenameNodeUndoRedoCommand::undo()
 {
     NodeGuiPtr node = _node.lock();
-    node->trySetName(_oldName);
+    node->setName(_oldName);
     setText(QObject::tr("Rename node"));
 }
 
 void RenameNodeUndoRedoCommand::redo()
 {
-    if (_firstRedoCalled) {
-        NodeGuiPtr node = _node.lock();
-        node->trySetName(_newName);
-       
-    }
-    _firstRedoCalled = true;
+    NodeGuiPtr node = _node.lock();
+    node->setName(_newName);
     setText(QObject::tr("Rename node"));
 }
 

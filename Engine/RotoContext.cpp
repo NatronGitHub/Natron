@@ -5112,7 +5112,7 @@ RotoContext::onItemKnobChanged()
 std::string
 RotoContext::getRotoNodeName() const
 {
-    return getNode()->getName_mt_safe();
+    return getNode()->getScriptName_mt_safe();
 }
 
 void
