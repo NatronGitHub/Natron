@@ -607,9 +607,9 @@ TimeLineGui::mousePressEvent(QMouseEvent* e)
             int distFromFirst = std::abs(e->x() - firstPos);
             int distFromLast = std::abs(e->x() - lastPos);
             if (distFromFirst  > distFromLast) {
-                setBoundaries(leftBound, tseq); // moving last frame anchor
+                setBoundariesInternal(leftBound, tseq, true); // moving last frame anchor
             } else {
-                setBoundaries( tseq, rightBound );   // moving first frame anchor
+                setBoundariesInternal( tseq, rightBound, true );   // moving first frame anchor
             }
         } else {
             _imp->_state = eTimelineStateDraggingCursor;
@@ -956,9 +956,8 @@ void
 TimeLineGui::onProjectFrameRangeChanged(int left,int right)
 {
     if (!isFrameRangeEdited()) {
-        QMutexLocker k(&_imp->boundariesMutex);
-        _imp->leftBoundary = left;
-        _imp->rightBoundary = right;
+        setBoundariesInternal(left, right, true);
+        setFrameRangeEdited(false);
     }
     update();
 }
