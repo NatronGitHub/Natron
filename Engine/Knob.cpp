@@ -453,7 +453,6 @@ KnobHelper::deleteValueAtTime(int time,
                               int dimension,
                               Natron::ValueChangedReasonEnum reason)
 {
-    assert(QThread::currentThread() == qApp->thread());
     if ( dimension > (int)_imp->curves.size() || dimension < 0) {
         throw std::invalid_argument("KnobHelper::deleteValueAtTime(): Dimension out of range");
     }
@@ -1471,20 +1470,57 @@ KnobHelper::getAnimationLevel(int dimension) const
 }
 
 void
-KnobHelper::deleteAnimationBeforeTime(int time,
-                                      int dimension,
-                                      Natron::ValueChangedReasonEnum reason)
+KnobHelper::deleteAnimationConditional(int time,int dimension,Natron::ValueChangedReasonEnum reason,bool before)
 {
     if (!_imp->curves[dimension]) {
         return;
     }
     assert( 0 <= dimension && dimension < getDimension() );
-    KeyFrame k;
-    bool ok = _imp->curves[dimension]->getPreviousKeyframeTime(time, &k);
-    while (ok) {
-        deleteValueAtTime(k.getTime(), dimension, reason);
-        ok = _imp->curves[dimension]->getPreviousKeyframeTime(time, &k);
+    KnobHolder* holder = getHolder();
+    
+    boost::shared_ptr<Curve> curve;
+    
+    bool useGuiCurve = (!holder || !holder->canSetValue()) && _imp->gui;
+    
+    if (!useGuiCurve) {
+        curve = _imp->curves[dimension];
+    } else {
+        curve = _imp->gui->getCurve(dimension);
+        setGuiCurveHasChanged(dimension,true);
     }
+    
+    std::list<int> keysRemoved;
+    if (before) {
+        curve->removeKeyFramesBeforeTime(time, &keysRemoved);
+    } else {
+        curve->removeKeyFramesAfterTime(time, &keysRemoved);
+    }
+    
+    if (!useGuiCurve) {
+        
+        if (_signalSlotHandler) {
+            _signalSlotHandler->s_updateSlaves(dimension);
+        }
+        checkAnimationLevel(dimension);
+        guiCurveCloneInternalCurve(dimension);
+        evaluateValueChange(dimension,reason, true);
+    }
+    
+    if (holder && holder->getApp()) {
+        holder->getApp()->getTimeLine()->removeMultipleKeyframeIndicator(keysRemoved, true);
+    }
+    if (_signalSlotHandler) {
+        _signalSlotHandler->s_animationRemoved(dimension);
+    }
+
+}
+
+void
+KnobHelper::deleteAnimationBeforeTime(int time,
+                                      int dimension,
+                                      Natron::ValueChangedReasonEnum reason)
+{
+    deleteAnimationConditional(time, dimension, reason, true);
 }
 
 void
@@ -1492,17 +1528,7 @@ KnobHelper::deleteAnimationAfterTime(int time,
                                      int dimension,
                                      Natron::ValueChangedReasonEnum reason)
 {
-    assert( 0 <= dimension && dimension < getDimension() );
-    KeyFrame k;
-    if (!_imp->curves[dimension]) {
-        return;
-    }
-    bool ok = _imp->curves[dimension]->getNextKeyframeTime(time, &k);
-    
-    while (ok) {
-        deleteValueAtTime(k.getTime(), dimension, reason);
-        ok = _imp->curves[dimension]->getNextKeyframeTime(time, &k);
-    }
+    deleteAnimationConditional(time, dimension, reason, false);
 }
 
 bool

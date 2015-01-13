@@ -430,6 +430,11 @@ Node::load(const std::string & pluginID,
         if (centerKnob) {
             centerKnob->setAsInstanceSpecific();
         }
+        
+        boost::shared_ptr<KnobI> offsetKnob = getKnobByName("offset");
+        if (offsetKnob) {
+            offsetKnob->setAsInstanceSpecific();
+        }
     }
     
     if (!nameSet) {

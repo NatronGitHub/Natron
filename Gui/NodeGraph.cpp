@@ -3645,7 +3645,14 @@ NodeGraph::deleteNodepluginsly(boost::shared_ptr<NodeGui> n)
     n->discardGraphPointer();
 
     if ( getGui() ) {
-        getGui()->removeRotoInterface(n.get(),true);
+        
+        if ( internalNode->isRotoNode() ) {
+            getGui()->removeRotoInterface(n.get(),true);
+        }
+        
+        if (internalNode->isTrackerNode()) {
+            getGui()->removeTrackerInterface(n.get(), true);
+        }
 
         ///now that we made the command dirty, delete the node everywhere in Natron
         getGui()->getApp()->deleteNode(n);

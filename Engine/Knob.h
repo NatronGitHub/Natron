@@ -924,6 +924,13 @@ public:
     virtual void onMasterChanged(KnobI* master,int masterDimension) OVERRIDE FINAL;
     virtual void deleteAnimationBeforeTime(int time,int dimension,Natron::ValueChangedReasonEnum reason) OVERRIDE FINAL;
     virtual void deleteAnimationAfterTime(int time,int dimension,Natron::ValueChangedReasonEnum reason) OVERRIDE FINAL;
+    
+private:
+    
+    void deleteAnimationConditional(int time,int dimension,Natron::ValueChangedReasonEnum reason,bool before);
+public:
+    
+    
     virtual double getDerivativeAtTime(double time, int dimension = 0) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool getKeyFrameTime(int index,int dimension,double* time) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool getLastKeyFrameTime(int dimension,double* time) const OVERRIDE FINAL WARN_UNUSED_RETURN;
