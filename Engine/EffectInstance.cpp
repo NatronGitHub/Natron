@@ -520,7 +520,6 @@ struct EffectInstance::Implementation
               , _dst(dst)
         {
             assert(_dst);
-            assert(outputImage);
 
             args._rod = rod;
             args._renderWindowPixel = renderWindow;

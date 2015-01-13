@@ -2427,7 +2427,7 @@ std::string
 Node::getPluginID() const
 {
     ///MT-safe, never changes
-    return _imp->liveInstance->getPluginID();
+    return _imp->liveInstance ? _imp->liveInstance->getPluginID() : std::string();
 }
 
 std::string
