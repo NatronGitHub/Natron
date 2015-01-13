@@ -1331,6 +1331,9 @@ KnobHelper::slaveTo(int dimension,
 {
     assert( 0 <= dimension && dimension < (int)_imp->masters.size() );
     assert( !other->isSlave(otherDimension) );
+    if (dynamic_cast<Button_Knob*>(this)) {
+        return false;
+    }
     {
         QWriteLocker l(&_imp->mastersMutex);
         if (_imp->masters[dimension].second) {
