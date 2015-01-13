@@ -224,6 +224,18 @@ public slots:
 
     void onProjectFormatChanged(const Format & format);
     
+    void onCheckerboardSettingsChanged();
+
+    
+    /**
+     * @brief Reset the wipe position so it is in the center of the B input.
+     * If B input is disconnected it goes in the middle of the A input.
+     * Otherwise it goes in the middle of the project window
+     **/
+    void resetWipeControls();
+    
+    void clearLastRenderedTexture();
+    
 private:
     
     void onProjectFormatChangedInternal(const Format & format,bool triggerRender);
@@ -237,16 +249,6 @@ public:
     
     virtual boost::shared_ptr<TimeLine> getTimeline() const OVERRIDE FINAL;
 
-    /**
-     * @brief Reset the wipe position so it is in the center of the B input.
-     * If B input is disconnected it goes in the middle of the A input.
-     * Otherwise it goes in the middle of the project window
-     **/
-    void resetWipeControls();
-
-    void onCheckerboardSettingsChanged();
-    
-    void clearLastRenderedTexture();
 
 public:
 
