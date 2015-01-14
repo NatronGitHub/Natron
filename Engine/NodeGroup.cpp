@@ -766,7 +766,31 @@ NodeCollection::checkIfNodeNameExists(const std::string & n,const Natron::Node* 
     return false;
 }
 
-
+void
+NodeCollection::recomputeFrameRangeForAllReaders(int* firstFrame,int* lastFrame)
+{
+    NodeList nodes = getNodes();
+    for (NodeList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        if ((*it)->isActivated()) {
+            
+            if ((*it)->getLiveInstance()->isReader()) {
+                int thisFirst,thislast;
+                (*it)->getLiveInstance()->getFrameRange_public((*it)->getHashValue(), &thisFirst, &thislast);
+                if (thisFirst != INT_MIN) {
+                    *firstFrame = std::min(*firstFrame, thisFirst);
+                }
+                if (thislast != INT_MAX) {
+                    *lastFrame = std::max(*lastFrame, thislast);
+                }
+            } else {
+                NodeGroup* isGrp = dynamic_cast<NodeGroup*>((*it)->getLiveInstance());
+                if (isGrp) {
+                    recomputeFrameRangeForAllReaders(firstFrame, lastFrame);
+                }
+            }
+        }
+    }
+}
 
 struct NodeGroupPrivate
 {

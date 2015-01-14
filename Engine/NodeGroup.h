@@ -195,6 +195,11 @@ public:
     void quitAnyProcessingForAllNodes();
     
     /**
+     * @brief Computes the union of the frame range of all readers in the group and subgroups.
+     **/
+    void recomputeFrameRangeForAllReaders(int* firstFrame,int* lastFrame);
+    
+    /**
      * @brief Callback called when a node of the collection is being deactivated
      **/
     virtual void notifyNodeDeactivated(const boost::shared_ptr<Natron::Node>& /*node*/) {}

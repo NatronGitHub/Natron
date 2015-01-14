@@ -1040,15 +1040,7 @@ Project::getProjectDefaultFormat(Format *f) const
 void
 Project::ensureAllProcessingThreadsFinished()
 {
-    std::vector<boost::shared_ptr<Natron::Node> > nodesToDelete;
-    {
-        QMutexLocker l(&_imp->nodesLock);
-        nodesToDelete = _imp->currentNodes;
-    }
-    for (U32 i = 0; i < nodesToDelete.size(); ++i) {
-        nodesToDelete[i]->quitAnyProcessing();
-    }
-    
+    quitAnyProcessingForAllNodes();
     QThreadPool::globalInstance()->waitForDone();
 }
 
@@ -1284,7 +1276,7 @@ Project::onKnobValueChanged(KnobI* knob,
     } else if (knob == _imp->frameRange.get()) {
         int first = _imp->frameRange->getValue(0);
         int last = _imp->frameRange->getValue(1);
-        emit frameRangeChanged(first, last);
+        Q_EMIT frameRangeChanged(first, last);
     }
 }
 
@@ -1924,8 +1916,9 @@ Project::isProjectClosing() const
 {
     assert(QThread::currentThread() == qApp->thread());
     return _imp->projectClosing;
-
-    bool
+}
+    
+bool
 Project::isFrameRangeLocked() const
 {
     return _imp->lockFrameRange->getValue();
@@ -1958,19 +1951,7 @@ void
 Project::recomputeFrameRangeFromReaders()
 {
     int first = 1,last = 1;
-    std::vector<boost::shared_ptr<Natron::Node> > nodes = getCurrentNodes();
-    for (std::vector<boost::shared_ptr<Natron::Node> > ::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        if ((*it)->isActivated() && (*it)->getLiveInstance()->isReader()) {
-            int thisFirst,thislast;
-            (*it)->getLiveInstance()->getFrameRange_public((*it)->getHashValue(), &thisFirst, &thislast);
-            if (thisFirst != INT_MIN) {
-                first = std::min(first, thisFirst);
-            }
-            if (thislast != INT_MAX) {
-                last = std::max(last, thislast);
-            }
-        }
-    }
+    recomputeFrameRangeForAllReaders(&first, &last);
     blockEvaluation();
     _imp->frameRange->setValue(first, 0);
     unblockEvaluation();
