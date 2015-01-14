@@ -51,7 +51,8 @@ class ProjectSerialization
     SequenceTime _timelineCurrent;
     qint64 _creationDate;
     AppInstance* _app;
-
+    unsigned int _version;
+    
 public:
 
     ProjectSerialization(AppInstance* app)
@@ -66,6 +67,11 @@ public:
         _serializedNodes.clear();
     }
 
+    unsigned int getVersion() const
+    {
+        return _version;
+    }
+    
     void initialize(const Natron::Project* project);
 
     SequenceTime getCurrentTime() const
@@ -139,6 +145,7 @@ public:
     void load(Archive & ar,
               const unsigned int version)
     {
+        _version = version;
         if (version >= PROJECT_SERIALIZATION_INTRODUCES_NATRON_VERSION) {
             std::string natronVersion;
             ar & boost::serialization::make_nvp("NatronVersion",natronVersion);

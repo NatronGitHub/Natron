@@ -344,6 +344,11 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
     ageSinceLastSave = time;
     lastAutoSave = time;
     _publicInterface->getApp()->setProjectWasCreatedWithLowerCaseIDs(false);
+    
+    if (obj.getVersion() < PROJECT_SERIALIZATION_REMOVES_TIMELINE_BOUNDS) {
+        _publicInterface->recomputeFrameRangeFromReaders();
+    }
+    
     return !mustShowErrorsLog;
 } // restoreFromSerialization
 

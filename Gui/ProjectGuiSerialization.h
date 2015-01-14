@@ -97,11 +97,15 @@ struct ViewerData
     
     int leftBound,rightBound;
     
+    unsigned int _version;
+    
     friend class boost::serialization::access;
     template<class Archive>
     void serialize(Archive & ar,
                    const unsigned int version)
     {
+        _version = version;
+        
         ar & boost::serialization::make_nvp("zoomLeft",zoomLeft);
         ar & boost::serialization::make_nvp("zoomBottom",zoomBottom);
         ar & boost::serialization::make_nvp("zoomFactor",zoomFactor);
@@ -133,6 +137,8 @@ struct ViewerData
         if (version >=  VIEWER_DATA_REMOVES_FRAME_RANGE_LOCK) {
             ar & boost::serialization::make_nvp("LeftBound",leftBound);
             ar & boost::serialization::make_nvp("RightBound",rightBound);
+        } else {
+            leftBound = rightBound = 1;
         }
         
         if (version >= VIEWER_DATA_INTRODUCES_TOOLBARS_VISIBLITY) {

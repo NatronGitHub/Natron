@@ -363,7 +363,7 @@ ProjectGui::load(boost::archive::xml_iarchive & archive)
                 nGui->setCurrentColor(color);
             }
         }
-
+        
         ViewerInstance* viewer = dynamic_cast<ViewerInstance*>( nGui->getNode()->getLiveInstance() );
         if (viewer) {
             std::map<std::string, ViewerData >::const_iterator found = viewersProjections.find(name);
@@ -389,7 +389,12 @@ ProjectGui::load(boost::archive::xml_iarchive & archive)
                 tab->setTimelineVisible(found->second.timelineVisible);
                 tab->setCheckerboardEnabled(found->second.checkerboardEnabled);
                 tab->setTimelineBounds(found->second.leftBound, found->second.rightBound);
-                tab->setFrameRangeEdited(leftBound != found->second.leftBound || rightBound != found->second.rightBound);
+                if (found->second._version >= VIEWER_DATA_REMOVES_FRAME_RANGE_LOCK) {
+                    tab->setFrameRangeEdited(leftBound != found->second.leftBound || rightBound != found->second.rightBound);
+                } else {
+                    tab->setTimelineBounds(leftBound, rightBound);
+                    tab->setFrameRangeEdited(false);
+                }
                 if (!found->second.fpsLocked) {
                     tab->setDesiredFps(found->second.fps);
                 }

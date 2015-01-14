@@ -2252,13 +2252,24 @@ Project::unionFrameRangeWith(int first,int last)
 void
 Project::recomputeFrameRangeFromReaders()
 {
-    int first,last;
+    int first = 1,last = 1;
     std::vector<boost::shared_ptr<Natron::Node> > nodes = getCurrentNodes();
     for (std::vector<boost::shared_ptr<Natron::Node> > ::iterator it = nodes.begin(); it != nodes.end(); ++it) {
         if ((*it)->isActivated() && (*it)->getLiveInstance()->isReader()) {
-            int first,last;
+            int thisFirst,thislast;
+            (*it)->getLiveInstance()->getFrameRange_public((*it)->getHashValue(), &thisFirst, &thislast);
+            if (thisFirst != INT_MIN) {
+                first = std::min(first, thisFirst);
+            }
+            if (thislast != INT_MAX) {
+                last = std::max(last, thislast);
+            }
         }
     }
+    blockEvaluation();
+    _imp->frameRange->setValue(first, 0);
+    unblockEvaluation();
+    _imp->frameRange->setValue(last, 1);
 }
     
 } //namespace Natron

@@ -958,6 +958,7 @@ TimeLineGui::onProjectFrameRangeChanged(int left,int right)
     if (!isFrameRangeEdited()) {
         setBoundariesInternal(left, right, true);
         setFrameRangeEdited(false);
+        centerOn(left, right);
     }
     update();
 }
