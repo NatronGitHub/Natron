@@ -183,6 +183,7 @@ struct ViewerGL::Implementation
           , isUserRoISet(false)
           , lastMousePosition()
           , lastDragStartPos()
+          , hasMovedSincePress(false)
           , currentViewerInfo()
           , projectFormatMutex()
           , projectFormat()
@@ -276,6 +277,7 @@ struct ViewerGL::Implementation
     bool isUserRoISet;
     QPoint lastMousePosition; //< in widget coordinates
     QPointF lastDragStartPos; //< in zoom coordinates
+    bool hasMovedSincePress;
 
     /////// currentViewerInfo
     ImageInfo currentViewerInfo[2]; /*!< Pointer to the ViewerInfo  used for rendering*/
@@ -2498,6 +2500,8 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
         return;
     }
     
+    _imp->hasMovedSincePress = false;
+    
     ///Set focus on user click
     setFocus();
     
@@ -2519,9 +2523,11 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
         zoomScreenPixelHeight = _imp->zoomCtx.screenPixelHeight();
     }
     RectD userRoI;
+    bool userRoIEnabled;
     {
         QMutexLocker l(&_imp->userRoIMutex);
         userRoI = _imp->userRoI;
+        userRoIEnabled = _imp->userRoIEnabled;
     }
     bool overlaysCaught = false;
     bool mustRedraw = false;
@@ -2568,48 +2574,48 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
             mustRedraw = true;
             overlaysCaught = true;
         } else if ( buttonDownIsLeft(e) &&
-                    isNearByUserRoIBottomEdge(userRoI,zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight) ) {
+                    userRoIEnabled && isNearByUserRoIBottomEdge(userRoI,zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight) ) {
             // start dragging the bottom edge of the user ROI
             _imp->ms = eMouseStateDraggingRoiBottomEdge;
             overlaysCaught = true;
         } else if ( buttonDownIsLeft(e) &&
-                    isNearByUserRoILeftEdge(userRoI,zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight) ) {
+                    userRoIEnabled && isNearByUserRoILeftEdge(userRoI,zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight) ) {
             // start dragging the left edge of the user ROI
             _imp->ms = eMouseStateDraggingRoiLeftEdge;
             overlaysCaught = true;
         } else if ( buttonDownIsLeft(e) &&
-                    isNearByUserRoIRightEdge(userRoI,zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight) ) {
+                    userRoIEnabled && isNearByUserRoIRightEdge(userRoI,zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight) ) {
             // start dragging the right edge of the user ROI
             _imp->ms = eMouseStateDraggingRoiRightEdge;
             overlaysCaught = true;
         } else if ( buttonDownIsLeft(e) &&
-                    isNearByUserRoITopEdge(userRoI,zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight) ) {
+                    userRoIEnabled && isNearByUserRoITopEdge(userRoI,zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight) ) {
             // start dragging the top edge of the user ROI
             _imp->ms = eMouseStateDraggingRoiTopEdge;
             overlaysCaught = true;
         } else if ( buttonDownIsLeft(e) &&
-                    isNearByUserRoI( (userRoI.x1 + userRoI.x2) / 2., (userRoI.y1 + userRoI.y2) / 2.,
+                    userRoIEnabled && isNearByUserRoI( (userRoI.x1 + userRoI.x2) / 2., (userRoI.y1 + userRoI.y2) / 2.,
                                      zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight ) ) {
             // start dragging the midpoint of the user ROI
             _imp->ms = eMouseStateDraggingRoiCross;
             overlaysCaught = true;
         } else if ( buttonDownIsLeft(e) &&
-                    isNearByUserRoI(userRoI.x1, userRoI.y2, zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight) ) {
+                    userRoIEnabled && isNearByUserRoI(userRoI.x1, userRoI.y2, zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight) ) {
             // start dragging the topleft corner of the user ROI
             _imp->ms = eMouseStateDraggingRoiTopLeft;
             overlaysCaught = true;
         } else if ( buttonDownIsLeft(e) &&
-                    isNearByUserRoI(userRoI.x2, userRoI.y2, zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight) ) {
+                    userRoIEnabled && isNearByUserRoI(userRoI.x2, userRoI.y2, zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight) ) {
             // start dragging the topright corner of the user ROI
             _imp->ms = eMouseStateDraggingRoiTopRight;
             overlaysCaught = true;
         }  else if ( buttonDownIsLeft(e) &&
-                     isNearByUserRoI(userRoI.x1, userRoI.y1, zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight) ) {
+                     userRoIEnabled && isNearByUserRoI(userRoI.x1, userRoI.y1, zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight) ) {
             // start dragging the bottomleft corner of the user ROI
             _imp->ms = eMouseStateDraggingRoiBottomLeft;
             overlaysCaught = true;
         }  else if ( buttonDownIsLeft(e) &&
-                     isNearByUserRoI(userRoI.x2, userRoI.y1, zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight) ) {
+                     userRoIEnabled && isNearByUserRoI(userRoI.x2, userRoI.y1, zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight) ) {
             // start dragging the bottomright corner of the user ROI
             _imp->ms = eMouseStateDraggingRoiBottomRight;
             overlaysCaught = true;
@@ -2639,6 +2645,7 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
             _imp->ms = eMouseStateSelecting;
             if ( !modCASIsControl(e) ) {
                 emit selectionCleared();
+                mustRedraw = true;
             }
         }
     }
@@ -2658,6 +2665,7 @@ ViewerGL::mouseReleaseEvent(QMouseEvent* e)
         return;
     }
     
+    
     bool mustRedraw = false;
     if (_imp->ms == eMouseStateBuildingPickerRectangle) {
         updateRectangleColorPicker();
@@ -2665,8 +2673,13 @@ ViewerGL::mouseReleaseEvent(QMouseEvent* e)
 
     if (_imp->ms == eMouseStateSelecting) {
         mustRedraw = true;
-        emit selectionRectangleChanged(true);
+        if (_imp->hasMovedSincePress) {
+            emit selectionRectangleChanged(true);
+        }
     }
+    
+    _imp->hasMovedSincePress = false;
+
 
     _imp->ms = eMouseStateUndefined;
     QPointF zoomPos;
@@ -2695,6 +2708,8 @@ ViewerGL::mouseMoveEvent(QMouseEvent* e)
         return;
     }
 
+    _imp->hasMovedSincePress = true;
+    
     QPointF zoomPos;
     unsigned int mipMapLevel = getInternalNode()->getMipMapLevel();
 

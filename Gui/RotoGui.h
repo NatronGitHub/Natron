@@ -158,6 +158,8 @@ public:
     bool keyUp(double scaleX, double scaleY, QKeyEvent* e);
 
     bool keyRepeat(double scaleX, double scaleY, QKeyEvent* e);
+    
+    void focusOut();
 
     bool isStickySelectionEnabled() const;
 

@@ -1909,7 +1909,13 @@ ViewerTab::notifyOverlaysFocusLost(double scaleX,
     getGui()->getNodesEntitledForOverlays(nodes);
     for (std::list<boost::shared_ptr<Natron::Node> >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         
-        if (_imp->currentTracker.first && (*it) == _imp->currentTracker.first->getNode()) {
+        
+        if (_imp->currentRoto.first && (*it) == _imp->currentRoto.first->getNode()) {
+            
+            if ( _imp->currentRoto.second && _imp->currentRoto.first->isSettingsPanelVisible() ) {
+                _imp->currentRoto.second->focusOut();
+            }
+        } else if (_imp->currentTracker.first && (*it) == _imp->currentTracker.first->getNode()) {
             if ( _imp->currentTracker.second && _imp->currentTracker.first->isSettingsPanelVisible() ) {
                 if ( _imp->currentTracker.second->loseFocus(scaleX, scaleY) ) {
                     return true;

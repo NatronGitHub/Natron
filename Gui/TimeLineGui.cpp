@@ -186,6 +186,8 @@ TimeLineGui::setTimeline(const boost::shared_ptr<TimeLine>& timeline)
     
     //connect the gui to the internal timeline
     QObject::connect( this, SIGNAL( frameChanged(SequenceTime) ), timeline.get(), SLOT( onFrameChanged(SequenceTime) ) );
+    
+    QObject::connect( timeline.get(), SIGNAL( keyframeIndicatorsChanged() ), this, SLOT( onKeyframesIndicatorsChanged() ) );
    
     _imp->_timeline = timeline;
 
