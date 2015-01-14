@@ -2980,24 +2980,36 @@ CurveWidget::sizeHint() const
     return _imp->sizeH;
 }
 
+static TabWidget* findParentTabRecursive(QWidget* w)
+{
+    QWidget* parent = w->parentWidget();
+    if (!parent) {
+        return 0;
+    }
+    TabWidget* tab = dynamic_cast<TabWidget*>(parent);
+    if (tab) {
+        return tab;
+    }
+    return findParentTabRecursive(parent);
+}
+
 void
 CurveWidget::keyPressEvent(QKeyEvent* e)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-
+    
     Qt::KeyboardModifiers modifiers = e->modifiers();
     Qt::Key key = (Qt::Key)e->key();
     
     if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionShowPaneFullScreen, modifiers, key) ) {
-        if ( parentWidget() ) {
-            if ( parentWidget()->parentWidget() ) {
-                if (parentWidget()->parentWidget()->objectName() == kCurveEditorObjectName) {
-                    QKeyEvent* ev = new QKeyEvent(QEvent::KeyPress, key, modifiers);
-                    QCoreApplication::postEvent(parentWidget()->parentWidget(),ev);
-                }
-            }
+        TabWidget* parentTab = findParentTabRecursive(this);
+        if (parentTab) {
+            QKeyEvent* ev = new QKeyEvent(QEvent::KeyPress, key, modifiers);
+            QCoreApplication::postEvent(parentTab,ev);
         }
+        
+        
     } else if ( isKeybind(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorRemoveKeys, modifiers, key) ) {
         deleteSelectedKeyFrames();
     } else if ( isKeybind(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorConstant, modifiers, key) ) {
