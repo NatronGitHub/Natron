@@ -897,29 +897,24 @@ Node::getPreferredInputForConnection()
         }
     }
     
+    bool useInputA = appPTR->getCurrentSettings()->isMergeAutoConnectingToAInput();
+    if (useInputA) {
+        ///Find an input named A
+        std::string inputNameToFind("A");
+        int maxinputs = getMaxInputCount();
+        for (int i = 0; i < maxinputs ; ++i) {
+            if (getInputLabel(i) == inputNameToFind && !getInput(i)) {
+                return i;
+            }
+        }
+    }
+    
+    ///Default to the first non optional empty input
     if (firstNonOptionalEmptyInput != -1) {
         return firstNonOptionalEmptyInput;
     }  else {
         if ( !optionalEmptyInputs.empty() ) {
             
-            if (getPluginID() == PLUGINID_OFX_MERGE) {
-                //if it is a merge node, try to follow what the user preferences tell us
-                std::string inputNameToFind;
-                bool useInputA = appPTR->getCurrentSettings()->isMergeAutoConnectingToAInput();
-                if (useInputA) {
-                    inputNameToFind = "A";
-                } else {
-                    inputNameToFind = "B";
-                }
-                
-                int maxinputs = getMaxInputCount();
-                for (int i = 0; i < maxinputs ; ++i) {
-                    if (getInputLabel(i) == inputNameToFind && !getInput(i)) {
-                        return i;
-                    }
-                }
-                
-            }
             //We return the last optional empty input
             std::list<int>::reverse_iterator first = optionalEmptyInputs.rbegin();
             while ( first != optionalEmptyInputs.rend() && _imp->liveInstance->isInputRotoBrush(*first) ) {
