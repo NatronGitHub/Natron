@@ -2249,6 +2249,18 @@ Project::unionFrameRangeWith(int first,int last)
 
 }
     
+void
+Project::recomputeFrameRangeFromReaders()
+{
+    int first,last;
+    std::vector<boost::shared_ptr<Natron::Node> > nodes = getCurrentNodes();
+    for (std::vector<boost::shared_ptr<Natron::Node> > ::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        if ((*it)->isActivated() && (*it)->getLiveInstance()->isReader()) {
+            int first,last;
+        }
+    }
+}
+    
 } //namespace Natron
 
 

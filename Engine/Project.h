@@ -292,6 +292,8 @@ public:
     
     void unionFrameRangeWith(int first,int last);
     
+    void recomputeFrameRangeFromReaders();
+    
 public slots:
 
     void onAutoSaveTimerTriggered();

@@ -248,9 +248,9 @@ struct NodeGraphPrivate
 {
     NodeGraph* _publicInterface;
     Gui* _gui;
-    QPointF _lastScenePosClick;
+    QPoint _lastMousePos;
     QPointF _lastNodeDragStartPoint;
-    QPointF _lastSelectionStartPoint;
+    QPoint _lastSelectionStartPoint;
     EventStateEnum _evtState;
     boost::shared_ptr<NodeGui> _magnifiedNode;
     double _nodeSelectedScaleBeforeMagnif;
@@ -299,7 +299,7 @@ struct NodeGraphPrivate
                      NodeGraph* p)
         : _publicInterface(p)
           , _gui(gui)
-          , _lastScenePosClick()
+          , _lastMousePos()
           , _lastNodeDragStartPoint()
           , _lastSelectionStartPoint()
           , _evtState(eEventStateNone)
@@ -972,9 +972,11 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
 
     bool didSomething = false;
 
-    _imp->_lastScenePosClick = mapToScene( e->pos() );
-    
-    if (e->buttons() == Qt::MiddleButton && buttonControlAlt(e) == Qt::AltModifier ) {
+    _imp->_lastMousePos = e->pos();
+    QPointF lastMousePosScene = mapToScene(_imp->_lastMousePos.x(),_imp->_lastMousePos.y());
+
+    if ((e->buttons() & Qt::MiddleButton) && (buttonControlAlt(e) == Qt::AltModifier || (e->buttons() & Qt::LeftButton)) ) {
+        // Alt + middle = zoom or left + middle = zoom
         _imp->_evtState = eEventStateZoomingArea;
         return;
     }
@@ -983,9 +985,10 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
     Edge* selectedEdge = 0;
     Edge* selectedBendPoint = 0;
     {
+        
         QMutexLocker l(&_imp->_nodesMutex);
         for (std::list<boost::shared_ptr<NodeGui> >::reverse_iterator it = _imp->_nodes.rbegin(); it != _imp->_nodes.rend(); ++it) {
-            QPointF evpt = (*it)->mapFromScene(_imp->_lastScenePosClick);
+            QPointF evpt = (*it)->mapFromScene(lastMousePosScene);
             if ( (*it)->isVisible() && (*it)->isActive() && (*it)->contains(evpt) ) {
                 selected = *it;
                 break;
@@ -995,12 +998,12 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
             ///try to find a selected edge
             for (std::list<boost::shared_ptr<NodeGui> >::reverse_iterator it = _imp->_nodes.rbegin(); it != _imp->_nodes.rend(); ++it) {
                 boost::shared_ptr<NodeGui> & n = *it;
-                Edge* bendPointEdge = n->hasBendPointNearbyPoint(_imp->_lastScenePosClick);
+                Edge* bendPointEdge = n->hasBendPointNearbyPoint(lastMousePosScene);
                 if (bendPointEdge) {
                     selectedBendPoint = bendPointEdge;
                     break;
                 }
-                Edge* edge = n->hasEdgeNearbyPoint(_imp->_lastScenePosClick);
+                Edge* edge = n->hasEdgeNearbyPoint(lastMousePosScene);
                 if (edge) {
                     selectedEdge = edge;
                 }
@@ -1070,7 +1073,7 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
 
         _imp->_gui->getApp()->getProject()->connectNodes(inputNb,dotNode,outputNode.get());
 
-        QPointF pos = dotNodeGui->mapToParent( dotNodeGui->mapFromScene(_imp->_lastScenePosClick) );
+        QPointF pos = dotNodeGui->mapToParent( dotNodeGui->mapFromScene(lastMousePosScene) );
         dotNodeGui->refreshPosition( pos.x(), pos.y() );
         if ( !dotNodeGui->getIsSelected() ) {
             selectNode( dotNodeGui, modCASIsShift(e) );
@@ -1105,8 +1108,8 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
         ///check if nearby a backdrop
         for (std::list<NodeBackDrop*>::iterator it = _imp->_backdrops.begin(); it != _imp->_backdrops.end(); ++it) {
             if ( buttonDownIsLeft(e) ) {
-                bool nearbyHeader = (*it)->isNearbyHeader(_imp->_lastScenePosClick);
-                bool nearbyResizeHandle = (*it)->isNearbyResizeHandle(_imp->_lastScenePosClick);
+                bool nearbyHeader = (*it)->isNearbyHeader(lastMousePosScene);
+                bool nearbyResizeHandle = (*it)->isNearbyResizeHandle(lastMousePosScene);
 
 
                 if (nearbyHeader || nearbyResizeHandle) {
@@ -1165,8 +1168,8 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
                 deselect();
             }
             _imp->_evtState = eEventStateSelectionRect;
-            _imp->_lastSelectionStartPoint = _imp->_lastScenePosClick;
-            QPointF clickPos = _imp->_selectionRect->mapFromScene(_imp->_lastScenePosClick);
+            _imp->_lastSelectionStartPoint = _imp->_lastMousePos;
+            QPointF clickPos = _imp->_selectionRect->mapFromScene(lastMousePosScene);
             _imp->_selectionRect->setRect(clickPos.x(), clickPos.y(), 0, 0);
             _imp->_selectionRect->show();
         } else if ( buttonDownIsMiddle(e) ) {
@@ -1473,8 +1476,11 @@ void
 NodeGraph::mouseMoveEvent(QMouseEvent* e)
 {
     QPointF newPos = mapToScene( e->pos() );
-    double dx = _imp->_root->mapFromScene(newPos).x() - _imp->_root->mapFromScene(_imp->_lastScenePosClick).x();
-    double dy = _imp->_root->mapFromScene(newPos).y() - _imp->_root->mapFromScene(_imp->_lastScenePosClick).y();
+    
+    QPointF lastMousePosScene = mapToScene(_imp->_lastMousePos.x(),_imp->_lastMousePos.y());
+    
+    double dx = _imp->_root->mapFromScene(newPos).x() - _imp->_root->mapFromScene(lastMousePosScene).x();
+    double dy = _imp->_root->mapFromScene(newPos).y() - _imp->_root->mapFromScene(lastMousePosScene).y();
 
     _imp->_hasMovedOnce = true;
 
@@ -1580,8 +1586,8 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
             mustUpdateNavigator = true;
             pushUndoCommand( new MoveMultipleNodesCommand(nodesToMove,
                                                           _imp->_selection.bds,
-                                                          newPos.x() - _imp->_lastScenePosClick.x(),
-                                                          newPos.y() - _imp->_lastScenePosClick.y(),
+                                                          newPos.x() - lastMousePosScene.x(),
+                                                          newPos.y() - lastMousePosScene.y(),
                                                           _imp->_mergeMoveCommands,
                                                           newPos) );
             if (!_imp->_mergeMoveCommands) {
@@ -1790,7 +1796,8 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
         break;
     }
     case eEventStateSelectionRect: {
-        QPointF startDrag = _imp->_selectionRect->mapFromScene(_imp->_lastSelectionStartPoint);
+        QPointF lastSelectionScene = mapToScene(_imp->_lastSelectionStartPoint);
+        QPointF startDrag = _imp->_selectionRect->mapFromScene(lastSelectionScene);
         QPointF cur = _imp->_selectionRect->mapFromScene(newPos);
         double xmin = std::min( cur.x(),startDrag.x() );
         double xmax = std::max( cur.x(),startDrag.x() );
@@ -1805,21 +1812,25 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
         if (insideNavigator) {
             _imp->_refreshOverlays = true;
             centerOn(mousePosSceneCoordinates);
-            _imp->_lastScenePosClick = newPos;
+            _imp->_lastMousePos = e->pos();
             return;
         }
+        
     } break;
-        case eEventStateZoomingArea: {
-            QPoint lastPos = mapFromScene(_imp->_lastScenePosClick);
+    case eEventStateZoomingArea: {
+            QPoint lastPos = mapFromScene(lastMousePosScene);
             int delta = 2*((e->x() - lastPos.x()) - (e->y() - lastPos.y()));
+            setTransformationAnchor(QGraphicsView::AnchorViewCenter);
             wheelEventInternal(modCASIsControl(e),delta);
-        } break;
+            setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
+            return;
+    } break;
     default:
         break;
     } // switch
 
     
-    _imp->_lastScenePosClick = newPos;
+    _imp->_lastMousePos = e->pos();
 
     if (mustUpdateNavigator) {
         _imp->_refreshOverlays = true;
@@ -1885,8 +1896,10 @@ NodeGraph::mouseDoubleClickEvent(QMouseEvent* e)
 {
     std::list<boost::shared_ptr<NodeGui> > nodes = getAllActiveNodes_mt_safe();
 
+    QPointF lastMousePosScene = mapToScene(_imp->_lastMousePos);
+    
     for (std::list<boost::shared_ptr<NodeGui> >::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        QPointF evpt = (*it)->mapFromScene(_imp->_lastScenePosClick);
+        QPointF evpt = (*it)->mapFromScene(lastMousePosScene);
         if ( (*it)->isVisible() && (*it)->isActive() && (*it)->contains(evpt) ) {
             
             if ((*it)->getSettingPanel()) {
@@ -1928,7 +1941,7 @@ NodeGraph::mouseDoubleClickEvent(QMouseEvent* e)
     }
 
     for (std::list<NodeBackDrop*>::iterator it = _imp->_backdrops.begin(); it != _imp->_backdrops.end(); ++it) {
-        if ( (*it)->isNearbyHeader(_imp->_lastScenePosClick) ) {
+        if ( (*it)->isNearbyHeader(lastMousePosScene) ) {
             
             if (e->modifiers().testFlag(Qt::ControlModifier)) {
                 ///Clear all visible panels and open the panels of all nodes in the backdrop
@@ -2422,7 +2435,7 @@ NodeGraph::wheelEventInternal(bool ctrlDown,double delta)
         _imp->_accumDelta += delta;
         if (std::abs(_imp->_accumDelta) > 60) {
             scaleFactor = pow( NATRON_WHEEL_ZOOM_PER_DELTA, _imp->_accumDelta );
-            setSceneRect(NATRON_SCENE_MIN,NATRON_SCENE_MIN,NATRON_SCENE_MAX,NATRON_SCENE_MAX);
+           // setSceneRect(NATRON_SCENE_MIN,NATRON_SCENE_MIN,NATRON_SCENE_MAX,NATRON_SCENE_MAX);
             scale(scaleFactor,scaleFactor);
             _imp->_accumDelta = 0;
         }
@@ -2438,10 +2451,8 @@ NodeGraph::wheelEvent(QWheelEvent* e)
     if (e->orientation() != Qt::Vertical) {
         return;
     }
-    QPointF newPos = mapToScene( e->pos() );
-    
     wheelEventInternal(modCASIsControl(e), e->delta());
-    _imp->_lastScenePosClick = newPos;
+    _imp->_lastMousePos = e->pos();
 }
 
 void

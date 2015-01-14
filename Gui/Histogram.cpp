@@ -1165,8 +1165,8 @@ Histogram::mousePressEvent(QMouseEvent* e)
         _imp->oldClick = e->pos();
     } else if ( buttonDownIsRight(e) ) {
         _imp->showMenu( e->globalPos() );
-    } else if (e->buttons() == Qt::MiddleButton && buttonControlAlt(e) == Qt::AltModifier ) {
-        // Alt + middle = zoom
+    } else if ((e->buttons() & Qt::MiddleButton) && (buttonControlAlt(e) == Qt::AltModifier || (e->buttons() & Qt::LeftButton)) ) {
+        // Alt + middle = zoom or left + middle = zoom
         _imp->state = eEventStateZoomingView;
         _imp->oldClick = e->pos();
         return;

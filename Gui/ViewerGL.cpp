@@ -2530,8 +2530,8 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
         // middle (or Alt + left) or Alt + right = pan
         _imp->ms = eMouseStateDraggingImage;
         overlaysCaught = true;
-    } else if (e->buttons() == Qt::MiddleButton && buttonControlAlt(e) == Qt::AltModifier ) {
-        // Alt + middle = zoom
+    } else if ((e->buttons() & Qt::MiddleButton) && (buttonControlAlt(e) == Qt::AltModifier || (e->buttons() & Qt::LeftButton)) ) {
+        // Alt + middle = zoom or Left + middle = zoom
         _imp->ms = eMouseStateZoomingImage;
         overlaysCaught = true;
     } else if ( (_imp->ms == eMouseStateUndefined) && _imp->overlay ) {
