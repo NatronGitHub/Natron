@@ -230,6 +230,8 @@ public slots:
     void onRippleEditButtonClicked(bool);
 
     void onStickySelectionButtonClicked(bool);
+    
+    void onBboxClickButtonClicked(bool);
 
     void onAddKeyFrameClicked();
 
