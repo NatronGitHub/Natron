@@ -879,14 +879,46 @@ RotoGui::drawOverlays(double /*scaleX*/,
                     double x,y;
                     (*it2)->getPositionAtTime(time, &x, &y);
                     
+                    double xF,yF;
+                    (*itF)->getPositionAtTime(time, &xF, &yF);
+                    ///draw the feather point only if it is distinct from the associated point
+                    bool drawFeather = isFeatherVisible();
+                    if (drawFeather) {
+                        drawFeather = !(*it2)->equalsAtTime(time, **itF);
+                    }
+                    
+                    
                     ///if the control point is the only control point being dragged, color it to identify it to the user
                     bool colorChanged = false;
                     SelectedCPs::const_iterator firstSelectedCP = _imp->rotoData->selectedCps.begin();
-                    if ( (firstSelectedCP->first == *it2)
-                        && ( _imp->rotoData->selectedCps.size() == 1) &&
-                        ( ( _imp->state == eEventStateDraggingSelectedControlPoints) || ( _imp->state == eEventStateDraggingControlPoint) ) ) {
-                        glColor3f(0.2, 1., 0.);
+                    if ( firstSelectedCP != _imp->rotoData->selectedCps.end() &&
+                        (firstSelectedCP->first == *it2 || firstSelectedCP->second == *it2) &&
+                         _imp->rotoData->selectedCps.size() == 1 &&
+                        (_imp->state == eEventStateDraggingSelectedControlPoints || _imp->state == eEventStateDraggingControlPoint) ) {
+                        glColor3f(0., 1., 1.);
                         colorChanged = true;
+                    }
+                    
+                    for (SelectedCPs::const_iterator cpIt = _imp->rotoData->selectedCps.begin();
+                         cpIt != _imp->rotoData->selectedCps.end(); ++cpIt) {
+                        ///if the control point is selected, draw its tangent handles
+                        if (cpIt->first == *it2) {
+                            _imp->drawSelectedCp(time, cpIt->first, x, y);
+                            if (drawFeather) {
+                                _imp->drawSelectedCp(time, cpIt->second, xF, yF);
+                            }
+                            glColor3f(0.2, 1., 0.);
+                            colorChanged = true;
+                            break;
+                        } else if (cpIt->second == *it2) {
+                            _imp->drawSelectedCp(time, cpIt->second, x, y);
+                            if (drawFeather) {
+                                _imp->drawSelectedCp(time, cpIt->first, xF, yF);
+                            }
+                            glColor3f(0.2, 1., 0.);
+                            colorChanged = true;
+                            break;
+                        }
                     }
                     
                     glBegin(GL_POLYGON);
@@ -908,13 +940,7 @@ RotoGui::drawOverlays(double /*scaleX*/,
                         colorChanged = true;
                     }
                     
-                    double xF,yF;
-                    (*itF)->getPositionAtTime(time, &xF, &yF);
-                    ///draw the feather point only if it is distinct from the associated point
-                    bool drawFeather = isFeatherVisible();
-                    if (drawFeather) {
-                        drawFeather = !(*it2)->equalsAtTime(time, **itF);
-                    }
+                  
                     double distFeatherX = 20. * pixelScale.first;
                     double distFeatherY = 20. * pixelScale.second;
                     bool isHovered = false;
@@ -994,29 +1020,13 @@ RotoGui::drawOverlays(double /*scaleX*/,
                                 glColor3d(0.85, 0.67, 0.);
                             }
                         }
-                    }
+                    } // isFeatherVisible()
                     
                     
                     if (colorChanged) {
                         glColor3d(0.85, 0.67, 0.);
                     }
                     
-                    
-                    for (SelectedCPs::const_iterator cpIt = _imp->rotoData->selectedCps.begin();
-                         cpIt != _imp->rotoData->selectedCps.end(); ++cpIt) {
-                        ///if the control point is selected, draw its tangent handles
-                        if (cpIt->first == *it2) {
-                            _imp->drawSelectedCp(time, cpIt->first, x, y);
-                            if (drawFeather) {
-                                _imp->drawSelectedCp(time, cpIt->second, xF, yF);
-                            }
-                        } else if (cpIt->second == *it2) {
-                            _imp->drawSelectedCp(time, cpIt->second, x, y);
-                            if (drawFeather) {
-                                _imp->drawSelectedCp(time, cpIt->first, xF, yF);
-                            }
-                        }
-                    }
                 }
                 
             }
