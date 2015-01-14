@@ -1466,8 +1466,6 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
         _imp->_selectionRect->hide();
         _imp->editSelectionFromSelectionRectangle( modCASIsShift(e) );
     }
-    scene()->update();
-    update();
     setCursor( QCursor(Qt::ArrowCursor) );
 } // mouseReleaseEvent
 
