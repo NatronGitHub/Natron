@@ -43,25 +43,31 @@ class BezierCP;
 class GuiAppInstance;
 struct RotoGuiSharedData;
 class RotoContext;
+
 class RotoToolButton
     : public QToolButton
 {
     Q_OBJECT
-
+    Q_PROPERTY(bool isSelected READ getIsSelected WRITE setIsSelected)
+    
 public:
 
     RotoToolButton(QWidget* parent);
 
-    virtual ~RotoToolButton()
-    {
-    }
+    virtual ~RotoToolButton();
+    
 
     void handleSelection();
 
+    bool getIsSelected() const;
+    void setIsSelected(bool s);
+    
 private:
 
     virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL;
     virtual void mouseReleaseEvent(QMouseEvent* e) OVERRIDE FINAL;
+    
+    bool isSelected;
 };
 
 class RotoGui

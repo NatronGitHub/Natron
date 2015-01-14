@@ -430,7 +430,7 @@ BezierCP::isNearbyTangent(int time,
     return -1;
 }
 
-#define TANGENTS_CUSP_LIMIT 50
+#define TANGENTS_CUSP_LIMIT 25
 namespace {
 static void
 cuspTangent(double x,
@@ -449,8 +449,8 @@ cuspTangent(double x,
         *tx = x;
         *ty = y;
     } else {
-        double newDx = 0.75 * dx ;
-        double newDy = 0.75 * dy;
+        double newDx = 0.9 * dx ;
+        double newDy = 0.9 * dy;
         *tx = x + newDx;
         *ty = y + newDy;
     }
@@ -534,8 +534,8 @@ smoothTangent(int time,
             dx = (dx < 0 ? -TANGENTS_CUSP_LIMIT : TANGENTS_CUSP_LIMIT) * pixelScale.first;
             dy = (dy < 0 ? -TANGENTS_CUSP_LIMIT : TANGENTS_CUSP_LIMIT) * pixelScale.second;
         }
-        newDx = dx * 1.25;
-        newDy = dy * 1.25;
+        newDx = dx * 1.1;
+        newDy = dy * 1.1;
 
         *tx = x + newDx;
         *ty = y + newDy;

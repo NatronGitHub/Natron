@@ -21,8 +21,10 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QLineF>
 #include <QKeyEvent>
 #include <QHBoxLayout>
+#include <QStyle>
 #include <QMenu>
 #include <QDialogButtonBox>
+#include <QTimer>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
@@ -110,6 +112,7 @@ enum SelectedCpsTransformModeEnum
     eSelectedCpsTransformModeRotateAndSkew = 1
 };
 }
+
 
 ///A small structure of all the data shared by all the viewers watching the same Roto
 struct RotoGuiSharedData
@@ -288,9 +291,18 @@ struct RotoGui::RotoGuiPrivate
     }
 };
 
+
 RotoToolButton::RotoToolButton(QWidget* parent)
-    : QToolButton(parent)
+: QToolButton(parent)
+, isSelected(false)
 {
+    setFocusPolicy(Qt::ClickFocus);
+}
+
+
+RotoToolButton::~RotoToolButton()
+{
+    
 }
 
 void
@@ -298,16 +310,32 @@ RotoToolButton::mousePressEvent(QMouseEvent* /*e*/)
 {
 }
 
+
 void
 RotoToolButton::mouseReleaseEvent(QMouseEvent* e)
 {
-    if ( buttonDownIsLeft(e) ) {
+    if ( triggerButtonisLeft(e) ) {
         handleSelection();
-    } else if ( buttonDownIsRight(e) ) {
+    } else if ( triggerButtonisRight(e) ) {
         showMenu();
     } else {
         QToolButton::mousePressEvent(e);
     }
+}
+
+bool
+RotoToolButton::getIsSelected() const
+{
+    return isSelected;
+}
+
+void
+RotoToolButton::setIsSelected(bool s)
+{
+    isSelected = s;
+    style()->unpolish(this);
+    style()->polish(this);
+    update();
 }
 
 void
@@ -316,6 +344,7 @@ RotoToolButton::handleSelection()
     QAction* curAction = defaultAction();
 
     if ( !isDown() ) {
+        setDown(true);
         emit triggered(curAction);
     } else {
         QList<QAction*> allAction = actions();
@@ -667,23 +696,32 @@ RotoGui::onToolActionTriggeredInternal(QAction* action,
     RotoRoleEnum actionRole = (RotoRoleEnum)data.y();
     QToolButton* toolButton = 0;
     RotoRoleEnum previousRole = getCurrentRole();
-
+    
     switch (actionRole) {
-    case eRotoRoleSelection:
-        toolButton = _imp->selectTool;
-        emit roleChanged( (int)previousRole,(int)eRotoRoleSelection );
-        break;
-    case eRotoRolePointsEdition:
-        toolButton = _imp->pointsEditionTool;
-        emit roleChanged( (int)previousRole,(int)eRotoRolePointsEdition );
-        break;
-    case eRotoRoleBezierEdition:
-        toolButton = _imp->bezierEditionTool;
-        emit roleChanged( (int)previousRole,(int)eRotoRoleBezierEdition );
-        break;
-    default:
-        assert(false);
-        break;
+        case eRotoRoleSelection:
+            toolButton = _imp->selectTool;
+            _imp->selectTool->setIsSelected(true);
+            _imp->pointsEditionTool->setIsSelected(false);
+            _imp->bezierEditionTool->setIsSelected(false);
+            emit roleChanged( (int)previousRole,(int)eRotoRoleSelection );
+            break;
+        case eRotoRolePointsEdition:
+            toolButton = _imp->pointsEditionTool;
+            _imp->selectTool->setIsSelected(false);
+            _imp->pointsEditionTool->setIsSelected(true);
+            _imp->bezierEditionTool->setIsSelected(false);
+            emit roleChanged( (int)previousRole,(int)eRotoRolePointsEdition );
+            break;
+        case eRotoRoleBezierEdition:
+            toolButton = _imp->bezierEditionTool;
+            _imp->selectTool->setIsSelected(false);
+            _imp->pointsEditionTool->setIsSelected(false);
+            _imp->bezierEditionTool->setIsSelected(true);
+            emit roleChanged( (int)previousRole,(int)eRotoRoleBezierEdition );
+            break;
+        default:
+            assert(false);
+            break;
     }
 
 

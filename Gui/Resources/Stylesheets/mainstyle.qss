@@ -277,6 +277,11 @@ QToolButton:focus {
     border: 1px solid %1;
 }
 
+RotoToolButton[isSelected="true"]
+{
+    border: 1px solid %1;
+}
+
 QDialogButtonBox {
     background-color: %3;
 }
