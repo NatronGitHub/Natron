@@ -1082,6 +1082,8 @@ RotoDrawableItem::clone(const RotoItem* other)
         _imp->feather->clone( otherDrawable->_imp->feather.get() );
         _imp->featherFallOff->clone( otherDrawable->_imp->featherFallOff.get() );
         _imp->opacity->clone( otherDrawable->_imp->opacity.get() );
+        _imp->color->clone(otherDrawable->_imp->color.get());
+        _imp->compOperator->clone(otherDrawable->_imp->compOperator.get());
 #ifdef NATRON_ROTO_INVERTIBLE
         _imp->inverted->clone( otherDrawable->_imp->inverted.get() );
 #endif
