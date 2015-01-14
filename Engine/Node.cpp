@@ -870,6 +870,32 @@ Node::getPreferredInputForConnection()
         return -1;
     }
     
+    {
+        ///Find an input named Source
+        std::string inputNameToFind(kOfxImageEffectSimpleSourceClipName);
+        int maxinputs = getMaxInputCount();
+        for (int i = 0; i < maxinputs ; ++i) {
+            if (getInputLabel(i) == inputNameToFind && !getInput(i)) {
+                return i;
+            }
+        }
+    }
+    
+    
+    bool useInputA = appPTR->getCurrentSettings()->isMergeAutoConnectingToAInput();
+    if (useInputA) {
+        ///Find an input named A
+        std::string inputNameToFind("A");
+        int maxinputs = getMaxInputCount();
+        for (int i = 0; i < maxinputs ; ++i) {
+            if (getInputLabel(i) == inputNameToFind && !getInput(i)) {
+                return i;
+            }
+        }
+    }
+    
+   
+    
     ///we return the first non-optional empty input
     int firstNonOptionalEmptyInput = -1;
     std::list<int> optionalEmptyInputs;
@@ -897,18 +923,7 @@ Node::getPreferredInputForConnection()
         }
     }
     
-    bool useInputA = appPTR->getCurrentSettings()->isMergeAutoConnectingToAInput();
-    if (useInputA) {
-        ///Find an input named A
-        std::string inputNameToFind("A");
-        int maxinputs = getMaxInputCount();
-        for (int i = 0; i < maxinputs ; ++i) {
-            if (getInputLabel(i) == inputNameToFind && !getInput(i)) {
-                return i;
-            }
-        }
-    }
-    
+   
     ///Default to the first non optional empty input
     if (firstNonOptionalEmptyInput != -1) {
         return firstNonOptionalEmptyInput;
