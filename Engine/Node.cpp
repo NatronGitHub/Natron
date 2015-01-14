@@ -3138,7 +3138,7 @@ std::string
 Node::getPluginID() const
 {
     ///MT-safe, never changes
-    if (!_imp->plugin || !_imp->liveInstance) {
+    if (!_imp->plugin) {
         return std::string();
     }
     return _imp->plugin->getPluginID().toStdString();
