@@ -25,8 +25,10 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QLineF>
 #include <QKeyEvent>
 #include <QHBoxLayout>
+#include <QStyle>
 #include <QMenu>
 #include <QDialogButtonBox>
+#include <QTimer>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
@@ -116,6 +118,7 @@ enum SelectedCpsTransformModeEnum
 };
 }
 
+
 ///A small structure of all the data shared by all the viewers watching the same Roto
 struct RotoGuiSharedData
 {
@@ -167,6 +170,7 @@ struct RotoGui::RotoGuiPrivate
     Button* featherLinkEnabled;
     Button* displayFeatherEnabled;
     Button* stickySelectionEnabled;
+    Button* bboxClickAnywhere;
     Button* rippleEditEnabled;
     Button* addKeyframeButton;
     Button* removeKeyframeButton;
@@ -184,8 +188,8 @@ struct RotoGui::RotoGuiPrivate
     bool evaluateOnPenUp; //< if true the next pen up will call context->evaluateChange()
     bool evaluateOnKeyUp;  //< if true the next key up will call context->evaluateChange()
     bool iSelectingwithCtrlA;
-    bool shiftDown;
-    bool ctrlDown;
+    int shiftDown;
+    int ctrlDown;
 
     RotoGuiPrivate(RotoGui* pub,
                    NodeGui* n,
@@ -204,6 +208,7 @@ struct RotoGui::RotoGuiPrivate
           , featherLinkEnabled(0)
           , displayFeatherEnabled(0)
           , stickySelectionEnabled(0)
+          , bboxClickAnywhere(0)
           , rippleEditEnabled(0)
           , addKeyframeButton(0)
           , removeKeyframeButton(0)
@@ -221,8 +226,8 @@ struct RotoGui::RotoGuiPrivate
           , evaluateOnPenUp(false)
           , evaluateOnKeyUp(false)
           , iSelectingwithCtrlA(false)
-          , shiftDown(false)
-          , ctrlDown(false)
+          , shiftDown(0)
+          , ctrlDown(0)
     {
         if ( n->getNode()->isRotoPaintingNode() ) {
             type = eRotoTypeRotopainting;
@@ -284,11 +289,25 @@ struct RotoGui::RotoGuiPrivate
     bool isNearbySelectedCpsBoundingBox(const QPointF & pos,double tolerance) const;
     
     EventStateEnum isMouseInteractingWithCPSBbox(const QPointF& pos,double tolerance,const std::pair<double, double>& pixelScale) const;
+    
+    bool isBboxClickAnywhereEnabled() const
+    {
+        return bboxClickAnywhere->isDown();
+    }
 };
 
+
 RotoToolButton::RotoToolButton(QWidget* parent)
-    : QToolButton(parent)
+: QToolButton(parent)
+, isSelected(false)
 {
+    setFocusPolicy(Qt::ClickFocus);
+}
+
+
+RotoToolButton::~RotoToolButton()
+{
+    
 }
 
 void
@@ -296,16 +315,32 @@ RotoToolButton::mousePressEvent(QMouseEvent* /*e*/)
 {
 }
 
+
 void
 RotoToolButton::mouseReleaseEvent(QMouseEvent* e)
 {
-    if ( buttonDownIsLeft(e) ) {
+    if ( triggerButtonisLeft(e) ) {
         handleSelection();
-    } else if ( buttonDownIsRight(e) ) {
+    } else if ( triggerButtonisRight(e) ) {
         showMenu();
     } else {
         QToolButton::mousePressEvent(e);
     }
+}
+
+bool
+RotoToolButton::getIsSelected() const
+{
+    return isSelected;
+}
+
+void
+RotoToolButton::setIsSelected(bool s)
+{
+    isSelected = s;
+    style()->unpolish(this);
+    style()->polish(this);
+    update();
 }
 
 void
@@ -314,6 +349,7 @@ RotoToolButton::handleSelection()
     QAction* curAction = defaultAction();
 
     if ( !isDown() ) {
+        setDown(true);
         Q_EMIT triggered(curAction);
     } else {
         QList<QAction*> allAction = actions();
@@ -373,6 +409,7 @@ RotoGui::RotoGui(NodeGui* node,
     QPixmap pixStickySelEnabled,pixStickySelDisabled,pixFeatherLinkEnabled,pixFeatherLinkDisabled,pixAddKey,pixRemoveKey;
     QPixmap pixRippleEnabled,pixRippleDisabled;
     QPixmap pixFeatherEnabled,pixFeatherDisabled;
+    QPixmap pixBboxClickEnabled,pixBboxClickDisabled;
 
     appPTR->getIcon(Natron::NATRON_PIXMAP_BEZIER_32, &pixBezier);
     appPTR->getIcon(Natron::NATRON_PIXMAP_ELLIPSE,&pixEllipse);
@@ -399,6 +436,8 @@ RotoGui::RotoGui(NodeGui* node,
     appPTR->getIcon(Natron::NATRON_PIXMAP_RIPPLE_EDIT_DISABLED,&pixRippleDisabled);
     appPTR->getIcon(Natron::NATRON_PIXMAP_FEATHER_VISIBLE, &pixFeatherEnabled);
     appPTR->getIcon(Natron::NATRON_PIXMAP_FEATHER_UNVISIBLE, &pixFeatherDisabled);
+    appPTR->getIcon(Natron::NATRON_PIXMAP_VIEWER_ROI_ENABLED, &pixBboxClickEnabled);
+    appPTR->getIcon(Natron::NATRON_PIXMAP_VIEWER_ROI_DISABLED, &pixBboxClickDisabled);
 
     _imp->toolbar = new QToolBar(parent);
     _imp->toolbar->setOrientation(Qt::Vertical);
@@ -456,6 +495,21 @@ RotoGui::RotoGui(NodeGui* node,
                                                  " clicking outside of any shape will not clear the current selection.") );
     QObject::connect( _imp->stickySelectionEnabled, SIGNAL( clicked(bool) ), this, SLOT( onStickySelectionButtonClicked(bool) ) );
     _imp->selectionButtonsBarLayout->addWidget(_imp->stickySelectionEnabled);
+    
+    QIcon bboxClickIc;
+    bboxClickIc.addPixmap(pixBboxClickEnabled,QIcon::Normal,QIcon::On);
+    bboxClickIc.addPixmap(pixBboxClickDisabled,QIcon::Normal,QIcon::Off);
+    _imp->bboxClickAnywhere = new Button(bboxClickIc,"",_imp->selectionButtonsBar);
+    _imp->bboxClickAnywhere->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
+    _imp->bboxClickAnywhere->setCheckable(true);
+    _imp->bboxClickAnywhere->setChecked(true);
+    _imp->bboxClickAnywhere->setDown(true);
+    _imp->bboxClickAnywhere->setToolTip( tr("Easy bounding box manipulation: When activated, "
+                                                 " clicking inside of the bounding box of selected points will move the points."
+                                            "When deactivated, only clicking on the cross will move the points.") );
+    QObject::connect( _imp->bboxClickAnywhere, SIGNAL( clicked(bool) ), this, SLOT( onBboxClickButtonClicked(bool) ) );
+    _imp->selectionButtonsBarLayout->addWidget(_imp->bboxClickAnywhere);
+    
 
     QIcon rippleEditIc;
     rippleEditIc.addPixmap(pixRippleEnabled,QIcon::Normal,QIcon::On);
@@ -647,23 +701,32 @@ RotoGui::onToolActionTriggeredInternal(QAction* action,
     RotoRoleEnum actionRole = (RotoRoleEnum)data.y();
     QToolButton* toolButton = 0;
     RotoRoleEnum previousRole = getCurrentRole();
-
+    
     switch (actionRole) {
-    case eRotoRoleSelection:
-        toolButton = _imp->selectTool;
-        Q_EMIT roleChanged( (int)previousRole,(int)eRotoRoleSelection );
-        break;
-    case eRotoRolePointsEdition:
-        toolButton = _imp->pointsEditionTool;
-        Q_EMIT roleChanged( (int)previousRole,(int)eRotoRolePointsEdition );
-        break;
-    case eRotoRoleBezierEdition:
-        toolButton = _imp->bezierEditionTool;
-        Q_EMIT roleChanged( (int)previousRole,(int)eRotoRoleBezierEdition );
-        break;
-    default:
-        assert(false);
-        break;
+        case eRotoRoleSelection:
+            toolButton = _imp->selectTool;
+            _imp->selectTool->setIsSelected(true);
+            _imp->pointsEditionTool->setIsSelected(false);
+            _imp->bezierEditionTool->setIsSelected(false);
+            Q_EMIT roleChanged( (int)previousRole,(int)eRotoRoleSelection );
+            break;
+        case eRotoRolePointsEdition:
+            toolButton = _imp->pointsEditionTool;
+            _imp->selectTool->setIsSelected(false);
+            _imp->pointsEditionTool->setIsSelected(true);
+            _imp->bezierEditionTool->setIsSelected(false);
+            Q_EMIT roleChanged( (int)previousRole,(int)eRotoRolePointsEdition );
+            break;
+        case eRotoRoleBezierEdition:
+            toolButton = _imp->bezierEditionTool;
+            _imp->selectTool->setIsSelected(false);
+            _imp->pointsEditionTool->setIsSelected(false);
+            _imp->bezierEditionTool->setIsSelected(true);
+            Q_EMIT roleChanged( (int)previousRole,(int)eRotoRoleBezierEdition );
+            break;
+        default:
+            assert(false);
+            break;
     }
 
 
@@ -886,14 +949,46 @@ RotoGui::drawOverlays(double /*scaleX*/,
                     double x,y;
                     (*it2)->getPositionAtTime(time, &x, &y);
                     
+                    double xF,yF;
+                    (*itF)->getPositionAtTime(time, &xF, &yF);
+                    ///draw the feather point only if it is distinct from the associated point
+                    bool drawFeather = isFeatherVisible();
+                    if (drawFeather) {
+                        drawFeather = !(*it2)->equalsAtTime(time, **itF);
+                    }
+                    
+                    
                     ///if the control point is the only control point being dragged, color it to identify it to the user
                     bool colorChanged = false;
                     SelectedCPs::const_iterator firstSelectedCP = _imp->rotoData->selectedCps.begin();
-                    if ( (firstSelectedCP->first == *it2)
-                        && ( _imp->rotoData->selectedCps.size() == 1) &&
-                        ( ( _imp->state == eEventStateDraggingSelectedControlPoints) || ( _imp->state == eEventStateDraggingControlPoint) ) ) {
-                        glColor3f(0.2, 1., 0.);
+                    if ( firstSelectedCP != _imp->rotoData->selectedCps.end() &&
+                        (firstSelectedCP->first == *it2 || firstSelectedCP->second == *it2) &&
+                         _imp->rotoData->selectedCps.size() == 1 &&
+                        (_imp->state == eEventStateDraggingSelectedControlPoints || _imp->state == eEventStateDraggingControlPoint) ) {
+                        glColor3f(0., 1., 1.);
                         colorChanged = true;
+                    }
+                    
+                    for (SelectedCPs::const_iterator cpIt = _imp->rotoData->selectedCps.begin();
+                         cpIt != _imp->rotoData->selectedCps.end(); ++cpIt) {
+                        ///if the control point is selected, draw its tangent handles
+                        if (cpIt->first == *it2) {
+                            _imp->drawSelectedCp(time, cpIt->first, x, y);
+                            if (drawFeather) {
+                                _imp->drawSelectedCp(time, cpIt->second, xF, yF);
+                            }
+                            glColor3f(0.2, 1., 0.);
+                            colorChanged = true;
+                            break;
+                        } else if (cpIt->second == *it2) {
+                            _imp->drawSelectedCp(time, cpIt->second, x, y);
+                            if (drawFeather) {
+                                _imp->drawSelectedCp(time, cpIt->first, xF, yF);
+                            }
+                            glColor3f(0.2, 1., 0.);
+                            colorChanged = true;
+                            break;
+                        }
                     }
                     
                     glBegin(GL_POLYGON);
@@ -915,13 +1010,7 @@ RotoGui::drawOverlays(double /*scaleX*/,
                         colorChanged = true;
                     }
                     
-                    double xF,yF;
-                    (*itF)->getPositionAtTime(time, &xF, &yF);
-                    ///draw the feather point only if it is distinct from the associated point
-                    bool drawFeather = isFeatherVisible();
-                    if (drawFeather) {
-                        drawFeather = !(*it2)->equalsAtTime(time, **itF);
-                    }
+                  
                     double distFeatherX = 20. * pixelScale.first;
                     double distFeatherY = 20. * pixelScale.second;
                     bool isHovered = false;
@@ -1001,28 +1090,11 @@ RotoGui::drawOverlays(double /*scaleX*/,
                                 glColor3d(0.85, 0.67, 0.);
                             }
                         }
-                    }
+                    } // isFeatherVisible()
                     
                     
                     if (colorChanged) {
                         glColor3d(0.85, 0.67, 0.);
-                    }
-                    
-                    
-                    for (SelectedCPs::const_iterator cpIt = _imp->rotoData->selectedCps.begin();
-                         cpIt != _imp->rotoData->selectedCps.end(); ++cpIt) {
-                        ///if the control point is selected, draw its tangent handles
-                        if (cpIt->first == *it2) {
-                            _imp->drawSelectedCp(time, cpIt->first, x, y);
-                            if (drawFeather) {
-                                _imp->drawSelectedCp(time, cpIt->second, xF, yF);
-                            }
-                        } else if (cpIt->second == *it2) {
-                            _imp->drawSelectedCp(time, cpIt->second, x, y);
-                            if (drawFeather) {
-                                _imp->drawSelectedCp(time, cpIt->first, xF, yF);
-                            }
-                        }
                     }
                     
                 }
@@ -1251,7 +1323,7 @@ void
 RotoGui::onSelectionCleared()
 {
     if ( !isStickySelectionEnabled()  && !_imp->shiftDown ) {
-        _imp->clearCPSSelection();
+        _imp->clearSelection();
     }
 }
 
@@ -1265,6 +1337,7 @@ RotoGui::updateSelectionFromSelectionRectangle(bool onRelease)
     bool stickySel = isStickySelectionEnabled();
     if ( !stickySel && !_imp->shiftDown) {
         _imp->clearCPSSelection();
+        _imp->rotoData->selectedBeziers.clear();
     }
 
     int selectionMode = -1;
@@ -1276,18 +1349,20 @@ RotoGui::updateSelectionFromSelectionRectangle(bool onRelease)
         selectionMode = 2;
     }
 
-    bool mustAddToBezierSelection = _imp->rotoData->selectedBeziers.empty();
-    
+
     double l,r,b,t;
     _imp->viewer->getSelectionRectangle(l, r, b, t);
     std::list<boost::shared_ptr<Bezier> > curves = _imp->context->getCurvesByRenderOrder();
     for (std::list<boost::shared_ptr<Bezier> >::const_iterator it = curves.begin(); it != curves.end(); ++it) {
         
-        SelectedBeziers::iterator isSelected = std::find(_imp->rotoData->selectedBeziers.begin(),
-                                                               _imp->rotoData->selectedBeziers.end(),
-                                                               *it);
+        if ((*it)->isLockedRecursive()) {
+            continue;
+        }
+//        SelectedBeziers::iterator isSelected = std::find(_imp->rotoData->selectedBeziers.begin(),
+//                                                               _imp->rotoData->selectedBeziers.end(),
+//                                                               *it);
         
-        if ( !(*it)->isLockedRecursive() && (isSelected != _imp->rotoData->selectedBeziers.end() || mustAddToBezierSelection)) {
+     //   if (isSelected != _imp->rotoData->selectedBeziers.end() || mustAddToBezierSelection) {
             SelectedCPs points  = (*it)->controlPointsWithinRect(l, r, b, t, 0,selectionMode);
             if (_imp->selectedTool != eRotoToolSelectCurves) {
                 for (SelectedCPs::iterator ptIt = points.begin(); ptIt != points.end(); ++ptIt) {
@@ -1307,19 +1382,17 @@ RotoGui::updateSelectionFromSelectionRectangle(bool onRelease)
                 }
             }
             if ( !points.empty()) {
-                if (mustAddToBezierSelection) {
-                    _imp->rotoData->selectedBeziers.push_back(*it);
-                }
-            } else {
-                if (!stickySel && !_imp->shiftDown && isSelected != _imp->rotoData->selectedBeziers.end()) {
-                    _imp->rotoData->selectedBeziers.erase(isSelected);
-                }
+                _imp->rotoData->selectedBeziers.push_back(*it);
             }
-        }
+     //   }
     }
 
-
-    _imp->context->select(_imp->rotoData->selectedBeziers, RotoContext::eSelectionReasonOverlayInteract);
+    if (!_imp->rotoData->selectedBeziers.empty()) {
+        _imp->context->select(_imp->rotoData->selectedBeziers, RotoContext::eSelectionReasonOverlayInteract);
+    } else if (!stickySel && !_imp->shiftDown) {
+        _imp->context->clearSelection(RotoContext::eSelectionReasonOverlayInteract);
+    }
+    
 
     _imp->computeSelectedCpsBBOX();
 }
@@ -1636,7 +1709,6 @@ RotoGui::penDown(double /*scaleX*/,
                 didSomething = true;
             }
         } else {
-            bool nearbySelectedBeziersBbox = _imp->isNearbySelectedCpsBoundingBox(pos, cpSelectionTolerance);
 
             if (featherBarSel.first) {
                 _imp->clearCPSSelection();
@@ -1644,12 +1716,9 @@ RotoGui::penDown(double /*scaleX*/,
                 _imp->handleControlPointSelection(_imp->rotoData->featherBarBeingDragged, e);
                 _imp->state = eEventStateDraggingFeatherBar;
                 didSomething = true;
-            } else if (nearbySelectedBeziersBbox) {
-                _imp->rotoData->transformMode = _imp->rotoData->transformMode == eSelectedCpsTransformModeTranslateAndScale ?
-                                                eSelectedCpsTransformModeRotateAndSkew : eSelectedCpsTransformModeTranslateAndScale;
-                didSomething = true;
             }
             if (_imp->state == eEventStateNone) {
+                
                 _imp->state = _imp->isMouseInteractingWithCPSBbox(pos,cpSelectionTolerance,pixelScale);
                 if (_imp->state != eEventStateNone) {
                     didSomething = true;
@@ -1960,9 +2029,14 @@ RotoGui::penMotion(double /*scaleX*/,
             }
         }
         
-        if ( !cursorSet && (_imp->rotoData->selectedCps.size() > 1) && _imp->isWithinSelectedCpsBBox(pos) ) {
-            _imp->viewer->setCursor( QCursor(Qt::SizeAllCursor) );
-            cursorSet = true;
+        bool clickAnywhere = _imp->isBboxClickAnywhereEnabled();
+        
+        if ( !cursorSet && (_imp->rotoData->selectedCps.size() > 1)) {
+            if ((clickAnywhere && _imp->isWithinSelectedCpsBBox(pos)) ||
+                (!clickAnywhere && _imp->isNearbySelectedCpsCrossHair(pos))) {
+                _imp->viewer->setCursor( QCursor(Qt::SizeAllCursor) );
+                cursorSet = true;
+            }
         }
         
         SelectedCP nearbyFeatherBar;
@@ -1981,10 +2055,10 @@ RotoGui::penMotion(double /*scaleX*/,
             didSomething = true;
         }
     }
-
-
-if (!cursorSet) {
-    _imp->viewer->setCursor( QCursor(Qt::ArrowCursor) );
+    
+    
+    if (!cursorSet) {
+        _imp->viewer->setCursor( QCursor(Qt::ArrowCursor) );
     }
 
 
@@ -2266,9 +2340,9 @@ RotoGui::keyDown(double /*scaleX*/,
     Qt::Key key = (Qt::Key)e->key();
 
     if (key == Qt::Key_Shift) {
-        _imp->shiftDown = true;
+        ++_imp->shiftDown;
     } else if (key == Qt::Key_Control) {
-        _imp->ctrlDown = true;
+        ++_imp->ctrlDown;
     }
     
     if ( modCASIsControl(e) ) {
@@ -2383,6 +2457,13 @@ RotoGui::keyRepeat(double /*scaleX*/,
     return didSomething;
 }
 
+void
+RotoGui::focusOut()
+{
+    _imp->shiftDown = 0;
+    _imp->ctrlDown = 0;
+}
+
 bool
 RotoGui::keyUp(double /*scaleX*/,
                double /*scaleY*/,
@@ -2391,9 +2472,9 @@ RotoGui::keyUp(double /*scaleX*/,
     bool didSomething = false;
 
     if (e->key() == Qt::Key_Shift) {
-        _imp->shiftDown = false;
+        --_imp->shiftDown;
     } else if (e->key() == Qt::Key_Control) {
-        _imp->ctrlDown = false;
+        --_imp->ctrlDown;
     }
 
     
@@ -2639,6 +2720,8 @@ RotoGui::RotoGuiPrivate::isNearbyBBoxMidBtm(const QPointF & p,
 EventStateEnum
 RotoGui::RotoGuiPrivate::isMouseInteractingWithCPSBbox(const QPointF& pos,double cpSelectionTolerance,const std::pair<double, double>& pixelScale) const
 {
+    bool clickAnywhere = isBboxClickAnywhereEnabled();
+
     EventStateEnum state = eEventStateNone;
     if ( rotoData->showCpsBbox && isNearbyBBoxTopLeft(pos, cpSelectionTolerance,pixelScale) ) {
         state = eEventStateDraggingBBoxTopLeft;
@@ -2656,7 +2739,9 @@ RotoGui::RotoGuiPrivate::isMouseInteractingWithCPSBbox(const QPointF& pos,double
         state = eEventStateDraggingBBoxMidBtm;
     } else if ( rotoData->showCpsBbox && isNearbyBBoxMidLeft(pos, cpSelectionTolerance,pixelScale) ) {
         state = eEventStateDraggingBBoxMidLeft;
-    } else if ( rotoData->showCpsBbox && isWithinSelectedCpsBBox(pos) ) {
+    } else if ( clickAnywhere && rotoData->showCpsBbox && isWithinSelectedCpsBBox(pos) ) {
+        state = eEventStateDraggingSelectedControlPoints;
+    } else if ( !clickAnywhere && rotoData->showCpsBbox && isNearbySelectedCpsCrossHair(pos) ) {
         state = eEventStateDraggingSelectedControlPoints;
     }
     return state;
@@ -2854,6 +2939,12 @@ void
 RotoGui::onStickySelectionButtonClicked(bool e)
 {
     _imp->stickySelectionEnabled->setDown(e);
+}
+
+void
+RotoGui::onBboxClickButtonClicked(bool e)
+{
+    _imp->bboxClickAnywhere->setDown(e);
 }
 
 bool

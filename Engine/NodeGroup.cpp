@@ -308,7 +308,7 @@ NodeCollection::clearNodes(bool emitSignal)
     }
     
     for (NodeList::iterator it = nodesToDelete.begin(); it != nodesToDelete.end(); ++it) {
-        (*it)->removeReferences();
+        (*it)->removeReferences(false);
     }
     
     

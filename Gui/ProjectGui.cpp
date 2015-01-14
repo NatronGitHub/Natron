@@ -263,7 +263,9 @@ ProjectGui::load(boost::archive::xml_iarchive & archive)
     archive >> boost::serialization::make_nvp("ProjectGui",obj);
 
     const std::map<std::string, ViewerData > & viewersProjections = obj.getViewersProjections();
-    
+
+    int leftBound,rightBound;
+    _project.lock()->getFrameRange(&leftBound, &rightBound);
 
     ///default color for nodes
     float defR,defG,defB;
@@ -342,7 +344,7 @@ ProjectGui::load(boost::archive::xml_iarchive & archive)
                 isBd->resize(w, h, true);
             }
         }
-
+        
         ViewerInstance* viewer = dynamic_cast<ViewerInstance*>( nGui->getNode()->getLiveInstance() );
         if (viewer) {
             std::map<std::string, ViewerData >::const_iterator found = viewersProjections.find(name);
@@ -360,7 +362,6 @@ ProjectGui::load(boost::archive::xml_iarchive & archive)
                 tab->setMipMapLevel(found->second.mipMapLevel);
                 tab->setCompositingOperator( (Natron::ViewerCompositingOperatorEnum)found->second.wipeCompositingOp );
                 tab->setZoomOrPannedSinceLastFit(found->second.zoomOrPanSinceLastFit);
-                tab->setFrameRangeLocked(found->second.frameRangeLocked);
                 tab->setTopToolbarVisible(found->second.topToolbarVisible);
                 tab->setLeftToolbarVisible(found->second.leftToolbarVisible);
                 tab->setRightToolbarVisible(found->second.rightToolbarVisible);
@@ -368,6 +369,13 @@ ProjectGui::load(boost::archive::xml_iarchive & archive)
                 tab->setInfobarVisible(found->second.infobarVisible);
                 tab->setTimelineVisible(found->second.timelineVisible);
                 tab->setCheckerboardEnabled(found->second.checkerboardEnabled);
+                tab->setTimelineBounds(found->second.leftBound, found->second.rightBound);
+                if (found->second._version >= VIEWER_DATA_REMOVES_FRAME_RANGE_LOCK) {
+                    tab->setFrameRangeEdited(leftBound != found->second.leftBound || rightBound != found->second.rightBound);
+                } else {
+                    tab->setTimelineBounds(leftBound, rightBound);
+                    tab->setFrameRangeEdited(false);
+                }
                 if (!found->second.fpsLocked) {
                     tab->setDesiredFps(found->second.fps);
                 }

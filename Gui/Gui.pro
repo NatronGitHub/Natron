@@ -120,6 +120,7 @@ HEADERS += \
     ComboBox.h \
     CurveEditor.h \
     CurveEditorUndoRedo.h \
+    CurveSelection.h \
     CurveWidget.h \
     CustomParamInteract.h \
     DockablePanel.h \

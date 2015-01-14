@@ -88,6 +88,8 @@ struct ProjectPrivate
     boost::shared_ptr<Choice_Knob> colorSpace16u;
     boost::shared_ptr<Choice_Knob> colorSpace32f;
     boost::shared_ptr<Double_Knob> frameRate;
+    boost::shared_ptr<Int_Knob> frameRange;
+    boost::shared_ptr<Bool_Knob> lockFrameRange;
     
     boost::shared_ptr<String_Knob> natronVersion;
     boost::shared_ptr<String_Knob> originalAuthorName,lastAuthorName;
@@ -102,7 +104,7 @@ struct ProjectPrivate
     
     boost::shared_ptr<TimeLine> timeline; // global timeline
     bool autoSetProjectFormat;
-    Natron::OutputEffectInstance* lastTimelineSeekCaller;
+
     mutable QMutex isLoadingProjectMutex;
     bool isLoadingProject; //< true when the project is loading
     bool isLoadingProjectInternal; //< true when loading the internal project (not gui)

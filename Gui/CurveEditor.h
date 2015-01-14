@@ -30,12 +30,14 @@ CLANG_DIAG_ON(uninitialized)
 #include "Global/GlobalDefines.h"
 #include "Global/Macros.h"
 
+#include "Gui/CurveSelection.h"
 #include "Gui/CurveEditorUndoRedo.h"
 
 class RectD;
 class NodeGui;
 class QTreeWidget;
 class QTreeWidgetItem;
+class QVBoxLayout;
 class CurveWidget;
 class Curve;
 class CurveGui;
@@ -45,6 +47,8 @@ class KnobGui;
 class KnobI;
 class BezierCP;
 class Bezier;
+class LineEdit;
+class QLabel;
 class RotoItem;
 class RotoContext;
 class KeyFrame;
@@ -102,6 +106,8 @@ public:
     {
         return _curveDisplayed;
     }
+    
+    void setVisible(bool visible);
 
     int getDimension() const WARN_UNUSED_RETURN
     {
@@ -114,8 +120,12 @@ public:
     }
     
     boost::shared_ptr<KnobI> getInternalKnob() const WARN_UNUSED_RETURN;
-public Q_SLOTS:
+    
+    void checkVisibleState(bool autoSelectOnShow);
 
+public Q_SLOTS:
+    
+    
     /**
      * @brief This is invoked everytimes the knob has a keyframe set or removed, to determine whether we need
      * to keep this element in the tree or not.
@@ -154,11 +164,20 @@ public:
     {
         return _node;
     }
+    
+    QTreeWidgetItem* getItem() const
+    {
+        return _nameItem;
+    }
 
     const Elements & getElements() const WARN_UNUSED_RETURN
     {
         return _nodeElements;
     }
+    
+    bool isVisible() const;
+    
+    void setVisible(bool visible);
 
     NodeCurveEditorElement* findElement(CurveGui* curve) const WARN_UNUSED_RETURN;
     NodeCurveEditorElement* findElement(KnobGui* knob,int dimension) const WARN_UNUSED_RETURN;
@@ -202,6 +221,8 @@ public:
     
     boost::shared_ptr<RotoContext> getContext() const;
     
+    const std::list<NodeCurveEditorElement*>& getElements() const;
+    
     void recursiveSelectBezier(QTreeWidgetItem* cur,bool mustSelect,
                              std::vector<CurveGui*> *curves);
     
@@ -240,6 +261,10 @@ public:
     
     void recursiveSelectRoto(QTreeWidgetItem* cur,
                              std::vector<CurveGui*> *curves);
+    
+    void setVisible(bool visible);
+    
+    const std::list<BezierEditorContext*>& getElements() const;
 
     std::list<NodeCurveEditorElement*> findElement(KnobGui* knob,int dimension) const;
     
@@ -259,8 +284,10 @@ private:
     
 };
 
+struct CurveEditorPrivate;
 class CurveEditor
     : public QWidget
+    , public CurveSelection
 {
     Q_OBJECT
 
@@ -294,25 +321,25 @@ public:
 
     CurveWidget* getCurveWidget() const WARN_UNUSED_RETURN;
 
+    virtual void getSelectedCurves(std::vector<CurveGui*>* selection) OVERRIDE FINAL;
+
 public Q_SLOTS:
 
-    void onCurrentItemChanged(QTreeWidgetItem*,QTreeWidgetItem*);
-
+    void onFilterTextChanged(const QString& filter);
+    
+    void onItemSelectionChanged();
+        
+    void onItemDoubleClicked(QTreeWidgetItem* item,int);
+    
 private:
 
-
-    // FIXME: PIMPL
+    virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
+    
     void recursiveSelect(QTreeWidgetItem* cur,std::vector<CurveGui*> *curves,bool inspectRotos = true);
 
-    std::list<NodeCurveEditorContext*> _nodes;
-    std::list<RotoCurveEditorContext*> _rotos;
-    QHBoxLayout* _mainLayout;
-    QSplitter* _splitter;
-    CurveWidget* _curveWidget;
-    QTreeWidget* _tree;
-    boost::scoped_ptr<QUndoStack> _undoStack;
-    QAction* _undoAction,*_redoAction;
+    boost::scoped_ptr<CurveEditorPrivate> _imp;
 };
+
 
 
 #endif // CURVEEDITOR_H

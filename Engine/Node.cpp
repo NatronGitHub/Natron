@@ -484,6 +484,11 @@ Node::load(const std::string & parentMultiInstanceName,
         if (centerKnob) {
             centerKnob->setAsInstanceSpecific();
         }
+        
+        boost::shared_ptr<KnobI> offsetKnob = getKnobByName("offset");
+        if (offsetKnob) {
+            offsetKnob->setAsInstanceSpecific();
+        }
     }
     
     if (!nameSet) {
@@ -1092,13 +1097,15 @@ Node::~Node()
 }
 
 void
-Node::removeReferences()
+Node::removeReferences(bool ensureThreadsFinished)
 {
     if (!_imp->liveInstance) {
         return;
     }
+    if (ensureThreadsFinished) {
+        getApp()->getProject()->ensureAllProcessingThreadsFinished();
+    }
     OutputEffectInstance* isOutput = dynamic_cast<OutputEffectInstance*>(_imp->liveInstance.get());
-    
     if (isOutput) {
         isOutput->getRenderEngine()->quitEngine();
     }
@@ -1166,6 +1173,32 @@ Node::getPreferredInputForConnection()
         return -1;
     }
     
+    {
+        ///Find an input named Source
+        std::string inputNameToFind(kOfxImageEffectSimpleSourceClipName);
+        int maxinputs = getMaxInputCount();
+        for (int i = 0; i < maxinputs ; ++i) {
+            if (getInputLabel(i) == inputNameToFind && !getInput(i)) {
+                return i;
+            }
+        }
+    }
+    
+    
+    bool useInputA = appPTR->getCurrentSettings()->isMergeAutoConnectingToAInput();
+    if (useInputA) {
+        ///Find an input named A
+        std::string inputNameToFind("A");
+        int maxinputs = getMaxInputCount();
+        for (int i = 0; i < maxinputs ; ++i) {
+            if (getInputLabel(i) == inputNameToFind && !getInput(i)) {
+                return i;
+            }
+        }
+    }
+    
+   
+    
     ///we return the first non-optional empty input
     int firstNonOptionalEmptyInput = -1;
     std::list<int> optionalEmptyInputs;
@@ -1193,29 +1226,13 @@ Node::getPreferredInputForConnection()
         }
     }
     
+   
+    ///Default to the first non optional empty input
     if (firstNonOptionalEmptyInput != -1) {
         return firstNonOptionalEmptyInput;
     }  else {
         if ( !optionalEmptyInputs.empty() ) {
             
-            if (getPluginID() == PLUGINID_OFX_MERGE) {
-                //if it is a merge node, try to follow what the user preferences tell us
-                std::string inputNameToFind;
-                bool useInputA = appPTR->getCurrentSettings()->isMergeAutoConnectingToAInput();
-                if (useInputA) {
-                    inputNameToFind = "A";
-                } else {
-                    inputNameToFind = "B";
-                }
-                
-                int maxinputs = getMaxInputCount();
-                for (int i = 0; i < maxinputs ; ++i) {
-                    if (getInputLabel(i) == inputNameToFind && !getInput(i)) {
-                        return i;
-                    }
-                }
-                
-            }
             //We return the last optional empty input
             std::list<int>::reverse_iterator first = optionalEmptyInputs.rbegin();
             while ( first != optionalEmptyInputs.rend() && _imp->liveInstance->isInputRotoBrush(*first) ) {
@@ -2842,7 +2859,7 @@ Node::destroyNode(bool autoReconnect)
         isGrp->clearNodes(true);
     }
     
-    removeReferences();
+    removeReferences(true);
 }
 
 boost::shared_ptr<KnobI>
@@ -3121,7 +3138,7 @@ std::string
 Node::getPluginID() const
 {
     ///MT-safe, never changes
-    if (!_imp->plugin) {
+    if (!_imp->plugin || !_imp->liveInstance) {
         return std::string();
     }
     return _imp->plugin->getPluginID().toStdString();
@@ -3853,6 +3870,18 @@ Node::onEffectKnobValueChanged(KnobI* what,
         ///Refresh the preview automatically if the filename changed
         incrementKnobsAge(); //< since evaluate() is called after knobChanged we have to do this  by hand
         computePreviewImage( getApp()->getTimeLine()->currentFrame() );
+        
+        
+        ///union the project frame range if not locked with the reader frame range
+        bool isLocked = getApp()->getProject()->isFrameRangeLocked();
+        if (!isLocked) {
+            int first,last;
+            _imp->liveInstance->getFrameRange_public(getHashValue(), &first, &last);
+            if (first != INT_MIN && last != INT_MAX) {
+                getApp()->getProject()->unionFrameRangeWith(first, last);
+            }
+        }
+        
     } else if ( what == _imp->refreshInfoButton.get() ) {
         int maxinputs = getMaxInputCount();
         for (int i = 0; i < maxinputs; ++i) {
@@ -3863,6 +3892,7 @@ Node::onEffectKnobValueChanged(KnobI* what,
         }
         std::string outputInfo = makeInfoForInput(-1);
         _imp->outputFormat->setValue(outputInfo, 0);
+ 
     }
 }
 

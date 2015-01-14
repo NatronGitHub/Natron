@@ -451,6 +451,7 @@ Curve::removeKeyFrameWithIndex(int index)
     removeKeyFrame( atIndex(index) );
 }
 
+
 void
 Curve::removeKeyFrameWithTime(double time)
 {
@@ -462,6 +463,45 @@ Curve::removeKeyFrameWithTime(double time)
     }
 
     removeKeyFrame(it);
+}
+
+void
+Curve::removeKeyFramesBeforeTime(double time,std::list<int>* keyframeRemoved)
+{
+    KeyFrameSet newSet;
+    QWriteLocker l(&_imp->_lock);
+    for (KeyFrameSet::iterator it = _imp->keyFrames.begin(); it != _imp->keyFrames.end(); ++it) {
+        if (it->getTime() < time) {
+            keyframeRemoved->push_back(it->getTime());
+            continue;
+        }
+        newSet.insert(*it);
+    }
+    _imp->keyFrames = newSet;
+    if (!_imp->keyFrames.empty()) {
+        refreshDerivatives(Curve::eCurveChangedReasonKeyframeChanged, _imp->keyFrames.begin());
+    }
+}
+
+void
+Curve::removeKeyFramesAfterTime(double time,std::list<int>* keyframeRemoved)
+{
+    KeyFrameSet newSet;
+    QWriteLocker l(&_imp->_lock);
+    for (KeyFrameSet::iterator it = _imp->keyFrames.begin(); it != _imp->keyFrames.end(); ++it) {
+        if (it->getTime() > time) {
+            keyframeRemoved->push_back(it->getTime());
+            continue;
+        }
+        newSet.insert(*it);
+    }
+    _imp->keyFrames = newSet;
+    if (!_imp->keyFrames.empty()) {
+        KeyFrameSet::iterator last = _imp->keyFrames.end();
+        --last;
+        refreshDerivatives(Curve::eCurveChangedReasonKeyframeChanged, last);
+    }
+
 }
 
 bool

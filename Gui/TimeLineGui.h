@@ -54,17 +54,20 @@ public:
 
     virtual ~TimeLineGui() OVERRIDE;
     
+    void discardGuiPointer();
+    
     void setTimeline(const boost::shared_ptr<TimeLine>& timeline);
     boost::shared_ptr<TimeLine> getTimeline() const;
 
     /*initialises the boundaries on the timeline*/
     void setBoundaries(SequenceTime first, SequenceTime last);
+    
 
-    SequenceTime firstFrame() const;
-    SequenceTime lastFrame() const;
     SequenceTime leftBound() const;
     SequenceTime rightBound() const;
     SequenceTime currentFrame() const;
+    
+    void getBounds(SequenceTime* left,SequenceTime* right) const;
 
     void setCursorColor(const QColor & cursorColor);
     void setBoundsColor(const QColor & boundsColor);
@@ -100,14 +103,16 @@ public:
      * a main window (an AppInstance) draw some cached line because another instance is running some playback or rendering something.
      **/
     void disconnectSlotsFromViewerCache();
+    
+    bool isFrameRangeEdited() const;
+    
+    void setFrameRangeEdited(bool edited);
 
 public Q_SLOTS:
 
     void centerOn(SequenceTime left,SequenceTime right);
 
     void onFrameChanged(SequenceTime,int);
-    void onFrameRangeChanged(SequenceTime first, SequenceTime last);
-    void onBoundariesChanged(SequenceTime, SequenceTime, int);
 
     void onCachedFrameAdded(SequenceTime time);
     void onCachedFrameRemoved(SequenceTime time,int storage);
@@ -118,8 +123,12 @@ public Q_SLOTS:
     void clearCachedFrames();
 
     void onKeyframesIndicatorsChanged();
+    
+    void onProjectFrameRangeChanged(int,int);
 
 private:
+    
+    void setBoundariesInternal(SequenceTime first, SequenceTime last,bool emitSignal);
 
     virtual void initializeGL() OVERRIDE FINAL;
     virtual void resizeGL(int width,int height) OVERRIDE FINAL;

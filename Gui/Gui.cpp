@@ -2161,6 +2161,14 @@ Gui::removeViewerTab(ViewerTab* tab,
             _imp->_lastSelectedViewer = 0;
         }
     }
+
+    ViewerInstance* internalViewer = tab->getInternalNode();
+    if (internalViewer) {
+        if (getApp()->getLastViewerUsingTimeline() == internalViewer) {
+            getApp()->discardLastViewerUsingTimeline();
+        }
+    }
+    
     if (!initiatedFromNode) {
         assert(_imp->_nodeGraphArea);
         ///call the deleteNode which will call this function again when the node will be deactivated.
@@ -2480,7 +2488,7 @@ Gui::findOrCreateToolButton(const boost::shared_ptr<PluginGroupNode>& plugin)
         QPixmap writeImagePix;
         appPTR->getIcon(Natron::NATRON_PIXMAP_WRITE_IMAGE, &writeImagePix);
         createWriterAction->setIcon( QIcon(writeImagePix) );
-        createReaderAction->setShortcutContext(Qt::WidgetShortcut);
+        createWriterAction->setShortcutContext(Qt::WidgetShortcut);
         createWriterAction->setShortcut( QKeySequence(Qt::Key_W) );
         imageMenu->addAction(createWriterAction);
     }

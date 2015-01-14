@@ -293,7 +293,9 @@ struct ValueSerialization
             ///and deducing the pattern from it and setting it as a value instead
             if (convertOldFileKeyframesToPattern) {
                 SequenceParsing::FileNameContent content(v);
-                content.generatePatternWithFrameNumberAtIndex(content.getPotentialFrameNumbersCount() - 1, &v);
+                content.generatePatternWithFrameNumberAtIndex(content.getPotentialFrameNumbersCount() - 1,
+                                                              content.getNumPrependingZeroes() + 1,
+                                                              &v);
             }
             isFile->setValue(v,_dimension);
         } else if (isOutputFile) {

@@ -195,7 +195,7 @@
 #define kShortcutDescActionZoomLevel100 "100%"
 
 #define kShortcutIDActionHideOverlays "hideOverlays"
-#define kShortcutDescActionHideOverlays "Show/Hide overlays"
+#define kShortcutDescActionHideOverlays "Enable overlays"
 
 #define kShortcutIDActionHidePlayer "hidePlayer"
 #define kShortcutDescActionHidePlayer "Show/Hide player"
@@ -226,6 +226,9 @@
 
 #define kShortcutIDMouseRectanglePick "rectanglePick"
 #define kShortcutDescMouseRectanglePick "Rectangle colour picker"
+
+#define kShortcutIDToggleWipe "toggleWipe"
+#define kShortcutDescToggleWipe "Toggle wipe"
 
 ///////////PLAYER SHORTCUTS
 

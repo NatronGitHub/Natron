@@ -136,9 +136,16 @@ public:
     
     virtual void appendToScriptEditor(const std::string& str) OVERRIDE FINAL;
     
-public Q_SLOTS:
 
     virtual void toggleAutoHideGraphInputs() OVERRIDE FINAL;
+    virtual void setLastViewerUsingTimeline(const boost::shared_ptr<Natron::Node>& node) OVERRIDE FINAL;
+    
+    virtual ViewerInstance* getLastViewerUsingTimeline() const OVERRIDE FINAL;
+    
+    void discardLastViewerUsingTimeline();
+    
+public Q_SLOTS:
+
     
     virtual void redrawAllViewers() OVERRIDE FINAL;
 

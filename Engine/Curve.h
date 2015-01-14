@@ -196,6 +196,10 @@ public:
     void removeKeyFrameWithTime(double time);
 
     void removeKeyFrameWithIndex(int index);
+    
+    void removeKeyFramesBeforeTime(double time,std::list<int>* keyframeRemoved);
+    
+    void removeKeyFramesAfterTime(double time,std::list<int>* keyframeRemoved);
 
     bool getNearestKeyFrameWithTime(double time,KeyFrame* k) const WARN_UNUSED_RETURN;
 

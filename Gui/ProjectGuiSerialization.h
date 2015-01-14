@@ -40,7 +40,8 @@ CLANG_DIAG_ON(unused-parameter)
 #define VIEWER_DATA_INTRODUCES_FPS 6
 #define VIEWER_DATA_REMOVES_ASPECT_RATIO 7
 #define VIEWER_DATA_INTRODUCES_FPS_LOCK 8
-#define VIEWER_DATA_SERIALIZATION_VERSION VIEWER_DATA_INTRODUCES_FPS_LOCK
+#define VIEWER_DATA_REMOVES_FRAME_RANGE_LOCK 9
+#define VIEWER_DATA_SERIALIZATION_VERSION VIEWER_DATA_REMOVES_FRAME_RANGE_LOCK
 
 #define PROJECT_GUI_INTRODUCES_BACKDROPS 2
 #define PROJECT_GUI_REMOVES_ALL_NODE_PREVIEW_TOGGLED 3
@@ -87,7 +88,6 @@ struct ViewerData
     std::string channels;
     bool zoomOrPanSinceLastFit;
     int wipeCompositingOp;
-    bool frameRangeLocked;
     
     bool leftToolbarVisible;
     bool rightToolbarVisible;
@@ -101,11 +101,17 @@ struct ViewerData
     double fps;
     bool fpsLocked;
     
+    int leftBound,rightBound;
+    
+    unsigned int _version;
+    
     friend class boost::serialization::access;
     template<class Archive>
     void serialize(Archive & ar,
                    const unsigned int version)
     {
+        _version = version;
+        
         ar & boost::serialization::make_nvp("zoomLeft",zoomLeft);
         ar & boost::serialization::make_nvp("zoomBottom",zoomBottom);
         ar & boost::serialization::make_nvp("zoomFactor",zoomFactor);
@@ -130,10 +136,15 @@ struct ViewerData
             zoomOrPanSinceLastFit = false;
             wipeCompositingOp = 0;
         }
-        if (version >= VIEWER_DATA_INTRODUCES_FRAME_RANGE) {
+        if (version >= VIEWER_DATA_INTRODUCES_FRAME_RANGE && version < VIEWER_DATA_REMOVES_FRAME_RANGE_LOCK) {
+            bool frameRangeLocked;
             ar & boost::serialization::make_nvp("FrameRangeLocked",frameRangeLocked);
+        }
+        if (version >=  VIEWER_DATA_REMOVES_FRAME_RANGE_LOCK) {
+            ar & boost::serialization::make_nvp("LeftBound",leftBound);
+            ar & boost::serialization::make_nvp("RightBound",rightBound);
         } else {
-            frameRangeLocked = false;
+            leftBound = rightBound = 1;
         }
         
         if (version >= VIEWER_DATA_INTRODUCES_TOOLBARS_VISIBLITY) {

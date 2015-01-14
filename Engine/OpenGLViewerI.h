@@ -156,16 +156,17 @@ public:
      * @brief Must return the time currently displayed
      **/
     virtual int getCurrentlyDisplayedTime() const = 0;
+    
+    /**
+     * @brief Get the viewer's timeline's range
+     **/
+    virtual void getViewerFrameRange(int* first,int* last) const = 0;
 
     /**
      * @brief Must return the current compositing operator applied to the viewer input A and B.
      **/
     virtual Natron::ViewerCompositingOperatorEnum getCompositingOperator() const = 0;
 
-    /**
-     * @brief Returns whether the user sould be able to edit the frame range or not.
-     **/
-    virtual bool isFrameRangeLocked() const = 0;
     
     /**
      * @brief Must return a pointer to the current timeline used by the Viewer

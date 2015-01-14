@@ -89,11 +89,15 @@ App::timelineGetTime() const
 int
 App::timelineGetLeftBound() const
 {
-    return _instance->getTimeLine()->leftBound();
+    int left,right;
+    _instance->getFrameRange(&left, &right);
+    return left;
 }
 
 int
 App::timelineGetRightBound() const
 {
-    return _instance->getTimeLine()->rightBound();
+    int left,right;
+    _instance->getFrameRange(&left, &right);
+    return right;
 }

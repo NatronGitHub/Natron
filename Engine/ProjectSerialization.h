@@ -44,7 +44,8 @@ CLANG_DIAG_ON(unused-parameter)
 
 #define PROJECT_SERIALIZATION_INTRODUCES_NATRON_VERSION 2
 #define PROJECT_SERIALIZATION_REMOVES_NODE_COUNTERS 3
-#define PROJECT_SERIALIZATION_INTRODUCES_GROUPS 4
+#define PROJECT_SERIALIZATION_REMOVES_TIMELINE_BOUNDS 4
+#define PROJECT_SERIALIZATION_INTRODUCES_GROUPS 5
 #define PROJECT_SERIALIZATION_VERSION PROJECT_SERIALIZATION_INTRODUCES_GROUPS
 
 class AppInstance;
@@ -53,16 +54,15 @@ class ProjectSerialization
     NodeCollectionSerialization _nodes;
     std::list<Format> _additionalFormats;
     std::list< boost::shared_ptr<KnobSerialization> > _projectKnobs;
-    SequenceTime _timelineLeft,_timelineRight,_timelineCurrent;
+    SequenceTime _timelineCurrent;
     qint64 _creationDate;
     AppInstance* _app;
-
+    unsigned int _version;
+    
 public:
 
     ProjectSerialization(AppInstance* app)
-        : _timelineLeft(0)
-        , _timelineRight(0)
-        , _timelineCurrent(0)
+        : _timelineCurrent(0)
         , _creationDate(0)
         , _app(app)
     {
@@ -73,21 +73,16 @@ public:
         
     }
 
+    unsigned int getVersion() const
+    {
+        return _version;
+    }
+    
     void initialize(const Natron::Project* project);
 
     SequenceTime getCurrentTime() const
     {
         return _timelineCurrent;
-    }
-
-    SequenceTime getLeftBoundTime() const
-    {
-        return _timelineLeft;
-    }
-
-    SequenceTime getRightBoundTime() const
-    {
-        return _timelineRight;
     }
 
     const std::list< boost::shared_ptr<KnobSerialization>  > & getProjectKnobsValues() const
@@ -143,8 +138,6 @@ public:
         }
         ar & boost::serialization::make_nvp("AdditionalFormats", _additionalFormats);
         ar & boost::serialization::make_nvp("Timeline_current_time", _timelineCurrent);
-        ar & boost::serialization::make_nvp("Timeline_left_bound", _timelineLeft);
-        ar & boost::serialization::make_nvp("Timeline_right_bound", _timelineRight);
         ar & boost::serialization::make_nvp("CreationDate", _creationDate);
     }
 
@@ -152,6 +145,7 @@ public:
     void load(Archive & ar,
               const unsigned int version)
     {
+        _version = version;
         if (version >= PROJECT_SERIALIZATION_INTRODUCES_NATRON_VERSION) {
             std::string natronVersion;
             ar & boost::serialization::make_nvp("NatronVersion",natronVersion);
@@ -182,8 +176,11 @@ public:
 
         ar & boost::serialization::make_nvp("AdditionalFormats", _additionalFormats);
         ar & boost::serialization::make_nvp("Timeline_current_time", _timelineCurrent);
-        ar & boost::serialization::make_nvp("Timeline_left_bound", _timelineLeft);
-        ar & boost::serialization::make_nvp("Timeline_right_bound", _timelineRight);
+        if (version < PROJECT_SERIALIZATION_REMOVES_TIMELINE_BOUNDS) {
+            SequenceTime left,right;
+            ar & boost::serialization::make_nvp("Timeline_left_bound", left);
+            ar & boost::serialization::make_nvp("Timeline_right_bound", right);
+        }
         if (version < PROJECT_SERIALIZATION_REMOVES_NODE_COUNTERS) {
             std::map<std::string,int> _nodeCounters;
             ar & boost::serialization::make_nvp("NodeCounters", _nodeCounters);

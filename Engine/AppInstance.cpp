@@ -79,7 +79,6 @@ AppInstance::AppInstance(int appID)
 AppInstance::~AppInstance()
 {
     appPTR->removeInstance(_imp->_appID);
-    QThreadPool::globalInstance()->waitForDone();
 
     ///Clear nodes now, not in the destructor of the project as
     ///deleting nodes might reference the project.
@@ -757,8 +756,7 @@ AppInstance::startRenderingFullSequence(const RenderWork& writerWork,bool /*rend
     if (writerWork.firstFrame == INT_MIN || writerWork.lastFrame == INT_MAX) {
         writerWork.writer->getFrameRange_public(writerWork.writer->getHash(), &first, &last);
         if (first == INT_MIN || last == INT_MAX) {
-            first = getTimeLine()->leftBound();
-            last = getTimeLine()->rightBound();
+            getFrameRange(&first, &last);
         }
     } else {
         first = writerWork.firstFrame;
@@ -766,6 +764,12 @@ AppInstance::startRenderingFullSequence(const RenderWork& writerWork,bool /*rend
     }
     
     backgroundRender.blockingRender(first,last); //< doesn't return before rendering is finished
+}
+
+void
+AppInstance::getFrameRange(int* first,int* last) const
+{
+    return _imp->_currentProject->getFrameRange(first, last);
 }
 
 void

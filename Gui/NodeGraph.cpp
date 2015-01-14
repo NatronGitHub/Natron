@@ -233,9 +233,9 @@ struct NodeGraphPrivate
     
     boost::weak_ptr<NodeCollection> group;
     
-    QPointF _lastScenePosClick;
+    QPoint _lastMousePos;
     QPointF _lastNodeDragStartPoint;
-    QPointF _lastSelectionStartPoint;
+    QPoint _lastSelectionStartPoint;
     EventStateEnum _evtState;
     NodeGuiPtr _magnifiedNode;
     double _nodeSelectedScaleBeforeMagnif;
@@ -287,7 +287,7 @@ struct NodeGraphPrivate
     : _publicInterface(p)
     , _gui(gui)
     , group(group)
-    , _lastScenePosClick()
+    , _lastMousePos()
     , _lastNodeDragStartPoint()
     , _lastSelectionStartPoint()
     , _evtState(eEventStateNone)
@@ -1014,9 +1014,11 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
 
     bool didSomething = false;
 
-    _imp->_lastScenePosClick = mapToScene( e->pos() );
-    
-    if (e->buttons() == Qt::MiddleButton && buttonControlAlt(e) == Qt::AltModifier ) {
+    _imp->_lastMousePos = e->pos();
+    QPointF lastMousePosScene = mapToScene(_imp->_lastMousePos.x(),_imp->_lastMousePos.y());
+
+    if ((e->buttons() & Qt::MiddleButton) && (buttonControlAlt(e) == Qt::AltModifier || (e->buttons() & Qt::LeftButton)) ) {
+        // Alt + middle = zoom or left + middle = zoom
         _imp->_evtState = eEventStateZoomingArea;
         return;
     }
@@ -1025,12 +1027,13 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
     Edge* selectedEdge = 0;
     Edge* selectedBendPoint = 0;
     {
+        
         QMutexLocker l(&_imp->_nodesMutex);
         
         ///Find matches, sorted by depth
         std::map<double,NodeGuiPtr> matches;
         for (NodeGuiList::reverse_iterator it = _imp->_nodes.rbegin(); it != _imp->_nodes.rend(); ++it) {
-            QPointF evpt = (*it)->mapFromScene(_imp->_lastScenePosClick);
+            QPointF evpt = (*it)->mapFromScene(lastMousePosScene);
             if ( (*it)->isVisible() && (*it)->isActive() ) {
                 
                 BackDropGui* isBd = dynamic_cast<BackDropGui*>(it->get());
@@ -1049,7 +1052,6 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
                     }
                 }
                 
-                
             }
         }
         if (!matches.empty() && _imp->_evtState != eEventStateResizingBackdrop) {
@@ -1058,12 +1060,13 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
         if (!selected) {
             ///try to find a selected edge
             for (NodeGuiList::reverse_iterator it = _imp->_nodes.rbegin(); it != _imp->_nodes.rend(); ++it) {
-                Edge* bendPointEdge = (*it)->hasBendPointNearbyPoint(_imp->_lastScenePosClick);
+                Edge* bendPointEdge = (*it)->hasBendPointNearbyPoint(lastMousePosScene);
+
                 if (bendPointEdge) {
                     selectedBendPoint = bendPointEdge;
                     break;
                 }
-                Edge* edge = (*it)->hasEdgeNearbyPoint(_imp->_lastScenePosClick);
+                Edge* edge = (*it)->hasEdgeNearbyPoint(lastMousePosScene);
                 if (edge) {
                     selectedEdge = edge;
                 }
@@ -1151,7 +1154,8 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
         
         _imp->_gui->getApp()->getProject()->connectNodes(inputNb,dotNode,outputNode.get());
         
-        QPointF pos = dotNodeGui->mapToParent( dotNodeGui->mapFromScene(_imp->_lastScenePosClick) );
+        QPointF pos = dotNodeGui->mapToParent( dotNodeGui->mapFromScene(lastMousePosScene) );
+
         dotNodeGui->refreshPosition( pos.x(), pos.y() );
         if ( !dotNodeGui->getIsSelected() ) {
             selectNode( dotNodeGui, modCASIsShift(e) );
@@ -1196,8 +1200,8 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
                 deselect();
             }
             _imp->_evtState = eEventStateSelectionRect;
-            _imp->_lastSelectionStartPoint = _imp->_lastScenePosClick;
-            QPointF clickPos = _imp->_selectionRect->mapFromScene(_imp->_lastScenePosClick);
+            _imp->_lastSelectionStartPoint = _imp->_lastMousePos;
+            QPointF clickPos = _imp->_selectionRect->mapFromScene(lastMousePosScene);
             _imp->_selectionRect->setRect(clickPos.x(), clickPos.y(), 0, 0);
             _imp->_selectionRect->show();
         } else if ( buttonDownIsMiddle(e) ) {
@@ -1506,8 +1510,6 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
         _imp->_selectionRect->hide();
         _imp->editSelectionFromSelectionRectangle( modCASIsShift(e) );
     }
-    scene()->update();
-    update();
     setCursor( QCursor(Qt::ArrowCursor) );
 } // mouseReleaseEvent
 
@@ -1515,12 +1517,14 @@ void
 NodeGraph::mouseMoveEvent(QMouseEvent* e)
 {
     QPointF newPos = mapToScene( e->pos() );
-    double dx = _imp->_root->mapFromScene(newPos).x() - _imp->_root->mapFromScene(_imp->_lastScenePosClick).x();
-    double dy = _imp->_root->mapFromScene(newPos).y() - _imp->_root->mapFromScene(_imp->_lastScenePosClick).y();
+    
+    QPointF lastMousePosScene = mapToScene(_imp->_lastMousePos.x(),_imp->_lastMousePos.y());
+    
+    double dx = _imp->_root->mapFromScene(newPos).x() - _imp->_root->mapFromScene(lastMousePosScene).x();
+    double dy = _imp->_root->mapFromScene(newPos).y() - _imp->_root->mapFromScene(lastMousePosScene).y();
 
     _imp->_hasMovedOnce = true;
 
-    
     QRectF sceneR = visibleSceneRect();
     if (_imp->_evtState != eEventStateSelectionRect && _imp->_evtState != eEventStateDraggingArrow) {
         ///set cursor
@@ -1617,8 +1621,8 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
 
             mustUpdateNavigator = true;
             pushUndoCommand( new MoveMultipleNodesCommand(nodesToMove,
-                                                          newPos.x() - _imp->_lastScenePosClick.x(),
-                                                          newPos.y() - _imp->_lastScenePosClick.y(),
+                                                          newPos.x() - lastMousePosScene.x(),
+                                                          newPos.y() - lastMousePosScene.y(),
                                                           _imp->_mergeMoveCommands,
                                                           newPos) );
             if (!_imp->_mergeMoveCommands) {
@@ -1831,7 +1835,8 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
         break;
     }
     case eEventStateSelectionRect: {
-        QPointF startDrag = _imp->_selectionRect->mapFromScene(_imp->_lastSelectionStartPoint);
+        QPointF lastSelectionScene = mapToScene(_imp->_lastSelectionStartPoint);
+        QPointF startDrag = _imp->_selectionRect->mapFromScene(lastSelectionScene);
         QPointF cur = _imp->_selectionRect->mapFromScene(newPos);
         double xmin = std::min( cur.x(),startDrag.x() );
         double xmax = std::max( cur.x(),startDrag.x() );
@@ -1846,27 +1851,31 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
         if (insideNavigator) {
             _imp->_refreshOverlays = true;
             centerOn(mousePosSceneCoordinates);
-            _imp->_lastScenePosClick = newPos;
+            _imp->_lastMousePos = e->pos();
             return;
         }
+        
     } break;
-        case eEventStateZoomingArea: {
-            QPoint lastPos = mapFromScene(_imp->_lastScenePosClick);
+    case eEventStateZoomingArea: {
+            QPoint lastPos = mapFromScene(lastMousePosScene);
             int delta = 2*((e->x() - lastPos.x()) - (e->y() - lastPos.y()));
+            setTransformationAnchor(QGraphicsView::AnchorViewCenter);
             wheelEventInternal(modCASIsControl(e),delta);
-        } break;
+            setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
+            return;
+    } break;
     default:
         break;
     } // switch
 
     
-    _imp->_lastScenePosClick = newPos;
+    _imp->_lastMousePos = e->pos();
 
     if (mustUpdateNavigator) {
         _imp->_refreshOverlays = true;
     }
 
-    update();
+    //update();
     QGraphicsView::mouseMoveEvent(e);
 } // mouseMoveEvent
 
@@ -1907,12 +1916,15 @@ NodeGraphPrivate::editSelectionFromSelectionRectangle(bool addToSelection)
 void
 NodeGraph::mouseDoubleClickEvent(QMouseEvent* /*e*/)
 {
+    
+    QPointF lastMousePosScene = mapToScene(_imp->_lastMousePos);
+
     NodeGuiList nodes = getAllActiveNodes_mt_safe();
     
     ///Matches sorted by depth
     std::map<double,NodeGuiPtr> matches;
     for (NodeGuiList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        QPointF evpt = (*it)->mapFromScene(_imp->_lastScenePosClick);
+        QPointF evpt = (*it)->mapFromScene(lastMousePosScene);
         if ( (*it)->isVisible() && (*it)->isActive() && (*it)->contains(evpt) && (*it)->getSettingPanel() ) {
             matches.insert(std::make_pair((*it)->zValue(), *it));
         }
@@ -1944,6 +1956,7 @@ NodeGraph::mouseDoubleClickEvent(QMouseEvent* /*e*/)
                     isParentTab = dynamic_cast<TabWidget*>(lastSelectedGraph->parentWidget());
                     assert(isParentTab);
                     isParentTab->setCurrentWidget(graph);
+
                 }
                 QTimer::singleShot(25, graph, SLOT(centerOnAllNodes()));
             }
@@ -2412,7 +2425,7 @@ NodeGraph::wheelEventInternal(bool ctrlDown,double delta)
         _imp->_accumDelta += delta;
         if (std::abs(_imp->_accumDelta) > 60) {
             scaleFactor = pow( NATRON_WHEEL_ZOOM_PER_DELTA, _imp->_accumDelta );
-            setSceneRect(NATRON_SCENE_MIN,NATRON_SCENE_MIN,NATRON_SCENE_MAX,NATRON_SCENE_MAX);
+           // setSceneRect(NATRON_SCENE_MIN,NATRON_SCENE_MIN,NATRON_SCENE_MAX,NATRON_SCENE_MAX);
             scale(scaleFactor,scaleFactor);
             _imp->_accumDelta = 0;
         }
@@ -2428,10 +2441,8 @@ NodeGraph::wheelEvent(QWheelEvent* e)
     if (e->orientation() != Qt::Vertical) {
         return;
     }
-    QPointF newPos = mapToScene( e->pos() );
-    
     wheelEventInternal(modCASIsControl(e), e->delta());
-    _imp->_lastScenePosClick = newPos;
+    _imp->_lastMousePos = e->pos();
 }
 
 void
@@ -3603,7 +3614,14 @@ NodeGraph::deleteNodepluginsly(boost::shared_ptr<NodeGui> n)
     n->discardGraphPointer();
 
     if ( getGui() ) {
-        getGui()->removeRotoInterface(n.get(),true);
+        
+        if ( internalNode->isRotoNode() ) {
+            getGui()->removeRotoInterface(n.get(),true);
+        }
+        
+        if (internalNode->isTrackerNode()) {
+            getGui()->removeTrackerInterface(n.get(), true);
+        }
 
         ///now that we made the command dirty, delete the node everywhere in Natron
         getGui()->getApp()->deleteNode(n);
@@ -3817,11 +3835,12 @@ NodeGraph::onTimeChanged(SequenceTime time,
         }
         (*it)->refreshKnobsAfterTimeChange(time);
     }
-    Natron::OutputEffectInstance* lastTimelineSeekCaller = project->getLastTimelineSeekCaller();
+    
+    ViewerInstance* leadViewer = getGui()->getApp()->getLastViewerUsingTimeline();
 
     ///Syncrhronize viewers
     for (U32 i = 0; i < viewers.size(); ++i) {
-        if ( (viewers[i] != lastTimelineSeekCaller) || (reason == eTimelineChangeReasonUserSeek) ) {
+        if ( (viewers[i] != leadViewer) || (reason == eTimelineChangeReasonUserSeek) ) {
             viewers[i]->renderCurrentFrame(reason != eTimelineChangeReasonPlaybackSeek);
         }
     }

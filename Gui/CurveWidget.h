@@ -36,6 +36,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/OverlaySupport.h"
 #include "Engine/Curve.h"
 
+class CurveSelection;
 class QFont;
 class Variant;
 class TimeLine;
@@ -239,6 +240,7 @@ private:
     boost::shared_ptr<RotoContext> _rotoContext;
 };
 
+
 class QMenu;
 class CurveWidgetPrivate;
 
@@ -254,6 +256,7 @@ public:
 
     /*Pass a null timeline ptr if you don't want interaction with the global timeline. */
     CurveWidget(Gui* gui,
+                CurveSelection* selection,
                 boost::shared_ptr<TimeLine> timeline = boost::shared_ptr<TimeLine>(),
                 QWidget* parent = NULL,
                 const QGLWidget* shareWidget = NULL);
@@ -351,7 +354,7 @@ public Q_SLOTS:
 
     void onTimeLineFrameChanged(SequenceTime time, int reason);
 
-    void onTimeLineBoundariesChanged(SequenceTime left, SequenceTime right, int);
+    void onTimeLineBoundariesChanged(int,int);
 
     void onCurveChanged();
 

@@ -78,7 +78,6 @@ ProjectGuiSerialization::initialize(const ProjectGui* projectGui)
                 viewerData.mipMapLevel = tab->getMipMapLevel();
                 viewerData.zoomOrPanSinceLastFit = tab->getZoomOrPannedSinceLastFit();
                 viewerData.wipeCompositingOp = (int)tab->getCompositingOperator();
-                viewerData.frameRangeLocked = tab->isFrameRangeLocked();
                 viewerData.leftToolbarVisible = tab->isLeftToolbarVisible();
                 viewerData.rightToolbarVisible = tab->isRightToolbarVisible();
                 viewerData.topToolbarVisible = tab->isTopToolbarVisible();
@@ -89,6 +88,8 @@ ProjectGuiSerialization::initialize(const ProjectGui* projectGui)
                 viewerData.fps = tab->getDesiredFps();
                 viewerData.fpsLocked = tab->isFPSLocked();
                 _viewersData.insert( std::make_pair(viewer->getNode()->getScriptName_mt_safe(),viewerData) );
+                tab->getTimelineBounds(&viewerData.leftBound, &viewerData.rightBound);
+
             }
         }
     }

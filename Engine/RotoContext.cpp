@@ -435,7 +435,7 @@ BezierCP::isNearbyTangent(int time,
     return -1;
 }
 
-#define TANGENTS_CUSP_LIMIT 50
+#define TANGENTS_CUSP_LIMIT 25
 namespace {
 static void
 cuspTangent(double x,
@@ -454,8 +454,8 @@ cuspTangent(double x,
         *tx = x;
         *ty = y;
     } else {
-        double newDx = 0.75 * dx ;
-        double newDy = 0.75 * dy;
+        double newDx = 0.9 * dx ;
+        double newDy = 0.9 * dy;
         *tx = x + newDx;
         *ty = y + newDy;
     }
@@ -539,8 +539,8 @@ smoothTangent(int time,
             dx = (dx < 0 ? -TANGENTS_CUSP_LIMIT : TANGENTS_CUSP_LIMIT) * pixelScale.first;
             dy = (dy < 0 ? -TANGENTS_CUSP_LIMIT : TANGENTS_CUSP_LIMIT) * pixelScale.second;
         }
-        newDx = dx * 1.25;
-        newDy = dy * 1.25;
+        newDx = dx * 1.1;
+        newDy = dy * 1.1;
 
         *tx = x + newDx;
         *ty = y + newDy;
@@ -1113,6 +1113,8 @@ RotoDrawableItem::clone(const RotoItem* other)
         _imp->feather->clone( otherDrawable->_imp->feather.get() );
         _imp->featherFallOff->clone( otherDrawable->_imp->featherFallOff.get() );
         _imp->opacity->clone( otherDrawable->_imp->opacity.get() );
+        _imp->color->clone(otherDrawable->_imp->color.get());
+        _imp->compOperator->clone(otherDrawable->_imp->compOperator.get());
 #ifdef NATRON_ROTO_INVERTIBLE
         _imp->inverted->clone( otherDrawable->_imp->inverted.get() );
 #endif
@@ -4844,7 +4846,7 @@ RotoContext::goToPreviousKeyframe()
     }
 
     if (minimum != INT_MIN) {
-        getNode()->getApp()->getTimeLine()->seekFrame(minimum, NULL, Natron::eTimelineChangeReasonPlaybackSeek);
+        getNode()->getApp()->getTimeLine()->seekFrame(minimum, false,  NULL, Natron::eTimelineChangeReasonPlaybackSeek);
     }
 }
 
@@ -4876,7 +4878,7 @@ RotoContext::goToNextKeyframe()
         }
     }
     if (maximum != INT_MAX) {
-        getNode()->getApp()->getTimeLine()->seekFrame(maximum, NULL,Natron::eTimelineChangeReasonPlaybackSeek);
+        getNode()->getApp()->getTimeLine()->seekFrame(maximum, false, NULL,Natron::eTimelineChangeReasonPlaybackSeek);
     }
 }
 
@@ -5233,7 +5235,7 @@ RotoContext::renderMask(bool useCache,
     if (!byPassCache) {
 
         getNode()->getLiveInstance()->getImageFromCacheAndConvertIfNeeded(useCache, false,  key, mipmapLevel, depth, components,
-                                                                           depth, components, 3,/*nodeRoD,*/inputImages,&image);
+                                                                           depth, components,roi,inputImages,&image);
         if (image) {
             params = image->getParams();
         }

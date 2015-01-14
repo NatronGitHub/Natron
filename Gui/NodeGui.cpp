@@ -963,6 +963,7 @@ NodeGui::initializeInputs()
     ///Make new edge for all non existing inputs
     boost::shared_ptr<NodeGui> thisShared = shared_from_this();
     
+    int inputsCount = 0;
     int emptyInputsCount = 0;
     for (U32 i = 0; i < inputs.size(); ++i) {
         Edge* edge = new Edge( i,0.,thisShared,parentItem());
@@ -976,11 +977,13 @@ NodeGui::initializeInputs()
             boost::shared_ptr<NodeGui> gui = boost::dynamic_pointer_cast<NodeGui>(gui_i);
             assert(gui);
             edge->setSource(gui);
-        } else {
-            if (!node->getLiveInstance()->isInputMask(i) &&
-                !node->getLiveInstance()->isInputRotoBrush(i)) {
+        }
+        if (!node->getLiveInstance()->isInputMask(i) &&
+            !node->getLiveInstance()->isInputRotoBrush(i)) {
+            if (!inputs[i]) {
                 ++emptyInputsCount;
             }
+            ++inputsCount;
         }
         _inputEdges.push_back(edge);
 
@@ -1005,13 +1008,12 @@ NodeGui::initializeInputs()
     }
 
 
-    double piDividedbyX = M_PI / (emptyInputsCount + 1);
+    double piDividedbyX = M_PI / (inputsCount + 1);
     double angle = M_PI - piDividedbyX;
   
     int maskIndex = 0;
     for (U32 i = 0; i < _inputEdges.size(); ++i) {
-        if (!_inputEdges[i]->hasSource() &&
-            !node->getLiveInstance()->isInputRotoBrush(i)) {
+        if (!node->getLiveInstance()->isInputRotoBrush(i)) {
             double edgeAngle;
             bool decrAngle = true;
             if (node->getLiveInstance()->isInputMask(i)) {
@@ -1033,7 +1035,9 @@ NodeGui::initializeInputs()
             if (decrAngle) {
                 angle -= piDividedbyX;
             }
-            _inputEdges[i]->initLine();
+            if (!_inputEdges[i]->hasSource()) {
+                _inputEdges[i]->initLine();
+            }
         }
     }
 } // initializeInputs

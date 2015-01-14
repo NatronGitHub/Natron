@@ -1186,12 +1186,21 @@ MultiInstancePanel::onItemDataChanged(TableItem* item)
     if (modelIndex.column() == 0) {
         return;
     }
+    
     int time = getApp()->getTimeLine()->currentFrame();
     
     assert( modelIndex.row() < (int)_imp->instances.size() );
     Nodes::iterator nIt = _imp->instances.begin();
     std::advance( nIt, modelIndex.row() );
-    const std::vector<boost::shared_ptr<KnobI> > & knobs = nIt->first.lock()->getKnobs();
+
+    boost::shared_ptr<Natron::Node> node = nIt->first.lock();
+    assert(node);
+    const std::vector<boost::shared_ptr<KnobI> > & knobs = node->getKnobs();
+
+    if (modelIndex.column() == 1) {
+        node->setLabel(data.toString().toStdString());
+    }
+    
     int instanceSpecificIndex = 1; //< 1 because we skip the enable cell
     for (U32 i = 0; i < knobs.size(); ++i) {
         if ( knobs[i]->isInstanceSpecific() ) {
@@ -1895,9 +1904,10 @@ TrackerPanel::trackBackward()
         return false;
     }
     
-    boost::shared_ptr<TimeLine> timeline = getApp()->getTimeLine();
-    int end = timeline->leftBound() - 1;
-    int start = timeline->currentFrame();
+    int leftBound,rightBound;
+    getApp()->getFrameRange(&leftBound, &rightBound);
+    int end = leftBound - 1;
+    int start = getApp()->getTimeLine()->currentFrame();
     
     _imp->scheduler.track(start, end, false, instanceButtons);
     
@@ -1914,9 +1924,11 @@ TrackerPanel::trackForward()
     if (!_imp->getTrackInstancesForButton(&instanceButtons, kTrackNextButtonName)) {
         return false;
     }
-    
+   
+    int leftBound,rightBound;
+    getApp()->getFrameRange(&leftBound, &rightBound);
     boost::shared_ptr<TimeLine> timeline = getApp()->getTimeLine();
-    int end = timeline->rightBound() + 1;
+    int end = rightBound + 1;
     int start = timeline->currentFrame();
     
     _imp->scheduler.track(start, end, true, instanceButtons);
@@ -2376,7 +2388,7 @@ TrackScheduler::run()
             ///Ok all tracks are finished now for this frame, refresh viewer if needed
             bool updateViewer = _imp->panel->isUpdateViewerOnTrackingEnabled();
             if (updateViewer) {
-                timeline->seekFrame(cur, NULL, Natron::eTimelineChangeReasonPlaybackSeek);
+                timeline->seekFrame(cur, false, 0, Natron::eTimelineChangeReasonPlaybackSeek);
             }
 
             if (reportProgress) {

@@ -33,7 +33,7 @@
 #include "Engine/Settings.h"
 
 namespace Natron {
-    ProjectPrivate::ProjectPrivate(Natron::Project* project)
+ProjectPrivate::ProjectPrivate(Natron::Project* project)
     : _publicInterface(project)
     , projectLock()
     , projectName("Untitled." NATRON_PROJECT_FILE_EXT)
@@ -62,7 +62,6 @@ namespace Natron {
     , onProjectCloseCB()
     , timeline( new TimeLine(project) )
     , autoSetProjectFormat(appPTR->getCurrentSettings()->isAutoProjectFormatEnabled())
-    , lastTimelineSeekCaller()
     , isLoadingProjectMutex()
     , isLoadingProject(false)
     , isLoadingProjectInternal(false)
@@ -71,8 +70,10 @@ namespace Natron {
     , autoSaveTimer( new QTimer() )
     , projectClosing(false)
     
-    {
-        autoSaveTimer->setSingleShot(true);
+{
+    
+    autoSaveTimer->setSingleShot(true);
+
 }
 
 bool
@@ -153,8 +154,7 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
     }
 
     /// 2) restore the timeline
-    timeline->setBoundaries( obj.getLeftBoundTime(), obj.getRightBoundTime() );
-    timeline->seekFrame(obj.getCurrentTime(),NULL,Natron::eTimelineChangeReasonPlaybackSeek);
+    timeline->seekFrame(obj.getCurrentTime(), false, 0, Natron::eTimelineChangeReasonPlaybackSeek);
 
     ///On our tests restoring nodes + connections takes approximatively 20% of loading time of a project, hence we update progress
     ///for each node of 0.2 / nbNodes
@@ -206,6 +206,10 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
     ageSinceLastSave = time;
     lastAutoSave = time;
     _publicInterface->getApp()->setProjectWasCreatedWithLowerCaseIDs(false);
+    
+    if (obj.getVersion() < PROJECT_SERIALIZATION_REMOVES_TIMELINE_BOUNDS) {
+        _publicInterface->recomputeFrameRangeFromReaders();
+    }
     
     return ok;
 

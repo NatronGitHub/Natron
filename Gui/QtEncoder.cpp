@@ -111,8 +111,7 @@ QtWriter::getFrameRange(SequenceTime *first,
             *last = 0;
         }
     } else if (index == 1) {
-        *first = getApp()->getTimeLine()->leftBound();
-        *last = getApp()->getTimeLine()->rightBound();
+        getApp()->getFrameRange(first, last);
     } else {
         *first = _firstFrameKnob->getValue();
         *last = _lastFrameKnob->getValue();
@@ -167,8 +166,8 @@ QtWriter::knobChanged(KnobI* k,
             _firstFrameKnob->setSecret(true);
             _lastFrameKnob->setSecret(true);
         } else {
-            int first = getApp()->getTimeLine()->firstFrame();
-            int last = getApp()->getTimeLine()->lastFrame();
+            int first,last;
+            getApp()->getFrameRange(&first, &last);
             _firstFrameKnob->setValue(first,0);
             _firstFrameKnob->setDisplayMinimum(first);
             _firstFrameKnob->setDisplayMaximum(last);

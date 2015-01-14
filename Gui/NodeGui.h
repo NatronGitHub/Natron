@@ -297,7 +297,12 @@ public:
 
     void setParentMultiInstance(const boost::shared_ptr<NodeGui> & parent);
 
-
+    boost::shared_ptr<NodeGui> getParentMultiInstance() const
+    {
+        return _parentMultiInstance.lock();
+    }
+    
+    
     void setKnobLinksVisible(bool visible);
     
     /**
@@ -345,6 +350,7 @@ protected:
     virtual void resizeExtraContent(int /*w*/,int /*h*/,bool /*forceResize*/) {}
     
 public Q_SLOTS:
+
 
     void onSettingsPanelClosed(bool closed);
     

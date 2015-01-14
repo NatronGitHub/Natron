@@ -288,6 +288,7 @@ struct EffectInstance::RenderArgs
     , _firstFrame(o._firstFrame)
     , _lastFrame(o._lastFrame)
     {
+        assert(_outputImage);
     }
 };
 
@@ -541,7 +542,7 @@ struct EffectInstance::Implementation
             args._firstFrame = firstFrame;
             args._lastFrame = lastFrame;
             args._validArgs = true;
-            _dst->setLocalData(args);
+            _dst->localData() = args;
 
         }
         
@@ -559,8 +560,9 @@ struct EffectInstance::Implementation
             : args(a)
               , _dst(dst)
         {
+            RenderArgs& tls = _dst->localData();
             args._validArgs = true;
-            _dst->setLocalData(args);
+            tls = args;
         }
 
         ~ScopedRenderArgs()
@@ -568,7 +570,9 @@ struct EffectInstance::Implementation
             assert( _dst->hasLocalData() );
             args._outputImage.reset();
             args._validArgs = false;
-            _dst->setLocalData(args);
+            RenderArgs& tls = _dst->localData();
+            tls._outputImage.reset();
+            tls._validArgs = false;
         }
 
         /**
@@ -592,6 +596,7 @@ struct EffectInstance::Implementation
                                int inputNbIdentity,
                                const boost::shared_ptr<Image>& outputImage)
         {
+            assert(outputImage);
             args._rod = rod;
             args._renderWindowPixel = renderWindow;
             args._time = time;
@@ -602,7 +607,7 @@ struct EffectInstance::Implementation
             args._identityInputNb = inputNbIdentity;
             args._outputImage = outputImage;
             args._validArgs = true;
-            _dst->setLocalData(args);
+            _dst->localData() = args;
         }
         
         void setArgs_secondPass(const RoIMap & roiMap,
@@ -612,7 +617,7 @@ struct EffectInstance::Implementation
             args._firstFrame = firstFrame;
             args._lastFrame = lastFrame;
             args._validArgs = true;
-            _dst->setLocalData(args);
+            _dst->localData() = args;
         }
         
 
@@ -641,12 +646,8 @@ public:
     : storage(storage)
     {
         if (!imgs.empty()) {
-            if (storage->hasLocalData()) {
-                std::list<boost::shared_ptr<Natron::Image> >& data = storage->localData();
-                data.insert(data.begin(), imgs.begin(),imgs.end());
-            } else {
-                storage->setLocalData(imgs);
-            }
+            std::list<boost::shared_ptr<Natron::Image> >& data = storage->localData();
+            data.insert(data.begin(), imgs.begin(),imgs.end());
         } else {
             this->storage = 0;
         }
@@ -1494,8 +1495,7 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool useCache,
                                                     Natron::ImageComponentsEnum components,
                                                     Natron::ImageBitDepthEnum nodePrefDepth,
                                                     Natron::ImageComponentsEnum nodePrefComps,
-                                                    int /*channelForAlpha*/,
-                                                    /*const RectD& rod,*/
+                                                    const RectI& renderWindow,
                                                     const std::list<boost::shared_ptr<Natron::Image> >& inputImages,
                                                     boost::shared_ptr<Natron::Image>* image)
 {
@@ -1579,6 +1579,7 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool useCache,
         
         if (imageToConvert && !*image) {
 
+            
             //Take the lock after getting the image from the cache
             ///to make sure a thread will not attempt to write to the image while its being allocated.
             ///When calling allocateMemory() on the image, the cache already has the lock since it added it
@@ -1597,6 +1598,10 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool useCache,
                                                                                oldParams->getComponents(),
                                                                                oldParams->getBitDepth(),
                                                                                oldParams->getFramesNeeded());
+                
+                if (!imageParams->getBounds().contains(renderWindow)) {
+                    return;
+                }
                 
                 imageParams->setMipMapLevel(mipMapLevel);
                 
@@ -2043,7 +2048,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
     
     bool isBeingRenderedElsewhere = false;
     getImageFromCacheAndConvertIfNeeded(createInCache, useDiskCacheNode, key, renderMappedMipMapLevel,args.bitdepth, args.components,
-                                        outputDepth, outputComponents,args.channelForAlpha,/*rod,*/args.inputImagesList, &image);
+                                        outputDepth, outputComponents,args.roi,args.inputImagesList, &image);
 
     
     if (byPassCache) {
@@ -2212,7 +2217,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
         getImageFromCacheAndConvertIfNeeded(createInCache, useDiskCacheNode, key, renderMappedMipMapLevel,
                                             args.bitdepth, args.components,
                                             outputDepth,outputComponents,
-                                            args.channelForAlpha,/*rod,*/args.inputImagesList, &image);
+                                            args.roi,args.inputImagesList, &image);
         if (image) {
             cachedImgParams = image->getParams();
             ///We check what is left to render.
@@ -4083,6 +4088,7 @@ EffectInstance::getThreadLocalRenderedImage(boost::shared_ptr<Natron::Image>* im
     if (_imp->renderArgs.hasLocalData()) {
         const RenderArgs& args = _imp->renderArgs.localData();
         if (args._validArgs) {
+            assert(args._outputImage);
             *image = args._outputImage;
             *renderWindow = args._renderWindowPixel;
             return true;
@@ -4133,6 +4139,7 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
 
     NodePtr node = getNode();
     node->onEffectKnobValueChanged(k, reason);
+
     
     KnobHelper* kh = dynamic_cast<KnobHelper*>(k);
     assert(kh);

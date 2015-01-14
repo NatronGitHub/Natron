@@ -598,6 +598,7 @@ public Q_SLOTS:
     void onNextTabTriggered();
     
     void onCloseTabTriggered();
+
 private:
 
     /**

@@ -138,23 +138,9 @@ public:
 
     boost::shared_ptr<TimeLine> getTimeLine() const WARN_UNUSED_RETURN;
 
-    // TimeLine operations (to avoid duplicating the shared_ptr when possible)
-    void setFrameRange(int first, int last);
-
     int currentFrame() const WARN_UNUSED_RETURN;
 
-    int firstFrame() const WARN_UNUSED_RETURN;
-
-    int lastFrame() const WARN_UNUSED_RETURN;
-
-    int leftBound() const WARN_UNUSED_RETURN;
-
-    int rightBound() const WARN_UNUSED_RETURN;
-
-
-    void setLastTimelineSeekCaller(Natron::OutputEffectInstance* output);
-    Natron::OutputEffectInstance* getLastTimelineSeekCaller() const;
-
+    void ensureAllProcessingThreadsFinished();
 
     /**
      * @brief Returns true if the project is considered as irrelevant and shouldn't be autosaved anyway.
@@ -254,7 +240,16 @@ public:
     std::string getOnNodeDeleteCB() const;
     
     bool isProjectClosing() const;
-public Q_SLOTS:
+
+    bool isFrameRangeLocked() const;
+    
+    void getFrameRange(int* first,int* last) const;
+    
+    void unionFrameRangeWith(int first,int last);
+    
+    void recomputeFrameRangeFromReaders();
+    
+    public Q_SLOTS:
 
     void onAutoSaveTimerTriggered();
 
@@ -271,6 +266,8 @@ Q_SIGNALS:
     void mustCreateFormat();
 
     void formatChanged(Format);
+    
+    void frameRangeChanged(int,int);
 
     void autoPreviewChanged(bool);
 

@@ -39,6 +39,7 @@ class TimeLine;
 struct AppInstancePrivate;
 class KnobSerialization;
 class KnobHolder;
+class ViewerInstance;
 class ProcessHandler;
 class NodeCollection;
 namespace Natron {
@@ -316,8 +317,13 @@ public:
     
     virtual void appendToScriptEditor(const std::string& str);
     
+    void getFrameRange(int* first,int* last) const;
+    
+    virtual void setLastViewerUsingTimeline(const boost::shared_ptr<Natron::Node>& /*node*/) {}
+    
+    virtual ViewerInstance* getLastViewerUsingTimeline() const { return 0; }
+    
 public Q_SLOTS:
-
 
 
     void quit();

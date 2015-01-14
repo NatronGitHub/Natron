@@ -192,6 +192,10 @@ public:
     void updatePersistentMessage();
     void updatePersistentMessageToWidth(int w);
     
+
+    virtual void getViewerFrameRange(int* first,int* last) const OVERRIDE FINAL;
+    
+
 public Q_SLOTS:
 
 
@@ -223,8 +227,28 @@ public Q_SLOTS:
     void clearColorBuffer(double r = 0.,double g = 0.,double b = 0.,double a = 1.);
 
     void toggleOverlays();
+    
+    void toggleWipe();
 
     void onProjectFormatChanged(const Format & format);
+    
+    void onCheckerboardSettingsChanged();
+
+    
+    /**
+     * @brief Reset the wipe position so it is in the center of the B input.
+     * If B input is disconnected it goes in the middle of the A input.
+     * Otherwise it goes in the middle of the project window
+     **/
+    void resetWipeControls();
+    
+    void clearLastRenderedTexture();
+    
+private:
+    
+    void onProjectFormatChangedInternal(const Format & format,bool triggerRender);
+public:
+    
 
     virtual void makeOpenGLcontextCurrent() OVERRIDE FINAL;
     virtual void onViewerNodeNameChanged(const QString & name) OVERRIDE FINAL;
@@ -233,16 +257,6 @@ public Q_SLOTS:
     
     virtual boost::shared_ptr<TimeLine> getTimeline() const OVERRIDE FINAL;
 
-    /**
-     * @brief Reset the wipe position so it is in the center of the B input.
-     * If B input is disconnected it goes in the middle of the A input.
-     * Otherwise it goes in the middle of the project window
-     **/
-    void resetWipeControls();
-
-    void onCheckerboardSettingsChanged();
-    
-    void clearLastRenderedTexture();
 
 public:
 
@@ -301,7 +315,6 @@ public:
     bool getZoomOrPannedSinceLastFit() const;
 
     virtual Natron::ViewerCompositingOperatorEnum getCompositingOperator() const OVERRIDE FINAL;
-    virtual bool isFrameRangeLocked() const OVERRIDE FINAL;
 
     ///Not MT-Safe
     void getSelectionRectangle(double &left,double &right,double &bottom,double &top) const;
@@ -318,9 +331,11 @@ public:
     
     /**
      * @brief Called by the Histogram when it wants to refresh. It returns a pointer to the last
-     * rendered image by the viewer.
+     * rendered image by the viewer. It doesn't re-render the image if it is not present.
      **/
     boost::shared_ptr<Natron::Image> getLastRenderedImage(int textureIndex) const;
+    
+    boost::shared_ptr<Natron::Image> getLastRenderedImageByMipMapLevel(int textureIndex,unsigned int mipMapLevel) const;
 
     /**
      * @brief Get the color of the currently displayed image at position x,y.

@@ -59,14 +59,19 @@ struct GuiAppInstancePrivate
 
     boost::shared_ptr<FileDialogPreviewProvider> _previewProvider;
 
+    mutable QMutex lastTimelineViewerMutex;
+    boost::shared_ptr<Natron::Node> lastTimelineViewer;
+    
     GuiAppInstancePrivate()
-        : _gui(NULL)
-          , _activeBgProcesses()
-          , _activeBgProcessesMutex()
-          , _isClosing(false)
-          , _showingDialog(false)
-          , _showingDialogMutex()
-          , _previewProvider(new FileDialogPreviewProvider)
+    : _gui(NULL)
+    , _activeBgProcesses()
+    , _activeBgProcessesMutex()
+    , _isClosing(false)
+    , _showingDialog(false)
+    , _showingDialogMutex()
+    , _previewProvider(new FileDialogPreviewProvider)
+    , lastTimelineViewerMutex()
+    , lastTimelineViewer()
     {
     }
     
@@ -101,7 +106,7 @@ GuiAppInstance::deletePreviewProvider()
             assert(liveInstance);
             node->deactivate(std::list< Natron::Node* > (),false,false,true,false);
             liveInstance->invalidateUiContext();
-            node->removeReferences();
+            node->removeReferences(false);
             _imp->_previewProvider->viewerNode->deleteReferences();
             _imp->_previewProvider->viewerNodeInternal.reset();
         }
@@ -109,7 +114,7 @@ GuiAppInstance::deletePreviewProvider()
         for (std::map<std::string,std::pair< boost::shared_ptr<Natron::Node>, boost::shared_ptr<NodeGui> > >::iterator it =
              _imp->_previewProvider->readerNodes.begin();
              it != _imp->_previewProvider->readerNodes.end(); ++it) {
-            it->second.first->removeReferences();
+            it->second.second->getNode()->removeReferences(false);
             it->second.second->deleteReferences();
         }
         _imp->_previewProvider->readerNodes.clear();
@@ -360,7 +365,7 @@ GuiAppInstance::deleteNode(const boost::shared_ptr<NodeGui> & n)
         boost::shared_ptr<Natron::Node> internalNode = n->getNode();
         if (internalNode) {
             getProject()->removeNode(internalNode);
-            internalNode->removeReferences();
+            internalNode->removeReferences(true);
         }
     }
 }
@@ -569,11 +574,13 @@ GuiAppInstance::startRenderingFullSequence(const AppInstance::RenderWork& w,bool
     if (w.firstFrame == INT_MIN || w.lastFrame == INT_MAX) {
         w.writer->getFrameRange_public(w.writer->getHash(),&firstFrame, &lastFrame, true);
         //if firstframe and lastframe are infinite clamp them to the timeline bounds
+        int projectFirst,projectLast;
+        getFrameRange(&projectFirst, &projectLast);
         if (firstFrame == INT_MIN) {
-            firstFrame = getTimeLine()->firstFrame();
+            firstFrame = projectFirst;
         }
         if (lastFrame == INT_MAX) {
-            lastFrame = getTimeLine()->lastFrame();
+            lastFrame = projectLast;
         }
         if (firstFrame > lastFrame) {
             Natron::errorDialog( w.writer->getNode()->getLabel_mt_safe(),
@@ -764,4 +771,33 @@ void
 GuiAppInstance::appendToScriptEditor(const std::string& str)
 {
     _imp->_gui->appendToScriptEditor(str);
+}
+
+void
+GuiAppInstance::setLastViewerUsingTimeline(const boost::shared_ptr<Natron::Node>& node)
+{
+    assert(QThread::currentThread() == qApp->thread());
+    
+    if (dynamic_cast<ViewerInstance*>(node->getLiveInstance())) {
+        QMutexLocker k(&_imp->lastTimelineViewerMutex);
+        _imp->lastTimelineViewer = node;
+    }
+}
+
+ViewerInstance*
+GuiAppInstance::getLastViewerUsingTimeline() const
+{
+    QMutexLocker k(&_imp->lastTimelineViewerMutex);
+    if (!_imp->lastTimelineViewer) {
+        return 0;
+    }
+    return dynamic_cast<ViewerInstance*>(_imp->lastTimelineViewer->getLiveInstance());
+}
+
+void
+GuiAppInstance::discardLastViewerUsingTimeline()
+{
+ 
+    QMutexLocker k(&_imp->lastTimelineViewerMutex);
+    _imp->lastTimelineViewer.reset();
 }

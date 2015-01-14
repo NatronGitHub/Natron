@@ -34,6 +34,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Singleton.h"
 #include "Engine/Knob.h"
 
+#include "Gui/CurveSelection.h"
 #include "Gui/KnobGui.h"
 
 //Define this if you want the spinbox to clamp to the plugin defined range
@@ -780,6 +781,7 @@ private:
 /*****************************/
 class Parametric_KnobGui
     : public KnobGui
+    , public CurveSelection
 {
     Q_OBJECT
 
@@ -803,7 +805,11 @@ public:
     virtual ~Parametric_KnobGui() OVERRIDE;
     virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
 
+    virtual void getSelectedCurves(std::vector<CurveGui*>* selection) OVERRIDE FINAL;
+
+    
 public Q_SLOTS:
+
 
     void onCurveChanged(int dimension);
 

@@ -48,25 +48,31 @@ class BezierCP;
 class GuiAppInstance;
 struct RotoGuiSharedData;
 class RotoContext;
+
 class RotoToolButton
     : public QToolButton
 {
     Q_OBJECT
-
+    Q_PROPERTY(bool isSelected READ getIsSelected WRITE setIsSelected)
+    
 public:
 
     RotoToolButton(QWidget* parent);
 
-    virtual ~RotoToolButton()
-    {
-    }
+    virtual ~RotoToolButton();
+    
 
     void handleSelection();
 
+    bool getIsSelected() const;
+    void setIsSelected(bool s);
+    
 private:
 
     virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL;
     virtual void mouseReleaseEvent(QMouseEvent* e) OVERRIDE FINAL;
+    
+    bool isSelected;
 };
 
 class RotoGui
@@ -157,6 +163,8 @@ public:
     bool keyUp(double scaleX, double scaleY, QKeyEvent* e);
 
     bool keyRepeat(double scaleX, double scaleY, QKeyEvent* e);
+    
+    void focusOut();
 
     bool isStickySelectionEnabled() const;
 
@@ -234,6 +242,8 @@ public Q_SLOTS:
     void onRippleEditButtonClicked(bool);
 
     void onStickySelectionButtonClicked(bool);
+    
+    void onBboxClickButtonClicked(bool);
 
     void onAddKeyFrameClicked();
 
