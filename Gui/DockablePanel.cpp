@@ -1166,6 +1166,7 @@ DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI> & knob,
                     page->second.tabWidget->addTab(tab,parentTabName);
                 }
                 ret->createGUI(tabLayout,fieldContainer,label,fieldLayout,makeNewLine,knobsOnSameLine);
+                layout = tabLayout;
             } else {
                 ///fill the fieldLayout with the widgets
                 ret->createGUI(layout,fieldContainer,label,fieldLayout,makeNewLine,knobsOnSameLine);
