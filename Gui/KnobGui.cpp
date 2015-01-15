@@ -355,7 +355,8 @@ KnobGui::showRightClickMenuForDimension(const QPoint &,
 
     _imp->copyRightClickMenu->addSeparator();
 
-    bool isSlave = knob->isSlave(dimension);
+    bool isSlave = knob->isSlave(dimension) || !knob->getExpression(dimension).empty();
+    
     
     int dim = knob->getDimension();
     
@@ -400,39 +401,6 @@ KnobGui::showRightClickMenuForDimension(const QPoint &,
             _imp->copyRightClickMenu->addAction(linkToAction);
         }
         
-    } else if (isSlave) {
-        
-        EffectInstance* effect = dynamic_cast<EffectInstance*>(knob->getHolder());
-        if (effect) {
-            _imp->copyRightClickMenu->addSeparator();
-            QAction* unlinkAction = new QAction(tr("Unlink"),_imp->copyRightClickMenu);
-            unlinkAction->setData( QVariant(dimension) );
-            QObject::connect( unlinkAction,SIGNAL( triggered() ),this,SLOT( onUnlinkActionTriggered() ) );
-            _imp->copyRightClickMenu->addAction(unlinkAction);
-            
-            
-            ///a stub action just to indicate what is the master knob.
-            QAction* masterNameAction = new QAction("",_imp->copyRightClickMenu);
-            std::pair<int,boost::shared_ptr<KnobI> > master = knob->getMaster(dimension);
-            assert(master.second);
-            
-            ///find-out to which node that master knob belongs to
-            std::string nodeName("Linked to: ");
-            
-            
-            Natron::EffectInstance* masterEffect = dynamic_cast<Natron::EffectInstance*>(master.second->getHolder());
-            assert(masterEffect);
-            nodeName.append(masterEffect->getNode()->getFullyQualifiedName());
-            nodeName.append(".");
-            nodeName.append( master.second->getName() );
-            if (master.second->getDimension() > 1) {
-                nodeName.append(".");
-                nodeName.append( master.second->getDimensionName(master.first) );
-            }
-            masterNameAction->setText( nodeName.c_str() );
-            masterNameAction->setEnabled(false);
-            _imp->copyRightClickMenu->addAction(masterNameAction);
-        }
     }
 
     addRightClickMenuEntries(_imp->copyRightClickMenu);
@@ -1555,17 +1523,38 @@ KnobGui::onKnobSlavedChanged(int dimension,
 void
 KnobGui::linkTo(int dimension)
 {
+    
+    boost::shared_ptr<KnobI> thisKnob = getKnob();
+    assert(thisKnob);
+    Natron::EffectInstance* isEffect = dynamic_cast<Natron::EffectInstance*>(thisKnob->getHolder());
+    if (!isEffect) {
+        return;
+    }
+    
+    
+    for (int i = 0;i < thisKnob->getDimension(); ++i) {
+        
+        if (i == dimension || dimension == -1) {
+            std::string expr = thisKnob->getExpression(dimension);
+            if (!expr.empty()) {
+                errorDialog(tr("Param Link").toStdString(),tr("This parameter already has an expression set, edit or clear it.").toStdString());
+                return;
+            }
+        }
+    }
+    
     LinkToKnobDialog dialog( this,_imp->copyRightClickMenu->parentWidget() );
 
     if ( dialog.exec() ) {
-        boost::shared_ptr<KnobI> thisKnob = getKnob();
         boost::shared_ptr<KnobI>  otherKnob = dialog.getSelectedKnobs();
         if (otherKnob) {
             if ( !thisKnob->isTypeCompatible(otherKnob) ) {
-                errorDialog( tr("Knob Link").toStdString(), tr("Types incompatibles!").toStdString() );
+                errorDialog( tr("Param Link").toStdString(), tr("Types incompatibles!").toStdString() );
 
                 return;
             }
+            
+            
 
             for (int i = 0; i < thisKnob->getDimension(); ++i) {
                 std::pair<int,boost::shared_ptr<KnobI> > existingLink = thisKnob->getMaster(i);
@@ -1574,23 +1563,30 @@ KnobGui::linkTo(int dimension)
                     err.append( thisKnob->getDescription() );
                     err.append( " \n " + tr("because the knob is already linked to ").toStdString() );
                     err.append( existingLink.second->getDescription() );
-                    errorDialog(tr("Knob Link").toStdString(), err);
+                    errorDialog(tr("Param Link").toStdString(), err);
 
                     return;
                 }
+                
+            }
+            
+            Natron::EffectInstance* otherEffect = dynamic_cast<Natron::EffectInstance*>(otherKnob->getHolder());
+            if (!otherEffect) {
+                return;
+            }
+            std::stringstream expr;
+            expr << otherEffect->getNode()->getFullyQualifiedName() << "." << otherKnob->getName()
+            << ".get()";
+            if (otherKnob->getDimension() > 1) {
+                expr << "[dimension]";
+            }
+            
+            for (int i = 0; i < thisKnob->getDimension(); ++i) {
+                if (i == dimension || dimension == -1) {
+                    thisKnob->setExpression(dimension, expr.str(), false);
+                }
             }
 
-            thisKnob->blockEvaluation();
-            int dims = thisKnob->getDimension();
-            for (int i = 0; i < dims; ++i) {
-                if (i == dims - 1) {
-                    thisKnob->unblockEvaluation();
-                }
-                if ((i == dimension || dimension == -1) && i < otherKnob->getDimension()) {
-                    thisKnob->onKnobSlavedTo(i, otherKnob,i);
-                    onKnobSlavedChanged(i, true);
-                }
-            }
             thisKnob->getHolder()->getApp()->triggerAutoSave();
         }
     }
@@ -1605,29 +1601,6 @@ KnobGui::onLinkToActionTriggered()
     linkTo(action->data().toInt());
 }
 
-void
-KnobGui::unlink()
-{
-    boost::shared_ptr<KnobI> thisKnob = getKnob();
-    int dims = thisKnob->getDimension();
-
-    thisKnob->blockEvaluation();
-    for (int i = 0; i < dims; ++i) {
-        std::pair<int,boost::shared_ptr<KnobI> > other = thisKnob->getMaster(i);
-        if (i == dims - 1) {
-            thisKnob->unblockEvaluation();
-        }
-        thisKnob->onKnobUnSlaved(i);
-        onKnobSlavedChanged(i, false);
-    }
-    getKnob()->getHolder()->getApp()->triggerAutoSave();
-}
-
-void
-KnobGui::onUnlinkActionTriggered()
-{
-    unlink();
-}
 
 void
 KnobGui::onResetDefaultValuesActionTriggered()

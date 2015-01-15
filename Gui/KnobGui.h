@@ -272,9 +272,6 @@ public Q_SLOTS:
     void onLinkToActionTriggered();
     void linkTo(int dimension);
 
-    void onUnlinkActionTriggered();
-    void unlink();
-
     void onResetDefaultValuesActionTriggered();
 
     ///Actually restores all dimensions, the parameter is disregarded.
