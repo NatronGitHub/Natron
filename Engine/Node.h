@@ -870,7 +870,7 @@ protected:
 
 private:
     
-    void computeFrameRangeForReader(const KnobI* fileKnob,int* leftBound,int* rightBound);
+    void computeFrameRangeForReader(const KnobI* fileKnob);
     
     std::string makeInfoForInput(int inputNumber) const;
 
