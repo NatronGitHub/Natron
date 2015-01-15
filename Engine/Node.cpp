@@ -3197,9 +3197,6 @@ Node::onEffectKnobValueChanged(KnobI* what,
         incrementKnobsAge(); //< since evaluate() is called after knobChanged we have to do this  by hand
         computePreviewImage( getApp()->getTimeLine()->currentFrame() );
         
-        
-        computeFrameRangeForReader(what);
-        
         ///union the project frame range if not locked with the reader frame range
         bool isLocked = getApp()->getProject()->isFrameRangeLocked();
         if (!isLocked) {

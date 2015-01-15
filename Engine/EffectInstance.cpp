@@ -4112,8 +4112,9 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
         return;
     }
     
-    _node->onEffectKnobValueChanged(k, reason);
-
+    if (isReader() && k->getName() == kOfxImageEffectFileParamName) {
+        getNode()->computeFrameRangeForReader(k);
+    }
     
     KnobHelper* kh = dynamic_cast<KnobHelper*>(k);
     assert(kh);
@@ -4135,6 +4136,7 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
         knobChanged(k, reason, /*view*/ 0, time, originatedFromMainThread);
     }
     
+    _node->onEffectKnobValueChanged(k, reason);
 
     
     ///Clear input images pointers that were stored in getImage() for the main-thread.

@@ -755,6 +755,8 @@ public:
     
     void restoreClipPreferencesRecursive(std::list<Natron::Node*>& markedNodes);
     
+    void computeFrameRangeForReader(const KnobI* fileKnob);
+
 public slots:
 
     void setKnobsAge(U64 newAge);
@@ -870,7 +872,6 @@ protected:
 
 private:
     
-    void computeFrameRangeForReader(const KnobI* fileKnob);
     
     std::string makeInfoForInput(int inputNumber) const;
 
