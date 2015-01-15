@@ -973,6 +973,7 @@ protected:
 
 private:
     
+    void declareRotoPythonField();
     
     std::string makeInfoForInput(int inputNumber) const;
 

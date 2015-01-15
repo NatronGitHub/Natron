@@ -1030,16 +1030,44 @@ RotoItem::setScriptName(const std::string & name)
         return false;
     }
     
-    
+    std::string oldFullName = getFullyQualifiedName();
+    bool oldNameEmpty;
     {
         QMutexLocker l(&itemMutex);
+        oldNameEmpty = _imp->scriptName.empty();
         _imp->scriptName = name;
     }
+    std::string newFullName = getFullyQualifiedName();
+    
     boost::shared_ptr<RotoContext> c = _imp->context.lock();
     if (c) {
+        if (!oldNameEmpty) {
+            c->changeItemScriptName(oldFullName, newFullName);
+        }
         c->onItemScriptNameChanged(shared_from_this());
     }
     return true;
+}
+
+static void getScriptNameRecursive(RotoLayer* item,std::string* scriptName)
+{
+    scriptName->insert(0, ".");
+    scriptName->insert(0, item->getScriptName());
+    boost::shared_ptr<RotoLayer> parent = item->getParentLayer();
+    if (parent) {
+        getScriptNameRecursive(parent.get(), scriptName);
+    }
+}
+
+std::string
+RotoItem::getFullyQualifiedName() const
+{
+    std::string name = getScriptName();
+    boost::shared_ptr<RotoLayer> parent = getParentLayer();
+    if (parent) {
+        getScriptNameRecursive(parent.get(), &name);
+    }
+    return name;
 }
 
 std::string
@@ -1533,7 +1561,7 @@ RotoLayer::load(const RotoItemSerialization &obj)
 }
 
 void
-RotoLayer::addItem(const boost::shared_ptr<RotoItem> & item)
+RotoLayer::addItem(const boost::shared_ptr<RotoItem> & item,bool declareToPython )
 {
     ///only called on the main-thread
     assert( QThread::currentThread() == qApp->thread() );
@@ -1541,9 +1569,15 @@ RotoLayer::addItem(const boost::shared_ptr<RotoItem> & item)
     if (parentLayer) {
         parentLayer->removeItem(item);
     }
+    
     item->setParentLayer(boost::dynamic_pointer_cast<RotoLayer>(shared_from_this()));
-    QMutexLocker l(&itemMutex);
-    _imp->items.push_back(item);
+    {
+        QMutexLocker l(&itemMutex);
+        _imp->items.push_back(item);
+    }
+    if (declareToPython) {
+        getContext()->declareItemAsPythonField(item);
+    }
 }
 
 void
@@ -1560,15 +1594,18 @@ RotoLayer::insertItem(const boost::shared_ptr<RotoItem> & item,
     }
     
     item->setParentLayer(boost::dynamic_pointer_cast<RotoLayer>(shared_from_this()));
-    QMutexLocker l(&itemMutex);
-    RotoItems::iterator it = _imp->items.begin();
-    if ( index >= (int)_imp->items.size() ) {
-        it = _imp->items.end();
-    } else {
-        std::advance(it, index);
+    {
+        QMutexLocker l(&itemMutex);
+        RotoItems::iterator it = _imp->items.begin();
+        if ( index >= (int)_imp->items.size() ) {
+            it = _imp->items.end();
+        } else {
+            std::advance(it, index);
+        }
+        ///insert before the iterator
+        _imp->items.insert(it, item);
     }
-    ///insert before the iterator
-    _imp->items.insert(it, item);
+    getContext()->declareItemAsPythonField(item);
 }
 
 void
@@ -1576,12 +1613,17 @@ RotoLayer::removeItem(const boost::shared_ptr<RotoItem>& item)
 {
     ///only called on the main-thread
     assert( QThread::currentThread() == qApp->thread() );
-    QMutexLocker l(&itemMutex);
-    for (RotoItems::iterator it = _imp->items.begin(); it != _imp->items.end(); ++it) {
-        if (*it == item) {
-            item->setParentLayer(boost::shared_ptr<RotoLayer>());
-            _imp->items.erase(it);
-            break;
+    {
+        QMutexLocker l(&itemMutex);
+        for (RotoItems::iterator it = _imp->items.begin(); it != _imp->items.end(); ++it) {
+            if (*it == item) {
+                l.unlock();
+                getContext()->removeItemAsPythonField(item);
+                l.relock();
+                item->setParentLayer(boost::shared_ptr<RotoLayer>());
+                _imp->items.erase(it);
+                break;
+            }
         }
     }
 }
@@ -3918,7 +3960,7 @@ void
 RotoContext::createBaseLayer()
 {
     ////Add the base layer
-    boost::shared_ptr<RotoLayer> base = addLayer();
+    boost::shared_ptr<RotoLayer> base = addLayerInternal(false);
     
     deselect(base, eSelectionReasonOther);
 }
@@ -3928,11 +3970,11 @@ RotoContext::~RotoContext()
 }
 
 boost::shared_ptr<RotoLayer>
-RotoContext::addLayer()
+RotoContext::addLayerInternal(bool declarePython)
 {
     boost::shared_ptr<RotoContext> this_shared = shared_from_this();
     assert(this_shared);
-
+    
     ///MT-safe: only called on the main-thread
     assert( QThread::currentThread() == qApp->thread() );
     boost::shared_ptr<RotoLayer> item;
@@ -3940,7 +3982,7 @@ RotoContext::addLayer()
     std::string name = generateUniqueName(kRotoLayerBaseName);
     {
         QMutexLocker l(&_imp->rotoContextMutex);
-
+        
         boost::shared_ptr<RotoLayer> deepestLayer = findDeepestSelectedLayer();
         boost::shared_ptr<RotoLayer> parentLayer;
         if (!deepestLayer) {
@@ -3956,23 +3998,30 @@ RotoContext::addLayer()
         } else {
             parentLayer = deepestLayer;
         }
-
-        item.reset( new RotoLayer(this_shared, name, parentLayer) );
+        
+        item.reset( new RotoLayer(this_shared, name, boost::shared_ptr<RotoLayer>()) );
         if (parentLayer) {
-            parentLayer->addItem(item);
+            parentLayer->addItem(item,declarePython);
         }
         _imp->layers.push_back(item);
-
+        
         _imp->lastInsertedItem = item;
     }
-
+    
     Q_EMIT itemInserted(eSelectionReasonOther);
-
-
+    
+    
     clearSelection(eSelectionReasonOther);
     select(item, eSelectionReasonOther);
-
+    
     return item;
+
+}
+
+boost::shared_ptr<RotoLayer>
+RotoContext::addLayer()
+{
+    return addLayerInternal(true);
 } // addLayer
 
 void
@@ -4138,7 +4187,7 @@ RotoContext::makeBezier(double x,
         }
     }
     assert(parentLayer);
-    boost::shared_ptr<Bezier> curve( new Bezier(this_shared, name, parentLayer) );
+    boost::shared_ptr<Bezier> curve( new Bezier(this_shared, name, boost::shared_ptr<RotoLayer>()) );
     if (parentLayer) {
         parentLayer->addItem(curve);
     }
@@ -4154,7 +4203,7 @@ RotoContext::makeBezier(double x,
         curve->setKeyframe( getTimelineCurrentTime() );
     }
     curve->addControlPoint(x, y, time);
-
+    
     return curve;
 } // makeBezier
 
@@ -4271,10 +4320,12 @@ RotoContext::addItem(const boost::shared_ptr<RotoLayer>& layer,
     ///MT-safe: only called on the main-thread
     assert( QThread::currentThread() == qApp->thread() );
     {
-        QMutexLocker l(&_imp->rotoContextMutex);
         if (layer) {
             layer->insertItem(item,indexInLayer);
         }
+        
+        QMutexLocker l(&_imp->rotoContextMutex);
+
         boost::shared_ptr<RotoLayer> isLayer = boost::dynamic_pointer_cast<RotoLayer>(item);
         if (isLayer) {
             std::list<boost::shared_ptr<RotoLayer> >::iterator foundLayer = std::find(_imp->layers.begin(), _imp->layers.end(), isLayer);
@@ -4286,6 +4337,7 @@ RotoContext::addItem(const boost::shared_ptr<RotoLayer>& layer,
     }
     Q_EMIT itemInserted(reason);
 }
+
 
 const std::list< boost::shared_ptr<RotoLayer> > &
 RotoContext::getLayers() const
@@ -5765,3 +5817,59 @@ RotoContextPrivate::applyAndDestroyMask(cairo_t* cr,
     cairo_pattern_destroy(mesh);
 }
 
+void
+RotoContext::changeItemScriptName(const std::string& oldFullyQualifiedName,const std::string& newFullyQUalifiedName)
+{
+    std::string appID = QString("app%1").arg(getNode()->getApp()->getAppID()+1).toStdString();
+    std::string nodeName = appID + "." + getNode()->getFullyQualifiedName();
+    std::string err;
+    
+    std::string declStr = nodeName + ".roto." + newFullyQUalifiedName + " = " + nodeName + ".roto." + oldFullyQualifiedName + "\n";
+    std::string delStr = "del " + nodeName + ".roto." + oldFullyQualifiedName + "\n";
+    
+    if (!Natron::interpretPythonScript(declStr + delStr , &err, 0)) {
+        getNode()->getApp()->appendToScriptEditor(err);
+    }
+}
+
+void
+RotoContext::removeItemAsPythonField(const boost::shared_ptr<RotoItem>& item)
+{
+    std::string appID = QString("app%1").arg(getNode()->getApp()->getAppID()+1).toStdString();
+    std::string nodeName = appID + "." + getNode()->getFullyQualifiedName();
+    std::string err;
+    if (!Natron::interpretPythonScript("del " + nodeName + ".roto." + item->getFullyQualifiedName() + "\n" , &err, 0)) {
+        getNode()->getApp()->appendToScriptEditor(err);
+    }
+    
+}
+
+
+void
+RotoContext::declareItemAsPythonField(const boost::shared_ptr<RotoItem>& item)
+{
+    std::string appID = QString("app%1").arg(getNode()->getApp()->getAppID()+1).toStdString();
+    std::string nodeName = appID + "." + getNode()->getFullyQualifiedName();
+    RotoLayer* isLayer = dynamic_cast<RotoLayer*>(item.get());
+    
+    std::string err;
+    if(!Natron::interpretPythonScript(nodeName + ".roto." + item->getFullyQualifiedName() + " = " +
+                                      nodeName + ".roto.getItemByName(\"" + item->getScriptName() + "\")\n" , &err, 0)) {
+        getNode()->getApp()->appendToScriptEditor(err);
+    }
+    
+    if (isLayer) {
+        const RotoItems& items = isLayer->getItems();
+        for (RotoItems::const_iterator it = items.begin(); it != items.end(); ++it) {
+            declareItemAsPythonField(*it);
+        }
+    }
+}
+
+void
+RotoContext::declarePythonFields()
+{
+    for (std::list< boost::shared_ptr<RotoLayer> >::iterator it = _imp->layers.begin(); it != _imp->layers.end(); ++it) {
+        declareItemAsPythonField(*it);
+    }
+}

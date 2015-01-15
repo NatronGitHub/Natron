@@ -510,6 +510,9 @@ Node::load(const std::string & parentMultiInstanceName,
     }
     
     declarePythonFields();
+    if  (getRotoContext()) {
+        declareRotoPythonField();
+    }
     
     boost::shared_ptr<NodeCollection> group = getGroup();
     if (group) {
@@ -532,6 +535,18 @@ Node::load(const std::string & parentMultiInstanceName,
         _imp->runOnNodeCreatedCB();
     }
 } // load
+
+void
+Node::declareRotoPythonField()
+{
+    assert(_imp->rotoContext);
+    std::string appID = QString("app%1").arg(getApp()->getAppID()+1).toStdString();
+    std::string fullyQualifiedName = appID + "." +getFullyQualifiedName();
+    std::string err;
+    bool ok = Natron::interpretPythonScript(fullyQualifiedName + ".roto = " + fullyQualifiedName + ".getRotoContext()\n", &err, 0);
+    assert(ok);
+    _imp->rotoContext->declarePythonFields();
+}
 
 boost::shared_ptr<NodeCollection>
 Node::getGroup() const

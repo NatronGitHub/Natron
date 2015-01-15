@@ -243,6 +243,8 @@ public:
 
     std::string getScriptName() const;
     
+    std::string getFullyQualifiedName() const;
+    
     std::string getLabel() const;
     
     void setLabel(const std::string& label);
@@ -475,7 +477,7 @@ public:
     ///only callable on the main-thread
     ///No check is done to figure out if the item already exists in this layer
     ///this is up to the caller responsability
-    void addItem(const boost::shared_ptr<RotoItem>& item);
+    void addItem(const boost::shared_ptr<RotoItem>& item,bool declareToPython = true);
 
     ///Inserts the item into the layer before the indicated index.
     ///The same restrictions as addItem are applied.
@@ -932,10 +934,20 @@ public:
     int getTimelineCurrentTime() const;
 
     /**
-     * @brief Add a new layer to the currently selected layer.
+     * @brief Create a new layer to the currently selected layer.
      **/
     boost::shared_ptr<RotoLayer> addLayer();
+private:
+    
+    boost::shared_ptr<RotoLayer> addLayerInternal(bool declarePython);
+public:
+    
+    
+    /**
+     * @brief Add an existing layer to the layers
+     **/
     void addLayer(const boost::shared_ptr<RotoLayer> & layer);
+    
 
     /**
      * @brief Make a new bezier curve and append it into the currently selected layer.
@@ -1095,6 +1107,13 @@ public:
     
     void onItemKnobChanged();
 
+    void declarePythonFields();
+    
+    void changeItemScriptName(const std::string& oldFullyQualifiedName,const std::string& newFullyQUalifiedName);
+    
+    void declareItemAsPythonField(const boost::shared_ptr<RotoItem>& item);
+    void removeItemAsPythonField(const boost::shared_ptr<RotoItem>& item);
+    
 Q_SIGNALS:
 
     /**
@@ -1127,7 +1146,7 @@ public Q_SLOTS:
     void onSelectedKnobCurveChanged();
 
 private:
-
+    
     void selectInternal(const boost::shared_ptr<RotoItem>& b);
     void deselectInternal(boost::shared_ptr<RotoItem> b);
 

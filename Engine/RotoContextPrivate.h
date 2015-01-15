@@ -47,7 +47,7 @@
 #define ROTO_DEFAULT_COLOR_G 1.
 #define ROTO_DEFAULT_COLOR_B 1.
 
-#define kRotoScriptNameHint "Script-name of the item for Python scripts"
+#define kRotoScriptNameHint "Script-name of the item for Python scripts. It cannot be edited."
 
 #define kRotoLabelHint "Label of the layer or curve"
 
