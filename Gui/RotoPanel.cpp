@@ -53,18 +53,19 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/ComboBox.h"
 #include "Gui/GuiMacros.h"
 
-#define COL_NAME 0
-#define COL_ACTIVATED 1
-#define COL_LOCKED 2
-#define COL_OVERLAY 4
-#define COL_COLOR 5
-#define COL_OPERATOR 3
+#define COL_LABEL 0
+#define COL_SCRIPT_NAME 1
+#define COL_ACTIVATED 2
+#define COL_LOCKED 3
+#define COL_OVERLAY 5
+#define COL_COLOR 6
+#define COL_OPERATOR 4
 
 #ifdef NATRON_ROTO_INVERTIBLE
-#define COL_INVERTED 6
-#define MAX_COLS 7
+#define COL_INVERTED 7
+#define MAX_COLS 8
 #else
-#define MAX_COLS 6
+#define MAX_COLS 7
 #endif
 
 using namespace Natron;
@@ -182,6 +183,8 @@ struct RotoPanelPrivate
 
     ItemKeys keyframes; //< track of all keyframes for items
     ColorDialogEditingEnum dialogEdition;
+    
+    bool settingNameFromGui;
 
     RotoPanelPrivate(RotoPanel* publicInter,
                      const boost::shared_ptr<NodeGui>&   n)
@@ -223,6 +226,7 @@ struct RotoPanelPrivate
         , clipBoard()
         , keyframes()
         , dialogEdition(eColorDialogEditingNothing)
+        , settingNameFromGui(false)
     {
         assert(n && context);
     }
@@ -288,6 +292,9 @@ RotoPanel::RotoPanel(const boost::shared_ptr<NodeGui>&  n,
                       SLOT( onTimeChanged(SequenceTime, int) ) );
     QObject::connect( n.get(), SIGNAL( settingsPanelClosed(bool) ), this, SLOT( onSettingsPanelClosed(bool) ) );
 
+    QObject::connect( _imp->context.get(),SIGNAL( itemScriptNameChanged(boost::shared_ptr<RotoItem>)),this,SLOT( onItemScriptNameChanged(boost::shared_ptr<RotoItem>) ) );
+    QObject::connect( _imp->context.get(),SIGNAL( itemLabelChanged(boost::shared_ptr<RotoItem>)),this,SLOT( onItemLabelChanged(boost::shared_ptr<RotoItem>) ) );
+    
     _imp->mainLayout = new QVBoxLayout(this);
 
     _imp->splineContainer = new QWidget(this);
@@ -382,7 +389,8 @@ RotoPanel::RotoPanel(const boost::shared_ptr<NodeGui>&  n,
 
     _imp->tree->setColumnCount(MAX_COLS);
     _imp->treeHeader = new QTreeWidgetItem;
-    _imp->treeHeader->setText( 0, tr("Name") );
+    _imp->treeHeader->setText( COL_LABEL, tr("Label") );
+    _imp->treeHeader->setText(COL_SCRIPT_NAME, tr("Script"));
 
     QPixmap pixLayer,pixBezier,pixVisible,pixUnvisible,pixLocked,pixUnlocked,pixInverted,pixUninverted,pixWheel,pixDefault,pixmerge;
     appPTR->getIcon(NATRON_PIXMAP_LAYER, &pixLayer);
@@ -859,8 +867,12 @@ RotoPanelPrivate::insertItemRecursively(int time,
     }
     items.push_back( TreeItem(treeItem,item) );
 
-    treeItem->setText( COL_NAME, item->getName_mt_safe().c_str() );
-    treeItem->setToolTip( COL_NAME, Qt::convertFromPlainText(kRotoNameHint, Qt::WhiteSpaceNormal) );
+    treeItem->setText( COL_LABEL, item->getLabel().c_str() );
+    treeItem->setToolTip( COL_LABEL, Qt::convertFromPlainText(kRotoLabelHint, Qt::WhiteSpaceNormal) );
+
+    treeItem->setText(COL_SCRIPT_NAME, item->getScriptName().c_str());
+    treeItem->setToolTip( COL_SCRIPT_NAME, Qt::convertFromPlainText(kRotoScriptNameHint, Qt::WhiteSpaceNormal) );
+    
     treeItem->setIcon(COL_ACTIVATED, item->isGloballyActivated() ? iconVisible : iconUnvisible);
     treeItem->setToolTip( COL_ACTIVATED, Qt::convertFromPlainText("Controls whether the overlay should be visible on the viewer for "
                                                                   "the shape.", Qt::WhiteSpaceNormal) );
@@ -875,7 +887,7 @@ RotoPanelPrivate::insertItemRecursively(int time,
         drawable->getOverlayColor(overlayColor);
         QIcon overlayIcon;
         makeSolidIcon(overlayColor, overlayIcon);
-        treeItem->setIcon(COL_NAME, iconBezier);
+        treeItem->setIcon(COL_LABEL, iconBezier);
         treeItem->setIcon(COL_OVERLAY,overlayIcon);
         treeItem->setToolTip( COL_OVERLAY, Qt::convertFromPlainText(kRotoOverlayHint, Qt::WhiteSpaceNormal) );
         double shapeColor[3];
@@ -1261,18 +1273,39 @@ void
 RotoPanel::onItemChanged(QTreeWidgetItem* item,
                          int column)
 {
-    if (column != 0) {
+    if (column != COL_LABEL) {
         return;
     }
     TreeItems::iterator it = _imp->findItem(item);
     if ( it != _imp->items.end() ) {
         std::string newName = item->text(column).toStdString();
-        if (!it->rotoItem->setName(newName)) {
-            Natron::warningDialog(tr("Invalid name ").toStdString(), tr("The name must be unique and cannot contain and should contain "
-                                                                        "only letters [a-z][A-Z] and numbers [0-9]. "
-                                                                        "It cannot start wih a digit, for scripting purposes.").toStdString() );
-            item->setText( COL_NAME, _imp->editedItemName.c_str() );
-        }
+        _imp->settingNameFromGui = true;
+        it->rotoItem->setLabel(newName);
+        _imp->settingNameFromGui = false;
+    }
+}
+
+void
+RotoPanel::onItemLabelChanged(const boost::shared_ptr<RotoItem>& item)
+{
+    if (_imp->settingNameFromGui) {
+        return;
+    }
+    TreeItems::iterator it = _imp->findItem(item);
+    if (it != _imp->items.end()) {
+        it->treeItem->setText(COL_LABEL, item->getLabel().c_str());
+    }
+}
+
+void
+RotoPanel::onItemScriptNameChanged(const boost::shared_ptr<RotoItem>& item)
+{
+    if (_imp->settingNameFromGui) {
+        return;
+    }
+    TreeItems::iterator it = _imp->findItem(item);
+    if (it != _imp->items.end()) {
+        it->treeItem->setText(COL_SCRIPT_NAME, item->getScriptName().c_str());
     }
 }
 
@@ -1285,10 +1318,10 @@ RotoPanel::onItemDoubleClicked(QTreeWidgetItem* item,
     if ( it != _imp->items.end() ) {
         
         switch (column) {
-            case COL_NAME: {
+            case COL_LABEL: {
                 _imp->editedItem = item;
                 QObject::connect( qApp, SIGNAL( focusChanged(QWidget*,QWidget*) ), this, SLOT( onFocusChanged(QWidget*,QWidget*) ) );
-                _imp->editedItemName = it->rotoItem->getName_mt_safe();
+                _imp->editedItemName = it->rotoItem->getLabel();
                 _imp->tree->openPersistentEditor(item);
             }   break;
             case COL_OVERLAY: {
@@ -1400,7 +1433,7 @@ RotoPanel::onFocusChanged(QWidget* old,
                           QWidget*)
 {
     if (_imp->editedItem) {
-        QWidget* w = _imp->tree->itemWidget(_imp->editedItem, COL_NAME);
+        QWidget* w = _imp->tree->itemWidget(_imp->editedItem, COL_LABEL);
         if (w == old) {
             _imp->tree->closePersistentEditor(_imp->editedItem);
             _imp->editedItem = NULL;

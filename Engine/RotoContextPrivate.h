@@ -47,7 +47,9 @@
 #define ROTO_DEFAULT_COLOR_G 1.
 #define ROTO_DEFAULT_COLOR_B 1.
 
-#define kRotoNameHint "Name of the layer or curve"
+#define kRotoScriptNameHint "Script-name of the item for Python scripts"
+
+#define kRotoLabelHint "Label of the layer or curve"
 
 #define kRotoOpacityParam "opacity"
 #define kRotoOpacityParamLabel "Opacity"
@@ -264,7 +266,7 @@ class RotoLayer;
 struct RotoItemPrivate
 {
     boost::weak_ptr<RotoContext> context;
-    std::string name;
+    std::string scriptName,label;
     boost::weak_ptr<RotoLayer> parentLayer;
 
     ////This controls whether the item (and all its children if it is a layer)
@@ -279,11 +281,12 @@ struct RotoItemPrivate
     RotoItemPrivate(const boost::shared_ptr<RotoContext> context,
                     const std::string & n,
                     const boost::shared_ptr<RotoLayer>& parent)
-        : context(context)
-          , name(n)
-          , parentLayer(parent)
-          , globallyActivated(true)
-          , locked(false)
+    : context(context)
+    , scriptName(n)
+    , label(n)
+    , parentLayer(parent)
+    , globallyActivated(true)
+    , locked(false)
     {
     }
 };
@@ -569,10 +572,6 @@ struct RotoContextPrivate
     boost::shared_ptr<Color_Knob> colorKnob;
 
     std::list<boost::shared_ptr<KnobI> > knobs; //< list for easy access to all knobs
-    
-    ////For each base item ("Rectangle","Ellipse","Bezier", etc...) a basic countr
-    ////to give a unique default name to each shape
-    std::map<std::string, int> itemCounters;
 
 
     ///This keeps track  of the items linked to the context knobs
@@ -584,14 +583,14 @@ struct RotoContextPrivate
     boost::shared_ptr<Natron::Image> lastRenderedImage;
 
     RotoContextPrivate(const boost::shared_ptr<Natron::Node>& n )
-        : rotoContextMutex()
-          , layers()
-          , autoKeying(true)
-          , rippleEdit(false)
-          , featherLink(true)
-          , node(n)
-          , age(0)
-          , lastRenderHash(0)
+    : rotoContextMutex()
+    , layers()
+    , autoKeying(true)
+    , rippleEdit(false)
+    , featherLink(true)
+    , node(n)
+    , age(0)
+    , lastRenderHash(0)
     {
         assert( n && n->getLiveInstance() );
         Natron::EffectInstance* effect = n->getLiveInstance();

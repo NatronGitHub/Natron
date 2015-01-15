@@ -312,7 +312,7 @@ Double_Knob::serializeTracks(std::list<SerializedTrack>* tracks)
 {
     for (std::list< boost::shared_ptr<BezierCP> >::iterator it = _slavedTracks.begin(); it != _slavedTracks.end(); ++it) {
         SerializedTrack s;
-        s.bezierName = (*it)->getBezier()->getName_mt_safe();
+        s.bezierName = (*it)->getBezier()->getScriptName();
         s.isFeather = (*it)->isFeatherPoint();
         s.cpIndex = !s.isFeather ? (*it)->getBezier()->getControlPointIndex(*it) : (*it)->getBezier()->getFeatherPointIndex(*it);
         s.rotoNodeName = (*it)->getBezier()->getRotoNodeName();

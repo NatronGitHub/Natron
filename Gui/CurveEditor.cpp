@@ -979,7 +979,7 @@ BezierEditorContext::BezierEditorContext(QTreeWidget* tree,
 : _imp(new BezierEditorContextPrivate(widget,curve,context))
 {
     _imp->nameItem = new QTreeWidgetItem(_imp->context->getItem());
-    QString name(_imp->curve->getName_mt_safe().c_str());
+    QString name(_imp->curve->getLabel().c_str());
     _imp->nameItem->setText(0, name);
     QObject::connect(curve.get(), SIGNAL(keyframeSet(int)), this, SLOT(onKeyframeAdded()));
     QObject::connect(curve.get(), SIGNAL(keyframeRemoved(int)), this, SLOT(onKeyframeRemoved()));
@@ -1160,7 +1160,7 @@ RotoCurveEditorContext::RotoCurveEditorContext(CurveWidget* widget,
     QObject::connect( rotoCtx.get(),SIGNAL( itemRemoved(boost::shared_ptr<RotoItem>,int) ),this,
                      SLOT( onItemRemoved(boost::shared_ptr<RotoItem>,int) ) );
     QObject::connect( rotoCtx.get(),SIGNAL( itemInserted(int) ),this,SLOT( itemInserted(int) ) );
-    QObject::connect( rotoCtx.get(),SIGNAL( itemNameChanged(boost::shared_ptr<RotoItem>) ),this,SLOT( onItemNameChanged(boost::shared_ptr<RotoItem>) ) );
+    QObject::connect( rotoCtx.get(),SIGNAL( itemLabelChanged(boost::shared_ptr<RotoItem>) ),this,SLOT( onItemNameChanged(boost::shared_ptr<RotoItem>) ) );
     
     std::list<boost::shared_ptr<Bezier> > curves = rotoCtx->getCurvesByRenderOrder();
     
@@ -1210,7 +1210,7 @@ RotoCurveEditorContext::onItemNameChanged(const boost::shared_ptr<RotoItem>& ite
 {
     for (std::list<BezierEditorContext*>::iterator it = _imp->curves.begin(); it != _imp->curves.end(); ++it) {
         if ((*it)->getBezier() == item) {
-            (*it)->onNameChanged(item->getName_mt_safe().c_str());
+            (*it)->onNameChanged(item->getLabel().c_str());
         }
     }
 }

@@ -1521,7 +1521,7 @@ static void exportRotoLayer(const std::list<boost::shared_ptr<RotoItem> >& items
                             const boost::shared_ptr<RotoLayer>& layer,
                             QTextStream& ts)
 {
-    QString parentLayerName = QString(layer->getName_mt_safe().c_str()) + "_layer";
+    QString parentLayerName = QString(layer->getScriptName().c_str()) + "_layer";
     for (std::list<boost::shared_ptr<RotoItem> >::const_iterator it = items.begin(); it != items.end(); ++it) {
         
         boost::shared_ptr<RotoLayer> isLayer = boost::dynamic_pointer_cast<RotoLayer>(*it);
@@ -1540,7 +1540,8 @@ static void exportRotoLayer(const std::list<boost::shared_ptr<RotoItem> >& items
             time = cps.front()->getKeyframeTime(0);
             
             WRITE_INDENT(1); WRITE_STATIC_LINE("bezier = roto.createBezier(0,0, " + NUM(time) + ")");
-            WRITE_INDENT(1); WRITE_STATIC_LINE("bezier.setName(" + ESC(isBezier->getName_mt_safe()) + ")");
+            WRITE_INDENT(1); WRITE_STATIC_LINE("bezier.setScriptName(" + ESC(isBezier->getScriptName()) + ")");
+            WRITE_INDENT(1); WRITE_STATIC_LINE("bezier.setLabel(" + ESC(isBezier->getLabel()) + ")");
             QString lockedStr = isBezier->getLocked() ? "True" : "False";
             WRITE_INDENT(1); WRITE_STRING("bezier.setLocked(" + lockedStr + ")");
             QString visibleStr = isBezier->isGloballyActivated() ? "True" : "False";
@@ -1614,10 +1615,11 @@ static void exportRotoLayer(const std::list<boost::shared_ptr<RotoItem> >& items
             
         } else {
             
-            QString name =  QString(isLayer->getName_mt_safe().c_str());
+            QString name =  QString(isLayer->getScriptName().c_str());
             QString layerName = name + "_layer";
             WRITE_INDENT(1); WRITE_STATIC_LINE(name + " = roto.createLayer()");
-            WRITE_INDENT(1); WRITE_STATIC_LINE(layerName +  ".setName(" + ESC(name) + ")");
+            WRITE_INDENT(1); WRITE_STATIC_LINE(layerName +  ".setScriptName(" + ESC(name) + ")");
+            WRITE_INDENT(1); WRITE_STATIC_LINE(layerName +  ".setLabel(" + ESC(isLayer->getLabel()) + ")");
             QString lockedStr = isLayer->getLocked() ? "True" : "False";
             WRITE_INDENT(1); WRITE_STRING(layerName + ".setLocked(" + lockedStr + ")");
             QString visibleStr = isLayer->isGloballyActivated() ? "True" : "False";
@@ -1680,11 +1682,12 @@ static void exportAllNodeKnobs(const boost::shared_ptr<Natron::Node>& node,QText
             WRITE_INDENT(1); WRITE_STATIC_LINE("#For the roto node, create all layers and beziers");
             WRITE_INDENT(1); WRITE_STRING("roto = lastNode.getRotoContext()");
             boost::shared_ptr<RotoLayer> baseLayer = layers.front();
-            QString baseLayerName = QString(baseLayer->getName_mt_safe().c_str());
+            QString baseLayerName = QString(baseLayer->getScriptName().c_str());
             QString baseLayerToken = baseLayerName +"_layer";
             WRITE_INDENT(1); WRITE_STATIC_LINE(baseLayerToken + " = roto.getBaseLayer()");
             
-            WRITE_INDENT(1); WRITE_STRING(baseLayerToken + ".setName(" + ESC(baseLayerName) + ")");
+            WRITE_INDENT(1); WRITE_STRING(baseLayerToken + ".setScriptName(" + ESC(baseLayerName) + ")");
+            WRITE_INDENT(1); WRITE_STRING(baseLayerToken + ".setLabel(" + ESC(baseLayer->getLabel()) + ")");
             QString lockedStr = baseLayer->getLocked() ? "True" : "False";
             WRITE_INDENT(1); WRITE_STRING(baseLayerToken + ".setLocked(" + lockedStr + ")");
             QString visibleStr = baseLayer->isGloballyActivated() ? "True" : "False";

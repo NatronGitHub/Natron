@@ -165,7 +165,7 @@ typesystem.xml file. See the documentation of shiboken-3.4 for an explanation of
 Alex, can you check if the homebrew line below this one works?
 
 ```Shell
-shiboken-3.4 --include-paths=/Users/alexandre/development/Engine:/Users/alexandre/development/Natron/Global:/opt/local/include:/opt/local/include/PySide-3.4  --typesystem-paths=/opt/local/share/PySide-3.4/typesystems --output-directory=Engine Engine/Pyside_Engine_Python.h  Engine/typesystem_engine.xml
+shiboken-3.4 --include-paths=../Engine:../Global:/opt/local/include:/opt/local/include/PySide-3.4  --typesystem-paths=/opt/local/share/PySide-3.4/typesystems --output-directory=Engine Engine/Pyside_Engine_Python.h  Engine/typesystem_engine.xml
 ```
 
 on HomeBrew:

@@ -239,9 +239,13 @@ public:
     virtual void clone(const RotoItem*  other);
 
     ///only callable on the main-thread
-    bool setName(const std::string & name);
+    bool setScriptName(const std::string & name);
 
-    std::string getName_mt_safe() const;
+    std::string getScriptName() const;
+    
+    std::string getLabel() const;
+    
+    void setLabel(const std::string& label);
 
     ///only callable on the main-thread
     void setParentLayer(boost::shared_ptr<RotoLayer> layer);
@@ -941,6 +945,8 @@ public:
     boost::shared_ptr<Bezier> makeEllipse(double x,double y,double diameter,bool fromCenter,int time);
     boost::shared_ptr<Bezier> makeSquare(double x,double y,double initialSize,int time);
     
+    std::string generateUniqueName(const std::string& baseName);
+    
     /**
      * @brief Removes the given item from the context. This also removes the item from the selection
      * if it was selected. If the item has children, this will also remove all the children.
@@ -1084,7 +1090,8 @@ public:
      **/
     std::string getRotoNodeName() const;
     
-    void onItemNameChanged(const boost::shared_ptr<RotoItem>& item);
+    void onItemScriptNameChanged(const boost::shared_ptr<RotoItem>& item);
+    void onItemLabelChanged(const boost::shared_ptr<RotoItem>& item);
     
     void onItemKnobChanged();
 
@@ -1106,7 +1113,8 @@ Q_SIGNALS:
 
     void itemLockedChanged();
     
-    void itemNameChanged(const boost::shared_ptr<RotoItem>&);
+    void itemScriptNameChanged(const boost::shared_ptr<RotoItem>&);
+    void itemLabelChanged(const boost::shared_ptr<RotoItem>&);
 
 public Q_SLOTS:
 

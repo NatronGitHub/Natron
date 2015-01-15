@@ -25,6 +25,34 @@ ItemBaseWrapper::~ItemBaseWrapper()
 // Target ---------------------------------------------------------
 
 extern "C" {
+static PyObject* Sbk_ItemBaseFunc_getLabel(PyObject* self)
+{
+    ::ItemBase* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::ItemBase*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_ITEMBASE_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+
+    // Call function/method
+    {
+
+        if (!PyErr_Occurred()) {
+            // getLabel()const
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            std::string cppResult = const_cast<const ::ItemBase*>(cppSelf)->getLabel();
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), &cppResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+}
+
 static PyObject* Sbk_ItemBaseFunc_getLocked(PyObject* self)
 {
     ::ItemBase* cppSelf = 0;
@@ -81,34 +109,6 @@ static PyObject* Sbk_ItemBaseFunc_getLockedRecursive(PyObject* self)
     return pyResult;
 }
 
-static PyObject* Sbk_ItemBaseFunc_getName(PyObject* self)
-{
-    ::ItemBase* cppSelf = 0;
-    SBK_UNUSED(cppSelf)
-    if (!Shiboken::Object::isValid(self))
-        return 0;
-    cppSelf = ((::ItemBase*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_ITEMBASE_IDX], (SbkObject*)self));
-    PyObject* pyResult = 0;
-
-    // Call function/method
-    {
-
-        if (!PyErr_Occurred()) {
-            // getName()const
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            std::string cppResult = const_cast<const ::ItemBase*>(cppSelf)->getName();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
-            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), &cppResult);
-        }
-    }
-
-    if (PyErr_Occurred() || !pyResult) {
-        Py_XDECREF(pyResult);
-        return 0;
-    }
-    return pyResult;
-}
-
 static PyObject* Sbk_ItemBaseFunc_getParentLayer(PyObject* self)
 {
     ::ItemBase* cppSelf = 0;
@@ -130,6 +130,34 @@ static PyObject* Sbk_ItemBaseFunc_getParentLayer(PyObject* self)
 
             // Ownership transferences.
             Shiboken::Object::getOwnership(pyResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+}
+
+static PyObject* Sbk_ItemBaseFunc_getScriptName(PyObject* self)
+{
+    ::ItemBase* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::ItemBase*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_ITEMBASE_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+
+    // Call function/method
+    {
+
+        if (!PyErr_Occurred()) {
+            // getScriptName()const
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            std::string cppResult = const_cast<const ::ItemBase*>(cppSelf)->getScriptName();
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), &cppResult);
         }
     }
 
@@ -166,6 +194,50 @@ static PyObject* Sbk_ItemBaseFunc_getVisible(PyObject* self)
         return 0;
     }
     return pyResult;
+}
+
+static PyObject* Sbk_ItemBaseFunc_setLabel(PyObject* self, PyObject* pyArg)
+{
+    ::ItemBase* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::ItemBase*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_ITEMBASE_IDX], (SbkObject*)self));
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp;
+    SBK_UNUSED(pythonToCpp)
+
+    // Overloaded function decisor
+    // 0: setLabel(std::string)
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArg)))) {
+        overloadId = 0; // setLabel(std::string)
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_ItemBaseFunc_setLabel_TypeError;
+
+    // Call function/method
+    {
+        ::std::string cppArg0;
+        pythonToCpp(pyArg, &cppArg0);
+
+        if (!PyErr_Occurred()) {
+            // setLabel(std::string)
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            cppSelf->setLabel(cppArg0);
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+        }
+    }
+
+    if (PyErr_Occurred()) {
+        return 0;
+    }
+    Py_RETURN_NONE;
+
+    Sbk_ItemBaseFunc_setLabel_TypeError:
+        const char* overloads[] = {"std::string", 0};
+        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.ItemBase.setLabel", overloads);
+        return 0;
 }
 
 static PyObject* Sbk_ItemBaseFunc_setLocked(PyObject* self, PyObject* pyArg)
@@ -212,7 +284,7 @@ static PyObject* Sbk_ItemBaseFunc_setLocked(PyObject* self, PyObject* pyArg)
         return 0;
 }
 
-static PyObject* Sbk_ItemBaseFunc_setName(PyObject* self, PyObject* pyArg)
+static PyObject* Sbk_ItemBaseFunc_setScriptName(PyObject* self, PyObject* pyArg)
 {
     ::ItemBase* cppSelf = 0;
     SBK_UNUSED(cppSelf)
@@ -224,13 +296,13 @@ static PyObject* Sbk_ItemBaseFunc_setName(PyObject* self, PyObject* pyArg)
     SBK_UNUSED(pythonToCpp)
 
     // Overloaded function decisor
-    // 0: setName(std::string)
+    // 0: setScriptName(std::string)
     if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArg)))) {
-        overloadId = 0; // setName(std::string)
+        overloadId = 0; // setScriptName(std::string)
     }
 
     // Function signature not found.
-    if (overloadId == -1) goto Sbk_ItemBaseFunc_setName_TypeError;
+    if (overloadId == -1) goto Sbk_ItemBaseFunc_setScriptName_TypeError;
 
     // Call function/method
     {
@@ -238,9 +310,9 @@ static PyObject* Sbk_ItemBaseFunc_setName(PyObject* self, PyObject* pyArg)
         pythonToCpp(pyArg, &cppArg0);
 
         if (!PyErr_Occurred()) {
-            // setName(std::string)
+            // setScriptName(std::string)
             PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            cppSelf->setName(cppArg0);
+            cppSelf->setScriptName(cppArg0);
             PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
         }
     }
@@ -250,9 +322,9 @@ static PyObject* Sbk_ItemBaseFunc_setName(PyObject* self, PyObject* pyArg)
     }
     Py_RETURN_NONE;
 
-    Sbk_ItemBaseFunc_setName_TypeError:
+    Sbk_ItemBaseFunc_setScriptName_TypeError:
         const char* overloads[] = {"std::string", 0};
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.ItemBase.setName", overloads);
+        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.ItemBase.setScriptName", overloads);
         return 0;
 }
 
@@ -301,13 +373,15 @@ static PyObject* Sbk_ItemBaseFunc_setVisible(PyObject* self, PyObject* pyArg)
 }
 
 static PyMethodDef Sbk_ItemBase_methods[] = {
+    {"getLabel", (PyCFunction)Sbk_ItemBaseFunc_getLabel, METH_NOARGS},
     {"getLocked", (PyCFunction)Sbk_ItemBaseFunc_getLocked, METH_NOARGS},
     {"getLockedRecursive", (PyCFunction)Sbk_ItemBaseFunc_getLockedRecursive, METH_NOARGS},
-    {"getName", (PyCFunction)Sbk_ItemBaseFunc_getName, METH_NOARGS},
     {"getParentLayer", (PyCFunction)Sbk_ItemBaseFunc_getParentLayer, METH_NOARGS},
+    {"getScriptName", (PyCFunction)Sbk_ItemBaseFunc_getScriptName, METH_NOARGS},
     {"getVisible", (PyCFunction)Sbk_ItemBaseFunc_getVisible, METH_NOARGS},
+    {"setLabel", (PyCFunction)Sbk_ItemBaseFunc_setLabel, METH_O},
     {"setLocked", (PyCFunction)Sbk_ItemBaseFunc_setLocked, METH_O},
-    {"setName", (PyCFunction)Sbk_ItemBaseFunc_setName, METH_O},
+    {"setScriptName", (PyCFunction)Sbk_ItemBaseFunc_setScriptName, METH_O},
     {"setVisible", (PyCFunction)Sbk_ItemBaseFunc_setVisible, METH_O},
 
     {0} // Sentinel

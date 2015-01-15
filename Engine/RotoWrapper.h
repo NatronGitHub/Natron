@@ -44,8 +44,11 @@ public:
         return _item;
     }
     
-    void setName(const std::string & name);
-    std::string getName() const;
+    void setLabel(const std::string & name);
+    std::string getLabel() const;
+    
+    void setScriptName(const std::string& name);
+    std::string getScriptName() const;
     
     void setLocked(bool locked);
     bool getLocked() const;

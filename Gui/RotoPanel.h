@@ -154,6 +154,9 @@ public Q_SLOTS:
     void onSettingsPanelClosed(bool closed);
 
     void onItemColorDialogEdited(const QColor & color);
+    
+    void onItemLabelChanged(const boost::shared_ptr<RotoItem>& item);
+    void onItemScriptNameChanged(const boost::shared_ptr<RotoItem>& item);
 
 private:
 

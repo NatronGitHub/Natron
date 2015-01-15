@@ -31,15 +31,27 @@ ItemBase::~ItemBase()
 }
 
 void
-ItemBase::setName(const std::string & name)
+ItemBase::setLabel(const std::string & name)
 {
-    _item->setName(name);
+    _item->setLabel(name);
 }
 
 std::string
-ItemBase::getName() const
+ItemBase::getLabel() const
 {
-    return _item->getName_mt_safe();
+    return _item->getLabel();
+}
+
+void
+ItemBase::setScriptName(const std::string& name)
+{
+    _item->setScriptName(name);
+}
+
+std::string
+ItemBase::getScriptName() const
+{
+    return _item->getScriptName();
 }
 
 void
