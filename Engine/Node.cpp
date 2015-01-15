@@ -1301,14 +1301,14 @@ Node::getScriptName_mt_safe() const
     return _imp->scriptName;
 }
 
-static void prependGroupNameRecursive(const boost::shared_ptr<NodeGroup>& group,std::string& name)
+static void prependGroupNameRecursive(const boost::shared_ptr<Natron::Node>& group,std::string& name)
 {
     name.insert(0,".");
     name.insert(0, group->getScriptName_mt_safe());
-    boost::shared_ptr<NodeCollection> hasParentGroup = group->getNode()->getGroup();
+    boost::shared_ptr<NodeCollection> hasParentGroup = group->getGroup();
     boost::shared_ptr<NodeGroup> isGrp = boost::dynamic_pointer_cast<NodeGroup>(hasParentGroup);
     if (isGrp) {
-        prependGroupNameRecursive(isGrp, name);
+        prependGroupNameRecursive(isGrp->getNode(), name);
     }
 }
 
@@ -1316,10 +1316,15 @@ std::string
 Node::getFullyQualifiedName() const
 {
     std::string ret = getScriptName_mt_safe();
-    boost::shared_ptr<NodeCollection> hasParentGroup = getGroup();
-    boost::shared_ptr<NodeGroup> isGrp = boost::dynamic_pointer_cast<NodeGroup>(hasParentGroup);
-    if (isGrp) {
-        prependGroupNameRecursive(isGrp, ret);
+    NodePtr parent = getParentMultiInstance();
+    if (parent) {
+        prependGroupNameRecursive(parent, ret);
+    } else {
+        boost::shared_ptr<NodeCollection> hasParentGroup = getGroup();
+        boost::shared_ptr<NodeGroup> isGrp = boost::dynamic_pointer_cast<NodeGroup>(hasParentGroup);
+        if (isGrp) {
+            prependGroupNameRecursive(isGrp->getNode(), ret);
+        }
     }
     return ret;
 }

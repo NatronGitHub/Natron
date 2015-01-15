@@ -595,10 +595,20 @@ NodeCollectionPrivate::findNodeInternal(const std::string& name,const std::strin
         if ((*it)->getScriptName_mt_safe() == name) {
             if (!recurseName.empty()) {
                 NodeGroup* isGrp = dynamic_cast<NodeGroup*>((*it)->getLiveInstance());
-                assert(isGrp);
-                return isGrp->getNodeByFullySpecifiedName(recurseName);
+                if (isGrp) {
+                    return isGrp->getNodeByFullySpecifiedName(recurseName);
+                } else {
+                    std::list<NodePtr> children;
+                    (*it)->getChildrenMultiInstance(&children);
+                    for (std::list<NodePtr>::iterator it2 = children.begin(); it2 != children.end(); ++it2) {
+                        if ((*it2)->getScriptName_mt_safe() == recurseName) {
+                            return *it2;
+                        }
+                    }
+                }
+            } else {
+                return *it;
             }
-            return *it;
         }
     }
     return NodePtr();

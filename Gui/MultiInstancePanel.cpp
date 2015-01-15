@@ -63,6 +63,11 @@ CLANG_DIAG_ON(uninitialized)
 #define kTrackForwardButtonName "trackForward"
 #define kTrackCenterName "center"
 #define kTrackInvertName "invert"
+
+#define COL_ENABLED 0
+#define COL_SCRIPT_NAME 1
+#define COL_FIRST_KNOB 2
+
 using namespace Natron;
 
 namespace {
@@ -295,13 +300,27 @@ TableItemDelegate::paint(QPainter * painter,
                          const QStyleOptionViewItem & option,
                          const QModelIndex & index) const
 {
-    QStyledItemDelegate::paint(painter,option,index);
 
-    if (!index.isValid() || (index.column() == 0) || option.state & QStyle::State_Selected) {
+    if (!index.isValid() || option.state & QStyle::State_Selected) {
+        QStyledItemDelegate::paint(painter,option,index);
+        return;
+    }
+   
+    
+    if (index.column() < COL_FIRST_KNOB) {
+        QPen pen = painter->pen();
+        if (index.column() == COL_SCRIPT_NAME) {
+            pen.setColor(Qt::black);
+        } else {
+            pen.setColor(QColor(200,200,200));
+        }
+        painter->setPen(pen);
+
         QStyledItemDelegate::paint(painter,option,index);
 
         return;
     }
+    
     TableModel* model = dynamic_cast<TableModel*>( _view->model() );
     assert(model);
     if (!model) {
@@ -313,19 +332,18 @@ TableItemDelegate::paint(QPainter * painter,
         return;
     }
     int dim;
+    Natron::AnimationLevelEnum level = eAnimationLevelNone;
     boost::shared_ptr<KnobI> knob = _panel->getKnobForItem(item, &dim);
-    assert(knob);
-    if (!knob) {
-        return;
+    if (knob) {
+        
+        Natron::AnimationLevelEnum level = knob->getAnimationLevel(dim);
+        if (level == eAnimationLevelNone) {
+            QStyledItemDelegate::paint(painter,option,index);
+            
+            return;
+        }
     }
-    assert(0 <= dim);
-    Natron::AnimationLevelEnum level = knob->getAnimationLevel(dim);
-    if (level == eAnimationLevelNone) {
-        QStyledItemDelegate::paint(painter,option,index);
-
-        return;
-    }
-
+    
     QStyleOptionViewItem opt = option;
     initStyleOption(&opt, index);
 
@@ -446,6 +464,7 @@ MultiInstancePanel::createMultiInstanceGui(QVBoxLayout* layout)
             dimensionNames.push_back(dimName);
         }
     }
+    dimensionNames.prepend("Script-name");
     dimensionNames.prepend("Enabled");
 
     _imp->view->setColumnCount( dimensionNames.size() );
@@ -467,12 +486,14 @@ MultiInstancePanel::createMultiInstanceGui(QVBoxLayout* layout)
     _imp->buttonsLayout = new QHBoxLayout(_imp->buttonsContainer);
     _imp->buttonsLayout->setContentsMargins(0, 0, 0, 0);
     _imp->addButton = new Button(QIcon(),"+",_imp->buttonsContainer);
+    _imp->addButton->setFixedSize(NATRON_SMALL_BUTTON_SIZE,NATRON_SMALL_BUTTON_SIZE);
     _imp->addButton->setToolTip("Add new");
     _imp->buttonsLayout->addWidget(_imp->addButton);
     QObject::connect( _imp->addButton, SIGNAL( clicked(bool) ), this, SLOT( onAddButtonClicked() ) );
 
     _imp->removeButton = new Button(QIcon(),"-",_imp->buttonsContainer);
     _imp->removeButton->setToolTip( tr("Remove selection") );
+    _imp->removeButton->setFixedSize(NATRON_SMALL_BUTTON_SIZE,NATRON_SMALL_BUTTON_SIZE);
     _imp->buttonsLayout->addWidget(_imp->removeButton);
     QObject::connect( _imp->removeButton, SIGNAL( clicked(bool) ), this, SLOT( onRemoveButtonClicked() ) );
     QPixmap selectAll;
@@ -642,13 +663,24 @@ MultiInstancePanelPrivate::addTableRow(const boost::shared_ptr<Natron::Node> & n
         AnimatedCheckBox* checkbox = new AnimatedCheckBox();
         QObject::connect( checkbox,SIGNAL( toggled(bool) ),publicInterface,SLOT( onCheckBoxChecked(bool) ) );
         checkbox->setChecked( !node->isNodeDisabled() );
-        view->setCellWidget(newRowIndex, 0, checkbox);
+        view->setCellWidget(newRowIndex, COL_ENABLED, checkbox);
         TableItem* newItem = new TableItem;
         newItem->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsEditable | Qt::ItemIsUserCheckable);
-        view->setItem(newRowIndex, 0, newItem);
-        view->resizeColumnToContents(0);
+        view->setItem(newRowIndex, COL_ENABLED, newItem);
+        view->resizeColumnToContents(COL_ENABLED);
     }
-    int columnIndex = 1;
+    
+    ///Script name
+    {
+        
+        TableItem* newItem = new TableItem;
+        view->setItem(newRowIndex, COL_SCRIPT_NAME, newItem);
+        newItem->setText(node->getScriptName().c_str());
+        newItem->setFlags(Qt::ItemIsSelectable);
+        view->resizeColumnToContents(COL_ENABLED);
+    }
+    
+    int columnIndex = COL_FIRST_KNOB;
     for (std::list<boost::shared_ptr<KnobI> >::iterator it = instanceSpecificKnobs.begin(); it != instanceSpecificKnobs.end(); ++it) {
         Int_Knob* isInt = dynamic_cast<Int_Knob*>( it->get() );
         Bool_Knob* isBool = dynamic_cast<Bool_Knob*>( it->get() );
@@ -691,7 +723,7 @@ MultiInstancePanelPrivate::addTableRow(const boost::shared_ptr<Natron::Node> & n
     view->selectionModel()->clear();
 
     ///select the new item
-    QModelIndex newIndex = model->index(newRowIndex, 0);
+    QModelIndex newIndex = model->index(newRowIndex, COL_ENABLED);
     assert( newIndex.isValid() );
     view->selectionModel()->select(newIndex, QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
 } // addTableRow
@@ -1155,7 +1187,7 @@ boost::shared_ptr<KnobI> MultiInstancePanel::getKnobForItem(TableItem* item,
     Nodes::iterator nIt = _imp->instances.begin();
     std::advance( nIt, modelIndex.row() );
     const std::vector<boost::shared_ptr<KnobI> > & knobs = nIt->first.lock()->getKnobs();
-    int instanceSpecificIndex = 1; //< 1 because we skip the enable cell
+    int instanceSpecificIndex = COL_FIRST_KNOB;
     for (U32 i = 0; i < knobs.size(); ++i) {
         if ( knobs[i]->isInstanceSpecific() ) {
             for (int j = 0; j < knobs[i]->getDimension(); ++j) {
@@ -1183,7 +1215,7 @@ MultiInstancePanel::onItemDataChanged(TableItem* item)
     QModelIndex modelIndex = _imp->model->index(item);
 
     ///The enabled cell is handled in onCheckBoxChecked
-    if (modelIndex.column() == 0) {
+    if (modelIndex.column() == COL_ENABLED) {
         return;
     }
     
@@ -1197,11 +1229,11 @@ MultiInstancePanel::onItemDataChanged(TableItem* item)
     assert(node);
     const std::vector<boost::shared_ptr<KnobI> > & knobs = node->getKnobs();
 
-    if (modelIndex.column() == 1) {
+    if (modelIndex.column() == COL_SCRIPT_NAME) {
         node->setLabel(data.toString().toStdString());
     }
     
-    int instanceSpecificIndex = 1; //< 1 because we skip the enable cell
+    int instanceSpecificIndex = COL_FIRST_KNOB;
     for (U32 i = 0; i < knobs.size(); ++i) {
         if ( knobs[i]->isInstanceSpecific() ) {
             for (int j = 0; j < knobs[i]->getDimension(); ++j) {
@@ -1270,7 +1302,7 @@ MultiInstancePanel::onCheckBoxChecked(bool checked)
 
     ///find the row which owns this checkbox
     for (int i = 0; i < _imp->model->rowCount(); ++i) {
-        QWidget* w = _imp->view->cellWidget(i, 0);
+        QWidget* w = _imp->view->cellWidget(i, COL_ENABLED);
         if (w == checkbox) {
             assert( i < (int)_imp->instances.size() );
             Nodes::iterator it = _imp->instances.begin();
@@ -1305,7 +1337,7 @@ MultiInstancePanel::onInstanceKnobValueChanged(int dim,
     KnobHolder* holder = knob->getHolder();
     assert(holder);
     int rowIndex = 0;
-    int colIndex = 1;
+    int colIndex = COL_FIRST_KNOB;
     for (Nodes::iterator it = _imp->instances.begin(); it != _imp->instances.end(); ++it,++rowIndex) {
         boost::shared_ptr<Node> node = it->first.lock();
         if ( holder == node->getLiveInstance() ) {
