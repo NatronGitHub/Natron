@@ -4141,6 +4141,10 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
     node->onEffectKnobValueChanged(k, reason);
 
     
+    if (isReader() && k->getName() == kOfxImageEffectFileParamName) {
+        getNode()->computeFrameRangeForReader(k);
+    }
+    
     KnobHelper* kh = dynamic_cast<KnobHelper*>(k);
     assert(kh);
     if ( kh && kh->isDeclaredByPlugin() ) {

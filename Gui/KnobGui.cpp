@@ -803,15 +803,22 @@ KnobGui::setInterpolationForDimensions(const std::vector<int> & dimensions,
                                        Natron::KeyframeTypeEnum interp)
 {
     boost::shared_ptr<KnobI> knob = getKnob();
-
+    
     for (U32 i = 0; i < dimensions.size(); ++i) {
         boost::shared_ptr<Curve> c = knob->getCurve(dimensions[i]);
-        int kfCount = c->getKeyFramesCount();
-        for (int j = 0; j < kfCount; ++j) {
-            c->setKeyFrameInterpolation(interp, j);
+        if (c) {
+            int kfCount = c->getKeyFramesCount();
+            for (int j = 0; j < kfCount; ++j) {
+                c->setKeyFrameInterpolation(interp, j);
+            }
+            boost::shared_ptr<Curve> guiCurve = getCurve(dimensions[i]);
+            if (guiCurve) {
+                guiCurve->clone(*c);
+            }
         }
     }
     Q_EMIT keyInterpolationChanged();
+
 }
 
 void

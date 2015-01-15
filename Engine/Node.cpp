@@ -769,7 +769,9 @@ Node::loadKnob(const boost::shared_ptr<KnobI> & knob,
                 }
             }
             
-            
+            if (knob->getName() == kOfxImageEffectFileParamName) {
+                computeFrameRangeForReader(knob.get());
+            }
             
             //}
             break;
@@ -3848,6 +3850,39 @@ Node::duringInputChangedAction() const
 }
 
 void
+Node::computeFrameRangeForReader(const KnobI* fileKnob)
+{
+    int leftBound = INT_MIN;
+    int rightBound = INT_MAX;
+    ///Set the originalFrameRange parameter of the reader if it has one.
+    boost::shared_ptr<KnobI> knob = getKnobByName("originalFrameRange");
+    if (knob) {
+        Int_Knob* originalFrameRange = dynamic_cast<Int_Knob*>(knob.get());
+        if (originalFrameRange && originalFrameRange->getDimension() == 2) {
+            
+            const File_Knob* isFile = dynamic_cast<const File_Knob*>(fileKnob);
+            assert(isFile);
+            
+            std::string pattern = isFile->getValue();
+            SequenceParsing::SequenceFromPattern seq;
+            SequenceParsing::filesListFromPattern(pattern, &seq);
+            if (seq.empty() || seq.size() == 1) {
+                leftBound = 1;
+                rightBound = 1;
+            } else if (seq.size() > 1) {
+                leftBound = seq.begin()->first;
+                rightBound = seq.rbegin()->first;
+            }
+            
+            originalFrameRange->setValue(leftBound, 0);
+            originalFrameRange->setValue(rightBound, 1);
+            
+        }
+    }
+
+}
+
+void
 Node::onEffectKnobValueChanged(KnobI* what,
                                Natron::ValueChangedReasonEnum reason)
 {
@@ -3892,14 +3927,14 @@ Node::onEffectKnobValueChanged(KnobI* what,
         incrementKnobsAge(); //< since evaluate() is called after knobChanged we have to do this  by hand
         computePreviewImage( getApp()->getTimeLine()->currentFrame() );
         
-        
         ///union the project frame range if not locked with the reader frame range
         bool isLocked = getApp()->getProject()->isFrameRangeLocked();
         if (!isLocked) {
-            int first,last;
-            _imp->liveInstance->getFrameRange_public(getHashValue(), &first, &last);
-            if (first != INT_MIN && last != INT_MAX) {
-                getApp()->getProject()->unionFrameRangeWith(first, last);
+            int leftBound = INT_MIN,rightBound = INT_MAX;
+            _imp->liveInstance->getFrameRange_public(getHashValue(), &leftBound, &rightBound);
+    
+            if (leftBound != INT_MIN && rightBound != INT_MAX) {
+                getApp()->getProject()->unionFrameRangeWith(leftBound, rightBound);
             }
         }
         

@@ -819,6 +819,7 @@ public:
     
     void restoreClipPreferencesRecursive(std::list<Natron::Node*>& markedNodes);
     
+<<<<<<< HEAD
     /**
      * @brief Declares to Python all parameters as attribute of the variable representing this node.
      **/
@@ -858,11 +859,14 @@ public:
     std::string getAfterRenderCallback() const;
     std::string getAfterFrameRenderCallback() const;
     
+    void computeFrameRangeForReader(const KnobI* fileKnob);
+
 private:
     
     void setNameInternal(const std::string& name);
 
 public Q_SLOTS:
+
 
     void setKnobsAge(U64 newAge);
 
@@ -974,6 +978,7 @@ protected:
 private:
     
     void declareRotoPythonField();
+
     
     std::string makeInfoForInput(int inputNumber) const;
 

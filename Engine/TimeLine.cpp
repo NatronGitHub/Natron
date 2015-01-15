@@ -56,7 +56,7 @@ TimeLine::seekFrame(SequenceTime frame,
     }
 
     if (_project && updateLastCaller) {
-        _project->getApp()->setLastViewerUsingTimeline(caller->getNode());
+        _project->getApp()->setLastViewerUsingTimeline(caller ? caller->getNode() : boost::shared_ptr<Natron::Node>());
     }
     if (changed) {
         Q_EMIT frameChanged(frame, (int)reason);
