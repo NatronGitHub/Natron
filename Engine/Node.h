@@ -819,7 +819,6 @@ public:
     
     void restoreClipPreferencesRecursive(std::list<Natron::Node*>& markedNodes);
     
-<<<<<<< HEAD
     /**
      * @brief Declares to Python all parameters as attribute of the variable representing this node.
      **/
