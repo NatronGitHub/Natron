@@ -1857,12 +1857,10 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
         
     } break;
     case eEventStateZoomingArea: {
-            QPoint lastPos = mapFromScene(lastMousePosScene);
-            int delta = 2*((e->x() - lastPos.x()) - (e->y() - lastPos.y()));
+            int delta = 2*((e->x() - _imp->_lastMousePos.x()) - (e->y() - _imp->_lastMousePos.y()));
             setTransformationAnchor(QGraphicsView::AnchorViewCenter);
             wheelEventInternal(modCASIsControl(e),delta);
             setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
-            return;
     } break;
     default:
         break;
@@ -2400,7 +2398,6 @@ void
 NodeGraph::wheelEventInternal(bool ctrlDown,double delta)
 {
     double scaleFactor = pow( NATRON_WHEEL_ZOOM_PER_DELTA, delta);
-    
     QTransform transfo = transform();
     
     double currentZoomFactor = transfo.mapRect( QRectF(0, 0, 1, 1) ).width();

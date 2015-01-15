@@ -406,16 +406,17 @@ Node::load(const std::string & parentMultiInstanceName,
         _imp->isMultiInstance = false;
     }
     
+    if (!parentMultiInstanceName.empty()) {
+        fetchParentMultiInstancePointer();
+    }
+    
     if (!serialization.isNull() && !dontLoadName && !nameSet && fixedName.isEmpty()) {
         setScriptName_no_error_check(serialization.getNodeScriptName());
         setLabel(serialization.getNodeLabel());
         nameSet = true;
     }
     
-    if (!parentMultiInstanceName.empty()) {
-        fetchParentMultiInstancePointer();
-    }
-    
+   
     boost::shared_ptr<Node> thisShared = shared_from_this();
 
     int renderScaleSupportPreference = appPTR->getCurrentSettings()->getRenderScaleSupportPreference(getPluginID());

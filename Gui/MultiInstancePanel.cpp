@@ -675,6 +675,7 @@ MultiInstancePanelPrivate::addTableRow(const boost::shared_ptr<Natron::Node> & n
         
         TableItem* newItem = new TableItem;
         view->setItem(newRowIndex, COL_SCRIPT_NAME, newItem);
+        newItem->setToolTip(QObject::tr("The script-name of the item as exposed to Python scripts"));
         newItem->setText(node->getScriptName().c_str());
         newItem->setFlags(Qt::ItemIsSelectable);
         view->resizeColumnToContents(COL_ENABLED);
@@ -693,7 +694,11 @@ MultiInstancePanelPrivate::addTableRow(const boost::shared_ptr<Natron::Node> & n
         if (!isInt && !isBool && !isDouble && !isColor && !isString) {
             continue;
         }
+        
+        QString help = QString("<b>Script-name: %1 </b><br/>").arg((*it)->getName().c_str());
+        help.append((*it)->getHintToolTip().c_str());
 
+        
         for (int i = 0; i < (*it)->getDimension(); ++i) {
             TableItem* newItem = new TableItem;
             Qt::ItemFlags flags = Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsEditable;
@@ -712,7 +717,7 @@ MultiInstancePanelPrivate::addTableRow(const boost::shared_ptr<Natron::Node> & n
                 newItem->setData( Qt::DisplayRole, isString->getValue(i).c_str() );
             }
             newItem->setFlags(flags);
-
+            newItem->setToolTip(help);
             view->setItem(newRowIndex, columnIndex, newItem);
             view->resizeColumnToContents(columnIndex);
             ++columnIndex;
