@@ -1700,7 +1700,6 @@ DragItemsUndoCommand::redo()
 
         it->dropped->newParentItem->setExpanded(true);
         it->dropped->newParentLayer->insertItem(it->dropped->droppedRotoItem, it->dropped->insertIndex);
-        it->dropped->droppedRotoItem->setParentLayer(it->dropped->newParentLayer);
     }
     _roto->getContext()->evaluateChange();
     setText( QObject::tr("Re-organize items of %2").arg( _roto->getNodeName().c_str() ) );

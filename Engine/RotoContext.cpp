@@ -3981,28 +3981,35 @@ RotoContext::addLayerInternal(bool declarePython)
     
     std::string name = generateUniqueName(kRotoLayerBaseName);
     {
-        QMutexLocker l(&_imp->rotoContextMutex);
         
-        boost::shared_ptr<RotoLayer> deepestLayer = findDeepestSelectedLayer();
+        boost::shared_ptr<RotoLayer> deepestLayer;
         boost::shared_ptr<RotoLayer> parentLayer;
-        if (!deepestLayer) {
-            ///find out if there's a base layer, if so add to the base layer,
-            ///otherwise create the base layer
-            for (std::list<boost::shared_ptr<RotoLayer> >::iterator it = _imp->layers.begin(); it != _imp->layers.end(); ++it) {
-                int hierarchy = (*it)->getHierarchyLevel();
-                if (hierarchy == 0) {
-                    parentLayer = *it;
-                    break;
+        {
+            QMutexLocker l(&_imp->rotoContextMutex);
+            deepestLayer = findDeepestSelectedLayer();
+
+            if (!deepestLayer) {
+                ///find out if there's a base layer, if so add to the base layer,
+                ///otherwise create the base layer
+                for (std::list<boost::shared_ptr<RotoLayer> >::iterator it = _imp->layers.begin(); it != _imp->layers.end(); ++it) {
+                    int hierarchy = (*it)->getHierarchyLevel();
+                    if (hierarchy == 0) {
+                        parentLayer = *it;
+                        break;
+                    }
                 }
+            } else {
+                parentLayer = deepestLayer;
             }
-        } else {
-            parentLayer = deepestLayer;
         }
         
         item.reset( new RotoLayer(this_shared, name, boost::shared_ptr<RotoLayer>()) );
         if (parentLayer) {
             parentLayer->addItem(item,declarePython);
         }
+        
+        QMutexLocker l(&_imp->rotoContextMutex);
+
         _imp->layers.push_back(item);
         
         _imp->lastInsertedItem = item;
