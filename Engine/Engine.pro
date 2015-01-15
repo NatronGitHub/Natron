@@ -44,6 +44,12 @@ win32-msvc* {
 	}
 }
 
+# XCode clang 3.5 without optimization generates code that crashes
+#(Natron on OSX, XCode 6, Spaceship_Natron.ntp)
+*-xcode {
+  QMAKE_CXXFLAGS += -O
+}
+
 SOURCES += \
     AppInstance.cpp \
     AppManager.cpp \
