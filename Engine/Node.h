@@ -870,6 +870,8 @@ protected:
 
 private:
     
+    void computeFrameRangeForReader(const KnobI* fileKnob,int* leftBound,int* rightBound);
+    
     std::string makeInfoForInput(int inputNumber) const;
 
     void invalidateParallelRenderArgsInternal(std::list<Natron::Node*>& markedNodes);

@@ -4112,6 +4112,9 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
         return;
     }
     
+    _node->onEffectKnobValueChanged(k, reason);
+
+    
     KnobHelper* kh = dynamic_cast<KnobHelper*>(k);
     assert(kh);
     if ( kh && kh->isDeclaredByPlugin() ) {
@@ -4132,7 +4135,6 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
         knobChanged(k, reason, /*view*/ 0, time, originatedFromMainThread);
     }
     
-    _node->onEffectKnobValueChanged(k, reason);
 
     
     ///Clear input images pointers that were stored in getImage() for the main-thread.
