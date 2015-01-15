@@ -4007,8 +4007,7 @@ Gui::showOfxLog()
     LogWindow lw(log,this);
 
     lw.setWindowTitle( tr("Errors log") );
-    int status = lw.exec();
-    assert(status == QDialog::Accepted);
+    lw.exec();
 }
 
 
