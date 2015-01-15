@@ -4007,7 +4007,7 @@ Gui::showOfxLog()
     LogWindow lw(log,this);
 
     lw.setWindowTitle( tr("Errors log") );
-    lw.exec();
+    ignore_result(lw.exec());
 }
 
 
