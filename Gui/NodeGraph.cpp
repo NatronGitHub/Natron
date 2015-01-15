@@ -1269,7 +1269,9 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
     _imp->_firstMove = true;
     _imp->_evtState = eEventStateNone;
     _imp->_nodesWithinBDAtPenDown.clear();
-    if (state == eEventStateDraggingArrow && _imp->_hasMovedOnce) {
+    
+    bool hasMovedOnce = modCASIsControl(e) || _imp->_hasMovedOnce;
+    if (state == eEventStateDraggingArrow && hasMovedOnce) {
         
         QRectF sceneR = visibleSceneRect();
         
