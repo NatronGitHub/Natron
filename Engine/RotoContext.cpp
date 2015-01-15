@@ -3930,7 +3930,6 @@ RotoContext::~RotoContext()
 boost::shared_ptr<RotoLayer>
 RotoContext::addLayer()
 {
-    int no;
     boost::shared_ptr<RotoContext> this_shared = shared_from_this();
     assert(this_shared);
 
@@ -4104,6 +4103,7 @@ RotoContext::generateUniqueName(const std::string& baseName)
         }
         ++no;
     } while (foundItem);
+    return name;
 }
 
 boost::shared_ptr<Bezier>
