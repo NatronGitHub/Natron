@@ -1492,6 +1492,9 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool useCache,
     ///Find first something in the input images list
     if (!inputImages.empty()) {
         for (std::list<boost::shared_ptr<Image> >::const_iterator it = inputImages.begin(); it != inputImages.end(); ++it) {
+            if (!(*it)) {
+                continue;
+            }
             const ImageKey& imgKey = (*it)->getKey();
             if (imgKey == key) {
                 cachedImages.push_back(*it);
@@ -2814,7 +2817,7 @@ EffectInstance::renderRoIInternal(SequenceTime time,
         const RenderArgs & args = scopedArgs.getArgs();
 
 
-#     ifndef NDEBUG
+#ifndef NDEBUG
         RenderScale scale;
         scale.x = Image::getScaleFromMipMapLevel(mipMapLevel);
         scale.y = scale.x;
