@@ -446,7 +446,10 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
         _filterLineLayout->addWidget(_fileExtensionCombo);
         QObject::connect( _fileExtensionCombo, SIGNAL( currentIndexChanged(int) ), this, SLOT( onFileExtensionComboChanged(int) ) );
         if (isSequenceDialog) {
-            _fileExtensionCombo->setCurrentIndex( _fileExtensionCombo->itemIndex("jpg") );
+            int idx = _fileExtensionCombo->itemIndex("jpg");
+            if (idx >= 0) {
+                _fileExtensionCombo->setCurrentIndex(idx);
+            }
         }
     }
 
@@ -2744,11 +2747,13 @@ SequenceFileDialog::createViewerPreviewNode()
     ViewerInstance* viewerInstance = dynamic_cast<ViewerInstance*>(viewer->getLiveInstance());
     assert(viewerInstance);
     if (!viewerInstance) {
+        // coverity[dead_error_line]
         return;
     }
     ViewerGL* viewerGL = dynamic_cast<ViewerGL*>(viewerInstance->getUiContext());
     assert(viewerGL);
     if (!viewerGL) {
+        // coverity[dead_error_line]
         return;
     }
     _preview->viewerUI = viewerGL->getViewerTab();

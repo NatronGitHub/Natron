@@ -563,16 +563,20 @@ AppManager::loadInternal(const QString & projectFilename,
     initGui();
 
 
-    size_t maxCacheRAM = _imp->_settings->getRamMaximumPercent() * getSystemTotalRAM();
-    U64 maxViewerDiskCache = _imp->_settings->getMaximumViewerDiskCacheSize();
-    U64 playbackSize = maxCacheRAM * _imp->_settings->getRamPlaybackMaximumPercent();
-    U64 viewerCacheSize = maxViewerDiskCache + playbackSize;
-    
-    U64 maxDiskCacheNode = _imp->_settings->getMaximumDiskCacheNodeSize();
-    
-    _imp->_nodeCache.reset( new Cache<Image>("NodeCache",NATRON_CACHE_VERSION, maxCacheRAM - playbackSize,1.) );
-    _imp->_diskCache.reset( new Cache<Image>("DiskCache",NATRON_CACHE_VERSION, maxDiskCacheNode,0.) );
-    _imp->_viewerCache.reset( new Cache<FrameEntry>("ViewerCache",NATRON_CACHE_VERSION,viewerCacheSize,(double)playbackSize / (double)viewerCacheSize) );
+    try {
+        size_t maxCacheRAM = _imp->_settings->getRamMaximumPercent() * getSystemTotalRAM();
+        U64 maxViewerDiskCache = _imp->_settings->getMaximumViewerDiskCacheSize();
+        U64 playbackSize = maxCacheRAM * _imp->_settings->getRamPlaybackMaximumPercent();
+        U64 viewerCacheSize = maxViewerDiskCache + playbackSize;
+
+        U64 maxDiskCacheNode = _imp->_settings->getMaximumDiskCacheNodeSize();
+
+        _imp->_nodeCache.reset( new Cache<Image>("NodeCache",NATRON_CACHE_VERSION, maxCacheRAM - playbackSize,1.) );
+        _imp->_diskCache.reset( new Cache<Image>("DiskCache",NATRON_CACHE_VERSION, maxDiskCacheNode,0.) );
+        _imp->_viewerCache.reset( new Cache<FrameEntry>("ViewerCache",NATRON_CACHE_VERSION,viewerCacheSize,(double)playbackSize / (double)viewerCacheSize) );
+    } catch (std::logic_error) {
+        // ignore
+    }
 
     setLoadingStatus( tr("Restoring the image cache...") );
     _imp->restoreCaches();

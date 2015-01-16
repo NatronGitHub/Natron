@@ -441,6 +441,7 @@ Double_Knob::denormalize(int dimension,
     
     assert(effect);
     if (!effect) {
+        // coverity[dead_error_line]
         return;
     }
     RectD rod;
@@ -461,6 +462,7 @@ Double_Knob::normalize(int dimension,
     
     assert(effect);
     if (!effect) {
+        // coverity[dead_error_line]
         return;
     }
     RectD rod;

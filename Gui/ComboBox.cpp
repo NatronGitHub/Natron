@@ -55,7 +55,7 @@ ComboBox::ComboBox(QWidget* parent)
 
     setFrameShape(QFrame::Box);
 
-    setCurrentIndex(-1);
+    setCurrentIndex(0);
 
     _menu = new MenuWithToolTips(this);
 

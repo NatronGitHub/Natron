@@ -300,17 +300,20 @@ TableItemDelegate::paint(QPainter * painter,
     TableModel* model = dynamic_cast<TableModel*>( _view->model() );
     assert(model);
     if (!model) {
+        // coverity[dead_error_line]
         return;
     }
     TableItem* item = model->item(index);
     assert(item);
     if (!item) {
+        // coverity[dead_error_line]
         return;
     }
     int dim;
     boost::shared_ptr<KnobI> knob = _panel->getKnobForItem(item, &dim);
     assert(knob);
     if (!knob) {
+        // coverity[dead_error_line]
         return;
     }
     assert(0 <= dim);

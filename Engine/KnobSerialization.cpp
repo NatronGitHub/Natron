@@ -37,8 +37,8 @@ ValueSerialization::ValueSerialization(const boost::shared_ptr<KnobI> & knob,
             _master.masterDimension = m.first;
             NamedKnobHolder* holder = dynamic_cast<NamedKnobHolder*>( m.second->getHolder() );
 
-            assert(holder);
             _master.masterNodeName = holder ? holder->getName_mt_safe() : "";
+            assert(holder);
             _master.masterKnobName = m.second->getName();
         } else {
             _master.masterDimension = -1;

@@ -1798,6 +1798,7 @@ Node::onInputNameChanged(const QString & name)
     Natron::Node* inp = dynamic_cast<Natron::Node*>( sender() );
     assert(inp);
     if (!inp) {
+        // coverity[dead_error_line]
         return;
     }
     int inputNb = -1;

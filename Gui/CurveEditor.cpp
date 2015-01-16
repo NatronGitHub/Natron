@@ -308,6 +308,7 @@ static void createElementsForKnob(QTreeWidgetItem* parent,KnobGui* kgui,boost::s
     KnobHelper* helper = dynamic_cast<KnobHelper*>( k.get() );
     assert(helper);
     if (!helper) {
+        // coverity[dead_error_line]
         return;
     }
     boost::shared_ptr<KnobSignalSlotHandler> handler = helper->getSignalSlotHandler();

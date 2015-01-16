@@ -687,6 +687,7 @@ PathKnobTableItemDelegate::paint(QPainter * painter,
     TableModel* model = dynamic_cast<TableModel*>( _view->model() );
     assert(model);
     if (!model) {
+        // coverity[dead_error_line]
         QStyledItemDelegate::paint(painter,option,index);
         return;
     }

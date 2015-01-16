@@ -1475,12 +1475,11 @@ OfxEffectInstance::getRegionsOfInterest(SequenceTime time,
         for (std::map<std::string,OFX::Host::ImageEffect::ClipInstance*>::const_iterator it = clips.begin(); it!=clips.end(); ++it) {
             if (!it->second->isOutput()) {
                 OfxClipInstance* natronClip = dynamic_cast<OfxClipInstance*>(it->second);
-                assert(natronClip);
                 EffectInstance* inputNode = natronClip ? natronClip->getAssociatedNode() : 0;
                 if (inputNode) {
                     ret->insert( std::make_pair(inputNode, renderWindow) );
                 }
-
+                assert(natronClip);
             }
         }
     }
@@ -1711,6 +1710,7 @@ OfxEffectInstance::isIdentity(SequenceTime time,
         OfxClipInstance* natronClip = dynamic_cast<OfxClipInstance*>(clip);
         assert(natronClip);
         if (!natronClip) {
+            // coverity[dead_error_line]
             qDebug() << "Error in OfxEffectInstance::render(): kOfxImageEffectActionIsIdentity returned an unknown clip: " << inputclip.c_str();
 
             return false;
