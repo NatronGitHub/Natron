@@ -3134,6 +3134,7 @@ Node::computeFrameRangeForReader(const KnobI* fileKnob)
             assert(isFile);
             
             std::string pattern = isFile->getValue();
+            getApp()->getProject()->canonicalizePath(pattern);
             SequenceParsing::SequenceFromPattern seq;
             SequenceParsing::filesListFromPattern(pattern, &seq);
             if (seq.empty() || seq.size() == 1) {
