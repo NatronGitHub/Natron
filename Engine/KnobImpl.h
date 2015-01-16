@@ -1467,6 +1467,8 @@ Knob<double>::resetToDefaultValue(int dimension)
     Double_Knob* isDouble = dynamic_cast<Double_Knob*>(this);
     double def;
     
+    clearExpression(dimension);
+    
     {
         QReadLocker l(&_valueMutex);
         def = _defaultValues[dimension];

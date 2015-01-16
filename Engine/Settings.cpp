@@ -766,36 +766,36 @@ Settings::initializeKnobs()
     
     _pythonPage = Natron::createKnob<Page_Knob>(this, "Python");
     
-    _defaultOnProjectLoaded = Natron::createKnob<String_Knob>(this, "Default onProjectLoaded");
+    _defaultOnProjectLoaded = Natron::createKnob<String_Knob>(this, "Default after project loaded");
     _defaultOnProjectLoaded->setName("defOnProjectLoaded");
-    _defaultOnProjectLoaded->setHintToolTip("The default onProjectLoaded callback that will be set for new projects.");
+    _defaultOnProjectLoaded->setHintToolTip("The default afterProjectLoad callback that will be set for new projects.");
     _defaultOnProjectLoaded->setAnimationEnabled(false);
     _pythonPage->addKnob(_defaultOnProjectLoaded);
     
-    _defaultOnProjectSave = Natron::createKnob<String_Knob>(this, "Default onProjectSave");
+    _defaultOnProjectSave = Natron::createKnob<String_Knob>(this, "Default before project save");
     _defaultOnProjectSave->setName("defOnProjectSave");
-    _defaultOnProjectSave->setHintToolTip("The default onProjectSave callback that will be set for new projects.");
+    _defaultOnProjectSave->setHintToolTip("The default beforeProjectSave callback that will be set for new projects.");
     _defaultOnProjectSave->setAnimationEnabled(false);
     _pythonPage->addKnob(_defaultOnProjectSave);
 
     
-    _defaultOnProjectClose = Natron::createKnob<String_Knob>(this, "Default onProjectClose");
+    _defaultOnProjectClose = Natron::createKnob<String_Knob>(this, "Default before project close");
     _defaultOnProjectClose->setName("defOnProjectClose");
-    _defaultOnProjectClose->setHintToolTip("The default onProjectClose callback that will be set for new projects.");
+    _defaultOnProjectClose->setHintToolTip("The default beforeProjectClose callback that will be set for new projects.");
     _defaultOnProjectClose->setAnimationEnabled(false);
     _pythonPage->addKnob(_defaultOnProjectClose);
 
     
-    _defaultOnNodeCreated = Natron::createKnob<String_Knob>(this, "Default onNodeCreated");
+    _defaultOnNodeCreated = Natron::createKnob<String_Knob>(this, "Default after node created");
     _defaultOnNodeCreated->setName("defOnNodeCreated");
-    _defaultOnNodeCreated->setHintToolTip("The default onNodeCreated callback that will be set for new projects.");
+    _defaultOnNodeCreated->setHintToolTip("The default afterNodeCreated callback that will be set for new projects.");
     _defaultOnNodeCreated->setAnimationEnabled(false);
     _pythonPage->addKnob(_defaultOnNodeCreated);
 
     
-    _defaultOnNodeDelete = Natron::createKnob<String_Knob>(this, "Default onNodeDelete");
+    _defaultOnNodeDelete = Natron::createKnob<String_Knob>(this, "Default before node removal");
     _defaultOnNodeDelete->setName("defOnNodeDelete");
-    _defaultOnNodeDelete->setHintToolTip("The default onNodeDelete callback that will be set for new projects.");
+    _defaultOnNodeDelete->setHintToolTip("The default beforeNodeRemoval callback that will be set for new projects.");
     _defaultOnNodeDelete->setAnimationEnabled(false);
     _pythonPage->addKnob(_defaultOnNodeDelete);
 
