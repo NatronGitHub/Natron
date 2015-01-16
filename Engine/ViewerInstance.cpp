@@ -586,7 +586,8 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time, int view, in
             ///The thread rendering the frame entry might have been aborted and the entry removed from the cache
             ///but another thread might successfully have found it in the cache. This flag is to notify it the frame
             ///is invalid.
-            isCached = false;
+            outArgs->params->cachedFrame.reset();
+            return eStatusOK;
         }
         
         // how do you make sure cachedFrame->data() is not freed after this line?
