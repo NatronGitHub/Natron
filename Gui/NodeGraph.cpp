@@ -399,7 +399,7 @@ NodeGraph::NodeGraph(Gui* gui,
 
     setMouseTracking(true);
     setCacheMode(CacheBackground);
-    setViewportUpdateMode(QGraphicsView::FullViewportUpdate);
+    setViewportUpdateMode(QGraphicsView::MinimalViewportUpdate);
     setRenderHint(QPainter::Antialiasing);
     setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
     //setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
