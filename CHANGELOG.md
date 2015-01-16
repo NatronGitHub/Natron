@@ -9,7 +9,7 @@ Natron 1.1.0
 
 - The composing of selection is now easier
     - A new button can now toggle on/off the click capture of the bounding box of selected points
-    - The smooth/cusp options are now applied we smaller steps and depending of the zoom factor
+    - The smooth/cusp options are now applied with smaller steps and depending of the zoom factor
     - A simple left click is required to cycle through tool buttons and a right click to open the menu
     - A new button in the settings panel allows to clear the animation of the selected Beziers
     - Only the keyframes of the selected shapes are now displayed on the timeline instead of all shapes keyframes
