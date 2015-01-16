@@ -1740,11 +1740,11 @@ static bool exportKnobLinks(const boost::shared_ptr<Natron::Node>& node,
     return hasExportedLink;
 }
 
-static void exportGroupInternal(NodeGroup* group,const QString& groupName, QTextStream& ts)
+static void exportGroupInternal(const NodeCollection* collection,const QString& groupName, QTextStream& ts)
 {
     WRITE_INDENT(1); WRITE_STATIC_LINE("#Create all nodes in the group");
     
-    NodeList nodes = group->getNodes();
+    NodeList nodes = collection->getNodes();
     NodeList exportedNodes;
     
     ///Re-order nodes so we're sure Roto nodes get exported in the end since they may depend on Trackers
@@ -1825,11 +1825,15 @@ static void exportGroupInternal(NodeGroup* group,const QString& groupName, QText
         
     }
     WRITE_STATIC_LINE("");
-    WRITE_INDENT(1); WRITE_STATIC_LINE("#Create the parameters of the group node the same way we did for all internal nodes");
-    WRITE_INDENT(1); WRITE_STRING("lastNode = " + groupName);
-    exportAllNodeKnobs(group->getNode(),ts);
-    WRITE_INDENT(1); WRITE_STATIC_LINE("del lastNode");
-    WRITE_STATIC_LINE("");
+    
+    const NodeGroup* isGroup = dynamic_cast<const NodeGroup*>(collection);
+    if (isGroup) {
+        WRITE_INDENT(1); WRITE_STATIC_LINE("#Create the parameters of the group node the same way we did for all internal nodes");
+        WRITE_INDENT(1); WRITE_STRING("lastNode = " + groupName);
+        exportAllNodeKnobs(isGroup->getNode(),ts);
+        WRITE_INDENT(1); WRITE_STATIC_LINE("del lastNode");
+        WRITE_STATIC_LINE("");
+    }
     
     WRITE_INDENT(1); WRITE_STATIC_LINE("#Now that all nodes are created we can connect them together, restore expressions");
     for (NodeList::iterator it = exportedNodes.begin(); it != exportedNodes.end(); ++it) {
@@ -1855,10 +1859,10 @@ static void exportGroupInternal(NodeGroup* group,const QString& groupName, QText
 }
 
 void
-NodeGroup::exportGroupToPython(const QString& pluginLabel,
-                               const QString& pluginIconPath,
-                               const QString& pluginGrouping,
-                               QString& output)
+NodeCollection::exportGroupToPython(const QString& pluginLabel,
+                                    const QString& pluginIconPath,
+                                    const QString& pluginGrouping,
+                                    QString& output)
 {
     QTextStream ts(&output);
     // coding must be set in first or second line, see https://www.python.org/dev/peps/pep-0263/

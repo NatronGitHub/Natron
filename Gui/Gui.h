@@ -483,6 +483,8 @@ public:
     TabWidget* getLastEnteredTabWidget() const;
     
     void appendToScriptEditor(const std::string& str);
+    
+    void exportGroupAsPythonScript(NodeCollection* collection);
 Q_SIGNALS:
 
 
@@ -503,6 +505,7 @@ public Q_SLOTS:
     void openProject();
     bool saveProject();
     bool saveProjectAs();
+    void exportProjectAsGroup();
     void saveAndIncrVersion();
     
     void autoSave();

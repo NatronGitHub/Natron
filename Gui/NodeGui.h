@@ -56,6 +56,7 @@ class LinkArrow;
 class MultiInstancePanel;
 class QMenu;
 class NodeGroup;
+class NodeCollection;
 namespace Natron {
 class ChannelSet;
 class Node;
@@ -596,7 +597,7 @@ class ExportGroupTemplateDialog : public QDialog
     
 public:
     
-    ExportGroupTemplateDialog(NodeGroup* group,Gui* gui,QWidget* parent);
+    ExportGroupTemplateDialog(NodeCollection* group,Gui* gui,QWidget* parent);
     
     virtual ~ExportGroupTemplateDialog();
     

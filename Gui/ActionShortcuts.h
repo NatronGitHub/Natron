@@ -49,6 +49,9 @@
 #define kShortcutIDActionSaveAndIncrVersion "saveAndIncr"
 #define kShortcutDescActionSaveAndIncrVersion "Version project"
 
+#define kShortcutIDActionExportProject "exportAsGroup"
+#define kShortcutDescActionExportProject "Export project as group"
+
 #define kShortcutIDActionPreferences "preferences"
 #define kShortcutDescActionPreferences "Preferences"
 

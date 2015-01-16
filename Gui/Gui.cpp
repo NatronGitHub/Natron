@@ -76,6 +76,7 @@ CLANG_DIAG_ON(unused-parameter)
 #include "Engine/KnobSerialization.h"
 #include "Engine/OutputSchedulerThread.h"
 #include "Engine/NodeGroup.h"
+#include "Engine/NoOp.h"
 
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/GuiAppInstance.h"
@@ -224,6 +225,7 @@ struct GuiPrivate
     ActionWithShortcut *actionClose_project;
     ActionWithShortcut *actionSave_project;
     ActionWithShortcut *actionSaveAs_project;
+    ActionWithShortcut *actionExportAsGroup;
     ActionWithShortcut *actionSaveAndIncrementVersion;
     ActionWithShortcut *actionPreferences;
     ActionWithShortcut *actionExit;
@@ -371,127 +373,128 @@ struct GuiPrivate
 
     GuiPrivate(GuiAppInstance* app,
                Gui* gui)
-        : _gui(gui)
-          , _isUserScrubbingTimeline(false)
-          , _lastSelectedViewer(NULL)
-          , _appInstance(app)
-          , _uiUsingMainThreadCond()
-          , _uiUsingMainThread(false)
-          , _uiUsingMainThreadMutex()
-          , _lastQuestionDialogAnswer(Natron::eStandardButtonNo)
-          , _lastStopAskingAnswer(false)
-          , _currentUndoAction(0)
-          , _currentRedoAction(0)
-          , _undoStacksGroup(0)
-          , _undoStacksActions()
-          , _splitters()
-          , actionNew_project(0)
-          , actionOpen_project(0)
-          , actionClose_project(0)
-          , actionSave_project(0)
-          , actionSaveAs_project(0)
-          , actionSaveAndIncrementVersion(0)
-          , actionPreferences(0)
-          , actionExit(0)
-          , actionProject_settings(0)
-          , actionShowOfxLog(0)
-          , actionShortcutEditor(0)
-          , actionNewViewer(0)
-          , actionFullScreen(0)
-          , actionClearDiskCache(0)
-          , actionClearPlayBackCache(0)
-          , actionClearNodeCache(0)
-          , actionClearPluginsLoadingCache(0)
-          , actionClearAllCaches(0)
-          , actionShowAboutWindow(0)
-          , actionsOpenRecentFile()
-          , renderAllWriters(0)
-          , renderSelectedNode(0)
-          , actionConnectInput1(0)
-          , actionConnectInput2(0)
-          , actionConnectInput3(0)
-          , actionConnectInput4(0)
-          , actionConnectInput5(0)
-          , actionConnectInput6(0)
-          , actionConnectInput7(0)
-          , actionConnectInput8(0)
-          , actionConnectInput9(0)
-          , actionConnectInput10(0)
-          , actionImportLayout(0)
-          , actionExportLayout(0)
-          , actionRestoreDefaultLayout(0)
-          , actionNextTab(0)
-          , actionCloseTab(0)
-          , _centralWidget(0)
-          , _mainLayout(0)
-          , _lastLoadSequenceOpenedDir()
-          , _lastLoadProjectOpenedDir()
-          , _lastSaveSequenceOpenedDir()
-          , _lastSaveProjectOpenedDir()
-          , _lastPluginDir()
-          , _nextViewerTabPlace(0)
-          , _leftRightSplitter(0)
-          , _viewerTabsMutex()
-          , _viewerTabs()
-          , _histogramsMutex()
-          , _histograms()
-          , _nextHistogramIndex(1)
-          , _nodeGraphArea(0)
-          , _lastFocusedGraph(0)
-          , _groups()
-          , _curveEditor(0)
-          , _toolBox(0)
-          , _propertiesBin(0)
-          , _propertiesScrollArea(0)
+    : _gui(gui)
+    , _isUserScrubbingTimeline(false)
+    , _lastSelectedViewer(NULL)
+    , _appInstance(app)
+    , _uiUsingMainThreadCond()
+    , _uiUsingMainThread(false)
+    , _uiUsingMainThreadMutex()
+    , _lastQuestionDialogAnswer(Natron::eStandardButtonNo)
+    , _lastStopAskingAnswer(false)
+    , _currentUndoAction(0)
+    , _currentRedoAction(0)
+    , _undoStacksGroup(0)
+    , _undoStacksActions()
+    , _splitters()
+    , actionNew_project(0)
+    , actionOpen_project(0)
+    , actionClose_project(0)
+    , actionSave_project(0)
+    , actionSaveAs_project(0)
+    , actionExportAsGroup(0)
+    , actionSaveAndIncrementVersion(0)
+    , actionPreferences(0)
+    , actionExit(0)
+    , actionProject_settings(0)
+    , actionShowOfxLog(0)
+    , actionShortcutEditor(0)
+    , actionNewViewer(0)
+    , actionFullScreen(0)
+    , actionClearDiskCache(0)
+    , actionClearPlayBackCache(0)
+    , actionClearNodeCache(0)
+    , actionClearPluginsLoadingCache(0)
+    , actionClearAllCaches(0)
+    , actionShowAboutWindow(0)
+    , actionsOpenRecentFile()
+    , renderAllWriters(0)
+    , renderSelectedNode(0)
+    , actionConnectInput1(0)
+    , actionConnectInput2(0)
+    , actionConnectInput3(0)
+    , actionConnectInput4(0)
+    , actionConnectInput5(0)
+    , actionConnectInput6(0)
+    , actionConnectInput7(0)
+    , actionConnectInput8(0)
+    , actionConnectInput9(0)
+    , actionConnectInput10(0)
+    , actionImportLayout(0)
+    , actionExportLayout(0)
+    , actionRestoreDefaultLayout(0)
+    , actionNextTab(0)
+    , actionCloseTab(0)
+    , _centralWidget(0)
+    , _mainLayout(0)
+    , _lastLoadSequenceOpenedDir()
+    , _lastLoadProjectOpenedDir()
+    , _lastSaveSequenceOpenedDir()
+    , _lastSaveProjectOpenedDir()
+    , _lastPluginDir()
+    , _nextViewerTabPlace(0)
+    , _leftRightSplitter(0)
+    , _viewerTabsMutex()
+    , _viewerTabs()
+    , _histogramsMutex()
+    , _histograms()
+    , _nextHistogramIndex(1)
+    , _nodeGraphArea(0)
+    , _lastFocusedGraph(0)
+    , _groups()
+    , _curveEditor(0)
+    , _toolBox(0)
+    , _propertiesBin(0)
+    , _propertiesScrollArea(0)
 		  , _propertiesContainer(0)
-          , _layoutPropertiesBin(0)
-          , _clearAllPanelsButton(0)
-          , _minimizeAllPanelsButtons(0)
-          , _maxPanelsOpenedSpinBox(0)
-          , _isGUIFrozenMutex()
-          , _isGUIFrozen(false)
-          , menubar(0)
-          , menuFile(0)
-          , menuRecentFiles(0)
-          , menuEdit(0)
-          , menuLayout(0)
-          , menuDisplay(0)
-          , menuOptions(0)
-          , menuRender(0)
-          , viewersMenu(0)
-          , viewerInputsMenu(0)
-          , viewersViewMenu(0)
-          , cacheMenu(0)
-          , _panesMutex()
-          , _panes()
-          , _floatingWindowMutex()
-          , _floatingWindows()
-          , _settingsGui(0)
-          , _projectGui(0)
-          , _currentlyDraggedPanel(0)
-          , _aboutWindow(0)
-          , _progressBars()
-          , openedPanels()
-          , _openGLVersion()
-          , _glewVersion()
-          , _toolButtonMenuOpened(NULL)
-          , aboutToCloseMutex()
-          , _aboutToClose(false)
-          , shortcutEditor(0)
-          , leftToolBarDisplayedOnHoverOnly(false)
-          , _scriptEditor(0)
-          , _lastEnteredTabWidget(0)
+    , _layoutPropertiesBin(0)
+    , _clearAllPanelsButton(0)
+    , _minimizeAllPanelsButtons(0)
+    , _maxPanelsOpenedSpinBox(0)
+    , _isGUIFrozenMutex()
+    , _isGUIFrozen(false)
+    , menubar(0)
+    , menuFile(0)
+    , menuRecentFiles(0)
+    , menuEdit(0)
+    , menuLayout(0)
+    , menuDisplay(0)
+    , menuOptions(0)
+    , menuRender(0)
+    , viewersMenu(0)
+    , viewerInputsMenu(0)
+    , viewersViewMenu(0)
+    , cacheMenu(0)
+    , _panesMutex()
+    , _panes()
+    , _floatingWindowMutex()
+    , _floatingWindows()
+    , _settingsGui(0)
+    , _projectGui(0)
+    , _currentlyDraggedPanel(0)
+    , _aboutWindow(0)
+    , _progressBars()
+    , openedPanels()
+    , _openGLVersion()
+    , _glewVersion()
+    , _toolButtonMenuOpened(NULL)
+    , aboutToCloseMutex()
+    , _aboutToClose(false)
+    , shortcutEditor(0)
+    , leftToolBarDisplayedOnHoverOnly(false)
+    , _scriptEditor(0)
+    , _lastEnteredTabWidget(0)
     {
     }
-
+    
     void restoreGuiGeometry();
-
+    
     void saveGuiGeometry();
-
+    
     void setUndoRedoActions(QAction* undoAction,QAction* redoAction);
-
+    
     void addToolButton(ToolButton* tool);
-
+    
     ///Creates the properties bin and appends it as a tab to the propertiesPane TabWidget
     void createPropertiesBinGui();
 
@@ -846,6 +849,10 @@ Gui::createMenuActions()
     _imp->actionSaveAs_project = new ActionWithShortcut(kShortcutGroupGlobal,kShortcutIDActionSaveAsProject,kShortcutDescActionSaveAsProject,this);
     _imp->actionSaveAs_project->setIcon( get_icon("document-save-as") );
     QObject::connect( _imp->actionSaveAs_project, SIGNAL( triggered() ), this, SLOT( saveProjectAs() ) );
+    
+    _imp->actionExportAsGroup = new ActionWithShortcut(kShortcutGroupGlobal,kShortcutIDActionExportProject,kShortcutDescActionExportProject,this);
+    _imp->actionExportAsGroup->setIcon( get_icon("document-save-as") );
+    QObject::connect( _imp->actionExportAsGroup, SIGNAL( triggered() ), this, SLOT( exportProjectAsGroup() ) );
 
     _imp->actionSaveAndIncrementVersion = new ActionWithShortcut(kShortcutGroupGlobal,kShortcutIDActionSaveAndIncrVersion,kShortcutDescActionSaveAndIncrVersion,this);
     QObject::connect(_imp->actionSaveAndIncrementVersion, SIGNAL( triggered() ), this, SLOT( saveAndIncrVersion() ) );
@@ -4837,4 +4844,32 @@ void
 Gui::appendToScriptEditor(const std::string& str)
 {
     _imp->_scriptEditor->appendToScriptEditor(str.c_str());
+}
+
+void
+Gui::exportGroupAsPythonScript(NodeCollection* collection)
+{
+    assert(collection);
+    NodeList nodes = collection->getNodes();
+    bool hasOutput = false;
+    for (NodeList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        if ((*it)->isActivated() && dynamic_cast<GroupOutput*>((*it)->getLiveInstance())) {
+            hasOutput = true;
+            break;
+        }
+    }
+    
+    if (!hasOutput) {
+        Natron::errorDialog(tr("Export").toStdString(), tr("To export as group, at least one Ouptut node must exist.").toStdString());
+        return;
+    }
+    ExportGroupTemplateDialog dialog(collection,this,this);
+    dialog.exec();
+    
+}
+
+void
+Gui::exportProjectAsGroup()
+{
+    exportGroupAsPythonScript(getApp()->getProject().get());
 }

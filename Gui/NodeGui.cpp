@@ -2640,7 +2640,7 @@ NodeGui::getSize(double* w, double* h) const
 struct ExportGroupTemplateDialogPrivate
 {
     Gui* gui;
-    NodeGroup* group;
+    NodeCollection* group;
     QGridLayout* mainLayout;
     
     QLabel* labelLabel;
@@ -2658,7 +2658,7 @@ struct ExportGroupTemplateDialogPrivate
     
     QDialogButtonBox *buttons;
     
-    ExportGroupTemplateDialogPrivate(NodeGroup* group,Gui* gui)
+    ExportGroupTemplateDialogPrivate(NodeCollection* group,Gui* gui)
     : gui(gui)
     , group(group)
     , mainLayout(0)
@@ -2677,7 +2677,7 @@ struct ExportGroupTemplateDialogPrivate
     }
 };
 
-ExportGroupTemplateDialog::ExportGroupTemplateDialog(NodeGroup* group,Gui* gui,QWidget* parent)
+ExportGroupTemplateDialog::ExportGroupTemplateDialog(NodeCollection* group,Gui* gui,QWidget* parent)
 : QDialog(parent)
 , _imp(new ExportGroupTemplateDialogPrivate(group,gui))
 {
@@ -2832,7 +2832,7 @@ ExportGroupTemplateDialog::onOkClicked()
     QString content;
     _imp->group->exportGroupToPython(pluginLabel, iconPath, grouping, content);
     ts << content;
-    
+
     accept();
 }
 
@@ -2848,8 +2848,7 @@ NodeGui::exportGroupAsPythonScript()
         qDebug() << "Attempting to export a non-group as a python script.";
         return;
     }
-    ExportGroupTemplateDialog dialog(isGroup,getDagGui()->getGui(),getDagGui());
-    dialog.exec();
+    getDagGui()->getGui()->exportGroupAsPythonScript(isGroup);
 }
 
 void

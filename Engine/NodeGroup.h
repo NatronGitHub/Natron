@@ -225,6 +225,10 @@ public:
      **/
     virtual void notifyNodeNameChanged(const boost::shared_ptr<Natron::Node>& /*node*/) {}
     
+    void exportGroupToPython(const QString& pluginLabel,
+                             const QString& pluginIconPath,
+                             const QString& pluginGrouping,
+                             QString& output);
     
 Q_SIGNALS:
     
@@ -317,10 +321,7 @@ public:
     
     void getInputsOutputs(std::list<Natron::Node* >* nodes) const;
     
-    void exportGroupToPython(const QString& pluginLabel,
-                             const QString& pluginIconPath,
-                             const QString& pluginGrouping,
-                             QString& output);
+ 
 private:
     
     virtual void initializeKnobs() OVERRIDE FINAL;
