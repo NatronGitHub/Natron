@@ -428,8 +428,18 @@ Project::saveProjectInternal(const QString & path,
     
     std::string onProjectSave = getOnProjectSaveCB();
     if (!onProjectSave.empty()) {
-        onProjectSave = "filename = " + filePath.toStdString() + "\nret = "
-        + onProjectSave + "()\ndel filename";
+        std::stringstream ss;
+        ss << "autoSave = ";
+        if (autoSave) {
+            ss << "True\n";
+        } else {
+            ss << "False\n";
+        }
+        ss << "filename = ";
+        ss << filePath.toStdString();
+        ss << "\n" << "ret = " << onProjectSave << "()\n";
+        ss << "del filename\ndel autoSave\n";
+        onProjectSave = ss.str();
         std::string err;
         std::string output;
         if (!Natron::interpretPythonScript(onProjectSave, &err, &output)) {
@@ -441,6 +451,8 @@ Project::saveProjectInternal(const QString & path,
             assert(ret);
             if (ret) {
                 filePath = QString(PY3String_asString(ret).c_str());
+                bool ok = Natron::interpretPythonScript("del ret\n", &err, 0);
+                assert(ok);
             }
             if (!output.empty()) {
                 getApp()->appendToScriptEditor(output);
@@ -952,8 +964,10 @@ Project::initializeKnobs()
     _imp->onProjectSaveCB->setHintToolTip("Add here the name of a Python-defined function that will be called each time this project "
                                           "is saved by the user. This will be called prior to actually saving the project and can be used "
                                           "to change the filename of the file.\n"
-                                          "The global variable \"filename\" will be declared beforehand. This function should then "
-                                          "return the filename under which the file should be saved.");
+                                          "The global variable \"filename\" will be declared. This function should then "
+                                          "return the filename under which the file should be saved.\n"
+                                          "The global boolean variable \"autoSave\" will be declared. If True it means that the callback "
+                                          "was triggered from an auto-save, otherwise from a regular user save.");
     _imp->onProjectSaveCB->setAnimationEnabled(false);
     std::string onProjectSave = appPTR->getCurrentSettings()->getDefaultOnProjectSaveCB();
     _imp->onProjectSaveCB->setValue(onProjectSave, 0);

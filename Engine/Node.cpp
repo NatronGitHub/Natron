@@ -198,7 +198,7 @@ struct Node::Implementation
     
     void ifGroupForceHashChangeOfInputs();
     
-    void runOnNodeCreatedCB();
+    void runOnNodeCreatedCB(bool userEdited);
     
     void runOnNodeDeleteCB();
     
@@ -532,9 +532,7 @@ Node::load(const std::string & parentMultiInstanceName,
     computeHash();
     assert(_imp->liveInstance);
     
-    if (serialization.isNull()) {
-        _imp->runOnNodeCreatedCB();
-    }
+    _imp->runOnNodeCreatedCB(serialization.isNull());
 } // load
 
 void
@@ -2865,7 +2863,7 @@ Node::activate(const std::list< Node* > & outputsToRestore,
     }
     Q_EMIT activated(triggerRender);
     
-    _imp->runOnNodeCreatedCB();
+    _imp->runOnNodeCreatedCB(true);
 } // activate
 
 void
@@ -4721,7 +4719,7 @@ Node::getKnobChangedCallback() const
 }
 
 void
-Node::Implementation::runOnNodeCreatedCB()
+Node::Implementation::runOnNodeCreatedCB(bool userEdited)
 {
     std::string cb = _publicInterface->getApp()->getProject()->getOnNodeCreatedCB();
     if (cb.empty()) {
@@ -4729,7 +4727,8 @@ Node::Implementation::runOnNodeCreatedCB()
     }
     std::string delScript;
     std::string thisNode = _publicInterface->declareCurrentNodeVariable_Python(&delScript);
-    cb = thisNode + cb + "()\n" + delScript;
+    std::string userStr = userEdited ? "userEdited = True\n" : "userEdited = False\n";
+    cb = thisNode + userStr + cb + "()\n" + delScript + "del userEdited\n";
     
     std::string err;
     std::string output;
