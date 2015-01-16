@@ -1023,34 +1023,24 @@ Settings::restoreSettings()
     _settingsExisted = false;
     try {
         _settingsExisted = _natronSettingsExist->getValue();
-    } catch (std::logic_error) {
-        // ignore
-    }
-    if (!_settingsExisted) {
-        _natronSettingsExist->setValue(true, 0);
-        saveSettings();
-    }
-    
-    try {
+
+        if (!_settingsExisted) {
+            _natronSettingsExist->setValue(true, 0);
+            saveSettings();
+        }
+
         int font_i = _fontChoice->getValue();
         if (font_i == 2) {
             //System font, show it
             _systemFontChoice->setSecret(false);
         }
-    } catch (std::logic_error) {
-        // ignore
-    }
 
-    appPTR->setNThreadsPerEffect(getNumberOfThreadsPerEffect());
-    appPTR->setNThreadsToRender(getNumberOfThreads());
-    
-    bool useTP = true;
-    try {
-        useTP = _useThreadPool->getValue();
+        appPTR->setNThreadsPerEffect(getNumberOfThreadsPerEffect());
+        appPTR->setNThreadsToRender(getNumberOfThreads());
+        appPTR->setUseThreadPool(_useThreadPool->getValue());
     } catch (std::logic_error) {
         // ignore
     }
-    appPTR->setUseThreadPool(useTP);
 
     
     _restoringSettings = false;

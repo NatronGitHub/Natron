@@ -82,6 +82,7 @@ struct CurveEditorPrivate
     , filterContainer(0)
     , filterLayout(0)
     , filterLabel(0)
+    , filterEdit(0)
     , leftPaneContainer(0)
     , leftPaneLayout(0)
     , undoStack(new QUndoStack)

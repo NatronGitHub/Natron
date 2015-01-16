@@ -97,14 +97,14 @@ struct ViewerData
     
     int leftBound,rightBound;
     
-    unsigned int _version;
+    unsigned int version;
     
     friend class boost::serialization::access;
     template<class Archive>
     void serialize(Archive & ar,
-                   const unsigned int version)
+                   const unsigned int version_)
     {
-        _version = version;
+        version = version_;
         
         ar & boost::serialization::make_nvp("zoomLeft",zoomLeft);
         ar & boost::serialization::make_nvp("zoomBottom",zoomBottom);

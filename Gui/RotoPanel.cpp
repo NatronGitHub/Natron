@@ -1976,6 +1976,7 @@ RotoPanelPrivate::setItemKey(const boost::shared_ptr<RotoItem>& item,
     } else {
         TimeLineKeys keys;
         keys.keys.insert(time);
+        keys.visible = false;
         keyframes.insert( std::make_pair(item, keys) );
     }
 }
@@ -2082,7 +2083,6 @@ RotoPanel::onSettingsPanelClosed(bool closed)
                         ret.first->second.visible = true;
                         break;
                     }
-                    break;
                 }
             }
         }
