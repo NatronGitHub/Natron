@@ -350,6 +350,14 @@ AppManager::parseCmdLineArgs(int argc,
         }
     }
 
+    if (expectWriterNameOnNextArg || expectPipeFileNameOnNextArg) {
+        AppManager::printUsage(argv[0]);
+        
+        return false;
+    }
+    if (expectedFrameRange) {
+        appendFakeFrameRange(frameRanges);
+    }
     return true;
 } // parseCmdLineArgs
 
@@ -389,7 +397,7 @@ AppManager::load(int &argc,
     _imp->idealThreadCount = QThread::idealThreadCount();
     QThreadPool::globalInstance()->setExpiryTimeout(-1); //< make threads never exit on their own
     //otherwise it might crash with thread local storage
-    _imp->diskCachesLocation = Natron::StandardPaths::writableLocation(Natron::StandardPaths::CacheLocation) ;
+    _imp->diskCachesLocation = Natron::StandardPaths::writableLocation(Natron::StandardPaths::eStandardLocationCache) ;
 
 #if QT_VERSION < 0x050000
     QTextCodec::setCodecForCStrings(QTextCodec::codecForName("UTF-8"));
@@ -426,8 +434,11 @@ AppManager::~AppManager()
         delete _imp->_backgroundIPC;
     }
 
-    _imp->saveCaches();
-
+    try {
+        _imp->saveCaches();
+    } catch (std::runtime_error) {
+        // ignore errors
+    }
 
     _instance = 0;
 
@@ -498,8 +509,38 @@ AppManager::loadInternal(const QString & projectFilename,
     //
     // this must be done after initializing the QCoreApplication, see
     // https://qt-project.org/doc/qt-5/qcoreapplication.html#locale-settings
-    //std::setlocale(LC_NUMERIC,"C"); // set the locale for LC_NUMERIC only
-    // set the locale for everything
+
+    // Set the C and C++ locales
+    // see http://en.cppreference.com/w/cpp/locale/locale/global
+    // Maybe this can also workaround the OSX crash in loadlocale():
+    // https://discussions.apple.com/thread/3479591
+    // https://github.com/cth103/dcpomatic/blob/master/src/lib/safe_stringstream.h
+    // stringstreams don't seem to be thread-safe on OSX because the change the locale.
+
+    // We also set explicitely the LC_NUMERIC locale to "C" to avoid juggling
+    // between locales when using stringstreams.
+    // See function __convert_from_v(...) in
+    // /usr/include/c++/4.2.1/x86_64-apple-darwin10/bits/c++locale.h
+    // https://www.opensource.apple.com/source/libstdcxx/libstdcxx-104.1/include/c++/4.2.1/bits/c++locale.h
+    // See also https://stackoverflow.com/questions/22753707/is-ostream-operator-in-libstdc-thread-hostile
+
+    // set the C++ locale first
+    try {
+        std::locale::global(std::locale(std::locale("en_US.UTF-8"), "C", std::locale::numeric));
+    } catch (std::runtime_error) {
+        try {
+            std::locale::global(std::locale(std::locale("UTF8"), "C", std::locale::numeric));
+        } catch (std::runtime_error) {
+            try {
+                std::locale::global(std::locale("C"));
+            } catch (std::runtime_error) {
+                qDebug() << "Could not set C++ locale!";
+            }
+        }
+    }
+
+    // set the C locale second, because it will not overwrite the changes you made to the C++ locale
+    // see https://stackoverflow.com/questions/12373341/does-stdlocaleglobal-make-affect-to-printf-function
     char *category = std::setlocale(LC_ALL,"en_US.UTF-8");
     if (category == NULL) {
         category = std::setlocale(LC_ALL,"UTF-8");
@@ -508,8 +549,10 @@ AppManager::loadInternal(const QString & projectFilename,
         category = std::setlocale(LC_ALL,"C");
     }
     if (category == NULL) {
-        qDebug() << "Could not set locale!";
+        qDebug() << "Could not set C locale!";
     }
+    std::setlocale(LC_NUMERIC,"C"); // set the locale for LC_NUMERIC only
+
     Natron::Log::instance(); //< enable logging
 
     _imp->_settings->initializeKnobsPublic();
@@ -803,6 +846,8 @@ AppManager::writeToOutputPipe(const QString & longMessage,
                               const QString & shortMessage)
 {
     if (!_imp->_backgroundIPC) {
+        
+        QMutexLocker k(&_imp->_ofxLogMutex);
         ///Don't use qdebug here which is disabled if QT_NO_DEBUG_OUTPUT is defined.
         std::cout << longMessage.toStdString() << std::endl;
         return false;
@@ -1175,11 +1220,11 @@ AppManager::getPluginBinaryFromOldID(const QString & pluginId,int majorVersion,i
     std::map<int,Natron::Plugin*> matches;
     
     if (pluginId == "Viewer") {
-        return _imp->findPluginById(NATRON_VIEWER_ID, majorVersion, minorVersion);
+        return _imp->findPluginById(PLUGINID_NATRON_VIEWER, majorVersion, minorVersion);
     } else if (pluginId == "Dot") {
-        return _imp->findPluginById(NATRON_DOT_ID,majorVersion, minorVersion );
+        return _imp->findPluginById(PLUGINID_NATRON_DOT,majorVersion, minorVersion );
     } else if (pluginId == "DiskCache") {
-        return _imp->findPluginById(NATRON_DISKCACHE_NODE_ID, majorVersion, minorVersion);
+        return _imp->findPluginById(PLUGINID_NATRON_DISKCACHE, majorVersion, minorVersion);
     }
     
     ///Try remapping these ids to old ids we had in Natron < 1.0 for backward-compat
@@ -1199,11 +1244,31 @@ AppManager::getPluginBinaryFromOldID(const QString & pluginId,int majorVersion,i
 Natron::Plugin*
 AppManager::getPluginBinary(const QString & pluginId,
                             int majorVersion,
-                            int /*minorVersion*/) const
+                            int /*minorVersion*/,
+                            bool convertToLowerCase) const
 {
-    std::map<int,Natron::Plugin*> matches;
-
-    PluginsMap::const_iterator foundID = _imp->_plugins.find(pluginId.toStdString());
+    PluginsMap::const_iterator foundID = _imp->_plugins.end();
+    for (PluginsMap::const_iterator it = _imp->_plugins.begin(); it != _imp->_plugins.end(); ++it) {
+        QString realID;
+        if (convertToLowerCase &&
+            !pluginId.startsWith(NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.")) {
+            
+            QString lowerCase = QString(it->first.c_str()).toLower();
+            if (lowerCase == pluginId) {
+                foundID = it;
+                break;
+            }
+            
+        } else {
+            if (QString(it->first.c_str()) == pluginId) {
+                foundID = it;
+                break;
+            }
+        }
+    }
+    
+    
+    
     if (foundID != _imp->_plugins.end()) {
         
         assert(!foundID->second.empty());
@@ -1453,7 +1518,7 @@ AppManager::setDiskCacheLocation(const QString& path)
     if (d.exists() && !path.isEmpty()) {
         _imp->diskCachesLocation = path;
     } else {
-        _imp->diskCachesLocation = Natron::StandardPaths::writableLocation(Natron::StandardPaths::CacheLocation);
+        _imp->diskCachesLocation = Natron::StandardPaths::writableLocation(Natron::StandardPaths::eStandardLocationCache);
     }
     
 }

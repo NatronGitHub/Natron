@@ -50,12 +50,12 @@ struct ScaleSliderQWidgetPrivate
     bool ctrlDown;
     bool shiftDown;
     double currentZoom;
-    ScaleSliderQWidget::DataType dataType;
+    ScaleSliderQWidget::DataTypeEnum dataType;
     
     ScaleSliderQWidgetPrivate(double min,
                               double max,
                               double initialPos,
-                              ScaleSliderQWidget::DataType dataType,
+                              ScaleSliderQWidget::DataTypeEnum dataType,
                               Natron::ScaleTypeEnum type)
     : zoomCtx()
     , oldClick()
@@ -83,7 +83,7 @@ struct ScaleSliderQWidgetPrivate
 ScaleSliderQWidget::ScaleSliderQWidget(double min,
                                        double max,
                                        double initialPos,
-                                       DataType dataType,
+                                       DataTypeEnum dataType,
                                        Natron::ScaleTypeEnum type,
                                        QWidget* parent)
     : QWidget(parent)

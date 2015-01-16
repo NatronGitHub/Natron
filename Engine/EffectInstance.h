@@ -22,6 +22,24 @@
 #include "Engine/Rect.h"
 #include "Engine/ImageLocker.h"
 
+// Various useful plugin IDs, @see EffectInstance::getPluginID()
+#define PLUGINID_OFX_MERGE        "net.sf.openfx.MergePlugin"
+#define PLUGINID_OFX_TRACKERPM    "net.sf.openfx.TrackerPM"
+#define PLUGINID_OFX_DOTEXAMPLE   "net.sf.openfx.dotexample"
+#define PLUGINID_OFX_READOIIO     "fr.inria.openfx.ReadOIIO"
+#define PLUGINID_OFX_WRITEOIIO    "fr.inria.openfx.WriteOIIO"
+#define PLUGINID_OFX_ROTO         "net.sf.openfx.RotoPlugin"
+#define PLUGINID_OFX_TRANSFORM    "net.sf.openfx.TransformPlugin"
+#define PLUGINID_OFX_GRADE        "net.sf.openfx.GradePlugin"
+#define PLUGINID_OFX_COLORCORRECT "net.sf.openfx.ColorCorrectPlugin"
+#define PLUGINID_OFX_BLURCIMG     "net.sf.cimg.CImgBlur"
+
+#define PLUGINID_NATRON_VIEWER    (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.Viewer")
+#define PLUGINID_NATRON_DISKCACHE (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.DiskCache")
+#define PLUGINID_NATRON_DOT       (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.Dot")
+#define PLUGINID_NATRON_READQT    (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.ReadQt")
+#define PLUGINID_NATRON_WRITEQT   (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.WriteQt")
+
 class Hash64;
 class Format;
 class TimeLine;
@@ -460,9 +478,7 @@ public:
                                              Natron::ImageComponentsEnum components,
                                              Natron::ImageBitDepthEnum nodeBitDepthPref,
                                              Natron::ImageComponentsEnum nodeComponentsPref,
-                                             int channelForAlpha,
-                                             /*const RectD& rod,*/
-                                             bool treatUnavailablePixelsAsRendered,
+                                             const RectI& renderWindow,
                                              const std::list<boost::shared_ptr<Natron::Image> >& inputImages,
                                              boost::shared_ptr<Natron::Image>* image);
 
@@ -1283,6 +1299,7 @@ private:
 );
 
     bool renderInputImagesForRoI(bool createImageInCache,
+                                 const std::list< boost::shared_ptr<Natron::Image> >& argsInputImages,
                                  SequenceTime time,
                                  int view,
                                  double par,
@@ -1364,11 +1381,11 @@ private:
         boost::shared_ptr<Natron::Image>  renderMappedImage;
     };
 
-    enum RenderingFunctorRet
+    enum RenderingFunctorRetEnum
     {
-        eRenderingFunctorFailed, //< must stop rendering
-        eRenderingFunctorOK, //< ok, move on
-        eRenderingFunctorTakeImageLock //< take the image lock because another thread is rendering part of something we need
+        eRenderingFunctorRetFailed, //< must stop rendering
+        eRenderingFunctorRetOK, //< ok, move on
+        eRenderingFunctorRetTakeImageLock //< take the image lock because another thread is rendering part of something we need
     };
 
     ///These are the image passed to the plug-in to render
@@ -1392,12 +1409,12 @@ private:
     /// - 4) Plugin needs remapping and downscaling
     ///    * renderMappedImage points to fullScaleMappedImage
     ///    * We render in fullScaledMappedImage, then convert into "image" and then downscale into downscaledImage.
-    RenderingFunctorRet tiledRenderingFunctor(const TiledRenderingFunctorArgs& args,
+    RenderingFunctorRetEnum tiledRenderingFunctor(const TiledRenderingFunctorArgs& args,
                                              const ParallelRenderArgs& frameArgs,
                                              bool setThreadLocalStorage,
                                              const RectI & downscaledRectToRender );
 
-    RenderingFunctorRet tiledRenderingFunctor(const RenderArgs & args,
+    RenderingFunctorRetEnum tiledRenderingFunctor(const RenderArgs & args,
                                              const ParallelRenderArgs& frameArgs,
                                              const std::list<boost::shared_ptr<Natron::Image> >& inputImages,
                                              bool setThreadLocalStorage,

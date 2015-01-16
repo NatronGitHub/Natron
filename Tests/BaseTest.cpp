@@ -36,20 +36,20 @@ BaseTest::registerTestPlugins()
 {
     _allTestPluginIDs.clear();
 
-    _dotGeneratorPluginID = QString("net.sf.openfx.dotexample");
+    _dotGeneratorPluginID = PLUGINID_OFX_DOTEXAMPLE;
     _allTestPluginIDs.push_back(_dotGeneratorPluginID);
 
-    _readOIIOPluginID = QString("fr.inria.openfx.readoiio");
+    _readOIIOPluginID = PLUGINID_OFX_READOIIO;
     _allTestPluginIDs.push_back(_readOIIOPluginID);
 
-    _writeOIIOPluginID = QString("fr.inria.openfx.writeoiio");
+    _writeOIIOPluginID = PLUGINID_OFX_WRITEOIIO;
     _allTestPluginIDs.push_back(_writeOIIOPluginID);
 
     for (unsigned int i = 0; i < _allTestPluginIDs.size(); ++i) {
         ///make sure the generic test plugin is present
         Natron::LibraryBinary* bin = NULL;
         try {
-            Natron::Plugin* p = appPTR->getPluginBinary(_allTestPluginIDs[i], -1, -1);
+            Natron::Plugin* p = appPTR->getPluginBinary(_allTestPluginIDs[i], -1, -1, false);
             if (p) {
                 bin = p->getLibraryBinary();
             }

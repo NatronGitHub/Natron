@@ -24,7 +24,7 @@ TEST(SequenceParsing,TestHashCharacter) {
     QStringList fileNames;
     int sequenceItemsCount = 10;
     ///create temporary files as a sequence and try to read that sequence.
-    QString tempPath = Natron::StandardPaths::writableLocation(Natron::StandardPaths::TempLocation);
+    QString tempPath = Natron::StandardPaths::writableLocation(Natron::StandardPaths::eStandardLocationTemp);
     QDir dir(tempPath);
 
     dir.mkpath(".");
@@ -183,7 +183,7 @@ TEST(SequenceParsing,TestHashCharacter) {
 TEST(SequenceParsing,TestPrintfLikeSyntax) {
     int sequenceItemsCount = 10;
     ///create temporary files as a sequence and try to read that sequence.
-    QString tempPath = Natron::StandardPaths::writableLocation(Natron::StandardPaths::TempLocation);
+    QString tempPath = Natron::StandardPaths::writableLocation(Natron::StandardPaths::eStandardLocationTemp);
     QDir dir(tempPath);
 
     dir.mkpath(".");
@@ -286,7 +286,7 @@ TEST(SequenceParsing,TestPrintfLikeSyntax) {
 TEST(SequenceParsing,TestViews) {
     int sequenceItemsCount = 11;
     ///create temporary files as a sequence and try to read that sequence.
-    QString tempPath = Natron::StandardPaths::writableLocation(Natron::StandardPaths::TempLocation);
+    QString tempPath = Natron::StandardPaths::writableLocation(Natron::StandardPaths::eStandardLocationTemp);
     QDir dir(tempPath);
 
     dir.mkpath(".");
@@ -486,7 +486,7 @@ TEST(FileNameContent,GeneralTest) {
     ASSERT_TRUE(file1Content.getPath() == "/Users/Test/");
     ASSERT_TRUE(file1Content.absoluteFileName() == file1);
 
-    ASSERT_TRUE(file1Content.getFilePattern() == "mysequence###0.jpg");
+    ASSERT_TRUE(file1Content.getFilePattern(3) == "mysequence###0.jpg");
     std::string numberStr;
     ASSERT_TRUE( file1Content.getNumberByIndex(0, &numberStr) );
     ASSERT_TRUE(numberStr == "001");
@@ -514,8 +514,8 @@ TEST(SequenceFromFiles,SimpleTest) {
     EXPECT_EQ( file1.fileName(), sequence.generateUserFriendlySequencePattern() );
     EXPECT_EQ( "jpg", sequence.fileExtension() );
     EXPECT_TRUE( sequence.isSingleFile() );
-    EXPECT_EQ( INT_MIN, sequence.getFirstFrame() );
-    EXPECT_EQ( INT_MAX, sequence.getLastFrame() );
+    EXPECT_EQ( 0, sequence.getFirstFrame() );
+    EXPECT_EQ( 0, sequence.getLastFrame() );
     EXPECT_TRUE( sequence.contains( file1.absoluteFileName() ) );
 
     ///now add valid files

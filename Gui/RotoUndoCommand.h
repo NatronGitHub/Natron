@@ -62,7 +62,7 @@ private:
     double _dx,_dy;
     bool _featherLinkEnabled;
     bool _rippleEditEnabled;
-    int _selectedTool; //< corresponds to the RotoGui::Roto_Tool enum
+    int _selectedTool; //< corresponds to the RotoGui::RotoToolEnum enum
     int _time; //< the time at which the change was made
     std::list<boost::shared_ptr<Bezier> > _selectedCurves;
     std::list<int> _indexesToMove; //< indexes of the control points
@@ -112,7 +112,7 @@ private:
     bool _firstRedoCalled; //< false by default
     RotoGui* _roto;
     bool _rippleEditEnabled;
-    int _selectedTool; //< corresponds to the RotoGui::Roto_Tool enum
+    int _selectedTool; //< corresponds to the RotoGui::RotoToolEnum enum
     boost::shared_ptr<Transform::Matrix3x3> _matrix;
     int _time; //< the time at which the change was made
     std::list<boost::shared_ptr<Bezier> > _selectedCurves;
@@ -574,10 +574,10 @@ class PasteItemUndoCommand
 {
 public:
 
-    enum Mode
+    enum PasteModeEnum
     {
-        CopyToLayer = 0,
-        CopyToItem
+        ePasteModeCopyToLayer = 0,
+        ePasteModeCopyToItem
     };
 
     struct PastedItem
@@ -600,7 +600,7 @@ public:
 private:
 
     RotoPanel* _roto;
-    Mode _mode;
+    PasteModeEnum _mode;
     QTreeWidgetItem* _targetTreeItem;
     boost::shared_ptr<RotoItem> _targetItem;
     boost::shared_ptr<RotoItem> _oldTargetItem;

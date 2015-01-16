@@ -525,12 +525,12 @@ ComboBox::setCurrentIndex_internal(int index)
     }
     str = text;
 
-    _currentText = str;
     QFontMetrics m = fontMetrics();
     setMinimumWidth( m.width(str) + 2 * DROP_DOWN_ICON_SIZE);
 
-    if (index != -1 && index != _currentIndex) {
+    if ((index != -1 && index != _currentIndex) || _currentText != str) {
         _currentIndex = index;
+        _currentText = str;
         updateLabel();
         return true;
     } else {

@@ -129,7 +129,7 @@ Project::loadProject(const QString & path,
         }
         Natron::errorDialog( QObject::tr("Project loader").toStdString(), QObject::tr("Error while loading project").toStdString() + ": " + e.what() );
         if ( !appPTR->isBackground() ) {
-            getApp()->createNode(  CreateNodeArgs(NATRON_VIEWER_ID,
+            getApp()->createNode(  CreateNodeArgs(PLUGINID_NATRON_VIEWER,
                                                   "",
                                                   -1,-1,
                                                   -1,
@@ -149,7 +149,7 @@ Project::loadProject(const QString & path,
         }
         Natron::errorDialog( QObject::tr("Project loader").toStdString(), QObject::tr("Unkown error while loading project").toStdString() );
         if ( !appPTR->isBackground() ) {
-            getApp()->createNode(  CreateNodeArgs(NATRON_VIEWER_ID,
+            getApp()->createNode(  CreateNodeArgs(PLUGINID_NATRON_VIEWER,
                                                   "",
                                                   -1,-1,
                                                   -1,
@@ -268,6 +268,8 @@ Project::loadProjectInternal(const QString & path,
     }
 
     ifile.close();
+    
+    _imp->natronVersion->setValue(generateUserFriendlyNatronVersionName(),0);
     getApp()->endProgress(this);
     emit projectNameChanged(name);
     return ret;
@@ -427,7 +429,7 @@ Project::saveProjectInternal(const QString & path,
     }
 
     ///Use a temporary file to save, so if Natron crashes it doesn't corrupt the user save.
-    QString tmpFilename = StandardPaths::writableLocation(StandardPaths::TempLocation);
+    QString tmpFilename = StandardPaths::writableLocation(StandardPaths::eStandardLocationTemp);
     tmpFilename.append( QDir::separator() );
     tmpFilename.append( QString::number( time.toMSecsSinceEpoch() ) );
 
@@ -654,7 +656,7 @@ Project::findAndTryLoadAutoSave()
                     loadOK = loadProjectInternal(savesDir.path() + QDir::separator(), entry,true,existingFilePath);
                 } catch (const std::exception & e) {
                     Natron::errorDialog( QObject::tr("Project loader").toStdString(), QObject::tr("Error while loading auto-saved project").toStdString() + ": " + e.what() );
-                    getApp()->createNode(  CreateNodeArgs(NATRON_VIEWER_ID,
+                    getApp()->createNode(  CreateNodeArgs(PLUGINID_NATRON_VIEWER,
                                                           "",
                                                           -1,-1,
                                                           -1,
@@ -666,7 +668,7 @@ Project::findAndTryLoadAutoSave()
                                                           CreateNodeArgs::DefaultValuesList()) );
                 } catch (...) {
                     Natron::errorDialog( QObject::tr("Project loader").toStdString(), QObject::tr("Error while loading auto-saved project").toStdString() );
-                    getApp()->createNode(  CreateNodeArgs(NATRON_VIEWER_ID,
+                    getApp()->createNode(  CreateNodeArgs(PLUGINID_NATRON_VIEWER,
                                                           "",
                                                           -1,-1,
                                                           -1,
@@ -812,29 +814,51 @@ Project::initializeKnobs()
     colorSpaces.push_back("sRGB");
     colorSpaces.push_back("Linear");
     colorSpaces.push_back("Rec.709");
-    _imp->colorSpace8bits = Natron::createKnob<Choice_Knob>(this, "Colorspace for 8 bits images");
-    _imp->colorSpace8bits->setName("8bitCS");
-    _imp->colorSpace8bits->setHintToolTip("Defines the color-space in which 8 bits images are assumed to be by default.");
-    _imp->colorSpace8bits->setAnimationEnabled(false);
-    _imp->colorSpace8bits->populateChoices(colorSpaces);
-    _imp->colorSpace8bits->setDefaultValue(0);
-    page->addKnob(_imp->colorSpace8bits);
+    _imp->colorSpace8u = Natron::createKnob<Choice_Knob>(this, "Colorspace for 8-bit integer images");
+    _imp->colorSpace8u->setName("defaultColorSpace8u");
+    _imp->colorSpace8u->setHintToolTip("Defines the color-space in which 8-bit images are assumed to be by default.");
+    _imp->colorSpace8u->setAnimationEnabled(false);
+    _imp->colorSpace8u->populateChoices(colorSpaces);
+    _imp->colorSpace8u->setDefaultValue(0);
+    page->addKnob(_imp->colorSpace8u);
     
-    _imp->colorSpace16bits = Natron::createKnob<Choice_Knob>(this, "Colorspace for 16 bits images");
-    _imp->colorSpace16bits->setName("16bitCS");
-    _imp->colorSpace16bits->setHintToolTip("Defines the color-space in which 16 bits images are assumed to be by default.");
-    _imp->colorSpace16bits->setAnimationEnabled(false);
-    _imp->colorSpace16bits->populateChoices(colorSpaces);
-    _imp->colorSpace16bits->setDefaultValue(2);
-    page->addKnob(_imp->colorSpace16bits);
+    _imp->colorSpace16u = Natron::createKnob<Choice_Knob>(this, "Colorspace for 16-bit integer images");
+    _imp->colorSpace16u->setName("defaultColorSpace16u");
+    _imp->colorSpace16u->setHintToolTip("Defines the color-space in which 16-bit integer images are assumed to be by default.");
+    _imp->colorSpace16u->setAnimationEnabled(false);
+    _imp->colorSpace16u->populateChoices(colorSpaces);
+    _imp->colorSpace16u->setDefaultValue(2);
+    page->addKnob(_imp->colorSpace16u);
     
-    _imp->colorSpace32bits = Natron::createKnob<Choice_Knob>(this, "Colorspace for 32 bits fp images");
-    _imp->colorSpace32bits->setName("32bitCS");
-    _imp->colorSpace32bits->setHintToolTip("Defines the color-space in which 32 bits floating point images are assumed to be by default.");
-    _imp->colorSpace32bits->setAnimationEnabled(false);
-    _imp->colorSpace32bits->populateChoices(colorSpaces);
-    _imp->colorSpace32bits->setDefaultValue(1);
-    page->addKnob(_imp->colorSpace32bits);
+    _imp->colorSpace32f = Natron::createKnob<Choice_Knob>(this, "Colorspace for 32-bit floating point images");
+    _imp->colorSpace32f->setName("defaultColorSpace32f");
+    _imp->colorSpace32f->setHintToolTip("Defines the color-space in which 32-bit floating point images are assumed to be by default.");
+    _imp->colorSpace32f->setAnimationEnabled(false);
+    _imp->colorSpace32f->populateChoices(colorSpaces);
+    _imp->colorSpace32f->setDefaultValue(1);
+    page->addKnob(_imp->colorSpace32f);
+    
+    _imp->frameRange = Natron::createKnob<Int_Knob>(this, "Frame range",2);
+    _imp->frameRange->setDefaultValue(1,0);
+    _imp->frameRange->setDefaultValue(1,1);
+    _imp->frameRange->setEvaluateOnChange(false);
+    _imp->frameRange->setName("frameRange");
+    _imp->frameRange->setHintToolTip("The frame range of the project as seen by the plug-ins. New viewers are created automatically "
+                                     "with this frame-range. By default when a new Reader node is created, its frame range "
+                                     "is unioned to this "
+                                     "frame-range, unless the Lock frame range parameter is checked.");
+    _imp->frameRange->setAnimationEnabled(false);
+    _imp->frameRange->turnOffNewLine();
+    page->addKnob(_imp->frameRange);
+    
+    _imp->lockFrameRange = Natron::createKnob<Bool_Knob>(this, "Lock range");
+    _imp->lockFrameRange->setName("lockRange");
+    _imp->lockFrameRange->setDefaultValue(false);
+    _imp->lockFrameRange->setAnimationEnabled(false);
+    _imp->lockFrameRange->setHintToolTip("By default when a new Reader node is created, its frame range is unioned to the "
+                                         "project frame-range, unless this parameter is checked.");
+    _imp->lockFrameRange->setEvaluateOnChange(false);
+    page->addKnob(_imp->lockFrameRange);
     
     _imp->frameRate = Natron::createKnob<Double_Knob>(this, "Frame rate");
     _imp->frameRate->setName("frameRate");
@@ -1002,7 +1026,22 @@ Project::removeNodeFromProject(const boost::shared_ptr<Natron::Node> & n)
             }
         }
     }
-    n->removeReferences();
+    n->removeReferences(true);
+}
+    
+void
+Project::ensureAllProcessingThreadsFinished()
+{
+    std::vector<boost::shared_ptr<Natron::Node> > nodesToDelete;
+    {
+        QMutexLocker l(&_imp->nodesLock);
+        nodesToDelete = _imp->currentNodes;
+    }
+    for (U32 i = 0; i < nodesToDelete.size(); ++i) {
+        nodesToDelete[i]->quitAnyProcessing();
+    }
+    
+    QThreadPool::globalInstance()->waitForDone();
 }
 
 void
@@ -1028,7 +1067,7 @@ Project::clearNodes(bool emitSignal)
     }
 
     for (U32 i = 0; i < nodesToDelete.size(); ++i) {
-        nodesToDelete[i]->removeReferences();
+        nodesToDelete[i]->removeReferences(false);
     }
 
 
@@ -1044,12 +1083,6 @@ Project::clearNodes(bool emitSignal)
     }
 }
 
-void
-Project::setFrameRange(int first,
-                       int last)
-{
-    _imp->timeline->setFrameRange(first,last);
-}
 
 int
 Project::currentFrame() const
@@ -1057,29 +1090,6 @@ Project::currentFrame() const
     return _imp->timeline->currentFrame();
 }
 
-int
-Project::firstFrame() const
-{
-    return _imp->timeline->firstFrame();
-}
-
-int
-Project::lastFrame() const
-{
-    return _imp->timeline->lastFrame();
-}
-
-int
-Project::leftBound() const
-{
-    return _imp->timeline->leftBound();
-}
-
-int
-Project::rightBound() const
-{
-    return _imp->timeline->rightBound();
-}
 
 int
 Project::tryAddProjectFormat(const Format & f)
@@ -1237,21 +1247,6 @@ Project::getAdditionalFormats(std::list<Format> *formats) const
     *formats = _imp->additionalFormats;
 }
 
-void
-Project::setLastTimelineSeekCaller(Natron::OutputEffectInstance* output)
-{
-    QMutexLocker l(&_imp->projectLock);
-
-    _imp->lastTimelineSeekCaller = output;
-}
-
-Natron::OutputEffectInstance*
-Project::getLastTimelineSeekCaller() const
-{
-    QMutexLocker l(&_imp->projectLock);
-
-    return _imp->lastTimelineSeekCaller;
-}
 
 bool
 Project::isSaveUpToDate() const
@@ -1338,6 +1333,10 @@ Project::onKnobValueChanged(KnobI* knob,
                 
         }
 
+    } else if (knob == _imp->frameRange.get()) {
+        int first = _imp->frameRange->getValue(0);
+        int last = _imp->frameRange->getValue(1);
+        emit frameRangeChanged(first, last);
     }
 }
 
@@ -1410,7 +1409,7 @@ Project::removeAutoSaves()
 QString
 Project::autoSavesDir()
 {
-    return Natron::StandardPaths::writableLocation(Natron::StandardPaths::DataLocation) + QDir::separator() + "Autosaves";
+    return Natron::StandardPaths::writableLocation(Natron::StandardPaths::eStandardLocationData) + QDir::separator() + "Autosaves";
 }
 
 void
@@ -1667,7 +1666,7 @@ Project::autoConnectNodes(boost::shared_ptr<Node> selected,
                     bool ok = disconnectNodes(selected.get(), it->first);
                     assert(ok);
                     
-                    (void)connectNodes(it->second, created, it->first);
+                    ignore_result(connectNodes(it->second, created, it->first));
                     //assert(ok); Might not be ok if the disconnectNodes() action above was queued
                 }
             }
@@ -1733,17 +1732,19 @@ Project::getDefaultColorSpaceForBitDepth(Natron::ImageBitDepthEnum bitdepth) con
     switch (bitdepth) {
     case Natron::eImageBitDepthByte:
 
-        return (Natron::ViewerColorSpaceEnum)_imp->colorSpace8bits->getValue();
+        return (Natron::ViewerColorSpaceEnum)_imp->colorSpace8u->getValue();
     case Natron::eImageBitDepthShort:
 
-        return (Natron::ViewerColorSpaceEnum)_imp->colorSpace16bits->getValue();
+        return (Natron::ViewerColorSpaceEnum)_imp->colorSpace16u->getValue();
     case Natron::eImageBitDepthFloat:
 
-        return (Natron::ViewerColorSpaceEnum)_imp->colorSpace32bits->getValue();
+        return (Natron::ViewerColorSpaceEnum)_imp->colorSpace32f->getValue();
     case Natron::eImageBitDepthNone:
         assert(false);
         break;
     }
+
+    return eViewerColorSpaceLinear;
 }
 
 // Functions to escape / unescape characters from XML strings
@@ -2167,34 +2168,38 @@ Project::onOCIOConfigPathChanged(const std::string& path,bool block)
     if (block) {
         blockEvaluation();
     }
-    std::string env = _imp->envVars->getValue();
-    std::map<std::string, std::string> envMap;
-    makeEnvMap(env, envMap);
-    
-    ///If there was already a OCIO variable, update it, otherwise create it
-    
-    std::map<std::string, std::string>::iterator foundOCIO = envMap.find(NATRON_OCIO_ENV_VAR_NAME);
-    if (foundOCIO != envMap.end()) {
-        foundOCIO->second = path;
-    } else {
-        envMap.insert(std::make_pair(NATRON_OCIO_ENV_VAR_NAME, path));
-    }
+    try {
+        std::string env = _imp->envVars->getValue();
+        std::map<std::string, std::string> envMap;
+        makeEnvMap(env, envMap);
 
-    std::string newEnv;
-    for (std::map<std::string, std::string>::iterator it = envMap.begin(); it!=envMap.end();++it) {
-        // In order to use XML tags, the text inside the tags has to be escaped.
-        newEnv += NATRON_ENV_VAR_NAME_START_TAG;
-        newEnv += Project::escapeXML(it->first);
-        newEnv += NATRON_ENV_VAR_NAME_END_TAG;
-        newEnv += NATRON_ENV_VAR_VALUE_START_TAG;
-        newEnv += Project::escapeXML(it->second);
-        newEnv += NATRON_ENV_VAR_VALUE_END_TAG;
-    }
-    if (env != newEnv) {
-        if (appPTR->getCurrentSettings()->isAutoFixRelativeFilePathEnabled()) {
-            fixRelativeFilePaths(NATRON_OCIO_ENV_VAR_NAME, path,block);
+        ///If there was already a OCIO variable, update it, otherwise create it
+
+        std::map<std::string, std::string>::iterator foundOCIO = envMap.find(NATRON_OCIO_ENV_VAR_NAME);
+        if (foundOCIO != envMap.end()) {
+            foundOCIO->second = path;
+        } else {
+            envMap.insert(std::make_pair(NATRON_OCIO_ENV_VAR_NAME, path));
         }
-        _imp->envVars->setValue(newEnv, 0);
+
+        std::string newEnv;
+        for (std::map<std::string, std::string>::iterator it = envMap.begin(); it!=envMap.end();++it) {
+            // In order to use XML tags, the text inside the tags has to be escaped.
+            newEnv += NATRON_ENV_VAR_NAME_START_TAG;
+            newEnv += Project::escapeXML(it->first);
+            newEnv += NATRON_ENV_VAR_NAME_END_TAG;
+            newEnv += NATRON_ENV_VAR_VALUE_START_TAG;
+            newEnv += Project::escapeXML(it->second);
+            newEnv += NATRON_ENV_VAR_VALUE_END_TAG;
+        }
+        if (env != newEnv) {
+            if (appPTR->getCurrentSettings()->isAutoFixRelativeFilePathEnabled()) {
+                fixRelativeFilePaths(NATRON_OCIO_ENV_VAR_NAME, path,block);
+            }
+            _imp->envVars->setValue(newEnv, 0);
+        }
+    } catch (std::logic_error) {
+        // ignore
     }
     if (block) {
         unblockEvaluation();
@@ -2213,6 +2218,58 @@ double
 Project::getProjectFrameRate() const
 {
     return _imp->frameRate->getValue();
+}
+    
+bool
+Project::isFrameRangeLocked() const
+{
+    return _imp->lockFrameRange->getValue();
+}
+    
+void
+Project::getFrameRange(int* first,int* last) const
+{
+    *first = _imp->frameRange->getValue(0);
+    *last = _imp->frameRange->getValue(1);
+}
+    
+void
+Project::unionFrameRangeWith(int first,int last)
+{
+    
+    int curFirst,curLast;
+    curFirst = _imp->frameRange->getValue(0);
+    curLast = _imp->frameRange->getValue(1);
+    curFirst = std::min(first, curFirst);
+    curLast = std::max(last, curLast);
+    blockEvaluation();
+    _imp->frameRange->setValue(curFirst, 0);
+    unblockEvaluation();
+    _imp->frameRange->setValue(curLast, 1);
+
+}
+    
+void
+Project::recomputeFrameRangeFromReaders()
+{
+    int first = 1,last = 1;
+    std::vector<boost::shared_ptr<Natron::Node> > nodes = getCurrentNodes();
+    for (std::vector<boost::shared_ptr<Natron::Node> > ::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        if ((*it)->isActivated() && (*it)->getLiveInstance()->isReader()) {
+            int thisFirst,thislast;
+            (*it)->getLiveInstance()->getFrameRange_public((*it)->getHashValue(), &thisFirst, &thislast);
+            if (thisFirst != INT_MIN) {
+                first = std::min(first, thisFirst);
+            }
+            if (thislast != INT_MAX) {
+                last = std::max(last, thislast);
+            }
+        }
+    }
+    blockEvaluation();
+    _imp->frameRange->setValue(first, 0);
+    unblockEvaluation();
+    _imp->frameRange->setValue(last, 1);
 }
     
 } //namespace Natron

@@ -101,7 +101,7 @@ struct KnobsClipBoard
 struct GuiApplicationManagerPrivate
 {
     GuiApplicationManager* _publicInterface;
-    std::list<PluginGroupNode*> _toolButtons;
+    std::list<boost::shared_ptr<PluginGroupNode> > _topLevelToolButtons;
     boost::scoped_ptr<KnobsClipBoard> _knobsClipBoard;
     boost::scoped_ptr<KnobGuiFactory> _knobGuiFactory;
     QCursor* _colorPickerCursor;
@@ -119,7 +119,7 @@ struct GuiApplicationManagerPrivate
     
     GuiApplicationManagerPrivate(GuiApplicationManager* publicInterface)
         :   _publicInterface(publicInterface)
-          , _toolButtons()
+          , _topLevelToolButtons()
           , _knobsClipBoard(new KnobsClipBoard)
           , _knobGuiFactory( new KnobGuiFactory() )
           , _colorPickerCursor(NULL)
@@ -134,7 +134,8 @@ struct GuiApplicationManagerPrivate
 
     void createColorPickerCursor();
     
-    void removePluginToolButton(const QString& pluginID);
+    void removePluginToolButtonInternal(const boost::shared_ptr<PluginGroupNode>& n,const QStringList& grouping);
+    void removePluginToolButton(const QStringList& grouping);
 
     void addStandardKeybind(const QString & grouping,const QString & id,
                             const QString & description,QKeySequence::StandardKey key);
@@ -148,6 +149,13 @@ struct GuiApplicationManagerPrivate
     void addMouseShortcut(const QString & grouping,const QString & id,
                           const QString & description,
                           const Qt::KeyboardModifiers & modifiers,Qt::MouseButton button);
+    
+    boost::shared_ptr<PluginGroupNode>  findPluginToolButtonInternal(const boost::shared_ptr<PluginGroupNode>& parent,
+                                                                     const QStringList & grouping,
+                                                                     const QString & name,
+                                                                     const QString & iconPath,
+                                                                     int major,
+                                                                     int minor);
 };
 
 GuiApplicationManager::GuiApplicationManager()
@@ -158,9 +166,7 @@ GuiApplicationManager::GuiApplicationManager()
 
 GuiApplicationManager::~GuiApplicationManager()
 {
-    for (std::list<PluginGroupNode*>::iterator it = _imp->_toolButtons.begin() ; it!=_imp->_toolButtons.end();++it) {
-        delete *it;
-    }
+   
     delete _imp->_colorPickerCursor;
     for (AppShortcuts::iterator it = _imp->_actionShortcuts.begin(); it != _imp->_actionShortcuts.end(); ++it) {
         for (GroupShortcuts::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
@@ -369,6 +375,14 @@ GuiApplicationManager::getIcon(Natron::PixmapEnum e,
                 break;
             case NATRON_PIXMAP_COLORWHEEL:
                 img.load(NATRON_IMAGES_PATH "colorwheel.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_OVERLAY:
+                img.load(NATRON_IMAGES_PATH "colorwheel_overlay.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_ROTO_MERGE:
+                img.load(NATRON_IMAGES_PATH "roto_merge.png");
                 *pix = QPixmap::fromImage(img);
                 break;
             case NATRON_PIXMAP_COLOR_PICKER:
@@ -671,10 +685,10 @@ GuiApplicationManager::getIcon(Natron::PixmapEnum e,
     }
 } // getIcon
 
-const std::list<PluginGroupNode*> &
-GuiApplicationManager::getPluginsToolButtons() const
+const std::list<boost::shared_ptr<PluginGroupNode> >&
+GuiApplicationManager::getTopLevelPluginsToolButtons() const
 {
-    return _imp->_toolButtons;
+    return _imp->_topLevelToolButtons;
 }
 
 const QCursor &
@@ -724,7 +738,6 @@ GuiApplicationManager::initGui()
 void
 GuiApplicationManager::onPluginLoaded(Natron::Plugin* plugin)
 {
-    PluginGroupNode* parent = NULL;
     QString shortcutGrouping(kShortcutGroupNodes);
     const QStringList & groups = plugin->getGrouping();
     const QString & pluginID = plugin->getPluginID();
@@ -732,38 +745,36 @@ GuiApplicationManager::onPluginLoaded(Natron::Plugin* plugin)
     const QString & pluginIconPath = plugin->getIconFilePath();
     const QString & groupIconPath = plugin->getGroupIconFilePath();
 
+    QStringList groupingWithID = groups;
+    groupingWithID.push_back(pluginID);
+    boost::shared_ptr<PluginGroupNode> child = findPluginToolButtonOrCreate(groupingWithID,
+                                                                            pluginLabel,
+                                                                            groupIconPath,
+                                                                            pluginIconPath,
+                                                                            plugin->getMajorVersion(),
+                                                                            plugin->getMinorVersion());
     for (int i = 0; i < groups.size(); ++i) {
-        PluginGroupNode* child = findPluginToolButtonOrCreate(groups.at(i),groups.at(i),groupIconPath,1,0);
-        if ( parent && (parent != child) ) {
-            parent->tryAddChild(child);
-            child->setParent(parent);
-        }
-        parent = child;
+       
         shortcutGrouping.push_back('/');
         shortcutGrouping.push_back(groups[i]);
     }
-    PluginGroupNode* lastChild = findPluginToolButtonOrCreate(pluginID,pluginLabel,pluginIconPath,plugin->getMajorVersion(),
-                                                              plugin->getMinorVersion());
-    if ( parent && (parent != lastChild) ) {
-        parent->tryAddChild(lastChild);
-        lastChild->setParent(parent);
-    }
+    
     Qt::KeyboardModifiers modifiers = Qt::NoModifier;
     Qt::Key symbol = (Qt::Key)0;
     bool hasShortcut = true;
 
     /*These are the plug-ins which have a default shortcut. Other plug-ins can have a user-assigned shortcut.*/
-    if (pluginID == "net.sf.openfx.transformplugin") {
+    if (pluginID == PLUGINID_OFX_TRANSFORM) {
         symbol = Qt::Key_T;
-    } else if (pluginID == "net.sf.openfx.rotoplugin") {
+    } else if (pluginID == PLUGINID_OFX_ROTO) {
         symbol = Qt::Key_O;
-    } else if (pluginID == "net.sf.openfx.mergeplugin") {
+    } else if (pluginID == PLUGINID_OFX_MERGE) {
         symbol = Qt::Key_M;
-    } else if (pluginID == "net.sf.openfx.gradeplugin") {
+    } else if (pluginID == PLUGINID_OFX_GRADE) {
         symbol = Qt::Key_G;
-    } else if (pluginID == "net.sf.openfx.colorcorrectplugin") {
+    } else if (pluginID == PLUGINID_OFX_COLORCORRECT) {
         symbol = Qt::Key_C;
-    } else if (pluginID == "net.sf.cimg.cimgblur") {
+    } else if (pluginID == PLUGINID_OFX_BLURCIMG) {
         symbol = Qt::Key_B;
     } else {
         hasShortcut = false;
@@ -775,66 +786,144 @@ GuiApplicationManager::onPluginLoaded(Natron::Plugin* plugin)
 void
 GuiApplicationManager::ignorePlugin(Natron::Plugin* plugin)
 {
-    _imp->removePluginToolButton(plugin->getPluginID());
+    _imp->removePluginToolButton(plugin->getGrouping());
     _imp->removeKeybind(kShortcutGroupNodes, plugin->getPluginID());
 }
 
-static void removeChildRecursively(PluginGroupNode* plugin,PluginGroupNode* parent,std::list<PluginGroupNode*>* toDelete)
-{
-    parent->tryRemoveChild(plugin);
-    if (parent->getChildren().empty()) {
-        toDelete->push_back(parent);
-        if (parent->getParent()) {
-            removeChildRecursively(parent, parent->getParent(), toDelete);
-        }
-    }
-}
 
 void
-GuiApplicationManagerPrivate::removePluginToolButton(const QString& pluginID)
+GuiApplicationManagerPrivate::removePluginToolButtonInternal(const boost::shared_ptr<PluginGroupNode>& n,const QStringList& grouping)
 {
-    std::list<PluginGroupNode*> toDelete;
-    for (std::list<PluginGroupNode*>::iterator it = _toolButtons.begin(); it != _toolButtons.end(); ++it) {
-        if ((*it)->getID() == pluginID) {
-            if ((*it)->getParent()) {
-                removeChildRecursively(*it,(*it)->getParent(),&toDelete);
+    assert(grouping.size() > 0);
+    
+    const std::list<boost::shared_ptr<PluginGroupNode> >& children = n->getChildren();
+    for (std::list<boost::shared_ptr<PluginGroupNode> >::const_iterator it = children.begin();
+         it != children.end(); ++it) {
+        if ((*it)->getID() == grouping[0]) {
+            
+            if (grouping.size() > 1) {
+                QStringList newGrouping;
+                for (int i = 1; i < grouping.size(); ++i) {
+                    newGrouping.push_back(grouping[i]);
+                }
+                removePluginToolButtonInternal(*it, newGrouping);
+                if ((*it)->getChildren().empty()) {
+                    n->tryRemoveChild(it->get());
+                }
+            } else {
+                n->tryRemoveChild(it->get());
             }
-            delete *it;
-            _toolButtons.erase(it);
             break;
         }
     }
+}
+void
+GuiApplicationManagerPrivate::removePluginToolButton(const QStringList& grouping)
+{
+    assert(grouping.size() > 0);
     
-    for (std::list<PluginGroupNode*>::iterator it = toDelete.begin(); it != toDelete.end(); ++it) {
-        std::list<PluginGroupNode*>::iterator found = std::find(_toolButtons.begin(),_toolButtons.end(),*it);
-        if (found != _toolButtons.end()) {
-            delete *found;
-            _toolButtons.erase(found);
+    for (std::list<boost::shared_ptr<PluginGroupNode> >::iterator it = _topLevelToolButtons.begin();
+         it != _topLevelToolButtons.end(); ++it) {
+        if ((*it)->getID() == grouping[0]) {
+            
+            if (grouping.size() > 1) {
+                QStringList newGrouping;
+                for (int i = 1; i < grouping.size(); ++i) {
+                    newGrouping.push_back(grouping[i]);
+                }
+                removePluginToolButtonInternal(*it, newGrouping);
+                if ((*it)->getChildren().empty()) {
+                    _topLevelToolButtons.erase(it);
+                }
+            } else {
+                _topLevelToolButtons.erase(it);
+            }
+            break;
         }
     }
 }
 
-PluginGroupNode*
-GuiApplicationManager::findPluginToolButtonOrCreate(const QString & pluginID,
+boost::shared_ptr<PluginGroupNode>
+GuiApplicationManagerPrivate::findPluginToolButtonInternal(const boost::shared_ptr<PluginGroupNode>& parent,
+                                                           const QStringList & grouping,
+                                                           const QString & name,
+                                                           const QString & iconPath,
+                                                           int major,
+                                                           int minor)
+{
+    assert(grouping.size() > 0);
+    
+    const std::list<boost::shared_ptr<PluginGroupNode> >& children = parent->getChildren();
+    
+    for (std::list<boost::shared_ptr<PluginGroupNode> >::const_iterator it = children.begin(); it != children.end(); ++it) {
+        if ((*it)->getID() == grouping[0]) {
+            
+            if (grouping.size() > 1) {
+                QStringList newGrouping;
+                for (int i = 1; i < grouping.size(); ++i) {
+                    newGrouping.push_back(grouping[i]);
+                }
+                return findPluginToolButtonInternal(*it, newGrouping, name, iconPath, major,minor);
+            }
+            if (major == (*it)->getMajorVersion()) {
+                return *it;
+            } else {
+                (*it)->setNotHighestMajorVersion(true);
+            }
+        }
+    }
+    boost::shared_ptr<PluginGroupNode> ret(new PluginGroupNode(grouping[0],grouping.size() == 1 ? name : grouping[0],iconPath,major,minor));
+    parent->tryAddChild(ret);
+    ret->setParent(parent);
+    
+    if (grouping.size() > 1) {
+        QStringList newGrouping;
+        for (int i = 1; i < grouping.size(); ++i) {
+            newGrouping.push_back(grouping[i]);
+        }
+        return findPluginToolButtonInternal(ret, newGrouping, name, iconPath, major,minor);
+    }
+    return ret;
+}
+
+boost::shared_ptr<PluginGroupNode>
+GuiApplicationManager::findPluginToolButtonOrCreate(const QStringList & grouping,
                                                     const QString & name,
+                                                    const QString& groupIconPath,
                                                     const QString & iconPath,
                                                     int major,
                                                     int minor)
 {
-    bool severalMajor = false;
-    for (std::list<PluginGroupNode*>::iterator it = _imp->_toolButtons.begin(); it != _imp->_toolButtons.end(); ++it) {
-        if ((*it)->getID() == pluginID) {
+    assert(grouping.size() > 0);
+    
+    for (std::list<boost::shared_ptr<PluginGroupNode> >::iterator it = _imp->_topLevelToolButtons.begin(); it != _imp->_topLevelToolButtons.end(); ++it) {
+        if ((*it)->getID() == grouping[0]) {
+            
+            if (grouping.size() > 1) {
+                QStringList newGrouping;
+                for (int i = 1; i < grouping.size(); ++i) {
+                    newGrouping.push_back(grouping[i]);
+                }
+                return _imp->findPluginToolButtonInternal(*it, newGrouping, name, iconPath, major , minor);
+            }
             if (major == (*it)->getMajorVersion()) {
                 return *it;
             } else {
-                (*it)->setSeveralPluginMajorVersions(true);
-                severalMajor = true;
+                (*it)->setNotHighestMajorVersion(true);
             }
         }
     }
-    PluginGroupNode* ret = new PluginGroupNode(pluginID,name,iconPath,major,minor,severalMajor);
-    _imp->_toolButtons.push_back(ret);
-
+    
+    boost::shared_ptr<PluginGroupNode> ret(new PluginGroupNode(grouping[0],grouping.size() == 1 ? name : grouping[0],iconPath,major,minor));
+    _imp->_topLevelToolButtons.push_back(ret);
+    if (grouping.size() > 1) {
+        ret->setIconPath(groupIconPath);
+        QStringList newGrouping;
+        for (int i = 1; i < grouping.size(); ++i) {
+            newGrouping.push_back(grouping[i]);
+        }
+        return _imp->findPluginToolButtonInternal(ret, newGrouping, name, iconPath, major,minor);
+    }
     return ret;
 }
 
@@ -906,7 +995,11 @@ GuiApplicationManager::updateAllRecentFileMenus()
     const std::map<int,AppInstanceRef> & instances = getAppInstances();
 
     for (std::map<int,AppInstanceRef>::const_iterator it = instances.begin(); it != instances.end(); ++it) {
-        dynamic_cast<GuiAppInstance*>(it->second.app)->getGui()->updateRecentFileActions();
+        GuiAppInstance* appInstance = dynamic_cast<GuiAppInstance*>(it->second.app);
+        assert(appInstance);
+        Gui* gui = appInstance->getGui();
+        assert(gui);
+        gui->updateRecentFileActions();
     }
 }
 
@@ -1172,8 +1265,11 @@ GuiApplicationManager::handleOpenFileRequest()
 
     AppInstance* mainApp = getAppInstance(0);
     GuiAppInstance* guiApp = dynamic_cast<GuiAppInstance*>(mainApp);
-    guiApp->getGui()->openProject(_imp->_openFileRequest.toStdString());
-    _imp->_openFileRequest.clear();
+    assert(guiApp);
+    if (guiApp) {
+        guiApp->getGui()->openProject(_imp->_openFileRequest.toStdString());
+        _imp->_openFileRequest.clear();
+    }
 }
 
 void
@@ -1192,7 +1288,7 @@ GuiApplicationManager::exitApp()
 
     for (std::map<int,AppInstanceRef>::const_iterator it = instances.begin(); it != instances.end(); ++it) {
         GuiAppInstance* app = dynamic_cast<GuiAppInstance*>(it->second.app);
-        if ( !app->getGui()->closeInstance() ) {
+        if ( app && !app->getGui()->closeInstance() ) {
             return;
         }
     }
@@ -1508,9 +1604,12 @@ GuiApplicationManager::populateShortcuts()
     registerKeybind(kShortcutGroupViewer, kShortcutIDActionHideAll, kShortcutDescActionHideAll, Qt::NoModifier, (Qt::Key)0);
     registerKeybind(kShortcutGroupViewer, kShortcutIDActionShowAll, kShortcutDescActionShowAll, Qt::NoModifier, (Qt::Key)0);
     registerKeybind(kShortcutGroupViewer, kShortcutIDActionZoomLevel100, kShortcutDescActionZoomLevel100, Qt::ControlModifier, Qt::Key_1);
+    registerKeybind(kShortcutGroupViewer, kShortcutIDToggleWipe, kShortcutDescToggleWipe, Qt::NoModifier, Qt::Key_W);
     
     registerMouseShortcut(kShortcutGroupViewer, kShortcutIDMousePickColor, kShortcutDescMousePickColor, Qt::ControlModifier, Qt::LeftButton);
     registerMouseShortcut(kShortcutGroupViewer, kShortcutIDMouseRectanglePick, kShortcutDescMouseRectanglePick, Qt::ShiftModifier | Qt::ControlModifier, Qt::LeftButton);
+    
+    
 
     ///Player
     registerKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevious, kShortcutDescActionPlayerPrevious, Qt::NoModifier, Qt::Key_Left);
@@ -1539,6 +1638,12 @@ GuiApplicationManager::populateShortcuts()
     registerKeybind(kShortcutGroupRoto, kShortcutIDActionRotoSmooth, kShortcutDescActionRotoSmooth, Qt::NoModifier, Qt::Key_Z);
     registerKeybind(kShortcutGroupRoto, kShortcutIDActionRotoCuspBezier, kShortcutDescActionRotoCuspBezier, Qt::ShiftModifier, Qt::Key_Z);
     registerKeybind(kShortcutGroupRoto, kShortcutIDActionRotoRemoveFeather, kShortcutDescActionRotoRemoveFeather, Qt::ShiftModifier, Qt::Key_E);
+    registerKeybind(kShortcutGroupRoto, kShortcutIDActionRotoLinkToTrack, kShortcutDescActionRotoLinkToTrack, Qt::NoModifier, (Qt::Key)0);
+    registerKeybind(kShortcutGroupRoto, kShortcutIDActionRotoUnlinkToTrack, kShortcutDescActionRotoUnlinkToTrack,
+                    Qt::NoModifier, (Qt::Key)0);
+    registerKeybind(kShortcutGroupRoto, kShortcutIDActionRotoLockCurve, kShortcutDescActionRotoLockCurve,
+                    Qt::ShiftModifier, Qt::Key_L);
+
 
     ///Tracking
     registerKeybind(kShortcutGroupTracking, kShortcutIDActionTrackingSelectAll, kShortcutDescActionTrackingSelectAll, Qt::ControlModifier, Qt::Key_A);

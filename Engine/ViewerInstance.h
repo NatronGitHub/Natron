@@ -18,7 +18,6 @@
 #include "Engine/Rect.h"
 #include "Engine/EffectInstance.h"
 
-#define NATRON_VIEWER_ID NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.Viewer"
 namespace Natron {
 class Image;
 class FrameEntry;
@@ -40,14 +39,14 @@ public:
     
     
     
-    enum DisplayChannels
+    enum DisplayChannelsEnum
     {
-        RGB = 0,
-        R,
-        G,
-        B,
-        A,
-        LUMINANCE
+        eDisplayChannelsRGB = 0,
+        eDisplayChannelsR,
+        eDisplayChannelsG,
+        eDisplayChannelsB,
+        eDisplayChannelsA,
+        eDisplayChannelsY
     };
 
 public:
@@ -120,7 +119,7 @@ public:
 
     int getMipMapLevelFromZoomFactor() const WARN_UNUSED_RETURN;
 
-    DisplayChannels getChannels() const WARN_UNUSED_RETURN;
+    DisplayChannelsEnum getChannels() const WARN_UNUSED_RETURN;
 
     /**
      * @brief This is a short-cut, this is primarily used when the user switch the
@@ -135,7 +134,7 @@ public:
     }
 
 
-    void setDisplayChannels(DisplayChannels channels);
+    void setDisplayChannels(DisplayChannelsEnum channels);
 
 
     bool isAutoContrastEnabled() const WARN_UNUSED_RETURN;
@@ -160,12 +159,12 @@ public:
     void setInputB(int inputNb);
 
     void getActiveInputs(int & a,int &b) const;
-
-    bool isFrameRangeLocked() const;
     
     int getLastRenderedTime() const;
 
     boost::shared_ptr<TimeLine> getTimeline() const;
+    
+    void getTimelineBounds(int* first,int* last) const;
     
     static const Natron::Color::Lut* lutFromColorspace(Natron::ViewerColorSpaceEnum cs) WARN_UNUSED_RETURN;
     
@@ -236,7 +235,7 @@ private:
 
     virtual std::string getPluginID() const OVERRIDE FINAL
     {
-        return NATRON_VIEWER_ID;
+        return PLUGINID_NATRON_VIEWER;
     }
 
     virtual std::string getPluginLabel() const OVERRIDE FINAL

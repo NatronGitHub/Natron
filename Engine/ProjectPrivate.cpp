@@ -44,9 +44,9 @@ ProjectPrivate::ProjectPrivate(Natron::Project* project)
       , addFormatKnob()
       , viewsCount()
       , previewMode()
-      , colorSpace8bits()
-      , colorSpace16bits()
-      , colorSpace32bits()
+      , colorSpace8u()
+      , colorSpace16u()
+      , colorSpace32f()
       , natronVersion()
       , originalAuthorName()
       , lastAuthorName()
@@ -56,7 +56,6 @@ ProjectPrivate::ProjectPrivate(Natron::Project* project)
       , autoSetProjectFormat(appPTR->getCurrentSettings()->isAutoProjectFormatEnabled())
       , currentNodes()
       , project(project)
-      , lastTimelineSeekCaller()
       , isLoadingProjectMutex()
       , isLoadingProject(false)
       , isLoadingProjectInternal(false)
@@ -139,13 +138,17 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
                 autoSetProjectDirectory(isAutoSave ? realFilePath : path);
             }
             _publicInterface->onOCIOConfigPathChanged(appPTR->getOCIOConfigPath(),false);
+        } else if (projectKnobs[i] == natronVersion) {
+            std::string v = natronVersion->getValue();
+            if (v == "Natron v1.0.0") {
+                _publicInterface->getApp()->setProjectWasCreatedWithLowerCaseIDs(true);
+            }
         }
 
     }
 
     /// 2) restore the timeline
-    timeline->setBoundaries( obj.getLeftBoundTime(), obj.getRightBoundTime() );
-    timeline->seekFrame(obj.getCurrentTime(),NULL,Natron::eTimelineChangeReasonPlaybackSeek);
+    timeline->seekFrame(obj.getCurrentTime(), false, 0, Natron::eTimelineChangeReasonPlaybackSeek);
 
     ///On our tests restoring nodes + connections takes approximatively 20% of loading time of a project, hence we update progress
     ///for each node of 0.2 / nbNodes
@@ -166,7 +169,7 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
         
         std::string pluginID = it->getPluginID();
         
-        if ( appPTR->isBackground() && (pluginID == NATRON_VIEWER_ID || pluginID == "Viewer") ) {
+        if ( appPTR->isBackground() && (pluginID == PLUGINID_NATRON_VIEWER || pluginID == "Viewer") ) {
             //if the node is a viewer, don't try to load it in background mode
             continue;
         }
@@ -226,8 +229,9 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
         if ( n->isOutputNode() ) {
             hasProjectAWriter = true;
         }
-        if (serializedNodes.size() > 0) {
-            _publicInterface->getApp()->progressUpdate(_publicInterface, (0.2 * nodesRestored) / serializedNodes.size());
+        const size_t serializedNb = serializedNodes.size();
+        if (serializedNb > 0) {
+            _publicInterface->getApp()->progressUpdate(_publicInterface, (0.2 * nodesRestored) / serializedNb);
         }
     }
 
@@ -240,7 +244,7 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
 
     /// 4) connect the nodes together, and restore the slave/master links for all knobs.
     for (std::list< NodeSerialization >::const_iterator it = serializedNodes.begin(); it != serializedNodes.end(); ++it) {
-        if ( appPTR->isBackground() && (it->getPluginID() == NATRON_VIEWER_ID) ) {
+        if ( appPTR->isBackground() && (it->getPluginID() == PLUGINID_NATRON_VIEWER) ) {
             //ignore viewers on background mode
             continue;
         }
@@ -321,10 +325,13 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
     }
     
     int count = 0;
-    for (std::list<Natron::Node*>::iterator it = nodesToRestorePreferences.begin(); it!=nodesToRestorePreferences.end(); ++it,++count) {
-        (*it)->restoreClipPreferencesRecursive(markedNodes);
-        _publicInterface->getApp()->progressUpdate(_publicInterface,
-                                                   ((double)(count+1) / (double)nodesToRestorePreferences.size()) * 0.5 + 0.25);
+    size_t nodesToRestorePreferencesNb = nodesToRestorePreferences.size();
+    if (nodesToRestorePreferencesNb) {
+        for (std::list<Natron::Node*>::iterator it = nodesToRestorePreferences.begin(); it!=nodesToRestorePreferences.end(); ++it,++count) {
+            (*it)->restoreClipPreferencesRecursive(markedNodes);
+            _publicInterface->getApp()->progressUpdate(_publicInterface,
+                                                       ((double)(count+1) / nodesToRestorePreferencesNb) * 0.5 + 0.25);
+        }
     }
     
     ///We should be now at 75% progress...
@@ -336,6 +343,11 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
     projectPath = isAutoSave ? realFilePath : path;
     ageSinceLastSave = time;
     lastAutoSave = time;
+    _publicInterface->getApp()->setProjectWasCreatedWithLowerCaseIDs(false);
+    
+    if (obj.getVersion() < PROJECT_SERIALIZATION_REMOVES_TIMELINE_BOUNDS) {
+        _publicInterface->recomputeFrameRangeFromReaders();
+    }
     
     return !mustShowErrorsLog;
 } // restoreFromSerialization

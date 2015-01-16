@@ -80,8 +80,12 @@ struct ProjectPrivate
     boost::shared_ptr<Int_Knob> viewsCount;
     boost::shared_ptr<Int_Knob> mainView;
     boost::shared_ptr<Bool_Knob> previewMode; //< auto or manual
-    boost::shared_ptr<Choice_Knob> colorSpace8bits,colorSpace16bits,colorSpace32bits;
+    boost::shared_ptr<Choice_Knob> colorSpace8u;
+    boost::shared_ptr<Choice_Knob> colorSpace16u;
+    boost::shared_ptr<Choice_Knob> colorSpace32f;
     boost::shared_ptr<Double_Knob> frameRate;
+    boost::shared_ptr<Int_Knob> frameRange;
+    boost::shared_ptr<Bool_Knob> lockFrameRange;
     
     boost::shared_ptr<String_Knob> natronVersion;
     boost::shared_ptr<String_Knob> originalAuthorName,lastAuthorName;
@@ -93,7 +97,6 @@ struct ProjectPrivate
     bool autoSetProjectFormat;
     std::vector< boost::shared_ptr<Natron::Node> > currentNodes;
     Natron::Project* project;
-    Natron::OutputEffectInstance* lastTimelineSeekCaller;
     mutable QMutex isLoadingProjectMutex;
     bool isLoadingProject; //< true when the project is loading
     bool isLoadingProjectInternal; //< true when loading the internal project (not gui)

@@ -687,7 +687,7 @@ Settings::initializeKnobs()
     _diskCachePath->setAnimationEnabled(false);
     _diskCachePath->setMultiPath(false);
     
-    QString defaultLocation = Natron::StandardPaths::writableLocation(Natron::StandardPaths::CacheLocation);
+    QString defaultLocation = Natron::StandardPaths::writableLocation(Natron::StandardPaths::eStandardLocationCache);
     std::string diskCacheTt("WARNING: Changing this parameter requires a restart of the application. \n"
                             "This is points to the location where " NATRON_APPLICATION_NAME " on-disk caches will be. "
                             "This variable should point to your fastest disk. If the parameter is left empty or the location set is invalid, "
@@ -908,27 +908,31 @@ Settings::saveSettings()
         const std::string& name = knobs[i]->getName();
         for (int j = 0; j < knobs[i]->getDimension(); ++j) {
             std::string dimensionName = knobs[i]->getDimension() > 1 ? name + '.' + knobs[i]->getDimensionName(j) : name;
-            if (isString) {
-                settings.setValue(dimensionName.c_str(), QVariant(isString->getValue(j).c_str()));
-            } else if (isInt) {
-                if (isChoice) {
-                    ///For choices,serialize the choice name instead
-                    int index = isChoice->getValue(j);
+            try {
+                if (isString) {
+                    settings.setValue(dimensionName.c_str(), QVariant(isString->getValue(j).c_str()));
+                } else if (isInt) {
+                    if (isChoice) {
+                        ///For choices,serialize the choice name instead
+                        int index = isChoice->getValue(j);
 
-                    const std::vector<std::string> entries = isChoice->getEntries_mt_safe();
-                    if (index < (int)entries.size() ) {
-                        settings.setValue(dimensionName.c_str(), QVariant(entries[index].c_str()));
+                        const std::vector<std::string> entries = isChoice->getEntries_mt_safe();
+                        if (index < (int)entries.size() ) {
+                            settings.setValue(dimensionName.c_str(), QVariant(entries[index].c_str()));
+                        }
+                    } else {
+                        settings.setValue(dimensionName.c_str(), QVariant(isInt->getValue(j)));
                     }
-                } else {
-                    settings.setValue(dimensionName.c_str(), QVariant(isInt->getValue(j)));
-                }
 
-            } else if (isDouble) {
-                settings.setValue(dimensionName.c_str(), QVariant(isDouble->getValue(j)));
-            } else if (isBool) {
-                settings.setValue(dimensionName.c_str(), QVariant(isBool->getValue(j)));
-            } else {
-                assert(false);
+                } else if (isDouble) {
+                    settings.setValue(dimensionName.c_str(), QVariant(isDouble->getValue(j)));
+                } else if (isBool) {
+                    settings.setValue(dimensionName.c_str(), QVariant(isBool->getValue(j)));
+                } else {
+                    assert(false);
+                }
+            } catch (std::logic_error) {
+                // ignore
             }
         }
     }
@@ -1016,22 +1020,36 @@ Settings::restoreSettings()
         tryLoadOpenColorIOConfig();
     }
     
-    _settingsExisted = _natronSettingsExist->getValue();
+    _settingsExisted = false;
+    try {
+        _settingsExisted = _natronSettingsExist->getValue();
+    } catch (std::logic_error) {
+        // ignore
+    }
     if (!_settingsExisted) {
         _natronSettingsExist->setValue(true, 0);
         saveSettings();
     }
     
-    int font_i = _fontChoice->getValue();
-    if (font_i == 2) {
-        //System font, show it
-        _systemFontChoice->setSecret(false);
+    try {
+        int font_i = _fontChoice->getValue();
+        if (font_i == 2) {
+            //System font, show it
+            _systemFontChoice->setSecret(false);
+        }
+    } catch (std::logic_error) {
+        // ignore
     }
-    
+
     appPTR->setNThreadsPerEffect(getNumberOfThreadsPerEffect());
     appPTR->setNThreadsToRender(getNumberOfThreads());
     
-    bool useTP = _useThreadPool->getValue();
+    bool useTP = true;
+    try {
+        useTP = _useThreadPool->getValue();
+    } catch (std::logic_error) {
+        // ignore
+    }
     appPTR->setUseThreadPool(useTP);
 
     
@@ -1046,7 +1064,12 @@ Settings::tryLoadOpenColorIOConfig()
 
     if ( _customOcioConfigFile->isEnabled(0) ) {
         ///try to load from the file
-        std::string file = _customOcioConfigFile->getValue();
+        std::string file;
+        try {
+            file = _customOcioConfigFile->getValue();
+        } catch (...) {
+            // ignore exceptions
+        }
         if ( file.empty() ) {
             return false;
         }
@@ -1057,34 +1080,38 @@ Settings::tryLoadOpenColorIOConfig()
         }
         configFile = file.c_str();
     } else {
-        ///try to load from the combobox
-        QString activeEntryText( _ocioConfigKnob->getActiveEntryText_mt_safe().c_str() );
-        QString configFileName = QString(activeEntryText + ".ocio");
-        QStringList defaultConfigsPaths = getDefaultOcioConfigPaths();
-        for (int i = 0; i < defaultConfigsPaths.size(); ++i) {
-            QDir defaultConfigsDir(defaultConfigsPaths[i]);
-            if ( !defaultConfigsDir.exists() ) {
-                qDebug() << "Attempt to read an OpenColorIO configuration but the configuration directory does not exist.";
-                continue;
-            }
-            ///try to open the .ocio config file first in the defaultConfigsDir
-            ///if we can't find it, try to look in a subdirectory with the name of the config for the file config.ocio
-            if ( !defaultConfigsDir.exists(configFileName) ) {
-                QDir subDir(defaultConfigsPaths[i] + QDir::separator() + activeEntryText);
-                if ( !subDir.exists() ) {
-                    Natron::errorDialog( "OpenColorIO",subDir.absoluteFilePath("config.ocio").toStdString() + QObject::tr(": No such file or directory.").toStdString() );
-
-                    return false;
+        try {
+            ///try to load from the combobox
+            QString activeEntryText( _ocioConfigKnob->getActiveEntryText_mt_safe().c_str() );
+            QString configFileName = QString(activeEntryText + ".ocio");
+            QStringList defaultConfigsPaths = getDefaultOcioConfigPaths();
+            for (int i = 0; i < defaultConfigsPaths.size(); ++i) {
+                QDir defaultConfigsDir(defaultConfigsPaths[i]);
+                if ( !defaultConfigsDir.exists() ) {
+                    qDebug() << "Attempt to read an OpenColorIO configuration but the configuration directory does not exist.";
+                    continue;
                 }
-                if ( !subDir.exists("config.ocio") ) {
-                    Natron::errorDialog( "OpenColorIO",subDir.absoluteFilePath("config.ocio").toStdString() + QObject::tr(": No such file or directory.").toStdString() );
+                ///try to open the .ocio config file first in the defaultConfigsDir
+                ///if we can't find it, try to look in a subdirectory with the name of the config for the file config.ocio
+                if ( !defaultConfigsDir.exists(configFileName) ) {
+                    QDir subDir(defaultConfigsPaths[i] + QDir::separator() + activeEntryText);
+                    if ( !subDir.exists() ) {
+                        Natron::errorDialog( "OpenColorIO",subDir.absoluteFilePath("config.ocio").toStdString() + QObject::tr(": No such file or directory.").toStdString() );
 
-                    return false;
+                        return false;
+                    }
+                    if ( !subDir.exists("config.ocio") ) {
+                        Natron::errorDialog( "OpenColorIO",subDir.absoluteFilePath("config.ocio").toStdString() + QObject::tr(": No such file or directory.").toStdString() );
+
+                        return false;
+                    }
+                    configFile = subDir.absoluteFilePath("config.ocio");
+                } else {
+                    configFile = defaultConfigsDir.absoluteFilePath(configFileName);
                 }
-                configFile = subDir.absoluteFilePath("config.ocio");
-            } else {
-                configFile = defaultConfigsDir.absoluteFilePath(configFileName);
             }
+        } catch (...) {
+            // ignore exceptions
         }
         if ( configFile.isEmpty() ) {
             return false;
@@ -1401,6 +1428,8 @@ Settings::populateWriterPluginsAndFormats(const std::map<std::string,std::vector
 
 static bool filterDefaultActivatedPlugin(const QString& ofxPluginID)
 {
+#pragma message WARN("WHY censor this list of plugins? This is open source fer chrissake! Let the user take control!")
+#if 0
     if (
         //Tuttle Readers/Writers
         ofxPluginID == "tuttle.avreader" ||
@@ -1454,6 +1483,7 @@ static bool filterDefaultActivatedPlugin(const QString& ofxPluginID)
         //These plug-ins of TuttleOFX achieve the same as plug-ins bundled with Natron, deactivate them by default.
         return false;
     }
+#endif
     return true;
 }
 

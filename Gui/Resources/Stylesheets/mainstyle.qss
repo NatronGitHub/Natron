@@ -277,6 +277,11 @@ QToolButton:focus {
     border: 1px solid %1;
 }
 
+RotoToolButton[isSelected="true"]
+{
+    border: 1px solid %1;
+}
+
 QDialogButtonBox {
     background-color: %3;
 }
@@ -406,6 +411,7 @@ QTabBar::tab:hover {
 QTabBar::tab:selected {
     background: %2;
     border-bottom-style:none;
+    border-color: %1;
 }
 
 QTabBar::tab:selected:focus {

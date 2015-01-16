@@ -289,7 +289,7 @@ struct GuiPrivate
     QToolBar* _toolBox;
 
     ///a vector of all the toolbuttons
-    std::vector<ToolButton*> _toolButtons;
+    std::vector<ToolButton* > _toolButtons;
 
     ///holds the properties dock
     QWidget *_propertiesBin;
@@ -300,6 +300,7 @@ struct GuiPrivate
     ///the vertical layout for the properties dock container.
     QVBoxLayout *_layoutPropertiesBin;
     Button* _clearAllPanelsButton;
+    Button* _minimizeAllPanelsButtons;
     SpinBox* _maxPanelsOpenedSpinBox;
     
     QMutex _isGUIFrozenMutex;
@@ -426,6 +427,7 @@ struct GuiPrivate
 		  , _propertiesContainer(0)
           , _layoutPropertiesBin(0)
           , _clearAllPanelsButton(0)
+          , _minimizeAllPanelsButtons(0)
           , _maxPanelsOpenedSpinBox(0)
           , _isGUIFrozenMutex()
           , _isGUIFrozen(false)
@@ -1096,8 +1098,21 @@ GuiPrivate::createPropertiesBinGui()
                                                                 Qt::WhiteSpaceNormal) );
     _clearAllPanelsButton->setFocusPolicy(Qt::NoFocus);
     QObject::connect( _clearAllPanelsButton,SIGNAL( clicked(bool) ),_gui,SLOT( clearAllVisiblePanels() ) );
-
-
+    
+    QPixmap minimizePix,maximizePix;
+    appPTR->getIcon(NATRON_PIXMAP_MINIMIZE_WIDGET, &minimizePix);
+    appPTR->getIcon(NATRON_PIXMAP_MAXIMIZE_WIDGET, &maximizePix);
+    QIcon mIc;
+    mIc.addPixmap(minimizePix,QIcon::Normal, QIcon::On);
+    mIc.addPixmap(maximizePix,QIcon::Normal, QIcon::Off);
+    _minimizeAllPanelsButtons = new Button(mIc,"",propertiesAreaButtonsContainer);
+    _minimizeAllPanelsButtons->setCheckable(true);
+    _minimizeAllPanelsButtons->setChecked(false);
+    _minimizeAllPanelsButtons->setFixedSize(NATRON_SMALL_BUTTON_SIZE,NATRON_SMALL_BUTTON_SIZE);
+    _minimizeAllPanelsButtons->setToolTip(Qt::convertFromPlainText(_gui->tr("Minimize / Maximize all panels"),Qt::WhiteSpaceNormal));
+    _minimizeAllPanelsButtons->setFocusPolicy(Qt::NoFocus);
+    QObject::connect( _minimizeAllPanelsButtons,SIGNAL( clicked(bool) ),_gui,SLOT( minimizeMaximizeAllPanels(bool) ) );
+    
     _maxPanelsOpenedSpinBox = new SpinBox(propertiesAreaButtonsContainer);
     _maxPanelsOpenedSpinBox->setMaximumSize(NATRON_SMALL_BUTTON_SIZE,NATRON_SMALL_BUTTON_SIZE);
     _maxPanelsOpenedSpinBox->setMinimum(0);
@@ -1111,6 +1126,7 @@ GuiPrivate::createPropertiesBinGui()
     
     propertiesAreaButtonsLayout->addWidget(_maxPanelsOpenedSpinBox);
     propertiesAreaButtonsLayout->addWidget(_clearAllPanelsButton);
+    propertiesAreaButtonsLayout->addWidget(_minimizeAllPanelsButtons);
     propertiesAreaButtonsLayout->addStretch();
     
     mainPropertiesLayout->addWidget(propertiesAreaButtonsContainer);
@@ -1431,7 +1447,7 @@ Gui::exportLayout()
     std::vector<std::string> filters;
 
     filters.push_back(NATRON_LAYOUT_FILE_EXT);
-    SequenceFileDialog dialog( this,filters,false,SequenceFileDialog::SAVE_DIALOG,_imp->_lastSaveProjectOpenedDir.toStdString(),this,false );
+    SequenceFileDialog dialog( this,filters,false,SequenceFileDialog::eFileDialogModeSave,_imp->_lastSaveProjectOpenedDir.toStdString(),this,false );
     if ( dialog.exec() ) {
         std::string filename = dialog.filesToSave();
         QString filenameCpy( filename.c_str() );
@@ -1493,7 +1509,7 @@ Gui::importLayout()
     std::vector<std::string> filters;
 
     filters.push_back(NATRON_LAYOUT_FILE_EXT);
-    SequenceFileDialog dialog( this,filters,false,SequenceFileDialog::OPEN_DIALOG,_imp->_lastLoadProjectOpenedDir.toStdString(),this,false );
+    SequenceFileDialog dialog( this,filters,false,SequenceFileDialog::eFileDialogModeOpen,_imp->_lastLoadProjectOpenedDir.toStdString(),this,false );
     if ( dialog.exec() ) {
         std::string filename = dialog.selectedFiles();
         std::ifstream ifile;
@@ -1971,6 +1987,13 @@ Gui::removeViewerTab(ViewerTab* tab,
     assert(tab);
     unregisterTab(tab);
 
+    ViewerInstance* internalViewer = tab->getInternalNode();
+    if (internalViewer) {
+        if (getApp()->getLastViewerUsingTimeline() == internalViewer) {
+            getApp()->discardLastViewerUsingTimeline();
+        }
+    }
+    
     if (!initiatedFromNode) {
         assert(_imp->_nodeGraphArea);
         ///call the deleteNode which will call this function again when the node will be deactivated.
@@ -2176,10 +2199,10 @@ Gui::findExistingToolButton(const QString & label) const
 }
 
 ToolButton*
-Gui::findOrCreateToolButton(PluginGroupNode* plugin)
+Gui::findOrCreateToolButton(const boost::shared_ptr<PluginGroupNode>& plugin)
 {
     for (U32 i = 0; i < _imp->_toolButtons.size(); ++i) {
-        if ( _imp->_toolButtons[i]->getID() == plugin->getID() && _imp->_toolButtons[i]->getPluginMajor() == plugin->getMajorVersion()) {
+        if ( _imp->_toolButtons[i]->getPluginToolButton() == plugin) {
             return _imp->_toolButtons[i];
         }
     }
@@ -2211,7 +2234,15 @@ Gui::findOrCreateToolButton(PluginGroupNode* plugin)
         //if the plugin has no children and no parent, put it in the "others" group
         if ( !plugin->hasParent() ) {
             ToolButton* othersGroup = findExistingToolButton(PLUGIN_GROUP_DEFAULT);
-            PluginGroupNode* othersToolButton = appPTR->findPluginToolButtonOrCreate(PLUGIN_GROUP_DEFAULT,PLUGIN_GROUP_DEFAULT, PLUGIN_GROUP_DEFAULT_ICON_PATH,1,0);
+            
+            QStringList grouping(PLUGIN_GROUP_DEFAULT);
+            boost::shared_ptr<PluginGroupNode> othersToolButton =
+            appPTR->findPluginToolButtonOrCreate(grouping,
+                                                 PLUGIN_GROUP_DEFAULT,
+                                                 PLUGIN_GROUP_DEFAULT_ICON_PATH,
+                                                 PLUGIN_GROUP_DEFAULT_ICON_PATH,
+                                                 1,
+                                                 0);
             othersToolButton->tryAddChild(plugin);
 
             //if the othersGroup doesn't exist, create it
@@ -2226,7 +2257,7 @@ Gui::findOrCreateToolButton(PluginGroupNode* plugin)
                                                    plugin->getLabel(),icon);
 
     if (isLeaf) {
-        QString label = plugin->isThereSeveralPluginMajorVersions() ? plugin->getLabelVersionMajorEncoded() : plugin->getLabel();
+        QString label = plugin->getNotHighestMajorVersion() ? plugin->getLabelVersionMajorEncoded() : plugin->getLabel();
         int foundOFX = label.lastIndexOf("OFX");
         if (foundOFX != -1) {
             label = label.remove(foundOFX, 3);
@@ -2267,7 +2298,7 @@ Gui::findOrCreateToolButton(PluginGroupNode* plugin)
         QPixmap writeImagePix;
         appPTR->getIcon(Natron::NATRON_PIXMAP_WRITE_IMAGE, &writeImagePix);
         createWriterAction->setIcon( QIcon(writeImagePix) );
-        createReaderAction->setShortcutContext(Qt::WidgetShortcut);
+        createWriterAction->setShortcutContext(Qt::WidgetShortcut);
         createWriterAction->setShortcut( QKeySequence(Qt::Key_W) );
         imageMenu->addAction(createWriterAction);
     }
@@ -2632,7 +2663,7 @@ Gui::saveAndIncrVersion()
 void
 Gui::createNewViewer()
 {
-    (void)_imp->_appInstance->createNode( CreateNodeArgs(NATRON_VIEWER_ID,
+    ignore_result(_imp->_appInstance->createNode( CreateNodeArgs(PLUGINID_NATRON_VIEWER,
                                                          "",
                                                          -1,-1,
                                                          -1,
@@ -2641,7 +2672,7 @@ Gui::createNewViewer()
                                                          true,
                                                          true,
                                                          QString(),
-                                                         CreateNodeArgs::DefaultValuesList()) );
+                                                         CreateNodeArgs::DefaultValuesList()) ));
 }
 
 boost::shared_ptr<Natron::Node>
@@ -2725,7 +2756,7 @@ Gui::popOpenFileDialog(bool sequenceDialog,
                        const std::string & initialDir,
                        bool allowRelativePaths)
 {
-    SequenceFileDialog dialog(this, initialfilters, sequenceDialog, SequenceFileDialog::OPEN_DIALOG, initialDir,this,allowRelativePaths);
+    SequenceFileDialog dialog(this, initialfilters, sequenceDialog, SequenceFileDialog::eFileDialogModeOpen, initialDir,this,allowRelativePaths);
 
     if ( dialog.exec() ) {
         return dialog.selectedFiles();
@@ -2768,7 +2799,7 @@ Gui::popSaveFileDialog(bool sequenceDialog,
                        const std::string & initialDir,
                        bool allowRelativePaths)
 {
-    SequenceFileDialog dialog(this,initialfilters,sequenceDialog,SequenceFileDialog::SAVE_DIALOG,initialDir,this,allowRelativePaths);
+    SequenceFileDialog dialog(this,initialfilters,sequenceDialog,SequenceFileDialog::eFileDialogModeSave,initialDir,this,allowRelativePaths);
 
     if ( dialog.exec() ) {
         return dialog.filesToSave();
@@ -3007,11 +3038,11 @@ Gui::onDoDialog(int type,
     if (type == 0) {
         QMessageBox critical(QMessageBox::Critical, title, msg, QMessageBox::NoButton, this, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint | Qt::WindowStaysOnTopHint);
         critical.setTextFormat(Qt::RichText);   //this is what makes the links clickable
-        critical.exec();
+        ignore_result(critical.exec());
     } else if (type == 1) {
         QMessageBox warning(QMessageBox::Warning, title, msg, QMessageBox::NoButton, this, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint | Qt::WindowStaysOnTopHint);
         warning.setTextFormat(Qt::RichText);
-        warning.exec();
+        ignore_result(warning.exec());
     } else if (type == 2) {
         QMessageBox info(QMessageBox::Information, title, (msg.count() > 1000 ? msg.left(1000) : msg), QMessageBox::NoButton, this, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint | Qt::WindowStaysOnTopHint);
         info.setTextFormat(Qt::RichText);
@@ -3023,7 +3054,7 @@ Gui::onDoDialog(int type,
                 layout->addWidget(edit, 0, 1);
             }
         }
-        info.exec();
+        ignore_result(info.exec());
     } else {
         QMessageBox ques(QMessageBox::Question, title, msg, QtEnumConvert::toQtStandarButtons(buttons),
                          this, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint | Qt::WindowStaysOnTopHint);
@@ -3424,7 +3455,8 @@ void
 Gui::showAbout()
 {
     _imp->_aboutWindow->show();
-    _imp->_aboutWindow->exec();
+    int status = _imp->_aboutWindow->exec();
+    assert(status == QDialog::Accepted);
 }
 
 void
@@ -3819,7 +3851,7 @@ Gui::debugImage(const Natron::Image* image,
     ///offset the pointer to 0,0
     from -= ( ( rod.bottom() * image->getRowElements() ) + rod.left() * image->getComponentsCount() );
     lut->to_byte_packed(output.bits(), from, rod, rod, rod,
-                        Natron::Color::PACKING_RGBA,Natron::Color::PACKING_BGRA, true,false);
+                        Natron::Color::ePixelPackingRGBA,Natron::Color::ePixelPackingBGRA, true,false);
     U64 hashKey = image->getHashKey();
     QString hashKeyStr = QString::number(hashKey);
     QString realFileName = filename.isEmpty() ? QString(hashKeyStr + ".png") : filename;
@@ -3905,11 +3937,15 @@ Gui::getCairoVersion() const
 void
 Gui::onNodeNameChanged(const QString & /*name*/)
 {
-    NodeGui* node = qobject_cast<NodeGui*>( sender() );
+    NodeGui* nodegui = qobject_cast<NodeGui*>( sender() );
+    if (!nodegui) {
+        return;
+    }
+    boost::shared_ptr<Natron::Node> node = nodegui->getNode();
     if (!node) {
         return;
     }
-    ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>(node->getNode()->getLiveInstance());
+    ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>(node->getLiveInstance());
     if (isViewer) {
         emit viewersChanged();
     }
@@ -3971,7 +4007,7 @@ Gui::showOfxLog()
     LogWindow lw(log,this);
 
     lw.setWindowTitle( tr("Errors log") );
-    lw.exec();
+    ignore_result(lw.exec());
 }
 
 
@@ -4202,6 +4238,23 @@ Gui::clearAllVisiblePanels()
         }
     }
 	getApp()->redrawAllViewers();
+}
+
+void
+Gui::minimizeMaximizeAllPanels(bool clicked)
+{
+    for (std::list<DockablePanel*>::iterator it = _imp->openedPanels.begin() ; it != _imp->openedPanels.end(); ++it) {
+        if (clicked) {
+            if (!(*it)->isMinimized()) {
+                (*it)->minimizeOrMaximize(true);
+            }
+        } else {
+            if ((*it)->isMinimized()) {
+                (*it)->minimizeOrMaximize(false);
+            }
+        }
+    }
+    getApp()->redrawAllViewers();
 }
 
 NodeBackDrop*
@@ -4470,17 +4523,26 @@ Gui::getNodesEntitledForOverlays(std::list<boost::shared_ptr<Natron::Node> >& no
                 if (multiInstance) {
                     const std::list< std::pair<boost::shared_ptr<Natron::Node>,bool > >& instances = multiInstance->getInstances();
                     for (std::list< std::pair<boost::shared_ptr<Natron::Node>,bool > >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
-                        if (node->isSettingsPanelVisible() && it->first->isActivated() && it->second && !it->first->isNodeDisabled()) {
+                        if (node->isSettingsPanelVisible() &&
+                            !node->isSettingsPanelMinimized() &&
+                            it->first->isActivated() &&
+                            it->second &&
+                            !it->first->isNodeDisabled()) {
                             nodes.push_back(it->first);
                         }
                     }
                     boost::shared_ptr<Natron::Node> internalNode = node->getNode();
-                    if (!internalNode->isNodeDisabled() && node->isSettingsPanelVisible()) {
+                    if (!internalNode->isNodeDisabled() &&
+                        node->isSettingsPanelVisible() &&
+                        !node->isSettingsPanelMinimized() ) {
                         nodes.push_back(node->getNode());
                     }
                 } else {
                     boost::shared_ptr<Natron::Node> internalNode = node->getNode();
-                    if (!internalNode->isNodeDisabled() && internalNode->isActivated() && node->isSettingsPanelVisible()) {
+                    if (!internalNode->isNodeDisabled() &&
+                        internalNode->isActivated() &&
+                        node->isSettingsPanelVisible() &&
+                        !node->isSettingsPanelMinimized() ) {
                         nodes.push_back(node->getNode());
                     }
                 }

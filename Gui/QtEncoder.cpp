@@ -48,7 +48,7 @@ QtWriter::~QtWriter()
 std::string
 QtWriter::getPluginID() const
 {
-    return NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.WriteQt";
+    return PLUGINID_NATRON_WRITEQT;
 }
 
 std::string
@@ -108,8 +108,7 @@ QtWriter::getFrameRange(SequenceTime *first,
             *last = 0;
         }
     } else if (index == 1) {
-        *first = getApp()->getTimeLine()->leftBound();
-        *last = getApp()->getTimeLine()->rightBound();
+        getApp()->getFrameRange(first, last);
     } else {
         *first = _firstFrameKnob->getValue();
         *last = _lastFrameKnob->getValue();
@@ -164,8 +163,8 @@ QtWriter::knobChanged(KnobI* k,
             _firstFrameKnob->setSecret(true);
             _lastFrameKnob->setSecret(true);
         } else {
-            int first = getApp()->getTimeLine()->firstFrame();
-            int last = getApp()->getTimeLine()->lastFrame();
+            int first,last;
+            getApp()->getFrameRange(&first, &last);
             _firstFrameKnob->setValue(first,0);
             _firstFrameKnob->setDisplayMinimum(first);
             _firstFrameKnob->setDisplayMaximum(last);
@@ -260,7 +259,7 @@ QtWriter::render(SequenceTime time,
     }
 
     _lut->to_byte_packed(buf, (const float*)src->pixelAt(0, 0), roi, src->getBounds(), roi,
-                         Natron::Color::PACKING_RGBA, Natron::Color::PACKING_BGRA, true, premult);
+                         Natron::Color::ePixelPackingRGBA, Natron::Color::ePixelPackingBGRA, true, premult);
 
     QImage img(buf,roi.width(),roi.height(),type);
     std::string filename = _fileKnob->getValue();

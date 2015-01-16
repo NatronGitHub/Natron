@@ -541,12 +541,82 @@ ofxExtractAllPartsOfGrouping(const QString & pluginIdentifier,
     QStringList out;
     if ( pluginIdentifier.startsWith("com.genarts.sapphire.") || s.startsWith("Sapphire ") || str.startsWith(" Sapphire ") ) {
         out.push_back("Sapphire");
+
     } else if ( pluginIdentifier.startsWith("com.genarts.monsters.") || s.startsWith("Monsters ") || str.startsWith(" Monsters ") ) {
         out.push_back("Monsters");
+
     } else if (pluginIdentifier == "uk.co.thefoundry.keylight.keylight") {
         s = PLUGIN_GROUP_KEYER;
+
     } else if (pluginIdentifier == "uk.co.thefoundry.noisetools.denoise") {
         s = PLUGIN_GROUP_FILTER;
+
+    } else if ( (pluginIdentifier == "tuttle.avreader") ||
+               (pluginIdentifier == "tuttle.avwriter") ||
+               (pluginIdentifier == "tuttle.dpxwriter") ||
+               (pluginIdentifier == "tuttle.exrreader") ||
+               (pluginIdentifier == "tuttle.exrwriter") ||
+               (pluginIdentifier == "tuttle.imagemagickreader") ||
+               (pluginIdentifier == "tuttle.jpeg2000reader") ||
+               (pluginIdentifier == "tuttle.jpeg2000writer") ||
+               (pluginIdentifier == "tuttle.jpegreader") ||
+               (pluginIdentifier == "tuttle.jpegwriter") ||
+               (pluginIdentifier == "tuttle.oiioreader") ||
+               (pluginIdentifier == "tuttle.oiiowriter") ||
+               (pluginIdentifier == "tuttle.pngreader") ||
+               (pluginIdentifier == "tuttle.pngwriter") ||
+               (pluginIdentifier == "tuttle.rawreader") ||
+               (pluginIdentifier == "tuttle.turbojpegreader") ||
+               (pluginIdentifier == "tuttle.turbojpegwriter") ) {
+        out.push_back(PLUGIN_GROUP_IMAGE);
+        if ( pluginIdentifier.endsWith("reader") ) {
+            s = PLUGIN_GROUP_IMAGE_READERS;
+        } else {
+            s = PLUGIN_GROUP_IMAGE_WRITERS;
+        }
+
+    } else if ( (pluginIdentifier == "tuttle.checkerboard") ||
+               (pluginIdentifier == "tuttle.colorbars") ||
+               (pluginIdentifier == "tuttle.colorcube") || // TuttleColorCube
+               (pluginIdentifier == "tuttle.colorgradient") ||
+               (pluginIdentifier == "tuttle.colorwheel") ||
+               (pluginIdentifier == "tuttle.constant") ||
+               (pluginIdentifier == "tuttle.inputbuffer") ||
+               (pluginIdentifier == "tuttle.outputbuffer") ||
+               (pluginIdentifier == "tuttle.ramp") ||
+               (pluginIdentifier == "tuttle.seexpr") ) {
+        s = PLUGIN_GROUP_IMAGE;
+
+    } else if ( (pluginIdentifier == "tuttle.bitdepth") ||
+               (pluginIdentifier == "tuttle.colorgradation") ||
+               (pluginIdentifier == "tuttle.colorspace") ||
+               (pluginIdentifier == "tuttle.colorsuppress") ||
+               (pluginIdentifier == "tuttle.colortransfer") ||
+               (pluginIdentifier == "tuttle.colortransform") ||
+               (pluginIdentifier == "tuttle.ctl") ||
+               (pluginIdentifier == "tuttle.invert") ||
+               (pluginIdentifier == "tuttle.lut") ||
+               (pluginIdentifier == "tuttle.normalize") ) {
+        s = PLUGIN_GROUP_COLOR;
+
+    } else if ( (pluginIdentifier == "tuttle.ocio.colorspace") ||
+               (pluginIdentifier == "tuttle.ocio.lut") ) {
+        out.push_back(PLUGIN_GROUP_COLOR);
+        s = "OCIO";
+
+    } else if ( (pluginIdentifier == "tuttle.gamma") ||
+               (pluginIdentifier == "tuttle.mathoperator") ) {
+        out.push_back(PLUGIN_GROUP_COLOR);
+        s = "Math";
+
+    } else if ( (pluginIdentifier == "tuttle.channelshuffle") ) {
+        s = PLUGIN_GROUP_CHANNEL;
+
+    } else if ( (pluginIdentifier == "tuttle.component") ||
+               (pluginIdentifier == "tuttle.fade") ||
+               (pluginIdentifier == "tuttle.merge") ) {
+        s = PLUGIN_GROUP_MERGE;
+
     } else if ( (pluginIdentifier == "tuttle.anisotropicdiffusion") ||
                 (pluginIdentifier == "tuttle.anisotropictensors") ||
                 (pluginIdentifier == "tuttle.blur") ||
@@ -557,89 +627,46 @@ ofxExtractAllPartsOfGrouping(const QString & pluginIdentifier,
                 (pluginIdentifier == "tuttle.sobel") ||
                 (pluginIdentifier == "tuttle.thinning") ) {
         s = PLUGIN_GROUP_FILTER;
-    } else if ( (pluginIdentifier == "tuttle.bitdepth") ||
-                (pluginIdentifier == "tuttle.colorgradation") ||
-                (pluginIdentifier == "tuttle.colorspace") ||
-                (pluginIdentifier == "tuttle.colorsuppress") ||
-                (pluginIdentifier == "tuttle.colortransfer") ||
-                (pluginIdentifier == "tuttle.colortransform") ||
-                (pluginIdentifier == "tuttle.ctl") ||
-                (pluginIdentifier == "tuttle.gamma") ||
-                (pluginIdentifier == "tuttle.invert") ||
-                (pluginIdentifier == "tuttle.normalize") ) {
-        s = PLUGIN_GROUP_COLOR;
-    } else if ( (pluginIdentifier == "tuttle.ocio.colorspace") ||
-                (pluginIdentifier == "tuttle.ocio.lut") ) {
-        out.push_back(PLUGIN_GROUP_COLOR);
-        s = "OCIO";
+
+    } else if ( (pluginIdentifier == "tuttle.crop") ||
+               (pluginIdentifier == "tuttle.flip") ||
+               (pluginIdentifier == "tuttle.lensdistort") ||
+               (pluginIdentifier == "tuttle.move2d") ||
+               (pluginIdentifier == "tuttle.pinning") ||
+               (pluginIdentifier == "tuttle.pushpixel") ||
+               (pluginIdentifier == "tuttle.resize") ||
+               (pluginIdentifier == "tuttle.swscale") ||
+               (pluginIdentifier == "tuttle.warp") ) {
+        s = PLUGIN_GROUP_TRANSFORM;
+
+    } else if ( (pluginIdentifier == "tuttle.timeshift") ) {
+        s = PLUGIN_GROUP_TIME;
+
+    } else if ( (pluginIdentifier == "tuttle.text") ) {
+        s = PLUGIN_GROUP_PAINT;
+
     } else if ( (pluginIdentifier == "tuttle.basickeyer") ||
                 (pluginIdentifier == "tuttle.colorspacekeyer") ||
                 (pluginIdentifier == "tuttle.histogramkeyer") ||
                 (pluginIdentifier == "tuttle.idkeyer") ) {
         s = PLUGIN_GROUP_KEYER;
-    } else if ( (pluginIdentifier == "tuttle.avreader") ||
-                (pluginIdentifier == "tuttle.avwriter") ||
-                (pluginIdentifier == "tuttle.dpxwriter") ||
-                (pluginIdentifier == "tuttle.exrreader") ||
-                (pluginIdentifier == "tuttle.exrwriter") ||
-                (pluginIdentifier == "tuttle.imagemagickreader") ||
-                (pluginIdentifier == "tuttle.jpeg2000reader") ||
-                (pluginIdentifier == "tuttle.jpeg2000writer") ||
-                (pluginIdentifier == "tuttle.jpegreader") ||
-                (pluginIdentifier == "tuttle.jpegwriter") ||
-                (pluginIdentifier == "tuttle.oiioreader") ||
-                (pluginIdentifier == "tuttle.oiiowriter") ||
-                (pluginIdentifier == "tuttle.pngreader") ||
-                (pluginIdentifier == "tuttle.pngwriter") ||
-                (pluginIdentifier == "tuttle.rawreader") ||
-                (pluginIdentifier == "tuttle.turbojpegreader") ||
-                (pluginIdentifier == "tuttle.turbojpegwriter") ) {
-        out.push_back(PLUGIN_GROUP_IMAGE);
-        if ( pluginIdentifier.endsWith("reader") ) {
-            s = PLUGIN_GROUP_IMAGE_READERS;
-        } else {
-            s = PLUGIN_GROUP_IMAGE_WRITERS;
-        }
-    } else if ( (pluginIdentifier == "tuttle.checkerboard") ||
-                (pluginIdentifier == "tuttle.colorbars") ||
-                (pluginIdentifier == "tuttle.colorcube") ||
-                (pluginIdentifier == "tuttle.colorwheel") ||
-                (pluginIdentifier == "tuttle.constant") ||
-                (pluginIdentifier == "tuttle.inputbuffer") ||
-                (pluginIdentifier == "tuttle.outputbuffer") ||
-                (pluginIdentifier == "tuttle.ramp") ||
-                (pluginIdentifier == "tuttle.seexpr") ) {
-        s = PLUGIN_GROUP_IMAGE;
-    } else if ( (pluginIdentifier == "tuttle.text") ) {
-        s = PLUGIN_GROUP_PAINT;
-    } else if ( (pluginIdentifier == "tuttle.component") ||
-                (pluginIdentifier == "tuttle.fade") ||
-                (pluginIdentifier == "tuttle.merge") ) {
-        s = PLUGIN_GROUP_MERGE;
-    } else if ( (pluginIdentifier == "tuttle.crop") ||
-                (pluginIdentifier == "tuttle.flip") ||
-                (pluginIdentifier == "tuttle.lensdistort") ||
-                (pluginIdentifier == "tuttle.move2d") ||
-                (pluginIdentifier == "tuttle.pinning") ||
-                (pluginIdentifier == "tuttle.pushpixel") ||
-                (pluginIdentifier == "tuttle.resize") ||
-                (pluginIdentifier == "tuttle.swscale") ||
-                (pluginIdentifier == "tuttle.warp") ) {
-        s = PLUGIN_GROUP_TRANSFORM;
-    } else if ( (pluginIdentifier == "tuttle.mathoperator") ) {
-        out.push_back(PLUGIN_GROUP_COLOR);
-        s = "Math";
-    } else if ( (pluginIdentifier == "tuttle.timeshift") ) {
-        s = PLUGIN_GROUP_TIME;
-    } else if ( (pluginIdentifier == "tuttle.channelshuffle") ) {
-        s = PLUGIN_GROUP_CHANNEL;
+
+    } else if ( (pluginIdentifier == "tuttle.colorCube") || // TuttleColorCubeViewer
+               (pluginIdentifier == "tuttle.colorcubeviewer") ||
+               (pluginIdentifier == "tuttle.diff") ||
+               (pluginIdentifier == "tuttle.dummy") ||
+               (pluginIdentifier == "tuttle.histogram") ||
+               (pluginIdentifier == "tuttle.imagestatistics") ) {
+        s = PLUGIN_GROUP_OTHER;
+        
+    } else if ( (pluginIdentifier == "tuttle.debugimageeffectapi") ) {
+        out.push_back(PLUGIN_GROUP_OTHER);
+        s = "Test";
     }
 
+    // The following plugins are pretty much useless for use within Natron, keep them in the Tuttle group:
     /*
-       (pluginIdentifier == "tuttle.diff") ||
-       (pluginIdentifier == "tuttle.dummy") ||
-       (pluginIdentifier == "tuttle.histogram") ||
-       (pluginIdentifier == "tuttle.imagestatistics") ||
+       (pluginIdentifier == "tuttle.print") ||
        (pluginIdentifier == "tuttle.viewer") ||
      */
     return out + s.split('/');
@@ -2446,7 +2473,7 @@ OfxEffectInstance::beginKnobsValuesChanged(Natron::ValueChangedReasonEnum reason
     ///getClipPreferences() so we don't take the clips preferences lock for read here otherwise we would
     ///create a deadlock. This code then assumes that the instance changed action of the plug-in doesn't require
     ///the clip preferences to stay the same throughout the action.
-    (void)effectInstance()->beginInstanceChangedAction(natronValueChangedReasonToOfxValueChangedReason(reason));
+    ignore_result(effectInstance()->beginInstanceChangedAction(natronValueChangedReasonToOfxValueChangedReason(reason)));
 }
 
 void
@@ -2462,7 +2489,7 @@ OfxEffectInstance::endKnobsValuesChanged(Natron::ValueChangedReasonEnum reason)
     ///getClipPreferences() so we don't take the clips preferences lock for read here otherwise we would
     ///create a deadlock. This code then assumes that the instance changed action of the plug-in doesn't require
     ///the clip preferences to stay the same throughout the action.
-    (void)effectInstance()->endInstanceChangedAction(natronValueChangedReasonToOfxValueChangedReason(reason));
+    ignore_result(effectInstance()->endInstanceChangedAction(natronValueChangedReasonToOfxValueChangedReason(reason)));
 
 }
 

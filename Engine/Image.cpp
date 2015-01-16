@@ -894,7 +894,6 @@ template <typename PIX, int maxValue>
 void
 Image::halveRoIForDepth(const RectI & roi,
                         bool copyBitMap,
-                        bool treatUnavailablePixelsAsRendered,
                         Natron::Image* output) const
 {
     assert( (getBitDepth() == eImageBitDepthByte && sizeof(PIX) == 1) ||
@@ -1015,17 +1014,21 @@ Image::halveRoIForDepth(const RectI & roi,
                 char c = (pickThisCol && pickNextRow) ? *(srcBmPixStart + srcBmRowSize): 0;
                 char d = (pickNextCol && pickNextRow) ? *(srcBmPixStart + srcBmRowSize  + 1)  : 0;
 #if NATRON_ENABLE_TRIMAP
+                /*
+                 The only correct solution is to convert pixels being rendered to 0 otherwise the caller
+                 would have to wait for the original fullscale image render to be finished and then re-downscale again.
+                 */
                 if (a == PIXEL_UNAVAILABLE) {
-                    a = treatUnavailablePixelsAsRendered ? 1 : 0;
+                    a = 0;
                 }
                 if (b == PIXEL_UNAVAILABLE) {
-                    b = treatUnavailablePixelsAsRendered ? 1 : 0;
+                    b = 0;
                 }
                 if (c == PIXEL_UNAVAILABLE) {
-                    c = treatUnavailablePixelsAsRendered ? 1 : 0;
+                    c = 0;
                 }
                 if (d == PIXEL_UNAVAILABLE) {
-                    d = treatUnavailablePixelsAsRendered ? 1 : 0;
+                    d = 0;
                 }
 #endif
                 assert(sumW == 2 || (sumW == 1 && ((a == 0 && c == 0) || (b == 0 && d == 0))));
@@ -1044,18 +1047,17 @@ Image::halveRoIForDepth(const RectI & roi,
 void
 Image::halveRoI(const RectI & roi,
                 bool copyBitMap,
-                bool treatUnavailablePixelsAsRendered,
                 Natron::Image* output) const
 {
     switch ( getBitDepth() ) {
     case eImageBitDepthByte:
-            halveRoIForDepth<unsigned char,255>(roi, copyBitMap,treatUnavailablePixelsAsRendered, output);
+            halveRoIForDepth<unsigned char,255>(roi, copyBitMap,  output);
         break;
     case eImageBitDepthShort:
-        halveRoIForDepth<unsigned short,65535>(roi,copyBitMap, treatUnavailablePixelsAsRendered, output);
+        halveRoIForDepth<unsigned short,65535>(roi,copyBitMap, output);
         break;
     case eImageBitDepthFloat:
-        halveRoIForDepth<float,1>(roi,copyBitMap,treatUnavailablePixelsAsRendered, output);
+        halveRoIForDepth<float,1>(roi,copyBitMap,output);
         break;
     case eImageBitDepthNone:
         break;
@@ -1139,7 +1141,6 @@ Image::downscaleMipMap(const RectI & roi,
                        unsigned int fromLevel,
                        unsigned int toLevel,
                        bool copyBitMap,
-                       bool treatUnavailablePixelsAsRendered,
                        Natron::Image* output) const
 {
     ///You should not call this function with a level equal to 0.
@@ -1160,7 +1161,7 @@ Image::downscaleMipMap(const RectI & roi,
     
     ImagePtr tmpImg( new Natron::Image( getComponents(), getRoD(), dstRoI, toLevel, par, getBitDepth() , true) );
 
-    buildMipMapLevel( roi, downscaleLvls, copyBitMap, treatUnavailablePixelsAsRendered, tmpImg.get() );
+    buildMipMapLevel( roi, downscaleLvls, copyBitMap, tmpImg.get() );
 
     // check that the downscaled mipmap is inside the output image (it may not be equal to it)
     assert(dstRoI.x1 >= output->getBounds().x1);
@@ -1173,29 +1174,32 @@ Image::downscaleMipMap(const RectI & roi,
 }
 
 
-void
+bool
 Image::checkForNaNs(const RectI& roi)
 {
     if (getBitDepth() != eImageBitDepthFloat) {
-        return;
+        return false;
     }
     
     unsigned int compsCount = getComponentsCount();
-    
+
+    bool hasnan = false;
     for (int y = roi.y1; y < roi.y2; ++y) {
         
-        float* pix = (float*)pixelAt(roi.x1, roi.y1);
+        float* pix = (float*)pixelAt(roi.x1, y);
         float* const end = pix +  compsCount * roi.width();
         
         for (;pix < end; ++pix) {
-            assert(!boost::math::isnan(*pix) && !boost::math::isinf(*pix));
-            if (boost::math::isnan(*pix) || boost::math::isinf(*pix)) {
+            // we remove NaNs, but infinity values should pose no problem
+            // (if they do, please explain here which ones)
+            if (boost::math::isnan(*pix)/* || boost::math::isinf(*pix)*/) {
                 *pix = 1.;
+                hasnan = true;
             }
         }
     }
 
-
+    return hasnan;
 }
 
 // code proofread and fixed by @devernay on 8/8/2014
@@ -1320,7 +1324,7 @@ Image::scaleBoxForDepth(const RectI & roi,
          ( srcRoi.x2 == 2 * dstBounds.x2) &&
          ( srcRoi.y1 == 2 * dstBounds.y1) &&
          ( srcRoi.y2 == 2 * dstBounds.y2) ) {
-        halveRoI(srcRoi, false, false, output);
+        halveRoI(srcRoi, false, output);
 
         return;
     }
@@ -1548,7 +1552,6 @@ void
 Image::buildMipMapLevel(const RectI & roi,
                         unsigned int level,
                         bool copyBitMap,
-                        bool treatUnavailablePixelsAsRendered,
                         Natron::Image* output) const
 {
     ///The last mip map level we will make with closestPo2
@@ -1581,7 +1584,7 @@ Image::buildMipMapLevel(const RectI & roi,
         ///Half the source image into dstImg.
         ///We pass the closestPo2 roi which might not be the entire size of the source image
         ///If the source image'sroi was originally a po2.
-        srcImg->halveRoI(previousRoI, copyBitMap,treatUnavailablePixelsAsRendered, dstImg);
+        srcImg->halveRoI(previousRoI, copyBitMap, dstImg);
 
         ///Clean-up, we should use shared_ptrs for safety
         if (mustFreeSrc) {
@@ -1823,7 +1826,11 @@ convertToFormatInternal_sameComps(const RectI & renderWindow,
 
             while ( x != end && x >= 0 && x < intersection.width() ) {
                 for (int k = 0; k < nComp; ++k) {
-                    if ( (k <= 2) && (srcLut || dstLut) ) {
+                    if ( k == 3 || (!srcLut && !dstLut) ) {
+                        DSTPIX pix = convertPixelDepth<SRCPIX, DSTPIX>(srcPixels[k]);
+                        dstPixels[k] = invert ? dstMaxValue - pix : pix;
+
+                    } else {
                         float pixFloat;
 
                         if (srcLut) {
@@ -1854,9 +1861,6 @@ convertToFormatInternal_sameComps(const RectI & renderWindow,
                             }
                             pix = convertPixelDepth<float, DSTPIX>(pixFloat);
                         }
-                        dstPixels[k] = invert ? dstMaxValue - pix : pix;
-                    } else {
-                        DSTPIX pix = convertPixelDepth<SRCPIX, DSTPIX>(srcPixels[k]);
                         dstPixels[k] = invert ? dstMaxValue - pix : pix;
                     }
                 }
@@ -2012,6 +2016,19 @@ convertToFormatInternal(const RectI & renderWindow,
                                 ///For alpha channel, fill with 1, we reach here only if converting RGB-->RGBA
                                 DSTPIX pix = convertPixelDepth<float, DSTPIX>(0.f);
                                 dstPixels[k] = invert ? dstMaxValue - pix : pix;
+
+                            } else if (!srcLut && !dstLut) {
+                                DSTPIX pix;
+                                if (dstDepth == eImageBitDepthByte) {
+                                    float pixFloat = convertPixelDepth<SRCPIX, float>(srcPixels[k]);
+                                    error[k] = (error[k] & 0xff) + ( dstLut ? dstLut->toColorSpaceUint8xxFromLinearFloatFast(pixFloat) :
+                                                                    Color::floatToInt<0xff01>(pixFloat) );
+                                    pix = error[k] >> 8;
+
+                                } else {
+                                    pix = convertPixelDepth<SRCPIX, DSTPIX>(srcPixels[k]);
+                                }
+                                dstPixels[k] = invert ? dstMaxValue - pix : pix;
                             } else {
                                 ///For RGB channels
                                 float pixFloat;
@@ -2023,36 +2040,35 @@ convertToFormatInternal(const RectI & renderWindow,
                                     if (srcLut) {
                                         pixFloat = srcLut->fromColorSpaceFloatToLinearFloat(pixFloat);
                                     }
-                                } else {
-                                    
-                                    if (srcLut) {
-                                        if (srcDepth == eImageBitDepthByte) {
-                                            pixFloat = srcLut->fromColorSpaceUint8ToLinearFloatFast(srcPixels[k]);
-                                        } else if (srcDepth == eImageBitDepthShort) {
-                                            pixFloat = srcLut->fromColorSpaceUint16ToLinearFloatFast(srcPixels[k]);
-                                        } else {
-                                            pixFloat = srcLut->fromColorSpaceFloatToLinearFloat(srcPixels[k]);
-                                        }
+
+                                } else if (srcLut) {
+                                    if (srcDepth == eImageBitDepthByte) {
+                                        pixFloat = srcLut->fromColorSpaceUint8ToLinearFloatFast(srcPixels[k]);
+                                    } else if (srcDepth == eImageBitDepthShort) {
+                                        pixFloat = srcLut->fromColorSpaceUint16ToLinearFloatFast(srcPixels[k]);
                                     } else {
-                                        pixFloat = convertPixelDepth<SRCPIX, float>(srcPixels[k]);
+                                        pixFloat = srcLut->fromColorSpaceFloatToLinearFloat(srcPixels[k]);
                                     }
+                                } else {
+                                    pixFloat = convertPixelDepth<SRCPIX, float>(srcPixels[k]);
                                 }
-                                
+
                                 ///Apply dst color-space
                                 DSTPIX pix;
                                 if (dstDepth == eImageBitDepthByte) {
                                     error[k] = (error[k] & 0xff) + ( dstLut ? dstLut->toColorSpaceUint8xxFromLinearFloatFast(pixFloat) :
                                                                     Color::floatToInt<0xff01>(pixFloat) );
                                     pix = error[k] >> 8;
+
                                 } else if (dstDepth == eImageBitDepthShort) {
                                     pix = dstLut ? dstLut->toColorSpaceUint16FromLinearFloatFast(pixFloat) :
                                     convertPixelDepth<float, DSTPIX>(pixFloat);
+
                                 } else {
                                     if (dstLut) {
                                         pixFloat = dstLut->toColorSpaceFloatFromLinearFloat(pixFloat);
-                                    } else {
-                                        pix = convertPixelDepth<float, DSTPIX>(pixFloat);
                                     }
+                                    pix = convertPixelDepth<float, DSTPIX>(pixFloat);
                                 }
                                 dstPixels[k] = invert ? dstMaxValue - pix : pix;
                             }

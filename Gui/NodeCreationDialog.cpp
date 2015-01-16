@@ -83,8 +83,8 @@ CompleterLineEdit::filterText(const QString & txt)
     if ( txt.isEmpty() ) {
         sl = _imp->words;
     } else {
-        for (int i = 0; i < _imp->words.size(); ++i) {
-            if ( _imp->words[i].contains(txt,Qt::CaseInsensitive) ) {
+        for (int i = 0; i < _imp->ids.size(); ++i) {
+            if ( _imp->ids[i].contains(txt,Qt::CaseInsensitive) ) {
                 sl << _imp->words[i];
             }
         }
@@ -234,27 +234,51 @@ NodeCreationDialog::NodeCreationDialog(const QString& initialFilter,QWidget* par
     QStringList ids;
     QStringList names;
     QString initialFilterName;
+    std::string stdInitialFilter = initialFilter.toStdString();
     int i = 0;
-    for (Natron::PluginsMap::iterator it = _imp->items.begin(); it != _imp->items.end(); ++it,++i) {
+    for (Natron::PluginsMap::iterator it = _imp->items.begin(); it != _imp->items.end(); ++it) {
         
         if (it->second.size() == 1) {
-            names.push_back( (*it->second.begin())->generateUserFriendlyPluginID() );
-            ids.push_back(it->first.c_str());
+            QString name = (*it->second.begin())->generateUserFriendlyPluginID();
+            names.push_back(name);
+            
+            int indexOfBracket = name.lastIndexOf("  [");
+            if (indexOfBracket != -1) {
+                name = name.left(indexOfBracket);
+            }
+            ids.push_back(name);
+            if (it->first == stdInitialFilter) {
+                initialFilterName = names[i];
+            }
+            ++i;
         } else {
+            QString bestMajorName;
             for (Natron::PluginMajorsOrdered::reverse_iterator it2 = it->second.rbegin(); it2 != it->second.rend(); ++it2) {
+                QString name;
                 if (it2 == it->second.rbegin()) {
-                    names.push_back((*it2)->generateUserFriendlyPluginID());
+                    name = (*it2)->generateUserFriendlyPluginID();
+                    bestMajorName = name;
                 } else {
-                    names.push_back((*it2)->generateUserFriendlyPluginIDMajorEncoded());
+                    name = (*it2)->generateUserFriendlyPluginIDMajorEncoded();
                 }
-                ids.push_back(it->first.c_str());
+                names.push_back(name);
+                
+                
+                int indexOfBracket = name.lastIndexOf("  [");
+                if (indexOfBracket != -1) {
+                    name = name.left(indexOfBracket);
+                }
+                ids.push_back(name);
+                
+                ++i;
+
+            }
+            if (it->first == stdInitialFilter) {
+                initialFilterName = bestMajorName;
             }
         }
         
-        if (ids[i] == initialFilter) {
-            initialFilterName = names[i];
-        }
-    }
+            }
     
     
     ids.sort();

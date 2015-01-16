@@ -89,7 +89,7 @@ ProjectGui::create(boost::shared_ptr<Natron::Project> projectInternal,
     _panel = new DockablePanel(_gui,
                                projectInternal.get(),
                                container,
-                               DockablePanel::READ_ONLY_NAME,
+                               DockablePanel::eHeaderModeReadOnlyName,
                                false,
                                tr("Project Settings"),
                                tr("The settings of the current project."),
@@ -165,7 +165,7 @@ AddFormatDialog::AddFormatDialog(Natron::Project *project,
 
     _widthLabel = new QLabel("w:",_parametersLine);
     _parametersLineLayout->addWidget(_widthLabel);
-    _widthSpinBox = new SpinBox(this,SpinBox::INT_SPINBOX);
+    _widthSpinBox = new SpinBox(this,SpinBox::eSpinBoxTypeInt);
     _widthSpinBox->setMaximum(99999);
     _widthSpinBox->setMinimum(1);
     _widthSpinBox->setValue(1);
@@ -174,7 +174,7 @@ AddFormatDialog::AddFormatDialog(Natron::Project *project,
 
     _heightLabel = new QLabel("h:",_parametersLine);
     _parametersLineLayout->addWidget(_heightLabel);
-    _heightSpinBox = new SpinBox(this,SpinBox::INT_SPINBOX);
+    _heightSpinBox = new SpinBox(this,SpinBox::eSpinBoxTypeInt);
     _heightSpinBox->setMaximum(99999);
     _heightSpinBox->setMinimum(1);
     _heightSpinBox->setValue(1);
@@ -183,7 +183,7 @@ AddFormatDialog::AddFormatDialog(Natron::Project *project,
 
     _pixelAspectLabel = new QLabel(tr("pixel aspect:"),_parametersLine);
     _parametersLineLayout->addWidget(_pixelAspectLabel);
-    _pixelAspectSpinBox = new SpinBox(this,SpinBox::DOUBLE_SPINBOX);
+    _pixelAspectSpinBox = new SpinBox(this,SpinBox::eSpinBoxTypeDouble);
     _pixelAspectSpinBox->setMinimum(0.);
     _pixelAspectSpinBox->setValue(1.);
     _parametersLineLayout->addWidget(_pixelAspectSpinBox);
@@ -295,6 +295,8 @@ ProjectGui::load(boost::archive::xml_iarchive & archive)
         }
     }
 
+    int leftBound,rightBound;
+    _project->getFrameRange(&leftBound, &rightBound);
 
     ///default color for nodes
     float defR,defG,defB;
@@ -361,7 +363,7 @@ ProjectGui::load(boost::archive::xml_iarchive & archive)
                 nGui->setCurrentColor(color);
             }
         }
-
+        
         ViewerInstance* viewer = dynamic_cast<ViewerInstance*>( nGui->getNode()->getLiveInstance() );
         if (viewer) {
             std::map<std::string, ViewerData >::const_iterator found = viewersProjections.find(name);
@@ -379,7 +381,6 @@ ProjectGui::load(boost::archive::xml_iarchive & archive)
                 tab->setMipMapLevel(found->second.mipMapLevel);
                 tab->setCompositingOperator( (Natron::ViewerCompositingOperatorEnum)found->second.wipeCompositingOp );
                 tab->setZoomOrPannedSinceLastFit(found->second.zoomOrPanSinceLastFit);
-                tab->setFrameRangeLocked(found->second.frameRangeLocked);
                 tab->setTopToolbarVisible(found->second.topToolbarVisible);
                 tab->setLeftToolbarVisible(found->second.leftToolbarVisible);
                 tab->setRightToolbarVisible(found->second.rightToolbarVisible);
@@ -387,6 +388,13 @@ ProjectGui::load(boost::archive::xml_iarchive & archive)
                 tab->setInfobarVisible(found->second.infobarVisible);
                 tab->setTimelineVisible(found->second.timelineVisible);
                 tab->setCheckerboardEnabled(found->second.checkerboardEnabled);
+                tab->setTimelineBounds(found->second.leftBound, found->second.rightBound);
+                if (found->second._version >= VIEWER_DATA_REMOVES_FRAME_RANGE_LOCK) {
+                    tab->setFrameRangeEdited(leftBound != found->second.leftBound || rightBound != found->second.rightBound);
+                } else {
+                    tab->setTimelineBounds(leftBound, rightBound);
+                    tab->setFrameRangeEdited(false);
+                }
                 if (!found->second.fpsLocked) {
                     tab->setDesiredFps(found->second.fps);
                 }

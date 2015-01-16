@@ -18,6 +18,11 @@
 #include <QString>
 #include <QStringList>
 
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#include <boost/shared_ptr.hpp>
+#include <boost/weak_ptr.hpp>
+#endif
+
 class QMutex;
 namespace Natron {
 class LibraryBinary;
@@ -29,24 +34,23 @@ class PluginGroupNode
     QString _label;
     QString _iconPath;
     int _major,_minor;
-    std::vector<PluginGroupNode*> _children;
-    PluginGroupNode* _parent;
-    bool _severalPluginMajorVersions;
+    std::list<boost::shared_ptr<PluginGroupNode> > _children;
+    boost::weak_ptr<PluginGroupNode> _parent;
+    bool _notHighestMajorVersion;
 public:
     PluginGroupNode(const QString & pluginID,
                     const QString & pluginLabel,
                     const QString & iconPath,
                     int major,
-                    int minor,
-                    bool severalPluginMajorVersions)
+                    int minor)
     : _id(pluginID)
     , _label(pluginLabel)
     , _iconPath(iconPath)
     , _major(major)
     , _minor(minor)
     , _children()
-    , _parent(NULL)
-    , _severalPluginMajorVersions(severalPluginMajorVersions)
+    , _parent()
+    , _notHighestMajorVersion(false)
     {
     }
 
@@ -62,7 +66,7 @@ public:
     
     const QString getLabelVersionMajorEncoded() const
     {
-        return _label + QString("_v") + QString::number(_major);
+        return _label + ' ' + QString::number(_major);
     }
 
     void setLabel(const QString & label)
@@ -80,27 +84,27 @@ public:
         _iconPath = iconPath;
     }
 
-    const std::vector<PluginGroupNode*> & getChildren() const
+    const std::list<boost::shared_ptr<PluginGroupNode> > & getChildren() const
     {
         return _children;
     }
 
-    void tryAddChild(PluginGroupNode* plugin);
+    void tryAddChild(const boost::shared_ptr<PluginGroupNode>& plugin);
     void tryRemoveChild(PluginGroupNode* plugin);
     
-    PluginGroupNode* getParent() const
+    boost::shared_ptr<PluginGroupNode> getParent() const
     {
-        return _parent;
+        return _parent.lock();
     }
 
-    void setParent(PluginGroupNode* parent)
+    void setParent(const boost::shared_ptr<PluginGroupNode>& parent)
     {
         _parent = parent;
     }
 
     bool hasParent() const
     {
-        return _parent != NULL;
+        return _parent.lock().get() != NULL;
     }
     
     int getMajorVersion() const
@@ -113,14 +117,14 @@ public:
         return _minor;
     }
     
-    bool isThereSeveralPluginMajorVersions() const
+    bool getNotHighestMajorVersion() const
     {
-        return _severalPluginMajorVersions;
+        return _notHighestMajorVersion;
     }
     
-    void setSeveralPluginMajorVersions(bool v)
+    void setNotHighestMajorVersion(bool v)
     {
-        _severalPluginMajorVersions = v;
+        _notHighestMajorVersion = v;
     }
 };
 
@@ -218,12 +222,12 @@ public:
     
     const QString getLabelVersionMajorMinorEncoded() const
     {
-        return _label + QString("_v") + QString::number(_majorVersion) + QString(".") + QString::number(_minorVersion);
+        return _label + ' ' + QString::number(_majorVersion) + '.' + QString::number(_minorVersion);
     }
     
     const QString getLabelVersionMajorEncoded() const
     {
-        return _label + QString("_v") + QString::number(_majorVersion);
+        return _label + ' ' + QString::number(_majorVersion);
     }
     
     QString generateUserFriendlyPluginID() const

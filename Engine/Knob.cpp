@@ -453,7 +453,6 @@ KnobHelper::deleteValueAtTime(int time,
                               int dimension,
                               Natron::ValueChangedReasonEnum reason)
 {
-    assert(QThread::currentThread() == qApp->thread());
     if ( dimension > (int)_imp->curves.size() || dimension < 0) {
         throw std::invalid_argument("KnobHelper::deleteValueAtTime(): Dimension out of range");
     }
@@ -1332,6 +1331,9 @@ KnobHelper::slaveTo(int dimension,
 {
     assert( 0 <= dimension && dimension < (int)_imp->masters.size() );
     assert( !other->isSlave(otherDimension) );
+    if (dynamic_cast<Button_Knob*>(this)) {
+        return false;
+    }
     {
         QWriteLocker l(&_imp->mastersMutex);
         if (_imp->masters[dimension].second) {
@@ -1471,20 +1473,57 @@ KnobHelper::getAnimationLevel(int dimension) const
 }
 
 void
-KnobHelper::deleteAnimationBeforeTime(int time,
-                                      int dimension,
-                                      Natron::ValueChangedReasonEnum reason)
+KnobHelper::deleteAnimationConditional(int time,int dimension,Natron::ValueChangedReasonEnum reason,bool before)
 {
     if (!_imp->curves[dimension]) {
         return;
     }
     assert( 0 <= dimension && dimension < getDimension() );
-    KeyFrame k;
-    bool ok = _imp->curves[dimension]->getPreviousKeyframeTime(time, &k);
-    while (ok) {
-        deleteValueAtTime(k.getTime(), dimension, reason);
-        ok = _imp->curves[dimension]->getPreviousKeyframeTime(time, &k);
+    KnobHolder* holder = getHolder();
+    
+    boost::shared_ptr<Curve> curve;
+    
+    bool useGuiCurve = (!holder || !holder->canSetValue()) && _imp->gui;
+    
+    if (!useGuiCurve) {
+        curve = _imp->curves[dimension];
+    } else {
+        curve = _imp->gui->getCurve(dimension);
+        setGuiCurveHasChanged(dimension,true);
     }
+    
+    std::list<int> keysRemoved;
+    if (before) {
+        curve->removeKeyFramesBeforeTime(time, &keysRemoved);
+    } else {
+        curve->removeKeyFramesAfterTime(time, &keysRemoved);
+    }
+    
+    if (!useGuiCurve) {
+        
+        if (_signalSlotHandler) {
+            _signalSlotHandler->s_updateSlaves(dimension);
+        }
+        checkAnimationLevel(dimension);
+        guiCurveCloneInternalCurve(dimension);
+        evaluateValueChange(dimension,reason, true);
+    }
+    
+    if (holder && holder->getApp()) {
+        holder->getApp()->getTimeLine()->removeMultipleKeyframeIndicator(keysRemoved, true);
+    }
+    if (_signalSlotHandler) {
+        _signalSlotHandler->s_animationRemoved(dimension);
+    }
+
+}
+
+void
+KnobHelper::deleteAnimationBeforeTime(int time,
+                                      int dimension,
+                                      Natron::ValueChangedReasonEnum reason)
+{
+    deleteAnimationConditional(time, dimension, reason, true);
 }
 
 void
@@ -1492,17 +1531,7 @@ KnobHelper::deleteAnimationAfterTime(int time,
                                      int dimension,
                                      Natron::ValueChangedReasonEnum reason)
 {
-    assert( 0 <= dimension && dimension < getDimension() );
-    KeyFrame k;
-    if (!_imp->curves[dimension]) {
-        return;
-    }
-    bool ok = _imp->curves[dimension]->getNextKeyframeTime(time, &k);
-    
-    while (ok) {
-        deleteValueAtTime(k.getTime(), dimension, reason);
-        ok = _imp->curves[dimension]->getNextKeyframeTime(time, &k);
-    }
+    deleteAnimationConditional(time, dimension, reason, false);
 }
 
 bool
@@ -1714,7 +1743,7 @@ struct KnobHolder::KnobHolderPrivate
 
     EvaluationRequest evaluateQueue;
     mutable QMutex paramsEditLevelMutex;
-    KnobHolder::MultipleParamsEditLevel paramsEditLevel;
+    KnobHolder::MultipleParamsEditEnum paramsEditLevel;
     mutable QMutex evaluationBlockedMutex;
     int evaluationBlocked;
 
@@ -1733,7 +1762,7 @@ struct KnobHolder::KnobHolderPrivate
     , overlayRedrawStackMutex()
     , overlayRedrawStack(0)
     , evaluateQueue()
-    , paramsEditLevel(PARAM_EDIT_OFF)
+    , paramsEditLevel(eMultipleParamsEditOff)
     , evaluationBlockedMutex(QMutex::Recursive)
     , evaluationBlocked(0)
     , knobsFrozenMutex()
@@ -1744,7 +1773,7 @@ struct KnobHolder::KnobHolderPrivate
         // Initialize local data on the main-thread
         ///Don't remove the if condition otherwise this will crash because QApp is not initialized yet for Natron settings.
         if (appInstance_) {
-            actionsRecursionLevel.setLocalData(0);
+            actionsRecursionLevel.localData() = 0;
         }
     }
 };
@@ -1790,7 +1819,7 @@ KnobHolder::isEvaluationBlocked() const
     return _imp->evaluationBlocked > 0;
 }
 
-KnobHolder::MultipleParamsEditLevel
+KnobHolder::MultipleParamsEditEnum
 KnobHolder::getMultipleParamsEditLevel() const
 {
     QMutexLocker l(&_imp->paramsEditLevelMutex);
@@ -1799,7 +1828,7 @@ KnobHolder::getMultipleParamsEditLevel() const
 }
 
 void
-KnobHolder::setMultipleParamsEditLevel(KnobHolder::MultipleParamsEditLevel level)
+KnobHolder::setMultipleParamsEditLevel(KnobHolder::MultipleParamsEditEnum level)
 {
     QMutexLocker l(&_imp->paramsEditLevelMutex);
 
@@ -2072,7 +2101,7 @@ void
 KnobHolder::incrementRecursionLevel()
 {
     if ( !_imp->actionsRecursionLevel.hasLocalData() ) {
-        _imp->actionsRecursionLevel.setLocalData(1);
+        _imp->actionsRecursionLevel.localData() = 1;
     } else {
         _imp->actionsRecursionLevel.localData() += 1;
     }

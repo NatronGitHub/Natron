@@ -152,7 +152,7 @@ public:
     void loadStyleSheet();
 
     ToolButton* findExistingToolButton(const QString & name) const;
-    ToolButton* findOrCreateToolButton(PluginGroupNode* plugin);
+    ToolButton* findOrCreateToolButton(const boost::shared_ptr<PluginGroupNode>& plugin);
     const std::vector<ToolButton*> & getToolButtons() const;
 
     void registerNewUndoStack(QUndoStack* stack);
@@ -545,6 +545,8 @@ public slots:
     void onMaxVisibleDockablePanelChanged(int maxPanels);
 
     void clearAllVisiblePanels();
+    
+    void minimizeMaximizeAllPanels(bool clicked);
 
     void onMaxPanelsSpinBoxValueChanged(double val);
 
@@ -557,6 +559,7 @@ public slots:
     void onFreezeUIButtonClicked(bool clicked);
 
 	void onPropertiesScrolled();
+    
 private:
 
     /**

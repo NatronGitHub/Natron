@@ -60,7 +60,7 @@ static void scaleToTexture32bits(std::pair<int,int> yRange,
                                  float *output);
 static std::pair<double, double>
 findAutoContrastVminVmax(boost::shared_ptr<const Natron::Image> inputImage,
-                         ViewerInstance::DisplayChannels channels,
+                         ViewerInstance::DisplayChannelsEnum channels,
                          const RectI & rect);
 static void renderFunctor(std::pair<int,int> yRange,
                           const RenderViewerArgs & args,
@@ -459,7 +459,7 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time, int view, in
     assert(_imp->uiContext);
     
     bool autoContrast;
-    ViewerInstance::DisplayChannels channels;
+    ViewerInstance::DisplayChannelsEnum channels;
     {
         QMutexLocker locker(&_imp->viewerParamsMutex);
         autoContrast = _imp->viewerParamsAutoContrast;
@@ -500,10 +500,10 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time, int view, in
     assert(outArgs->params->bytesCount > 0);
     
     assert(_imp->uiContext);
-    OpenGLViewerI::BitDepth bitDepth = _imp->uiContext->getBitDepth();
+    OpenGLViewerI::BitDepthEnum bitDepth = _imp->uiContext->getBitDepth();
     
     //half float is not supported yet so it is the same as float
-    if ( (bitDepth == OpenGLViewerI::FLOAT) || (bitDepth == OpenGLViewerI::HALF_FLOAT) ) {
+    if ( (bitDepth == OpenGLViewerI::eBitDepthFloat) || (bitDepth == OpenGLViewerI::eBitDepthHalf) ) {
         outArgs->params->bytesCount *= sizeof(float);
     }
     
@@ -636,7 +636,7 @@ ViewerInstance::renderViewer_internal(int view,
     roi.y2 = inArgs.params->textureRect.y2;
     
     bool autoContrast;
-    ViewerInstance::DisplayChannels channels;
+    ViewerInstance::DisplayChannelsEnum channels;
     {
         QMutexLocker locker(&_imp->viewerParamsMutex);
         autoContrast = _imp->viewerParamsAutoContrast;
@@ -935,7 +935,7 @@ renderFunctor(std::pair<int,int> yRange,
 {
     assert(args.texRect.y1 <= yRange.first && yRange.first <= yRange.second && yRange.second <= args.texRect.y2);
 
-    if ( (args.bitDepth == OpenGLViewerI::FLOAT) || (args.bitDepth == OpenGLViewerI::HALF_FLOAT) ) {
+    if ( (args.bitDepth == OpenGLViewerI::eBitDepthFloat) || (args.bitDepth == OpenGLViewerI::eBitDepthHalf) ) {
         // image is stored as linear, the OpenGL shader with do gamma/sRGB/Rec709 decompression, as well as gain and offset
         scaleToTexture32bits(yRange, args,viewer, (float*)buffer);
     } else {
@@ -947,7 +947,7 @@ renderFunctor(std::pair<int,int> yRange,
 template <int nComps>
 std::pair<double, double>
 findAutoContrastVminVmax_internal(boost::shared_ptr<const Natron::Image> inputImage,
-                         ViewerInstance::DisplayChannels channels,
+                         ViewerInstance::DisplayChannelsEnum channels,
                          const RectI & rect)
 {
     double localVmin = std::numeric_limits<double>::infinity();
@@ -982,27 +982,27 @@ findAutoContrastVminVmax_internal(boost::shared_ptr<const Natron::Image> inputIm
             
             double mini, maxi;
             switch (channels) {
-                case ViewerInstance::RGB:
+                case ViewerInstance::eDisplayChannelsRGB:
                     mini = std::min(std::min(r,g),b);
                     maxi = std::max(std::max(r,g),b);
                     break;
-                case ViewerInstance::LUMINANCE:
+                case ViewerInstance::eDisplayChannelsY:
                     mini = r = 0.299 * r + 0.587 * g + 0.114 * b;
                     maxi = mini;
                     break;
-                case ViewerInstance::R:
+                case ViewerInstance::eDisplayChannelsR:
                     mini = r;
                     maxi = mini;
                     break;
-                case ViewerInstance::G:
+                case ViewerInstance::eDisplayChannelsG:
                     mini = g;
                     maxi = mini;
                     break;
-                case ViewerInstance::B:
+                case ViewerInstance::eDisplayChannelsB:
                     mini = b;
                     maxi = mini;
                     break;
-                case ViewerInstance::A:
+                case ViewerInstance::eDisplayChannelsA:
                     mini = a;
                     maxi = mini;
                     break;
@@ -1028,7 +1028,7 @@ findAutoContrastVminVmax_internal(boost::shared_ptr<const Natron::Image> inputIm
 
 std::pair<double, double>
 findAutoContrastVminVmax(boost::shared_ptr<const Natron::Image> inputImage,
-                         ViewerInstance::DisplayChannels channels,
+                         ViewerInstance::DisplayChannelsEnum channels,
                          const RectI & rect)
 {
     switch (inputImage->getComponents()) {
@@ -1052,7 +1052,7 @@ scaleToTexture8bits_internal(const std::pair<int,int> & yRange,
 {
     size_t pixelSize = sizeof(PIX);
     
-    const bool luminance = (args.channels == ViewerInstance::LUMINANCE);
+    const bool luminance = (args.channels == ViewerInstance::eDisplayChannelsY);
     
     ///offset the output buffer at the starting point
     output += ( (yRange.first - args.texRect.y1) / args.closestPowerOf2 ) * args.texRect.w;
@@ -1211,21 +1211,21 @@ scaleToTexture8bitsForDepthForComponents(const std::pair<int,int> & yRange,
                             U32* output)
 {
     switch (args.channels) {
-        case ViewerInstance::RGB:
-        case ViewerInstance::LUMINANCE:
+        case ViewerInstance::eDisplayChannelsRGB:
+        case ViewerInstance::eDisplayChannelsY:
 
             scaleToTexture8bitsForPremult<PIX, maxValue, nComps, 0, 1, 2>(yRange, args,viewer, output);
             break;
-        case ViewerInstance::G:
+        case ViewerInstance::eDisplayChannelsG:
             scaleToTexture8bitsForPremult<PIX, maxValue, nComps, 1, 1, 1>(yRange, args,viewer, output);
             break;
-        case ViewerInstance::B:
+        case ViewerInstance::eDisplayChannelsB:
             scaleToTexture8bitsForPremult<PIX, maxValue, nComps, 2, 2, 2>(yRange, args,viewer, output);
             break;
-        case ViewerInstance::A:
+        case ViewerInstance::eDisplayChannelsA:
             scaleToTexture8bitsForPremult<PIX, maxValue, nComps, 3, 3, 3>(yRange, args,viewer, output);
             break;
-        case ViewerInstance::R:
+        case ViewerInstance::eDisplayChannelsR:
         default:
             scaleToTexture8bitsForPremult<PIX, maxValue, nComps, 0, 0, 0>(yRange, args,viewer, output);
 
@@ -1287,7 +1287,7 @@ scaleToTexture32bitsInternal(const std::pair<int,int> & yRange,
                              float *output)
 {
     size_t pixelSize = sizeof(PIX);
-    const bool luminance = (args.channels == ViewerInstance::LUMINANCE);
+    const bool luminance = (args.channels == ViewerInstance::eDisplayChannelsY);
 
     ///the width of the output buffer multiplied by the channels count
     int dst_width = args.texRect.w * 4;
@@ -1383,7 +1383,7 @@ scaleToTexture32bitsInternal(const std::pair<int,int> & yRange,
             *dst_pixels++ = b;
             *dst_pixels++ = a;
 
-            src_pixels += args.closestPowerOf2 * 4;
+            src_pixels += args.closestPowerOf2 * nComps;
         }
         ++dstY;
     }
@@ -1418,8 +1418,8 @@ scaleToTexture32bitsForDepthForComponents(const std::pair<int,int> & yRange,
                              float *output)
 {
     switch (args.channels) {
-        case ViewerInstance::RGB:
-        case ViewerInstance::LUMINANCE:
+        case ViewerInstance::eDisplayChannelsRGB:
+        case ViewerInstance::eDisplayChannelsY:
             switch (nComps) {
                 case 1:
                     scaleToTexture32bitsForPremult<PIX, maxValue, nComps, 0, 0, 0>(yRange, args,viewer, output);
@@ -1432,7 +1432,7 @@ scaleToTexture32bitsForDepthForComponents(const std::pair<int,int> & yRange,
                     break;
             }
             break;
-        case ViewerInstance::G:
+        case ViewerInstance::eDisplayChannelsG:
             switch (nComps) {
                 case 1:
                     scaleToTexture32bitsForPremult<PIX, maxValue, nComps, 0, 0, 0>(yRange, args,viewer, output);
@@ -1445,7 +1445,7 @@ scaleToTexture32bitsForDepthForComponents(const std::pair<int,int> & yRange,
                     break;
             }
             break;
-        case ViewerInstance::B:
+        case ViewerInstance::eDisplayChannelsB:
             switch (nComps) {
                 case 1:
                     scaleToTexture32bitsForPremult<PIX, maxValue, nComps, 0, 0, 0>(yRange, args,viewer, output);
@@ -1458,7 +1458,7 @@ scaleToTexture32bitsForDepthForComponents(const std::pair<int,int> & yRange,
                     break;
             }
             break;
-        case ViewerInstance::A:
+        case ViewerInstance::eDisplayChannelsA:
             switch (nComps) {
                 case 1:
                 case 3:
@@ -1471,7 +1471,7 @@ scaleToTexture32bitsForDepthForComponents(const std::pair<int,int> & yRange,
                     break;
             }
             break;
-        case ViewerInstance::R:
+        case ViewerInstance::eDisplayChannelsR:
         default:
             scaleToTexture32bitsForPremult<PIX, maxValue, nComps, 0, 0, 0>(yRange, args,viewer, output);
             break;
@@ -1594,7 +1594,7 @@ ViewerInstance::onGainChanged(double exp)
         _imp->viewerParamsGain = exp;
     }
     assert(_imp->uiContext);
-    if ( ( (_imp->uiContext->getBitDepth() == OpenGLViewerI::BYTE) || !_imp->uiContext->supportsGLSL() )
+    if ( ( (_imp->uiContext->getBitDepth() == OpenGLViewerI::eBitDepthByte) || !_imp->uiContext->supportsGLSL() )
          && !getApp()->getProject()->isLoadingProject() ) {
         renderCurrentFrame(true);
     } else {
@@ -1656,7 +1656,7 @@ ViewerInstance::onColorSpaceChanged(Natron::ViewerColorSpaceEnum colorspace)
         _imp->viewerParamsLut = colorspace;
     }
     assert(_imp->uiContext);
-    if ( ( (_imp->uiContext->getBitDepth() == OpenGLViewerI::BYTE) || !_imp->uiContext->supportsGLSL() )
+    if ( ( (_imp->uiContext->getBitDepth() == OpenGLViewerI::eBitDepthByte) || !_imp->uiContext->supportsGLSL() )
         && !getApp()->getProject()->isLoadingProject() ) {
         renderCurrentFrame(true);
     } else {
@@ -1665,7 +1665,7 @@ ViewerInstance::onColorSpaceChanged(Natron::ViewerColorSpaceEnum colorspace)
 }
 
 void
-ViewerInstance::setDisplayChannels(DisplayChannels channels)
+ViewerInstance::setDisplayChannels(DisplayChannelsEnum channels)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
@@ -1746,7 +1746,7 @@ ViewerInstance::getMipMapLevel() const
 }
 
 
-ViewerInstance::DisplayChannels
+ViewerInstance::DisplayChannelsEnum
 ViewerInstance::getChannels() const
 {
     // MT-SAFE: called from main thread and Serialization (pooled) thread
@@ -1853,12 +1853,6 @@ ViewerInstance::setInputB(int inputNb)
     emit refreshOptionalState();
 }
 
-bool
-ViewerInstance::isFrameRangeLocked() const
-{
-    return _imp->uiContext ? _imp->uiContext->isFrameRangeLocked() : true;
-}
-
 int
 ViewerInstance::getLastRenderedTime() const
 {
@@ -1869,6 +1863,17 @@ boost::shared_ptr<TimeLine>
 ViewerInstance::getTimeline() const
 {
     return _imp->uiContext ? _imp->uiContext->getTimeline() : getApp()->getTimeLine();
+}
+
+void
+ViewerInstance::getTimelineBounds(int* first,int* last) const
+{
+    if (_imp->uiContext) {
+        _imp->uiContext->getViewerFrameRange(first, last);
+    } else {
+        *first = 0;
+        *last = 0;
+    }
 }
 
 

@@ -73,8 +73,16 @@ CLANG_DIAG_ON(uninitialized)
 using namespace Natron;
 using std::make_pair;
 
-// convenience private classes
 
+static bool shouldSliderBeVisible(int sliderMin,int sliderMax)
+{
+    return (sliderMax > sliderMin) && ( (sliderMax - sliderMin) < SLIDER_MAX_RANGE ) && (sliderMax < INT_MAX) && (sliderMin > INT_MIN);
+}
+
+static bool shouldSliderBeVisible(double sliderMin,double sliderMax)
+{
+    return (sliderMax > sliderMin) && ( (sliderMax - sliderMin) < SLIDER_MAX_RANGE ) && (sliderMax < DBL_MAX) && (sliderMin > -DBL_MAX);
+}
 
 //==========================INT_KNOB_GUI======================================
 Int_KnobGui::Int_KnobGui(boost::shared_ptr<KnobI> knob,
@@ -156,7 +164,7 @@ Int_KnobGui::createWidget(QHBoxLayout* layout)
             subDesc->setFont( QFont(appFont,appFontSize) );
             boxContainerLayout->addWidget(subDesc);
         }
-        SpinBox *box = new SpinBox(layout->parentWidget(), SpinBox::INT_SPINBOX);
+        SpinBox *box = new SpinBox(layout->parentWidget(), SpinBox::eSpinBoxTypeInt);
         QObject::connect( box, SIGNAL( valueChanged(double) ), this, SLOT( onSpinBoxValueChanged() ) );
 
         ///set the copy/link actions in the right click menu
@@ -178,16 +186,17 @@ Int_KnobGui::createWidget(QHBoxLayout* layout)
         _spinBoxes.push_back( make_pair(box, subDesc) );
     }
     
+    bool sliderVisible = false;
     if (!_knob->isSliderDisabled()) {
         int dispmin = displayMins[0];
         int dispmax = displayMaxs[0];
         
-        if (dispmin < -SLIDER_MAX_RANGE) {
-            dispmin = -SLIDER_MAX_RANGE;
-        }
-        if (dispmax > SLIDER_MAX_RANGE) {
-            dispmax = SLIDER_MAX_RANGE;
-        }
+//        if (dispmin < -SLIDER_MAX_RANGE) {
+//            dispmin = -SLIDER_MAX_RANGE;
+//        }
+//        if (dispmax > SLIDER_MAX_RANGE) {
+//            dispmax = SLIDER_MAX_RANGE;
+//        }
         
         _slider = new ScaleSliderQWidget( dispmin, dispmax,_knob->getValue(0,false),
                                          ScaleSliderQWidget::eDataTypeInt,Natron::eScaleTypeLinear, layout->parentWidget() );
@@ -200,9 +209,10 @@ Int_KnobGui::createWidget(QHBoxLayout* layout)
         
         containerLayout->addWidget(_slider);
         onDisplayMinMaxChanged(dispmin, dispmax);
+        sliderVisible = shouldSliderBeVisible(dispmin, dispmax);
     }
 
-    if (dim > 1 && !_knob->isSliderDisabled() ) {
+    if (dim > 1 && !_knob->isSliderDisabled() && sliderVisible) {
         _dimensionSwitchButton = new Button(QIcon(),QString::number(dim),container);
         _dimensionSwitchButton->setToolTip(Qt::convertFromPlainText(tr("Switch between a single value for all dimensions and multiple values"), Qt::WhiteSpaceNormal));
         _dimensionSwitchButton->setFocusPolicy(Qt::NoFocus);
@@ -313,7 +323,6 @@ Int_KnobGui::foldAllDimensions()
 }
 
 
-
 void
 Int_KnobGui::onDisplayMinMaxChanged(double mini,
                                     double maxi,
@@ -333,7 +342,7 @@ Int_KnobGui::onDisplayMinMaxChanged(double mini,
                 sliderMax = max;
             }
         }
-        if ( (sliderMax > sliderMin) && ( (sliderMax - sliderMin) < SLIDER_MAX_RANGE ) && (sliderMax < INT_MAX) && (sliderMin > INT_MIN) ) {
+        if (shouldSliderBeVisible(sliderMin,sliderMax)) {
             _slider->show();
         } else {
             _slider->hide();
@@ -555,6 +564,7 @@ boost::shared_ptr<KnobI> Int_KnobGui::getKnob() const
 Bool_KnobGui::Bool_KnobGui(boost::shared_ptr<KnobI> knob,
                            DockablePanel *container)
     : KnobGui(knob, container)
+    , _checkBox(0)
 {
     _knob = boost::dynamic_pointer_cast<Bool_Knob>(knob);
 }
@@ -684,8 +694,8 @@ Double_KnobGui::valueAccordingToType(bool normalize,
     }
 
     if (dimension == 0) {
-        Double_Knob::NormalizedState state = _knob->getNormalizedState(dimension);
-        if (state == Double_Knob::NORMALIZATION_X) {
+        Double_Knob::NormalizedStateEnum state = _knob->getNormalizedState(dimension);
+        if (state == Double_Knob::eNormalizedStateX) {
             Format f;
             getKnob()->getHolder()->getApp()->getProject()->getProjectDefaultFormat(&f);
             if (normalize) {
@@ -693,7 +703,7 @@ Double_KnobGui::valueAccordingToType(bool normalize,
             } else {
                 *value *= f.width();
             }
-        } else if (state == Double_Knob::NORMALIZATION_Y) {
+        } else if (state == Double_Knob::eNormalizedStateY) {
             Format f;
             getKnob()->getHolder()->getApp()->getProject()->getProjectDefaultFormat(&f);
             if (normalize) {
@@ -748,6 +758,7 @@ Double_KnobGui::createWidget(QHBoxLayout* layout)
     layout->parentWidget()->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
     QWidget *container = new QWidget( layout->parentWidget() );
     QHBoxLayout *containerLayout = new QHBoxLayout(container);
+    layout->addWidget(container);
 
     container->setLayout(containerLayout);
     containerLayout->setContentsMargins(0, 0, 0, 0);
@@ -792,7 +803,7 @@ Double_KnobGui::createWidget(QHBoxLayout* layout)
             subDesc->setFont( QFont(appFont,appFontSize) );
             boxContainerLayout->addWidget(subDesc);
         }
-        SpinBox *box = new SpinBox(layout->parentWidget(), SpinBox::DOUBLE_SPINBOX);
+        SpinBox *box = new SpinBox(layout->parentWidget(), SpinBox::eSpinBoxTypeDouble);
         QObject::connect( box, SIGNAL( valueChanged(double) ), this, SLOT( onSpinBoxValueChanged() ) );
         
         ///set the copy/link actions in the right click menu
@@ -820,7 +831,7 @@ Double_KnobGui::createWidget(QHBoxLayout* layout)
         _spinBoxes.push_back( make_pair(box, subDesc) );
     }
     
-    
+    bool sliderVisible = false;
     if ( !_knob->isSliderDisabled()) {
         double dispmin = displayMins[0];
         double dispmax = displayMaxs[0];
@@ -856,13 +867,13 @@ Double_KnobGui::createWidget(QHBoxLayout* layout)
         QObject::connect( _slider, SIGNAL( positionChanged(double) ), this, SLOT( onSliderValueChanged(double) ) );
         QObject::connect( _slider, SIGNAL( editingFinished() ), this, SLOT( onSliderEditingFinished() ) );
         containerLayout->addWidget(_slider);
-        
+        sliderVisible = shouldSliderBeVisible(dispmin, dispmax);
         onDisplayMinMaxChanged(dispmin, dispmax);
         
     }
     
     
-    if (dim > 1 && !_knob->isSliderDisabled() ) {
+    if (dim > 1 && !_knob->isSliderDisabled() && sliderVisible ) {
         _dimensionSwitchButton = new Button(QIcon(),QString::number(dim),container);
         _dimensionSwitchButton->setToolTip(Qt::convertFromPlainText(tr("Switch between a single value for all dimensions and multiple values"), Qt::WhiteSpaceNormal));
         _dimensionSwitchButton->setFixedSize(17, 17);
@@ -888,7 +899,6 @@ Double_KnobGui::createWidget(QHBoxLayout* layout)
         QObject::connect( _dimensionSwitchButton, SIGNAL( clicked(bool) ), this, SLOT( onDimensionSwitchClicked() ) );
 
     }
-    layout->addWidget(container);
 
 } // createWidget
 
@@ -988,11 +998,11 @@ Double_KnobGui::onDisplayMinMaxChanged(double mini,
             }
         }
         
-        if ( (sliderMax > sliderMin) && ( (sliderMax - sliderMin) < SLIDER_MAX_RANGE ) && (sliderMax < DBL_MAX) && (sliderMin > -DBL_MAX) ) {
+        if (shouldSliderBeVisible(sliderMin, sliderMax)) {
             _digits = std::max(0., std::ceil(-std::log10(sliderMax - sliderMin) + 2.));
-            _slider->show();
+            _slider->setVisible(true);
         } else {
-            _slider->hide();
+            _slider->setVisible(false);
         }
         
         _slider->setMinimumAndMaximum(sliderMin, sliderMax);
@@ -1306,6 +1316,7 @@ boost::shared_ptr<KnobI> Button_KnobGui::getKnob() const
 Choice_KnobGui::Choice_KnobGui(boost::shared_ptr<KnobI> knob,
                                DockablePanel *container)
     : KnobGui(knob, container)
+    , _comboBox(0)
 {
     _knob = boost::dynamic_pointer_cast<Choice_Knob>(knob);
     _entries = _knob->getEntries_mt_safe();
@@ -1443,6 +1454,7 @@ boost::shared_ptr<KnobI> Choice_KnobGui::getKnob() const
 Separator_KnobGui::Separator_KnobGui(boost::shared_ptr<KnobI> knob,
                                      DockablePanel *container)
     : KnobGui(knob, container)
+    , _line(0)
 {
     _knob = boost::dynamic_pointer_cast<Separator_Knob>(knob);
 }
@@ -1547,17 +1559,17 @@ Color_KnobGui::createWidget(QHBoxLayout* layout)
     const std::vector<double> & maximums = _knob->getMaximums();
 #endif
     
-    _rBox = new SpinBox(boxContainers, SpinBox::DOUBLE_SPINBOX);
+    _rBox = new SpinBox(boxContainers, SpinBox::eSpinBoxTypeDouble);
     QObject::connect( _rBox, SIGNAL( valueChanged(double) ), this, SLOT( onColorChanged() ) );
 
     if (_dimension >= 3) {
-        _gBox = new SpinBox(boxContainers, SpinBox::DOUBLE_SPINBOX);
+        _gBox = new SpinBox(boxContainers, SpinBox::eSpinBoxTypeDouble);
         QObject::connect( _gBox, SIGNAL( valueChanged(double) ), this, SLOT( onColorChanged() ) );
-        _bBox = new SpinBox(boxContainers, SpinBox::DOUBLE_SPINBOX);
+        _bBox = new SpinBox(boxContainers, SpinBox::eSpinBoxTypeDouble);
         QObject::connect( _bBox, SIGNAL( valueChanged(double) ), this, SLOT( onColorChanged() ) );
     }
     if (_dimension >= 4) {
-        _aBox = new SpinBox(boxContainers, SpinBox::DOUBLE_SPINBOX);
+        _aBox = new SpinBox(boxContainers, SpinBox::eSpinBoxTypeDouble);
         QObject::connect( _aBox, SIGNAL( valueChanged(double) ), this, SLOT( onColorChanged() ) );
     }
 
@@ -2460,6 +2472,9 @@ String_KnobGui::String_KnobGui(boost::shared_ptr<KnobI> knob,
       , _setItalicButton(0)
       , _fontSizeSpinBox(0)
       , _fontColorButton(0)
+      , _fontSize(0)
+      , _boldActivated(false)
+      , _italicActivated(false)
       , _label(0)
 {
     _knob = boost::dynamic_pointer_cast<String_Knob>(knob);
@@ -3524,7 +3539,7 @@ Parametric_KnobGui::createWidget(QHBoxLayout* layout)
 
     layout->addWidget(treeColumn);
 
-    _curveWidget = new CurveWidget( getGui(),boost::shared_ptr<TimeLine>(),layout->parentWidget() );
+    _curveWidget = new CurveWidget( getGui(),this, boost::shared_ptr<TimeLine>(),layout->parentWidget() );
     _curveWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     if ( hasToolTip() ) {
         _curveWidget->setToolTip( toolTip() );
@@ -3627,6 +3642,20 @@ Parametric_KnobGui::onItemsSelectionChanged()
 
     _curveWidget->showCurvesAndHideOthers(curves);
     _curveWidget->centerOn(curves); //remove this if you don't want the editor to switch to a curve on a selection change
+}
+
+void
+Parametric_KnobGui::getSelectedCurves(std::vector<CurveGui*>* selection)
+{
+    QList<QTreeWidgetItem*> selected = _tree->selectedItems();
+    for (int i = 0; i < selected.size(); ++i) {
+        //find the items in the curves
+        for (CurveGuis::iterator it = _curves.begin(); it != _curves.end(); ++it) {
+            if ( it->second.treeItem == selected.at(i) ) {
+                selection->push_back(it->second.curve);
+            }
+        }
+    }
 }
 
 void

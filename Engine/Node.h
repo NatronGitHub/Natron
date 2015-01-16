@@ -109,7 +109,7 @@ public:
     void createRotoContextConditionnally();
 
     ///called by Project::removeNode, never call this
-    void removeReferences();
+    void removeReferences(bool ensureThreadsFinished);
 
     ///function called by EffectInstance to create a knob
     template <class K>
@@ -755,6 +755,8 @@ public:
     
     void restoreClipPreferencesRecursive(std::list<Natron::Node*>& markedNodes);
     
+    void computeFrameRangeForReader(const KnobI* fileKnob);
+
 public slots:
 
     void setKnobsAge(U64 newAge);
@@ -869,6 +871,7 @@ protected:
     void computeHash();
 
 private:
+    
     
     std::string makeInfoForInput(int inputNumber) const;
 

@@ -444,7 +444,7 @@ Natron::OfxHost::loadOFXPlugins(std::map<std::string,std::vector< std::pair<std:
     // On OSX, it will be ~/Library/Caches/<organization>/<application>/OFXCache.xml
     //on Linux ~/.cache/<organization>/<application>/OFXCache.xml
     //on windows:
-    QString ofxcachename = Natron::StandardPaths::writableLocation(Natron::StandardPaths::CacheLocation) + QDir::separator() + "OFXCache.xml";
+    QString ofxcachename = Natron::StandardPaths::writableLocation(Natron::StandardPaths::eStandardLocationCache) + QDir::separator() + "OFXCache.xml";
     std::ifstream ifs( ofxcachename.toStdString().c_str() );
     if ( ifs.is_open() ) {
         OFX::Host::PluginCache::getPluginCache()->readCache(ifs);
@@ -483,13 +483,23 @@ Natron::OfxHost::loadOFXPlugins(std::map<std::string,std::vector< std::pair<std:
 
         assert( p->getBinary() );
         QString iconFilename = QString( bundlePath.c_str() ) + "/Contents/Resources/";
-        iconFilename.append( p->getDescriptor().getProps().getStringProperty(kOfxPropIcon,1).c_str() );
-        iconFilename.append(openfxId.c_str());
-        iconFilename.append(".png");
+        std::string pngIcon;
+        try {
+            // kOfxPropIcon is normally only defined for parameter desctriptors
+            // (see <http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#ParameterProperties>)
+            // but let's assume it may also be defained on the plugin descriptor.
+            pngIcon = p->getDescriptor().getProps().getStringProperty(kOfxPropIcon, 1); // dimension 1 is PNG icon
+        } catch (OFX::Host::Property::Exception) {
+        }
+        if (pngIcon.empty()) {
+            // no icon defined by kOfxPropIcon, use the default value
+            pngIcon = openfxId + ".png";
+        }
+        iconFilename.append( pngIcon.c_str() );
         QString groupIconFilename;
         if (groups.size() > 0) {
             groupIconFilename = QString( p->getBinary()->getBundlePath().c_str() ) + "/Contents/Resources/";
-            groupIconFilename.append( p->getDescriptor().getProps().getStringProperty(kOfxPropIcon,1).c_str() );
+            // the plugin grouping has no descriptor, just try the default filename.
             groupIconFilename.append(groups[0]);
             groupIconFilename.append(".png");
         } else {
@@ -510,7 +520,7 @@ Natron::OfxHost::loadOFXPlugins(std::map<std::string,std::vector< std::pair<std:
                                 p->getIdentifier().c_str(),
                                 foundReader != contexts.end(),
                                 foundWriter != contexts.end(),
-                                new Natron::LibraryBinary(Natron::LibraryBinary::BUILTIN),
+                                new Natron::LibraryBinary(Natron::LibraryBinary::eLibraryTypeBuiltin),
                                 p->getDescriptor().getRenderThreadSafety() == kOfxImageEffectRenderUnsafe,
                                 p->getVersionMajor(), p->getVersionMinor() );
 
@@ -565,7 +575,7 @@ void
 Natron::OfxHost::writeOFXCache()
 {
     /// and write a new cache, long version with everything in there
-    QString ofxcachename = Natron::StandardPaths::writableLocation(Natron::StandardPaths::CacheLocation);
+    QString ofxcachename = Natron::StandardPaths::writableLocation(Natron::StandardPaths::eStandardLocationCache);
 
     QDir().mkpath(ofxcachename);
     ofxcachename +=  QDir::separator();
@@ -580,7 +590,7 @@ Natron::OfxHost::writeOFXCache()
 void
 Natron::OfxHost::clearPluginsLoadedCache()
 {
-    QString ofxcachename = Natron::StandardPaths::writableLocation(Natron::StandardPaths::CacheLocation);
+    QString ofxcachename = Natron::StandardPaths::writableLocation(Natron::StandardPaths::eStandardLocationCache);
 
     QDir().mkpath(ofxcachename);
     ofxcachename +=  QDir::separator();

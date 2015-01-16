@@ -15,34 +15,17 @@
 
 #include <cassert>
 #include "Engine/Project.h"
+#include "Engine/AppInstance.h"
 #include "Engine/Node.h"
+#include "Engine/EffectInstance.h"
 
 TimeLine::TimeLine(Natron::Project* project)
-    : _firstFrame(1)
-      , _lastFrame(1)
-      , _currentFrame(1)
-      , _leftBoundary(_firstFrame)
-      , _rightBoundary(_lastFrame)
-      , _keyframes()
-      , _project(project)
+: _currentFrame(1)
+, _keyframes()
+, _project(project)
 {
 }
 
-SequenceTime
-TimeLine::firstFrame() const
-{
-    QMutexLocker l(&_lock);
-
-    return _firstFrame;
-}
-
-SequenceTime
-TimeLine::lastFrame() const
-{
-    QMutexLocker l(&_lock);
-
-    return _lastFrame;
-}
 
 SequenceTime
 TimeLine::currentFrame() const
@@ -52,44 +35,9 @@ TimeLine::currentFrame() const
     return _currentFrame;
 }
 
-SequenceTime
-TimeLine::leftBound() const
-{
-    QMutexLocker l(&_lock);
-
-    return _leftBoundary;
-}
-
-SequenceTime
-TimeLine::rightBound() const
-{
-    QMutexLocker l(&_lock);
-
-    return _rightBoundary;
-}
-
-void
-TimeLine::setFrameRange(SequenceTime first,
-                        SequenceTime last)
-{
-    bool changed = false;
-    {
-        QMutexLocker l(&_lock);
-        if ( (_firstFrame != first) || (_lastFrame != last) ) {
-            _firstFrame = first;
-            _lastFrame = last;
-            changed = true;
-        }
-    }
-
-    if (changed) {
-        emit frameRangeChanged(first, last);
-        setBoundaries(first,last);
-    }
-}
-
 void
 TimeLine::seekFrame(SequenceTime frame,
+                    bool updateLastCaller,
                     Natron::OutputEffectInstance* caller,
                     Natron::TimelineChangeReasonEnum reason)
 {
@@ -102,16 +50,16 @@ TimeLine::seekFrame(SequenceTime frame,
         }
     }
 
+    if (_project && updateLastCaller) {
+        _project->getApp()->setLastViewerUsingTimeline(caller ? caller->getNode() : boost::shared_ptr<Natron::Node>());
+    }
     if (changed) {
-        if (_project) {
-            _project->setLastTimelineSeekCaller(caller);
-        }
         emit frameChanged(frame, (int)reason);
     }
 }
 
 void
-TimeLine::incrementCurrentFrame(Natron::OutputEffectInstance* caller)
+TimeLine::incrementCurrentFrame()
 {
     SequenceTime frame;
     {
@@ -119,23 +67,17 @@ TimeLine::incrementCurrentFrame(Natron::OutputEffectInstance* caller)
         ++_currentFrame;
         frame = _currentFrame;
     }
-    if (_project) {
-        _project->setLastTimelineSeekCaller(caller);
-    }
     emit frameChanged(frame, (int)Natron::eTimelineChangeReasonPlaybackSeek);
 }
 
 void
-TimeLine::decrementCurrentFrame(Natron::OutputEffectInstance* caller)
+TimeLine::decrementCurrentFrame()
 {
     SequenceTime frame;
     {
         QMutexLocker l(&_lock);
         --_currentFrame;
         frame = _currentFrame;
-    }
-    if (_project) {
-        _project->setLastTimelineSeekCaller(caller);
     }
     emit frameChanged(frame, (int)Natron::eTimelineChangeReasonPlaybackSeek);
 }
@@ -156,45 +98,6 @@ TimeLine::onFrameChanged(SequenceTime frame)
         /*This function is called in response to a signal emitted by a single timeline gui, but we also
            need to sync all the other timelines potentially existing.*/
         emit frameChanged(frame, (int)Natron::eTimelineChangeReasonUserSeek);
-    }
-}
-
-void
-TimeLine::setBoundaries(SequenceTime leftBound,
-                        SequenceTime rightBound)
-{
-    bool changed = false;
-    {
-        QMutexLocker l(&_lock);
-        if ( (_leftBoundary != leftBound) || (_rightBoundary != rightBound) ) {
-            _leftBoundary = leftBound;
-            _rightBoundary = rightBound;
-            changed = true;
-        }
-    }
-
-    if (changed) {
-        emit boundariesChanged(leftBound, rightBound, Natron::eValueChangedReasonPluginEdited);
-    }
-}
-
-// the reason (last line) differs in this version
-void
-TimeLine::onBoundariesChanged(SequenceTime leftBound,
-                              SequenceTime rightBound)
-{
-    bool changed = false;
-    {
-        QMutexLocker l(&_lock);
-        if ( (_leftBoundary != leftBound) || (_rightBoundary != rightBound) ) {
-            _leftBoundary = leftBound;
-            _rightBoundary = rightBound;
-            changed = true;
-        }
-    }
-
-    if (changed) {
-        emit boundariesChanged(leftBound, rightBound, Natron::eValueChangedReasonUserEdited);
     }
 }
 
@@ -328,7 +231,7 @@ TimeLine::goToPreviousKeyframe()
     std::list<SequenceTime>::iterator lowerBound = std::lower_bound(_keyframes.begin(), _keyframes.end(), _currentFrame);
     if ( lowerBound != _keyframes.begin() ) {
         --lowerBound;
-        seekFrame(*lowerBound,NULL,Natron::eTimelineChangeReasonPlaybackSeek);
+        seekFrame(*lowerBound, true, NULL, Natron::eTimelineChangeReasonPlaybackSeek);
     }
 }
 
@@ -341,7 +244,7 @@ TimeLine::goToNextKeyframe()
     _keyframes.sort();
     std::list<SequenceTime>::iterator upperBound = std::upper_bound(_keyframes.begin(), _keyframes.end(), _currentFrame);
     if ( upperBound != _keyframes.end() ) {
-        seekFrame(*upperBound,NULL,Natron::eTimelineChangeReasonPlaybackSeek);
+        seekFrame(*upperBound, true, NULL, Natron::eTimelineChangeReasonPlaybackSeek);
     }
 }
 

@@ -37,7 +37,7 @@ class ScaleSliderQWidget
 
 public:
     
-    enum DataType
+    enum DataTypeEnum
     {
         eDataTypeInt,
         eDataTypeDouble
@@ -46,7 +46,7 @@ public:
     ScaleSliderQWidget(double bottom, // the minimum value
                        double top, // the maximum value
                        double initialPos, // the initial value
-                       DataType dataType,
+                       DataTypeEnum dataType,
                        Natron::ScaleTypeEnum type = Natron::eScaleTypeLinear, // the type of scale
                        QWidget* parent = 0);
     

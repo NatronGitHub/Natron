@@ -199,10 +199,9 @@ struct ViewerTabPrivate
     Button* nextIncrement_Button;
     Button* playbackMode_Button;
     LineEdit* frameRangeEdit;
-    QCheckBox* canEditFrameRangeBox;
+
     ClickableLabel* canEditFrameRangeLabel;
-    mutable QMutex frameRangeLockedMutex;
-    bool frameRangeLocked;
+
     QCheckBox* canEditFpsBox;
     ClickableLabel* canEditFpsLabel;
     mutable QMutex fpsLockedMutex;
@@ -295,10 +294,7 @@ struct ViewerTabPrivate
         , nextIncrement_Button(NULL)
         , playbackMode_Button(NULL)
         , frameRangeEdit(NULL)
-        , canEditFrameRangeBox(NULL)
         , canEditFrameRangeLabel(NULL)
-        , frameRangeLockedMutex()
-        , frameRangeLocked(true)
         , canEditFpsBox(NULL)
         , canEditFpsLabel(NULL)
         , fpsLockedMutex()
@@ -510,7 +506,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->secondRowLayout->setContentsMargins(0, 0, 0, 0);
     _imp->mainLayout->addWidget(_imp->secondSettingsRow);
 
-    _imp->gainBox = new SpinBox(_imp->secondSettingsRow,SpinBox::DOUBLE_SPINBOX);
+    _imp->gainBox = new SpinBox(_imp->secondSettingsRow,SpinBox::eSpinBoxTypeDouble);
     _imp->gainBox->setToolTip( "<p><b>" + tr("Gain") + ": \n</b></p>" + tr(
                                     "Multiplies the image by \nthis amount before display.") );
     _imp->gainBox->setIncrement(0.1);
@@ -624,7 +620,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->playerButtonsContainer->setLayout(_imp->playerLayout);
     _imp->mainLayout->addWidget(_imp->playerButtonsContainer);
 
-    _imp->currentFrameBox = new SpinBox(_imp->playerButtonsContainer,SpinBox::INT_SPINBOX);
+    _imp->currentFrameBox = new SpinBox(_imp->playerButtonsContainer,SpinBox::eSpinBoxTypeInt);
     _imp->currentFrameBox->setValue(0);
     _imp->currentFrameBox->setToolTip("<p><b>" + tr("Current frame number") + "</b></p>");
     _imp->playerLayout->addWidget(_imp->currentFrameBox);
@@ -788,37 +784,21 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
 
     _imp->playerLayout->addStretch();
     
-    _imp->canEditFrameRangeBox = new QCheckBox(_imp->playerButtonsContainer);
-    QString canEditFRTooltip = Qt::convertFromPlainText(tr("When unchecked, the timeline bounds will be automatically set by "
-                                                           "%1 as "
-                                                           "informed by the Readers upstream. When checked, the bounds will no longer "
-                                                           "be automatically set, and you're free to set them in the edit line "
-                                                           "on the right or by dragging the timeline markers.").arg(NATRON_APPLICATION_NAME)
-                                                        ,Qt::WhiteSpaceNormal);
-    _imp->canEditFrameRangeBox->setToolTip(canEditFRTooltip);
-    QObject::connect( _imp->canEditFrameRangeBox,SIGNAL( clicked(bool) ),this,SLOT( onCanSetFrameRangeButtonClicked(bool) ) );
-    _imp->canEditFrameRangeBox->setChecked(!_imp->frameRangeLocked);
-    _imp->canEditFrameRangeBox->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     QFont font(appFont,appFontSize);
     
     _imp->canEditFrameRangeLabel = new ClickableLabel(tr("Frame-range"),_imp->playerButtonsContainer);
-    QObject::connect(_imp->canEditFrameRangeLabel, SIGNAL(clicked(bool)),this,SLOT(onCanSetFrameRangeLabelClicked(bool)));
-    _imp->canEditFrameRangeLabel->setToolTip(canEditFRTooltip);
     _imp->canEditFrameRangeLabel->setFont(font);
     
-    _imp->playerLayout->addWidget(_imp->canEditFrameRangeBox);
     _imp->playerLayout->addWidget(_imp->canEditFrameRangeLabel);
 
     _imp->frameRangeEdit = new LineEdit(_imp->playerButtonsContainer);
     QObject::connect( _imp->frameRangeEdit,SIGNAL( editingFinished() ),this,SLOT( onFrameRangeEditingFinished() ) );
-    _imp->frameRangeEdit->setReadOnly(true);
     _imp->frameRangeEdit->setToolTip( Qt::convertFromPlainText(tr("Define here the timeline bounds in which the cursor will playback. Alternatively"
-                                                                  " you can drag the red markers on the timeline. To activate editing, unlock the"
-                                                                  " button on the right."),
+                                                                  " you can drag the red markers on the timeline. The frame range of the project "
+                                                                  "is the part coloured in grey on the timeline."),
                                                                Qt::WhiteSpaceNormal) );
     boost::shared_ptr<TimeLine> timeline = _imp->app->getTimeLine();
     _imp->frameRangeEdit->setMaximumWidth(70);
-    onTimelineBoundariesChanged(timeline->leftBound(), timeline->rightBound(), 0);
 
     _imp->playerLayout->addWidget(_imp->frameRangeEdit);
 
@@ -845,7 +825,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->playerLayout->addWidget(_imp->canEditFpsBox);
     _imp->playerLayout->addWidget(_imp->canEditFpsLabel);
     
-    _imp->fpsBox = new SpinBox(_imp->playerButtonsContainer,SpinBox::DOUBLE_SPINBOX);
+    _imp->fpsBox = new SpinBox(_imp->playerButtonsContainer,SpinBox::eSpinBoxTypeDouble);
     _imp->fpsBox->setReadOnly(_imp->fpsLocked);
     _imp->fpsBox->decimals(1);
     _imp->fpsBox->setValue(24.0);
@@ -980,8 +960,16 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
 
     /*frame seeker*/
     _imp->timeLineGui = new TimeLineGui(node,timeline,_imp->gui,this);
+    QObject::connect(_imp->timeLineGui, SIGNAL( boundariesChanged(SequenceTime,SequenceTime)),
+                     this, SLOT(onTimelineBoundariesChanged(SequenceTime, SequenceTime)));
+    QObject::connect(gui->getApp()->getProject().get(), SIGNAL(frameRangeChanged(int,int)), _imp->timeLineGui, SLOT(onProjectFrameRangeChanged(int,int)));
     _imp->timeLineGui->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::Minimum);
     _imp->mainLayout->addWidget(_imp->timeLineGui);
+    int leftBound,rightBound;
+    gui->getApp()->getFrameRange(&leftBound, &rightBound);
+    _imp->timeLineGui->setBoundaries(leftBound, rightBound);
+    onTimelineBoundariesChanged(leftBound,rightBound);
+    _imp->timeLineGui->setFrameRangeEdited(false);
     /*================================================*/
 
 
@@ -1171,13 +1159,14 @@ ViewerTab::startPause(bool b)
 {
     abortRendering();
     if (b) {
+        _imp->gui->getApp()->setLastViewerUsingTimeline(_imp->viewerNode->getNode());
         _imp->play_Forward_Button->setDown(true);
         _imp->play_Forward_Button->setChecked(true);
         if (appPTR->getCurrentSettings()->isAutoTurboEnabled()) {
             _imp->gui->onFreezeUIButtonClicked(true);
         }
         boost::shared_ptr<TimeLine> timeline = _imp->timeLineGui->getTimeline();
-        _imp->viewerNode->getRenderEngine()->renderFromCurrentFrame(OutputSchedulerThread::RENDER_FORWARD);
+        _imp->viewerNode->getRenderEngine()->renderFromCurrentFrame(OutputSchedulerThread::eRenderDirectionForward);
     }
 }
 
@@ -1205,6 +1194,9 @@ ViewerTab::abortRendering()
 void
 ViewerTab::onEngineStopped()
 {
+    if (!_imp->gui) {
+        return;
+    }
     _imp->play_Forward_Button->setDown(false);
     _imp->play_Backward_Button->setDown(false);
     _imp->play_Forward_Button->setChecked(false);
@@ -1219,13 +1211,14 @@ ViewerTab::startBackward(bool b)
 {
     abortRendering();
     if (b) {
+        _imp->gui->getApp()->setLastViewerUsingTimeline(_imp->viewerNode->getNode());
         _imp->play_Backward_Button->setDown(true);
         _imp->play_Backward_Button->setChecked(true);
         if (appPTR->getCurrentSettings()->isAutoTurboEnabled()) {
             _imp->gui->onFreezeUIButtonClicked(true);
         }
         boost::shared_ptr<TimeLine> timeline = _imp->timeLineGui->getTimeline();
-        _imp->viewerNode->getRenderEngine()->renderFromCurrentFrame(OutputSchedulerThread::RENDER_BACKWARD);
+        _imp->viewerNode->getRenderEngine()->renderFromCurrentFrame(OutputSchedulerThread::eRenderDirectionBackward);
 
     }
 }
@@ -1235,6 +1228,7 @@ ViewerTab::seek(SequenceTime time)
 {
     _imp->currentFrameBox->setValue(time);
     _imp->timeLineGui->seek(time);
+    
 }
 
 void
@@ -1432,7 +1426,7 @@ ViewerTab::keyPressEvent(QKeyEvent* e)
         _imp->renderScaleCombo->setCurrentIndex(3);
     } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionProxyLevel32, modifiers, key) ) {
         _imp->renderScaleCombo->setCurrentIndex(4);
-    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionZoomLevel100, modifiers, key) ) {
+    } else if (isKeybind(kShortcutGroupViewer, kShortcutIDActionZoomLevel100, modifiers, key) ) {
         _imp->viewer->zoomSlot(100);
         _imp->zoomCombobox->setCurrentIndex_no_emit(4);
     }
@@ -1449,29 +1443,29 @@ ViewerTab::onGainSliderChanged(double v)
 void
 ViewerTab::onViewerChannelsChanged(int i)
 {
-    ViewerInstance::DisplayChannels channels;
+    ViewerInstance::DisplayChannelsEnum channels;
 
     switch (i) {
     case 0:
-        channels = ViewerInstance::LUMINANCE;
+        channels = ViewerInstance::eDisplayChannelsY;
         break;
     case 1:
-        channels = ViewerInstance::RGB;
+        channels = ViewerInstance::eDisplayChannelsRGB;
         break;
     case 2:
-        channels = ViewerInstance::R;
+        channels = ViewerInstance::eDisplayChannelsR;
         break;
     case 3:
-        channels = ViewerInstance::G;
+        channels = ViewerInstance::eDisplayChannelsG;
         break;
     case 4:
-        channels = ViewerInstance::B;
+        channels = ViewerInstance::eDisplayChannelsB;
         break;
     case 5:
-        channels = ViewerInstance::A;
+        channels = ViewerInstance::eDisplayChannelsA;
         break;
     default:
-        channels = ViewerInstance::RGB;
+        channels = ViewerInstance::eDisplayChannelsRGB;
         break;
     }
     _imp->viewerNode->setDisplayChannels(channels);
@@ -1915,7 +1909,13 @@ ViewerTab::notifyOverlaysFocusLost(double scaleX,
     getGui()->getNodesEntitledForOverlays(nodes);
     for (std::list<boost::shared_ptr<Natron::Node> >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         
-        if (_imp->currentTracker.first && (*it) == _imp->currentTracker.first->getNode()) {
+        
+        if (_imp->currentRoto.first && (*it) == _imp->currentRoto.first->getNode()) {
+            
+            if ( _imp->currentRoto.second && _imp->currentRoto.first->isSettingsPanelVisible() ) {
+                _imp->currentRoto.second->focusOut();
+            }
+        } else if (_imp->currentTracker.first && (*it) == _imp->currentTracker.first->getNode()) {
             if ( _imp->currentTracker.second && _imp->currentTracker.first->isSettingsPanelVisible() ) {
                 if ( _imp->currentTracker.second->loseFocus(scaleX, scaleY) ) {
                     return true;
@@ -2070,25 +2070,25 @@ ViewerTab::getZoomOrPannedSinceLastFit() const
 std::string
 ViewerTab::getChannelsString() const
 {
-    ViewerInstance::DisplayChannels c = _imp->viewerNode->getChannels();
+    ViewerInstance::DisplayChannelsEnum c = _imp->viewerNode->getChannels();
 
     switch (c) {
-    case ViewerInstance::RGB:
+    case ViewerInstance::eDisplayChannelsRGB:
 
         return "RGB";
-    case ViewerInstance::R:
+    case ViewerInstance::eDisplayChannelsR:
 
         return "R";
-    case ViewerInstance::G:
+    case ViewerInstance::eDisplayChannelsG:
 
         return "G";
-    case ViewerInstance::B:
+    case ViewerInstance::eDisplayChannelsB:
 
         return "B";
-    case ViewerInstance::A:
+    case ViewerInstance::eDisplayChannelsA:
 
         return "A";
-    case ViewerInstance::LUMINANCE:
+    case ViewerInstance::eDisplayChannelsY:
 
         return "Luminance";
         break;
@@ -2449,7 +2449,7 @@ ViewerTab::onRotoRoleChanged(int previousRole,
         assert(roto == _imp->currentRoto.second);
 
         ///Remove the previous buttons bar
-        int buttonsBarIndex = _imp->mainLayout->indexOf( _imp->currentRoto.second->getButtonsBar( (RotoGui::Roto_Role)previousRole ) );
+        int buttonsBarIndex = _imp->mainLayout->indexOf( _imp->currentRoto.second->getButtonsBar( (RotoGui::RotoRoleEnum)previousRole ) );
         assert(buttonsBarIndex >= 0);
         _imp->mainLayout->removeItem( _imp->mainLayout->itemAt(buttonsBarIndex) );
 
@@ -2457,7 +2457,7 @@ ViewerTab::onRotoRoleChanged(int previousRole,
         ///Set the new buttons bar
         int viewerIndex = _imp->mainLayout->indexOf(_imp->viewerContainer);
         assert(viewerIndex >= 0);
-        _imp->mainLayout->insertWidget( viewerIndex, _imp->currentRoto.second->getButtonsBar( (RotoGui::Roto_Role)newRole ) );
+        _imp->mainLayout->insertWidget( viewerIndex, _imp->currentRoto.second->getButtonsBar( (RotoGui::RotoRoleEnum)newRole ) );
     }
 }
 
@@ -2466,7 +2466,7 @@ ViewerTab::updateRotoSelectedTool(int tool,
                                   RotoGui* sender)
 {
     if ( _imp->currentRoto.second && (_imp->currentRoto.second != sender) ) {
-        _imp->currentRoto.second->setCurrentTool( (RotoGui::Roto_Tool)tool,false );
+        _imp->currentRoto.second->setCurrentTool( (RotoGui::RotoToolEnum)tool,false );
     }
 }
 
@@ -2524,6 +2524,7 @@ void
 ViewerTab::notifyAppClosing()
 {
     _imp->gui = 0;
+    _imp->timeLineGui->discardGuiPointer();
     _imp->app = 0;
 }
 
@@ -2838,12 +2839,14 @@ ViewerTab::onFrameRangeEditingFinished()
     while ( i < text.size() && !text.at(i).isDigit() ) {
         ++i;
     }
+    
+    int curLeft,curRight;
+    getTimelineBounds(&curLeft, &curRight);
 
-    boost::shared_ptr<TimeLine> timeline = _imp->app->getTimeLine();
     bool ok;
     int first = firstStr.toInt(&ok);
     if (!ok) {
-        QString text = QString("%1 - %2").arg( timeline->leftBound() ).arg( timeline->rightBound() );
+        QString text = QString("%1 - %2").arg( curLeft ).arg( curRight );
         _imp->frameRangeEdit->setText(text);
         _imp->frameRangeEdit->adjustSize();
 
@@ -2852,7 +2855,7 @@ ViewerTab::onFrameRangeEditingFinished()
 
     if ( i == text.size() ) {
         ///there's no second marker, set the timeline's boundaries to be the same frame
-        timeline->setFrameRange(first, first);
+        setTimelineBounds(first, first);
     } else {
         QString secondStr;
         while ( i < text.size() && text.at(i).isDigit() ) {
@@ -2862,37 +2865,14 @@ ViewerTab::onFrameRangeEditingFinished()
         int second = secondStr.toInt(&ok);
         if (!ok) {
             ///there's no second marker, set the timeline's boundaries to be the same frame
-            timeline->setFrameRange(first, first);
+            setTimelineBounds(first, first);
         } else {
-            timeline->setFrameRange(first,second);
+            setTimelineBounds(first, second);
         }
     }
     _imp->frameRangeEdit->adjustSize();
 }
 
-void
-ViewerTab::onCanSetFrameRangeButtonClicked(bool toggled)
-{
-    _imp->frameRangeEdit->setReadOnly(!toggled);
-    {
-        QMutexLocker l(&_imp->frameRangeLockedMutex);
-        _imp->frameRangeLocked = !toggled;
-    }
-}
-
-void
-ViewerTab::onCanSetFrameRangeLabelClicked(bool toggled)
-{
-    _imp->canEditFrameRangeBox->setChecked(toggled);
-    onCanSetFrameRangeButtonClicked(toggled);
-}
-
-void
-ViewerTab::setFrameRangeLocked(bool toggled)
-{
-    _imp->canEditFrameRangeBox->setChecked(!toggled);
-    onCanSetFrameRangeButtonClicked(!toggled);
-}
 
 void
 ViewerTab::onCanSetFPSLabelClicked(bool toggled)
@@ -2921,8 +2901,7 @@ ViewerTab::setFPSLocked(bool fpsLocked)
 
 void
 ViewerTab::onTimelineBoundariesChanged(SequenceTime first,
-                                       SequenceTime second,
-                                       int /*reason*/)
+                                       SequenceTime second)
 {
     QString text = QString("%1 - %2").arg(first).arg(second);
 
@@ -2930,13 +2909,6 @@ ViewerTab::onTimelineBoundariesChanged(SequenceTime first,
     _imp->frameRangeEdit->adjustSize();
 }
 
-bool
-ViewerTab::isFrameRangeLocked() const
-{
-    QMutexLocker l(&_imp->frameRangeLockedMutex);
-
-    return _imp->frameRangeLocked;
-}
 
 bool
 ViewerTab::isFPSLocked() const
@@ -3223,8 +3195,7 @@ ViewerTab::manageTimelineSlot(bool disconnectPrevious,const boost::shared_ptr<Ti
         QObject::disconnect( _imp->previousKeyFrame_Button,SIGNAL( clicked(bool) ),previous.get(), SLOT( goToPreviousKeyframe() ) );
         QObject::disconnect( previous.get(),SIGNAL( frameChanged(SequenceTime,int) ),
                          this, SLOT( onTimeLineTimeChanged(SequenceTime,int) ) );
-        QObject::disconnect( previous.get(),SIGNAL( boundariesChanged(SequenceTime,SequenceTime,int) ),this,
-                         SLOT( onTimelineBoundariesChanged(SequenceTime,SequenceTime,int) ) );
+        
 
     }
     
@@ -3232,8 +3203,7 @@ ViewerTab::manageTimelineSlot(bool disconnectPrevious,const boost::shared_ptr<Ti
     QObject::connect( _imp->previousKeyFrame_Button,SIGNAL( clicked(bool) ),timeline.get(), SLOT( goToPreviousKeyframe() ) );
     QObject::connect( timeline.get(),SIGNAL( frameChanged(SequenceTime,int) ),
                      this, SLOT( onTimeLineTimeChanged(SequenceTime,int) ) );
-    QObject::connect( timeline.get(),SIGNAL( boundariesChanged(SequenceTime,SequenceTime,int) ),this,
-                     SLOT( onTimelineBoundariesChanged(SequenceTime,SequenceTime,int) ) );
+
 
 }
 
@@ -3337,4 +3307,22 @@ ViewerTab::redrawGLWidgets()
 {
 	_imp->viewer->updateGL();
 	_imp->timeLineGui->updateGL();
+}
+
+void
+ViewerTab::getTimelineBounds(int* left,int* right) const
+{
+    return _imp->timeLineGui->getBounds(left, right);
+}
+
+void
+ViewerTab::setTimelineBounds(int left,int right)
+{
+    _imp->timeLineGui->setBoundaries(left, right);
+}
+
+void
+ViewerTab::setFrameRangeEdited(bool edited)
+{
+    _imp->timeLineGui->setFrameRangeEdited(edited);
 }

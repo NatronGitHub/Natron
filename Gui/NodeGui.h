@@ -224,7 +224,7 @@ public:
     void markInputNull(Edge* e);
 
     const std::map<boost::shared_ptr<KnobI>,KnobGui*> & getKnobs() const;
-    static const int DEFAULT_OFFSET_BETWEEN_NODES = 20;
+    static const int DEFAULT_OFFSET_BETWEEN_NODES = 30;
 
 
     QSize getSize() const;
@@ -240,6 +240,8 @@ public:
     void changePosition(double dx,double dy);
 
     bool isSettingsPanelVisible() const;
+    
+    bool isSettingsPanelMinimized() const;
 
     void removeSettingsPanel();
 
@@ -283,7 +285,12 @@ public:
 
     void setParentMultiInstance(const boost::shared_ptr<NodeGui> & parent);
 
-
+    boost::shared_ptr<NodeGui> getParentMultiInstance() const
+    {
+        return _parentMultiInstance;
+    }
+    
+    
     void setKnobLinksVisible(bool visible);
     
     /**
@@ -305,7 +312,8 @@ public:
     void setVisibleDetails(bool visible);
     
     virtual void refreshStateIndicator();
-        
+    
+    
 public slots:
 
     void onSettingsPanelClosed(bool closed);

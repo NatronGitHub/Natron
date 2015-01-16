@@ -371,7 +371,7 @@ TrackerGui::penDown(double scaleX,
         if ( ( pos.x() >= (x - selectionTol) ) && ( pos.x() <= (x + selectionTol) ) &&
              ( pos.y() >= (y - selectionTol) ) && ( pos.y() <= (y + selectionTol) ) ) {
             if (!it->second) {
-                _imp->panel->selectNode( it->first, modCASIsControl(e) );
+                _imp->panel->selectNode( it->first, modCASIsShift(e) );
             }
             didSomething = true;
         }
@@ -390,7 +390,7 @@ TrackerGui::penDown(double scaleX,
         didSomething = true;
     }
 
-    if ( !didSomething && !modCASIsControl(e) ) {
+    if ( !didSomething && !modCASIsShift(e) ) {
         _imp->panel->clearSelection();
     }
 

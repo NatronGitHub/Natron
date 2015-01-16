@@ -60,7 +60,7 @@ QtReader::~QtReader()
 std::string
 QtReader::getPluginID() const
 {
-    return NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.ReadQt";;
+    return PLUGINID_NATRON_READQT;
 }
 
 std::string
@@ -475,12 +475,12 @@ QtReader::render(SequenceTime /*time*/,
     case QImage::Format_ARGB32:     // The image is stored using a 32-bit ARGB format (0xAARRGGBB).
         //might have to invert y coordinates here
         _lut->from_byte_packed( (float*)output->pixelAt(0, 0), _img->bits(), roi, output->getBounds(), output->getBounds(),
-                                Natron::Color::PACKING_BGRA,Natron::Color::PACKING_RGBA,true,false );
+                                Natron::Color::ePixelPackingBGRA,Natron::Color::ePixelPackingRGBA,true,false );
         break;
     case QImage::Format_ARGB32_Premultiplied:     // The image is stored using a premultiplied 32-bit ARGB format (0xAARRGGBB).
         //might have to invert y coordinates here
         _lut->from_byte_packed( (float*)output->pixelAt(0, 0), _img->bits(), roi, output->getBounds(), output->getBounds(),
-                                Natron::Color::PACKING_BGRA,Natron::Color::PACKING_RGBA,true,true );
+                                Natron::Color::ePixelPackingBGRA,Natron::Color::ePixelPackingRGBA,true,true );
         break;
     case QImage::Format_Mono:     // The image is stored using 1-bit per pixel. Bytes are packed with the most significant bit (MSB) first.
     case QImage::Format_MonoLSB:     // The image is stored using 1-bit per pixel. Bytes are packed with the less significant bit (LSB) first.
@@ -493,7 +493,7 @@ QtReader::render(SequenceTime /*time*/,
     {
         QImage img = _img->convertToFormat(QImage::Format_ARGB32);
         _lut->from_byte_packed( (float*)output->pixelAt(0, 0), img.bits(), roi, output->getBounds(), output->getBounds(),
-                                Natron::Color::PACKING_BGRA, Natron::Color::PACKING_RGBA, true, false );
+                                Natron::Color::ePixelPackingBGRA, Natron::Color::ePixelPackingRGBA, true, false );
         break;
     }
     case QImage::Format_ARGB8565_Premultiplied:     // The image is stored using a premultiplied 24-bit ARGB format (8-5-6-5).
@@ -503,7 +503,7 @@ QtReader::render(SequenceTime /*time*/,
     {
         QImage img = _img->convertToFormat(QImage::Format_ARGB32_Premultiplied);
         _lut->from_byte_packed( (float*)output->pixelAt(0, 0), img.bits(), roi, output->getBounds(), output->getBounds(),
-                                Natron::Color::PACKING_BGRA, Natron::Color::PACKING_RGBA, true, true );
+                                Natron::Color::ePixelPackingBGRA, Natron::Color::ePixelPackingRGBA, true, true );
         break;
     }
     case QImage::Format_Invalid:

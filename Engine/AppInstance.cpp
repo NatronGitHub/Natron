@@ -39,12 +39,13 @@ struct AppInstancePrivate
 {
     boost::shared_ptr<Natron::Project> _currentProject; //< ptr to the project
     int _appID; //< the unique ID of this instance (or window)
-
-
+    bool _projectCreatedWithLowerCaseIDs;
+    
     AppInstancePrivate(int appID,
                        AppInstance* app)
-        : _currentProject( new Natron::Project(app) )
-          , _appID(appID)
+    : _currentProject( new Natron::Project(app) )
+    , _appID(appID)
+    , _projectCreatedWithLowerCaseIDs(false)
     {
     }
 };
@@ -64,7 +65,6 @@ AppInstance::AppInstance(int appID)
 AppInstance::~AppInstance()
 {
     appPTR->removeInstance(_imp->_appID);
-    QThreadPool::globalInstance()->waitForDone();
 
     ///Clear nodes now, not in the destructor of the project as
     ///deleting nodes might reference the project.
@@ -319,7 +319,7 @@ AppInstance::createNodeInternal(const QString & pluginID,
     Natron::Plugin* plugin = 0;
 
     try {
-        plugin = appPTR->getPluginBinary(pluginID,majorVersion,minorVersion);
+        plugin = appPTR->getPluginBinary(pluginID,majorVersion,minorVersion,_imp->_projectCreatedWithLowerCaseIDs);
     } catch (const std::exception & e1) {
         
         ///Ok try with the old Ids we had in Natron prior to 1.0
@@ -336,7 +336,7 @@ AppInstance::createNodeInternal(const QString & pluginID,
     }
 
     std::string foundPluginID = plugin->getPluginID().toStdString();
-    if (foundPluginID != NATRON_VIEWER_ID) { // for now only the viewer can be an inspector.
+    if (foundPluginID != PLUGINID_NATRON_VIEWER) { // for now only the viewer can be an inspector.
         node.reset( new Node(this,plugin) );
     } else {
         node.reset( new InspectorNode(this,plugin) );
@@ -344,7 +344,7 @@ AppInstance::createNodeInternal(const QString & pluginID,
     
     {
         ///Furnace plug-ins don't handle using the thread pool
-        if (foundPluginID.find("Furnace") != std::string::npos && appPTR->getUseThreadPool()) {
+        if (foundPluginID.find("uk.co.thefoundry.furnace") != std::string::npos && appPTR->getUseThreadPool()) {
             Natron::StandardButtonEnum reply = Natron::questionDialog(tr("Warning").toStdString(),
                                                                   tr("The settings of the application are currently set to use "
                                                                      "the global thread-pool for rendering effects. The Foundry Furnace "
@@ -630,8 +630,7 @@ AppInstance::startRenderingFullSequence(const RenderWork& writerWork,bool /*rend
     if (writerWork.firstFrame == INT_MIN || writerWork.lastFrame == INT_MAX) {
         writerWork.writer->getFrameRange_public(writerWork.writer->getHash(), &first, &last);
         if (first == INT_MIN || last == INT_MAX) {
-            first = getTimeLine()->leftBound();
-            last = getTimeLine()->rightBound();
+            getFrameRange(&first, &last);
         }
     } else {
         first = writerWork.firstFrame;
@@ -639,6 +638,12 @@ AppInstance::startRenderingFullSequence(const RenderWork& writerWork,bool /*rend
     }
     
     backgroundRender.blockingRender(first,last); //< doesn't return before rendering is finished
+}
+
+void
+AppInstance::getFrameRange(int* first,int* last) const
+{
+    return _imp->_currentProject->getFrameRange(first, last);
 }
 
 void
@@ -691,4 +696,16 @@ double
 AppInstance::getProjectFrameRate() const
 {
     return _imp->_currentProject->getProjectFrameRate();
+}
+
+void
+AppInstance::setProjectWasCreatedWithLowerCaseIDs(bool b)
+{
+    _imp->_projectCreatedWithLowerCaseIDs = b;
+}
+
+bool
+AppInstance::wasProjectCreatedWithLowerCaseIDs() const
+{
+    return _imp->_projectCreatedWithLowerCaseIDs;
 }

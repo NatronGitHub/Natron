@@ -47,8 +47,6 @@ ProjectSerialization::initialize(const Natron::Project* project)
         }
     }
 
-    _timelineLeft = project->leftBound();
-    _timelineRight = project->rightBound();
     _timelineCurrent = project->currentFrame();
 
     _creationDate = project->getProjectCreationTime();

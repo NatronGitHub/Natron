@@ -67,7 +67,7 @@ DiskCacheNode::initializeKnobs()
     _imp->frameRange->setAnimationEnabled(false);
     std::vector<std::string> choices;
     choices.push_back("Input frame range");
-    choices.push_back("Timeline bounds");
+    choices.push_back("Project frame range");
     choices.push_back("Manual");
     _imp->frameRange->populateChoices(choices);
     _imp->frameRange->setEvaluateOnChange(false);
@@ -144,9 +144,7 @@ DiskCacheNode::getFrameRange(SequenceTime *first,SequenceTime *last)
             }
         } break;
         case 1: {
-            boost::shared_ptr<TimeLine> tl = getApp()->getTimeLine();
-            *first = tl->leftBound();
-            *last = tl->rightBound();
+            getApp()->getFrameRange(first, last);
         } break;
         case 2: {
             *first = _imp->firstFrame->getValue();

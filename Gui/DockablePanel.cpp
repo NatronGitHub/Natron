@@ -154,7 +154,7 @@ struct DockablePanelPrivate
     PageMap _pages;
     QString _defaultPageName;
     bool _useScrollAreasForTabs;
-    DockablePanel::HeaderMode _mode;
+    DockablePanel::HeaderModeEnum _mode;
     mutable QMutex _isClosedMutex;
     bool _isClosed; //< accessed by serialization thread too
     
@@ -166,7 +166,7 @@ struct DockablePanelPrivate
                          ,
                          QVBoxLayout* container
                          ,
-                         DockablePanel::HeaderMode headerMode
+                         DockablePanel::HeaderModeEnum headerMode
                          ,
                          bool useScrollAreasForTabs
                          ,
@@ -236,7 +236,7 @@ DockablePanel::DockablePanel(Gui* gui
                              ,
                              QVBoxLayout* container
                              ,
-                             HeaderMode headerMode
+                             HeaderModeEnum headerMode
                              ,
                              bool useScrollAreasForTabs
                              ,
@@ -271,7 +271,7 @@ DockablePanel::DockablePanel(Gui* gui
     }
     
     
-    if (headerMode != NO_HEADER) {
+    if (headerMode != eHeaderModeNoHeader) {
         _imp->_headerWidget = new QFrame(this);
         _imp->_headerWidget->setFrameShape(QFrame::Box);
         _imp->_headerLayout = new QHBoxLayout(_imp->_headerWidget);
@@ -309,7 +309,7 @@ DockablePanel::DockablePanel(Gui* gui
         QPixmap pixHelp;
         appPTR->getIcon(NATRON_PIXMAP_HELP_WIDGET,&pixHelp);
         _imp->_helpButton = new Button(QIcon(pixHelp),"",_imp->_headerWidget);
-        _imp->_helpButton->setFixedSize(NATRON_SMALL_BUTTON_SIZE, NATRON_SMALL_BUTTON_SIZE);
+        _imp->_helpButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
         _imp->_helpButton->setFocusPolicy(Qt::NoFocus);
             QString tt = Qt::convertFromPlainText(helpToolTip, Qt::WhiteSpaceNormal);
             if (!pluginLabelVersioned.isEmpty()) {
@@ -332,7 +332,7 @@ DockablePanel::DockablePanel(Gui* gui
             _imp->_hideUnmodifiedButton = new Button(icHideShow,"",_imp->_headerWidget);
             _imp->_hideUnmodifiedButton->setToolTip(tr("Show/Hide all parameters without modifications"));
             _imp->_hideUnmodifiedButton->setFocusPolicy(Qt::NoFocus);
-            _imp->_hideUnmodifiedButton->setFixedSize(NATRON_SMALL_BUTTON_SIZE, NATRON_SMALL_BUTTON_SIZE);
+            _imp->_hideUnmodifiedButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
             _imp->_hideUnmodifiedButton->setCheckable(true);
             _imp->_hideUnmodifiedButton->setChecked(false);
             QObject::connect(_imp->_hideUnmodifiedButton,SIGNAL(clicked(bool)),this,SLOT(onHideUnmodifiedButtonClicked(bool)));
@@ -347,23 +347,23 @@ DockablePanel::DockablePanel(Gui* gui
         appPTR->getIcon(NATRON_PIXMAP_MAXIMIZE_WIDGET, &pixF);
 
         _imp->_minimize = new Button(QIcon(pixM),"",_imp->_headerWidget);
-        _imp->_minimize->setFixedSize(NATRON_SMALL_BUTTON_SIZE, NATRON_SMALL_BUTTON_SIZE);
+        _imp->_minimize->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
         _imp->_minimize->setCheckable(true);
         _imp->_minimize->setFocusPolicy(Qt::NoFocus);
         QObject::connect( _imp->_minimize,SIGNAL( toggled(bool) ),this,SLOT( minimizeOrMaximize(bool) ) );
 
         _imp->_floatButton = new Button(QIcon(pixF),"",_imp->_headerWidget);
-        _imp->_floatButton->setFixedSize(NATRON_SMALL_BUTTON_SIZE, NATRON_SMALL_BUTTON_SIZE);
+        _imp->_floatButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
         _imp->_floatButton->setFocusPolicy(Qt::NoFocus);
         QObject::connect( _imp->_floatButton,SIGNAL( clicked() ),this,SLOT( floatPanel() ) );
 
 
         _imp->_cross = new Button(QIcon(pixC),"",_imp->_headerWidget);
-        _imp->_cross->setFixedSize(NATRON_SMALL_BUTTON_SIZE, NATRON_SMALL_BUTTON_SIZE);
+        _imp->_cross->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
         _imp->_cross->setFocusPolicy(Qt::NoFocus);
         QObject::connect( _imp->_cross,SIGNAL( clicked() ),this,SLOT( closePanel() ) );
 
-        if (headerMode != READ_ONLY_NAME) {
+        if (headerMode != eHeaderModeReadOnlyName) {
             boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
             float r,g,b;
             
@@ -415,12 +415,12 @@ DockablePanel::DockablePanel(Gui* gui
             
             
             _imp->_currentColor.setRgbF( Natron::clamp(r), Natron::clamp(g), Natron::clamp(b) );
-            QPixmap p(NATRON_SMALL_BUTTON_SIZE,NATRON_SMALL_BUTTON_SIZE);
+            QPixmap p(NATRON_MEDIUM_BUTTON_SIZE,NATRON_MEDIUM_BUTTON_SIZE);
             p.fill(_imp->_currentColor);
 
             
             _imp->_colorButton = new Button(QIcon(p),"",_imp->_headerWidget);
-            _imp->_colorButton->setFixedSize(NATRON_SMALL_BUTTON_SIZE, NATRON_SMALL_BUTTON_SIZE);
+            _imp->_colorButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
             _imp->_colorButton->setToolTip( Qt::convertFromPlainText(tr("Set here the color of the node in the nodegraph. "
                                                                         "By default the color of the node is the one set in the "
                                                                         "preferences of %1").arg(NATRON_APPLICATION_NAME)
@@ -441,7 +441,7 @@ DockablePanel::DockablePanel(Gui* gui
         icUndo.addPixmap(pixUndo,QIcon::Normal);
         icUndo.addPixmap(pixUndo_gray,QIcon::Disabled);
         _imp->_undoButton = new Button(icUndo,"",_imp->_headerWidget);
-        _imp->_undoButton->setFixedSize(NATRON_SMALL_BUTTON_SIZE, NATRON_SMALL_BUTTON_SIZE);
+        _imp->_undoButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
         _imp->_undoButton->setToolTip( Qt::convertFromPlainText(tr("Undo the last change made to this operator"), Qt::WhiteSpaceNormal) );
         _imp->_undoButton->setEnabled(false);
         _imp->_undoButton->setFocusPolicy(Qt::NoFocus);
@@ -453,7 +453,7 @@ DockablePanel::DockablePanel(Gui* gui
         icRedo.addPixmap(pixRedo,QIcon::Normal);
         icRedo.addPixmap(pixRedo_gray,QIcon::Disabled);
         _imp->_redoButton = new Button(icRedo,"",_imp->_headerWidget);
-        _imp->_redoButton->setFixedSize(NATRON_SMALL_BUTTON_SIZE, NATRON_SMALL_BUTTON_SIZE);
+        _imp->_redoButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
         _imp->_redoButton->setToolTip( Qt::convertFromPlainText(tr("Redo the last change undone to this operator"), Qt::WhiteSpaceNormal) );
         _imp->_redoButton->setEnabled(false);
         _imp->_redoButton->setFocusPolicy(Qt::NoFocus);
@@ -463,14 +463,14 @@ DockablePanel::DockablePanel(Gui* gui
         QIcon icRestore;
         icRestore.addPixmap(pixRestore);
         _imp->_restoreDefaultsButton = new Button(icRestore,"",_imp->_headerWidget);
-        _imp->_restoreDefaultsButton->setFixedSize(NATRON_SMALL_BUTTON_SIZE, NATRON_SMALL_BUTTON_SIZE);
+        _imp->_restoreDefaultsButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
         _imp->_restoreDefaultsButton->setToolTip( Qt::convertFromPlainText(tr("Restore default values for this operator."),Qt::WhiteSpaceNormal) );
         _imp->_restoreDefaultsButton->setFocusPolicy(Qt::NoFocus);
         QObject::connect( _imp->_restoreDefaultsButton,SIGNAL( clicked() ),this,SLOT( onRestoreDefaultsButtonClicked() ) );
         QObject::connect( _imp->_undoButton, SIGNAL( clicked() ),this, SLOT( onUndoClicked() ) );
         QObject::connect( _imp->_redoButton, SIGNAL( clicked() ),this, SLOT( onRedoPressed() ) );
 
-        if (headerMode != READ_ONLY_NAME) {
+        if (headerMode != eHeaderModeReadOnlyName) {
             _imp->_nameLineEdit = new LineEdit(_imp->_headerWidget);
             _imp->_nameLineEdit->setText(initialName);
             QObject::connect( _imp->_nameLineEdit,SIGNAL( editingFinished() ),this,SLOT( onLineEditNameEditingFinished() ) );
@@ -483,7 +483,7 @@ DockablePanel::DockablePanel(Gui* gui
 
         _imp->_headerLayout->addStretch();
 
-        if (headerMode != READ_ONLY_NAME) {
+        if (headerMode != eHeaderModeReadOnlyName) {
             _imp->_headerLayout->addWidget(_imp->_colorButton);
         }
         _imp->_headerLayout->addWidget(_imp->_undoButton);
@@ -536,7 +536,9 @@ DockablePanel::~DockablePanel()
     for (std::map<boost::shared_ptr<KnobI>,KnobGui*>::const_iterator it = _imp->_knobs.begin(); it != _imp->_knobs.end(); ++it) {
         if (it->second) {
             KnobHelper* helper = dynamic_cast<KnobHelper*>( it->first.get() );
-            QObject::disconnect( helper->getSignalSlotHandler().get(),SIGNAL( deleted() ),this,SLOT( onKnobDeletion() ) );
+            if (helper) {
+                QObject::disconnect( helper->getSignalSlotHandler().get(),SIGNAL( deleted() ),this,SLOT( onKnobDeletion() ) );
+            }
             it->first->setKnobGuiPointer(0);
             it->second->deleteLater();
         }
@@ -1326,7 +1328,7 @@ DockablePanel::onKnobDeletion()
     if (handler) {
         for (std::map<boost::shared_ptr<KnobI>,KnobGui*>::iterator it = _imp->_knobs.begin(); it != _imp->_knobs.end(); ++it) {
             KnobHelper* helper = dynamic_cast<KnobHelper*>( it->first.get() );
-            if (helper->getSignalSlotHandler().get() == handler) {
+            if (helper && helper->getSignalSlotHandler().get() == handler) {
                 if (it->second) {
                     it->second->deleteLater();
                 }
@@ -1348,7 +1350,7 @@ void
 DockablePanel::insertHeaderWidget(int index,
                                   QWidget* widget)
 {
-    if (_imp->_mode != NO_HEADER) {
+    if (_imp->_mode != eHeaderModeNoHeader) {
         _imp->_headerLayout->insertWidget(index, widget);
     }
 }
@@ -1356,7 +1358,7 @@ DockablePanel::insertHeaderWidget(int index,
 void
 DockablePanel::appendHeaderWidget(QWidget* widget)
 {
-    if (_imp->_mode != NO_HEADER) {
+    if (_imp->_mode != eHeaderModeNoHeader) {
         _imp->_headerLayout->addWidget(widget);
     }
 }
@@ -1406,7 +1408,7 @@ DockablePanel::isFloating() const
 void
 DockablePanel::onColorDialogColorChanged(const QColor & color)
 {
-    if (_imp->_mode != READ_ONLY_NAME) {
+    if (_imp->_mode != eHeaderModeReadOnlyName) {
         QPixmap p(15,15);
         p.fill(color);
         _imp->_colorButton->setIcon( QIcon(p) );
@@ -1640,7 +1642,7 @@ NodeSettingsPanel::NodeSettingsPanel(const boost::shared_ptr<MultiInstancePanel>
     : DockablePanel(gui,
                     multiPanel.get() != NULL ? dynamic_cast<KnobHolder*>( multiPanel.get() ) : NodeUi->getNode()->getLiveInstance(),
                     container,
-                    DockablePanel::FULLY_FEATURED,
+                    DockablePanel::eHeaderModeFullyFeatured,
                     false,
                     NodeUi->getNode()->getName().c_str(),
                     NodeUi->getNode()->getDescription().c_str(),
@@ -1847,7 +1849,7 @@ NodeBackDropSettingsPanel::NodeBackDropSettingsPanel(NodeBackDrop* backdrop,
 : DockablePanel(gui,
                 backdrop,
                 container,
-                DockablePanel::FULLY_FEATURED,
+                DockablePanel::eHeaderModeFullyFeatured,
                 false,
                 name,
                 QObject::tr("The node backdrop is useful to group nodes and identify them in the node graph. You can also "

@@ -61,7 +61,6 @@ struct ZoomContext
     double bottom; /// the bottom edge of orthographic projection
     double left; /// the left edge of the orthographic projection
     double zoomFactor; /// the zoom factor applied to the current image
-    double lastOrthoLeft, lastOrthoBottom, lastOrthoRight, lastOrthoTop; //< remembers the last values passed to the glOrtho call
 };
 
 struct CachedFrame
@@ -112,28 +111,39 @@ struct TimelineGuiPrivate
     bool _firstPaint;
     CachedFrames cachedFrames;
 
+    mutable QMutex boundariesMutex;
+    SequenceTime leftBoundary, rightBoundary;
+
+    mutable QMutex frameRangeEditedMutex;
+    bool isFrameRangeEdited;
+    
     TimelineGuiPrivate(ViewerInstance* viewer,
                        Gui* gui)
-        :  _viewer(viewer)
-          , _timeline()
-          , _gui(gui)
-          , _alphaCursor(false)
-          , _lastMouseEventWidgetCoord()
-          , _state(eTimelineStateIdle)
-          , _zoomCtx()
-          , _textRenderer()
-          , _cursorColor(243,149,0)
-          , _boundsColor(207,69,6)
-          , _cachedLineColor(143,201,103)
-          , _diskCachedLineColor(69,96,63)
-          , _keyframesColor(21,97,248)
-          , _clearColor(0,0,0,255)
-          , _backgroundColor(50,50,50)
-          , _ticksColor(200,200,200)
-          , _scaleColor(100,100,100)
-          , _font(appFont,appFontSize)
-          , _firstPaint(true)
-          , cachedFrames()
+    :  _viewer(viewer)
+    , _timeline()
+    , _gui(gui)
+    , _alphaCursor(false)
+    , _lastMouseEventWidgetCoord()
+    , _state(eTimelineStateIdle)
+    , _zoomCtx()
+    , _textRenderer()
+    , _cursorColor(243,149,0)
+    , _boundsColor(207,69,6)
+    , _cachedLineColor(143,201,103)
+    , _diskCachedLineColor(69,96,63)
+    , _keyframesColor(21,97,248)
+    , _clearColor(0,0,0,255)
+    , _backgroundColor(50,50,50)
+    , _ticksColor(200,200,200)
+    , _scaleColor(100,100,100)
+    , _font(appFont,appFontSize)
+    , _firstPaint(true)
+    , cachedFrames()
+    , boundariesMutex()
+    , leftBoundary(0)
+    , rightBoundary(0)
+    , frameRangeEditedMutex()
+    , isFrameRangeEdited(false)
     {
     }
 };
@@ -163,30 +173,22 @@ TimeLineGui::setTimeline(const boost::shared_ptr<TimeLine>& timeline)
         QObject::disconnect( _imp->_timeline.get(), SIGNAL( frameChanged(SequenceTime,int) ), this, SLOT( onFrameChanged(SequenceTime,int) ) );
         QObject::disconnect( _imp->_timeline.get(), SIGNAL( frameRangeChanged(SequenceTime,SequenceTime) ),
                          this, SLOT( onFrameRangeChanged(SequenceTime,SequenceTime) ) );
-        QObject::disconnect( _imp->_timeline.get(), SIGNAL( boundariesChanged(SequenceTime,SequenceTime,int) ),
-                         this, SLOT( onBoundariesChanged(SequenceTime,SequenceTime,int) ) );
         
         
         //connect the gui to the internal timeline
         QObject::disconnect( this, SIGNAL( frameChanged(SequenceTime) ), _imp->_timeline.get(), SLOT( onFrameChanged(SequenceTime) ) );
-        QObject::disconnect( this, SIGNAL( boundariesChanged(SequenceTime,SequenceTime) ),
-                         _imp->_timeline.get(), SLOT( onBoundariesChanged(SequenceTime,SequenceTime) ) );
         QObject::disconnect( _imp->_timeline.get(), SIGNAL( keyframeIndicatorsChanged() ), this, SLOT( onKeyframesIndicatorsChanged() ) );
     }
   
     //connect the internal timeline to the gui
     QObject::connect( timeline.get(), SIGNAL( frameChanged(SequenceTime,int) ), this, SLOT( onFrameChanged(SequenceTime,int) ) );
-    QObject::connect( timeline.get(), SIGNAL( frameRangeChanged(SequenceTime,SequenceTime) ),
-                     this, SLOT( onFrameRangeChanged(SequenceTime,SequenceTime) ) );
-    QObject::connect( timeline.get(), SIGNAL( boundariesChanged(SequenceTime,SequenceTime,int) ),
-                     this, SLOT( onBoundariesChanged(SequenceTime,SequenceTime,int) ) );
     
     
     //connect the gui to the internal timeline
     QObject::connect( this, SIGNAL( frameChanged(SequenceTime) ), timeline.get(), SLOT( onFrameChanged(SequenceTime) ) );
-    QObject::connect( this, SIGNAL( boundariesChanged(SequenceTime,SequenceTime) ),
-                     timeline.get(), SLOT( onBoundariesChanged(SequenceTime,SequenceTime) ) );
+    
     QObject::connect( timeline.get(), SIGNAL( keyframeIndicatorsChanged() ), this, SLOT( onKeyframesIndicatorsChanged() ) );
+   
     _imp->_timeline = timeline;
 
 
@@ -220,20 +222,36 @@ TimeLineGui::resizeGL(int width,
 }
 
 void
+TimeLineGui::discardGuiPointer()
+{
+    _imp->_gui = 0;
+}
+
+void
 TimeLineGui::paintGL()
 {
+    if (!_imp->_gui) {
+        return;
+    }
     glCheckError();
+    
+    SequenceTime leftBound,rightBound;
+    {
+        QMutexLocker k(&_imp->boundariesMutex);
+        leftBound = _imp->leftBoundary;
+        rightBound = _imp->rightBoundary;
+    }
+    SequenceTime cur = _imp->_timeline->currentFrame();
+
     if (_imp->_firstPaint) {
         _imp->_firstPaint = false;
-        SequenceTime left = _imp->_timeline->leftBound();
-        SequenceTime right = _imp->_timeline->rightBound();
-        SequenceTime cur = _imp->_timeline->currentFrame();
-        if ( (right - left) > 10000 ) {
+        
+        if ( (rightBound - leftBound) > 10000 ) {
             centerOn(cur - 100, cur + 100);
-        } else if ( (right - left) < 50 ) {
+        } else if ( (rightBound - leftBound) < 50 ) {
             centerOn(cur - DEFAULT_TIMELINE_LEFT_BOUND, cur + DEFAULT_TIMELINE_RIGHT_BOUND);
         } else {
-            centerOn(left,right);
+            centerOn(leftBound,rightBound);
         }
     }
 
@@ -265,10 +283,6 @@ TimeLineGui::paintGL()
 
             return;
         }
-        _imp->_zoomCtx.lastOrthoLeft = left;
-        _imp->_zoomCtx.lastOrthoRight = right;
-        _imp->_zoomCtx.lastOrthoBottom = bottom;
-        _imp->_zoomCtx.lastOrthoTop = top;
         glOrtho(left, right, bottom, top, -1, 1);
 
 
@@ -281,8 +295,10 @@ TimeLineGui::paintGL()
 
 
         /// change the backgroud color of the portion of the timeline where images are lying
-        QPointF firstFrameWidgetPos = toWidgetCoordinates(_imp->_timeline->firstFrame(),0);
-        QPointF lastFrameWidgetPos = toWidgetCoordinates(_imp->_timeline->lastFrame(),0);
+        int firstFrame,lastFrame;
+        _imp->_gui->getApp()->getFrameRange(&firstFrame, &lastFrame);
+        QPointF firstFrameWidgetPos = toWidgetCoordinates(firstFrame,0);
+        QPointF lastFrameWidgetPos = toWidgetCoordinates(lastFrame,0);
 
         glScissor( firstFrameWidgetPos.x(),0,
                   lastFrameWidgetPos.x() - firstFrameWidgetPos.x(),height() );
@@ -377,13 +393,13 @@ TimeLineGui::paintGL()
                                                       cursorBtmWidgetCoord.y() - CURSOR_HEIGHT);
         QPointF cursorTopRight = toTimeLineCoordinates(cursorBtmWidgetCoord.x() + CURSOR_WIDTH / 2.,
                                                        cursorBtmWidgetCoord.y() - CURSOR_HEIGHT);
-        QPointF leftBoundBtm(_imp->_timeline->leftBound(),lineYpos);
+        QPointF leftBoundBtm(leftBound,lineYpos);
         QPointF leftBoundWidgetCoord = toWidgetCoordinates( leftBoundBtm.x(),leftBoundBtm.y() );
         QPointF leftBoundBtmRight = toTimeLineCoordinates( leftBoundWidgetCoord.x() + CURSOR_WIDTH / 2.,
                                                           leftBoundWidgetCoord.y() );
         QPointF leftBoundTop = toTimeLineCoordinates(leftBoundWidgetCoord.x(),
                                                      leftBoundWidgetCoord.y() - CURSOR_HEIGHT);
-        QPointF rightBoundBtm(_imp->_timeline->rightBound(),lineYpos);
+        QPointF rightBoundBtm(rightBound,lineYpos);
         QPointF rightBoundWidgetCoord = toWidgetCoordinates( rightBoundBtm.x(),rightBoundBtm.y() );
         QPointF rightBoundBtmLeft = toTimeLineCoordinates( rightBoundWidgetCoord.x() - CURSOR_WIDTH / 2.,
                                                           rightBoundWidgetCoord.y() );
@@ -449,8 +465,8 @@ TimeLineGui::paintGL()
         glEnd();
         glCheckErrorIgnoreOSXBug();
 
-        if ( _imp->_timeline->leftBound() != _imp->_timeline->currentFrame() ) {
-            QString leftBoundStr( QString::number( _imp->_timeline->leftBound() ) );
+        if ( leftBound != _imp->_timeline->currentFrame() ) {
+            QString leftBoundStr( QString::number(leftBound) );
             double leftBoundTextXposWidget = toWidgetCoordinates( ( leftBoundBtm.x() + leftBoundBtmRight.x() ) / 2.,0 ).x() - fontM.width(leftBoundStr) / 2.;
             double leftBoundTextPos = toTimeLineCoordinates(leftBoundTextXposWidget,0).x();
             renderText(leftBoundTextPos,leftBoundTop.y(),
@@ -464,8 +480,8 @@ TimeLineGui::paintGL()
         glEnd();
         glCheckErrorIgnoreOSXBug();
 
-        if ( _imp->_timeline->rightBound() != _imp->_timeline->currentFrame() ) {
-            QString rightBoundStr( QString::number( _imp->_timeline->rightBound() ) );
+        if ( rightBound != cur ) {
+            QString rightBoundStr( QString::number( rightBound ) );
             double rightBoundTextXposWidget = toWidgetCoordinates( ( rightBoundBtm.x() + rightBoundBtmLeft.x() ) / 2.,0 ).x() - fontM.width(rightBoundStr) / 2.;
             double rightBoundTextPos = toTimeLineCoordinates(rightBoundTextXposWidget,0).x();
             renderText(rightBoundTextPos,rightBoundTop.y(),
@@ -565,7 +581,7 @@ void
 TimeLineGui::seek(SequenceTime time)
 {
     if ( time != _imp->_timeline->currentFrame() ) {
-        _imp->_gui->getApp()->getProject()->setLastTimelineSeekCaller(_imp->_viewer);
+        _imp->_gui->getApp()->setLastViewerUsingTimeline(_imp->_viewer->getNode());
         emit frameChanged(time);
         update();
     }
@@ -574,22 +590,28 @@ TimeLineGui::seek(SequenceTime time)
 void
 TimeLineGui::mousePressEvent(QMouseEvent* e)
 {
+    int leftBound,rightBound;
+    {
+        QMutexLocker k(&_imp->boundariesMutex);
+        leftBound = _imp->leftBoundary;
+        rightBound = _imp->rightBoundary;
+    }
     if (buttonDownIsMiddle(e)) {
-        centerOn(_imp->_timeline->leftBound(), _imp->_timeline->rightBound());
+        centerOn(leftBound, rightBound);
     } else {
         _imp->_lastMouseEventWidgetCoord = e->pos();
         double t = toTimeLineCoordinates(e->x(),0).x();
         SequenceTime tseq = std::floor(t + 0.5);
-        if ( modCASIsControl(e) && !_imp->_viewer->isFrameRangeLocked() ) {
+        if (modCASIsControl(e)) {
             _imp->_state = eTimelineStateDraggingBoundary;
-            int firstPos = toWidgetCoordinates(_imp->_timeline->leftBound() - 1,0).x();
-            int lastPos = toWidgetCoordinates(_imp->_timeline->rightBound() + 1,0).x();
+            int firstPos = toWidgetCoordinates(leftBound - 1,0).x();
+            int lastPos = toWidgetCoordinates(rightBound + 1,0).x();
             int distFromFirst = std::abs(e->x() - firstPos);
             int distFromLast = std::abs(e->x() - lastPos);
             if (distFromFirst  > distFromLast) {
-                setBoundaries(_imp->_timeline->leftBound(), tseq); // moving last frame anchor
+                setBoundariesInternal(leftBound, tseq, true); // moving last frame anchor
             } else {
-                setBoundaries( tseq, _imp->_timeline->rightBound() );   // moving first frame anchor
+                setBoundariesInternal( tseq, rightBound, true );   // moving first frame anchor
             }
         } else {
             _imp->_state = eTimelineStateDraggingCursor;
@@ -602,6 +624,13 @@ TimeLineGui::mousePressEvent(QMouseEvent* e)
 void
 TimeLineGui::mouseMoveEvent(QMouseEvent* e)
 {
+    int leftBound,rightBound;
+    {
+        QMutexLocker k(&_imp->boundariesMutex);
+        leftBound = _imp->leftBoundary;
+        rightBound = _imp->rightBoundary;
+    }
+    
     _imp->_lastMouseEventWidgetCoord = e->pos();
     double t = toTimeLineCoordinates(e->x(),0).x();
     SequenceTime tseq = std::floor(t + 0.5);
@@ -609,23 +638,23 @@ TimeLineGui::mouseMoveEvent(QMouseEvent* e)
     bool onEditingFinishedOnly = appPTR->getCurrentSettings()->getRenderOnEditingFinishedOnly();
     if (_imp->_state == eTimelineStateDraggingCursor && !onEditingFinishedOnly) {
         if ( tseq != _imp->_timeline->currentFrame() ) {
-            _imp->_gui->getApp()->getProject()->setLastTimelineSeekCaller(_imp->_viewer);
+            _imp->_gui->getApp()->setLastViewerUsingTimeline(_imp->_viewer->getNode());
             emit frameChanged(tseq);
         }
         distortViewPort = true;
         _imp->_alphaCursor = false;
     } else if (_imp->_state == eTimelineStateDraggingBoundary) {
-        int firstPos = toWidgetCoordinates(_imp->_timeline->leftBound() - 1,0).x();
-        int lastPos = toWidgetCoordinates(_imp->_timeline->rightBound() + 1,0).x();
+        int firstPos = toWidgetCoordinates(leftBound - 1,0).x();
+        int lastPos = toWidgetCoordinates(rightBound + 1,0).x();
         int distFromFirst = std::abs(e->x() - firstPos);
         int distFromLast = std::abs(e->x() - lastPos);
         if (distFromFirst  > distFromLast) { // moving last frame anchor
-            if (_imp->_timeline->leftBound() <= tseq) {
-                emit boundariesChanged(_imp->_timeline->leftBound(), tseq);
+            if (leftBound <= tseq) {
+                setBoundariesInternal(leftBound, tseq, true);
             }
         } else { // moving first frame anchor
-            if (_imp->_timeline->rightBound() >= tseq) {
-                emit boundariesChanged( tseq, _imp->_timeline->rightBound() );
+            if (rightBound >= tseq) {
+                setBoundariesInternal(tseq, rightBound, true);
             }
         }
         distortViewPort = true;
@@ -676,7 +705,7 @@ TimeLineGui::mouseReleaseEvent(QMouseEvent* e)
             double t = toTimeLineCoordinates(e->x(),0).x();
             SequenceTime tseq = std::floor(t + 0.5);
             if ( tseq != _imp->_timeline->currentFrame() ) {
-                _imp->_gui->getApp()->getProject()->setLastTimelineSeekCaller(_imp->_viewer);
+                _imp->_gui->getApp()->setLastViewerUsingTimeline(_imp->_viewer->getNode());
                 emit frameChanged(tseq);
             }
 
@@ -711,34 +740,31 @@ TimeLineGui::wheelEvent(QWheelEvent* e)
 }
 
 void
-TimeLineGui::onFrameRangeChanged(SequenceTime first,
-                                 SequenceTime last)
+TimeLineGui::setBoundariesInternal(SequenceTime first, SequenceTime last,bool emitSignal)
 {
-    if (first == last) {
-        return;
+    if (first <= last) {
+        {
+            QMutexLocker k(&_imp->boundariesMutex);
+            _imp->leftBoundary = first;
+            _imp->rightBoundary = last;
+        }
+        if (emitSignal) {
+            emit boundariesChanged(first, last);
+        } else {
+            update();
+        }
+        setFrameRangeEdited(true);
     }
-    centerOn(first,last);
 }
 
 void
 TimeLineGui::setBoundaries(SequenceTime first,
                            SequenceTime last)
 {
-    if (first <= last) {
-        emit boundariesChanged(first,last);
-        update();
-    }
+    setBoundariesInternal(first, last, false);
+   
 }
 
-void
-TimeLineGui::onBoundariesChanged(SequenceTime,
-                                 SequenceTime,
-                                 int reason)
-{
-    if (reason == Natron::eValueChangedReasonPluginEdited) {
-        update();
-    }
-}
 
 void
 TimeLineGui::centerOn(SequenceTime left,
@@ -753,28 +779,27 @@ TimeLineGui::centerOn(SequenceTime left,
     update();
 }
 
-SequenceTime
-TimeLineGui::firstFrame() const
-{
-    return _imp->_timeline->firstFrame();
-}
-
-SequenceTime
-TimeLineGui::lastFrame() const
-{
-    return _imp->_timeline->lastFrame();
-}
 
 SequenceTime
 TimeLineGui::leftBound() const
 {
-    return _imp->_timeline->leftBound();
+    QMutexLocker k(&_imp->boundariesMutex);
+    return _imp->leftBoundary;
 }
 
 SequenceTime
 TimeLineGui::rightBound() const
 {
-    return _imp->_timeline->rightBound();
+    QMutexLocker k(&_imp->boundariesMutex);
+    return _imp->rightBoundary;
+}
+
+void
+TimeLineGui::getBounds(SequenceTime* left,SequenceTime* right) const
+{
+    QMutexLocker k(&_imp->boundariesMutex);
+    *left = _imp->leftBoundary;
+    *right = _imp->rightBoundary;
 }
 
 SequenceTime
@@ -847,6 +872,20 @@ TimeLineGui::disconnectSlotsFromViewerCache()
     QObject::disconnect( emitter, SIGNAL( clearedInMemoryPortion() ), this, SLOT( onMemoryCacheCleared() ) );
 }
 
+bool
+TimeLineGui::isFrameRangeEdited() const
+{
+    QMutexLocker k(&_imp->frameRangeEditedMutex);
+    return _imp->isFrameRangeEdited;
+}
+
+void
+TimeLineGui::setFrameRangeEdited(bool edited)
+{
+    QMutexLocker k(&_imp->frameRangeEditedMutex);
+    _imp->isFrameRangeEdited = edited;
+}
+
 void
 TimeLineGui::onCachedFrameAdded(SequenceTime time)
 {
@@ -915,3 +954,13 @@ TimeLineGui::clearCachedFrames()
     update();
 }
 
+void
+TimeLineGui::onProjectFrameRangeChanged(int left,int right)
+{
+    if (!isFrameRangeEdited()) {
+        setBoundariesInternal(left, right, true);
+        setFrameRangeEdited(false);
+        centerOn(left, right);
+    }
+    update();
+}

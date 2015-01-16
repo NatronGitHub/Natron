@@ -23,10 +23,8 @@ log{
 }
 
 CONFIG(debug, debug|release){
-    message("Compiling in DEBUG mode.")
     DEFINES *= DEBUG
 } else {
-    message("Compiling in RELEASE mode.")
     DEFINES *= NDEBUG
 }
 
@@ -165,12 +163,6 @@ unix {
   QMAKE_CFLAGS -= -O2
   QMAKE_CXXFLAGS -= -O2
   QMAKE_CXXFLAGS += -ftemplate-depth-1024
-
-  # Qt 4.8.5's XCode generator has a bug and places moc_*.cpp files next to the sources instead of inside the build dir
-  # However, setting the MOC_DIR doesn't fix that (Xcode build fails)
-  # Simple rtule: don't use Xcode
-  #MOC_DIR = $$OUT_PWD
-  warning("Xcode generator wrongly places the moc files in the source directory. You thus cannot compile with different Qt versions using Xcode.")
 }
 
 *clang* {

@@ -430,6 +430,11 @@ Node::load(const std::string & pluginID,
         if (centerKnob) {
             centerKnob->setAsInstanceSpecific();
         }
+        
+        boost::shared_ptr<KnobI> offsetKnob = getKnobByName("offset");
+        if (offsetKnob) {
+            offsetKnob->setAsInstanceSpecific();
+        }
     }
     
     if (!nameSet) {
@@ -638,7 +643,9 @@ Node::loadKnob(const boost::shared_ptr<KnobI> & knob,
                 }
             }
             
-            
+            if (knob->getName() == kOfxImageEffectFileParamName) {
+                computeFrameRangeForReader(knob.get());
+            }
             
             //}
             break;
@@ -792,8 +799,11 @@ Node::~Node()
 }
 
 void
-Node::removeReferences()
+Node::removeReferences(bool ensureThreadsFinished)
 {
+    if (ensureThreadsFinished) {
+        getApp()->getProject()->ensureAllProcessingThreadsFinished();
+    }
     OutputEffectInstance* isOutput = dynamic_cast<OutputEffectInstance*>(_imp->liveInstance);
     
     if (isOutput) {
@@ -861,12 +871,42 @@ Node::getPreferredInputForConnection()
         return -1;
     }
     
+    {
+        ///Find an input named Source
+        std::string inputNameToFind(kOfxImageEffectSimpleSourceClipName);
+        int maxinputs = getMaxInputCount();
+        for (int i = 0; i < maxinputs ; ++i) {
+            if (getInputLabel(i) == inputNameToFind && !getInput(i)) {
+                return i;
+            }
+        }
+    }
+    
+    
+    bool useInputA = appPTR->getCurrentSettings()->isMergeAutoConnectingToAInput();
+    if (useInputA) {
+        ///Find an input named A
+        std::string inputNameToFind("A");
+        int maxinputs = getMaxInputCount();
+        for (int i = 0; i < maxinputs ; ++i) {
+            if (getInputLabel(i) == inputNameToFind && !getInput(i)) {
+                return i;
+            }
+        }
+    }
+    
+   
+    
     ///we return the first non-optional empty input
     int firstNonOptionalEmptyInput = -1;
     std::list<int> optionalEmptyInputs;
+    std::list<int> optionalEmptyMasks;
     {
         QMutexLocker l(&_imp->inputsMutex);
         for (U32 i = 0; i < _imp->inputs.size(); ++i) {
+            if (_imp->liveInstance->isInputRotoBrush(i)) {
+                continue;
+            }
             if (!_imp->inputs[i]) {
                 if ( !_imp->liveInstance->isInputOptional(i) ) {
                     if (firstNonOptionalEmptyInput == -1) {
@@ -874,35 +914,23 @@ Node::getPreferredInputForConnection()
                         break;
                     }
                 } else {
-                    optionalEmptyInputs.push_back(i);
+                    if (_imp->liveInstance->isInputMask(i)) {
+                        optionalEmptyMasks.push_back(i);
+                    } else {
+                        optionalEmptyInputs.push_back(i);
+                    }
                 }
             }
         }
     }
     
+   
+    ///Default to the first non optional empty input
     if (firstNonOptionalEmptyInput != -1) {
         return firstNonOptionalEmptyInput;
     }  else {
         if ( !optionalEmptyInputs.empty() ) {
             
-            if (getPluginID().find("net.sf.openfx.mergeplugin") != std::string::npos) {
-                //if it is a merge node, try to follow what the user preferences tell us
-                std::string inputNameToFind;
-                bool useInputA = appPTR->getCurrentSettings()->isMergeAutoConnectingToAInput();
-                if (useInputA) {
-                    inputNameToFind = "A";
-                } else {
-                    inputNameToFind = "B";
-                }
-                
-                int maxinputs = getMaxInputCount();
-                for (int i = 0; i < maxinputs ; ++i) {
-                    if (getInputLabel(i) == inputNameToFind && !getInput(i)) {
-                        return i;
-                    }
-                }
-                
-            }
             //We return the last optional empty input
             std::list<int>::reverse_iterator first = optionalEmptyInputs.rbegin();
             while ( first != optionalEmptyInputs.rend() && _imp->liveInstance->isInputRotoBrush(*first) ) {
@@ -914,6 +942,8 @@ Node::getPreferredInputForConnection()
                 return *first;
             }
 
+        } else if (!optionalEmptyMasks.empty()) {
+            return optionalEmptyMasks.front();
         } else {
             return -1;
         }
@@ -2004,9 +2034,13 @@ Node::deactivate(const std::list< Node* > & outputsToDisconnect,
     
     std::vector<boost::shared_ptr<Node> > inputsQueueCopy;
     
-    for (U32 i = 0; i < _imp->inputs.size(); ++i) {
-        if (_imp->inputs[i]) {
-            _imp->inputs[i]->disconnectOutput(this);
+    ///For multi-instances, if we deactivate the main instance without hiding the GUI (the default state of the tracker node)
+    ///then don't remove it from outputs of the inputs
+    if (hideGui || !_imp->isMultiInstance) {
+        for (U32 i = 0; i < _imp->inputs.size(); ++i) {
+            if (_imp->inputs[i]) {
+                _imp->inputs[i]->disconnectOutput(this);
+            }
         }
     }
     
@@ -2352,8 +2386,7 @@ Node::isRotoNode() const
 {
     ///Runs only in the main thread (checked by getName())
     ///Crude way to distinguish between Rotoscoping and Rotopainting nodes.
-    std::string name = getPluginID();
-    return name.find("net.sf.openfx.rotoplugin") != std::string::npos;
+    return getPluginID() == PLUGINID_OFX_ROTO;
 }
 
 /**
@@ -2405,7 +2438,7 @@ std::string
 Node::getPluginID() const
 {
     ///MT-safe, never changes
-    return _imp->liveInstance->getPluginID();
+    return _imp->liveInstance ? _imp->liveInstance->getPluginID() : std::string();
 }
 
 std::string
@@ -3087,6 +3120,39 @@ Node::duringInputChangedAction() const
 }
 
 void
+Node::computeFrameRangeForReader(const KnobI* fileKnob)
+{
+    int leftBound = INT_MIN;
+    int rightBound = INT_MAX;
+    ///Set the originalFrameRange parameter of the reader if it has one.
+    boost::shared_ptr<KnobI> knob = getKnobByName("originalFrameRange");
+    if (knob) {
+        Int_Knob* originalFrameRange = dynamic_cast<Int_Knob*>(knob.get());
+        if (originalFrameRange && originalFrameRange->getDimension() == 2) {
+            
+            const File_Knob* isFile = dynamic_cast<const File_Knob*>(fileKnob);
+            assert(isFile);
+            
+            std::string pattern = isFile->getValue();
+            SequenceParsing::SequenceFromPattern seq;
+            SequenceParsing::filesListFromPattern(pattern, &seq);
+            if (seq.empty() || seq.size() == 1) {
+                leftBound = 1;
+                rightBound = 1;
+            } else if (seq.size() > 1) {
+                leftBound = seq.begin()->first;
+                rightBound = seq.rbegin()->first;
+            }
+            
+            originalFrameRange->setValue(leftBound, 0);
+            originalFrameRange->setValue(rightBound, 1);
+            
+        }
+    }
+
+}
+
+void
 Node::onEffectKnobValueChanged(KnobI* what,
                                Natron::ValueChangedReasonEnum reason)
 {
@@ -3130,6 +3196,18 @@ Node::onEffectKnobValueChanged(KnobI* what,
         ///Refresh the preview automatically if the filename changed
         incrementKnobsAge(); //< since evaluate() is called after knobChanged we have to do this  by hand
         computePreviewImage( getApp()->getTimeLine()->currentFrame() );
+        
+        ///union the project frame range if not locked with the reader frame range
+        bool isLocked = getApp()->getProject()->isFrameRangeLocked();
+        if (!isLocked) {
+            int leftBound = INT_MIN,rightBound = INT_MAX;
+            _imp->liveInstance->getFrameRange_public(getHashValue(), &leftBound, &rightBound);
+    
+            if (leftBound != INT_MIN && rightBound != INT_MAX) {
+                getApp()->getProject()->unionFrameRangeWith(leftBound, rightBound);
+            }
+        }
+        
     } else if ( what == _imp->refreshInfoButton.get() ) {
         int maxinputs = getMaxInputCount();
         for (int i = 0; i < maxinputs; ++i) {
@@ -3138,6 +3216,7 @@ Node::onEffectKnobValueChanged(KnobI* what,
         }
         std::string outputInfo = makeInfoForInput(-1);
         _imp->outputFormat->setValue(outputInfo, 0);
+ 
     }
 }
 
@@ -3323,7 +3402,7 @@ Node::hasSequentialOnlyNodeUpstream(std::string & nodeName) const
 bool
 Node::isTrackerNode() const
 {
-    return getPluginID().find("net.sf.openfx.trackerpm") != std::string::npos;
+    return getPluginID() == PLUGINID_OFX_TRACKERPM;
 }
 
 void
@@ -3688,10 +3767,11 @@ InspectorNode::connectInput(const boost::shared_ptr<Node>& input,
     }
     
     /*Adding all empty edges so it creates at least the inputNB'th one.*/
-    while (_inputsCount <= inputNumber) {
+    while (inputNumber >= _inputsCount) {
         ///this function might not succeed if we already have 10 inputs OR the last input is already empty
         addEmptyInput();
     }
+  
     
     if ( !Node::connectInput(input, inputNumber) ) {
         

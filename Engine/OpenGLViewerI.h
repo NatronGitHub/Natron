@@ -30,11 +30,11 @@ class OpenGLViewerI
 {
 public:
 
-    enum BitDepth
+    enum BitDepthEnum
     {
-        BYTE = 0,
-        HALF_FLOAT,
-        FLOAT
+        eBitDepthByte = 0,
+        eBitDepthHalf,
+        eBitDepthFloat
     };
 
     OpenGLViewerI()
@@ -71,7 +71,7 @@ public:
     /**
      * @brief Must return the bit depth of the texture used to render. (Byte, half or float)
      **/
-    virtual BitDepth getBitDepth() const = 0;
+    virtual BitDepthEnum getBitDepth() const = 0;
 
     /**
      * @brief Returns true if the user has enabled the region of interest
@@ -149,16 +149,17 @@ public:
      * @brief Must return the time currently displayed
      **/
     virtual int getCurrentlyDisplayedTime() const = 0;
+    
+    /**
+     * @brief Get the viewer's timeline's range
+     **/
+    virtual void getViewerFrameRange(int* first,int* last) const = 0;
 
     /**
      * @brief Must return the current compositing operator applied to the viewer input A and B.
      **/
     virtual Natron::ViewerCompositingOperatorEnum getCompositingOperator() const = 0;
 
-    /**
-     * @brief Returns whether the user sould be able to edit the frame range or not.
-     **/
-    virtual bool isFrameRangeLocked() const = 0;
     
     /**
      * @brief Must return a pointer to the current timeline used by the Viewer

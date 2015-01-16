@@ -1,3 +1,33 @@
+Natron 1.1.0
+------------
+
+- Fix stability of the software as a whole. This build has been reported to be robust to several hours of work.
+
+- The tracker node can now be offset to track elements that go beyond the bounds of the image
+
+- The roto node interaction has been improved:
+
+- The composing of selection is now easier
+    - A new button can now toggle on/off the click capture of the bounding box of selected points
+    - The smooth/cusp options are now applied we smaller steps and depending of the zoom factor
+    - A simple left click is required to cycle through tool buttons and a right click to open the menu
+    - A new button in the settings panel allows to clear the animation of the selected Beziers
+    - Only the keyframes of the selected shapes are now displayed on the timeline instead of all shapes keyframes
+
+- CurveEditor: added a filter to display only nodes containing the filter
+
+- CurveEditor: double-clicking the item of a node will open the settings panel much like a double-click in the NodeGraph does
+
+- The interpolation submenu of the animation menu of the parameter is working again
+
+A-  simple click on an arrow of the node graph no longer disconnects nodes to prevent mistakes, instead now, to disconnect only with a simple click it is required to hold the control modifier.
+
+- Playback: The behaviour when using multiple viewers is now much more logical: all viewers are kept in sync and follow the frame range of the viewer that started the playback. The frame range is now per viewer.
+
+- The frame range is now a property of the project: Each time a Reader node the frame range of the project is unioned with the frame range of the sequence read (unless the Lock range parameter is checked). New viewers that have their frame range untouched will use the project frame range by default.
+
+- New nodes: Add, Multiply, Gamma, ColorConvert, SharpenInvDiff, SharpenShock
+
 Natron 1.0.0 "Stable release"
 ----------------------------
 

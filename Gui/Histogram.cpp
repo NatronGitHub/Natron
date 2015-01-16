@@ -49,8 +49,9 @@ GCC_DIAG_OFF(deprecated-declarations)
 namespace { // protext local classes in anonymous namespace
 enum EventStateEnum
 {
-    DRAGGING_VIEW = 0,
-    NONE = 1
+    eEventStateDraggingView = 0,
+    eEventStateZoomingView,
+    eEventStateNone
 };
 }
 
@@ -71,12 +72,12 @@ struct HistogramPrivate
           , filterActions(0)
           , filterMenu(NULL)
           , widget(widget)
-          , mode(Histogram::RGB)
+          , mode(Histogram::eDisplayModeRGB)
           , oldClick()
           , zoomCtx()
           , supportsGLSL(true)
           , hasOpenGLVAOSupport(true)
-          , state(NONE)
+          , state(eEventStateNone)
           , hasBeenModifiedSinceResize(false)
           , _baseAxisColor(118,215,90,255)
           , _scaleColor(67,123,52,255)
@@ -123,10 +124,10 @@ struct HistogramPrivate
 
 
     ///For all these functions, mode refers to either R,G,B,A or Y
-    void computeHistogram(Histogram::DisplayMode mode);
-    void renderHistogram(Histogram::DisplayMode mode);
-    void activateHistogramComputingShader(Histogram::DisplayMode mode);
-    void activateHistogramRenderingShader(Histogram::DisplayMode mode);
+    void computeHistogram(Histogram::DisplayModeEnum mode);
+    void renderHistogram(Histogram::DisplayModeEnum mode);
+    void activateHistogramComputingShader(Histogram::DisplayModeEnum mode);
+    void activateHistogramRenderingShader(Histogram::DisplayModeEnum mode);
 
 #else
     void drawHistogramCPU();
@@ -150,7 +151,7 @@ struct HistogramPrivate
     QActionGroup* filterActions;
     QMenu* filterMenu;
     Histogram* widget;
-    Histogram::DisplayMode mode;
+    Histogram::DisplayModeEnum mode;
     QPoint oldClick; /// the last click pressed, in widget coordinates [ (0,0) == top left corner ]
     ZoomContext zoomCtx;
     bool supportsGLSL;
@@ -601,7 +602,7 @@ Histogram::onDisplayModeChanged(QAction* action)
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
-    _imp->mode = (Histogram::DisplayMode)action->data().toInt();
+    _imp->mode = (Histogram::DisplayModeEnum)action->data().toInt();
     computeHistogramAndRefresh();
 }
 
@@ -835,30 +836,30 @@ stopRenderingTo()
 }
 
 static int
-shaderChannelFromDisplayMode(Histogram::DisplayMode channel)
+shaderChannelFromDisplayMode(Histogram::DisplayModeEnum channel)
 {
     switch (channel) {
-    case Histogram::R:
+    case Histogram::eDisplayModeR:
 
         return 1;
         break;
-    case Histogram::G:
+    case Histogram::eDisplayModeG:
 
         return 2;
         break;
-    case Histogram::B:
+    case Histogram::eDisplayModeB:
 
         return 3;
         break;
-    case Histogram::A:
+    case Histogram::eDisplayModeA:
 
         return 4;
         break;
-    case Histogram::Y:
+    case Histogram::eDisplayModeY:
 
         return 0;
         break;
-    case Histogram::RGB:
+    case Histogram::eDisplayModeRGB:
     default:
         assert(false);
         break;
@@ -866,7 +867,7 @@ shaderChannelFromDisplayMode(Histogram::DisplayMode channel)
 }
 
 void
-HistogramPrivate::activateHistogramComputingShader(Histogram::DisplayMode channel)
+HistogramPrivate::activateHistogramComputingShader(Histogram::DisplayModeEnum channel)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
@@ -879,7 +880,7 @@ HistogramPrivate::activateHistogramComputingShader(Histogram::DisplayMode channe
 }
 
 void
-HistogramPrivate::activateHistogramRenderingShader(Histogram::DisplayMode channel)
+HistogramPrivate::activateHistogramRenderingShader(Histogram::DisplayModeEnum channel)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
@@ -903,30 +904,30 @@ HistogramPrivate::activateHistogramRenderingShader(Histogram::DisplayMode channe
 }
 
 static GLenum
-colorAttachmentFromDisplayMode(Histogram::DisplayMode channel)
+colorAttachmentFromDisplayMode(Histogram::DisplayModeEnum channel)
 {
     switch (channel) {
-    case Histogram::R:
+    case Histogram::eDisplayModeR:
 
         return GL_COLOR_ATTACHMENT0;
         break;
-    case Histogram::G:
+    case Histogram::eDisplayModeG:
 
         return GL_COLOR_ATTACHMENT1;
         break;
-    case Histogram::B:
+    case Histogram::eDisplayModeB:
 
         return GL_COLOR_ATTACHMENT2;
         break;
-    case Histogram::A:
+    case Histogram::eDisplayModeA:
 
         return GL_COLOR_ATTACHMENT0;
         break;
-    case Histogram::Y:
+    case Histogram::eDisplayModeY:
 
         return GL_COLOR_ATTACHMENT0;
         break;
-    case Histogram::RGB:
+    case Histogram::eDisplayModeRGB:
     default:
         ///isn't meant for other components than the one handled here
         assert(false);
@@ -935,7 +936,7 @@ colorAttachmentFromDisplayMode(Histogram::DisplayMode channel)
 }
 
 void
-HistogramPrivate::computeHistogram(Histogram::DisplayMode channel)
+HistogramPrivate::computeHistogram(Histogram::DisplayModeEnum channel)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
@@ -1027,7 +1028,7 @@ HistogramPrivate::computeHistogram(Histogram::DisplayMode channel)
 } // computeHistogram
 
 void
-HistogramPrivate::renderHistogram(Histogram::DisplayMode channel)
+HistogramPrivate::renderHistogram(Histogram::DisplayModeEnum channel)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
@@ -1160,11 +1161,17 @@ Histogram::mousePressEvent(QMouseEvent* e)
     ////
     // middle button: scroll view
     if ( buttonDownIsMiddle(e) ) {
-        _imp->state = DRAGGING_VIEW;
+        _imp->state = eEventStateDraggingView;
         _imp->oldClick = e->pos();
     } else if ( buttonDownIsRight(e) ) {
         _imp->showMenu( e->globalPos() );
+    } else if ((e->buttons() & Qt::MiddleButton) && (buttonControlAlt(e) == Qt::AltModifier || (e->buttons() & Qt::LeftButton)) ) {
+        // Alt + middle = zoom or left + middle = zoom
+        _imp->state = eEventStateZoomingView;
+        _imp->oldClick = e->pos();
+        return;
     }
+
 }
 
 void
@@ -1184,12 +1191,39 @@ Histogram::mouseMoveEvent(QMouseEvent* e)
     double dy = ( oldClick_opengl.y() - newClick_opengl.y() );
 
     switch (_imp->state) {
-    case DRAGGING_VIEW:
+    case eEventStateDraggingView:
         _imp->zoomCtx.translate(dx, dy);
         _imp->hasBeenModifiedSinceResize = true;
-        computeHistogramAndRefresh();
-        break;
-    case NONE:
+            computeHistogramAndRefresh();
+            break;
+        case eEventStateZoomingView: {
+            
+            int delta = 2*((e->x() - _imp->oldClick.x()) - (e->y() - _imp->oldClick.y()));
+            
+            const double zoomFactor_min = 0.000001;
+            const double zoomFactor_max = 1000000.;
+            double zoomFactor;
+            double scaleFactor = std::pow( NATRON_WHEEL_ZOOM_PER_DELTA, delta);
+            QPointF zoomCenter = _imp->zoomCtx.toZoomCoordinates( e->x(), e->y() );
+            
+            
+            
+            // Wheel: zoom values and time, keep point under mouse
+            zoomFactor = _imp->zoomCtx.factor() * scaleFactor;
+            if (zoomFactor <= zoomFactor_min) {
+                zoomFactor = zoomFactor_min;
+                scaleFactor = zoomFactor / _imp->zoomCtx.factor();
+            } else if (zoomFactor > zoomFactor_max) {
+                zoomFactor = zoomFactor_max;
+                scaleFactor = zoomFactor / _imp->zoomCtx.factor();
+            }
+            _imp->zoomCtx.zoom(zoomCenter.x(), zoomCenter.y(), scaleFactor);
+            
+            _imp->hasBeenModifiedSinceResize = true;
+            
+            computeHistogramAndRefresh();
+    } break;
+    case eEventStateNone:
         _imp->updatePicker( newClick_opengl.x() );
         update();
         break;
@@ -1209,26 +1243,26 @@ HistogramPrivate::updatePicker(double x)
     rValueStr.clear();
     gValueStr.clear();
     bValueStr.clear();
-    if (mode == Histogram::RGB) {
+    if (mode == Histogram::eDisplayModeRGB) {
         float r = histogram1.empty() ? 0 :  histogram1[index];
         float g = histogram2.empty() ? 0 :  histogram2[index];
         float b = histogram3.empty() ? 0 :  histogram3[index];
         rValueStr = QString("r=") + QString::number(r);
         gValueStr = QString("g=") + QString::number(g);
         bValueStr = QString("b=") + QString::number(b);
-    } else if (mode == Histogram::Y) {
+    } else if (mode == Histogram::eDisplayModeY) {
         float y = histogram1[index];
         rValueStr = QString("y=") + QString::number(y);
-    } else if (mode == Histogram::A) {
+    } else if (mode == Histogram::eDisplayModeA) {
         float a = histogram1[index];
         rValueStr = QString("a=") + QString::number(a);
-    } else if (mode == Histogram::R) {
+    } else if (mode == Histogram::eDisplayModeR) {
         float r = histogram1[index];
         rValueStr = QString("r=") + QString::number(r);
-    } else if (mode == Histogram::G) {
+    } else if (mode == Histogram::eDisplayModeG) {
         float g = histogram1[index];
         gValueStr = QString("g=") + QString::number(g);
-    } else if (mode == Histogram::B) {
+    } else if (mode == Histogram::eDisplayModeB) {
         float b = histogram1[index];
         bValueStr = QString("b=") + QString::number(b);
     } else {
@@ -1242,7 +1276,7 @@ Histogram::mouseReleaseEvent(QMouseEvent* /*e*/)
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
-    _imp->state = NONE;
+    _imp->state = eEventStateNone;
 }
 
 void
@@ -1544,14 +1578,14 @@ HistogramPrivate::drawPicker()
     // - red, green and blue are complementary, but they sum up to more than 1
     xColor.setRgbF(0.398979,0.398979,0.398979);
     switch (mode) {
-    case Histogram::RGB:
+    case Histogram::eDisplayModeRGB:
         rColor.setRgbF(0.851643,0.196936,0.196936);
         break;
-    case Histogram::Y:
-    case Histogram::A:
-    case Histogram::R:
-    case Histogram::G:
-    case Histogram::B:
+    case Histogram::eDisplayModeY:
+    case Histogram::eDisplayModeA:
+    case Histogram::eDisplayModeR:
+    case Histogram::eDisplayModeG:
+    case Histogram::eDisplayModeB:
     default:
         rColor = xColor;
         break;
@@ -1683,7 +1717,7 @@ HistogramPrivate::drawHistogramCPU()
         glBegin(GL_LINES);
         for (unsigned int i = 0; i < binsCount; ++i) {
             double binMinX = vmin + i * binSize;
-            if (mode == Histogram::RGB) {
+            if (mode == Histogram::eDisplayModeRGB) {
                 if ( histogram1.empty() || histogram2.empty() || histogram3.empty() ) {
                     break;
                 }
@@ -1715,23 +1749,23 @@ HistogramPrivate::drawHistogramCPU()
 
                 // all the following colors have the same luminance (~0.4)
                 switch (mode) {
-                    case Histogram::R:
+                    case Histogram::eDisplayModeR:
                         //glColor3f(1, 0, 0);
                         glColor3f(0.851643,0.196936,0.196936);
                         break;
-                    case Histogram::G:
+                    case Histogram::eDisplayModeG:
                         //glColor3f(0, 1, 0);
                         glColor3f(0,0.654707,0);
                         break;
-                    case Histogram::B:
+                    case Histogram::eDisplayModeB:
                         //glColor3f(0, 0, 1);
                         glColor3f(0.345293,0.345293,1);
                         break;
-                    case Histogram::A:
+                    case Histogram::eDisplayModeA:
                         //glColor3f(1, 1, 1);
                         glColor3f(0.398979,0.398979,0.398979);
                         break;
-                    case Histogram::Y:
+                    case Histogram::eDisplayModeY:
                         //glColor3f(0.7, 0.7, 0.7);
                         glColor3f(0.398979,0.398979,0.398979);
                         break;

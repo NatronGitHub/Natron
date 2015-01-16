@@ -413,10 +413,10 @@ OfxDoubleInstance::OfxDoubleInstance(OfxEffectInstance* node,
     const std::string & doubleType = properties.getStringProperty(kOfxParamPropDoubleType);
     if ( (doubleType == kOfxParamDoubleTypeNormalisedX) ||
          ( doubleType == kOfxParamDoubleTypeNormalisedXAbsolute) ) {
-        _knob->setNormalizedState(0, Double_Knob::NORMALIZATION_X);
+        _knob->setNormalizedState(0, Double_Knob::eNormalizedStateX);
     } else if ( (doubleType == kOfxParamDoubleTypeNormalisedY) ||
                 ( doubleType == kOfxParamDoubleTypeNormalisedYAbsolute) ) {
-        _knob->setNormalizedState(0, Double_Knob::NORMALIZATION_Y);
+        _knob->setNormalizedState(0, Double_Knob::eNormalizedStateY);
     }
 
     double min = properties.getDoubleProperty(kOfxParamPropMin);
@@ -1344,8 +1344,8 @@ OfxDouble2DInstance::OfxDouble2DInstance(OfxEffectInstance* node,
     const std::string & doubleType = properties.getStringProperty(kOfxParamPropDoubleType);
     if ( (doubleType == kOfxParamDoubleTypeNormalisedXY) ||
          ( doubleType == kOfxParamDoubleTypeNormalisedXYAbsolute) ) {
-        _knob->setNormalizedState(0, Double_Knob::NORMALIZATION_X);
-        _knob->setNormalizedState(1, Double_Knob::NORMALIZATION_Y);
+        _knob->setNormalizedState(0, Double_Knob::eNormalizedStateX);
+        _knob->setNormalizedState(1, Double_Knob::eNormalizedStateY);
     }
     
     bool isSpatial = doubleType == kOfxParamDoubleTypeNormalisedXY ||
@@ -1420,7 +1420,7 @@ OfxDouble2DInstance::set(double x1,
     bool doEditEnd = false;
 
     if ( _node->isDoingInteractAction() ) {
-        (void)_node->effectInstance()->editBegin( getName() );
+        ignore_result(_node->effectInstance()->editBegin( getName() ));
         doEditEnd = true;
     }
     _knob->blockEvaluation();
@@ -1442,7 +1442,7 @@ OfxDouble2DInstance::set(OfxTime time,
     bool doEditEnd = false;
 
     if ( _node->isDoingInteractAction() ) {
-        (void)_node->effectInstance()->editBegin( getName() );
+        ignore_result(_node->effectInstance()->editBegin( getName() ));
         doEditEnd = true;
     }
     _knob->blockEvaluation();
@@ -1664,7 +1664,7 @@ OfxInteger2DInstance::set(int x1,
     bool doEditEnd = false;
 
     if ( _node->isDoingInteractAction() ) {
-        (void)_node->effectInstance()->editBegin( getName() );
+        ignore_result(_node->effectInstance()->editBegin( getName() ));
         doEditEnd = true;
     }
 
@@ -1674,7 +1674,7 @@ OfxInteger2DInstance::set(int x1,
     _knob->setValueFromPlugin(x2,1);
 
     if (doEditEnd) {
-        (void)_node->effectInstance()->editEnd();
+        ignore_result(_node->effectInstance()->editEnd());
     }
 
     return kOfxStatOK;
@@ -1688,7 +1688,7 @@ OfxInteger2DInstance::set(OfxTime time,
     bool doEditEnd = false;
 
     if ( _node->isDoingInteractAction() ) {
-        (void)_node->effectInstance()->editBegin( getName() );
+        ignore_result(_node->effectInstance()->editBegin( getName() ));
         doEditEnd = true;
     }
     _knob->blockEvaluation();
@@ -1697,7 +1697,7 @@ OfxInteger2DInstance::set(OfxTime time,
     _knob->setValueAtTimeFromPlugin(time,x2,1);
 
     if (doEditEnd) {
-        (void)_node->effectInstance()->editEnd();
+        ignore_result(_node->effectInstance()->editEnd());
     }
 
     return kOfxStatOK;
@@ -1890,7 +1890,7 @@ OfxDouble3DInstance::set(double x1,
     bool doEditEnd = false;
 
     if ( _node->isDoingInteractAction() ) {
-        (void)_node->effectInstance()->editBegin( getName() );
+        ignore_result(_node->effectInstance()->editBegin( getName() ));
         doEditEnd = true;
     }
     _knob->blockEvaluation();
@@ -1899,7 +1899,7 @@ OfxDouble3DInstance::set(double x1,
     _knob->unblockEvaluation();
     _knob->setValueFromPlugin(x3,2);
     if (doEditEnd) {
-        (void)_node->effectInstance()->editEnd();
+        ignore_result(_node->effectInstance()->editEnd());
     }
 
     return kOfxStatOK;
@@ -1914,7 +1914,7 @@ OfxDouble3DInstance::set(OfxTime time,
     bool doEditEnd = false;
 
     if ( _node->isDoingInteractAction() ) {
-        (void)_node->effectInstance()->editBegin( getName() );
+        ignore_result(_node->effectInstance()->editBegin( getName() ));
         doEditEnd = true;
     }
     _knob->blockEvaluation();
@@ -1923,7 +1923,7 @@ OfxDouble3DInstance::set(OfxTime time,
     _knob->unblockEvaluation();
     _knob->setValueAtTimeFromPlugin(time,x3,2);
     if (doEditEnd) {
-        (void)_node->effectInstance()->editEnd();
+        ignore_result(_node->effectInstance()->editEnd());
     }
 
     return kOfxStatOK;
@@ -2153,7 +2153,7 @@ OfxInteger3DInstance::set(int x1,
     bool doEditEnd = false;
 
     if ( _node->isDoingInteractAction() ) {
-        (void)_node->effectInstance()->editBegin( getName() );
+        ignore_result(_node->effectInstance()->editBegin( getName() ));
         doEditEnd = true;
     }
     _knob->blockEvaluation();
@@ -2162,7 +2162,7 @@ OfxInteger3DInstance::set(int x1,
     _knob->unblockEvaluation();
     _knob->setValueFromPlugin(x3,2);
     if (doEditEnd) {
-        (void)_node->effectInstance()->editEnd();
+        ignore_result(_node->effectInstance()->editEnd());
     }
 
     return kOfxStatOK;
@@ -2177,7 +2177,7 @@ OfxInteger3DInstance::set(OfxTime time,
     bool doEditEnd = false;
 
     if ( _node->isDoingInteractAction() ) {
-        (void)_node->effectInstance()->editBegin( getName() );
+        ignore_result(_node->effectInstance()->editBegin( getName() ));
         doEditEnd = true;
     }
     _knob->blockEvaluation();
@@ -2186,7 +2186,7 @@ OfxInteger3DInstance::set(OfxTime time,
     _knob->unblockEvaluation();
     _knob->setValueAtTimeFromPlugin(time,x3,2);
     if (doEditEnd) {
-        (void)_node->effectInstance()->editEnd();
+        ignore_result(_node->effectInstance()->editEnd());
     }
 
     return kOfxStatOK;
@@ -2579,14 +2579,10 @@ OfxStringInstance::getV(va_list arg)
     const char **value = va_arg(arg, const char **);
     OfxStatus stat;
 
-    if ( _localString.hasLocalData() ) {
-        stat = get( _localString.localData() );
-    } else {
-        std::string localD;
-        stat = get(localD);
-        _localString.setLocalData(localD);
-    }
-    *value = _localString.localData().c_str();
+    std::string& tls = _localString.localData();
+    stat = get(tls);
+
+    *value = tls.c_str();
 
     return stat;
 }
@@ -2598,14 +2594,9 @@ OfxStringInstance::getV(OfxTime time,
     const char **value = va_arg(arg, const char **);
     OfxStatus stat;
 
-    if ( _localString.hasLocalData() ) {
-        stat = get( time,_localString.localData() );
-    } else {
-        std::string localD;
-        stat = get(time,localD);
-        _localString.setLocalData(localD);
-    }
-    *value = _localString.localData().c_str();
+    std::string& tls = _localString.localData();
+    stat = get( time,tls);
+    *value = tls.c_str();
 
     return stat;
 }

@@ -102,7 +102,7 @@ struct RunArgs
     int firstFrame,lastFrame;
     
     /// the timelineDirection represents the direction the timeline should move to
-    OutputSchedulerThread::RenderDirection timelineDirection;
+    OutputSchedulerThread::RenderDirectionEnum timelineDirection;
 
 };
 
@@ -156,12 +156,12 @@ struct OutputSchedulerThreadPrivate
     ///asleep. We don't want that another thread attemps to post an abort request at the same time.
     bool abortBeingProcessed;
     
-    bool treatRunning; //true when the scheduler is actively "treating" a frame (i.e: updating the viewer or writing in a file on disk)
-    QWaitCondition treatCondition;
-    QMutex treatMutex;
+    bool processRunning; //true when the scheduler is actively "processing" a frame (i.e: updating the viewer or writing in a file on disk)
+    QWaitCondition processCondition;
+    QMutex processMutex;
 
     //doesn't need any protection since it never changes and is set in the constructor
-    OutputSchedulerThread::Mode mode; //is the frame to be treated on the main-thread (i.e OpenGL rendering) or on the scheduler thread
+    OutputSchedulerThread::ProcessFrameModeEnum mode; //is the frame to be processed on the main-thread (i.e OpenGL rendering) or on the scheduler thread
 
     
     boost::scoped_ptr<Timer> timer; // Timer regulating the engine execution. It is controlled by the GUI and MT-safe.
@@ -202,7 +202,7 @@ struct OutputSchedulerThreadPrivate
     RenderEngine* engine;
 
     
-    OutputSchedulerThreadPrivate(RenderEngine* engine,Natron::OutputEffectInstance* effect,OutputSchedulerThread::Mode mode)
+    OutputSchedulerThreadPrivate(RenderEngine* engine,Natron::OutputEffectInstance* effect,OutputSchedulerThread::ProcessFrameModeEnum mode)
     : buf()
     , bufCondition()
     , bufMutex()
@@ -221,9 +221,9 @@ struct OutputSchedulerThreadPrivate
     , abortedRequestedMutex()
     , abortBeingProcessedMutex()
     , abortBeingProcessed(false)
-    , treatRunning(false)
-    , treatCondition()
-    , treatMutex()
+    , processRunning(false)
+    , processCondition()
+    , processMutex()
     , mode(mode)
     , timer(new Timer)
     , requestedRunArgs()
@@ -315,14 +315,14 @@ struct OutputSchedulerThreadPrivate
     }
     
     static bool getNextFrameInSequence(PlaybackModeEnum pMode,
-                                       OutputSchedulerThread::RenderDirection direction,
+                                       OutputSchedulerThread::RenderDirectionEnum direction,
                                        int frame,
                                        int firstFrame,
                                        int lastFrame,
                                        int* nextFrame,
-                                       OutputSchedulerThread::RenderDirection* newDirection);
+                                       OutputSchedulerThread::RenderDirectionEnum* newDirection);
     
-    static void getNearestInSequence(OutputSchedulerThread::RenderDirection direction,
+    static void getNearestInSequence(OutputSchedulerThread::RenderDirectionEnum direction,
                                      int frame,
                                      int firstFrame,
                                      int lastFrame,
@@ -415,12 +415,12 @@ struct OutputSchedulerThreadPrivate
 };
 
 
-OutputSchedulerThread::OutputSchedulerThread(RenderEngine* engine,Natron::OutputEffectInstance* effect,Mode mode)
+OutputSchedulerThread::OutputSchedulerThread(RenderEngine* engine,Natron::OutputEffectInstance* effect,ProcessFrameModeEnum mode)
 : QThread()
 , _imp(new OutputSchedulerThreadPrivate(engine,effect,mode))
 {
-    QObject::connect(this, SIGNAL(s_doTreatOnMainThread(BufferedFrames,bool,int)), this,
-                     SLOT(doTreatFrameMainThread(BufferedFrames,bool,int)));
+    QObject::connect(this, SIGNAL(s_doProcessOnMainThread(BufferedFrames,bool,int)), this,
+                     SLOT(doProcessFrameMainThread(BufferedFrames,bool,int)));
     
     QObject::connect(_imp->timer.get(), SIGNAL(fpsChanged(double,double)), _imp->engine, SIGNAL(fpsChanged(double,double)));
     
@@ -441,9 +441,9 @@ OutputSchedulerThread::~OutputSchedulerThread()
 
 
 bool
-OutputSchedulerThreadPrivate::getNextFrameInSequence(PlaybackModeEnum pMode,OutputSchedulerThread::RenderDirection direction,int frame,
+OutputSchedulerThreadPrivate::getNextFrameInSequence(PlaybackModeEnum pMode,OutputSchedulerThread::RenderDirectionEnum direction,int frame,
                                                      int firstFrame,int lastFrame,
-                                                     int* nextFrame,OutputSchedulerThread::RenderDirection* newDirection)
+                                                     int* nextFrame,OutputSchedulerThread::RenderDirectionEnum* newDirection)
 {
     *newDirection = direction;
     if (firstFrame == lastFrame) {
@@ -453,24 +453,24 @@ OutputSchedulerThreadPrivate::getNextFrameInSequence(PlaybackModeEnum pMode,Outp
     if (frame <= firstFrame) {
         switch (pMode) {
                 case Natron::ePlaybackModeLoop:
-                if (direction == OutputSchedulerThread::RENDER_FORWARD) {
+                if (direction == OutputSchedulerThread::eRenderDirectionForward) {
                     *nextFrame = firstFrame + 1;
                 } else {
                     *nextFrame  = lastFrame - 1;
                 }
                 break;
                 case Natron::ePlaybackModeBounce:
-                if (direction == OutputSchedulerThread::RENDER_FORWARD) {
-                    *newDirection = OutputSchedulerThread::RENDER_BACKWARD;
+                if (direction == OutputSchedulerThread::eRenderDirectionForward) {
+                    *newDirection = OutputSchedulerThread::eRenderDirectionBackward;
                     *nextFrame  = lastFrame - 1;
                 } else {
-                    *newDirection = OutputSchedulerThread::RENDER_FORWARD;
+                    *newDirection = OutputSchedulerThread::eRenderDirectionForward;
                     *nextFrame  = firstFrame + 1;
                 }
                 break;
                 case Natron::ePlaybackModeOnce:
                 default:
-                if (direction == OutputSchedulerThread::RENDER_FORWARD) {
+                if (direction == OutputSchedulerThread::eRenderDirectionForward) {
                     *nextFrame = firstFrame + 1;
                     break;
                 } else {
@@ -482,24 +482,24 @@ OutputSchedulerThreadPrivate::getNextFrameInSequence(PlaybackModeEnum pMode,Outp
     } else if (frame >= lastFrame) {
         switch (pMode) {
                 case Natron::ePlaybackModeLoop:
-                if (direction == OutputSchedulerThread::RENDER_FORWARD) {
+                if (direction == OutputSchedulerThread::eRenderDirectionForward) {
                     *nextFrame = firstFrame;
                 } else {
                     *nextFrame = lastFrame - 1;
                 }
                 break;
                 case Natron::ePlaybackModeBounce:
-                if (direction == OutputSchedulerThread::RENDER_FORWARD) {
-                    *newDirection = OutputSchedulerThread::RENDER_BACKWARD;
+                if (direction == OutputSchedulerThread::eRenderDirectionForward) {
+                    *newDirection = OutputSchedulerThread::eRenderDirectionBackward;
                     *nextFrame = lastFrame - 1;
                 } else {
-                    *newDirection = OutputSchedulerThread::RENDER_FORWARD;
+                    *newDirection = OutputSchedulerThread::eRenderDirectionForward;
                     *nextFrame = firstFrame + 1;
                 }
                 break;
                 case Natron::ePlaybackModeOnce:
             default:
-                if (direction == OutputSchedulerThread::RENDER_FORWARD) {
+                if (direction == OutputSchedulerThread::eRenderDirectionForward) {
                     return false;
                 } else {
                     *nextFrame = lastFrame - 1;
@@ -509,7 +509,7 @@ OutputSchedulerThreadPrivate::getNextFrameInSequence(PlaybackModeEnum pMode,Outp
                 
         }
     } else {
-        if (direction == OutputSchedulerThread::RENDER_FORWARD) {
+        if (direction == OutputSchedulerThread::eRenderDirectionForward) {
             *nextFrame = frame + 1;
             
         } else {
@@ -521,20 +521,20 @@ OutputSchedulerThreadPrivate::getNextFrameInSequence(PlaybackModeEnum pMode,Outp
 }
 
 void
-OutputSchedulerThreadPrivate::getNearestInSequence(OutputSchedulerThread::RenderDirection direction,int frame,
+OutputSchedulerThreadPrivate::getNearestInSequence(OutputSchedulerThread::RenderDirectionEnum direction,int frame,
                           int firstFrame,int lastFrame,
                           int* nextFrame)
 {
     if (frame >= firstFrame && frame <= lastFrame) {
         *nextFrame = frame;
     } else if (frame < firstFrame) {
-        if (direction == OutputSchedulerThread::RENDER_FORWARD) {
+        if (direction == OutputSchedulerThread::eRenderDirectionForward) {
             *nextFrame = firstFrame;
         } else {
             *nextFrame = lastFrame;
         }
     } else { // frame > lastFrame
-        if (direction == OutputSchedulerThread::RENDER_FORWARD) {
+        if (direction == OutputSchedulerThread::eRenderDirectionForward) {
             *nextFrame = lastFrame;
         } else {
             *nextFrame = firstFrame;
@@ -564,7 +564,7 @@ OutputSchedulerThread::pushFramesToRenderInternal(int startingFrame,int nThreads
         nThreads = 1;
     }
     
-    RenderDirection direction;
+    RenderDirectionEnum direction;
     int firstFrame,lastFrame;
     {
         QMutexLocker l(&_imp->runArgsMutex);
@@ -602,7 +602,7 @@ void
 OutputSchedulerThread::pushAllFrameRange()
 {
     QMutexLocker l(&_imp->framesToRenderMutex);
-    RenderDirection direction;
+    RenderDirectionEnum direction;
     int firstFrame,lastFrame;
     {
         QMutexLocker l(&_imp->runArgsMutex);
@@ -611,7 +611,7 @@ OutputSchedulerThread::pushAllFrameRange()
         lastFrame = _imp->livingRunArgs.lastFrame;
     }
     
-    if (direction == RENDER_FORWARD) {
+    if (direction == eRenderDirectionForward) {
         for (int i = firstFrame; i <= lastFrame; ++i) {
             _imp->framesToRender.push_back(i);
         }
@@ -629,7 +629,7 @@ OutputSchedulerThread::pushFramesToRender(int nThreads)
 {
     QMutexLocker l(&_imp->framesToRenderMutex);
 
-    RenderDirection direction;
+    RenderDirectionEnum direction;
     int firstFrame,lastFrame;
     {
         QMutexLocker l(&_imp->runArgsMutex);
@@ -651,6 +651,9 @@ OutputSchedulerThread::pushFramesToRender(int nThreads)
     
     if (canContinue) {
         pushFramesToRenderInternal(frame, nThreads);
+    } else {
+        ///Still wake up threads that may still sleep
+        _imp->framesToRenderNotEmptyCond.wakeAll();
     }
 }
 
@@ -668,16 +671,34 @@ OutputSchedulerThread::pickFrameToRender(RenderThreadTask* thread)
         _imp->allRenderThreadsInactiveCond.wakeOne();
     }
     
+    ///Simple heuristic to limit the size of the internal buffer.
+    ///If the buffer grows too much, we will keep shared ptr to images, hence keep them in RAM which
+    ///can lead to RAM issue for the end user.
+    ///We can end up in this situation for very simple graphs where the rendering of the output node (the writer or viewer)
+    ///is much slower than things upstream, hence the buffer grows quickly, and fills up the RAM.
+    int nbThreadsHardware = appPTR->getHardwareIdealThreadCount();
+    bool bufferFull;
+    {
+        QMutexLocker k(&_imp->bufMutex);
+        bufferFull = (int)_imp->buf.size() >= nbThreadsHardware * 3;
+    }
+    
     QMutexLocker l(&_imp->framesToRenderMutex);
-    while ( _imp->framesToRender.empty() && !thread->mustQuit() ) {
+    while ((bufferFull || _imp->framesToRender.empty()) && !thread->mustQuit() ) {
         
         ///Notify that we're no longer doing work
         thread->notifyIsRunning(false);
         
         
         _imp->framesToRenderNotEmptyCond.wait(&_imp->framesToRenderMutex);
+        
+        {
+            QMutexLocker k(&_imp->bufMutex);
+            bufferFull = (int)_imp->buf.size() >= nbThreadsHardware * 3;
+        }
     }
     
+   
     if (!_imp->framesToRender.empty()) {
         
         ///Notify that we're running for good, will do nothing if flagged already running
@@ -722,7 +743,7 @@ OutputSchedulerThread::startRender()
 {
     
     if ( isFPSRegulationNeeded() ) {
-        _imp->timer->playState = RUNNING;
+        _imp->timer->playState = ePlayStateRunning;
     }
     
     ///We will push frame to renders starting at startingFrame.
@@ -800,7 +821,7 @@ OutputSchedulerThread::startRender()
 void
 OutputSchedulerThread::stopRender()
 {
-    _imp->timer->playState = PAUSE;
+    _imp->timer->playState = ePlayStatePause;
     
     ///Wait for all render threads to be done
     {
@@ -825,12 +846,12 @@ OutputSchedulerThread::stopRender()
         
         RenderScale scaleOne;
         scaleOne.x = scaleOne.y = 1.;
-        (void)_imp->outputEffect->endSequenceRender_public(firstFrame, lastFrame,
+        ignore_result(_imp->outputEffect->endSequenceRender_public(firstFrame, lastFrame,
                                                            1,
                                                            !appPTR->isBackground(),
                                                            scaleOne, true,
                                                            !appPTR->isBackground(),
-                                                           _imp->outputEffect->getApp()->getMainView());
+                                                           _imp->outputEffect->getApp()->getMainView()));
            
         
     }
@@ -952,18 +973,14 @@ OutputSchedulerThread::run()
                     getFrameRangeToRender(firstFrame, lastFrame);
                     
                     
-                    RenderDirection timelineDirection;
+                    RenderDirectionEnum timelineDirection;
                     {
                         QMutexLocker l(&_imp->runArgsMutex);
                         
-                        if ( isTimelineRangeSettable() && !isTimelineRangeSetByUser() ) {
-                            
-                            ///Refresh the firstframe/lastFrame as they might have changed on the timeline
-                            _imp->livingRunArgs.firstFrame = firstFrame;
-                            _imp->livingRunArgs.lastFrame = lastFrame;
-                            
-                            timelineSetBounds(firstFrame, lastFrame);
-                        }
+                        ///Refresh the firstframe/lastFrame as they might have changed on the timeline
+                        _imp->livingRunArgs.firstFrame = firstFrame;
+                        _imp->livingRunArgs.lastFrame = lastFrame;
+                        
                         
                         
                         timelineDirection = _imp->livingRunArgs.timelineDirection;
@@ -973,10 +990,10 @@ OutputSchedulerThread::run()
                     ///Determine if we finished rendering or if we should just increment/decrement the timeline
                     ///or just loop/bounce
                     Natron::PlaybackModeEnum pMode = _imp->engine->getPlaybackMode();
-                    RenderDirection newDirection;
+                    RenderDirectionEnum newDirection;
                     if (firstFrame == lastFrame && pMode == ePlaybackModeOnce) {
                         renderFinished = true;
-                        newDirection = RENDER_FORWARD;
+                        newDirection = eRenderDirectionForward;
                     } else {
                         renderFinished = !OutputSchedulerThreadPrivate::getNextFrameInSequence(pMode, timelineDirection,
                                                                                           expectedTimeToRender, firstFrame,
@@ -1000,14 +1017,14 @@ OutputSchedulerThread::run()
                     }
                 }
                 
-                if (_imp->timer->playState == RUNNING) {
+                if (_imp->timer->playState == ePlayStateRunning) {
                     _imp->timer->waitUntilNextFrameIsDue(); // timer synchronizing with the requested fps
                 }
                 
                 
                 
-                if (_imp->mode == TREAT_ON_SCHEDULER_THREAD) {
-                    treatFrame(framesToRender);
+                if (_imp->mode == eProcessFrameBySchedulerThread) {
+                    processFrame(framesToRender);
                     
                     if (!renderFinished) {
                         ///Timeline might have changed if another thread moved the playhead
@@ -1020,11 +1037,11 @@ OutputSchedulerThread::run()
                         
                     }
                 } else {
-                    ///Treat on main-thread
+                    ///Process on main-thread
                                     
-                    QMutexLocker treatLocker (&_imp->treatMutex);
+                    QMutexLocker processLocker (&_imp->processMutex);
                     
-                    ///Check for abortion while under treatMutex to be sure the main thread is not deadlock in abortRendering
+                    ///Check for abortion while under processMutex to be sure the main thread is not deadlock in abortRendering
                     {
                         QMutexLocker locker(&_imp->abortedRequestedMutex);
                         if (_imp->abortRequested > 0) {
@@ -1036,7 +1053,7 @@ OutputSchedulerThread::run()
                         }
                     }
                     
-                    _imp->treatRunning = true;
+                    _imp->processRunning = true;
                     
                     int timeToSeek = 0;
                     if (!renderFinished) {
@@ -1050,16 +1067,16 @@ OutputSchedulerThread::run()
                         
                     }
 
-                    emit s_doTreatOnMainThread(framesToRender,!renderFinished, timeToSeek);
+                    emit s_doProcessOnMainThread(framesToRender,!renderFinished, timeToSeek);
                                         
-                    while (_imp->treatRunning) {
-                        _imp->treatCondition.wait(&_imp->treatMutex);
+                    while (_imp->processRunning) {
+                        _imp->processCondition.wait(&_imp->processMutex);
                     }
                 }
                 
                 
                 ////////////
-                /////At this point the frame has been treated by the output device
+                /////At this point the frame has been processed by the output device
                 
                 
                 notifyFrameRendered(expectedTimeToRender,eSchedulingPolicyOrdered);
@@ -1164,7 +1181,7 @@ OutputSchedulerThread::notifyFrameRendered(int frame,
             ///Notify the scheduler rendering is finished by append a fake frame to the buffer
             {
                 QMutexLocker bufLocker (&_imp->bufMutex);
-                (void)_imp->appendBufferedFrame(0, 0, boost::shared_ptr<BufferableObject>());
+                ignore_result(_imp->appendBufferedFrame(0, 0, boost::shared_ptr<BufferableObject>()));
                 _imp->bufCondition.wakeOne();
             }
         } else {
@@ -1194,16 +1211,16 @@ OutputSchedulerThread::appendToBuffer_internal(double time,int view,const boost:
             b.frame = frame;
             BufferedFrames frames;
             frames.push_back(b);
-            treatFrame(frames);
+            processFrame(frames);
         }
     } else {
         
         ///Called by the scheduler thread when an image is rendered
         
         QMutexLocker l(&_imp->bufMutex);
-        (void)_imp->appendBufferedFrame(time, view, frame);
+        ignore_result(_imp->appendBufferedFrame(time, view, frame));
         if (wakeThread) {
-            ///Wake up the scheduler thread that an image is available if it is asleep so it can treat it.
+            ///Wake up the scheduler thread that an image is available if it is asleep so it can process it.
             _imp->bufCondition.wakeOne();
         }
         
@@ -1236,27 +1253,27 @@ OutputSchedulerThread::appendToBuffer(double time,int view,const BufferableObjec
 
 
 void
-OutputSchedulerThread::doTreatFrameMainThread(const BufferedFrames& frames,bool mustSeekTimeline,int time)
+OutputSchedulerThread::doProcessFrameMainThread(const BufferedFrames& frames,bool mustSeekTimeline,int time)
 {
     assert(QThread::currentThread() == qApp->thread());
     {
-        QMutexLocker treatLocker (&_imp->treatMutex);
+        QMutexLocker processLocker (&_imp->processMutex);
         ///The flag might have been reseted back by abortRendering()
-        if (!_imp->treatRunning) {
+        if (!_imp->processRunning) {
             return;
         }
     }
     
     
-    treatFrame(frames);
+    processFrame(frames);
     
     if (mustSeekTimeline) {
         timelineGoTo(time);
     }
     
-    QMutexLocker treatLocker (&_imp->treatMutex);
-    _imp->treatRunning = false;
-    _imp->treatCondition.wakeOne();
+    QMutexLocker processLocker (&_imp->processMutex);
+    _imp->processRunning = false;
+    _imp->processCondition.wakeOne();
 }
 
 void
@@ -1279,12 +1296,12 @@ OutputSchedulerThread::abortRendering(bool blocking)
         _imp->abortBeingProcessed = false;
         _imp->isAbortRequestBlocking = blocking;
         
-        ///We make sure the render-thread doesn't wait for the main-thread to treat a frame
+        ///We make sure the render-thread doesn't wait for the main-thread to process a frame
         ///This function (abortRendering) was probably called from a user event that was posted earlier in the
-        ///event-loop, we just flag that the next event that will treat the frame should NOT treat it by
-        ///reseting the treatRunning flag
+        ///event-loop, we just flag that the next event that will process the frame should NOT process it by
+        ///reseting the processRunning flag
         {
-            QMutexLocker l2(&_imp->treatMutex);
+            QMutexLocker l2(&_imp->processMutex);
             
             {
                 QMutexLocker abortBeingProcessedLocker(&_imp->abortBeingProcessedMutex);
@@ -1309,12 +1326,12 @@ OutputSchedulerThread::abortRendering(bool blocking)
             
             if (isMainThread) {
                 
-                _imp->treatRunning = false;
-                _imp->treatCondition.wakeOne();
+                _imp->processRunning = false;
+                _imp->processCondition.wakeOne();
             }
         }
         ///If the scheduler is asleep waiting for the buffer to be filling up, we post a fake request
-        ///that will not be treated anyway because the first thing it does is checking for abort
+        ///that will not be processed anyway because the first thing it does is checking for abort
         {
             QMutexLocker l2(&_imp->bufMutex);
             _imp->bufCondition.wakeOne();
@@ -1337,12 +1354,12 @@ OutputSchedulerThread::quitThread()
     
     
     if (QThread::currentThread() == qApp->thread()) {
-        ///If the scheduler thread was sleeping in the treat condition, waiting for the main-thread to finish
-        ///treating the frame then waiting in the mustQuitCond would create a deadlock.
-        ///Instead we discard the treating of the frame by taking the lock and setting treatRunning to false
-        QMutexLocker treatLocker (&_imp->treatMutex);
-        _imp->treatRunning = false;
-        _imp->treatCondition.wakeOne();
+        ///If the scheduler thread was sleeping in the process condition, waiting for the main-thread to finish
+        ///processing the frame then waiting in the mustQuitCond would create a deadlock.
+        ///Instead we discard the processing of the frame by taking the lock and setting processRunning to false
+        QMutexLocker processLocker (&_imp->processMutex);
+        _imp->processRunning = false;
+        _imp->processCondition.wakeOne();
     }
     
     {
@@ -1394,9 +1411,9 @@ OutputSchedulerThread::getDesiredFPS() const
 }
 
 void
-OutputSchedulerThread::renderFrameRange(int firstFrame,int lastFrame,RenderDirection direction)
+OutputSchedulerThread::renderFrameRange(int firstFrame,int lastFrame,RenderDirectionEnum direction)
 {
-    if (direction == RENDER_FORWARD) {
+    if (direction == eRenderDirectionForward) {
         timelineGoTo(firstFrame);
     } else {
         timelineGoTo(lastFrame);
@@ -1424,7 +1441,7 @@ OutputSchedulerThread::renderFrameRange(int firstFrame,int lastFrame,RenderDirec
 }
 
 void
-OutputSchedulerThread::renderFromCurrentFrame(RenderDirection timelineDirection)
+OutputSchedulerThread::renderFromCurrentFrame(RenderDirectionEnum timelineDirection)
 {
     
 
@@ -1432,14 +1449,8 @@ OutputSchedulerThread::renderFromCurrentFrame(RenderDirection timelineDirection)
         QMutexLocker l(&_imp->runArgsMutex);
 
         int firstFrame,lastFrame;
-        if (isTimelineRangeSettable() && !isTimelineRangeSetByUser()) {
-            getPluginFrameRange(firstFrame,lastFrame);
-            timelineSetBounds(firstFrame, lastFrame);
-        } else {
-            getFrameRangeToRender(firstFrame, lastFrame);
-        }
-        
-        
+        getFrameRangeToRender(firstFrame, lastFrame);
+  
         ///Make sure current frame is in the frame range
         int currentTime = timelineGetTime();
         OutputSchedulerThreadPrivate::getNearestInSequence(timelineDirection, currentTime, firstFrame, lastFrame, &currentTime);
@@ -1513,7 +1524,7 @@ OutputSchedulerThread::getPluginFrameRange(int& first,int &last) const
     }
 }
 
-OutputSchedulerThread::RenderDirection
+OutputSchedulerThread::RenderDirectionEnum
 OutputSchedulerThread::getDirectionRequestedToRender() const
 {
     QMutexLocker l(&_imp->runArgsMutex);
@@ -1690,7 +1701,7 @@ RenderThreadTask::notifyIsRunning(bool running)
 
 
 DefaultScheduler::DefaultScheduler(RenderEngine* engine,Natron::OutputEffectInstance* effect)
-: OutputSchedulerThread(engine,effect,TREAT_ON_SCHEDULER_THREAD)
+: OutputSchedulerThread(engine,effect,eProcessFrameBySchedulerThread)
 , _effect(effect)
 {
     engine->setPlaybackMode(ePlaybackModeOnce);
@@ -1837,14 +1848,14 @@ DefaultScheduler::createRunnable()
 
 
 /**
- * @brief Called whenever there are images available to treat in the buffer.
- * Once treated, the frame will be removed from the buffer.
+ * @brief Called whenever there are images available to process in the buffer.
+ * Once processed, the frame will be removed from the buffer.
  *
- * According to the Mode given to the scheduler this function will be called either by the scheduler thread (this)
+ * According to the ProcessFrameModeEnum given to the scheduler this function will be called either by the scheduler thread (this)
  * or by the application's main-thread (typically to do OpenGL rendering).
  **/
 void
-DefaultScheduler::treatFrame(const BufferedFrames& frames)
+DefaultScheduler::processFrame(const BufferedFrames& frames)
 {
     assert(!frames.empty());
     //Only consider the first frame, we shouldn't have multiple view here anyway.
@@ -1866,43 +1877,53 @@ DefaultScheduler::treatFrame(const BufferedFrames& frames)
     
     const double par = _effect->getPreferredAspectRatio();
     
-    (void)_effect->getRegionOfDefinition_public(hash,frame.time, scale, frame.view, &rod, &isProjectFormat);
-    rod.toPixelEnclosing(0, par, &roi);
-
     Natron::SequentialPreferenceEnum sequentiallity = _effect->getSequentialPreference();
     bool canOnlyHandleOneView = sequentiallity == Natron::eSequentialPreferenceOnlySequential || sequentiallity == Natron::eSequentialPreferencePreferSequential;
     
-    Node::ParallelRenderArgsSetter frameRenderARgs(_effect->getNode().get(),
-                                                   frame.time,
-                                                   frame.view,
-                                                   false,  // is this render due to user interaction ?
-                                                   canOnlyHandleOneView, // is this sequential ?
-                                                   true,
-                                                   hash,
+    for (BufferedFrames::const_iterator it = frames.begin(); it != frames.end(); ++it) {
+        ignore_result(_effect->getRegionOfDefinition_public(hash,it->time, scale, it->view, &rod, &isProjectFormat));
+        rod.toPixelEnclosing(0, par, &roi);
+        
+        Node::ParallelRenderArgsSetter frameRenderARgs(_effect->getNode().get(),
+                                                       it->time,
+                                                       it->view,
+                                                       false,  // is this render due to user interaction ?
+                                                       canOnlyHandleOneView, // is this sequential ?
+                                                       true,
+                                                       hash,
+                                                       false,
+                                                       _effect->getApp()->getTimeLine().get());
+        
+        ImagePtr inputImage = boost::dynamic_pointer_cast<Natron::Image>(it->frame);
+        assert(inputImage);
+        
+        std::list<ImagePtr> inputImages;
+        inputImages.push_back(inputImage);
+        Natron::EffectInstance::RenderRoIArgs args(frame.time,
+                                                   scale,0,
+                                                   it->view,
+                                                   true, // for writers, always by-pass cache for the write node only @see renderRoiInternal
+                                                   roi,
+                                                   rod,
+                                                   components,
+                                                   imageDepth,
+                                                   3,
                                                    false,
-                                                   _effect->getApp()->getTimeLine().get());
-    
-    
-    Natron::EffectInstance::RenderRoIArgs args(frame.time,
-                                               scale,0,
-                                               frame.view,
-                                               true, // for writers, always by-pass cache for the write node only @see renderRoiInternal
-                                               roi,
-                                               rod,
-                                               components,
-                                               imageDepth,
-                                               3);
-    try {
-        (void)_effect->renderRoI(args);
-    } catch (const std::exception& e) {
-        notifyRenderFailure(e.what());
+                                                   inputImages);
+        try {
+            ignore_result(_effect->renderRoI(args));
+        } catch (const std::exception& e) {
+            notifyRenderFailure(e.what());
+        }
+
     }
+    
 }
 
 void
-DefaultScheduler::timelineStepOne(OutputSchedulerThread::RenderDirection direction)
+DefaultScheduler::timelineStepOne(OutputSchedulerThread::RenderDirectionEnum direction)
 {
-    if (direction == OutputSchedulerThread::RENDER_FORWARD) {
+    if (direction == OutputSchedulerThread::eRenderDirectionForward) {
         _effect->incrementCurrentFrame();
     } else {
         _effect->decrementCurrentFrame();
@@ -1928,12 +1949,6 @@ DefaultScheduler::getFrameRangeToRender(int& first,int& last) const
     last = _effect->getLastFrame();
 }
 
-void
-DefaultScheduler::timelineSetBounds(int left,int right)
-{
-    _effect->setFirstFrame(left);
-    _effect->setLastFrame(right);
-}
 
 void
 DefaultScheduler::handleRenderFailure(const std::string& errorMessage)
@@ -1961,7 +1976,7 @@ DefaultScheduler::aboutToStartRender()
     _effect->setFirstFrame(first);
     _effect->setLastFrame(last);
     
-    if (getDirectionRequestedToRender() == RENDER_FORWARD) {
+    if (getDirectionRequestedToRender() == eRenderDirectionForward) {
         _effect->setCurrentFrame(first);
     } else {
         _effect->setCurrentFrame(last);
@@ -1991,7 +2006,7 @@ DefaultScheduler::onRenderStopped()
 
 
 ViewerDisplayScheduler::ViewerDisplayScheduler(RenderEngine* engine,ViewerInstance* viewer)
-: OutputSchedulerThread(engine,viewer,TREAT_ON_MAIN_THREAD) //< OpenGL rendering is done on the main-thread
+: OutputSchedulerThread(engine,viewer,eProcessFrameByMainThread) //< OpenGL rendering is done on the main-thread
 , _viewer(viewer)
 {
     
@@ -2004,14 +2019,14 @@ ViewerDisplayScheduler::~ViewerDisplayScheduler()
 
 
 /**
- * @brief Called whenever there are images available to treat in the buffer.
- * Once treated, the frame will be removed from the buffer.
+ * @brief Called whenever there are images available to process in the buffer.
+ * Once processed, the frame will be removed from the buffer.
  *
- * According to the Mode given to the scheduler this function will be called either by the scheduler thread (this)
+ * According to the ProcessFrameModeEnum given to the scheduler this function will be called either by the scheduler thread (this)
  * or by the application's main-thread (typically to do OpenGL rendering).
  **/
 void
-ViewerDisplayScheduler::treatFrame(const BufferedFrames& frames)
+ViewerDisplayScheduler::processFrame(const BufferedFrames& frames)
 {
 
     if (!frames.empty()) {
@@ -2026,13 +2041,13 @@ ViewerDisplayScheduler::treatFrame(const BufferedFrames& frames)
 }
 
 void
-ViewerDisplayScheduler::timelineStepOne(OutputSchedulerThread::RenderDirection direction)
+ViewerDisplayScheduler::timelineStepOne(OutputSchedulerThread::RenderDirectionEnum direction)
 {
     assert(_viewer);
-    if (direction == OutputSchedulerThread::RENDER_FORWARD) {
-        _viewer->getTimeline()->incrementCurrentFrame(_viewer);
+    if (direction == OutputSchedulerThread::eRenderDirectionForward) {
+        _viewer->getTimeline()->incrementCurrentFrame();
     } else {
-        _viewer->getTimeline()->decrementCurrentFrame(_viewer);
+        _viewer->getTimeline()->decrementCurrentFrame();
     }
 }
 
@@ -2040,7 +2055,7 @@ void
 ViewerDisplayScheduler::timelineGoTo(int time)
 {
     assert(_viewer);
-    _viewer->getTimeline()->seekFrame(time, _viewer, Natron::eTimelineChangeReasonPlaybackSeek);
+    _viewer->getTimeline()->seekFrame(time, false, 0, Natron::eTimelineChangeReasonPlaybackSeek);
 }
 
 int
@@ -2052,9 +2067,10 @@ ViewerDisplayScheduler::timelineGetTime() const
 void
 ViewerDisplayScheduler::getFrameRangeToRender(int &first, int &last) const
 {
-    boost::shared_ptr<TimeLine> timeline = _viewer->getTimeline();
-    first = timeline->leftBound();
-    last = timeline->rightBound();
+    ViewerInstance* leadViewer = _viewer->getApp()->getLastViewerUsingTimeline();
+    ViewerInstance* viewer = leadViewer ? leadViewer : _viewer;
+    assert(viewer);
+    viewer->getTimelineBounds(&first, &last);
 }
 
 
@@ -2165,18 +2181,6 @@ ViewerDisplayScheduler::onRenderStopped()
     }
 }
 
-bool
-ViewerDisplayScheduler::isTimelineRangeSetByUser() const
-{
-    return !_viewer->isFrameRangeLocked();
-}
-
-void
-ViewerDisplayScheduler::timelineSetBounds(int left, int right)
-{
-    _viewer->getTimeline()->setFrameRange(left, right);
-}
-
 int
 ViewerDisplayScheduler::getLastRenderedTime() const
 {
@@ -2229,7 +2233,7 @@ RenderEngine::createScheduler(Natron::OutputEffectInstance* effect)
 }
 
 void
-RenderEngine::renderFrameRange(int firstFrame,int lastFrame,OutputSchedulerThread::RenderDirection forward)
+RenderEngine::renderFrameRange(int firstFrame,int lastFrame,OutputSchedulerThread::RenderDirectionEnum forward)
 {
     {
         QMutexLocker k(&_imp->schedulerCreationLock);
@@ -2242,7 +2246,7 @@ RenderEngine::renderFrameRange(int firstFrame,int lastFrame,OutputSchedulerThrea
 }
 
 void
-RenderEngine::renderFromCurrentFrame(OutputSchedulerThread::RenderDirection forward)
+RenderEngine::renderFromCurrentFrame(OutputSchedulerThread::RenderDirectionEnum forward)
 {
     
     {
@@ -2279,14 +2283,6 @@ RenderEngine::renderCurrentFrame(bool canAbort)
         QMutexLocker k(&_imp->schedulerCreationLock);
         if (!_imp->scheduler) {
             _imp->scheduler = createScheduler(_imp->output);
-        }
-    }
-    
-    {
-        if ( !_imp->scheduler->isTimelineRangeSetByUser() ) {
-            int firstFrame,lastFrame;
-            _imp->scheduler->getPluginFrameRange(firstFrame,lastFrame);
-            isViewer->getTimeline()->setFrameRange(firstFrame, lastFrame);
         }
     }
     
@@ -2411,9 +2407,9 @@ struct ViewerCurrentFrameRequestSchedulerPrivate
     QWaitCondition producedQueueNotEmpty;
     
     
-    bool treatRunning;
-    QWaitCondition treatCondition;
-    QMutex treatMutex;
+    bool processRunning;
+    QWaitCondition processCondition;
+    QMutex processMutex;
     
     bool mustQuit;
     mutable QMutex mustQuitMutex;
@@ -2431,9 +2427,9 @@ struct ViewerCurrentFrameRequestSchedulerPrivate
     , producedQueueMutex()
     , producedQueue()
     , producedQueueNotEmpty()
-    , treatRunning(false)
-    , treatCondition()
-    , treatMutex()
+    , processRunning(false)
+    , processCondition()
+    , processMutex()
     , mustQuit(false)
     , mustQuitMutex()
     , mustQuitCond()
@@ -2474,7 +2470,7 @@ struct ViewerCurrentFrameRequestSchedulerPrivate
         producedQueueNotEmpty.wakeOne();
     }
     
-    void treatProducedFrame(const BufferableObjectList& frames);
+    void processProducedFrame(const BufferableObjectList& frames);
 
 };
 
@@ -2521,7 +2517,7 @@ static void renderCurrentFrameFunctor(CurrentFrameFunctorArgs& args)
     } else {
         
         assert(QThread::currentThread() == qApp->thread());
-        args.scheduler->treatProducedFrame(ret);
+        args.scheduler->processProducedFrame(ret);
     }
     
     
@@ -2532,7 +2528,7 @@ ViewerCurrentFrameRequestScheduler::ViewerCurrentFrameRequestScheduler(ViewerIns
 , _imp(new ViewerCurrentFrameRequestSchedulerPrivate(viewer))
 {
     setObjectName("ViewerCurrentFrameRequestScheduler");
-    QObject::connect(this, SIGNAL(s_treatProducedFrameOnMainThread(BufferableObjectList)), this, SLOT(doTreatProducedFrameOnMainThread(BufferableObjectList)));
+    QObject::connect(this, SIGNAL(s_processProducedFrameOnMainThread(BufferableObjectList)), this, SLOT(doProcessProducedFrameOnMainThread(BufferableObjectList)));
 }
 
 ViewerCurrentFrameRequestScheduler::~ViewerCurrentFrameRequestScheduler()
@@ -2598,12 +2594,12 @@ ViewerCurrentFrameRequestScheduler::run()
             }
             
             {
-                QMutexLocker treatLocker(&_imp->treatMutex);
-                _imp->treatRunning = true;
-                emit s_treatProducedFrameOnMainThread(frames);
+                QMutexLocker processLocker(&_imp->processMutex);
+                _imp->processRunning = true;
+                emit s_processProducedFrameOnMainThread(frames);
                 
-                while (_imp->treatRunning && !_imp->checkForAbortion()) {
-                    _imp->treatCondition.wait(&_imp->treatMutex);
+                while (_imp->processRunning && !_imp->checkForAbortion()) {
+                    _imp->processCondition.wait(&_imp->processMutex);
                 }
             }
             
@@ -2623,13 +2619,13 @@ ViewerCurrentFrameRequestScheduler::run()
 }
 
 void
-ViewerCurrentFrameRequestScheduler::doTreatProducedFrameOnMainThread(const BufferableObjectList& frames)
+ViewerCurrentFrameRequestScheduler::doProcessProducedFrameOnMainThread(const BufferableObjectList& frames)
 {
-    _imp->treatProducedFrame(frames);
+    _imp->processProducedFrame(frames);
 }
 
 void
-ViewerCurrentFrameRequestSchedulerPrivate::treatProducedFrame(const BufferableObjectList& frames)
+ViewerCurrentFrameRequestSchedulerPrivate::processProducedFrame(const BufferableObjectList& frames)
 {
     assert(QThread::currentThread() == qApp->thread());
     
@@ -2652,9 +2648,9 @@ ViewerCurrentFrameRequestSchedulerPrivate::treatProducedFrame(const BufferableOb
     
     
     {
-        QMutexLocker k(&treatMutex);
-        treatRunning = false;
-        treatCondition.wakeOne();
+        QMutexLocker k(&processMutex);
+        processRunning = false;
+        processCondition.wakeOne();
     }
 }
 
@@ -2666,9 +2662,9 @@ ViewerCurrentFrameRequestScheduler::abortRendering()
     }
     
     {
-        QMutexLocker l2(&_imp->treatMutex);
-        _imp->treatRunning = false;
-        _imp->treatCondition.wakeOne();
+        QMutexLocker l2(&_imp->processMutex);
+        _imp->processRunning = false;
+        _imp->processCondition.wakeOne();
     }
     
     {
@@ -2687,9 +2683,9 @@ ViewerCurrentFrameRequestScheduler::quitThread()
     abortRendering();
     
     {
-        QMutexLocker l2(&_imp->treatMutex);
-        _imp->treatRunning = false;
-        _imp->treatCondition.wakeOne();
+        QMutexLocker l2(&_imp->processMutex);
+        _imp->processRunning = false;
+        _imp->processCondition.wakeOne();
     }
     
     {

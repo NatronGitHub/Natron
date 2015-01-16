@@ -57,13 +57,13 @@ class RectI;
 namespace Natron {
 namespace Color {
 /// @enum An enum describing supported pixels packing formats
-enum PixelPacking
+enum PixelPackingEnum
 {
-    PACKING_RGBA = 0,
-    PACKING_BGRA,
-    PACKING_RGB,
-    PACKING_BGR,
-    PACKING_PLANAR
+    ePixelPackingRGBA = 0,
+    ePixelPackingBGRA,
+    ePixelPackingRGB,
+    ePixelPackingBGR,
+    ePixelPackingPLANAR
 };
 
 
@@ -288,13 +288,13 @@ public:
      **/
     void to_byte_packed(unsigned char* to, const float* from,const RectI & conversionRect,
                         const RectI & srcRoD,const RectI & dstRoD,
-                        PixelPacking inputPacking,PixelPacking outputPacking,bool invertY,bool premult) const;
+                        PixelPackingEnum inputPacking,PixelPackingEnum outputPacking,bool invertY,bool premult) const;
     void to_short_packed(unsigned short* to, const float* from,const RectI & conversionRect,
                          const RectI & srcRoD,const RectI & dstRoD,
-                         PixelPacking inputPacking,PixelPacking outputPacking,bool invertY,bool premult) const;
+                         PixelPackingEnum inputPacking,PixelPackingEnum outputPacking,bool invertY,bool premult) const;
     void to_float_packed(float* to, const float* from,const RectI & conversionRect,
                          const RectI & srcRoD,const RectI & dstRoD,
-                         PixelPacking inputPacking,PixelPacking outputPacking,bool invertY,bool premult) const;
+                         PixelPackingEnum inputPacking,PixelPackingEnum outputPacking,bool invertY,bool premult) const;
 
 
     /////@TODO the following functions expects a float output buffer, one could extend it to cover all bitdepths.
@@ -349,15 +349,15 @@ public:
      **/
     void from_byte_packed(float* to, const unsigned char* from,const RectI & conversionRect,
                           const RectI & srcRoD,const RectI & dstRoD,
-                          PixelPacking inputPacking,PixelPacking outputPacking,bool invertY,bool premult) const;
+                          PixelPackingEnum inputPacking,PixelPackingEnum outputPacking,bool invertY,bool premult) const;
 
     void from_short_packed(float* to, const unsigned short* from,const RectI & conversionRect,
                            const RectI & srcRoD,const RectI & dstRoD,
-                           PixelPacking inputPacking,PixelPacking outputPacking,bool invertY,bool premult) const;
+                           PixelPackingEnum inputPacking,PixelPackingEnum outputPacking,bool invertY,bool premult) const;
 
     void from_float_packed(float* to, const float* from,const RectI & conversionRect,
                            const RectI & srcRoD,const RectI & dstRoD,
-                           PixelPacking inputPacking,PixelPacking outputPacking,bool invertY,bool premult) const;
+                           PixelPackingEnum inputPacking,PixelPackingEnum outputPacking,bool invertY,bool premult) const;
 };
 
 
@@ -409,13 +409,13 @@ void to_float_planar(float* to, const float* from,int W,const float* alpha = NUL
  **/
 void to_byte_packed(unsigned char* to, const float* from,const RectI & conversionRect,
                     const RectI & srcRoD,const RectI & dstRoD,
-                    PixelPacking inputPacking,PixelPacking outputPacking,bool invertY,bool premult);
+                    PixelPackingEnum inputPacking,PixelPackingEnum outputPacking,bool invertY,bool premult);
 void to_short_packed(unsigned short* to, const float* from,const RectI & conversionRect,
                      const RectI & srcRoD,const RectI & dstRoD,
-                     PixelPacking inputPacking,PixelPacking outputPacking,bool invertY,bool premult);
+                     PixelPackingEnum inputPacking,PixelPackingEnum outputPacking,bool invertY,bool premult);
 void to_float_packed(float* to, const float* from,const RectI & conversionRect,
                      const RectI & srcRoD,const RectI & dstRoD,
-                     PixelPacking inputPacking,PixelPacking outputPacking,bool invertY,bool premult);
+                     PixelPackingEnum inputPacking,PixelPackingEnum outputPacking,bool invertY,bool premult);
 
 
 /////the following functions expects a float output buffer, one could extend it to cover all bitdepths.
@@ -464,15 +464,15 @@ void from_float_planar(float* to,const float* from,int W,int inDelta = 1, int ou
  **/
 void from_byte_packed(float* to, const unsigned char* from,const RectI & conversionRect,
                       const RectI & srcRoD,const RectI & dstRoD,
-                      PixelPacking inputPacking,PixelPacking outputPacking,bool invertY);
+                      PixelPackingEnum inputPacking,PixelPackingEnum outputPacking,bool invertY);
 
 void from_short_packed(float* to, const unsigned short* from,const RectI & conversionRect,
                        const RectI & srcRoD,const RectI & dstRoD,
-                       PixelPacking inputPacking,PixelPacking outputPacking,bool invertY);
+                       PixelPackingEnum inputPacking,PixelPackingEnum outputPacking,bool invertY);
 
 void from_float_packed(float* to, const float* from,const RectI & conversionRect,
                        const RectI & srcRoD,const RectI & dstRoD,
-                       PixelPacking inputPacking,PixelPacking outputPacking,bool invertY);
+                       PixelPackingEnum inputPacking,PixelPackingEnum outputPacking,bool invertY);
 }        //namespace Linear
 
 

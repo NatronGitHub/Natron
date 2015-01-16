@@ -930,9 +930,10 @@ FileSystemModel::onDirectoryLoadedByGatherer(const QString& directory)
                 if (sequence->isSingleFile()) {
                     _imp->watcher->addPath(sequence->generateValidSequencePattern().c_str());
                 } else {
-                    const std::map<int,std::string>& indexes = sequence->getFrameIndexes();
-                    for (std::map<int,std::string>::const_iterator it = indexes.begin(); it != indexes.end(); ++it) {
-                        _imp->watcher->addPath(it->second.c_str());
+                    const std::map<int,SequenceParsing::FileNameContent>& indexes = sequence->getFrameIndexes();
+                    for (std::map<int,SequenceParsing::FileNameContent>::const_iterator it = indexes.begin();
+                         it != indexes.end(); ++it) {
+                        _imp->watcher->addPath(it->second.absoluteFileName().c_str());
                     }
                 }
     
