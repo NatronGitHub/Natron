@@ -822,7 +822,6 @@ GuiAppInstance::toggleAutoHideGraphInputs()
 void
 GuiAppInstance::setLastViewerUsingTimeline(const boost::shared_ptr<Natron::Node>& node)
 {
-    assert(QThread::currentThread() == qApp->thread());
     if (!node) {
         QMutexLocker k(&_imp->lastTimelineViewerMutex);
         _imp->lastTimelineViewer.reset();
