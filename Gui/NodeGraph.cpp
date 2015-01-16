@@ -1170,8 +1170,8 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
             _imp->_evtState = eEventStateSelectionRect;
             _imp->_lastSelectionStartPoint = _imp->_lastMousePos;
             QPointF clickPos = _imp->_selectionRect->mapFromScene(lastMousePosScene);
-            _imp->_selectionRect->setRect(clickPos.x(), clickPos.y(), 0, 0);
-            _imp->_selectionRect->show();
+            //_imp->_selectionRect->setRect(clickPos.x(), clickPos.y(), 0, 0);
+            //_imp->_selectionRect->show();
         } else if ( buttonDownIsMiddle(e) ) {
             _imp->_evtState = eEventStateMovingArea;
             QGraphicsView::mousePressEvent(e);
@@ -1806,6 +1806,7 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
         double ymin = std::min( cur.y(),startDrag.y() );
         double ymax = std::max( cur.y(),startDrag.y() );
         _imp->_selectionRect->setRect(xmin,ymin,xmax - xmin,ymax - ymin);
+        _imp->_selectionRect->show();
         break;
     }
     case eEventStateDraggingNavigator: {
