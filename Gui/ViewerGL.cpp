@@ -4638,7 +4638,7 @@ getColorAtInternal(Natron::Image* image,
             *r = 0.;
             *g = 0.;
             *b = 0.;
-            *a = pix[3] / (float)maxValue;
+            *a = pix[0] / (float)maxValue;
             break;
         default:
             assert(false);
