@@ -2881,8 +2881,13 @@ QDirModelPrivate_size(quint64 bytes)
 void
 NodeGraph::updateCacheSizeText()
 {
-    _imp->_cacheSizeText->setPlainText( tr("Memory cache size: %1")
-                                        .arg( QDirModelPrivate_size( appPTR->getCachesTotalMemorySize() ) ) );
+    QString oldText = _imp->_cacheSizeText->toPlainText();
+    quint64 cacheSize = appPTR->getCachesTotalMemorySize();
+    QString cacheSizeStr = QDirModelPrivate_size(cacheSize);
+    QString newText = tr("Memory cache size: ") + cacheSizeStr;
+    if (newText != oldText) {
+        _imp->_cacheSizeText->setPlainText(newText);
+    }
 }
 
 QRectF
