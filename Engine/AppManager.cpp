@@ -585,7 +585,11 @@ AppManager::loadInternal(const QString & projectFilename,
 
 
     ///Set host properties after restoring settings since it depends on the host name.
-    _imp->ofxHost->setProperties();
+    try {
+        _imp->ofxHost->setProperties();
+    } catch (std::logic_error) {
+        // ignore
+    }
 
     /*loading all plugins*/
     loadAllPlugins();
