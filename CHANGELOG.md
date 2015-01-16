@@ -1,5 +1,5 @@
 Natron 1.1.0
-------------
+-------------
 
 - Fix stability of the software as a whole. This build has been reported to be robust to several hours of work.
 
@@ -8,6 +8,7 @@ Natron 1.1.0
 - The roto node interaction has been improved:
 
 - The composing of selection is now easier
+
     - A new button can now toggle on/off the click capture of the bounding box of selected points
     - The smooth/cusp options are now applied with smaller steps and depending of the zoom factor
     - A simple left click is required to cycle through tool buttons and a right click to open the menu
@@ -20,7 +21,7 @@ Natron 1.1.0
 
 - The interpolation submenu of the animation menu of the parameter is working again
 
-A-  simple click on an arrow of the node graph no longer disconnects nodes to prevent mistakes, instead now, to disconnect only with a simple click it is required to hold the control modifier.
+- A simple click on an arrow of the node graph no longer disconnects nodes to prevent mistakes, instead now, to disconnect only with a simple click it is required to hold the control modifier.
 
 - Playback: The behaviour when using multiple viewers is now much more logical: all viewers are kept in sync and follow the frame range of the viewer that started the playback. The frame range is now per viewer.
 

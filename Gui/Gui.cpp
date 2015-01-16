@@ -3455,8 +3455,7 @@ void
 Gui::showAbout()
 {
     _imp->_aboutWindow->show();
-    int status = _imp->_aboutWindow->exec();
-    assert(status == QDialog::Accepted);
+    ignore_result(_imp->_aboutWindow->exec());
 }
 
 void
