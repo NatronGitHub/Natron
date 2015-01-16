@@ -1440,9 +1440,10 @@ NodeGui::hideGui()
     ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>( node->getLiveInstance() );
     if (isViewer) {
         ViewerGL* viewerGui = dynamic_cast<ViewerGL*>( isViewer->getUiContext() );
-        assert(viewerGui);
-        viewerGui->clearLastRenderedTexture();
-        _graph->getGui()->deactivateViewerTab(isViewer);
+        if (viewerGui) {
+            viewerGui->clearLastRenderedTexture();
+            _graph->getGui()->deactivateViewerTab(isViewer);
+        }
     } else {
         if ( isSettingsPanelVisible() ) {
             setVisibleSettingsPanel(false);

@@ -157,7 +157,7 @@ public:
             int nodesCount;
             ar & boost::serialization::make_nvp("NodesCount",nodesCount);
             for (int i = 0; i < nodesCount; ++i) {
-                boost::shared_ptr<NodeSerialization> ns;
+                boost::shared_ptr<NodeSerialization> ns(new NodeSerialization);
                 ar & boost::serialization::make_nvp("item",*ns);
                 _nodes.addNodeSerialization(ns);
             }

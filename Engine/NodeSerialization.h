@@ -234,6 +234,8 @@ private:
         ar & boost::serialization::make_nvp("Plugin_label",_nodeLabel);
         if (version >= NODE_SERIALIZATION_INTRODUCES_SCRIPT_NAME) {
             ar & boost::serialization::make_nvp("Plugin_script_name",_nodeScriptName);
+        } else {
+            _nodeScriptName = _nodeLabel;
         }
         ar & boost::serialization::make_nvp("Plugin_id",_pluginID);
         ar & boost::serialization::make_nvp("Plugin_major_version",_pluginMajorVersion);
