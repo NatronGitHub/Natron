@@ -2416,7 +2416,7 @@ NodeGraph::wheelEventInternal(bool ctrlDown,double delta)
     
     double currentZoomFactor = transfo.mapRect( QRectF(0, 0, 1, 1) ).width();
     double newZoomfactor = currentZoomFactor * scaleFactor;
-    if (newZoomfactor < 0.05 || newZoomfactor > 40) {
+    if ((newZoomfactor < 0.01 && scaleFactor < 1.) || (newZoomfactor > 50 && scaleFactor > 1.)) {
         return;
     }
     if (newZoomfactor < 0.4) {
