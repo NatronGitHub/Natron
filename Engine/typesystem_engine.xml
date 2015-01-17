@@ -289,6 +289,52 @@
                 %CPPSELF.%FUNCTION_NAME(%1);
             </inject-code>
         </modify-function>
+        <modify-function signature="setScriptName(std::string)">
+            <inject-code class="target" position="beginning">
+                %RETURN_TYPE %0 = %CPPSELF.%FUNCTION_NAME(%1);
+                %PYARG_0 = %CONVERTTOPYTHON[%RETURN_TYPE](%0);
+            </inject-code>
+        </modify-function>
+        <modify-function signature="getPosition(double*,double*)const">
+            <modify-argument index="1">
+                <remove-argument/>
+            </modify-argument>
+            <modify-argument index="2">
+                <remove-argument/>
+            </modify-argument>
+            <modify-argument index="return">
+                <replace-type modified-type="PyObject"/>
+            </modify-argument>
+            <inject-code class="target" position="beginning">
+                double x,y;
+                %CPPSELF.%FUNCTION_NAME(&amp;x,&amp;y);
+                %PYARG_0 = PyTuple_New(2);
+                PyTuple_SET_ITEM(%PYARG_0, 0, %CONVERTTOPYTHON[double](x));
+                PyTuple_SET_ITEM(%PYARG_0, 1, %CONVERTTOPYTHON[double](y));
+                return %PYARG_0;
+            </inject-code>
+
+        </modify-function>
+        <modify-function signature="getSize(double*,double*)const">
+            <modify-argument index="1">
+                <remove-argument/>
+            </modify-argument>
+            <modify-argument index="2">
+                <remove-argument/>
+            </modify-argument>
+            <modify-argument index="return">
+                <replace-type modified-type="PyObject"/>
+            </modify-argument>
+            <inject-code class="target" position="beginning">
+                double x,y;
+                %CPPSELF.%FUNCTION_NAME(&amp;x,&amp;y);
+                %PYARG_0 = PyTuple_New(2);
+                PyTuple_SET_ITEM(%PYARG_0, 0, %CONVERTTOPYTHON[double](x));
+                PyTuple_SET_ITEM(%PYARG_0, 1, %CONVERTTOPYTHON[double](y));
+                return %PYARG_0;
+            </inject-code>
+            
+        </modify-function>
         <!-- It doesn't seem that Shiboken allows to remove an overload:
          signature 'getNode(std::string)const' for function modification in 'Effect' not found. Possible candidates: getNode(std::string)const in Group
          -->
@@ -858,6 +904,17 @@
                 <define-ownership class="target" owner="target"/>
             </modify-argument>
         </modify-function>
+        <modify-function signature="setScriptName(std::string)">
+            <inject-code class="target" position="beginning">
+                %RETURN_TYPE %0 = %CPPSELF.%FUNCTION_NAME(%1);
+                %PYARG_0 = %CONVERTTOPYTHON[%RETURN_TYPE](%0);
+            </inject-code>
+        </modify-function>
+        <modify-function signature="setLabel(std::string)">
+            <inject-code class="target" position="beginning">
+                %CPPSELF.%FUNCTION_NAME(%1);
+            </inject-code>
+        </modify-function>
     </object-type>
     <object-type name="Layer">
         <modify-function signature="getChildren()const">
@@ -872,6 +929,21 @@
                 PyList_SET_ITEM(ret, idx, item);
                 }
                 return ret;
+            </inject-code>
+        </modify-function>
+        <modify-function signature="addItem(ItemBase*)">
+            <inject-code class="target" position="beginning">
+                %CPPSELF.%FUNCTION_NAME(%1);
+            </inject-code>
+        </modify-function>
+        <modify-function signature="insertItem(int,ItemBase*)">
+            <inject-code class="target" position="beginning">
+                %CPPSELF.%FUNCTION_NAME(%1,%2);
+            </inject-code>
+        </modify-function>
+        <modify-function signature="removeItem(ItemBase*)">
+            <inject-code class="target" position="beginning">
+                %CPPSELF.%FUNCTION_NAME(%1);
             </inject-code>
         </modify-function>
     </object-type>
@@ -928,21 +1000,37 @@
             <modify-argument index="return">
                 <define-ownership class="target" owner="target"/>
             </modify-argument>
+            <inject-code class="target" position="beginning">
+                %RETURN_TYPE %0 = %CPPSELF.%FUNCTION_NAME();
+                %PYARG_0 = %CONVERTTOPYTHON[%RETURN_TYPE](%0);
+            </inject-code>
         </modify-function>
         <modify-function signature="createBezier(double,double,int)">
             <modify-argument index="return">
                 <define-ownership class="target" owner="target"/>
             </modify-argument>
+            <inject-code class="target" position="beginning">
+                %RETURN_TYPE %0 = %CPPSELF.%FUNCTION_NAME(%1,%2,%3);
+                %PYARG_0 = %CONVERTTOPYTHON[%RETURN_TYPE](%0);
+            </inject-code>
         </modify-function>
         <modify-function signature="createEllipse(double,double,double,bool,int)">
             <modify-argument index="return">
                 <define-ownership class="target" owner="target"/>
             </modify-argument>
+            <inject-code class="target" position="beginning">
+                %RETURN_TYPE %0 = %CPPSELF.%FUNCTION_NAME(%1,%2,%3,%4,%5);
+                %PYARG_0 = %CONVERTTOPYTHON[%RETURN_TYPE](%0);
+            </inject-code>
         </modify-function>
         <modify-function signature="createRectangle(double,double,double,int)">
             <modify-argument index="return">
                 <define-ownership class="target" owner="target"/>
             </modify-argument>
+            <inject-code class="target" position="beginning">
+                %RETURN_TYPE %0 = %CPPSELF.%FUNCTION_NAME(%1,%2,%3,%4);
+                %PYARG_0 = %CONVERTTOPYTHON[%RETURN_TYPE](%0);
+            </inject-code>
         </modify-function>
     </object-type>
     

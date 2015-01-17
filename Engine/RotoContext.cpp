@@ -1002,25 +1002,9 @@ RotoItem::setScriptName(const std::string & name)
         return false;
     }
     
-    std::locale loc;
-    std::string cpy;
-    for (std::size_t i = 0; i < _imp->scriptName.size(); ++i) {
-        
-        ///Ignore starting digits
-        if (cpy.empty() && std::isdigit(_imp->scriptName[i])) {
-            continue;
-        }
-        
-        ///Spaces becomes underscores
-        if (std::isspace(_imp->scriptName[i])){
-            cpy.push_back('_');
-        }
-        
-        ///Non alpha-numeric characters are not allowed in python
-        else if (_imp->scriptName[i] == '_' || std::isalnum(_imp->scriptName[i], loc)) {
-            cpy.push_back(_imp->scriptName[i]);
-        }
-    }
+    
+    std::string cpy = Natron::makeNameScriptFriendly(name);
+    
     if (cpy.empty()) {
         return false;
     }

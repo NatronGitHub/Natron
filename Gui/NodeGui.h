@@ -174,6 +174,8 @@ public:
     virtual void getPosition(double *x, double* y) const OVERRIDE FINAL;
  
     virtual void getSize(double* w, double* h) const OVERRIDE FINAL;
+    
+    virtual void setSize(double w, double h) OVERRIDE FINAL;
 
     /*Returns true if the NodeGUI contains the point (in items coordinates)*/
     virtual bool contains(const QPointF &point) const OVERRIDE FINAL;

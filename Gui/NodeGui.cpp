@@ -2049,6 +2049,12 @@ NodeGui::getSize() const
 }
 
 void
+NodeGui::setSize(double w, double h)
+{
+    resize(w, h);
+}
+
+void
 NodeGui::onDisabledKnobToggled(bool disabled)
 {
     if (!_nameItem) {
@@ -2768,7 +2774,8 @@ void
 ExportGroupTemplateDialog::onOkClicked()
 {
     QString dirPath = _imp->fileEdit->text();
-    if (dirPath[dirPath.size() - 1] == QChar('/')) {
+
+    if (!dirPath.isEmpty() && dirPath[dirPath.size() - 1] == QChar('/')) {
         dirPath.remove(dirPath.size() - 1, 1);
     }
     QDir d(dirPath);

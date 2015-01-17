@@ -55,9 +55,13 @@ static PyObject* Sbk_LayerFunc_addItem(PyObject* self, PyObject* pyArg)
 
         if (!PyErr_Occurred()) {
             // addItem(ItemBase*)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            // Begin code injection
+
             cppSelf->addItem(cppArg0);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+
+            // End of code injection
+
+
         }
     }
 
@@ -154,9 +158,13 @@ static PyObject* Sbk_LayerFunc_insertItem(PyObject* self, PyObject* args)
 
         if (!PyErr_Occurred()) {
             // insertItem(int,ItemBase*)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            cppSelf->insertItem(cppArg0, cppArg1);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            // Begin code injection
+
+            cppSelf->insertItem(cppArg0,cppArg1);
+
+            // End of code injection
+
+
         }
     }
 
@@ -200,9 +208,13 @@ static PyObject* Sbk_LayerFunc_removeItem(PyObject* self, PyObject* pyArg)
 
         if (!PyErr_Occurred()) {
             // removeItem(ItemBase*)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            // Begin code injection
+
             cppSelf->removeItem(cppArg0);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+
+            // End of code injection
+
+
         }
     }
 

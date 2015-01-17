@@ -2829,11 +2829,8 @@ bool interpretPythonScript(const std::string& script,std::string* error,std::str
 
 }
       
-bool isPluginCreatable(const std::string& pluginID)
+bool isPluginCreatable(const std::string& /*pluginID*/)
 {
-    if (pluginID == PLUGINID_NATRON_OUTPUT) {
-        return false;
-    }
     return true;
 }
     
@@ -2864,5 +2861,32 @@ appendToNatronPath(const std::string& path)
 {
     appPTR->getCurrentSettings()->appendPythonGroupsPath(path);
 }
+    
+std::string
+makeNameScriptFriendly(const std::string& str)
+{
+    ///Remove any non alpha-numeric characters from the baseName
+    std::locale loc;
+    std::string cpy;
+    for (std::size_t i = 0; i < str.size(); ++i) {
+        
+        ///Ignore starting digits
+        if (cpy.empty() && std::isdigit(str[i])) {
+            continue;
+        }
+        
+        ///Spaces becomes underscores
+        if (std::isspace(str[i])){
+            cpy.push_back('_');
+        }
+        
+        ///Non alpha-numeric characters are not allowed in python
+        else if (str[i] == '_' || std::isalnum(str[i], loc)) {
+            cpy.push_back(str[i]);
+        }
+    }
+    return cpy;
+}
+
     
 } //Namespace Natron

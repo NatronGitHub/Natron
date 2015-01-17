@@ -983,6 +983,7 @@ Gui::createMenuActions()
     _imp->menuFile->addAction(_imp->actionSave_project);
     _imp->menuFile->addAction(_imp->actionSaveAs_project);
     _imp->menuFile->addAction(_imp->actionSaveAndIncrementVersion);
+    _imp->menuFile->addAction(_imp->actionExportAsGroup);
     _imp->menuFile->addSeparator();
     _imp->menuFile->addAction(_imp->actionExit);
 

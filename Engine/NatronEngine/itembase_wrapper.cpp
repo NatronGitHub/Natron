@@ -223,9 +223,13 @@ static PyObject* Sbk_ItemBaseFunc_setLabel(PyObject* self, PyObject* pyArg)
 
         if (!PyErr_Occurred()) {
             // setLabel(std::string)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            // Begin code injection
+
             cppSelf->setLabel(cppArg0);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+
+            // End of code injection
+
+
         }
     }
 
@@ -291,6 +295,7 @@ static PyObject* Sbk_ItemBaseFunc_setScriptName(PyObject* self, PyObject* pyArg)
     if (!Shiboken::Object::isValid(self))
         return 0;
     cppSelf = ((::ItemBase*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_ITEMBASE_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
     int overloadId = -1;
     PythonToCppFunc pythonToCpp;
     SBK_UNUSED(pythonToCpp)
@@ -311,16 +316,22 @@ static PyObject* Sbk_ItemBaseFunc_setScriptName(PyObject* self, PyObject* pyArg)
 
         if (!PyErr_Occurred()) {
             // setScriptName(std::string)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            cppSelf->setScriptName(cppArg0);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            // Begin code injection
+
+            bool cppResult = cppSelf->setScriptName(cppArg0);
+            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), &cppResult);
+
+            // End of code injection
+
+
         }
     }
 
-    if (PyErr_Occurred()) {
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
         return 0;
     }
-    Py_RETURN_NONE;
+    return pyResult;
 
     Sbk_ItemBaseFunc_setScriptName_TypeError:
         const char* overloads[] = {"std::string", 0};

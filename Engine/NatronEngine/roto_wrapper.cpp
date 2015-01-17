@@ -62,10 +62,14 @@ static PyObject* Sbk_RotoFunc_createBezier(PyObject* self, PyObject* args)
 
         if (!PyErr_Occurred()) {
             // createBezier(double,double,int)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            BezierCurve * cppResult = cppSelf->createBezier(cppArg0, cppArg1, cppArg2);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            // Begin code injection
+
+            BezierCurve * cppResult = cppSelf->createBezier(cppArg0,cppArg1,cppArg2);
             pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_BEZIERCURVE_IDX], cppResult);
+
+            // End of code injection
+
+
 
             // Ownership transferences.
             Shiboken::Object::getOwnership(pyResult);
@@ -134,10 +138,14 @@ static PyObject* Sbk_RotoFunc_createEllipse(PyObject* self, PyObject* args)
 
         if (!PyErr_Occurred()) {
             // createEllipse(double,double,double,bool,int)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            BezierCurve * cppResult = cppSelf->createEllipse(cppArg0, cppArg1, cppArg2, cppArg3, cppArg4);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            // Begin code injection
+
+            BezierCurve * cppResult = cppSelf->createEllipse(cppArg0,cppArg1,cppArg2,cppArg3,cppArg4);
             pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_BEZIERCURVE_IDX], cppResult);
+
+            // End of code injection
+
+
 
             // Ownership transferences.
             Shiboken::Object::getOwnership(pyResult);
@@ -170,10 +178,14 @@ static PyObject* Sbk_RotoFunc_createLayer(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // createLayer()
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            // Begin code injection
+
             Layer * cppResult = cppSelf->createLayer();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_LAYER_IDX], cppResult);
+
+            // End of code injection
+
+
 
             // Ownership transferences.
             Shiboken::Object::getOwnership(pyResult);
@@ -234,10 +246,14 @@ static PyObject* Sbk_RotoFunc_createRectangle(PyObject* self, PyObject* args)
 
         if (!PyErr_Occurred()) {
             // createRectangle(double,double,double,int)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            BezierCurve * cppResult = cppSelf->createRectangle(cppArg0, cppArg1, cppArg2, cppArg3);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            // Begin code injection
+
+            BezierCurve * cppResult = cppSelf->createRectangle(cppArg0,cppArg1,cppArg2,cppArg3);
             pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_BEZIERCURVE_IDX], cppResult);
+
+            // End of code injection
+
+
 
             // Ownership transferences.
             Shiboken::Object::getOwnership(pyResult);

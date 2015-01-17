@@ -47,7 +47,7 @@ public:
     void setLabel(const std::string & name);
     std::string getLabel() const;
     
-    void setScriptName(const std::string& name);
+    bool setScriptName(const std::string& name);
     std::string getScriptName() const;
     
     void setLocked(bool locked);

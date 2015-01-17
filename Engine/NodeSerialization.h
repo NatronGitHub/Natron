@@ -31,6 +31,7 @@ CLANG_DIAG_ON(unused-parameter)
 #endif
 #include "Engine/KnobSerialization.h"
 #include "Engine/RotoSerialization.h"
+#include "Engine/AppManager.h"
 
 
 #define NODE_SERIALIZATION_V_INTRODUCES_ROTO 2
@@ -235,7 +236,7 @@ private:
         if (version >= NODE_SERIALIZATION_INTRODUCES_SCRIPT_NAME) {
             ar & boost::serialization::make_nvp("Plugin_script_name",_nodeScriptName);
         } else {
-            _nodeScriptName = _nodeLabel;
+            _nodeScriptName = Natron::makeNameScriptFriendly(_nodeLabel);
         }
         ar & boost::serialization::make_nvp("Plugin_id",_pluginID);
         ar & boost::serialization::make_nvp("Plugin_major_version",_pluginMajorVersion);
@@ -247,8 +248,16 @@ private:
             _knobsValues.push_back(ks);
         }
         ar & boost::serialization::make_nvp("Inputs_map",_inputs);
+        if (version < NODE_SERIALIZATION_INTRODUCES_SCRIPT_NAME) {
+            for (U32 i = 0; i < _inputs.size(); ++i) {
+                _inputs[i] = Natron::makeNameScriptFriendly(_inputs[i]);
+            }
+        }
         ar & boost::serialization::make_nvp("KnobsAge",_knobsAge);
         ar & boost::serialization::make_nvp("MasterNode",_masterNodeName);
+        if (version < NODE_SERIALIZATION_INTRODUCES_SCRIPT_NAME) {
+            _masterNodeName = Natron::makeNameScriptFriendly(_masterNodeName);
+        }
         _isNull = false;
         
         if (version >= NODE_SERIALIZATION_V_INTRODUCES_ROTO) {
@@ -259,6 +268,9 @@ private:
         }
         if (version >= NODE_SERIALIZATION_INTRODUCES_MULTI_INSTANCE) {
             ar & boost::serialization::make_nvp("MultiInstanceParent",_multiInstanceParentName);
+            if (version < NODE_SERIALIZATION_INTRODUCES_SCRIPT_NAME) {
+                 _multiInstanceParentName = Natron::makeNameScriptFriendly(_multiInstanceParentName);
+            }
         }
         
         if (version >= NODE_SERIALIZATION_INTRODUCES_USER_KNOBS) {

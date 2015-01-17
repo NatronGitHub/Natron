@@ -50,6 +50,11 @@ public :
      **/
     virtual void getSize(double* w, double* h) const = 0;
     
+    /**
+     * @brief Set the size of the bounding box of the node in the nodegraph
+     **/
+    virtual void setSize(double w, double h) = 0;
+    
     virtual void exportGroupAsPythonScript() = 0;
 
     /**

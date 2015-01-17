@@ -42,7 +42,8 @@ CLANG_DIAG_ON(unused-parameter)
 #define KNOB_SERIALIZATION_INTRODUCES_SLAVED_TRACKS_OFFSET 3
 #define KNOB_SERIALIZATION_INTRODUCES_CHOICE_LABEL 4
 #define KNOB_SERIALIZATION_INTRODUCES_USER_KNOB 5
-#define KNOB_SERIALIZATION_VERSION KNOB_SERIALIZATION_INTRODUCES_USER_KNOB
+#define KNOB_SERIALIZATION_NODE_SCRIPT_NAME 6
+#define KNOB_SERIALIZATION_VERSION KNOB_SERIALIZATION_NODE_SCRIPT_NAME
 
 #define VALUE_SERIALIZATION_INTRODUCES_CHOICE_LABEL 2
 #define VALUE_SERIALIZATION_INTRODUCES_EXPRESSIONS 3
@@ -512,6 +513,9 @@ class KnobSerialization : public KnobSerializationBase
             for (int i = 0; i < count; ++i) {
                 Double_Knob::SerializedTrack t;
                 ar & boost::serialization::make_nvp("SlavePtNodeName",t.rotoNodeName);
+                if (version >= KNOB_SERIALIZATION_NODE_SCRIPT_NAME) {
+                    t.rotoNodeName = Natron::makeNameScriptFriendly(t.rotoNodeName);
+                }
                 ar & boost::serialization::make_nvp("SlavePtBezier",t.bezierName);
                 ar & boost::serialization::make_nvp("SlavePtIndex",t.cpIndex);
                 ar & boost::serialization::make_nvp("SlavePtIsFeather",t.isFeather);

@@ -233,9 +233,9 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
             
             //////////////////////////////////////////////////////
             ///////For READERS & WRITERS only we open an image file dialog
-            if (allowFileDialogs && isReader() && !(serialization && !serialization->isNull()) && paramValues.empty()) {
+            if (!getApp()->isCreatingPythonGroup() && allowFileDialogs && isReader() && !(serialization && !serialization->isNull()) && paramValues.empty()) {
                 images = getApp()->openImageFileDialog();
-            } else if (allowFileDialogs && isWriter() && !(serialization && !serialization->isNull())  && paramValues.empty()) {
+            } else if (!getApp()->isCreatingPythonGroup() && allowFileDialogs && isWriter() && !(serialization && !serialization->isNull())  && paramValues.empty()) {
                 images = getApp()->saveImageFileDialog();
             }
             if (!images.empty()) {

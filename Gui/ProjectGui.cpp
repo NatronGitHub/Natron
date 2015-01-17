@@ -35,6 +35,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/EffectInstance.h"
 #include "Engine/Node.h"
 #include "Engine/Settings.h"
+#include "Engine/BackDrop.h"
 
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/Gui.h"
@@ -296,6 +297,8 @@ ProjectGui::load(boost::archive::xml_iarchive & archive)
             iseffect->getPluginGrouping(&grouping);
             std::string majGroup = grouping.empty() ? "" : grouping.front();
 
+            BackDropGui* isBd = dynamic_cast<BackDropGui*>(nGui.get());
+
             if ( iseffect->isReader() ) {
                 settings->getReaderColor(&defR, &defG, &defB);
             } else if ( iseffect->isWriter() ) {
@@ -322,6 +325,8 @@ ProjectGui::load(boost::archive::xml_iarchive & archive)
                 settings->getViewsGroupColor(&defR, &defG, &defB);
             } else if (majGroup == PLUGIN_GROUP_DEEP) {
                 settings->getDeepGroupColor(&defR, &defG, &defB);
+            } else if (isBd) {
+                settings->getDefaultBackDropColor(&defR, &defG, &defB);
             } else {
                 settings->getDefaultNodeColor(&defR, &defG, &defB);
             }
@@ -337,7 +342,6 @@ ProjectGui::load(boost::archive::xml_iarchive & archive)
                 nGui->setCurrentColor(color);
             }
             
-            BackDropGui* isBd = dynamic_cast<BackDropGui*>(nGui.get());
             if (isBd) {
                 double w,h;
                 it->getSize(&w, &h);
@@ -431,6 +435,7 @@ ProjectGui::load(boost::archive::xml_iarchive & archive)
         QColor c;
         c.setRgbF(r,g,b);
         bd->setDefaultColor(c);
+        node->setLabel(it->getFullySpecifiedName());
     }
 
     ///now restore opened settings panels

@@ -114,6 +114,12 @@ Effect::getScriptName() const
     return _node->getScriptName_mt_safe();
 }
 
+bool
+Effect::setScriptName(const std::string& scriptName)
+{
+    return _node->setScriptName(scriptName);
+}
+
 std::string
 Effect::getLabel() const
 {
@@ -231,6 +237,24 @@ void
 Effect::setPosition(double x,double y)
 {
     _node->setPosition(x, y);
+}
+
+void
+Effect::getPosition(double* x, double* y) const
+{
+    _node->getPosition(x, y);
+}
+
+void
+Effect::setSize(double w,double h)
+{
+    _node->setSize(w, h);
+}
+
+void
+Effect::getSize(double* w, double* h) const
+{
+    _node->getSize(w, h);
 }
 
 void

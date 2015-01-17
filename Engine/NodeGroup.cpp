@@ -324,6 +324,7 @@ NodeCollection::clearNodes(bool emitSignal)
     nodesToDelete.clear();
 }
 
+
 bool
 NodeCollection::setNodeName(const std::string& baseName,bool appendDigit,bool errorIfExists,std::string* nodeName)
 {
@@ -331,26 +332,7 @@ NodeCollection::setNodeName(const std::string& baseName,bool appendDigit,bool er
         return false;
     }
     ///Remove any non alpha-numeric characters from the baseName
-    std::locale loc;
-    std::string cpy;
-    for (std::size_t i = 0; i < baseName.size(); ++i) {
-        
-        ///Ignore starting digits
-        if (cpy.empty() && std::isdigit(baseName[i])) {
-            continue;
-        }
-        
-        ///Spaces becomes underscores
-        if (std::isspace(baseName[i])){
-            cpy.push_back('_');
-        }
-        
-        ///Non alpha-numeric characters are not allowed in python
-        else if (baseName[i] == '_' || std::isalnum(baseName[i], loc)) {
-            cpy.push_back(baseName[i]);
-        }
-    }
-    
+    std::string cpy = Natron::makeNameScriptFriendly(baseName);
     if (cpy.empty()) {
         return false;
     }
@@ -805,13 +787,13 @@ NodeCollection::recomputeFrameRangeForAllReaders(int* firstFrame,int* lastFrame)
 struct NodeGroupPrivate
 {
     std::vector<boost::weak_ptr<Node> > inputs;
-    boost::weak_ptr<Node> output;
+    std::list<boost::weak_ptr<Node> > outputs;
     
     boost::shared_ptr<Button_Knob> exportAsTemplate;
     
     NodeGroupPrivate()
     : inputs()
-    , output()
+    , outputs()
     , exportAsTemplate()
     {
         
@@ -961,7 +943,12 @@ NodeGroup::notifyNodeDeactivated(const boost::shared_ptr<Natron::Node>& node)
     }
     GroupOutput* isOutput = dynamic_cast<GroupOutput*>(node->getLiveInstance());
     if (isOutput) {
-        _imp->output.reset();
+        for (std::list<boost::weak_ptr<Natron::Node> >::iterator it = _imp->outputs.begin(); it !=_imp->outputs.end(); ++it) {
+            if (it->lock()->getLiveInstance() == isOutput) {
+                _imp->outputs.erase(it);
+                break;
+            }
+        }
     }
     
     ///Notify outputs of the group nodes that their inputs may have changed
@@ -986,7 +973,7 @@ NodeGroup::notifyNodeActivated(const boost::shared_ptr<Natron::Node>& node)
     }
     GroupOutput* isOutput = dynamic_cast<GroupOutput*>(node->getLiveInstance());
     if (isOutput) {
-        _imp->output = node;
+        _imp->outputs.push_back(node);
     }
     
     ///Notify outputs of the group nodes that their inputs may have changed
@@ -1022,13 +1009,17 @@ NodeGroup::notifyNodeNameChanged(const boost::shared_ptr<Natron::Node>& node)
 boost::shared_ptr<Natron::Node>
 NodeGroup::getOutputNode() const
 {
-    return _imp->output.lock();
+    ///A group can only have a single output.
+    if (_imp->outputs.empty()) {
+        return NodePtr();
+    }
+    return _imp->outputs.front().lock();
 }
 
 boost::shared_ptr<Natron::Node>
 NodeGroup::getOutputNodeInput() const
 {
-    NodePtr output = _imp->output.lock();
+    NodePtr output = getOutputNode();
     if (output) {
         return output->getInput(0);
     }
@@ -1080,7 +1071,7 @@ NodeGroup::knobChanged(KnobI* k,Natron::ValueChangedReasonEnum /*reason*/,
 
 static bool isCharToEscape(const QChar& c)
 {
-    return c == '\\' || c == '"' || c == '\'';
+    return c == '\\' || c == '"' || c == '\'' || c == '\n' || c == '\t' || c == '\r';
 }
 
 static QString escapeString(const QString& str)
@@ -1088,7 +1079,7 @@ static QString escapeString(const QString& str)
     QString ret = str;
     for (int i = 0; i < ret.size(); ++i) {
         if ((i == 0 && isCharToEscape(ret[i])) ||
-            (i > 0 && isCharToEscape(ret[i]) && ret[i - 1] != '\\')) {
+            (i > 0 && isCharToEscape(ret[i]) && ret[i - 1] != QChar('\\'))) {
             ret.insert(i, QChar('\\'));
         }
     }
@@ -1570,7 +1561,7 @@ static void exportRotoLayer(const std::list<boost::shared_ptr<RotoItem> >& items
             exportKnobValues(fallOffKnob,"bezier.getFeatherFallOffParam()", true, ts);
             
             boost::shared_ptr<Color_Knob> colorKnob = isBezier->getColorKnob();
-            exportKnobValues(colorKnob, "bezier.getActivatedParam()", true, ts);
+            exportKnobValues(colorKnob, "bezier.getColorParam()", true, ts);
             
             boost::shared_ptr<Choice_Knob> compositing = isBezier->getOperatorKnob();
             exportKnobValues(compositing, "bezier.getCompositingOperatorParam()", true, ts);
@@ -1785,10 +1776,14 @@ static void exportGroupInternal(const NodeCollection* collection,const QString& 
         WRITE_INDENT(1); WRITE_STRING("lastNode = app.createNode(" + ESC(nodeName) + ", " +
                                       NUM((*it)->getPlugin()->getMajorVersion()) + ", " + groupName +
                                       ")");
-        WRITE_INDENT(1); WRITE_STRING("lastNode.setName(" + ESC((*it)->getScriptName_mt_safe()) + ")");
+        WRITE_INDENT(1); WRITE_STRING("lastNode.setScriptName(" + ESC((*it)->getScriptName_mt_safe()) + ")");
+        WRITE_INDENT(1); WRITE_STRING("lastNode.setLabel(" + ESC((*it)->getLabel_mt_safe()) + ")");
         double x,y;
         (*it)->getPosition(&x,&y);
+        double w,h;
+        (*it)->getSize(&w, &h);
         WRITE_INDENT(1); WRITE_STRING("lastNode.setPosition(" + NUM(x) + ", " + NUM(y) + ")");
+        WRITE_INDENT(1); WRITE_STRING("lastNode.setSize(" + NUM(w) + ", " + NUM(h) + ")");
         
         QString nodeNameInScript = groupName + QString((*it)->getScriptName_mt_safe().c_str());
         WRITE_INDENT(1); WRITE_STRING(nodeNameInScript + " = lastNode");
@@ -1805,9 +1800,10 @@ static void exportGroupInternal(const NodeCollection* collection,const QString& 
             for (std::list< NodePtr > ::iterator it2 = children.begin(); it2 != children.end(); ++it2) {
                 if ((*it2)->isActivated()) {
                     WRITE_INDENT(1); WRITE_STRING("lastNode = " + nodeNameInScript + ".createChild()");
-                    WRITE_INDENT(1); WRITE_STRING("lastNode.setName(\"" + QString((*it2)->getScriptName_mt_safe().c_str()) + "\")");
+                    WRITE_INDENT(1); WRITE_STRING("lastNode.setScriptName(\"" + QString((*it2)->getScriptName_mt_safe().c_str()) + "\")");
+                    WRITE_INDENT(1); WRITE_STRING("lastNode.setLabel(\"" + QString((*it2)->getLabel_mt_safe().c_str()) + "\")");
                     exportAllNodeKnobs(*it2,ts);
-                    WRITE_INDENT(1); WRITE_STRING(groupName + QString((*it2)->getScriptName_mt_safe().c_str()) + " = lastNode");
+                    WRITE_INDENT(1); WRITE_STRING(nodeNameInScript + "." + QString((*it2)->getScriptName_mt_safe().c_str()) + " = lastNode");
                     WRITE_INDENT(1); WRITE_STRING("del lastNode");
                 }
             }

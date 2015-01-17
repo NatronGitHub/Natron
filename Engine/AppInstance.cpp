@@ -366,14 +366,6 @@ AppInstance::createNodeInternal(const QString & pluginID,
         
     }
     
-    if (pluginID == PLUGINID_NATRON_INPUT) {
-        Natron::Project* isProject = dynamic_cast<Natron::Project*>(group.get());
-        if (isProject) {
-            Natron::errorDialog(tr("Plugin error").toStdString(),
-                                tr("You can only create an Input node within a Group").toStdString());
-            return node;
-        }
-    }
     
     if (!plugin) {
         return node;

@@ -1833,12 +1833,13 @@ Node::getOutputsWithGroupRedirection(std::list<Node*>& outputs) const
         boost::shared_ptr<NodeCollection> collection = isOutput->getNode()->getGroup();
         assert(collection);
         isGrp = dynamic_cast<NodeGroup*>(collection.get());
-        assert(isGrp);
-        
-        std::list<Node*> groupOutputs;
-        isGrp->getNode()->getOutputs_mt_safe(groupOutputs);
-        for (std::list<Node*>::iterator it2 = groupOutputs.begin(); it2 != groupOutputs.end(); ++it2) {
-            outputs.push_back(*it2);
+        if (isGrp) {
+            
+            std::list<Node*> groupOutputs;
+            isGrp->getNode()->getOutputs_mt_safe(groupOutputs);
+            for (std::list<Node*>::iterator it2 = groupOutputs.begin(); it2 != groupOutputs.end(); ++it2) {
+                outputs.push_back(*it2);
+            }
         }
     } else {
         QMutexLocker l(&_imp->outputsMutex);
@@ -4170,6 +4171,8 @@ Node::canOthersConnectToThisNode() const
 {
     if (dynamic_cast<BackDrop*>(_imp->liveInstance.get())) {
         return false;
+    } else if (dynamic_cast<GroupOutput*>(_imp->liveInstance.get())) {
+        return false;
     }
     ///In debug mode only allow connections to Writer nodes
 # ifdef DEBUG
@@ -4434,6 +4437,27 @@ Node::getPosition(double *x,double *y) const
     } else {
         *x = 0.;
         *y = 0.;
+    }
+}
+
+void
+Node::setSize(double w,double h)
+{
+    boost::shared_ptr<NodeGuiI> gui = _imp->guiPointer.lock();
+    if (gui) {
+        gui->setSize(w, h);
+    }
+}
+
+void
+Node::getSize(double* w,double* h) const
+{
+    boost::shared_ptr<NodeGuiI> gui = _imp->guiPointer.lock();
+    if (gui) {
+        gui->getSize(w, h);
+    } else {
+        *w = 0.;
+        *h = 0.;
     }
 }
 

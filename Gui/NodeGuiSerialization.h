@@ -25,11 +25,13 @@ CLANG_DIAG_OFF(unused-parameter)
 CLANG_DIAG_ON(unused-parameter)
 #include <boost/archive/xml_oarchive.hpp>
 #include <boost/serialization/version.hpp>
+#include <boost/serialization/split_member.hpp>
 #endif
 #define NODE_GUI_INTRODUCES_COLOR 2
 #define NODE_GUI_INTRODUCES_SELECTED 3
 #define NODE_GUI_MERGE_BACKDROP 4
 #define NODE_GUI_SERIALIZATION_VERSION NODE_GUI_MERGE_BACKDROP
+#include "Engine/AppManager.h"
 
 class NodeGui;
 class NodeGuiSerialization
@@ -107,14 +109,35 @@ private:
 
     friend class boost::serialization::access;
     template<class Archive>
-    void serialize(Archive & ar,
-                   const unsigned int version)
+    void save(Archive & ar,
+                   const unsigned int /*version*/) const
     {
         ar & boost::serialization::make_nvp("Name",_nodeName);
         ar & boost::serialization::make_nvp("X_position",_posX);
         ar & boost::serialization::make_nvp("Y_position",_posY);
         ar & boost::serialization::make_nvp("Preview_enabled",_previewEnabled);
-
+        
+        ar & boost::serialization::make_nvp("r",_r);
+        ar & boost::serialization::make_nvp("g",_g);
+        ar & boost::serialization::make_nvp("b",_b);
+        
+        ar & boost::serialization::make_nvp("Selected",_selected);
+        
+        
+        ar & boost::serialization::make_nvp("Width",_width);
+        ar & boost::serialization::make_nvp("Height",_height);
+        
+    }
+    
+    template<class Archive>
+    void load(Archive & ar,
+              const unsigned int version)
+    {
+        ar & boost::serialization::make_nvp("Name",_nodeName);
+        ar & boost::serialization::make_nvp("X_position",_posX);
+        ar & boost::serialization::make_nvp("Y_position",_posY);
+        ar & boost::serialization::make_nvp("Preview_enabled",_previewEnabled);
+        
         if (version >= NODE_GUI_INTRODUCES_COLOR) {
             ar & boost::serialization::make_nvp("r",_r);
             ar & boost::serialization::make_nvp("g",_g);
@@ -128,8 +151,13 @@ private:
         if (version >= NODE_GUI_MERGE_BACKDROP) {
             ar & boost::serialization::make_nvp("Width",_width);
             ar & boost::serialization::make_nvp("Height",_height);
+        } else {
+            _nodeName = Natron::makeNameScriptFriendly(_nodeName);
         }
     }
+
+    
+    BOOST_SERIALIZATION_SPLIT_MEMBER()
 };
 
 BOOST_CLASS_VERSION(NodeGuiSerialization, NODE_GUI_SERIALIZATION_VERSION)

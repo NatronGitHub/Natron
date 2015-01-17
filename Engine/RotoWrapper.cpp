@@ -42,7 +42,7 @@ ItemBase::getLabel() const
     return _item->getLabel();
 }
 
-void
+bool
 ItemBase::setScriptName(const std::string& name)
 {
     _item->setScriptName(name);

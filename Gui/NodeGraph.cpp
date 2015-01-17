@@ -385,7 +385,7 @@ NodeGraph::NodeGraph(Gui* gui,
 
     NodeGroup* isGrp = dynamic_cast<NodeGroup*>(group.get());
     if (isGrp) {
-        QObject::connect(isGrp->getNode().get(), SIGNAL(nameChanged(QString)), this, SLOT( onGroupNameChanged(QString)));
+        QObject::connect(isGrp->getNode().get(), SIGNAL(labelChanged(QString)), this, SLOT( onGroupNameChanged(QString)));
     }
     
     setMouseTracking(true);
@@ -2461,7 +2461,8 @@ NodeGraph::keyReleaseEvent(QKeyEvent* e)
 void
 NodeGraph::removeNode(const boost::shared_ptr<NodeGui> & node)
 {
-    if (node->getNode()->getPluginID() == PLUGINID_NATRON_OUTPUT) {
+    NodeGroup* isGrp = dynamic_cast<NodeGroup*>(getGroup().get());
+    if (isGrp && node->getNode()->getPluginID() == PLUGINID_NATRON_OUTPUT) {
         Natron::errorDialog(tr("Operation failed").toStdString(), tr("You cannot remove the Output node of a group, it "
                                                                      "needs to exist for the group to work properly.")
                             .toStdString());
@@ -2745,15 +2746,22 @@ NodeGraph::getFullSceneScreenShot()
 
     int xOffset = ( img.width() - renderImage.width() ) / 2;
     int yOffset = ( img.height() - renderImage.height() ) / 2;
-    assert( ( xOffset + renderImage.width() ) <= img.width() && ( yOffset + renderImage.height() ) <= img.height() );
 
     int yDest = yOffset;
     for (int y = 0; y < renderImage.height(); ++y,++yDest) {
+       
+        if (yDest >= img.height()) {
+            break;
+        }
         QRgb* dst_pixels = (QRgb*)img.scanLine(yDest);
         const QRgb* src_pixels = (const QRgb*)renderImage.scanLine(y);
         int xDest = xOffset;
         for (int x = 0; x < renderImage.width(); ++x,++xDest) {
-            dst_pixels[xDest] = src_pixels[x];
+            if (xDest >= img.width()) {
+                dst_pixels[xDest] = qRgba(0, 0, 0, 0);
+            } else {
+                dst_pixels[xDest] = src_pixels[x];
+            }
         }
     }
 

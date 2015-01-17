@@ -114,6 +114,12 @@ public:
     std::string getScriptName() const;
     
     /**
+     * @brief Set the internal script name of the effect
+     * @returns False upon failure, True upon success.
+     **/
+    bool setScriptName(const std::string& scriptName);
+    
+    /**
      * @brief Returns the name of the Effect as displayed on the GUI
      **/
     std::string getLabel() const;
@@ -154,9 +160,16 @@ public:
     int getCurrentTime() const;
     
     /**
-     * @brief Set the position of the node in the nodegraph. This is ignored in background mode.
+     * @brief Set the position of the top left corner of the node in the nodegraph. This is ignored in background mode.
      **/
     void setPosition(double x,double y);
+    void getPosition(double* x, double* y) const;
+    
+    /**
+     * @brief Set the size of the bounding box of the node in the nodegraph. This is ignored in background mode.
+     **/
+    void setSize(double w,double h);
+    void getSize(double* w, double* h) const;
     
     /////////////Functions to create custom parameters//////////////////////////
     ///////////////////////////////////////////////////////////////////////////
