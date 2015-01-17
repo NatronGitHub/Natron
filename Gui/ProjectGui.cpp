@@ -435,6 +435,7 @@ ProjectGui::load(boost::archive::xml_iarchive & archive)
         QColor c;
         c.setRgbF(r,g,b);
         bd->setDefaultColor(c);
+        bd->setCurrentColor(c);
         node->setLabel(it->getFullySpecifiedName());
     }
 
