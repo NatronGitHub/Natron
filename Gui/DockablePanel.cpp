@@ -1792,7 +1792,7 @@ void
 DockablePanel::onManageUserParametersActionTriggered()
 {
     ManageUserParamsDialog dialog(this,this);
-    dialog.exec();
+    ignore_result(dialog.exec());
 }
 
 void
