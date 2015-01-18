@@ -22,6 +22,7 @@
 
 #include "Engine/NodeWrapper.h"
 
+
 class AppInstance;
 
 class App : public Group
@@ -35,6 +36,8 @@ public:
     
     int getAppID() const;
     
+    AppInstance* getInternalApp() const;
+    
     /**
      * @brief Creates a new instance of the plugin identified by the given pluginID.
      * @param majorVersion If different than -1, it will try to load a specific major version
@@ -44,7 +47,7 @@ public:
      **/
     Effect* createNode(const std::string& pluginID,
                        int majorVersion = -1,
-                       Effect* group = 0) const;
+                       Group* group = 0) const;
     
     int timelineGetTime() const;
     

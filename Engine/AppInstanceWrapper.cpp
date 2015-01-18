@@ -36,21 +36,34 @@ App::getAppID() const
     return _instance->getAppID();
 }
 
+AppInstance*
+App::getInternalApp() const
+{
+    return _instance;
+}
+
 Effect*
 App::createNode(const std::string& pluginID,
                 int majorVersion,
-                Effect* group) const
+                Group* group) const
 {
     boost::shared_ptr<NodeCollection> collection;
     if (group) {
-        boost::shared_ptr<Natron::Node> node = group->getInternalNode();
-        assert(node);
-        boost::shared_ptr<NodeGroup> isGrp = boost::dynamic_pointer_cast<NodeGroup>(node->getLiveInstance()->shared_from_this());
-        if (!isGrp) {
-            qDebug() << "The group passed to createNode() is not a group, defaulting to the project root.";
-        } else {
-            collection = boost::dynamic_pointer_cast<NodeCollection>(isGrp);
-            assert(collection);
+        App* isApp = dynamic_cast<App*>(group);
+        Effect* isEffect = dynamic_cast<Effect*>(group);
+        if (isApp) {
+            collection = boost::dynamic_pointer_cast<NodeCollection>(isApp->getInternalApp()->getProject());
+        } else if (isEffect) {
+            boost::shared_ptr<Natron::Node> node = isEffect->getInternalNode();
+            assert(node);
+            boost::shared_ptr<NodeGroup> isGrp = boost::dynamic_pointer_cast<NodeGroup>(node->getLiveInstance()->shared_from_this());
+            if (!isGrp) {
+                qDebug() << "The group passed to createNode() is not a group, defaulting to the project root.";
+            } else {
+                collection = boost::dynamic_pointer_cast<NodeCollection>(isGrp);
+                assert(collection);
+            }
+
         }
     }
     

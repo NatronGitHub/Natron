@@ -721,14 +721,15 @@ CLArgsPrivate::parse()
             foundFileName = true;
         }
         
+        writers.push_back(w);
         
         QStringList::iterator endToErase = next;
         ++endToErase;
         args.erase(it, endToErase);
     }
     
-    if (!writers.empty() && !rangeSet) {
-        std::cout << QObject::tr("The frame range must be set when using the -o option").toStdString() << std::endl;
+    if (atLeastOneOutput && !rangeSet) {
+        std::cout << QObject::tr("A frame range must be set when using the -o option").toStdString() << std::endl;
         error = 1;
         return;
     }
@@ -2946,7 +2947,7 @@ errorDialog(const std::string & title,
     if ( topLvlInstance && !appPTR->isBackground() ) {
         topLvlInstance->errorDialog(title,message,useHtml);
     } else {
-        std::cout << "ERROR: " << title << " :" <<  message << std::endl;
+        std::cout << "ERROR: " << title << ": " <<  message << std::endl;
     }
 }
 
@@ -2961,7 +2962,7 @@ errorDialog(const std::string & title,
     if ( topLvlInstance && !appPTR->isBackground() ) {
         topLvlInstance->errorDialog(title,message,stopAsking,useHtml);
     } else {
-        std::cout << "ERROR: " << title << " :" <<  message << std::endl;
+        std::cout << "ERROR: " << title << ": " <<  message << std::endl;
     }
 }
 
@@ -2975,7 +2976,7 @@ warningDialog(const std::string & title,
     if ( topLvlInstance && !appPTR->isBackground() ) {
         topLvlInstance->warningDialog(title,message,useHtml);
     } else {
-        std::cout << "WARNING: " << title << " :" << message << std::endl;
+        std::cout << "WARNING: " << title << ": " << message << std::endl;
     }
 }
 void

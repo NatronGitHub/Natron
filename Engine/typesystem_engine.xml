@@ -242,7 +242,7 @@
         </modify-function>
     </object-type>
     <object-type name="App" copyable="false">
-        <modify-function signature="createNode(std::string,int,Effect*)const">
+        <modify-function signature="createNode(std::string,int,Group*)const">
             <modify-argument index="return">
                 <define-ownership class="target" owner="target"/>
             </modify-argument>

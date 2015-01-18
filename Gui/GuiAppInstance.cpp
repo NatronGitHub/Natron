@@ -249,8 +249,10 @@ GuiAppInstance::load(const CLArgs& cl)
         
         if (info.suffix() == "py") {
             
+            appPTR->setLoadingStatus(tr("Loading script: ") + cl.getFilename());
+            
             ///If this is a Python script, execute it
-            loadPythonScript(cl.getFilename().toStdString());
+            loadPythonScript(info);
             
         } else if (info.suffix() == NATRON_PROJECT_FILE_EXT) {
             

@@ -39,6 +39,7 @@ class TimeLine;
 struct AppInstancePrivate;
 class KnobSerialization;
 class KnobHolder;
+class QFileInfo;
 class ViewerInstance;
 class ProcessHandler;
 class NodeCollection;
@@ -324,7 +325,7 @@ public:
     
     virtual ViewerInstance* getLastViewerUsingTimeline() const { return 0; }
     
-    bool loadPythonScript(const std::string& filename);
+    bool loadPythonScript(const QFileInfo& file);
     
     boost::shared_ptr<Natron::Node> createWriter(const std::string& filename,
                                                  const boost::shared_ptr<NodeCollection>& collection,

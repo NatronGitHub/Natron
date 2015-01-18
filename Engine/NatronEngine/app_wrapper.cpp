@@ -11,6 +11,7 @@
 #include "app_wrapper.h"
 
 // Extra includes
+#include <NodeGroupWrapper.h>
 #include <NodeWrapper.h>
 #include <list>
 
@@ -55,15 +56,15 @@ static PyObject* Sbk_AppFunc_createNode(PyObject* self, PyObject* args, PyObject
 
 
     // Overloaded function decisor
-    // 0: createNode(std::string,int,Effect*)const
+    // 0: createNode(std::string,int,Group*)const
     if ((pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[0])))) {
         if (numArgs == 1) {
-            overloadId = 0; // createNode(std::string,int,Effect*)const
+            overloadId = 0; // createNode(std::string,int,Group*)const
         } else if ((pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[1])))) {
             if (numArgs == 2) {
-                overloadId = 0; // createNode(std::string,int,Effect*)const
-            } else if ((pythonToCpp[2] = Shiboken::Conversions::isPythonToCppPointerConvertible((SbkObjectType*)SbkNatronEngineTypes[SBK_EFFECT_IDX], (pyArgs[2])))) {
-                overloadId = 0; // createNode(std::string,int,Effect*)const
+                overloadId = 0; // createNode(std::string,int,Group*)const
+            } else if ((pythonToCpp[2] = Shiboken::Conversions::isPythonToCppPointerConvertible((SbkObjectType*)SbkNatronEngineTypes[SBK_GROUP_IDX], (pyArgs[2])))) {
+                overloadId = 0; // createNode(std::string,int,Group*)const
             }
         }
     }
@@ -89,7 +90,7 @@ static PyObject* Sbk_AppFunc_createNode(PyObject* self, PyObject* args, PyObject
                 return 0;
             } else if (value) {
                 pyArgs[2] = value;
-                if (!(pythonToCpp[2] = Shiboken::Conversions::isPythonToCppPointerConvertible((SbkObjectType*)SbkNatronEngineTypes[SBK_EFFECT_IDX], (pyArgs[2]))))
+                if (!(pythonToCpp[2] = Shiboken::Conversions::isPythonToCppPointerConvertible((SbkObjectType*)SbkNatronEngineTypes[SBK_GROUP_IDX], (pyArgs[2]))))
                     goto Sbk_AppFunc_createNode_TypeError;
             }
         }
@@ -99,11 +100,11 @@ static PyObject* Sbk_AppFunc_createNode(PyObject* self, PyObject* args, PyObject
         if (pythonToCpp[1]) pythonToCpp[1](pyArgs[1], &cppArg1);
         if (!Shiboken::Object::isValid(pyArgs[2]))
             return 0;
-        ::Effect* cppArg2 = 0;
+        ::Group* cppArg2 = 0;
         if (pythonToCpp[2]) pythonToCpp[2](pyArgs[2], &cppArg2);
 
         if (!PyErr_Occurred()) {
-            // createNode(std::string,int,Effect*)const
+            // createNode(std::string,int,Group*)const
             // Begin code injection
 
             Effect * cppResult = cppSelf->createNode(cppArg0,cppArg1,cppArg2);
@@ -125,7 +126,7 @@ static PyObject* Sbk_AppFunc_createNode(PyObject* self, PyObject* args, PyObject
     return pyResult;
 
     Sbk_AppFunc_createNode_TypeError:
-        const char* overloads[] = {"std::string, int = -1, NatronEngine.Effect = None", 0};
+        const char* overloads[] = {"std::string, int = -1, NatronEngine.Group = None", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.App.createNode", overloads);
         return 0;
 }

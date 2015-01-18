@@ -532,7 +532,7 @@ DockablePanel::DockablePanel(Gui* gui
 
         _imp->_headerLayout->addStretch();
 
-        if (headerMode != eHeaderModeReadOnlyName) {
+        if (headerMode != eHeaderModeReadOnlyName && _imp->_colorButton) {
             _imp->_headerLayout->addWidget(_imp->_colorButton);
         }
         _imp->_headerLayout->addWidget(_imp->_undoButton);
@@ -1688,7 +1688,7 @@ DockablePanel::isFloating() const
 void
 DockablePanel::onColorDialogColorChanged(const QColor & color)
 {
-    if (_imp->_mode != eHeaderModeReadOnlyName) {
+    if (_imp->_mode != eHeaderModeReadOnlyName && _imp->_colorButton) {
         QPixmap p(15,15);
         p.fill(color);
         _imp->_colorButton->setIcon( QIcon(p) );

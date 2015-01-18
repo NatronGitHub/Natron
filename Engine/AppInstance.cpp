@@ -45,6 +45,24 @@
 
 using namespace Natron;
 
+class FlagSetter {
+    
+    bool* p;
+public:
+    
+    FlagSetter(bool initialValue,bool* p)
+    : p(p)
+    {
+        *p = initialValue;
+    }
+    
+    ~FlagSetter()
+    {
+        *p = !*p;
+    }
+};
+
+
 struct AppInstancePrivate
 {
     boost::shared_ptr<Natron::Project> _currentProject; //< ptr to the project
@@ -370,21 +388,21 @@ AppInstance::load(const CLArgs& cl)
         }
         
         std::list<AppInstance::RenderRequest> writersWork;
-        getWritersWorkForCL(cl, writersWork);
-        
+
         if (info.suffix() == NATRON_PROJECT_FILE_EXT) {
             
             if ( !_imp->_currentProject->loadProject(info.path(),info.fileName()) ) {
                 throw std::invalid_argument(tr("Project file loading failed.").toStdString());
             }
             
+            getWritersWorkForCL(cl, writersWork);
             startWritersRendering(writersWork);
 
         } else if (info.suffix() == "py") {
             
-            loadPythonScript(cl.getFilename().toStdString());
-            
-            
+            loadPythonScript(info);
+            getWritersWorkForCL(cl, writersWork);
+
         } else {
             throw std::invalid_argument(tr(NATRON_APPLICATION_NAME " only accepts python scripts or .ntp project files").toStdString());
         }
@@ -394,70 +412,79 @@ AppInstance::load(const CLArgs& cl)
     } else if (appPTR->getAppType() == AppManager::eAppTypeInterpreter) {
         QFileInfo info(cl.getFilename());
         if (info.exists() && info.suffix() == "py") {
-            loadPythonScript(cl.getFilename().toStdString());
+            loadPythonScript(info);
         }
+        
         
         appPTR->launchPythonInterpreter();
     }
 }
 
 bool
-AppInstance::loadPythonScript(const std::string& filename)
+AppInstance::loadPythonScript(const QFileInfo& file)
 {
-    std::ifstream f;
-    try {
-        f.exceptions(std::ifstream::failbit | std::ifstream::badbit);
-        f.open(filename.c_str(),std::ifstream::in);
-    } catch (const std::ifstream::failure & e) {
-        std::cerr << "Failed to open file: " << e.what() << std::endl;
-        return false;
-    }
     
-    
-    std::string content;
-    std::string line;
-    if (f.is_open()) {
-        while (std::getline(f, line)) {
-            content.append(line);
-            content.push_back('\n');
-        }
-    } else {
-        return false;
-    }
+    std::string addToPythonPath("sys.path.append(\"");
+    addToPythonPath += file.path().toStdString();
+    addToPythonPath += "\")\n";
     
     std::string err;
-    bool ok = Natron::interpretPythonScript("app = app1\n", &err, 0);
+    bool ok  = interpretPythonScript(addToPythonPath, &err, 0);
+    assert(ok);
+
+    ok = Natron::interpretPythonScript("app = app1\n", &err, 0);
     assert(ok);
     
-    std::string output;
-    if (!Natron::interpretPythonScript(content, &err, &output)) {
+    QString filename = file.fileName();
+    int lastDotPos = filename.lastIndexOf(QChar('.'));
+    if (lastDotPos != -1) {
+        filename = filename.left(lastDotPos);
+    }
+    
+    QString hasCreateInstanceScript = QString("import sys\n"
+                                              "import %1\n"
+                                              "ret = True\n"
+                                              "if not hasattr(%1,\"createInstance\") or not hasattr(%1.createInstance,\"__call__\"):\n"
+                                              "    ret = False\n").arg(filename);
+    
+    
+    ok = Natron::interpretPythonScript(hasCreateInstanceScript.toStdString(), &err, 0);
+    
+    if (!ok) {
         Natron::errorDialog(tr("Python").toStdString(), err);
-    } else {
-        if (appPTR->isBackground()) {
-            std::cout << output << std::endl;
+        return false;
+    }
+    
+    
+    PyObject* mainModule = getMainModule();
+    PyObject* retObj = PyObject_GetAttrString(mainModule,"ret"); //new ref
+    assert(retObj);
+    bool hasCreateInstance = PyObject_IsTrue(retObj) == 1;
+    Py_XDECREF(retObj);
+    
+    ok = interpretPythonScript("del ret\n", &err, 0);
+    assert(ok);
+    
+    if (hasCreateInstance) {
+        std::string output;
+        FlagSetter flag(true, &_imp->_creatingGroup);
+        if (!Natron::interpretPythonScript(filename.toStdString() + ".createInstance(app,app)", &err, &output)) {
+            Natron::errorDialog(tr("Python").toStdString(), err);
+            return false;
         } else {
-            appendToScriptEditor(output);
+            if (!output.empty()) {
+                if (appPTR->isBackground()) {
+                    std::cout << output << std::endl;
+                } else {
+                    appendToScriptEditor(output);
+                }
+            }
         }
     }
+    
     return true;
 }
 
-class FlagSetter {
-    
-    bool* p;
-public:
-    
-    FlagSetter(bool initialValue,bool* p)
-    : p(p)
-    {
-        *p = initialValue;
-    }
-    
-    ~FlagSetter()
-    {
-        *p = !*p;
-    }
-};
 
 
 boost::shared_ptr<Natron::Node>
