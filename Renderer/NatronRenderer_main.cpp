@@ -41,7 +41,7 @@ main(int argc,
 
     AppManager manager;
 
-    if (!manager.load(argc,argv,cl)) {
+    if (!manager.load(argc,argv,args)) {
         return 1;
     } else {
         return 0;
