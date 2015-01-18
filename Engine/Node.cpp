@@ -3329,8 +3329,7 @@ Node::setPersistentMessage(MessageTypeEnum type,
         }
         Q_EMIT persistentMessageChanged();
     } else {
-        std::cout << "Persistent message" << std::endl;
-        std::cout << content << std::endl;
+        std::cout << "Persistent message: " << content << std::endl;
     }
 }
 

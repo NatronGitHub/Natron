@@ -2929,6 +2929,9 @@ AppManager::toggleAutoHideGraphInputs()
 void
 AppManager::launchPythonInterpreter()
 {
+    std::string err;
+    bool ok = Natron::interpretPythonScript("app = app1\n", &err, 0);
+    assert(ok);
     Py_Main(1, &_imp->args[0]);
 }
 

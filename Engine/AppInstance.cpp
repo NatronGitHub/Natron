@@ -424,7 +424,11 @@ AppInstance::loadPythonScript(const std::string& filename)
     } else {
         return false;
     }
+    
     std::string err;
+    bool ok = Natron::interpretPythonScript("app = app1\n", &err, 0);
+    assert(ok);
+    
     std::string output;
     if (!Natron::interpretPythonScript(content, &err, &output)) {
         Natron::errorDialog(tr("Python").toStdString(), err);
