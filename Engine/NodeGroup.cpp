@@ -183,6 +183,24 @@ NodeCollection::getViewers(std::list<ViewerInstance*>* viewers) const
 }
 
 void
+NodeCollection::getWriters(std::list<Natron::OutputEffectInstance*>* writers) const
+{
+    QMutexLocker k(&_imp->nodesMutex);
+    for (NodeList::iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
+        if ((*it)->getLiveInstance()->isWriter()) {
+            Natron::OutputEffectInstance* out = dynamic_cast<Natron::OutputEffectInstance*>((*it)->getLiveInstance());
+            assert(out);
+            writers->push_back(out);
+        }
+        NodeGroup* isGrp = dynamic_cast<NodeGroup*>((*it)->getLiveInstance());
+        if (isGrp) {
+            isGrp->getWriters(writers);
+        }
+    }
+
+}
+
+void
 NodeCollection::quitAnyProcessingForAllNodes()
 {
     NodeList nodes = getNodes();
@@ -1784,6 +1802,10 @@ static void exportGroupInternal(const NodeCollection* collection,const QString& 
         (*it)->getSize(&w, &h);
         WRITE_INDENT(1); WRITE_STRING("lastNode.setPosition(" + NUM(x) + ", " + NUM(y) + ")");
         WRITE_INDENT(1); WRITE_STRING("lastNode.setSize(" + NUM(w) + ", " + NUM(h) + ")");
+        
+        double r,g,b;
+        (*it)->getColor(&r,&g,&b);
+        WRITE_INDENT(1); WRITE_STRING("lastNode.setColor(" + NUM(r) + ", " + NUM(g) + ", " + NUM(b) +  ")");
         
         QString nodeNameInScript = groupName + QString((*it)->getScriptName_mt_safe().c_str());
         WRITE_INDENT(1); WRITE_STRING(nodeNameInScript + " = lastNode");

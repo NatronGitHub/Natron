@@ -330,9 +330,12 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
     ///that we set
     for (std::list<boost::shared_ptr<KnobSerialization> >::const_iterator it = paramValues.begin(); it != paramValues.end();++it) {
         boost::shared_ptr<KnobI> knob = getKnobByName((*it)->getName());
-        assert(knob);
-        for (int i = 0; i < knob->getDimension(); ++i) {
-            knob->evaluateValueChange(i, Natron::eValueChangedReasonUserEdited, true);
+        if (knob) {
+            for (int i = 0; i < knob->getDimension(); ++i) {
+                knob->evaluateValueChange(i, Natron::eValueChangedReasonUserEdited, true);
+            }
+        } else {
+            qDebug() << "WARNING: No such parameter " << (*it)->getName().c_str();
         }
     }
     

@@ -171,6 +171,12 @@ public:
     void setSize(double w,double h);
     void getSize(double* w, double* h) const;
     
+    /**
+     * @brief Get the colour of the node as it appears on the nodegraph.
+     **/
+    void getColor(double* r,double *g, double* b) const;
+    void setColor(double r, double g, double b);
+    
     /////////////Functions to create custom parameters//////////////////////////
     ///////////////////////////////////////////////////////////////////////////
     //////////// A parameter may have some properties set after creation, though most of them are not dynamic:

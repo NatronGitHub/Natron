@@ -208,7 +208,7 @@ NodeGui::initialize(NodeGraph* dag,
     if (_settingsPanel) {
         QObject::connect( _settingsPanel,SIGNAL( nameChanged(QString) ),this,SLOT( setName(QString) ) );
         QObject::connect( _settingsPanel,SIGNAL( closeChanged(bool) ), this, SLOT( onSettingsPanelClosed(bool) ) );
-        QObject::connect( _settingsPanel,SIGNAL( colorChanged(QColor) ),this,SLOT( setDefaultColor(QColor) ) );
+        QObject::connect( _settingsPanel,SIGNAL( colorChanged(QColor) ),this,SLOT( onSettingsPanelColorChanged(QColor) ) );
     }
     OfxEffectInstance* ofxNode = dynamic_cast<OfxEffectInstance*>( internalNode->getLiveInstance() );
     if (ofxNode) {
@@ -229,7 +229,7 @@ NodeGui::initialize(NodeGraph* dag,
     _clonedColor.setRgb(200,70,100);
 
 
-    setDefaultColor(defaultColor);
+    setCurrentColor(defaultColor);
 
     if ( !internalNode->isMultiInstance() ) {
         _nodeLabel = internalNode->getNodeExtraLabel().c_str();
@@ -400,7 +400,7 @@ NodeGui::createGui()
 }
 
 void
-NodeGui::setDefaultColor(const QColor & color)
+NodeGui::onSettingsPanelColorChanged(const QColor & color)
 {
     _defaultColor = color;
     refreshCurrentBrush();
@@ -2342,6 +2342,7 @@ NodeGui::getCurrentColor() const
 void
 NodeGui::setCurrentColor(const QColor & c)
 {
+    onSettingsPanelColorChanged(c);
     if (_settingsPanel) {
         _settingsPanel->setCurrentColor(c);
     }
@@ -2866,4 +2867,21 @@ NodeGui::onChildInstanceCreated(const boost::shared_ptr<Natron::Node>& node)
     boost::shared_ptr<MultiInstancePanel> panel = getMultiInstancePanel();
     assert(panel);
     panel->onChildCreated(node);
+}
+
+void
+NodeGui::getColor(double* r,double *g, double* b) const
+{
+    QColor c = getCurrentColor();
+    *r = c.redF();
+    *g = c.greenF();
+    *b = c.blueF();
+}
+
+void
+NodeGui::setColor(double r, double g, double b)
+{
+    QColor c;
+    c.setRgbF(r,g,b);
+    setCurrentColor(c);
 }

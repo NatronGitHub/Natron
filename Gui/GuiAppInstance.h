@@ -68,8 +68,7 @@ private:
 public:
     
     virtual void aboutToQuit() OVERRIDE FINAL;
-    virtual void load(const QString & projectName = QString(),
-                      const std::list<RenderRequest> &writersWork = std::list<AppInstance::RenderRequest>()) OVERRIDE FINAL;
+    virtual void load(const CLArgs& cl) OVERRIDE FINAL;
     Gui* getGui() const WARN_UNUSED_RETURN;
 
     /**

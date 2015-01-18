@@ -62,6 +62,7 @@ CLANG_DIAG_ON(unused-parameter)
 #include "Engine/Plugin.h"
 #include "Engine/Image.h"
 #include "Engine/BackDrop.h"
+#include "Engine/NoOp.h"
 #include "Engine/NodeSerialization.h"
 
 #include "Gui/ActionShortcuts.h"
@@ -299,6 +300,11 @@ DockablePanel::DockablePanel(Gui* gui
     Natron::EffectInstance* iseffect = dynamic_cast<Natron::EffectInstance*>(holder);
     QString pluginLabelVersioned;
     if (iseffect) {
+        
+        if (dynamic_cast<GroupOutput*>(iseffect)) {
+            headerMode = eHeaderModeReadOnlyName;
+        }
+        
         const Natron::Plugin* plugin = iseffect->getNode()->getPlugin();
         pluginLabelVersioned = plugin->getPluginLabel();
         QString toAppend = QString(" version %1.%2").arg(plugin->getMajorVersion()).arg(plugin->getMinorVersion());
@@ -398,7 +404,7 @@ DockablePanel::DockablePanel(Gui* gui
         _imp->_cross->setFocusPolicy(Qt::NoFocus);
         QObject::connect( _imp->_cross,SIGNAL( clicked() ),this,SLOT( closePanel() ) );
 
-        if (headerMode != eHeaderModeReadOnlyName) {
+        if (iseffect) {
             boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
             float r,g,b;
             
@@ -509,7 +515,7 @@ DockablePanel::DockablePanel(Gui* gui
         if (headerMode != eHeaderModeReadOnlyName) {
             _imp->_nameLineEdit = new LineEdit(_imp->_headerWidget);
             if (iseffect) {
-                _imp->_nameLineEdit->setToolTip("<b>Script name: </b>" + QString(iseffect->getScriptName().c_str()));
+                onNodeScriptChanged(iseffect->getScriptName().c_str());
                 QObject::connect(iseffect->getNode().get(),SIGNAL(scriptNameChanged(QString)),this, SLOT(onNodeScriptChanged(QString)));
             }
             _imp->_nameLineEdit->setText(initialName);
@@ -518,6 +524,9 @@ DockablePanel::DockablePanel(Gui* gui
         } else {
             _imp->_nameLabel = new QLabel(initialName,_imp->_headerWidget);
             _imp->_nameLabel->setFont(QFont(appFont,appFontSize));
+            if (iseffect) {
+                onNodeScriptChanged(iseffect->getScriptName().c_str());
+            }
             _imp->_headerLayout->addWidget(_imp->_nameLabel);
         }
 
@@ -588,7 +597,9 @@ void
 DockablePanel::onNodeScriptChanged(const QString& label)
 {
     if (_imp->_nameLineEdit) {
-        _imp->_nameLineEdit->setToolTip("<b>Script name: </b>" + label);
+        _imp->_nameLineEdit->setToolTip("Script name: <br/><b><font size=4>" + label + "</b></font>");
+    } else if (_imp->_nameLabel) {
+        _imp->_nameLabel->setToolTip("Script name: <br/><b><font size=4>" + label + "</b></font>");
     }
 }
 
@@ -783,6 +794,7 @@ DockablePanel::onLineEditNameEditingFinished()
     }
 
     assert(node);
+    
     if (node) {
         pushUndoCommand(new RenameNodeUndoRedoCommand(node, oldName, newName));
     } 

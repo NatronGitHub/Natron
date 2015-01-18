@@ -42,6 +42,7 @@ class KnobHolder;
 class ViewerInstance;
 class ProcessHandler;
 class NodeCollection;
+class CLArgs;
 namespace Natron {
 class Node;
 class Project;
@@ -152,7 +153,7 @@ public:
         int firstFrame,lastFrame;
     };
     
-    virtual void load(const QString & projectName = QString(), const std::list<RenderRequest> &writersWork = std::list<RenderRequest>() );
+    virtual void load(const CLArgs& cl);
 
     int getAppID() const;
 
@@ -323,6 +324,12 @@ public:
     
     virtual ViewerInstance* getLastViewerUsingTimeline() const { return 0; }
     
+    bool loadPythonScript(const std::string& filename);
+    
+    boost::shared_ptr<Natron::Node> createWriter(const std::string& filename,
+                                                 const boost::shared_ptr<NodeCollection>& collection,
+                                                 int firstFrame = INT_MIN, int lastFrame = INT_MAX);
+    
 public Q_SLOTS:
 
 
@@ -359,6 +366,8 @@ protected:
 
 
 private:
+    
+    void getWritersWorkForCL(const CLArgs& cl,std::list<AppInstance::RenderRequest>& requests);
 
 
     boost::shared_ptr<Natron::Node> createNodeInternal(const QString & pluginID,const std::string & multiInstanceParentName,

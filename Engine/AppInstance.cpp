@@ -14,6 +14,7 @@
 
 #include "AppInstance.h"
 
+#include <fstream>
 #include <list>
 #include <stdexcept>
 
@@ -21,10 +22,14 @@
 #include <QtConcurrentMap>
 #include <QThreadPool>
 #include <QUrl>
+#include <QFileInfo>
 #include <QEventLoop>
 #include <QSettings>
 
+
 #include <boost/bind.hpp>
+
+#include "Global/QtCompat.h"
 
 #include "Engine/Project.h"
 #include "Engine/Plugin.h"
@@ -36,6 +41,7 @@
 #include "Engine/FileDownloader.h"
 #include "Engine/Settings.h"
 #include "Engine/KnobTypes.h"
+#include "Engine/NoOp.h"
 
 using namespace Natron;
 
@@ -57,7 +63,6 @@ struct AppInstancePrivate
     }
     
     void declareCurrentAppVariable_Python();
-
     
 };
 
@@ -263,52 +268,174 @@ AppInstance::newVersionCheckError()
 }
 
 void
-AppInstance::load(const QString & projectName,
-                  const std::list<RenderRequest>& writersWork)
+AppInstance::getWritersWorkForCL(const CLArgs& cl,std::list<AppInstance::RenderRequest>& requests)
 {
-    if ( (getAppID() == 0) && appPTR->getCurrentSettings()->isCheckForUpdatesEnabled() ) {
-        QSettings settings(NATRON_ORGANIZATION_NAME,NATRON_APPLICATION_NAME);
-        settings.beginGroup("General");
-        bool checkUpdates = true;
-        if ( !settings.contains("checkForUpdates") ) {
-            Natron::StandardButtonEnum reply = Natron::questionDialog("Updates", "Do you want " NATRON_APPLICATION_NAME " to check for updates "
-                                                                  "on launch of the application ?", false);
-            if (reply == Natron::eStandardButtonNo) {
-                checkUpdates = false;
+    const std::list<CLArgs::WriterArg>& writers = cl.getWriterArgs();
+    for (std::list<CLArgs::WriterArg>::const_iterator it = writers.begin(); it != writers.end(); ++it) {
+        AppInstance::RenderRequest r;
+        
+        int firstFrame = INT_MIN,lastFrame = INT_MAX;
+        if (cl.hasFrameRange()) {
+            const std::pair<int,int>& range = cl.getFrameRange();
+            firstFrame = range.first;
+            lastFrame = range.second;
+        }
+        
+        if (it->mustCreate) {
+            
+            NodePtr writer = createWriter(it->filename.toStdString(), getProject(), firstFrame, lastFrame);
+            
+            //Connect the writer to the corresponding Output node input
+            NodePtr output = getProject()->getNodeByFullySpecifiedName(it->name.toStdString());
+            if (!output) {
+                throw std::invalid_argument(it->name.toStdString() + tr(" is not the name of a valid Output node of the script").toStdString());
             }
-            appPTR->getCurrentSettings()->setCheckUpdatesEnabled(checkUpdates);
+            GroupOutput* isGrpOutput = dynamic_cast<GroupOutput*>(output->getLiveInstance());
+            if (!isGrpOutput) {
+                throw std::invalid_argument(it->name.toStdString() + tr(" is not the name of a valid Output node of the script").toStdString());
+            }
+            NodePtr outputInput = output->getRealInput(0);
+            if (outputInput) {
+                writer->connectInput(outputInput, 0);
+            }
+            
+            r.writerName = writer->getScriptName().c_str();
+            r.firstFrame = firstFrame;
+            r.lastFrame = lastFrame;
+        } else {
+            r.writerName = it->name;
+            r.firstFrame = firstFrame;
+            r.lastFrame = lastFrame;
         }
-        if (checkUpdates) {
-            checkForNewVersion();
-        }
+        requests.push_back(r);
     }
+}
+
+NodePtr
+AppInstance::createWriter(const std::string& filename,
+                          const boost::shared_ptr<NodeCollection>& collection,
+                          int firstFrame, int lastFrame)
+{
+    std::map<std::string,std::string> writersForFormat;
+    appPTR->getCurrentSettings()->getFileFormatsForWritingAndWriter(&writersForFormat);
+    
+    QString fileCpy(filename.c_str());
+    std::string ext = Natron::removeFileExtension(fileCpy).toStdString();
+    std::map<std::string,std::string>::iterator found = writersForFormat.find(ext);
+    if ( found == writersForFormat.end() ) {
+        Natron::errorDialog( tr("Writer").toStdString(),
+                            tr("No plugin capable of encoding ").toStdString() + ext + tr(" was found.").toStdString(),false );
+    }
+    
+    
+    CreateNodeArgs::DefaultValuesList defaultValues;
+    defaultValues.push_back(createDefaultValueForParam<std::string>(kOfxImageEffectFileParamName, filename));
+    if (firstFrame != INT_MIN && lastFrame != INT_MAX) {
+        defaultValues.push_back(createDefaultValueForParam<int>("frameRange", 2));
+        defaultValues.push_back(createDefaultValueForParam<int>("firstFrame", firstFrame));
+        defaultValues.push_back(createDefaultValueForParam<int>("lastFrame", lastFrame));
+    }
+    CreateNodeArgs args(found->second.c_str(),
+                        "",
+                        -1,
+                        -1,
+                        true,
+                        INT_MIN,INT_MIN,
+                        true,
+                        true,
+                        QString(),
+                        defaultValues,
+                        collection);
+    return createNode(args);
+    
+}
+
+void
+AppInstance::load(const CLArgs& cl)
+{
 
     ///if the app is a background project autorun and the project name is empty just throw an exception.
     if ( (appPTR->getAppType() == AppManager::eAppTypeBackgroundAutoRun ||
-          appPTR->getAppType() == AppManager::eAppTypeBackgroundAutoRunLaunchedFromGui) && projectName.isEmpty() ) {
-        // cannot start a background process without a file
-        throw std::invalid_argument("Project file name empty");
-    }
-    if (appPTR->getAppType() == AppManager::eAppTypeBackgroundAutoRun ||
-        appPTR->getAppType() == AppManager::eAppTypeBackgroundAutoRunLaunchedFromGui) {
-        QString realProjectName = projectName;
-        int lastSep = realProjectName.lastIndexOf( QDir::separator() );
-        if (lastSep == -1) {
-            throw std::invalid_argument("Filename has no path. It must be absolute.");
+          appPTR->getAppType() == AppManager::eAppTypeBackgroundAutoRunLaunchedFromGui)) {
+        
+        if (cl.getFilename().isEmpty()) {
+            // cannot start a background process without a file
+            throw std::invalid_argument(tr("Project file name empty").toStdString());
         }
-
-        QString path = realProjectName.left(lastSep);
-        if ( !path.isEmpty() && ( path.at(path.size() - 1) != QDir::separator() ) ) {
-            path += QDir::separator();
+        
+        
+        QFileInfo info(cl.getFilename());
+        if (!info.exists()) {
+            throw std::invalid_argument(tr("Specified file does not exist").toStdString());
         }
+        
+        std::list<AppInstance::RenderRequest> writersWork;
+        getWritersWorkForCL(cl, writersWork);
+        
+        if (info.suffix() == NATRON_PROJECT_FILE_EXT) {
+            
+            if ( !_imp->_currentProject->loadProject(info.path(),info.fileName()) ) {
+                throw std::invalid_argument(tr("Project file loading failed.").toStdString());
+            }
+            
+            startWritersRendering(writersWork);
 
-        QString name = realProjectName.remove(path);
-
-        if ( !_imp->_currentProject->loadProject(path,name) ) {
-            throw std::invalid_argument("Project file loading failed.");
+        } else if (info.suffix() == "py") {
+            
+            loadPythonScript(cl.getFilename().toStdString());
+            
+            
+        } else {
+            throw std::invalid_argument(tr(NATRON_APPLICATION_NAME " only accepts python scripts or .ntp project files").toStdString());
         }
+        
         startWritersRendering(writersWork);
+        
+    } else if (appPTR->getAppType() == AppManager::eAppTypeInterpreter) {
+        QFileInfo info(cl.getFilename());
+        if (info.exists() && info.suffix() == "py") {
+            loadPythonScript(cl.getFilename().toStdString());
+        }
+        
+        appPTR->launchPythonInterpreter();
     }
+}
+
+bool
+AppInstance::loadPythonScript(const std::string& filename)
+{
+    std::ifstream f;
+    try {
+        f.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+        f.open(filename.c_str(),std::ifstream::in);
+    } catch (const std::ifstream::failure & e) {
+        std::cerr << "Failed to open file: " << e.what() << std::endl;
+        return false;
+    }
+    
+    
+    std::string content;
+    std::string line;
+    if (f.is_open()) {
+        while (std::getline(f, line)) {
+            content.append(line);
+            content.push_back('\n');
+        }
+    } else {
+        return false;
+    }
+    std::string err;
+    std::string output;
+    if (!Natron::interpretPythonScript(content, &err, &output)) {
+        Natron::errorDialog(tr("Python").toStdString(), err);
+    } else {
+        if (appPTR->isBackground()) {
+            std::cout << output << std::endl;
+        } else {
+            appendToScriptEditor(output);
+        }
+    }
+    return true;
 }
 
 class FlagSetter {
@@ -660,27 +787,18 @@ AppInstance::triggerAutoSave()
 void
 AppInstance::startWritersRendering(const std::list<RenderRequest>& writers)
 {
-    NodeList projectNodes;
-    _imp->_currentProject->getActiveNodes(&projectNodes);
-    
-   
     std::list<RenderWork> renderers;
 
     if ( !writers.empty() ) {
         for (std::list<RenderRequest>::const_iterator it = writers.begin(); it != writers.end(); ++it) {
             
-            boost::shared_ptr<Node> node;
             std::string writerName =  it->writerName.toStdString();
             
-            for (NodeList::const_iterator it2 = projectNodes.begin(); it2 != projectNodes.end(); ++it2) {
-                if ( (*it2)->getScriptName() == writerName) {
-                    node = *it2;
-                    break;
-                }
-            }
+            NodePtr node = getNodeByFullySpecifiedName(writerName);
+           
             if (!node) {
                 std::string exc(writerName);
-                exc.append(" does not belong to the project file. Please enter a valid writer name.");
+                exc.append(tr(" does not belong to the project file. Please enter a valid writer name.").toStdString());
                 throw std::invalid_argument(exc);
             } else {
                 if ( !node->isOutputNode() ) {
@@ -692,6 +810,7 @@ AppInstance::startWritersRendering(const std::list<RenderRequest>& writers)
                 if (isViewer) {
                     throw std::invalid_argument("Internal issue with the project loader...viewers should have been evicted from the project.");
                 }
+                
                 RenderWork w;
                 w.writer = dynamic_cast<OutputEffectInstance*>( node->getLiveInstance() );
                 assert(w.writer);
@@ -702,17 +821,17 @@ AppInstance::startWritersRendering(const std::list<RenderRequest>& writers)
         }
     } else {
         //start rendering for all writers found in the project
-        for (NodeList::const_iterator it2 = projectNodes.begin(); it2 != projectNodes.end(); ++it2) {
-            if ( (*it2)->getLiveInstance()->isWriter() ) {
-                
-                RenderWork w;
-                w.writer = dynamic_cast<OutputEffectInstance*>( (*it2)->getLiveInstance() );
-                assert(w.writer);
-                if (w.writer) {
-                    w.writer->getFrameRange_public(w.writer->getHash(), &w.firstFrame, &w.lastFrame);
-                }
-                renderers.push_back(w);
+        std::list<Natron::OutputEffectInstance*> writers;
+        getProject()->getWriters(&writers);
+        
+        for (std::list<Natron::OutputEffectInstance*>::const_iterator it2 = writers.begin(); it2 != writers.end(); ++it2) {
+            RenderWork w;
+            w.writer = *it2;
+            assert(w.writer);
+            if (w.writer) {
+                w.writer->getFrameRange_public(w.writer->getHash(), &w.firstFrame, &w.lastFrame);
             }
+            renderers.push_back(w);
         }
     }
     
@@ -722,6 +841,10 @@ AppInstance::startWritersRendering(const std::list<RenderRequest>& writers)
 void
 AppInstance::startWritersRendering(const std::list<RenderWork>& writers)
 {
+    
+    if (writers.empty()) {
+        return;
+    }
     
     if ( appPTR->isBackground() ) {
         

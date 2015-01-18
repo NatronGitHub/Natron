@@ -205,179 +205,37 @@ AppManager::getHardwareIdealThreadCount()
     return _imp->idealThreadCount;
 }
 
-void
-AppManager::printBackGroundWelcomeMessage()
-{
-    std::cout << "================================================================================" << std::endl;
-    std::cout << NATRON_APPLICATION_NAME << "    " << QObject::tr(" version: ").toStdString() << NATRON_VERSION_STRING << std::endl;
-    std::cout << QObject::tr(">>>Running in background mode (off-screen rendering only).<<<").toStdString() << std::endl;
-    std::cout << QObject::tr("Please note that the background mode is in early stage and accepts only project files "
-                             "that would produce a valid output from the graphical version of ").toStdString() << NATRON_APPLICATION_NAME << std::endl;
-    std::cout << QObject::tr("If the background mode doesn't output any result, please adjust your project via the application interface "
-                             "and then re-try using the background mode.").toStdString() << std::endl;
-}
 
-void
-AppManager::printUsage(const std::string& programName)
-{
-    std::cout << NATRON_APPLICATION_NAME << QObject::tr(" usage: ").toStdString() << std::endl;
-    std::cout << programName << QObject::tr("    <project file path>").toStdString() << std::endl;
-    std::cout << QObject::tr("[--background] or [-b] enables background mode rendering. No graphical interface will be shown."
-                             "When using NatronRenderer this argument is implicit and you don't need to use it.").toStdString() << std::endl;
-    std::cout << QObject::tr("[--writer <Writer node script name>] or [-w] When in background mode, the renderer will only try to render with the node"
-                             " script name following this argument. If no such node exists in the project file, the process will abort."
-                             "Note that if you don't pass the --writer argument, it will try to start rendering with all the writers in the project. "
-                             "After the writer node script name you can pass an optional frame range in the format "
-                             " firstFrame-lastFrame (e.g: 10-40). ").toStdString() << std::endl;
-    std::cout << QObject::tr("An example of usage of the renderer can be: \n"
-                             "./NatronRenderer -w MyWriter 1-100 /Users/Me/MyNatronProjects/MyProject.ntp").toStdString() << std::endl;
 
-}
-
-static void appendFakeFrameRange(std::list<std::pair<int,int> >& frameRanges)
+static bool tryParseFrameRange(const QString& arg,std::pair<int,int>& range)
 {
-    ///push a fake frame range indicating to the render engine that it needs to render using the frame range
-    ///defined by the writer node instead
-    std::pair<int, int> range;
-    range.first = INT_MIN;
-    range.second = INT_MAX;
-    frameRanges.push_back(range);
-}
-
-bool
-AppManager::parseCmdLineArgs(int argc,
-                             char* argv[],
-                             bool* isBackground,
-                             QString & projectFilename,
-                             QStringList & writers,
-                             std::list<std::pair<int,int> >& frameRanges,
-                             QString & mainProcessServerName)
-{
-    if (!argv) {
-        return false;
+    bool frameRangeFound = true;
+    
+    QStringList strRange = arg.split('-');
+    if (strRange.size() != 2) {
+        frameRangeFound = false;
     }
-
-    *isBackground = false;
-    bool expectWriterNameOnNextArg = false;
-    bool expectPipeFileNameOnNextArg = false;
-    bool expectedFrameRange = false;
-    QStringList args;
-    for (int i = 0; i < argc; ++i) {
-        args.push_back( QString(argv[i]) );
+    for (int i = 0; i < strRange.size(); ++i) {
+        strRange[i] = strRange[i].trimmed();
     }
-
-    for (int i = 0; i < args.size(); ++i) {
-        
-        if ( args.at(i).contains("." NATRON_PROJECT_FILE_EXT) ) {
-            if (expectWriterNameOnNextArg || expectPipeFileNameOnNextArg) {
-                AppManager::printUsage(argv[0]);
-
-                return false;
-            }
-            if (expectedFrameRange) {
-                expectedFrameRange = false;
-                appendFakeFrameRange(frameRanges);
-            }
-            projectFilename = args.at(i);
-            continue;
-        } else if ( (args.at(i) == "--background") || (args.at(i) == "-b") ) {
-            if (expectWriterNameOnNextArg  || expectPipeFileNameOnNextArg) {
-                AppManager::printUsage(argv[0]);
-
-                return false;
-            }
-            if (expectedFrameRange) {
-                expectedFrameRange = false;
-                appendFakeFrameRange(frameRanges);
-            }
-            *isBackground = true;
-            continue;
-        } else if ( (args.at(i) == "--writer") || (args.at(i) == "-w") ) {
-            if (expectWriterNameOnNextArg  || expectPipeFileNameOnNextArg) {
-                AppManager::printUsage(argv[0]);
-
-                return false;
-            }
-            if (expectedFrameRange) {
-                expectedFrameRange = false;
-                appendFakeFrameRange(frameRanges);
-            }
-            expectWriterNameOnNextArg = true;
-            continue;
-        } else if (args.at(i) == "--IPCpipe") {
-            if (expectWriterNameOnNextArg || expectPipeFileNameOnNextArg) {
-                AppManager::printUsage(argv[0]);
-
-                return false;
-            }
-            if (expectedFrameRange) {
-                expectedFrameRange = false;
-                appendFakeFrameRange(frameRanges);
-            }
-            expectPipeFileNameOnNextArg = true;
-            continue;
+    if (frameRangeFound) {
+        bool ok;
+        range.first = strRange[0].toInt(&ok);
+        if (!ok) {
+            frameRangeFound = false;
         }
         
-        if (expectedFrameRange) {
-            
-            bool frameRangeFound = true;
-            
-            QStringList strRange = args[i].split('-');
-            if (strRange.size() != 2) {
+        if (frameRangeFound) {
+            range.second = strRange[1].toInt(&ok);
+            if (!ok) {
                 frameRangeFound = false;
             }
-            
-            std::pair<int, int> range;
-            if (frameRangeFound) {
-                bool ok;
-                range.first = strRange[0].toInt(&ok);
-                if (!ok) {
-                    frameRangeFound = false;
-                }
-                
-                if (frameRangeFound) {
-                    range.second = strRange[1].toInt(&ok);
-                    if (!ok) {
-                        frameRangeFound = false;
-                    }
-                }
-            }
-            
-            if (frameRangeFound) {
-                frameRanges.push_back(range);
-            } else {
-                appendFakeFrameRange(frameRanges);
-            }
-            
-            expectedFrameRange = false;
-            continue;
-        }
-        
-        if (expectWriterNameOnNextArg) {
-            assert(!expectPipeFileNameOnNextArg);
-            writers << args.at(i);
-            expectWriterNameOnNextArg = false;
-            expectedFrameRange = true;
-            continue;
-        }
-        if (expectPipeFileNameOnNextArg) {
-            assert(!expectWriterNameOnNextArg);
-            mainProcessServerName = args.at(i);
-            expectPipeFileNameOnNextArg = false;
-            continue;
         }
     }
+    
+    return frameRangeFound;
+}
 
-    if (expectWriterNameOnNextArg || expectPipeFileNameOnNextArg) {
-        AppManager::printUsage(argv[0]);
-        
-        return false;
-    }
-    if (expectedFrameRange) {
-        appendFakeFrameRange(frameRanges);
-    }
-    return true;
-} // parseCmdLineArgs
 
 AppManager::AppManager()
     : QObject()
@@ -387,13 +245,499 @@ AppManager::AppManager()
     _instance = this;
 }
 
+struct CLArgsPrivate
+{
+    QStringList args;
+    
+    QString filename;
+    
+    bool isPythonScript;
+    
+    std::list<CLArgs::WriterArg> writers;
+    
+    bool isBackground;
+    
+    QString ipcPipe;
+    
+    int error;
+    
+    bool isInterpreterMode;
+    
+    std::pair<int,int> range;
+    bool rangeSet;
+    
+    bool isEmpty;
+    
+    CLArgsPrivate()
+    : args()
+    , filename()
+    , isPythonScript(false)
+    , writers()
+    , isBackground(false)
+    , ipcPipe()
+    , error(0)
+    , isInterpreterMode(false)
+    , range()
+    , rangeSet(false)
+    , isEmpty(true)
+    {
+        
+    }
+ 
+    
+    void parse();
+    
+    QStringList::iterator hasToken(const QString& longName,const QString& shortName);
+    int hasToken2(const QString& longName,const QString& shortName) const;
+    
+    QStringList::iterator hasOutputToken(QString& indexStr);
+    
+    QStringList::iterator hasFileNameWithExtension(const QString& extension);
+    
+};
+
+CLArgs::CLArgs()
+: _imp(new CLArgsPrivate())
+{
+    
+}
+
+CLArgs::CLArgs(int& argc,char* argv[],bool forceBackground)
+: _imp(new CLArgsPrivate())
+{    
+    _imp->isEmpty = false;
+    if (forceBackground) {
+        _imp->isBackground = true;
+    }
+    for (int i = 0; i < argc; ++i) {
+        _imp->args.push_back( QString(argv[i]) );
+    }
+    
+    _imp->parse();
+}
+
+CLArgs::~CLArgs()
+{
+    
+}
+
+bool
+CLArgs::isEmpty() const
+{
+    return _imp->isEmpty;
+}
+
+#define W_TR_LINE(s) std::cout << QObject::tr(s).toStdString() << std::endl;
+#define W_LINE(s) std::cout << s << std::endl;
+
+void
+CLArgs::printBackGroundWelcomeMessage()
+{
+    W_LINE(NATRON_APPLICATION_NAME);
+    std::cout << QObject::tr("Version: ").toStdString() << NATRON_VERSION_STRING << std::endl;
+    W_TR_LINE("Copyright (C) 2015 the " NATRON_APPLICATION_NAME " developers");
+    W_TR_LINE(">>>Use the --help or -h option to print usage.<<<");
+    std::cout << std::endl;
+}
+
+void
+CLArgs::printUsage(const std::string& programName)
+{
+    std::cout << NATRON_APPLICATION_NAME << QObject::tr(" usage: ").toStdString() << std::endl;
+    W_TR_LINE("3 distinct execution modes exist in background mode:\n"
+                             "- The execution of " NATRON_APPLICATION_NAME " projects (." NATRON_PROJECT_FILE_EXT ")\n"
+                             "- The execution of Python scripts that contain commands for " NATRON_APPLICATION_NAME "\n"
+              "- An interpreter mode where commands can be given directly to the Python interpreter\n");
+    W_TR_LINE("- General options:\n");
+    W_TR_LINE("[--background] or [-b] enables background mode rendering.\n No graphical interface will be shown."
+              "When using NatronRenderer or the -t option this argument is implicit and you don't need to use it."
+              "If using " NATRON_APPLICATION_NAME " and this option is not specified then it will load the project as if opened from the file menu.");
+    W_LINE("\n");
+    W_TR_LINE("[--interpreter] or [-t] [optional<python script file path> enables Python interpreter mode.\n"
+              "Python commands can be given to the interpreter and executed on the fly."
+              "An optional Python script filename can be specified to source a script before the interpreter is made accessible."
+              "Note that " NATRON_APPLICATION_NAME " will not start rendering any Write node of the sourced script, you must explicitly "
+              "start it."
+              "NatronRenderer and " NATRON_APPLICATION_NAME "will do the same thing in this mode, only the init.py script will be loaded.");
+    W_LINE("\n");
+    
+    W_TR_LINE("- Options for the execution of " NATRON_APPLICATION_NAME " projects:\n");
+    W_LINE(programName + " <project file path>");
+    W_TR_LINE("[--writer] or [-w] <Writer node script name> [optional]<filename> [optional]<frameRange> specifies a Write node to render.\n"
+              "When in background mode, the renderer will only try to render with the node"
+              " script name following this argument. If no such node exists in the project file, the process will abort."
+              "Note that if you don't pass the --writer argument, it will try to start rendering with all the writers in the project. "
+              "After the writer node script name you can pass an optional output filename and pass an optional frame range in the format "
+              " firstFrame-lastFrame (e.g: 10-40). \n"
+              "Note that several -w options can be set to specify multiple Write nodes to render.\n"
+              "Note that if specified, then the frame range will be the same for all Write nodes that will render.");
+    W_TR_LINE("Some examples of usage of the tool:\n");
+    W_LINE("./Natron /Users/Me/MyNatronProjects/MyProject.ntp");
+    W_LINE("./Natron -b -w MyWriter /Users/Me/MyNatronProjects/MyProject.ntp");
+    W_LINE("./NatronRenderer -w MyWriter /Users/Me/MyNatronProjects/MyProject.ntp");
+    W_LINE("./NatronRenderer -w MyWriter /FastDisk/Pictures/sequence###.exr 1-100 /Users/Me/MyNatronProjects/MyProject.ntp");
+    W_LINE("./NatronRenderer -w MyWriter -w MySecondWriter 1-10 /Users/Me/MyNatronProjects/MyProject.ntp");
+    W_LINE("\n");
+    W_TR_LINE("- Options for the execution of Python scripts:\n");
+    W_LINE(programName + " <Python script path>");
+    W_TR_LINE("Note that the following does not apply if the -t option was given.");
+    W_TR_LINE("The script argument can either be the script of a Group that was exported from the graphical user interface or an exported project "
+              "or a script written by hand. When executing a script, " NATRON_APPLICATION_NAME " first looks "
+              "for a function with the following signature:\n"
+              "def createInstance(app,group):\n"
+              "If this function is found, it will be executed, otherwise the whole content "
+              "of the script will be interpreted as though it were given to Python natively.\n"
+              "Note that if you are using " NATRON_APPLICATION_NAME " it will source the script before creating the graphical user interface "
+              "and will not start rendering. "
+              "If in background mode you must specify the nodes to render either with the [-w] option as described above "
+              "or with the following option:");
+    
+    W_TR_LINE("[--output] or [-o] <filename> <frameRange> specifies an Output node in the script that should be replaced with a Write node.\n"
+              "The option looks for a node named Output1 in the script and will replace it by a Write node much like when creating a Write node "
+              "in interactive mode. A filename must be specified, it will be the filename of the output files. Also a frame range must be specified "
+              "if it was not specified earlier.\n"
+              "This option can also be used to render out multiple Output nodes, in which case it has to be used like this:\n"
+              "[--output1] or [-o1] looks for a node named Output1 \n"
+              "[--output2] or [-o2] looks for a node named Output2 \n"
+              "etc...");
+    W_TR_LINE("Some examples of usage of the tool:\n");
+    W_LINE("./Natron /Users/Me/MyNatronScripts/MyScript.py");
+    W_LINE("./Natron -b -w MyWriter /Users/Me/MyNatronScripts/MyScript.py");
+    W_LINE("./NatronRenderer -w MyWriter /Users/Me/MyNatronScripts/MyScript.py");
+    W_LINE("./NatronRenderer -o /FastDisk/Pictures/sequence###.exr 1-100 /Users/Me/MyNatronScripts/MyScript.py");
+    W_LINE("./NatronRenderer -o1 /FastDisk/Pictures/sequence###.exr -o2 /FastDisk/Pictures/test###.exr 1-100 /Users/Me/MyNatronScripts/MyScript.py");
+    W_LINE("./NatronRenderer -w MyWriter -o /FastDisk/Pictures/sequence###.exr 1-100 /Users/Me/MyNatronScripts/MyScript.py");
+    W_LINE("\n");
+    W_TR_LINE("- Options for the execution of the interpreter mode:\n");
+    W_LINE(programName + " -t [optional]<Python script path>");
+    W_TR_LINE(NATRON_APPLICATION_NAME " will first source the script passed in argument, if any and then return control to the user that "
+              "can freely input Python commands that will be interpreted by the Python interpreter.");
+    W_TR_LINE("Some examples of usage of the tool:\n");
+    W_LINE("./Natron -t");
+    W_LINE("./NatronRenderer -t");
+    W_LINE("./NatronRenderer -t /Users/Me/MyNatronScripts/MyScript.py");
+    
+    
+}
+
+
+int
+CLArgs::getError() const
+{
+    return _imp->error;
+}
+
+const std::list<CLArgs::WriterArg>&
+CLArgs::getWriterArgs() const
+{
+    return _imp->writers;
+}
+
+bool
+CLArgs::hasFrameRange() const
+{
+    return _imp->rangeSet;
+}
+
+const std::pair<int,int>&
+CLArgs::getFrameRange() const
+{
+    return _imp->range;
+}
+
+bool
+CLArgs::isBackgroundMode() const
+{
+    return _imp->isBackground;
+}
+
+bool
+CLArgs::isInterpreterMode() const
+{
+    return _imp->isInterpreterMode;
+}
+
+const QString&
+CLArgs::getFilename() const
+{
+    return _imp->filename;
+}
+
+const QString&
+CLArgs::getIPCPipeName() const
+{
+    return _imp->ipcPipe;
+}
+
+bool
+CLArgs::isPythonScript() const
+{
+    return _imp->isPythonScript;
+}
+
+QStringList::iterator
+CLArgsPrivate::hasFileNameWithExtension(const QString& extension)
+{
+    for (QStringList::iterator it = args.begin(); it != args.end() ; ++it) {
+        if (it->endsWith("." + extension)) {
+            return it;
+        }
+        
+    }
+    return args.end();
+}
+
+QStringList::iterator
+CLArgsPrivate::hasToken(const QString& longName,const QString& shortName)
+{
+    QString longToken = "--" + longName;
+    QString shortToken =  !shortName.isEmpty() ? "-" + shortName : QString();
+    for (QStringList::iterator it = args.begin(); it != args.end() ; ++it) {
+        if (*it == longToken || (!shortToken.isEmpty() && *it == shortToken)) {
+            return it;
+        }
+    }
+    return args.end();
+}
+
+int
+CLArgsPrivate::hasToken2(const QString& longName,const QString& shortName) const
+{
+    QString longToken = "--" + longName;
+    QString shortToken =  !shortName.isEmpty() ? "-" + shortName : QString();
+    for (int i = 0; i < args.size() ; ++i) {
+        if (args[i] == longToken || (!shortToken.isEmpty() && args[i] == shortToken)) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+QStringList::iterator
+CLArgsPrivate::hasOutputToken(QString& indexStr)
+{
+    QString outputLong("--output");
+    QString outputShort("-o");
+    
+    for (QStringList::iterator it = args.begin(); it != args.end(); ++it) {
+        int indexOf = it->indexOf(outputLong);
+        if (indexOf != -1) {
+            indexOf += outputLong.size();
+            if (indexOf < it->size()) {
+                indexStr = it->mid(indexOf);
+                bool ok;
+                indexStr.toInt(&ok);
+                if (!ok) {
+                    error = 1;
+                    std::cout << QObject::tr("Wrong formating for the -o option").toStdString() << std::endl;
+                    return args.end();
+                }
+            } else {
+                indexStr = "1";
+            }
+            return it;
+        } else {
+            indexOf = it->indexOf(outputShort);
+            if (indexOf != -1) {
+                indexOf += outputShort.size();
+                if (indexOf < it->size()) {
+                    indexStr = it->mid(indexOf);
+                    bool ok;
+                    indexStr.toInt(&ok);
+                    if (!ok) {
+                        error = 1;
+                        std::cout << QObject::tr("Wrong formating for the -o option").toStdString() << std::endl;
+                        return args.end();
+                    }
+                } else {
+                    indexStr = "1";
+                }
+                return it;
+            }
+        }
+    }
+    return args.end();
+}
+
+void
+CLArgsPrivate::parse()
+{
+    {
+        QStringList::iterator it = hasToken("help", "h");
+        if (it != args.end()) {
+            CLArgs::printUsage(args[0].toStdString());
+            error = 1;
+            return;
+        }
+    }
+    
+    {
+        QStringList::iterator it = hasToken("background", "b");
+        if (it != args.end()) {
+            isBackground = true;
+            args.erase(it);
+        }
+    }
+    
+    {
+        QStringList::iterator it = hasToken("interpreter", "t");
+        if (it != args.end()) {
+            isInterpreterMode = true;
+            isBackground = true;
+            std::cout << QObject::tr("Note: -t argument given, loading in background mode, only Python commands / scripts are accepted").toStdString()
+            << std::endl;
+            args.erase(it);
+        }
+    }
+    
+    
+    {
+        QStringList::iterator it = hasToken("IPCpipe", "");
+        if (it != args.end()) {
+            ipcPipe = *it;
+            args.erase(it);
+        }
+    }
+    
+    {
+        QStringList::iterator it = hasFileNameWithExtension(NATRON_PROJECT_FILE_EXT);
+        if (it == args.end()) {
+            it = hasFileNameWithExtension("py");
+            if (it == args.end() && !isInterpreterMode && isBackground) {
+                std::cout << QObject::tr("You must specify the filename of a script or " NATRON_APPLICATION_NAME " project. (." NATRON_PROJECT_FILE_EXT
+                                         ")").toStdString() << std::endl;
+                error = 1;
+                return;
+            }
+            isPythonScript = true;
+            
+        }
+        if (it != args.end()) {
+            filename = *it;
+#if defined(Q_OS_UNIX)
+            filename = AppManager::qt_tildeExpansion(filename);
+#endif
+            args.erase(it);
+        }
+    }
+    
+    //Parse frame range
+    for (int i = 0; i < args.size(); ++i) {
+        if (tryParseFrameRange(args[i], range)) {
+            if (rangeSet) {
+                std::cout << QObject::tr("Only a single frame range can be specified").toStdString() << std::endl;
+                error = 1;
+                return;
+            }
+            rangeSet = true;
+        }
+    }
+    
+    //Parse writers
+    for (;;) {
+        int found = hasToken2("writer", "w");
+        if (found == -1) {
+            break;
+        }
+        
+        if (!isBackground || isInterpreterMode) {
+            std::cout << QObject::tr("You cannot use the -w option in interactive or interpreter mode").toStdString() << std::endl;
+            error = 1;
+            return;
+        }
+        
+        if (found + 1 >= args.size()) {
+            std::cout << QObject::tr("You must specify the name of a Write node when using the -w option").toStdString() << std::endl;
+            error = 1;
+            return;
+        }
+        
+        
+        //Check that the name is conform to a Python acceptable script name
+        std::string pythonConform = Natron::makeNameScriptFriendly(args[found + 1].toStdString());
+        if (args[found + 1].toStdString() != pythonConform) {
+            std::cout << QObject::tr("The name of the Write node specified is not valid: it cannot contain non alpha-numerical "
+                                     "characters and must not start with a digit.").toStdString() << std::endl;
+            error = 1;
+            return;
+        }
+        
+        CLArgs::WriterArg w;
+        w.name = args[found + 1];
+        
+        bool foundFilename = false;
+        if (found + 2 < args.size()) {
+            //Check for an optional filename
+            if (!args[found + 2].startsWith("-") && !args[found + 2].startsWith("--")) {
+                w.filename = args[found+2];
+#if defined(Q_OS_UNIX)
+                w.filename = AppManager::qt_tildeExpansion(w.filename);
+#endif
+                foundFilename = true;
+            }
+        }
+        
+        for (int i  = 0; i < foundFilename ? 2 : 1; ++i) {
+            args.removeAt(found);
+        }
+    } // for (;;)
+    
+    bool atLeastOneOutput = false;
+    ///Parse outputs
+    for (;;) {
+        QString indexStr;
+        QStringList::iterator it  = hasOutputToken(indexStr);
+        if (error > 0) {
+            return;
+        }
+        if (it == args.end()) {
+            break;
+        }
+        
+        if (!isBackground) {
+            std::cout << QObject::tr("You cannot use the -o option in interactive or interpreter mode").toStdString() << std::endl;
+            error = 1;
+            return;
+        }
+
+        CLArgs::WriterArg w;
+        w.name = QString("Output%1").arg(indexStr);
+        w.mustCreate = true;
+        atLeastOneOutput = true;
+        
+        //Check for a mandatory file name
+        bool foundFileName = false;
+        QStringList::iterator next = it;
+        ++next;
+        if (next == args.end()) {
+            std::cout << QObject::tr("Filename is not optional with the -o option").toStdString() << std::endl;
+            error = 1;
+            return;
+        }
+        
+        //Check for an optional filename
+        if (!next->startsWith("-") && !next->startsWith("--")) {
+            w.filename = *next;
+            foundFileName = true;
+        }
+        
+        
+        QStringList::iterator endToErase = next;
+        ++endToErase;
+        args.erase(it, endToErase);
+    }
+    
+    if (!writers.empty() && !rangeSet) {
+        std::cout << QObject::tr("The frame range must be set when using the -o option").toStdString() << std::endl;
+        error = 1;
+        return;
+    }
+}
+
 bool
 AppManager::load(int &argc,
                  char *argv[],
-                 const QString & projectFilename,
-                 const QStringList & writers,
-                 const std::list<std::pair<int,int> >& frameRanges,
-                 const QString & mainProcessServerName)
+                 const CLArgs& cl)
 {
     ///if the user didn't specify launch arguments (e.g unit testing)
     ///find out the binary path
@@ -432,7 +776,7 @@ AppManager::load(int &argc,
     ///the QCoreApplication must have been created so far.
     assert(qApp);
 
-    return loadInternal(projectFilename,writers,frameRanges,mainProcessServerName);
+    return loadInternal(cl);
 }
 
 AppManager::~AppManager()
@@ -504,10 +848,7 @@ AppManager::initializeQApp(int &argc,
 }
 
 bool
-AppManager::loadInternal(const QString & projectFilename,
-                         const QStringList & writers,
-                         const std::list<std::pair<int,int> >& frameRanges,
-                         const QString & mainProcessServerName)
+AppManager::loadInternal(const CLArgs& cl)
 {
     assert(!_imp->_loaded);
 
@@ -609,15 +950,16 @@ AppManager::loadInternal(const QString & projectFilename,
     loadAllPlugins();
     _imp->loadBuiltinFormats();
 
-    if ( isBackground() && !mainProcessServerName.isEmpty() ) {
-        _imp->initProcessInputChannel(mainProcessServerName);
-        printBackGroundWelcomeMessage();
+    if ( isBackground() && !cl.getIPCPipeName().isEmpty() ) {
+        _imp->initProcessInputChannel(cl.getIPCPipeName());
     }
 
 
-    if ( isBackground() ) {
-        if ( !projectFilename.isEmpty() ) {
-            if (!mainProcessServerName.isEmpty()) {
+    if (cl.isInterpreterMode()) {
+        _imp->_appType = eAppTypeInterpreter;
+    } else if ( isBackground() ) {
+        if ( !cl.getFilename().isEmpty() ) {
+            if (!cl.getIPCPipeName().isEmpty()) {
                 _imp->_appType = eAppTypeBackgroundAutoRunLaunchedFromGui;
             } else {
                 _imp->_appType = eAppTypeBackgroundAutoRun;
@@ -629,7 +971,7 @@ AppManager::loadInternal(const QString & projectFilename,
         _imp->_appType = eAppTypeGui;
     }
 
-    AppInstance* mainInstance = newAppInstance(projectFilename,writers,frameRanges);
+    AppInstance* mainInstance = newAppInstance(cl);
     
     hideSplashScreen();
 
@@ -640,7 +982,8 @@ AppManager::loadInternal(const QString & projectFilename,
 
         ///In background project auto-run the rendering is finished at this point, just exit the instance
         if ( (_imp->_appType == eAppTypeBackgroundAutoRun ||
-              _imp->_appType == eAppTypeBackgroundAutoRunLaunchedFromGui) && mainInstance ) {
+              _imp->_appType == eAppTypeBackgroundAutoRunLaunchedFromGui ||
+              _imp->_appType == eAppTypeInterpreter) && mainInstance ) {
             mainInstance->quit();
         }
 
@@ -649,23 +992,12 @@ AppManager::loadInternal(const QString & projectFilename,
 } // loadInternal
 
 AppInstance*
-AppManager::newAppInstance(const QString & projectName,
-                           const QStringList & writers,
-                           const std::list<std::pair<int,int> >& frameRanges)
+AppManager::newAppInstance(const CLArgs& cl)
 {
     AppInstance* instance = makeNewInstance(_imp->_availableID);
 
     try {
-        std::list<AppInstance::RenderRequest> renderWorks;
-        int i = 0;
-        for (std::list<std::pair<int,int> >::const_iterator it = frameRanges.begin(); it != frameRanges.end(); ++it,++i) {
-            AppInstance::RenderRequest w;
-            w.writerName = writers[i];
-            w.firstFrame = it->first;
-            w.lastFrame = it->second;
-            renderWorks.push_back(w);
-        }
-        instance->load(projectName,renderWorks);
+        instance->load(cl);
     } catch (const std::exception & e) {
         Natron::errorDialog( NATRON_APPLICATION_NAME,e.what(), false );
         removeInstance(_imp->_availableID);
@@ -2592,6 +2924,12 @@ AppManager::toggleAutoHideGraphInputs()
     for (std::map<int,AppInstanceRef>::iterator it = _imp->_appInstances.begin(); it != _imp->_appInstances.end(); ++it) {
         it->second.app->toggleAutoHideGraphInputs();
     }
+}
+
+void
+AppManager::launchPythonInterpreter()
+{
+    Py_Main(1, &_imp->args[0]);
 }
 
 namespace Natron {

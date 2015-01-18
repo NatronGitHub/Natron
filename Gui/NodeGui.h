@@ -176,6 +176,11 @@ public:
     virtual void getSize(double* w, double* h) const OVERRIDE FINAL;
     
     virtual void setSize(double w, double h) OVERRIDE FINAL;
+    
+    virtual void getColor(double* r,double *g, double* b) const OVERRIDE FINAL;
+    
+    virtual void setColor(double r, double g, double b) OVERRIDE FINAL;
+
 
     /*Returns true if the NodeGUI contains the point (in items coordinates)*/
     virtual bool contains(const QPointF &point) const OVERRIDE FINAL;
@@ -357,7 +362,7 @@ public Q_SLOTS:
 
     void onSettingsPanelClosed(bool closed);
     
-    void setDefaultColor(const QColor & color);
+    void onSettingsPanelColorChanged(const QColor & color);
 
     void togglePreview();
 

@@ -2680,7 +2680,7 @@ GuiPrivate::setUndoRedoActions(QAction* undoAction,
 void
 Gui::newProject()
 {
-    appPTR->newAppInstance(QString(),QStringList(),std::list<std::pair<int,int> >());
+    appPTR->newAppInstance(CLArgs());
 }
 
 void
@@ -2714,7 +2714,7 @@ Gui::openProjectInternal(const std::string & absoluteFileName)
     } else {
         ///remove autosaves otherwise the new instance might try to load an autosave
         Project::removeAutoSaves();
-        AppInstance* newApp = appPTR->newAppInstance(QString(),QStringList(),std::list<std::pair<int,int> >());
+        AppInstance* newApp = appPTR->newAppInstance(CLArgs());
         newApp->getProject()->loadProject( path.c_str(), fileUnPathed.c_str() );
     }
 
@@ -2941,41 +2941,17 @@ Gui::createWriter()
     }
     std::string file = popSaveFileDialog( true, filters, _imp->_lastSaveSequenceOpenedDir.toStdString(),true );
     if ( !file.empty() ) {
-        QString fileCpy = file.c_str();
-        std::string ext = Natron::removeFileExtension(fileCpy).toStdString();
-        std::map<std::string,std::string>::iterator found = writersForFormat.find(ext);
-        if ( found != writersForFormat.end() ) {
-            
-            NodeGraph* graph = 0;
-            if (_imp->_lastFocusedGraph) {
-                graph = _imp->_lastFocusedGraph;
-            } else {
-                graph = _imp->_nodeGraphArea;
-            }
-            boost::shared_ptr<NodeCollection> group = graph->getGroup();
-            assert(group);
-
-
-            CreateNodeArgs::DefaultValuesList defaultValues;
-            defaultValues.push_back(createDefaultValueForParam<std::string>(kOfxImageEffectFileParamName, file));
-            CreateNodeArgs args(found->second.c_str(),
-                                "",
-                                -1,
-                                -1,
-                                true,
-                                INT_MIN,INT_MIN,
-                                true,
-                                true,
-                                QString(),
-                                defaultValues,
-                                group);
-            ret = _imp->_appInstance->createNode(args);
-            if (!ret) {
-                return ret;
-            }
+        
+        NodeGraph* graph = 0;
+        if (_imp->_lastFocusedGraph) {
+            graph = _imp->_lastFocusedGraph;
         } else {
-            errorDialog( tr("Writer").toStdString(), tr("No plugin capable of encoding ").toStdString() + ext + tr(" was found.").toStdString(),false );
+            graph = _imp->_nodeGraphArea;
         }
+        boost::shared_ptr<NodeCollection> group = graph->getGroup();
+        assert(group);
+        
+        ret =  getApp()->createWriter(file, group);
     }
 
     return ret;
@@ -3701,7 +3677,7 @@ Gui::openRecentFile()
         } else {
             ///remove autosaves otherwise the new instance might try to load an autosave
             Project::removeAutoSaves();
-            AppInstance* newApp = appPTR->newAppInstance(QString(),QStringList(),std::list<std::pair<int,int> >());
+            AppInstance* newApp = appPTR->newAppInstance(CLArgs());
             newApp->getProject()->loadProject( path,f.fileName() );
         }
     }

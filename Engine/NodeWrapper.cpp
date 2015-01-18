@@ -258,6 +258,18 @@ Effect::getSize(double* w, double* h) const
 }
 
 void
+Effect::getColor(double* r,double *g, double* b) const
+{
+    _node->getColor(r, g, b);
+}
+
+void
+Effect::setColor(double r, double g, double b)
+{
+    _node->setColor(r, g, b);
+}
+
+void
 Effect::blockEvaluation()
 {
     _node->getLiveInstance()->blockEvaluation();

@@ -335,6 +335,30 @@
             </inject-code>
             
         </modify-function>
+        <modify-function signature="getColor(double*,double*,double*)const">
+            <modify-argument index="1">
+                <remove-argument/>
+            </modify-argument>
+            <modify-argument index="2">
+                <remove-argument/>
+            </modify-argument>
+            <modify-argument index="3">
+                <remove-argument/>
+            </modify-argument>
+            <modify-argument index="return">
+                <replace-type modified-type="PyObject"/>
+            </modify-argument>
+            <inject-code class="target" position="beginning">
+                double r,g,b;
+                %CPPSELF.%FUNCTION_NAME(&amp;r,&amp;g,&amp;b);
+                %PYARG_0 = PyTuple_New(3);
+                PyTuple_SET_ITEM(%PYARG_0, 0, %CONVERTTOPYTHON[double](r));
+                PyTuple_SET_ITEM(%PYARG_0, 1, %CONVERTTOPYTHON[double](g));
+                PyTuple_SET_ITEM(%PYARG_0, 2, %CONVERTTOPYTHON[double](b));
+                return %PYARG_0;
+            </inject-code>
+            
+        </modify-function>
         <!-- It doesn't seem that Shiboken allows to remove an overload:
          signature 'getNode(std::string)const' for function modification in 'Effect' not found. Possible candidates: getNode(std::string)const in Group
          -->

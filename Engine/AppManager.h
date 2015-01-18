@@ -73,6 +73,60 @@ struct AppInstanceRef
     Natron::AppInstanceStatusEnum status;
 };
 
+
+struct CLArgsPrivate;
+class CLArgs
+{
+public:
+    
+    struct WriterArg
+    {
+        QString name;
+        QString filename;
+        bool mustCreate;
+        
+        WriterArg()
+        : name(), filename(), mustCreate(false)
+        {
+            
+        }
+    };
+    
+    CLArgs();
+    
+    CLArgs(int& argc,char* argv[],bool forceBackground);
+    
+    ~CLArgs();
+    
+    bool isEmpty() const;
+    
+    static void printBackGroundWelcomeMessage();
+    
+    static void printUsage(const std::string& programName);
+    
+    int getError() const;
+    
+    const std::list<CLArgs::WriterArg>& getWriterArgs() const;
+    
+    bool hasFrameRange() const;
+    
+    const std::pair<int,int>& getFrameRange() const;
+    
+    bool isBackgroundMode() const;
+    
+    bool isInterpreterMode() const;
+    
+    const QString& getFilename() const;
+    
+    const QString& getIPCPipeName() const;
+    
+    bool isPythonScript() const;
+    
+private:
+    
+    boost::scoped_ptr<CLArgsPrivate> _imp;
+};
+
 struct AppManagerPrivate;
 class AppManager
     : public QObject, public boost::noncopyable
@@ -90,6 +144,8 @@ public:
                                  //writers is empty, it doesn't make sense to call AppInstance with this parameter.
         
         eAppTypeBackgroundAutoRunLaunchedFromGui, //same as eAppTypeBackgroundAutoRun but a bg process launched by GUI of a main process
+        
+        eAppTypeInterpreter, //< running in Python interpreter mode
 
         eAppTypeGui //< a GUI AppInstance, the end-user can interact with it.
     };
@@ -102,16 +158,10 @@ public:
      * It must be called right away after the constructor. It cannot be put in the constructor as this function relies on RTTI info.
      * @param argc The number of arguments passed to the main function.
      * @param argv An array of strings passed to the main function.
-     * @param projectFilename The project absolute filename that the application's main instance should try to load.
-     * @param writers A list of the writers the project should use to render. This is only meaningful for background applications.
-     * If empty all writers in the project will be rendered.
-     * @param mainProcessServerName The name of the main process named pipe so the background application can communicate with the
+     * @param cl The parsed arguments passed to the command line
      * main process.
      **/
-    bool load( int &argc, char **argv, const QString & projectFilename,
-               const QStringList & writers,
-               const std::list<std::pair<int,int> >& frameRanges,
-               const QString & mainProcessServerName  );
+    bool load( int &argc, char **argv, const CLArgs& cl);
 
     virtual ~AppManager();
 
@@ -126,14 +176,10 @@ public:
     }
 
     AppManager::AppTypeEnum getAppType() const;
-    static void printBackGroundWelcomeMessage();
-    static void printUsage(const std::string& programName);
 
     bool isLoaded() const;
 
-    AppInstance* newAppInstance( const QString & projectName,
-                                const QStringList & writers,
-                                const std::list<std::pair<int,int> >& frameRanges);
+    AppInstance* newAppInstance(const CLArgs& cl);
     virtual void hideSplashScreen()
     {
     }
@@ -371,6 +417,8 @@ public:
     
     QStringList getAllNonOFXPluginsPaths() const;
     
+    void launchPythonInterpreter();
+    
 public Q_SLOTS:
 
     void toggleAutoHideGraphInputs();
@@ -443,10 +491,7 @@ protected:
 private:
 
 
-    bool loadInternal(const QString & projectFilename,
-                      const QStringList & writers,
-                      const std::list<std::pair<int,int> >& frameRanges,
-                      const QString & mainProcessServerName);
+    bool loadInternal(const CLArgs& cl);
     
     void loadPythonGroups();
 

@@ -1334,6 +1334,10 @@ void
 Node::setLabel(const std::string& label)
 {
     assert(QThread::currentThread() == qApp->thread());
+    if (dynamic_cast<GroupOutput*>(_imp->liveInstance.get())) {
+        return ;
+    }
+    
     {
         QMutexLocker k(&_imp->nameMutex);
         _imp->label = label;
@@ -1434,6 +1438,12 @@ Node::setScriptName(const std::string& name)
     if (!getGroup()->setNodeName(name,false, true, &newName)) {
         return false;
     }
+    
+    if (dynamic_cast<GroupOutput*>(_imp->liveInstance.get())) {
+        return false;
+    }
+    
+    
     setNameInternal(newName);
     return true;
 }
@@ -4458,6 +4468,28 @@ Node::getSize(double* w,double* h) const
     } else {
         *w = 0.;
         *h = 0.;
+    }
+}
+
+void
+Node::getColor(double* r,double *g, double* b) const
+{
+    boost::shared_ptr<NodeGuiI> gui = _imp->guiPointer.lock();
+    if (gui) {
+        gui->getColor(r, g, b);
+    } else {
+        *r = 0.;
+        *g = 0.;
+        *b = 0.;
+    }
+}
+
+void
+Node::setColor(double r, double g, double b)
+{
+    boost::shared_ptr<NodeGuiI> gui = _imp->guiPointer.lock();
+    if (gui) {
+        gui->setColor(r, g, b);
     }
 }
 

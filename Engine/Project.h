@@ -249,7 +249,9 @@ public:
     
     void recomputeFrameRangeFromReaders();
     
-    public Q_SLOTS:
+    void createViewer();
+
+public Q_SLOTS:
 
     void onAutoSaveTimerTriggered();
 
@@ -258,7 +260,7 @@ public:
     {
         reset();
     }
-
+    
     void onAutoSaveFutureFinished();
 
 Q_SIGNALS:

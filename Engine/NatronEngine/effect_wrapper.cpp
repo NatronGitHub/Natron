@@ -1432,6 +1432,43 @@ static PyObject* Sbk_EffectFunc_disconnectInput(PyObject* self, PyObject* pyArg)
         return 0;
 }
 
+static PyObject* Sbk_EffectFunc_getColor(PyObject* self)
+{
+    ::Effect* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::Effect*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+
+    // Call function/method
+    {
+
+        if (!PyErr_Occurred()) {
+            // getColor(double*,double*,double*)const
+            // Begin code injection
+
+            double r,g,b;
+            cppSelf->getColor(&r,&g,&b);
+            pyResult = PyTuple_New(3);
+            PyTuple_SET_ITEM(pyResult, 0, Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &r));
+            PyTuple_SET_ITEM(pyResult, 1, Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &g));
+            PyTuple_SET_ITEM(pyResult, 2, Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &b));
+            return pyResult;
+
+            // End of code injection
+
+
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+}
+
 static PyObject* Sbk_EffectFunc_getCurrentTime(PyObject* self)
 {
     ::Effect* cppSelf = 0;
@@ -1903,6 +1940,66 @@ static PyObject* Sbk_EffectFunc_refreshUserParamsGUI(PyObject* self)
     Py_RETURN_NONE;
 }
 
+static PyObject* Sbk_EffectFunc_setColor(PyObject* self, PyObject* args)
+{
+    ::Effect* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::Effect*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], (SbkObject*)self));
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp[] = { 0, 0, 0 };
+    SBK_UNUSED(pythonToCpp)
+    int numArgs = PyTuple_GET_SIZE(args);
+    PyObject* pyArgs[] = {0, 0, 0};
+
+    // invalid argument lengths
+
+
+    if (!PyArg_UnpackTuple(args, "setColor", 3, 3, &(pyArgs[0]), &(pyArgs[1]), &(pyArgs[2])))
+        return 0;
+
+
+    // Overloaded function decisor
+    // 0: setColor(double,double,double)
+    if (numArgs == 3
+        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[0])))
+        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[1])))
+        && (pythonToCpp[2] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[2])))) {
+        overloadId = 0; // setColor(double,double,double)
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_EffectFunc_setColor_TypeError;
+
+    // Call function/method
+    {
+        double cppArg0;
+        pythonToCpp[0](pyArgs[0], &cppArg0);
+        double cppArg1;
+        pythonToCpp[1](pyArgs[1], &cppArg1);
+        double cppArg2;
+        pythonToCpp[2](pyArgs[2], &cppArg2);
+
+        if (!PyErr_Occurred()) {
+            // setColor(double,double,double)
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            cppSelf->setColor(cppArg0, cppArg1, cppArg2);
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+        }
+    }
+
+    if (PyErr_Occurred()) {
+        return 0;
+    }
+    Py_RETURN_NONE;
+
+    Sbk_EffectFunc_setColor_TypeError:
+        const char* overloads[] = {"float, float, float", 0};
+        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.Effect.setColor", overloads);
+        return 0;
+}
+
 static PyObject* Sbk_EffectFunc_setLabel(PyObject* self, PyObject* pyArg)
 {
     ::Effect* cppSelf = 0;
@@ -2141,6 +2238,7 @@ static PyMethodDef Sbk_Effect_methods[] = {
     {"createStringParam", (PyCFunction)Sbk_EffectFunc_createStringParam, METH_VARARGS},
     {"destroy", (PyCFunction)Sbk_EffectFunc_destroy, METH_VARARGS|METH_KEYWORDS},
     {"disconnectInput", (PyCFunction)Sbk_EffectFunc_disconnectInput, METH_O},
+    {"getColor", (PyCFunction)Sbk_EffectFunc_getColor, METH_NOARGS},
     {"getCurrentTime", (PyCFunction)Sbk_EffectFunc_getCurrentTime, METH_NOARGS},
     {"getInput", (PyCFunction)Sbk_EffectFunc_getInput, METH_O},
     {"getLabel", (PyCFunction)Sbk_EffectFunc_getLabel, METH_NOARGS},
@@ -2155,6 +2253,7 @@ static PyMethodDef Sbk_Effect_methods[] = {
     {"getUserPageParam", (PyCFunction)Sbk_EffectFunc_getUserPageParam, METH_NOARGS},
     {"isNull", (PyCFunction)Sbk_EffectFunc_isNull, METH_NOARGS},
     {"refreshUserParamsGUI", (PyCFunction)Sbk_EffectFunc_refreshUserParamsGUI, METH_NOARGS},
+    {"setColor", (PyCFunction)Sbk_EffectFunc_setColor, METH_VARARGS},
     {"setLabel", (PyCFunction)Sbk_EffectFunc_setLabel, METH_O},
     {"setPosition", (PyCFunction)Sbk_EffectFunc_setPosition, METH_VARARGS},
     {"setScriptName", (PyCFunction)Sbk_EffectFunc_setScriptName, METH_O},

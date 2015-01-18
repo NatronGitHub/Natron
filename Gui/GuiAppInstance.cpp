@@ -14,7 +14,9 @@
 
 #include "GuiAppInstance.h"
 
+
 #include <QDir>
+#include <QSettings>
 #include <QMutex>
 #include <QCoreApplication>
 
@@ -168,8 +170,7 @@ GuiAppInstancePrivate::findOrCreateToolButtonRecursive(const boost::shared_ptr<P
 }
 
 void
-GuiAppInstance::load(const QString & projectName,
-                     const std::list<AppInstance::RenderRequest>& /*writersWork*/)
+GuiAppInstance::load(const CLArgs& cl)
 {
     appPTR->setLoadingStatus( tr("Creating user interface...") );
     _imp->_gui = new Gui(this);
@@ -186,13 +187,23 @@ GuiAppInstance::load(const QString & projectName,
     ///show the gui
     _imp->_gui->show();
 
-
+    
     QObject::connect(getProject().get(), SIGNAL(formatChanged(Format)), this, SLOT(projectFormatChanged(Format)));
     
-    if ( (getAppID() == 0) && appPTR->getCurrentSettings()->isCheckForUpdatesEnabled() ) {
-        appPTR->setLoadingStatus( tr("Checking if updates are available...") );
-        ///Before loading autosave check for a new version
-        checkForNewVersion();
+    {
+        QSettings settings(NATRON_ORGANIZATION_NAME,NATRON_APPLICATION_NAME);
+        if ( !settings.contains("checkForUpdates") ) {
+            Natron::StandardButtonEnum reply = Natron::questionDialog(tr("Updates").toStdString(),
+                                                                      tr("Do you want " NATRON_APPLICATION_NAME " to check for updates "
+                                                                      "on launch of the application ?").toStdString(), false);
+            bool checkForUpdates = reply == Natron::eStandardButtonYes;
+            appPTR->getCurrentSettings()->setCheckUpdatesEnabled(checkForUpdates);
+        }
+        
+        if (appPTR->getCurrentSettings()->isCheckForUpdatesEnabled()) {
+            appPTR->setLoadingStatus( tr("Checking if updates are available...") );
+            checkForNewVersion();
+        }
     }
 
     /// Create auto-save dir if it does not exists
@@ -219,7 +230,7 @@ GuiAppInstance::load(const QString & projectName,
     }
     
     /// If this is the first instance of the software, try to load an autosave
-    if ( (getAppID() == 0) && projectName.isEmpty() ) {
+    if ( (getAppID() == 0) && cl.getFilename().isEmpty() ) {
         if ( getProject()->findAndTryLoadAutoSave() ) {
             ///if we successfully loaded an autosave ignore the specified project in the launch args.
             return;
@@ -227,29 +238,34 @@ GuiAppInstance::load(const QString & projectName,
     }
     
    
+    QFileInfo info(cl.getFilename());
 
-    if ( projectName.isEmpty() ) {
-        ///if the user didn't specify a projects name in the launch args just create a viewer node.
-        createNode( CreateNodeArgs(PLUGINID_NATRON_VIEWER,
-                                   "",
-                                   -1,-1,
-                                   true,
-                                   INT_MIN,INT_MIN,
-                                   true,
-                                   true,
-                                   QString(),
-                                   CreateNodeArgs::DefaultValuesList(),
-                                   getProject()) );
+    if (cl.getFilename().isEmpty() || !info.exists()) {
+        
+        getProject()->createViewer();
+        
     } else {
-        ///Otherwise just load the project specified.
-        QFileInfo info(projectName);
-        QString name = info.fileName();
-        QString path = info.path();
-        path += QDir::separator();
-        appPTR->setLoadingStatus(tr("Loading project: ") + path + name);
-        getProject()->loadProject(path,name);
-        ///remove any file open event that might have occured
-        appPTR->setFileToOpen("");
+        
+        
+        if (info.suffix() == "py") {
+            
+            ///If this is a Python script, execute it
+            loadPythonScript(cl.getFilename().toStdString());
+            
+        } else if (info.suffix() == NATRON_PROJECT_FILE_EXT) {
+            
+            ///Otherwise just load the project specified.
+            QString name = info.fileName();
+            QString path = info.path();
+            path += QDir::separator();
+            appPTR->setLoadingStatus(tr("Loading project: ") + path + name);
+            getProject()->loadProject(path,name);
+            ///remove any file open event that might have occured
+            appPTR->setFileToOpen("");
+        } else {
+            Natron::errorDialog(tr("Invalid file").toStdString(),
+                                tr(NATRON_APPLICATION_NAME " only accepts python scripts or .ntp project files").toStdString());
+        }
     }
 } // load
 

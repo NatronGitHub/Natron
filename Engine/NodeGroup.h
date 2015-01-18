@@ -28,6 +28,7 @@ typedef std::list<NodePtr> NodeList;
 
 namespace Natron {
 class Node;
+class OutputEffectInstance;
 }
 class NodeGraphI;
 class KnobI;
@@ -188,6 +189,11 @@ public:
      * @brief Get all viewers in the group and sub groups
      **/
     void getViewers(std::list<ViewerInstance*>* viewers) const;
+    
+    /**
+     * @brief Get all Writers in the group and sub groups
+     **/
+    void getWriters(std::list<Natron::OutputEffectInstance*>* writers) const;
     
     /**
      * @brief Calls quitAnyProcessing for all nodes in the group and in each subgroup

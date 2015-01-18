@@ -56,6 +56,16 @@ public :
     virtual void setSize(double w, double h) = 0;
     
     virtual void exportGroupAsPythonScript() = 0;
+    
+    /**
+     * @brief Get the colour of the node as it appears on the nodegraph.
+     **/
+    virtual void getColor(double* r,double *g, double* b) const = 0;
+    
+    /**
+     * @brief Set the colour of the node as it appears on the nodegraph.
+     **/
+    virtual void setColor(double r, double g, double b) = 0;
 
     /**
      * @brief Called when a child is created for multi-instance, like a new Track

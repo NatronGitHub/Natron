@@ -1973,6 +1973,21 @@ Project::recomputeFrameRangeFromReaders()
     _imp->frameRange->setValue(last, 1);
 }
     
+void
+Project::createViewer()
+{
+    getApp()->createNode( CreateNodeArgs(PLUGINID_NATRON_VIEWER,
+                                         "",
+                                         -1,-1,
+                                         true,
+                                         INT_MIN,INT_MIN,
+                                         true,
+                                         true,
+                                         QString(),
+                                         CreateNodeArgs::DefaultValuesList(),
+                                         shared_from_this()) );
+}
+    
 } //namespace Natron
 
 

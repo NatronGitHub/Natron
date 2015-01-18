@@ -3970,6 +3970,10 @@ NodeGraph::popRenameDialog(const QPoint& pos)
     
     assert(node);
 
+    if (dynamic_cast<GroupOutput*>(node->getNode()->getLiveInstance())) {
+        Natron::errorDialog(tr("Rename").toStdString(), tr("You cannot rename an Output node for scripting purposes.").toStdString());
+        return;
+    }
     
     QPoint realPos = pos;
     
