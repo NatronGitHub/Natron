@@ -139,7 +139,8 @@ Effect::getPluginID() const
     return _node->getPluginID();
 }
 
-Param* createParamWrapperForKnob(const boost::shared_ptr<KnobI>& knob)
+Param*
+Effect::createParamWrapperForKnob(const boost::shared_ptr<KnobI>& knob)
 {
     int dims = knob->getDimension();
     boost::shared_ptr<Int_Knob> isInt = boost::dynamic_pointer_cast<Int_Knob>(knob);

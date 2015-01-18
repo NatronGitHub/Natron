@@ -21,6 +21,8 @@
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h"
 #include "Engine/EffectInstance.h"
+#include "Engine/Settings.h"
+
 App::App(AppInstance* instance)
 : Group()
 , _instance(instance)
@@ -113,4 +115,114 @@ App::timelineGetRightBound() const
     int left,right;
     _instance->getFrameRange(&left, &right);
     return right;
+}
+
+
+AppSettings::AppSettings(const boost::shared_ptr<Settings>& settings)
+: _settings(settings)
+{
+    
+}
+
+Param*
+AppSettings::getParam(const std::string& scriptName) const
+{
+    boost::shared_ptr<KnobI> knob = _settings->getKnobByName(scriptName);
+    if (!knob) {
+        return 0;
+    }
+    return Effect::createParamWrapperForKnob(knob);
+}
+
+std::list<Param*>
+AppSettings::getParams() const
+{
+    std::list<Param*> ret;
+    const std::vector<boost::shared_ptr<KnobI> >& knobs = _settings->getKnobs();
+    for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+        Param* p = Effect::createParamWrapperForKnob(*it);
+        if (p) {
+            ret.push_back(p);
+        }
+    }
+    return ret;
+}
+
+void
+AppSettings::saveSettings()
+{
+    _settings->saveSettings();
+}
+
+void AppSettings::restoreDefaultSettings()
+{
+    _settings->restoreDefault();
+}
+
+void
+App::render(const RenderTask& task)
+{
+    if (!task.writeNode) {
+        std::cerr << QObject::tr("Invalid write node").toStdString() << std::endl;
+        return;
+    }
+    AppInstance::RenderWork w;
+    NodePtr node =  task.writeNode->getInternalNode();
+    if (!node) {
+        std::cerr << QObject::tr("Invalid write node").toStdString() << std::endl;
+        return;
+    }
+    w.writer = dynamic_cast<Natron::OutputEffectInstance*>(node->getLiveInstance());
+    if (!w.writer) {
+        std::cerr << QObject::tr("Invalid write node").toStdString() << std::endl;
+        return;
+    }
+    
+    w.firstFrame = task.firstFrame;
+    w.lastFrame = task.lastFrame;
+    
+    std::list<AppInstance::RenderWork> l;
+    l.push_back(w);
+    _instance->startWritersRendering(l);
+}
+
+void
+App::render(const std::list<RenderTask>& tasks)
+{
+    std::list<AppInstance::RenderWork> l;
+
+    for (std::list<RenderTask>::const_iterator it = tasks.begin(); it != tasks.end(); ++it) {
+        if (!it->writeNode) {
+            std::cerr << QObject::tr("Invalid write node").toStdString() << std::endl;
+            return;
+        }
+        AppInstance::RenderWork w;
+        NodePtr node =  it->writeNode->getInternalNode();
+        if (!node) {
+            std::cerr << QObject::tr("Invalid write node").toStdString() << std::endl;
+            return;
+        }
+        w.writer = dynamic_cast<Natron::OutputEffectInstance*>(node->getLiveInstance());
+        if (!w.writer || !w.writer->isOutput()) {
+            std::cerr << QObject::tr("Invalid write node").toStdString() << std::endl;
+            return;
+        }
+        
+        w.firstFrame = it->firstFrame;
+        w.lastFrame = it->lastFrame;
+        
+        l.push_back(w);
+
+    }
+    _instance->startWritersRendering(l);
+}
+
+Param*
+App::getProjectParam(const std::string& name) const
+{
+    boost::shared_ptr<KnobI> knob =  _instance->getProject()->getKnobByName(name);
+    if (!knob) {
+        return 0;
+    }
+    return Effect::createParamWrapperForKnob(knob);
 }

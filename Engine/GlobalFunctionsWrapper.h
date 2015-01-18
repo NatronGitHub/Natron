@@ -21,6 +21,8 @@
 
 #include "Engine/AppManager.h"
 #include "Engine/AppInstanceWrapper.h"
+#include "Global/MemoryInfo.h"
+
 
 inline std::list<std::string>
 getPluginIDs()
@@ -51,5 +53,88 @@ appendToNatronPath(const std::string& path)
 {
     Natron::appendToNatronPath(path);
 }
+
+inline bool isLinux()
+{
+#ifdef __NATRON_LINUX__
+    return true;
+#else
+    return false;
+#endif
+}
+
+inline bool isWindows()
+{
+#ifdef __NATRON_WIN32__
+    return true;
+#else
+    return false;
+#endif
+}
+
+inline bool isMacOSX()
+{
+#ifdef __NATRON_OSX__
+    return true;
+#else
+    return false;
+#endif
+}
+
+inline bool isUnix()
+{
+#ifdef __NATRON_UNIX__
+    return true;
+#else
+    return false;
+#endif
+}
+
+inline std::string getNatronVersionString()
+{
+    return std::string(NATRON_VERSION_STRING);
+}
+
+inline int getNatronVersionMajor()
+{
+    return NATRON_VERSION_MAJOR;
+}
+
+inline int getNatronVersionMinor()
+{
+    return NATRON_VERSION_MINOR;
+}
+
+inline int getNatronVersionRevision()
+{
+    return NATRON_VERSION_REVISION;
+}
+
+inline int getNatronVersionEncoded()
+{
+    return NATRON_VERSION_ENCODED;
+}
+
+inline std::string getNatronDevelopmentStatus()
+{
+    return std::string(NATRON_DEVELOPMENT_STATUS);
+}
+
+inline int getBuildNumber()
+{
+    return NATRON_BUILD_NUMBER;
+}
+
+inline bool is64Bit()
+{
+    return !isApplication32Bits();
+}
+
+inline int getNumCpus()
+{
+    return appPTR->getHardwareIdealThreadCount();
+}
+
+
 
 #endif // GLOBALFUNCTIONSWRAPPER_H

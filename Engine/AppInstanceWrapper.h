@@ -22,8 +22,39 @@
 
 #include "Engine/NodeWrapper.h"
 
-
+class Settings;
 class AppInstance;
+
+
+class AppSettings
+{
+    
+public:
+    
+    AppSettings(const boost::shared_ptr<Settings>& settings);
+    
+    Param* getParam(const std::string& scriptName) const;
+    
+    std::list<Param*> getParams() const;
+    
+    void saveSettings();
+    
+    void restoreDefaultSettings();
+    
+private:
+    
+    boost::shared_ptr<Settings> _settings;
+};
+
+struct RenderTask
+{
+    Effect* writeNode;
+    int firstFrame,lastFrame;
+    
+    RenderTask() : writeNode(0), firstFrame(0), lastFrame(0) {}
+    
+    RenderTask(Effect* writeNode, int firstFrame, int lastFrame) : writeNode(writeNode) , firstFrame(firstFrame) , lastFrame(lastFrame) {}
+};
 
 class App : public Group
 {
@@ -54,6 +85,16 @@ public:
     int timelineGetLeftBound() const;
     
     int timelineGetRightBound() const;
+    
+    inline AppSettings* getSettings() const
+    {
+        return new AppSettings(appPTR->getCurrentSettings());
+    }
+    
+    void render(const RenderTask& task);
+    void render(const std::list<RenderTask>& tasks);
+    
+    Param* getProjectParam(const std::string& name) const;
 };
 
 

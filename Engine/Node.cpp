@@ -4709,6 +4709,9 @@ Node::setNodeVariableToPython(const std::string& oldName,const std::string& newN
 void
 Node::deleteNodeVariableToPython(const std::string& nodeName)
 {
+    if (getParentMultiInstance()) {
+        return;
+    }
     QString appID = QString("app%1").arg(getApp()->getAppID() + 1);
     QString str = QString("del " + appID + ".%1").arg(nodeName.c_str());
     std::string script = str.toStdString();

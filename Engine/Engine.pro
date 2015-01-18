@@ -149,7 +149,9 @@ SOURCES += \
     NatronEngine/layer_wrapper.cpp \
     NatronEngine/roto_wrapper.cpp \
     NatronEngine/groupparam_wrapper.cpp \
-    NatronEngine/pageparam_wrapper.cpp
+    NatronEngine/pageparam_wrapper.cpp \
+    NatronEngine/appsettings_wrapper.cpp \
+    NatronEngine/rendertask_wrapper.cpp
 
 HEADERS += \
     AppInstance.h \
@@ -308,7 +310,9 @@ HEADERS += \
     NatronEngine/layer_wrapper.h \
     NatronEngine/roto_wrapper.h \
     NatronEngine/groupparam_wrapper.h \
-    NatronEngine/pageparam_wrapper.h
+    NatronEngine/pageparam_wrapper.h \
+    NatronEngine/appsettings_wrapper.h \
+    NatronEngine/rendertask_wrapper.h
 
 
 OTHER_FILES += \

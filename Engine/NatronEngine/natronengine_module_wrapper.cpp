@@ -53,6 +53,29 @@ static PyObject* SbkNatronEngineModule_appendToNatronPath(PyObject* self, PyObje
         return 0;
 }
 
+static PyObject* SbkNatronEngineModule_getBuildNumber(PyObject* self)
+{
+    PyObject* pyResult = 0;
+
+    // Call function/method
+    {
+
+        if (!PyErr_Occurred()) {
+            // getBuildNumber()
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            int cppResult = getBuildNumber();
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<int>(), &cppResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+}
+
 static PyObject* SbkNatronEngineModule_getInstance(PyObject* self, PyObject* pyArg)
 {
     PyObject* pyResult = 0;
@@ -95,6 +118,29 @@ static PyObject* SbkNatronEngineModule_getInstance(PyObject* self, PyObject* pyA
         return 0;
 }
 
+static PyObject* SbkNatronEngineModule_getNatronDevelopmentStatus(PyObject* self)
+{
+    PyObject* pyResult = 0;
+
+    // Call function/method
+    {
+
+        if (!PyErr_Occurred()) {
+            // getNatronDevelopmentStatus()
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            std::string cppResult = getNatronDevelopmentStatus();
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), &cppResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+}
+
 static PyObject* SbkNatronEngineModule_getNatronPath(PyObject* self)
 {
     PyObject* pyResult = 0;
@@ -108,6 +154,144 @@ static PyObject* SbkNatronEngineModule_getNatronPath(PyObject* self)
             std::list<std::string > cppResult = getNatronPath();
             PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_LIST_STD_STRING_IDX], &cppResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+}
+
+static PyObject* SbkNatronEngineModule_getNatronVersionEncoded(PyObject* self)
+{
+    PyObject* pyResult = 0;
+
+    // Call function/method
+    {
+
+        if (!PyErr_Occurred()) {
+            // getNatronVersionEncoded()
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            int cppResult = getNatronVersionEncoded();
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<int>(), &cppResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+}
+
+static PyObject* SbkNatronEngineModule_getNatronVersionMajor(PyObject* self)
+{
+    PyObject* pyResult = 0;
+
+    // Call function/method
+    {
+
+        if (!PyErr_Occurred()) {
+            // getNatronVersionMajor()
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            int cppResult = getNatronVersionMajor();
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<int>(), &cppResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+}
+
+static PyObject* SbkNatronEngineModule_getNatronVersionMinor(PyObject* self)
+{
+    PyObject* pyResult = 0;
+
+    // Call function/method
+    {
+
+        if (!PyErr_Occurred()) {
+            // getNatronVersionMinor()
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            int cppResult = getNatronVersionMinor();
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<int>(), &cppResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+}
+
+static PyObject* SbkNatronEngineModule_getNatronVersionRevision(PyObject* self)
+{
+    PyObject* pyResult = 0;
+
+    // Call function/method
+    {
+
+        if (!PyErr_Occurred()) {
+            // getNatronVersionRevision()
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            int cppResult = getNatronVersionRevision();
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<int>(), &cppResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+}
+
+static PyObject* SbkNatronEngineModule_getNatronVersionString(PyObject* self)
+{
+    PyObject* pyResult = 0;
+
+    // Call function/method
+    {
+
+        if (!PyErr_Occurred()) {
+            // getNatronVersionString()
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            std::string cppResult = getNatronVersionString();
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), &cppResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+}
+
+static PyObject* SbkNatronEngineModule_getNumCpus(PyObject* self)
+{
+    PyObject* pyResult = 0;
+
+    // Call function/method
+    {
+
+        if (!PyErr_Occurred()) {
+            // getNumCpus()
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            int cppResult = getNumCpus();
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<int>(), &cppResult);
         }
     }
 
@@ -164,30 +348,132 @@ static PyObject* SbkNatronEngineModule_getPluginIDs(PyObject* self)
     return pyResult;
 }
 
+static PyObject* SbkNatronEngineModule_is64Bit(PyObject* self)
+{
+    PyObject* pyResult = 0;
+
+    // Call function/method
+    {
+
+        if (!PyErr_Occurred()) {
+            // is64Bit()
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            bool cppResult = is64Bit();
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), &cppResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+}
+
+static PyObject* SbkNatronEngineModule_isLinux(PyObject* self)
+{
+    PyObject* pyResult = 0;
+
+    // Call function/method
+    {
+
+        if (!PyErr_Occurred()) {
+            // isLinux()
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            bool cppResult = isLinux();
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), &cppResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+}
+
+static PyObject* SbkNatronEngineModule_isMacOSX(PyObject* self)
+{
+    PyObject* pyResult = 0;
+
+    // Call function/method
+    {
+
+        if (!PyErr_Occurred()) {
+            // isMacOSX()
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            bool cppResult = isMacOSX();
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), &cppResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+}
+
+static PyObject* SbkNatronEngineModule_isWindows(PyObject* self)
+{
+    PyObject* pyResult = 0;
+
+    // Call function/method
+    {
+
+        if (!PyErr_Occurred()) {
+            // isWindows()
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            bool cppResult = isWindows();
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), &cppResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+}
+
 
 static PyMethodDef NatronEngine_methods[] = {
     {"appendToNatronPath", (PyCFunction)SbkNatronEngineModule_appendToNatronPath, METH_O},
+    {"getBuildNumber", (PyCFunction)SbkNatronEngineModule_getBuildNumber, METH_NOARGS},
     {"getInstance", (PyCFunction)SbkNatronEngineModule_getInstance, METH_O},
+    {"getNatronDevelopmentStatus", (PyCFunction)SbkNatronEngineModule_getNatronDevelopmentStatus, METH_NOARGS},
     {"getNatronPath", (PyCFunction)SbkNatronEngineModule_getNatronPath, METH_NOARGS},
+    {"getNatronVersionEncoded", (PyCFunction)SbkNatronEngineModule_getNatronVersionEncoded, METH_NOARGS},
+    {"getNatronVersionMajor", (PyCFunction)SbkNatronEngineModule_getNatronVersionMajor, METH_NOARGS},
+    {"getNatronVersionMinor", (PyCFunction)SbkNatronEngineModule_getNatronVersionMinor, METH_NOARGS},
+    {"getNatronVersionRevision", (PyCFunction)SbkNatronEngineModule_getNatronVersionRevision, METH_NOARGS},
+    {"getNatronVersionString", (PyCFunction)SbkNatronEngineModule_getNatronVersionString, METH_NOARGS},
+    {"getNumCpus", (PyCFunction)SbkNatronEngineModule_getNumCpus, METH_NOARGS},
     {"getNumInstances", (PyCFunction)SbkNatronEngineModule_getNumInstances, METH_NOARGS},
     {"getPluginIDs", (PyCFunction)SbkNatronEngineModule_getPluginIDs, METH_NOARGS},
+    {"is64Bit", (PyCFunction)SbkNatronEngineModule_is64Bit, METH_NOARGS},
+    {"isLinux", (PyCFunction)SbkNatronEngineModule_isLinux, METH_NOARGS},
+    {"isMacOSX", (PyCFunction)SbkNatronEngineModule_isMacOSX, METH_NOARGS},
+    {"isWindows", (PyCFunction)SbkNatronEngineModule_isWindows, METH_NOARGS},
     {0} // Sentinel
 };
 
 // Classes initialization functions ------------------------------------------------------------
 void init_Group(PyObject* module);
-void init_Effect(PyObject* module);
 void init_App(PyObject* module);
+void init_Effect(PyObject* module);
+void init_AppSettings(PyObject* module);
+void init_RenderTask(PyObject* module);
 void init_ItemBase(PyObject* module);
 void init_Layer(PyObject* module);
 void init_BezierCurve(PyObject* module);
 void init_Roto(PyObject* module);
 void init_Param(PyObject* module);
-void init_ButtonParam(PyObject* module);
-void init_GroupParam(PyObject* module);
 void init_AnimatedParam(PyObject* module);
-void init_ChoiceParam(PyObject* module);
-void init_BooleanParam(PyObject* module);
 void init_StringParamBase(PyObject* module);
 void init_OutputFileParam(PyObject* module);
 void init_PathParam(PyObject* module);
@@ -200,6 +486,10 @@ void init_DoubleParam(PyObject* module);
 void init_Double2DParam(PyObject* module);
 void init_Double3DParam(PyObject* module);
 void init_ColorParam(PyObject* module);
+void init_ChoiceParam(PyObject* module);
+void init_BooleanParam(PyObject* module);
+void init_ButtonParam(PyObject* module);
+void init_GroupParam(PyObject* module);
 void init_PageParam(PyObject* module);
 void init_ParametricParam(PyObject* module);
 void init_Int2DTuple(PyObject* module);
@@ -364,6 +654,40 @@ static PythonToCppFunc is_std_list_ItemBasePTR__PythonToCpp_std_list_ItemBasePTR
     return 0;
 }
 
+// C++ to Python conversion for type 'std::list<Param * >'.
+static PyObject* std_list_ParamPTR__CppToPython_std_list_ParamPTR_(const void* cppIn) {
+    ::std::list<Param * >& cppInRef = *((::std::list<Param * >*)cppIn);
+
+                    // TEMPLATE - stdListToPyList - START
+            PyObject* pyOut = PyList_New((int) cppInRef.size());
+            ::std::list<Param * >::const_iterator it = cppInRef.begin();
+            for (int idx = 0; it != cppInRef.end(); ++it, ++idx) {
+            ::Param* cppItem(*it);
+            PyList_SET_ITEM(pyOut, idx, Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_PARAM_IDX], cppItem));
+            }
+            return pyOut;
+        // TEMPLATE - stdListToPyList - END
+
+}
+static void std_list_ParamPTR__PythonToCpp_std_list_ParamPTR_(PyObject* pyIn, void* cppOut) {
+    ::std::list<Param * >& cppOutRef = *((::std::list<Param * >*)cppOut);
+
+                    // TEMPLATE - pyListToStdList - START
+        for (int i = 0; i < PySequence_Size(pyIn); i++) {
+        Shiboken::AutoDecRef pyItem(PySequence_GetItem(pyIn, i));
+        ::Param* cppItem = ((::Param*)0);
+        Shiboken::Conversions::pythonToCppPointer((SbkObjectType*)SbkNatronEngineTypes[SBK_PARAM_IDX], pyItem, &(cppItem));
+        cppOutRef.push_back(cppItem);
+        }
+    // TEMPLATE - pyListToStdList - END
+
+}
+static PythonToCppFunc is_std_list_ParamPTR__PythonToCpp_std_list_ParamPTR__Convertible(PyObject* pyIn) {
+    if (Shiboken::Conversions::checkSequenceTypes(SbkNatronEngineTypes[SBK_PARAM_IDX], pyIn))
+        return std_list_ParamPTR__PythonToCpp_std_list_ParamPTR_;
+    return 0;
+}
+
 // C++ to Python conversion for type 'std::list<Effect * >'.
 static PyObject* std_list_EffectPTR__CppToPython_std_list_EffectPTR_(const void* cppIn) {
     ::std::list<Effect * >& cppInRef = *((::std::list<Effect * >*)cppIn);
@@ -398,37 +722,37 @@ static PythonToCppFunc is_std_list_EffectPTR__PythonToCpp_std_list_EffectPTR__Co
     return 0;
 }
 
-// C++ to Python conversion for type 'std::list<Param * >'.
-static PyObject* std_list_ParamPTR__CppToPython_std_list_ParamPTR_(const void* cppIn) {
-    ::std::list<Param * >& cppInRef = *((::std::list<Param * >*)cppIn);
+// C++ to Python conversion for type 'const std::list<RenderTask > &'.
+static PyObject* conststd_list_RenderTask_REF_CppToPython_conststd_list_RenderTask_REF(const void* cppIn) {
+    ::std::list<RenderTask >& cppInRef = *((::std::list<RenderTask >*)cppIn);
 
                     // TEMPLATE - stdListToPyList - START
             PyObject* pyOut = PyList_New((int) cppInRef.size());
-            ::std::list<Param * >::const_iterator it = cppInRef.begin();
+            ::std::list<RenderTask >::const_iterator it = cppInRef.begin();
             for (int idx = 0; it != cppInRef.end(); ++it, ++idx) {
-            ::Param* cppItem(*it);
-            PyList_SET_ITEM(pyOut, idx, Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_PARAM_IDX], cppItem));
+            ::RenderTask cppItem(*it);
+            PyList_SET_ITEM(pyOut, idx, Shiboken::Conversions::copyToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_RENDERTASK_IDX], &cppItem));
             }
             return pyOut;
         // TEMPLATE - stdListToPyList - END
 
 }
-static void std_list_ParamPTR__PythonToCpp_std_list_ParamPTR_(PyObject* pyIn, void* cppOut) {
-    ::std::list<Param * >& cppOutRef = *((::std::list<Param * >*)cppOut);
+static void conststd_list_RenderTask_REF_PythonToCpp_conststd_list_RenderTask_REF(PyObject* pyIn, void* cppOut) {
+    ::std::list<RenderTask >& cppOutRef = *((::std::list<RenderTask >*)cppOut);
 
                     // TEMPLATE - pyListToStdList - START
         for (int i = 0; i < PySequence_Size(pyIn); i++) {
         Shiboken::AutoDecRef pyItem(PySequence_GetItem(pyIn, i));
-        ::Param* cppItem = ((::Param*)0);
-        Shiboken::Conversions::pythonToCppPointer((SbkObjectType*)SbkNatronEngineTypes[SBK_PARAM_IDX], pyItem, &(cppItem));
+        ::RenderTask cppItem = ::RenderTask();
+        Shiboken::Conversions::pythonToCppCopy((SbkObjectType*)SbkNatronEngineTypes[SBK_RENDERTASK_IDX], pyItem, &(cppItem));
         cppOutRef.push_back(cppItem);
         }
     // TEMPLATE - pyListToStdList - END
 
 }
-static PythonToCppFunc is_std_list_ParamPTR__PythonToCpp_std_list_ParamPTR__Convertible(PyObject* pyIn) {
-    if (Shiboken::Conversions::checkSequenceTypes(SbkNatronEngineTypes[SBK_PARAM_IDX], pyIn))
-        return std_list_ParamPTR__PythonToCpp_std_list_ParamPTR_;
+static PythonToCppFunc is_conststd_list_RenderTask_REF_PythonToCpp_conststd_list_RenderTask_REF_Convertible(PyObject* pyIn) {
+    if (Shiboken::Conversions::convertibleSequenceTypes((SbkObjectType*)SbkNatronEngineTypes[SBK_RENDERTASK_IDX], pyIn))
+        return conststd_list_RenderTask_REF_PythonToCpp_conststd_list_RenderTask_REF;
     return 0;
 }
 
@@ -591,18 +915,16 @@ SBK_MODULE_INIT_FUNCTION_BEGIN(NatronEngine)
 
     // Initialize classes in the type system
     init_Group(module);
-    init_Effect(module);
     init_App(module);
+    init_Effect(module);
+    init_AppSettings(module);
+    init_RenderTask(module);
     init_ItemBase(module);
     init_Layer(module);
     init_BezierCurve(module);
     init_Roto(module);
     init_Param(module);
-    init_ButtonParam(module);
-    init_GroupParam(module);
     init_AnimatedParam(module);
-    init_ChoiceParam(module);
-    init_BooleanParam(module);
     init_StringParamBase(module);
     init_OutputFileParam(module);
     init_PathParam(module);
@@ -615,6 +937,10 @@ SBK_MODULE_INIT_FUNCTION_BEGIN(NatronEngine)
     init_Double2DParam(module);
     init_Double3DParam(module);
     init_ColorParam(module);
+    init_ChoiceParam(module);
+    init_BooleanParam(module);
+    init_ButtonParam(module);
+    init_GroupParam(module);
     init_PageParam(module);
     init_ParametricParam(module);
     init_Int2DTuple(module);
@@ -661,6 +987,13 @@ SBK_MODULE_INIT_FUNCTION_BEGIN(NatronEngine)
         std_list_ItemBasePTR__PythonToCpp_std_list_ItemBasePTR_,
         is_std_list_ItemBasePTR__PythonToCpp_std_list_ItemBasePTR__Convertible);
 
+    // Register converter for type 'std::list<Param*>'.
+    SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_LIST_PARAMPTR_IDX] = Shiboken::Conversions::createConverter(&PyList_Type, std_list_ParamPTR__CppToPython_std_list_ParamPTR_);
+    Shiboken::Conversions::registerConverterName(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_LIST_PARAMPTR_IDX], "std::list<Param*>");
+    Shiboken::Conversions::addPythonToCppValueConversion(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_LIST_PARAMPTR_IDX],
+        std_list_ParamPTR__PythonToCpp_std_list_ParamPTR_,
+        is_std_list_ParamPTR__PythonToCpp_std_list_ParamPTR__Convertible);
+
     // Register converter for type 'std::list<Effect*>'.
     SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_LIST_EFFECTPTR_IDX] = Shiboken::Conversions::createConverter(&PyList_Type, std_list_EffectPTR__CppToPython_std_list_EffectPTR_);
     Shiboken::Conversions::registerConverterName(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_LIST_EFFECTPTR_IDX], "std::list<Effect*>");
@@ -668,12 +1001,12 @@ SBK_MODULE_INIT_FUNCTION_BEGIN(NatronEngine)
         std_list_EffectPTR__PythonToCpp_std_list_EffectPTR_,
         is_std_list_EffectPTR__PythonToCpp_std_list_EffectPTR__Convertible);
 
-    // Register converter for type 'std::list<Param*>'.
-    SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_LIST_PARAMPTR_IDX] = Shiboken::Conversions::createConverter(&PyList_Type, std_list_ParamPTR__CppToPython_std_list_ParamPTR_);
-    Shiboken::Conversions::registerConverterName(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_LIST_PARAMPTR_IDX], "std::list<Param*>");
-    Shiboken::Conversions::addPythonToCppValueConversion(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_LIST_PARAMPTR_IDX],
-        std_list_ParamPTR__PythonToCpp_std_list_ParamPTR_,
-        is_std_list_ParamPTR__PythonToCpp_std_list_ParamPTR__Convertible);
+    // Register converter for type 'const std::list<RenderTask>&'.
+    SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_LIST_RENDERTASK_IDX] = Shiboken::Conversions::createConverter(&PyList_Type, conststd_list_RenderTask_REF_CppToPython_conststd_list_RenderTask_REF);
+    Shiboken::Conversions::registerConverterName(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_LIST_RENDERTASK_IDX], "const std::list<RenderTask>&");
+    Shiboken::Conversions::addPythonToCppValueConversion(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_LIST_RENDERTASK_IDX],
+        conststd_list_RenderTask_REF_PythonToCpp_conststd_list_RenderTask_REF,
+        is_conststd_list_RenderTask_REF_PythonToCpp_conststd_list_RenderTask_REF_Convertible);
 
     // Register converter for type 'QList<QVariant>'.
     SbkNatronEngineTypeConverters[SBK_NATRONENGINE_QLIST_QVARIANT_IDX] = Shiboken::Conversions::createConverter(&PyList_Type, _QList_QVariant__CppToPython__QList_QVariant_);

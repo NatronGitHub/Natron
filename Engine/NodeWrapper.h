@@ -289,6 +289,8 @@ public:
      * @brief Get the roto context for this node if it has any. At the time of writing only the Roto node has a roto context.
      **/
     Roto* getRotoContext() const;
+    
+    static Param* createParamWrapperForKnob(const boost::shared_ptr<KnobI>& knob);
 };
 
 #endif // NODEWRAPPER_H

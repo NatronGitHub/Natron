@@ -251,6 +251,17 @@
                 %PYARG_0 = %CONVERTTOPYTHON[%RETURN_TYPE](%0);
             </inject-code>
         </modify-function>
+        <modify-function signature="getSettings()const">
+            <modify-argument index="return">
+                <define-ownership class="target" owner="target"/>
+            </modify-argument>
+        </modify-function>
+        <modify-function signature="getParam(std::string)const">
+            <modify-argument index="return">
+                <define-ownership class="target" owner="target"/>
+            </modify-argument>
+        </modify-function>
+
     </object-type>
     
         
@@ -474,6 +485,34 @@
             </modify-argument>
         </modify-function>
     </object-type>
+    
+    <object-type name="RenderTask">
+    </object-type>
+    
+    <object-type name="AppSettings">
+        <modify-function signature="getParam(std::string)const">
+            <modify-argument index="return">
+                <define-ownership class="target" owner="target"/>
+            </modify-argument>
+        </modify-function>
+        <modify-function signature="getParams()const">
+            <inject-code class="target" position="beginning">
+                std::list&lt;Param*&gt; params = %CPPSELF.%FUNCTION_NAME(%ARGUMENT_NAMES);
+                PyObject* ret = PyList_New((int) params.size());
+                int idx = 0;
+                for (std::list&lt;Param*&gt;::iterator it = params.begin(); it!=params.end(); ++it,++idx) {
+                PyObject* item = %CONVERTTOPYTHON[Param*](*it);
+                // Ownership transferences.
+                Shiboken::Object::getOwnership(item);
+                PyList_SET_ITEM(ret, idx, item);
+                }
+                return ret;
+            </inject-code>
+        </modify-function>
+    </object-type>
+    
+    
+    
     <object-type name="Param">
         <modify-function signature="getParent()const">
             <modify-argument index="return">
@@ -1068,6 +1107,19 @@
     <function signature="getInstance(int)"/>
     <function signature="getNatronPath()"/>
     <function signature="appendToNatronPath(std::string)"/>
+    <function signature="isLinux()"/>
+    <function signature="isWindows()"/>
+    <function signature="isMacOSX()"/>
+    <function signature="is64Bit()"/>
+    <function signature="getNatronVersionString()"/>
+    <function signature="getNatronVersionMajor()"/>
+    <function signature="getNatronVersionMinor()"/>
+    <function signature="getNatronVersionRevision()"/>
+    <function signature="getNatronVersionEncoded()"/>
+    <function signature="getNatronDevelopmentStatus()"/>
+    <function signature="getNumCpus()"/>
+    <function signature="getBuildNumber()"/>
+
 
 </typesystem>
 

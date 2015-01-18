@@ -1180,14 +1180,15 @@ OutputSchedulerThread::notifyFrameRendered(int frame,
                                            Natron::SchedulingPolicyEnum policy)
 {
     _imp->engine->s_frameRendered(frame);
-    
+    double percentage;
     if (policy == eSchedulingPolicyFFA) {
         
         QMutexLocker l(&_imp->runArgsMutex);
         ++_imp->nFramesRendered;
-        if ( _imp->nFramesRendered == (U64)(_imp->livingRunArgs.lastFrame - _imp->livingRunArgs.firstFrame + 1) ) {
+        U64 totalFrames = _imp->livingRunArgs.lastFrame - _imp->livingRunArgs.firstFrame + 1;
+        percentage = (double)_imp->nFramesRendered / totalFrames;
+        if ( _imp->nFramesRendered == totalFrames) {
             _imp->renderFinished = true;
-            
             l.unlock();
 
             ///Notify the scheduler rendering is finished by append a fake frame to the buffer
@@ -1204,6 +1205,9 @@ OutputSchedulerThread::notifyFrameRendered(int frame,
             int newNThreads;
             adjustNumberOfThreads(&newNThreads);
         }
+    } else {
+        QMutexLocker l(&_imp->runArgsMutex);
+        percentage = (double)frame / _imp->livingRunArgs.lastFrame - _imp->livingRunArgs.firstFrame + 1;
     }
     
     std::string afterFrameRender = _imp->outputEffect->getNode()->getAfterFrameRenderCallback();
@@ -1211,7 +1215,9 @@ OutputSchedulerThread::notifyFrameRendered(int frame,
     
     if ( appPTR->isBackground() ) {
         QString frameStr = QString::number(frame);
-        appPTR->writeToOutputPipe(kFrameRenderedStringLong + frameStr,kFrameRenderedStringShort + frameStr);
+        
+        QString pStr = QString::number(percentage * 100);
+        appPTR->writeToOutputPipe(kFrameRenderedStringLong + frameStr + " (" + pStr + "%)",kFrameRenderedStringShort + frameStr);
     }
 }
 

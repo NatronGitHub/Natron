@@ -11,6 +11,7 @@
 #include "app_wrapper.h"
 
 // Extra includes
+#include <AppInstanceWrapper.h>
 #include <NodeGroupWrapper.h>
 #include <NodeWrapper.h>
 #include <list>
@@ -159,6 +160,103 @@ static PyObject* Sbk_AppFunc_getAppID(PyObject* self)
     return pyResult;
 }
 
+static PyObject* Sbk_AppFunc_getSettings(PyObject* self)
+{
+    ::App* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::App*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_APP_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+
+    // Call function/method
+    {
+
+        if (!PyErr_Occurred()) {
+            // getSettings()const
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            AppSettings * cppResult = const_cast<const ::App*>(cppSelf)->getSettings();
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_APPSETTINGS_IDX], cppResult);
+
+            // Ownership transferences.
+            Shiboken::Object::getOwnership(pyResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+}
+
+static PyObject* Sbk_AppFunc_render(PyObject* self, PyObject* pyArg)
+{
+    ::App* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::App*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_APP_IDX], (SbkObject*)self));
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp;
+    SBK_UNUSED(pythonToCpp)
+
+    // Overloaded function decisor
+    // 0: render(RenderTask)
+    // 1: render(std::list<RenderTask>)
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppReferenceConvertible((SbkObjectType*)SbkNatronEngineTypes[SBK_RENDERTASK_IDX], (pyArg)))) {
+        overloadId = 0; // render(RenderTask)
+    } else if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_LIST_RENDERTASK_IDX], (pyArg)))) {
+        overloadId = 1; // render(std::list<RenderTask>)
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_AppFunc_render_TypeError;
+
+    // Call function/method
+    switch (overloadId) {
+        case 0: // render(const RenderTask & task)
+        {
+            if (!Shiboken::Object::isValid(pyArg))
+                return 0;
+            ::RenderTask* cppArg0;
+            pythonToCpp(pyArg, &cppArg0);
+
+            if (!PyErr_Occurred()) {
+                // render(RenderTask)
+                PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+                cppSelf->render(*cppArg0);
+                PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            }
+            break;
+        }
+        case 1: // render(const std::list<RenderTask > & tasks)
+        {
+            ::std::list<RenderTask > cppArg0;
+            pythonToCpp(pyArg, &cppArg0);
+
+            if (!PyErr_Occurred()) {
+                // render(std::list<RenderTask>)
+                PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+                cppSelf->render(cppArg0);
+                PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            }
+            break;
+        }
+    }
+
+    if (PyErr_Occurred()) {
+        return 0;
+    }
+    Py_RETURN_NONE;
+
+    Sbk_AppFunc_render_TypeError:
+        const char* overloads[] = {"NatronEngine.RenderTask", "list", 0};
+        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.App.render", overloads);
+        return 0;
+}
+
 static PyObject* Sbk_AppFunc_timelineGetLeftBound(PyObject* self)
 {
     ::App* cppSelf = 0;
@@ -246,6 +344,8 @@ static PyObject* Sbk_AppFunc_timelineGetTime(PyObject* self)
 static PyMethodDef Sbk_App_methods[] = {
     {"createNode", (PyCFunction)Sbk_AppFunc_createNode, METH_VARARGS|METH_KEYWORDS},
     {"getAppID", (PyCFunction)Sbk_AppFunc_getAppID, METH_NOARGS},
+    {"getSettings", (PyCFunction)Sbk_AppFunc_getSettings, METH_NOARGS},
+    {"render", (PyCFunction)Sbk_AppFunc_render, METH_O},
     {"timelineGetLeftBound", (PyCFunction)Sbk_AppFunc_timelineGetLeftBound, METH_NOARGS},
     {"timelineGetRightBound", (PyCFunction)Sbk_AppFunc_timelineGetRightBound, METH_NOARGS},
     {"timelineGetTime", (PyCFunction)Sbk_AppFunc_timelineGetTime, METH_NOARGS},
