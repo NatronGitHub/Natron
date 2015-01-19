@@ -288,9 +288,9 @@ public:
 
 #endif
 
-    void getMinimumSize(int & minW,int & minH) const;
+    void getMinimumSize(double & minW, double & minH) const;
 
-    void getPreferredSize(int & pW,int & pH) const;
+    void getPreferredSize(int & pW, int & pH) const;
 
     void getSize(int &w,int &h) const;
 
