@@ -59,7 +59,7 @@ CustomParamInteract::CustomParamInteract(KnobGui* knob,
     : QGLWidget(parent)
       , _imp( new CustomParamInteractPrivate(knob,ofxParamHandle,entryPoint) )
 {
-    int minW,minH;
+    double minW,minH;
 
     entryPoint->getMinimumSize(minW, minH);
     setMinimumSize(minW, minH);
