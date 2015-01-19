@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<!--  Natron
+ 
+ This Source Code Form is subject to the terms of the Mozilla Public
+ License, v. 2.0. If a copy of the MPL was not distributed with this
+ file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+ 
+ Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
+ contact: immarespond at gmail dot com
+ -->
+<typesystem package="NatronGui">
+
+    <!--Load Engine typesystem-->
+    <load-typesystem name="typesystem_engine.xml" generate="no" />
+
+    <!--Load QtGui typesystem-->
+    <load-typesystem name="typesystem_gui.xml" generate="no" />
+
+    <object-type name="GuiApp">
+    </object-type>
+
+    <object-type name="PyGuiApplication">
+        <modify-function signature="getGuiInstance(int)const">
+            <modify-argument index="return">
+                <define-ownership class="target" owner="target"/>
+            </modify-argument>
+        </modify-function>
+
+    </object-type>
+
+
+</typesystem>

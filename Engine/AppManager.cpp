@@ -999,6 +999,7 @@ AppManager::newAppInstance(const CLArgs& cl)
 
     try {
         instance->load(cl);
+        instance->declareCurrentAppVariable_Python();
     } catch (const std::exception & e) {
         Natron::errorDialog( NATRON_APPLICATION_NAME,e.what(), false );
         removeInstance(_imp->_availableID);
@@ -2856,10 +2857,17 @@ AppManager::initPython(int argc,char* argv[])
     PySys_SetArgv(argc,_imp->args.data()); /// relative module import
     
     std::string err;
-    bool ok = interpretPythonScript("import sys\nfrom NatronEngine import*", &err, 0);
+    bool ok = interpretPythonScript("import sys\nimport " + std::string(NATRON_ENGINE_PYTHON_MODULE_NAME), &err, 0);
     assert(ok);
     
     if (!isBackground()) {
+        
+        ok = interpretPythonScript("import sys\nimport " + std::string(NATRON_GUI_PYTHON_MODULE_NAME), &err, 0);
+        assert(ok);
+        
+        ok = interpretPythonScript("natron = " + std::string(NATRON_GUI_PYTHON_MODULE_NAME) + ".PyGuiApplication()\n" , &err, 0);
+        assert(ok);
+        
         //redirect stdout/stderr
         std::string script(
         "class StreamCatcher:\n"
@@ -2874,6 +2882,9 @@ AppManager::initPython(int argc,char* argv[])
         "sys.stdout = catchOut\n"
         "sys.stderr = catchErr\n");
         ok = interpretPythonScript(script,&err,0);
+        assert(ok);
+    } else {
+        ok = interpretPythonScript("natron = " + std::string(NATRON_ENGINE_PYTHON_MODULE_NAME) + ".PyCoreApplication()\n" , &err, 0);
         assert(ok);
     }
 }

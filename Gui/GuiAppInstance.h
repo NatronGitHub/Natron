@@ -143,6 +143,9 @@ public:
     
     void discardLastViewerUsingTimeline();
     
+    virtual void declareCurrentAppVariable_Python();
+
+    
 public Q_SLOTS:
 
     
@@ -153,6 +156,7 @@ public Q_SLOTS:
     void projectFormatChanged(const Format& f);
 private:
 
+    
     virtual void createNodeGui(const boost::shared_ptr<Natron::Node> &node,
                                const boost::shared_ptr<Natron::Node>&  parentMultiInstance,
                                bool loadRequest,

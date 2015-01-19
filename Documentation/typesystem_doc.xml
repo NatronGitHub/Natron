@@ -1,0 +1,8 @@
+<?xml version="1.0" ?>
+<typesystem package="Natron">
+    <suppress-warning text="File containing conversion code for *" />
+    <suppress-warning text="File for inject code not exist: *" />
+    
+    <load-typesystem name="typesystem_engine.xml" generate="yes"/>
+    <load-typesystem name="typesystem_gui.xml" generate="yes"/>
+</typesystem>

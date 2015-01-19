@@ -823,3 +823,16 @@ GuiAppInstance::discardLastViewerUsingTimeline()
     QMutexLocker k(&_imp->lastTimelineViewerMutex);
     _imp->lastTimelineViewer.reset();
 }
+
+void
+GuiAppInstance::declareCurrentAppVariable_Python()
+{
+    /// define the app variable
+    std::stringstream ss;
+    ss << "app" << getAppID() + 1 << " = natron.getGuiInstance(" << getAppID() << ") \n";
+    std::string script = ss.str();
+    std::string err;
+    bool ok = Natron::interpretPythonScript(script, &err, 0);
+    assert(ok);
+}
+

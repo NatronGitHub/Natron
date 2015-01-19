@@ -7,7 +7,7 @@ TARGET = Gui
 TEMPLATE = lib
 CONFIG += staticlib
 CONFIG += moc rcc
-CONFIG += boost glew opengl qt cairo python
+CONFIG += boost glew opengl qt cairo python shiboken pyside
 QT += gui core opengl network 
 greaterThan(QT_MAJOR_VERSION, 4): QT += concurrent
 
@@ -36,6 +36,10 @@ INCLUDEPATH += $$PWD/../libs/SequenceParsing
 DEPENDPATH += $$PWD/../Engine
 DEPENDPATH += $$PWD/../Global
 
+INCLUDEPATH += $$PWD/../Engine
+INCLUDEPATH += $$PWD/../Engine/NatronEngine
+INCLUDEPATH += $$PWD/../Global
+
 win32-msvc* {
 	CONFIG(64bit) {
 		QMAKE_LFLAGS += /MACHINE:X64
@@ -63,6 +67,7 @@ SOURCES += \
     Gui.cpp \
     GuiApplicationManager.cpp \
     GuiAppInstance.cpp \
+    GuiAppWrapper.cpp \
     Histogram.cpp \
     InfoViewerWidget.cpp \
     KnobGui.cpp \
@@ -108,7 +113,11 @@ SOURCES += \
     TimeLineGui.cpp \
     TrackerGui.cpp \
     ViewerGL.cpp \
-    ViewerTab.cpp
+    ViewerTab.cpp \
+    NatronGui/natrongui_module_wrapper.cpp \
+    NatronGui/pyguiapplication_wrapper.cpp \
+    NatronGui/guiapp_wrapper.cpp
+
 HEADERS += \
     AboutWindow.h \
     ActionShortcuts.h \
@@ -131,6 +140,8 @@ HEADERS += \
     GuiMacros.h \
     GuiApplicationManager.h \
     GuiAppInstance.h \
+    GuiAppWrapper.h \
+    GlobalGuiWrapper.h \
     Histogram.h \
     InfoViewerWidget.h \
     KnobGui.h \
@@ -151,6 +162,7 @@ HEADERS += \
     PreferencesPanel.h \
     ProjectGui.h \
     ProjectGuiSerialization.h \
+    Pyside_Gui_Python.h \
     QtDecoder.h \
     QtEncoder.h \
     RenderingProgressDialog.h \
@@ -199,7 +211,10 @@ HEADERS += \
     ../libs/OpenFX/include/nuke/fnOfxExtensions.h \
     ../libs/OpenFX/include/nuke/fnPublicOfxExtensions.h \
     ../libs/OpenFX/include/tuttle/ofxReadWrite.h \
-    ../libs/OpenFX_extensions/ofxhParametricParam.h
+    ../libs/OpenFX_extensions/ofxhParametricParam.h \
+    NatronGui/natrongui_python.h \
+    NatronGui/pyguiapplication_wrapper.h \
+    NatronGui/guiapp_wrapper.h
 
 RESOURCES += \
     GuiResources.qrc

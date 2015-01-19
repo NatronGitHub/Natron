@@ -189,6 +189,8 @@ public Q_SLOTS:
 
 private:
 
+    virtual void initBuiltinPythonModules() OVERRIDE FINAL;
+
     virtual void onPluginLoaded(Natron::Plugin* plugin) OVERRIDE FINAL;
     virtual void ignorePlugin(Natron::Plugin* plugin) OVERRIDE FINAL;
     virtual void onAllPluginsLoaded() OVERRIDE FINAL;

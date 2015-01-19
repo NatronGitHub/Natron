@@ -10,7 +10,7 @@
 class AppWrapper : public App
 {
 public:
-    ~AppWrapper();
+    virtual ~AppWrapper();
 };
 
 #endif // SBK_APPWRAPPER_H

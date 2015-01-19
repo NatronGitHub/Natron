@@ -95,8 +95,6 @@ AppInstance::AppInstance(int appID)
     ///initialize the knobs of the project before loading anything else.
     _imp->_currentProject->initializeKnobsPublic();
     
-    _imp->declareCurrentAppVariable_Python();
-
 }
 
 AppInstance::~AppInstance()
@@ -967,11 +965,11 @@ AppInstance::onOCIOConfigPathChanged(const std::string& path)
 }
 
 void
-AppInstancePrivate::declareCurrentAppVariable_Python()
+AppInstance::declareCurrentAppVariable_Python()
 {
     /// define the app variable
     std::stringstream ss;
-    ss << "app" << _appID + 1 << " = getInstance(" << _appID << ") \n";
+    ss << "app" << _imp->_appID + 1 << " = getInstance(" << _imp->_appID << ") \n";
     std::string script = ss.str();
     std::string err;
     bool ok = Natron::interpretPythonScript(script, &err, 0);

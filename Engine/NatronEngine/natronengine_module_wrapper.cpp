@@ -4,7 +4,6 @@
 #include <algorithm>
 #include "natronengine_python.h"
 
-#include <GlobalFunctionsWrapper.h>
 
 
 // Extra includes
@@ -14,458 +13,16 @@ PyTypeObject** SbkNatronEngineTypes;
 // Current module's converter array.
 SbkConverter** SbkNatronEngineTypeConverters;
 // Global functions ------------------------------------------------------------
-static PyObject* SbkNatronEngineModule_appendToNatronPath(PyObject* self, PyObject* pyArg)
-{
-    int overloadId = -1;
-    PythonToCppFunc pythonToCpp;
-    SBK_UNUSED(pythonToCpp)
-
-    // Overloaded function decisor
-    // 0: appendToNatronPath(std::string)
-    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArg)))) {
-        overloadId = 0; // appendToNatronPath(std::string)
-    }
-
-    // Function signature not found.
-    if (overloadId == -1) goto SbkNatronEngineModule_appendToNatronPath_TypeError;
-
-    // Call function/method
-    {
-        ::std::string cppArg0;
-        pythonToCpp(pyArg, &cppArg0);
-
-        if (!PyErr_Occurred()) {
-            // appendToNatronPath(std::string)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            appendToNatronPath(cppArg0);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
-        }
-    }
-
-    if (PyErr_Occurred()) {
-        return 0;
-    }
-    Py_RETURN_NONE;
-
-    SbkNatronEngineModule_appendToNatronPath_TypeError:
-        const char* overloads[] = {"std::string", 0};
-        Shiboken::setErrorAboutWrongArguments(pyArg, "appendToNatronPath", overloads);
-        return 0;
-}
-
-static PyObject* SbkNatronEngineModule_getBuildNumber(PyObject* self)
-{
-    PyObject* pyResult = 0;
-
-    // Call function/method
-    {
-
-        if (!PyErr_Occurred()) {
-            // getBuildNumber()
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            int cppResult = getBuildNumber();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
-            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<int>(), &cppResult);
-        }
-    }
-
-    if (PyErr_Occurred() || !pyResult) {
-        Py_XDECREF(pyResult);
-        return 0;
-    }
-    return pyResult;
-}
-
-static PyObject* SbkNatronEngineModule_getInstance(PyObject* self, PyObject* pyArg)
-{
-    PyObject* pyResult = 0;
-    int overloadId = -1;
-    PythonToCppFunc pythonToCpp;
-    SBK_UNUSED(pythonToCpp)
-
-    // Overloaded function decisor
-    // 0: getInstance(int)
-    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArg)))) {
-        overloadId = 0; // getInstance(int)
-    }
-
-    // Function signature not found.
-    if (overloadId == -1) goto SbkNatronEngineModule_getInstance_TypeError;
-
-    // Call function/method
-    {
-        int cppArg0;
-        pythonToCpp(pyArg, &cppArg0);
-
-        if (!PyErr_Occurred()) {
-            // getInstance(int)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            App* cppResult = new App(getInstance(cppArg0));
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
-            pyResult = Shiboken::Object::newObject((SbkObjectType*)SbkNatronEngineTypes[SBK_APP_IDX], cppResult, true, true);
-        }
-    }
-
-    if (PyErr_Occurred() || !pyResult) {
-        Py_XDECREF(pyResult);
-        return 0;
-    }
-    return pyResult;
-
-    SbkNatronEngineModule_getInstance_TypeError:
-        const char* overloads[] = {"int", 0};
-        Shiboken::setErrorAboutWrongArguments(pyArg, "getInstance", overloads);
-        return 0;
-}
-
-static PyObject* SbkNatronEngineModule_getNatronDevelopmentStatus(PyObject* self)
-{
-    PyObject* pyResult = 0;
-
-    // Call function/method
-    {
-
-        if (!PyErr_Occurred()) {
-            // getNatronDevelopmentStatus()
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            std::string cppResult = getNatronDevelopmentStatus();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
-            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), &cppResult);
-        }
-    }
-
-    if (PyErr_Occurred() || !pyResult) {
-        Py_XDECREF(pyResult);
-        return 0;
-    }
-    return pyResult;
-}
-
-static PyObject* SbkNatronEngineModule_getNatronPath(PyObject* self)
-{
-    PyObject* pyResult = 0;
-
-    // Call function/method
-    {
-
-        if (!PyErr_Occurred()) {
-            // getNatronPath()
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            std::list<std::string > cppResult = getNatronPath();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
-            pyResult = Shiboken::Conversions::copyToPython(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_LIST_STD_STRING_IDX], &cppResult);
-        }
-    }
-
-    if (PyErr_Occurred() || !pyResult) {
-        Py_XDECREF(pyResult);
-        return 0;
-    }
-    return pyResult;
-}
-
-static PyObject* SbkNatronEngineModule_getNatronVersionEncoded(PyObject* self)
-{
-    PyObject* pyResult = 0;
-
-    // Call function/method
-    {
-
-        if (!PyErr_Occurred()) {
-            // getNatronVersionEncoded()
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            int cppResult = getNatronVersionEncoded();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
-            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<int>(), &cppResult);
-        }
-    }
-
-    if (PyErr_Occurred() || !pyResult) {
-        Py_XDECREF(pyResult);
-        return 0;
-    }
-    return pyResult;
-}
-
-static PyObject* SbkNatronEngineModule_getNatronVersionMajor(PyObject* self)
-{
-    PyObject* pyResult = 0;
-
-    // Call function/method
-    {
-
-        if (!PyErr_Occurred()) {
-            // getNatronVersionMajor()
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            int cppResult = getNatronVersionMajor();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
-            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<int>(), &cppResult);
-        }
-    }
-
-    if (PyErr_Occurred() || !pyResult) {
-        Py_XDECREF(pyResult);
-        return 0;
-    }
-    return pyResult;
-}
-
-static PyObject* SbkNatronEngineModule_getNatronVersionMinor(PyObject* self)
-{
-    PyObject* pyResult = 0;
-
-    // Call function/method
-    {
-
-        if (!PyErr_Occurred()) {
-            // getNatronVersionMinor()
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            int cppResult = getNatronVersionMinor();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
-            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<int>(), &cppResult);
-        }
-    }
-
-    if (PyErr_Occurred() || !pyResult) {
-        Py_XDECREF(pyResult);
-        return 0;
-    }
-    return pyResult;
-}
-
-static PyObject* SbkNatronEngineModule_getNatronVersionRevision(PyObject* self)
-{
-    PyObject* pyResult = 0;
-
-    // Call function/method
-    {
-
-        if (!PyErr_Occurred()) {
-            // getNatronVersionRevision()
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            int cppResult = getNatronVersionRevision();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
-            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<int>(), &cppResult);
-        }
-    }
-
-    if (PyErr_Occurred() || !pyResult) {
-        Py_XDECREF(pyResult);
-        return 0;
-    }
-    return pyResult;
-}
-
-static PyObject* SbkNatronEngineModule_getNatronVersionString(PyObject* self)
-{
-    PyObject* pyResult = 0;
-
-    // Call function/method
-    {
-
-        if (!PyErr_Occurred()) {
-            // getNatronVersionString()
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            std::string cppResult = getNatronVersionString();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
-            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), &cppResult);
-        }
-    }
-
-    if (PyErr_Occurred() || !pyResult) {
-        Py_XDECREF(pyResult);
-        return 0;
-    }
-    return pyResult;
-}
-
-static PyObject* SbkNatronEngineModule_getNumCpus(PyObject* self)
-{
-    PyObject* pyResult = 0;
-
-    // Call function/method
-    {
-
-        if (!PyErr_Occurred()) {
-            // getNumCpus()
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            int cppResult = getNumCpus();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
-            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<int>(), &cppResult);
-        }
-    }
-
-    if (PyErr_Occurred() || !pyResult) {
-        Py_XDECREF(pyResult);
-        return 0;
-    }
-    return pyResult;
-}
-
-static PyObject* SbkNatronEngineModule_getNumInstances(PyObject* self)
-{
-    PyObject* pyResult = 0;
-
-    // Call function/method
-    {
-
-        if (!PyErr_Occurred()) {
-            // getNumInstances()
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            int cppResult = getNumInstances();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
-            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<int>(), &cppResult);
-        }
-    }
-
-    if (PyErr_Occurred() || !pyResult) {
-        Py_XDECREF(pyResult);
-        return 0;
-    }
-    return pyResult;
-}
-
-static PyObject* SbkNatronEngineModule_getPluginIDs(PyObject* self)
-{
-    PyObject* pyResult = 0;
-
-    // Call function/method
-    {
-
-        if (!PyErr_Occurred()) {
-            // getPluginIDs()
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            std::list<std::string > cppResult = getPluginIDs();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
-            pyResult = Shiboken::Conversions::copyToPython(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_LIST_STD_STRING_IDX], &cppResult);
-        }
-    }
-
-    if (PyErr_Occurred() || !pyResult) {
-        Py_XDECREF(pyResult);
-        return 0;
-    }
-    return pyResult;
-}
-
-static PyObject* SbkNatronEngineModule_is64Bit(PyObject* self)
-{
-    PyObject* pyResult = 0;
-
-    // Call function/method
-    {
-
-        if (!PyErr_Occurred()) {
-            // is64Bit()
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            bool cppResult = is64Bit();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
-            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), &cppResult);
-        }
-    }
-
-    if (PyErr_Occurred() || !pyResult) {
-        Py_XDECREF(pyResult);
-        return 0;
-    }
-    return pyResult;
-}
-
-static PyObject* SbkNatronEngineModule_isLinux(PyObject* self)
-{
-    PyObject* pyResult = 0;
-
-    // Call function/method
-    {
-
-        if (!PyErr_Occurred()) {
-            // isLinux()
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            bool cppResult = isLinux();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
-            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), &cppResult);
-        }
-    }
-
-    if (PyErr_Occurred() || !pyResult) {
-        Py_XDECREF(pyResult);
-        return 0;
-    }
-    return pyResult;
-}
-
-static PyObject* SbkNatronEngineModule_isMacOSX(PyObject* self)
-{
-    PyObject* pyResult = 0;
-
-    // Call function/method
-    {
-
-        if (!PyErr_Occurred()) {
-            // isMacOSX()
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            bool cppResult = isMacOSX();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
-            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), &cppResult);
-        }
-    }
-
-    if (PyErr_Occurred() || !pyResult) {
-        Py_XDECREF(pyResult);
-        return 0;
-    }
-    return pyResult;
-}
-
-static PyObject* SbkNatronEngineModule_isWindows(PyObject* self)
-{
-    PyObject* pyResult = 0;
-
-    // Call function/method
-    {
-
-        if (!PyErr_Occurred()) {
-            // isWindows()
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            bool cppResult = isWindows();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
-            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), &cppResult);
-        }
-    }
-
-    if (PyErr_Occurred() || !pyResult) {
-        Py_XDECREF(pyResult);
-        return 0;
-    }
-    return pyResult;
-}
-
 
 static PyMethodDef NatronEngine_methods[] = {
-    {"appendToNatronPath", (PyCFunction)SbkNatronEngineModule_appendToNatronPath, METH_O},
-    {"getBuildNumber", (PyCFunction)SbkNatronEngineModule_getBuildNumber, METH_NOARGS},
-    {"getInstance", (PyCFunction)SbkNatronEngineModule_getInstance, METH_O},
-    {"getNatronDevelopmentStatus", (PyCFunction)SbkNatronEngineModule_getNatronDevelopmentStatus, METH_NOARGS},
-    {"getNatronPath", (PyCFunction)SbkNatronEngineModule_getNatronPath, METH_NOARGS},
-    {"getNatronVersionEncoded", (PyCFunction)SbkNatronEngineModule_getNatronVersionEncoded, METH_NOARGS},
-    {"getNatronVersionMajor", (PyCFunction)SbkNatronEngineModule_getNatronVersionMajor, METH_NOARGS},
-    {"getNatronVersionMinor", (PyCFunction)SbkNatronEngineModule_getNatronVersionMinor, METH_NOARGS},
-    {"getNatronVersionRevision", (PyCFunction)SbkNatronEngineModule_getNatronVersionRevision, METH_NOARGS},
-    {"getNatronVersionString", (PyCFunction)SbkNatronEngineModule_getNatronVersionString, METH_NOARGS},
-    {"getNumCpus", (PyCFunction)SbkNatronEngineModule_getNumCpus, METH_NOARGS},
-    {"getNumInstances", (PyCFunction)SbkNatronEngineModule_getNumInstances, METH_NOARGS},
-    {"getPluginIDs", (PyCFunction)SbkNatronEngineModule_getPluginIDs, METH_NOARGS},
-    {"is64Bit", (PyCFunction)SbkNatronEngineModule_is64Bit, METH_NOARGS},
-    {"isLinux", (PyCFunction)SbkNatronEngineModule_isLinux, METH_NOARGS},
-    {"isMacOSX", (PyCFunction)SbkNatronEngineModule_isMacOSX, METH_NOARGS},
-    {"isWindows", (PyCFunction)SbkNatronEngineModule_isWindows, METH_NOARGS},
     {0} // Sentinel
 };
 
 // Classes initialization functions ------------------------------------------------------------
+void init_PyCoreApplication(PyObject* module);
 void init_Group(PyObject* module);
-void init_App(PyObject* module);
 void init_Effect(PyObject* module);
+void init_App(PyObject* module);
 void init_AppSettings(PyObject* module);
 void init_RenderTask(PyObject* module);
 void init_ItemBase(PyObject* module);
@@ -474,20 +31,20 @@ void init_BezierCurve(PyObject* module);
 void init_Roto(PyObject* module);
 void init_Param(PyObject* module);
 void init_AnimatedParam(PyObject* module);
+void init_ColorParam(PyObject* module);
+void init_ChoiceParam(PyObject* module);
+void init_BooleanParam(PyObject* module);
 void init_StringParamBase(PyObject* module);
-void init_OutputFileParam(PyObject* module);
-void init_PathParam(PyObject* module);
 void init_StringParam(PyObject* module);
 void init_FileParam(PyObject* module);
+void init_OutputFileParam(PyObject* module);
+void init_PathParam(PyObject* module);
 void init_IntParam(PyObject* module);
 void init_Int2DParam(PyObject* module);
 void init_Int3DParam(PyObject* module);
 void init_DoubleParam(PyObject* module);
 void init_Double2DParam(PyObject* module);
 void init_Double3DParam(PyObject* module);
-void init_ColorParam(PyObject* module);
-void init_ChoiceParam(PyObject* module);
-void init_BooleanParam(PyObject* module);
 void init_ButtonParam(PyObject* module);
 void init_GroupParam(PyObject* module);
 void init_PageParam(PyObject* module);
@@ -528,40 +85,6 @@ static PythonToCppFunc is_PyLong_PythonToCpp_std_size_t_Convertible(PyObject* py
 
 
 // Container Type converters.
-
-// C++ to Python conversion for type 'std::list<std::string >'.
-static PyObject* std_list_std_string__CppToPython_std_list_std_string_(const void* cppIn) {
-    ::std::list<std::string >& cppInRef = *((::std::list<std::string >*)cppIn);
-
-                    // TEMPLATE - stdListToPyList - START
-            PyObject* pyOut = PyList_New((int) cppInRef.size());
-            ::std::list<std::string >::const_iterator it = cppInRef.begin();
-            for (int idx = 0; it != cppInRef.end(); ++it, ++idx) {
-            ::std::string cppItem(*it);
-            PyList_SET_ITEM(pyOut, idx, Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), &cppItem));
-            }
-            return pyOut;
-        // TEMPLATE - stdListToPyList - END
-
-}
-static void std_list_std_string__PythonToCpp_std_list_std_string_(PyObject* pyIn, void* cppOut) {
-    ::std::list<std::string >& cppOutRef = *((::std::list<std::string >*)cppOut);
-
-                    // TEMPLATE - pyListToStdList - START
-        for (int i = 0; i < PySequence_Size(pyIn); i++) {
-        Shiboken::AutoDecRef pyItem(PySequence_GetItem(pyIn, i));
-        ::std::string cppItem;
-        Shiboken::Conversions::pythonToCppCopy(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), pyItem, &(cppItem));
-        cppOutRef.push_back(cppItem);
-        }
-    // TEMPLATE - pyListToStdList - END
-
-}
-static PythonToCppFunc is_std_list_std_string__PythonToCpp_std_list_std_string__Convertible(PyObject* pyIn) {
-    if (Shiboken::Conversions::convertibleSequenceTypes(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), pyIn))
-        return std_list_std_string__PythonToCpp_std_list_std_string_;
-    return 0;
-}
 
 // C++ to Python conversion for type 'std::pair<std::string, std::string >'.
 static PyObject* std_pair_std_string_std_string__CppToPython_std_pair_std_string_std_string_(const void* cppIn) {
@@ -756,6 +279,40 @@ static PythonToCppFunc is_conststd_list_RenderTask_REF_PythonToCpp_conststd_list
     return 0;
 }
 
+// C++ to Python conversion for type 'std::list<std::string >'.
+static PyObject* std_list_std_string__CppToPython_std_list_std_string_(const void* cppIn) {
+    ::std::list<std::string >& cppInRef = *((::std::list<std::string >*)cppIn);
+
+                    // TEMPLATE - stdListToPyList - START
+            PyObject* pyOut = PyList_New((int) cppInRef.size());
+            ::std::list<std::string >::const_iterator it = cppInRef.begin();
+            for (int idx = 0; it != cppInRef.end(); ++it, ++idx) {
+            ::std::string cppItem(*it);
+            PyList_SET_ITEM(pyOut, idx, Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), &cppItem));
+            }
+            return pyOut;
+        // TEMPLATE - stdListToPyList - END
+
+}
+static void std_list_std_string__PythonToCpp_std_list_std_string_(PyObject* pyIn, void* cppOut) {
+    ::std::list<std::string >& cppOutRef = *((::std::list<std::string >*)cppOut);
+
+                    // TEMPLATE - pyListToStdList - START
+        for (int i = 0; i < PySequence_Size(pyIn); i++) {
+        Shiboken::AutoDecRef pyItem(PySequence_GetItem(pyIn, i));
+        ::std::string cppItem;
+        Shiboken::Conversions::pythonToCppCopy(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), pyItem, &(cppItem));
+        cppOutRef.push_back(cppItem);
+        }
+    // TEMPLATE - pyListToStdList - END
+
+}
+static PythonToCppFunc is_std_list_std_string__PythonToCpp_std_list_std_string__Convertible(PyObject* pyIn) {
+    if (Shiboken::Conversions::convertibleSequenceTypes(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), pyIn))
+        return std_list_std_string__PythonToCpp_std_list_std_string_;
+    return 0;
+}
+
 // C++ to Python conversion for type 'QList<QVariant >'.
 static PyObject* _QList_QVariant__CppToPython__QList_QVariant_(const void* cppIn) {
     ::QList<QVariant >& cppInRef = *((::QList<QVariant >*)cppIn);
@@ -914,9 +471,10 @@ SBK_MODULE_INIT_FUNCTION_BEGIN(NatronEngine)
 #endif
 
     // Initialize classes in the type system
+    init_PyCoreApplication(module);
     init_Group(module);
-    init_App(module);
     init_Effect(module);
+    init_App(module);
     init_AppSettings(module);
     init_RenderTask(module);
     init_ItemBase(module);
@@ -925,20 +483,20 @@ SBK_MODULE_INIT_FUNCTION_BEGIN(NatronEngine)
     init_Roto(module);
     init_Param(module);
     init_AnimatedParam(module);
+    init_ColorParam(module);
+    init_ChoiceParam(module);
+    init_BooleanParam(module);
     init_StringParamBase(module);
-    init_OutputFileParam(module);
-    init_PathParam(module);
     init_StringParam(module);
     init_FileParam(module);
+    init_OutputFileParam(module);
+    init_PathParam(module);
     init_IntParam(module);
     init_Int2DParam(module);
     init_Int3DParam(module);
     init_DoubleParam(module);
     init_Double2DParam(module);
     init_Double3DParam(module);
-    init_ColorParam(module);
-    init_ChoiceParam(module);
-    init_BooleanParam(module);
     init_ButtonParam(module);
     init_GroupParam(module);
     init_PageParam(module);
@@ -958,13 +516,6 @@ SBK_MODULE_INIT_FUNCTION_BEGIN(NatronEngine)
         PyLong_PythonToCpp_std_size_t,
         is_PyLong_PythonToCpp_std_size_t_Convertible);
 
-
-    // Register converter for type 'std::list<std::string>'.
-    SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_LIST_STD_STRING_IDX] = Shiboken::Conversions::createConverter(&PyList_Type, std_list_std_string__CppToPython_std_list_std_string_);
-    Shiboken::Conversions::registerConverterName(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_LIST_STD_STRING_IDX], "std::list<std::string>");
-    Shiboken::Conversions::addPythonToCppValueConversion(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_LIST_STD_STRING_IDX],
-        std_list_std_string__PythonToCpp_std_list_std_string_,
-        is_std_list_std_string__PythonToCpp_std_list_std_string__Convertible);
 
     // Register converter for type 'std::pair<std::string,std::string>'.
     SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_PAIR_STD_STRING_STD_STRING_IDX] = Shiboken::Conversions::createConverter(&PyList_Type, std_pair_std_string_std_string__CppToPython_std_pair_std_string_std_string_);
@@ -1007,6 +558,13 @@ SBK_MODULE_INIT_FUNCTION_BEGIN(NatronEngine)
     Shiboken::Conversions::addPythonToCppValueConversion(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_LIST_RENDERTASK_IDX],
         conststd_list_RenderTask_REF_PythonToCpp_conststd_list_RenderTask_REF,
         is_conststd_list_RenderTask_REF_PythonToCpp_conststd_list_RenderTask_REF_Convertible);
+
+    // Register converter for type 'std::list<std::string>'.
+    SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_LIST_STD_STRING_IDX] = Shiboken::Conversions::createConverter(&PyList_Type, std_list_std_string__CppToPython_std_list_std_string_);
+    Shiboken::Conversions::registerConverterName(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_LIST_STD_STRING_IDX], "std::list<std::string>");
+    Shiboken::Conversions::addPythonToCppValueConversion(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_LIST_STD_STRING_IDX],
+        std_list_std_string__PythonToCpp_std_list_std_string_,
+        is_std_list_std_string__PythonToCpp_std_list_std_string__Convertible);
 
     // Register converter for type 'QList<QVariant>'.
     SbkNatronEngineTypeConverters[SBK_NATRONENGINE_QLIST_QVARIANT_IDX] = Shiboken::Conversions::createConverter(&PyList_Type, _QList_QVariant__CppToPython__QList_QVariant_);

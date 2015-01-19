@@ -36,6 +36,7 @@
 
 //Define here the name of the Engine module that was chosen in the typesystem_engine.xml
 #define NATRON_ENGINE_PYTHON_MODULE_NAME "NatronEngine"
+#define NATRON_GUI_PYTHON_MODULE_NAME "NatronGui"
 
 #define NATRON_ENV_VAR_NAME_START_TAG "<Name>"
 #define NATRON_ENV_VAR_NAME_END_TAG "</Name>"

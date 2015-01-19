@@ -14,6 +14,7 @@
 #include <AppInstanceWrapper.h>
 #include <NodeGroupWrapper.h>
 #include <NodeWrapper.h>
+#include <ParameterWrapper.h>
 #include <list>
 
 
@@ -158,6 +159,56 @@ static PyObject* Sbk_AppFunc_getAppID(PyObject* self)
         return 0;
     }
     return pyResult;
+}
+
+static PyObject* Sbk_AppFunc_getProjectParam(PyObject* self, PyObject* pyArg)
+{
+    ::App* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::App*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_APP_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp;
+    SBK_UNUSED(pythonToCpp)
+
+    // Overloaded function decisor
+    // 0: getProjectParam(std::string)const
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArg)))) {
+        overloadId = 0; // getProjectParam(std::string)const
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_AppFunc_getProjectParam_TypeError;
+
+    // Call function/method
+    {
+        ::std::string cppArg0;
+        pythonToCpp(pyArg, &cppArg0);
+
+        if (!PyErr_Occurred()) {
+            // getProjectParam(std::string)const
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            Param * cppResult = const_cast<const ::App*>(cppSelf)->getProjectParam(cppArg0);
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_PARAM_IDX], cppResult);
+
+            // Ownership transferences.
+            Shiboken::Object::getOwnership(pyResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+
+    Sbk_AppFunc_getProjectParam_TypeError:
+        const char* overloads[] = {"std::string", 0};
+        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.App.getProjectParam", overloads);
+        return 0;
 }
 
 static PyObject* Sbk_AppFunc_getSettings(PyObject* self)
@@ -344,6 +395,7 @@ static PyObject* Sbk_AppFunc_timelineGetTime(PyObject* self)
 static PyMethodDef Sbk_App_methods[] = {
     {"createNode", (PyCFunction)Sbk_AppFunc_createNode, METH_VARARGS|METH_KEYWORDS},
     {"getAppID", (PyCFunction)Sbk_AppFunc_getAppID, METH_NOARGS},
+    {"getProjectParam", (PyCFunction)Sbk_AppFunc_getProjectParam, METH_O},
     {"getSettings", (PyCFunction)Sbk_AppFunc_getSettings, METH_NOARGS},
     {"render", (PyCFunction)Sbk_AppFunc_render, METH_O},
     {"timelineGetLeftBound", (PyCFunction)Sbk_AppFunc_timelineGetLeftBound, METH_NOARGS},

@@ -65,6 +65,8 @@ public:
     
     App(AppInstance* instance);
     
+    virtual ~App() {}
+    
     int getAppID() const;
     
     AppInstance* getInternalApp() const;

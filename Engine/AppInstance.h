@@ -331,6 +331,8 @@ public:
                                                  const boost::shared_ptr<NodeCollection>& collection,
                                                  int firstFrame = INT_MIN, int lastFrame = INT_MAX);
     
+    virtual void declareCurrentAppVariable_Python();
+
 public Q_SLOTS:
 
 
@@ -367,6 +369,7 @@ protected:
 
 
 private:
+    
     
     void getWritersWorkForCL(const CLArgs& cl,std::list<AppInstance::RenderRequest>& requests);
 

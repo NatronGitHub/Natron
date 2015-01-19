@@ -220,6 +220,11 @@
    
 
     <object-type name="Group" copyable="false">
+        <inject-documentation format="target">
+            This is an abstract class, it is derived by 2 different classes:
+            :doc:`App` which represents an instance of Natron, or more specifically the current project.
+            :doc:`Effect` which represents an a node in the nodegraph.
+        </inject-documentation>
         <modify-function signature="getNode(std::string)const">
             <modify-argument index="return">
                 <define-ownership class="target" owner="target"/>
@@ -256,7 +261,7 @@
                 <define-ownership class="target" owner="target"/>
             </modify-argument>
         </modify-function>
-        <modify-function signature="getParam(std::string)const">
+        <modify-function signature="getProjectParam(std::string)const">
             <modify-argument index="return">
                 <define-ownership class="target" owner="target"/>
             </modify-argument>
@@ -266,7 +271,14 @@
     
         
     <object-type name="Effect" copyable="false">
+        <inject-documentation format="target">
+            This object represents a single node in Natron, that is: an instance of a plug-in.
+        </inject-documentation>
+        
         <modify-function signature="getInput(int)const">
+            <inject-documentation format="target">
+                Returns the node at the given input.
+            </inject-documentation>
             <modify-argument index="return">
                 <define-ownership class="target" owner="target"/>
             </modify-argument>
@@ -1101,25 +1113,13 @@
     <rejection class="Effect" field-name="_node"/>
     <rejection class="*" field-name="_imp"/>
     
-    <!--Global functions to Natron process-->
-    <function signature="getPluginIDs()"/>
-    <function signature="getNumInstances()"/>
-    <function signature="getInstance(int)"/>
-    <function signature="getNatronPath()"/>
-    <function signature="appendToNatronPath(std::string)"/>
-    <function signature="isLinux()"/>
-    <function signature="isWindows()"/>
-    <function signature="isMacOSX()"/>
-    <function signature="is64Bit()"/>
-    <function signature="getNatronVersionString()"/>
-    <function signature="getNatronVersionMajor()"/>
-    <function signature="getNatronVersionMinor()"/>
-    <function signature="getNatronVersionRevision()"/>
-    <function signature="getNatronVersionEncoded()"/>
-    <function signature="getNatronDevelopmentStatus()"/>
-    <function signature="getNumCpus()"/>
-    <function signature="getBuildNumber()"/>
-
+    <object-type name="PyCoreApplication">
+        <modify-function signature="getInstance(int)const">
+            <modify-argument index="return">
+                <define-ownership class="target" owner="target"/>
+            </modify-argument>
+        </modify-function>
+    </object-type>
 
 </typesystem>
 

@@ -23,117 +23,132 @@
 #include "Engine/AppInstanceWrapper.h"
 #include "Global/MemoryInfo.h"
 
-
-inline std::list<std::string>
-getPluginIDs()
+class PyCoreApplication
 {
-    return Natron::getPluginIDs();
-}
-
-inline App
-getInstance(int idx)
-{
-    return App(Natron::getInstance(idx));
-}
-
-inline int
-getNumInstances()
-{
-    return Natron::getNumInstances();
-}
-
-inline std::list<std::string>
-getNatronPath()
-{
-    return Natron::getNatronPath();
-}
-
-inline void
-appendToNatronPath(const std::string& path)
-{
-    Natron::appendToNatronPath(path);
-}
-
-inline bool isLinux()
-{
+    
+public:
+    
+    PyCoreApplication() {}
+    
+    virtual ~PyCoreApplication() {}
+    
+    inline std::list<std::string> const
+    getPluginIDs()
+    {
+        return Natron::getPluginIDs();
+    }
+    
+    inline int const
+    getNumInstances()
+    {
+        return Natron::getNumInstances();
+    }
+    
+    inline std::list<std::string> const
+    getNatronPath()
+    {
+        return Natron::getNatronPath();
+    }
+    
+    inline void
+    appendToNatronPath(const std::string& path)
+    {
+        Natron::appendToNatronPath(path);
+    }
+    
+    inline bool isLinux() const
+    {
 #ifdef __NATRON_LINUX__
-    return true;
+        return true;
 #else
-    return false;
+        return false;
 #endif
-}
-
-inline bool isWindows()
-{
+    }
+    
+    inline bool isWindows() const
+    {
 #ifdef __NATRON_WIN32__
-    return true;
+        return true;
 #else
-    return false;
+        return false;
 #endif
-}
-
-inline bool isMacOSX()
-{
+    }
+    
+    inline bool isMacOSX() const
+    {
 #ifdef __NATRON_OSX__
-    return true;
+        return true;
 #else
-    return false;
+        return false;
 #endif
-}
-
-inline bool isUnix()
-{
+    }
+    
+    inline bool isUnix() const
+    {
 #ifdef __NATRON_UNIX__
-    return true;
+        return true;
 #else
-    return false;
+        return false;
 #endif
-}
+    }
+    
+    inline std::string getNatronVersionString() const
+    {
+        return std::string(NATRON_VERSION_STRING);
+    }
+    
+    inline int getNatronVersionMajor() const
+    {
+        return NATRON_VERSION_MAJOR;
+    }
+    
+    inline int getNatronVersionMinor() const
+    {
+        return NATRON_VERSION_MINOR;
+    }
+    
+    inline int getNatronVersionRevision() const
+    {
+        return NATRON_VERSION_REVISION;
+    }
+    
+    inline int getNatronVersionEncoded() const
+    {
+        return NATRON_VERSION_ENCODED;
+    }
+    
+    inline std::string getNatronDevelopmentStatus() const
+    {
+        return std::string(NATRON_DEVELOPMENT_STATUS);
+    }
+    
+    inline int getBuildNumber() const
+    {
+        return NATRON_BUILD_NUMBER;
+    }
+    
+    inline bool is64Bit() const
+    {
+        return !isApplication32Bits();
+    }
+    
+    inline int getNumCpus() const
+    {
+        return appPTR->getHardwareIdealThreadCount();
+    }
+    
+    inline App*
+    getInstance(int idx) const
+    {
+        AppInstance* app = Natron::getInstance(idx);
+        if (!app) {
+            return 0;
+        }
+        return new App(app);
+    }
+};
 
-inline std::string getNatronVersionString()
-{
-    return std::string(NATRON_VERSION_STRING);
-}
 
-inline int getNatronVersionMajor()
-{
-    return NATRON_VERSION_MAJOR;
-}
-
-inline int getNatronVersionMinor()
-{
-    return NATRON_VERSION_MINOR;
-}
-
-inline int getNatronVersionRevision()
-{
-    return NATRON_VERSION_REVISION;
-}
-
-inline int getNatronVersionEncoded()
-{
-    return NATRON_VERSION_ENCODED;
-}
-
-inline std::string getNatronDevelopmentStatus()
-{
-    return std::string(NATRON_DEVELOPMENT_STATUS);
-}
-
-inline int getBuildNumber()
-{
-    return NATRON_BUILD_NUMBER;
-}
-
-inline bool is64Bit()
-{
-    return !isApplication32Bits();
-}
-
-inline int getNumCpus()
-{
-    return appPTR->getHardwareIdealThreadCount();
-}
 
 
 
