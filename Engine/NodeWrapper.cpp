@@ -134,6 +134,17 @@ Effect::setLabel(const std::string& name)
 }
 
 std::string
+Effect::getInputLabel(int inputNumber)
+{
+    try {
+        return _node->getInputLabel(inputNumber);
+    } catch (const std::exception& e) {
+        std::cout << e.what() << std::endl;
+    }
+    return std::string();
+}
+
+std::string
 Effect::getPluginID() const
 {
     return _node->getPluginID();
@@ -470,6 +481,24 @@ Effect::createParametricParam(const std::string& name, const std::string& label,
     } else {
         return 0;
     }
+}
+
+bool
+Effect::removeParam(Param* param)
+{
+    if (!param) {
+        return false;
+    }
+    if (!param->getInternalKnob()) {
+        return false;
+    }
+    if (!param->getInternalKnob()->isUserKnob()) {
+        return false;
+    }
+    
+    _node->getLiveInstance()->removeDynamicKnob(param->getInternalKnob().get());
+    
+    return true;
 }
 
 PageParam*

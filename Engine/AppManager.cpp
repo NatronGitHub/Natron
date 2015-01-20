@@ -571,7 +571,7 @@ CLArgsPrivate::parse()
         if (it != args.end()) {
             isInterpreterMode = true;
             isBackground = true;
-            std::cout << QObject::tr("Note: -t argument given, loading in background mode, only Python commands / scripts are accepted").toStdString()
+            std::cout << QObject::tr("Note: -t argument given, loading in command-line interpreter mode, only Python commands / scripts are accepted").toStdString()
             << std::endl;
             args.erase(it);
         }

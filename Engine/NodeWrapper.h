@@ -135,6 +135,11 @@ public:
     std::string getPluginID() const;
     
     /**
+     * @brief Returns the label of the input at the given index
+     **/
+    std::string getInputLabel(int inputNumber);
+    
+    /**
      * @brief Returns a list of all parameters for the Effect. These are the parameters located in the settings panel
      * on the GUI.
      **/
@@ -265,6 +270,8 @@ public:
     PageParam* createPageParam(const std::string& name, const std::string& label);
     
     ParametricParam* createParametricParam(const std::string& name, const std::string& label,int nbCurves);
+    
+    bool removeParam(Param* param);
     
     /**
      * @brief To be called once you have added or removed any user parameter to update the GUI with the changes.
