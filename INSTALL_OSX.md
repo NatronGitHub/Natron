@@ -178,6 +178,12 @@ The only solution to deal with it found so far is to comment the following lines
     PyTypeObject** SbkNatronEngineTypes;
     SbkConverter** SbkNatronEngineTypeConverters;*/
 
+To generate the Sphinx documentation of the Python bindings using Shiboken:
+
+```Shell
+shiboken-3.4 --generator-set=qtdoc Documentation/Pyside_Global_Python.h  --library-source-dir=Engine:Gui  --documentation-data-dir=Documentation --include-paths=../Engine:../Gui:../Global:/opt/local/include:/opt/local/include/PySide-3.4  --typesystem-paths=/opt/local/share/PySide-3.4/typesystems:Gui:Engine --output-directory=Documentation/PythonReference   Documentation/typesystem_doc.xml
+```
+
 on HomeBrew:
 ```Shell
 shiboken --include-paths=../Global:`pkg-config --variable=prefix QtCore`/include:`pkg-config --variable=includedir pyside`  --typesystem-paths=`pkg-config --variable=typesystemdir pyside` --output-directory=Engine Engine/Pyside_Engine_Python.h Engine/typesystem_engine.xml

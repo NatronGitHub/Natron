@@ -4,5 +4,5 @@
     <suppress-warning text="File for inject code not exist: *" />
     
     <load-typesystem name="typesystem_engine.xml" generate="yes"/>
-    <load-typesystem name="typesystem_gui.xml" generate="yes"/>
+    <load-typesystem name="typesystem_natronGui.xml" generate="yes"/>
 </typesystem>
