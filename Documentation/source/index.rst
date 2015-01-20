@@ -6,10 +6,9 @@
 Welcome to Natron Python developers guide
 =========================================
 
-Contents:
-
 .. toctree::
 	:maxdepth: 2
 
 	APIReference
+	scriptvslabel
 	

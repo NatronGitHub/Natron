@@ -272,7 +272,9 @@
         
     <object-type name="Effect" copyable="false">
         <inject-documentation format="target">
-            This object represents a single node in Natron, that is: an instance of a plug-in.
+            This object represents a single node in Natron, that is, an instance of a plug-in.
+            You cannot create Effects directly by calling their constructor, instead you must use the
+            function :doc:`App.createNode` to create them.
         </inject-documentation>
         
         <modify-function signature="getInput(int)const">

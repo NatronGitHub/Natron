@@ -4,16 +4,15 @@
 Effect
 ******
 
-**Inherits**: :doc:`Group`
+.. inheritance-diagram:: Effect
+    :parts: 2
 
 Synopsis
 --------
 
-This object represents a single node in Natron, that is: an instance of a plug-in.
-See :ref:`details`
-
 Functions
 ^^^^^^^^^
+.. container:: function_list
 
 *    def :meth:`allowEvaluation<NatronEngine.Effect.allowEvaluation>` ()
 *    def :meth:`blockEvaluation<NatronEngine.Effect.blockEvaluation>` ()
@@ -61,18 +60,16 @@ Functions
 *    def :meth:`setSize<NatronEngine.Effect.setSize>` (w, h)
 
 
-.. _details:
-
 Detailed Description
 --------------------
 
 
-The Effect object can be used to operate with a single node in Natron. 
-To create a new Effect, use the :func:`NatronEngine.App.createNode` function.
     
-Natron automatically declares a variable to Python when a new Effect is created. 
-This variable will have a script-name determined by Natron as explained in the 
-:ref:`autovar` section
+    This object represents a single node in Natron, that is, an instance of a plug-in.
+    You cannot create Effects directly by calling their constructor, instead you must use the
+    function :doc:`App.createNode` to create them.
+    
+
 
 
 
