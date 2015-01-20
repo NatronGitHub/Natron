@@ -210,7 +210,7 @@ Member functions description
 	This function will return a new parameter of type button which will appear as a
 	push button. Use the onParamChanged callback of the Effect to handle user clicks.
 
-	:: warning:: After calling this function you should call :func:`refreshUserParamsGUI()<NatronEngine.Effect.refreshUserParamsGUI>`
+	.. warning:: After calling this function you should call :func:`refreshUserParamsGUI()<NatronEngine.Effect.refreshUserParamsGUI>`
 	to refresh the user interface. The refreshing is done in a separate function because it may
 	be expensive and thus allows you to make multiple changes to user parameters at once
 	while keeping the user interface responsive.
@@ -239,7 +239,7 @@ Member functions description
 	This function will return a new parameter of type choice which will appear as a
 	dropdown combobox. 
 
-	:: warning:: After calling this function you should call :func:`refreshUserParamsGUI()<NatronEngine.Effect.refreshUserParamsGUI>`
+	.. warning:: After calling this function you should call :func:`refreshUserParamsGUI()<NatronEngine.Effect.refreshUserParamsGUI>`
 	to refresh the user interface. The refreshing is done in a separate function because it may
 	be expensive and thus allows you to make multiple changes to user parameters at once
 	while keeping the user interface responsive.
@@ -257,7 +257,7 @@ Member functions description
 	:ref:`here<autoVar>` for an explanation of the difference between the *name* and *label*.
 	This function will return a new parameter of type color.
 
-	:: warning:: After calling this function you should call :func:`refreshUserParamsGUI()<NatronEngine.Effect.refreshUserParamsGUI>`
+	.. warning:: After calling this function you should call :func:`refreshUserParamsGUI()<NatronEngine.Effect.refreshUserParamsGUI>`
 	to refresh the user interface. The refreshing is done in a separate function because it may
 	be expensive and thus allows you to make multiple changes to user parameters at once
 	while keeping the user interface responsive.
@@ -275,7 +275,7 @@ Member functions description
 	This function will return a new parameter of type double with 2 dimensions. 
 
 
-	:: warning:: After calling this function you should call :func:`refreshUserParamsGUI()<NatronEngine.Effect.refreshUserParamsGUI>`
+	.. warning:: After calling this function you should call :func:`refreshUserParamsGUI()<NatronEngine.Effect.refreshUserParamsGUI>`
 	to refresh the user interface. The refreshing is done in a separate function because it may
 	be expensive and thus allows you to make multiple changes to user parameters at once
 	while keeping the user interface responsive.
@@ -292,7 +292,7 @@ Member functions description
 	:ref:`here<autoVar>` for an explanation of the difference between the *name* and *label*.
 	This function will return a new parameter of type double with 3 dimensions. 
 
-	:: warning:: After calling this function you should call :func:`refreshUserParamsGUI()<NatronEngine.Effect.refreshUserParamsGUI>`
+	.. warning:: After calling this function you should call :func:`refreshUserParamsGUI()<NatronEngine.Effect.refreshUserParamsGUI>`
 	to refresh the user interface. The refreshing is done in a separate function because it may
 	be expensive and thus allows you to make multiple changes to user parameters at once
 	while keeping the user interface responsive.
@@ -310,7 +310,7 @@ Member functions description
 	This function will return a new parameter of type double with single dimension.
 	A double is similar to a floating point value.
 
-	:: warning:: After calling this function you should call :func:`refreshUserParamsGUI()<NatronEngine.Effect.refreshUserParamsGUI>`
+	.. warning:: After calling this function you should call :func:`refreshUserParamsGUI()<NatronEngine.Effect.refreshUserParamsGUI>`
 	to refresh the user interface. The refreshing is done in a separate function because it may
 	be expensive and thus allows you to make multiple changes to user parameters at once
 	while keeping the user interface responsive.
@@ -327,7 +327,7 @@ Member functions description
 	:ref:`here<autoVar>` for an explanation of the difference between the *name* and *label*.
 	This function will return a new parameter of type double with 2 dimensions. 
 
-	:: warning:: After calling this function you should call :func:`refreshUserParamsGUI()<NatronEngine.Effect.refreshUserParamsGUI>`
+	.. warning:: After calling this function you should call :func:`refreshUserParamsGUI()<NatronEngine.Effect.refreshUserParamsGUI>`
 	to refresh the user interface. The refreshing is done in a separate function because it may
 	be expensive and thus allows you to make multiple changes to user parameters at once
 	while keeping the user interface responsive.
@@ -345,7 +345,7 @@ Member functions description
 	This function will return a new parameter of type group. It can contain other
 	children parameters and can be expanded or folded.
 
-	:: warning:: After calling this function you should call :func:`refreshUserParamsGUI()<NatronEngine.Effect.refreshUserParamsGUI>`
+	.. warning:: After calling this function you should call :func:`refreshUserParamsGUI()<NatronEngine.Effect.refreshUserParamsGUI>`
 	to refresh the user interface. The refreshing is done in a separate function because it may
 	be expensive and thus allows you to make multiple changes to user parameters at once
 	while keeping the user interface responsive.
@@ -361,7 +361,7 @@ Member functions description
 	:ref:`here<autoVar>` for an explanation of the difference between the *name* and *label*.
 	This function will return a new parameter of type integer with 2 dimensions.
 
-	:: warning:: After calling this function you should call :func:`refreshUserParamsGUI()<NatronEngine.Effect.refreshUserParamsGUI>`
+	.. warning:: After calling this function you should call :func:`refreshUserParamsGUI()<NatronEngine.Effect.refreshUserParamsGUI>`
 	to refresh the user interface. The refreshing is done in a separate function because it may
 	be expensive and thus allows you to make multiple changes to user parameters at once
 	while keeping the user interface responsive.
@@ -379,7 +379,7 @@ Member functions description
 	:ref:`here<autoVar>` for an explanation of the difference between the *name* and *label*.
 	This function will return a new parameter of type integer with 3 dimensions.
 
-	:: warning:: After calling this function you should call :func:`refreshUserParamsGUI()<NatronEngine.Effect.refreshUserParamsGUI>`
+	.. warning:: After calling this function you should call :func:`refreshUserParamsGUI()<NatronEngine.Effect.refreshUserParamsGUI>`
 	to refresh the user interface. The refreshing is done in a separate function because it may
 	be expensive and thus allows you to make multiple changes to user parameters at once
 	while keeping the user interface responsive.
@@ -395,7 +395,7 @@ Member functions description
 	:ref:`here<autoVar>` for an explanation of the difference between the *name* and *label*.
 	This function will return a new parameter of type integer with a single dimension.
 
-	:: warning:: After calling this function you should call :func:`refreshUserParamsGUI()<NatronEngine.Effect.refreshUserParamsGUI>`
+	.. warning:: After calling this function you should call :func:`refreshUserParamsGUI()<NatronEngine.Effect.refreshUserParamsGUI>`
 	to refresh the user interface. The refreshing is done in a separate function because it may
 	be expensive and thus allows you to make multiple changes to user parameters at once
 	while keeping the user interface responsive.
@@ -413,7 +413,7 @@ Member functions description
 	This function will return a new parameter of type string dedicated to specify
 	paths to output files.
 
-	:: warning:: After calling this function you should call :func:`refreshUserParamsGUI()<NatronEngine.Effect.refreshUserParamsGUI>`
+	.. warning:: After calling this function you should call :func:`refreshUserParamsGUI()<NatronEngine.Effect.refreshUserParamsGUI>`
 	to refresh the user interface. The refreshing is done in a separate function because it may
 	be expensive and thus allows you to make multiple changes to user parameters at once
 	while keeping the user interface responsive.
@@ -432,7 +432,7 @@ Member functions description
 	This function will return a new parameter of type page. A page is a tab within the
 	settings panel of the node.
 
-	:: warning:: After calling this function you should call :func:`refreshUserParamsGUI()<NatronEngine.Effect.refreshUserParamsGUI>`
+	.. warning:: After calling this function you should call :func:`refreshUserParamsGUI()<NatronEngine.Effect.refreshUserParamsGUI>`
 	to refresh the user interface. The refreshing is done in a separate function because it may
 	be expensive and thus allows you to make multiple changes to user parameters at once
 	while keeping the user interface responsive.
@@ -452,7 +452,7 @@ Member functions description
 	is what can be found in the ColorLookup node or in the Ranges tab of the ColorCorrect
 	node.
 
-	:: warning:: After calling this function you should call :func:`refreshUserParamsGUI()<NatronEngine.Effect.refreshUserParamsGUI>`
+	.. warning:: After calling this function you should call :func:`refreshUserParamsGUI()<NatronEngine.Effect.refreshUserParamsGUI>`
 	to refresh the user interface. The refreshing is done in a separate function because it may
 	be expensive and thus allows you to make multiple changes to user parameters at once
 	while keeping the user interface responsive.
@@ -470,7 +470,7 @@ Member functions description
 	This function will return a new parameter of type string. This parameter is dedicated
 	to specify path to single or multiple directories.
 
-	:: warning:: After calling this function you should call :func:`refreshUserParamsGUI()<NatronEngine.Effect.refreshUserParamsGUI>`
+	.. warning:: After calling this function you should call :func:`refreshUserParamsGUI()<NatronEngine.Effect.refreshUserParamsGUI>`
 	to refresh the user interface. The refreshing is done in a separate function because it may
 	be expensive and thus allows you to make multiple changes to user parameters at once
 	while keeping the user interface responsive.
@@ -486,7 +486,7 @@ Member functions description
 	:ref:`here<autoVar>` for an explanation of the difference between the *name* and *label*.
 	This function will return a new parameter of type string.
 	
-	:: warning:: After calling this function you should call :func:`refreshUserParamsGUI()<NatronEngine.Effect.refreshUserParamsGUI>`
+	.. warning:: After calling this function you should call :func:`refreshUserParamsGUI()<NatronEngine.Effect.refreshUserParamsGUI>`
 	to refresh the user interface. The refreshing is done in a separate function because it may
 	be expensive and thus allows you to make multiple changes to user parameters at once
 	while keeping the user interface responsive.
@@ -501,7 +501,7 @@ Member functions description
 	This function works only if *param* is a user parameter and does nothing otherwise.
 	This function returns True upon success and False otherwise.
 	
-	:: warning:: After calling this function you should call :func:`refreshUserParamsGUI()<NatronEngine.Effect.refreshUserParamsGUI>`
+	.. warning:: After calling this function you should call :func:`refreshUserParamsGUI()<NatronEngine.Effect.refreshUserParamsGUI>`
 	to refresh the user interface. The refreshing is done in a separate function because it may
 	be expensive and thus allows you to make multiple changes to user parameters at once
 	while keeping the user interface responsive.
@@ -737,7 +737,7 @@ Member functions description
 	See :ref:`this<autoVar>` section for an explanation of the difference between the *label* and the 
 	*script-name*.
 	
-	:: warning:: Using this function will remove any previous variable declared using the
+	.. warning:: Using this function will remove any previous variable declared using the
 	old script-name and will create a new variable with the new script name if valid.
 	If your script was using for instance a node named::
 	
