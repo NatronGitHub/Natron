@@ -17,7 +17,7 @@ Functions
 
 *    def :meth:`allowEvaluation<NatronEngine.Effect.allowEvaluation>` ()
 *    def :meth:`blockEvaluation<NatronEngine.Effect.blockEvaluation>` ()
-*    def :meth:`canSetInput<NatronEngine.Effect.canSetInput>` (inputNumber, node)
+*    def :meth:`canConnectInput<NatronEngine.Effect.canConnectInput>` (inputNumber, node)
 *    def :meth:`connectInput<NatronEngine.Effect.connectInput>` (inputNumber, input)
 *    def :meth:`createBooleanParam<NatronEngine.Effect.createBooleanParam>` (name, label)
 *    def :meth:`createButtonParam<NatronEngine.Effect.createButtonParam>` (name, label)
@@ -54,7 +54,6 @@ Functions
 *    def :meth:`getScriptName<NatronEngine.Effect.getScriptName>` ()
 *    def :meth:`getSize<NatronEngine.Effect.getSize>` ()
 *    def :meth:`getUserPageParam<NatronEngine.Effect.getUserPageParam>` ()
-*    def :meth:`isNull<NatronEngine.Effect.isNull>` ()
 *    def :meth:`refreshUserParamsGUI<NatronEngine.Effect.refreshUserParamsGUI>` ()
 *    def :meth:`setColor<NatronEngine.Effect.setColor>` (r, g, b)
 *    def :meth:`setLabel<NatronEngine.Effect.setLabel>` (name)
@@ -96,7 +95,7 @@ For convenience some GUI functionalities have been made accessible via the Effec
 to control the GUI of the node (on the node graph):
 	
 	* Get/Set the node position with the :func:`setPosition(x,y)<NatronEngine.Effect.setPosition>` and :func:`getPosition()<NatronEngine.Effect.getPosition>` functions
-	* Get/Set the node size with the :func:`setSize(width,height)<NatronEngine.Effect.setSize>` and :func:`getSize()<NatronEngine.Effect.getSize`> functions
+	* Get/Set the node size with the :func:`setSize(width,height)<NatronEngine.Effect.setSize>` and :func:`getSize()<NatronEngine.Effect.getSize>` functions
 	* Get/Set the node color with the :func:`setColor(r,g,b)<NatronEngine.Effect.setColor>` and :func:`getColor()<NatronEngine.Effect.getColor>` functions
 	
 .. _userParams:
@@ -144,16 +143,27 @@ Member functions description
 
 
 
-.. method:: NatronEngine.Effect.canSetInput(inputNumber, node)
+.. method:: NatronEngine.Effect.canConnectInput(inputNumber, node)
 
 
-    :param inputNumber: :class:`PySide.QtCore.int`
+    :param inputNumber: :class:`int<PySide.QtCore.int>`
     :param node: :class:`NatronEngine.Effect`
     :rtype: :class:`PySide.QtCore.bool`
 
 
-
-
+	Returns whether the given *node* can be connected at the given *inputNumber* of this
+	Effect. This function could return False for one of the following reasons:
+	
+		* The Effect already has an input at the given *inputNumber*
+		* The *node* is None
+		* The given *inputNumber* is out of range
+		* The *node* cannot have any node connected to it (such as a BackDrop or an Output)
+		* This Effect or the given *node* is a child of another node (for trackers only)
+		* Connecting *node* would create a cycle in the graph implying that it would create
+		infinite recursions
+		* The pixel aspect ratio of *node* is different than one of the already existing input
+		of this Effect and this Effect cannot handle different input pixel aspect ratios
+		* The frame rate of *node* is different than one of the already existing input
 
 
 .. method:: NatronEngine.Effect.connectInput(inputNumber, input)
@@ -163,8 +173,9 @@ Member functions description
     :param input: :class:`NatronEngine.Effect`
     :rtype: :class:`PySide.QtCore.bool`
 
-
-
+	Connects *input* to the given *inputNumber* of this Effect. 
+	This function calls internally :func:`canConnectInput()<NatronEngine.Effect.canConnectInput>`
+	to determine if a connection is possible. 
 
 
 
@@ -176,9 +187,15 @@ Member functions description
     :rtype: :class:`NatronEngine.BooleanParam`
 
 
+	Creates a new user :doc:`parameter<Param>` with the given *name* and *label*. See
+	:ref:`here<autoVar>` for an explanation of the difference between the *name* and *label*.
+	This function will return a new parameter of type boolean which will appear in the user
+	interface as a checkbox.
 
-
-
+	:: warning: After calling this function you should call :func:`refreshUserParamsGUI()<NatronEngine.Effect.refreshUserParamsGUI>`
+	to refresh the user interface. The refreshing is done in a separate function because it may
+	be expensive and thus allows you to make multiple changes to user parameters at once
+	while keeping the user interface responsive.
 
 .. method:: NatronEngine.Effect.createButtonParam(name, label)
 
@@ -188,17 +205,25 @@ Member functions description
     :rtype: :class:`NatronEngine.ButtonParam`
 
 
+	Creates a new user :doc:`parameter<Param>` with the given *name* and *label*. See
+	:ref:`here<autoVar>` for an explanation of the difference between the *name* and *label*.
+	This function will return a new parameter of type button which will appear as a
+	push button. Use the onParamChanged callback of the Effect to handle user clicks.
 
-
-
+	:: warning: After calling this function you should call :func:`refreshUserParamsGUI()<NatronEngine.Effect.refreshUserParamsGUI>`
+	to refresh the user interface. The refreshing is done in a separate function because it may
+	be expensive and thus allows you to make multiple changes to user parameters at once
+	while keeping the user interface responsive.
 
 .. method:: NatronEngine.Effect.createChild()
 
 
     :rtype: :class:`NatronEngine.Effect`
 
-
-
+	If this Effect is a multi-instance node (currently only the Tracker node is a multi-instance)
+	then this function will create a new instance of the same plug-in as a child of this node.
+	This is used for Trackers to create new tracks: internally each track is in fact a 
+	separate node on its own.
 
 
 
@@ -209,9 +234,15 @@ Member functions description
     :param label: :class:`NatronEngine.std::string`
     :rtype: :class:`NatronEngine.ChoiceParam`
 
+	Creates a new user :doc:`parameter<Param>` with the given *name* and *label*. See
+	:ref:`here<autoVar>` for an explanation of the difference between the *name* and *label*.
+	This function will return a new parameter of type choice which will appear as a
+	dropdown combobox. 
 
-
-
+	:: warning: After calling this function you should call :func:`refreshUserParamsGUI()<NatronEngine.Effect.refreshUserParamsGUI>`
+	to refresh the user interface. The refreshing is done in a separate function because it may
+	be expensive and thus allows you to make multiple changes to user parameters at once
+	while keeping the user interface responsive.
 
 
 .. method:: NatronEngine.Effect.createColorParam(name, label, useAlpha)
@@ -222,9 +253,14 @@ Member functions description
     :param useAlpha: :class:`PySide.QtCore.bool`
     :rtype: :class:`NatronEngine.ColorParam`
 
+	Creates a new user :doc:`parameter<Param>` with the given *name* and *label*. See
+	:ref:`here<autoVar>` for an explanation of the difference between the *name* and *label*.
+	This function will return a new parameter of type color.
 
-
-
+	:: warning: After calling this function you should call :func:`refreshUserParamsGUI()<NatronEngine.Effect.refreshUserParamsGUI>`
+	to refresh the user interface. The refreshing is done in a separate function because it may
+	be expensive and thus allows you to make multiple changes to user parameters at once
+	while keeping the user interface responsive.
 
 
 .. method:: NatronEngine.Effect.createDouble2DParam(name, label)
@@ -234,10 +270,15 @@ Member functions description
     :param label: :class:`NatronEngine.std::string`
     :rtype: :class:`NatronEngine.Double2DParam`
 
+	Creates a new user :doc:`parameter<Param>` with the given *name* and *label*. See
+	:ref:`here<autoVar>` for an explanation of the difference between the *name* and *label*.
+	This function will return a new parameter of type double with 2 dimensions. 
 
 
-
-
+	:: warning: After calling this function you should call :func:`refreshUserParamsGUI()<NatronEngine.Effect.refreshUserParamsGUI>`
+	to refresh the user interface. The refreshing is done in a separate function because it may
+	be expensive and thus allows you to make multiple changes to user parameters at once
+	while keeping the user interface responsive.
 
 .. method:: NatronEngine.Effect.createDouble3DParam(name, label)
 
@@ -247,9 +288,14 @@ Member functions description
     :rtype: :class:`NatronEngine.Double3DParam`
 
 
+	Creates a new user :doc:`parameter<Param>` with the given *name* and *label*. See
+	:ref:`here<autoVar>` for an explanation of the difference between the *name* and *label*.
+	This function will return a new parameter of type double with 3 dimensions. 
 
-
-
+	:: warning: After calling this function you should call :func:`refreshUserParamsGUI()<NatronEngine.Effect.refreshUserParamsGUI>`
+	to refresh the user interface. The refreshing is done in a separate function because it may
+	be expensive and thus allows you to make multiple changes to user parameters at once
+	while keeping the user interface responsive.
 
 .. method:: NatronEngine.Effect.createDoubleParam(name, label)
 
@@ -259,9 +305,15 @@ Member functions description
     :rtype: :class:`NatronEngine.DoubleParam`
 
 
+	Creates a new user :doc:`parameter<Param>` with the given *name* and *label*. See
+	:ref:`here<autoVar>` for an explanation of the difference between the *name* and *label*.
+	This function will return a new parameter of type double with single dimension.
+	A double is similar to a floating point value.
 
-
-
+	:: warning: After calling this function you should call :func:`refreshUserParamsGUI()<NatronEngine.Effect.refreshUserParamsGUI>`
+	to refresh the user interface. The refreshing is done in a separate function because it may
+	be expensive and thus allows you to make multiple changes to user parameters at once
+	while keeping the user interface responsive.
 
 .. method:: NatronEngine.Effect.createFileParam(name, label)
 
@@ -271,9 +323,14 @@ Member functions description
     :rtype: :class:`NatronEngine.FileParam`
 
 
+	Creates a new user :doc:`parameter<Param>` with the given *name* and *label*. See
+	:ref:`here<autoVar>` for an explanation of the difference between the *name* and *label*.
+	This function will return a new parameter of type double with 2 dimensions. 
 
-
-
+	:: warning: After calling this function you should call :func:`refreshUserParamsGUI()<NatronEngine.Effect.refreshUserParamsGUI>`
+	to refresh the user interface. The refreshing is done in a separate function because it may
+	be expensive and thus allows you to make multiple changes to user parameters at once
+	while keeping the user interface responsive.
 
 .. method:: NatronEngine.Effect.createGroupParam(name, label)
 
@@ -283,9 +340,15 @@ Member functions description
     :rtype: :class:`NatronEngine.GroupParam`
 
 
+	Creates a new user :doc:`parameter<Param>` with the given *name* and *label*. See
+	:ref:`here<autoVar>` for an explanation of the difference between the *name* and *label*.
+	This function will return a new parameter of type group. It can contain other
+	children parameters and can be expanded or folded.
 
-
-
+	:: warning: After calling this function you should call :func:`refreshUserParamsGUI()<NatronEngine.Effect.refreshUserParamsGUI>`
+	to refresh the user interface. The refreshing is done in a separate function because it may
+	be expensive and thus allows you to make multiple changes to user parameters at once
+	while keeping the user interface responsive.
 
 .. method:: NatronEngine.Effect.createInt2DParam(name, label)
 
@@ -294,9 +357,14 @@ Member functions description
     :param label: :class:`NatronEngine.std::string`
     :rtype: :class:`NatronEngine.Int2DParam`
 
+	Creates a new user :doc:`parameter<Param>` with the given *name* and *label*. See
+	:ref:`here<autoVar>` for an explanation of the difference between the *name* and *label*.
+	This function will return a new parameter of type integer with 2 dimensions.
 
-
-
+	:: warning: After calling this function you should call :func:`refreshUserParamsGUI()<NatronEngine.Effect.refreshUserParamsGUI>`
+	to refresh the user interface. The refreshing is done in a separate function because it may
+	be expensive and thus allows you to make multiple changes to user parameters at once
+	while keeping the user interface responsive.
 
 
 .. method:: NatronEngine.Effect.createInt3DParam(name, label)
@@ -307,9 +375,14 @@ Member functions description
     :rtype: :class:`NatronEngine.Int3DParam`
 
 
+	Creates a new user :doc:`parameter<Param>` with the given *name* and *label*. See
+	:ref:`here<autoVar>` for an explanation of the difference between the *name* and *label*.
+	This function will return a new parameter of type integer with 3 dimensions.
 
-
-
+	:: warning: After calling this function you should call :func:`refreshUserParamsGUI()<NatronEngine.Effect.refreshUserParamsGUI>`
+	to refresh the user interface. The refreshing is done in a separate function because it may
+	be expensive and thus allows you to make multiple changes to user parameters at once
+	while keeping the user interface responsive.
 
 .. method:: NatronEngine.Effect.createIntParam(name, label)
 
@@ -318,9 +391,14 @@ Member functions description
     :param label: :class:`NatronEngine.std::string`
     :rtype: :class:`NatronEngine.IntParam`
 
+	Creates a new user :doc:`parameter<Param>` with the given *name* and *label*. See
+	:ref:`here<autoVar>` for an explanation of the difference between the *name* and *label*.
+	This function will return a new parameter of type integer with a single dimension.
 
-
-
+	:: warning: After calling this function you should call :func:`refreshUserParamsGUI()<NatronEngine.Effect.refreshUserParamsGUI>`
+	to refresh the user interface. The refreshing is done in a separate function because it may
+	be expensive and thus allows you to make multiple changes to user parameters at once
+	while keeping the user interface responsive.
 
 
 .. method:: NatronEngine.Effect.createOutputFileParam(name, label)
@@ -330,9 +408,15 @@ Member functions description
     :param label: :class:`NatronEngine.std::string`
     :rtype: :class:`NatronEngine.OutputFileParam`
 
+	Creates a new user :doc:`parameter<Param>` with the given *name* and *label*. See
+	:ref:`here<autoVar>` for an explanation of the difference between the *name* and *label*.
+	This function will return a new parameter of type string dedicated to specify
+	paths to output files.
 
-
-
+	:: warning: After calling this function you should call :func:`refreshUserParamsGUI()<NatronEngine.Effect.refreshUserParamsGUI>`
+	to refresh the user interface. The refreshing is done in a separate function because it may
+	be expensive and thus allows you to make multiple changes to user parameters at once
+	while keeping the user interface responsive.
 
 
 .. method:: NatronEngine.Effect.createPageParam(name, label)
@@ -343,10 +427,16 @@ Member functions description
     :rtype: :class:`NatronEngine.PageParam`
 
 
+	Creates a new user :doc:`parameter<Param>` with the given *name* and *label*. See
+	:ref:`here<autoVar>` for an explanation of the difference between the *name* and *label*.
+	This function will return a new parameter of type page. A page is a tab within the
+	settings panel of the node.
 
-
-
-
+	:: warning: After calling this function you should call :func:`refreshUserParamsGUI()<NatronEngine.Effect.refreshUserParamsGUI>`
+	to refresh the user interface. The refreshing is done in a separate function because it may
+	be expensive and thus allows you to make multiple changes to user parameters at once
+	while keeping the user interface responsive.
+	
 .. method:: NatronEngine.Effect.createParametricParam(name, label, nbCurves)
 
 
@@ -356,9 +446,16 @@ Member functions description
     :rtype: :class:`NatronEngine.ParametricParam`
 
 
+	Creates a new user :doc:`parameter<Param>` with the given *name* and *label*. See
+	:ref:`here<autoVar>` for an explanation of the difference between the *name* and *label*.
+	This function will return a new parameter of type parametric. A parametric parameter
+	is what can be found in the ColorLookup node or in the Ranges tab of the ColorCorrect
+	node.
 
-
-
+	:: warning: After calling this function you should call :func:`refreshUserParamsGUI()<NatronEngine.Effect.refreshUserParamsGUI>`
+	to refresh the user interface. The refreshing is done in a separate function because it may
+	be expensive and thus allows you to make multiple changes to user parameters at once
+	while keeping the user interface responsive.
 
 .. method:: NatronEngine.Effect.createPathParam(name, label)
 
@@ -368,9 +465,15 @@ Member functions description
     :rtype: :class:`NatronEngine.PathParam`
 
 
+	Creates a new user :doc:`parameter<Param>` with the given *name* and *label*. See
+	:ref:`here<autoVar>` for an explanation of the difference between the *name* and *label*.
+	This function will return a new parameter of type string. This parameter is dedicated
+	to specify path to single or multiple directories.
 
-
-
+	:: warning: After calling this function you should call :func:`refreshUserParamsGUI()<NatronEngine.Effect.refreshUserParamsGUI>`
+	to refresh the user interface. The refreshing is done in a separate function because it may
+	be expensive and thus allows you to make multiple changes to user parameters at once
+	while keeping the user interface responsive.
 
 .. method:: NatronEngine.Effect.createStringParam(name, label)
 
@@ -379,6 +482,14 @@ Member functions description
     :param label: :class:`NatronEngine.std::string`
     :rtype: :class:`NatronEngine.StringParam`
 
+	Creates a new user :doc:`parameter<Param>` with the given *name* and *label*. See
+	:ref:`here<autoVar>` for an explanation of the difference between the *name* and *label*.
+	This function will return a new parameter of type string.
+	
+	:: warning: After calling this function you should call :func:`refreshUserParamsGUI()<NatronEngine.Effect.refreshUserParamsGUI>`
+	to refresh the user interface. The refreshing is done in a separate function because it may
+	be expensive and thus allows you to make multiple changes to user parameters at once
+	while keeping the user interface responsive.
 
 .. method:: NatronEngine.Effect.removeParam(param)
 
@@ -386,16 +497,25 @@ Member functions description
     :param param: :class:`NatronEngine.Param`
     :rtype: :class:`PySide.QtCore.bool`
 
+	Removes the given *param* from the parameters of this Effect. 
+	This function works only if *param* is a user parameter and does nothing otherwise.
+	This function returns True upon success and False otherwise.
+	
+	:: warning: After calling this function you should call :func:`refreshUserParamsGUI()<NatronEngine.Effect.refreshUserParamsGUI>`
+	to refresh the user interface. The refreshing is done in a separate function because it may
+	be expensive and thus allows you to make multiple changes to user parameters at once
+	while keeping the user interface responsive.
 
 
 .. method:: NatronEngine.Effect.destroy([autoReconnect=true])
 
 
     :param autoReconnect: :class:`PySide.QtCore.bool`
-
-
-
-
+		
+	Removes this Effect from the current project definitively. 
+	If *autoReconnect* is True then any nodes connected to this node will try to connect
+	their input to the input of this node instead. 
+	
 
 
 .. method:: NatronEngine.Effect.disconnectInput(inputNumber)
@@ -403,15 +523,16 @@ Member functions description
 
     :param inputNumber: :class:`PySide.QtCore.int`
 
-
+	Removes any input Effect connected to the given *inputNumber* of this node.
 
 
 
 
 .. method:: NatronEngine.Effect.getColor()
 
-
-
+	:rtype: :class:`Tuple`
+	
+	Returns the color of this node as it appears on the node graph as [R,G,B] 3-dimensional tuple.
 
 
 
@@ -423,7 +544,9 @@ Member functions description
     :rtype: :class:`PySide.QtCore.int`
 
 
-
+	Returns the current time of timeline if this node is currently rendering, otherwise
+	it returns the current time at which the node is currently rendering for the caller
+	thread.
 
 
 
@@ -434,9 +557,8 @@ Member functions description
     :rtype: :class:`NatronEngine.Effect`
 
 
-
     
-    Returns the node at the given input.
+    Returns the node connected at the given *inputNumber*.
     
 
 
@@ -446,7 +568,8 @@ Member functions description
 
     :rtype: :class:`NatronEngine.std::string`
 
-
+	Returns the *label* of the node. See :ref:`this section<autoVar>` for a discussion
+	of the *label* vs the *script-name*.
 
 .. method:: NatronEngine.Effect.getInputLabel(inputNumber)
 
@@ -462,7 +585,8 @@ Member functions description
 
     :rtype: :class:`PySide.QtCore.int`
 
-
+	Returns the number of inputs for the node. Graphically this corresponds to the number
+	of arrows in input.
 
 
 
@@ -474,7 +598,8 @@ Member functions description
     :rtype: :class:`NatronEngine.Param`
 
 
-
+	Returns a :doc:`parameter<NatronEngine.Param>` by its script-name or None if
+	no such parameter exists.
 
 
 
@@ -483,8 +608,8 @@ Member functions description
 
     :rtype: 
 
-
-
+	Returns all the :doc:`parameters<NatronEngine.Param>` of this Effect as a sequence.
+	
 
 
 
@@ -494,15 +619,19 @@ Member functions description
     :rtype: :class:`NatronEngine.std::string`
 
 
-
+	Returns the ID of the plug-in that this node instantiate.
 
 
 
 .. method:: NatronEngine.Effect.getPosition()
 
 
-
-
+	:rtype: :class:`Tuple`
+	
+	Returns the current position of the node on the node-graph. This is a 2
+	dimensional [X,Y] tuple. 
+	Note that in background mode, if used, this function will always return [0,0] and
+	should NOT be used.
 
 
 
@@ -512,8 +641,10 @@ Member functions description
 
     :rtype: :class:`NatronEngine.Roto`
 
-
-
+	Returns the roto context for this node. Currently only the Roto node has a roto context.
+	The roto context is in charge of maintaining all informations relative to :doc:`Beziers<BezierCurve>`
+	and :doc:`Layers<Layer>`.
+	Most of the nodes don't have a roto context though and this function will return None.
 
 
 
@@ -523,14 +654,17 @@ Member functions description
     :rtype: :class:`NatronEngine.std::string`
 
 
-
+	Returns the script-name of this Effect. See :ref:`this<autoVar>` section for more 
+	information about the script-name.
 
 
 
 .. method:: NatronEngine.Effect.getSize()
 
 
-
+	Returns the size of this node on the node-graph as a 2 dimensional [Width,Height] tuple.
+	Note that calling this function will in background mode will always return [0,0] and 
+	should not be used.
 
 
 
@@ -542,17 +676,7 @@ Member functions description
     :rtype: :class:`NatronEngine.PageParam`
 
 
-
-
-
-
-.. method:: NatronEngine.Effect.isNull()
-
-
-    :rtype: :class:`PySide.QtCore.bool`
-
-
-
+	Convenience function to return the user page parameter if this Effect has one.
 
 
 
@@ -560,8 +684,8 @@ Member functions description
 
 
 
-
-
+	This function must be called after new user parameter were created or removed. 
+	This will re-create the user interface for the parameters and can be expensive.
 
 
 
@@ -571,9 +695,10 @@ Member functions description
     :param r: :class:`PySide.QtCore.double`
     :param g: :class:`PySide.QtCore.double`
     :param b: :class:`PySide.QtCore.double`
-
-
-
+	
+	Set the color of the node as it appears on the node graph.
+	Note that calling this function will in background mode will do nothing and 
+	should not be used.
 
 
 
@@ -582,8 +707,9 @@ Member functions description
 
     :param name: :class:`NatronEngine.std::string`
 
-
-
+	Set the label of the node as it appears in the user interface.
+	See :ref:`this<autoVar>` section for an explanation of the difference between the *label* and the 
+	*script-name*.
 
 
 
@@ -594,7 +720,9 @@ Member functions description
     :param y: :class:`PySide.QtCore.double`
 
 
-
+	Set the position of the node as it appears on the node graph.
+	Note that calling this function will in background mode will do nothing and 
+	should not be used.
 
 
 
@@ -604,7 +732,21 @@ Member functions description
     :param scriptName: :class:`NatronEngine.std::string`
     :rtype: :class:`PySide.QtCore.bool`
 
-
+	Set the script-name of the node as used internally by Natron.
+	See :ref:`this<autoVar>` section for an explanation of the difference between the *label* and the 
+	*script-name*.
+	
+	:: warning: Using this function will remove any previous variable declared using the
+	old script-name and will create a new variable with the new script name if valid.
+	If your script was using for instance a node named::
+		app1.Blur1
+	and you renamed it BlurOne, it should now be available to Python this way::
+		app1.BlurOne
+	but using app1.Blur1 would report the following error::
+	
+	    Traceback (most recent call last):
+		File "<stdin>", line 1, in <module>
+		NameError: name 'Blur1' is not defined
 
 
 
@@ -615,7 +757,9 @@ Member functions description
     :param w: :class:`PySide.QtCore.double`
     :param h: :class:`PySide.QtCore.double`
 
-
+	Set the size of the node as it appears on the node graph.
+	Note that calling this function will in background mode will do nothing and 
+	should not be used.
 
 
 

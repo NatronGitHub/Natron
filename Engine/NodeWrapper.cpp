@@ -60,32 +60,24 @@ Effect::getMaxInputCount() const
 }
 
 bool
-Effect::canSetInput(int inputNumber,const Effect* node) const
+Effect::canConnectInput(int inputNumber,const Effect* node) const
 {
 
-    ///Input already connected
-    if (_node->getInput(inputNumber)) {
+    if (!node) {
         return false;
     }
     
-    ///No-one is allowed to connect to the other node
-    if (!node->_node->canOthersConnectToThisNode()) {
+    if (!node->getInternalNode()) {
         return false;
     }
     
-    ///Applying this connection would create cycles in the graph
-    if (!_node->checkIfConnectingInputIsOk(node->_node.get())) {
-        return false;
-    }
-    
-    ///Ok, following connection would be clean.
-    return true;
+    return _node->canConnectInput(node->getInternalNode(),inputNumber);
 }
 
 bool
 Effect::connectInput(int inputNumber,const Effect* input)
 {
-    if (canSetInput(inputNumber, input)) {
+    if (canConnectInput(inputNumber, input)) {
         return _node->connectInput(input->_node, inputNumber);
     } else {
         return false;

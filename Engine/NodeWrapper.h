@@ -64,14 +64,6 @@ public:
     
     boost::shared_ptr<Natron::Node> getInternalNode() const;
     
-    bool isNull() const
-    {
-        if (_node) {
-            return false;
-        } else {
-            return true;
-        }
-    }
     
     /**
      * @brief Removes the node from the project. It will no longer be possible to use it.
@@ -87,7 +79,7 @@ public:
     /**
      * @brief Determines whether a connection is possible for the given node at the given input number.
      **/
-    bool canSetInput(int inputNumber,const Effect* node) const;
+    bool canConnectInput(int inputNumber,const Effect* node) const;
     
     /**
      * @brief Attempts to connect the Effect 'input' to the given inputNumber.
