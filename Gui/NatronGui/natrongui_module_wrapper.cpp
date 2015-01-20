@@ -23,10 +23,12 @@ void init_GuiApp(PyObject* module);
 void init_PyGuiApplication(PyObject* module);
 
 // Required modules' type and converter arrays.
-PyTypeObject** SbkNatronEngineTypes;
-SbkConverter** SbkNatronEngineTypeConverters;
-PyTypeObject** SbkPySide_QtCoreTypes;
+PyTypeObject** SbkPySide_QtGuiTypes;
+SbkConverter** SbkPySide_QtGuiTypeConverters;
+/*PyTypeObject** SbkPySide_QtCoreTypes;
 SbkConverter** SbkPySide_QtCoreTypeConverters;
+PyTypeObject** SbkNatronEngineTypes;
+SbkConverter** SbkNatronEngineTypeConverters;*/
 
 // Module initialization ------------------------------------------------------------
 // Container Type converters.
@@ -62,6 +64,40 @@ static void _std_list_std_string__PythonToCpp__std_list_std_string_(PyObject* py
 static PythonToCppFunc is__std_list_std_string__PythonToCpp__std_list_std_string__Convertible(PyObject* pyIn) {
     if (Shiboken::Conversions::convertibleSequenceTypes(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), pyIn))
         return _std_list_std_string__PythonToCpp__std_list_std_string_;
+    return 0;
+}
+
+// C++ to Python conversion for type 'std::list<Effect * >'.
+static PyObject* _std_list_EffectPTR__CppToPython__std_list_EffectPTR_(const void* cppIn) {
+    ::std::list<Effect * >& cppInRef = *((::std::list<Effect * >*)cppIn);
+
+                    // TEMPLATE - stdListToPyList - START
+            PyObject* pyOut = PyList_New((int) cppInRef.size());
+            ::std::list<Effect * >::const_iterator it = cppInRef.begin();
+            for (int idx = 0; it != cppInRef.end(); ++it, ++idx) {
+            ::Effect* cppItem(*it);
+            PyList_SET_ITEM(pyOut, idx, Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_EFFECT_IDX], cppItem));
+            }
+            return pyOut;
+        // TEMPLATE - stdListToPyList - END
+
+}
+static void _std_list_EffectPTR__PythonToCpp__std_list_EffectPTR_(PyObject* pyIn, void* cppOut) {
+    ::std::list<Effect * >& cppOutRef = *((::std::list<Effect * >*)cppOut);
+
+                    // TEMPLATE - pyListToStdList - START
+        for (int i = 0; i < PySequence_Size(pyIn); i++) {
+        Shiboken::AutoDecRef pyItem(PySequence_GetItem(pyIn, i));
+        ::Effect* cppItem = ((::Effect*)0);
+        Shiboken::Conversions::pythonToCppPointer((SbkObjectType*)SbkNatronEngineTypes[SBK_EFFECT_IDX], pyItem, &(cppItem));
+        cppOutRef.push_back(cppItem);
+        }
+    // TEMPLATE - pyListToStdList - END
+
+}
+static PythonToCppFunc is__std_list_EffectPTR__PythonToCpp__std_list_EffectPTR__Convertible(PyObject* pyIn) {
+    if (Shiboken::Conversions::checkSequenceTypes(SbkNatronEngineTypes[SBK_EFFECT_IDX], pyIn))
+        return _std_list_EffectPTR__PythonToCpp__std_list_EffectPTR_;
     return 0;
 }
 
@@ -235,11 +271,11 @@ static struct PyModuleDef moduledef = {
 #endif
 SBK_MODULE_INIT_FUNCTION_BEGIN(NatronGui)
     {
-        Shiboken::AutoDecRef requiredModule(Shiboken::Module::import("NatronEngine"));
+        Shiboken::AutoDecRef requiredModule(Shiboken::Module::import("PySide.QtGui"));
         if (requiredModule.isNull())
             return SBK_MODULE_INIT_ERROR;
-        SbkNatronEngineTypes = Shiboken::Module::getTypes(requiredModule);
-        SbkNatronEngineTypeConverters = Shiboken::Module::getTypeConverters(requiredModule);
+        SbkPySide_QtGuiTypes = Shiboken::Module::getTypes(requiredModule);
+        SbkPySide_QtGuiTypeConverters = Shiboken::Module::getTypeConverters(requiredModule);
     }
 
     {
@@ -248,6 +284,14 @@ SBK_MODULE_INIT_FUNCTION_BEGIN(NatronGui)
             return SBK_MODULE_INIT_ERROR;
         SbkPySide_QtCoreTypes = Shiboken::Module::getTypes(requiredModule);
         SbkPySide_QtCoreTypeConverters = Shiboken::Module::getTypeConverters(requiredModule);
+    }
+
+    {
+        Shiboken::AutoDecRef requiredModule(Shiboken::Module::import("NatronEngine"));
+        if (requiredModule.isNull())
+            return SBK_MODULE_INIT_ERROR;
+        SbkNatronEngineTypes = Shiboken::Module::getTypes(requiredModule);
+        SbkNatronEngineTypeConverters = Shiboken::Module::getTypeConverters(requiredModule);
     }
 
     // Create an array of wrapper types for the current module.
@@ -274,6 +318,13 @@ SBK_MODULE_INIT_FUNCTION_BEGIN(NatronGui)
     Shiboken::Conversions::addPythonToCppValueConversion(SbkNatronGuiTypeConverters[SBK_NATRONGUI_STD_LIST_STD_STRING_IDX],
         _std_list_std_string__PythonToCpp__std_list_std_string_,
         is__std_list_std_string__PythonToCpp__std_list_std_string__Convertible);
+
+    // Register converter for type 'std::list<Effect*>'.
+    SbkNatronGuiTypeConverters[SBK_NATRONGUI_STD_LIST_EFFECTPTR_IDX] = Shiboken::Conversions::createConverter(&PyList_Type, _std_list_EffectPTR__CppToPython__std_list_EffectPTR_);
+    Shiboken::Conversions::registerConverterName(SbkNatronGuiTypeConverters[SBK_NATRONGUI_STD_LIST_EFFECTPTR_IDX], "std::list<Effect*>");
+    Shiboken::Conversions::addPythonToCppValueConversion(SbkNatronGuiTypeConverters[SBK_NATRONGUI_STD_LIST_EFFECTPTR_IDX],
+        _std_list_EffectPTR__PythonToCpp__std_list_EffectPTR_,
+        is__std_list_EffectPTR__PythonToCpp__std_list_EffectPTR__Convertible);
 
     // Register converter for type 'const std::list<RenderTask>&'.
     SbkNatronGuiTypeConverters[SBK_NATRONGUI_STD_LIST_RENDERTASK_IDX] = Shiboken::Conversions::createConverter(&PyList_Type, _conststd_list_RenderTask_REF_CppToPython__conststd_list_RenderTask_REF);

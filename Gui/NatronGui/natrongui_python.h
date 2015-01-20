@@ -14,37 +14,38 @@
 #include <memory>
 
 // Module Includes
-#include <natronengine_python.h>
+#include <pyside_qtgui_python.h>
 #include <pyside_qtcore_python.h>
+#include <natronengine_python.h>
 
 // Binded library includes
 #include <GuiAppWrapper.h>
 #include <GlobalGuiWrapper.h>
 // Conversion Includes - Primitive Types
+#include <QStringList>
+#include <qabstractitemmodel.h>
 #include <QString>
 #include <signalmanager.h>
 #include <typeresolver.h>
 #include <QtConcurrentFilter>
-#include <QStringList>
-#include <qabstractitemmodel.h>
 
 // Conversion Includes - Container Types
-#include <QList>
 #include <QMap>
 #include <QStack>
-#include <QMultiMap>
-#include <map>
+#include <QLinkedList>
 #include <QVector>
+#include <set>
+#include <QSet>
+#include <map>
+#include <vector>
+#include <list>
 #include <QPair>
 #include <pysideconversions.h>
-#include <QSet>
-#include <vector>
-#include <QQueue>
 #include <map>
+#include <QQueue>
+#include <QList>
 #include <utility>
-#include <list>
-#include <QLinkedList>
-#include <set>
+#include <QMultiMap>
 
 // Type indices
 #define SBK_PYGUIAPPLICATION_IDX                                     1
@@ -59,11 +60,12 @@ extern SbkConverter** SbkNatronGuiTypeConverters;
 
 // Converter indices
 #define SBK_NATRONGUI_STD_LIST_STD_STRING_IDX                        0 // std::list<std::string >
-#define SBK_NATRONGUI_STD_LIST_RENDERTASK_IDX                        1 // const std::list<RenderTask > &
-#define SBK_NATRONGUI_QLIST_QVARIANT_IDX                             2 // QList<QVariant >
-#define SBK_NATRONGUI_QLIST_QSTRING_IDX                              3 // QList<QString >
-#define SBK_NATRONGUI_QMAP_QSTRING_QVARIANT_IDX                      4 // QMap<QString, QVariant >
-#define SBK_NatronGui_CONVERTERS_IDX_COUNT                           5
+#define SBK_NATRONGUI_STD_LIST_EFFECTPTR_IDX                         1 // std::list<Effect * >
+#define SBK_NATRONGUI_STD_LIST_RENDERTASK_IDX                        2 // const std::list<RenderTask > &
+#define SBK_NATRONGUI_QLIST_QVARIANT_IDX                             3 // QList<QVariant >
+#define SBK_NATRONGUI_QLIST_QSTRING_IDX                              4 // QList<QString >
+#define SBK_NATRONGUI_QMAP_QSTRING_QVARIANT_IDX                      5 // QMap<QString, QVariant >
+#define SBK_NatronGui_CONVERTERS_IDX_COUNT                           6
 
 // Macros for type check
 

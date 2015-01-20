@@ -19,9 +19,16 @@ class PyGuiApplication : public PyCoreApplication
 {
 public:
     
-    PyGuiApplication();
+    PyGuiApplication()
+    : PyCoreApplication()
+    {
+        
+    }
     
-    virtual ~PyGuiApplication();
+    virtual ~PyGuiApplication()
+    {
+        
+    }
     
     GuiApp* getGuiInstance(int idx) const
     {

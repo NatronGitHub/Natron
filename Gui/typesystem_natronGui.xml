@@ -10,11 +10,12 @@
  -->
 <typesystem package="NatronGui">
 
+    <!--Load QtGui typesystem-->
+    <load-typesystem name="typesystem_gui.xml" generate="no" />
     <!--Load Engine typesystem-->
     <load-typesystem name="typesystem_engine.xml" generate="no" />
 
-    <!--Load QtGui typesystem-->
-    <load-typesystem name="typesystem_gui.xml" generate="no" />
+
 
     <object-type name="GuiApp">
     </object-type>

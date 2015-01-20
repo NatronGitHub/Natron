@@ -32,20 +32,20 @@ public:
     
     virtual ~PyCoreApplication() {}
     
-    inline std::list<std::string> const
-    getPluginIDs()
+    inline std::list<std::string>
+    getPluginIDs() const
     {
         return Natron::getPluginIDs();
     }
     
-    inline int const
-    getNumInstances()
+    inline int
+    getNumInstances() const
     {
         return Natron::getNumInstances();
     }
     
-    inline std::list<std::string> const
-    getNatronPath()
+    inline std::list<std::string>
+    getNatronPath() const
     {
         return Natron::getNatronPath();
     }

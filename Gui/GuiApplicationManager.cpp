@@ -54,7 +54,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/GuiAppInstance.h"
 #include "Gui/CurveWidget.h"
 #include "Gui/ActionShortcuts.h"
-
+#include "NatronGui/natrongui_python.h"
 /**
  * @macro Registers a keybind to the application.
  * @param group The name of the group under which the shortcut should be (e.g: Global, Viewer,NodeGraph...)
@@ -2011,6 +2011,8 @@ extern "C"
 void
 GuiApplicationManager::initBuiltinPythonModules()
 {
+    AppManager::initBuiltinPythonModules();
+    
     int ret = PyImport_AppendInittab(NATRON_GUI_PYTHON_MODULE_NAME,&PyInit_NatronGui);
     if (ret == -1) {
         throw std::runtime_error("Failed to initialize built-in Python module.");

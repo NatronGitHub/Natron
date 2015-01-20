@@ -12,6 +12,7 @@
 
 // Extra includes
 #include <AppInstanceWrapper.h>
+#include <NodeGroupWrapper.h>
 #include <list>
 
 
@@ -96,8 +97,8 @@ static SbkObjectType Sbk_GuiApp_Type = { { {
 
 static void* Sbk_GuiApp_typeDiscovery(void* cptr, SbkObjectType* instanceType)
 {
-    if (instanceType == reinterpret_cast<SbkObjectType*>(Shiboken::SbkType< ::App >()))
-        return dynamic_cast< ::GuiApp*>(reinterpret_cast< ::App*>(cptr));
+    if (instanceType == reinterpret_cast<SbkObjectType*>(Shiboken::SbkType< ::Group >()))
+        return dynamic_cast< ::GuiApp*>(reinterpret_cast< ::Group*>(cptr));
     return 0;
 }
 

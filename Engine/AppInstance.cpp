@@ -369,6 +369,8 @@ AppInstance::createWriter(const std::string& filename,
 void
 AppInstance::load(const CLArgs& cl)
 {
+    
+    declareCurrentAppVariable_Python();
 
     ///if the app is a background project autorun and the project name is empty just throw an exception.
     if ( (appPTR->getAppType() == AppManager::eAppTypeBackgroundAutoRun ||
@@ -969,7 +971,7 @@ AppInstance::declareCurrentAppVariable_Python()
 {
     /// define the app variable
     std::stringstream ss;
-    ss << "app" << _imp->_appID + 1 << " = getInstance(" << _imp->_appID << ") \n";
+    ss << "app" << _imp->_appID + 1 << " = natron.getInstance(" << _imp->_appID << ") \n";
     std::string script = ss.str();
     std::string err;
     bool ok = Natron::interpretPythonScript(script, &err, 0);

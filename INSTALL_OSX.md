@@ -166,7 +166,17 @@ Alex, can you check if the homebrew line below this one works?
 
 ```Shell
 shiboken-3.4 --include-paths=../Engine:../Global:/opt/local/include:/opt/local/include/PySide-3.4  --typesystem-paths=/opt/local/share/PySide-3.4/typesystems --output-directory=Engine Engine/Pyside_Engine_Python.h  Engine/typesystem_engine.xml
+
+shiboken-3.4 --include-paths=../Engine:../Gui:../Global:/opt/local/include:/opt/local/include/PySide-3.4  --typesystem-paths=/opt/local/share/PySide-3.4/typesystems:Engine --output-directory=Gui Gui/Pyside_Gui_Python.h  Gui/typesystem_natronGui.xml
 ```
+**Note**
+Shiboken wrongly declares referenced typesystems as global variable in the source file of the module. That means if both NatronEngine and NatronGui need QtCore as a dependency typsystem, then they will both have the SbkPySide_QtCoreTypes and SbkPySide_QtCoreTypeConverters variables defined in <modulename>_module_wrapper.cpp
+The only solution to deal with it found so far is to comment the following lines in natrongui_module_wrapper.cpp :
+
+    /*PyTypeObject** SbkPySide_QtCoreTypes;
+    SbkConverter** SbkPySide_QtCoreTypeConverters;
+    PyTypeObject** SbkNatronEngineTypes;
+    SbkConverter** SbkNatronEngineTypeConverters;*/
 
 on HomeBrew:
 ```Shell

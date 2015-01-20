@@ -225,9 +225,9 @@ static PyObject* Sbk_PyCoreApplicationFunc_getNatronPath(PyObject* self)
     {
 
         if (!PyErr_Occurred()) {
-            // getNatronPath()
+            // getNatronPath()const
             PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            std::list<std::string > cppResult = cppSelf->getNatronPath();
+            std::list<std::string > cppResult = const_cast<const ::PyCoreApplication*>(cppSelf)->getNatronPath();
             PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_LIST_STD_STRING_IDX], &cppResult);
         }
@@ -421,9 +421,9 @@ static PyObject* Sbk_PyCoreApplicationFunc_getNumInstances(PyObject* self)
     {
 
         if (!PyErr_Occurred()) {
-            // getNumInstances()
+            // getNumInstances()const
             PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            int cppResult = cppSelf->getNumInstances();
+            int cppResult = const_cast<const ::PyCoreApplication*>(cppSelf)->getNumInstances();
             PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<int>(), &cppResult);
         }
@@ -449,9 +449,9 @@ static PyObject* Sbk_PyCoreApplicationFunc_getPluginIDs(PyObject* self)
     {
 
         if (!PyErr_Occurred()) {
-            // getPluginIDs()
+            // getPluginIDs()const
             PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            std::list<std::string > cppResult = cppSelf->getPluginIDs();
+            std::list<std::string > cppResult = const_cast<const ::PyCoreApplication*>(cppSelf)->getPluginIDs();
             PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_LIST_STD_STRING_IDX], &cppResult);
         }

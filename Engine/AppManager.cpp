@@ -288,7 +288,6 @@ struct CLArgsPrivate
     void parse();
     
     QStringList::iterator hasToken(const QString& longName,const QString& shortName);
-    int hasToken2(const QString& longName,const QString& shortName) const;
     
     QStringList::iterator hasOutputToken(QString& indexStr);
     
@@ -500,18 +499,6 @@ CLArgsPrivate::hasToken(const QString& longName,const QString& shortName)
     return args.end();
 }
 
-int
-CLArgsPrivate::hasToken2(const QString& longName,const QString& shortName) const
-{
-    QString longToken = "--" + longName;
-    QString shortToken =  !shortName.isEmpty() ? "-" + shortName : QString();
-    for (int i = 0; i < args.size() ; ++i) {
-        if (args[i] == longToken || (!shortToken.isEmpty() && args[i] == shortToken)) {
-            return i;
-        }
-    }
-    return -1;
-}
 
 QStringList::iterator
 CLArgsPrivate::hasOutputToken(QString& indexStr)
@@ -635,8 +622,8 @@ CLArgsPrivate::parse()
     
     //Parse writers
     for (;;) {
-        int found = hasToken2("writer", "w");
-        if (found == -1) {
+        QStringList::iterator it = hasToken("writer", "w");
+        if (it == args.end()) {
             break;
         }
         
@@ -646,7 +633,10 @@ CLArgsPrivate::parse()
             return;
         }
         
-        if (found + 1 >= args.size()) {
+        QStringList::iterator next = it;
+        ++next;
+        
+        if (next == args.end()) {
             std::cout << QObject::tr("You must specify the name of a Write node when using the -w option").toStdString() << std::endl;
             error = 1;
             return;
@@ -654,8 +644,8 @@ CLArgsPrivate::parse()
         
         
         //Check that the name is conform to a Python acceptable script name
-        std::string pythonConform = Natron::makeNameScriptFriendly(args[found + 1].toStdString());
-        if (args[found + 1].toStdString() != pythonConform) {
+        std::string pythonConform = Natron::makeNameScriptFriendly(next->toStdString());
+        if (next->toStdString() != pythonConform) {
             std::cout << QObject::tr("The name of the Write node specified is not valid: it cannot contain non alpha-numerical "
                                      "characters and must not start with a digit.").toStdString() << std::endl;
             error = 1;
@@ -663,13 +653,16 @@ CLArgsPrivate::parse()
         }
         
         CLArgs::WriterArg w;
-        w.name = args[found + 1];
+        w.name = *next;
         
         bool foundFilename = false;
-        if (found + 2 < args.size()) {
+        QStringList::iterator nextNext = next;
+        ++nextNext;
+        
+        if (nextNext != args.end()) {
             //Check for an optional filename
-            if (!args[found + 2].startsWith("-") && !args[found + 2].startsWith("--")) {
-                w.filename = args[found+2];
+            if (!nextNext->startsWith("-") && !nextNext->startsWith("--")) {
+                w.filename = *nextNext;
 #if defined(Q_OS_UNIX)
                 w.filename = AppManager::qt_tildeExpansion(w.filename);
 #endif
@@ -677,9 +670,12 @@ CLArgsPrivate::parse()
             }
         }
         
-        for (int i  = 0; i < foundFilename ? 2 : 1; ++i) {
-            args.removeAt(found);
+        QStringList::iterator end = nextNext;
+        if (nextNext != args.end()) {
+            ++nextNext;
         }
+        args.erase(it,nextNext);
+
     } // for (;;)
     
     bool atLeastOneOutput = false;
@@ -999,7 +995,6 @@ AppManager::newAppInstance(const CLArgs& cl)
 
     try {
         instance->load(cl);
-        instance->declareCurrentAppVariable_Python();
     } catch (const std::exception & e) {
         Natron::errorDialog( NATRON_APPLICATION_NAME,e.what(), false );
         removeInstance(_imp->_availableID);
@@ -2887,6 +2882,8 @@ AppManager::initPython(int argc,char* argv[])
         ok = interpretPythonScript("natron = " + std::string(NATRON_ENGINE_PYTHON_MODULE_NAME) + ".PyCoreApplication()\n" , &err, 0);
         assert(ok);
     }
+    
+    assert(PyObject_HasAttrString(_imp->mainModule, "natron") == 1);
 }
 
 void

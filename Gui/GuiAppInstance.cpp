@@ -176,6 +176,8 @@ GuiAppInstance::load(const CLArgs& cl)
     _imp->_gui = new Gui(this);
     _imp->_gui->createGui();
 
+    
+    declareCurrentAppVariable_Python();
 
     ///if the app is interactive, build the plugins toolbuttons from the groups we extracted off the plugins.
     const std::list<boost::shared_ptr<PluginGroupNode> > & _toolButtons = appPTR->getTopLevelPluginsToolButtons();

@@ -12,6 +12,7 @@
 
 //Engine
 #include "AppInstanceWrapper.h"
+#include "NodeGroupWrapper.h"
 #include "GlobalFunctionsWrapper.h"
 
 //Gui
