@@ -222,8 +222,8 @@
     <object-type name="Group" copyable="false">
         <inject-documentation format="target">
             This is an abstract class, it is derived by 2 different classes:
-            :doc:`App` which represents an instance of Natron, or more specifically the current project.
-            :doc:`Effect` which represents an a node in the nodegraph.
+            :doc:`App` which represents an instance of Natron, or more specifically an opened project.
+            :doc:`Effect` which represents a node in the nodegraph.
         </inject-documentation>
         <modify-function signature="getNode(std::string)const">
             <modify-argument index="return">
