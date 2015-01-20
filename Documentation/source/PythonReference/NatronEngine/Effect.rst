@@ -159,10 +159,8 @@ Member functions description
 		* The given *inputNumber* is out of range
 		* The *node* cannot have any node connected to it (such as a BackDrop or an Output)
 		* This Effect or the given *node* is a child of another node (for trackers only)
-		* Connecting *node* would create a cycle in the graph implying that it would create
-		infinite recursions
-		* The pixel aspect ratio of *node* is different than one of the already existing input
-		of this Effect and this Effect cannot handle different input pixel aspect ratios
+		* Connecting *node* would create a cycle in the graph implying that it would create infinite recursions
+		* The pixel aspect ratio of *node* is different than one of the already existing input of this Effect and this Effect cannot handle different input pixel aspect ratios
 		* The frame rate of *node* is different than one of the already existing input
 
 
