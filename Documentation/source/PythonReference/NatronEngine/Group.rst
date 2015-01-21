@@ -4,8 +4,6 @@
 Group
 *****
 
-.. inheritance-diagram:: Group
-    :parts: 2
 
 **Inherited by:** :ref:`Effect`, :ref:`App`, :ref:`GuiApp`
 

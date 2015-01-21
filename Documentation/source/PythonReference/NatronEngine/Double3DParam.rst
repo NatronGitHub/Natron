@@ -4,23 +4,39 @@
 Double3DParam
 *************
 
-.. inheritance-diagram:: Double3DParam
-    :parts: 2
+**Inherits** :doc:`Double2DParam`
 
 Synopsis
 --------
 
+See :doc:`DoubleParam` for more informations on this class.
+
 Functions
 ^^^^^^^^^
-.. container:: function_list
-
+*    def :meth:`get<NatronEngine.Double3DParam.get>` ()
+*    def :meth:`get<NatronEngine.Double3DParam.get>` (frame)
 *    def :meth:`set<NatronEngine.Double3DParam.set>` (x, y, z)
 *    def :meth:`set<NatronEngine.Double3DParam.set>` (x, y, z, frame)
 
 
-Detailed Description
---------------------
 
+Member functions description
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. method:: NatronEngine.Double3DParam.get()
+	
+	:rtype: :class:`Double3DTuple`
+	
+Returns a :doc:`Double3DTuple` with the [x,y,z] values for this parameter at the current
+timeline's time.
+
+
+
+.. method:: NatronEngine.Double3DParam.get(frame)
+	
+	:rtype: :class:`Double3DTuple`
+	
+Returns a :doc:`Double3DTuple` with the [x,y,z] values for this parameter at the given *frame*.
 
 
 
@@ -29,12 +45,13 @@ Detailed Description
 .. method:: NatronEngine.Double3DParam.set(x, y, z, frame)
 
 
-    :param x: :class:`PySide.QtCore.double`
-    :param y: :class:`PySide.QtCore.double`
-    :param z: :class:`PySide.QtCore.double`
+    :param x: :class:`float<PySide.QtCore.double>`
+    :param y: :class:`float<PySide.QtCore.double>`
+    :param z: :class:`float<PySide.QtCore.double>`
     :param frame: :class:`PySide.QtCore.int`
 
 
+Same as :func:`set(x,frame)<NatronEngine.DoubleParam.set>` but for 3-dimensional doubles.
 
 
 
@@ -42,11 +59,12 @@ Detailed Description
 .. method:: NatronEngine.Double3DParam.set(x, y, z)
 
 
-    :param x: :class:`PySide.QtCore.double`
-    :param y: :class:`PySide.QtCore.double`
-    :param z: :class:`PySide.QtCore.double`
+    :param x: :class:`float<PySide.QtCore.double>`
+    :param y: :class:`float<PySide.QtCore.double>`
+    :param z: :class:`float<PySide.QtCore.double>`
 
 
+Same as :func:`set(x)<NatronEngine.DoubleParam.set>` but for 3-dimensional doubles.
 
 
 

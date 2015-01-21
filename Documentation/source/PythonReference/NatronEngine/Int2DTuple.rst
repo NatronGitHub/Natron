@@ -4,17 +4,18 @@
 Int2DTuple
 **********
 
-.. inheritance-diagram:: Int2DTuple
-    :parts: 2
 
 Synopsis
 --------
+
+Utility class to return pair of integers values.
+
 
 Functions
 ^^^^^^^^^
 .. container:: function_list
 
-*    def :meth:`__getitem__<NatronEngine.Int2DTuple.__getitem__>` (arg__1)
+*    def :meth:`__getitem__<NatronEngine.Int2DTuple.__getitem__>` (index)
 
 
 Detailed Description
@@ -33,15 +34,15 @@ Detailed Description
 .. attribute:: NatronEngine.Int2DTuple.y
 
 
-.. method:: NatronEngine.Int2DTuple.__getitem__(arg__1)
+.. method:: NatronEngine.Int2DTuple.__getitem__(index)
 
 
-    :param arg__1: :class:`PySide.QtCore.int`
+    :param index: :class:`int<PySide.QtCore.int>`
     :rtype: :class:`PyObject`
 
 
 
-
+Returns the item at the given index. This is the bracket operator *[]*
 
 
 

@@ -4,11 +4,11 @@
 Double2DTuple
 *************
 
-.. inheritance-diagram:: Double2DTuple
-    :parts: 2
 
 Synopsis
 --------
+
+Utility class to return pair of floating point values.
 
 Functions
 ^^^^^^^^^
@@ -33,15 +33,12 @@ Detailed Description
 .. attribute:: NatronEngine.Double2DTuple.y
 
 
-.. method:: NatronEngine.Double2DTuple.__getitem__(arg__1)
+.. method:: NatronEngine.Double2DTuple.__getitem__(index)
 
 
-    :param arg__1: :class:`PySide.QtCore.int`
-    :rtype: :class:`PyObject`
+    :param index: :class:`int<PySide.QtCore.int>`
+    :rtype: :class:`float`
 
 
-
-
-
-
+Returns the item at the given index. This is the bracket operator *[]*
 

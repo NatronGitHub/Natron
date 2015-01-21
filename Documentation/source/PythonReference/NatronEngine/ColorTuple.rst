@@ -4,27 +4,19 @@
 ColorTuple
 **********
 
-.. inheritance-diagram:: ColorTuple
-    :parts: 2
 
 Synopsis
 --------
 
+Utility class used to return [R,G,B,[A]] values.
+
 Functions
 ^^^^^^^^^
-.. container:: function_list
 
 *    def :meth:`__getitem__<NatronEngine.ColorTuple.__getitem__>` (arg__1)
 
 
-Detailed Description
---------------------
-
-
-
-
 .. class:: ColorTuple()
-
 
 
 .. attribute:: NatronEngine.ColorTuple.g
@@ -39,13 +31,13 @@ Detailed Description
 .. attribute:: NatronEngine.ColorTuple.b
 
 
-.. method:: NatronEngine.ColorTuple.__getitem__(arg__1)
+.. method:: NatronEngine.ColorTuple.__getitem__(index)
 
 
-    :param arg__1: :class:`PySide.QtCore.int`
-    :rtype: :class:`PyObject`
+    :param arg__1: :class:`int<PySide.QtCore.int>`
+    :rtype: :class:`float`
 
-
+Returns the item at the given index. This is the bracket operator *[]*
 
 
 

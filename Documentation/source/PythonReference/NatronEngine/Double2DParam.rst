@@ -4,49 +4,63 @@
 Double2DParam
 *************
 
-.. inheritance-diagram:: Double2DParam
-    :parts: 2
+**Inherits** :doc:`DoubleParam`
 
 **Inherited by:** :ref:`Double3DParam`
 
 Synopsis
 --------
 
+See :doc:`DoubleParam` for more informations on this class.
+
 Functions
 ^^^^^^^^^
-.. container:: function_list
 
+*    def :meth:`get<NatronEngine.Double2DParam.get>` ()
+*    def :meth:`get<NatronEngine.Double2DParam.get>` (frame)
 *    def :meth:`set<NatronEngine.Double2DParam.set>` (x, y)
 *    def :meth:`set<NatronEngine.Double2DParam.set>` (x, y, frame)
 
 
-Detailed Description
---------------------
+Member functions description
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. method:: NatronEngine.Double2DParam.get()
+	
+	:rtype: :class:`Double2DTuple`
+	
+Returns a :doc:`Double2DTuple` with the [x,y] values for this parameter at the current
+timeline's time.
 
 
 
+.. method:: NatronEngine.Double2DParam.get(frame)
+	
+	:rtype: :class:`Double2DTuple`
+	
+Returns a :doc:`Double2DTuple` with the [x,y] values for this parameter at the given *frame*.
 
 
 
 .. method:: NatronEngine.Double2DParam.set(x, y, frame)
 
 
-    :param x: :class:`PySide.QtCore.double`
-    :param y: :class:`PySide.QtCore.double`
-    :param frame: :class:`PySide.QtCore.int`
+    :param x: :class:`float<PySide.QtCore.double>`
+    :param y: :class:`float<PySide.QtCore.double>`
+    :param frame: :class:`int<PySide.QtCore.int>`
 
 
-
+Same as :func:`set(x,frame)<NatronEngine.DoubleParam.set>` but for 2-dimensional doubles.
 
 
 
 .. method:: NatronEngine.Double2DParam.set(x, y)
 
 
-    :param x: :class:`PySide.QtCore.double`
-    :param y: :class:`PySide.QtCore.double`
+    :param x: :class:`float<PySide.QtCore.double>`
+    :param y: :class:`float<PySide.QtCore.double>`
 
-
+Same as :func:`set(x)<NatronEngine.DoubleParam.set>` but for 2-dimensional doubles.
 
 
 

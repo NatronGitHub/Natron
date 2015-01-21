@@ -4,19 +4,20 @@
 IntParam
 ********
 
-.. inheritance-diagram:: IntParam
-    :parts: 2
+*Inherits* :doc:`AnimatedParam`
 
 **Inherited by:** :ref:`Int2DParam`, :ref:`Int3DParam`
 
 Synopsis
 --------
 
+An IntParam can contain one or multiple int values. 
+See :ref:`detailed<int.details>` description...
+
 Functions
 ^^^^^^^^^
 .. container:: function_list
 
-*    def :meth:`addAsDependencyOf<NatronEngine.IntParam.addAsDependencyOf>` (fromExprDimension, param)
 *    def :meth:`get<NatronEngine.IntParam.get>` ()
 *    def :meth:`get<NatronEngine.IntParam.get>` (frame)
 *    def :meth:`getDefaultValue<NatronEngine.IntParam.getDefaultValue>` ([dimension=0])
@@ -37,44 +38,56 @@ Functions
 *    def :meth:`setValue<NatronEngine.IntParam.setValue>` (value[, dimension=0])
 *    def :meth:`setValueAtTime<NatronEngine.IntParam.setValueAtTime>` (value, time[, dimension=0])
 
+.. _int.details:
 
 Detailed Description
 --------------------
 
 
+An int param can have 1 to 3 dimensions. (See :doc:`Int2DParam` and :doc:`Int3DParam`).
+Usually this is used to represent a single integer value that may animate over time.
+
+The user interface for them varies depending on the number of dimensions.
+*Screenshots are the same than for the :doc`DoubleParam` because the user interface is the same*
+
+A 1-dimensional :doc:`DoubleParam`
+
+.. figure:: doubleParam.png
+
+A 2-dimensional :doc:`Double2Dparam` 
+
+.. figure:: double2DParam.png
+
+A 3-dimensional :doc:`Double3DParam`
+
+.. figure:: double3DParam.png
 
 
-
-
-.. method:: NatronEngine.IntParam.addAsDependencyOf(fromExprDimension, param)
-
-
-    :param fromExprDimension: :class:`PySide.QtCore.int`
-    :param param: :class:`NatronEngine.Param`
-    :rtype: :class:`PySide.QtCore.int`
-
-
-
+Member functions description
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
 
 .. method:: NatronEngine.IntParam.get(frame)
 
 
-    :param frame: :class:`PySide.QtCore.int`
-    :rtype: :class:`PySide.QtCore.int`
+    :param frame: :class:`int<PySide.QtCore.int>`
+    :rtype: :class:`int<PySide.QtCore.int>`
 
 
-
+Returns the value of this parameter at the given *frame*. If the animation curve has an 
+animation (see :doc:`getIsAnimated<NatronEngine.AnimatedParam.getIsAnimated>` then the
+value will be interpolated using the *interpolation* chosen by the user for the curve. 
 
 
 
 .. method:: NatronEngine.IntParam.get()
 
 
-    :rtype: :class:`PySide.QtCore.int`
+    :rtype: :class:`int<PySide.QtCore.int>`
 
 
+Returns the value of this parameter at the given current timeline's time.
 
 
 
@@ -82,31 +95,38 @@ Detailed Description
 .. method:: NatronEngine.IntParam.getDefaultValue([dimension=0])
 
 
-    :param dimension: :class:`PySide.QtCore.int`
-    :rtype: :class:`PySide.QtCore.int`
+    :param dimension: :class:`int<PySide.QtCore.int>`
+    :rtype: :class:`int<PySide.QtCore.int>`
 
 
-
+Returns the default value for this parameter. *dimension* is meaningless for the IntParam
+class because it is 1-dimensional, but is useful for inherited classes :doc:`Int2DParam`
+and :doc:`Int3DParam`
 
 
 
 .. method:: NatronEngine.IntParam.getDisplayMaximum(dimension)
 
 
-    :param dimension: :class:`PySide.QtCore.int`
-    :rtype: :class:`PySide.QtCore.int`
+    :param dimension: :class:`int<PySide.QtCore.int>`
+    :rtype: :class:`int<PySide.QtCore.int>`
 
 
-
+Returns the display maximum for this parameter at the given *dimension*.
+The display maximum is the maximum value visible on the slider, internally the value
+can exceed this range.
 
 
 
 .. method:: NatronEngine.IntParam.getDisplayMinimum(dimension)
 
 
-    :param dimension: :class:`PySide.QtCore.int`
-    :rtype: :class:`PySide.QtCore.int`
+    :param dimension: :class:`int<PySide.QtCore.int>`
+    :rtype: :class:`int<PySide.QtCore.int>`
 
+Returns the display minimum for this parameter at the given *dimension*.
+The display minimum is the minimum value visible on the slider, internally the value
+can exceed this range.
 
 
 
@@ -115,9 +135,11 @@ Detailed Description
 .. method:: NatronEngine.IntParam.getMaximum([dimension=0])
 
 
-    :param dimension: :class:`PySide.QtCore.int`
-    :rtype: :class:`PySide.QtCore.int`
+    :param dimension: :class:`int<PySide.QtCore.int>`
+    :rtype: :class:`int<PySide.QtCore.int>`
 
+Returns the maximum for this parameter at the given *dimension*.
+The maximum value cannot be exceeded and any higher value will be clamped to this value.
 
 
 
@@ -126,10 +148,12 @@ Detailed Description
 .. method:: NatronEngine.IntParam.getMinimum([dimension=0])
 
 
-    :param dimension: :class:`PySide.QtCore.int`
-    :rtype: :class:`PySide.QtCore.int`
+    :param dimension: :class:`int<PySide.QtCore.int>`
+    :rtype: :class:`int<PySide.QtCore.int>`
 
 
+Returns the minimum for this parameter at the given *dimension*.
+The minimum value cannot be exceeded and any lower value will be clamped to this value.
 
 
 
@@ -137,10 +161,11 @@ Detailed Description
 .. method:: NatronEngine.IntParam.getValue([dimension=0])
 
 
-    :param dimension: :class:`PySide.QtCore.int`
-    :rtype: :class:`PySide.QtCore.int`
+    :param dimension: :class:`int<PySide.QtCore.int>`
+    :rtype: :class:`int<PySide.QtCore.int>`
 
 
+Returns the value of this parameter at the given *dimension* at the current timeline's time.
 
 
 
@@ -148,11 +173,16 @@ Detailed Description
 .. method:: NatronEngine.IntParam.getValueAtTime(time[, dimension=0])
 
 
-    :param time: :class:`PySide.QtCore.int`
-    :param dimension: :class:`PySide.QtCore.int`
-    :rtype: :class:`PySide.QtCore.int`
+    :param time: :class:`int<PySide.QtCore.int>`
+    :param dimension: :class:`int<PySide.QtCore.int>`
+    :rtype: :class:`int<PySide.QtCore.int>`
 
 
+Returns the value of this parameter at the given *dimension* at the given *time*.
+
+If the animation curve has an 
+animation (see :doc:`getIsAnimated<NatronEngine.AnimatedParam.getIsAnimated>` then the
+value will be interpolated using the *interpolation* chosen by the user for the curve. 
 
 
 
@@ -160,9 +190,10 @@ Detailed Description
 .. method:: NatronEngine.IntParam.restoreDefaultValue([dimension=0])
 
 
-    :param dimension: :class:`PySide.QtCore.int`
+    :param dimension: :class:`int<PySide.QtCore.int>`
 
 
+Returns the value of this parameter at the given *dimension* at the given *time*.
 
 
 
@@ -170,9 +201,10 @@ Detailed Description
 .. method:: NatronEngine.IntParam.set(x, frame)
 
 
-    :param x: :class:`PySide.QtCore.int`
-    :param frame: :class:`PySide.QtCore.int`
+    :param x: :class:`int<PySide.QtCore.int>`
+    :param frame: :class:`int<PySide.QtCore.int>`
 
+Set a new keyframe on the parameter with the value *x* at the given *frame*.
 
 
 
@@ -181,9 +213,12 @@ Detailed Description
 .. method:: NatronEngine.IntParam.set(x)
 
 
-    :param x: :class:`PySide.QtCore.int`
+    :param x: :class:`int<PySide.QtCore.int>`
 
 
+Set the value of this parameter to be *x*. 
+If this parameter is animated (see :func:`getIsAnimated(dimension)<NatronEngine.AnimatedParam.getIsAnimated>`
+then this function will automatically add a keyframe at the timeline's current time.
 
 
 
@@ -191,9 +226,10 @@ Detailed Description
 .. method:: NatronEngine.IntParam.setDefaultValue(value[, dimension=0])
 
 
-    :param value: :class:`PySide.QtCore.int`
-    :param dimension: :class:`PySide.QtCore.int`
+    :param value: :class:`int<PySide.QtCore.int>`
+    :param dimension: :class:`int<PySide.QtCore.int>`
 
+Set the default *value* for this parameter at the given *dimension*.
 
 
 
@@ -202,10 +238,12 @@ Detailed Description
 .. method:: NatronEngine.IntParam.setDisplayMaximum(maximum[, dimension=0])
 
 
-    :param maximum: :class:`PySide.QtCore.int`
-    :param dimension: :class:`PySide.QtCore.int`
+    :param maximum: :class:`int<PySide.QtCore.int>`
+    :param dimension: :class:`int<PySide.QtCore.int>`
 
 
+Set the display maximum of the parameter to be *maximum* for the given *dimension*.
+See :func:`getDisplayMaximum<NatronEngine.IntParam.getDisplayMaximum>`
 
 
 
@@ -213,10 +251,13 @@ Detailed Description
 .. method:: NatronEngine.IntParam.setDisplayMinimum(minimum[, dimension=0])
 
 
-    :param minimum: :class:`PySide.QtCore.int`
-    :param dimension: :class:`PySide.QtCore.int`
+    :param minimum: :class:`int<PySide.QtCore.int>`
+    :param dimension: :class:`int<PySide.QtCore.int>`
 
 
+
+Set the display minimum of the parameter to be *minmum* for the given *dimension*.
+See :func:`getDisplayMinimum<NatronEngine.IntParam.getDisplayMinimum>`
 
 
 
@@ -224,8 +265,11 @@ Detailed Description
 .. method:: NatronEngine.IntParam.setMaximum(maximum[, dimension=0])
 
 
-    :param maximum: :class:`PySide.QtCore.int`
-    :param dimension: :class:`PySide.QtCore.int`
+    :param maximum: :class:`int<PySide.QtCore.int>`
+    :param dimension: :class:`int<PySide.QtCore.int>`
+
+Set the maximum of the parameter to be *maximum* for the given *dimension*.
+See :func:`getMaximum<NatronEngine.IntParam.getMaximum>`
 
 
 
@@ -235,9 +279,12 @@ Detailed Description
 .. method:: NatronEngine.IntParam.setMinimum(minimum[, dimension=0])
 
 
-    :param minimum: :class:`PySide.QtCore.int`
-    :param dimension: :class:`PySide.QtCore.int`
+    :param minimum: :class:`int<PySide.QtCore.int>`
+    :param dimension: :class:`int<PySide.QtCore.int>`
 
+
+Set the minimum of the parameter to be *minimum* for the given *dimension*.
+See :func:`getMinimum<NatronEngine.IntParam.getMinimum>`
 
 
 
@@ -246,10 +293,12 @@ Detailed Description
 .. method:: NatronEngine.IntParam.setValue(value[, dimension=0])
 
 
-    :param value: :class:`PySide.QtCore.int`
-    :param dimension: :class:`PySide.QtCore.int`
+    :param value: :class:`int<PySide.QtCore.int>`
+    :param dimension: :class:`int<PySide.QtCore.int>`
 
 
+
+Same as :func:`set(value,dimension)<NatronEngine.IntParam.set>`
 
 
 
@@ -257,11 +306,12 @@ Detailed Description
 .. method:: NatronEngine.IntParam.setValueAtTime(value, time[, dimension=0])
 
 
-    :param value: :class:`PySide.QtCore.int`
-    :param time: :class:`PySide.QtCore.int`
-    :param dimension: :class:`PySide.QtCore.int`
+    :param value: :class:`int<PySide.QtCore.int>`
+    :param time: :class:`int<PySide.QtCore.int>`
+    :param dimension: :class:`int<PySide.QtCore.int>`
 
 
+Same as :func:`set(value,time,dimension)<NatronEngine.IntParam.set>`
 
 
 

@@ -41,6 +41,8 @@ Once 2 keyframes are active on the parameter, the value of the parameter will be
 automatically by Natron for a given time. 
 You can control keyframes by adding,removing, changing their values and their :ref:`interpolation<NatronEngine.Natron.KeyframeTypeEnum>` type.
 
+Note that by default new keyframes are always with a **Smooth** interpolation.
+
 Moreover parameters can have Python expressions set on them to control their value. In that case, the expression takes
 precedence over any animation that the parameter may have, meaning that the value of the parameter would be computed
 using the expression provided. 

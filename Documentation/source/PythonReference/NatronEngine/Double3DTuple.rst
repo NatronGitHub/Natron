@@ -4,17 +4,16 @@
 Double3DTuple
 *************
 
-.. inheritance-diagram:: Double3DTuple
-    :parts: 2
-
 Synopsis
 --------
 
+Utility class to return pair of floating point values.
+
+
 Functions
 ^^^^^^^^^
-.. container:: function_list
 
-*    def :meth:`__getitem__<NatronEngine.Double3DTuple.__getitem__>` (arg__1)
+*    def :meth:`__getitem__<NatronEngine.Double3DTuple.__getitem__>` (index)
 
 
 Detailed Description
@@ -36,13 +35,14 @@ Detailed Description
 .. attribute:: NatronEngine.Double3DTuple.z
 
 
-.. method:: NatronEngine.Double3DTuple.__getitem__(arg__1)
+.. method:: NatronEngine.Double3DTuple.__getitem__(index)
 
 
-    :param arg__1: :class:`PySide.QtCore.int`
-    :rtype: :class:`PyObject`
+    :param index: :class:`int<PySide.QtCore.int>`
+    :rtype: :class:`float`
 
 
+Returns the item at the given index. This is the bracket operator *[]*
 
 
 
