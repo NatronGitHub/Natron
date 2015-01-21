@@ -1906,7 +1906,17 @@ convertToFormatInternal(const RectI & renderWindow,
 
     assert(!intersection.isNull() && intersection.width() > 0 && intersection.height() > 0);
 
-    if (channelForAlpha == -1) {
+    if (channelForAlpha != -1) {
+        switch (srcNComps) {
+            case 3:
+                if (channelForAlpha > 3) {
+                    channelForAlpha = -1;
+                }
+                break;
+            default:
+                break;
+        }
+    } else {
         switch (srcNComps) {
             case 4:
                 channelForAlpha = 3;
@@ -1975,7 +1985,8 @@ convertToFormatInternal(const RectI & renderWindow,
                             pix = convertPixelDepth<SRCPIX, DSTPIX>(srcPixels[channelForAlpha]);
                             break;
                         case 3:
-                            pix = convertPixelDepth<SRCPIX, DSTPIX>(1); // RGB is opaque
+                            // RGB is opaque but the channelForAlpha can be 0-2
+                            pix = convertPixelDepth<SRCPIX, DSTPIX>(channelForAlpha == -1 ? 0. : srcPixels[channelForAlpha]);
                             break;
                         case 1:
                             pix  = convertPixelDepth<SRCPIX, DSTPIX>(*srcPixels);
