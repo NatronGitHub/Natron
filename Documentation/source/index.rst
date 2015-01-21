@@ -11,4 +11,5 @@ Welcome to Natron Python developers guide
 
 	APIReference
 	scriptvslabel
+	natronpath
 	

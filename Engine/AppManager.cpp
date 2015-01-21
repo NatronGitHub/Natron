@@ -1441,8 +1441,8 @@ AppManager::getAllNonOFXPluginsPaths() const
     QString natronBundledPluginsPath = QString(cwd.absolutePath() +  "/Plugins");
 
     bool preferBundleOverSystemWide = _imp->_settings->preferBundledPlugins();
-    
-    if (preferBundleOverSystemWide) {
+    bool useBundledPlugins = _imp->_settings->loadBundledPlugins();
+    if (preferBundleOverSystemWide && useBundledPlugins) {
         ///look-in the bundled plug-ins
         templatesSearchPath.push_back(natronBundledPluginsPath);
     }
@@ -1464,7 +1464,7 @@ AppManager::getAllNonOFXPluginsPaths() const
         }
     }
     
-    if (!preferBundleOverSystemWide) {
+    if (!preferBundleOverSystemWide && useBundledPlugins) {
         ///look-in the bundled plug-ins
         templatesSearchPath.push_back(natronBundledPluginsPath);
     }
