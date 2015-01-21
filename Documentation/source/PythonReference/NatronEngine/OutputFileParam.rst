@@ -4,25 +4,26 @@
 OutputFileParam
 ***************
 
-.. inheritance-diagram:: OutputFileParam
-    :parts: 2
+**Inherits** :doc:`StringParamBase`
+
 
 Synopsis
 --------
 
+This parameter is used to specify an output file 
+
+
 Functions
 ^^^^^^^^^
-.. container:: function_list
 
 *    def :meth:`openFile<NatronEngine.OutputFileParam.openFile>` ()
 *    def :meth:`setSequenceEnabled<NatronEngine.OutputFileParam.setSequenceEnabled>` (enabled)
 
 
-Detailed Description
---------------------
 
 
-
+Member functions description
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
 
@@ -30,7 +31,8 @@ Detailed Description
 
 
 
-
+When called in GUI mode, this will open a file dialog for the user. Does nothing in 
+background mode.
 
 
 
@@ -38,9 +40,10 @@ Detailed Description
 .. method:: NatronEngine.OutputFileParam.setSequenceEnabled(enabled)
 
 
-    :param enabled: :class:`PySide.QtCore.bool`
+    :param enabled: :class:`bool<PySide.QtCore.bool>`
 
-
+Determines whether the file dialog opened by :func:`openFile()<NatronEngine.FileParam.openFile>`
+should have support for file sequences or not.
 
 
 

@@ -4,32 +4,32 @@
 FileParam
 *********
 
-.. inheritance-diagram:: FileParam
-    :parts: 2
+**Inherits** :doc:`StringParamBase`
 
 Synopsis
 --------
 
+This parameter is used to specify an input file (i.e: a file that already exist). 
+
+
 Functions
 ^^^^^^^^^
-.. container:: function_list
+
 
 *    def :meth:`openFile<NatronEngine.FileParam.openFile>` ()
 *    def :meth:`setSequenceEnabled<NatronEngine.FileParam.setSequenceEnabled>` (enabled)
 
 
-Detailed Description
---------------------
 
-
-
-
+Member functions description
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
 .. method:: NatronEngine.FileParam.openFile()
 
 
-
+When called in GUI mode, this will open a file dialog for the user. Does nothing in 
+background mode.
 
 
 
@@ -38,9 +38,10 @@ Detailed Description
 .. method:: NatronEngine.FileParam.setSequenceEnabled(enabled)
 
 
-    :param enabled: :class:`PySide.QtCore.bool`
+    :param enabled: :class:`bool<PySide.QtCore.bool>`
 
-
+Determines whether the file dialog opened by :func:`openFile()<NatronEngine.FileParam.openFile>`
+should have support for file sequences or not.
 
 
 

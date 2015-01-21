@@ -49,6 +49,10 @@ Here are the different types of string parameters:
 		:align: center
 
 
+
+Member functions description
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 .. method:: NatronEngine.StringParam.setType(type)
 
 
