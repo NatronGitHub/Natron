@@ -4413,7 +4413,7 @@ FloatingWidget::FloatingWidget(Gui* gui,
       , _layout(0)
       , _gui(gui)
 {
-    setWindowFlags(Qt::WindowStaysOnTopHint | Qt::Window);
+    setWindowFlags(Qt::Window);
     setAttribute(Qt::WA_DeleteOnClose,true);
     _layout = new QVBoxLayout(this);
     _layout->setContentsMargins(0, 0, 0, 0);
