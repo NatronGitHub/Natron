@@ -628,10 +628,10 @@ of arrows in input.
 
 
     :param name: :class:`str<NatronEngine.std::string>`
-    :rtype: :class:`Param<NatronEngine.Param>`
+    :rtype: :class:`Param<Param>`
 
 
-Returns a :doc:`parameter<NatronEngine.Param>` by its script-name or None if
+Returns a :doc:`parameter<Param>` by its script-name or None if
 no such parameter exists.
 
 
