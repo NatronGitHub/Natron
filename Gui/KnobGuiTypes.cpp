@@ -1328,15 +1328,29 @@ Button_KnobGui::createWidget(QHBoxLayout* layout)
 {
     QString label( _knob->getDescription().c_str() );
     const std::string & iconFilePath = _knob->getIconFilePath();
+    
+    QString filePath(iconFilePath.c_str());
+    if (!iconFilePath.empty() && !QFile::exists(filePath)) {
+        ///Search all natron paths for a file
+        
+        QStringList paths = appPTR->getAllNonOFXPluginsPaths();
+        for (int i = 0; i < paths.size(); ++i) {
+            filePath = paths[i] + QChar('/') + filePath;
+            if (QFile::exists(filePath)) {
+                break;
+            }
+        }
+    }
+    
     QPixmap pix;
 
-    if ( pix.load( iconFilePath.c_str() ) ) {
+    if (pix.load(filePath)) {
         _button = new Button( QIcon(pix),"",layout->parentWidget() );
         _button->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     } else {
         _button = new Button( label,layout->parentWidget() );
     }
-    QObject::connect( _button, SIGNAL( clicked() ), this, SLOT( emitValueChanged() ) );
+    QObject::connect( _button, SIGNAL(clicked()), this, SLOT(emitValueChanged()));
     if ( hasToolTip() ) {
         _button->setToolTip( toolTip() );
     }

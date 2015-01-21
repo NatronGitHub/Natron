@@ -34,5 +34,5 @@ If the setting "Prefer bundled plug-ins over system-wide plug-ins" is checked in
 then Natron will first look into the bundled plug-ins before checking the standard location.
 Otherwise, Natron will check bundled plug-ins as the *last* location. 
 
-Note that if the "User bundled plug-ins" setting in the preferences is unchecked, then Natron
+Note that if the "User bundled plug-ins" setting in the preferences is unchecked, Natron
 will not attempt to load any bundled plug-ins.
