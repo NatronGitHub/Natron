@@ -774,7 +774,8 @@ Member functions description
 	
 		Using this function will remove any previous variable declared using the 
 		old script-name and will create a new variable with the new script name if valid.
-		If your script was using for instance a node named::
+	
+	If your script was using for instance a node named::
 	
 		app1.Blur1
 		
