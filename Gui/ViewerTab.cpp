@@ -1512,9 +1512,11 @@ ViewerTab::sizeHint() const
 void
 ViewerTab::showView(int view)
 {
-    QMutexLocker l(&_imp->currentViewMutex);
-
-    _imp->currentViewIndex = view;
+    {
+        QMutexLocker l(&_imp->currentViewMutex);
+        
+        _imp->currentViewIndex = view;
+    }
     abortRendering();
     _imp->viewerNode->renderCurrentFrame(true);
 }
