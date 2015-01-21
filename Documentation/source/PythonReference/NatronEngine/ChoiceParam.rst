@@ -4,17 +4,17 @@
 ChoiceParam
 ***********
 
-.. inheritance-diagram:: ChoiceParam
-    :parts: 2
+**Inherits** : :doc:`AnimatedParam`
 
 Synopsis
 --------
 
+A choice parameter holds an integer value which corresponds to a choice. 
+See :ref:`detailed description<choice.details>` below.
+
 Functions
 ^^^^^^^^^
-.. container:: function_list
 
-*    def :meth:`addAsDependencyOf<NatronEngine.ChoiceParam.addAsDependencyOf>` (fromExprDimension, param)
 *    def :meth:`addOption<NatronEngine.ChoiceParam.addOption>` (option, help)
 *    def :meth:`get<NatronEngine.ChoiceParam.get>` ()
 *    def :meth:`get<NatronEngine.ChoiceParam.get>` (frame)
@@ -30,45 +30,43 @@ Functions
 *    def :meth:`setValue<NatronEngine.ChoiceParam.setValue>` (value)
 *    def :meth:`setValueAtTime<NatronEngine.ChoiceParam.setValueAtTime>` (value, time)
 
+.. _choice.details:
 
 Detailed Description
 --------------------
 
+A choice is represented as a drop-down (combobox) in the user interface:
 
+.. figure:: choiceParam.png
 
+You can add options to the menu using the :func:`addOption(option, help)<NatronEngine.ChoiceParam.addOption>` function.
+You can also set them all at once using the :func:`setOptions(options)<NatronEngine.ChoiceParam.setOptions>` function.
 
+The value held internally is a 0-based index corresponding to an entry of the menu.
+the choice parameter behaves much like an :doc:`IntParam`.
 
-
-.. method:: NatronEngine.ChoiceParam.addAsDependencyOf(fromExprDimension, param)
-
-
-    :param fromExprDimension: :class:`PySide.QtCore.int`
-    :param param: :class:`NatronEngine.Param`
-    :rtype: :class:`PySide.QtCore.int`
-
-
-
-
+Member functions description
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
 .. method:: NatronEngine.ChoiceParam.addOption(option, help)
 
 
-    :param option: :class:`NatronEngine.std::string`
-    :param help: :class:`NatronEngine.std::string`
+    :param option: :class:`str<NatronEngine.std::string>`
+    :param help: :class:`str<NatronEngine.std::string>`
 
-
-
+Adds a new *option* to the menu. If *help* is not empty, it will be displayed when the user
+hovers the entry with the mouse.
 
 
 
 .. method:: NatronEngine.ChoiceParam.get(frame)
 
 
-    :param frame: :class:`PySide.QtCore.int`
-    :rtype: :class:`PySide.QtCore.int`
+    :param frame: :class:`int<PySide.QtCore.int>`
+    :rtype: :class:`int<PySide.QtCore.int>`
 
-
+Get the value of the parameter at the given *frame*.
 
 
 
@@ -76,9 +74,9 @@ Detailed Description
 .. method:: NatronEngine.ChoiceParam.get()
 
 
-    :rtype: :class:`PySide.QtCore.int`
+    :rtype: :class:`int<PySide.QtCore.int>`
 
-
+Get the value of the parameter at the current timeline's time.
 
 
 
@@ -86,9 +84,9 @@ Detailed Description
 .. method:: NatronEngine.ChoiceParam.getDefaultValue()
 
 
-    :rtype: :class:`PySide.QtCore.int`
+    :rtype: :class:`int<PySide.QtCore.int>`
 
-
+Get the default value for this parameter.
 
 
 
@@ -96,10 +94,10 @@ Detailed Description
 .. method:: NatronEngine.ChoiceParam.getOption(index)
 
 
-    :param index: :class:`PySide.QtCore.int`
-    :rtype: :class:`NatronEngine.std::string`
+    :param index: :class:`int<PySide.QtCore.int>`
+    :rtype: :class:`str<NatronEngine.std::string>`
 
-
+Get the menu entry at the given *index*.
 
 
 
@@ -107,9 +105,9 @@ Detailed Description
 .. method:: NatronEngine.ChoiceParam.getValue()
 
 
-    :rtype: :class:`PySide.QtCore.int`
+    :rtype: :class:`int<PySide.QtCore.int>`
 
-
+Same as :func:`get()<NatronEngine.ChoiceParam.get>`
 
 
 
@@ -117,10 +115,10 @@ Detailed Description
 .. method:: NatronEngine.ChoiceParam.getValueAtTime(time)
 
 
-    :param time: :class:`PySide.QtCore.int`
-    :rtype: :class:`PySide.QtCore.int`
+    :param time: :class:`int<PySide.QtCore.int>`
+    :rtype: :class:`int<PySide.QtCore.int>`
 
-
+Same as :func:`get(frame)<NatronEngine.ChoiceParam.get>`
 
 
 
@@ -129,7 +127,8 @@ Detailed Description
 
 
 
-
+Removes all animation and expression set on this parameter and set the value
+to be the default value.
 
 
 
@@ -137,9 +136,10 @@ Detailed Description
 .. method:: NatronEngine.ChoiceParam.set(x)
 
 
-    :param x: :class:`PySide.QtCore.int`
+    :param x: :class:`int<PySide.QtCore.int>`
 
-
+Set the value of this parameter to be *x*. If this parameter is animated (see :func:`getIsAnimated(dimension)<NatronEngine.AnimatedParam.getIsAnimated>`
+then this function will automatically add a keyframe at the timeline's current time.
 
 
 
@@ -147,9 +147,10 @@ Detailed Description
 .. method:: NatronEngine.ChoiceParam.set(x, frame)
 
 
-    :param x: :class:`PySide.QtCore.int`
-    :param frame: :class:`PySide.QtCore.int`
+    :param x: :class:`int<PySide.QtCore.int>`
+    :param frame: :class:`int<PySide.QtCore.int>`
 
+Set a new keyframe on the parameter with the value *x* at the given *frame*.
 
 
 
@@ -158,9 +159,10 @@ Detailed Description
 .. method:: NatronEngine.ChoiceParam.setDefaultValue(value)
 
 
-    :param value: :class:`PySide.QtCore.int`
+    :param value: :class:`int<PySide.QtCore.int>`
 
 
+Set the default *value* for this parameter.
 
 
 
@@ -168,19 +170,19 @@ Detailed Description
 .. method:: NatronEngine.ChoiceParam.setOptions(options)
 
 
-    :param options: 
+    :param options: class::`sequence`
 
-
-
+Clears all existing entries in the menu and add all entries contained in *options*
+to the menu.
 
 
 
 .. method:: NatronEngine.ChoiceParam.setValue(value)
 
 
-    :param value: :class:`PySide.QtCore.int`
+    :param value: :class:`int<PySide.QtCore.int>`
 
-
+Same as :func:`set<NatronEngine.ChoiceParam.setValue>`
 
 
 
@@ -188,10 +190,10 @@ Detailed Description
 .. method:: NatronEngine.ChoiceParam.setValueAtTime(value, time)
 
 
-    :param value: :class:`PySide.QtCore.int`
-    :param time: :class:`PySide.QtCore.int`
+    :param value: :class:`int<PySide.QtCore.int>`
+    :param time: :class:`int<PySide.QtCore.int>`
 
-
+Same as :func:`set(time)<NatronEngine.ChoiceParam.set`
 
 
 
