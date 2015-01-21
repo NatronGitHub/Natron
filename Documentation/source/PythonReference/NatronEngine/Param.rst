@@ -171,7 +171,7 @@ Member functions description
 
     :rtype: :class:`bool<PySide.QtCore.bool>`
 
-	Returns whether the *next* parameter defined after this one should be on the same line or not.
+Returns whether the *next* parameter defined after this one should be on the same line or not.
 
 
 
@@ -181,9 +181,9 @@ Member functions description
 
     :rtype: :class:`bool<PySide.QtCore.bool>`
 
-	Returns whether this class can have any animation or not. This cannot be changed.
-	calling :func:`setAnimationEnabled(True)<NatronEngine.Param.setAnimationEnabled>` will
-	not enable animation for parameters that cannot animate.
+Returns whether this class can have any animation or not. This cannot be changed.
+calling :func:`setAnimationEnabled(True)<NatronEngine.Param.setAnimationEnabled>` will
+not enable animation for parameters that cannot animate.
 
 
 
@@ -193,9 +193,9 @@ Member functions description
 
     :rtype: :class:`bool<PySide.QtCore.bool>`
 
-	Returns whether this parameter can evaluate on change. A parameter evaluating on change
-	means that a new render will be triggered when its value changes due to a call of one of
-	the setValue functions.
+Returns whether this parameter can evaluate on change. A parameter evaluating on change
+means that a new render will be triggered when its value changes due to a call of one of
+the setValue functions.
 
 
 
@@ -205,7 +205,7 @@ Member functions description
 
     :rtype: :class:`str<NatronEngine.std::string>`
 
-	Returns the help tooltip visible when hovering the parameter with the mouse on the GUI;
+Returns the help tooltip visible when hovering the parameter with the mouse on the GUI;
 
 
 
@@ -215,9 +215,9 @@ Member functions description
 
     :rtype: :class:`bool<PySide.QtCore.bool>`
 
-	Returns whether animation is enabled for this parameter. This is dynamic and can be
-	changed by :func:`setAnimationEnabled(bool)<NatronEngine.Param.setAnimationEnabled>` if the
-	parameter *can animate*.
+Returns whether animation is enabled for this parameter. This is dynamic and can be
+changed by :func:`setAnimationEnabled(bool)<NatronEngine.Param.setAnimationEnabled>` if the
+parameter *can animate*.
 	
 
 
@@ -228,7 +228,7 @@ Member functions description
     :param dimension: :class:`int<PySide.QtCore.int>`
     :rtype: :class:`bool<PySide.QtCore.bool>`
 
-	Returns whether the given *dimension* is enabled or not.
+Returns whether the given *dimension* is enabled or not.
 
 
 
@@ -238,8 +238,8 @@ Member functions description
 
     :rtype: :class:`bool<PySide.QtCore.bool>`
 
-	Returns whether this parameter should be persistant in the project or not.
-	Non-persistant parameter will not have their value saved when saving a project.
+Returns whether this parameter should be persistant in the project or not.
+Non-persistant parameter will not have their value saved when saving a project.
 
 
 
@@ -259,9 +259,9 @@ Member functions description
 
     :rtype: :class:`str<NatronEngine.std::string>`
 
-	Returns the *label* of the parameter. This is what is displayed in the settings panel
-	of the node. See :ref:`this section<autoVar>` for an explanation of the difference between
-	the *label* and the *script name*
+Returns the *label* of the parameter. This is what is displayed in the settings panel
+of the node. See :ref:`this section<autoVar>` for an explanation of the difference between
+the *label* and the *script name*
 
 
 
@@ -271,8 +271,8 @@ Member functions description
 
     :rtype: :class:`int<PySide.QtCore.int>`
 
-	Returns the number of dimensions. For exampel a :doc:`Double3DParam` has 3 dimensions.
-	A :doc:`ParametricParam` has as many dimensions as there are curves.
+Returns the number of dimensions. For exampel a :doc:`Double3DParam` has 3 dimensions.
+A :doc:`ParametricParam` has as many dimensions as there are curves.
 
 
 
@@ -282,9 +282,9 @@ Member functions description
 
     :rtype: :class:`NatronEngine.Param`
 
-	If this param is within a :doc:`group<GroupParam>`, then the parent will be the group.
-	Otherwise the param's parent will be the:doc:`page<PageParam>` onto which the param
-	appears in the settings panel.
+If this param is within a :doc:`group<GroupParam>`, then the parent will be the group.
+Otherwise the param's parent will be the:doc:`page<PageParam>` onto which the param
+appears in the settings panel.
 
 
 
@@ -294,10 +294,10 @@ Member functions description
 
     :rtype: :class:`str<NatronEngine.std::string>`
 
-	Returns the *script-name* of the param as used internally. The script-name is visible
-	in the tooltip of the parameter when hovering the mouse over it on the GUI.
-	See :ref:`this section<autoVar>` for an explanation of the difference between
-	the *label* and the *script name*
+Returns the *script-name* of the param as used internally. The script-name is visible
+in the tooltip of the parameter when hovering the mouse over it on the GUI.
+See :ref:`this section<autoVar>` for an explanation of the difference between
+the *label* and the *script name*
 
 
 
@@ -307,7 +307,7 @@ Member functions description
 
     :rtype: :class:`str<NatronEngine.std::string>`
 
-	Returns the type-name of the parameter.
+Returns the type-name of the parameter.
 
 
 
@@ -317,8 +317,8 @@ Member functions description
 
     :param a: :class:`bool<PySide.QtCore.bool>`
 
-	Set whether the parameter should trigger a new line after its declaration or not.
-	See :func:`getAddNewLine()<NatronEngine.Param.getAddNewLine>`
+Set whether the parameter should trigger a new line after its declaration or not.
+See :func:`getAddNewLine()<NatronEngine.Param.getAddNewLine>`
 
 
 
@@ -328,8 +328,8 @@ Member functions description
 
     :param e: :class:`bool<PySide.QtCore.bool>`
 
-	Set whether animation should be enabled (= can have keyframes). 
-	See :func:`getIsAnimationEnabled()<NatronEngine.Param.getIsAnimationEnabled>`
+Set whether animation should be enabled (= can have keyframes). 
+See :func:`getIsAnimationEnabled()<NatronEngine.Param.getIsAnimationEnabled>`
 
 
 
@@ -340,10 +340,10 @@ Member functions description
     :param enabled: :class:`bool<PySide.QtCore.bool>`
     :param dimension: :class:`int<PySide.QtCore.int>`
 
-	Set whether the given *dimension* of the parameter should be enabled or not.
-	When disabled, the parameter will be displayed in black and the user will not be able
-	to edit it.
-	See :func:`getIsEnabled(dimension)<NatronEngine.Param.getIsEnabled>`
+Set whether the given *dimension* of the parameter should be enabled or not.
+When disabled, the parameter will be displayed in black and the user will not be able
+to edit it.
+See :func:`getIsEnabled(dimension)<NatronEngine.Param.getIsEnabled>`
 
 
 
@@ -353,9 +353,9 @@ Member functions description
 
     :param eval: :class:`bool<PySide.QtCore.bool>`
 
-	Set whether evaluation should be enabled for this parameter. When True, calling any
-	function that change the value of the parameter will trigger a new render.
-	See :func:`getEvaluateOnChange()<NatronEngine.Param.getEvaluateOnChange>`
+Set whether evaluation should be enabled for this parameter. When True, calling any
+function that change the value of the parameter will trigger a new render.
+See :func:`getEvaluateOnChange()<NatronEngine.Param.getEvaluateOnChange>`
 
 
 
@@ -364,8 +364,8 @@ Member functions description
 
     :param help: :class:`str<NatronEngine.std::string>`
 
-	Set the help tooltip of the parameter.
-	See :func:`getHelp()<NatronEngine.Param.getHelp>`
+Set the help tooltip of the parameter.
+See :func:`getHelp()<NatronEngine.Param.getHelp>`
 
 
 .. method:: NatronEngine.Param.setPersistant(persistant)
@@ -373,9 +373,9 @@ Member functions description
 
     :param persistant: :class:`bool<PySide.QtCore.bool>`
 
-	Set whether this parameter should be persistant or not.
-	Non persistant parameter will not be saved in the project.
-	See :func:`getIsPersistant<NatronEngine.Param.getIsPersistant>`
+Set whether this parameter should be persistant or not.
+Non persistant parameter will not be saved in the project.
+See :func:`getIsPersistant<NatronEngine.Param.getIsPersistant>`
 
 
 
@@ -385,8 +385,8 @@ Member functions description
 
     :param visible: :class:`bool<PySide.QtCore.bool>`
 	
-	Set whether this parameter should be visible or not to the user.
-	See :func:`getIsVisible()<NatronEngine.Param.getIsVisible>`
+Set whether this parameter should be visible or not to the user.
+See :func:`getIsVisible()<NatronEngine.Param.getIsVisible>`
 
 
 

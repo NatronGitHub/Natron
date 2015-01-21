@@ -4,17 +4,18 @@
 AnimatedParam
 *************
 
-.. inheritance-diagram:: AnimatedParam
-    :parts: 2
+**Inherits** :doc:`Param`
 
 **Inherited by:** :ref:`StringParamBase`, :ref:`PathParam`, :ref:`OutputFileParam`, :ref:`FileParam`, :ref:`StringParam`, :ref:`BooleanParam`, :ref:`ChoiceParam`, :ref:`ColorParam`, :ref:`DoubleParam`, :ref:`Double2DParam`, :ref:`Double3DParam`, :ref:`IntParam`, :ref:`Int2DParam`, :ref:`Int3DParam`
 
 Synopsis
 --------
 
+This is the base class for all parameters which have the property :func:`canAnimate<NatronEngine.Param.getCanAnimate>` set to True.
+See the :ref:`detailed description<details>` below
+
 Functions
 ^^^^^^^^^
-.. container:: function_list
 
 *    def :meth:`deleteValueAtTime<NatronEngine.AnimatedParam.deleteValueAtTime>` (time[, dimension=0])
 *    def :meth:`getCurrentTime<NatronEngine.AnimatedParam.getCurrentTime>` ()
@@ -28,22 +29,36 @@ Functions
 *    def :meth:`removeAnimation<NatronEngine.AnimatedParam.removeAnimation>` ([dimension=0])
 *    def :meth:`setExpression<NatronEngine.AnimatedParam.setExpression>` (expr, hasRetVariable[, dimension=0])
 
+.. _details:
 
 Detailed Description
 --------------------
 
+Animating parameters have values that may change throughout the time. To enable animation
+the parameter should have at least 1 keyframe. Keyframes can be added in the derived class
+(since function signature is type specific) with the *setValueAtTime* function.
+Once 2 keyframes are active on the parameter, the value of the parameter will be interpolated
+automatically by Natron for a given time. 
+You can control keyframes by adding,removing, changing their values and their :ref:`interpolation<NatronEngine.Natron.KeyframeTypeEnum>` type.
+
+Moreover parameters can have Python expressions set on them to control their value. In that case, the expression takes
+precedence over any animation that the parameter may have, meaning that the value of the parameter would be computed
+using the expression provided. 
 
 
+Member functions description
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
 
 .. method:: NatronEngine.AnimatedParam.deleteValueAtTime(time[, dimension=0])
 
 
-    :param time: :class:`PySide.QtCore.int`
-    :param dimension: :class:`PySide.QtCore.int`
+    :param time: :class:`int<PySide.QtCore.int>`
+    :param dimension: :class:`int<PySide.QtCore.int>`
 
-
+Removes a keyframe at the given *time* and *dimension* for this parameter, if such
+keyframe exists.
 
 
 
@@ -51,9 +66,9 @@ Detailed Description
 .. method:: NatronEngine.AnimatedParam.getCurrentTime()
 
 
-    :rtype: :class:`PySide.QtCore.int`
+    :rtype: :class:`int<PySide.QtCore.int>`
 
-
+Convenience function: returns the current time on the timeline
 
 
 
@@ -61,11 +76,13 @@ Detailed Description
 .. method:: NatronEngine.AnimatedParam.getDerivativeAtTime(time[, dimension=0])
 
 
-    :param time: :class:`PySide.QtCore.double`
-    :param dimension: :class:`PySide.QtCore.int`
-    :rtype: :class:`PySide.QtCore.double`
+    :param time: :class:`float<PySide.QtCore.double>`
+    :param dimension: :class:`int<PySide.QtCore.int>`
+    :rtype: :class:`double<PySide.QtCore.double>`
 
-
+Returns the derivative of the parameter at the given *time* and for the given 
+*dimension*. The derivative is computed on the animation curve of the parameter.
+This function is irrelevant for parameters that have an expression.
 
 
 
@@ -73,34 +90,36 @@ Detailed Description
 .. method:: NatronEngine.AnimatedParam.getExpression(dimension)
 
 
-    :param dimension: :class:`PySide.QtCore.int`
-    :rtype: PyObject
+    :param dimension: :class:`int<PySide.QtCore.int>`
+    :rtype: :class:`str<NatronEngine.std::string>`
 
-
-
+Returns the Python expression set on the parameter at the given dimension.
+When no expression is set, this function returns an empty string.
 
 
 
 .. method:: NatronEngine.AnimatedParam.getIntegrateFromTimeToTime(time1, time2[, dimension=0])
 
 
-    :param time1: :class:`PySide.QtCore.double`
-    :param time2: :class:`PySide.QtCore.double`
-    :param dimension: :class:`PySide.QtCore.int`
-    :rtype: :class:`PySide.QtCore.double`
+    :param time1: :class:`float<PySide.QtCore.double>`
+    :param time2: :class:`float<PySide.QtCore.double>`
+    :param dimension: :class:`int<PySide.QtCore.int>`
+    :rtype: :class:`float<PySide.QtCore.double>`
 
-
-
-
+Integrates the value of the parameter over the range [*time1* - *time2*].
+This is done using the animation curve of the parameter of the given *dimension*.
+Note that if this parameter has an expression, the return value is irrelevant.
+	
 
 
 .. method:: NatronEngine.AnimatedParam.getIsAnimated([dimension=0])
 
 
-    :param dimension: :class:`PySide.QtCore.int`
-    :rtype: :class:`PySide.QtCore.bool`
+    :param dimension: :class:`int<PySide.QtCore.int>`
+    :rtype: :class:`bool<PySide.QtCore.bool>`
 
-
+Returns whether the given *dimension* has an animation or not. 
+This returns true if the underlying animation curve has 1 or more keyframes.
 
 
 
@@ -108,11 +127,12 @@ Detailed Description
 .. method:: NatronEngine.AnimatedParam.getKeyIndex(time[, dimension=0])
 
 
-    :param time: :class:`PySide.QtCore.int`
-    :param dimension: :class:`PySide.QtCore.int`
-    :rtype: :class:`PySide.QtCore.int`
+    :param time: :class:`int<PySide.QtCore.int>`
+    :param dimension: :class:`int<PySide.QtCore.int>`
+    :rtype: :class:`int<PySide.QtCore.int>`
 
-
+Returns the index of the keyframe at the given *time* for the animation curve
+at the given *dimension*, or -1 if no such keyframe could be found.
 
 
 
@@ -120,10 +140,13 @@ Detailed Description
 .. method:: NatronEngine.AnimatedParam.getKeyTime(index, dimension)
 
 
-    :param index: :class:`PySide.QtCore.int`
-    :param dimension: :class:`PySide.QtCore.int`
-    :rtype: PyObject
-
+    :param index: :class:`int<PySide.QtCore.int>`
+    :param dimension: :class:`int<PySide.QtCore.int>`
+    :rtype: :class:`tuple`
+	
+Returns a tuple [bool,float] where the first member is True if a keyframe exists at 
+the given *index* for the animation curve at the given *dimension*. 
+The second *float* member is the keyframe exact time.
 
 
 
@@ -132,10 +155,10 @@ Detailed Description
 .. method:: NatronEngine.AnimatedParam.getNumKeys([dimension=0])
 
 
-    :param dimension: :class:`PySide.QtCore.int`
-    :rtype: :class:`PySide.QtCore.int`
+    :param dimension: :class:`int<PySide.QtCore.int>`
+    :rtype: :class:`int<PySide.QtCore.int>`
 
-
+Returns the number of keyframes for the animation curve at the given *dimension*.
 
 
 
@@ -143,9 +166,10 @@ Detailed Description
 .. method:: NatronEngine.AnimatedParam.removeAnimation([dimension=0])
 
 
-    :param dimension: :class:`PySide.QtCore.int`
+    :param dimension: :class:`int<PySide.QtCore.int>`
 
-
+Removes all animation for the animation curve at the given *dimension*.
+Note that this will not remove any expression set.
 
 
 
@@ -153,12 +177,14 @@ Detailed Description
 .. method:: NatronEngine.AnimatedParam.setExpression(expr, hasRetVariable[, dimension=0])
 
 
-    :param expr: :class:`NatronEngine.std::string`
-    :param hasRetVariable: :class:`PySide.QtCore.bool`
-    :param dimension: :class:`PySide.QtCore.int`
-    :rtype: :class:`PySide.QtCore.bool`
+    :param expr: :class:`str<NatronEngine.std::string>`
+    :param hasRetVariable: :class:`bool<PySide.QtCore.bool>`
+    :param dimension: :class:`int<PySide.QtCore.int>`
+    :rtype: :class:`bool<PySide.QtCore.bool>`
 
-
+Set the Python expression *expr* on the parameter at the given *dimension*
+If *hasRetVariable* is True, then *expr* is assumed to have a variable *ret* declared.
+Otherwise, Natron will declare the *ret* variable itself.
 
 
 
