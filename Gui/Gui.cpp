@@ -1109,7 +1109,7 @@ GuiPrivate::createPropertiesBinGui()
     _minimizeAllPanelsButtons->setCheckable(true);
     _minimizeAllPanelsButtons->setChecked(false);
     _minimizeAllPanelsButtons->setFixedSize(NATRON_SMALL_BUTTON_SIZE,NATRON_SMALL_BUTTON_SIZE);
-    _minimizeAllPanelsButtons->setToolTip(Qt::convertFromPlainText(_gui->tr("Minimize / Maximize all panels"),Qt::WhiteSpaceNormal));
+    _minimizeAllPanelsButtons->setToolTip(Qt::convertFromPlainText(_gui->tr("Minimize / Maximize all panels."),Qt::WhiteSpaceNormal));
     _minimizeAllPanelsButtons->setFocusPolicy(Qt::NoFocus);
     QObject::connect( _minimizeAllPanelsButtons,SIGNAL( clicked(bool) ),_gui,SLOT( minimizeMaximizeAllPanels(bool) ) );
     
@@ -2459,7 +2459,7 @@ GuiPrivate::addToolButton(ToolButton* tool)
     button->setIcon( tool->getIcon() );
     button->setMenu( tool->getMenu() );
     button->setPopupMode(QToolButton::InstantPopup);
-    button->setToolTip( Qt::convertFromPlainText(tool->getLabel(), Qt::WhiteSpaceNormal) );
+    button->setToolTip( Qt::convertFromPlainText(tool->getLabel().trimmed(), Qt::WhiteSpaceNormal) );
     _toolBox->addWidget(button);
 }
 
@@ -3033,7 +3033,7 @@ Gui::onDoDialog(int type,
                 Natron::StandardButtons buttons,
                 int defaultB)
 {
-    QString msg = useHtml ? content : Qt::convertFromPlainText(content, Qt::WhiteSpaceNormal);
+    QString msg = useHtml ? content : Qt::convertFromPlainText(content.trimmed(), Qt::WhiteSpaceNormal);
 
     if (type == 0) {
         QMessageBox critical(QMessageBox::Critical, title, msg, QMessageBox::NoButton, this, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint | Qt::WindowStaysOnTopHint);
@@ -3139,7 +3139,7 @@ Gui::questionDialog(const std::string & title,
 void
 Gui::onDoDialogWithStopAskingCheckbox(int type,const QString & title,const QString & content,bool useHtml,Natron::StandardButtons buttons,int defaultB)
 {
-    QString message = useHtml ? content : Qt::convertFromPlainText(content,Qt::WhiteSpaceNormal);
+    QString message = useHtml ? content : Qt::convertFromPlainText(content.trimmed(), Qt::WhiteSpaceNormal);
     Natron::MessageBox dialog(title,content,(Natron::MessageBox::MessageBoxTypeEnum)type,buttons,(Natron::StandardButtonEnum)defaultB,this);
     
     QCheckBox* stopAskingCheckbox = new QCheckBox(tr("Do not show this again"),&dialog);

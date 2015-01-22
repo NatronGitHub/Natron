@@ -43,7 +43,7 @@
 #define ROTO_DEFAULT_COLOR_G 1.
 #define ROTO_DEFAULT_COLOR_B 1.
 
-#define kRotoNameHint "Name of the layer or curve"
+#define kRotoNameHint "Name of the layer or curve."
 
 #define kRotoOpacityParam "opacity"
 #define kRotoOpacityParamLabel "Opacity"

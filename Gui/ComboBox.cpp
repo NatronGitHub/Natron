@@ -386,7 +386,7 @@ ComboBox::insertItem(int index,
     QAction* action =  new QAction(this);
     action->setText(item);
     if ( !toolTip.isEmpty() ) {
-        action->setToolTip( Qt::convertFromPlainText(toolTip, Qt::WhiteSpaceNormal) );
+        action->setToolTip( Qt::convertFromPlainText(toolTip.trimmed(), Qt::WhiteSpaceNormal) );
     }
     if ( !icon.isNull() ) {
         action->setIcon(icon);
@@ -434,7 +434,7 @@ ComboBox::addItem(const QString & item,
         action->setShortcut(key);
     }
     if ( !toolTip.isEmpty() ) {
-        action->setToolTip( Qt::convertFromPlainText(toolTip, Qt::WhiteSpaceNormal) );
+        action->setToolTip( Qt::convertFromPlainText(toolTip.trimmed(), Qt::WhiteSpaceNormal) );
     }
     addAction(action);
 }

@@ -856,12 +856,12 @@ RotoPanelPrivate::insertItemRecursively(int time,
     items.push_back( TreeItem(treeItem,item) );
 
     treeItem->setText( COL_NAME, item->getName_mt_safe().c_str() );
-    treeItem->setToolTip( COL_NAME, Qt::convertFromPlainText(kRotoNameHint, Qt::WhiteSpaceNormal) );
+    treeItem->setToolTip( COL_NAME, Qt::convertFromPlainText(publicInterface->tr(kRotoNameHint), Qt::WhiteSpaceNormal) );
     treeItem->setIcon(COL_ACTIVATED, item->isGloballyActivated() ? iconVisible : iconUnvisible);
-    treeItem->setToolTip( COL_ACTIVATED, Qt::convertFromPlainText("Controls whether the overlay should be visible on the viewer for "
-                                                                  "the shape.", Qt::WhiteSpaceNormal) );
+    treeItem->setToolTip( COL_ACTIVATED, Qt::convertFromPlainText(publicInterface->tr("Controls whether the overlay should be visible on the viewer for "
+                                                                  "the shape."), Qt::WhiteSpaceNormal) );
     treeItem->setIcon(COL_LOCKED, item->getLocked() ? iconLocked : iconUnlocked);
-    treeItem->setToolTip( COL_LOCKED, Qt::convertFromPlainText(kRotoLockedHint, Qt::WhiteSpaceNormal) );
+    treeItem->setToolTip( COL_LOCKED, Qt::convertFromPlainText(publicInterface->tr(kRotoLockedHint), Qt::WhiteSpaceNormal) );
 
     boost::shared_ptr<RotoDrawableItem> drawable = boost::dynamic_pointer_cast<RotoDrawableItem>(item);
     boost::shared_ptr<RotoLayer> layer = boost::dynamic_pointer_cast<RotoLayer>(item);
@@ -873,16 +873,16 @@ RotoPanelPrivate::insertItemRecursively(int time,
         makeSolidIcon(overlayColor, overlayIcon);
         treeItem->setIcon(COL_NAME, iconBezier);
         treeItem->setIcon(COL_OVERLAY,overlayIcon);
-        treeItem->setToolTip( COL_OVERLAY, Qt::convertFromPlainText(kRotoOverlayHint, Qt::WhiteSpaceNormal) );
+        treeItem->setToolTip( COL_OVERLAY, Qt::convertFromPlainText(publicInterface->tr(kRotoOverlayHint), Qt::WhiteSpaceNormal) );
         double shapeColor[3];
         drawable->getColor(time, shapeColor);
         QIcon shapeIcon;
         makeSolidIcon(shapeColor, shapeIcon);
         treeItem->setIcon(COL_COLOR, shapeIcon);
-        treeItem->setToolTip( COL_COLOR, Qt::convertFromPlainText(kRotoColorHint, Qt::WhiteSpaceNormal) );
+        treeItem->setToolTip( COL_COLOR, Qt::convertFromPlainText(publicInterface->tr(kRotoColorHint), Qt::WhiteSpaceNormal) );
 #ifdef NATRON_ROTO_INVERTIBLE
         treeItem->setIcon(COL_INVERTED, drawable->getInverted(time)  ? iconInverted : iconUninverted);
-        treeItem->setTooltip( COL_INVERTED, Qt::convertFromPlainText(kRotoInvertedHint, Qt::WhiteSpaceNormal) );
+        treeItem->setTooltip( COL_INVERTED, Qt::convertFromPlainText(tr(kRotoInvertedHint), Qt::WhiteSpaceNormal) );
 #endif
 
         publicInterface->makeCustomWidgetsForItem(drawable,treeItem);
@@ -932,7 +932,7 @@ RotoPanel::makeCustomWidgetsForItem(const boost::shared_ptr<RotoDrawableItem>& i
     }
     // set the tooltip
     const std::string & tt = item->getCompositingOperatorToolTip();
-    cb->setToolTip( Qt::convertFromPlainText(tt.c_str(), Qt::WhiteSpaceNormal) );
+    cb->setToolTip( Qt::convertFromPlainText(QString(tt.c_str()).trimmed(), Qt::WhiteSpaceNormal) );
     cb->setCurrentIndex_no_emit( item->getCompositingOperator(time) );
     _imp->tree->setItemWidget(treeItem, COL_OPERATOR, cb);
 }
