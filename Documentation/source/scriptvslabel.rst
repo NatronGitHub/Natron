@@ -43,3 +43,10 @@ To overcome this issue, all auto-declared variables in Natron have 2 names:
 	2. A label: The label is what is displayed on the graphical user interface. For example
 	the node label is visible in the node graph. This label can contain any character 
 	without any restriction.
+
+Basically there can only ever be one instance of an object with a *script-name* (so it is 
+identified uniquely) but several instances of this object could have the same *label*.
+
+Generally when calling a function which takes an object name in parameter, you pass it always
+the script-name of the object.
+See for example :func:`getParam(name)<NatronEngine.Effect.getParam>`.

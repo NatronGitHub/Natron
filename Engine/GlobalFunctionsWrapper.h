@@ -38,6 +38,12 @@ public:
         return Natron::getPluginIDs();
     }
     
+    inline std::list<std::string>
+    getPluginIDs(const std::string& filter) const
+    {
+        return appPTR->getPluginIDs(filter);
+    }
+    
     inline int
     getNumInstances() const
     {

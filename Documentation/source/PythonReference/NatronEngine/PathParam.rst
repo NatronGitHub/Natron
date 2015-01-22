@@ -45,6 +45,10 @@ Some more characters are escaped, you can see the full function in the source co
 `here <https://github.com/MrKepzie/Natron/blob/workshop/Engine/ProjectPrivate.cpp>`_
 
 
+
+Member functions description
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 .. method:: NatronEngine.PathParam.setAsMultiPathTable()
 
 

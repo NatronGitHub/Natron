@@ -436,7 +436,7 @@ static PyObject* Sbk_PyCoreApplicationFunc_getNumInstances(PyObject* self)
     return pyResult;
 }
 
-static PyObject* Sbk_PyCoreApplicationFunc_getPluginIDs(PyObject* self)
+static PyObject* Sbk_PyCoreApplicationFunc_getPluginIDs(PyObject* self, PyObject* args)
 {
     ::PyCoreApplication* cppSelf = 0;
     SBK_UNUSED(cppSelf)
@@ -444,16 +444,59 @@ static PyObject* Sbk_PyCoreApplicationFunc_getPluginIDs(PyObject* self)
         return 0;
     cppSelf = ((::PyCoreApplication*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PYCOREAPPLICATION_IDX], (SbkObject*)self));
     PyObject* pyResult = 0;
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp[] = { 0 };
+    SBK_UNUSED(pythonToCpp)
+    int numArgs = PyTuple_GET_SIZE(args);
+    PyObject* pyArgs[] = {0};
+
+    // invalid argument lengths
+
+
+    if (!PyArg_UnpackTuple(args, "getPluginIDs", 0, 1, &(pyArgs[0])))
+        return 0;
+
+
+    // Overloaded function decisor
+    // 0: getPluginIDs()const
+    // 1: getPluginIDs(std::string)const
+    if (numArgs == 0) {
+        overloadId = 0; // getPluginIDs()const
+    } else if (numArgs == 1
+        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[0])))) {
+        overloadId = 1; // getPluginIDs(std::string)const
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_PyCoreApplicationFunc_getPluginIDs_TypeError;
 
     // Call function/method
-    {
+    switch (overloadId) {
+        case 0: // getPluginIDs() const
+        {
 
-        if (!PyErr_Occurred()) {
-            // getPluginIDs()const
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            std::list<std::string > cppResult = const_cast<const ::PyCoreApplication*>(cppSelf)->getPluginIDs();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
-            pyResult = Shiboken::Conversions::copyToPython(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_LIST_STD_STRING_IDX], &cppResult);
+            if (!PyErr_Occurred()) {
+                // getPluginIDs()const
+                PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+                std::list<std::string > cppResult = const_cast<const ::PyCoreApplication*>(cppSelf)->getPluginIDs();
+                PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+                pyResult = Shiboken::Conversions::copyToPython(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_LIST_STD_STRING_IDX], &cppResult);
+            }
+            break;
+        }
+        case 1: // getPluginIDs(const std::string & filter) const
+        {
+            ::std::string cppArg0;
+            pythonToCpp[0](pyArgs[0], &cppArg0);
+
+            if (!PyErr_Occurred()) {
+                // getPluginIDs(std::string)const
+                PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+                std::list<std::string > cppResult = const_cast<const ::PyCoreApplication*>(cppSelf)->getPluginIDs(cppArg0);
+                PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+                pyResult = Shiboken::Conversions::copyToPython(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_LIST_STD_STRING_IDX], &cppResult);
+            }
+            break;
         }
     }
 
@@ -462,6 +505,11 @@ static PyObject* Sbk_PyCoreApplicationFunc_getPluginIDs(PyObject* self)
         return 0;
     }
     return pyResult;
+
+    Sbk_PyCoreApplicationFunc_getPluginIDs_TypeError:
+        const char* overloads[] = {"", "std::string", 0};
+        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.PyCoreApplication.getPluginIDs", overloads);
+        return 0;
 }
 
 static PyObject* Sbk_PyCoreApplicationFunc_is64Bit(PyObject* self)
@@ -617,7 +665,7 @@ static PyMethodDef Sbk_PyCoreApplication_methods[] = {
     {"getNatronVersionString", (PyCFunction)Sbk_PyCoreApplicationFunc_getNatronVersionString, METH_NOARGS},
     {"getNumCpus", (PyCFunction)Sbk_PyCoreApplicationFunc_getNumCpus, METH_NOARGS},
     {"getNumInstances", (PyCFunction)Sbk_PyCoreApplicationFunc_getNumInstances, METH_NOARGS},
-    {"getPluginIDs", (PyCFunction)Sbk_PyCoreApplicationFunc_getPluginIDs, METH_NOARGS},
+    {"getPluginIDs", (PyCFunction)Sbk_PyCoreApplicationFunc_getPluginIDs, METH_VARARGS},
     {"is64Bit", (PyCFunction)Sbk_PyCoreApplicationFunc_is64Bit, METH_NOARGS},
     {"isLinux", (PyCFunction)Sbk_PyCoreApplicationFunc_isLinux, METH_NOARGS},
     {"isMacOSX", (PyCFunction)Sbk_PyCoreApplicationFunc_isMacOSX, METH_NOARGS},

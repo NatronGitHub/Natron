@@ -2698,6 +2698,22 @@ AppManager::getPluginIDs() const
     return ret;
 }
 
+std::list<std::string>
+AppManager::getPluginIDs(const std::string& filter)
+{
+    QString qFilter(filter.c_str());
+    std::list<std::string> ret;
+    for (PluginsMap::const_iterator it = _imp->_plugins.begin() ; it!=_imp->_plugins.end(); ++it) {
+        assert(!it->second.empty());
+        
+        QString pluginID(it->first.c_str());
+        if (pluginID.contains(qFilter,Qt::CaseInsensitive)) {
+            ret.push_back(it->first);
+        }
+    }
+    return ret;
+}
+
 //Borrowed from https://github.com/python/cpython/blob/634cb7aa2936a09e84c5787d311291f0e042dba3/Python/fileutils.c
 //Somehow Python 3 dev forced every C application embedding python to have their own code to convert char** to wchar_t**
 static wchar_t*

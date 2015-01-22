@@ -393,6 +393,11 @@ public:
      * with a plug-in.
      **/
     std::list<std::string> getPluginIDs() const;
+    
+    /**
+     * @brief Returns all plugin-ids containing the given filter string. This function compares without case sensitivity.
+     **/
+    std::list<std::string> getPluginIDs(const std::string& filter);
 
     virtual QString getAppFont() const { return ""; }
     virtual int getAppFontSize() const { return 11; }
