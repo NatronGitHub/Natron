@@ -10,6 +10,7 @@ This applies currently to the following objects:
 	*	:doc:`PythonReference/NatronEngine/Layer`
 	*	:doc:`PythonReference/NatronEngine/BezierCurve`
 	*	:doc:`PythonReference/NatronEngine/App`
+	*	:doc:`PythonReference/NatronEngine/PyCoreApplication`
 	
 The idea is that it is simpler to access a simple variable like this::
 	

@@ -10,6 +10,5 @@ Welcome to Natron Python developers guide
 	:maxdepth: 2
 
 	APIReference
-	scriptvslabel
-	natronpath
+	introduction
 	

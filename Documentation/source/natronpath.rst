@@ -4,7 +4,7 @@ Natron plug-in paths
 =====================
 
 When looking for startup scripts or Python group plug-ins, Natron will look into
-the following paths in order:
+the following search paths in order:
 
 	* The bundled plug-ins path. This is a directory relative to your Natron installation.
 	Usually this is the directory "Plugins" one level up where the executable of Natron is.
