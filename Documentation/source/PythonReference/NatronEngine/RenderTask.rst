@@ -4,31 +4,24 @@
 RenderTask
 **********
 
-.. inheritance-diagram:: RenderTask
-    :parts: 2
 
 Detailed Description
 --------------------
 
+A utility class used as an argument of the :func:`render(task)<NatronEngine.App.render>` function.
 
 
+Member functions description
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. class:: RenderTask()
            RenderTask(writeNode, firstFrame, lastFrame)
 
-    :param writeNode: :class:`NatronEngine.Effect`
-    :param firstFrame: :class:`PySide.QtCore.int`
-    :param lastFrame: :class:`PySide.QtCore.int`
+    :param writeNode: :class:`Effect<NatronEngine.Effect>`
+    :param firstFrame: :class:`int<PySide.QtCore.int>`
+    :param lastFrame: :class:`int<PySide.QtCore.int>`
 
-
-
-.. attribute:: NatronEngine.RenderTask.writeNode
-
-
-.. attribute:: NatronEngine.RenderTask.firstFrame
-
-
-.. attribute:: NatronEngine.RenderTask.lastFrame
-
+Constructs a new RenderTask object. The *writeNode* must point either to a Write node or
+to a DiskCache node. The *firstFrame* and *lastFrame* indicates the range to render (including them).
 
 

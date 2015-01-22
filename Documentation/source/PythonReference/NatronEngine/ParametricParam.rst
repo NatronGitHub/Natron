@@ -33,6 +33,11 @@ Functions
 Detailed Description
 --------------------
 
+
+.. figure:: parametricParam.png
+	:width: 500px
+	:align: center
+
 A parametric parameter has as many dimensions as there are curves. Currently the number of
 curves is static and you may only specify the number of curves via the *nbCurves* argument 
 of the :func:`createParametricParam(name,label,nbCurves)<NatronEngine.Effect.createParametricParam>` function.
@@ -43,6 +48,9 @@ control points and remove them.
 You can peak the value of the curve at a special *parametric position*  with the :func:`getValue(dimension,parametricPosition)<NatronEngine.ParametricParam.getValue>`
 function. The *parametric position* is represented by the X axis on the graphical user interface.
 
+
+Member functions description
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. method:: NatronEngine.ParametricParam.addControlPoint(dimension, key, value)
 
