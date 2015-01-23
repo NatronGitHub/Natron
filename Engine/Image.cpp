@@ -285,67 +285,71 @@ minimalNonMarkedRects_internal(const RectI & roi,const RectI& _bounds, const std
         ret.push_back(bboxB);
     }
     
-    //find left
-    RectI bboxC = bboxX;
-    bboxC.set_right( bboxX.left() );
-    for (int j = bboxX.left(); j < bboxX.right(); ++j) {
-        const char* pix = BM_GET(bboxX.bottom(), j);
-        
-        bool metUnavailablePixel = false;
-        
-        for (int i = bboxX.bottom(); i < bboxX.top(); ++i, pix += _bounds.width()) {
-            if (*pix == 1) {
-                pix = 0;
-                break;
-            } else if (trimap && *pix == PIXEL_UNAVAILABLE) {
-                pix = 0;
-                metUnavailablePixel = true;
-                break;
-            }
-        }
-        if (pix) {
-            bboxX.set_left(bboxX.left() + 1);
-            bboxC.set_right( bboxX.left() );
-        } else {
-            if (metUnavailablePixel) {
-                *isBeingRenderedElsewhere = true;
-            }
-            break;
-        }
-    }
+	//find left
+	RectI bboxC = bboxX;
+	bboxC.set_right( bboxX.left() );
+	if (bboxX.bottom() < bboxX.top()) {
+		for (int j = bboxX.left(); j < bboxX.right(); ++j) {
+			const char* pix = BM_GET(bboxX.bottom(), j);
+
+			bool metUnavailablePixel = false;
+
+			for (int i = bboxX.bottom(); i < bboxX.top(); ++i, pix += _bounds.width()) {
+				if (*pix == 1) {
+					pix = 0;
+					break;
+				} else if (trimap && *pix == PIXEL_UNAVAILABLE) {
+					pix = 0;
+					metUnavailablePixel = true;
+					break;
+				}
+			}
+			if (pix) {
+				bboxX.set_left(bboxX.left() + 1);
+				bboxC.set_right( bboxX.left() );
+			} else {
+				if (metUnavailablePixel) {
+					*isBeingRenderedElsewhere = true;
+				}
+				break;
+			}
+		}
+	}
     if ( !bboxC.isNull() ) { // empty boxes should not be pushed
         ret.push_back(bboxC);
     }
-    
-    //find right
-    RectI bboxD = bboxX;
-    bboxD.set_left( bboxX.right() );
-    for (int j = bboxX.right() - 1; j >= bboxX.left(); --j) {
-        const char* pix = BM_GET(bboxX.bottom(), j);
-        
-        bool metUnavailablePixel = false;
-        
-        for (int i = bboxX.bottom(); i < bboxX.top(); ++i, pix += _bounds.width()) {
-            if (*pix == 1) {
-                pix = 0;
-                break;
-            } else if (trimap && *pix == PIXEL_UNAVAILABLE) {
-                pix = 0;
-                metUnavailablePixel = true;
-                break;
-            }
-        }
-        if (pix) {
-            bboxX.set_right(bboxX.right() - 1);
-            bboxD.set_left( bboxX.right() );
-        } else {
-            if (metUnavailablePixel) {
-                *isBeingRenderedElsewhere = true;
-            }
-            break;
-        }
-    }
-    if ( !bboxD.isNull() ) { // empty boxes should not be pushed
+
+	//find right
+	RectI bboxD = bboxX;
+	bboxD.set_left( bboxX.right() );
+	if (bboxX.bottom() < bboxX.top()) {
+		for (int j = bboxX.right() - 1; j >= bboxX.left(); --j) {
+			const char* pix = BM_GET(bboxX.bottom(), j);
+
+			bool metUnavailablePixel = false;
+
+			for (int i = bboxX.bottom(); i < bboxX.top(); ++i, pix += _bounds.width()) {
+				if (*pix == 1) {
+					pix = 0;
+					break;
+				} else if (trimap && *pix == PIXEL_UNAVAILABLE) {
+					pix = 0;
+					metUnavailablePixel = true;
+					break;
+				}
+			}
+			if (pix) {
+				bboxX.set_right(bboxX.right() - 1);
+				bboxD.set_left( bboxX.right() );
+			} else {
+				if (metUnavailablePixel) {
+					*isBeingRenderedElsewhere = true;
+				}
+				break;
+			}
+		}
+	}
+	if ( !bboxD.isNull() ) { // empty boxes should not be pushed
         ret.push_back(bboxD);
     }
     
