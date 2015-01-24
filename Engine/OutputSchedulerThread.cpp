@@ -2572,6 +2572,9 @@ ViewerCurrentFrameRequestScheduler::run()
                 }
                 
                 while (found == _imp->producedQueue.end()) {
+					if (_imp->checkForExit()) {
+						return;
+					}
                     _imp->producedQueueNotEmpty.wait(&_imp->producedQueueMutex);
                     
                     for (std::list<ProducedFrame>::iterator it = _imp->producedQueue.begin(); it!= _imp->producedQueue.end(); ++it) {

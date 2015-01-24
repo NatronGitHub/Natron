@@ -712,7 +712,7 @@ TabWidget::removeTab(int index)
             l.relock();
         }
     }
-    tab->setParent(NULL);
+	tab->setParent(_gui);
 
     return tab;
 }
