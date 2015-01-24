@@ -2510,6 +2510,19 @@ Gui::openProjectInternal(const std::string & absoluteFileName)
     std::string fileUnPathed = absoluteFileName;
     std::string path = SequenceParsing::removePath(fileUnPathed);
 
+	int openedProject = appPTR->isProjectAlreadyOpened(absoluteFileName);
+	if (openedProject != -1) {
+		AppInstance* instance = appPTR->getAppInstance(openedProject);
+		if (instance) {
+			GuiAppInstance* guiApp = dynamic_cast<GuiAppInstance*>(instance);
+			assert(guiApp);
+			if (guiApp) {
+				guiApp->getGui()->activateWindow();
+				return ;
+			}
+		}
+	}
+
     ///if the current graph has no value, just load the project in the same window
     if ( _imp->_appInstance->getProject()->isGraphWorthLess() ) {
         _imp->_appInstance->getProject()->loadProject( path.c_str(), fileUnPathed.c_str() );
@@ -3471,7 +3484,22 @@ Gui::openRecentFile()
 
     if (action) {
         QFileInfo f( action->data().toString() );
-        QString path = f.path() + QDir::separator();
+		QString path = f.path() + '/';
+
+		QString filename = path + f.fileName();
+		int openedProject = appPTR->isProjectAlreadyOpened(filename.toStdString());
+		if (openedProject != -1) {
+			AppInstance* instance = appPTR->getAppInstance(openedProject);
+			if (instance) {
+				GuiAppInstance* guiApp = dynamic_cast<GuiAppInstance*>(instance);
+				assert(guiApp);
+				if (guiApp) {
+					guiApp->getGui()->activateWindow();
+					return ;
+				}
+			}
+		}
+
         ///if the current graph has no value, just load the project in the same window
         if ( _imp->_appInstance->getProject()->isGraphWorthLess() ) {
             _imp->_appInstance->getProject()->loadProject( path,f.fileName() );
