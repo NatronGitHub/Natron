@@ -333,6 +333,12 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
                                                        ((double)(count+1) / nodesToRestorePreferencesNb) * 0.5 + 0.25);
         }
     }
+
+	for (U32 i = 0; i < currentNodes.size(); ++i) {
+        if (currentNodes[i]->getLiveInstance()->supportsRenderScaleMaybe() == EffectInstance::eSupportsMaybe) {
+			currentNodes[i]->getLiveInstance()->restoreClipPreferences();
+        }
+    }
     
     ///We should be now at 75% progress...
     
