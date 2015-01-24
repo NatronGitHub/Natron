@@ -79,11 +79,15 @@ The following table sums up the different properties for all parameters includin
 
 
 Note that  most of the properties are not dynamic:
-they need to be set before calling refreshUserParamsGUI() which will create the GUI for these parameters.
+they need to be set before calling :func:`refreshUserParamsGUI()<NatronEngine.Effect.refreshUserParamsGUI>` which will create the GUI for these parameters.
 
 .. warning::
 
 	A non-dynamic property can no longer be changed once refreshUserParamsGUI() has been called.
+	
+For non *user-parameters* (i.e: parameters that were defined by the underlying OpenFX plug-in), only 
+their **dynamic** properties can be changed since  :func:`refreshUserParamsGUI()<NatronEngine.Effect.refreshUserParamsGUI>`
+will only refresh user parameters.
 	
 If a Setter function contains a (*) that means it can only be called for user parameters,
 it has no effect on already declared non-user parameters.

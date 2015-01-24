@@ -18,6 +18,13 @@ Note that you can also access a parameter with the :func:`getParam(scriptName)<N
                                         
 but you should not ever need it because Natron pre-declared all variables for you.
 
+The *script-name* of a parameter is visible in the user interface when hovering the parameter
+in the settings panel with the mouse. This is the name in **bold**:
+
+.. figure:: paramScriptName.png
+	:width: 200px
+	:align: center
+
 Parameters type:
 ----------------
 
@@ -104,3 +111,23 @@ explanation of other properties and how they affect the parameter.
 
 Creating new parameters:
 ------------------------
+
+In Natron, the user has the possibility to add new parameters, called *User parameters*. 
+They are pretty much the same than the parameters defined by the underlying OpenFX plug-in itself.
+
+In the Python API, to create a new *user parameter*, you would need to call one of the 
+:func:`createXParam(name,label,...)<>` of the :doc:`PythonReference/NatronEngine/Effect` class.
+
+These parameters can have their default values and properties changed as explained in the 
+documentation page of the :doc:`PythonReference/NatronEngine/Param` class.
+
+To remove a user created parameter you would need to call the :func:`removeParam(param)<>` function
+of the :doc:`PythonReference/NatronEngine/Effect` class.
+
+.. warning::
+
+	Only **user parameters** can be removed. Removing parameters defined by the OpenFX plug-in
+	will not work.
+	
+
+

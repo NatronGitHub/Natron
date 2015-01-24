@@ -51,3 +51,57 @@ identified uniquely) but several instances of this object could have the same *l
 Generally when calling a function which takes an object name in parameter, you pass it always
 the script-name of the object.
 See for example :func:`getParam(name)<NatronEngine.Effect.getParam>`.
+
+.. _nodeScriptName:
+
+Knowing the script-name of a node:
+----------------------------------
+
+The script-name of a node is visible in the graphical-user interface in the tool-tip of 
+the widget to edit the *label* of the node:
+
+.. figure:: nodeScriptName.png
+	:width: 200px
+	:align: center
+	
+	
+For children nodes (like tracks) you can access their script-name from the table of the Tracker
+node:
+
+.. figure:: trackScriptName.png
+	:width: 300px
+	:align: center
+	
+In command-line mode or via the *Script Editor*, you can also get the script-name of the node
+with the :func:`getScriptName()<>` function of the :doc:`PythonReference/NatronEngine/Effect` class.
+
+
+.. _paramScriptName:
+
+Knowing the script-name of a parameter:
+---------------------------------------
+
+In the settings panel of a node, the script-name of a parameter is visible in *bold* in the
+tooltip displayed when hovering a parameter with the mouse:
+
+.. figure:: paramScriptName.png
+	:width: 200px
+	:align: center
+	
+In command-line mode or via the *Script Editor* you can also get the script-name of the parameter
+with the :func:`getScriptName()<>` function of the :doc:`PythonReference/NatronEngine/Param` class.
+
+
+.. _rotoScriptName:
+
+Knowing the script-name of an item of a Roto node:
+--------------------------------------------------
+
+In the settings panel of a roto node, the script-name of an item is visible in the *Script* column of the table:
+
+.. figure:: rotoScriptName.png
+	:width: 300px
+	:align: center
+	
+In command-line mode or via the *Script Editor* you can also get the script-name of an item
+with the :func:`getScriptName()<>` function of the :doc:`PythonReference/NatronEngine/ItemBase` class.

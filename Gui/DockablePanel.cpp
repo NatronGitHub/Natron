@@ -192,19 +192,16 @@ struct DockablePanelPrivate
     mutable QMutex _isClosedMutex;
     bool _isClosed; //< accessed by serialization thread too
     
-    DockablePanelPrivate(DockablePanel* publicI
-                         ,
-                         Gui* gui
-                         ,
-                         KnobHolder* holder
-                         ,
-                         QVBoxLayout* container
-                         ,
-                         DockablePanel::HeaderModeEnum headerMode
-                         ,
-                         bool useScrollAreasForTabs
-                         ,
-                         const QString & defaultPageName)
+    QString _helpToolTip;
+    
+    DockablePanelPrivate(DockablePanel* publicI,
+                         Gui* gui,
+                         KnobHolder* holder,
+                         QVBoxLayout* container,
+                         DockablePanel::HeaderModeEnum headerMode,
+                         bool useScrollAreasForTabs,
+                         const QString & defaultPageName,
+                         const QString& helpToolTip)
     : _publicInterface(publicI)
     ,_gui(gui)
     ,_container(container)
@@ -241,6 +238,7 @@ struct DockablePanelPrivate
     ,_mode(headerMode)
     ,_isClosedMutex()
     ,_isClosed(false)
+    ,_helpToolTip(helpToolTip)
     {
     }
 
@@ -263,28 +261,18 @@ struct DockablePanelPrivate
 
 
 
-DockablePanel::DockablePanel(Gui* gui
-                             ,
-                             KnobHolder* holder
-                             ,
-                             QVBoxLayout* container
-                             ,
-                             HeaderModeEnum headerMode
-                             ,
-                             bool useScrollAreasForTabs
-                             ,
-                             const QString & initialName
-                             ,
-                             const QString & helpToolTip
-                             ,
-                             bool createDefaultPage
-                             ,
-                             const QString & defaultPageName
-                             ,
+DockablePanel::DockablePanel(Gui* gui ,
+                             KnobHolder* holder ,
+                             QVBoxLayout* container,
+                             HeaderModeEnum headerMode,
+                             bool useScrollAreasForTabs,
+                             const QString & initialName,
+                             const QString & helpToolTip,
+                             bool createDefaultPage,
+                             const QString & defaultPageName,
                              QWidget *parent)
-    : QFrame(parent)
-      , _imp( new DockablePanelPrivate(this,gui,holder,container,headerMode,useScrollAreasForTabs,defaultPageName) )
-
+: QFrame(parent)
+, _imp(new DockablePanelPrivate(this,gui,holder,container,headerMode,useScrollAreasForTabs,defaultPageName,helpToolTip))
 {
     assert(holder);
     holder->setPanelPointer(this);
@@ -309,8 +297,14 @@ DockablePanel::DockablePanel(Gui* gui
         pluginLabelVersioned = plugin->getPluginLabel();
         QString toAppend = QString(" version %1.%2").arg(plugin->getMajorVersion()).arg(plugin->getMinorVersion());
         pluginLabelVersioned.append(toAppend);
+        
+        
     }
-    
+    MultiInstancePanel* isMultiInstance = dynamic_cast<MultiInstancePanel*>(holder);
+    if (isMultiInstance) {
+        iseffect = isMultiInstance->getMainInstance()->getLiveInstance();
+        assert(iseffect);
+    }
     
     if (headerMode != eHeaderModeNoHeader) {
         _imp->_headerWidget = new QFrame(this);
@@ -347,23 +341,19 @@ DockablePanel::DockablePanel(Gui* gui
             _imp->_headerLayout->addWidget(_imp->_centerNodeButton);
         }
         
-        QPixmap pixHelp;
-        appPTR->getIcon(NATRON_PIXMAP_HELP_WIDGET,&pixHelp);
-        _imp->_helpButton = new Button(QIcon(pixHelp),"",_imp->_headerWidget);
-        _imp->_helpButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-        _imp->_helpButton->setFocusPolicy(Qt::NoFocus);
-            QString tt = Qt::convertFromPlainText(helpToolTip, Qt::WhiteSpaceNormal);
-            if (!pluginLabelVersioned.isEmpty()) {
-                QString toPrepend("<p><b>");
-                toPrepend.append(pluginLabelVersioned);
-                toPrepend.append("</b></p>");
-                tt.prepend(toPrepend);
-            }
-            _imp->_helpButton->setToolTip(tt);
         
-        QObject::connect( _imp->_helpButton, SIGNAL( clicked() ), this, SLOT( showHelp() ) );
+      
         
         if (!_imp->_holder->isProject()) {
+            
+            QPixmap pixHelp;
+            appPTR->getIcon(NATRON_PIXMAP_HELP_WIDGET,&pixHelp);
+            _imp->_helpButton = new Button(QIcon(pixHelp),"",_imp->_headerWidget);
+            _imp->_helpButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
+            _imp->_helpButton->setFocusPolicy(Qt::NoFocus);
+            
+            QObject::connect( _imp->_helpButton, SIGNAL( clicked() ), this, SLOT( showHelp() ) );
+            
             QPixmap pixHide,pixShow;
             appPTR->getIcon(NATRON_PIXMAP_UNHIDE_UNMODIFIED, &pixShow);
             appPTR->getIcon(NATRON_PIXMAP_HIDE_UNMODIFIED,&pixHide);
@@ -408,11 +398,7 @@ DockablePanel::DockablePanel(Gui* gui
             boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
             float r,g,b;
             
-            MultiInstancePanel* isMultiInstance = dynamic_cast<MultiInstancePanel*>(holder);
-            if (isMultiInstance) {
-                iseffect = isMultiInstance->getMainInstance()->getLiveInstance();
-                assert(iseffect);
-            }
+            
             if (iseffect) {
                 BackDrop* isBd = dynamic_cast<BackDrop*>(iseffect);
                 
@@ -540,7 +526,9 @@ DockablePanel::DockablePanel(Gui* gui
         _imp->_headerLayout->addWidget(_imp->_restoreDefaultsButton);
 
         _imp->_headerLayout->addStretch();
-        _imp->_headerLayout->addWidget(_imp->_helpButton);
+        if (_imp->_helpButton) {
+            _imp->_headerLayout->addWidget(_imp->_helpButton);
+        }
         if (_imp->_hideUnmodifiedButton) {
             _imp->_headerLayout->addWidget(_imp->_hideUnmodifiedButton);
         }
@@ -1366,8 +1354,35 @@ DockablePanel::onRedoPressed()
 void
 DockablePanel::showHelp()
 {
-    QToolTip::showText( QCursor::pos(), _imp->_helpButton->toolTip() );
+    
+    Natron::EffectInstance* iseffect = dynamic_cast<Natron::EffectInstance*>(_imp->_holder);
+    QString pluginLabelVersioned;
+    if (iseffect) {
+        
+        //Base help
+        QString tt = Qt::convertFromPlainText(_imp->_helpToolTip, Qt::WhiteSpaceNormal);
+        
+        
+        //Prepend the plugin ID
+        const Natron::Plugin* plugin = iseffect->getNode()->getPlugin();
+        pluginLabelVersioned = plugin->getPluginID();
+        QString toAppend = QString(" version %1.%2").arg(plugin->getMajorVersion()).arg(plugin->getMinorVersion());
+        pluginLabelVersioned.append(toAppend);
+
+        if (!pluginLabelVersioned.isEmpty()) {
+            QString toPrepend("<p><b>");
+            toPrepend.append(pluginLabelVersioned);
+            toPrepend.append("</b></p>");
+            tt.prepend(toPrepend);
+        }
+        
+        Natron::informationDialog(plugin->getPluginLabel().toStdString(), tt.toStdString(),true);
+    }
+    
+
+
 }
+
 
 void
 DockablePanel::setClosed(bool c)

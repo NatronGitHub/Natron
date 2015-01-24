@@ -4604,19 +4604,23 @@ Node::declareAllNodesVariableInScope_Python(std::string* deleteScript) const
         
         NodeList siblings = collection->getNodes();
         for (NodeList::iterator it = siblings.begin(); it != siblings.end(); ++it) {
-            std::string name = (*it)->getFullyQualifiedName();
-            ss << name << " = app" << appID << "." <<
-            name << "\n";
-            deleteScript->append("del " + name + "\n");
+            if ((*it)->isActivated()) {
+                std::string name = (*it)->getFullyQualifiedName();
+                ss << name << " = app" << appID << "." <<
+                name << "\n";
+                deleteScript->append("del " + name + "\n");
+            }
         }
         
         NodeGroup* isGrp = dynamic_cast<NodeGroup*>(getLiveInstance());
         if (isGrp) {
             NodeList children = isGrp->getNodes();
             for (NodeList::iterator it = children.begin(); it != children.end(); ++it) {
-                std::string name = (*it)->getFullyQualifiedName();
-                ss << name << " = app" << appID << "." <<
-                name << "\n";
+                if ((*it)->isActivated()) {
+                    std::string name = (*it)->getFullyQualifiedName();
+                    ss << name << " = app" << appID << "." <<
+                    name << "\n";
+                }
             }
         }
     }

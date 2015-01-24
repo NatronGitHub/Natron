@@ -46,6 +46,17 @@ You can also filter out plug-ins that contain only a given *filter* name::
 	
 	filteredPlugins = natron.getPluginIDs(".inria.")
 
+In the user interface, the plug-in ID can be found when pressing the **?** button located in the 
+top right-hand corner of the settings panel:
+
+.. figure:: helpButton.png
+	:width: 300px
+	:align: center
+	
+.. figure:: pluginID.png
+	:width: 400px
+	:align: center
+
 Connecting a node to other nodes:
 -----------------------------------
 
