@@ -593,8 +593,12 @@ private:
             
             
             try {
-                returnValue->reset( new EntryType(key,params,this,storage,
-                                                  storage == Natron::eStorageModeDisk ? QString( getCachePath() + QDir::separator() ).toStdString() : std::string()) );
+				std::string filePath;
+				if (storage == Natron::eStorageModeDisk) {
+					filePath = getCachePath().toStdString();
+					filePath += '/';
+				}
+                returnValue->reset( new EntryType(key,params,this,storage, filePath) );
                 
                 ///Don't call allocateMemory() here because we're still under the lock and we might force tons of threads to wait unnecesserarily
                 
@@ -1037,7 +1041,7 @@ public:
     {
         QString cacheFolderName(appPTR->getDiskCacheLocation());
         if (!cacheFolderName.endsWith('\\') && !cacheFolderName.endsWith('/')) {
-            cacheFolderName.append(QDir::separator());
+            cacheFolderName.append('/');
         }
         cacheFolderName.append( cacheName().c_str() );
         return cacheFolderName;
