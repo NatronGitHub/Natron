@@ -63,6 +63,94 @@ Sbk_PyGuiApplication_Init(PyObject* self, PyObject* args, PyObject* kwds)
     return 1;
 }
 
+static PyObject* Sbk_PyGuiApplicationFunc_addMenuCommand(PyObject* self, PyObject* args)
+{
+    ::PyGuiApplication* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::PyGuiApplication*)Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYGUIAPPLICATION_IDX], (SbkObject*)self));
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp[] = { 0, 0, 0, 0 };
+    SBK_UNUSED(pythonToCpp)
+    int numArgs = PyTuple_GET_SIZE(args);
+    PyObject* pyArgs[] = {0, 0, 0, 0};
+
+    // invalid argument lengths
+    if (numArgs == 3)
+        goto Sbk_PyGuiApplicationFunc_addMenuCommand_TypeError;
+
+    if (!PyArg_UnpackTuple(args, "addMenuCommand", 2, 4, &(pyArgs[0]), &(pyArgs[1]), &(pyArgs[2]), &(pyArgs[3])))
+        return 0;
+
+
+    // Overloaded function decisor
+    // 0: addMenuCommand(std::string,std::string)
+    // 1: addMenuCommand(std::string,std::string,Qt::Key,QFlags<Qt::KeyboardModifier>)
+    if (numArgs >= 2
+        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[0])))
+        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[1])))) {
+        if (numArgs == 2) {
+            overloadId = 0; // addMenuCommand(std::string,std::string)
+        } else if (numArgs == 4
+            && (pythonToCpp[2] = Shiboken::Conversions::isPythonToCppConvertible(SBK_CONVERTER(SbkPySide_QtCoreTypes[SBK_QT_KEY_IDX]), (pyArgs[2])))
+            && (pythonToCpp[3] = Shiboken::Conversions::isPythonToCppConvertible(SBK_CONVERTER(SbkPySide_QtCoreTypes[SBK_QFLAGS_QT_KEYBOARDMODIFIER__IDX]), (pyArgs[3])))) {
+            overloadId = 1; // addMenuCommand(std::string,std::string,Qt::Key,QFlags<Qt::KeyboardModifier>)
+        }
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_PyGuiApplicationFunc_addMenuCommand_TypeError;
+
+    // Call function/method
+    switch (overloadId) {
+        case 0: // addMenuCommand(const std::string & grouping, const std::string & pythonFunctionName)
+        {
+            ::std::string cppArg0;
+            pythonToCpp[0](pyArgs[0], &cppArg0);
+            ::std::string cppArg1;
+            pythonToCpp[1](pyArgs[1], &cppArg1);
+
+            if (!PyErr_Occurred()) {
+                // addMenuCommand(std::string,std::string)
+                PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+                cppSelf->addMenuCommand(cppArg0, cppArg1);
+                PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            }
+            break;
+        }
+        case 1: // addMenuCommand(const std::string & grouping, const std::string & pythonFunctionName, Qt::Key key, const QFlags<Qt::KeyboardModifier> & modifiers)
+        {
+            ::std::string cppArg0;
+            pythonToCpp[0](pyArgs[0], &cppArg0);
+            ::std::string cppArg1;
+            pythonToCpp[1](pyArgs[1], &cppArg1);
+            ::Qt::Key cppArg2 = ((::Qt::Key)0);
+            pythonToCpp[2](pyArgs[2], &cppArg2);
+            ::QFlags<Qt::KeyboardModifier> cppArg3 = ((::QFlags<Qt::KeyboardModifier>)0);
+            pythonToCpp[3](pyArgs[3], &cppArg3);
+
+            if (!PyErr_Occurred()) {
+                // addMenuCommand(std::string,std::string,Qt::Key,QFlags<Qt::KeyboardModifier>)
+                PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+                cppSelf->addMenuCommand(cppArg0, cppArg1, cppArg2, cppArg3);
+                PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            }
+            break;
+        }
+    }
+
+    if (PyErr_Occurred()) {
+        return 0;
+    }
+    Py_RETURN_NONE;
+
+    Sbk_PyGuiApplicationFunc_addMenuCommand_TypeError:
+        const char* overloads[] = {"std::string, std::string", "std::string, std::string, PySide.QtCore.Qt.Key, PySide.QtCore.Qt.KeyboardModifiers", 0};
+        Shiboken::setErrorAboutWrongArguments(args, "NatronGui.PyGuiApplication.addMenuCommand", overloads);
+        return 0;
+}
+
 static PyObject* Sbk_PyGuiApplicationFunc_errorDialog(PyObject* self, PyObject* args)
 {
     ::PyGuiApplication* cppSelf = 0;
@@ -345,6 +433,7 @@ static PyObject* Sbk_PyGuiApplicationFunc_warningDialog(PyObject* self, PyObject
 }
 
 static PyMethodDef Sbk_PyGuiApplication_methods[] = {
+    {"addMenuCommand", (PyCFunction)Sbk_PyGuiApplicationFunc_addMenuCommand, METH_VARARGS},
     {"errorDialog", (PyCFunction)Sbk_PyGuiApplicationFunc_errorDialog, METH_VARARGS},
     {"getGuiInstance", (PyCFunction)Sbk_PyGuiApplicationFunc_getGuiInstance, METH_O},
     {"informationDialog", (PyCFunction)Sbk_PyGuiApplicationFunc_informationDialog, METH_VARARGS},

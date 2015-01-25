@@ -102,6 +102,8 @@ struct KnobsClipBoard
     bool copyAnimation; //< should we copy all the animation or not
 };
 
+
+
 struct GuiApplicationManagerPrivate
 {
     GuiApplicationManager* _publicInterface;
@@ -123,6 +125,8 @@ struct GuiApplicationManagerPrivate
     
     NodeClipBoard _nodeCB;
     
+    std::list<PythonUserCommand> pythonCommands;
+    
     GuiApplicationManagerPrivate(GuiApplicationManager* publicInterface)
         :   _publicInterface(publicInterface)
     , _topLevelToolButtons()
@@ -136,6 +140,7 @@ struct GuiApplicationManagerPrivate
     , _fontFamily()
     , _fontSize(0)
     , _nodeCB()
+    , pythonCommands()
     {
     }
 
@@ -2018,4 +2023,30 @@ GuiApplicationManager::initBuiltinPythonModules()
         throw std::runtime_error("Failed to initialize built-in Python module.");
     }
     
+}
+
+void
+GuiApplicationManager::addCommand(const QString& grouping,const std::string& pythonFunction, Qt::Key key,const Qt::KeyboardModifiers& modifiers)
+{
+    
+    QStringList split = grouping.split('/');
+    if (grouping.isEmpty() || split.isEmpty()) {
+        return;
+    }
+    PythonUserCommand c;
+    c.grouping = grouping;
+    c.pythonFunction = pythonFunction;
+    c.key = key;
+    c.modifiers = modifiers;
+    _imp->pythonCommands.push_back(c);
+    
+    
+    registerKeybind(kShortcutGroupGlobal, split[split.size() -1], split[split.size() - 1], modifiers, key);
+}
+
+
+const std::list<PythonUserCommand>&
+GuiApplicationManager::getUserPythonCommands() const
+{
+    return _imp->pythonCommands;
 }

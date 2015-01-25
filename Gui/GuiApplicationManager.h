@@ -79,7 +79,12 @@ struct NodeClipBoard
     }
 };
 
-
+struct PythonUserCommand {
+    QString grouping;
+    Qt::Key key;
+    Qt::KeyboardModifiers modifiers;
+    std::string pythonFunction;
+};
 
 struct GuiApplicationManagerPrivate;
 class GuiApplicationManager
@@ -180,6 +185,10 @@ public:
     NodeClipBoard& getNodeClipBoard();
     
     void clearNodeClipBoard();
+    
+    void addCommand(const QString& grouping,const std::string& pythonFunction, Qt::Key key,const Qt::KeyboardModifiers& modifiers);
+    
+    const std::list<PythonUserCommand>& getUserPythonCommands() const;
     
 public Q_SLOTS:
 

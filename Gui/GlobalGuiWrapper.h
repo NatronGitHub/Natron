@@ -13,7 +13,11 @@
 #define GLOBAL_GUI_WRAPPER_H
 
 #include "Engine/GlobalFunctionsWrapper.h"
+
+#include <QKeyEvent>
+
 #include "Gui/GuiAppWrapper.h"
+#include "Gui/GuiApplicationManager.h"
 
 class PyGuiApplication : public PyCoreApplication
 {
@@ -61,6 +65,18 @@ public:
     Natron::StandardButtonEnum questionDialog(const std::string& title,const std::string& message)
     {
         return Natron::questionDialog(title, message, false);
+    }
+    
+    void addMenuCommand(const std::string& grouping,const std::string& pythonFunctionName)
+    {
+        appPTR->addCommand(grouping.c_str(), pythonFunctionName, (Qt::Key)0, Qt::NoModifier);
+    }
+    
+    
+    void addMenuCommand(const std::string& grouping,const std::string& pythonFunctionName,
+                        Qt::Key key, const Qt::KeyboardModifiers& modifiers)
+    {
+        appPTR->addCommand(grouping.c_str(), pythonFunctionName, key, modifiers);
     }
     
 };

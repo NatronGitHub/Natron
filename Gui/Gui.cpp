@@ -370,6 +370,9 @@ struct GuiPrivate
     ScriptEditor* _scriptEditor;
     
     TabWidget* _lastEnteredTabWidget;
+    
+    ///Menu entries added by the user
+    std::map<ActionWithShortcut*,std::string> pythonCommands;
 
     GuiPrivate(GuiAppInstance* app,
                Gui* gui)
@@ -484,6 +487,7 @@ struct GuiPrivate
     , leftToolBarDisplayedOnHoverOnly(false)
     , _scriptEditor(0)
     , _lastEnteredTabWidget(0)
+    , pythonCommands()
     {
     }
     
@@ -511,6 +515,8 @@ struct GuiPrivate
     TabWidget* getOnly1NonFloatingPane(int & count) const;
     
     void refreshLeftToolBarVisibility(const QPoint& p);
+    
+    QAction* findActionRecursive(int i,QWidget* widget,const QStringList& grouping);
 };
 
 // Helper function: Get the icon with the given name from the icon theme.
@@ -1024,6 +1030,13 @@ Gui::createMenuActions()
     _imp->cacheMenu->addAction(_imp->actionClearAllCaches);
     _imp->cacheMenu->addSeparator();
     _imp->cacheMenu->addAction(_imp->actionClearPluginsLoadingCache);
+    
+    ///Create custom menu
+    const std::list<PythonUserCommand>& commands = appPTR->getUserPythonCommands();
+    for (std::list<PythonUserCommand>::const_iterator it = commands.begin(); it != commands.end(); ++it) {
+        addMenuEntry(it->grouping, it->pythonFunction, it->key, it->modifiers);
+    }
+    
 } // createMenuActions
 
 void
@@ -4848,4 +4861,96 @@ void
 Gui::exportProjectAsGroup()
 {
     exportGroupAsPythonScript(getApp()->getProject().get());
+}
+
+QAction*
+GuiPrivate::findActionRecursive(int i,QWidget* widget,const QStringList& grouping)
+{
+    assert(i < grouping.size());
+    QList<QAction*> actions = widget->actions();
+    for (QList<QAction*>::iterator it = actions.begin();it != actions.end(); ++it) {
+        if ((*it)->text() == grouping[i]) {
+            if (i == grouping.size() -1) {
+                return *it;
+            } else {
+                QMenu* menu = (*it)->menu();
+                if (menu) {
+                    return findActionRecursive(i + 1, menu, grouping);
+                } else {
+                    ///Error: specified the name of an already existing action
+                    return 0;
+                }
+            }
+        }
+    }
+    ///Create the entry
+    if (i < grouping.size() -1) {
+        QMenu* menu = new QMenu(widget);
+        menu->setTitle(grouping[i]);
+        QMenu* isMenu = dynamic_cast<QMenu*>(widget);
+        QMenuBar* isMenuBar = dynamic_cast<QMenuBar*>(widget);
+        if (isMenu) {
+            isMenu->addAction(menu->menuAction());
+        } else if (isMenuBar) {
+            isMenuBar->addAction(menu->menuAction());
+        }
+        return findActionRecursive(i + 1, menu, grouping);
+    } else {
+        ActionWithShortcut* action = new ActionWithShortcut(kShortcutGroupGlobal,grouping[i],grouping[i],widget);
+        QObject::connect(action, SIGNAL(triggered()), _gui, SLOT(onUserCommandTriggered()));
+        QMenu* isMenu = dynamic_cast<QMenu*>(widget);
+        if (isMenu) {
+            isMenu->addAction(action);
+        }
+
+        return action;
+    }
+    return 0;
+}
+
+void
+Gui::onUserCommandTriggered()
+{
+    QAction* action = qobject_cast<QAction*>(sender());
+    if (!action) {
+        return;
+    }
+    ActionWithShortcut* aws = dynamic_cast<ActionWithShortcut*>(action);
+    if (!aws) {
+        return;
+    }
+    std::map<ActionWithShortcut*,std::string>::iterator found = _imp->pythonCommands.find(aws);
+    if (found != _imp->pythonCommands.end()) {
+        std::string err;
+        std::string output;
+        if (!Natron::interpretPythonScript(found->second, &err, &output)) {
+            getApp()->appendToScriptEditor(err);
+        } else {
+            getApp()->appendToScriptEditor(output);
+        }
+    }
+}
+
+void
+Gui::addMenuEntry(const QString& menuGrouping,const std::string& pythonFunction,Qt::Key key,const Qt::KeyboardModifiers& modifiers)
+{
+    QStringList grouping = menuGrouping.split('/');
+    if (grouping.isEmpty()) {
+        getApp()->appendToScriptEditor(tr("Failed to add menu entry: incorrect menu grouping").toStdString());
+        return;
+    }
+    
+    std::string script = pythonFunction + "()\n";
+    
+    QAction* action = _imp->findActionRecursive(0, _imp->menubar, grouping);
+    ActionWithShortcut* aws = dynamic_cast<ActionWithShortcut*>(action);
+    if (aws) {
+        aws->setShortcut(makeKeySequence(modifiers,key));
+        std::map<ActionWithShortcut*,std::string>::iterator found = _imp->pythonCommands.find(aws);
+        if (found != _imp->pythonCommands.end()) {
+            found->second = pythonFunction;
+        } else {
+            _imp->pythonCommands.insert(std::make_pair(aws,script));
+        }
+    }
 }

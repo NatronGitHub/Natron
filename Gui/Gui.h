@@ -485,6 +485,9 @@ public:
     void appendToScriptEditor(const std::string& str);
     
     void exportGroupAsPythonScript(NodeCollection* collection);
+    
+    void addMenuEntry(const QString& menuGrouping,const std::string& pythonFunction, Qt::Key key,const Qt::KeyboardModifiers& modifiers);
+    
 Q_SIGNALS:
 
 
@@ -602,6 +605,8 @@ public Q_SLOTS:
     
     void onCloseTabTriggered();
 
+    void onUserCommandTriggered();
+    
 private:
 
     /**
