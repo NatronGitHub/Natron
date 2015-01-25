@@ -32,6 +32,8 @@ CLANG_DIAG_ON(unused-private-field)
 #include <QtGui/QKeySequence>
 #include <QTextDocument>
 
+#include <boost/weak_ptr.hpp>
+
 #include "Engine/ViewerInstance.h"
 #include "Engine/Settings.h"
 #include "Engine/Project.h"
@@ -48,7 +50,6 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Gui/Button.h"
 #include "Gui/Gui.h"
 #include "Gui/TabWidget.h"
-#include "Gui/FromQtEnums.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/ClickableLabel.h"
@@ -237,6 +238,9 @@ struct ViewerTabPrivate
     mutable QMutex fpsMutex;
     double fps;
     
+    //The last node that took the penDown/motion/keyDown/keyRelease etc...
+    boost::weak_ptr<Natron::Node> lastOverlayNode;
+    
     ViewerTabPrivate(Gui* gui,
                      ViewerInstance* node)
         : viewer(NULL)
@@ -323,6 +327,7 @@ struct ViewerTabPrivate
         , checkerboardEnabled(false)
         , fpsMutex()
         , fps(24.)
+        , lastOverlayNode()
     {
         infoWidget[0] = infoWidget[1] = NULL;
         currentRoto.first = NULL;
@@ -1532,7 +1537,7 @@ ViewerTab::drawOverlays(double scaleX,
     std::list<boost::shared_ptr<Natron::Node> >  nodes;
     getGui()->getNodesEntitledForOverlays(nodes);
     
-    ///Draw overlays in reverse order of appearance
+    ///Draw overlays in reverse order of appearance so that the first (top) panel is drawn on top of everything else
     for (std::list<boost::shared_ptr<Natron::Node> >::reverse_iterator it = nodes.rbegin(); it != nodes.rend(); ++it) {
         
         if (_imp->currentRoto.first && (*it) == _imp->currentRoto.first->getNode()) {
@@ -1554,13 +1559,47 @@ ViewerTab::drawOverlays(double scaleX,
 }
 
 bool
+ViewerTab::notifyOverlaysPenDown_internal(const boost::shared_ptr<Natron::Node>& node, double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, QMouseEvent* e)
+{
+    if (_imp->currentRoto.first && node == _imp->currentRoto.first->getNode()) {
+        if ( _imp->currentRoto.second && _imp->currentRoto.first->isSettingsPanelVisible() ) {
+            if ( _imp->currentRoto.second->penDown(scaleX, scaleY,viewportPos,pos,e) ) {
+                _imp->lastOverlayNode = node;
+                return true;
+            }
+        }
+    } else if (_imp->currentTracker.first && node == _imp->currentTracker.first->getNode()) {
+        if ( _imp->currentTracker.second && _imp->currentTracker.first->isSettingsPanelVisible() ) {
+            if ( _imp->currentTracker.second->penDown(scaleX, scaleY,viewportPos,pos,e) ) {
+                _imp->lastOverlayNode = node;
+                return true;
+            }
+        }
+    } else {
+        
+        Natron::EffectInstance* effect = node->getLiveInstance();
+        assert(effect);
+        effect->setCurrentViewportForOverlays(_imp->viewer);
+        bool didSmthing = effect->onOverlayPenDown_public(scaleX,scaleY,viewportPos, pos);
+        if (didSmthing) {
+            //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
+            // if the instance returns kOfxStatOK, the host should not pass the pen motion
+            
+            // to any other interactive object it may own that shares the same view.
+            _imp->lastOverlayNode = node;
+            return true;
+        }
+    }
+    return false;
+}
+
+bool
 ViewerTab::notifyOverlaysPenDown(double scaleX,
                                  double scaleY,
                                  const QPointF & viewportPos,
                                  const QPointF & pos,
                                  QMouseEvent* e)
 {
-    bool didSomething = false;
 
     if ( !_imp->app || _imp->app->isClosing() ) {
         return false;
@@ -1569,43 +1608,31 @@ ViewerTab::notifyOverlaysPenDown(double scaleX,
     std::list<boost::shared_ptr<Natron::Node> >  nodes;
     getGui()->getNodesEntitledForOverlays(nodes);
     
-    for (std::list<boost::shared_ptr<Natron::Node> >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
-       
-        
-        if (_imp->currentRoto.first && (*it) == _imp->currentRoto.first->getNode()) {
-            if ( _imp->currentRoto.second && _imp->currentRoto.first->isSettingsPanelVisible() ) {
-                if ( _imp->currentRoto.second->penDown(scaleX, scaleY,viewportPos,pos,e) ) {
-                    return true;
-                }
-            }
-        } else if (_imp->currentTracker.first && (*it) == _imp->currentTracker.first->getNode()) {
-            if ( _imp->currentTracker.second && _imp->currentTracker.first->isSettingsPanelVisible() ) {
-                if ( _imp->currentTracker.second->penDown(scaleX, scaleY,viewportPos,pos,e) ) {
-                    return true;
-                }
-            }
-        } else {
-            
-            Natron::EffectInstance* effect = (*it)->getLiveInstance();
-            assert(effect);
-            effect->setCurrentViewportForOverlays(_imp->viewer);
-            bool didSmthing = effect->onOverlayPenDown_public(scaleX,scaleY,viewportPos, pos);
-            if (didSmthing) {
-                //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
-                // if the instance returns kOfxStatOK, the host should not pass the pen motion
+    
+    boost::shared_ptr<Natron::Node> lastOverlay = _imp->lastOverlayNode.lock();
+    if (lastOverlay) {
+        for (std::list<boost::shared_ptr<Natron::Node> >::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+            if (*it == lastOverlay) {
                 
-                // to any other interactive object it may own that shares the same view.
-                return true;
+                if (notifyOverlaysPenDown_internal(*it, scaleX, scaleY, viewportPos, pos, e)) {
+                    return true;
+                } else {
+                    nodes.erase(it);
+                    break;
+                }
             }
         }
     }
+    
+    for (std::list<boost::shared_ptr<Natron::Node> >::reverse_iterator it = nodes.rbegin(); it != nodes.rend(); ++it) {
+        if (notifyOverlaysPenDown_internal(*it, scaleX, scaleY, viewportPos, pos, e)) {
+            return true;
+        }
+    }
 
-
-
- 
-
-    return didSomething;
+    return false;
 }
+
 
 bool
 ViewerTab::notifyOverlaysPenDoubleClick(double scaleX,
@@ -1620,16 +1647,53 @@ ViewerTab::notifyOverlaysPenDoubleClick(double scaleX,
 
     if ( _imp->currentRoto.second && _imp->currentRoto.first->isSettingsPanelVisible() ) {
         if ( _imp->currentRoto.second->penDoubleClicked(scaleX, scaleY, viewportPos, pos, e) ) {
+            _imp->lastOverlayNode = _imp->currentRoto.first->getNode();
             return true;
         }
     }
 
     if ( _imp->currentTracker.second && _imp->currentTracker.first->isSettingsPanelVisible() ) {
         if ( _imp->currentTracker.second->penDoubleClicked(scaleX, scaleY, viewportPos, pos, e) ) {
+            _imp->lastOverlayNode = _imp->currentRoto.first->getNode();
             return true;
         }
     }
 
+    return false;
+}
+
+bool
+ViewerTab::notifyOverlaysPenMotion_internal(const boost::shared_ptr<Natron::Node>& node,double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, QMouseEvent* e)
+{
+    if (_imp->currentRoto.first && node == _imp->currentRoto.first->getNode()) {
+        if ( _imp->currentRoto.second && _imp->currentRoto.first->isSettingsPanelVisible() ) {
+            if ( _imp->currentRoto.second->penMotion(scaleX, scaleY, viewportPos, pos, e) ) {
+                _imp->lastOverlayNode = node;
+                return true;
+            }
+        }
+    } else if (_imp->currentTracker.first && node == _imp->currentTracker.first->getNode()) {
+        if ( _imp->currentTracker.second && _imp->currentTracker.first->isSettingsPanelVisible() ) {
+            if ( _imp->currentTracker.second->penMotion(scaleX, scaleY, viewportPos, pos, e) ) {
+                _imp->lastOverlayNode = node;
+                return true;
+            }
+        }
+    } else {
+        
+        Natron::EffectInstance* effect = node->getLiveInstance();
+        assert(effect);
+        effect->setCurrentViewportForOverlays(_imp->viewer);
+        bool didSmthing = effect->onOverlayPenMotion_public(scaleX,scaleY,viewportPos, pos);
+        if (didSmthing) {
+            //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
+            // if the instance returns kOfxStatOK, the host should not pass the pen motion
+            
+            // to any other interactive object it may own that shares the same view.
+            _imp->lastOverlayNode = node;
+            return true;
+        }
+    }
     return false;
 }
 
@@ -1648,33 +1712,26 @@ ViewerTab::notifyOverlaysPenMotion(double scaleX,
     
     std::list<boost::shared_ptr<Natron::Node> >  nodes;
     getGui()->getNodesEntitledForOverlays(nodes);
-    for (std::list<boost::shared_ptr<Natron::Node> >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        
-        if (_imp->currentRoto.first && (*it) == _imp->currentRoto.first->getNode()) {
-            if ( _imp->currentRoto.second && _imp->currentRoto.first->isSettingsPanelVisible() ) {
-                if ( _imp->currentRoto.second->penMotion(scaleX, scaleY, viewportPos, pos, e) ) {
+    
+    
+    boost::shared_ptr<Natron::Node> lastOverlay = _imp->lastOverlayNode.lock();
+    if (lastOverlay) {
+        for (std::list<boost::shared_ptr<Natron::Node> >::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+            if (*it == lastOverlay) {
+                if (notifyOverlaysPenMotion_internal(*it, scaleX, scaleY, viewportPos, pos, e)) {
                     return true;
+                } else {
+                    nodes.erase(it);
+                    break;
                 }
             }
-        } else if (_imp->currentTracker.first && (*it) == _imp->currentTracker.first->getNode()) {
-            if ( _imp->currentTracker.second && _imp->currentTracker.first->isSettingsPanelVisible() ) {
-                if ( _imp->currentTracker.second->penMotion(scaleX, scaleY, viewportPos, pos, e) ) {
-                    return true;
-                }
-            }
-        } else {
-            
-            Natron::EffectInstance* effect = (*it)->getLiveInstance();
-            assert(effect);
-            effect->setCurrentViewportForOverlays(_imp->viewer);
-            bool didSmthing = effect->onOverlayPenMotion_public(scaleX,scaleY,viewportPos, pos);
-            if (didSmthing) {
-                //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
-                // if the instance returns kOfxStatOK, the host should not pass the pen motion
-                
-                // to any other interactive object it may own that shares the same view.
-                return true;
-            }
+        }
+    }
+
+    
+    for (std::list<boost::shared_ptr<Natron::Node> >::reverse_iterator it = nodes.rbegin(); it != nodes.rend(); ++it) {
+        if (notifyOverlaysPenMotion_internal(*it, scaleX, scaleY, viewportPos, pos, e)) {
+            return true;
         }
     }
 
@@ -1697,6 +1754,8 @@ ViewerTab::notifyOverlaysPenUp(double scaleX,
     if ( !_imp->app || _imp->app->isClosing() ) {
         return false;
     }
+    
+    _imp->lastOverlayNode.reset();
     
     std::list<boost::shared_ptr<Natron::Node> >  nodes;
     getGui()->getNodesEntitledForOverlays(nodes);
@@ -1730,6 +1789,45 @@ ViewerTab::notifyOverlaysPenUp(double scaleX,
 }
 
 bool
+ViewerTab::notifyOverlaysKeyDown_internal(const boost::shared_ptr<Natron::Node>& node,double scaleX,double scaleY,QKeyEvent* e,
+                                          Natron::Key k,
+                                          Natron::KeyboardModifiers km)
+{
+    if (_imp->currentRoto.first && node == _imp->currentRoto.first->getNode()) {
+        
+        if ( _imp->currentRoto.second && _imp->currentRoto.first->isSettingsPanelVisible() ) {
+            if ( _imp->currentRoto.second->keyDown(scaleX, scaleY, e) ) {
+                _imp->lastOverlayNode = node;
+                return true;
+            }
+        }
+    } else if (_imp->currentTracker.first && node == _imp->currentTracker.first->getNode()) {
+        if ( _imp->currentTracker.second && _imp->currentTracker.first->isSettingsPanelVisible() ) {
+            if ( _imp->currentTracker.second->keyDown(scaleX, scaleY, e) ) {
+                _imp->lastOverlayNode = node;
+                return true;
+            }
+        }
+        
+    } else {
+        
+        Natron::EffectInstance* effect = node->getLiveInstance();
+        assert(effect);
+        effect->setCurrentViewportForOverlays(_imp->viewer);
+        bool didSmthing = effect->onOverlayKeyDown_public(scaleX,scaleY,k,km);
+        if (didSmthing) {
+            //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
+            // if the instance returns kOfxStatOK, the host should not pass the pen motion
+            
+            // to any other interactive object it may own that shares the same view.
+            _imp->lastOverlayNode = node;
+            return true;
+        }
+    }
+    return false;
+}
+
+bool
 ViewerTab::notifyOverlaysKeyDown(double scaleX,
                                  double scaleY,
                                  QKeyEvent* e)
@@ -1745,37 +1843,27 @@ ViewerTab::notifyOverlaysKeyDown(double scaleX,
     
     std::list<boost::shared_ptr<Natron::Node> >  nodes;
     getGui()->getNodesEntitledForOverlays(nodes);
-    for (std::list<boost::shared_ptr<Natron::Node> >::const_iterator it = nodes.begin();
-         it != nodes.end();
+    
+    boost::shared_ptr<Natron::Node> lastOverlay = _imp->lastOverlayNode.lock();
+    if (lastOverlay) {
+        for (std::list<boost::shared_ptr<Natron::Node> >::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+            if (*it == lastOverlay) {
+                if (notifyOverlaysKeyDown_internal(*it, scaleX, scaleY, e, natronKey, natronMod)) {
+                    return true;
+                } else {
+                    nodes.erase(it);
+                    break;
+                }
+            }
+        }
+    }
+
+    
+    for (std::list<boost::shared_ptr<Natron::Node> >::reverse_iterator it = nodes.rbegin();
+         it != nodes.rend();
          ++it) {
-        
-        if (_imp->currentRoto.first && (*it) == _imp->currentRoto.first->getNode()) {
-            
-            if ( _imp->currentRoto.second && _imp->currentRoto.first->isSettingsPanelVisible() ) {
-                if ( _imp->currentRoto.second->keyDown(scaleX, scaleY, e) ) {
-                    return true;
-                }
-            }
-        } else if (_imp->currentTracker.first && (*it) == _imp->currentTracker.first->getNode()) {
-            if ( _imp->currentTracker.second && _imp->currentTracker.first->isSettingsPanelVisible() ) {
-                if ( _imp->currentTracker.second->keyDown(scaleX, scaleY, e) ) {
-                    return true;
-                }
-            }
-            
-        } else {
-            
-            Natron::EffectInstance* effect = (*it)->getLiveInstance();
-            assert(effect);
-            effect->setCurrentViewportForOverlays(_imp->viewer);
-            bool didSmthing = effect->onOverlayKeyDown_public(scaleX,scaleY,natronKey,natronMod);
-            if (didSmthing) {
-                //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
-                // if the instance returns kOfxStatOK, the host should not pass the pen motion
-                
-                // to any other interactive object it may own that shares the same view.
-                return true;
-            }
+        if (notifyOverlaysKeyDown_internal(*it, scaleX, scaleY, e, natronKey, natronMod)) {
+            return true;
         }
     }
 
@@ -1793,6 +1881,8 @@ ViewerTab::notifyOverlaysKeyUp(double scaleX,
     if ( !_imp->app || _imp->app->isClosing() ) {
         return false;
     }
+    
+    _imp->lastOverlayNode.reset();
 
 
     std::list<boost::shared_ptr<Natron::Node> >  nodes;
@@ -1826,6 +1916,40 @@ ViewerTab::notifyOverlaysKeyUp(double scaleX,
 }
 
 bool
+ViewerTab::notifyOverlaysKeyRepeat_internal(const boost::shared_ptr<Natron::Node>& node,double scaleX,double scaleY,QKeyEvent* e,Natron::Key k,
+                                      Natron::KeyboardModifiers km)
+{
+    if (_imp->currentRoto.first && node == _imp->currentRoto.first->getNode()) {
+        
+        if ( _imp->currentRoto.second && _imp->currentRoto.first->isSettingsPanelVisible() ) {
+            if ( _imp->currentRoto.second->keyRepeat(scaleX, scaleY, e) ) {
+                _imp->lastOverlayNode = node;
+                return true;
+            }
+        }
+    } else {
+        //if (_imp->currentTracker.second && _imp->currentTracker.first->isSettingsPanelVisible()) {
+        //    if (_imp->currentTracker.second->loseFocus(scaleX, scaleY,e)) {
+        //        return true;
+        //    }
+        //}
+        Natron::EffectInstance* effect = node->getLiveInstance();
+        assert(effect);
+        effect->setCurrentViewportForOverlays(_imp->viewer);
+        bool didSmthing = effect->onOverlayKeyRepeat_public( scaleX,scaleY,k,km);
+        if (didSmthing) {
+            //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
+            // if the instance returns kOfxStatOK, the host should not pass the pen motion
+            
+            // to any other interactive object it may own that shares the same view.
+            _imp->lastOverlayNode = node;
+            return true;
+        }
+    }
+    return false;
+}
+
+bool
 ViewerTab::notifyOverlaysKeyRepeat(double scaleX,
                                    double scaleY,
                                    QKeyEvent* e)
@@ -1834,38 +1958,32 @@ ViewerTab::notifyOverlaysKeyRepeat(double scaleX,
         return false;
     }
     
+    Natron::Key natronKey = QtEnumConvert::fromQtKey( (Qt::Key)e->key() );
+    Natron::KeyboardModifiers natronMod = QtEnumConvert::fromQtModifiers( e->modifiers() );
+    
     std::list<boost::shared_ptr<Natron::Node> >  nodes;
     getGui()->getNodesEntitledForOverlays(nodes);
-    for (std::list<boost::shared_ptr<Natron::Node> >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        Natron::EffectInstance* effect = (*it)->getLiveInstance();
-        assert(effect);
-        
-        if (_imp->currentRoto.first && (*it) == _imp->currentRoto.first->getNode()) {
-            
-            if ( _imp->currentRoto.second && _imp->currentRoto.first->isSettingsPanelVisible() ) {
-                if ( _imp->currentRoto.second->keyRepeat(scaleX, scaleY, e) ) {
+    
+    boost::shared_ptr<Natron::Node> lastOverlay = _imp->lastOverlayNode.lock();
+    if (lastOverlay) {
+        for (std::list<boost::shared_ptr<Natron::Node> >::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+            if (*it == lastOverlay) {
+                if (notifyOverlaysKeyRepeat_internal(*it, scaleX, scaleY, e, natronKey, natronMod)) {
                     return true;
+                } else {
+                    nodes.erase(it);
+                    break;
                 }
             }
-        } else {
-            //if (_imp->currentTracker.second && _imp->currentTracker.first->isSettingsPanelVisible()) {
-            //    if (_imp->currentTracker.second->loseFocus(scaleX, scaleY,e)) {
-            //        return true;
-            //    }
-            //}
-            
-            effect->setCurrentViewportForOverlays(_imp->viewer);
-            bool didSmthing = effect->onOverlayKeyRepeat_public( scaleX,scaleY,
-                                                                QtEnumConvert::fromQtKey( (Qt::Key)e->key() ),QtEnumConvert::fromQtModifiers( e->modifiers() ) );
-            if (didSmthing) {
-                //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
-                // if the instance returns kOfxStatOK, the host should not pass the pen motion
-                
-                // to any other interactive object it may own that shares the same view.
-                return true;
-            }
         }
-        
+    }
+    
+
+    
+    for (std::list<boost::shared_ptr<Natron::Node> >::reverse_iterator it = nodes.rbegin(); it != nodes.rend(); ++it) {
+        if (notifyOverlaysKeyRepeat_internal(*it, scaleX, scaleY, e, natronKey, natronMod)) {
+            return true;
+        }
     }
 
    
