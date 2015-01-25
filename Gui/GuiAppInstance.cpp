@@ -850,3 +850,9 @@ GuiAppInstance::discardLastViewerUsingTimeline()
     QMutexLocker k(&_imp->lastTimelineViewerMutex);
     _imp->lastTimelineViewer.reset();
 }
+
+void
+GuiAppInstance::renderAllViewers()
+{
+    _imp->_gui->renderAllViewers();
+}

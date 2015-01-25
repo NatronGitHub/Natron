@@ -322,6 +322,8 @@ public:
     
     virtual ViewerInstance* getLastViewerUsingTimeline() const { return 0; }
     
+    virtual void renderAllViewers() {}
+    
 public slots:
 
     void quit();

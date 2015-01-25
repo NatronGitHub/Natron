@@ -447,6 +447,8 @@ public:
     
     void redrawAllViewers();
     
+    void renderAllViewers();
+    
     void toggleAutoHideGraphInputs();
     
 signals:

@@ -146,6 +146,8 @@ public:
     
     void discardLastViewerUsingTimeline();
     
+    virtual void renderAllViewers() OVERRIDE FINAL;
+    
 public slots:
     
     virtual void redrawAllViewers() OVERRIDE FINAL;

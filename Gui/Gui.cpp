@@ -4590,6 +4590,17 @@ Gui::redrawAllViewers()
 }
 
 void
+Gui::renderAllViewers()
+{
+    QMutexLocker k(&_imp->_viewerTabsMutex);
+    for (std::list<ViewerTab*>::const_iterator it = _imp->_viewerTabs.begin(); it!=_imp->_viewerTabs.end(); ++it) {
+        if ((*it)->isVisible()) {
+            (*it)->getInternalNode()->renderCurrentFrame(false);
+        }
+    }
+}
+
+void
 Gui::toggleAutoHideGraphInputs()
 {
     _imp->_nodeGraphArea->toggleAutoHideInputs(false);

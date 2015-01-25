@@ -362,6 +362,7 @@ public:
 
 	int isProjectAlreadyOpened(const std::string& projectFilePath) const;
 
+    
 public slots:
     
 

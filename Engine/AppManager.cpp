@@ -751,6 +751,10 @@ AppManager::clearAllCaches()
     for (std::map<int,AppInstanceRef>::iterator it = _imp->_appInstances.begin(); it != _imp->_appInstances.end(); ++it) {
         it->second.app->clearOpenFXPluginsCaches();
     }
+    
+    for (std::map<int,AppInstanceRef>::iterator it = _imp->_appInstances.begin(); it != _imp->_appInstances.end(); ++it) {
+        it->second.app->renderAllViewers();
+    }
 }
 
 std::vector<LibraryBinary*>
