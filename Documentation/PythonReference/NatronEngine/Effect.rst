@@ -4,7 +4,7 @@
 Effect
 ******
 
-**Inherits**: :doc:`Group`
+**Inherits**: :doc:`Group`, :doc:`UserParamHolder`
 
 Synopsis
 --------
@@ -19,25 +19,7 @@ Functions
 *    def :meth:`blockEvaluation<NatronEngine.Effect.blockEvaluation>` ()
 *    def :meth:`canConnectInput<NatronEngine.Effect.canConnectInput>` (inputNumber, node)
 *    def :meth:`connectInput<NatronEngine.Effect.connectInput>` (inputNumber, input)
-*    def :meth:`createBooleanParam<NatronEngine.Effect.createBooleanParam>` (name, label)
-*    def :meth:`createButtonParam<NatronEngine.Effect.createButtonParam>` (name, label)
 *    def :meth:`createChild<NatronEngine.Effect.createChild>` ()
-*    def :meth:`createChoiceParam<NatronEngine.Effect.createChoiceParam>` (name, label)
-*    def :meth:`createColorParam<NatronEngine.Effect.createColorParam>` (name, label, useAlpha)
-*    def :meth:`createDouble2DParam<NatronEngine.Effect.createDouble2DParam>` (name, label)
-*    def :meth:`createDouble3DParam<NatronEngine.Effect.createDouble3DParam>` (name, label)
-*    def :meth:`createDoubleParam<NatronEngine.Effect.createDoubleParam>` (name, label)
-*    def :meth:`createFileParam<NatronEngine.Effect.createFileParam>` (name, label)
-*    def :meth:`createGroupParam<NatronEngine.Effect.createGroupParam>` (name, label)
-*    def :meth:`createInt2DParam<NatronEngine.Effect.createInt2DParam>` (name, label)
-*    def :meth:`createInt3DParam<NatronEngine.Effect.createInt3DParam>` (name, label)
-*    def :meth:`createIntParam<NatronEngine.Effect.createIntParam>` (name, label)
-*    def :meth:`createOutputFileParam<NatronEngine.Effect.createOutputFileParam>` (name, label)
-*    def :meth:`createPageParam<NatronEngine.Effect.createPageParam>` (name, label)
-*    def :meth:`createParametricParam<NatronEngine.Effect.createParametricParam>` (name, label, nbCurves)
-*    def :meth:`createPathParam<NatronEngine.Effect.createPathParam>` (name, label)
-*    def :meth:`createStringParam<NatronEngine.Effect.createStringParam>` (name, label)
-*    def :meth:`removeParam<NatronEngine.Effect.removeParam>` (param)
 *    def :meth:`destroy<NatronEngine.Effect.destroy>` ([autoReconnect=true])
 *    def :meth:`disconnectInput<NatronEngine.Effect.disconnectInput>` (inputNumber)
 *    def :meth:`getColor<NatronEngine.Effect.getColor>` ()
@@ -54,7 +36,6 @@ Functions
 *    def :meth:`getScriptName<NatronEngine.Effect.getScriptName>` ()
 *    def :meth:`getSize<NatronEngine.Effect.getSize>` ()
 *    def :meth:`getUserPageParam<NatronEngine.Effect.getUserPageParam>` ()
-*    def :meth:`refreshUserParamsGUI<NatronEngine.Effect.refreshUserParamsGUI>` ()
 *    def :meth:`setColor<NatronEngine.Effect.setColor>` (r, g, b)
 *    def :meth:`setLabel<NatronEngine.Effect.setLabel>` (name)
 *    def :meth:`setPosition<NatronEngine.Effect.setPosition>` (x, y)
@@ -103,14 +84,8 @@ to control the GUI of the node (on the node graph):
 Creating user parameters
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
-To create a new user :doc:`parameter<Param>` on the Effect, use one of the **createXParam**
-function. To remove a user parameter created, use the :func:`removeParam(param)<NatronEngine.Effect.removeParam>`
-function. Note that this function can only be used to remove **user parameters** and cannot
-be used to remove parameters that were defined by the OpenFX plug-in.
+See :ref:`this section<userParams.details>`.
 
-Once you have made modifications to the user parameters, you must call the 
-:func:`refreshUserParamsGUI()<NatronEngine.Effect.refreshUserParamsGUI>` function to notify
-the GUI, otherwise no change will appear on the GUI. 
 
 
 Member functions description
@@ -176,47 +151,6 @@ This function calls internally :func:`canConnectInput()<NatronEngine.Effect.canC
 to determine if a connection is possible. 
 
 
-
-.. method:: NatronEngine.Effect.createBooleanParam(name, label)
-
-
-    :param name: :class:`str<NatronEngine.std::string>`
-    :param label: :class:`str<NatronEngine.std::string>`
-    :rtype: :class:`BooleanParam<NatronEngine.BooleanParam>`
-
-
-Creates a new user :doc:`parameter<Param>` with the given *name* and *label*. See
-:ref:`here<autoVar>` for an explanation of the difference between the *name* and *label*.
-This function will return a new parameter of type boolean which will appear in the user
-interface as a checkbox.
-
-.. warning::
-	
-	After calling this function you should call :func:`refreshUserParamsGUI()<NatronEngine.Effect.refreshUserParamsGUI>`
-	to refresh the user interface. The refreshing is done in a separate function because it may
-	be expensive and thus allows you to make multiple changes to user parameters at once
-	while keeping the user interface responsive.
-
-.. method:: NatronEngine.Effect.createButtonParam(name, label)
-
-
-    :param name: :class:`str<NatronEngine.std::string>`
-    :param label: :class:`str<NatronEngine.std::string>`
-    :rtype: :class:`ButtonParam<NatronEngine.ButtonParam>`
-
-
-Creates a new user :doc:`parameter<Param>` with the given *name* and *label*. See
-:ref:`here<autoVar>` for an explanation of the difference between the *name* and *label*.
-This function will return a new parameter of type button which will appear as a
-push button. Use the onParamChanged callback of the Effect to handle user clicks.
-	
-.. warning::
-	
-	After calling this function you should call :func:`refreshUserParamsGUI()<NatronEngine.Effect.refreshUserParamsGUI>`
-	to refresh the user interface. The refreshing is done in a separate function because it may
-	be expensive and thus allows you to make multiple changes to user parameters at once
-	while keeping the user interface responsive.
-
 .. method:: NatronEngine.Effect.createChild()
 
 
@@ -228,317 +162,6 @@ This is used for Trackers to create new tracks: internally each track is in fact
 separate node on its own.
 
 
-
-.. method:: NatronEngine.Effect.createChoiceParam(name, label)
-
-
-    :param name: :class:`str<NatronEngine.std::string>`
-    :param label: :class:`str<NatronEngine.std::string>`
-    :rtype: :class:`ChoiceParam<NatronEngine.ChoiceParam>`
-
-Creates a new user :doc:`parameter<Param>` with the given *name* and *label*. See
-:ref:`here<autoVar>` for an explanation of the difference between the *name* and *label*.
-This function will return a new parameter of type choice which will appear as a
-dropdown combobox. 
-
-.. warning::
-	
-	After calling this function you should call :func:`refreshUserParamsGUI()<NatronEngine.Effect.refreshUserParamsGUI>`
-	to refresh the user interface. The refreshing is done in a separate function because it may
-	be expensive and thus allows you to make multiple changes to user parameters at once
-	while keeping the user interface responsive.
-
-
-.. method:: NatronEngine.Effect.createColorParam(name, label, useAlpha)
-
-
-    :param name: :class:`str<NatronEngine.std::string>`
-    :param label: :class:`str<NatronEngine.std::string>`
-    :param useAlpha: :class:`bool<PySide.QtCore.bool>`
-    :rtype: :class:`ColorParam<NatronEngine.ColorParam>`
-
-Creates a new user :doc:`parameter<Param>` with the given *name* and *label*. See
-:ref:`here<autoVar>` for an explanation of the difference between the *name* and *label*.
-This function will return a new parameter of type color.
-
-.. warning::
-	
-	After calling this function you should call :func:`refreshUserParamsGUI()<NatronEngine.Effect.refreshUserParamsGUI>`
-	to refresh the user interface. The refreshing is done in a separate function because it may
-	be expensive and thus allows you to make multiple changes to user parameters at once
-	while keeping the user interface responsive.
-
-
-.. method:: NatronEngine.Effect.createDouble2DParam(name, label)
-
-
-    :param name: :class:`str<NatronEngine.std::string>`
-    :param label: :class:`str<NatronEngine.std::string>`
-    :rtype: :class:`Double2DParam<NatronEngine.Double2DParam>`
-
-Creates a new user :doc:`parameter<Param>` with the given *name* and *label*. See
-:ref:`here<autoVar>` for an explanation of the difference between the *name* and *label*.
-This function will return a new parameter of type double with 2 dimensions. 
-
-
-.. warning::
-	
-	After calling this function you should call :func:`refreshUserParamsGUI()<NatronEngine.Effect.refreshUserParamsGUI>`
-	to refresh the user interface. The refreshing is done in a separate function because it may
-	be expensive and thus allows you to make multiple changes to user parameters at once
-	while keeping the user interface responsive.
-
-.. method:: NatronEngine.Effect.createDouble3DParam(name, label)
-
-
-    :param name: :class:`str<NatronEngine.std::string>`
-    :param label: :class:`str<NatronEngine.std::string>`
-    :rtype: :class:`Double3DParam<NatronEngine.Double3DParam>`
-
-
-Creates a new user :doc:`parameter<Param>` with the given *name* and *label*. See
-:ref:`here<autoVar>` for an explanation of the difference between the *name* and *label*.
-This function will return a new parameter of type double with 3 dimensions.
-
-.. warning::
-
-    After calling this function you should call :func:`refreshUserParamsGUI()<NatronEngine.Effect.refreshUserParamsGUI>`
-    to refresh the user interface. The refreshing is done in a separate function because it may
-    be expensive and thus allows you to make multiple changes to user parameters at once
-    while keeping the user interface responsive.
-
-.. method:: NatronEngine.Effect.createDoubleParam(name, label)
-
-
-    :param name: :class:`str<NatronEngine.std::string>`
-    :param label: :class:`str<NatronEngine.std::string>`
-    :rtype: :class:`DoubleParam<NatronEngine.DoubleParam>`
-
-
-Creates a new user :doc:`parameter<Param>` with the given *name* and *label*. See
-:ref:`here<autoVar>` for an explanation of the difference between the *name* and *label*.
-This function will return a new parameter of type double with single dimension.
-A double is similar to a floating point value.
-
-.. warning::
-	
-    After calling this function you should call :func:`refreshUserParamsGUI()<NatronEngine.Effect.refreshUserParamsGUI>`
-    to refresh the user interface. The refreshing is done in a separate function because it may
-    be expensive and thus allows you to make multiple changes to user parameters at once
-    while keeping the user interface responsive.
-
-.. method:: NatronEngine.Effect.createFileParam(name, label)
-
-
-    :param name: :class:`str<NatronEngine.std::string>`
-    :param label: :class:`str<NatronEngine.std::string>`
-    :rtype: :class:`FileParam<NatronEngine.FileParam>`
-
-
-Creates a new user :doc:`parameter<Param>` with the given *name* and *label*. See
-:ref:`here<autoVar>` for an explanation of the difference between the *name* and *label*.
-This function will return a new parameter of type double with 2 dimensions.
-
-.. warning::
-	
-    After calling this function you should call :func:`refreshUserParamsGUI()<NatronEngine.Effect.refreshUserParamsGUI>`
-    to refresh the user interface. The refreshing is done in a separate function because it may
-    be expensive and thus allows you to make multiple changes to user parameters at once
-    while keeping the user interface responsive.
-
-.. method:: NatronEngine.Effect.createGroupParam(name, label)
-
-
-    :param name: :class:`str<NatronEngine.std::string>`
-    :param label: :class:`str<NatronEngine.std::string>`
-    :rtype: :class:`GroupParam<NatronEngine.GroupParam>`
-
-
-Creates a new user :doc:`parameter<Param>` with the given *name* and *label*. See
-:ref:`here<autoVar>` for an explanation of the difference between the *name* and *label*.
-This function will return a new parameter of type group. It can contain other
-children parameters and can be expanded or folded.
-
-.. warning::
-
-    After calling this function you should call :func:`refreshUserParamsGUI()<NatronEngine.Effect.refreshUserParamsGUI>`
-    to refresh the user interface. The refreshing is done in a separate function because it may
-    be expensive and thus allows you to make multiple changes to user parameters at once
-    while keeping the user interface responsive.
-
-.. method:: NatronEngine.Effect.createInt2DParam(name, label)
-
-
-    :param name: :class:`str<NatronEngine.std::string>`
-    :param label: :class:`str<NatronEngine.std::string>`
-    :rtype: :class:`Int2DParam<NatronEngine.Int2DParam>`
-
-Creates a new user :doc:`parameter<Param>` with the given *name* and *label*. See
-:ref:`here<autoVar>` for an explanation of the difference between the *name* and *label*.
-This function will return a new parameter of type integer with 2 dimensions.
-
-.. warning::
-
-    After calling this function you should call :func:`refreshUserParamsGUI()<NatronEngine.Effect.refreshUserParamsGUI>`
-    to refresh the user interface. The refreshing is done in a separate function because it may
-    be expensive and thus allows you to make multiple changes to user parameters at once
-    while keeping the user interface responsive.
-
-
-.. method:: NatronEngine.Effect.createInt3DParam(name, label)
-
-
-    :param name: :class:`str<NatronEngine.std::string>`
-    :param label: :class:`str<NatronEngine.std::string>`
-    :rtype: :class:`Int3DParam<NatronEngine.Int3DParam>`
-
-
-Creates a new user :doc:`parameter<Param>` with the given *name* and *label*. See
-:ref:`here<autoVar>` for an explanation of the difference between the *name* and *label*.
-This function will return a new parameter of type integer with 3 dimensions.
-
-.. warning::
-
-    Afer calling this function you should call :func:`refreshUserParamsGUI()<NatronEngine.Effect.refreshUserParamsGUI>`
-    to refresh the user interface. The refreshing is done in a separate function because it may
-    be expensive and thus allows you to make multiple changes to user parameters at once
-    while keeping the user interface responsive.
-
-.. method:: NatronEngine.Effect.createIntParam(name, label)
-
-
-    :param name: :class:`str<NatronEngine.std::string>`
-    :param label: :class:`str<NatronEngine.std::string>`
-    :rtype: :class:`IntParam<NatronEngine.IntParam>`
-
-Creates a new user :doc:`parameter<Param>` with the given *name* and *label*. See
-:ref:`here<autoVar>` for an explanation of the difference between the *name* and *label*.
-This function will return a new parameter of type integer with a single dimension.
-
-.. warning::
-
-    After calling this function you should call :func:`refreshUserParamsGUI()<NatronEngine.Effect.refreshUserParamsGUI>`
-    to refresh the user interface. The refreshing is done in a separate function because it may
-    be expensive and thus allows you to make multiple changes to user parameters at once
-    while keeping the user interface responsive.
-
-
-.. method:: NatronEngine.Effect.createOutputFileParam(name, label)
-
-
-    :param name: :class:`str<NatronEngine.std::string>`
-    :param label: :class:`str<NatronEngine.std::string>`
-    :rtype: :class:`OutputFileParam<NatronEngine.OutputFileParam>`
-
-Creates a new user :doc:`parameter<Param>` with the given *name* and *label*. See
-:ref:`here<autoVar>` for an explanation of the difference between the *name* and *label*.
-This function will return a new parameter of type string dedicated to specify
-paths to output files.
-
-.. warning::
-
-    After calling this function you should call :func:`refreshUserParamsGUI()<NatronEngine.Effect.refreshUserParamsGUI>`
-    to refresh the user interface. The refreshing is done in a separate function because it may
-    be expensive and thus allows you to make multiple changes to user parameters at once
-    while keeping the user interface responsive.
-
-
-.. method:: NatronEngine.Effect.createPageParam(name, label)
-
-
-    :param name: :class:`str<NatronEngine.std::string>`
-    :param label: :class:`str<NatronEngine.std::string>`
-    :rtype: :class:`PageParam<NatronEngine.PageParam>`
-
-
-Creates a new user :doc:`parameter<Param>` with the given *name* and *label*. See
-:ref:`here<autoVar>` for an explanation of the difference between the *name* and *label*.
-This function will return a new parameter of type page. A page is a tab within the
-settings panel of the node.
-
-.. warning::
-	
-    After calling this function you should call :func:`refreshUserParamsGUI()<NatronEngine.Effect.refreshUserParamsGUI>`
-    to refresh the user interface. The refreshing is done in a separate function because it may
-    be expensive and thus allows you to make multiple changes to user parameters at once
-    while keeping the user interface responsive.
-	
-.. method:: NatronEngine.Effect.createParametricParam(name, label, nbCurves)
-
-
-    :param name: :class:`str<NatronEngine.std::string>`
-    :param label: :class:`str<NatronEngine.std::string>`
-    :param nbCurves: :class:`int<PySide.QtCore.int>`
-    :rtype: :class:`ParametricParam<NatronEngine.ParametricParam>`
-
-
-Creates a new user :doc:`parameter<Param>` with the given *name* and *label*. See
-:ref:`here<autoVar>` for an explanation of the difference between the *name* and *label*.
-This function will return a new parameter of type parametric. A parametric parameter
-is what can be found in the ColorLookup node or in the Ranges tab of the ColorCorrect
-node.
-
-.. warning::
-
-    After calling this function you should call :func:`refreshUserParamsGUI()<NatronEngine.Effect.refreshUserParamsGUI>`
-    to refresh the user interface. The refreshing is done in a separate function because it may
-    be expensive and thus allows you to make multiple changes to user parameters at once
-    while keeping the user interface responsive.
-
-.. method:: NatronEngine.Effect.createPathParam(name, label)
-
-
-    :param name: :class:`str<NatronEngine.std::string>`
-    :param label: :class:`str<NatronEngine.std::string>`
-    :rtype: :class:`PathParam<NatronEngine.PathParam>`
-
-
-Creates a new user :doc:`parameter<Param>` with the given *name* and *label*. See
-:ref:`here<autoVar>` for an explanation of the difference between the *name* and *label*.
-This function will return a new parameter of type string. This parameter is dedicated
-to specify path to single or multiple directories.
-
-.. warning::
-
-    After calling this function you should call :func:`refreshUserParamsGUI()<NatronEngine.Effect.refreshUserParamsGUI>`
-    to refresh the user interface. The refreshing is done in a separate function because it may
-    be expensive and thus allows you to make multiple changes to user parameters at once
-    while keeping the user interface responsive.
-
-.. method:: NatronEngine.Effect.createStringParam(name, label)
-
-
-    :param name: :class:`str<NatronEngine.std::string>`
-    :param label: :class:`str<NatronEngine.std::string>`
-    :rtype: :class:`StringParam<NatronEngine.StringParam>`
-
-Creates a new user :doc:`parameter<Param>` with the given *name* and *label*. See
-:ref:`here<autoVar>` for an explanation of the difference between the *name* and *label*.
-This function will return a new parameter of type string.
-
-.. warning::
-
-    After calling this function you should call :func:`refreshUserParamsGUI()<NatronEngine.Effect.refreshUserParamsGUI>`
-    to refresh the user interface. The refreshing is done in a separate function because it may
-    be expensive and thus allows you to make multiple changes to user parameters at once
-    while keeping the user interface responsive.
-
-.. method:: NatronEngine.Effect.removeParam(param)
-
-
-    :param param: :class:`Param<NatronEngine.Param>`
-    :rtype: :class:`bool<PySide.QtCore.bool>`
-
-Removes the given *param* from the parameters of this Effect.
-This function works only if *param* is a user parameter and does nothing otherwise.
-This function returns True upon success and False otherwise.
-
-.. warning::
-
-    After calling this function you should call :func:`refreshUserParamsGUI()<NatronEngine.Effect.refreshUserParamsGUI>`
-    to refresh the user interface. The refreshing is done in a separate function because it may
-    be expensive and thus allows you to make multiple changes to user parameters at once
-    while keeping the user interface responsive.
 
 .. method:: NatronEngine.Effect.destroy([autoReconnect=true])
 
@@ -711,15 +334,6 @@ should not be used.
 
 
 Convenience function to return the user page parameter if this Effect has one.
-
-
-
-.. method:: NatronEngine.Effect.refreshUserParamsGUI()
-
-
-
-This function must be called after new user parameter were created or removed.
-This will re-create the user interface for the parameters and can be expensive.
 
 
 

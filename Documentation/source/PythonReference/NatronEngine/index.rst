@@ -49,7 +49,7 @@ without importing anything.
 	Roto
 	StringParam
 	StringParamBase
-
+	UserParamHolder
  
 
 

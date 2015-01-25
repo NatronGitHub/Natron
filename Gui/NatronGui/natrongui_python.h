@@ -50,7 +50,7 @@
 // Type indices
 #define SBK_PYGUIAPPLICATION_IDX                                     1
 #define SBK_GUIAPP_IDX                                               0
-#define SBK_NatronGui_IDX_COUNT                                      2
+#define SBK_NatronGui_IDX_COUNT                                      3
 
 // This variable stores all Python types exported by this module.
 extern PyTypeObject** SbkNatronGuiTypes;

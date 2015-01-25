@@ -25,10 +25,10 @@ void init_PyGuiApplication(PyObject* module);
 // Required modules' type and converter arrays.
 PyTypeObject** SbkPySide_QtGuiTypes;
 SbkConverter** SbkPySide_QtGuiTypeConverters;
-/*PyTypeObject** SbkPySide_QtCoreTypes;
+PyTypeObject** SbkPySide_QtCoreTypes;
 SbkConverter** SbkPySide_QtCoreTypeConverters;
 PyTypeObject** SbkNatronEngineTypes;
-SbkConverter** SbkNatronEngineTypeConverters;*/
+SbkConverter** SbkNatronEngineTypeConverters;
 
 // Module initialization ------------------------------------------------------------
 // Container Type converters.

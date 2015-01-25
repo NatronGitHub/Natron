@@ -88,6 +88,7 @@ SOURCES += \
     PreferencesPanel.cpp \
     ProjectGui.cpp \
     ProjectGuiSerialization.cpp \
+    PythonPanels.cpp \
     QtDecoder.cpp \
     QtEncoder.cpp \
     RenderingProgressDialog.cpp \
@@ -163,6 +164,7 @@ HEADERS += \
     ProjectGui.h \
     ProjectGuiSerialization.h \
     Pyside_Gui_Python.h \
+    PythonPanels.h \
     QtDecoder.h \
     QtEncoder.h \
     RenderingProgressDialog.h \

@@ -16,6 +16,8 @@
 #include "Engine/AppInstanceWrapper.h"
 #include "Gui/GuiAppInstance.h"
 
+class PyModalDialog;
+
 class GuiApp : public App
 {
     GuiAppInstance* _app;
@@ -25,6 +27,8 @@ public:
     GuiApp(AppInstance* app);
     
     virtual ~GuiApp();
+    
+    PyModalDialog* createModalDialog();
 };
 
 #endif // GUIAPPWRAPPER_H

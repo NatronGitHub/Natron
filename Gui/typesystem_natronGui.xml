@@ -29,5 +29,6 @@
 
     </object-type>
 
-
+	<object-type name="PyModalDialog">
+	</object-type>
 </typesystem>

@@ -51,8 +51,132 @@ class ButtonParam;
 class GroupParam;
 class PageParam;
 class ParametricParam;
+class KnobHolder;
 
-class Effect : public Group
+class UserParamHolder
+{
+    KnobHolder* _holder;
+public:
+    
+    UserParamHolder()
+    {
+        
+    }
+    
+    UserParamHolder(KnobHolder* holder)
+    : _holder(holder)
+    {
+        
+    }
+    
+    virtual ~UserParamHolder() {}
+    
+    void setHolder(KnobHolder* holder)
+    {
+        assert(!_holder);
+        _holder = holder;
+    }
+    
+    /////////////Functions to create custom parameters//////////////////////////
+    ///////////////////////////////////////////////////////////////////////////
+    //////////// A parameter may have some properties set after creation, though most of them are not dynamic:
+    //////////// they need to be set before calling refreshUserParamsGUI() which will create the GUI for these parameters.
+    //////////// Here's a list of the properties and whether they must be set before refreshUserParamsGUI() or can be set
+    //////////// dynamically after refreshUserParamsGUI() was called. A non-dynamic property can no longer be changed once
+    //////////// refreshUserParamsGUI() has been called.
+    //////////// If a Setter function contains a (*) that means it can only be called for user parameters,
+    //////////// it has no effect on already declared non-user parameters.
+    ////////////
+    //////////// Name:              Type:           Dynamic:            Setter:                 Getter:               Default:
+    ////////////
+    //////////// name               string          no                  None                    getScriptName         ""
+    //////////// label              string          no                  None                    getLabel              ""
+    //////////// help               string          yes                 setHelp(*)              getHelp               ""
+    //////////// addNewLine         bool            no                  setAddNewLine(*)        getAddNewLine         True
+    //////////// persistent         bool            yes                 setPersistant(*)        getIsPersistant       True
+    //////////// evaluatesOnChange  bool            yes                 setEvaluateOnChange(*)  getEvaluateOnChange   True
+    //////////// animates           bool            no                  setAnimationEnabled(*)  getIsAnimationEnabled (1)
+    //////////// visible            bool            yes                 setVisible              getIsVisible          True
+    //////////// enabled            bool            yes                 setEnabled              getIsEnabled          True
+    ////////////
+    //////////// Properties on IntParam, Int2DParam, Int3DParam, DoubleParam, Double2DParam, Double3DParam, ColorParam only:
+    ////////////
+    //////////// min                int/double      yes                 setMinimum(*)            getMinimum            INT_MIN
+    //////////// max                int/double      yes                 setMaximum(*)            getMaximum            INT_MAX
+    //////////// displayMin         int/double      yes                 setDisplayMinimum(*)     getDisplayMinimum     INT_MIN
+    //////////// displayMax         int/double      yes                 setDisplayMaximum(*)     getDisplayMaximum     INT_MAX
+    ////////////
+    //////////// Properties on ChoiceParam only:
+    ////////////
+    //////////// options            list<string>    yes                 setOptions/addOption(*)  getOption             empty list
+    ////////////
+    //////////// Properties on FileParam, OutputFileParam only:
+    ////////////
+    //////////// sequenceDialog     bool            yes                 setSequenceEnabled(*)    None                  False
+    ////////////
+    //////////// Properties on StringParam only:
+    ////////////
+    //////////// type               TypeEnum        no                  setType(*)               None                  eStringTypeDefault
+    ////////////
+    //////////// Properties on PathParam only:
+    ////////////
+    //////////// multiPathTable     bool            no                  setAsMultiPathTable(*)   None                  False
+    ////////////
+    ////////////
+    //////////// Properties on GroupParam only:
+    ////////////
+    //////////// isTab              bool            no                  setAsTab(*)              None                   False
+    ////////////
+    ////////////
+    ////////////  (1): animates is set to True by default only if it is one of the following parameters:
+    ////////////  IntParam Int2DParam Int3DParam
+    ////////////  DoubleParam Double2DParam Double3DParam
+    ////////////  ColorParam
+    ////////////
+    ////////////  Note that ParametricParam , GroupParam, PageParam, ButtonParam, FileParam, OutputFileParam,
+    ////////////  PathParam cannot animate at all.
+    
+    IntParam* createIntParam(const std::string& name, const std::string& label);
+    Int2DParam* createInt2DParam(const std::string& name, const std::string& label);
+    Int3DParam* createInt3DParam(const std::string& name, const std::string& label);
+    
+    DoubleParam* createDoubleParam(const std::string& name, const std::string& label);
+    Double2DParam* createDouble2DParam(const std::string& name, const std::string& label);
+    Double3DParam* createDouble3DParam(const std::string& name, const std::string& label);
+    
+    BooleanParam* createBooleanParam(const std::string& name, const std::string& label);
+    
+    ChoiceParam* createChoiceParam(const std::string& name, const std::string& label);
+    
+    ColorParam* createColorParam(const std::string& name, const std::string& label, bool useAlpha);
+    
+    StringParam* createStringParam(const std::string& name, const std::string& label);
+    
+    FileParam* createFileParam(const std::string& name, const std::string& label);
+    
+    OutputFileParam* createOutputFileParam(const std::string& name, const std::string& label);
+    
+    PathParam* createPathParam(const std::string& name, const std::string& label);
+    
+    ButtonParam* createButtonParam(const std::string& name, const std::string& label);
+    
+    GroupParam* createGroupParam(const std::string& name, const std::string& label);
+    
+    PageParam* createPageParam(const std::string& name, const std::string& label);
+    
+    ParametricParam* createParametricParam(const std::string& name, const std::string& label,int nbCurves);
+    
+    bool removeParam(Param* param);
+    
+    /**
+     * @brief To be called once you have added or removed any user parameter to update the GUI with the changes.
+     * This may be expensive so try to minimize the number of calls to this function.
+     **/
+    void refreshUserParamsGUI();
+
+};
+
+class Effect : public Group, public UserParamHolder
 {
     boost::shared_ptr<Natron::Node> _node;
     
@@ -174,102 +298,6 @@ public:
     void getColor(double* r,double *g, double* b) const;
     void setColor(double r, double g, double b);
     
-    /////////////Functions to create custom parameters//////////////////////////
-    ///////////////////////////////////////////////////////////////////////////
-    //////////// A parameter may have some properties set after creation, though most of them are not dynamic:
-    //////////// they need to be set before calling refreshUserParamsGUI() which will create the GUI for these parameters.
-    //////////// Here's a list of the properties and whether they must be set before refreshUserParamsGUI() or can be set
-    //////////// dynamically after refreshUserParamsGUI() was called. A non-dynamic property can no longer be changed once
-    //////////// refreshUserParamsGUI() has been called.
-    //////////// If a Setter function contains a (*) that means it can only be called for user parameters,
-    //////////// it has no effect on already declared non-user parameters.
-    ////////////
-    //////////// Name:              Type:           Dynamic:            Setter:                 Getter:               Default:
-    ////////////
-    //////////// name               string          no                  None                    getScriptName         ""
-    //////////// label              string          no                  None                    getLabel              ""
-    //////////// help               string          yes                 setHelp(*)              getHelp               ""
-    //////////// addNewLine         bool            no                  setAddNewLine(*)        getAddNewLine         True
-    //////////// persistent         bool            yes                 setPersistant(*)        getIsPersistant       True
-    //////////// evaluatesOnChange  bool            yes                 setEvaluateOnChange(*)  getEvaluateOnChange   True
-    //////////// animates           bool            no                  setAnimationEnabled(*)  getIsAnimationEnabled (1)
-    //////////// visible            bool            yes                 setVisible              getIsVisible          True
-    //////////// enabled            bool            yes                 setEnabled              getIsEnabled          True
-    ////////////
-    //////////// Properties on IntParam, Int2DParam, Int3DParam, DoubleParam, Double2DParam, Double3DParam, ColorParam only:
-    ////////////
-    //////////// min                int/double      yes                 setMinimum(*)            getMinimum            INT_MIN
-    //////////// max                int/double      yes                 setMaximum(*)            getMaximum            INT_MAX
-    //////////// displayMin         int/double      yes                 setDisplayMinimum(*)     getDisplayMinimum     INT_MIN
-    //////////// displayMax         int/double      yes                 setDisplayMaximum(*)     getDisplayMaximum     INT_MAX
-    ////////////
-    //////////// Properties on ChoiceParam only:
-    ////////////
-    //////////// options            list<string>    yes                 setOptions/addOption(*)  getOption             empty list
-    ////////////
-    //////////// Properties on FileParam, OutputFileParam only:
-    ////////////
-    //////////// sequenceDialog     bool            yes                 setSequenceEnabled(*)    None                  False
-    ////////////
-    //////////// Properties on StringParam only:
-    ////////////
-    //////////// type               TypeEnum        no                  setType(*)               None                  eStringTypeDefault
-    ////////////
-    //////////// Properties on PathParam only:
-    ////////////
-    //////////// multiPathTable     bool            no                  setAsMultiPathTable(*)   None                  False
-    ////////////
-    ////////////
-    //////////// Properties on GroupParam only:
-    ////////////
-    //////////// isTab              bool            no                  setAsTab(*)              None                   False
-    ////////////
-    ////////////
-    ////////////  (1): animates is set to True by default only if it is one of the following parameters:
-    ////////////  IntParam Int2DParam Int3DParam
-    ////////////  DoubleParam Double2DParam Double3DParam
-    ////////////  ColorParam
-    ////////////
-    ////////////  Note that ParametricParam , GroupParam, PageParam, ButtonParam, FileParam, OutputFileParam,
-    ////////////  PathParam cannot animate at all.
-    
-    IntParam* createIntParam(const std::string& name, const std::string& label);
-    Int2DParam* createInt2DParam(const std::string& name, const std::string& label);
-    Int3DParam* createInt3DParam(const std::string& name, const std::string& label);
-    
-    DoubleParam* createDoubleParam(const std::string& name, const std::string& label);
-    Double2DParam* createDouble2DParam(const std::string& name, const std::string& label);
-    Double3DParam* createDouble3DParam(const std::string& name, const std::string& label);
-    
-    BooleanParam* createBooleanParam(const std::string& name, const std::string& label);
-    
-    ChoiceParam* createChoiceParam(const std::string& name, const std::string& label);
-    
-    ColorParam* createColorParam(const std::string& name, const std::string& label, bool useAlpha);
-    
-    StringParam* createStringParam(const std::string& name, const std::string& label);
-    
-    FileParam* createFileParam(const std::string& name, const std::string& label);
-    
-    OutputFileParam* createOutputFileParam(const std::string& name, const std::string& label);
-    
-    PathParam* createPathParam(const std::string& name, const std::string& label);
-    
-    ButtonParam* createButtonParam(const std::string& name, const std::string& label);
-    
-    GroupParam* createGroupParam(const std::string& name, const std::string& label);
-    
-    PageParam* createPageParam(const std::string& name, const std::string& label);
-    
-    ParametricParam* createParametricParam(const std::string& name, const std::string& label,int nbCurves);
-    
-    bool removeParam(Param* param);
-    
-    /**
-     * @brief To be called once you have added or removed any user parameter to update the GUI with the changes.
-     * This may be expensive so try to minimize the number of calls to this function.
-     **/
-    void refreshUserParamsGUI();
     
     /**
      * @brief Get the user page param. Note that user created params (with the function above) may only be added to user created pages,

@@ -21,7 +21,6 @@ static PyMethodDef NatronEngine_methods[] = {
 // Classes initialization functions ------------------------------------------------------------
 void init_PyCoreApplication(PyObject* module);
 void init_Group(PyObject* module);
-void init_Effect(PyObject* module);
 void init_App(PyObject* module);
 void init_AppSettings(PyObject* module);
 void init_RenderTask(PyObject* module);
@@ -29,8 +28,13 @@ void init_ItemBase(PyObject* module);
 void init_Layer(PyObject* module);
 void init_BezierCurve(PyObject* module);
 void init_Roto(PyObject* module);
+void init_UserParamHolder(PyObject* module);
+void init_Effect(PyObject* module);
 void init_Param(PyObject* module);
 void init_AnimatedParam(PyObject* module);
+void init_DoubleParam(PyObject* module);
+void init_Double2DParam(PyObject* module);
+void init_Double3DParam(PyObject* module);
 void init_ColorParam(PyObject* module);
 void init_ChoiceParam(PyObject* module);
 void init_BooleanParam(PyObject* module);
@@ -42,9 +46,6 @@ void init_PathParam(PyObject* module);
 void init_IntParam(PyObject* module);
 void init_Int2DParam(PyObject* module);
 void init_Int3DParam(PyObject* module);
-void init_DoubleParam(PyObject* module);
-void init_Double2DParam(PyObject* module);
-void init_Double3DParam(PyObject* module);
 void init_ButtonParam(PyObject* module);
 void init_GroupParam(PyObject* module);
 void init_PageParam(PyObject* module);
@@ -473,7 +474,6 @@ SBK_MODULE_INIT_FUNCTION_BEGIN(NatronEngine)
     // Initialize classes in the type system
     init_PyCoreApplication(module);
     init_Group(module);
-    init_Effect(module);
     init_App(module);
     init_AppSettings(module);
     init_RenderTask(module);
@@ -481,8 +481,13 @@ SBK_MODULE_INIT_FUNCTION_BEGIN(NatronEngine)
     init_Layer(module);
     init_BezierCurve(module);
     init_Roto(module);
+    init_UserParamHolder(module);
+    init_Effect(module);
     init_Param(module);
     init_AnimatedParam(module);
+    init_DoubleParam(module);
+    init_Double2DParam(module);
+    init_Double3DParam(module);
     init_ColorParam(module);
     init_ChoiceParam(module);
     init_BooleanParam(module);
@@ -494,9 +499,6 @@ SBK_MODULE_INIT_FUNCTION_BEGIN(NatronEngine)
     init_IntParam(module);
     init_Int2DParam(module);
     init_Int3DParam(module);
-    init_DoubleParam(module);
-    init_Double2DParam(module);
-    init_Double3DParam(module);
     init_ButtonParam(module);
     init_GroupParam(module);
     init_PageParam(module);

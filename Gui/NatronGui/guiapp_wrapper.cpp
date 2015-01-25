@@ -27,7 +27,36 @@ GuiAppWrapper::~GuiAppWrapper()
 // Target ---------------------------------------------------------
 
 extern "C" {
+static PyObject* Sbk_GuiAppFunc_createModalDialog(PyObject* self)
+{
+    ::GuiApp* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::GuiApp*)Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_GUIAPP_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+
+    // Call function/method
+    {
+
+        if (!PyErr_Occurred()) {
+            // createModalDialog()
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            PyModalDialog * cppResult = cppSelf->createModalDialog();
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronGuiTypes[SBK_PYMODALDIALOG_IDX], cppResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+}
+
 static PyMethodDef Sbk_GuiApp_methods[] = {
+    {"createModalDialog", (PyCFunction)Sbk_GuiAppFunc_createModalDialog, METH_NOARGS},
 
     {0} // Sentinel
 };
