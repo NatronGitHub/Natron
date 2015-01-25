@@ -17,12 +17,12 @@ E.g::
 	if not natron.isBackground():
 		# do GUI only stuff here
 
+
 .. toctree::
-	:maxdepth: 1
+    :maxdepth: 1
 	
-	GuiApp
-	PyGuiApplication
-
-
+    GuiApp
+    PyGuiApplication
+    PyModalDialog
 
 

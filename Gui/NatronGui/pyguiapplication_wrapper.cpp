@@ -63,6 +63,63 @@ Sbk_PyGuiApplication_Init(PyObject* self, PyObject* args, PyObject* kwds)
     return 1;
 }
 
+static PyObject* Sbk_PyGuiApplicationFunc_errorDialog(PyObject* self, PyObject* args)
+{
+    ::PyGuiApplication* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::PyGuiApplication*)Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYGUIAPPLICATION_IDX], (SbkObject*)self));
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp[] = { 0, 0 };
+    SBK_UNUSED(pythonToCpp)
+    int numArgs = PyTuple_GET_SIZE(args);
+    PyObject* pyArgs[] = {0, 0};
+
+    // invalid argument lengths
+
+
+    if (!PyArg_UnpackTuple(args, "errorDialog", 2, 2, &(pyArgs[0]), &(pyArgs[1])))
+        return 0;
+
+
+    // Overloaded function decisor
+    // 0: errorDialog(std::string,std::string)
+    if (numArgs == 2
+        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[0])))
+        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[1])))) {
+        overloadId = 0; // errorDialog(std::string,std::string)
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_PyGuiApplicationFunc_errorDialog_TypeError;
+
+    // Call function/method
+    {
+        ::std::string cppArg0;
+        pythonToCpp[0](pyArgs[0], &cppArg0);
+        ::std::string cppArg1;
+        pythonToCpp[1](pyArgs[1], &cppArg1);
+
+        if (!PyErr_Occurred()) {
+            // errorDialog(std::string,std::string)
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            cppSelf->errorDialog(cppArg0, cppArg1);
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+        }
+    }
+
+    if (PyErr_Occurred()) {
+        return 0;
+    }
+    Py_RETURN_NONE;
+
+    Sbk_PyGuiApplicationFunc_errorDialog_TypeError:
+        const char* overloads[] = {"std::string, std::string", 0};
+        Shiboken::setErrorAboutWrongArguments(args, "NatronGui.PyGuiApplication.errorDialog", overloads);
+        return 0;
+}
+
 static PyObject* Sbk_PyGuiApplicationFunc_getGuiInstance(PyObject* self, PyObject* pyArg)
 {
     ::PyGuiApplication* cppSelf = 0;
@@ -113,8 +170,186 @@ static PyObject* Sbk_PyGuiApplicationFunc_getGuiInstance(PyObject* self, PyObjec
         return 0;
 }
 
+static PyObject* Sbk_PyGuiApplicationFunc_informationDialog(PyObject* self, PyObject* args)
+{
+    ::PyGuiApplication* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::PyGuiApplication*)Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYGUIAPPLICATION_IDX], (SbkObject*)self));
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp[] = { 0, 0 };
+    SBK_UNUSED(pythonToCpp)
+    int numArgs = PyTuple_GET_SIZE(args);
+    PyObject* pyArgs[] = {0, 0};
+
+    // invalid argument lengths
+
+
+    if (!PyArg_UnpackTuple(args, "informationDialog", 2, 2, &(pyArgs[0]), &(pyArgs[1])))
+        return 0;
+
+
+    // Overloaded function decisor
+    // 0: informationDialog(std::string,std::string)
+    if (numArgs == 2
+        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[0])))
+        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[1])))) {
+        overloadId = 0; // informationDialog(std::string,std::string)
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_PyGuiApplicationFunc_informationDialog_TypeError;
+
+    // Call function/method
+    {
+        ::std::string cppArg0;
+        pythonToCpp[0](pyArgs[0], &cppArg0);
+        ::std::string cppArg1;
+        pythonToCpp[1](pyArgs[1], &cppArg1);
+
+        if (!PyErr_Occurred()) {
+            // informationDialog(std::string,std::string)
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            cppSelf->informationDialog(cppArg0, cppArg1);
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+        }
+    }
+
+    if (PyErr_Occurred()) {
+        return 0;
+    }
+    Py_RETURN_NONE;
+
+    Sbk_PyGuiApplicationFunc_informationDialog_TypeError:
+        const char* overloads[] = {"std::string, std::string", 0};
+        Shiboken::setErrorAboutWrongArguments(args, "NatronGui.PyGuiApplication.informationDialog", overloads);
+        return 0;
+}
+
+static PyObject* Sbk_PyGuiApplicationFunc_questionDialog(PyObject* self, PyObject* args)
+{
+    ::PyGuiApplication* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::PyGuiApplication*)Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYGUIAPPLICATION_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp[] = { 0, 0 };
+    SBK_UNUSED(pythonToCpp)
+    int numArgs = PyTuple_GET_SIZE(args);
+    PyObject* pyArgs[] = {0, 0};
+
+    // invalid argument lengths
+
+
+    if (!PyArg_UnpackTuple(args, "questionDialog", 2, 2, &(pyArgs[0]), &(pyArgs[1])))
+        return 0;
+
+
+    // Overloaded function decisor
+    // 0: questionDialog(std::string,std::string)
+    if (numArgs == 2
+        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[0])))
+        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[1])))) {
+        overloadId = 0; // questionDialog(std::string,std::string)
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_PyGuiApplicationFunc_questionDialog_TypeError;
+
+    // Call function/method
+    {
+        ::std::string cppArg0;
+        pythonToCpp[0](pyArgs[0], &cppArg0);
+        ::std::string cppArg1;
+        pythonToCpp[1](pyArgs[1], &cppArg1);
+
+        if (!PyErr_Occurred()) {
+            // questionDialog(std::string,std::string)
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            Natron::StandardButtonEnum cppResult = cppSelf->questionDialog(cppArg0, cppArg1);
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            pyResult = Shiboken::Conversions::copyToPython(SBK_CONVERTER(SbkNatronEngineTypes[SBK_NATRON_STANDARDBUTTONENUM_IDX]), &cppResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+
+    Sbk_PyGuiApplicationFunc_questionDialog_TypeError:
+        const char* overloads[] = {"std::string, std::string", 0};
+        Shiboken::setErrorAboutWrongArguments(args, "NatronGui.PyGuiApplication.questionDialog", overloads);
+        return 0;
+}
+
+static PyObject* Sbk_PyGuiApplicationFunc_warningDialog(PyObject* self, PyObject* args)
+{
+    ::PyGuiApplication* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::PyGuiApplication*)Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYGUIAPPLICATION_IDX], (SbkObject*)self));
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp[] = { 0, 0 };
+    SBK_UNUSED(pythonToCpp)
+    int numArgs = PyTuple_GET_SIZE(args);
+    PyObject* pyArgs[] = {0, 0};
+
+    // invalid argument lengths
+
+
+    if (!PyArg_UnpackTuple(args, "warningDialog", 2, 2, &(pyArgs[0]), &(pyArgs[1])))
+        return 0;
+
+
+    // Overloaded function decisor
+    // 0: warningDialog(std::string,std::string)
+    if (numArgs == 2
+        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[0])))
+        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[1])))) {
+        overloadId = 0; // warningDialog(std::string,std::string)
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_PyGuiApplicationFunc_warningDialog_TypeError;
+
+    // Call function/method
+    {
+        ::std::string cppArg0;
+        pythonToCpp[0](pyArgs[0], &cppArg0);
+        ::std::string cppArg1;
+        pythonToCpp[1](pyArgs[1], &cppArg1);
+
+        if (!PyErr_Occurred()) {
+            // warningDialog(std::string,std::string)
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            cppSelf->warningDialog(cppArg0, cppArg1);
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+        }
+    }
+
+    if (PyErr_Occurred()) {
+        return 0;
+    }
+    Py_RETURN_NONE;
+
+    Sbk_PyGuiApplicationFunc_warningDialog_TypeError:
+        const char* overloads[] = {"std::string, std::string", 0};
+        Shiboken::setErrorAboutWrongArguments(args, "NatronGui.PyGuiApplication.warningDialog", overloads);
+        return 0;
+}
+
 static PyMethodDef Sbk_PyGuiApplication_methods[] = {
+    {"errorDialog", (PyCFunction)Sbk_PyGuiApplicationFunc_errorDialog, METH_VARARGS},
     {"getGuiInstance", (PyCFunction)Sbk_PyGuiApplicationFunc_getGuiInstance, METH_O},
+    {"informationDialog", (PyCFunction)Sbk_PyGuiApplicationFunc_informationDialog, METH_VARARGS},
+    {"questionDialog", (PyCFunction)Sbk_PyGuiApplicationFunc_questionDialog, METH_VARARGS},
+    {"warningDialog", (PyCFunction)Sbk_PyGuiApplicationFunc_warningDialog, METH_VARARGS},
 
     {0} // Sentinel
 };

@@ -18,6 +18,10 @@ Functions
 
 
 *    def :meth:`getGuiInstance<NatronGui.PyGuiApplication.getGuiInstance>` (idx)
+*    def :meth:`informationDialog<NatronGui.PyGuiApplication.informationDialog>` (title,message)
+*    def :meth:`warningDialog<NatronGui.PyGuiApplication.warningDialog>` (title,message)
+*    def :meth:`errorDialog<NatronGui.PyGuiApplication.errorDialog>` (title,message)
+*    def :meth:`questionDialog<NatronGui.PyGuiApplication.questionDialog>` (title,question)
 
 
 Member functions description
@@ -42,7 +46,36 @@ with the following variables: *app1* for the first opened project, *app2* for th
 
 
 
+.. method:: NatronGui.PyGuiApplication.informationDialog(title,message)
 
+	:param title: :class:`str`
+	:param message: :class:`str`	
+	
+Shows a modal information dialog to the user with the given window *title* and 
+containing the given *message*.
 
+.. method:: NatronGui.PyGuiApplication.warningDialog(title,message)
 
+	:param title: :class:`str`
+	:param message: :class:`str`	
+	
+Shows a modal warning dialog to the user with the given window *title* and 
+containing the given *message*.
 
+.. method:: NatronGui.PyGuiApplication.errorDialog(title,message)
+
+	:param title: :class:`str`
+	:param message: :class:`str`	
+	
+Shows a modal error dialog to the user with the given window *title* and 
+containing the given *message*.
+
+.. method:: NatronGui.PyGuiApplication.questionDialog(title,message)
+
+	:param title: :class:`str`
+	:param message: :class:`str`	
+	:rtype: :class:`NatronEngine.StandardButtonEnum`
+	
+Shows a modal question dialog to the user with the given window *title* and 
+containing the given *message*.
+The dialog will be a "Yes" "No" dialog, and you can compare the result to the :class:`NatronEngine.StandardButtonEnum` members.

@@ -42,6 +42,27 @@ public:
         }
         return new GuiApp(app);
     }
+    
+    void informationDialog(const std::string& title,const std::string& message)
+    {
+        Natron::informationDialog(title, message);
+    }
+    
+    void warningDialog(const std::string& title,const std::string& message)
+    {
+        Natron::warningDialog(title,message);
+    }
+    
+    void errorDialog(const std::string& title,const std::string& message)
+    {
+        Natron::errorDialog(title,message);
+    }
+    
+    Natron::StandardButtonEnum questionDialog(const std::string& title,const std::string& message)
+    {
+        return Natron::questionDialog(title, message, false);
+    }
+    
 };
 
 
