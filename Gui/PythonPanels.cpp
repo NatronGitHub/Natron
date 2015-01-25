@@ -18,6 +18,8 @@
 #include <QHBoxLayout>
 #include <QDialogButtonBox>
 
+#include "Engine/NodeWrapper.h"
+
 #include "Gui/Gui.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/DockablePanel.h"
@@ -45,6 +47,17 @@ DialogParamHolder::DialogParamHolder(const std::string& uniqueID,AppInstance* ap
 , _imp(new DialogParamHolderPrivate(uniqueID))
 {
     
+}
+
+DialogParamHolder::~DialogParamHolder()
+{
+    
+}
+
+std::string
+DialogParamHolder::getScriptName_mt_safe() const
+{
+    return _imp->uniqueID;
 }
 
 void
@@ -93,13 +106,19 @@ struct PyModalDialogPrivate
     
     QVBoxLayout* mainLayout;
     DockablePanel* panel;
-    QDialogButtonBox* buttons;
     
+    QWidget* centerContainer;
+    QVBoxLayout* centerLayout;
+    
+    QDialogButtonBox* buttons;
+        
     PyModalDialogPrivate(Gui* gui)
     : gui(gui)
     , holder(0)
     , mainLayout(0)
     , panel(0)
+    , centerContainer(0)
+    , centerLayout(0)
     , buttons(0)
     {
         
@@ -115,8 +134,44 @@ PyModalDialog::PyModalDialog(Gui* gui)
     setHolder(_imp->holder);
     
     _imp->mainLayout = new QVBoxLayout(this);
+    _imp->mainLayout->setContentsMargins(0, 0, 0, 0);
     
-    _imp->panel = new DockablePanel(gui,
+    _imp->centerContainer = new QWidget(this);
+    _imp->centerLayout = new QVBoxLayout(_imp->centerContainer);
+    _imp->centerLayout->setContentsMargins(0, 0, 0, 0);
+    
+    _imp->mainLayout->addWidget(_imp->centerContainer);
+    
+    _imp->buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, Qt::Horizontal,this);
+    QObject::connect(_imp->buttons, SIGNAL(accepted()), this, SLOT(accept()));
+    QObject::connect(_imp->buttons, SIGNAL(rejected()), this, SLOT(reject()));
+    _imp->mainLayout->addWidget(_imp->buttons);
+}
+
+PyModalDialog::~PyModalDialog()
+{
+    
+}
+
+void
+PyModalDialog::insertWidget(int index, QWidget* widget)
+{
+    _imp->centerLayout->insertWidget(index, widget);
+}
+
+void
+PyModalDialog::addWidget(QWidget* widget)
+{
+    _imp->centerLayout->addWidget(widget);
+}
+
+void
+PyModalDialog::activateUserParametersSupport()
+{
+    if (_imp->panel) {
+        return;
+    }
+    _imp->panel = new DockablePanel(_imp->gui,
                                     _imp->holder,
                                     _imp->mainLayout,
                                     DockablePanel::eHeaderModeNoHeader,
@@ -124,14 +179,11 @@ PyModalDialog::PyModalDialog(Gui* gui)
                                     QString(),QString(),
                                     false,
                                     "Default",
-                                    this);
+                                    _imp->centerContainer);
     
-    _imp->mainLayout->addWidget(_imp->panel);
-    
-    _imp->buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, Qt::Horizontal,this);
-    QObject::connect(_imp->buttons, SIGNAL(accepted()), this, SLOT(accept()));
-    QObject::connect(_imp->buttons, SIGNAL(rejected()), this, SLOT(reject()));
-    _imp->mainLayout->addWidget(_imp->buttons);
+    _imp->panel->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
+    _imp->centerLayout->insertWidget(0,_imp->panel);
+
 }
 
 void
@@ -140,4 +192,12 @@ PyModalDialog::setParamChangedCallback(const std::string& callback)
     _imp->holder->setParamChangedCallback(callback);
 }
 
-
+Param*
+PyModalDialog::getParam(const std::string& scriptName) const
+{
+    boost::shared_ptr<KnobI> knob =  _imp->holder->getKnobByName(scriptName);
+    if (!knob) {
+        return 0;
+    }
+    return Effect::createParamWrapperForKnob(knob);
+}

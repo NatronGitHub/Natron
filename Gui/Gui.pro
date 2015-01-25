@@ -117,7 +117,8 @@ SOURCES += \
     ViewerTab.cpp \
     NatronGui/natrongui_module_wrapper.cpp \
     NatronGui/pyguiapplication_wrapper.cpp \
-    NatronGui/guiapp_wrapper.cpp
+    NatronGui/guiapp_wrapper.cpp \
+    NatronGui/pymodaldialog_wrapper.cpp
 
 HEADERS += \
     AboutWindow.h \
@@ -216,7 +217,8 @@ HEADERS += \
     ../libs/OpenFX_extensions/ofxhParametricParam.h \
     NatronGui/natrongui_python.h \
     NatronGui/pyguiapplication_wrapper.h \
-    NatronGui/guiapp_wrapper.h
+    NatronGui/guiapp_wrapper.h \
+    NatronGui/pymodaldialog_wrapper.h
 
 RESOURCES += \
     GuiResources.qrc

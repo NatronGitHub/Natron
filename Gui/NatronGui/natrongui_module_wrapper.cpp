@@ -21,14 +21,15 @@ static PyMethodDef NatronGui_methods[] = {
 // Classes initialization functions ------------------------------------------------------------
 void init_GuiApp(PyObject* module);
 void init_PyGuiApplication(PyObject* module);
+void init_PyModalDialog(PyObject* module);
 
 // Required modules' type and converter arrays.
 PyTypeObject** SbkPySide_QtGuiTypes;
 SbkConverter** SbkPySide_QtGuiTypeConverters;
-PyTypeObject** SbkPySide_QtCoreTypes;
+/*PyTypeObject** SbkPySide_QtCoreTypes;
 SbkConverter** SbkPySide_QtCoreTypeConverters;
 PyTypeObject** SbkNatronEngineTypes;
-SbkConverter** SbkNatronEngineTypeConverters;
+SbkConverter** SbkNatronEngineTypeConverters;*/
 
 // Module initialization ------------------------------------------------------------
 // Container Type converters.
@@ -132,6 +133,40 @@ static void _conststd_list_RenderTask_REF_PythonToCpp__conststd_list_RenderTask_
 static PythonToCppFunc is__conststd_list_RenderTask_REF_PythonToCpp__conststd_list_RenderTask_REF_Convertible(PyObject* pyIn) {
     if (Shiboken::Conversions::convertibleSequenceTypes((SbkObjectType*)SbkNatronEngineTypes[SBK_RENDERTASK_IDX], pyIn))
         return _conststd_list_RenderTask_REF_PythonToCpp__conststd_list_RenderTask_REF;
+    return 0;
+}
+
+// C++ to Python conversion for type 'QList<QAction * >'.
+static PyObject* _QList_QActionPTR__CppToPython__QList_QActionPTR_(const void* cppIn) {
+    ::QList<QAction * >& cppInRef = *((::QList<QAction * >*)cppIn);
+
+                // TEMPLATE - cpplist_to_pylist_conversion - START
+        PyObject* pyOut = PyList_New((int) cppInRef.size());
+        ::QList<QAction * >::const_iterator it = cppInRef.begin();
+        for (int idx = 0; it != cppInRef.end(); ++it, ++idx) {
+            ::QAction* cppItem(*it);
+            PyList_SET_ITEM(pyOut, idx, Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkPySide_QtGuiTypes[SBK_QACTION_IDX], cppItem));
+        }
+        return pyOut;
+        // TEMPLATE - cpplist_to_pylist_conversion - END
+
+}
+static void _QList_QActionPTR__PythonToCpp__QList_QActionPTR_(PyObject* pyIn, void* cppOut) {
+    ::QList<QAction * >& cppOutRef = *((::QList<QAction * >*)cppOut);
+
+                // TEMPLATE - pyseq_to_cpplist_conversion - START
+    for (int i = 0; i < PySequence_Size(pyIn); i++) {
+        Shiboken::AutoDecRef pyItem(PySequence_GetItem(pyIn, i));
+        ::QAction* cppItem = ((::QAction*)0);
+        Shiboken::Conversions::pythonToCppPointer((SbkObjectType*)SbkPySide_QtGuiTypes[SBK_QACTION_IDX], pyItem, &(cppItem));
+        cppOutRef << cppItem;
+    }
+    // TEMPLATE - pyseq_to_cpplist_conversion - END
+
+}
+static PythonToCppFunc is__QList_QActionPTR__PythonToCpp__QList_QActionPTR__Convertible(PyObject* pyIn) {
+    if (Shiboken::Conversions::checkSequenceTypes(SbkPySide_QtGuiTypes[SBK_QACTION_IDX], pyIn))
+        return _QList_QActionPTR__PythonToCpp__QList_QActionPTR_;
     return 0;
 }
 
@@ -311,6 +346,7 @@ SBK_MODULE_INIT_FUNCTION_BEGIN(NatronGui)
     // Initialize classes in the type system
     init_GuiApp(module);
     init_PyGuiApplication(module);
+    init_PyModalDialog(module);
 
     // Register converter for type 'std::list<std::string>'.
     SbkNatronGuiTypeConverters[SBK_NATRONGUI_STD_LIST_STD_STRING_IDX] = Shiboken::Conversions::createConverter(&PyList_Type, _std_list_std_string__CppToPython__std_list_std_string_);
@@ -332,6 +368,13 @@ SBK_MODULE_INIT_FUNCTION_BEGIN(NatronGui)
     Shiboken::Conversions::addPythonToCppValueConversion(SbkNatronGuiTypeConverters[SBK_NATRONGUI_STD_LIST_RENDERTASK_IDX],
         _conststd_list_RenderTask_REF_PythonToCpp__conststd_list_RenderTask_REF,
         is__conststd_list_RenderTask_REF_PythonToCpp__conststd_list_RenderTask_REF_Convertible);
+
+    // Register converter for type 'QList<QAction*>'.
+    SbkNatronGuiTypeConverters[SBK_NATRONGUI_QLIST_QACTIONPTR_IDX] = Shiboken::Conversions::createConverter(&PyList_Type, _QList_QActionPTR__CppToPython__QList_QActionPTR_);
+    Shiboken::Conversions::registerConverterName(SbkNatronGuiTypeConverters[SBK_NATRONGUI_QLIST_QACTIONPTR_IDX], "QList<QAction*>");
+    Shiboken::Conversions::addPythonToCppValueConversion(SbkNatronGuiTypeConverters[SBK_NATRONGUI_QLIST_QACTIONPTR_IDX],
+        _QList_QActionPTR__PythonToCpp__QList_QActionPTR_,
+        is__QList_QActionPTR__PythonToCpp__QList_QActionPTR__Convertible);
 
     // Register converter for type 'QList<QVariant>'.
     SbkNatronGuiTypeConverters[SBK_NATRONGUI_QLIST_QVARIANT_IDX] = Shiboken::Conversions::createConverter(&PyList_Type, _QList_QVariant__CppToPython__QList_QVariant_);

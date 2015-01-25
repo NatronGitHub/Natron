@@ -30,5 +30,10 @@
     </object-type>
 
 	<object-type name="PyModalDialog">
+        <modify-function signature="getParam(std::string)const">
+            <modify-argument index="return">
+                <define-ownership class="target" owner="target"/>
+            </modify-argument>
+        </modify-function>
 	</object-type>
 </typesystem>

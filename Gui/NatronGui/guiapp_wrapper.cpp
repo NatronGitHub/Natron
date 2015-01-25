@@ -13,6 +13,9 @@
 // Extra includes
 #include <AppInstanceWrapper.h>
 #include <NodeGroupWrapper.h>
+#include <NodeWrapper.h>
+#include <ParameterWrapper.h>
+#include <PythonPanels.h>
 #include <list>
 
 

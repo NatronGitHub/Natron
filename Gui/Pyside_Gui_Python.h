@@ -14,9 +14,12 @@
 #include "AppInstanceWrapper.h"
 #include "NodeGroupWrapper.h"
 #include "GlobalFunctionsWrapper.h"
+#include "NodeWrapper.h"
+#include "ParameterWrapper.h"
 
 //Gui
 #include "GlobalGuiWrapper.h"
 #include "GuiAppWrapper.h"
+#include "PythonPanels.h"
 
 #endif // PYSIDE_GUI_PYTHON_H

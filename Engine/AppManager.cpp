@@ -1511,6 +1511,21 @@ AppManager::loadPythonGroups()
         bool ok  = interpretPythonScript(addToPythonPath, &err, 0);
         assert(ok);
         
+    }
+    
+    ///Also import Pyside.QtCore and Pyside.QtGui (the later only in non background mode
+    {
+        bool ok  = interpretPythonScript("import PySide.QtCore", &err, 0);
+        assert(ok);
+    }
+    
+    if (!isBackground()) {
+        bool ok  = interpretPythonScript("import PySide.QtGui", &err, 0);
+        assert(ok);
+    }
+
+    
+    for (int i = 0; i < templatesSearchPath.size(); ++i) {
         QDir d(templatesSearchPath[i]);
         if (d.exists()) {
             

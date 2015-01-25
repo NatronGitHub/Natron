@@ -4,8 +4,7 @@
 GuiApp
 ******
 
-.. inheritance-diagram:: GuiApp
-    :parts: 2
+**Inherits** :doc:`App`
 
 Detailed Description
 --------------------

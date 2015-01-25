@@ -13,6 +13,8 @@
 #ifndef PYTHONPANELS_H
 #define PYTHONPANELS_H
 
+#include <Python.h>
+
 #include <QDialog>
 
 #include "Global/Macros.h"
@@ -21,6 +23,7 @@
 #include "Engine/Knob.h"
 
 class Gui;
+class Param;
 
 struct DialogParamHolderPrivate;
 class DialogParamHolder : public NamedKnobHolder
@@ -64,7 +67,15 @@ public:
     
     virtual ~PyModalDialog();
     
+    Param* getParam(const std::string& scriptName) const;
+    
+    void activateUserParametersSupport();
+    
     void setParamChangedCallback(const std::string& callback);
+    
+    void insertWidget(int index, QWidget* widget);
+    
+    void addWidget(QWidget* widget);
     
 private:
     
