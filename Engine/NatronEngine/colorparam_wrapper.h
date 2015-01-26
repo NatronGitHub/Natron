@@ -11,6 +11,7 @@ class ColorParamWrapper : public ColorParam
 {
 public:
     virtual ~ColorParamWrapper();
+    static void pysideInitQtMetaTypes();
 };
 
 #endif // SBK_COLORPARAMWRAPPER_H

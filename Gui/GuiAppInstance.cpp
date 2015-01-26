@@ -245,6 +245,7 @@ GuiAppInstance::load(const CLArgs& cl)
     if (cl.getFilename().isEmpty() || !info.exists()) {
         
         getProject()->createViewer();
+        execOnProjectCreatedCallback();
         
     } else {
         
@@ -255,6 +256,7 @@ GuiAppInstance::load(const CLArgs& cl)
             
             ///If this is a Python script, execute it
             loadPythonScript(info);
+            execOnProjectCreatedCallback();
             
         } else if (info.suffix() == NATRON_PROJECT_FILE_EXT) {
             
@@ -269,6 +271,7 @@ GuiAppInstance::load(const CLArgs& cl)
         } else {
             Natron::errorDialog(tr("Invalid file").toStdString(),
                                 tr(NATRON_APPLICATION_NAME " only accepts python scripts or .ntp project files").toStdString());
+            execOnProjectCreatedCallback();
         }
     }
 } // load

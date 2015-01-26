@@ -34,6 +34,13 @@ public:
         
     }
     
+    QPixmap getIcon(Natron::PixmapEnum val) const
+    {
+        QPixmap ret;
+        appPTR->getIcon(val,&ret);
+        return ret;
+    }
+    
     GuiApp* getGuiInstance(int idx) const
     {
         AppInstance* app = Natron::getInstance(idx);

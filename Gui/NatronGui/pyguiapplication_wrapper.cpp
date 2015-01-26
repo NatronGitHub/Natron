@@ -4,6 +4,9 @@
 
 // default includes
 #include <shiboken.h>
+#include <pysidesignal.h>
+#include <pysideproperty.h>
+#include <pyside.h>
 #include <typeresolver.h>
 #include <typeinfo>
 #include "natrongui_python.h"
@@ -14,6 +17,7 @@
 #include <AppInstanceWrapper.h>
 #include <GuiAppWrapper.h>
 #include <list>
+#include <qpixmap.h>
 
 
 // Native ---------------------------------------------------------
@@ -258,6 +262,53 @@ static PyObject* Sbk_PyGuiApplicationFunc_getGuiInstance(PyObject* self, PyObjec
         return 0;
 }
 
+static PyObject* Sbk_PyGuiApplicationFunc_getIcon(PyObject* self, PyObject* pyArg)
+{
+    ::PyGuiApplication* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::PyGuiApplication*)Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYGUIAPPLICATION_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp;
+    SBK_UNUSED(pythonToCpp)
+
+    // Overloaded function decisor
+    // 0: getIcon(Natron::PixmapEnum)const
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(SBK_CONVERTER(SbkNatronEngineTypes[SBK_NATRON_PIXMAPENUM_IDX]), (pyArg)))) {
+        overloadId = 0; // getIcon(Natron::PixmapEnum)const
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_PyGuiApplicationFunc_getIcon_TypeError;
+
+    // Call function/method
+    {
+        ::Natron::PixmapEnum cppArg0 = ((::Natron::PixmapEnum)0);
+        pythonToCpp(pyArg, &cppArg0);
+
+        if (!PyErr_Occurred()) {
+            // getIcon(Natron::PixmapEnum)const
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            QPixmap cppResult = const_cast<const ::PyGuiApplication*>(cppSelf)->getIcon(cppArg0);
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            pyResult = Shiboken::Conversions::copyToPython((SbkObjectType*)SbkPySide_QtGuiTypes[SBK_QPIXMAP_IDX], &cppResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+
+    Sbk_PyGuiApplicationFunc_getIcon_TypeError:
+        const char* overloads[] = {"NatronEngine.Natron.PixmapEnum", 0};
+        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronGui.PyGuiApplication.getIcon", overloads);
+        return 0;
+}
+
 static PyObject* Sbk_PyGuiApplicationFunc_informationDialog(PyObject* self, PyObject* args)
 {
     ::PyGuiApplication* cppSelf = 0;
@@ -436,6 +487,7 @@ static PyMethodDef Sbk_PyGuiApplication_methods[] = {
     {"addMenuCommand", (PyCFunction)Sbk_PyGuiApplicationFunc_addMenuCommand, METH_VARARGS},
     {"errorDialog", (PyCFunction)Sbk_PyGuiApplicationFunc_errorDialog, METH_VARARGS},
     {"getGuiInstance", (PyCFunction)Sbk_PyGuiApplicationFunc_getGuiInstance, METH_O},
+    {"getIcon", (PyCFunction)Sbk_PyGuiApplicationFunc_getIcon, METH_O},
     {"informationDialog", (PyCFunction)Sbk_PyGuiApplicationFunc_informationDialog, METH_VARARGS},
     {"questionDialog", (PyCFunction)Sbk_PyGuiApplicationFunc_questionDialog, METH_VARARGS},
     {"warningDialog", (PyCFunction)Sbk_PyGuiApplicationFunc_warningDialog, METH_VARARGS},

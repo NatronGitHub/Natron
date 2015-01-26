@@ -21,9 +21,10 @@
 #include "Engine/NodeWrapper.h"
 
 #include "Gui/Gui.h"
+#include "Gui/TabWidget.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/DockablePanel.h"
-
+#include "Gui/GuiAppWrapper.h"
 
 
 struct DialogParamHolderPrivate
@@ -131,7 +132,6 @@ PyModalDialog::PyModalDialog(Gui* gui)
 , _imp(new PyModalDialogPrivate(gui))
 {
     _imp->holder = new DialogParamHolder(std::string(),gui->getApp());
-    setHolder(_imp->holder);
     
     _imp->mainLayout = new QVBoxLayout(this);
     _imp->mainLayout->setContentsMargins(0, 0, 0, 0);
@@ -139,6 +139,20 @@ PyModalDialog::PyModalDialog(Gui* gui)
     _imp->centerContainer = new QWidget(this);
     _imp->centerLayout = new QVBoxLayout(_imp->centerContainer);
     _imp->centerLayout->setContentsMargins(0, 0, 0, 0);
+    
+    
+    _imp->panel = new DockablePanel(_imp->gui,
+                                    _imp->holder,
+                                    _imp->mainLayout,
+                                    DockablePanel::eHeaderModeNoHeader,
+                                    false,
+                                    QString(),QString(),
+                                    false,
+                                    "Default",
+                                    _imp->centerContainer);
+    _imp->panel->turnOffPages();
+    _imp->panel->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
+    _imp->centerLayout->insertWidget(0,_imp->panel);
     
     _imp->mainLayout->addWidget(_imp->centerContainer);
     
@@ -165,26 +179,7 @@ PyModalDialog::addWidget(QWidget* widget)
     _imp->centerLayout->addWidget(widget);
 }
 
-void
-PyModalDialog::activateUserParametersSupport()
-{
-    if (_imp->panel) {
-        return;
-    }
-    _imp->panel = new DockablePanel(_imp->gui,
-                                    _imp->holder,
-                                    _imp->mainLayout,
-                                    DockablePanel::eHeaderModeNoHeader,
-                                    false,
-                                    QString(),QString(),
-                                    false,
-                                    "Default",
-                                    _imp->centerContainer);
-    
-    _imp->panel->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
-    _imp->centerLayout->insertWidget(0,_imp->panel);
 
-}
 
 void
 PyModalDialog::setParamChangedCallback(const std::string& callback)
@@ -200,4 +195,313 @@ PyModalDialog::getParam(const std::string& scriptName) const
         return 0;
     }
     return Effect::createParamWrapperForKnob(knob);
+}
+
+
+struct PyPanelPrivate
+{
+    
+    Gui* gui;
+    
+    mutable QMutex labelMutex;
+    std::string label;
+    
+    DialogParamHolder* holder;
+    
+    QVBoxLayout* mainLayout;
+    DockablePanel* panel;
+    
+    QWidget* centerContainer;
+    QVBoxLayout* centerLayout;
+    
+    QMutex paramChangedCBMutex;
+    std::string paramChangedCB;
+    
+    mutable QMutex serializationMutex;
+    std::string serialization;
+
+    
+    PyPanelPrivate(const std::string& label)
+    : gui(0)
+    , labelMutex()
+    , label(label)
+    , holder(0)
+    , mainLayout(0)
+    , panel(0)
+    , centerContainer(0)
+    , centerLayout(0)
+    , paramChangedCBMutex()
+    , paramChangedCB()
+    , serializationMutex()
+    , serialization()
+    {
+        
+    }
+};
+
+
+
+PyPanel::PyPanel(const std::string& label,bool useUserParameters,GuiApp* app)
+: QWidget(app->getGui())
+, UserParamHolder()
+, _imp(new PyPanelPrivate(label))
+{
+    _imp->gui = app->getGui();
+    setObjectName(label.c_str());
+    _imp->gui->registerTab(this);
+   
+    
+    if (useUserParameters) {
+        _imp->holder = new DialogParamHolder(_imp->label,_imp->gui->getApp());
+        
+        _imp->mainLayout = new QVBoxLayout(this);
+        _imp->mainLayout->setContentsMargins(0, 0, 0, 0);
+        
+        _imp->centerContainer = new QWidget(this);
+        _imp->centerLayout = new QVBoxLayout(_imp->centerContainer);
+        _imp->centerLayout->setContentsMargins(0, 0, 0, 0);
+        
+        _imp->panel = new DockablePanel(_imp->gui,
+                                        _imp->holder,
+                                        _imp->mainLayout,
+                                        DockablePanel::eHeaderModeNoHeader,
+                                        false,
+                                        QString(),QString(),
+                                        false,
+                                        "Default",
+                                        _imp->centerContainer);
+        _imp->panel->turnOffPages();
+        _imp->panel->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
+        _imp->centerLayout->insertWidget(0,_imp->panel);
+        
+        _imp->mainLayout->addWidget(_imp->centerContainer);
+    }
+}
+
+PyPanel::~PyPanel()
+{
+    
+}
+
+void
+PyPanel::setLabel(const std::string& label)
+{
+    {
+        QMutexLocker k(&_imp->labelMutex);
+        _imp->label = label;
+    }
+    QString name(label.c_str());
+    setObjectName(name);
+    TabWidget* parent = dynamic_cast<TabWidget*>(parentWidget());
+    if (parent) {
+        parent->setTabName(this, name);
+    }
+}
+
+std::string
+PyPanel::getLabel() const
+{
+    QMutexLocker k(&_imp->labelMutex);
+    return _imp->label;
+}
+
+Param*
+PyPanel::getParam(const std::string& scriptName) const
+{
+    if (!_imp->holder) {
+        return 0;
+    }
+    boost::shared_ptr<KnobI> knob =  _imp->holder->getKnobByName(scriptName);
+    if (!knob) {
+        return 0;
+    }
+    return Effect::createParamWrapperForKnob(knob);
+
+}
+
+std::list<Param*>
+PyPanel::getParams() const
+{
+    std::list<Param*> ret;
+    if (!_imp->holder) {
+        return ret;
+    }
+    const std::vector<boost::shared_ptr<KnobI> >& knobs = _imp->holder->getKnobs();
+    for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+        Param* p = Effect::createParamWrapperForKnob(*it);
+        if (p) {
+            ret.push_back(p);
+        }
+    }
+    return ret;
+}
+
+
+void
+PyPanel::setParamChangedCallback(const std::string& callback)
+{
+    QMutexLocker k(&_imp->paramChangedCBMutex);
+    _imp->paramChangedCB = callback;
+}
+
+void
+PyPanel::insertWidget(int index, QWidget* widget)
+{
+    if (!_imp->centerLayout) {
+        return;
+    }
+    _imp->centerLayout->insertWidget(index, widget);
+}
+
+void
+PyPanel::addWidget(QWidget* widget)
+{
+    if (!_imp->centerLayout) {
+        return;
+    }
+    _imp->centerLayout->addWidget(widget);
+}
+
+void
+PyPanel::onUserDataChanged()
+{
+    QMutexLocker k(&_imp->serializationMutex);
+    _imp->serialization = save();
+}
+
+std::string
+PyPanel::save_serialization_thread() const
+{
+    QMutexLocker k(&_imp->serializationMutex);
+    return _imp->serialization;
+}
+
+PyTabWidget::PyTabWidget(TabWidget* pane)
+: _tab(pane)
+{
+    
+}
+
+PyTabWidget::~PyTabWidget()
+{
+    
+}
+
+bool
+PyTabWidget::appendTab(QWidget* tab)
+{
+    return _tab->appendTab(tab);
+}
+
+void
+PyTabWidget::insertTab(int index,QWidget* tab)
+{
+    _tab->insertTab(index, QIcon(), tab);
+}
+
+void
+PyTabWidget::removeTab(QWidget* tab)
+{
+    _tab->removeTab(tab, false);
+}
+
+void
+PyTabWidget::removeTab(int index)
+{
+    _tab->removeTab(index, false);
+}
+
+void
+PyTabWidget::closeTab(int index)
+{
+    _tab->removeTab(index, true);
+}
+
+std::string
+PyTabWidget::getTabName(int index) const
+{
+    return _tab->getTabName(index).toStdString();
+}
+
+int
+PyTabWidget::count()
+{
+    return _tab->count();
+}
+
+QWidget*
+PyTabWidget::currentWidget()
+{
+    return _tab->currentWidget();
+}
+
+void
+PyTabWidget::setCurrentIndex(int index)
+{
+    _tab->makeCurrentTab(index);
+}
+
+int
+PyTabWidget::getCurrentIndex() const
+{
+    return _tab->activeIndex();
+}
+
+PyTabWidget*
+PyTabWidget::splitHorizontally()
+{
+    TabWidget* ret = _tab->splitHorizontally();
+    if (ret) {
+        return new PyTabWidget(ret);
+    } else {
+        return 0;
+    }
+}
+
+PyTabWidget*
+PyTabWidget::splitVertically()
+{
+    TabWidget* ret = _tab->splitVertically();
+    if (ret) {
+        return new PyTabWidget(ret);
+    } else {
+        return 0;
+    }
+
+}
+
+void
+PyTabWidget::closePane()
+{
+    _tab->closePane();
+}
+
+void
+PyTabWidget::floatPane()
+{
+    _tab->floatPane();
+}
+
+void
+PyTabWidget::setNextTabCurrent()
+{
+    _tab->moveToNextTab();
+}
+
+void
+PyTabWidget::floatCurrentTab()
+{
+    _tab->floatCurrentWidget();
+}
+
+void
+PyTabWidget::closeCurrentTab()
+{
+    _tab->closeCurrentWidget();
+}
+
+std::string
+PyTabWidget::getScriptName() const
+{
+    return _tab->objectName_mt_safe().toStdString();
 }

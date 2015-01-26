@@ -250,6 +250,8 @@ public:
     void recomputeFrameRangeFromReaders();
     
     void createViewer();
+    
+    void resetProject();
 
 public Q_SLOTS:
 

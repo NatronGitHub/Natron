@@ -106,6 +106,7 @@ CLANG_DIAG_ON(unused-parameter)
 #include "Gui/MessageBox.h"
 #include "Gui/MultiInstancePanel.h"
 #include "Gui/ScriptEditor.h"
+#include "Gui/PythonPanels.h"
 
 #define kViewerPaneName "ViewerPane"
 #define kPropertiesBinName "Properties"
@@ -217,6 +218,9 @@ struct GuiPrivate
     ///all the splitters used to separate the "panes" of the application
     mutable QMutex _splittersMutex;
     std::list<Splitter*> _splitters;
+    
+    mutable QMutex _pyPanelsMutex;
+    std::map<PyPanel*,std::string> _userPanels;
 
 
     ///all the menu actions
@@ -389,7 +393,10 @@ struct GuiPrivate
     , _currentRedoAction(0)
     , _undoStacksGroup(0)
     , _undoStacksActions()
+    , _splittersMutex()
     , _splitters()
+    , _pyPanelsMutex()
+    , _userPanels()
     , actionNew_project(0)
     , actionOpen_project(0)
     , actionClose_project(0)
@@ -667,6 +674,9 @@ Gui::closeProject()
     ///since we're not sure it will be used right away
     appPTR->clearPlaybackCache();
     abortProject(false);
+    
+    _imp->_appInstance->getProject()->createViewer();
+    _imp->_appInstance->execOnProjectCreatedCallback();
 }
 
 void
@@ -1414,7 +1424,7 @@ Gui::createDefaultLayout1()
     ///First tab widget must be created this way
     TabWidget* mainPane = new TabWidget(this,_imp->_leftRightSplitter);
 
-    mainPane->setObjectName(kViewerPaneName);
+    mainPane->setObjectName_mt_safe(kViewerPaneName);
     mainPane->setAsAnchor(true);
     {
         QMutexLocker l(&_imp->_panesMutex);
@@ -2344,7 +2354,7 @@ Gui::registerPane(TabWidget* pane)
         std::list<TabWidget*>::iterator found = std::find(_imp->_panes.begin(), _imp->_panes.end(), pane);
         
         if ( found == _imp->_panes.end() ) {
-            
+
             if ( _imp->_panes.empty() ) {
                 _imp->_leftRightSplitter->addWidget(pane);
                 pane->setClosable(false);
@@ -2379,6 +2389,35 @@ Gui::unregisterSplitter(Splitter* s)
     if ( found != _imp->_splitters.end() ) {
         _imp->_splitters.erase(found);
     }
+}
+
+void
+Gui::registerPyPanel(PyPanel* panel,const std::string& pythonFunction)
+{
+    QMutexLocker l(&_imp->_pyPanelsMutex);
+    std::map<PyPanel*,std::string>::iterator found = _imp->_userPanels.find(panel);
+    
+    if ( found == _imp->_userPanels.end() ) {
+        _imp->_userPanels.insert(std::make_pair(panel,pythonFunction));
+    }
+}
+
+void
+Gui::unregisterPyPanel(PyPanel* panel)
+{
+    QMutexLocker l(&_imp->_pyPanelsMutex);
+    std::map<PyPanel*,std::string>::iterator found = _imp->_userPanels.find(panel);
+    
+    if ( found != _imp->_userPanels.end() ) {
+        _imp->_userPanels.erase(found);
+    }
+}
+
+std::map<PyPanel*,std::string>
+Gui::getPythonPanels() const
+{
+    QMutexLocker l(&_imp->_pyPanelsMutex);
+    return _imp->_userPanels;
 }
 
 QWidget*
@@ -2693,7 +2732,8 @@ GuiPrivate::setUndoRedoActions(QAction* undoAction,
 void
 Gui::newProject()
 {
-    appPTR->newAppInstance(CLArgs());
+    AppInstance* app = appPTR->newAppInstance(CLArgs());
+    app->execOnProjectCreatedCallback();
 }
 
 void

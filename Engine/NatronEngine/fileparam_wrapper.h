@@ -11,6 +11,7 @@ class FileParamWrapper : public FileParam
 {
 public:
     virtual ~FileParamWrapper();
+    static void pysideInitQtMetaTypes();
 };
 
 #endif // SBK_FILEPARAMWRAPPER_H

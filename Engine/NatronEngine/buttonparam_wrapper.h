@@ -11,6 +11,7 @@ class ButtonParamWrapper : public ButtonParam
 {
 public:
     virtual ~ButtonParamWrapper();
+    static void pysideInitQtMetaTypes();
 };
 
 #endif // SBK_BUTTONPARAMWRAPPER_H

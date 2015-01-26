@@ -66,6 +66,7 @@ class RotoGui;
 class FloatingWidget;
 class BoundAction;
 class ScriptEditor;
+class PyPanel;
 
 //Natron engine
 class ViewerInstance;
@@ -265,6 +266,12 @@ public:
 
     void registerSplitter(Splitter* s);
     void unregisterSplitter(Splitter* s);
+    
+    void registerPyPanel(PyPanel* panel,const std::string& pythonFunction);
+    void unregisterPyPanel(PyPanel* panel);
+    
+    std::map<PyPanel*,std::string> getPythonPanels() const;
+
 
     /**
      * @brief MT-Safe
@@ -487,6 +494,7 @@ public:
     void exportGroupAsPythonScript(NodeCollection* collection);
     
     void addMenuEntry(const QString& menuGrouping,const std::string& pythonFunction, Qt::Key key,const Qt::KeyboardModifiers& modifiers);
+    
     
 Q_SIGNALS:
 

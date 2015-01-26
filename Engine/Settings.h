@@ -233,6 +233,7 @@ public:
     void getPythonGroupsSearchPaths(std::list<std::string>* templates) const;
     void appendPythonGroupsPath(const std::string& path);
     
+    std::string getOnProjectCreatedCB();
     std::string getDefaultOnProjectLoadedCB();
     std::string getDefaultOnProjectSaveCB();
     std::string getDefaultOnProjectCloseCB();
@@ -346,6 +347,7 @@ private:
     boost::shared_ptr<Page_Knob> _pluginsTab;
     
     boost::shared_ptr<Page_Knob> _pythonPage;
+    boost::shared_ptr<String_Knob> _onProjectCreated;
     boost::shared_ptr<String_Knob> _defaultOnProjectLoaded;
     boost::shared_ptr<String_Knob> _defaultOnProjectSave;
     boost::shared_ptr<String_Knob> _defaultOnProjectClose;

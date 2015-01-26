@@ -11,6 +11,7 @@ class ParametricParamWrapper : public ParametricParam
 {
 public:
     virtual ~ParametricParamWrapper();
+    static void pysideInitQtMetaTypes();
 };
 
 #endif // SBK_PARAMETRICPARAMWRAPPER_H

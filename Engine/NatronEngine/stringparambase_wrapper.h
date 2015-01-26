@@ -11,6 +11,7 @@ class StringParamBaseWrapper : public StringParamBase
 {
 public:
     virtual ~StringParamBaseWrapper();
+    static void pysideInitQtMetaTypes();
 };
 
 #endif // SBK_STRINGPARAMBASEWRAPPER_H

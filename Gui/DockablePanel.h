@@ -199,8 +199,11 @@ public:
     void deleteKnobGui(const boost::shared_ptr<KnobI>& knob);
     
     int getPagesCount() const;
-    
-    void rebuildUserPages();
+        
+    /**
+     * @brief When called, all knobs will go into the same page which will appear as a plain Widget and not as a tab
+     **/
+    void turnOffPages();
         
 public Q_SLOTS:
 

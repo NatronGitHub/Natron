@@ -11,6 +11,7 @@ class BezierCurveWrapper : public BezierCurve
 {
 public:
     virtual ~BezierCurveWrapper();
+    static void pysideInitQtMetaTypes();
 };
 
 #endif // SBK_BEZIERCURVEWRAPPER_H

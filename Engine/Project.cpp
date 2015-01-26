@@ -1360,6 +1360,15 @@ Project::autoSavesDir()
 {
     return Natron::StandardPaths::writableLocation(Natron::StandardPaths::eStandardLocationData) + QDir::separator() + "Autosaves";
 }
+    
+void
+Project::resetProject()
+{
+    reset();
+    if (!appPTR->isBackground()) {
+        createViewer();
+    }
+}
 
 void
 Project::reset()

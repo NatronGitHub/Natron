@@ -57,6 +57,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/CurveEditor.h"
 #include "Gui/BackDropGui.h"
 #include "Gui/ScriptEditor.h"
+#include "Gui/PythonPanels.h"
 
 ProjectGui::ProjectGui(Gui* gui)
     : _gui(gui)
@@ -457,6 +458,49 @@ ProjectGui::load(boost::archive::xml_iarchive & archive)
                 }
             }
         }
+    }
+    
+    
+    ///restore user python panels
+    const std::list<boost::shared_ptr<PythonPanelSerialization> >& pythonPanels = obj.getPythonPanels();
+    if (!pythonPanels.empty()) {
+        QString appID = QString("app%1").arg(_gui->getApp()->getAppID() + 1);
+        std::string err;
+        bool ok = Natron::interpretPythonScript("app = " + appID.toStdString() + "\n", &err, 0);
+        assert(ok);
+    }
+    for (std::list<boost::shared_ptr<PythonPanelSerialization> >::const_iterator it = pythonPanels.begin(); it != pythonPanels.end(); ++it) {
+        std::string script = (*it)->pythonFunction + "()\n";
+        std::string err,output;
+        if (!Natron::interpretPythonScript(script, &err, &output)) {
+            _gui->getApp()->appendToScriptEditor(err);
+        } else {
+            if (!output.empty()) {
+                _gui->getApp()->appendToScriptEditor(output);
+            }
+        }
+        const std::map<std::string,QWidget*>& registeredTabs = _gui->getRegisteredTabs();
+        std::map<std::string,QWidget*>::const_iterator found = registeredTabs.find((*it)->name);
+        if (found != registeredTabs.end()) {
+            PyPanel* panel = dynamic_cast<PyPanel*>(found->second);
+            if (panel) {
+                panel->restore((*it)->userData);
+                for (std::list<KnobSerialization>::iterator it2 = (*it)->knobs.begin(); it2!=(*it)->knobs.end(); ++it2) {
+                    Param* param = panel->getParam(it2->getName());
+                    if (param) {
+                        param->getInternalKnob()->clone(it2->getKnob());
+                        delete param;
+                    }
+                }
+            }
+        }
+        
+    }
+    
+    if (!pythonPanels.empty()) {
+        std::string err;
+        bool ok = Natron::interpretPythonScript("del app",&err,0);
+        assert(ok);
     }
 
     _gui->restoreLayout( true,obj.getVersion() < PROJECT_GUI_SERIALIZATION_MAJOR_OVERHAUL,obj.getGuiLayout() );

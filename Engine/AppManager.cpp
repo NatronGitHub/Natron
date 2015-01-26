@@ -1515,12 +1515,12 @@ AppManager::loadPythonGroups()
     
     ///Also import Pyside.QtCore and Pyside.QtGui (the later only in non background mode
     {
-        bool ok  = interpretPythonScript("import PySide.QtCore", &err, 0);
+        bool ok  = interpretPythonScript("import PySide.QtCore as QtCore", &err, 0);
         assert(ok);
     }
     
     if (!isBackground()) {
-        bool ok  = interpretPythonScript("import PySide.QtGui", &err, 0);
+        bool ok  = interpretPythonScript("import PySide.QtGui as QtGui", &err, 0);
         assert(ok);
     }
 

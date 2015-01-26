@@ -11,6 +11,7 @@ class BooleanParamWrapper : public BooleanParam
 {
 public:
     virtual ~BooleanParamWrapper();
+    static void pysideInitQtMetaTypes();
 };
 
 #endif // SBK_BOOLEANPARAMWRAPPER_H

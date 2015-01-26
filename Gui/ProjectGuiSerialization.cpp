@@ -26,7 +26,10 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/Project.h"
 #include "Engine/Node.h"
+#include "Engine/ParameterWrapper.h"
 #include "Engine/ViewerInstance.h"
+
+
 #include "Gui/NodeGui.h"
 #include "Gui/Gui.h"
 #include "Gui/TabWidget.h"
@@ -40,7 +43,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/Splitter.h"
 #include "Gui/DockablePanel.h"
 #include "Gui/ScriptEditor.h"
-
+#include "Gui/PythonPanels.h"
 
 void
 ProjectGuiSerialization::initialize(const ProjectGui* projectGui)
@@ -123,6 +126,13 @@ ProjectGuiSerialization::initialize(const ProjectGui* projectGui)
     }
     
     _scriptEditorInput = projectGui->getGui()->getScriptEditor()->getAutoSavedScript().toStdString();
+    
+    std::map<PyPanel*,std::string> pythonPanels = projectGui->getGui()->getPythonPanels();
+    for ( std::map<PyPanel*,std::string>::iterator it = pythonPanels.begin(); it != pythonPanels.end(); ++it) {
+        boost::shared_ptr<PythonPanelSerialization> s(new PythonPanelSerialization);
+        s->initialize(it->first, it->second);
+        _pythonPanels.push_back(s);
+    }
 } // initialize
 
 void
@@ -242,5 +252,21 @@ GuiLayoutSerialization::initialize(Gui* gui)
         window->initialize(false, *it);
         _windows.push_back(window);
     }
+}
+
+
+void
+PythonPanelSerialization::initialize(PyPanel* tab,const std::string& func)
+{
+    name = tab->getLabel();
+    pythonFunction = func;
+    std::list<Param*> parameters = tab->getParams();
+    for (std::list<Param*>::iterator it = parameters.begin(); it != parameters.end(); ++it) {
+        KnobSerialization k((*it)->getInternalKnob(),false);
+        knobs.push_back(k);
+        delete *it;
+    }
+    
+    userData = tab->save_serialization_thread();
 }
 

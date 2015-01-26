@@ -2,6 +2,7 @@
 #include <sbkpython.h>
 #include <shiboken.h>
 #include <algorithm>
+#include <pyside.h>
 #include "natronengine_python.h"
 
 
@@ -12,6 +13,13 @@
 PyTypeObject** SbkNatronEngineTypes;
 // Current module's converter array.
 SbkConverter** SbkNatronEngineTypeConverters;
+void cleanTypesAttributes(void) {
+    for (int i = 0, imax = SBK_NatronEngine_IDX_COUNT; i < imax; i++) {
+        PyObject *pyType = reinterpret_cast<PyObject*>(SbkNatronEngineTypes[i]);
+        if (pyType && PyObject_HasAttrString(pyType, "staticMetaObject"))
+            PyObject_SetAttrString(pyType, "staticMetaObject", Py_None);
+    }
+}
 // Global functions ------------------------------------------------------------
 
 static PyMethodDef NatronEngine_methods[] = {
@@ -19,6 +27,11 @@ static PyMethodDef NatronEngine_methods[] = {
 };
 
 // Classes initialization functions ------------------------------------------------------------
+void init_Int2DTuple(PyObject* module);
+void init_Int3DTuple(PyObject* module);
+void init_Double2DTuple(PyObject* module);
+void init_Double3DTuple(PyObject* module);
+void init_ColorTuple(PyObject* module);
 void init_PyCoreApplication(PyObject* module);
 void init_Group(PyObject* module);
 void init_App(PyObject* module);
@@ -31,30 +44,25 @@ void init_Roto(PyObject* module);
 void init_UserParamHolder(PyObject* module);
 void init_Effect(PyObject* module);
 void init_Param(PyObject* module);
+void init_ButtonParam(PyObject* module);
+void init_GroupParam(PyObject* module);
+void init_PageParam(PyObject* module);
+void init_ParametricParam(PyObject* module);
 void init_AnimatedParam(PyObject* module);
+void init_IntParam(PyObject* module);
+void init_Int2DParam(PyObject* module);
+void init_Int3DParam(PyObject* module);
+void init_BooleanParam(PyObject* module);
 void init_DoubleParam(PyObject* module);
 void init_Double2DParam(PyObject* module);
 void init_Double3DParam(PyObject* module);
-void init_ColorParam(PyObject* module);
-void init_ChoiceParam(PyObject* module);
-void init_BooleanParam(PyObject* module);
 void init_StringParamBase(PyObject* module);
 void init_StringParam(PyObject* module);
 void init_FileParam(PyObject* module);
 void init_OutputFileParam(PyObject* module);
 void init_PathParam(PyObject* module);
-void init_IntParam(PyObject* module);
-void init_Int2DParam(PyObject* module);
-void init_Int3DParam(PyObject* module);
-void init_ButtonParam(PyObject* module);
-void init_GroupParam(PyObject* module);
-void init_PageParam(PyObject* module);
-void init_ParametricParam(PyObject* module);
-void init_Int2DTuple(PyObject* module);
-void init_Int3DTuple(PyObject* module);
-void init_Double2DTuple(PyObject* module);
-void init_Double3DTuple(PyObject* module);
-void init_ColorTuple(PyObject* module);
+void init_ColorParam(PyObject* module);
+void init_ChoiceParam(PyObject* module);
 void init_Natron(PyObject* module);
 
 // Required modules' type and converter arrays.
@@ -472,6 +480,11 @@ SBK_MODULE_INIT_FUNCTION_BEGIN(NatronEngine)
 #endif
 
     // Initialize classes in the type system
+    init_Int2DTuple(module);
+    init_Int3DTuple(module);
+    init_Double2DTuple(module);
+    init_Double3DTuple(module);
+    init_ColorTuple(module);
     init_PyCoreApplication(module);
     init_Group(module);
     init_App(module);
@@ -484,30 +497,25 @@ SBK_MODULE_INIT_FUNCTION_BEGIN(NatronEngine)
     init_UserParamHolder(module);
     init_Effect(module);
     init_Param(module);
+    init_ButtonParam(module);
+    init_GroupParam(module);
+    init_PageParam(module);
+    init_ParametricParam(module);
     init_AnimatedParam(module);
+    init_IntParam(module);
+    init_Int2DParam(module);
+    init_Int3DParam(module);
+    init_BooleanParam(module);
     init_DoubleParam(module);
     init_Double2DParam(module);
     init_Double3DParam(module);
-    init_ColorParam(module);
-    init_ChoiceParam(module);
-    init_BooleanParam(module);
     init_StringParamBase(module);
     init_StringParam(module);
     init_FileParam(module);
     init_OutputFileParam(module);
     init_PathParam(module);
-    init_IntParam(module);
-    init_Int2DParam(module);
-    init_Int3DParam(module);
-    init_ButtonParam(module);
-    init_GroupParam(module);
-    init_PageParam(module);
-    init_ParametricParam(module);
-    init_Int2DTuple(module);
-    init_Int3DTuple(module);
-    init_Double2DTuple(module);
-    init_Double3DTuple(module);
-    init_ColorTuple(module);
+    init_ColorParam(module);
+    init_ChoiceParam(module);
     init_Natron(module);
 
     // Register converter for type 'NatronEngine.std::size_t'.
@@ -529,6 +537,7 @@ SBK_MODULE_INIT_FUNCTION_BEGIN(NatronEngine)
     // Register converter for type 'const std::list<std::pair<std::string,std::string>>&'.
     SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_LIST_STD_PAIR_STD_STRING_STD_STRING_IDX] = Shiboken::Conversions::createConverter(&PyList_Type, conststd_list_std_pair_std_string_std_string__REF_CppToPython_conststd_list_std_pair_std_string_std_string__REF);
     Shiboken::Conversions::registerConverterName(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_LIST_STD_PAIR_STD_STRING_STD_STRING_IDX], "const std::list<std::pair<std::string,std::string>>&");
+    Shiboken::Conversions::registerConverterName(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_LIST_STD_PAIR_STD_STRING_STD_STRING_IDX], "std::list<std::pair<std::string,std::string>>");
     Shiboken::Conversions::addPythonToCppValueConversion(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_LIST_STD_PAIR_STD_STRING_STD_STRING_IDX],
         conststd_list_std_pair_std_string_std_string__REF_PythonToCpp_conststd_list_std_pair_std_string_std_string__REF,
         is_conststd_list_std_pair_std_string_std_string__REF_PythonToCpp_conststd_list_std_pair_std_string_std_string__REF_Convertible);
@@ -557,6 +566,7 @@ SBK_MODULE_INIT_FUNCTION_BEGIN(NatronEngine)
     // Register converter for type 'const std::list<RenderTask>&'.
     SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_LIST_RENDERTASK_IDX] = Shiboken::Conversions::createConverter(&PyList_Type, conststd_list_RenderTask_REF_CppToPython_conststd_list_RenderTask_REF);
     Shiboken::Conversions::registerConverterName(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_LIST_RENDERTASK_IDX], "const std::list<RenderTask>&");
+    Shiboken::Conversions::registerConverterName(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_LIST_RENDERTASK_IDX], "std::list<RenderTask>");
     Shiboken::Conversions::addPythonToCppValueConversion(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_LIST_RENDERTASK_IDX],
         conststd_list_RenderTask_REF_PythonToCpp_conststd_list_RenderTask_REF,
         is_conststd_list_RenderTask_REF_PythonToCpp_conststd_list_RenderTask_REF_Convertible);
@@ -598,4 +608,5 @@ SBK_MODULE_INIT_FUNCTION_BEGIN(NatronEngine)
         PyErr_Print();
         Py_FatalError("can't initialize module NatronEngine");
     }
+    PySide::registerCleanupFunction(cleanTypesAttributes);
 SBK_MODULE_INIT_FUNCTION_END

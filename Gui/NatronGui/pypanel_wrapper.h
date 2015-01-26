@@ -1,5 +1,5 @@
-#ifndef SBK_PYMODALDIALOGWRAPPER_H
-#define SBK_PYMODALDIALOGWRAPPER_H
+#ifndef SBK_PYPANELWRAPPER_H
+#define SBK_PYPANELWRAPPER_H
 
 #define protected public
 
@@ -9,20 +9,19 @@
 
 namespace PySide { class DynamicQMetaObject; }
 
-class PyModalDialogWrapper : public PyModalDialog
+class PyPanelWrapper : public PyPanel
 {
 public:
-    virtual void accept();
+    PyPanelWrapper(const std::string & label, bool useUserParameters, GuiApp * app);
     virtual void actionEvent(QActionEvent * event);
     virtual void changeEvent(QEvent * event);
     virtual void childEvent(QChildEvent * arg__1);
-    virtual void closeEvent(QCloseEvent * arg__1);
+    virtual void closeEvent(QCloseEvent * event);
     virtual void connectNotify(const char * signal);
-    virtual void contextMenuEvent(QContextMenuEvent * arg__1);
+    virtual void contextMenuEvent(QContextMenuEvent * event);
     virtual void customEvent(QEvent * arg__1);
     virtual int devType() const;
     virtual void disconnectNotify(const char * signal);
-    virtual void done(int arg__1);
     virtual void dragEnterEvent(QDragEnterEvent * event);
     virtual void dragLeaveEvent(QDragLeaveEvent * event);
     virtual void dragMoveEvent(QDragMoveEvent * event);
@@ -37,7 +36,7 @@ public:
     virtual void hideEvent(QHideEvent * event);
     virtual void inputMethodEvent(QInputMethodEvent * event);
     virtual QVariant inputMethodQuery(Qt::InputMethodQuery arg__1) const;
-    virtual void keyPressEvent(QKeyEvent * arg__1);
+    virtual void keyPressEvent(QKeyEvent * event);
     virtual void keyReleaseEvent(QKeyEvent * event);
     virtual void languageChange();
     virtual void leaveEvent(QEvent * event);
@@ -51,20 +50,21 @@ public:
     virtual void moveEvent(QMoveEvent * event);
     virtual QPaintEngine * paintEngine() const;
     virtual void paintEvent(QPaintEvent * event);
-    virtual void reject();
-    virtual void resizeEvent(QResizeEvent * arg__1);
+    virtual void resizeEvent(QResizeEvent * event);
+    virtual void restore(const std::string & arg__1);
+    virtual std::string save();
     virtual void setVisible(bool visible);
-    virtual void showEvent(QShowEvent * arg__1);
+    virtual void showEvent(QShowEvent * event);
     virtual QSize sizeHint() const;
     virtual void tabletEvent(QTabletEvent * event);
     virtual void timerEvent(QTimerEvent * arg__1);
     virtual void wheelEvent(QWheelEvent * event);
-    virtual ~PyModalDialogWrapper();
+    virtual ~PyPanelWrapper();
 public:
     virtual int qt_metacall(QMetaObject::Call call, int id, void** args);
     virtual void* qt_metacast(const char* _clname);
     static void pysideInitQtMetaTypes();
 };
 
-#endif // SBK_PYMODALDIALOGWRAPPER_H
+#endif // SBK_PYPANELWRAPPER_H
 

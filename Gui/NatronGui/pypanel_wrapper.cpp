@@ -14,17 +14,18 @@
 #include <set>
 #include "natrongui_python.h"
 
-#include "pymodaldialog_wrapper.h"
+#include "pypanel_wrapper.h"
 
 // Extra includes
+#include <GuiAppWrapper.h>
 #include <ParameterWrapper.h>
 #include <QList>
+#include <list>
 #include <qaction.h>
 #include <qbitmap.h>
 #include <qbytearray.h>
 #include <qcoreevent.h>
 #include <qcursor.h>
-#include <qdialog.h>
 #include <qevent.h>
 #include <qfont.h>
 #include <qfontinfo.h>
@@ -35,6 +36,7 @@
 #include <qkeysequence.h>
 #include <qlayout.h>
 #include <qlocale.h>
+#include <qmetaobject.h>
 #include <qobject.h>
 #include <qobjectdefs.h>
 #include <qpaintdevice.h>
@@ -47,33 +49,17 @@
 #include <qsize.h>
 #include <qsizepolicy.h>
 #include <qstyle.h>
+#include <qthread.h>
 #include <qwidget.h>
 
 
 // Native ---------------------------------------------------------
 
-void PyModalDialogWrapper::accept()
-{
-    Shiboken::GilState gil;
-    if (PyErr_Occurred())
-        return ;
-    Shiboken::AutoDecRef pyOverride(Shiboken::BindingManager::instance().getOverride(this, "accept"));
-    if (pyOverride.isNull()) {
-        gil.release();
-        return this->::QDialog::accept();
-    }
-
-    Shiboken::AutoDecRef pyArgs(PyTuple_New(0));
-
-    Shiboken::AutoDecRef pyResult(PyObject_Call(pyOverride, pyArgs, NULL));
-    // An error happened in python code!
-    if (pyResult.isNull()) {
-        PyErr_Print();
-        return ;
-    }
+PyPanelWrapper::PyPanelWrapper(const std::string & label, bool useUserParameters, GuiApp * app) : PyPanel(label, useUserParameters, app) {
+    // ... middle
 }
 
-void PyModalDialogWrapper::actionEvent(QActionEvent * event)
+void PyPanelWrapper::actionEvent(QActionEvent * event)
 {
     Shiboken::GilState gil;
     if (PyErr_Occurred())
@@ -99,7 +85,7 @@ void PyModalDialogWrapper::actionEvent(QActionEvent * event)
         Shiboken::Object::invalidate(PyTuple_GET_ITEM(pyArgs, 0));
 }
 
-void PyModalDialogWrapper::changeEvent(QEvent * event)
+void PyPanelWrapper::changeEvent(QEvent * event)
 {
     Shiboken::GilState gil;
     if (PyErr_Occurred())
@@ -125,7 +111,7 @@ void PyModalDialogWrapper::changeEvent(QEvent * event)
         Shiboken::Object::invalidate(PyTuple_GET_ITEM(pyArgs, 0));
 }
 
-void PyModalDialogWrapper::childEvent(QChildEvent * arg__1)
+void PyPanelWrapper::childEvent(QChildEvent * arg__1)
 {
     Shiboken::GilState gil;
     if (PyErr_Occurred())
@@ -151,7 +137,7 @@ void PyModalDialogWrapper::childEvent(QChildEvent * arg__1)
         Shiboken::Object::invalidate(PyTuple_GET_ITEM(pyArgs, 0));
 }
 
-void PyModalDialogWrapper::closeEvent(QCloseEvent * arg__1)
+void PyPanelWrapper::closeEvent(QCloseEvent * event)
 {
     Shiboken::GilState gil;
     if (PyErr_Occurred())
@@ -159,11 +145,11 @@ void PyModalDialogWrapper::closeEvent(QCloseEvent * arg__1)
     Shiboken::AutoDecRef pyOverride(Shiboken::BindingManager::instance().getOverride(this, "closeEvent"));
     if (pyOverride.isNull()) {
         gil.release();
-        return this->::QDialog::closeEvent(arg__1);
+        return this->::QWidget::closeEvent(event);
     }
 
     Shiboken::AutoDecRef pyArgs(Py_BuildValue("(N)",
-        Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkPySide_QtGuiTypes[SBK_QCLOSEEVENT_IDX], arg__1)
+        Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkPySide_QtGuiTypes[SBK_QCLOSEEVENT_IDX], event)
     ));
     bool invalidateArg1 = PyTuple_GET_ITEM(pyArgs, 0)->ob_refcnt == 1;
 
@@ -177,7 +163,7 @@ void PyModalDialogWrapper::closeEvent(QCloseEvent * arg__1)
         Shiboken::Object::invalidate(PyTuple_GET_ITEM(pyArgs, 0));
 }
 
-void PyModalDialogWrapper::connectNotify(const char * signal)
+void PyPanelWrapper::connectNotify(const char * signal)
 {
     Shiboken::GilState gil;
     if (PyErr_Occurred())
@@ -200,7 +186,7 @@ void PyModalDialogWrapper::connectNotify(const char * signal)
     }
 }
 
-void PyModalDialogWrapper::contextMenuEvent(QContextMenuEvent * arg__1)
+void PyPanelWrapper::contextMenuEvent(QContextMenuEvent * event)
 {
     Shiboken::GilState gil;
     if (PyErr_Occurred())
@@ -208,11 +194,11 @@ void PyModalDialogWrapper::contextMenuEvent(QContextMenuEvent * arg__1)
     Shiboken::AutoDecRef pyOverride(Shiboken::BindingManager::instance().getOverride(this, "contextMenuEvent"));
     if (pyOverride.isNull()) {
         gil.release();
-        return this->::QDialog::contextMenuEvent(arg__1);
+        return this->::QWidget::contextMenuEvent(event);
     }
 
     Shiboken::AutoDecRef pyArgs(Py_BuildValue("(N)",
-        Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkPySide_QtGuiTypes[SBK_QCONTEXTMENUEVENT_IDX], arg__1)
+        Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkPySide_QtGuiTypes[SBK_QCONTEXTMENUEVENT_IDX], event)
     ));
     bool invalidateArg1 = PyTuple_GET_ITEM(pyArgs, 0)->ob_refcnt == 1;
 
@@ -226,7 +212,7 @@ void PyModalDialogWrapper::contextMenuEvent(QContextMenuEvent * arg__1)
         Shiboken::Object::invalidate(PyTuple_GET_ITEM(pyArgs, 0));
 }
 
-void PyModalDialogWrapper::customEvent(QEvent * arg__1)
+void PyPanelWrapper::customEvent(QEvent * arg__1)
 {
     Shiboken::GilState gil;
     if (PyErr_Occurred())
@@ -252,7 +238,7 @@ void PyModalDialogWrapper::customEvent(QEvent * arg__1)
         Shiboken::Object::invalidate(PyTuple_GET_ITEM(pyArgs, 0));
 }
 
-int PyModalDialogWrapper::devType() const
+int PyPanelWrapper::devType() const
 {
     Shiboken::GilState gil;
     if (PyErr_Occurred())
@@ -274,7 +260,7 @@ int PyModalDialogWrapper::devType() const
     // Check return type
     PythonToCppFunc pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), pyResult);
     if (!pythonToCpp) {
-        Shiboken::warning(PyExc_RuntimeWarning, 2, "Invalid return value in function %s, expected %s, got %s.", "PyModalDialog.devType", "int", pyResult->ob_type->tp_name);
+        Shiboken::warning(PyExc_RuntimeWarning, 2, "Invalid return value in function %s, expected %s, got %s.", "PyPanel.devType", "int", pyResult->ob_type->tp_name);
         return ((int)0);
     }
     int cppResult;
@@ -282,7 +268,7 @@ int PyModalDialogWrapper::devType() const
     return cppResult;
 }
 
-void PyModalDialogWrapper::disconnectNotify(const char * signal)
+void PyPanelWrapper::disconnectNotify(const char * signal)
 {
     Shiboken::GilState gil;
     if (PyErr_Occurred())
@@ -305,30 +291,7 @@ void PyModalDialogWrapper::disconnectNotify(const char * signal)
     }
 }
 
-void PyModalDialogWrapper::done(int arg__1)
-{
-    Shiboken::GilState gil;
-    if (PyErr_Occurred())
-        return ;
-    Shiboken::AutoDecRef pyOverride(Shiboken::BindingManager::instance().getOverride(this, "done"));
-    if (pyOverride.isNull()) {
-        gil.release();
-        return this->::QDialog::done(arg__1);
-    }
-
-    Shiboken::AutoDecRef pyArgs(Py_BuildValue("(i)",
-        arg__1
-    ));
-
-    Shiboken::AutoDecRef pyResult(PyObject_Call(pyOverride, pyArgs, NULL));
-    // An error happened in python code!
-    if (pyResult.isNull()) {
-        PyErr_Print();
-        return ;
-    }
-}
-
-void PyModalDialogWrapper::dragEnterEvent(QDragEnterEvent * event)
+void PyPanelWrapper::dragEnterEvent(QDragEnterEvent * event)
 {
     Shiboken::GilState gil;
     if (PyErr_Occurred())
@@ -354,7 +317,7 @@ void PyModalDialogWrapper::dragEnterEvent(QDragEnterEvent * event)
         Shiboken::Object::invalidate(PyTuple_GET_ITEM(pyArgs, 0));
 }
 
-void PyModalDialogWrapper::dragLeaveEvent(QDragLeaveEvent * event)
+void PyPanelWrapper::dragLeaveEvent(QDragLeaveEvent * event)
 {
     Shiboken::GilState gil;
     if (PyErr_Occurred())
@@ -380,7 +343,7 @@ void PyModalDialogWrapper::dragLeaveEvent(QDragLeaveEvent * event)
         Shiboken::Object::invalidate(PyTuple_GET_ITEM(pyArgs, 0));
 }
 
-void PyModalDialogWrapper::dragMoveEvent(QDragMoveEvent * event)
+void PyPanelWrapper::dragMoveEvent(QDragMoveEvent * event)
 {
     Shiboken::GilState gil;
     if (PyErr_Occurred())
@@ -406,7 +369,7 @@ void PyModalDialogWrapper::dragMoveEvent(QDragMoveEvent * event)
         Shiboken::Object::invalidate(PyTuple_GET_ITEM(pyArgs, 0));
 }
 
-void PyModalDialogWrapper::dropEvent(QDropEvent * event)
+void PyPanelWrapper::dropEvent(QDropEvent * event)
 {
     Shiboken::GilState gil;
     if (PyErr_Occurred())
@@ -432,7 +395,7 @@ void PyModalDialogWrapper::dropEvent(QDropEvent * event)
         Shiboken::Object::invalidate(PyTuple_GET_ITEM(pyArgs, 0));
 }
 
-void PyModalDialogWrapper::enterEvent(QEvent * event)
+void PyPanelWrapper::enterEvent(QEvent * event)
 {
     Shiboken::GilState gil;
     if (PyErr_Occurred())
@@ -458,7 +421,7 @@ void PyModalDialogWrapper::enterEvent(QEvent * event)
         Shiboken::Object::invalidate(PyTuple_GET_ITEM(pyArgs, 0));
 }
 
-bool PyModalDialogWrapper::event(QEvent * arg__1)
+bool PyPanelWrapper::event(QEvent * arg__1)
 {
     Shiboken::GilState gil;
     if (PyErr_Occurred())
@@ -483,7 +446,7 @@ bool PyModalDialogWrapper::event(QEvent * arg__1)
     // Check return type
     PythonToCppFunc pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), pyResult);
     if (!pythonToCpp) {
-        Shiboken::warning(PyExc_RuntimeWarning, 2, "Invalid return value in function %s, expected %s, got %s.", "PyModalDialog.event", "bool", pyResult->ob_type->tp_name);
+        Shiboken::warning(PyExc_RuntimeWarning, 2, "Invalid return value in function %s, expected %s, got %s.", "PyPanel.event", "bool", pyResult->ob_type->tp_name);
         return ((bool)0);
     }
     bool cppResult;
@@ -493,7 +456,7 @@ bool PyModalDialogWrapper::event(QEvent * arg__1)
     return cppResult;
 }
 
-bool PyModalDialogWrapper::eventFilter(QObject * arg__1, QEvent * arg__2)
+bool PyPanelWrapper::eventFilter(QObject * arg__1, QEvent * arg__2)
 {
     Shiboken::GilState gil;
     if (PyErr_Occurred())
@@ -501,7 +464,7 @@ bool PyModalDialogWrapper::eventFilter(QObject * arg__1, QEvent * arg__2)
     Shiboken::AutoDecRef pyOverride(Shiboken::BindingManager::instance().getOverride(this, "eventFilter"));
     if (pyOverride.isNull()) {
         gil.release();
-        return this->::QDialog::eventFilter(arg__1, arg__2);
+        return this->::QObject::eventFilter(arg__1, arg__2);
     }
 
     Shiboken::AutoDecRef pyArgs(Py_BuildValue("(NN)",
@@ -519,7 +482,7 @@ bool PyModalDialogWrapper::eventFilter(QObject * arg__1, QEvent * arg__2)
     // Check return type
     PythonToCppFunc pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), pyResult);
     if (!pythonToCpp) {
-        Shiboken::warning(PyExc_RuntimeWarning, 2, "Invalid return value in function %s, expected %s, got %s.", "PyModalDialog.eventFilter", "bool", pyResult->ob_type->tp_name);
+        Shiboken::warning(PyExc_RuntimeWarning, 2, "Invalid return value in function %s, expected %s, got %s.", "PyPanel.eventFilter", "bool", pyResult->ob_type->tp_name);
         return ((bool)0);
     }
     bool cppResult;
@@ -529,7 +492,7 @@ bool PyModalDialogWrapper::eventFilter(QObject * arg__1, QEvent * arg__2)
     return cppResult;
 }
 
-void PyModalDialogWrapper::focusInEvent(QFocusEvent * event)
+void PyPanelWrapper::focusInEvent(QFocusEvent * event)
 {
     Shiboken::GilState gil;
     if (PyErr_Occurred())
@@ -555,7 +518,7 @@ void PyModalDialogWrapper::focusInEvent(QFocusEvent * event)
         Shiboken::Object::invalidate(PyTuple_GET_ITEM(pyArgs, 0));
 }
 
-bool PyModalDialogWrapper::focusNextPrevChild(bool next)
+bool PyPanelWrapper::focusNextPrevChild(bool next)
 {
     Shiboken::GilState gil;
     if (PyErr_Occurred())
@@ -579,7 +542,7 @@ bool PyModalDialogWrapper::focusNextPrevChild(bool next)
     // Check return type
     PythonToCppFunc pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), pyResult);
     if (!pythonToCpp) {
-        Shiboken::warning(PyExc_RuntimeWarning, 2, "Invalid return value in function %s, expected %s, got %s.", "PyModalDialog.focusNextPrevChild", "bool", pyResult->ob_type->tp_name);
+        Shiboken::warning(PyExc_RuntimeWarning, 2, "Invalid return value in function %s, expected %s, got %s.", "PyPanel.focusNextPrevChild", "bool", pyResult->ob_type->tp_name);
         return ((bool)0);
     }
     bool cppResult;
@@ -587,7 +550,7 @@ bool PyModalDialogWrapper::focusNextPrevChild(bool next)
     return cppResult;
 }
 
-void PyModalDialogWrapper::focusOutEvent(QFocusEvent * event)
+void PyPanelWrapper::focusOutEvent(QFocusEvent * event)
 {
     Shiboken::GilState gil;
     if (PyErr_Occurred())
@@ -613,7 +576,7 @@ void PyModalDialogWrapper::focusOutEvent(QFocusEvent * event)
         Shiboken::Object::invalidate(PyTuple_GET_ITEM(pyArgs, 0));
 }
 
-int PyModalDialogWrapper::heightForWidth(int arg__1) const
+int PyPanelWrapper::heightForWidth(int arg__1) const
 {
     Shiboken::GilState gil;
     if (PyErr_Occurred())
@@ -637,7 +600,7 @@ int PyModalDialogWrapper::heightForWidth(int arg__1) const
     // Check return type
     PythonToCppFunc pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), pyResult);
     if (!pythonToCpp) {
-        Shiboken::warning(PyExc_RuntimeWarning, 2, "Invalid return value in function %s, expected %s, got %s.", "PyModalDialog.heightForWidth", "int", pyResult->ob_type->tp_name);
+        Shiboken::warning(PyExc_RuntimeWarning, 2, "Invalid return value in function %s, expected %s, got %s.", "PyPanel.heightForWidth", "int", pyResult->ob_type->tp_name);
         return ((int)0);
     }
     int cppResult;
@@ -645,7 +608,7 @@ int PyModalDialogWrapper::heightForWidth(int arg__1) const
     return cppResult;
 }
 
-void PyModalDialogWrapper::hideEvent(QHideEvent * event)
+void PyPanelWrapper::hideEvent(QHideEvent * event)
 {
     Shiboken::GilState gil;
     if (PyErr_Occurred())
@@ -671,7 +634,7 @@ void PyModalDialogWrapper::hideEvent(QHideEvent * event)
         Shiboken::Object::invalidate(PyTuple_GET_ITEM(pyArgs, 0));
 }
 
-void PyModalDialogWrapper::inputMethodEvent(QInputMethodEvent * event)
+void PyPanelWrapper::inputMethodEvent(QInputMethodEvent * event)
 {
     Shiboken::GilState gil;
     if (PyErr_Occurred())
@@ -697,7 +660,7 @@ void PyModalDialogWrapper::inputMethodEvent(QInputMethodEvent * event)
         Shiboken::Object::invalidate(PyTuple_GET_ITEM(pyArgs, 0));
 }
 
-QVariant PyModalDialogWrapper::inputMethodQuery(Qt::InputMethodQuery arg__1) const
+QVariant PyPanelWrapper::inputMethodQuery(Qt::InputMethodQuery arg__1) const
 {
     Shiboken::GilState gil;
     if (PyErr_Occurred())
@@ -721,7 +684,7 @@ QVariant PyModalDialogWrapper::inputMethodQuery(Qt::InputMethodQuery arg__1) con
     // Check return type
     PythonToCppFunc pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QVARIANT_IDX], pyResult);
     if (!pythonToCpp) {
-        Shiboken::warning(PyExc_RuntimeWarning, 2, "Invalid return value in function %s, expected %s, got %s.", "PyModalDialog.inputMethodQuery", "QVariant", pyResult->ob_type->tp_name);
+        Shiboken::warning(PyExc_RuntimeWarning, 2, "Invalid return value in function %s, expected %s, got %s.", "PyPanel.inputMethodQuery", "QVariant", pyResult->ob_type->tp_name);
         return ::QVariant();
     }
     ::QVariant cppResult = ::QVariant();
@@ -729,7 +692,7 @@ QVariant PyModalDialogWrapper::inputMethodQuery(Qt::InputMethodQuery arg__1) con
     return cppResult;
 }
 
-void PyModalDialogWrapper::keyPressEvent(QKeyEvent * arg__1)
+void PyPanelWrapper::keyPressEvent(QKeyEvent * event)
 {
     Shiboken::GilState gil;
     if (PyErr_Occurred())
@@ -737,11 +700,11 @@ void PyModalDialogWrapper::keyPressEvent(QKeyEvent * arg__1)
     Shiboken::AutoDecRef pyOverride(Shiboken::BindingManager::instance().getOverride(this, "keyPressEvent"));
     if (pyOverride.isNull()) {
         gil.release();
-        return this->::QDialog::keyPressEvent(arg__1);
+        return this->::QWidget::keyPressEvent(event);
     }
 
     Shiboken::AutoDecRef pyArgs(Py_BuildValue("(N)",
-        Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkPySide_QtGuiTypes[SBK_QKEYEVENT_IDX], arg__1)
+        Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkPySide_QtGuiTypes[SBK_QKEYEVENT_IDX], event)
     ));
     bool invalidateArg1 = PyTuple_GET_ITEM(pyArgs, 0)->ob_refcnt == 1;
 
@@ -755,7 +718,7 @@ void PyModalDialogWrapper::keyPressEvent(QKeyEvent * arg__1)
         Shiboken::Object::invalidate(PyTuple_GET_ITEM(pyArgs, 0));
 }
 
-void PyModalDialogWrapper::keyReleaseEvent(QKeyEvent * event)
+void PyPanelWrapper::keyReleaseEvent(QKeyEvent * event)
 {
     Shiboken::GilState gil;
     if (PyErr_Occurred())
@@ -781,7 +744,7 @@ void PyModalDialogWrapper::keyReleaseEvent(QKeyEvent * event)
         Shiboken::Object::invalidate(PyTuple_GET_ITEM(pyArgs, 0));
 }
 
-void PyModalDialogWrapper::languageChange()
+void PyPanelWrapper::languageChange()
 {
     Shiboken::GilState gil;
     if (PyErr_Occurred())
@@ -802,7 +765,7 @@ void PyModalDialogWrapper::languageChange()
     }
 }
 
-void PyModalDialogWrapper::leaveEvent(QEvent * event)
+void PyPanelWrapper::leaveEvent(QEvent * event)
 {
     Shiboken::GilState gil;
     if (PyErr_Occurred())
@@ -828,7 +791,7 @@ void PyModalDialogWrapper::leaveEvent(QEvent * event)
         Shiboken::Object::invalidate(PyTuple_GET_ITEM(pyArgs, 0));
 }
 
-int PyModalDialogWrapper::metric(QPaintDevice::PaintDeviceMetric arg__1) const
+int PyPanelWrapper::metric(QPaintDevice::PaintDeviceMetric arg__1) const
 {
     Shiboken::GilState gil;
     if (PyErr_Occurred())
@@ -852,7 +815,7 @@ int PyModalDialogWrapper::metric(QPaintDevice::PaintDeviceMetric arg__1) const
     // Check return type
     PythonToCppFunc pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), pyResult);
     if (!pythonToCpp) {
-        Shiboken::warning(PyExc_RuntimeWarning, 2, "Invalid return value in function %s, expected %s, got %s.", "PyModalDialog.metric", "int", pyResult->ob_type->tp_name);
+        Shiboken::warning(PyExc_RuntimeWarning, 2, "Invalid return value in function %s, expected %s, got %s.", "PyPanel.metric", "int", pyResult->ob_type->tp_name);
         return ((int)0);
     }
     int cppResult;
@@ -860,7 +823,7 @@ int PyModalDialogWrapper::metric(QPaintDevice::PaintDeviceMetric arg__1) const
     return cppResult;
 }
 
-QSize PyModalDialogWrapper::minimumSizeHint() const
+QSize PyPanelWrapper::minimumSizeHint() const
 {
     Shiboken::GilState gil;
     if (PyErr_Occurred())
@@ -868,7 +831,7 @@ QSize PyModalDialogWrapper::minimumSizeHint() const
     Shiboken::AutoDecRef pyOverride(Shiboken::BindingManager::instance().getOverride(this, "minimumSizeHint"));
     if (pyOverride.isNull()) {
         gil.release();
-        return this->::QDialog::minimumSizeHint();
+        return this->::QWidget::minimumSizeHint();
     }
 
     Shiboken::AutoDecRef pyArgs(PyTuple_New(0));
@@ -882,7 +845,7 @@ QSize PyModalDialogWrapper::minimumSizeHint() const
     // Check return type
     PythonToCppFunc pythonToCpp = Shiboken::Conversions::isPythonToCppValueConvertible((SbkObjectType*)SbkPySide_QtCoreTypes[SBK_QSIZE_IDX], pyResult);
     if (!pythonToCpp) {
-        Shiboken::warning(PyExc_RuntimeWarning, 2, "Invalid return value in function %s, expected %s, got %s.", "PyModalDialog.minimumSizeHint", Shiboken::SbkType< QSize >()->tp_name, pyResult->ob_type->tp_name);
+        Shiboken::warning(PyExc_RuntimeWarning, 2, "Invalid return value in function %s, expected %s, got %s.", "PyPanel.minimumSizeHint", Shiboken::SbkType< QSize >()->tp_name, pyResult->ob_type->tp_name);
         return ::QSize();
     }
     ::QSize cppResult = ::QSize();
@@ -890,7 +853,7 @@ QSize PyModalDialogWrapper::minimumSizeHint() const
     return cppResult;
 }
 
-void PyModalDialogWrapper::mouseDoubleClickEvent(QMouseEvent * event)
+void PyPanelWrapper::mouseDoubleClickEvent(QMouseEvent * event)
 {
     Shiboken::GilState gil;
     if (PyErr_Occurred())
@@ -916,7 +879,7 @@ void PyModalDialogWrapper::mouseDoubleClickEvent(QMouseEvent * event)
         Shiboken::Object::invalidate(PyTuple_GET_ITEM(pyArgs, 0));
 }
 
-void PyModalDialogWrapper::mouseMoveEvent(QMouseEvent * event)
+void PyPanelWrapper::mouseMoveEvent(QMouseEvent * event)
 {
     Shiboken::GilState gil;
     if (PyErr_Occurred())
@@ -942,7 +905,7 @@ void PyModalDialogWrapper::mouseMoveEvent(QMouseEvent * event)
         Shiboken::Object::invalidate(PyTuple_GET_ITEM(pyArgs, 0));
 }
 
-void PyModalDialogWrapper::mousePressEvent(QMouseEvent * event)
+void PyPanelWrapper::mousePressEvent(QMouseEvent * event)
 {
     Shiboken::GilState gil;
     if (PyErr_Occurred())
@@ -968,7 +931,7 @@ void PyModalDialogWrapper::mousePressEvent(QMouseEvent * event)
         Shiboken::Object::invalidate(PyTuple_GET_ITEM(pyArgs, 0));
 }
 
-void PyModalDialogWrapper::mouseReleaseEvent(QMouseEvent * event)
+void PyPanelWrapper::mouseReleaseEvent(QMouseEvent * event)
 {
     Shiboken::GilState gil;
     if (PyErr_Occurred())
@@ -994,7 +957,7 @@ void PyModalDialogWrapper::mouseReleaseEvent(QMouseEvent * event)
         Shiboken::Object::invalidate(PyTuple_GET_ITEM(pyArgs, 0));
 }
 
-void PyModalDialogWrapper::moveEvent(QMoveEvent * event)
+void PyPanelWrapper::moveEvent(QMoveEvent * event)
 {
     Shiboken::GilState gil;
     if (PyErr_Occurred())
@@ -1020,7 +983,7 @@ void PyModalDialogWrapper::moveEvent(QMoveEvent * event)
         Shiboken::Object::invalidate(PyTuple_GET_ITEM(pyArgs, 0));
 }
 
-QPaintEngine * PyModalDialogWrapper::paintEngine() const
+QPaintEngine * PyPanelWrapper::paintEngine() const
 {
     Shiboken::GilState gil;
     if (PyErr_Occurred())
@@ -1042,7 +1005,7 @@ QPaintEngine * PyModalDialogWrapper::paintEngine() const
     // Check return type
     PythonToCppFunc pythonToCpp = Shiboken::Conversions::isPythonToCppPointerConvertible((SbkObjectType*)SbkPySide_QtGuiTypes[SBK_QPAINTENGINE_IDX], pyResult);
     if (!pythonToCpp) {
-        Shiboken::warning(PyExc_RuntimeWarning, 2, "Invalid return value in function %s, expected %s, got %s.", "PyModalDialog.paintEngine", Shiboken::SbkType< QPaintEngine >()->tp_name, pyResult->ob_type->tp_name);
+        Shiboken::warning(PyExc_RuntimeWarning, 2, "Invalid return value in function %s, expected %s, got %s.", "PyPanel.paintEngine", Shiboken::SbkType< QPaintEngine >()->tp_name, pyResult->ob_type->tp_name);
         return ((::QPaintEngine*)0);
     }
     ::QPaintEngine* cppResult;
@@ -1050,7 +1013,7 @@ QPaintEngine * PyModalDialogWrapper::paintEngine() const
     return cppResult;
 }
 
-void PyModalDialogWrapper::paintEvent(QPaintEvent * event)
+void PyPanelWrapper::paintEvent(QPaintEvent * event)
 {
     Shiboken::GilState gil;
     if (PyErr_Occurred())
@@ -1076,28 +1039,7 @@ void PyModalDialogWrapper::paintEvent(QPaintEvent * event)
         Shiboken::Object::invalidate(PyTuple_GET_ITEM(pyArgs, 0));
 }
 
-void PyModalDialogWrapper::reject()
-{
-    Shiboken::GilState gil;
-    if (PyErr_Occurred())
-        return ;
-    Shiboken::AutoDecRef pyOverride(Shiboken::BindingManager::instance().getOverride(this, "reject"));
-    if (pyOverride.isNull()) {
-        gil.release();
-        return this->::QDialog::reject();
-    }
-
-    Shiboken::AutoDecRef pyArgs(PyTuple_New(0));
-
-    Shiboken::AutoDecRef pyResult(PyObject_Call(pyOverride, pyArgs, NULL));
-    // An error happened in python code!
-    if (pyResult.isNull()) {
-        PyErr_Print();
-        return ;
-    }
-}
-
-void PyModalDialogWrapper::resizeEvent(QResizeEvent * arg__1)
+void PyPanelWrapper::resizeEvent(QResizeEvent * event)
 {
     Shiboken::GilState gil;
     if (PyErr_Occurred())
@@ -1105,11 +1047,11 @@ void PyModalDialogWrapper::resizeEvent(QResizeEvent * arg__1)
     Shiboken::AutoDecRef pyOverride(Shiboken::BindingManager::instance().getOverride(this, "resizeEvent"));
     if (pyOverride.isNull()) {
         gil.release();
-        return this->::QDialog::resizeEvent(arg__1);
+        return this->::QWidget::resizeEvent(event);
     }
 
     Shiboken::AutoDecRef pyArgs(Py_BuildValue("(N)",
-        Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkPySide_QtGuiTypes[SBK_QRESIZEEVENT_IDX], arg__1)
+        Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkPySide_QtGuiTypes[SBK_QRESIZEEVENT_IDX], event)
     ));
     bool invalidateArg1 = PyTuple_GET_ITEM(pyArgs, 0)->ob_refcnt == 1;
 
@@ -1123,7 +1065,60 @@ void PyModalDialogWrapper::resizeEvent(QResizeEvent * arg__1)
         Shiboken::Object::invalidate(PyTuple_GET_ITEM(pyArgs, 0));
 }
 
-void PyModalDialogWrapper::setVisible(bool visible)
+void PyPanelWrapper::restore(const std::string & arg__1)
+{
+    Shiboken::GilState gil;
+    if (PyErr_Occurred())
+        return ;
+    Shiboken::AutoDecRef pyOverride(Shiboken::BindingManager::instance().getOverride(this, "restore"));
+    if (pyOverride.isNull()) {
+        gil.release();
+        return this->::PyPanel::restore(arg__1);
+    }
+
+    Shiboken::AutoDecRef pyArgs(Py_BuildValue("(N)",
+        Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), &arg__1)
+    ));
+
+    Shiboken::AutoDecRef pyResult(PyObject_Call(pyOverride, pyArgs, NULL));
+    // An error happened in python code!
+    if (pyResult.isNull()) {
+        PyErr_Print();
+        return ;
+    }
+}
+
+std::string PyPanelWrapper::save()
+{
+    Shiboken::GilState gil;
+    if (PyErr_Occurred())
+        return ::std::string();
+    Shiboken::AutoDecRef pyOverride(Shiboken::BindingManager::instance().getOverride(this, "save"));
+    if (pyOverride.isNull()) {
+        gil.release();
+        return this->::PyPanel::save();
+    }
+
+    Shiboken::AutoDecRef pyArgs(PyTuple_New(0));
+
+    Shiboken::AutoDecRef pyResult(PyObject_Call(pyOverride, pyArgs, NULL));
+    // An error happened in python code!
+    if (pyResult.isNull()) {
+        PyErr_Print();
+        return ::std::string();
+    }
+    // Check return type
+    PythonToCppFunc pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), pyResult);
+    if (!pythonToCpp) {
+        Shiboken::warning(PyExc_RuntimeWarning, 2, "Invalid return value in function %s, expected %s, got %s.", "PyPanel.save", "string", pyResult->ob_type->tp_name);
+        return ::std::string();
+    }
+    ::std::string cppResult;
+    pythonToCpp(pyResult, &cppResult);
+    return cppResult;
+}
+
+void PyPanelWrapper::setVisible(bool visible)
 {
     Shiboken::GilState gil;
     if (PyErr_Occurred())
@@ -1131,7 +1126,7 @@ void PyModalDialogWrapper::setVisible(bool visible)
     Shiboken::AutoDecRef pyOverride(Shiboken::BindingManager::instance().getOverride(this, "setVisible"));
     if (pyOverride.isNull()) {
         gil.release();
-        return this->::QDialog::setVisible(visible);
+        return this->::QWidget::setVisible(visible);
     }
 
     Shiboken::AutoDecRef pyArgs(Py_BuildValue("(N)",
@@ -1146,7 +1141,7 @@ void PyModalDialogWrapper::setVisible(bool visible)
     }
 }
 
-void PyModalDialogWrapper::showEvent(QShowEvent * arg__1)
+void PyPanelWrapper::showEvent(QShowEvent * event)
 {
     Shiboken::GilState gil;
     if (PyErr_Occurred())
@@ -1154,11 +1149,11 @@ void PyModalDialogWrapper::showEvent(QShowEvent * arg__1)
     Shiboken::AutoDecRef pyOverride(Shiboken::BindingManager::instance().getOverride(this, "showEvent"));
     if (pyOverride.isNull()) {
         gil.release();
-        return this->::QDialog::showEvent(arg__1);
+        return this->::QWidget::showEvent(event);
     }
 
     Shiboken::AutoDecRef pyArgs(Py_BuildValue("(N)",
-        Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkPySide_QtGuiTypes[SBK_QSHOWEVENT_IDX], arg__1)
+        Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkPySide_QtGuiTypes[SBK_QSHOWEVENT_IDX], event)
     ));
     bool invalidateArg1 = PyTuple_GET_ITEM(pyArgs, 0)->ob_refcnt == 1;
 
@@ -1172,7 +1167,7 @@ void PyModalDialogWrapper::showEvent(QShowEvent * arg__1)
         Shiboken::Object::invalidate(PyTuple_GET_ITEM(pyArgs, 0));
 }
 
-QSize PyModalDialogWrapper::sizeHint() const
+QSize PyPanelWrapper::sizeHint() const
 {
     Shiboken::GilState gil;
     if (PyErr_Occurred())
@@ -1180,7 +1175,7 @@ QSize PyModalDialogWrapper::sizeHint() const
     Shiboken::AutoDecRef pyOverride(Shiboken::BindingManager::instance().getOverride(this, "sizeHint"));
     if (pyOverride.isNull()) {
         gil.release();
-        return this->::QDialog::sizeHint();
+        return this->::QWidget::sizeHint();
     }
 
     Shiboken::AutoDecRef pyArgs(PyTuple_New(0));
@@ -1194,7 +1189,7 @@ QSize PyModalDialogWrapper::sizeHint() const
     // Check return type
     PythonToCppFunc pythonToCpp = Shiboken::Conversions::isPythonToCppValueConvertible((SbkObjectType*)SbkPySide_QtCoreTypes[SBK_QSIZE_IDX], pyResult);
     if (!pythonToCpp) {
-        Shiboken::warning(PyExc_RuntimeWarning, 2, "Invalid return value in function %s, expected %s, got %s.", "PyModalDialog.sizeHint", Shiboken::SbkType< QSize >()->tp_name, pyResult->ob_type->tp_name);
+        Shiboken::warning(PyExc_RuntimeWarning, 2, "Invalid return value in function %s, expected %s, got %s.", "PyPanel.sizeHint", Shiboken::SbkType< QSize >()->tp_name, pyResult->ob_type->tp_name);
         return ::QSize();
     }
     ::QSize cppResult = ::QSize();
@@ -1202,7 +1197,7 @@ QSize PyModalDialogWrapper::sizeHint() const
     return cppResult;
 }
 
-void PyModalDialogWrapper::tabletEvent(QTabletEvent * event)
+void PyPanelWrapper::tabletEvent(QTabletEvent * event)
 {
     Shiboken::GilState gil;
     if (PyErr_Occurred())
@@ -1228,7 +1223,7 @@ void PyModalDialogWrapper::tabletEvent(QTabletEvent * event)
         Shiboken::Object::invalidate(PyTuple_GET_ITEM(pyArgs, 0));
 }
 
-void PyModalDialogWrapper::timerEvent(QTimerEvent * arg__1)
+void PyPanelWrapper::timerEvent(QTimerEvent * arg__1)
 {
     Shiboken::GilState gil;
     if (PyErr_Occurred())
@@ -1254,7 +1249,7 @@ void PyModalDialogWrapper::timerEvent(QTimerEvent * arg__1)
         Shiboken::Object::invalidate(PyTuple_GET_ITEM(pyArgs, 0));
 }
 
-void PyModalDialogWrapper::wheelEvent(QWheelEvent * event)
+void PyPanelWrapper::wheelEvent(QWheelEvent * event)
 {
     Shiboken::GilState gil;
     if (PyErr_Occurred())
@@ -1280,33 +1275,33 @@ void PyModalDialogWrapper::wheelEvent(QWheelEvent * event)
         Shiboken::Object::invalidate(PyTuple_GET_ITEM(pyArgs, 0));
 }
 
-const QMetaObject* PyModalDialogWrapper::metaObject() const
+const QMetaObject* PyPanelWrapper::metaObject() const
 {
     #if QT_VERSION >= 0x040700
     if (QObject::d_ptr->metaObject) return QObject::d_ptr->metaObject;
     #endif
     SbkObject* pySelf = Shiboken::BindingManager::instance().retrieveWrapper(this);
     if (pySelf == NULL)
-        return PyModalDialog::metaObject();
+        return PyPanel::metaObject();
     return PySide::SignalManager::retriveMetaObject(reinterpret_cast<PyObject*>(pySelf));
 }
 
-int PyModalDialogWrapper::qt_metacall(QMetaObject::Call call, int id, void** args)
+int PyPanelWrapper::qt_metacall(QMetaObject::Call call, int id, void** args)
 {
-    int result = PyModalDialog::qt_metacall(call, id, args);
+    int result = PyPanel::qt_metacall(call, id, args);
     return result < 0 ? result : PySide::SignalManager::qt_metacall(this, call, id, args);
 }
 
-void* PyModalDialogWrapper::qt_metacast(const char* _clname)
+void* PyPanelWrapper::qt_metacast(const char* _clname)
 {
         if (!_clname) return 0;
         SbkObject* pySelf = Shiboken::BindingManager::instance().retrieveWrapper(this);
         if (pySelf && PySide::inherits(Py_TYPE(pySelf), _clname))
-                return static_cast<void*>(const_cast< PyModalDialogWrapper* >(this));
-        return PyModalDialog::qt_metacast(_clname);
+                return static_cast<void*>(const_cast< PyPanelWrapper* >(this));
+        return PyPanel::qt_metacast(_clname);
 }
 
-PyModalDialogWrapper::~PyModalDialogWrapper()
+PyPanelWrapper::~PyPanelWrapper()
 {
     SbkObject* wrapper = Shiboken::BindingManager::instance().retrieveWrapper(this);
     Shiboken::Object::destroy(wrapper, this);
@@ -1315,13 +1310,108 @@ PyModalDialogWrapper::~PyModalDialogWrapper()
 // Target ---------------------------------------------------------
 
 extern "C" {
-static PyObject* Sbk_PyModalDialogFunc_addWidget(PyObject* self, PyObject* pyArg)
+static int
+Sbk_PyPanel_Init(PyObject* self, PyObject* args, PyObject* kwds)
 {
-    ::PyModalDialog* cppSelf = 0;
+    const char** argNames = 0;
+    const QMetaObject* metaObject;
+    SbkObject* sbkSelf = reinterpret_cast<SbkObject*>(self);
+    SbkObjectType* type = reinterpret_cast<SbkObjectType*>(self->ob_type);
+    SbkObjectType* myType = reinterpret_cast<SbkObjectType*>(SbkNatronGuiTypes[SBK_PYPANEL_IDX]);
+    if (type != myType) {
+        Shiboken::ObjectType::copyMultimpleheritance(type, myType);
+    }
+
+    if (Shiboken::Object::isUserType(self) && !Shiboken::ObjectType::canCallConstructor(self->ob_type, Shiboken::SbkType< ::PyPanel >()))
+        return -1;
+
+    ::PyPanelWrapper* cptr = 0;
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp[] = { 0, 0, 0 };
+    SBK_UNUSED(pythonToCpp)
+    int numArgs = PyTuple_GET_SIZE(args);
+    PyObject* pyArgs[] = {0, 0, 0};
+
+    // invalid argument lengths
+
+
+    if (!PyArg_UnpackTuple(args, "PyPanel", 3, 3, &(pyArgs[0]), &(pyArgs[1]), &(pyArgs[2])))
+        return -1;
+
+
+    // Overloaded function decisor
+    // 0: PyPanel(std::string,bool,GuiApp*)
+    if (numArgs == 3
+        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[0])))
+        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), (pyArgs[1])))
+        && (pythonToCpp[2] = Shiboken::Conversions::isPythonToCppPointerConvertible((SbkObjectType*)SbkNatronGuiTypes[SBK_GUIAPP_IDX], (pyArgs[2])))) {
+        overloadId = 0; // PyPanel(std::string,bool,GuiApp*)
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_PyPanel_Init_TypeError;
+
+    // Call function/method
+    {
+        ::std::string cppArg0;
+        pythonToCpp[0](pyArgs[0], &cppArg0);
+        bool cppArg1;
+        pythonToCpp[1](pyArgs[1], &cppArg1);
+        if (!Shiboken::Object::isValid(pyArgs[2]))
+            return -1;
+        ::GuiApp* cppArg2;
+        pythonToCpp[2](pyArgs[2], &cppArg2);
+
+        if (!PyErr_Occurred()) {
+            // PyPanel(std::string,bool,GuiApp*)
+            void* addr = PySide::nextQObjectMemoryAddr();
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            if (addr) {
+                cptr = new (addr) ::PyPanelWrapper(cppArg0, cppArg1, cppArg2);
+                PySide::setNextQObjectMemoryAddr(0);
+            } else {
+                cptr = new ::PyPanelWrapper(cppArg0, cppArg1, cppArg2);
+            }
+
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+
+            // Ownership transferences.
+            Shiboken::Object::releaseOwnership(self);
+        }
+    }
+
+    if (PyErr_Occurred() || !Shiboken::Object::setCppPointer(sbkSelf, Shiboken::SbkType< ::PyPanel >(), cptr)) {
+        delete cptr;
+        return -1;
+    }
+    if (!cptr) goto Sbk_PyPanel_Init_TypeError;
+
+    Shiboken::Object::setValidCpp(sbkSelf, true);
+    Shiboken::Object::setHasCppWrapper(sbkSelf, true);
+    Shiboken::BindingManager::instance().registerWrapper(sbkSelf, cptr);
+
+    // QObject setup
+    PySide::Signal::updateSourceObject(self);
+    metaObject = cptr->metaObject(); // <- init python qt properties
+    if (kwds && !PySide::fillQtProperties(self, metaObject, kwds, argNames, 0))
+        return -1;
+
+
+    return 1;
+
+    Sbk_PyPanel_Init_TypeError:
+        const char* overloads[] = {"std::string, bool, NatronGui.GuiApp", 0};
+        Shiboken::setErrorAboutWrongArguments(args, "NatronGui.PyPanel", overloads);
+        return -1;
+}
+
+static PyObject* Sbk_PyPanelFunc_addWidget(PyObject* self, PyObject* pyArg)
+{
+    ::PyPanel* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = ((::PyModalDialog*)Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYMODALDIALOG_IDX], (SbkObject*)self));
+    cppSelf = ((::PyPanel*)Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYPANEL_IDX], (SbkObject*)self));
     int overloadId = -1;
     PythonToCppFunc pythonToCpp;
     SBK_UNUSED(pythonToCpp)
@@ -1333,7 +1423,7 @@ static PyObject* Sbk_PyModalDialogFunc_addWidget(PyObject* self, PyObject* pyArg
     }
 
     // Function signature not found.
-    if (overloadId == -1) goto Sbk_PyModalDialogFunc_addWidget_TypeError;
+    if (overloadId == -1) goto Sbk_PyPanelFunc_addWidget_TypeError;
 
     // Call function/method
     {
@@ -1355,19 +1445,47 @@ static PyObject* Sbk_PyModalDialogFunc_addWidget(PyObject* self, PyObject* pyArg
     }
     Py_RETURN_NONE;
 
-    Sbk_PyModalDialogFunc_addWidget_TypeError:
+    Sbk_PyPanelFunc_addWidget_TypeError:
         const char* overloads[] = {"PySide.QtGui.QWidget", 0};
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronGui.PyModalDialog.addWidget", overloads);
+        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronGui.PyPanel.addWidget", overloads);
         return 0;
 }
 
-static PyObject* Sbk_PyModalDialogFunc_getParam(PyObject* self, PyObject* pyArg)
+static PyObject* Sbk_PyPanelFunc_getLabel(PyObject* self)
 {
-    ::PyModalDialog* cppSelf = 0;
+    ::PyPanel* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = ((::PyModalDialog*)Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYMODALDIALOG_IDX], (SbkObject*)self));
+    cppSelf = ((::PyPanel*)Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYPANEL_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+
+    // Call function/method
+    {
+
+        if (!PyErr_Occurred()) {
+            // getLabel()const
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            std::string cppResult = const_cast<const ::PyPanel*>(cppSelf)->getLabel();
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), &cppResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+}
+
+static PyObject* Sbk_PyPanelFunc_getParam(PyObject* self, PyObject* pyArg)
+{
+    ::PyPanel* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::PyPanel*)Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYPANEL_IDX], (SbkObject*)self));
     PyObject* pyResult = 0;
     int overloadId = -1;
     PythonToCppFunc pythonToCpp;
@@ -1380,7 +1498,7 @@ static PyObject* Sbk_PyModalDialogFunc_getParam(PyObject* self, PyObject* pyArg)
     }
 
     // Function signature not found.
-    if (overloadId == -1) goto Sbk_PyModalDialogFunc_getParam_TypeError;
+    if (overloadId == -1) goto Sbk_PyPanelFunc_getParam_TypeError;
 
     // Call function/method
     {
@@ -1390,7 +1508,7 @@ static PyObject* Sbk_PyModalDialogFunc_getParam(PyObject* self, PyObject* pyArg)
         if (!PyErr_Occurred()) {
             // getParam(std::string)const
             PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            Param * cppResult = const_cast<const ::PyModalDialog*>(cppSelf)->getParam(cppArg0);
+            Param * cppResult = const_cast<const ::PyPanel*>(cppSelf)->getParam(cppArg0);
             PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_PARAM_IDX], cppResult);
 
@@ -1405,19 +1523,59 @@ static PyObject* Sbk_PyModalDialogFunc_getParam(PyObject* self, PyObject* pyArg)
     }
     return pyResult;
 
-    Sbk_PyModalDialogFunc_getParam_TypeError:
+    Sbk_PyPanelFunc_getParam_TypeError:
         const char* overloads[] = {"std::string", 0};
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronGui.PyModalDialog.getParam", overloads);
+        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronGui.PyPanel.getParam", overloads);
         return 0;
 }
 
-static PyObject* Sbk_PyModalDialogFunc_insertWidget(PyObject* self, PyObject* args)
+static PyObject* Sbk_PyPanelFunc_getParams(PyObject* self)
 {
-    ::PyModalDialog* cppSelf = 0;
+    ::PyPanel* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = ((::PyModalDialog*)Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYMODALDIALOG_IDX], (SbkObject*)self));
+    cppSelf = ((::PyPanel*)Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYPANEL_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+
+    // Call function/method
+    {
+
+        if (!PyErr_Occurred()) {
+            // getParams()const
+            // Begin code injection
+
+            std::list<Param*> params = cppSelf->getParams();
+            PyObject* ret = PyList_New((int) params.size());
+            int idx = 0;
+            for (std::list<Param*>::iterator it = params.begin(); it!=params.end(); ++it,++idx) {
+            PyObject* item = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_PARAM_IDX], *it);
+            // Ownership transferences.
+            Shiboken::Object::getOwnership(item);
+            PyList_SET_ITEM(ret, idx, item);
+            }
+            return ret;
+
+            // End of code injection
+
+
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+}
+
+static PyObject* Sbk_PyPanelFunc_insertWidget(PyObject* self, PyObject* args)
+{
+    ::PyPanel* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::PyPanel*)Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYPANEL_IDX], (SbkObject*)self));
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { 0, 0 };
     SBK_UNUSED(pythonToCpp)
@@ -1440,7 +1598,7 @@ static PyObject* Sbk_PyModalDialogFunc_insertWidget(PyObject* self, PyObject* ar
     }
 
     // Function signature not found.
-    if (overloadId == -1) goto Sbk_PyModalDialogFunc_insertWidget_TypeError;
+    if (overloadId == -1) goto Sbk_PyPanelFunc_insertWidget_TypeError;
 
     // Call function/method
     {
@@ -1464,19 +1622,160 @@ static PyObject* Sbk_PyModalDialogFunc_insertWidget(PyObject* self, PyObject* ar
     }
     Py_RETURN_NONE;
 
-    Sbk_PyModalDialogFunc_insertWidget_TypeError:
+    Sbk_PyPanelFunc_insertWidget_TypeError:
         const char* overloads[] = {"int, PySide.QtGui.QWidget", 0};
-        Shiboken::setErrorAboutWrongArguments(args, "NatronGui.PyModalDialog.insertWidget", overloads);
+        Shiboken::setErrorAboutWrongArguments(args, "NatronGui.PyPanel.insertWidget", overloads);
         return 0;
 }
 
-static PyObject* Sbk_PyModalDialogFunc_setParamChangedCallback(PyObject* self, PyObject* pyArg)
+static PyObject* Sbk_PyPanelFunc_onUserDataChanged(PyObject* self)
 {
-    ::PyModalDialog* cppSelf = 0;
+    ::PyPanel* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = ((::PyModalDialog*)Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYMODALDIALOG_IDX], (SbkObject*)self));
+    cppSelf = ((::PyPanel*)Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYPANEL_IDX], (SbkObject*)self));
+
+    // Call function/method
+    {
+
+        if (!PyErr_Occurred()) {
+            // onUserDataChanged()
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            cppSelf->onUserDataChanged();
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+        }
+    }
+
+    if (PyErr_Occurred()) {
+        return 0;
+    }
+    Py_RETURN_NONE;
+}
+
+static PyObject* Sbk_PyPanelFunc_restore(PyObject* self, PyObject* pyArg)
+{
+    ::PyPanel* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::PyPanel*)Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYPANEL_IDX], (SbkObject*)self));
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp;
+    SBK_UNUSED(pythonToCpp)
+
+    // Overloaded function decisor
+    // 0: restore(std::string)
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArg)))) {
+        overloadId = 0; // restore(std::string)
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_PyPanelFunc_restore_TypeError;
+
+    // Call function/method
+    {
+        ::std::string cppArg0;
+        pythonToCpp(pyArg, &cppArg0);
+
+        if (!PyErr_Occurred()) {
+            // restore(std::string)
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            Shiboken::Object::hasCppWrapper(reinterpret_cast<SbkObject*>(self)) ? cppSelf->::PyPanel::restore(cppArg0) : cppSelf->restore(cppArg0);
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+        }
+    }
+
+    if (PyErr_Occurred()) {
+        return 0;
+    }
+    Py_RETURN_NONE;
+
+    Sbk_PyPanelFunc_restore_TypeError:
+        const char* overloads[] = {"std::string", 0};
+        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronGui.PyPanel.restore", overloads);
+        return 0;
+}
+
+static PyObject* Sbk_PyPanelFunc_save(PyObject* self)
+{
+    ::PyPanel* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::PyPanel*)Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYPANEL_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+
+    // Call function/method
+    {
+
+        if (!PyErr_Occurred()) {
+            // save()
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            std::string cppResult = Shiboken::Object::hasCppWrapper(reinterpret_cast<SbkObject*>(self)) ? cppSelf->::PyPanel::save() : cppSelf->save();
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), &cppResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+}
+
+static PyObject* Sbk_PyPanelFunc_setLabel(PyObject* self, PyObject* pyArg)
+{
+    ::PyPanel* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::PyPanel*)Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYPANEL_IDX], (SbkObject*)self));
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp;
+    SBK_UNUSED(pythonToCpp)
+
+    // Overloaded function decisor
+    // 0: setLabel(std::string)
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArg)))) {
+        overloadId = 0; // setLabel(std::string)
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_PyPanelFunc_setLabel_TypeError;
+
+    // Call function/method
+    {
+        ::std::string cppArg0;
+        pythonToCpp(pyArg, &cppArg0);
+
+        if (!PyErr_Occurred()) {
+            // setLabel(std::string)
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            cppSelf->setLabel(cppArg0);
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+        }
+    }
+
+    if (PyErr_Occurred()) {
+        return 0;
+    }
+    Py_RETURN_NONE;
+
+    Sbk_PyPanelFunc_setLabel_TypeError:
+        const char* overloads[] = {"std::string", 0};
+        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronGui.PyPanel.setLabel", overloads);
+        return 0;
+}
+
+static PyObject* Sbk_PyPanelFunc_setParamChangedCallback(PyObject* self, PyObject* pyArg)
+{
+    ::PyPanel* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::PyPanel*)Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYPANEL_IDX], (SbkObject*)self));
     int overloadId = -1;
     PythonToCppFunc pythonToCpp;
     SBK_UNUSED(pythonToCpp)
@@ -1488,7 +1787,7 @@ static PyObject* Sbk_PyModalDialogFunc_setParamChangedCallback(PyObject* self, P
     }
 
     // Function signature not found.
-    if (overloadId == -1) goto Sbk_PyModalDialogFunc_setParamChangedCallback_TypeError;
+    if (overloadId == -1) goto Sbk_PyPanelFunc_setParamChangedCallback_TypeError;
 
     // Call function/method
     {
@@ -1508,46 +1807,50 @@ static PyObject* Sbk_PyModalDialogFunc_setParamChangedCallback(PyObject* self, P
     }
     Py_RETURN_NONE;
 
-    Sbk_PyModalDialogFunc_setParamChangedCallback_TypeError:
+    Sbk_PyPanelFunc_setParamChangedCallback_TypeError:
         const char* overloads[] = {"std::string", 0};
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronGui.PyModalDialog.setParamChangedCallback", overloads);
+        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronGui.PyPanel.setParamChangedCallback", overloads);
         return 0;
 }
 
-static PyMethodDef Sbk_PyModalDialog_methods[] = {
-    {"addWidget", (PyCFunction)Sbk_PyModalDialogFunc_addWidget, METH_O},
-    {"getParam", (PyCFunction)Sbk_PyModalDialogFunc_getParam, METH_O},
-    {"insertWidget", (PyCFunction)Sbk_PyModalDialogFunc_insertWidget, METH_VARARGS},
-    {"setParamChangedCallback", (PyCFunction)Sbk_PyModalDialogFunc_setParamChangedCallback, METH_O},
+static PyMethodDef Sbk_PyPanel_methods[] = {
+    {"addWidget", (PyCFunction)Sbk_PyPanelFunc_addWidget, METH_O},
+    {"getLabel", (PyCFunction)Sbk_PyPanelFunc_getLabel, METH_NOARGS},
+    {"getParam", (PyCFunction)Sbk_PyPanelFunc_getParam, METH_O},
+    {"getParams", (PyCFunction)Sbk_PyPanelFunc_getParams, METH_NOARGS},
+    {"insertWidget", (PyCFunction)Sbk_PyPanelFunc_insertWidget, METH_VARARGS},
+    {"onUserDataChanged", (PyCFunction)Sbk_PyPanelFunc_onUserDataChanged, METH_NOARGS},
+    {"restore", (PyCFunction)Sbk_PyPanelFunc_restore, METH_O},
+    {"save", (PyCFunction)Sbk_PyPanelFunc_save, METH_NOARGS},
+    {"setLabel", (PyCFunction)Sbk_PyPanelFunc_setLabel, METH_O},
+    {"setParamChangedCallback", (PyCFunction)Sbk_PyPanelFunc_setParamChangedCallback, METH_O},
 
     {0} // Sentinel
 };
 
 } // extern "C"
 
-static int Sbk_PyModalDialog_traverse(PyObject* self, visitproc visit, void* arg)
+static int Sbk_PyPanel_traverse(PyObject* self, visitproc visit, void* arg)
 {
     return reinterpret_cast<PyTypeObject*>(&SbkObject_Type)->tp_traverse(self, visit, arg);
 }
-static int Sbk_PyModalDialog_clear(PyObject* self)
+static int Sbk_PyPanel_clear(PyObject* self)
 {
     return reinterpret_cast<PyTypeObject*>(&SbkObject_Type)->tp_clear(self);
 }
-static int mi_offsets[] = { -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 };
+static int mi_offsets[] = { -1, -1, -1, -1, -1, -1, -1, -1, -1 };
 int*
-Sbk_PyModalDialog_mi_init(const void* cptr)
+Sbk_PyPanel_mi_init(const void* cptr)
 {
     if (mi_offsets[0] == -1) {
         std::set<int> offsets;
         std::set<int>::iterator it;
-        const PyModalDialog* class_ptr = reinterpret_cast<const PyModalDialog*>(cptr);
+        const PyPanel* class_ptr = reinterpret_cast<const PyPanel*>(cptr);
         size_t base = (size_t) class_ptr;
-        offsets.insert(((size_t) static_cast<const QDialog*>(class_ptr)) - base);
-        offsets.insert(((size_t) static_cast<const QDialog*>((PyModalDialog*)((void*)class_ptr))) - base);
-        offsets.insert(((size_t) static_cast<const UserParamHolder*>(class_ptr)) - base);
-        offsets.insert(((size_t) static_cast<const UserParamHolder*>((PyModalDialog*)((void*)class_ptr))) - base);
         offsets.insert(((size_t) static_cast<const QWidget*>(class_ptr)) - base);
-        offsets.insert(((size_t) static_cast<const QWidget*>((QDialog*)((void*)class_ptr))) - base);
+        offsets.insert(((size_t) static_cast<const QWidget*>((PyPanel*)((void*)class_ptr))) - base);
+        offsets.insert(((size_t) static_cast<const UserParamHolder*>(class_ptr)) - base);
+        offsets.insert(((size_t) static_cast<const UserParamHolder*>((PyPanel*)((void*)class_ptr))) - base);
         offsets.insert(((size_t) static_cast<const QObject*>(class_ptr)) - base);
         offsets.insert(((size_t) static_cast<const QObject*>((QWidget*)((void*)class_ptr))) - base);
         offsets.insert(((size_t) static_cast<const QPaintDevice*>(class_ptr)) - base);
@@ -1563,12 +1866,10 @@ Sbk_PyModalDialog_mi_init(const void* cptr)
     }
     return mi_offsets;
 }
-static void* Sbk_PyModalDialogSpecialCastFunction(void* obj, SbkObjectType* desiredType)
+static void* Sbk_PyPanelSpecialCastFunction(void* obj, SbkObjectType* desiredType)
 {
-    PyModalDialog* me = reinterpret_cast< ::PyModalDialog*>(obj);
-    if (desiredType == reinterpret_cast<SbkObjectType*>(SbkPySide_QtGuiTypes[SBK_QDIALOG_IDX]))
-        return static_cast< ::QDialog*>(me);
-    else if (desiredType == reinterpret_cast<SbkObjectType*>(SbkPySide_QtGuiTypes[SBK_QWIDGET_IDX]))
+    PyPanel* me = reinterpret_cast< ::PyPanel*>(obj);
+    if (desiredType == reinterpret_cast<SbkObjectType*>(SbkPySide_QtGuiTypes[SBK_QWIDGET_IDX]))
         return static_cast< ::QWidget*>(me);
     else if (desiredType == reinterpret_cast<SbkObjectType*>(SbkPySide_QtCoreTypes[SBK_QOBJECT_IDX]))
         return static_cast< ::QObject*>(me);
@@ -1582,9 +1883,9 @@ static void* Sbk_PyModalDialogSpecialCastFunction(void* obj, SbkObjectType* desi
 
 // Class Definition -----------------------------------------------
 extern "C" {
-static SbkObjectType Sbk_PyModalDialog_Type = { { {
+static SbkObjectType Sbk_PyPanel_Type = { { {
     PyVarObject_HEAD_INIT(&SbkObjectType_Type, 0)
-    /*tp_name*/             "NatronGui.PyModalDialog",
+    /*tp_name*/             "NatronGui.PyPanel",
     /*tp_basicsize*/        sizeof(SbkObject),
     /*tp_itemsize*/         0,
     /*tp_dealloc*/          &SbkDeallocWrapper,
@@ -1602,15 +1903,15 @@ static SbkObjectType Sbk_PyModalDialog_Type = { { {
     /*tp_getattro*/         0,
     /*tp_setattro*/         0,
     /*tp_as_buffer*/        0,
-    /*tp_flags*/            Py_TPFLAGS_DEFAULT|Py_TPFLAGS_CHECKTYPES|Py_TPFLAGS_HAVE_GC,
+    /*tp_flags*/            Py_TPFLAGS_DEFAULT|Py_TPFLAGS_BASETYPE|Py_TPFLAGS_CHECKTYPES|Py_TPFLAGS_HAVE_GC,
     /*tp_doc*/              0,
-    /*tp_traverse*/         Sbk_PyModalDialog_traverse,
-    /*tp_clear*/            Sbk_PyModalDialog_clear,
+    /*tp_traverse*/         Sbk_PyPanel_traverse,
+    /*tp_clear*/            Sbk_PyPanel_clear,
     /*tp_richcompare*/      0,
     /*tp_weaklistoffset*/   0,
     /*tp_iter*/             0,
     /*tp_iternext*/         0,
-    /*tp_methods*/          Sbk_PyModalDialog_methods,
+    /*tp_methods*/          Sbk_PyPanel_methods,
     /*tp_members*/          0,
     /*tp_getset*/           0,
     /*tp_base*/             0,
@@ -1618,9 +1919,9 @@ static SbkObjectType Sbk_PyModalDialog_Type = { { {
     /*tp_descr_get*/        0,
     /*tp_descr_set*/        0,
     /*tp_dictoffset*/       0,
-    /*tp_init*/             0,
+    /*tp_init*/             Sbk_PyPanel_Init,
     /*tp_alloc*/            0,
-    /*tp_new*/              0,
+    /*tp_new*/              SbkObjectTpNew,
     /*tp_free*/             0,
     /*tp_is_gc*/            0,
     /*tp_bases*/            0,
@@ -1633,14 +1934,14 @@ static SbkObjectType Sbk_PyModalDialog_Type = { { {
 };
 } //extern
 
-static void* Sbk_PyModalDialog_typeDiscovery(void* cptr, SbkObjectType* instanceType)
+static void* Sbk_PyPanel_typeDiscovery(void* cptr, SbkObjectType* instanceType)
 {
     if (instanceType == reinterpret_cast<SbkObjectType*>(Shiboken::SbkType< ::QObject >()))
-        return dynamic_cast< ::PyModalDialog*>(reinterpret_cast< ::QObject*>(cptr));
+        return dynamic_cast< ::PyPanel*>(reinterpret_cast< ::QObject*>(cptr));
     if (instanceType == reinterpret_cast<SbkObjectType*>(Shiboken::SbkType< ::QPaintDevice >()))
-        return dynamic_cast< ::PyModalDialog*>(reinterpret_cast< ::QPaintDevice*>(cptr));
+        return dynamic_cast< ::PyPanel*>(reinterpret_cast< ::QPaintDevice*>(cptr));
     if (instanceType == reinterpret_cast<SbkObjectType*>(Shiboken::SbkType< ::UserParamHolder >()))
-        return dynamic_cast< ::PyModalDialog*>(reinterpret_cast< ::UserParamHolder*>(cptr));
+        return dynamic_cast< ::PyPanel*>(reinterpret_cast< ::UserParamHolder*>(cptr));
     return 0;
 }
 
@@ -1648,55 +1949,55 @@ static void* Sbk_PyModalDialog_typeDiscovery(void* cptr, SbkObjectType* instance
 // Type conversion functions.
 
 // Python to C++ pointer conversion - returns the C++ object of the Python wrapper (keeps object identity).
-static void PyModalDialog_PythonToCpp_PyModalDialog_PTR(PyObject* pyIn, void* cppOut) {
-    Shiboken::Conversions::pythonToCppPointer(&Sbk_PyModalDialog_Type, pyIn, cppOut);
+static void PyPanel_PythonToCpp_PyPanel_PTR(PyObject* pyIn, void* cppOut) {
+    Shiboken::Conversions::pythonToCppPointer(&Sbk_PyPanel_Type, pyIn, cppOut);
 }
-static PythonToCppFunc is_PyModalDialog_PythonToCpp_PyModalDialog_PTR_Convertible(PyObject* pyIn) {
+static PythonToCppFunc is_PyPanel_PythonToCpp_PyPanel_PTR_Convertible(PyObject* pyIn) {
     if (pyIn == Py_None)
         return Shiboken::Conversions::nonePythonToCppNullPtr;
-    if (PyObject_TypeCheck(pyIn, (PyTypeObject*)&Sbk_PyModalDialog_Type))
-        return PyModalDialog_PythonToCpp_PyModalDialog_PTR;
+    if (PyObject_TypeCheck(pyIn, (PyTypeObject*)&Sbk_PyPanel_Type))
+        return PyPanel_PythonToCpp_PyPanel_PTR;
     return 0;
 }
 
 // C++ to Python pointer conversion - tries to find the Python wrapper for the C++ object (keeps object identity).
-static PyObject* PyModalDialog_PTR_CppToPython_PyModalDialog(const void* cppIn) {
-    return PySide::getWrapperForQObject((::PyModalDialog*)cppIn, &Sbk_PyModalDialog_Type);
+static PyObject* PyPanel_PTR_CppToPython_PyPanel(const void* cppIn) {
+    return PySide::getWrapperForQObject((::PyPanel*)cppIn, &Sbk_PyPanel_Type);
 
 }
 
-void init_PyModalDialog(PyObject* module)
+void init_PyPanel(PyObject* module)
 {
-    SbkNatronGuiTypes[SBK_PYMODALDIALOG_IDX] = reinterpret_cast<PyTypeObject*>(&Sbk_PyModalDialog_Type);
+    SbkNatronGuiTypes[SBK_PYPANEL_IDX] = reinterpret_cast<PyTypeObject*>(&Sbk_PyPanel_Type);
 
-    PyObject* Sbk_PyModalDialog_Type_bases = PyTuple_Pack(2,
-        (PyObject*)SbkPySide_QtGuiTypes[SBK_QDIALOG_IDX],
+    PyObject* Sbk_PyPanel_Type_bases = PyTuple_Pack(2,
+        (PyObject*)SbkPySide_QtGuiTypes[SBK_QWIDGET_IDX],
         (PyObject*)SbkNatronEngineTypes[SBK_USERPARAMHOLDER_IDX]);
 
-    if (!Shiboken::ObjectType::introduceWrapperType(module, "PyModalDialog", "PyModalDialog*",
-        &Sbk_PyModalDialog_Type, &Shiboken::callCppDestructor< ::PyModalDialog >, (SbkObjectType*)SbkNatronEngineTypes[SBK_USERPARAMHOLDER_IDX], Sbk_PyModalDialog_Type_bases)) {
+    if (!Shiboken::ObjectType::introduceWrapperType(module, "PyPanel", "PyPanel*",
+        &Sbk_PyPanel_Type, &Shiboken::callCppDestructor< ::PyPanel >, (SbkObjectType*)SbkNatronEngineTypes[SBK_USERPARAMHOLDER_IDX], Sbk_PyPanel_Type_bases)) {
         return;
     }
 
     // Register Converter
-    SbkConverter* converter = Shiboken::Conversions::createConverter(&Sbk_PyModalDialog_Type,
-        PyModalDialog_PythonToCpp_PyModalDialog_PTR,
-        is_PyModalDialog_PythonToCpp_PyModalDialog_PTR_Convertible,
-        PyModalDialog_PTR_CppToPython_PyModalDialog);
+    SbkConverter* converter = Shiboken::Conversions::createConverter(&Sbk_PyPanel_Type,
+        PyPanel_PythonToCpp_PyPanel_PTR,
+        is_PyPanel_PythonToCpp_PyPanel_PTR_Convertible,
+        PyPanel_PTR_CppToPython_PyPanel);
 
-    Shiboken::Conversions::registerConverterName(converter, "PyModalDialog");
-    Shiboken::Conversions::registerConverterName(converter, "PyModalDialog*");
-    Shiboken::Conversions::registerConverterName(converter, "PyModalDialog&");
-    Shiboken::Conversions::registerConverterName(converter, typeid(::PyModalDialog).name());
-    Shiboken::Conversions::registerConverterName(converter, typeid(::PyModalDialogWrapper).name());
-
-
-    MultipleInheritanceInitFunction func = Sbk_PyModalDialog_mi_init;
-    Shiboken::ObjectType::setMultipleIheritanceFunction(&Sbk_PyModalDialog_Type, func);
-    Shiboken::ObjectType::setCastFunction(&Sbk_PyModalDialog_Type, &Sbk_PyModalDialogSpecialCastFunction);
-    Shiboken::ObjectType::setTypeDiscoveryFunctionV2(&Sbk_PyModalDialog_Type, &Sbk_PyModalDialog_typeDiscovery);
+    Shiboken::Conversions::registerConverterName(converter, "PyPanel");
+    Shiboken::Conversions::registerConverterName(converter, "PyPanel*");
+    Shiboken::Conversions::registerConverterName(converter, "PyPanel&");
+    Shiboken::Conversions::registerConverterName(converter, typeid(::PyPanel).name());
+    Shiboken::Conversions::registerConverterName(converter, typeid(::PyPanelWrapper).name());
 
 
-    Shiboken::ObjectType::setSubTypeInitHook(&Sbk_PyModalDialog_Type, &PySide::initQObjectSubType);
-    PySide::initDynamicMetaObject(&Sbk_PyModalDialog_Type, &::PyModalDialog::staticMetaObject, sizeof(::PyModalDialog));
+    MultipleInheritanceInitFunction func = Sbk_PyPanel_mi_init;
+    Shiboken::ObjectType::setMultipleIheritanceFunction(&Sbk_PyPanel_Type, func);
+    Shiboken::ObjectType::setCastFunction(&Sbk_PyPanel_Type, &Sbk_PyPanelSpecialCastFunction);
+    Shiboken::ObjectType::setTypeDiscoveryFunctionV2(&Sbk_PyPanel_Type, &Sbk_PyPanel_typeDiscovery);
+
+
+    Shiboken::ObjectType::setSubTypeInitHook(&Sbk_PyPanel_Type, &PySide::initQObjectSubType);
+    PySide::initDynamicMetaObject(&Sbk_PyPanel_Type, &::PyPanel::staticMetaObject, sizeof(::PyPanel));
 }

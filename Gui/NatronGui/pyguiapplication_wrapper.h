@@ -12,6 +12,7 @@ class PyGuiApplicationWrapper : public PyGuiApplication
 public:
     PyGuiApplicationWrapper();
     virtual ~PyGuiApplicationWrapper();
+    static void pysideInitQtMetaTypes();
 };
 
 #endif // SBK_PYGUIAPPLICATIONWRAPPER_H

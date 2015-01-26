@@ -11,6 +11,7 @@ class Double2DParamWrapper : public Double2DParam
 {
 public:
     virtual ~Double2DParamWrapper();
+    static void pysideInitQtMetaTypes();
 };
 
 #endif // SBK_DOUBLE2DPARAMWRAPPER_H

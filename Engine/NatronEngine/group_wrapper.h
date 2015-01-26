@@ -12,6 +12,7 @@ class GroupWrapper : public Group
 public:
     GroupWrapper();
     virtual ~GroupWrapper();
+    static void pysideInitQtMetaTypes();
 };
 
 #endif // SBK_GROUPWRAPPER_H

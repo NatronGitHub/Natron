@@ -11,6 +11,7 @@ class Int2DParamWrapper : public Int2DParam
 {
 public:
     virtual ~Int2DParamWrapper();
+    static void pysideInitQtMetaTypes();
 };
 
 #endif // SBK_INT2DPARAMWRAPPER_H

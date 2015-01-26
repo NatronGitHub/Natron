@@ -11,6 +11,7 @@ class ChoiceParamWrapper : public ChoiceParam
 {
 public:
     virtual ~ChoiceParamWrapper();
+    static void pysideInitQtMetaTypes();
 };
 
 #endif // SBK_CHOICEPARAMWRAPPER_H

@@ -4,6 +4,9 @@
 
 // default includes
 #include <shiboken.h>
+#include <pysidesignal.h>
+#include <pysideproperty.h>
+#include <pyside.h>
 #include <typeresolver.h>
 #include <typeinfo>
 #include "natronengine_python.h"
@@ -251,4 +254,5 @@ void init_StringParam(PyObject* module)
     // End of 'TypeEnum' enum.
 
 
+    qRegisterMetaType< ::StringParam::TypeEnum >("StringParam::TypeEnum");
 }

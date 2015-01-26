@@ -11,6 +11,7 @@ class GroupParamWrapper : public GroupParam
 {
 public:
     virtual ~GroupParamWrapper();
+    static void pysideInitQtMetaTypes();
 };
 
 #endif // SBK_GROUPPARAMWRAPPER_H

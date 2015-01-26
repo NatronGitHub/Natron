@@ -33,6 +33,8 @@ CLANG_DIAG_ON(unused-parameter)
 #include "Gui/NodeGuiSerialization.h"
 #include "Gui/NodeBackDropSerialization.h"
 
+#define PYTHON_PANEL_SERIALIZATION_VERSION 1
+
 #define VIEWER_DATA_INTRODUCES_WIPE_COMPOSITING 2
 #define VIEWER_DATA_INTRODUCES_FRAME_RANGE 3
 #define VIEWER_DATA_INTRODUCES_TOOLBARS_VISIBLITY 4
@@ -52,7 +54,8 @@ CLANG_DIAG_ON(unused-parameter)
 #define PROJECT_GUI_SERIALIZATION_NODEGRAPH_ZOOM_TO_POINT 8
 #define PROJECT_GUI_SERIALIZATION_SCRIPT_EDITOR 9
 #define PROJECT_GUI_SERIALIZATION_MERGE_BACKDROP 10
-#define PROJECT_GUI_SERIALIZATION_VERSION PROJECT_GUI_SERIALIZATION_MERGE_BACKDROP
+#define PROJECT_GUI_SERIALIZATION_INTRODUCES_PYTHON_PANELS 11
+#define PROJECT_GUI_SERIALIZATION_VERSION PROJECT_GUI_SERIALIZATION_INTRODUCES_PYTHON_PANELS
 
 #define PANE_SERIALIZATION_INTRODUCES_CURRENT_TAB 2
 #define PANE_SERIALIZATION_INTRODUCES_SIZE 3
@@ -71,6 +74,7 @@ class ProjectGui;
 class Gui;
 class Splitter;
 class TabWidget;
+class PyPanel;
 
 struct ViewerData
 {
@@ -184,6 +188,55 @@ struct ViewerData
 };
 
 BOOST_CLASS_VERSION(ViewerData, VIEWER_DATA_SERIALIZATION_VERSION)
+
+struct PythonPanelSerialization
+{
+    
+    std::list<KnobSerialization> knobs;
+    std::string name;
+    std::string pythonFunction;
+    std::string userData;
+    
+    void initialize(PyPanel* tab,const std::string& pythonFunction);
+    
+    template<class Archive>
+    void save(Archive & ar,
+              const unsigned int /*version*/) const
+    {
+        ar & boost::serialization::make_nvp("Label",name);
+        ar & boost::serialization::make_nvp("PythonFunction",pythonFunction);
+        
+        int nKnobs = knobs.size();
+        ar & boost::serialization::make_nvp("NumParams",nKnobs);
+        for (std::list<KnobSerialization>::const_iterator it = knobs.begin() ;it != knobs.end() ;++it) {
+            ar & boost::serialization::make_nvp("item",*it);
+        }
+        
+        ar & boost::serialization::make_nvp("UserData",userData);
+    }
+    
+    template<class Archive>
+    void load(Archive & ar,
+              const unsigned int /*version*/)
+    {
+        ar & boost::serialization::make_nvp("Label",name);
+        ar & boost::serialization::make_nvp("PythonFunction",pythonFunction);
+        
+        int nKnobs;
+        ar & boost::serialization::make_nvp("NumParams",nKnobs);
+        for (int i = 0;i < nKnobs; ++i) {
+            KnobSerialization k;
+            ar & boost::serialization::make_nvp("item",k);
+            knobs.push_back(k);
+        }
+        
+        ar & boost::serialization::make_nvp("UserData",userData);
+    }
+    
+    BOOST_SERIALIZATION_SPLIT_MEMBER()
+};
+
+BOOST_CLASS_VERSION(PythonPanelSerialization, PYTHON_PANEL_SERIALIZATION_VERSION)
 
 /**
  * @brief This is to keep compatibility until the version PANE_SERIALIZATION_INTRODUCES_SIZE of PaneLayout
@@ -552,6 +605,8 @@ class ProjectGuiSerialization
 
     std::string _scriptEditorInput;
     
+    std::list<boost::shared_ptr<PythonPanelSerialization> > _pythonPanels;
+    
     ///The boost version passed to load(), this is not used on save
     unsigned int _version;
 
@@ -568,6 +623,12 @@ class ProjectGuiSerialization
         ar & boost::serialization::make_nvp("Histograms",_histograms);
         ar & boost::serialization::make_nvp("OpenedPanels",_openedPanelsOrdered);
         ar & boost::serialization::make_nvp("ScriptEditorInput",_scriptEditorInput);
+        
+        int numPyPanels = (int)_pythonPanels.size();
+        ar & boost::serialization::make_nvp("NumPyPanels",numPyPanels);
+        for (std::list<boost::shared_ptr<PythonPanelSerialization> >::const_iterator it = _pythonPanels.begin(); it != _pythonPanels.end(); ++it) {
+            ar & boost::serialization::make_nvp("item",**it);
+        }
     }
 
     template<class Archive>
@@ -600,6 +661,16 @@ class ProjectGuiSerialization
         }
         if (version >= PROJECT_GUI_SERIALIZATION_SCRIPT_EDITOR) {
             ar & boost::serialization::make_nvp("ScriptEditorInput",_scriptEditorInput);
+        }
+        
+        if (version >= PROJECT_GUI_SERIALIZATION_INTRODUCES_PYTHON_PANELS) {
+            int numPyPanels;
+            ar & boost::serialization::make_nvp("NumPyPanels",numPyPanels);
+            for (int i = 0; i < numPyPanels; ++i) {
+                boost::shared_ptr<PythonPanelSerialization> s(new PythonPanelSerialization);
+                ar & boost::serialization::make_nvp("item",*s);
+                _pythonPanels.push_back(s);
+            }
         }
         _version = version;
     }
@@ -662,6 +733,11 @@ public:
     unsigned int getVersion() const
     {
         return _version;
+    }
+    
+    const std::list<boost::shared_ptr<PythonPanelSerialization> >& getPythonPanels() const
+    {
+        return _pythonPanels;
     }
 
     BOOST_SERIALIZATION_SPLIT_MEMBER()

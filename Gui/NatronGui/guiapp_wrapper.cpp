@@ -4,6 +4,9 @@
 
 // default includes
 #include <shiboken.h>
+#include <pysidesignal.h>
+#include <pysideproperty.h>
+#include <pyside.h>
 #include <typeresolver.h>
 #include <typeinfo>
 #include "natrongui_python.h"
@@ -17,6 +20,7 @@
 #include <ParameterWrapper.h>
 #include <PythonPanels.h>
 #include <list>
+#include <vector>
 
 
 // Native ---------------------------------------------------------
@@ -48,6 +52,9 @@ static PyObject* Sbk_GuiAppFunc_createModalDialog(PyObject* self)
             PyModalDialog * cppResult = cppSelf->createModalDialog();
             PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronGuiTypes[SBK_PYMODALDIALOG_IDX], cppResult);
+
+            // Ownership transferences.
+            Shiboken::Object::releaseOwnership(pyResult);
         }
     }
 
@@ -58,8 +65,600 @@ static PyObject* Sbk_GuiAppFunc_createModalDialog(PyObject* self)
     return pyResult;
 }
 
+static PyObject* Sbk_GuiAppFunc_getDirectoryDialog(PyObject* self, PyObject* args, PyObject* kwds)
+{
+    ::GuiApp* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::GuiApp*)Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_GUIAPP_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp[] = { 0, 0 };
+    SBK_UNUSED(pythonToCpp)
+    int numNamedArgs = (kwds ? PyDict_Size(kwds) : 0);
+    int numArgs = PyTuple_GET_SIZE(args);
+    PyObject* pyArgs[] = {0, 0};
+
+    // invalid argument lengths
+    if (numArgs + numNamedArgs > 2) {
+        PyErr_SetString(PyExc_TypeError, "NatronGui.GuiApp.getDirectoryDialog(): too many arguments");
+        return 0;
+    } else if (numArgs < 1) {
+        PyErr_SetString(PyExc_TypeError, "NatronGui.GuiApp.getDirectoryDialog(): not enough arguments");
+        return 0;
+    }
+
+    if (!PyArg_ParseTuple(args, "|OO:getDirectoryDialog", &(pyArgs[0]), &(pyArgs[1])))
+        return 0;
+
+
+    // Overloaded function decisor
+    // 0: getDirectoryDialog(std::vector<std::string>,std::string)const
+    if ((pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(SbkNatronGuiTypeConverters[SBK_NATRONGUI_STD_VECTOR_STD_STRING_IDX], (pyArgs[0])))) {
+        if (numArgs == 1) {
+            overloadId = 0; // getDirectoryDialog(std::vector<std::string>,std::string)const
+        } else if ((pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[1])))) {
+            overloadId = 0; // getDirectoryDialog(std::vector<std::string>,std::string)const
+        }
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_GuiAppFunc_getDirectoryDialog_TypeError;
+
+    // Call function/method
+    {
+        if (kwds) {
+            PyObject* value = PyDict_GetItemString(kwds, "location");
+            if (value && pyArgs[1]) {
+                PyErr_SetString(PyExc_TypeError, "NatronGui.GuiApp.getDirectoryDialog(): got multiple values for keyword argument 'location'.");
+                return 0;
+            } else if (value) {
+                pyArgs[1] = value;
+                if (!(pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[1]))))
+                    goto Sbk_GuiAppFunc_getDirectoryDialog_TypeError;
+            }
+        }
+        ::std::vector<std::string > cppArg0;
+        pythonToCpp[0](pyArgs[0], &cppArg0);
+        ::std::string cppArg1 = std::string();
+        if (pythonToCpp[1]) pythonToCpp[1](pyArgs[1], &cppArg1);
+
+        if (!PyErr_Occurred()) {
+            // getDirectoryDialog(std::vector<std::string>,std::string)const
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            std::string cppResult = const_cast<const ::GuiApp*>(cppSelf)->getDirectoryDialog(cppArg0, cppArg1);
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), &cppResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+
+    Sbk_GuiAppFunc_getDirectoryDialog_TypeError:
+        const char* overloads[] = {"list, std::string = std.string()", 0};
+        Shiboken::setErrorAboutWrongArguments(args, "NatronGui.GuiApp.getDirectoryDialog", overloads);
+        return 0;
+}
+
+static PyObject* Sbk_GuiAppFunc_getFilenameDialog(PyObject* self, PyObject* args, PyObject* kwds)
+{
+    ::GuiApp* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::GuiApp*)Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_GUIAPP_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp[] = { 0, 0 };
+    SBK_UNUSED(pythonToCpp)
+    int numNamedArgs = (kwds ? PyDict_Size(kwds) : 0);
+    int numArgs = PyTuple_GET_SIZE(args);
+    PyObject* pyArgs[] = {0, 0};
+
+    // invalid argument lengths
+    if (numArgs + numNamedArgs > 2) {
+        PyErr_SetString(PyExc_TypeError, "NatronGui.GuiApp.getFilenameDialog(): too many arguments");
+        return 0;
+    } else if (numArgs < 1) {
+        PyErr_SetString(PyExc_TypeError, "NatronGui.GuiApp.getFilenameDialog(): not enough arguments");
+        return 0;
+    }
+
+    if (!PyArg_ParseTuple(args, "|OO:getFilenameDialog", &(pyArgs[0]), &(pyArgs[1])))
+        return 0;
+
+
+    // Overloaded function decisor
+    // 0: getFilenameDialog(std::vector<std::string>,std::string)const
+    if ((pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(SbkNatronGuiTypeConverters[SBK_NATRONGUI_STD_VECTOR_STD_STRING_IDX], (pyArgs[0])))) {
+        if (numArgs == 1) {
+            overloadId = 0; // getFilenameDialog(std::vector<std::string>,std::string)const
+        } else if ((pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[1])))) {
+            overloadId = 0; // getFilenameDialog(std::vector<std::string>,std::string)const
+        }
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_GuiAppFunc_getFilenameDialog_TypeError;
+
+    // Call function/method
+    {
+        if (kwds) {
+            PyObject* value = PyDict_GetItemString(kwds, "location");
+            if (value && pyArgs[1]) {
+                PyErr_SetString(PyExc_TypeError, "NatronGui.GuiApp.getFilenameDialog(): got multiple values for keyword argument 'location'.");
+                return 0;
+            } else if (value) {
+                pyArgs[1] = value;
+                if (!(pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[1]))))
+                    goto Sbk_GuiAppFunc_getFilenameDialog_TypeError;
+            }
+        }
+        ::std::vector<std::string > cppArg0;
+        pythonToCpp[0](pyArgs[0], &cppArg0);
+        ::std::string cppArg1 = std::string();
+        if (pythonToCpp[1]) pythonToCpp[1](pyArgs[1], &cppArg1);
+
+        if (!PyErr_Occurred()) {
+            // getFilenameDialog(std::vector<std::string>,std::string)const
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            std::string cppResult = const_cast<const ::GuiApp*>(cppSelf)->getFilenameDialog(cppArg0, cppArg1);
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), &cppResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+
+    Sbk_GuiAppFunc_getFilenameDialog_TypeError:
+        const char* overloads[] = {"list, std::string = std.string()", 0};
+        Shiboken::setErrorAboutWrongArguments(args, "NatronGui.GuiApp.getFilenameDialog", overloads);
+        return 0;
+}
+
+static PyObject* Sbk_GuiAppFunc_getRGBColorDialog(PyObject* self)
+{
+    ::GuiApp* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::GuiApp*)Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_GUIAPP_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+
+    // Call function/method
+    {
+
+        if (!PyErr_Occurred()) {
+            // getRGBColorDialog()const
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            ColorTuple* cppResult = new ColorTuple(const_cast<const ::GuiApp*>(cppSelf)->getRGBColorDialog());
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            pyResult = Shiboken::Object::newObject((SbkObjectType*)SbkNatronEngineTypes[SBK_COLORTUPLE_IDX], cppResult, true, true);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+}
+
+static PyObject* Sbk_GuiAppFunc_getSequenceDialog(PyObject* self, PyObject* args, PyObject* kwds)
+{
+    ::GuiApp* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::GuiApp*)Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_GUIAPP_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp[] = { 0, 0 };
+    SBK_UNUSED(pythonToCpp)
+    int numNamedArgs = (kwds ? PyDict_Size(kwds) : 0);
+    int numArgs = PyTuple_GET_SIZE(args);
+    PyObject* pyArgs[] = {0, 0};
+
+    // invalid argument lengths
+    if (numArgs + numNamedArgs > 2) {
+        PyErr_SetString(PyExc_TypeError, "NatronGui.GuiApp.getSequenceDialog(): too many arguments");
+        return 0;
+    } else if (numArgs < 1) {
+        PyErr_SetString(PyExc_TypeError, "NatronGui.GuiApp.getSequenceDialog(): not enough arguments");
+        return 0;
+    }
+
+    if (!PyArg_ParseTuple(args, "|OO:getSequenceDialog", &(pyArgs[0]), &(pyArgs[1])))
+        return 0;
+
+
+    // Overloaded function decisor
+    // 0: getSequenceDialog(std::vector<std::string>,std::string)const
+    if ((pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(SbkNatronGuiTypeConverters[SBK_NATRONGUI_STD_VECTOR_STD_STRING_IDX], (pyArgs[0])))) {
+        if (numArgs == 1) {
+            overloadId = 0; // getSequenceDialog(std::vector<std::string>,std::string)const
+        } else if ((pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[1])))) {
+            overloadId = 0; // getSequenceDialog(std::vector<std::string>,std::string)const
+        }
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_GuiAppFunc_getSequenceDialog_TypeError;
+
+    // Call function/method
+    {
+        if (kwds) {
+            PyObject* value = PyDict_GetItemString(kwds, "location");
+            if (value && pyArgs[1]) {
+                PyErr_SetString(PyExc_TypeError, "NatronGui.GuiApp.getSequenceDialog(): got multiple values for keyword argument 'location'.");
+                return 0;
+            } else if (value) {
+                pyArgs[1] = value;
+                if (!(pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[1]))))
+                    goto Sbk_GuiAppFunc_getSequenceDialog_TypeError;
+            }
+        }
+        ::std::vector<std::string > cppArg0;
+        pythonToCpp[0](pyArgs[0], &cppArg0);
+        ::std::string cppArg1 = std::string();
+        if (pythonToCpp[1]) pythonToCpp[1](pyArgs[1], &cppArg1);
+
+        if (!PyErr_Occurred()) {
+            // getSequenceDialog(std::vector<std::string>,std::string)const
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            std::string cppResult = const_cast<const ::GuiApp*>(cppSelf)->getSequenceDialog(cppArg0, cppArg1);
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), &cppResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+
+    Sbk_GuiAppFunc_getSequenceDialog_TypeError:
+        const char* overloads[] = {"list, std::string = std.string()", 0};
+        Shiboken::setErrorAboutWrongArguments(args, "NatronGui.GuiApp.getSequenceDialog", overloads);
+        return 0;
+}
+
+static PyObject* Sbk_GuiAppFunc_getTabWidget(PyObject* self, PyObject* pyArg)
+{
+    ::GuiApp* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::GuiApp*)Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_GUIAPP_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp;
+    SBK_UNUSED(pythonToCpp)
+
+    // Overloaded function decisor
+    // 0: getTabWidget(std::string)const
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArg)))) {
+        overloadId = 0; // getTabWidget(std::string)const
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_GuiAppFunc_getTabWidget_TypeError;
+
+    // Call function/method
+    {
+        ::std::string cppArg0;
+        pythonToCpp(pyArg, &cppArg0);
+
+        if (!PyErr_Occurred()) {
+            // getTabWidget(std::string)const
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            PyTabWidget * cppResult = const_cast<const ::GuiApp*>(cppSelf)->getTabWidget(cppArg0);
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronGuiTypes[SBK_PYTABWIDGET_IDX], cppResult);
+
+            // Ownership transferences.
+            Shiboken::Object::getOwnership(pyResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+
+    Sbk_GuiAppFunc_getTabWidget_TypeError:
+        const char* overloads[] = {"std::string", 0};
+        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronGui.GuiApp.getTabWidget", overloads);
+        return 0;
+}
+
+static PyObject* Sbk_GuiAppFunc_registerPythonPanel(PyObject* self, PyObject* args)
+{
+    ::GuiApp* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::GuiApp*)Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_GUIAPP_IDX], (SbkObject*)self));
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp[] = { 0, 0 };
+    SBK_UNUSED(pythonToCpp)
+    int numArgs = PyTuple_GET_SIZE(args);
+    PyObject* pyArgs[] = {0, 0};
+
+    // invalid argument lengths
+
+
+    if (!PyArg_UnpackTuple(args, "registerPythonPanel", 2, 2, &(pyArgs[0]), &(pyArgs[1])))
+        return 0;
+
+
+    // Overloaded function decisor
+    // 0: registerPythonPanel(PyPanel*,std::string)
+    if (numArgs == 2
+        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppPointerConvertible((SbkObjectType*)SbkNatronGuiTypes[SBK_PYPANEL_IDX], (pyArgs[0])))
+        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[1])))) {
+        overloadId = 0; // registerPythonPanel(PyPanel*,std::string)
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_GuiAppFunc_registerPythonPanel_TypeError;
+
+    // Call function/method
+    {
+        if (!Shiboken::Object::isValid(pyArgs[0]))
+            return 0;
+        ::PyPanel* cppArg0;
+        pythonToCpp[0](pyArgs[0], &cppArg0);
+        ::std::string cppArg1;
+        pythonToCpp[1](pyArgs[1], &cppArg1);
+
+        if (!PyErr_Occurred()) {
+            // registerPythonPanel(PyPanel*,std::string)
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            cppSelf->registerPythonPanel(cppArg0, cppArg1);
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+        }
+    }
+
+    if (PyErr_Occurred()) {
+        return 0;
+    }
+    Py_RETURN_NONE;
+
+    Sbk_GuiAppFunc_registerPythonPanel_TypeError:
+        const char* overloads[] = {"NatronGui.PyPanel, std::string", 0};
+        Shiboken::setErrorAboutWrongArguments(args, "NatronGui.GuiApp.registerPythonPanel", overloads);
+        return 0;
+}
+
+static PyObject* Sbk_GuiAppFunc_saveFilenameDialog(PyObject* self, PyObject* args, PyObject* kwds)
+{
+    ::GuiApp* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::GuiApp*)Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_GUIAPP_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp[] = { 0, 0 };
+    SBK_UNUSED(pythonToCpp)
+    int numNamedArgs = (kwds ? PyDict_Size(kwds) : 0);
+    int numArgs = PyTuple_GET_SIZE(args);
+    PyObject* pyArgs[] = {0, 0};
+
+    // invalid argument lengths
+    if (numArgs + numNamedArgs > 2) {
+        PyErr_SetString(PyExc_TypeError, "NatronGui.GuiApp.saveFilenameDialog(): too many arguments");
+        return 0;
+    } else if (numArgs < 1) {
+        PyErr_SetString(PyExc_TypeError, "NatronGui.GuiApp.saveFilenameDialog(): not enough arguments");
+        return 0;
+    }
+
+    if (!PyArg_ParseTuple(args, "|OO:saveFilenameDialog", &(pyArgs[0]), &(pyArgs[1])))
+        return 0;
+
+
+    // Overloaded function decisor
+    // 0: saveFilenameDialog(std::vector<std::string>,std::string)const
+    if ((pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(SbkNatronGuiTypeConverters[SBK_NATRONGUI_STD_VECTOR_STD_STRING_IDX], (pyArgs[0])))) {
+        if (numArgs == 1) {
+            overloadId = 0; // saveFilenameDialog(std::vector<std::string>,std::string)const
+        } else if ((pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[1])))) {
+            overloadId = 0; // saveFilenameDialog(std::vector<std::string>,std::string)const
+        }
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_GuiAppFunc_saveFilenameDialog_TypeError;
+
+    // Call function/method
+    {
+        if (kwds) {
+            PyObject* value = PyDict_GetItemString(kwds, "location");
+            if (value && pyArgs[1]) {
+                PyErr_SetString(PyExc_TypeError, "NatronGui.GuiApp.saveFilenameDialog(): got multiple values for keyword argument 'location'.");
+                return 0;
+            } else if (value) {
+                pyArgs[1] = value;
+                if (!(pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[1]))))
+                    goto Sbk_GuiAppFunc_saveFilenameDialog_TypeError;
+            }
+        }
+        ::std::vector<std::string > cppArg0;
+        pythonToCpp[0](pyArgs[0], &cppArg0);
+        ::std::string cppArg1 = std::string();
+        if (pythonToCpp[1]) pythonToCpp[1](pyArgs[1], &cppArg1);
+
+        if (!PyErr_Occurred()) {
+            // saveFilenameDialog(std::vector<std::string>,std::string)const
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            std::string cppResult = const_cast<const ::GuiApp*>(cppSelf)->saveFilenameDialog(cppArg0, cppArg1);
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), &cppResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+
+    Sbk_GuiAppFunc_saveFilenameDialog_TypeError:
+        const char* overloads[] = {"list, std::string = std.string()", 0};
+        Shiboken::setErrorAboutWrongArguments(args, "NatronGui.GuiApp.saveFilenameDialog", overloads);
+        return 0;
+}
+
+static PyObject* Sbk_GuiAppFunc_saveSequenceDialog(PyObject* self, PyObject* args, PyObject* kwds)
+{
+    ::GuiApp* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::GuiApp*)Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_GUIAPP_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp[] = { 0, 0 };
+    SBK_UNUSED(pythonToCpp)
+    int numNamedArgs = (kwds ? PyDict_Size(kwds) : 0);
+    int numArgs = PyTuple_GET_SIZE(args);
+    PyObject* pyArgs[] = {0, 0};
+
+    // invalid argument lengths
+    if (numArgs + numNamedArgs > 2) {
+        PyErr_SetString(PyExc_TypeError, "NatronGui.GuiApp.saveSequenceDialog(): too many arguments");
+        return 0;
+    } else if (numArgs < 1) {
+        PyErr_SetString(PyExc_TypeError, "NatronGui.GuiApp.saveSequenceDialog(): not enough arguments");
+        return 0;
+    }
+
+    if (!PyArg_ParseTuple(args, "|OO:saveSequenceDialog", &(pyArgs[0]), &(pyArgs[1])))
+        return 0;
+
+
+    // Overloaded function decisor
+    // 0: saveSequenceDialog(std::vector<std::string>,std::string)const
+    if ((pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(SbkNatronGuiTypeConverters[SBK_NATRONGUI_STD_VECTOR_STD_STRING_IDX], (pyArgs[0])))) {
+        if (numArgs == 1) {
+            overloadId = 0; // saveSequenceDialog(std::vector<std::string>,std::string)const
+        } else if ((pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[1])))) {
+            overloadId = 0; // saveSequenceDialog(std::vector<std::string>,std::string)const
+        }
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_GuiAppFunc_saveSequenceDialog_TypeError;
+
+    // Call function/method
+    {
+        if (kwds) {
+            PyObject* value = PyDict_GetItemString(kwds, "location");
+            if (value && pyArgs[1]) {
+                PyErr_SetString(PyExc_TypeError, "NatronGui.GuiApp.saveSequenceDialog(): got multiple values for keyword argument 'location'.");
+                return 0;
+            } else if (value) {
+                pyArgs[1] = value;
+                if (!(pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[1]))))
+                    goto Sbk_GuiAppFunc_saveSequenceDialog_TypeError;
+            }
+        }
+        ::std::vector<std::string > cppArg0;
+        pythonToCpp[0](pyArgs[0], &cppArg0);
+        ::std::string cppArg1 = std::string();
+        if (pythonToCpp[1]) pythonToCpp[1](pyArgs[1], &cppArg1);
+
+        if (!PyErr_Occurred()) {
+            // saveSequenceDialog(std::vector<std::string>,std::string)const
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            std::string cppResult = const_cast<const ::GuiApp*>(cppSelf)->saveSequenceDialog(cppArg0, cppArg1);
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), &cppResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+
+    Sbk_GuiAppFunc_saveSequenceDialog_TypeError:
+        const char* overloads[] = {"list, std::string = std.string()", 0};
+        Shiboken::setErrorAboutWrongArguments(args, "NatronGui.GuiApp.saveSequenceDialog", overloads);
+        return 0;
+}
+
+static PyObject* Sbk_GuiAppFunc_unregisterPythonPanel(PyObject* self, PyObject* pyArg)
+{
+    ::GuiApp* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::GuiApp*)Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_GUIAPP_IDX], (SbkObject*)self));
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp;
+    SBK_UNUSED(pythonToCpp)
+
+    // Overloaded function decisor
+    // 0: unregisterPythonPanel(PyPanel*)
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppPointerConvertible((SbkObjectType*)SbkNatronGuiTypes[SBK_PYPANEL_IDX], (pyArg)))) {
+        overloadId = 0; // unregisterPythonPanel(PyPanel*)
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_GuiAppFunc_unregisterPythonPanel_TypeError;
+
+    // Call function/method
+    {
+        if (!Shiboken::Object::isValid(pyArg))
+            return 0;
+        ::PyPanel* cppArg0;
+        pythonToCpp(pyArg, &cppArg0);
+
+        if (!PyErr_Occurred()) {
+            // unregisterPythonPanel(PyPanel*)
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            cppSelf->unregisterPythonPanel(cppArg0);
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+        }
+    }
+
+    if (PyErr_Occurred()) {
+        return 0;
+    }
+    Py_RETURN_NONE;
+
+    Sbk_GuiAppFunc_unregisterPythonPanel_TypeError:
+        const char* overloads[] = {"NatronGui.PyPanel", 0};
+        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronGui.GuiApp.unregisterPythonPanel", overloads);
+        return 0;
+}
+
 static PyMethodDef Sbk_GuiApp_methods[] = {
     {"createModalDialog", (PyCFunction)Sbk_GuiAppFunc_createModalDialog, METH_NOARGS},
+    {"getDirectoryDialog", (PyCFunction)Sbk_GuiAppFunc_getDirectoryDialog, METH_VARARGS|METH_KEYWORDS},
+    {"getFilenameDialog", (PyCFunction)Sbk_GuiAppFunc_getFilenameDialog, METH_VARARGS|METH_KEYWORDS},
+    {"getRGBColorDialog", (PyCFunction)Sbk_GuiAppFunc_getRGBColorDialog, METH_NOARGS},
+    {"getSequenceDialog", (PyCFunction)Sbk_GuiAppFunc_getSequenceDialog, METH_VARARGS|METH_KEYWORDS},
+    {"getTabWidget", (PyCFunction)Sbk_GuiAppFunc_getTabWidget, METH_O},
+    {"registerPythonPanel", (PyCFunction)Sbk_GuiAppFunc_registerPythonPanel, METH_VARARGS},
+    {"saveFilenameDialog", (PyCFunction)Sbk_GuiAppFunc_saveFilenameDialog, METH_VARARGS|METH_KEYWORDS},
+    {"saveSequenceDialog", (PyCFunction)Sbk_GuiAppFunc_saveSequenceDialog, METH_VARARGS|METH_KEYWORDS},
+    {"unregisterPythonPanel", (PyCFunction)Sbk_GuiAppFunc_unregisterPythonPanel, METH_O},
 
     {0} // Sentinel
 };

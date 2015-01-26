@@ -11,6 +11,7 @@ class LayerWrapper : public Layer
 {
 public:
     virtual ~LayerWrapper();
+    static void pysideInitQtMetaTypes();
 };
 
 #endif // SBK_LAYERWRAPPER_H

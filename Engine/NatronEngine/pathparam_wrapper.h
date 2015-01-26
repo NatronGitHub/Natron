@@ -11,6 +11,7 @@ class PathParamWrapper : public PathParam
 {
 public:
     virtual ~PathParamWrapper();
+    static void pysideInitQtMetaTypes();
 };
 
 #endif // SBK_PATHPARAMWRAPPER_H

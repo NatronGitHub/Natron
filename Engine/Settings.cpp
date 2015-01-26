@@ -766,6 +766,16 @@ Settings::initializeKnobs()
     
     _pythonPage = Natron::createKnob<Page_Knob>(this, "Python");
     
+    
+    _onProjectCreated = Natron::createKnob<String_Knob>(this, "After project created");
+    _onProjectCreated->setName("afterProjectCreated");
+    _onProjectCreated->setHintToolTip("Callback called once a new project is created (this is never called when \"After project loaded\" is called.)\n"
+                                      "The variable \"app\" will be declared prior to calling the function, pointing to the current instance being "
+                                      "created.");
+    _onProjectCreated->setAnimationEnabled(false);
+    _pythonPage->addKnob(_onProjectCreated);
+    
+    
     _defaultOnProjectLoaded = Natron::createKnob<String_Knob>(this, "Default after project loaded");
     _defaultOnProjectLoaded->setName("defOnProjectLoaded");
     _defaultOnProjectLoaded->setHintToolTip("The default afterProjectLoad callback that will be set for new projects.");
@@ -2276,4 +2286,10 @@ std::string
 Settings::getDefaultOnNodeDeleteCB()
 {
     return _defaultOnNodeDelete->getValue();
+}
+
+std::string
+Settings::getOnProjectCreatedCB()
+{
+    return _onProjectCreated->getValue();
 }

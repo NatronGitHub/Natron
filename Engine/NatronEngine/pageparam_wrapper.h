@@ -11,6 +11,7 @@ class PageParamWrapper : public PageParam
 {
 public:
     virtual ~PageParamWrapper();
+    static void pysideInitQtMetaTypes();
 };
 
 #endif // SBK_PAGEPARAMWRAPPER_H

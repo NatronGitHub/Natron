@@ -11,6 +11,7 @@ class IntParamWrapper : public IntParam
 {
 public:
     virtual ~IntParamWrapper();
+    static void pysideInitQtMetaTypes();
 };
 
 #endif // SBK_INTPARAMWRAPPER_H

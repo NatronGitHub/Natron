@@ -11,6 +11,7 @@ class GuiAppWrapper : public GuiApp
 {
 public:
     virtual ~GuiAppWrapper();
+    static void pysideInitQtMetaTypes();
 };
 
 #endif // SBK_GUIAPPWRAPPER_H

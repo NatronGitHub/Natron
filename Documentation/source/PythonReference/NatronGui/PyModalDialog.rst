@@ -17,7 +17,6 @@ See :ref:`detailed<modalDialog.details>` description...
 Functions
 ^^^^^^^^^
 
-*    def :meth:`activateUserParametersSupport<NatronGui.PyModalDialog.activateUserParametersSupport>` ()
 *    def :meth:`addWidget<NatronGui.PyModalDialog.addWidget>` (widget)
 *    def :meth:`getParam<NatronGui.PyModalDialog.getParam>` (scriptName)
 *    def :meth:`insertWidget<NatronGui.PyModalDialog.insertWidget>` (index,widget)
@@ -58,11 +57,8 @@ The modal dialog always has *OK* and *Cancel* buttons. To query which button the
 Adding user parameters:
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-To add user parameters you must first activate support for it on the dialog with the :func:`activateUserParametersSupport()<NatronGui.GuiApp.activateUserParametersSupport>` function::
 
-	dialog.activateUserParametersSupport()
-	
-You can now start adding user parameters using all the :func:`createXParam<>` functions inherited from :doc:`UserParamHolder` class.
+You can start adding user parameters using all the :func:`createXParam<>` functions inherited from :doc:`UserParamHolder` class.
 
 Once all your parameters are created, create the GUI for them using the :func:`refreshUserParamsGUI()<NatronEngine.UserParamHolder.refreshUserParamsGUI>` function::
 
@@ -86,12 +82,6 @@ You can then retrieve the value of a parameter once the dialog is finished using
 		
 Member functions description
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-.. method:: NatronGui.PyModalDialog.activateUserParametersSupport()
-
-Activates support for user parameters if you need to add some. By default this is de-activated as this adds a black frame around them. 
-
-
 
 .. method:: NatronGui.PyModalDialog.addWidget(widget)
 

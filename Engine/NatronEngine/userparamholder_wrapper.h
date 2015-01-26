@@ -12,6 +12,7 @@ class UserParamHolderWrapper : public UserParamHolder
 public:
     UserParamHolderWrapper();
     virtual ~UserParamHolderWrapper();
+    static void pysideInitQtMetaTypes();
 };
 
 #endif // SBK_USERPARAMHOLDERWRAPPER_H

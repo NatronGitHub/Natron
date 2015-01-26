@@ -423,6 +423,7 @@ public:
     QStringList getAllNonOFXPluginsPaths() const;
     
     void launchPythonInterpreter();
+
     
 public Q_SLOTS:
 

@@ -417,6 +417,8 @@ AppInstance::load(const CLArgs& cl)
         
         
         appPTR->launchPythonInterpreter();
+    } else {
+        execOnProjectCreatedCallback();
     }
 }
 
@@ -1006,4 +1008,22 @@ void
 AppInstance::appendToScriptEditor(const std::string& str)
 {
     std::cout << str <<  std::endl;
+}
+
+void
+AppInstance::execOnProjectCreatedCallback()
+{
+    QString appID = QString("app%1").arg(getAppID() + 1);
+    std::string cb = appPTR->getCurrentSettings()->getOnProjectCreatedCB();
+    if (cb.empty()) {
+        return;
+    }
+    std::string script = "app = " + appID.toStdString() + "\n" +  cb + "()\n" + "del app\n";
+    
+    std::string err,output;
+    if (!Natron::interpretPythonScript(script, &err, &output)) {
+        appendToScriptEditor(err);
+    } else {
+        appendToScriptEditor(output);
+    }
 }

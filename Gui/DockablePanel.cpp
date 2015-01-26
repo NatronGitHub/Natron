@@ -194,6 +194,8 @@ struct DockablePanelPrivate
     
     QString _helpToolTip;
     
+    bool _pagesEnabled;
+    
     DockablePanelPrivate(DockablePanel* publicI,
                          Gui* gui,
                          KnobHolder* holder,
@@ -239,6 +241,7 @@ struct DockablePanelPrivate
     ,_isClosedMutex()
     ,_isClosed(false)
     ,_helpToolTip(helpToolTip)
+    ,_pagesEnabled(true)
     {
     }
 
@@ -580,6 +583,19 @@ DockablePanel::~DockablePanel()
         }
     }
 }
+
+void
+DockablePanel::turnOffPages()
+{
+    _imp->_pagesEnabled = false;
+    delete _imp->_tabWidget;
+    _imp->_tabWidget = 0;
+    setFrameShape(QFrame::NoFrame);
+    
+    boost::shared_ptr<Page_Knob> userPage = _imp->_holder->getOrCreateUserPageKnob();
+    _imp->addPage(userPage.get(), userPage->getDescription().c_str());
+    
+}
                                  
 void
 DockablePanel::onNodeScriptChanged(const QString& label)
@@ -607,39 +623,6 @@ DockablePanel::getPagesCount() const
 {
     return _imp->_pages.size();
 }
-
-void
-DockablePanel::rebuildUserPages()
-{
-    std::list<Page_Knob*> userPages;
-    getUserPages(userPages);
-    
-    boost::shared_ptr<Page_Knob> page = getUserPageKnob();
-    userPages.push_back(page.get());
-    for (std::list<Page_Knob*>::iterator it = userPages.begin(); it != userPages.end(); ++it) {
-        PageMap::iterator foundPage = _imp->_pages.find((*it)->getDescription().c_str());
-        if (foundPage != _imp->_pages.end()) {
-            foundPage->second.currentRow = 0;
-            std::vector<boost::shared_ptr<KnobI> > children = (*it)->getChildren();
-            for (std::vector<boost::shared_ptr<KnobI> >::iterator it2 = children.begin(); it2 != children.end(); ++it2) {
-                deleteKnobGui(*it2);
-            }
-        }
-    }
-    
-    scanForNewKnobs();
-    
-    ///Refresh the curve editor with potential new animated knobs
-    NodeSettingsPanel* isNodePanel = dynamic_cast<NodeSettingsPanel*>(this);
-    
-    if (isNodePanel) {
-        boost::shared_ptr<NodeGui> node = isNodePanel->getNode();
-        getGui()->getCurveEditor()->removeNode(node.get());
-        getGui()->getCurveEditor()->addNode(node);
-    }
-
-}
-                                 
 
 
 void
@@ -1276,15 +1259,21 @@ RightClickableWidget::enterEvent(QEvent* e)
 PageMap::iterator
 DockablePanelPrivate::addPage(Page_Knob* /*page*/,const QString & name)
 {
+    if (!_pagesEnabled && _pages.size() > 0) {
+        return _pages.begin();
+    }
+    
     PageMap::iterator found = _pages.find(name);
 
     if ( found != _pages.end() ) {
         return found;
     }
     
+    
     QWidget* newTab;
     QWidget* layoutContainer;
     if (_useScrollAreasForTabs) {
+        assert(_tabWidget);
         QScrollArea* sa = new QScrollArea(_tabWidget);
         layoutContainer = new QWidget(sa);
         layoutContainer->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::Fixed);
@@ -1292,7 +1281,15 @@ DockablePanelPrivate::addPage(Page_Knob* /*page*/,const QString & name)
         sa->setWidget(layoutContainer);
         newTab = sa;
     } else {
-        RightClickableWidget* clickableWidget = new RightClickableWidget(_publicInterface,_tabWidget);
+        QWidget* parent;
+        
+        if (_tabWidget) {
+            parent = _tabWidget;
+        } else {
+            parent = _publicInterface;
+        };
+        
+        RightClickableWidget* clickableWidget = new RightClickableWidget(_publicInterface,parent);
         QObject::connect(clickableWidget,SIGNAL(rightClicked(QPoint)),_publicInterface,SLOT( onRightClickMenuRequested(QPoint) ) );
         QObject::connect(clickableWidget,SIGNAL(escapePressed()),_publicInterface,SLOT( closePanel() ) );
         newTab = clickableWidget;
@@ -1303,8 +1300,13 @@ DockablePanelPrivate::addPage(Page_Knob* /*page*/,const QString & name)
     layoutContainer->setLayout(tabLayout);
     tabLayout->setContentsMargins(1, 1, 1, 1);
     tabLayout->setColumnStretch(1, 1);
-    tabLayout->setSpacing(NATRON_FORM_LAYOUT_LINES_SPACING); // unfortunately, this leaves extra space when parameters are hidden
-    _tabWidget->addTab(newTab,name);
+    tabLayout->setSpacing(NATRON_FORM_LAYOUT_LINES_SPACING);
+    
+    if (_tabWidget) {
+        _tabWidget->addTab(newTab,name);
+    } else {
+        _horizLayout->addWidget(newTab);
+    }
     Page p;
     p.tab = newTab;
     p.currentRow = 0;
@@ -1567,12 +1569,14 @@ void
 DockablePanel::deleteKnobGui(const boost::shared_ptr<KnobI>& knob)
 {
     Page_Knob* isPage = dynamic_cast<Page_Knob*>(knob.get());
-    if (isPage) {
+    if (isPage && _imp->_pagesEnabled) {
         PageMap::iterator found = _imp->_pages.find(isPage->getDescription().c_str());
         if (found != _imp->_pages.end()) {
-            int index = _imp->_tabWidget->indexOf(found->second.tab);
-            if (index != -1) {
-                _imp->_tabWidget->removeTab(index);
+            if (_imp->_tabWidget) {
+                int index = _imp->_tabWidget->indexOf(found->second.tab);
+                if (index != -1) {
+                    _imp->_tabWidget->removeTab(index);
+                }
             }
             found->second.tab->deleteLater();
             found->second.currentRow = 0;
@@ -1914,10 +1918,44 @@ DockablePanel::onHideUnmodifiedButtonClicked(bool checked)
 void
 DockablePanel::scanForNewKnobs()
 {
+    
+    std::list<Page_Knob*> userPages;
+    getUserPages(userPages);
+    
+    if (_imp->_pagesEnabled) {
+        boost::shared_ptr<Page_Knob> page = getUserPageKnob();
+        userPages.push_back(page.get());
+        for (std::list<Page_Knob*>::iterator it = userPages.begin(); it != userPages.end(); ++it) {
+            PageMap::iterator foundPage = _imp->_pages.find((*it)->getDescription().c_str());
+            if (foundPage != _imp->_pages.end()) {
+                foundPage->second.currentRow = 0;
+                std::vector<boost::shared_ptr<KnobI> > children = (*it)->getChildren();
+                for (std::vector<boost::shared_ptr<KnobI> >::iterator it2 = children.begin(); it2 != children.end(); ++it2) {
+                    deleteKnobGui(*it2);
+                }
+            }
+        }
+    } else {
+        
+        std::vector<boost::shared_ptr<KnobI> > knobs = _imp->_holder->getKnobs();
+        for (std::vector<boost::shared_ptr<KnobI> >::iterator it = knobs.begin(); it != knobs.end(); ++it) {
+            deleteKnobGui(*it);
+        }
+        
+    }
+    
     _imp->initializeKnobVector(_imp->_holder->getKnobs(),NULL);
     NodeSettingsPanel* isNodePanel = dynamic_cast<NodeSettingsPanel*>(this);
     if (isNodePanel) {
         isNodePanel->getNode()->getNode()->declarePythonFields();
+    }
+    
+    
+    ///Refresh the curve editor with potential new animated knobs
+    if (isNodePanel) {
+        boost::shared_ptr<NodeGui> node = isNodePanel->getNode();
+        getGui()->getCurveEditor()->removeNode(node.get());
+        getGui()->getCurveEditor()->addNode(node);
     }
 }
 
@@ -2375,7 +2413,7 @@ DockablePanel::getUserPages(std::list<Page_Knob*>& userPages) const
 void
 ManageUserParamsDialogPrivate::rebuildUserPages()
 {
-    panel->rebuildUserPages();
+    panel->scanForNewKnobs();
 }
 
 void

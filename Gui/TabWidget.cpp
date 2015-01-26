@@ -53,6 +53,7 @@ CLANG_DIAG_ON(deprecated)
 #include "Engine/ViewerInstance.h"
 #include "Engine/Project.h"
 
+#define LEFT_HAND_CORNER_BUTTON_TT "Manage the layouts for this pane"
 
 using namespace Natron;
 
@@ -97,7 +98,7 @@ TabWidget::TabWidget(Gui* gui,
 
     _leftCornerButton = new Button(QIcon(pixL),"",_header);
     _leftCornerButton->setFixedSize(NATRON_SMALL_BUTTON_SIZE,NATRON_SMALL_BUTTON_SIZE);
-    _leftCornerButton->setToolTip( Qt::convertFromPlainText(tr("Manage the layouts for this pane"), Qt::WhiteSpaceNormal) );
+    _leftCornerButton->setToolTip( Qt::convertFromPlainText(tr(LEFT_HAND_CORNER_BUTTON_TT), Qt::WhiteSpaceNormal) );
     _leftCornerButton->setFocusPolicy(Qt::NoFocus);
     _headerLayout->addWidget(_leftCornerButton);
     _headerLayout->addSpacing(10);
@@ -1292,9 +1293,15 @@ TabWidget::activeIndex() const
 void
 TabWidget::setObjectName_mt_safe(const QString & str)
 {
-    QMutexLocker l(&_tabWidgetStateMutex);
-
-    setObjectName(str);
+    {
+        QMutexLocker l(&_tabWidgetStateMutex);
+        
+        setObjectName(str);
+    }
+    QString tt = Qt::convertFromPlainText(tr(LEFT_HAND_CORNER_BUTTON_TT), Qt::WhiteSpaceNormal) ;
+    QString toPre = QString("Script name: <font size = 4><b>%1</font></b><br/>").arg(str);
+    tt.prepend(toPre);
+    _leftCornerButton->setToolTip(tt);
 }
 
 QString

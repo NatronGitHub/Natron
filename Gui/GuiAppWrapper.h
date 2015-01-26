@@ -17,6 +17,8 @@
 #include "Gui/GuiAppInstance.h"
 
 class PyModalDialog;
+class PyPanel;
+class PyTabWidget;
 
 class GuiApp : public App
 {
@@ -28,7 +30,27 @@ public:
     
     virtual ~GuiApp();
     
+    Gui* getGui() const;
+    
     PyModalDialog* createModalDialog();
+        
+    PyTabWidget* getTabWidget(const std::string& name) const;
+    
+    void registerPythonPanel(PyPanel* panel,const std::string& pythonFunction);
+    void unregisterPythonPanel(PyPanel* panel);
+    
+    std::string getFilenameDialog(const std::vector<std::string>& filters,const std::string& location = std::string()) const;
+    
+    std::string getSequenceDialog(const std::vector<std::string>& filters,const std::string& location = std::string()) const;
+    
+    std::string getDirectoryDialog(const std::vector<std::string>& filters,const std::string& location = std::string()) const;
+    
+    std::string saveFilenameDialog(const std::vector<std::string>& filters,const std::string& location = std::string()) const;
+    
+    std::string saveSequenceDialog(const std::vector<std::string>& filters,const std::string& location = std::string()) const;
+
+    ColorTuple getRGBColorDialog() const;
+    
 };
 
 #endif // GUIAPPWRAPPER_H

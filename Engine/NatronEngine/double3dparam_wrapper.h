@@ -11,6 +11,7 @@ class Double3DParamWrapper : public Double3DParam
 {
 public:
     virtual ~Double3DParamWrapper();
+    static void pysideInitQtMetaTypes();
 };
 
 #endif // SBK_DOUBLE3DPARAMWRAPPER_H

@@ -1,6 +1,9 @@
 
 // default includes
 #include <shiboken.h>
+#include <pysidesignal.h>
+#include <pysideproperty.h>
+#include <pyside.h>
 #include <typeresolver.h>
 #include <typeinfo>
 #include "natronengine_python.h"
@@ -1318,4 +1321,18 @@ void init_Natron(PyObject* module)
     // End of 'ViewerColorSpaceEnum' enum.
 
 
+    qRegisterMetaType< ::Natron::StandardButtonEnum >("Natron::StandardButtonEnum");
+    qRegisterMetaType< ::Natron::StandardButtons >("Natron::StandardButtons");
+    qRegisterMetaType< ::Natron::ImageComponentsEnum >("Natron::ImageComponentsEnum");
+    qRegisterMetaType< ::Natron::ImageBitDepthEnum >("Natron::ImageBitDepthEnum");
+    qRegisterMetaType< ::Natron::KeyframeTypeEnum >("Natron::KeyframeTypeEnum");
+    qRegisterMetaType< ::Natron::ValueChangedReasonEnum >("Natron::ValueChangedReasonEnum");
+    qRegisterMetaType< ::Natron::AnimationLevelEnum >("Natron::AnimationLevelEnum");
+    qRegisterMetaType< ::Natron::OrientationEnum >("Natron::OrientationEnum");
+    qRegisterMetaType< ::Natron::ImagePremultiplicationEnum >("Natron::ImagePremultiplicationEnum");
+    qRegisterMetaType< ::Natron::StatusEnum >("Natron::StatusEnum");
+    qRegisterMetaType< ::Natron::ViewerCompositingOperatorEnum >("Natron::ViewerCompositingOperatorEnum");
+    qRegisterMetaType< ::Natron::PlaybackModeEnum >("Natron::PlaybackModeEnum");
+    qRegisterMetaType< ::Natron::PixmapEnum >("Natron::PixmapEnum");
+    qRegisterMetaType< ::Natron::ViewerColorSpaceEnum >("Natron::ViewerColorSpaceEnum");
 }

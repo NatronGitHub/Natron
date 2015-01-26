@@ -333,6 +333,7 @@ public:
     
     virtual void declareCurrentAppVariable_Python();
 
+    void execOnProjectCreatedCallback();
 public Q_SLOTS:
 
 

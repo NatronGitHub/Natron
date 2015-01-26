@@ -11,6 +11,7 @@ class AnimatedParamWrapper : public AnimatedParam
 {
 public:
     virtual ~AnimatedParamWrapper();
+    static void pysideInitQtMetaTypes();
 };
 
 #endif // SBK_ANIMATEDPARAMWRAPPER_H

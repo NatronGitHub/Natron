@@ -11,6 +11,7 @@ class Int3DParamWrapper : public Int3DParam
 {
 public:
     virtual ~Int3DParamWrapper();
+    static void pysideInitQtMetaTypes();
 };
 
 #endif // SBK_INT3DPARAMWRAPPER_H

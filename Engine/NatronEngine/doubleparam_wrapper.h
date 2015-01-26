@@ -11,6 +11,7 @@ class DoubleParamWrapper : public DoubleParam
 {
 public:
     virtual ~DoubleParamWrapper();
+    static void pysideInitQtMetaTypes();
 };
 
 #endif // SBK_DOUBLEPARAMWRAPPER_H

@@ -11,6 +11,7 @@ class OutputFileParamWrapper : public OutputFileParam
 {
 public:
     virtual ~OutputFileParamWrapper();
+    static void pysideInitQtMetaTypes();
 };
 
 #endif // SBK_OUTPUTFILEPARAMWRAPPER_H

@@ -12,6 +12,7 @@ class PyCoreApplicationWrapper : public PyCoreApplication
 public:
     PyCoreApplicationWrapper();
     virtual ~PyCoreApplicationWrapper();
+    static void pysideInitQtMetaTypes();
 };
 
 #endif // SBK_PYCOREAPPLICATIONWRAPPER_H
