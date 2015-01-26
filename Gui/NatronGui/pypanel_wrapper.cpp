@@ -1374,9 +1374,6 @@ Sbk_PyPanel_Init(PyObject* self, PyObject* args, PyObject* kwds)
             }
 
             PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
-
-            // Ownership transferences.
-            Shiboken::Object::releaseOwnership(self);
         }
     }
 

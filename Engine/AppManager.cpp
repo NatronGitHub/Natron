@@ -1402,6 +1402,9 @@ static void findAndRunScriptFile(const QString& path,const QStringList& files,co
                 QTextStream ts(&file);
                 QString content = ts.readAll();
                 PyRun_SimpleString(content.toStdString().c_str());
+                if (PyErr_Occurred()) {
+                    PyErr_Print();
+                }
             }
             break;
         }
