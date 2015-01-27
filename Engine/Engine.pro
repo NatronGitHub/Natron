@@ -105,6 +105,7 @@ SOURCES += \
     Project.cpp \
     ProjectPrivate.cpp \
     ProjectSerialization.cpp \
+    PySideCompat.cpp \
     RotoContext.cpp \
     RotoSerialization.cpp  \
     RotoWrapper.cpp \
