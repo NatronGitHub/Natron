@@ -154,7 +154,11 @@ public:
     }
 };
 
-
+#if defined(PYSIDE_H) && defined(PYSIDE_OLD)
+namespace PySide {
+PYSIDE_API PyObject* getWrapperForQObject(QObject* cppSelf, SbkObjectType* sbk_type);
+}
+#endif
 
 
 
