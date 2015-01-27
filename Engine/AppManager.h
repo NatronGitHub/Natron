@@ -75,7 +75,7 @@ struct AppInstanceRef
 
 
 struct CLArgsPrivate;
-class CLArgs
+class CLArgs : boost::noncopyable
 {
 public:
     
