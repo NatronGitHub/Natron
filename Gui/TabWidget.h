@@ -307,6 +307,9 @@ public Q_SLOTS:
     
     void moveToNextTab();
     
+    void onCurrentTabDeleted();
+    
+    void onUserPanelActionTriggered();
 private:
 
 

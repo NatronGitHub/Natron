@@ -49,6 +49,7 @@ CLANG_DIAG_ON(deprecated)
 #include "Gui/ActionShortcuts.h"
 #include "Gui/MenuWithToolTips.h"
 #include "Gui/ScriptEditor.h"
+#include "Gui/PythonPanels.h"
 
 #include "Engine/ViewerInstance.h"
 #include "Engine/Project.h"
@@ -157,8 +158,8 @@ void
 TabWidget::createMenu()
 {
     MenuWithToolTips menu(_gui);
-
-    menu.setFont( QFont(appFont,appFontSize) );
+    QFont f(appFont,appFontSize);
+    menu.setFont(f) ;
     QPixmap pixV,pixM,pixH,pixC,pixA;
     appPTR->getIcon(NATRON_PIXMAP_TAB_WIDGET_SPLIT_VERTICALLY,&pixV);
     appPTR->getIcon(NATRON_PIXMAP_TAB_WIDGET_SPLIT_HORIZONTALLY,&pixH);
@@ -210,6 +211,22 @@ TabWidget::createMenu()
     menu.addAction( tr("Curve Editor here"), this, SLOT( moveCurveEditorHere() ) );
     menu.addAction( tr("Properties bin here"), this, SLOT( movePropertiesBinHere() ) );
     menu.addAction( tr("Script editor here"), this, SLOT( moveScriptEditorHere() ) );
+    
+    
+    std::map<PyPanel*,std::string> userPanels = _gui->getPythonPanels();
+    if (!userPanels.empty()) {
+        QMenu* userPanelsMenu = new QMenu(tr("User panels"),&menu);
+        userPanelsMenu->setFont(f);
+        menu.addAction(userPanelsMenu->menuAction());
+        
+        
+        for (std::map<PyPanel*,std::string>::iterator it = userPanels.begin(); it != userPanels.end(); ++it) {
+            QAction* pAction = new QAction(QString(it->first->getLabel().c_str()) + tr(" here"),userPanelsMenu);
+            QObject::connect(pAction, SIGNAL(triggered()), this, SLOT(onUserPanelActionTriggered()));
+            pAction->setData(it->first->getLabel().c_str());
+            userPanelsMenu->addAction(pAction);
+        }
+    }
     menu.addSeparator();
     
     QAction* isAnchorAction = new QAction(QIcon(pixA),tr("Set this as anchor"),&menu);
@@ -222,6 +239,21 @@ TabWidget::createMenu()
     menu.addAction(isAnchorAction);
 
     menu.exec( _leftCornerButton->mapToGlobal( QPoint(0,0) ) );
+}
+
+void
+TabWidget::onUserPanelActionTriggered()
+{
+    QAction* s = qobject_cast<QAction*>(sender());
+    if (!s) {
+        return;
+    }
+    
+    const std::map<std::string,QWidget*>& tabs = _gui->getRegisteredTabs();
+    std::map<std::string,QWidget*>::const_iterator found = tabs.find(s->data().toString().toStdString());
+    if (found != tabs.end()) {
+        moveTab(found->second, this);
+    }
 }
 
 void
@@ -797,12 +829,14 @@ TabWidget::makeCurrentTab(int index)
         }
         /*Removing previous widget if any*/
         if (_currentWidget) {
+            QObject::disconnect(_currentWidget, SIGNAL(destroyed()), this, SLOT(onCurrentTabDeleted()));
             _currentWidget->setVisible(false);
             _mainLayout->removeWidget(_currentWidget);
             // _currentWidget->setParent(0);
         }
         tab = _tabs[index];
         _mainLayout->addWidget(tab);
+        QObject::connect(tab, SIGNAL(destroyed()), this, SLOT(onCurrentTabDeleted()));
         _currentWidget = tab;
     }
     tab->setVisible(true);
@@ -810,6 +844,41 @@ TabWidget::makeCurrentTab(int index)
     _modifyingTabBar = true;
     _tabBar->setCurrentIndex(index);
     _modifyingTabBar = false;
+}
+                         
+void
+TabWidget::onCurrentTabDeleted()
+{
+    QObject* s = sender();
+    if (s != _currentWidget) {
+        return;
+    }
+    _currentWidget = 0;
+    QMutexLocker l(&_tabWidgetStateMutex);
+    for (U32 i = 0; i < _tabs.size(); ++i) {
+        if (_tabs[i] == s) {
+
+            _tabs.erase(_tabs.begin() + i);
+            _modifyingTabBar = true;
+            _tabBar->removeTab(i);
+            _modifyingTabBar = false;
+            if (_tabs.size() > 0) {
+                l.unlock();
+                makeCurrentTab(0);
+                l.relock();
+            } else {
+                _currentWidget = 0;
+                _mainLayout->addStretch();
+                if ( !_gui->isDraggingPanel() ) {
+                    l.unlock();
+                    tryCloseFloatingPane();
+                    l.relock();
+                }
+            }
+            break;
+        }
+    }
+    
 }
 
 void
