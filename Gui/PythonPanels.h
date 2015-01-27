@@ -138,6 +138,10 @@ public :
     
     ~PyTabWidget();
     
+    TabWidget* getInternalTabWidget() const {
+        return _tab;
+    }
+    
     bool appendTab(QWidget* tab);
     
     void insertTab(int index,QWidget* tab);

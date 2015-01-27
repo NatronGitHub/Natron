@@ -22,11 +22,17 @@ class IconViewer(NatronGui.PyPanel):
         location = self.currentApp.getFilenameDialog(("jpg","png","bmp","tif"))
         if location:
             self.locationEdit.setText(location)
+            
+            #Save the file
+            self.onUserDataChanged()
+        
         self.userFileChanged.emit()
     
     #This is called when the user finish editing of the line edit (when return is pressed or focus out)
     @QtCore.Slot()
     def onLocationEditEditingFinished(self):
+        #Save the file
+        self.onUserDataChanged()
         self.userFileChanged.emit()
     
     #This is called when our custom userFileChanged signal is emitted
@@ -87,6 +93,15 @@ class IconViewer(NatronGui.PyPanel):
         self.locationEdit.editingFinished.connect(self.onLocationEditEditingFinished)
         self.userFileChanged.connect(self.onFileChanged)
 
+    # We override the save() function and save the filename
+    def save(self):
+        return self.locationEdit.text()
+
+    # We override the restore(data) function and restore the current image
+    def restore(self,data):
+
+        self.locationEdit.setText(data)
+        self.label.setPixmap(QPixmap(data))
 
 #To be called to create a new icon viewer panel:
 #Note that *app* should be defined. Generally when called from onProjectCreatedCallback

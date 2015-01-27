@@ -23,11 +23,11 @@
                 <define-ownership class="target" owner="target"/>
             </modify-argument>
         </modify-function>
-        <modify-function signature="createModalDialog()">
+        <!--<modify-function signature="createModalDialog()">
             <modify-argument index="return">
                 <define-ownership owner="c++"/>
             </modify-argument>
-        </modify-function>
+        </modify-function>-->
     </object-type>
 
     <object-type name="PyGuiApplication">

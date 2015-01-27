@@ -473,7 +473,12 @@ PyTabWidget::splitVertically()
 void
 PyTabWidget::closePane()
 {
+    if (_tab->getGui()->getPanes().size() == 1) {
+        _tab->getGui()->getApp()->appendToScriptEditor(QObject::tr("Cannot close pane when this is the last one remaining.").toStdString());
+        return;
+    }
     _tab->closePane();
+    _tab->close();
 }
 
 void

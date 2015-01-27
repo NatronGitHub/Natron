@@ -20,6 +20,7 @@
 #include <ParameterWrapper.h>
 #include <PythonPanels.h>
 #include <list>
+#include <qwidget.h>
 #include <vector>
 
 
@@ -52,9 +53,6 @@ static PyObject* Sbk_GuiAppFunc_createModalDialog(PyObject* self)
             PyModalDialog * cppResult = cppSelf->createModalDialog();
             PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronGuiTypes[SBK_PYMODALDIALOG_IDX], cppResult);
-
-            // Ownership transferences.
-            Shiboken::Object::releaseOwnership(pyResult);
         }
     }
 
@@ -74,33 +72,28 @@ static PyObject* Sbk_GuiAppFunc_getDirectoryDialog(PyObject* self, PyObject* arg
     cppSelf = ((::GuiApp*)Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_GUIAPP_IDX], (SbkObject*)self));
     PyObject* pyResult = 0;
     int overloadId = -1;
-    PythonToCppFunc pythonToCpp[] = { 0, 0 };
+    PythonToCppFunc pythonToCpp[] = { 0 };
     SBK_UNUSED(pythonToCpp)
     int numNamedArgs = (kwds ? PyDict_Size(kwds) : 0);
     int numArgs = PyTuple_GET_SIZE(args);
-    PyObject* pyArgs[] = {0, 0};
+    PyObject* pyArgs[] = {0};
 
     // invalid argument lengths
-    if (numArgs + numNamedArgs > 2) {
+    if (numArgs + numNamedArgs > 1) {
         PyErr_SetString(PyExc_TypeError, "NatronGui.GuiApp.getDirectoryDialog(): too many arguments");
-        return 0;
-    } else if (numArgs < 1) {
-        PyErr_SetString(PyExc_TypeError, "NatronGui.GuiApp.getDirectoryDialog(): not enough arguments");
         return 0;
     }
 
-    if (!PyArg_ParseTuple(args, "|OO:getDirectoryDialog", &(pyArgs[0]), &(pyArgs[1])))
+    if (!PyArg_ParseTuple(args, "|O:getDirectoryDialog", &(pyArgs[0])))
         return 0;
 
 
     // Overloaded function decisor
-    // 0: getDirectoryDialog(std::vector<std::string>,std::string)const
-    if ((pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(SbkNatronGuiTypeConverters[SBK_NATRONGUI_STD_VECTOR_STD_STRING_IDX], (pyArgs[0])))) {
-        if (numArgs == 1) {
-            overloadId = 0; // getDirectoryDialog(std::vector<std::string>,std::string)const
-        } else if ((pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[1])))) {
-            overloadId = 0; // getDirectoryDialog(std::vector<std::string>,std::string)const
-        }
+    // 0: getDirectoryDialog(std::string)const
+    if (numArgs == 0) {
+        overloadId = 0; // getDirectoryDialog(std::string)const
+    } else if ((pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[0])))) {
+        overloadId = 0; // getDirectoryDialog(std::string)const
     }
 
     // Function signature not found.
@@ -110,24 +103,22 @@ static PyObject* Sbk_GuiAppFunc_getDirectoryDialog(PyObject* self, PyObject* arg
     {
         if (kwds) {
             PyObject* value = PyDict_GetItemString(kwds, "location");
-            if (value && pyArgs[1]) {
+            if (value && pyArgs[0]) {
                 PyErr_SetString(PyExc_TypeError, "NatronGui.GuiApp.getDirectoryDialog(): got multiple values for keyword argument 'location'.");
                 return 0;
             } else if (value) {
-                pyArgs[1] = value;
-                if (!(pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[1]))))
+                pyArgs[0] = value;
+                if (!(pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[0]))))
                     goto Sbk_GuiAppFunc_getDirectoryDialog_TypeError;
             }
         }
-        ::std::vector<std::string > cppArg0;
-        pythonToCpp[0](pyArgs[0], &cppArg0);
-        ::std::string cppArg1 = std::string();
-        if (pythonToCpp[1]) pythonToCpp[1](pyArgs[1], &cppArg1);
+        ::std::string cppArg0 = std::string();
+        if (pythonToCpp[0]) pythonToCpp[0](pyArgs[0], &cppArg0);
 
         if (!PyErr_Occurred()) {
-            // getDirectoryDialog(std::vector<std::string>,std::string)const
+            // getDirectoryDialog(std::string)const
             PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            std::string cppResult = const_cast<const ::GuiApp*>(cppSelf)->getDirectoryDialog(cppArg0, cppArg1);
+            std::string cppResult = const_cast<const ::GuiApp*>(cppSelf)->getDirectoryDialog(cppArg0);
             PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), &cppResult);
         }
@@ -140,7 +131,7 @@ static PyObject* Sbk_GuiAppFunc_getDirectoryDialog(PyObject* self, PyObject* arg
     return pyResult;
 
     Sbk_GuiAppFunc_getDirectoryDialog_TypeError:
-        const char* overloads[] = {"list, std::string = std.string()", 0};
+        const char* overloads[] = {"std::string = std.string()", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronGui.GuiApp.getDirectoryDialog", overloads);
         return 0;
 }
@@ -380,6 +371,70 @@ static PyObject* Sbk_GuiAppFunc_getTabWidget(PyObject* self, PyObject* pyArg)
     Sbk_GuiAppFunc_getTabWidget_TypeError:
         const char* overloads[] = {"std::string", 0};
         Shiboken::setErrorAboutWrongArguments(pyArg, "NatronGui.GuiApp.getTabWidget", overloads);
+        return 0;
+}
+
+static PyObject* Sbk_GuiAppFunc_moveTab(PyObject* self, PyObject* args)
+{
+    ::GuiApp* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::GuiApp*)Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_GUIAPP_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp[] = { 0, 0 };
+    SBK_UNUSED(pythonToCpp)
+    int numArgs = PyTuple_GET_SIZE(args);
+    PyObject* pyArgs[] = {0, 0};
+
+    // invalid argument lengths
+
+
+    if (!PyArg_UnpackTuple(args, "moveTab", 2, 2, &(pyArgs[0]), &(pyArgs[1])))
+        return 0;
+
+
+    // Overloaded function decisor
+    // 0: moveTab(QWidget*,PyTabWidget*)
+    if (numArgs == 2
+        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppPointerConvertible((SbkObjectType*)SbkPySide_QtGuiTypes[SBK_QWIDGET_IDX], (pyArgs[0])))
+        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppPointerConvertible((SbkObjectType*)SbkNatronGuiTypes[SBK_PYTABWIDGET_IDX], (pyArgs[1])))) {
+        overloadId = 0; // moveTab(QWidget*,PyTabWidget*)
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_GuiAppFunc_moveTab_TypeError;
+
+    // Call function/method
+    {
+        if (!Shiboken::Object::isValid(pyArgs[0]))
+            return 0;
+        ::QWidget* cppArg0;
+        pythonToCpp[0](pyArgs[0], &cppArg0);
+        if (!Shiboken::Object::isValid(pyArgs[1]))
+            return 0;
+        ::PyTabWidget* cppArg1;
+        pythonToCpp[1](pyArgs[1], &cppArg1);
+
+        if (!PyErr_Occurred()) {
+            // moveTab(QWidget*,PyTabWidget*)
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            bool cppResult = cppSelf->moveTab(cppArg0, cppArg1);
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), &cppResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+
+    Sbk_GuiAppFunc_moveTab_TypeError:
+        const char* overloads[] = {"PySide.QtGui.QWidget, NatronGui.PyTabWidget", 0};
+        Shiboken::setErrorAboutWrongArguments(args, "NatronGui.GuiApp.moveTab", overloads);
         return 0;
 }
 
@@ -655,6 +710,7 @@ static PyMethodDef Sbk_GuiApp_methods[] = {
     {"getRGBColorDialog", (PyCFunction)Sbk_GuiAppFunc_getRGBColorDialog, METH_NOARGS},
     {"getSequenceDialog", (PyCFunction)Sbk_GuiAppFunc_getSequenceDialog, METH_VARARGS|METH_KEYWORDS},
     {"getTabWidget", (PyCFunction)Sbk_GuiAppFunc_getTabWidget, METH_O},
+    {"moveTab", (PyCFunction)Sbk_GuiAppFunc_moveTab, METH_VARARGS},
     {"registerPythonPanel", (PyCFunction)Sbk_GuiAppFunc_registerPythonPanel, METH_VARARGS},
     {"saveFilenameDialog", (PyCFunction)Sbk_GuiAppFunc_saveFilenameDialog, METH_VARARGS|METH_KEYWORDS},
     {"saveSequenceDialog", (PyCFunction)Sbk_GuiAppFunc_saveSequenceDialog, METH_VARARGS|METH_KEYWORDS},

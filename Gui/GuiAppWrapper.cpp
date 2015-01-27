@@ -46,6 +46,12 @@ GuiApp::getTabWidget(const std::string& name) const
     return 0;
 }
 
+bool
+GuiApp::moveTab(QWidget* tab,PyTabWidget* pane)
+{
+    return TabWidget::moveTab(tab, pane->getInternalTabWidget());
+}
+
 void
 GuiApp::registerPythonPanel(PyPanel* panel,const std::string& pythonFunction)
 {
@@ -99,11 +105,10 @@ GuiApp::getSequenceDialog(const std::vector<std::string>& filters,
 }
 
 std::string
-GuiApp::getDirectoryDialog(const std::vector<std::string>& filters,
-                          const std::string& location) const
+GuiApp::getDirectoryDialog(const std::string& location) const
 {
     Gui* gui = _app->getGui();
-    
+    std::vector<std::string> filters;
     SequenceFileDialog dialog(gui,
                               filters,
                               false,

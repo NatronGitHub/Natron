@@ -497,12 +497,6 @@ ProjectGui::load(boost::archive::xml_iarchive & archive)
         
     }
     
-    if (!pythonPanels.empty()) {
-        std::string err;
-        bool ok = Natron::interpretPythonScript("del app",&err,0);
-        assert(ok);
-    }
-
     _gui->restoreLayout( true,obj.getVersion() < PROJECT_GUI_SERIALIZATION_MAJOR_OVERHAUL,obj.getGuiLayout() );
 
     ///restore the histograms

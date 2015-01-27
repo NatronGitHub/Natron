@@ -19,6 +19,7 @@
 class PyModalDialog;
 class PyPanel;
 class PyTabWidget;
+class QWidget;
 
 class GuiApp : public App
 {
@@ -36,6 +37,8 @@ public:
         
     PyTabWidget* getTabWidget(const std::string& name) const;
     
+    bool moveTab(QWidget* tab,PyTabWidget* pane);
+    
     void registerPythonPanel(PyPanel* panel,const std::string& pythonFunction);
     void unregisterPythonPanel(PyPanel* panel);
     
@@ -43,7 +46,7 @@ public:
     
     std::string getSequenceDialog(const std::vector<std::string>& filters,const std::string& location = std::string()) const;
     
-    std::string getDirectoryDialog(const std::vector<std::string>& filters,const std::string& location = std::string()) const;
+    std::string getDirectoryDialog(const std::string& location = std::string()) const;
     
     std::string saveFilenameDialog(const std::vector<std::string>& filters,const std::string& location = std::string()) const;
     

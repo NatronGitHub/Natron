@@ -1,5 +1,5 @@
 .. module:: NatronGui
-.. _GuiApp:
+.. _pyModalDialog:
 
 PyModalDialog
 ******************
@@ -58,7 +58,7 @@ Adding user parameters:
 ^^^^^^^^^^^^^^^^^^^^^^^
 
 
-You can start adding user parameters using all the :func:`createXParam<>` functions inherited from :doc:`UserParamHolder` class.
+You can start adding user parameters using all the :func:`createXParam<>` functions inherited from the :doc:`UserParamHolder` class.
 
 Once all your parameters are created, create the GUI for them using the :func:`refreshUserParamsGUI()<NatronEngine.UserParamHolder.refreshUserParamsGUI>` function::
 
@@ -87,7 +87,8 @@ Member functions description
 
 	:param widget: :class:`PySide.QtGui.QWidget`
 	
-Append a QWidget inherited *widget* at the bottom of the dialog. This allows to add custom GUI created directly using PySide.
+Append a QWidget inherited *widget* at the bottom of the dialog. This allows to add custom GUI created directly using PySide
+that will be inserted **after** any custom parameter.
 
 
 
@@ -108,6 +109,7 @@ Returns the user parameter with the given *scriptName* if it exists or *None* ot
 	:param widget: :class:`PySide.QtGui.QWidget`
 	
 Inserts a QWidget inherited *widget* at the given *index* of the layout in the dialog. This allows to add custom GUI created directly using PySide.
+The widget will always be inserted **after** any user parameter.
 
 
 

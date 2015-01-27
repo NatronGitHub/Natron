@@ -24,5 +24,7 @@ E.g::
     GuiApp
     PyGuiApplication
     PyModalDialog
+    PyPanel
+    PyTabWidget
 
 

@@ -162,31 +162,18 @@ launchctl setenv PATH /opt/local/bin:/opt/local/sbin:/usr/bin:/bin:/usr/sbin:/sb
 This is not required as generated files are already in the repository. You would need to run it if you were to extend or modify the Python bindings via the
 typesystem.xml file. See the documentation of shiboken-3.4 for an explanation of the command line arguments.
 
-Alex, can you check if the homebrew line below this one works?
 
 ```Shell
-shiboken-3.4 --include-paths=../Engine:../Global:/opt/local/include:/opt/local/include/PySide-3.4  --typesystem-paths=/opt/local/share/PySide-3.4/typesystems --output-directory=Engine Engine/Pyside_Engine_Python.h  Engine/typesystem_engine.xml
+shiboken-3.4 --enable-pyside-extensions --include-paths=../Engine:../Global:/opt/local/include:/opt/local/include/PySide-3.4  --typesystem-paths=/opt/local/share/PySide-3.4/typesystems --output-directory=Engine Engine/Pyside_Engine_Python.h  Engine/typesystem_engine.xml
 
-shiboken-3.4 --include-paths=../Engine:../Gui:../Global:/opt/local/include:/opt/local/include/PySide-3.4  --typesystem-paths=/opt/local/share/PySide-3.4/typesystems:Engine --output-directory=Gui Gui/Pyside_Gui_Python.h  Gui/typesystem_natronGui.xml
+shiboken-3.4 --enable-pyside-extensions --include-paths=../Engine:../Gui:../Global:/opt/local/include:/opt/local/include/PySide-3.4  --typesystem-paths=/opt/local/share/PySide-3.4/typesystems:Engine --output-directory=Gui Gui/Pyside_Gui_Python.h  Gui/typesystem_natronGui.xml
 ```
 **Note**
-Shiboken wrongly declares referenced typesystems as global variable in the source file of the module. That means if both NatronEngine and NatronGui need QtCore as a dependency typsystem, then they will both have the SbkPySide_QtCoreTypes and SbkPySide_QtCoreTypeConverters variables defined in <modulename>_module_wrapper.cpp
-The only solution to deal with it found so far is to comment the following lines in natrongui_module_wrapper.cpp :
-
-    /*PyTypeObject** SbkPySide_QtCoreTypes;
-    SbkConverter** SbkPySide_QtCoreTypeConverters;
-    PyTypeObject** SbkNatronEngineTypes;
-    SbkConverter** SbkNatronEngineTypeConverters;*/
-
-To generate the Sphinx documentation of the Python bindings using Shiboken:
-
-```Shell
-shiboken-3.4 --generator-set=qtdoc Documentation/Pyside_Global_Python.h  --library-source-dir=Engine:Gui  --documentation-data-dir=Documentation --include-paths=../Engine:../Gui:../Global:/opt/local/include:/opt/local/include/PySide-3.4  --typesystem-paths=/opt/local/share/PySide-3.4/typesystems:Gui:Engine --output-directory=Documentation/PythonReference   Documentation/typesystem_doc.xml
-```
+Shiboken has some glitchs which needs fixing with some sed commands, run tools/runPostShiboken.sh once shiboken is called
 
 on HomeBrew:
 ```Shell
-shiboken --include-paths=../Global:`pkg-config --variable=prefix QtCore`/include:`pkg-config --variable=includedir pyside`  --typesystem-paths=`pkg-config --variable=typesystemdir pyside` --output-directory=Engine Engine/Pyside_Engine_Python.h Engine/typesystem_engine.xml
+shiboken --enable-pyside-extensions --include-paths=../Global:`pkg-config --variable=prefix QtCore`/include:`pkg-config --variable=includedir pyside`  --typesystem-paths=`pkg-config --variable=typesystemdir pyside` --output-directory=Engine Engine/Pyside_Engine_Python.h Engine/typesystem_engine.xml
  ```
  
 ## OpenFX plugins
