@@ -253,6 +253,7 @@ PyPanel::PyPanel(const std::string& label,bool useUserParameters,GuiApp* app)
     
     if (useUserParameters) {
         _imp->holder = new DialogParamHolder(_imp->label,_imp->gui->getApp());
+        setHolder(_imp->holder);
         
         _imp->mainLayout = new QVBoxLayout(this);
         _imp->mainLayout->setContentsMargins(0, 0, 0, 0);
@@ -326,7 +327,7 @@ PyPanel::getParams() const
     if (!_imp->holder) {
         return ret;
     }
-    const std::vector<boost::shared_ptr<KnobI> >& knobs = _imp->holder->getKnobs();
+    std::vector<boost::shared_ptr<KnobI> > knobs = _imp->holder->getKnobs_mt_safe();
     for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
         Param* p = Effect::createParamWrapperForKnob(*it);
         if (p) {

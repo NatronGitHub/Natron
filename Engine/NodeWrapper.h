@@ -59,6 +59,7 @@ class UserParamHolder
 public:
     
     UserParamHolder()
+    : _holder(0)
     {
         
     }

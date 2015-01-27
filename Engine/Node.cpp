@@ -4572,6 +4572,7 @@ Node::declareCurrentNodeVariable_Python(std::string* deleteScript) const
     int appID = getApp()->getAppID() + 1 ;
     ///Now define the thisNode variable
     std::stringstream ss;
+    ss << "app = " << "app" << appID ;
     if (isParentGrp) {
         ss << "thisGroup = " << "app" << appID << "." << isParentGrp->getNode()->getFullyQualifiedName() << "\n";
         deleteScript->append("del thisGroup\n");

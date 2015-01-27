@@ -1422,7 +1422,7 @@ static void exportUserKnob(const boost::shared_ptr<KnobI>& knob,const QString& f
         } else {
             typeStr = "eStringTypeDefault";
         }
-        WRITE_INDENT(1); WRITE_STRING("param.setType(StringParam." + typeStr + ")");
+        WRITE_INDENT(1); WRITE_STRING("param.setType(NatronEngine.StringParam.TypeEnum." + typeStr + ")");
     } else if (isFile) {
         WRITE_INDENT(1); WRITE_STRING("param = " + fullyQualifiedNodeName + ".createFileParam(" + ESC(isFile->getName()) +
                                       ", " + ESC(isFile->getDescription()) + ")");
