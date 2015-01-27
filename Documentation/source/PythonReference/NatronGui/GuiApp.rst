@@ -23,6 +23,7 @@ Functions
 *    def :meth:`getDirectoryDialog<NatronGui.GuiApp.getDirectoryDialog>` ([location=None])
 *    def :meth:`getRGBColorDialog<NatronGui.GuiApp.getRGBColorDialog>` ()
 *    def :meth:`getTabWidget<NatronGui.GuiApp.getTabWidget>` (scriptName)
+*    def :meth:`getSelectedNodes<NatronGui.GuiApp.getSelectedNodes>` ([group=None])
 *    def :meth:`moveTab<NatronGui.GuiApp.moveTab>` (tab,pane)
 *    def :meth:`saveFilenameDialog<NatronGui.GuiApp.saveFilenameDialog>` (filters[, location=None])
 *    def :meth:`saveSequenceDialog<NatronGui.GuiApp.saveSequenceDialog>` (filters[, location=None])
@@ -181,4 +182,16 @@ be used to re-create the panel.
 Unregisters a previously registered panel.
 
 
+.. method:: NatronGui.GuiApp.getSelectedNodes([group = None])
 
+	:rtype: :class:`sequence`
+
+Returns a sequence of :ref:`nodes<Effect>` currently selected in the given *group*.
+If no *group* is specified, this will return the selection in the main node graph::
+
+	topLevelSelection = app.getSelectedNodes()
+	
+	group = app.createNode("fr.inria.built-in.Group")
+	
+	groupSelection = app.getSelectedNodes(group)
+	

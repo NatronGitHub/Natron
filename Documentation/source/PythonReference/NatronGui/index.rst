@@ -26,5 +26,6 @@ E.g::
     PyModalDialog
     PyPanel
     PyTabWidget
+    PyViewer
 
 

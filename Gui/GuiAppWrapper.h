@@ -20,6 +20,77 @@ class PyModalDialog;
 class PyPanel;
 class PyTabWidget;
 class QWidget;
+class Effect;
+class Group;
+class ViewerTab;
+
+namespace Natron {
+class Node;
+}
+
+class PyViewer
+{
+    
+    boost::shared_ptr<Natron::Node> _node;
+    ViewerTab* _viewer;
+    
+public:
+    
+    PyViewer(const boost::shared_ptr<Natron::Node>& node);
+    
+    ~PyViewer();
+    
+    void seek(int frame);
+    
+    int getCurrentFrame();
+    
+    void startForward();
+    
+    void startBackward();
+    
+    void pause();
+    
+    void redraw();
+    
+    void renderCurrentFrame(bool useCache = true);
+    
+    void setFrameRange(int firstFrame,int lastFrame);
+    
+    void getFrameRange(int* firstFrame,int* lastFrame) const;
+    
+    void setPlaybackMode(Natron::PlaybackModeEnum mode);
+    
+    Natron::PlaybackModeEnum getPlaybackMode() const;
+    
+    Natron::ViewerCompositingOperatorEnum getCompositingOperator() const;
+    
+    void setCompositingOperator(Natron::ViewerCompositingOperatorEnum op);
+    
+    int getAInput() const;
+
+    void setAInput(int index);
+    
+    int getBInput() const;
+    
+    void setBInput(int index);
+    
+    void setChannels(Natron::DisplayChannelsEnum channels);
+    
+    Natron::DisplayChannelsEnum getChannels() const;
+    
+    void setProxyModeEnabled(bool enabled);
+    
+    bool isProxyModeEnabled() const;
+    
+    void setProxyIndex(int index);
+    
+    int getProxyIndex() const;
+    
+    void setCurrentView(int index);
+    
+    int getCurrentView() const;
+    
+};
 
 class GuiApp : public App
 {
@@ -54,6 +125,10 @@ public:
 
     ColorTuple getRGBColorDialog() const;
     
+    std::list<Effect*> getSelectedNodes(Group* group = 0) const;
+    
+    PyViewer* getViewer(const std::string& scriptName) const;
+
 };
 
 #endif // GUIAPPWRAPPER_H

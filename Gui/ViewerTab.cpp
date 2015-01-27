@@ -202,6 +202,10 @@ struct ViewerTabPrivate
     SpinBox* incrementSpinBox;
     Button* nextIncrement_Button;
     Button* playbackMode_Button;
+    
+    mutable QMutex playbackModeMutex;
+    Natron::PlaybackModeEnum playbackMode;
+    
     LineEdit* frameRangeEdit;
 
     ClickableLabel* canEditFrameRangeLabel;
@@ -297,6 +301,8 @@ struct ViewerTabPrivate
         , incrementSpinBox(NULL)
         , nextIncrement_Button(NULL)
         , playbackMode_Button(NULL)
+        , playbackModeMutex()
+        , playbackMode(Natron::ePlaybackModeLoop)
         , frameRangeEdit(NULL)
         , canEditFrameRangeLabel(NULL)
         , canEditFpsBox(NULL)
@@ -1115,6 +1121,39 @@ ViewerTab::getCurrentView() const
 }
 
 void
+ViewerTab::setPlaybackMode(Natron::PlaybackModeEnum mode)
+{
+    QPixmap pix;
+    switch (mode) {
+        case Natron::ePlaybackModeLoop:
+            appPTR->getIcon(NATRON_PIXMAP_PLAYER_LOOP_MODE, &pix);
+            break;
+        case Natron::ePlaybackModeBounce:
+            appPTR->getIcon(NATRON_PIXMAP_PLAYER_BOUNCE, &pix);
+            break;
+        case Natron::ePlaybackModeOnce:
+            appPTR->getIcon(NATRON_PIXMAP_PLAYER_PLAY_ONCE, &pix);
+            break;
+        default:
+            break;
+    }
+    {
+        QMutexLocker k(&_imp->playbackModeMutex);
+        _imp->playbackMode = mode;
+    }
+    _imp->playbackMode_Button->setIcon(QIcon(pix));
+    _imp->viewerNode->getRenderEngine()->setPlaybackMode(mode);
+
+}
+
+Natron::PlaybackModeEnum
+ViewerTab::getPlaybackMode() const
+{
+    QMutexLocker k(&_imp->playbackModeMutex);
+    return _imp->playbackMode;
+}
+
+void
 ViewerTab::togglePlaybackMode()
 {
     Natron::PlaybackModeEnum mode = _imp->viewerNode->getRenderEngine()->getPlaybackMode();
@@ -1132,6 +1171,10 @@ ViewerTab::togglePlaybackMode()
             break;
         default:
             break;
+    }
+    {
+        QMutexLocker k(&_imp->playbackModeMutex);
+        _imp->playbackMode = mode;
     }
     _imp->playbackMode_Button->setIcon(QIcon(pix));
     _imp->viewerNode->getRenderEngine()->setPlaybackMode(mode);
@@ -1447,29 +1490,29 @@ ViewerTab::onGainSliderChanged(double v)
 void
 ViewerTab::onViewerChannelsChanged(int i)
 {
-    ViewerInstance::DisplayChannelsEnum channels;
+    Natron::DisplayChannelsEnum channels;
 
     switch (i) {
     case 0:
-        channels = ViewerInstance::eDisplayChannelsY;
+        channels = Natron::eDisplayChannelsY;
         break;
     case 1:
-        channels = ViewerInstance::eDisplayChannelsRGB;
+        channels = Natron::eDisplayChannelsRGB;
         break;
     case 2:
-        channels = ViewerInstance::eDisplayChannelsR;
+        channels = Natron::eDisplayChannelsR;
         break;
     case 3:
-        channels = ViewerInstance::eDisplayChannelsG;
+        channels = Natron::eDisplayChannelsG;
         break;
     case 4:
-        channels = ViewerInstance::eDisplayChannelsB;
+        channels = Natron::eDisplayChannelsB;
         break;
     case 5:
-        channels = ViewerInstance::eDisplayChannelsA;
+        channels = Natron::eDisplayChannelsA;
         break;
     default:
-        channels = ViewerInstance::eDisplayChannelsRGB;
+        channels = Natron::eDisplayChannelsRGB;
         break;
     }
     _imp->viewerNode->setDisplayChannels(channels);
@@ -2075,35 +2118,46 @@ ViewerTab::getZoomOrPannedSinceLastFit() const
     return _imp->viewer->getZoomOrPannedSinceLastFit();
 }
 
+Natron::DisplayChannelsEnum
+ViewerTab::getChannels() const
+{
+    return _imp->viewerNode->getChannels();
+}
+
+std::string
+ViewerTab::getChannelsString(Natron::DisplayChannelsEnum c)
+{
+    switch (c) {
+        case Natron::eDisplayChannelsRGB:
+            
+            return "RGB";
+        case Natron::eDisplayChannelsR:
+            
+            return "R";
+        case Natron::eDisplayChannelsG:
+            
+            return "G";
+        case Natron::eDisplayChannelsB:
+            
+            return "B";
+        case Natron::eDisplayChannelsA:
+            
+            return "A";
+        case Natron::eDisplayChannelsY:
+            
+            return "Luminance";
+            break;
+        default:
+            
+            return "";
+    }
+}
+
 std::string
 ViewerTab::getChannelsString() const
 {
-    ViewerInstance::DisplayChannelsEnum c = _imp->viewerNode->getChannels();
-
-    switch (c) {
-    case ViewerInstance::eDisplayChannelsRGB:
-
-        return "RGB";
-    case ViewerInstance::eDisplayChannelsR:
-
-        return "R";
-    case ViewerInstance::eDisplayChannelsG:
-
-        return "G";
-    case ViewerInstance::eDisplayChannelsB:
-
-        return "B";
-    case ViewerInstance::eDisplayChannelsA:
-
-        return "A";
-    case ViewerInstance::eDisplayChannelsY:
-
-        return "Luminance";
-        break;
-    default:
-
-        return "";
-    }
+    Natron::DisplayChannelsEnum c = _imp->viewerNode->getChannels();
+    return getChannelsString(c);
 }
 
 void
@@ -2626,6 +2680,41 @@ ViewerTab::getCompositingOperator() const
     QMutexLocker l(&_imp->compOperatorMutex);
 
     return _imp->compOperator;
+}
+
+void
+ViewerTab::setInputA(int index)
+{
+    InputNamesMap::iterator found = _imp->inputNamesMap.find(index);
+    if (found == _imp->inputNamesMap.end()) {
+        return;
+    }
+    
+    int comboboxIndex = _imp->firstInputImage->itemIndex(found->second.name);
+    if (comboboxIndex == -1) {
+        return;
+    }
+    _imp->firstInputImage->setCurrentIndex(comboboxIndex);
+    _imp->viewerNode->setInputA(index);
+    _imp->viewerNode->renderCurrentFrame(true);
+    
+}
+
+void
+ViewerTab::setInputB(int index)
+{
+    InputNamesMap::iterator found = _imp->inputNamesMap.find(index);
+    if (found == _imp->inputNamesMap.end()) {
+        return;
+    }
+    
+    int comboboxIndex = _imp->secondInputImage->itemIndex(found->second.name);
+    if (comboboxIndex == -1) {
+        return;
+    }
+    _imp->secondInputImage->setCurrentIndex(comboboxIndex);
+    _imp->viewerNode->setInputB(index);
+    _imp->viewerNode->renderCurrentFrame(true);
 }
 
 ///Called when the user change the combobox choice
@@ -3340,4 +3429,11 @@ void
 ViewerTab::setFrameRangeEdited(bool edited)
 {
     _imp->timeLineGui->setFrameRangeEdited(edited);
+}
+
+void
+ViewerTab::setFrameRange(int left,int right)
+{
+    setTimelineBounds(left, right);
+    onTimelineBoundariesChanged(left, right);
 }

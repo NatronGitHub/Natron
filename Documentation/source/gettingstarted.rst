@@ -13,6 +13,5 @@ This section covers basic functionalities a Python script can do in Natron.
 	creatingNode.rst
 	controllingParameters.rst
 	paramExpressions.rst
-	panelUsingParamsExample.rst
 	pysidePanelExample.rst
 	

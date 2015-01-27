@@ -64,7 +64,7 @@ static void scaleToTexture32bits(std::pair<int,int> yRange,
                                  float *output);
 static std::pair<double, double>
 findAutoContrastVminVmax(boost::shared_ptr<const Natron::Image> inputImage,
-                         ViewerInstance::DisplayChannelsEnum channels,
+                         Natron::DisplayChannelsEnum channels,
                          const RectI & rect);
 static void renderFunctor(std::pair<int,int> yRange,
                           const RenderViewerArgs & args,
@@ -464,7 +464,7 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time, int view, in
     assert(_imp->uiContext);
     
     bool autoContrast;
-    ViewerInstance::DisplayChannelsEnum channels;
+    Natron::DisplayChannelsEnum channels;
     {
         QMutexLocker locker(&_imp->viewerParamsMutex);
         autoContrast = _imp->viewerParamsAutoContrast;
@@ -641,7 +641,7 @@ ViewerInstance::renderViewer_internal(int view,
     roi.y2 = inArgs.params->textureRect.y2;
     
     bool autoContrast;
-    ViewerInstance::DisplayChannelsEnum channels;
+    Natron::DisplayChannelsEnum channels;
     {
         QMutexLocker locker(&_imp->viewerParamsMutex);
         autoContrast = _imp->viewerParamsAutoContrast;
@@ -952,7 +952,7 @@ renderFunctor(std::pair<int,int> yRange,
 template <int nComps>
 std::pair<double, double>
 findAutoContrastVminVmax_internal(boost::shared_ptr<const Natron::Image> inputImage,
-                         ViewerInstance::DisplayChannelsEnum channels,
+                         Natron::DisplayChannelsEnum channels,
                          const RectI & rect)
 {
     double localVmin = std::numeric_limits<double>::infinity();
@@ -987,27 +987,27 @@ findAutoContrastVminVmax_internal(boost::shared_ptr<const Natron::Image> inputIm
             
             double mini, maxi;
             switch (channels) {
-                case ViewerInstance::eDisplayChannelsRGB:
+                case Natron::eDisplayChannelsRGB:
                     mini = std::min(std::min(r,g),b);
                     maxi = std::max(std::max(r,g),b);
                     break;
-                case ViewerInstance::eDisplayChannelsY:
+                case Natron::eDisplayChannelsY:
                     mini = r = 0.299 * r + 0.587 * g + 0.114 * b;
                     maxi = mini;
                     break;
-                case ViewerInstance::eDisplayChannelsR:
+                case Natron::eDisplayChannelsR:
                     mini = r;
                     maxi = mini;
                     break;
-                case ViewerInstance::eDisplayChannelsG:
+                case Natron::eDisplayChannelsG:
                     mini = g;
                     maxi = mini;
                     break;
-                case ViewerInstance::eDisplayChannelsB:
+                case Natron::eDisplayChannelsB:
                     mini = b;
                     maxi = mini;
                     break;
-                case ViewerInstance::eDisplayChannelsA:
+                case Natron::eDisplayChannelsA:
                     mini = a;
                     maxi = mini;
                     break;
@@ -1033,7 +1033,7 @@ findAutoContrastVminVmax_internal(boost::shared_ptr<const Natron::Image> inputIm
 
 std::pair<double, double>
 findAutoContrastVminVmax(boost::shared_ptr<const Natron::Image> inputImage,
-                         ViewerInstance::DisplayChannelsEnum channels,
+                         Natron::DisplayChannelsEnum channels,
                          const RectI & rect)
 {
     switch (inputImage->getComponents()) {
@@ -1057,7 +1057,7 @@ scaleToTexture8bits_internal(const std::pair<int,int> & yRange,
 {
     size_t pixelSize = sizeof(PIX);
     
-    const bool luminance = (args.channels == ViewerInstance::eDisplayChannelsY);
+    const bool luminance = (args.channels == Natron::eDisplayChannelsY);
     
     ///offset the output buffer at the starting point
     output += ( (yRange.first - args.texRect.y1) / args.closestPowerOf2 ) * args.texRect.w;
@@ -1216,21 +1216,21 @@ scaleToTexture8bitsForDepthForComponents(const std::pair<int,int> & yRange,
                             U32* output)
 {
     switch (args.channels) {
-        case ViewerInstance::eDisplayChannelsRGB:
-        case ViewerInstance::eDisplayChannelsY:
+        case Natron::eDisplayChannelsRGB:
+        case Natron::eDisplayChannelsY:
 
             scaleToTexture8bitsForPremult<PIX, maxValue, nComps, 0, 1, 2>(yRange, args,viewer, output);
             break;
-        case ViewerInstance::eDisplayChannelsG:
+        case Natron::eDisplayChannelsG:
             scaleToTexture8bitsForPremult<PIX, maxValue, nComps, 1, 1, 1>(yRange, args,viewer, output);
             break;
-        case ViewerInstance::eDisplayChannelsB:
+        case Natron::eDisplayChannelsB:
             scaleToTexture8bitsForPremult<PIX, maxValue, nComps, 2, 2, 2>(yRange, args,viewer, output);
             break;
-        case ViewerInstance::eDisplayChannelsA:
+        case Natron::eDisplayChannelsA:
             scaleToTexture8bitsForPremult<PIX, maxValue, nComps, 3, 3, 3>(yRange, args,viewer, output);
             break;
-        case ViewerInstance::eDisplayChannelsR:
+        case Natron::eDisplayChannelsR:
         default:
             scaleToTexture8bitsForPremult<PIX, maxValue, nComps, 0, 0, 0>(yRange, args,viewer, output);
 
@@ -1292,7 +1292,7 @@ scaleToTexture32bitsInternal(const std::pair<int,int> & yRange,
                              float *output)
 {
     size_t pixelSize = sizeof(PIX);
-    const bool luminance = (args.channels == ViewerInstance::eDisplayChannelsY);
+    const bool luminance = (args.channels == Natron::eDisplayChannelsY);
 
     ///the width of the output buffer multiplied by the channels count
     int dst_width = args.texRect.w * 4;
@@ -1423,8 +1423,8 @@ scaleToTexture32bitsForDepthForComponents(const std::pair<int,int> & yRange,
                              float *output)
 {
     switch (args.channels) {
-        case ViewerInstance::eDisplayChannelsRGB:
-        case ViewerInstance::eDisplayChannelsY:
+        case Natron::eDisplayChannelsRGB:
+        case Natron::eDisplayChannelsY:
             switch (nComps) {
                 case 1:
                     scaleToTexture32bitsForPremult<PIX, maxValue, nComps, 0, 0, 0>(yRange, args,viewer, output);
@@ -1437,7 +1437,7 @@ scaleToTexture32bitsForDepthForComponents(const std::pair<int,int> & yRange,
                     break;
             }
             break;
-        case ViewerInstance::eDisplayChannelsG:
+        case Natron::eDisplayChannelsG:
             switch (nComps) {
                 case 1:
                     scaleToTexture32bitsForPremult<PIX, maxValue, nComps, 0, 0, 0>(yRange, args,viewer, output);
@@ -1450,7 +1450,7 @@ scaleToTexture32bitsForDepthForComponents(const std::pair<int,int> & yRange,
                     break;
             }
             break;
-        case ViewerInstance::eDisplayChannelsB:
+        case Natron::eDisplayChannelsB:
             switch (nComps) {
                 case 1:
                     scaleToTexture32bitsForPremult<PIX, maxValue, nComps, 0, 0, 0>(yRange, args,viewer, output);
@@ -1463,7 +1463,7 @@ scaleToTexture32bitsForDepthForComponents(const std::pair<int,int> & yRange,
                     break;
             }
             break;
-        case ViewerInstance::eDisplayChannelsA:
+        case Natron::eDisplayChannelsA:
             switch (nComps) {
                 case 1:
                 case 3:
@@ -1476,7 +1476,7 @@ scaleToTexture32bitsForDepthForComponents(const std::pair<int,int> & yRange,
                     break;
             }
             break;
-        case ViewerInstance::eDisplayChannelsR:
+        case Natron::eDisplayChannelsR:
         default:
             scaleToTexture32bitsForPremult<PIX, maxValue, nComps, 0, 0, 0>(yRange, args,viewer, output);
             break;
@@ -1751,7 +1751,7 @@ ViewerInstance::getMipMapLevel() const
 }
 
 
-ViewerInstance::DisplayChannelsEnum
+Natron::DisplayChannelsEnum
 ViewerInstance::getChannels() const
 {
     // MT-SAFE: called from main thread and Serialization (pooled) thread

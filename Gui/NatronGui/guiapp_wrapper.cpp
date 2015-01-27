@@ -15,6 +15,7 @@
 
 // Extra includes
 #include <AppInstanceWrapper.h>
+#include <GuiAppWrapper.h>
 #include <NodeGroupWrapper.h>
 #include <NodeWrapper.h>
 #include <ParameterWrapper.h>
@@ -244,6 +245,93 @@ static PyObject* Sbk_GuiAppFunc_getRGBColorDialog(PyObject* self)
     return pyResult;
 }
 
+static PyObject* Sbk_GuiAppFunc_getSelectedNodes(PyObject* self, PyObject* args, PyObject* kwds)
+{
+    ::GuiApp* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::GuiApp*)Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_GUIAPP_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp[] = { 0 };
+    SBK_UNUSED(pythonToCpp)
+    int numNamedArgs = (kwds ? PyDict_Size(kwds) : 0);
+    int numArgs = PyTuple_GET_SIZE(args);
+    PyObject* pyArgs[] = {0};
+
+    // invalid argument lengths
+    if (numArgs + numNamedArgs > 1) {
+        PyErr_SetString(PyExc_TypeError, "NatronGui.GuiApp.getSelectedNodes(): too many arguments");
+        return 0;
+    }
+
+    if (!PyArg_ParseTuple(args, "|O:getSelectedNodes", &(pyArgs[0])))
+        return 0;
+
+
+    // Overloaded function decisor
+    // 0: getSelectedNodes(Group*)const
+    if (numArgs == 0) {
+        overloadId = 0; // getSelectedNodes(Group*)const
+    } else if ((pythonToCpp[0] = Shiboken::Conversions::isPythonToCppPointerConvertible((SbkObjectType*)SbkNatronEngineTypes[SBK_GROUP_IDX], (pyArgs[0])))) {
+        overloadId = 0; // getSelectedNodes(Group*)const
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_GuiAppFunc_getSelectedNodes_TypeError;
+
+    // Call function/method
+    {
+        if (kwds) {
+            PyObject* value = PyDict_GetItemString(kwds, "group");
+            if (value && pyArgs[0]) {
+                PyErr_SetString(PyExc_TypeError, "NatronGui.GuiApp.getSelectedNodes(): got multiple values for keyword argument 'group'.");
+                return 0;
+            } else if (value) {
+                pyArgs[0] = value;
+                if (!(pythonToCpp[0] = Shiboken::Conversions::isPythonToCppPointerConvertible((SbkObjectType*)SbkNatronEngineTypes[SBK_GROUP_IDX], (pyArgs[0]))))
+                    goto Sbk_GuiAppFunc_getSelectedNodes_TypeError;
+            }
+        }
+        if (!Shiboken::Object::isValid(pyArgs[0]))
+            return 0;
+        ::Group* cppArg0 = 0;
+        if (pythonToCpp[0]) pythonToCpp[0](pyArgs[0], &cppArg0);
+
+        if (!PyErr_Occurred()) {
+            // getSelectedNodes(Group*)const
+            // Begin code injection
+
+            std::list<Effect*> effects = cppSelf->getSelectedNodes(cppArg0);
+            PyObject* ret = PyList_New((int) effects.size());
+            int idx = 0;
+            for (std::list<Effect*>::iterator it = effects.begin(); it!=effects.end(); ++it,++idx) {
+            PyObject* item = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_EFFECT_IDX], *it);
+            // Ownership transferences.
+            Shiboken::Object::getOwnership(item);
+            PyList_SET_ITEM(ret, idx, item);
+            }
+            return ret;
+
+            // End of code injection
+
+
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+
+    Sbk_GuiAppFunc_getSelectedNodes_TypeError:
+        const char* overloads[] = {"NatronEngine.Group = None", 0};
+        Shiboken::setErrorAboutWrongArguments(args, "NatronGui.GuiApp.getSelectedNodes", overloads);
+        return 0;
+}
+
 static PyObject* Sbk_GuiAppFunc_getSequenceDialog(PyObject* self, PyObject* args, PyObject* kwds)
 {
     ::GuiApp* cppSelf = 0;
@@ -371,6 +459,56 @@ static PyObject* Sbk_GuiAppFunc_getTabWidget(PyObject* self, PyObject* pyArg)
     Sbk_GuiAppFunc_getTabWidget_TypeError:
         const char* overloads[] = {"std::string", 0};
         Shiboken::setErrorAboutWrongArguments(pyArg, "NatronGui.GuiApp.getTabWidget", overloads);
+        return 0;
+}
+
+static PyObject* Sbk_GuiAppFunc_getViewer(PyObject* self, PyObject* pyArg)
+{
+    ::GuiApp* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::GuiApp*)Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_GUIAPP_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp;
+    SBK_UNUSED(pythonToCpp)
+
+    // Overloaded function decisor
+    // 0: getViewer(std::string)const
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArg)))) {
+        overloadId = 0; // getViewer(std::string)const
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_GuiAppFunc_getViewer_TypeError;
+
+    // Call function/method
+    {
+        ::std::string cppArg0;
+        pythonToCpp(pyArg, &cppArg0);
+
+        if (!PyErr_Occurred()) {
+            // getViewer(std::string)const
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            PyViewer * cppResult = const_cast<const ::GuiApp*>(cppSelf)->getViewer(cppArg0);
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronGuiTypes[SBK_PYVIEWER_IDX], cppResult);
+
+            // Ownership transferences.
+            Shiboken::Object::getOwnership(pyResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+
+    Sbk_GuiAppFunc_getViewer_TypeError:
+        const char* overloads[] = {"std::string", 0};
+        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronGui.GuiApp.getViewer", overloads);
         return 0;
 }
 
@@ -708,8 +846,10 @@ static PyMethodDef Sbk_GuiApp_methods[] = {
     {"getDirectoryDialog", (PyCFunction)Sbk_GuiAppFunc_getDirectoryDialog, METH_VARARGS|METH_KEYWORDS},
     {"getFilenameDialog", (PyCFunction)Sbk_GuiAppFunc_getFilenameDialog, METH_VARARGS|METH_KEYWORDS},
     {"getRGBColorDialog", (PyCFunction)Sbk_GuiAppFunc_getRGBColorDialog, METH_NOARGS},
+    {"getSelectedNodes", (PyCFunction)Sbk_GuiAppFunc_getSelectedNodes, METH_VARARGS|METH_KEYWORDS},
     {"getSequenceDialog", (PyCFunction)Sbk_GuiAppFunc_getSequenceDialog, METH_VARARGS|METH_KEYWORDS},
     {"getTabWidget", (PyCFunction)Sbk_GuiAppFunc_getTabWidget, METH_O},
+    {"getViewer", (PyCFunction)Sbk_GuiAppFunc_getViewer, METH_O},
     {"moveTab", (PyCFunction)Sbk_GuiAppFunc_moveTab, METH_VARARGS},
     {"registerPythonPanel", (PyCFunction)Sbk_GuiAppFunc_registerPythonPanel, METH_VARARGS},
     {"saveFilenameDialog", (PyCFunction)Sbk_GuiAppFunc_saveFilenameDialog, METH_VARARGS|METH_KEYWORDS},

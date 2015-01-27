@@ -41,8 +41,7 @@ inserted as tabs into :doc:`tab-widgets<PyTabWidget>` .
 There are 2 possible usage of this class:
 
 	* Sub-class it and create your own GUI using `PySide <http://qt-project.org/wiki/PySideDocumentation>`_ 
-	* Use the API proposed by :doc:`PyPanel` to add custom user :doc:`parameters<NatronEngine.Param>` as done
-	for :doc:`PyModalDialog`.
+	* Use the API proposed by :doc:`PyPanel` to add custom user :doc:`parameters<NatronEngine.Param>` as done for :doc:`PyModalDialog`.
 	
 Sub-classing:
 ^^^^^^^^^^^^^
@@ -136,6 +135,7 @@ corner of every pane) which the user can trigger to move the custom pane on the 
 	:width: 600px
 	:align: center
 	
+.. _panelSerialization:
 
 Saving and restoring state:
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^

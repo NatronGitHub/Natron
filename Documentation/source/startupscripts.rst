@@ -1,4 +1,4 @@
-.. _introduction:
+.. _startupScripts:
 
 Start-up scripts
 ================
@@ -21,3 +21,10 @@ There are 2 different initialization scripts that Natron will look for in the :r
 	
 All the scripts with the above name found in the search paths will be run in the order
 of the :ref:`search paths<natronPath>`.
+
+.. warning::
+
+	These scripts are run well before any :ref:`application instance<App>` (i.e: project) is created.
+	You should therefore not run any function directly that might rely on the *app* variable (or *app1*, etc...).
+	However you're free to define classes and functions that may rely on these variable being declared, but that
+	will be called only later on, when a project will actually be created.

@@ -114,8 +114,12 @@ public:
     void setGain(double d);
 
     double getGain() const;
+    
+    static std::string getChannelsString(Natron::DisplayChannelsEnum c);
 
     std::string getChannelsString() const;
+    
+    Natron::DisplayChannelsEnum getChannels() const;
 
     void setChannels(const std::string & channelsStr);
 
@@ -205,7 +209,14 @@ public:
     
     void setTimelineBounds(int left,int right);
     
+    ///Calls setTimelineBounds + set the frame range line edit
+    void setFrameRange(int left,int right);
+    
     void setFrameRangeEdited(bool edited);
+    
+    void setPlaybackMode(Natron::PlaybackModeEnum mode);
+    
+    Natron::PlaybackModeEnum getPlaybackMode() const;
     
 public Q_SLOTS:
 
@@ -259,6 +270,10 @@ public Q_SLOTS:
     void onFirstInputNameChanged(const QString & text);
 
     void onSecondInputNameChanged(const QString & text);
+    
+    void setInputA(int index);
+    
+    void setInputB(int index);
 
     void onActiveInputsChanged();
 

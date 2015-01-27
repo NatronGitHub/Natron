@@ -348,6 +348,21 @@ static PyObject* Natron_OrientationEnum_CppToPython_Natron_OrientationEnum(const
 
 }
 
+static void Natron_DisplayChannelsEnum_PythonToCpp_Natron_DisplayChannelsEnum(PyObject* pyIn, void* cppOut) {
+    *((::Natron::DisplayChannelsEnum*)cppOut) = (::Natron::DisplayChannelsEnum) Shiboken::Enum::getValue(pyIn);
+
+}
+static PythonToCppFunc is_Natron_DisplayChannelsEnum_PythonToCpp_Natron_DisplayChannelsEnum_Convertible(PyObject* pyIn) {
+    if (PyObject_TypeCheck(pyIn, SbkNatronEngineTypes[SBK_NATRON_DISPLAYCHANNELSENUM_IDX]))
+        return Natron_DisplayChannelsEnum_PythonToCpp_Natron_DisplayChannelsEnum;
+    return 0;
+}
+static PyObject* Natron_DisplayChannelsEnum_CppToPython_Natron_DisplayChannelsEnum(const void* cppIn) {
+    int castCppIn = *((::Natron::DisplayChannelsEnum*)cppIn);
+    return Shiboken::Enum::newItem(SbkNatronEngineTypes[SBK_NATRON_DISPLAYCHANNELSENUM_IDX], castCppIn);
+
+}
+
 static void Natron_ImagePremultiplicationEnum_PythonToCpp_Natron_ImagePremultiplicationEnum(PyObject* pyIn, void* cppOut) {
     *((::Natron::ImagePremultiplicationEnum*)cppOut) = (::Natron::ImagePremultiplicationEnum) Shiboken::Enum::getValue(pyIn);
 
@@ -770,6 +785,46 @@ void init_Natron(PyObject* module)
         Shiboken::Conversions::registerConverterName(converter, "OrientationEnum");
     }
     // End of 'OrientationEnum' enum.
+
+    // Initialization of enum 'DisplayChannelsEnum'.
+    SbkNatronEngineTypes[SBK_NATRON_DISPLAYCHANNELSENUM_IDX] = Shiboken::Enum::createScopedEnum(&Sbk_Natron_Type,
+        "DisplayChannelsEnum",
+        "NatronEngine.Natron.DisplayChannelsEnum",
+        "Natron::DisplayChannelsEnum");
+    if (!SbkNatronEngineTypes[SBK_NATRON_DISPLAYCHANNELSENUM_IDX])
+        return ;
+
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_DISPLAYCHANNELSENUM_IDX],
+        &Sbk_Natron_Type, "eDisplayChannelsRGB", (long) Natron::eDisplayChannelsRGB))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_DISPLAYCHANNELSENUM_IDX],
+        &Sbk_Natron_Type, "eDisplayChannelsR", (long) Natron::eDisplayChannelsR))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_DISPLAYCHANNELSENUM_IDX],
+        &Sbk_Natron_Type, "eDisplayChannelsG", (long) Natron::eDisplayChannelsG))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_DISPLAYCHANNELSENUM_IDX],
+        &Sbk_Natron_Type, "eDisplayChannelsB", (long) Natron::eDisplayChannelsB))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_DISPLAYCHANNELSENUM_IDX],
+        &Sbk_Natron_Type, "eDisplayChannelsA", (long) Natron::eDisplayChannelsA))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_DISPLAYCHANNELSENUM_IDX],
+        &Sbk_Natron_Type, "eDisplayChannelsY", (long) Natron::eDisplayChannelsY))
+        return ;
+    // Register converter for enum 'Natron::DisplayChannelsEnum'.
+    {
+        SbkConverter* converter = Shiboken::Conversions::createConverter(SbkNatronEngineTypes[SBK_NATRON_DISPLAYCHANNELSENUM_IDX],
+            Natron_DisplayChannelsEnum_CppToPython_Natron_DisplayChannelsEnum);
+        Shiboken::Conversions::addPythonToCppValueConversion(converter,
+            Natron_DisplayChannelsEnum_PythonToCpp_Natron_DisplayChannelsEnum,
+            is_Natron_DisplayChannelsEnum_PythonToCpp_Natron_DisplayChannelsEnum_Convertible);
+        Shiboken::Enum::setTypeConverter(SbkNatronEngineTypes[SBK_NATRON_DISPLAYCHANNELSENUM_IDX], converter);
+        Shiboken::Enum::setTypeConverter(SbkNatronEngineTypes[SBK_NATRON_DISPLAYCHANNELSENUM_IDX], converter);
+        Shiboken::Conversions::registerConverterName(converter, "Natron::DisplayChannelsEnum");
+        Shiboken::Conversions::registerConverterName(converter, "DisplayChannelsEnum");
+    }
+    // End of 'DisplayChannelsEnum' enum.
 
     // Initialization of enum 'ImagePremultiplicationEnum'.
     SbkNatronEngineTypes[SBK_NATRON_IMAGEPREMULTIPLICATIONENUM_IDX] = Shiboken::Enum::createScopedEnum(&Sbk_Natron_Type,
@@ -1329,6 +1384,7 @@ void init_Natron(PyObject* module)
     qRegisterMetaType< ::Natron::ValueChangedReasonEnum >("Natron::ValueChangedReasonEnum");
     qRegisterMetaType< ::Natron::AnimationLevelEnum >("Natron::AnimationLevelEnum");
     qRegisterMetaType< ::Natron::OrientationEnum >("Natron::OrientationEnum");
+    qRegisterMetaType< ::Natron::DisplayChannelsEnum >("Natron::DisplayChannelsEnum");
     qRegisterMetaType< ::Natron::ImagePremultiplicationEnum >("Natron::ImagePremultiplicationEnum");
     qRegisterMetaType< ::Natron::StatusEnum >("Natron::StatusEnum");
     qRegisterMetaType< ::Natron::ViewerCompositingOperatorEnum >("Natron::ViewerCompositingOperatorEnum");

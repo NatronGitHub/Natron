@@ -340,6 +340,16 @@ enum SchedulingPolicyEnum
     eSchedulingPolicyOrdered ///frames will be rendered in order
 };
     
+enum DisplayChannelsEnum
+{
+    eDisplayChannelsRGB = 0,
+    eDisplayChannelsR,
+    eDisplayChannelsG,
+    eDisplayChannelsB,
+    eDisplayChannelsA,
+    eDisplayChannelsY
+};
+    
 }
 Q_DECLARE_METATYPE(Natron::StandardButtons)
 

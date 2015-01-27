@@ -215,6 +215,7 @@
     <enum-type name="ViewerColorSpaceEnum"/>
     <enum-type name="OrientationEnum"/>
     <enum-type name="PlaybackModeEnum"/>
+    <enum-type name="DisplayChannelsEnum"/>
     </namespace-type>
     
    

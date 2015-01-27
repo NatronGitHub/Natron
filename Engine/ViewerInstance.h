@@ -39,19 +39,6 @@ class ViewerInstance
 {
     Q_OBJECT
     
-public:
-    
-    
-    
-    enum DisplayChannelsEnum
-    {
-        eDisplayChannelsRGB = 0,
-        eDisplayChannelsR,
-        eDisplayChannelsG,
-        eDisplayChannelsB,
-        eDisplayChannelsA,
-        eDisplayChannelsY
-    };
 
 public:
     static Natron::EffectInstance* BuildEffect(boost::shared_ptr<Natron::Node> n) WARN_UNUSED_RETURN;
@@ -123,7 +110,7 @@ public:
 
     int getMipMapLevelFromZoomFactor() const WARN_UNUSED_RETURN;
 
-    DisplayChannelsEnum getChannels() const WARN_UNUSED_RETURN;
+    Natron::DisplayChannelsEnum getChannels() const WARN_UNUSED_RETURN;
 
     /**
      * @brief This is a short-cut, this is primarily used when the user switch the
@@ -138,7 +125,7 @@ public:
     }
 
 
-    void setDisplayChannels(DisplayChannelsEnum channels);
+    void setDisplayChannels(Natron::DisplayChannelsEnum channels);
 
 
     bool isAutoContrastEnabled() const WARN_UNUSED_RETURN;
