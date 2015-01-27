@@ -1427,7 +1427,7 @@ OfxEffectInstance::getRegionsOfInterest(SequenceTime time,
 
         bool skipDiscarding = false;
         if (getRecursionLevel() > 1) {
-            qDebug() << "getRegionsOfInterest cannot be called recursively as an action. Please check this.";
+            // getRegionsOfInterest may be called recursively as a result of calling fetchImage() from an action
             skipDiscarding = true;
         }
         ClipsThreadStorageSetter clipSetter(effectInstance(),
