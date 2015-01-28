@@ -824,7 +824,9 @@ OfxEffectInstance::isInputRotoBrush(int inputNb) const
 {
     assert(_context != eContextNone);
     MappedInputV inputs = inputClipsCopyWithoutOutput();
-    assert( inputNb < (int)inputs.size() );
+    if ( inputNb >= (int)inputs.size() ) {
+        return false;
+    }
 
     ///Maybe too crude ? Not like many plug-ins use the paint context except Natron's roto node.
     return inputs[inputs.size() - 1 - inputNb]->getName() == "Roto" && getNode()->isRotoNode();
