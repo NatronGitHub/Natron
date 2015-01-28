@@ -40,6 +40,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Engine/TimeLine.h"
 #include "Engine/Node.h"
 #include "Engine/OutputSchedulerThread.h"
+#include "Engine/Transform.h"
 
 #include "Gui/ViewerGL.h"
 #include "Gui/InfoViewerWidget.h"
@@ -333,6 +334,11 @@ struct ViewerTabPrivate
         currentRoto.first = NULL;
         currentRoto.second = NULL;
     }
+    
+    
+    void getOverlayTransform(const boost::shared_ptr<Natron::Node>& target,
+                             const boost::shared_ptr<Natron::Node>& currentNode,
+                             Transform::Matrix3x3* transform) const;
 };
 
 ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,

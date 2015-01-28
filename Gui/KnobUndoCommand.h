@@ -247,7 +247,7 @@ class MultipleKnobEditsUndoCommand
     ParamsMap knobs;
     bool createNew;
     bool firstRedoCalled;
-
+    Natron::ValueChangedReasonEnum _reason;
 public:
 
     /**
@@ -256,6 +256,7 @@ public:
      * @param setKeyFrame if true, the command will use setValueAtTime instead of setValue in the redo() command.
      **/
     MultipleKnobEditsUndoCommand(KnobGui* knob,
+                                 Natron::ValueChangedReasonEnum reason,
                                  bool createNew,
                                  bool setKeyFrame,
                                  const Variant & value,

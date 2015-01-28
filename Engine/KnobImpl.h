@@ -568,7 +568,7 @@ Knob<T>::setValue(const T & v,
                     QMutexLocker l(&_setValueRecursionLevelMutex);
                     ++_setValueRecursionLevel;
                 }
-                _signalSlotHandler->s_appendParamEditChange(vari, dimension, 0, true,false);
+                _signalSlotHandler->s_appendParamEditChange(reason, vari, dimension, 0, true,false);
                 {
                     QMutexLocker l(&_setValueRecursionLevelMutex);
                     --_setValueRecursionLevel;
@@ -586,7 +586,7 @@ Knob<T>::setValue(const T & v,
                     QMutexLocker l(&_setValueRecursionLevelMutex);
                     ++_setValueRecursionLevel;
                 }
-                _signalSlotHandler->s_appendParamEditChange(vari, dimension,0, false,false);
+                _signalSlotHandler->s_appendParamEditChange(reason, vari, dimension,0, false,false);
                 {
                     QMutexLocker l(&_setValueRecursionLevelMutex);
                     --_setValueRecursionLevel;
@@ -767,7 +767,7 @@ Knob<T>::setValueAtTime(int time,
                 Variant vari;
                 valueToVariant(v, &vari);
                 holder->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOn);
-                _signalSlotHandler->s_appendParamEditChange(vari, dimension, time, true,true);
+                _signalSlotHandler->s_appendParamEditChange(reason, vari, dimension, time, true,true);
 
                 return true;
             }
@@ -777,7 +777,7 @@ Knob<T>::setValueAtTime(int time,
             if ( !get_SetValueRecursionLevel() ) {
                 Variant vari;
                 valueToVariant(v, &vari);
-                _signalSlotHandler->s_appendParamEditChange(vari, dimension,time, false,true);
+                _signalSlotHandler->s_appendParamEditChange(reason, vari, dimension,time, false,true);
 
                 return true;
             }

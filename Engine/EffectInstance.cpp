@@ -1492,7 +1492,7 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool useCache,
     ///Find first something in the input images list
     if (!inputImages.empty()) {
         for (std::list<boost::shared_ptr<Image> >::const_iterator it = inputImages.begin(); it != inputImages.end(); ++it) {
-            if (!(*it)) {
+            if (!it->get()) {
                 continue;
             }
             const ImageKey& imgKey = (*it)->getKey();
