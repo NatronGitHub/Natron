@@ -1106,7 +1106,7 @@ NodeGui::connectEdge(int edgeNumber)
     } else {
         it2->second->setSource(src);
         it2->second->initLine();
-
+        update();
         return true;
     }
 }
