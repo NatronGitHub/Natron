@@ -1944,10 +1944,9 @@ Color_KnobGui::setEnabled()
     //_rBox->setEnabled(r);
     _rBox->setReadOnly(!r);
 
-    if ( _slider->isVisible() ) {
-        _slider->setReadOnly(!r);
-    }
-
+    _slider->setReadOnly(!r);
+    _colorDialogButton->setEnabled(r);
+    
     if (_dimension >= 3) {
         bool g = _knob->isEnabled(1);
         bool b = _knob->isEnabled(2);
