@@ -3760,7 +3760,7 @@ EffectInstance::getTransform_public(SequenceTime time,
                                     Natron::EffectInstance** inputToTransform,
                                     Transform::Matrix3x3* transform)
 {
-    NON_RECURSIVE_ACTION();
+    RECURSIVE_ACTION();
     return getTransform(time, renderScale, view, inputToTransform, transform);
 }
 

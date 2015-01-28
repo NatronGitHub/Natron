@@ -62,6 +62,8 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Gui/GuiMacros.h"
 #include "Gui/ActionShortcuts.h"
 
+//#define NATRON_TRANSFORM_AFFECTS_OVERLAYS
+
 using namespace Natron;
 
 namespace {
@@ -335,10 +337,14 @@ struct ViewerTabPrivate
         currentRoto.second = NULL;
     }
     
-    
-    void getOverlayTransform(const boost::shared_ptr<Natron::Node>& target,
-                             const boost::shared_ptr<Natron::Node>& currentNode,
-                             Transform::Matrix3x3* transform) const;
+#ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
+    void getOverlayTransform(int time,
+                             int view,
+                             const boost::shared_ptr<Natron::Node>& target,
+                             Natron::EffectInstance* currentNode,
+                             Transform::Matrix3x3* transform,
+                             bool* ok) const;
+#endif
 };
 
 ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
@@ -1532,6 +1538,17 @@ ViewerTab::showView(int view)
     _imp->viewerNode->renderCurrentFrame(true);
 }
 
+#ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
+//OpenGL is column-major for matrixes
+static void transformToOpenGLMatrix(const Transform::Matrix3x3& mat,GLdouble* oglMat)
+{
+    oglMat[0] = mat.a; oglMat[4] = mat.b; oglMat[8]  = mat.c; oglMat[12] = 0;
+    oglMat[1] = mat.d; oglMat[5] = mat.e; oglMat[9]  = mat.f; oglMat[13] = 0;
+    oglMat[2] = mat.g; oglMat[6] = mat.h; oglMat[10] = mat.i; oglMat[14] = 0;
+    oglMat[3] = 0;     oglMat[7] = 0;     oglMat[11] = 0;     oglMat[15] = 1;
+}
+#endif
+
 void
 ViewerTab::drawOverlays(double scaleX,
                         double scaleY) const
@@ -1539,12 +1556,31 @@ ViewerTab::drawOverlays(double scaleX,
     if ( !_imp->app || !_imp->viewer ||  _imp->app->isClosing() || isFileDialogViewer() || _imp->gui->isGUIFrozen()) {
         return;
     }
-
+    
+#ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
+    int time = _imp->app->getTimeLine()->currentFrame();
+    int view = getCurrentView();
+#endif
+    
     std::list<boost::shared_ptr<Natron::Node> >  nodes;
     getGui()->getNodesEntitledForOverlays(nodes);
     
     ///Draw overlays in reverse order of appearance so that the first (top) panel is drawn on top of everything else
     for (std::list<boost::shared_ptr<Natron::Node> >::reverse_iterator it = nodes.rbegin(); it != nodes.rend(); ++it) {
+        
+#ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
+        Transform::Matrix3x3 mat(1,0,0,0,1,0,0,0,1);
+        bool ok;
+        _imp->getOverlayTransform(time, view, *it, getInternalNode(), &mat, &ok);
+        if (ok) {
+            //Ok we've got a transform here, apply it to the OpenGL model view matrix
+            
+            GLdouble oglMat[16];
+            transformToOpenGLMatrix(mat,oglMat);
+            glPushMatrix();
+            glMultMatrixd(oglMat);
+        }
+#endif
         
         if (_imp->currentRoto.first && (*it) == _imp->currentRoto.first->getNode()) {
             if ( _imp->currentRoto.second && _imp->currentRoto.first->isSettingsPanelVisible() ) {
@@ -1561,6 +1597,11 @@ ViewerTab::drawOverlays(double scaleX,
             effect->setCurrentViewportForOverlays(_imp->viewer);
             effect->drawOverlay_public(scaleX,scaleY);
         }
+#ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
+        if (ok) {
+            glPopMatrix();
+        }
+#endif
     }
 }
 
@@ -3452,3 +3493,89 @@ ViewerTab::setFrameRangeEdited(bool edited)
 {
     _imp->timeLineGui->setFrameRangeEdited(edited);
 }
+
+#ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
+void
+ViewerTabPrivate::getOverlayTransform(int time,
+                                      int view,
+                                      const boost::shared_ptr<Natron::Node>& target,
+                                      Natron::EffectInstance* currentNode,
+                                      Transform::Matrix3x3* transform,
+                                      bool* ok) const
+{
+    if (currentNode == target->getLiveInstance()) {
+        *ok = true;
+        return;
+    }
+    RenderScale s;
+    s.x = s.y = 1.;
+    Transform::Matrix3x3 mat;
+    Natron::EffectInstance* input = 0;
+    Natron::StatusEnum stat = eStatusReplyDefault;
+    if (!currentNode->getNode()->isNodeDisabled()) {
+        stat = currentNode->getTransform_public(time, s, view, &input, &mat);
+    }
+    if (stat == eStatusFailed) {
+        *ok = false;
+        return;
+        
+    } else if (stat == eStatusReplyDefault) {
+        //No transfo matrix found, pass to the input...
+        
+        ///Test all inputs recursively, going from last to first, preferring non optional inputs.
+        std::list<Natron::EffectInstance*> nonOptionalInputs;
+        std::list<Natron::EffectInstance*> optionalInputs;
+        int maxInp = currentNode->getMaxInputCount();
+        
+        ///We cycle in reverse by default. It should be a setting of the application.
+        ///In this case it will return input B instead of input A of a merge for example.
+        for (int i = maxInp - 1; i >= 0; --i) {
+            Natron::EffectInstance* inp = currentNode->getInput(i);
+            bool optional = currentNode->isInputOptional(i);
+            if (inp) {
+                if (optional) {
+                    optionalInputs.push_back(inp);
+                } else {
+                    nonOptionalInputs.push_back(inp);
+                }
+            }
+        }
+        
+        if (nonOptionalInputs.empty() && optionalInputs.empty()) {
+            *ok = false;
+            return;
+        }
+        
+        ///Cycle through all non optional inputs first
+        for (std::list<Natron::EffectInstance*> ::iterator it = nonOptionalInputs.begin(); it != nonOptionalInputs.end(); ++it) {
+            bool isOk;
+            getOverlayTransform(time, view, target, *it, transform, &isOk);
+            if (isOk) {
+                *ok = true;
+                return;
+            }
+        }
+        
+        ///Cycle through optional inputs...
+        for (std::list<Natron::EffectInstance*> ::iterator it = optionalInputs.begin(); it != optionalInputs.end(); ++it) {
+            bool isOk;
+            getOverlayTransform(time, view, target, *it, transform, &isOk);
+            if (isOk) {
+                *ok = true;
+                return;
+            }
+            
+        }
+        *ok = false;
+    } else {
+        assert(input);
+        double par = input->getPreferredAspectRatio();
+
+        //The mat is in pixel coordinates, though
+        mat = Transform::matMul(Transform::matPixelToCanonical(par, 1, 1, false),mat);
+        mat = Transform::matMul(mat,Transform::matCanonicalToPixel(par, 1, 1, false));
+        *transform = Transform::matMul(*transform, mat);
+        getOverlayTransform(time, view, target, input, transform, ok);
+    }
+}
+#endif

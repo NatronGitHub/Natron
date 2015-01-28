@@ -2783,7 +2783,6 @@ OfxEffectInstance::getTransform(SequenceTime time,
     {
         bool skipDiscarding = false;
         if (getRecursionLevel() > 1) {
-            qDebug() << "renderAction cannot be called recursively as an action. Please check this.";
             skipDiscarding = true;
         }
         
@@ -2823,7 +2822,9 @@ OfxEffectInstance::getTransform(SequenceTime time,
         return Natron::eStatusFailed;
     }
     *inputToTransform = natronClip->getAssociatedNode();
-    
+    if (!*inputToTransform) {
+        return Natron::eStatusFailed;
+    }
     return Natron::eStatusOK;
 }
 
