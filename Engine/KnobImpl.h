@@ -664,8 +664,10 @@ Knob<T>::setValue(const T & v,
         ++_setValueRecursionLevel;
     }
 
+    bool hasChanged;
     {
         QWriteLocker l(&_valueMutex);
+        hasChanged = v != _values[dimension];
         _values[dimension] = v;
     }
 
@@ -688,9 +690,10 @@ Knob<T>::setValue(const T & v,
         } else {
             ret = eValueChangedReturnCodeKeyframeModified;
         }
+        hasChanged = true;
     }
 
-    if (ret == eValueChangedReturnCodeNoKeyframeAdded) { //the other cases already called this in setValueAtTime()
+    if (hasChanged && ret == eValueChangedReturnCodeNoKeyframeAdded) { //the other cases already called this in setValueAtTime()
         evaluateValueChange(dimension,reason, true);
     }
     {
@@ -820,8 +823,13 @@ Knob<T>::setValueAtTime(int time,
         dequeueValuesSet(true);
     }
     
-    
-
+    KeyFrame existingKey;
+    bool hasExistingKey = curve->getKeyFrameWithTime(time, &existingKey);
+    bool hasChanged = true;
+    if (hasExistingKey && existingKey.getValue() == newKey->getValue() && existingKey.getLeftDerivative() == newKey->getLeftDerivative() &&
+        existingKey.getRightDerivative() == newKey->getRightDerivative()) {
+        hasChanged = false;
+    }
     bool ret = curve->addKeyFrame(*newKey);
     if (holder) {
         holder->setHasAnimation(true);
@@ -831,7 +839,9 @@ Knob<T>::setValueAtTime(int time,
     if (_signalSlotHandler && ret) {
         _signalSlotHandler->s_keyFrameSet(time,dimension,(int)reason,ret);
     }
-    evaluateValueChange(dimension, reason, true);
+    if (hasChanged) {
+        evaluateValueChange(dimension, reason, true);
+    }
 
     return ret;
 } // setValueAtTime
