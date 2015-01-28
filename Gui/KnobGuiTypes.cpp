@@ -365,7 +365,7 @@ Int_KnobGui::updateGUI(int dimension)
 {
     int v = _knob->getValue(dimension,false);
 
-    if (!_dimensionSwitchButton->isChecked()) {
+    if (_dimensionSwitchButton && !_dimensionSwitchButton->isChecked()) {
         for (int i = 0; i < _knob->getDimension(); ++i) {
             
             if (i == dimension) {
@@ -1049,7 +1049,7 @@ Double_KnobGui::updateGUI(int dimension)
     double v = _knob->getValue(dimension,false);
     valueAccordingToType(false, dimension, &v);
     
-    if (!_dimensionSwitchButton->isChecked()) {
+    if (_dimensionSwitchButton && !_dimensionSwitchButton->isChecked()) {
         for (int i = 0; i < _knob->getDimension(); ++i) {
             
             if (i == dimension) {
