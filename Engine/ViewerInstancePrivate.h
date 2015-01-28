@@ -151,8 +151,8 @@ public:
     , lastRenderedHashMutex()
     , lastRenderedHash(0)
     , lastRenderedHashValid(false)
-    , renderAge(0)
     , renderAgeMutex()
+    , renderAge(0)
     {
 
         activeInputs[0] = -1;

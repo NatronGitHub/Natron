@@ -621,7 +621,7 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
             _imp->lastRenderedHashValid = true;
         }
         if (!isSequential) {
-            _imp->checkAndUpdateRenderAge(renderAge);
+            _imp->checkAgeNoUpdate(renderAge);
         }
         
     }

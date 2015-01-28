@@ -162,7 +162,7 @@ struct ViewerGL::Implementation
           , blankViewerInfo()
           , displayingImageGain()
           , displayingImageOffset()
-          , displayingImageMipMapLevel(0)
+          , displayingImageMipMapLevel()
           , displayingImagePremult()
           , displayingImageLut(Natron::eViewerColorSpaceSRGB)
           , ms(eMouseStateUndefined)
@@ -221,6 +221,7 @@ struct ViewerGL::Implementation
         displayingImageOffset[0] = displayingImageOffset[1] = 0.;
         for (int i = 0; i < 2 ; ++i) {
             displayingImageTime[i] = 0;
+            displayingImageMipMapLevel[i] = 0;
             lastRenderedImage[i].resize(MAX_MIP_MAP_LEVELS);
         }
         assert( qApp && qApp->thread() == QThread::currentThread() );
@@ -253,7 +254,7 @@ struct ViewerGL::Implementation
     ImageInfo blankViewerInfo; /*!< Pointer to the info used when the viewer is disconnected.*/
     double displayingImageGain[2];
     double displayingImageOffset[2];
-    unsigned int displayingImageMipMapLevel;
+    unsigned int displayingImageMipMapLevel[2];
     Natron::ImagePremultiplicationEnum displayingImagePremult[2];
     int displayingImageTime[2];
     Natron::ViewerColorSpaceEnum displayingImageLut;
@@ -1129,40 +1130,40 @@ ViewerGL::paintGL()
 
                 if (drawTexture[0]) {
                     BlendSetter b(premultA);
-                    drawRenderingVAO(_imp->displayingImageMipMapLevel, 0, eDrawPolygonModeWhole);
+                    drawRenderingVAO(_imp->displayingImageMipMapLevel[0], 0, eDrawPolygonModeWhole);
                 }
                 if (drawTexture[1]) {
                     glEnable(GL_BLEND);
                     glBlendFunc(GL_CONSTANT_ALPHA, GL_ONE_MINUS_CONSTANT_ALPHA);
-                    drawRenderingVAO(_imp->displayingImageMipMapLevel, 1, eDrawPolygonModeWipeRight);
+                    drawRenderingVAO(_imp->displayingImageMipMapLevel[1], 1, eDrawPolygonModeWipeRight);
                     glDisable(GL_BLEND);
                 }
             } else if (compOp == eViewerCompositingOperatorMinus) {
                 if (drawTexture[0]) {
                     BlendSetter b(premultA);
-                    drawRenderingVAO(_imp->displayingImageMipMapLevel, 0, eDrawPolygonModeWhole);
+                    drawRenderingVAO(_imp->displayingImageMipMapLevel[0], 0, eDrawPolygonModeWhole);
                 }
                 if (drawTexture[1]) {
                     glEnable(GL_BLEND);
                     glBlendFunc(GL_CONSTANT_ALPHA, GL_ONE);
                     glBlendEquation(GL_FUNC_REVERSE_SUBTRACT);
-                    drawRenderingVAO(_imp->displayingImageMipMapLevel, 1, eDrawPolygonModeWipeRight);
+                    drawRenderingVAO(_imp->displayingImageMipMapLevel[1], 1, eDrawPolygonModeWipeRight);
                     glDisable(GL_BLEND);
                 }
             } else if (compOp == eViewerCompositingOperatorUnder) {
                 if (drawTexture[0]) {
                     BlendSetter b(premultA);
-                    drawRenderingVAO(_imp->displayingImageMipMapLevel, 0, eDrawPolygonModeWhole);
+                    drawRenderingVAO(_imp->displayingImageMipMapLevel[0], 0, eDrawPolygonModeWhole);
                 }
                 if (drawTexture[1]) {
                     glEnable(GL_BLEND);
                     glBlendFunc(GL_ONE_MINUS_DST_ALPHA, GL_ONE);
-                    drawRenderingVAO(_imp->displayingImageMipMapLevel, 1, eDrawPolygonModeWipeRight);
+                    drawRenderingVAO(_imp->displayingImageMipMapLevel[1], 1, eDrawPolygonModeWipeRight);
                     glDisable(GL_BLEND);
 
                     glEnable(GL_BLEND);
                     glBlendFunc(GL_CONSTANT_ALPHA,GL_ONE_MINUS_CONSTANT_ALPHA);
-                    drawRenderingVAO(_imp->displayingImageMipMapLevel, 1, eDrawPolygonModeWipeRight);
+                    drawRenderingVAO(_imp->displayingImageMipMapLevel[1], 1, eDrawPolygonModeWipeRight);
                     glDisable(GL_BLEND);
                 }
             } else if (compOp == eViewerCompositingOperatorOver) {
@@ -1174,26 +1175,26 @@ ViewerGL::paintGL()
                         premultB = Natron::eImagePremultiplicationOpaque; ///When no checkerboard, draw opaque
                     }
                     BlendSetter b(premultB);
-                    drawRenderingVAO(_imp->displayingImageMipMapLevel, 1, eDrawPolygonModeWipeRight);
+                    drawRenderingVAO(_imp->displayingImageMipMapLevel[1], 1, eDrawPolygonModeWipeRight);
                 }
                 if (drawTexture[0]) {
                     glEnable(GL_BLEND);
                     glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
-                    drawRenderingVAO(_imp->displayingImageMipMapLevel, 0, eDrawPolygonModeWipeRight);
+                    drawRenderingVAO(_imp->displayingImageMipMapLevel[0], 0, eDrawPolygonModeWipeRight);
                     glDisable(GL_BLEND);
 
-                    drawRenderingVAO(_imp->displayingImageMipMapLevel, 0, eDrawPolygonModeWipeLeft);
+                    drawRenderingVAO(_imp->displayingImageMipMapLevel[0], 0, eDrawPolygonModeWipeLeft);
 
                     glEnable(GL_BLEND);
                     glBlendFunc(GL_ONE_MINUS_CONSTANT_ALPHA,GL_CONSTANT_ALPHA);
-                    drawRenderingVAO(_imp->displayingImageMipMapLevel, 0, eDrawPolygonModeWipeRight);
+                    drawRenderingVAO(_imp->displayingImageMipMapLevel[0], 0, eDrawPolygonModeWipeRight);
                     glDisable(GL_BLEND);
                 }
             } else {
                 if (drawTexture[0]) {
                     glDisable(GL_BLEND);
                     BlendSetter b(premultA);
-                    drawRenderingVAO(_imp->displayingImageMipMapLevel, 0, eDrawPolygonModeWhole);
+                    drawRenderingVAO(_imp->displayingImageMipMapLevel[0], 0, eDrawPolygonModeWhole);
 
                 }
             }
@@ -1204,7 +1205,7 @@ ViewerGL::paintGL()
         
         glCheckError();
         if (_imp->overlay) {
-            drawOverlay(_imp->displayingImageMipMapLevel);
+            drawOverlay(_imp->displayingImageMipMapLevel[0]);
         }
         
         if (_imp->ms == eMouseStateSelecting) {
@@ -2394,7 +2395,7 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
     _imp->activeTextures[textureIndex] = _imp->displayTextures[textureIndex];
     _imp->displayingImageGain[textureIndex] = gain;
     _imp->displayingImageOffset[textureIndex] = offset;
-    _imp->displayingImageMipMapLevel = mipMapLevel;
+    _imp->displayingImageMipMapLevel[textureIndex] = mipMapLevel;
     _imp->displayingImageLut = (Natron::ViewerColorSpaceEnum)lut;
     _imp->displayingImagePremult[textureIndex] = premult;
     _imp->displayingImageTime[textureIndex] = time;
