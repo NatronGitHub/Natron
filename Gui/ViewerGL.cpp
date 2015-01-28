@@ -2453,6 +2453,8 @@ ViewerGL::disconnectInputTexture(int textureIndex)
     assert(textureIndex == 0 || textureIndex == 1);
     if (_imp->activeTextures[textureIndex] != 0) {
         _imp->activeTextures[textureIndex] = 0;
+        RectI r(0,0,0,0);
+        _imp->infoViewer[textureIndex]->setDataWindow(r);
     }
 }
 

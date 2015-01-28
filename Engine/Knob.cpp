@@ -1744,6 +1744,8 @@ struct KnobHolder::KnobHolderPrivate
     EvaluationRequest evaluateQueue;
     mutable QMutex paramsEditLevelMutex;
     KnobHolder::MultipleParamsEditEnum paramsEditLevel;
+    int paramsEditRecursionLevel;
+    
     mutable QMutex evaluationBlockedMutex;
     int evaluationBlocked;
 
@@ -1763,6 +1765,7 @@ struct KnobHolder::KnobHolderPrivate
     , overlayRedrawStack(0)
     , evaluateQueue()
     , paramsEditLevel(eMultipleParamsEditOff)
+    , paramsEditRecursionLevel(0)
     , evaluationBlockedMutex(QMutex::Recursive)
     , evaluationBlocked(0)
     , knobsFrozenMutex()
@@ -1827,12 +1830,28 @@ KnobHolder::getMultipleParamsEditLevel() const
     return _imp->paramsEditLevel;
 }
 
+
 void
 KnobHolder::setMultipleParamsEditLevel(KnobHolder::MultipleParamsEditEnum level)
 {
     QMutexLocker l(&_imp->paramsEditLevelMutex);
 
-    _imp->paramsEditLevel = level;
+    if (level == KnobHolder::eMultipleParamsEditOff) {
+        if (_imp->paramsEditRecursionLevel > 0) {
+            --_imp->paramsEditRecursionLevel;
+        }
+        if (_imp->paramsEditRecursionLevel == 0) {
+            _imp->paramsEditLevel = KnobHolder::eMultipleParamsEditOff;
+        }
+        
+    } else if (level == KnobHolder::eMultipleParamsEditOn) {
+        _imp->paramsEditLevel = level;
+    } else {
+        if (_imp->paramsEditLevel == KnobHolder::eMultipleParamsEditOff) {
+            _imp->paramsEditLevel = KnobHolder::eMultipleParamsEditOnCreateNewCommand;
+        }
+        ++_imp->paramsEditRecursionLevel;
+    }
 }
 
 AppInstance*

@@ -143,8 +143,8 @@ KnobGui::KnobGui(boost::shared_ptr<KnobI> knob,
         QObject::connect( handler,SIGNAL( setValueWithUndoStack(Variant,int) ),this,SLOT( onSetValueUsingUndoStack(Variant,int) ) );
         QObject::connect( handler,SIGNAL( dirty(bool) ),this,SLOT( onSetDirty(bool) ) );
         QObject::connect( handler,SIGNAL( animationLevelChanged(int,int) ),this,SLOT( onAnimationLevelChanged(int,int) ) );
-        QObject::connect( handler,SIGNAL( appendParamEditChange(Natron::ValueChangedReasonEnum,Variant,int,int,bool,bool) ),this,
-                         SLOT( onAppendParamEditChanged(Natron::ValueChangedReasonEnum,Variant,int,int,bool,bool) ) );
+        QObject::connect( handler,SIGNAL( appendParamEditChange(int,Variant,int,int,bool,bool) ),this,
+                         SLOT( onAppendParamEditChanged(int,Variant,int,int,bool,bool) ) );
         QObject::connect( handler,SIGNAL( frozenChanged(bool) ),this,SLOT( onFrozenChanged(bool) ) );
     }
     _imp->guiCurves.resize(knob->getDimension());
@@ -1742,14 +1742,14 @@ KnobGui::onAnimationLevelChanged(int dim,int level)
 }
 
 void
-KnobGui::onAppendParamEditChanged(Natron::ValueChangedReasonEnum reason,
+KnobGui::onAppendParamEditChanged(int reason,
                                   const Variant & v,
                                   int dim,
                                   int time,
                                   bool createNewCommand,
                                   bool setKeyFrame)
 {
-    pushUndoCommand( new MultipleKnobEditsUndoCommand(this,reason, createNewCommand,setKeyFrame,v,dim,time) );
+    pushUndoCommand( new MultipleKnobEditsUndoCommand(this,(Natron::ValueChangedReasonEnum)reason, createNewCommand,setKeyFrame,v,dim,time) );
 }
 
 void

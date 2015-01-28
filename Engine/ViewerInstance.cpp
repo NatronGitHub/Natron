@@ -772,6 +772,13 @@ ViewerInstance::renderViewer_internal(int view,
         
     } // EffectInstance::NotifyInputNRenderingStarted_RAII inputNIsRendering_RAII(_node.get(),activeInputIndex);
     
+    ///Re-check the hash of the viewer. If the user was actively modifying a parameter, there are strong chances
+    ///that the hash changed.
+    bool hashChanged = false;
+    if (inArgs.activeInputToRender->getHash() != inArgs.activeInputHash) {
+        hashChanged = true;
+    }
+    
     ///Re-check the RoI of the viewer after we rendered. If the user was zooming in/out, it might have changed
     ///and we don't want to erase all the texture for nothing. E.g: when the user is currently zoomed in on a few
     ///pixels of the image, when dezooming, several renders will be triggered, but we don't want the intermediate renders
@@ -779,7 +786,7 @@ ViewerInstance::renderViewer_internal(int view,
     RectI roiAfterRender = _imp->uiContext->getImageRectangleDisplayedRoundedToTileSize(inArgs.params->rod,
                                                                                         inArgs.params->textureRect.par,
                                                                                         inArgs.params->mipMapLevel);
-    if (!autoContrast && roi != roiAfterRender) {
+    if ((!autoContrast && roi != roiAfterRender) || hashChanged) {
         if (inArgs.params->cachedFrame) {
             inArgs.params->cachedFrame->setAborted(true);
             appPTR->removeFromViewerCache(inArgs.params->cachedFrame);

@@ -3626,7 +3626,6 @@ Node::shouldCacheOutput() const
 {
     {
         //If true then we're in analysis, so we cache the input of the analysis effect
-        bool isMainThread = QThread::currentThread() == qApp->thread();
         
         QMutexLocker k(&_imp->outputsMutex);
         std::size_t sz = _imp->outputs.size();
@@ -3656,7 +3655,7 @@ Node::shouldCacheOutput() const
                 
                 return output->isSettingsPanelOpened() ||
                 _imp->liveInstance->doesTemporalClipAccess() ||
-                (isMainThread && (output->isMultiInstance() || output->getParentMultiInstance())) ||
+                _imp->liveInstance->getRecursionLevel() > 0 ||
                 isForceCachingEnabled() ||
                 appPTR->isAggressiveCachingEnabled() ||
                 (isPreviewEnabled() && !appPTR->isBackground());

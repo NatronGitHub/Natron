@@ -134,7 +134,7 @@ public:
                                  bool createNewCommand,
                                  bool setKeyFrame)
     {
-        emit appendParamEditChange(reason, v, dim,time,createNewCommand,setKeyFrame);
+        emit appendParamEditChange((int)reason, v, dim,time,createNewCommand,setKeyFrame);
     }
     
     void s_setDirty(bool b)
@@ -263,7 +263,7 @@ signals:
     
     ///Same as setValueWithUndoStack except that the value change will be compressed
     ///in a multiple edit undo/redo action
-    void appendParamEditChange(Natron::ValueChangedReasonEnum reason,Variant v,int dim,int time,bool createNewCommand,bool setKeyFrame);
+    void appendParamEditChange(int reason,Variant v,int dim,int time,bool createNewCommand,bool setKeyFrame);
     
     ///Emitted whenever the knob is dirty, @see KnobI::setDirty(bool)
     void dirty(bool);
@@ -1448,7 +1448,7 @@ public:
     void refreshInstanceSpecificKnobsOnly(SequenceTime time);
 
     KnobHolder::MultipleParamsEditEnum getMultipleParamsEditLevel() const;
-
+    
     void setMultipleParamsEditLevel(KnobHolder::MultipleParamsEditEnum level);
 
     virtual bool isProject() const

@@ -266,7 +266,7 @@ public slots:
 
     void onAnimationLevelChanged(int dim,int level);
 
-    void onAppendParamEditChanged(Natron::ValueChangedReasonEnum reason,const Variant & v,int dim,int time,bool createNewCommand,bool setKeyFrame);
+    void onAppendParamEditChanged(int reason,const Variant & v,int dim,int time,bool createNewCommand,bool setKeyFrame);
 
     void onFrozenChanged(bool frozen);
 
