@@ -75,12 +75,15 @@ public:
         U64 activeInputHash;
         boost::shared_ptr<Natron::FrameKey> key;
         boost::shared_ptr<UpdateViewerParams> params;
+        
     };
     
     /**
      * @brief Look-up the cache and try to find a matching texture for the portion to render.
      **/
-    Natron::StatusEnum getRenderViewerArgsAndCheckCache(SequenceTime time, int view, int textureIndex, U64 viewerHash,
+    Natron::StatusEnum getRenderViewerArgsAndCheckCache(SequenceTime time,
+                                                        bool isSequential,
+                                                        int view, int textureIndex, U64 viewerHash,
                                                         ViewerArgs* outArgs);
 
     
@@ -178,6 +181,9 @@ public:
     void s_viewerRenderingStarted() { emit viewerRenderingStarted(); }
     
     void s_viewerRenderingEnded() { emit viewerRenderingEnded(); }
+    
+    struct ViewerInstancePrivate;
+
 public slots:
 
 
@@ -277,7 +283,6 @@ private:
     
 private:
     
-    struct ViewerInstancePrivate;
     boost::scoped_ptr<ViewerInstancePrivate> _imp;
 };
 
