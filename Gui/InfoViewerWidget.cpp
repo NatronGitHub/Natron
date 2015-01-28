@@ -40,9 +40,36 @@ InfoViewerWidget::InfoViewerWidget(ViewerGL* v,
         currentColor[i] = 0;
     }
     setFixedHeight(20);
-    setStyleSheet( QString("background :black") );
+    setStyleSheet( QString("background-color: black;\n"
+                           "color : rgba(200,200,200,255); ") );
     
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+    
+    
+    QString tt = QString(tr("Informations from left to right:<br/>"
+                            "<br/>"
+                            "<br><font color=orange>Input:</font> Specifies whether the information are for the input <b>A</b> or <b>B</b></br>"
+                            "<br/>"
+                            "<br><font color=orange>Image format:</font>  An identifier for the pixel components and bitdepth of the displayed image</br>"
+                            "<br/>"
+                            "<br><font color=orange>Format:</font>  The resolution of the project's format</br>"
+                            "<br/>"
+                            "<br><font color=orange>RoD:</font>  The region of definition of the displayed image</br>"
+                            "<br/>"
+                            "<br><font color=orange>Fps:</font>  (Only active during playback) The frame-rate of the play-back sustained by the viewer</br>"
+                            "<br/>"
+                            "<br><font color=orange>Coordinates:</font>  The coordinates of the current mouse location</br>"
+                            "<br/>"
+                            "<br><font color=orange>RGBA:</font>  The RGBA color of the displayed image. Note that if some <b>?</b> are set instead of colors "
+                            "that means the underlying image cannot be accessed internally, you should refresh the viewer to make it available. "
+                            "Also sometimes you may notice the tild '~' after the colors: it indicates whether the color indicated is the true "
+                            "color in the image (no tild) or this is an approximated mipmap that has been filtered with a box filter (tild), "
+                            "in which case this may not reflect exactly the underlying internal image. </br>"
+                            "<br/>"
+                            "<br><font color=orange>HSVL:</font>  For convenience the RGBA color is also displayed as HSV(L)</br>"
+                            "<br/>"
+                            ""));
+    setToolTip(tt);
 
     layout = new QHBoxLayout(this);
     layout->setSpacing(0);
@@ -419,11 +446,5 @@ InfoViewerWidget::setImageFormat(Natron::ImageComponentsEnum comp,
     text.append("</font>");
     imageFormat->setText(text);
     _comp = comp;
-}
-
-void
-InfoViewerWidget::paintEvent(QPaintEvent* e)
-{
-    QWidget::paintEvent(e);
 }
 
