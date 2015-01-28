@@ -1485,7 +1485,9 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
     double dy = _imp->_root->mapFromScene(newPos).y() - _imp->_root->mapFromScene(lastMousePosScene).y();
 
     _imp->_hasMovedOnce = true;
-
+    
+    bool mustUpdate = true;
+    
     QRectF sceneR = visibleSceneRect();
     if (_imp->_evtState != eEventStateSelectionRect && _imp->_evtState != eEventStateDraggingArrow) {
         ///set cursor
@@ -1827,6 +1829,7 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
             setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
     } break;
     default:
+            mustUpdate = false;
         break;
     } // switch
 
@@ -1836,8 +1839,10 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
     if (mustUpdateNavigator) {
         _imp->_refreshOverlays = true;
     }
-
-    //update();
+    
+    if (mustUpdate) {
+        update();
+    }
     QGraphicsView::mouseMoveEvent(e);
 } // mouseMoveEvent
 
