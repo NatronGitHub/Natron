@@ -117,5 +117,16 @@
                 <define-ownership class="target" owner="target"/>
             </modify-argument>
         </modify-function>
+        <modify-function signature="appendTab(PyPanel*)">
+            <inject-code class="target" position="beginning">
+                %RETURN_TYPE %0 = %CPPSELF.%FUNCTION_NAME(%1);
+                %PYARG_0 = %CONVERTTOPYTHON[%RETURN_TYPE](%0);
+            </inject-code>
+        </modify-function>
+        <modify-function signature="insertTab(int,PyPanel*)">
+            <inject-code class="target" position="beginning">
+                %CPPSELF.%FUNCTION_NAME(%1,%2);
+            </inject-code>
+        </modify-function>
     </object-type>
 </typesystem>

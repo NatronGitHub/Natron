@@ -12,7 +12,7 @@ namespace PySide { class DynamicQMetaObject; }
 class PyPanelWrapper : public PyPanel
 {
 public:
-    PyPanelWrapper(const std::string & label, bool useUserParameters, GuiApp * app);
+    PyPanelWrapper(const std::string & scriptName, const std::string & label, bool useUserParameters, GuiApp * app);
     virtual void actionEvent(QActionEvent * event);
     virtual void changeEvent(QEvent * event);
     virtual void childEvent(QChildEvent * arg__1);

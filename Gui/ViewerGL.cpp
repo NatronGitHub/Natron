@@ -4056,18 +4056,7 @@ ViewerGL::makeOpenGLcontextCurrent()
     makeCurrent();
 }
 
-void
-ViewerGL::onViewerNodeNameChanged(const QString & name)
-{
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-    _imp->viewerTab->getGui()->unregisterTab(_imp->viewerTab);
-    TabWidget* parent = dynamic_cast<TabWidget*>( _imp->viewerTab->parentWidget() );
-    if (parent) {
-        parent->setTabName(_imp->viewerTab, name);
-    }
-    _imp->viewerTab->getGui()->registerTab(_imp->viewerTab);
-}
+
 
 void
 ViewerGL::removeGUI()

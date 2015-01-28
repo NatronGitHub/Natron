@@ -251,7 +251,6 @@ public:
     
 
     virtual void makeOpenGLcontextCurrent() OVERRIDE FINAL;
-    virtual void onViewerNodeNameChanged(const QString & name) OVERRIDE FINAL;
     virtual void removeGUI() OVERRIDE FINAL;
     virtual int getCurrentView() const OVERRIDE FINAL;
     

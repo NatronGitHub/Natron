@@ -55,7 +55,7 @@
 
 // Native ---------------------------------------------------------
 
-PyPanelWrapper::PyPanelWrapper(const std::string & label, bool useUserParameters, GuiApp * app) : PyPanel(label, useUserParameters, app) {
+PyPanelWrapper::PyPanelWrapper(const std::string & scriptName, const std::string & label, bool useUserParameters, GuiApp * app) : PyPanel(scriptName, label, useUserParameters, app) {
     // ... middle
 }
 
@@ -1327,25 +1327,26 @@ Sbk_PyPanel_Init(PyObject* self, PyObject* args, PyObject* kwds)
 
     ::PyPanelWrapper* cptr = 0;
     int overloadId = -1;
-    PythonToCppFunc pythonToCpp[] = { 0, 0, 0 };
+    PythonToCppFunc pythonToCpp[] = { 0, 0, 0, 0 };
     SBK_UNUSED(pythonToCpp)
     int numArgs = PyTuple_GET_SIZE(args);
-    PyObject* pyArgs[] = {0, 0, 0};
+    PyObject* pyArgs[] = {0, 0, 0, 0};
 
     // invalid argument lengths
 
 
-    if (!PyArg_UnpackTuple(args, "PyPanel", 3, 3, &(pyArgs[0]), &(pyArgs[1]), &(pyArgs[2])))
+    if (!PyArg_UnpackTuple(args, "PyPanel", 4, 4, &(pyArgs[0]), &(pyArgs[1]), &(pyArgs[2]), &(pyArgs[3])))
         return -1;
 
 
     // Overloaded function decisor
-    // 0: PyPanel(std::string,bool,GuiApp*)
-    if (numArgs == 3
+    // 0: PyPanel(std::string,std::string,bool,GuiApp*)
+    if (numArgs == 4
         && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[0])))
-        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), (pyArgs[1])))
-        && (pythonToCpp[2] = Shiboken::Conversions::isPythonToCppPointerConvertible((SbkObjectType*)SbkNatronGuiTypes[SBK_GUIAPP_IDX], (pyArgs[2])))) {
-        overloadId = 0; // PyPanel(std::string,bool,GuiApp*)
+        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[1])))
+        && (pythonToCpp[2] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), (pyArgs[2])))
+        && (pythonToCpp[3] = Shiboken::Conversions::isPythonToCppPointerConvertible((SbkObjectType*)SbkNatronGuiTypes[SBK_GUIAPP_IDX], (pyArgs[3])))) {
+        overloadId = 0; // PyPanel(std::string,std::string,bool,GuiApp*)
     }
 
     // Function signature not found.
@@ -1355,22 +1356,24 @@ Sbk_PyPanel_Init(PyObject* self, PyObject* args, PyObject* kwds)
     {
         ::std::string cppArg0;
         pythonToCpp[0](pyArgs[0], &cppArg0);
-        bool cppArg1;
+        ::std::string cppArg1;
         pythonToCpp[1](pyArgs[1], &cppArg1);
-        if (!Shiboken::Object::isValid(pyArgs[2]))
-            return -1;
-        ::GuiApp* cppArg2;
+        bool cppArg2;
         pythonToCpp[2](pyArgs[2], &cppArg2);
+        if (!Shiboken::Object::isValid(pyArgs[3]))
+            return -1;
+        ::GuiApp* cppArg3;
+        pythonToCpp[3](pyArgs[3], &cppArg3);
 
         if (!PyErr_Occurred()) {
-            // PyPanel(std::string,bool,GuiApp*)
+            // PyPanel(std::string,std::string,bool,GuiApp*)
             void* addr = PySide::nextQObjectMemoryAddr();
             PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             if (addr) {
-                cptr = new (addr) ::PyPanelWrapper(cppArg0, cppArg1, cppArg2);
+                cptr = new (addr) ::PyPanelWrapper(cppArg0, cppArg1, cppArg2, cppArg3);
                 PySide::setNextQObjectMemoryAddr(0);
             } else {
-                cptr = new ::PyPanelWrapper(cppArg0, cppArg1, cppArg2);
+                cptr = new ::PyPanelWrapper(cppArg0, cppArg1, cppArg2, cppArg3);
             }
 
             PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
@@ -1397,7 +1400,7 @@ Sbk_PyPanel_Init(PyObject* self, PyObject* args, PyObject* kwds)
     return 1;
 
     Sbk_PyPanel_Init_TypeError:
-        const char* overloads[] = {"std::string, bool, NatronGui.GuiApp", 0};
+        const char* overloads[] = {"std::string, std::string, bool, NatronGui.GuiApp", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronGui.PyPanel", overloads);
         return -1;
 }
@@ -1448,7 +1451,7 @@ static PyObject* Sbk_PyPanelFunc_addWidget(PyObject* self, PyObject* pyArg)
         return 0;
 }
 
-static PyObject* Sbk_PyPanelFunc_getLabel(PyObject* self)
+static PyObject* Sbk_PyPanelFunc_getPanelLabel(PyObject* self)
 {
     ::PyPanel* cppSelf = 0;
     SBK_UNUSED(cppSelf)
@@ -1461,9 +1464,37 @@ static PyObject* Sbk_PyPanelFunc_getLabel(PyObject* self)
     {
 
         if (!PyErr_Occurred()) {
-            // getLabel()const
+            // getPanelLabel()const
             PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            std::string cppResult = const_cast<const ::PyPanel*>(cppSelf)->getLabel();
+            std::string cppResult = const_cast<const ::PyPanel*>(cppSelf)->getPanelLabel();
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), &cppResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+}
+
+static PyObject* Sbk_PyPanelFunc_getPanelScriptName(PyObject* self)
+{
+    ::PyPanel* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::PyPanel*)Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYPANEL_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+
+    // Call function/method
+    {
+
+        if (!PyErr_Occurred()) {
+            // getPanelScriptName()const
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            std::string cppResult = const_cast<const ::PyPanel*>(cppSelf)->getPanelScriptName();
             PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), &cppResult);
         }
@@ -1722,7 +1753,7 @@ static PyObject* Sbk_PyPanelFunc_save(PyObject* self)
     return pyResult;
 }
 
-static PyObject* Sbk_PyPanelFunc_setLabel(PyObject* self, PyObject* pyArg)
+static PyObject* Sbk_PyPanelFunc_setPanelLabel(PyObject* self, PyObject* pyArg)
 {
     ::PyPanel* cppSelf = 0;
     SBK_UNUSED(cppSelf)
@@ -1734,13 +1765,13 @@ static PyObject* Sbk_PyPanelFunc_setLabel(PyObject* self, PyObject* pyArg)
     SBK_UNUSED(pythonToCpp)
 
     // Overloaded function decisor
-    // 0: setLabel(std::string)
+    // 0: setPanelLabel(std::string)
     if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArg)))) {
-        overloadId = 0; // setLabel(std::string)
+        overloadId = 0; // setPanelLabel(std::string)
     }
 
     // Function signature not found.
-    if (overloadId == -1) goto Sbk_PyPanelFunc_setLabel_TypeError;
+    if (overloadId == -1) goto Sbk_PyPanelFunc_setPanelLabel_TypeError;
 
     // Call function/method
     {
@@ -1748,9 +1779,9 @@ static PyObject* Sbk_PyPanelFunc_setLabel(PyObject* self, PyObject* pyArg)
         pythonToCpp(pyArg, &cppArg0);
 
         if (!PyErr_Occurred()) {
-            // setLabel(std::string)
+            // setPanelLabel(std::string)
             PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            cppSelf->setLabel(cppArg0);
+            cppSelf->setPanelLabel(cppArg0);
             PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
         }
     }
@@ -1760,9 +1791,9 @@ static PyObject* Sbk_PyPanelFunc_setLabel(PyObject* self, PyObject* pyArg)
     }
     Py_RETURN_NONE;
 
-    Sbk_PyPanelFunc_setLabel_TypeError:
+    Sbk_PyPanelFunc_setPanelLabel_TypeError:
         const char* overloads[] = {"std::string", 0};
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronGui.PyPanel.setLabel", overloads);
+        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronGui.PyPanel.setPanelLabel", overloads);
         return 0;
 }
 
@@ -1812,14 +1843,15 @@ static PyObject* Sbk_PyPanelFunc_setParamChangedCallback(PyObject* self, PyObjec
 
 static PyMethodDef Sbk_PyPanel_methods[] = {
     {"addWidget", (PyCFunction)Sbk_PyPanelFunc_addWidget, METH_O},
-    {"getLabel", (PyCFunction)Sbk_PyPanelFunc_getLabel, METH_NOARGS},
+    {"getPanelLabel", (PyCFunction)Sbk_PyPanelFunc_getPanelLabel, METH_NOARGS},
+    {"getPanelScriptName", (PyCFunction)Sbk_PyPanelFunc_getPanelScriptName, METH_NOARGS},
     {"getParam", (PyCFunction)Sbk_PyPanelFunc_getParam, METH_O},
     {"getParams", (PyCFunction)Sbk_PyPanelFunc_getParams, METH_NOARGS},
     {"insertWidget", (PyCFunction)Sbk_PyPanelFunc_insertWidget, METH_VARARGS},
     {"onUserDataChanged", (PyCFunction)Sbk_PyPanelFunc_onUserDataChanged, METH_NOARGS},
     {"restore", (PyCFunction)Sbk_PyPanelFunc_restore, METH_O},
     {"save", (PyCFunction)Sbk_PyPanelFunc_save, METH_NOARGS},
-    {"setLabel", (PyCFunction)Sbk_PyPanelFunc_setLabel, METH_O},
+    {"setPanelLabel", (PyCFunction)Sbk_PyPanelFunc_setPanelLabel, METH_O},
     {"setParamChangedCallback", (PyCFunction)Sbk_PyPanelFunc_setParamChangedCallback, METH_O},
 
     {0} // Sentinel

@@ -174,7 +174,6 @@ public Q_SLOTS:
 
     void onMipMapLevelChanged(int level);
 
-    void onNodeNameChanged(const QString &);
 
     /**
      * @brief Redraws the OpenGL viewer. Can only be called on the main-thread.

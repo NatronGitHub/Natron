@@ -374,6 +374,8 @@ NodeGraph::NodeGraph(Gui* gui,
                      QGraphicsScene* scene,
                      QWidget *parent)
     : QGraphicsView(scene,parent)
+    , NodeGraphI()
+    , ScriptObject()
       , _imp( new NodeGraphPrivate(gui,this, group) )
 {
     
@@ -4317,13 +4319,12 @@ NodeGraph::onGroupNameChanged(const QString& name)
 {
     assert( qApp && qApp->thread() == QThread::currentThread() );
     getGui()->unregisterTab(this);
+    setLabel(name.toStdString());
     TabWidget* parent = dynamic_cast<TabWidget*>(parentWidget() );
     if (parent) {
-        parent->setTabName(this, name);
-    } else {
-        setObjectName(name);
+        parent->setTabLabel(this, name);
     }
-    getGui()->registerTab(this);
+    getGui()->registerTab(this,this);
 }
 
 void

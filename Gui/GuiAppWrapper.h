@@ -108,7 +108,7 @@ public:
         
     PyTabWidget* getTabWidget(const std::string& name) const;
     
-    bool moveTab(QWidget* tab,PyTabWidget* pane);
+    bool moveTab(const std::string& scriptName,PyTabWidget* pane);
     
     void registerPythonPanel(PyPanel* panel,const std::string& pythonFunction);
     void unregisterPythonPanel(PyPanel* panel);
@@ -128,6 +128,8 @@ public:
     std::list<Effect*> getSelectedNodes(Group* group = 0) const;
     
     PyViewer* getViewer(const std::string& scriptName) const;
+    
+    PyPanel* getUserPanel(const std::string& scriptName) const;
 
 };
 

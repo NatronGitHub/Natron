@@ -151,9 +151,7 @@ ViewerInstance::ViewerInstance(boost::shared_ptr<Node> node)
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
-    if (node) {
-        connect( node.get(),SIGNAL( labelChanged(QString) ),this,SLOT( onNodeNameChanged(QString) ) );
-    }
+   
     QObject::connect( this,SIGNAL( disconnectTextureRequest(int) ),this,SLOT( executeDisconnectTextureRequestOnMainThread(int) ) );
     QObject::connect( _imp.get(),SIGNAL( mustRedrawViewer() ),this,SLOT( redrawViewer() ) );
     QObject::connect( this,SIGNAL( s_callRedrawOnMainThread() ), this, SLOT( redrawViewer() ) );
@@ -238,17 +236,6 @@ ViewerInstance::invalidateUiContext()
     _imp->uiContext = NULL;
 }
 
-void
-ViewerInstance::onNodeNameChanged(const QString & name)
-{
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-
-    ///update the gui tab name
-    if (_imp->uiContext) {
-        _imp->uiContext->onViewerNodeNameChanged(name);
-    }
-}
 
 
 int

@@ -109,6 +109,7 @@ SOURCES += \
     RotoContext.cpp \
     RotoSerialization.cpp  \
     RotoWrapper.cpp \
+    ScriptObject.cpp \
     Settings.cpp \
     StandardPaths.cpp \
     StringAnimationManager.cpp \
@@ -236,6 +237,7 @@ HEADERS += \
     RotoContextPrivate.h \
     RotoSerialization.h \
     RotoWrapper.h \
+    ScriptObject.h \
     Settings.h \
     Singleton.h \
     StandardPaths.h \

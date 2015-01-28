@@ -32,6 +32,8 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Global/GlobalDefines.h"
 #include "Gui/SerializableWindow.h"
+#include "Engine/ScriptObject.h"
+
 
 #define kMainSplitterObjectName "ToolbarSplitter"
 
@@ -82,6 +84,20 @@ class EffectInstance;
 class OutputEffectInstance;
 }
 
+typedef std::map<std::string,std::pair<QWidget*,ScriptObject*> > RegisteredTabs;
+
+
+class PropertiesBinWrapper : public QWidget, public ScriptObject
+{
+public:
+    
+    PropertiesBinWrapper(QWidget* parent)
+    : QWidget(parent)
+    , ScriptObject()
+    {
+        
+    }
+};
 
 struct GuiPrivate;
 class Gui
@@ -257,7 +273,7 @@ public:
     void registerPane(TabWidget* pane);
     void unregisterPane(TabWidget* pane);
 
-    void registerTab(QWidget* tab);
+    void registerTab(QWidget* tab,ScriptObject* obj);
     void unregisterTab(QWidget* tab);
 
     void registerFloatingWindow(FloatingWidget* window);
@@ -283,9 +299,9 @@ public:
     /*Returns a valid tab if a tab with a matching name has been
        found. Otherwise returns NULL.*/
     QWidget* findExistingTab(const std::string & name) const;
+    void findExistingTab(const std::string & name, QWidget** w,ScriptObject** o) const;
 
-
-    void appendTabToDefaultViewerPane(QWidget* tab);
+    void appendTabToDefaultViewerPane(QWidget* tab,ScriptObject* obj);
 
     /**
      * @brief Get the central of the application, it is either 1 TabWidget or a Splitter.
@@ -366,8 +382,8 @@ public:
     ScriptEditor* getScriptEditor() const;
     
     QVBoxLayout* getPropertiesLayout() const;
-    QWidget* getPropertiesBin() const;
-    const std::map<std::string,QWidget*> & getRegisteredTabs() const;
+    PropertiesBinWrapper* getPropertiesBin() const;
+    const RegisteredTabs & getRegisteredTabs() const;
 
     void updateLastSequenceOpenedPath(const QString & path);
 

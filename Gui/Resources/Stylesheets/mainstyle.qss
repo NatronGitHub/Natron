@@ -556,18 +556,6 @@ QTextEdit:focus {
     padding: 2px 4px;
 }
 
-ScriptTextEdit[isOutput="true"] {
-    color: %5;
-    background-color: %2;
-    selection-color: %8;
-    selection-background-color: %1;
-}
-ScriptTextEdit[isOutput="false"] {
-    color: %5;
-    background-color: %3;
-    selection-color: %8;
-    selection-background-color: %1;
-}
 
 AnimatedCheckBox[animation="1"]::indicator:unchecked {
     image: url(:/Resources/Images/checkbox_animation1_unchecked.png);
@@ -652,4 +640,17 @@ QMenuBar::item:selected
 {
 	color: %5;
     background: %1;
+}
+
+ScriptTextEdit[isOutput="true"] {
+    color: %5;
+    background-color: %2;
+    selection-color: %8;
+    selection-background-color: %1;
+}
+ScriptTextEdit[isOutput="false"] {
+    color: %5;
+    background-color: %3;
+    selection-color: %8;
+    selection-background-color: %1;
 }

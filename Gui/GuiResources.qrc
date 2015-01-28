@@ -189,5 +189,14 @@
         <file>Resources/Images/dot_icon.png</file>
         <file>Resources/Images/colorwheel_overlay.png</file>
         <file>Resources/Images/roto_merge.png</file>
+        <file>Resources/Images/clearOutput.png</file>
+        <file>Resources/Images/execScript.png</file>
+        <file>Resources/Images/loadAndExecScript.png</file>
+        <file>Resources/Images/loadScript.png</file>
+        <file>Resources/Images/nextScript.png</file>
+        <file>Resources/Images/outputPanelActivated.png</file>
+        <file>Resources/Images/outputPanelDeactivated.png</file>
+        <file>Resources/Images/previousScript.png</file>
+        <file>Resources/Images/saveScript.png</file>
     </qresource>
 </RCC>

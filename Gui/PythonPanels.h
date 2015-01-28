@@ -20,6 +20,7 @@
 #include "Global/Macros.h"
 
 #include "Engine/NodeWrapper.h"
+#include "Engine/ScriptObject.h"
 #include "Engine/Knob.h"
 
 class GuiApp;
@@ -87,13 +88,13 @@ private:
 
 
 struct PyPanelPrivate;
-class PyPanel : public QWidget, public UserParamHolder
+class PyPanel : public QWidget, public UserParamHolder, public ScriptObject
 {
     Q_OBJECT
     
 public:
     
-    PyPanel(const std::string& label,bool useUserParameters,GuiApp* app);
+    PyPanel(const std::string& scriptName,const std::string& label,bool useUserParameters,GuiApp* app);
     
     virtual ~PyPanel();
         
@@ -101,9 +102,11 @@ public:
     
     virtual void restore(const std::string& /*data*/) {}
     
-    void setLabel(const std::string& label);
+    std::string getPanelScriptName() const;
     
-    std::string getLabel() const;
+    void setPanelLabel(const std::string& label);
+    
+    std::string getPanelLabel() const;
     
     Param* getParam(const std::string& scriptName) const;
     
@@ -142,9 +145,9 @@ public :
         return _tab;
     }
     
-    bool appendTab(QWidget* tab);
+    bool appendTab(PyPanel* tab);
     
-    void insertTab(int index,QWidget* tab);
+    void insertTab(int index,PyPanel* tab);
     
     void removeTab(QWidget* tab);
     
@@ -152,7 +155,7 @@ public :
     
     void closeTab(int index);
     
-    std::string getTabName(int index) const;
+    std::string getTabLabel(int index) const;
     
     int count();
     

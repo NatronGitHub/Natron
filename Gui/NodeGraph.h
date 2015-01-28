@@ -31,6 +31,7 @@ CLANG_DIAG_ON(uninitialized)
 #endif
 
 #include "Engine/NodeGraphI.h"
+#include "Engine/ScriptObject.h"
 #include "Global/GlobalDefines.h"
 
 class QVBoxLayout;
@@ -51,7 +52,7 @@ namespace Natron {
 class Node;
 }
 
-class NodeGraph : public QGraphicsView, public NodeGraphI, public boost::noncopyable
+class NodeGraph : public QGraphicsView, public NodeGraphI, public ScriptObject, public boost::noncopyable
 {
     Q_OBJECT
 

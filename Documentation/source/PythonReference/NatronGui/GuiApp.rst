@@ -24,7 +24,9 @@ Functions
 *    def :meth:`getRGBColorDialog<NatronGui.GuiApp.getRGBColorDialog>` ()
 *    def :meth:`getTabWidget<NatronGui.GuiApp.getTabWidget>` (scriptName)
 *    def :meth:`getSelectedNodes<NatronGui.GuiApp.getSelectedNodes>` ([group=None])
-*    def :meth:`moveTab<NatronGui.GuiApp.moveTab>` (tab,pane)
+*    def :meth:`getViewer<NatronGui.GuiApp.getViewer>` (scriptName)
+*    def :meth:`getUserPanel<NatronGui.GuiApp.getUserPanel>` (scriptName)
+*    def :meth:`moveTab<NatronGui.GuiApp.moveTab>` (tabScriptName,pane)
 *    def :meth:`saveFilenameDialog<NatronGui.GuiApp.saveFilenameDialog>` (filters[, location=None])
 *    def :meth:`saveSequenceDialog<NatronGui.GuiApp.saveSequenceDialog>` (filters[, location=None])
 *    def :meth:`registerPythonPanel<NatronGui.GuiApp.registerPythonPanel>` (panel,pythonFunction)
@@ -153,14 +155,20 @@ corner of the pane)
 	
 	
 
-.. method:: NatronGui.GuiApp.moveTab(tab,pane)
+.. method:: NatronGui.GuiApp.moveTab(tabScriptName,pane)
 	
-	:param tab: :class:`QWidget<PySide.QtGui.QWidget>`
+	:param tabScriptName: :class:`str`
 	:param pane: :class:`PyTabWidget<NatronGui.PyTabWidget>`
     :rtype: :class:`bool`
 
-Attempts to move the given *tab* into the given *pane* and make it current in the *pane*.
-This function returns True upon success or False otherwise.
+Attempts to move the tab with the given *tabScriptName* into the given *pane* and make it current in the *pane*.
+This function returns True upon success or False otherwise. 
+
+.. warning:: 
+
+	Moving tabs that are not registered to
+	the application via :func:`registerPythonPanel(panel,pythonFunction)<NatronGui.GuiApp.registerPythonPanel>`
+	will not work.
 	
 	
 .. method:: NatronGui.GuiApp.registerPythonPanel(panel,pythonFunction)
@@ -195,3 +203,17 @@ If no *group* is specified, this will return the selection in the main node grap
 	
 	groupSelection = app.getSelectedNodes(group)
 	
+	
+.. method :: NatronGui.GuiApp.getViewer(scriptName)
+
+	:param scriptName: :class:`str`
+	
+Returns the viewer with the given *scriptName* if one can be found.
+
+
+.. method :: NatronGui.GuiApp.getUserPanel(scriptName)
+
+	:param scriptName: :class:`str`
+	
+Returns a user panel matching the given *scriptName* if there is any.
+

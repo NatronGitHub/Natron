@@ -136,10 +136,6 @@ public:
      **/
     virtual bool supportsGLSL() const = 0;
 
-    /**
-     * @brief Overrides to refresh any gui indicating the name of the underlying node.
-     **/
-    virtual void onViewerNodeNameChanged(const QString & name) = 0;
 
     /**
      * @brief Called when the live instance of the viewer node is killed. (i.e: when the node is deleted).

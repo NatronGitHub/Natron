@@ -98,9 +98,17 @@ ScriptEditor::ScriptEditor(Gui* gui)
     _imp->buttonsContainerLayout->setSpacing(2);
     
     QPixmap undoPix,redoPix,clearHistoPix,sourceScriptPix,loadScriptPix,saveScriptPix,execScriptPix,outputVisiblePix,outputHiddenPix,clearOutpoutPix;
-    appPTR->getIcon(Natron::NATRON_PIXMAP_UNDO, &undoPix);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_REDO, &redoPix);
+    appPTR->getIcon(Natron::NATRON_PIXMAP_SCRIPT_PREVIOUS_SCRIPT, &undoPix);
+    appPTR->getIcon(Natron::NATRON_PIXMAP_SCRIPT_NEXT_SCRIPT, &redoPix);
+    appPTR->getIcon(Natron::NATRON_PIXMAP_CLOSE_PANEL, &clearHistoPix);
     appPTR->getIcon(Natron::NATRON_PIXMAP_CLEAR_ALL_ANIMATION, &clearHistoPix);
+    appPTR->getIcon(Natron::NATRON_PIXMAP_SCRIPT_CLEAR_OUTPUT,&clearOutpoutPix);
+    appPTR->getIcon(Natron::NATRON_PIXMAP_SCRIPT_EXEC_SCRIPT,&execScriptPix);
+    appPTR->getIcon(Natron::NATRON_PIXMAP_SCRIPT_OUTPUT_PANE_ACTIVATED,&outputVisiblePix);
+    appPTR->getIcon(Natron::NATRON_PIXMAP_SCRIPT_OUTPUT_PANE_DEACTIVATED,&outputHiddenPix);
+    appPTR->getIcon(Natron::NATRON_PIXMAP_SCRIPT_LOAD_EXEC_SCRIPT,&sourceScriptPix);
+    appPTR->getIcon(Natron::NATRON_PIXMAP_SCRIPT_LOAD_SCRIPT,&loadScriptPix);
+    appPTR->getIcon(Natron::NATRON_PIXMAP_SCRIPT_SAVE_SCRIPT,&saveScriptPix);
     
     _imp->undoB = new Button(QIcon(undoPix),"",_imp->buttonsContainer);
     QKeySequence undoSeq(Qt::CTRL + Qt::Key_BracketLeft);
@@ -165,7 +173,7 @@ ScriptEditor::ScriptEditor(Gui* gui)
     _imp->showHideOutputB->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     QObject::connect(_imp->showHideOutputB, SIGNAL(clicked(bool)), this, SLOT(onShowHideOutputClicked(bool)));
     
-    _imp->clearOutputB = new Button(QIcon(outputHiddenPix),"",_imp->buttonsContainer);
+    _imp->clearOutputB = new Button(QIcon(clearOutpoutPix),"",_imp->buttonsContainer);
     QKeySequence clearSeq(Qt::CTRL + Qt::Key_Backspace);
     _imp->clearOutputB->setFocusPolicy(Qt::NoFocus);
     _imp->clearOutputB->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);

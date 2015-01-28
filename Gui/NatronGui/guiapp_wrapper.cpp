@@ -21,7 +21,6 @@
 #include <ParameterWrapper.h>
 #include <PythonPanels.h>
 #include <list>
-#include <qwidget.h>
 #include <vector>
 
 
@@ -462,6 +461,53 @@ static PyObject* Sbk_GuiAppFunc_getTabWidget(PyObject* self, PyObject* pyArg)
         return 0;
 }
 
+static PyObject* Sbk_GuiAppFunc_getUserPanel(PyObject* self, PyObject* pyArg)
+{
+    ::GuiApp* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::GuiApp*)Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_GUIAPP_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp;
+    SBK_UNUSED(pythonToCpp)
+
+    // Overloaded function decisor
+    // 0: getUserPanel(std::string)const
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArg)))) {
+        overloadId = 0; // getUserPanel(std::string)const
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_GuiAppFunc_getUserPanel_TypeError;
+
+    // Call function/method
+    {
+        ::std::string cppArg0;
+        pythonToCpp(pyArg, &cppArg0);
+
+        if (!PyErr_Occurred()) {
+            // getUserPanel(std::string)const
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            PyPanel * cppResult = const_cast<const ::GuiApp*>(cppSelf)->getUserPanel(cppArg0);
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronGuiTypes[SBK_PYPANEL_IDX], cppResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+
+    Sbk_GuiAppFunc_getUserPanel_TypeError:
+        const char* overloads[] = {"std::string", 0};
+        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronGui.GuiApp.getUserPanel", overloads);
+        return 0;
+}
+
 static PyObject* Sbk_GuiAppFunc_getViewer(PyObject* self, PyObject* pyArg)
 {
     ::GuiApp* cppSelf = 0;
@@ -534,11 +580,11 @@ static PyObject* Sbk_GuiAppFunc_moveTab(PyObject* self, PyObject* args)
 
 
     // Overloaded function decisor
-    // 0: moveTab(QWidget*,PyTabWidget*)
+    // 0: moveTab(std::string,PyTabWidget*)
     if (numArgs == 2
-        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppPointerConvertible((SbkObjectType*)SbkPySide_QtGuiTypes[SBK_QWIDGET_IDX], (pyArgs[0])))
+        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[0])))
         && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppPointerConvertible((SbkObjectType*)SbkNatronGuiTypes[SBK_PYTABWIDGET_IDX], (pyArgs[1])))) {
-        overloadId = 0; // moveTab(QWidget*,PyTabWidget*)
+        overloadId = 0; // moveTab(std::string,PyTabWidget*)
     }
 
     // Function signature not found.
@@ -546,9 +592,7 @@ static PyObject* Sbk_GuiAppFunc_moveTab(PyObject* self, PyObject* args)
 
     // Call function/method
     {
-        if (!Shiboken::Object::isValid(pyArgs[0]))
-            return 0;
-        ::QWidget* cppArg0;
+        ::std::string cppArg0;
         pythonToCpp[0](pyArgs[0], &cppArg0);
         if (!Shiboken::Object::isValid(pyArgs[1]))
             return 0;
@@ -556,7 +600,7 @@ static PyObject* Sbk_GuiAppFunc_moveTab(PyObject* self, PyObject* args)
         pythonToCpp[1](pyArgs[1], &cppArg1);
 
         if (!PyErr_Occurred()) {
-            // moveTab(QWidget*,PyTabWidget*)
+            // moveTab(std::string,PyTabWidget*)
             PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             bool cppResult = cppSelf->moveTab(cppArg0, cppArg1);
             PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
@@ -571,7 +615,7 @@ static PyObject* Sbk_GuiAppFunc_moveTab(PyObject* self, PyObject* args)
     return pyResult;
 
     Sbk_GuiAppFunc_moveTab_TypeError:
-        const char* overloads[] = {"PySide.QtGui.QWidget, NatronGui.PyTabWidget", 0};
+        const char* overloads[] = {"std::string, NatronGui.PyTabWidget", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronGui.GuiApp.moveTab", overloads);
         return 0;
 }
@@ -849,6 +893,7 @@ static PyMethodDef Sbk_GuiApp_methods[] = {
     {"getSelectedNodes", (PyCFunction)Sbk_GuiAppFunc_getSelectedNodes, METH_VARARGS|METH_KEYWORDS},
     {"getSequenceDialog", (PyCFunction)Sbk_GuiAppFunc_getSequenceDialog, METH_VARARGS|METH_KEYWORDS},
     {"getTabWidget", (PyCFunction)Sbk_GuiAppFunc_getTabWidget, METH_O},
+    {"getUserPanel", (PyCFunction)Sbk_GuiAppFunc_getUserPanel, METH_O},
     {"getViewer", (PyCFunction)Sbk_GuiAppFunc_getViewer, METH_O},
     {"moveTab", (PyCFunction)Sbk_GuiAppFunc_moveTab, METH_VARARGS},
     {"registerPythonPanel", (PyCFunction)Sbk_GuiAppFunc_registerPythonPanel, METH_VARARGS},

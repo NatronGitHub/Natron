@@ -22,6 +22,9 @@ CLANG_DIAG_ON(uninitialized)
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #endif
+
+#include "Engine/ScriptObject.h"
+
 class QString;
 class QColor;
 class QFont;
@@ -34,6 +37,7 @@ class ViewerGL;
 struct HistogramPrivate;
 class Histogram
     : public QGLWidget
+    , public ScriptObject
 {
     Q_OBJECT
 

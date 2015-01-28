@@ -83,17 +83,20 @@ DialogParamHolder::onKnobValueChanged(KnobI* k,
         bool userEdited = reason == Natron::eValueChangedReasonNatronGuiEdited ||
         reason == Natron::eValueChangedReasonUserEdited;
         
-        std::string script = callback;
-        script.append("()\n");
-        KnobI::declareCurrentKnobVariable_Python(k, -1, script);
-        script.append("userEdited = ");
+        std::stringstream ss;
+        ss << "app = app" << getApp()->getAppID() + 1 << "\n";
+        ss << "userEdited = ";
         if (userEdited) {
-            script.append("True\n");
+            ss << "True\n";
         } else {
-            script.append("False\n");
+            ss << "False\n";
         }
+        ss << "paramName = '" << k->getName() << "'\n";
+        ss << callback << "()\n";
+        ss << "del paramName" ;
+        
         std::string err;
-        if (!Natron::interpretPythonScript(script, &err,NULL)) {
+        if (!Natron::interpretPythonScript(ss.str(), &err,NULL)) {
             getApp()->appendToScriptEditor(QObject::tr("Failed to execute callback: ").toStdString() + err);
         }
 
@@ -132,7 +135,7 @@ PyModalDialog::PyModalDialog(Gui* gui)
 , _imp(new PyModalDialogPrivate(gui))
 {
     _imp->holder = new DialogParamHolder(std::string(),gui->getApp());
-    
+    _imp->holder->initializeKnobsPublic();
     _imp->mainLayout = new QVBoxLayout(this);
     _imp->mainLayout->setContentsMargins(0, 0, 0, 0);
     
@@ -203,9 +206,6 @@ struct PyPanelPrivate
     
     Gui* gui;
     
-    mutable QMutex labelMutex;
-    std::string label;
-    
     DialogParamHolder* holder;
     
     QVBoxLayout* mainLayout;
@@ -213,25 +213,18 @@ struct PyPanelPrivate
     
     QWidget* centerContainer;
     QVBoxLayout* centerLayout;
-    
-    QMutex paramChangedCBMutex;
-    std::string paramChangedCB;
-    
+
     mutable QMutex serializationMutex;
     std::string serialization;
 
     
-    PyPanelPrivate(const std::string& label)
+    PyPanelPrivate()
     : gui(0)
-    , labelMutex()
-    , label(label)
     , holder(0)
     , mainLayout(0)
     , panel(0)
     , centerContainer(0)
     , centerLayout(0)
-    , paramChangedCBMutex()
-    , paramChangedCB()
     , serializationMutex()
     , serialization()
     {
@@ -241,20 +234,38 @@ struct PyPanelPrivate
 
 
 
-PyPanel::PyPanel(const std::string& label,bool useUserParameters,GuiApp* app)
+PyPanel::PyPanel(const std::string& scriptName,const std::string& label,bool useUserParameters,GuiApp* app)
 : QWidget(app->getGui())
 , UserParamHolder()
-, _imp(new PyPanelPrivate(label))
+, ScriptObject()
+, _imp(new PyPanelPrivate())
 {
     _imp->gui = app->getGui();
-    setObjectName(label.c_str());
-    _imp->gui->registerTab(this);
+    setLabel(label.c_str());
+
+    
+    int idx = 1;
+    std::string name = Natron::makeNameScriptFriendly(scriptName);
+    QWidget* existing = 0;
+    existing = _imp->gui->findExistingTab(name);
+    while (existing) {
+        std::stringstream ss;
+        ss << name << idx;
+        existing = _imp->gui->findExistingTab(ss.str());
+        if (!existing) {
+            name = ss.str();
+        }
+        ++idx;
+    }
+    
+    setScriptName(name);
+    _imp->gui->registerTab(this,this);
    
     
     if (useUserParameters) {
-        _imp->holder = new DialogParamHolder(_imp->label,_imp->gui->getApp());
+        _imp->holder = new DialogParamHolder(name,_imp->gui->getApp());
         setHolder(_imp->holder);
-        
+        _imp->holder->initializeKnobsPublic();
         _imp->mainLayout = new QVBoxLayout(this);
         _imp->mainLayout->setContentsMargins(0, 0, 0, 0);
         
@@ -272,10 +283,10 @@ PyPanel::PyPanel(const std::string& label,bool useUserParameters,GuiApp* app)
                                         "Default",
                                         _imp->centerContainer);
         _imp->panel->turnOffPages();
-        _imp->panel->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
         _imp->centerLayout->insertWidget(0,_imp->panel);
         
         _imp->mainLayout->addWidget(_imp->centerContainer);
+        _imp->mainLayout->addStretch();
     }
 }
 
@@ -284,26 +295,27 @@ PyPanel::~PyPanel()
     
 }
 
-void
-PyPanel::setLabel(const std::string& label)
+std::string
+PyPanel::getPanelScriptName() const
 {
-    {
-        QMutexLocker k(&_imp->labelMutex);
-        _imp->label = label;
-    }
+    return getScriptName();
+}
+
+void
+PyPanel::setPanelLabel(const std::string& label)
+{
+    setLabel(label);
     QString name(label.c_str());
-    setObjectName(name);
     TabWidget* parent = dynamic_cast<TabWidget*>(parentWidget());
     if (parent) {
-        parent->setTabName(this, name);
+        parent->setTabLabel(this, name);
     }
 }
 
 std::string
-PyPanel::getLabel() const
+PyPanel::getPanelLabel() const
 {
-    QMutexLocker k(&_imp->labelMutex);
-    return _imp->label;
+    return getLabel();
 }
 
 Param*
@@ -341,8 +353,9 @@ PyPanel::getParams() const
 void
 PyPanel::setParamChangedCallback(const std::string& callback)
 {
-    QMutexLocker k(&_imp->paramChangedCBMutex);
-    _imp->paramChangedCB = callback;
+    if (_imp->holder) {
+        _imp->holder->setParamChangedCallback(callback);
+    }
 }
 
 void
@@ -389,15 +402,15 @@ PyTabWidget::~PyTabWidget()
 }
 
 bool
-PyTabWidget::appendTab(QWidget* tab)
+PyTabWidget::appendTab(PyPanel* tab)
 {
-    return _tab->appendTab(tab);
+    return _tab->appendTab(tab,tab);
 }
 
 void
-PyTabWidget::insertTab(int index,QWidget* tab)
+PyTabWidget::insertTab(int index,PyPanel* tab)
 {
-    _tab->insertTab(index, QIcon(), tab);
+    _tab->insertTab(index, QIcon(), tab, tab);
 }
 
 void
@@ -419,9 +432,9 @@ PyTabWidget::closeTab(int index)
 }
 
 std::string
-PyTabWidget::getTabName(int index) const
+PyTabWidget::getTabLabel(int index) const
 {
-    return _tab->getTabName(index).toStdString();
+    return _tab->getTabLabel(index).toStdString();
 }
 
 int

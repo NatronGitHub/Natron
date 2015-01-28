@@ -25,7 +25,7 @@ Functions
 *    def :meth:`floatPane<NatronGui.PyTabWidget.floatPane>` ()
 *    def :meth:`getCurrentIndex<NatronGui.PyTabWidget.getCurrentIndex>` ()
 *    def :meth:`getScriptName<NatronGui.PyTabWidget.getScriptName>` ()
-*    def :meth:`getTabName<NatronGui.PyTabWidget.getTabName>` (index)
+*    def :meth:`getTabLabel<NatronGui.PyTabWidget.getTabLabel>` (index)
 *    def :meth:`insertTab<NatronGui.PyTabWidget.insertTab>` (index,tab)
 *    def :meth:`removeTab<NatronGui.PyTabWidget.removeTab>` (tab)
 *    def :meth:`removeTab<NatronGui.PyTabWidget.removeTab>` (index)
@@ -172,7 +172,7 @@ Returns the script-name of the pane, as used by the :func:`getTabWidget(scriptNa
 
 
 
-.. method:: NatronGui.PyTabWidget.getTabName(index)
+.. method:: NatronGui.PyTabWidget.getTabLabel(index)
 
 	:param index: :class:`int`
 	:rtype: :class:`str`

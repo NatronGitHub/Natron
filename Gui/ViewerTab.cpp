@@ -348,10 +348,19 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
                      ViewerInstance* node,
                      QWidget* parent)
     : QWidget(parent)
+    , ScriptObject()
       , _imp( new ViewerTabPrivate(gui,node) )
 {
     installEventFilter(this);
-    setObjectName( node->getNode()->getScriptName().c_str() );
+    
+    std::string nodeName =  node->getNode()->getScriptName();
+    setScriptName(nodeName);
+    setLabel(nodeName);
+    
+    NodePtr internalNode = node->getNode();
+    QObject::connect(internalNode.get(), SIGNAL(scriptNameChanged(QString)), this, SLOT(onInternalNodeScriptNameChanged(QString)));
+    QObject::connect(internalNode.get(), SIGNAL(labelChanged(QString)), this, SLOT(onInternalNodeLabelChanged(QString)));
+    
     _imp->mainLayout = new QVBoxLayout(this);
     setLayout(_imp->mainLayout);
     _imp->mainLayout->setSpacing(0);
@@ -1052,6 +1061,9 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     }
 
     setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Preferred);
+    
+    _imp->viewerNode->setUiContext(getViewer());
+
 }
 
 void
@@ -3436,4 +3448,31 @@ ViewerTab::setFrameRange(int left,int right)
 {
     setTimelineBounds(left, right);
     onTimelineBoundariesChanged(left, right);
+}
+
+void
+ViewerTab::onInternalNodeLabelChanged(const QString& name)
+{
+    TabWidget* parent = dynamic_cast<TabWidget*>(parentWidget() );
+    if (parent) {
+        setLabel(name.toStdString());
+        parent->setTabLabel(this, name);
+    }
+}
+
+void
+ViewerTab::onInternalNodeScriptNameChanged(const QString& name)
+{
+    // always running in the main thread
+    std::string newName = name.toStdString();
+    std::string oldName = getScriptName();
+  
+    assert( qApp && qApp->thread() == QThread::currentThread() );
+    getGui()->unregisterTab(this);
+    setScriptName(newName);
+    getGui()->registerTab(this,this);
+    TabWidget* parent = dynamic_cast<TabWidget*>(parentWidget() );
+    if (parent) {
+        parent->onTabScriptNameChanged(this, oldName, newName);
+    }
 }

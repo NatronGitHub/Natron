@@ -108,8 +108,7 @@ CLANG_DIAG_ON(unused-parameter)
 #include "Gui/ScriptEditor.h"
 #include "Gui/PythonPanels.h"
 
-#define kViewerPaneName "ViewerPane"
-#define kPropertiesBinName "Properties"
+#define kPropertiesBinName "properties"
 
 #define NAMED_PLUGIN_GROUP_NO 15
 
@@ -174,6 +173,7 @@ getPixmapForGrouping(QPixmap* pixmap,
     }
 }
 }
+
 
 class AutoHideToolBar : public QToolBar
 {
@@ -309,7 +309,7 @@ struct GuiPrivate
     std::vector<ToolButton* > _toolButtons;
 
     ///holds the properties dock
-    QWidget *_propertiesBin;
+    PropertiesBinWrapper *_propertiesBin;
     
     QScrollArea* _propertiesScrollArea;
 	QWidget* _propertiesContainer;
@@ -345,7 +345,7 @@ struct GuiPrivate
     std::list<FloatingWidget*> _floatingWindows;
 
     ///All the tabs used in the TabWidgets (used for d&d purpose)
-    std::map<std::string,QWidget*> _registeredTabs;
+    RegisteredTabs _registeredTabs;
 
     ///The user preferences window
     PreferencesPanel* _settingsGui;
@@ -787,7 +787,6 @@ Gui::createViewerGui(boost::shared_ptr<Node> viewer)
     ViewerInstance* v = dynamic_cast<ViewerInstance*>( viewer->getLiveInstance() );
     assert(v);
     _imp->_lastSelectedViewer = addNewViewerTab(v, where);
-    v->setUiContext( _imp->_lastSelectedViewer->getViewer() );
 }
 
 
@@ -1145,8 +1144,9 @@ Gui::setupUi()
 void
 GuiPrivate::createPropertiesBinGui()
 {
-    _propertiesBin = new QWidget(_gui);
-    _propertiesBin->setObjectName(kPropertiesBinName);
+    _propertiesBin = new PropertiesBinWrapper(_gui);
+    _propertiesBin->setScriptName(kPropertiesBinName);
+    _propertiesBin->setLabel(QObject::tr("Properties").toStdString());
 
     QVBoxLayout* mainPropertiesLayout = new QVBoxLayout(_propertiesBin);
     mainPropertiesLayout->setContentsMargins(0, 0, 0, 0);
@@ -1212,7 +1212,7 @@ GuiPrivate::createPropertiesBinGui()
     mainPropertiesLayout->addWidget(propertiesAreaButtonsContainer);
     mainPropertiesLayout->addWidget(_propertiesScrollArea);
 
-    _gui->registerTab(_propertiesBin);
+    _gui->registerTab(_propertiesBin,_propertiesBin);
 } // createPropertiesBinGui
 
 void Gui::onPropertiesScrolled()
@@ -1267,7 +1267,7 @@ Gui::createGroupGui(const boost::shared_ptr<Natron::Node>& group,bool requestedB
     nodeGraph->setObjectName(group->getLabel().c_str());
     _imp->_groups.push_back(nodeGraph);
     if (!requestedByLoad && !getApp()->isCreatingPythonGroup()) {
-        where->appendTab(nodeGraph);
+        where->appendTab(nodeGraph,nodeGraph);
         QTimer::singleShot( 25, nodeGraph, SLOT(centerOnAllNodes()));
     } else {
         nodeGraph->setVisible(false);
@@ -1285,7 +1285,7 @@ Gui::addGroupGui(NodeGraph* tab,TabWidget* where)
             _imp->_groups.push_back(tab);
         }
     }
-    where->appendTab(tab);
+    where->appendTab(tab,tab);
 }
 
 void
@@ -1346,25 +1346,28 @@ GuiPrivate::createNodeGraphGui()
     QGraphicsScene* scene = new QGraphicsScene(_gui);
     scene->setItemIndexMethod(QGraphicsScene::NoIndex);
     _nodeGraphArea = new NodeGraph(_gui,_appInstance->getProject(),scene,_gui);
-    _nodeGraphArea->setObjectName(kNodeGraphObjectName);
-    _gui->registerTab(_nodeGraphArea);
+    _nodeGraphArea->setScriptName(kNodeGraphObjectName);
+    _nodeGraphArea->setLabel(QObject::tr("Node Graph").toStdString());
+    _gui->registerTab(_nodeGraphArea,_nodeGraphArea);
 }
 
 void
 GuiPrivate::createCurveEditorGui()
 {
     _curveEditor = new CurveEditor(_gui,_appInstance->getTimeLine(),_gui);
-    _curveEditor->setObjectName(kCurveEditorObjectName);
-    _gui->registerTab(_curveEditor);
+    _curveEditor->setScriptName(kCurveEditorObjectName);
+    _curveEditor->setLabel(QObject::tr("Curve Editor").toStdString());
+    _gui->registerTab(_curveEditor,_curveEditor);
 }
 
 void
 GuiPrivate::createScriptEditorGui()
 {
     _scriptEditor = new ScriptEditor(_gui);
-    _scriptEditor->setObjectName("ScriptEditor");
+    _scriptEditor->setScriptName("scriptEditor");
+    _scriptEditor->setLabel(QObject::tr("Script Editor").toStdString());
     _scriptEditor->hide();
-    _gui->registerTab(_scriptEditor);
+    _gui->registerTab(_scriptEditor,_scriptEditor);
 }
 
 void
@@ -1423,13 +1426,13 @@ Gui::createDefaultLayout1()
 {
     ///First tab widget must be created this way
     TabWidget* mainPane = new TabWidget(this,_imp->_leftRightSplitter);
-
-    mainPane->setObjectName_mt_safe(kViewerPaneName);
-    mainPane->setAsAnchor(true);
     {
         QMutexLocker l(&_imp->_panesMutex);
         _imp->_panes.push_back(mainPane);
     }
+    mainPane->setObjectName_mt_safe("pane1");
+    mainPane->setAsAnchor(true);
+   
     _imp->_leftRightSplitter->addWidget(mainPane);
 
     QList<int> sizes;
@@ -1445,20 +1448,20 @@ Gui::createDefaultLayout1()
     sizes << width() * 0.65 << width() * 0.35;
     propertiesSplitter->setSizes_mt_safe(sizes);
 
-    TabWidget::moveTab(_imp->_nodeGraphArea, workshopPane);
-    TabWidget::moveTab(_imp->_curveEditor,workshopPane);
-    TabWidget::moveTab(_imp->_propertiesBin,propertiesPane);
-
+    TabWidget::moveTab(_imp->_nodeGraphArea, _imp->_nodeGraphArea, workshopPane);
+    TabWidget::moveTab(_imp->_curveEditor , _imp->_curveEditor, workshopPane);
+    TabWidget::moveTab(_imp->_propertiesBin, _imp->_propertiesBin, propertiesPane);
+    
     {
         QMutexLocker l(&_imp->_viewerTabsMutex);
         for (std::list<ViewerTab*>::iterator it2 = _imp->_viewerTabs.begin(); it2 != _imp->_viewerTabs.end(); ++it2) {
-            TabWidget::moveTab(*it2,mainPane);
+            TabWidget::moveTab(*it2, *it2, mainPane);
         }
     }
     {
         QMutexLocker l(&_imp->_histogramsMutex);
         for (std::list<Histogram*>::iterator it2 = _imp->_histograms.begin(); it2 != _imp->_histograms.end(); ++it2) {
-            TabWidget::moveTab(*it2,mainPane);
+            TabWidget::moveTab(*it2, *it2, mainPane);
         }
     }
 
@@ -1476,13 +1479,13 @@ restoreTabWidget(TabWidget* pane,
 
     pane->setObjectName_mt_safe(availableName);
     pane->setAsAnchor(serialization.isAnchor);
-    const std::map<std::string,QWidget*> & tabs = pane->getGui()->getRegisteredTabs();
+    const RegisteredTabs & tabs = pane->getGui()->getRegisteredTabs();
     for (std::list<std::string>::const_iterator it = serialization.tabs.begin(); it != serialization.tabs.end(); ++it) {
-        std::map<std::string,QWidget*>::const_iterator found = tabs.find(*it);
+        RegisteredTabs::const_iterator found = tabs.find(*it);
 
         ///If the tab exists in the current project, move it
         if ( found != tabs.end() ) {
-            TabWidget::moveTab(found->second, pane);
+            TabWidget::moveTab(found->second.first, found->second.second, pane);
         }
     }
     pane->makeCurrentTab(serialization.currentIndex);
@@ -2085,7 +2088,7 @@ Gui::addNewViewerTab(ViewerInstance* viewer,
         QMutexLocker l(&_imp->_viewerTabsMutex);
         _imp->_viewerTabs.push_back(tab);
     }
-    where->appendTab(tab);
+    where->appendTab(tab,tab);
     Q_EMIT viewersChanged();
 
     return tab;
@@ -2118,27 +2121,29 @@ Gui::addViewerTab(ViewerTab* tab,
             _imp->_viewerTabs.push_back(tab);
         }
     }
-    where->appendTab(tab);
+    where->appendTab(tab,tab);
     Q_EMIT viewersChanged();
 }
 
 void
-Gui::registerTab(QWidget* tab)
+Gui::registerTab(QWidget* tab,ScriptObject* obj)
 {
-    std::map<std::string, QWidget*>::iterator registeredTab = _imp->_registeredTabs.find( tab->objectName().toStdString() );
+    std::string name = obj->getScriptName();
+    RegisteredTabs::iterator registeredTab = _imp->_registeredTabs.find(name);
 
     if ( registeredTab == _imp->_registeredTabs.end() ) {
-        _imp->_registeredTabs.insert( std::make_pair(tab->objectName().toStdString(), tab) );
+        _imp->_registeredTabs.insert( std::make_pair(name, std::make_pair(tab,obj)));
     }
 }
 
 void
 Gui::unregisterTab(QWidget* tab)
 {
-    std::map<std::string, QWidget*>::iterator registeredTab = _imp->_registeredTabs.find( tab->objectName().toStdString() );
-
-    if ( registeredTab != _imp->_registeredTabs.end() ) {
-        _imp->_registeredTabs.erase(registeredTab);
+    for (RegisteredTabs::iterator it = _imp->_registeredTabs.begin(); it != _imp->_registeredTabs.end(); ++it) {
+        if (it->second.first == tab) {
+            _imp->_registeredTabs.erase(it);
+            break;
+        }
     }
 }
 
@@ -2240,7 +2245,11 @@ Gui::addNewHistogram()
     Histogram* h = new Histogram(this);
     QMutexLocker l(&_imp->_histogramsMutex);
 
-    h->setObjectName( "Histogram " + QString::number(_imp->_nextHistogramIndex) );
+    std::stringstream ss;
+    ss << _imp->_nextHistogramIndex;
+    
+    h->setScriptName("histogram" + ss.str());
+    h->setLabel("Histogram" + ss.str());
     ++_imp->_nextHistogramIndex;
     _imp->_histograms.push_back(h);
 
@@ -2423,12 +2432,26 @@ Gui::getPythonPanels() const
 QWidget*
 Gui::findExistingTab(const std::string & name) const
 {
-    std::map<std::string,QWidget*>::const_iterator it = _imp->_registeredTabs.find(name);
+    RegisteredTabs::const_iterator it = _imp->_registeredTabs.find(name);
 
     if ( it != _imp->_registeredTabs.end() ) {
-        return it->second;
+        return it->second.first;
     } else {
         return NULL;
+    }
+}
+
+void
+Gui::findExistingTab(const std::string & name, QWidget** w,ScriptObject** o) const
+{
+    RegisteredTabs::const_iterator it = _imp->_registeredTabs.find(name);
+    
+    if ( it != _imp->_registeredTabs.end() ) {
+        *w = it->second.first;
+        *o = it->second.second;
+    } else {
+        *w = 0;
+        *o = 0;
     }
 }
 
@@ -3855,7 +3878,7 @@ Gui::activateViewerTab(ViewerInstance* viewer)
             if ( (*it)->getViewer() == viewport ) {
                 TabWidget* viewerAnchor = getAnchor();
                 assert(viewerAnchor);
-                viewerAnchor->appendTab(*it);
+                viewerAnchor->appendTab(*it,*it);
                 (*it)->show();
             }
         }
@@ -3987,7 +4010,7 @@ Gui::getAvailablePaneName(const QString & baseName) const
     int baseNumber = _imp->_panes.size();
 
     if ( name.isEmpty() ) {
-        name.append("Pane");
+        name.append("pane");
         name.append( QString::number(baseNumber) );
     }
 
@@ -4001,7 +4024,7 @@ Gui::getAvailablePaneName(const QString & baseName) const
         }
         if (foundName) {
             ++baseNumber;
-            name = QString("Pane%1").arg(baseNumber);
+            name = QString("pane%1").arg(baseNumber);
         } else {
             break;
         }
@@ -4046,7 +4069,7 @@ Gui::getScriptEditor() const
     return _imp->_scriptEditor;
 }
 
-QWidget*
+PropertiesBinWrapper*
 Gui::getPropertiesBin() const
 {
     return _imp->_propertiesBin;
@@ -4059,12 +4082,12 @@ Gui::getPropertiesLayout() const
 }
 
 void
-Gui::appendTabToDefaultViewerPane(QWidget* tab)
+Gui::appendTabToDefaultViewerPane(QWidget* tab,ScriptObject* obj)
 {
     TabWidget* viewerAnchor = getAnchor();
 
     assert(viewerAnchor);
-    viewerAnchor->appendTab(tab);
+    viewerAnchor->appendTab(tab,obj);
 }
 
 QWidget*
@@ -4088,7 +4111,7 @@ Gui::getCentralWidget() const
     return NULL;
 }
 
-const std::map<std::string,QWidget*> &
+const RegisteredTabs &
 Gui::getRegisteredTabs() const
 {
     return _imp->_registeredTabs;

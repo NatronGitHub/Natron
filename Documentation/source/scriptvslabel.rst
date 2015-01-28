@@ -7,10 +7,14 @@ A lot of Python variables are pre-declared by Natron upon the creation of specif
 This applies currently to the following objects:
 
 	*	:doc:`PythonReference/NatronEngine/Effect`
+	*	:doc:`PythonReference/NatronEngine/Param`
 	*	:doc:`PythonReference/NatronEngine/Layer`
 	*	:doc:`PythonReference/NatronEngine/BezierCurve`
 	*	:doc:`PythonReference/NatronEngine/App`
 	*	:doc:`PythonReference/NatronEngine/PyCoreApplication`
+	*	:doc:`PythonReference/NatronGui/PyTabWidget`
+	*	:doc:`PythonReference/NatronGui/PyViewer`
+	*	:doc:`PythonReference/NatronGui/PyPanel`
 	
 The idea is that it is simpler to access a simple variable like this::
 	
@@ -105,3 +109,30 @@ In the settings panel of a roto node, the script-name of an item is visible in t
 	
 In command-line mode or via the *Script Editor* you can also get the script-name of an item
 with the :func:`getScriptName()<>` function of the :doc:`PythonReference/NatronEngine/ItemBase` class.
+
+
+Knowing the script-name of a tab-widget:
+----------------------------------------
+
+The script-name of a pane can be seen on the graphical user interface by hovering
+the mouse over the "Manage layout" button (in the top left hand corner of a pane).
+
+.. figure:: paneScriptName.png
+	:width: 300px
+	:align: center
+
+
+
+Knowing the script-name of a viewer:
+-------------------------------------
+
+The script-name of a viewer is the :ref:`script-name<nodeScriptName>` of the node associated to it, e.g::
+
+	app1.pane1.Viewer1
+	
+
+Knowing the script-name of a PyPanel:
+-------------------------------------
+
+The script-name of a :ref:`PyPanel<pypanel>` can be retrieved with the :func:`getPanelScriptName()<>`
+function of the class.

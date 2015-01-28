@@ -690,6 +690,42 @@ GuiApplicationManager::getIcon(Natron::PixmapEnum e,
                 img.load(NATRON_IMAGES_PATH "addTrack.png");
                 *pix = QPixmap::fromImage(img);
                 break;
+            case NATRON_PIXMAP_SCRIPT_CLEAR_OUTPUT:
+                img.load(NATRON_IMAGES_PATH "clearOutput.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_SCRIPT_EXEC_SCRIPT:
+                img.load(NATRON_IMAGES_PATH "execScript.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_SCRIPT_LOAD_EXEC_SCRIPT:
+                img.load(NATRON_IMAGES_PATH "loadAndExecScript.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_SCRIPT_LOAD_SCRIPT:
+                img.load(NATRON_IMAGES_PATH "loadScript.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_SCRIPT_NEXT_SCRIPT:
+                img.load(NATRON_IMAGES_PATH "nextScript.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_SCRIPT_OUTPUT_PANE_ACTIVATED:
+                img.load(NATRON_IMAGES_PATH "outputPanelActivated.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_SCRIPT_OUTPUT_PANE_DEACTIVATED:
+                img.load(NATRON_IMAGES_PATH "outputPanelDeactivated.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_SCRIPT_PREVIOUS_SCRIPT:
+                img.load(NATRON_IMAGES_PATH "previousScript.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_SCRIPT_SAVE_SCRIPT:
+                img.load(NATRON_IMAGES_PATH "saveScript.png");
+                *pix = QPixmap::fromImage(img);
+                break;
             default:
                 assert(!"Missing image.");
         } // switch

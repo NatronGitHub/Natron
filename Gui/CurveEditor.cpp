@@ -100,6 +100,8 @@ CurveEditor::CurveEditor(Gui* gui,
                          boost::shared_ptr<TimeLine> timeline,
                          QWidget *parent)
 : QWidget(parent)
+, CurveSelection()
+, ScriptObject()
 , _imp(new CurveEditorPrivate(gui))
 {
     setObjectName("CurveEditor");

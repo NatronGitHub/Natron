@@ -22,13 +22,15 @@
 #include <boost/scoped_ptr.hpp>
 #endif
 
+#include "Engine/ScriptObject.h"
+
 #include "Global/Macros.h"
 #include <QWidget>
 
 class Gui;
 
 struct ScriptEditorPrivate;
-class ScriptEditor : public QWidget
+class ScriptEditor : public QWidget, public ScriptObject
 {
     Q_OBJECT
     

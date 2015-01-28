@@ -27,6 +27,7 @@ CLANG_DIAG_ON(uninitialized)
 #include <boost/shared_ptr.hpp>
 #endif
 #include "Global/GlobalDefines.h"
+#include "Engine/ScriptObject.h"
 
 class ViewerGL;
 class ViewerInstance;
@@ -42,6 +43,7 @@ struct RotoGuiSharedData;
 struct ViewerTabPrivate;
 class ViewerTab
     : public QWidget
+    , public ScriptObject
 {
     Q_OBJECT
 
@@ -322,6 +324,10 @@ public Q_SLOTS:
     void setTurboButtonDown(bool down);
     
     void onClipPreferencesChanged();
+    
+    void onInternalNodeLabelChanged(const QString& name);
+    void onInternalNodeScriptNameChanged(const QString& name);
+    
 private:
     
     void manageTimelineSlot(bool disconnectPrevious,const boost::shared_ptr<TimeLine>& timeline);

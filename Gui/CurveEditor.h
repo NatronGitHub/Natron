@@ -30,6 +30,8 @@ CLANG_DIAG_ON(uninitialized)
 #include "Global/GlobalDefines.h"
 #include "Global/Macros.h"
 
+#include "Engine/ScriptObject.h"
+
 #include "Gui/CurveSelection.h"
 #include "Gui/CurveEditorUndoRedo.h"
 
@@ -288,6 +290,7 @@ struct CurveEditorPrivate;
 class CurveEditor
     : public QWidget
     , public CurveSelection
+    , public ScriptObject
 {
     Q_OBJECT
 

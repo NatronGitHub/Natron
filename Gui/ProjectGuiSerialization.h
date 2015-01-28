@@ -192,7 +192,7 @@ BOOST_CLASS_VERSION(ViewerData, VIEWER_DATA_SERIALIZATION_VERSION)
 struct PythonPanelSerialization
 {
     
-    std::list<KnobSerialization> knobs;
+    std::list<boost::shared_ptr<KnobSerialization> > knobs;
     std::string name;
     std::string pythonFunction;
     std::string userData;
@@ -208,8 +208,8 @@ struct PythonPanelSerialization
         
         int nKnobs = knobs.size();
         ar & boost::serialization::make_nvp("NumParams",nKnobs);
-        for (std::list<KnobSerialization>::const_iterator it = knobs.begin() ;it != knobs.end() ;++it) {
-            ar & boost::serialization::make_nvp("item",*it);
+        for (std::list<boost::shared_ptr<KnobSerialization> >::const_iterator it = knobs.begin() ;it != knobs.end() ;++it) {
+            ar & boost::serialization::make_nvp("item",**it);
         }
         
         ar & boost::serialization::make_nvp("UserData",userData);
@@ -225,8 +225,8 @@ struct PythonPanelSerialization
         int nKnobs;
         ar & boost::serialization::make_nvp("NumParams",nKnobs);
         for (int i = 0;i < nKnobs; ++i) {
-            KnobSerialization k;
-            ar & boost::serialization::make_nvp("item",k);
+            boost::shared_ptr<KnobSerialization> k(new KnobSerialization);
+            ar & boost::serialization::make_nvp("item",*k);
             knobs.push_back(k);
         }
         

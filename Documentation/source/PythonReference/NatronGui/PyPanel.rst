@@ -17,17 +17,18 @@ See :ref:`detailed<pypanel.details>` description...
 Functions
 ^^^^^^^^^
 
-*    def :meth:`PyPanel<NatronGui.PyPanel.PyPanel>` (label,useUserParameters,app)
+*    def :meth:`PyPanel<NatronGui.PyPanel.PyPanel>` (scriptName,label,useUserParameters,app)
 
 *    def :meth:`addWidget<NatronGui.PyPanel.addWidget>` (widget)
-*    def :meth:`getLabel<NatronGui.PyPanel.getLabel>` ()
+*    def :meth:`getPanelLabel<NatronGui.PyPanel.getPanelLabel>` ()
+*    def :meth:`getPanelScriptName<NatronGui.PyPanel.getPanelScriptName>` ()
 *    def :meth:`getParam<NatronGui.PyPanel.getParam>` (scriptName)
 *    def :meth:`getParams<NatronGui.PyPanel.getParams>` ()
 *    def :meth:`insertWidget<NatronGui.PyPanel.insertWidget>` (index,widget)
 *    def :meth:`onUserDataChanged<NatronGui.PyPanel.onUserDataChanged>` ()
 *    def :meth:`setParamChangedCallback<NatronGui.PyPanel.setParamChangedCallback>` (callback)
 *    def :meth:`save<NatronGui.PyPanel.save>` ()
-*    def :meth:`setLabel<NatronGui.PyPanel.setLabel>` (label)
+*    def :meth:`setPanelLabel<NatronGui.PyPanel.setPanelLabel>` (label)
 *    def :meth:`restore<NatronGui.PyPanel.restore>` (data)
 
 .. _pypanel.details:
@@ -51,8 +52,8 @@ constructor that you do not want to use user parameters, as this might conflict 
 layout that you will use::
 
 	class MyPanel(NatronGui.PyPanel):
-		def __init__(label,app):
-			NatronGui.PyPanel.__init__(label,False,app)
+		def __init__(scriptName,label,app):
+			NatronGui.PyPanel.__init__(scriptName,label,False,app)
 			...	
 		
 You're then free to use all features proposed by `PySide <http://qt-project.org/wiki/PySideDocumentation>`_ 
@@ -67,7 +68,7 @@ You can start adding user parameters using all the :func:`createXParam<>` functi
 
 Once all your parameters are created, create the GUI for them using the :func:`refreshUserParamsGUI()<NatronEngine.UserParamHolder.refreshUserParamsGUI>` function::
 
-	panel = NatronGui.PyPanel("MyPanel",True,app)
+	panel = NatronGui.PyPanel("fr.inria.mypanel","My Panel",True,app)
 	myInteger = panel.createIntParam("myInt","This is an integer very important")
 	myInteger.setAnimationEnabled(False)
 	myInteger.setAddNewLine(False)
@@ -100,17 +101,15 @@ to add this panel to the pane.
 
 .. warning::
 
-	Note that the lifetime of the widget will be the same than the lifetime of the Python variable:
-	If it gets out of scope, it will be detroyed. This is important to store your variables as attribute of
-	objects which have a longer life-time. A good example is the *app* object (see :doc:`GuiApp`) since
-	it lives as long as the project is opened.
+	Note that the lifetime of the widget will be by default the same as the project's GUI
+	because :doc:`PyPanel` is :ref:`auto-declared<autoVar>` by Natron.
 	
 ::
 
-	panel = NatronGui.PyPanel("MyPanel",True,app)
+	panel = NatronGui.PyPanel("fr.inria.mypanel","My Panel",True,app)
 	...
 	...
-	pane = app.getTabWidget("Pane1")
+	pane = app.getTabWidget("pane1")
 	pane.appendTab(panel)
 	app.mypanel = panel
 	
@@ -245,11 +244,11 @@ The widget will always be inserted **after** any user parameter.
 Registers the given Python *callback* to be called whenever a user parameter changed. 
 The *callback* should be the name of a Python defined function (taking no parameter). 
 
-The variable *thisParam* will be declared upon calling the callback, referencing the parameter that just changed.
+The variable **paramName** will be declared upon calling the callback, referencing the script name of the parameter that just changed.
 Example::
 
 	def myCallback():
-		if thisParam.getScriptName() == "myInt":
+		if paramName == "myInt":
 			intValue = thisParam.get()
 			if intValue > 0:
 				myBoolean.setVisible(False)
@@ -261,18 +260,25 @@ Example::
 	This function should be used exclusively when the widget was created using *useUserParameters = True* 
 
 
-.. method:: NatronGui.PyPanel.setLabel(label)
+.. method:: NatronGui.PyPanel.setPanelLabel(label)
 
 	:param callback: :class:`str`
 	
 Set the label of the panel as it will be displayed on the tab header of the :doc:`PyTabWidget`.
 This name should be unique.
 
-.. method:: NatronGui.PyPanel.getLabel()
+.. method:: NatronGui.PyPanel.getPanelLabel()
 
 	:rtype: :class:`str`
 	
 Get the label of the panel as displayed on the tab header of the :doc:`PyTabWidget`.
+
+
+.. method:: NatronGui.PyPanel.getPanelScriptName()
+
+	:rtype: :class:`str`
+	
+Get the script-name of the panel as used internally. This is a unique string identifying the tab in Natron.
 
 
 

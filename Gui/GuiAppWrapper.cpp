@@ -17,6 +17,8 @@
 #include "Engine/Node.h"
 #include "Engine/ViewerInstance.h"
 #include "Engine/TimeLine.h"
+#include "Engine/ScriptObject.h"
+
 GuiApp::GuiApp(AppInstance* app)
 : App(app)
 , _app(dynamic_cast<GuiAppInstance*>(app))
@@ -57,9 +59,16 @@ GuiApp::getTabWidget(const std::string& name) const
 }
 
 bool
-GuiApp::moveTab(QWidget* tab,PyTabWidget* pane)
+GuiApp::moveTab(const std::string& scriptName,PyTabWidget* pane)
 {
-    return TabWidget::moveTab(tab, pane->getInternalTabWidget());
+    QWidget* w;
+    ScriptObject* o;
+    _app->getGui()->findExistingTab(scriptName, &w, &o);
+    if (!w || !o) {
+        return false;
+    }
+    
+    return TabWidget::moveTab(w, o, pane->getInternalTabWidget());
 }
 
 void
@@ -249,6 +258,16 @@ GuiApp::getViewer(const std::string& scriptName) const
     return new PyViewer(ptr);
 }
 
+
+PyPanel*
+GuiApp::getUserPanel(const std::string& scriptName) const
+{
+    QWidget* w = _app->getGui()->findExistingTab(scriptName);
+    if (!w) {
+        return 0;
+    }
+    return dynamic_cast<PyPanel*>(w);
+}
 
 PyViewer::PyViewer(const boost::shared_ptr<Natron::Node>& node)
 : _node(node)

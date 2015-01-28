@@ -20,6 +20,7 @@
 class ScriptTextEdit : public QTextEdit
 {
     Q_PROPERTY(bool isOutput READ getOutput WRITE setOutput)
+    Q_OBJECT
     
 public:
     

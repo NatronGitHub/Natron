@@ -86,8 +86,8 @@ typedef OfxRangeD RangeD;
 #define kBgProcessServerCreatedShort "--bg_server_created"
 
 
-#define kNodeGraphObjectName "NodeGraph"
-#define kCurveEditorObjectName "CurveEditor"
+#define kNodeGraphObjectName "nodeGraph"
+#define kCurveEditorObjectName "curveEditor"
 
 #define kCurveEditorMoveMultipleKeysCommandCompressionID 2
 #define kKnobUndoChangeCommandCompressionID 3

@@ -121,11 +121,11 @@ The widget will always be inserted **after** any user parameter.
 Registers the given Python *callback* to be called whenever a user parameter changed. 
 The *callback* should be the name of a Python defined function (taking no parameter). 
 
-The variable *thisParam* will be declared upon calling the callback, referencing the parameter that just changed.
+The variable **paramName** will be declared upon calling the callback, referencing the script-name of the parameter that just changed.
 Example::
 
 	def myCallback():
-		if thisParam.getScriptName() == "myInt":
+		if paramName == "myInt":
 			intValue = thisParam.get()
 			if intValue > 0:
 				myBoolean.setVisible(False)

@@ -138,7 +138,7 @@ ProjectGuiSerialization::initialize(const ProjectGui* projectGui)
 void
 PaneLayout::initialize(TabWidget* tab)
 {
-    QStringList children = tab->getTabNames();
+    QStringList children = tab->getTabScriptNames();
 
     for (int i = 0; i < children.size(); ++i) {
         tabs.push_back( children[i].toStdString() );
@@ -262,8 +262,20 @@ PythonPanelSerialization::initialize(PyPanel* tab,const std::string& func)
     pythonFunction = func;
     std::list<Param*> parameters = tab->getParams();
     for (std::list<Param*>::iterator it = parameters.begin(); it != parameters.end(); ++it) {
-        KnobSerialization k((*it)->getInternalKnob(),false);
-        knobs.push_back(k);
+        
+        boost::shared_ptr<KnobI> knob = (*it)->getInternalKnob();
+        Group_Knob* isGroup = dynamic_cast<Group_Knob*>( knob.get() );
+        Page_Knob* isPage = dynamic_cast<Page_Knob*>( knob.get() );
+        Button_Knob* isButton = dynamic_cast<Button_Knob*>( knob.get() );
+        Choice_Knob* isChoice = dynamic_cast<Choice_Knob*>( knob.get() );
+        
+        if (!isGroup && !isPage && !isButton) {
+            ///For choice do a deepclone because we need entries
+            bool doCopyKnobs = isChoice != NULL;
+            
+            boost::shared_ptr<KnobSerialization> k(new KnobSerialization(knob,doCopyKnobs));
+            knobs.push_back(k);
+        }
         delete *it;
     }
     

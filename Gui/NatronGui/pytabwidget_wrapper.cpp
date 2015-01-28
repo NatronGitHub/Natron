@@ -35,9 +35,9 @@ static PyObject* Sbk_PyTabWidgetFunc_appendTab(PyObject* self, PyObject* pyArg)
     SBK_UNUSED(pythonToCpp)
 
     // Overloaded function decisor
-    // 0: appendTab(QWidget*)
-    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppPointerConvertible((SbkObjectType*)SbkPySide_QtGuiTypes[SBK_QWIDGET_IDX], (pyArg)))) {
-        overloadId = 0; // appendTab(QWidget*)
+    // 0: appendTab(PyPanel*)
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppPointerConvertible((SbkObjectType*)SbkNatronGuiTypes[SBK_PYPANEL_IDX], (pyArg)))) {
+        overloadId = 0; // appendTab(PyPanel*)
     }
 
     // Function signature not found.
@@ -47,15 +47,19 @@ static PyObject* Sbk_PyTabWidgetFunc_appendTab(PyObject* self, PyObject* pyArg)
     {
         if (!Shiboken::Object::isValid(pyArg))
             return 0;
-        ::QWidget* cppArg0;
+        ::PyPanel* cppArg0;
         pythonToCpp(pyArg, &cppArg0);
 
         if (!PyErr_Occurred()) {
-            // appendTab(QWidget*)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            // appendTab(PyPanel*)
+            // Begin code injection
+
             bool cppResult = cppSelf->appendTab(cppArg0);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), &cppResult);
+
+            // End of code injection
+
+
         }
     }
 
@@ -66,7 +70,7 @@ static PyObject* Sbk_PyTabWidgetFunc_appendTab(PyObject* self, PyObject* pyArg)
     return pyResult;
 
     Sbk_PyTabWidgetFunc_appendTab_TypeError:
-        const char* overloads[] = {"PySide.QtGui.QWidget", 0};
+        const char* overloads[] = {"NatronGui.PyPanel", 0};
         Shiboken::setErrorAboutWrongArguments(pyArg, "NatronGui.PyTabWidget.appendTab", overloads);
         return 0;
 }
@@ -327,7 +331,7 @@ static PyObject* Sbk_PyTabWidgetFunc_getScriptName(PyObject* self)
     return pyResult;
 }
 
-static PyObject* Sbk_PyTabWidgetFunc_getTabName(PyObject* self, PyObject* pyArg)
+static PyObject* Sbk_PyTabWidgetFunc_getTabLabel(PyObject* self, PyObject* pyArg)
 {
     ::PyTabWidget* cppSelf = 0;
     SBK_UNUSED(cppSelf)
@@ -340,13 +344,13 @@ static PyObject* Sbk_PyTabWidgetFunc_getTabName(PyObject* self, PyObject* pyArg)
     SBK_UNUSED(pythonToCpp)
 
     // Overloaded function decisor
-    // 0: getTabName(int)const
+    // 0: getTabLabel(int)const
     if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArg)))) {
-        overloadId = 0; // getTabName(int)const
+        overloadId = 0; // getTabLabel(int)const
     }
 
     // Function signature not found.
-    if (overloadId == -1) goto Sbk_PyTabWidgetFunc_getTabName_TypeError;
+    if (overloadId == -1) goto Sbk_PyTabWidgetFunc_getTabLabel_TypeError;
 
     // Call function/method
     {
@@ -354,9 +358,9 @@ static PyObject* Sbk_PyTabWidgetFunc_getTabName(PyObject* self, PyObject* pyArg)
         pythonToCpp(pyArg, &cppArg0);
 
         if (!PyErr_Occurred()) {
-            // getTabName(int)const
+            // getTabLabel(int)const
             PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            std::string cppResult = const_cast<const ::PyTabWidget*>(cppSelf)->getTabName(cppArg0);
+            std::string cppResult = const_cast<const ::PyTabWidget*>(cppSelf)->getTabLabel(cppArg0);
             PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), &cppResult);
         }
@@ -368,9 +372,9 @@ static PyObject* Sbk_PyTabWidgetFunc_getTabName(PyObject* self, PyObject* pyArg)
     }
     return pyResult;
 
-    Sbk_PyTabWidgetFunc_getTabName_TypeError:
+    Sbk_PyTabWidgetFunc_getTabLabel_TypeError:
         const char* overloads[] = {"int", 0};
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronGui.PyTabWidget.getTabName", overloads);
+        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronGui.PyTabWidget.getTabLabel", overloads);
         return 0;
 }
 
@@ -395,11 +399,11 @@ static PyObject* Sbk_PyTabWidgetFunc_insertTab(PyObject* self, PyObject* args)
 
 
     // Overloaded function decisor
-    // 0: insertTab(int,QWidget*)
+    // 0: insertTab(int,PyPanel*)
     if (numArgs == 2
         && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[0])))
-        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppPointerConvertible((SbkObjectType*)SbkPySide_QtGuiTypes[SBK_QWIDGET_IDX], (pyArgs[1])))) {
-        overloadId = 0; // insertTab(int,QWidget*)
+        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppPointerConvertible((SbkObjectType*)SbkNatronGuiTypes[SBK_PYPANEL_IDX], (pyArgs[1])))) {
+        overloadId = 0; // insertTab(int,PyPanel*)
     }
 
     // Function signature not found.
@@ -411,14 +415,18 @@ static PyObject* Sbk_PyTabWidgetFunc_insertTab(PyObject* self, PyObject* args)
         pythonToCpp[0](pyArgs[0], &cppArg0);
         if (!Shiboken::Object::isValid(pyArgs[1]))
             return 0;
-        ::QWidget* cppArg1;
+        ::PyPanel* cppArg1;
         pythonToCpp[1](pyArgs[1], &cppArg1);
 
         if (!PyErr_Occurred()) {
-            // insertTab(int,QWidget*)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            cppSelf->insertTab(cppArg0, cppArg1);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            // insertTab(int,PyPanel*)
+            // Begin code injection
+
+            cppSelf->insertTab(cppArg0,cppArg1);
+
+            // End of code injection
+
+
         }
     }
 
@@ -428,7 +436,7 @@ static PyObject* Sbk_PyTabWidgetFunc_insertTab(PyObject* self, PyObject* args)
     Py_RETURN_NONE;
 
     Sbk_PyTabWidgetFunc_insertTab_TypeError:
-        const char* overloads[] = {"int, PySide.QtGui.QWidget", 0};
+        const char* overloads[] = {"int, NatronGui.PyPanel", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronGui.PyTabWidget.insertTab", overloads);
         return 0;
 }
@@ -641,7 +649,7 @@ static PyMethodDef Sbk_PyTabWidget_methods[] = {
     {"floatPane", (PyCFunction)Sbk_PyTabWidgetFunc_floatPane, METH_NOARGS},
     {"getCurrentIndex", (PyCFunction)Sbk_PyTabWidgetFunc_getCurrentIndex, METH_NOARGS},
     {"getScriptName", (PyCFunction)Sbk_PyTabWidgetFunc_getScriptName, METH_NOARGS},
-    {"getTabName", (PyCFunction)Sbk_PyTabWidgetFunc_getTabName, METH_O},
+    {"getTabLabel", (PyCFunction)Sbk_PyTabWidgetFunc_getTabLabel, METH_O},
     {"insertTab", (PyCFunction)Sbk_PyTabWidgetFunc_insertTab, METH_VARARGS},
     {"removeTab", (PyCFunction)Sbk_PyTabWidgetFunc_removeTab, METH_O},
     {"setCurrentIndex", (PyCFunction)Sbk_PyTabWidgetFunc_setCurrentIndex, METH_O},
