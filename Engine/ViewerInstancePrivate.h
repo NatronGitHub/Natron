@@ -152,11 +152,13 @@ public:
     , lastRenderedHash(0)
     , lastRenderedHashValid(false)
     , renderAgeMutex()
-    , renderAge(0)
+    , renderAge()
     {
 
-        activeInputs[0] = -1;
-        activeInputs[1] = -1;
+        for (int i = 0;i < 2; ++i) {
+            activeInputs[i] = -1;
+            renderAge[i] = 0;
+        }
     }
     
     
@@ -211,31 +213,31 @@ public:
         textureBeingRenderedCond.wakeAll();
     }
 
-    U64 getRenderAge()
+    U64 getRenderAge(int texIndex)
     {
         QMutexLocker k(&renderAgeMutex);
         
-        return renderAge;
+        return renderAge[texIndex];
     }
     
-    bool checkAgeNoUpdate(U64 age)
+    bool checkAgeNoUpdate(int texIndex,U64 age)
     {
         QMutexLocker k(&renderAgeMutex);
-        assert(age <= renderAge);
-        return age == renderAge;
+        assert(age <= renderAge[texIndex]);
+        return age == renderAge[texIndex];
     }
     
-    bool checkAndUpdateRenderAge(U64 age)
+    bool checkAndUpdateRenderAge(int texIndex,U64 age)
     {
         QMutexLocker k(&renderAgeMutex);
-        assert(age <= renderAge);
-        if (age < renderAge) {
+        assert(age <= renderAge[texIndex]);
+        if (age < renderAge[texIndex]) {
             return false;
         }
-        if (renderAge == std::numeric_limits<U64>::max()) {
-            renderAge = 0;
+        if (renderAge[texIndex] == std::numeric_limits<U64>::max()) {
+            renderAge[texIndex] = 0;
         } else {
-            ++renderAge;
+            ++renderAge[texIndex];
         }
         return true;
     }
@@ -296,7 +298,7 @@ public:
 private:
     
     QMutex renderAgeMutex;
-    U64 renderAge;
+    U64 renderAge[2];
 };
 
 

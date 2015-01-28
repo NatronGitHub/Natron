@@ -370,7 +370,7 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
                                                  int view, int textureIndex, U64 viewerHash,
                                                  ViewerArgs* outArgs)
 {
-    U64 renderAge = _imp->getRenderAge();
+    U64 renderAge = _imp->getRenderAge(textureIndex);
     
     
     if (textureIndex == 0) {
@@ -452,7 +452,7 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
     if (stat == eStatusFailed) {
         emit disconnectTextureRequest(textureIndex);
         if (!isSequential) {
-            _imp->checkAndUpdateRenderAge(renderAge);
+            _imp->checkAndUpdateRenderAge(textureIndex,renderAge);
         }
         return stat;
     }
@@ -486,7 +486,7 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
         emit disconnectTextureRequest(textureIndex);
         outArgs->params.reset();
         if (!isSequential) {
-            _imp->checkAndUpdateRenderAge(renderAge);
+            _imp->checkAndUpdateRenderAge(textureIndex,renderAge);
         }
         return eStatusReplyDefault;
     }
@@ -620,9 +620,6 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
             _imp->lastRenderedHash = viewerHash;
             _imp->lastRenderedHashValid = true;
         }
-        if (!isSequential) {
-            _imp->checkAgeNoUpdate(renderAge);
-        }
         
     }
     return eStatusOK;
@@ -635,7 +632,7 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
                                     appPTR->removeFromViewerCache(inArgs.params->cachedFrame); \
                                 } \
                                 if (!isSequentialRender) { \
-                                    _imp->checkAndUpdateRenderAge(inArgs.params->renderAge); \
+                                    _imp->checkAndUpdateRenderAge(inArgs.params->textureIndex,inArgs.params->renderAge); \
                                 } \
                                 return eStatusReplyDefault; \
                             }
@@ -668,7 +665,7 @@ ViewerInstance::renderViewer_internal(int view,
     if ( !isSequentialRender && (inArgs.activeInputToRender->getHash() != inArgs.activeInputHash ||
                                  inArgs.params->time != getTimeline()->currentFrame()) ) {
         if (!isSequentialRender) {
-            _imp->checkAndUpdateRenderAge(inArgs.params->renderAge);
+            _imp->checkAndUpdateRenderAge(inArgs.params->textureIndex,inArgs.params->renderAge);
         }
         return eStatusReplyDefault;
     }
@@ -707,7 +704,7 @@ ViewerInstance::renderViewer_internal(int view,
             ss << printAsRAM( cachedFrameParams->getElementsCount() * sizeof(FrameEntry::data_t) ).toStdString();
             Natron::errorDialog( QObject::tr("Out of memory").toStdString(),ss.str() );
             if (!isSequentialRender) {
-                _imp->checkAndUpdateRenderAge(inArgs.params->renderAge);
+                _imp->checkAndUpdateRenderAge(inArgs.params->textureIndex,inArgs.params->renderAge);
             }
             return eStatusFailed;
         }
@@ -718,7 +715,7 @@ ViewerInstance::renderViewer_internal(int view,
                 ///Another thread is rendering it, just return it is not useful to keep this thread waiting.
                 inArgs.params->cachedFrame.reset();
                 if (!isSequentialRender) {
-                    _imp->checkAndUpdateRenderAge(inArgs.params->renderAge);
+                    _imp->checkAndUpdateRenderAge(inArgs.params->textureIndex,inArgs.params->renderAge);
                 }
                 return eStatusOK;
             }
@@ -784,7 +781,7 @@ ViewerInstance::renderViewer_internal(int view,
                 if (inArgs.params->cachedFrame) {
                     inArgs.params->cachedFrame->setAborted(true);
                     if (!isSequentialRender) {
-                        _imp->checkAndUpdateRenderAge(inArgs.params->renderAge);
+                        _imp->checkAndUpdateRenderAge(inArgs.params->textureIndex,inArgs.params->renderAge);
                     }
                     appPTR->removeFromViewerCache(inArgs.params->cachedFrame);
                 }
@@ -806,7 +803,7 @@ ViewerInstance::renderViewer_internal(int view,
    
     ///We check that the render age is still OK and that no other renders were triggered, in which case we should not need to
     ///refresh the viewer.
-    if (!_imp->checkAgeNoUpdate(inArgs.params->renderAge)) {
+    if (!_imp->checkAgeNoUpdate(inArgs.params->textureIndex,inArgs.params->renderAge)) {
         if (inArgs.params->cachedFrame) {
             inArgs.params->cachedFrame->setAborted(true);
             appPTR->removeFromViewerCache(inArgs.params->cachedFrame);
@@ -1574,7 +1571,7 @@ ViewerInstance::ViewerInstancePrivate::updateViewer(boost::shared_ptr<UpdateView
     assert(params->ramBuffer);
     
     bool doUpdate = true;
-    if (!params->isSequential && !checkAndUpdateRenderAge(params->renderAge)) {
+    if (!params->isSequential && !checkAndUpdateRenderAge(params->textureIndex,params->renderAge)) {
         doUpdate = false;
     }
     if (doUpdate) {
