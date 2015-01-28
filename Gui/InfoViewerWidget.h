@@ -52,6 +52,11 @@ public:
     void setMousePos(QPoint p);
 
     static void removeTrailingZeroes(QString& str);
+    
+    void setColorValid(bool valid);
+    
+    void setColorApproximated(bool approx);
+    
 public slots:
 
     void hideColorAndMouseInfo();
@@ -81,6 +86,9 @@ private:
     QLabel* _fpsLabel;
     ViewerGL* viewer;
     Natron::ImageComponentsEnum _comp;
+    bool _colorValid;
+    bool _colorApprox;
+    double currentColor[4];
 };
 
 #endif /* defined(NATRON_GUI_INFOVIEWERWIDGET_H_) */

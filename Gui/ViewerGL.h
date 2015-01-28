@@ -339,11 +339,12 @@ public:
      * X and Y are in CANONICAL COORDINATES
      * @return true if the point is inside the image and colors were set
      **/
-    bool getColorAt(double x, double y, bool forceLinear, int textureIndex, float* r, float* g, float* b, float* a) WARN_UNUSED_RETURN;
+    bool getColorAt(double x, double y, bool forceLinear, int textureIndex, float* r,
+                    float* g, float* b, float* a,unsigned int* mipMapLevel) WARN_UNUSED_RETURN;
     
     // same as getColor, but computes the mean over a given rectangle
     bool getColorAtRect(const RectD &rect, // rectangle in canonical coordinates
-                        bool forceLinear, int textureIndex, float* r, float* g, float* b, float* a);
+                        bool forceLinear, int textureIndex, float* r, float* g, float* b, float* a, unsigned int* mipMapLevel);
     
     
     ///same as getMipMapLevel but with the zoomFactor taken into account

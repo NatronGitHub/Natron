@@ -3113,6 +3113,7 @@ ViewerGL::updateColorPicker(int textureIndex,
     RectD rod = getRoD(textureIndex);
     RectD projectCanonical;
     _imp->getProjectFormatCanonical(projectCanonical);
+    unsigned int mmLevel;
     if ( ( imgPosCanonical.x() >= rod.left() ) &&
          ( imgPosCanonical.x() < rod.right() ) &&
          ( imgPosCanonical.y() >= rod.bottom() ) &&
@@ -3127,14 +3128,14 @@ ViewerGL::updateColorPicker(int textureIndex,
                ( imgPosCanonical.y() >= projectCanonical.bottom() ) &&
                ( imgPosCanonical.y() < projectCanonical.top() ) ) ) {
             //imgPos must be in canonical coordinates
-            picked = getColorAt(imgPosCanonical.x(), imgPosCanonical.y(), linear, textureIndex, &r, &g, &b, &a);
+            picked = getColorAt(imgPosCanonical.x(), imgPosCanonical.y(), linear, textureIndex, &r, &g, &b, &a,&mmLevel);
         }
     }
     if (!picked) {
-        if ( _imp->infoViewer[textureIndex]->colorAndMouseVisible() ) {
-            _imp->infoViewer[textureIndex]->hideColorAndMouseInfo();
-        }
+        _imp->infoViewer[textureIndex]->setColorValid(false);
     } else {
+        _imp->infoViewer[textureIndex]->setColorApproximated(mmLevel > 0);
+        _imp->infoViewer[textureIndex]->setColorValid(true);
         if ( !_imp->infoViewer[textureIndex]->colorAndMouseVisible() ) {
             _imp->infoViewer[textureIndex]->showColorAndMouseInfo();
         }
@@ -4108,7 +4109,8 @@ ViewerGL::pickColor(double x,
     bool ret = false;
     for (int i = 0; i < 2; ++i) {
         // imgPos must be in canonical coordinates
-        bool picked = getColorAt(imgPos.x(), imgPos.y(), linear, i, &r, &g, &b, &a);
+        unsigned int mmLevel;
+        bool picked = getColorAt(imgPos.x(), imgPos.y(), linear, i, &r, &g, &b, &a,&mmLevel);
         if (picked) {
             if (i == 0) {
                 QColor pickerColor;
@@ -4118,15 +4120,15 @@ ViewerGL::pickColor(double x,
                 pickerColor.setAlphaF( Natron::clamp(a) );
                 _imp->viewerTab->getGui()->setColorPickersColor(pickerColor);
             }
+            _imp->infoViewer[i]->setColorApproximated(mmLevel > 0);
+            _imp->infoViewer[i]->setColorValid(true);
             if ( !_imp->infoViewer[i]->colorAndMouseVisible() ) {
                 _imp->infoViewer[i]->showColorAndMouseInfo();
             }
             _imp->infoViewer[i]->setColor(r,g,b,a);
             ret = true;
         } else {
-            if ( _imp->infoViewer[i]->colorAndMouseVisible() ) {
-                _imp->infoViewer[i]->hideColorAndMouseInfo();
-            }
+            _imp->infoViewer[i]->setColorValid(false);
         }
     }
 
@@ -4202,7 +4204,8 @@ ViewerGL::updateRectangleColorPicker()
     rect.set_bottom( std::min( topLeft.y(), btmRight.y() ) );
     rect.set_top( std::max( topLeft.y(), btmRight.y() ) );
     for (int i = 0; i < 2; ++i) {
-        bool picked = getColorAtRect(rect, linear, i, &r, &g, &b, &a);
+        unsigned int mm;
+        bool picked = getColorAtRect(rect, linear, i, &r, &g, &b, &a,&mm);
         if (picked) {
             if (i == 0) {
                 QColor pickerColor;
@@ -4212,14 +4215,14 @@ ViewerGL::updateRectangleColorPicker()
                 pickerColor.setAlphaF( clamp(a) );
                 _imp->viewerTab->getGui()->setColorPickersColor(pickerColor);
             }
+            _imp->infoViewer[i]->setColorValid(true);
             if ( !_imp->infoViewer[i]->colorAndMouseVisible() ) {
                 _imp->infoViewer[i]->showColorAndMouseInfo();
             }
+            _imp->infoViewer[i]->setColorApproximated(mm > 0);
             _imp->infoViewer[i]->setColor(r, g, b, a);
         } else {
-            if ( _imp->infoViewer[i]->colorAndMouseVisible() ) {
-                _imp->infoViewer[i]->hideColorAndMouseInfo();
-            }
+            _imp->infoViewer[i]->setColorValid(false);
         }
     }
 }
@@ -4680,7 +4683,8 @@ ViewerGL::getColorAt(double x,
                      float* r,
                      float* g,
                      float* b,
-                     float* a)                               // output values
+                     float* a,
+                     unsigned int* imgMmlevel)                               // output values
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
@@ -4692,7 +4696,9 @@ ViewerGL::getColorAt(double x,
 
     
     if (!img) {
-        double colorGPU[4];
+        return false;
+        ///Don't do this as this is 8bit data
+        /*double colorGPU[4];
         getTextureColorAt(x, y, &colorGPU[0], &colorGPU[1], &colorGPU[2], &colorGPU[3]);
         *a = colorGPU[3];
         if ( forceLinear && (_imp->displayingImageLut != eViewerColorSpaceLinear) ) {
@@ -4706,7 +4712,7 @@ ViewerGL::getColorAt(double x,
             *g = colorGPU[1];
             *b = colorGPU[2];
         }
-        return true;
+        return true;*/
     }
     
     Natron::ImageBitDepthEnum depth = img->getBitDepth();
@@ -4759,6 +4765,7 @@ ViewerGL::getColorAt(double x,
             gotval = false;
             break;
     }
+    *imgMmlevel = img->getMipMapLevel();
     return gotval;
 } // getColorAt
 
@@ -4769,7 +4776,8 @@ ViewerGL::getColorAtRect(const RectD &rect, // rectangle in canonical coordinate
                                float* r,
                                float* g,
                                float* b,
-                               float* a)                               // output values
+                               float* a,
+                              unsigned int* imgMm)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
@@ -4797,7 +4805,8 @@ ViewerGL::getColorAtRect(const RectD &rect, // rectangle in canonical coordinate
     double bSum = 0.;
     double aSum = 0.;
     if ( !img ) {
-        
+        //don't do this as this is 8 bit
+        /*
         Texture::DataTypeEnum type;
         if (_imp->displayTextures[0]) {
             type = _imp->displayTextures[0]->type();
@@ -4877,7 +4886,7 @@ ViewerGL::getColorAtRect(const RectD &rect, // rectangle in canonical coordinate
         *b = bSum / rectPixel.area();
         *a = aSum / rectPixel.area();
         
-        return true;
+        return true;*/
     }
     
     
@@ -4936,6 +4945,8 @@ ViewerGL::getColorAtRect(const RectD &rect, // rectangle in canonical coordinate
             }
         }
     }
+    
+    *imgMm = img->getMipMapLevel();
     
     if (area > 0) {
         *r = rSum / area;
