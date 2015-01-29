@@ -1313,7 +1313,7 @@ Button_KnobGui::~Button_KnobGui()
 void
 Button_KnobGui::emitValueChanged()
 {
-    dynamic_cast<Button_Knob*>( getKnob().get() )->onValueChanged(true, 0, Natron::eValueChangedReasonUserEdited, NULL);
+    _knob->evaluateValueChange(0, Natron::eValueChangedReasonUserEdited, true);
 }
 
 void

@@ -379,13 +379,13 @@ QtReader::getFilenameAtSequenceTime(SequenceTime time,
 {
     int missingChoice = _missingFrameChoice->getValue();
 
-    filename = _fileKnob->getFileName(time, 0);
+    filename = _fileKnob->getFileName(time);
 
     switch (missingChoice) {
     case 0:     // Load nearest
                 ///the nearest frame search went out of range and couldn't find a frame.
         if ( filename.empty() ) {
-            filename = _fileKnob->getFileName(time, 0);
+            filename = _fileKnob->getFileName(time);
             if ( filename.empty() ) {
                 setPersistentMessage( Natron::eMessageTypeError, QObject::tr("Nearest frame search went out of range").toStdString() );
             }

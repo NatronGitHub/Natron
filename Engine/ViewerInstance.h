@@ -147,7 +147,7 @@ public:
     /**
      * @brief Returns the current view, MT-safe
      **/
-    int getCurrentView() const;
+    int getViewerCurrentView() const;
 
     void onGainChanged(double exp);
 

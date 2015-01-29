@@ -1646,6 +1646,13 @@ public:
      **/
     virtual SequenceTime getCurrentTime() const;
 
+    /**
+     * @brief Returns the local current view being rendered or 0
+     **/
+    virtual int getCurrentView() const {
+        return 0;
+    }
+    
 protected:
 
 

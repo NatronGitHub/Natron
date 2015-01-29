@@ -1796,7 +1796,7 @@ ViewerInstance::addAcceptedComponents(int /*inputNb*/,
 }
 
 int
-ViewerInstance::getCurrentView() const
+ViewerInstance::getViewerCurrentView() const
 {
     return _imp->uiContext ? _imp->uiContext->getCurrentView() : 0;
 }

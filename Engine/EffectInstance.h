@@ -590,6 +590,8 @@ public:
 
     virtual SequenceTime getCurrentTime() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
+    virtual int getCurrentView() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+
     virtual bool getCanTransform() const { return false; }
 
     virtual bool getCanApplyTransform(Natron::EffectInstance** /*effect*/) const { return false; }

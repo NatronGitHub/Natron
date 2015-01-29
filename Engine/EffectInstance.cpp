@@ -4336,6 +4336,19 @@ EffectInstance::getCurrentTime() const
     return getThreadLocalRenderTime();
 }
 
+int
+EffectInstance::getCurrentView() const
+{
+    if (_imp->renderArgs.hasLocalData()) {
+        const RenderArgs& args = _imp->renderArgs.localData();
+        if (args._validArgs) {
+            return args._view;
+        }
+    }
+    
+    return 0;
+}
+
 #ifdef DEBUG
 void
 EffectInstance::checkCanSetValueAndWarn() const

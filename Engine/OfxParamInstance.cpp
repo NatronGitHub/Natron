@@ -2527,7 +2527,7 @@ OfxStringInstance::get(std::string &str)
     assert( _node->effectInstance() );
     int currentFrame = _node->getApp()->getTimeLine()->currentFrame();
     if (_fileKnob) {
-        str = _fileKnob->getFileName(currentFrame,/*view*/ 0);
+        str = _fileKnob->getFileName(currentFrame);
         projectEnvVar_getProxy(str);
     } else if (_outputFileKnob) {
         str = _outputFileKnob->generateFileNameAtTime(currentFrame).toStdString();
@@ -2548,7 +2548,7 @@ OfxStringInstance::get(OfxTime time,
 {
     assert( _node->effectInstance() );
     if (_fileKnob) {
-        str = _fileKnob->getFileName(std::floor(time + 0.5),/*view*/ 0);
+        str = _fileKnob->getFileName(std::floor(time + 0.5));
         projectEnvVar_getProxy(str);
     } else if (_outputFileKnob) {
         str = _outputFileKnob->generateFileNameAtTime(time).toStdString();
