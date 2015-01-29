@@ -1416,10 +1416,10 @@ Settings::populateWriterPluginsAndFormats(const std::map<std::string,std::vector
     restoreKnobsSettings(knobs);
 }
 
-static bool filterDefaultActivatedPlugin(const QString& ofxPluginID)
+static bool filterDefaultActivatedPlugin(const QString& /*ofxPluginID*/)
 {
-#pragma message WARN("WHY censor this list of plugins? This is open source fer chrissake! Let the user take control!")
 #if 0
+#pragma message WARN("WHY censor this list of plugins? This is open source fer chrissake! Let the user take control!")
     if (
         //Tuttle Readers/Writers
         ofxPluginID == "tuttle.avreader" ||
