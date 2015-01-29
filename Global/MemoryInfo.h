@@ -107,7 +107,7 @@ inline uint64_t
 getSystemTotalRAM_conditionnally()
 {
     if ( isApplication32Bits() ) {
-        return std::min( 0x100000000ULL, getSystemTotalRAM() );
+        return std::min( (uint64_t)0x100000000ULL, getSystemTotalRAM() );
     } else {
         return getSystemTotalRAM();
     }
