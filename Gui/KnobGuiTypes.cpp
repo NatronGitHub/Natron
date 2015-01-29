@@ -1943,6 +1943,7 @@ Color_KnobGui::setEnabled()
 
     //_rBox->setEnabled(r);
     _rBox->setReadOnly(!r);
+    _rLabel->setEnabled(r);
 
     _slider->setReadOnly(!r);
     _colorDialogButton->setEnabled(r);
@@ -1952,13 +1953,16 @@ Color_KnobGui::setEnabled()
         bool b = _knob->isEnabled(2);
         //_gBox->setEnabled(g);
         _gBox->setReadOnly(!g);
+        _gLabel->setEnabled(g);
         //_bBox->setEnabled(b);
         _bBox->setReadOnly(!b);
+        _bLabel->setEnabled(b);
     }
     if (_dimension >= 4) {
         bool a = _knob->isEnabled(3);
         //_aBox->setEnabled(a);
         _aBox->setReadOnly(!a);
+        _aLabel->setEnabled(a);
     }
     _dimensionSwitchButton->setEnabled(r);
     _colorLabel->setEnabledMode(r);
