@@ -47,4 +47,27 @@ private:
     virtual void paintEvent(QPaintEvent* e) OVERRIDE FINAL;
 };
 
+
+class LoadProjectSplashScreen
+: public QWidget
+{
+    QPixmap _pixmap;
+    QString _text;
+    QString _projectName;
+    
+public:
+    
+    LoadProjectSplashScreen(const QString & filePath);
+    
+    virtual ~LoadProjectSplashScreen()
+    {
+    }
+    
+    void updateText(const QString & text);
+
+private:
+    
+    virtual void paintEvent(QPaintEvent* e) OVERRIDE FINAL;
+};
+
 #endif // SPLASHSCREEN_H

@@ -334,6 +334,13 @@ public:
     virtual void declareCurrentAppVariable_Python();
 
     void execOnProjectCreatedCallback();
+    
+    virtual void createLoadProjectSplashScreen(const QString& /*projectFile*/) {}
+    
+    virtual void updateProjectLoadStatus(const QString& /*str*/) {}
+    
+    virtual void closeLoadPRojectSplashScreen() {}
+    
 public Q_SLOTS:
 
 

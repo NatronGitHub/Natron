@@ -292,7 +292,7 @@ PyPanel::PyPanel(const std::string& scriptName,const std::string& label,bool use
 
 PyPanel::~PyPanel()
 {
-    
+    _imp->gui->unregisterPyPanel(this);
 }
 
 std::string

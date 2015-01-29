@@ -26,6 +26,7 @@
 #include "Gui/NodeGui.h"
 #include "Gui/MultiInstancePanel.h"
 #include "Gui/ViewerTab.h"
+#include "Gui/SplashScreen.h"
 #include "Gui/ViewerGL.h"
 
 #include "Engine/Project.h"
@@ -64,6 +65,8 @@ struct GuiAppInstancePrivate
     mutable QMutex lastTimelineViewerMutex;
     boost::shared_ptr<Natron::Node> lastTimelineViewer;
     
+    LoadProjectSplashScreen* loadProjectSplash;
+    
     GuiAppInstancePrivate()
     : _gui(NULL)
     , _activeBgProcesses()
@@ -74,6 +77,7 @@ struct GuiAppInstancePrivate
     , _previewProvider(new FileDialogPreviewProvider)
     , lastTimelineViewerMutex()
     , lastTimelineViewer()
+    , loadProjectSplash(0)
     {
     }
     
@@ -843,3 +847,27 @@ GuiAppInstance::declareCurrentAppVariable_Python()
     assert(ok);
 }
 
+void
+GuiAppInstance::createLoadProjectSplashScreen(const QString& projectFile)
+{
+    if (_imp->loadProjectSplash) {
+        return;
+    }
+    _imp->loadProjectSplash = new LoadProjectSplashScreen(projectFile);
+}
+
+void
+GuiAppInstance::updateProjectLoadStatus(const QString& str)
+{
+    if (!_imp->loadProjectSplash) {
+        return;
+    }
+    _imp->loadProjectSplash->updateText(str);
+}
+
+void
+GuiAppInstance::closeLoadPRojectSplashScreen()
+{
+    _imp->loadProjectSplash->deleteLater();
+    _imp->loadProjectSplash = 0;
+}

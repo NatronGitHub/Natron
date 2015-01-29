@@ -269,6 +269,7 @@ ProjectGui::load(boost::archive::xml_iarchive & archive)
     int leftBound,rightBound;
     _project.lock()->getFrameRange(&leftBound, &rightBound);
 
+    
     ///default color for nodes
     float defR,defG,defB;
     boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
@@ -438,6 +439,8 @@ ProjectGui::load(boost::archive::xml_iarchive & archive)
         node->setLabel(it->getFullySpecifiedName());
     }
 
+     _gui->getApp()->updateProjectLoadStatus(QObject::tr("Restoring settings panels"));
+    
     ///now restore opened settings panels
     const std::list<std::string> & openedPanels = obj.getOpenedPanels();
     //reverse the iterator to fill the layout bottom up
@@ -461,8 +464,13 @@ ProjectGui::load(boost::archive::xml_iarchive & archive)
     }
     
     
+    
     ///restore user python panels
     const std::list<boost::shared_ptr<PythonPanelSerialization> >& pythonPanels = obj.getPythonPanels();
+    if (!pythonPanels.empty()) {
+        _gui->getApp()->updateProjectLoadStatus(QObject::tr("Restoring user panels"));
+    }
+
     if (!pythonPanels.empty()) {
         QString appID = QString("app%1").arg(_gui->getApp()->getAppID() + 1);
         std::string err;
@@ -496,6 +504,8 @@ ProjectGui::load(boost::archive::xml_iarchive & archive)
         }
         
     }
+    
+    _gui->getApp()->updateProjectLoadStatus(QObject::tr("Restoring layout"));
     
     _gui->restoreLayout( true,obj.getVersion() < PROJECT_GUI_SERIALIZATION_MAJOR_OVERHAUL,obj.getGuiLayout() );
 

@@ -198,5 +198,6 @@
         <file>Resources/Images/outputPanelDeactivated.png</file>
         <file>Resources/Images/previousScript.png</file>
         <file>Resources/Images/saveScript.png</file>
+        <file>Resources/Images/loadProjectSplashscreen.png</file>
     </qresource>
 </RCC>

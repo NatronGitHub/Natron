@@ -110,6 +110,23 @@ Project::~Project()
     ///Even if the user replied she/he didn't want to save the current work, we keep an autosave of it.
     //removeAutoSaves();
 }
+    
+class LoadProjectSplashScreen_RAII
+{
+    AppInstance* app;
+public:
+    
+    LoadProjectSplashScreen_RAII(AppInstance* app,const QString& filename)
+    : app(app)
+    {
+        app->createLoadProjectSplashScreen(filename);
+    }
+    
+    ~LoadProjectSplashScreen_RAII()
+    {
+        app->closeLoadPRojectSplashScreen();
+    }
+};
 
   
 bool
@@ -203,11 +220,6 @@ Project::loadProjectInternal(const QString & path,
     } catch (const std::ifstream::failure & e) {
         throw std::runtime_error( std::string("Exception occured when opening file ") + filePath.toStdString() + ": " + e.what() );
     }
-    {
-        std::string projName = isAutoSave  && !realFilePath.isEmpty() ? realFilePath.toStdString() : name.toStdString();
-        std::string loadMessage = tr("Loading ").toStdString() + projName + " ...";
-        getApp()->startProgress(this, loadMessage, false);
-    }
     
     if (NATRON_VERSION_MAJOR == 1 && NATRON_VERSION_MINOR == 0 && NATRON_VERSION_REVISION == 0) {
         
@@ -232,7 +244,10 @@ Project::loadProjectInternal(const QString & path,
         }
     }
     
+    LoadProjectSplashScreen_RAII __raii_splashscreen__(getApp(),isAutoSave  && !realFilePath.isEmpty() ? realFilePath : name);
+    
     try {
+        
         {
             QMutexLocker k(&_imp->isLoadingProjectMutex);
             _imp->isLoadingProjectInternal = true;
@@ -255,7 +270,6 @@ Project::loadProjectInternal(const QString & path,
         }
     } catch (const boost::archive::archive_exception & e) {
         ifile.close();
-        getApp()->endProgress(this);
         {
             QMutexLocker k(&_imp->isLoadingProjectMutex);
             _imp->isLoadingProjectInternal = false;
@@ -263,7 +277,6 @@ Project::loadProjectInternal(const QString & path,
         throw std::runtime_error( e.what() );
     } catch (const std::exception & e) {
         ifile.close();
-        getApp()->endProgress(this);
         {
             QMutexLocker k(&_imp->isLoadingProjectMutex);
             _imp->isLoadingProjectInternal = false;
@@ -274,7 +287,6 @@ Project::loadProjectInternal(const QString & path,
     ifile.close();
     
     _imp->natronVersion->setValue(generateUserFriendlyNatronVersionName(),0);
-    getApp()->endProgress(this);
     Q_EMIT projectNameChanged(name);
     
     std::string onProjectLoad = getOnProjectLoadCB();

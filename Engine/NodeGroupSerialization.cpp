@@ -44,6 +44,15 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
 
     bool mustShowErrorsLog = false;
     
+    NodeGroup* isNodeGroup = dynamic_cast<NodeGroup*>(group.get());
+    QString groupName;
+    if (isNodeGroup) {
+        groupName = isNodeGroup->getNode()->getLabel().c_str();
+    } else {
+        groupName = QObject::tr("top-level");
+    }
+    group->getApplication()->updateProjectLoadStatus(QObject::tr("Creating nodes in group: ") + groupName);
+    
     ///If a parent of a multi-instance node doesn't exist anymore but the children do, we must recreate the parent.
     ///Problem: we have lost the nodes connections. To do so we restore them using the serialization of a child.
     ///This map contains all the parents that must be reconnected and an iterator to the child serialization
@@ -135,6 +144,8 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
         }
     }
     
+    
+    group->getApplication()->updateProjectLoadStatus(QObject::tr("Restoring graph links in group: ") + groupName);
 
     NodeList nodes = group->getNodes();
     

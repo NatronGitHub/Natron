@@ -90,6 +90,7 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
 
     projectCreationTime = QDateTime::fromMSecsSinceEpoch( obj.getCreationDate() );
 
+    _publicInterface->getApp()->updateProjectLoadStatus(QObject::tr("Restoring project settings..."));
 
     /*we must restore the entries in the combobox before restoring the value*/
     std::vector<std::string> entries;
@@ -158,8 +159,6 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
     /// 2) restore the timeline
     timeline->seekFrame(obj.getCurrentTime(), false, 0, Natron::eTimelineChangeReasonPlaybackSeek);
 
-    ///On our tests restoring nodes + connections takes approximatively 20% of loading time of a project, hence we update progress
-    ///for each node of 0.2 / nbNodes
     
     /// 3) Restore the nodes
     
@@ -175,7 +174,6 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
     }
 
     
-    ///The next for loop is about 50% of loading time of a project
     
     ///Now that everything is connected, check clip preferences on all OpenFX effects
     std::list<Natron::Node*> markedNodes;
@@ -188,17 +186,15 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
         }
     }
     
-    int count = 0;
+    _publicInterface->getApp()->updateProjectLoadStatus(QObject::tr("Restoring graph stream preferences"));
+    
     size_t nodesToRestorePreferencesNb = nodesToRestorePreferences.size();
     if (nodesToRestorePreferencesNb) {
-        for (std::list<Natron::Node*>::iterator it = nodesToRestorePreferences.begin(); it!=nodesToRestorePreferences.end(); ++it,++count) {
+        for (std::list<Natron::Node*>::iterator it = nodesToRestorePreferences.begin(); it!=nodesToRestorePreferences.end(); ++it) {
             (*it)->restoreClipPreferencesRecursive(markedNodes);
-            _publicInterface->getApp()->progressUpdate(_publicInterface,
-                                                       ((double)(count+1) / nodesToRestorePreferencesNb) * 0.5 + 0.25);
         }
     }
     
-    ///We should be now at 75% progress...
     
     QDateTime time = QDateTime::currentDateTime();
     autoSetProjectFormat = false;

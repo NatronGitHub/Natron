@@ -145,6 +145,11 @@ public:
     
     virtual void declareCurrentAppVariable_Python();
 
+    virtual void createLoadProjectSplashScreen(const QString& projectFile) OVERRIDE FINAL;
+    
+    virtual void updateProjectLoadStatus(const QString& str) OVERRIDE FINAL;
+    
+    virtual void closeLoadPRojectSplashScreen() OVERRIDE FINAL;
     
 public Q_SLOTS:
 
