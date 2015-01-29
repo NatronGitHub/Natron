@@ -812,7 +812,7 @@ Settings::setDefaultValues()
     _checkerboardColor2->setDefaultValue(0.,1);
     _checkerboardColor2->setDefaultValue(0.,2);
     _checkerboardColor2->setDefaultValue(0.,3);
-    _autoWipe->setDefaultValue(true);
+    _autoWipe->setDefaultValue(false);
     
     _warnOcioConfigKnobChanged->setDefaultValue(true);
     _ocioStartupCheck->setDefaultValue(true);

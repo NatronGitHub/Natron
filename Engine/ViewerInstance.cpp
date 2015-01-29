@@ -1819,7 +1819,7 @@ ViewerInstance::onInputChanged(int inputNb)
             bool autoWipeEnabled = appPTR->getCurrentSettings()->isAutoWipeEnabled();
             if (_imp->activeInputs[0] == -1 || !autoWipeEnabled) {
                 _imp->activeInputs[0] = inputNb;
-            } else if (_imp->activeInputs[0] != inputNb) {
+            } else {
                 _imp->activeInputs[1] = inputNb;
             }
         }

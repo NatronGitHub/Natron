@@ -2696,6 +2696,27 @@ ViewerTab::notifyAppClosing()
 }
 
 void
+ViewerTab::onCompositingOperatorChangedInternal(Natron::ViewerCompositingOperatorEnum oldOp,Natron::ViewerCompositingOperatorEnum newOp)
+{
+    if ( (oldOp == eViewerCompositingOperatorNone) && (newOp != eViewerCompositingOperatorNone) ) {
+        _imp->viewer->resetWipeControls();
+    }
+    
+    _imp->secondInputImage->setEnabled_natron(newOp != eViewerCompositingOperatorNone);
+
+    
+    if (newOp == eViewerCompositingOperatorNone || !_imp->secondInputImage->getEnabled_natron()  || _imp->secondInputImage->activeIndex() == 0) {
+        manageSlotsForInfoWidget(1, false);
+        _imp->infoWidget[1]->hide();
+    } else if (newOp != eViewerCompositingOperatorNone) {
+        manageSlotsForInfoWidget(1, true);
+        _imp->infoWidget[1]->show();
+    }
+    
+    _imp->viewer->updateGL();
+}
+
+void
 ViewerTab::onCompositingOperatorIndexChanged(int index)
 {
     ViewerCompositingOperatorEnum newOp,oldOp;
@@ -2727,24 +2748,7 @@ ViewerTab::onCompositingOperatorIndexChanged(int index)
         newOp = _imp->compOperator;
     }
 
-    if ( (oldOp == eViewerCompositingOperatorNone) && (newOp != eViewerCompositingOperatorNone) ) {
-        _imp->viewer->resetWipeControls();
-    }
-
-    if ( (_imp->compOperator != eViewerCompositingOperatorNone) && !_imp->secondInputImage->isEnabled() ) {
-        _imp->secondInputImage->setEnabled_natron(true);
-        manageSlotsForInfoWidget(1, true);
-        _imp->infoWidget[1]->show();
-    } else if (_imp->compOperator == eViewerCompositingOperatorNone) {
-        _imp->secondInputImage->setEnabled_natron(false);
-        manageSlotsForInfoWidget(1, false);
-        _imp->infoWidget[1]->hide();
-    } else {
-        _imp->secondInputImage->setEnabled_natron(true);
-    }
-
-
-    _imp->viewer->updateGL();
+    onCompositingOperatorChangedInternal(oldOp, newOp);
 }
 
 void
@@ -2771,12 +2775,18 @@ ViewerTab::setCompositingOperator(Natron::ViewerCompositingOperatorEnum op)
     default:
         break;
     }
+    Natron::ViewerCompositingOperatorEnum oldOp;
     {
         QMutexLocker l(&_imp->compOperatorMutex);
+        oldOp = _imp->compOperator;
         _imp->compOperator = op;
+        
     }
     _imp->compositingOperator->setCurrentIndex_no_emit(comboIndex);
-    _imp->viewer->updateGL();
+    onCompositingOperatorChangedInternal(oldOp, op);
+    
+    
+
 }
 
 ViewerCompositingOperatorEnum
@@ -2850,35 +2860,38 @@ ViewerTab::onActiveInputsChanged()
         _imp->firstInputImage->setCurrentIndex_no_emit(0);
     }
 
+    Natron::ViewerCompositingOperatorEnum op = getCompositingOperator();
+    _imp->secondInputImage->setEnabled_natron(op != Natron::eViewerCompositingOperatorNone);
+
     InputNamesMap::iterator foundB = _imp->inputNamesMap.find(activeInputs[1]);
     if ( foundB != _imp->inputNamesMap.end() ) {
         int indexInB = _imp->secondInputImage->itemIndex(foundB->second.name);
 
         assert(indexInB != -1);
         _imp->secondInputImage->setCurrentIndex_no_emit(indexInB);
-        if ( !_imp->infoWidget[1]->isVisible() ) {
-            _imp->infoWidget[1]->show();
-            _imp->secondInputImage->setEnabled_natron(true);
-            manageSlotsForInfoWidget(1, true);
-        }
     } else {
         _imp->secondInputImage->setCurrentIndex_no_emit(0);
-        setCompositingOperator(Natron::eViewerCompositingOperatorNone);
-        manageSlotsForInfoWidget(1, false);
-        _imp->infoWidget[1]->hide();
-        //_imp->secondInputImage->setEnabled_natron(false);
     }
 
+    if (op == eViewerCompositingOperatorNone || !_imp->secondInputImage->getEnabled_natron()  || _imp->secondInputImage->activeIndex() == 0) {
+        manageSlotsForInfoWidget(1, false);
+        _imp->infoWidget[1]->hide();
+    } else if (op != eViewerCompositingOperatorNone) {
+        manageSlotsForInfoWidget(1, true);
+        _imp->infoWidget[1]->show();
+    }
+    
     bool autoWipe = appPTR->getCurrentSettings()->isAutoWipeEnabled();
     
-    if ( ( (activeInputs[0] == -1) || (activeInputs[1] == -1) ) //only 1 input is valid
-         && ( getCompositingOperator() != eViewerCompositingOperatorNone) ) {
+    /*if ( ( (activeInputs[0] == -1) || (activeInputs[1] == -1) ) //only 1 input is valid
+         && ( op != eViewerCompositingOperatorNone) ) {
         //setCompositingOperator(eViewerCompositingOperatorNone);
         _imp->infoWidget[1]->hide();
         manageSlotsForInfoWidget(1, false);
         // _imp->secondInputImage->setEnabled_natron(false);
-    } else if ( autoWipe && (activeInputs[0] != -1) && (activeInputs[1] != -1) && (activeInputs[0] != activeInputs[1])
-                && ( getCompositingOperator() == eViewerCompositingOperatorNone) ) {
+    }
+    else*/ if ( autoWipe && (activeInputs[0] != -1) && (activeInputs[1] != -1) && (activeInputs[0] != activeInputs[1])
+                && (op == eViewerCompositingOperatorNone) ) {
         _imp->viewer->resetWipeControls();
         setCompositingOperator(Natron::eViewerCompositingOperatorWipe);
     }

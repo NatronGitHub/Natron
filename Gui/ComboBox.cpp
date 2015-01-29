@@ -681,6 +681,12 @@ ComboBox::setReadOnly(bool readOnly)
     repaint();
 }
 
+bool
+ComboBox::getEnabled_natron() const
+{
+    return _enabled;
+}
+
 void
 ComboBox::setEnabled_natron(bool enabled)
 {

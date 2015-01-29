@@ -322,6 +322,9 @@ public slots:
     void onClipPreferencesChanged();
 private:
     
+    void onCompositingOperatorChangedInternal(Natron::ViewerCompositingOperatorEnum oldOp,Natron::ViewerCompositingOperatorEnum newOp);
+
+    
     void manageTimelineSlot(bool disconnectPrevious,const boost::shared_ptr<TimeLine>& timeline);
 
     void manageSlotsForInfoWidget(int textureIndex,bool connect);
