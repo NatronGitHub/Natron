@@ -60,7 +60,8 @@ CLANG_DIAG_ON(unused-parameter)
 #define PANE_SERIALIZATION_INTRODUCES_CURRENT_TAB 2
 #define PANE_SERIALIZATION_INTRODUCES_SIZE 3
 #define PANE_SERIALIZATION_MAJOR_OVERHAUL 4
-#define PANE_SERIALIZATION_VERSION PANE_SERIALIZATION_MAJOR_OVERHAUL
+#define PANE_SERIALIZATION_INTRODUCE_SCRIPT_NAME 5
+#define PANE_SERIALIZATION_VERSION PANE_SERIALIZATION_INTRODUCE_SCRIPT_NAME
 
 #define SPLITTER_SERIALIZATION_VERSION 1
 #define APPLICATION_WINDOW_SERIALIZATION_VERSION 1
@@ -275,7 +276,7 @@ struct PaneLayout
     ///Added in PANE_SERIALIZATION_MAJOR_OVERHAUL
     bool isAnchor;
     std::string name;
-
+    
     ///This is only used to restore compatibility with project saved prior to PANE_SERIALIZATION_MAJOR_OVERHAUL
 
     PaneLayout()
@@ -306,6 +307,7 @@ struct PaneLayout
     void load(Archive & ar,
               const unsigned int version)
     {
+        
         if (version < PANE_SERIALIZATION_MAJOR_OVERHAUL) {
             PaneLayoutCompat_PANE_SERIALIZATION_INTRODUCES_SIZE compat1;
             ar & boost::serialization::make_nvp("Floating",compat1.floating);
@@ -330,8 +332,21 @@ struct PaneLayout
             ar & boost::serialization::make_nvp("Name",name);
             ar & boost::serialization::make_nvp("IsAnchor",isAnchor);
         }
+        if (version < PANE_SERIALIZATION_INTRODUCE_SCRIPT_NAME) {
+            
+            for (std::list<std::string>::iterator it = tabs.begin() ; it!= tabs.end() ; ++it) {
+                //Try to map the tab name to an old name
+                if (*it == "CurveEditor") {
+                    *it = kCurveEditorObjectName;
+                } else if (*it == "NodeGraph") {
+                    *it = kNodeGraphObjectName;
+                } else if (*it == "Properties") {
+                    *it = "properties";
+                }
+            }
+        }
     }
-
+    
     BOOST_SERIALIZATION_SPLIT_MEMBER()
 };
 
