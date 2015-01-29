@@ -1060,8 +1060,17 @@ ViewerGL::paintGL()
         //GLProtectMatrix m(GL_MODELVIEW);
         //GLProtectMatrix p(GL_PROJECTION);
 
+        // Note: the OFX spec says that the GL_MODELVIEW should be the identity matrix
+        // http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#ImageEffectOverlays
+        // However,
+        // - Nuke uses a different matrix
+        // - Nuke transforms the interacts using the modelview if there are Transform nodes between the viewer and the interact.
+
         glMatrixMode(GL_MODELVIEW);
+        // TODO: apply cumulated viewer transforms to modelview
         glLoadIdentity();
+        glTranslatef(-1, -1, 0);        // for compatibility with Nuke
+        glScalef(1/256., 1./256., 1.0); // for compatibility with Nuke
 
         glMatrixMode(GL_PROJECTION);
         glLoadIdentity();
@@ -1081,7 +1090,10 @@ ViewerGL::paintGL()
             return;
         }
 
-        glOrtho(zoomLeft, zoomRight, zoomBottom, zoomTop, -1, 1);
+        glOrtho(zoomLeft, zoomRight, zoomBottom, zoomTop, 1, -1);
+        glScalef(256., 256., 1.0); // for compatibility with Nuke
+        glTranslatef(1, 1, 0);     // for compatibility with Nuke
+
         glCheckError();
 
 
