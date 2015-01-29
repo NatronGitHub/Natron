@@ -173,7 +173,7 @@ RenderingProgressDialog::onVideoEngineStopped(int retCode)
 }
 
 void
-RenderingProgressDialog::closeEvent(QCloseEvent* e)
+RenderingProgressDialog::closeEvent(QCloseEvent* /*e*/)
 {
     emit canceled();
 }

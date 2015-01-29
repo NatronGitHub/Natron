@@ -61,14 +61,14 @@
 //#include <QFileSystemModel>
 //CLANG_DIAG_ON(deprecated)
 
-inline size_t
+inline uint64_t
 getSystemTotalRAM()
 {
 #if defined(__APPLE__)
     int mib [] = {
         CTL_HW, HW_MEMSIZE
     };
-    int64_t value = 0;
+    uint64_t value = 0;
     size_t length = sizeof(value);
 
     if ( -1 == sysctl(mib, 2, &value, &length, NULL, 0) ) {
@@ -103,11 +103,11 @@ isApplication32Bits()
     return sizeof(void*) == 4;
 }
 
-inline size_t
+inline uint64_t
 getSystemTotalRAM_conditionnally()
 {
     if ( isApplication32Bits() ) {
-        return std::min( (size_t)0xFFFFFFFF,getSystemTotalRAM() );
+        return std::min( 0x100000000ULL, getSystemTotalRAM() );
     } else {
         return getSystemTotalRAM();
     }
