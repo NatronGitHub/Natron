@@ -714,9 +714,6 @@ ViewerInstance::renderViewer_internal(int view,
             if (!entryLocker.tryLock(inArgs.params->cachedFrame)) {
                 ///Another thread is rendering it, just return it is not useful to keep this thread waiting.
                 inArgs.params->cachedFrame.reset();
-                if (!isSequentialRender) {
-                    _imp->checkAndUpdateRenderAge(inArgs.params->textureIndex,inArgs.params->renderAge);
-                }
                 return eStatusOK;
             }
         } else {
