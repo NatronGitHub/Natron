@@ -2518,7 +2518,11 @@ DotGui::DotGui(QGraphicsItem* parent)
 void
 DotGui::createGui()
 {
+    double depth = getBaseDepth();
+    setZValue(depth);
+    
     diskShape = new QGraphicsEllipseItem(this);
+    diskShape->setZValue(depth);
     QPointF topLeft = mapFromParent( pos() );
     diskShape->setRect( QRectF(topLeft.x(),topLeft.y(),DOT_GUI_DIAMETER,DOT_GUI_DIAMETER) );
     
