@@ -104,15 +104,15 @@ struct Page
 {
     QWidget* tab;
     int currentRow;
-    QTabWidget* tabWidget; //< to gather group knobs that are set as a tab
+    TabGroup* groupAsTab; //< to gather group knobs that are set as a tab
 
     Page()
-        : tab(0), currentRow(0),tabWidget(0)
+        : tab(0), currentRow(0),groupAsTab(0)
     {
     }
 
     Page(const Page & other)
-        : tab(other.tab), currentRow(other.currentRow), tabWidget(other.tabWidget)
+        : tab(other.tab), currentRow(other.currentRow), groupAsTab(other.groupAsTab)
     {
     }
 };
@@ -136,6 +136,57 @@ static Page_Knob* getTopLevelPageForKnob(KnobI* knob)
     ////find in which page the knob should be
     Page_Knob* isTopLevelParentAPage = dynamic_cast<Page_Knob*>(parentKnobTmp);
     return isTopLevelParentAPage;
+}
+
+TabGroup::TabGroup(QWidget* parent)
+: QFrame(parent)
+{
+    setFrameShadow(QFrame::Raised);
+    setFrameShape(QFrame::Box);
+    QHBoxLayout* frameLayout = new QHBoxLayout(this);
+    _tabWidget = new QTabWidget(this);
+    frameLayout->addWidget(_tabWidget);
+}
+
+QGridLayout*
+TabGroup::addTab(const boost::shared_ptr<Group_Knob>& group,const QString& name)
+{
+    
+    QWidget* tab = 0;
+    QGridLayout* tabLayout = 0;
+    for (U32 i = 0 ; i < _tabs.size(); ++i) {
+        if (_tabs[i].lock() == group) {
+            tab = _tabWidget->widget(i);
+            assert(tab);
+            tabLayout = qobject_cast<QGridLayout*>( tab->layout() );
+            assert(tabLayout);
+        }
+    }
+   
+    if (!tab) {
+        tab = new QWidget(_tabWidget);
+        tabLayout = new QGridLayout(tab);
+        tabLayout->setColumnStretch(1, 1);
+        tabLayout->setContentsMargins(0, 0, 0, 0);
+        tabLayout->setSpacing(NATRON_FORM_LAYOUT_LINES_SPACING); // unfortunately, this leaves extra space when parameters are hidden
+        _tabWidget->addTab(tab,name);
+        _tabs.push_back(group);
+    }
+    assert(tabLayout);
+    return tabLayout;
+}
+
+void
+TabGroup::removeTab(Group_Knob* group)
+{
+    int i = 0;
+    for (std::vector<boost::weak_ptr<Group_Knob> >::iterator it = _tabs.begin(); it != _tabs.end(); ++it,++i) {
+        if (it->lock().get() == group) {
+            _tabWidget->removeTab(i);
+            _tabs.erase(it);
+            break;
+        }
+    }
 }
 
 struct DockablePanelPrivate
@@ -260,6 +311,8 @@ struct DockablePanelPrivate
                                   bool makeNewLine,
                                   QWidget* lastRowWidget,
                                   const std::vector< boost::shared_ptr< KnobI > > & knobsOnSameLine = std::vector< boost::shared_ptr< KnobI > >() );
+    
+    PageMap::iterator getDefaultPage(const boost::shared_ptr<KnobI> &knob);
 };
 
 
@@ -960,6 +1013,40 @@ DockablePanelPrivate::createKnobGui(const boost::shared_ptr<KnobI> &knob)
     return ret;
 }
 
+PageMap::iterator
+DockablePanelPrivate::getDefaultPage(const boost::shared_ptr<KnobI> &knob)
+{
+    PageMap::iterator page = _pages.end();
+    const std::vector< boost::shared_ptr<KnobI> > & knobs = _holder->getKnobs();
+    ///find in all knobs a page param to set this param into
+    for (U32 i = 0; i < knobs.size(); ++i) {
+        Page_Knob* p = dynamic_cast<Page_Knob*>( knobs[i].get() );
+        if ( p && (p->getDescription() != NATRON_EXTRA_PARAMETER_PAGE_NAME) ) {
+            page = addPage(p,  p->getDescription().c_str() );
+            p->addKnob(knob);
+            break;
+        }
+    }
+    
+    if ( page == _pages.end() ) {
+        ///the plug-in didn't specify any page
+        ///for this param, put it in the first page that is not the default page.
+        ///If there is still no page, put it in the default tab.
+        for (PageMap::iterator it = _pages.begin(); it != _pages.end(); ++it) {
+            if (it->first != _defaultPageName) {
+                page = it;
+                break;
+            }
+        }
+        
+        ///Last resort: The plug-in didn't specify ANY page, just put it into the default page
+        if ( page == _pages.end() ) {
+            page = addPage(NULL, _defaultPageName);
+        }
+    }
+    return page;
+}
+
 KnobGui*
 DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI> & knob,
                                           bool makeNewLine,
@@ -986,11 +1073,15 @@ DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI> & knob,
 
 
     if (isPage) {
-        
+        if (isPage->getChildren().empty()) {
+            return 0;
+        }
         QString pageName(isPage->getDescription().c_str());
         addPage(isPage.get(), pageName);
 
     } else {
+        
+        
         ret = createKnobGui(knob);
 
         boost::shared_ptr<KnobI> parentKnob = knob->getParentKnob();
@@ -1002,9 +1093,86 @@ DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI> & knob,
         }
 
 
-        ///if widgets for the KnobGui have already been created, don't the following
+        ///if widgets for the KnobGui have already been created, don't do the following
         ///For group only create the gui if it is not  a tab.
-        if ( !ret->hasWidgetBeenCreated() && ( !isGroup || !isGroup->isTab() ) ) {
+        if (isGroup  && isGroup->isTab()) {
+            
+            Page_Knob* parentIsPage = dynamic_cast<Page_Knob*>(parentKnob.get());
+            if (!parentKnob || parentIsPage) {
+                PageMap::iterator page = _pages.end();
+                if (!parentKnob) {
+                    page = getDefaultPage(knob);
+                } else {
+                    page = addPage(parentIsPage, parentIsPage->getDescription().c_str() );
+                }
+                if (!page->second.groupAsTab) {
+                    page->second.groupAsTab = new TabGroup(_publicInterface);
+                }
+                page->second.groupAsTab->addTab(isGroup, isGroup->getDescription().c_str());
+                
+                ///retrieve the form layout
+                QGridLayout* layout;
+                if (_useScrollAreasForTabs) {
+                    layout = dynamic_cast<QGridLayout*>(
+                                                        dynamic_cast<QScrollArea*>(page->second.tab)->widget()->layout() );
+                } else {
+                    layout = dynamic_cast<QGridLayout*>( page->second.tab->layout() );
+                }
+                assert(layout);
+                
+                layout->addWidget(page->second.groupAsTab, page->second.currentRow, 0, 1, 2);
+            } else {
+                assert(parentIsGroup);
+                assert(parentGui);
+                TabGroup* groupAsTab = parentGui->getOrCreateTabWidget();
+                
+                groupAsTab->addTab(isGroup, isGroup->getDescription().c_str());
+                
+                if (parentIsGroup && parentIsGroup->isTab()) {
+                    ///insert the tab in the layout of the parent
+                    ///Find the page in the parentParent group
+                    boost::shared_ptr<KnobI> parentParent = parentKnob->getParentKnob();
+                    assert(parentParent);
+                    boost::shared_ptr<Group_Knob> parentParentIsGroup = boost::dynamic_pointer_cast<Group_Knob>(parentParent);
+                    boost::shared_ptr<Page_Knob> parentParentIsPage = boost::dynamic_pointer_cast<Page_Knob>(parentParent);
+                    assert(parentParentIsGroup || parentParentIsPage);
+                    TabGroup* parentTabGroup = 0;
+                    if (parentParentIsPage) {
+                        PageMap::iterator page = addPage(parentParentIsPage.get(),parentParentIsPage->getDescription().c_str());
+                        assert(page != _pages.end());
+                        parentTabGroup = page->second.groupAsTab;
+                    } else {
+                        std::map<boost::shared_ptr<KnobI>,KnobGui*>::iterator it = _knobs.find(parentParent);
+                        assert(it != _knobs.end());
+                        Group_KnobGui* parentParentGroupGui = dynamic_cast<Group_KnobGui*>(it->second);
+                        assert(parentParentGroupGui);
+                        parentTabGroup = parentParentGroupGui->getOrCreateTabWidget();
+                    }
+                    
+                    QGridLayout* layout = parentTabGroup->addTab(parentIsGroup, parentIsGroup->getDescription().c_str());
+                    assert(layout);
+                    layout->addWidget(groupAsTab, 0, 0, 1, 2);
+                    
+                } else {
+                    Page_Knob* topLevelPage = getTopLevelPageForKnob(knob.get());
+                    PageMap::iterator page = addPage(topLevelPage,topLevelPage->getDescription().c_str());
+                    assert(page != _pages.end());
+                    ///retrieve the form layout
+                    QGridLayout* layout;
+                    if (_useScrollAreasForTabs) {
+                        layout = dynamic_cast<QGridLayout*>(
+                                                            dynamic_cast<QScrollArea*>(page->second.tab)->widget()->layout() );
+                    } else {
+                        layout = dynamic_cast<QGridLayout*>( page->second.tab->layout() );
+                    }
+                    assert(layout);
+                    
+                    layout->addWidget(groupAsTab, page->second.currentRow, 0, 1, 2);
+                }
+                
+            }
+            
+        } else if (!ret->hasWidgetBeenCreated()) {
             KnobI* parentKnobTmp = parentKnob.get();
             while (parentKnobTmp) {
                 boost::shared_ptr<KnobI> parent = parentKnobTmp->getParentKnob();
@@ -1035,36 +1203,10 @@ DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI> & knob,
                     userPage->addKnob(knob);
                 
                 } else {
-                    
-                    const std::vector< boost::shared_ptr<KnobI> > & knobs = _holder->getKnobs();
-                    ///find in all knobs a page param to set this param into
-                    for (U32 i = 0; i < knobs.size(); ++i) {
-                        Page_Knob* p = dynamic_cast<Page_Knob*>( knobs[i].get() );
-                        if ( p && (p->getDescription() != NATRON_EXTRA_PARAMETER_PAGE_NAME) ) {
-                            page = addPage(p,  p->getDescription().c_str() );
-                            p->addKnob(knob);
-                            break;
-                        }
-                    }
-                   
-                    if ( page == _pages.end() ) {
-                        ///the plug-in didn't specify any page
-                        ///for this param, put it in the first page that is not the default page.
-                        ///If there is still no page, put it in the default tab.
-                        for (PageMap::iterator it = _pages.begin(); it != _pages.end(); ++it) {
-                            if (it->first != _defaultPageName) {
-                                page = it;
-                                break;
-                            }
-                        }
-                        
-                        ///Last resort: The plug-in didn't specify ANY page, just put it into the default page
-                        if ( page == _pages.end() ) {
-                            page = addPage(NULL, _defaultPageName);
-                        }
-                    }
+                    page = getDefaultPage(knob);
                 }
-            }
+                
+            } // if (isTopLevelParentAPage) {
 
             assert( page != _pages.end() );
 
@@ -1095,18 +1237,17 @@ DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI> & knob,
                 fieldLayout = new QHBoxLayout(fieldContainer);
                 fieldLayout->setContentsMargins(3,0,0,NATRON_SETTINGS_VERTICAL_SPACING_PIXELS);
                 fieldLayout->setSpacing(2);
-                //fieldContainer->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Preferred);
             } else {
                 ///otherwise re-use the last row's widget and layout
                 assert(lastRowWidget);
                 fieldContainer = lastRowWidget;
                 fieldLayout = dynamic_cast<QHBoxLayout*>( fieldContainer->layout() );
-
-                ///the knobs use this value to know whether we should remove the row or not
-                //fieldContainer->setObjectName("multi-line");
             }
+            
             assert(fieldContainer);
             assert(fieldLayout);
+            
+            ///Create the label if needed
             ClickableLabel* label = 0;
             
             if (ret->showDescriptionLabel() && !knob->getDescription().empty()) {
@@ -1117,43 +1258,34 @@ DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI> & knob,
 
 
             if ( parentIsGroup && parentIsGroup->isTab() ) {
-                ///The group is a tab, check if the tab widget is created
-                if (!page->second.tabWidget) {
-                    QFrame* frame = new QFrame(_publicInterface);
-                    frame->setFrameShadow(QFrame::Raised);
-                    frame->setFrameShape(QFrame::Box);
-                    QHBoxLayout* frameLayout = new QHBoxLayout(frame);
-                    page->second.tabWidget = new QTabWidget(frame);
-                    frameLayout->addWidget(page->second.tabWidget);
-                    layout->addWidget(frame, page->second.currentRow, 0, 1, 2);
+                assert(parentGui);
+                
+                boost::shared_ptr<KnobI> parentParent = parentIsGroup->getParentKnob();
+                Group_Knob* parentParentIsGroup = dynamic_cast<Group_Knob*>(parentParent.get());
+                Page_Knob* parentParentIsPage = dynamic_cast<Page_Knob*>(parentParent.get());
+                
+                assert(parentParentIsGroup || parentParentIsPage);
+                if (parentParentIsGroup) {
+                    Group_KnobGui* parentParentGroupGui = dynamic_cast<Group_KnobGui*>(findKnobGuiOrCreate(parentParent, true,
+                                                                                                           ret->getFieldContainer()));
+                    assert(parentParentGroupGui);
+                    TabGroup* groupAsTab = parentParentGroupGui->getOrCreateTabWidget();
+                    assert(groupAsTab);
+                    layout = groupAsTab->addTab(parentIsGroup, parentIsGroup->getDescription().c_str());
+                    
+                } else if (parentParentIsPage) {
+                    PageMap::iterator page = addPage(parentParentIsPage, parentParentIsPage->getDescription().c_str());
+                    assert(page != _pages.end());
+                    assert(page->second.groupAsTab);
+                    layout = page->second.groupAsTab->addTab(parentIsGroup, parentIsGroup->getDescription().c_str());
                 }
-                QString parentTabName( parentIsGroup->getDescription().c_str() );
-
-                ///now check if the tab exists
-                QWidget* tab = 0;
-                QGridLayout* tabLayout = 0;
-                for (int i = 0; i < page->second.tabWidget->count(); ++i) {
-                    if (page->second.tabWidget->tabText(i) == parentTabName) {
-                        tab = page->second.tabWidget->widget(i);
-                        tabLayout = qobject_cast<QGridLayout*>( tab->layout() );
-                        break;
-                    }
-                }
-
-                if (!tab) {
-                    tab = new QWidget(page->second.tabWidget);
-                    tabLayout = new QGridLayout(tab);
-                    tabLayout->setColumnStretch(1, 1);
-                    tabLayout->setContentsMargins(0, 0, 0, 0);
-                    tabLayout->setSpacing(NATRON_FORM_LAYOUT_LINES_SPACING); // unfortunately, this leaves extra space when parameters are hidden
-                    page->second.tabWidget->addTab(tab,parentTabName);
-                }
-                ret->createGUI(tabLayout,fieldContainer,label,fieldLayout,makeNewLine,knobsOnSameLine);
-                layout = tabLayout;
-            } else {
-                ///fill the fieldLayout with the widgets
-                ret->createGUI(layout,fieldContainer,label,fieldLayout,makeNewLine,knobsOnSameLine);
+                assert(layout);
+                
             }
+            
+            ///fill the fieldLayout with the widgets
+            ret->createGUI(layout,fieldContainer,label,fieldLayout,makeNewLine,knobsOnSameLine);
+            
             
             ret->setEnabledSlot();
             
@@ -1198,7 +1330,8 @@ DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI> & knob,
                 parentGui->addKnob(ret);
             }
 
-        }
+        } //  if ( !ret->hasWidgetBeenCreated() && ( !isGroup || !isGroup->isTab() ) ) {
+        
     } // !isPage
 
     ///if the knob is a group, create all the children
@@ -1599,33 +1732,35 @@ DockablePanel::deleteKnobGui(const boost::shared_ptr<KnobI>& knob)
         }
         if (isGrp && isGrp->isTab()) {
             //find parent page
-            KnobI* parentKnobTmp = isGrp;
-            while (parentKnobTmp) {
-                boost::shared_ptr<KnobI> parent = parentKnobTmp->getParentKnob();
-                if (!parent) {
-                    break;
-                } else {
-                    parentKnobTmp = parent.get();
-                }
+            boost::shared_ptr<KnobI> parent = knob->getParentKnob();
+            Page_Knob* isParentPage = dynamic_cast<Page_Knob*>(parent.get());
+            Group_Knob* isParentGroup = dynamic_cast<Group_Knob*>(parent.get());
+            
+            assert(isParentPage || isParentGroup);
+            TabGroup* groupAsTab = 0;
+            if (isParentPage) {
+                PageMap::iterator page = _imp->_pages.find(isParentPage->getDescription().c_str());
+                assert(page != _imp->_pages.end());
+                assert(page->second.groupAsTab);
+                groupAsTab = page->second.groupAsTab;
+                
+            } else {
+                std::map<boost::shared_ptr<KnobI>,KnobGui*>::iterator found  = _imp->_knobs.find(knob);
+                assert(found != _imp->_knobs.end());
+                Group_KnobGui* parentGroupGui = dynamic_cast<Group_KnobGui*>(found->second);
+                assert(parentGroupGui);
+                groupAsTab = parentGroupGui->getOrCreateTabWidget();
             }
-            Page_Knob* isTopLevelParentAPage = dynamic_cast<Page_Knob*>(parentKnobTmp);
-            if (isTopLevelParentAPage) {
-                PageMap::iterator page = _imp->_pages.find(isTopLevelParentAPage->getDescription().c_str());
-                int index = -1;
-                if (page->second.tab != 0) {
-                    index = page->second.tabWidget->indexOf(page->second.tab);
-                }
-                if (index != -1) {
-                    page->second.tabWidget->removeTab(index);
-                    page->second.tab->deleteLater();
-                    page->second.tab = 0;
-                }
-                if (page->second.tabWidget->count() == 0) {
-                    page->second.tabWidget->deleteLater();
-                    _imp->_pages.erase(page);
-
-                }
+            assert(groupAsTab);
+            groupAsTab->removeTab(isGrp);
+            
+            std::map<boost::shared_ptr<KnobI>,KnobGui*>::iterator it = _imp->_knobs.find(knob);
+            if (it != _imp->_knobs.end()) {
+                it->first->setKnobGuiPointer(0);
+                delete it->second;
+                _imp->_knobs.erase(it);
             }
+        
         } else {
             
             std::map<boost::shared_ptr<KnobI>,KnobGui*>::iterator it = _imp->_knobs.find(knob);

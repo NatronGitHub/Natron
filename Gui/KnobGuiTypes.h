@@ -73,6 +73,7 @@ class ScaleSliderQWidget;
 class GroupBoxLabel;
 class CurveWidget;
 class KnobCurveGui;
+class TabGroup;
 
 // private classes, defined in KnobGuiTypes.cpp
 class ClickableLabel;
@@ -749,6 +750,8 @@ public:
     bool isChecked() const;
 
     virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
+    
+    TabGroup* getOrCreateTabWidget();
 
 public Q_SLOTS:
     void setChecked(bool b);
@@ -774,6 +777,7 @@ private:
     GroupBoxLabel *_button;
     std::list<KnobGui*> _children;
     std::vector< std::pair<KnobGui*,std::vector<int> > > _childrenToEnable; //< when re-enabling a group, what are the children that we should set
+    TabGroup* _tabGroup;
     //enabled too
     boost::shared_ptr<Group_Knob> _knob;
 };

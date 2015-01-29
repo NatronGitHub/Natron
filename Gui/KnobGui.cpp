@@ -88,7 +88,7 @@ struct KnobGui::KnobGuiPrivate
     bool triggerNewLine;
     int spacingBetweenItems;
     bool widgetCreated;
-    DockablePanel* const container;
+    DockablePanel*  container;
     QMenu* animationMenu;
     AnimationButton* animationButton;
     QMenu* copyRightClickMenu;
@@ -177,6 +177,12 @@ KnobGui::KnobGui(boost::shared_ptr<KnobI> knob,
 KnobGui::~KnobGui()
 {
 
+}
+
+DockablePanel*
+KnobGui::getContainer()
+{
+    return _imp->container;
 }
 
 void

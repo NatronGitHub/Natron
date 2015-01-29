@@ -3502,8 +3502,9 @@ String_KnobGui::updateToolTip()
 
 //=============================GROUP_KNOB_GUI===================================
 GroupBoxLabel::GroupBoxLabel(QWidget *parent)
-    : QLabel(parent),
-      _checked(false)
+: QLabel(parent)
+, _checked(false)
+
 {
     QObject::connect( this, SIGNAL( checked(bool) ), this, SLOT( setChecked(bool) ) );
 }
@@ -3523,16 +3524,31 @@ GroupBoxLabel::setChecked(bool b)
 
 Group_KnobGui::Group_KnobGui(boost::shared_ptr<KnobI> knob,
                              DockablePanel *container)
-    : KnobGui(knob, container)
-      , _checked(false)
-      , _button(0)
+: KnobGui(knob, container)
+, _checked(false)
+, _button(0)
+, _children()
+, _childrenToEnable()
+, _tabGroup(0)
+, _knob( boost::dynamic_pointer_cast<Group_Knob>(knob))
 {
-    _knob = boost::dynamic_pointer_cast<Group_Knob>(knob);
+
 }
 
 Group_KnobGui::~Group_KnobGui()
 {
     
+}
+
+TabGroup*
+Group_KnobGui::getOrCreateTabWidget()
+{
+    if (_tabGroup) {
+        return _tabGroup;
+    }
+    
+    _tabGroup = new TabGroup(getContainer());
+    return _tabGroup;
 }
 
 void Group_KnobGui::removeSpecificGui()

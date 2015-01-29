@@ -45,8 +45,28 @@ class QVBoxLayout;
 class Button;
 class QUndoStack;
 class QUndoCommand;
+class QGridLayout;
 class RotoPanel;
 class MultiInstancePanel;
+class QTabWidget;
+class Group_Knob;
+
+/**
+ * @brief Used when group are using the kFnOfxParamPropGroupIsTab extension
+ **/
+class TabGroup : public QFrame
+{
+    QTabWidget* _tabWidget;
+    std::vector<boost::weak_ptr<Group_Knob> > _tabs;
+    
+public:
+    
+    TabGroup(QWidget* parent);
+    
+    QGridLayout* addTab(const boost::shared_ptr<Group_Knob>& group,const QString& name);
+    
+    void removeTab(Group_Knob* group);
+};
 
 /**
  * @class This is to overcome an issue in QTabWidget : switching tab does not resize the QTabWidget.

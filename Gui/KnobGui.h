@@ -65,6 +65,8 @@ public:
 
     virtual ~KnobGui() OVERRIDE;
     
+    DockablePanel* getContainer();
+    
     void removeGui();
     
     void callDeleteLater();
