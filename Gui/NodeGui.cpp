@@ -534,7 +534,7 @@ void
 NodeGui::adjustSizeToContent(int* /*w*/,int *h)
 {
     QRectF labelBbox = _nameItem->boundingRect();
-    *h = std::max((double)*h, labelBbox.height());
+    *h = std::max((double)*h, labelBbox.height() * 1.2);
 }
 
 void
@@ -568,7 +568,7 @@ NodeGui::resize(int width,
     _nameItem->setX( topLeft.x() + (width / 2) - (nameWidth / 2) );
     
     double mh = labelBbox.height();
-    _nameItem->setY(topLeft.y() + mh / 4.);
+    _nameItem->setY(topLeft.y() + mh * 0.1);
     
     if (mustFrameName()) {
         QRectF nameFrameBox(topLeft.x(),topLeft.y(), width, 1.5 * mh);
