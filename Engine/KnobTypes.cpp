@@ -563,6 +563,13 @@ Choice_Knob::getEntries_mt_safe() const
     return _entries;
 }
 
+int
+Choice_Knob::getNumEntries() const
+{
+    QMutexLocker l(&_entriesMutex);
+    return (int)_entries.size();
+}
+
 std::vector<std::string>
 Choice_Knob::getEntriesHelp_mt_safe() const
 {

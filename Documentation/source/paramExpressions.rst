@@ -127,7 +127,7 @@ will do it by itself::
 	ret = Transform1.translate.get[0]
 
 However if you were to write an expression that spans over multiple lines you would need
-to specifically set the ***ret** variable yourself and toggle-on the *multi-line* button::
+to specifically set the **ret** variable yourself and toggle-on the *multi-line* button::
 
 	a = acos(Transform1.translate.get[0])
 	b = sin(Transform1.rotate.get())
@@ -169,7 +169,7 @@ Note that for 1-dimensional parameter, the :func:`get()<>`function cannot be use
 	Blur1.size.get()
 	
 To retrieve the value of the parameter at a specific *frame* because the parameter is animated,
-you can use the :func:`get(frame)` function. 
+you can use the :func:`get(frame)<>` function. 
 
 Again the :func:`getValueAtTime(frame,dimension)<>` does the same thing but takes a *dimension* parameter to retrieve
 the value of the parameter at a specific *dimension*. The following lines are equivalent to 

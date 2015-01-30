@@ -1342,6 +1342,10 @@ Node::setLabel(const std::string& label)
         QMutexLocker k(&_imp->nameMutex);
         _imp->label = label;
     }
+    boost::shared_ptr<NodeCollection> collection = getGroup();
+    if (collection) {
+        collection->notifyNodeNameChanged(shared_from_this());
+    }
     Q_EMIT labelChanged(QString(label.c_str()));
 
 }
@@ -1374,7 +1378,10 @@ Node::setNameInternal(const std::string& name)
     std::string fullOldName = getFullyQualifiedName();
     std::string newName = name;
     
-    getGroup()->setNodeName(name,false, false, &newName);
+    boost::shared_ptr<NodeCollection> collection = getGroup();
+    if (collection) {
+        collection->setNodeName(name,false, false, &newName);
+    }
     
     {
         QMutexLocker l(&_imp->nameMutex);
@@ -1383,7 +1390,6 @@ Node::setNameInternal(const std::string& name)
         _imp->label = newName;
     }
     
-    boost::shared_ptr<NodeCollection> collection = getGroup();
     if (collection) {
         std::string fullySpecifiedName = getFullyQualifiedName();
         if (!oldName.empty()) {
@@ -1423,7 +1429,6 @@ Node::setNameInternal(const std::string& name)
         } else { //if (!oldName.empty()) {
             declareNodeVariableToPython(fullySpecifiedName);
         }
-        collection->notifyNodeNameChanged(shared_from_this());
     }
     
     QString qnewName(newName.c_str());

@@ -407,6 +407,8 @@ public:
     std::vector<std::string> getEntries_mt_safe() const;
     std::vector<std::string> getEntriesHelp_mt_safe() const;
     std::string getActiveEntryText_mt_safe() const;
+    
+    int getNumEntries() const;
 
     /// Can this type be animated?
     /// ChoiceParam animation may not be quite perfect yet,

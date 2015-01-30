@@ -1014,6 +1014,19 @@ ChoiceParam::getOption(int index) const
     return entries[index];
 }
 
+
+int
+ChoiceParam::getNumOptions() const
+{
+    return _choiceKnob->getNumEntries();
+}
+
+std::vector<std::string>
+ChoiceParam::getOptions() const
+{
+    return _choiceKnob->getEntries_mt_safe();
+}
+
 int
 ChoiceParam::addAsDependencyOf(int fromExprDimension,Param* param)
 {

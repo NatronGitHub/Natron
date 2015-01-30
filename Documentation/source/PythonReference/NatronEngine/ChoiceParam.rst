@@ -20,6 +20,8 @@ Functions
 *    def :meth:`get<NatronEngine.ChoiceParam.get>` (frame)
 *    def :meth:`getDefaultValue<NatronEngine.ChoiceParam.getDefaultValue>` ()
 *    def :meth:`getOption<NatronEngine.ChoiceParam.getOption>` (index)
+*    def :meth:`getNumOptions<NatronEngine.ChoiceParam.getNumOptions>` ()
+*    def :meth:`getOptions<NatronEngine.ChoiceParam.getOptions>` ()
 *    def :meth:`getValue<NatronEngine.ChoiceParam.getValue>` ()
 *    def :meth:`getValueAtTime<NatronEngine.ChoiceParam.getValueAtTime>` (time)
 *    def :meth:`restoreDefaultValue<NatronEngine.ChoiceParam.restoreDefaultValue>` ()
@@ -101,6 +103,17 @@ Get the menu entry at the given *index*.
 
 
 
+.. method:: NatronEngine.ChoiceParam.getNumOptions()
+
+	:rtype: :class:`int`
+
+Returns the number of menu entries.
+
+.. method:: NatronEngine.ChoiceParam.getOptions()
+
+	:rtype: :class:`sequence`
+
+Returns a sequence of string with all menu entries from top to bottom.
 
 .. method:: NatronEngine.ChoiceParam.getValue()
 

@@ -38,16 +38,74 @@ This callback will not be called for project being loaded either via an auto-sav
 	but to define classes and functions that will be used later on by :ref:`application instances<GuiApp>`.	
 	
 Python panels can be re-created for existing projects using serialization
-functionalities explained :ref:`here<panelSerialization>`.
+functionalities explained :ref:`here<panelSerialization>`
+See the example below (the whole script is available attached below)
+::
+
+	# We override the save() function and save the filename
+    def save(self):
+        return self.locationEdit.text()
+
+    # We override the restore(data) function and restore the current image
+    def restore(self,data):
+
+        self.locationEdit.setText(data)
+        self.label.setPixmap(QPixmap(data))
+        
 
 The sole requirement to save a panel in the layout is to call the :func:`registerPythonPanel(panel,function)<NatronGui.GuiApp.registerPythonPanel>` function
-of :ref:`GuiApp<GuiApp>` .
+of :ref:`GuiApp<GuiApp>`::
+
+	app.registerPythonPanel(app.mypanel,"createIconViewer")
+	
+See the details of the :ref:`PyPanel<pypanel>` class for more explanation on how to
+sub-class it.
+
+Also check-out the complete example :ref:`source code<sourcecodeEx>` below.
 
 Using user parameters:
 ----------------------
 
-Let's assume we have no use to make our own widgets and want quick parameters fresh and ready,
-we just have to use the :ref:`PyPanel<pypanel>` class without sub-classing it.
+Let's assume we have no use to make our own widgets and want quick :ref:`parameters<Param>` fresh and ready,
+we just have to use the :ref:`PyPanel<pypanel>` class without sub-classing it::
+	
+	#Callback called when a parameter of the player changes
+	#The variable paramName is declared by Natron; indicating the name of the parameter which just had its value changed
+	def myPlayerParamChangedCallback():
+
+	    viewer = app.getViewer("Viewer1")
+    	if viewer == None:
+        	return
+	    if paramName == "previous":
+    	    viewer.seek(viewer.getCurrentFrame() - 1)
+    
+
+	
+	def createMyPlayer():
+	
+		#Create a panel named "My Panel" that will use user parameters
+		app.player = NatronGui.PyPanel("fr.inria.myplayer","My Player",True,app)
+	
+		#Add a push-button parameter named "Previous"
+	    app.player.previousFrameButton = app.player.createButtonParam("previous","Previous")
+	
+		#Refresh user parameters GUI, necessary after changes to static properties of parameters.
+		#See the Param class documentation
+		app.player.refreshUserParamsGUI()
+	
+		#Set a callback that will be called upon parameter change
+	    app.player.setParamChangedCallback("myPlayerParamChangedCallback")
 
 
+.. note:: 
 
+	For convenience, there is a way to also add custom widgets to python panels that are 
+	using user parameters with the :func:`addWidget(widget)<>` and :func:`insertWidget(index,widget)<>`
+	functions. However the widgets will be appended **after** any user parameter defined.
+
+.. _sourcecodeEx:
+
+Source code of the example initGui.py
+---------------------------------------	
+
+.. literalinclude:: initGui.py

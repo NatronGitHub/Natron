@@ -724,6 +724,16 @@ public:
     std::string getOption(int index) const;
     
     /**
+     * @brief Returns the count of options
+     **/
+    int getNumOptions() const;
+    
+    /**
+     * @brief Returns all options
+     **/
+    std::vector<std::string> getOptions() const;
+    
+    /**
      * @brief Adds this Param as a dependency of the given Param. This is used mainly by the GUI to notify the user
      * when a dependency (through expressions) is destroyed (because the holding node has been removed).
      * You should not call this directly.
