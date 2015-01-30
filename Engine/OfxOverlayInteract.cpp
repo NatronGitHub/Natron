@@ -221,12 +221,15 @@ NatronOverlayInteractSupport::n_getBackgroundColour(double &r,
     }
 }
 
-void
-NatronOverlayInteractSupport::n_getOverlayColour(double &r,
-                                                 double &g,
-                                                 double &b) const
+bool
+NatronOverlayInteractSupport::n_getSuggestedColour(double &r,
+                                                   double &g,
+                                                   double &b) const
 {
-    r = g = b = 1.;
+    return false;
+    // TODO
+    //r = g = b = ...;
+    //return true;
 }
 
 void
