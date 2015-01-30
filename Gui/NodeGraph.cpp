@@ -387,7 +387,10 @@ NodeGraph::NodeGraph(Gui* gui,
 
     NodeGroup* isGrp = dynamic_cast<NodeGroup*>(group.get());
     if (isGrp) {
+        setScriptName(isGrp->getScriptName());
+        setLabel(isGrp->getNode()->getLabel());
         QObject::connect(isGrp->getNode().get(), SIGNAL(labelChanged(QString)), this, SLOT( onGroupNameChanged(QString)));
+        QObject::connect(isGrp->getNode().get(), SIGNAL(scriptNameChanged(QString)), this, SLOT( onGroupScriptNameChanged(QString)));
     }
     
     setMouseTracking(true);
@@ -1957,7 +1960,7 @@ NodeGraph::mouseDoubleClickEvent(QMouseEvent* /*e*/)
                     
                     isParentTab = dynamic_cast<TabWidget*>(lastSelectedGraph->parentWidget());
                     assert(isParentTab);
-                    isParentTab->setCurrentWidget(graph);
+                    isParentTab->appendTab(graph,graph);
 
                 }
                 QTimer::singleShot(25, graph, SLOT(centerOnAllNodes()));
@@ -4317,14 +4320,29 @@ NodeGraph::createGroupFromSelection()
 void
 NodeGraph::onGroupNameChanged(const QString& name)
 {
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-    getGui()->unregisterTab(this);
+    
     setLabel(name.toStdString());
     TabWidget* parent = dynamic_cast<TabWidget*>(parentWidget() );
     if (parent) {
         parent->setTabLabel(this, name);
     }
+}
+
+void
+NodeGraph::onGroupScriptNameChanged(const QString& name)
+{
+    assert( qApp && qApp->thread() == QThread::currentThread() );
+    std::string newName = name.toStdString();
+    std::string oldName = getScriptName();
+    
+    getGui()->unregisterTab(this);
+    setScriptName(newName);
     getGui()->registerTab(this,this);
+    TabWidget* parent = dynamic_cast<TabWidget*>(parentWidget() );
+    if (parent) {
+        parent->onTabScriptNameChanged(this, oldName, newName);
+    }
+
 }
 
 void

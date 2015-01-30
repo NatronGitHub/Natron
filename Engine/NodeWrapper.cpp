@@ -71,8 +71,8 @@ Effect::canConnectInput(int inputNumber,const Effect* node) const
     if (!node->getInternalNode()) {
         return false;
     }
-    
-    return _node->canConnectInput(node->getInternalNode(),inputNumber);
+    Natron::Node::CanConnectInputReturnValue ret = _node->canConnectInput(node->getInternalNode(),inputNumber);
+    return ret == Natron::Node::eCanConnectInput_ok;
 }
 
 bool

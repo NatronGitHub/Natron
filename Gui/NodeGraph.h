@@ -206,6 +206,7 @@ public:
     void toggleAutoTurbo();
     
     void onGroupNameChanged(const QString& name);
+    void onGroupScriptNameChanged(const QString& name);
     
 private:
 
