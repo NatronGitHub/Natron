@@ -369,6 +369,20 @@ struct NodeGraphPrivate
     
 };
 
+static void makeFullyQualifiedLabel(Natron::Node* node,std::string* ret)
+{
+    boost::shared_ptr<NodeCollection> parent = node->getGroup();
+    NodeGroup* isParentGrp = dynamic_cast<NodeGroup*>(parent.get());
+    std::string toPreprend = node->getLabel();
+    if (isParentGrp) {
+        toPreprend.insert(0, "/");
+    }
+    ret->insert(0, toPreprend);
+    if (isParentGrp) {
+        makeFullyQualifiedLabel(isParentGrp->getNode().get(), ret);
+    }
+}
+
 NodeGraph::NodeGraph(Gui* gui,
                      const boost::shared_ptr<NodeCollection>& group,
                      QGraphicsScene* scene,
@@ -387,11 +401,19 @@ NodeGraph::NodeGraph(Gui* gui,
 
     NodeGroup* isGrp = dynamic_cast<NodeGroup*>(group.get());
     if (isGrp) {
-        setScriptName(isGrp->getScriptName());
-        setLabel(isGrp->getNode()->getLabel());
+        setScriptName(isGrp->getNode()->getFullyQualifiedName());
+        std::string label;
+        makeFullyQualifiedLabel(isGrp->getNode().get(),&label);
+        setLabel(label);
         QObject::connect(isGrp->getNode().get(), SIGNAL(labelChanged(QString)), this, SLOT( onGroupNameChanged(QString)));
         QObject::connect(isGrp->getNode().get(), SIGNAL(scriptNameChanged(QString)), this, SLOT( onGroupScriptNameChanged(QString)));
+    } else {
+        setScriptName(kNodeGraphObjectName);
+        setLabel(QObject::tr("Node Graph").toStdString());
     }
+    
+    
+    
     
     setMouseTracking(true);
     setCacheMode(CacheBackground);
@@ -3975,10 +3997,6 @@ NodeGraph::popRenameDialog(const QPoint& pos)
     
     assert(node);
 
-    if (dynamic_cast<GroupOutput*>(node->getNode()->getLiveInstance())) {
-        Natron::errorDialog(tr("Rename").toStdString(), tr("You cannot rename an Output node for scripting purposes.").toStdString());
-        return;
-    }
     
     QPoint realPos = pos;
     
@@ -4329,12 +4347,20 @@ NodeGraph::onGroupNameChanged(const QString& name)
 }
 
 void
-NodeGraph::onGroupScriptNameChanged(const QString& name)
+NodeGraph::onGroupScriptNameChanged(const QString& /*name*/)
 {
     assert( qApp && qApp->thread() == QThread::currentThread() );
-    std::string newName = name.toStdString();
-    std::string oldName = getScriptName();
     
+    boost::shared_ptr<NodeCollection> group = getGroup();
+    if (!group) {
+        return;
+    }
+    NodeGroup* isGrp = dynamic_cast<NodeGroup*>(group.get());
+    if (!isGrp) {
+        return;
+    }
+    std::string newName = isGrp->getNode()->getFullyQualifiedName();
+    std::string oldName = getScriptName();
     getGui()->unregisterTab(this);
     setScriptName(newName);
     getGui()->registerTab(this,this);

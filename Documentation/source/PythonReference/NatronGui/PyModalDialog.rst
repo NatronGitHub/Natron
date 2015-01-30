@@ -79,6 +79,12 @@ You can then retrieve the value of a parameter once the dialog is finished using
 		intValue = dialog.getParam("myInt").get()
 		boolValue = dialog.getParam("myBool").get()
 
+.. warning::
+
+	Unlike the :ref:`Effect<Effect>` class, parameters on modal dialogs are not automatically declared by Natron,
+	which means you cannot do stuff like *dialog.intValue*
+	
+
 		
 Member functions description
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^

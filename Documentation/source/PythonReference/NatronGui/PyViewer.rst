@@ -231,5 +231,5 @@ visible when the number of views in the project settings has been set to a value
 
 	:param viewIndex: :class:`int`
 	
-Retrusn the currently  displayed view index. This is the index in the multi-view combobox
+Returns the currently  displayed view index. This is the index in the multi-view combobox
 visible when the number of views in the project settings has been set to a value greater than 1.

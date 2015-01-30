@@ -1,3 +1,5 @@
+.. _apiReference:
+
 Natron Python API reference
 ===========================
 

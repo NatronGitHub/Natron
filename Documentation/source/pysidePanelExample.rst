@@ -103,6 +103,29 @@ we just have to use the :ref:`PyPanel<pypanel>` class without sub-classing it::
 	using user parameters with the :func:`addWidget(widget)<>` and :func:`insertWidget(index,widget)<>`
 	functions. However the widgets will be appended **after** any user parameter defined.
 
+
+Managing panels and panes
+--------------------------
+
+Panels in Natron all have an underlying script-name, that is the one you gave as first parameter
+to the constructor of :ref:`PyPanel<pypanel>`. 
+
+You can then move the :ref:`PyPanel<pypanel>` between the application's :ref:`panes<pyTabWidget>` by calling
+the function :func:`moveTab(scriptName,pane)<>` of :ref:`GuiApp<GuiApp>`.
+
+.. note:: 
+
+	All application's panes are :ref:`auto-declared<autoVar>` by Natron and can be referenced directly
+	by a variable, such as::
+		app.pane2
+	
+Panels also have a script-name but only :ref:`viewers<pyViewer>` and :ref:`user panels<pypanel>`
+are auto-declared by Natron::
+
+	app.pane2.Viewer1
+	app.pane1.myPySidePanelScriptName
+	
+
 .. _sourcecodeEx:
 
 Source code of the example initGui.py

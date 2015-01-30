@@ -135,6 +135,7 @@ PyModalDialog::PyModalDialog(Gui* gui)
 , _imp(new PyModalDialogPrivate(gui))
 {
     _imp->holder = new DialogParamHolder(std::string(),gui->getApp());
+    setHolder(_imp->holder);
     _imp->holder->initializeKnobsPublic();
     _imp->mainLayout = new QVBoxLayout(this);
     _imp->mainLayout->setContentsMargins(0, 0, 0, 0);
@@ -201,6 +202,7 @@ PyModalDialog::getParam(const std::string& scriptName) const
 }
 
 
+
 struct PyPanelPrivate
 {
     
@@ -260,7 +262,7 @@ PyPanel::PyPanel(const std::string& scriptName,const std::string& label,bool use
     
     setScriptName(name);
     _imp->gui->registerTab(this,this);
-   
+
     
     if (useUserParameters) {
         _imp->holder = new DialogParamHolder(name,_imp->gui->getApp());

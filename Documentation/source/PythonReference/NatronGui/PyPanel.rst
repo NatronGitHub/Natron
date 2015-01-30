@@ -84,11 +84,18 @@ You can then retrieve the value of a parameter at any time using the :func:`getP
 	intValue = panel.getParam("myInt").get()
 	boolValue = panel.getParam("myBool").get()
 	
+.. warning::
+
+	Unlike the :ref:`Effect<Effect>` class, parameters on panels are not automatically declared by Natron,
+	which means you cannot do stuff like *panel.intValue*
+	
 You can get notified when a parameter's value changed, by setting a callback using the 
 :func:`setParamChangedCallback(callback)<NatronGui.PyPanel.setParamChangedCallback>` function that takes
 the name of a Python-defined function in parameters.
 The variable **thisParam** will be declared prior to calling the callback, referencing the parameter 
 which just had its value changed.
+	
+	
 	
 	
 Managing the panel:

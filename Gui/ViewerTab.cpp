@@ -3461,10 +3461,10 @@ ViewerTab::onInternalNodeLabelChanged(const QString& name)
 }
 
 void
-ViewerTab::onInternalNodeScriptNameChanged(const QString& name)
+ViewerTab::onInternalNodeScriptNameChanged(const QString& /*name*/)
 {
     // always running in the main thread
-    std::string newName = name.toStdString();
+    std::string newName = _imp->viewerNode->getNode()->getFullyQualifiedName();
     std::string oldName = getScriptName();
   
     assert( qApp && qApp->thread() == QThread::currentThread() );

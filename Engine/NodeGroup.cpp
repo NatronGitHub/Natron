@@ -412,7 +412,7 @@ NodeCollection::connectNodes(int inputNumber,const NodePtr& input,Natron::Node* 
     ////Only called by the main-thread
     assert( QThread::currentThread() == qApp->thread() );
     
-    NodePtr existingInput = output->getInput(inputNumber);
+    NodePtr existingInput = output->getRealInput(inputNumber);
     if (force && existingInput) {
         bool ok = disconnectNodes(existingInput.get(), output);
         assert(ok);
@@ -1889,8 +1889,16 @@ NodeCollection::exportGroupToPython(const QString& pluginLabel,
     WRITE_STATIC_LINE("#Note that Viewers are never exported");
     WRITE_STATIC_LINE("");
    
+    WRITE_STATIC_LINE("def getPluginID():");
+    WRITE_INDENT(1);WRITE_STRING("return \"" + pluginLabel + "\"");
+    WRITE_STATIC_LINE("");
+    
     WRITE_STATIC_LINE("def getLabel():");
     WRITE_INDENT(1);WRITE_STRING("return \"" + pluginLabel + "\"");
+    WRITE_STATIC_LINE("");
+    
+    WRITE_STATIC_LINE("def getVersion():");
+    WRITE_INDENT(1);WRITE_STRING("return 1");
     WRITE_STATIC_LINE("");
   
     if (!pluginIconPath.isEmpty()) {

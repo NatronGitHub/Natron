@@ -1,5 +1,7 @@
 .. module:: NatronGui
 
+.. _NatronGui:
+
 NatronGui
 *********
 
