@@ -2300,6 +2300,8 @@ KnobGui::onExprChanged(int dimension)
     }
     
     onHelpChanged();
+    
+    updateGUI(dimension);
 }
 
 void
