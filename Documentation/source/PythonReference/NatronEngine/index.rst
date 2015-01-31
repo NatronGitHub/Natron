@@ -45,7 +45,6 @@ without importing anything.
 	ParametricParam
 	PathParam
 	PyCoreApplication
-	RenderTask
 	Roto
 	StringParam
 	StringParamBase

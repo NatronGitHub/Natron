@@ -153,7 +153,6 @@ SOURCES += \
     NatronEngine/groupparam_wrapper.cpp \
     NatronEngine/pageparam_wrapper.cpp \
     NatronEngine/appsettings_wrapper.cpp \
-    NatronEngine/rendertask_wrapper.cpp \
     NatronEngine/pycoreapplication_wrapper.cpp \
     NatronEngine/userparamholder_wrapper.cpp
 
@@ -317,7 +316,6 @@ HEADERS += \
     NatronEngine/groupparam_wrapper.h \
     NatronEngine/pageparam_wrapper.h \
     NatronEngine/appsettings_wrapper.h \
-    NatronEngine/rendertask_wrapper.h \
     NatronEngine/pycoreapplication_wrapper.h \
     NatronEngine/userparamholder_wrapper.h
 

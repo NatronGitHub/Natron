@@ -413,6 +413,7 @@ You can set the callback from the Write node settings panel in the "Python" tab.
 
 This function can be used to communicate with external programs for example.
 
+.. _afterRenderCallback:
 
 The After render callback:
 ---------------------------

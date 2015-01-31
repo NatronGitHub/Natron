@@ -160,14 +160,14 @@ void AppSettings::restoreDefaultSettings()
 }
 
 void
-App::render(const RenderTask& task)
+App::render(Effect* writeNode,int firstFrame,int lastFrame)
 {
-    if (!task.writeNode) {
+    if (!writeNode) {
         std::cerr << QObject::tr("Invalid write node").toStdString() << std::endl;
         return;
     }
     AppInstance::RenderWork w;
-    NodePtr node =  task.writeNode->getInternalNode();
+    NodePtr node =  writeNode->getInternalNode();
     if (!node) {
         std::cerr << QObject::tr("Invalid write node").toStdString() << std::endl;
         return;
@@ -178,8 +178,8 @@ App::render(const RenderTask& task)
         return;
     }
     
-    w.firstFrame = task.firstFrame;
-    w.lastFrame = task.lastFrame;
+    w.firstFrame = firstFrame;
+    w.lastFrame = lastFrame;
     
     std::list<AppInstance::RenderWork> l;
     l.push_back(w);
@@ -187,17 +187,21 @@ App::render(const RenderTask& task)
 }
 
 void
-App::render(const std::list<RenderTask>& tasks)
+App::render(const std::list<Effect*>& effects,const std::list<int>& firstFrames,const std::list<int>& lastFrames)
 {
     std::list<AppInstance::RenderWork> l;
 
-    for (std::list<RenderTask>::const_iterator it = tasks.begin(); it != tasks.end(); ++it) {
-        if (!it->writeNode) {
+    assert(effects.size() == firstFrames.size() && effects.size() == lastFrames.size());
+    std::list<Effect*>::const_iterator itE = effects.begin();
+    std::list<int>::const_iterator itF = firstFrames.begin();
+    std::list<int>::const_iterator itL = lastFrames.begin();
+    for (; itE != effects.end(); ++itE, ++itF, ++itL) {
+        if (!*itE) {
             std::cerr << QObject::tr("Invalid write node").toStdString() << std::endl;
             return;
         }
         AppInstance::RenderWork w;
-        NodePtr node =  it->writeNode->getInternalNode();
+        NodePtr node =  (*itE)->getInternalNode();
         if (!node) {
             std::cerr << QObject::tr("Invalid write node").toStdString() << std::endl;
             return;
@@ -208,8 +212,8 @@ App::render(const std::list<RenderTask>& tasks)
             return;
         }
         
-        w.firstFrame = it->firstFrame;
-        w.lastFrame = it->lastFrame;
+        w.firstFrame = (*itF);
+        w.lastFrame = (*itL);
         
         l.push_back(w);
 

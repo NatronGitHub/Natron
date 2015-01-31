@@ -3206,7 +3206,7 @@ KnobHolder::setKnobsFrozen(bool frozen)
         }
         _imp->knobsFrozen = frozen;
     }
-    const std::vector<boost::shared_ptr<KnobI> > & knobs = getKnobs();
+    std::vector<boost::shared_ptr<KnobI> >  knobs = getKnobs_mt_safe();
     
     for (U32 i = 0; i < knobs.size(); ++i) {
         knobs[i]->setIsFrozen(frozen);

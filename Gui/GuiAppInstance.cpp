@@ -365,13 +365,31 @@ GuiAppInstance::createNodeGui(const boost::shared_ptr<Natron::Node> &node,
 std::string
 GuiAppInstance::openImageFileDialog()
 {
-    return _imp->_gui->openImageSequenceDialog();
+    {
+        QMutexLocker l(&_imp->_showingDialogMutex);
+        _imp->_showingDialog = true;
+    }
+    std::string ret = _imp->_gui->openImageSequenceDialog();
+    {
+        QMutexLocker l(&_imp->_showingDialogMutex);
+        _imp->_showingDialog = false;
+    }
+    return ret;
 }
 
 std::string
 GuiAppInstance::saveImageFileDialog()
 {
-    return _imp->_gui->saveImageSequenceDialog();
+    {
+        QMutexLocker l(&_imp->_showingDialogMutex);
+        _imp->_showingDialog = true;
+    }
+    std::string ret =  _imp->_gui->saveImageSequenceDialog();
+    {
+        QMutexLocker l(&_imp->_showingDialogMutex);
+        _imp->_showingDialog = false;
+    }
+    return ret;
 }
 
 Gui*

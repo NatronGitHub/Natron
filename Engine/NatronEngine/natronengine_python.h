@@ -80,6 +80,7 @@
 #define SBK_GROUPPARAM_IDX                                           18
 #define SBK_BUTTONPARAM_IDX                                          6
 #define SBK_ANIMATEDPARAM_IDX                                        0
+#define SBK_BOOLEANPARAM_IDX                                         5
 #define SBK_CHOICEPARAM_IDX                                          7
 #define SBK_COLORPARAM_IDX                                           8
 #define SBK_DOUBLEPARAM_IDX                                          14
@@ -88,26 +89,24 @@
 #define SBK_INTPARAM_IDX                                             23
 #define SBK_INT2DPARAM_IDX                                           19
 #define SBK_INT3DPARAM_IDX                                           21
-#define SBK_STRINGPARAMBASE_IDX                                      52
+#define SBK_STRINGPARAMBASE_IDX                                      51
 #define SBK_PATHPARAM_IDX                                            45
 #define SBK_OUTPUTFILEPARAM_IDX                                      41
 #define SBK_FILEPARAM_IDX                                            16
-#define SBK_STRINGPARAM_IDX                                          50
-#define SBK_STRINGPARAM_TYPEENUM_IDX                                 51
-#define SBK_BOOLEANPARAM_IDX                                         5
-#define SBK_USERPARAMHOLDER_IDX                                      53
-#define SBK_ROTO_IDX                                                 49
+#define SBK_STRINGPARAM_IDX                                          49
+#define SBK_STRINGPARAM_TYPEENUM_IDX                                 50
+#define SBK_USERPARAMHOLDER_IDX                                      52
+#define SBK_ROTO_IDX                                                 48
 #define SBK_ITEMBASE_IDX                                             24
 #define SBK_BEZIERCURVE_IDX                                          3
 #define SBK_BEZIERCURVE_CAIROOPERATORENUM_IDX                        4
 #define SBK_LAYER_IDX                                                25
-#define SBK_RENDERTASK_IDX                                           48
 #define SBK_APPSETTINGS_IDX                                          2
 #define SBK_GROUP_IDX                                                17
 #define SBK_APP_IDX                                                  1
 #define SBK_EFFECT_IDX                                               15
 #define SBK_PYCOREAPPLICATION_IDX                                    46
-#define SBK_NatronEngine_IDX_COUNT                                   54
+#define SBK_NatronEngine_IDX_COUNT                                   53
 
 // This variable stores all Python types exported by this module.
 extern PyTypeObject** SbkNatronEngineTypes;
@@ -123,7 +122,7 @@ extern SbkConverter** SbkNatronEngineTypeConverters;
 #define SBK_NATRONENGINE_STD_LIST_ITEMBASEPTR_IDX                    4 // std::list<ItemBase * >
 #define SBK_NATRONENGINE_STD_LIST_PARAMPTR_IDX                       5 // std::list<Param * >
 #define SBK_NATRONENGINE_STD_LIST_EFFECTPTR_IDX                      6 // std::list<Effect * >
-#define SBK_NATRONENGINE_STD_LIST_RENDERTASK_IDX                     7 // const std::list<RenderTask > &
+#define SBK_NATRONENGINE_STD_LIST_INT_IDX                            7 // const std::list<int > &
 #define SBK_NATRONENGINE_STD_LIST_STD_STRING_IDX                     8 // std::list<std::string >
 #define SBK_NATRONENGINE_QLIST_QVARIANT_IDX                          9 // QList<QVariant >
 #define SBK_NATRONENGINE_QLIST_QSTRING_IDX                           10 // QList<QString >
@@ -162,6 +161,7 @@ template<> inline PyTypeObject* SbkType< ::PageParam >() { return reinterpret_ca
 template<> inline PyTypeObject* SbkType< ::GroupParam >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_GROUPPARAM_IDX]); }
 template<> inline PyTypeObject* SbkType< ::ButtonParam >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_BUTTONPARAM_IDX]); }
 template<> inline PyTypeObject* SbkType< ::AnimatedParam >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_ANIMATEDPARAM_IDX]); }
+template<> inline PyTypeObject* SbkType< ::BooleanParam >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_BOOLEANPARAM_IDX]); }
 template<> inline PyTypeObject* SbkType< ::ChoiceParam >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_CHOICEPARAM_IDX]); }
 template<> inline PyTypeObject* SbkType< ::ColorParam >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_COLORPARAM_IDX]); }
 template<> inline PyTypeObject* SbkType< ::DoubleParam >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_DOUBLEPARAM_IDX]); }
@@ -176,14 +176,12 @@ template<> inline PyTypeObject* SbkType< ::OutputFileParam >() { return reinterp
 template<> inline PyTypeObject* SbkType< ::FileParam >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_FILEPARAM_IDX]); }
 template<> inline PyTypeObject* SbkType< ::StringParam::TypeEnum >() { return SbkNatronEngineTypes[SBK_STRINGPARAM_TYPEENUM_IDX]; }
 template<> inline PyTypeObject* SbkType< ::StringParam >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_STRINGPARAM_IDX]); }
-template<> inline PyTypeObject* SbkType< ::BooleanParam >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_BOOLEANPARAM_IDX]); }
 template<> inline PyTypeObject* SbkType< ::UserParamHolder >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_USERPARAMHOLDER_IDX]); }
 template<> inline PyTypeObject* SbkType< ::Roto >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_ROTO_IDX]); }
 template<> inline PyTypeObject* SbkType< ::ItemBase >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_ITEMBASE_IDX]); }
 template<> inline PyTypeObject* SbkType< ::BezierCurve::CairoOperatorEnum >() { return SbkNatronEngineTypes[SBK_BEZIERCURVE_CAIROOPERATORENUM_IDX]; }
 template<> inline PyTypeObject* SbkType< ::BezierCurve >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_BEZIERCURVE_IDX]); }
 template<> inline PyTypeObject* SbkType< ::Layer >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_LAYER_IDX]); }
-template<> inline PyTypeObject* SbkType< ::RenderTask >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_RENDERTASK_IDX]); }
 template<> inline PyTypeObject* SbkType< ::AppSettings >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_APPSETTINGS_IDX]); }
 template<> inline PyTypeObject* SbkType< ::Group >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_GROUP_IDX]); }
 template<> inline PyTypeObject* SbkType< ::App >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_APP_IDX]); }

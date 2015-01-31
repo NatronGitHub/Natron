@@ -14,7 +14,6 @@
 #include "guiapp_wrapper.h"
 
 // Extra includes
-#include <AppInstanceWrapper.h>
 #include <GuiAppWrapper.h>
 #include <NodeGroupWrapper.h>
 #include <NodeWrapper.h>

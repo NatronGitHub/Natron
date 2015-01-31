@@ -14,7 +14,6 @@
 #include "app_wrapper.h"
 
 // Extra includes
-#include <AppInstanceWrapper.h>
 #include <NodeGroupWrapper.h>
 #include <NodeWrapper.h>
 #include <ParameterWrapper.h>
@@ -214,7 +213,7 @@ static PyObject* Sbk_AppFunc_getProjectParam(PyObject* self, PyObject* pyArg)
         return 0;
 }
 
-static PyObject* Sbk_AppFunc_render(PyObject* self, PyObject* pyArg)
+static PyObject* Sbk_AppFunc_render(PyObject* self, PyObject* args)
 {
     ::App* cppSelf = 0;
     SBK_UNUSED(cppSelf)
@@ -222,16 +221,30 @@ static PyObject* Sbk_AppFunc_render(PyObject* self, PyObject* pyArg)
         return 0;
     cppSelf = ((::App*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_APP_IDX], (SbkObject*)self));
     int overloadId = -1;
-    PythonToCppFunc pythonToCpp;
+    PythonToCppFunc pythonToCpp[] = { 0, 0, 0 };
     SBK_UNUSED(pythonToCpp)
+    int numArgs = PyTuple_GET_SIZE(args);
+    PyObject* pyArgs[] = {0, 0, 0};
+
+    // invalid argument lengths
+    if (numArgs == 2)
+        goto Sbk_AppFunc_render_TypeError;
+
+    if (!PyArg_UnpackTuple(args, "render", 1, 3, &(pyArgs[0]), &(pyArgs[1]), &(pyArgs[2])))
+        return 0;
+
 
     // Overloaded function decisor
-    // 0: render(RenderTask)
-    // 1: render(std::list<RenderTask>)
-    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppReferenceConvertible((SbkObjectType*)SbkNatronEngineTypes[SBK_RENDERTASK_IDX], (pyArg)))) {
-        overloadId = 0; // render(RenderTask)
-    } else if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_LIST_RENDERTASK_IDX], (pyArg)))) {
-        overloadId = 1; // render(std::list<RenderTask>)
+    // 0: render(Effect*,int,int)
+    // 1: render(std::list<Effect*>,std::list<int>,std::list<int>)
+    if (numArgs == 3
+        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppPointerConvertible((SbkObjectType*)SbkNatronEngineTypes[SBK_EFFECT_IDX], (pyArgs[0])))
+        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[1])))
+        && (pythonToCpp[2] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[2])))) {
+        overloadId = 0; // render(Effect*,int,int)
+    } else if (numArgs == 1
+        && PyList_Check(pyArgs[0])) {
+        overloadId = 1; // render(std::list<Effect*>,std::list<int>,std::list<int>)
     }
 
     // Function signature not found.
@@ -239,31 +252,69 @@ static PyObject* Sbk_AppFunc_render(PyObject* self, PyObject* pyArg)
 
     // Call function/method
     switch (overloadId) {
-        case 0: // render(const RenderTask & task)
+        case 0: // render(Effect * writeNode, int firstFrame, int lastFrame)
         {
-            if (!Shiboken::Object::isValid(pyArg))
+            if (!Shiboken::Object::isValid(pyArgs[0]))
                 return 0;
-            ::RenderTask* cppArg0;
-            pythonToCpp(pyArg, &cppArg0);
+            ::Effect* cppArg0;
+            pythonToCpp[0](pyArgs[0], &cppArg0);
+            int cppArg1;
+            pythonToCpp[1](pyArgs[1], &cppArg1);
+            int cppArg2;
+            pythonToCpp[2](pyArgs[2], &cppArg2);
 
             if (!PyErr_Occurred()) {
-                // render(RenderTask)
+                // render(Effect*,int,int)
                 PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-                cppSelf->render(*cppArg0);
+                cppSelf->render(cppArg0, cppArg1, cppArg2);
                 PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             }
             break;
         }
-        case 1: // render(const std::list<RenderTask > & tasks)
+        case 1: // render(const std::list<Effect * > & effects, const std::list<int > & firstFrames, const std::list<int > & lastFrames)
         {
-            ::std::list<RenderTask > cppArg0;
-            pythonToCpp(pyArg, &cppArg0);
 
             if (!PyErr_Occurred()) {
-                // render(std::list<RenderTask>)
-                PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-                cppSelf->render(cppArg0);
-                PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+                // render(std::list<Effect*>,std::list<int>,std::list<int>)
+                // Begin code injection
+
+                if (!PyList_Check(pyArgs[1-1])) {
+                    PyErr_SetString(PyExc_TypeError, "tasks must be a list of tuple objects.");
+                    return 0;
+                }
+                std::list<Effect*> effects;
+
+                std::list<int> firstFrames;
+
+                std::list<int> lastFrames;
+
+                int size = (int)PyList_GET_SIZE(pyArgs[1-1]);
+                for (int i = 0; i < size; ++i) {
+                    PyObject* tuple = PyList_GET_ITEM(pyArgs[1-1],i);
+                    if (!tuple) {
+                        PyErr_SetString(PyExc_TypeError, "tasks must be a list of tuple objects.");
+                        return 0;
+                    }
+                    if (PyTuple_GET_SIZE(pyArgs[1-1]) != 3) {
+                    PyErr_SetString(PyExc_TypeError, "the tuple must have exactly 3 items.");
+                    return 0;
+                    }
+                    ::Effect* writeNode = ((::Effect*)0);
+                    Shiboken::Conversions::pythonToCppPointer((SbkObjectType*)SbkNatronEngineTypes[SBK_EFFECT_IDX], PyTuple_GET_ITEM(tuple, 0), &(writeNode));
+                    int firstFrame;
+                    Shiboken::Conversions::pythonToCppCopy(Shiboken::Conversions::PrimitiveTypeConverter<int>(), PyTuple_GET_ITEM(tuple, 1), &(firstFrame));
+                    int lastFrame;
+                    Shiboken::Conversions::pythonToCppCopy(Shiboken::Conversions::PrimitiveTypeConverter<int>(), PyTuple_GET_ITEM(tuple, 2), &(lastFrame));
+                    effects.push_back(writeNode);
+                    firstFrames.push_back(firstFrame);
+                    lastFrames.push_back(lastFrame);
+                }
+
+                cppSelf->render(effects,firstFrames,lastFrames);
+
+                // End of code injection
+
+
             }
             break;
         }
@@ -275,8 +326,8 @@ static PyObject* Sbk_AppFunc_render(PyObject* self, PyObject* pyArg)
     Py_RETURN_NONE;
 
     Sbk_AppFunc_render_TypeError:
-        const char* overloads[] = {"NatronEngine.RenderTask", "list", 0};
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.App.render", overloads);
+        const char* overloads[] = {"NatronEngine.Effect, int, int", "list, list, list", 0};
+        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.App.render", overloads);
         return 0;
 }
 
@@ -368,7 +419,7 @@ static PyMethodDef Sbk_App_methods[] = {
     {"createNode", (PyCFunction)Sbk_AppFunc_createNode, METH_VARARGS|METH_KEYWORDS},
     {"getAppID", (PyCFunction)Sbk_AppFunc_getAppID, METH_NOARGS},
     {"getProjectParam", (PyCFunction)Sbk_AppFunc_getProjectParam, METH_O},
-    {"render", (PyCFunction)Sbk_AppFunc_render, METH_O},
+    {"render", (PyCFunction)Sbk_AppFunc_render, METH_VARARGS},
     {"timelineGetLeftBound", (PyCFunction)Sbk_AppFunc_timelineGetLeftBound, METH_NOARGS},
     {"timelineGetRightBound", (PyCFunction)Sbk_AppFunc_timelineGetRightBound, METH_NOARGS},
     {"timelineGetTime", (PyCFunction)Sbk_AppFunc_timelineGetTime, METH_NOARGS},

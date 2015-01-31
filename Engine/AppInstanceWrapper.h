@@ -46,15 +46,6 @@ private:
     boost::shared_ptr<Settings> _settings;
 };
 
-struct RenderTask
-{
-    Effect* writeNode;
-    int firstFrame,lastFrame;
-    
-    RenderTask() : writeNode(0), firstFrame(0), lastFrame(0) {}
-    
-    RenderTask(Effect* writeNode, int firstFrame, int lastFrame) : writeNode(writeNode) , firstFrame(firstFrame) , lastFrame(lastFrame) {}
-};
 
 class App : public Group
 {
@@ -89,8 +80,8 @@ public:
     int timelineGetRightBound() const;
     
     
-    void render(const RenderTask& task);
-    void render(const std::list<RenderTask>& tasks);
+    void render(Effect* writeNode,int firstFrame, int lastFrame);
+    void render(const std::list<Effect*>& effects,const std::list<int>& firstFrames,const std::list<int>& lastFrames);
     
     Param* getProjectParam(const std::string& name) const;
 };

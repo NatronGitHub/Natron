@@ -13,6 +13,7 @@ This section covers basic functionalities a Python script can do in Natron.
 	paramExpressions.rst
 	groups.rst
 	callbacks.rst
+	renderingWriteNode.rst
 	modalDialogs.rst
 	userCommands.rst
 	pysidePanelExample.rst
