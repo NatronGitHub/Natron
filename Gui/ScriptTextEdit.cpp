@@ -15,12 +15,19 @@
 
 #include "ScriptTextEdit.h"
 
+#include "Engine/Node.h"
+
+#include "Gui/GuiAppInstance.h"
+#include "Gui/GuiApplicationManager.h"
+
 #include <QStyle>
+#include <QDropEvent>
 
 ScriptTextEdit::ScriptTextEdit(QWidget* parent)
 : QTextEdit(parent)
 , isOutput(false)
 {
+    
 }
 
 ScriptTextEdit::~ScriptTextEdit()
@@ -42,3 +49,80 @@ ScriptTextEdit::getOutput() const
 {
     return isOutput;
 }
+
+void
+ScriptTextEdit::dragEnterEvent(QDragEnterEvent* e)
+{
+    
+    QStringList formats = e->mimeData()->formats();
+    if ( formats.contains("Animation") ) {
+        setCursor(Qt::DragCopyCursor);
+        e->acceptProposedAction();
+    }
+}
+
+void
+ScriptTextEdit::dragMoveEvent(QDragMoveEvent* e)
+{
+    if (!acceptDrops()) {
+        return;
+    }
+    QStringList formats = e->mimeData()->formats();
+    
+    if ( formats.contains("Animation") ) {
+        e->acceptProposedAction();
+    }
+}
+
+
+void
+ScriptTextEdit::dropEvent(QDropEvent* e)
+{
+    if (!acceptDrops()) {
+        return;
+    }
+    QStringList formats = e->mimeData()->formats();
+    if ( formats.contains("Animation") ) {
+        std::list<Variant> values;
+        std::list<boost::shared_ptr<Curve> > curves;
+        std::list<boost::shared_ptr<Curve> > parametricCurves;
+        std::map<int,std::string> stringAnimation;
+        bool copyAnimation;
+        
+        std::string appID;
+        std::string nodeFullyQualifiedName;
+        std::string paramName;
+        
+        appPTR->getKnobClipBoard(&copyAnimation,&values,&curves,&stringAnimation,&parametricCurves,&appID,&nodeFullyQualifiedName,&paramName);
+        
+        QString toAppend("app.");
+        toAppend.append(nodeFullyQualifiedName.c_str());
+        toAppend.append('.');
+        toAppend.append(paramName.c_str());
+        toAppend.append(".get()");
+        if (values.size() > 1) {
+            toAppend.append("[dimension]");
+        }
+        append(toAppend);
+        e->acceptProposedAction();
+    }
+    
+}
+
+
+void
+ScriptTextEdit::enterEvent(QEvent* /*e*/)
+{
+    if (acceptDrops() && cursor().shape() != Qt::OpenHandCursor) {
+        setCursor(Qt::OpenHandCursor);
+    }
+}
+
+void
+ScriptTextEdit::leaveEvent(QEvent* /*e*/)
+{
+    if (acceptDrops() && cursor().shape() == Qt::OpenHandCursor) {
+        setCursor(Qt::ArrowCursor);
+    }
+}
+

@@ -168,9 +168,11 @@ PasteUndoCommand::redo()
         _knob->removeAllKeyframeMarkersOnTimeline(-1);
         
         std::list<boost::shared_ptr<Curve> >::iterator it = newCurves.begin();
-        for (int i = 0;i  < targetDimension; ++it,++i) {
-            
-            internalKnob->getCurve(i)->clone( *(*it) );
+        for (U32 i = 0; i  < newCurves.size(); ++it,++i) {
+            boost::shared_ptr<Curve> c = internalKnob->getCurve(i);
+            if (c) {
+                c->clone( *(*it) );
+            }
             if ( (*it)->getKeyFramesCount() > 0 ) {
                 hasKeyframeData = true;
             }
@@ -180,9 +182,9 @@ PasteUndoCommand::redo()
 
     std::list<Variant>::iterator it = newValues.begin();
     internalKnob->blockEvaluation();
-    for (int i = 0; i < targetDimension; ++it,++i) {
+    for (U32 i = 0; i < newValues.size(); ++it,++i) {
         
-        bool isLast = i == targetDimension - 1;
+        bool isLast = (int)i == targetDimension - 1;
         if (isLast) {
             internalKnob->unblockEvaluation();
         }

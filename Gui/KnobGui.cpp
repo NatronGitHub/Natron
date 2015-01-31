@@ -567,8 +567,12 @@ KnobGui::createAnimationMenu(QMenu* menu,int dimension)
             std::list<boost::shared_ptr<Curve> > parametricCurves;
             std::map<int,std::string> stringAnimation;
             bool copyAnimation;
-
-            appPTR->getKnobClipBoard(&copyAnimation,&values,&curves,&stringAnimation,&parametricCurves);
+            
+            std::string appID;
+            std::string nodeFullyQualifiedName;
+            std::string paramName;
+            
+            appPTR->getKnobClipBoard(&copyAnimation,&values,&curves,&stringAnimation,&parametricCurves,&appID,&nodeFullyQualifiedName,&paramName);
 
             QAction* pasteAction = new QAction(tr("Paste animation"),menu);
             QObject::connect( pasteAction,SIGNAL( triggered() ),this,SLOT( onPasteAnimationActionTriggered() ) );
@@ -1295,8 +1299,19 @@ KnobGui::copyToClipBoard(bool copyAnimation) const
             parametricCurves.push_back(c);
         }
     }
+    
+    std::string appID = QString("app%1").arg(getGui()->getApp()->getAppID() + 1).toStdString();
+    std::string nodeFullyQualifiedName;
+    KnobHolder* holder = getKnob()->getHolder();
+    if (holder) {
+        Natron::EffectInstance* isEffect = dynamic_cast<Natron::EffectInstance*>(holder);
+        if (isEffect) {
+            nodeFullyQualifiedName = isEffect->getNode()->getFullyQualifiedName();
+        }
+    }
+    std::string paramName = getKnob()->getName();
 
-    appPTR->setKnobClipBoard(copyAnimation,values,curves,stringAnimation,parametricCurves);
+    appPTR->setKnobClipBoard(copyAnimation,values,curves,stringAnimation,parametricCurves,appID,nodeFullyQualifiedName,paramName);
 }
 
 void
@@ -1312,7 +1327,11 @@ KnobGui::pasteClipBoard()
     std::map<int,std::string> stringAnimation;
     bool copyAnimation;
 
-    appPTR->getKnobClipBoard(&copyAnimation,&values,&curves,&stringAnimation,&parametricCurves);
+    std::string appID;
+    std::string nodeFullyQualifiedName;
+    std::string paramName;
+    
+    appPTR->getKnobClipBoard(&copyAnimation,&values,&curves,&stringAnimation,&parametricCurves,&appID,&nodeFullyQualifiedName,&paramName);
 
     boost::shared_ptr<KnobI> knob = getKnob();
 
@@ -1965,7 +1984,7 @@ EditScriptDialog::EditScriptDialog(QWidget* parent)
 , _imp(new EditScriptDialogPrivate())
 {
     
-    
+    setWindowFlags(windowFlags() | Qt::WindowStaysOnTopHint);
 }
 
 void
@@ -1996,6 +2015,7 @@ EditScriptDialog::create(const QString& initialScript,bool makeUseRetButton)
             QString toAppend = QString("<br><b>%1</b>: %2</br>").arg(it->first).arg(it->second);
             labelHtml.append(toAppend);
         }
+        labelHtml.append("<p>" + tr("Note that parameters can be referenced by drag&dropping them from their animation button.") + "</p>");
     }
     
     _imp->expressionLabel = new QLabel(labelHtml,this);
@@ -2003,6 +2023,8 @@ EditScriptDialog::create(const QString& initialScript,bool makeUseRetButton)
     _imp->mainLayout->addWidget(_imp->expressionLabel);
     
     _imp->expressionEdit = new ScriptTextEdit(this);
+    _imp->expressionEdit->setAcceptDrops(true);
+    _imp->expressionEdit->setMouseTracking(true);
     QFontMetrics fm = _imp->expressionEdit->fontMetrics();
     _imp->expressionEdit->setTabStopWidth(4 * fm.width(' '));
     _imp->mainLayout->addWidget(_imp->expressionEdit);

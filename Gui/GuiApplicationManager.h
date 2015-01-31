@@ -114,14 +114,20 @@ public:
                           const std::list<Variant> & values,
                           const std::list<boost::shared_ptr<Curve> > & animation,
                           const std::map<int,std::string> & stringAnimation,
-                          const std::list<boost::shared_ptr<Curve> > & parametricCurves);
+                          const std::list<boost::shared_ptr<Curve> > & parametricCurves,
+                          const std::string& appID,
+                          const std::string& nodeFullyQualifiedName,
+                          const std::string& paramName);
 
 
     void getKnobClipBoard(bool* copyAnimation,
                           std::list<Variant>* values,
                           std::list<boost::shared_ptr<Curve> >* animation,
                           std::map<int,std::string>* stringAnimation,
-                          std::list<boost::shared_ptr<Curve> >* parametricCurves) const;
+                          std::list<boost::shared_ptr<Curve> >* parametricCurves,
+                          std::string* appID,
+                          std::string* nodeFullyQualifiedName,
+                          std::string* paramName) const;
 
     bool isClipBoardEmpty() const;
 

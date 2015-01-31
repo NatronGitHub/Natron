@@ -17,6 +17,8 @@
 
 #include <QTextEdit>
 
+#include "Global/Macros.h"
+
 class ScriptTextEdit : public QTextEdit
 {
     Q_PROPERTY(bool isOutput READ getOutput WRITE setOutput)
@@ -32,6 +34,16 @@ public:
     
     bool getOutput() const;
 private:
+    
+    virtual void dragEnterEvent(QDragEnterEvent* e) OVERRIDE FINAL;
+    
+    virtual void dropEvent(QDropEvent* e) OVERRIDE FINAL;
+    
+    virtual void dragMoveEvent(QDragMoveEvent* e) OVERRIDE FINAL;
+    
+    virtual void enterEvent(QEvent* e) OVERRIDE FINAL;
+    
+    virtual void leaveEvent(QEvent* e) OVERRIDE FINAL;
     
     bool isOutput;
 };

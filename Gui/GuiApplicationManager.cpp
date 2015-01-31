@@ -100,6 +100,10 @@ struct KnobsClipBoard
     std::map<int,std::string> stringAnimation; //< for animating string knobs
     bool isEmpty; //< is the clipboard empty
     bool copyAnimation; //< should we copy all the animation or not
+    
+    std::string appID;
+    std::string nodeFullyQualifiedName;
+    std::string paramName;
 };
 
 
@@ -1017,7 +1021,10 @@ GuiApplicationManager::setKnobClipBoard(bool copyAnimation,
                                         const std::list<Variant> & values,
                                         const std::list<boost::shared_ptr<Curve> > & animation,
                                         const std::map<int,std::string> & stringAnimation,
-                                        const std::list<boost::shared_ptr<Curve> > & parametricCurves)
+                                        const std::list<boost::shared_ptr<Curve> > & parametricCurves,
+                                        const std::string& appID,
+                                        const std::string& nodeFullyQualifiedName,
+                                        const std::string& paramName)
 {
     _imp->_knobsClipBoard->copyAnimation = copyAnimation;
     _imp->_knobsClipBoard->isEmpty = false;
@@ -1025,6 +1032,9 @@ GuiApplicationManager::setKnobClipBoard(bool copyAnimation,
     _imp->_knobsClipBoard->curves = animation;
     _imp->_knobsClipBoard->stringAnimation = stringAnimation;
     _imp->_knobsClipBoard->parametricCurves = parametricCurves;
+    _imp->_knobsClipBoard->appID = appID;
+    _imp->_knobsClipBoard->nodeFullyQualifiedName = nodeFullyQualifiedName;
+    _imp->_knobsClipBoard->paramName = paramName;
 }
 
 void
@@ -1032,13 +1042,19 @@ GuiApplicationManager::getKnobClipBoard(bool* copyAnimation,
                                         std::list<Variant>* values,
                                         std::list<boost::shared_ptr<Curve> >* animation,
                                         std::map<int,std::string>* stringAnimation,
-                                        std::list<boost::shared_ptr<Curve> >* parametricCurves) const
+                                        std::list<boost::shared_ptr<Curve> >* parametricCurves,
+                                        std::string* appID,
+                                        std::string* nodeFullyQualifiedName,
+                                        std::string* paramName) const
 {
     *copyAnimation = _imp->_knobsClipBoard->copyAnimation;
     *values = _imp->_knobsClipBoard->values;
     *animation = _imp->_knobsClipBoard->curves;
     *stringAnimation = _imp->_knobsClipBoard->stringAnimation;
     *parametricCurves = _imp->_knobsClipBoard->parametricCurves;
+    *appID = _imp->_knobsClipBoard->appID;
+    *nodeFullyQualifiedName = _imp->_knobsClipBoard->nodeFullyQualifiedName;
+    *paramName = _imp->_knobsClipBoard->paramName;
 }
 
 void
