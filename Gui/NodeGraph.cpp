@@ -417,7 +417,7 @@ NodeGraph::NodeGraph(Gui* gui,
     
     setMouseTracking(true);
     setCacheMode(CacheBackground);
-    setViewportUpdateMode(QGraphicsView::FullViewportUpdate);
+    setViewportUpdateMode(QGraphicsView::MinimalViewportUpdate);
     setRenderHint(QPainter::Antialiasing);
     setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
     //setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
@@ -1230,7 +1230,7 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
             _imp->_lastSelectionStartPoint = _imp->_lastMousePos;
             QPointF clickPos = _imp->_selectionRect->mapFromScene(lastMousePosScene);
             _imp->_selectionRect->setRect(clickPos.x(), clickPos.y(), 0, 0);
-            _imp->_selectionRect->show();
+            //_imp->_selectionRect->show();
         } else if ( buttonDownIsMiddle(e) ) {
             _imp->_evtState = eEventStateMovingArea;
             QGraphicsView::mousePressEvent(e);
@@ -1553,7 +1553,9 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
     double dy = _imp->_root->mapFromScene(newPos).y() - _imp->_root->mapFromScene(lastMousePosScene).y();
 
     _imp->_hasMovedOnce = true;
-
+    
+    bool mustUpdate = true;
+    
     QRectF sceneR = visibleSceneRect();
     if (_imp->_evtState != eEventStateSelectionRect && _imp->_evtState != eEventStateDraggingArrow) {
         ///set cursor
@@ -1872,6 +1874,7 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
         double ymin = std::min( cur.y(),startDrag.y() );
         double ymax = std::max( cur.y(),startDrag.y() );
         _imp->_selectionRect->setRect(xmin,ymin,xmax - xmin,ymax - ymin);
+        _imp->_selectionRect->show();
         break;
     }
     case eEventStateDraggingNavigator: {
@@ -1892,6 +1895,7 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
             setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
     } break;
     default:
+            mustUpdate = false;
         break;
     } // switch
 
@@ -1901,8 +1905,10 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
     if (mustUpdateNavigator) {
         _imp->_refreshOverlays = true;
     }
-
-    //update();
+    
+    if (mustUpdate) {
+        update();
+    }
     QGraphicsView::mouseMoveEvent(e);
 } // mouseMoveEvent
 
@@ -2431,7 +2437,7 @@ NodeGraph::wheelEventInternal(bool ctrlDown,double delta)
     
     double currentZoomFactor = transfo.mapRect( QRectF(0, 0, 1, 1) ).width();
     double newZoomfactor = currentZoomFactor * scaleFactor;
-    if (newZoomfactor < 0.05 || newZoomfactor > 40) {
+    if ((newZoomfactor < 0.01 && scaleFactor < 1.) || (newZoomfactor > 50 && scaleFactor > 1.)) {
         return;
     }
     if (newZoomfactor < 0.4) {
@@ -2887,8 +2893,13 @@ QDirModelPrivate_size(quint64 bytes)
 void
 NodeGraph::updateCacheSizeText()
 {
-    _imp->_cacheSizeText->setPlainText( tr("Memory cache size: %1")
-                                        .arg( QDirModelPrivate_size( appPTR->getCachesTotalMemorySize() ) ) );
+    QString oldText = _imp->_cacheSizeText->toPlainText();
+    quint64 cacheSize = appPTR->getCachesTotalMemorySize();
+    QString cacheSizeStr = QDirModelPrivate_size(cacheSize);
+    QString newText = tr("Memory cache size: ") + cacheSizeStr;
+    if (newText != oldText) {
+        _imp->_cacheSizeText->setPlainText(newText);
+    }
 }
 
 QRectF

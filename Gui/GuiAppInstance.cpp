@@ -108,13 +108,17 @@ GuiAppInstance::deletePreviewProvider()
         if (_imp->_previewProvider->viewerNode) {
             _imp->_gui->removeViewerTab(_imp->_previewProvider->viewerUI, true, true);
             boost::shared_ptr<Natron::Node> node = _imp->_previewProvider->viewerNodeInternal;
-            ViewerInstance* liveInstance = dynamic_cast<ViewerInstance*>(node->getLiveInstance());
-            assert(liveInstance);
-            node->deactivate(std::list< Natron::Node* > (),false,false,true,false);
-            liveInstance->invalidateUiContext();
-            node->removeReferences(false);
-            _imp->_previewProvider->viewerNode->deleteReferences();
-            _imp->_previewProvider->viewerNodeInternal.reset();
+            if (node) {
+                ViewerInstance* liveInstance = dynamic_cast<ViewerInstance*>(node->getLiveInstance());
+                if (liveInstance) {
+                    node->deactivate(std::list< Natron::Node* > (),false,false,true,false);
+                    liveInstance->invalidateUiContext();
+                    node->removeReferences(false);
+                    _imp->_previewProvider->viewerNode->deleteReferences();
+                    _imp->_previewProvider->viewerNodeInternal.reset();
+                }
+            }
+            
         }
         
         for (std::map<std::string,std::pair< boost::shared_ptr<Natron::Node>, boost::shared_ptr<NodeGui> > >::iterator it =
@@ -823,7 +827,6 @@ GuiAppInstance::appendToScriptEditor(const std::string& str)
 void
 GuiAppInstance::setLastViewerUsingTimeline(const boost::shared_ptr<Natron::Node>& node)
 {
-    assert(QThread::currentThread() == qApp->thread());
     if (!node) {
         QMutexLocker k(&_imp->lastTimelineViewerMutex);
         _imp->lastTimelineViewer.reset();
@@ -888,4 +891,10 @@ GuiAppInstance::closeLoadPRojectSplashScreen()
 {
     _imp->loadProjectSplash->deleteLater();
     _imp->loadProjectSplash = 0;
+}
+
+void
+GuiAppInstance::renderAllViewers()
+{
+    _imp->_gui->renderAllViewers();
 }

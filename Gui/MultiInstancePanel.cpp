@@ -324,11 +324,13 @@ TableItemDelegate::paint(QPainter * painter,
     TableModel* model = dynamic_cast<TableModel*>( _view->model() );
     assert(model);
     if (!model) {
+        // coverity[dead_error_line]
         return;
     }
     TableItem* item = model->item(index);
     assert(item);
     if (!item) {
+        // coverity[dead_error_line]
         return;
     }
     int dim;
@@ -2425,7 +2427,7 @@ TrackScheduler::run()
             ///Ok all tracks are finished now for this frame, refresh viewer if needed
             bool updateViewer = _imp->panel->isUpdateViewerOnTrackingEnabled();
             if (updateViewer) {
-                timeline->seekFrame(cur, false, 0, Natron::eTimelineChangeReasonPlaybackSeek);
+                timeline->seekFrame(cur, true, 0, Natron::eTimelineChangeReasonPlaybackSeek);
             }
 
             if (reportProgress) {

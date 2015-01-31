@@ -225,6 +225,7 @@ PasteUndoCommand::redo()
 } // redo
 
 MultipleKnobEditsUndoCommand::MultipleKnobEditsUndoCommand(KnobGui* knob,
+                                                           Natron::ValueChangedReasonEnum reason,
                                                            bool createNew,
                                                            bool setKeyFrame,
                                                            const Variant & value,
@@ -234,6 +235,7 @@ MultipleKnobEditsUndoCommand::MultipleKnobEditsUndoCommand(KnobGui* knob,
       , knobs()
       , createNew(createNew)
       , firstRedoCalled(false)
+      , _reason(reason)
 {
     assert(knob);
     boost::shared_ptr<KnobI> originalKnob = knob->getKnob();
@@ -318,12 +320,12 @@ MultipleKnobEditsUndoCommand::undo()
     if (holder) {
         int currentFrame = holder->getApp()->getTimeLine()->currentFrame();
         for (std::set <KnobI*>::iterator it = knobsUnique.begin(); it != knobsUnique.end(); ++it) {
-            (*it)->getHolder()->onKnobValueChanged_public(*it, Natron::eValueChangedReasonUserEdited,currentFrame, true);
+            (*it)->getHolder()->onKnobValueChanged_public(*it, _reason,currentFrame, true);
         }
 
         Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(holder);
         if (effect) {
-            effect->evaluate_public(NULL, true, Natron::eValueChangedReasonUserEdited);
+            effect->evaluate_public(NULL, true, _reason);
 
             holderName = effect->getNode()->getLabel().c_str();
         }
@@ -352,7 +354,7 @@ MultipleKnobEditsUndoCommand::redo()
 
             for (std::set <KnobI*>::iterator it = knobsUnique.begin(); it != knobsUnique.end(); ++it) {
                 int currentFrame = (*it)->getHolder()->getApp()->getTimeLine()->currentFrame();
-                (*it)->getHolder()->onKnobValueChanged_public(*it, Natron::eValueChangedReasonUserEdited,currentFrame, true);
+                (*it)->getHolder()->onKnobValueChanged_public(*it, _reason,currentFrame, true);
             }
         }
     } else {
@@ -365,14 +367,14 @@ MultipleKnobEditsUndoCommand::redo()
             Knob<double>* isDouble = dynamic_cast<Knob<double>*>( knob.get() );
             Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>( knob.get() );
             if (isInt) {
-                it->first->setValue<int>(it->second.dimension, it->second.newValue.toInt(), &k,true,Natron::eValueChangedReasonPluginEdited);
+                it->first->setValue<int>(it->second.dimension, it->second.newValue.toInt(), &k,true,_reason);
             } else if (isBool) {
-                it->first->setValue<bool>(it->second.dimension, it->second.newValue.toBool(), &k,true,Natron::eValueChangedReasonPluginEdited);
+                it->first->setValue<bool>(it->second.dimension, it->second.newValue.toBool(), &k,true,_reason);
             } else if (isDouble) {
-                it->first->setValue<double>(it->second.dimension, it->second.newValue.toDouble(), &k,true,Natron::eValueChangedReasonPluginEdited);
+                it->first->setValue<double>(it->second.dimension, it->second.newValue.toDouble(), &k,true,_reason);
             } else if (isString) {
                 it->first->setValue<std::string>(it->second.dimension, it->second.newValue.toString().toStdString(),
-                                                 &k,true,Natron::eValueChangedReasonPluginEdited);
+                                                 &k,true,_reason);
             } else {
                 assert(false);
             }
@@ -389,7 +391,7 @@ MultipleKnobEditsUndoCommand::redo()
         Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(holder);
         if (effect) {
             if (firstRedoCalled) {
-                effect->evaluate_public(NULL, true, Natron::eValueChangedReasonUserEdited);
+                effect->evaluate_public(NULL, true, _reason);
             } else {
                 effect->getApp()->triggerAutoSave();
             }

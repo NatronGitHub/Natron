@@ -415,7 +415,7 @@ public:
     const QString& getDiskCacheLocation() const;
     
     void saveCaches() const;
-    
+
     PyObject* getMainModule();
     
     QString getSystemNonOFXPluginsPath() const;
@@ -423,6 +423,9 @@ public:
     QStringList getAllNonOFXPluginsPaths() const;
     
     void launchPythonInterpreter();
+
+	int isProjectAlreadyOpened(const std::string& projectFilePath) const;
+
 
     
 public Q_SLOTS:

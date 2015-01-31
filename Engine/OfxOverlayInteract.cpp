@@ -177,6 +177,12 @@ NatronOverlayInteractSupport::setCallingViewport(OverlaySupport* viewport)
     _viewport = viewport;
 }
 
+OverlaySupport*
+NatronOverlayInteractSupport::getLastCallingViewport() const
+{
+    return _viewport;
+}
+
 OfxStatus
 NatronOverlayInteractSupport::n_swapBuffers()
 {
@@ -225,20 +231,23 @@ NatronOverlayInteractSupport::n_getBackgroundColour(double &r,
     }
 }
 
-void
-NatronOverlayInteractSupport::n_getOverlayColour(double &r,
-                                                 double &g,
-                                                 double &b) const
+bool
+NatronOverlayInteractSupport::n_getSuggestedColour(double &r,
+                                                   double &g,
+                                                   double &b) const
 {
-    r = g = b = 1.;
+    return false;
+    // TODO
+    //r = g = b = ...;
+    //return true;
 }
 
 void
-Natron::OfxParamOverlayInteract::getMinimumSize(int & minW,
-                                                int & minH) const
+Natron::OfxParamOverlayInteract::getMinimumSize(double & minW,
+                                                double & minH) const
 {
-    minW = _descriptor.getProperties().getIntProperty(kOfxParamPropInteractMinimumSize,0);
-    minH = _descriptor.getProperties().getIntProperty(kOfxParamPropInteractMinimumSize,1);
+    minW = _descriptor.getProperties().getDoubleProperty(kOfxParamPropInteractMinimumSize,0);
+    minH = _descriptor.getProperties().getDoubleProperty(kOfxParamPropInteractMinimumSize,1);
 }
 
 void

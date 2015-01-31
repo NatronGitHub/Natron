@@ -1505,6 +1505,9 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool useCache,
     ///Find first something in the input images list
     if (!inputImages.empty()) {
         for (std::list<boost::shared_ptr<Image> >::const_iterator it = inputImages.begin(); it != inputImages.end(); ++it) {
+            if (!it->get()) {
+                continue;
+            }
             const ImageKey& imgKey = (*it)->getKey();
             if (imgKey == key) {
                 cachedImages.push_back(*it);
@@ -2827,7 +2830,7 @@ EffectInstance::renderRoIInternal(SequenceTime time,
         const RenderArgs & args = scopedArgs.getArgs();
 
 
-#     ifndef NDEBUG
+#ifndef NDEBUG
         RenderScale scale;
         scale.x = Image::getScaleFromMipMapLevel(mipMapLevel);
         scale.y = scale.x;
@@ -3765,7 +3768,7 @@ EffectInstance::getTransform_public(SequenceTime time,
                                     Natron::EffectInstance** inputToTransform,
                                     Transform::Matrix3x3* transform)
 {
-    NON_RECURSIVE_ACTION();
+    RECURSIVE_ACTION();
     return getTransform(time, renderScale, view, inputToTransform, transform);
 }
 
@@ -4372,6 +4375,19 @@ SequenceTime
 EffectInstance::getCurrentTime() const
 {
     return getThreadLocalRenderTime();
+}
+
+int
+EffectInstance::getCurrentView() const
+{
+    if (_imp->renderArgs.hasLocalData()) {
+        const RenderArgs& args = _imp->renderArgs.localData();
+        if (args._validArgs) {
+            return args._view;
+        }
+    }
+    
+    return 0;
 }
 
 #ifdef DEBUG

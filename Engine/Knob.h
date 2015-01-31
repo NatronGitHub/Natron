@@ -132,13 +132,14 @@ public:
         Q_EMIT setValueWithUndoStack(v, dim);
     }
     
-    void s_appendParamEditChange(Variant v,
+    void s_appendParamEditChange(Natron::ValueChangedReasonEnum reason,
+                                 Variant v,
                                  int dim,
                                  int time,
                                  bool createNewCommand,
                                  bool setKeyFrame)
     {
-        Q_EMIT appendParamEditChange(v, dim,time,createNewCommand,setKeyFrame);
+        Q_EMIT appendParamEditChange((int)reason, v, dim,time,createNewCommand,setKeyFrame);
     }
     
     void s_setDirty(bool b)
@@ -278,7 +279,7 @@ Q_SIGNALS:
     
     ///Same as setValueWithUndoStack except that the value change will be compressed
     ///in a multiple edit undo/redo action
-    void appendParamEditChange(Variant v,int dim,int time,bool createNewCommand,bool setKeyFrame);
+    void appendParamEditChange(int reason,Variant v,int dim,int time,bool createNewCommand,bool setKeyFrame);
     
     ///Emitted whenever the knob is dirty, @see KnobI::setDirty(bool)
     void dirty(bool);
@@ -799,6 +800,7 @@ public:
     virtual void getViewportSize(double &width, double &height) const = 0;
     virtual void getPixelScale(double & xScale, double & yScale) const  = 0;
     virtual void getBackgroundColour(double &r, double &g, double &b) const = 0;
+    virtual unsigned int getCurrentRenderScale() const OVERRIDE FINAL { return 0; }
     virtual void saveOpenGLContext() = 0;
     virtual void restoreOpenGLContext() = 0;
     
@@ -1259,14 +1261,7 @@ private:
     virtual void unSlave(int dimension,Natron::ValueChangedReasonEnum reason,bool copyState) OVERRIDE FINAL;
 
     
-    /**
-     * @brief Set the value of the knob in the given dimension with the given reason.
-     * @param newKey If not NULL and the animation level of the knob is Natron::eAnimationLevelInterpolatedValue
-     * then a new keyframe will be set at the current time.
-     **/
-    ValueChangedReturnCodeEnum setValue(const T & v,int dimension,Natron::ValueChangedReasonEnum reason,
-                                    KeyFrame* newKey) WARN_UNUSED_RETURN;
-    /**
+       /**
      * @brief Set the value of the knob at the given time and for the given dimension with the given reason.
      * @param newKey[out] The keyframe that was added if the return value is true.
      * @returns True if a keyframe was successfully added, false otherwise.
@@ -1274,6 +1269,14 @@ private:
     bool setValueAtTime(int time,const T & v,int dimension,Natron::ValueChangedReasonEnum reason,KeyFrame* newKey) WARN_UNUSED_RETURN;
 
 public:
+
+    /**
+     * @brief Set the value of the knob in the given dimension with the given reason.
+     * @param newKey If not NULL and the animation level of the knob is Natron::eAnimationLevelInterpolatedValue
+     * then a new keyframe will be set at the current time.
+     **/
+    ValueChangedReturnCodeEnum setValue(const T & v,int dimension,Natron::ValueChangedReasonEnum reason,
+                                        KeyFrame* newKey) WARN_UNUSED_RETURN;
 
     
    
@@ -1610,7 +1613,7 @@ public:
     void refreshInstanceSpecificKnobsOnly(SequenceTime time);
 
     KnobHolder::MultipleParamsEditEnum getMultipleParamsEditLevel() const;
-
+    
     void setMultipleParamsEditLevel(KnobHolder::MultipleParamsEditEnum level);
 
     virtual bool isProject() const
@@ -1845,7 +1848,13 @@ public:
      **/
     virtual SequenceTime getCurrentTime() const;
 
-
+    /**
+     * @brief Returns the local current view being rendered or 0
+     **/
+    virtual int getCurrentView() const {
+        return 0;
+    }
+    
 protected:
 
 

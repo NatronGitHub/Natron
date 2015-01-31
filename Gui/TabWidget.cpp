@@ -891,6 +891,7 @@ TabWidget::removeTab(int index,bool userAction)
     if (isGraph && _imp->gui->getLastSelectedGraph() == isGraph) {
         _imp->gui->setLastSelectedGraph(0);
     }
+	tab->setParent(_imp->gui);
 
     
     return tab;

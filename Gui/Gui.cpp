@@ -1189,7 +1189,7 @@ GuiPrivate::createPropertiesBinGui()
     _minimizeAllPanelsButtons->setCheckable(true);
     _minimizeAllPanelsButtons->setChecked(false);
     _minimizeAllPanelsButtons->setFixedSize(NATRON_SMALL_BUTTON_SIZE,NATRON_SMALL_BUTTON_SIZE);
-    _minimizeAllPanelsButtons->setToolTip(Qt::convertFromPlainText(_gui->tr("Minimize / Maximize all panels"),Qt::WhiteSpaceNormal));
+    _minimizeAllPanelsButtons->setToolTip(Qt::convertFromPlainText(_gui->tr("Minimize / Maximize all panels."),Qt::WhiteSpaceNormal));
     _minimizeAllPanelsButtons->setFocusPolicy(Qt::NoFocus);
     QObject::connect( _minimizeAllPanelsButtons,SIGNAL( clicked(bool) ),_gui,SLOT( minimizeMaximizeAllPanels(bool) ) );
     
@@ -2732,7 +2732,7 @@ GuiPrivate::addToolButton(ToolButton* tool)
     button->setIcon( tool->getIcon() );
     button->setMenu( tool->getMenu() );
     button->setPopupMode(QToolButton::InstantPopup);
-    button->setToolTip( Qt::convertFromPlainText(tool->getLabel(), Qt::WhiteSpaceNormal) );
+    button->setToolTip( Qt::convertFromPlainText(tool->getLabel().trimmed(), Qt::WhiteSpaceNormal) );
     _toolBox->addWidget(button);
 }
 
@@ -2784,6 +2784,19 @@ Gui::openProjectInternal(const std::string & absoluteFileName)
 {
     std::string fileUnPathed = absoluteFileName;
     std::string path = SequenceParsing::removePath(fileUnPathed);
+
+	int openedProject = appPTR->isProjectAlreadyOpened(absoluteFileName);
+	if (openedProject != -1) {
+		AppInstance* instance = appPTR->getAppInstance(openedProject);
+		if (instance) {
+			GuiAppInstance* guiApp = dynamic_cast<GuiAppInstance*>(instance);
+			assert(guiApp);
+			if (guiApp) {
+				guiApp->getGui()->activateWindow();
+				return ;
+			}
+		}
+	}
 
     ///if the current graph has no value, just load the project in the same window
     if ( _imp->_appInstance->getProject()->isGraphWorthLess() ) {
@@ -3319,7 +3332,8 @@ Gui::onDoDialog(int type,
                 int defaultB)
 {
 
-    QString msg = useHtml ? content : Qt::convertFromPlainText(content, Qt::WhiteSpaceNormal);
+    QString msg = useHtml ? content : Qt::convertFromPlainText(content.trimmed(), Qt::WhiteSpaceNormal);
+
 
     if (type == 0) {
         QMessageBox critical(QMessageBox::Critical, title, msg, QMessageBox::NoButton, this, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint | Qt::WindowStaysOnTopHint);
@@ -3427,7 +3441,7 @@ Gui::questionDialog(const std::string & title,
 void
 Gui::onDoDialogWithStopAskingCheckbox(int type,const QString & title,const QString & content,bool useHtml,Natron::StandardButtons buttons,int defaultB)
 {
-    QString message = useHtml ? content : Qt::convertFromPlainText(content,Qt::WhiteSpaceNormal);
+    QString message = useHtml ? content : Qt::convertFromPlainText(content.trimmed(), Qt::WhiteSpaceNormal);
     Natron::MessageBox dialog(title,content,(Natron::MessageBox::MessageBoxTypeEnum)type,buttons,(Natron::StandardButtonEnum)defaultB,this);
     
     QCheckBox* stopAskingCheckbox = new QCheckBox(tr("Do not show this again"),&dialog);
@@ -3731,8 +3745,7 @@ void
 Gui::showAbout()
 {
     _imp->_aboutWindow->show();
-    int status = _imp->_aboutWindow->exec();
-    assert(status == QDialog::Accepted);
+    ignore_result(_imp->_aboutWindow->exec());
 }
 
 void
@@ -3748,7 +3761,22 @@ Gui::openRecentFile()
 
     if (action) {
         QFileInfo f( action->data().toString() );
-        QString path = f.path() + QDir::separator();
+		QString path = f.path() + '/';
+
+		QString filename = path + f.fileName();
+		int openedProject = appPTR->isProjectAlreadyOpened(filename.toStdString());
+		if (openedProject != -1) {
+			AppInstance* instance = appPTR->getAppInstance(openedProject);
+			if (instance) {
+				GuiAppInstance* guiApp = dynamic_cast<GuiAppInstance*>(instance);
+				assert(guiApp);
+				if (guiApp) {
+					guiApp->getGui()->activateWindow();
+					return ;
+				}
+			}
+		}
+
         ///if the current graph has no value, just load the project in the same window
         if ( _imp->_appInstance->getProject()->isGraphWorthLess() ) {
             _imp->_appInstance->getProject()->loadProject( path,f.fileName() );
@@ -4700,7 +4728,7 @@ FloatingWidget::FloatingWidget(Gui* gui,
       , _layout(0)
       , _gui(gui)
 {
-    setWindowFlags(Qt::WindowStaysOnTopHint | Qt::Window);
+    setWindowFlags(Qt::Window);
     setAttribute(Qt::WA_DeleteOnClose,true);
     _layout = new QVBoxLayout(this);
     _layout->setContentsMargins(0, 0, 0, 0);
@@ -4846,6 +4874,17 @@ Gui::redrawAllViewers()
     for (std::list<ViewerTab*>::const_iterator it = _imp->_viewerTabs.begin(); it!=_imp->_viewerTabs.end(); ++it) {
         if ((*it)->isVisible()) {
             (*it)->getViewer()->redraw();
+        }
+    }
+}
+
+void
+Gui::renderAllViewers()
+{
+    QMutexLocker k(&_imp->_viewerTabsMutex);
+    for (std::list<ViewerTab*>::const_iterator it = _imp->_viewerTabs.begin(); it!=_imp->_viewerTabs.end(); ++it) {
+        if ((*it)->isVisible()) {
+            (*it)->getInternalNode()->renderCurrentFrame(false);
         }
     }
 }

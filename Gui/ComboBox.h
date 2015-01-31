@@ -113,6 +113,8 @@ public:
     int getAnimation() const;
     void setAnimation(int i);
     void setReadOnly(bool readOnly);
+    
+    bool getEnabled_natron() const;
 
 public Q_SLOTS:
 

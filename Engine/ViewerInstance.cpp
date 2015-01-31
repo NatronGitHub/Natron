@@ -354,10 +354,17 @@ static bool checkTreeCanRender(Node* node)
 }
 
 
+
+
 Natron::StatusEnum
-ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time, int view, int textureIndex, U64 viewerHash,
+ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
+                                                 bool isSequential,
+                                                 int view, int textureIndex, U64 viewerHash,
                                                  ViewerArgs* outArgs)
 {
+    U64 renderAge = _imp->getRenderAge(textureIndex);
+    
+    
     if (textureIndex == 0) {
         QMutexLocker l(&_imp->activeInputsMutex);
         outArgs->activeInputIndex =  _imp->activeInputs[0];
@@ -436,6 +443,10 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time, int view, in
                                                                         view, &rod, &isRodProjectFormat);
     if (stat == eStatusFailed) {
         Q_EMIT disconnectTextureRequest(textureIndex);
+        if (!isSequential) {
+            _imp->checkAndUpdateRenderAge(textureIndex,renderAge);
+        }
+
         return stat;
     }
     // update scale after the first call to getRegionOfDefinition
@@ -467,6 +478,9 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time, int view, in
     if ( (roi.width() == 0) || (roi.height() == 0) ) {
         Q_EMIT disconnectTextureRequest(textureIndex);
         outArgs->params.reset();
+        if (!isSequential) {
+            _imp->checkAndUpdateRenderAge(textureIndex,renderAge);
+        }
         return eStatusReplyDefault;
     }
     
@@ -475,6 +489,8 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time, int view, in
     // start UpdateViewerParams scope
     //
     outArgs->params.reset(new UpdateViewerParams);
+    outArgs->params->isSequential = isSequential;
+    outArgs->params->renderAge = renderAge;
     outArgs->params->setUniqueID(textureIndex);
     outArgs->params->srcPremult = outArgs->activeInputToRender->getOutputPremultiplication();
     
@@ -578,7 +594,8 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time, int view, in
             ///The thread rendering the frame entry might have been aborted and the entry removed from the cache
             ///but another thread might successfully have found it in the cache. This flag is to notify it the frame
             ///is invalid.
-            isCached = false;
+            outArgs->params->cachedFrame.reset();
+            return eStatusOK;
         }
         
         // how do you make sure cachedFrame->data() is not freed after this line?
@@ -597,7 +614,6 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time, int view, in
             _imp->lastRenderedHashValid = true;
         }
         
-        
     }
     return eStatusOK;
 }
@@ -607,6 +623,9 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time, int view, in
                                 if (inArgs.params->cachedFrame) { \
                                     inArgs.params->cachedFrame->setAborted(true); \
                                     appPTR->removeFromViewerCache(inArgs.params->cachedFrame); \
+                                } \
+                                if (!isSequentialRender) { \
+                                    _imp->checkAndUpdateRenderAge(inArgs.params->textureIndex,inArgs.params->renderAge); \
                                 } \
                                 return eStatusReplyDefault; \
                             }
@@ -638,6 +657,9 @@ ViewerInstance::renderViewer_internal(int view,
     ///Check that we were not aborted already
     if ( !isSequentialRender && (inArgs.activeInputToRender->getHash() != inArgs.activeInputHash ||
                                  inArgs.params->time != getTimeline()->currentFrame()) ) {
+        if (!isSequentialRender) {
+            _imp->checkAndUpdateRenderAge(inArgs.params->textureIndex,inArgs.params->renderAge);
+        }
         return eStatusReplyDefault;
     }
     
@@ -674,7 +696,9 @@ ViewerInstance::renderViewer_internal(int view,
             ss << "Failed to allocate a texture of ";
             ss << printAsRAM( cachedFrameParams->getElementsCount() * sizeof(FrameEntry::data_t) ).toStdString();
             Natron::errorDialog( QObject::tr("Out of memory").toStdString(),ss.str() );
-            
+            if (!isSequentialRender) {
+                _imp->checkAndUpdateRenderAge(inArgs.params->textureIndex,inArgs.params->renderAge);
+            }
             return eStatusFailed;
         }
         
@@ -746,6 +770,9 @@ ViewerInstance::renderViewer_internal(int view,
             if (!inArgs.params->image) {
                 if (inArgs.params->cachedFrame) {
                     inArgs.params->cachedFrame->setAborted(true);
+                    if (!isSequentialRender) {
+                        _imp->checkAndUpdateRenderAge(inArgs.params->textureIndex,inArgs.params->renderAge);
+                    }
                     appPTR->removeFromViewerCache(inArgs.params->cachedFrame);
                 }
                 return eStatusReplyDefault;
@@ -763,14 +790,10 @@ ViewerInstance::renderViewer_internal(int view,
         
     } // EffectInstance::NotifyInputNRenderingStarted_RAII inputNIsRendering_RAII(_node.get(),activeInputIndex);
     
-    ///Re-check the RoI of the viewer after we rendered. If the user was zooming in/out, it might have changed
-    ///and we don't want to erase all the texture for nothing. E.g: when the user is currently zoomed in on a few
-    ///pixels of the image, when dezooming, several renders will be triggered, but we don't want the intermediate renders
-    ///to clear portions of the texture, just the last one.
-    RectI roiAfterRender = _imp->uiContext->getImageRectangleDisplayedRoundedToTileSize(inArgs.params->rod,
-                                                                                        inArgs.params->textureRect.par,
-                                                                                        inArgs.params->mipMapLevel);
-    if (!autoContrast && roi != roiAfterRender) {
+   
+    ///We check that the render age is still OK and that no other renders were triggered, in which case we should not need to
+    ///refresh the viewer.
+    if (!_imp->checkAgeNoUpdate(inArgs.params->textureIndex,inArgs.params->renderAge)) {
         if (inArgs.params->cachedFrame) {
             inArgs.params->cachedFrame->setAborted(true);
             appPTR->removeFromViewerCache(inArgs.params->cachedFrame);
@@ -1537,23 +1560,29 @@ ViewerInstance::ViewerInstancePrivate::updateViewer(boost::shared_ptr<UpdateView
     
     assert(params->ramBuffer);
     
-    uiContext->transferBufferFromRAMtoGPU(params->ramBuffer,
-                                          params->image,
-                                          params->time,
-                                          params->rod,
-                                          params->bytesCount,
-                                          params->textureRect,
-                                          params->gain,
-                                          params->offset,
-                                          params->lut,
-                                          updateViewerPboIndex,
-                                          params->mipMapLevel,
-                                          params->srcPremult,
-                                          params->textureIndex);
-    updateViewerPboIndex = (updateViewerPboIndex + 1) % 2;
-    
-    
-    uiContext->updateColorPicker(params->textureIndex);
+    bool doUpdate = true;
+    if (!params->isSequential && !checkAndUpdateRenderAge(params->textureIndex,params->renderAge)) {
+        doUpdate = false;
+    }
+    if (doUpdate) {
+        uiContext->transferBufferFromRAMtoGPU(params->ramBuffer,
+                                              params->image,
+                                              params->time,
+                                              params->rod,
+                                              params->bytesCount,
+                                              params->textureRect,
+                                              params->gain,
+                                              params->offset,
+                                              params->lut,
+                                              updateViewerPboIndex,
+                                              params->mipMapLevel,
+                                              params->srcPremult,
+                                              params->textureIndex);
+        updateViewerPboIndex = (updateViewerPboIndex + 1) % 2;
+        
+        
+        uiContext->updateColorPicker(params->textureIndex);
+    }
     //
     //        updateViewerRunning = false;
     //    }
@@ -1757,7 +1786,7 @@ ViewerInstance::addAcceptedComponents(int /*inputNb*/,
 }
 
 int
-ViewerInstance::getCurrentView() const
+ViewerInstance::getViewerCurrentView() const
 {
     return _imp->uiContext ? _imp->uiContext->getCurrentView() : 0;
 }
@@ -1780,7 +1809,7 @@ ViewerInstance::onInputChanged(int inputNb)
             bool autoWipeEnabled = appPTR->getCurrentSettings()->isAutoWipeEnabled();
             if (_imp->activeInputs[0] == -1 || !autoWipeEnabled) {
                 _imp->activeInputs[0] = inputNb;
-            } else if (_imp->activeInputs[0] != inputNb) {
+            } else {
                 _imp->activeInputs[1] = inputNb;
             }
         }

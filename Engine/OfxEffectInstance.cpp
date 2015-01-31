@@ -831,7 +831,9 @@ OfxEffectInstance::isInputRotoBrush(int inputNb) const
 {
     assert(_context != eContextNone);
     MappedInputV inputs = inputClipsCopyWithoutOutput();
-    assert( inputNb < (int)inputs.size() );
+    if ( inputNb >= (int)inputs.size() ) {
+        return false;
+    }
 
     ///Maybe too crude ? Not like many plug-ins use the paint context except Natron's roto node.
     return inputs[inputs.size() - 1 - inputNb]->getName() == "Roto" && getNode()->isRotoNode();
@@ -1434,7 +1436,7 @@ OfxEffectInstance::getRegionsOfInterest(SequenceTime time,
 
         bool skipDiscarding = false;
         if (getRecursionLevel() > 1) {
-            qDebug() << "getRegionsOfInterest cannot be called recursively as an action. Please check this.";
+            // getRegionsOfInterest may be called recursively as a result of calling fetchImage() from an action
             skipDiscarding = true;
         }
         ClipsThreadStorageSetter clipSetter(effectInstance(),
@@ -1482,12 +1484,11 @@ OfxEffectInstance::getRegionsOfInterest(SequenceTime time,
         for (std::map<std::string,OFX::Host::ImageEffect::ClipInstance*>::const_iterator it = clips.begin(); it!=clips.end(); ++it) {
             if (!it->second->isOutput()) {
                 OfxClipInstance* natronClip = dynamic_cast<OfxClipInstance*>(it->second);
-                assert(natronClip);
                 EffectInstance* inputNode = natronClip ? natronClip->getAssociatedNode() : 0;
                 if (inputNode) {
                     ret->insert( std::make_pair(inputNode, renderWindow) );
                 }
-
+                assert(natronClip);
             }
         }
     }
@@ -1718,6 +1719,7 @@ OfxEffectInstance::isIdentity(SequenceTime time,
         OfxClipInstance* natronClip = dynamic_cast<OfxClipInstance*>(clip);
         assert(natronClip);
         if (!natronClip) {
+            // coverity[dead_error_line]
             qDebug() << "Error in OfxEffectInstance::render(): kOfxImageEffectActionIsIdentity returned an unknown clip: " << inputclip.c_str();
 
             return false;
@@ -1970,16 +1972,16 @@ OfxEffectInstance::initializeOverlayInteract()
 }
 
 void
-OfxEffectInstance::drawOverlay(double /*scaleX*/,
-                               double /*scaleY*/)
+OfxEffectInstance::drawOverlay(double scaleX,
+                               double scaleY)
 {
     if (!_initialized) {
         return;
     }
     if (_overlayInteract) {
         OfxPointD rs;
-        rs.x = 1.; //scaleX;
-        rs.y = 1.; //scaleY;
+        rs.x = scaleX;
+        rs.y = scaleY;
         OfxTime time = getApp()->getTimeLine()->currentFrame();
 
        /* if (getRecursionLevel() == 1) {
@@ -2019,8 +2021,8 @@ OfxEffectInstance::setCurrentViewportForOverlays(OverlaySupport* viewport)
 }
 
 bool
-OfxEffectInstance::onOverlayPenDown(double /*scaleX*/,
-                                    double /*scaleY*/,
+OfxEffectInstance::onOverlayPenDown(double scaleX,
+                                    double scaleY,
                                     const QPointF & viewportPos,
                                     const QPointF & pos)
 {
@@ -2029,8 +2031,8 @@ OfxEffectInstance::onOverlayPenDown(double /*scaleX*/,
     }
     if (_overlayInteract) {
         OfxPointD rs;
-        rs.x = 1.; //scaleX;
-        rs.y = 1.; //scaleY;
+        rs.x = scaleX;
+        rs.y = scaleY;
         OfxPointD penPos;
         penPos.x = pos.x();
         penPos.y = pos.y();
@@ -2067,8 +2069,8 @@ OfxEffectInstance::onOverlayPenDown(double /*scaleX*/,
 }
 
 bool
-OfxEffectInstance::onOverlayPenMotion(double /*scaleX*/,
-                                      double /*scaleY*/,
+OfxEffectInstance::onOverlayPenMotion(double scaleX,
+                                      double scaleY,
                                       const QPointF & viewportPos,
                                       const QPointF & pos)
 {
@@ -2077,8 +2079,8 @@ OfxEffectInstance::onOverlayPenMotion(double /*scaleX*/,
     }
     if (_overlayInteract) {
         OfxPointD rs;
-        rs.x = 1.; //scaleX;
-        rs.y = 1.; //scaleY;
+        rs.x = scaleX;
+        rs.y = scaleY;
         OfxPointD penPos;
         penPos.x = pos.x();
         penPos.y = pos.y();
@@ -2115,8 +2117,8 @@ OfxEffectInstance::onOverlayPenMotion(double /*scaleX*/,
 }
 
 bool
-OfxEffectInstance::onOverlayPenUp(double /*scaleX*/,
-                                  double /*scaleY*/,
+OfxEffectInstance::onOverlayPenUp(double scaleX,
+                                  double scaleY,
                                   const QPointF & viewportPos,
                                   const QPointF & pos)
 {
@@ -2125,8 +2127,8 @@ OfxEffectInstance::onOverlayPenUp(double /*scaleX*/,
     }
     if (_overlayInteract) {
         OfxPointD rs;
-        rs.x = 1.; //scaleX;
-        rs.y = 1.; //scaleY;
+        rs.x = scaleX;
+        rs.y = scaleY;
         OfxPointD penPos;
         penPos.x = pos.x();
         penPos.y = pos.y();
@@ -2162,8 +2164,8 @@ OfxEffectInstance::onOverlayPenUp(double /*scaleX*/,
 }
 
 bool
-OfxEffectInstance::onOverlayKeyDown(double /*scaleX*/,
-                                    double /*scaleY*/,
+OfxEffectInstance::onOverlayKeyDown(double scaleX,
+                                    double scaleY,
                                     Natron::Key key,
                                     Natron::KeyboardModifiers /*modifiers*/)
 {
@@ -2172,8 +2174,8 @@ OfxEffectInstance::onOverlayKeyDown(double /*scaleX*/,
     }
     if (_overlayInteract) {
         OfxPointD rs;
-        rs.x = 1.; //scaleX;
-        rs.y = 1.; //scaleY;
+        rs.x = scaleX;
+        rs.y = scaleY;
         OfxTime time = getApp()->getTimeLine()->currentFrame();
         QByteArray keyStr;
 /*
@@ -2201,8 +2203,8 @@ OfxEffectInstance::onOverlayKeyDown(double /*scaleX*/,
 }
 
 bool
-OfxEffectInstance::onOverlayKeyUp(double /*scaleX*/,
-                                  double /*scaleY*/,
+OfxEffectInstance::onOverlayKeyUp(double scaleX,
+                                  double scaleY,
                                   Natron::Key key,
                                   Natron::KeyboardModifiers /* modifiers*/)
 {
@@ -2211,8 +2213,8 @@ OfxEffectInstance::onOverlayKeyUp(double /*scaleX*/,
     }
     if (_overlayInteract) {
         OfxPointD rs;
-        rs.x = 1.; //scaleX;
-        rs.y = 1.; //scaleY;
+        rs.x = scaleX;
+        rs.y = scaleY;
         OfxTime time = getApp()->getTimeLine()->currentFrame();
         QByteArray keyStr;
 
@@ -2243,8 +2245,8 @@ OfxEffectInstance::onOverlayKeyUp(double /*scaleX*/,
 }
 
 bool
-OfxEffectInstance::onOverlayKeyRepeat(double /*scaleX*/,
-                                      double /*scaleY*/,
+OfxEffectInstance::onOverlayKeyRepeat(double scaleX,
+                                      double scaleY,
                                       Natron::Key key,
                                       Natron::KeyboardModifiers /*modifiers*/)
 {
@@ -2253,8 +2255,8 @@ OfxEffectInstance::onOverlayKeyRepeat(double /*scaleX*/,
     }
     if (_overlayInteract) {
         OfxPointD rs;
-        rs.x = 1.; //scaleX;
-        rs.y = 1.; //scaleY;
+        rs.x = scaleX;
+        rs.y = scaleY;
         OfxTime time = getApp()->getTimeLine()->currentFrame();
         QByteArray keyStr;
 /*
@@ -2282,16 +2284,16 @@ OfxEffectInstance::onOverlayKeyRepeat(double /*scaleX*/,
 }
 
 bool
-OfxEffectInstance::onOverlayFocusGained(double /*scaleX*/,
-                                        double /*scaleY*/)
+OfxEffectInstance::onOverlayFocusGained(double scaleX,
+                                        double scaleY)
 {
     if (!_initialized) {
         return false;
     }
     if (_overlayInteract) {
         OfxPointD rs;
-        rs.x = 1.; //scaleX;
-        rs.y = 1.; //scaleY;
+        rs.x = scaleX;
+        rs.y = scaleY;
         OfxTime time = getApp()->getTimeLine()->currentFrame();
         OfxStatus stat;
 /*
@@ -2317,16 +2319,16 @@ OfxEffectInstance::onOverlayFocusGained(double /*scaleX*/,
 }
 
 bool
-OfxEffectInstance::onOverlayFocusLost(double /*scaleX*/,
-                                      double /*scaleY*/)
+OfxEffectInstance::onOverlayFocusLost(double scaleX,
+                                      double scaleY)
 {
     if (!_initialized) {
         return false;
     }
     if (_overlayInteract) {
         OfxPointD rs;
-        rs.x = 1.; //scaleX;
-        rs.y = 1.; //scaleY;
+        rs.x = scaleX;
+        rs.y = scaleY;
         OfxTime time = getApp()->getTimeLine()->currentFrame();
         OfxStatus stat;
         
@@ -2409,7 +2411,15 @@ OfxEffectInstance::knobChanged(KnobI* k,
     std::string ofxReason = natronValueChangedReasonToOfxValueChangedReason(reason);
     assert( !ofxReason.empty() ); // crashes when resetting to defaults
     OfxPointD renderScale;
-    renderScale.x = renderScale.y = 1;
+    if (isDoingInteractAction()) {
+        assert(_overlayInteract);
+        OverlaySupport* lastInteract = _overlayInteract->getLastCallingViewport();
+        assert(lastInteract);
+        unsigned int mmLevel = lastInteract->getCurrentRenderScale();
+        renderScale.x = renderScale.y = 1 << mmLevel;
+    } else {
+        renderScale.x = renderScale.y = 1;
+    }
     OfxStatus stat = kOfxStatOK;
     
     int recursionLevel = getRecursionLevel();
@@ -2790,7 +2800,6 @@ OfxEffectInstance::getTransform(SequenceTime time,
     {
         bool skipDiscarding = false;
         if (getRecursionLevel() > 1) {
-            qDebug() << "renderAction cannot be called recursively as an action. Please check this.";
             skipDiscarding = true;
         }
         
@@ -2830,7 +2839,9 @@ OfxEffectInstance::getTransform(SequenceTime time,
         return Natron::eStatusFailed;
     }
     *inputToTransform = natronClip->getAssociatedNode();
-    
+    if (!*inputToTransform) {
+        return Natron::eStatusFailed;
+    }
     return Natron::eStatusOK;
 }
 

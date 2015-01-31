@@ -94,6 +94,8 @@ public:
           , cachedFrame()
           , image()
           , rod()
+          , renderAge(0)
+          , isSequential(false)
     {
     }
     
@@ -125,6 +127,8 @@ public:
     boost::shared_ptr<Natron::FrameEntry> cachedFrame;
     boost::shared_ptr<Natron::Image> image;
     RectD rod;
+    U64 renderAge;
+    bool isSequential;
 };
 
 struct ViewerInstance::ViewerInstancePrivate
@@ -135,27 +139,33 @@ struct ViewerInstance::ViewerInstancePrivate
 public:
     
     ViewerInstancePrivate(const ViewerInstance* parent)
-        : instance(parent)
-          , uiContext(NULL)
-          , forceRenderMutex()
-          , forceRender(false)
-          , updateViewerPboIndex(0)
-          , viewerParamsMutex()
-          , viewerParamsGain(1.)
-          , viewerParamsLut(Natron::eViewerColorSpaceSRGB)
-          , viewerParamsAutoContrast(false)
-          , viewerParamsChannels(Natron::eDisplayChannelsRGB)
-          , viewerMipMapLevel(0)
-          , activeInputsMutex()
-          , activeInputs()
-          , lastRenderedHashMutex()
-          , lastRenderedHash(0)
-          , lastRenderedHashValid(false)
+    : instance(parent)
+    , uiContext(NULL)
+    , forceRenderMutex()
+    , forceRender(false)
+    , updateViewerPboIndex(0)
+    , viewerParamsMutex()
+    , viewerParamsGain(1.)
+    , viewerParamsLut(Natron::eViewerColorSpaceSRGB)
+    , viewerParamsAutoContrast(false)
+    , viewerParamsChannels(Natron::eDisplayChannelsRGB)
+    , viewerMipMapLevel(0)
+    , activeInputsMutex()
+    , activeInputs()
+    , lastRenderedHashMutex()
+    , lastRenderedHash(0)
+    , lastRenderedHashValid(false)
+    , renderAgeMutex()
+    , renderAge()
     {
 
-        activeInputs[0] = -1;
-        activeInputs[1] = -1;
+        for (int i = 0;i < 2; ++i) {
+            activeInputs[i] = -1;
+            renderAge[i] = 0;
+        }
     }
+    
+    
 
     void redrawViewer()
     {
@@ -207,8 +217,38 @@ public:
         textureBeingRenderedCond.wakeAll();
     }
 
+    U64 getRenderAge(int texIndex)
+    {
+        QMutexLocker k(&renderAgeMutex);
+        
+        return renderAge[texIndex];
+    }
+    
+    bool checkAgeNoUpdate(int texIndex,U64 age)
+    {
+        QMutexLocker k(&renderAgeMutex);
+        assert(age <= renderAge[texIndex]);
+        return age == renderAge[texIndex];
+    }
+    
+    bool checkAndUpdateRenderAge(int texIndex,U64 age)
+    {
+        QMutexLocker k(&renderAgeMutex);
+        assert(age <= renderAge[texIndex]);
+        if (age < renderAge[texIndex]) {
+            return false;
+        }
+        if (renderAge[texIndex] == std::numeric_limits<U64>::max()) {
+            renderAge[texIndex] = 0;
+        } else {
+            ++renderAge[texIndex];
+        }
+        return true;
+    }
+
 
 public Q_SLOTS:
+
     /**
      * @brief Slot called internally by the renderViewer() function when it wants to refresh the OpenGL viewer.
      * Do not call this yourself.
@@ -258,6 +298,11 @@ public:
     mutable QMutex textureBeingRenderedMutex;
     QWaitCondition textureBeingRenderedCond;
     std::list<boost::shared_ptr<Natron::FrameEntry> > textureBeingRendered; ///< a list of all the texture being rendered simultaneously
+    
+private:
+    
+    QMutex renderAgeMutex;
+    U64 renderAge[2];
 };
 
 

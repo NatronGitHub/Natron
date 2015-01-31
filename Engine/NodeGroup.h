@@ -236,6 +236,8 @@ public:
                              const QString& pluginGrouping,
                              QString& output);
     
+    void checkSupportsRenderScaleOKForAllNodes();
+    
 Q_SIGNALS:
     
     void nodesCleared();
@@ -327,7 +329,7 @@ public:
     
     void getInputsOutputs(std::list<Natron::Node* >* nodes) const;
     
- 
+    
 private:
     
     virtual void initializeKnobs() OVERRIDE FINAL;

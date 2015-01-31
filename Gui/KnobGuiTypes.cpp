@@ -217,7 +217,7 @@ Int_KnobGui::createWidget(QHBoxLayout* layout)
 
     if (dim > 1 && !_knob->isSliderDisabled() && sliderVisible) {
         _dimensionSwitchButton = new Button(QIcon(),QString::number(dim),container);
-        _dimensionSwitchButton->setToolTip(Qt::convertFromPlainText(tr("Switch between a single value for all dimensions and multiple values"), Qt::WhiteSpaceNormal));
+        _dimensionSwitchButton->setToolTip(Qt::convertFromPlainText(tr("Switch between a single value for all dimensions and multiple values."), Qt::WhiteSpaceNormal));
         _dimensionSwitchButton->setFocusPolicy(Qt::NoFocus);
         _dimensionSwitchButton->setFixedSize(17, 17);
         _dimensionSwitchButton->setCheckable(true);
@@ -368,6 +368,18 @@ Int_KnobGui::updateGUI(int dimension)
 {
     int v = _knob->getValue(dimension,false);
 
+    if (_dimensionSwitchButton && !_dimensionSwitchButton->isChecked()) {
+        for (int i = 0; i < _knob->getDimension(); ++i) {
+            
+            if (i == dimension) {
+                continue;
+            }
+            if (_knob->getValue(i,false) != v) {
+                expandAllDimensions();
+            }
+        }
+    }
+    
     if (_slider) {
         _slider->seekScalePosition(v);
     }
@@ -525,6 +537,7 @@ Int_KnobGui::_show()
 void
 Int_KnobGui::setEnabled()
 {
+    bool enabled0 = getKnob()->isEnabled(0);
     for (U32 i = 0; i < _spinBoxes.size(); ++i) {
         bool b = getKnob()->isEnabled(i);
         //_spinBoxes[i].first->setEnabled(b);
@@ -534,7 +547,11 @@ Int_KnobGui::setEnabled()
         }
     }
     if (_slider) {
-        _slider->setReadOnly( !getKnob()->isEnabled(0) );
+        _slider->setReadOnly( !enabled0 );
+    }
+    
+    if (_dimensionSwitchButton) {
+        _dimensionSwitchButton->setEnabled(enabled0);
     }
 }
 
@@ -924,7 +941,7 @@ Double_KnobGui::createWidget(QHBoxLayout* layout)
     
     if (dim > 1 && !_knob->isSliderDisabled() && sliderVisible ) {
         _dimensionSwitchButton = new Button(QIcon(),QString::number(dim),container);
-        _dimensionSwitchButton->setToolTip(Qt::convertFromPlainText(tr("Switch between a single value for all dimensions and multiple values"), Qt::WhiteSpaceNormal));
+        _dimensionSwitchButton->setToolTip(Qt::convertFromPlainText(tr("Switch between a single value for all dimensions and multiple values."), Qt::WhiteSpaceNormal));
         _dimensionSwitchButton->setFixedSize(17, 17);
         _dimensionSwitchButton->setFocusPolicy(Qt::NoFocus);
         _dimensionSwitchButton->setCheckable(true);
@@ -1080,6 +1097,19 @@ Double_KnobGui::updateGUI(int dimension)
 {
     double v = _knob->getValue(dimension,false);
     valueAccordingToType(false, dimension, &v);
+    
+    if (_dimensionSwitchButton && !_dimensionSwitchButton->isChecked()) {
+        for (int i = 0; i < _knob->getDimension(); ++i) {
+            
+            if (i == dimension) {
+                continue;
+            }
+            if (_knob->getValue(i,false) != v) {
+                expandAllDimensions();
+            }
+        }
+    }
+    
     if (_slider) {
         _slider->seekScalePosition(v);
     }
@@ -1250,6 +1280,8 @@ Double_KnobGui::_show()
 void
 Double_KnobGui::setEnabled()
 {
+    bool enabled0 = getKnob()->isEnabled(0);
+    
     for (U32 i = 0; i < _spinBoxes.size(); ++i) {
         bool b = getKnob()->isEnabled(i);
         //_spinBoxes[i].first->setEnabled(b);
@@ -1259,7 +1291,11 @@ Double_KnobGui::setEnabled()
         }
     }
     if (_slider) {
-        _slider->setReadOnly( !getKnob()->isEnabled(0) );
+        _slider->setReadOnly( !enabled0 );
+    }
+    
+    if (_dimensionSwitchButton) {
+        _dimensionSwitchButton->setEnabled(enabled0);
     }
 
 }
@@ -1369,7 +1405,7 @@ void Button_KnobGui::removeSpecificGui()
 void
 Button_KnobGui::emitValueChanged()
 {
-    dynamic_cast<Button_Knob*>( getKnob().get() )->onValueChanged(true, 0, Natron::eValueChangedReasonUserEdited, NULL);
+    _knob->evaluateValueChange(0, Natron::eValueChangedReasonUserEdited, true);
 }
 
 void
@@ -1831,7 +1867,7 @@ Color_KnobGui::createWidget(QHBoxLayout* layout)
     colorLayout->setContentsMargins(0, 0, 0, 0);
     colorLayout->setSpacing(0);
 
-    _colorLabel = new ColorPickerLabel(colorContainer);
+    _colorLabel = new ColorPickerLabel(this,colorContainer);
     QObject::connect( _colorLabel,SIGNAL( pickingEnabled(bool) ),this,SLOT( onPickingEnabled(bool) ) );
     colorLayout->addWidget(_colorLabel);
 
@@ -1840,13 +1876,13 @@ Color_KnobGui::createWidget(QHBoxLayout* layout)
 
     _colorDialogButton = new Button(QIcon(buttonPix), "", colorContainer);
     _colorDialogButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-    _colorDialogButton->setToolTip(Qt::convertFromPlainText(tr("Open the color dialog"), Qt::WhiteSpaceNormal));
+    _colorDialogButton->setToolTip(Qt::convertFromPlainText(tr("Open the color dialog."), Qt::WhiteSpaceNormal));
     _colorDialogButton->setFocusPolicy(Qt::NoFocus);
     QObject::connect( _colorDialogButton, SIGNAL( clicked() ), this, SLOT( showColorDialog() ) );
     colorLayout->addWidget(_colorDialogButton);
 
     _dimensionSwitchButton = new Button(QIcon(),QString::number(_dimension),colorContainer);
-    _dimensionSwitchButton->setToolTip(Qt::convertFromPlainText(tr("Switch between a single value for all dimensions and multiple values"), Qt::WhiteSpaceNormal));
+    _dimensionSwitchButton->setToolTip(Qt::convertFromPlainText(tr("Switch between a single value for all dimensions and multiple values."), Qt::WhiteSpaceNormal));
     _dimensionSwitchButton->setFocusPolicy(Qt::NoFocus);
     _dimensionSwitchButton->setFixedSize(17, 17);
     _dimensionSwitchButton->setCheckable(true);
@@ -2024,24 +2060,29 @@ Color_KnobGui::setEnabled()
 
     //_rBox->setEnabled(r);
     _rBox->setReadOnly(!r);
+    _rLabel->setEnabled(r);
 
-    if ( _slider->isVisible() ) {
-        _slider->setReadOnly(!r);
-    }
-
+    _slider->setReadOnly(!r);
+    _colorDialogButton->setEnabled(r);
+    
     if (_dimension >= 3) {
         bool g = _knob->isEnabled(1);
         bool b = _knob->isEnabled(2);
         //_gBox->setEnabled(g);
         _gBox->setReadOnly(!g);
+        _gLabel->setEnabled(g);
         //_bBox->setEnabled(b);
         _bBox->setReadOnly(!b);
+        _bLabel->setEnabled(b);
     }
     if (_dimension >= 4) {
         bool a = _knob->isEnabled(3);
         //_aBox->setEnabled(a);
         _aBox->setReadOnly(!a);
+        _aLabel->setEnabled(a);
     }
+    _dimensionSwitchButton->setEnabled(r);
+    _colorLabel->setEnabledMode(r);
 }
 
 void
@@ -2049,6 +2090,19 @@ Color_KnobGui::updateGUI(int dimension)
 {
     assert(dimension < _dimension && dimension >= 0 && dimension <= 3);
     double value = _knob->getValue(dimension,false);
+    
+    if (!_knob->areAllDimensionsEnabled()) {
+        for (int i = 0; i < _knob->getDimension(); ++i) {
+            
+            if (i == dimension) {
+                continue;
+            }
+            if (_knob->getValue(i,false) != value) {
+                expandAllDimensions();
+            }
+        }
+    }
+    
     switch (dimension) {
     case 0: {
         _rBox->setValue(value);
@@ -2416,9 +2470,10 @@ Color_KnobGui::_show()
     _colorDialogButton->show();
 }
 
-ColorPickerLabel::ColorPickerLabel(QWidget* parent)
+ColorPickerLabel::ColorPickerLabel(Color_KnobGui* knob,QWidget* parent)
     : QLabel(parent)
       , _pickingEnabled(false)
+    , _knob(knob)
 {
     setToolTip( Qt::convertFromPlainText(tr("To pick a color on a viewer, click this and then press control + left click on any viewer.\n"
                                             "You can also pick the average color of a given rectangle by holding control + shift + left click\n. "
@@ -2452,8 +2507,22 @@ ColorPickerLabel::leaveEvent(QEvent*)
 void
 ColorPickerLabel::setPickingEnabled(bool enabled)
 {
+    if (!isEnabled()) {
+        return;
+    }
     _pickingEnabled = enabled;
     setColor(_currentColor);
+}
+
+void
+ColorPickerLabel::setEnabledMode(bool enabled)
+{
+    setEnabled(enabled);
+    if (!enabled && _pickingEnabled) {
+        _pickingEnabled = false;
+        setColor(_currentColor);
+        _knob->getGui()->removeColorPicker(boost::dynamic_pointer_cast<Color_Knob>(_knob->getKnob()));
+    }
 }
 
 void
@@ -2499,11 +2568,10 @@ void
 Color_KnobGui::onPickingEnabled(bool enabled)
 {
     if ( getKnob()->getHolder()->getApp() ) {
-        boost::shared_ptr<Color_Knob> colorKnob = boost::dynamic_pointer_cast<Color_Knob>( getKnob() );
         if (enabled) {
-            getGui()->registerNewColorPicker(colorKnob);
+            getGui()->registerNewColorPicker(_knob);
         } else {
-            getGui()->removeColorPicker(colorKnob);
+            getGui()->removeColorPicker(_knob);
         }
     }
 }
@@ -3741,7 +3809,7 @@ Parametric_KnobGui::createWidget(QHBoxLayout* layout)
     treeColumnLayout->addWidget(_tree);
 
     _resetButton = new Button("Reset",treeColumn);
-    _resetButton->setToolTip( Qt::convertFromPlainText(tr("Reset the selected curves in the tree to their default shape"), Qt::WhiteSpaceNormal) );
+    _resetButton->setToolTip( Qt::convertFromPlainText(tr("Reset the selected curves in the tree to their default shape."), Qt::WhiteSpaceNormal) );
     QObject::connect( _resetButton, SIGNAL( clicked() ), this, SLOT( resetSelectedCurves() ) );
     treeColumnLayout->addWidget(_resetButton);
 

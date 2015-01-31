@@ -162,8 +162,40 @@ public:
 
 #endif // 0
 
+#ifdef __NATRON_WIN32__
+
+static QString mapPathWithDriveLetterToPathWithNetworkShareName(const QString& path)
+{
+	if (path.size() <= 2) {
+		return path;
+	}
+
+	QString ret;
+	if (path[0].isLetter() && path[1] == QChar(':')) {
+
+		QString driveName = path.mid(0,2);
+
+		TCHAR szDeviceName[512]; 
+		DWORD dwResult, cchBuff = sizeof(szDeviceName);
+		dwResult = WNetGetConnection(driveName.toStdString().c_str(), szDeviceName, &cchBuff);
+		if (dwResult == NO_ERROR) {
+			ret = path.mid(2,-1);
+
+			//Replace \\ with / 
+			QString qDeviceName(szDeviceName);
+			qDeviceName.replace('\\','/');
+			ret.prepend(qDeviceName);
+			return ret;
+		} 
+	}  
+	ret = path;
+	return ret;
 
 
+}
+
+
+#endif
 
 ///////////////////////// SequenceFileDialog
 
@@ -450,7 +482,10 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
         _filterLineLayout->addWidget(_fileExtensionCombo);
         QObject::connect( _fileExtensionCombo, SIGNAL( currentIndexChanged(int) ), this, SLOT( onFileExtensionComboChanged(int) ) );
         if (isSequenceDialog) {
-            _fileExtensionCombo->setCurrentIndex( _fileExtensionCombo->itemIndex("jpg") );
+            int idx = _fileExtensionCombo->itemIndex("jpg");
+            if (idx >= 0) {
+                _fileExtensionCombo->setCurrentIndex(idx);
+            }
         }
     }
 
@@ -1730,6 +1765,11 @@ SequenceFileDialog::selectedFiles()
             Natron::Project::makeRelativeToVariable(varName, varPath, selection);
         }
     }
+
+#ifdef __NATRON_WIN32__
+	QString ret = mapPathWithDriveLetterToPathWithNetworkShareName(selection.c_str());
+	selection = ret.toStdString();
+#endif
     return selection;
 }
 
@@ -1740,17 +1780,24 @@ SequenceFileDialog::filesToSave()
     QString text = _selectionLineEdit->text();
     ///Find last dot position and remove everything after the extension which we might added on the line edit
     int lastDotPos = text.lastIndexOf('.');
+
+	QString ret;
     if (lastDotPos != -1) {
         int i = lastDotPos + 1;
         while (i < text.size() && text.at(i) != QChar(' ')) {
             ++i;
         }
-        return text.mid(0,i).toStdString();
+        ret =  text.mid(0,i);
         
     } else {
-        return text.toStdString();
+        ret = text;
     }
-    
+
+#ifdef __NATRON_WIN32__
+    ret = mapPathWithDriveLetterToPathWithNetworkShareName(ret);
+#endif
+
+	return ret.toStdString();
 }
 
 QDir
@@ -1771,7 +1818,14 @@ SequenceFileDialog::selectedDirectory() const
             Natron::Project::makeRelativeToVariable(pathName, pathValue, path);
         }
     }
-    return path;
+
+
+#ifdef __NATRON_WIN32__
+	QString ret = mapPathWithDriveLetterToPathWithNetworkShareName(path.c_str());
+	path = ret.toStdString();
+#endif
+	
+	return path;
 }
 
 QModelIndex
@@ -2755,11 +2809,13 @@ SequenceFileDialog::createViewerPreviewNode()
     ViewerInstance* viewerInstance = dynamic_cast<ViewerInstance*>(_preview->viewerNodeInternal->getLiveInstance());
     assert(viewerInstance);
     if (!viewerInstance) {
+        // coverity[dead_error_line]
         return;
     }
     ViewerGL* viewerGL = dynamic_cast<ViewerGL*>(viewerInstance->getUiContext());
     assert(viewerGL);
     if (!viewerGL) {
+        // coverity[dead_error_line]
         return;
     }
     _preview->viewerUI = viewerGL->getViewerTab();

@@ -90,7 +90,7 @@ public:
      * @brief getRandomFrameName
      * @param f The index of the frame.
      */
-    std::string getFileName(int time,int view) const;
+    std::string getFileName(int time) const;
 
 Q_SIGNALS:
 
@@ -156,7 +156,7 @@ public:
         return _sequenceDialog;
     }
 
-    QString generateFileNameAtTime(SequenceTime time,int view = 0) const;
+    QString generateFileNameAtTime(SequenceTime time) const;
 
 Q_SIGNALS:
 

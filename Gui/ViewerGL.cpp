@@ -167,7 +167,7 @@ struct ViewerGL::Implementation
           , blankViewerInfo()
           , displayingImageGain()
           , displayingImageOffset()
-          , displayingImageMipMapLevel(0)
+          , displayingImageMipMapLevel()
           , displayingImagePremult()
           , displayingImageLut(Natron::eViewerColorSpaceSRGB)
           , ms(eMouseStateUndefined)
@@ -226,6 +226,7 @@ struct ViewerGL::Implementation
         displayingImageOffset[0] = displayingImageOffset[1] = 0.;
         for (int i = 0; i < 2 ; ++i) {
             displayingImageTime[i] = 0;
+            displayingImageMipMapLevel[i] = 0;
             lastRenderedImage[i].resize(MAX_MIP_MAP_LEVELS);
         }
         assert( qApp && qApp->thread() == QThread::currentThread() );
@@ -258,7 +259,7 @@ struct ViewerGL::Implementation
     ImageInfo blankViewerInfo; /*!< Pointer to the info used when the viewer is disconnected.*/
     double displayingImageGain[2];
     double displayingImageOffset[2];
-    unsigned int displayingImageMipMapLevel;
+    unsigned int displayingImageMipMapLevel[2];
     Natron::ImagePremultiplicationEnum displayingImagePremult[2];
     int displayingImageTime[2];
     Natron::ViewerColorSpaceEnum displayingImageLut;
@@ -1064,8 +1065,17 @@ ViewerGL::paintGL()
         //GLProtectMatrix m(GL_MODELVIEW);
         //GLProtectMatrix p(GL_PROJECTION);
 
+        // Note: the OFX spec says that the GL_MODELVIEW should be the identity matrix
+        // http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#ImageEffectOverlays
+        // However,
+        // - Nuke uses a different matrix
+        // - Nuke transforms the interacts using the modelview if there are Transform nodes between the viewer and the interact.
+
         glMatrixMode(GL_MODELVIEW);
+        // TODO: apply cumulated viewer transforms to modelview
         glLoadIdentity();
+        glTranslatef(-1, -1, 0);        // for compatibility with Nuke
+        glScalef(1/256., 1./256., 1.0); // for compatibility with Nuke
 
         glMatrixMode(GL_PROJECTION);
         glLoadIdentity();
@@ -1085,7 +1095,10 @@ ViewerGL::paintGL()
             return;
         }
 
-        glOrtho(zoomLeft, zoomRight, zoomBottom, zoomTop, -1, 1);
+        glOrtho(zoomLeft, zoomRight, zoomBottom, zoomTop, 1, -1);
+        glScalef(256., 256., 1.0); // for compatibility with Nuke
+        glTranslatef(1, 1, 0);     // for compatibility with Nuke
+
         glCheckError();
 
 
@@ -1134,40 +1147,40 @@ ViewerGL::paintGL()
 
                 if (drawTexture[0]) {
                     BlendSetter b(premultA);
-                    drawRenderingVAO(_imp->displayingImageMipMapLevel, 0, eDrawPolygonModeWhole);
+                    drawRenderingVAO(_imp->displayingImageMipMapLevel[0], 0, eDrawPolygonModeWhole);
                 }
                 if (drawTexture[1]) {
                     glEnable(GL_BLEND);
                     glBlendFunc(GL_CONSTANT_ALPHA, GL_ONE_MINUS_CONSTANT_ALPHA);
-                    drawRenderingVAO(_imp->displayingImageMipMapLevel, 1, eDrawPolygonModeWipeRight);
+                    drawRenderingVAO(_imp->displayingImageMipMapLevel[1], 1, eDrawPolygonModeWipeRight);
                     glDisable(GL_BLEND);
                 }
             } else if (compOp == eViewerCompositingOperatorMinus) {
                 if (drawTexture[0]) {
                     BlendSetter b(premultA);
-                    drawRenderingVAO(_imp->displayingImageMipMapLevel, 0, eDrawPolygonModeWhole);
+                    drawRenderingVAO(_imp->displayingImageMipMapLevel[0], 0, eDrawPolygonModeWhole);
                 }
                 if (drawTexture[1]) {
                     glEnable(GL_BLEND);
                     glBlendFunc(GL_CONSTANT_ALPHA, GL_ONE);
                     glBlendEquation(GL_FUNC_REVERSE_SUBTRACT);
-                    drawRenderingVAO(_imp->displayingImageMipMapLevel, 1, eDrawPolygonModeWipeRight);
+                    drawRenderingVAO(_imp->displayingImageMipMapLevel[1], 1, eDrawPolygonModeWipeRight);
                     glDisable(GL_BLEND);
                 }
             } else if (compOp == eViewerCompositingOperatorUnder) {
                 if (drawTexture[0]) {
                     BlendSetter b(premultA);
-                    drawRenderingVAO(_imp->displayingImageMipMapLevel, 0, eDrawPolygonModeWhole);
+                    drawRenderingVAO(_imp->displayingImageMipMapLevel[0], 0, eDrawPolygonModeWhole);
                 }
                 if (drawTexture[1]) {
                     glEnable(GL_BLEND);
                     glBlendFunc(GL_ONE_MINUS_DST_ALPHA, GL_ONE);
-                    drawRenderingVAO(_imp->displayingImageMipMapLevel, 1, eDrawPolygonModeWipeRight);
+                    drawRenderingVAO(_imp->displayingImageMipMapLevel[1], 1, eDrawPolygonModeWipeRight);
                     glDisable(GL_BLEND);
 
                     glEnable(GL_BLEND);
                     glBlendFunc(GL_CONSTANT_ALPHA,GL_ONE_MINUS_CONSTANT_ALPHA);
-                    drawRenderingVAO(_imp->displayingImageMipMapLevel, 1, eDrawPolygonModeWipeRight);
+                    drawRenderingVAO(_imp->displayingImageMipMapLevel[1], 1, eDrawPolygonModeWipeRight);
                     glDisable(GL_BLEND);
                 }
             } else if (compOp == eViewerCompositingOperatorOver) {
@@ -1179,26 +1192,26 @@ ViewerGL::paintGL()
                         premultB = Natron::eImagePremultiplicationOpaque; ///When no checkerboard, draw opaque
                     }
                     BlendSetter b(premultB);
-                    drawRenderingVAO(_imp->displayingImageMipMapLevel, 1, eDrawPolygonModeWipeRight);
+                    drawRenderingVAO(_imp->displayingImageMipMapLevel[1], 1, eDrawPolygonModeWipeRight);
                 }
                 if (drawTexture[0]) {
                     glEnable(GL_BLEND);
                     glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
-                    drawRenderingVAO(_imp->displayingImageMipMapLevel, 0, eDrawPolygonModeWipeRight);
+                    drawRenderingVAO(_imp->displayingImageMipMapLevel[0], 0, eDrawPolygonModeWipeRight);
                     glDisable(GL_BLEND);
 
-                    drawRenderingVAO(_imp->displayingImageMipMapLevel, 0, eDrawPolygonModeWipeLeft);
+                    drawRenderingVAO(_imp->displayingImageMipMapLevel[0], 0, eDrawPolygonModeWipeLeft);
 
                     glEnable(GL_BLEND);
                     glBlendFunc(GL_ONE_MINUS_CONSTANT_ALPHA,GL_CONSTANT_ALPHA);
-                    drawRenderingVAO(_imp->displayingImageMipMapLevel, 0, eDrawPolygonModeWipeRight);
+                    drawRenderingVAO(_imp->displayingImageMipMapLevel[0], 0, eDrawPolygonModeWipeRight);
                     glDisable(GL_BLEND);
                 }
             } else {
                 if (drawTexture[0]) {
                     glDisable(GL_BLEND);
                     BlendSetter b(premultA);
-                    drawRenderingVAO(_imp->displayingImageMipMapLevel, 0, eDrawPolygonModeWhole);
+                    drawRenderingVAO(_imp->displayingImageMipMapLevel[0], 0, eDrawPolygonModeWhole);
 
                 }
             }
@@ -1209,7 +1222,7 @@ ViewerGL::paintGL()
         
         glCheckError();
         if (_imp->overlay) {
-            drawOverlay(_imp->displayingImageMipMapLevel);
+            drawOverlay(getCurrentRenderScale());
         }
         
         if (_imp->ms == eMouseStateSelecting) {
@@ -1365,7 +1378,8 @@ ViewerGL::drawOverlay(unsigned int mipMapLevel)
 
         glCheckError();
         glColor4f(1., 1., 1., 1.);
-        _imp->viewerTab->drawOverlays(1 << mipMapLevel,1 << mipMapLevel);
+        double scale = 1. / (1 << mipMapLevel);
+        _imp->viewerTab->drawOverlays(scale,scale);
         glCheckError();
 
         if (_imp->pickerState == ePickerStateRectangle) {
@@ -2399,7 +2413,7 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
     _imp->activeTextures[textureIndex] = _imp->displayTextures[textureIndex];
     _imp->displayingImageGain[textureIndex] = gain;
     _imp->displayingImageOffset[textureIndex] = offset;
-    _imp->displayingImageMipMapLevel = mipMapLevel;
+    _imp->displayingImageMipMapLevel[textureIndex] = mipMapLevel;
     _imp->displayingImageLut = (Natron::ViewerColorSpaceEnum)lut;
     _imp->displayingImagePremult[textureIndex] = premult;
     _imp->displayingImageTime[textureIndex] = time;
@@ -2458,6 +2472,8 @@ ViewerGL::disconnectInputTexture(int textureIndex)
     assert(textureIndex == 0 || textureIndex == 1);
     if (_imp->activeTextures[textureIndex] != 0) {
         _imp->activeTextures[textureIndex] = 0;
+        RectI r(0,0,0,0);
+        _imp->infoViewer[textureIndex]->setDataWindow(r);
     }
 }
 
@@ -2550,8 +2566,9 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
         _imp->ms = eMouseStateZoomingImage;
         overlaysCaught = true;
     } else if ( (_imp->ms == eMouseStateUndefined) && _imp->overlay ) {
-        unsigned int mipMapLevel = getInternalNode()->getMipMapLevel();
-        overlaysCaught = _imp->viewerTab->notifyOverlaysPenDown(1 << mipMapLevel, 1 << mipMapLevel, QMouseEventLocalPos(e), zoomPos, e);
+        unsigned int mipMapLevel = getCurrentRenderScale();
+        double scale = 1. / (1 << mipMapLevel);
+        overlaysCaught = _imp->viewerTab->notifyOverlaysPenDown(scale,scale, QMouseEventLocalPos(e), zoomPos, e);
         if (overlaysCaught) {
             mustRedraw = true;
         }
@@ -2697,8 +2714,9 @@ ViewerGL::mouseReleaseEvent(QMouseEvent* e)
         QMutexLocker l(&_imp->zoomCtxMutex);
         zoomPos = _imp->zoomCtx.toZoomCoordinates( e->x(), e->y() );
     }
-    unsigned int mipMapLevel = getInternalNode()->getMipMapLevel();
-    if ( _imp->viewerTab->notifyOverlaysPenUp(1 << mipMapLevel, 1 << mipMapLevel, QMouseEventLocalPos(e), zoomPos, e) ) {
+    unsigned int mipMapLevel = getCurrentRenderScale();
+    double scale = 1. / (1 << mipMapLevel);
+    if ( _imp->viewerTab->notifyOverlaysPenUp(scale,scale, QMouseEventLocalPos(e), zoomPos, e) ) {
         mustRedraw = true;
     }
     if (mustRedraw) {
@@ -2721,7 +2739,6 @@ ViewerGL::mouseMoveEvent(QMouseEvent* e)
     _imp->hasMovedSincePress = true;
     
     QPointF zoomPos;
-    unsigned int mipMapLevel = getInternalNode()->getMipMapLevel();
 
     // if the picker was deselected, this fixes the picer State
     // (see issue #133 https://github.com/MrKepzie/Natron/issues/133 )
@@ -3036,8 +3053,10 @@ ViewerGL::mouseMoveEvent(QMouseEvent* e)
         Q_EMIT selectionRectangleChanged(false);
     }; break;
     default: {
+        unsigned int mipMapLevel = getCurrentRenderScale();
+        double scale = 1. / (1 << mipMapLevel);
         if ( _imp->overlay &&
-             _imp->viewerTab->notifyOverlaysPenMotion(1 << mipMapLevel, 1 << mipMapLevel, QMouseEventLocalPos(e), zoomPos, e) ) {
+             _imp->viewerTab->notifyOverlaysPenMotion(scale,scale, QMouseEventLocalPos(e), zoomPos, e) ) {
             mustRedraw = true;
         }
         break;
@@ -3066,8 +3085,8 @@ ViewerGL::mouseDoubleClickEvent(QMouseEvent* e)
         QMutexLocker l(&_imp->zoomCtxMutex);
         pos_opengl = _imp->zoomCtx.toZoomCoordinates( e->x(),e->y() );
     }
-
-    if ( _imp->viewerTab->notifyOverlaysPenDoubleClick(1 << mipMapLevel, 1 << mipMapLevel, QMouseEventLocalPos(e), pos_opengl, e) ) {
+    double scale = 1. / (1 << mipMapLevel);
+    if ( _imp->viewerTab->notifyOverlaysPenDoubleClick(scale,scale, QMouseEventLocalPos(e), pos_opengl, e) ) {
         updateGL();
     }
     QGLWidget::mouseDoubleClickEvent(e);
@@ -3120,6 +3139,7 @@ ViewerGL::updateColorPicker(int textureIndex,
     RectD rod = getRoD(textureIndex);
     RectD projectCanonical;
     _imp->getProjectFormatCanonical(projectCanonical);
+    unsigned int mmLevel;
     if ( ( imgPosCanonical.x() >= rod.left() ) &&
          ( imgPosCanonical.x() < rod.right() ) &&
          ( imgPosCanonical.y() >= rod.bottom() ) &&
@@ -3134,14 +3154,14 @@ ViewerGL::updateColorPicker(int textureIndex,
                ( imgPosCanonical.y() >= projectCanonical.bottom() ) &&
                ( imgPosCanonical.y() < projectCanonical.top() ) ) ) {
             //imgPos must be in canonical coordinates
-            picked = getColorAt(imgPosCanonical.x(), imgPosCanonical.y(), linear, textureIndex, &r, &g, &b, &a);
+            picked = getColorAt(imgPosCanonical.x(), imgPosCanonical.y(), linear, textureIndex, &r, &g, &b, &a,&mmLevel);
         }
     }
     if (!picked) {
-        if ( _imp->infoViewer[textureIndex]->colorAndMouseVisible() ) {
-            _imp->infoViewer[textureIndex]->hideColorAndMouseInfo();
-        }
+        _imp->infoViewer[textureIndex]->setColorValid(false);
     } else {
+        _imp->infoViewer[textureIndex]->setColorApproximated(mmLevel > 0);
+        _imp->infoViewer[textureIndex]->setColorValid(true);
         if ( !_imp->infoViewer[textureIndex]->colorAndMouseVisible() ) {
             _imp->infoViewer[textureIndex]->showColorAndMouseInfo();
         }
@@ -3503,7 +3523,7 @@ ViewerGL::focusInEvent(QFocusEvent* e)
     if ( !_imp->viewerTab->getGui() ) {
         return;
     }
-    unsigned int scale = 1 << getInternalNode()->getMipMapLevel();
+    double scale = 1. / (1 << getCurrentRenderScale());
     if ( _imp->viewerTab->notifyOverlaysFocusGained(scale,scale) ) {
         updateGL();
     }
@@ -3520,7 +3540,7 @@ ViewerGL::focusOutEvent(QFocusEvent* e)
         return;
     }
 
-    unsigned int scale = 1 << getInternalNode()->getMipMapLevel();
+    double scale = 1. / (1 << getCurrentRenderScale());
     if ( _imp->viewerTab->notifyOverlaysFocusLost(scale,scale) ) {
         updateGL();
     }
@@ -3615,7 +3635,7 @@ ViewerGL::keyPressEvent(QKeyEvent* e)
         QGLWidget::keyPressEvent(e);
     }
 
-    unsigned int scale = 1 << getInternalNode()->getMipMapLevel();
+    double scale = 1. / (1 << getCurrentRenderScale());
     if ( e->isAutoRepeat() ) {
         if ( _imp->viewerTab->notifyOverlaysKeyRepeat(scale, scale, e) ) {
             accept = true;
@@ -3642,7 +3662,7 @@ ViewerGL::keyReleaseEvent(QKeyEvent* e)
     if (!_imp->viewerTab->getGui()) {
         return;
     }
-    unsigned int scale = 1 << getInternalNode()->getMipMapLevel();
+    double scale = 1. / (1 << getCurrentRenderScale());
     if ( _imp->viewerTab->notifyOverlaysKeyUp(scale, scale, e) ) {
         updateGL();
     }
@@ -4107,7 +4127,8 @@ ViewerGL::pickColor(double x,
     bool ret = false;
     for (int i = 0; i < 2; ++i) {
         // imgPos must be in canonical coordinates
-        bool picked = getColorAt(imgPos.x(), imgPos.y(), linear, i, &r, &g, &b, &a);
+        unsigned int mmLevel;
+        bool picked = getColorAt(imgPos.x(), imgPos.y(), linear, i, &r, &g, &b, &a,&mmLevel);
         if (picked) {
             if (i == 0) {
                 QColor pickerColor;
@@ -4117,15 +4138,15 @@ ViewerGL::pickColor(double x,
                 pickerColor.setAlphaF( Natron::clamp(a) );
                 _imp->viewerTab->getGui()->setColorPickersColor(pickerColor);
             }
+            _imp->infoViewer[i]->setColorApproximated(mmLevel > 0);
+            _imp->infoViewer[i]->setColorValid(true);
             if ( !_imp->infoViewer[i]->colorAndMouseVisible() ) {
                 _imp->infoViewer[i]->showColorAndMouseInfo();
             }
             _imp->infoViewer[i]->setColor(r,g,b,a);
             ret = true;
         } else {
-            if ( _imp->infoViewer[i]->colorAndMouseVisible() ) {
-                _imp->infoViewer[i]->hideColorAndMouseInfo();
-            }
+            _imp->infoViewer[i]->setColorValid(false);
         }
     }
 
@@ -4201,7 +4222,8 @@ ViewerGL::updateRectangleColorPicker()
     rect.set_bottom( std::min( topLeft.y(), btmRight.y() ) );
     rect.set_top( std::max( topLeft.y(), btmRight.y() ) );
     for (int i = 0; i < 2; ++i) {
-        bool picked = getColorAtRect(rect, linear, i, &r, &g, &b, &a);
+        unsigned int mm;
+        bool picked = getColorAtRect(rect, linear, i, &r, &g, &b, &a,&mm);
         if (picked) {
             if (i == 0) {
                 QColor pickerColor;
@@ -4211,14 +4233,14 @@ ViewerGL::updateRectangleColorPicker()
                 pickerColor.setAlphaF( clamp(a) );
                 _imp->viewerTab->getGui()->setColorPickersColor(pickerColor);
             }
+            _imp->infoViewer[i]->setColorValid(true);
             if ( !_imp->infoViewer[i]->colorAndMouseVisible() ) {
                 _imp->infoViewer[i]->showColorAndMouseInfo();
             }
+            _imp->infoViewer[i]->setColorApproximated(mm > 0);
             _imp->infoViewer[i]->setColor(r, g, b, a);
         } else {
-            if ( _imp->infoViewer[i]->colorAndMouseVisible() ) {
-                _imp->infoViewer[i]->hideColorAndMouseInfo();
-            }
+            _imp->infoViewer[i]->setColorValid(false);
         }
     }
 }
@@ -4602,6 +4624,12 @@ ViewerGL::getMipMapLevelCombinedToZoomFactor() const
 }
 
 
+unsigned int
+ViewerGL::getCurrentRenderScale() const
+{
+    return getMipMapLevelCombinedToZoomFactor();
+}
+
 template <typename PIX,int maxValue>
 static
 bool
@@ -4640,7 +4668,7 @@ getColorAtInternal(Natron::Image* image,
             *r = 0.;
             *g = 0.;
             *b = 0.;
-            *a = pix[3] / (float)maxValue;
+            *a = pix[0] / (float)maxValue;
             break;
         default:
             assert(false);
@@ -4679,7 +4707,8 @@ ViewerGL::getColorAt(double x,
                      float* r,
                      float* g,
                      float* b,
-                     float* a)                               // output values
+                     float* a,
+                     unsigned int* imgMmlevel)                               // output values
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
@@ -4691,7 +4720,9 @@ ViewerGL::getColorAt(double x,
 
     
     if (!img) {
-        double colorGPU[4];
+        return false;
+        ///Don't do this as this is 8bit data
+        /*double colorGPU[4];
         getTextureColorAt(x, y, &colorGPU[0], &colorGPU[1], &colorGPU[2], &colorGPU[3]);
         *a = colorGPU[3];
         if ( forceLinear && (_imp->displayingImageLut != eViewerColorSpaceLinear) ) {
@@ -4705,7 +4736,7 @@ ViewerGL::getColorAt(double x,
             *g = colorGPU[1];
             *b = colorGPU[2];
         }
-        return true;
+        return true;*/
     }
     
     Natron::ImageBitDepthEnum depth = img->getBitDepth();
@@ -4758,6 +4789,7 @@ ViewerGL::getColorAt(double x,
             gotval = false;
             break;
     }
+    *imgMmlevel = img->getMipMapLevel();
     return gotval;
 } // getColorAt
 
@@ -4768,7 +4800,8 @@ ViewerGL::getColorAtRect(const RectD &rect, // rectangle in canonical coordinate
                                float* r,
                                float* g,
                                float* b,
-                               float* a)                               // output values
+                               float* a,
+                              unsigned int* imgMm)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
@@ -4796,7 +4829,8 @@ ViewerGL::getColorAtRect(const RectD &rect, // rectangle in canonical coordinate
     double bSum = 0.;
     double aSum = 0.;
     if ( !img ) {
-        
+        //don't do this as this is 8 bit
+        /*
         Texture::DataTypeEnum type;
         if (_imp->displayTextures[0]) {
             type = _imp->displayTextures[0]->type();
@@ -4876,7 +4910,7 @@ ViewerGL::getColorAtRect(const RectD &rect, // rectangle in canonical coordinate
         *b = bSum / rectPixel.area();
         *a = aSum / rectPixel.area();
         
-        return true;
+        return true;*/
     }
     
     
@@ -4935,6 +4969,8 @@ ViewerGL::getColorAtRect(const RectD &rect, // rectangle in canonical coordinate
             }
         }
     }
+    
+    *imgMm = img->getMipMapLevel();
     
     if (area > 0) {
         *r = rSum / area;

@@ -327,16 +327,18 @@
 		1EADE5DB18AA403700EF3180 /* Tests */ = {
 			isa = PBXReferenceProxy;
 			fileType = "compiled.mach-o.executable";
-			path = Tests;
+			name = Tests;
+			path = Users/devernay/Development/Natron/Tests/build/Debug/Tests;
 			remoteRef = 1EADE5DA18AA403700EF3180 /* PBXContainerItemProxy */;
-			sourceTree = BUILT_PRODUCTS_DIR;
+			sourceTree = "<group>";
 		};
 		D7A1962C18B2234100F412DA /* NatronRenderer */ = {
 			isa = PBXReferenceProxy;
 			fileType = "compiled.mach-o.executable";
-			path = NatronRenderer;
+			name = NatronRenderer;
+			path = Users/devernay/Development/Natron/Renderer/build/Debug/NatronRenderer;
 			remoteRef = D7A1962B18B2234100F412DA /* PBXContainerItemProxy */;
-			sourceTree = BUILT_PRODUCTS_DIR;
+			sourceTree = "<group>";
 		};
 		D7A1964618B2242500F412DA /* libHostSupport.a */ = {
 			isa = PBXReferenceProxy;

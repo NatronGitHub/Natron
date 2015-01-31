@@ -195,6 +195,7 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
         }
     }
     
+    _publicInterface->checkSupportsRenderScaleOKForAllNodes();
     
     QDateTime time = QDateTime::currentDateTime();
     autoSetProjectFormat = false;

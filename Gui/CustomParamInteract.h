@@ -68,6 +68,8 @@ public:
     virtual void saveOpenGLContext() OVERRIDE FINAL;
     virtual void restoreOpenGLContext() OVERRIDE FINAL;
     
+    virtual unsigned int getCurrentRenderScale() const OVERRIDE FINAL { return 0; }
+    
 private:
 
     virtual void paintGL() OVERRIDE FINAL;

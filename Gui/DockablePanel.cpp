@@ -396,8 +396,7 @@ DockablePanel::DockablePanel(Gui* gui ,
             QObject::connect( _imp->_centerNodeButton,SIGNAL( clicked() ),this,SLOT( onCenterButtonClicked() ) );
             _imp->_headerLayout->addWidget(_imp->_centerNodeButton);
         }
-        
-        
+
       
         
         if (!_imp->_holder->isProject()) {
@@ -507,7 +506,7 @@ DockablePanel::DockablePanel(Gui* gui ,
             _imp->_colorButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
             _imp->_colorButton->setToolTip( Qt::convertFromPlainText(tr("Set here the color of the node in the nodegraph. "
                                                                         "By default the color of the node is the one set in the "
-                                                                        "preferences of %1").arg(NATRON_APPLICATION_NAME)
+                                                                        "preferences of %1.").arg(NATRON_APPLICATION_NAME)
                                                                      ,Qt::WhiteSpaceNormal) );
             _imp->_colorButton->setFocusPolicy(Qt::NoFocus);
             QObject::connect( _imp->_colorButton,SIGNAL( clicked() ),this,SLOT( onColorButtonClicked() ) );
@@ -526,7 +525,7 @@ DockablePanel::DockablePanel(Gui* gui ,
         icUndo.addPixmap(pixUndo_gray,QIcon::Disabled);
         _imp->_undoButton = new Button(icUndo,"",_imp->_headerWidget);
         _imp->_undoButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-        _imp->_undoButton->setToolTip( Qt::convertFromPlainText(tr("Undo the last change made to this operator"), Qt::WhiteSpaceNormal) );
+        _imp->_undoButton->setToolTip( Qt::convertFromPlainText(tr("Undo the last change made to this operator."), Qt::WhiteSpaceNormal) );
         _imp->_undoButton->setEnabled(false);
         _imp->_undoButton->setFocusPolicy(Qt::NoFocus);
         QPixmap pixRedo;
@@ -538,7 +537,7 @@ DockablePanel::DockablePanel(Gui* gui ,
         icRedo.addPixmap(pixRedo_gray,QIcon::Disabled);
         _imp->_redoButton = new Button(icRedo,"",_imp->_headerWidget);
         _imp->_redoButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-        _imp->_redoButton->setToolTip( Qt::convertFromPlainText(tr("Redo the last change undone to this operator"), Qt::WhiteSpaceNormal) );
+        _imp->_redoButton->setToolTip( Qt::convertFromPlainText(tr("Redo the last change undone to this operator."), Qt::WhiteSpaceNormal) );
         _imp->_redoButton->setEnabled(false);
         _imp->_redoButton->setFocusPolicy(Qt::NoFocus);
 

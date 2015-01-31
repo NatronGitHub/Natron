@@ -1237,7 +1237,6 @@ NodeGui::connectEdge(int edgeNumber)
         src = boost::dynamic_pointer_cast<NodeGui>(ngi);
     }
     
-   
     _inputEdges[edgeNumber]->setSource(src);
     return true;
     
@@ -2077,7 +2076,7 @@ NodeGui::toggleBitDepthIndicator(bool on,
                                  const QString & tooltip)
 {
     if (on) {
-        setToolTip( Qt::convertFromPlainText(tooltip,Qt::WhiteSpaceNormal) );
+        setToolTip( Qt::convertFromPlainText(tooltip.trimmed(), Qt::WhiteSpaceNormal) );
         _bitDepthWarning->setToolTip(tooltip);
     } else {
         setToolTip("");
@@ -2153,7 +2152,7 @@ NodeGuiIndicator::~NodeGuiIndicator()
 void
 NodeGuiIndicator::setToolTip(const QString & tooltip)
 {
-    _imp->ellipse->setToolTip( Qt::convertFromPlainText(tooltip,Qt::WhiteSpaceNormal) );
+    _imp->ellipse->setToolTip( Qt::convertFromPlainText(tooltip.trimmed(), Qt::WhiteSpaceNormal) );
 }
 
 void

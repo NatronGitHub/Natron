@@ -56,6 +56,7 @@
 #include "Engine/Project.h"
 #include "Engine/BackDrop.h"
 
+
 BOOST_CLASS_EXPORT(Natron::FrameParams)
 BOOST_CLASS_EXPORT(Natron::ImageParams)
 
@@ -925,16 +926,20 @@ AppManager::loadInternal(const CLArgs& cl)
     initGui();
 
 
-    size_t maxCacheRAM = _imp->_settings->getRamMaximumPercent() * getSystemTotalRAM();
-    U64 maxViewerDiskCache = _imp->_settings->getMaximumViewerDiskCacheSize();
-    U64 playbackSize = maxCacheRAM * _imp->_settings->getRamPlaybackMaximumPercent();
-    U64 viewerCacheSize = maxViewerDiskCache + playbackSize;
-    
-    U64 maxDiskCacheNode = _imp->_settings->getMaximumDiskCacheNodeSize();
-    
-    _imp->_nodeCache.reset( new Cache<Image>("NodeCache",NATRON_CACHE_VERSION, maxCacheRAM - playbackSize,1.) );
-    _imp->_diskCache.reset( new Cache<Image>("DiskCache",NATRON_CACHE_VERSION, maxDiskCacheNode,0.) );
-    _imp->_viewerCache.reset( new Cache<FrameEntry>("ViewerCache",NATRON_CACHE_VERSION,viewerCacheSize,(double)playbackSize / (double)viewerCacheSize) );
+    try {
+        size_t maxCacheRAM = _imp->_settings->getRamMaximumPercent() * getSystemTotalRAM();
+        U64 maxViewerDiskCache = _imp->_settings->getMaximumViewerDiskCacheSize();
+        U64 playbackSize = maxCacheRAM * _imp->_settings->getRamPlaybackMaximumPercent();
+        U64 viewerCacheSize = maxViewerDiskCache + playbackSize;
+
+        U64 maxDiskCacheNode = _imp->_settings->getMaximumDiskCacheNodeSize();
+
+        _imp->_nodeCache.reset( new Cache<Image>("NodeCache",NATRON_CACHE_VERSION, maxCacheRAM - playbackSize,1.) );
+        _imp->_diskCache.reset( new Cache<Image>("DiskCache",NATRON_CACHE_VERSION, maxDiskCacheNode,0.) );
+        _imp->_viewerCache.reset( new Cache<FrameEntry>("ViewerCache",NATRON_CACHE_VERSION,viewerCacheSize,(double)playbackSize / (double)viewerCacheSize) );
+    } catch (std::logic_error) {
+        // ignore
+    }
 
     setLoadingStatus( tr("Restoring the image cache...") );
     _imp->restoreCaches();
@@ -943,7 +948,11 @@ AppManager::loadInternal(const CLArgs& cl)
 
 
     ///Set host properties after restoring settings since it depends on the host name.
-    _imp->ofxHost->setProperties();
+    try {
+        _imp->ofxHost->setProperties();
+    } catch (std::logic_error) {
+        // ignore
+    }
 
     /*loading all plugins*/
     loadAllPlugins();
@@ -1099,6 +1108,10 @@ AppManager::clearAllCaches()
     ///for each app instance clear all its nodes cache
     for (std::map<int,AppInstanceRef>::iterator it = _imp->_appInstances.begin(); it != _imp->_appInstances.end(); ++it) {
         it->second.app->clearOpenFXPluginsCaches();
+    }
+    
+    for (std::map<int,AppInstanceRef>::iterator it = _imp->_appInstances.begin(); it != _imp->_appInstances.end(); ++it) {
+        it->second.app->renderAllViewers();
     }
 }
 
@@ -2981,6 +2994,7 @@ AppManager::toggleAutoHideGraphInputs()
     }
 }
 
+
 void
 AppManager::launchPythonInterpreter()
 {
@@ -2999,6 +3013,23 @@ AppManagerPrivate::declareSettingsToPython()
     for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
         ss << "natron.settings." << (*it)->getName() << " = natron.settings.getParam('" << (*it)->getName() << "')\n";
     }
+}
+
+int
+AppManager::isProjectAlreadyOpened(const std::string& projectFilePath) const
+{
+	for (std::map<int,AppInstanceRef>::iterator it = _imp->_appInstances.begin(); it != _imp->_appInstances.end(); ++it) {
+        boost::shared_ptr<Natron::Project> proj = it->second.app->getProject();
+		if (proj) {
+			QString path = proj->getProjectPath();
+			QString name = proj->getProjectName();
+			std::string existingProject = path.toStdString() + name.toStdString();
+			if (existingProject == projectFilePath) {
+				return it->first;
+			}
+		}
+    }
+	return -1;
 }
 
 namespace Natron {

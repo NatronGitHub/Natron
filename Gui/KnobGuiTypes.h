@@ -431,6 +431,7 @@ private:
 
 /******************************/
 
+class Color_KnobGui;
 class ColorPickerLabel
     : public QLabel
 {
@@ -438,7 +439,7 @@ class ColorPickerLabel
 
 public:
 
-    ColorPickerLabel(QWidget* parent = NULL);
+    ColorPickerLabel(Color_KnobGui* knob,QWidget* parent = NULL);
 
     virtual ~ColorPickerLabel() OVERRIDE
     {
@@ -452,6 +453,8 @@ public:
     void setColor(const QColor & color);
 
     void setPickingEnabled(bool enabled);
+    
+    void setEnabledMode(bool enabled);
 
 Q_SIGNALS:
 
@@ -467,6 +470,7 @@ private:
 
     bool _pickingEnabled;
     QColor _currentColor;
+    Color_KnobGui* _knob;
 };
 
 

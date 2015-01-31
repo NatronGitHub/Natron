@@ -65,6 +65,7 @@ public:
         : _timelineCurrent(0)
         , _creationDate(0)
         , _app(app)
+        , _version(0)
     {
     }
 

@@ -375,7 +375,7 @@ ProjectGui::load(boost::archive::xml_iarchive & archive)
                 tab->setTimelineVisible(found->second.timelineVisible);
                 tab->setCheckerboardEnabled(found->second.checkerboardEnabled);
                 tab->setTimelineBounds(found->second.leftBound, found->second.rightBound);
-                if (found->second._version >= VIEWER_DATA_REMOVES_FRAME_RANGE_LOCK) {
+                if (found->second.version >= VIEWER_DATA_REMOVES_FRAME_RANGE_LOCK) {
                     tab->setFrameRangeEdited(leftBound != found->second.leftBound || rightBound != found->second.rightBound);
                 } else {
                     tab->setTimelineBounds(leftBound, rightBound);

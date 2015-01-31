@@ -143,6 +143,7 @@ public:
     
     void discardLastViewerUsingTimeline();
     
+
     virtual void declareCurrentAppVariable_Python();
 
     virtual void createLoadProjectSplashScreen(const QString& projectFile) OVERRIDE FINAL;
@@ -153,6 +154,8 @@ public:
     
 public Q_SLOTS:
 
+    virtual void renderAllViewers() OVERRIDE FINAL;
+    
     
     virtual void redrawAllViewers() OVERRIDE FINAL;
 

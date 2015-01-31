@@ -578,6 +578,20 @@ KnobCurveGui::getInternalKnob() const
     return _knob ? _knob->getKnob() : _internalKnob;
 }
 
+int
+KnobCurveGui::getKeyFrameIndex(double time) const
+{
+    assert(_internalCurve);
+    return _internalCurve->keyFrameIndex(time);
+}
+
+void
+KnobCurveGui::setKeyFrameInterpolation(Natron::KeyframeTypeEnum interp,int index)
+{
+    assert(_internalCurve);
+    _internalCurve->setKeyFrameInterpolation(interp, index);
+}
+
 BezierCPCurveGui::BezierCPCurveGui(const CurveWidget *curveWidget,
                                    const boost::shared_ptr<Bezier>& bezier,
                                    const boost::shared_ptr<RotoContext>& roto,
@@ -608,20 +622,31 @@ BezierCPCurveGui::~BezierCPCurveGui()
 double
 BezierCPCurveGui::evaluate(double x) const
 {
-    std::set<int> keys;
-    _bezier->getKeyframeTimes(&keys);
-    std::set<int>::iterator it = keys.upper_bound(std::floor(x + 0.5));
-    if (it == keys.end()) {
+    std::list<std::pair<int,Natron::KeyframeTypeEnum> > keys;
+    _bezier->getKeyframeTimesAndInterpolation(&keys);
+    
+    std::list<std::pair<int,Natron::KeyframeTypeEnum> >::iterator upb = keys.end();
+    int dist = 0;
+    for (std::list<std::pair<int,Natron::KeyframeTypeEnum> >::iterator it = keys.begin(); it != keys.end(); ++it,++dist) {
+        if (it->first > x) {
+            upb = it;
+            break;
+        }
+    }
+    
+    if (upb == keys.end()) {
         return keys.size() - 1;
-    } else if (it == keys.begin()) {
+    } else if (upb == keys.begin()) {
         return 0;
     } else {
-        std::set<int>::iterator prev = it;
+        std::list<std::pair<int,Natron::KeyframeTypeEnum> >::iterator prev = upb;
         --prev;
-        if ((x - *prev) < ((*it) - x)) {
-            return std::distance(keys.begin(), prev);
+        if (prev->second == Natron::eKeyframeTypeConstant) {
+            return dist - 1;
         } else {
-            return std::distance(keys.begin(), it);
+            ///Always linear for bezier interpolation
+            assert((upb->first - prev->first) != 0);
+            return ((double)(x - prev->first) / (upb->first - prev->first)) + dist - 1;
         }
     }
 }
@@ -645,6 +670,19 @@ BezierCPCurveGui::getKeyFrames() const
     }
     return ret;
 }
+
+int
+BezierCPCurveGui::getKeyFrameIndex(double time) const
+{
+    return _bezier->getKeyFrameIndex(time);
+}
+
+void
+BezierCPCurveGui::setKeyFrameInterpolation(Natron::KeyframeTypeEnum interp,int index)
+{
+    _bezier->setKeyFrameInterpolation(interp, index);
+}
+
 /*****************************CURVE WIDGET***********************************************/
 
 namespace { // protext local classes in anonymous namespace

@@ -159,12 +159,8 @@ public:
                  Natron::ValueChangedReasonEnum reason)
     {
         Knob<T>* knob = dynamic_cast<Knob<T>*>( getKnob().get() );
-        KnobHelper::ValueChangedReturnCodeEnum ret;
-        if (reason == Natron::eValueChangedReasonUserEdited) {
-            ret = knob->onValueChanged(v, dimension, Natron::eValueChangedReasonUserEdited, newKey);
-        } else {
-            ret = knob->setValue(v,dimension,false);
-        }
+        KnobHelper::ValueChangedReturnCodeEnum ret = knob->setValue(v,dimension,reason,newKey);
+        
         if (ret > 0) {
             assert(newKey);
             if (ret == KnobHelper::eValueChangedReturnCodeKeyframeAdded) {
@@ -287,7 +283,7 @@ public Q_SLOTS:
 
     void onAnimationLevelChanged(int dim,int level);
 
-    void onAppendParamEditChanged(const Variant & v,int dim,int time,bool createNewCommand,bool setKeyFrame);
+    void onAppendParamEditChanged(int reason,const Variant & v,int dim,int time,bool createNewCommand,bool setKeyFrame);
 
     void onFrozenChanged(bool frozen);
 

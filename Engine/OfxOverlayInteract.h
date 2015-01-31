@@ -36,6 +36,8 @@ public:
     virtual ~NatronOverlayInteractSupport();
 
     void setCallingViewport(OverlaySupport* viewport);
+    
+    OverlaySupport* getLastCallingViewport() const;
 
     /*Swaps the buffer of the attached viewer*/
     OfxStatus n_swapBuffers();
@@ -53,8 +55,8 @@ public:
     // hooks to kOfxInteractPropBackgroundColour in the property set
     void n_getBackgroundColour(double &r, double &g, double &b) const;
 
-    // hooks to kOfxPropOverlayColour in the property set
-    void n_getOverlayColour(double &r, double &g, double &b) const;
+    // hooks to kOfxInteractPropSuggestedColour and kOfxPropOverlayColour in the property set
+    bool n_getSuggestedColour(double &r, double &g, double &b) const;
 };
 
 class OfxImageEffectInstance;
@@ -106,16 +108,13 @@ public:
         n_getBackgroundColour(r, g, b);
     }
 
-#ifdef OFX_EXTENSIONS_NUKE
-    // hooks to kOfxPropOverlayColour in the property set
-    virtual void getOverlayColour(double &r,
-                                  double &g,
-                                  double &b) const
+    // hooks to kOfxInteractPropSuggestedColour and kOfxPropOverlayColour in the property set
+    virtual bool getSuggestedColour(double &r,
+                                    double &g,
+                                    double &b) const
     {
-        n_getOverlayColour(r, g, b);
+        return n_getSuggestedColour(r, g, b);
     }
-
-#endif
 
     /// call create instance
     virtual OfxStatus createInstanceAction() OVERRIDE FINAL;
@@ -281,20 +280,17 @@ public:
         n_getBackgroundColour(r, g, b);
     }
 
-#ifdef OFX_EXTENSIONS_NUKE
-    // hooks to kOfxPropOverlayColour in the property set
-    virtual void getOverlayColour(double &r,
-                                  double &g,
-                                  double &b) const
+    // hooks to kOfxInteractPropSuggestedColour and kOfxPropOverlayColour in the property set
+    virtual bool getSuggestedColour(double &r,
+                                    double &g,
+                                    double &b) const
     {
-        n_getOverlayColour(r, g, b);
+        return n_getSuggestedColour(r, g, b);
     }
 
-#endif
+    void getMinimumSize(double & minW, double & minH) const;
 
-    void getMinimumSize(int & minW,int & minH) const;
-
-    void getPreferredSize(int & pW,int & pH) const;
+    void getPreferredSize(int & pW, int & pH) const;
 
     void getSize(int &w,int &h) const;
 

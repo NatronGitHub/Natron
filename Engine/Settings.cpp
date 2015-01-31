@@ -871,7 +871,7 @@ Settings::setDefaultValues()
     _checkerboardColor2->setDefaultValue(0.,1);
     _checkerboardColor2->setDefaultValue(0.,2);
     _checkerboardColor2->setDefaultValue(0.,3);
-    _autoWipe->setDefaultValue(true);
+    _autoWipe->setDefaultValue(false);
     
     _warnOcioConfigKnobChanged->setDefaultValue(true);
     _ocioStartupCheck->setDefaultValue(true);
@@ -1082,34 +1082,24 @@ Settings::restoreSettings()
     _settingsExisted = false;
     try {
         _settingsExisted = _natronSettingsExist->getValue();
-    } catch (std::logic_error) {
-        // ignore
-    }
-    if (!_settingsExisted) {
-        _natronSettingsExist->setValue(true, 0);
-        saveSettings();
-    }
-    
-    try {
+
+        if (!_settingsExisted) {
+            _natronSettingsExist->setValue(true, 0);
+            saveSettings();
+        }
+
         int font_i = _fontChoice->getValue();
         if (font_i == 2) {
             //System font, show it
             _systemFontChoice->setSecret(false);
         }
-    } catch (std::logic_error) {
-        // ignore
-    }
 
-    appPTR->setNThreadsPerEffect(getNumberOfThreadsPerEffect());
-    appPTR->setNThreadsToRender(getNumberOfThreads());
-    
-    bool useTP = true;
-    try {
-        useTP = _useThreadPool->getValue();
+        appPTR->setNThreadsPerEffect(getNumberOfThreadsPerEffect());
+        appPTR->setNThreadsToRender(getNumberOfThreads());
+        appPTR->setUseThreadPool(_useThreadPool->getValue());
     } catch (std::logic_error) {
         // ignore
     }
-    appPTR->setUseThreadPool(useTP);
 
     
     _restoringSettings = false;
@@ -1486,10 +1476,10 @@ Settings::populateWriterPluginsAndFormats(const std::map<std::string,std::vector
     restoreKnobsSettings(knobs);
 }
 
-static bool filterDefaultActivatedPlugin(const QString& ofxPluginID)
+static bool filterDefaultActivatedPlugin(const QString& /*ofxPluginID*/)
 {
-#pragma message WARN("WHY censor this list of plugins? This is open source fer chrissake! Let the user take control!")
 #if 0
+#pragma message WARN("WHY censor this list of plugins? This is open source fer chrissake! Let the user take control!")
     if (
         //Tuttle Readers/Writers
         ofxPluginID == "tuttle.avreader" ||

@@ -66,12 +66,15 @@ public:
         U64 activeInputHash;
         boost::shared_ptr<Natron::FrameKey> key;
         boost::shared_ptr<UpdateViewerParams> params;
+        
     };
     
     /**
      * @brief Look-up the cache and try to find a matching texture for the portion to render.
      **/
-    Natron::StatusEnum getRenderViewerArgsAndCheckCache(SequenceTime time, int view, int textureIndex, U64 viewerHash,
+    Natron::StatusEnum getRenderViewerArgsAndCheckCache(SequenceTime time,
+                                                        bool isSequential,
+                                                        int view, int textureIndex, U64 viewerHash,
                                                         ViewerArgs* outArgs);
 
     
@@ -135,7 +138,7 @@ public:
     /**
      * @brief Returns the current view, MT-safe
      **/
-    int getCurrentView() const;
+    int getViewerCurrentView() const;
 
     void onGainChanged(double exp);
 
@@ -166,10 +169,13 @@ public:
     
     void callRedrawOnMainThread() { Q_EMIT s_callRedrawOnMainThread(); }
 
+    struct ViewerInstancePrivate;
+    
+public Q_SLOTS:
+    
     void s_viewerRenderingStarted() { Q_EMIT viewerRenderingStarted(); }
     
     void s_viewerRenderingEnded() { Q_EMIT viewerRenderingEnded(); }
-public Q_SLOTS:
 
 
     void onMipMapLevelChanged(int level);
@@ -267,7 +273,6 @@ private:
     
 private:
     
-    struct ViewerInstancePrivate;
     boost::scoped_ptr<ViewerInstancePrivate> _imp;
 };
 

@@ -28,7 +28,13 @@ CLANG_DIAG_ON(uninitialized)
 #endif
 #include "Global/GlobalDefines.h"
 #include "Engine/ScriptObject.h"
+#include "Gui/FromQtEnums.h"
 
+
+namespace Natron
+{
+    class Node;
+}
 class ViewerGL;
 class ViewerInstance;
 class Gui;
@@ -96,6 +102,18 @@ public:
     bool notifyOverlaysFocusGained(double scaleX,double scaleY);
 
     bool notifyOverlaysFocusLost(double scaleX,double scaleY);
+    
+private:
+    
+    bool notifyOverlaysPenDown_internal(const boost::shared_ptr<Natron::Node>& node, double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, QMouseEvent* e);
+    
+    bool notifyOverlaysPenMotion_internal(const boost::shared_ptr<Natron::Node>& node,double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, QMouseEvent* e);
+    bool notifyOverlaysKeyDown_internal(const boost::shared_ptr<Natron::Node>& node,double scaleX,double scaleY,QKeyEvent* e,Natron::Key k,
+                                        Natron::KeyboardModifiers km);
+    bool notifyOverlaysKeyRepeat_internal(const boost::shared_ptr<Natron::Node>& node,double scaleX,double scaleY,QKeyEvent* e,Natron::Key k,
+                                          Natron::KeyboardModifiers km);
+public:
+    
 
 
     ////////
@@ -329,6 +347,9 @@ public Q_SLOTS:
     void onInternalNodeScriptNameChanged(const QString& name);
     
 private:
+    
+    void onCompositingOperatorChangedInternal(Natron::ViewerCompositingOperatorEnum oldOp,Natron::ViewerCompositingOperatorEnum newOp);
+
     
     void manageTimelineSlot(bool disconnectPrevious,const boost::shared_ptr<TimeLine>& timeline);
 

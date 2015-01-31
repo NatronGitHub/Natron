@@ -343,7 +343,8 @@ public:
     
 public Q_SLOTS:
 
-
+    virtual void renderAllViewers() {}
+    
     void quit();
 
     virtual void redrawAllViewers() {}

@@ -92,7 +92,8 @@ ProjectGuiSerialization::initialize(const ProjectGui* projectGui)
                 viewerData.fpsLocked = tab->isFPSLocked();
                 _viewersData.insert( std::make_pair(viewer->getNode()->getScriptName_mt_safe(),viewerData) );
                 tab->getTimelineBounds(&viewerData.leftBound, &viewerData.rightBound);
-
+                viewerData.version = VIEWER_DATA_SERIALIZATION_VERSION;
+                _viewersData.insert( std::make_pair(viewer->getNode()->getScriptName_mt_safe(),viewerData) );
             }
         }
     }

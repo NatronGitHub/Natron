@@ -213,6 +213,22 @@ NodeCollection::quitAnyProcessingForAllNodes()
     }
 }
 
+void
+NodeCollection::checkSupportsRenderScaleOKForAllNodes()
+{
+    NodeList nodes = getNodes();
+    for (NodeList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        if ((*it)->getLiveInstance()->supportsRenderScaleMaybe() == EffectInstance::eSupportsMaybe) {
+            (*it)->getLiveInstance()->restoreClipPreferences();
+        }
+        NodeGroup* isGrp = dynamic_cast<NodeGroup*>((*it)->getLiveInstance());
+        if (isGrp) {
+            isGrp->checkSupportsRenderScaleOKForAllNodes();
+        }
+
+    }
+}
+
 bool
 NodeCollection::hasNodeRendering() const
 {

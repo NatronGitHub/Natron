@@ -374,6 +374,32 @@ BezierCP::getKeyframeTimes(std::set<int>* times) const
     }
 }
 
+void
+BezierCP::getKeyFrames(std::list<std::pair<int,Natron::KeyframeTypeEnum> >* keys) const
+{
+    KeyFrameSet set = _imp->curveX->getKeyFrames_mt_safe();
+    for (KeyFrameSet::iterator it = set.begin(); it != set.end(); ++it) {
+        keys->push_back(std::make_pair(it->getTime(), it->getInterpolation()));
+    }
+}
+
+int
+BezierCP::getKeyFrameIndex(double time) const
+{
+    return _imp->curveX->keyFrameIndex(time);
+}
+
+void
+BezierCP::setKeyFrameInterpolation(Natron::KeyframeTypeEnum interp,int index)
+{
+    _imp->curveX->setKeyFrameInterpolation(interp, index);
+    _imp->curveY->setKeyFrameInterpolation(interp, index);
+    _imp->curveLeftBezierX->setKeyFrameInterpolation(interp, index);
+    _imp->curveLeftBezierY->setKeyFrameInterpolation(interp, index);
+    _imp->curveRightBezierX->setKeyFrameInterpolation(interp, index);
+    _imp->curveRightBezierY->setKeyFrameInterpolation(interp, index);
+}
+
 int
 BezierCP::getKeyframeTime(int index) const
 {
@@ -3723,6 +3749,16 @@ Bezier::getKeyframeTimes(std::set<int> *times) const
     _imp->getKeyframeTimes(times);
 }
 
+void
+Bezier::getKeyframeTimesAndInterpolation(std::list<std::pair<int,Natron::KeyframeTypeEnum> > *keys) const
+{
+    QMutexLocker l(&itemMutex);
+    if ( _imp->points.empty() ) {
+        return;
+    }
+    _imp->points.front()->getKeyFrames(keys);
+}
+
 int
 Bezier::getPreviousKeyframeTime(int time) const
 {
@@ -3753,6 +3789,27 @@ Bezier::getNextKeyframeTime(int time) const
     }
 
     return INT_MAX;
+}
+
+int
+Bezier::getKeyFrameIndex(double time) const
+{
+    QMutexLocker l(&itemMutex);
+    if (_imp->points.empty()) {
+        return -1;
+    }
+    return _imp->points.front()->getKeyFrameIndex(time);
+}
+
+void
+Bezier::setKeyFrameInterpolation(Natron::KeyframeTypeEnum interp,int index)
+{
+    QMutexLocker l(&itemMutex);
+    BezierCPs::iterator fp = _imp->featherPoints.begin();
+    for (BezierCPs::iterator it = _imp->points.begin(); it != _imp->points.end(); ++it,++fp) {
+        (*it)->setKeyFrameInterpolation(interp, index);
+        (*fp)->setKeyFrameInterpolation(interp, index);
+    }
 }
 
 static

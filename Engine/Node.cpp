@@ -2253,7 +2253,7 @@ Node::connectInput(const boost::shared_ptr<Node> & input,
     {
         ///Check for invalid index
         QMutexLocker l(&_imp->inputsMutex);
-        if ( (inputNumber < 0) || ( inputNumber > (int)_imp->inputs.size() ) || (_imp->inputs[inputNumber]) ) {
+        if ( (inputNumber < 0) || ( inputNumber >= (int)_imp->inputs.size() ) || (_imp->inputs[inputNumber]) ) {
             return false;
         }
         
@@ -2455,6 +2455,7 @@ Node::onInputLabelChanged(const QString & name)
     Natron::Node* inp = dynamic_cast<Natron::Node*>( sender() );
     assert(inp);
     if (!inp) {
+        // coverity[dead_error_line]
         return;
     }
     int inputNb = -1;
@@ -3873,6 +3874,7 @@ Node::computeFrameRangeForReader(const KnobI* fileKnob)
             assert(isFile);
             
             std::string pattern = isFile->getValue();
+            getApp()->getProject()->canonicalizePath(pattern);
             SequenceParsing::SequenceFromPattern seq;
             SequenceParsing::filesListFromPattern(pattern, &seq);
             if (seq.empty() || seq.size() == 1) {
@@ -4386,6 +4388,10 @@ bool
 Node::shouldCacheOutput() const
 {
     {
+
+
+        //If true then we're in analysis, so we cache the input of the analysis effect
+
         
         QMutexLocker k(&_imp->outputsMutex);
         std::size_t sz = _imp->outputs.size();
@@ -4398,10 +4404,6 @@ Node::shouldCacheOutput() const
                 //If force caching or aggressive caching are enabled, we by-pass and cache it anyway.
                 Node* output = _imp->outputs.front();
                 
-#pragma message WARN("Hack: Return true if the node is directly connected to a viewer, because otherwise we will never cache " \
-"properly a graph which is linear (with only a single input tree). We need to rework the viewer cache to cache tiles and then " \
-"we can remove this piece of code")
-                ///+TEMPORARY
                 ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>(output->getLiveInstance());
                 if (isViewer) {
                     int activeInputs[2];
@@ -4411,12 +4413,11 @@ Node::shouldCacheOutput() const
                         return true;
                     }
                 }
-                ///+TEMPORARY
+            
                 
                 return output->isSettingsPanelOpened() ||
                 _imp->liveInstance->doesTemporalClipAccess() ||
-                output->isMultiInstance() ||
-                output->getParentMultiInstance() ||
+                _imp->liveInstance->getRecursionLevel() > 0 ||
                 isForceCachingEnabled() ||
                 appPTR->isAggressiveCachingEnabled() ||
                 (isPreviewEnabled() && !appPTR->isBackground());

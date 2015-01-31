@@ -175,6 +175,12 @@ RenderingProgressDialog::onVideoEngineStopped(int retCode)
     }
 }
 
+void
+RenderingProgressDialog::closeEvent(QCloseEvent* /*e*/)
+{
+    Q_EMIT canceled();
+}
+
 RenderingProgressDialog::RenderingProgressDialog(Gui* gui,
                                                  const QString & sequenceName,
                                                  int firstFrame,

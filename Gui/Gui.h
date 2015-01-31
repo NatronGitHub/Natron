@@ -497,6 +497,8 @@ public:
     
     void redrawAllViewers();
     
+    void renderAllViewers();
+    
     void toggleAutoHideGraphInputs();
     
     void centerAllNodeGraphsWithTimer();
