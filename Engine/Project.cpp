@@ -292,6 +292,8 @@ Project::loadProjectInternal(const QString & path,
     std::string onProjectLoad = getOnProjectLoadCB();
     if (!onProjectLoad.empty()) {
         std::string err,output;
+        QString appID = QString("app%1").arg(getApp()->getAppID() + 1);
+        onProjectLoad.insert(0, "app = " + appID.toStdString() + "\n");
         if (!Natron::interpretPythonScript(onProjectLoad + "()\n", &err, &output)) {
             getApp()->appendToScriptEditor("Failed to run onProjectLoad callback: " + err);
         } else {
@@ -447,9 +449,10 @@ Project::saveProjectInternal(const QString & path,
         } else {
             ss << "False\n";
         }
-        ss << "filename = ";
-        ss << filePath.toStdString();
-        ss << "\n" << "ret = " << onProjectSave << "()\n";
+        ss << "filename = " << filePath.toStdString() << "\n";
+        QString appID = QString("app%1").arg(getApp()->getAppID() + 1);
+        ss << "app = " <<  appID.toStdString() << "\n";
+        ss << "ret = " << onProjectSave << "()\n";
         ss << "del filename\ndel autoSave\n";
         onProjectSave = ss.str();
         std::string err;
@@ -959,12 +962,12 @@ Project::initializeKnobs()
     infoPage->addKnob(comments);
     
     boost::shared_ptr<Page_Knob> pythonPage = Natron::createKnob<Page_Knob>(this, "Python");
-    _imp->onProjectLoadCB = Natron::createKnob<String_Knob>(this, "On project loaded");
+    _imp->onProjectLoadCB = Natron::createKnob<String_Knob>(this, "After project loaded");
     _imp->onProjectLoadCB->setName("afterProjectLoad");
     _imp->onProjectLoadCB->setHintToolTip("Add here the name of a Python-defined function that will be called each time this project "
                                           "is loaded either from an auto-save or by a user action. It will be called immediately after all "
-                                          "nodes are re-created. This callback will not be called "
-                                          "when creating new projects. No special variable is preset prior to calling this function.");
+                                          "nodes are re-created. This callback will not be called when creating new projects. "
+                                          "The variable \"app\" will be declared prior to calling the function, pointing to the project being loaded.");
     _imp->onProjectLoadCB->setAnimationEnabled(false);
     std::string onProjectLoad = appPTR->getCurrentSettings()->getDefaultOnProjectLoadedCB();
     _imp->onProjectLoadCB->setValue(onProjectLoad, 0);
@@ -979,7 +982,8 @@ Project::initializeKnobs()
                                           "The global variable \"filename\" will be declared. This function should then "
                                           "return the filename under which the file should be saved.\n"
                                           "The global boolean variable \"autoSave\" will be declared. If True it means that the callback "
-                                          "was triggered from an auto-save, otherwise from a regular user save.");
+                                          "was triggered from an auto-save, otherwise from a regular user save. "
+                                          "The variable \"app\" will be declared prior to calling the function, pointing to the current app instance.");
     _imp->onProjectSaveCB->setAnimationEnabled(false);
     std::string onProjectSave = appPTR->getCurrentSettings()->getDefaultOnProjectSaveCB();
     _imp->onProjectSaveCB->setValue(onProjectSave, 0);
@@ -989,8 +993,8 @@ Project::initializeKnobs()
     _imp->onProjectCloseCB->setName("beforeProjectClose");
     _imp->onProjectCloseCB->setHintToolTip("Add here the name of a Python-defined function that will be called each time this project "
                                           "is closed or if the user closes the application while this project is opened. This is called "
-                                           "prior to removing anything from the project. No special variable is preset prior to calling "
-                                           "this function.");
+                                           "prior to removing anything from the project. "
+                                           "The variable \"app\" will be declared prior to calling the function, pointing to the project being closed.");
     _imp->onProjectCloseCB->setAnimationEnabled(false);
     std::string onProjectClose = appPTR->getCurrentSettings()->getDefaultOnProjectCloseCB();
     _imp->onProjectCloseCB->setValue(onProjectClose, 0);
@@ -1002,7 +1006,8 @@ Project::initializeKnobs()
                                            "is created. The boolean variable userEdited will be set to True if the node was created "
                                         "by the user or False otherwise (such as when loading a project, or pasting a node).\n"
                                         "The global variable \"thisNode\" will be declared beforhand, referencing the node that has "
-                                        "created.");
+                                        "created. "
+                                        "The variable \"app\" will be declared prior to calling the function, pointing to the current app instance.");
     _imp->onNodeCreated->setAnimationEnabled(false);
     std::string onNodeCreated = appPTR->getCurrentSettings()->getDefaultOnNodeCreatedCB();
     _imp->onNodeCreated->setValue(onNodeCreated, 0);
@@ -1014,7 +1019,8 @@ Project::initializeKnobs()
                                         "is about to be deleted. \n"
                                         "The global variable \"thisNode\" will be declared, referencing the node that is to be "
                                         "deleted. \n"
-                                        "Note that this function will not be called when the project is closing.");
+                                        "Note that this function will not be called when the project is closing. "
+                                        "The variable \"app\" will be declared prior to calling the function, pointing to the current app instance.");
     _imp->onNodeDeleted->setAnimationEnabled(false);
     std::string onNodeDelete = appPTR->getCurrentSettings()->getDefaultOnNodeDeleteCB();
     _imp->onNodeDeleted->setValue(onNodeDelete, 0);

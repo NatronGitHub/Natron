@@ -214,37 +214,6 @@ static PyObject* Sbk_AppFunc_getProjectParam(PyObject* self, PyObject* pyArg)
         return 0;
 }
 
-static PyObject* Sbk_AppFunc_getSettings(PyObject* self)
-{
-    ::App* cppSelf = 0;
-    SBK_UNUSED(cppSelf)
-    if (!Shiboken::Object::isValid(self))
-        return 0;
-    cppSelf = ((::App*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_APP_IDX], (SbkObject*)self));
-    PyObject* pyResult = 0;
-
-    // Call function/method
-    {
-
-        if (!PyErr_Occurred()) {
-            // getSettings()const
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            AppSettings * cppResult = const_cast<const ::App*>(cppSelf)->getSettings();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
-            pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_APPSETTINGS_IDX], cppResult);
-
-            // Ownership transferences.
-            Shiboken::Object::getOwnership(pyResult);
-        }
-    }
-
-    if (PyErr_Occurred() || !pyResult) {
-        Py_XDECREF(pyResult);
-        return 0;
-    }
-    return pyResult;
-}
-
 static PyObject* Sbk_AppFunc_render(PyObject* self, PyObject* pyArg)
 {
     ::App* cppSelf = 0;
@@ -399,7 +368,6 @@ static PyMethodDef Sbk_App_methods[] = {
     {"createNode", (PyCFunction)Sbk_AppFunc_createNode, METH_VARARGS|METH_KEYWORDS},
     {"getAppID", (PyCFunction)Sbk_AppFunc_getAppID, METH_NOARGS},
     {"getProjectParam", (PyCFunction)Sbk_AppFunc_getProjectParam, METH_O},
-    {"getSettings", (PyCFunction)Sbk_AppFunc_getSettings, METH_NOARGS},
     {"render", (PyCFunction)Sbk_AppFunc_render, METH_O},
     {"timelineGetLeftBound", (PyCFunction)Sbk_AppFunc_timelineGetLeftBound, METH_NOARGS},
     {"timelineGetRightBound", (PyCFunction)Sbk_AppFunc_timelineGetRightBound, METH_NOARGS},

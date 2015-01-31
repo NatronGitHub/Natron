@@ -17,6 +17,7 @@
 #include <ParameterWrapper.h>
 #include <list>
 #include <utility>
+#include <vector>
 
 
 // Native ---------------------------------------------------------
@@ -253,6 +254,34 @@ static PyObject* Sbk_ChoiceParamFunc_getDefaultValue(PyObject* self)
     return pyResult;
 }
 
+static PyObject* Sbk_ChoiceParamFunc_getNumOptions(PyObject* self)
+{
+    ::ChoiceParam* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::ChoiceParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_CHOICEPARAM_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+
+    // Call function/method
+    {
+
+        if (!PyErr_Occurred()) {
+            // getNumOptions()const
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            int cppResult = const_cast<const ::ChoiceParam*>(cppSelf)->getNumOptions();
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<int>(), &cppResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+}
+
 static PyObject* Sbk_ChoiceParamFunc_getOption(PyObject* self, PyObject* pyArg)
 {
     ::ChoiceParam* cppSelf = 0;
@@ -298,6 +327,34 @@ static PyObject* Sbk_ChoiceParamFunc_getOption(PyObject* self, PyObject* pyArg)
         const char* overloads[] = {"int", 0};
         Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.ChoiceParam.getOption", overloads);
         return 0;
+}
+
+static PyObject* Sbk_ChoiceParamFunc_getOptions(PyObject* self)
+{
+    ::ChoiceParam* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::ChoiceParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_CHOICEPARAM_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+
+    // Call function/method
+    {
+
+        if (!PyErr_Occurred()) {
+            // getOptions()const
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            std::vector<std::string > cppResult = const_cast<const ::ChoiceParam*>(cppSelf)->getOptions();
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            pyResult = Shiboken::Conversions::copyToPython(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_VECTOR_STD_STRING_IDX], &cppResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
 }
 
 static PyObject* Sbk_ChoiceParamFunc_getValue(PyObject* self)
@@ -692,7 +749,9 @@ static PyMethodDef Sbk_ChoiceParam_methods[] = {
     {"addOption", (PyCFunction)Sbk_ChoiceParamFunc_addOption, METH_VARARGS},
     {"get", (PyCFunction)Sbk_ChoiceParamFunc_get, METH_VARARGS},
     {"getDefaultValue", (PyCFunction)Sbk_ChoiceParamFunc_getDefaultValue, METH_NOARGS},
+    {"getNumOptions", (PyCFunction)Sbk_ChoiceParamFunc_getNumOptions, METH_NOARGS},
     {"getOption", (PyCFunction)Sbk_ChoiceParamFunc_getOption, METH_O},
+    {"getOptions", (PyCFunction)Sbk_ChoiceParamFunc_getOptions, METH_NOARGS},
     {"getValue", (PyCFunction)Sbk_ChoiceParamFunc_getValue, METH_NOARGS},
     {"getValueAtTime", (PyCFunction)Sbk_ChoiceParamFunc_getValueAtTime, METH_O},
     {"restoreDefaultValue", (PyCFunction)Sbk_ChoiceParamFunc_restoreDefaultValue, METH_NOARGS},

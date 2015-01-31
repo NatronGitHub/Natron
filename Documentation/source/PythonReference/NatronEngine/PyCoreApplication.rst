@@ -17,6 +17,7 @@ Functions
 .. container:: function_list
 
 *    def :meth:`appendToNatronPath<NatronEngine.PyCoreApplication.appendToNatronPath>` (path)
+*    def :meth:`getSettings<NatronEngine.PyCoreApplication.getSettings>` ()
 *    def :meth:`getBuildNumber<NatronEngine.PyCoreApplication.getBuildNumber>` ()
 *    def :meth:`getInstance<NatronEngine.PyCoreApplication.getInstance>` (idx)
 *    def :meth:`getNatronDevelopmentStatus<NatronEngine.PyCoreApplication.getNatronDevelopmentStatus>` ()
@@ -30,6 +31,7 @@ Functions
 *    def :meth:`getNumInstances<NatronEngine.PyCoreApplication.getNumInstances>` ()
 *    def :meth:`getPluginIDs<NatronEngine.PyCoreApplication.getPluginIDs>` ()
 *    def :meth:`getPluginIDs<NatronEngine.PyCoreApplication.getPluginIDs>` (filter)
+*    def :meth:`isBackground<NatronEngine.PyCoreApplication.isBackground>` ()
 *    def :meth:`is64Bit<NatronEngine.PyCoreApplication.is64Bit>` ()
 *    def :meth:`isLinux<NatronEngine.PyCoreApplication.isLinux>` ()
 *    def :meth:`isMacOSX<NatronEngine.PyCoreApplication.isMacOSX>` ()
@@ -92,6 +94,18 @@ points to. This is equivalent to calling::
 
 Adds a new path to the Natron search paths. See :ref:`this section<natronPath>` for a detailed explanation
 of Natron search paths.
+
+
+
+.. method:: NatronEngine.PyCoreApplication.getSettings()
+
+
+    :rtype: :class:`AppSettings<NatronEngine.AppSettings>`
+
+Returns an object containing all Natron settings. The settings are what can be found in
+the preferences of Natron.
+
+
 
 
 
@@ -237,6 +251,16 @@ Returns a sequence of strings with all plugin-IDs currently loaded.
 
 Same as :func:`getPluginIDs()<NatronEngine.PyCoreApplication.getPluginIDs>` but returns
 only plug-ins *containing* the given *filter*. Comparison is done **without** case-sensitivity.
+
+
+.. method:: NatronEngine.PyCoreApplication.isBackground()
+
+
+    :rtype: :class:`bool<PySide.QtCore.bool>`
+
+Returns True if Natron is executed in background mode, i.e: from the command-line, without
+any graphical user interface displayed.
+
 
 
 

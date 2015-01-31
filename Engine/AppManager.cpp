@@ -191,6 +191,8 @@ struct AppManagerPrivate
     void setMaxCacheFiles();
     
     Natron::Plugin* findPluginById(const QString& oldId,int major, int minor) const;
+    
+    void declareSettingsToPython();
 };
 
 void
@@ -1229,8 +1231,6 @@ AppManager::loadAllPlugins()
 
     /*loading ofx plugins*/
     _imp->ofxHost->loadOFXPlugins( &readersMap, &writersMap);
-
-    loadPythonGroups();
     
     std::vector<Natron::Plugin*> ignoredPlugins;
     _imp->_settings->populatePluginsTab(ignoredPlugins);
@@ -1286,6 +1286,12 @@ AppManager::loadAllPlugins()
     
     _imp->_settings->populateReaderPluginsAndFormats(readersMap);
     _imp->_settings->populateWriterPluginsAndFormats(writersMap);
+
+    _imp->declareSettingsToPython();
+    
+    //Load python groups and init.py & initGui.py scripts
+    //Should be done after settings are declared
+    loadPythonGroups();
 
     onAllPluginsLoaded();
 }
@@ -2982,6 +2988,17 @@ AppManager::launchPythonInterpreter()
     bool ok = Natron::interpretPythonScript("app = app1\n", &err, 0);
     assert(ok);
     Py_Main(1, &_imp->args[0]);
+}
+
+void
+AppManagerPrivate::declareSettingsToPython()
+{
+    std::stringstream ss;
+    ss << "natron.settings = natron.getSettings()\n";
+    const std::vector<boost::shared_ptr<KnobI> >& knobs = _settings->getKnobs();
+    for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+        ss << "natron.settings." << (*it)->getName() << " = natron.settings.getParam('" << (*it)->getName() << "')\n";
+    }
 }
 
 namespace Natron {

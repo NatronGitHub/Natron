@@ -1328,6 +1328,33 @@ void init_Natron(PyObject* module)
         &Sbk_Natron_Type, "NATRON_PIXMAP_VIEWER_ZEBRA_DISABLED", (long) Natron::NATRON_PIXMAP_VIEWER_ZEBRA_DISABLED))
         return ;
     if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_PIXMAPENUM_IDX],
+        &Sbk_Natron_Type, "NATRON_PIXMAP_SCRIPT_CLEAR_OUTPUT", (long) Natron::NATRON_PIXMAP_SCRIPT_CLEAR_OUTPUT))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_PIXMAPENUM_IDX],
+        &Sbk_Natron_Type, "NATRON_PIXMAP_SCRIPT_EXEC_SCRIPT", (long) Natron::NATRON_PIXMAP_SCRIPT_EXEC_SCRIPT))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_PIXMAPENUM_IDX],
+        &Sbk_Natron_Type, "NATRON_PIXMAP_SCRIPT_LOAD_EXEC_SCRIPT", (long) Natron::NATRON_PIXMAP_SCRIPT_LOAD_EXEC_SCRIPT))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_PIXMAPENUM_IDX],
+        &Sbk_Natron_Type, "NATRON_PIXMAP_SCRIPT_LOAD_SCRIPT", (long) Natron::NATRON_PIXMAP_SCRIPT_LOAD_SCRIPT))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_PIXMAPENUM_IDX],
+        &Sbk_Natron_Type, "NATRON_PIXMAP_SCRIPT_NEXT_SCRIPT", (long) Natron::NATRON_PIXMAP_SCRIPT_NEXT_SCRIPT))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_PIXMAPENUM_IDX],
+        &Sbk_Natron_Type, "NATRON_PIXMAP_SCRIPT_OUTPUT_PANE_ACTIVATED", (long) Natron::NATRON_PIXMAP_SCRIPT_OUTPUT_PANE_ACTIVATED))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_PIXMAPENUM_IDX],
+        &Sbk_Natron_Type, "NATRON_PIXMAP_SCRIPT_OUTPUT_PANE_DEACTIVATED", (long) Natron::NATRON_PIXMAP_SCRIPT_OUTPUT_PANE_DEACTIVATED))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_PIXMAPENUM_IDX],
+        &Sbk_Natron_Type, "NATRON_PIXMAP_SCRIPT_PREVIOUS_SCRIPT", (long) Natron::NATRON_PIXMAP_SCRIPT_PREVIOUS_SCRIPT))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_PIXMAPENUM_IDX],
+        &Sbk_Natron_Type, "NATRON_PIXMAP_SCRIPT_SAVE_SCRIPT", (long) Natron::NATRON_PIXMAP_SCRIPT_SAVE_SCRIPT))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_PIXMAPENUM_IDX],
         &Sbk_Natron_Type, "NATRON_PIXMAP_APP_ICON", (long) Natron::NATRON_PIXMAP_APP_ICON))
         return ;
     // Register converter for enum 'Natron::PixmapEnum'.

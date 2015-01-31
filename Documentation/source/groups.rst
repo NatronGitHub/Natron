@@ -38,7 +38,7 @@ Where each argument *o1*, *o2* expand respectively the nodes *Output1* and *Outp
 		
 
 The **Input** node is not necessarily unique and represents 1 input arrow of the group node.
-You can also specifies in the settings panel of the *Input* node whether this input should be
+You can also specify in the settings panel of the *Input* node whether this input should be
 considered as a mask or whether it should be optional. 
 
 .. note:: 

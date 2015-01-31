@@ -138,6 +138,11 @@ public:
         return !isApplication32Bits();
     }
     
+    bool isBackground() const
+    {
+        return appPTR->isBackground();
+    }
+    
     inline int getNumCpus() const
     {
         return appPTR->getHardwareIdealThreadCount();
@@ -152,6 +157,13 @@ public:
         }
         return new App(app);
     }
+    
+    
+    inline AppSettings* getSettings() const
+    {
+        return new AppSettings(appPTR->getCurrentSettings());
+    }
+
 };
 
 #if defined(PYSIDE_H) && defined(PYSIDE_OLD)

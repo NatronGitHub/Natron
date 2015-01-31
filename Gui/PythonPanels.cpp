@@ -96,8 +96,11 @@ DialogParamHolder::onKnobValueChanged(KnobI* k,
         ss << "del paramName" ;
         
         std::string err;
-        if (!Natron::interpretPythonScript(ss.str(), &err,NULL)) {
+        std::string output;
+        if (!Natron::interpretPythonScript(ss.str(), &err,&output)) {
             getApp()->appendToScriptEditor(QObject::tr("Failed to execute callback: ").toStdString() + err);
+        } else {
+            getApp()->appendToScriptEditor(output);
         }
 
     }

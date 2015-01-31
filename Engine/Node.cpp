@@ -4795,12 +4795,23 @@ Node::Implementation::runOnNodeCreatedCB(bool userEdited)
     }
     std::string delScript;
     std::string thisNode = _publicInterface->declareCurrentNodeVariable_Python(&delScript);
-    std::string userStr = userEdited ? "userEdited = True\n" : "userEdited = False\n";
-    cb = thisNode + userStr + cb + "()\n" + delScript + "del userEdited\n";
+    
+    QString appID = QString("app%1").arg(_publicInterface->getApp()->getAppID() + 1);
+    
+    std::stringstream ss;
+    ss << thisNode;
+    if (userEdited) {
+        ss << "userEdited = True\n" ;
+    } else {
+        ss << "userEdited = False\n";
+    }
+    ss << "app = " << appID.toStdString() << "\n";
+    ss << cb << "()\n";
+    ss << delScript << "del userEdited\n";
     
     std::string err;
     std::string output;
-    if (!Natron::interpretPythonScript(cb, &err, &output)) {
+    if (!Natron::interpretPythonScript(ss.str(), &err, &output)) {
         _publicInterface->getApp()->appendToScriptEditor("Failed to run onNodeCreated callback: " + err);
     } else if (!output.empty()) {
         _publicInterface->getApp()->appendToScriptEditor(output);
@@ -4816,7 +4827,13 @@ Node::Implementation::runOnNodeDeleteCB()
     }
     std::string delScript;
     std::string thisNode = _publicInterface->declareCurrentNodeVariable_Python(&delScript);
-    cb = thisNode + cb + "()\n" + delScript;
+    
+    QString appID = QString("app%1").arg(_publicInterface->getApp()->getAppID() + 1);
+    
+    std::stringstream ss;
+    ss << thisNode;
+    ss << "app = " << appID.toStdString() << "\n";
+    ss << cb << "()\n" << delScript;
     
     std::string err;
     std::string output;

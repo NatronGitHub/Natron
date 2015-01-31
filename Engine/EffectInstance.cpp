@@ -4121,8 +4121,11 @@ EffectInstance::Implementation::runChangedParamCallback(KnobI* k,bool userEdited
         script.append("False\n");
     }
     std::string err;
-    if (!Natron::interpretPythonScript(script, &err,NULL)) {
+    std::string output;
+    if (!Natron::interpretPythonScript(script, &err,&output)) {
         _publicInterface->getApp()->appendToScriptEditor(QObject::tr("Failed to execute callback: ").toStdString() + err);
+    } else {
+        _publicInterface->getApp()->appendToScriptEditor(output);
     }
 }
 

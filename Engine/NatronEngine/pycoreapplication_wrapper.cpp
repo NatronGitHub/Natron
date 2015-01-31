@@ -515,6 +515,37 @@ static PyObject* Sbk_PyCoreApplicationFunc_getPluginIDs(PyObject* self, PyObject
         return 0;
 }
 
+static PyObject* Sbk_PyCoreApplicationFunc_getSettings(PyObject* self)
+{
+    ::PyCoreApplication* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::PyCoreApplication*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PYCOREAPPLICATION_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+
+    // Call function/method
+    {
+
+        if (!PyErr_Occurred()) {
+            // getSettings()const
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            AppSettings * cppResult = const_cast<const ::PyCoreApplication*>(cppSelf)->getSettings();
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_APPSETTINGS_IDX], cppResult);
+
+            // Ownership transferences.
+            Shiboken::Object::getOwnership(pyResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+}
+
 static PyObject* Sbk_PyCoreApplicationFunc_is64Bit(PyObject* self)
 {
     ::PyCoreApplication* cppSelf = 0;
@@ -531,6 +562,34 @@ static PyObject* Sbk_PyCoreApplicationFunc_is64Bit(PyObject* self)
             // is64Bit()const
             PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             bool cppResult = const_cast<const ::PyCoreApplication*>(cppSelf)->is64Bit();
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), &cppResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+}
+
+static PyObject* Sbk_PyCoreApplicationFunc_isBackground(PyObject* self)
+{
+    ::PyCoreApplication* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::PyCoreApplication*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PYCOREAPPLICATION_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+
+    // Call function/method
+    {
+
+        if (!PyErr_Occurred()) {
+            // isBackground()const
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            bool cppResult = const_cast<const ::PyCoreApplication*>(cppSelf)->isBackground();
             PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), &cppResult);
         }
@@ -669,7 +728,9 @@ static PyMethodDef Sbk_PyCoreApplication_methods[] = {
     {"getNumCpus", (PyCFunction)Sbk_PyCoreApplicationFunc_getNumCpus, METH_NOARGS},
     {"getNumInstances", (PyCFunction)Sbk_PyCoreApplicationFunc_getNumInstances, METH_NOARGS},
     {"getPluginIDs", (PyCFunction)Sbk_PyCoreApplicationFunc_getPluginIDs, METH_VARARGS},
+    {"getSettings", (PyCFunction)Sbk_PyCoreApplicationFunc_getSettings, METH_NOARGS},
     {"is64Bit", (PyCFunction)Sbk_PyCoreApplicationFunc_is64Bit, METH_NOARGS},
+    {"isBackground", (PyCFunction)Sbk_PyCoreApplicationFunc_isBackground, METH_NOARGS},
     {"isLinux", (PyCFunction)Sbk_PyCoreApplicationFunc_isLinux, METH_NOARGS},
     {"isMacOSX", (PyCFunction)Sbk_PyCoreApplicationFunc_isMacOSX, METH_NOARGS},
     {"isUnix", (PyCFunction)Sbk_PyCoreApplicationFunc_isUnix, METH_NOARGS},

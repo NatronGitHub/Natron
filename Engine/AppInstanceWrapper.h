@@ -88,10 +88,6 @@ public:
     
     int timelineGetRightBound() const;
     
-    inline AppSettings* getSettings() const
-    {
-        return new AppSettings(appPTR->getCurrentSettings());
-    }
     
     void render(const RenderTask& task);
     void render(const std::list<RenderTask>& tasks);

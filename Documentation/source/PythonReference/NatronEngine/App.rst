@@ -20,7 +20,6 @@ Functions
 *    def :meth:`createNode<NatronEngine.App.createNode>` (pluginID[, majorVersion=-1[, group=None]])
 *    def :meth:`getAppID<NatronEngine.App.getAppID>` ()
 *    def :meth:`getProjectParam<NatronEngine.App.getProjectParam>` (name)
-*    def :meth:`getSettings<NatronEngine.App.getSettings>` ()
 *    def :meth:`render<NatronEngine.App.render>` (task)
 *    def :meth:`render<NatronEngine.App.render>` (tasks)
 *    def :meth:`timelineGetLeftBound<NatronEngine.App.timelineGetLeftBound>` ()
@@ -149,17 +148,6 @@ Returns the **zero-based** ID of the App instance.
 
 Returns a project :doc:`Param` given its *name* (script-name). See :ref:`this section<autoVar>` for 
 an explanation of *script-name* vs. *label*. 
-
-
-
-
-.. method:: NatronEngine.App.getSettings()
-
-
-    :rtype: :class:`AppSettings<NatronEngine.AppSettings>`
-
-Returns an object containing all Natron settings. The settings are what can be found in
-the preferences of Natron.
 
 
 

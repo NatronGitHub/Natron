@@ -974,8 +974,15 @@ AppInstance::declareCurrentAppVariable_Python()
     /// define the app variable
     std::stringstream ss;
     ss << "app" << _imp->_appID + 1 << " = natron.getInstance(" << _imp->_appID << ") \n";
+    const std::vector<boost::shared_ptr<KnobI> >& knobs = _imp->_currentProject->getKnobs();
+    for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+        ss << "app" << _imp->_appID + 1 << "." << (*it)->getName() << " = app" << _imp->_appID + 1 << ".getProjectParam('" <<
+        (*it)->getName() << "')\n";
+    }
     std::string script = ss.str();
     std::string err;
+    
+    
     bool ok = Natron::interpretPythonScript(script, &err, 0);
     assert(ok);
 }

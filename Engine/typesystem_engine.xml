@@ -257,11 +257,6 @@
                 %PYARG_0 = %CONVERTTOPYTHON[%RETURN_TYPE](%0);
             </inject-code>
         </modify-function>
-        <modify-function signature="getSettings()const">
-            <modify-argument index="return">
-                <define-ownership class="target" owner="target"/>
-            </modify-argument>
-        </modify-function>
         <modify-function signature="getProjectParam(std::string)const">
             <modify-argument index="return">
                 <define-ownership class="target" owner="target"/>
@@ -1122,6 +1117,11 @@
     
     <object-type name="PyCoreApplication">
         <modify-function signature="getInstance(int)const">
+            <modify-argument index="return">
+                <define-ownership class="target" owner="target"/>
+            </modify-argument>
+        </modify-function>
+        <modify-function signature="getSettings()const">
             <modify-argument index="return">
                 <define-ownership class="target" owner="target"/>
             </modify-argument>

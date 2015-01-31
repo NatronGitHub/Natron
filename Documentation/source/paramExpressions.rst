@@ -153,6 +153,8 @@ For convenience the following variables have been declared to Python when execut
 	
 	* **frame**: It references the current time on the timeline
 	
+	* The **app** variable will be set so it points to the correct :ref:`application instance<App>`.
+	
 To reference the value of another parameter use the :func:`get()<>` function which retrieves the value
 of the parameter at the current timeline's time. If the parameter is multi-dimensional, you need to use 
 the subscript operator to retrieve the value of a particular dimension.
