@@ -292,7 +292,7 @@ InfoViewerWidget::setColor(float r,
         break;
     }
     if (_colorApprox) {
-        values.append("<b> ~ </b>");
+        values.prepend("<b> ~ </b>");
     }
     rgbaValues->setText(values);
     rgbaValues->repaint();
