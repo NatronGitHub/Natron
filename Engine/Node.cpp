@@ -1707,10 +1707,9 @@ Node::initializeKnobs(int renderScaleSupportPref)
             _imp->beforeFrameRender->setName("beforeFrameRender");
             _imp->beforeFrameRender->setAnimationEnabled(false);
             _imp->beforeFrameRender->setHintToolTip("Add here the name of a Python defined function that will be called before rendering "
-                                                    "any frame.\n The \"isBackground\" global variable is a boolean defined that indicates "
-                                                    "whether the render is called from a background instance of " NATRON_APPLICATION_NAME
-                                                    " or from an interactive session."
-                                                    "\nThe global variable \"thisNode\" will be declared when calling the function, "
+                                                    "any frame.\n "
+                                                    "The variable \"app\" will be declared prior to calling the function, pointing to the current app instance.\n"
+                                                    "\nThe variable \"thisNode\" will be declared when calling the function, "
                                                     "referencing the writer node.");
             pythonPage->addKnob(_imp->beforeFrameRender);
             
@@ -1719,10 +1718,8 @@ Node::initializeKnobs(int renderScaleSupportPref)
             _imp->beforeRender->setAnimationEnabled(false);
             _imp->beforeRender->setHintToolTip("Add here the name of a Python defined function that will be called once when "
                                                "starting rendering.\n "
-                                                    "The \"isBackground\" global variable is a boolean defined that indicates "
-                                                    "whether the render is called from a background instance of " NATRON_APPLICATION_NAME
-                                                    " or from an interactive session."
-                                               "\nThe global variable \"thisNode\" will be declared when calling the function, "
+                                                "The variable \"app\" will be declared prior to calling the function, pointing to the current app instance.\n"
+                                               "\nThe variable \"thisNode\" will be declared when calling the function, "
                                                "referencing the writer node.");
             pythonPage->addKnob(_imp->beforeRender);
             
@@ -1730,10 +1727,9 @@ Node::initializeKnobs(int renderScaleSupportPref)
             _imp->afterFrameRender->setName("afterFrameRender");
             _imp->afterFrameRender->setAnimationEnabled(false);
             _imp->afterFrameRender->setHintToolTip("Add here the name of a Python defined function that will be called after rendering "
-                                                    "any frame.\n The \"isBackground\" global variable is a boolean defined that indicates "
-                                                    "whether the render is called from a background instance of " NATRON_APPLICATION_NAME
-                                                    " or from an interactive session."
-                                                   "\nThe global variable \"thisNode\" will be declared when calling the function, "
+                                                    "any frame.\n "
+                                                   "The variable \"app\" will be declared prior to calling the function, pointing to the current app instance.\n"
+                                                   "\nThe variable \"thisNode\" will be declared when calling the function, "
                                                    "referencing the writer node.");
             pythonPage->addKnob(_imp->afterFrameRender);
             
@@ -1741,10 +1737,10 @@ Node::initializeKnobs(int renderScaleSupportPref)
             _imp->afterRender->setName("afterRender");
             _imp->afterRender->setAnimationEnabled(false);
             _imp->afterRender->setHintToolTip("Add here the name of a Python defined function that will be called once when the rendering "
-                                                    "is finished.\n The \"isBackground\" global variable is a boolean defined that indicates "
-                                                    "whether the render is called from a background instance of " NATRON_APPLICATION_NAME
-                                                    " or from an interactive session."
-                                              "\nThe global variable \"thisNode\" will be declared when calling the function, "
+                                                    "is finished.\n "
+                                              "The boolean variable \"aborted\" will be set to True if the render was aborted or False otherwise.\n"
+                                              "The variable \"app\" will be declared prior to calling the function, pointing to the current app instance.\n"
+                                              "\nThe variable \"thisNode\" will be declare, "
                                               "referencing the writer node.");
             pythonPage->addKnob(_imp->afterRender);
         }

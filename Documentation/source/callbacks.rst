@@ -341,3 +341,102 @@ You can set the callback from the project settings:
 
 	You can set a default Before node removal callback for all new projects in the *Preferences-->Python* tab.
 	
+	
+The Before frame render callback:
+---------------------------------
+
+This function is called prior to rendering any frame with a Write node.
+
+The **app** variable will be set so it points to the correct :ref:`application instance<App>`.
+
+The **thisNode** variable will be set to point to the :ref:`write node<Effect>`.
+
+To execute code specific when in background render mode or in GUI mode, use the following condition
+::
+
+	if natron.isBackground():
+		#We are in background mode
+
+You can set the callback from the Write node settings panel in the "Python" tab.
+
+.. figure:: writePython.png
+	:width: 400px
+	:align: center
+
+This function can be used to communicate with external programs for example.
+
+The After frame rendered callback:
+---------------------------------
+
+This function is called after each frame is finished rendering with a Write node. 
+
+The **app** variable will be set so it points to the correct :ref:`application instance<App>`.
+
+The **thisNode** variable will be set to point to the :ref:`write node<Effect>`.
+
+To execute code specific when in background render mode or in GUI mode, use the following condition
+::
+
+	if natron.isBackground():
+		#We are in background mode
+
+You can set the callback from the Write node settings panel in the "Python" tab.
+
+.. figure:: writePython.png
+	:width: 400px
+	:align: center
+
+This function can be used to communicate with external programs for example.
+
+
+The Before render callback:
+---------------------------
+
+This function is called once before starting rendering the first frame of a sequence with 
+the Write node.
+
+The **app** variable will be set so it points to the correct :ref:`application instance<App>`.
+
+The **thisNode** variable will be set to point to the :ref:`write node<Effect>`.
+
+To execute code specific when in background render mode or in GUI mode, use the following condition
+::
+
+	if natron.isBackground():
+		#We are in background mode
+
+You can set the callback from the Write node settings panel in the "Python" tab.
+
+.. figure:: writePython.png
+	:width: 400px
+	:align: center
+
+This function can be used to communicate with external programs for example.
+
+
+The After render callback:
+---------------------------
+
+This function is called once after the rendering of the last frame is finished with
+the Write node or if the render was aborted.
+
+
+The **app** variable will be set so it points to the correct :ref:`application instance<App>`.
+
+The **thisNode** variable will be set to point to the :ref:`write node<Effect>`.
+
+The **aborted** boolean variable will be set to *True* if the rendering was aborted or *False* otherwise.
+
+To execute code specific when in background render mode or in GUI mode, use the following condition
+::
+
+	if natron.isBackground():
+		#We are in background mode
+
+You can set the callback from the Write node settings panel in the "Python" tab.
+
+.. figure:: writePython.png
+	:width: 400px
+	:align: center
+
+This function can be used to communicate with external programs for example.

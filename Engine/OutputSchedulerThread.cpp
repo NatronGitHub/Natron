@@ -898,7 +898,7 @@ OutputSchedulerThread::stopRender()
         ///Notify everyone that the render is finished
         _imp->engine->s_renderFinished(wasAborted ? 1 : 0);
         
-        onRenderStopped();
+        onRenderStopped(wasAborted);
 
         
     }
@@ -1210,8 +1210,10 @@ OutputSchedulerThread::notifyFrameRendered(int frame,
         percentage = (double)frame / _imp->livingRunArgs.lastFrame - _imp->livingRunArgs.firstFrame + 1;
     }
     
-    std::string afterFrameRender = _imp->outputEffect->getNode()->getAfterFrameRenderCallback();
-    runCallbackWithVariables(afterFrameRender.c_str());
+    if (_imp->outputEffect->isWriter()) {
+        std::string afterFrameRender = _imp->outputEffect->getNode()->getAfterFrameRenderCallback();
+        runCallbackWithVariables(afterFrameRender.c_str());
+    }
     
     if ( appPTR->isBackground() ) {
         QString frameStr = QString::number(frame);
@@ -1650,8 +1652,6 @@ OutputSchedulerThread::runCallbackWithVariables(const QString& callback)
         std::string thisNode = _imp->outputEffect->getNode()->declareCurrentNodeVariable_Python(&deleteScript);
         
         QString script;
-        script.append("isBackground = ");
-        script.append(appPTR->isBackground() ? "True\n" : "False\n");
         script.append(thisNode.c_str());
         script.append(callback);
         script.append("()\n");
@@ -2076,7 +2076,7 @@ DefaultScheduler::aboutToStartRender()
 }
 
 void
-DefaultScheduler::onRenderStopped()
+DefaultScheduler::onRenderStopped(bool aborted)
 {
     bool isBackGround = appPTR->isBackground();
     if (!isBackGround) {
@@ -2086,6 +2086,13 @@ DefaultScheduler::onRenderStopped()
     }
     
     std::string afterRender = _effect->getNode()->getAfterRenderCallback();
+    std::string script("aborted = ");
+    if (aborted) {
+        script += "True\n";
+    } else {
+        script += "False\n";
+    }
+    script += afterRender;
     runCallbackWithVariables(afterRender.c_str());
 
 }
@@ -2261,7 +2268,7 @@ ViewerDisplayScheduler::handleRenderFailure(const std::string& /*errorMessage*/)
 }
 
 void
-ViewerDisplayScheduler::onRenderStopped()
+ViewerDisplayScheduler::onRenderStopped(bool /*/aborted*/)
 {
     ///Refresh all previews in the tree
     _viewer->getNode()->refreshPreviewsRecursivelyUpstream(_viewer->getTimeline()->currentFrame());

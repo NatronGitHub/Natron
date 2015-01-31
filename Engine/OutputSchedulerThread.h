@@ -368,7 +368,7 @@ protected:
     /**
      * @brief Callback when stopRender() is called
      **/
-    virtual void onRenderStopped() {}
+    virtual void onRenderStopped(bool /*aborted*/) {}
     
     RenderEngine* getEngine() const;
     
@@ -448,7 +448,7 @@ private:
     
     virtual void aboutToStartRender() OVERRIDE FINAL;
     
-    virtual void onRenderStopped() OVERRIDE FINAL;
+    virtual void onRenderStopped(bool aborted) OVERRIDE FINAL;
     
 
     
@@ -489,7 +489,7 @@ private:
     
     virtual int getLastRenderedTime() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     
-    virtual void onRenderStopped() OVERRIDE FINAL;
+    virtual void onRenderStopped(bool aborted) OVERRIDE FINAL;
     
     ViewerInstance* _viewer;
 };
