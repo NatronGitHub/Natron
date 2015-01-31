@@ -14,6 +14,7 @@ This section covers basic functionalities a Python script can do in Natron.
 	groups.rst
 	callbacks.rst
 	renderingWriteNode.rst
+	roto.rst
 	modalDialogs.rst
 	userCommands.rst
 	pysidePanelExample.rst
