@@ -507,7 +507,13 @@ OfxImageEffectInstance::newParam(const std::string &paramName,
         _parentingMap.insert( make_pair(instance,parent) );
     }
 
-    knob->setName(paramName);
+    std::string pythonCompliantParamName = paramName;
+    if (pythonCompliantParamName == "from") {
+        pythonCompliantParamName = "paramFrom";
+    } else {
+        pythonCompliantParamName = Natron::makeNameScriptFriendly(paramName);
+    }
+    knob->setName(pythonCompliantParamName);
     knob->setEvaluateOnChange( descriptor.getEvaluateOnChange() );
 
     bool persistant = descriptor.getIsPersistant();
