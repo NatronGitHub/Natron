@@ -477,6 +477,10 @@ SetKeysInterpolationCommand::setNewInterpolation(bool undo)
                     k->blockEvaluation();
                 }
             }
+        } else {
+            BezierCPCurveGui* bezierCurve = dynamic_cast<BezierCPCurveGui*>(it->key->curve);
+            assert(bezierCurve);
+            rotoToEvaluate.push_back(bezierCurve->getBezier()->getContext());
         }
     }
 
@@ -491,16 +495,22 @@ SetKeysInterpolationCommand::setNewInterpolation(bool undo)
             
             if (isParametric) {
                 
-                int keyframeIndex = it->key->curve->getInternalCurve()->keyFrameIndex( it->key->key.getTime() );
+                int keyframeIndex = it->key->curve->getKeyFrameIndex( it->key->key.getTime() );
                 if (keyframeIndex != -1) {
-                    it->key->key =  it->key->curve->getInternalCurve()->setKeyFrameInterpolation(interp, keyframeIndex);
+                    it->key->curve->setKeyFrameInterpolation(interp, keyframeIndex);
                 }
                 
             } else {
                 knob->setInterpolationAtTime(isKnobCurve->getDimension(), it->key->key.getTime(), interp, &it->key->key);
             }
         } else {
-            ///We don't set interpolation for bezier animation curve...it is linear
+            ///interpolation for bezier curve is either linear or constant
+            interp = interp == Natron::eKeyframeTypeConstant ? Natron::eKeyframeTypeConstant :
+            Natron::eKeyframeTypeLinear;
+            int keyframeIndex = it->key->curve->getKeyFrameIndex( it->key->key.getTime() );
+            if (keyframeIndex != -1) {
+                it->key->curve->setKeyFrameInterpolation(interp, keyframeIndex);
+            }
         }
         
     }
