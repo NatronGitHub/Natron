@@ -722,6 +722,7 @@ public:
     virtual void getViewportSize(double &width, double &height) const = 0;
     virtual void getPixelScale(double & xScale, double & yScale) const  = 0;
     virtual void getBackgroundColour(double &r, double &g, double &b) const = 0;
+    virtual unsigned int getCurrentRenderScale() const OVERRIDE FINAL { return 0; }
     virtual void saveOpenGLContext() = 0;
     virtual void restoreOpenGLContext() = 0;
     

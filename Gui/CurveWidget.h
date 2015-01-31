@@ -324,6 +324,7 @@ public:
      **/
     virtual void getBackgroundColour(double &r, double &g, double &b) const OVERRIDE FINAL;
 
+    virtual unsigned int getCurrentRenderScale() const OVERRIDE FINAL { return 0; }
     
     virtual void saveOpenGLContext() OVERRIDE FINAL;
     virtual void restoreOpenGLContext() OVERRIDE FINAL;

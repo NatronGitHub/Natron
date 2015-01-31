@@ -173,6 +173,12 @@ NatronOverlayInteractSupport::setCallingViewport(OverlaySupport* viewport)
     _viewport = viewport;
 }
 
+OverlaySupport*
+NatronOverlayInteractSupport::getLastCallingViewport() const
+{
+    return _viewport;
+}
+
 OfxStatus
 NatronOverlayInteractSupport::n_swapBuffers()
 {

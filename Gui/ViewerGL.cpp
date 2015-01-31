@@ -1217,7 +1217,7 @@ ViewerGL::paintGL()
         
         glCheckError();
         if (_imp->overlay) {
-            drawOverlay(_imp->displayingImageMipMapLevel[0]);
+            drawOverlay(getCurrentRenderScale());
         }
         
         if (_imp->ms == eMouseStateSelecting) {
@@ -1373,7 +1373,8 @@ ViewerGL::drawOverlay(unsigned int mipMapLevel)
 
         glCheckError();
         glColor4f(1., 1., 1., 1.);
-        _imp->viewerTab->drawOverlays(1 << mipMapLevel,1 << mipMapLevel);
+        double scale = 1. / (1 << mipMapLevel);
+        _imp->viewerTab->drawOverlays(scale,scale);
         glCheckError();
 
         if (_imp->pickerState == ePickerStateRectangle) {
@@ -2556,8 +2557,9 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
         _imp->ms = eMouseStateZoomingImage;
         overlaysCaught = true;
     } else if ( (_imp->ms == eMouseStateUndefined) && _imp->overlay ) {
-        unsigned int mipMapLevel = getInternalNode()->getMipMapLevel();
-        overlaysCaught = _imp->viewerTab->notifyOverlaysPenDown(1 << mipMapLevel, 1 << mipMapLevel, QMouseEventLocalPos(e), zoomPos, e);
+        unsigned int mipMapLevel = getCurrentRenderScale();
+        double scale = 1. / (1 << mipMapLevel);
+        overlaysCaught = _imp->viewerTab->notifyOverlaysPenDown(scale,scale, QMouseEventLocalPos(e), zoomPos, e);
         if (overlaysCaught) {
             mustRedraw = true;
         }
@@ -2702,8 +2704,9 @@ ViewerGL::mouseReleaseEvent(QMouseEvent* e)
         QMutexLocker l(&_imp->zoomCtxMutex);
         zoomPos = _imp->zoomCtx.toZoomCoordinates( e->x(), e->y() );
     }
-    unsigned int mipMapLevel = getInternalNode()->getMipMapLevel();
-    if ( _imp->viewerTab->notifyOverlaysPenUp(1 << mipMapLevel, 1 << mipMapLevel, QMouseEventLocalPos(e), zoomPos, e) ) {
+    unsigned int mipMapLevel = getCurrentRenderScale();
+    double scale = 1. / (1 << mipMapLevel);
+    if ( _imp->viewerTab->notifyOverlaysPenUp(scale,scale, QMouseEventLocalPos(e), zoomPos, e) ) {
         mustRedraw = true;
     }
     if (mustRedraw) {
@@ -2726,7 +2729,6 @@ ViewerGL::mouseMoveEvent(QMouseEvent* e)
     _imp->hasMovedSincePress = true;
     
     QPointF zoomPos;
-    unsigned int mipMapLevel = getInternalNode()->getMipMapLevel();
 
     // if the picker was deselected, this fixes the picer State
     // (see issue #133 https://github.com/MrKepzie/Natron/issues/133 )
@@ -3041,8 +3043,10 @@ ViewerGL::mouseMoveEvent(QMouseEvent* e)
         emit selectionRectangleChanged(false);
     }; break;
     default: {
+        unsigned int mipMapLevel = getCurrentRenderScale();
+        double scale = 1. / (1 << mipMapLevel);
         if ( _imp->overlay &&
-             _imp->viewerTab->notifyOverlaysPenMotion(1 << mipMapLevel, 1 << mipMapLevel, QMouseEventLocalPos(e), zoomPos, e) ) {
+             _imp->viewerTab->notifyOverlaysPenMotion(scale,scale, QMouseEventLocalPos(e), zoomPos, e) ) {
             mustRedraw = true;
         }
         break;
@@ -3071,8 +3075,8 @@ ViewerGL::mouseDoubleClickEvent(QMouseEvent* e)
         QMutexLocker l(&_imp->zoomCtxMutex);
         pos_opengl = _imp->zoomCtx.toZoomCoordinates( e->x(),e->y() );
     }
-
-    if ( _imp->viewerTab->notifyOverlaysPenDoubleClick(1 << mipMapLevel, 1 << mipMapLevel, QMouseEventLocalPos(e), pos_opengl, e) ) {
+    double scale = 1. / (1 << mipMapLevel);
+    if ( _imp->viewerTab->notifyOverlaysPenDoubleClick(scale,scale, QMouseEventLocalPos(e), pos_opengl, e) ) {
         updateGL();
     }
     QGLWidget::mouseDoubleClickEvent(e);
@@ -3506,7 +3510,7 @@ ViewerGL::focusInEvent(QFocusEvent* e)
     if ( !_imp->viewerTab->getGui() ) {
         return;
     }
-    unsigned int scale = 1 << getInternalNode()->getMipMapLevel();
+    double scale = 1. / (1 << getCurrentRenderScale());
     if ( _imp->viewerTab->notifyOverlaysFocusGained(scale,scale) ) {
         updateGL();
     }
@@ -3523,7 +3527,7 @@ ViewerGL::focusOutEvent(QFocusEvent* e)
         return;
     }
 
-    unsigned int scale = 1 << getInternalNode()->getMipMapLevel();
+    double scale = 1. / (1 << getCurrentRenderScale());
     if ( _imp->viewerTab->notifyOverlaysFocusLost(scale,scale) ) {
         updateGL();
     }
@@ -3618,7 +3622,7 @@ ViewerGL::keyPressEvent(QKeyEvent* e)
         QGLWidget::keyPressEvent(e);
     }
 
-    unsigned int scale = 1 << getInternalNode()->getMipMapLevel();
+    double scale = 1. / (1 << getCurrentRenderScale());
     if ( e->isAutoRepeat() ) {
         if ( _imp->viewerTab->notifyOverlaysKeyRepeat(scale, scale, e) ) {
             accept = true;
@@ -3645,7 +3649,7 @@ ViewerGL::keyReleaseEvent(QKeyEvent* e)
     if (!_imp->viewerTab->getGui()) {
         return;
     }
-    unsigned int scale = 1 << getInternalNode()->getMipMapLevel();
+    double scale = 1. / (1 << getCurrentRenderScale());
     if ( _imp->viewerTab->notifyOverlaysKeyUp(scale, scale, e) ) {
         updateGL();
     }
@@ -4617,6 +4621,12 @@ ViewerGL::getMipMapLevelCombinedToZoomFactor() const
     return mmLvl;
 }
 
+
+unsigned int
+ViewerGL::getCurrentRenderScale() const
+{
+    return getMipMapLevelCombinedToZoomFactor();
+}
 
 template <typename PIX,int maxValue>
 static

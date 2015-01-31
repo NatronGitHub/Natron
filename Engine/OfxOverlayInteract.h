@@ -32,6 +32,8 @@ public:
     virtual ~NatronOverlayInteractSupport();
 
     void setCallingViewport(OverlaySupport* viewport);
+    
+    OverlaySupport* getLastCallingViewport() const;
 
     /*Swaps the buffer of the attached viewer*/
     OfxStatus n_swapBuffers();

@@ -347,6 +347,8 @@ public:
                         bool forceLinear, int textureIndex, float* r, float* g, float* b, float* a, unsigned int* mipMapLevel);
     
     
+    virtual unsigned int getCurrentRenderScale() const OVERRIDE FINAL;
+    
     ///same as getMipMapLevel but with the zoomFactor taken into account
     int getMipMapLevelCombinedToZoomFactor() const WARN_UNUSED_RETURN;
     
