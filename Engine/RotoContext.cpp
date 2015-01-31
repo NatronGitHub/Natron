@@ -5874,8 +5874,11 @@ RotoContext::changeItemScriptName(const std::string& oldFullyQualifiedName,const
     
     std::string declStr = nodeName + ".roto." + newFullyQUalifiedName + " = " + nodeName + ".roto." + oldFullyQualifiedName + "\n";
     std::string delStr = "del " + nodeName + ".roto." + oldFullyQualifiedName + "\n";
-    
-    if (!Natron::interpretPythonScript(declStr + delStr , &err, 0)) {
+    std::string script = declStr + delStr;
+    if (!appPTR->isBackground()) {
+        getNode()->getApp()->printAutoDeclaredVariable(script);
+    }
+    if (!Natron::interpretPythonScript(script , &err, 0)) {
         getNode()->getApp()->appendToScriptEditor(err);
     }
 }
@@ -5886,7 +5889,11 @@ RotoContext::removeItemAsPythonField(const boost::shared_ptr<RotoItem>& item)
     std::string appID = QString("app%1").arg(getNode()->getApp()->getAppID()+1).toStdString();
     std::string nodeName = appID + "." + getNode()->getFullyQualifiedName();
     std::string err;
-    if (!Natron::interpretPythonScript("del " + nodeName + ".roto." + item->getFullyQualifiedName() + "\n" , &err, 0)) {
+    std::string script = "del " + nodeName + ".roto." + item->getFullyQualifiedName() + "\n";
+    if (!appPTR->isBackground()) {
+        getNode()->getApp()->printAutoDeclaredVariable(script);
+    }
+    if (!Natron::interpretPythonScript(script , &err, 0)) {
         getNode()->getApp()->appendToScriptEditor(err);
     }
     
@@ -5901,8 +5908,12 @@ RotoContext::declareItemAsPythonField(const boost::shared_ptr<RotoItem>& item)
     RotoLayer* isLayer = dynamic_cast<RotoLayer*>(item.get());
     
     std::string err;
-    if(!Natron::interpretPythonScript(nodeName + ".roto." + item->getFullyQualifiedName() + " = " +
-                                      nodeName + ".roto.getItemByName(\"" + item->getScriptName() + "\")\n" , &err, 0)) {
+    std::string script = nodeName + ".roto." + item->getFullyQualifiedName() + " = " +
+    nodeName + ".roto.getItemByName(\"" + item->getScriptName() + "\")\n";
+    if (!appPTR->isBackground()) {
+        getNode()->getApp()->printAutoDeclaredVariable(script);
+    }
+    if(!Natron::interpretPythonScript(script , &err, 0)) {
         getNode()->getApp()->appendToScriptEditor(err);
     }
     

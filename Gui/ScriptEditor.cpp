@@ -23,6 +23,7 @@
 #include <QTextStream>
 #include <QThread>
 #include <QApplication>
+#include <QSplitter>
 #include <QTimer>
 #include <QMutex>
 #include <QKeyEvent>
@@ -34,6 +35,7 @@
 #include "Gui/SequenceFileDialog.h"
 #include "Gui/ScriptTextEdit.h"
 
+#include "Engine/Settings.h"
 struct ScriptEditorPrivate
 {
     
@@ -196,6 +198,8 @@ ScriptEditor::ScriptEditor(Gui* gui)
     _imp->buttonsContainerLayout->addWidget(_imp->clearOutputB);
     _imp->buttonsContainerLayout->addStretch();
     
+    QSplitter* splitter = new QSplitter(Qt::Vertical,this);
+    
     _imp->outputEdit = new ScriptTextEdit(this);
     _imp->outputEdit->setOutput(true);
     _imp->outputEdit->setFocusPolicy(Qt::ClickFocus);
@@ -208,8 +212,9 @@ ScriptEditor::ScriptEditor(Gui* gui)
     _imp->outputEdit->setTabStopWidth(fm.width(' ') * 4);
     
     _imp->mainLayout->addWidget(_imp->buttonsContainer);
-    _imp->mainLayout->addWidget(_imp->outputEdit);
-    _imp->mainLayout->addWidget(_imp->inputEdit);
+    splitter->addWidget(_imp->outputEdit);
+    splitter->addWidget(_imp->inputEdit);
+    _imp->mainLayout->addWidget(splitter);
     
     QObject::connect(&_imp->history, SIGNAL(canUndoChanged(bool)), this, SLOT(onHistoryCanUndoChanged(bool)));
     QObject::connect(&_imp->history, SIGNAL(canRedoChanged(bool)), this, SLOT(onHistoryCanRedoChanged(bool)));
@@ -467,4 +472,15 @@ void
 ScriptEditor::appendToScriptEditor(const QString& str)
 {
     _imp->outputEdit->append(str + "\n");
+}
+
+void
+ScriptEditor::printAutoDeclaredVariable(const QString& str)
+{
+    if (!appPTR->getCurrentSettings()->isAutoDeclaredVariablePrintActivated()) {
+        return;
+    }
+    QString cpy = str;
+    cpy.replace("\n", "<br/>");
+    _imp->outputEdit->append("<font color=grey><b>" + cpy + "</font></b>");
 }

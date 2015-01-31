@@ -135,7 +135,8 @@ public:
     
     virtual void appendToScriptEditor(const std::string& str) OVERRIDE FINAL;
     
-
+    virtual void printAutoDeclaredVariable(const std::string& str) OVERRIDE FINAL;
+    
     virtual void toggleAutoHideGraphInputs() OVERRIDE FINAL;
     virtual void setLastViewerUsingTimeline(const boost::shared_ptr<Natron::Node>& node) OVERRIDE FINAL;
     

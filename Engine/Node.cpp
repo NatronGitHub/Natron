@@ -542,7 +542,11 @@ Node::declareRotoPythonField()
     std::string appID = QString("app%1").arg(getApp()->getAppID()+1).toStdString();
     std::string fullyQualifiedName = appID + "." +getFullyQualifiedName();
     std::string err;
-    bool ok = Natron::interpretPythonScript(fullyQualifiedName + ".roto = " + fullyQualifiedName + ".getRotoContext()\n", &err, 0);
+    std::string script = fullyQualifiedName + ".roto = " + fullyQualifiedName + ".getRotoContext()\n";
+    if (!appPTR->isBackground()) {
+        getApp()->printAutoDeclaredVariable(script);
+    }
+    bool ok = Natron::interpretPythonScript(script, &err, 0);
     assert(ok);
     _imp->rotoContext->declarePythonFields();
 }
@@ -4693,6 +4697,9 @@ Node::declareNodeVariableToPython(const std::string& nodeName)
         script.append(nodeName);
         script.append("\")\n");
         std::string err;
+        if (!appPTR->isBackground()) {
+            getApp()->printAutoDeclaredVariable(script);
+        }
         if (!interpretPythonScript(script, &err, 0)) {
             qDebug() << err.c_str();
         }
@@ -4707,6 +4714,9 @@ Node::setNodeVariableToPython(const std::string& oldName,const std::string& newN
     QString str = QString(appID + ".%1 = " + appID + ".%2\ndel " + appID + ".%2\n").arg(newName.c_str()).arg(oldName.c_str());
     std::string script = str.toStdString();
     std::string err;
+    if (!appPTR->isBackground()) {
+        getApp()->printAutoDeclaredVariable(script);
+    }
     if (!interpretPythonScript(script, &err, 0)) {
         qDebug() << err.c_str();
     }
@@ -4723,6 +4733,9 @@ Node::deleteNodeVariableToPython(const std::string& nodeName)
     QString str = QString("del " + appID + ".%1").arg(nodeName.c_str());
     std::string script = str.toStdString();
     std::string err;
+    if (!appPTR->isBackground()) {
+        getApp()->printAutoDeclaredVariable(script);
+    }
     if (!interpretPythonScript(script, &err, 0)) {
         qDebug() << err.c_str();
     }
@@ -4771,6 +4784,9 @@ Node::declareParameterAsNodeField(const std::string& nodeName,PyObject* nodeObj,
     std::string script = nodeName +  "." + parameterName + " = " +
     nodeName + ".getParam(\"" + parameterName + "\")\n";
     std::string err;
+    if (!appPTR->isBackground()) {
+        getApp()->printAutoDeclaredVariable(script);
+    }
     if (!interpretPythonScript(script, &err, 0)) {
         qDebug() << err.c_str();
     }

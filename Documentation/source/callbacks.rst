@@ -287,6 +287,7 @@ by the user (or by a script using the :func:`createNode(pluginID,version,group)<
 or *False* if the node was created by actions such as pasting a node or when the project is
 loaded.
 
+This is a good place to change default parameters values.
 
 You can set the callback from the project settings:
 

@@ -509,6 +509,8 @@ public:
     
     void appendToScriptEditor(const std::string& str);
     
+    void printAutoDeclaredVariable(const std::string& str);
+    
     void exportGroupAsPythonScript(NodeCollection* collection);
     
     void addMenuEntry(const QString& menuGrouping,const std::string& pythonFunction, Qt::Key key,const Qt::KeyboardModifiers& modifiers);

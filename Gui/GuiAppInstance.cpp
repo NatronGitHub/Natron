@@ -67,6 +67,8 @@ struct GuiAppInstancePrivate
     
     LoadProjectSplashScreen* loadProjectSplash;
     
+    std::string declareAppAndParamsString;
+    
     GuiAppInstancePrivate()
     : _gui(NULL)
     , _activeBgProcesses()
@@ -78,6 +80,7 @@ struct GuiAppInstancePrivate
     , lastTimelineViewerMutex()
     , lastTimelineViewer()
     , loadProjectSplash(0)
+    , declareAppAndParamsString()
     {
     }
     
@@ -187,7 +190,7 @@ GuiAppInstance::load(const CLArgs& cl)
     _imp->_gui = new Gui(this);
     _imp->_gui->createGui();
 
-    
+    printAutoDeclaredVariable(_imp->declareAppAndParamsString);
 
     ///if the app is interactive, build the plugins toolbuttons from the groups we extracted off the plugins.
     const std::list<boost::shared_ptr<PluginGroupNode> > & _toolButtons = appPTR->getTopLevelPluginsToolButtons();
@@ -825,6 +828,12 @@ GuiAppInstance::appendToScriptEditor(const std::string& str)
 }
 
 void
+GuiAppInstance::printAutoDeclaredVariable(const std::string& str)
+{
+    _imp->_gui->printAutoDeclaredVariable(str);
+}
+
+void
 GuiAppInstance::setLastViewerUsingTimeline(const boost::shared_ptr<Natron::Node>& node)
 {
     if (!node) {
@@ -862,8 +871,15 @@ GuiAppInstance::declareCurrentAppVariable_Python()
     /// define the app variable
     std::stringstream ss;
     ss << "app" << getAppID() + 1 << " = natron.getGuiInstance(" << getAppID() << ") \n";
+    const std::vector<boost::shared_ptr<KnobI> >& knobs = getProject()->getKnobs();
+    for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+        ss << "app" << getAppID() + 1 << "." << (*it)->getName() << " = app" << getAppID() + 1 << ".getProjectParam('" <<
+        (*it)->getName() << "')\n";
+    }
+
     std::string script = ss.str();
     std::string err;
+    _imp->declareAppAndParamsString = script;
     bool ok = Natron::interpretPythonScript(script, &err, 0);
     assert(ok);
 }

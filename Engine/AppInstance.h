@@ -319,6 +319,8 @@ public:
     
     virtual void appendToScriptEditor(const std::string& str);
     
+    virtual void printAutoDeclaredVariable(const std::string& str);
+    
     void getFrameRange(int* first,int* last) const;
     
     virtual void setLastViewerUsingTimeline(const boost::shared_ptr<Natron::Node>& /*node*/) {}
@@ -375,8 +377,6 @@ protected:
     {
     }
     
-
-
 private:
     
     

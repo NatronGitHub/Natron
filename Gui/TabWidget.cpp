@@ -1656,7 +1656,9 @@ TabWidget::onTabScriptNameChanged(QWidget* tab,const std::string& oldName,const 
     ss << appID << "." << paneName << "." << newName << " = " << appID << ".getViewer(\"" << newName << "\")\n";
     
     std::string err;
-    bool ok = Natron::interpretPythonScript(ss.str(), &err, 0);
+    std::string script = ss.str();
+    _imp->gui->printAutoDeclaredVariable(script);
+    bool ok = Natron::interpretPythonScript(script, &err, 0);
     assert(ok);
 }
 
@@ -1683,6 +1685,7 @@ TabWidgetPrivate::declareTabToPython(QWidget* widget,const std::string& tabName)
     
     std::string script = ss.str();
     std::string err;
+    gui->printAutoDeclaredVariable(script);
     bool ok = Natron::interpretPythonScript(script, &err, 0);
     assert(ok);
 }
@@ -1703,6 +1706,8 @@ TabWidgetPrivate::removeTabToPython(QWidget* widget,const std::string& tabName)
     ss << "del " << appID << "." << paneName << "." << tabName ;
 
     std::string err;
-    bool ok = Natron::interpretPythonScript(ss.str(), &err, 0);
+    std::string script = ss.str();
+    gui->printAutoDeclaredVariable(script);
+    bool ok = Natron::interpretPythonScript(script, &err, 0);
     assert(ok);
 }

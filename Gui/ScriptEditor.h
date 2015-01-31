@@ -48,6 +48,8 @@ public:
     
     void appendToScriptEditor(const QString& str);
     
+    void printAutoDeclaredVariable(const QString& str);
+    
 public Q_SLOTS:
 
     void onShowHideOutputClicked(bool clicked);

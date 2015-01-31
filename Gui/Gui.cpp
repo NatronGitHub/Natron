@@ -4942,6 +4942,12 @@ Gui::appendToScriptEditor(const std::string& str)
 }
 
 void
+Gui::printAutoDeclaredVariable(const std::string& str)
+{
+    _imp->_scriptEditor->printAutoDeclaredVariable(str.c_str());
+}
+
+void
 Gui::exportGroupAsPythonScript(NodeCollection* collection)
 {
     assert(collection);

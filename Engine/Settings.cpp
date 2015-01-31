@@ -809,7 +809,11 @@ Settings::initializeKnobs()
     _defaultOnNodeDelete->setAnimationEnabled(false);
     _pythonPage->addKnob(_defaultOnNodeDelete);
 
-    
+    _echoVariableDeclarationToPython = Natron::createKnob<Bool_Knob>(this, "Print auto-declared variables in the Script Editor");
+    _echoVariableDeclarationToPython->setHintToolTip("When checked, Natron will print in the Script Editor all variables that are "
+                                                     "automatically declared, such as the app variable or node attributes.");
+    _echoVariableDeclarationToPython->setAnimationEnabled(false);
+    _pythonPage->addKnob(_echoVariableDeclarationToPython);
     setDefaultValues();
 } // initializeKnobs
 
@@ -945,7 +949,8 @@ Settings::setDefaultValues()
     _defaultDeepGroupColor->setDefaultValue(0.,0);
     _defaultDeepGroupColor->setDefaultValue(0.,1);
     _defaultDeepGroupColor->setDefaultValue(0.38,2);
-
+    
+    _echoVariableDeclarationToPython->setDefaultValue(true);
 
     endKnobsValuesChanged(Natron::eValueChangedReasonPluginEdited);
 } // setDefaultValues
@@ -2282,4 +2287,10 @@ std::string
 Settings::getOnProjectCreatedCB()
 {
     return _onProjectCreated->getValue();
+}
+
+bool
+Settings::isAutoDeclaredVariablePrintActivated() const
+{
+    return _echoVariableDeclarationToPython->getValue();
 }

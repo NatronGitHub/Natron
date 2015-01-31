@@ -71,6 +71,7 @@ struct AppInstancePrivate
     
     bool _creatingGroup;
     
+    
     AppInstancePrivate(int appID,
                        AppInstance* app)
     : _currentProject( new Natron::Project(app) )
@@ -982,10 +983,10 @@ AppInstance::declareCurrentAppVariable_Python()
     std::string script = ss.str();
     std::string err;
     
-    
     bool ok = Natron::interpretPythonScript(script, &err, 0);
     assert(ok);
 }
+
 
 double
 AppInstance::getProjectFrameRate() const
@@ -1015,6 +1016,12 @@ void
 AppInstance::appendToScriptEditor(const std::string& str)
 {
     std::cout << str <<  std::endl;
+}
+
+void
+AppInstance::printAutoDeclaredVariable(const std::string& /*str*/)
+{
+    
 }
 
 void

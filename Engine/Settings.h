@@ -240,6 +240,8 @@ public:
     std::string getDefaultOnNodeCreatedCB();
     std::string getDefaultOnNodeDeleteCB();
     
+    bool isAutoDeclaredVariablePrintActivated() const;
+    
 private:
 
     virtual void initializeKnobs() OVERRIDE FINAL;
@@ -353,6 +355,8 @@ private:
     boost::shared_ptr<String_Knob> _defaultOnProjectClose;
     boost::shared_ptr<String_Knob> _defaultOnNodeCreated;
     boost::shared_ptr<String_Knob> _defaultOnNodeDelete;
+    
+    boost::shared_ptr<Bool_Knob> _echoVariableDeclarationToPython;
     
     std::map<std::string,boost::shared_ptr<Choice_Knob> > _perPluginRenderScaleSupport;
     bool _wereChangesMadeSinceLastSave;
