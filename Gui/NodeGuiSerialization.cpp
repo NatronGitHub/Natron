@@ -41,5 +41,8 @@ NodeGuiSerialization::initialize(const NodeGui*  n)
     _g = color.greenF();
     _b = color.blueF();
     _selected = n->isSelected();
+    
+    _hasOverlayColor = n->getOverlayColor(&_overlayR, &_overlayG, &_overlayB);
+    
 }
 

@@ -1083,6 +1083,22 @@ NodeGui::computePreviewImage(int time)
     }
 }
 
+bool
+NodeGui::getOverlayColor(double* r, double* g, double* b) const
+{
+    if (!getSettingPanel()) {
+        return false;
+    }
+    if (!getSettingPanel()->hasOverlayColor()) {
+        return false;
+    }
+    QColor c = getSettingPanel()->getOverlayColor();
+    *r = c.redF();
+    *g = c.greenF();
+    *b = c.blueF();
+    return true;
+}
+
 void
 NodeGui::initializeInputs()
 {
@@ -2509,6 +2525,14 @@ NodeGui::setCurrentColor(const QColor & c)
     onSettingsPanelColorChanged(c);
     if (_settingsPanel) {
         _settingsPanel->setCurrentColor(c);
+    }
+}
+
+void
+NodeGui::setOverlayColor(const QColor& c)
+{
+    if (_settingsPanel) {
+        _settingsPanel->setOverlayColor(c);
     }
 }
 

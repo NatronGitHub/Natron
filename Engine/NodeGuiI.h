@@ -71,6 +71,11 @@ public :
      * @brief Called when a child is created for multi-instance, like a new Track
      **/
     virtual void onChildInstanceCreated(const boost::shared_ptr<Natron::Node>& node) = 0;
+    
+    /**
+     * @brief Get the suggested overlay colour
+     **/
+    virtual bool getOverlayColor(double* r, double* g, double* b) const = 0;
 };
 
 #endif // NODEGUII_H

@@ -1146,6 +1146,19 @@ public:
 
     bool isDoingInteractAction() const WARN_UNUSED_RETURN;
 
+    /* @brief Overlay support:
+    * Just overload this function in your operator.
+    * No need to include any OpenGL related header.
+    * The coordinate space is  defined by the displayWindow
+    * (i.e: (0,0) = bottomLeft and  width() and height() being
+    * respectivly the width and height of the frame.)
+    */
+    virtual bool hasOverlay() const
+    {
+        return false;
+    }
+
+
 protected:
 
     /**
@@ -1166,17 +1179,6 @@ protected:
     {
     }
 
-    /* @brief Overlay support:
-     * Just overload this function in your operator.
-     * No need to include any OpenGL related header.
-     * The coordinate space is  defined by the displayWindow
-     * (i.e: (0,0) = bottomLeft and  width() and height() being
-     * respectivly the width and height of the frame.)
-     */
-    virtual bool hasOverlay() const
-    {
-        return false;
-    }
 
     virtual void drawOverlay(double /*scaleX*/,
                              double /*scaleY*/)

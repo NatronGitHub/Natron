@@ -111,10 +111,7 @@ public:
     // hooks to kOfxInteractPropSuggestedColour and kOfxPropOverlayColour in the property set
     virtual bool getSuggestedColour(double &r,
                                     double &g,
-                                    double &b) const
-    {
-        return n_getSuggestedColour(r, g, b);
-    }
+                                    double &b) const;
 
     /// call create instance
     virtual OfxStatus createInstanceAction() OVERRIDE FINAL;

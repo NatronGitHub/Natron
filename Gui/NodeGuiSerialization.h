@@ -30,7 +30,8 @@ CLANG_DIAG_ON(unused-parameter)
 #define NODE_GUI_INTRODUCES_COLOR 2
 #define NODE_GUI_INTRODUCES_SELECTED 3
 #define NODE_GUI_MERGE_BACKDROP 4
-#define NODE_GUI_SERIALIZATION_VERSION NODE_GUI_MERGE_BACKDROP
+#define NODE_GUI_INTRODUCES_OVERLAY_COLOR 5
+#define NODE_GUI_SERIALIZATION_VERSION NODE_GUI_INTRODUCES_OVERLAY_COLOR
 #include "Engine/AppManager.h"
 
 class NodeGui;
@@ -97,6 +98,16 @@ public:
         return _selected;
     }
 
+    bool getOverlayColor(double* r,double* g,double* b) const {
+        if (!_hasOverlayColor) {
+            return false;
+        }
+        *r = _overlayR;
+        *g = _overlayG;
+        *b = _overlayB;
+        return true;
+    }
+    
 private:
 
     std::string _nodeName;
@@ -107,6 +118,9 @@ private:
     bool _colorWasFound;
     bool _selected;
 
+    double _overlayR,_overlayG,_overlayB;
+    bool _hasOverlayColor;
+    
     friend class boost::serialization::access;
     template<class Archive>
     void save(Archive & ar,
@@ -127,6 +141,12 @@ private:
         ar & boost::serialization::make_nvp("Width",_width);
         ar & boost::serialization::make_nvp("Height",_height);
         
+        ar & boost::serialization::make_nvp("HasOverlayColor",_hasOverlayColor);
+        if (_hasOverlayColor) {
+            ar & boost::serialization::make_nvp("oR",_overlayR);
+            ar & boost::serialization::make_nvp("oG",_overlayG);
+            ar & boost::serialization::make_nvp("oB",_overlayB);
+        }
     }
     
     template<class Archive>
@@ -153,6 +173,17 @@ private:
             ar & boost::serialization::make_nvp("Height",_height);
         } else {
             _nodeName = Natron::makeNameScriptFriendly(_nodeName);
+        }
+        
+        if (version >= NODE_GUI_INTRODUCES_OVERLAY_COLOR) {
+            ar & boost::serialization::make_nvp("HasOverlayColor",_hasOverlayColor);
+            if (_hasOverlayColor) {
+                ar & boost::serialization::make_nvp("oR",_overlayR);
+                ar & boost::serialization::make_nvp("oG",_overlayG);
+                ar & boost::serialization::make_nvp("oB",_overlayB);
+            }
+        } else {
+            _hasOverlayColor = false;
         }
     }
 

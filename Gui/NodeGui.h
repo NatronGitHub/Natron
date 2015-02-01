@@ -296,6 +296,8 @@ public:
     QColor getCurrentColor() const;
 
     void setCurrentColor(const QColor & c);
+    
+    void setOverlayColor(const QColor& c);
 
     void refreshKnobsAfterTimeChange(SequenceTime time);
     
@@ -340,6 +342,8 @@ public:
     bool isNearbyResizeHandle(const QPointF& pos) const;
     
     int getFrameNameHeight() const;
+    
+    virtual bool getOverlayColor(double* r, double* g, double* b) const OVERRIDE FINAL;
 
 protected:
     

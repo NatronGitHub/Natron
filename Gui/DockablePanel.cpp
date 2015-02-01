@@ -218,7 +218,10 @@ struct DockablePanelPrivate
     Button* _cross;
     mutable QMutex _currentColorMutex; //< protects _currentColor
     QColor _currentColor; //< accessed by the serialization thread
+    QColor _overlayColor;
+    bool _hasOverlayColor;
     Button* _colorButton;
+    Button* _overlayButton;
     Button* _undoButton;
     Button* _redoButton;
     Button* _restoreDefaultsButton;
@@ -273,8 +276,11 @@ struct DockablePanelPrivate
     ,_hideUnmodifiedButton(NULL)
     ,_floatButton(NULL)
     ,_cross(NULL)
-    , _currentColor()
+    ,_currentColor()
+    ,_overlayColor()
+    ,_hasOverlayColor(false)
     ,_colorButton(NULL)
+    ,_overlayButton(NULL)
     ,_undoButton(NULL)
     ,_redoButton(NULL)
     ,_restoreDefaultsButton(NULL)
@@ -515,6 +521,20 @@ DockablePanel::DockablePanel(Gui* gui ,
                 ///Show timeline keyframe markers to be consistent with the fact that the panel is opened by default
                 iseffect->getNode()->showKeyframesOnTimeline(true);
             }
+            
+            
+            if (iseffect && iseffect->hasOverlay()) {
+                QPixmap pixOverlay;
+                appPTR->getIcon(Natron::NATRON_PIXMAP_OVERLAY,&pixOverlay);
+                _imp->_overlayButton = new Button(QIcon(pixOverlay),"",_imp->_headerWidget);
+                _imp->_overlayButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
+                _imp->_overlayButton->setToolTip(Qt::convertFromPlainText(tr("You can suggest here a colour for the overlay on the viewer."
+                                                                             "Some plug-in understand it and will use this to change the colour of "
+                                                                             "the overlay."),Qt::WhiteSpaceNormal));
+                _imp->_overlayButton->setFocusPolicy(Qt::NoFocus);
+                QObject::connect( _imp->_overlayButton,SIGNAL( clicked() ),this,SLOT( onOverlayButtonClicked() ) );
+            }
+            
         }
         QPixmap pixUndo;
         appPTR->getIcon(NATRON_PIXMAP_UNDO,&pixUndo);
@@ -575,6 +595,9 @@ DockablePanel::DockablePanel(Gui* gui ,
 
         if (headerMode != eHeaderModeReadOnlyName && _imp->_colorButton) {
             _imp->_headerLayout->addWidget(_imp->_colorButton);
+        }
+        if (headerMode != eHeaderModeReadOnlyName && _imp->_overlayButton) {
+            _imp->_headerLayout->addWidget(_imp->_overlayButton);
         }
         _imp->_headerLayout->addWidget(_imp->_undoButton);
         _imp->_headerLayout->addWidget(_imp->_redoButton);
@@ -1854,6 +1877,39 @@ DockablePanel::onColorDialogColorChanged(const QColor & color)
 }
 
 void
+DockablePanel::onOverlayColorDialogColorChanged(const QColor& color)
+{
+    
+    NodeSettingsPanel* nodePanel = dynamic_cast<NodeSettingsPanel*>(this);
+    if (!nodePanel) {
+        return;
+    }
+    boost::shared_ptr<Natron::Node> node = nodePanel->getNode()->getNode();
+    if (!node) {
+        return;
+    }
+
+    
+    if (_imp->_mode  != eHeaderModeReadOnlyName && _imp->_overlayButton) {
+        QPixmap p(15,15);
+        p.fill(color);
+        _imp->_overlayButton->setIcon( QIcon(p) );
+        {
+            QMutexLocker k(&_imp->_currentColorMutex);
+            _imp->_overlayColor = color;
+            _imp->_hasOverlayColor = true;
+        }
+
+        std::list<boost::shared_ptr<Natron::Node> > overlayNodes;
+        getGui()->getNodesEntitledForOverlays(overlayNodes);
+        std::list<boost::shared_ptr<Natron::Node> >::iterator found = std::find(overlayNodes.begin(),overlayNodes.end(),node);
+        if (found != overlayNodes.end()) {
+            getGui()->getApp()->redrawAllViewers();
+        }
+    }
+}
+
+void
 DockablePanel::onColorButtonClicked()
 {
     QColorDialog dialog(this);
@@ -1877,12 +1933,76 @@ DockablePanel::onColorButtonClicked()
     }
 }
 
+void
+DockablePanel::onOverlayButtonClicked()
+{
+    NodeSettingsPanel* nodePanel = dynamic_cast<NodeSettingsPanel*>(this);
+    if (!nodePanel) {
+        return;
+    }
+    boost::shared_ptr<Natron::Node> node = nodePanel->getNode()->getNode();
+    if (!node) {
+        return;
+    }
+    QColorDialog dialog(this);
+    QColor oldColor;
+    bool hadOverlayColor;
+    {
+        QMutexLocker locker(&_imp->_currentColorMutex);
+        dialog.setCurrentColor(_imp->_overlayColor);
+        oldColor = _imp->_overlayColor;
+        hadOverlayColor = _imp->_hasOverlayColor;
+    }
+    QObject::connect( &dialog,SIGNAL( currentColorChanged(QColor) ),this,SLOT( onOverlayColorDialogColorChanged(QColor) ) );
+    
+    if ( dialog.exec() ) {
+        QColor c = dialog.currentColor();
+        {
+            QMutexLocker locker(&_imp->_currentColorMutex);
+            _imp->_overlayColor = c;
+            _imp->_hasOverlayColor = true;
+        }
+        std::list<boost::shared_ptr<Natron::Node> > overlayNodes;
+        getGui()->getNodesEntitledForOverlays(overlayNodes);
+        std::list<boost::shared_ptr<Natron::Node> >::iterator found = std::find(overlayNodes.begin(),overlayNodes.end(),node);
+        if (found != overlayNodes.end()) {
+            getGui()->getApp()->redrawAllViewers();
+        }
+    } else {
+        if (!hadOverlayColor) {
+            {
+                QMutexLocker locker(&_imp->_currentColorMutex);
+                _imp->_hasOverlayColor = false;
+            }
+            QPixmap pixOverlay;
+            appPTR->getIcon(Natron::NATRON_PIXMAP_OVERLAY,&pixOverlay);
+            _imp->_overlayButton->setIcon(QIcon(pixOverlay));
+        }
+        onOverlayColorDialogColorChanged(oldColor);
+    }
+
+}
+
 QColor
 DockablePanel::getCurrentColor() const
 {
     QMutexLocker locker(&_imp->_currentColorMutex);
 
     return _imp->_currentColor;
+}
+
+QColor
+DockablePanel::getOverlayColor() const
+{
+    QMutexLocker locker(&_imp->_currentColorMutex);
+    return _imp->_overlayColor;
+}
+
+bool
+DockablePanel::hasOverlayColor() const
+{
+    QMutexLocker locker(&_imp->_currentColorMutex);
+    return _imp->_hasOverlayColor;
 }
 
 void
@@ -1893,6 +2013,18 @@ DockablePanel::setCurrentColor(const QColor & c)
         _imp->_currentColor = c;
     }
     onColorDialogColorChanged(c);
+}
+
+void
+DockablePanel::setOverlayColor(const QColor& c)
+{
+    {
+        QMutexLocker locker(&_imp->_currentColorMutex);
+        _imp->_overlayColor = c;
+        _imp->_hasOverlayColor = true;
+    }
+    onOverlayColorDialogColorChanged(c);
+
 }
 
 void

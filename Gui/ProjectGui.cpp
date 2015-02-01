@@ -343,6 +343,14 @@ ProjectGui::load(boost::archive::xml_iarchive & archive)
                 nGui->setCurrentColor(color);
             }
             
+            double ovR,ovG,ovB;
+            bool hasOverlayColor = it->getOverlayColor(&ovR,&ovG,&ovB);
+            if (hasOverlayColor) {
+                QColor c;
+                c.setRgbF(ovR, ovG, ovB);
+                nGui->setOverlayColor(c);
+            }
+            
             if (isBd) {
                 double w,h;
                 it->getSize(&w, &h);

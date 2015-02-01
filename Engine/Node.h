@@ -337,6 +337,8 @@ public:
 
     bool hasInputConnected() const;
     
+    bool hasOverlay() const;
+    
     bool hasMandatoryInputDisconnected() const;
     
     /**
@@ -868,6 +870,8 @@ public:
     std::string getAfterFrameRenderCallback() const;
     
     void computeFrameRangeForReader(const KnobI* fileKnob);
+    
+    bool getOverlayColor(double* r,double* g,double* b) const;
 
 private:
     

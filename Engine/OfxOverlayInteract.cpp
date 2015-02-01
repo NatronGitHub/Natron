@@ -20,6 +20,7 @@
 #include "Engine/Format.h"
 #include "Engine/OverlaySupport.h"
 #include "Engine/Knob.h"
+#include "Engine/Node.h"
 
 
 using namespace Natron;
@@ -50,6 +51,7 @@ OfxOverlayInteract::OfxOverlayInteract(OfxImageEffectInstance &v,
     : OFX::Host::ImageEffect::OverlayInteract(v,bitDepthPerComponent,hasAlpha)
       , NatronOverlayInteractSupport()
 {
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
@@ -150,7 +152,15 @@ OfxOverlayInteract::loseFocusAction(OfxTime  time,
     return OFX::Host::ImageEffect::OverlayInteract::loseFocusAction(time, renderScale);
 }
 
-
+bool
+Natron::OfxOverlayInteract::getSuggestedColour(double &r,
+                                               double &g,
+                                               double &b) const
+{
+    OfxImageEffectInstance* effect = dynamic_cast<OfxImageEffectInstance*>(&_instance);
+    assert(effect && effect->getOfxEffectInstance());
+    return effect->getOfxEffectInstance()->getNode()->getOverlayColor(&r, &g, &b);
+}
 
 
 Natron::OfxParamOverlayInteract::OfxParamOverlayInteract(KnobI* knob,
@@ -237,9 +247,6 @@ NatronOverlayInteractSupport::n_getSuggestedColour(double &r,
                                                    double &b) const
 {
     return false;
-    // TODO
-    //r = g = b = ...;
-    //return true;
 }
 
 void
@@ -279,4 +286,6 @@ Natron::OfxParamOverlayInteract::getPixelAspectRatio(double & par) const
 {
     par = _descriptor.getProperties().getDoubleProperty(kOfxParamPropInteractSizeAspect);
 }
+
+
 

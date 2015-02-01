@@ -1044,6 +1044,12 @@ Node::isRenderingPreview() const
     return _imp->computingPreview;
 }
 
+bool
+Node::hasOverlay() const
+{
+    return _imp->liveInstance ? _imp->liveInstance->hasOverlay() : false;
+}
+
 void
 Node::Implementation::abortPreview()
 {
@@ -3895,6 +3901,16 @@ Node::computeFrameRangeForReader(const KnobI* fileKnob)
         }
     }
 
+}
+
+bool
+Node::getOverlayColor(double* r,double* g,double* b) const
+{
+    boost::shared_ptr<NodeGuiI> gui_i = getNodeGui();
+    if (!gui_i) {
+        return false;
+    }
+    return gui_i->getOverlayColor(r, g, b);
 }
 
 void

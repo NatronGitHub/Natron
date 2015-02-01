@@ -198,6 +198,12 @@ public:
 
     ///MT-safe
     void setCurrentColor(const QColor & c);
+    
+    void setOverlayColor(const QColor& c);
+    
+    QColor getOverlayColor() const;
+    
+    bool hasOverlayColor() const;
 
     virtual boost::shared_ptr<MultiInstancePanel> getMultiInstancePanel() const
     {
@@ -255,8 +261,12 @@ public Q_SLOTS:
     void floatPanel();
 
     void onColorButtonClicked();
+    
+    void onOverlayButtonClicked();
 
     void onColorDialogColorChanged(const QColor & color);
+    
+    void onOverlayColorDialogColorChanged(const QColor& color);
 
     void setClosed(bool closed);
 
