@@ -1247,7 +1247,6 @@ Parametric_Knob::setParametricRange(double min,
 std::pair<double,double> Parametric_Knob::getParametricRange() const
 {
     ///Mt-safe as it never changes
-    
     assert( !_curves.empty() );
     
     return _curves.front()->getXRange();
@@ -1259,8 +1258,14 @@ boost::shared_ptr<Curve> Parametric_Knob::getParametricCurve(int dimension) cons
     ///Mt-safe as Curve is MT-safe and the pointer is never deleted
     
     assert( dimension < (int)_curves.size() );
-    
-    return _curves[dimension];
+    std::pair<int,boost::shared_ptr<KnobI> >  master = getMaster(dimension);
+    if (master.second) {
+        Parametric_Knob* m = dynamic_cast<Parametric_Knob*>(master.second.get());
+        assert(m);
+        return m->getParametricCurve(dimension);
+    } else {
+        return _curves[dimension];
+    }
 }
 
 Natron::StatusEnum
@@ -1295,7 +1300,7 @@ Parametric_Knob::getValue(int dimension,
         return eStatusFailed;
     }
     try {
-        *returnValue = _curves[dimension]->getValueAt(parametricPosition);
+        *returnValue = getParametricCurve(dimension)->getValueAt(parametricPosition);
     }catch (...) {
         return Natron::eStatusFailed;
     }
@@ -1311,7 +1316,7 @@ Parametric_Knob::getNControlPoints(int dimension,
     if ( dimension >= (int)_curves.size() ) {
         return eStatusFailed;
     }
-    *returnValue =  _curves[dimension]->getKeyFramesCount();
+    *returnValue =  getParametricCurve(dimension)->getKeyFramesCount();
     
     return eStatusOK;
 }
@@ -1327,7 +1332,7 @@ Parametric_Knob::getNthControlPoint(int dimension,
         return eStatusFailed;
     }
     KeyFrame kf;
-    bool ret = _curves[dimension]->getKeyFrameWithIndex(nthCtl, &kf);
+    bool ret = getParametricCurve(dimension)->getKeyFrameWithIndex(nthCtl, &kf);
     if (!ret) {
         return eStatusFailed;
     }
@@ -1350,7 +1355,7 @@ Parametric_Knob::getNthControlPoint(int dimension,
         return eStatusFailed;
     }
     KeyFrame kf;
-    bool ret = _curves[dimension]->getKeyFrameWithIndex(nthCtl, &kf);
+    bool ret = getParametricCurve(dimension)->getKeyFrameWithIndex(nthCtl, &kf);
     if (!ret) {
         return eStatusFailed;
     }

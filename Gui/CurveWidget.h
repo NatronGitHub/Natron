@@ -126,10 +126,7 @@ public:
      **/
     virtual double evaluate(double x) const;
     
-    boost::shared_ptr<Curve>  getInternalCurve() const
-    {
-        return _internalCurve;
-    }
+    virtual boost::shared_ptr<Curve>  getInternalCurve() const;
 
     void drawCurve(int curveIndex,int curvesCount);
 
@@ -193,6 +190,8 @@ public:
                  int thickness = 1);
     
     virtual ~KnobCurveGui();
+    
+    virtual boost::shared_ptr<Curve>  getInternalCurve() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     
     KnobGui* getKnobGui() const
     {
