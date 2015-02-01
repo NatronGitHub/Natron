@@ -1576,12 +1576,14 @@ AppManager::loadPythonGroups()
     for (int i = 0; i < allPlugins.size(); ++i) {
         
         QString moduleName = allPlugins[i];
+        QString modulePath;
         int lastDot = moduleName.lastIndexOf('.');
         if (lastDot != -1) {
             moduleName = moduleName.left(lastDot);
         }
         int lastSlash = moduleName.lastIndexOf('/');
         if (lastSlash != -1) {
+            modulePath = moduleName.mid(0,lastSlash + 1);
             moduleName = moduleName.remove(0,lastSlash + 1);
         }
         
@@ -1638,7 +1640,7 @@ AppManager::loadPythonGroups()
             
             setLoadingStatus("Python: Loading " + label);
             
-            QFileInfo iconInfo(allPlugins[i] + "/" + iconPath);
+            QFileInfo iconInfo(modulePath + iconPath);
             QString iconFullPath =  iconInfo.canonicalFilePath();
             
             bool ok = interpretPythonScript(deleteScript, &err, NULL);
