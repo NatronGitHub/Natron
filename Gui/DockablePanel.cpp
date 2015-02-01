@@ -528,8 +528,8 @@ DockablePanel::DockablePanel(Gui* gui ,
                 appPTR->getIcon(Natron::NATRON_PIXMAP_OVERLAY,&pixOverlay);
                 _imp->_overlayButton = new Button(QIcon(pixOverlay),"",_imp->_headerWidget);
                 _imp->_overlayButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-                _imp->_overlayButton->setToolTip(Qt::convertFromPlainText(tr("You can suggest here a colour for the overlay on the viewer."
-                                                                             "Some plug-in understand it and will use this to change the colour of "
+                _imp->_overlayButton->setToolTip(Qt::convertFromPlainText(tr("You can suggest here a color for the overlay on the viewer. "
+                                                                             "Some plug-ins understand it and will use it to change the color of "
                                                                              "the overlay."),Qt::WhiteSpaceNormal));
                 _imp->_overlayButton->setFocusPolicy(Qt::NoFocus);
                 QObject::connect( _imp->_overlayButton,SIGNAL( clicked() ),this,SLOT( onOverlayButtonClicked() ) );
