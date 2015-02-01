@@ -45,9 +45,7 @@ public:
     
     boost::shared_ptr<FileSystemItem> childAt(int position) const;
     
-    int childCount() const;std::vector<boost::shared_ptr<FileSystemItem> > getChildren() const;
-    
-    std::vector<boost::shared_ptr<FileSystemItem> > getChildren() const;
+    int childCount() const;
     
     int indexInParent() const;
     

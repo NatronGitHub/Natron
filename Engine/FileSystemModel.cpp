@@ -158,13 +158,6 @@ FileSystemItem::childCount() const
     return (int)_imp->children.size();
 }
 
-std::vector<boost::shared_ptr<FileSystemItem> >
-FileSystemItem::getChildren() const
-{
-    QMutexLocker l(&_imp->childrenMutex);
-    return _imp->children;
-}
-
 int
 FileSystemItem::indexInParent() const
 {
