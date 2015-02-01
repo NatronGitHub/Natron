@@ -1291,7 +1291,9 @@ DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI> & knob,
             ///Must add the row to the layout before calling setSecret()
             if (makeNewLine) {
                 int rowIndex;
-                if (parentGui && knob->isDynamicallyCreated()) {
+                if (parentIsGroup && parentIsGroup->isTab()) {
+                    rowIndex = layout->rowCount();
+                } else if (parentGui && knob->isDynamicallyCreated()) {
                     const std::list<KnobGui*>& children = parentGui->getChildren();
                     if (children.empty()) {
                         rowIndex = parentGui->getActualIndexInLayout();
