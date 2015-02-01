@@ -1654,7 +1654,7 @@ EffectInstance::tryConcatenateTransforms(const RenderRoIArgs& args,
     //An effect might not be able to concatenate transforms but can still apply a transform (e.g CornerPinMasked)
     bool canApplyTransform = getCanApplyTransform(&inputTransformEffect);
     
-    if (canTransform || canApplyTransform) {
+    if (canTransform || (canApplyTransform && inputTransformEffect)) {
         
         Transform::Matrix3x3 thisNodeTransform;
         
