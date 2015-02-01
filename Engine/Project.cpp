@@ -937,7 +937,7 @@ Project::evaluate(KnobI* knob,
                   Natron::ValueChangedReasonEnum /*reason*/)
 {
     assert(QThread::currentThread() == qApp->thread());
-    if (isSignificant && knob != _imp->formatKnob.get()) {
+   /* if (isSignificant && knob != _imp->formatKnob.get()) {
         getCurrentNodes();
         
         for (U32 i = 0; i < _imp->currentNodes.size(); ++i) {
@@ -950,7 +950,7 @@ Project::evaluate(KnobI* knob,
                 n->renderCurrentFrame(true);
             }
         }
-    }
+    }*/
 }
 
 // don't return a reference to a mutex-protected object!
