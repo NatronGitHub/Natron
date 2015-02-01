@@ -1429,17 +1429,17 @@ Project::reset()
     _imp->timeline->removeAllKeyframesIndicators();
     const std::vector<boost::shared_ptr<KnobI> > & knobs = getKnobs();
 
+    beginChanges();
     for (U32 i = 0; i < knobs.size(); ++i) {
-        knobs[i]->blockEvaluation();
         for (int j = 0; j < knobs[i]->getDimension(); ++j) {
             knobs[i]->resetToDefaultValue(j);
         }
-        knobs[i]->unblockEvaluation();
     }
 
-    _imp->envVars->blockEvaluation();
+
     onOCIOConfigPathChanged(appPTR->getOCIOConfigPath(),true);
-    _imp->envVars->unblockEvaluation();
+    
+    endChanges();
     
     emit projectNameChanged(NATRON_PROJECT_UNTITLED);
     clearNodes();
@@ -2017,7 +2017,7 @@ Project::fixRelativeFilePaths(const std::string& projectPathName,const std::stri
     for (U32 i = 0; i < nodes.size(); ++i) {
         if (nodes[i]->isActivated()) {
             if (blockEval) {
-                nodes[i]->getLiveInstance()->blockEvaluation();
+                nodes[i]->getLiveInstance()->beginChanges();
             }
             const std::vector<boost::shared_ptr<KnobI> >& knobs = nodes[i]->getKnobs();
             for (U32 j = 0; j < knobs.size(); ++j) {
@@ -2037,7 +2037,7 @@ Project::fixRelativeFilePaths(const std::string& projectPathName,const std::stri
                 }
             }
             if (blockEval) {
-                nodes[i]->getLiveInstance()->unblockEvaluation();
+                nodes[i]->getLiveInstance()->endChanges();
             }
             
         }
@@ -2167,7 +2167,7 @@ void
 Project::onOCIOConfigPathChanged(const std::string& path,bool block)
 {
     if (block) {
-        blockEvaluation();
+        beginChanges();
     }
     try {
         std::string env = _imp->envVars->getValue();
@@ -2203,7 +2203,7 @@ Project::onOCIOConfigPathChanged(const std::string& path,bool block)
         // ignore
     }
     if (block) {
-        unblockEvaluation();
+        endChanges();
     }
 }
 
@@ -2243,10 +2243,10 @@ Project::unionFrameRangeWith(int first,int last)
     curLast = _imp->frameRange->getValue(1);
     curFirst = std::min(first, curFirst);
     curLast = std::max(last, curLast);
-    blockEvaluation();
+    beginChanges();
     _imp->frameRange->setValue(curFirst, 0);
-    unblockEvaluation();
     _imp->frameRange->setValue(curLast, 1);
+    endChanges();
 
 }
     
@@ -2267,10 +2267,10 @@ Project::recomputeFrameRangeFromReaders()
             }
         }
     }
-    blockEvaluation();
+    beginChanges();
     _imp->frameRange->setValue(first, 0);
-    unblockEvaluation();
     _imp->frameRange->setValue(last, 1);
+    endChanges();
 }
     
 } //namespace Natron

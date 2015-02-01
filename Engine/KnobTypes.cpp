@@ -773,11 +773,11 @@ Color_Knob::setValues(double r,
 {
     assert(getDimension() == 3);
     KeyFrame k;
-    blockEvaluation();
+    beginChanges();
     onValueChanged(r, 0, Natron::eValueChangedReasonNatronGuiEdited, &k);
     onValueChanged(g, 1, Natron::eValueChangedReasonNatronGuiEdited, &k);
-    unblockEvaluation();
     onValueChanged(b, 2, Natron::eValueChangedReasonNatronGuiEdited, &k);
+    endChanges();
 }
 
 void
@@ -788,12 +788,12 @@ Color_Knob::setValues(double r,
 {
     assert(getDimension() == 4);
     KeyFrame k;
-    blockEvaluation();
+    beginChanges();
     onValueChanged(r, 0, Natron::eValueChangedReasonNatronGuiEdited, &k);
     onValueChanged(g, 1, Natron::eValueChangedReasonNatronGuiEdited, &k);
     onValueChanged(b, 2, Natron::eValueChangedReasonNatronGuiEdited, &k);
-    unblockEvaluation();
     onValueChanged(a, 3, Natron::eValueChangedReasonNatronGuiEdited, &k);
+    endChanges();
 }
 
 /******************************STRING_KNOB**************************************/

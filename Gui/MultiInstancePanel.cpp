@@ -990,7 +990,7 @@ MultiInstancePanel::onSelectionChanged(const QItemSelection & newSelection,
 
         it->first->hideKeyframesFromTimeline( nextPreviouslySelected == previouslySelectedInstances.end() );
         
-        it->first->getLiveInstance()->blockEvaluation();
+        it->first->getLiveInstance()->beginChanges();
         const std::vector<boost::shared_ptr<KnobI> > & knobs = it->first->getKnobs();
         for (U32 i = 0; i < knobs.size(); ++i) {
             if ( knobs[i]->isDeclaredByPlugin() && !knobs[i]->isInstanceSpecific() && !knobs[i]->getIsSecret() ) {
@@ -1001,7 +1001,7 @@ MultiInstancePanel::onSelectionChanged(const QItemSelection & newSelection,
                 }
             }
         }
-        it->first->getLiveInstance()->unblockEvaluation();
+        it->first->getLiveInstance()->endChanges();
 
         for (Nodes::iterator it2 = _imp->instances.begin(); it2 != _imp->instances.end(); ++it2) {
             if (it2->first.get() == it->first) {
@@ -1054,11 +1054,11 @@ MultiInstancePanel::onSelectionChanged(const QItemSelection & newSelection,
                     Button_Knob* isButton = dynamic_cast<Button_Knob*>( knobs[i].get() );
                     if (!isButton) {
                         otherKnob->clone(knobs[i]);
-                        knobs[i]->blockEvaluation();
+                        knobs[i]->beginChanges();
                         for (int j = 0; j < knobs[i]->getDimension(); ++j) {
                             knobs[i]->slaveTo(j, otherKnob, j,true);
                         }
-                        knobs[i]->unblockEvaluation();
+                        knobs[i]->endChanges();
                     }
                 }
 
@@ -1425,12 +1425,12 @@ MultiInstancePanel::resetInstances(const std::list<Natron::Node*> & instances)
             Button_Knob* isBtn = dynamic_cast<Button_Knob*>( knobs[i].get() );
 
             if ( !isBtn && (knobs[i]->getName() != kUserLabelKnobName) && (knobs[i]->getName() != kOfxParamStringSublabelName) ) {
-                knobs[i]->blockEvaluation();
+                knobs[i]->beginChanges();
                 int dims = knobs[i]->getDimension();
                 for (int j = 0; j < dims; ++j) {
                     knobs[i]->resetToDefaultValue(j);
                 }
-                knobs[i]->unblockEvaluation();
+                knobs[i]->endChanges();
             }
         }
     }
@@ -1753,7 +1753,7 @@ TrackerPanel::onAverageTracksButtonClicked()
         keyframesRange.max = 0;
     }
 
-    newInstanceCenter->blockEvaluation();
+    newInstanceCenter->beginChanges();
     for (double t = keyframesRange.min; t <= keyframesRange.max; ++t) {
         std::pair<double,double> average;
         average.first = 0;
@@ -1769,12 +1769,10 @@ TrackerPanel::onAverageTracksButtonClicked()
             average.first /= centersNb;
             average.second /= centersNb;
             newInstanceCenter->setValueAtTime(t, average.first, 0);
-            if (t == keyframesRange.max) {
-                newInstanceCenter->unblockEvaluation();
-            }
             newInstanceCenter->setValueAtTime(t, average.second, 1);
         }
     }
+    newInstanceCenter->endChanges();
 } // onAverageTracksButtonClicked
 
 void

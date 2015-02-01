@@ -701,7 +701,9 @@ Knob<T>::setValue(const T & v,
         --_setValueRecursionLevel;
         assert(_setValueRecursionLevel >= 0);
     }
-
+    if (!hasChanged && ret == eValueChangedReturnCodeNoKeyframeAdded) {
+        return eValueChangedReturnCodeNothingChanged;
+    }
 
     return ret;
 } // setValue
@@ -841,6 +843,8 @@ Knob<T>::setValueAtTime(int time,
     }
     if (hasChanged) {
         evaluateValueChange(dimension, reason, true);
+    } else {
+        return eValueChangedReturnCodeNothingChanged;
     }
 
     return ret;
@@ -1640,7 +1644,6 @@ Knob<T>::dequeueValuesSet(bool disableEvaluation)
            
             QueuedSetValueAtTime* isAtTime = dynamic_cast<QueuedSetValueAtTime*>(it->get());
            
-            dimensionChanged.insert((*it)->_imp->dimension);
             
             if (!isAtTime) {
                 
@@ -1654,12 +1657,22 @@ Knob<T>::dequeueValuesSet(bool disableEvaluation)
                         getHolder()->setHasAnimation(true);
                     }
                 } else {
-                    _values[(*it)->_imp->dimension] = (*it)->_imp->value;
+                    if (_values[(*it)->_imp->dimension] != (*it)->_imp->value) {
+                        _values[(*it)->_imp->dimension] = (*it)->_imp->value;
+                        dimensionChanged.insert((*it)->_imp->dimension);
+                    }
                 }
             } else {
                 boost::shared_ptr<Curve> curve = getCurve((*it)->_imp->dimension);
                 if (curve) {
-                    curve->addKeyFrame((*it)->_imp->key);
+                    KeyFrame existingKey;
+                    bool hasKey = curve->getKeyFrameWithTime((*it)->_imp->key.getTime(),&existingKey);
+                    if (!hasKey || existingKey.getTime() != (*it)->_imp->key.getTime() || existingKey.getValue() != (*it)->_imp->key.getValue() ||
+                        existingKey.getLeftDerivative() != (*it)->_imp->key.getLeftDerivative() ||
+                        existingKey.getRightDerivative() != (*it)->_imp->key.getRightDerivative()) {
+                            dimensionChanged.insert((*it)->_imp->dimension);
+                            curve->addKeyFrame((*it)->_imp->key);
+                        }
                 }
 
                 if (getHolder()) {
@@ -1673,24 +1686,11 @@ Knob<T>::dequeueValuesSet(bool disableEvaluation)
 
     if (!disableEvaluation && !dimensionChanged.empty()) {
         
-        blockEvaluation();
-        std::set<int>::iterator next = dimensionChanged.begin();
-        if (!dimensionChanged.empty()) {
-            ++next;
-        }
+        beginChanges();
         for (std::set<int>::iterator it = dimensionChanged.begin();it!=dimensionChanged.end();++it) {
-            
-            if (next == dimensionChanged.end()) {
-                unblockEvaluation();
-            }
-            
             evaluateValueChange(*it, Natron::eValueChangedReasonNatronInternalEdited, true);
-            
-            if (next != dimensionChanged.end()) {
-                ++next;
-            }
         }
-        
+        endChanges();
     }
     
 }

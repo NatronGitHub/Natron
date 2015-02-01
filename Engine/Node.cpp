@@ -1072,7 +1072,7 @@ void
 Node::initializeKnobs(const NodeSerialization & serialization,int renderScaleSupportPref)
 {
     ////Only called by the main-thread
-    _imp->liveInstance->blockEvaluation();
+    _imp->liveInstance->beginChanges();
     
     assert( QThread::currentThread() == qApp->thread() );
     assert(!_imp->knobsInitialized);
@@ -1223,7 +1223,7 @@ Node::initializeKnobs(const NodeSerialization & serialization,int renderScaleSup
     
     
     _imp->knobsInitialized = true;
-    _imp->liveInstance->unblockEvaluation();
+    _imp->liveInstance->endChanges();
     emit knobsInitialized();
 } // initializeKnobs
 

@@ -3678,9 +3678,9 @@ ViewerTabPrivate::getOverlayTransform(int time,
     }
     RenderScale s;
     s.x = s.y = 1.;
-    Transform::Matrix3x3 mat;
     Natron::EffectInstance* input = 0;
     Natron::StatusEnum stat = eStatusReplyDefault;
+    Transform::Matrix3x3 mat;
     if (!currentNode->getNode()->isNodeDisabled()) {
         stat = currentNode->getTransform_public(time, s, view, &input, &mat);
     }
@@ -3714,16 +3714,20 @@ ViewerTabPrivate::getOverlayTransform(int time,
         
         ///Cycle through all non optional inputs first
         for (std::list<Natron::EffectInstance*> ::iterator it = nonOptionalInputs.begin(); it != nonOptionalInputs.end(); ++it) {
-            bool isOk = getOverlayTransform(time, view, target, *it, transform);
+            mat = Transform::Matrix3x3(1,0,0,0,1,0,0,0,1);
+            bool isOk = getOverlayTransform(time, view, target, *it, &mat);
             if (isOk) {
+                *transform = Transform::matMul(*transform, mat);
                 return true;
             }
         }
         
         ///Cycle through optional inputs...
         for (std::list<Natron::EffectInstance*> ::iterator it = optionalInputs.begin(); it != optionalInputs.end(); ++it) {
-            bool isOk = getOverlayTransform(time, view, target, *it, transform);
+            mat = Transform::Matrix3x3(1,0,0,0,1,0,0,0,1);
+            bool isOk = getOverlayTransform(time, view, target, *it, &mat);
             if (isOk) {
+                *transform = Transform::matMul(*transform, mat);
                 return true;
             }
             

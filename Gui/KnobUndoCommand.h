@@ -93,16 +93,11 @@ private:
         bool modifiedKeyFrame = false;
         int i = 0;
 
-        typename std::list<T>::iterator next = _oldValue.begin();
-        ++next;
-        _knob->getKnob()->blockEvaluation();
-        for (typename std::list<T>::iterator it = _oldValue.begin(); it != _oldValue.end(); ++it,++next) {
+        _knob->getKnob()->beginChanges();
+        
+        for (typename std::list<T>::iterator it = _oldValue.begin(); it != _oldValue.end(); ++it) {
             int dimension = _dimension == -1 ? i : _dimension;
-            bool isLast = next == _oldValue.end();
-            if (isLast) {
-                _knob->getKnob()->unblockEvaluation();
-            }
-
+          
             _knob->setValue(dimension,*it,NULL,true,Natron::eValueChangedReasonUserEdited);
             if ( _knob->getKnob()->getHolder()->getApp() ) {
                 if (_valueChangedReturnCode[i] == 1) { //the value change also added a keyframe
@@ -115,11 +110,13 @@ private:
                     modifiedKeyFrame = true;
                 }
             }
+
+            
             ++i;
-            if ( next == _oldValue.end() ) {
-                --next;
-            }
+    
         }
+        
+        _knob->getKnob()->endChanges();
         if (modifiedKeyFrame) {
             _knob->getGui()->getCurveEditor()->getCurveWidget()->refreshSelectedKeys();
         }
@@ -138,16 +135,12 @@ private:
 
         bool modifiedKeyFrames = false;
 
-        _knob->getKnob()->blockEvaluation();
+        _knob->getKnob()->beginChanges();
         int i = 0;
-        typename std::list<T>::iterator next = _newValue.begin();
-        ++next;
-        for (typename std::list<T>::iterator it = _newValue.begin(); it != _newValue.end(); ++it,++next) {
+        
+        for (typename std::list<T>::iterator it = _newValue.begin(); it != _newValue.end(); ++it) {
             int dimension = _dimension == -1 ? i : _dimension;
-            bool isLast = next == _newValue.end();
-            if (isLast) {
-                _knob->getKnob()->unblockEvaluation();
-            }
+    
 
             boost::shared_ptr<Curve> c = _knob->getKnob()->getCurve(dimension);
             //find out if there's already an existing keyframe before calling setValue
@@ -166,16 +159,15 @@ private:
             if (_valueChangedReturnCode[i] != KnobHelper::eValueChangedReturnCodeNoKeyframeAdded) {
                 modifiedKeyFrames = true;
             }
-
+    
             ///if we added a keyframe, prevent this command to merge with any other command
             if (_valueChangedReturnCode[i] == KnobHelper::eValueChangedReturnCodeKeyframeAdded) {
                 _merge = false;
             }
             ++i;
-            if ( next == _newValue.end() ) {
-                --next;
-            }
+        
         }
+        _knob->getKnob()->endChanges();
 
         if (modifiedKeyFrames) {
             _knob->getGui()->getCurveEditor()->getCurveWidget()->refreshSelectedKeys();

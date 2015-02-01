@@ -1424,17 +1424,15 @@ KnobGui::linkTo(int dimension)
                 }
             }
 
-            thisKnob->blockEvaluation();
+            thisKnob->beginChanges();
             int dims = thisKnob->getDimension();
             for (int i = 0; i < dims; ++i) {
-                if (i == dims - 1) {
-                    thisKnob->unblockEvaluation();
-                }
                 if ((i == dimension || dimension == -1) && i < otherKnob->getDimension()) {
                     thisKnob->onKnobSlavedTo(i, otherKnob,i);
                     onKnobSlavedChanged(i, true);
                 }
             }
+            thisKnob->endChanges();
             thisKnob->getHolder()->getApp()->triggerAutoSave();
         }
     }
@@ -1455,15 +1453,13 @@ KnobGui::unlink()
     boost::shared_ptr<KnobI> thisKnob = getKnob();
     int dims = thisKnob->getDimension();
 
-    thisKnob->blockEvaluation();
+    thisKnob->beginChanges();
     for (int i = 0; i < dims; ++i) {
         std::pair<int,boost::shared_ptr<KnobI> > other = thisKnob->getMaster(i);
-        if (i == dims - 1) {
-            thisKnob->unblockEvaluation();
-        }
         thisKnob->onKnobUnSlaved(i);
         onKnobSlavedChanged(i, false);
     }
+    thisKnob->endChanges();
     getKnob()->getHolder()->getApp()->triggerAutoSave();
 }
 

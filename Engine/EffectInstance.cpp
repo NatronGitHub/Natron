@@ -3573,13 +3573,16 @@ EffectInstance::onOverlayPenDown_public(double scaleX,
     if ( !hasOverlay() ) {
         return false;
     }
-
-    NON_RECURSIVE_ACTION();
-    _imp->setDuringInteractAction(true);
-    bool ret = onOverlayPenDown(scaleX,scaleY,viewportPos, pos);
-    _imp->setDuringInteractAction(false);
+    
+    bool ret;
+    {
+        NON_RECURSIVE_ACTION();
+        _imp->setDuringInteractAction(true);
+        ret = onOverlayPenDown(scaleX,scaleY,viewportPos, pos);
+        _imp->setDuringInteractAction(false);
+    }
     checkIfRenderNeeded();
-
+    
     return ret;
 }
 
@@ -3617,13 +3620,15 @@ EffectInstance::onOverlayPenUp_public(double scaleX,
     if ( !hasOverlay() ) {
         return false;
     }
-    
-    NON_RECURSIVE_ACTION();
-    _imp->setDuringInteractAction(true);
-    bool ret = onOverlayPenUp(scaleX,scaleY,viewportPos, pos);
-    _imp->setDuringInteractAction(false);
+    bool ret;
+    {
+        NON_RECURSIVE_ACTION();
+        _imp->setDuringInteractAction(true);
+        ret = onOverlayPenUp(scaleX,scaleY,viewportPos, pos);
+        _imp->setDuringInteractAction(false);
+    }
     checkIfRenderNeeded();
-
+    
     return ret;
 }
 
@@ -3639,12 +3644,15 @@ EffectInstance::onOverlayKeyDown_public(double scaleX,
         return false;
     }
 
-    NON_RECURSIVE_ACTION();
-    _imp->setDuringInteractAction(true);
-    bool ret = onOverlayKeyDown(scaleX,scaleY,key, modifiers);
-    _imp->setDuringInteractAction(false);
+    bool ret;
+    {
+        NON_RECURSIVE_ACTION();
+        _imp->setDuringInteractAction(true);
+        ret = onOverlayKeyDown(scaleX,scaleY,key, modifiers);
+        _imp->setDuringInteractAction(false);
+    }
     checkIfRenderNeeded();
-
+    
     return ret;
 }
 
@@ -3659,12 +3667,15 @@ EffectInstance::onOverlayKeyUp_public(double scaleX,
     if ( !hasOverlay() ) {
         return false;
     }
-
-    NON_RECURSIVE_ACTION();
-
-    _imp->setDuringInteractAction(true);
-    bool ret = onOverlayKeyUp(scaleX, scaleY, key, modifiers);
-    _imp->setDuringInteractAction(false);
+    
+    bool ret;
+    {
+        NON_RECURSIVE_ACTION();
+        
+        _imp->setDuringInteractAction(true);
+        ret = onOverlayKeyUp(scaleX, scaleY, key, modifiers);
+        _imp->setDuringInteractAction(false);
+    }
     checkIfRenderNeeded();
 
     return ret;
@@ -3681,13 +3692,16 @@ EffectInstance::onOverlayKeyRepeat_public(double scaleX,
     if ( !hasOverlay() ) {
         return false;
     }
-
-    NON_RECURSIVE_ACTION();
-    _imp->setDuringInteractAction(true);
-    bool ret = onOverlayKeyRepeat(scaleX,scaleY,key, modifiers);
-    _imp->setDuringInteractAction(false);
+    
+    bool ret;
+    {
+        NON_RECURSIVE_ACTION();
+        _imp->setDuringInteractAction(true);
+        ret = onOverlayKeyRepeat(scaleX,scaleY,key, modifiers);
+        _imp->setDuringInteractAction(false);
+    }
     checkIfRenderNeeded();
-
+    
     return ret;
 }
 
@@ -3700,13 +3714,16 @@ EffectInstance::onOverlayFocusGained_public(double scaleX,
     if ( !hasOverlay() ) {
         return false;
     }
-
-    NON_RECURSIVE_ACTION();
-    _imp->setDuringInteractAction(true);
-    bool ret = onOverlayFocusGained(scaleX,scaleY);
-    _imp->setDuringInteractAction(false);
+    
+    bool ret;
+    {
+        NON_RECURSIVE_ACTION();
+        _imp->setDuringInteractAction(true);
+        ret = onOverlayFocusGained(scaleX,scaleY);
+        _imp->setDuringInteractAction(false);
+    }
     checkIfRenderNeeded();
-
+    
     return ret;
 }
 
@@ -3719,14 +3736,16 @@ EffectInstance::onOverlayFocusLost_public(double scaleX,
     if ( !hasOverlay() ) {
         return false;
     }
-
-
-    NON_RECURSIVE_ACTION();
-    _imp->setDuringInteractAction(true);
-    bool ret = onOverlayFocusLost(scaleX,scaleY);
-    _imp->setDuringInteractAction(false);
+    bool ret;
+    {
+        
+        NON_RECURSIVE_ACTION();
+        _imp->setDuringInteractAction(true);
+        ret = onOverlayFocusLost(scaleX,scaleY);
+        _imp->setDuringInteractAction(false);
+    }
     checkIfRenderNeeded();
-
+    
     return ret;
 }
 
