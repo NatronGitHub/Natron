@@ -45,7 +45,9 @@ public:
     
     boost::shared_ptr<FileSystemItem> childAt(int position) const;
     
-    int childCount() const;
+    int childCount() const;std::vector<boost::shared_ptr<FileSystemItem> > getChildren() const;
+    
+    std::vector<boost::shared_ptr<FileSystemItem> > getChildren() const;
     
     int indexInParent() const;
     
@@ -78,6 +80,9 @@ public:
      * @brief Add a new child, MT-safe
      **/
     void addChild(const boost::shared_ptr<FileSystemItem>& child);
+    
+    void addChild(const boost::shared_ptr<SequenceParsing::SequenceFromFiles>& sequence,
+                  const QFileInfo& info);
     
     /**
      * @brief Remove all children, MT-safe
