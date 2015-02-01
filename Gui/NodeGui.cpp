@@ -740,7 +740,7 @@ NodeGui::resize(int width,
     _stateIndicator->setRect(topLeft.x() - NATRON_STATE_INDICATOR_OFFSET,topLeft.y() - NATRON_STATE_INDICATOR_OFFSET,
                              width + NATRON_STATE_INDICATOR_OFFSET * 2,height + NATRON_STATE_INDICATOR_OFFSET * 2);
     if (_previewPixmap) {
-        _previewPixmap->setPos(topLeft.x() + iconWidth + NODE_WIDTH / 2. ,
+        _previewPixmap->setPos(topLeft.x() + iconWidth + NODE_WIDTH / 4. ,
                                topLeft.y() + height / 2 - NATRON_PREVIEW_HEIGHT / 2 + 10);
     }
 
