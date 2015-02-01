@@ -495,6 +495,12 @@ Settings::initializeKnobs()
     _useInputAForMergeAutoConnect->setHintToolTip("If checked, upon creation of a new Merge node, the input A will be preferred "
                                                   "for auto-connection with another node instead of the input B.");
     _nodegraphTab->addKnob(_useInputAForMergeAutoConnect);
+    
+    _usePluginIconsInNodeGraph = Natron::createKnob<Bool_Knob>(this, "Display plug-in icon on node-graph");
+    _usePluginIconsInNodeGraph->setHintToolTip("When checked, each node that has a plug-in icon will display it in the node-graph."
+                                               "Changing this option will not affect already existing nodes, unless a restart of Natron is made.");
+    _usePluginIconsInNodeGraph->setAnimationEnabled(false);
+    _nodegraphTab->addKnob(_usePluginIconsInNodeGraph);
 
     _defaultNodeColor = Natron::createKnob<Color_Knob>(this, "Default node color",3);
     _defaultNodeColor->setName("defaultNodeColor");
@@ -888,6 +894,7 @@ Settings::setDefaultValues()
     _maxDiskCacheNodeGB->setDefaultValue(10,0);
     setCachingLabels();
     _autoTurbo->setDefaultValue(false);
+    _usePluginIconsInNodeGraph->setDefaultValue(true);
     _defaultNodeColor->setDefaultValue(0.7,0);
     _defaultNodeColor->setDefaultValue(0.7,1);
     _defaultNodeColor->setDefaultValue(0.7,2);
@@ -2294,3 +2301,10 @@ Settings::isAutoDeclaredVariablePrintActivated() const
 {
     return _echoVariableDeclarationToPython->getValue();
 }
+
+bool
+Settings::isPluginIconActivatedOnNodeGraph() const
+{
+    return _usePluginIconsInNodeGraph->getValue();
+}
+

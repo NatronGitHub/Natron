@@ -242,6 +242,8 @@ public:
     
     bool isAutoDeclaredVariablePrintActivated() const;
     
+    bool isPluginIconActivatedOnNodeGraph() const;
+    
 private:
 
     virtual void initializeKnobs() OVERRIDE FINAL;
@@ -322,6 +324,7 @@ private:
     boost::shared_ptr<Int_Knob> _disconnectedArrowLength;
     boost::shared_ptr<Bool_Knob> _hideOptionalInputsAutomatically;
     boost::shared_ptr<Bool_Knob> _useInputAForMergeAutoConnect;
+    boost::shared_ptr<Bool_Knob> _usePluginIconsInNodeGraph;
     boost::shared_ptr<Color_Knob> _defaultNodeColor;
     boost::shared_ptr<Color_Knob> _defaultBackdropColor;
     boost::shared_ptr<Color_Knob> _defaultGeneratorColor;

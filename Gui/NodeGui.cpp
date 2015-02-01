@@ -77,10 +77,11 @@ CLANG_DIAG_ON(uninitialized)
 
 #define NODE_WIDTH 80
 #define NODE_HEIGHT 30
-#define NODE_WITH_PREVIEW_WIDTH NODE_WIDTH / 2 + NATRON_PREVIEW_WIDTH
-#define NODE_WITH_PREVIEW_HEIGHT NODE_HEIGHT + NATRON_PREVIEW_HEIGHT
 
 #define DOT_GUI_DIAMETER 15
+
+#define NATRON_PLUGIN_ICON_SIZE 20
+#define PLUGIN_ICON_OFFSET 2
 
 using namespace Natron;
 
@@ -105,6 +106,8 @@ NodeGui::NodeGui(QGraphicsItem *parent)
 , _internalNode()
 , _selected(false)
 , _settingNameFromGui(false)
+, _pluginIcon(NULL)
+, _pluginIconFrame(NULL)
 , _nameItem(NULL)
 , _nameFrame(NULL)
 , _resizeHandle(NULL)
@@ -331,9 +334,22 @@ NodeGui::createPanel(QVBoxLayout* container,
 }
 
 void
-NodeGui::getInitialSize(int *w, int *h)
+NodeGui::getSizeWithPreview(int *w, int *h) const
 {
-    *w = NODE_WIDTH;
+    getInitialSize(w,h);
+    *w = *w -  (NODE_WIDTH / 2.) + NATRON_PREVIEW_WIDTH;
+    *h = *h + NATRON_PREVIEW_HEIGHT;
+}
+
+void
+NodeGui::getInitialSize(int *w, int *h) const
+{
+    const QString& iconFilePath = getNode()->getPlugin()->getIconFilePath();
+    if (!iconFilePath.isEmpty() && QFile::exists(iconFilePath) && appPTR->getCurrentSettings()->isPluginIconActivatedOnNodeGraph()) {
+        *w = NODE_WIDTH + NATRON_PLUGIN_ICON_SIZE + PLUGIN_ICON_OFFSET * 2;
+    } else {
+        *w = NODE_WIDTH;
+    }
     *h = NODE_HEIGHT;
 }
 
@@ -353,6 +369,20 @@ NodeGui::createGui()
     if (mustAddResizeHandle()) {
         _resizeHandle = new QGraphicsPolygonItem(this);
         _resizeHandle->setZValue(depth + 1);
+    }
+    
+    const QString& iconFilePath = getNode()->getPlugin()->getIconFilePath();
+    if (!iconFilePath.isEmpty() && appPTR->getCurrentSettings()->isPluginIconActivatedOnNodeGraph()) {
+        QPixmap pix(iconFilePath);
+        if (QFile::exists(iconFilePath) && !pix.isNull()) {
+            pix = pix.scaled(NATRON_PLUGIN_ICON_SIZE,NATRON_PLUGIN_ICON_SIZE,Qt::IgnoreAspectRatio,Qt::SmoothTransformation);
+            _pluginIcon = new QGraphicsPixmapItem(pix,this);
+            _pluginIcon->setZValue(depth + 1);
+            _pluginIconFrame = new QGraphicsRectItem(this);
+            _pluginIconFrame->setZValue(depth);
+            _pluginIconFrame->setBrush(QColor(50,50,50));
+        }
+        
     }
     
     _nameItem = new QGraphicsTextItem(getNode()->getLabel().c_str(),this);
@@ -446,9 +476,13 @@ NodeGui::ensurePreviewCreated()
         
     }
     QSize size = getSize();
-    if (size.width() < NODE_WITH_PREVIEW_WIDTH ||
-        size.height() < NODE_WITH_PREVIEW_HEIGHT) {
-        resize(NODE_WITH_PREVIEW_WIDTH,NODE_WITH_PREVIEW_HEIGHT);
+    int w,h;
+    getSizeWithPreview(&w,&h);
+    if (size.width() < w ||
+        size.height() < h) {
+
+        
+        resize(w,h);
         _previewPixmap->stackBefore(_nameItem);
         _previewPixmap->show();
     }
@@ -551,6 +585,7 @@ NodeGui::resize(int width,
 
     adjustSizeToContent(&width,&height);
     
+    bool hasPluginIcon = _pluginIcon != NULL;
     
     {
         QMutexLocker k(&_mtSafeSizeMutex);
@@ -558,14 +593,22 @@ NodeGui::resize(int width,
         _mtSafeHeight = height;
     }
     
+    int iconWidth = hasPluginIcon ? NATRON_PLUGIN_ICON_SIZE + PLUGIN_ICON_OFFSET * 2 : 0;
+    
     QRectF bbox(topLeft.x(),topLeft.y(),width,height);
 
     _boundingBox->setRect(bbox);
+    
+    if (hasPluginIcon) {
+        _pluginIcon->setX(topLeft.x() + PLUGIN_ICON_OFFSET);
+        _pluginIcon->setY(topLeft.y() + (height - NATRON_PLUGIN_ICON_SIZE) / 2.);
+        _pluginIconFrame->setRect(topLeft.x(),topLeft.y(),iconWidth, height);
+    }
 
     QFont f(appFont,appFontSize);
     QFontMetrics metrics(f);
     int nameWidth = labelBbox.width();
-    _nameItem->setX( topLeft.x() + (width / 2) - (nameWidth / 2) );
+    _nameItem->setX( topLeft.x() + iconWidth +  ((width - iconWidth) / 2) - (nameWidth / 2) );
     
     double mh = labelBbox.height();
     _nameItem->setY(topLeft.y() + mh * 0.1);
@@ -590,7 +633,7 @@ NodeGui::resize(int width,
     f.setPixelSize(25);
     metrics = QFontMetrics(f);
     int pMWidth = metrics.width(persistentMessage);
-    QPointF bitDepthPos(topLeft.x() + width / 2,0);
+    QPointF bitDepthPos(topLeft.x() + iconWidth + (width - iconWidth) / 2,0);
     _bitDepthWarning->refreshPosition(bitDepthPos);
 
     _expressionIndicator->refreshPosition( topLeft + QPointF(width,0) );
@@ -599,7 +642,7 @@ NodeGui::resize(int width,
     _stateIndicator->setRect(topLeft.x() - NATRON_STATE_INDICATOR_OFFSET,topLeft.y() - NATRON_STATE_INDICATOR_OFFSET,
                              width + NATRON_STATE_INDICATOR_OFFSET * 2,height + NATRON_STATE_INDICATOR_OFFSET * 2);
     if (_previewPixmap) {
-        _previewPixmap->setPos(topLeft.x() + width / 2 - NATRON_PREVIEW_WIDTH / 2,
+        _previewPixmap->setPos(topLeft.x() + iconWidth + NODE_WIDTH / 2. ,
                                topLeft.y() + height / 2 - NATRON_PREVIEW_HEIGHT / 2 + 10);
     }
 
@@ -933,8 +976,10 @@ NodeGui::computePreviewImage(int time)
             _previewPixmap->setPixmap(prev_pixmap);
             QPointF topLeft = mapFromParent( pos() );
             QRectF bbox = boundingRect();
-            _previewPixmap->setPos(topLeft.x() + bbox.width() / 2 - w / 2,
-                                   topLeft.y() + bbox.height() / 2 - h / 2 + 10);
+            
+            int iconWidth = _pluginIcon ? NATRON_PLUGIN_ICON_SIZE + PLUGIN_ICON_OFFSET * 2 : 0;
+            _previewPixmap->setPos(topLeft.x() + iconWidth + NODE_WIDTH / 4. ,
+                                   topLeft.y() + bbox.height() / 2 - NATRON_PREVIEW_HEIGHT / 2 + 10);
         }
         free(buf);
     }

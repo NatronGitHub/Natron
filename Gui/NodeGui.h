@@ -351,7 +351,9 @@ protected:
     
     virtual bool mustAddResizeHandle() const { return false; }
     
-    virtual void getInitialSize(int *w, int *h);
+    virtual void getInitialSize(int *w, int *h) const;
+    
+    void getSizeWithPreview(int *w, int *h) const;
     
     virtual void adjustSizeToContent(int *w,int *h);
     
@@ -499,6 +501,10 @@ private:
 
     /*A pointer to the graphical text displaying the name.*/
     bool _settingNameFromGui;
+    
+    QGraphicsPixmapItem* _pluginIcon;
+    QGraphicsRectItem* _pluginIconFrame;
+    
     QGraphicsTextItem *_nameItem;
     QGraphicsRectItem *_nameFrame;
     

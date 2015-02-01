@@ -71,7 +71,7 @@ BackDropGuiPrivate::getLabelValue() const
 }
 
 void
-BackDropGui::getInitialSize(int *w, int *h)
+BackDropGui::getInitialSize(int *w, int *h) const
 {
     *w = NATRON_BACKDROP_DEFAULT_WIDTH;
     *h = NATRON_BACKDROP_DEFAULT_HEIGHT;

@@ -62,7 +62,7 @@ private:
     
     virtual void adjustSizeToContent(int *w,int *h) OVERRIDE FINAL;
         
-    virtual void getInitialSize(int *w, int *h) OVERRIDE FINAL;
+    virtual void getInitialSize(int *w, int *h) const OVERRIDE FINAL;
     
 
     
