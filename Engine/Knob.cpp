@@ -1803,7 +1803,7 @@ KnobHolder::endChanges(bool discardEverything)
         if (_imp->evaluationBlocked > 0) {
             --_imp->evaluationBlocked;
         }
-        //std::cout <<"DECR: " << _imp->evaluationBlocked << std::endl;
+       // std::cout <<"DECR: " << _imp->evaluationBlocked << std::endl;
         
         evaluate = _imp->evaluationBlocked == 0;
             
@@ -1841,7 +1841,7 @@ KnobHolder::appendValueChange(KnobI* knob,Natron::ValueChangedReasonEnum reason)
         QMutexLocker l(&_imp->evaluationBlockedMutex);
         if (!_imp->evaluationBlocked) {
             ++_imp->evaluationBlocked;
-            //std::cout <<"INCR: " << _imp->evaluationBlocked << std::endl;
+           // std::cout <<"INCR: " << _imp->evaluationBlocked << std::endl;
         }
         _imp->knobChanged.insert(std::make_pair(knob,reason));
         if (knob) {
@@ -2085,20 +2085,17 @@ KnobHolder::evaluate_public(KnobI* knob,
 {
     ///cannot run in another thread.
     assert( QThread::currentThread() == qApp->thread() );
-
-    if (getRecursionLevel() == 0) {
-        evaluate(knob, isSignificant,reason);
-        
-        if ( isSignificant && getApp() ) {
-            ///Don't trigger autosaves for buttons
-            Button_Knob* isButton = dynamic_cast<Button_Knob*>(knob);
-            if (!isButton) {
-                getApp()->triggerAutoSave();
-            }
+    
+    evaluate(knob, isSignificant,reason);
+    
+    if ( isSignificant && getApp() ) {
+        ///Don't trigger autosaves for buttons
+        Button_Knob* isButton = dynamic_cast<Button_Knob*>(knob);
+        if (!isButton) {
+            getApp()->triggerAutoSave();
         }
-    } else {
-        appendValueChange(knob, reason);
     }
+    
 }
 
 void

@@ -1468,7 +1468,6 @@ Project::setOrAddProjectFormat(const Format & frmt,
     }
 
     Format dispW;
-    bool formatSet = false;
     {
         QMutexLocker l(&_imp->formatMutex);
 
@@ -1483,14 +1482,10 @@ Project::setOrAddProjectFormat(const Format & frmt,
             } else {
                 setProjectDefaultFormat(dispW);
             }
-            formatSet = true;
         } else if (!skipAdd) {
             dispW = frmt;
             tryAddProjectFormat(dispW);
         }
-    }
-    if (formatSet) {
-        emit formatChanged(dispW);
     }
 }
 
