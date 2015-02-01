@@ -15,7 +15,7 @@ panel of a node. See :ref:`details here<details>`.
 Functions
 ^^^^^^^^^
 
-*    def :meth:`copy<NatronEngine.Param.copy>` (param)
+*    def :meth:`copy<NatronEngine.Param.copy>` (param[, dimension=-1])
 *    def :meth:`getAddNewLine<NatronEngine.Param.getAddNewLine>` ()
 *    def :meth:`getCanAnimate<NatronEngine.Param.getCanAnimate>` ()
 *    def :meth:`getEvaluateOnChange<NatronEngine.Param.getEvaluateOnChange>` ()
@@ -172,12 +172,15 @@ Member functions description
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
-.. method:: NatronEngine.Param.copy(other)
+.. method:: NatronEngine.Param.copy(other [, dimension=-1])
 
 	:param other: :class:`Param`
+	:param dimension: :class:`int`
 	:rtype: :class:`bool`
 	
-Copies the *other* parameter values, animation and expressions.
+Copies the *other* parameter values, animation and expressions at the given *dimension*.
+If *dimension* is -1, all dimensions in **min(getNumDimensions(), other.getNumDimensions())** will 
+be copied.
 
 .. note::
 	Note that types must be convertible:

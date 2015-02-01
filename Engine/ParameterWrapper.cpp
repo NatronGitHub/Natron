@@ -170,12 +170,12 @@ Param::setAddNewLine(bool a)
 }
 
 bool
-Param::copy(Param* other)
+Param::copy(Param* other, int dimension)
 {
     if (!_knob->isTypeCompatible(other->_knob)) {
         return false;
     }
-    _knob->cloneAndUpdateGui(other->_knob.get(),-1);
+    _knob->cloneAndUpdateGui(other->_knob.get(), dimension);
     return true;
 }
 

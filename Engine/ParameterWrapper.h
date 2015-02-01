@@ -141,7 +141,7 @@ public:
      * The parameters must be compatible types. E.g: you cannot copy
      * a StringParam to an IntParam but you can convert a Doubleparam to an IntParam.
      **/
-    bool copy(Param* other);
+    bool copy(Param* other, int dimension = -1);
     
 protected:
     

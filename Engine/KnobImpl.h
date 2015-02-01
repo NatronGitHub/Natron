@@ -1535,13 +1535,15 @@ Knob<bool>::cloneValues(KnobI* other,int dimension)
     Knob<int>* isInt = dynamic_cast<Knob<int>* >(other);
     Knob<bool>* isBool = dynamic_cast<Knob<bool>* >(other);
     Knob<double>* isDouble = dynamic_cast<Knob<double>* >(other);
+    
+    int dimMin = std::min( getDimension(), other->getDimension() );
     assert(other->isTypePOD() && (isInt || isBool || isDouble)); //< other data types aren't supported
     QWriteLocker k(&_valueMutex);
     if (isInt) {
         std::vector<int> v = isInt->getValueForEachDimension_mt_safe_vector();
-        assert( v.size() == _values.size() );
-        for (U32 i = 0; i < v.size(); ++i) {
-            if ((int)i == dimension || dimension == -1) {
+        
+        for (int i = 0; i < dimMin; ++i) {
+            if (i == dimension || dimension == -1) {
                 _values[i] = v[i];
             }
         }
@@ -1549,9 +1551,9 @@ Knob<bool>::cloneValues(KnobI* other,int dimension)
         _values = isBool->getValueForEachDimension_mt_safe_vector();
     } else if (isDouble) {
         std::vector<double> v = isDouble->getValueForEachDimension_mt_safe_vector();
-        assert( v.size() == _values.size() );
-        for (U32 i = 0; i < v.size(); ++i) {
-            if ((int)i == dimension || dimension == -1) {
+
+        for (int i = 0; i < dimMin; ++i) {
+            if (i == dimension || dimension == -1) {
                 _values[i] = v[i];
             }
         }
@@ -1566,40 +1568,35 @@ Knob<double>::cloneValues(KnobI* other, int dimension)
     Knob<bool>* isBool = dynamic_cast<Knob<bool>* >(other);
     Knob<double>* isDouble = dynamic_cast<Knob<double>* >(other);
     
+    int dimMin = std::min( getDimension(), other->getDimension() );
     ///can only clone pod
     assert(other->isTypePOD() && (isInt || isBool || isDouble)); //< other data types aren't supported
     QWriteLocker k(&_valueMutex);
     if (isInt) {
         std::vector<int> v = isInt->getValueForEachDimension_mt_safe_vector();
-        //std::vector<int> defaultV = isInt->getDefaultValues_mt_safe();
-        //assert(defaultV.size() == v.size());
-        assert( v.size() == _values.size() );
-        for (U32 i = 0; i < v.size(); ++i) {
-            if ((int)i == dimension || dimension == -1) {
+
+        for (int i = 0; i < dimMin; ++i) {
+            if (i == dimension || dimension == -1) {
                 _values[i] = v[i];
             }
-            //_defaultValues[i] = defaultV[i];
         }
     } else if (isBool) {
         std::vector<bool> v = isBool->getValueForEachDimension_mt_safe_vector();
-        //std::vector<bool> defaultV = isBool->getDefaultValues_mt_safe();
-        //assert(defaultV.size() == v.size());
-        assert( v.size() == _values.size() );
-        for (U32 i = 0; i < v.size(); ++i) {
-            if ((int)i == dimension || dimension == -1) {
+
+        int dimMin = std::min( getDimension(), other->getDimension() );
+        for (int i = 0; i < dimMin; ++i) {
+            if (i == dimension || dimension == -1) {
                 _values[i] = v[i];
             }
-            //_defaultValues[i] = defaultV[i];
         }
     } else if (isDouble) {
         std::vector<double> v = isDouble->getValueForEachDimension_mt_safe_vector();
-        assert( v.size() == _values.size() );
-        for (U32 i = 0; i < v.size(); ++i) {
-            if ((int)i == dimension || dimension == -1) {
+        
+        for (int i = 0; i < dimMin; ++i) {
+            if (i == dimension || dimension == -1) {
                 _values[i] = v[i];
             }
         }
-        //_defaultValues = isDouble->getDefaultValues_mt_safe();
     }
 }
 
@@ -1608,19 +1605,16 @@ void
 Knob<std::string>::cloneValues(KnobI* other, int dimension)
 {
     Knob<std::string>* isString = dynamic_cast<Knob<std::string>* >(other);
-    
+    int dimMin = std::min( getDimension(), other->getDimension() );
     ///Can only clone strings
     assert(isString);
     if (isString) {
         QWriteLocker k(&_valueMutex);
         std::vector<std::string> v = isString->getValueForEachDimension_mt_safe_vector();
-        //std::vector<std::string> defaultV = isString->getDefaultValues_mt_safe();
-        //assert(defaultV.size() == v.size());
-        for (U32 i = 0; i < v.size(); ++i) {
-            if ((int)i == dimension || dimension == -1) {
+        for (int i = 0; i < dimMin; ++i) {
+            if (i == dimension || dimension == -1) {
                 _values[i] = v[i];
             }
-            //_defaultValues[i] = defaultV[i];
         }
     }
 }

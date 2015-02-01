@@ -87,7 +87,7 @@ static PyObject* Sbk_ParamFunc__addAsDependencyOf(PyObject* self, PyObject* args
         return 0;
 }
 
-static PyObject* Sbk_ParamFunc_copy(PyObject* self, PyObject* pyArg)
+static PyObject* Sbk_ParamFunc_copy(PyObject* self, PyObject* args, PyObject* kwds)
 {
     ::Param* cppSelf = 0;
     SBK_UNUSED(cppSelf)
@@ -96,13 +96,33 @@ static PyObject* Sbk_ParamFunc_copy(PyObject* self, PyObject* pyArg)
     cppSelf = ((::Param*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAM_IDX], (SbkObject*)self));
     PyObject* pyResult = 0;
     int overloadId = -1;
-    PythonToCppFunc pythonToCpp;
+    PythonToCppFunc pythonToCpp[] = { 0, 0 };
     SBK_UNUSED(pythonToCpp)
+    int numNamedArgs = (kwds ? PyDict_Size(kwds) : 0);
+    int numArgs = PyTuple_GET_SIZE(args);
+    PyObject* pyArgs[] = {0, 0};
+
+    // invalid argument lengths
+    if (numArgs + numNamedArgs > 2) {
+        PyErr_SetString(PyExc_TypeError, "NatronEngine.Param.copy(): too many arguments");
+        return 0;
+    } else if (numArgs < 1) {
+        PyErr_SetString(PyExc_TypeError, "NatronEngine.Param.copy(): not enough arguments");
+        return 0;
+    }
+
+    if (!PyArg_ParseTuple(args, "|OO:copy", &(pyArgs[0]), &(pyArgs[1])))
+        return 0;
+
 
     // Overloaded function decisor
-    // 0: copy(Param*)
-    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppPointerConvertible((SbkObjectType*)SbkNatronEngineTypes[SBK_PARAM_IDX], (pyArg)))) {
-        overloadId = 0; // copy(Param*)
+    // 0: copy(Param*,int)
+    if ((pythonToCpp[0] = Shiboken::Conversions::isPythonToCppPointerConvertible((SbkObjectType*)SbkNatronEngineTypes[SBK_PARAM_IDX], (pyArgs[0])))) {
+        if (numArgs == 1) {
+            overloadId = 0; // copy(Param*,int)
+        } else if ((pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[1])))) {
+            overloadId = 0; // copy(Param*,int)
+        }
     }
 
     // Function signature not found.
@@ -110,15 +130,28 @@ static PyObject* Sbk_ParamFunc_copy(PyObject* self, PyObject* pyArg)
 
     // Call function/method
     {
-        if (!Shiboken::Object::isValid(pyArg))
+        if (kwds) {
+            PyObject* value = PyDict_GetItemString(kwds, "dimension");
+            if (value && pyArgs[1]) {
+                PyErr_SetString(PyExc_TypeError, "NatronEngine.Param.copy(): got multiple values for keyword argument 'dimension'.");
+                return 0;
+            } else if (value) {
+                pyArgs[1] = value;
+                if (!(pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[1]))))
+                    goto Sbk_ParamFunc_copy_TypeError;
+            }
+        }
+        if (!Shiboken::Object::isValid(pyArgs[0]))
             return 0;
         ::Param* cppArg0;
-        pythonToCpp(pyArg, &cppArg0);
+        pythonToCpp[0](pyArgs[0], &cppArg0);
+        int cppArg1 = -1;
+        if (pythonToCpp[1]) pythonToCpp[1](pyArgs[1], &cppArg1);
 
         if (!PyErr_Occurred()) {
-            // copy(Param*)
+            // copy(Param*,int)
             PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            bool cppResult = cppSelf->copy(cppArg0);
+            bool cppResult = cppSelf->copy(cppArg0, cppArg1);
             PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), &cppResult);
         }
@@ -131,8 +164,8 @@ static PyObject* Sbk_ParamFunc_copy(PyObject* self, PyObject* pyArg)
     return pyResult;
 
     Sbk_ParamFunc_copy_TypeError:
-        const char* overloads[] = {"NatronEngine.Param", 0};
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.Param.copy", overloads);
+        const char* overloads[] = {"NatronEngine.Param, int = -1", 0};
+        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.Param.copy", overloads);
         return 0;
 }
 
@@ -891,7 +924,7 @@ static PyObject* Sbk_ParamFunc_setVisible(PyObject* self, PyObject* pyArg)
 
 static PyMethodDef Sbk_Param_methods[] = {
     {"_addAsDependencyOf", (PyCFunction)Sbk_ParamFunc__addAsDependencyOf, METH_VARARGS},
-    {"copy", (PyCFunction)Sbk_ParamFunc_copy, METH_O},
+    {"copy", (PyCFunction)Sbk_ParamFunc_copy, METH_VARARGS|METH_KEYWORDS},
     {"getAddNewLine", (PyCFunction)Sbk_ParamFunc_getAddNewLine, METH_NOARGS},
     {"getCanAnimate", (PyCFunction)Sbk_ParamFunc_getCanAnimate, METH_NOARGS},
     {"getEvaluateOnChange", (PyCFunction)Sbk_ParamFunc_getEvaluateOnChange, METH_NOARGS},
