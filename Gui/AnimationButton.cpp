@@ -138,7 +138,7 @@ void
 AnimationButton::leaveEvent(QEvent* /*e*/)
 {
     if (cursor().shape() == Qt::OpenHandCursor) {
-        setCursor(Qt::ArrowCursor);
+        unsetCursor();
     }
 }
 

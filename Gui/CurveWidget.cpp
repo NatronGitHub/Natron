@@ -2744,7 +2744,7 @@ CurveWidget::mouseMoveEvent(QMouseEvent* e)
                         setCursor( QCursor(Qt::SizeHorCursor) );
                     } else {
                         //default case
-                        setCursor( QCursor(Qt::ArrowCursor) );
+                        unsetCursor();
                     }
                 }
             }
