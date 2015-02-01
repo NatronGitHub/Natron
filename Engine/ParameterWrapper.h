@@ -135,7 +135,14 @@ public:
      **/
     bool getAddNewLine();
     void setAddNewLine(bool a);
-        
+
+    /**
+     * @brief Copies all the content of the other param: animation, expression and value.
+     * The parameters must be compatible types. E.g: you cannot copy
+     * a StringParam to an IntParam but you can convert a Doubleparam to an IntParam.
+     **/
+    bool copy(Param* other);
+    
 protected:
     
     /**

@@ -2272,14 +2272,16 @@ KnobHelper::onExprDependencyChanged(KnobI* knob,int /*dimension*/)
 }
 
 void
-KnobHelper::cloneExpressions(KnobI* other)
+KnobHelper::cloneExpressions(KnobI* other,int dimension)
 {
     assert((int)_imp->expressions.size() == getDimension());
     try {
         for (int i = 0; i < getDimension(); ++i) {
-            std::string expr = other->getExpression(i);
-            bool hasRet = other->isExpressionUsingRetVariable(i);
-            (void)setExpression(i, expr,hasRet);
+            if (i == dimension || dimension == -1) {
+                std::string expr = other->getExpression(i);
+                bool hasRet = other->isExpressionUsingRetVariable(i);
+                (void)setExpression(i, expr,hasRet);
+            }
         }
     } catch(...) {
         ///ignore errors

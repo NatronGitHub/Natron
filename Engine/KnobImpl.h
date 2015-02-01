@@ -1500,7 +1500,7 @@ Knob<double>::resetToDefaultValue(int dimension)
 
 template<>
 void
-Knob<int>::cloneValues(KnobI* other)
+Knob<int>::cloneValues(KnobI* other,int dimension)
 {
     Knob<int>* isInt = dynamic_cast<Knob<int>* >(other);
     Knob<bool>* isBool = dynamic_cast<Knob<bool>* >(other);
@@ -1513,20 +1513,24 @@ Knob<int>::cloneValues(KnobI* other)
         std::vector<bool> v = isBool->getValueForEachDimension_mt_safe_vector();
         assert( v.size() == _values.size() );
         for (U32 i = 0; i < v.size(); ++i) {
-            _values[i] = v[i];
+            if (i == dimension || dimension == -1) {
+                _values[i] = v[i];
+            }
         }
     } else if (isDouble) {
         std::vector<double> v = isDouble->getValueForEachDimension_mt_safe_vector();
         assert( v.size() == _values.size() );
         for (U32 i = 0; i < v.size(); ++i) {
-            _values[i] = v[i];
+            if ((int)i == dimension || dimension == -1) {
+                _values[i] = v[i];
+            }
         }
     }
 }
 
 template<>
 void
-Knob<bool>::cloneValues(KnobI* other)
+Knob<bool>::cloneValues(KnobI* other,int dimension)
 {
     Knob<int>* isInt = dynamic_cast<Knob<int>* >(other);
     Knob<bool>* isBool = dynamic_cast<Knob<bool>* >(other);
@@ -1537,7 +1541,9 @@ Knob<bool>::cloneValues(KnobI* other)
         std::vector<int> v = isInt->getValueForEachDimension_mt_safe_vector();
         assert( v.size() == _values.size() );
         for (U32 i = 0; i < v.size(); ++i) {
-            _values[i] = v[i];
+            if ((int)i == dimension || dimension == -1) {
+                _values[i] = v[i];
+            }
         }
     } else if (isBool) {
         _values = isBool->getValueForEachDimension_mt_safe_vector();
@@ -1545,14 +1551,16 @@ Knob<bool>::cloneValues(KnobI* other)
         std::vector<double> v = isDouble->getValueForEachDimension_mt_safe_vector();
         assert( v.size() == _values.size() );
         for (U32 i = 0; i < v.size(); ++i) {
-            _values[i] = v[i];
+            if ((int)i == dimension || dimension == -1) {
+                _values[i] = v[i];
+            }
         }
     }
 }
 
 template<>
 void
-Knob<double>::cloneValues(KnobI* other)
+Knob<double>::cloneValues(KnobI* other, int dimension)
 {
     Knob<int>* isInt = dynamic_cast<Knob<int>* >(other);
     Knob<bool>* isBool = dynamic_cast<Knob<bool>* >(other);
@@ -1567,7 +1575,9 @@ Knob<double>::cloneValues(KnobI* other)
         //assert(defaultV.size() == v.size());
         assert( v.size() == _values.size() );
         for (U32 i = 0; i < v.size(); ++i) {
-            _values[i] = v[i];
+            if ((int)i == dimension || dimension == -1) {
+                _values[i] = v[i];
+            }
             //_defaultValues[i] = defaultV[i];
         }
     } else if (isBool) {
@@ -1576,18 +1586,26 @@ Knob<double>::cloneValues(KnobI* other)
         //assert(defaultV.size() == v.size());
         assert( v.size() == _values.size() );
         for (U32 i = 0; i < v.size(); ++i) {
-            _values[i] = v[i];
+            if ((int)i == dimension || dimension == -1) {
+                _values[i] = v[i];
+            }
             //_defaultValues[i] = defaultV[i];
         }
     } else if (isDouble) {
-        _values = isDouble->getValueForEachDimension_mt_safe_vector();
+        std::vector<double> v = isDouble->getValueForEachDimension_mt_safe_vector();
+        assert( v.size() == _values.size() );
+        for (U32 i = 0; i < v.size(); ++i) {
+            if ((int)i == dimension || dimension == -1) {
+                _values[i] = v[i];
+            }
+        }
         //_defaultValues = isDouble->getDefaultValues_mt_safe();
     }
 }
 
 template<>
 void
-Knob<std::string>::cloneValues(KnobI* other)
+Knob<std::string>::cloneValues(KnobI* other, int dimension)
 {
     Knob<std::string>* isString = dynamic_cast<Knob<std::string>* >(other);
     
@@ -1599,7 +1617,9 @@ Knob<std::string>::cloneValues(KnobI* other)
         //std::vector<std::string> defaultV = isString->getDefaultValues_mt_safe();
         //assert(defaultV.size() == v.size());
         for (U32 i = 0; i < v.size(); ++i) {
-            _values[i] = v[i];
+            if ((int)i == dimension || dimension == -1) {
+                _values[i] = v[i];
+            }
             //_defaultValues[i] = defaultV[i];
         }
     }
@@ -1614,8 +1634,8 @@ Knob<T>::clone(KnobI* other,
         return;
     }
     int dimMin = std::min( getDimension(), other->getDimension() );
-    cloneValues(other);
-    cloneExpressions(other);
+    cloneValues(other,dimension);
+    cloneExpressions(other,dimension);
     for (int i = 0; i < dimMin; ++i) {
         if (i == dimension || dimension == -1) {
             boost::shared_ptr<Curve> thisCurve = getCurve(i,true);
@@ -1651,8 +1671,8 @@ Knob<T>::clone(KnobI* other,
     if (other == this) {
         return;
     }
-    cloneValues(other);
-    cloneExpressions(other);
+    cloneValues(other,dimension);
+    cloneExpressions(other,dimension);
     int dimMin = std::min( getDimension(), other->getDimension() );
     for (int i = 0; i < dimMin; ++i) {
         if (dimension == -1 || i == dimension) {
@@ -1686,7 +1706,7 @@ Knob<T>::cloneAndUpdateGui(KnobI* other,int dimension)
         return;
     }
     int dimMin = std::min( getDimension(), other->getDimension() );
-    cloneValues(other);
+    cloneValues(other,dimension);
     cloneExpressions(other);
     for (int i = 0; i < dimMin; ++i) {
         if (dimension == -1 || i == dimension) {

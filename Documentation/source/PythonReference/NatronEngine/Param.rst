@@ -15,6 +15,7 @@ panel of a node. See :ref:`details here<details>`.
 Functions
 ^^^^^^^^^
 
+*    def :meth:`copy<NatronEngine.Param.copy>` (param)
 *    def :meth:`getAddNewLine<NatronEngine.Param.getAddNewLine>` ()
 *    def :meth:`getCanAnimate<NatronEngine.Param.getCanAnimate>` ()
 *    def :meth:`getEvaluateOnChange<NatronEngine.Param.getEvaluateOnChange>` ()
@@ -169,6 +170,31 @@ it has no effect on already declared non-user parameters.
 	
 Member functions description
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+.. method:: NatronEngine.Param.copy(other)
+
+	:param other: :class:`Param`
+	:rtype: :class:`bool`
+	
+Copies the *other* parameter values, animation and expressions.
+
+.. note::
+	Note that types must be convertible:
+
+	IntParam,DoubleParam, ChoiceParam, ColorParam and BooleanParam can convert between types but StringParam cannot.
+	
+.. warning::
+
+	When copying a parameter, only values are copied, not properties, hence if copying a 
+	choice parameter, make sure that the value you copy has a meaning to the receiver otherwise
+	you might end-up with an undefined behaviour, e.g::
+	
+	If ChoiceParam1 has 3 entries and the current index is 2 and ChoiceParam2 has 15 entries
+	and current index is 10, copying ChoiceParam2 to ChoiceParam1 will end-up in undefined behaviour.
+	
+
+This function returns **True** upon success and **False** otherwise.
 
 .. method:: NatronEngine.Param.getAddNewLine()
 

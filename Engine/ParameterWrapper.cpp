@@ -169,6 +169,16 @@ Param::setAddNewLine(bool a)
     } 
 }
 
+bool
+Param::copy(Param* other)
+{
+    if (!_knob->isTypeCompatible(other->_knob)) {
+        return false;
+    }
+    _knob->cloneAndUpdateGui(other->_knob.get(),-1);
+    return true;
+}
+
 AnimatedParam::AnimatedParam(const boost::shared_ptr<KnobI>& knob)
 : Param(knob)
 {

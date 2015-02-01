@@ -1158,7 +1158,7 @@ protected:
         (void)dimension;
     }
     
-    void cloneExpressions(KnobI* other);
+    void cloneExpressions(KnobI* other,int dimension = -1);
 
     /**
      * @brief Override to copy extra properties, such as the entries for a combobox for example.
@@ -1412,7 +1412,7 @@ private:
     void signalMinMaxChanged(const T& mini,const T& maxi,int dimension);
     void signalDisplayMinMaxChanged(const T& mini,const T& maxi,int dimension);
 
-    void cloneValues(KnobI* other);
+    void cloneValues(KnobI* other,int dimension);
 
     T getValueFromMaster(int dimension);
 
