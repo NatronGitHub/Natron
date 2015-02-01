@@ -505,6 +505,8 @@ private:
     QGraphicsPixmapItem* _pluginIcon;
     QGraphicsRectItem* _pluginIconFrame;
     
+    QGraphicsPixmapItem* _mergeIcon;
+    
     QGraphicsTextItem *_nameItem;
     QGraphicsRectItem *_nameFrame;
     

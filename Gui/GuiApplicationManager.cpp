@@ -730,6 +730,139 @@ GuiApplicationManager::getIcon(Natron::PixmapEnum e,
                 img.load(NATRON_IMAGES_PATH "saveScript.png");
                 *pix = QPixmap::fromImage(img);
                 break;
+                
+            case NATRON_PIXMAP_MERGE_ATOP:
+                img.load(NATRON_IMAGES_PATH "merge_atop.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_MERGE_AVERAGE:
+                img.load(NATRON_IMAGES_PATH "merge_average.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_MERGE_COLOR_BURN:
+                img.load(NATRON_IMAGES_PATH "merge_color_burn.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_MERGE_COLOR_DODGE:
+                img.load(NATRON_IMAGES_PATH "merge_color_dodge.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_MERGE_CONJOINT_OVER:
+                img.load(NATRON_IMAGES_PATH "merge_conjoint_over.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_MERGE_COPY:
+                img.load(NATRON_IMAGES_PATH "merge_copy.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_MERGE_DIFFERENCE:
+                img.load(NATRON_IMAGES_PATH "merge_difference.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_MERGE_DISJOINT_OVER:
+                img.load(NATRON_IMAGES_PATH "merge_disjoint_over.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_MERGE_DIVIDE:
+                img.load(NATRON_IMAGES_PATH "merge_divide.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_MERGE_EXCLUSION:
+                img.load(NATRON_IMAGES_PATH "merge_exclusion.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_MERGE_FREEZE:
+                img.load(NATRON_IMAGES_PATH "merge_freeze.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_MERGE_FROM:
+                img.load(NATRON_IMAGES_PATH "merge_from.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_MERGE_GEOMETRIC:
+                img.load(NATRON_IMAGES_PATH "merge_geometric.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_MERGE_HARD_LIGHT:
+                img.load(NATRON_IMAGES_PATH "merge_hard_light.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_MERGE_HYPOT:
+                img.load(NATRON_IMAGES_PATH "merge_hypot.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_MERGE_IN:
+                img.load(NATRON_IMAGES_PATH "merge_in.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_MERGE_INTERPOLATED:
+                img.load(NATRON_IMAGES_PATH "merge_interpolated.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_MERGE_MASK:
+                img.load(NATRON_IMAGES_PATH "merge_mask.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_MERGE_MAX:
+                img.load(NATRON_IMAGES_PATH "merge_max.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_MERGE_MIN:
+                img.load(NATRON_IMAGES_PATH "merge_min.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_MERGE_MINUS:
+                img.load(NATRON_IMAGES_PATH "merge_minus.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_MERGE_MULTIPLY:
+                img.load(NATRON_IMAGES_PATH "merge_multiply.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_MERGE_OUT:
+                img.load(NATRON_IMAGES_PATH "merge_out.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_MERGE_OVER:
+                img.load(NATRON_IMAGES_PATH "merge_over.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_MERGE_OVERLAY:
+                img.load(NATRON_IMAGES_PATH "merge_overlay.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_MERGE_PINLIGHT:
+                img.load(NATRON_IMAGES_PATH "merge_pinlight.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_MERGE_PLUS:
+                img.load(NATRON_IMAGES_PATH "merge_plus.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_MERGE_REFLECT:
+                img.load(NATRON_IMAGES_PATH "merge_reflect.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_MERGE_SCREEN:
+                img.load(NATRON_IMAGES_PATH "merge_screen.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_MERGE_SOFT_LIGHT:
+                img.load(NATRON_IMAGES_PATH "merge_soft_light.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_MERGE_STENCIL:
+                img.load(NATRON_IMAGES_PATH "merge_stencil.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_MERGE_UNDER:
+                img.load(NATRON_IMAGES_PATH "merge_under.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_MERGE_XOR:
+                img.load(NATRON_IMAGES_PATH "merge_xor.png");
+                *pix = QPixmap::fromImage(img);
+                break;
             default:
                 assert(!"Missing image.");
         } // switch

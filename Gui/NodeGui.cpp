@@ -33,6 +33,8 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
+#include <ofxNatron.h>
+
 #include "Gui/Edge.h"
 #include "Gui/DockablePanel.h"
 #include "Gui/NodeGraph.h"
@@ -99,6 +101,79 @@ replaceLineBreaksWithHtmlParagraph(QString txt)
     return txt;
 }
 
+static void getPixmapForMergeOperator(const QString& op,QPixmap* pix)
+{
+    if (op == "atop") {
+        appPTR->getIcon(Natron::NATRON_PIXMAP_MERGE_ATOP,pix);
+    } else if (op == "average") {
+        appPTR->getIcon(Natron::NATRON_PIXMAP_MERGE_AVERAGE,pix);
+    } else if (op == "color-burn") {
+        appPTR->getIcon(Natron::NATRON_PIXMAP_MERGE_COLOR_BURN,pix);
+    } else if (op == "color-dodge") {
+        appPTR->getIcon(Natron::NATRON_PIXMAP_MERGE_COLOR_DODGE,pix);
+    } else if (op == "conjoint-over") {
+        appPTR->getIcon(Natron::NATRON_PIXMAP_MERGE_CONJOINT_OVER,pix);
+    } else if (op == "copy") {
+        appPTR->getIcon(Natron::NATRON_PIXMAP_MERGE_COPY,pix);
+    } else if (op == "difference") {
+        appPTR->getIcon(Natron::NATRON_PIXMAP_MERGE_DIFFERENCE,pix);
+    } else if (op == "disjoint-over") {
+        appPTR->getIcon(Natron::NATRON_PIXMAP_MERGE_DISJOINT_OVER,pix);
+    } else if (op == "divide") {
+        appPTR->getIcon(Natron::NATRON_PIXMAP_MERGE_DIVIDE,pix);
+    } else if (op == "exclusion") {
+        appPTR->getIcon(Natron::NATRON_PIXMAP_MERGE_EXCLUSION,pix);
+    } else if (op == "freeze") {
+        appPTR->getIcon(Natron::NATRON_PIXMAP_MERGE_FREEZE,pix);
+    } else if (op == "from") {
+        appPTR->getIcon(Natron::NATRON_PIXMAP_MERGE_FROM,pix);
+    } else if (op == "geometric") {
+        appPTR->getIcon(Natron::NATRON_PIXMAP_MERGE_GEOMETRIC,pix);
+    } else if (op == "hard-light") {
+        appPTR->getIcon(Natron::NATRON_PIXMAP_MERGE_HARD_LIGHT,pix);
+    } else if (op == "hypot") {
+        appPTR->getIcon(Natron::NATRON_PIXMAP_MERGE_HYPOT,pix);
+    } else if (op == "in") {
+        appPTR->getIcon(Natron::NATRON_PIXMAP_MERGE_IN,pix);
+    } else if (op == "interpolated") {
+        appPTR->getIcon(Natron::NATRON_PIXMAP_MERGE_INTERPOLATED,pix);
+    } else if (op == "mask") {
+        appPTR->getIcon(Natron::NATRON_PIXMAP_MERGE_MASK,pix);
+    } else if (op == "matte") {
+        appPTR->getIcon(Natron::NATRON_PIXMAP_MERGE_MATTE,pix);
+    } else if (op == "max") {
+        appPTR->getIcon(Natron::NATRON_PIXMAP_MERGE_MAX,pix);
+    } else if (op == "min") {
+        appPTR->getIcon(Natron::NATRON_PIXMAP_MERGE_MIN,pix);
+    } else if (op == "minus") {
+        appPTR->getIcon(Natron::NATRON_PIXMAP_MERGE_MINUS,pix);
+    } else if (op == "multiply") {
+        appPTR->getIcon(Natron::NATRON_PIXMAP_MERGE_MULTIPLY,pix);
+    } else if (op == "out") {
+        appPTR->getIcon(Natron::NATRON_PIXMAP_MERGE_OUT,pix);
+    } else if (op == "over") {
+        appPTR->getIcon(Natron::NATRON_PIXMAP_MERGE_OVER,pix);
+    } else if (op == "overlay") {
+        appPTR->getIcon(Natron::NATRON_PIXMAP_MERGE_OVERLAY,pix);
+    } else if (op == "pinlight") {
+        appPTR->getIcon(Natron::NATRON_PIXMAP_MERGE_PINLIGHT,pix);
+    } else if (op == "plus") {
+        appPTR->getIcon(Natron::NATRON_PIXMAP_MERGE_PLUS,pix);
+    } else if (op == "reflect") {
+        appPTR->getIcon(Natron::NATRON_PIXMAP_MERGE_REFLECT,pix);
+    } else if (op == "screen") {
+        appPTR->getIcon(Natron::NATRON_PIXMAP_MERGE_SCREEN,pix);
+    } else if (op == "soft-light") {
+        appPTR->getIcon(Natron::NATRON_PIXMAP_MERGE_SOFT_LIGHT,pix);
+    } else if (op == "stencil") {
+        appPTR->getIcon(Natron::NATRON_PIXMAP_MERGE_STENCIL,pix);
+    } else if (op == "under") {
+        appPTR->getIcon(Natron::NATRON_PIXMAP_MERGE_UNDER,pix);
+    } else if (op == "xor") {
+        appPTR->getIcon(Natron::NATRON_PIXMAP_MERGE_XOR,pix);
+    }
+}
+
 NodeGui::NodeGui(QGraphicsItem *parent)
 : QObject()
 , QGraphicsItem(parent)
@@ -108,6 +183,7 @@ NodeGui::NodeGui(QGraphicsItem *parent)
 , _settingNameFromGui(false)
 , _pluginIcon(NULL)
 , _pluginIconFrame(NULL)
+, _mergeIcon(NULL)
 , _nameItem(NULL)
 , _nameFrame(NULL)
 , _resizeHandle(NULL)
@@ -218,9 +294,19 @@ NodeGui::initialize(NodeGraph* dag,
         ofxNode->effectInstance()->beginInstanceEditAction();
     }
 
+    
+    if (internalNode->getPluginID() == PLUGINID_OFX_MERGE) {
+        boost::shared_ptr<KnobI> knob = internalNode->getKnobByName(kOfxParamStringSublabelName);
+        assert(knob);
+        String_Knob* strKnob = dynamic_cast<String_Knob*>(knob.get());
+        if (strKnob) {
+            onNodeExtraLabelChanged(strKnob->getValue().c_str());
+        }
+    }
+    
 
     if ( internalNode->makePreviewByDefault() ) {
-        ///It calls updateShape
+        ///It calls resize
         togglePreview_internal(false);
     } else {
         int w,h;
@@ -383,6 +469,11 @@ NodeGui::createGui()
             _pluginIconFrame->setBrush(QColor(50,50,50));
         }
         
+    }
+    
+    if (getNode()->getPlugin()->getPluginID() == QString(PLUGINID_OFX_MERGE)) {
+        _mergeIcon = new QGraphicsPixmapItem(this);
+        _mergeIcon->setZValue(depth + 1);
     }
     
     _nameItem = new QGraphicsTextItem(getNode()->getLabel().c_str(),this);
@@ -601,8 +692,15 @@ NodeGui::resize(int width,
     
     if (hasPluginIcon) {
         _pluginIcon->setX(topLeft.x() + PLUGIN_ICON_OFFSET);
-        _pluginIcon->setY(topLeft.y() + (height - NATRON_PLUGIN_ICON_SIZE) / 2.);
+        int iconsOffset = _mergeIcon  && _mergeIcon->isVisible() ? (height - 2 * NATRON_PLUGIN_ICON_SIZE) / 3. : (height - NATRON_PLUGIN_ICON_SIZE) /2.;
+        _pluginIcon->setY(topLeft.y() + iconsOffset);
         _pluginIconFrame->setRect(topLeft.x(),topLeft.y(),iconWidth, height);
+    }
+    
+    if (_mergeIcon && _mergeIcon->isVisible()) {
+        int iconsOffset =  (height - 2 * NATRON_PLUGIN_ICON_SIZE) / 3.;
+        _mergeIcon->setX(topLeft.x() + PLUGIN_ICON_OFFSET);
+        _mergeIcon->setY(topLeft.y() + iconsOffset * 2 + NATRON_PLUGIN_ICON_SIZE);
     }
 
     QFont f(appFont,appFontSize);
@@ -2367,6 +2465,28 @@ NodeGui::onNodeExtraLabelChanged(const QString & label)
     }
     _nodeLabel = replaceLineBreaksWithHtmlParagraph(_nodeLabel); ///< maybe we should do this in the knob itself when the user writes ?
     setNameItemHtml(node->getLabel().c_str(),_nodeLabel);
+    
+    if (getNode()->getPlugin()->getPluginID() == QString(PLUGINID_OFX_MERGE)) {
+        assert(_mergeIcon);
+        QString op = String_KnobGui::getNatronHtmlTagContent(label);
+        //Remove surrounding parenthesis
+        if (op[0] == QChar('(')) {
+            op.remove(0, 1);
+        }
+        if (op[op.size() - 1] == QChar(')')) {
+            op.remove(op.size() - 1,1);
+        }
+        QPixmap pix;
+        getPixmapForMergeOperator(op,&pix);
+        if (pix.isNull()) {
+            _mergeIcon->setVisible(false);
+        } else {
+            _mergeIcon->setVisible(true);
+            pix = pix.scaled(NATRON_PLUGIN_ICON_SIZE,NATRON_PLUGIN_ICON_SIZE,Qt::IgnoreAspectRatio,Qt::SmoothTransformation);
+            _mergeIcon->setPixmap(pix);
+        }
+        refreshSize();
+    }
 }
 
 QColor

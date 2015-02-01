@@ -672,6 +672,14 @@ public Q_SLOTS:
     static QString decorateTextWithFontTag(const QString& family,int fontSize,const QColor& color,const QString& text);
     static QString removeNatronHtmlTag(QString text);
 
+    static QString getNatronHtmlTagContent(QString text);
+    
+    /**
+     * @brief The goal here is to remove all the tags added automatically by Natron (like font color,size family etc...)
+     * so the user does not see them in the user interface. Those tags are  present in the internal value held by the knob.
+     **/
+    static QString removeAutoAddedHtmlTags(QString text,bool removeNatronTag = true) ;
+    
 private:
 
     virtual bool shouldAddStretch() const { return false; }
@@ -691,11 +699,6 @@ private:
     void restoreTextInfoFromString();
 
 
-    /**
-     * @brief The goal here is to remove all the tags added automatically by Natron (like font color,size family etc...)
-     * so the user does not see them in the user interface. Those tags are  present in the internal value held by the knob.
-     **/
-    QString removeAutoAddedHtmlTags(QString text) const;
 
     QString addHtmlTags(QString text) const;
 

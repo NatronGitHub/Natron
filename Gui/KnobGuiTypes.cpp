@@ -3323,7 +3323,24 @@ String_KnobGui::removeNatronHtmlTag(QString text)
 }
 
 QString
-String_KnobGui::removeAutoAddedHtmlTags(QString text) const
+String_KnobGui::getNatronHtmlTagContent(QString text)
+{
+    QString label = removeAutoAddedHtmlTags(text,false);
+    QString startTag(NATRON_CUSTOM_HTML_TAG_START);
+    int startCustomData = label.indexOf(startTag);
+    if (startCustomData != -1) {
+        QString endTag(NATRON_CUSTOM_HTML_TAG_END);
+        int endCustomData = label.indexOf(endTag,startCustomData);
+        assert(endCustomData != -1);
+        label = label.remove(endCustomData, endTag.size());
+        label = label.remove(startCustomData, startTag.size());
+    }
+    return label;
+}
+
+
+QString
+String_KnobGui::removeAutoAddedHtmlTags(QString text,bool removeNatronTag)
 {
     QString toFind = QString(kFontSizeTag);
     int i = text.indexOf(toFind);
@@ -3378,7 +3395,11 @@ String_KnobGui::removeAutoAddedHtmlTags(QString text) const
     }
 
     ///we also remove any custom data added by natron so the user doesn't see it
-    return removeNatronHtmlTag(text);
+    if (removeNatronTag) {
+        return removeNatronHtmlTag(text);
+    } else {
+        return text;
+    }
 } // removeAutoAddedHtmlTags
 
 void
