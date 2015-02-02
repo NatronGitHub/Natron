@@ -4827,6 +4827,7 @@ ViewerGL::getColorAtRect(const RectD &rect, // rectangle in canonical coordinate
     double bSum = 0.;
     double aSum = 0.;
     if ( !img ) {
+        return false;
         //don't do this as this is 8 bit
         /*
         Texture::DataTypeEnum type;
