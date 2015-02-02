@@ -54,7 +54,12 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/GuiAppInstance.h"
 #include "Gui/CurveWidget.h"
 #include "Gui/ActionShortcuts.h"
+CLANG_DIAG_OFF(mismatched-tags)
+GCC_DIAG_OFF(unused-parameter)
 #include "NatronGui/natrongui_python.h"
+CLANG_DIAG_ON(mismatched-tags)
+GCC_DIAG_ON(unused-parameter)
+
 /**
  * @macro Registers a keybind to the application.
  * @param group The name of the group under which the shortcut should be (e.g: Global, Viewer,NodeGraph...)

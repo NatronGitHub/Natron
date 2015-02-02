@@ -22,15 +22,19 @@
 #include <stdexcept>
 #include <string>
 
-
-#include <shiboken.h>
-
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/math/special_functions/fpclassify.hpp>
 #endif
 
 #include <QString>
 #include <QDebug>
+
+#include "Global/Macros.h"
+CLANG_DIAG_OFF(mismatched-tags)
+GCC_DIAG_OFF(unused-parameter)
+#include <shiboken.h>
+CLANG_DIAG_ON(mismatched-tags)
+GCC_DIAG_ON(unused-parameter)
 
 #include "Engine/Curve.h"
 #include "Engine/AppInstance.h"
@@ -1500,7 +1504,7 @@ Knob<double>::resetToDefaultValue(int dimension)
 
 template<>
 void
-Knob<int>::cloneValues(KnobI* other,int dimension)
+Knob<int>::cloneValues(KnobI* other, int dimension)
 {
     Knob<int>* isInt = dynamic_cast<Knob<int>* >(other);
     Knob<bool>* isBool = dynamic_cast<Knob<bool>* >(other);
@@ -1512,15 +1516,15 @@ Knob<int>::cloneValues(KnobI* other,int dimension)
     } else if (isBool) {
         std::vector<bool> v = isBool->getValueForEachDimension_mt_safe_vector();
         assert( v.size() == _values.size() );
-        for (U32 i = 0; i < v.size(); ++i) {
-            if (i == dimension || dimension == -1) {
+        for (unsigned i = 0; i < v.size(); ++i) {
+            if ((int)i == dimension || dimension == -1) {
                 _values[i] = v[i];
             }
         }
     } else if (isDouble) {
         std::vector<double> v = isDouble->getValueForEachDimension_mt_safe_vector();
         assert( v.size() == _values.size() );
-        for (U32 i = 0; i < v.size(); ++i) {
+        for (unsigned i = 0; i < v.size(); ++i) {
             if ((int)i == dimension || dimension == -1) {
                 _values[i] = v[i];
             }

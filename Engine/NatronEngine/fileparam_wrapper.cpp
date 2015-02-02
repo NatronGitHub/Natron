@@ -3,7 +3,11 @@
 #define protected public
 
 // default includes
-#include <shiboken.h>
+#include "Global/Macros.h"
+CLANG_DIAG_OFF(mismatched-tags)
+GCC_DIAG_OFF(unused-parameter)
+GCC_DIAG_OFF(missing-field-initializers)
+#include <shiboken.h> // produces many warnings
 #include <pysidesignal.h>
 #include <pysideproperty.h>
 #include <pyside.h>

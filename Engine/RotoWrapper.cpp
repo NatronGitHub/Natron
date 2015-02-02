@@ -45,7 +45,7 @@ ItemBase::getLabel() const
 bool
 ItemBase::setScriptName(const std::string& name)
 {
-    _item->setScriptName(name);
+    return _item->setScriptName(name);
 }
 
 std::string
