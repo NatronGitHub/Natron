@@ -669,6 +669,7 @@ interParams(const KeyFrameSet &keyFrames,
             Natron::KeyframeTypeEnum *interpNext)
 {
 //#pragma message WARN("Unused parameter 't'") //the parameter is good enough for asserts
+    (void)t;
     assert( itup == keyFrames.end() || t < itup->getTime() );
     if ( itup == keyFrames.begin() ) {
         //if all keys have a greater time

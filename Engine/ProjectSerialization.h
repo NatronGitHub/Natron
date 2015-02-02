@@ -153,6 +153,7 @@ public:
             
         }
         assert(_app);
+        (void)_app;
         
         if (version < PROJECT_SERIALIZATION_INTRODUCES_GROUPS) {
             int nodesCount;

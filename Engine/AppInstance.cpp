@@ -985,6 +985,7 @@ AppInstance::declareCurrentAppVariable_Python()
     
     bool ok = Natron::interpretPythonScript(script, &err, 0);
     assert(ok);
+    (void)ok;
 }
 
 

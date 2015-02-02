@@ -1422,8 +1422,7 @@ KnobHelperPrivate::parseListenersFromExpression(int dimension)
         qDebug() << error.c_str();
     }
     assert(success);
-    
-    
+    (void)success;
 }
 
 

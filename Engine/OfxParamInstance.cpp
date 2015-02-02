@@ -3039,6 +3039,7 @@ OfxParametricInstance::onResetToDefault(const QVector<int> & dimensions)
     for (int i = 0; i < dimensions.size(); ++i) {
         Natron::StatusEnum st = _knob->deleteAllControlPoints( dimensions.at(i) );
         assert(st == Natron::eStatusOK);
+        (void)st;
         defaultInitializeFromDescriptor(dimensions.at(i),_descriptor);
     }
 }

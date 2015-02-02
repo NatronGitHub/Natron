@@ -14,6 +14,8 @@
 
 #include <vector>
 
+CLANG_DIAG_OFF(deprecated)
+CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QMutex>
 #include <QtCore/QWaitCondition>
 #include <QtCore/QFileSystemWatcher>
@@ -23,6 +25,8 @@
 #include <QtCore/QDebug>
 #include <QtCore/QUrl>
 #include <QtCore/QMimeData>
+CLANG_DIAG_ON(deprecated)
+CLANG_DIAG_ON(uninitialized)
 
 #include <SequenceParsing.h>
 

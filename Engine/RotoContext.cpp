@@ -526,6 +526,7 @@ smoothTangent(int time,
         }
 
         assert(index < cpCount);
+        (void)cpCount;
 
         double leftDx,leftDy,rightDx,rightDy;
         Bezier::leftDerivativeAtPoint(time, *p, **prev, &leftDx, &leftDy);

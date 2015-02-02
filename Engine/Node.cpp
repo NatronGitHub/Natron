@@ -548,6 +548,7 @@ Node::declareRotoPythonField()
     }
     bool ok = Natron::interpretPythonScript(script, &err, 0);
     assert(ok);
+    (void)ok;
     _imp->rotoContext->declarePythonFields();
 }
 

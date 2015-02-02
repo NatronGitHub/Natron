@@ -1538,18 +1538,20 @@ AppManager::loadPythonGroups()
         
         bool ok  = interpretPythonScript(addToPythonPath, &err, 0);
         assert(ok);
-        
+        (void)ok;
     }
     
     ///Also import Pyside.QtCore and Pyside.QtGui (the later only in non background mode
     {
         bool ok  = interpretPythonScript("import PySide.QtCore as QtCore", &err, 0);
         assert(ok);
+        (void)ok;
     }
     
     if (!isBackground()) {
         bool ok  = interpretPythonScript("import PySide.QtGui as QtGui", &err, 0);
         assert(ok);
+        (void)ok;
     }
 
     
@@ -1645,6 +1647,7 @@ AppManager::loadPythonGroups()
             
             bool ok = interpretPythonScript(deleteScript, &err, NULL);
             assert(ok);
+            (void)ok;
             
             Natron::Plugin* p = registerPlugin(grouping.split(QChar('/')), label, label, iconFullPath, QString(), QString(), false, false, 0, false, version, 0);
             
@@ -3003,6 +3006,7 @@ AppManager::launchPythonInterpreter()
     std::string err;
     bool ok = Natron::interpretPythonScript("app = app1\n", &err, 0);
     assert(ok);
+    (void)ok;
     Py_Main(1, &_imp->args[0]);
 }
 

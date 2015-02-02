@@ -132,13 +132,12 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
         const std::list<boost::shared_ptr<NodeSerialization> >& children = (*it)->getNodesCollection();
         if (!children.empty()) {
             NodeGroup* isGrp = dynamic_cast<NodeGroup*>(n->getLiveInstance());
-            bool isMultiInstance = n->isMultiInstance();
             if (isGrp) {
                 boost::shared_ptr<Natron::EffectInstance> sharedEffect = isGrp->shared_from_this();
                 boost::shared_ptr<NodeGroup> sharedGrp = boost::dynamic_pointer_cast<NodeGroup>(sharedEffect);
                 NodeCollectionSerialization::restoreFromSerialization(children, sharedGrp , hasProjectAWriter);
             } else {
-                assert(isMultiInstance);
+                assert(n->isMultiInstance());
                 NodeCollectionSerialization::restoreFromSerialization(children, group, hasProjectAWriter);
             }
         }

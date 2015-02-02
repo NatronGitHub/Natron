@@ -1419,11 +1419,13 @@ OfxEffectInstance::getRegionsOfInterest(SequenceTime time,
         return;
     }
     assert(outputRoD.x2 >= outputRoD.x1 && outputRoD.y2 >= outputRoD.y1);
+    (void)outputRoD;
     assert(renderWindow.x2 >= renderWindow.x1 && renderWindow.y2 >= renderWindow.y1);
 
     {
         bool scaleIsOne = (scale.x == 1. && scale.y == 1.);
         assert( !( (supportsRenderScaleMaybe() == eSupportsNo) && !scaleIsOne ) );
+        (void)scaleIsOne;
     }
 
     OfxStatus stat;
@@ -1753,6 +1755,7 @@ OfxEffectInstance::beginSequenceRender(SequenceTime first,
     {
         bool scaleIsOne = (scale.x == 1. && scale.y == 1.);
         assert( !( (supportsRenderScaleMaybe() == eSupportsNo) && !scaleIsOne ) );
+        (void)scaleIsOne;
     }
 
     OfxStatus stat;
@@ -1798,6 +1801,7 @@ OfxEffectInstance::endSequenceRender(SequenceTime first,
     {
         bool scaleIsOne = (scale.x == 1. && scale.y == 1.);
         assert( !( (supportsRenderScaleMaybe() == eSupportsNo) && !scaleIsOne ) );
+        (void)scaleIsOne;
     }
 
     OfxStatus stat;
@@ -1878,6 +1882,7 @@ OfxEffectInstance::render(SequenceTime time,
         }
     }
 # endif // DEBUG
+    (void)output;
     {
         bool skipDiscarding = false;
         if (getRecursionLevel() > 1) {
@@ -2706,9 +2711,7 @@ const std::string &
 OfxEffectInstance::ofxGetOutputPremultiplication() const
 {
     static const std::string v(kOfxImagePreMultiplied);
-    OFX::Host::ImageEffect::ClipInstance* clip = effectInstance()->getClip(kOfxImageEffectOutputClipName);
-
-    assert(clip);
+    assert(effectInstance()->getClip(kOfxImageEffectOutputClipName));
     
     if (getRecursionLevel() > 0) {
         const std::string & premult = effectInstance()->getOutputPreMultiplication();

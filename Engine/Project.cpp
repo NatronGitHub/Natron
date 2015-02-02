@@ -469,6 +469,7 @@ Project::saveProjectInternal(const QString & path,
                 filePath = QString(PY3String_asString(ret).c_str());
                 bool ok = Natron::interpretPythonScript("del ret\n", &err, 0);
                 assert(ok);
+                (void)ok;
             }
             if (!output.empty()) {
                 getApp()->appendToScriptEditor(output);

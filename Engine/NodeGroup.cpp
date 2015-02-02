@@ -559,6 +559,7 @@ NodeCollection::autoConnectNodes(const NodePtr& selected,const NodePtr& created)
         if (selectedInput != -1) {
             bool ok = connectNodes(selectedInput, created, selected.get(),true);
             assert(ok);
+            (void)ok;
             ret = true;
         } else {
             ret = false;
@@ -575,7 +576,7 @@ NodeCollection::autoConnectNodes(const NodePtr& selected,const NodePtr& created)
                 if (it->first->getParentMultiInstanceName().empty()) {
                     bool ok = disconnectNodes(selected.get(), it->first);
                     assert(ok);
-                    
+                    (void)ok;
                     (void)connectNodes(it->second, created, it->first);
                     //assert(ok); Might not be ok if the disconnectNodes() action above was queued
                 }
@@ -586,6 +587,7 @@ NodeCollection::autoConnectNodes(const NodePtr& selected,const NodePtr& created)
         if (createdInput != -1) {
             bool ok = connectNodes(createdInput, selected, created.get());
             assert(ok);
+            (void)ok;
             ret = true;
         } else {
             ret = false;
