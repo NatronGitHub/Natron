@@ -52,10 +52,12 @@ if "%BITS%" == "32" (
 	echo Building Natron x86 32 bit %CONFIGURATION%.
 	set BUILD_SUB_DIR=win32
 	set QT_LIBRARIES_DIR=C:\Qt\Qt4.8.6_win32
+	set MSVC_CONF=Win32
 ) else if "%BITS%" == "64" (
 	echo Building Natron x86 64 bit %CONFIGURATION%.
 	set BUILD_SUB_DIR=x64
 	set QT_LIBRARIES_DIR=%DEP_PATH%\Qt4.8.6_64bit
+	set MSVC_CONF=x64
 ) else (
 	echo Architecture must be either 32 or 64 bits.
 	goto fail
@@ -104,8 +106,8 @@ if "%BITS%" == "64" (
 	::for /f "tokens=*" %a in ('echo %DEP_PATH%^| sed "s/\\/\\\\/g"') do set DEP_PATH_ESCAPED=%a
 	sed -e "/<AdditionalDependencies>/ s/c:\\Qt\\4.8.6_win32/c:\\Users\\Lex\\Documents\\Github\\Natron3rdParty\\Qt4.8.6_64bit/g" -i App\Natron.vcxproj Renderer\NatronRenderer.vcxproj Tests\Tests.vcxpoj
 )
-devenv Project.sln /Build %CONFIGURATION% /Project Natron
-devenv Project.sln /Build %CONFIGURATION% /Project NatronRenderer
+devenv Project.sln /Build "%CONFIGURATION%|%MSVC_CONF%" /Project Natron
+devenv Project.sln /Build "%CONFIGURATION%|%MSVC_CONF%" /Project NatronRenderer
  
 :: Deploy Natron in Release mode
 if "%CONFIGURATION%" == "Release" (

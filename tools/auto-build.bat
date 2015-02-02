@@ -43,9 +43,9 @@ git log|head -1|awk "{print $2}" > curVersion.txt
 set /p GITV_NATRON=<curVersion.txt
 set /p ORIG_NATRON=<%CWD%\NATRON_WORKSHOP
 echo Natron git %GITV_NATRON% vs. last version %ORIG_NATRON%
-if "%GITV_NATRON%"=="%ORIG_NATRON%" (
+ECHO.%ORIG_NATRON% | FIND /I "%GITV_NATRON%">Nul && (
 	echo "Natron up to date"
-) else (
+) || (
 	echo "Natron update needed"
 	set BUILD_NATRON=1
 	set BUILD_ALL=1
@@ -60,9 +60,9 @@ git log|head -1|awk "{print $2}" > curVersion.txt
 set /p GITV_IO=<curVersion.txt
 set /p ORIG_IO=<%CWD%\IO_WORKSHOP
 echo openfx-io git %GITV_IO% vs. last version %ORIG_IO%
-if "%GITV_IO%"=="%ORIG_IO%" (
+ECHO.%ORIG_IO% | FIND /I "%GITV_IO%">Nul && (
 	echo "openfx-io up to date"
-) else (
+) || (
 	echo "openfx-io update needed"
 	set BUILD_IO=1
 	set BUILD_ALL=1
@@ -77,9 +77,9 @@ git log|head -1|awk "{print $2}" > curVersion.txt
 set /p GITV_MISC=<curVersion.txt
 set /p ORIG_MISC=<%CWD%\MISC_WORKSHOP
 echo openfx-misc git %GITV_MISC% vs. last version %ORIG_MISC%
-if "%GITV_MISC%"=="%ORIG_MISC%" (
+ECHO.%ORIG_MISC% | FIND /I "%GITV_MISC%">Nul && (
 	echo "openfx-misc up to date"
-) else (
+) || (
 	echo "openfx-misc update needed"
 	set BUILD_MISC=1
 	set BUILD_ALL=1
@@ -128,7 +128,7 @@ cd %CWD%
 	zip -r Natron-%GITV_NATRON%.zip Natron-%GITV_NATRON%
 	rmdir /S /Q Natron-%GITV_NATRON%
 	cd ..
-	rsync -avz -e ssh --delete Windows%BIT% kepzlol@frs.sourceforge.net:/home/frs/project/natron/snapshots
+	rsync -avz -e ssh --progress --delete Windows%BIT% kepzlol@frs.sourceforge.net:/home/frs/project/natron/snapshots
 	goto for_all_arch
 	
 :FAIL
