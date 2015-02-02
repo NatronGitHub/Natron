@@ -342,6 +342,7 @@ AppInstance::createWriter(const std::string& filename,
     if ( found == writersForFormat.end() ) {
         Natron::errorDialog( tr("Writer").toStdString(),
                             tr("No plugin capable of encoding ").toStdString() + ext + tr(" was found.").toStdString(),false );
+        return NodePtr();
     }
     
     

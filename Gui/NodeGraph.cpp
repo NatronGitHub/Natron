@@ -2822,8 +2822,8 @@ NodeGraph::moveToTrash(NodeGui* node)
     for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_selection.begin();
          it != _imp->_selection.end(); ++it) {
         if (it->get() == node) {
-            _imp->_selection.erase(it);
             (*it)->setUserSelected(false);
+            _imp->_selection.erase(it);
             break;
         }
     }
