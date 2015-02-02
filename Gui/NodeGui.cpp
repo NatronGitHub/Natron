@@ -973,7 +973,7 @@ NodeGui::refreshEdges()
     }
     
     for (U32 i = 0; i < _inputEdges.size(); ++i) {
-        assert(i < nodeInputs.size() && i >= 0);
+        assert(i < nodeInputs.size());
         assert(_inputEdges[i]);
         if (nodeInputs[i]) {
             boost::shared_ptr<NodeGuiI> nodeInputGui_i = nodeInputs[i]->getNodeGui();
