@@ -271,9 +271,9 @@ public:
      * @brief When called, all parameter changes will not call the callback onParamChanged and will not attempt to trigger a new render.
      * A call to allowEvaluation() should be made to restore the state of the Effect
      **/
-    void blockEvaluation();
+    void beginChanges();
     
-    void allowEvaluation();
+    void endChanges();
     
     /**
      * @brief Get the current time on the timeline or the time of the frame being rendered by the caller thread if a render

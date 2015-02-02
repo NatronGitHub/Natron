@@ -1359,6 +1359,108 @@ void init_Natron(PyObject* module)
         &Sbk_Natron_Type, "NATRON_PIXMAP_SCRIPT_SAVE_SCRIPT", (long) Natron::NATRON_PIXMAP_SCRIPT_SAVE_SCRIPT))
         return ;
     if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_PIXMAPENUM_IDX],
+        &Sbk_Natron_Type, "NATRON_PIXMAP_MERGE_ATOP", (long) Natron::NATRON_PIXMAP_MERGE_ATOP))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_PIXMAPENUM_IDX],
+        &Sbk_Natron_Type, "NATRON_PIXMAP_MERGE_AVERAGE", (long) Natron::NATRON_PIXMAP_MERGE_AVERAGE))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_PIXMAPENUM_IDX],
+        &Sbk_Natron_Type, "NATRON_PIXMAP_MERGE_COLOR_BURN", (long) Natron::NATRON_PIXMAP_MERGE_COLOR_BURN))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_PIXMAPENUM_IDX],
+        &Sbk_Natron_Type, "NATRON_PIXMAP_MERGE_COLOR_DODGE", (long) Natron::NATRON_PIXMAP_MERGE_COLOR_DODGE))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_PIXMAPENUM_IDX],
+        &Sbk_Natron_Type, "NATRON_PIXMAP_MERGE_CONJOINT_OVER", (long) Natron::NATRON_PIXMAP_MERGE_CONJOINT_OVER))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_PIXMAPENUM_IDX],
+        &Sbk_Natron_Type, "NATRON_PIXMAP_MERGE_COPY", (long) Natron::NATRON_PIXMAP_MERGE_COPY))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_PIXMAPENUM_IDX],
+        &Sbk_Natron_Type, "NATRON_PIXMAP_MERGE_DIFFERENCE", (long) Natron::NATRON_PIXMAP_MERGE_DIFFERENCE))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_PIXMAPENUM_IDX],
+        &Sbk_Natron_Type, "NATRON_PIXMAP_MERGE_DISJOINT_OVER", (long) Natron::NATRON_PIXMAP_MERGE_DISJOINT_OVER))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_PIXMAPENUM_IDX],
+        &Sbk_Natron_Type, "NATRON_PIXMAP_MERGE_DIVIDE", (long) Natron::NATRON_PIXMAP_MERGE_DIVIDE))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_PIXMAPENUM_IDX],
+        &Sbk_Natron_Type, "NATRON_PIXMAP_MERGE_EXCLUSION", (long) Natron::NATRON_PIXMAP_MERGE_EXCLUSION))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_PIXMAPENUM_IDX],
+        &Sbk_Natron_Type, "NATRON_PIXMAP_MERGE_FREEZE", (long) Natron::NATRON_PIXMAP_MERGE_FREEZE))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_PIXMAPENUM_IDX],
+        &Sbk_Natron_Type, "NATRON_PIXMAP_MERGE_FROM", (long) Natron::NATRON_PIXMAP_MERGE_FROM))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_PIXMAPENUM_IDX],
+        &Sbk_Natron_Type, "NATRON_PIXMAP_MERGE_GEOMETRIC", (long) Natron::NATRON_PIXMAP_MERGE_GEOMETRIC))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_PIXMAPENUM_IDX],
+        &Sbk_Natron_Type, "NATRON_PIXMAP_MERGE_HARD_LIGHT", (long) Natron::NATRON_PIXMAP_MERGE_HARD_LIGHT))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_PIXMAPENUM_IDX],
+        &Sbk_Natron_Type, "NATRON_PIXMAP_MERGE_HYPOT", (long) Natron::NATRON_PIXMAP_MERGE_HYPOT))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_PIXMAPENUM_IDX],
+        &Sbk_Natron_Type, "NATRON_PIXMAP_MERGE_IN", (long) Natron::NATRON_PIXMAP_MERGE_IN))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_PIXMAPENUM_IDX],
+        &Sbk_Natron_Type, "NATRON_PIXMAP_MERGE_INTERPOLATED", (long) Natron::NATRON_PIXMAP_MERGE_INTERPOLATED))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_PIXMAPENUM_IDX],
+        &Sbk_Natron_Type, "NATRON_PIXMAP_MERGE_MASK", (long) Natron::NATRON_PIXMAP_MERGE_MASK))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_PIXMAPENUM_IDX],
+        &Sbk_Natron_Type, "NATRON_PIXMAP_MERGE_MATTE", (long) Natron::NATRON_PIXMAP_MERGE_MATTE))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_PIXMAPENUM_IDX],
+        &Sbk_Natron_Type, "NATRON_PIXMAP_MERGE_MAX", (long) Natron::NATRON_PIXMAP_MERGE_MAX))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_PIXMAPENUM_IDX],
+        &Sbk_Natron_Type, "NATRON_PIXMAP_MERGE_MIN", (long) Natron::NATRON_PIXMAP_MERGE_MIN))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_PIXMAPENUM_IDX],
+        &Sbk_Natron_Type, "NATRON_PIXMAP_MERGE_MINUS", (long) Natron::NATRON_PIXMAP_MERGE_MINUS))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_PIXMAPENUM_IDX],
+        &Sbk_Natron_Type, "NATRON_PIXMAP_MERGE_MULTIPLY", (long) Natron::NATRON_PIXMAP_MERGE_MULTIPLY))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_PIXMAPENUM_IDX],
+        &Sbk_Natron_Type, "NATRON_PIXMAP_MERGE_OUT", (long) Natron::NATRON_PIXMAP_MERGE_OUT))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_PIXMAPENUM_IDX],
+        &Sbk_Natron_Type, "NATRON_PIXMAP_MERGE_OVER", (long) Natron::NATRON_PIXMAP_MERGE_OVER))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_PIXMAPENUM_IDX],
+        &Sbk_Natron_Type, "NATRON_PIXMAP_MERGE_OVERLAY", (long) Natron::NATRON_PIXMAP_MERGE_OVERLAY))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_PIXMAPENUM_IDX],
+        &Sbk_Natron_Type, "NATRON_PIXMAP_MERGE_PINLIGHT", (long) Natron::NATRON_PIXMAP_MERGE_PINLIGHT))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_PIXMAPENUM_IDX],
+        &Sbk_Natron_Type, "NATRON_PIXMAP_MERGE_PLUS", (long) Natron::NATRON_PIXMAP_MERGE_PLUS))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_PIXMAPENUM_IDX],
+        &Sbk_Natron_Type, "NATRON_PIXMAP_MERGE_REFLECT", (long) Natron::NATRON_PIXMAP_MERGE_REFLECT))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_PIXMAPENUM_IDX],
+        &Sbk_Natron_Type, "NATRON_PIXMAP_MERGE_SCREEN", (long) Natron::NATRON_PIXMAP_MERGE_SCREEN))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_PIXMAPENUM_IDX],
+        &Sbk_Natron_Type, "NATRON_PIXMAP_MERGE_SOFT_LIGHT", (long) Natron::NATRON_PIXMAP_MERGE_SOFT_LIGHT))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_PIXMAPENUM_IDX],
+        &Sbk_Natron_Type, "NATRON_PIXMAP_MERGE_STENCIL", (long) Natron::NATRON_PIXMAP_MERGE_STENCIL))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_PIXMAPENUM_IDX],
+        &Sbk_Natron_Type, "NATRON_PIXMAP_MERGE_UNDER", (long) Natron::NATRON_PIXMAP_MERGE_UNDER))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_PIXMAPENUM_IDX],
+        &Sbk_Natron_Type, "NATRON_PIXMAP_MERGE_XOR", (long) Natron::NATRON_PIXMAP_MERGE_XOR))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_PIXMAPENUM_IDX],
         &Sbk_Natron_Type, "NATRON_PIXMAP_APP_ICON", (long) Natron::NATRON_PIXMAP_APP_ICON))
         return ;
     // Register converter for enum 'Natron::PixmapEnum'.

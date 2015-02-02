@@ -275,15 +275,15 @@ Effect::setColor(double r, double g, double b)
 }
 
 void
-Effect::blockEvaluation()
+Effect::beginChanges()
 {
-    _node->getLiveInstance()->blockEvaluation();
+    _node->getLiveInstance()->beginChanges();
 }
 
 void
-Effect::allowEvaluation()
+Effect::endChanges()
 {
-    _node->getLiveInstance()->unblockEvaluation();
+    _node->getLiveInstance()->endChanges();
 }
 
 IntParam*

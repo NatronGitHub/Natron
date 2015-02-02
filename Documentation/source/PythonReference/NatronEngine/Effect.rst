@@ -15,8 +15,8 @@ See :ref:`details`
 Functions
 ^^^^^^^^^
 
-*    def :meth:`allowEvaluation<NatronEngine.Effect.allowEvaluation>` ()
-*    def :meth:`blockEvaluation<NatronEngine.Effect.blockEvaluation>` ()
+*    def :meth:`endChanges<NatronEngine.Effect.endChanges>` ()
+*    def :meth:`beginChanges<NatronEngine.Effect.beginChanges>` ()
 *    def :meth:`canConnectInput<NatronEngine.Effect.canConnectInput>` (inputNumber, node)
 *    def :meth:`connectInput<NatronEngine.Effect.connectInput>` (inputNumber, input)
 *    def :meth:`createChild<NatronEngine.Effect.createChild>` ()
@@ -89,28 +89,29 @@ See :ref:`this section<userParams.details>`
 Member functions description
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. method:: NatronEngine.Effect.allowEvaluation()
+.. method:: NatronEngine.Effect.beginChanges()
 
-	Allows all evaluation (=renders and callback onParamChanged) that would be issued due to
+	Starts a begin/End bracket, blocking all evaluation (=renders and callback onParamChanged) that would be issued due to
 	a call to :func:`setValue<NatronEngine.IntParam.setValue>` on any parameter of the Effect.
 	
 	Typically to change several values at once we bracket the changes like this::
 	
-		node.blockEvaluation()	
+		node.beginChanges()	
 		param1.setValue(...)
 		param2.setValue(...)
 		param3.setValue(...)
-		node.allowEvaluation()
-		param4.setValue(...) # This triggers a new render and a call to the onParamChanged callback
+		param4.setValue(...)
+		node.endChanges()  # This triggers a new render and a call to the onParamChanged callback
 
 
 
 
-.. method:: NatronEngine.Effect.blockEvaluation()
+.. method:: NatronEngine.Effect.endChanges()
 
-	Blocks all evaluation (=renders and callback onParamChanged) that would be issued due to
-	a call to :func:`setValue<NatronEngine.IntParam.setValue>` on any parameter of the Effect.
-	See :func:`allowEvaluation()<NatronEngine.Effect.allowEvaluation>`
+	Ends a begin/end bracket. If the begin/end bracket recursion reaches 0 and there were calls
+	made to :func:`setValue<NatronEngine.IntParam.setValue>` this function will effectively compresss
+	all evaluations into a single one.
+	See :func:`beginChanges()<NatronEngine.Effect.beginChanges>`
 
 
 

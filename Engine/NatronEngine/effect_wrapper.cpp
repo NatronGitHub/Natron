@@ -36,7 +36,7 @@ EffectWrapper::~EffectWrapper()
 // Target ---------------------------------------------------------
 
 extern "C" {
-static PyObject* Sbk_EffectFunc_allowEvaluation(PyObject* self)
+static PyObject* Sbk_EffectFunc_beginChanges(PyObject* self)
 {
     ::Effect* cppSelf = 0;
     SBK_UNUSED(cppSelf)
@@ -48,34 +48,9 @@ static PyObject* Sbk_EffectFunc_allowEvaluation(PyObject* self)
     {
 
         if (!PyErr_Occurred()) {
-            // allowEvaluation()
+            // beginChanges()
             PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            cppSelf->allowEvaluation();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
-        }
-    }
-
-    if (PyErr_Occurred()) {
-        return 0;
-    }
-    Py_RETURN_NONE;
-}
-
-static PyObject* Sbk_EffectFunc_blockEvaluation(PyObject* self)
-{
-    ::Effect* cppSelf = 0;
-    SBK_UNUSED(cppSelf)
-    if (!Shiboken::Object::isValid(self))
-        return 0;
-    cppSelf = ((::Effect*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], (SbkObject*)self));
-
-    // Call function/method
-    {
-
-        if (!PyErr_Occurred()) {
-            // blockEvaluation()
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            cppSelf->blockEvaluation();
+            cppSelf->beginChanges();
             PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
         }
     }
@@ -361,6 +336,31 @@ static PyObject* Sbk_EffectFunc_disconnectInput(PyObject* self, PyObject* pyArg)
         const char* overloads[] = {"int", 0};
         Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.Effect.disconnectInput", overloads);
         return 0;
+}
+
+static PyObject* Sbk_EffectFunc_endChanges(PyObject* self)
+{
+    ::Effect* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::Effect*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], (SbkObject*)self));
+
+    // Call function/method
+    {
+
+        if (!PyErr_Occurred()) {
+            // endChanges()
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            cppSelf->endChanges();
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+        }
+    }
+
+    if (PyErr_Occurred()) {
+        return 0;
+    }
+    Py_RETURN_NONE;
 }
 
 static PyObject* Sbk_EffectFunc_getColor(PyObject* self)
@@ -1135,13 +1135,13 @@ static PyObject* Sbk_EffectFunc_setSize(PyObject* self, PyObject* args)
 }
 
 static PyMethodDef Sbk_Effect_methods[] = {
-    {"allowEvaluation", (PyCFunction)Sbk_EffectFunc_allowEvaluation, METH_NOARGS},
-    {"blockEvaluation", (PyCFunction)Sbk_EffectFunc_blockEvaluation, METH_NOARGS},
+    {"beginChanges", (PyCFunction)Sbk_EffectFunc_beginChanges, METH_NOARGS},
     {"canConnectInput", (PyCFunction)Sbk_EffectFunc_canConnectInput, METH_VARARGS},
     {"connectInput", (PyCFunction)Sbk_EffectFunc_connectInput, METH_VARARGS},
     {"createChild", (PyCFunction)Sbk_EffectFunc_createChild, METH_NOARGS},
     {"destroy", (PyCFunction)Sbk_EffectFunc_destroy, METH_VARARGS|METH_KEYWORDS},
     {"disconnectInput", (PyCFunction)Sbk_EffectFunc_disconnectInput, METH_O},
+    {"endChanges", (PyCFunction)Sbk_EffectFunc_endChanges, METH_NOARGS},
     {"getColor", (PyCFunction)Sbk_EffectFunc_getColor, METH_NOARGS},
     {"getCurrentTime", (PyCFunction)Sbk_EffectFunc_getCurrentTime, METH_NOARGS},
     {"getInput", (PyCFunction)Sbk_EffectFunc_getInput, METH_O},

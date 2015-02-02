@@ -317,7 +317,7 @@ ColorTuple
 BezierCurve::getOverlayColor() const
 {
     ColorTuple c;
-    double color[3];
+    double color[4];
     _bezier->getOverlayColor(color);
     c.r = color[0];
     c.g = color[1];
@@ -329,10 +329,11 @@ BezierCurve::getOverlayColor() const
 void
 BezierCurve::setOverlayColor(double r,double g,double b)
 {
-    double color[3];
+    double color[4];
     color[0] = r;
     color[1] = g;
     color[2] = b;
+    color[3] = 1.;
     _bezier->setOverlayColor(color);
 }
 

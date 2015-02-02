@@ -710,7 +710,7 @@ NodeCollection::fixRelativeFilePaths(const std::string& projectPathName,const st
     for (NodeList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
         if ((*it)->isActivated()) {
             if (blockEval) {
-                (*it)->getLiveInstance()->blockEvaluation();
+                (*it)->getLiveInstance()->beginChanges();
             }
             const std::vector<boost::shared_ptr<KnobI> >& knobs = (*it)->getKnobs();
             for (U32 j = 0; j < knobs.size(); ++j) {
@@ -730,7 +730,7 @@ NodeCollection::fixRelativeFilePaths(const std::string& projectPathName,const st
                 }
             }
             if (blockEval) {
-                (*it)->getLiveInstance()->unblockEvaluation();
+                (*it)->getLiveInstance()->endChanges();
             }
             
             NodeGroup* isGrp = dynamic_cast<NodeGroup*>((*it)->getLiveInstance());

@@ -348,20 +348,20 @@ IntParam::set(int x)
 void
 Int2DParam::set(int x, int y)
 {
-    _intKnob->blockEvaluation();
+    _intKnob->beginChanges();
     _intKnob->setValue(x, 0);
-    _intKnob->unblockEvaluation();
     _intKnob->setValue(y, 1);
+    _intKnob->endChanges();
 }
 
 void
 Int3DParam::set(int x, int y, int z)
 {
-    _intKnob->blockEvaluation();
+    _intKnob->beginChanges();
     _intKnob->setValue(x, 0);
     _intKnob->setValue(y, 1);
-    _intKnob->unblockEvaluation();
     _intKnob->setValue(z, 2);
+    _intKnob->endChanges();
 }
 
 void
@@ -373,20 +373,20 @@ IntParam::set(int x, int frame)
 void
 Int2DParam::set(int x, int y, int frame)
 {
-    _intKnob->blockEvaluation();
+    _intKnob->beginChanges();
     _intKnob->setValueAtTime(frame,x, 0);
-    _intKnob->unblockEvaluation();
     _intKnob->setValueAtTime(frame,y, 1);
+    _intKnob->endChanges();
 }
 
 void
 Int3DParam::set(int x, int y, int z, int frame)
 {
-    _intKnob->blockEvaluation();
+    _intKnob->beginChanges();
     _intKnob->setValueAtTime(frame,x, 0);
     _intKnob->setValueAtTime(frame,y, 1);
-    _intKnob->unblockEvaluation();
     _intKnob->setValueAtTime(frame,z, 2);
+    _intKnob->endChanges();
 }
 
 int
@@ -566,21 +566,21 @@ DoubleParam::set(double x)
 void
 Double2DParam::set(double x, double y)
 {
-    _doubleKnob->blockEvaluation();
+    _doubleKnob->beginChanges();
     _doubleKnob->setValue(x, 0);
-    _doubleKnob->unblockEvaluation();
     _doubleKnob->setValue(y, 1);
+    _doubleKnob->endChanges();
 
 }
 
 void
 Double3DParam::set(double x, double y, double z)
 {
-    _doubleKnob->blockEvaluation();
+    _doubleKnob->beginChanges();
     _doubleKnob->setValue(x, 0);
     _doubleKnob->setValue(y, 1);
-    _doubleKnob->unblockEvaluation();
     _doubleKnob->setValue(z, 2);
+    _doubleKnob->endChanges();
 }
 
 void
@@ -592,20 +592,20 @@ DoubleParam::set(double x, int frame)
 void
 Double2DParam::set(double x, double y, int frame)
 {
-    _doubleKnob->blockEvaluation();
+    _doubleKnob->beginChanges();
     _doubleKnob->setValueAtTime(frame,x, 0);
-    _doubleKnob->unblockEvaluation();
     _doubleKnob->setValueAtTime(frame,y, 1);
+    _doubleKnob->endChanges();
 }
 
 void
 Double3DParam::set(double x, double y, double z, int frame)
 {
-    _doubleKnob->blockEvaluation();
+    _doubleKnob->beginChanges();
     _doubleKnob->setValueAtTime(frame,x, 0);
     _doubleKnob->setValueAtTime(frame,y, 1);
-    _doubleKnob->unblockEvaluation();
     _doubleKnob->setValueAtTime(frame,z, 2);
+    _doubleKnob->endChanges();
 }
 
 double
@@ -754,36 +754,28 @@ ColorParam::get(int frame) const
 void
 ColorParam::set(double r, double g, double b, double a)
 {
-    _colorKnob->blockEvaluation();
+    _colorKnob->beginChanges();
     _colorKnob->setValue(r, 0);
     _colorKnob->setValue(g, 1);
-    int dims = _colorKnob->getDimension();
-    if (dims == 3) {
-        _colorKnob->unblockEvaluation();
-    }
     _colorKnob->setValue(b, 2);
-    if (dims == 4) {
-        _colorKnob->unblockEvaluation();
+    if (_colorKnob->getDimension() == 4) {
         _colorKnob->setValue(a, 3);
     }
+    _colorKnob->endChanges();
 }
 
 void
 ColorParam::set(double r, double g, double b, double a, int frame)
 {
-    _colorKnob->blockEvaluation();
+    _colorKnob->beginChanges();
     _colorKnob->setValueAtTime(frame, r, 0);
     _colorKnob->setValueAtTime(frame,g, 1);
     int dims = _colorKnob->getDimension();
-    if (dims == 3) {
-        _colorKnob->unblockEvaluation();
-    }
     _colorKnob->setValueAtTime(frame,b, 2);
     if (dims == 4) {
-        _colorKnob->unblockEvaluation();
         _colorKnob->setValueAtTime(frame,a, 3);
     }
-
+    _colorKnob->endChanges();
 }
 
 void
