@@ -66,7 +66,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Gui/GuiMacros.h"
 #include "Gui/ActionShortcuts.h"
 
-//#define NATRON_TRANSFORM_AFFECTS_OVERLAYS
+#define NATRON_TRANSFORM_AFFECTS_OVERLAYS
 
 using namespace Natron;
 
@@ -348,12 +348,12 @@ struct ViewerTabPrivate
     }
     
 #ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
-    void getOverlayTransform(int time,
+    // return the tronsform to apply to the overlay as a 3x3 homography in canonical coordinates
+    bool getOverlayTransform(int time,
                              int view,
                              const boost::shared_ptr<Natron::Node>& target,
                              Natron::EffectInstance* currentNode,
-                             Transform::Matrix3x3* transform,
-                             bool* ok) const;
+                             Transform::Matrix3x3* transform) const;
 #endif
 };
 
@@ -1604,10 +1604,10 @@ ViewerTab::showView(int view)
 //OpenGL is column-major for matrixes
 static void transformToOpenGLMatrix(const Transform::Matrix3x3& mat,GLdouble* oglMat)
 {
-    oglMat[0] = mat.a; oglMat[4] = mat.b; oglMat[8]  = mat.c; oglMat[12] = 0;
-    oglMat[1] = mat.d; oglMat[5] = mat.e; oglMat[9]  = mat.f; oglMat[13] = 0;
-    oglMat[2] = mat.g; oglMat[6] = mat.h; oglMat[10] = mat.i; oglMat[14] = 0;
-    oglMat[3] = 0;     oglMat[7] = 0;     oglMat[11] = 0;     oglMat[15] = 1;
+    oglMat[0] = mat.a; oglMat[4] = mat.b; oglMat[8]  = 0; oglMat[12] = mat.c;
+    oglMat[1] = mat.d; oglMat[5] = mat.e; oglMat[9]  = 0; oglMat[13] = mat.f;
+    oglMat[2] = 0;     oglMat[6] = 0;     oglMat[10] = 1; oglMat[14] = 0;
+    oglMat[3] = mat.g; oglMat[7] = mat.h; oglMat[11] = 0; oglMat[15] = mat.i;
 }
 #endif
 
@@ -1633,14 +1633,15 @@ ViewerTab::drawOverlays(double scaleX,
         
 #ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
         Transform::Matrix3x3 mat(1,0,0,0,1,0,0,0,1);
-        bool ok;
-        _imp->getOverlayTransform(time, view, *it, getInternalNode(), &mat, &ok);
+        bool ok = _imp->getOverlayTransform(time, view, *it, getInternalNode(), &mat);
+        GLfloat oldMat[16];
         if (ok) {
             //Ok we've got a transform here, apply it to the OpenGL model view matrix
             
             GLdouble oglMat[16];
             transformToOpenGLMatrix(mat,oglMat);
-            glPushMatrix();
+            glMatrixMode(GL_MODELVIEW);
+            glGetFloatv (GL_MODELVIEW_MATRIX, oldMat);
             glMultMatrixd(oglMat);
         }
 #endif
@@ -1662,7 +1663,8 @@ ViewerTab::drawOverlays(double scaleX,
         }
 #ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
         if (ok) {
-            glPopMatrix();
+            glMatrixMode(GL_MODELVIEW);
+            glLoadMatrixf(oldMat);
         }
 #endif
     }
@@ -1671,16 +1673,50 @@ ViewerTab::drawOverlays(double scaleX,
 bool
 ViewerTab::notifyOverlaysPenDown_internal(const boost::shared_ptr<Natron::Node>& node, double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, QMouseEvent* e)
 {
+
+    QPointF transformViewportPos;
+    QPointF transformPos;
+#ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
+    int time = _imp->app->getTimeLine()->currentFrame();
+    int view = getCurrentView();
+    Transform::Matrix3x3 mat(1,0,0,0,1,0,0,0,1);
+    bool ok = _imp->getOverlayTransform(time, view, node, getInternalNode(), &mat);
+    if (ok) {
+        mat = Transform::matInverse(mat);
+        {
+            Transform::Point3D p;
+            p.x = viewportPos.x();
+            p.y = viewportPos.y();
+            p.z = 1;
+            p = Transform::matApply(mat, p);
+            transformViewportPos.rx() = p.x / p.z;
+            transformViewportPos.ry() = p.y / p.z;
+        }
+        {
+            Transform::Point3D p;
+            p.x = pos.x();
+            p.y = pos.y();
+            p.z = 1;
+            p = Transform::matApply(mat, p);
+            transformPos.rx() = p.x / p.z;
+            transformPos.ry() = p.y / p.z;
+        }
+    }
+#else
+    transformViewportPos = viewportPos;
+    transformPos = pos;
+#endif
+    
     if (_imp->currentRoto.first && node == _imp->currentRoto.first->getNode()) {
         if ( _imp->currentRoto.second && _imp->currentRoto.first->isSettingsPanelVisible() ) {
-            if ( _imp->currentRoto.second->penDown(scaleX, scaleY,viewportPos,pos,e) ) {
+            if ( _imp->currentRoto.second->penDown(scaleX, scaleY,transformViewportPos,transformPos,e) ) {
                 _imp->lastOverlayNode = node;
                 return true;
             }
         }
     } else if (_imp->currentTracker.first && node == _imp->currentTracker.first->getNode()) {
         if ( _imp->currentTracker.second && _imp->currentTracker.first->isSettingsPanelVisible() ) {
-            if ( _imp->currentTracker.second->penDown(scaleX, scaleY,viewportPos,pos,e) ) {
+            if ( _imp->currentTracker.second->penDown(scaleX, scaleY,transformViewportPos,transformPos,e) ) {
                 _imp->lastOverlayNode = node;
                 return true;
             }
@@ -1690,7 +1726,7 @@ ViewerTab::notifyOverlaysPenDown_internal(const boost::shared_ptr<Natron::Node>&
         Natron::EffectInstance* effect = node->getLiveInstance();
         assert(effect);
         effect->setCurrentViewportForOverlays(_imp->viewer);
-        bool didSmthing = effect->onOverlayPenDown_public(scaleX,scaleY,viewportPos, pos);
+        bool didSmthing = effect->onOverlayPenDown_public(scaleX,scaleY,transformViewportPos, transformPos);
         if (didSmthing) {
             //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
             // if the instance returns kOfxStatOK, the host should not pass the pen motion
@@ -1754,18 +1790,71 @@ ViewerTab::notifyOverlaysPenDoubleClick(double scaleX,
     if ( !_imp->app || _imp->app->isClosing() ) {
         return false;
     }
-
-    if ( _imp->currentRoto.second && _imp->currentRoto.first->isSettingsPanelVisible() ) {
-        if ( _imp->currentRoto.second->penDoubleClicked(scaleX, scaleY, viewportPos, pos, e) ) {
-            _imp->lastOverlayNode = _imp->currentRoto.first->getNode();
-            return true;
+    
+    std::list<boost::shared_ptr<Natron::Node> >  nodes;
+    getGui()->getNodesEntitledForOverlays(nodes);
+    
+    boost::shared_ptr<Natron::Node> lastOverlay = _imp->lastOverlayNode.lock();
+    if (lastOverlay) {
+        for (std::list<boost::shared_ptr<Natron::Node> >::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+            if (*it == lastOverlay) {
+                if (notifyOverlaysPenMotion_internal(*it, scaleX, scaleY, viewportPos, pos, e)) {
+                    return true;
+                } else {
+                    nodes.erase(it);
+                    break;
+                }
+            }
         }
     }
 
-    if ( _imp->currentTracker.second && _imp->currentTracker.first->isSettingsPanelVisible() ) {
-        if ( _imp->currentTracker.second->penDoubleClicked(scaleX, scaleY, viewportPos, pos, e) ) {
-            _imp->lastOverlayNode = _imp->currentRoto.first->getNode();
-            return true;
+
+    for (std::list<boost::shared_ptr<Natron::Node> >::reverse_iterator it = nodes.rbegin(); it != nodes.rend(); ++it) {
+        QPointF transformViewportPos;
+        QPointF transformPos;
+#ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
+        int time = _imp->app->getTimeLine()->currentFrame();
+        int view = getCurrentView();
+        Transform::Matrix3x3 mat(1,0,0,0,1,0,0,0,1);
+        bool ok = _imp->getOverlayTransform(time, view, *it, getInternalNode(), &mat);
+        if (ok) {
+            mat = Transform::matInverse(mat);
+            {
+                Transform::Point3D p;
+                p.x = viewportPos.x();
+                p.y = viewportPos.y();
+                p.z = 1;
+                p = Transform::matApply(mat, p);
+                transformViewportPos.rx() = p.x / p.z;
+                transformViewportPos.ry() = p.y / p.z;
+            }
+            {
+                Transform::Point3D p;
+                p.x = pos.x();
+                p.y = pos.y();
+                p.z = 1;
+                p = Transform::matApply(mat, p);
+                transformPos.rx() = p.x / p.z;
+                transformPos.ry() = p.y / p.z;
+            }
+        }
+#else
+        transformViewportPos = viewportPos;
+        transformPos = pos;
+#endif
+        
+        if ( _imp->currentRoto.second && _imp->currentRoto.first->isSettingsPanelVisible() ) {
+            if ( _imp->currentRoto.second->penDoubleClicked(scaleX, scaleY, transformViewportPos, transformPos, e) ) {
+                _imp->lastOverlayNode = _imp->currentRoto.first->getNode();
+                return true;
+            }
+        }
+        
+        if ( _imp->currentTracker.second && _imp->currentTracker.first->isSettingsPanelVisible() ) {
+            if ( _imp->currentTracker.second->penDoubleClicked(scaleX, scaleY, transformViewportPos, transformPos, e) ) {
+                _imp->lastOverlayNode = _imp->currentRoto.first->getNode();
+                return true;
+            }
         }
     }
 
@@ -1775,16 +1864,50 @@ ViewerTab::notifyOverlaysPenDoubleClick(double scaleX,
 bool
 ViewerTab::notifyOverlaysPenMotion_internal(const boost::shared_ptr<Natron::Node>& node,double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, QMouseEvent* e)
 {
+    
+    QPointF transformViewportPos;
+    QPointF transformPos;
+#ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
+    int time = _imp->app->getTimeLine()->currentFrame();
+    int view = getCurrentView();
+    Transform::Matrix3x3 mat(1,0,0,0,1,0,0,0,1);
+    bool ok = _imp->getOverlayTransform(time, view, node, getInternalNode(), &mat);
+    if (ok) {
+        mat = Transform::matInverse(mat);
+        {
+            Transform::Point3D p;
+            p.x = viewportPos.x();
+            p.y = viewportPos.y();
+            p.z = 1;
+            p = Transform::matApply(mat, p);
+            transformViewportPos.rx() = p.x / p.z;
+            transformViewportPos.ry() = p.y / p.z;
+        }
+        {
+            Transform::Point3D p;
+            p.x = pos.x();
+            p.y = pos.y();
+            p.z = 1;
+            p = Transform::matApply(mat, p);
+            transformPos.rx() = p.x / p.z;
+            transformPos.ry() = p.y / p.z;
+        }
+    }
+#else
+    transformViewportPos = viewportPos;
+    transformPos = pos;
+#endif
+    
     if (_imp->currentRoto.first && node == _imp->currentRoto.first->getNode()) {
         if ( _imp->currentRoto.second && _imp->currentRoto.first->isSettingsPanelVisible() ) {
-            if ( _imp->currentRoto.second->penMotion(scaleX, scaleY, viewportPos, pos, e) ) {
+            if ( _imp->currentRoto.second->penMotion(scaleX, scaleY, transformViewportPos, transformPos, e) ) {
                 _imp->lastOverlayNode = node;
                 return true;
             }
         }
     } else if (_imp->currentTracker.first && node == _imp->currentTracker.first->getNode()) {
         if ( _imp->currentTracker.second && _imp->currentTracker.first->isSettingsPanelVisible() ) {
-            if ( _imp->currentTracker.second->penMotion(scaleX, scaleY, viewportPos, pos, e) ) {
+            if ( _imp->currentTracker.second->penMotion(scaleX, scaleY, transformViewportPos, transformPos, e) ) {
                 _imp->lastOverlayNode = node;
                 return true;
             }
@@ -1794,7 +1917,7 @@ ViewerTab::notifyOverlaysPenMotion_internal(const boost::shared_ptr<Natron::Node
         Natron::EffectInstance* effect = node->getLiveInstance();
         assert(effect);
         effect->setCurrentViewportForOverlays(_imp->viewer);
-        bool didSmthing = effect->onOverlayPenMotion_public(scaleX,scaleY,viewportPos, pos);
+        bool didSmthing = effect->onOverlayPenMotion_public(scaleX,scaleY,transformViewportPos, transformPos);
         if (didSmthing) {
             //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
             // if the instance returns kOfxStatOK, the host should not pass the pen motion
@@ -1871,22 +1994,57 @@ ViewerTab::notifyOverlaysPenUp(double scaleX,
     getGui()->getNodesEntitledForOverlays(nodes);
     for (std::list<boost::shared_ptr<Natron::Node> >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         
+        
+        QPointF transformViewportPos;
+        QPointF transformPos;
+#ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
+        int time = _imp->app->getTimeLine()->currentFrame();
+        int view = getCurrentView();
+        Transform::Matrix3x3 mat(1,0,0,0,1,0,0,0,1);
+        bool ok = _imp->getOverlayTransform(time, view, *it, getInternalNode(), &mat);
+        if (ok) {
+            mat = Transform::matInverse(mat);
+            {
+                Transform::Point3D p;
+                p.x = viewportPos.x();
+                p.y = viewportPos.y();
+                p.z = 1;
+                p = Transform::matApply(mat, p);
+                transformViewportPos.rx() = p.x / p.z;
+                transformViewportPos.ry() = p.y / p.z;
+            }
+            {
+                Transform::Point3D p;
+                p.x = pos.x();
+                p.y = pos.y();
+                p.z = 1;
+                p = Transform::matApply(mat, p);
+                transformPos.rx() = p.x / p.z;
+                transformPos.ry() = p.y / p.z;
+            }
+        }
+#else
+        transformViewportPos = viewportPos;
+        transformPos = pos;
+#endif
+        
+        
         if (_imp->currentRoto.first && (*it) == _imp->currentRoto.first->getNode()) {
             
             if ( _imp->currentRoto.second && _imp->currentRoto.first->isSettingsPanelVisible() ) {
-                didSomething |= _imp->currentRoto.second->penUp(scaleX, scaleY, viewportPos, pos, e);
+                didSomething |= _imp->currentRoto.second->penUp(scaleX, scaleY, transformViewportPos, transformPos, e);
             }
         }
         if (_imp->currentTracker.first && (*it) == _imp->currentTracker.first->getNode()) {
             if ( _imp->currentTracker.second && _imp->currentTracker.first->isSettingsPanelVisible() ) {
-                didSomething |=  _imp->currentTracker.second->penUp(scaleX, scaleY, viewportPos, pos, e)  ;
+                didSomething |=  _imp->currentTracker.second->penUp(scaleX, scaleY, transformViewportPos, transformPos, e)  ;
             }
         }
         
         Natron::EffectInstance* effect = (*it)->getLiveInstance();
         assert(effect);
         effect->setCurrentViewportForOverlays(_imp->viewer);
-        didSomething |= effect->onOverlayPenUp_public(scaleX,scaleY,viewportPos, pos);
+        didSomething |= effect->onOverlayPenUp_public(scaleX,scaleY,transformViewportPos, transformPos);
         
         
     }
@@ -3659,30 +3817,26 @@ ViewerTab::onInternalNodeScriptNameChanged(const QString& /*name*/)
 }
 
 #ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
-void
+bool
 ViewerTabPrivate::getOverlayTransform(int time,
                                       int view,
                                       const boost::shared_ptr<Natron::Node>& target,
                                       Natron::EffectInstance* currentNode,
-                                      Transform::Matrix3x3* transform,
-                                      bool* ok) const
+                                      Transform::Matrix3x3* transform) const
 {
     if (currentNode == target->getLiveInstance()) {
-        *ok = true;
-        return;
+        return true;
     }
     RenderScale s;
     s.x = s.y = 1.;
-    Transform::Matrix3x3 mat;
     Natron::EffectInstance* input = 0;
     Natron::StatusEnum stat = eStatusReplyDefault;
+    Transform::Matrix3x3 mat;
     if (!currentNode->getNode()->isNodeDisabled()) {
         stat = currentNode->getTransform_public(time, s, view, &input, &mat);
     }
     if (stat == eStatusFailed) {
-        *ok = false;
-        return;
-        
+        return false;
     } else if (stat == eStatusReplyDefault) {
         //No transfo matrix found, pass to the input...
         
@@ -3706,40 +3860,43 @@ ViewerTabPrivate::getOverlayTransform(int time,
         }
         
         if (nonOptionalInputs.empty() && optionalInputs.empty()) {
-            *ok = false;
-            return;
+            return false;
         }
         
         ///Cycle through all non optional inputs first
         for (std::list<Natron::EffectInstance*> ::iterator it = nonOptionalInputs.begin(); it != nonOptionalInputs.end(); ++it) {
-            bool isOk;
-            getOverlayTransform(time, view, target, *it, transform, &isOk);
+            mat = Transform::Matrix3x3(1,0,0,0,1,0,0,0,1);
+            bool isOk = getOverlayTransform(time, view, target, *it, &mat);
             if (isOk) {
-                *ok = true;
-                return;
+                *transform = Transform::matMul(*transform, mat);
+                return true;
             }
         }
         
         ///Cycle through optional inputs...
         for (std::list<Natron::EffectInstance*> ::iterator it = optionalInputs.begin(); it != optionalInputs.end(); ++it) {
-            bool isOk;
-            getOverlayTransform(time, view, target, *it, transform, &isOk);
+            mat = Transform::Matrix3x3(1,0,0,0,1,0,0,0,1);
+            bool isOk = getOverlayTransform(time, view, target, *it, &mat);
             if (isOk) {
-                *ok = true;
-                return;
+                *transform = Transform::matMul(*transform, mat);
+                return true;
             }
             
         }
-        *ok = false;
+        return false;
     } else {
+        
         assert(input);
         double par = input->getPreferredAspectRatio();
-
+        
         //The mat is in pixel coordinates, though
         mat = Transform::matMul(Transform::matPixelToCanonical(par, 1, 1, false),mat);
         mat = Transform::matMul(mat,Transform::matCanonicalToPixel(par, 1, 1, false));
         *transform = Transform::matMul(*transform, mat);
-        getOverlayTransform(time, view, target, input, transform, ok);
+        bool isOk = getOverlayTransform(time, view, target, input, transform);
+        return isOk;
     }
+    return false;
+
 }
 #endif

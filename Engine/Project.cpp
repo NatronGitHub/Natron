@@ -1038,13 +1038,15 @@ Project::initializeKnobs()
 } // initializeKnobs
 
 void
-Project::evaluate(KnobI* knob,
-                  bool isSignificant,
+Project::evaluate(KnobI* /*knob*/,
+                  bool /*isSignificant*/,
                   Natron::ValueChangedReasonEnum /*reason*/)
 {
     assert(QThread::currentThread() == qApp->thread());
-    if (isSignificant && knob != _imp->formatKnob.get()) {
-        
+
+   /* if (isSignificant && knob != _imp->formatKnob.get()) {
+        getCurrentNodes();
+    
         NodeList nodes = getNodes();
         
         for (NodeList::iterator it = nodes.begin(); it != nodes.end() ; ++it) {
@@ -1057,7 +1059,7 @@ Project::evaluate(KnobI* knob,
                 n->renderCurrentFrame(true);
             }
         }
-    }
+    }*/
 }
 
 // don't return a reference to a mutex-protected object!
@@ -1419,17 +1421,17 @@ Project::reset()
     _imp->timeline->removeAllKeyframesIndicators();
     const std::vector<boost::shared_ptr<KnobI> > & knobs = getKnobs();
 
+    beginChanges();
     for (U32 i = 0; i < knobs.size(); ++i) {
-        knobs[i]->blockEvaluation();
         for (int j = 0; j < knobs[i]->getDimension(); ++j) {
             knobs[i]->resetToDefaultValue(j);
         }
-        knobs[i]->unblockEvaluation();
     }
 
-    _imp->envVars->blockEvaluation();
+
     onOCIOConfigPathChanged(appPTR->getOCIOConfigPath(),true);
-    _imp->envVars->unblockEvaluation();
+    
+    endChanges();
     
     Q_EMIT projectNameChanged(NATRON_PROJECT_UNTITLED);
     clearNodes(true);
@@ -1459,7 +1461,6 @@ Project::setOrAddProjectFormat(const Format & frmt,
     }
 
     Format dispW;
-    bool formatSet = false;
     {
         QMutexLocker l(&_imp->formatMutex);
 
@@ -1474,14 +1475,10 @@ Project::setOrAddProjectFormat(const Format & frmt,
             } else {
                 setProjectDefaultFormat(dispW);
             }
-            formatSet = true;
         } else if (!skipAdd) {
             dispW = frmt;
             tryAddProjectFormat(dispW);
         }
-    }
-    if (formatSet) {
-        Q_EMIT formatChanged(dispW);
     }
 }
 
@@ -1785,8 +1782,6 @@ Project::fixFilePath(const std::string& projectPathName,const std::string& newPr
     }
 }
     
-
-    
 bool
 Project::isRelative(const std::string& str)
 {
@@ -1871,7 +1866,7 @@ void
 Project::onOCIOConfigPathChanged(const std::string& path,bool block)
 {
     if (block) {
-        blockEvaluation();
+        beginChanges();
     }
     try {
         std::string env = _imp->envVars->getValue();
@@ -1907,7 +1902,7 @@ Project::onOCIOConfigPathChanged(const std::string& path,bool block)
         // ignore
     }
     if (block) {
-        unblockEvaluation();
+        endChanges();
     }
 }
 
@@ -1984,10 +1979,10 @@ Project::unionFrameRangeWith(int first,int last)
     curLast = _imp->frameRange->getValue(1);
     curFirst = std::min(first, curFirst);
     curLast = std::max(last, curLast);
-    blockEvaluation();
+    beginChanges();
     _imp->frameRange->setValue(curFirst, 0);
-    unblockEvaluation();
     _imp->frameRange->setValue(curLast, 1);
+    endChanges();
 
 }
     
@@ -1996,10 +1991,11 @@ Project::recomputeFrameRangeFromReaders()
 {
     int first = 1,last = 1;
     recomputeFrameRangeForAllReaders(&first, &last);
-    blockEvaluation();
+    
+    beginChanges();
     _imp->frameRange->setValue(first, 0);
-    unblockEvaluation();
     _imp->frameRange->setValue(last, 1);
+    endChanges();
 }
     
 void

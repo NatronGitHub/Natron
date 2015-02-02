@@ -195,14 +195,12 @@ copyFrom(const boost::shared_ptr<KnobI> & from,
     ///copy only if type is the same
     if ( from->typeName() == to->typeName() ) {
         to->clone(from,offset,range);
-        to->blockEvaluation();
+        to->beginChanges();
         int dims = to->getDimension();
         for (int i = 0; i < dims; ++i) {
-            if (i == dims - 1) {
-                to->unblockEvaluation();
-            }
             to->evaluateValueChange(i, Natron::eValueChangedReasonPluginEdited, true);
         }
+        to->endChanges();
     }
 
     return kOfxStatOK;
@@ -1213,12 +1211,11 @@ OfxRGBInstance::set(double r,
                     double g,
                     double b)
 {
-    _knob->blockEvaluation();
+    _knob->beginChanges();
     _knob->setValueFromPlugin(r,0);
     _knob->setValueFromPlugin(g,1);
-    _knob->unblockEvaluation();
     _knob->setValueFromPlugin(b,2);
-
+    _knob->endChanges();
     return kOfxStatOK;
 }
 
@@ -1232,12 +1229,11 @@ OfxRGBInstance::set(OfxTime time,
         qDebug() << "Attempting to call setValueAtTime on a parameter that does not have animation enabled";
         return set(r,g,b);
     }
-    _knob->blockEvaluation();
+    _knob->beginChanges();
     _knob->setValueAtTimeFromPlugin(time,r,0);
     _knob->setValueAtTimeFromPlugin(time,g,1);
-    _knob->unblockEvaluation();
     _knob->setValueAtTimeFromPlugin(time,b,2);
-
+    _knob->endChanges();
     return kOfxStatOK;
 }
 
@@ -1454,10 +1450,10 @@ OfxDouble2DInstance::set(double x1,
         ignore_result(_node->effectInstance()->editBegin( getName() ));
         doEditEnd = true;
     }
-    _knob->blockEvaluation();
+    _knob->beginChanges();
     _knob->setValueFromPlugin(x1,0);
-    _knob->unblockEvaluation();
     _knob->setValueFromPlugin(x2,1);
+    _knob->endChanges();
     if (doEditEnd) {
         _node->effectInstance()->editEnd();
     }
@@ -1480,10 +1476,10 @@ OfxDouble2DInstance::set(OfxTime time,
         ignore_result(_node->effectInstance()->editBegin( getName() ));
         doEditEnd = true;
     }
-    _knob->blockEvaluation();
+    _knob->beginChanges();
     _knob->setValueAtTimeFromPlugin(time,x1,0);
-    _knob->unblockEvaluation();
     _knob->setValueAtTimeFromPlugin(time,x2,1);
+    _knob->endChanges();
     if (doEditEnd) {
         _node->effectInstance()->editEnd();
     }
@@ -1703,11 +1699,10 @@ OfxInteger2DInstance::set(int x1,
         doEditEnd = true;
     }
 
-    _knob->blockEvaluation();
+    _knob->beginChanges();
     _knob->setValueFromPlugin(x1,0);
-    _knob->unblockEvaluation();
     _knob->setValueFromPlugin(x2,1);
-
+    _knob->endChanges();
     if (doEditEnd) {
         ignore_result(_node->effectInstance()->editEnd());
     }
@@ -1730,11 +1725,10 @@ OfxInteger2DInstance::set(OfxTime time,
         ignore_result(_node->effectInstance()->editBegin( getName() ));
         doEditEnd = true;
     }
-    _knob->blockEvaluation();
+    _knob->beginChanges();
     _knob->setValueAtTimeFromPlugin(time,x1,0);
-    _knob->unblockEvaluation();
     _knob->setValueAtTimeFromPlugin(time,x2,1);
-
+    _knob->endChanges();
     if (doEditEnd) {
         ignore_result(_node->effectInstance()->editEnd());
     }
@@ -1933,11 +1927,11 @@ OfxDouble3DInstance::set(double x1,
         ignore_result(_node->effectInstance()->editBegin( getName() ));
         doEditEnd = true;
     }
-    _knob->blockEvaluation();
+    _knob->beginChanges();
     _knob->setValueFromPlugin(x1,0);
     _knob->setValueFromPlugin(x2,1);
-    _knob->unblockEvaluation();
     _knob->setValueFromPlugin(x3,2);
+    _knob->endChanges();
     if (doEditEnd) {
         ignore_result(_node->effectInstance()->editEnd());
     }
@@ -1961,11 +1955,11 @@ OfxDouble3DInstance::set(OfxTime time,
         ignore_result(_node->effectInstance()->editBegin( getName() ));
         doEditEnd = true;
     }
-    _knob->blockEvaluation();
+    _knob->beginChanges();
     _knob->setValueAtTimeFromPlugin(time,x1,0);
     _knob->setValueAtTimeFromPlugin(time,x2,1);
-    _knob->unblockEvaluation();
     _knob->setValueAtTimeFromPlugin(time,x3,2);
+    _knob->endChanges();
     if (doEditEnd) {
         ignore_result(_node->effectInstance()->editEnd());
     }
@@ -2201,11 +2195,11 @@ OfxInteger3DInstance::set(int x1,
         ignore_result(_node->effectInstance()->editBegin( getName() ));
         doEditEnd = true;
     }
-    _knob->blockEvaluation();
+    _knob->beginChanges();
     _knob->setValueFromPlugin(x1,0);
     _knob->setValueFromPlugin(x2,1);
-    _knob->unblockEvaluation();
     _knob->setValueFromPlugin(x3,2);
+    _knob->endChanges();
     if (doEditEnd) {
         ignore_result(_node->effectInstance()->editEnd());
     }
@@ -2229,11 +2223,11 @@ OfxInteger3DInstance::set(OfxTime time,
         ignore_result(_node->effectInstance()->editBegin( getName() ));
         doEditEnd = true;
     }
-    _knob->blockEvaluation();
+    _knob->beginChanges();
     _knob->setValueAtTimeFromPlugin(time,x1,0);
     _knob->setValueAtTimeFromPlugin(time,x2,1);
-    _knob->unblockEvaluation();
     _knob->setValueAtTimeFromPlugin(time,x3,2);
+    _knob->endChanges();
     if (doEditEnd) {
         ignore_result(_node->effectInstance()->editEnd());
     }

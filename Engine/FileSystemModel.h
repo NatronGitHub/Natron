@@ -84,6 +84,9 @@ public:
      **/
     void addChild(const boost::shared_ptr<FileSystemItem>& child);
     
+    void addChild(const boost::shared_ptr<SequenceParsing::SequenceFromFiles>& sequence,
+                  const QFileInfo& info);
+    
     /**
      * @brief Remove all children, MT-safe
      **/

@@ -157,11 +157,13 @@ public:
     , lastRenderedHashValid(false)
     , renderAgeMutex()
     , renderAge()
+    , lastRenderAge()
     {
 
         for (int i = 0;i < 2; ++i) {
             activeInputs[i] = -1;
             renderAge[i] = 0;
+            lastRenderAge[i] = 0;
         }
     }
     
@@ -221,28 +223,31 @@ public:
     {
         QMutexLocker k(&renderAgeMutex);
         
-        return renderAge[texIndex];
+        U64 ret = renderAge[texIndex];
+        if (renderAge[texIndex] == std::numeric_limits<U64>::max()) {
+            renderAge[texIndex] = 0;
+        } else {
+            ++renderAge[texIndex];
+        }
+        return ret;
+        
     }
     
     bool checkAgeNoUpdate(int texIndex,U64 age)
     {
         QMutexLocker k(&renderAgeMutex);
         assert(age <= renderAge[texIndex]);
-        return age == renderAge[texIndex];
+        return age >= lastRenderAge[texIndex];
     }
     
     bool checkAndUpdateRenderAge(int texIndex,U64 age)
     {
         QMutexLocker k(&renderAgeMutex);
         assert(age <= renderAge[texIndex]);
-        if (age < renderAge[texIndex]) {
+        if (age < lastRenderAge[texIndex]) {
             return false;
         }
-        if (renderAge[texIndex] == std::numeric_limits<U64>::max()) {
-            renderAge[texIndex] = 0;
-        } else {
-            ++renderAge[texIndex];
-        }
+        lastRenderAge[texIndex] = age;
         return true;
     }
 
@@ -303,6 +308,7 @@ private:
     
     QMutex renderAgeMutex;
     U64 renderAge[2];
+    U64 lastRenderAge[2];
 };
 
 

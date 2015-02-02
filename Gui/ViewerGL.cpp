@@ -2771,8 +2771,10 @@ ViewerGL::mouseMoveEvent(QMouseEvent* e)
     bool mustRedraw = false;
     bool wasHovering = _imp->hs != eHoverStateNothing;
 
-    if ( (_imp->ms != eMouseStateDraggingImage) && _imp->overlay ) {
+    if ( (_imp->ms == eMouseStateDraggingImage) || !_imp->overlay ) {
+        unsetCursor();
 
+    } else {
         _imp->hs = eHoverStateNothing;
         if ( isWipeHandleVisible() && _imp->isNearbyWipeCenter(zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight) ) {
             setCursor( QCursor(Qt::SizeAllCursor) );
@@ -2807,13 +2809,11 @@ ViewerGL::mouseMoveEvent(QMouseEvent* e)
                         ( _imp->ms == eMouseStateDraggingRoiTopRight) ) {
                 setCursor( QCursor(Qt::SizeBDiagCursor) );
             } else {
-                setCursor( QCursor(Qt::ArrowCursor) );
+                unsetCursor();
             }
         } else {
-            setCursor( QCursor(Qt::ArrowCursor) );
+            unsetCursor();
         }
-    } else {
-        setCursor( QCursor(Qt::ArrowCursor) );
     }
 
     if ( (_imp->hs == eHoverStateNothing) && wasHovering ) {
@@ -3071,7 +3071,7 @@ ViewerGL::mouseMoveEvent(QMouseEvent* e)
 //    if(_imp->viewerTab->getGui()->_projectGui->hasPickers()){
 //        setCursor(appPTR->getColorPickerCursor());
 //    }else{
-//        setCursor(QCursor(Qt::ArrowCursor));
+//        unsetCursor();
 //    }
     QGLWidget::mouseMoveEvent(e);
 } // mouseMoveEvent

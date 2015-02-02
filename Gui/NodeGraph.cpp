@@ -1539,7 +1539,7 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
         _imp->_selectionRect->hide();
         _imp->editSelectionFromSelectionRectangle( modCASIsShift(e) );
     }
-    setCursor( QCursor(Qt::ArrowCursor) );
+    unsetCursor();
 } // mouseReleaseEvent
 
 void
@@ -1595,7 +1595,7 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
             setCursor( QCursor(Qt::OpenHandCursor) );
         } else if (selectedEdge) {
         } else if (!selectedEdge && !selected) {
-            setCursor( QCursor(Qt::ArrowCursor) );
+            unsetCursor();
         }
     }
 

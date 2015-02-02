@@ -1607,11 +1607,14 @@ KnobGui::linkTo(int dimension)
                 expr << "[dimension]";
             }
             
+            thisKnob->beginChanges();
             for (int i = 0; i < thisKnob->getDimension(); ++i) {
                 if (i == dimension || dimension == -1) {
                     thisKnob->setExpression(dimension, expr.str(), false);
                 }
             }
+            thisKnob->endChanges();
+
 
             thisKnob->getHolder()->getApp()->triggerAutoSave();
         }

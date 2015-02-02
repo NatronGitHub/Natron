@@ -40,6 +40,7 @@ win32-msvc* {
 	} else {
 		QMAKE_LFLAGS += /MACHINE:X86
 	}
+        QMAKE_LFLAGS += /ENTRY:"mainCRTStartup"
 }
 
 ################

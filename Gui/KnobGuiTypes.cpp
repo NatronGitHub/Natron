@@ -273,13 +273,11 @@ Int_KnobGui::onDimensionSwitchClicked()
         int dim = _knob->getDimension();
         if (dim > 1) {
             double value(_spinBoxes[0].first->value());
-            _knob->blockEvaluation();
+            _knob->beginChanges();
             for (int i = 1; i < dim; ++i) {
-                if (i == dim -1) {
-                    _knob->unblockEvaluation();
-                }
                 _knob->setValue(value,i);
             }
+            _knob->endChanges();
         }
     }
     
@@ -982,13 +980,11 @@ Double_KnobGui::onDimensionSwitchClicked()
         int dim = _knob->getDimension();
         if (dim > 1) {
             double value(_spinBoxes[0].first->value());
-            _knob->blockEvaluation();
+            _knob->beginChanges();
             for (int i = 1; i < dim; ++i) {
-                if (i == dim -1) {
-                    _knob->unblockEvaluation();
-                }
                 _knob->setValue(value,i);
             }
+            _knob->endChanges();
         }
     }
 
@@ -2288,16 +2284,16 @@ Color_KnobGui::showColorDialog()
     QObject::connect( &dialog,SIGNAL( currentColorChanged(QColor) ),this,SLOT( onDialogCurrentColorChanged(QColor) ) );
     if (!dialog.exec()) {
         
-        _knob->blockEvaluation();
+        _knob->beginChanges();
 
         for (int i = 0; i < _dimension; ++i) {
             _knob->setValue(_lastColor[i],i);
         }
-        _knob->unblockEvaluation();
+        _knob->endChanges();
 
     } else {
         
-        _knob->blockEvaluation();
+        _knob->beginChanges();
 
         ///refresh the last value so that the undo command retrieves the value that was prior to opening the dialog
         for (int i = 0; i < _dimension; ++i) {
@@ -2341,7 +2337,7 @@ Color_KnobGui::showColorDialog()
 
         onColorChanged();
         
-        _knob->unblockEvaluation();
+        _knob->endChanges();
 
     }
     _knob->evaluateValueChange(0, eValueChangedReasonNatronGuiEdited, true);
@@ -2350,7 +2346,7 @@ Color_KnobGui::showColorDialog()
 void
 Color_KnobGui::onDialogCurrentColorChanged(const QColor & color)
 {
-    _knob->blockEvaluation();
+    _knob->beginChanges();
     _knob->setValue(Natron::Color::from_func_srgb(color.redF()), 0);
     if (_dimension > 1) {
         _knob->setValue(Natron::Color::from_func_srgb(color.greenF()), 1);
@@ -2360,8 +2356,7 @@ Color_KnobGui::onDialogCurrentColorChanged(const QColor & color)
 //            _knob->setValue(color.alphaF(), 3); // no conversion, alpha is linear
 //        }
     }
-    _knob->unblockEvaluation();
-    _knob->evaluateValueChange(0, eValueChangedReasonNatronGuiEdited, true);
+    _knob->endChanges();
 }
 
 void

@@ -397,10 +397,10 @@ TrackerGui::penDown(double scaleX,
         assert(newInstanceKnob); //< if it crashes here that means the parameter's name changed in the OpenFX plug-in.
         Double_Knob* dblKnob = dynamic_cast<Double_Knob*>( newInstanceKnob.get() );
         assert(dblKnob);
-        dblKnob->blockEvaluation();
+        dblKnob->beginChanges();
         dblKnob->setValue(pos.x(), 0);
-        dblKnob->unblockEvaluation();
         dblKnob->setValue(pos.y(), 1);
+        dblKnob->endChanges();
         didSomething = true;
     }
 

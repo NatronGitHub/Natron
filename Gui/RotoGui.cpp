@@ -2058,7 +2058,7 @@ RotoGui::penMotion(double /*scaleX*/,
     
     
     if (!cursorSet) {
-        _imp->viewer->setCursor( QCursor(Qt::ArrowCursor) );
+        _imp->viewer->unsetCursor();
     }
 
 

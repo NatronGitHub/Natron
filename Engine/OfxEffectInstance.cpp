@@ -197,7 +197,7 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
 //                                                        _effect->getDescriptor().getPluginGrouping() );
 
 
-        blockEvaluation();
+        beginChanges();
         OfxStatus stat;
         {
             SET_CAN_SET_VALUE(true);
@@ -253,7 +253,7 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
                 stat = _effect->createInstanceAction();
             }
             _created = true;
-            unblockEvaluation();
+            
             
         } // SET_CAN_SET_VALUE(true);
         
@@ -345,6 +345,7 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
             fileNameKnob->evaluateValueChange(0,Natron::eValueChangedReasonUserEdited, true);
         }
     }
+    endChanges();
     
 } // createOfxImageEffectInstance
 

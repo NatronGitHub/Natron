@@ -69,14 +69,9 @@ AddKeysCommand::addOrRemoveKeyframe(bool add)
             boost::shared_ptr<KnobI> knob = isKnobCurve->getInternalKnob();
             boost::shared_ptr<Parametric_Knob> isParametric = boost::dynamic_pointer_cast<Parametric_Knob>(knob);
             
-            knob->blockEvaluation();
-            bool isUnblocked = false;
+            knob->beginChanges();
             assert( !(*it)->keys.empty() );
             for (U32 i = 0; i < (*it)->keys.size(); ++i) {
-                if ( (i == (*it)->keys.size() - 1) && ( next == _keys.end() ) ) {
-                    knob->unblockEvaluation();
-                    isUnblocked = true;
-                }
                 
                 double time = (*it)->keys[i].getTime();
                 
@@ -128,12 +123,8 @@ AddKeysCommand::addOrRemoveKeyframe(bool add)
                     }
                 }
             }
-            if ( next == _keys.end() ) {
-                --next;
-            }
-            if (!isUnblocked) {
-                knob->unblockEvaluation();
-            }
+            knob->endChanges();
+    
         } else if (isBezierCurve) {
             for (U32 i = 0; i < (*it)->keys.size(); ++i) {
                 if (add) {
@@ -183,7 +174,7 @@ RemoveKeysCommand::addOrRemoveKeyframe(bool add)
         
         if (isKnobCurve) {
             if (i != _keys.size() - 1) {
-                isKnobCurve->getInternalKnob()->blockEvaluation();
+                isKnobCurve->getInternalKnob()->beginChanges();
                 hasBlocked = true;
             }
             
@@ -241,7 +232,7 @@ RemoveKeysCommand::addOrRemoveKeyframe(bool add)
             }
             
             if (hasBlocked) {
-                isKnobCurve->getInternalKnob()->unblockEvaluation();
+                isKnobCurve->getInternalKnob()->endChanges();
             }
         } else if (isBezierCurve) {
             if (add) {
@@ -332,6 +323,7 @@ moveKey(KeyPtr &k,
             int newIndex;
             
             k->key = curve->setKeyFrameValueAndTime(newX,newY, keyframeIndex, &newIndex);
+            isParametric->evaluateValueChange(isKnobCurve->getDimension(), Natron::eValueChangedReasonUserEdited, true);
         } else {
             knob->moveValueAtTime(k->key.getTime(), isKnobCurve->getDimension(), dt, dv,&k->key);
         }
@@ -348,7 +340,7 @@ void
 MoveKeysCommand::move(double dt,
                       double dv)
 {
-    std::list<KnobI*> differentKnobs;
+    std::list<KnobHolder*> differentKnobs;
 
     std::list<boost::shared_ptr<RotoContext> > rotoToEvaluate;
     
@@ -364,9 +356,11 @@ MoveKeysCommand::move(double dt,
                 }
             } else {
                 KnobI* k = isKnobCurve->getInternalKnob().get();
-                if ( std::find(differentKnobs.begin(), differentKnobs.end(), k) == differentKnobs.end() ) {
-                    differentKnobs.push_back(k);
-                    k->blockEvaluation();
+                if (k->getHolder()) {
+                    if ( std::find(differentKnobs.begin(), differentKnobs.end(), k->getHolder()) == differentKnobs.end() ) {
+                        differentKnobs.push_back(k->getHolder());
+                        k->getHolder()->beginChanges();
+                    }
                 }
             }
         }
@@ -384,12 +378,9 @@ MoveKeysCommand::move(double dt,
         }
     }
     
-    for (std::list<KnobI*>::iterator it = differentKnobs.begin(); it != differentKnobs.end(); ++it) {
-        (*it)->unblockEvaluation();
-        if (_firstRedoCalled || _updateOnFirstRedo) {
-            if ((*it)->getHolder()) {
-                (*it)->getHolder()->evaluate_public(*it, true, Natron::eValueChangedReasonUserEdited);
-            }
+    if (_firstRedoCalled || _updateOnFirstRedo) {
+        for (std::list<KnobHolder*>::iterator it = differentKnobs.begin(); it != differentKnobs.end(); ++it) {
+            (*it)->endChanges();
         }
     }
     
@@ -478,7 +469,7 @@ SetKeysInterpolationCommand::setNewInterpolation(bool undo)
                 KnobI* k = isKnobCurve->getInternalKnob().get();
                 if ( std::find(differentKnobs.begin(), differentKnobs.end(), k) == differentKnobs.end() ) {
                     differentKnobs.push_back(k);
-                    k->blockEvaluation();
+                    k->beginChanges();
                 }
             }
         } else {
@@ -520,8 +511,7 @@ SetKeysInterpolationCommand::setNewInterpolation(bool undo)
     }
     
     for (std::list<KnobI*>::iterator it = differentKnobs.begin(); it != differentKnobs.end(); ++it) {
-        (*it)->unblockEvaluation();
-        (*it)->getHolder()->evaluate_public(*it, true, Natron::eValueChangedReasonUserEdited);
+        (*it)->endChanges();
     }
     for (std::list<boost::shared_ptr<RotoContext> >::iterator it = rotoToEvaluate.begin(); it!=rotoToEvaluate.end();++it) {
         (*it)->evaluateChange();
@@ -675,7 +665,7 @@ MoveTangentCommand::setNewDerivatives(bool undo)
         Natron::KeyframeTypeEnum interp = undo ? _oldInterp : _newInterp;
         
         if (!isParametric) {
-            attachedKnob->blockEvaluation();
+            attachedKnob->beginChanges();
             if (_setBoth) {
                 attachedKnob->moveDerivativesAtTime(isKnobCurve->getDimension(), _key->key.getTime(), left, right);
             } else {
@@ -685,16 +675,16 @@ MoveTangentCommand::setNewDerivatives(bool undo)
                 
             }
             attachedKnob->setInterpolationAtTime(isKnobCurve->getDimension(), _key->key.getTime(), interp, &_key->key);
-            attachedKnob->unblockEvaluation();
+            if (_firstRedoCalled || _updateOnFirstRedo) {
+                attachedKnob->endChanges();
+            }
         } else {
             int keyframeIndexInCurve = _key->curve->getInternalCurve()->keyFrameIndex( _key->key.getTime() );
             _key->key = _key->curve->getInternalCurve()->setKeyFrameInterpolation(interp, keyframeIndexInCurve);
             _key->key = _key->curve->getInternalCurve()->setKeyFrameDerivatives(left, right,keyframeIndexInCurve);
-        }
-        
-        if (_firstRedoCalled || _updateOnFirstRedo) {
             attachedKnob->evaluateValueChange(isKnobCurve->getDimension(), Natron::eValueChangedReasonUserEdited, true);
         }
+        
         _widget->refreshDisplayedTangents();
     }
 }

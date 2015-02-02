@@ -374,12 +374,12 @@ public:
      * @brief When set to true the instanceChanged action on the plugin and evaluate (render) will not be called
      * when issuing value changes. Internally it maintains a counter, when it reaches 0 the evaluation is unblocked.
      **/
-    virtual void blockEvaluation() = 0;
+    virtual void beginChanges() = 0;
 
     /**
      * @brief To be called to reactivate evaluation. Internally it maintains a counter, when it reaches 0 the evaluation is unblocked.
      **/
-    virtual void unblockEvaluation() = 0;
+    virtual void endChanges() = 0;
 
     /**
      * @brief Called by setValue to refresh the GUI, call the instanceChanged action on the plugin and
@@ -959,7 +959,8 @@ public:
     {
         eValueChangedReturnCodeNoKeyframeAdded = 0,
         eValueChangedReturnCodeKeyframeModified,
-        eValueChangedReturnCodeKeyframeAdded
+        eValueChangedReturnCodeKeyframeAdded,
+        eValueChangedReturnCodeNothingChanged,
     };
 
     /**
@@ -1011,8 +1012,8 @@ public:
 
     ///Populates for each dimension: the enabled state, the curve and the animation level
     virtual void populate() OVERRIDE;
-    virtual void blockEvaluation() OVERRIDE FINAL;
-    virtual void unblockEvaluation() OVERRIDE FINAL;
+    virtual void beginChanges() OVERRIDE FINAL;
+    virtual void endChanges() OVERRIDE FINAL;
     virtual void evaluateValueChange(int dimension,Natron::ValueChangedReasonEnum reason, bool originatedFromMainThread) OVERRIDE FINAL;
 
 private:
@@ -1703,6 +1704,8 @@ public:
     
     bool isEvaluationBlocked() const;
 
+    void appendValueChange(KnobI* knob,Natron::ValueChangedReasonEnum reason);
+    
 protected:
     
     //////////////////////////////////////////////////////////////////////////////////////////
@@ -1768,12 +1771,11 @@ public:
     int getRecursionLevel() const;
 
     /**
-     * @brief When set to true any change which would trigger an instanceChanged action or cause a new
-     * evaluation will not cause them to be called. Internally maintains a counter, when 0 evaluation
-     * is enabled.
+     * @brief Use this to bracket setValue() calls, this will actually trigger the evaluate() and instanceChanged()
+     * if needed when endChanges() is called
      **/
-    void blockEvaluation();
-    void unblockEvaluation();
+    void beginChanges();
+    void endChanges(bool discardEverything = false);
 
     /**
      * @brief The virtual portion of notifyProjectBeginValuesChanged(). This is called by the project

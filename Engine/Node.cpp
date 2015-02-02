@@ -1543,7 +1543,7 @@ void
 Node::initializeKnobs(int renderScaleSupportPref)
 {
     ////Only called by the main-thread
-    _imp->liveInstance->blockEvaluation();
+    _imp->liveInstance->beginChanges();
     
     assert( QThread::currentThread() == qApp->thread() );
     assert(!_imp->knobsInitialized);
@@ -1764,9 +1764,8 @@ Node::initializeKnobs(int renderScaleSupportPref)
     }
     
     _imp->knobsInitialized = true;
-    _imp->liveInstance->unblockEvaluation();
-    
-    
+
+    _imp->liveInstance->endChanges();
     Q_EMIT knobsInitialized();
 } // initializeKnobs
 
