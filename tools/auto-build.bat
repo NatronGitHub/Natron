@@ -12,14 +12,6 @@ if not exist "%TMP%" (
 	mkdir %TMP%
 )
 
-if not exist "%CWD%\src" (
-	mkdir %CWD%\src
-)
-
-if not exist "%CWD%\logs" (
-	mkdir %CWD%\logs
-)
-
 if not exist "%TMP%\Natron" (
 	cd %TMP%
 	git clone %GIT_NATRON%
@@ -50,8 +42,10 @@ git submodule update -i --recursive
 git log|head -1|awk "{print $2}" > curVersion.txt
 set /p GITV_NATRON=<curVersion.txt
 set /p ORIG_NATRON=<%CWD%\NATRON_WORKSHOP
-echo Natron %GITV_NATRON% vs. %ORIG_NATRON%
-if not "%GITV_NATRON%" == "%ORIG_NATRON%" (
+echo Natron git %GITV_NATRON% vs. last version %ORIG_NATRON%
+if "%GITV_NATRON%"=="%ORIG_NATRON%" (
+	echo "Natron up to date"
+) else (
 	echo "Natron update needed"
 	set BUILD_NATRON=1
 	set BUILD_ALL=1
@@ -65,9 +59,11 @@ git submodule update -i --recursive
 git log|head -1|awk "{print $2}" > curVersion.txt
 set /p GITV_IO=<curVersion.txt
 set /p ORIG_IO=<%CWD%\IO_WORKSHOP
-echo Natron %GITV_IO% vs. %ORIG_IO%
-if not "%GITV_IO%" == "%ORIG_IO%" (
-	echo "IO update needed"
+echo openfx-io git %GITV_IO% vs. last version %ORIG_IO%
+if "%GITV_IO%"=="%ORIG_IO%" (
+	echo "openfx-io up to date"
+) else (
+	echo "openfx-io update needed"
 	set BUILD_IO=1
 	set BUILD_ALL=1
 	echo %GITV_IO% > %CWD%\IO_WORKSHOP
@@ -80,9 +76,11 @@ git submodule update -i --recursive
 git log|head -1|awk "{print $2}" > curVersion.txt
 set /p GITV_MISC=<curVersion.txt
 set /p ORIG_MISC=<%CWD%\MISC_WORKSHOP
-echo Natron %GITV_MISC% vs. %ORIG_MISC%
-if not "%GITV_MISC%" == "%ORIG_MISC%" (
-	echo "MISC update needed"
+echo openfx-misc git %GITV_MISC% vs. last version %ORIG_MISC%
+if "%GITV_MISC%"=="%ORIG_MISC%" (
+	echo "openfx-misc up to date"
+) else (
+	echo "openfx-misc update needed"
 	set BUILD_MISC=1
 	set BUILD_ALL=1
 	echo %GITV_MISC% > %CWD%\MISC_WORKSHOP
@@ -113,7 +111,7 @@ cd %CWD%
 
 :BUILD_ARCH
 cd %CWD%
-	call build-natron.bat %NATRON_BRANCH% %BIT% 1 Release 1
+	call build-natron.bat %NATRON_BRANCH% %BIT% 0 Release 1
 	cd %CWD%
 	call build-plugins.bat %BIT% Release 1
 	if exist "%TMP%\repo\Windows%BIT%" (

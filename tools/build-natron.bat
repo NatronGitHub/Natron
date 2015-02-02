@@ -89,7 +89,7 @@ if exist "config.pri" (
 	del config.pri 
 )
 
-copy /Y %CWD%\config.pri config.pri
+copy /Y %CWD%\..\config.pri config.pri
 
 qmake -r -tp vc -spec C:\Qt\4.8.6_win32\mkspecs\win32-msvc2010 CONFIG+=%BITS%bit
 

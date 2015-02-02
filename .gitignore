@@ -50,7 +50,7 @@ x64/
 build/
 [Bb]in/
 [Oo]bj/
-
+*autobuild*
 # MSTest test Results
 [Tt]est[Rr]esult*/
 [Bb]uild[Ll]og.*
