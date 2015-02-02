@@ -22,10 +22,15 @@ GCC_DIAG_ON(missing-field-initializers)
 #include <algorithm>
 #include <cstring>
 #include <cctype>
+
+CLANG_DIAG_OFF(deprecated)
+CLANG_DIAG_OFF(uninitialized)
 #include <QStack>
 #include <QCoreApplication>
 #include <QDebug>
 #include <QSharedPointer>
+CLANG_DIAG_ON(deprecated)
+CLANG_DIAG_ON(uninitialized)
 
 // A QSharedPointer is used with a deletion function to invalidate a pointer
 // when the property value is cleared. This should be a QSharedPointer with

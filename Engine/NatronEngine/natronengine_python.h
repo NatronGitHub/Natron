@@ -15,7 +15,11 @@
 
 #include <pysidesignal.h>
 // Module Includes
-#include <pyside_qtcore_python.h>
+CLANG_DIAG_OFF(deprecated)
+CLANG_DIAG_OFF(uninitialized)
+#include <pyside_qtcore_python.h> // produces warnings
+CLANG_DIAG_ON(deprecated)
+CLANG_DIAG_ON(uninitialized)
 
 // Binded library includes
 #include <Enums.h>

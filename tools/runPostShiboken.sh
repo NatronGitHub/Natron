@@ -23,5 +23,17 @@ GCC_DIAG_OFF(missing-field-initializers)\
 sed -e 's@^#include <pysidemetafunction.h>$@CLANG_DIAG_OFF(header-guard)\
 #include <pysidemetafunction.h> // has wrong header guards in pyside 1.2.2@' -i .bak Engine/NatronEngine/*.cpp Gui/NatronGui/*.cpp
 
+sed -e 's@^#include <pyside_qtcore_python.h>$@CLANG_DIAG_OFF(deprecated)\
+CLANG_DIAG_OFF(uninitialized)\
+#include <pyside_qtcore_python.h> // produces warnings\
+CLANG_DIAG_ON(deprecated)\
+CLANG_DIAG_ON(uninitialized)@' -i .bak Engine/NatronEngine/*.cpp Gui/NatronGui/*.cpp Engine/NatronEngine/*.h Gui/NatronGui/*.h
+
+sed -e 's@^#include <pyside_qtgui_python.h>$@CLANG_DIAG_OFF(deprecated)\
+CLANG_DIAG_OFF(uninitialized)\
+#include <pyside_qtgui_python.h> // produces warnings\
+CLANG_DIAG_ON(deprecated)\
+CLANG_DIAG_ON(uninitialized)@' -i .bak Engine/NatronEngine/*.cpp Gui/NatronGui/*.cpp Engine/NatronEngine/*.h Gui/NatronGui/*.h
+
 # clean up
 rm Gui/NatronGui/*.bak Engine/NatronEngine/*.bak

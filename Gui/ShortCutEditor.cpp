@@ -15,6 +15,10 @@
 #include "ShortCutEditor.h"
 
 #include <list>
+
+#include "Global/Macros.h"
+CLANG_DIAG_OFF(deprecated)
+CLANG_DIAG_OFF(uninitialized)
 #include <QVBoxLayout>
 #include <QTreeWidget>
 #include <QTreeWidgetItem>
@@ -25,6 +29,8 @@
 #include <QStyledItemDelegate>
 #include <QPainter>
 #include <QApplication>
+CLANG_DIAG_ON(deprecated)
+CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/Button.h"
 #include "Gui/GuiApplicationManager.h"

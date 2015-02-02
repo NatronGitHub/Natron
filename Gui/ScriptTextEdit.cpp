@@ -17,11 +17,16 @@
 
 #include "Engine/Node.h"
 
-#include "Gui/GuiAppInstance.h"
-#include "Gui/GuiApplicationManager.h"
-
+#include "Global/Macros.h"
+CLANG_DIAG_OFF(deprecated)
+CLANG_DIAG_OFF(uninitialized)
 #include <QStyle>
 #include <QDropEvent>
+CLANG_DIAG_ON(deprecated)
+CLANG_DIAG_ON(uninitialized)
+
+#include "Gui/GuiAppInstance.h"
+#include "Gui/GuiApplicationManager.h"
 
 ScriptTextEdit::ScriptTextEdit(QWidget* parent)
 : QTextEdit(parent)

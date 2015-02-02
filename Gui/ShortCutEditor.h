@@ -21,9 +21,15 @@ GCC_DIAG_OFF_48(unused-local-typedefs) // /opt/boost/include/boost/serialization
 #include <boost/scoped_ptr.hpp>
 GCC_DIAG_OFF_48(unused-local-typedefs)
 #endif
+
+CLANG_DIAG_OFF(deprecated)
+CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_OFF(deprecated-register) //'register' storage class specifier is deprecated
 #include <QWidget>
+CLANG_DIAG_ON(deprecated)
+CLANG_DIAG_ON(uninitialized)
 CLANG_DIAG_ON(deprecated-register)
+
 #include "Gui/LineEdit.h"
 
 class BoundAction;

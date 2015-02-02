@@ -9,6 +9,9 @@
 
 #include "MessageBox.h"
 
+#include "Global/Macros.h"
+CLANG_DIAG_OFF(deprecated)
+CLANG_DIAG_OFF(uninitialized)
 #include <QHBoxLayout>
 #include <QVBoxLayout>
 #include <QDialogButtonBox>
@@ -19,6 +22,8 @@
 #include <QTextEdit>
 #include <QApplication>
 #include <QDesktopWidget>
+CLANG_DIAG_ON(deprecated)
+CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/FromQtEnums.h"
 #include "Gui/GuiApplicationManager.h"
