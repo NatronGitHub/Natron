@@ -670,6 +670,7 @@ CLArgsPrivate::parse()
                 w.filename = AppManager::qt_tildeExpansion(w.filename);
 #endif
                 foundFilename = true;
+#pragma message WARN("dead store: foundFilename is never used. Why not remove it?")
             }
         }
         
@@ -679,6 +680,7 @@ CLArgsPrivate::parse()
         }
         args.erase(it,nextNext);
 
+#pragma message WARN("dead store: w is never used and is destroyed here - probably a BUG")
     } // for (;;)
     
     bool atLeastOneOutput = false;
@@ -718,6 +720,7 @@ CLArgsPrivate::parse()
         if (!next->startsWith("-") && !next->startsWith("--")) {
             w.filename = *next;
             foundFileName = true;
+#pragma message WARN("dead store: foundFilename is never used. Why not remove it?")
         }
         
         writers.push_back(w);
@@ -2767,7 +2770,7 @@ AppManager::getPluginIDs(const std::string& filter)
 static wchar_t*
 char2wchar(char* arg)
 {
-    wchar_t *res;
+    wchar_t *res = NULL;
 #ifdef HAVE_BROKEN_MBSTOWCS
     /* Some platforms have a broken implementation of
      * mbstowcs which does not count the characters that
@@ -2822,6 +2825,7 @@ char2wchar(char* arg)
              unless there is a bug in the C library, or I
              misunderstood how mbrtowc works. */
             fprintf(stderr, "unexpected mbrtowc result -2\n");
+            free(res);
             return NULL;
         }
         if (converted == (size_t)-1) {
@@ -2863,6 +2867,7 @@ char2wchar(char* arg)
     return res;
 oom:
     fprintf(stderr, "out of memory\n");
+    free(res);
     return NULL;
 }
 

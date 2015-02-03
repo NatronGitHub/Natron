@@ -2164,8 +2164,8 @@ EditScriptDialog::onHelpRequested()
 QString
 EditScriptDialog::getExpression(bool* hasRetVariable) const
 {
-    if (_imp->useRetButton) {
-        *hasRetVariable = _imp->useRetButton->isChecked();
+    if (hasRetVariable) {
+        *hasRetVariable = _imp->useRetButton ? _imp->useRetButton->isChecked() : false;
     }
     return _imp->expressionEdit->toPlainText();
 }

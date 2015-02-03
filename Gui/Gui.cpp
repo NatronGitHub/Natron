@@ -1266,7 +1266,7 @@ Gui::createGroupGui(const boost::shared_ptr<Natron::Node>& group,bool requestedB
     NodeGraph* nodeGraph = new NodeGraph(this,collection,scene,this);
     nodeGraph->setObjectName(group->getLabel().c_str());
     _imp->_groups.push_back(nodeGraph);
-    if (!requestedByLoad && !getApp()->isCreatingPythonGroup()) {
+    if (where && !requestedByLoad && !getApp()->isCreatingPythonGroup()) {
         where->appendTab(nodeGraph,nodeGraph);
         QTimer::singleShot( 25, nodeGraph, SLOT(centerOnAllNodes()));
     } else {

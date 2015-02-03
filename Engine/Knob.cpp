@@ -2846,13 +2846,12 @@ KnobHolder::endChanges(bool discardEverything)
         if (discardEverything) {
             return;
         }
-        Natron::ValueChangedReasonEnum reason;
-        for (std::map<KnobI*,Natron::ValueChangedReasonEnum >::iterator it = knobChanged.begin(); it!=knobChanged.end(); ++it) {
+        Natron::ValueChangedReasonEnum reason = knobChanged.begin()->second;
+        for (std::map<KnobI*,Natron::ValueChangedReasonEnum >::iterator it = knobChanged.begin();
+             it != knobChanged.end();
+             ++it) {
             if (it->first) {
                 onKnobValueChanged_public(it->first, it->second, getCurrentTime(), true);
-            }
-            if (it == knobChanged.begin()) {
-                reason = it->second;
             }
         }
         if (significant) {
