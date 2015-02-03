@@ -1450,9 +1450,8 @@ static void exportUserKnob(const boost::shared_ptr<KnobI>& knob,const QString& f
         WRITE_INDENT(1); WRITE_STRING("param = " + fullyQualifiedNodeName + ".createOutputFileParam(" +
                                       ESC(isOutFile->getName()) +
                                       ", " + ESC(isOutFile->getDescription()) + ")");
-#pragma message WARN("probably a BUG: isFile is NULL here")
-        assert(isFile); // crash
-        QString seqStr = isFile->isInputImageFile() ? "True" : "False";
+        assert(isOutFile); 
+        QString seqStr = isOutFile->isOutputImageFile() ? "True" : "False";
         WRITE_INDENT(1); WRITE_STRING("param.setSequenceEnabled("+ seqStr + ")");
     } else if (isPath) {
         WRITE_INDENT(1); WRITE_STRING("param = " + fullyQualifiedNodeName + ".createPathParam(" +

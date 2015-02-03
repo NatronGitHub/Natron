@@ -658,7 +658,6 @@ CLArgsPrivate::parse()
         CLArgs::WriterArg w;
         w.name = *next;
         
-        bool foundFilename = false;
         QStringList::iterator nextNext = next;
         ++nextNext;
         
@@ -669,18 +668,16 @@ CLArgsPrivate::parse()
 #if defined(Q_OS_UNIX)
                 w.filename = AppManager::qt_tildeExpansion(w.filename);
 #endif
-                foundFilename = true;
-#pragma message WARN("dead store: foundFilename is never used. Why not remove it?")
             }
         }
         
+        writers.push_back(w);
         QStringList::iterator end = nextNext;
         if (nextNext != args.end()) {
             ++nextNext;
         }
         args.erase(it,nextNext);
 
-#pragma message WARN("dead store: w is never used and is destroyed here - probably a BUG")
     } // for (;;)
     
     bool atLeastOneOutput = false;
@@ -707,7 +704,6 @@ CLArgsPrivate::parse()
         atLeastOneOutput = true;
         
         //Check for a mandatory file name
-        bool foundFileName = false;
         QStringList::iterator next = it;
         ++next;
         if (next == args.end()) {
@@ -719,8 +715,6 @@ CLArgsPrivate::parse()
         //Check for an optional filename
         if (!next->startsWith("-") && !next->startsWith("--")) {
             w.filename = *next;
-            foundFileName = true;
-#pragma message WARN("dead store: foundFilename is never used. Why not remove it?")
         }
         
         writers.push_back(w);
