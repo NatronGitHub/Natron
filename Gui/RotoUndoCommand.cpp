@@ -187,9 +187,7 @@ TransformUndoCommand::TransformUndoCommand(RotoGui* roto,
                                            double ty,
                                            double sx,
                                            double sy,
-                                           int time,
-                                           TransformPointsSelectionEnum type,
-                                           const QRectF& bbox)
+                                           int time)
     : QUndoCommand()
       , _firstRedoCalled(false)
       , _roto(roto)
@@ -257,7 +255,7 @@ TransformUndoCommand::redo()
         _roto->setSelection(_selectedCurves, _selectedPoints);
         _roto->evaluate(true);
     } else {
-        _roto->refreshSelectionBBox();
+       // _roto->refreshSelectionBBox();
         _roto->onRefreshAsked();
     }
 

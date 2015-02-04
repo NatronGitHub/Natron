@@ -2156,8 +2156,7 @@ RotoGui::penMotion(double /*scaleX*/,
 
         double tx = 0., ty = 0.;
         double skewX = 0.,skewY = 0.;
-        TransformUndoCommand::TransformPointsSelectionEnum type = TransformUndoCommand::eTransformAllPoints;
-        pushUndoCommand( new TransformUndoCommand(this,center.x(),center.y(),rot,skewX,skewY,tx,ty,sx,sy,time,type,_imp->rotoData->selectedCpsBbox) );
+        pushUndoCommand( new TransformUndoCommand(this,center.x(),center.y(),rot,skewX,skewY,tx,ty,sx,sy,time) );
         _imp->evaluateOnPenUp = true;
         didSomething = true;
         break;
@@ -2220,7 +2219,7 @@ RotoGui::penMotion(double /*scaleX*/,
     
 
         
-        pushUndoCommand( new TransformUndoCommand(this,center.x(),center.y(),rot,skewX,skewY,tx,ty,sx,sy,time,type,bbox) );
+        pushUndoCommand( new TransformUndoCommand(this,center.x(),center.y(),rot,skewX,skewY,tx,ty,sx,sy,time) );
         _imp->evaluateOnPenUp = true;
         didSomething = true;
         break;
@@ -2283,7 +2282,7 @@ RotoGui::penMotion(double /*scaleX*/,
             }
         }
         
-        pushUndoCommand( new TransformUndoCommand(this,center.x(),center.y(),rot,skewX,skewY,tx,ty,sx,sy,time,type,_imp->rotoData->selectedCpsBbox) );
+        pushUndoCommand( new TransformUndoCommand(this,center.x(),center.y(),rot,skewX,skewY,tx,ty,sx,sy,time) );
 
         _imp->evaluateOnPenUp = true;
         didSomething = true;
@@ -2354,6 +2353,18 @@ RotoGui::penUp(double /*scaleX*/,
     _imp->rotoData->cpBeingDragged.second.reset();
     _imp->rotoData->featherBarBeingDragged.first.reset();
     _imp->rotoData->featherBarBeingDragged.second.reset();
+    
+    if (_imp->state == eEventStateDraggingBBoxMidLeft ||
+        _imp->state == eEventStateDraggingBBoxMidLeft ||
+        _imp->state == eEventStateDraggingBBoxMidTop ||
+        _imp->state == eEventStateDraggingBBoxMidBtm ||
+        _imp->state == eEventStateDraggingBBoxTopLeft ||
+        _imp->state == eEventStateDraggingBBoxTopRight ||
+        _imp->state == eEventStateDraggingBBoxBtmRight ||
+        _imp->state == eEventStateDraggingBBoxBtmLeft) {
+        refreshSelectionBBox();
+    }
+    
     _imp->state = eEventStateNone;
 
     if ( (_imp->selectedTool == eRotoToolDrawEllipse) || (_imp->selectedTool == eRotoToolDrawRectangle) ) {

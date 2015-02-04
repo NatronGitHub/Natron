@@ -94,9 +94,7 @@ public:
                          double ty,
                          double sx,
                          double sy,
-                         int time,
-                         TransformPointsSelectionEnum type,
-                         const QRectF& bbox);
+                         int time);
 
     virtual ~TransformUndoCommand();
 
