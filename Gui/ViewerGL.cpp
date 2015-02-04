@@ -3757,14 +3757,18 @@ ViewerGL::renderText(double x,
     }
     {
         GLProtectAttrib a(GL_TRANSFORM_BIT);
+        GLProtectMatrix pmv(GL_MODELVIEW);
+        glLoadIdentity();
         GLProtectMatrix p(GL_PROJECTION);
 
         glMatrixMode(GL_PROJECTION);
         glLoadIdentity();
+        
         double h = (double)height();
         double w = (double)width();
         /*we put the ortho proj to the widget coords, draw the elements and revert back to the old orthographic proj.*/
         glOrtho(0,w,0,h,-1,1);
+
 
         QPointF pos;
         {
@@ -3773,7 +3777,6 @@ ViewerGL::renderText(double x,
         }
         glCheckError();
         _imp->textRenderer.renderText(pos.x(),h - pos.y(),string,color,font);
-    _imp->textRenderer.renderText(x,y,string,color,font);
         glCheckError();
     } // GLProtectAttrib a(GL_TRANSFORM_BIT);
 }
