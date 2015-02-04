@@ -1618,7 +1618,10 @@ ViewerTab::notifyOverlaysPenDown_internal(const boost::shared_ptr<Natron::Node>&
     int view = getCurrentView();
     Transform::Matrix3x3 mat(1,0,0,0,1,0,0,0,1);
     bool ok = _imp->getOverlayTransform(time, view, node, getInternalNode(), &mat);
-    if (ok) {
+    if (!ok) {
+        transformViewportPos = viewportPos;
+        transformPos = pos;
+    } else {
         mat = Transform::matInverse(mat);
         {
             Transform::Point3D p;
@@ -1754,7 +1757,10 @@ ViewerTab::notifyOverlaysPenDoubleClick(double scaleX,
         int view = getCurrentView();
         Transform::Matrix3x3 mat(1,0,0,0,1,0,0,0,1);
         bool ok = _imp->getOverlayTransform(time, view, *it, getInternalNode(), &mat);
-        if (ok) {
+        if (!ok) {
+            transformViewportPos = viewportPos;
+            transformPos = pos;
+        } else {
             mat = Transform::matInverse(mat);
             {
                 Transform::Point3D p;
@@ -1809,7 +1815,10 @@ ViewerTab::notifyOverlaysPenMotion_internal(const boost::shared_ptr<Natron::Node
     int view = getCurrentView();
     Transform::Matrix3x3 mat(1,0,0,0,1,0,0,0,1);
     bool ok = _imp->getOverlayTransform(time, view, node, getInternalNode(), &mat);
-    if (ok) {
+    if (!ok) {
+        transformViewportPos = viewportPos;
+        transformPos = pos;
+    } else {
         mat = Transform::matInverse(mat);
         {
             Transform::Point3D p;
@@ -1939,7 +1948,10 @@ ViewerTab::notifyOverlaysPenUp(double scaleX,
         int view = getCurrentView();
         Transform::Matrix3x3 mat(1,0,0,0,1,0,0,0,1);
         bool ok = _imp->getOverlayTransform(time, view, *it, getInternalNode(), &mat);
-        if (ok) {
+        if (!ok) {
+            transformViewportPos = viewportPos;
+            transformPos = pos;
+        } else {
             mat = Transform::matInverse(mat);
             {
                 Transform::Point3D p;

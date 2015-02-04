@@ -864,7 +864,7 @@ OfxEffectInstance::onInputChanged(int inputNo)
     /**
      * The plug-in might call getImage, set a valid thread storage on the tree.
      **/
-    Node::ParallelRenderArgsSetter frameRenderArgs(_node.get(),
+    ParallelRenderArgsSetter frameRenderArgs(_node.get(),
                                                    time,
                                                    0 /*view*/,
                                                    true,

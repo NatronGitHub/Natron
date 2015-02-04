@@ -3130,7 +3130,7 @@ EffectInstance::tiledRenderingFunctor(const RenderArgs & args,
     
     ///Make the thread-storage live as long as the render action is called if we're in a newly launched thread in eRenderSafetyFullySafeFrame mode
     boost::shared_ptr<Implementation::ScopedRenderArgs> scopedArgs;
-    boost::shared_ptr<Node::ParallelRenderArgsSetter> scopedFrameArgs;
+    boost::shared_ptr<ParallelRenderArgsSetter> scopedFrameArgs;
     
     boost::shared_ptr<InputImagesHolder_RAII> scopedInputImages;
     
@@ -3193,7 +3193,7 @@ EffectInstance::tiledRenderingFunctor(const RenderArgs & args,
         argsCpy._renderWindowPixel = renderRectToRender;
         
         scopedArgs.reset( new Implementation::ScopedRenderArgs(&_imp->renderArgs,argsCpy) );
-        scopedFrameArgs.reset( new Node::ParallelRenderArgsSetter(_node.get(),
+        scopedFrameArgs.reset( new ParallelRenderArgsSetter(_node.get(),
                                                                   frameArgs.time,
                                                                   frameArgs.view,
                                                                   frameArgs.isRenderResponseToUserInteraction,
@@ -3876,6 +3876,7 @@ EffectInstance::getRegionOfDefinition_public(U64 hash,
     
     unsigned int mipMapLevel = Image::getLevelFromScale(scale.x);
     bool foundInCache = _imp->actionsCache.getRoDResult(hash, time, mipMapLevel, rod);
+    foundInCache = false;
     if (foundInCache) {
         *isProjectFormat = false;
         if (rod->isNull()) {
@@ -4092,6 +4093,13 @@ EffectInstance::getThreadLocalRenderTime() const
             return args._time;
         }
     }
+    
+    if (_imp->frameRenderArgs.hasLocalData()) {
+        const ParallelRenderArgs& args = _imp->frameRenderArgs.localData();
+        if (args.validArgs) {
+            return args.time;
+        }
+    }
 
     return getApp()->getTimeLine()->currentFrame();
 }
@@ -4144,7 +4152,7 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
         ////We set the thread storage render args so that if the instance changed action
         ////tries to call getImage it can render with good parameters.
         
-        Node::ParallelRenderArgsSetter frameRenderArgs(_node.get(),
+        ParallelRenderArgsSetter frameRenderArgs(_node.get(),
                                                        time,
                                                        0, /*view*/
                                                        true,
@@ -4362,6 +4370,31 @@ EffectInstance::getCurrentView() const
         const RenderArgs& args = _imp->renderArgs.localData();
         if (args._validArgs) {
             return args._view;
+        }
+    }
+    
+    return 0;
+}
+
+SequenceTime
+EffectInstance::getFrameRenderArgsCurrentTime() const
+{
+    if (_imp->frameRenderArgs.hasLocalData()) {
+        const ParallelRenderArgs& args = _imp->frameRenderArgs.localData();
+        if (args.validArgs) {
+            return args.time;
+        }
+    }
+    return getApp()->getTimeLine()->currentFrame();
+}
+
+int
+EffectInstance::getFrameRenderArgsCurrentView() const
+{
+    if (_imp->frameRenderArgs.hasLocalData()) {
+        const ParallelRenderArgs& args = _imp->frameRenderArgs.localData();
+        if (args.validArgs) {
+            return args.view;
         }
     }
     

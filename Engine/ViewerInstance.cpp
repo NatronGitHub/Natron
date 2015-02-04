@@ -367,6 +367,7 @@ static bool checkTreeCanRender(Node* node)
 Natron::StatusEnum
 ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
                                                  bool isSequential,
+                                                 bool canAbort,
                                                  int view, int textureIndex, U64 viewerHash,
                                                  ViewerArgs* outArgs)
 {
@@ -444,6 +445,19 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
     
     
     const double par = outArgs->activeInputToRender->getPreferredAspectRatio();
+    
+    
+    ///need to set TLS for getROD()
+    ParallelRenderArgsSetter frameArgs(outArgs->activeInputToRender->getNode().get(),
+                                                   time,
+                                                   view,
+                                                   !isSequential,  // is this render due to user interaction ?
+                                                   isSequential, // is this sequential ?
+                                                   canAbort,
+                                                   outArgs->activeInputHash,
+                                                   false,
+                                                   getTimeline().get());
+
     
     ///Get the RoD here to be able to figure out what is the RoI of the Viewer.
     StatusEnum stat = outArgs->activeInputToRender->getRegionOfDefinition_public(outArgs->activeInputHash,time,
@@ -746,16 +760,16 @@ ViewerInstance::renderViewer_internal(int view,
         
         EffectInstance::NotifyInputNRenderingStarted_RAII inputNIsRendering_RAII(_node.get(),inArgs.activeInputIndex);
         
-        Node::ParallelRenderArgsSetter frameRenderArgs(inArgs.activeInputToRender->getNode().get(),
-                                                       inArgs.params->time,
-                                                       view,
-                                                       !isSequentialRender,  // is this render due to user interaction ?
-                                                       isSequentialRender, // is this sequential ?
-                                                       canAbort,
-                                                       inArgs.activeInputHash,
-                                                       false,
-                                                       getTimeline().get());
-        
+        ParallelRenderArgsSetter frameArgs(inArgs.activeInputToRender->getNode().get(),
+                                           inArgs.params->time,
+                                           view,
+                                           !isSequentialRender,  // is this render due to user interaction ?
+                                           isSequentialRender, // is this sequential ?
+                                           canAbort,
+                                           inArgs.activeInputHash,
+                                           false,
+                                           getTimeline().get());
+
         
         
         // If an exception occurs here it is probably fatal, since
@@ -1911,5 +1925,17 @@ ViewerInstance::getMipMapLevelFromZoomFactor() const
     double zoomFactor = _imp->uiContext->getZoomFactor();
     double closestPowerOf2 = zoomFactor >= 1 ? 1 : std::pow( 2,-std::ceil(std::log(zoomFactor) / M_LN2) );
     return std::log(closestPowerOf2) / M_LN2;
+}
+
+SequenceTime
+ViewerInstance::getCurrentTime() const
+{
+    return getFrameRenderArgsCurrentTime();
+}
+
+int
+ViewerInstance::getCurrentView() const
+{
+    return getFrameRenderArgsCurrentView();
 }
 

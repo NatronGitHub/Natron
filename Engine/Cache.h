@@ -739,7 +739,7 @@ public:
     /**
      * @brief Clears the memory portion and moves it to the disk portion if possible
      **/
-    void clearInMemoryPortion()
+    void clearInMemoryPortion(bool emitSignals = true)
     {
         if (_signalEmitter) {
             ///block signals otherwise the we would be spammed of notifications
@@ -792,7 +792,9 @@ public:
         }
 
         _signalEmitter->blockSignals(false);
-        _signalEmitter->emitSignalClearedInMemoryPortion();
+        if (emitSignals) {
+            _signalEmitter->emitSignalClearedInMemoryPortion();
+        }
     }
     
     
@@ -1231,7 +1233,7 @@ public:
      */
     void save(CacheTOC* tableOfContents)
     {
-        clearInMemoryPortion();
+        clearInMemoryPortion(false);
         QMutexLocker l(&_lock);     // must be locked
 
         for (CacheIterator it = _diskCache.begin(); it != _diskCache.end(); ++it) {
