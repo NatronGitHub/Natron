@@ -535,9 +535,7 @@ KnobHelper::moveValueAtTime(int time,int dimension,double dt,double dv,KeyFrame*
         setGuiCurveHasChanged(dimension,true);
     }
     assert(curve);
-    
-    std::pair<double,double> curveYRange = curve->getCurveYRange();
-    
+        
     KeyFrame k;
     int keyindex = curve->keyFrameIndex(time);
     if (keyindex == -1) {
@@ -556,12 +554,6 @@ KnobHelper::moveValueAtTime(int time,int dimension,double dt,double dv,KeyFrame*
         newY = std::floor(newY + 0.5);
     } else if ( curve->areKeyFramesValuesClampedToBooleans() ) {
         newY = newY < 0.5 ? 0 : 1;
-    }
-    
-    if (newY > curveYRange.second) {
-        newY = k.getValue();
-    } else if (newY < curveYRange.first) {
-        newY = k.getValue();
     }
     
     ///Make sure string animation follows up

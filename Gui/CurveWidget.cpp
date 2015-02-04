@@ -746,7 +746,9 @@ public:
 
     void refreshSelectionRectangle(double x,double y);
 
+#if 0
     void updateSelectedKeysMaxMovement();
+#endif
 
     void setSelectedKeysInterpolation(Natron::KeyframeTypeEnum type);
 
@@ -1549,7 +1551,7 @@ CurveWidgetPrivate::moveSelectedKeyFrames(const QPointF & oldClick_opengl,
         totalMovement.ry() = newClick_opengl.y() - dragStartPointOpenGL.y();
     }
     // clamp totalMovement to _keyDragMaxMovement
-    totalMovement.rx() = std::min(std::max(totalMovement.x(),_keyDragMaxMovement.left),_keyDragMaxMovement.right);
+    //totalMovement.rx() = std::min(std::max(totalMovement.x(),_keyDragMaxMovement.left),_keyDragMaxMovement.right);
    // totalMovement.ry() = std::min(std::max(totalMovement.y(),_keyDragMaxMovement.bottom),_keyDragMaxMovement.top);
 
     /// round to the nearest integer the keyframes total motion (in X only)
@@ -1767,6 +1769,8 @@ CurveWidget::pushUndoCommand(QUndoCommand* cmd)
     _imp->_undoStack->push(cmd);
 }
 
+#if 0
+
 void
 CurveWidgetPrivate::updateSelectedKeysMaxMovement()
 {
@@ -1922,6 +1926,7 @@ CurveWidgetPrivate::updateSelectedKeysMaxMovement()
   //  assert(_keyDragMaxMovement.left <= 0 && _keyDragMaxMovement.right >= 0
    //        && _keyDragMaxMovement.bottom <= 0 && _keyDragMaxMovement.top >= 0);
 } // updateSelectedKeysMaxMovement
+#endif
 
 void
 CurveWidgetPrivate::setSelectedKeysInterpolation(Natron::KeyframeTypeEnum type)
@@ -2519,7 +2524,7 @@ CurveWidget::mousePressEvent(QMouseEvent* e)
         // yes, start dragging
         _imp->_mustSetDragOrientation = true;
         _imp->_state = eEventStateDraggingKeys;
-        _imp->updateSelectedKeysMaxMovement();
+        //_imp->updateSelectedKeysMaxMovement();
         _imp->_keyDragLastMovement.rx() = 0.;
         _imp->_keyDragLastMovement.ry() = 0.;
         _imp->_dragStartPoint = e->pos();
@@ -2546,7 +2551,7 @@ CurveWidget::mousePressEvent(QMouseEvent* e)
         //insert it into the _selectedKeyFrames
         _imp->insertSelectedKeyFrameConditionnaly(selected);
 
-        _imp->updateSelectedKeysMaxMovement();
+       // _imp->updateSelectedKeysMaxMovement();
         _imp->_keyDragLastMovement.rx() = 0.;
         _imp->_keyDragLastMovement.ry() = 0.;
         _imp->_dragStartPoint = e->pos();
@@ -2781,10 +2786,10 @@ CurveWidget::mouseMoveEvent(QMouseEvent* e)
     case eEventStateDraggingKeys:
         if (!_imp->_mustSetDragOrientation) {
             if ( !_imp->_selectedKeyFrames.empty() ) {
-                bool clampToIntegers = ( *_imp->_selectedKeyFrames.begin() )->curve->areKeyFramesTimeClampedToIntegers();
-                if (!clampToIntegers) {
-                    _imp->updateSelectedKeysMaxMovement();
-                }
+//                bool clampToIntegers = ( *_imp->_selectedKeyFrames.begin() )->curve->areKeyFramesTimeClampedToIntegers();
+//                if (!clampToIntegers) {
+//                    _imp->updateSelectedKeysMaxMovement();
+//                }
                 _imp->moveSelectedKeyFrames(oldClick_opengl,newClick_opengl);
             }
         }

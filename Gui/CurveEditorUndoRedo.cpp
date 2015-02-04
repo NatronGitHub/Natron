@@ -297,7 +297,7 @@ moveKey(KeyPtr &k,
         Parametric_Knob* isParametric = dynamic_cast<Parametric_Knob*>(knob.get());
         
         if (isParametric) {
-            std::pair<double,double> curveYRange = k->curve->getInternalCurve()->getCurveYRange();
+           // std::pair<double,double> curveYRange = k->curve->getInternalCurve()->getCurveYRange();
             double newX = k->key.getTime() + dt;
             double newY = k->key.getValue() + dv;
             boost::shared_ptr<Curve> curve = k->curve->getInternalCurve();
@@ -308,12 +308,12 @@ moveKey(KeyPtr &k,
                 newY = newY < 0.5 ? 0 : 1;
             }
             
-            if (newY > curveYRange.second) {
-                newY = k->key.getValue();
-            } else if (newY < curveYRange.first) {
-                newY = k->key.getValue();
-            }
-            
+//            if (newY > curveYRange.second) {
+//                newY = k->key.getValue();
+//            } else if (newY < curveYRange.first) {
+//                newY = k->key.getValue();
+//            }
+//            
             double oldTime = k->key.getTime();
             int keyframeIndex = curve->keyFrameIndex(oldTime);
             int newIndex;
