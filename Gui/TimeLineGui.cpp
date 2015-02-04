@@ -267,24 +267,20 @@ TimeLineGui::paintGL()
     double top = bottom +  h / (double)_imp->_zoomCtx.zoomFactor;
     double right = left +  (w / (double)_imp->_zoomCtx.zoomFactor);
 
+    if ( (left == right) || (top == bottom) ) {
+        glClearColor( _imp->_clearColor.redF(),_imp->_clearColor.greenF(),_imp->_clearColor.blueF(),_imp->_clearColor.alphaF() );
+        glClear(GL_COLOR_BUFFER_BIT);
+
+        return;
+    }
+
     {
         GLProtectAttrib a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_POLYGON_BIT | GL_LINE_BIT | GL_ENABLE_BIT | GL_HINT_BIT | GL_SCISSOR_BIT | GL_TRANSFORM_BIT);
-        GLProtectMatrix m(GL_MODELVIEW);
         GLProtectMatrix p(GL_PROJECTION);
-
-        glMatrixMode(GL_MODELVIEW);
         glLoadIdentity();
-        glMatrixMode(GL_PROJECTION);
+        glOrtho(left, right, bottom, top, 1, -1);
+        GLProtectMatrix m(GL_MODELVIEW);
         glLoadIdentity();
-
-        if ( (left == right) || (top == bottom) ) {
-            glClearColor( _imp->_clearColor.redF(),_imp->_clearColor.greenF(),_imp->_clearColor.blueF(),_imp->_clearColor.alphaF() );
-            glClear(GL_COLOR_BUFFER_BIT);
-
-            return;
-        }
-        glOrtho(left, right, bottom, top, -1, 1);
-
 
         glClearColor( _imp->_clearColor.redF(),_imp->_clearColor.greenF(),_imp->_clearColor.blueF(),_imp->_clearColor.alphaF() );
         glClear(GL_COLOR_BUFFER_BIT);
@@ -551,17 +547,14 @@ TimeLineGui::renderText(double x,
     }
     {
         GLProtectAttrib a(GL_TRANSFORM_BIT);
-        GLProtectMatrix p(GL_PROJECTION);
-
-        glMatrixMode(GL_PROJECTION);
-        glLoadIdentity();
-
-        glCheckError();
+        /*we put the ortho proj to the widget coords, draw the elements and revert back to the old orthographic proj.*/
         double h = (double)height();
         double w = (double)width();
-        /*we put the ortho proj to the widget coords, draw the elements and revert back to the old orthographic proj.*/
-        glOrtho(0,w,0,h,-1,1);
-
+        GLProtectMatrix p(GL_PROJECTION);
+        glLoadIdentity();
+        glOrtho(0, w, 0, h, 1, -1);
+        glMatrixMode(GL_MODELVIEW);
+        
         QPointF pos = toWidgetCoordinates(x, y);
         glCheckError();
         _imp->_textRenderer.renderText(pos.x(),h - pos.y(),text,color,font);
