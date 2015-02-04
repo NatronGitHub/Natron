@@ -205,43 +205,10 @@ TransformUndoCommand::TransformUndoCommand(RotoGui* roto,
     std::list< std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> > > selected;
     roto->getSelection(&_selectedCurves, &selected);
     
-    if (type == eTransformAllPoints) {
-        _selectedPoints = selected;
+    _selectedPoints = selected;
 
-    } else {
-        QPointF bboxCenter = bbox.center();
-        double x,y;
-        for (std::list< std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> > >::iterator it = selected.begin(); it != selected.end(); ++it) {
-            switch (type) {
-                case eTransformMidBottom:
-                    it->first->getPositionAtTime(time, &x, &y);
-                    if (y < bboxCenter.y()) {
-                        _selectedPoints.push_back(*it);
-                    }
-                    break;
-                case eTransformMidTop:
-                    it->first->getPositionAtTime(time, &x, &y);
-                    if (y >= bboxCenter.y()) {
-                        _selectedPoints.push_back(*it);
-                    }
-                    break;
-                case eTransformMidRight:
-                    it->first->getPositionAtTime(time, &x, &y);
-                    if (x >= bboxCenter.x()) {
-                        _selectedPoints.push_back(*it);
-                    }
-                    break;
-                case eTransformMidLeft:
-                    it->first->getPositionAtTime(time, &x, &y);
-                    if (x < bboxCenter.x()) {
-                        _selectedPoints.push_back(*it);
-                    }
-                    break;
-                default:
-                    break;
-            }
-        }
-    }
+  
+    
 
     *_matrix = Transform::matTransformCanonical(tx, ty, sx, sy, skewX, skewY, true, (rot), centerX, centerY);
     ///we make a copy of the points
