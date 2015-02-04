@@ -1067,7 +1067,6 @@ ViewerGL::paintGL()
         // - Nuke transforms the interacts using the modelview if there are Transform nodes between the viewer and the interact.
 
         glMatrixMode(GL_MODELVIEW);
-        // TODO: apply cumulated viewer transforms to modelview
         glLoadIdentity();
         glTranslatef(-1, -1, 0);        // for compatibility with Nuke
         glScalef(1/256., 1./256., 1.0); // for compatibility with Nuke
@@ -1585,12 +1584,16 @@ ViewerGL::drawWipeControl()
         // l = 1: drawing
         double baseColor[3];
         for (int l = 0; l < 2; ++l) {
+            
+            // shadow (uses GL_PROJECTION)
+            glMatrixMode(GL_PROJECTION);
+            int direction = (l == 0) ? 1 : -1;
+            // translate (1,-1) pixels
+            glTranslated(direction * zoomScreenPixelWidth / 256, -direction * zoomScreenPixelHeight / 256, 0);
+            glMatrixMode(GL_MODELVIEW); // Modelview should be used on Nuke
+            
             if (l == 0) {
                 // Draw a shadow for the cross hair
-                // shift by (1,1) pixel
-                glMatrixMode(GL_PROJECTION);
-                glPushMatrix();
-                glTranslated(1 * zoomScreenPixelWidth, -1. * zoomScreenPixelHeight, 0);
                 baseColor[0] = baseColor[1] = baseColor[2] = 0.;
             } else {
                 baseColor[0] = baseColor[1] = baseColor[2] = 0.8;
@@ -1671,10 +1674,7 @@ ViewerGL::drawWipeControl()
             glPointSize(1.);
             
             _imp->drawArcOfCircle(wipeCenter, mixX, mixY, wipeAngle + M_PI / 8., wipeAngle + 3. * M_PI / 8.);
-            if (l == 0) {
-                glMatrixMode(GL_PROJECTION);
-                glPopMatrix();
-            }
+      
         }
     } // GLProtectAttrib a(GL_ENABLE_BIT | GL_LINE_BIT | GL_CURRENT_BIT | GL_HINT_BIT | GL_TRANSFORM_BIT | GL_COLOR_BUFFER_BIT);
 } // drawWipeControl
@@ -3773,6 +3773,7 @@ ViewerGL::renderText(double x,
         }
         glCheckError();
         _imp->textRenderer.renderText(pos.x(),h - pos.y(),string,color,font);
+    _imp->textRenderer.renderText(x,y,string,color,font);
         glCheckError();
     } // GLProtectAttrib a(GL_TRANSFORM_BIT);
 }
