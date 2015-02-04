@@ -266,7 +266,7 @@ Project::loadProjectInternal(const QString & path,
             QMutexLocker k(&_imp->isLoadingProjectMutex);
             _imp->isLoadingProjectInternal = false;
         }
-        throw std::runtime_error( std::string("Failed to read the project file: I/O failure (") + e.code().message() + ")");
+        throw std::runtime_error( std::string("Failed to read the project file: I/O failure (") + e.what() + ")");
     } catch (const std::exception & e) {
         ifile.close();
         getApp()->endProgress(this);
