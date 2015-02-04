@@ -2297,32 +2297,28 @@ CurveWidget::paintGL()
     assert( qApp && qApp->thread() == QThread::currentThread() );
     assert( QGLContext::currentContext() == context() );
     glCheckError();
+    if (_imp->zoomCtx.factor() <= 0) {
+        return;
+    }
+    double zoomLeft, zoomRight, zoomBottom, zoomTop;
+    zoomLeft = _imp->zoomCtx.left();
+    zoomRight = _imp->zoomCtx.right();
+    zoomBottom = _imp->zoomCtx.bottom();
+    zoomTop = _imp->zoomCtx.top();
+    if ( (zoomLeft == zoomRight) || (zoomTop == zoomBottom) ) {
+        glClearColor( _imp->_clearColor.redF(),_imp->_clearColor.greenF(),_imp->_clearColor.blueF(),_imp->_clearColor.alphaF() );
+        glClear(GL_COLOR_BUFFER_BIT);
+
+        return;
+    }
+
     {
         GLProtectAttrib a(GL_TRANSFORM_BIT | GL_COLOR_BUFFER_BIT);
-        GLProtectMatrix m(GL_MODELVIEW);
         GLProtectMatrix p(GL_PROJECTION);
-
-        glMatrixMode(GL_MODELVIEW);
         glLoadIdentity();
-
-        glMatrixMode(GL_PROJECTION);
-        glLoadIdentity();
-
-        if (_imp->zoomCtx.factor() <= 0) {
-            return;
-        }
-        double zoomLeft, zoomRight, zoomBottom, zoomTop;
-        zoomLeft = _imp->zoomCtx.left();
-        zoomRight = _imp->zoomCtx.right();
-        zoomBottom = _imp->zoomCtx.bottom();
-        zoomTop = _imp->zoomCtx.top();
-        if ( (zoomLeft == zoomRight) || (zoomTop == zoomBottom) ) {
-            glClearColor( _imp->_clearColor.redF(),_imp->_clearColor.greenF(),_imp->_clearColor.blueF(),_imp->_clearColor.alphaF() );
-            glClear(GL_COLOR_BUFFER_BIT);
-
-            return;
-        }
         glOrtho(zoomLeft, zoomRight, zoomBottom, zoomTop, 1, -1);
+        GLProtectMatrix m(GL_MODELVIEW);
+        glLoadIdentity();
         glCheckError();
 
         glClearColor( _imp->_clearColor.redF(),_imp->_clearColor.greenF(),_imp->_clearColor.blueF(),_imp->_clearColor.alphaF() );
@@ -2365,16 +2361,14 @@ CurveWidget::renderText(double x,
     glCheckError();
     {
         GLProtectAttrib a(GL_TRANSFORM_BIT);
-        GLProtectMatrix p(GL_PROJECTION);
-
-        glMatrixMode(GL_PROJECTION);
-        glLoadIdentity();
-
+        /*we put the ortho proj to the widget coords, draw the elements and revert back to the old orthographic proj.*/
         double h = (double)height();
         double w = (double)width();
-        /*we put the ortho proj to the widget coords, draw the elements and revert back to the old orthographic proj.*/
+        GLProtectMatrix p(GL_PROJECTION);
+        glLoadIdentity();
         glOrtho(0, w, 0, h, 1, -1);
-
+        glMatrixMode(GL_MODELVIEW);
+        
         QPointF pos = toWidgetCoordinates(x, y);
         glCheckError();
         _imp->_textRenderer.renderText(pos.x(),h - pos.y(),text,color,font);

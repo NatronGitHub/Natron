@@ -85,14 +85,10 @@ CustomParamInteract::paintGL()
      */
     {
         GLProtectAttrib a(GL_TRANSFORM_BIT);
-        GLProtectMatrix m(GL_MODELVIEW);
         GLProtectMatrix p(GL_PROJECTION);
-
-        glMatrixMode(GL_PROJECTION);
         glLoadIdentity();
         glOrtho(-0.5, width() - 0.5, -0.5, height() - 0.5, 1, -1);
-
-        glMatrixMode(GL_MODELVIEW);
+        GLProtectMatrix m(GL_MODELVIEW);
         glLoadIdentity();
 
         /*A parameter's interact draw function will have full responsibility for drawing the interact, including clearing the background and swapping buffers.*/
