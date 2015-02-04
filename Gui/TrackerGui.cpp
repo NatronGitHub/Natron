@@ -266,13 +266,16 @@ TrackerGui::drawOverlays(double scaleX,
                 Double_Knob* dblKnob = dynamic_cast<Double_Knob*>( newInstanceKnob.get() );
                 assert(dblKnob);
 
-                for (int i = 0; i < 2; ++i) {
-                    if (i == 0) {
-                        // Draw a shadow for the cross hair
-                        // shift by (1,1) pixel
-                        glMatrixMode(GL_PROJECTION);
-                        glPushMatrix();
-                        glTranslated(pixelScaleX, -pixelScaleY, 0);
+                GLProtectMatrix p(GL_PROJECTION);
+                for (int l = 0; l < 2; ++l) {
+                    // shadow (uses GL_PROJECTION)
+                    glMatrixMode(GL_PROJECTION);
+                    int direction = (l == 0) ? 1 : -1;
+                    // translate (1,-1) pixels
+                    glTranslated(direction * pixelScaleX / 256, -direction * pixelScaleY / 256, 0);
+                    glMatrixMode(GL_MODELVIEW);
+
+                    if (l == 0) {
                         glColor4d(0., 0., 0., 1.);
                     } else {
                         glColor4f(1., 1., 1., 1.);
@@ -292,11 +295,6 @@ TrackerGui::drawOverlays(double scaleX,
                     glVertex2d(x, y - CROSS_SIZE * pixelScaleY);
                     glVertex2d(x, y + CROSS_SIZE * pixelScaleY);
                     glEnd();
-
-                    if (i == 0) {
-                        glMatrixMode(GL_PROJECTION);
-                        glPopMatrix();
-                    }
                 }
                 glPointSize(1.);
             }
@@ -309,14 +307,16 @@ TrackerGui::drawOverlays(double scaleX,
             glEnable(GL_LINE_SMOOTH);
             glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
             glLineWidth(1.5);
-            glMatrixMode(GL_PROJECTION);
-            for (int i = 0; i < 2; ++i) {
-                if (i == 0) {
-                    // Draw a shadow for the cross hair
-                    // shift by (1,1) pixel
-                    glMatrixMode(GL_PROJECTION);
-                    glPushMatrix();
-                    glTranslated(pixelScaleX, -pixelScaleY, 0);
+            GLProtectMatrix p(GL_PROJECTION);
+            for (int l = 0; l < 2; ++l) {
+                // shadow (uses GL_PROJECTION)
+                glMatrixMode(GL_PROJECTION);
+                int direction = (l == 0) ? 1 : -1;
+                // translate (1,-1) pixels
+                glTranslated(direction * pixelScaleX / 256, -direction * pixelScaleY / 256, 0);
+                glMatrixMode(GL_MODELVIEW);
+
+                if (l == 0) {
                     glColor4d(0., 0., 0., 0.8);
                 } else {
                     glColor4d(0., 1., 0.,0.8);
@@ -336,11 +336,6 @@ TrackerGui::drawOverlays(double scaleX,
                 glVertex2d(_imp->lastMousePos.x(), _imp->lastMousePos.y() - ADDTRACK_SIZE * pixelScaleY);
                 glVertex2d(_imp->lastMousePos.x(), _imp->lastMousePos.y() + ADDTRACK_SIZE * pixelScaleY);
                 glEnd();
-
-                if (i == 0) {
-                    glMatrixMode(GL_PROJECTION);
-                    glPopMatrix();
-                }
             }
         }
     } // GLProtectAttrib a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_LINE_BIT | GL_ENABLE_BIT | GL_HINT_BIT);

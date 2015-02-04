@@ -22,6 +22,7 @@
 #include "Engine/Rect.h"
 #include "Engine/EffectInstance.h"
 
+class ParallelRenderArgsSetter;
 namespace Natron {
 class Image;
 class FrameEntry;
@@ -66,7 +67,7 @@ public:
         U64 activeInputHash;
         boost::shared_ptr<Natron::FrameKey> key;
         boost::shared_ptr<UpdateViewerParams> params;
-        
+        boost::shared_ptr<ParallelRenderArgsSetter> frameArgs;
     };
     
     /**
@@ -74,6 +75,7 @@ public:
      **/
     Natron::StatusEnum getRenderViewerArgsAndCheckCache(SequenceTime time,
                                                         bool isSequential,
+                                                        bool canAbort,
                                                         int view, int textureIndex, U64 viewerHash,
                                                         ViewerArgs* outArgs);
 
@@ -155,6 +157,10 @@ public:
     void getActiveInputs(int & a,int &b) const;
     
     int getLastRenderedTime() const;
+    
+    virtual SequenceTime getCurrentTime() const OVERRIDE WARN_UNUSED_RETURN;
+    
+    virtual int getCurrentView() const OVERRIDE WARN_UNUSED_RETURN;
 
     boost::shared_ptr<TimeLine> getTimeline() const;
     

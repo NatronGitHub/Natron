@@ -16,6 +16,7 @@
 
 #include <fstream>
 #include <algorithm>
+#include <ios>
 #include <cstdlib> // strtoul
 #include <cerrno> // errno
 
@@ -276,13 +277,29 @@ Project::loadProjectInternal(const QString & path,
             _imp->isLoadingProjectInternal = false;
         }
         throw std::runtime_error( e.what() );
+    } catch (const std::ios_base::failure& e) {
+        ifile.close();
+        getApp()->endProgress(this);
+        {
+            QMutexLocker k(&_imp->isLoadingProjectMutex);
+            _imp->isLoadingProjectInternal = false;
+        }
+        throw std::runtime_error( std::string("Failed to read the project file: I/O failure (") + e.what() + ")");
     } catch (const std::exception & e) {
         ifile.close();
         {
             QMutexLocker k(&_imp->isLoadingProjectMutex);
             _imp->isLoadingProjectInternal = false;
         }
-        throw std::runtime_error( std::string("Failed to read the project file: ") + std::string( e.what() ) );
+        throw std::runtime_error( std::string("Failed to read the project file: ") + e.what() );
+    } catch (...) {
+        ifile.close();
+        getApp()->endProgress(this);
+        {
+            QMutexLocker k(&_imp->isLoadingProjectMutex);
+            _imp->isLoadingProjectInternal = false;
+        }
+        throw std::runtime_error("Failed to read the project file");
     }
 
     ifile.close();

@@ -1887,7 +1887,7 @@ private:
                     RectI renderWindow;
                     rod.toPixelEnclosing(scale, par, &renderWindow);
                     
-                    Node::ParallelRenderArgsSetter frameRenderARgs(activeInputToRender->getNode().get(),
+                    ParallelRenderArgsSetter frameRenderARgs(activeInputToRender->getNode().get(),
                                                                    time,
                                                                    i,
                                                                    false,  // is this render due to user interaction ?
@@ -1971,7 +1971,7 @@ DefaultScheduler::processFrame(const BufferedFrames& frames)
         ignore_result(_effect->getRegionOfDefinition_public(hash,it->time, scale, it->view, &rod, &isProjectFormat));
         rod.toPixelEnclosing(0, par, &roi);
         
-        Node::ParallelRenderArgsSetter frameRenderARgs(_effect->getNode().get(),
+        ParallelRenderArgsSetter frameRenderARgs(_effect->getNode().get(),
                                                        it->time,
                                                        it->view,
                                                        false,  // is this render due to user interaction ?
@@ -2217,7 +2217,7 @@ private:
         
         for (int i = 0; i < 2; ++i) {
             args[i].reset(new ViewerInstance::ViewerArgs);
-            status[i] = _viewer->getRenderViewerArgsAndCheckCache(time, true, view, i, viewerHash, args[i].get());
+            status[i] = _viewer->getRenderViewerArgsAndCheckCache(time, true, true, view, i, viewerHash, args[i].get());
         }
        
         if (status[0] == eStatusFailed && status[1] == eStatusFailed) {
@@ -2838,7 +2838,7 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool canAbort)
     boost::shared_ptr<ViewerInstance::ViewerArgs> args[2];
     for (int i = 0; i < 2; ++i) {
         args[i].reset(new ViewerInstance::ViewerArgs);
-        status[i] = _imp->viewer->getRenderViewerArgsAndCheckCache(frame, false, view, i, viewerHash, args[i].get());
+        status[i] = _imp->viewer->getRenderViewerArgsAndCheckCache(frame, false, canAbort, view, i, viewerHash, args[i].get());
     }
     
     if (status[0] == eStatusFailed && status[1] == eStatusFailed) {

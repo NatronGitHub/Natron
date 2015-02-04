@@ -1060,10 +1060,23 @@ ViewerGL::paintGL()
     }
     glCheckError();
 
+    double zoomLeft, zoomRight, zoomBottom, zoomTop;
+    {
+        QMutexLocker l(&_imp->zoomCtxMutex);
+        assert(0 < _imp->zoomCtx.factor() && _imp->zoomCtx.factor() <= 1024);
+        zoomLeft = _imp->zoomCtx.left();
+        zoomRight = _imp->zoomCtx.right();
+        zoomBottom = _imp->zoomCtx.bottom();
+        zoomTop = _imp->zoomCtx.top();
+    }
+    if ( (zoomLeft == zoomRight) || (zoomTop == zoomBottom) ) {
+        clearColorBuffer( _imp->clearColor.redF(),_imp->clearColor.greenF(),_imp->clearColor.blueF(),_imp->clearColor.alphaF() );
+
+        return;
+    }
+
     {
         GLProtectAttrib a(GL_TRANSFORM_BIT);
-        //GLProtectMatrix m(GL_MODELVIEW);
-        //GLProtectMatrix p(GL_PROJECTION);
 
         // Note: the OFX spec says that the GL_MODELVIEW should be the identity matrix
         // http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#ImageEffectOverlays
@@ -1071,33 +1084,16 @@ ViewerGL::paintGL()
         // - Nuke uses a different matrix
         // - Nuke transforms the interacts using the modelview if there are Transform nodes between the viewer and the interact.
 
-        glMatrixMode(GL_MODELVIEW);
-        // TODO: apply cumulated viewer transforms to modelview
-        glLoadIdentity();
-        glTranslatef(-1, -1, 0);        // for compatibility with Nuke
-        glScalef(1/256., 1./256., 1.0); // for compatibility with Nuke
 
         glMatrixMode(GL_PROJECTION);
         glLoadIdentity();
-
-        double zoomLeft, zoomRight, zoomBottom, zoomTop;
-        {
-            QMutexLocker l(&_imp->zoomCtxMutex);
-            assert(0 < _imp->zoomCtx.factor() && _imp->zoomCtx.factor() <= 1024);
-            zoomLeft = _imp->zoomCtx.left();
-            zoomRight = _imp->zoomCtx.right();
-            zoomBottom = _imp->zoomCtx.bottom();
-            zoomTop = _imp->zoomCtx.top();
-        }
-        if ( (zoomLeft == zoomRight) || (zoomTop == zoomBottom) ) {
-            clearColorBuffer( _imp->clearColor.redF(),_imp->clearColor.greenF(),_imp->clearColor.blueF(),_imp->clearColor.alphaF() );
-
-            return;
-        }
-
-        glOrtho(zoomLeft, zoomRight, zoomBottom, zoomTop, 1, -1);
+        glOrtho(zoomLeft, zoomRight, zoomBottom, zoomTop, -1, 1);
         glScalef(256., 256., 1.0); // for compatibility with Nuke
         glTranslatef(1, 1, 0);     // for compatibility with Nuke
+        glMatrixMode(GL_MODELVIEW);
+        glLoadIdentity();
+        glTranslatef(-1, -1, 0);        // for compatibility with Nuke
+        glScalef(1/256., 1./256., 1.0); // for compatibility with Nuke
 
         glCheckError();
 
@@ -1590,12 +1586,16 @@ ViewerGL::drawWipeControl()
         // l = 1: drawing
         double baseColor[3];
         for (int l = 0; l < 2; ++l) {
+            
+            // shadow (uses GL_PROJECTION)
+            glMatrixMode(GL_PROJECTION);
+            int direction = (l == 0) ? 1 : -1;
+            // translate (1,-1) pixels
+            glTranslated(direction * zoomScreenPixelWidth / 256, -direction * zoomScreenPixelHeight / 256, 0);
+            glMatrixMode(GL_MODELVIEW); // Modelview should be used on Nuke
+            
             if (l == 0) {
                 // Draw a shadow for the cross hair
-                // shift by (1,1) pixel
-                glMatrixMode(GL_PROJECTION);
-                glPushMatrix();
-                glTranslated(1 * zoomScreenPixelWidth, -1. * zoomScreenPixelHeight, 0);
                 baseColor[0] = baseColor[1] = baseColor[2] = 0.;
             } else {
                 baseColor[0] = baseColor[1] = baseColor[2] = 0.8;
@@ -1622,7 +1622,7 @@ ViewerGL::drawWipeControl()
 
             ///if hovering the rotate handle or dragging it show a small bended arrow
             if ( (_imp->hs == eHoverStateWipeRotateHandle) || (_imp->ms == eMouseStateRotatingWipeHandle) ) {
-                GLProtectMatrix p(GL_PROJECTION);
+                GLProtectMatrix p(GL_MODELVIEW);
 
                 glColor4f(0., 1. * l, 0., 1.);
                 double arrowCenterX = WIPE_ROTATE_HANDLE_LENGTH * zoomScreenPixelWidth / 2;
@@ -1631,7 +1631,6 @@ ViewerGL::drawWipeControl()
                 arrowRadius.x = 5. * zoomScreenPixelWidth;
                 arrowRadius.y = 10. * zoomScreenPixelHeight;
 
-                glMatrixMode(GL_PROJECTION);
                 glTranslatef(wipeCenter.x(), wipeCenter.y(), 0.);
                 glRotatef(wipeAngle * 180.0 / M_PI,0, 0, 1);
                 //  center the oval at x_center, y_center
@@ -1676,10 +1675,7 @@ ViewerGL::drawWipeControl()
             glPointSize(1.);
             
             _imp->drawArcOfCircle(wipeCenter, mixX, mixY, wipeAngle + M_PI / 8., wipeAngle + 3. * M_PI / 8.);
-            if (l == 0) {
-                glMatrixMode(GL_PROJECTION);
-                glPopMatrix();
-            }
+      
         }
     } // GLProtectAttrib a(GL_ENABLE_BIT | GL_LINE_BIT | GL_CURRENT_BIT | GL_HINT_BIT | GL_TRANSFORM_BIT | GL_COLOR_BUFFER_BIT);
 } // drawWipeControl
@@ -3771,13 +3767,13 @@ ViewerGL::renderText(double x,
     {
         GLProtectAttrib a(GL_TRANSFORM_BIT);
         GLProtectMatrix p(GL_PROJECTION);
-
-        glMatrixMode(GL_PROJECTION);
         glLoadIdentity();
         double h = (double)height();
         double w = (double)width();
         /*we put the ortho proj to the widget coords, draw the elements and revert back to the old orthographic proj.*/
-        glOrtho(0,w,0,h,-1,1);
+        glOrtho(0, w, 0, h, 1, -1);
+        GLProtectMatrix pmv(GL_MODELVIEW);
+        glLoadIdentity();
 
         QPointF pos;
         {
@@ -4829,6 +4825,7 @@ ViewerGL::getColorAtRect(const RectD &rect, // rectangle in canonical coordinate
     double bSum = 0.;
     double aSum = 0.;
     if ( !img ) {
+        return false;
         //don't do this as this is 8 bit
         /*
         Texture::DataTypeEnum type;

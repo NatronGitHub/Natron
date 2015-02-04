@@ -766,7 +766,9 @@ public:
 
     void refreshSelectionRectangle(double x,double y);
 
+#if 0
     void updateSelectedKeysMaxMovement();
+#endif
 
     void setSelectedKeysInterpolation(Natron::KeyframeTypeEnum type);
 
@@ -1569,7 +1571,7 @@ CurveWidgetPrivate::moveSelectedKeyFrames(const QPointF & oldClick_opengl,
         totalMovement.ry() = newClick_opengl.y() - dragStartPointOpenGL.y();
     }
     // clamp totalMovement to _keyDragMaxMovement
-    totalMovement.rx() = std::min(std::max(totalMovement.x(),_keyDragMaxMovement.left),_keyDragMaxMovement.right);
+    //totalMovement.rx() = std::min(std::max(totalMovement.x(),_keyDragMaxMovement.left),_keyDragMaxMovement.right);
    // totalMovement.ry() = std::min(std::max(totalMovement.y(),_keyDragMaxMovement.bottom),_keyDragMaxMovement.top);
 
     /// round to the nearest integer the keyframes total motion (in X only)
@@ -1787,6 +1789,8 @@ CurveWidget::pushUndoCommand(QUndoCommand* cmd)
     _imp->_undoStack->push(cmd);
 }
 
+#if 0
+
 void
 CurveWidgetPrivate::updateSelectedKeysMaxMovement()
 {
@@ -1942,6 +1946,7 @@ CurveWidgetPrivate::updateSelectedKeysMaxMovement()
   //  assert(_keyDragMaxMovement.left <= 0 && _keyDragMaxMovement.right >= 0
    //        && _keyDragMaxMovement.bottom <= 0 && _keyDragMaxMovement.top >= 0);
 } // updateSelectedKeysMaxMovement
+#endif
 
 void
 CurveWidgetPrivate::setSelectedKeysInterpolation(Natron::KeyframeTypeEnum type)
@@ -2301,13 +2306,13 @@ CurveWidget::resizeGL(int width,
     }
 
     ///find out what are the selected curves and center on them
-    std::vector<CurveGui*> curves;
-    getVisibleCurves(&curves);
-    if ( curves.empty() ) {
-        centerOn(-10,500,-10,10);
-    } else {
-        centerOn(curves);
-    }
+//    std::vector<CurveGui*> curves;
+//    getVisibleCurves(&curves);
+//    if ( curves.empty() ) {
+//        centerOn(-10,500,-10,10);
+//    } else {
+//        centerOn(curves);
+//    }
 }
 
 void
@@ -2317,32 +2322,28 @@ CurveWidget::paintGL()
     assert( qApp && qApp->thread() == QThread::currentThread() );
     assert( QGLContext::currentContext() == context() );
     glCheckError();
+    if (_imp->zoomCtx.factor() <= 0) {
+        return;
+    }
+    double zoomLeft, zoomRight, zoomBottom, zoomTop;
+    zoomLeft = _imp->zoomCtx.left();
+    zoomRight = _imp->zoomCtx.right();
+    zoomBottom = _imp->zoomCtx.bottom();
+    zoomTop = _imp->zoomCtx.top();
+    if ( (zoomLeft == zoomRight) || (zoomTop == zoomBottom) ) {
+        glClearColor( _imp->_clearColor.redF(),_imp->_clearColor.greenF(),_imp->_clearColor.blueF(),_imp->_clearColor.alphaF() );
+        glClear(GL_COLOR_BUFFER_BIT);
+
+        return;
+    }
+
     {
         GLProtectAttrib a(GL_TRANSFORM_BIT | GL_COLOR_BUFFER_BIT);
-        GLProtectMatrix m(GL_MODELVIEW);
         GLProtectMatrix p(GL_PROJECTION);
-
-        glMatrixMode(GL_MODELVIEW);
         glLoadIdentity();
-
-        glMatrixMode(GL_PROJECTION);
+        glOrtho(zoomLeft, zoomRight, zoomBottom, zoomTop, 1, -1);
+        GLProtectMatrix m(GL_MODELVIEW);
         glLoadIdentity();
-
-        if (_imp->zoomCtx.factor() <= 0) {
-            return;
-        }
-        double zoomLeft, zoomRight, zoomBottom, zoomTop;
-        zoomLeft = _imp->zoomCtx.left();
-        zoomRight = _imp->zoomCtx.right();
-        zoomBottom = _imp->zoomCtx.bottom();
-        zoomTop = _imp->zoomCtx.top();
-        if ( (zoomLeft == zoomRight) || (zoomTop == zoomBottom) ) {
-            glClearColor( _imp->_clearColor.redF(),_imp->_clearColor.greenF(),_imp->_clearColor.blueF(),_imp->_clearColor.alphaF() );
-            glClear(GL_COLOR_BUFFER_BIT);
-
-            return;
-        }
-        glOrtho(zoomLeft, zoomRight, zoomBottom, zoomTop, -1, 1);
         glCheckError();
 
         glClearColor( _imp->_clearColor.redF(),_imp->_clearColor.greenF(),_imp->_clearColor.blueF(),_imp->_clearColor.alphaF() );
@@ -2385,16 +2386,14 @@ CurveWidget::renderText(double x,
     glCheckError();
     {
         GLProtectAttrib a(GL_TRANSFORM_BIT);
-        GLProtectMatrix p(GL_PROJECTION);
-
-        glMatrixMode(GL_PROJECTION);
-        glLoadIdentity();
-
+        /*we put the ortho proj to the widget coords, draw the elements and revert back to the old orthographic proj.*/
         double h = (double)height();
         double w = (double)width();
-        /*we put the ortho proj to the widget coords, draw the elements and revert back to the old orthographic proj.*/
-        glOrtho(0,w,0,h,-1,1);
-
+        GLProtectMatrix p(GL_PROJECTION);
+        glLoadIdentity();
+        glOrtho(0, w, 0, h, 1, -1);
+        glMatrixMode(GL_MODELVIEW);
+        
         QPointF pos = toWidgetCoordinates(x, y);
         glCheckError();
         _imp->_textRenderer.renderText(pos.x(),h - pos.y(),text,color,font);
@@ -2545,7 +2544,7 @@ CurveWidget::mousePressEvent(QMouseEvent* e)
         // yes, start dragging
         _imp->_mustSetDragOrientation = true;
         _imp->_state = eEventStateDraggingKeys;
-        _imp->updateSelectedKeysMaxMovement();
+        //_imp->updateSelectedKeysMaxMovement();
         _imp->_keyDragLastMovement.rx() = 0.;
         _imp->_keyDragLastMovement.ry() = 0.;
         _imp->_dragStartPoint = e->pos();
@@ -2572,7 +2571,7 @@ CurveWidget::mousePressEvent(QMouseEvent* e)
         //insert it into the _selectedKeyFrames
         _imp->insertSelectedKeyFrameConditionnaly(selected);
 
-        _imp->updateSelectedKeysMaxMovement();
+       // _imp->updateSelectedKeysMaxMovement();
         _imp->_keyDragLastMovement.rx() = 0.;
         _imp->_keyDragLastMovement.ry() = 0.;
         _imp->_dragStartPoint = e->pos();
@@ -2807,10 +2806,10 @@ CurveWidget::mouseMoveEvent(QMouseEvent* e)
     case eEventStateDraggingKeys:
         if (!_imp->_mustSetDragOrientation) {
             if ( !_imp->_selectedKeyFrames.empty() ) {
-                bool clampToIntegers = ( *_imp->_selectedKeyFrames.begin() )->curve->areKeyFramesTimeClampedToIntegers();
-                if (!clampToIntegers) {
-                    _imp->updateSelectedKeysMaxMovement();
-                }
+//                bool clampToIntegers = ( *_imp->_selectedKeyFrames.begin() )->curve->areKeyFramesTimeClampedToIntegers();
+//                if (!clampToIntegers) {
+//                    _imp->updateSelectedKeysMaxMovement();
+//                }
                 _imp->moveSelectedKeyFrames(oldClick_opengl,newClick_opengl);
             }
         }

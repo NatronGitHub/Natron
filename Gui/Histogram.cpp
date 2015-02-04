@@ -822,7 +822,7 @@ startRenderingTo(GLuint fboId,
     glMatrixMode(GL_PROJECTION);
     glPushMatrix();
     glLoadIdentity();
-    glOrtho(0,w,0,h,-1,1);
+    glOrtho(0, w, 0, h, 1, -1);
     glMatrixMode(GL_MODELVIEW);
     glPushMatrix();
     glLoadIdentity();
@@ -1095,34 +1095,31 @@ Histogram::paintGL()
         return;
     }
 
+    assert(_imp->zoomCtx.factor() > 0.);
+
+    double zoomLeft = _imp->zoomCtx.left();
+    double zoomRight = _imp->zoomCtx.right();
+    double zoomBottom = _imp->zoomCtx.bottom();
+    double zoomTop = _imp->zoomCtx.top();
+    if ( (zoomLeft == zoomRight) || (zoomTop == zoomBottom) ) {
+        glClearColor(0,0,0,1);
+        glClear(GL_COLOR_BUFFER_BIT);
+
+        return;
+    }
+
     {
         GLProtectAttrib a(GL_TRANSFORM_BIT | GL_COLOR_BUFFER_BIT);
-        GLProtectMatrix m(GL_MODELVIEW);
         GLProtectMatrix p(GL_PROJECTION);
-        glMatrixMode(GL_MODELVIEW);
         glLoadIdentity();
-        glMatrixMode(GL_PROJECTION);
+        glOrtho(zoomLeft, zoomRight, zoomBottom, zoomTop, 1, -1);
+        GLProtectMatrix m(GL_MODELVIEW);
         glLoadIdentity();
-        assert(_imp->zoomCtx.factor() > 0.);
-
-        double zoomLeft = _imp->zoomCtx.left();
-        double zoomRight = _imp->zoomCtx.right();
-        double zoomBottom = _imp->zoomCtx.bottom();
-        double zoomTop = _imp->zoomCtx.top();
-        if ( (zoomLeft == zoomRight) || (zoomTop == zoomBottom) ) {
-            glClearColor(0,0,0,1);
-            glClear(GL_COLOR_BUFFER_BIT);
-
-            return;
-        }
-        glOrtho(zoomLeft, zoomRight, zoomBottom, zoomTop, -1, 1);
         glCheckError();
-
 
         glClearColor(0,0,0,1);
         glClear(GL_COLOR_BUFFER_BIT);
         glCheckErrorIgnoreOSXBug();
-
 
         _imp->drawScale();
 
@@ -1807,14 +1804,13 @@ Histogram::renderText(double x,
     {
         GLProtectAttrib a(GL_TRANSFORM_BIT);
         GLProtectMatrix p(GL_PROJECTION);
-
-        glMatrixMode(GL_PROJECTION);
         glLoadIdentity();
         double h = (double)height();
         double w = (double)width();
         /*we put the ortho proj to the widget coords, draw the elements and revert back to the old orthographic proj.*/
-        glOrtho(0,w,0,h,-1,1);
-
+        glOrtho(0, w, 0, h, 1, -1);
+        glMatrixMode(GL_MODELVIEW);
+        
         QPointF pos = _imp->zoomCtx.toWidgetCoordinates(x, y);
         glCheckError();
         _imp->textRenderer.renderText(pos.x(),h - pos.y(),text,color,font);

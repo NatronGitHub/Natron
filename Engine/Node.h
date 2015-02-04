@@ -774,31 +774,6 @@ public:
     
     void invalidateParallelRenderArgs();
     
-    class ParallelRenderArgsSetter
-    {
-        Node* node;
-    public:
-        
-        ParallelRenderArgsSetter(Node* n,
-                                 int time,
-                                 int view,
-                                 bool isRenderUserInteraction,
-                                 bool isSequential,
-                                 bool canAbort,
-                                 U64 nodeHash,
-                                 bool canSetValue,
-                                 const TimeLine* timeline)
-        : node(n)
-        {
-            node->setParallelRenderArgs(time,view,isRenderUserInteraction,isSequential,canAbort,nodeHash,canSetValue,timeline);
-        }
-        
-        ~ParallelRenderArgsSetter()
-        {
-            node->invalidateParallelRenderArgs();
-        }
-    };
-    
     /**
      * @brief Returns true if the parallel render args thread-storage is set
      **/
@@ -1069,5 +1044,31 @@ public:
     void setActiveInputAndRefresh(int inputNb);
 
 };
+
+class ParallelRenderArgsSetter
+{
+    Natron::Node* node;
+public:
+    
+    ParallelRenderArgsSetter(Natron::Node* n,
+                             int time,
+                             int view,
+                             bool isRenderUserInteraction,
+                             bool isSequential,
+                             bool canAbort,
+                             U64 nodeHash,
+                             bool canSetValue,
+                             const TimeLine* timeline)
+    : node(n)
+    {
+        node->setParallelRenderArgs(time,view,isRenderUserInteraction,isSequential,canAbort,nodeHash,canSetValue,timeline);
+    }
+    
+    ~ParallelRenderArgsSetter()
+    {
+        node->invalidateParallelRenderArgs();
+    }
+};
+
 
 #endif // NATRON_ENGINE_NODE_H_

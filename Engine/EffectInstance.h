@@ -601,11 +601,15 @@ public:
 
     virtual bool canSetValue() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
-    virtual SequenceTime getCurrentTime() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual SequenceTime getCurrentTime() const OVERRIDE WARN_UNUSED_RETURN;
 
-    virtual int getCurrentView() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual int getCurrentView() const OVERRIDE WARN_UNUSED_RETURN;
 
     virtual bool getCanTransform() const { return false; }
+
+    SequenceTime getFrameRenderArgsCurrentTime() const;
+
+    int getFrameRenderArgsCurrentView() const;
 
     virtual bool getCanApplyTransform(Natron::EffectInstance** /*effect*/) const { return false; }
 
@@ -1044,6 +1048,7 @@ public:
      * This function is here to update the last render args thread storage.
      **/
     void updateThreadLocalRenderTime(int time);
+
     
     /**
      * @brief If the caller thread is currently rendering an image, it will return a pointer to it
