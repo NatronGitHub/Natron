@@ -1089,7 +1089,7 @@ ViewerGL::paintGL()
             return;
         }
 
-        glOrtho(zoomLeft, zoomRight, zoomBottom, zoomTop, 1, -1);
+        glOrtho(zoomLeft, zoomRight, zoomBottom, zoomTop, -1, 1);
         glScalef(256., 256., 1.0); // for compatibility with Nuke
         glTranslatef(1, 1, 0);     // for compatibility with Nuke
 
@@ -3760,14 +3760,12 @@ ViewerGL::renderText(double x,
         GLProtectMatrix pmv(GL_MODELVIEW);
         glLoadIdentity();
         GLProtectMatrix p(GL_PROJECTION);
-
-        glMatrixMode(GL_PROJECTION);
         glLoadIdentity();
         
         double h = (double)height();
         double w = (double)width();
         /*we put the ortho proj to the widget coords, draw the elements and revert back to the old orthographic proj.*/
-        glOrtho(0,w,0,h,-1,1);
+        glOrtho(0, w, 0, h, 1, -1);
 
 
         QPointF pos;

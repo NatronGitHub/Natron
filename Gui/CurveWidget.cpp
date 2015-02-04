@@ -2322,7 +2322,7 @@ CurveWidget::paintGL()
 
             return;
         }
-        glOrtho(zoomLeft, zoomRight, zoomBottom, zoomTop, -1, 1);
+        glOrtho(zoomLeft, zoomRight, zoomBottom, zoomTop, 1, -1);
         glCheckError();
 
         glClearColor( _imp->_clearColor.redF(),_imp->_clearColor.greenF(),_imp->_clearColor.blueF(),_imp->_clearColor.alphaF() );
@@ -2373,7 +2373,7 @@ CurveWidget::renderText(double x,
         double h = (double)height();
         double w = (double)width();
         /*we put the ortho proj to the widget coords, draw the elements and revert back to the old orthographic proj.*/
-        glOrtho(0,w,0,h,-1,1);
+        glOrtho(0, w, 0, h, 1, -1);
 
         QPointF pos = toWidgetCoordinates(x, y);
         glCheckError();

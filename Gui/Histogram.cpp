@@ -819,7 +819,7 @@ startRenderingTo(GLuint fboId,
     glMatrixMode(GL_PROJECTION);
     glPushMatrix();
     glLoadIdentity();
-    glOrtho(0,w,0,h,-1,1);
+    glOrtho(0, w, 0, h, 1, -1);
     glMatrixMode(GL_MODELVIEW);
     glPushMatrix();
     glLoadIdentity();
@@ -1112,7 +1112,7 @@ Histogram::paintGL()
 
             return;
         }
-        glOrtho(zoomLeft, zoomRight, zoomBottom, zoomTop, -1, 1);
+        glOrtho(zoomLeft, zoomRight, zoomBottom, zoomTop, 1, -1);
         glCheckError();
 
 
@@ -1810,7 +1810,7 @@ Histogram::renderText(double x,
         double h = (double)height();
         double w = (double)width();
         /*we put the ortho proj to the widget coords, draw the elements and revert back to the old orthographic proj.*/
-        glOrtho(0,w,0,h,-1,1);
+        glOrtho(0, w, 0, h, 1, -1);
 
         QPointF pos = _imp->zoomCtx.toWidgetCoordinates(x, y);
         glCheckError();
