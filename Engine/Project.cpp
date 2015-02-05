@@ -1071,12 +1071,14 @@ Project::clearNodes(bool emitSignal)
         nodesToDelete = _imp->currentNodes;
     }
 
+    ///Kill thread pool so threads are killed before killing thread storage
+    QThreadPool::globalInstance()->waitForDone();
+    
     ///First quit any processing
     for (U32 i = 0; i < nodesToDelete.size(); ++i) {
         nodesToDelete[i]->quitAnyProcessing();
     }
-    ///Kill thread pool so threads are killed before killing thread storage
-    QThreadPool::globalInstance()->waitForDone();
+
 
 
     ///Kill effects
@@ -1456,7 +1458,7 @@ Project::reset()
 
     onOCIOConfigPathChanged(appPTR->getOCIOConfigPath(),true);
     
-    endChanges();
+    endChanges(true);
     
     emit projectNameChanged(NATRON_PROJECT_UNTITLED);
     clearNodes();
@@ -2028,9 +2030,8 @@ Project::fixRelativeFilePaths(const std::string& projectPathName,const std::stri
     
     for (U32 i = 0; i < nodes.size(); ++i) {
         if (nodes[i]->isActivated()) {
-            if (blockEval) {
-                nodes[i]->getLiveInstance()->beginChanges();
-            }
+            nodes[i]->getLiveInstance()->beginChanges();
+            
             const std::vector<boost::shared_ptr<KnobI> >& knobs = nodes[i]->getKnobs();
             for (U32 j = 0; j < knobs.size(); ++j) {
                 
@@ -2048,9 +2049,7 @@ Project::fixRelativeFilePaths(const std::string& projectPathName,const std::stri
                     }
                 }
             }
-            if (blockEval) {
-                nodes[i]->getLiveInstance()->endChanges();
-            }
+            nodes[i]->getLiveInstance()->endChanges(blockEval);
             
         }
     }
@@ -2178,9 +2177,8 @@ Project::makeRelativeToProject(std::string& str)
 void
 Project::onOCIOConfigPathChanged(const std::string& path,bool block)
 {
-    if (block) {
-        beginChanges();
-    }
+    beginChanges();
+    
     try {
         std::string env = _imp->envVars->getValue();
         std::map<std::string, std::string> envMap;
@@ -2214,9 +2212,8 @@ Project::onOCIOConfigPathChanged(const std::string& path,bool block)
     } catch (std::logic_error) {
         // ignore
     }
-    if (block) {
-        endChanges();
-    }
+    endChanges(block);
+    
 }
 
 void
