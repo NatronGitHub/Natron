@@ -1298,8 +1298,8 @@ FileGathererThread::gatheringKernel(const boost::shared_ptr<FileSystemItem>& ite
     ///List of all possible file sequences in the directory or directories
     FileSequences sequences;
     
-    int start;
-    int end;
+    int start = 0;
+    int end = 0;
     switch (viewOrder) {
         case Qt::AscendingOrder:
             start = 0;
