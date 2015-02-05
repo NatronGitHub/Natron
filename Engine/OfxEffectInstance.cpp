@@ -421,8 +421,11 @@ OfxEffectInstance::tryInitializeOverlayInteracts()
         _overlayInteract->getSlaveToParam(slaveParams);
         for (U32 i = 0; i < slaveParams.size(); ++i) {
             boost::shared_ptr<KnobI> param = getKnobByName(slaveParams[i]);
-            assert(param);
-            _overlaySlaves.push_back((void*)param.get());
+            if (!param) {
+                qDebug() << "OfxEffectInstance::tryInitializeOverlayInteracts(): slaveToParam " << slaveParams[i].c_str() << " not available";
+            } else {
+                _overlaySlaves.push_back((void*)param.get());
+            }
         }
         
         getApp()->redrawAllViewers();
