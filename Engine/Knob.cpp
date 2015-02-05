@@ -214,6 +214,7 @@ struct KnobHelperPrivate
     std::string description; //< the text label that will be displayed  on the GUI
     bool descriptionVisible;
     std::string name; //< the knob can have a name different than the label displayed on GUI.
+    std::string originalName; //< the original name passed to setName() by the user
     //By default this is the same as _description but can be set by calling setName().
     bool newLine;
     int itemSpacing;
@@ -281,6 +282,7 @@ struct KnobHelperPrivate
     , description(description_)
     , descriptionVisible(true)
     , name( description_.c_str() )
+    , originalName(description.c_str())
     , newLine(true)
     , itemSpacing(0)
     , parentKnob()
@@ -1700,13 +1702,20 @@ KnobHelper::isAnimationEnabled() const
 void
 KnobHelper::setName(const std::string & name)
 {
-    _imp->name = name;
+    _imp->originalName = name;
+    _imp->name = Natron::makeNameScriptFriendly(name);
 }
 
 const std::string &
 KnobHelper::getName() const
 {
     return _imp->name;
+}
+
+const std::string &
+KnobHelper::getOriginalName() const
+{
+    return _imp->originalName;
 }
 
 void

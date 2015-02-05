@@ -3308,6 +3308,9 @@ appendToNatronPath(const std::string& path)
 std::string
 makeNameScriptFriendly(const std::string& str)
 {
+    if (str == "from") {
+        return "pFrom";
+    }
     ///Remove any non alpha-numeric characters from the baseName
     std::locale loc;
     std::string cpy;
@@ -3315,6 +3318,8 @@ makeNameScriptFriendly(const std::string& str)
         
         ///Ignore starting digits
         if (cpy.empty() && std::isdigit(str[i])) {
+            cpy.push_back('p');
+            cpy.push_back(str[i]);
             continue;
         }
         
