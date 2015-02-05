@@ -4026,30 +4026,37 @@ Gui::renderSelectedNode()
     } else if ( selectedNodes.empty() ) {
         Natron::warningDialog( tr("Render").toStdString(), tr("You must select a node to render first!").toStdString() );
     } else {
-        const boost::shared_ptr<NodeGui> & selectedNode = selectedNodes.front();
+        
         std::list<AppInstance::RenderWork> workList;
-        if ( selectedNode->getNode()->getLiveInstance()->isWriter() ) {
-            ///if the node is a writer, just use it to render!
-            AppInstance::RenderWork w;
-            w.writer = dynamic_cast<Natron::OutputEffectInstance*>(selectedNode->getNode()->getLiveInstance());
-            assert(w.writer);
-            w.firstFrame = INT_MIN;
-            w.lastFrame = INT_MAX;
-            workList.push_back(w);
-            _imp->_appInstance->startWritersRendering(workList);
-        } else {
-            ///create a node and connect it to the node and use it to render
-            boost::shared_ptr<Natron::Node> writer = createWriter();
-            if (writer) {
+        
+        for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = selectedNodes.begin();
+             it!=selectedNodes.end(); ++it) {
+            if ( (*it)->getNode()->getLiveInstance()->isWriter() ) {
+                ///if the node is a writer, just use it to render!
                 AppInstance::RenderWork w;
-                w.writer = dynamic_cast<Natron::OutputEffectInstance*>(writer->getLiveInstance());
+                w.writer = dynamic_cast<Natron::OutputEffectInstance*>((*it)->getNode()->getLiveInstance());
                 assert(w.writer);
                 w.firstFrame = INT_MIN;
                 w.lastFrame = INT_MAX;
                 workList.push_back(w);
-                _imp->_appInstance->startWritersRendering(workList);
+            } else {
+                if (selectedNodes.size() == 1) {
+                    ///create a node and connect it to the node and use it to render
+                    boost::shared_ptr<Natron::Node> writer = createWriter();
+                    if (writer) {
+                        AppInstance::RenderWork w;
+                        w.writer = dynamic_cast<Natron::OutputEffectInstance*>(writer->getLiveInstance());
+                        assert(w.writer);
+                        w.firstFrame = INT_MIN;
+                        w.lastFrame = INT_MAX;
+                        workList.push_back(w);
+                    }
+                }
             }
         }
+        _imp->_appInstance->startWritersRendering(workList);
+
+        
     }
 }
 
