@@ -16,6 +16,7 @@
 #include "Engine/Format.h"
 #include "Engine/OverlaySupport.h"
 #include "Engine/Knob.h"
+#include "Engine/AppInstance.h"
 
 
 using namespace Natron;
@@ -147,6 +148,18 @@ OfxOverlayInteract::loseFocusAction(OfxTime  time,
 }
 
 
+OfxStatus
+OfxOverlayInteract::redraw()
+{
+    OfxImageEffectInstance* effect = dynamic_cast<OfxImageEffectInstance*>(&_instance);
+    assert(effect);
+    if (effect) {
+        effect->getOfxEffectInstance()->getApp()->redrawAllViewers();
+    }
+    return kOfxStatOK;
+}
+
+
 
 
 Natron::OfxParamOverlayInteract::OfxParamOverlayInteract(KnobI* knob,
@@ -189,15 +202,7 @@ NatronOverlayInteractSupport::n_swapBuffers()
     return kOfxStatOK;
 }
 
-OfxStatus
-NatronOverlayInteractSupport::n_redraw()
-{
-    if (_viewport) {
-        _viewport->redraw();
-    }
 
-    return kOfxStatOK;
-}
 
 void
 NatronOverlayInteractSupport::n_getViewportSize(double &width,
@@ -274,5 +279,15 @@ void
 Natron::OfxParamOverlayInteract::getPixelAspectRatio(double & par) const
 {
     par = _descriptor.getProperties().getDoubleProperty(kOfxParamPropInteractSizeAspect);
+}
+
+OfxStatus
+Natron::OfxParamOverlayInteract::redraw()
+{
+    if (_viewport) {
+        _viewport->redraw();
+    }
+    
+    return kOfxStatOK;
 }
 
