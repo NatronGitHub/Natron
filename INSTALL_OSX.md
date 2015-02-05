@@ -114,9 +114,6 @@ boost: LIBS += -L/usr/local/lib -lboost_serialization-mt -lboost_thread-mt -lboo
 expat: PKGCONFIG -= expat
 expat: INCLUDEPATH += /usr/local/opt/expat/include
 expat: LIBS += -L/usr/local/opt/expat/lib -lexpat
-shiboken: PKGCONFIG -= shiboken
-shiboken: INCLUDEPATH += /opt/local/include/shiboken-3.4
-shiboken: LIBS += -L/opt/local/lib -lshiboken.cpython-34m
 EOF
 ```
 

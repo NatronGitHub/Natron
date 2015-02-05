@@ -420,7 +420,6 @@ OfxEffectInstance::tryInitializeOverlayInteracts()
         std::vector<std::string> slaveParams;
         _overlayInteract->getSlaveToParam(slaveParams);
         for (U32 i = 0; i < slaveParams.size(); ++i) {
-           
             boost::shared_ptr<KnobI> param ;
             const std::vector< boost::shared_ptr<KnobI> > & knobs = getKnobs();
             for (std::vector< boost::shared_ptr<KnobI> >::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
@@ -430,8 +429,11 @@ OfxEffectInstance::tryInitializeOverlayInteracts()
                     
                 }
             }
-            assert(param);
-            _overlaySlaves.push_back((void*)param.get());
+            if (!param) {
+                qDebug() << "OfxEffectInstance::tryInitializeOverlayInteracts(): slaveToParam " << slaveParams[i].c_str() << " not available";
+            } else {
+                _overlaySlaves.push_back((void*)param.get());
+            }
         }
         
         getApp()->redrawAllViewers();

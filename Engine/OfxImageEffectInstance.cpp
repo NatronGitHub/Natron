@@ -477,8 +477,15 @@ OfxImageEffectInstance::newParam(const std::string &paramName,
         instance = ret;
         paramShouldBePersistant = false;
     } else if (descriptor.getType() == kOfxParamTypePage) {
-        OfxPageInstance* ret = new OfxPageInstance(getOfxEffectInstance(),descriptor);
+        OfxPageInstance* ret = new OfxPageInstance(getOfxEffectInstance(), descriptor);
         knob = ret->getKnob();
+#ifdef DEBUG_PAGE
+        qDebug() << "Page " << descriptor.getName().c_str() << " has children:";
+        int nChildren = ret->getProperties().getDimension(kOfxParamPropPageChild);
+        for(int i = 0; i < nChildren; ++i) {
+            qDebug() << "- " << ret->getProperties().getStringProperty(kOfxParamPropPageChild,i).c_str();
+        }
+#endif
         instance = ret;
         paramShouldBePersistant = false;
     } else if (descriptor.getType() == kOfxParamTypePushButton) {

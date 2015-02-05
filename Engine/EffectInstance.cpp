@@ -3806,7 +3806,7 @@ EffectInstance::isIdentity_public(U64 hash,
 
     unsigned int mipMapLevel = Image::getLevelFromScale(scale.x);
     
-    double timeF;
+    double timeF = 0.;
     bool foundInCache = _imp->actionsCache.getIdentityResult(hash, time, mipMapLevel, inputNb, &timeF);
     if (foundInCache) {
         *inputTime = timeF;
@@ -3965,7 +3965,7 @@ EffectInstance::getFrameRange_public(U64 hash,
                                      bool bypasscache)
 {
     
-    double fFirst,fLast;
+    double fFirst = 0.,fLast = 0.;
     bool foundInCache = false;
     if (!bypasscache) {
         foundInCache = _imp->actionsCache.getTimeDomainResult(hash, &fFirst, &fLast);

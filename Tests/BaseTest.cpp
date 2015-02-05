@@ -70,7 +70,8 @@ BaseTest::SetUp()
 {
     AppManager* manager = new AppManager;
     int argc = 0;
-    manager->load(argc, 0, CLArgs());
+    CLArgs cl;
+    manager->load(argc, 0, cl);
 
     _app = manager->getTopLevelInstance();
 
