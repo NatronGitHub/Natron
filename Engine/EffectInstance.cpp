@@ -3881,7 +3881,6 @@ EffectInstance::getRegionOfDefinition_public(U64 hash,
     
     unsigned int mipMapLevel = Image::getLevelFromScale(scale.x);
     bool foundInCache = _imp->actionsCache.getRoDResult(hash, time, mipMapLevel, rod);
-    foundInCache = false;
     if (foundInCache) {
         *isProjectFormat = false;
         if (rod->isNull()) {
