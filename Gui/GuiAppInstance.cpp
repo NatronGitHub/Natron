@@ -58,6 +58,8 @@ struct GuiAppInstancePrivate
     mutable QMutex lastTimelineViewerMutex;
     boost::shared_ptr<Natron::Node> lastTimelineViewer;
     
+    int overlayRedrawRequests;
+    
     GuiAppInstancePrivate()
     : _gui(NULL)
     , _nodeMapping()
@@ -69,6 +71,7 @@ struct GuiAppInstancePrivate
     , _previewProvider(new FileDialogPreviewProvider)
     , lastTimelineViewerMutex()
     , lastTimelineViewer()
+    , overlayRedrawRequests(0)
     {
     }
     
@@ -863,4 +866,25 @@ GuiAppInstance::reloadStylesheet()
     if (_imp->_gui) {
         _imp->_gui->reloadStylesheet();
     }
+}
+
+void
+GuiAppInstance::queueRedrawForAllViewers()
+{
+    assert(QThread::currentThread() == qApp->thread());
+    ++_imp->overlayRedrawRequests;
+}
+
+int
+GuiAppInstance::getOverlayRedrawRequestsCount() const
+{
+    assert(QThread::currentThread() == qApp->thread());
+    return _imp->overlayRedrawRequests;
+}
+
+void
+GuiAppInstance::clearOverlayRedrawRequests()
+{
+    assert(QThread::currentThread() == qApp->thread());
+    _imp->overlayRedrawRequests = 0;
 }

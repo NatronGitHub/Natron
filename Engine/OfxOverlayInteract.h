@@ -242,8 +242,9 @@ public:
         return n_swapBuffers();
     }
 
-    /*Calls updateGL() on the attached viewer*/
+    /*Calls updateGL() on all viewers*/
     virtual OfxStatus redraw();
+
 
     /// hooks to kOfxInteractPropViewportSize in the property set
     /// this is actually redundant and is to be deprecated
