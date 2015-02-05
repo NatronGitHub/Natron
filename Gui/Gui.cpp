@@ -1806,7 +1806,7 @@ Gui::loadStyleSheet()
     
     QString selStr = QString("rgb(%1,%2,%3)").arg(Natron::clamp(selR) * 256).arg(Natron::clamp(selG) * 256).arg(Natron::clamp(selB) * 256);
     QString sunkStr = QString("rgb(%1,%2,%3)").arg(Natron::clamp(sunkR) * 256).arg(Natron::clamp(sunkG) * 256).arg(Natron::clamp(sunkB) * 256);
-    QString baseStr = QString("rgb(%1,%2,%3)").arg(Natron::clamp(baseR) * 256).arg(Natron::clamp(baseR) * 256).arg(Natron::clamp(baseR) * 256);
+    QString baseStr = QString("rgb(%1,%2,%3)").arg(Natron::clamp(baseR) * 256).arg(Natron::clamp(baseG) * 256).arg(Natron::clamp(baseB) * 256);
     QString raisedStr = QString("rgb(%1,%2,%3)").arg(Natron::clamp(raisR) * 256).arg(Natron::clamp(raisG) * 256).arg(Natron::clamp(raisB) * 256);
     QString txtStr = QString("rgb(%1,%2,%3)").arg(Natron::clamp(txtR) * 256).arg(Natron::clamp(txtG) * 256).arg(Natron::clamp(txtB) * 256);
     QString intStr = QString("rgb(%1,%2,%3)").arg(Natron::clamp(intR) * 256).arg(Natron::clamp(intG) * 256).arg(Natron::clamp(intB) * 256);
