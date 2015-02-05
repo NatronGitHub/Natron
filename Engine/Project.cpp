@@ -144,7 +144,11 @@ Project::loadProject(const QString & path,
     reset();
 
     try {
-        loadProjectInternal(path,name,false,path);
+        QString realPath = path;
+        if (!realPath.endsWith('/')) {
+            realPath.push_back('/');
+        }
+        loadProjectInternal(realPath,name,false,path);
     } catch (const std::exception & e) {
         {
             QMutexLocker l(&_imp->isLoadingProjectMutex);
