@@ -1844,6 +1844,11 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
     bool renderScaleOneUpstreamIfRenderScaleSupportDisabled = false;
     if (renderFullScaleThenDownscale) {
         renderScaleOneUpstreamIfRenderScaleSupportDisabled = _node->useScaleOneImagesWhenRenderScaleSupportIsDisabled();
+        
+        ///For multi-resolution we want input images with exactly the same size as the output image
+        if (!renderScaleOneUpstreamIfRenderScaleSupportDisabled && !supportsMultiResolution()) {
+            renderScaleOneUpstreamIfRenderScaleSupportDisabled = true;
+        }
     }
     
  
