@@ -104,7 +104,7 @@ if "%BITS%" == "64" (
 	:: Qmake in the path is the Qmake 32 bit hence the visual studio solution is setup to build against
 	:: 32bit libraries of Qt. The following is to use our compiled version of Qt 64bit
 	::for /f "tokens=*" %a in ('echo %DEP_PATH%^| sed "s/\\/\\\\/g"') do set DEP_PATH_ESCAPED=%a
-	sed -e "/<AdditionalDependencies>/ s/c:\\\Qt\\\4.8.6_win32/c:\\\Users\\\Lex\\\Documents\\\Github\\\Natron3rdParty\\\Qt4.8.6_64bit/g" -i App\Natron.vcxproj Renderer\NatronRenderer.vcxproj Tests\Tests.vcxproj
+	sed -e "/<AdditionalDependencies>/ s/c:\\Qt\\4.8.6_win32/c:\\Users\\Lex\\Documents\\Github\\Natron3rdParty\\Qt4.8.6_64bit/g" -i App\Natron.vcxproj Renderer\NatronRenderer.vcxproj Tests\Tests.vcxproj
 )
 devenv Project.sln /Build "%CONFIGURATION%|%MSVC_CONF%" /Project Natron
 devenv Project.sln /Build "%CONFIGURATION%|%MSVC_CONF%" /Project NatronRenderer

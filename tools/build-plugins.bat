@@ -6,20 +6,20 @@
 
 set CWD=%cd%
 
+:: Either 32 or 64
+set BITS=%1%
 
 if "%3" == "1" (
-	set BUILD_DIR=%CWD%\autobuild\build
-	set DEPLOY_DIR=%CWD%\autobuild\deploy
+	set BUILD_DIR=%CWD%\autobuild\build%BITS%
+	set DEPLOY_DIR=%CWD%\autobuild\deploy%BITS%
 ) else (
-	set BUILD_DIR=%CWD%\build
-	set DEPLOY_DIR=%CWD%\build\deploy
+	set BUILD_DIR=%CWD%\build%BITS%
+	set DEPLOY_DIR=%CWD%\build\deploy%BITS%
 )
 
 set IO_BRANCH=master
 set MISC_BRANCH=master
 
-:: Either 32 or 64
-set BITS=%1%
 
 :: If %4% set you can specify a build condiguration, either Debug or Release 
 :: This defaults to Release
