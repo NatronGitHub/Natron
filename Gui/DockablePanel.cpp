@@ -259,7 +259,7 @@ DockablePanel::DockablePanel(Gui* gui
     setLayout(_imp->_mainLayout);
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     setFrameShape(QFrame::Box);
-    setFocusPolicy(Qt::TabFocus);
+    setFocusPolicy(Qt::NoFocus);
     
     Natron::EffectInstance* iseffect = dynamic_cast<Natron::EffectInstance*>(holder);
     QString pluginLabelVersioned;
@@ -580,7 +580,7 @@ DockablePanelTabWidget::DockablePanelTabWidget(Gui* gui,QWidget* parent)
     : QTabWidget(parent)
     , _gui(gui)
 {
-    setFocusPolicy(Qt::StrongFocus);
+    setFocusPolicy(Qt::ClickFocus);
     QTabBar* tabbar = new NoWheelTabBar(this);
     tabbar->setFocusPolicy(Qt::ClickFocus);
     setTabBar(tabbar);
@@ -592,13 +592,11 @@ DockablePanelTabWidget::keyPressEvent(QKeyEvent* event)
     Qt::Key key = (Qt::Key)event->key();
     Qt::KeyboardModifiers modifiers = event->modifiers();
     
-    bool hasF = hasFocus();
-    
-    if (!hasF && isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevious, modifiers, key)) {
+    if (isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevious, modifiers, key)) {
         if ( _gui->getLastSelectedViewer() ) {
             _gui->getLastSelectedViewer()->previousFrame();
         }
-    } else if (!hasF && isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerNext, modifiers, key) ) {
+    } else if (isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerNext, modifiers, key) ) {
         if ( _gui->getLastSelectedViewer() ) {
             _gui->getLastSelectedViewer()->nextFrame();
         }
@@ -1081,6 +1079,7 @@ DockablePanelPrivate::addPage(const QString & name)
         RightClickableWidget* clickableWidget = new RightClickableWidget(_publicInterface,_tabWidget);
         QObject::connect(clickableWidget,SIGNAL(rightClicked(QPoint)),_publicInterface,SLOT( onRightClickMenuRequested(QPoint) ) );
         QObject::connect(clickableWidget,SIGNAL(escapePressed()),_publicInterface,SLOT( closePanel() ) );
+        clickableWidget->setFocusPolicy(Qt::NoFocus);
         newTab = clickableWidget;
         layoutContainer = newTab;
     }
