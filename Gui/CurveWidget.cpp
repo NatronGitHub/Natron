@@ -816,6 +816,7 @@ public:
 
     GLuint savedTexture;
     QSize sizeH;
+    bool hasResizedOnce;
     
 private:
 
@@ -865,6 +866,7 @@ CurveWidgetPrivate::CurveWidgetPrivate(Gui* gui,
       , _gui(gui)
       , savedTexture(0)
       , sizeH()
+      , hasResizedOnce(false)
       , _baseAxisColor(118,215,90,255)
       , _scaleColor(67,123,52,255)
       , _keyDragMaxMovement()
@@ -2305,14 +2307,18 @@ CurveWidget::resizeGL(int width,
         return;
     }
 
-    ///find out what are the selected curves and center on them
-//    std::vector<CurveGui*> curves;
-//    getVisibleCurves(&curves);
-//    if ( curves.empty() ) {
-//        centerOn(-10,500,-10,10);
-//    } else {
-//        centerOn(curves);
-//    }
+    if (!_imp->hasResizedOnce) {
+        _imp->hasResizedOnce = true;
+        ///find out what are the selected curves and center on them
+        std::vector<CurveGui*> curves;
+        getVisibleCurves(&curves);
+        if ( curves.empty() ) {
+            centerOn(-10,500,-10,10);
+        } else {
+            centerOn(curves);
+        }
+    }
+    
 }
 
 void

@@ -4211,7 +4211,7 @@ Node::canOthersConnectToThisNode() const
     
     return dynamic_cast<const ViewerInstance*>(_imp->liveInstance.get()) == NULL;
 # else // !DEBUG
-    return dynamic_cast<const ViewerInstance*>(_imp->liveInstance.get()) == NULL && !_imp->liveInstance->isWriter();
+    return dynamic_cast<const ViewerInstance*>(_imp->liveInstance.get()) == NULL/* && !_imp->liveInstance->isWriter()*/;
 # endif // !DEBUG
 }
 

@@ -1097,7 +1097,6 @@ Project::ensureAllProcessingThreadsFinished()
     quitAnyProcessingForAllNodes();
     QThreadPool::globalInstance()->waitForDone();
 }
-
 int
 Project::currentFrame() const
 {
@@ -1448,7 +1447,7 @@ Project::reset()
 
     onOCIOConfigPathChanged(appPTR->getOCIOConfigPath(),true);
     
-    endChanges();
+    endChanges(true);
     
     Q_EMIT projectNameChanged(NATRON_PROJECT_UNTITLED);
     clearNodes(true);
@@ -1798,8 +1797,7 @@ Project::fixFilePath(const std::string& projectPathName,const std::string& newPr
         return true;
     }
 }
-    
-bool
+ bool
 Project::isRelative(const std::string& str)
 {
 #ifdef __NATRON_WIN32__
@@ -1882,9 +1880,8 @@ Project::makeRelativeToProject(std::string& str)
 void
 Project::onOCIOConfigPathChanged(const std::string& path,bool block)
 {
-    if (block) {
-        beginChanges();
-    }
+    beginChanges();
+    
     try {
         std::string env = _imp->envVars->getValue();
         std::map<std::string, std::string> envMap;
@@ -1918,9 +1915,8 @@ Project::onOCIOConfigPathChanged(const std::string& path,bool block)
     } catch (std::logic_error) {
         // ignore
     }
-    if (block) {
-        endChanges();
-    }
+    endChanges(block);
+    
 }
 
 double

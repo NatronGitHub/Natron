@@ -2188,7 +2188,6 @@ NodeGui::deleteReferences()
     }
 
     if (_settingsPanel) {
-        _settingsPanel->setParent(NULL);
         delete _settingsPanel;
         _settingsPanel = NULL;
     }

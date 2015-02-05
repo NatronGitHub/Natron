@@ -1856,7 +1856,13 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
     ///Do we want to render the graph upstream at scale 1 or at the requested render scale ? (user setting)
     bool renderScaleOneUpstreamIfRenderScaleSupportDisabled = false;
     if (renderFullScaleThenDownscale) {
+
         renderScaleOneUpstreamIfRenderScaleSupportDisabled = getNode()->useScaleOneImagesWhenRenderScaleSupportIsDisabled();
+        
+        ///For multi-resolution we want input images with exactly the same size as the output image
+        if (!renderScaleOneUpstreamIfRenderScaleSupportDisabled && !supportsMultiResolution()) {
+            renderScaleOneUpstreamIfRenderScaleSupportDisabled = true;
+        }
     }
     
  
@@ -3884,7 +3890,6 @@ EffectInstance::getRegionOfDefinition_public(U64 hash,
     
     unsigned int mipMapLevel = Image::getLevelFromScale(scale.x);
     bool foundInCache = _imp->actionsCache.getRoDResult(hash, time, mipMapLevel, rod);
-    foundInCache = false;
     if (foundInCache) {
         *isProjectFormat = false;
         if (rod->isNull()) {

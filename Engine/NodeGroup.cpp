@@ -709,9 +709,8 @@ NodeCollection::fixRelativeFilePaths(const std::string& projectPathName,const st
     boost::shared_ptr<Natron::Project> project = _imp->app->getProject();
     for (NodeList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
         if ((*it)->isActivated()) {
-            if (blockEval) {
-                (*it)->getLiveInstance()->beginChanges();
-            }
+            (*it)->getLiveInstance()->beginChanges();
+            
             const std::vector<boost::shared_ptr<KnobI> >& knobs = (*it)->getKnobs();
             for (U32 j = 0; j < knobs.size(); ++j) {
                 
@@ -729,10 +728,9 @@ NodeCollection::fixRelativeFilePaths(const std::string& projectPathName,const st
                     }
                 }
             }
-            if (blockEval) {
-                (*it)->getLiveInstance()->endChanges();
-            }
+            (*it)->getLiveInstance()->endChanges(blockEval);
             
+        
             NodeGroup* isGrp = dynamic_cast<NodeGroup*>((*it)->getLiveInstance());
             if (isGrp) {
                 isGrp->fixRelativeFilePaths(projectPathName, newProjectPath, blockEval);
