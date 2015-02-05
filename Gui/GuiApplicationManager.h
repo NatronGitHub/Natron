@@ -148,6 +148,7 @@ public:
     
     virtual int getAppFontSize() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     
+    virtual void reloadStylesheets() OVERRIDE FINAL;
     
 public slots:
 

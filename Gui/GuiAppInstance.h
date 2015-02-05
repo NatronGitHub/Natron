@@ -148,6 +148,8 @@ public:
     
     virtual void renderAllViewers() OVERRIDE FINAL;
     
+    void reloadStylesheet();
+    
 public slots:
     
     virtual void redrawAllViewers() OVERRIDE FINAL;

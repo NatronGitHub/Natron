@@ -856,3 +856,11 @@ GuiAppInstance::renderAllViewers()
 {
     _imp->_gui->renderAllViewers();
 }
+
+void
+GuiAppInstance::reloadStylesheet()
+{
+    if (_imp->_gui) {
+        _imp->_gui->reloadStylesheet();
+    }
+}

@@ -39,7 +39,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Engine/Settings.h"
 #include "Engine/RotoContext.h"
 #include "Engine/Project.h"
-
+#include "Engine/Image.h"
 
 #include "Gui/LineEdit.h"
 #include "Gui/SpinBox.h"
@@ -710,8 +710,6 @@ public:
 
     void drawCurves();
 
-    void drawBaseAxis();
-
     void drawScale();
     void drawSelectedKeyFramesBbox();
 
@@ -768,7 +766,6 @@ public:
     ZoomContext zoomCtx;
     EventStateEnum _state;
     QMenu* _rightClickMenu;
-    QColor _clearColor;
     QColor _selectedCurveColor;
     QColor _nextCurveAddedColor;
     TextRenderer _textRenderer;
@@ -800,9 +797,6 @@ public:
     
 private:
 
-    QColor _baseAxisColor;
-    QColor _scaleColor;
-    MaxMovement _keyDragMaxMovement;
     QPolygonF _timelineTopPoly;
     QPolygonF _timelineBtmPoly;
     CurveWidget* _widget;
@@ -820,7 +814,6 @@ CurveWidgetPrivate::CurveWidgetPrivate(Gui* gui,
       , zoomCtx()
       , _state(eEventStateNone)
       , _rightClickMenu( new QMenu(widget) )
-      , _clearColor(0,0,0,255)
       , _selectedCurveColor(255,255,89,255)
       , _nextCurveAddedColor()
       , _textRenderer()
@@ -847,9 +840,6 @@ CurveWidgetPrivate::CurveWidgetPrivate(Gui* gui,
       , savedTexture(0)
       , sizeH()
       , hasResizedOnce(false)
-      , _baseAxisColor(118,215,90,255)
-      , _scaleColor(67,123,52,255)
-      , _keyDragMaxMovement()
       , _timelineTopPoly()
       , _timelineBtmPoly()
       , _widget(widget)
@@ -1079,6 +1069,12 @@ CurveWidgetPrivate::drawTimelineMarkers()
     assert( QGLContext::currentContext() == _widget->context() );
 
     refreshTimelinePositions();
+    
+    double cursorR,cursorG,cursorB;
+    double boundsR,boundsG,boundsB;
+    boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
+    settings->getTimelinePlayheadColor(&cursorR, &cursorG, &cursorB);
+    settings->getTimelineBoundsColor(&boundsR, &boundsG, &boundsB);
 
     QPointF topLeft = zoomCtx.toZoomCoordinates(0,0);
     QPointF btmRight = zoomCtx.toZoomCoordinates(_widget->width() - 1,_widget->height() - 1);
@@ -1090,7 +1086,7 @@ CurveWidgetPrivate::drawTimelineMarkers()
         glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
         glEnable(GL_LINE_SMOOTH);
         glHint(GL_LINE_SMOOTH_HINT,GL_DONT_CARE);
-        glColor4f(0.8,0.3,0.,1.);
+        glColor4f(boundsR,boundsG,boundsB,1.);
 
         int leftBound,rightBound;
         _gui->getApp()->getFrameRange(&leftBound, &rightBound);
@@ -1099,7 +1095,7 @@ CurveWidgetPrivate::drawTimelineMarkers()
         glVertex2f( leftBound,topLeft.y() );
         glVertex2f( rightBound,btmRight.y() );
         glVertex2f( rightBound,topLeft.y() );
-        glColor4f(0.95,0.58,0.,1.);
+        glColor4f(cursorR,cursorG,cursorB,1.);
         glVertex2f( _timeline->currentFrame(),btmRight.y() );
         glVertex2f( _timeline->currentFrame(),topLeft.y() );
         glEnd();
@@ -1142,24 +1138,6 @@ CurveWidgetPrivate::drawCurves()
     }
 }
 
-void
-CurveWidgetPrivate::drawBaseAxis()
-{
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-    assert( QGLContext::currentContext() == _widget->context() );
-
-    glColor4f( _baseAxisColor.redF(), _baseAxisColor.greenF(), _baseAxisColor.blueF(), _baseAxisColor.alphaF() );
-    glBegin(GL_LINES);
-    glVertex2f(AXIS_MIN, 0);
-    glVertex2f(AXIS_MAX, 0);
-    glVertex2f(0, AXIS_MIN);
-    glVertex2f(0, AXIS_MAX);
-    glEnd();
-
-    //reset back the color
-    glColor4f(1., 1., 1., 1.);
-}
 
 void
 CurveWidgetPrivate::drawScale()
@@ -1184,7 +1162,19 @@ CurveWidgetPrivate::drawScale()
     acceptedDistances.push_back(5.);
     acceptedDistances.push_back(10.);
     acceptedDistances.push_back(50.);
+    
+    double gridR,gridG,gridB;
+    boost::shared_ptr<Settings> sett = appPTR->getCurrentSettings();
+    sett->getCurveEditorGridColor(&gridR, &gridG, &gridB);
 
+    
+    double scaleR,scaleG,scaleB;
+    sett->getCurveEditorScaleColor(&scaleR, &scaleG, &scaleB);
+    
+    QColor scaleColor;
+    scaleColor.setRgbF(Natron::clamp(scaleR), Natron::clamp(scaleG), Natron::clamp(scaleB));
+
+    
     {
         GLProtectAttrib a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT);
 
@@ -1214,7 +1204,7 @@ CurveWidgetPrivate::drawScale()
                 const double tickSize = ticks[i - m1] * smallTickSize;
                 const double alpha = ticks_alpha(smallestTickSize, largestTickSize, tickSize);
 
-                glColor4f(_baseAxisColor.redF(), _baseAxisColor.greenF(), _baseAxisColor.blueF(), alpha);
+                glColor4f(gridR,gridG,gridB, alpha);
 
                 glBegin(GL_LINES);
                 if (axis == 0) {
@@ -1239,7 +1229,7 @@ CurveWidgetPrivate::drawScale()
                             // draw it with a lower alpha
                             alphaText *= (tickSizePixel - sSizePixel) / (double)minTickSizeTextPixel;
                         }
-                        QColor c = _scaleColor;
+                        QColor c = scaleColor;
                         c.setAlpha(255 * alphaText);
                         if (axis == 0) {
                             _widget->renderText(value, btmLeft.y(), s, c, *_font); // AXIS-SPECIFIC
@@ -1251,6 +1241,17 @@ CurveWidgetPrivate::drawScale()
             }
         }
     } // GLProtectAttrib a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT);
+    
+    
+    glColor4f(gridR,gridG,gridB,1.);
+    glBegin(GL_LINES);
+    glVertex2f(AXIS_MIN, 0);
+    glVertex2f(AXIS_MAX, 0);
+    glVertex2f(0, AXIS_MIN);
+    glVertex2f(0, AXIS_MAX);
+    glEnd();
+
+    
     glCheckError();
 } // drawScale
 
@@ -2225,10 +2226,8 @@ CurveWidget::getBackgroundColour(double &r,
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
+    appPTR->getCurrentSettings()->getCurveEditorBGColor(&r, &g, &b);
 
-    r = _imp->_clearColor.redF();
-    g = _imp->_clearColor.greenF();
-    b = _imp->_clearColor.blueF();
 }
 
 void
@@ -2316,8 +2315,12 @@ CurveWidget::paintGL()
     zoomRight = _imp->zoomCtx.right();
     zoomBottom = _imp->zoomCtx.bottom();
     zoomTop = _imp->zoomCtx.top();
+    
+    double bgR,bgG,bgB;
+    appPTR->getCurrentSettings()->getCurveEditorBGColor(&bgR, &bgG, &bgB);
+    
     if ( (zoomLeft == zoomRight) || (zoomTop == zoomBottom) ) {
-        glClearColor( _imp->_clearColor.redF(),_imp->_clearColor.greenF(),_imp->_clearColor.blueF(),_imp->_clearColor.alphaF() );
+        glClearColor(bgR,bgG,bgB,1.);
         glClear(GL_COLOR_BUFFER_BIT);
 
         return;
@@ -2332,12 +2335,10 @@ CurveWidget::paintGL()
         glLoadIdentity();
         glCheckError();
 
-        glClearColor( _imp->_clearColor.redF(),_imp->_clearColor.greenF(),_imp->_clearColor.blueF(),_imp->_clearColor.alphaF() );
+        glClearColor(bgR,bgG,bgB,1.);
         glClear(GL_COLOR_BUFFER_BIT);
 
         _imp->drawScale();
-
-        _imp->drawBaseAxis();
 
         if (_imp->_timelineEnabled) {
             _imp->drawTimelineMarkers();

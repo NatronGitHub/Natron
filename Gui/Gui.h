@@ -462,6 +462,8 @@ signals:
 
 public slots:
 
+    void reloadStylesheet();
+    
     ///Close the project instance, asking questions to the user and leaving the main window intact
     void closeProject();
     void toggleFullScreen();

@@ -35,7 +35,7 @@ PreferencesPanel::PreferencesPanel(boost::shared_ptr<Settings> settings,
 {
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
 
-    setWindowFlags(Qt::WindowStaysOnTopHint | Qt::Window);
+    setWindowFlags(Qt::Window);
     setWindowTitle( tr("Preferences") );
     _mainLayout = new QVBoxLayout(this);
     _mainLayout->setContentsMargins(0,0,0,0);

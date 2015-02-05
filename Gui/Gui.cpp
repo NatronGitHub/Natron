@@ -1778,8 +1778,40 @@ Gui::setVisibleProjectSettingsPanel()
 }
 
 void
+Gui::reloadStylesheet()
+{
+    loadStyleSheet();
+}
+
+void
 Gui::loadStyleSheet()
 {
+    
+    double selR,selG,selB;
+    double baseR,baseG,baseB;
+    double sunkR,sunkG,sunkB;
+    double raisR,raisG,raisB;
+    double txtR,txtG,txtB;
+    double intR,intG,intB;
+    double kfR,kfG,kfB;
+    boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
+    
+    settings->getSelectionColor(&selR, &selG, &selB);
+    settings->getBaseColor(&baseR, &baseG, &baseB);
+    settings->getSunkenColor(&sunkR, &sunkG, &sunkB);
+    settings->getRaisedColor(&raisR, &raisG, &raisB);
+    settings->getTextColor(&txtR, &txtG, &txtB);
+    settings->getInterpolatedColor(&intR, &intG, &intB);
+    settings->getKeyframeColor(&kfR, &kfG, &kfB);
+    
+    QString selStr = QString("rgb(%1,%2,%3)").arg(Natron::clamp(selR) * 256).arg(Natron::clamp(selG) * 256).arg(Natron::clamp(selB) * 256);
+    QString sunkStr = QString("rgb(%1,%2,%3)").arg(Natron::clamp(sunkR) * 256).arg(Natron::clamp(sunkG) * 256).arg(Natron::clamp(sunkB) * 256);
+    QString baseStr = QString("rgb(%1,%2,%3)").arg(Natron::clamp(baseR) * 256).arg(Natron::clamp(baseR) * 256).arg(Natron::clamp(baseR) * 256);
+    QString raisedStr = QString("rgb(%1,%2,%3)").arg(Natron::clamp(raisR) * 256).arg(Natron::clamp(raisG) * 256).arg(Natron::clamp(raisB) * 256);
+    QString txtStr = QString("rgb(%1,%2,%3)").arg(Natron::clamp(txtR) * 256).arg(Natron::clamp(txtG) * 256).arg(Natron::clamp(txtB) * 256);
+    QString intStr = QString("rgb(%1,%2,%3)").arg(Natron::clamp(intR) * 256).arg(Natron::clamp(intG) * 256).arg(Natron::clamp(intB) * 256);
+    QString kfStr = QString("rgb(%1,%2,%3)").arg(Natron::clamp(kfR) * 256).arg(Natron::clamp(kfG) * 256).arg(Natron::clamp(kfB) * 256);
+    
     QFile qss(":/Resources/Stylesheets/mainstyle.qss");
 
     if ( qss.open(QIODevice::ReadOnly
@@ -1787,13 +1819,13 @@ Gui::loadStyleSheet()
         QTextStream in(&qss);
         QString content( in.readAll() );
         setStyleSheet( content
-                       .arg("rgb(243,149,0)") // %1: selection-color
-                       .arg("rgb(50,50,50)") // %2: medium background
-                       .arg("rgb(71,71,71)") // %3: soft background
-                       .arg("rgb(38,38,38)") // %4: strong background
-                       .arg("rgb(200,200,200)") // %5: text colour
-                       .arg("rgb(86,117,156)") // %6: interpolated value color
-                       .arg("rgb(21,97,248)") // %7: keyframe value color
+                       .arg(selStr) // %1: selection-color
+                       .arg(baseStr) // %2: medium background
+                       .arg(raisedStr) // %3: soft background
+                       .arg(sunkStr) // %4: strong background
+                       .arg(txtStr) // %5: text colour
+                       .arg(intStr) // %6: interpolated value color
+                       .arg(kfStr) // %7: keyframe value color
                        .arg("rgb(0,0,0)") ); // %8: disabled editable text
     }
 }
