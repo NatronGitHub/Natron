@@ -1492,7 +1492,9 @@ static void exportUserKnob(const boost::shared_ptr<KnobI>& knob,const QString& f
 
     QString help(knob->getHintToolTip().c_str());
     WRITE_INDENT(1); WRITE_STRING("param.setHelp(\"" + help + "\")");
-    if (knob->isNewLineTurnedOff()) {
+    if (knob->isNewLineActivated()) {
+        WRITE_INDENT(1); WRITE_STRING("param.setAddNewLine(True)");
+    } else {
         WRITE_INDENT(1); WRITE_STRING("param.setAddNewLine(False)");
     }
     

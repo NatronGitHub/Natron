@@ -96,7 +96,7 @@ Settings::initializeKnobs()
     fontEntries.push_back("Droid Sans");
     fontEntries.push_back("System fonts...");
     _fontChoice->populateChoices(fontEntries);
-    _fontChoice->turnOffNewLine();
+    _fontChoice->setAddNewLine(false);
     _fontChoice->setAnimationEnabled(false);
     
     _generalTab->addKnob(_fontChoice);
@@ -104,7 +104,7 @@ Settings::initializeKnobs()
     _systemFontChoice = Natron::createKnob<Choice_Knob>(this, "System font");
     _systemFontChoice->setHintToolTip("List of all fonts available on your system");
     _systemFontChoice->setName("systemFont");
-    _systemFontChoice->turnOffNewLine();
+    _systemFontChoice->setAddNewLine(false);
     _systemFontChoice->setAnimationEnabled(false);
     _systemFontChoice->setSecret(true);
     _generalTab->addKnob(_systemFontChoice);
@@ -625,7 +625,7 @@ Settings::initializeKnobs()
     }
 
     _maxRAMPercent->setHintToolTip(ramHint);
-    _maxRAMPercent->turnOffNewLine();
+    _maxRAMPercent->setAddNewLine(false);
     _cachingTab->addKnob(_maxRAMPercent);
 
     _maxRAMLabel = Natron::createKnob<String_Knob>(this, "");
@@ -642,7 +642,7 @@ Settings::initializeKnobs()
     _maxPlayBackPercent->setMaximum(100);
     _maxPlayBackPercent->setHintToolTip("This setting indicates the percentage of the maximum RAM used for caching "
                                         "dedicated to the playback cache. This is available for debugging purposes.");
-    _maxPlayBackPercent->turnOffNewLine();
+    _maxPlayBackPercent->setAddNewLine(false);
     _cachingTab->addKnob(_maxPlayBackPercent);
 
     _maxPlaybackLabel = Natron::createKnob<String_Knob>(this, "");
@@ -666,7 +666,7 @@ Settings::initializeKnobs()
                                            "you want to keep available on your computer for other usage. "
                                            "A low value may result in a massive slowdown and high disk usage."
                                            );
-    _unreachableRAMPercent->turnOffNewLine();
+    _unreachableRAMPercent->setAddNewLine(false);
     _cachingTab->addKnob(_unreachableRAMPercent);
     _unreachableRAMLabel = Natron::createKnob<String_Knob>(this, "");
     _unreachableRAMLabel->setName("unreachableRAMLabel");
@@ -1657,7 +1657,7 @@ Settings::populatePluginsTab(std::vector<Natron::Plugin*>& pluginsToIgnore)
         pluginLabel->setName(it->first);
         pluginLabel->setAnimationEnabled(false);
         pluginLabel->setDefaultValue(pluginName);
-        pluginLabel->turnOffNewLine();
+        pluginLabel->setAddNewLine(false);
         pluginLabel->hideDescription();
         pluginLabel->setIsPersistant(false);
         if (group) {
@@ -1670,7 +1670,7 @@ Settings::populatePluginsTab(std::vector<Natron::Plugin*>& pluginsToIgnore)
         pluginActivation->setDefaultValue(filterDefaultActivatedPlugin(plugin->getPluginID()));
         pluginActivation->setName(it->first + ".enabled");
         pluginActivation->setAnimationEnabled(false);
-        pluginActivation->turnOffNewLine();
+        pluginActivation->setAddNewLine(false);
         pluginActivation->setHintToolTip("When checked, " + pluginName + " will be activated and you can create a node using this plug-in in " NATRON_APPLICATION_NAME ". When unchecked, you'll be unable to create a node for this plug-in. Changing this parameter requires a restart of the application.");
         if (group) {
             group->addKnob(pluginActivation);

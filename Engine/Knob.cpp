@@ -217,6 +217,7 @@ struct KnobHelperPrivate
     std::string originalName; //< the original name passed to setName() by the user
     //By default this is the same as _description but can be set by calling setName().
     bool newLine;
+    bool addSeparator;
     int itemSpacing;
     boost::shared_ptr<KnobI> parentKnob;
     bool IsSecret;
@@ -284,6 +285,7 @@ struct KnobHelperPrivate
     , name( description_.c_str() )
     , originalName(description.c_str())
     , newLine(true)
+    , addSeparator(false)
     , itemSpacing(0)
     , parentKnob()
     , IsSecret(false)
@@ -1106,15 +1108,27 @@ KnobHelper::evaluateValueChange(int dimension,
 }
 
 void
-KnobHelper::turnOffNewLine()
+KnobHelper::setAddNewLine(bool newLine)
 {
-    _imp->newLine = false;
+    _imp->newLine = newLine;
 }
 
 bool
-KnobHelper::isNewLineTurnedOff() const
+KnobHelper::isNewLineActivated() const
 {
-    return !_imp->newLine;
+    return _imp->newLine;
+}
+
+void
+KnobHelper::setAddSeparator(bool addSep)
+{
+    _imp->addSeparator = addSep;
+}
+
+bool
+KnobHelper::isSeparatorActivated() const
+{
+    return _imp->addSeparator;
 }
 
 void

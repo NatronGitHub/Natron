@@ -637,7 +637,7 @@ struct RotoContextPrivate
         activated = Natron::createKnob<Bool_Knob>(effect, kRotoActivatedParamLabel, 1, false);
         activated->setHintToolTip(kRotoActivatedHint);
         activated->setName(kRotoActivatedParam);
-        activated->turnOffNewLine();
+        activated->setAddNewLine(false);
         activated->setDefaultValue(true);
         activated->setAllDimensionsEnabled(false);
         activated->setIsPersistant(false);

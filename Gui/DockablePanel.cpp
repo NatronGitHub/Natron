@@ -864,7 +864,7 @@ static void findKnobsOnSameLine(const std::vector<boost::shared_ptr<KnobI> >& kn
     int k = idx - 1;
     boost::shared_ptr<KnobI> parent = ref->getParentKnob();
     
-    while ( k >= 0 && knobs[k]->isNewLineTurnedOff()) {
+    while ( k >= 0 && !knobs[k]->isNewLineActivated()) {
         if (parent) {
             assert(knobs[k]->getParentKnob() == parent);
             knobsOnSameLine.push_back(knobs[k]);
@@ -880,7 +880,7 @@ static void findKnobsOnSameLine(const std::vector<boost::shared_ptr<KnobI> >& kn
     
     ///find all knobs forward that are on the same line.
     k = idx;
-    while ( k < (int)(knobs.size() - 1) && knobs[k]->isNewLineTurnedOff()) {
+    while ( k < (int)(knobs.size() - 1) && !knobs[k]->isNewLineActivated()) {
         if (parent) {
             assert(knobs[k + 1]->getParentKnob() == parent);
             knobsOnSameLine.push_back(knobs[k + 1]);
@@ -917,7 +917,7 @@ DockablePanelPrivate::initializeKnobVector(const std::vector< boost::shared_ptr<
 
         
         if (!isPage && !isGroup) {
-            if ( (i > 0) && knobs[i - 1]->isNewLineTurnedOff() ) {
+            if ( (i > 0) && !knobs[i - 1]->isNewLineActivated() ) {
                 makeNewLine = false;
             }
             
@@ -1340,7 +1340,7 @@ DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI> & knob,
             
             ret->setSecret();
             
-            if (!knob->isNewLineTurnedOff() && ret->shouldAddStretch()) {
+            if (knob->isNewLineActivated() && ret->shouldAddStretch()) {
                 fieldLayout->addStretch();
             }
 
@@ -3254,7 +3254,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,const boost::shared_ptr<KnobI>
         _imp->startNewLineBox = new QCheckBox(secondRowContainer);
         _imp->startNewLineBox->setToolTip(tr("If checked the <b><i>next</i></b> parameter defined will be on the same line as this parameter"));
         if (knob) {
-            _imp->startNewLineBox->setChecked(!knob->isNewLineTurnedOff());
+            _imp->startNewLineBox->setChecked(knob->isNewLineActivated());
         }
         secondRowLayout->addWidget(_imp->startNewLineBox);
         secondRowLayout->addStretch();
@@ -3956,9 +3956,7 @@ AddKnobDialogPrivate::createKnobFromSelection(int index,int optionalGroupIndex)
         knob->setAnimationEnabled(animatesCheckbox->isChecked());
     }
     knob->setEvaluateOnChange(evaluatesOnChange->isChecked());
-    if (!startNewLineBox->isChecked()) {
-        knob->turnOffNewLine();
-    }
+    knob->setAddNewLine(startNewLineBox->isChecked());
     knob->setSecret(hideBox->isChecked());
     knob->setName(nameLineEdit->text().toStdString());
     knob->setHintToolTip(tooltipArea->toPlainText().toStdString());

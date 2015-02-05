@@ -84,7 +84,7 @@ DiskCacheNode::initializeKnobs()
     _imp->firstFrame->setName("firstFrame");
     _imp->firstFrame->disableSlider();
     _imp->firstFrame->setEvaluateOnChange(false);
-    _imp->firstFrame->turnOffNewLine();
+    _imp->firstFrame->setAddNewLine(false);
     _imp->firstFrame->setDefaultValue(1);
     _imp->firstFrame->setSecret(true);
     page->addKnob(_imp->firstFrame);

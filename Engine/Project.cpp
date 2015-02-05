@@ -823,7 +823,7 @@ Project::initializeKnobs()
         entries.push_back( formatStr.toStdString() );
         _imp->builtinFormats.push_back(*f);
     }
-    _imp->formatKnob->turnOffNewLine();
+    _imp->formatKnob->setAddNewLine(false);
 
     _imp->formatKnob->populateChoices(entries);
     _imp->formatKnob->setAnimationEnabled(false);
@@ -840,7 +840,7 @@ Project::initializeKnobs()
     _imp->viewsCount->setDefaultValue(1,0);
     _imp->viewsCount->disableSlider();
     _imp->viewsCount->setEvaluateOnChange(false);
-    _imp->viewsCount->turnOffNewLine();
+    _imp->viewsCount->setAddNewLine(false);
     page->addKnob(_imp->viewsCount);
 
     _imp->mainView = Natron::createKnob<Int_Knob>(this, "Main view");
@@ -901,7 +901,7 @@ Project::initializeKnobs()
                                      "is unioned to this "
                                      "frame-range, unless the Lock frame range parameter is checked.");
     _imp->frameRange->setAnimationEnabled(false);
-    _imp->frameRange->turnOffNewLine();
+    _imp->frameRange->setAddNewLine(false);
     page->addKnob(_imp->frameRange);
     
     _imp->lockFrameRange = Natron::createKnob<Bool_Knob>(this, "Lock range");

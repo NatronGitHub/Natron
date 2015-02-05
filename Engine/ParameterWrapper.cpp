@@ -155,7 +155,7 @@ Param::setAnimationEnabled(bool e)
 bool
 Param::getAddNewLine()
 {
-    return !_knob->isNewLineTurnedOff();
+    return _knob->isNewLineActivated();
 }
 
 void
@@ -164,9 +164,7 @@ Param::setAddNewLine(bool a)
     if (!_knob->isUserKnob()) {
         return;
     }
-    if (!a && !_knob->isNewLineTurnedOff()) {
-        _knob->turnOffNewLine();
-    } 
+    _knob->setAddNewLine(a);
 }
 
 bool

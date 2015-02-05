@@ -3687,7 +3687,7 @@ Group_KnobGui::setChecked(bool b)
             (*it)->hide();
         } else if ( !(*it)->getKnob()->getIsSecret() ) {
             (*it)->show(startChildIndex);
-            if ( !(*it)->getKnob()->isNewLineTurnedOff() ) {
+            if ( (*it)->getKnob()->isNewLineActivated() ) {
                 ++startChildIndex;
             }
         }

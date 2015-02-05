@@ -985,7 +985,7 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
             knob->setName(isRegular->getName());
             knob->setHintToolTip(isRegular->getHintToolTip());
             if (!isRegular->triggerNewLine()) {
-                knob->turnOffNewLine();
+                knob->setAddNewLine(false);
             }
             
         }
@@ -1567,7 +1567,7 @@ Node::initializeKnobs(int renderScaleSupportPref)
                 boost::shared_ptr<Bool_Knob> enableMaskKnob = Natron::createKnob<Bool_Knob>(_imp->liveInstance.get(), maskName,1,false);
                 _imp->enableMaskKnob.insert( std::make_pair(i,enableMaskKnob) );
                 enableMaskKnob->setDefaultValue(false, 0);
-                enableMaskKnob->turnOffNewLine();
+                enableMaskKnob->setAddNewLine(false);
                 std::string enableMaskName(std::string(kEnableMaskKnobName) + std::string("_") + maskName);
                 enableMaskKnob->setName(enableMaskName);
                 enableMaskKnob->setAnimationEnabled(false);
@@ -1585,7 +1585,7 @@ Node::initializeKnobs(int renderScaleSupportPref)
                 maskChannelKnob->populateChoices(choices);
                 maskChannelKnob->setDefaultValue(4, 0);
                 maskChannelKnob->setAnimationEnabled(false);
-                maskChannelKnob->turnOffNewLine();
+                maskChannelKnob->setAddNewLine(false);
                 maskChannelKnob->setHintToolTip("Use this channel from the original input to mix the output with the original input. "
                                                 "Setting this to None is the same as disabling the mask.");
                 std::string channelMaskName(kMaskChannelKnobName + std::string("_") + maskName);
@@ -1613,7 +1613,7 @@ Node::initializeKnobs(int renderScaleSupportPref)
         _imp->forceCaching->setName("forceCaching");
         _imp->forceCaching->setDefaultValue(false);
         _imp->forceCaching->setAnimationEnabled(false);
-        _imp->forceCaching->turnOffNewLine();
+        _imp->forceCaching->setAddNewLine(false);
         _imp->forceCaching->setIsPersistant(true);
         _imp->forceCaching->setEvaluateOnChange(false);
         _imp->forceCaching->setHintToolTip("When checked, the output of this node will always be kept in the RAM cache for fast access of already computed "
@@ -1625,7 +1625,7 @@ Node::initializeKnobs(int renderScaleSupportPref)
         _imp->previewEnabledKnob->setDefaultValue( makePreviewByDefault() );
         _imp->previewEnabledKnob->setName(kEnablePreviewKnobName);
         _imp->previewEnabledKnob->setAnimationEnabled(false);
-        _imp->previewEnabledKnob->turnOffNewLine();
+        _imp->previewEnabledKnob->setAddNewLine(false);
         _imp->previewEnabledKnob->setIsPersistant(false);
         _imp->previewEnabledKnob->setEvaluateOnChange(false);
         _imp->previewEnabledKnob->setHintToolTip("Whether to show a preview on the node box in the node-graph.");
@@ -1636,7 +1636,7 @@ Node::initializeKnobs(int renderScaleSupportPref)
         _imp->disableNodeKnob->setAnimationEnabled(false);
         _imp->disableNodeKnob->setDefaultValue(false);
         _imp->disableNodeKnob->setName(kDisableNodeKnobName);
-        _imp->disableNodeKnob->turnOffNewLine();
+        _imp->disableNodeKnob->setAddNewLine(false);
         _imp->disableNodeKnob->setHintToolTip("When disabled, this node acts as a pass through.");
         _imp->nodeSettingsPage->addKnob(_imp->disableNodeKnob);
         

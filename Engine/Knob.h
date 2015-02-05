@@ -658,12 +658,14 @@ public:
     /**
      * @brief Any GUI representing this parameter should represent the next parameter on the same line as this parameter.
      **/
-    virtual void turnOffNewLine() = 0;
+    virtual void setAddNewLine(bool newLine) = 0;
+    virtual void setAddSeparator(bool addSep) = 0;
 
     /**
      * @brief Any GUI representing this parameter should represent the next parameter on the same line as this parameter.
      **/
-    virtual bool isNewLineTurnedOff() const = 0;
+    virtual bool isNewLineActivated() const = 0;
+    virtual bool isSeparatorActivated() const = 0;
 
     /**
      * @brief GUI-related
@@ -1071,8 +1073,10 @@ public:
     virtual bool isDescriptionVisible() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual KnobHolder* getHolder() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual int getDimension() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual void turnOffNewLine() OVERRIDE FINAL;
-    virtual bool isNewLineTurnedOff() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual void setAddNewLine(bool newLine) OVERRIDE FINAL;
+    virtual void setAddSeparator(bool addSep) OVERRIDE FINAL;
+    virtual bool isNewLineActivated() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool isSeparatorActivated() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setSpacingBetweenItems(int spacing) OVERRIDE FINAL;
     virtual void setEnabled(int dimension,bool b) OVERRIDE FINAL;
     virtual bool isEnabled(int dimension) const OVERRIDE FINAL;

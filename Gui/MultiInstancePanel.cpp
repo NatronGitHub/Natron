@@ -211,9 +211,7 @@ struct MultiInstancePanelPrivate
         ret->setHintToolTip( ref->getHintToolTip() );
         ret->setEvaluateOnChange( ref->getEvaluateOnChange() );
         ret->setIsPersistant(false);
-        if ( ref->isNewLineTurnedOff() ) {
-            ret->turnOffNewLine();
-        }
+        ret->setAddNewLine(ref->isNewLineActivated());
         bool refSecret = ref->getIsSecret();
 
         if (refSecret) {

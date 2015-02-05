@@ -632,7 +632,7 @@ public:
         
         _isUserKnob = knob->isUserKnob();
         _label = knob->getDescription();
-        _triggerNewLine = !knob->isNewLineTurnedOff();
+        _triggerNewLine = knob->isNewLineActivated();
         _evaluatesOnChange = knob->getEvaluateOnChange();
         _isPersistent = knob->getIsPersistant();
         _animationEnabled = knob->isAnimationEnabled();
