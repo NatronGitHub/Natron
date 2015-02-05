@@ -7,6 +7,8 @@ set GIT_IO=https://github.com/MrKepzie/openfx-io.git
 set GIT_MISC=https://github.com/devernay/openfx-misc.git
 set NATRON_BRANCH=workshop
 set OPENFX_BRANCH=master
+setlocal enabledelayedexpansion 
+
 
 if not exist "%TMP%" (
 	mkdir %TMP%
@@ -29,7 +31,6 @@ if not exist "%TMP%\openfx-misc" (
 	cd %TMP%
 	git clone %GIT_MISC%
 )
-
 
 :MAIN_LOOP
 set CONTINUE=0
@@ -86,50 +87,43 @@ ECHO.%ORIG_MISC% | FIND /I "%GITV_MISC%">Nul && (
 	echo %GITV_MISC% > %CWD%\MISC_WORKSHOP
 )
 
-cd %TMP%
-set i=0
 if "%BUILD_ALL%"=="1" (
-:FOR_ALL_ARCH
-	if "%i%" == "2" (
-		goto main_loop
-	)
-	if "%i%" == "0" (
+for /l %%i in (1, 1, 2) do (
+    if "%%i" == "1" (
 		set BIT=64
-	)
-	if "%i%" == "1" (
+    )
+	if "%%i" == "2" (
 		set BIT=32
 	)
-	set i=%i%+1
-	goto build_arch
-) else (
-	timeout 60
-	goto main_loop
-)
-
-
-cd %CWD%
-
-:BUILD_ARCH
-cd %CWD%
-	call build-natron.bat %NATRON_BRANCH% %BIT% 0 Release 1
 	cd %CWD%
-	call build-plugins.bat %BIT% Release 1
-	if exist "%TMP%\repo\Windows%BIT%" (
-		rmdir /S /Q %TMP%\repo\Windows%BIT%
+	call build-natron.bat %NATRON_BRANCH% !BIT! 0 Release 1
+	cd %CWD%
+	call build-plugins.bat !BIT! Release 1
+	if exist "%TMP%\repo\Windows!BIT!" (
+		rmdir /S /Q %TMP%\repo\Windows!BIT!
 	)
 	
 	if not exist "%TMP%\repo" (
 		mkdir %TMP%\repo 
 	)
-	mkdir %TMP%\repo\Windows%BIT%
-	mkdir %TMP%\repo\Windows%BIT%\Natron-%GITV_NATRON%
-	xcopy /Y /E %TMP%\deploy %TMP%\repo\Windows%BIT%\Natron-%GITV_NATRON%
-	cd %TMP%\repo\Windows%BIT%
+	mkdir %TMP%\repo\Windows!BIT!
+	mkdir %TMP%\repo\Windows!BIT!\Natron-%GITV_NATRON%
+	xcopy /Y /E %TMP%\deploy %TMP%\repo\Windows!BIT!\Natron-%GITV_NATRON%
+	cd %TMP%\repo\Windows!BIT!
 	zip -r Natron-%GITV_NATRON%.zip Natron-%GITV_NATRON%
 	rmdir /S /Q Natron-%GITV_NATRON%
 	cd ..
-	rsync -avz -e ssh --progress --delete Windows%BIT% kepzlol@frs.sourceforge.net:/home/frs/project/natron/snapshots
-	goto for_all_arch
+	rsync -avz -e ssh --progress --delete Windows!BIT! kepzlol@frs.sourceforge.net:/home/frs/project/natron/snapshots
+)
+
+) else (
+	timeout 60
+)
+
+goto main_loop
+cd %CWD%
+
+
 	
 :FAIL
 	set errorlevel=1
