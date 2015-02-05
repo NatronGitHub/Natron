@@ -420,7 +420,15 @@ OfxEffectInstance::tryInitializeOverlayInteracts()
         std::vector<std::string> slaveParams;
         _overlayInteract->getSlaveToParam(slaveParams);
         for (U32 i = 0; i < slaveParams.size(); ++i) {
-            boost::shared_ptr<KnobI> param = getKnobByName(slaveParams[i]);
+            boost::shared_ptr<KnobI> param ;
+            const std::vector< boost::shared_ptr<KnobI> > & knobs = getKnobs();
+            for (std::vector< boost::shared_ptr<KnobI> >::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+                if ((*it)->getOriginalName() == slaveParams[i]) {
+                    param = *it;
+                    break;
+                    
+                }
+            }
             if (!param) {
                 qDebug() << "OfxEffectInstance::tryInitializeOverlayInteracts(): slaveToParam " << slaveParams[i].c_str() << " not available";
             } else {
@@ -2447,13 +2455,13 @@ OfxEffectInstance::knobChanged(KnobI* k,
             ///getClipPreferences() so we don't take the clips preferences lock for read here otherwise we would
             ///create a deadlock. This code then assumes that the instance changed action of the plug-in doesn't require
             ///the clip preferences to stay the same throughout the action.
-            stat = effectInstance()->paramInstanceChangedAction(k->getName(), ofxReason,(OfxTime)time,renderScale);
+            stat = effectInstance()->paramInstanceChangedAction(k->getOriginalName(), ofxReason,(OfxTime)time,renderScale);
         } else {
             ///This action as all the overlay interacts actions can trigger recursive actions, such as
             ///getClipPreferences() so we don't take the clips preferences lock for read here otherwise we would
             ///create a deadlock. This code then assumes that the instance changed action of the plug-in doesn't require
             ///the clip preferences to stay the same throughout the action.
-            stat = effectInstance()->paramInstanceChangedAction(k->getName(), ofxReason,(OfxTime)time,renderScale);
+            stat = effectInstance()->paramInstanceChangedAction(k->getOriginalName(), ofxReason,(OfxTime)time,renderScale);
         }
     }
     if ( (stat != kOfxStatOK) && (stat != kOfxStatReplyDefault) ) {
@@ -2468,8 +2476,8 @@ OfxEffectInstance::knobChanged(KnobI* k,
         originatedFromMainThread) { //< change didnt occur in main-thread in the first, palce don't attempt to draw the overlay
         
         ///Run the following only in the main-thread
-        
-        if ( _effect->isClipPreferencesSlaveParam( k->getName() ) ) {
+
+        if ( _effect->isClipPreferencesSlaveParam( k->getOriginalName() ) ) {
             RECURSIVE_ACTION();
             checkOFXClipPreferences_public(time, renderScale, ofxReason,true, true);
         }

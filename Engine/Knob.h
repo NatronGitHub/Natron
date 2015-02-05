@@ -723,6 +723,12 @@ public:
      * name is the same as the getDescription(i.e: the text label).
      */
     virtual const std::string & getName() const = 0;
+    
+    /**
+     * @brief Returns the name passed to setName(). This might be different than getName() if
+     * the name passed to setName() was not python compliant.
+     **/
+    virtual const std::string & getOriginalName() const = 0;
 
     /**
      * @brief Set the given knob as the parent of this knob.
@@ -1077,6 +1083,7 @@ public:
     virtual void setDirty(bool d) OVERRIDE FINAL;
     virtual void setName(const std::string & name) OVERRIDE FINAL;
     virtual const std::string & getName() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual const std::string & getOriginalName() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setParentKnob(boost::shared_ptr<KnobI> knob) OVERRIDE FINAL;
     virtual boost::shared_ptr<KnobI> getParentKnob() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual int determineHierarchySize() const OVERRIDE FINAL WARN_UNUSED_RETURN;
