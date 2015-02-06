@@ -524,6 +524,13 @@ public:
      * @brief Convenience function for RGBA color params
      **/
     void setValues(double r,double g,double b,double a);
+    
+    /**
+     * @brief When simplified, the GUI of the knob should not have any spinbox and sliders but just a label to click and openup a color dialog
+     **/
+    void setSimplified(bool simp);
+    bool isSimplified() const;
+    
 
 public Q_SLOTS:
 
@@ -547,6 +554,7 @@ private:
 
 private:
     bool _allDimensionsEnabled;
+    bool _simplifiedMode;
     static const std::string _typeNameStr;
 };
 

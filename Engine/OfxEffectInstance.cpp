@@ -2481,10 +2481,13 @@ OfxEffectInstance::knobChanged(KnobI* k,
             RECURSIVE_ACTION();
             checkOFXClipPreferences_public(time, renderScale, ofxReason,true, true);
         }
+#pragma message WARN("TODO (python): also check if the interact is actually visible (requires changes in GUI)")
         if (_overlayInteract) {
-            if (std::find(_overlaySlaves.begin(), _overlaySlaves.end(), (void*)k) != _overlaySlaves.end()) {
-                incrementRedrawNeededCounter();
-            }
+            // Some plugins (e.g. by digital film tools) forget to set kOfxInteractPropSlaveToParam.
+            // Most hosts trigger a redraw if the plugin has an active overlay.
+            //if (std::find(_overlaySlaves.begin(), _overlaySlaves.end(), (void*)k) != _overlaySlaves.end()) {
+            incrementRedrawNeededCounter();
+            //}
 
             if (recursionLevel == 1 && checkIfOverlayRedrawNeeded()) {
                 stat = _overlayInteract->redraw();

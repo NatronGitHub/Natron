@@ -30,6 +30,9 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Engine/Project.h"
 #include "Engine/ViewerInstance.h"
 #include "Engine/TimeLine.h"
+#include "Engine/Settings.h"
+#include "Engine/KnobTypes.h"
+#include "Engine/Image.h"
 
 #include "Gui/ViewerTab.h"
 #include "Gui/TextRenderer.h"
@@ -102,15 +105,6 @@ struct TimelineGuiPrivate
     Natron::TimelineStateEnum _state; //state machine for mouse events
     ZoomContext _zoomCtx;
     Natron::TextRenderer _textRenderer;
-    QColor _cursorColor;
-    QColor _boundsColor;
-    QColor _cachedLineColor;
-    QColor _diskCachedLineColor;
-    QColor _keyframesColor;
-    QColor _clearColor;
-    QColor _backgroundColor;
-    QColor _ticksColor;
-    QColor _scaleColor;
     QFont _font;
     bool _firstPaint;
     CachedFrames cachedFrames;
@@ -131,15 +125,6 @@ struct TimelineGuiPrivate
     , _state(eTimelineStateIdle)
     , _zoomCtx()
     , _textRenderer()
-    , _cursorColor(243,149,0)
-    , _boundsColor(207,69,6)
-    , _cachedLineColor(143,201,103)
-    , _diskCachedLineColor(69,96,63)
-    , _keyframesColor(21,97,248)
-    , _clearColor(0,0,0,255)
-    , _backgroundColor(50,50,50)
-    , _ticksColor(200,200,200)
-    , _scaleColor(100,100,100)
     , _font(appFont,appFontSize)
     , _firstPaint(true)
     , cachedFrames()
@@ -271,8 +256,12 @@ TimeLineGui::paintGL()
     double top = bottom +  h / (double)_imp->_zoomCtx.zoomFactor;
     double right = left +  (w / (double)_imp->_zoomCtx.zoomFactor);
 
+    double clearR,clearG,clearB;
+    boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
+    settings->getTimelineBGColor(&clearR, &clearG, &clearB);
+    
     if ( (left == right) || (top == bottom) ) {
-        glClearColor( _imp->_clearColor.redF(),_imp->_clearColor.greenF(),_imp->_clearColor.blueF(),_imp->_clearColor.alphaF() );
+        glClearColor(clearR,clearG,clearB,1.);
         glClear(GL_COLOR_BUFFER_BIT);
 
         return;
@@ -286,7 +275,7 @@ TimeLineGui::paintGL()
         GLProtectMatrix m(GL_MODELVIEW);
         glLoadIdentity();
 
-        glClearColor( _imp->_clearColor.redF(),_imp->_clearColor.greenF(),_imp->_clearColor.blueF(),_imp->_clearColor.alphaF() );
+        glClearColor(clearR,clearG,clearB,1.);
         glClear(GL_COLOR_BUFFER_BIT);
         glCheckErrorIgnoreOSXBug();
 
@@ -303,8 +292,11 @@ TimeLineGui::paintGL()
         glScissor( firstFrameWidgetPos.x(),0,
                   lastFrameWidgetPos.x() - firstFrameWidgetPos.x(),height() );
 
+        double bgR,bgG,bgB;
+        settings->getBaseColor(&bgR, &bgG, &bgB);
+        
         glEnable(GL_SCISSOR_TEST);
-        glClearColor( _imp->_backgroundColor.redF(),_imp->_backgroundColor.greenF(),_imp->_backgroundColor.blueF(),_imp->_backgroundColor.alphaF() );
+        glClearColor(bgR,bgG,bgB,1.);
         glClear(GL_COLOR_BUFFER_BIT);
         glCheckErrorIgnoreOSXBug();
         glDisable(GL_SCISSOR_TEST);
@@ -319,7 +311,25 @@ TimeLineGui::paintGL()
         double cachedLineYPos = toTimeLineCoordinates(0,lineYPosWidget + 1).y();
 
         /*draw the horizontal axis*/
-        glColor4f( _imp->_scaleColor.redF(), _imp->_scaleColor.greenF(), _imp->_scaleColor.blueF(), _imp->_scaleColor.alphaF() );
+        double txtR,txtG,txtB;
+        settings->getTextColor(&txtR, &txtG, &txtB);
+        double kfR,kfG,kfB;
+        settings->getKeyframeColor(&kfR, &kfG, &kfB);
+        
+        double cursorR,cursorG,cursorB;
+        settings->getTimelinePlayheadColor(&cursorR, &cursorG, &cursorB);
+        
+        double boundsR,boundsG,boundsB;
+        settings->getTimelineBoundsColor(&boundsR, &boundsG, &boundsB);
+        
+        double cachedR,cachedG,cachedB;
+        settings->getCachedFrameColor(&cachedR, &cachedG, &cachedB);
+        
+        double dcR,dcG,dcB;
+        settings->getDiskCachedColor(&dcR, &dcG, &dcB);
+
+        
+        glColor4f(txtR / 2.,txtG / 2., txtB / 2., 1.);
         glBegin(GL_LINES);
         glVertex2f(btmLeft.x(), lineYpos);
         glVertex2f(topRight.x(), lineYpos);
@@ -357,7 +367,7 @@ TimeLineGui::paintGL()
             const double tickSize = ticks[i - m1] * smallTickSize;
             const double alpha = ticks_alpha(smallestTickSize, largestTickSize, tickSize);
 
-            glColor4f(_imp->_ticksColor.redF(), _imp->_ticksColor.greenF(), _imp->_ticksColor.blueF(), alpha);
+            glColor4f(txtR,txtG,txtB, alpha);
 
             glBegin(GL_LINES);
             glVertex2f(value, tickBottom);
@@ -378,7 +388,8 @@ TimeLineGui::paintGL()
                         // draw it with a lower alpha
                         alphaText *= (tickSizePixel - sSizePixel) / (double)minTickSizeTextPixel;
                     }
-                    QColor c = _imp->_ticksColor;
+                    QColor c;
+                    c.setRgbF(Natron::clamp(txtR), Natron::clamp(txtG), Natron::clamp(txtB));
                     c.setAlpha(255 * alphaText);
                     glCheckError();
                     renderText(value, btmLeft.y(), s, c, _imp->_font);
@@ -424,16 +435,18 @@ TimeLineGui::paintGL()
             QPoint mouseNumberWidgetCoord(currentPosBtmWidgetCoordX - fontM.width(mouseNumber) / 2,
                                           currentPosBtmWidgetCoordY - CURSOR_HEIGHT - 2);
             QPointF mouseNumberPos = toTimeLineCoordinates( mouseNumberWidgetCoord.x(),mouseNumberWidgetCoord.y() );
-            QColor currentColor;
             std::list<SequenceTime>::iterator foundHoveredAsKeyframe = std::find(keyframes.begin(),keyframes.end(),hoveredTime);
+            QColor currentColor;
             if ( foundHoveredAsKeyframe != keyframes.end() ) {
-                currentColor = _imp->_keyframesColor;
+                glColor4f(kfR,kfG,kfB,0.4);
+                currentColor.setRgbF(Natron::clamp(kfR), Natron::clamp(kfG), Natron::clamp(kfB));
             } else {
-                currentColor = _imp->_cursorColor;
+                glColor4f(cursorR, cursorG, cursorB, 0.4);
+                currentColor.setRgbF(Natron::clamp(cursorR), Natron::clamp(cursorG), Natron::clamp(cursorB));
             }
             currentColor.setAlpha(100);
 
-            glColor4f( currentColor.redF(),currentColor.greenF(),currentColor.blueF(),currentColor.alphaF() );
+            
             glBegin(GL_POLYGON);
             glVertex2f( currentPosBtm.x(),currentPosBtm.y() );
             glVertex2f( currentPosTopLeft.x(),currentPosTopLeft.y() );
@@ -445,19 +458,20 @@ TimeLineGui::paintGL()
         }
 
         //draw the bounds and the current time cursor
-        QColor actualCursorColor;
         std::list<SequenceTime>::iterator isCurrentTimeAKeyframe = std::find( keyframes.begin(),keyframes.end(),_imp->_timeline->currentFrame() );
+        QColor actualCursorColor;
         if ( isCurrentTimeAKeyframe != keyframes.end() ) {
-            actualCursorColor = _imp->_keyframesColor;
+            glColor4f(kfR,kfG,kfB,1.);
+            actualCursorColor.setRgbF(Natron::clamp(kfR), Natron::clamp(kfG), Natron::clamp(kfB));
         } else {
-            actualCursorColor = _imp->_cursorColor;
+            glColor4f(cursorR, cursorG, cursorB,1.);
+            actualCursorColor.setRgbF(Natron::clamp(cursorR), Natron::clamp(cursorG), Natron::clamp(cursorB));
         }
 
         QString currentFrameStr( QString::number( _imp->_timeline->currentFrame() ) );
         double cursorTextXposWidget = cursorBtmWidgetCoord.x() - fontM.width(currentFrameStr) / 2.;
         double cursorTextPos = toTimeLineCoordinates(cursorTextXposWidget,0).x();
         renderText(cursorTextPos,cursorTopLeft.y(), currentFrameStr, actualCursorColor, _imp->_font);
-        glColor4f( actualCursorColor.redF(),actualCursorColor.greenF(),actualCursorColor.blueF(),actualCursorColor.alphaF() );
         glBegin(GL_POLYGON);
         glVertex2f( cursorBtm.x(),cursorBtm.y() );
         glVertex2f( cursorTopLeft.x(),cursorTopLeft.y() );
@@ -465,14 +479,17 @@ TimeLineGui::paintGL()
         glEnd();
         glCheckErrorIgnoreOSXBug();
 
+        QColor boundsColor;
+        boundsColor.setRgbF(Natron::clamp(boundsR), Natron::clamp(boundsG), Natron::clamp(boundsB));
+        
         if ( leftBound != _imp->_timeline->currentFrame() ) {
             QString leftBoundStr( QString::number(leftBound) );
             double leftBoundTextXposWidget = toWidgetCoordinates( ( leftBoundBtm.x() + leftBoundBtmRight.x() ) / 2.,0 ).x() - fontM.width(leftBoundStr) / 2.;
             double leftBoundTextPos = toTimeLineCoordinates(leftBoundTextXposWidget,0).x();
             renderText(leftBoundTextPos,leftBoundTop.y(),
-                       leftBoundStr, _imp->_boundsColor, _imp->_font);
+                       leftBoundStr, boundsColor, _imp->_font);
         }
-        glColor4f( _imp->_boundsColor.redF(),_imp->_boundsColor.greenF(),_imp->_boundsColor.blueF(),_imp->_boundsColor.alphaF() );
+        glColor4f(boundsR,boundsG,boundsB,1.);
         glBegin(GL_POLYGON);
         glVertex2f( leftBoundBtm.x(),leftBoundBtm.y() );
         glVertex2f( leftBoundBtmRight.x(),leftBoundBtmRight.y() );
@@ -485,9 +502,9 @@ TimeLineGui::paintGL()
             double rightBoundTextXposWidget = toWidgetCoordinates( ( rightBoundBtm.x() + rightBoundBtmLeft.x() ) / 2.,0 ).x() - fontM.width(rightBoundStr) / 2.;
             double rightBoundTextPos = toTimeLineCoordinates(rightBoundTextXposWidget,0).x();
             renderText(rightBoundTextPos,rightBoundTop.y(),
-                       rightBoundStr, _imp->_boundsColor, _imp->_font);
+                       rightBoundStr, boundsColor, _imp->_font);
         }
-        glColor4f( _imp->_boundsColor.redF(),_imp->_boundsColor.greenF(),_imp->_boundsColor.blueF(),_imp->_boundsColor.alphaF() );
+        glColor4f(boundsR,boundsG,boundsB,1.);
         glCheckError();
         glBegin(GL_POLYGON);
         glVertex2f( rightBoundBtm.x(),rightBoundBtm.y() );
@@ -507,11 +524,9 @@ TimeLineGui::paintGL()
         glBegin(GL_LINES);
         for (CachedFrames::const_iterator i = _imp->cachedFrames.begin(); i != _imp->cachedFrames.end(); ++i) {
             if (i->mode == eStorageModeRAM) {
-                glColor4f( _imp->_cachedLineColor.redF(),_imp->_cachedLineColor.greenF(),
-                          _imp->_cachedLineColor.blueF(),_imp->_cachedLineColor.alphaF() );
+                glColor4f(cachedR,cachedG,cachedB,1.);
             } else if (i->mode == eStorageModeDisk) {
-                glColor4f( _imp->_diskCachedLineColor.redF(),_imp->_diskCachedLineColor.greenF(),
-                          _imp->_diskCachedLineColor.blueF(),_imp->_diskCachedLineColor.alphaF() );
+                glColor4f(dcR,dcG,dcB,1.);
             }
             glVertex2f(i->time - 0.5,cachedLineYPos);
             glVertex2f(i->time + 0.5,cachedLineYPos);
@@ -519,7 +534,7 @@ TimeLineGui::paintGL()
         glEnd();
         
         ///now draw keyframes
-        glColor4f( _imp->_keyframesColor.redF(),_imp->_keyframesColor.greenF(),_imp->_keyframesColor.blueF(),_imp->_keyframesColor.alphaF() );
+        glColor4f(kfR,kfG,kfB,1.);
         std::set<SequenceTime> alreadyDrawnKeyframes;
         glBegin(GL_LINES);
         for (std::list<SequenceTime>::const_iterator i = keyframes.begin(); i != keyframes.end(); ++i) {

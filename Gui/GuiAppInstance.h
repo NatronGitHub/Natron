@@ -153,11 +153,21 @@ public:
     
     virtual void closeLoadPRojectSplashScreen() OVERRIDE FINAL;
     
-public Q_SLOTS:
 
     virtual void renderAllViewers() OVERRIDE FINAL;
     
     
+    virtual void queueRedrawForAllViewers() OVERRIDE FINAL;
+    
+    int getOverlayRedrawRequestsCount() const;
+    
+    void clearOverlayRedrawRequests();
+    
+    public Q_SLOTS:
+    
+
+    void reloadStylesheet();
+
     virtual void redrawAllViewers() OVERRIDE FINAL;
 
     void onProcessFinished();

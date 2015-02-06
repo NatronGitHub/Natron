@@ -92,9 +92,10 @@ if exist "config.pri" (
 )
 
 copy /Y %CWD%\..\config.pri config.pri
-
-qmake -r -tp vc -spec C:\Qt\4.8.6_win32\mkspecs\win32-msvc2010 CONFIG+=%BITS%bit
-
+copy /Y %CWD%\callQmake.bat callQmake.bat
+::start /i /b /wait callQmake.bat %BITS%
+call callQmake.bat %BITS%
+call "C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\bin\amd64\vcvars64.bat"
 :: By default Visual Studio 2010 solution files build for 32 bit. Moreover it does not
 :: provide any way to change to /MACHINE:X64 from command-line, hence we do it by hend using sed
 :: See http://www.cmake.org/Bug/view.php?id=11240 for reference
@@ -118,7 +119,7 @@ if "%CONFIGURATION%" == "Release" (
 	mkdir %DEPLOY_DIR%\Plugins
 	mkdir %DEPLOY_DIR%\Resources
 	mkdir %DEPLOY_DIR%\Resources\OpenColorIO-Configs
-	xcopy  /Y /E Gui\Resources\OpenColorIO-Configs %DEPLOY_DIR%\Resources\OpenColorIO-Configs
+	echo R | xcopy  /Y /E Gui\Resources\OpenColorIO-Configs %DEPLOY_DIR%\Resources\OpenColorIO-Configs
 	del  %DEPLOY_DIR%\Resources\OpenColorIO-Configs\.git
 	copy /Y App\%PROJECT_OBJ_DIR%\Natron.exe %DEPLOY_DIR%\bin
 	copy /Y Renderer\%PROJECT_OBJ_DIR%\NatronRenderer.exe %DEPLOY_DIR%\bin
@@ -127,15 +128,15 @@ if "%CONFIGURATION%" == "Release" (
 	copy /Y Gui\Resources\Images\natronProjectIcon_windows.ico %DEPLOY_DIR%\bin
 	
 	mkdir %DEPLOY_DIR%\bin\accessible
-	xcopy  /Y /E %QT_LIBRARIES_DIR%\plugins\accessible %DEPLOY_DIR%\bin\accessible
+	echo R | xcopy  /Y /E %QT_LIBRARIES_DIR%\plugins\accessible %DEPLOY_DIR%\bin\accessible
 	mkdir %DEPLOY_DIR%\bin\bearer
-	xcopy  /Y /E %QT_LIBRARIES_DIR%\plugins\bearer %DEPLOY_DIR%\bin\bearer
+	echo R | xcopy  /Y /E %QT_LIBRARIES_DIR%\plugins\bearer %DEPLOY_DIR%\bin\bearer
 	mkdir %DEPLOY_DIR%\bin\codecs
-	xcopy  /Y /E %QT_LIBRARIES_DIR%\plugins\codecs %DEPLOY_DIR%\bin\codecs
+	echo R | xcopy  /Y /E %QT_LIBRARIES_DIR%\plugins\codecs %DEPLOY_DIR%\bin\codecs
 	mkdir %DEPLOY_DIR%\bin\iconengines
-	xcopy  /Y /E %QT_LIBRARIES_DIR%\plugins\iconengines %DEPLOY_DIR%\bin\iconengines
+	echo R | xcopy  /Y /E %QT_LIBRARIES_DIR%\plugins\iconengines %DEPLOY_DIR%\bin\iconengines
 	mkdir %DEPLOY_DIR%\bin\imageformats
-	xcopy  /Y /E %QT_LIBRARIES_DIR%\plugins\imageformats %DEPLOY_DIR%\bin\imageformats
+	echo R | xcopy  /Y /E %QT_LIBRARIES_DIR%\plugins\imageformats %DEPLOY_DIR%\bin\imageformats
 	
 	copy /Y %QT_LIBRARIES_DIR%\bin\QtCore4.dll %DEPLOY_DIR%\bin
 	copy /Y %QT_LIBRARIES_DIR%\bin\QtGui4.dll %DEPLOY_DIR%\bin

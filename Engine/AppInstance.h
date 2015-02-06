@@ -332,6 +332,9 @@ public:
     boost::shared_ptr<Natron::Node> createWriter(const std::string& filename,
                                                  const boost::shared_ptr<NodeCollection>& collection,
                                                  int firstFrame = INT_MIN, int lastFrame = INT_MAX);
+    virtual void queueRedrawForAllViewers() {}
+    
+    virtual void renderAllViewers() {}
     
     virtual void declareCurrentAppVariable_Python();
 
@@ -344,8 +347,6 @@ public:
     virtual void closeLoadPRojectSplashScreen() {}
     
 public Q_SLOTS:
-
-    virtual void renderAllViewers() {}
     
     void quit();
 

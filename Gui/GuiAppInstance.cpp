@@ -68,6 +68,7 @@ struct GuiAppInstancePrivate
     LoadProjectSplashScreen* loadProjectSplash;
     
     std::string declareAppAndParamsString;
+    int overlayRedrawRequests;
     
     GuiAppInstancePrivate()
     : _gui(NULL)
@@ -81,6 +82,7 @@ struct GuiAppInstancePrivate
     , lastTimelineViewer()
     , loadProjectSplash(0)
     , declareAppAndParamsString()
+    , overlayRedrawRequests(0)
     {
     }
     
@@ -913,4 +915,33 @@ void
 GuiAppInstance::renderAllViewers()
 {
     _imp->_gui->renderAllViewers();
+}
+
+void
+GuiAppInstance::reloadStylesheet()
+{
+    if (_imp->_gui) {
+        _imp->_gui->reloadStylesheet();
+    }
+}
+
+void
+GuiAppInstance::queueRedrawForAllViewers()
+{
+    assert(QThread::currentThread() == qApp->thread());
+    ++_imp->overlayRedrawRequests;
+}
+
+int
+GuiAppInstance::getOverlayRedrawRequestsCount() const
+{
+    assert(QThread::currentThread() == qApp->thread());
+    return _imp->overlayRedrawRequests;
+}
+
+void
+GuiAppInstance::clearOverlayRedrawRequests()
+{
+    assert(QThread::currentThread() == qApp->thread());
+    _imp->overlayRedrawRequests = 0;
 }

@@ -42,8 +42,6 @@ public:
     /*Swaps the buffer of the attached viewer*/
     OfxStatus n_swapBuffers();
 
-    /*Calls updateGL() on the attached viewer*/
-    OfxStatus n_redraw();
 
     /// hooks to kOfxInteractPropViewportSize in the property set
     /// this is actually redundant and is to be deprecated
@@ -80,10 +78,7 @@ public:
     }
 
     /*Calls updateGL() on the attached viewer*/
-    virtual OfxStatus redraw()
-    {
-        return n_redraw();
-    }
+    virtual OfxStatus redraw();
 
     /// hooks to kOfxInteractPropViewportSize in the property set
     /// this is actually redundant and is to be deprecated
@@ -248,11 +243,9 @@ public:
         return n_swapBuffers();
     }
 
-    /*Calls updateGL() on the attached viewer*/
-    virtual OfxStatus redraw()
-    {
-        return n_redraw();
-    }
+    /*Calls updateGL() on all viewers*/
+    virtual OfxStatus redraw();
+
 
     /// hooks to kOfxInteractPropViewportSize in the property set
     /// this is actually redundant and is to be deprecated

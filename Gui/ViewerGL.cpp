@@ -2553,6 +2553,9 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
     bool overlaysCaught = false;
     bool mustRedraw = false;
 
+    bool hasPickers = _imp->viewerTab->getGui()->hasPickers();
+
+    
     if ( (buttonDownIsMiddle(e) || ( (e)->buttons() == Qt::RightButton   && buttonControlAlt(e) == Qt::AltModifier )) && !modifierHasControl(e) ) {
         // middle (or Alt + left) or Alt + right = pan
         _imp->ms = eMouseStateDraggingImage;
@@ -2561,6 +2564,14 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
         // Alt + middle = zoom or Left + middle = zoom
         _imp->ms = eMouseStateZoomingImage;
         overlaysCaught = true;
+    } else if ( hasPickers && isMouseShortcut(kShortcutGroupViewer, kShortcutIDMousePickColor, modifiers, button) && displayingImage() ) {
+        // picker with single-point selection
+        _imp->pickerState = ePickerStatePoint;
+        if ( pickColor( e->x(),e->y() ) ) {
+            _imp->ms = eMouseStatePickingColor;
+            mustRedraw = true;
+            overlaysCaught = true;
+        }
     } else if ( (_imp->ms == eMouseStateUndefined) && _imp->overlay ) {
         unsigned int mipMapLevel = getCurrentRenderScale();
         double scale = 1. / (1 << mipMapLevel);
@@ -2572,17 +2583,8 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
 
 
     if (!overlaysCaught) {
-        bool hasPickers = _imp->viewerTab->getGui()->hasPickers();
 
-        if ( hasPickers && isMouseShortcut(kShortcutGroupViewer, kShortcutIDMousePickColor, modifiers, button) && displayingImage() ) {
-            // picker with single-point selection
-            _imp->pickerState = ePickerStatePoint;
-            if ( pickColor( e->x(),e->y() ) ) {
-                _imp->ms = eMouseStatePickingColor;
-                mustRedraw = true;
-                overlaysCaught = true;
-            }
-        } else if ( hasPickers && isMouseShortcut(kShortcutGroupViewer, kShortcutIDMouseRectanglePick, modifiers, button) && displayingImage() ) {
+          if ( hasPickers && isMouseShortcut(kShortcutGroupViewer, kShortcutIDMouseRectanglePick, modifiers, button) && displayingImage() ) {
             // start picker with rectangle selection (picked color is the average over the rectangle)
             _imp->pickerState = ePickerStateRectangle;
             _imp->pickerRect.setTopLeft(zoomPos);

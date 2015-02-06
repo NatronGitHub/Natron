@@ -29,6 +29,10 @@ CLANG_DIAG_OFF(deprecated-register) //'register' storage class specifier is depr
 CLANG_DIAG_ON(unused-private-field)
 CLANG_DIAG_ON(deprecated-register)
 
+#include "Engine/Settings.h"
+#include "Engine/KnobTypes.h"
+#include "Engine/Image.h"
+
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/MenuWithToolTips.h"
 #include "Gui/ClickableLabel.h"
@@ -225,22 +229,27 @@ ComboBox::paintEvent(QPaintEvent* /*e*/)
         if (_clicked || _dirty) {
             fillColor = Qt::black;
         } else {
+            double r,g,b;
             switch (_animation) {
                 case 0:
-                default:
-                    fillColor.setRgb(71,71,71);
-                    break;
-                case 1:
-                    fillColor.setRgb(86,117,156);
-                    break;
-                case 2:
-                    fillColor.setRgb(21,97,248);
-                    break;
-                case 3:
-                    fillColor.setRgb(180, 200, 100);
-                    break;
+                default: {
                     
+                    appPTR->getCurrentSettings()->getRaisedColor(&r, &g, &b);
+                }   break;
+                case 1: {
+                    appPTR->getCurrentSettings()->getInterpolatedColor(&r, &g, &b);
+                }   break;
+                case 2:
+                {
+                    appPTR->getCurrentSettings()->getKeyframeColor(&r, &g, &b);
+                }   break;
+                case 3:
+                {
+                    appPTR->getCurrentSettings()->getExprColor(&r, &g, &b);
+                }   break;
             }
+            fillColor.setRgb(Natron::clamp(r) * 256,Natron::clamp(g) * 256,Natron::clamp(b) * 256);
+
         }
         
         double fw = frameWidth();
@@ -249,7 +258,10 @@ ComboBox::paintEvent(QPaintEvent* /*e*/)
         if (!hasFocus()) {
             pen.setColor(Qt::black);
         } else {
-            pen.setColor(QColor(243,137,0));
+            double r,g,b;
+            appPTR->getCurrentSettings()->getSelectionColor(&r, &g, &b);
+            QColor c;
+            c.setRgb(Natron::clamp(r) * 256,Natron::clamp(g) * 256,Natron::clamp(b) * 256);
             fw = 2;
         }
         p.setPen(pen);
@@ -273,7 +285,9 @@ ComboBox::paintEvent(QPaintEvent* /*e*/)
     } else if (!_enabled) {
         textColor = Qt::black;
     } else {
-        textColor.setRgb(200,200,200);
+        double r,g,b;
+        appPTR->getCurrentSettings()->getTextColor(&r, &g, &b);
+        textColor.setRgb(Natron::clamp(r) * 256,Natron::clamp(g) * 256,Natron::clamp(b) * 256);
     }
     {
         Qt::Alignment align = QStyle::visualAlignment(Qt::LeftToRight, QFlag(_align));

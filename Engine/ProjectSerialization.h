@@ -150,6 +150,30 @@ public:
         if (version >= PROJECT_SERIALIZATION_INTRODUCES_NATRON_VERSION) {
             std::string natronVersion;
             ar & boost::serialization::make_nvp("NatronVersion",natronVersion);
+            std::string toFind(NATRON_APPLICATION_NAME " v");
+            std::size_t foundV = natronVersion.find(toFind);
+            if (foundV != std::string::npos) {
+                foundV += toFind.size();
+                toFind = std::string(" from git branch");
+                std::size_t foundFrom = natronVersion.find(toFind);
+                if (foundFrom != std::string::npos) {
+                    std::string vStr;
+                    for (std::size_t i = foundV; i < foundFrom; ++i) {
+                        vStr.push_back(natronVersion[i]);
+                    }
+                    QStringList splits = QString(vStr.c_str()).split('.');
+                    if (splits.size() == 3) {
+                        int major,minor,rev;
+                        major = splits[0].toInt();
+                        minor = splits[1].toInt();
+                        rev = splits[2].toInt();
+                        if (NATRON_VERSION_ENCODE(major, minor, rev) > NATRON_VERSION_ENCODED) {
+                            throw std::invalid_argument("The given project was produced with a more recent and incompatible version of Natron.");
+                        }
+                    }
+                    
+                }
+            }
             
         }
         assert(_app);

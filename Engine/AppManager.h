@@ -426,7 +426,7 @@ public:
 
 	int isProjectAlreadyOpened(const std::string& projectFilePath) const;
 
-
+    virtual void reloadStylesheets() {}
     
 public Q_SLOTS:
 

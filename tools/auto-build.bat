@@ -108,7 +108,7 @@ for /l %%i in (1, 1, 2) do (
 	)
 	mkdir %TMP%\repo\Windows!BIT!
 	mkdir %TMP%\repo\Windows!BIT!\Natron-%GITV_NATRON%
-	xcopy /Y /E %TMP%\deploy %TMP%\repo\Windows!BIT!\Natron-%GITV_NATRON%
+	echo R | xcopy /Y /E %TMP%\deploy!BIT! %TMP%\repo\Windows!BIT!\Natron-%GITV_NATRON%
 	cd %TMP%\repo\Windows!BIT!
 	zip -r Natron-%GITV_NATRON%.zip Natron-%GITV_NATRON%
 	rmdir /S /Q Natron-%GITV_NATRON%

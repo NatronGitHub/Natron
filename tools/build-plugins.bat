@@ -102,7 +102,7 @@ if exist "%DEPLOY_DIR%\Plugins\IO.ofx.bundle" (
 	rmdir /S /Q %DEPLOY_DIR%\Plugins\IO.ofx.bundle
 )
 mkdir %DEPLOY_DIR%\Plugins\IO.ofx.bundle
-xcopy /Y /E %PROJECT_OBJ_DIR%\IO.ofx.bundle %DEPLOY_DIR%\Plugins\IO.ofx.bundle
+echo R | xcopy /Y /E %PROJECT_OBJ_DIR%\IO.ofx.bundle %DEPLOY_DIR%\Plugins\IO.ofx.bundle
 copy /Y %DEP_PATH%\ffmpeg_2.4\lib\%BUILD_SUB_DIR%\avcodec-56.dll %DEPLOY_DIR%\Plugins\IO.ofx.bundle\Contents\%OFX_CONF_SUB_DIR%
 copy /Y %DEP_PATH%\ffmpeg_2.4\lib\%BUILD_SUB_DIR%\avformat-56.dll %DEPLOY_DIR%\Plugins\IO.ofx.bundle\Contents\%OFX_CONF_SUB_DIR%
 copy /Y %DEP_PATH%\ffmpeg_2.4\lib\%BUILD_SUB_DIR%\avutil-54.dll %DEPLOY_DIR%\Plugins\IO.ofx.bundle\Contents\%OFX_CONF_SUB_DIR%

@@ -190,6 +190,8 @@ public:
     
     NodeClipBoard& getNodeClipBoard();
     
+    virtual void reloadStylesheets() OVERRIDE FINAL;
+    
     void clearNodeClipBoard();
     
     void addCommand(const QString& grouping,const std::string& pythonFunction, Qt::Key key,const Qt::KeyboardModifiers& modifiers);

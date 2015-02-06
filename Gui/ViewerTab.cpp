@@ -1739,6 +1739,7 @@ ViewerTab::notifyOverlaysPenDown_internal(const boost::shared_ptr<Natron::Node>&
             return true;
         }
     }
+    
     return false;
 }
 
@@ -1779,6 +1780,10 @@ ViewerTab::notifyOverlaysPenDown(double scaleX,
         }
     }
 
+    if (getGui()->getApp()->getOverlayRedrawRequestsCount() > 0) {
+        getGui()->getApp()->redrawAllViewers();
+    }
+    getGui()->getApp()->clearOverlayRedrawRequests();
     return false;
 }
 
@@ -1978,7 +1983,10 @@ ViewerTab::notifyOverlaysPenMotion(double scaleX,
     }
 
    
-
+    if (getGui()->getApp()->getOverlayRedrawRequestsCount() > 0) {
+        getGui()->getApp()->redrawAllViewers();
+    }
+    getGui()->getApp()->clearOverlayRedrawRequests();
    
 
     return didSomething;
@@ -2062,7 +2070,10 @@ ViewerTab::notifyOverlaysPenUp(double scaleX,
     }
 
    
-
+    if (!didSomething && getGui()->getApp()->getOverlayRedrawRequestsCount() > 0) {
+        getGui()->getApp()->redrawAllViewers();
+    }
+    getGui()->getApp()->clearOverlayRedrawRequests();
     
 
     return didSomething;
@@ -2147,6 +2158,10 @@ ViewerTab::notifyOverlaysKeyDown(double scaleX,
         }
     }
 
+    if (getGui()->getApp()->getOverlayRedrawRequestsCount() > 0) {
+        getGui()->getApp()->redrawAllViewers();
+    }
+    getGui()->getApp()->clearOverlayRedrawRequests();
 
     return didSomething;
 }
@@ -2189,7 +2204,10 @@ ViewerTab::notifyOverlaysKeyUp(double scaleX,
     }
     
    
-
+    if (!didSomething && getGui()->getApp()->getOverlayRedrawRequestsCount() > 0) {
+        getGui()->getApp()->redrawAllViewers();
+    }
+    getGui()->getApp()->clearOverlayRedrawRequests();
     
 
     return didSomething;
@@ -2266,7 +2284,10 @@ ViewerTab::notifyOverlaysKeyRepeat(double scaleX,
         }
     }
 
-   
+    if (getGui()->getApp()->getOverlayRedrawRequestsCount() > 0) {
+        getGui()->getApp()->redrawAllViewers();
+    }
+    getGui()->getApp()->clearOverlayRedrawRequests();
 
 
     return false;
@@ -2293,6 +2314,11 @@ ViewerTab::notifyOverlaysFocusGained(double scaleX,
         }
         
     }
+    
+    if (!ret && getGui()->getApp()->getOverlayRedrawRequestsCount() > 0) {
+        getGui()->getApp()->redrawAllViewers();
+    }
+    getGui()->getApp()->clearOverlayRedrawRequests();
 
     return ret;
 }
@@ -2334,7 +2360,10 @@ ViewerTab::notifyOverlaysFocusLost(double scaleX,
     }
     
     
-
+    if (!ret && getGui()->getApp()->getOverlayRedrawRequestsCount() > 0) {
+        getGui()->getApp()->redrawAllViewers();
+    }
+    getGui()->getApp()->clearOverlayRedrawRequests();
 
     return ret;
 }
