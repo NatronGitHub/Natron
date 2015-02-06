@@ -1,3 +1,36 @@
+Natron 1.2.0
+------------
+
+- Overlays on the viewer are now transformed by all Transform effects such as CornerPin,Transform 
+
+- The user interface colors can now be changed in the "Appearance" tab of the Preferences of Natron
+
+- Bezier curves motion now have a constant or linear interpolation 
+
+- The dialog that pops up when trying to merge 2 clips that do not have a matching FPS is now a bit clearer regarding possible solutions
+
+- Wacom support is now more intuitive and supported on all widgets that can zoom or pan.
+
+- New "Image statistics" node to analyse various significant values from an image
+
+- It is now possible to connect any node to a Writer node
+
+Bug fixes:
+
+    - ReadFFMPEG would crash when reading video files with a videostream bitdepth > 8bit
+    - ReadFFMPEG would crash when reading image sequences
+    - The viewer would not redraw correctly 
+    - The nodegraph would not redraw correctly, hence producing a latency effect
+    - Readers would not recognize some image sequences
+    - Some TIFF files would not be read correctly by the ReadOIIO node
+
+Known issues:
+
+    - Stereo workflows are broken and will be re-introduced with a more clever approach in the next version. The only way for now is to use a Switch node.
+    
+    
+
+
 Natron 1.1.0
 -------------
 
