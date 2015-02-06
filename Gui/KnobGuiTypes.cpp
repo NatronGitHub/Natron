@@ -707,27 +707,26 @@ Double_KnobGui::valueAccordingToType(bool normalize,
     if ( (dimension != 0) && (dimension != 1) ) {
         return;
     }
-
-    if (dimension == 0) {
-        Double_Knob::NormalizedStateEnum state = _knob->getNormalizedState(dimension);
-        if (state == Double_Knob::eNormalizedStateX) {
-            Format f;
-            getKnob()->getHolder()->getApp()->getProject()->getProjectDefaultFormat(&f);
-            if (normalize) {
-                *value /= f.width();
-            } else {
-                *value *= f.width();
-            }
-        } else if (state == Double_Knob::eNormalizedStateY) {
-            Format f;
-            getKnob()->getHolder()->getApp()->getProject()->getProjectDefaultFormat(&f);
-            if (normalize) {
-                *value /= f.height();
-            } else {
-                *value *= f.height();
-            }
+    
+    Double_Knob::NormalizedStateEnum state = _knob->getNormalizedState(dimension);
+    if (state == Double_Knob::eNormalizedStateX) {
+        Format f;
+        getKnob()->getHolder()->getApp()->getProject()->getProjectDefaultFormat(&f);
+        if (normalize) {
+            *value /= f.width();
+        } else {
+            *value *= f.width();
+        }
+    } else if (state == Double_Knob::eNormalizedStateY) {
+        Format f;
+        getKnob()->getHolder()->getApp()->getProject()->getProjectDefaultFormat(&f);
+        if (normalize) {
+            *value /= f.height();
+        } else {
+            *value *= f.height();
         }
     }
+    
 }
 
 bool
