@@ -94,7 +94,8 @@ if exist "config.pri" (
 copy /Y %CWD%\..\config.pri config.pri
 copy /Y %CWD%\callQmake.bat callQmake.bat
 ::start /i /b /wait callQmake.bat %BITS%
-call callQmake.bat %BITS%
+
+call "cmd /c callQmake.bat %BITS%"
 call "C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\bin\amd64\vcvars64.bat"
 :: By default Visual Studio 2010 solution files build for 32 bit. Moreover it does not
 :: provide any way to change to /MACHINE:X64 from command-line, hence we do it by hend using sed
