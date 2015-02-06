@@ -189,6 +189,38 @@ TabGroup::removeTab(Group_Knob* group)
     }
 }
 
+class OverlayColorButton: public Button
+{
+    
+    DockablePanel* _panel;
+    
+public:
+    
+    
+    OverlayColorButton(DockablePanel* panel,const QIcon& icon,QWidget* parent)
+    : Button(icon,"",parent)
+    , _panel(panel)
+    {
+        
+    }
+    
+private:
+    
+    virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL
+    {
+        if (triggerButtonisRight(e)) {
+            Natron::StandardButtonEnum rep = Natron::questionDialog(tr("Warning").toStdString(),
+                                                                    tr("Are you sure you want to reset the overlay color ?").toStdString(),
+                                                                    false);
+            if (rep == Natron::eStandardButtonYes) {
+                _panel->resetDefaultOverlayColor();
+            }
+        } else {
+            Button::mousePressEvent(e);
+        }
+    }
+};
+
 struct DockablePanelPrivate
 {
     DockablePanel* _publicInterface;
@@ -526,7 +558,8 @@ DockablePanel::DockablePanel(Gui* gui ,
             if (iseffect && iseffect->hasOverlay()) {
                 QPixmap pixOverlay;
                 appPTR->getIcon(Natron::NATRON_PIXMAP_OVERLAY,&pixOverlay);
-                _imp->_overlayButton = new Button(QIcon(pixOverlay),"",_imp->_headerWidget);
+                _imp->_overlayColor.setRgbF(1., 1., 1.);
+                _imp->_overlayButton = new OverlayColorButton(this,QIcon(pixOverlay),_imp->_headerWidget);
                 _imp->_overlayButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
                 _imp->_overlayButton->setToolTip(Qt::convertFromPlainText(tr("You can suggest here a color for the overlay on the viewer. "
                                                                              "Some plug-ins understand it and will use it to change the color of "
@@ -2012,6 +2045,37 @@ DockablePanel::setCurrentColor(const QColor & c)
         _imp->_currentColor = c;
     }
     onColorDialogColorChanged(c);
+}
+
+void
+DockablePanel::resetDefaultOverlayColor()
+{
+    NodeSettingsPanel* nodePanel = dynamic_cast<NodeSettingsPanel*>(this);
+    if (!nodePanel) {
+        return;
+    }
+    boost::shared_ptr<Natron::Node> node = nodePanel->getNode()->getNode();
+    if (!node) {
+        return;
+    }
+    QColor c;
+    {
+        QMutexLocker locker(&_imp->_currentColorMutex);
+        _imp->_currentColor.setRgbF(1., 1., 1.);
+        _imp->_hasOverlayColor = false;
+        c = _imp->_currentColor;
+    }
+    QPixmap pixOverlay;
+    appPTR->getIcon(Natron::NATRON_PIXMAP_OVERLAY,&pixOverlay);
+    _imp->_overlayButton->setIcon(QIcon(pixOverlay));
+    
+    std::list<boost::shared_ptr<Natron::Node> > overlayNodes;
+    getGui()->getNodesEntitledForOverlays(overlayNodes);
+    std::list<boost::shared_ptr<Natron::Node> >::iterator found = std::find(overlayNodes.begin(),overlayNodes.end(),node);
+    if (found != overlayNodes.end()) {
+        getGui()->getApp()->redrawAllViewers();
+    }
+
 }
 
 void

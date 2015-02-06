@@ -204,6 +204,8 @@ public:
     QColor getOverlayColor() const;
     
     bool hasOverlayColor() const;
+    
+    void resetDefaultOverlayColor();
 
     virtual boost::shared_ptr<MultiInstancePanel> getMultiInstancePanel() const
     {
