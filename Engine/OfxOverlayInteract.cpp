@@ -10,12 +10,13 @@
  */
 #include "OfxOverlayInteract.h"
 
-
+#include "Global/Macros.h"
 #include "Engine/OfxImageEffectInstance.h"
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/Format.h"
 #include "Engine/OverlaySupport.h"
 #include "Engine/Knob.h"
+#include "Engine/AppInstance.h"
 
 
 using namespace Natron;
@@ -147,6 +148,23 @@ OfxOverlayInteract::loseFocusAction(OfxTime  time,
 }
 
 
+OfxStatus
+OfxOverlayInteract::redraw()
+{
+    OfxImageEffectInstance* effect = dynamic_cast<OfxImageEffectInstance*>(&_instance);
+    assert(effect);
+    if (effect) {
+        AppInstance* app =  effect->getOfxEffectInstance()->getApp();
+        assert(app);
+#pragma message WARN("TODO (python): only redraw in viewers where the interact is visible (requires changes in GUI)")
+        if (effect->getOfxEffectInstance()->isDoingInteractAction()) {
+            app->queueRedrawForAllViewers();
+        } else {
+            app->redrawAllViewers();
+        }
+    }
+    return kOfxStatOK;
+}
 
 
 Natron::OfxParamOverlayInteract::OfxParamOverlayInteract(KnobI* knob,
@@ -189,15 +207,7 @@ NatronOverlayInteractSupport::n_swapBuffers()
     return kOfxStatOK;
 }
 
-OfxStatus
-NatronOverlayInteractSupport::n_redraw()
-{
-    if (_viewport) {
-        _viewport->redraw();
-    }
 
-    return kOfxStatOK;
-}
 
 void
 NatronOverlayInteractSupport::n_getViewportSize(double &width,
@@ -274,5 +284,15 @@ void
 Natron::OfxParamOverlayInteract::getPixelAspectRatio(double & par) const
 {
     par = _descriptor.getProperties().getDoubleProperty(kOfxParamPropInteractSizeAspect);
+}
+
+OfxStatus
+Natron::OfxParamOverlayInteract::redraw()
+{
+    if (_viewport) {
+        _viewport->redraw();
+    }
+    
+    return kOfxStatOK;
 }
 

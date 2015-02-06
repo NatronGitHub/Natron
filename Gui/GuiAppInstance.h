@@ -148,6 +148,14 @@ public:
     
     virtual void renderAllViewers() OVERRIDE FINAL;
     
+    void reloadStylesheet();
+    
+    virtual void queueRedrawForAllViewers() OVERRIDE FINAL;
+    
+    int getOverlayRedrawRequestsCount() const;
+    
+    void clearOverlayRedrawRequests();
+    
 public slots:
     
     virtual void redrawAllViewers() OVERRIDE FINAL;

@@ -726,6 +726,7 @@ Color_Knob::Color_Knob(KnobHolder* holder,
                        bool declaredByPlugin)
 : Knob<double>(holder, description, dimension,declaredByPlugin)
 , _allDimensionsEnabled(true)
+, _simplifiedMode(false)
 {
     //dimension greater than 4 is not supported. Dimension 2 doesn't make sense.
     assert(dimension <= 4 && dimension != 2);
@@ -794,6 +795,18 @@ Color_Knob::setValues(double r,
     onValueChanged(b, 2, Natron::eValueChangedReasonNatronGuiEdited, &k);
     onValueChanged(a, 3, Natron::eValueChangedReasonNatronGuiEdited, &k);
     endChanges();
+}
+
+void
+Color_Knob::setSimplified(bool simp)
+{
+    _simplifiedMode = simp;
+}
+
+bool
+Color_Knob::isSimplified() const
+{
+    return _simplifiedMode;
 }
 
 /******************************STRING_KNOB**************************************/

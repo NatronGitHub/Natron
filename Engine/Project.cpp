@@ -859,6 +859,8 @@ Project::initializeKnobs()
     _imp->frameRange = Natron::createKnob<Int_Knob>(this, "Frame range",2);
     _imp->frameRange->setDefaultValue(1,0);
     _imp->frameRange->setDefaultValue(1,1);
+    _imp->frameRange->setDimensionName(0, "first");
+    _imp->frameRange->setDimensionName(1, "last");
     _imp->frameRange->setEvaluateOnChange(false);
     _imp->frameRange->setName("frameRange");
     _imp->frameRange->setHintToolTip("The frame range of the project as seen by the plug-ins. New viewers are created automatically "

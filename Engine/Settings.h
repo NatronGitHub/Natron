@@ -35,11 +35,13 @@ class Page_Knob;
 class Double_Knob;
 class Int_Knob;
 class Bool_Knob;
+class Group_Knob;
 class Choice_Knob;
 class Path_Knob;
 class Color_Knob;
 class String_Knob;
 class QSettings;
+class Separator_Knob;
 class Settings
     : public KnobHolder
 {
@@ -225,6 +227,22 @@ public:
     
     void setOptionalInputsAutoHidden(bool hidden);
     bool areOptionalInputsAutoHidden() const;
+    
+    void getSunkenColor(double* r,double* g,double* b) const;
+    void getBaseColor(double* r,double* g,double* b) const;
+    void getRaisedColor(double* r,double* g,double* b) const;
+    void getSelectionColor(double* r,double* g,double* b) const;
+    void getInterpolatedColor(double* r,double* g,double* b) const;
+    void getKeyframeColor(double* r,double* g,double* b) const;
+    void getTextColor(double* r,double* g,double* b) const;
+    void getTimelinePlayheadColor(double* r,double* g,double* b) const;
+    void getTimelineBoundsColor(double* r,double* g,double* b) const;
+    void getTimelineBGColor(double* r,double* g,double* b) const;
+    void getCachedFrameColor(double* r,double* g,double* b) const;
+    void getDiskCachedColor(double* r,double* g,double* b) const;
+    void getCurveEditorBGColor(double* r,double* g,double* b) const;
+    void getCurveEditorGridColor(double* r,double* g,double* b) const;
+    void getCurveEditorScaleColor(double* r,double* g,double* b) const;
 private:
 
     virtual void initializeKnobs() OVERRIDE FINAL;
@@ -237,9 +255,7 @@ private:
 
     boost::shared_ptr<Page_Knob> _generalTab;
     boost::shared_ptr<Bool_Knob> _natronSettingsExist;
-    boost::shared_ptr<Choice_Knob> _fontChoice;
-    boost::shared_ptr<Choice_Knob> _systemFontChoice;
-    boost::shared_ptr<Int_Knob> _fontSize;
+  
     boost::shared_ptr<Bool_Knob> _checkForUpdates;
     boost::shared_ptr<Bool_Knob> _notifyOnFileChange;
     boost::shared_ptr<Int_Knob> _autoSaveDelay;
@@ -329,6 +345,32 @@ private:
     boost::shared_ptr<Bool_Knob> _preferBundledPlugins;
     boost::shared_ptr<Bool_Knob> _loadBundledPlugins;
     boost::shared_ptr<Page_Knob> _pluginsTab;
+    
+    boost::shared_ptr<Page_Knob> _appearanceTab;
+    
+    boost::shared_ptr<Choice_Knob> _fontChoice;
+    boost::shared_ptr<Choice_Knob> _systemFontChoice;
+    boost::shared_ptr<Int_Knob> _fontSize;
+    
+    boost::shared_ptr<Group_Knob> _guiColors;
+    boost::shared_ptr<Color_Knob> _sunkenColor;
+    boost::shared_ptr<Color_Knob> _baseColor;
+    boost::shared_ptr<Color_Knob> _raisedColor;
+    boost::shared_ptr<Color_Knob> _selectionColor;
+    boost::shared_ptr<Color_Knob> _textColor;
+    boost::shared_ptr<Color_Knob> _timelinePlayheadColor;
+    boost::shared_ptr<Color_Knob> _timelineBGColor;
+    boost::shared_ptr<Color_Knob> _timelineBoundsColor;
+    boost::shared_ptr<Color_Knob> _interpolatedColor;
+    boost::shared_ptr<Color_Knob> _keyframeColor;
+    boost::shared_ptr<Color_Knob> _cachedFrameColor;
+    boost::shared_ptr<Color_Knob> _diskCachedFrameColor;
+    
+    boost::shared_ptr<Group_Knob> _curveEditorColors;
+    boost::shared_ptr<Color_Knob> _curveEditorBGColor;
+    boost::shared_ptr<Color_Knob> _gridColor;
+    boost::shared_ptr<Color_Knob> _curveEditorScaleColor;
+    
     
     std::map<std::string,boost::shared_ptr<Choice_Knob> > _perPluginRenderScaleSupport;
     bool _wereChangesMadeSinceLastSave;
