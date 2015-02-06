@@ -847,6 +847,8 @@ public:
     void computeFrameRangeForReader(const KnobI* fileKnob);
     
     bool getOverlayColor(double* r,double* g,double* b) const;
+    
+    bool shouldDrawOverlay() const;
 
 private:
     

@@ -169,10 +169,9 @@ OfxOverlayInteract::redraw()
 {
     OfxImageEffectInstance* effect = dynamic_cast<OfxImageEffectInstance*>(&_instance);
     assert(effect);
-    if (effect) {
+    if (effect && effect->getOfxEffectInstance()->getNode()->shouldDrawOverlay()) {
         AppInstance* app =  effect->getOfxEffectInstance()->getApp();
         assert(app);
-#pragma message WARN("TODO (python): only redraw in viewers where the interact is visible (requires changes in GUI)")
         if (effect->getOfxEffectInstance()->isDoingInteractAction()) {
             app->queueRedrawForAllViewers();
         } else {

@@ -34,6 +34,11 @@ public :
     virtual bool isSettingsPanelOpened() const = 0;
     
     /**
+     * @brief Returns whether the node should draw an overlay (if it has any) on the viewer or not.
+     **/
+    virtual bool shouldDrawOverlay() const = 0;
+    
+    /**
      * @brief Set the position of the node in the nodegraph.
      **/
     virtual void setPosition(double x,double y) = 0;

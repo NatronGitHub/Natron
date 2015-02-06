@@ -3913,6 +3913,16 @@ Node::getOverlayColor(double* r,double* g,double* b) const
     return gui_i->getOverlayColor(r, g, b);
 }
 
+bool
+Node::shouldDrawOverlay() const
+{
+    boost::shared_ptr<NodeGuiI> gui_i = getNodeGui();
+    if (!gui_i) {
+        return false;
+    }
+    return gui_i->shouldDrawOverlay();
+}
+
 void
 Node::onEffectKnobValueChanged(KnobI* what,
                                Natron::ValueChangedReasonEnum reason)

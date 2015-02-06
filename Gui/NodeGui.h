@@ -169,6 +169,8 @@ public:
     
     virtual bool isSettingsPanelOpened() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     
+    virtual bool shouldDrawOverlay() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
     virtual void setPosition(double x,double y) OVERRIDE FINAL;
     
     virtual void getPosition(double *x, double* y) const OVERRIDE FINAL;

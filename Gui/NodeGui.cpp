@@ -2814,6 +2814,58 @@ NodeGui::isSettingsPanelOpened() const
     return _settingsPanel ? !_settingsPanel->isClosed() : false;
 }
 
+bool
+NodeGui::shouldDrawOverlay() const
+{
+    NodePtr internalNode = getNode();
+    if (!internalNode) {
+        return false;
+    }
+    
+    NodePtr parentMultiInstance = internalNode->getParentMultiInstance();
+    
+    
+    if (parentMultiInstance) {
+        boost::shared_ptr<NodeGuiI> gui_i = parentMultiInstance->getNodeGui();
+        assert(gui_i);
+        NodeGui *parentGui = dynamic_cast<NodeGui*>(gui_i.get());
+        assert(parentGui);
+        
+        boost::shared_ptr<MultiInstancePanel> multiInstance = parentGui->getMultiInstancePanel();
+        assert(multiInstance);
+        
+        const std::list< std::pair<boost::weak_ptr<Natron::Node>,bool > >& instances = multiInstance->getInstances();
+        for (std::list< std::pair<boost::weak_ptr<Natron::Node>,bool > >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
+            NodePtr instance = it->first.lock();
+            
+            if (instance == internalNode) {
+                
+                if (parentGui->isSettingsPanelVisible() &&
+                    !parentGui->isSettingsPanelMinimized() &&
+                    instance->isActivated() &&
+                    it->second &&
+                    !instance->isNodeDisabled()) {
+                    return true;
+                } else {
+                    return false;
+                }
+
+            }
+            
+        }
+        
+    } else {
+        if (!internalNode->isNodeDisabled() &&
+            internalNode->isActivated() &&
+            isSettingsPanelVisible() &&
+            !isSettingsPanelMinimized() ) {
+            
+            return true;
+        }
+    }
+    return false;
+}
+
 void
 NodeGui::setPosition(double x,double y)
 {
