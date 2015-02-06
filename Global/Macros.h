@@ -44,7 +44,7 @@
 
 //////////////////////////////////////////Natron version/////////////////////////////////////////////
 #define NATRON_VERSION_MAJOR 1
-#define NATRON_VERSION_MINOR 1
+#define NATRON_VERSION_MINOR 2
 #define NATRON_VERSION_REVISION 0
 
 ///For example RC 1, RC 2 etc...
