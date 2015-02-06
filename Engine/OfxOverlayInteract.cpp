@@ -10,7 +10,7 @@
  */
 #include "OfxOverlayInteract.h"
 
-
+#include "Global/Macros.h"
 #include "Engine/OfxImageEffectInstance.h"
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/Format.h"
@@ -156,6 +156,7 @@ OfxOverlayInteract::redraw()
     if (effect) {
         AppInstance* app =  effect->getOfxEffectInstance()->getApp();
         assert(app);
+#pragma message WARN("TODO (python): only redraw in viewers where the interact is visible (requires changes in GUI)")
         if (effect->getOfxEffectInstance()->isDoingInteractAction()) {
             app->queueRedrawForAllViewers();
         } else {
