@@ -507,12 +507,14 @@ struct Knob<T>::QueuedSetValuePrivate
     T value;
     KeyFrame key;
     bool useKey;
+    Natron::ValueChangedReasonEnum reason;
     
-    QueuedSetValuePrivate(int dimension,const T& value,const KeyFrame& key_,bool useKey)
+    QueuedSetValuePrivate(int dimension,const T& value,const KeyFrame& key_,bool useKey,Natron::ValueChangedReasonEnum reason_)
     : dimension(dimension)
     , value(value)
     , key(key_)
     , useKey(useKey)
+    , reason(reason_)
     {
         
     }
@@ -521,8 +523,8 @@ struct Knob<T>::QueuedSetValuePrivate
 
 
 template<typename T>
-Knob<T>::QueuedSetValue::QueuedSetValue(int dimension,const T& value,const KeyFrame& key,bool useKey)
-: _imp(new QueuedSetValuePrivate(dimension,value,key,useKey))
+Knob<T>::QueuedSetValue::QueuedSetValue(int dimension,const T& value,const KeyFrame& key,bool useKey,Natron::ValueChangedReasonEnum reason_)
+: _imp(new QueuedSetValuePrivate(dimension,value,key,useKey,reason_))
 {
     
 }
@@ -646,8 +648,7 @@ Knob<T>::setValue(const T & v,
             returnValue =  eValueChangedReturnCodeNoKeyframeAdded;
         }
     
-        
-        boost::shared_ptr<QueuedSetValue> qv(new QueuedSetValue(dimension,v,k,returnValue != eValueChangedReturnCodeNoKeyframeAdded));
+        boost::shared_ptr<QueuedSetValue> qv(new QueuedSetValue(dimension,v,k,returnValue != eValueChangedReturnCodeNoKeyframeAdded,reason));
         
         {
             QMutexLocker kql(&_setValuesQueueMutex);
@@ -800,7 +801,7 @@ Knob<T>::setValueAtTime(int time,
     if (holder && !holder->canSetValue()) {
         
     
-        boost::shared_ptr<QueuedSetValueAtTime> qv(new QueuedSetValueAtTime(time,dimension,v,*newKey));
+        boost::shared_ptr<QueuedSetValueAtTime> qv(new QueuedSetValueAtTime(time,dimension,v,*newKey,reason));
         
         {
             QMutexLocker kql(&_setValuesQueueMutex);
@@ -1632,7 +1633,7 @@ void
 Knob<T>::dequeueValuesSet(bool disableEvaluation)
 {
     
-    std::set<int> dimensionChanged;
+    std::map<int,Natron::ValueChangedReasonEnum> dimensionChanged;
     
     cloneGuiCurvesIfNeeded(dimensionChanged);
     {
@@ -1659,7 +1660,7 @@ Knob<T>::dequeueValuesSet(bool disableEvaluation)
                 } else {
                     if (_values[(*it)->_imp->dimension] != (*it)->_imp->value) {
                         _values[(*it)->_imp->dimension] = (*it)->_imp->value;
-                        dimensionChanged.insert((*it)->_imp->dimension);
+                        dimensionChanged.insert(std::make_pair((*it)->_imp->dimension,(*it)->_imp->reason));
                     }
                 }
             } else {
@@ -1670,7 +1671,7 @@ Knob<T>::dequeueValuesSet(bool disableEvaluation)
                     if (!hasKey || existingKey.getTime() != (*it)->_imp->key.getTime() || existingKey.getValue() != (*it)->_imp->key.getValue() ||
                         existingKey.getLeftDerivative() != (*it)->_imp->key.getLeftDerivative() ||
                         existingKey.getRightDerivative() != (*it)->_imp->key.getRightDerivative()) {
-                            dimensionChanged.insert((*it)->_imp->dimension);
+                        dimensionChanged.insert(std::make_pair((*it)->_imp->dimension,(*it)->_imp->reason));
                             curve->addKeyFrame((*it)->_imp->key);
                         }
                 }
@@ -1687,8 +1688,8 @@ Knob<T>::dequeueValuesSet(bool disableEvaluation)
     if (!disableEvaluation && !dimensionChanged.empty()) {
         
         beginChanges();
-        for (std::set<int>::iterator it = dimensionChanged.begin();it!=dimensionChanged.end();++it) {
-            evaluateValueChange(*it, Natron::eValueChangedReasonNatronInternalEdited, true);
+        for (std::map<int,Natron::ValueChangedReasonEnum>::iterator it = dimensionChanged.begin();it!=dimensionChanged.end();++it) {
+            evaluateValueChange(it->first, it->second, true);
         }
         endChanges();
     }

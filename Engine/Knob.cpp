@@ -791,14 +791,14 @@ KnobHelper::removeAnimation(int dimension,
 }
 
 void
-KnobHelper::cloneInternalCurvesIfNeeded(std::set<int>& modifiedDimensions)
+KnobHelper::cloneInternalCurvesIfNeeded(std::map<int,Natron::ValueChangedReasonEnum>& modifiedDimensions)
 {
     QMutexLocker k(&_imp->mustCloneGuiCurvesMutex);
     for (int i = 0; i < getDimension(); ++i) {
         if (_imp->mustCloneInternalCurves[i]) {
             guiCurveCloneInternalCurve(i);
             _imp->mustCloneInternalCurves[i] = false;
-            modifiedDimensions.insert(i);
+            modifiedDimensions.insert(std::make_pair(i,Natron::eValueChangedReasonNatronInternalEdited));
         }
     }
 }
@@ -811,7 +811,7 @@ KnobHelper::setInternalCurveHasChanged(int dimension, bool changed)
 }
 
 void
-KnobHelper::cloneGuiCurvesIfNeeded(std::set<int>& modifiedDimensions)
+KnobHelper::cloneGuiCurvesIfNeeded(std::map<int,Natron::ValueChangedReasonEnum>& modifiedDimensions)
 {
     if (!canAnimate()) {
         return;
@@ -827,7 +827,7 @@ KnobHelper::cloneGuiCurvesIfNeeded(std::set<int>& modifiedDimensions)
             curve->clone(*guicurve);
             _imp->mustCloneGuiCurves[i] = false;
             
-            modifiedDimensions.insert(i);
+            modifiedDimensions.insert(std::make_pair(i,Natron::eValueChangedReasonUserEdited));
         }
     }
     if (_imp->holder) {
@@ -963,16 +963,17 @@ KnobHelper::evaluateValueChange(int dimension,
             if (_imp->holder->isEvaluationBlocked()) {
                 _imp->holder->appendValueChange(this,reason);
             } else {
+                _imp->holder->beginChanges();
                 ///Notify that a value has changed, this may lead to this function being called recursively because it calls the plugin's
                 ///instance changed action.
                 _imp->holder->onKnobValueChanged_public(this, reason, time, originatedFromMainThread);
                 
                 
-                if (/*reason != Natron::eValueChangedReasonSlaveRefresh &&*/isMainThread && !guiFrozen) {
-                    ///Evaluate the change only if the reason is not time changed or slave refresh
-                    _imp->holder->evaluate_public(this, getEvaluateOnChange(), reason);
-                }
-                
+//                if (/*reason != Natron::eValueChangedReasonSlaveRefresh &&*/isMainThread && !guiFrozen) {
+//                    ///Evaluate the change only if the reason is not time changed or slave refresh
+//                    _imp->holder->evaluate_public(this, getEvaluateOnChange(), reason);
+//                }
+                _imp->holder->endChanges();
             }
             
         }
