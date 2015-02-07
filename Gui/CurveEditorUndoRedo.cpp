@@ -323,7 +323,7 @@ moveKey(KeyPtr &k,
             int newIndex;
             
             k->key = curve->setKeyFrameValueAndTime(newX,newY, keyframeIndex, &newIndex);
-            isParametric->evaluateValueChange(isKnobCurve->getDimension(), Natron::eValueChangedReasonUserEdited, true);
+            isParametric->evaluateValueChange(isKnobCurve->getDimension(), Natron::eValueChangedReasonUserEdited);
         } else {
             knob->moveValueAtTime(k->key.getTime(), isKnobCurve->getDimension(), dt, dv,&k->key);
         }
@@ -682,7 +682,7 @@ MoveTangentCommand::setNewDerivatives(bool undo)
             int keyframeIndexInCurve = _key->curve->getInternalCurve()->keyFrameIndex( _key->key.getTime() );
             _key->key = _key->curve->getInternalCurve()->setKeyFrameInterpolation(interp, keyframeIndexInCurve);
             _key->key = _key->curve->getInternalCurve()->setKeyFrameDerivatives(left, right,keyframeIndexInCurve);
-            attachedKnob->evaluateValueChange(isKnobCurve->getDimension(), Natron::eValueChangedReasonUserEdited, true);
+            attachedKnob->evaluateValueChange(isKnobCurve->getDimension(), Natron::eValueChangedReasonUserEdited);
         }
         
         _widget->refreshDisplayedTangents();

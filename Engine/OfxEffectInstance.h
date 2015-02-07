@@ -79,7 +79,7 @@ public:
 };
 
 class OfxEffectInstance
-    : public QObject, public AbstractOfxEffectInstance
+    : public AbstractOfxEffectInstance
 {
     Q_OBJECT
 

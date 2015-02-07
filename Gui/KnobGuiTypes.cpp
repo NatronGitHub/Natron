@@ -1400,7 +1400,7 @@ void Button_KnobGui::removeSpecificGui()
 void
 Button_KnobGui::emitValueChanged()
 {
-    _knob->evaluateValueChange(0, Natron::eValueChangedReasonUserEdited, true);
+    _knob->evaluateValueChange(0, Natron::eValueChangedReasonUserEdited);
 }
 
 void
@@ -2371,7 +2371,7 @@ Color_KnobGui::showColorDialog()
         _knob->endChanges();
 
     }
-    _knob->evaluateValueChange(0, eValueChangedReasonNatronGuiEdited, true);
+    _knob->evaluateValueChange(0, eValueChangedReasonNatronGuiEdited);
 } // showColorDialog
 
 void

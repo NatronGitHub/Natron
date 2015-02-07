@@ -315,7 +315,7 @@ MultipleKnobEditsUndoCommand::undo()
     if (holder) {
         holder->beginChanges();
         for (std::set <KnobI*>::iterator it = knobsUnique.begin(); it != knobsUnique.end(); ++it) {
-            (*it)->evaluateValueChange(0, _reason, (*it)->getEvaluateOnChange());
+            (*it)->evaluateValueChange(0, _reason);
         }
         holder->endChanges();
         Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(holder);
@@ -351,7 +351,7 @@ MultipleKnobEditsUndoCommand::redo()
 
             
             for (std::set <KnobI*>::iterator it = knobsUnique.begin(); it != knobsUnique.end(); ++it) {
-                (*it)->evaluateValueChange(0, _reason, (*it)->getEvaluateOnChange());
+                (*it)->evaluateValueChange(0, _reason);
             }
         }
     } else {
