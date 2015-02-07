@@ -1813,7 +1813,6 @@ KnobHolder::endChanges(bool discardEverything)
         if (discardEverything) {
             return;
         }
-        Natron::ValueChangedReasonEnum reason;
         KnobI* knob = 0;
         for (ChangesMap::iterator it = knobChanged.begin(); it!=knobChanged.end(); ++it) {
             if (it->first) {
@@ -1822,11 +1821,9 @@ KnobHolder::endChanges(bool discardEverything)
             if (!knob && it->first) {
                 knob = it->first;
             }
-            if (it == knobChanged.begin()) {
-                reason = it->second.reason;
-            }
         }
         if (significant) {
+            Natron::ValueChangedReasonEnum reason = knobChanged.begin()->second.reason;
             if (!isMT) {
                 Q_EMIT doEvaluateOnMainThread(knob, significant, reason);
             } else {
