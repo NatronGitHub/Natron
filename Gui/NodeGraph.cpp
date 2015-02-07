@@ -397,7 +397,6 @@ NodeGraph::NodeGraph(Gui* gui,
     
     setAcceptDrops(true);
 
-    QObject::connect( group.get(), SIGNAL( nodesCleared() ), this, SLOT( onProjectNodesCleared() ) );
 
     NodeGroup* isGrp = dynamic_cast<NodeGroup*>(group.get());
     if (isGrp) {
@@ -523,7 +522,6 @@ NodeGraph::~NodeGraph()
     QObject::disconnect( &_imp->_refreshCacheTextTimer,SIGNAL( timeout() ),this,SLOT( updateCacheSizeText() ) );
     _imp->_nodeCreationShortcutEnabled = false;
 
-    //onProjectNodesCleared();
 }
 
 
@@ -562,7 +560,7 @@ NodeGraph::discardGuiPointer()
 }
 
 void
-NodeGraph::onProjectNodesCleared()
+NodeGraph::onNodesCleared()
 {
     _imp->_selection.clear();
     std::list<boost::shared_ptr<NodeGui> > nodesCpy;

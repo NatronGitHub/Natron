@@ -23,6 +23,8 @@ public:
     
     virtual ~NodeGraphI() {}
     
+    virtual void onNodesCleared() = 0;
+    
 };
 
 #endif // NODEGRAPHI_H

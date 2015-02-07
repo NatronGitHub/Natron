@@ -17,7 +17,7 @@
 #include "Engine/NoOp.h"
 
 struct BackDropPrivate;
-class BackDrop : public QObject,  public NoOpBase
+class BackDrop : public NoOpBase
 {
     Q_OBJECT
     

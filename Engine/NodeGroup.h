@@ -34,10 +34,8 @@ class NodeGraphI;
 class KnobI;
 class ViewerInstance;
 struct NodeCollectionPrivate;
-class NodeCollection : public QObject
+class NodeCollection
 {
-    
-    Q_OBJECT
     
 public:
     
@@ -237,12 +235,7 @@ public:
                              QString& output);
     
     void checkSupportsRenderScaleOKForAllNodes();
-    
-Q_SIGNALS:
-    
-    void nodesCleared();
-    
-    
+
 private:
     
     boost::scoped_ptr<NodeCollectionPrivate> _imp;

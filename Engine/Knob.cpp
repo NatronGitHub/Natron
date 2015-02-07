@@ -48,12 +48,7 @@ KnobSignalSlotHandler::KnobSignalSlotHandler(boost::shared_ptr<KnobI> knob)
 : QObject()
 , k(knob)
 {
-<<<<<<< HEAD
-    QObject::connect( this, SIGNAL( evaluateValueChangedInMainThread(int,int) ), this,
-                     SLOT( onEvaluateValueChangedInOtherThread(int,int) ) );
-=======
-    
->>>>>>> workshop
+
 }
 
 void

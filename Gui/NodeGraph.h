@@ -138,6 +138,8 @@ public:
     void copyNodesAndCreateInGroup(const std::list<boost::shared_ptr<NodeGui> >& nodes,
                                    const boost::shared_ptr<NodeCollection>& group);
 
+    virtual void onNodesCleared() OVERRIDE FINAL;
+    
    public Q_SLOTS:
 
     void deleteSelection();
@@ -159,8 +161,6 @@ public:
     void forceRefreshAllPreviews();
 
     void toggleKnobLinksVisible();
-
-    void onProjectNodesCleared();
 
     void switchInputs1and2ForSelectedNodes();
     

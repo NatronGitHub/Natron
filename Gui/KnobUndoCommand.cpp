@@ -554,7 +554,7 @@ SetExpressionCommand::undo()
         }
     }
     
-    _knob->evaluateValueChange(_dimension == -1 ? 0 : _dimension, Natron::eValueChangedReasonNatronGuiEdited, true);
+    _knob->evaluateValueChange(_dimension == -1 ? 0 : _dimension, Natron::eValueChangedReasonNatronGuiEdited);
     setText( QObject::tr("Set expression") );
 }
 
@@ -577,6 +577,6 @@ SetExpressionCommand::redo()
             Natron::errorDialog(QObject::tr("Expression").toStdString(), QObject::tr("The expression is invalid").toStdString());
         }
     }
-    _knob->evaluateValueChange(_dimension == -1 ? 0 : _dimension, Natron::eValueChangedReasonNatronGuiEdited, true);
+    _knob->evaluateValueChange(_dimension == -1 ? 0 : _dimension, Natron::eValueChangedReasonNatronGuiEdited);
     setText( QObject::tr("Set expression") );
 }

@@ -34,6 +34,7 @@
 #include "Engine/Plugin.h"
 #include "Engine/NodeGuiI.h"
 #include "Engine/Curve.h"
+#include "Engine/NodeGraphI.h"
 #include "Engine/RotoContext.h"
 
 using namespace Natron;
@@ -347,7 +348,9 @@ NodeCollection::clearNodes(bool emitSignal)
     
     
     if (emitSignal) {
-        Q_EMIT nodesCleared();
+        if (_imp->graph) {
+            _imp->graph->onNodesCleared();
+        }
     }
     
     {

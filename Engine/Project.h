@@ -49,7 +49,7 @@ class OutputEffectInstance;
 struct ProjectPrivate;
 
 class Project
-    : public NodeCollection, public KnobHolder,  public boost::noncopyable, public boost::enable_shared_from_this<Natron::Project>
+    :  public KnobHolder, public NodeCollection,  public boost::noncopyable, public boost::enable_shared_from_this<Natron::Project>
 {
     Q_OBJECT
 
