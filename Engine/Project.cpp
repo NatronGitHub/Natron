@@ -90,8 +90,7 @@ static std::string generateUserFriendlyNatronVersionName()
 
 namespace Natron {
 Project::Project(AppInstance* appInstance)
-    : QObject()
-      , KnobHolder(appInstance)
+    :  KnobHolder(appInstance)
       , _imp( new ProjectPrivate(this) )
 {
     QObject::connect( _imp->autoSaveTimer.get(), SIGNAL( timeout() ), this, SLOT( onAutoSaveTimerTriggered() ) );

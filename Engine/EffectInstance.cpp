@@ -3384,7 +3384,11 @@ EffectInstance::evaluate(KnobI* knob,
     if (!button && isSignificant) {
         _node->incrementKnobsAge();
     }
-
+    
+    
+    int time = getCurrentTime();
+    
+    
     std::list<ViewerInstance* > viewers;
     _node->hasViewersConnected(&viewers);
     for (std::list<ViewerInstance* >::iterator it = viewers.begin();
@@ -3396,8 +3400,8 @@ EffectInstance::evaluate(KnobI* knob,
             (*it)->redrawViewer();
         }
     }
-
-    getNode()->refreshPreviewsRecursivelyDownstream(getApp()->getTimeLine()->currentFrame());
+    
+    getNode()->refreshPreviewsRecursivelyDownstream(time);
 } // evaluate
 
 bool

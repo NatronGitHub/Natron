@@ -695,7 +695,7 @@ Knob<T>::setValue(const T & v,
     }
 
     if (hasChanged && ret == eValueChangedReturnCodeNoKeyframeAdded) { //the other cases already called this in setValueAtTime()
-        evaluateValueChange(dimension,reason, true);
+        evaluateValueChange(dimension,reason);
     }
     {
         QMutexLocker l(&_setValueRecursionLevelMutex);
@@ -843,7 +843,7 @@ Knob<T>::setValueAtTime(int time,
         _signalSlotHandler->s_keyFrameSet(time,dimension,(int)reason,ret);
     }
     if (hasChanged) {
-        evaluateValueChange(dimension, reason, true);
+        evaluateValueChange(dimension, reason);
     } else {
         return eValueChangedReturnCodeNothingChanged;
     }
@@ -892,7 +892,7 @@ Knob<T>::unSlave(int dimension,
     if (getHolder() && _signalSlotHandler) {
         getHolder()->onKnobSlaved( _signalSlotHandler->getKnob(),dimension,false, master.second->getHolder() );
     }
-    evaluateValueChange(dimension, reason, true);
+    evaluateValueChange(dimension, reason);
 }
 
 template<>
@@ -1207,7 +1207,7 @@ Knob<T>::onKeyFrameSet(SequenceTime time,
     
     if (!useGuiCurve) {
         guiCurveCloneInternalCurve(dimension);
-        evaluateValueChange(dimension, Natron::eValueChangedReasonUserEdited, true);
+        evaluateValueChange(dimension, Natron::eValueChangedReasonUserEdited);
     }
     return ret;
 }
@@ -1231,7 +1231,7 @@ Knob<T>::onKeyFrameSet(SequenceTime /*time*/,const KeyFrame& key,int dimension)
     
     if (!useGuiCurve) {
         guiCurveCloneInternalCurve(dimension);
-        evaluateValueChange(dimension, Natron::eValueChangedReasonUserEdited, true);
+        evaluateValueChange(dimension, Natron::eValueChangedReasonUserEdited);
     }
     return ret;
 }
@@ -1689,7 +1689,7 @@ Knob<T>::dequeueValuesSet(bool disableEvaluation)
         
         beginChanges();
         for (std::map<int,Natron::ValueChangedReasonEnum>::iterator it = dimensionChanged.begin();it!=dimensionChanged.end();++it) {
-            evaluateValueChange(it->first, it->second, true);
+            evaluateValueChange(it->first, it->second);
         }
         endChanges();
     }

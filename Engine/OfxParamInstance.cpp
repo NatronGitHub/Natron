@@ -191,7 +191,7 @@ copyFrom(const boost::shared_ptr<KnobI> & from,
         to->beginChanges();
         int dims = to->getDimension();
         for (int i = 0; i < dims; ++i) {
-            to->evaluateValueChange(i, Natron::eValueChangedReasonPluginEdited, true);
+            to->evaluateValueChange(i, Natron::eValueChangedReasonPluginEdited);
         }
         to->endChanges();
     }

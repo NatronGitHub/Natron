@@ -53,12 +53,6 @@ public:
         return k;
     }
     
-    void s_evaluateValueChangedInMainThread(int dimension,
-                                            int reason)
-    {
-        emit evaluateValueChangedInMainThread(dimension,reason);
-    }
-    
     void s_animationLevelChanged(int dim,int level)
     {
         emit animationLevelChanged(dim,level);
@@ -195,16 +189,9 @@ public slots:
     void onMasterKeyFrameMoved(int dimension,int oldTime,int newTime);
     
     void onMasterAnimationRemoved(int dimension);
-    
-    /**
-     * @brief Calls KnobI::evaluateValueChange and assert that this function is run in the main thread.
-     **/
-    void onEvaluateValueChangedInOtherThread(int dimension, int reason);
+
     
 signals:
-    
-    ///emitted whenever evaluateValueChanged is called in another thread than the main thread
-    void evaluateValueChangedInMainThread(int dimension,int reason);
     
     ///emitted whenever setAnimationLevel is called. It is meant to notify
     ///openfx params whether it is auto-keying or not.
@@ -272,6 +259,14 @@ signals:
     
     void displayMinMaxChanged(double mini,double maxi,int index);
 };
+
+struct KnobChange
+{
+    Natron::ValueChangedReasonEnum reason;
+    bool originatedFromMainThread;
+};
+typedef std::map<KnobI*,KnobChange> ChangesMap;
+
 
 class KnobI
     : public OverlaySupport
@@ -341,7 +336,7 @@ public:
      * @brief Called by setValue to refresh the GUI, call the instanceChanged action on the plugin and
      * evaluate the new value (cause a render).
      **/
-    virtual void evaluateValueChange(int dimension,Natron::ValueChangedReasonEnum reason, bool originatedFromMainThread) = 0;
+    virtual void evaluateValueChange(int dimension,Natron::ValueChangedReasonEnum reason) = 0;
 
     /**
      * @brief Copies all the values, animations and extra data the other knob might have
@@ -908,7 +903,7 @@ public:
     virtual void populate() OVERRIDE;
     virtual void beginChanges() OVERRIDE FINAL;
     virtual void endChanges() OVERRIDE FINAL;
-    virtual void evaluateValueChange(int dimension,Natron::ValueChangedReasonEnum reason, bool originatedFromMainThread) OVERRIDE FINAL;
+    virtual void evaluateValueChange(int dimension,Natron::ValueChangedReasonEnum reason) OVERRIDE FINAL;
 
 private:
 
@@ -1414,11 +1409,13 @@ private:
  * calls evaluate() which should then trigger an evaluation of the freshly changed value
  * (i.e force a new render).
  **/
-class KnobHolder
+class KnobHolder : public QObject
 {
     struct KnobHolderPrivate;
     boost::scoped_ptr<KnobHolderPrivate> _imp;
 
+    Q_OBJECT
+    
 public:
 
     enum MultipleParamsEditEnum
@@ -1723,6 +1720,18 @@ public:
     {
     }
 
+public Q_SLOTS:
+    
+    void onDoEndChangesOnMainThreadTriggered();
+
+    void onDoEvaluateOnMainThread(KnobI* knob,bool significant,int reason);
+    
+Q_SIGNALS:
+    
+    void doEndChangesOnMainThread();
+    
+    void doEvaluateOnMainThread(KnobI* knob,bool significant,int reason);
+    
 private:
 
 
