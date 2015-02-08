@@ -23,11 +23,23 @@
 #include <cstddef>
 #include <QDebug>
 #include <QTextCodec>
+#include <QProcess>
 #include <QAbstractSocket>
 #include <QCoreApplication>
+#include <QLocalServer>
+#include <QLocalSocket>
 #include <QThread>
+#include <QTemporaryFile>
 #include <QThreadPool>
 #include <QtCore/QAtomicInt>
+
+#if defined(Q_OS_MAC)
+#include "client/mac/handler/exception_handler.h"
+#elif defined(Q_OS_LINUX)
+#include "client/linux/handler/exception_handler.h"
+#elif defined(Q_OS_WIN32)
+#include "client/windows/handler/exception_handler.h"
+#endif
 
 #include "Global/MemoryInfo.h"
 #include "Global/QtCompat.h" // for removeRecursively
@@ -65,6 +77,9 @@ BOOST_CLASS_EXPORT(Natron::ImageParams)
 using namespace Natron;
 
 AppManager* AppManager::_instance = 0;
+
+
+
 struct AppManagerPrivate
 {
     AppManager::AppTypeEnum _appType; //< the type of app
@@ -127,44 +142,13 @@ struct AppManagerPrivate
     
     PyObject* mainModule;
     
-    AppManagerPrivate()
-    : _appType(AppManager::eAppTypeBackground)
-    , _appInstances()
-    , _availableID(0)
-    , _topLevelInstanceID(0)
-    , _settings( new Settings(NULL) )
-    , _formats()
-    , _plugins()
-    , ofxHost( new Natron::OfxHost() )
-    , _knobFactory( new KnobFactory() )
-    , _nodeCache()
-    , _diskCache()
-    , _viewerCache()
-    , diskCachesLocationMutex()
-    , diskCachesLocation()
-    ,_backgroundIPC(0)
-    ,_loaded(false)
-    ,_binaryPath()
-    ,_wasAbortAnyProcessingCalled(false)
-    ,_nodesGlobalMemoryUse(0)
-    ,_ofxLogMutex()
-    ,_ofxLog()
-    ,maxCacheFiles(0)
-    ,currentCacheFilesCount(0)
-    ,currentCacheFilesCountMutex()
-    ,idealThreadCount(0)
-    ,nThreadsToRender(0)
-    ,nThreadsPerEffect(0)
-    ,useThreadPool(true)
-    ,nThreadsMutex()
-    ,runningThreadsCount()
-    ,lastProjectLoadedCreatedDuringRC2Or3(false)
-    ,args()
-    {
-        setMaxCacheFiles();
-        
-        runningThreadsCount = 0;
-    }
+    boost::shared_ptr<google_breakpad::ExceptionHandler> breakpadHandler;
+    boost::shared_ptr<QProcess> crashReporter;
+    QString crashReporterBreakpadPipe;
+    boost::shared_ptr<QLocalServer> crashClientServer;
+    QLocalSocket* crashServerConnection;
+    
+    AppManagerPrivate();
     
     ~AppManagerPrivate()
     {
@@ -194,7 +178,66 @@ struct AppManagerPrivate
     Natron::Plugin* findPluginById(const QString& oldId,int major, int minor) const;
     
     void declareSettingsToPython();
+    
+    void initBreakpad();
 };
+
+#ifdef DEBUG
+void crash_application()
+{
+    sleep(2);
+    volatile int* a = (int*)(NULL);
+    *a = 1;
+}
+#endif
+
+
+AppManagerPrivate::AppManagerPrivate()
+: _appType(AppManager::eAppTypeBackground)
+, _appInstances()
+, _availableID(0)
+, _topLevelInstanceID(0)
+, _settings( new Settings(NULL) )
+, _formats()
+, _plugins()
+, ofxHost( new Natron::OfxHost() )
+, _knobFactory( new KnobFactory() )
+, _nodeCache()
+, _diskCache()
+, _viewerCache()
+, diskCachesLocationMutex()
+, diskCachesLocation()
+,_backgroundIPC(0)
+,_loaded(false)
+,_binaryPath()
+,_wasAbortAnyProcessingCalled(false)
+,_nodesGlobalMemoryUse(0)
+,_ofxLogMutex()
+,_ofxLog()
+,maxCacheFiles(0)
+,currentCacheFilesCount(0)
+,currentCacheFilesCountMutex()
+,idealThreadCount(0)
+,nThreadsToRender(0)
+,nThreadsPerEffect(0)
+,useThreadPool(true)
+,nThreadsMutex()
+,runningThreadsCount()
+,lastProjectLoadedCreatedDuringRC2Or3(false)
+,args()
+,mainModule(0)
+,breakpadHandler()
+,crashReporter()
+,crashReporterBreakpadPipe()
+,crashClientServer()
+,crashServerConnection(0)
+{
+    setMaxCacheFiles();
+    
+    runningThreadsCount = 0;
+}
+
+
 
 void
 AppManager::saveCaches() const
@@ -816,6 +859,10 @@ AppManager::~AppManager()
     
     tearDownPython();
     
+    if (_imp->crashReporter) {
+        _imp->crashReporter->terminate();
+    }
+    
     if (qApp) {
         delete qApp;
     }
@@ -842,6 +889,42 @@ AppManager::initializeQApp(int &argc,
                            char **argv)
 {
     new QCoreApplication(argc,argv);
+}
+
+void
+AppManagerPrivate::initBreakpad()
+{
+    if (appPTR->isBackground()) {
+        return;
+    }
+    assert(!breakpadHandler);
+    std::srand(2000);
+    int randomNumber = std::rand();
+    QString filename;
+    int handle;
+    {
+        QTemporaryFile tmpf( NATRON_APPLICATION_NAME "_CRASH_PIPE_" + QString::number(randomNumber) );
+        tmpf.open();
+        handle = tmpf.handle();
+        filename = tmpf.fileName();
+        tmpf.remove();
+    }
+    
+    QString comPipeFilename = filename + "_COM_PIPE_";
+    crashClientServer.reset(new QLocalServer());
+    QObject::connect(crashClientServer.get(),SIGNAL( newConnection() ),appPTR,SLOT( onNewCrashReporterConnectionPending() ) );
+    crashClientServer->listen(comPipeFilename);
+    
+    crashReporterBreakpadPipe = filename;
+    QStringList args;
+    args << filename;
+    args << QString::number(handle);
+    args << comPipeFilename;
+    crashReporter.reset(new QProcess);
+    QString crashReporterBinaryPath = qApp->applicationDirPath() + "/NatronCrashReporter";
+    crashReporter->start(crashReporterBinaryPath, args);
+    
+    
 }
 
 bool
@@ -914,7 +997,10 @@ AppManager::loadInternal(const CLArgs& cl)
     std::setlocale(LC_NUMERIC,"C"); // set the locale for LC_NUMERIC only
 
     Natron::Log::instance(); //< enable logging
-
+    
+    _imp->initBreakpad();
+    
+    
     _imp->_settings->initializeKnobsPublic();
     ///Call restore after initializing knobs
     _imp->_settings->restoreSettings();
@@ -3035,6 +3121,58 @@ AppManager::isProjectAlreadyOpened(const std::string& projectFilePath) const
 		}
     }
 	return -1;
+}
+
+void
+AppManager::onCrashReporterOutputWritten()
+{
+    ///always running in the main thread
+    assert( QThread::currentThread() == qApp->thread() );
+    
+    QString str = _imp->crashServerConnection->readLine();
+    while ( str.endsWith('\n') ) {
+        str.chop(1);
+    }
+
+    if (str.startsWith("-i")) {
+        //At this point, the CrashReporter just notified us it is ready, so we can create our exception handler safely
+        //because we know the pipe is opened on the other side.
+        
+#if defined(Q_OS_MAC)
+        _imp->breakpadHandler.reset(new google_breakpad::ExceptionHandler( std::string(), 0, 0/*dmpcb*/,  0, true,
+                                                                          _imp->crashReporterBreakpadPipe.toStdString().c_str()));
+#elif defined(Q_OS_LINUX)
+        _imp->breakpadHandler.reset(new google_breakpad::ExceptionHandler( google_breakpad::MinidumpDescriptor(std::string()), 0, 0/*dmpCb*/,
+                                                                          0, true, handle));
+#elif defined(Q_OS_WIN32)
+        _imp->breakpadHandler.reset(new google_breakpad::ExceptionHandler( std::wstring(), 0, 0/*dmpcb*/,
+                                                                          google_breakpad::ExceptionHandler::HANDLER_ALL,
+                                                                          MiniDumpNormal,
+                                                                          filename.toStdWString(),
+                                                                          0));
+#endif
+        
+        //crash_application();
+
+    } else {
+        qDebug() << "Error: Unable to interpret message.";
+        throw std::runtime_error("AppManager::onCrashReporterOutputWritten() received erroneous message");
+    }
+
+
+}
+
+void
+AppManager::onNewCrashReporterConnectionPending()
+{
+    ///accept only 1 connection!
+    if (_imp->crashServerConnection) {
+        return;
+    }
+    
+    _imp->crashServerConnection = _imp->crashClientServer->nextPendingConnection();
+    
+    QObject::connect( _imp->crashServerConnection, SIGNAL( readyRead() ), this, SLOT( onCrashReporterOutputWritten() ) );
 }
 
 namespace Natron {

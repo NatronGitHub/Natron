@@ -9,6 +9,7 @@ build
 DerivedData
 Natron.xcodeproj
 NatronRenderer.xcodeproj
+NatronCrashReporter.xcodeproj
 Tests.xcodeproj
 HostSupport.xcodeproj
 Gui.xcodeproj

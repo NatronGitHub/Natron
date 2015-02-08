@@ -14,7 +14,8 @@ SUBDIRS += \
     Gui \
     Renderer \
     Tests \
-    App
+    App \
+    CrashReporter
 
 OTHER_FILES += \
     Global/Enums.h \

@@ -429,6 +429,10 @@ public:
     virtual void reloadStylesheets() {}
     
 public Q_SLOTS:
+    
+    void onNewCrashReporterConnectionPending();
+    
+    void onCrashReporterOutputWritten();
 
     void toggleAutoHideGraphInputs();
 
