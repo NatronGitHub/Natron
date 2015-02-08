@@ -14,7 +14,7 @@
 #include <QApplication>
 #include <QStringList>
 #include <QString>
-#include <QLocalSocket>
+#include <QDir>
 
 #include "client/mac/crash_generation/crash_generation_server.h"
 #include "CrashDialog.h"
@@ -128,7 +128,7 @@ main(int argc,
     
     manager.writeDebugMessage("Crash reporter started with following arguments: " + qPipeName + " " + args[2] + " " + args[3]);
     
-    
+    QString dumpPath = QDir::tempPath();
 #if defined(Q_OS_MAC)
     CrashGenerationServer breakpad_server(qPipeName.toStdString().c_str(),
                                           0, // filter cb
@@ -138,19 +138,22 @@ main(int argc,
                                           OnClientExitRequest, // exit cb
                                           0, // exit ctx
                                           true, // auto-generate dumps
-                                          ""); // path to dump to
+                                          dumpPath.toStdString()); // path to dump to
 #elif defined(Q_OS_LINUX)
     int listenFd = args[2].toInt();
+    std::string stdDumpPath = dumpPath.toStdString();
     CrashGenerationServer breakpad_server(listenFd,
                                           OnClientDumpRequest, // dump cb
                                           0, // dump ctx
                                           OnClientExitRequest, // exit cb
                                           0, // exit ctx
                                           true, // auto-generate dumps
-                                          0); // path to dump to
+                                          &stdDumpPath); // path to dump to
 #elif defined(Q_OS_WIN32)
     std::string pipeName = qPipeName.toStdString();
     std::wstring wpipeName = Natron::s2ws(pipeName);
+    std::string stdDumPath = dumpPath.toStdString();
+    std::wstring stdWDumpPath = Natron::s2ws(stdDumPath);
     CrashGenerationServer breakpad_server(wpipeName,
                                           0, // SECURITY ATTRS
                                           0, // on client connected cb
@@ -162,7 +165,7 @@ main(int argc,
                                           0, // upload request cb
                                           0, //  upload request ctx
                                           true, // auto-generate dumps
-                                          0); // path to dump to
+                                          &stdWDumpPath); // path to dump to
 #endif
     if (!breakpad_server.Start()) {
         manager.writeDebugMessage("Failure to start breakpad server, crash generation will fail.");
