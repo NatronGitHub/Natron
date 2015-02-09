@@ -565,7 +565,7 @@ TEST(SequenceFromFiles,ComplexTest) {
         EXPECT_TRUE( sequence.tryInsertFile( FileNameContent("/Users/Test/23489.jpg") ) );
         EXPECT_TRUE( sequence.tryInsertFile( FileNameContent("/Users/Test/00001.jpg") ) );
         EXPECT_FALSE( sequence.tryInsertFile( FileNameContent("/Users/Test/0001.jpg") ) );
-        EXPECT_TRUE( sequence.tryInsertFile( FileNameContent("/Users/Test/122938.jpg") ) );
+        EXPECT_FALSE( sequence.tryInsertFile( FileNameContent("/Users/Test/122938.jpg") ) );
         EXPECT_FALSE( sequence.tryInsertFile( FileNameContent("/Users/Test/000002.jpg") ) );
         EXPECT_TRUE(sequence.generateValidSequencePattern() == "/Users/Test/#####.jpg");
     }

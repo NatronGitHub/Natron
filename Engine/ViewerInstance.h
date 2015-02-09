@@ -18,6 +18,7 @@
 #include "Engine/Rect.h"
 #include "Engine/EffectInstance.h"
 
+class ParallelRenderArgsSetter;
 namespace Natron {
 class Image;
 class FrameEntry;
@@ -31,7 +32,7 @@ class OpenGLViewerI;
 struct TextureRect;
 
 class ViewerInstance
-: public QObject, public Natron::OutputEffectInstance
+: public Natron::OutputEffectInstance
 {
     Q_OBJECT
     
@@ -75,12 +76,16 @@ public:
         U64 activeInputHash;
         boost::shared_ptr<Natron::FrameKey> key;
         boost::shared_ptr<UpdateViewerParams> params;
+        boost::shared_ptr<ParallelRenderArgsSetter> frameArgs;
     };
     
     /**
      * @brief Look-up the cache and try to find a matching texture for the portion to render.
      **/
-    Natron::StatusEnum getRenderViewerArgsAndCheckCache(SequenceTime time, int view, int textureIndex, U64 viewerHash,
+    Natron::StatusEnum getRenderViewerArgsAndCheckCache(SequenceTime time,
+                                                        bool isSequential,
+                                                        bool canAbort,
+                                                        int view, int textureIndex, U64 viewerHash,
                                                         ViewerArgs* outArgs);
 
     
@@ -144,7 +149,7 @@ public:
     /**
      * @brief Returns the current view, MT-safe
      **/
-    int getCurrentView() const;
+    int getViewerCurrentView() const;
 
     void onGainChanged(double exp);
 
@@ -161,6 +166,10 @@ public:
     void getActiveInputs(int & a,int &b) const;
     
     int getLastRenderedTime() const;
+    
+    virtual SequenceTime getCurrentTime() const OVERRIDE WARN_UNUSED_RETURN;
+    
+    virtual int getCurrentView() const OVERRIDE WARN_UNUSED_RETURN;
 
     boost::shared_ptr<TimeLine> getTimeline() const;
     
@@ -178,6 +187,9 @@ public:
     void s_viewerRenderingStarted() { emit viewerRenderingStarted(); }
     
     void s_viewerRenderingEnded() { emit viewerRenderingEnded(); }
+    
+    struct ViewerInstancePrivate;
+
 public slots:
 
 
@@ -277,7 +289,6 @@ private:
     
 private:
     
-    struct ViewerInstancePrivate;
     boost::scoped_ptr<ViewerInstancePrivate> _imp;
 };
 

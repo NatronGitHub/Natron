@@ -18,7 +18,7 @@
 #include <nuke/fnPublicOfxExtensions.h>
 
 #include <ofxParametricParam.h>
-
+#include <QDebug>
 
 #include "Engine/AppManager.h"
 #include "Global/GlobalDefines.h"
@@ -188,14 +188,12 @@ copyFrom(const boost::shared_ptr<KnobI> & from,
     ///copy only if type is the same
     if ( from->typeName() == to->typeName() ) {
         to->clone(from,offset,range);
-        to->blockEvaluation();
+        to->beginChanges();
         int dims = to->getDimension();
         for (int i = 0; i < dims; ++i) {
-            if (i == dims - 1) {
-                to->unblockEvaluation();
-            }
-            to->evaluateValueChange(i, Natron::eValueChangedReasonPluginEdited, true);
+            to->evaluateValueChange(i, Natron::eValueChangedReasonPluginEdited);
         }
+        to->endChanges();
     }
 
     return kOfxStatOK;
@@ -294,6 +292,10 @@ OfxStatus
 OfxIntegerInstance::set(OfxTime time,
                         int v)
 {
+    if (!getCanAnimate()) {
+        qDebug() << "Attempting to call setValueAtTime on a parameter that does not have animation enabled";
+        return set(v);
+    }
     _knob->setValueAtTimeFromPlugin(time,v,0);
 
     return kOfxStatOK;
@@ -480,6 +482,10 @@ OfxStatus
 OfxDoubleInstance::set(OfxTime time,
                        double v)
 {
+    if (!getCanAnimate()) {
+        qDebug() << "Attempting to call setValueAtTime on a parameter that does not have animation enabled";
+        return set(v);
+    }
     _knob->setValueAtTimeFromPlugin(time,v,0);
 
     return kOfxStatOK;
@@ -652,6 +658,10 @@ OfxStatus
 OfxBooleanInstance::set(OfxTime time,
                         bool b)
 {
+    if (!getCanAnimate()) {
+        qDebug() << "Attempting to call setValueAtTime on a parameter that does not have animation enabled";
+        return set(b);
+    }
     assert( Bool_Knob::canAnimateStatic() );
     _knob->setValueAtTimeFromPlugin(time, b, 0);
 
@@ -787,6 +797,10 @@ OfxStatus
 OfxChoiceInstance::set(OfxTime time,
                        int v)
 {
+    if (!getCanAnimate()) {
+        qDebug() << "Attempting to call setValueAtTime on a parameter that does not have animation enabled";
+        return set(v);
+    }
     if ( (0 <= v) && ( v < (int)_entries.size() ) ) {
         _knob->setValueAtTimeFromPlugin(time, v, 0);
 
@@ -988,6 +1002,10 @@ OfxRGBAInstance::set(OfxTime time,
                      double b,
                      double a)
 {
+    if (!getCanAnimate()) {
+        qDebug() << "Attempting to call setValueAtTime on a parameter that does not have animation enabled";
+        return set(r,g,b,a);
+    }
     _knob->setValueAtTimeFromPlugin(time,r,0);
     _knob->setValueAtTimeFromPlugin(time,g,1);
     _knob->setValueAtTimeFromPlugin(time,b,2);
@@ -1186,12 +1204,11 @@ OfxRGBInstance::set(double r,
                     double g,
                     double b)
 {
-    _knob->blockEvaluation();
+    _knob->beginChanges();
     _knob->setValueFromPlugin(r,0);
     _knob->setValueFromPlugin(g,1);
-    _knob->unblockEvaluation();
     _knob->setValueFromPlugin(b,2);
-
+    _knob->endChanges();
     return kOfxStatOK;
 }
 
@@ -1201,12 +1218,15 @@ OfxRGBInstance::set(OfxTime time,
                     double g,
                     double b)
 {
-    _knob->blockEvaluation();
+    if (!getCanAnimate()) {
+        qDebug() << "Attempting to call setValueAtTime on a parameter that does not have animation enabled";
+        return set(r,g,b);
+    }
+    _knob->beginChanges();
     _knob->setValueAtTimeFromPlugin(time,r,0);
     _knob->setValueAtTimeFromPlugin(time,g,1);
-    _knob->unblockEvaluation();
     _knob->setValueAtTimeFromPlugin(time,b,2);
-
+    _knob->endChanges();
     return kOfxStatOK;
 }
 
@@ -1423,10 +1443,10 @@ OfxDouble2DInstance::set(double x1,
         ignore_result(_node->effectInstance()->editBegin( getName() ));
         doEditEnd = true;
     }
-    _knob->blockEvaluation();
+    _knob->beginChanges();
     _knob->setValueFromPlugin(x1,0);
-    _knob->unblockEvaluation();
     _knob->setValueFromPlugin(x2,1);
+    _knob->endChanges();
     if (doEditEnd) {
         _node->effectInstance()->editEnd();
     }
@@ -1439,16 +1459,20 @@ OfxDouble2DInstance::set(OfxTime time,
                          double x1,
                          double x2)
 {
+    if (!getCanAnimate()) {
+        qDebug() << "Attempting to call setValueAtTime on a parameter that does not have animation enabled";
+        return set(x1,x2);
+    }
     bool doEditEnd = false;
 
     if ( _node->isDoingInteractAction() ) {
         ignore_result(_node->effectInstance()->editBegin( getName() ));
         doEditEnd = true;
     }
-    _knob->blockEvaluation();
+    _knob->beginChanges();
     _knob->setValueAtTimeFromPlugin(time,x1,0);
-    _knob->unblockEvaluation();
     _knob->setValueAtTimeFromPlugin(time,x2,1);
+    _knob->endChanges();
     if (doEditEnd) {
         _node->effectInstance()->editEnd();
     }
@@ -1668,11 +1692,10 @@ OfxInteger2DInstance::set(int x1,
         doEditEnd = true;
     }
 
-    _knob->blockEvaluation();
+    _knob->beginChanges();
     _knob->setValueFromPlugin(x1,0);
-    _knob->unblockEvaluation();
     _knob->setValueFromPlugin(x2,1);
-
+    _knob->endChanges();
     if (doEditEnd) {
         ignore_result(_node->effectInstance()->editEnd());
     }
@@ -1685,17 +1708,20 @@ OfxInteger2DInstance::set(OfxTime time,
                           int x1,
                           int x2)
 {
+    if (!getCanAnimate()) {
+        qDebug() << "Attempting to call setValueAtTime on a parameter that does not have animation enabled";
+        return set(x1,x2);
+    }
     bool doEditEnd = false;
 
     if ( _node->isDoingInteractAction() ) {
         ignore_result(_node->effectInstance()->editBegin( getName() ));
         doEditEnd = true;
     }
-    _knob->blockEvaluation();
+    _knob->beginChanges();
     _knob->setValueAtTimeFromPlugin(time,x1,0);
-    _knob->unblockEvaluation();
     _knob->setValueAtTimeFromPlugin(time,x2,1);
-
+    _knob->endChanges();
     if (doEditEnd) {
         ignore_result(_node->effectInstance()->editEnd());
     }
@@ -1887,17 +1913,18 @@ OfxDouble3DInstance::set(double x1,
                          double x2,
                          double x3)
 {
+    
     bool doEditEnd = false;
 
     if ( _node->isDoingInteractAction() ) {
         ignore_result(_node->effectInstance()->editBegin( getName() ));
         doEditEnd = true;
     }
-    _knob->blockEvaluation();
+    _knob->beginChanges();
     _knob->setValueFromPlugin(x1,0);
     _knob->setValueFromPlugin(x2,1);
-    _knob->unblockEvaluation();
     _knob->setValueFromPlugin(x3,2);
+    _knob->endChanges();
     if (doEditEnd) {
         ignore_result(_node->effectInstance()->editEnd());
     }
@@ -1911,17 +1938,21 @@ OfxDouble3DInstance::set(OfxTime time,
                          double x2,
                          double x3)
 {
+    if (!getCanAnimate()) {
+        qDebug() << "Attempting to call setValueAtTime on a parameter that does not have animation enabled";
+        return set(x1,x2,x3);
+    }
     bool doEditEnd = false;
 
     if ( _node->isDoingInteractAction() ) {
         ignore_result(_node->effectInstance()->editBegin( getName() ));
         doEditEnd = true;
     }
-    _knob->blockEvaluation();
+    _knob->beginChanges();
     _knob->setValueAtTimeFromPlugin(time,x1,0);
     _knob->setValueAtTimeFromPlugin(time,x2,1);
-    _knob->unblockEvaluation();
     _knob->setValueAtTimeFromPlugin(time,x3,2);
+    _knob->endChanges();
     if (doEditEnd) {
         ignore_result(_node->effectInstance()->editEnd());
     }
@@ -2150,17 +2181,18 @@ OfxInteger3DInstance::set(int x1,
                           int x2,
                           int x3)
 {
+   
     bool doEditEnd = false;
 
     if ( _node->isDoingInteractAction() ) {
         ignore_result(_node->effectInstance()->editBegin( getName() ));
         doEditEnd = true;
     }
-    _knob->blockEvaluation();
+    _knob->beginChanges();
     _knob->setValueFromPlugin(x1,0);
     _knob->setValueFromPlugin(x2,1);
-    _knob->unblockEvaluation();
     _knob->setValueFromPlugin(x3,2);
+    _knob->endChanges();
     if (doEditEnd) {
         ignore_result(_node->effectInstance()->editEnd());
     }
@@ -2174,17 +2206,21 @@ OfxInteger3DInstance::set(OfxTime time,
                           int x2,
                           int x3)
 {
+    if (!getCanAnimate()) {
+        qDebug() << "Attempting to call setValueAtTime on a parameter that does not have animation enabled";
+        return set(x1,x2,x3);
+    }
     bool doEditEnd = false;
 
     if ( _node->isDoingInteractAction() ) {
         ignore_result(_node->effectInstance()->editBegin( getName() ));
         doEditEnd = true;
     }
-    _knob->blockEvaluation();
+    _knob->beginChanges();
     _knob->setValueAtTimeFromPlugin(time,x1,0);
     _knob->setValueAtTimeFromPlugin(time,x2,1);
-    _knob->unblockEvaluation();
     _knob->setValueAtTimeFromPlugin(time,x3,2);
+    _knob->endChanges();
     if (doEditEnd) {
         ignore_result(_node->effectInstance()->editEnd());
     }
@@ -2485,7 +2521,7 @@ OfxStringInstance::get(std::string &str)
     assert( _node->effectInstance() );
     int currentFrame = _node->getApp()->getTimeLine()->currentFrame();
     if (_fileKnob) {
-        str = _fileKnob->getFileName(currentFrame,/*view*/ 0);
+        str = _fileKnob->getFileName(currentFrame);
         projectEnvVar_getProxy(str);
     } else if (_outputFileKnob) {
         str = _outputFileKnob->generateFileNameAtTime(currentFrame).toStdString();
@@ -2506,7 +2542,7 @@ OfxStringInstance::get(OfxTime time,
 {
     assert( _node->effectInstance() );
     if (_fileKnob) {
-        str = _fileKnob->getFileName(std::floor(time + 0.5),/*view*/ 0);
+        str = _fileKnob->getFileName(std::floor(time + 0.5));
         projectEnvVar_getProxy(str);
     } else if (_outputFileKnob) {
         str = _outputFileKnob->generateFileNameAtTime(time).toStdString();
@@ -2550,6 +2586,10 @@ OfxStatus
 OfxStringInstance::set(OfxTime time,
                        const char* str)
 {
+    if (!getCanAnimate()) {
+        qDebug() << "Attempting to call setValueAtTime on a parameter that does not have animation enabled";
+        return set(str);
+    }
     assert( !String_Knob::canAnimateStatic() );
     if (_fileKnob) {
         std::string s(str);
@@ -2852,6 +2892,10 @@ OfxStatus
 OfxCustomInstance::set(OfxTime time,
                        const char* str)
 {
+    if (!getCanAnimate()) {
+        qDebug() << "Attempting to call setValueAtTime on a parameter that does not have animation enabled";
+        return set(str);
+    }
     assert( String_Knob::canAnimateStatic() );
     _knob->setValueAtTimeFromPlugin(time,str,0);
 

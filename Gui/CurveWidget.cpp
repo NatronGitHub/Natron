@@ -39,7 +39,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Engine/Settings.h"
 #include "Engine/RotoContext.h"
 #include "Engine/Project.h"
-
+#include "Engine/Image.h"
 
 #include "Gui/LineEdit.h"
 #include "Gui/SpinBox.h"
@@ -574,6 +574,20 @@ KnobCurveGui::getInternalKnob() const
     return _knob ? _knob->getKnob() : _internalKnob;
 }
 
+int
+KnobCurveGui::getKeyFrameIndex(double time) const
+{
+    assert(_internalCurve);
+    return _internalCurve->keyFrameIndex(time);
+}
+
+void
+KnobCurveGui::setKeyFrameInterpolation(Natron::KeyframeTypeEnum interp,int index)
+{
+    assert(_internalCurve);
+    _internalCurve->setKeyFrameInterpolation(interp, index);
+}
+
 BezierCPCurveGui::BezierCPCurveGui(const CurveWidget *curveWidget,
                                    const boost::shared_ptr<Bezier>& bezier,
                                    const boost::shared_ptr<RotoContext>& roto,
@@ -604,20 +618,31 @@ BezierCPCurveGui::~BezierCPCurveGui()
 double
 BezierCPCurveGui::evaluate(double x) const
 {
-    std::set<int> keys;
-    _bezier->getKeyframeTimes(&keys);
-    std::set<int>::iterator it = keys.upper_bound(std::floor(x + 0.5));
-    if (it == keys.end()) {
+    std::list<std::pair<int,Natron::KeyframeTypeEnum> > keys;
+    _bezier->getKeyframeTimesAndInterpolation(&keys);
+    
+    std::list<std::pair<int,Natron::KeyframeTypeEnum> >::iterator upb = keys.end();
+    int dist = 0;
+    for (std::list<std::pair<int,Natron::KeyframeTypeEnum> >::iterator it = keys.begin(); it != keys.end(); ++it,++dist) {
+        if (it->first > x) {
+            upb = it;
+            break;
+        }
+    }
+    
+    if (upb == keys.end()) {
         return keys.size() - 1;
-    } else if (it == keys.begin()) {
+    } else if (upb == keys.begin()) {
         return 0;
     } else {
-        std::set<int>::iterator prev = it;
+        std::list<std::pair<int,Natron::KeyframeTypeEnum> >::iterator prev = upb;
         --prev;
-        if ((x - *prev) < ((*it) - x)) {
-            return std::distance(keys.begin(), prev);
+        if (prev->second == Natron::eKeyframeTypeConstant) {
+            return dist - 1;
         } else {
-            return std::distance(keys.begin(), it);
+            ///Always linear for bezier interpolation
+            assert((upb->first - prev->first) != 0);
+            return ((double)(x - prev->first) / (upb->first - prev->first)) + dist - 1;
         }
     }
 }
@@ -641,6 +666,19 @@ BezierCPCurveGui::getKeyFrames() const
     }
     return ret;
 }
+
+int
+BezierCPCurveGui::getKeyFrameIndex(double time) const
+{
+    return _bezier->getKeyFrameIndex(time);
+}
+
+void
+BezierCPCurveGui::setKeyFrameInterpolation(Natron::KeyframeTypeEnum interp,int index)
+{
+    _bezier->setKeyFrameInterpolation(interp, index);
+}
+
 /*****************************CURVE WIDGET***********************************************/
 
 namespace { // protext local classes in anonymous namespace
@@ -671,8 +709,6 @@ public:
     void drawTimelineMarkers();
 
     void drawCurves();
-
-    void drawBaseAxis();
 
     void drawScale();
     void drawSelectedKeyFramesBbox();
@@ -708,7 +744,9 @@ public:
 
     void refreshSelectionRectangle(double x,double y);
 
+#if 0
     void updateSelectedKeysMaxMovement();
+#endif
 
     void setSelectedKeysInterpolation(Natron::KeyframeTypeEnum type);
 
@@ -728,7 +766,6 @@ public:
     ZoomContext zoomCtx;
     EventStateEnum _state;
     QMenu* _rightClickMenu;
-    QColor _clearColor;
     QColor _selectedCurveColor;
     QColor _nextCurveAddedColor;
     TextRenderer _textRenderer;
@@ -756,12 +793,10 @@ public:
 
     GLuint savedTexture;
     QSize sizeH;
+    bool hasResizedOnce;
     
 private:
 
-    QColor _baseAxisColor;
-    QColor _scaleColor;
-    MaxMovement _keyDragMaxMovement;
     QPolygonF _timelineTopPoly;
     QPolygonF _timelineBtmPoly;
     CurveWidget* _widget;
@@ -779,7 +814,6 @@ CurveWidgetPrivate::CurveWidgetPrivate(Gui* gui,
       , zoomCtx()
       , _state(eEventStateNone)
       , _rightClickMenu( new QMenu(widget) )
-      , _clearColor(0,0,0,255)
       , _selectedCurveColor(255,255,89,255)
       , _nextCurveAddedColor()
       , _textRenderer()
@@ -805,9 +839,7 @@ CurveWidgetPrivate::CurveWidgetPrivate(Gui* gui,
       , _gui(gui)
       , savedTexture(0)
       , sizeH()
-      , _baseAxisColor(118,215,90,255)
-      , _scaleColor(67,123,52,255)
-      , _keyDragMaxMovement()
+      , hasResizedOnce(false)
       , _timelineTopPoly()
       , _timelineBtmPoly()
       , _widget(widget)
@@ -1037,6 +1069,12 @@ CurveWidgetPrivate::drawTimelineMarkers()
     assert( QGLContext::currentContext() == _widget->context() );
 
     refreshTimelinePositions();
+    
+    double cursorR,cursorG,cursorB;
+    double boundsR,boundsG,boundsB;
+    boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
+    settings->getTimelinePlayheadColor(&cursorR, &cursorG, &cursorB);
+    settings->getTimelineBoundsColor(&boundsR, &boundsG, &boundsB);
 
     QPointF topLeft = zoomCtx.toZoomCoordinates(0,0);
     QPointF btmRight = zoomCtx.toZoomCoordinates(_widget->width() - 1,_widget->height() - 1);
@@ -1048,7 +1086,7 @@ CurveWidgetPrivate::drawTimelineMarkers()
         glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
         glEnable(GL_LINE_SMOOTH);
         glHint(GL_LINE_SMOOTH_HINT,GL_DONT_CARE);
-        glColor4f(0.8,0.3,0.,1.);
+        glColor4f(boundsR,boundsG,boundsB,1.);
 
         int leftBound,rightBound;
         _gui->getApp()->getFrameRange(&leftBound, &rightBound);
@@ -1057,7 +1095,7 @@ CurveWidgetPrivate::drawTimelineMarkers()
         glVertex2f( leftBound,topLeft.y() );
         glVertex2f( rightBound,btmRight.y() );
         glVertex2f( rightBound,topLeft.y() );
-        glColor4f(0.95,0.58,0.,1.);
+        glColor4f(cursorR,cursorG,cursorB,1.);
         glVertex2f( _timeline->currentFrame(),btmRight.y() );
         glVertex2f( _timeline->currentFrame(),topLeft.y() );
         glEnd();
@@ -1100,24 +1138,6 @@ CurveWidgetPrivate::drawCurves()
     }
 }
 
-void
-CurveWidgetPrivate::drawBaseAxis()
-{
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-    assert( QGLContext::currentContext() == _widget->context() );
-
-    glColor4f( _baseAxisColor.redF(), _baseAxisColor.greenF(), _baseAxisColor.blueF(), _baseAxisColor.alphaF() );
-    glBegin(GL_LINES);
-    glVertex2f(AXIS_MIN, 0);
-    glVertex2f(AXIS_MAX, 0);
-    glVertex2f(0, AXIS_MIN);
-    glVertex2f(0, AXIS_MAX);
-    glEnd();
-
-    //reset back the color
-    glColor4f(1., 1., 1., 1.);
-}
 
 void
 CurveWidgetPrivate::drawScale()
@@ -1142,7 +1162,19 @@ CurveWidgetPrivate::drawScale()
     acceptedDistances.push_back(5.);
     acceptedDistances.push_back(10.);
     acceptedDistances.push_back(50.);
+    
+    double gridR,gridG,gridB;
+    boost::shared_ptr<Settings> sett = appPTR->getCurrentSettings();
+    sett->getCurveEditorGridColor(&gridR, &gridG, &gridB);
 
+    
+    double scaleR,scaleG,scaleB;
+    sett->getCurveEditorScaleColor(&scaleR, &scaleG, &scaleB);
+    
+    QColor scaleColor;
+    scaleColor.setRgbF(Natron::clamp(scaleR), Natron::clamp(scaleG), Natron::clamp(scaleB));
+
+    
     {
         GLProtectAttrib a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT);
 
@@ -1172,7 +1204,7 @@ CurveWidgetPrivate::drawScale()
                 const double tickSize = ticks[i - m1] * smallTickSize;
                 const double alpha = ticks_alpha(smallestTickSize, largestTickSize, tickSize);
 
-                glColor4f(_baseAxisColor.redF(), _baseAxisColor.greenF(), _baseAxisColor.blueF(), alpha);
+                glColor4f(gridR,gridG,gridB, alpha);
 
                 glBegin(GL_LINES);
                 if (axis == 0) {
@@ -1197,7 +1229,7 @@ CurveWidgetPrivate::drawScale()
                             // draw it with a lower alpha
                             alphaText *= (tickSizePixel - sSizePixel) / (double)minTickSizeTextPixel;
                         }
-                        QColor c = _scaleColor;
+                        QColor c = scaleColor;
                         c.setAlpha(255 * alphaText);
                         if (axis == 0) {
                             _widget->renderText(value, btmLeft.y(), s, c, *_font); // AXIS-SPECIFIC
@@ -1209,6 +1241,17 @@ CurveWidgetPrivate::drawScale()
             }
         }
     } // GLProtectAttrib a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT);
+    
+    
+    glColor4f(gridR,gridG,gridB,1.);
+    glBegin(GL_LINES);
+    glVertex2f(AXIS_MIN, 0);
+    glVertex2f(AXIS_MAX, 0);
+    glVertex2f(0, AXIS_MIN);
+    glVertex2f(0, AXIS_MAX);
+    glEnd();
+
+    
     glCheckError();
 } // drawScale
 
@@ -1511,7 +1554,7 @@ CurveWidgetPrivate::moveSelectedKeyFrames(const QPointF & oldClick_opengl,
         totalMovement.ry() = newClick_opengl.y() - dragStartPointOpenGL.y();
     }
     // clamp totalMovement to _keyDragMaxMovement
-    totalMovement.rx() = std::min(std::max(totalMovement.x(),_keyDragMaxMovement.left),_keyDragMaxMovement.right);
+    //totalMovement.rx() = std::min(std::max(totalMovement.x(),_keyDragMaxMovement.left),_keyDragMaxMovement.right);
    // totalMovement.ry() = std::min(std::max(totalMovement.y(),_keyDragMaxMovement.bottom),_keyDragMaxMovement.top);
 
     /// round to the nearest integer the keyframes total motion (in X only)
@@ -1729,6 +1772,8 @@ CurveWidget::pushUndoCommand(QUndoCommand* cmd)
     _imp->_undoStack->push(cmd);
 }
 
+#if 0
+
 void
 CurveWidgetPrivate::updateSelectedKeysMaxMovement()
 {
@@ -1884,6 +1929,7 @@ CurveWidgetPrivate::updateSelectedKeysMaxMovement()
   //  assert(_keyDragMaxMovement.left <= 0 && _keyDragMaxMovement.right >= 0
    //        && _keyDragMaxMovement.bottom <= 0 && _keyDragMaxMovement.top >= 0);
 } // updateSelectedKeysMaxMovement
+#endif
 
 void
 CurveWidgetPrivate::setSelectedKeysInterpolation(Natron::KeyframeTypeEnum type)
@@ -2180,10 +2226,8 @@ CurveWidget::getBackgroundColour(double &r,
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
+    appPTR->getCurrentSettings()->getCurveEditorBGColor(&r, &g, &b);
 
-    r = _imp->_clearColor.redF();
-    g = _imp->_clearColor.greenF();
-    b = _imp->_clearColor.blueF();
 }
 
 void
@@ -2242,14 +2286,18 @@ CurveWidget::resizeGL(int width,
         return;
     }
 
-    ///find out what are the selected curves and center on them
-    std::vector<CurveGui*> curves;
-    getVisibleCurves(&curves);
-    if ( curves.empty() ) {
-        centerOn(-10,500,-10,10);
-    } else {
-        centerOn(curves);
+    if (!_imp->hasResizedOnce) {
+        _imp->hasResizedOnce = true;
+        ///find out what are the selected curves and center on them
+        std::vector<CurveGui*> curves;
+        getVisibleCurves(&curves);
+        if ( curves.empty() ) {
+            centerOn(-10,500,-10,10);
+        } else {
+            centerOn(curves);
+        }
     }
+    
 }
 
 void
@@ -2259,40 +2307,38 @@ CurveWidget::paintGL()
     assert( qApp && qApp->thread() == QThread::currentThread() );
     assert( QGLContext::currentContext() == context() );
     glCheckError();
+    if (_imp->zoomCtx.factor() <= 0) {
+        return;
+    }
+    double zoomLeft, zoomRight, zoomBottom, zoomTop;
+    zoomLeft = _imp->zoomCtx.left();
+    zoomRight = _imp->zoomCtx.right();
+    zoomBottom = _imp->zoomCtx.bottom();
+    zoomTop = _imp->zoomCtx.top();
+    
+    double bgR,bgG,bgB;
+    appPTR->getCurrentSettings()->getCurveEditorBGColor(&bgR, &bgG, &bgB);
+    
+    if ( (zoomLeft == zoomRight) || (zoomTop == zoomBottom) ) {
+        glClearColor(bgR,bgG,bgB,1.);
+        glClear(GL_COLOR_BUFFER_BIT);
+
+        return;
+    }
+
     {
         GLProtectAttrib a(GL_TRANSFORM_BIT | GL_COLOR_BUFFER_BIT);
-        GLProtectMatrix m(GL_MODELVIEW);
         GLProtectMatrix p(GL_PROJECTION);
-
-        glMatrixMode(GL_MODELVIEW);
         glLoadIdentity();
-
-        glMatrixMode(GL_PROJECTION);
+        glOrtho(zoomLeft, zoomRight, zoomBottom, zoomTop, 1, -1);
+        GLProtectMatrix m(GL_MODELVIEW);
         glLoadIdentity();
-
-        if (_imp->zoomCtx.factor() <= 0) {
-            return;
-        }
-        double zoomLeft, zoomRight, zoomBottom, zoomTop;
-        zoomLeft = _imp->zoomCtx.left();
-        zoomRight = _imp->zoomCtx.right();
-        zoomBottom = _imp->zoomCtx.bottom();
-        zoomTop = _imp->zoomCtx.top();
-        if ( (zoomLeft == zoomRight) || (zoomTop == zoomBottom) ) {
-            glClearColor( _imp->_clearColor.redF(),_imp->_clearColor.greenF(),_imp->_clearColor.blueF(),_imp->_clearColor.alphaF() );
-            glClear(GL_COLOR_BUFFER_BIT);
-
-            return;
-        }
-        glOrtho(zoomLeft, zoomRight, zoomBottom, zoomTop, -1, 1);
         glCheckError();
 
-        glClearColor( _imp->_clearColor.redF(),_imp->_clearColor.greenF(),_imp->_clearColor.blueF(),_imp->_clearColor.alphaF() );
+        glClearColor(bgR,bgG,bgB,1.);
         glClear(GL_COLOR_BUFFER_BIT);
 
         _imp->drawScale();
-
-        _imp->drawBaseAxis();
 
         if (_imp->_timelineEnabled) {
             _imp->drawTimelineMarkers();
@@ -2327,16 +2373,14 @@ CurveWidget::renderText(double x,
     glCheckError();
     {
         GLProtectAttrib a(GL_TRANSFORM_BIT);
-        GLProtectMatrix p(GL_PROJECTION);
-
-        glMatrixMode(GL_PROJECTION);
-        glLoadIdentity();
-
+        /*we put the ortho proj to the widget coords, draw the elements and revert back to the old orthographic proj.*/
         double h = (double)height();
         double w = (double)width();
-        /*we put the ortho proj to the widget coords, draw the elements and revert back to the old orthographic proj.*/
-        glOrtho(0,w,0,h,-1,1);
-
+        GLProtectMatrix p(GL_PROJECTION);
+        glLoadIdentity();
+        glOrtho(0, w, 0, h, 1, -1);
+        glMatrixMode(GL_MODELVIEW);
+        
         QPointF pos = toWidgetCoordinates(x, y);
         glCheckError();
         _imp->_textRenderer.renderText(pos.x(),h - pos.y(),text,color,font);
@@ -2487,7 +2531,7 @@ CurveWidget::mousePressEvent(QMouseEvent* e)
         // yes, start dragging
         _imp->_mustSetDragOrientation = true;
         _imp->_state = eEventStateDraggingKeys;
-        _imp->updateSelectedKeysMaxMovement();
+        //_imp->updateSelectedKeysMaxMovement();
         _imp->_keyDragLastMovement.rx() = 0.;
         _imp->_keyDragLastMovement.ry() = 0.;
         _imp->_dragStartPoint = e->pos();
@@ -2514,7 +2558,7 @@ CurveWidget::mousePressEvent(QMouseEvent* e)
         //insert it into the _selectedKeyFrames
         _imp->insertSelectedKeyFrameConditionnaly(selected);
 
-        _imp->updateSelectedKeysMaxMovement();
+       // _imp->updateSelectedKeysMaxMovement();
         _imp->_keyDragLastMovement.rx() = 0.;
         _imp->_keyDragLastMovement.ry() = 0.;
         _imp->_dragStartPoint = e->pos();
@@ -2706,7 +2750,7 @@ CurveWidget::mouseMoveEvent(QMouseEvent* e)
                         setCursor( QCursor(Qt::SizeHorCursor) );
                     } else {
                         //default case
-                        setCursor( QCursor(Qt::ArrowCursor) );
+                        unsetCursor();
                     }
                 }
             }
@@ -2749,10 +2793,10 @@ CurveWidget::mouseMoveEvent(QMouseEvent* e)
     case eEventStateDraggingKeys:
         if (!_imp->_mustSetDragOrientation) {
             if ( !_imp->_selectedKeyFrames.empty() ) {
-                bool clampToIntegers = ( *_imp->_selectedKeyFrames.begin() )->curve->areKeyFramesTimeClampedToIntegers();
-                if (!clampToIntegers) {
-                    _imp->updateSelectedKeysMaxMovement();
-                }
+//                bool clampToIntegers = ( *_imp->_selectedKeyFrames.begin() )->curve->areKeyFramesTimeClampedToIntegers();
+//                if (!clampToIntegers) {
+//                    _imp->updateSelectedKeysMaxMovement();
+//                }
                 _imp->moveSelectedKeyFrames(oldClick_opengl,newClick_opengl);
             }
         }

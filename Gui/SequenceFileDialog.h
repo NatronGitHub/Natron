@@ -310,7 +310,6 @@ public:
     ///Works only in eFileDialogModeOpen mode.
     std::string selectedFiles();
 
-
     ///Returns  the content of the selection line edit.
     ///Works only in eFileDialogModeSave mode.
     std::string filesToSave();

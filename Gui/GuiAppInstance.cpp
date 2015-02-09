@@ -58,6 +58,8 @@ struct GuiAppInstancePrivate
     mutable QMutex lastTimelineViewerMutex;
     boost::shared_ptr<Natron::Node> lastTimelineViewer;
     
+    int overlayRedrawRequests;
+    
     GuiAppInstancePrivate()
     : _gui(NULL)
     , _nodeMapping()
@@ -69,6 +71,7 @@ struct GuiAppInstancePrivate
     , _previewProvider(new FileDialogPreviewProvider)
     , lastTimelineViewerMutex()
     , lastTimelineViewer()
+    , overlayRedrawRequests(0)
     {
     }
     
@@ -99,12 +102,15 @@ GuiAppInstance::deletePreviewProvider()
         if (_imp->_previewProvider->viewerNode) {
             _imp->_gui->removeViewerTab(_imp->_previewProvider->viewerUI, true, true);
             boost::shared_ptr<Natron::Node> node = _imp->_previewProvider->viewerNode->getNode();
-            ViewerInstance* liveInstance = dynamic_cast<ViewerInstance*>(node->getLiveInstance());
-            assert(liveInstance);
-            node->deactivate(std::list< Natron::Node* > (),false,false,true,false);
-            liveInstance->invalidateUiContext();
-            node->removeReferences(false);
-            _imp->_previewProvider->viewerNode->deleteReferences();
+            if (node) {
+                ViewerInstance* liveInstance = dynamic_cast<ViewerInstance*>(node->getLiveInstance());
+                if (liveInstance) {
+                    node->deactivate(std::list< Natron::Node* > (),false,false,true,false);
+                    liveInstance->invalidateUiContext();
+                    node->removeReferences(false);
+                    _imp->_previewProvider->viewerNode->deleteReferences();
+                }
+            }
         }
         
         for (std::map<std::string,boost::shared_ptr<NodeGui> >::iterator it = _imp->_previewProvider->readerNodes.begin();
@@ -819,7 +825,6 @@ GuiAppInstance::toggleAutoHideGraphInputs()
 void
 GuiAppInstance::setLastViewerUsingTimeline(const boost::shared_ptr<Natron::Node>& node)
 {
-    assert(QThread::currentThread() == qApp->thread());
     if (!node) {
         QMutexLocker k(&_imp->lastTimelineViewerMutex);
         _imp->lastTimelineViewer.reset();
@@ -847,4 +852,39 @@ GuiAppInstance::discardLastViewerUsingTimeline()
  
     QMutexLocker k(&_imp->lastTimelineViewerMutex);
     _imp->lastTimelineViewer.reset();
+}
+
+void
+GuiAppInstance::renderAllViewers()
+{
+    _imp->_gui->renderAllViewers();
+}
+
+void
+GuiAppInstance::reloadStylesheet()
+{
+    if (_imp->_gui) {
+        _imp->_gui->reloadStylesheet();
+    }
+}
+
+void
+GuiAppInstance::queueRedrawForAllViewers()
+{
+    assert(QThread::currentThread() == qApp->thread());
+    ++_imp->overlayRedrawRequests;
+}
+
+int
+GuiAppInstance::getOverlayRedrawRequestsCount() const
+{
+    assert(QThread::currentThread() == qApp->thread());
+    return _imp->overlayRedrawRequests;
+}
+
+void
+GuiAppInstance::clearOverlayRedrawRequests()
+{
+    assert(QThread::currentThread() == qApp->thread());
+    _imp->overlayRedrawRequests = 0;
 }

@@ -85,30 +85,7 @@ Settings::initializeKnobs()
     _natronSettingsExist->setSecret(true);
     _generalTab->addKnob(_natronSettingsExist);
     
-    _fontChoice = Natron::createKnob<Choice_Knob>(this, "Font");
-    _fontChoice->setName("font");
-    _fontChoice->setHintToolTip("You can choose here between fonts bundled with Natron or among fonts available on your system");
-    std::vector<std::string> fontEntries;
-    fontEntries.push_back("Droid Sans");
-    fontEntries.push_back("System fonts...");
-    _fontChoice->populateChoices(fontEntries);
-    _fontChoice->turnOffNewLine();
-    _fontChoice->setAnimationEnabled(false);
-    
-    _generalTab->addKnob(_fontChoice);
-    
-    _systemFontChoice = Natron::createKnob<Choice_Knob>(this, "System font");
-    _systemFontChoice->setHintToolTip("List of all fonts available on your system");
-    _systemFontChoice->setName("systemFont");
-    _systemFontChoice->turnOffNewLine();
-    _systemFontChoice->setAnimationEnabled(false);
-    _systemFontChoice->setSecret(true);
-    _generalTab->addKnob(_systemFontChoice);
-    
-    _fontSize = Natron::createKnob<Int_Knob>(this, "Font size");
-    _fontSize->setName("fontSize");
-    _fontSize->setAnimationEnabled(false);
-    _generalTab->addKnob(_fontSize);
+   
     
     _checkForUpdates = Natron::createKnob<Bool_Knob>(this, "Always check for updates on start-up");
     _checkForUpdates->setName("checkForUpdates");
@@ -307,6 +284,148 @@ Settings::initializeKnobs()
                               NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB "." NATRON_APPLICATION_NAME);
     _hostName->setAnimationEnabled(false);
     _generalTab->addKnob(_hostName);
+    
+    //////////////APPEARANCE TAB/////////////////
+    _appearanceTab = Natron::createKnob<Page_Knob>(this, "Appearance");
+    
+    _fontChoice = Natron::createKnob<Choice_Knob>(this, "Font");
+    _fontChoice->setName("font");
+    _fontChoice->setHintToolTip("You can choose here between fonts bundled with Natron or among fonts available on your system");
+    std::vector<std::string> fontEntries;
+    fontEntries.push_back("Droid Sans");
+    fontEntries.push_back("System fonts...");
+    _fontChoice->populateChoices(fontEntries);
+    _fontChoice->turnOffNewLine();
+    _fontChoice->setAnimationEnabled(false);
+    
+    _appearanceTab->addKnob(_fontChoice);
+    
+    _systemFontChoice = Natron::createKnob<Choice_Knob>(this, "System font");
+    _systemFontChoice->setHintToolTip("List of all fonts available on your system");
+    _systemFontChoice->setName("systemFont");
+    _systemFontChoice->turnOffNewLine();
+    _systemFontChoice->setAnimationEnabled(false);
+    _systemFontChoice->setSecret(true);
+    _appearanceTab->addKnob(_systemFontChoice);
+    
+    _fontSize = Natron::createKnob<Int_Knob>(this, "Font size");
+    _fontSize->setName("fontSize");
+    _fontSize->setAnimationEnabled(false);
+    _appearanceTab->addKnob(_fontSize);
+    
+    _guiColors = Natron::createKnob<Group_Knob>(this, "GUI colors");
+    _guiColors->setAsTab();
+    _appearanceTab->addKnob(_guiColors);
+    
+    _curveEditorColors = Natron::createKnob<Group_Knob>(this, "Curve Editor");
+    _curveEditorColors->setAsTab();
+    _appearanceTab->addKnob(_curveEditorColors);
+
+    
+    _sunkenColor =  Natron::createKnob<Color_Knob>(this, "Sunken",3);
+    _sunkenColor->setName("sunken");
+    _sunkenColor->setAnimationEnabled(false);
+    _sunkenColor->setSimplified(true);
+    _sunkenColor->turnOffNewLine();
+    _guiColors->addKnob(_sunkenColor);
+    
+    _baseColor =  Natron::createKnob<Color_Knob>(this, "Base",3);
+    _baseColor->setName("base");
+    _baseColor->setAnimationEnabled(false);
+    _baseColor->setSimplified(true);
+    _baseColor->turnOffNewLine();
+    _guiColors->addKnob(_baseColor);
+    
+    _raisedColor =  Natron::createKnob<Color_Knob>(this, "Raised",3);
+    _raisedColor->setName("raised");
+    _raisedColor->setAnimationEnabled(false);
+    _raisedColor->setSimplified(true);
+    _raisedColor->turnOffNewLine();
+    _guiColors->addKnob(_raisedColor);
+    
+    _selectionColor =  Natron::createKnob<Color_Knob>(this, "Selection",3);
+    _selectionColor->setName("selection");
+    _selectionColor->setAnimationEnabled(false);
+    _selectionColor->setSimplified(true);
+    _selectionColor->turnOffNewLine();
+    _guiColors->addKnob(_selectionColor);
+    
+    _textColor =  Natron::createKnob<Color_Knob>(this, "Text",3);
+    _textColor->setName("text");
+    _textColor->setAnimationEnabled(false);
+    _textColor->setSimplified(true);
+    _guiColors->addKnob(_textColor);
+    
+    _timelinePlayheadColor =  Natron::createKnob<Color_Knob>(this, "Timeline playhead",3);
+    _timelinePlayheadColor->setName("timelinePlayhead");
+    _timelinePlayheadColor->setAnimationEnabled(false);
+    _timelinePlayheadColor->setSimplified(true);
+    _timelinePlayheadColor->turnOffNewLine();
+    _guiColors->addKnob(_timelinePlayheadColor);
+    
+    
+    _timelineBGColor =  Natron::createKnob<Color_Knob>(this, "Timeline background",3);
+    _timelineBGColor->setName("timelineBG");
+    _timelineBGColor->setAnimationEnabled(false);
+    _timelineBGColor->setSimplified(true);
+    _timelineBGColor->turnOffNewLine();
+    _guiColors->addKnob(_timelineBGColor);
+    
+    _timelineBoundsColor =  Natron::createKnob<Color_Knob>(this, "Timeline bounds",3);
+    _timelineBoundsColor->setName("timelineBound");
+    _timelineBoundsColor->setAnimationEnabled(false);
+    _timelineBoundsColor->setSimplified(true);
+    _timelineBoundsColor->turnOffNewLine();
+    _guiColors->addKnob(_timelineBoundsColor);
+    
+    _cachedFrameColor =  Natron::createKnob<Color_Knob>(this, "Cached frame",3);
+    _cachedFrameColor->setName("cachedFrame");
+    _cachedFrameColor->setAnimationEnabled(false);
+    _cachedFrameColor->setSimplified(true);
+    _cachedFrameColor->turnOffNewLine();
+    _guiColors->addKnob(_cachedFrameColor);
+    
+    _diskCachedFrameColor =  Natron::createKnob<Color_Knob>(this, "Disk cached frame",3);
+    _diskCachedFrameColor->setName("diskCachedFrame");
+    _diskCachedFrameColor->setAnimationEnabled(false);
+    _diskCachedFrameColor->setSimplified(true);
+    _guiColors->addKnob(_diskCachedFrameColor);
+    
+    _interpolatedColor =  Natron::createKnob<Color_Knob>(this, "Interpolated value",3);
+    _interpolatedColor->setName("interpValue");
+    _interpolatedColor->setAnimationEnabled(false);
+    _interpolatedColor->setSimplified(true);
+    _interpolatedColor->turnOffNewLine();
+    _guiColors->addKnob(_interpolatedColor);
+    
+    _keyframeColor =  Natron::createKnob<Color_Knob>(this, "Keyframe",3);
+    _keyframeColor->setName("keyframe");
+    _keyframeColor->setAnimationEnabled(false);
+    _keyframeColor->setSimplified(true);
+    _guiColors->addKnob(_keyframeColor);
+    
+    
+    _curveEditorBGColor =  Natron::createKnob<Color_Knob>(this, "Background color",3);
+    _curveEditorBGColor->setName("curveEditorBG");
+    _curveEditorBGColor->setAnimationEnabled(false);
+    _curveEditorBGColor->setSimplified(true);
+    _curveEditorBGColor->turnOffNewLine();
+    _curveEditorColors->addKnob(_curveEditorBGColor);
+
+    
+    _gridColor =  Natron::createKnob<Color_Knob>(this, "Grid color",3);
+    _gridColor->setName("curveditorGrid");
+    _gridColor->setAnimationEnabled(false);
+    _gridColor->setSimplified(true);
+    _gridColor->turnOffNewLine();
+    _curveEditorColors->addKnob(_gridColor);
+
+
+    _curveEditorScaleColor =  Natron::createKnob<Color_Knob>(this, "Scale color",3);
+    _curveEditorScaleColor->setName("curveeditorScale");
+    _curveEditorScaleColor->setAnimationEnabled(false);
+    _curveEditorScaleColor->setSimplified(true);
+    _curveEditorColors->addKnob(_curveEditorScaleColor);
 
     boost::shared_ptr<Page_Knob> ocioTab = Natron::createKnob<Page_Knob>(this, "OpenColorIO");
 
@@ -495,6 +614,8 @@ Settings::initializeKnobs()
     _defaultNodeColor = Natron::createKnob<Color_Knob>(this, "Default node color",3);
     _defaultNodeColor->setName("defaultNodeColor");
     _defaultNodeColor->setAnimationEnabled(false);
+    _defaultNodeColor->setSimplified(true);
+    _defaultNodeColor->turnOffNewLine();
     _defaultNodeColor->setHintToolTip("The default color used for newly created nodes.");
 
     _nodegraphTab->addKnob(_defaultNodeColor);
@@ -503,6 +624,8 @@ Settings::initializeKnobs()
     _defaultBackdropColor =  Natron::createKnob<Color_Knob>(this, "Default backdrop color",3);
     _defaultBackdropColor->setName("backdropColor");
     _defaultBackdropColor->setAnimationEnabled(false);
+    _defaultBackdropColor->setSimplified(true);
+    _defaultBackdropColor->turnOffNewLine();
     _defaultBackdropColor->setHintToolTip("The default color used for newly created backdrop nodes.");
     _nodegraphTab->addKnob(_defaultBackdropColor);
 
@@ -511,78 +634,101 @@ Settings::initializeKnobs()
     _defaultReaderColor =  Natron::createKnob<Color_Knob>(this, PLUGIN_GROUP_IMAGE_READERS,3);
     _defaultReaderColor->setName("readerColor");
     _defaultReaderColor->setAnimationEnabled(false);
+    _defaultReaderColor->setSimplified(true);
+    _defaultReaderColor->turnOffNewLine();
     _defaultReaderColor->setHintToolTip("The color used for newly created Reader nodes.");
     _nodegraphTab->addKnob(_defaultReaderColor);
 
     _defaultWriterColor =  Natron::createKnob<Color_Knob>(this, PLUGIN_GROUP_IMAGE_WRITERS,3);
     _defaultWriterColor->setName("writerColor");
     _defaultWriterColor->setAnimationEnabled(false);
+    _defaultWriterColor->setSimplified(true);
+    _defaultWriterColor->turnOffNewLine();
     _defaultWriterColor->setHintToolTip("The color used for newly created Writer nodes.");
     _nodegraphTab->addKnob(_defaultWriterColor);
 
     _defaultGeneratorColor =  Natron::createKnob<Color_Knob>(this, "Generators",3);
     _defaultGeneratorColor->setName("generatorColor");
     _defaultGeneratorColor->setAnimationEnabled(false);
+    _defaultGeneratorColor->setSimplified(true);
     _defaultGeneratorColor->setHintToolTip("The color used for newly created Generator nodes.");
     _nodegraphTab->addKnob(_defaultGeneratorColor);
 
     _defaultColorGroupColor =  Natron::createKnob<Color_Knob>(this, "Color group",3);
     _defaultColorGroupColor->setName("colorNodesColor");
     _defaultColorGroupColor->setAnimationEnabled(false);
+    _defaultColorGroupColor->setSimplified(true);
+    _defaultColorGroupColor->turnOffNewLine();
     _defaultColorGroupColor->setHintToolTip("The color used for newly created Color nodes.");
     _nodegraphTab->addKnob(_defaultColorGroupColor);
 
     _defaultFilterGroupColor =  Natron::createKnob<Color_Knob>(this, "Filter group",3);
     _defaultFilterGroupColor->setName("filterNodesColor");
     _defaultFilterGroupColor->setAnimationEnabled(false);
+    _defaultFilterGroupColor->setSimplified(true);
+    _defaultFilterGroupColor->turnOffNewLine();
     _defaultFilterGroupColor->setHintToolTip("The color used for newly created Filter nodes.");
     _nodegraphTab->addKnob(_defaultFilterGroupColor);
 
     _defaultTransformGroupColor =  Natron::createKnob<Color_Knob>(this, "Transform group",3);
     _defaultTransformGroupColor->setName("transformNodesColor");
     _defaultTransformGroupColor->setAnimationEnabled(false);
+    _defaultTransformGroupColor->setSimplified(true);
+    _defaultTransformGroupColor->turnOffNewLine();
     _defaultTransformGroupColor->setHintToolTip("The color used for newly created Transform nodes.");
     _nodegraphTab->addKnob(_defaultTransformGroupColor);
 
     _defaultTimeGroupColor =  Natron::createKnob<Color_Knob>(this, "Time group",3);
     _defaultTimeGroupColor->setName("timeNodesColor");
     _defaultTimeGroupColor->setAnimationEnabled(false);
+    _defaultTimeGroupColor->setSimplified(true);
+    _defaultTimeGroupColor->turnOffNewLine();
     _defaultTimeGroupColor->setHintToolTip("The color used for newly created Time nodes.");
     _nodegraphTab->addKnob(_defaultTimeGroupColor);
 
     _defaultDrawGroupColor =  Natron::createKnob<Color_Knob>(this, "Draw group",3);
     _defaultDrawGroupColor->setName("drawNodesColor");
     _defaultDrawGroupColor->setAnimationEnabled(false);
+    _defaultDrawGroupColor->setSimplified(true);
     _defaultDrawGroupColor->setHintToolTip("The color used for newly created Draw nodes.");
     _nodegraphTab->addKnob(_defaultDrawGroupColor);
 
     _defaultKeyerGroupColor =  Natron::createKnob<Color_Knob>(this, "Keyer group",3);
     _defaultKeyerGroupColor->setName("keyerNodesColor");
     _defaultKeyerGroupColor->setAnimationEnabled(false);
+    _defaultKeyerGroupColor->setSimplified(true);
+    _defaultKeyerGroupColor->turnOffNewLine();
     _defaultKeyerGroupColor->setHintToolTip("The color used for newly created Keyer nodes.");
     _nodegraphTab->addKnob(_defaultKeyerGroupColor);
 
     _defaultChannelGroupColor =  Natron::createKnob<Color_Knob>(this, "Channel group",3);
     _defaultChannelGroupColor->setName("channelNodesColor");
     _defaultChannelGroupColor->setAnimationEnabled(false);
+    _defaultChannelGroupColor->setSimplified(true);
+    _defaultChannelGroupColor->turnOffNewLine();
     _defaultChannelGroupColor->setHintToolTip("The color used for newly created Channel nodes.");
     _nodegraphTab->addKnob(_defaultChannelGroupColor);
 
     _defaultMergeGroupColor =  Natron::createKnob<Color_Knob>(this, "Merge group",3);
     _defaultMergeGroupColor->setName("defaultMergeColor");
     _defaultMergeGroupColor->setAnimationEnabled(false);
+    _defaultMergeGroupColor->setSimplified(true);
+    _defaultMergeGroupColor->turnOffNewLine();
     _defaultMergeGroupColor->setHintToolTip("The color used for newly created Merge nodes.");
     _nodegraphTab->addKnob(_defaultMergeGroupColor);
 
     _defaultViewsGroupColor =  Natron::createKnob<Color_Knob>(this, "Views group",3);
     _defaultViewsGroupColor->setName("defaultViewsColor");
     _defaultViewsGroupColor->setAnimationEnabled(false);
+    _defaultViewsGroupColor->setSimplified(true);
+    _defaultViewsGroupColor->turnOffNewLine();
     _defaultViewsGroupColor->setHintToolTip("The color used for newly created Views nodes.");
     _nodegraphTab->addKnob(_defaultViewsGroupColor);
 
     _defaultDeepGroupColor =  Natron::createKnob<Color_Knob>(this, "Deep group",3);
     _defaultDeepGroupColor->setName("defaultDeepColor");
     _defaultDeepGroupColor->setAnimationEnabled(false);
+    _defaultDeepGroupColor->setSimplified(true);
     _defaultDeepGroupColor->setHintToolTip("The color used for newly created Deep nodes.");
     _nodegraphTab->addKnob(_defaultDeepGroupColor);
 
@@ -812,7 +958,7 @@ Settings::setDefaultValues()
     _checkerboardColor2->setDefaultValue(0.,1);
     _checkerboardColor2->setDefaultValue(0.,2);
     _checkerboardColor2->setDefaultValue(0.,3);
-    _autoWipe->setDefaultValue(true);
+    _autoWipe->setDefaultValue(false);
     
     _warnOcioConfigKnobChanged->setDefaultValue(true);
     _ocioStartupCheck->setDefaultValue(true);
@@ -886,6 +1032,67 @@ Settings::setDefaultValues()
     _defaultDeepGroupColor->setDefaultValue(0.,0);
     _defaultDeepGroupColor->setDefaultValue(0.,1);
     _defaultDeepGroupColor->setDefaultValue(0.38,2);
+
+    
+    _sunkenColor->setDefaultValue(0.15,0);
+    _sunkenColor->setDefaultValue(0.15,1);
+    _sunkenColor->setDefaultValue(0.15,2);
+    
+    _baseColor->setDefaultValue(0.19,0);
+    _baseColor->setDefaultValue(0.19,1);
+    _baseColor->setDefaultValue(0.19,2);
+    
+    _raisedColor->setDefaultValue(0.28,0);
+    _raisedColor->setDefaultValue(0.28,1);
+    _raisedColor->setDefaultValue(0.28,2);
+    
+    _selectionColor->setDefaultValue(0.95,0);
+    _selectionColor->setDefaultValue(0.54,1);
+    _selectionColor->setDefaultValue(0.,2);
+    
+    _textColor->setDefaultValue(0.78,0);
+    _textColor->setDefaultValue(0.78,1);
+    _textColor->setDefaultValue(0.78,2);
+    
+    _timelinePlayheadColor->setDefaultValue(0.95,0);
+    _timelinePlayheadColor->setDefaultValue(0.54,1);
+    _timelinePlayheadColor->setDefaultValue(0.,2);
+    
+    _timelineBGColor->setDefaultValue(0,0);
+    _timelineBGColor->setDefaultValue(0,1);
+    _timelineBGColor->setDefaultValue(0.,2);
+    
+    _timelineBoundsColor->setDefaultValue(0.81,0);
+    _timelineBoundsColor->setDefaultValue(0.27,1);
+    _timelineBoundsColor->setDefaultValue(0.02,2);
+    
+    _cachedFrameColor->setDefaultValue(0.56,0);
+    _cachedFrameColor->setDefaultValue(0.79,1);
+    _cachedFrameColor->setDefaultValue(0.4,2);
+    
+    _diskCachedFrameColor->setDefaultValue(0.27,0);
+    _diskCachedFrameColor->setDefaultValue(0.38,1);
+    _diskCachedFrameColor->setDefaultValue(0.25,2);
+    
+    _interpolatedColor->setDefaultValue(0.34,0);
+    _interpolatedColor->setDefaultValue(0.46,1);
+    _interpolatedColor->setDefaultValue(0.6,2);
+    
+    _keyframeColor->setDefaultValue(0.08,0);
+    _keyframeColor->setDefaultValue(0.38,1);
+    _keyframeColor->setDefaultValue(0.97,2);
+    
+    _curveEditorBGColor->setDefaultValue(0.,0);
+    _curveEditorBGColor->setDefaultValue(0.,1);
+    _curveEditorBGColor->setDefaultValue(0.,2);
+
+    _gridColor->setDefaultValue(0.46,0);
+    _gridColor->setDefaultValue(0.84,1);
+    _gridColor->setDefaultValue(0.35,2);
+    
+    _curveEditorScaleColor->setDefaultValue(0.26,0);
+    _curveEditorScaleColor->setDefaultValue(0.48,1);
+    _curveEditorScaleColor->setDefaultValue(0.2,2);
 
 
     endKnobsValuesChanged(Natron::eValueChangedReasonPluginEdited);
@@ -1023,34 +1230,24 @@ Settings::restoreSettings()
     _settingsExisted = false;
     try {
         _settingsExisted = _natronSettingsExist->getValue();
-    } catch (std::logic_error) {
-        // ignore
-    }
-    if (!_settingsExisted) {
-        _natronSettingsExist->setValue(true, 0);
-        saveSettings();
-    }
-    
-    try {
+
+        if (!_settingsExisted) {
+            _natronSettingsExist->setValue(true, 0);
+            saveSettings();
+        }
+
         int font_i = _fontChoice->getValue();
         if (font_i == 2) {
             //System font, show it
             _systemFontChoice->setSecret(false);
         }
-    } catch (std::logic_error) {
-        // ignore
-    }
 
-    appPTR->setNThreadsPerEffect(getNumberOfThreadsPerEffect());
-    appPTR->setNThreadsToRender(getNumberOfThreads());
-    
-    bool useTP = true;
-    try {
-        useTP = _useThreadPool->getValue();
+        appPTR->setNThreadsPerEffect(getNumberOfThreadsPerEffect());
+        appPTR->setNThreadsToRender(getNumberOfThreads());
+        appPTR->setUseThreadPool(_useThreadPool->getValue());
     } catch (std::logic_error) {
         // ignore
     }
-    appPTR->setUseThreadPool(useTP);
 
     
     _restoringSettings = false;
@@ -1252,6 +1449,11 @@ Settings::onKnobValueChanged(KnobI* k,
         }
     } else if (k == _hideOptionalInputsAutomatically.get() && !_restoringSettings && reason == Natron::eValueChangedReasonUserEdited) {
         appPTR->toggleAutoHideGraphInputs();
+    } else if (!_restoringSettings && (k == _sunkenColor.get() || k == _baseColor.get() || k == _raisedColor.get() || k == _selectionColor.get() || k == _textColor.get()
+               || k == _timelinePlayheadColor.get() || k == _timelineBoundsColor.get() || k == _timelineBGColor.get() ||
+               k == _interpolatedColor.get() || k == _keyframeColor.get() || k == _cachedFrameColor.get() || k == _diskCachedFrameColor.get() ||
+               k == _curveEditorBGColor.get() || k == _gridColor.get() || k == _curveEditorScaleColor.get())) {
+        appPTR->reloadStylesheets();
     }
 } // onKnobValueChanged
 
@@ -1426,10 +1628,10 @@ Settings::populateWriterPluginsAndFormats(const std::map<std::string,std::vector
     restoreKnobsSettings(knobs);
 }
 
-static bool filterDefaultActivatedPlugin(const QString& ofxPluginID)
+static bool filterDefaultActivatedPlugin(const QString& /*ofxPluginID*/)
 {
-#pragma message WARN("WHY censor this list of plugins? This is open source fer chrissake! Let the user take control!")
 #if 0
+#pragma message WARN("WHY censor this list of plugins? This is open source fer chrissake! Let the user take control!")
     if (
         //Tuttle Readers/Writers
         ofxPluginID == "tuttle.avreader" ||
@@ -2222,3 +2424,120 @@ Settings::areOptionalInputsAutoHidden() const
 {
     return _hideOptionalInputsAutomatically->getValue();
 }
+
+void
+Settings::getSunkenColor(double* r,double* g,double* b) const
+{
+    *r = _sunkenColor->getValue(0);
+    *g = _sunkenColor->getValue(1);
+    *b = _sunkenColor->getValue(2);
+}
+
+void
+Settings::getBaseColor(double* r,double* g,double* b) const
+{
+    *r = _baseColor->getValue(0);
+    *g = _baseColor->getValue(1);
+    *b = _baseColor->getValue(2);
+}
+void
+Settings::getRaisedColor(double* r,double* g,double* b) const
+{
+    *r = _raisedColor->getValue(0);
+    *g = _raisedColor->getValue(1);
+    *b = _raisedColor->getValue(2);
+}
+void
+Settings::getSelectionColor(double* r,double* g,double* b) const
+{
+    *r = _selectionColor->getValue(0);
+    *g = _selectionColor->getValue(1);
+    *b = _selectionColor->getValue(2);
+}
+void
+Settings::getInterpolatedColor(double* r,double* g,double* b) const
+{
+    *r = _interpolatedColor->getValue(0);
+    *g = _interpolatedColor->getValue(1);
+    *b = _interpolatedColor->getValue(2);
+}
+void
+Settings::getKeyframeColor(double* r,double* g,double* b) const
+{
+    *r = _keyframeColor->getValue(0);
+    *g = _keyframeColor->getValue(1);
+    *b = _keyframeColor->getValue(2);
+}
+
+void
+Settings::getTextColor(double* r,double* g,double* b) const
+{
+    *r = _textColor->getValue(0);
+    *g = _textColor->getValue(1);
+    *b = _textColor->getValue(2);
+}
+
+void
+Settings::getTimelinePlayheadColor(double* r,double* g,double* b) const
+{
+    *r = _timelinePlayheadColor->getValue(0);
+    *g = _timelinePlayheadColor->getValue(1);
+    *b = _timelinePlayheadColor->getValue(2);
+}
+
+void
+Settings::getTimelineBoundsColor(double* r,double* g,double* b) const
+{
+    *r = _timelineBoundsColor->getValue(0);
+    *g = _timelineBoundsColor->getValue(1);
+    *b = _timelineBoundsColor->getValue(2);
+}
+
+void
+Settings::getTimelineBGColor(double* r,double* g,double* b) const
+{
+    *r = _timelineBGColor->getValue(0);
+    *g = _timelineBGColor->getValue(1);
+    *b = _timelineBGColor->getValue(2);
+}
+
+void
+Settings::getCachedFrameColor(double* r,double* g,double* b) const
+{
+    *r = _cachedFrameColor->getValue(0);
+    *g = _cachedFrameColor->getValue(1);
+    *b = _cachedFrameColor->getValue(2);
+}
+
+void
+Settings::getDiskCachedColor(double* r,double* g,double* b) const
+{
+    *r = _diskCachedFrameColor->getValue(0);
+    *g = _diskCachedFrameColor->getValue(1);
+    *b = _diskCachedFrameColor->getValue(2);
+}
+
+void
+Settings::getCurveEditorBGColor(double* r,double* g,double* b) const
+{
+    *r = _curveEditorBGColor->getValue(0);
+    *g = _curveEditorBGColor->getValue(1);
+    *b = _curveEditorBGColor->getValue(2);
+}
+
+void
+Settings::getCurveEditorGridColor(double* r,double* g,double* b) const
+{
+    *r = _gridColor->getValue(0);
+    *g = _gridColor->getValue(1);
+    *b = _gridColor->getValue(2);
+}
+
+void
+Settings::getCurveEditorScaleColor(double* r,double* g,double* b) const
+{
+    *r = _curveEditorScaleColor->getValue(0);
+    *g = _curveEditorScaleColor->getValue(1);
+    *b = _curveEditorScaleColor->getValue(2);
+}
+

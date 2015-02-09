@@ -83,9 +83,10 @@ File_Knob::frameCount() const
 }
 
 std::string
-File_Knob::getFileName(int time,
-                       int view) const
+File_Knob::getFileName(int time) const
 {
+    int view = getHolder() ? getHolder()->getCurrentView() : 0;
+    
     if (!_isInputImage) {
         return getValue();
     } else {
@@ -126,9 +127,9 @@ OutputFile_Knob::typeName() const
 }
 
 QString
-OutputFile_Knob::generateFileNameAtTime(SequenceTime time,
-                                        int view) const
+OutputFile_Knob::generateFileNameAtTime(SequenceTime time) const
 {
+    int view = getHolder() ? getHolder()->getCurrentView() : 0;
     return SequenceParsing::generateFileNameFromPattern(getValue(0), time, view).c_str();
 }
 

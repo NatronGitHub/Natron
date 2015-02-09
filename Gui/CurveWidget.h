@@ -136,6 +136,8 @@ public:
     virtual bool areKeyFramesValuesClampedToIntegers() const;
     virtual bool isYComponentMovable() const;
     virtual KeyFrameSet getKeyFrames() const;
+    virtual int getKeyFrameIndex(double time) const = 0;
+    virtual void setKeyFrameInterpolation(Natron::KeyframeTypeEnum interp,int index) = 0;
     
 signals:
 
@@ -146,7 +148,13 @@ signals:
 private:
 
     std::pair<KeyFrame,bool> nextPointForSegment(double x1,double* x2,const KeyFrameSet & keyframes);
+    
+protected:
+    
     boost::shared_ptr<Curve> _internalCurve; ///ptr to the internal curve
+    
+private:
+    
     QString _name; /// the name of the curve
     QColor _color; /// the color that must be used to draw the curve
     int _thickness; /// its thickness
@@ -196,6 +204,10 @@ public:
         return _dimension;
     }
     
+    virtual int getKeyFrameIndex(double time) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual void setKeyFrameInterpolation(Natron::KeyframeTypeEnum interp,int index) OVERRIDE FINAL;
+
+    
 private:
     
     boost::shared_ptr<RotoContext> _roto;
@@ -229,6 +241,10 @@ public:
     virtual bool areKeyFramesValuesClampedToIntegers() const { return true; }
     virtual bool isYComponentMovable() const { return false; }
     virtual KeyFrameSet getKeyFrames() const;
+    
+    virtual int getKeyFrameIndex(double time) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual void setKeyFrameInterpolation(Natron::KeyframeTypeEnum interp,int index) OVERRIDE FINAL;
+
 private:
     
     
@@ -308,6 +324,7 @@ public:
      **/
     virtual void getBackgroundColour(double &r, double &g, double &b) const OVERRIDE FINAL;
 
+    virtual unsigned int getCurrentRenderScale() const OVERRIDE FINAL { return 0; }
     
     virtual void saveOpenGLContext() OVERRIDE FINAL;
     virtual void restoreOpenGLContext() OVERRIDE FINAL;

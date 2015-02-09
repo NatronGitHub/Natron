@@ -142,7 +142,7 @@ File_KnobGui::onReloadClicked()
             effect->purgeCaches();
             effect->clearPersistentMessage(false);
         }
-        _knob->evaluateValueChange(0, Natron::eValueChangedReasonNatronInternalEdited, true);
+        _knob->evaluateValueChange(0, Natron::eValueChangedReasonNatronInternalEdited);
     }
 }
 
@@ -206,7 +206,7 @@ File_KnobGui::updateGUI(int /*dimension*/)
             _fileBeingWatched.clear();
         }
         
-        std::string newValue = _knob->getFileName(_knob->getCurrentTime(), 0);
+        std::string newValue = _knob->getFileName(_knob->getCurrentTime());
         if (_knob->getHolder()->getApp()) {
             _knob->getHolder()->getApp()->getProject()->canonicalizePath(newValue);
         }
@@ -236,7 +236,7 @@ File_KnobGui::onTimelineFrameChanged(SequenceTime time,int /*reason*/)
     }
     ///Get the current file, if it exists, add the file path to the file system watcher
     ///to get notified if the file changes.
-    std::string filepath = _knob->getFileName(time, 0);
+    std::string filepath = _knob->getFileName(time);
     if (!filepath.empty() && _knob->getHolder() && _knob->getHolder()->getApp()) {
         _knob->getHolder()->getApp()->getProject()->canonicalizePath(filepath);
     }
@@ -281,7 +281,7 @@ File_KnobGui::watchedFileChanged()
                 }
                 
             } else {
-                 _knob->evaluateValueChange(0, Natron::eValueChangedReasonNatronInternalEdited, true);
+                 _knob->evaluateValueChange(0, Natron::eValueChangedReasonNatronInternalEdited);
             }
         }
         
@@ -687,12 +687,13 @@ PathKnobTableItemDelegate::paint(QPainter * painter,
     TableModel* model = dynamic_cast<TableModel*>( _view->model() );
     assert(model);
     if (!model) {
-        QStyledItemDelegate::paint(painter,option,index);
+        // coverity[dead_error_begin]
+        QStyledItemDelegate::paint(painter, option, index);
         return;
     }
     TableItem* item = model->item(index);
     if (!item) {
-        QStyledItemDelegate::paint(painter,option,index);
+        QStyledItemDelegate::paint(painter, option, index);
         return;
     }
     QPen pen;

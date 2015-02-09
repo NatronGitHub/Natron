@@ -102,12 +102,10 @@ PasteUndoCommand::undo()
     }
 
     std::list<Variant>::iterator it = oldValues.begin();
-    internalKnob->blockEvaluation();
+    internalKnob->beginChanges();
+
     for (int i = 0; i < targetDimension; ++it,++i) {
-        bool isLast = i == targetDimension - 1;
-        if (isLast) {
-            internalKnob->unblockEvaluation();
-        }
+   
         if (isInt) {
             isInt->setValue(it->toInt(), i,true);
         } else if (isBool) {
@@ -117,9 +115,8 @@ PasteUndoCommand::undo()
         } else if (isString) {
             isString->setValue(it->toString().toStdString(), i,true);
         }
-
     }
-
+    internalKnob->endChanges();
 
     if (isAnimatingString) {
         isAnimatingString->loadAnimation(oldStringAnimation);
@@ -175,13 +172,12 @@ PasteUndoCommand::redo()
     }
 
     std::list<Variant>::iterator it = newValues.begin();
-    internalKnob->blockEvaluation();
+    internalKnob->beginChanges();
+    
     for (int i = 0; i < targetDimension; ++it,++i) {
+
         
-        bool isLast = i == targetDimension - 1;
-        if (isLast) {
-            internalKnob->unblockEvaluation();
-        }
+        
         if (isInt) {
             isInt->setValue(it->toInt(), i, true);
         } else if (isBool) {
@@ -191,7 +187,9 @@ PasteUndoCommand::redo()
         } else if (isString) {
             isString->setValue(it->toString().toStdString(), i, true);
         }
+        
     }
+    internalKnob->endChanges();
 
     if ( _copyAnimation && hasKeyframeData && !newCurves.empty() ) {
         _knob->updateCurveEditorKeyframes();
@@ -221,6 +219,7 @@ PasteUndoCommand::redo()
 } // redo
 
 MultipleKnobEditsUndoCommand::MultipleKnobEditsUndoCommand(KnobGui* knob,
+                                                           Natron::ValueChangedReasonEnum reason,
                                                            bool createNew,
                                                            bool setKeyFrame,
                                                            const Variant & value,
@@ -230,6 +229,7 @@ MultipleKnobEditsUndoCommand::MultipleKnobEditsUndoCommand(KnobGui* knob,
       , knobs()
       , createNew(createNew)
       , firstRedoCalled(false)
+      , _reason(reason)
 {
     assert(knob);
     boost::shared_ptr<KnobI> originalKnob = knob->getKnob();
@@ -312,15 +312,13 @@ MultipleKnobEditsUndoCommand::undo()
 
 
     if (holder) {
-        int currentFrame = holder->getApp()->getTimeLine()->currentFrame();
+        holder->beginChanges();
         for (std::set <KnobI*>::iterator it = knobsUnique.begin(); it != knobsUnique.end(); ++it) {
-            (*it)->getHolder()->onKnobValueChanged_public(*it, Natron::eValueChangedReasonUserEdited,currentFrame, true);
+            (*it)->evaluateValueChange(0, _reason);
         }
-
+        holder->endChanges();
         Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(holder);
         if (effect) {
-            effect->evaluate_public(NULL, true, Natron::eValueChangedReasonUserEdited);
-
             holderName = effect->getName().c_str();
         }
     }
@@ -330,6 +328,11 @@ MultipleKnobEditsUndoCommand::undo()
 void
 MultipleKnobEditsUndoCommand::redo()
 {
+    assert( !knobs.empty() );
+    KnobHolder* holder = knobs.begin()->first->getKnob()->getHolder();
+    if (holder) {
+        holder->beginChanges();
+    }
     if (firstRedoCalled) {
         ///just clone
         std::set <KnobI*> knobsUnique;
@@ -345,10 +348,9 @@ MultipleKnobEditsUndoCommand::redo()
 
             knobsUnique.insert( originalKnob.get() );
 
-
+            
             for (std::set <KnobI*>::iterator it = knobsUnique.begin(); it != knobsUnique.end(); ++it) {
-                int currentFrame = (*it)->getHolder()->getApp()->getTimeLine()->currentFrame();
-                (*it)->getHolder()->onKnobValueChanged_public(*it, Natron::eValueChangedReasonUserEdited,currentFrame, true);
+                (*it)->evaluateValueChange(0, _reason);
             }
         }
     } else {
@@ -361,14 +363,14 @@ MultipleKnobEditsUndoCommand::redo()
             Knob<double>* isDouble = dynamic_cast<Knob<double>*>( knob.get() );
             Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>( knob.get() );
             if (isInt) {
-                it->first->setValue<int>(it->second.dimension, it->second.newValue.toInt(), &k,true,Natron::eValueChangedReasonPluginEdited);
+                it->first->setValue<int>(it->second.dimension, it->second.newValue.toInt(), &k,true,_reason);
             } else if (isBool) {
-                it->first->setValue<bool>(it->second.dimension, it->second.newValue.toBool(), &k,true,Natron::eValueChangedReasonPluginEdited);
+                it->first->setValue<bool>(it->second.dimension, it->second.newValue.toBool(), &k,true,_reason);
             } else if (isDouble) {
-                it->first->setValue<double>(it->second.dimension, it->second.newValue.toDouble(), &k,true,Natron::eValueChangedReasonPluginEdited);
+                it->first->setValue<double>(it->second.dimension, it->second.newValue.toDouble(), &k,true,_reason);
             } else if (isString) {
                 it->first->setValue<std::string>(it->second.dimension, it->second.newValue.toString().toStdString(),
-                                                 &k,true,Natron::eValueChangedReasonPluginEdited);
+                                                 &k,true,_reason);
             } else {
                 assert(false);
             }
@@ -377,16 +379,15 @@ MultipleKnobEditsUndoCommand::redo()
             }
         }
     }
-
+    if (holder) {
+        holder->endChanges();
+    }
     assert( !knobs.empty() );
-    KnobHolder* holder = knobs.begin()->first->getKnob()->getHolder();
     QString holderName;
     if (holder) {
         Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(holder);
         if (effect) {
-            if (firstRedoCalled) {
-                effect->evaluate_public(NULL, true, Natron::eValueChangedReasonUserEdited);
-            } else {
+            if (!firstRedoCalled) {
                 effect->getApp()->triggerAutoSave();
             }
             holderName = effect->getName().c_str();
@@ -490,7 +491,7 @@ RestoreDefaultsCommand::redo()
     std::list<SequenceTime> times;
     const boost::shared_ptr<KnobI> & first = _knobs.front();
     boost::shared_ptr<TimeLine> timeline = first->getHolder()->getApp()->getTimeLine();
-
+    
     for (std::list<boost::shared_ptr<KnobI> >::iterator it = _knobs.begin(); it != _knobs.end(); ++it) {
         if ( (*it)->getHolder()->getApp() ) {
             int dim = (*it)->getDimension();
@@ -505,11 +506,11 @@ RestoreDefaultsCommand::redo()
             }
         }
 
-        (*it)->blockEvaluation();
+        (*it)->beginChanges();
         for (int d = 0; d < (*it)->getDimension(); ++d) {
             (*it)->resetToDefaultValue(d);
         }
-        (*it)->unblockEvaluation();
+        (*it)->endChanges();
     }
     timeline->removeMultipleKeyframeIndicator(times,true);
 

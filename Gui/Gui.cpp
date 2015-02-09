@@ -1109,7 +1109,7 @@ GuiPrivate::createPropertiesBinGui()
     _minimizeAllPanelsButtons->setCheckable(true);
     _minimizeAllPanelsButtons->setChecked(false);
     _minimizeAllPanelsButtons->setFixedSize(NATRON_SMALL_BUTTON_SIZE,NATRON_SMALL_BUTTON_SIZE);
-    _minimizeAllPanelsButtons->setToolTip(Qt::convertFromPlainText(_gui->tr("Minimize / Maximize all panels"),Qt::WhiteSpaceNormal));
+    _minimizeAllPanelsButtons->setToolTip(Qt::convertFromPlainText(_gui->tr("Minimize / Maximize all panels."),Qt::WhiteSpaceNormal));
     _minimizeAllPanelsButtons->setFocusPolicy(Qt::NoFocus);
     QObject::connect( _minimizeAllPanelsButtons,SIGNAL( clicked(bool) ),_gui,SLOT( minimizeMaximizeAllPanels(bool) ) );
     
@@ -1778,8 +1778,40 @@ Gui::setVisibleProjectSettingsPanel()
 }
 
 void
+Gui::reloadStylesheet()
+{
+    loadStyleSheet();
+}
+
+void
 Gui::loadStyleSheet()
 {
+    
+    double selR,selG,selB;
+    double baseR,baseG,baseB;
+    double sunkR,sunkG,sunkB;
+    double raisR,raisG,raisB;
+    double txtR,txtG,txtB;
+    double intR,intG,intB;
+    double kfR,kfG,kfB;
+    boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
+    
+    settings->getSelectionColor(&selR, &selG, &selB);
+    settings->getBaseColor(&baseR, &baseG, &baseB);
+    settings->getSunkenColor(&sunkR, &sunkG, &sunkB);
+    settings->getRaisedColor(&raisR, &raisG, &raisB);
+    settings->getTextColor(&txtR, &txtG, &txtB);
+    settings->getInterpolatedColor(&intR, &intG, &intB);
+    settings->getKeyframeColor(&kfR, &kfG, &kfB);
+    
+    QString selStr = QString("rgb(%1,%2,%3)").arg(Natron::clamp(selR) * 256).arg(Natron::clamp(selG) * 256).arg(Natron::clamp(selB) * 256);
+    QString sunkStr = QString("rgb(%1,%2,%3)").arg(Natron::clamp(sunkR) * 256).arg(Natron::clamp(sunkG) * 256).arg(Natron::clamp(sunkB) * 256);
+    QString baseStr = QString("rgb(%1,%2,%3)").arg(Natron::clamp(baseR) * 256).arg(Natron::clamp(baseG) * 256).arg(Natron::clamp(baseB) * 256);
+    QString raisedStr = QString("rgb(%1,%2,%3)").arg(Natron::clamp(raisR) * 256).arg(Natron::clamp(raisG) * 256).arg(Natron::clamp(raisB) * 256);
+    QString txtStr = QString("rgb(%1,%2,%3)").arg(Natron::clamp(txtR) * 256).arg(Natron::clamp(txtG) * 256).arg(Natron::clamp(txtB) * 256);
+    QString intStr = QString("rgb(%1,%2,%3)").arg(Natron::clamp(intR) * 256).arg(Natron::clamp(intG) * 256).arg(Natron::clamp(intB) * 256);
+    QString kfStr = QString("rgb(%1,%2,%3)").arg(Natron::clamp(kfR) * 256).arg(Natron::clamp(kfG) * 256).arg(Natron::clamp(kfB) * 256);
+    
     QFile qss(":/Resources/Stylesheets/mainstyle.qss");
 
     if ( qss.open(QIODevice::ReadOnly
@@ -1787,13 +1819,13 @@ Gui::loadStyleSheet()
         QTextStream in(&qss);
         QString content( in.readAll() );
         setStyleSheet( content
-                       .arg("rgb(243,149,0)") // %1: selection-color
-                       .arg("rgb(50,50,50)") // %2: medium background
-                       .arg("rgb(71,71,71)") // %3: soft background
-                       .arg("rgb(38,38,38)") // %4: strong background
-                       .arg("rgb(200,200,200)") // %5: text colour
-                       .arg("rgb(86,117,156)") // %6: interpolated value color
-                       .arg("rgb(21,97,248)") // %7: keyframe value color
+                       .arg(selStr) // %1: selection-color
+                       .arg(baseStr) // %2: medium background
+                       .arg(raisedStr) // %3: soft background
+                       .arg(sunkStr) // %4: strong background
+                       .arg(txtStr) // %5: text colour
+                       .arg(intStr) // %6: interpolated value color
+                       .arg(kfStr) // %7: keyframe value color
                        .arg("rgb(0,0,0)") ); // %8: disabled editable text
     }
 }
@@ -2459,7 +2491,7 @@ GuiPrivate::addToolButton(ToolButton* tool)
     button->setIcon( tool->getIcon() );
     button->setMenu( tool->getMenu() );
     button->setPopupMode(QToolButton::InstantPopup);
-    button->setToolTip( Qt::convertFromPlainText(tool->getLabel(), Qt::WhiteSpaceNormal) );
+    button->setToolTip( Qt::convertFromPlainText(tool->getLabel().trimmed(), Qt::WhiteSpaceNormal) );
     _toolBox->addWidget(button);
 }
 
@@ -2509,6 +2541,19 @@ Gui::openProjectInternal(const std::string & absoluteFileName)
 {
     std::string fileUnPathed = absoluteFileName;
     std::string path = SequenceParsing::removePath(fileUnPathed);
+
+	int openedProject = appPTR->isProjectAlreadyOpened(absoluteFileName);
+	if (openedProject != -1) {
+		AppInstance* instance = appPTR->getAppInstance(openedProject);
+		if (instance) {
+			GuiAppInstance* guiApp = dynamic_cast<GuiAppInstance*>(instance);
+			assert(guiApp);
+			if (guiApp) {
+				guiApp->getGui()->activateWindow();
+				return ;
+			}
+		}
+	}
 
     ///if the current graph has no value, just load the project in the same window
     if ( _imp->_appInstance->getProject()->isGraphWorthLess() ) {
@@ -3033,7 +3078,7 @@ Gui::onDoDialog(int type,
                 Natron::StandardButtons buttons,
                 int defaultB)
 {
-    QString msg = useHtml ? content : Qt::convertFromPlainText(content, Qt::WhiteSpaceNormal);
+    QString msg = useHtml ? content : Qt::convertFromPlainText(content.trimmed(), Qt::WhiteSpaceNormal);
 
     if (type == 0) {
         QMessageBox critical(QMessageBox::Critical, title, msg, QMessageBox::NoButton, this, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint | Qt::WindowStaysOnTopHint);
@@ -3139,7 +3184,7 @@ Gui::questionDialog(const std::string & title,
 void
 Gui::onDoDialogWithStopAskingCheckbox(int type,const QString & title,const QString & content,bool useHtml,Natron::StandardButtons buttons,int defaultB)
 {
-    QString message = useHtml ? content : Qt::convertFromPlainText(content,Qt::WhiteSpaceNormal);
+    QString message = useHtml ? content : Qt::convertFromPlainText(content.trimmed(), Qt::WhiteSpaceNormal);
     Natron::MessageBox dialog(title,content,(Natron::MessageBox::MessageBoxTypeEnum)type,buttons,(Natron::StandardButtonEnum)defaultB,this);
     
     QCheckBox* stopAskingCheckbox = new QCheckBox(tr("Do not show this again"),&dialog);
@@ -3455,8 +3500,7 @@ void
 Gui::showAbout()
 {
     _imp->_aboutWindow->show();
-    int status = _imp->_aboutWindow->exec();
-    assert(status == QDialog::Accepted);
+    ignore_result(_imp->_aboutWindow->exec());
 }
 
 void
@@ -3472,7 +3516,22 @@ Gui::openRecentFile()
 
     if (action) {
         QFileInfo f( action->data().toString() );
-        QString path = f.path() + QDir::separator();
+		QString path = f.path() + '/';
+
+		QString filename = path + f.fileName();
+		int openedProject = appPTR->isProjectAlreadyOpened(filename.toStdString());
+		if (openedProject != -1) {
+			AppInstance* instance = appPTR->getAppInstance(openedProject);
+			if (instance) {
+				GuiAppInstance* guiApp = dynamic_cast<GuiAppInstance*>(instance);
+				assert(guiApp);
+				if (guiApp) {
+					guiApp->getGui()->activateWindow();
+					return ;
+				}
+			}
+		}
+
         ///if the current graph has no value, just load the project in the same window
         if ( _imp->_appInstance->getProject()->isGraphWorthLess() ) {
             _imp->_appInstance->getProject()->loadProject( path,f.fileName() );
@@ -3967,30 +4026,37 @@ Gui::renderSelectedNode()
     } else if ( selectedNodes.empty() ) {
         Natron::warningDialog( tr("Render").toStdString(), tr("You must select a node to render first!").toStdString() );
     } else {
-        const boost::shared_ptr<NodeGui> & selectedNode = selectedNodes.front();
+        
         std::list<AppInstance::RenderWork> workList;
-        if ( selectedNode->getNode()->getLiveInstance()->isWriter() ) {
-            ///if the node is a writer, just use it to render!
-            AppInstance::RenderWork w;
-            w.writer = dynamic_cast<Natron::OutputEffectInstance*>(selectedNode->getNode()->getLiveInstance());
-            assert(w.writer);
-            w.firstFrame = INT_MIN;
-            w.lastFrame = INT_MAX;
-            workList.push_back(w);
-            _imp->_appInstance->startWritersRendering(workList);
-        } else {
-            ///create a node and connect it to the node and use it to render
-            boost::shared_ptr<Natron::Node> writer = createWriter();
-            if (writer) {
+        
+        for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = selectedNodes.begin();
+             it!=selectedNodes.end(); ++it) {
+            if ( (*it)->getNode()->getLiveInstance()->isWriter() ) {
+                ///if the node is a writer, just use it to render!
                 AppInstance::RenderWork w;
-                w.writer = dynamic_cast<Natron::OutputEffectInstance*>(writer->getLiveInstance());
+                w.writer = dynamic_cast<Natron::OutputEffectInstance*>((*it)->getNode()->getLiveInstance());
                 assert(w.writer);
                 w.firstFrame = INT_MIN;
                 w.lastFrame = INT_MAX;
                 workList.push_back(w);
-                _imp->_appInstance->startWritersRendering(workList);
+            } else {
+                if (selectedNodes.size() == 1) {
+                    ///create a node and connect it to the node and use it to render
+                    boost::shared_ptr<Natron::Node> writer = createWriter();
+                    if (writer) {
+                        AppInstance::RenderWork w;
+                        w.writer = dynamic_cast<Natron::OutputEffectInstance*>(writer->getLiveInstance());
+                        assert(w.writer);
+                        w.firstFrame = INT_MIN;
+                        w.lastFrame = INT_MAX;
+                        workList.push_back(w);
+                    }
+                }
             }
         }
+        _imp->_appInstance->startWritersRendering(workList);
+
+        
     }
 }
 
@@ -4414,7 +4480,7 @@ FloatingWidget::FloatingWidget(Gui* gui,
       , _layout(0)
       , _gui(gui)
 {
-    setWindowFlags(Qt::WindowStaysOnTopHint | Qt::Window);
+    setWindowFlags(Qt::Window);
     setAttribute(Qt::WA_DeleteOnClose,true);
     _layout = new QVBoxLayout(this);
     _layout->setContentsMargins(0, 0, 0, 0);
@@ -4558,6 +4624,17 @@ Gui::redrawAllViewers()
     for (std::list<ViewerTab*>::const_iterator it = _imp->_viewerTabs.begin(); it!=_imp->_viewerTabs.end(); ++it) {
         if ((*it)->isVisible()) {
             (*it)->getViewer()->redraw();
+        }
+    }
+}
+
+void
+Gui::renderAllViewers()
+{
+    QMutexLocker k(&_imp->_viewerTabsMutex);
+    for (std::list<ViewerTab*>::const_iterator it = _imp->_viewerTabs.begin(); it!=_imp->_viewerTabs.end(); ++it) {
+        if ((*it)->isVisible()) {
+            (*it)->getInternalNode()->renderCurrentFrame(false);
         }
     }
 }

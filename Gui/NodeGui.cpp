@@ -1106,7 +1106,7 @@ NodeGui::connectEdge(int edgeNumber)
     } else {
         it2->second->setSource(src);
         it2->second->initLine();
-
+        update();
         return true;
     }
 }
@@ -1904,7 +1904,6 @@ NodeGui::deleteReferences()
     }
 
     if (_settingsPanel) {
-        _settingsPanel->setParent(NULL);
         delete _settingsPanel;
         _settingsPanel = NULL;
     }
@@ -1940,7 +1939,7 @@ NodeGui::toggleBitDepthIndicator(bool on,
                                  const QString & tooltip)
 {
     if (on) {
-        setToolTip( Qt::convertFromPlainText(tooltip,Qt::WhiteSpaceNormal) );
+        setToolTip( Qt::convertFromPlainText(tooltip.trimmed(), Qt::WhiteSpaceNormal) );
         _bitDepthWarning->setToolTip(tooltip);
     } else {
         setToolTip("");
@@ -2014,7 +2013,7 @@ NodeGuiIndicator::~NodeGuiIndicator()
 void
 NodeGuiIndicator::setToolTip(const QString & tooltip)
 {
-    _imp->ellipse->setToolTip( Qt::convertFromPlainText(tooltip,Qt::WhiteSpaceNormal) );
+    _imp->ellipse->setToolTip( Qt::convertFromPlainText(tooltip.trimmed(), Qt::WhiteSpaceNormal) );
 }
 
 void

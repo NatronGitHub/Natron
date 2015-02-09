@@ -441,6 +441,7 @@ Double_Knob::denormalize(int dimension,
     
     assert(effect);
     if (!effect) {
+        // coverity[dead_error_line]
         return;
     }
     RectD rod;
@@ -461,6 +462,7 @@ Double_Knob::normalize(int dimension,
     
     assert(effect);
     if (!effect) {
+        // coverity[dead_error_line]
         return;
     }
     RectD rod;
@@ -724,6 +726,7 @@ Color_Knob::Color_Knob(KnobHolder* holder,
                        bool declaredByPlugin)
 : Knob<double>(holder, description, dimension,declaredByPlugin)
 , _allDimensionsEnabled(true)
+, _simplifiedMode(false)
 {
     //dimension greater than 4 is not supported. Dimension 2 doesn't make sense.
     assert(dimension <= 4 && dimension != 2);
@@ -771,11 +774,11 @@ Color_Knob::setValues(double r,
 {
     assert(getDimension() == 3);
     KeyFrame k;
-    blockEvaluation();
+    beginChanges();
     onValueChanged(r, 0, Natron::eValueChangedReasonNatronGuiEdited, &k);
     onValueChanged(g, 1, Natron::eValueChangedReasonNatronGuiEdited, &k);
-    unblockEvaluation();
     onValueChanged(b, 2, Natron::eValueChangedReasonNatronGuiEdited, &k);
+    endChanges();
 }
 
 void
@@ -786,12 +789,24 @@ Color_Knob::setValues(double r,
 {
     assert(getDimension() == 4);
     KeyFrame k;
-    blockEvaluation();
+    beginChanges();
     onValueChanged(r, 0, Natron::eValueChangedReasonNatronGuiEdited, &k);
     onValueChanged(g, 1, Natron::eValueChangedReasonNatronGuiEdited, &k);
     onValueChanged(b, 2, Natron::eValueChangedReasonNatronGuiEdited, &k);
-    unblockEvaluation();
     onValueChanged(a, 3, Natron::eValueChangedReasonNatronGuiEdited, &k);
+    endChanges();
+}
+
+void
+Color_Knob::setSimplified(bool simp)
+{
+    _simplifiedMode = simp;
+}
+
+bool
+Color_Knob::isSimplified() const
+{
+    return _simplifiedMode;
 }
 
 /******************************STRING_KNOB**************************************/

@@ -38,16 +38,16 @@ DEPENDPATH += $$PWD/../Global
 
 win32-msvc* {
 	CONFIG(64bit) {
-		QMAKE_LFLAGS += /MACHINE:X64
-	} else {
-		QMAKE_LFLAGS += /MACHINE:X86
+                QMAKE_LFLAGS += /MACHINE:X64
+        } else {
+                QMAKE_LFLAGS += /MACHINE:X86
 	}
 }
 
 # XCode clang 3.5 without optimization generates code that crashes
 #(Natron on OSX, XCode 6, Spaceship_Natron.ntp)
 *-xcode {
-  QMAKE_CXXFLAGS += -O
+  QMAKE_CXXFLAGS += -O1
 }
 
 SOURCES += \

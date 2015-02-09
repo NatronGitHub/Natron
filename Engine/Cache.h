@@ -593,8 +593,12 @@ private:
             
             
             try {
-                returnValue->reset( new EntryType(key,params,this,storage,
-                                                  storage == Natron::eStorageModeDisk ? QString( getCachePath() + QDir::separator() ).toStdString() : std::string()) );
+				std::string filePath;
+				if (storage == Natron::eStorageModeDisk) {
+					filePath = getCachePath().toStdString();
+					filePath += '/';
+				}
+                returnValue->reset( new EntryType(key,params,this,storage, filePath) );
                 
                 ///Don't call allocateMemory() here because we're still under the lock and we might force tons of threads to wait unnecesserarily
                 
@@ -735,7 +739,7 @@ public:
     /**
      * @brief Clears the memory portion and moves it to the disk portion if possible
      **/
-    void clearInMemoryPortion()
+    void clearInMemoryPortion(bool emitSignals = true)
     {
         if (_signalEmitter) {
             ///block signals otherwise the we would be spammed of notifications
@@ -788,7 +792,9 @@ public:
         }
 
         _signalEmitter->blockSignals(false);
-        _signalEmitter->emitSignalClearedInMemoryPortion();
+        if (emitSignals) {
+            _signalEmitter->emitSignalClearedInMemoryPortion();
+        }
     }
     
     
@@ -1037,7 +1043,7 @@ public:
     {
         QString cacheFolderName(appPTR->getDiskCacheLocation());
         if (!cacheFolderName.endsWith('\\') && !cacheFolderName.endsWith('/')) {
-            cacheFolderName.append(QDir::separator());
+            cacheFolderName.append('/');
         }
         cacheFolderName.append( cacheName().c_str() );
         return cacheFolderName;
@@ -1227,7 +1233,7 @@ public:
      */
     void save(CacheTOC* tableOfContents)
     {
-        clearInMemoryPortion();
+        clearInMemoryPortion(false);
         QMutexLocker l(&_lock);     // must be locked
 
         for (CacheIterator it = _diskCache.begin(); it != _diskCache.end(); ++it) {

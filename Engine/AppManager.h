@@ -359,6 +359,11 @@ public:
     void saveCaches() const;
     
     void toggleAutoHideGraphInputs();
+
+	int isProjectAlreadyOpened(const std::string& projectFilePath) const;
+    
+    virtual void reloadStylesheets() {}
+    
 public slots:
     
 

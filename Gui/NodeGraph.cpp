@@ -399,7 +399,7 @@ NodeGraph::NodeGraph(Gui* gui,
 
     setMouseTracking(true);
     setCacheMode(CacheBackground);
-    setViewportUpdateMode(QGraphicsView::FullViewportUpdate);
+    setViewportUpdateMode(QGraphicsView::BoundingRectViewportUpdate);
     setRenderHint(QPainter::Antialiasing);
     setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
     //setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
@@ -1171,7 +1171,7 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
             _imp->_lastSelectionStartPoint = _imp->_lastMousePos;
             QPointF clickPos = _imp->_selectionRect->mapFromScene(lastMousePosScene);
             _imp->_selectionRect->setRect(clickPos.x(), clickPos.y(), 0, 0);
-            _imp->_selectionRect->show();
+            //_imp->_selectionRect->show();
         } else if ( buttonDownIsMiddle(e) ) {
             _imp->_evtState = eEventStateMovingArea;
             QGraphicsView::mousePressEvent(e);
@@ -1309,7 +1309,7 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
                             Natron::errorDialog(tr("Different pixel aspect").toStdString(),
                                                 error.toStdString());
                         } else if (linkRetCode == Natron::Node::eCanConnectInput_differentFPS) {
-                            QString error = QString(tr("You cannot connect ") +  "%1" + " to " + "%2"  + tr(" because they don't have the same frame rate (") + "%3 / %4)")
+                            QString error = QString(tr("You cannot connect ") +  "%1" + " to " + "%2"  + tr(" because they don't have the same frame rate (") + "%3 / %4). Either change the FPS from the Read node parameters or change the settings of the project.")
                             .arg(nodeHoldingEdge->getNode()->getName().c_str())
                             .arg(n->getNode()->getName().c_str())
                             .arg(nodeHoldingEdge->getNode()->getLiveInstance()->getPreferredFrameRate())
@@ -1343,7 +1343,7 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
                                 Natron::errorDialog(tr("Different pixel aspect").toStdString(),
                                                     error.toStdString());
                             } else if (linkRetCode == Natron::Node::eCanConnectInput_differentFPS) {
-                                QString error = QString(tr("You cannot connect ") +  "%1" + " to " + "%2"  + tr(" because they don't have the same frame rate (") + "%3 / %4)")
+                                QString error = QString(tr("You cannot connect ") +  "%1" + " to " + "%2"  + tr(" because they don't have the same frame rate (") + "%3 / %4). Either change the FPS from the Read node parameters or change the settings of the project.")
                                 .arg(nodeHoldingEdge->getNode()->getName().c_str())
                                 .arg(n->getNode()->getName().c_str())
                                 .arg(nodeHoldingEdge->getNode()->getLiveInstance()->getPreferredFrameRate())
@@ -1471,7 +1471,7 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
         _imp->_selectionRect->hide();
         _imp->editSelectionFromSelectionRectangle( modCASIsShift(e) );
     }
-    setCursor( QCursor(Qt::ArrowCursor) );
+    unsetCursor();
 } // mouseReleaseEvent
 
 void
@@ -1485,7 +1485,9 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
     double dy = _imp->_root->mapFromScene(newPos).y() - _imp->_root->mapFromScene(lastMousePosScene).y();
 
     _imp->_hasMovedOnce = true;
-
+    
+    bool mustUpdate = true;
+    
     QRectF sceneR = visibleSceneRect();
     if (_imp->_evtState != eEventStateSelectionRect && _imp->_evtState != eEventStateDraggingArrow) {
         ///set cursor
@@ -1526,7 +1528,7 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
             setCursor( QCursor(Qt::OpenHandCursor) );
         } else if (selectedEdge) {
         } else if (!selectedEdge && !selected) {
-            setCursor( QCursor(Qt::ArrowCursor) );
+            unsetCursor();
         }
     }
 
@@ -1806,6 +1808,7 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
         double ymin = std::min( cur.y(),startDrag.y() );
         double ymax = std::max( cur.y(),startDrag.y() );
         _imp->_selectionRect->setRect(xmin,ymin,xmax - xmin,ymax - ymin);
+        _imp->_selectionRect->show();
         break;
     }
     case eEventStateDraggingNavigator: {
@@ -1826,6 +1829,7 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
             setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
     } break;
     default:
+            mustUpdate = false;
         break;
     } // switch
 
@@ -1835,8 +1839,10 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
     if (mustUpdateNavigator) {
         _imp->_refreshOverlays = true;
     }
-
-    //update();
+    
+    if (mustUpdate) {
+        update();
+    }
     QGraphicsView::mouseMoveEvent(e);
 } // mouseMoveEvent
 
@@ -2415,7 +2421,7 @@ NodeGraph::wheelEventInternal(bool ctrlDown,double delta)
     
     double currentZoomFactor = transfo.mapRect( QRectF(0, 0, 1, 1) ).width();
     double newZoomfactor = currentZoomFactor * scaleFactor;
-    if (newZoomfactor < 0.05 || newZoomfactor > 40) {
+    if ((newZoomfactor < 0.01 && scaleFactor < 1.) || (newZoomfactor > 50 && scaleFactor > 1.)) {
         return;
     }
     if (newZoomfactor < 0.4) {
@@ -2881,8 +2887,13 @@ QDirModelPrivate_size(quint64 bytes)
 void
 NodeGraph::updateCacheSizeText()
 {
-    _imp->_cacheSizeText->setPlainText( tr("Memory cache size: %1")
-                                        .arg( QDirModelPrivate_size( appPTR->getCachesTotalMemorySize() ) ) );
+    QString oldText = _imp->_cacheSizeText->toPlainText();
+    quint64 cacheSize = appPTR->getCachesTotalMemorySize();
+    QString cacheSizeStr = QDirModelPrivate_size(cacheSize);
+    QString newText = tr("Memory cache size: ") + cacheSizeStr;
+    if (newText != oldText) {
+        _imp->_cacheSizeText->setPlainText(newText);
+    }
 }
 
 QRectF

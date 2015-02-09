@@ -33,7 +33,7 @@ class Gui;
  **/
 struct MultiInstancePanelPrivate;
 class MultiInstancePanel
-    : public QObject, public NamedKnobHolder
+    :  public NamedKnobHolder
 {
     Q_OBJECT
 

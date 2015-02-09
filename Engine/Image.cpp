@@ -285,67 +285,71 @@ minimalNonMarkedRects_internal(const RectI & roi,const RectI& _bounds, const std
         ret.push_back(bboxB);
     }
     
-    //find left
-    RectI bboxC = bboxX;
-    bboxC.set_right( bboxX.left() );
-    for (int j = bboxX.left(); j < bboxX.right(); ++j) {
-        const char* pix = BM_GET(bboxX.bottom(), j);
-        
-        bool metUnavailablePixel = false;
-        
-        for (int i = bboxX.bottom(); i < bboxX.top(); ++i, pix += _bounds.width()) {
-            if (*pix == 1) {
-                pix = 0;
-                break;
-            } else if (trimap && *pix == PIXEL_UNAVAILABLE) {
-                pix = 0;
-                metUnavailablePixel = true;
-                break;
-            }
-        }
-        if (pix) {
-            bboxX.set_left(bboxX.left() + 1);
-            bboxC.set_right( bboxX.left() );
-        } else {
-            if (metUnavailablePixel) {
-                *isBeingRenderedElsewhere = true;
-            }
-            break;
-        }
-    }
+	//find left
+	RectI bboxC = bboxX;
+	bboxC.set_right( bboxX.left() );
+	if (bboxX.bottom() < bboxX.top()) {
+		for (int j = bboxX.left(); j < bboxX.right(); ++j) {
+			const char* pix = BM_GET(bboxX.bottom(), j);
+
+			bool metUnavailablePixel = false;
+
+			for (int i = bboxX.bottom(); i < bboxX.top(); ++i, pix += _bounds.width()) {
+				if (*pix == 1) {
+					pix = 0;
+					break;
+				} else if (trimap && *pix == PIXEL_UNAVAILABLE) {
+					pix = 0;
+					metUnavailablePixel = true;
+					break;
+				}
+			}
+			if (pix) {
+				bboxX.set_left(bboxX.left() + 1);
+				bboxC.set_right( bboxX.left() );
+			} else {
+				if (metUnavailablePixel) {
+					*isBeingRenderedElsewhere = true;
+				}
+				break;
+			}
+		}
+	}
     if ( !bboxC.isNull() ) { // empty boxes should not be pushed
         ret.push_back(bboxC);
     }
-    
-    //find right
-    RectI bboxD = bboxX;
-    bboxD.set_left( bboxX.right() );
-    for (int j = bboxX.right() - 1; j >= bboxX.left(); --j) {
-        const char* pix = BM_GET(bboxX.bottom(), j);
-        
-        bool metUnavailablePixel = false;
-        
-        for (int i = bboxX.bottom(); i < bboxX.top(); ++i, pix += _bounds.width()) {
-            if (*pix == 1) {
-                pix = 0;
-                break;
-            } else if (trimap && *pix == PIXEL_UNAVAILABLE) {
-                pix = 0;
-                metUnavailablePixel = true;
-                break;
-            }
-        }
-        if (pix) {
-            bboxX.set_right(bboxX.right() - 1);
-            bboxD.set_left( bboxX.right() );
-        } else {
-            if (metUnavailablePixel) {
-                *isBeingRenderedElsewhere = true;
-            }
-            break;
-        }
-    }
-    if ( !bboxD.isNull() ) { // empty boxes should not be pushed
+
+	//find right
+	RectI bboxD = bboxX;
+	bboxD.set_left( bboxX.right() );
+	if (bboxX.bottom() < bboxX.top()) {
+		for (int j = bboxX.right() - 1; j >= bboxX.left(); --j) {
+			const char* pix = BM_GET(bboxX.bottom(), j);
+
+			bool metUnavailablePixel = false;
+
+			for (int i = bboxX.bottom(); i < bboxX.top(); ++i, pix += _bounds.width()) {
+				if (*pix == 1) {
+					pix = 0;
+					break;
+				} else if (trimap && *pix == PIXEL_UNAVAILABLE) {
+					pix = 0;
+					metUnavailablePixel = true;
+					break;
+				}
+			}
+			if (pix) {
+				bboxX.set_right(bboxX.right() - 1);
+				bboxD.set_left( bboxX.right() );
+			} else {
+				if (metUnavailablePixel) {
+					*isBeingRenderedElsewhere = true;
+				}
+				break;
+			}
+		}
+	}
+	if ( !bboxD.isNull() ) { // empty boxes should not be pushed
         ret.push_back(bboxD);
     }
     
@@ -1906,7 +1910,17 @@ convertToFormatInternal(const RectI & renderWindow,
 
     assert(!intersection.isNull() && intersection.width() > 0 && intersection.height() > 0);
 
-    if (channelForAlpha == -1) {
+    if (channelForAlpha != -1) {
+        switch (srcNComps) {
+            case 3:
+                if (channelForAlpha > 3) {
+                    channelForAlpha = -1;
+                }
+                break;
+            default:
+                break;
+        }
+    } else {
         switch (srcNComps) {
             case 4:
                 channelForAlpha = 3;
@@ -1975,7 +1989,8 @@ convertToFormatInternal(const RectI & renderWindow,
                             pix = convertPixelDepth<SRCPIX, DSTPIX>(srcPixels[channelForAlpha]);
                             break;
                         case 3:
-                            pix = convertPixelDepth<SRCPIX, DSTPIX>(1); // RGB is opaque
+                            // RGB is opaque but the channelForAlpha can be 0-2
+                            pix = convertPixelDepth<SRCPIX, DSTPIX>(channelForAlpha == -1 ? 0. : srcPixels[channelForAlpha]);
                             break;
                         case 1:
                             pix  = convertPixelDepth<SRCPIX, DSTPIX>(*srcPixels);

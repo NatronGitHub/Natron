@@ -10,12 +10,13 @@
  */
 #include "OfxOverlayInteract.h"
 
-
+#include "Global/Macros.h"
 #include "Engine/OfxImageEffectInstance.h"
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/Format.h"
 #include "Engine/OverlaySupport.h"
 #include "Engine/Knob.h"
+#include "Engine/AppInstance.h"
 
 
 using namespace Natron;
@@ -147,6 +148,23 @@ OfxOverlayInteract::loseFocusAction(OfxTime  time,
 }
 
 
+OfxStatus
+OfxOverlayInteract::redraw()
+{
+    OfxImageEffectInstance* effect = dynamic_cast<OfxImageEffectInstance*>(&_instance);
+    assert(effect);
+    if (effect) {
+        AppInstance* app =  effect->getOfxEffectInstance()->getApp();
+        assert(app);
+#pragma message WARN("TODO (python): only redraw in viewers where the interact is visible (requires changes in GUI)")
+        if (effect->getOfxEffectInstance()->isDoingInteractAction()) {
+            app->queueRedrawForAllViewers();
+        } else {
+            app->redrawAllViewers();
+        }
+    }
+    return kOfxStatOK;
+}
 
 
 Natron::OfxParamOverlayInteract::OfxParamOverlayInteract(KnobI* knob,
@@ -173,6 +191,12 @@ NatronOverlayInteractSupport::setCallingViewport(OverlaySupport* viewport)
     _viewport = viewport;
 }
 
+OverlaySupport*
+NatronOverlayInteractSupport::getLastCallingViewport() const
+{
+    return _viewport;
+}
+
 OfxStatus
 NatronOverlayInteractSupport::n_swapBuffers()
 {
@@ -183,15 +207,7 @@ NatronOverlayInteractSupport::n_swapBuffers()
     return kOfxStatOK;
 }
 
-OfxStatus
-NatronOverlayInteractSupport::n_redraw()
-{
-    if (_viewport) {
-        _viewport->redraw();
-    }
 
-    return kOfxStatOK;
-}
 
 void
 NatronOverlayInteractSupport::n_getViewportSize(double &width,
@@ -221,20 +237,23 @@ NatronOverlayInteractSupport::n_getBackgroundColour(double &r,
     }
 }
 
-void
-NatronOverlayInteractSupport::n_getOverlayColour(double &r,
-                                                 double &g,
-                                                 double &b) const
+bool
+NatronOverlayInteractSupport::n_getSuggestedColour(double &r,
+                                                   double &g,
+                                                   double &b) const
 {
-    r = g = b = 1.;
+    return false;
+    // TODO
+    //r = g = b = ...;
+    //return true;
 }
 
 void
-Natron::OfxParamOverlayInteract::getMinimumSize(int & minW,
-                                                int & minH) const
+Natron::OfxParamOverlayInteract::getMinimumSize(double & minW,
+                                                double & minH) const
 {
-    minW = _descriptor.getProperties().getIntProperty(kOfxParamPropInteractMinimumSize,0);
-    minH = _descriptor.getProperties().getIntProperty(kOfxParamPropInteractMinimumSize,1);
+    minW = _descriptor.getProperties().getDoubleProperty(kOfxParamPropInteractMinimumSize,0);
+    minH = _descriptor.getProperties().getDoubleProperty(kOfxParamPropInteractMinimumSize,1);
 }
 
 void
@@ -265,5 +284,15 @@ void
 Natron::OfxParamOverlayInteract::getPixelAspectRatio(double & par) const
 {
     par = _descriptor.getProperties().getDoubleProperty(kOfxParamPropInteractSizeAspect);
+}
+
+OfxStatus
+Natron::OfxParamOverlayInteract::redraw()
+{
+    if (_viewport) {
+        _viewport->redraw();
+    }
+    
+    return kOfxStatOK;
 }
 

@@ -12,6 +12,7 @@
 
 #include <fstream>
 #include <algorithm>
+#include <ios>
 #include <cstdlib> // strtoul
 #include <cerrno> // errno
 
@@ -75,11 +76,12 @@ static std::string generateUserFriendlyNatronVersionName()
     std::string ret(NATRON_APPLICATION_NAME);
     ret.append(" v");
     ret.append(NATRON_VERSION_STRING);
-    if (NATRON_DEVELOPMENT_STATUS == NATRON_DEVELOPMENT_ALPHA) {
+    const std::string status(NATRON_DEVELOPMENT_STATUS);
+    if (status == NATRON_DEVELOPMENT_ALPHA) {
         ret.append(" " NATRON_DEVELOPMENT_ALPHA);
-    } else if (NATRON_DEVELOPMENT_STATUS == NATRON_DEVELOPMENT_BETA) {
+    } else if (status == NATRON_DEVELOPMENT_BETA) {
         ret.append(" " NATRON_DEVELOPMENT_BETA);
-    } else if (NATRON_DEVELOPMENT_STATUS == NATRON_DEVELOPMENT_RELEASE_CANDIDATE) {
+    } else if (status == NATRON_DEVELOPMENT_RELEASE_CANDIDATE) {
         ret.append(" " NATRON_DEVELOPMENT_RELEASE_CANDIDATE);
         ret.append(QString::number(NATRON_BUILD_NUMBER).toStdString());
     }
@@ -88,8 +90,7 @@ static std::string generateUserFriendlyNatronVersionName()
 
 namespace Natron {
 Project::Project(AppInstance* appInstance)
-    : QObject()
-      , KnobHolder(appInstance)
+    :  KnobHolder(appInstance)
       , _imp( new ProjectPrivate(this) )
 {
     QObject::connect( _imp->autoSaveTimer.get(), SIGNAL( timeout() ), this, SLOT( onAutoSaveTimerTriggered() ) );
@@ -257,6 +258,14 @@ Project::loadProjectInternal(const QString & path,
             _imp->isLoadingProjectInternal = false;
         }
         throw std::runtime_error( e.what() );
+    } catch (const std::ios_base::failure& e) {
+        ifile.close();
+        getApp()->endProgress(this);
+        {
+            QMutexLocker k(&_imp->isLoadingProjectMutex);
+            _imp->isLoadingProjectInternal = false;
+        }
+        throw std::runtime_error( std::string("Failed to read the project file: I/O failure (") + e.what() + ")");
     } catch (const std::exception & e) {
         ifile.close();
         getApp()->endProgress(this);
@@ -264,7 +273,15 @@ Project::loadProjectInternal(const QString & path,
             QMutexLocker k(&_imp->isLoadingProjectMutex);
             _imp->isLoadingProjectInternal = false;
         }
-        throw std::runtime_error( std::string("Failed to read the project file: ") + std::string( e.what() ) );
+        throw std::runtime_error( std::string("Failed to read the project file: ") + e.what() );
+    } catch (...) {
+        ifile.close();
+        getApp()->endProgress(this);
+        {
+            QMutexLocker k(&_imp->isLoadingProjectMutex);
+            _imp->isLoadingProjectInternal = false;
+        }
+        throw std::runtime_error("Failed to read the project file");
     }
 
     ifile.close();
@@ -841,6 +858,8 @@ Project::initializeKnobs()
     _imp->frameRange = Natron::createKnob<Int_Knob>(this, "Frame range",2);
     _imp->frameRange->setDefaultValue(1,0);
     _imp->frameRange->setDefaultValue(1,1);
+    _imp->frameRange->setDimensionName(0, "first");
+    _imp->frameRange->setDimensionName(1, "last");
     _imp->frameRange->setEvaluateOnChange(false);
     _imp->frameRange->setName("frameRange");
     _imp->frameRange->setHintToolTip("The frame range of the project as seen by the plug-ins. New viewers are created automatically "
@@ -936,7 +955,7 @@ Project::evaluate(KnobI* knob,
                   Natron::ValueChangedReasonEnum /*reason*/)
 {
     assert(QThread::currentThread() == qApp->thread());
-    if (isSignificant && knob != _imp->formatKnob.get()) {
+   /* if (isSignificant && knob != _imp->formatKnob.get()) {
         getCurrentNodes();
         
         for (U32 i = 0; i < _imp->currentNodes.size(); ++i) {
@@ -949,7 +968,7 @@ Project::evaluate(KnobI* knob,
                 n->renderCurrentFrame(true);
             }
         }
-    }
+    }*/
 }
 
 // don't return a reference to a mutex-protected object!
@@ -1053,12 +1072,14 @@ Project::clearNodes(bool emitSignal)
         nodesToDelete = _imp->currentNodes;
     }
 
+    ///Kill thread pool so threads are killed before killing thread storage
+    QThreadPool::globalInstance()->waitForDone();
+    
     ///First quit any processing
     for (U32 i = 0; i < nodesToDelete.size(); ++i) {
         nodesToDelete[i]->quitAnyProcessing();
     }
-    ///Kill thread pool so threads are killed before killing thread storage
-    QThreadPool::globalInstance()->waitForDone();
+
 
 
     ///Kill effects
@@ -1428,17 +1449,17 @@ Project::reset()
     _imp->timeline->removeAllKeyframesIndicators();
     const std::vector<boost::shared_ptr<KnobI> > & knobs = getKnobs();
 
+    beginChanges();
     for (U32 i = 0; i < knobs.size(); ++i) {
-        knobs[i]->blockEvaluation();
         for (int j = 0; j < knobs[i]->getDimension(); ++j) {
             knobs[i]->resetToDefaultValue(j);
         }
-        knobs[i]->unblockEvaluation();
     }
 
-    _imp->envVars->blockEvaluation();
+
     onOCIOConfigPathChanged(appPTR->getOCIOConfigPath(),true);
-    _imp->envVars->unblockEvaluation();
+    
+    endChanges(true);
     
     emit projectNameChanged(NATRON_PROJECT_UNTITLED);
     clearNodes();
@@ -1467,7 +1488,6 @@ Project::setOrAddProjectFormat(const Format & frmt,
     }
 
     Format dispW;
-    bool formatSet = false;
     {
         QMutexLocker l(&_imp->formatMutex);
 
@@ -1482,14 +1502,10 @@ Project::setOrAddProjectFormat(const Format & frmt,
             } else {
                 setProjectDefaultFormat(dispW);
             }
-            formatSet = true;
         } else if (!skipAdd) {
             dispW = frmt;
             tryAddProjectFormat(dispW);
         }
-    }
-    if (formatSet) {
-        emit formatChanged(dispW);
     }
 }
 
@@ -2015,9 +2031,8 @@ Project::fixRelativeFilePaths(const std::string& projectPathName,const std::stri
     
     for (U32 i = 0; i < nodes.size(); ++i) {
         if (nodes[i]->isActivated()) {
-            if (blockEval) {
-                nodes[i]->getLiveInstance()->blockEvaluation();
-            }
+            nodes[i]->getLiveInstance()->beginChanges();
+            
             const std::vector<boost::shared_ptr<KnobI> >& knobs = nodes[i]->getKnobs();
             for (U32 j = 0; j < knobs.size(); ++j) {
                 
@@ -2035,9 +2050,7 @@ Project::fixRelativeFilePaths(const std::string& projectPathName,const std::stri
                     }
                 }
             }
-            if (blockEval) {
-                nodes[i]->getLiveInstance()->unblockEvaluation();
-            }
+            nodes[i]->getLiveInstance()->endChanges(blockEval);
             
         }
     }
@@ -2165,9 +2178,8 @@ Project::makeRelativeToProject(std::string& str)
 void
 Project::onOCIOConfigPathChanged(const std::string& path,bool block)
 {
-    if (block) {
-        blockEvaluation();
-    }
+    beginChanges();
+    
     try {
         std::string env = _imp->envVars->getValue();
         std::map<std::string, std::string> envMap;
@@ -2201,9 +2213,8 @@ Project::onOCIOConfigPathChanged(const std::string& path,bool block)
     } catch (std::logic_error) {
         // ignore
     }
-    if (block) {
-        unblockEvaluation();
-    }
+    endChanges(block);
+    
 }
 
 void
@@ -2242,10 +2253,10 @@ Project::unionFrameRangeWith(int first,int last)
     curLast = _imp->frameRange->getValue(1);
     curFirst = std::min(first, curFirst);
     curLast = std::max(last, curLast);
-    blockEvaluation();
+    beginChanges();
     _imp->frameRange->setValue(curFirst, 0);
-    unblockEvaluation();
     _imp->frameRange->setValue(curLast, 1);
+    endChanges();
 
 }
     
@@ -2266,10 +2277,10 @@ Project::recomputeFrameRangeFromReaders()
             }
         }
     }
-    blockEvaluation();
+    beginChanges();
     _imp->frameRange->setValue(first, 0);
-    unblockEvaluation();
     _imp->frameRange->setValue(last, 1);
+    endChanges();
 }
     
 } //namespace Natron

@@ -82,6 +82,7 @@ struct CurveEditorPrivate
     , filterContainer(0)
     , filterLayout(0)
     , filterLabel(0)
+    , filterEdit(0)
     , leftPaneContainer(0)
     , leftPaneLayout(0)
     , undoStack(new QUndoStack)
@@ -307,6 +308,7 @@ static void createElementsForKnob(QTreeWidgetItem* parent,KnobGui* kgui,boost::s
     KnobHelper* helper = dynamic_cast<KnobHelper*>( k.get() );
     assert(helper);
     if (!helper) {
+        // coverity[dead_error_line]
         return;
     }
     boost::shared_ptr<KnobSignalSlotHandler> handler = helper->getSignalSlotHandler();

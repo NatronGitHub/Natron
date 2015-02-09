@@ -148,6 +148,12 @@ public:
     bool hasKeyFrameAtTime(int time) const;
 
     void getKeyframeTimes(std::set<int>* times) const;
+    
+    void getKeyFrames(std::list<std::pair<int,Natron::KeyframeTypeEnum> >* keys) const;
+    
+    int getKeyFrameIndex(double time) const;
+    
+    void setKeyFrameInterpolation(Natron::KeyframeTypeEnum interp,int index);
 
     int getKeyframeTime(int index) const;
 
@@ -827,6 +833,8 @@ public:
     virtual void load(const RotoItemSerialization & obj) OVERRIDE;
 
     void getKeyframeTimes(std::set<int> *times) const;
+    
+    void getKeyframeTimesAndInterpolation(std::list<std::pair<int,Natron::KeyframeTypeEnum> > *keys) const;
 
     /**
      * @brief Get the nearest previous keyframe from the given time.
@@ -839,6 +847,11 @@ public:
      * If nothing was found INT_MAX is returned.
      **/
     int getNextKeyframeTime(int time) const;
+    
+    int getKeyFrameIndex(double time) const;
+    
+    void setKeyFrameInterpolation(Natron::KeyframeTypeEnum interp,int index);
+
 
 signals:
 

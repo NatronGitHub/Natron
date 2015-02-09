@@ -1079,7 +1079,7 @@ OutputSchedulerThread::run()
                 /////At this point the frame has been processed by the output device
                 
                 
-                notifyFrameRendered(expectedTimeToRender,eSchedulingPolicyOrdered);
+                notifyFrameRendered(expectedTimeToRender,0,1,eSchedulingPolicyOrdered);
                 
                 ///////////
                 /// End of the loop, refresh bufferEmpty
@@ -1165,14 +1165,20 @@ OutputSchedulerThread::adjustNumberOfThreads(int* newNThreads)
 
 void
 OutputSchedulerThread::notifyFrameRendered(int frame,
+                                           int viewIndex,
+                                           int viewsCount,
                                            Natron::SchedulingPolicyEnum policy)
 {
-    _imp->engine->s_frameRendered(frame);
+    if (viewIndex == viewsCount -1) {
+        _imp->engine->s_frameRendered(frame);
+    }
     
     if (policy == eSchedulingPolicyFFA) {
         
         QMutexLocker l(&_imp->runArgsMutex);
-        ++_imp->nFramesRendered;
+        if (viewIndex == viewsCount -1) {
+            ++_imp->nFramesRendered;
+        }
         if ( _imp->nFramesRendered == (U64)(_imp->livingRunArgs.lastFrame - _imp->livingRunArgs.firstFrame + 1) ) {
             _imp->renderFinished = true;
             
@@ -1800,7 +1806,7 @@ private:
                     RectI renderWindow;
                     rod.toPixelEnclosing(scale, par, &renderWindow);
                     
-                    Node::ParallelRenderArgsSetter frameRenderARgs(activeInputToRender->getNode().get(),
+                    ParallelRenderArgsSetter frameRenderARgs(activeInputToRender->getNode().get(),
                                                                    time,
                                                                    i,
                                                                    false,  // is this render due to user interaction ?
@@ -1825,7 +1831,7 @@ private:
                     if (!renderDirectly) {
                         _imp->scheduler->appendToBuffer(time, i, boost::dynamic_pointer_cast<BufferableObject>(img));
                     } else {
-                        _imp->scheduler->notifyFrameRendered(time,eSchedulingPolicyFFA);
+                        _imp->scheduler->notifyFrameRendered(time,i,viewsCount,eSchedulingPolicyFFA);
                     }
                     
                 } else {
@@ -1884,7 +1890,7 @@ DefaultScheduler::processFrame(const BufferedFrames& frames)
         ignore_result(_effect->getRegionOfDefinition_public(hash,it->time, scale, it->view, &rod, &isProjectFormat));
         rod.toPixelEnclosing(0, par, &roi);
         
-        Node::ParallelRenderArgsSetter frameRenderARgs(_effect->getNode().get(),
+        ParallelRenderArgsSetter frameRenderARgs(_effect->getNode().get(),
                                                        it->time,
                                                        it->view,
                                                        false,  // is this render due to user interaction ?
@@ -2103,7 +2109,7 @@ private:
         StatusEnum stat = eStatusReplyDefault;
         
         int viewsCount = _viewer->getRenderViewsCount();
-        int view = viewsCount > 0 ? _viewer->getCurrentView() : 0;
+        int view = viewsCount > 0 ? _viewer->getViewerCurrentView() : 0;
         U64 viewerHash = _viewer->getHash();
         boost::shared_ptr<ViewerInstance::ViewerArgs> args[2];
         
@@ -2113,7 +2119,7 @@ private:
         
         for (int i = 0; i < 2; ++i) {
             args[i].reset(new ViewerInstance::ViewerArgs);
-            status[i] = _viewer->getRenderViewerArgsAndCheckCache(time, view, i, viewerHash, args[i].get());
+            status[i] = _viewer->getRenderViewerArgsAndCheckCache(time, true, true, view, i, viewerHash, args[i].get());
         }
        
         if (status[0] == eStatusFailed && status[1] == eStatusFailed) {
@@ -2572,6 +2578,9 @@ ViewerCurrentFrameRequestScheduler::run()
                 }
                 
                 while (found == _imp->producedQueue.end()) {
+					if (_imp->checkForExit()) {
+						return;
+					}
                     _imp->producedQueueNotEmpty.wait(&_imp->producedQueueMutex);
                     
                     for (std::list<ProducedFrame>::iterator it = _imp->producedQueue.begin(); it!= _imp->producedQueue.end(); ++it) {
@@ -2718,7 +2727,7 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool canAbort)
 {
     int frame = _imp->viewer->getTimeline()->currentFrame();
     int viewsCount = _imp->viewer->getRenderViewsCount();
-    int view = viewsCount > 0 ? _imp->viewer->getCurrentView() : 0;
+    int view = viewsCount > 0 ? _imp->viewer->getViewerCurrentView() : 0;
     U64 viewerHash = _imp->viewer->getHash();
     
     Natron::StatusEnum status[2] = {
@@ -2728,7 +2737,7 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool canAbort)
     boost::shared_ptr<ViewerInstance::ViewerArgs> args[2];
     for (int i = 0; i < 2; ++i) {
         args[i].reset(new ViewerInstance::ViewerArgs);
-        status[i] = _imp->viewer->getRenderViewerArgsAndCheckCache(frame, view, i, viewerHash, args[i].get());
+        status[i] = _imp->viewer->getRenderViewerArgsAndCheckCache(frame, false, canAbort, view, i, viewerHash, args[i].get());
     }
     
     if (status[0] == eStatusFailed && status[1] == eStatusFailed) {

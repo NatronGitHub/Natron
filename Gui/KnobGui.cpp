@@ -143,8 +143,8 @@ KnobGui::KnobGui(boost::shared_ptr<KnobI> knob,
         QObject::connect( handler,SIGNAL( setValueWithUndoStack(Variant,int) ),this,SLOT( onSetValueUsingUndoStack(Variant,int) ) );
         QObject::connect( handler,SIGNAL( dirty(bool) ),this,SLOT( onSetDirty(bool) ) );
         QObject::connect( handler,SIGNAL( animationLevelChanged(int,int) ),this,SLOT( onAnimationLevelChanged(int,int) ) );
-        QObject::connect( handler,SIGNAL( appendParamEditChange(Variant,int,int,bool,bool) ),this,
-                         SLOT( onAppendParamEditChanged(Variant,int,int,bool,bool) ) );
+        QObject::connect( handler,SIGNAL( appendParamEditChange(int,Variant,int,int,bool,bool) ),this,
+                         SLOT( onAppendParamEditChanged(int,Variant,int,int,bool,bool) ) );
         QObject::connect( handler,SIGNAL( frozenChanged(bool) ),this,SLOT( onFrozenChanged(bool) ) );
     }
     _imp->guiCurves.resize(knob->getDimension());
@@ -269,7 +269,7 @@ KnobGui::createAnimationButton(QHBoxLayout* layout)
     appPTR->getIcon(Natron::NATRON_PIXMAP_CURVE, &pix);
     _imp->animationButton = new AnimationButton( this,QIcon(pix),"",layout->parentWidget() );
     _imp->animationButton->setFixedSize(17, 17);
-    _imp->animationButton->setToolTip( Qt::convertFromPlainText(tr("Animation menu"), Qt::WhiteSpaceNormal) );
+    _imp->animationButton->setToolTip( Qt::convertFromPlainText(tr("Animation menu."), Qt::WhiteSpaceNormal) );
     QObject::connect( _imp->animationButton,SIGNAL( animationMenuRequested() ),this,SLOT( showAnimationMenu() ) );
     layout->addWidget(_imp->animationButton);
 
@@ -887,7 +887,7 @@ KnobGui::toolTip() const
     QString realTt( getKnob()->getHintToolTip().c_str() );
 
     if ( !realTt.isEmpty() ) {
-        realTt = Qt::convertFromPlainText(realTt,Qt::WhiteSpaceNormal);
+        realTt = Qt::convertFromPlainText(realTt.trimmed(), Qt::WhiteSpaceNormal);
         tt.append(realTt);
     }
 
@@ -1424,17 +1424,15 @@ KnobGui::linkTo(int dimension)
                 }
             }
 
-            thisKnob->blockEvaluation();
+            thisKnob->beginChanges();
             int dims = thisKnob->getDimension();
             for (int i = 0; i < dims; ++i) {
-                if (i == dims - 1) {
-                    thisKnob->unblockEvaluation();
-                }
                 if ((i == dimension || dimension == -1) && i < otherKnob->getDimension()) {
                     thisKnob->onKnobSlavedTo(i, otherKnob,i);
                     onKnobSlavedChanged(i, true);
                 }
             }
+            thisKnob->endChanges();
             thisKnob->getHolder()->getApp()->triggerAutoSave();
         }
     }
@@ -1455,15 +1453,13 @@ KnobGui::unlink()
     boost::shared_ptr<KnobI> thisKnob = getKnob();
     int dims = thisKnob->getDimension();
 
-    thisKnob->blockEvaluation();
+    thisKnob->beginChanges();
     for (int i = 0; i < dims; ++i) {
         std::pair<int,boost::shared_ptr<KnobI> > other = thisKnob->getMaster(i);
-        if (i == dims - 1) {
-            thisKnob->unblockEvaluation();
-        }
         thisKnob->onKnobUnSlaved(i);
         onKnobSlavedChanged(i, false);
     }
+    thisKnob->endChanges();
     getKnob()->getHolder()->getApp()->triggerAutoSave();
 }
 
@@ -1742,13 +1738,14 @@ KnobGui::onAnimationLevelChanged(int dim,int level)
 }
 
 void
-KnobGui::onAppendParamEditChanged(const Variant & v,
+KnobGui::onAppendParamEditChanged(int reason,
+                                  const Variant & v,
                                   int dim,
                                   int time,
                                   bool createNewCommand,
                                   bool setKeyFrame)
 {
-    pushUndoCommand( new MultipleKnobEditsUndoCommand(this,createNewCommand,setKeyFrame,v,dim,time) );
+    pushUndoCommand( new MultipleKnobEditsUndoCommand(this,(Natron::ValueChangedReasonEnum)reason, createNewCommand,setKeyFrame,v,dim,time) );
 }
 
 void

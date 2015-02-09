@@ -64,6 +64,8 @@ signals:
     void canceled();
 
 private:
+    
+    virtual void closeEvent(QCloseEvent* e) OVERRIDE FINAL;
 
     boost::scoped_ptr<RenderingProgressDialogPrivate> _imp;
 };

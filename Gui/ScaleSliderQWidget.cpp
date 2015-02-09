@@ -22,6 +22,10 @@ CLANG_DIAG_ON(unused-private-field)
 #include <QtGui/QPainter>
 #include <QStyleOption>
 
+#include "Engine/Settings.h"
+#include "Engine/Image.h"
+#include "Engine/KnobTypes.h"
+
 #include "Gui/ticks.h"
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/ZoomContext.h"
@@ -41,8 +45,6 @@ struct ScaleSliderQWidgetPrivate
     double value;
     bool dragging;
     QFont* font;
-    QColor textColor;
-    QColor scaleColor;
     QColor sliderColor;
     bool initialized;
     bool mustInitializeSliderPosition;
@@ -65,8 +67,6 @@ struct ScaleSliderQWidgetPrivate
     , value(initialPos)
     , dragging(false)
     , font(new QFont(appFont,NATRON_FONT_SIZE_8))
-    , textColor(200,200,200,255)
-    , scaleColor(100,100,100,255)
     , sliderColor(97,83,30,255)
     , initialized(false)
     , mustInitializeSliderPosition(true)
@@ -312,8 +312,16 @@ ScaleSliderQWidget::paintEvent(QPaintEvent* /*e*/)
     QPainter p(this);
     style()->drawPrimitive(QStyle::PE_Widget, &opt, &p, this);
 
+    double txtR,txtG,txtB;
+    appPTR->getCurrentSettings()->getTextColor(&txtR, &txtG, &txtB);
+    QColor textColor;
+    textColor.setRgbF(Natron::clamp(txtR), Natron::clamp(txtG), Natron::clamp(txtB));
+    
+    QColor scaleColor;
+    scaleColor.setRgbF(textColor.redF() / 2., textColor.greenF() / 2., textColor.blueF() / 2.);
+    
     QFontMetrics fontM(*_imp->font);
-    p.setPen(_imp->scaleColor);
+    p.setPen(scaleColor);
 
     QPointF btmLeft = _imp->zoomCtx.toZoomCoordinates(0,height() - 1);
     QPointF topRight = _imp->zoomCtx.toZoomCoordinates(width() - 1, 0);
@@ -356,7 +364,7 @@ ScaleSliderQWidget::paintEvent(QPaintEvent* /*e*/)
         double value = i * smallTickSize + offset;
         const double tickSize = ticks[i - m1] * smallTickSize;
         const double alpha = ticks_alpha(smallestTickSize, largestTickSize, tickSize);
-        QColor color(_imp->textColor);
+        QColor color(textColor);
         color.setAlphaF(alpha);
         QPen pen(color);
         pen.setWidthF(1.9);
@@ -380,7 +388,7 @@ ScaleSliderQWidget::paintEvent(QPaintEvent* /*e*/)
                     // draw it with a lower alpha
                     alphaText *= (tickSizePixel - sSizePixel) / (double)minTickSizeTextPixel;
                 }
-                QColor c = _imp->readOnly || !isEnabled() ? Qt::black : _imp->textColor;
+                QColor c = _imp->readOnly || !isEnabled() ? Qt::black : textColor;
                 c.setAlphaF(alphaText);
                 p.setFont(*_imp->font);
                 p.setPen(c);

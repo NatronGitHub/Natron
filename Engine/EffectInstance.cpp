@@ -1492,6 +1492,9 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool useCache,
     ///Find first something in the input images list
     if (!inputImages.empty()) {
         for (std::list<boost::shared_ptr<Image> >::const_iterator it = inputImages.begin(); it != inputImages.end(); ++it) {
+            if (!it->get()) {
+                continue;
+            }
             const ImageKey& imgKey = (*it)->getKey();
             if (imgKey == key) {
                 cachedImages.push_back(*it);
@@ -1651,7 +1654,7 @@ EffectInstance::tryConcatenateTransforms(const RenderRoIArgs& args,
     //An effect might not be able to concatenate transforms but can still apply a transform (e.g CornerPinMasked)
     bool canApplyTransform = getCanApplyTransform(&inputTransformEffect);
     
-    if (canTransform || canApplyTransform) {
+    if (canTransform || (canApplyTransform && inputTransformEffect)) {
         
         Transform::Matrix3x3 thisNodeTransform;
         
@@ -1841,6 +1844,11 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
     bool renderScaleOneUpstreamIfRenderScaleSupportDisabled = false;
     if (renderFullScaleThenDownscale) {
         renderScaleOneUpstreamIfRenderScaleSupportDisabled = _node->useScaleOneImagesWhenRenderScaleSupportIsDisabled();
+        
+        ///For multi-resolution we want input images with exactly the same size as the output image
+        if (!renderScaleOneUpstreamIfRenderScaleSupportDisabled && !supportsMultiResolution()) {
+            renderScaleOneUpstreamIfRenderScaleSupportDisabled = true;
+        }
     }
     
  
@@ -2411,7 +2419,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
         if (!rectsToRender.empty()) {
             
 # ifdef DEBUG
-            qDebug() << getNode()->getName_mt_safe().c_str() << ": render " << rectsToRender.size() << " rectangles";
+            qDebug() << getNode()->getName_mt_safe().c_str() << ": render view " << args.view << " " << rectsToRender.size() << " rectangles";
             for (std::list<RectI>::const_iterator it = rectsToRender.begin(); it != rectsToRender.end(); ++it) {
                 qDebug() << "rect: " << "x1= " <<  it->x1 << " , x2= " << it->x2 << " , y1= " << it->y1 << " , y2= " << it->y2;
             }
@@ -2814,7 +2822,7 @@ EffectInstance::renderRoIInternal(SequenceTime time,
         const RenderArgs & args = scopedArgs.getArgs();
 
 
-#     ifndef NDEBUG
+#ifndef NDEBUG
         RenderScale scale;
         scale.x = Image::getScaleFromMipMapLevel(mipMapLevel);
         scale.y = scale.x;
@@ -3127,7 +3135,7 @@ EffectInstance::tiledRenderingFunctor(const RenderArgs & args,
     
     ///Make the thread-storage live as long as the render action is called if we're in a newly launched thread in eRenderSafetyFullySafeFrame mode
     boost::shared_ptr<Implementation::ScopedRenderArgs> scopedArgs;
-    boost::shared_ptr<Node::ParallelRenderArgsSetter> scopedFrameArgs;
+    boost::shared_ptr<ParallelRenderArgsSetter> scopedFrameArgs;
     
     boost::shared_ptr<InputImagesHolder_RAII> scopedInputImages;
     
@@ -3190,7 +3198,7 @@ EffectInstance::tiledRenderingFunctor(const RenderArgs & args,
         argsCpy._renderWindowPixel = renderRectToRender;
         
         scopedArgs.reset( new Implementation::ScopedRenderArgs(&_imp->renderArgs,argsCpy) );
-        scopedFrameArgs.reset( new Node::ParallelRenderArgsSetter(_node.get(),
+        scopedFrameArgs.reset( new ParallelRenderArgsSetter(_node.get(),
                                                                   frameArgs.time,
                                                                   frameArgs.view,
                                                                   frameArgs.isRenderResponseToUserInteraction,
@@ -3376,7 +3384,11 @@ EffectInstance::evaluate(KnobI* knob,
     if (!button && isSignificant) {
         _node->incrementKnobsAge();
     }
-
+    
+    
+    int time = getCurrentTime();
+    
+    
     std::list<ViewerInstance* > viewers;
     _node->hasViewersConnected(&viewers);
     for (std::list<ViewerInstance* >::iterator it = viewers.begin();
@@ -3388,8 +3400,8 @@ EffectInstance::evaluate(KnobI* knob,
             (*it)->redrawViewer();
         }
     }
-
-    getNode()->refreshPreviewsRecursivelyDownstream(getApp()->getTimeLine()->currentFrame());
+    
+    getNode()->refreshPreviewsRecursivelyDownstream(time);
 } // evaluate
 
 bool
@@ -3570,13 +3582,16 @@ EffectInstance::onOverlayPenDown_public(double scaleX,
     if ( !hasOverlay() ) {
         return false;
     }
-
-    NON_RECURSIVE_ACTION();
-    _imp->setDuringInteractAction(true);
-    bool ret = onOverlayPenDown(scaleX,scaleY,viewportPos, pos);
-    _imp->setDuringInteractAction(false);
+    
+    bool ret;
+    {
+        NON_RECURSIVE_ACTION();
+        _imp->setDuringInteractAction(true);
+        ret = onOverlayPenDown(scaleX,scaleY,viewportPos, pos);
+        _imp->setDuringInteractAction(false);
+    }
     checkIfRenderNeeded();
-
+    
     return ret;
 }
 
@@ -3614,13 +3629,15 @@ EffectInstance::onOverlayPenUp_public(double scaleX,
     if ( !hasOverlay() ) {
         return false;
     }
-    
-    NON_RECURSIVE_ACTION();
-    _imp->setDuringInteractAction(true);
-    bool ret = onOverlayPenUp(scaleX,scaleY,viewportPos, pos);
-    _imp->setDuringInteractAction(false);
+    bool ret;
+    {
+        NON_RECURSIVE_ACTION();
+        _imp->setDuringInteractAction(true);
+        ret = onOverlayPenUp(scaleX,scaleY,viewportPos, pos);
+        _imp->setDuringInteractAction(false);
+    }
     checkIfRenderNeeded();
-
+    
     return ret;
 }
 
@@ -3636,12 +3653,15 @@ EffectInstance::onOverlayKeyDown_public(double scaleX,
         return false;
     }
 
-    NON_RECURSIVE_ACTION();
-    _imp->setDuringInteractAction(true);
-    bool ret = onOverlayKeyDown(scaleX,scaleY,key, modifiers);
-    _imp->setDuringInteractAction(false);
+    bool ret;
+    {
+        NON_RECURSIVE_ACTION();
+        _imp->setDuringInteractAction(true);
+        ret = onOverlayKeyDown(scaleX,scaleY,key, modifiers);
+        _imp->setDuringInteractAction(false);
+    }
     checkIfRenderNeeded();
-
+    
     return ret;
 }
 
@@ -3656,12 +3676,15 @@ EffectInstance::onOverlayKeyUp_public(double scaleX,
     if ( !hasOverlay() ) {
         return false;
     }
-
-    NON_RECURSIVE_ACTION();
-
-    _imp->setDuringInteractAction(true);
-    bool ret = onOverlayKeyUp(scaleX, scaleY, key, modifiers);
-    _imp->setDuringInteractAction(false);
+    
+    bool ret;
+    {
+        NON_RECURSIVE_ACTION();
+        
+        _imp->setDuringInteractAction(true);
+        ret = onOverlayKeyUp(scaleX, scaleY, key, modifiers);
+        _imp->setDuringInteractAction(false);
+    }
     checkIfRenderNeeded();
 
     return ret;
@@ -3678,13 +3701,16 @@ EffectInstance::onOverlayKeyRepeat_public(double scaleX,
     if ( !hasOverlay() ) {
         return false;
     }
-
-    NON_RECURSIVE_ACTION();
-    _imp->setDuringInteractAction(true);
-    bool ret = onOverlayKeyRepeat(scaleX,scaleY,key, modifiers);
-    _imp->setDuringInteractAction(false);
+    
+    bool ret;
+    {
+        NON_RECURSIVE_ACTION();
+        _imp->setDuringInteractAction(true);
+        ret = onOverlayKeyRepeat(scaleX,scaleY,key, modifiers);
+        _imp->setDuringInteractAction(false);
+    }
     checkIfRenderNeeded();
-
+    
     return ret;
 }
 
@@ -3697,13 +3723,16 @@ EffectInstance::onOverlayFocusGained_public(double scaleX,
     if ( !hasOverlay() ) {
         return false;
     }
-
-    NON_RECURSIVE_ACTION();
-    _imp->setDuringInteractAction(true);
-    bool ret = onOverlayFocusGained(scaleX,scaleY);
-    _imp->setDuringInteractAction(false);
+    
+    bool ret;
+    {
+        NON_RECURSIVE_ACTION();
+        _imp->setDuringInteractAction(true);
+        ret = onOverlayFocusGained(scaleX,scaleY);
+        _imp->setDuringInteractAction(false);
+    }
     checkIfRenderNeeded();
-
+    
     return ret;
 }
 
@@ -3716,14 +3745,16 @@ EffectInstance::onOverlayFocusLost_public(double scaleX,
     if ( !hasOverlay() ) {
         return false;
     }
-
-
-    NON_RECURSIVE_ACTION();
-    _imp->setDuringInteractAction(true);
-    bool ret = onOverlayFocusLost(scaleX,scaleY);
-    _imp->setDuringInteractAction(false);
+    bool ret;
+    {
+        
+        NON_RECURSIVE_ACTION();
+        _imp->setDuringInteractAction(true);
+        ret = onOverlayFocusLost(scaleX,scaleY);
+        _imp->setDuringInteractAction(false);
+    }
     checkIfRenderNeeded();
-
+    
     return ret;
 }
 
@@ -3757,7 +3788,7 @@ EffectInstance::getTransform_public(SequenceTime time,
                                     Natron::EffectInstance** inputToTransform,
                                     Transform::Matrix3x3* transform)
 {
-    NON_RECURSIVE_ACTION();
+    RECURSIVE_ACTION();
     return getTransform(time, renderScale, view, inputToTransform, transform);
 }
 
@@ -4070,6 +4101,13 @@ EffectInstance::getThreadLocalRenderTime() const
             return args._time;
         }
     }
+    
+    if (_imp->frameRenderArgs.hasLocalData()) {
+        const ParallelRenderArgs& args = _imp->frameRenderArgs.localData();
+        if (args.validArgs) {
+            return args.time;
+        }
+    }
 
     return getApp()->getTimeLine()->currentFrame();
 }
@@ -4122,7 +4160,7 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
         ////We set the thread storage render args so that if the instance changed action
         ////tries to call getImage it can render with good parameters.
         
-        Node::ParallelRenderArgsSetter frameRenderArgs(_node.get(),
+        ParallelRenderArgsSetter frameRenderArgs(_node.get(),
                                                        time,
                                                        0, /*view*/
                                                        true,
@@ -4331,6 +4369,44 @@ SequenceTime
 EffectInstance::getCurrentTime() const
 {
     return getThreadLocalRenderTime();
+}
+
+int
+EffectInstance::getCurrentView() const
+{
+    if (_imp->renderArgs.hasLocalData()) {
+        const RenderArgs& args = _imp->renderArgs.localData();
+        if (args._validArgs) {
+            return args._view;
+        }
+    }
+    
+    return 0;
+}
+
+SequenceTime
+EffectInstance::getFrameRenderArgsCurrentTime() const
+{
+    if (_imp->frameRenderArgs.hasLocalData()) {
+        const ParallelRenderArgs& args = _imp->frameRenderArgs.localData();
+        if (args.validArgs) {
+            return args.time;
+        }
+    }
+    return getApp()->getTimeLine()->currentFrame();
+}
+
+int
+EffectInstance::getFrameRenderArgsCurrentView() const
+{
+    if (_imp->frameRenderArgs.hasLocalData()) {
+        const ParallelRenderArgs& args = _imp->frameRenderArgs.localData();
+        if (args.validArgs) {
+            return args.view;
+        }
+    }
+    
+    return 0;
 }
 
 #ifdef DEBUG

@@ -261,12 +261,13 @@ TextRenderer::renderText(float x,
     glGetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&savedTexture);
     {
         GLProtectAttrib a(GL_ENABLE_BIT | GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT | GL_TRANSFORM_BIT);
-        GLProtectMatrix pr(GL_PROJECTION);
+        GLProtectMatrix pr(GL_MODELVIEW);
 
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         glEnable(GL_TEXTURE_2D);
         GLuint texture = 0;
+
         glTranslatef(x, y, 0);
         glColor4f( color.redF(), color.greenF(), color.blueF(), color.alphaF() );
         for (int i = 0; i < text.length(); ++i) {

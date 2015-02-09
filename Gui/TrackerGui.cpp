@@ -104,9 +104,11 @@ TrackerGui::TrackerGui(const boost::shared_ptr<TrackerPanel> & panel,
     _imp->addTrackButton->setCheckable(true);
     _imp->addTrackButton->setChecked(false);
     _imp->addTrackButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-    _imp->addTrackButton->setToolTip( tr( Qt::convertFromPlainText("When enabled you can add new tracks by clicking on the Viewer. "
-                                                                   "Holding the Control + Alt keys is the same as pressing this button."
-                                                                   ,Qt::WhiteSpaceNormal).toStdString().c_str() ) );
+    _imp->addTrackButton->setToolTip( tr( Qt::convertFromPlainText(tr("When enabled you can add new tracks "
+                                                                      "by clicking on the Viewer. "
+                                                                      "Holding the Control + Alt keys is the "
+                                                                      "same as pressing this button."),
+                                                                   Qt::WhiteSpaceNormal).toStdString().c_str() ) );
     _imp->buttonsLayout->addWidget(_imp->addTrackButton);
     QObject::connect( _imp->addTrackButton, SIGNAL( clicked(bool) ), this, SLOT( onAddTrackClicked(bool) ) );
     QPixmap pixPrev,pixNext,pixClearAll,pixClearBw,pixClearFw,pixUpdateViewerEnabled,pixUpdateViewerDisabled,pixStop;
@@ -172,21 +174,21 @@ TrackerGui::TrackerGui(const boost::shared_ptr<TrackerPanel> & panel,
 
     _imp->clearAllAnimationButton = new Button(QIcon(pixClearAll),"",_imp->buttonsBar);
     _imp->clearAllAnimationButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-    _imp->clearAllAnimationButton->setToolTip( tr( Qt::convertFromPlainText("Clear all animation for selected tracks.",
+    _imp->clearAllAnimationButton->setToolTip( tr( Qt::convertFromPlainText(tr("Clear all animation for selected tracks."),
                                                                             Qt::WhiteSpaceNormal).toStdString().c_str() ) );
     QObject::connect( _imp->clearAllAnimationButton,SIGNAL( clicked(bool) ),this,SLOT( onClearAllAnimationClicked() ) );
     _imp->buttonsLayout->addWidget(_imp->clearAllAnimationButton);
 
     _imp->clearBwAnimationButton = new Button(QIcon(pixClearBw),"",_imp->buttonsBar);
     _imp->clearBwAnimationButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-    _imp->clearBwAnimationButton->setToolTip( tr( Qt::convertFromPlainText("Clear animation backward from the current frame.",
+    _imp->clearBwAnimationButton->setToolTip( tr( Qt::convertFromPlainText(tr("Clear animation backward from the current frame."),
                                                                            Qt::WhiteSpaceNormal).toStdString().c_str() ) );
     QObject::connect( _imp->clearBwAnimationButton,SIGNAL( clicked(bool) ),this,SLOT( onClearBwAnimationClicked() ) );
     _imp->buttonsLayout->addWidget(_imp->clearBwAnimationButton);
 
     _imp->clearFwAnimationButton = new Button(QIcon(pixClearFw),"",_imp->buttonsBar);
     _imp->clearFwAnimationButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-    _imp->clearFwAnimationButton->setToolTip( tr( Qt::convertFromPlainText("Clear animation forward from the current frame.",
+    _imp->clearFwAnimationButton->setToolTip( tr( Qt::convertFromPlainText(tr("Clear animation forward from the current frame."),
                                                                            Qt::WhiteSpaceNormal).toStdString().c_str() ) );
     QObject::connect( _imp->clearFwAnimationButton,SIGNAL( clicked(bool) ),this,SLOT( onClearFwAnimationClicked() ) );
     _imp->buttonsLayout->addWidget(_imp->clearFwAnimationButton);
@@ -199,8 +201,9 @@ TrackerGui::TrackerGui(const boost::shared_ptr<TrackerPanel> & panel,
     _imp->updateViewerButton->setCheckable(true);
     _imp->updateViewerButton->setChecked(true);
     _imp->updateViewerButton->setDown(true);
-    _imp->updateViewerButton->setToolTip( tr( Qt::convertFromPlainText("Update viewer during tracking for each frame instead of just the tracks."
-                                                                       , Qt::WhiteSpaceNormal).toStdString().c_str() ) );
+    _imp->updateViewerButton->setToolTip( tr( Qt::convertFromPlainText(tr("Update viewer during tracking for each "
+                                                                          "frame instead of just the tracks."),
+                                                                        Qt::WhiteSpaceNormal).toStdString().c_str() ) );
     QObject::connect( _imp->updateViewerButton,SIGNAL( clicked(bool) ),this,SLOT( onUpdateViewerClicked(bool) ) );
     _imp->buttonsLayout->addWidget(_imp->updateViewerButton);
 
@@ -257,13 +260,16 @@ TrackerGui::drawOverlays(double scaleX,
                 Double_Knob* dblKnob = dynamic_cast<Double_Knob*>( newInstanceKnob.get() );
                 assert(dblKnob);
 
-                for (int i = 0; i < 2; ++i) {
-                    if (i == 0) {
-                        // Draw a shadow for the cross hair
-                        // shift by (1,1) pixel
-                        glMatrixMode(GL_PROJECTION);
-                        glPushMatrix();
-                        glTranslated(pixelScaleX, -pixelScaleY, 0);
+                GLProtectMatrix p(GL_PROJECTION);
+                for (int l = 0; l < 2; ++l) {
+                    // shadow (uses GL_PROJECTION)
+                    glMatrixMode(GL_PROJECTION);
+                    int direction = (l == 0) ? 1 : -1;
+                    // translate (1,-1) pixels
+                    glTranslated(direction * pixelScaleX / 256, -direction * pixelScaleY / 256, 0);
+                    glMatrixMode(GL_MODELVIEW);
+
+                    if (l == 0) {
                         glColor4d(0., 0., 0., 1.);
                     } else {
                         glColor4f(1., 1., 1., 1.);
@@ -283,11 +289,6 @@ TrackerGui::drawOverlays(double scaleX,
                     glVertex2d(x, y - CROSS_SIZE * pixelScaleY);
                     glVertex2d(x, y + CROSS_SIZE * pixelScaleY);
                     glEnd();
-
-                    if (i == 0) {
-                        glMatrixMode(GL_PROJECTION);
-                        glPopMatrix();
-                    }
                 }
                 glPointSize(1.);
             }
@@ -300,14 +301,16 @@ TrackerGui::drawOverlays(double scaleX,
             glEnable(GL_LINE_SMOOTH);
             glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
             glLineWidth(1.5);
-            glMatrixMode(GL_PROJECTION);
-            for (int i = 0; i < 2; ++i) {
-                if (i == 0) {
-                    // Draw a shadow for the cross hair
-                    // shift by (1,1) pixel
-                    glMatrixMode(GL_PROJECTION);
-                    glPushMatrix();
-                    glTranslated(pixelScaleX, -pixelScaleY, 0);
+            GLProtectMatrix p(GL_PROJECTION);
+            for (int l = 0; l < 2; ++l) {
+                // shadow (uses GL_PROJECTION)
+                glMatrixMode(GL_PROJECTION);
+                int direction = (l == 0) ? 1 : -1;
+                // translate (1,-1) pixels
+                glTranslated(direction * pixelScaleX / 256, -direction * pixelScaleY / 256, 0);
+                glMatrixMode(GL_MODELVIEW);
+
+                if (l == 0) {
                     glColor4d(0., 0., 0., 0.8);
                 } else {
                     glColor4d(0., 1., 0.,0.8);
@@ -327,11 +330,6 @@ TrackerGui::drawOverlays(double scaleX,
                 glVertex2d(_imp->lastMousePos.x(), _imp->lastMousePos.y() - ADDTRACK_SIZE * pixelScaleY);
                 glVertex2d(_imp->lastMousePos.x(), _imp->lastMousePos.y() + ADDTRACK_SIZE * pixelScaleY);
                 glEnd();
-
-                if (i == 0) {
-                    glMatrixMode(GL_PROJECTION);
-                    glPopMatrix();
-                }
             }
         }
     } // GLProtectAttrib a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_LINE_BIT | GL_ENABLE_BIT | GL_HINT_BIT);
@@ -383,10 +381,10 @@ TrackerGui::penDown(double scaleX,
         assert(newInstanceKnob); //< if it crashes here that means the parameter's name changed in the OpenFX plug-in.
         Double_Knob* dblKnob = dynamic_cast<Double_Knob*>( newInstanceKnob.get() );
         assert(dblKnob);
-        dblKnob->blockEvaluation();
+        dblKnob->beginChanges();
         dblKnob->setValue(pos.x(), 0);
-        dblKnob->unblockEvaluation();
         dblKnob->setValue(pos.y(), 1);
+        dblKnob->endChanges();
         didSomething = true;
     }
 

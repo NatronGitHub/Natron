@@ -1072,7 +1072,7 @@ void
 Node::initializeKnobs(const NodeSerialization & serialization,int renderScaleSupportPref)
 {
     ////Only called by the main-thread
-    _imp->liveInstance->blockEvaluation();
+    _imp->liveInstance->beginChanges();
     
     assert( QThread::currentThread() == qApp->thread() );
     assert(!_imp->knobsInitialized);
@@ -1223,7 +1223,7 @@ Node::initializeKnobs(const NodeSerialization & serialization,int renderScaleSup
     
     
     _imp->knobsInitialized = true;
-    _imp->liveInstance->unblockEvaluation();
+    _imp->liveInstance->endChanges();
     emit knobsInitialized();
 } // initializeKnobs
 
@@ -1619,7 +1619,7 @@ Node::connectInput(const boost::shared_ptr<Node> & input,
     {
         ///Check for invalid index
         QMutexLocker l(&_imp->inputsMutex);
-        if ( (inputNumber < 0) || ( inputNumber > (int)_imp->inputs.size() ) || (_imp->inputs[inputNumber]) ) {
+        if ( (inputNumber < 0) || ( inputNumber >= (int)_imp->inputs.size() ) || (_imp->inputs[inputNumber]) ) {
             return false;
         }
         
@@ -1798,6 +1798,7 @@ Node::onInputNameChanged(const QString & name)
     Natron::Node* inp = dynamic_cast<Natron::Node*>( sender() );
     assert(inp);
     if (!inp) {
+        // coverity[dead_error_line]
         return;
     }
     int inputNb = -1;
@@ -3134,6 +3135,7 @@ Node::computeFrameRangeForReader(const KnobI* fileKnob)
             assert(isFile);
             
             std::string pattern = isFile->getValue();
+            getApp()->getProject()->canonicalizePath(pattern);
             SequenceParsing::SequenceFromPattern seq;
             SequenceParsing::filesListFromPattern(pattern, &seq);
             if (seq.empty() || seq.size() == 1) {
@@ -3426,7 +3428,7 @@ Node::canOthersConnectToThisNode() const
     
     return dynamic_cast<const ViewerInstance*>(_imp->liveInstance) == NULL;
 # else // !DEBUG
-    return dynamic_cast<const ViewerInstance*>(_imp->liveInstance) == NULL && !_imp->liveInstance->isWriter();
+    return dynamic_cast<const ViewerInstance*>(_imp->liveInstance) == NULL/* && !_imp->liveInstance->isWriter()*/;
 # endif // !DEBUG
 }
 
@@ -3624,7 +3626,6 @@ Node::shouldCacheOutput() const
 {
     {
         //If true then we're in analysis, so we cache the input of the analysis effect
-        bool isMainThread = QThread::currentThread() == qApp->thread();
         
         QMutexLocker k(&_imp->outputsMutex);
         std::size_t sz = _imp->outputs.size();
@@ -3654,7 +3655,7 @@ Node::shouldCacheOutput() const
                 
                 return output->isSettingsPanelOpened() ||
                 _imp->liveInstance->doesTemporalClipAccess() ||
-                (isMainThread && (output->isMultiInstance() || output->getParentMultiInstance())) ||
+                _imp->liveInstance->getRecursionLevel() > 0 ||
                 isForceCachingEnabled() ||
                 appPTR->isAggressiveCachingEnabled() ||
                 (isPreviewEnabled() && !appPTR->isBackground());

@@ -1110,7 +1110,7 @@ RotoGui::RotoGuiPrivate::drawArrow(double centerX,
                                    bool hovered,
                                    const std::pair<double,double> & pixelScale)
 {
-    GLProtectMatrix p(GL_PROJECTION); // or should it be GL_MODELVIEW?
+    GLProtectMatrix p(GL_MODELVIEW);
 
     if (hovered) {
         glColor3f(0., 1., 0.);
@@ -1122,8 +1122,6 @@ RotoGui::RotoGuiPrivate::drawArrow(double centerX,
     double arrowWidth = kTransformArrowWidth * pixelScale.second;
     double arrowHeadHeight = 4 * pixelScale.second;
 
-
-    glMatrixMode(GL_PROJECTION); // or should it be GL_MODELVIEW?
     glTranslatef(centerX, centerY, 0.);
     glRotatef(rotate, 0., 0., 1.);
     QPointF bottom(0.,-arrowLenght);
@@ -1154,7 +1152,7 @@ RotoGui::RotoGuiPrivate::drawBendedArrow(double centerX,
                                          bool hovered,
                                          const std::pair<double,double> & pixelScale)
 {
-    GLProtectMatrix p(GL_PROJECTION); // or should it be GL_MODELVIEW?
+    GLProtectMatrix p(GL_MODELVIEW);
 
     if (hovered) {
         glColor3f(0., 1., 0.);
@@ -1166,7 +1164,6 @@ RotoGui::RotoGuiPrivate::drawBendedArrow(double centerX,
     double arrowWidth = kTransformArrowWidth * pixelScale.second;
     double arrowHeadHeight = 4 * pixelScale.second;
 
-    glMatrixMode(GL_PROJECTION); // or should it be GL_MODELVIEW?
     glTranslatef(centerX, centerY, 0.);
     glRotatef(rotate, 0., 0., 1.);
 
@@ -1283,13 +1280,13 @@ RotoGui::RotoGuiPrivate::drawSelectedCpsBBOX()
                 ///draw mid left arrow horizontal
                 drawArrow(midLeft.x() - offset, midLeft.y(), 90., hoverState == eHoverStateBboxMidLeft, pixelScale);
                 ///draw top left arrow rotated
-                drawArrow(topLeft.x() - halfOffset, topLeft.y() + halfOffset, -45., hoverState == eHoverStateBboxTopLeft, pixelScale);
+                drawArrow(topLeft.x() - offset, topLeft.y() + offset, 45., hoverState == eHoverStateBboxTopLeft, pixelScale);
                 ///draw top right arrow rotated
-                drawArrow(btmRight.x() + halfOffset, topLeft.y() + halfOffset, 45., hoverState == eHoverStateBboxTopRight, pixelScale);
+                drawArrow(btmRight.x() + offset, topLeft.y() + offset, -45., hoverState == eHoverStateBboxTopRight, pixelScale);
                 ///draw btm right arrow rotated
-                drawArrow(btmRight.x() + halfOffset, btmRight.y() - halfOffset, -45., hoverState == eHoverStateBboxBtmRight, pixelScale);
+                drawArrow(btmRight.x() + offset, btmRight.y() - offset, 45., hoverState == eHoverStateBboxBtmRight, pixelScale);
                 ///draw btm left arrow rotated
-                drawArrow(topLeft.x() - halfOffset, btmRight.y() - halfOffset, 45., hoverState == eHoverStateBboxBtmLeft, pixelScale);
+                drawArrow(topLeft.x() - offset, btmRight.y() - offset, -45., hoverState == eHoverStateBboxBtmLeft, pixelScale);
             } else {
                 ///draw mid top arrow horizontal
                 drawArrow(midTop.x(), midTop.y() + offset, 90., hoverState == eHoverStateBboxMidTop, pixelScale);
@@ -2051,7 +2048,7 @@ RotoGui::penMotion(double /*scaleX*/,
     
     
     if (!cursorSet) {
-        _imp->viewer->setCursor( QCursor(Qt::ArrowCursor) );
+        _imp->viewer->unsetCursor();
     }
 
 
@@ -2159,8 +2156,7 @@ RotoGui::penMotion(double /*scaleX*/,
 
         double tx = 0., ty = 0.;
         double skewX = 0.,skewY = 0.;
-        TransformUndoCommand::TransformPointsSelectionEnum type = TransformUndoCommand::eTransformAllPoints;
-        pushUndoCommand( new TransformUndoCommand(this,center.x(),center.y(),rot,skewX,skewY,tx,ty,sx,sy,time,type,_imp->rotoData->selectedCpsBbox) );
+        pushUndoCommand( new TransformUndoCommand(this,center.x(),center.y(),rot,skewX,skewY,tx,ty,sx,sy,time) );
         _imp->evaluateOnPenUp = true;
         didSomething = true;
         break;
@@ -2172,6 +2168,40 @@ RotoGui::penMotion(double /*scaleX*/,
         double sx = 1.,sy = 1.;
         double skewX = 0.,skewY = 0.;
         double tx = 0., ty = 0.;
+        
+        TransformUndoCommand::TransformPointsSelectionEnum type;
+        if (!modCASIsShift(e)) {
+            type = TransformUndoCommand::eTransformAllPoints;
+        } else {
+            if (_imp->state == eEventStateDraggingBBoxMidTop) {
+                type = TransformUndoCommand::eTransformMidTop;
+            } else if (_imp->state == eEventStateDraggingBBoxMidBtm) {
+                type = TransformUndoCommand::eTransformMidBottom;
+            }
+        }
+        
+        const QRectF& bbox = _imp->rotoData->selectedCpsBbox;
+        
+        switch (type) {
+            case TransformUndoCommand::eTransformMidBottom:
+                center.rx() = bbox.center().x();
+                center.ry() = bbox.top();
+                break;
+            case TransformUndoCommand::eTransformMidTop:
+                center.rx() = bbox.center().x();
+                center.ry() = bbox.bottom();
+                break;
+            case TransformUndoCommand::eTransformMidRight:
+                center.rx() = bbox.left();
+                center.ry() = bbox.center().y();
+                break;
+            case TransformUndoCommand::eTransformMidLeft:
+                center.rx() = bbox.right();
+                center.ry() = bbox.center().y();
+                break;
+            default:
+                break;
+        }
 
         if (_imp->rotoData->transformMode == eSelectedCpsTransformModeRotateAndSkew) {
             const double addSkew = ( pos.x() - _imp->lastMousePos.x() ) / ( pos.y() - center.y() );
@@ -2186,17 +2216,10 @@ RotoGui::penMotion(double /*scaleX*/,
                 sy *= ratio;
             }
         }
-        TransformUndoCommand::TransformPointsSelectionEnum type;
-        if (!modCASIsShift(e)) {
-            type = TransformUndoCommand::eTransformAllPoints;
-        } else {
-            if (_imp->state == eEventStateDraggingBBoxMidTop) {
-                type = TransformUndoCommand::eTransformMidTop;
-            } else if (_imp->state == eEventStateDraggingBBoxMidBtm) {
-                type = TransformUndoCommand::eTransformMidBottom;
-            }
-        }
-        pushUndoCommand( new TransformUndoCommand(this,center.x(),center.y(),rot,skewX,skewY,tx,ty,sx,sy,time,type,_imp->rotoData->selectedCpsBbox) );
+    
+
+        
+        pushUndoCommand( new TransformUndoCommand(this,center.x(),center.y(),rot,skewX,skewY,tx,ty,sx,sy,time) );
         _imp->evaluateOnPenUp = true;
         didSomething = true;
         break;
@@ -2208,6 +2231,42 @@ RotoGui::penMotion(double /*scaleX*/,
         double sx = 1.,sy = 1.;
         double skewX = 0.,skewY = 0.;
         double tx = 0., ty = 0.;
+        
+        
+        TransformUndoCommand::TransformPointsSelectionEnum type;
+        if (!modCASIsShift(e)) {
+            type = TransformUndoCommand::eTransformAllPoints;
+        } else {
+            if (_imp->state == eEventStateDraggingBBoxMidRight) {
+                type = TransformUndoCommand::eTransformMidRight;
+            } else if (_imp->state == eEventStateDraggingBBoxMidLeft) {
+                type = TransformUndoCommand::eTransformMidLeft;
+            }
+        }
+        
+        const QRectF& bbox = _imp->rotoData->selectedCpsBbox;
+        
+        switch (type) {
+            case TransformUndoCommand::eTransformMidBottom:
+                center.rx() = bbox.center().x();
+                center.ry() = bbox.top();
+                break;
+            case TransformUndoCommand::eTransformMidTop:
+                center.rx() = bbox.center().x();
+                center.ry() = bbox.bottom();
+                break;
+            case TransformUndoCommand::eTransformMidRight:
+                center.rx() = bbox.left();
+                center.ry() = bbox.center().y();
+                break;
+            case TransformUndoCommand::eTransformMidLeft:
+                center.rx() = bbox.right();
+                center.ry() = bbox.center().y();
+                break;
+            default:
+                break;
+        }
+
 
         if (_imp->rotoData->transformMode == eSelectedCpsTransformModeRotateAndSkew) {
             const double addSkew = ( pos.y() - _imp->lastMousePos.y() ) / ( pos.x() - center.x() );
@@ -2222,18 +2281,8 @@ RotoGui::penMotion(double /*scaleX*/,
                 sx *= ratio;
             }
         }
-        TransformUndoCommand::TransformPointsSelectionEnum type;
-        if (!modCASIsShift(e)) {
-            type = TransformUndoCommand::eTransformAllPoints;
-        } else {
-            if (_imp->state == eEventStateDraggingBBoxMidRight) {
-                type = TransformUndoCommand::eTransformMidRight;
-            } else if (_imp->state == eEventStateDraggingBBoxMidLeft) {
-                type = TransformUndoCommand::eTransformMidLeft;
-            }
-        }
-
-        pushUndoCommand( new TransformUndoCommand(this,center.x(),center.y(),rot,skewX,skewY,tx,ty,sx,sy,time,type,_imp->rotoData->selectedCpsBbox) );
+        
+        pushUndoCommand( new TransformUndoCommand(this,center.x(),center.y(),rot,skewX,skewY,tx,ty,sx,sy,time) );
 
         _imp->evaluateOnPenUp = true;
         didSomething = true;
@@ -2304,6 +2353,18 @@ RotoGui::penUp(double /*scaleX*/,
     _imp->rotoData->cpBeingDragged.second.reset();
     _imp->rotoData->featherBarBeingDragged.first.reset();
     _imp->rotoData->featherBarBeingDragged.second.reset();
+    
+    if (_imp->state == eEventStateDraggingBBoxMidLeft ||
+        _imp->state == eEventStateDraggingBBoxMidLeft ||
+        _imp->state == eEventStateDraggingBBoxMidTop ||
+        _imp->state == eEventStateDraggingBBoxMidBtm ||
+        _imp->state == eEventStateDraggingBBoxTopLeft ||
+        _imp->state == eEventStateDraggingBBoxTopRight ||
+        _imp->state == eEventStateDraggingBBoxBtmRight ||
+        _imp->state == eEventStateDraggingBBoxBtmLeft) {
+        refreshSelectionBBox();
+    }
+    
     _imp->state = eEventStateNone;
 
     if ( (_imp->selectedTool == eRotoToolDrawEllipse) || (_imp->selectedTool == eRotoToolDrawRectangle) ) {

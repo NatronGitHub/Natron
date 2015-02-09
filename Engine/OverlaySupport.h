@@ -63,6 +63,11 @@ public:
      * @brief Must restore all OpenGL bits saved in saveOpenGLContext()
      **/
     virtual void restoreOpenGLContext() = 0;
+    
+    /**
+     * @brief Get the current mipmapLevel applied by the viewer
+     **/
+    virtual unsigned int getCurrentRenderScale() const = 0;
 };
 
 #endif // OVERLAYSUPPORT_H
