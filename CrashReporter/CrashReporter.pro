@@ -94,7 +94,7 @@ unix:!mac {
 
 win32 {
         SOURCES += \
-                $BREAKPAD_PATH/client/windows/crash_generation/client_info.cc \
+                $$BREAKPAD_PATH/client/windows/crash_generation/client_info.cc \
                 $$BREAKPAD_PATH/client/windows/crash_generation/crash_generation_server.cc \
                 $$BREAKPAD_PATH/client/windows/crash_generation/minidump_generator.cc \
                 $$BREAKPAD_PATH/common/windows/guid_string.cc
