@@ -249,8 +249,7 @@ struct MultiInstancePanelPrivate
 };
 
 MultiInstancePanel::MultiInstancePanel(const boost::shared_ptr<NodeGui> & node)
-    : QObject()
-      , NamedKnobHolder( node->getNode()->getApp() )
+    : NamedKnobHolder( node->getNode()->getApp() )
       , _imp( new MultiInstancePanelPrivate(this,node) )
 {
 }

@@ -43,7 +43,7 @@ class OutputEffectInstance;
 struct ProjectPrivate;
 
 class Project
-    : public QObject,  public KnobHolder, public boost::noncopyable
+    : public KnobHolder, public boost::noncopyable
 {
     Q_OBJECT
 

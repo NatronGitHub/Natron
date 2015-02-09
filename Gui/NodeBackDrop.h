@@ -29,7 +29,7 @@ class DockablePanel;
 class NodeBackDropSerialization;
 struct NodeBackDropPrivate;
 class NodeBackDrop
-    : public QObject, public QGraphicsRectItem, public NamedKnobHolder
+    : public NamedKnobHolder, public QGraphicsRectItem
 {
     Q_OBJECT
 

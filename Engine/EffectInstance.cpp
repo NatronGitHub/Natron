@@ -2419,7 +2419,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
         if (!rectsToRender.empty()) {
             
 # ifdef DEBUG
-            qDebug() << getNode()->getName_mt_safe().c_str() << ": render " << rectsToRender.size() << " rectangles";
+            qDebug() << getNode()->getName_mt_safe().c_str() << ": render view " << args.view << " " << rectsToRender.size() << " rectangles";
             for (std::list<RectI>::const_iterator it = rectsToRender.begin(); it != rectsToRender.end(); ++it) {
                 qDebug() << "rect: " << "x1= " <<  it->x1 << " , x2= " << it->x2 << " , y1= " << it->y1 << " , y2= " << it->y2;
             }
@@ -3384,7 +3384,11 @@ EffectInstance::evaluate(KnobI* knob,
     if (!button && isSignificant) {
         _node->incrementKnobsAge();
     }
-
+    
+    
+    int time = getCurrentTime();
+    
+    
     std::list<ViewerInstance* > viewers;
     _node->hasViewersConnected(&viewers);
     for (std::list<ViewerInstance* >::iterator it = viewers.begin();
@@ -3396,8 +3400,8 @@ EffectInstance::evaluate(KnobI* knob,
             (*it)->redrawViewer();
         }
     }
-
-    getNode()->refreshPreviewsRecursivelyDownstream(getApp()->getTimeLine()->currentFrame());
+    
+    getNode()->refreshPreviewsRecursivelyDownstream(time);
 } // evaluate
 
 bool

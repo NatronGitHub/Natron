@@ -32,7 +32,7 @@ class OpenGLViewerI;
 struct TextureRect;
 
 class ViewerInstance
-: public QObject, public Natron::OutputEffectInstance
+: public Natron::OutputEffectInstance
 {
     Q_OBJECT
     

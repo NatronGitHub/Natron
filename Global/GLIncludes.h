@@ -14,6 +14,8 @@
 #include <GL/glew.h>
 #define QT_NO_OPENGL_ES_2
 
+#include "Global/Macros.h"
+
 #ifdef DEBUG
 #include <iostream>
 #define glCheckError()                                                  \
@@ -78,24 +80,71 @@
 #define glCheckFramebufferError() ( (void)0 )
 #endif // ifdef DEBUG
 
+CLANG_DIAG_OFF(deprecated)
+
 // an RAII helper class to push/pop attribs
 class GLProtectAttrib
 {
 public:
-    GLProtectAttrib(GLbitfield mask = GL_ALL_ATTRIB_BITS) { glPushAttrib(mask); }
+    GLProtectAttrib(GLbitfield mask = GL_ALL_ATTRIB_BITS)
+    {
+#ifdef DEBUG
+        GLint d = -1, m = -1;
+        glGetIntegerv(GL_ATTRIB_STACK_DEPTH, &d);
+        glGetIntegerv(GL_MAX_CLIENT_ATTRIB_STACK_DEPTH, &m);
+        if (d == m) {
+            overflow(m);
+        }
+#endif
+        glPushAttrib(mask);
+#ifdef DEBUG
+        glCheckError();
+#endif
+    }
 
     ~GLProtectAttrib() { glPopAttrib(); }
+private:
+#ifdef DEBUG
+    void overflow(GLint m) {
+        std::cout << "GLProtectAttrib: stack overflow (max depth is " << m << "). Add breakpoint in GLProtectAttrib::overflow()." << std::endl;
+    }
+#endif
 };
 
 // an RAII helper class to push/pop matrix
 class GLProtectMatrix
 {
 public:
-    GLProtectMatrix(GLenum mode) : _mode(mode) { glMatrixMode(_mode); glPushMatrix(); }
+    GLProtectMatrix(GLenum mode) : _mode(mode)
+    {
+#ifdef DEBUG
+        GLint d = -1, m = -1;
+        if (mode == GL_PROJECTION) {
+            glGetIntegerv(GL_PROJECTION_STACK_DEPTH, &d);
+            glGetIntegerv(GL_MAX_PROJECTION_STACK_DEPTH, &m);
+        } else {
+            glGetIntegerv(GL_MODELVIEW_STACK_DEPTH, &d);
+            glGetIntegerv(GL_MAX_MODELVIEW_STACK_DEPTH, &m);
+        }
+        if (d == m) {
+            overflow(m);
+        }
+#endif
+        glMatrixMode(_mode);
+        glPushMatrix();
+    }
 
     ~GLProtectMatrix() { glMatrixMode(_mode); glPopMatrix(); }
 private:
     GLenum _mode;
+
+#ifdef DEBUG
+    void overflow(GLint m) {
+        std::cout << "GLProtectMatrix(GL_" << (_mode == GL_PROJECTION ? "PROJECTION": "MODELVIEW") << "): stack overflow (max depth is " << m << ") Add breakpoint in GLProtectMatrix::overflow()." << std::endl;
+    }
+#endif
 };
+
+CLANG_DIAG_ON(deprecated)
 
 #endif // ifndef NATRON_GLOBAL_GLINCLUDES_H_

@@ -328,14 +328,14 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
         boost::shared_ptr<KnobI> knob = getKnobByName((*it)->getName());
         assert(knob);
         for (int i = 0; i < knob->getDimension(); ++i) {
-            knob->evaluateValueChange(i, Natron::eValueChangedReasonUserEdited, true);
+            knob->evaluateValueChange(i, Natron::eValueChangedReasonUserEdited);
         }
     }
     
     if (!images.empty()) {
         boost::shared_ptr<KnobI> fileNameKnob = getKnobByName(kOfxImageEffectFileParamName);
         if (fileNameKnob) {
-            fileNameKnob->evaluateValueChange(0,Natron::eValueChangedReasonUserEdited, true);
+            fileNameKnob->evaluateValueChange(0,Natron::eValueChangedReasonUserEdited);
         }
     }
     endChanges();
