@@ -12,14 +12,19 @@
 #ifndef NATRON_GUI_EDGE_H_
 #define NATRON_GUI_EDGE_H_
 
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QGraphicsLineItem>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
-#ifndef Q_MOC_RUN
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
+#include <boost/weak_ptr.hpp>
 #endif
 class QGraphicsPolygonItem;
 class QGraphicsLineItem;
@@ -71,17 +76,17 @@ public:
 
     boost::shared_ptr<NodeGui> getDest() const
     {
-        return _dest;
+        return _dest.lock();
     }
 
     boost::shared_ptr<NodeGui> getSource() const
     {
-        return _source;
+        return _source.lock();
     }
 
     bool hasSource() const
     {
-        return _source != NULL;
+        return _source.lock().get() != NULL;
     }
 
     void dragSource(const QPointF & src);
@@ -145,8 +150,8 @@ private:
     double _angle;
     QGraphicsTextItem* _label;
     QPolygonF _arrowHead;
-    boost::shared_ptr<NodeGui> _dest;
-    boost::shared_ptr<NodeGui> _source;
+    boost::weak_ptr<NodeGui> _dest;
+    boost::weak_ptr<NodeGui> _source;
     QColor _defaultColor;
     QColor _renderingColor;
     bool _useRenderingColor;
@@ -182,7 +187,7 @@ public:
 
     void setWidth(int lineWidth);
 
-public slots:
+public Q_SLOTS:
 
     /**
      * @brief Called when one of the 2 nodes is moved

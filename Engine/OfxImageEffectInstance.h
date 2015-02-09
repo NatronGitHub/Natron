@@ -10,9 +10,13 @@
 #ifndef NATRON_ENGINE_OFXIMAGEEFFECTINSTANCE_H_
 #define NATRON_ENGINE_OFXIMAGEEFFECTINSTANCE_H_
 
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
 #include <string>
 #include <cstdarg>
-#ifndef Q_MOC_RUN
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
 #endif
 #include <ofxhImageEffect.h>

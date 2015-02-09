@@ -6,6 +6,10 @@
 #ifndef NATRON_GUI_KNOBUNDOCOMMAND_H_
 #define NATRON_GUI_KNOBUNDOCOMMAND_H_
 
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
 #include <map>
 #include <vector>
 
@@ -305,6 +309,29 @@ public:
 private:
 
     std::list<boost::shared_ptr<KnobI> > _knobs,_clones;
+};
+
+class SetExpressionCommand
+: public QUndoCommand
+{
+public:
+    
+    SetExpressionCommand(const boost::shared_ptr<KnobI> & knob,
+                         bool hasRetVar,
+                         int dimension,
+                         const std::string& expr,
+                         QUndoCommand *parent = 0);
+    virtual void undo();
+    virtual void redo();
+    
+private:
+    
+    boost::shared_ptr<KnobI > _knob;
+    std::vector<std::string> _oldExprs;
+    std::vector<bool> _hadRetVar;
+    std::string _newExpr;
+    bool _hasRetVar;
+    int _dimension;
 };
 
 #endif // NATRON_GUI_KNOBUNDOCOMMAND_H_

@@ -8,6 +8,10 @@
  *
  */
 
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
 #include "ViewerTab.h"
 
 #include <cassert>
@@ -202,6 +206,10 @@ struct ViewerTabPrivate
     SpinBox* incrementSpinBox;
     Button* nextIncrement_Button;
     Button* playbackMode_Button;
+    
+    mutable QMutex playbackModeMutex;
+    Natron::PlaybackModeEnum playbackMode;
+    
     LineEdit* frameRangeEdit;
 
     ClickableLabel* canEditFrameRangeLabel;
@@ -300,6 +308,8 @@ struct ViewerTabPrivate
         , incrementSpinBox(NULL)
         , nextIncrement_Button(NULL)
         , playbackMode_Button(NULL)
+        , playbackModeMutex()
+        , playbackMode(Natron::ePlaybackModeLoop)
         , frameRangeEdit(NULL)
         , canEditFrameRangeLabel(NULL)
         , canEditFpsBox(NULL)
@@ -355,10 +365,19 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
                      ViewerInstance* node,
                      QWidget* parent)
     : QWidget(parent)
+    , ScriptObject()
       , _imp( new ViewerTabPrivate(gui,node) )
 {
     installEventFilter(this);
-    setObjectName( node->getName().c_str() );
+    
+    std::string nodeName =  node->getNode()->getScriptName();
+    setScriptName(nodeName);
+    setLabel(nodeName);
+    
+    NodePtr internalNode = node->getNode();
+    QObject::connect(internalNode.get(), SIGNAL(scriptNameChanged(QString)), this, SLOT(onInternalNodeScriptNameChanged(QString)));
+    QObject::connect(internalNode.get(), SIGNAL(labelChanged(QString)), this, SLOT(onInternalNodeLabelChanged(QString)));
+    
     _imp->mainLayout = new QVBoxLayout(this);
     setLayout(_imp->mainLayout);
     _imp->mainLayout->setSpacing(0);
@@ -996,7 +1015,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     
     boost::shared_ptr<Node> wrapperNode = _imp->viewerNode->getNode();
     QObject::connect( wrapperNode.get(),SIGNAL( inputChanged(int) ),this,SLOT( onInputChanged(int) ) );
-    QObject::connect( wrapperNode.get(),SIGNAL( inputNameChanged(int,QString) ),this,SLOT( onInputNameChanged(int,QString) ) );
+    QObject::connect( wrapperNode.get(),SIGNAL( inputLabelChanged(int,QString) ),this,SLOT( onInputNameChanged(int,QString) ) );
     QObject::connect( _imp->viewerNode,SIGNAL(clipPreferencesChanged()), this, SLOT(onClipPreferencesChanged()));
     QObject::connect( _imp->viewerNode,SIGNAL( activeInputsChanged() ),this,SLOT( onActiveInputsChanged() ) );
     QObject::connect( _imp->viewerColorSpace, SIGNAL( currentIndexChanged(int) ), this,
@@ -1059,6 +1078,9 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     }
 
     setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Preferred);
+    
+    _imp->viewerNode->setUiContext(getViewer());
+
 }
 
 void
@@ -1128,6 +1150,39 @@ ViewerTab::getCurrentView() const
 }
 
 void
+ViewerTab::setPlaybackMode(Natron::PlaybackModeEnum mode)
+{
+    QPixmap pix;
+    switch (mode) {
+        case Natron::ePlaybackModeLoop:
+            appPTR->getIcon(NATRON_PIXMAP_PLAYER_LOOP_MODE, &pix);
+            break;
+        case Natron::ePlaybackModeBounce:
+            appPTR->getIcon(NATRON_PIXMAP_PLAYER_BOUNCE, &pix);
+            break;
+        case Natron::ePlaybackModeOnce:
+            appPTR->getIcon(NATRON_PIXMAP_PLAYER_PLAY_ONCE, &pix);
+            break;
+        default:
+            break;
+    }
+    {
+        QMutexLocker k(&_imp->playbackModeMutex);
+        _imp->playbackMode = mode;
+    }
+    _imp->playbackMode_Button->setIcon(QIcon(pix));
+    _imp->viewerNode->getRenderEngine()->setPlaybackMode(mode);
+
+}
+
+Natron::PlaybackModeEnum
+ViewerTab::getPlaybackMode() const
+{
+    QMutexLocker k(&_imp->playbackModeMutex);
+    return _imp->playbackMode;
+}
+
+void
 ViewerTab::togglePlaybackMode()
 {
     Natron::PlaybackModeEnum mode = _imp->viewerNode->getRenderEngine()->getPlaybackMode();
@@ -1145,6 +1200,10 @@ ViewerTab::togglePlaybackMode()
             break;
         default:
             break;
+    }
+    {
+        QMutexLocker k(&_imp->playbackModeMutex);
+        _imp->playbackMode = mode;
     }
     _imp->playbackMode_Button->setIcon(QIcon(pix));
     _imp->viewerNode->getRenderEngine()->setPlaybackMode(mode);
@@ -1460,29 +1519,29 @@ ViewerTab::onGainSliderChanged(double v)
 void
 ViewerTab::onViewerChannelsChanged(int i)
 {
-    ViewerInstance::DisplayChannelsEnum channels;
+    Natron::DisplayChannelsEnum channels;
 
     switch (i) {
     case 0:
-        channels = ViewerInstance::eDisplayChannelsY;
+        channels = Natron::eDisplayChannelsY;
         break;
     case 1:
-        channels = ViewerInstance::eDisplayChannelsRGB;
+        channels = Natron::eDisplayChannelsRGB;
         break;
     case 2:
-        channels = ViewerInstance::eDisplayChannelsR;
+        channels = Natron::eDisplayChannelsR;
         break;
     case 3:
-        channels = ViewerInstance::eDisplayChannelsG;
+        channels = Natron::eDisplayChannelsG;
         break;
     case 4:
-        channels = ViewerInstance::eDisplayChannelsB;
+        channels = Natron::eDisplayChannelsB;
         break;
     case 5:
-        channels = ViewerInstance::eDisplayChannelsA;
+        channels = Natron::eDisplayChannelsA;
         break;
     default:
-        channels = ViewerInstance::eDisplayChannelsRGB;
+        channels = Natron::eDisplayChannelsRGB;
         break;
     }
     _imp->viewerNode->setDisplayChannels(channels);
@@ -1494,7 +1553,10 @@ ViewerTab::eventFilter(QObject *target,
 {
     if (e->type() == QEvent::MouseButtonPress) {
         if (_imp->gui && _imp->app) {
-            _imp->gui->selectNode( _imp->app->getNodeGui( _imp->viewerNode->getNode() ) );
+            boost::shared_ptr<NodeGuiI> gui_i = _imp->viewerNode->getNode()->getNodeGui();
+            assert(gui_i);
+            boost::shared_ptr<NodeGui> gui = boost::dynamic_pointer_cast<NodeGui>(gui_i);
+            _imp->gui->selectNode(gui);
         }
     }
 
@@ -1553,6 +1615,7 @@ void
 ViewerTab::drawOverlays(double scaleX,
                         double scaleY) const
 {
+
     if ( !_imp->app || !_imp->viewer ||  _imp->app->isClosing() || isFileDialogViewer() || _imp->gui->isGUIFrozen()) {
         return;
     }
@@ -2433,35 +2496,46 @@ ViewerTab::getZoomOrPannedSinceLastFit() const
     return _imp->viewer->getZoomOrPannedSinceLastFit();
 }
 
+Natron::DisplayChannelsEnum
+ViewerTab::getChannels() const
+{
+    return _imp->viewerNode->getChannels();
+}
+
+std::string
+ViewerTab::getChannelsString(Natron::DisplayChannelsEnum c)
+{
+    switch (c) {
+        case Natron::eDisplayChannelsRGB:
+            
+            return "RGB";
+        case Natron::eDisplayChannelsR:
+            
+            return "R";
+        case Natron::eDisplayChannelsG:
+            
+            return "G";
+        case Natron::eDisplayChannelsB:
+            
+            return "B";
+        case Natron::eDisplayChannelsA:
+            
+            return "A";
+        case Natron::eDisplayChannelsY:
+            
+            return "Luminance";
+            break;
+        default:
+            
+            return "";
+    }
+}
+
 std::string
 ViewerTab::getChannelsString() const
 {
-    ViewerInstance::DisplayChannelsEnum c = _imp->viewerNode->getChannels();
-
-    switch (c) {
-    case ViewerInstance::eDisplayChannelsRGB:
-
-        return "RGB";
-    case ViewerInstance::eDisplayChannelsR:
-
-        return "R";
-    case ViewerInstance::eDisplayChannelsG:
-
-        return "G";
-    case ViewerInstance::eDisplayChannelsB:
-
-        return "B";
-    case ViewerInstance::eDisplayChannelsA:
-
-        return "A";
-    case ViewerInstance::eDisplayChannelsY:
-
-        return "Luminance";
-        break;
-    default:
-
-        return "";
-    }
+    Natron::DisplayChannelsEnum c = _imp->viewerNode->getChannels();
+    return getChannelsString(c);
 }
 
 void
@@ -2996,6 +3070,41 @@ ViewerTab::getCompositingOperator() const
     return _imp->compOperator;
 }
 
+void
+ViewerTab::setInputA(int index)
+{
+    InputNamesMap::iterator found = _imp->inputNamesMap.find(index);
+    if (found == _imp->inputNamesMap.end()) {
+        return;
+    }
+    
+    int comboboxIndex = _imp->firstInputImage->itemIndex(found->second.name);
+    if (comboboxIndex == -1) {
+        return;
+    }
+    _imp->firstInputImage->setCurrentIndex(comboboxIndex);
+    _imp->viewerNode->setInputA(index);
+    _imp->viewerNode->renderCurrentFrame(true);
+    
+}
+
+void
+ViewerTab::setInputB(int index)
+{
+    InputNamesMap::iterator found = _imp->inputNamesMap.find(index);
+    if (found == _imp->inputNamesMap.end()) {
+        return;
+    }
+    
+    int comboboxIndex = _imp->secondInputImage->itemIndex(found->second.name);
+    if (comboboxIndex == -1) {
+        return;
+    }
+    _imp->secondInputImage->setCurrentIndex(comboboxIndex);
+    _imp->viewerNode->setInputB(index);
+    _imp->viewerNode->renderCurrentFrame(true);
+}
+
 ///Called when the user change the combobox choice
 void
 ViewerTab::onFirstInputNameChanged(const QString & text)
@@ -3126,23 +3235,30 @@ void
 ViewerTab::onInputChanged(int inputNb)
 {
     ///rebuild the name maps
-    EffectInstance* inp = _imp->viewerNode->getInput(inputNb);
+    EffectInstance* inp = 0;
+    std::vector<boost::shared_ptr<Natron::Node> > inputs  = _imp->viewerNode->getNode()->getInputs_mt_safe();
+    if (inputNb >= 0 && inputNb < (int)inputs.size()) {
+        if (inputs[inputNb]) {
+            inp = inputs[inputNb]->getLiveInstance();
+        }
+    }
+    
 
     if (inp) {
         InputNamesMap::iterator found = _imp->inputNamesMap.find(inputNb);
         if ( found != _imp->inputNamesMap.end() ) {
-            const std::string & curInputName = found->second.input->getName();
+            const std::string & curInputName = found->second.input->getNode()->getLabel();
             found->second.input = inp;
             int indexInA = _imp->firstInputImage->itemIndex( curInputName.c_str() );
             int indexInB = _imp->secondInputImage->itemIndex( curInputName.c_str() );
             assert(indexInA != -1 && indexInB != -1);
-            found->second.name = inp->getName().c_str();
+            found->second.name = inp->getNode()->getLabel().c_str();
             _imp->firstInputImage->setItemText(indexInA, found->second.name);
             _imp->secondInputImage->setItemText(indexInB, found->second.name);
         } else {
             InputName inpName;
             inpName.input = inp;
-            inpName.name = inp->getName().c_str();
+            inpName.name = inp->getNode()->getLabel().c_str();
             _imp->inputNamesMap.insert( std::make_pair(inputNb,inpName) );
             _imp->firstInputImage->addItem(inpName.name);
             _imp->secondInputImage->addItem(inpName.name);
@@ -3152,7 +3268,7 @@ ViewerTab::onInputChanged(int inputNb)
 
         ///The input has been disconnected
         if ( found != _imp->inputNamesMap.end() ) {
-            const std::string & curInputName = found->second.input->getName();
+            const std::string & curInputName = found->second.input->getNode()->getLabel();
             _imp->firstInputImage->blockSignals(true);
             _imp->secondInputImage->blockSignals(true);
             _imp->firstInputImage->removeItem( curInputName.c_str() );
@@ -3704,6 +3820,41 @@ void
 ViewerTab::setFrameRangeEdited(bool edited)
 {
     _imp->timeLineGui->setFrameRangeEdited(edited);
+}
+
+
+void
+ViewerTab::setFrameRange(int left,int right)
+{
+    setTimelineBounds(left, right);
+    onTimelineBoundariesChanged(left, right);
+}
+
+void
+ViewerTab::onInternalNodeLabelChanged(const QString& name)
+{
+    TabWidget* parent = dynamic_cast<TabWidget*>(parentWidget() );
+    if (parent) {
+        setLabel(name.toStdString());
+        parent->setTabLabel(this, name);
+    }
+}
+
+void
+ViewerTab::onInternalNodeScriptNameChanged(const QString& /*name*/)
+{
+    // always running in the main thread
+    std::string newName = _imp->viewerNode->getNode()->getFullyQualifiedName();
+    std::string oldName = getScriptName();
+  
+    assert( qApp && qApp->thread() == QThread::currentThread() );
+    getGui()->unregisterTab(this);
+    setScriptName(newName);
+    getGui()->registerTab(this,this);
+    TabWidget* parent = dynamic_cast<TabWidget*>(parentWidget() );
+    if (parent) {
+        parent->onTabScriptNameChanged(this, oldName, newName);
+    }
 }
 
 #ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS

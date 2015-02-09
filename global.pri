@@ -2,7 +2,7 @@
 #License, v. 2.0. If a copy of the MPL was not distributed with this
 #file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-CONFIG += warn_on
+CONFIG += warn_on no_keywords
 DEFINES += OFX_EXTENSIONS_NUKE OFX_EXTENSIONS_TUTTLE OFX_EXTENSIONS_VEGAS OFX_SUPPORTS_PARAMETRIC OFX_EXTENSIONS_TUTTLE
 DEFINES += OFX_SUPPORTS_MULTITHREAD
 
@@ -155,6 +155,36 @@ unix {
      }
      linux {
          LIBS += -ldl
+     }
+
+     # User may specify an alternate python3-config from the command-line,
+     # as in "qmake PYTHON_CONFIG=python3.4-config" (MacPorts doesn't have a python3-config)
+     isEmpty(PYTHON_CONFIG) {
+         PYTHON_CONFIG = python3-config
+     }
+     #message(PYTHON_CONFIG = $$PYTHON_CONFIG)
+     python {
+         LIBS += $$system($$PYTHON_CONFIG --ldflags)
+         QMAKE_CXXFLAGS += $$system($$PYTHON_CONFIG --includes)
+     }
+
+     # There may be different pyside.pc/shiboken.pc for different versions of python.
+     # The following hack also works with Homebrew if pyside is installed with option --with-python3
+     shiboken {
+       PYSIDE_PKG_CONFIG_PATH = $$system($$PYTHON_CONFIG --prefix)/lib/pkgconfig
+       INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir shiboken)
+       # the sed stuff is to work around an Xcode generator bug
+       LIBS += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --libs shiboken | sed -e s/-undefined\\ dynamic_lookup//)
+     }
+     pyside {
+       PYSIDE_PKG_CONFIG_PATH = $$system($$PYTHON_CONFIG --prefix)/lib/pkgconfig
+       INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside)
+       INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside)/QtCore
+       # QtGui include are needed because it looks for Qt::convertFromPlainText which is defined in
+       # qtextdocument.h in the QtGui module.
+       INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside)/QtGui
+       QT += gui
+       LIBS += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --libs pyside)
      }
 } #unix
 

@@ -175,6 +175,10 @@
         <file>Resources/Images/treeview_more.png</file>
         <file>Resources/Images/treeview_vline.png</file>
         <file>Resources/Images/refreshActive.png</file>
+        <file>Resources/Images/checkbox_animation3_checked_hovered.png</file>
+        <file>Resources/Images/checkbox_animation3_checked.png</file>
+        <file>Resources/Images/checkbox_animation3_unchecked_hovered.png</file>
+        <file>Resources/Images/checkbox_animation3_unchecked.png</file>
         <file>Resources/Images/hide_unmodified.png</file>
         <file>Resources/Images/unhide_unmodified.png</file>
         <file>../CHANGELOG.md</file>
@@ -185,5 +189,23 @@
         <file>Resources/Images/dot_icon.png</file>
         <file>Resources/Images/colorwheel_overlay.png</file>
         <file>Resources/Images/roto_merge.png</file>
+        <file>Resources/Images/clearOutput.png</file>
+        <file>Resources/Images/execScript.png</file>
+        <file>Resources/Images/loadAndExecScript.png</file>
+        <file>Resources/Images/loadScript.png</file>
+        <file>Resources/Images/nextScript.png</file>
+        <file>Resources/Images/outputPanelActivated.png</file>
+        <file>Resources/Images/outputPanelDeactivated.png</file>
+        <file>Resources/Images/previousScript.png</file>
+        <file>Resources/Images/saveScript.png</file>
+        <file>Resources/Images/loadProjectSplashscreen.png</file>
+        <file>Resources/Images/merge_difference.png</file>
+        <file>Resources/Images/merge_divide.png</file>
+        <file>Resources/Images/merge_max.png</file>
+        <file>Resources/Images/merge_min.png</file>
+        <file>Resources/Images/merge_minus.png</file>
+        <file>Resources/Images/merge_multiply.png</file>
+        <file>Resources/Images/merge_plus.png</file>
+        <file>Resources/Images/merge_screen.png</file>
     </qresource>
 </RCC>

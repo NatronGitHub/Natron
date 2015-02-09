@@ -6,6 +6,10 @@
 #ifndef NATRON_GUI_GROUPBOXLABEL_H_
 #define NATRON_GUI_GROUPBOXLABEL_H_
 
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
@@ -33,7 +37,7 @@ public:
         return _checked;
     }
 
-public slots:
+public Q_SLOTS:
 
     void setChecked(bool);
 
@@ -41,11 +45,11 @@ private:
     virtual void mousePressEvent(QMouseEvent* /*e*/) OVERRIDE FINAL
     {
         if ( isEnabled() ) {
-            emit checked(!_checked);
+            Q_EMIT checked(!_checked);
         }
     }
 
-signals:
+Q_SIGNALS:
     void checked(bool);
 
 private:

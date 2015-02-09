@@ -9,6 +9,10 @@
  *
  */
 
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
 #include "OfxEffectInstance.h"
 
 #include <locale>
@@ -216,7 +220,7 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
             getNode()->createRotoContextConditionnally();
             
             getNode()->initializeInputs();
-            getNode()->initializeKnobs( serialization ? *serialization : NodeSerialization( getApp() ), disableRenderScaleSupport ? 1 : 0 );
+            getNode()->initializeKnobs(disableRenderScaleSupport ? 1 : 0 );
             
             ///before calling the createInstanceAction, load values
             if ( serialization && !serialization->isNull() ) {
@@ -229,9 +233,9 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
             
             //////////////////////////////////////////////////////
             ///////For READERS & WRITERS only we open an image file dialog
-            if (allowFileDialogs && isReader() && !(serialization && !serialization->isNull()) && paramValues.empty()) {
+            if (!getApp()->isCreatingPythonGroup() && allowFileDialogs && isReader() && !(serialization && !serialization->isNull()) && paramValues.empty()) {
                 images = getApp()->openImageFileDialog();
-            } else if (allowFileDialogs && isWriter() && !(serialization && !serialization->isNull())  && paramValues.empty()) {
+            } else if (!getApp()->isCreatingPythonGroup() && allowFileDialogs && isWriter() && !(serialization && !serialization->isNull())  && paramValues.empty()) {
                 images = getApp()->saveImageFileDialog();
             }
             if (!images.empty()) {
@@ -326,9 +330,12 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
     ///that we set
     for (std::list<boost::shared_ptr<KnobSerialization> >::const_iterator it = paramValues.begin(); it != paramValues.end();++it) {
         boost::shared_ptr<KnobI> knob = getKnobByName((*it)->getName());
-        assert(knob);
-        for (int i = 0; i < knob->getDimension(); ++i) {
-            knob->evaluateValueChange(i, Natron::eValueChangedReasonUserEdited);
+        if (knob) {
+            for (int i = 0; i < knob->getDimension(); ++i) {
+                knob->evaluateValueChange(i, Natron::eValueChangedReasonUserEdited);
+            }
+        } else {
+            qDebug() << "WARNING: No such parameter " << (*it)->getName().c_str();
         }
     }
     
@@ -413,9 +420,20 @@ OfxEffectInstance::tryInitializeOverlayInteracts()
         std::vector<std::string> slaveParams;
         _overlayInteract->getSlaveToParam(slaveParams);
         for (U32 i = 0; i < slaveParams.size(); ++i) {
-            boost::shared_ptr<KnobI> param = getKnobByName(slaveParams[i]);
-            assert(param);
-            _overlaySlaves.push_back((void*)param.get());
+            boost::shared_ptr<KnobI> param ;
+            const std::vector< boost::shared_ptr<KnobI> > & knobs = getKnobs();
+            for (std::vector< boost::shared_ptr<KnobI> >::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+                if ((*it)->getOriginalName() == slaveParams[i]) {
+                    param = *it;
+                    break;
+                    
+                }
+            }
+            if (!param) {
+                qDebug() << "OfxEffectInstance::tryInitializeOverlayInteracts(): slaveToParam " << slaveParams[i].c_str() << " not available";
+            } else {
+                _overlaySlaves.push_back((void*)param.get());
+            }
         }
         
         getApp()->redrawAllViewers();
@@ -864,7 +882,7 @@ OfxEffectInstance::onInputChanged(int inputNo)
     /**
      * The plug-in might call getImage, set a valid thread storage on the tree.
      **/
-    ParallelRenderArgsSetter frameRenderArgs(_node.get(),
+    ParallelRenderArgsSetter frameRenderArgs(getNode().get(),
                                                    time,
                                                    0 /*view*/,
                                                    true,
@@ -1049,17 +1067,17 @@ clipPrefsProxy(OfxEffectInstance* self,
             }
             ///Otherwise if the bit-depth conversion will be lossy, warn the user
             else if ( Image::isBitDepthConversionLossy(input_outputNatronDepth, outputClipDepthNatron) ) {
-                bitDepthWarning.append( instance->getName().c_str() );
+                bitDepthWarning.append( instance->getNode()->getLabel_mt_safe().c_str() );
                 bitDepthWarning.append(" (" + QString( Image::getDepthString(input_outputNatronDepth).c_str() ) + ")");
                 bitDepthWarning.append(" ----> ");
-                bitDepthWarning.append( self->getName_mt_safe().c_str() );
+                bitDepthWarning.append( self->getNode()->getLabel_mt_safe().c_str() );
                 bitDepthWarning.append(" (" + QString( Image::getDepthString(outputClipDepthNatron).c_str() ) + ")");
                 bitDepthWarning.append('\n');
                 setBitDepthWarning = true;
             }
             
             if (!self->effectInstance()->supportsMultipleClipPARs() && foundClipPrefs->second.par != outputAspectRatio && foundClipPrefs->first->getConnected()) {
-                qDebug() << self->getName_mt_safe().c_str() << ": An input clip ("<< foundClipPrefs->first->getName().c_str()
+                qDebug() << self->getScriptName_mt_safe().c_str() << ": An input clip ("<< foundClipPrefs->first->getName().c_str()
                 << ") has a pixel aspect ratio (" << foundClipPrefs->second.par
                 << ") different than the output clip (" << outputAspectRatio << ") but it doesn't support multiple clips PAR. "
                 << "This should have been handled earlier before connecting the nodes, @see Node::canConnectInput.";
@@ -1413,11 +1431,13 @@ OfxEffectInstance::getRegionsOfInterest(SequenceTime time,
         return;
     }
     assert(outputRoD.x2 >= outputRoD.x1 && outputRoD.y2 >= outputRoD.y1);
+    (void)outputRoD;
     assert(renderWindow.x2 >= renderWindow.x1 && renderWindow.y2 >= renderWindow.y1);
 
     {
         bool scaleIsOne = (scale.x == 1. && scale.y == 1.);
         assert( !( (supportsRenderScaleMaybe() == eSupportsNo) && !scaleIsOne ) );
+        (void)scaleIsOne;
     }
 
     OfxStatus stat;
@@ -1450,7 +1470,7 @@ OfxEffectInstance::getRegionsOfInterest(SequenceTime time,
 
 
     if ( (stat != kOfxStatOK) && (stat != kOfxStatReplyDefault) ) {
-        appPTR->writeToOfxLog_mt_safe(QString( getNode()->getName_mt_safe().c_str() ) + "Failed to specify the region of interest from inputs.");
+        appPTR->writeToOfxLog_mt_safe(QString( getNode()->getScriptName_mt_safe().c_str() ) + "Failed to specify the region of interest from inputs.");
     }
     if (stat != kOfxStatReplyDefault) {
         
@@ -1508,7 +1528,7 @@ OfxEffectInstance::getFramesNeeded(SequenceTime time)
         stat = _effect->getFrameNeededAction( (OfxTime)time, inputRanges );
     }
     if ( (stat != kOfxStatOK) && (stat != kOfxStatReplyDefault) ) {
-        Natron::errorDialog( getName(), QObject::tr("Failed to specify the frame ranges needed from inputs.").toStdString() );
+        Natron::errorDialog( getScriptName_mt_safe(), QObject::tr("Failed to specify the frame ranges needed from inputs.").toStdString() );
     } else if (stat == kOfxStatOK) {
         for (OFX::Host::ImageEffect::RangeMap::iterator it = inputRanges.begin(); it != inputRanges.end(); ++it) {
             OfxClipInstance* clip = dynamic_cast<OfxClipInstance*>(it->first);
@@ -1747,6 +1767,7 @@ OfxEffectInstance::beginSequenceRender(SequenceTime first,
     {
         bool scaleIsOne = (scale.x == 1. && scale.y == 1.);
         assert( !( (supportsRenderScaleMaybe() == eSupportsNo) && !scaleIsOne ) );
+        (void)scaleIsOne;
     }
 
     OfxStatus stat;
@@ -1792,6 +1813,7 @@ OfxEffectInstance::endSequenceRender(SequenceTime first,
     {
         bool scaleIsOne = (scale.x == 1. && scale.y == 1.);
         assert( !( (supportsRenderScaleMaybe() == eSupportsNo) && !scaleIsOne ) );
+        (void)scaleIsOne;
     }
 
     OfxStatus stat;
@@ -1872,6 +1894,7 @@ OfxEffectInstance::render(SequenceTime time,
         }
     }
 # endif // DEBUG
+    (void)output;
     {
         bool skipDiscarding = false;
         if (getRecursionLevel() > 1) {
@@ -2389,7 +2412,7 @@ OfxEffectInstance::knobChanged(KnobI* k,
 
     ///If the param changed is a button and the node is disabled don't do anything which might
     ///trigger an analysis
-    if ( (reason == eValueChangedReasonUserEdited) && dynamic_cast<Button_Knob*>(k) && _node->isNodeDisabled() ) {
+    if ( (reason == eValueChangedReasonUserEdited) && dynamic_cast<Button_Knob*>(k) && getNode()->isNodeDisabled() ) {
         return;
     }
 
@@ -2432,17 +2455,17 @@ OfxEffectInstance::knobChanged(KnobI* k,
             ///getClipPreferences() so we don't take the clips preferences lock for read here otherwise we would
             ///create a deadlock. This code then assumes that the instance changed action of the plug-in doesn't require
             ///the clip preferences to stay the same throughout the action.
-            stat = effectInstance()->paramInstanceChangedAction(k->getName(), ofxReason,(OfxTime)time,renderScale);
+            stat = effectInstance()->paramInstanceChangedAction(k->getOriginalName(), ofxReason,(OfxTime)time,renderScale);
         } else {
             ///This action as all the overlay interacts actions can trigger recursive actions, such as
             ///getClipPreferences() so we don't take the clips preferences lock for read here otherwise we would
             ///create a deadlock. This code then assumes that the instance changed action of the plug-in doesn't require
             ///the clip preferences to stay the same throughout the action.
-            stat = effectInstance()->paramInstanceChangedAction(k->getName(), ofxReason,(OfxTime)time,renderScale);
+            stat = effectInstance()->paramInstanceChangedAction(k->getOriginalName(), ofxReason,(OfxTime)time,renderScale);
         }
     }
     if ( (stat != kOfxStatOK) && (stat != kOfxStatReplyDefault) ) {
-        QString err( QString( getNode()->getName_mt_safe().c_str() ) + ": An error occured while changing parameter " +
+        QString err( QString( getNode()->getScriptName_mt_safe().c_str() ) + ": An error occured while changing parameter " +
                     k->getDescription().c_str() );
         appPTR->writeToOfxLog_mt_safe(err);
         
@@ -2453,13 +2476,12 @@ OfxEffectInstance::knobChanged(KnobI* k,
         originatedFromMainThread) { //< change didnt occur in main-thread in the first, palce don't attempt to draw the overlay
         
         ///Run the following only in the main-thread
-        
-        if ( _effect->isClipPreferencesSlaveParam( k->getName() ) ) {
+
+        if ( _effect->isClipPreferencesSlaveParam( k->getOriginalName() ) ) {
             RECURSIVE_ACTION();
             checkOFXClipPreferences_public(time, renderScale, ofxReason,true, true);
         }
-#pragma message WARN("TODO (python): also check if the interact is actually visible (requires changes in GUI)")
-        if (_overlayInteract) {
+        if (_overlayInteract && getNode()->shouldDrawOverlay()) {
             // Some plugins (e.g. by digital film tools) forget to set kOfxInteractPropSlaveToParam.
             // Most hosts trigger a redraw if the plugin has an active overlay.
             //if (std::find(_overlaySlaves.begin(), _overlaySlaves.end(), (void*)k) != _overlaySlaves.end()) {
@@ -2703,9 +2725,7 @@ const std::string &
 OfxEffectInstance::ofxGetOutputPremultiplication() const
 {
     static const std::string v(kOfxImagePreMultiplied);
-    OFX::Host::ImageEffect::ClipInstance* clip = effectInstance()->getClip(kOfxImageEffectOutputClipName);
-
-    assert(clip);
+    assert(effectInstance()->getClip(kOfxImageEffectOutputClipName));
     
     if (getRecursionLevel() > 0) {
         const std::string & premult = effectInstance()->getOutputPreMultiplication();
@@ -2858,6 +2878,7 @@ OfxEffectInstance::clearTransform(int inputNb)
     assert(clip);
     clip->clearTransform();
 }
+
 
 bool
 OfxEffectInstance::isFrameVarying() const

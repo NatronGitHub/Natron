@@ -9,16 +9,22 @@
  *
  */
 
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
 #include "OfxParamInstance.h"
+
 #include <iostream>
 #include <boost/scoped_array.hpp>
 #include <boost/math/special_functions/fpclassify.hpp>
 
 //ofx extension
 #include <nuke/fnPublicOfxExtensions.h>
-
 #include <ofxParametricParam.h>
+
 #include <QDebug>
+
 
 #include "Engine/AppManager.h"
 #include "Global/GlobalDefines.h"
@@ -35,6 +41,7 @@
 #include "Engine/Format.h"
 #include "Engine/Project.h"
 #include "Engine/AppInstance.h"
+
 using namespace Natron;
 
 
@@ -2406,18 +2413,6 @@ OfxPageInstance::setSecret()
     _pageKnob->setAllDimensionsEnabled( getSecret() );
 }
 
-void
-OfxPageInstance::populatePage()
-{
-    const std::map<int,OFX::Host::Param::Instance*> & children = getChildren();
-
-    for (std::map<int, OFX::Host::Param::Instance*>::const_iterator it = children.begin(); it != children.end(); ++it) {
-        OfxParamToKnob* param = dynamic_cast<OfxParamToKnob*>(it->second);
-        assert(param);
-        _pageKnob->addKnob( param->getKnob() );
-    }
-}
-
 boost::shared_ptr<KnobI> OfxPageInstance::getKnob() const
 {
     return _pageKnob;
@@ -3038,6 +3033,7 @@ OfxParametricInstance::onResetToDefault(const QVector<int> & dimensions)
     for (int i = 0; i < dimensions.size(); ++i) {
         Natron::StatusEnum st = _knob->deleteAllControlPoints( dimensions.at(i) );
         assert(st == Natron::eStatusOK);
+        (void)st;
         defaultInitializeFromDescriptor(dimensions.at(i),_descriptor);
     }
 }

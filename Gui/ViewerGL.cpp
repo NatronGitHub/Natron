@@ -8,6 +8,10 @@
  *
  */
 
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
 #include "ViewerGL.h"
 
 #include <cassert>
@@ -66,6 +70,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Gui/NodeGraph.h"
 #include "Gui/CurveWidget.h"
 #include "Gui/Histogram.h"
+#include "Gui/NodeGui.h"
 
 // warning: 'gluErrorString' is deprecated: first deprecated in OS X 10.9 [-Wdeprecated-declarations]
 CLANG_DIAG_OFF(deprecated-declarations)
@@ -2434,7 +2439,7 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
     }
     setRegionOfDefinition(rod,region.par,textureIndex);
 
-    emit imageChanged(textureIndex);
+    Q_EMIT imageChanged(textureIndex);
 }
 
 void
@@ -2521,7 +2526,11 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
     Qt::MouseButton button = e->button();
 
     if ( buttonDownIsLeft(e) ) {
-        _imp->viewerTab->getGui()->selectNode( _imp->viewerTab->getGui()->getApp()->getNodeGui( _imp->viewerTab->getInternalNode()->getNode() ) );
+        
+        boost::shared_ptr<NodeGuiI> gui_i = _imp->viewerTab->getInternalNode()->getNode()->getNodeGui();
+        assert(gui_i);
+        boost::shared_ptr<NodeGui> gui = boost::dynamic_pointer_cast<NodeGui>(gui_i);
+        _imp->viewerTab->getGui()->selectNode(gui);
     }
 
     _imp->oldClick = e->pos();
@@ -2659,7 +2668,7 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
             _imp->lastDragStartPos = zoomPos;
             _imp->ms = eMouseStateSelecting;
             if ( !modCASIsControl(e) ) {
-                emit selectionCleared();
+                Q_EMIT selectionCleared();
                 mustRedraw = true;
             }
         }
@@ -2688,8 +2697,9 @@ ViewerGL::mouseReleaseEvent(QMouseEvent* e)
 
     if (_imp->ms == eMouseStateSelecting) {
         mustRedraw = true;
+
         if (_imp->hasMovedSincePress) {
-            emit selectionRectangleChanged(true);
+            Q_EMIT selectionRectangleChanged(true);
         }
     }
     
@@ -2862,7 +2872,7 @@ ViewerGL::mouseMoveEvent(QMouseEvent* e)
             zoomValue = 1; // sometimes, floor(100*0.01) makes 0
         }
         assert(zoomValue > 0);
-        emit zoomChanged(zoomValue);
+        Q_EMIT zoomChanged(zoomValue);
 
         //_imp->oldClick = newClick; // don't update oldClick! this is the zoom center
         _imp->viewerTab->getInternalNode()->renderCurrentFrame(false);
@@ -3038,7 +3048,7 @@ ViewerGL::mouseMoveEvent(QMouseEvent* e)
     case eMouseStateSelecting: {
         _imp->refreshSelectionRectangle(zoomPos);
         mustRedraw = true;
-        emit selectionRectangleChanged(false);
+        Q_EMIT selectionRectangleChanged(false);
     }; break;
     default: {
         unsigned int mipMapLevel = getCurrentRenderScale();
@@ -3173,7 +3183,10 @@ ViewerGL::wheelEvent(QWheelEvent* e)
     if (!gui) {
         return;
     }
-    gui->selectNode(gui->getApp()->getNodeGui( _imp->viewerTab->getInternalNode()->getNode() ) );
+    
+    boost::shared_ptr<NodeGuiI> nodeGui_i = _imp->viewerTab->getInternalNode()->getNode()->getNodeGui();
+    boost::shared_ptr<NodeGui> nodeGui = boost::dynamic_pointer_cast<NodeGui>(nodeGui_i);
+    gui->selectNode(nodeGui);
 
     const double zoomFactor_min = 0.01;
     const double zoomFactor_max = 1024.;
@@ -3206,7 +3219,7 @@ ViewerGL::wheelEvent(QWheelEvent* e)
         zoomValue = 1; // sometimes, floor(100*0.01) makes 0
     }
     assert(zoomValue > 0);
-    emit zoomChanged(zoomValue);
+    Q_EMIT zoomChanged(zoomValue);
 
 
     _imp->viewerTab->getInternalNode()->renderCurrentFrame(false);
@@ -3297,7 +3310,7 @@ ViewerGL::fitImageToFormat()
         if (zoomFactorInt == 0) {
             zoomFactorInt = 1;
         }
-        emit zoomChanged(zoomFactorInt);
+        Q_EMIT zoomChanged(zoomFactorInt);
     }
     ///Clear green cached line so the user doesn't expect to see things in the cache
     ///since we're changing the zoom factor
@@ -4061,18 +4074,7 @@ ViewerGL::makeOpenGLcontextCurrent()
     makeCurrent();
 }
 
-void
-ViewerGL::onViewerNodeNameChanged(const QString & name)
-{
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-    _imp->viewerTab->getGui()->unregisterTab(_imp->viewerTab);
-    TabWidget* parent = dynamic_cast<TabWidget*>( _imp->viewerTab->parentWidget() );
-    if (parent) {
-        parent->setTabName(_imp->viewerTab, name);
-    }
-    _imp->viewerTab->getGui()->registerTab(_imp->viewerTab);
-}
+
 
 void
 ViewerGL::removeGUI()

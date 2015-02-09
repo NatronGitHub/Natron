@@ -8,8 +8,12 @@
  *
  */
 
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
 
 #include "SequenceFileDialog.h"
+
 #if defined(Q_OS_UNIX)
 #include <pwd.h>
 #include <unistd.h> // for pathconf() on OS X
@@ -2435,7 +2439,7 @@ void
 FavoriteView::clicked(const QModelIndex &index)
 {
     QUrl url = model()->index(index.row(), 0).data(UrlModel::UrlRole).toUrl();
-    emit urlRequested(url);
+    Q_EMIT urlRequested(url);
 
     selectUrl(url);
 }
@@ -2769,10 +2773,14 @@ SequenceFileDialog::onTogglePreviewButtonClicked(bool toggled)
         if (!_preview->viewerUI->parentWidget()) {
             _centerAreaLayout->addWidget(_preview->viewerUI);
         }
-        _preview->viewerUI->show();
+        if (!_preview->viewerUI->isVisible()) {
+            _preview->viewerUI->setVisible(true);
+        }
         refreshPreviewAfterSelectionChange();
     } else {
-        _preview->viewerUI->hide();
+        if (_preview->viewerUI->isVisible()) {
+            _preview->viewerUI->setVisible(false);
+        }
     }
 }
 
@@ -2782,20 +2790,23 @@ SequenceFileDialog::createViewerPreviewNode()
     CreateNodeArgs args(PLUGINID_NATRON_VIEWER,
                         "",
                         -1,-1,
-                        -1,
                         false,
                         INT_MIN,
                         INT_MIN,
                         false,
                         false,
                         NATRON_FILE_DIALOG_PREVIEW_VIEWER_NAME,
-                        CreateNodeArgs::DefaultValuesList());
+                        CreateNodeArgs::DefaultValuesList(),
+                        _gui->getApp()->getProject());
     
-    boost::shared_ptr<Natron::Node> viewer = _gui->getApp()->createNode(args);
-    _preview->viewerNode = _gui->getApp()->getNodeGui(viewer);
+    _preview->viewerNodeInternal = _gui->getApp()->createNode(args);
+    assert(_preview->viewerNodeInternal);
+    boost::shared_ptr<NodeGuiI> viewerNodeGui = _preview->viewerNodeInternal->getNodeGui();
+    _preview->viewerNode = boost::dynamic_pointer_cast<NodeGui>(viewerNodeGui);
     assert(_preview->viewerNode);
     _preview->viewerNode->hideGui();
-    ViewerInstance* viewerInstance = dynamic_cast<ViewerInstance*>(viewer->getLiveInstance());
+    
+    ViewerInstance* viewerInstance = dynamic_cast<ViewerInstance*>(_preview->viewerNodeInternal->getLiveInstance());
     assert(viewerInstance);
     if (!viewerInstance) {
         // coverity[dead_error_line]
@@ -2825,7 +2836,7 @@ SequenceFileDialog::createViewerPreviewNode()
     _preview->viewerUI->setPlayerVisible(false);
     TabWidget* parent = dynamic_cast<TabWidget*>(_preview->viewerUI->parentWidget());
     if (parent) {
-        parent->removeTab(_preview->viewerUI);
+        parent->removeTab(_preview->viewerUI,true);
     }
     _preview->viewerUI->setParent(NULL);
 }
@@ -2840,29 +2851,30 @@ SequenceFileDialog::findOrCreatePreviewReader(const std::string& filetype)
         if ( found == readersForFormat.end() ) {
             return boost::shared_ptr<NodeGui>();
         }
-        std::map<std::string,boost::shared_ptr<NodeGui> >::iterator foundReader = _preview->readerNodes.find(found->second);
+        std::map<std::string,std::pair< boost::shared_ptr<Natron::Node>, boost::shared_ptr<NodeGui> > >::iterator foundReader = _preview->readerNodes.find(found->second);
         if (foundReader == _preview->readerNodes.end()) {
             
             CreateNodeArgs args(found->second.c_str(),
                                 "",
                                 -1,-1,
-                                -1,
                                 false,
                                 INT_MIN,
                                 INT_MIN,
                                 false,
                                 false,
-                                QString(NATRON_FILE_DIALOG_PREVIEW_READER_NAME) +  QString(found->second.c_str()),
-                                CreateNodeArgs::DefaultValuesList());
+                                QString(NATRON_FILE_DIALOG_PREVIEW_READER_NAME) +  QString(found->first.c_str()),
+                                CreateNodeArgs::DefaultValuesList(),
+                                _gui->getApp()->getProject());
             
             boost::shared_ptr<Natron::Node> reader = _gui->getApp()->createNode(args);
-            boost::shared_ptr<NodeGui> readerGui = _gui->getApp()->getNodeGui(reader);
+            boost::shared_ptr<NodeGuiI> readerGui_i = reader->getNodeGui();
+            boost::shared_ptr<NodeGui> readerGui = boost::dynamic_pointer_cast<NodeGui>(readerGui_i);
             assert(readerGui);
             readerGui->hideGui();
-            _preview->readerNodes.insert(std::make_pair(found->second,readerGui));
+            _preview->readerNodes.insert(std::make_pair(found->second,std::make_pair(reader,readerGui)));
             return readerGui;
         } else {
-            return foundReader->second;
+            return foundReader->second.second;
         }
     }
     return  boost::shared_ptr<NodeGui>();

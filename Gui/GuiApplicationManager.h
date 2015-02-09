@@ -13,6 +13,13 @@
 #ifndef GUIAPPLICATIONMANAGER_H
 #define GUIAPPLICATIONMANAGER_H
 
+
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
+#include <list>
+
 #include "Engine/AppManager.h"
 #include "Engine/Variant.h"
 
@@ -51,8 +58,33 @@ class Curve;
 class BoundAction;
 class KeyBoundAction;
 class QAction;
+class NodeSerialization;
+class NodeGuiSerialization;
 
 
+struct NodeClipBoard
+{
+    std::list<boost::shared_ptr<NodeSerialization> > nodes;
+    std::list<boost::shared_ptr<NodeGuiSerialization> > nodesUI;
+    
+    NodeClipBoard()
+    : nodes()
+    , nodesUI()
+    {
+    }
+    
+    bool isEmpty() const
+    {
+        return nodes.empty() && nodesUI.empty();
+    }
+};
+
+struct PythonUserCommand {
+    QString grouping;
+    Qt::Key key;
+    Qt::KeyboardModifiers modifiers;
+    std::string pythonFunction;
+};
 
 struct GuiApplicationManagerPrivate;
 class GuiApplicationManager
@@ -82,14 +114,20 @@ public:
                           const std::list<Variant> & values,
                           const std::list<boost::shared_ptr<Curve> > & animation,
                           const std::map<int,std::string> & stringAnimation,
-                          const std::list<boost::shared_ptr<Curve> > & parametricCurves);
+                          const std::list<boost::shared_ptr<Curve> > & parametricCurves,
+                          const std::string& appID,
+                          const std::string& nodeFullyQualifiedName,
+                          const std::string& paramName);
 
 
     void getKnobClipBoard(bool* copyAnimation,
                           std::list<Variant>* values,
                           std::list<boost::shared_ptr<Curve> >* animation,
                           std::map<int,std::string>* stringAnimation,
-                          std::list<boost::shared_ptr<Curve> >* parametricCurves) const;
+                          std::list<boost::shared_ptr<Curve> >* parametricCurves,
+                          std::string* appID,
+                          std::string* nodeFullyQualifiedName,
+                          std::string* paramName) const;
 
     bool isClipBoardEmpty() const;
 
@@ -148,15 +186,27 @@ public:
     
     virtual int getAppFontSize() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     
+    bool isNodeClipBoardEmpty() const;
+    
+    NodeClipBoard& getNodeClipBoard();
+    
     virtual void reloadStylesheets() OVERRIDE FINAL;
     
-public slots:
+    void clearNodeClipBoard();
+    
+    void addCommand(const QString& grouping,const std::string& pythonFunction, Qt::Key key,const Qt::KeyboardModifiers& modifiers);
+    
+    const std::list<PythonUserCommand>& getUserPythonCommands() const;
+    
+public Q_SLOTS:
 
 
     ///Closes the application, asking the user to save each opened project that has unsaved changes
     virtual void exitApp() OVERRIDE FINAL;
 
 private:
+
+    virtual void initBuiltinPythonModules() OVERRIDE FINAL;
 
     virtual void onPluginLoaded(Natron::Plugin* plugin) OVERRIDE FINAL;
     virtual void ignorePlugin(Natron::Plugin* plugin) OVERRIDE FINAL;

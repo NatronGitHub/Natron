@@ -11,15 +11,22 @@
 
 #ifndef OPENGLVIEWERI_H
 #define OPENGLVIEWERI_H
-#ifndef Q_MOC_RUN
+
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
 #endif
 #include "Engine/OverlaySupport.h"
 #include "Engine/Rect.h"
+
 class Format;
 struct TextureRect;
 class QString;
 class TimeLine;
+
 namespace Natron
 {
     class Image;
@@ -129,10 +136,6 @@ public:
      **/
     virtual bool supportsGLSL() const = 0;
 
-    /**
-     * @brief Overrides to refresh any gui indicating the name of the underlying node.
-     **/
-    virtual void onViewerNodeNameChanged(const QString & name) = 0;
 
     /**
      * @brief Called when the live instance of the viewer node is killed. (i.e: when the node is deleted).

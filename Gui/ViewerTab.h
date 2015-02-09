@@ -12,18 +12,24 @@
 #ifndef NATRON_GUI_VIEWERTAB_H_
 #define NATRON_GUI_VIEWERTAB_H_
 
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QWidget>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
-#ifndef Q_MOC_RUN
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #endif
 #include "Global/GlobalDefines.h"
+#include "Engine/ScriptObject.h"
 #include "Gui/FromQtEnums.h"
+
 
 namespace Natron
 {
@@ -43,6 +49,7 @@ struct RotoGuiSharedData;
 struct ViewerTabPrivate;
 class ViewerTab
     : public QWidget
+    , public ScriptObject
 {
     Q_OBJECT
 
@@ -127,8 +134,12 @@ public:
     void setGain(double d);
 
     double getGain() const;
+    
+    static std::string getChannelsString(Natron::DisplayChannelsEnum c);
 
     std::string getChannelsString() const;
+    
+    Natron::DisplayChannelsEnum getChannels() const;
 
     void setChannels(const std::string & channelsStr);
 
@@ -218,9 +229,16 @@ public:
     
     void setTimelineBounds(int left,int right);
     
+    ///Calls setTimelineBounds + set the frame range line edit
+    void setFrameRange(int left,int right);
+    
     void setFrameRangeEdited(bool edited);
     
-public slots:
+    void setPlaybackMode(Natron::PlaybackModeEnum mode);
+    
+    Natron::PlaybackModeEnum getPlaybackMode() const;
+    
+public Q_SLOTS:
 
     void startPause(bool);
     void abortRendering();
@@ -272,6 +290,10 @@ public slots:
     void onFirstInputNameChanged(const QString & text);
 
     void onSecondInputNameChanged(const QString & text);
+    
+    void setInputA(int index);
+    
+    void setInputB(int index);
 
     void onActiveInputsChanged();
 
@@ -320,6 +342,10 @@ public slots:
     void setTurboButtonDown(bool down);
     
     void onClipPreferencesChanged();
+    
+    void onInternalNodeLabelChanged(const QString& name);
+    void onInternalNodeScriptNameChanged(const QString& name);
+    
 private:
     
     void onCompositingOperatorChangedInternal(Natron::ViewerCompositingOperatorEnum oldOp,Natron::ViewerCompositingOperatorEnum newOp);

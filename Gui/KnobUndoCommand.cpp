@@ -3,6 +3,10 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
 #include "KnobUndoCommand.h"
 
 #include "Engine/KnobTypes.h"
@@ -147,8 +151,6 @@ PasteUndoCommand::redo()
 {
     
     boost::shared_ptr<KnobI> internalKnob = _knob->getKnob();
-
-    int targetDimension = internalKnob->getDimension();
     
     Knob<int>* isInt = dynamic_cast<Knob<int>*>( internalKnob.get() );
     Knob<bool>* isBool = dynamic_cast<Knob<bool>*>( internalKnob.get() );
@@ -161,9 +163,11 @@ PasteUndoCommand::redo()
         _knob->removeAllKeyframeMarkersOnTimeline(-1);
         
         std::list<boost::shared_ptr<Curve> >::iterator it = newCurves.begin();
-        for (int i = 0;i  < targetDimension; ++it,++i) {
-            
-            internalKnob->getCurve(i)->clone( *(*it) );
+        for (U32 i = 0; i  < newCurves.size(); ++it,++i) {
+            boost::shared_ptr<Curve> c = internalKnob->getCurve(i);
+            if (c) {
+                c->clone( *(*it) );
+            }
             if ( (*it)->getKeyFramesCount() > 0 ) {
                 hasKeyframeData = true;
             }
@@ -173,10 +177,7 @@ PasteUndoCommand::redo()
 
     std::list<Variant>::iterator it = newValues.begin();
     internalKnob->beginChanges();
-    
-    for (int i = 0; i < targetDimension; ++it,++i) {
-
-        
+    for (U32 i = 0; i < newValues.size(); ++it,++i) {
         
         if (isInt) {
             isInt->setValue(it->toInt(), i, true);
@@ -319,7 +320,7 @@ MultipleKnobEditsUndoCommand::undo()
         holder->endChanges();
         Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(holder);
         if (effect) {
-            holderName = effect->getName().c_str();
+            holderName = effect->getNode()->getLabel().c_str();
         }
     }
     setText( QObject::tr("Multiple edits for %1").arg(holderName) );
@@ -390,7 +391,7 @@ MultipleKnobEditsUndoCommand::redo()
             if (!firstRedoCalled) {
                 effect->getApp()->triggerAutoSave();
             }
-            holderName = effect->getName().c_str();
+            holderName = effect->getNode()->getLabel().c_str();
         }
     }
     firstRedoCalled = true;
@@ -521,3 +522,61 @@ RestoreDefaultsCommand::redo()
     setText( QObject::tr("Restore default value(s)") );
 }
 
+
+SetExpressionCommand::SetExpressionCommand(const boost::shared_ptr<KnobI> & knob,
+                     bool hasRetVar,
+                     int dimension,
+                     const std::string& expr,
+                     QUndoCommand *parent)
+: QUndoCommand(parent)
+, _knob(knob)
+, _oldExprs()
+, _hadRetVar()
+, _newExpr(expr)
+, _hasRetVar(hasRetVar)
+, _dimension(dimension)
+{
+    for (int i = 0; i < knob->getDimension(); ++i) {
+        _oldExprs.push_back(knob->getExpression(i));
+        _hadRetVar.push_back(knob->isExpressionUsingRetVariable(i));
+    }
+}
+
+void
+SetExpressionCommand::undo()
+{
+    for (int i = 0; i < _knob->getDimension(); ++i) {
+        try {
+            (void)_knob->setExpression(i, _oldExprs[i], _hadRetVar[i]);
+        } catch (...) {
+            Natron::errorDialog(QObject::tr("Expression").toStdString(), QObject::tr("The expression is invalid").toStdString());
+            break;
+        }
+    }
+    
+    _knob->evaluateValueChange(_dimension == -1 ? 0 : _dimension, Natron::eValueChangedReasonNatronGuiEdited);
+    setText( QObject::tr("Set expression") );
+}
+
+void
+SetExpressionCommand::redo()
+{
+    if (_dimension == -1) {
+        for (int i = 0; i < _knob->getDimension(); ++i) {
+            try {
+               (void) _knob->setExpression(i, _newExpr, _hasRetVar);
+            } catch (...) {
+                Natron::errorDialog(QObject::tr("Expression").toStdString(), QObject::tr("The expression is invalid").toStdString());
+                break;
+            }
+        }
+    } else {
+        try {
+            _knob->setExpression(_dimension, _newExpr, _hasRetVar);
+        } catch (...) {
+            Natron::errorDialog(QObject::tr("Expression").toStdString(), QObject::tr("The expression is invalid").toStdString());
+        }
+    }
+    _knob->evaluateValueChange(_dimension == -1 ? 0 : _dimension, Natron::eValueChangedReasonNatronGuiEdited);
+    setText( QObject::tr("Set expression") );
+}

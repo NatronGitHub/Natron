@@ -12,6 +12,10 @@
 #ifndef NATRON_ENGINE_VIEWERNODE_H_
 #define NATRON_ENGINE_VIEWERNODE_H_
 
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
 #include <string>
 
 #include "Global/Macros.h"
@@ -36,19 +40,6 @@ class ViewerInstance
 {
     Q_OBJECT
     
-public:
-    
-    
-    
-    enum DisplayChannelsEnum
-    {
-        eDisplayChannelsRGB = 0,
-        eDisplayChannelsR,
-        eDisplayChannelsG,
-        eDisplayChannelsB,
-        eDisplayChannelsA,
-        eDisplayChannelsY
-    };
 
 public:
     static Natron::EffectInstance* BuildEffect(boost::shared_ptr<Natron::Node> n) WARN_UNUSED_RETURN;
@@ -124,7 +115,7 @@ public:
 
     int getMipMapLevelFromZoomFactor() const WARN_UNUSED_RETURN;
 
-    DisplayChannelsEnum getChannels() const WARN_UNUSED_RETURN;
+    Natron::DisplayChannelsEnum getChannels() const WARN_UNUSED_RETURN;
 
     /**
      * @brief This is a short-cut, this is primarily used when the user switch the
@@ -139,7 +130,7 @@ public:
     }
 
 
-    void setDisplayChannels(DisplayChannelsEnum channels);
+    void setDisplayChannels(Natron::DisplayChannelsEnum channels);
 
 
     bool isAutoContrastEnabled() const WARN_UNUSED_RETURN;
@@ -182,20 +173,19 @@ public:
                                          const std::string & reason,
                                          bool forceGetClipPrefAction) OVERRIDE FINAL;
     
-    void callRedrawOnMainThread() { emit s_callRedrawOnMainThread(); }
+    void callRedrawOnMainThread() { Q_EMIT s_callRedrawOnMainThread(); }
 
-    void s_viewerRenderingStarted() { emit viewerRenderingStarted(); }
-    
-    void s_viewerRenderingEnded() { emit viewerRenderingEnded(); }
-    
     struct ViewerInstancePrivate;
-
-public slots:
+    
+public Q_SLOTS:
+    
+    void s_viewerRenderingStarted() { Q_EMIT viewerRenderingStarted(); }
+    
+    void s_viewerRenderingEnded() { Q_EMIT viewerRenderingEnded(); }
 
 
     void onMipMapLevelChanged(int level);
 
-    void onNodeNameChanged(const QString &);
 
     /**
      * @brief Redraws the OpenGL viewer. Can only be called on the main-thread.
@@ -206,7 +196,7 @@ public slots:
     void executeDisconnectTextureRequestOnMainThread(int index);
 
 
-signals:
+Q_SIGNALS:
     
     void s_callRedrawOnMainThread();
 

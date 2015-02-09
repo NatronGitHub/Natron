@@ -4,9 +4,16 @@
  * The goal of this algorithm is to compute the position of ticks on an axis.
  * the ticks are positioned at multiples of 1 and 5 of powers of 10
  */
+
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
 #include "ticks.h"
+
 #include <cmath>
 #include <cassert>
+
 // tick_size_10
 //
 // for a range xmin,xmax drawn with a size range_units (in pixels, or cm...),

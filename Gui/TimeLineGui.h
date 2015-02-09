@@ -12,8 +12,12 @@
 #ifndef NATRON_GUI_TIMELINE_H_
 #define NATRON_GUI_TIMELINE_H_
 
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
 #include <list>
-#ifndef Q_MOC_RUN
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
 #endif
@@ -104,7 +108,7 @@ public:
     
     void setFrameRangeEdited(bool edited);
 
-public slots:
+public Q_SLOTS:
 
     void centerOn(SequenceTime left,SequenceTime right);
 
@@ -137,7 +141,7 @@ private:
     virtual void leaveEvent(QEvent* e) OVERRIDE FINAL;
     virtual QSize sizeHint() const OVERRIDE FINAL;
 
-signals:
+Q_SIGNALS:
 
     void frameChanged(SequenceTime);
     void boundariesChanged(SequenceTime,SequenceTime);

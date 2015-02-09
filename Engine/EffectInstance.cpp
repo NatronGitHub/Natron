@@ -9,7 +9,12 @@
  *
  */
 
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
 #include "EffectInstance.h"
+
 #include <map>
 #include <sstream>
 #include <QtConcurrentMap>
@@ -369,6 +374,9 @@ struct EffectInstance::Implementation
     IBRMap imagesBeingRendered;
 #endif
     
+    void runChangedParamCallback(KnobI* k,bool userEdited,const std::string& callback);
+    
+    
     void setDuringInteractAction(bool b)
     {
         QWriteLocker l(&duringInteractActionMutex);
@@ -677,20 +685,23 @@ EffectInstance::~EffectInstance()
 void
 EffectInstance::lock(const boost::shared_ptr<Natron::Image>& entry)
 {
-    _node->lock(entry);
+    boost::shared_ptr<Node> n = _node.lock();
+    n->lock(entry);
 }
 
 
 bool
 EffectInstance::tryLock(const boost::shared_ptr<Natron::Image>& entry)
 {
-    return _node->tryLock(entry);
+    boost::shared_ptr<Node> n = _node.lock();
+    return n->tryLock(entry);
 }
 
 void
 EffectInstance::unlock(const boost::shared_ptr<Natron::Image>& entry)
 {
-    _node->unlock(entry);
+    boost::shared_ptr<Node> n = _node.lock();
+    n->unlock(entry);
 }
 
 void
@@ -757,7 +768,8 @@ EffectInstance::invalidateParallelRenderArgs()
 U64
 EffectInstance::getHash() const
 {
-    return _node->getHashValue();
+    boost::shared_ptr<Node> n = _node.lock();
+    return n->getHashValue();
 }
 
 U64
@@ -809,10 +821,10 @@ EffectInstance::aborted() const
                     ///Rendering issued by RenderEngine::renderCurrentFrame, if time or hash changed, abort
                     bool ret = args.nodeHash != getHash() ||
                     args.time != args.timeline->currentFrame() ||
-                    !_node->isActivated();
+                    !getNode()->isActivated();
                     return ret;
                 } else {
-                    bool ret = !_node->isActivated();
+                    bool ret = !getNode()->isActivated();
                     return ret;
                 }
                 
@@ -830,7 +842,8 @@ EffectInstance::aborted() const
 bool
 EffectInstance::shouldCacheOutput() const
 {
-    return _node->shouldCacheOutput();
+    boost::shared_ptr<Node> n = _node.lock();
+    return n->shouldCacheOutput();
 }
 
 void
@@ -845,25 +858,25 @@ EffectInstance::setAborted(bool b)
 U64
 EffectInstance::getKnobsAge() const
 {
-    return _node->getKnobsAge();
+    return getNode()->getKnobsAge();
 }
 
 void
 EffectInstance::setKnobsAge(U64 age)
 {
-    _node->setKnobsAge(age);
+    getNode()->setKnobsAge(age);
 }
 
 const std::string &
-EffectInstance::getName() const
+EffectInstance::getScriptName() const
 {
-    return _node->getName();
+    return getNode()->getScriptName();
 }
 
 std::string
-EffectInstance::getName_mt_safe() const
+EffectInstance::getScriptName_mt_safe() const
 {
-    return _node->getName_mt_safe();
+    return getNode()->getScriptName_mt_safe();
 }
 
 void
@@ -882,13 +895,13 @@ EffectInstance::getRenderViewsCount() const
 bool
 EffectInstance::hasOutputConnected() const
 {
-    return _node->hasOutputConnected();
+    return getNode()->hasOutputConnected();
 }
 
 EffectInstance*
 EffectInstance::getInput(int n) const
 {
-    boost::shared_ptr<Natron::Node> inputNode = _node->getInput(n);
+    boost::shared_ptr<Natron::Node> inputNode = getNode()->getInput(n);
 
     if (inputNode) {
         return inputNode->getLiveInstance();
@@ -928,7 +941,7 @@ EffectInstance::retrieveGetImageDataUponFailure(const int time,
 //#ifdef DEBUG
 //    if (QThread::currentThread() != qApp->thread()) {
 //        ///This is a bad plug-in
-//        qDebug() << getNode()->getName_mt_safe().c_str() << " is trying to call clipGetImage during an unauthorized time. "
+//        qDebug() << getNode()->getScriptName_mt_safe().c_str() << " is trying to call clipGetImage during an unauthorized time. "
 //        "Developers of that plug-in should fix it. \n Reminder from the OpenFX spec: \n "
 //        "Images may be fetched from an attached clip in the following situations... \n"
 //        "- in the kOfxImageEffectActionRender action\n"
@@ -1032,7 +1045,7 @@ EffectInstance::getImage(int inputNb,
         ///This is last resort, the plug-in should've checked getConnected() before, which would have returned false.
         return boost::shared_ptr<Natron::Image>();
     }
-    boost::shared_ptr<RotoContext> roto = _node->getRotoContext();
+    boost::shared_ptr<RotoContext> roto = getNode()->getRotoContext();
     bool useRotoInput = false;
     if (roto) {
         useRotoInput = isInputRotoBrush(inputNb);
@@ -1127,7 +1140,7 @@ EffectInstance::getImage(int inputNb,
     bool renderScaleOneUpstreamIfRenderScaleSupportDisabled = false;
     unsigned int renderMappedMipMapLevel = mipMapLevel;
     if (renderFullScaleThenDownscale) {
-        renderScaleOneUpstreamIfRenderScaleSupportDisabled = _node->useScaleOneImagesWhenRenderScaleSupportIsDisabled();
+        renderScaleOneUpstreamIfRenderScaleSupportDisabled = getNode()->useScaleOneImagesWhenRenderScaleSupportIsDisabled();
         if (renderScaleOneUpstreamIfRenderScaleSupportDisabled) {
             renderMappedMipMapLevel = 0;
         }
@@ -1197,8 +1210,8 @@ EffectInstance::getImage(int inputNb,
     unsigned int inputImgMipMapLevel = inputImg->getMipMapLevel();
     
     if (inputImg->getPixelAspectRatio() != par) {
-        qDebug() << "WARNING: " << getName_mt_safe().c_str() << " requested an image with a pixel aspect ratio of " << par <<
-        " but " << n->getName_mt_safe().c_str() << " rendered an image with a pixel aspect ratio of " << inputImg->getPixelAspectRatio();
+        qDebug() << "WARNING: " << getScriptName_mt_safe().c_str() << " requested an image with a pixel aspect ratio of " << par <<
+        " but " << n->getScriptName_mt_safe().c_str() << " rendered an image with a pixel aspect ratio of " << inputImg->getPixelAspectRatio();
     }
     
     ///If the plug-in doesn't support the render scale, but the image is downscaled, up-scale it.
@@ -1800,7 +1813,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
         frameRenderArgs.view = args.view;
         frameRenderArgs.isSequentialRender = false;
         frameRenderArgs.isRenderResponseToUserInteraction = true;
-        boost::shared_ptr<RotoContext> roto = _node->getRotoContext();
+        boost::shared_ptr<RotoContext> roto = getNode()->getRotoContext();
         if (roto) {
             frameRenderArgs.rotoAge = roto->getAge();
         } else {
@@ -1843,7 +1856,8 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
     ///Do we want to render the graph upstream at scale 1 or at the requested render scale ? (user setting)
     bool renderScaleOneUpstreamIfRenderScaleSupportDisabled = false;
     if (renderFullScaleThenDownscale) {
-        renderScaleOneUpstreamIfRenderScaleSupportDisabled = _node->useScaleOneImagesWhenRenderScaleSupportIsDisabled();
+
+        renderScaleOneUpstreamIfRenderScaleSupportDisabled = getNode()->useScaleOneImagesWhenRenderScaleSupportIsDisabled();
         
         ///For multi-resolution we want input images with exactly the same size as the output image
         if (!renderScaleOneUpstreamIfRenderScaleSupportDisabled && !supportsMultiResolution()) {
@@ -2002,7 +2016,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
 
     bool isFrameVaryingOrAnimated = isFrameVaryingOrAnimated_Recursive();
     Natron::ImageKey key = Natron::Image::makeKey(nodeHash, isFrameVaryingOrAnimated, args.time, args.view);
-    
+
     bool useDiskCacheNode = dynamic_cast<DiskCacheNode*>(this) != NULL;
 
     {
@@ -2419,7 +2433,8 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
         if (!rectsToRender.empty()) {
             
 # ifdef DEBUG
-            qDebug() << getNode()->getName_mt_safe().c_str() << ": render view " << args.view << " " << rectsToRender.size() << " rectangles";
+
+            qDebug() << getNode()->getScriptName_mt_safe().c_str() << ": render view " << args.view << " " << rectsToRender.size() << " rectangles";
             for (std::list<RectI>::const_iterator it = rectsToRender.begin(); it != rectsToRender.end(); ++it) {
                 qDebug() << "rect: " << "x1= " <<  it->x1 << " , x2= " << it->x2 << " , y1= " << it->y1 << " , y2= " << it->y2;
             }
@@ -2555,7 +2570,7 @@ EffectInstance::renderInputImagesForRoI(bool createImageInCache,
     getRegionsOfInterest_public(time, renderMappedScale, rod, canonicalRenderWindow, view,inputsRoi);
 #ifdef DEBUG
     if (!inputsRoi->empty() && framesNeeded.empty() && !isReader()) {
-        qDebug() << getNode()->getName_mt_safe().c_str() << ": getRegionsOfInterestAction returned 1 or multiple input RoI(s) but returned "
+        qDebug() << getNode()->getScriptName_mt_safe().c_str() << ": getRegionsOfInterestAction returned 1 or multiple input RoI(s) but returned "
         << "an empty list with getFramesNeededAction";
     }
 #endif
@@ -2630,7 +2645,7 @@ EffectInstance::renderInputImagesForRoI(bool createImageInCache,
             assert(it2->first != -1); //< see getInputNumber
             
             {
-                NotifyInputNRenderingStarted_RAII inputNIsRendering_RAII(_node.get(),it2->first);
+                NotifyInputNRenderingStarted_RAII inputNIsRendering_RAII(getNode().get(),it2->first);
                 
                 ///For all frames requested for this node, render the RoI requested.
                 for (U32 range = 0; range < it2->second.size(); ++range) {
@@ -2674,7 +2689,7 @@ EffectInstance::renderInputImagesForRoI(bool createImageInCache,
 
     
     ///if the node has a roto context, pre-render the roto mask too
-    boost::shared_ptr<RotoContext> rotoCtx = _node->getRotoContext();
+    boost::shared_ptr<RotoContext> rotoCtx = getNode()->getRotoContext();
     if (rotoCtx) {
         Natron::ImageComponentsEnum inputPrefComps;
         Natron::ImageBitDepthEnum inputPrefDepth;
@@ -2766,7 +2781,7 @@ EffectInstance::renderRoIInternal(SequenceTime time,
     ///Notify the gui we're rendering
     boost::shared_ptr<NotifyRenderingStarted_RAII> renderingNotifier;
     if (!rectsToRender.empty()) {
-        renderingNotifier.reset(new NotifyRenderingStarted_RAII(_node.get()));
+        renderingNotifier.reset(new NotifyRenderingStarted_RAII(getNode().get()));
     }
     
     for (std::list<RectI>::const_iterator it = rectsToRender.begin(); it != rectsToRender.end(); ++it) {
@@ -3013,7 +3028,7 @@ EffectInstance::renderRoIInternal(SequenceTime time,
             if (safety == eRenderSafetyInstanceSafe) {
                 locker = new QMutexLocker( &getNode()->getRenderInstancesSharedMutex() );
             } else if (safety == eRenderSafetyUnsafe) {
-                const Natron::Plugin* p = _node->getPlugin();
+                const Natron::Plugin* p = getNode()->getPlugin();
                 assert(p);
                 
                 locker = new QMutexLocker( appPTR->getMutexForPlugin(p->getPluginID(), p->getMajorVersion(), p->getMinorVersion()) );
@@ -3198,7 +3213,7 @@ EffectInstance::tiledRenderingFunctor(const RenderArgs & args,
         argsCpy._renderWindowPixel = renderRectToRender;
         
         scopedArgs.reset( new Implementation::ScopedRenderArgs(&_imp->renderArgs,argsCpy) );
-        scopedFrameArgs.reset( new ParallelRenderArgsSetter(_node.get(),
+        scopedFrameArgs.reset( new ParallelRenderArgsSetter(getNode().get(),
                                                                   frameArgs.time,
                                                                   frameArgs.view,
                                                                   frameArgs.isRenderResponseToUserInteraction,
@@ -3260,7 +3275,7 @@ EffectInstance::tiledRenderingFunctor(const RenderArgs & args,
         
         //Check for NaNs
         if (renderMappedImage->checkForNaNs(renderRectToRender)) {
-            qDebug() << getNode()->getName_mt_safe().c_str() << ": rendered rectangle (" << renderRectToRender.x1 << ',' << renderRectToRender.y1 << ")-(" << renderRectToRender.x2 << ',' << renderRectToRender.y2 << ") contains invalid values.";
+            qDebug() << getNode()->getScriptName_mt_safe().c_str() << ": rendered rectangle (" << renderRectToRender.x1 << ',' << renderRectToRender.y1 << ")-(" << renderRectToRender.x2 << ',' << renderRectToRender.y2 << ") contains invalid values.";
         }
         
         ///copy the rectangle rendered in the full scale image to the downscaled output
@@ -3317,23 +3332,18 @@ EffectInstance::openImageFileKnob()
     }
 }
 
-void
-EffectInstance::createKnobDynamically()
-{
-    _node->createKnobDynamically();
-}
 
 void
 EffectInstance::evaluate(KnobI* knob,
                          bool isSignificant,
                          Natron::ValueChangedReasonEnum /*reason*/)
 {
-    assert(_node);
 
     ////If the node is currently modifying its input, to ask for a render
     ////because at then end of the inputChanged handler, it will ask for a refresh
     ////and a rebuild of the inputs tree.
-    if ( _node->duringInputChangedAction() ) {
+    NodePtr node = getNode();
+    if ( node->duringInputChangedAction() ) {
         return;
     }
 
@@ -3350,8 +3360,8 @@ EffectInstance::evaluate(KnobI* knob,
         if (button) {
             if ( button->isRenderButton() ) {
                 std::string sequentialNode;
-                if ( _node->hasSequentialOnlyNodeUpstream(sequentialNode) ) {
-                    if (_node->getApp()->getProject()->getProjectViewsCount() > 1) {
+                if ( node->hasSequentialOnlyNodeUpstream(sequentialNode) ) {
+                    if (node->getApp()->getProject()->getProjectViewsCount() > 1) {
                         Natron::StandardButtonEnum answer =
                         Natron::questionDialog( QObject::tr("Render").toStdString(),
                                                sequentialNode + QObject::tr(" can only "
@@ -3382,7 +3392,7 @@ EffectInstance::evaluate(KnobI* knob,
 
     ///increments the knobs age following a change
     if (!button && isSignificant) {
-        _node->incrementKnobsAge();
+        node->incrementKnobsAge();
     }
     
     
@@ -3390,7 +3400,7 @@ EffectInstance::evaluate(KnobI* knob,
     
     
     std::list<ViewerInstance* > viewers;
-    _node->hasViewersConnected(&viewers);
+    node->hasViewersConnected(&viewers);
     for (std::list<ViewerInstance* >::iterator it = viewers.begin();
          it != viewers.end();
          ++it) {
@@ -3408,20 +3418,20 @@ bool
 EffectInstance::message(Natron::MessageTypeEnum type,
                         const std::string & content) const
 {
-    return _node->message(type,content);
+    return getNode()->message(type,content);
 }
 
 void
 EffectInstance::setPersistentMessage(Natron::MessageTypeEnum type,
                                      const std::string & content)
 {
-    _node->setPersistentMessage(type, content);
+    getNode()->setPersistentMessage(type, content);
 }
 
 void
 EffectInstance::clearPersistentMessage(bool recurse)
 {
-    _node->clearPersistentMessage(recurse);
+    getNode()->clearPersistentMessage(recurse);
 }
 
 int
@@ -3470,8 +3480,9 @@ EffectInstance::setSupportsRenderScaleMaybe(EffectInstance::SupportsEnum s) cons
         
         _imp->supportsRenderScale = s;
     }
-    if (_node) {
-        _node->onSetSupportRenderScaleMaybeSet((int)s);
+    NodePtr node = getNode();
+    if (node) {
+        node->onSetSupportRenderScaleMaybeSet((int)s);
     }
 }
 
@@ -3498,7 +3509,7 @@ EffectInstance::setOutputFilesForWriter(const std::string & pattern)
 PluginMemory*
 EffectInstance::newMemoryInstance(size_t nBytes)
 {
-    PluginMemory* ret = new PluginMemory( _node->getLiveInstance() ); //< hack to get "this" as a shared ptr
+    PluginMemory* ret = new PluginMemory( getNode()->getLiveInstance() ); //< hack to get "this" as a shared ptr
     bool wasntLocked = ret->alloc(nBytes);
 
     assert(wasntLocked);
@@ -3529,29 +3540,28 @@ EffectInstance::removePluginMemoryPointer(PluginMemory* mem)
 void
 EffectInstance::registerPluginMemory(size_t nBytes)
 {
-    _node->registerPluginMemory(nBytes);
+    getNode()->registerPluginMemory(nBytes);
 }
 
 void
 EffectInstance::unregisterPluginMemory(size_t nBytes)
 {
-    _node->unregisterPluginMemory(nBytes);
+    getNode()->unregisterPluginMemory(nBytes);
 }
 
 void
 EffectInstance::onAllKnobsSlaved(bool isSlave,
                                  KnobHolder* master)
 {
-    _node->onAllKnobsSlaved(isSlave,master);
+    getNode()->onAllKnobsSlaved(isSlave,master);
 }
 
 void
-EffectInstance::onKnobSlaved(const boost::shared_ptr<KnobI> & knob,
+EffectInstance::onKnobSlaved(KnobI* slave,KnobI* master,
                              int dimension,
-                             bool isSlave,
-                             KnobHolder* master)
+                             bool isSlave)
 {
-    _node->onKnobSlaved(knob,dimension,isSlave,master);
+    getNode()->onKnobSlaved(slave,master,dimension,isSlave);
 }
 
 void
@@ -3807,7 +3817,7 @@ EffectInstance::isIdentity_public(U64 hash,
 
     unsigned int mipMapLevel = Image::getLevelFromScale(scale.x);
     
-    double timeF;
+    double timeF = 0.;
     bool foundInCache = _imp->actionsCache.getIdentityResult(hash, time, mipMapLevel, inputNb, &timeF);
     if (foundInCache) {
         *inputTime = timeF;
@@ -3833,7 +3843,7 @@ EffectInstance::isIdentity_public(U64 hash,
             ret = true;
             *inputNb = 0;
             *inputTime = time;
-        } else if ( _node->isNodeDisabled() ) {
+        } else if ( getNode()->isNodeDisabled() ) {
             ret = true;
             *inputTime = time;
             *inputNb = -1;
@@ -3842,7 +3852,7 @@ EffectInstance::isIdentity_public(U64 hash,
             int lastOptionalInput = -1;
             for (int i = getMaxInputCount() - 1; i >= 0; --i) {
                 bool optional = isInputOptional(i);
-                if ( !optional && _node->getInput(i) ) {
+                if ( !optional && getNode()->getInput(i) ) {
                     *inputNb = i;
                     break;
                 } else if ( optional && (lastOptionalInput == -1) ) {
@@ -3965,7 +3975,7 @@ EffectInstance::getFrameRange_public(U64 hash,
                                      bool bypasscache)
 {
     
-    double fFirst,fLast;
+    double fFirst = 0.,fLast = 0.;
     bool foundInCache = false;
     if (!bypasscache) {
         foundInCache = _imp->actionsCache.getTimeDomainResult(hash, &fFirst, &fLast);
@@ -4038,26 +4048,26 @@ bool
 EffectInstance::isSupportedComponent(int inputNb,
                                      Natron::ImageComponentsEnum comp) const
 {
-    return _node->isSupportedComponent(inputNb, comp);
+    return getNode()->isSupportedComponent(inputNb, comp);
 }
 
 Natron::ImageBitDepthEnum
 EffectInstance::getBitDepth() const
 {
-    return _node->getBitDepth();
+    return getNode()->getBitDepth();
 }
 
 bool
 EffectInstance::isSupportedBitDepth(Natron::ImageBitDepthEnum depth) const
 {
-    return _node->isSupportedBitDepth(depth);
+    return getNode()->isSupportedBitDepth(depth);
 }
 
 Natron::ImageComponentsEnum
 EffectInstance::findClosestSupportedComponents(int inputNb,
                                                Natron::ImageComponentsEnum comp) const
 {
-    return _node->findClosestSupportedComponents(inputNb,comp);
+    return getNode()->findClosestSupportedComponents(inputNb,comp);
 }
 
 void
@@ -4075,13 +4085,13 @@ EffectInstance::getPreferredDepthAndComponents(int inputNb,
 int
 EffectInstance::getMaskChannel(int inputNb) const
 {
-    return _node->getMaskChannel(inputNb);
+    return getNode()->getMaskChannel(inputNb);
 }
 
 bool
 EffectInstance::isMaskEnabled(int inputNb) const
 {
-    return _node->isMaskEnabled(inputNb);
+    return getNode()->isMaskEnabled(inputNb);
 }
 
 void
@@ -4138,6 +4148,26 @@ EffectInstance::updateThreadLocalRenderTime(int time)
     }
 }
 
+void
+EffectInstance::Implementation::runChangedParamCallback(KnobI* k,bool userEdited,const std::string& callback)
+{
+    std::string script = callback;
+    script.append("()\n");
+    KnobI::declareCurrentKnobVariable_Python(k, -1, script);
+    script.append("userEdited = ");
+    if (userEdited) {
+        script.append("True\n");
+    } else {
+        script.append("False\n");
+    }
+    std::string err;
+    std::string output;
+    if (!Natron::interpretPythonScript(script, &err,&output)) {
+        _publicInterface->getApp()->appendToScriptEditor(QObject::tr("Failed to execute callback: ").toStdString() + err);
+    } else {
+        _publicInterface->getApp()->appendToScriptEditor(output);
+    }
+}
 
 void
 EffectInstance::onKnobValueChanged_public(KnobI* k,
@@ -4149,6 +4179,10 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
     if ( isEvaluationBlocked() ) {
         return;
     }
+
+    NodePtr node = getNode();
+    node->onEffectKnobValueChanged(k, reason);
+
     
     if (isReader() && k->getName() == kOfxImageEffectFileParamName) {
         getNode()->computeFrameRangeForReader(k);
@@ -4160,7 +4194,8 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
         ////We set the thread storage render args so that if the instance changed action
         ////tries to call getImage it can render with good parameters.
         
-        ParallelRenderArgsSetter frameRenderArgs(_node.get(),
+
+        ParallelRenderArgsSetter frameRenderArgs(node.get(),
                                                        time,
                                                        0, /*view*/
                                                        true,
@@ -4174,7 +4209,14 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
         knobChanged(k, reason, /*view*/ 0, time, originatedFromMainThread);
     }
     
-    _node->onEffectKnobValueChanged(k, reason);
+    ///If there's a knobChanged Python callback, run it
+    std::string pythonCB = getNode()->getKnobChangedCallback();
+    
+    if (!pythonCB.empty()) {
+        bool userEdited = reason == eValueChangedReasonNatronGuiEdited ||
+        reason == eValueChangedReasonUserEdited;
+        _imp->runChangedParamCallback(k,userEdited,pythonCB);
+    }
 
     
     ///Clear input images pointers that were stored in getImage() for the main-thread.
@@ -4198,10 +4240,11 @@ void
 EffectInstance::aboutToRestoreDefaultValues()
 {
     ///Invalidate the cache by incrementing the age
-    _node->incrementKnobsAge();
+    NodePtr node = getNode();
+    node->incrementKnobsAge();
 
-    if ( _node->areKeyframesVisibleOnTimeline() ) {
-        _node->hideKeyframesFromTimeline(true);
+    if ( node->areKeyframesVisibleOnTimeline() ) {
+        node->hideKeyframesFromTimeline(true);
     }
 }
 
@@ -4213,8 +4256,9 @@ EffectInstance::aboutToRestoreDefaultValues()
 Natron::EffectInstance*
 EffectInstance::getNearestNonDisabled() const
 {
-    if ( !_node->isNodeDisabled() ) {
-        return _node->getLiveInstance();
+    NodePtr node = getNode();
+    if ( !node->isNodeDisabled() ) {
+        return node->getLiveInstance();
     } else {
         ///Test all inputs recursively, going from last to first, preferring non optional inputs.
         std::list<Natron::EffectInstance*> nonOptionalInputs;
@@ -4259,7 +4303,7 @@ EffectInstance::getNearestNonDisabled() const
 Natron::EffectInstance*
 EffectInstance::getNearestNonDisabledPrevious(int* inputNb)
 {
-    assert(_node->isNodeDisabled());
+    assert(getNode()->isNodeDisabled());
     
     ///Test all inputs recursively, going from last to first, preferring non optional inputs.
     std::list<Natron::EffectInstance*> nonOptionalInputs;
@@ -4362,7 +4406,7 @@ EffectInstance::onNodeHashChanged(U64 hash)
 bool
 EffectInstance::canSetValue() const
 {
-    return !_node->isNodeRendering() || appPTR->isBackground();
+    return !getNode()->isNodeRendering() || appPTR->isBackground();
 }
 
 SequenceTime
@@ -4414,7 +4458,7 @@ void
 EffectInstance::checkCanSetValueAndWarn() const
 {
     if (!checkCanSetValue()) {
-        qDebug() << getName_mt_safe().c_str() << ": setValue()/setValueAtTime() was called during an action that is not allowed to call this function.";
+        qDebug() << getScriptName_mt_safe().c_str() << ": setValue()/setValueAtTime() was called during an action that is not allowed to call this function.";
     }
 }
 #endif
@@ -4445,6 +4489,7 @@ EffectInstance::isFrameVaryingOrAnimated_Recursive() const
     isFrameVaryingOrAnimated_impl(this,&ret);
     return ret;
 }
+
 
 OutputEffectInstance::OutputEffectInstance(boost::shared_ptr<Node> node)
     : Natron::EffectInstance(node)
@@ -4625,15 +4670,18 @@ EffectInstance::checkOFXClipPreferences_recursive(double time,
                                        bool forceGetClipPrefAction,
                                        std::list<Natron::Node*>& markedNodes)
 {
-    std::list<Natron::Node*>::iterator found = std::find(markedNodes.begin(), markedNodes.end(), _node.get());
+    NodePtr node = getNode();
+    std::list<Natron::Node*>::iterator found = std::find(markedNodes.begin(), markedNodes.end(), node.get());
     if (found != markedNodes.end()) {
         return;
     }
     
-    checkOFXClipPreferences(time, scale, reason, forceGetClipPrefAction);
-    markedNodes.push_back(_node.get());
     
-    const std::list<Natron::Node*> & outputs = _node->getOutputs();
+    checkOFXClipPreferences(time, scale, reason, forceGetClipPrefAction);
+    markedNodes.push_back(node.get());
+    
+    std::list<Natron::Node*>  outputs;
+    node->getOutputsWithGroupRedirection(outputs);
     for (std::list<Natron::Node*>::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
         (*it)->getLiveInstance()->checkOFXClipPreferences_recursive(time, scale, reason, forceGetClipPrefAction,markedNodes);
     }

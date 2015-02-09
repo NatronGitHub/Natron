@@ -11,6 +11,10 @@
 #ifndef NATRON_ENGINE_OFXOVERLAYINTERACT_H_
 #define NATRON_ENGINE_OFXOVERLAYINTERACT_H_
 
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
 #include <ofxhImageEffect.h>
 
 #include "Global/Macros.h"
@@ -102,10 +106,7 @@ public:
     // hooks to kOfxInteractPropSuggestedColour and kOfxPropOverlayColour in the property set
     virtual bool getSuggestedColour(double &r,
                                     double &g,
-                                    double &b) const
-    {
-        return n_getSuggestedColour(r, g, b);
-    }
+                                    double &b) const;
 
     /// call create instance
     virtual OfxStatus createInstanceAction() OVERRIDE FINAL;

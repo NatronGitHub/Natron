@@ -9,6 +9,10 @@
  *
  */
 
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
 #include "GuiApplicationManager.h"
 
 ///gui
@@ -50,6 +54,11 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/GuiAppInstance.h"
 #include "Gui/CurveWidget.h"
 #include "Gui/ActionShortcuts.h"
+CLANG_DIAG_OFF(mismatched-tags)
+GCC_DIAG_OFF(unused-parameter)
+#include "NatronGui/natrongui_python.h"
+CLANG_DIAG_ON(mismatched-tags)
+GCC_DIAG_ON(unused-parameter)
 
 /**
  * @macro Registers a keybind to the application.
@@ -96,7 +105,13 @@ struct KnobsClipBoard
     std::map<int,std::string> stringAnimation; //< for animating string knobs
     bool isEmpty; //< is the clipboard empty
     bool copyAnimation; //< should we copy all the animation or not
+    
+    std::string appID;
+    std::string nodeFullyQualifiedName;
+    std::string paramName;
 };
+
+
 
 struct GuiApplicationManagerPrivate
 {
@@ -117,18 +132,24 @@ struct GuiApplicationManagerPrivate
     QString _fontFamily;
     int _fontSize;
     
+    NodeClipBoard _nodeCB;
+    
+    std::list<PythonUserCommand> pythonCommands;
+    
     GuiApplicationManagerPrivate(GuiApplicationManager* publicInterface)
         :   _publicInterface(publicInterface)
-          , _topLevelToolButtons()
-          , _knobsClipBoard(new KnobsClipBoard)
-          , _knobGuiFactory( new KnobGuiFactory() )
-          , _colorPickerCursor(NULL)
-          , _splashScreen(NULL)
-          , _openFileRequest()
-          , _actionShortcuts()
-          , _shortcutsChangedVersion(false)
-          , _fontFamily()
-          , _fontSize(0)
+    , _topLevelToolButtons()
+    , _knobsClipBoard(new KnobsClipBoard)
+    , _knobGuiFactory( new KnobGuiFactory() )
+    , _colorPickerCursor(NULL)
+    , _splashScreen(NULL)
+    , _openFileRequest()
+    , _actionShortcuts()
+    , _shortcutsChangedVersion(false)
+    , _fontFamily()
+    , _fontSize(0)
+    , _nodeCB()
+    , pythonCommands()
     {
     }
 
@@ -678,6 +699,175 @@ GuiApplicationManager::getIcon(Natron::PixmapEnum e,
                 img.load(NATRON_IMAGES_PATH "addTrack.png");
                 *pix = QPixmap::fromImage(img);
                 break;
+            case NATRON_PIXMAP_SCRIPT_CLEAR_OUTPUT:
+                img.load(NATRON_IMAGES_PATH "clearOutput.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_SCRIPT_EXEC_SCRIPT:
+                img.load(NATRON_IMAGES_PATH "execScript.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_SCRIPT_LOAD_EXEC_SCRIPT:
+                img.load(NATRON_IMAGES_PATH "loadAndExecScript.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_SCRIPT_LOAD_SCRIPT:
+                img.load(NATRON_IMAGES_PATH "loadScript.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_SCRIPT_NEXT_SCRIPT:
+                img.load(NATRON_IMAGES_PATH "nextScript.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_SCRIPT_OUTPUT_PANE_ACTIVATED:
+                img.load(NATRON_IMAGES_PATH "outputPanelActivated.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_SCRIPT_OUTPUT_PANE_DEACTIVATED:
+                img.load(NATRON_IMAGES_PATH "outputPanelDeactivated.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_SCRIPT_PREVIOUS_SCRIPT:
+                img.load(NATRON_IMAGES_PATH "previousScript.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_SCRIPT_SAVE_SCRIPT:
+                img.load(NATRON_IMAGES_PATH "saveScript.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+                
+            case NATRON_PIXMAP_MERGE_ATOP:
+                img.load(NATRON_IMAGES_PATH "merge_atop.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_MERGE_AVERAGE:
+                img.load(NATRON_IMAGES_PATH "merge_average.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_MERGE_COLOR_BURN:
+                img.load(NATRON_IMAGES_PATH "merge_color_burn.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_MERGE_COLOR_DODGE:
+                img.load(NATRON_IMAGES_PATH "merge_color_dodge.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_MERGE_CONJOINT_OVER:
+                img.load(NATRON_IMAGES_PATH "merge_conjoint_over.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_MERGE_COPY:
+                img.load(NATRON_IMAGES_PATH "merge_copy.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_MERGE_DIFFERENCE:
+                img.load(NATRON_IMAGES_PATH "merge_difference.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_MERGE_DISJOINT_OVER:
+                img.load(NATRON_IMAGES_PATH "merge_disjoint_over.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_MERGE_DIVIDE:
+                img.load(NATRON_IMAGES_PATH "merge_divide.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_MERGE_EXCLUSION:
+                img.load(NATRON_IMAGES_PATH "merge_exclusion.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_MERGE_FREEZE:
+                img.load(NATRON_IMAGES_PATH "merge_freeze.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_MERGE_FROM:
+                img.load(NATRON_IMAGES_PATH "merge_from.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_MERGE_GEOMETRIC:
+                img.load(NATRON_IMAGES_PATH "merge_geometric.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_MERGE_HARD_LIGHT:
+                img.load(NATRON_IMAGES_PATH "merge_hard_light.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_MERGE_HYPOT:
+                img.load(NATRON_IMAGES_PATH "merge_hypot.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_MERGE_IN:
+                img.load(NATRON_IMAGES_PATH "merge_in.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_MERGE_INTERPOLATED:
+                img.load(NATRON_IMAGES_PATH "merge_interpolated.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_MERGE_MASK:
+                img.load(NATRON_IMAGES_PATH "merge_mask.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_MERGE_MAX:
+                img.load(NATRON_IMAGES_PATH "merge_max.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_MERGE_MIN:
+                img.load(NATRON_IMAGES_PATH "merge_min.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_MERGE_MINUS:
+                img.load(NATRON_IMAGES_PATH "merge_minus.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_MERGE_MULTIPLY:
+                img.load(NATRON_IMAGES_PATH "merge_multiply.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_MERGE_OUT:
+                img.load(NATRON_IMAGES_PATH "merge_out.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_MERGE_OVER:
+                img.load(NATRON_IMAGES_PATH "merge_over.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_MERGE_OVERLAY:
+                img.load(NATRON_IMAGES_PATH "merge_overlay.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_MERGE_PINLIGHT:
+                img.load(NATRON_IMAGES_PATH "merge_pinlight.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_MERGE_PLUS:
+                img.load(NATRON_IMAGES_PATH "merge_plus.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_MERGE_REFLECT:
+                img.load(NATRON_IMAGES_PATH "merge_reflect.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_MERGE_SCREEN:
+                img.load(NATRON_IMAGES_PATH "merge_screen.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_MERGE_SOFT_LIGHT:
+                img.load(NATRON_IMAGES_PATH "merge_soft_light.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_MERGE_STENCIL:
+                img.load(NATRON_IMAGES_PATH "merge_stencil.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_MERGE_UNDER:
+                img.load(NATRON_IMAGES_PATH "merge_under.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_MERGE_XOR:
+                img.load(NATRON_IMAGES_PATH "merge_xor.png");
+                *pix = QPixmap::fromImage(img);
+                break;
             default:
                 assert(!"Missing image.");
         } // switch
@@ -780,7 +970,11 @@ GuiApplicationManager::onPluginLoaded(Natron::Plugin* plugin)
         hasShortcut = false;
     }
     plugin->setHasShortcut(hasShortcut);
-    _imp->addKeybind(shortcutGrouping, pluginID, pluginLabel, modifiers, symbol);
+    
+    if (Natron::isPluginCreatable(plugin->getPluginID().toStdString())) {
+        _imp->addKeybind(shortcutGrouping, pluginID, pluginLabel, modifiers, symbol);
+    }
+    
 }
 
 void
@@ -965,7 +1159,10 @@ GuiApplicationManager::setKnobClipBoard(bool copyAnimation,
                                         const std::list<Variant> & values,
                                         const std::list<boost::shared_ptr<Curve> > & animation,
                                         const std::map<int,std::string> & stringAnimation,
-                                        const std::list<boost::shared_ptr<Curve> > & parametricCurves)
+                                        const std::list<boost::shared_ptr<Curve> > & parametricCurves,
+                                        const std::string& appID,
+                                        const std::string& nodeFullyQualifiedName,
+                                        const std::string& paramName)
 {
     _imp->_knobsClipBoard->copyAnimation = copyAnimation;
     _imp->_knobsClipBoard->isEmpty = false;
@@ -973,6 +1170,9 @@ GuiApplicationManager::setKnobClipBoard(bool copyAnimation,
     _imp->_knobsClipBoard->curves = animation;
     _imp->_knobsClipBoard->stringAnimation = stringAnimation;
     _imp->_knobsClipBoard->parametricCurves = parametricCurves;
+    _imp->_knobsClipBoard->appID = appID;
+    _imp->_knobsClipBoard->nodeFullyQualifiedName = nodeFullyQualifiedName;
+    _imp->_knobsClipBoard->paramName = paramName;
 }
 
 void
@@ -980,13 +1180,19 @@ GuiApplicationManager::getKnobClipBoard(bool* copyAnimation,
                                         std::list<Variant>* values,
                                         std::list<boost::shared_ptr<Curve> >* animation,
                                         std::map<int,std::string>* stringAnimation,
-                                        std::list<boost::shared_ptr<Curve> >* parametricCurves) const
+                                        std::list<boost::shared_ptr<Curve> >* parametricCurves,
+                                        std::string* appID,
+                                        std::string* nodeFullyQualifiedName,
+                                        std::string* paramName) const
 {
     *copyAnimation = _imp->_knobsClipBoard->copyAnimation;
     *values = _imp->_knobsClipBoard->values;
     *animation = _imp->_knobsClipBoard->curves;
     *stringAnimation = _imp->_knobsClipBoard->stringAnimation;
     *parametricCurves = _imp->_knobsClipBoard->parametricCurves;
+    *appID = _imp->_knobsClipBoard->appID;
+    *nodeFullyQualifiedName = _imp->_knobsClipBoard->nodeFullyQualifiedName;
+    *paramName = _imp->_knobsClipBoard->paramName;
 }
 
 void
@@ -1091,13 +1297,6 @@ GuiApplicationManager::loadBuiltinNodePlugins(std::map<std::string,std::vector< 
         
         registerPlugin(grouping, viewer->getPluginID().c_str(), viewer->getPluginLabel().c_str(),NATRON_IMAGES_PATH "viewer_icon.png", "", "", false, false, viewerPlugin, false, viewer->getMajorVersion(), viewer->getMinorVersion());
 
-    }
-
-    {
-        QString label(NATRON_BACKDROP_NODE_NAME);
-        QStringList backdropGrouping(PLUGIN_GROUP_OTHER);
-        
-        registerPlugin(backdropGrouping, label, label,NATRON_IMAGES_PATH "backdrop_icon.png", "", "", false, false, NULL, false, 1, 0);
     }
 
     ///Also load the plug-ins of the AppManager
@@ -1540,7 +1739,7 @@ GuiApplicationManager::populateShortcuts()
 
     registerKeybind(kShortcutGroupGlobal, kShortcutIDActionSaveAndIncrVersion, kShortcutDescActionSaveAndIncrVersion, Qt::ControlModifier | Qt::ShiftModifier |
                     Qt::AltModifier, Qt::Key_S);
-    
+    registerKeybind(kShortcutGroupGlobal, kShortcutIDActionExportProject, kShortcutDescActionExportProject, Qt::NoModifier, (Qt::Key)0);
     registerKeybind(kShortcutGroupGlobal, kShortcutIDActionShowAbout, kShortcutDescActionShowAbout, Qt::NoModifier, (Qt::Key)0);
 
     registerKeybind(kShortcutGroupGlobal, kShortcutIDActionImportLayout, kShortcutDescActionImportLayout, Qt::NoModifier, (Qt::Key)0);
@@ -1576,6 +1775,8 @@ GuiApplicationManager::populateShortcuts()
     registerKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput10, kShortcutDescActionConnectViewerToInput10, Qt::NoModifier, Qt::Key_0);
 
     registerKeybind(kShortcutGroupGlobal, kShortcutIDActionShowPaneFullScreen, kShortcutDescActionShowPaneFullScreen, Qt::NoModifier, Qt::Key_Space);
+    registerKeybind(kShortcutGroupGlobal, kShortcutIDActionNextTab, kShortcutDescActionNextTab, Qt::ControlModifier, Qt::Key_T);
+    registerKeybind(kShortcutGroupGlobal, kShortcutIDActionCloseTab, kShortcutDescActionCloseTab, Qt::ShiftModifier, Qt::Key_Escape);
 
     ///Viewer
     registerKeybind(kShortcutGroupViewer, kShortcutIDActionLuminance, kShortcutDescActionLuminance, Qt::NoModifier, Qt::Key_Y);
@@ -1687,7 +1888,9 @@ GuiApplicationManager::populateShortcuts()
     registerKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphRenameNode, kShortcutDescActionGraphRenameNode, Qt::NoModifier, Qt::Key_N);
     registerKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphExtractNode, kShortcutDescActionGraphExtractNode, Qt::ControlModifier | Qt::ShiftModifier,
                     Qt::Key_X);
-
+    registerKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphMakeGroup, kShortcutDescActionGraphMakeGroup, Qt::ControlModifier | Qt::ShiftModifier,
+                    Qt::Key_G);
+    
     ///CurveEditor
     registerKeybind(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorRemoveKeys, kShortcutDescActionCurveEditorRemoveKeys, Qt::NoModifier,Qt::Key_Backspace);
     registerKeybind(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorConstant, kShortcutDescActionCurveEditorConstant, Qt::NoModifier, Qt::Key_K);
@@ -1973,6 +2176,70 @@ GuiApplicationManager::clearLastRenderedTextures()
     }
 }
 
+bool
+GuiApplicationManager::isNodeClipBoardEmpty() const
+{
+    return _imp->_nodeCB.isEmpty();
+}
+
+NodeClipBoard&
+GuiApplicationManager::getNodeClipBoard()
+{
+    return _imp->_nodeCB;
+}
+
+void
+GuiApplicationManager::clearNodeClipBoard()
+{
+    _imp->_nodeCB.nodes.clear();
+    _imp->_nodeCB.nodesUI.clear();
+}
+
+
+///The symbol has been generated by Shiboken in  Engine/NatronEngine/natronengine_module_wrapper.cpp
+extern "C"
+{
+    PyObject* PyInit_NatronGui();
+}
+
+
+void
+GuiApplicationManager::initBuiltinPythonModules()
+{
+    AppManager::initBuiltinPythonModules();
+    
+    int ret = PyImport_AppendInittab(NATRON_GUI_PYTHON_MODULE_NAME,&PyInit_NatronGui);
+    if (ret == -1) {
+        throw std::runtime_error("Failed to initialize built-in Python module.");
+    }
+    
+}
+
+void
+GuiApplicationManager::addCommand(const QString& grouping,const std::string& pythonFunction, Qt::Key key,const Qt::KeyboardModifiers& modifiers)
+{
+    
+    QStringList split = grouping.split('/');
+    if (grouping.isEmpty() || split.isEmpty()) {
+        return;
+    }
+    PythonUserCommand c;
+    c.grouping = grouping;
+    c.pythonFunction = pythonFunction;
+    c.key = key;
+    c.modifiers = modifiers;
+    _imp->pythonCommands.push_back(c);
+    
+    
+    registerKeybind(kShortcutGroupGlobal, split[split.size() -1], split[split.size() - 1], modifiers, key);
+}
+
+
+const std::list<PythonUserCommand>&
+GuiApplicationManager::getUserPythonCommands() const
+{
+    return _imp->pythonCommands;
+}
 void
 GuiApplicationManager::reloadStylesheets()
 {

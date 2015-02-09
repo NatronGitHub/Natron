@@ -12,6 +12,10 @@
 #ifndef CURVE_WIDGET_H
 #define CURVE_WIDGET_H
 
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
 #include <set>
 
 #include "Global/GLIncludes.h" //!<must be included before QGlWidget because of gl.h and glew.h
@@ -23,7 +27,7 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QDialog>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
-#ifndef Q_MOC_RUN
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #endif
@@ -101,7 +105,7 @@ public:
     void setVisibleAndRefresh(bool visible);
 
     /**
-     * @brief same as setVisibleAndRefresh() but doesn't emit any signal for a repaint
+     * @brief same as setVisibleAndRefresh() but doesn't Q_EMIT any signal for a repaint
      **/
     void setVisible(bool visible);
 
@@ -122,10 +126,7 @@ public:
      **/
     virtual double evaluate(double x) const;
     
-    boost::shared_ptr<Curve>  getInternalCurve() const
-    {
-        return _internalCurve;
-    }
+    virtual boost::shared_ptr<Curve>  getInternalCurve() const;
 
     void drawCurve(int curveIndex,int curvesCount);
 
@@ -139,7 +140,7 @@ public:
     virtual int getKeyFrameIndex(double time) const = 0;
     virtual void setKeyFrameInterpolation(Natron::KeyframeTypeEnum interp,int index) = 0;
     
-signals:
+Q_SIGNALS:
 
     void curveChanged();
     
@@ -189,6 +190,8 @@ public:
                  int thickness = 1);
     
     virtual ~KnobCurveGui();
+    
+    virtual boost::shared_ptr<Curve>  getInternalCurve() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     
     KnobGui* getKnobGui() const
     {
@@ -331,7 +334,7 @@ public:
     
     void pushUndoCommand(QUndoCommand* cmd);
 
-public slots:
+public Q_SLOTS:
 
     void refreshDisplayedTangents();
 
@@ -443,7 +446,7 @@ public:
 
     void getCurveColumns(std::map<int,CurveGui*>* columns) const;
 
-public slots:
+public Q_SLOTS:
 
     void open_file();
 
@@ -516,12 +519,12 @@ public:
     
     virtual ~EditKeyFrameDialog();
     
-signals:
+Q_SIGNALS:
     
     void valueChanged(int dimension,double value);
     
     
-public slots:
+public Q_SLOTS:
     
     void onXSpinBoxValueChanged(double d);
     void onYSpinBoxValueChanged(double d);

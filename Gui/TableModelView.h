@@ -7,7 +7,11 @@
 #ifndef TABLEMODELVIEW_H
 #define TABLEMODELVIEW_H
 
-#ifndef Q_MOC_RUN
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
 #endif
 #include "Global/Macros.h"
@@ -271,7 +275,7 @@ public:
     inline TableItem * itemAt(int x, int y) const;
     QRect visualItemRect(const TableItem *item) const;
 
-signals:
+Q_SIGNALS:
 
     void deleteKeyPressed();
     void itemRightClicked(TableItem* item);
@@ -353,11 +357,11 @@ public:
 
     bool isValid(const QModelIndex &index) const;
 
-public slots:
+public Q_SLOTS:
 
     void onDataChanged(const QModelIndex & index);
 
-signals:
+Q_SIGNALS:
 
     void s_itemChanged(TableItem*);
 

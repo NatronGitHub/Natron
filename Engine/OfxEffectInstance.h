@@ -12,10 +12,14 @@
 #ifndef NATRON_ENGINE_OFXNODE_H_
 #define NATRON_ENGINE_OFXNODE_H_
 
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
 #include "Global/Macros.h"
 #include <map>
 #include <string>
-#ifndef Q_MOC_RUN
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
 #endif
 CLANG_DIAG_OFF(deprecated)
@@ -128,7 +132,7 @@ public:
      **/
     void syncPrivateData_other_thread()
     {
-        emit syncPrivateDataRequested();
+        Q_EMIT syncPrivateDataRequested();
     }
 
 public:
@@ -166,6 +170,7 @@ public:
                                   const RectD & renderWindow, //!< the region to be rendered in the output image, in Canonical Coordinates
                                   int view,
                                 Natron::EffectInstance::RoIMap* ret) OVERRIDE FINAL;
+
     virtual Natron::EffectInstance::FramesNeededMap getFramesNeeded(SequenceTime time) WARN_UNUSED_RETURN;
     virtual void getFrameRange(SequenceTime *first,SequenceTime *last) OVERRIDE;
     virtual void initializeOverlayInteract() OVERRIDE FINAL;
@@ -268,18 +273,19 @@ public:
     virtual void clearTransform(int inputNb) OVERRIDE FINAL;
 
     virtual bool isFrameVarying() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+
     /********OVERRIDEN FROM EFFECT INSTANCE: END*************/
 
     OfxClipInstance* getClipCorrespondingToInput(int inputNo) const;
 
 
 
-public slots:
+public Q_SLOTS:
 
     void onSyncPrivateDataRequested();
 
 
-signals:
+Q_SIGNALS:
 
     void syncPrivateDataRequested();
 

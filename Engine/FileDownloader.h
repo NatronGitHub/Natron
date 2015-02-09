@@ -8,6 +8,13 @@
  *
  */
 
+#ifndef __NATRON_FILEDOWNLOADER_H
+#define __NATRON_FILEDOWNLOADER_H
+
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated-register) //'register' storage class specifier is deprecated
 #include <QObject>
@@ -16,9 +23,6 @@ CLANG_DIAG_OFF(deprecated-register) //'register' storage class specifier is depr
 #include <QNetworkRequest>
 #include <QNetworkReply>
 CLANG_DIAG_ON(deprecated-register)
-
-#ifndef FILEDOWNLOADER_H
-#define FILEDOWNLOADER_H
 
 /**
    Usage:
@@ -56,12 +60,12 @@ public:
 
     QNetworkReply* getReply() const;
 
-signals:
+Q_SIGNALS:
     void downloaded();
 
     void error();
 
-private slots:
+public Q_SLOTS:
 
     void fileDownloaded(QNetworkReply* pReply);
 

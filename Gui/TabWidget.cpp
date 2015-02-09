@@ -8,6 +8,10 @@
  *
  */
 
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
 #include "TabWidget.h"
 
 #include "Global/Macros.h"
@@ -44,42 +48,83 @@ CLANG_DIAG_ON(deprecated)
 #include "Gui/GuiMacros.h"
 #include "Gui/ActionShortcuts.h"
 #include "Gui/MenuWithToolTips.h"
+#include "Gui/ScriptEditor.h"
+#include "Gui/PythonPanels.h"
+
 #include "Engine/ViewerInstance.h"
 #include "Engine/Project.h"
+#include "Engine/ScriptObject.h"
+
+#define LEFT_HAND_CORNER_BUTTON_TT "Manage the layouts for this pane"
 
 using namespace Natron;
 
+struct TabWidgetPrivate
+{
+    TabWidget* _publicInterface;
+    Gui* gui;
+    QVBoxLayout* mainLayout;
+    std::vector<std::pair<QWidget*,ScriptObject*> > tabs; // the actual tabs
+    QWidget* header;
+    QHBoxLayout* headerLayout;
+    bool modifyingTabBar;
+    TabBar* tabBar; // the header containing clickable pages
+    Button* leftCornerButton;
+    Button* floatButton;
+    Button* closeButton;
+    QWidget* currentWidget;
+    bool drawDropRect;
+    bool fullScreen;
+    bool isAnchor;
+    bool tabBarVisible;
+    
+    ///Protects  currentWidget, fullScreen, isViewerAnchor
+    mutable QMutex tabWidgetStateMutex;
+    
+    TabWidgetPrivate(TabWidget* publicInterface,Gui* gui)
+    : _publicInterface(publicInterface)
+    , gui(gui)
+    , mainLayout(0)
+    , tabs()
+    , header(0)
+    , headerLayout(0)
+    , modifyingTabBar(false)
+    , tabBar(0)
+    , leftCornerButton(0)
+    , floatButton(0)
+    , closeButton(0)
+    , currentWidget(0)
+    , drawDropRect(false)
+    , fullScreen(false)
+    , isAnchor(false)
+    , tabBarVisible(true)
+    , tabWidgetStateMutex()
+    {
+        
+
+    }
+    
+    void declareTabToPython(QWidget* widget,const std::string& tabName);
+    void removeTabToPython(QWidget* widget,const std::string& tabName);
+};
+
 TabWidget::TabWidget(Gui* gui,
                      QWidget* parent)
-    : QFrame(parent),
-      _gui(gui),
-      _header(0),
-      _headerLayout(0),
-      _modifyingTabBar(false),
-      _tabBar(0),
-      _leftCornerButton(0),
-      _floatButton(0),
-      _closeButton(0),
-      _currentWidget(0),
-      _drawDropRect(false),
-      _fullScreen(false),
-      _isAnchor(false),
-      _tabBarVisible(true),
-      _tabWidgetStateMutex()
+    : QFrame(parent)
+    , _imp(new TabWidgetPrivate(this,gui))
 {
     setMouseTracking(true);
     setFrameShape(QFrame::NoFrame);
-    _mainLayout = new QVBoxLayout(this);
-    _mainLayout->setContentsMargins(0, 5, 0, 0);
-    _mainLayout->setSpacing(0);
-    setLayout(_mainLayout);
+    _imp->mainLayout = new QVBoxLayout(this);
+    _imp->mainLayout->setContentsMargins(0, 5, 0, 0);
+    _imp->mainLayout->setSpacing(0);
 
-    _header = new TabWidgetHeader(this);
-    QObject::connect( _header, SIGNAL(mouseLeftTabBar()), this, SLOT(onTabBarMouseLeft()));
-    _headerLayout = new QHBoxLayout(_header);
-    _headerLayout->setContentsMargins(0, 0, 0, 0);
-    _headerLayout->setSpacing(0);
-    _header->setLayout(_headerLayout);
+    _imp->header = new TabWidgetHeader(this);
+    QObject::connect( _imp->header, SIGNAL(mouseLeftTabBar()), this, SLOT(onTabBarMouseLeft()));
+    _imp->headerLayout = new QHBoxLayout(_imp->header);
+    _imp->headerLayout->setContentsMargins(0, 0, 0, 0);
+    _imp->headerLayout->setSpacing(0);
+    _imp->header->setLayout(_imp->headerLayout);
 
 
     QPixmap pixC,pixM,pixL;
@@ -88,100 +133,107 @@ TabWidget::TabWidget(Gui* gui,
     appPTR->getIcon(NATRON_PIXMAP_TAB_WIDGET_LAYOUT_BUTTON,&pixL);
 
 
-    _leftCornerButton = new Button(QIcon(pixL),"",_header);
-    _leftCornerButton->setFixedSize(NATRON_SMALL_BUTTON_SIZE,NATRON_SMALL_BUTTON_SIZE);
-    _leftCornerButton->setToolTip( Qt::convertFromPlainText(tr("Manage the layouts for this pane."), Qt::WhiteSpaceNormal) );
-    _leftCornerButton->setFocusPolicy(Qt::NoFocus);
-    _headerLayout->addWidget(_leftCornerButton);
-    _headerLayout->addSpacing(10);
+    _imp->leftCornerButton = new Button(QIcon(pixL),"", _imp->header);
+    _imp->leftCornerButton->setFixedSize(NATRON_SMALL_BUTTON_SIZE,NATRON_SMALL_BUTTON_SIZE);
+    _imp->leftCornerButton->setToolTip( Qt::convertFromPlainText(tr(LEFT_HAND_CORNER_BUTTON_TT), Qt::WhiteSpaceNormal) );
+    _imp->leftCornerButton->setFocusPolicy(Qt::NoFocus);
+    _imp->headerLayout->addWidget(_imp->leftCornerButton);
+    _imp->headerLayout->addSpacing(10);
 
-    _tabBar = new TabBar(this,_header);
-    _tabBar->setShape(QTabBar::RoundedNorth);
-    _tabBar->setDrawBase(false);
-    QObject::connect( _tabBar, SIGNAL( currentChanged(int) ), this, SLOT( makeCurrentTab(int) ) );
-    QObject::connect( _tabBar, SIGNAL(mouseLeftTabBar()), this, SLOT(onTabBarMouseLeft()));
-    _headerLayout->addWidget(_tabBar);
-    _headerLayout->addStretch();
-    _floatButton = new Button(QIcon(pixM),"",_header);
-    _floatButton->setFixedSize(NATRON_SMALL_BUTTON_SIZE,NATRON_SMALL_BUTTON_SIZE);
-    _floatButton->setToolTip( Qt::convertFromPlainText(tr("Float pane."), Qt::WhiteSpaceNormal) );
-    _floatButton->setEnabled(true);
-    _floatButton->setFocusPolicy(Qt::NoFocus);
-    QObject::connect( _floatButton, SIGNAL( clicked() ), this, SLOT( floatCurrentWidget() ) );
-    _headerLayout->addWidget(_floatButton);
+    _imp->tabBar = new TabBar(this,_imp->header);
+    _imp->tabBar->setShape(QTabBar::RoundedNorth);
+    _imp->tabBar->setDrawBase(false);
+    QObject::connect( _imp->tabBar, SIGNAL( currentChanged(int) ), this, SLOT( makeCurrentTab(int) ) );
+    QObject::connect( _imp->tabBar, SIGNAL(mouseLeftTabBar()), this, SLOT(onTabBarMouseLeft()));
+    _imp->headerLayout->addWidget(_imp->tabBar);
+    _imp->headerLayout->addStretch();
+    _imp->floatButton = new Button(QIcon(pixM),"",_imp->header);
+    _imp->floatButton->setFixedSize(NATRON_SMALL_BUTTON_SIZE,NATRON_SMALL_BUTTON_SIZE);
+    _imp->floatButton->setToolTip( Qt::convertFromPlainText(tr("Float pane"), Qt::WhiteSpaceNormal) );
+    _imp->floatButton->setEnabled(true);
+    _imp->floatButton->setFocusPolicy(Qt::NoFocus);
+    QObject::connect( _imp->floatButton, SIGNAL( clicked() ), this, SLOT( floatCurrentWidget() ) );
+    _imp->headerLayout->addWidget(_imp->floatButton);
 
-    _closeButton = new Button(QIcon(pixC),"",_header);
-    _closeButton->setFixedSize(NATRON_SMALL_BUTTON_SIZE,NATRON_SMALL_BUTTON_SIZE);
-    _closeButton->setToolTip( Qt::convertFromPlainText(tr("Close pane."), Qt::WhiteSpaceNormal) );
-    _closeButton->setFocusPolicy(Qt::NoFocus);
-    QObject::connect( _closeButton, SIGNAL( clicked() ), this, SLOT( closePane() ) );
-    _headerLayout->addWidget(_closeButton);
+    _imp->closeButton = new Button(QIcon(pixC),"",_imp->header);
+    _imp->closeButton->setFixedSize(NATRON_SMALL_BUTTON_SIZE,NATRON_SMALL_BUTTON_SIZE);
+    _imp->closeButton->setToolTip( Qt::convertFromPlainText(tr("Close pane"), Qt::WhiteSpaceNormal) );
+    _imp->closeButton->setFocusPolicy(Qt::NoFocus);
+    QObject::connect( _imp->closeButton, SIGNAL( clicked() ), this, SLOT( closePane() ) );
+    _imp->headerLayout->addWidget(_imp->closeButton);
 
 
     /*adding menu to the left corner button*/
-    _leftCornerButton->setContextMenuPolicy(Qt::CustomContextMenu);
-    QObject::connect( _leftCornerButton, SIGNAL( clicked() ), this, SLOT( createMenu() ) );
+    _imp->leftCornerButton->setContextMenuPolicy(Qt::CustomContextMenu);
+    QObject::connect( _imp->leftCornerButton, SIGNAL( clicked() ), this, SLOT( createMenu() ) );
 
 
-    _mainLayout->addWidget(_header);
-    _mainLayout->addStretch();
+    _imp->mainLayout->addWidget(_imp->header);
+    _imp->mainLayout->addStretch();
 }
 
 TabWidget::~TabWidget()
 {
 }
 
+Gui*
+TabWidget::getGui() const
+{
+    return _imp->gui;
+}
+
+int
+TabWidget::count() const
+{
+    QMutexLocker l(&_imp->tabWidgetStateMutex);
+    
+    return _imp->tabs.size();
+}
+
+QWidget*
+TabWidget::tabAt(int index) const
+{
+    QMutexLocker l(&_imp->tabWidgetStateMutex);
+    if (index < 0 || index >= (int)_imp->tabs.size()) {
+        return 0;
+    }
+    return _imp->tabs[index].first;
+}
+
+void
+TabWidget::tabAt(int index, QWidget** w, ScriptObject** obj) const
+{
+    QMutexLocker l(&_imp->tabWidgetStateMutex);
+    if (index < 0 || index >= (int)_imp->tabs.size()) {
+        *w = 0;
+        *obj = 0;
+        return ;
+    }
+    *w = _imp->tabs[index].first;
+    *obj = _imp->tabs[index].second;
+}
+
+
 void
 TabWidget::notifyGuiAboutRemoval()
 {
-    _gui->unregisterPane(this);
+    _imp->gui->unregisterPane(this);
 }
 
 void
 TabWidget::setClosable(bool closable)
 {
-    _closeButton->setEnabled(closable);
-    _floatButton->setEnabled(closable);
+    _imp->closeButton->setEnabled(closable);
+    _imp->floatButton->setEnabled(closable);
 }
 
-void
-TabWidget::destroyTabs()
-{
-    for (U32 i = 0; i < _tabs.size(); ++i) {
-        bool mustDelete = destroyTab(_tabs[i]);
-        if (mustDelete) {
-            delete _tabs[i];
-            _tabs[i] = NULL;
-        }
-    }
-}
-
-bool
-TabWidget::destroyTab(QWidget* tab)
-{
-    /*special care is taken if this is a viewer: we also
-       need to delete the viewer node.*/
-    ViewerTab* isViewer = dynamic_cast<ViewerTab*>(tab);
-    Histogram* isHisto = dynamic_cast<Histogram*>(tab);
-
-    if (isViewer) {
-        _gui->removeViewerTab(isViewer,false,false);
-    } else if (isHisto) {
-        _gui->removeHistogram(isHisto);
-    } else {
-        ///Do not delete unique widgets such as the properties bin, node graph or curve editor
-        tab->setVisible(false);
-    }
-
-    return false; // must not be deleted
-}
 
 void
 TabWidget::createMenu()
 {
-    MenuWithToolTips menu(_gui);
-
-    menu.setFont( QFont(appFont,appFontSize) );
+    MenuWithToolTips menu(_imp->gui);
+    QFont f(appFont,appFontSize);
+    menu.setFont(f) ;
     QPixmap pixV,pixM,pixH,pixC,pixA;
     appPTR->getIcon(NATRON_PIXMAP_TAB_WIDGET_SPLIT_VERTICALLY,&pixV);
     appPTR->getIcon(NATRON_PIXMAP_TAB_WIDGET_SPLIT_HORIZONTALLY,&pixH);
@@ -200,17 +252,17 @@ TabWidget::createMenu()
     menu.addAction(floatAction);
 
 
-    if ( (_tabBar->count() == 0) ) {
+    if ( (_imp->tabBar->count() == 0) ) {
         floatAction->setEnabled(false);
     }
 
     QAction* closeAction = new QAction(QIcon(pixC),tr("Close pane"), &menu);
-    closeAction->setEnabled( _closeButton->isEnabled() );
+    closeAction->setEnabled( _imp->closeButton->isEnabled() );
     QObject::connect( closeAction, SIGNAL( triggered() ), this, SLOT( closePane() ) );
     menu.addAction(closeAction);
     
     QAction* hideToolbar;
-    if (_gui->isLeftToolBarDisplayedOnMouseHoverOnly()) {
+    if (_imp->gui->isLeftToolBarDisplayedOnMouseHoverOnly()) {
         hideToolbar = new QAction(tr("Show left toolbar"),&menu);
     } else {
         hideToolbar = new QAction(tr("Hide left toolbar"),&menu);
@@ -219,7 +271,7 @@ TabWidget::createMenu()
     menu.addAction(hideToolbar);
     
     QAction* hideTabbar;
-    if (_tabBarVisible) {
+    if (_imp->tabBarVisible) {
         hideTabbar = new QAction(tr("Hide tabs header"),&menu);
     } else {
         hideTabbar = new QAction(tr("Show tabs header"),&menu);
@@ -232,6 +284,23 @@ TabWidget::createMenu()
     menu.addAction( tr("Node graph here"), this, SLOT( moveNodeGraphHere() ) );
     menu.addAction( tr("Curve Editor here"), this, SLOT( moveCurveEditorHere() ) );
     menu.addAction( tr("Properties bin here"), this, SLOT( movePropertiesBinHere() ) );
+    menu.addAction( tr("Script editor here"), this, SLOT( moveScriptEditorHere() ) );
+    
+    
+    std::map<PyPanel*,std::string> userPanels = _imp->gui->getPythonPanels();
+    if (!userPanels.empty()) {
+        QMenu* userPanelsMenu = new QMenu(tr("User panels"),&menu);
+        userPanelsMenu->setFont(f);
+        menu.addAction(userPanelsMenu->menuAction());
+        
+        
+        for (std::map<PyPanel*,std::string>::iterator it = userPanels.begin(); it != userPanels.end(); ++it) {
+            QAction* pAction = new QAction(QString(it->first->getPanelLabel().c_str()) + tr(" here"),userPanelsMenu);
+            QObject::connect(pAction, SIGNAL(triggered()), this, SLOT(onUserPanelActionTriggered()));
+            pAction->setData(it->first->getScriptName().c_str());
+            userPanelsMenu->addAction(pAction);
+        }
+    }
     menu.addSeparator();
     
     QAction* isAnchorAction = new QAction(QIcon(pixA),tr("Set this as anchor"),&menu);
@@ -243,13 +312,50 @@ TabWidget::createMenu()
     QObject::connect( isAnchorAction, SIGNAL( triggered() ), this, SLOT( onSetAsAnchorActionTriggered() ) );
     menu.addAction(isAnchorAction);
 
-    menu.exec( _leftCornerButton->mapToGlobal( QPoint(0,0) ) );
+    menu.exec( _imp->leftCornerButton->mapToGlobal( QPoint(0,0) ) );
+}
+
+void
+TabWidget::onUserPanelActionTriggered()
+{
+    QAction* s = qobject_cast<QAction*>(sender());
+    if (!s) {
+        return;
+    }
+    
+    const RegisteredTabs& tabs = _imp->gui->getRegisteredTabs();
+    RegisteredTabs::const_iterator found = tabs.find(s->data().toString().toStdString());
+    if (found != tabs.end()) {
+        moveTab(found->second.first, found->second.second, this);
+    }
 }
 
 void
 TabWidget::onHideLeftToolBarActionTriggered()
 {
-    _gui->setLeftToolBarDisplayedOnMouseHoverOnly(!_gui->isLeftToolBarDisplayedOnMouseHoverOnly());
+    _imp->gui->setLeftToolBarDisplayedOnMouseHoverOnly(!_imp->gui->isLeftToolBarDisplayedOnMouseHoverOnly());
+}
+
+void
+TabWidget::moveToNextTab()
+{
+    int nextTab = -1;
+    {
+        QMutexLocker l(&_imp->tabWidgetStateMutex);
+        
+        for (U32 i = 0; i < _imp->tabs.size(); ++i) {
+            if (_imp->tabs[i].first == _imp->currentWidget) {
+                if (i == _imp->tabs.size() -1) {
+                    nextTab = 0;
+                } else {
+                    nextTab = i + 1;
+                }
+            }
+        }
+    }
+    if (nextTab != -1) {
+        makeCurrentTab(nextTab);
+    }
 }
 
 void
@@ -316,7 +422,7 @@ TabWidget::closeSplitterAndMoveOtherSplitToParent(Splitter* container)
     }
 
     /*Remove the container from everywhere*/
-    _gui->unregisterSplitter(container);
+    _imp->gui->unregisterSplitter(container);
     container->setParent(NULL);
     container->deleteLater();
 }
@@ -324,7 +430,7 @@ TabWidget::closeSplitterAndMoveOtherSplitToParent(Splitter* container)
 void
 TabWidget::closePane()
 {
-    if (!_gui) {
+    if (!_imp->gui) {
         return;
     }
 
@@ -336,14 +442,14 @@ TabWidget::closePane()
 
     /*Removing it from the _panes vector*/
 
-    _gui->unregisterPane(this);
+    _imp->gui->unregisterPane(this);
 
 
     ///This is the TabWidget to which we will move all our splits.
     TabWidget* tabToTransferTo = 0;
 
     ///Move living tabs to the viewer anchor TabWidget, this is better than destroying them.
-    const std::list<TabWidget*> & panes = _gui->getPanes();
+    const std::list<TabWidget*> & panes = _imp->gui->getPanes();
     for (std::list<TabWidget*>::const_iterator it = panes.begin(); it != panes.end(); ++it) {
         if ( (*it != this) && (*it)->isAnchor() ) {
             tabToTransferTo = *it;
@@ -355,11 +461,19 @@ TabWidget::closePane()
     if (tabToTransferTo) {
         ///move this tab's splits
         while (count() > 0) {
-            moveTab(tabAt(0), tabToTransferTo);
+            QWidget* w;
+            ScriptObject* o;
+            tabAt(0,&w,&o);
+            if (w && o) {
+                moveTab(w, o, tabToTransferTo);
+            }
         }
     } else {
         while (count() > 0) {
-            removeTab( tabAt(0) );
+            QWidget* w = tabAt(0);
+            if (w) {
+                removeTab( w, true );
+            }
         }
     }
 
@@ -381,7 +495,7 @@ TabWidget::floatPane(QPoint* position)
         return;
     }
 
-    FloatingWidget* floatingW = new FloatingWidget(_gui,_gui);
+    FloatingWidget* floatingW = new FloatingWidget(_imp->gui,_imp->gui);
     Splitter* parentSplitter = dynamic_cast<Splitter*>( parentWidget() );
     setParent(0);
     if (parentSplitter) {
@@ -394,79 +508,88 @@ TabWidget::floatPane(QPoint* position)
     if (position) {
         floatingW->move(*position);
     }
-    _gui->registerFloatingWindow(floatingW);
-    _gui->checkNumberOfNonFloatingPanes();
+    _imp->gui->registerFloatingWindow(floatingW);
+    _imp->gui->checkNumberOfNonFloatingPanes();
 }
 
 void
 TabWidget::addNewViewer()
 {
-    _gui->setNextViewerAnchor(this);
-    _gui->getApp()->createNode(  CreateNodeArgs(PLUGINID_NATRON_VIEWER,
+    _imp->gui->setNextViewerAnchor(this);
+    
+    NodeGraph* lastFocusedGraph = _imp->gui->getLastSelectedGraph();
+    NodeGraph* graph = lastFocusedGraph ? lastFocusedGraph : _imp->gui->getNodeGraph();
+    assert(graph);
+    _imp->gui->getApp()->createNode(  CreateNodeArgs(PLUGINID_NATRON_VIEWER,
                                                 "",
                                                 -1,-1,
-                                                -1,
                                                 true,
                                                 INT_MIN,INT_MIN,
                                                 true,
                                                 true,
                                                 QString(),
-                                                CreateNodeArgs::DefaultValuesList()) );
+                                                CreateNodeArgs::DefaultValuesList(),
+                                                graph->getGroup()) );
 }
 
 void
 TabWidget::moveNodeGraphHere()
 {
-    QWidget* what = dynamic_cast<QWidget*>( _gui->getNodeGraph() );
+    NodeGraph* graph = _imp->gui->getNodeGraph();
 
-    moveTab(what,this);
+    moveTab(graph, graph ,this);
 }
 
 void
 TabWidget::moveCurveEditorHere()
 {
-    QWidget* what = dynamic_cast<QWidget*>( _gui->getCurveEditor() );
+    CurveEditor* editor = _imp->gui->getCurveEditor();
 
-    moveTab(what,this);
+    moveTab(editor, editor,this);
 }
 
 void
 TabWidget::newHistogramHere()
 {
-    Histogram* h = _gui->addNewHistogram();
+    Histogram* h = _imp->gui->addNewHistogram();
 
-    appendTab(h);
+    appendTab(h,h);
 
-    _gui->getApp()->triggerAutoSave();
+    _imp->gui->getApp()->triggerAutoSave();
 }
 
 /*Get the header name of the tab at index "index".*/
 QString
-TabWidget::getTabName(int index) const
+TabWidget::getTabLabel(int index) const
 {
-    if ( index >= _tabBar->count() ) {
+    QMutexLocker k(&_imp->tabWidgetStateMutex);
+    if (index < 0 || index >= _imp->tabBar->count() ) {
         return QString();
     }
-
-    return _tabBar->tabText(index);
+    return _imp->tabs[index].second->getLabel().c_str();
 }
 
 QString
-TabWidget::getTabName(QWidget* tab) const
+TabWidget::getTabLabel(QWidget* tab) const
 {
-    return tab->objectName();
+    QMutexLocker k(&_imp->tabWidgetStateMutex);
+    for (U32 i = 0; i < _imp->tabs.size(); ++i) {
+        if (_imp->tabs[i].first == tab) {
+            return _imp->tabs[i].second->getLabel().c_str();
+        }
+    }
+    return QString();
 }
 
 void
-TabWidget::setTabName(QWidget* tab,
+TabWidget::setTabLabel(QWidget* tab,
                       const QString & name)
 {
-    QMutexLocker l(&_tabWidgetStateMutex);
+    QMutexLocker l(&_imp->tabWidgetStateMutex);
 
-    tab->setObjectName(name);
-    for (U32 i = 0; i < _tabs.size(); ++i) {
-        if (_tabs[i] == tab) {
-            _tabBar->setTabText(i, name);
+    for (U32 i = 0; i < _imp->tabs.size(); ++i) {
+        if (_imp->tabs[i].first == tab) {
+            _imp->tabBar->setTabText(i, name);
         }
     }
 }
@@ -474,15 +597,21 @@ TabWidget::setTabName(QWidget* tab,
 void
 TabWidget::floatCurrentWidget()
 {
-    if (_tabs.empty()) {
+    if (_imp->tabs.empty()) {
         return;
     }
-    if ( !_closeButton->isEnabled() ) {
+    if ( !_imp->closeButton->isEnabled() ) {
         ///Make a new tab widget and float it instead
-        TabWidget* newPane = new TabWidget(_gui,_gui);
-        newPane->setObjectName_mt_safe( _gui->getAvailablePaneName() );
-        _gui->registerPane(newPane);
-        moveTab(_currentWidget, newPane);
+        TabWidget* newPane = new TabWidget(_imp->gui,_imp->gui);
+        _imp->gui->registerPane(newPane);
+        newPane->setObjectName_mt_safe( _imp->gui->getAvailablePaneName() );
+        
+        QWidget* w;
+        ScriptObject* o;
+        currentWidget(&w, &o);
+        if (w && o) {
+            moveTab(w, o, newPane);
+        }
         newPane->floatPane();
     } else {
         ///Float this tab
@@ -493,36 +622,37 @@ TabWidget::floatCurrentWidget()
 void
 TabWidget::closeCurrentWidget()
 {
-    if (!_currentWidget) {
+    QWidget* w = currentWidget();
+    if (!w) {
         return;
     }
-    removeTab(_currentWidget);
-    bool mustDelete = destroyTab(_currentWidget);
-    if (mustDelete) {
-        delete _currentWidget;
-        _currentWidget = NULL;
-    }
+    removeTab(w,true);
+    
 }
 
 void
 TabWidget::closeTab(int index)
 {
-    assert( index < (int)_tabs.size() );
-    QWidget *tab = _tabs[index];
-    assert(_tabs[index]);
-    removeTab(tab);
-    bool mustDelete = destroyTab(tab);
-    if (mustDelete) {
-        delete tab;
-        // tab was already removed from the _tabs array by removeTab()
+    
+    QWidget *w = tabAt(index);
+    if (!w) {
+        return;
     }
-    _gui->getApp()->triggerAutoSave();
+    removeTab(w, true);
+    
+    _imp->gui->getApp()->triggerAutoSave();
 }
 
 void
 TabWidget::movePropertiesBinHere()
 {
-    moveTab(_gui->getPropertiesBin(), this);
+    moveTab(_imp->gui->getPropertiesBin(), _imp->gui->getPropertiesBin(), this);
+}
+
+void
+TabWidget::moveScriptEditorHere()
+{
+    moveTab(_imp->gui->getScriptEditor(), _imp->gui->getScriptEditor(), this);
 }
 
 TabWidget*
@@ -548,15 +678,15 @@ TabWidget::splitInternal(bool autoSave,
     Splitter* newSplitter = new Splitter;
     newSplitter->setContentsMargins(0, 0, 0, 0);
     newSplitter->setOrientation(orientation);
-    _gui->registerSplitter(newSplitter);
+    _imp->gui->registerSplitter(newSplitter);
  
     /*Add this to the new splitter*/
     newSplitter->addWidget_mt_safe(this);
 
     /*Adding now a new TabWidget*/
-    TabWidget* newTab = new TabWidget(_gui,newSplitter);
-    newTab->setObjectName_mt_safe( _gui->getAvailablePaneName() );
-    _gui->registerPane(newTab);
+    TabWidget* newTab = new TabWidget(_imp->gui,newSplitter);
+    _imp->gui->registerPane(newTab);
+    newTab->setObjectName_mt_safe( _imp->gui->getAvailablePaneName() );
     newSplitter->insertChild_mt_safe(-1,newTab);
 
     /*Resize the whole thing so each split gets the same size*/
@@ -594,8 +724,8 @@ TabWidget::splitInternal(bool autoSave,
     }
 
 
-    if (!_gui->getApp()->getProject()->isLoadingProject() && autoSave) {
-        _gui->getApp()->triggerAutoSave();
+    if (!_imp->gui->getApp()->getProject()->isLoadingProject() && autoSave) {
+        _imp->gui->getApp()->triggerAutoSave();
     }
 
     return newTab;
@@ -614,44 +744,51 @@ TabWidget::splitVertically(bool autoSave)
 }
 
 bool
-TabWidget::appendTab(QWidget* widget)
+TabWidget::appendTab(QWidget* widget, ScriptObject* object)
 {
-    return appendTab(QIcon(),widget);
+    return appendTab(QIcon(),widget,object);
 }
 
 bool
 TabWidget::appendTab(const QIcon & icon,
-                     QWidget* widget)
+                     QWidget* widget,
+                    ScriptObject* object)
 {
     {
-        QMutexLocker l(&_tabWidgetStateMutex);
+        QMutexLocker l(&_imp->tabWidgetStateMutex);
 
         ///If we do not know the tab ignore it
-        QString title = widget->objectName();
-        if ( title.isEmpty() ) {
+        std::string name = object->getScriptName();
+        std::string label = object->getLabel();
+        if ( name.empty() || label.empty() ) {
             return false;
         }
 
         /*registering this tab for drag&drop*/
-        _gui->registerTab(widget);
+        _imp->gui->registerTab(widget,object);
 
-        _tabs.push_back(widget);
+        _imp->tabs.push_back(std::make_pair(widget,object));
         widget->setParent(this);
-        _modifyingTabBar = true;
-        _tabBar->addTab(icon,title);
-        _tabBar->updateGeometry(); //< necessary
-        _modifyingTabBar = false;
-        if (_tabs.size() == 1) {
-            for (int i = 0; i < _mainLayout->count(); ++i) {
-                QSpacerItem* item = dynamic_cast<QSpacerItem*>( _mainLayout->itemAt(i) );
+        _imp->modifyingTabBar = true;
+        _imp->tabBar->addTab(icon,label.c_str());
+        _imp->tabBar->updateGeometry(); //< necessary
+        _imp->modifyingTabBar = false;
+        if (_imp->tabs.size() == 1) {
+            for (int i = 0; i < _imp->mainLayout->count(); ++i) {
+                QSpacerItem* item = dynamic_cast<QSpacerItem*>( _imp->mainLayout->itemAt(i) );
                 if (item) {
-                    _mainLayout->removeItem(item);
+                    _imp->mainLayout->removeItem(item);
                 }
             }
         }
-        _floatButton->setEnabled(true);
+        if (!widget->isVisible()) {
+            widget->setVisible(true);
+        }
+        _imp->floatButton->setEnabled(true);
+        
     }
-    makeCurrentTab(_tabs.size() - 1);
+    _imp->declareTabToPython(widget, object->getScriptName());
+    makeCurrentTab(_imp->tabs.size() - 1);
 
     return true;
 }
@@ -659,73 +796,116 @@ TabWidget::appendTab(const QIcon & icon,
 void
 TabWidget::insertTab(int index,
                      const QIcon & icon,
-                     QWidget* widget)
+                     QWidget* widget,
+                      ScriptObject* object)
 {
-    QMutexLocker l(&_tabWidgetStateMutex);
-    QString title = widget->objectName();
 
-    if ( (U32)index < _tabs.size() ) {
+    QString title = object->getLabel().c_str();
+
+    QMutexLocker l(&_imp->tabWidgetStateMutex);
+
+    if ( (U32)index < _imp->tabs.size() ) {
         /*registering this tab for drag&drop*/
-        _gui->registerTab(widget);
+        _imp->gui->registerTab(widget,object);
 
-        _tabs.insert(_tabs.begin() + index, widget);
-        _modifyingTabBar = true;
-        _tabBar->insertTab(index,icon,title);
-        _tabBar->updateGeometry(); //< necessary
-        _modifyingTabBar = false;
+        _imp->tabs.insert(_imp->tabs.begin() + index, std::make_pair(widget,object));
+        _imp->modifyingTabBar = true;
+        _imp->tabBar->insertTab(index,icon,title);
+        _imp->tabBar->updateGeometry(); //< necessary
+        _imp->modifyingTabBar = false;
+        if (!widget->isVisible()) {
+            widget->setVisible(true);
+        }
+        
+        l.unlock();
+        _imp->declareTabToPython(widget, object->getScriptName());
+        
     } else {
-        appendTab(widget);
+        l.unlock();
+        appendTab(widget,object);
     }
-    _floatButton->setEnabled(true);
+    _imp->floatButton->setEnabled(true);
 }
 
 void
 TabWidget::insertTab(int index,
-                     QWidget* widget)
+                     QWidget* widget,
+                     ScriptObject* object)
 {
-    insertTab(index, QIcon(), widget);
+    insertTab(index, QIcon(), widget,object);
 }
 
 QWidget*
-TabWidget::removeTab(int index)
+TabWidget::removeTab(int index,bool userAction)
 {
-    QMutexLocker l(&_tabWidgetStateMutex);
-
-    if ( (index < 0) || ( index >= (int)_tabs.size() ) ) {
-        return NULL;
+    QWidget* tab;
+    ScriptObject* obj;
+    tabAt(index,&tab,&obj);
+    if (!tab || !obj) {
+        return 0;
     }
-    QWidget* tab = _tabs[index];
-    _tabs.erase(_tabs.begin() + index);
-    _modifyingTabBar = true;
-    _tabBar->removeTab(index);
-    _modifyingTabBar = false;
-    if (_tabs.size() > 0) {
-        l.unlock();
-        makeCurrentTab(0);
-        l.relock();
-    } else {
-        _currentWidget = 0;
-        _mainLayout->addStretch();
-        if ( !_gui->isDraggingPanel() ) {
+    
+    {
+        QMutexLocker l(&_imp->tabWidgetStateMutex);
+        
+        _imp->tabs.erase(_imp->tabs.begin() + index);
+        _imp->modifyingTabBar = true;
+        _imp->tabBar->removeTab(index);
+        _imp->modifyingTabBar = false;
+        if (_imp->tabs.size() > 0) {
             l.unlock();
-            tryCloseFloatingPane();
+            makeCurrentTab(0);
             l.relock();
+        } else {
+            _imp->currentWidget = 0;
+            _imp->mainLayout->addStretch();
+            if ( !_imp->gui->isDraggingPanel() ) {
+                l.unlock();
+                tryCloseFloatingPane();
+                l.relock();
+            }
         }
+        tab->setParent(_imp->gui);
     }
-	tab->setParent(_gui);
+    ViewerTab* isViewer = dynamic_cast<ViewerTab*>(tab);
+    Histogram* isHisto = dynamic_cast<Histogram*>(tab);
+    NodeGraph* isGraph = dynamic_cast<NodeGraph*>(tab);
+    
+    _imp->removeTabToPython(tab, obj->getScriptName());
+    
+    if (userAction) {
+      
+        if (isViewer) {
+            /*special care is taken if this is a viewer: we also
+             need to delete the viewer node.*/
+            _imp->gui->removeViewerTab(isViewer,false,false);
+        } else if (isHisto) {
+            _imp->gui->removeHistogram(isHisto);
+        } else {
+            ///Do not delete unique widgets such as the properties bin, node graph or curve editor
+            tab->setVisible(false);
+        }
+    } else {
+        tab->setVisible(false);
+    }
+    if (isGraph && _imp->gui->getLastSelectedGraph() == isGraph) {
+        _imp->gui->setLastSelectedGraph(0);
+    }
+	tab->setParent(_imp->gui);
 
+    
     return tab;
 }
 
 void
-TabWidget::removeTab(QWidget* widget)
+TabWidget::removeTab(QWidget* widget,bool userAction)
 {
     int index = -1;
 
     {
-        QMutexLocker l(&_tabWidgetStateMutex);
-        for (U32 i = 0; i < _tabs.size(); ++i) {
-            if (_tabs[i] == widget) {
+        QMutexLocker l(&_imp->tabWidgetStateMutex);
+        for (U32 i = 0; i < _imp->tabs.size(); ++i) {
+            if (_imp->tabs[i].first == widget) {
                 index = i;
                 break;
             }
@@ -733,39 +913,97 @@ TabWidget::removeTab(QWidget* widget)
     }
 
     if (index != -1) {
-        QWidget* tab = removeTab(index);
+        QWidget* tab = removeTab(index,userAction);
         assert(tab == widget);
         (void)tab;
     }
 }
 
 void
+TabWidget::setCurrentWidget(QWidget* w)
+{
+    int index = -1;
+    {
+        QMutexLocker l(&_imp->tabWidgetStateMutex);
+        for (U32 i = 0; i < _imp->tabs.size(); ++i) {
+            if (_imp->tabs[i].first == w) {
+                index = i;
+                break;
+            }
+        }
+    }
+    if (index != -1) {
+        makeCurrentTab(index);
+    }
+}
+
+void
 TabWidget::makeCurrentTab(int index)
 {
-    if (_modifyingTabBar) {
+    if (_imp->modifyingTabBar) {
         return;
     }
-    QWidget* tab;
+    QWidget* tab = tabAt(index);
+    if (!tab) {
+        return;
+    }
     {
-        QMutexLocker l(&_tabWidgetStateMutex);
-        if ( (index < 0) || ( index >= (int)_tabs.size() ) ) {
-            return;
+        QMutexLocker l(&_imp->tabWidgetStateMutex);
+        
+        /*Remove previous widget if any*/
+        
+        if (_imp->currentWidget) {
+            QObject::disconnect(_imp->currentWidget, SIGNAL(destroyed()), this, SLOT(onCurrentTabDeleted()));
+            _imp->currentWidget->setVisible(false);
+            _imp->mainLayout->removeWidget(_imp->currentWidget);
         }
-        /*Removing previous widget if any*/
-        if (_currentWidget) {
-            _currentWidget->setVisible(false);
-            _mainLayout->removeWidget(_currentWidget);
-            // _currentWidget->setParent(0);
-        }
-        tab = _tabs[index];
-        _mainLayout->addWidget(tab);
-        _currentWidget = tab;
+
+        _imp->mainLayout->addWidget(tab);
+        QObject::connect(tab, SIGNAL(destroyed()), this, SLOT(onCurrentTabDeleted()));
+        _imp->currentWidget = tab;
     }
     tab->setVisible(true);
     tab->setParent(this);
-    _modifyingTabBar = true;
-    _tabBar->setCurrentIndex(index);
-    _modifyingTabBar = false;
+    _imp->modifyingTabBar = true;
+    _imp->tabBar->setCurrentIndex(index);
+    _imp->modifyingTabBar = false;
+}
+                         
+void
+TabWidget::onCurrentTabDeleted()
+{
+    QObject* s = sender();
+    
+    QMutexLocker l(&_imp->tabWidgetStateMutex);
+
+    if (s != _imp->currentWidget) {
+        return;
+    }
+    _imp->currentWidget = 0;
+    for (U32 i = 0; i < _imp->tabs.size(); ++i) {
+        if (_imp->tabs[i].first == s) {
+
+            _imp->tabs.erase(_imp->tabs.begin() + i);
+            _imp->modifyingTabBar = true;
+            _imp->tabBar->removeTab(i);
+            _imp->modifyingTabBar = false;
+            if (_imp->tabs.size() > 0) {
+                l.unlock();
+                makeCurrentTab(0);
+                l.relock();
+            } else {
+                _imp->currentWidget = 0;
+                _imp->mainLayout->addStretch();
+                if ( !_imp->gui->isDraggingPanel() ) {
+                    l.unlock();
+                    tryCloseFloatingPane();
+                    l.relock();
+                }
+            }
+            break;
+        }
+    }
+    
 }
 
 void
@@ -773,7 +1011,7 @@ TabWidget::paintEvent(QPaintEvent* e)
 {
     QFrame::paintEvent(e);
 
-    if (_drawDropRect) {
+    if (_imp->drawDropRect) {
         QRect r = rect();
         QPainter p(this);
         QPen pen;
@@ -792,11 +1030,13 @@ TabWidget::dropEvent(QDropEvent* e)
 {
     e->accept();
     QString name( e->mimeData()->data("Tab") );
-    QWidget* w = _gui->findExistingTab( name.toStdString() );
-    if (w) {
-        moveTab(w, this);
+    QWidget* w;
+    ScriptObject* obj;
+    _imp->gui->findExistingTab(name.toStdString(), &w, &obj);
+    if (w && obj) {
+        moveTab(w, obj, this);
     }
-    _drawDropRect = false;
+    _imp->drawDropRect = false;
     setFrameShape(QFrame::NoFrame);
     repaint();
 }
@@ -830,7 +1070,7 @@ TabBar::leaveEvent(QEvent* e)
         QTabBar::leaveEvent(e);
     } else {
         _processingLeaveEvent = true;
-        emit mouseLeftTabBar();
+        Q_EMIT mouseLeftTabBar();
         QTabBar::leaveEvent(e);
         _processingLeaveEvent = false;
     }
@@ -992,16 +1232,35 @@ TabWidget::stopDragTab(const QPoint & globalPos)
         tryCloseFloatingPane();
     }
 
-    QWidget* draggedPanel = _gui->stopDragPanel();
-    const std::list<TabWidget*> panes = _gui->getPanes();
+    QWidget* draggedPanel = _imp->gui->stopDragPanel();
+    if (!draggedPanel) {
+        return false;
+    }
+    ScriptObject* obj = 0;
+    const RegisteredTabs& tabs = _imp->gui->getRegisteredTabs();
+    for (RegisteredTabs::const_iterator it = tabs.begin(); it != tabs.end(); ++it) {
+        if (it->second.first == draggedPanel) {
+            obj = it->second.second;
+            break;
+        }
+        
+    }
+    if (!obj) {
+        return false;
+    }
+    
+    
+    const std::list<TabWidget*> panes = _imp->gui->getPanes();
     
     QWidget* widgetUnderMouse = qApp->widgetAt(globalPos);
     bool foundTabWidgetUnderneath = false;
     if (widgetUnderMouse) {
         TabWidget* topLvlTabWidget = findTabWidgetRecursive(widgetUnderMouse);
         if (topLvlTabWidget) {
-            topLvlTabWidget->appendTab(draggedPanel);
+            
+            topLvlTabWidget->appendTab(draggedPanel, obj);
             foundTabWidgetUnderneath = true;
+            
         }
     }
 
@@ -1012,18 +1271,18 @@ TabWidget::stopDragTab(const QPoint & globalPos)
         
         
         QPoint windowPos = globalPos;
-        FloatingWidget* floatingW = new FloatingWidget(_gui,_gui);
-        TabWidget* newTab = new TabWidget(_gui,floatingW);
-        newTab->setObjectName_mt_safe( _gui->getAvailablePaneName() );
-        _gui->registerPane(newTab);
-        newTab->appendTab(draggedPanel);
+        FloatingWidget* floatingW = new FloatingWidget(_imp->gui,_imp->gui);
+        TabWidget* newTab = new TabWidget(_imp->gui,floatingW);
+        _imp->gui->registerPane(newTab);
+        newTab->setObjectName_mt_safe( _imp->gui->getAvailablePaneName() );
+        newTab->appendTab(draggedPanel,obj);
         floatingW->setWidget(newTab);
         floatingW->move(windowPos);
-        _gui->registerFloatingWindow(floatingW);
+        _imp->gui->registerFloatingWindow(floatingW);
         
-        _gui->checkNumberOfNonFloatingPanes();
+        _imp->gui->checkNumberOfNonFloatingPanes();
         
-        bool isClosable = _closeButton->isEnabled();
+        bool isClosable = _imp->closeButton->isEnabled();
         if (isClosable && count() == 0) {
             closePane();
             ret = true;
@@ -1040,28 +1299,27 @@ TabWidget::stopDragTab(const QPoint & globalPos)
 void
 TabWidget::startDragTab(int index)
 {
-    if ( index >= count() ) {
+    QWidget* selectedTab = tabAt(index);
+    if (!selectedTab) {
         return;
     }
 
-    QWidget* selectedTab = tabAt(index);
-    assert(selectedTab);
     selectedTab->setParent(this);
 
-    _gui->startDragPanel(selectedTab);
+    _imp->gui->startDragPanel(selectedTab);
 
-    removeTab(selectedTab);
+    removeTab(selectedTab, false);
     selectedTab->hide();
 }
 
 void
 TabWidget::setDrawDropRect(bool draw)
 {
-    if (draw == _drawDropRect) {
+    if (draw == _imp->drawDropRect) {
         return;
     }
 
-    _drawDropRect = draw;
+    _imp->drawDropRect = draw;
     if (draw) {
         setFrameShape(QFrame::Box);
     } else {
@@ -1082,23 +1340,23 @@ TabWidget::isWithinWidget(const QPoint & globalPos) const
 bool
 TabWidget::isFullScreen() const
 {
-    QMutexLocker l(&_tabWidgetStateMutex);
+    QMutexLocker l(&_imp->tabWidgetStateMutex);
 
-    return _fullScreen;
+    return _imp->fullScreen;
 }
 
 bool
 TabWidget::isAnchor() const
 {
-    QMutexLocker l(&_tabWidgetStateMutex);
+    QMutexLocker l(&_imp->tabWidgetStateMutex);
 
-    return _isAnchor;
+    return _imp->isAnchor;
 }
 
 void
 TabWidget::onSetAsAnchorActionTriggered()
 {
-    const std::list<TabWidget*> & allPanes = _gui->getPanes();
+    const std::list<TabWidget*> & allPanes = _imp->gui->getPanes();
 
     for (std::list<TabWidget*>::const_iterator it = allPanes.begin(); it != allPanes.end(); ++it) {
         (*it)->setAsAnchor(*it == this);
@@ -1108,16 +1366,16 @@ TabWidget::onSetAsAnchorActionTriggered()
 void
 TabWidget::onShowHideTabBarActionTriggered()
 {
-    _tabBarVisible = !_tabBarVisible;
-    _header->setVisible(_tabBarVisible);
+    _imp->tabBarVisible = !_imp->tabBarVisible;
+    _imp->header->setVisible(_imp->tabBarVisible);
 }
 
 void
 TabWidget::setAsAnchor(bool anchor)
 {
     {
-        QMutexLocker l(&_tabWidgetStateMutex);
-        _isAnchor = anchor;
+        QMutexLocker l(&_imp->tabWidgetStateMutex);
+        _imp->isAnchor = anchor;
     }
     QPixmap pix;
 
@@ -1126,7 +1384,7 @@ TabWidget::setAsAnchor(bool anchor)
     } else {
         appPTR->getIcon(Natron::NATRON_PIXMAP_TAB_WIDGET_LAYOUT_BUTTON, &pix);
     }
-    _leftCornerButton->setIcon( QIcon(pix) );
+    _imp->leftCornerButton->setIcon( QIcon(pix) );
 }
 
 void
@@ -1135,21 +1393,25 @@ TabWidget::keyPressEvent (QKeyEvent* e)
     if ( (e->key() == Qt::Key_Space) && modCASIsNone(e) ) {
         bool fullScreen;
         {
-            QMutexLocker l(&_tabWidgetStateMutex);
-            fullScreen = _fullScreen;
+            QMutexLocker l(&_imp->tabWidgetStateMutex);
+            fullScreen = _imp->fullScreen;
         }
         {
-            QMutexLocker l(&_tabWidgetStateMutex);
-            _fullScreen = !_fullScreen;
+            QMutexLocker l(&_imp->tabWidgetStateMutex);
+            _imp->fullScreen = !_imp->fullScreen;
         }
         if (fullScreen) {
-            _gui->minimize();
+            _imp->gui->minimize();
         } else {
-            _gui->maximize(this);
+            _imp->gui->maximize(this);
         }
         e->accept();
+    } else if (isKeybind(kShortcutGroupGlobal, kShortcutIDActionNextTab, e->modifiers(), e->key())) {
+        moveToNextTab();
+    } else if (isKeybind(kShortcutGroupGlobal, kShortcutIDActionCloseTab, e->modifiers(), e->key())) {
+        closeCurrentWidget();
     } else if (isFloatingWindowChild() && isKeybind(kShortcutGroupGlobal, kShortcutIDActionFullscreen, e->modifiers(), e->key())) {
-        _gui->toggleFullScreen();
+        _imp->gui->toggleFullScreen();
         e->accept();
     } else {
         QFrame::keyPressEvent(e);
@@ -1158,6 +1420,7 @@ TabWidget::keyPressEvent (QKeyEvent* e)
 
 bool
 TabWidget::moveTab(QWidget* what,
+                ScriptObject* obj,
                    TabWidget *where)
 {
     TabWidget* from = dynamic_cast<TabWidget*>( what->parentWidget() );
@@ -1178,10 +1441,10 @@ TabWidget::moveTab(QWidget* what,
     }
 
     if (from) {
-        from->removeTab(what);
+        from->removeTab(what, false);
     }
     assert(where);
-    where->appendTab(what);
+    where->appendTab(what,obj);
     what->setParent(where);
     if ( !where->getGui()->getApp()->getProject()->isLoadingProject() ) {
         where->getGui()->getApp()->triggerAutoSave();
@@ -1216,25 +1479,47 @@ DragPixmap::paintEvent(QPaintEvent*)
 }
 
 QStringList
-TabWidget::getTabNames() const
+TabWidget::getTabScriptNames() const
 {
-    QMutexLocker l(&_tabWidgetStateMutex);
+    QMutexLocker l(&_imp->tabWidgetStateMutex);
     QStringList ret;
 
-    for (U32 i = 0; i < _tabs.size(); ++i) {
-        ret << _tabs[i]->objectName();
+    for (U32 i = 0; i < _imp->tabs.size(); ++i) {
+        ret << _imp->tabs[i].second->getScriptName().c_str();
     }
 
     return ret;
 }
 
+QWidget*
+TabWidget::currentWidget() const
+{
+    QMutexLocker l(&_imp->tabWidgetStateMutex);
+    
+    return _imp->currentWidget;
+}
+
+void
+TabWidget::currentWidget(QWidget** w,ScriptObject** obj) const
+{
+    QMutexLocker l(&_imp->tabWidgetStateMutex);
+    *w = _imp->currentWidget;
+    for (U32 i = 0; i < _imp->tabs.size(); ++i) {
+        if (_imp->tabs[i].first == _imp->currentWidget) {
+            *obj = _imp->tabs[i].second;
+            return;
+        }
+    }
+    *obj = 0;
+}
+
 int
 TabWidget::activeIndex() const
 {
-    QMutexLocker l(&_tabWidgetStateMutex);
+    QMutexLocker l(&_imp->tabWidgetStateMutex);
 
-    for (U32 i = 0; i < _tabs.size(); ++i) {
-        if (_tabs[i] == _currentWidget) {
+    for (U32 i = 0; i < _imp->tabs.size(); ++i) {
+        if (_imp->tabs[i].first == _imp->currentWidget) {
             return i;
         }
     }
@@ -1245,15 +1530,42 @@ TabWidget::activeIndex() const
 void
 TabWidget::setObjectName_mt_safe(const QString & str)
 {
-    QMutexLocker l(&_tabWidgetStateMutex);
+    std::string oldName = objectName_mt_safe().toStdString();
+    {
+        QMutexLocker l(&_imp->tabWidgetStateMutex);
+        
+        setObjectName(str);
+    }
+    QString tt = Qt::convertFromPlainText(tr(LEFT_HAND_CORNER_BUTTON_TT), Qt::WhiteSpaceNormal) ;
+    QString toPre = QString("Script name: <font size = 4><b>%1</font></b><br/>").arg(str);
+    tt.prepend(toPre);
+    _imp->leftCornerButton->setToolTip(tt);
+    
+    std::string appID;
+    {
+        std::stringstream ss;
+        ss << "app" << _imp->gui->getApp()->getAppID() + 1;
+        appID = ss.str();
+    }
 
-    setObjectName(str);
+    
+    std::stringstream ss;
+    if (!oldName.empty()) {
+        ss << "if hasattr(" << appID << ", '"  << oldName << "'):\n";
+        ss << "    del " << appID << "." << oldName << "\n";
+    }
+    ss << appID << "." << str.toStdString() << " = " << appID << ".getTabWidget('" << str.toStdString() << "')\n";
+
+    std::string script = ss.str();
+    std::string err;
+    bool ok = Natron::interpretPythonScript(script, &err, 0);
+    assert(ok);
 }
 
 QString
 TabWidget::objectName_mt_safe() const
 {
-    QMutexLocker l(&_tabWidgetStateMutex);
+    QMutexLocker l(&_imp->tabWidgetStateMutex);
 
     return objectName();
 }
@@ -1277,26 +1589,26 @@ TabWidget::isFloatingWindowChild() const
 void
 TabWidget::discardGuiPointer()
 {
-    _gui = 0;
+    _imp->gui = 0;
 }
 
 void
 TabWidget::mouseMoveEvent(QMouseEvent* e)
 {
-    if (!_tabBarVisible) {
-        QSize size = _header->sizeHint();
+    if (!_imp->tabBarVisible) {
+        QSize size = _imp->header->sizeHint();
         if (e->y() <= (size.height() * 1.2)) {
-            if (!_header->isVisible()) {
-                _header->setVisible(true);
+            if (!_imp->header->isVisible()) {
+                _imp->header->setVisible(true);
             }
         } else {
-            if (_header->isVisible()) {
-                _header->setVisible(false);
+            if (_imp->header->isVisible()) {
+                _imp->header->setVisible(false);
             }
         }
     }
-    if (_gui && _gui->isLeftToolBarDisplayedOnMouseHoverOnly()) {
-        _gui->refreshLeftToolBarVisibility(e->globalPos());
+    if (_imp->gui && _imp->gui->isLeftToolBarDisplayedOnMouseHoverOnly()) {
+        _imp->gui->refreshLeftToolBarVisibility(e->globalPos());
     }
     QFrame::mouseMoveEvent(e);
 }
@@ -1309,11 +1621,93 @@ TabWidget::leaveEvent(QEvent* e)
 }
 
 void
+TabWidget::enterEvent(QEvent* e)
+{
+    if (_imp->gui) {
+        _imp->gui->setLastEnteredTabWidget(this);
+    }
+    QFrame::leaveEvent(e);
+}
+
+void
 TabWidget::onTabBarMouseLeft()
 {
-    if (!_tabBarVisible) {
-        if (_header->isVisible()) {
-            _header->setVisible(false);
+    if (!_imp->tabBarVisible) {
+        if (_imp->header->isVisible()) {
+            _imp->header->setVisible(false);
         }
     }
+}
+
+void
+TabWidget::onTabScriptNameChanged(QWidget* tab,const std::string& oldName,const std::string& newName)
+{
+    ViewerTab* isViewer = dynamic_cast<ViewerTab*>(tab);
+    if (!isViewer) {
+        return;
+    }
+    
+    std::string paneName = objectName_mt_safe().toStdString();
+    std::string appID = QString("app%1").arg(_imp->gui->getApp()->getAppID() + 1).toStdString();
+
+    std::stringstream ss;
+    ss << "if hasattr(" << appID << "." << paneName << ",\"" << oldName << "\"):\n";
+    ss << "    del " << appID << "." << paneName << "." << oldName;
+    ss << appID << "." << paneName << "." << newName << " = " << appID << ".getViewer(\"" << newName << "\")\n";
+    
+    std::string err;
+    std::string script = ss.str();
+    _imp->gui->printAutoDeclaredVariable(script);
+    bool ok = Natron::interpretPythonScript(script, &err, 0);
+    assert(ok);
+}
+
+void
+TabWidgetPrivate::declareTabToPython(QWidget* widget,const std::string& tabName)
+{
+    ViewerTab* isViewer = dynamic_cast<ViewerTab*>(widget);
+    PyPanel* isPanel = dynamic_cast<PyPanel*>(widget);
+    
+    if (!isViewer && !isPanel) {
+        return;
+    }
+    
+    std::string paneName = _publicInterface->objectName_mt_safe().toStdString();
+    std::string appID = QString("app%1").arg(gui->getApp()->getAppID() + 1).toStdString();
+    std::stringstream ss;
+    ss << appID << "." << paneName << "." << tabName << " = " << appID << ".";
+    if (isViewer) {
+        ss << "getViewer('";
+    } else {
+        ss << "getUserPanel('";
+    }
+    ss  << tabName << "')\n";
+    
+    std::string script = ss.str();
+    std::string err;
+    gui->printAutoDeclaredVariable(script);
+    bool ok = Natron::interpretPythonScript(script, &err, 0);
+    assert(ok);
+}
+
+void
+TabWidgetPrivate::removeTabToPython(QWidget* widget,const std::string& tabName)
+{
+    ViewerTab* isViewer = dynamic_cast<ViewerTab*>(widget);
+    PyPanel* isPanel = dynamic_cast<PyPanel*>(widget);
+    
+    if (!isViewer && !isPanel) {
+        return;
+    }
+    
+    std::string paneName = _publicInterface->objectName_mt_safe().toStdString();
+    std::string appID = QString("app%1").arg(gui->getApp()->getAppID() + 1).toStdString();
+    std::stringstream ss;
+    ss << "del " << appID << "." << paneName << "." << tabName ;
+
+    std::string err;
+    std::string script = ss.str();
+    gui->printAutoDeclaredVariable(script);
+    bool ok = Natron::interpretPythonScript(script, &err, 0);
+    assert(ok);
 }

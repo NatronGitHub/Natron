@@ -12,10 +12,12 @@
 #ifndef SCALESLIDERQWIDGET_H
 #define SCALESLIDERQWIDGET_H
 
-
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
 
 #include "Global/Macros.h"
-#ifndef Q_MOC_RUN
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
 #endif
 CLANG_DIAG_OFF(deprecated)
@@ -69,11 +71,11 @@ public:
     void setReadOnly(bool ro);
 
     
-signals:
+Q_SIGNALS:
     void editingFinished();
     void positionChanged(double);
 
-public slots:
+public Q_SLOTS:
 
     void seekScalePosition(double v);
 

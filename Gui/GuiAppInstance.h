@@ -11,6 +11,10 @@
 #ifndef GUIAPPINSTANCE_H
 #define GUIAPPINSTANCE_H
 
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
 #include <map>
 
 #include "Engine/AppInstance.h"
@@ -30,11 +34,13 @@ class KnobHolder;
 struct FileDialogPreviewProvider
 {
     ViewerTab* viewerUI;
+    boost::shared_ptr<Natron::Node> viewerNodeInternal;
     boost::shared_ptr<NodeGui> viewerNode;
-    std::map<std::string,boost::shared_ptr<NodeGui> > readerNodes;
+    std::map<std::string,std::pair< boost::shared_ptr<Natron::Node>, boost::shared_ptr<NodeGui> > > readerNodes;
     
     FileDialogPreviewProvider()
     : viewerUI(0)
+    , viewerNodeInternal()
     , viewerNode()
     , readerNodes()
     {}
@@ -62,19 +68,9 @@ private:
 public:
     
     virtual void aboutToQuit() OVERRIDE FINAL;
-    virtual void load(const QString & projectName = QString(),
-                      const std::list<RenderRequest> &writersWork = std::list<AppInstance::RenderRequest>()) OVERRIDE FINAL;
+    virtual void load(const CLArgs& cl) OVERRIDE FINAL;
     Gui* getGui() const WARN_UNUSED_RETURN;
 
-    //////////
-    boost::shared_ptr<NodeGui> getNodeGui(const boost::shared_ptr<Natron::Node> & n) const WARN_UNUSED_RETURN;
-    boost::shared_ptr<NodeGui> getNodeGui(Natron::Node* n) const WARN_UNUSED_RETURN;
-    boost::shared_ptr<NodeGui> getNodeGui(const std::string & nodeName) const WARN_UNUSED_RETURN;
-    boost::shared_ptr<Natron::Node> getNode(const boost::shared_ptr<NodeGui> & n) const WARN_UNUSED_RETURN;
-    
-    ////To be removed in Natron 1.1, this is temporary to workaround a bug
-    void insertInNodeMapping(const boost::shared_ptr<NodeGui>& node);
-    
     /**
      * @brief Remove the node n from the mapping in GuiAppInstance and from the project so the pointer is no longer
      * referenced anywhere. This function is called on nodes that were already deleted by the user but were kept into
@@ -126,7 +122,6 @@ public:
     virtual void onMaxPanelsOpenedChanged(int maxPanels) OVERRIDE FINAL;
     virtual void connectViewersToViewerCache() OVERRIDE FINAL;
     virtual void disconnectViewersFromViewerCache() OVERRIDE FINAL;
-    virtual void clearNodeGuiMapping() OVERRIDE FINAL;
 
 
     boost::shared_ptr<FileDialogPreviewProvider> getPreviewProvider() const;
@@ -138,17 +133,29 @@ public:
 
     virtual void clearViewersLastRenderedTexture() OVERRIDE FINAL;
     
-    virtual void toggleAutoHideGraphInputs() OVERRIDE FINAL;
+    virtual void appendToScriptEditor(const std::string& str) OVERRIDE FINAL;
     
+    virtual void printAutoDeclaredVariable(const std::string& str) OVERRIDE FINAL;
+    
+    virtual void toggleAutoHideGraphInputs() OVERRIDE FINAL;
     virtual void setLastViewerUsingTimeline(const boost::shared_ptr<Natron::Node>& node) OVERRIDE FINAL;
     
     virtual ViewerInstance* getLastViewerUsingTimeline() const OVERRIDE FINAL;
     
     void discardLastViewerUsingTimeline();
     
+
+    virtual void declareCurrentAppVariable_Python();
+
+    virtual void createLoadProjectSplashScreen(const QString& projectFile) OVERRIDE FINAL;
+    
+    virtual void updateProjectLoadStatus(const QString& str) OVERRIDE FINAL;
+    
+    virtual void closeLoadPRojectSplashScreen() OVERRIDE FINAL;
+    
+
     virtual void renderAllViewers() OVERRIDE FINAL;
     
-    void reloadStylesheet();
     
     virtual void queueRedrawForAllViewers() OVERRIDE FINAL;
     
@@ -156,8 +163,11 @@ public:
     
     void clearOverlayRedrawRequests();
     
-public slots:
+    public Q_SLOTS:
     
+
+    void reloadStylesheet();
+
     virtual void redrawAllViewers() OVERRIDE FINAL;
 
     void onProcessFinished();
@@ -165,9 +175,9 @@ public slots:
     void projectFormatChanged(const Format& f);
 private:
 
-    virtual void createBackDrop() OVERRIDE FINAL;
-    virtual void createNodeGui(boost::shared_ptr<Natron::Node> node,
-                               const std::string & multiInstanceParentName,
+    
+    virtual void createNodeGui(const boost::shared_ptr<Natron::Node> &node,
+                               const boost::shared_ptr<Natron::Node>&  parentMultiInstance,
                                bool loadRequest,
                                bool autoConnect,
                                double xPosHint,double yPosHint,

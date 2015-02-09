@@ -12,6 +12,10 @@
 #ifndef NATRON_ENGINE_ABSTRACTCACHE_H_
 #define NATRON_ENGINE_ABSTRACTCACHE_H_
 
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
 #include <vector>
 #include <sstream>
 #include <fstream>
@@ -32,7 +36,7 @@ CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QThreadPool>
 #include <QtCore/QRunnable>
 CLANG_DIAG_ON(deprecated)
-#ifndef Q_MOC_RUN
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
 CLANG_DIAG_OFF(unused-parameter)
 // /opt/local/include/boost/serialization/smart_cast.hpp:254:25: warning: unused parameter 'u' [-Wunused-parameter]
@@ -201,33 +205,33 @@ public:
 
     void emitSignalClearedInMemoryPortion()
     {
-        emit clearedInMemoryPortion();
+        Q_EMIT clearedInMemoryPortion();
     }
 
     void emitClearedDiskPortion()
     {
-        emit clearedDiskPortion();
+        Q_EMIT clearedDiskPortion();
     }
 
     void emitAddedEntry(SequenceTime time)
     {
-        emit addedEntry(time);
+        Q_EMIT addedEntry(time);
     }
 
     void emitRemovedEntry(SequenceTime time,
                           int storage)
     {
-        emit removedEntry(time,storage);
+        Q_EMIT removedEntry(time,storage);
     }
 
     void emitEntryStorageChanged(SequenceTime time,
                                  int oldStorage,
                                  int newStorage)
     {
-        emit entryStorageChanged(time,oldStorage,newStorage);
+        Q_EMIT entryStorageChanged(time,oldStorage,newStorage);
     }
 
-signals:
+Q_SIGNALS:
 
     void clearedInMemoryPortion();
 
@@ -1328,7 +1332,7 @@ private:
                 if ((*it)->getKey() == key) {
                     returnValue->push_back(*it);
                     
-                    ///emit te added signal otherwise when first reading something that's already cached
+                    ///Q_EMIT te added signal otherwise when first reading something that's already cached
                     ///the timeline wouldn't update
                     if (_signalEmitter) {
                         _signalEmitter->emitAddedEntry( key.getTime() );
@@ -1405,7 +1409,7 @@ private:
                         
                         returnValue->push_back(*it);
                         ret.erase(it);
-                        ///emit te added signal otherwise when first reading something that's already cached
+                        ///Q_EMIT te added signal otherwise when first reading something that's already cached
                         ///the timeline wouldn't update
                         if (_signalEmitter) {
                             _signalEmitter->emitAddedEntry( key.getTime() );

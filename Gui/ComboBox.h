@@ -12,6 +12,10 @@
 #ifndef NATRON_GUI_COMBOBOX_H_
 #define NATRON_GUI_COMBOBOX_H_
 
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
 #include <vector>
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
@@ -112,12 +116,12 @@ public:
     
     bool getEnabled_natron() const;
 
-public slots:
+public Q_SLOTS:
 
     ///Changes the current index AND emits the signal void currentIndexChanged(int)
     void setCurrentIndex(int index);
 
-    ///Same as setCurrentIndex but does not emit any signal.
+    ///Same as setCurrentIndex but does not Q_EMIT any signal.
     void setCurrentIndex_no_emit(int index);
 
     ///Changes the text displayed by the combobox. It doesn't have to match the text
@@ -130,7 +134,7 @@ public slots:
 
     void setEnabled_natron(bool enabled);
 
-signals:
+Q_SIGNALS:
 
     void currentIndexChanged(int index);
 

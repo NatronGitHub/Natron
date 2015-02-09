@@ -12,7 +12,11 @@
 #ifndef KNOBGUII_H
 #define KNOBGUII_H
 
-#ifndef Q_MOC_RUN
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
 #endif
 #include "Engine/OverlaySupport.h"
@@ -38,7 +42,7 @@ public:
     virtual void restoreOpenGLContext() = 0;
     virtual unsigned int getCurrentRenderScale() const { return 0; }
     virtual boost::shared_ptr<Curve> getCurve(int dimension) const = 0;
-    
+    virtual void onKnobDeletion() = 0;
 protected:
 
     ///Should set to the underlying knob the gui ptr

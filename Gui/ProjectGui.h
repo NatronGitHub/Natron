@@ -7,8 +7,13 @@
  * contact: immarespond at gmail dot com
  *
  */
+
 #ifndef PROJECTGUI_H
 #define PROJECTGUI_H
+
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
 
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
@@ -17,8 +22,9 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QDialog>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
-#ifndef Q_MOC_RUN
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
+#include <boost/weak_ptr.hpp>
 #endif
 #include "Engine/Format.h"
 
@@ -35,6 +41,7 @@ class DockablePanel;
 class ProjectGuiSerialization;
 class Gui;
 class NodeGui;
+class ViewerInstance;
 class NodeGuiSerialization;
 namespace boost {
 namespace archive {
@@ -68,7 +75,7 @@ public:
 
     boost::shared_ptr<Natron::Project> getInternalProject() const
     {
-        return _project;
+        return _project.lock();
     }
 
     void save(boost::archive::xml_oarchive & archive) const;
@@ -95,7 +102,7 @@ public:
         return _gui;
     }
 
-public slots:
+public Q_SLOTS:
 
     void createNewFormat();
 
@@ -107,7 +114,7 @@ private:
 
 
     Gui* _gui;
-    boost::shared_ptr<Natron::Project> _project;
+    boost::weak_ptr<Natron::Project> _project;
     DockablePanel* _panel;
     bool _created;
     std::vector<boost::shared_ptr<Color_Knob> > _colorPickersEnabled;
@@ -130,7 +137,7 @@ public:
 
     Format getFormat() const;
 
-public slots:
+public Q_SLOTS:
 
     void onCopyFromViewer();
 
@@ -138,6 +145,9 @@ private:
 
     Gui* _gui;
     Natron::Project* _project;
+    
+    std::list<ViewerInstance*> _viewers;
+    
     QVBoxLayout* _mainLayout;
     QWidget* _fromViewerLine;
     QHBoxLayout* _fromViewerLineLayout;

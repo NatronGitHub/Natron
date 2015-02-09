@@ -12,9 +12,13 @@
 #ifndef NATRON_GUI_VIEWERGL_H_
 #define NATRON_GUI_VIEWERGL_H_
 
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
 #include <vector>
 #include <utility>
-#ifndef Q_MOC_RUN
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
 #endif
 #include "Global/Macros.h"
@@ -188,9 +192,11 @@ public:
     void updatePersistentMessage();
     void updatePersistentMessageToWidth(int w);
     
+
     virtual void getViewerFrameRange(int* first,int* last) const OVERRIDE FINAL;
     
-public slots:
+
+public Q_SLOTS:
 
 
     /**
@@ -245,7 +251,6 @@ public:
     
 
     virtual void makeOpenGLcontextCurrent() OVERRIDE FINAL;
-    virtual void onViewerNodeNameChanged(const QString & name) OVERRIDE FINAL;
     virtual void removeGUI() OVERRIDE FINAL;
     virtual int getCurrentView() const OVERRIDE FINAL;
     
@@ -354,7 +359,7 @@ public:
     
     virtual int getCurrentlyDisplayedTime() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     
-signals:
+Q_SIGNALS:
 
     /**
      *@brief Signal emitted when the current zoom factor changed.

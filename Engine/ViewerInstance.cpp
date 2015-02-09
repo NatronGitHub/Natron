@@ -9,6 +9,10 @@
  *
  */
 
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
 #include "ViewerInstancePrivate.h"
 
 #include <boost/shared_ptr.hpp>
@@ -60,7 +64,7 @@ static void scaleToTexture32bits(std::pair<int,int> yRange,
                                  float *output);
 static std::pair<double, double>
 findAutoContrastVminVmax(boost::shared_ptr<const Natron::Image> inputImage,
-                         ViewerInstance::DisplayChannelsEnum channels,
+                         Natron::DisplayChannelsEnum channels,
                          const RectI & rect);
 static void renderFunctor(std::pair<int,int> yRange,
                           const RenderViewerArgs & args,
@@ -147,9 +151,7 @@ ViewerInstance::ViewerInstance(boost::shared_ptr<Node> node)
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
-    if (node) {
-        connect( node.get(),SIGNAL( nameChanged(QString) ),this,SLOT( onNodeNameChanged(QString) ) );
-    }
+   
     QObject::connect( this,SIGNAL( disconnectTextureRequest(int) ),this,SLOT( executeDisconnectTextureRequestOnMainThread(int) ) );
     QObject::connect( _imp.get(),SIGNAL( mustRedrawViewer() ),this,SLOT( redrawViewer() ) );
     QObject::connect( this,SIGNAL( s_callRedrawOnMainThread() ), this, SLOT( redrawViewer() ) );
@@ -234,17 +236,6 @@ ViewerInstance::invalidateUiContext()
     _imp->uiContext = NULL;
 }
 
-void
-ViewerInstance::onNodeNameChanged(const QString & name)
-{
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-
-    ///update the gui tab name
-    if (_imp->uiContext) {
-        _imp->uiContext->onViewerNodeNameChanged(name);
-    }
-}
 
 
 int
@@ -334,16 +325,17 @@ ViewerInstance::renderViewer(int view,
 
 static void checkTreeCanRender_internal(Node* node,bool* ret)
 {
-    const std::vector<boost::shared_ptr<Node> > inputs = node->getInputs_copy();
-    for (U32 i = 0; i < inputs.size(); ++i) {
-        if (!inputs[i]) {
+    int maxInput = node->getMaxInputCount();
+    for (int i = 0; i < maxInput; ++i) {
+        NodePtr input = node->getInput(i);
+        if (!input) {
             if (!node->getLiveInstance()->isInputOptional(i)) {
                 *ret = false;
                 return;
             }
             
         } else {
-            checkTreeCanRender_internal(inputs[i].get(), ret);
+            checkTreeCanRender_internal(input.get(), ret);
             if (!ret) {
                 return;
             }
@@ -390,7 +382,7 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
     }
     
     if (!outArgs->activeInputToRender || !checkTreeCanRender(outArgs->activeInputToRender->getNode().get())) {
-        emit disconnectTextureRequest(textureIndex);
+        Q_EMIT disconnectTextureRequest(textureIndex);
         return eStatusFailed;
     }
     
@@ -464,10 +456,11 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
                                                                         supportsRS ==  eSupportsNo ? scaleOne : scale,
                                                                         view, &rod, &isRodProjectFormat);
     if (stat == eStatusFailed) {
-        emit disconnectTextureRequest(textureIndex);
+        Q_EMIT disconnectTextureRequest(textureIndex);
         if (!isSequential) {
             _imp->checkAndUpdateRenderAge(textureIndex,renderAge);
         }
+
         return stat;
     }
     // update scale after the first call to getRegionOfDefinition
@@ -483,7 +476,7 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
     assert(_imp->uiContext);
     
     bool autoContrast;
-    ViewerInstance::DisplayChannelsEnum channels;
+    Natron::DisplayChannelsEnum channels;
     {
         QMutexLocker locker(&_imp->viewerParamsMutex);
         autoContrast = _imp->viewerParamsAutoContrast;
@@ -497,7 +490,7 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
     _imp->uiContext->getImageRectangleDisplayedRoundedToTileSize(rod, par, mipMapLevel);
     
     if ( (roi.width() == 0) || (roi.height() == 0) ) {
-        emit disconnectTextureRequest(textureIndex);
+        Q_EMIT disconnectTextureRequest(textureIndex);
         outArgs->params.reset();
         if (!isSequential) {
             _imp->checkAndUpdateRenderAge(textureIndex,renderAge);
@@ -546,7 +539,7 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
         outArgs->params->gain = _imp->viewerParamsGain;
         outArgs->params->lut = _imp->viewerParamsLut;
     }
-    std::string inputToRenderName = outArgs->activeInputToRender->getNode()->getName_mt_safe();
+    std::string inputToRenderName = outArgs->activeInputToRender->getNode()->getScriptName_mt_safe();
     
     outArgs->key.reset(new FrameKey(time,
                  viewerHash,
@@ -668,7 +661,7 @@ ViewerInstance::renderViewer_internal(int view,
     roi.y2 = inArgs.params->textureRect.y2;
     
     bool autoContrast;
-    ViewerInstance::DisplayChannelsEnum channels;
+    Natron::DisplayChannelsEnum channels;
     {
         QMutexLocker locker(&_imp->viewerParamsMutex);
         autoContrast = _imp->viewerParamsAutoContrast;
@@ -758,7 +751,7 @@ ViewerInstance::renderViewer_internal(int view,
     
     {
         
-        EffectInstance::NotifyInputNRenderingStarted_RAII inputNIsRendering_RAII(_node.get(),inArgs.activeInputIndex);
+        EffectInstance::NotifyInputNRenderingStarted_RAII inputNIsRendering_RAII(getNode().get(),inArgs.activeInputIndex);
         
         ParallelRenderArgsSetter frameArgs(inArgs.activeInputToRender->getNode().get(),
                                            inArgs.params->time,
@@ -983,7 +976,7 @@ renderFunctor(std::pair<int,int> yRange,
 template <int nComps>
 std::pair<double, double>
 findAutoContrastVminVmax_internal(boost::shared_ptr<const Natron::Image> inputImage,
-                         ViewerInstance::DisplayChannelsEnum channels,
+                         Natron::DisplayChannelsEnum channels,
                          const RectI & rect)
 {
     double localVmin = std::numeric_limits<double>::infinity();
@@ -1018,27 +1011,27 @@ findAutoContrastVminVmax_internal(boost::shared_ptr<const Natron::Image> inputIm
             
             double mini, maxi;
             switch (channels) {
-                case ViewerInstance::eDisplayChannelsRGB:
+                case Natron::eDisplayChannelsRGB:
                     mini = std::min(std::min(r,g),b);
                     maxi = std::max(std::max(r,g),b);
                     break;
-                case ViewerInstance::eDisplayChannelsY:
+                case Natron::eDisplayChannelsY:
                     mini = r = 0.299 * r + 0.587 * g + 0.114 * b;
                     maxi = mini;
                     break;
-                case ViewerInstance::eDisplayChannelsR:
+                case Natron::eDisplayChannelsR:
                     mini = r;
                     maxi = mini;
                     break;
-                case ViewerInstance::eDisplayChannelsG:
+                case Natron::eDisplayChannelsG:
                     mini = g;
                     maxi = mini;
                     break;
-                case ViewerInstance::eDisplayChannelsB:
+                case Natron::eDisplayChannelsB:
                     mini = b;
                     maxi = mini;
                     break;
-                case ViewerInstance::eDisplayChannelsA:
+                case Natron::eDisplayChannelsA:
                     mini = a;
                     maxi = mini;
                     break;
@@ -1064,7 +1057,7 @@ findAutoContrastVminVmax_internal(boost::shared_ptr<const Natron::Image> inputIm
 
 std::pair<double, double>
 findAutoContrastVminVmax(boost::shared_ptr<const Natron::Image> inputImage,
-                         ViewerInstance::DisplayChannelsEnum channels,
+                         Natron::DisplayChannelsEnum channels,
                          const RectI & rect)
 {
     switch (inputImage->getComponents()) {
@@ -1088,7 +1081,7 @@ scaleToTexture8bits_internal(const std::pair<int,int> & yRange,
 {
     size_t pixelSize = sizeof(PIX);
     
-    const bool luminance = (args.channels == ViewerInstance::eDisplayChannelsY);
+    const bool luminance = (args.channels == Natron::eDisplayChannelsY);
     
     ///offset the output buffer at the starting point
     output += ( (yRange.first - args.texRect.y1) / args.closestPowerOf2 ) * args.texRect.w;
@@ -1247,21 +1240,21 @@ scaleToTexture8bitsForDepthForComponents(const std::pair<int,int> & yRange,
                             U32* output)
 {
     switch (args.channels) {
-        case ViewerInstance::eDisplayChannelsRGB:
-        case ViewerInstance::eDisplayChannelsY:
+        case Natron::eDisplayChannelsRGB:
+        case Natron::eDisplayChannelsY:
 
             scaleToTexture8bitsForPremult<PIX, maxValue, nComps, 0, 1, 2>(yRange, args,viewer, output);
             break;
-        case ViewerInstance::eDisplayChannelsG:
+        case Natron::eDisplayChannelsG:
             scaleToTexture8bitsForPremult<PIX, maxValue, nComps, 1, 1, 1>(yRange, args,viewer, output);
             break;
-        case ViewerInstance::eDisplayChannelsB:
+        case Natron::eDisplayChannelsB:
             scaleToTexture8bitsForPremult<PIX, maxValue, nComps, 2, 2, 2>(yRange, args,viewer, output);
             break;
-        case ViewerInstance::eDisplayChannelsA:
+        case Natron::eDisplayChannelsA:
             scaleToTexture8bitsForPremult<PIX, maxValue, nComps, 3, 3, 3>(yRange, args,viewer, output);
             break;
-        case ViewerInstance::eDisplayChannelsR:
+        case Natron::eDisplayChannelsR:
         default:
             scaleToTexture8bitsForPremult<PIX, maxValue, nComps, 0, 0, 0>(yRange, args,viewer, output);
 
@@ -1323,7 +1316,7 @@ scaleToTexture32bitsInternal(const std::pair<int,int> & yRange,
                              float *output)
 {
     size_t pixelSize = sizeof(PIX);
-    const bool luminance = (args.channels == ViewerInstance::eDisplayChannelsY);
+    const bool luminance = (args.channels == Natron::eDisplayChannelsY);
 
     ///the width of the output buffer multiplied by the channels count
     int dst_width = args.texRect.w * 4;
@@ -1454,8 +1447,8 @@ scaleToTexture32bitsForDepthForComponents(const std::pair<int,int> & yRange,
                              float *output)
 {
     switch (args.channels) {
-        case ViewerInstance::eDisplayChannelsRGB:
-        case ViewerInstance::eDisplayChannelsY:
+        case Natron::eDisplayChannelsRGB:
+        case Natron::eDisplayChannelsY:
             switch (nComps) {
                 case 1:
                     scaleToTexture32bitsForPremult<PIX, maxValue, nComps, 0, 0, 0>(yRange, args,viewer, output);
@@ -1468,7 +1461,7 @@ scaleToTexture32bitsForDepthForComponents(const std::pair<int,int> & yRange,
                     break;
             }
             break;
-        case ViewerInstance::eDisplayChannelsG:
+        case Natron::eDisplayChannelsG:
             switch (nComps) {
                 case 1:
                     scaleToTexture32bitsForPremult<PIX, maxValue, nComps, 0, 0, 0>(yRange, args,viewer, output);
@@ -1481,7 +1474,7 @@ scaleToTexture32bitsForDepthForComponents(const std::pair<int,int> & yRange,
                     break;
             }
             break;
-        case ViewerInstance::eDisplayChannelsB:
+        case Natron::eDisplayChannelsB:
             switch (nComps) {
                 case 1:
                     scaleToTexture32bitsForPremult<PIX, maxValue, nComps, 0, 0, 0>(yRange, args,viewer, output);
@@ -1494,7 +1487,7 @@ scaleToTexture32bitsForDepthForComponents(const std::pair<int,int> & yRange,
                     break;
             }
             break;
-        case ViewerInstance::eDisplayChannelsA:
+        case Natron::eDisplayChannelsA:
             switch (nComps) {
                 case 1:
                 case 3:
@@ -1507,7 +1500,7 @@ scaleToTexture32bitsForDepthForComponents(const std::pair<int,int> & yRange,
                     break;
             }
             break;
-        case ViewerInstance::eDisplayChannelsR:
+        case Natron::eDisplayChannelsR:
         default:
             scaleToTexture32bitsForPremult<PIX, maxValue, nComps, 0, 0, 0>(yRange, args,viewer, output);
             break;
@@ -1728,7 +1721,7 @@ ViewerInstance::disconnectViewer()
 
     //_lastRenderedImage.reset(); // if you uncomment this, _lastRenderedImage is not set back when you reconnect the viewer immediately after disconnecting
     if (_imp->uiContext) {
-        emit viewerDisconnected();
+        Q_EMIT viewerDisconnected();
     }
 }
 
@@ -1788,7 +1781,7 @@ ViewerInstance::getMipMapLevel() const
 }
 
 
-ViewerInstance::DisplayChannelsEnum
+Natron::DisplayChannelsEnum
 ViewerInstance::getChannels() const
 {
     // MT-SAFE: called from main thread and Serialization (pooled) thread
@@ -1835,15 +1828,15 @@ ViewerInstance::onInputChanged(int inputNb)
             }
         }
     }
-    emit activeInputsChanged();
-    emit refreshOptionalState();
-    emit clipPreferencesChanged();
+    Q_EMIT activeInputsChanged();
+    Q_EMIT refreshOptionalState();
+    Q_EMIT clipPreferencesChanged();
 }
 
 void
 ViewerInstance::restoreClipPreferences()
 {
-    emit clipPreferencesChanged();
+    Q_EMIT clipPreferencesChanged();
 }
 
 void
@@ -1852,7 +1845,7 @@ ViewerInstance::checkOFXClipPreferences(double /*time*/,
                              const std::string & /*reason*/,
                              bool /*forceGetClipPrefAction*/)
 {
-    emit clipPreferencesChanged();
+    Q_EMIT clipPreferencesChanged();
 }
 
 void
@@ -1881,7 +1874,7 @@ ViewerInstance::setInputA(int inputNb)
         QMutexLocker l(&_imp->activeInputsMutex);
         _imp->activeInputs[0] = inputNb;
     }
-    emit refreshOptionalState();
+    Q_EMIT refreshOptionalState();
 }
 
 void
@@ -1892,7 +1885,7 @@ ViewerInstance::setInputB(int inputNb)
         QMutexLocker l(&_imp->activeInputsMutex);
         _imp->activeInputs[1] = inputNb;
     }
-    emit refreshOptionalState();
+    Q_EMIT refreshOptionalState();
 }
 
 int

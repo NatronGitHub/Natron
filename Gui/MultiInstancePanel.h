@@ -12,7 +12,11 @@
 #ifndef MULTIINSTANCEPANEL_H
 #define MULTIINSTANCEPANEL_H
 
-#ifndef Q_MOC_RUN
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #endif
@@ -53,9 +57,11 @@ public:
 
     int getNodeIndex(const boost::shared_ptr<Natron::Node> & node) const;
 
-    const std::list< std::pair<boost::shared_ptr<Natron::Node>,bool > > & getInstances() const;
-    virtual std::string getName_mt_safe() const OVERRIDE FINAL;
+    const std::list< std::pair<boost::weak_ptr<Natron::Node>,bool > > & getInstances() const;
+    virtual std::string getScriptName_mt_safe() const OVERRIDE FINAL;
     boost::shared_ptr<Natron::Node> getMainInstance() const;
+    
+    boost::shared_ptr<NodeGui> getMainInstanceGui() const;
 
     void getSelectedInstances(std::list<Natron::Node*>* instances) const;
 
@@ -82,7 +88,9 @@ public:
     void removeInstances(const std::list<boost::shared_ptr<Natron::Node> >& instances);
     void addInstances(const std::list<boost::shared_ptr<Natron::Node> >& instances);
 
-public slots:
+    void onChildCreated(const boost::shared_ptr<Natron::Node>& node);
+    
+public Q_SLOTS:
 
     void onAddButtonClicked();
 
@@ -168,7 +176,7 @@ public:
     void setUpdateViewerOnTracking(bool update);
 
     bool isUpdateViewerOnTrackingEnabled() const;
-public slots:
+public Q_SLOTS:
 
     void onAverageTracksButtonClicked();
     void onExportButtonClicked();
@@ -179,7 +187,7 @@ public slots:
     
     void onTrackingProgressUpdate(double progress);
     
-signals:
+Q_SIGNALS:
     
     void trackingEnded();
     
@@ -220,7 +228,7 @@ public:
     
     bool isWorking() const;
     
-signals:
+Q_SIGNALS:
     
     void trackingStarted();
     

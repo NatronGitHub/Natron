@@ -3,6 +3,9 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
 
 #include "NodeCreationDialog.h"
 
@@ -21,6 +24,7 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
+#include "Engine/AppManager.h"
 #include "Engine/Plugin.h"
 #include "Gui/LineEdit.h"
 #include "Gui/GuiApplicationManager.h"
@@ -117,7 +121,7 @@ CompleterLineEdit::setTextFromIndex(const QModelIndex & index)
     QString text = index.data().toString();
 
     setText(text);
-    emit itemCompletionChosen();
+    Q_EMIT itemCompletionChosen();
     _imp->listView->hide();
     if (_imp->quickExitEnabled) {
         _imp->dialog->accept();
@@ -173,7 +177,7 @@ CompleterLineEdit::keyPressEvent(QKeyEvent* e)
         _imp->listView->hide();
         if (_imp->model->rowCount() == 1) {
             setText( _imp->model->index(0).data().toString() );
-            emit itemCompletionChosen();
+            Q_EMIT itemCompletionChosen();
             if (_imp->quickExitEnabled) {
                 _imp->dialog->accept();
             }
@@ -183,7 +187,7 @@ CompleterLineEdit::keyPressEvent(QKeyEvent* e)
             QModelIndexList indexes = selection.indexes();
             if (indexes.size() == 1) {
                 setText( _imp->model->index( indexes[0].row() ).data().toString() );
-                emit itemCompletionChosen();
+                Q_EMIT itemCompletionChosen();
                 if (_imp->quickExitEnabled) {
                     _imp->dialog->accept();
                 }
@@ -237,6 +241,10 @@ NodeCreationDialog::NodeCreationDialog(const QString& initialFilter,QWidget* par
     std::string stdInitialFilter = initialFilter.toStdString();
     int i = 0;
     for (Natron::PluginsMap::iterator it = _imp->items.begin(); it != _imp->items.end(); ++it) {
+        
+        if (!Natron::isPluginCreatable(it->first)) {
+            continue;
+        }
         
         if (it->second.size() == 1) {
             QString name = (*it->second.begin())->generateUserFriendlyPluginID();

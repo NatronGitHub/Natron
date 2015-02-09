@@ -8,7 +8,12 @@
  *
  */
 
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
 #include "DiskCacheNode.h"
+
 #include "Engine/Node.h"
 #include "Engine/Image.h"
 #include "Engine/AppInstance.h"
@@ -79,7 +84,7 @@ DiskCacheNode::initializeKnobs()
     _imp->firstFrame->setName("firstFrame");
     _imp->firstFrame->disableSlider();
     _imp->firstFrame->setEvaluateOnChange(false);
-    _imp->firstFrame->turnOffNewLine();
+    _imp->firstFrame->setAddNewLine(false);
     _imp->firstFrame->setDefaultValue(1);
     _imp->firstFrame->setSecret(true);
     page->addKnob(_imp->firstFrame);

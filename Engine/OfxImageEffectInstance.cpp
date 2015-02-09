@@ -8,6 +8,10 @@
 //
 //
 
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
 #include "OfxImageEffectInstance.h"
 
 #include <cassert>
@@ -473,8 +477,15 @@ OfxImageEffectInstance::newParam(const std::string &paramName,
         instance = ret;
         paramShouldBePersistant = false;
     } else if (descriptor.getType() == kOfxParamTypePage) {
-        OfxPageInstance* ret = new OfxPageInstance(getOfxEffectInstance(),descriptor);
+        OfxPageInstance* ret = new OfxPageInstance(getOfxEffectInstance(), descriptor);
         knob = ret->getKnob();
+#ifdef DEBUG_PAGE
+        qDebug() << "Page " << descriptor.getName().c_str() << " has children:";
+        int nChildren = ret->getProperties().getDimension(kOfxParamPropPageChild);
+        for(int i = 0; i < nChildren; ++i) {
+            qDebug() << "- " << ret->getProperties().getStringProperty(kOfxParamPropPageChild,i).c_str();
+        }
+#endif
         instance = ret;
         paramShouldBePersistant = false;
     } else if (descriptor.getType() == kOfxParamTypePushButton) {
@@ -502,7 +513,7 @@ OfxImageEffectInstance::newParam(const std::string &paramName,
     if ( !parent.empty() ) {
         _parentingMap.insert( make_pair(instance,parent) );
     }
-
+   
     knob->setName(paramName);
     knob->setEvaluateOnChange( descriptor.getEvaluateOnChange() );
 
@@ -518,40 +529,11 @@ OfxImageEffectInstance::newParam(const std::string &paramName,
     knob->setCanUndo( descriptor.getCanUndo() );
     knob->setSpacingBetweenItems( descriptor.getProperties().getIntProperty(kOfxParamPropLayoutPadWidth) );
     
-    Page_Knob* parentPage = 0;
-    const std::list<OFX::Host::Param::Instance*> & params = getParamList();
-    for (std::list<OFX::Host::Param::Instance*>::const_iterator it = params.begin(); it != params.end(); ++it) {
-        OfxPageInstance* isPage = dynamic_cast<OfxPageInstance*>(*it);
-        if (isPage) {
-            int nChildren = isPage->getProperties().getDimension(kOfxParamPropPageChild);
-            for(int i = 0; i < nChildren; ++i) {
-                std::string childName = isPage->getProperties().getStringProperty(kOfxParamPropPageChild,i);
-                if (childName == descriptor.getName()) {
-                    parentPage = dynamic_cast<Page_Knob*>(isPage->getKnob().get());
-                    assert(parentPage);
-                    break;
-                }
-            }
-        }
-        if (parentPage) {
-            break;
-        }
-    }
-    if (parentPage) {
-        parentPage->addKnob(knob);
-    }
-    
     int layoutHint = descriptor.getProperties().getIntProperty(kOfxParamPropLayoutHint);
     if (layoutHint == 2) {
-        knob->turnOffNewLine();
-    } else if (layoutHint == 1 && parent.empty()) {
-        boost::shared_ptr<Separator_Knob> sep = Natron::createKnob<Separator_Knob>( getOfxEffectInstance(),"");
-        sep->setName(knob->getName() + std::string("_separator"));
-        
-        if (parentPage) {
-            parentPage->addKnob(sep);
-        }
-    
+        knob->setAddNewLine(false);
+    } else if (layoutHint == 1) {
+        knob->setAddSeparator(true);
     }
     knob->setOfxParamHandle( (void*)instance->getHandle() );
 
@@ -573,11 +555,16 @@ void
 OfxImageEffectInstance::addParamsToTheirParents()
 {
     const std::list<OFX::Host::Param::Instance*> & params = getParamList();
-
+    const std::map<std::string, OFX::Host::Param::Instance*> & paramsMap = getParams();
+    const std::vector<boost::shared_ptr<KnobI> >& knobs = _ofxEffectInstance->getKnobs();
+    
     //for each params find their parents if any and add to the parent this param's knob
+    std::list<OfxPageInstance*> pages;
     for (std::list<OFX::Host::Param::Instance*>::const_iterator it = params.begin(); it != params.end(); ++it) {
         OfxPageInstance* isPage = dynamic_cast<OfxPageInstance*>(*it);
-        if (!isPage) {
+        if (isPage) {
+            pages.push_back(isPage);
+        } else {
             std::map<OFX::Host::Param::Instance*,std::string>::const_iterator found = _parentingMap.find(*it);
 
             //the param has no parent
@@ -588,7 +575,6 @@ OfxImageEffectInstance::addParamsToTheirParents()
             assert( !found->second.empty() );
 
             //find the parent by name
-            const std::map<std::string, OFX::Host::Param::Instance*> & paramsMap = getParams();
             std::map<std::string, OFX::Host::Param::Instance*>::const_iterator foundParent = paramsMap.find(found->second);
 
             //the parent must exist!
@@ -603,6 +589,9 @@ OfxImageEffectInstance::addParamsToTheirParents()
             assert(grp);
             if (grp && knobHolder) {
                 grp->addKnob( knobHolder->getKnob() );
+            } else {
+                qDebug() << "Warning: attempting to set a parent which is not a group to parameter " << (*it)->getName().c_str();
+                continue;
             }
             
             int layoutHint = (*it)->getProperties().getIntProperty(kOfxParamPropLayoutHint);
@@ -615,6 +604,49 @@ OfxImageEffectInstance::addParamsToTheirParents()
                 }
             }
         }
+    }
+    
+    ///Add parameters to pages if they do not have a parent
+    for (std::list<OfxPageInstance*>::const_iterator it = pages.begin(); it != pages.end(); ++it) {
+        int nChildren = (*it)->getProperties().getDimension(kOfxParamPropPageChild);
+        for (int i = 0; i < nChildren; ++i) {
+            std::string childName = (*it)->getProperties().getStringProperty(kOfxParamPropPageChild,i);
+            
+            boost::shared_ptr<KnobI> child;
+            for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it2 = knobs.begin(); it2 != knobs.end(); ++it2) {
+                if ((*it2)->getOriginalName() == childName) {
+                    child = *it2;
+                    break;
+                }
+            }
+            if (!child) {
+                qDebug() << "Warning: " << childName.c_str() << " is in the children list of " << (*it)->getName().c_str() << " but does not seem to be a valid parameter.";
+                continue;
+            }
+            if (child && !child->getParentKnob()) {
+                OfxParamToKnob* knobHolder = dynamic_cast<OfxParamToKnob*>(*it);
+                assert(knobHolder);
+                if (knobHolder) {
+                    boost::shared_ptr<KnobI> knob_i = knobHolder->getKnob();
+                    assert(knob_i);
+                    if (knob_i) {
+                        Page_Knob* pageKnob = dynamic_cast<Page_Knob*>(knob_i.get());
+                        assert(pageKnob);
+                        if (pageKnob) {
+                            pageKnob->addKnob(child);
+                        
+                            if (child->isSeparatorActivated()) {
+                    
+                                boost::shared_ptr<Separator_Knob> sep = Natron::createKnob<Separator_Knob>( getOfxEffectInstance(),"");
+                                sep->setName(child->getName() + std::string("_separator"));
+                                pageKnob->addKnob(sep);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
     }
 }
 
@@ -740,7 +772,7 @@ OfxImageEffectInstance::newMemoryInstance(size_t nBytes)
     bool allocated = ret->alloc(nBytes);
 
     if ((nBytes != 0 && !ret->getPtr()) || !allocated) {
-        Natron::errorDialog(QObject::tr("Out of memory").toStdString(), getOfxEffectInstance()->getNode()->getName_mt_safe() + QObject::tr(" failed to allocate memory (").toStdString() + printAsRAM(nBytes).toStdString() + ").");
+        Natron::errorDialog(QObject::tr("Out of memory").toStdString(), getOfxEffectInstance()->getNode()->getLabel_mt_safe() + QObject::tr(" failed to allocate memory (").toStdString() + printAsRAM(nBytes).toStdString() + ").");
     }
 
     return ret;
@@ -850,7 +882,7 @@ OfxImageEffectInstance::getClipPreferences_safe(std::map<OfxClipInstance*, ClipP
     if (mustWarnPar) {
         qDebug()
         << "WARNING: getClipPreferences() for "
-        << _ofxEffectInstance->getName_mt_safe().c_str()
+        << _ofxEffectInstance->getScriptName_mt_safe().c_str()
         << ": This node has several input clips with different pixel aspect ratio but it does "
         "not support multiple input clips PAR. Your script or the GUI should have handled this "
         "earlier (before connecting the node @see Node::canConnectInput) .";
@@ -861,23 +893,23 @@ OfxImageEffectInstance::getClipPreferences_safe(std::map<OfxClipInstance*, ClipP
     if (mustWarnFPS) {
         qDebug()
         << "WARNING: getClipPreferences() for "
-        << _ofxEffectInstance->getName_mt_safe().c_str()
+        << _ofxEffectInstance->getScriptName_mt_safe().c_str()
         << ": This node has several input clips with different frame rates but it does "
         "not support it. Your script or the GUI should have handled this "
         "earlier (before connecting the node @see Node::canConnectInput) .";
         outArgs.setDoubleProperty(kOfxImageEffectPropFrameRate, getFrameRate());
-        std::string name = _ofxEffectInstance->getName_mt_safe();
+        std::string name = _ofxEffectInstance->getScriptName_mt_safe();
         _ofxEffectInstance->setPersistentMessage(Natron::eMessageTypeWarning, "Several input clips with different pixel aspect ratio or different frame rates but it cannot handle it.");
     }
 
     if (mustWarnPar && !mustWarnFPS) {
-        std::string name = _ofxEffectInstance->getName_mt_safe();
+        std::string name = _ofxEffectInstance->getNode()->getLabel_mt_safe();
         _ofxEffectInstance->setPersistentMessage(Natron::eMessageTypeWarning, "Several input clips with different pixel aspect ratio but it cannot handle it.");
     } else if (!mustWarnPar && mustWarnFPS) {
-        std::string name = _ofxEffectInstance->getName_mt_safe();
+        std::string name = _ofxEffectInstance->getNode()->getLabel_mt_safe();
         _ofxEffectInstance->setPersistentMessage(Natron::eMessageTypeWarning, "Several input clips with different frame rates but it cannot handle it.");
     } else if (mustWarnPar && mustWarnFPS) {
-        std::string name = _ofxEffectInstance->getName_mt_safe();
+        std::string name = _ofxEffectInstance->getNode()->getLabel_mt_safe();
         _ofxEffectInstance->setPersistentMessage(Natron::eMessageTypeWarning, "Several input clips with different pixel aspect ratio and different frame rates but it cannot handle it.");
     } else {
         if (_ofxEffectInstance->getNode()->hasPersistentMessage()) {

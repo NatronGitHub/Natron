@@ -4,6 +4,9 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
 
 #include "RotoPanel.h"
 
@@ -50,18 +53,19 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/ComboBox.h"
 #include "Gui/GuiMacros.h"
 
-#define COL_NAME 0
-#define COL_ACTIVATED 1
-#define COL_LOCKED 2
-#define COL_OVERLAY 4
-#define COL_COLOR 5
-#define COL_OPERATOR 3
+#define COL_LABEL 0
+#define COL_SCRIPT_NAME 1
+#define COL_ACTIVATED 2
+#define COL_LOCKED 3
+#define COL_OVERLAY 5
+#define COL_COLOR 6
+#define COL_OPERATOR 4
 
 #ifdef NATRON_ROTO_INVERTIBLE
-#define COL_INVERTED 6
-#define MAX_COLS 7
+#define COL_INVERTED 7
+#define MAX_COLS 8
 #else
-#define MAX_COLS 6
+#define MAX_COLS 7
 #endif
 
 using namespace Natron;
@@ -94,7 +98,7 @@ private:
         QList<QTreeWidgetItem*> selection = selectedItems();
 
         if ( index.isValid() && (index.column() != 0) && selection.contains(item) ) {
-            emit itemClicked( item, index.column() );
+            Q_EMIT itemClicked( item, index.column() );
         } else if ( triggerButtonisRight(e) && index.isValid() ) {
             _panel->showItemMenu( item,e->globalPos() );
         } else {
@@ -149,7 +153,7 @@ enum ColorDialogEditingEnum
 struct RotoPanelPrivate
 {
     RotoPanel* publicInterface;
-    NodeGui* node;
+    boost::weak_ptr<NodeGui> node;
     boost::shared_ptr<RotoContext> context;
     QVBoxLayout* mainLayout;
     QWidget* splineContainer;
@@ -179,9 +183,11 @@ struct RotoPanelPrivate
 
     ItemKeys keyframes; //< track of all keyframes for items
     ColorDialogEditingEnum dialogEdition;
+    
+    bool settingNameFromGui;
 
     RotoPanelPrivate(RotoPanel* publicInter,
-                     NodeGui*  n)
+                     const boost::shared_ptr<NodeGui>&   n)
         : publicInterface(publicInter)
         , node(n)
         , context( n->getNode()->getRotoContext())
@@ -220,6 +226,7 @@ struct RotoPanelPrivate
         , clipBoard()
         , keyframes()
         , dialogEdition(eColorDialogEditingNothing)
+        , settingNameFromGui(false)
     {
         assert(n && context);
     }
@@ -273,7 +280,7 @@ struct RotoPanelPrivate
     void setVisibleItemKeyframes(const std::set<int>& keys,bool visible, bool emitSignal);
 };
 
-RotoPanel::RotoPanel(NodeGui* n,
+RotoPanel::RotoPanel(const boost::shared_ptr<NodeGui>&  n,
                      QWidget* parent)
     : QWidget(parent)
       , _imp( new RotoPanelPrivate(this,n) )
@@ -283,8 +290,11 @@ RotoPanel::RotoPanel(NodeGui* n,
     QObject::connect( _imp->context.get(),SIGNAL( itemRemoved(const boost::shared_ptr<RotoItem>&,int) ),this,SLOT( onItemRemoved(const boost::shared_ptr<RotoItem>&,int) ) );
     QObject::connect( n->getNode()->getApp()->getTimeLine().get(), SIGNAL( frameChanged(SequenceTime,int) ), this,
                       SLOT( onTimeChanged(SequenceTime, int) ) );
-    QObject::connect( n, SIGNAL( settingsPanelClosed(bool) ), this, SLOT( onSettingsPanelClosed(bool) ) );
+    QObject::connect( n.get(), SIGNAL( settingsPanelClosed(bool) ), this, SLOT( onSettingsPanelClosed(bool) ) );
 
+    QObject::connect( _imp->context.get(),SIGNAL( itemScriptNameChanged(boost::shared_ptr<RotoItem>)),this,SLOT( onItemScriptNameChanged(boost::shared_ptr<RotoItem>) ) );
+    QObject::connect( _imp->context.get(),SIGNAL( itemLabelChanged(boost::shared_ptr<RotoItem>)),this,SLOT( onItemLabelChanged(boost::shared_ptr<RotoItem>) ) );
+    
     _imp->mainLayout = new QVBoxLayout(this);
 
     _imp->splineContainer = new QWidget(this);
@@ -379,7 +389,8 @@ RotoPanel::RotoPanel(NodeGui* n,
 
     _imp->tree->setColumnCount(MAX_COLS);
     _imp->treeHeader = new QTreeWidgetItem;
-    _imp->treeHeader->setText( 0, tr("Name") );
+    _imp->treeHeader->setText( COL_LABEL, tr("Label") );
+    _imp->treeHeader->setText(COL_SCRIPT_NAME, tr("Script"));
 
     QPixmap pixLayer,pixBezier,pixVisible,pixUnvisible,pixLocked,pixUnlocked,pixInverted,pixUninverted,pixWheel,pixDefault,pixmerge;
     appPTR->getIcon(NATRON_PIXMAP_LAYER, &pixLayer);
@@ -660,6 +671,7 @@ RotoPanel::onSelectedBezierAnimationRemoved()
     if (b) {
         isBezier = boost::dynamic_pointer_cast<Bezier>(b->shared_from_this());
     }
+
     _imp->updateSplinesInfoGUI(_imp->context->getTimelineCurrentTime());
     if (isBezier) {
        _imp->removeItemAnimation(isBezier);
@@ -752,7 +764,7 @@ RotoPanel::updateItemGui(QTreeWidgetItem* item)
         assert(w);
         ComboBox* cb = dynamic_cast<ComboBox*>(w);
         assert(cb);
-        cb->setCurrentIndex_no_emit( drawable->getCompositingOperator(time) );
+        cb->setCurrentIndex_no_emit( drawable->getCompositingOperator() );
     }
 }
 
@@ -855,8 +867,12 @@ RotoPanelPrivate::insertItemRecursively(int time,
     }
     items.push_back( TreeItem(treeItem,item) );
 
-    treeItem->setText( COL_NAME, item->getName_mt_safe().c_str() );
-    treeItem->setToolTip( COL_NAME, Qt::convertFromPlainText(publicInterface->tr(kRotoNameHint), Qt::WhiteSpaceNormal) );
+    treeItem->setText( COL_LABEL, item->getLabel().c_str() );
+    treeItem->setToolTip( COL_LABEL, Qt::convertFromPlainText(kRotoLabelHint, Qt::WhiteSpaceNormal) );
+
+    treeItem->setText(COL_SCRIPT_NAME, item->getScriptName().c_str());
+    treeItem->setToolTip( COL_SCRIPT_NAME, Qt::convertFromPlainText(kRotoScriptNameHint, Qt::WhiteSpaceNormal) );
+    
     treeItem->setIcon(COL_ACTIVATED, item->isGloballyActivated() ? iconVisible : iconUnvisible);
     treeItem->setToolTip( COL_ACTIVATED, Qt::convertFromPlainText(publicInterface->tr("Controls whether the overlay should be visible on the viewer for "
                                                                   "the shape."), Qt::WhiteSpaceNormal) );
@@ -871,7 +887,7 @@ RotoPanelPrivate::insertItemRecursively(int time,
         drawable->getOverlayColor(overlayColor);
         QIcon overlayIcon;
         makeSolidIcon(overlayColor, overlayIcon);
-        treeItem->setIcon(COL_NAME, iconBezier);
+        treeItem->setIcon(COL_LABEL, iconBezier);
         treeItem->setIcon(COL_OVERLAY,overlayIcon);
         treeItem->setToolTip( COL_OVERLAY, Qt::convertFromPlainText(publicInterface->tr(kRotoOverlayHint), Qt::WhiteSpaceNormal) );
         double shapeColor[3];
@@ -908,6 +924,12 @@ RotoPanelPrivate::insertItemRecursively(int time,
     expandRecursively(treeItem);
 } // insertItemRecursively
 
+boost::shared_ptr<NodeGui>
+RotoPanel::getNode() const
+{
+    return _imp->node.lock();
+}
+
 void
 RotoPanel::makeCustomWidgetsForItem(const boost::shared_ptr<RotoDrawableItem>& item,
                                     QTreeWidgetItem* treeItem)
@@ -922,7 +944,6 @@ RotoPanel::makeCustomWidgetsForItem(const boost::shared_ptr<RotoDrawableItem>& i
     }
 
 
-    int time = _imp->context->getTimelineCurrentTime();
     ComboBox* cb = new ComboBox;
     QObject::connect( cb,SIGNAL( currentIndexChanged(int) ),this,SLOT( onCurrentItemCompOperatorChanged(int) ) );
     std::vector<std::string> compositingOperators,tooltips;
@@ -932,8 +953,10 @@ RotoPanel::makeCustomWidgetsForItem(const boost::shared_ptr<RotoDrawableItem>& i
     }
     // set the tooltip
     const std::string & tt = item->getCompositingOperatorToolTip();
+
     cb->setToolTip( Qt::convertFromPlainText(QString(tt.c_str()).trimmed(), Qt::WhiteSpaceNormal) );
-    cb->setCurrentIndex_no_emit( item->getCompositingOperator(time) );
+    cb->setCurrentIndex_no_emit( item->getCompositingOperator() );
+
     _imp->tree->setItemWidget(treeItem, COL_OPERATOR, cb);
 }
 
@@ -952,7 +975,7 @@ RotoPanelPrivate::removeItemRecursively(const boost::shared_ptr<RotoItem>& item)
     }
 #endif
 
-    ///deleting the item will emit a selection change which would lead to a deadlock
+    ///deleting the item will Q_EMIT a selection change which would lead to a deadlock
     tree->blockSignals(true);
     delete it->treeItem;
     tree->blockSignals(false);
@@ -1009,8 +1032,9 @@ RotoPanel::onItemRemoved(const boost::shared_ptr<RotoItem>& item,
     if (isBezier) {
         ItemKeys::iterator it = _imp->keyframes.find(isBezier);
         if ( it != _imp->keyframes.end() ) {
+
             for (std::set<int>::iterator it2 = it->second.keys.begin(); it2 != it->second.keys.end(); ++it2) {
-                _imp->node->getNode()->getApp()->getTimeLine()->removeKeyFrameIndicator(*it2);
+                getNode()->getNode()->getApp()->getTimeLine()->removeKeyFrameIndicator(*it2);
             }
             _imp->keyframes.erase(it);
         }
@@ -1027,10 +1051,12 @@ RotoPanelPrivate::buildTreeFromContext()
     int time = context->getTimelineCurrentTime();
     const std::list< boost::shared_ptr<RotoLayer> > & layers = context->getLayers();
 
+    tree->blockSignals(true);
     if ( !layers.empty() ) {
         const boost::shared_ptr<RotoLayer> & base = layers.front();
         insertItemRecursively(time, base);
     }
+    tree->blockSignals(false);
 }
 
 void
@@ -1106,12 +1132,11 @@ RotoPanel::onRotoItemCompOperatorChanged(int /*dim*/,
     }
 
     if (item) {
-        int time = _imp->context->getTimelineCurrentTime();
         TreeItems::iterator it = _imp->findItem(item);
         if ( it != _imp->items.end() ) {
             ComboBox* cb = dynamic_cast<ComboBox*>( _imp->tree->itemWidget(it->treeItem, COL_OPERATOR) );
             if (cb) {
-                int compIndex = item->getCompositingOperator(time);
+                int compIndex = item->getCompositingOperator();
                 cb->setCurrentIndex_no_emit(compIndex);
             }
         }
@@ -1145,7 +1170,6 @@ RotoPanel::onItemClicked(QTreeWidgetItem* item,
             for (int i = 0; i < selected.size(); ++i) {
                 TreeItems::iterator found = _imp->findItem(selected[i]);
                 assert( found != _imp->items.end() );
-                _imp->context->setLastItemLocked(found->rotoItem);
                 found->rotoItem->setLocked(locked,true);
                 _imp->setChildrenLockedRecursively(locked, found->treeItem);
             }
@@ -1251,19 +1275,39 @@ void
 RotoPanel::onItemChanged(QTreeWidgetItem* item,
                          int column)
 {
-    if (column != 0) {
+    if (column != COL_LABEL) {
         return;
     }
     TreeItems::iterator it = _imp->findItem(item);
     if ( it != _imp->items.end() ) {
         std::string newName = item->text(column).toStdString();
-        boost::shared_ptr<RotoItem> existingItem = _imp->context->getItemByName(newName);
-        if ( existingItem && (existingItem != it->rotoItem) ) {
-            Natron::warningDialog( "", tr("An item with the name ").toStdString() + newName + tr(" already exists. Please pick something else.").toStdString() );
-            item->setText( COL_NAME, _imp->editedItemName.c_str() );
-        } else {
-            it->rotoItem->setName(newName);
-        }
+        _imp->settingNameFromGui = true;
+        it->rotoItem->setLabel(newName);
+        _imp->settingNameFromGui = false;
+    }
+}
+
+void
+RotoPanel::onItemLabelChanged(const boost::shared_ptr<RotoItem>& item)
+{
+    if (_imp->settingNameFromGui) {
+        return;
+    }
+    TreeItems::iterator it = _imp->findItem(item);
+    if (it != _imp->items.end()) {
+        it->treeItem->setText(COL_LABEL, item->getLabel().c_str());
+    }
+}
+
+void
+RotoPanel::onItemScriptNameChanged(const boost::shared_ptr<RotoItem>& item)
+{
+    if (_imp->settingNameFromGui) {
+        return;
+    }
+    TreeItems::iterator it = _imp->findItem(item);
+    if (it != _imp->items.end()) {
+        it->treeItem->setText(COL_SCRIPT_NAME, item->getScriptName().c_str());
     }
 }
 
@@ -1276,10 +1320,10 @@ RotoPanel::onItemDoubleClicked(QTreeWidgetItem* item,
     if ( it != _imp->items.end() ) {
         
         switch (column) {
-            case COL_NAME: {
+            case COL_LABEL: {
                 _imp->editedItem = item;
                 QObject::connect( qApp, SIGNAL( focusChanged(QWidget*,QWidget*) ), this, SLOT( onFocusChanged(QWidget*,QWidget*) ) );
-                _imp->editedItemName = it->rotoItem->getName_mt_safe();
+                _imp->editedItemName = it->rotoItem->getLabel();
                 _imp->tree->openPersistentEditor(item);
             }   break;
             case COL_OVERLAY: {
@@ -1391,7 +1435,7 @@ RotoPanel::onFocusChanged(QWidget* old,
                           QWidget*)
 {
     if (_imp->editedItem) {
-        QWidget* w = _imp->tree->itemWidget(_imp->editedItem, COL_NAME);
+        QWidget* w = _imp->tree->itemWidget(_imp->editedItem, COL_LABEL);
         if (w == old) {
             _imp->tree->closePersistentEditor(_imp->editedItem);
             _imp->editedItem = NULL;
@@ -1461,7 +1505,7 @@ RotoPanel::onItemSelectionChanged()
     _imp->selectedItems.clear();
 
     ///Don't allow any selection to be made if the roto is a clone of another roto  node.
-    if ( _imp->node->getNode()->getMasterNode() ) {
+    if ( getNode()->getNode()->getMasterNode() ) {
         _imp->tree->selectionModel()->clear();
 
         return;
@@ -1783,7 +1827,7 @@ TreeWidget::keyPressEvent(QKeyEvent* e)
 void
 RotoPanel::pushUndoCommand(QUndoCommand* cmd)
 {
-    NodeSettingsPanel* panel = _imp->node->getSettingPanel();
+    NodeSettingsPanel* panel = getNode()->getSettingPanel();
 
     assert(panel);
     panel->pushUndoCommand(cmd);
@@ -1792,7 +1836,7 @@ RotoPanel::pushUndoCommand(QUndoCommand* cmd)
 std::string
 RotoPanel::getNodeName() const
 {
-    return _imp->node->getNode()->getName();
+    return getNode()->getNode()->getScriptName();
 }
 
 boost::shared_ptr<RotoContext>
@@ -1969,9 +2013,10 @@ RotoPanelPrivate::setItemKey(const boost::shared_ptr<RotoItem>& item,
     ItemKeys::iterator it = keyframes.find(item);
 
     if ( it != keyframes.end() ) {
+
         std::pair<std::set<int>::iterator,bool> ret = it->second.keys.insert(time);
         if (ret.second && it->second.visible) {
-            node->getNode()->getApp()->getTimeLine()->addKeyframeIndicator(time);
+            node.lock()->getNode()->getApp()->getTimeLine()->addKeyframeIndicator(time);
         }
     } else {
         TimeLineKeys keys;
@@ -1988,11 +2033,12 @@ RotoPanelPrivate::removeItemKey(const boost::shared_ptr<RotoItem>& item,
     ItemKeys::iterator it = keyframes.find(item);
 
     if ( it != keyframes.end() ) {
+
         std::set<int>::iterator it2 = it->second.keys.find(time);
         if ( it2 != it->second.keys.end() ) {
             it->second.keys.erase(it2);
             if (it->second.visible) {
-                node->getNode()->getApp()->getTimeLine()->removeKeyFrameIndicator(time);
+                node.lock()->getNode()->getApp()->getTimeLine()->removeKeyFrameIndicator(time);
             }
         }
     }
@@ -2005,16 +2051,17 @@ RotoPanelPrivate::removeItemAnimation(const boost::shared_ptr<RotoItem>& item)
     
     if ( it != keyframes.end() ) {
         std::list<SequenceTime> toRemove;
+
         for (std::set<int>::iterator it2 = it->second.keys.begin(); it2 != it->second.keys.end(); ++it2) {
             toRemove.push_back(*it2);
         }
         it->second.keys.clear();
         if (it->second.visible) {
-            node->getNode()->getApp()->getTimeLine()->removeMultipleKeyframeIndicator(toRemove, true);
+            node.lock()->getNode()->getApp()->getTimeLine()->removeMultipleKeyframeIndicator(toRemove, true);
         }
     }
-
 }
+
 
 void
 RotoPanelPrivate::setVisibleItemKeyframes(const std::set<int>& keyframes,bool visible, bool emitSignal)
@@ -2024,15 +2071,16 @@ RotoPanelPrivate::setVisibleItemKeyframes(const std::set<int>& keyframes,bool vi
         keys.push_back(*it2);
     }
     if (!visible) {
-        node->getNode()->getApp()->getTimeLine()->removeMultipleKeyframeIndicator(keys, emitSignal);
+        node.lock()->getNode()->getApp()->getTimeLine()->removeMultipleKeyframeIndicator(keys, emitSignal);
     } else {
-        node->getNode()->getApp()->getTimeLine()->addMultipleKeyframeIndicatorsAdded(keys, emitSignal);
+        node.lock()->getNode()->getApp()->getTimeLine()->addMultipleKeyframeIndicatorsAdded(keys, emitSignal);
     }
 }
 
 void
 RotoPanel::onSettingsPanelClosed(bool closed)
 {
+    boost::shared_ptr<TimeLine> timeline = getNode()->getNode()->getApp()->getTimeLine();
     if (closed) {
         ///remove all keyframes from the structure kept
         std::set< std::set<int> > toRemove;
@@ -2073,6 +2121,7 @@ RotoPanel::onSettingsPanelClosed(bool closed)
                 for (std::set<int>::iterator it3 = keys.keys.begin(); it3 != keys.keys.end(); ++it3) {
                     markers.push_back(*it3);
                 }
+
                 std::pair<ItemKeys::iterator,bool> ret = _imp->keyframes.insert( std::make_pair(isBezier, keys) );
                 assert(ret.second);
                 

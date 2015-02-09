@@ -8,6 +8,11 @@
  * contact: immarespond at gmail dot com
  *
  */
+
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
 #include "OfxOverlayInteract.h"
 
 #include "Global/Macros.h"
@@ -16,6 +21,7 @@
 #include "Engine/Format.h"
 #include "Engine/OverlaySupport.h"
 #include "Engine/Knob.h"
+#include "Engine/Node.h"
 #include "Engine/AppInstance.h"
 
 
@@ -47,6 +53,7 @@ OfxOverlayInteract::OfxOverlayInteract(OfxImageEffectInstance &v,
     : OFX::Host::ImageEffect::OverlayInteract(v,bitDepthPerComponent,hasAlpha)
       , NatronOverlayInteractSupport()
 {
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
@@ -147,16 +154,24 @@ OfxOverlayInteract::loseFocusAction(OfxTime  time,
     return OFX::Host::ImageEffect::OverlayInteract::loseFocusAction(time, renderScale);
 }
 
+bool
+Natron::OfxOverlayInteract::getSuggestedColour(double &r,
+                                               double &g,
+                                               double &b) const
+{
+    OfxImageEffectInstance* effect = dynamic_cast<OfxImageEffectInstance*>(&_instance);
+    assert(effect && effect->getOfxEffectInstance());
+    return effect->getOfxEffectInstance()->getNode()->getOverlayColor(&r, &g, &b);
+}
 
 OfxStatus
 OfxOverlayInteract::redraw()
 {
     OfxImageEffectInstance* effect = dynamic_cast<OfxImageEffectInstance*>(&_instance);
     assert(effect);
-    if (effect) {
+    if (effect && effect->getOfxEffectInstance()->getNode()->shouldDrawOverlay()) {
         AppInstance* app =  effect->getOfxEffectInstance()->getApp();
         assert(app);
-#pragma message WARN("TODO (python): only redraw in viewers where the interact is visible (requires changes in GUI)")
         if (effect->getOfxEffectInstance()->isDoingInteractAction()) {
             app->queueRedrawForAllViewers();
         } else {
@@ -238,14 +253,11 @@ NatronOverlayInteractSupport::n_getBackgroundColour(double &r,
 }
 
 bool
-NatronOverlayInteractSupport::n_getSuggestedColour(double &r,
-                                                   double &g,
-                                                   double &b) const
+NatronOverlayInteractSupport::n_getSuggestedColour(double &/*r*/,
+                                                   double &/*g*/,
+                                                   double &/*b*/) const
 {
     return false;
-    // TODO
-    //r = g = b = ...;
-    //return true;
 }
 
 void
@@ -285,6 +297,7 @@ Natron::OfxParamOverlayInteract::getPixelAspectRatio(double & par) const
 {
     par = _descriptor.getProperties().getDoubleProperty(kOfxParamPropInteractSizeAspect);
 }
+
 
 OfxStatus
 Natron::OfxParamOverlayInteract::redraw()

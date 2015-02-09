@@ -12,6 +12,10 @@
 #ifndef PLUGIN_H
 #define PLUGIN_H
 
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
 #include <vector>
 #include <set>
 #include <map>
@@ -143,22 +147,24 @@ class Plugin
     int _minorVersion;
     mutable bool _hasShortcutSet; //< to speed up the keypress event of Nodegraph, this is used to find out quickly whether it has a shortcut or not.
     bool _isReader,_isWriter;
+    QString _pythonModule;
 public:
 
     Plugin()
-        : _binary(NULL)
-          , _id()
-          , _label()
-          , _iconFilePath()
-          , _groupIconFilePath()
-          , _grouping()
-          , _ofxPluginID()
-          , _lock()
-          , _majorVersion(0)
-          , _minorVersion(0)
-          , _hasShortcutSet(false)
-          , _isReader(false)
-          , _isWriter(false)
+    : _binary(NULL)
+    , _id()
+    , _label()
+    , _iconFilePath()
+    , _groupIconFilePath()
+    , _grouping()
+    , _ofxPluginID()
+    , _lock()
+    , _majorVersion(0)
+    , _minorVersion(0)
+    , _hasShortcutSet(false)
+    , _isReader(false)
+    , _isWriter(false)
+    , _pythonModule()
     {
     }
 
@@ -196,6 +202,7 @@ public:
     {
         _id = id;
     }
+    
 
     const QString & getPluginID() const
     {
@@ -291,6 +298,15 @@ public:
     bool getHasShortcut() const
     {
         return _hasShortcutSet;
+    }
+    
+    void setPythonModule(const QString& module)
+    {
+        _pythonModule = module;
+    }
+    
+    const QString& getPythonModule() const {
+        return _pythonModule;
     }
 };
     

@@ -12,6 +12,9 @@
 #ifndef NATRON_ENGINE_OFXCLIPINSTANCE_H_
 #define NATRON_ENGINE_OFXCLIPINSTANCE_H_
 
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
 
 #include <cassert>
 
@@ -19,7 +22,7 @@
 CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QMutex>
 CLANG_DIAG_ON(deprecated)
-#ifndef Q_MOC_RUN
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
 #endif
 //ofx
@@ -231,7 +234,6 @@ private:
     };
 
     Natron::ThreadStorage<ActionLocalData> _lastActionData; //< foreach  thread, the args
-    
 };
 
 class OfxImage

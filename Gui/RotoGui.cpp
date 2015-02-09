@@ -9,6 +9,10 @@
  *
  */
 
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
 #include "RotoGui.h"
 
 CLANG_DIAG_OFF(deprecated)
@@ -29,6 +33,7 @@ CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/Node.h"
+#include "Engine/NodeGroup.h"
 #include "Engine/RotoContext.h"
 #include "Engine/TimeLine.h"
 #include "Engine/KnobTypes.h"
@@ -345,14 +350,14 @@ RotoToolButton::handleSelection()
 
     if ( !isDown() ) {
         setDown(true);
-        emit triggered(curAction);
+        Q_EMIT triggered(curAction);
     } else {
         QList<QAction*> allAction = actions();
         for (int i = 0; i < allAction.size(); ++i) {
             if (allAction[i] == curAction) {
                 int next = ( i == (allAction.size() - 1) ) ? 0 : i + 1;
                 setDefaultAction(allAction[next]);
-                emit triggered(allAction[next]);
+                Q_EMIT triggered(allAction[next]);
                 break;
             }
         }
@@ -703,21 +708,21 @@ RotoGui::onToolActionTriggeredInternal(QAction* action,
             _imp->selectTool->setIsSelected(true);
             _imp->pointsEditionTool->setIsSelected(false);
             _imp->bezierEditionTool->setIsSelected(false);
-            emit roleChanged( (int)previousRole,(int)eRotoRoleSelection );
+            Q_EMIT roleChanged( (int)previousRole,(int)eRotoRoleSelection );
             break;
         case eRotoRolePointsEdition:
             toolButton = _imp->pointsEditionTool;
             _imp->selectTool->setIsSelected(false);
             _imp->pointsEditionTool->setIsSelected(true);
             _imp->bezierEditionTool->setIsSelected(false);
-            emit roleChanged( (int)previousRole,(int)eRotoRolePointsEdition );
+            Q_EMIT roleChanged( (int)previousRole,(int)eRotoRolePointsEdition );
             break;
         case eRotoRoleBezierEdition:
             toolButton = _imp->bezierEditionTool;
             _imp->selectTool->setIsSelected(false);
             _imp->pointsEditionTool->setIsSelected(false);
             _imp->bezierEditionTool->setIsSelected(true);
-            emit roleChanged( (int)previousRole,(int)eRotoRoleBezierEdition );
+            Q_EMIT roleChanged( (int)previousRole,(int)eRotoRoleBezierEdition );
             break;
         default:
             assert(false);
@@ -751,7 +756,7 @@ RotoGui::onToolActionTriggeredInternal(QAction* action,
     _imp->selectedRole = toolButton;
     _imp->selectedTool = (RotoToolEnum)data.x();
     if (emitSignal) {
-        emit selectedToolChanged( (int)_imp->selectedTool );
+        Q_EMIT selectedToolChanged( (int)_imp->selectedTool );
     }
 } // onToolActionTriggeredInternal
 
@@ -843,7 +848,7 @@ RotoGui::drawOverlays(double /*scaleX*/,
 
     {
         GLProtectAttrib a(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_COLOR_BUFFER_BIT | GL_POINT_BIT | GL_CURRENT_BIT);
-
+        
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
         glEnable(GL_LINE_SMOOTH);
@@ -856,6 +861,7 @@ RotoGui::drawOverlays(double /*scaleX*/,
                 continue;
             }
             ///draw the bezier
+
 #pragma message WARN("Roto drawing: please update this algorithm")
             // Please update this algorithm:
             // It should first compute the bbox (this is cheap)
@@ -889,6 +895,7 @@ RotoGui::drawOverlays(double /*scaleX*/,
             if ( isFeatherVisible() ) {
                 ///Draw feather only if visible (button is toggled in the user interface)
 #pragma message WARN("Roto drawing: please update this algorithm")
+
                 // Plese update this algorithm:
                 // It should first compute the bbox (this is cheap)
                 // then check if the bbox is visible
@@ -3186,7 +3193,7 @@ RotoGui::pushUndoCommand(QUndoCommand* cmd)
 QString
 RotoGui::getNodeName() const
 {
-    return _imp->node->getNode()->getName().c_str();
+    return _imp->node->getNode()->getScriptName().c_str();
 }
 
 RotoContext*
@@ -3546,13 +3553,12 @@ void
 RotoGui::linkPointTo(const std::list<std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> > > & points)
 {
     std::vector< std::pair<std::string,boost::shared_ptr<Double_Knob> > > knobs;
-    std::vector<boost::shared_ptr<Natron::Node> > activeNodes;
-
-    _imp->node->getNode()->getApp()->getActiveNodes(&activeNodes);
-    for (U32 i = 0; i < activeNodes.size(); ++i) {
-        if ( activeNodes[i]->isTrackerNode() ) {
-            boost::shared_ptr<KnobI> k = activeNodes[i]->getKnobByName("center");
-            boost::shared_ptr<KnobI> name = activeNodes[i]->getKnobByName(kOfxParamStringSublabelName);
+    NodeList activeNodes;
+    _imp->node->getNode()->getGroup()->getActiveNodes(&activeNodes);
+    for (NodeList::iterator it = activeNodes.begin(); it != activeNodes.end(); ++it) {
+        if ( (*it)->isTrackerNode() ) {
+            boost::shared_ptr<KnobI> k = (*it)->getKnobByName("center");
+            boost::shared_ptr<KnobI> name = (*it)->getKnobByName(kOfxParamStringSublabelName);
             if (k && name) {
                 boost::shared_ptr<Double_Knob> dk = boost::dynamic_pointer_cast<Double_Knob>(k);
                 String_Knob* nameKnob = dynamic_cast<String_Knob*>( name.get() );

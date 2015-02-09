@@ -12,6 +12,10 @@
 #ifndef NATRON_GUI_INFOVIEWERWIDGET_H_
 #define NATRON_GUI_INFOVIEWERWIDGET_H_
 
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
@@ -53,11 +57,12 @@ public:
 
     static void removeTrailingZeroes(QString& str);
     
+public Q_SLOTS:
+
+    
     void setColorValid(bool valid);
     
     void setColorApproximated(bool approx);
-    
-public slots:
 
     void hideColorAndMouseInfo();
     void showColorAndMouseInfo();

@@ -12,7 +12,11 @@
 #ifndef NATRON_GUI_GUI_H_
 #define NATRON_GUI_GUI_H_
 
-#ifndef Q_MOC_RUN
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
@@ -28,6 +32,8 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Global/GlobalDefines.h"
 #include "Gui/SerializableWindow.h"
+#include "Engine/ScriptObject.h"
+
 
 #define kMainSplitterObjectName "ToolbarSplitter"
 
@@ -43,7 +49,6 @@ class xml_oarchive;
 class Splitter;
 class QUndoStack;
 class QScrollArea;
-class NodeBackDrop;
 class QToolButton;
 class QVBoxLayout;
 class QMutex;
@@ -59,16 +64,18 @@ class DockablePanel;
 class NodeGraph;
 class CurveEditor;
 class Histogram;
-class NodeBackDropSerialization;
 class RotoGui;
 class FloatingWidget;
 class BoundAction;
+class ScriptEditor;
+class PyPanel;
 
 //Natron engine
 class ViewerInstance;
 class PluginGroupNode;
 class Color_Knob;
 class ProcessHandler;
+class NodeCollection;
 class KnobHolder;
 namespace Natron {
 class Node;
@@ -77,6 +84,20 @@ class EffectInstance;
 class OutputEffectInstance;
 }
 
+typedef std::map<std::string,std::pair<QWidget*,ScriptObject*> > RegisteredTabs;
+
+
+class PropertiesBinWrapper : public QWidget, public ScriptObject
+{
+public:
+    
+    PropertiesBinWrapper(QWidget* parent)
+    : QWidget(parent)
+    , ScriptObject()
+    {
+        
+    }
+};
 
 struct GuiPrivate;
 class Gui
@@ -113,6 +134,19 @@ public:
     bool eventFilter(QObject *target, QEvent* e);
 
     void createViewerGui(boost::shared_ptr<Natron::Node> viewer);
+    
+    void createGroupGui(const boost::shared_ptr<Natron::Node>& group, bool requestedByLoad);
+    
+    void addGroupGui(NodeGraph* tab,TabWidget* where);
+    
+    void removeGroupGui(NodeGraph* tab,bool deleteData);
+
+    
+    void setLastSelectedGraph(NodeGraph* graph);
+    
+    NodeGraph* getLastSelectedGraph() const;
+    
+    boost::shared_ptr<NodeCollection> getLastSelectedNodeCollection() const;
 
     /**
      * @brief Calling this will force the next viewer to be created in the given pane.
@@ -137,6 +171,7 @@ public:
        that wants to close. The deleteData flag tells whether we actually want
        to destroy the tab/node or just hide them.*/
     void removeViewerTab(ViewerTab* tab,bool initiatedFromNode,bool deleteData);
+    
 
     Histogram* addNewHistogram();
 
@@ -238,7 +273,7 @@ public:
     void registerPane(TabWidget* pane);
     void unregisterPane(TabWidget* pane);
 
-    void registerTab(QWidget* tab);
+    void registerTab(QWidget* tab,ScriptObject* obj);
     void unregisterTab(QWidget* tab);
 
     void registerFloatingWindow(FloatingWidget* window);
@@ -247,6 +282,12 @@ public:
 
     void registerSplitter(Splitter* s);
     void unregisterSplitter(Splitter* s);
+    
+    void registerPyPanel(PyPanel* panel,const std::string& pythonFunction);
+    void unregisterPyPanel(PyPanel* panel);
+    
+    std::map<PyPanel*,std::string> getPythonPanels() const;
+
 
     /**
      * @brief MT-Safe
@@ -258,9 +299,9 @@ public:
     /*Returns a valid tab if a tab with a matching name has been
        found. Otherwise returns NULL.*/
     QWidget* findExistingTab(const std::string & name) const;
+    void findExistingTab(const std::string & name, QWidget** w,ScriptObject** o) const;
 
-
-    void appendTabToDefaultViewerPane(QWidget* tab);
+    void appendTabToDefaultViewerPane(QWidget* tab,ScriptObject* obj);
 
     /**
      * @brief Get the central of the application, it is either 1 TabWidget or a Splitter.
@@ -338,13 +379,19 @@ public:
 
     NodeGraph* getNodeGraph() const;
     CurveEditor* getCurveEditor() const;
+    ScriptEditor* getScriptEditor() const;
+    
     QVBoxLayout* getPropertiesLayout() const;
-    QWidget* getPropertiesBin() const;
-    const std::map<std::string,QWidget*> & getRegisteredTabs() const;
+    PropertiesBinWrapper* getPropertiesBin() const;
+    const RegisteredTabs & getRegisteredTabs() const;
 
     void updateLastSequenceOpenedPath(const QString & path);
 
     void updateLastSequenceSavedPath(const QString & path);
+    
+    void updateLastSavedProjectPath(const QString& project);
+    
+    void updateLastOpenedProjectPath(const QString& project);
 
     void setUndoRedoStackLimit(int limit);
 
@@ -400,8 +447,7 @@ public:
 
     void addVisibleDockablePanel(DockablePanel* panel);
     void removeVisibleDockablePanel(DockablePanel* panel);
-
-    NodeBackDrop* createBackDrop(bool requestedByLoad,const NodeBackDropSerialization & serialization);
+    
     std::list<ToolButton*> getToolButtonsOrdered() const;
 
     void setToolButtonMenuOpened(QToolButton* button);
@@ -431,6 +477,10 @@ public:
     
     const QString& getLastSaveProjectDirectory() const;
     
+    const QString& getLastPluginDirectory() const;
+    
+    void updateLastPluginDirectory(const QString& str);
+    
     
     /**
      * @brief Returns in nodes all the nodes that can draw an overlay in their order of appearance in the properties bin.
@@ -451,7 +501,23 @@ public:
     
     void toggleAutoHideGraphInputs();
     
-signals:
+    void centerAllNodeGraphsWithTimer();
+    
+    void setLastEnteredTabWidget(TabWidget* tab);
+    
+    TabWidget* getLastEnteredTabWidget() const;
+    
+    void appendToScriptEditor(const std::string& str);
+    
+    void printAutoDeclaredVariable(const std::string& str);
+    
+    void exportGroupAsPythonScript(NodeCollection* collection);
+    
+    void addMenuEntry(const QString& menuGrouping,const std::string& pythonFunction, Qt::Key key,const Qt::KeyboardModifiers& modifiers);
+    
+    
+Q_SIGNALS:
+
 
     void doDialog(int type,const QString & title,const QString & content,bool useHtml,Natron::StandardButtons buttons,int defaultB);
     
@@ -460,7 +526,7 @@ signals:
     ///emitted when a viewer changes its name or is deleted/added
     void viewersChanged();
 
-public slots:
+public Q_SLOTS:
 
     void reloadStylesheet();
     
@@ -472,6 +538,7 @@ public slots:
     void openProject();
     bool saveProject();
     bool saveProjectAs();
+    void exportProjectAsGroup();
     void saveAndIncrVersion();
     
     void autoSave();
@@ -564,6 +631,12 @@ public slots:
 
 	void onPropertiesScrolled();
     
+    void onNextTabTriggered();
+    
+    void onCloseTabTriggered();
+
+    void onUserCommandTriggered();
+    
 private:
 
     /**
@@ -615,7 +688,7 @@ public:
         return _embeddedWidget;
     }
 
-signals:
+Q_SIGNALS:
 
     void closed();
 

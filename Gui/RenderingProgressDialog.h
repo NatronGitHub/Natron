@@ -12,13 +12,17 @@
 #ifndef RENDERINGPROGRESSDIALOG_H
 #define RENDERINGPROGRESSDIALOG_H
 
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QDialog>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
-#ifndef Q_MOC_RUN
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
 #endif
@@ -45,7 +49,7 @@ public:
 
     virtual ~RenderingProgressDialog();
 
-public slots:
+public Q_SLOTS:
 
     void onProcessDeleted();
 
@@ -59,7 +63,7 @@ public slots:
 
     void onVideoEngineStopped(int);
 
-signals:
+Q_SIGNALS:
 
     void canceled();
 
@@ -85,7 +89,7 @@ public:
     LogWindow(const QString & log,
               QWidget* parent = 0);
     
-public slots:
+public Q_SLOTS:
     
     void onClearButtonClicked();
 };

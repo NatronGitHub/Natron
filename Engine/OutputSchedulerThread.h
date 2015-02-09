@@ -11,7 +11,12 @@
 
 #ifndef OUTPUTSCHEDULERTHREAD_H
 #define OUTPUTSCHEDULERTHREAD_H
-#ifndef Q_MOC_RUN
+
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
 #endif
@@ -202,7 +207,7 @@ public:
     
     void doAbortRenderingOnMainThread (bool blocking)
     {
-        emit s_abortRenderingOnMainThread(blocking);
+        Q_EMIT s_abortRenderingOnMainThread(blocking);
     }
     
     
@@ -250,8 +255,9 @@ public:
     void getPluginFrameRange(int& first,int &last) const;
     
     
-    
-public slots:
+    void runCallbackWithVariables(const QString& callback);
+
+public Q_SLOTS:
     
     void doProcessFrameMainThread(const BufferedFrames& frames,bool mustSeekTimeline,int time);
     
@@ -270,12 +276,16 @@ public slots:
      * If you want to abortRendering() from one of those threads, call doAbortRenderingOnMainThreadInstead
      **/
     void abortRendering(bool blocking);
-signals:
+    
+    void onExecuteCallbackOnMainThread(QString callback);
+    
+Q_SIGNALS:
     
     void s_doProcessOnMainThread(const BufferedFrames& frames,bool mustSeekTimeline,int time);
     
     void s_abortRenderingOnMainThread(bool blocking);
     
+    void s_executeCallbackOnMainThread(QString);
     
 protected:
     
@@ -358,10 +368,13 @@ protected:
     /**
      * @brief Callback when stopRender() is called
      **/
-    virtual void onRenderStopped() {}
+    virtual void onRenderStopped(bool /*aborted*/) {}
     
     RenderEngine* getEngine() const;
     
+    void runCallback(const QString& callback);
+    
+
 private:
     
     virtual void run() OVERRIDE FINAL;
@@ -414,6 +427,7 @@ public:
     
     virtual ~DefaultScheduler();
     
+
 private:
     
     virtual void processFrame(const BufferedFrames& frames) OVERRIDE FINAL;
@@ -434,7 +448,9 @@ private:
     
     virtual void aboutToStartRender() OVERRIDE FINAL;
     
-    virtual void onRenderStopped() OVERRIDE FINAL;
+    virtual void onRenderStopped(bool aborted) OVERRIDE FINAL;
+    
+
     
     Natron::OutputEffectInstance* _effect;
 };
@@ -473,7 +489,7 @@ private:
     
     virtual int getLastRenderedTime() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     
-    virtual void onRenderStopped() OVERRIDE FINAL;
+    virtual void onRenderStopped(bool aborted) OVERRIDE FINAL;
     
     ViewerInstance* _viewer;
 };
@@ -507,11 +523,11 @@ public:
     
     bool hasThreadsWorking() const;
     
-public slots:
+public Q_SLOTS:
     
     void doProcessProducedFrameOnMainThread(const BufferableObjectList& frames);
     
-signals:
+Q_SIGNALS:
     
     void s_processProducedFrameOnMainThread(const BufferableObjectList& frames);
     
@@ -588,7 +604,7 @@ public:
      **/
     bool hasThreadsWorking() const;
     
-public slots:
+public Q_SLOTS:
 
     
     /**
@@ -611,7 +627,7 @@ public slots:
     void abortRendering_Blocking() { abortRendering(true); }
 
     
-signals:
+Q_SIGNALS:
     
     /**
      * @brief Emitted when the fps has changed
@@ -648,12 +664,12 @@ protected:
 private:
     
     /**
-     * The following functions are called by the OutputThreadScheduler to emit the corresponding signals
+     * The following functions are called by the OutputThreadScheduler to Q_EMIT the corresponding signals
      **/
-    void s_fpsChanged(double actual,double desired) { emit fpsChanged(actual, desired); }
-    void s_frameRendered(int time) { emit frameRendered(time); }
-    void s_renderFinished(int retCode) { emit renderFinished(retCode); }
-    void s_refreshAllKnobs() { emit refreshAllKnobs(); }
+    void s_fpsChanged(double actual,double desired) { Q_EMIT fpsChanged(actual, desired); }
+    void s_frameRendered(int time) { Q_EMIT frameRendered(time); }
+    void s_renderFinished(int retCode) { Q_EMIT renderFinished(retCode); }
+    void s_refreshAllKnobs() { Q_EMIT refreshAllKnobs(); }
     boost::scoped_ptr<RenderEnginePrivate> _imp;
 };
 

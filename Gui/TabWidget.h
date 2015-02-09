@@ -12,8 +12,18 @@
 #ifndef NATRON_GUI_TABWIDGET_H_
 #define NATRON_GUI_TABWIDGET_H_
 
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
 #include <map>
 #include <vector>
+
+
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#include <boost/scoped_ptr.hpp>
+#endif
+
 
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
@@ -41,6 +51,7 @@ class QDragLeaveEvent;
 class TabWidget;
 class QPaintEvent;
 class Gui;
+class ScriptObject;
 class Splitter;
 
 
@@ -81,7 +92,7 @@ public:
     }
 
     
-signals:
+Q_SIGNALS:
     
     void mouseLeftTabBar();
     
@@ -107,19 +118,21 @@ public:
     : QWidget(parent)
     {}
     
-signals:
+Q_SIGNALS:
     
     void mouseLeftTabBar();
 private:
     
     virtual void leaveEvent(QEvent* e) OVERRIDE FINAL
     {
-        emit mouseLeftTabBar();
+        Q_EMIT mouseLeftTabBar();
         QWidget::leaveEvent(e);
     }
     
 };
 
+
+struct TabWidgetPrivate;
 class TabWidget
     : public QFrame
 {
@@ -133,10 +146,7 @@ public:
 
     virtual ~TabWidget();
 
-    Gui* getGui() const
-    {
-        return _gui;
-    }
+    Gui* getGui() const;
 
     ////To be called when it is going to be deleted
     void notifyGuiAboutRemoval();
@@ -146,59 +156,51 @@ public:
 
     /*Appends a new tab to the tab widget. The name of the tab will be the QWidget's object's name.
        Returns false if the object's name is empty but the TabWidget needs a decoration*/
-    bool appendTab(QWidget* widget);
+    bool appendTab(QWidget* widget, ScriptObject* object);
 
     /*Appends a new tab to the tab widget. The name of the tab will be the QWidget's object's name.
        Returns false if the title is empty but the TabWidget needs a decoration*/
-    bool appendTab(const QIcon & icon,QWidget* widget);
+    bool appendTab(const QIcon & icon,QWidget* widget,  ScriptObject* object);
 
     /*Inserts before the element at index.*/
-    void insertTab(int index,const QIcon & icon,QWidget* widget);
+    void insertTab(int index,const QIcon & icon,QWidget* widget, ScriptObject* object);
 
-    void insertTab(int index,QWidget* widget);
+    void insertTab(int index,QWidget* widget, ScriptObject* object);
 
     /*Removes from the TabWidget, but does not delete the widget.
        Returns NULL if the index is not in a good range.*/
-    QWidget* removeTab(int index);
+    QWidget* removeTab(int index,bool userAction);
 
     /*Get the header name of the tab at index "index".*/
-    QString getTabName(int index) const;
+    QString getTabLabel(int index) const;
 
     /*Convenience function*/
-    QString getTabName(QWidget* tab) const;
+    QString getTabLabel(QWidget* tab) const;
 
-    void setTabName(QWidget* tab,const QString & name);
+    void setTabLabel(QWidget* tab,const QString & name);
 
     /*Removes from the TabWidget, but does not delete the widget.*/
-    void removeTab(QWidget* widget);
+    void removeTab(QWidget* widget,bool userAction);
 
-    int count() const
-    {
-        QMutexLocker l(&_tabWidgetStateMutex);
+    int count() const;
+    
+    QWidget* tabAt(int index) const;
+    
+    void tabAt(int index, QWidget** w, ScriptObject** obj) const;
 
-        return _tabs.size();
-    }
+    QStringList getTabScriptNames() const;
 
-    QWidget* tabAt(int index) const
-    {
-        QMutexLocker l(&_tabWidgetStateMutex);
-
-        return _tabs[index];
-    }
-
-    QStringList getTabNames() const;
-
-    void destroyTabs();
-
-    QWidget* currentWidget() const
-    {
-        QMutexLocker l(&_tabWidgetStateMutex);
-
-        return _currentWidget;
-    }
+    QWidget* currentWidget() const;
+    
+    void currentWidget(QWidget** w,ScriptObject** obj) const;
+    
+    /**
+     * @brief Set w as the current widget of the tab
+     **/
+    void setCurrentWidget(QWidget* w);
 
     void dettachTabs();
-    static bool moveTab(QWidget* what,TabWidget* where);
+    static bool moveTab(QWidget* what, ScriptObject* obj,TabWidget* where);
 
     /**
      * @brief Starts dragging the selected panel. The following actions are performed:
@@ -240,8 +242,10 @@ public:
     bool isFloatingWindowChild() const;
 
     void discardGuiPointer();
+    
+    void onTabScriptNameChanged(QWidget* tab,const std::string& oldName,const std::string& newName);
 
-public slots:
+public Q_SLOTS:
     /*Makes current the tab at index "index". Passing an
        index out of range will have no effect.*/
     void makeCurrentTab(int index);
@@ -257,6 +261,8 @@ public slots:
     void newHistogramHere();
 
     void movePropertiesBinHere();
+    
+    void moveScriptEditorHere();
 
     void onSplitHorizontally()
     {
@@ -295,6 +301,12 @@ public slots:
     void onTabBarMouseLeft();
     
     void onHideLeftToolBarActionTriggered();
+    
+    void moveToNextTab();
+    
+    void onCurrentTabDeleted();
+    
+    void onUserPanelActionTriggered();
 private:
 
 
@@ -303,7 +315,8 @@ private:
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
     virtual void mouseMoveEvent(QMouseEvent* e) OVERRIDE FINAL;
     virtual void leaveEvent(QEvent* e) OVERRIDE FINAL;
-    bool destroyTab(QWidget* tab) WARN_UNUSED_RETURN;
+    virtual void enterEvent(QEvent* e) OVERRIDE FINAL;
+    
 
 private:
 
@@ -316,24 +329,8 @@ private:
      **/
     void closeSplitterAndMoveOtherSplitToParent(Splitter* container);
 
-    // FIXME: PIMPL
-    Gui* _gui;
-    QVBoxLayout* _mainLayout;
-    std::vector<QWidget*> _tabs; // the actual tabs
-    QWidget* _header;
-    QHBoxLayout* _headerLayout;
-    bool _modifyingTabBar;
-    TabBar* _tabBar; // the header containing clickable pages
-    Button* _leftCornerButton;
-    Button* _floatButton;
-    Button* _closeButton;
-    QWidget* _currentWidget;
-    bool _drawDropRect;
-    bool _fullScreen;
-    bool _isAnchor;
-    bool _tabBarVisible;
-    ///Protects  _currentWidget, _fullScreen, _isViewerAnchor
-    mutable QMutex _tabWidgetStateMutex;
+    
+    boost::scoped_ptr<TabWidgetPrivate> _imp;
 };
 
 

@@ -9,6 +9,10 @@
  *
  */
 
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
 #include "Curve.h"
 
 #include <algorithm>
@@ -665,6 +669,7 @@ interParams(const KeyFrameSet &keyFrames,
             Natron::KeyframeTypeEnum *interpNext)
 {
 //#pragma message WARN("Unused parameter 't'") //the parameter is good enough for asserts
+    (void)t;
     assert( itup == keyFrames.end() || t < itup->getTime() );
     if ( itup == keyFrames.begin() ) {
         //if all keys have a greater time

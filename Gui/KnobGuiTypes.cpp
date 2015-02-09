@@ -7,8 +7,11 @@
  * contact: immarespond at gmail dot com
  *
  */
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
 
-#include "Gui/KnobGuiTypes.h"
+#include "KnobGuiTypes.h"
 
 #include <cfloat>
 
@@ -106,13 +109,14 @@ Int_KnobGui::Int_KnobGui(boost::shared_ptr<KnobI> knob,
 
 Int_KnobGui::~Int_KnobGui()
 {
-//    for (U32 i  = 0; i < _spinBoxes.size(); ++i) {
-//        delete _spinBoxes[i].first;
-//        delete _spinBoxes[i].second;
-//    }
-//    if (_slider) {
-//        delete _slider;
-//    }
+}
+
+void
+Int_KnobGui::removeSpecificGui()
+{
+    container->setParent(NULL);
+    delete container;
+    _spinBoxes.clear();
 }
 
 void
@@ -120,7 +124,7 @@ Int_KnobGui::createWidget(QHBoxLayout* layout)
 {
     
     int dim = _knob->getDimension();
-    QWidget *container = new QWidget( layout->parentWidget() );
+    container = new QWidget( layout->parentWidget() );
     QHBoxLayout *containerLayout = new QHBoxLayout(container);
 
     container->setLayout(containerLayout);
@@ -148,7 +152,8 @@ Int_KnobGui::createWidget(QHBoxLayout* layout)
 #endif
     
     for (int i = 0; i < dim; ++i) {
-        QWidget *boxContainer = new QWidget( layout->parentWidget() );
+
+        QWidget *boxContainer = new QWidget( container );
         boxContainer->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
         QHBoxLayout *boxContainerLayout = new QHBoxLayout(boxContainer);
         boxContainer->setLayout(boxContainerLayout);
@@ -178,9 +183,7 @@ Int_KnobGui::createWidget(QHBoxLayout* layout)
 #endif
         
         box->setIncrement(increments[i]);
-        if ( hasToolTip() ) {
-            box->setToolTip( toolTip() );
-        }
+
         boxContainerLayout->addWidget(box);
         containerLayout->addWidget(boxContainer);
         _spinBoxes.push_back( make_pair(box, subDesc) );
@@ -574,6 +577,29 @@ boost::shared_ptr<KnobI> Int_KnobGui::getKnob() const
     return _knob;
 }
 
+void
+Int_KnobGui::reflectExpressionState(int dimension,bool hasExpr)
+{
+    _spinBoxes[dimension].first->setAnimation(3);
+    _spinBoxes[dimension].first->setReadOnly(hasExpr);
+    if (_slider) {
+        _slider->setReadOnly(hasExpr);
+    }
+}
+
+void
+Int_KnobGui::updateToolTip()
+{
+    if ( hasToolTip() ) {
+        QString tt = toolTip();
+        for (int i = 0; i < _knob->getDimension();++i) {
+            _spinBoxes[i].first->setToolTip( tt );
+        }
+        if (_slider) {
+            _slider->setToolTip(tt);
+        }
+    }
+}
 //==========================BOOL_KNOB_GUI======================================
 
 Bool_KnobGui::Bool_KnobGui(boost::shared_ptr<KnobI> knob,
@@ -588,9 +614,7 @@ void
 Bool_KnobGui::createWidget(QHBoxLayout* layout)
 {
     _checkBox = new AnimatedCheckBox( layout->parentWidget() );
-    if ( hasToolTip() ) {
-        _checkBox->setToolTip( toolTip() );
-    }
+
     _checkBox->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     QObject::connect( _checkBox, SIGNAL( toggled(bool) ), this, SLOT( onCheckBoxStateChanged(bool) ) );
     QObject::connect( this, SIGNAL( labelClicked(bool) ), this, SLOT( onCheckBoxStateChanged(bool) ) );
@@ -603,7 +627,13 @@ Bool_KnobGui::createWidget(QHBoxLayout* layout)
 
 Bool_KnobGui::~Bool_KnobGui()
 {
-   // delete _checkBox;
+
+}
+
+void Bool_KnobGui::removeSpecificGui()
+{
+    _checkBox->setParent(0);
+    delete _checkBox;
 }
 
 void
@@ -677,9 +707,28 @@ Bool_KnobGui::setDirty(bool dirty)
     _checkBox->setDirty(dirty);
 }
 
-boost::shared_ptr<KnobI> Bool_KnobGui::getKnob() const
+boost::shared_ptr<KnobI>
+Bool_KnobGui::getKnob() const
 {
     return _knob;
+}
+
+void
+Bool_KnobGui::reflectExpressionState(int /*dimension*/,bool hasExpr)
+{
+    _checkBox->setAnimation(3);
+    _checkBox->setReadOnly(hasExpr);
+}
+
+void
+Bool_KnobGui::updateToolTip()
+{
+    if ( hasToolTip() ) {
+        QString tt = toolTip();
+        for (int i = 0; i < _knob->getDimension();++i) {
+            _checkBox->setToolTip( tt );
+        }
+    }
 }
 
 //=============================DOUBLE_KNOB_GUI===================================
@@ -757,20 +806,20 @@ Double_KnobGui::Double_KnobGui(boost::shared_ptr<KnobI> knob,
 
 Double_KnobGui::~Double_KnobGui()
 {
-//    for (U32 i  = 0; i < _spinBoxes.size(); ++i) {
-//        delete _spinBoxes[i].first;
-//        delete _spinBoxes[i].second;
-//    }
-//    if (_slider) {
-//        delete _slider;
-//    }
+
+}
+
+void Double_KnobGui::removeSpecificGui()
+{
+    delete container;
+    _spinBoxes.clear();
 }
 
 void
 Double_KnobGui::createWidget(QHBoxLayout* layout)
 {
-    layout->parentWidget()->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
-    QWidget *container = new QWidget( layout->parentWidget() );
+
+    container = new QWidget( layout->parentWidget() );
     QHBoxLayout *containerLayout = new QHBoxLayout(container);
     layout->addWidget(container);
 
@@ -801,7 +850,8 @@ Double_KnobGui::createWidget(QHBoxLayout* layout)
 #endif
     const std::vector<int> &decimals = _knob->getDecimals();
     for (int i = 0; i < dim; ++i) {
-        QWidget *boxContainer = new QWidget( layout->parentWidget() );
+
+        QWidget *boxContainer = new QWidget( container );
         boxContainer->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
         QHBoxLayout *boxContainerLayout = new QHBoxLayout(boxContainer);
         boxContainer->setLayout(boxContainerLayout);
@@ -837,10 +887,9 @@ Double_KnobGui::createWidget(QHBoxLayout* layout)
         box->decimals(decimals[i]);
         
         box->setIncrement(increments[i]);
-        if ( hasToolTip() ) {
-            box->setToolTip( toolTip() );
-        }
+       
         boxContainerLayout->addWidget(box);
+
         containerLayout->addWidget(boxContainer);
         _spinBoxes.push_back( make_pair(box, subDesc) );
     }
@@ -1265,9 +1314,34 @@ Double_KnobGui::setDirty(bool dirty)
     }
 }
 
-boost::shared_ptr<KnobI> Double_KnobGui::getKnob() const
+boost::shared_ptr<KnobI>
+Double_KnobGui::getKnob() const
 {
     return _knob;
+}
+
+void
+Double_KnobGui::reflectExpressionState(int dimension,bool hasExpr)
+{
+    _spinBoxes[dimension].first->setAnimation(3);
+    _spinBoxes[dimension].first->setReadOnly(hasExpr);
+    if (_slider) {
+        _slider->setReadOnly(hasExpr);
+    }
+}
+
+void
+Double_KnobGui::updateToolTip()
+{
+    if ( hasToolTip() ) {
+        QString tt = toolTip();
+        for (int i = 0; i < _knob->getDimension();++i) {
+            _spinBoxes[i].first->setToolTip( tt );
+        }
+        if (_slider) {
+            _slider->setToolTip(tt);
+        }
+    }
 }
 
 //=============================BUTTON_KNOB_GUI===================================
@@ -1285,15 +1359,29 @@ Button_KnobGui::createWidget(QHBoxLayout* layout)
 {
     QString label( _knob->getDescription().c_str() );
     const std::string & iconFilePath = _knob->getIconFilePath();
+    
+    QString filePath(iconFilePath.c_str());
+    if (!iconFilePath.empty() && !QFile::exists(filePath)) {
+        ///Search all natron paths for a file
+        
+        QStringList paths = appPTR->getAllNonOFXPluginsPaths();
+        for (int i = 0; i < paths.size(); ++i) {
+            filePath = paths[i] + QChar('/') + filePath;
+            if (QFile::exists(filePath)) {
+                break;
+            }
+        }
+    }
+    
     QPixmap pix;
 
-    if ( pix.load( iconFilePath.c_str() ) ) {
+    if (pix.load(filePath)) {
         _button = new Button( QIcon(pix),"",layout->parentWidget() );
         _button->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     } else {
         _button = new Button( label,layout->parentWidget() );
     }
-    QObject::connect( _button, SIGNAL( clicked() ), this, SLOT( emitValueChanged() ) );
+    QObject::connect( _button, SIGNAL(clicked()), this, SLOT(emitValueChanged()));
     if ( hasToolTip() ) {
         _button->setToolTip( toolTip() );
     }
@@ -1302,7 +1390,11 @@ Button_KnobGui::createWidget(QHBoxLayout* layout)
 
 Button_KnobGui::~Button_KnobGui()
 {
-  //  delete _button;
+}
+
+void Button_KnobGui::removeSpecificGui()
+{
+    delete _button;
 }
 
 void
@@ -1356,7 +1448,12 @@ Choice_KnobGui::Choice_KnobGui(boost::shared_ptr<KnobI> knob,
 
 Choice_KnobGui::~Choice_KnobGui()
 {
-   // delete _comboBox;
+   
+}
+
+void Choice_KnobGui::removeSpecificGui()
+{
+    delete _comboBox;
 }
 
 void
@@ -1398,14 +1495,23 @@ Choice_KnobGui::onEntriesPopulated()
     ///we don't want that to happen because the index actually didn't change.
     _comboBox->setCurrentIndex_no_emit(activeIndex);
 
-    QString tt = getScriptNameHtml();
-    QString realTt( _knob->getHintToolTipFull().c_str() );
-    if ( !realTt.isEmpty() ) {
-        realTt = Qt::convertFromPlainText(realTt.trimmed(), Qt::WhiteSpaceNormal);
-        tt.append(realTt);
-    }
-    _comboBox->setToolTip(tt);
+    updateToolTip();
 }
+
+void
+Choice_KnobGui::reflectExpressionState(int /*dimension*/,bool hasExpr)
+{
+    _comboBox->setAnimation(3);
+    _comboBox->setReadOnly(hasExpr);
+}
+
+void
+Choice_KnobGui::updateToolTip()
+{
+    QString tt = toolTip();
+    _comboBox->setToolTip( tt );
+}
+
 
 void
 Choice_KnobGui::updateGUI(int /*dimension*/)
@@ -1506,7 +1612,12 @@ Separator_KnobGui::createWidget(QHBoxLayout* layout)
 
 Separator_KnobGui::~Separator_KnobGui()
 {
-    //delete _line;
+    
+}
+
+void Separator_KnobGui::removeSpecificGui()
+{
+    delete _line;
 }
 
 void
@@ -1568,7 +1679,12 @@ Color_KnobGui::Color_KnobGui(boost::shared_ptr<KnobI> knob,
 
 Color_KnobGui::~Color_KnobGui()
 {
-   // delete mainContainer;
+   
+}
+
+void Color_KnobGui::removeSpecificGui()
+{
+   delete mainContainer;
 }
 
 void
@@ -1614,7 +1730,7 @@ Color_KnobGui::createWidget(QHBoxLayout* layout)
     
     ///set the copy/link actions in the right click menu
     enableRightClickMenu(_rBox,0);
-    
+
     if ( hasToolTip() ) {
         _rBox->setToolTip( toolTip() );
     }
@@ -1851,7 +1967,7 @@ Color_KnobGui::expandAllDimensions()
             _aBox->show();
         }
     }
-    emit dimensionSwitchToggled(true);
+    Q_EMIT dimensionSwitchToggled(true);
 }
 
 void
@@ -1872,7 +1988,7 @@ Color_KnobGui::foldAllDimensions()
             _aBox->hide();
         }
     }
-    emit dimensionSwitchToggled(false);
+    Q_EMIT dimensionSwitchToggled(false);
 }
 
 void
@@ -2052,17 +2168,7 @@ Color_KnobGui::updateGUI(int dimension)
         updateLabel(r, g, b, a);
     }
 
-//    bool colorsEqual = true;
-//    if (_dimension == 3) {
-//        colorsEqual = (r == g && r == b);
-//    } else {
-//        colorsEqual = (r == g && r == b && r == a);
-//    }
-//    if (!_knob->areAllDimensionsEnabled() && !colorsEqual) {
-//        expandAllDimensions();
-//    } else if (_knob->areAllDimensionsEnabled() && colorsEqual) {
-//        foldAllDimensions();
-//    }
+
 } // updateGUI
 
 void
@@ -2074,9 +2180,6 @@ Color_KnobGui::reflectAnimationLevel(int dimension,
     }
     switch (level) {
         case Natron::eAnimationLevelNone: {
-            if (_rBox->getAnimation() == 0) {
-                return;
-            }
             switch (dimension) {
                 case 0:
                     _rBox->setAnimation(0);
@@ -2097,9 +2200,6 @@ Color_KnobGui::reflectAnimationLevel(int dimension,
         }  break;
         case Natron::eAnimationLevelInterpolatedValue: {
             switch (dimension) {
-                    if (_rBox->getAnimation() == 1) {
-                        return;
-                    }
                 case 0:
                     _rBox->setAnimation(1);
                     break;
@@ -2119,9 +2219,6 @@ Color_KnobGui::reflectAnimationLevel(int dimension,
         }    break;
         case Natron::eAnimationLevelOnKeyframe: {
             switch (dimension) {
-                    if (_rBox->getAnimation() == 2) {
-                        return;
-                    }
                 case 0:
                     _rBox->setAnimation(2);
                     break;
@@ -2144,6 +2241,49 @@ Color_KnobGui::reflectAnimationLevel(int dimension,
             break;
     } // switch
 } // reflectAnimationLevel
+
+void
+Color_KnobGui::reflectExpressionState(int dimension,bool hasExpr)
+{
+    switch (dimension) {
+        case 0:
+            _rBox->setAnimation(3);
+            _rBox->setReadOnly(hasExpr);
+            break;
+        case 1:
+            _gBox->setAnimation(3);
+            _gBox->setReadOnly(hasExpr);
+            break;
+        case 2:
+            _bBox->setAnimation(3);
+            _bBox->setReadOnly(hasExpr);
+            break;
+        case 3:
+            _aBox->setAnimation(3);
+            _aBox->setReadOnly(hasExpr);
+            break;
+        default:
+            break;
+    }
+    
+}
+
+void
+Color_KnobGui::updateToolTip()
+{
+    if (hasToolTip()) {
+        QString tt = toolTip();
+        _rBox->setToolTip(tt);
+        if (_dimension >= 3) {
+            _gBox->setToolTip(tt);
+            _bBox->setToolTip(tt);
+            if (_dimension >= 4) {
+                _aBox->setToolTip(tt);
+            }
+        }
+        _slider->setToolTip(tt);
+    }
+}
 
 void
 Color_KnobGui::showColorDialog()
@@ -2282,9 +2422,18 @@ Color_KnobGui::onColorChanged()
     if (_dimension >= 4) {
         newValues.push_back(a);
     }
-
-    updateLabel(r, g, b, a);
-    pushUndoCommand( new KnobUndoCommand<double>(this, _knob->getValueForEachDimension_mt_safe(), newValues,false) );
+    std::list<double> oldValues = _knob->getValueForEachDimension_mt_safe();
+    assert(oldValues.size() == newValues.size());
+    std::list<double>::iterator itNew = newValues.begin();
+    for (std::list<double>::iterator it = oldValues.begin() ; it != oldValues.end() ; ++it, ++itNew) {
+        if (*it != *itNew) {
+            updateLabel(r, g, b, a);
+            pushUndoCommand( new KnobUndoCommand<double>(this, oldValues, newValues,false) );
+            break;
+        }
+    }
+    
+    
 }
 
 void
@@ -2371,7 +2520,7 @@ void
 ColorPickerLabel::mousePressEvent(QMouseEvent*)
 {
     _pickingEnabled = !_pickingEnabled;
-    emit pickingEnabled(_pickingEnabled);
+    Q_EMIT pickingEnabled(_pickingEnabled);
     setColor(_currentColor); //< refresh the icon
 }
 
@@ -2529,7 +2678,7 @@ AnimatingTextEdit::focusOutEvent(QFocusEvent* e)
 {
     if (_hasChanged) {
         _hasChanged = false;
-        emit editingFinished();
+        Q_EMIT editingFinished();
     }
     QTextEdit::focusOutEvent(e);
 }
@@ -2540,7 +2689,7 @@ AnimatingTextEdit::keyPressEvent(QKeyEvent* e)
     if (e->key() == Qt::Key_Return) {
         if (_hasChanged) {
             _hasChanged = false;
-            emit editingFinished();
+            Q_EMIT editingFinished();
         }
     }
     _hasChanged = true;
@@ -2592,15 +2741,8 @@ String_KnobGui::createWidget(QHBoxLayout* layout)
 
         bool useRichText = _knob->usesRichText();
         _textEdit = new AnimatingTextEdit(_container);
-        if ( hasToolTip() ) {
-            QString tt = toolTip();
-            if (useRichText) {
-                tt += tr(" This text area supports html encoding. "
-                         "Please check <a href=http://qt-project.org/doc/qt-5/richtext-html-subset.html>Qt website</a> for more info. ");
-            }
-            _textEdit->setAcceptRichText(useRichText);
-            _textEdit->setToolTip(tt);
-        }
+        _textEdit->setAcceptRichText(useRichText);
+
 
         _mainLayout->addWidget(_textEdit);
 
@@ -2679,6 +2821,7 @@ String_KnobGui::createWidget(QHBoxLayout* layout)
         layout->addWidget(_container);
     } else if ( _knob->isLabel() ) {
         _label = new QLabel( layout->parentWidget() );
+
         if ( hasToolTip() ) {
             _label->setToolTip( toolTip() );
         }
@@ -2686,6 +2829,7 @@ String_KnobGui::createWidget(QHBoxLayout* layout)
         layout->addWidget(_label);
     } else {
         _lineEdit = new LineEdit( layout->parentWidget() );
+
         if ( hasToolTip() ) {
             _lineEdit->setToolTip( toolTip() );
         }
@@ -2705,9 +2849,14 @@ String_KnobGui::createWidget(QHBoxLayout* layout)
 
 String_KnobGui::~String_KnobGui()
 {
-//    delete _lineEdit;
-//    delete _label;
-//    delete _container;
+}
+
+void String_KnobGui::removeSpecificGui()
+{
+    delete _lineEdit;
+    delete _label;
+    delete _container;
+
 }
 
 void
@@ -3206,7 +3355,24 @@ String_KnobGui::removeNatronHtmlTag(QString text)
 }
 
 QString
-String_KnobGui::removeAutoAddedHtmlTags(QString text) const
+String_KnobGui::getNatronHtmlTagContent(QString text)
+{
+    QString label = removeAutoAddedHtmlTags(text,false);
+    QString startTag(NATRON_CUSTOM_HTML_TAG_START);
+    int startCustomData = label.indexOf(startTag);
+    if (startCustomData != -1) {
+        QString endTag(NATRON_CUSTOM_HTML_TAG_END);
+        int endCustomData = label.indexOf(endTag,startCustomData);
+        assert(endCustomData != -1);
+        label = label.remove(endCustomData, endTag.size());
+        label = label.remove(startCustomData, startTag.size());
+    }
+    return label;
+}
+
+
+QString
+String_KnobGui::removeAutoAddedHtmlTags(QString text,bool removeNatronTag)
 {
     QString toFind = QString(kFontSizeTag);
     int i = text.indexOf(toFind);
@@ -3261,7 +3427,11 @@ String_KnobGui::removeAutoAddedHtmlTags(QString text) const
     }
 
     ///we also remove any custom data added by natron so the user doesn't see it
-    return removeNatronHtmlTag(text);
+    if (removeNatronTag) {
+        return removeNatronHtmlTag(text);
+    } else {
+        return text;
+    }
 } // removeAutoAddedHtmlTags
 
 void
@@ -3379,16 +3549,12 @@ String_KnobGui::reflectAnimationLevel(int /*dimension*/,
     
     if ( _knob->isMultiLine() ) {
         assert(_textEdit);
-        if (_textEdit->getAnimation() != value) {
-            _textEdit->setAnimation(value);
-        }
+        _textEdit->setAnimation(value);
     } else if ( _knob->isLabel() ) {
         assert(_label);
     } else {
         assert(_lineEdit);
-        if (_lineEdit->getAnimation() != value) {
-            _lineEdit->setAnimation(value);
-        }
+        _lineEdit->setAnimation(value);
     }
 }
 
@@ -3417,15 +3583,49 @@ String_KnobGui::setDirty(bool dirty)
     }
 }
 
-boost::shared_ptr<KnobI> String_KnobGui::getKnob() const
+boost::shared_ptr<KnobI>
+String_KnobGui::getKnob() const
 {
     return _knob;
 }
 
+void
+String_KnobGui::reflectExpressionState(int /*dimension*/,bool hasExpr)
+{
+    if (_textEdit) {
+        _textEdit->setAnimation(3);
+        _textEdit->setReadOnly(hasExpr);
+    } else if (_lineEdit) {
+        _lineEdit->setAnimation(3);
+        _lineEdit->setReadOnly(hasExpr);
+    }
+}
+
+void
+String_KnobGui::updateToolTip()
+{
+    if (hasToolTip()) {
+        QString tt = toolTip();
+        if (_textEdit) {
+            bool useRichText = _knob->usesRichText();
+            if (useRichText) {
+                tt += tr(" This text area supports html encoding. "
+                         "Please check <a href=http://qt-project.org/doc/qt-5/richtext-html-subset.html>Qt website</a> for more info. ");
+            }
+            _textEdit->setToolTip(tt);
+        } else if (_lineEdit) {
+            _lineEdit->setToolTip(tt);
+        } else if (_label) {
+            _label->setToolTip(tt);
+        }
+    }
+}
+
 //=============================GROUP_KNOB_GUI===================================
 GroupBoxLabel::GroupBoxLabel(QWidget *parent)
-    : QLabel(parent),
-      _checked(false)
+: QLabel(parent)
+, _checked(false)
+
 {
     QObject::connect( this, SIGNAL( checked(bool) ), this, SLOT( setChecked(bool) ) );
 }
@@ -3445,26 +3645,46 @@ GroupBoxLabel::setChecked(bool b)
 
 Group_KnobGui::Group_KnobGui(boost::shared_ptr<KnobI> knob,
                              DockablePanel *container)
-    : KnobGui(knob, container)
-      , _checked(false)
-      , _button(0)
+: KnobGui(knob, container)
+, _checked(false)
+, _button(0)
+, _children()
+, _childrenToEnable()
+, _tabGroup(0)
+, _knob( boost::dynamic_pointer_cast<Group_Knob>(knob))
 {
-    _knob = boost::dynamic_pointer_cast<Group_Knob>(knob);
+
 }
 
 Group_KnobGui::~Group_KnobGui()
 {
-   // delete _button;
-    //    for(U32 i  = 0 ; i < _children.size(); ++i){
-    //        delete _children[i].first;
-    //    }
+    
+}
+
+TabGroup*
+Group_KnobGui::getOrCreateTabWidget()
+{
+    if (_tabGroup) {
+        return _tabGroup;
+    }
+    
+    _tabGroup = new TabGroup(getContainer());
+    return _tabGroup;
+}
+
+void Group_KnobGui::removeSpecificGui()
+{
+    delete _button;
+//    for (std::list<KnobGui*>::iterator it = _children.begin() ;it!= _children.end();++it) {
+//        (*it)->removeSpecificGui();
+//        delete *it;
+//    }
 }
 
 void
-Group_KnobGui::addKnob(KnobGui *child,
-                       int row)
+Group_KnobGui::addKnob(KnobGui *child)
 {
-    _children.push_back( std::make_pair( child, row ) );
+    _children.push_back(child);
 }
 
 bool
@@ -3498,12 +3718,13 @@ Group_KnobGui::setChecked(bool b)
     ///the children back with an offset relative to the group.
     int realIndexInLayout = getActualIndexInLayout();
     int startChildIndex = realIndexInLayout + 1;
-    for (U32 i = 0; i < _children.size(); ++i) {
+    
+    for (std::list<KnobGui*>::iterator it = _children.begin(); it != _children.end(); ++it) {
         if (!b) {
-            _children[i].first->hide();
-        } else if ( !_children[i].first->getKnob()->getIsSecret() ) {
-            _children[i].first->show(startChildIndex);
-            if ( !_children[i].first->getKnob()->isNewLineTurnedOff() ) {
+            (*it)->hide();
+        } else if ( !(*it)->getKnob()->getIsSecret() ) {
+            (*it)->show(startChildIndex);
+            if ( (*it)->getKnob()->isNewLineActivated() ) {
                 ++startChildIndex;
             }
         }
@@ -3539,8 +3760,8 @@ Group_KnobGui::_hide()
     if (_button) {
         _button->hide();
     }
-    for (U32 i = 0; i < _children.size(); ++i) {
-        _children[i].first->hide();
+    for (std::list<KnobGui*>::iterator it = _children.begin(); it != _children.end(); ++it) {
+        (*it)->hide();
     }
 }
 
@@ -3555,8 +3776,8 @@ Group_KnobGui::_show()
     }
 
     if (_checked) {
-        for (U32 i = 0; i < _children.size(); ++i) {
-            _children[i].first->show();
+        for (std::list<KnobGui*>::iterator it = _children.begin(); it != _children.end(); ++it) {
+            (*it)->show();
         }
     }
 }
@@ -3577,15 +3798,15 @@ Group_KnobGui::setEnabled()
         }
     } else {
         _childrenToEnable.clear();
-        for (U32 i = 0; i < _children.size(); ++i) {
+        for (std::list<KnobGui*>::iterator it = _children.begin(); it != _children.end(); ++it) {
             std::vector<int> dimensions;
-            for (int j = 0; j < _children[i].first->getKnob()->getDimension(); ++j) {
-                if ( _children[i].first->getKnob()->isEnabled(j) ) {
-                    _children[i].first->getKnob()->setEnabled(j, false);
+            for (int j = 0; j < (*it)->getKnob()->getDimension(); ++j) {
+                if ( (*it)->getKnob()->isEnabled(j) ) {
+                    (*it)->getKnob()->setEnabled(j, false);
                     dimensions.push_back(j);
                 }
             }
-            _childrenToEnable.push_back( std::make_pair(_children[i].first, dimensions) );
+            _childrenToEnable.push_back( std::make_pair(*it, dimensions) );
         }
     }
 }
@@ -3599,19 +3820,26 @@ boost::shared_ptr<KnobI> Group_KnobGui::getKnob() const
 
 Parametric_KnobGui::Parametric_KnobGui(boost::shared_ptr<KnobI> knob,
                                        DockablePanel *container)
-    : KnobGui(knob, container)
-      , _curveWidget(NULL)
-      , _tree(NULL)
-      , _resetButton(NULL)
-      , _curves()
+: KnobGui(knob, container)
+, treeColumn(NULL)
+, _curveWidget(NULL)
+, _tree(NULL)
+, _resetButton(NULL)
+, _curves()
 {
     _knob = boost::dynamic_pointer_cast<Parametric_Knob>(knob);
+    QObject::connect(_knob.get(), SIGNAL(curveColorChanged(int)), this, SLOT(onColorChanged(int)));
 }
 
 Parametric_KnobGui::~Parametric_KnobGui()
 {
-//    delete _curveWidget;
-//    delete _tree;
+    
+}
+
+void Parametric_KnobGui::removeSpecificGui()
+{
+    delete _curveWidget;
+    delete treeColumn;
 }
 
 void
@@ -3620,7 +3848,7 @@ Parametric_KnobGui::createWidget(QHBoxLayout* layout)
     QObject::connect( _knob.get(), SIGNAL( curveChanged(int) ), this, SLOT( onCurveChanged(int) ) );
 
     //layout->parentWidget()->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
-    QWidget* treeColumn = new QWidget( layout->parentWidget() );
+    treeColumn = new QWidget( layout->parentWidget() );
     QVBoxLayout* treeColumnLayout = new QVBoxLayout(treeColumn);
     treeColumnLayout->setContentsMargins(0, 0, 0, 0);
 
@@ -3675,6 +3903,20 @@ Parametric_KnobGui::createWidget(QHBoxLayout* layout)
     _curveWidget->centerOn(visibleCurves);
     QObject::connect( _tree, SIGNAL( itemSelectionChanged() ),this,SLOT( onItemsSelectionChanged() ) );
 } // createWidget
+
+void
+Parametric_KnobGui::onColorChanged(int dimension)
+{
+    double r, g, b;
+    _knob->getCurveColor(dimension, &r, &g, &b);
+    CurveGuis::iterator found = _curves.find(dimension);
+    if (found != _curves.end()) {
+        QColor c;
+        c.setRgbF(r, g, b);
+        found->second.curve->setColor(c);
+    }
+    _curveWidget->update();
+}
 
 void
 Parametric_KnobGui::_hide()

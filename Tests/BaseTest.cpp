@@ -9,6 +9,9 @@
  *
  */
 
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
 
 #include "BaseTest.h"
 
@@ -67,8 +70,8 @@ BaseTest::SetUp()
 {
     AppManager* manager = new AppManager;
     int argc = 0;
-
-    manager->load(argc,NULL,QString(),QStringList(),std::list<std::pair<int,int> >(),QString());
+    CLArgs cl;
+    manager->load(argc, 0, cl);
 
     _app = manager->getTopLevelInstance();
 
@@ -90,8 +93,9 @@ boost::shared_ptr<Natron::Node> BaseTest::createNode(const QString & pluginID,
 {
     boost::shared_ptr<Node> ret =  _app->createNode( CreateNodeArgs(pluginID,
                                                                     "",
-                                                                    majorVersion,minorVersion,-1,true,INT_MIN,INT_MIN,true,true,
-                                                                    QString(),CreateNodeArgs::DefaultValuesList()) );
+                                                                    majorVersion,minorVersion,true,INT_MIN,INT_MIN,true,true,
+                                                                    QString(),CreateNodeArgs::DefaultValuesList(),
+                                                                    _app->getProject()) );
 
     EXPECT_NE(ret.get(),(Natron::Node*)NULL);
 

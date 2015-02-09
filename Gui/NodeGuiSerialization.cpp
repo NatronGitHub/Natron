@@ -9,6 +9,9 @@
  *
  */
 
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
 
 #include "NodeGuiSerialization.h"
 
@@ -24,18 +27,22 @@ CLANG_DIAG_ON(uninitialized)
 
 
 void
-NodeGuiSerialization::initialize(const boost::shared_ptr<NodeGui> & n)
+NodeGuiSerialization::initialize(const NodeGui*  n)
 {
     ////All this code is MT-safe
-    _nodeName = n->getNode()->getName_mt_safe();
+    _nodeName = n->getNode()->getFullyQualifiedName();
     QPointF pos = n->getPos_mt_safe();
     _posX = pos.x();
     _posY = pos.y();
+    n->getSize(&_width, &_height);
     _previewEnabled = n->getNode()->isPreviewEnabled();
     QColor color = n->getCurrentColor();
     _r = color.redF();
     _g = color.greenF();
     _b = color.blueF();
     _selected = n->isSelected();
+    
+    _hasOverlayColor = n->getOverlayColor(&_overlayR, &_overlayG, &_overlayB);
+    
 }
 

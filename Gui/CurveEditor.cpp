@@ -9,6 +9,10 @@
  *
  */
 
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
 #include "CurveEditor.h"
 
 #include <utility>
@@ -97,6 +101,8 @@ CurveEditor::CurveEditor(Gui* gui,
                          boost::shared_ptr<TimeLine> timeline,
                          QWidget *parent)
 : QWidget(parent)
+, CurveSelection()
+, ScriptObject()
 , _imp(new CurveEditorPrivate(gui))
 {
     setObjectName("CurveEditor");
@@ -178,7 +184,7 @@ CurveEditor::onFilterTextChanged(const QString& filter)
     for (std::list<NodeCurveEditorContext*>::iterator it = _imp->nodes.begin();
          it != _imp->nodes.end(); ++it) {
         if (filter.isEmpty() ||
-            QString((*it)->getNode()->getNode()->getName().c_str()).contains(filter,Qt::CaseInsensitive)) {
+            QString((*it)->getNode()->getNode()->getLabel().c_str()).contains(filter,Qt::CaseInsensitive)) {
             (*it)->setVisible(true);
         } else {
             (*it)->setVisible(false);
@@ -187,7 +193,7 @@ CurveEditor::onFilterTextChanged(const QString& filter)
     
     for (std::list<RotoCurveEditorContext*>::iterator it = _imp->rotos.begin(); it != _imp->rotos.end(); ++it) {
         if (filter.isEmpty() ||
-            QString((*it)->getNode()->getNode()->getName().c_str()).contains(filter,Qt::CaseInsensitive)) {
+            QString((*it)->getNode()->getNode()->getLabel().c_str()).contains(filter,Qt::CaseInsensitive)) {
             (*it)->setVisible(true);
         } else {
             (*it)->setVisible(false);
@@ -395,9 +401,10 @@ NodeCurveEditorContext::NodeCurveEditorContext(QTreeWidget* tree,
 {
     QTreeWidgetItem* nameItem = new QTreeWidgetItem(tree);
 
-    nameItem->setText( 0,_node->getNode()->getName().c_str() );
+    nameItem->setText( 0,_node->getNode()->getLabel().c_str() );
 
-    QObject::connect( node->getNode().get(),SIGNAL( nameChanged(QString) ),this,SLOT( onNameChanged(QString) ) );
+    QObject::connect( node->getNode().get(),SIGNAL( labelChanged(QString) ),this,SLOT( onNameChanged(QString) ) );
+
     const std::map<boost::shared_ptr<KnobI>,KnobGui*> & knobs = node->getKnobs();
 
     bool hasAtLeast1KnobWithACurveShown = false;
@@ -976,7 +983,7 @@ BezierEditorContext::BezierEditorContext(QTreeWidget* tree,
 : _imp(new BezierEditorContextPrivate(widget,curve,context))
 {
     _imp->nameItem = new QTreeWidgetItem(_imp->context->getItem());
-    QString name(_imp->curve->getName_mt_safe().c_str());
+    QString name(_imp->curve->getLabel().c_str());
     _imp->nameItem->setText(0, name);
     QObject::connect(curve.get(), SIGNAL(keyframeSet(int)), this, SLOT(onKeyframeAdded()));
     QObject::connect(curve.get(), SIGNAL(keyframeRemoved(int)), this, SLOT(onKeyframeRemoved()));
@@ -1151,12 +1158,13 @@ RotoCurveEditorContext::RotoCurveEditorContext(CurveWidget* widget,
     assert(rotoCtx);
     
     _imp->nameItem = new QTreeWidgetItem(tree);
-    _imp->nameItem->setText( 0,_imp->node->getNode()->getName().c_str() );
-    QObject::connect( node->getNode().get(),SIGNAL( nameChanged(QString) ),this,SLOT( onNameChanged(QString) ) );
+    _imp->nameItem->setText( 0,_imp->node->getNode()->getLabel().c_str() );
+    QObject::connect( node->getNode().get(),SIGNAL( labelChanged(QString) ),this,SLOT( onNameChanged(QString) ) );
+
     QObject::connect( rotoCtx.get(),SIGNAL( itemRemoved(boost::shared_ptr<RotoItem>,int) ),this,
                      SLOT( onItemRemoved(boost::shared_ptr<RotoItem>,int) ) );
     QObject::connect( rotoCtx.get(),SIGNAL( itemInserted(int) ),this,SLOT( itemInserted(int) ) );
-    QObject::connect( rotoCtx.get(),SIGNAL( itemNameChanged(boost::shared_ptr<RotoItem>) ),this,SLOT( onItemNameChanged(boost::shared_ptr<RotoItem>) ) );
+    QObject::connect( rotoCtx.get(),SIGNAL( itemLabelChanged(boost::shared_ptr<RotoItem>) ),this,SLOT( onItemNameChanged(boost::shared_ptr<RotoItem>) ) );
     
     std::list<boost::shared_ptr<Bezier> > curves = rotoCtx->getCurvesByRenderOrder();
     
@@ -1206,7 +1214,7 @@ RotoCurveEditorContext::onItemNameChanged(const boost::shared_ptr<RotoItem>& ite
 {
     for (std::list<BezierEditorContext*>::iterator it = _imp->curves.begin(); it != _imp->curves.end(); ++it) {
         if ((*it)->getBezier() == item) {
-            (*it)->onNameChanged(item->getName_mt_safe().c_str());
+            (*it)->onNameChanged(item->getLabel().c_str());
         }
     }
 }

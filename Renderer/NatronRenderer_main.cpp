@@ -8,6 +8,10 @@
  *
  */
 
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
 #include <csignal>
 #include <cstdio>  // perror
 #include <cstdlib> // exit
@@ -27,29 +31,17 @@ int
 main(int argc,
      char *argv[])
 {
-    bool isBackground;
-    QString projectName,mainProcessServerName;
-    QStringList writers;
-    std::list<std::pair<int,int> > frameRanges;
-    AppManager::parseCmdLineArgs(argc,argv,&isBackground,projectName,writers,frameRanges,mainProcessServerName);
-
-    setShutDownSignal(SIGINT);   // shut down on ctrl-c
-    setShutDownSignal(SIGTERM);   // shut down on killall
-#if defined(Q_OS_UNIX)
-    projectName = AppManager::qt_tildeExpansion(projectName);
-#endif
-
-    ///auto-background without a project name is not valid.
-    if ( projectName.isEmpty() ) {
-        AppManager::printUsage(argv[0]);
-
+    CLArgs args(argc,argv,true);
+    if (args.getError() > 0) {
         return 1;
     }
+    
+    setShutDownSignal(SIGINT);   // shut down on ctrl-c
+    setShutDownSignal(SIGTERM);   // shut down on killall
+
     AppManager manager;
 
-    if ( !manager.load(argc,argv,projectName,writers,frameRanges,mainProcessServerName) ) {
-        AppManager::printUsage(argv[0]);
-
+    if (!manager.load(argc,argv,args)) {
         return 1;
     } else {
         return 0;

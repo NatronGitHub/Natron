@@ -9,12 +9,23 @@
 /**
  * @brief In this file all Natron's actions that can have their shortcut edited should be listed.
  **/
+
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
 #include <map>
 #include <list>
+
+#include "Global/Macros.h"
+CLANG_DIAG_OFF(deprecated)
+CLANG_DIAG_OFF(uninitialized)
 #include <QKeyEvent>
 #include <QMouseEvent>
 #include <QString>
 #include <QAction>
+CLANG_DIAG_ON(deprecated)
+CLANG_DIAG_ON(uninitialized)
 
 #define kShortcutGroupGlobal "Global"
 #define kShortcutGroupNodegraph "NodeGraph"
@@ -43,6 +54,9 @@
 
 #define kShortcutIDActionSaveAndIncrVersion "saveAndIncr"
 #define kShortcutDescActionSaveAndIncrVersion "Version project"
+
+#define kShortcutIDActionExportProject "exportAsGroup"
+#define kShortcutDescActionExportProject "Export project as group"
 
 #define kShortcutIDActionPreferences "preferences"
 #define kShortcutDescActionPreferences "Preferences"
@@ -133,6 +147,12 @@
 
 #define kShortcutIDActionDefaultLayout "restoreDefaultLayout"
 #define kShortcutDescActionDefaultLayout "Restore default layout"
+
+#define kShortcutIDActionNextTab "nextTab"
+#define kShortcutDescActionNextTab "Next Tab"
+
+#define kShortcutIDActionCloseTab "closeTab"
+#define kShortcutDescActionCloseTab "Close Tab"
 
 /////////VIEWER SHORTCUTS
 #define kShortcutIDActionLuminance "luminance"
@@ -417,6 +437,10 @@
 
 #define kShortcutIDActionGraphExtractNode "extractNode"
 #define kShortcutDescActionGraphExtractNode "Extract node"
+
+#define kShortcutIDActionGraphMakeGroup "makeGroup"
+#define kShortcutDescActionGraphMakeGroup "Group from selection"
+
 ///////////CURVEEDITOR SHORTCUTS
 #define kShortcutIDActionCurveEditorRemoveKeys "remove"
 #define kShortcutDescActionCurveEditorRemoveKeys "Delete keyframes"

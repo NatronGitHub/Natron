@@ -7,6 +7,9 @@
 #ifndef NODECREATIONDIALOG_H
 #define NODECREATIONDIALOG_H
 
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
 
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
@@ -14,7 +17,7 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QDialog>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
-#ifndef Q_MOC_RUN
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #endif
@@ -41,13 +44,13 @@ public:
 
     QListView* getView() const;
 
-public slots:
+public Q_SLOTS:
 
     void filterText(const QString & txt);
     void setTextFromIndex(const QModelIndex & index);
     void showCompleter();
 
-signals:
+Q_SIGNALS:
 
     void itemCompletionChosen();
 

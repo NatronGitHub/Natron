@@ -6,12 +6,16 @@
  * contact: immarespond at gmail dot com
  */
 
-
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
 
 #include "FileSystemModel.h"
 
 #include <vector>
 
+CLANG_DIAG_OFF(deprecated)
+CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QMutex>
 #include <QtCore/QWaitCondition>
 #include <QtCore/QFileSystemWatcher>
@@ -21,6 +25,8 @@
 #include <QtCore/QDebug>
 #include <QtCore/QUrl>
 #include <QtCore/QMimeData>
+CLANG_DIAG_ON(deprecated)
+CLANG_DIAG_ON(uninitialized)
 
 #include <SequenceParsing.h>
 
@@ -926,10 +932,10 @@ FileSystemModel::setRootPath(const QString& path)
         
         _imp->populateItem(item);
     } else {
-        emit directoryLoaded(path);
+        Q_EMIT directoryLoaded(path);
     }
     
-    emit rootPathChanged(path);
+    Q_EMIT rootPathChanged(path);
 }
 
 
@@ -988,7 +994,7 @@ FileSystemModel::onDirectoryLoadedByGatherer(const QString& directory)
     }
     
     ///Finally notify the client that the directory is ready for use
-    emit directoryLoaded(directory);
+    Q_EMIT directoryLoaded(directory);
 }
 
 void
@@ -1292,8 +1298,8 @@ FileGathererThread::gatheringKernel(const boost::shared_ptr<FileSystemItem>& ite
     ///List of all possible file sequences in the directory or directories
     FileSequences sequences;
     
-    int start;
-    int end;
+    int start = 0;
+    int end = 0;
     switch (viewOrder) {
         case Qt::AscendingOrder:
             start = 0;
@@ -1370,7 +1376,7 @@ FileGathererThread::gatheringKernel(const boost::shared_ptr<FileSystemItem>& ite
         item->addChild(it->first, it->second);
     }
     
-    emit directoryLoaded( item->absoluteFilePath() );
+    Q_EMIT directoryLoaded( item->absoluteFilePath() );
 }
 
 void

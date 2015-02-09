@@ -8,6 +8,10 @@
  *
  */
 
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
 #include "Gui/ComboBox.h"
 
 #include <cassert>
@@ -231,7 +235,6 @@ ComboBox::paintEvent(QPaintEvent* /*e*/)
                 default: {
                     
                     appPTR->getCurrentSettings()->getRaisedColor(&r, &g, &b);
-                    
                 }   break;
                 case 1: {
                     appPTR->getCurrentSettings()->getInterpolatedColor(&r, &g, &b);
@@ -239,6 +242,10 @@ ComboBox::paintEvent(QPaintEvent* /*e*/)
                 case 2:
                 {
                     appPTR->getCurrentSettings()->getKeyframeColor(&r, &g, &b);
+                }   break;
+                case 3:
+                {
+                    appPTR->getCurrentSettings()->getExprColor(&r, &g, &b);
                 }   break;
             }
             fillColor.setRgb(Natron::clamp(r) * 256,Natron::clamp(g) * 256,Natron::clamp(b) * 256);
@@ -465,8 +472,8 @@ ComboBox::setCurrentText(const QString & text)
     int index = setCurrentText_internal(text);
 
     if (index != -1) {
-        emit currentIndexChanged(index);
-        emit currentIndexChanged( getCurrentIndexText() );
+        Q_EMIT currentIndexChanged(index);
+        Q_EMIT currentIndexChanged( getCurrentIndexText() );
     }
 }
 
@@ -523,6 +530,9 @@ ComboBox::activeIndex() const
 QString
 ComboBox::getCurrentIndexText() const
 {
+    if (_actions.empty()) {
+        return QString();
+    }
     assert( _currentIndex < (int)_actions.size() );
 
     return _actions[_currentIndex]->text();
@@ -559,9 +569,9 @@ ComboBox::setCurrentIndex(int index)
         return;
     }
     if ( setCurrentIndex_internal(index) ) {
-        ///emit the signal only if the entry changed
-        emit currentIndexChanged(_currentIndex);
-        emit currentIndexChanged( getCurrentIndexText() );
+        ///Q_EMIT the signal only if the entry changed
+        Q_EMIT currentIndexChanged(_currentIndex);
+        Q_EMIT currentIndexChanged( getCurrentIndexText() );
     }
 }
 

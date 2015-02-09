@@ -9,6 +9,10 @@
  *
  */
 
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
 #include "Settings.h"
 
 #include <QtCore/QDebug>
@@ -85,8 +89,7 @@ Settings::initializeKnobs()
     _natronSettingsExist->setSecret(true);
     _generalTab->addKnob(_natronSettingsExist);
     
-   
-    
+
     _checkForUpdates = Natron::createKnob<Bool_Knob>(this, "Always check for updates on start-up");
     _checkForUpdates->setName("checkForUpdates");
     _checkForUpdates->setAnimationEnabled(false);
@@ -295,7 +298,7 @@ Settings::initializeKnobs()
     fontEntries.push_back("Droid Sans");
     fontEntries.push_back("System fonts...");
     _fontChoice->populateChoices(fontEntries);
-    _fontChoice->turnOffNewLine();
+    _fontChoice->setAddNewLine(false);
     _fontChoice->setAnimationEnabled(false);
     
     _appearanceTab->addKnob(_fontChoice);
@@ -303,7 +306,7 @@ Settings::initializeKnobs()
     _systemFontChoice = Natron::createKnob<Choice_Knob>(this, "System font");
     _systemFontChoice->setHintToolTip("List of all fonts available on your system");
     _systemFontChoice->setName("systemFont");
-    _systemFontChoice->turnOffNewLine();
+    _systemFontChoice->setAddNewLine(false);
     _systemFontChoice->setAnimationEnabled(false);
     _systemFontChoice->setSecret(true);
     _appearanceTab->addKnob(_systemFontChoice);
@@ -326,28 +329,28 @@ Settings::initializeKnobs()
     _sunkenColor->setName("sunken");
     _sunkenColor->setAnimationEnabled(false);
     _sunkenColor->setSimplified(true);
-    _sunkenColor->turnOffNewLine();
+    _sunkenColor->setAddNewLine(false);
     _guiColors->addKnob(_sunkenColor);
     
     _baseColor =  Natron::createKnob<Color_Knob>(this, "Base",3);
     _baseColor->setName("base");
     _baseColor->setAnimationEnabled(false);
     _baseColor->setSimplified(true);
-    _baseColor->turnOffNewLine();
+    _baseColor->setAddNewLine(false);
     _guiColors->addKnob(_baseColor);
     
     _raisedColor =  Natron::createKnob<Color_Knob>(this, "Raised",3);
     _raisedColor->setName("raised");
     _raisedColor->setAnimationEnabled(false);
     _raisedColor->setSimplified(true);
-    _raisedColor->turnOffNewLine();
+    _raisedColor->setAddNewLine(false);
     _guiColors->addKnob(_raisedColor);
     
     _selectionColor =  Natron::createKnob<Color_Knob>(this, "Selection",3);
     _selectionColor->setName("selection");
     _selectionColor->setAnimationEnabled(false);
     _selectionColor->setSimplified(true);
-    _selectionColor->turnOffNewLine();
+    _selectionColor->setAddNewLine(false);
     _guiColors->addKnob(_selectionColor);
     
     _textColor =  Natron::createKnob<Color_Knob>(this, "Text",3);
@@ -360,7 +363,7 @@ Settings::initializeKnobs()
     _timelinePlayheadColor->setName("timelinePlayhead");
     _timelinePlayheadColor->setAnimationEnabled(false);
     _timelinePlayheadColor->setSimplified(true);
-    _timelinePlayheadColor->turnOffNewLine();
+    _timelinePlayheadColor->setAddNewLine(false);
     _guiColors->addKnob(_timelinePlayheadColor);
     
     
@@ -368,21 +371,21 @@ Settings::initializeKnobs()
     _timelineBGColor->setName("timelineBG");
     _timelineBGColor->setAnimationEnabled(false);
     _timelineBGColor->setSimplified(true);
-    _timelineBGColor->turnOffNewLine();
+    _timelineBGColor->setAddNewLine(false);
     _guiColors->addKnob(_timelineBGColor);
     
     _timelineBoundsColor =  Natron::createKnob<Color_Knob>(this, "Timeline bounds",3);
     _timelineBoundsColor->setName("timelineBound");
     _timelineBoundsColor->setAnimationEnabled(false);
     _timelineBoundsColor->setSimplified(true);
-    _timelineBoundsColor->turnOffNewLine();
+    _timelineBoundsColor->setAddNewLine(false);
     _guiColors->addKnob(_timelineBoundsColor);
     
     _cachedFrameColor =  Natron::createKnob<Color_Knob>(this, "Cached frame",3);
     _cachedFrameColor->setName("cachedFrame");
     _cachedFrameColor->setAnimationEnabled(false);
     _cachedFrameColor->setSimplified(true);
-    _cachedFrameColor->turnOffNewLine();
+    _cachedFrameColor->setAddNewLine(false);
     _guiColors->addKnob(_cachedFrameColor);
     
     _diskCachedFrameColor =  Natron::createKnob<Color_Knob>(this, "Disk cached frame",3);
@@ -395,21 +398,28 @@ Settings::initializeKnobs()
     _interpolatedColor->setName("interpValue");
     _interpolatedColor->setAnimationEnabled(false);
     _interpolatedColor->setSimplified(true);
-    _interpolatedColor->turnOffNewLine();
+    _interpolatedColor->setAddNewLine(false);
     _guiColors->addKnob(_interpolatedColor);
     
     _keyframeColor =  Natron::createKnob<Color_Knob>(this, "Keyframe",3);
     _keyframeColor->setName("keyframe");
     _keyframeColor->setAnimationEnabled(false);
     _keyframeColor->setSimplified(true);
+    _keyframeColor->setAddNewLine(false);
     _guiColors->addKnob(_keyframeColor);
+    
+    _exprColor =  Natron::createKnob<Color_Knob>(this, "Expression",3);
+    _exprColor->setName("exprColor");
+    _exprColor->setAnimationEnabled(false);
+    _exprColor->setSimplified(true);
+    _guiColors->addKnob(_exprColor);
     
     
     _curveEditorBGColor =  Natron::createKnob<Color_Knob>(this, "Background color",3);
     _curveEditorBGColor->setName("curveEditorBG");
     _curveEditorBGColor->setAnimationEnabled(false);
     _curveEditorBGColor->setSimplified(true);
-    _curveEditorBGColor->turnOffNewLine();
+    _curveEditorBGColor->setAddNewLine(false);
     _curveEditorColors->addKnob(_curveEditorBGColor);
 
     
@@ -417,7 +427,7 @@ Settings::initializeKnobs()
     _gridColor->setName("curveditorGrid");
     _gridColor->setAnimationEnabled(false);
     _gridColor->setSimplified(true);
-    _gridColor->turnOffNewLine();
+    _gridColor->setAddNewLine(false);
     _curveEditorColors->addKnob(_gridColor);
 
 
@@ -610,12 +620,18 @@ Settings::initializeKnobs()
     _useInputAForMergeAutoConnect->setHintToolTip("If checked, upon creation of a new Merge node, the input A will be preferred "
                                                   "for auto-connection with another node instead of the input B.");
     _nodegraphTab->addKnob(_useInputAForMergeAutoConnect);
+    
+    _usePluginIconsInNodeGraph = Natron::createKnob<Bool_Knob>(this, "Display plug-in icon on node-graph");
+    _usePluginIconsInNodeGraph->setHintToolTip("When checked, each node that has a plug-in icon will display it in the node-graph."
+                                               "Changing this option will not affect already existing nodes, unless a restart of Natron is made.");
+    _usePluginIconsInNodeGraph->setAnimationEnabled(false);
+    _nodegraphTab->addKnob(_usePluginIconsInNodeGraph);
 
     _defaultNodeColor = Natron::createKnob<Color_Knob>(this, "Default node color",3);
     _defaultNodeColor->setName("defaultNodeColor");
     _defaultNodeColor->setAnimationEnabled(false);
     _defaultNodeColor->setSimplified(true);
-    _defaultNodeColor->turnOffNewLine();
+    _defaultNodeColor->setAddNewLine(false);
     _defaultNodeColor->setHintToolTip("The default color used for newly created nodes.");
 
     _nodegraphTab->addKnob(_defaultNodeColor);
@@ -625,7 +641,7 @@ Settings::initializeKnobs()
     _defaultBackdropColor->setName("backdropColor");
     _defaultBackdropColor->setAnimationEnabled(false);
     _defaultBackdropColor->setSimplified(true);
-    _defaultBackdropColor->turnOffNewLine();
+    _defaultBackdropColor->setAddNewLine(false);
     _defaultBackdropColor->setHintToolTip("The default color used for newly created backdrop nodes.");
     _nodegraphTab->addKnob(_defaultBackdropColor);
 
@@ -635,7 +651,7 @@ Settings::initializeKnobs()
     _defaultReaderColor->setName("readerColor");
     _defaultReaderColor->setAnimationEnabled(false);
     _defaultReaderColor->setSimplified(true);
-    _defaultReaderColor->turnOffNewLine();
+    _defaultReaderColor->setAddNewLine(false);
     _defaultReaderColor->setHintToolTip("The color used for newly created Reader nodes.");
     _nodegraphTab->addKnob(_defaultReaderColor);
 
@@ -643,7 +659,7 @@ Settings::initializeKnobs()
     _defaultWriterColor->setName("writerColor");
     _defaultWriterColor->setAnimationEnabled(false);
     _defaultWriterColor->setSimplified(true);
-    _defaultWriterColor->turnOffNewLine();
+    _defaultWriterColor->setAddNewLine(false);
     _defaultWriterColor->setHintToolTip("The color used for newly created Writer nodes.");
     _nodegraphTab->addKnob(_defaultWriterColor);
 
@@ -658,7 +674,7 @@ Settings::initializeKnobs()
     _defaultColorGroupColor->setName("colorNodesColor");
     _defaultColorGroupColor->setAnimationEnabled(false);
     _defaultColorGroupColor->setSimplified(true);
-    _defaultColorGroupColor->turnOffNewLine();
+    _defaultColorGroupColor->setAddNewLine(false);
     _defaultColorGroupColor->setHintToolTip("The color used for newly created Color nodes.");
     _nodegraphTab->addKnob(_defaultColorGroupColor);
 
@@ -666,7 +682,7 @@ Settings::initializeKnobs()
     _defaultFilterGroupColor->setName("filterNodesColor");
     _defaultFilterGroupColor->setAnimationEnabled(false);
     _defaultFilterGroupColor->setSimplified(true);
-    _defaultFilterGroupColor->turnOffNewLine();
+    _defaultFilterGroupColor->setAddNewLine(false);
     _defaultFilterGroupColor->setHintToolTip("The color used for newly created Filter nodes.");
     _nodegraphTab->addKnob(_defaultFilterGroupColor);
 
@@ -674,7 +690,7 @@ Settings::initializeKnobs()
     _defaultTransformGroupColor->setName("transformNodesColor");
     _defaultTransformGroupColor->setAnimationEnabled(false);
     _defaultTransformGroupColor->setSimplified(true);
-    _defaultTransformGroupColor->turnOffNewLine();
+    _defaultTransformGroupColor->setAddNewLine(false);
     _defaultTransformGroupColor->setHintToolTip("The color used for newly created Transform nodes.");
     _nodegraphTab->addKnob(_defaultTransformGroupColor);
 
@@ -682,7 +698,7 @@ Settings::initializeKnobs()
     _defaultTimeGroupColor->setName("timeNodesColor");
     _defaultTimeGroupColor->setAnimationEnabled(false);
     _defaultTimeGroupColor->setSimplified(true);
-    _defaultTimeGroupColor->turnOffNewLine();
+    _defaultTimeGroupColor->setAddNewLine(false);
     _defaultTimeGroupColor->setHintToolTip("The color used for newly created Time nodes.");
     _nodegraphTab->addKnob(_defaultTimeGroupColor);
 
@@ -697,7 +713,7 @@ Settings::initializeKnobs()
     _defaultKeyerGroupColor->setName("keyerNodesColor");
     _defaultKeyerGroupColor->setAnimationEnabled(false);
     _defaultKeyerGroupColor->setSimplified(true);
-    _defaultKeyerGroupColor->turnOffNewLine();
+    _defaultKeyerGroupColor->setAddNewLine(false);
     _defaultKeyerGroupColor->setHintToolTip("The color used for newly created Keyer nodes.");
     _nodegraphTab->addKnob(_defaultKeyerGroupColor);
 
@@ -705,7 +721,7 @@ Settings::initializeKnobs()
     _defaultChannelGroupColor->setName("channelNodesColor");
     _defaultChannelGroupColor->setAnimationEnabled(false);
     _defaultChannelGroupColor->setSimplified(true);
-    _defaultChannelGroupColor->turnOffNewLine();
+    _defaultChannelGroupColor->setAddNewLine(false);
     _defaultChannelGroupColor->setHintToolTip("The color used for newly created Channel nodes.");
     _nodegraphTab->addKnob(_defaultChannelGroupColor);
 
@@ -713,7 +729,7 @@ Settings::initializeKnobs()
     _defaultMergeGroupColor->setName("defaultMergeColor");
     _defaultMergeGroupColor->setAnimationEnabled(false);
     _defaultMergeGroupColor->setSimplified(true);
-    _defaultMergeGroupColor->turnOffNewLine();
+    _defaultMergeGroupColor->setAddNewLine(false);
     _defaultMergeGroupColor->setHintToolTip("The color used for newly created Merge nodes.");
     _nodegraphTab->addKnob(_defaultMergeGroupColor);
 
@@ -721,7 +737,7 @@ Settings::initializeKnobs()
     _defaultViewsGroupColor->setName("defaultViewsColor");
     _defaultViewsGroupColor->setAnimationEnabled(false);
     _defaultViewsGroupColor->setSimplified(true);
-    _defaultViewsGroupColor->turnOffNewLine();
+    _defaultViewsGroupColor->setAddNewLine(false);
     _defaultViewsGroupColor->setHintToolTip("The color used for newly created Views nodes.");
     _nodegraphTab->addKnob(_defaultViewsGroupColor);
 
@@ -761,7 +777,7 @@ Settings::initializeKnobs()
     }
 
     _maxRAMPercent->setHintToolTip(ramHint);
-    _maxRAMPercent->turnOffNewLine();
+    _maxRAMPercent->setAddNewLine(false);
     _cachingTab->addKnob(_maxRAMPercent);
 
     _maxRAMLabel = Natron::createKnob<String_Knob>(this, "");
@@ -778,7 +794,7 @@ Settings::initializeKnobs()
     _maxPlayBackPercent->setMaximum(100);
     _maxPlayBackPercent->setHintToolTip("This setting indicates the percentage of the maximum RAM used for caching "
                                         "dedicated to the playback cache. This is available for debugging purposes.");
-    _maxPlayBackPercent->turnOffNewLine();
+    _maxPlayBackPercent->setAddNewLine(false);
     _cachingTab->addKnob(_maxPlayBackPercent);
 
     _maxPlaybackLabel = Natron::createKnob<String_Knob>(this, "");
@@ -802,7 +818,7 @@ Settings::initializeKnobs()
                                            "you want to keep available on your computer for other usage. "
                                            "A low value may result in a massive slowdown and high disk usage."
                                            );
-    _unreachableRAMPercent->turnOffNewLine();
+    _unreachableRAMPercent->setAddNewLine(false);
     _cachingTab->addKnob(_unreachableRAMPercent);
     _unreachableRAMLabel = Natron::createKnob<String_Knob>(this, "");
     _unreachableRAMLabel->setName("unreachableRAMLabel");
@@ -855,9 +871,9 @@ Settings::initializeKnobs()
     _pluginsTab = Natron::createKnob<Page_Knob>(this, "Plug-ins");
     _pluginsTab->setName("plugins");
     
-    _extraPluginPaths = Natron::createKnob<Path_Knob>(this, "Extra plugins search paths");
+    _extraPluginPaths = Natron::createKnob<Path_Knob>(this, "OpenFX plugins search path");
     _extraPluginPaths->setName("extraPluginsSearchPaths");
-    _extraPluginPaths->setHintToolTip( std::string("Extra search paths where " NATRON_APPLICATION_NAME " should scan for plugins. "
+    _extraPluginPaths->setHintToolTip( std::string("Extra search paths where " NATRON_APPLICATION_NAME " should scan for OpenFX plugins. "
                                                    "Extra plugins search paths can also be specified using the OFX_PLUGIN_PATH environment variable.\n"
                                                    "The priority order for system-wide plugins, from high to low, is:\n"
                                                    "- plugins found in OFX_PLUGIN_PATH\n"
@@ -880,6 +896,14 @@ Settings::initializeKnobs()
     _extraPluginPaths->setMultiPath(true);
     _pluginsTab->addKnob(_extraPluginPaths);
     
+    _templatesPluginPaths = Natron::createKnob<Path_Knob>(this, "Group plugins search path");
+    _templatesPluginPaths->setName("groupPluginsSearchPath");
+    _templatesPluginPaths->setHintToolTip("Search path where " NATRON_APPLICATION_NAME " should scan for Python group scripts. "
+                                          "The search paths for groups can also be specified using the "
+                                          "NATRON_PLUGIN_PATH environment variable.");
+    _templatesPluginPaths->setMultiPath(true);
+    _pluginsTab->addKnob(_templatesPluginPaths);
+    
     _loadBundledPlugins = Natron::createKnob<Bool_Knob>(this, "Use bundled plugins");
     _loadBundledPlugins->setName("useBundledPlugins");
     _loadBundledPlugins->setHintToolTip("When checked, " NATRON_APPLICATION_NAME " also uses the plugins bundled "
@@ -892,11 +916,62 @@ Settings::initializeKnobs()
     _preferBundledPlugins = Natron::createKnob<Bool_Knob>(this, "Prefer bundled plugins over system-wide plugins");
     _preferBundledPlugins->setName("preferBundledPlugins");
     _preferBundledPlugins->setHintToolTip("When checked, and if \"Use bundled plugins\" is also checked, plugins bundled with the "
-                                          NATRON_APPLICATION_NAME " binary distribution will take precedence over system-wide plugins.");
+                                          NATRON_APPLICATION_NAME " binary distribution will take precedence over system-wide plugins "
+                                          "if they have the same internal ID.");
     _preferBundledPlugins->setAnimationEnabled(false);
     _pluginsTab->addKnob(_preferBundledPlugins);
     
     
+    _pythonPage = Natron::createKnob<Page_Knob>(this, "Python");
+    
+    
+    _onProjectCreated = Natron::createKnob<String_Knob>(this, "After project created");
+    _onProjectCreated->setName("afterProjectCreated");
+    _onProjectCreated->setHintToolTip("Callback called once a new project is created (this is never called when \"After project loaded\" is called.)\n"
+                                      "The variable \"app\" will be declared prior to calling the function, pointing to the current instance being "
+                                      "created.");
+    _onProjectCreated->setAnimationEnabled(false);
+    _pythonPage->addKnob(_onProjectCreated);
+    
+    
+    _defaultOnProjectLoaded = Natron::createKnob<String_Knob>(this, "Default after project loaded");
+    _defaultOnProjectLoaded->setName("defOnProjectLoaded");
+    _defaultOnProjectLoaded->setHintToolTip("The default afterProjectLoad callback that will be set for new projects.");
+    _defaultOnProjectLoaded->setAnimationEnabled(false);
+    _pythonPage->addKnob(_defaultOnProjectLoaded);
+    
+    _defaultOnProjectSave = Natron::createKnob<String_Knob>(this, "Default before project save");
+    _defaultOnProjectSave->setName("defOnProjectSave");
+    _defaultOnProjectSave->setHintToolTip("The default beforeProjectSave callback that will be set for new projects.");
+    _defaultOnProjectSave->setAnimationEnabled(false);
+    _pythonPage->addKnob(_defaultOnProjectSave);
+
+    
+    _defaultOnProjectClose = Natron::createKnob<String_Knob>(this, "Default before project close");
+    _defaultOnProjectClose->setName("defOnProjectClose");
+    _defaultOnProjectClose->setHintToolTip("The default beforeProjectClose callback that will be set for new projects.");
+    _defaultOnProjectClose->setAnimationEnabled(false);
+    _pythonPage->addKnob(_defaultOnProjectClose);
+
+    
+    _defaultOnNodeCreated = Natron::createKnob<String_Knob>(this, "Default after node created");
+    _defaultOnNodeCreated->setName("defOnNodeCreated");
+    _defaultOnNodeCreated->setHintToolTip("The default afterNodeCreated callback that will be set for new projects.");
+    _defaultOnNodeCreated->setAnimationEnabled(false);
+    _pythonPage->addKnob(_defaultOnNodeCreated);
+
+    
+    _defaultOnNodeDelete = Natron::createKnob<String_Knob>(this, "Default before node removal");
+    _defaultOnNodeDelete->setName("defOnNodeDelete");
+    _defaultOnNodeDelete->setHintToolTip("The default beforeNodeRemoval callback that will be set for new projects.");
+    _defaultOnNodeDelete->setAnimationEnabled(false);
+    _pythonPage->addKnob(_defaultOnNodeDelete);
+
+    _echoVariableDeclarationToPython = Natron::createKnob<Bool_Knob>(this, "Print auto-declared variables in the Script Editor");
+    _echoVariableDeclarationToPython->setHintToolTip("When checked, Natron will print in the Script Editor all variables that are "
+                                                     "automatically declared, such as the app variable or node attributes.");
+    _echoVariableDeclarationToPython->setAnimationEnabled(false);
+    _pythonPage->addKnob(_echoVariableDeclarationToPython);
     setDefaultValues();
 } // initializeKnobs
 
@@ -971,6 +1046,7 @@ Settings::setDefaultValues()
     _maxDiskCacheNodeGB->setDefaultValue(10,0);
     setCachingLabels();
     _autoTurbo->setDefaultValue(false);
+    _usePluginIconsInNodeGraph->setDefaultValue(true);
     _defaultNodeColor->setDefaultValue(0.7,0);
     _defaultNodeColor->setDefaultValue(0.7,1);
     _defaultNodeColor->setDefaultValue(0.7,2);
@@ -1032,6 +1108,8 @@ Settings::setDefaultValues()
     _defaultDeepGroupColor->setDefaultValue(0.,0);
     _defaultDeepGroupColor->setDefaultValue(0.,1);
     _defaultDeepGroupColor->setDefaultValue(0.38,2);
+    
+    _echoVariableDeclarationToPython->setDefaultValue(true);
 
     
     _sunkenColor->setDefaultValue(0.15,0);
@@ -1081,6 +1159,10 @@ Settings::setDefaultValues()
     _keyframeColor->setDefaultValue(0.08,0);
     _keyframeColor->setDefaultValue(0.38,1);
     _keyframeColor->setDefaultValue(0.97,2);
+    
+    _exprColor->setDefaultValue(0.7,0);
+    _exprColor->setDefaultValue(0.78,1);
+    _exprColor->setDefaultValue(0.39,2);
     
     _curveEditorBGColor->setDefaultValue(0.,0);
     _curveEditorBGColor->setDefaultValue(0.,1);
@@ -1339,22 +1421,23 @@ Settings::onKnobValueChanged(KnobI* k,
         std::map<int,AppInstanceRef> apps = appPTR->getAppInstances();
         bool isFirstViewer = true;
         for (std::map<int,AppInstanceRef>::iterator it = apps.begin(); it != apps.end(); ++it) {
-            const std::vector<boost::shared_ptr<Node> > nodes = it->second.app->getProject()->getCurrentNodes();
-            for (U32 i = 0; i < nodes.size(); ++i) {
-                assert(nodes[i]);
-                ViewerInstance* n = dynamic_cast<ViewerInstance*>( nodes[i]->getLiveInstance() );
-                if (n) {
-                    if (isFirstViewer) {
-                        if ( !n->supportsGLSL() && (_texturesMode->getValue() != 0) ) {
-                            Natron::errorDialog( QObject::tr("Viewer").toStdString(), QObject::tr("You need OpenGL GLSL in order to use 32 bit fp textures.\n"
-                                                                                                  "Reverting to 8bits textures.").toStdString() );
-                            _texturesMode->setValue(0,0);
-
-                            return;
-                        }
+            
+            std::list<ViewerInstance*> allViewers;
+            it->second.app->getProject()->getViewers(&allViewers);
+            for (std::list<ViewerInstance*>::iterator it = allViewers.begin(); it != allViewers.end(); ++it) {
+                
+                
+                if (isFirstViewer) {
+                    if ( !(*it)->supportsGLSL() && (_texturesMode->getValue() != 0) ) {
+                        Natron::errorDialog( QObject::tr("Viewer").toStdString(), QObject::tr("You need OpenGL GLSL in order to use 32 bit fp textures.\n"
+                                                                                              "Reverting to 8bits textures.").toStdString() );
+                        _texturesMode->setValue(0,0);
+                        
+                        return;
                     }
-                    n->renderCurrentFrame(true);
                 }
+                (*it)->renderCurrentFrame(true);
+                
             }
         }
     } else if ( k == _maxViewerDiskCacheGB.get() ) {
@@ -1797,7 +1880,7 @@ Settings::populatePluginsTab(std::vector<Natron::Plugin*>& pluginsToIgnore)
         pluginLabel->setName(it->first);
         pluginLabel->setAnimationEnabled(false);
         pluginLabel->setDefaultValue(pluginName);
-        pluginLabel->turnOffNewLine();
+        pluginLabel->setAddNewLine(false);
         pluginLabel->hideDescription();
         pluginLabel->setIsPersistant(false);
         if (group) {
@@ -1810,7 +1893,7 @@ Settings::populatePluginsTab(std::vector<Natron::Plugin*>& pluginsToIgnore)
         pluginActivation->setDefaultValue(filterDefaultActivatedPlugin(plugin->getPluginID()));
         pluginActivation->setName(it->first + ".enabled");
         pluginActivation->setAnimationEnabled(false);
-        pluginActivation->turnOffNewLine();
+        pluginActivation->setAddNewLine(false);
         pluginActivation->setHintToolTip("When checked, " + pluginName + " will be activated and you can create a node using this plug-in in " NATRON_APPLICATION_NAME ". When unchecked, you'll be unable to create a node for this plug-in. Changing this parameter requires a restart of the application.");
         if (group) {
             group->addKnob(pluginActivation);
@@ -1904,49 +1987,10 @@ Settings::getFileFormatsForWritingAndWriter(std::map<std::string,std::string>* f
     }
 }
 
-QStringList
-Settings::getPluginsExtraSearchPaths() const
+void
+Settings::getOpenFXPluginsSearchPaths(std::list<std::string>* paths) const
 {
-    std::string paths = _extraPluginPaths->getValue().c_str();
-    QStringList variables;
-    
-    std::string startNameTag(NATRON_ENV_VAR_NAME_START_TAG);
-    std::string endNameTag(NATRON_ENV_VAR_NAME_END_TAG);
-    std::string startValueTag(NATRON_ENV_VAR_VALUE_START_TAG);
-    std::string endValueTag(NATRON_ENV_VAR_VALUE_END_TAG);
-    
-    size_t i = paths.find(startNameTag);
-    while (i != std::string::npos) {
-        i += startNameTag.size();
-        assert(i < paths.size());
-        size_t endNamePos = paths.find(endNameTag,i);
-        assert(endNamePos != std::string::npos && endNamePos < paths.size());
-        
-        std::string name,value;
-        while (i < endNamePos) {
-            name.push_back(paths[i]);
-            ++i;
-        }
-        
-        i = paths.find(startValueTag,i);
-        i += startValueTag.size();
-        assert(i != std::string::npos && i < paths.size());
-        
-        size_t endValuePos = paths.find(endValueTag,i);
-        assert(endValuePos != std::string::npos && endValuePos < paths.size());
-        
-        while (i < endValuePos) {
-            value.push_back(paths.at(i));
-            ++i;
-        }
-        
-        // In order to use XML tags, the text inside the tags has to be unescaped.
-        variables.push_back(Project::unescapeXML(value).c_str());
-        
-        i = paths.find(startNameTag,i);
-    }
-
-    return variables;
+    _extraPluginPaths->getPaths(paths);
 }
 
 void
@@ -2426,6 +2470,69 @@ Settings::areOptionalInputsAutoHidden() const
 }
 
 void
+Settings::getPythonGroupsSearchPaths(std::list<std::string>* templates) const
+{
+    _templatesPluginPaths->getPaths(templates);
+}
+
+void
+Settings::appendPythonGroupsPath(const std::string& path)
+{
+    _templatesPluginPaths->appendPath(path);
+    QSettings settings(NATRON_ORGANIZATION_NAME,NATRON_APPLICATION_NAME);
+    settings.setValue(_templatesPluginPaths->getName().c_str(), QVariant(_templatesPluginPaths->getValue(0).c_str()));
+}
+
+std::string
+Settings::getDefaultOnProjectLoadedCB()
+{
+    return _defaultOnProjectLoaded->getValue();
+}
+
+std::string
+Settings::getDefaultOnProjectSaveCB()
+{
+    return _defaultOnProjectSave->getValue();
+}
+
+std::string
+Settings::getDefaultOnProjectCloseCB()
+{
+    return _defaultOnProjectClose->getValue();
+}
+
+std::string
+Settings::getDefaultOnNodeCreatedCB()
+{
+    return _defaultOnNodeCreated->getValue();
+}
+
+std::string
+Settings::getDefaultOnNodeDeleteCB()
+{
+    return _defaultOnNodeDelete->getValue();
+}
+
+std::string
+Settings::getOnProjectCreatedCB()
+{
+    return _onProjectCreated->getValue();
+}
+
+bool
+Settings::isAutoDeclaredVariablePrintActivated() const
+{
+    return _echoVariableDeclarationToPython->getValue();
+}
+
+bool
+Settings::isPluginIconActivatedOnNodeGraph() const
+{
+    return _usePluginIconsInNodeGraph->getValue();
+
+}
+
+void
 Settings::getSunkenColor(double* r,double* g,double* b) const
 {
     *r = _sunkenColor->getValue(0);
@@ -2467,6 +2574,14 @@ Settings::getKeyframeColor(double* r,double* g,double* b) const
     *r = _keyframeColor->getValue(0);
     *g = _keyframeColor->getValue(1);
     *b = _keyframeColor->getValue(2);
+}
+
+void
+Settings::getExprColor(double* r,double* g,double* b) const
+{
+    *r = _exprColor->getValue(0);
+    *g = _exprColor->getValue(1);
+    *b = _exprColor->getValue(2);
 }
 
 void

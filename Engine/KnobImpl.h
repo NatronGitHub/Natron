@@ -12,15 +12,30 @@
 #ifndef KNOBIMPL_H
 #define KNOBIMPL_H
 
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
 #include "Knob.h"
 
 #include <cfloat>
 #include <stdexcept>
 #include <string>
-#ifndef Q_MOC_RUN
+
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/math/special_functions/fpclassify.hpp>
 #endif
+
 #include <QString>
+#include <QDebug>
+
+#include "Global/Macros.h"
+CLANG_DIAG_OFF(mismatched-tags)
+GCC_DIAG_OFF(unused-parameter)
+#include <shiboken.h>
+CLANG_DIAG_ON(mismatched-tags)
+GCC_DIAG_ON(unused-parameter)
+
 #include "Engine/Curve.h"
 #include "Engine/AppInstance.h"
 #include "Engine/Project.h"
@@ -283,6 +298,53 @@ Knob<bool>::clampToMinMax(const bool& value,int /*dimension*/) const
     return value;
 }
 
+template <>
+int
+Knob<int>::pyObjectToType(PyObject* o) const
+{
+    return (int)PyInt_AsLong(o);
+}
+
+template <>
+bool
+Knob<bool>::pyObjectToType(PyObject* o) const
+{
+    if (PyObject_IsTrue(o) == 1) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+template <>
+double
+Knob<double>::pyObjectToType(PyObject* o) const
+{
+    return (double)PyFloat_AsDouble(o);
+}
+
+template <>
+std::string
+Knob<std::string>::pyObjectToType(PyObject* o) const
+{
+    return std::string(Natron::PY3String_asString(o));
+}
+
+template <typename T>
+T Knob<T>::evaluateExpression(int dimension) const
+{
+    PyObject *ret;
+    try {
+        ret = executeExpression(dimension);
+    } catch (...) {
+        return T();
+    }
+    
+    T val =  pyObjectToType(ret);
+    Py_DECREF(ret); //< new ref
+    return val;
+}
+
 //Declare the specialization before defining it to avoid the following
 //error: explicit specialization of 'getValueAtTime' after instantiation
 template<>
@@ -292,6 +354,17 @@ template<>
 std::string
 Knob<std::string>::getValue(int dimension,bool /*clampToMinMax*/) const
 {
+    std::string hasExpr = getExpression(dimension);
+    if (!hasExpr.empty()) {
+        QMutexLocker k(&_expressionRecursionLevelMutex);
+        if (_expressionsRecursionLevel == 0) {
+            ++_expressionsRecursionLevel;
+            std::string ret = evaluateExpression(dimension);
+            --_expressionsRecursionLevel;
+            return ret;
+        }
+    }
+    
     if ( isAnimated(dimension) ) {
         SequenceTime time;
         if ( !getHolder() || !getHolder()->getApp() ) {
@@ -330,6 +403,26 @@ template <typename T>
 T
 Knob<T>::getValue(int dimension,bool clamp) const
 {
+    std::string hasExpr = getExpression(dimension);
+    if (!hasExpr.empty()) {
+        
+        ///Prevent recursive call of the expression
+        QMutexLocker k(&_expressionRecursionLevelMutex);
+        if (_expressionsRecursionLevel == 0) {
+            ++_expressionsRecursionLevel;
+            T ret = evaluateExpression(dimension);
+            --_expressionsRecursionLevel;
+            
+            
+            if (clamp) {
+                return clampToMinMax(ret,dimension);
+            } else {
+                return ret;
+            }
+        }
+      
+    }
+    
     if ( isAnimated(dimension) ) {
         return getValueAtTime(getCurrentTime(), dimension,clamp);
     }
@@ -366,11 +459,25 @@ std::string
 Knob<std::string>::getValueAtTime(double time,
                                   int dimension,bool /*clampToMinMax*/,bool byPassMaster) const
 {
+    
     if ( ( dimension > getDimension() ) || (dimension < 0) ) {
         throw std::invalid_argument("Knob::getValueAtTime(): Dimension out of range");
     }
 
-
+    std::string hasExpr = getExpression(dimension);
+    if (!hasExpr.empty()) {
+        
+        ///Prevent recursive call of the expression
+        QMutexLocker k(&_expressionRecursionLevelMutex);
+        if (_expressionsRecursionLevel == 0) {
+            ++_expressionsRecursionLevel;
+            std::string ret =  evaluateExpression(dimension);
+            --_expressionsRecursionLevel;
+            return ret;
+        }
+        
+    }
+    
     ///if the knob is slaved to another knob, returns the other knob value
     std::pair<int,boost::shared_ptr<KnobI> > master = getMaster(dimension);
     if (!byPassMaster && master.second) {
@@ -423,8 +530,27 @@ Knob<T>::getValueAtTime(double time,
     if ( ( dimension > getDimension() ) || (dimension < 0) ) {
         throw std::invalid_argument("Knob::getValueAtTime(): Dimension out of range");
     }
+    
+    std::string hasExpr = getExpression(dimension);
+    if (!hasExpr.empty()) {
+        
+        ///Prevent recursive call of the expression
+        QMutexLocker k(&_expressionRecursionLevelMutex);
+        if (_expressionsRecursionLevel == 0) {
 
-
+            ++_expressionsRecursionLevel;
+            T ret = evaluateExpression(dimension);
+            --_expressionsRecursionLevel;
+            
+            if (clamp) {
+                return clampToMinMax(ret,dimension);
+            } else {
+                return ret;
+            }
+            
+        }
+    }
+    
     ///if the knob is slaved to another knob, returns the other knob value
     std::pair<int,boost::shared_ptr<KnobI> > master = getMaster(dimension);
     if (!byPassMaster && master.second) {
@@ -890,7 +1016,7 @@ Knob<T>::unSlave(int dimension,
         }
     }
     if (getHolder() && _signalSlotHandler) {
-        getHolder()->onKnobSlaved( _signalSlotHandler->getKnob(),dimension,false, master.second->getHolder() );
+        getHolder()->onKnobSlaved( this, master.second.get(),dimension,false );
     }
     evaluateValueChange(dimension, reason);
 }
@@ -951,6 +1077,9 @@ Knob<std::string>::unSlave(int dimension,
     resetMaster(dimension);
 
     _signalSlotHandler->s_valueChanged(dimension,reason);
+    if (getHolder() && _signalSlotHandler) {
+        getHolder()->onKnobSlaved( this,master.second.get(),dimension,false );
+    }
     if (reason == Natron::eValueChangedReasonPluginEdited) {
         _signalSlotHandler->s_knobSlaved(dimension, false);
     }
@@ -1249,7 +1378,6 @@ Knob<T>::onTimeChanged(SequenceTime /*time*/)
         
         if (_signalSlotHandler && isAnimated(i)) {
             _signalSlotHandler->s_valueChanged(i, Natron::eValueChangedReasonTimeChanged);
-            //_signalSlotHandler->s_updateSlaves(i);
         }
         checkAnimationLevel(i);
     }
@@ -1358,6 +1486,8 @@ Knob<double>::resetToDefaultValue(int dimension)
     Double_Knob* isDouble = dynamic_cast<Double_Knob*>(this);
     double def;
     
+    clearExpression(dimension);
+    
     {
         QReadLocker l(&_valueMutex);
         def = _defaultValues[dimension];
@@ -1379,7 +1509,7 @@ Knob<double>::resetToDefaultValue(int dimension)
 
 template<>
 void
-Knob<int>::cloneValues(KnobI* other)
+Knob<int>::cloneValues(KnobI* other, int dimension)
 {
     Knob<int>* isInt = dynamic_cast<Knob<int>* >(other);
     Knob<bool>* isBool = dynamic_cast<Knob<bool>* >(other);
@@ -1391,95 +1521,109 @@ Knob<int>::cloneValues(KnobI* other)
     } else if (isBool) {
         std::vector<bool> v = isBool->getValueForEachDimension_mt_safe_vector();
         assert( v.size() == _values.size() );
-        for (U32 i = 0; i < v.size(); ++i) {
-            _values[i] = v[i];
+        for (unsigned i = 0; i < v.size(); ++i) {
+            if ((int)i == dimension || dimension == -1) {
+                _values[i] = v[i];
+            }
         }
     } else if (isDouble) {
         std::vector<double> v = isDouble->getValueForEachDimension_mt_safe_vector();
         assert( v.size() == _values.size() );
-        for (U32 i = 0; i < v.size(); ++i) {
-            _values[i] = v[i];
+        for (unsigned i = 0; i < v.size(); ++i) {
+            if ((int)i == dimension || dimension == -1) {
+                _values[i] = v[i];
+            }
         }
     }
 }
 
 template<>
 void
-Knob<bool>::cloneValues(KnobI* other)
+Knob<bool>::cloneValues(KnobI* other,int dimension)
 {
     Knob<int>* isInt = dynamic_cast<Knob<int>* >(other);
     Knob<bool>* isBool = dynamic_cast<Knob<bool>* >(other);
     Knob<double>* isDouble = dynamic_cast<Knob<double>* >(other);
+    
+    int dimMin = std::min( getDimension(), other->getDimension() );
     assert(other->isTypePOD() && (isInt || isBool || isDouble)); //< other data types aren't supported
     QWriteLocker k(&_valueMutex);
     if (isInt) {
         std::vector<int> v = isInt->getValueForEachDimension_mt_safe_vector();
-        assert( v.size() == _values.size() );
-        for (U32 i = 0; i < v.size(); ++i) {
-            _values[i] = v[i];
+        
+        for (int i = 0; i < dimMin; ++i) {
+            if (i == dimension || dimension == -1) {
+                _values[i] = v[i];
+            }
         }
     } else if (isBool) {
         _values = isBool->getValueForEachDimension_mt_safe_vector();
     } else if (isDouble) {
         std::vector<double> v = isDouble->getValueForEachDimension_mt_safe_vector();
-        assert( v.size() == _values.size() );
-        for (U32 i = 0; i < v.size(); ++i) {
-            _values[i] = v[i];
+
+        for (int i = 0; i < dimMin; ++i) {
+            if (i == dimension || dimension == -1) {
+                _values[i] = v[i];
+            }
         }
     }
 }
 
 template<>
 void
-Knob<double>::cloneValues(KnobI* other)
+Knob<double>::cloneValues(KnobI* other, int dimension)
 {
     Knob<int>* isInt = dynamic_cast<Knob<int>* >(other);
     Knob<bool>* isBool = dynamic_cast<Knob<bool>* >(other);
     Knob<double>* isDouble = dynamic_cast<Knob<double>* >(other);
     
+    int dimMin = std::min( getDimension(), other->getDimension() );
     ///can only clone pod
     assert(other->isTypePOD() && (isInt || isBool || isDouble)); //< other data types aren't supported
     QWriteLocker k(&_valueMutex);
     if (isInt) {
         std::vector<int> v = isInt->getValueForEachDimension_mt_safe_vector();
-        //std::vector<int> defaultV = isInt->getDefaultValues_mt_safe();
-        //assert(defaultV.size() == v.size());
-        assert( v.size() == _values.size() );
-        for (U32 i = 0; i < v.size(); ++i) {
-            _values[i] = v[i];
-            //_defaultValues[i] = defaultV[i];
+
+        for (int i = 0; i < dimMin; ++i) {
+            if (i == dimension || dimension == -1) {
+                _values[i] = v[i];
+            }
         }
     } else if (isBool) {
         std::vector<bool> v = isBool->getValueForEachDimension_mt_safe_vector();
-        //std::vector<bool> defaultV = isBool->getDefaultValues_mt_safe();
-        //assert(defaultV.size() == v.size());
-        assert( v.size() == _values.size() );
-        for (U32 i = 0; i < v.size(); ++i) {
-            _values[i] = v[i];
-            //_defaultValues[i] = defaultV[i];
+
+        int dimMin = std::min( getDimension(), other->getDimension() );
+        for (int i = 0; i < dimMin; ++i) {
+            if (i == dimension || dimension == -1) {
+                _values[i] = v[i];
+            }
         }
     } else if (isDouble) {
-        _values = isDouble->getValueForEachDimension_mt_safe_vector();
-        //_defaultValues = isDouble->getDefaultValues_mt_safe();
+        std::vector<double> v = isDouble->getValueForEachDimension_mt_safe_vector();
+        
+        for (int i = 0; i < dimMin; ++i) {
+            if (i == dimension || dimension == -1) {
+                _values[i] = v[i];
+            }
+        }
     }
 }
 
 template<>
 void
-Knob<std::string>::cloneValues(KnobI* other)
+Knob<std::string>::cloneValues(KnobI* other, int dimension)
 {
     Knob<std::string>* isString = dynamic_cast<Knob<std::string>* >(other);
-    
+    int dimMin = std::min( getDimension(), other->getDimension() );
     ///Can only clone strings
     assert(isString);
     if (isString) {
         QWriteLocker k(&_valueMutex);
         std::vector<std::string> v = isString->getValueForEachDimension_mt_safe_vector();
-        //std::vector<std::string> defaultV = isString->getDefaultValues_mt_safe();
-        //assert(defaultV.size() == v.size());
-        for (U32 i = 0; i < v.size(); ++i) {
-            _values[i] = v[i];
-            //_defaultValues[i] = defaultV[i];
+        for (int i = 0; i < dimMin; ++i) {
+            if (i == dimension || dimension == -1) {
+                _values[i] = v[i];
+            }
         }
     }
 }
@@ -1493,7 +1637,8 @@ Knob<T>::clone(KnobI* other,
         return;
     }
     int dimMin = std::min( getDimension(), other->getDimension() );
-    cloneValues(other);
+    cloneValues(other,dimension);
+    cloneExpressions(other,dimension);
     for (int i = 0; i < dimMin; ++i) {
         if (i == dimension || dimension == -1) {
             boost::shared_ptr<Curve> thisCurve = getCurve(i,true);
@@ -1529,7 +1674,8 @@ Knob<T>::clone(KnobI* other,
     if (other == this) {
         return;
     }
-    cloneValues(other);
+    cloneValues(other,dimension);
+    cloneExpressions(other,dimension);
     int dimMin = std::min( getDimension(), other->getDimension() );
     for (int i = 0; i < dimMin; ++i) {
         if (dimension == -1 || i == dimension) {
@@ -1563,7 +1709,8 @@ Knob<T>::cloneAndUpdateGui(KnobI* other,int dimension)
         return;
     }
     int dimMin = std::min( getDimension(), other->getDimension() );
-    cloneValues(other);
+    cloneValues(other,dimension);
+    cloneExpressions(other);
     for (int i = 0; i < dimMin; ++i) {
         if (dimension == -1 || i == dimension) {
             if (_signalSlotHandler) {
@@ -1700,6 +1847,12 @@ template <typename T>
 bool Knob<T>::hasModifications() const
 {
     for (int i = 0; i < getDimension(); ++i) {
+        
+        std::string expr = getExpression(i);
+        if (!expr.empty()) {
+            return true;
+        }
+        
         boost::shared_ptr<Curve> c = getCurve(i);
         if (c && c->isAnimated()) {
             return true;
@@ -1712,6 +1865,30 @@ bool Knob<T>::hasModifications() const
             return true;
         }
     }
+    return false;
+}
+
+template <typename T>
+bool Knob<T>::hasModifications(int dimension) const
+{
+    boost::shared_ptr<Curve> c = getCurve(dimension);
+    
+    std::string expr = getExpression(dimension);
+    if (!expr.empty()) {
+        return true;
+    }
+    
+    if (c && c->isAnimated()) {
+        return true;
+    }
+    
+    ///Check expressions too in the future
+    
+    QReadLocker k(&_valueMutex);
+    if (_values[dimension] != _defaultValues[dimension]) {
+        return true;
+    }
+    
     return false;
 }
 

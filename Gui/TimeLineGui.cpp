@@ -8,6 +8,10 @@
  *
  */
 
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
 #include "TimeLineGui.h"
 
 #include <cmath>
@@ -590,7 +594,7 @@ TimeLineGui::seek(SequenceTime time)
 {
     if ( time != _imp->_timeline->currentFrame() ) {
         _imp->_gui->getApp()->setLastViewerUsingTimeline(_imp->_viewer->getNode());
-        emit frameChanged(time);
+        Q_EMIT frameChanged(time);
         update();
     }
 }
@@ -646,8 +650,9 @@ TimeLineGui::mouseMoveEvent(QMouseEvent* e)
     bool onEditingFinishedOnly = appPTR->getCurrentSettings()->getRenderOnEditingFinishedOnly();
     if (_imp->_state == eTimelineStateDraggingCursor && !onEditingFinishedOnly) {
         if ( tseq != _imp->_timeline->currentFrame() ) {
+            
             _imp->_gui->getApp()->setLastViewerUsingTimeline(_imp->_viewer->getNode());
-            emit frameChanged(tseq);
+            Q_EMIT frameChanged(tseq);
         }
         distortViewPort = true;
         _imp->_alphaCursor = false;
@@ -657,6 +662,7 @@ TimeLineGui::mouseMoveEvent(QMouseEvent* e)
         int distFromFirst = std::abs(e->x() - firstPos);
         int distFromLast = std::abs(e->x() - lastPos);
         if (distFromFirst  > distFromLast) { // moving last frame anchor
+
             if (leftBound <= tseq) {
                 setBoundariesInternal(leftBound, tseq, true);
             }
@@ -713,8 +719,9 @@ TimeLineGui::mouseReleaseEvent(QMouseEvent* e)
             double t = toTimeLineCoordinates(e->x(),0).x();
             SequenceTime tseq = std::floor(t + 0.5);
             if ( tseq != _imp->_timeline->currentFrame() ) {
+
                 _imp->_gui->getApp()->setLastViewerUsingTimeline(_imp->_viewer->getNode());
-                emit frameChanged(tseq);
+                Q_EMIT frameChanged(tseq);
             }
 
         }
@@ -757,7 +764,7 @@ TimeLineGui::setBoundariesInternal(SequenceTime first, SequenceTime last,bool em
             _imp->rightBoundary = last;
         }
         if (emitSignal) {
-            emit boundariesChanged(first, last);
+            Q_EMIT boundariesChanged(first, last);
         } else {
             update();
         }
@@ -769,6 +776,7 @@ void
 TimeLineGui::setBoundaries(SequenceTime first,
                            SequenceTime last)
 {
+
     setBoundariesInternal(first, last, false);
    
 }

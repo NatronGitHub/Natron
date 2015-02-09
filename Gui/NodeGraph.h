@@ -12,6 +12,10 @@
 #ifndef NATRON_GUI_NODEGRAPH_H_
 #define NATRON_GUI_NODEGRAPH_H_
 
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
@@ -20,12 +24,14 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
-#ifndef Q_MOC_RUN
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/noncopyable.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #endif
 
+#include "Engine/NodeGraphI.h"
+#include "Engine/ScriptObject.h"
 #include "Global/GlobalDefines.h"
 
 class QVBoxLayout;
@@ -40,24 +46,26 @@ class QDragEnterEvent;
 class NodeSerialization;
 class NodeGuiSerialization;
 class NodeBackDropSerialization;
-class NodeBackDrop;
+class NodeCollection;
 struct NodeGraphPrivate;
 namespace Natron {
 class Node;
 }
 
-class NodeGraph
-    : public QGraphicsView, public boost::noncopyable
+class NodeGraph : public QGraphicsView, public NodeGraphI, public ScriptObject, public boost::noncopyable
 {
     Q_OBJECT
 
 public:
 
     explicit NodeGraph(Gui* gui,
+                       const boost::shared_ptr<NodeCollection>& group,
                        QGraphicsScene* scene = 0,
                        QWidget *parent = 0);
 
-    virtual ~NodeGraph() OVERRIDE;
+    virtual ~NodeGraph();
+    
+    boost::shared_ptr<NodeCollection> getGroup() const;
 
     const std::list< boost::shared_ptr<NodeGui> > & getSelectedNodes() const;
     boost::shared_ptr<NodeGui> createNodeGUI(QVBoxLayout *dockContainer,const boost::shared_ptr<Natron::Node> & node,bool requestedByLoad,
@@ -68,8 +76,6 @@ public:
     void setSelection(const std::list<boost::shared_ptr<NodeGui> >& nodes);
     
     void clearSelection();
-
-    void selectBackDrop(NodeBackDrop* bd,bool addToSelection);
 
     ///The visible portion of the graph, in scene coordinates.
     QRectF visibleSceneRect() const;
@@ -108,33 +114,11 @@ public:
 
     void centerOnItem(QGraphicsItem* item);
 
-    boost::shared_ptr<NodeGui> getNodeGuiSharedPtr(const NodeGui* n) const;
-
     void setUndoRedoStackLimit(int limit);
 
     void deleteNodepluginsly(boost::shared_ptr<NodeGui> n);
 
-    NodeBackDrop* createBackDrop(QVBoxLayout *dockContainer,bool requestedByLoad,const NodeBackDropSerialization & serialization);
-
-    ///Returns true if it already exists
-    bool checkIfBackDropNameExists(const QString & n,const NodeBackDrop* bd) const;
-
-    bool checkIfNodeNameExists(const std::string & n,const NodeGui* node) const;
-
-    std::list<NodeBackDrop*> getBackDrops() const;
-    std::list<NodeBackDrop*> getActiveBackDrops() const;
-
-    /**
-     * @brief This function just inserts the given backdrop in the list
-     **/
-    void insertNewBackDrop(NodeBackDrop* bd);
-
-    /**
-     * @brief This function just removes the given backdrop from the list, it does not delete it or anything.
-     **/
-    void removeBackDrop(NodeBackDrop* bd);
-
-    std::list<boost::shared_ptr<NodeGui> > getNodesWithinBackDrop(const NodeBackDrop* bd) const;
+    std::list<boost::shared_ptr<NodeGui> > getNodesWithinBackDrop(const boost::shared_ptr<NodeGui>& node) const;
 
     void selectAllNodes(bool onlyInVisiblePortion);
 
@@ -150,8 +134,13 @@ public:
     void pushUndoCommand(QUndoCommand* command);
     
     bool areOptionalInputsAutoHidden() const;
+    
+    void copyNodesAndCreateInGroup(const std::list<boost::shared_ptr<NodeGui> >& nodes,
+                                   const boost::shared_ptr<NodeCollection>& group);
 
-   public slots:
+    virtual void onNodesCleared() OVERRIDE FINAL;
+    
+   public Q_SLOTS:
 
     void deleteSelection();
 
@@ -173,11 +162,11 @@ public:
 
     void toggleKnobLinksVisible();
 
-    void onProjectNodesCleared();
-
     void switchInputs1and2ForSelectedNodes();
     
     void extractSelectedNode();
+    
+    void createGroupFromSelection();
 
     ///All these actions also work for backdrops
     /////////////////////////////////////////////
@@ -215,6 +204,9 @@ public:
     void onNodeNameEditDialogFinished();
     
     void toggleAutoTurbo();
+    
+    void onGroupNameChanged(const QString& name);
+    void onGroupScriptNameChanged(const QString& name);
     
 private:
 
@@ -270,7 +262,7 @@ public:
     
     virtual ~FindNodeDialog();
     
-public slots:
+public Q_SLOTS:
     
     void onOkClicked();
     void onCancelClicked();
@@ -297,7 +289,7 @@ class EditNodeNameDialog: public QDialog
     
 public:
     
-    EditNodeNameDialog(NodeGraph* graph,const boost::shared_ptr<NodeGui>& node,NodeBackDrop* bd,QWidget* parent);
+    EditNodeNameDialog(NodeGraph* graph,const boost::shared_ptr<NodeGui>& node,QWidget* parent);
     
     virtual ~EditNodeNameDialog();
     

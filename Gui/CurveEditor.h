@@ -11,7 +11,12 @@
 
 #ifndef CURVEEDITOR_H
 #define CURVEEDITOR_H
-#ifndef Q_MOC_RUN
+
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
 #endif
@@ -24,6 +29,8 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Global/GlobalDefines.h"
 #include "Global/Macros.h"
+
+#include "Engine/ScriptObject.h"
 
 #include "Gui/CurveSelection.h"
 #include "Gui/CurveEditorUndoRedo.h"
@@ -117,9 +124,10 @@ public:
     boost::shared_ptr<KnobI> getInternalKnob() const WARN_UNUSED_RETURN;
     
     void checkVisibleState(bool autoSelectOnShow);
-    
-public slots:
 
+public Q_SLOTS:
+    
+    
     /**
      * @brief This is invoked everytimes the knob has a keyframe set or removed, to determine whether we need
      * to keep this element in the tree or not.
@@ -177,7 +185,7 @@ public:
     NodeCurveEditorElement* findElement(KnobGui* knob,int dimension) const WARN_UNUSED_RETURN;
     NodeCurveEditorElement* findElement(QTreeWidgetItem* item) const WARN_UNUSED_RETURN;
 
-public slots:
+public Q_SLOTS:
 
     void onNameChanged(const QString & name);
 
@@ -221,7 +229,7 @@ public:
                              std::vector<CurveGui*> *curves);
     
     NodeCurveEditorElement* findElement(KnobGui* knob,int dimension) const;
-public slots:
+public Q_SLOTS:
     
     void onNameChanged(const QString & name);
     
@@ -262,7 +270,7 @@ public:
 
     std::list<NodeCurveEditorElement*> findElement(KnobGui* knob,int dimension) const;
     
-public slots:
+public Q_SLOTS:
     
     void onNameChanged(const QString & name);
     
@@ -282,6 +290,7 @@ struct CurveEditorPrivate;
 class CurveEditor
     : public QWidget
     , public CurveSelection
+    , public ScriptObject
 {
     Q_OBJECT
 
@@ -316,7 +325,8 @@ public:
     CurveWidget* getCurveWidget() const WARN_UNUSED_RETURN;
 
     virtual void getSelectedCurves(std::vector<CurveGui*>* selection) OVERRIDE FINAL;
-public slots:
+
+public Q_SLOTS:
 
     void onFilterTextChanged(const QString& filter);
     

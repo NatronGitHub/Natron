@@ -32,6 +32,8 @@ You need an up to date macports version. Just download it and install it from <h
 	sudo port selfupdate
 	sudo port upgrade outdated
 	sudo port install qt4-mac boost glew cairo expat
+	sudo port install py34-pyside
+	sudo ln -s python3.4-config /opt/local/bin/python3-config
 
 create the file /opt/local/lib/pkgconfig/glu.pc containing GLU
 configuration, for example using the following comands:
@@ -63,6 +65,7 @@ Install libraries:
     brew tap homebrew/python
     brew tap homebrew/science
     brew install qt expat cairo glew
+    brew install pyside --with-python3
 
 To install the openfx-io and openfx-misc sets of plugin, you also need the following:
 
@@ -106,8 +109,8 @@ config.pri:
 ```Shell
  # copy and paste the following in a terminal
 cat > config.pri << EOF
-boost: INCLUDEPATH += /opt/local/include
-boost: LIBS += LIBS += -L/opt/local/lib -lboost_serialization-mt -lboost_thread-mt -lboost_system-mt
+boost: INCLUDEPATH += /usr/local/include
+boost: LIBS += -L/usr/local/lib -lboost_serialization-mt -lboost_thread-mt -lboost_system-mt
 expat: PKGCONFIG -= expat
 expat: INCLUDEPATH += /usr/local/opt/expat/include
 expat: LIBS += -L/usr/local/opt/expat/lib -lexpat
@@ -115,6 +118,7 @@ EOF
 ```
 
 ## Build with Makefile
+
 You can generate a makefile by typing
 
 	qmake -r Project.pro
@@ -153,6 +157,25 @@ launchctl setenv PATH /opt/local/bin:/opt/local/sbin:/usr/bin:/bin:/usr/sbin:/sb
 
 	(cd Tests && qmake -r CONFIG+=debug CONFIG+=coverage && make -j4 && ./Tests)
 
+## Generating Python bindings
+
+This is not required as generated files are already in the repository. You would need to run it if you were to extend or modify the Python bindings via the
+typesystem.xml file. See the documentation of shiboken-3.4 for an explanation of the command line arguments.
+
+
+```Shell
+shiboken-3.4 --enable-pyside-extensions --include-paths=../Engine:../Global:/opt/local/include:/opt/local/include/PySide-3.4  --typesystem-paths=/opt/local/share/PySide-3.4/typesystems --output-directory=Engine Engine/Pyside_Engine_Python.h  Engine/typesystem_engine.xml
+
+shiboken-3.4 --enable-pyside-extensions --include-paths=../Engine:../Gui:../Global:/opt/local/include:/opt/local/include/PySide-3.4  --typesystem-paths=/opt/local/share/PySide-3.4/typesystems:Engine --output-directory=Gui Gui/Pyside_Gui_Python.h  Gui/typesystem_natronGui.xml
+```
+**Note**
+Shiboken has some glitchs which needs fixing with some sed commands, run tools/runPostShiboken.sh once shiboken is called
+
+on HomeBrew:
+```Shell
+shiboken --enable-pyside-extensions --include-paths=../Global:`pkg-config --variable=prefix QtCore`/include:`pkg-config --variable=includedir pyside`  --typesystem-paths=`pkg-config --variable=typesystemdir pyside` --output-directory=Engine Engine/Pyside_Engine_Python.h Engine/typesystem_engine.xml
+ ```
+ 
 ## OpenFX plugins
 
 Instructions to build the [openfx-io](https://github.com/MrKepzie/openfx-io) and [openfx-misc](https://github.com/devernay/openfx-misc) sets of plugins can also be found in the [tools/packageOSX.sh](https://github.com/MrKepzie/Natron/blob/workshop/tools/packageOSX.sh) script if you are using MacPorts, or in the .travis.yml file in their respective github repositories if you are using homebrew ([openfx-misc/.travis.yml](https://github.com/devernay/openfx-misc/blob/master/.travis.yml), [openfx-io/.travis.yml](https://github.com/MrKepzie/openfx-io/blob/master/.travis.yml).

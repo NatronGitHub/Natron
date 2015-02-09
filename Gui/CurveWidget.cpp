@@ -9,6 +9,10 @@
  *
  */
 
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
 #include "CurveWidget.h"
 
 #include <cmath>
@@ -250,11 +254,17 @@ std::pair<double,double>
 CurveGui::getCurveYRange() const
 {
     try {
-        return _internalCurve->getCurveYRange();
+        return getInternalCurve()->getCurveYRange();
     } catch (const std::exception & e) {
         qDebug() << e.what();
         return std::make_pair(INT_MIN,INT_MAX);
     }
+}
+
+boost::shared_ptr<Curve>
+CurveGui::getInternalCurve() const
+{
+    return _internalCurve;
 }
 
 void
@@ -284,7 +294,7 @@ CurveGui::drawCurve(int curveIndex,
             keyframes.insert(KeyFrame(*it,i));
         }
     } else {
-        keyframes = _internalCurve->getKeyFrames_mt_safe();
+        keyframes = getInternalCurve()->getKeyFrames_mt_safe();
     }
     if (keyframes.empty()) {
         return;
@@ -469,7 +479,7 @@ CurveGui::evaluate(double x) const
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
     try {
-        return _internalCurve->getValueAt(x,false);
+        return getInternalCurve()->getValueAt(x,false);
     } catch (...) {
         return 0.;
     }
@@ -491,37 +501,37 @@ CurveGui::setVisibleAndRefresh(bool visible)
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
     _visible = visible;
-    emit curveChanged();
+    Q_EMIT curveChanged();
 }
 
 bool
 CurveGui::areKeyFramesTimeClampedToIntegers() const
 {
-    return _internalCurve->areKeyFramesTimeClampedToIntegers();
+    return getInternalCurve()->areKeyFramesTimeClampedToIntegers();
 }
 
 bool
 CurveGui::areKeyFramesValuesClampedToBooleans() const
 {
-    return _internalCurve->areKeyFramesValuesClampedToBooleans();
+    return getInternalCurve()->areKeyFramesValuesClampedToBooleans();
 }
 
 bool
 CurveGui::areKeyFramesValuesClampedToIntegers() const
 {
-    return _internalCurve->areKeyFramesValuesClampedToIntegers();
+    return getInternalCurve()->areKeyFramesValuesClampedToIntegers();
 }
 
 bool
 CurveGui::isYComponentMovable() const
 {
-    return _internalCurve->isYComponentMovable();
+    return getInternalCurve()->isYComponentMovable();
 }
 
 KeyFrameSet
 CurveGui::getKeyFrames() const
 {
-    return _internalCurve->getKeyFrames_mt_safe();
+    return getInternalCurve()->getKeyFrames_mt_safe();
 }
 
 KnobCurveGui::KnobCurveGui(const CurveWidget *curveWidget,
@@ -568,6 +578,17 @@ KnobCurveGui::~KnobCurveGui()
     
 }
 
+boost::shared_ptr<Curve>
+KnobCurveGui::getInternalCurve() const
+{
+    boost::shared_ptr<KnobI> knob = getInternalKnob();
+    Parametric_Knob* isParametric = dynamic_cast<Parametric_Knob*>(knob.get());
+    if (!knob || !isParametric) {
+        return CurveGui::getInternalCurve();
+    }
+    return isParametric->getParametricCurve(_dimension);
+}
+
 boost::shared_ptr<KnobI>
 KnobCurveGui::getInternalKnob() const
 {
@@ -577,8 +598,7 @@ KnobCurveGui::getInternalKnob() const
 int
 KnobCurveGui::getKeyFrameIndex(double time) const
 {
-    assert(_internalCurve);
-    return _internalCurve->keyFrameIndex(time);
+    return getInternalCurve()->keyFrameIndex(time);
 }
 
 void

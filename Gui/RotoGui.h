@@ -11,7 +11,12 @@
 
 #ifndef ROTOGUI_H
 #define ROTOGUI_H
-#ifndef Q_MOC_RUN
+
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #endif
@@ -211,8 +216,7 @@ public:
 
     void linkPointTo(const std::list<std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> > > & cp);
 
-    
-signals:
+Q_SIGNALS:
 
     /**
      * @brief Emitted when the selected role changes
@@ -221,7 +225,7 @@ signals:
 
     void selectedToolChanged(int);
 
-public slots:
+public Q_SLOTS:
 
     void updateSelectionFromSelectionRectangle(bool onRelease);
 

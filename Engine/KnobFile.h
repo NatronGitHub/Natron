@@ -12,6 +12,10 @@
 #ifndef NATRON_ENGINE_KNOBFILE_H_
 #define NATRON_ENGINE_KNOBFILE_H_
 
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
 #include <vector>
 #include <map>
 
@@ -79,7 +83,7 @@ public:
 
     void open_file()
     {
-        emit openFile();
+        Q_EMIT openFile();
     }
 
     /**
@@ -88,7 +92,7 @@ public:
      */
     std::string getFileName(int time) const;
 
-signals:
+Q_SIGNALS:
 
     void openFile();
 
@@ -139,7 +143,7 @@ public:
 
     void open_file()
     {
-        emit openFile(_sequenceDialog && _isOutputImage);
+        Q_EMIT openFile(_sequenceDialog && _isOutputImage);
     }
 
     void turnOffSequences()
@@ -154,7 +158,7 @@ public:
 
     QString generateFileNameAtTime(SequenceTime time) const;
 
-signals:
+Q_SIGNALS:
 
     void openFile(bool);
 
@@ -205,8 +209,19 @@ public:
 
     bool isMultiPath() const;
 
+    void getPaths(std::list<std::string>* paths) const;
+    
+    ///Doesn't work if isMultiPath() == false
+    void getVariables(std::list<std::pair<std::string,std::string> >* paths) const;
+    
+    void setPaths(const std::list<std::pair<std::string,std::string> >& paths);
+    
+    void prependPath(const std::string& path) ;
+    void appendPath(const std::string& path) ;
 
 private:
+    
+    static std::string generateUniquePathID(const std::list<std::pair<std::string,std::string> >& paths);
 
     virtual bool canAnimate() const OVERRIDE FINAL;
     virtual const std::string & typeName() const OVERRIDE FINAL;

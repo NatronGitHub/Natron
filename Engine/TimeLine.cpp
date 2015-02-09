@@ -6,6 +6,10 @@
 //
 //
 
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
 #include "TimeLine.h"
 
 #ifndef NDEBUG
@@ -35,6 +39,7 @@ TimeLine::currentFrame() const
     return _currentFrame;
 }
 
+
 void
 TimeLine::seekFrame(SequenceTime frame,
                     bool updateLastCaller,
@@ -54,7 +59,7 @@ TimeLine::seekFrame(SequenceTime frame,
         _project->getApp()->setLastViewerUsingTimeline(caller ? caller->getNode() : boost::shared_ptr<Natron::Node>());
     }
     if (changed) {
-        emit frameChanged(frame, (int)reason);
+        Q_EMIT frameChanged(frame, (int)reason);
     }
 }
 
@@ -67,7 +72,8 @@ TimeLine::incrementCurrentFrame()
         ++_currentFrame;
         frame = _currentFrame;
     }
-    emit frameChanged(frame, (int)Natron::eTimelineChangeReasonPlaybackSeek);
+
+    Q_EMIT frameChanged(frame, (int)Natron::eTimelineChangeReasonPlaybackSeek);
 }
 
 void
@@ -79,7 +85,8 @@ TimeLine::decrementCurrentFrame()
         --_currentFrame;
         frame = _currentFrame;
     }
-    emit frameChanged(frame, (int)Natron::eTimelineChangeReasonPlaybackSeek);
+
+    Q_EMIT frameChanged(frame, (int)Natron::eTimelineChangeReasonPlaybackSeek);
 }
 
 void
@@ -97,7 +104,7 @@ TimeLine::onFrameChanged(SequenceTime frame)
     if (changed) {
         /*This function is called in response to a signal emitted by a single timeline gui, but we also
            need to sync all the other timelines potentially existing.*/
-        emit frameChanged(frame, (int)Natron::eTimelineChangeReasonUserSeek);
+        Q_EMIT frameChanged(frame, (int)Natron::eTimelineChangeReasonUserSeek);
     }
 }
 
@@ -110,7 +117,7 @@ TimeLine::removeAllKeyframesIndicators()
     bool wasEmpty = _keyframes.empty();
     _keyframes.clear();
     if (!wasEmpty) {
-        emit keyframeIndicatorsChanged();
+        Q_EMIT keyframeIndicatorsChanged();
     }
 }
 
@@ -121,7 +128,7 @@ TimeLine::addKeyframeIndicator(SequenceTime time)
     assert( QThread::currentThread() == qApp->thread() );
 
     _keyframes.push_back(time);
-    emit keyframeIndicatorsChanged();
+    Q_EMIT keyframeIndicatorsChanged();
 }
 
 void
@@ -133,7 +140,7 @@ TimeLine::addMultipleKeyframeIndicatorsAdded(const std::list<SequenceTime> & key
 
     _keyframes.insert( _keyframes.begin(),keys.begin(),keys.end() );
     if (!keys.empty() && emitSignal) {
-        emit keyframeIndicatorsChanged();
+        Q_EMIT keyframeIndicatorsChanged();
     }
 }
 
@@ -146,7 +153,7 @@ TimeLine::removeKeyFrameIndicator(SequenceTime time)
     std::list<SequenceTime>::iterator it = std::find(_keyframes.begin(), _keyframes.end(), time);
     if ( it != _keyframes.end() ) {
         _keyframes.erase(it);
-        emit keyframeIndicatorsChanged();
+        Q_EMIT keyframeIndicatorsChanged();
     }
 }
 
@@ -164,7 +171,7 @@ TimeLine::removeMultipleKeyframeIndicator(const std::list<SequenceTime> & keys,
         }
     }
     if (!keys.empty() && emitSignal) {
-        emit keyframeIndicatorsChanged();
+        Q_EMIT keyframeIndicatorsChanged();
     }
 }
 

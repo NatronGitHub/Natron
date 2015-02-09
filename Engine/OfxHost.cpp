@@ -7,6 +7,11 @@
 //  Created by Frédéric Devernay on 03/09/13.
 //
 //
+
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
 #include "OfxHost.h"
 
 #include <cassert>
@@ -361,7 +366,7 @@ Natron::OfxHost::getPluginAndContextByID(const std::string & pluginID,
     }
 } // getPluginAndContextByID
 
-AbstractOfxEffectInstance*
+boost::shared_ptr<AbstractOfxEffectInstance>
 Natron::OfxHost::createOfxEffect(const std::string & name,
                                  boost::shared_ptr<Natron::Node> node,
                                  const NodeSerialization* serialization,
@@ -376,7 +381,7 @@ Natron::OfxHost::createOfxEffect(const std::string & name,
     assert(natronPlugin);
     getPluginAndContextByID(name,natronPlugin->getMajorVersion(),natronPlugin->getMinorVersion(),&plugin,context);
 
-    AbstractOfxEffectInstance* hostSideEffect = new OfxEffectInstance(node);
+    boost::shared_ptr<AbstractOfxEffectInstance> hostSideEffect(new OfxEffectInstance(node));
     if ( node && !node->getLiveInstance() ) {
         node->setLiveInstance(hostSideEffect);
     }
@@ -420,11 +425,11 @@ Natron::OfxHost::loadOFXPlugins(std::map<std::string,std::vector< std::pair<std:
     OFX::Host::PluginCache::getPluginCache()->addFileToPath("/Library/OFX/Nuke");
 #endif
 
-    QStringList extraPluginsSearchPaths = appPTR->getCurrentSettings()->getPluginsExtraSearchPaths();
-    for (int i = 0; i < extraPluginsSearchPaths.size(); ++i) {
-        std::string path = extraPluginsSearchPaths.at(i).toStdString();
-        if ( !path.empty() ) {
-            OFX::Host::PluginCache::getPluginCache()->addFileToPath(path);
+    std::list<std::string> extraPluginsSearchPaths;
+    appPTR->getCurrentSettings()->getOpenFXPluginsSearchPaths(&extraPluginsSearchPaths);
+    for (std::list<std::string>::iterator it = extraPluginsSearchPaths.begin(); it != extraPluginsSearchPaths.end(); ++it) {
+        if ( !(*it).empty() ) {
+            OFX::Host::PluginCache::getPluginCache()->addFileToPath(*it);
         }
     }
 
