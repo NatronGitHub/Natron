@@ -90,17 +90,6 @@ void OnClientDumpRequest(void* context,
 }
 #endif
 
-void OnClientExitRequest(void* /*context*/,
-#if defined(Q_OS_MAC)
-                         const ClientInfo& /*client_info*/
-#else
-                         const ClientInfo* /*client_info*/
-#endif
-                         )
-{
-    qApp->quit();
-}
-
 
 static void printUsage(const char* programName)
 {
@@ -135,7 +124,7 @@ main(int argc,
                                           0, // filter ctx
                                           OnClientDumpRequest, // dump cb
                                           0, // dump ctx
-                                          OnClientExitRequest, // exit cb
+                                          0, // exit cb
                                           0, // exit ctx
                                           true, // auto-generate dumps
                                           dumpPath.toStdString()); // path to dump to
@@ -145,7 +134,7 @@ main(int argc,
     CrashGenerationServer breakpad_server(listenFd,
                                           OnClientDumpRequest, // dump cb
                                           0, // dump ctx
-                                          OnClientExitRequest, // exit cb
+                                          0, // exit cb
                                           0, // exit ctx
                                           true, // auto-generate dumps
                                           &stdDumpPath); // path to dump to
@@ -160,7 +149,7 @@ main(int argc,
                                           0, // on client connected ctx
                                           OnClientDumpRequest, // dump cb
                                           0, // dump ctx
-                                          OnClientExitRequest, // exit cb
+                                          0, // exit cb
                                           0, // exit ctx
                                           0, // upload request cb
                                           0, //  upload request ctx
@@ -177,5 +166,7 @@ main(int argc,
 
     manager.initOuptutPipe(args[3]);
     
-    return app.exec();
+    int ret = app.exec();
+    manager.writeDebugMessage("Exiting now.");
+    return ret;
 }

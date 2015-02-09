@@ -206,9 +206,6 @@ CrashDialog::onSaveClicked()
 
 CallbacksManager::CallbacksManager()
     : QObject()
-    , _doingDialogMutex()
-    , _doingDialogCond()
-    , _doingDialog(false)
 #ifdef DEBUG
     , _dFileMutex()
     , _dFile(0)
@@ -246,10 +243,7 @@ CallbacksManager::onDoDumpOnMainThread(const QString& filePath)
     } else {
 
     }
-    
-    QMutexLocker k(&_doingDialogMutex);
-    _doingDialog = false;
-    _doingDialogCond.wakeAll();
+
 }
 
 void
@@ -257,18 +251,12 @@ CallbacksManager::s_emitDoCallBackOnMainThread(const QString& filePath)
 {
     writeDebugMessage("Dump request received, file located at: " + filePath);
     if (QFile::exists(filePath)) {
-        QMutexLocker k(&_doingDialogMutex);
-        _doingDialog = true;
-        
+
         emit doDumpCallBackOnMainThread(filePath);
         
-        while (_doingDialog) {
-            _doingDialogCond.wait(&_doingDialogMutex);
-        }
     } else {
         writeDebugMessage("Dump file does not seem to exist...exiting crash reporter now.");
     }
-    qApp->quit();
 }
 
 #ifdef DEBUG

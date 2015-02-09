@@ -12,7 +12,6 @@
 #define CRASHDIALOG_H
 
 #include <QDialog>
-#include <QWaitCondition>
 #include <QMutex>
 
 class QVBoxLayout;
@@ -109,9 +108,6 @@ private:
 
     static CallbacksManager *_instance;
     
-    QMutex _doingDialogMutex;
-    QWaitCondition _doingDialogCond;
-    bool _doingDialog;
 #ifdef DEBUG
     QMutex _dFileMutex;
     QFile* _dFile;
