@@ -37,6 +37,7 @@ CLANG_DIAG_ON(deprecated)
 /*macro to get the unique pointer to the controler*/
 #define appPTR AppManager::instance()
 
+//#define NATRON_USE_BREAKPAD
 
 class QMutex;
 
@@ -430,9 +431,11 @@ public:
     
 public Q_SLOTS:
     
+#ifdef NATRON_USE_BREAKPAD
     void onNewCrashReporterConnectionPending();
     
     void onCrashReporterOutputWritten();
+#endif
 
     void toggleAutoHideGraphInputs();
 

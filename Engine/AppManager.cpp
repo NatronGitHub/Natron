@@ -74,6 +74,7 @@ BOOST_CLASS_EXPORT(Natron::ImageParams)
 
 #define NATRON_CACHE_VERSION 2
 
+
 using namespace Natron;
 
 AppManager* AppManager::_instance = 0;
@@ -142,11 +143,13 @@ struct AppManagerPrivate
     
     PyObject* mainModule;
     
+#ifdef NATRON_USE_BREAKPAD
     boost::shared_ptr<google_breakpad::ExceptionHandler> breakpadHandler;
     boost::shared_ptr<QProcess> crashReporter;
     QString crashReporterBreakpadPipe;
     boost::shared_ptr<QLocalServer> crashClientServer;
     QLocalSocket* crashServerConnection;
+#endif
     
     AppManagerPrivate();
     
@@ -179,7 +182,9 @@ struct AppManagerPrivate
     
     void declareSettingsToPython();
     
+#ifdef NATRON_USE_BREAKPAD
     void initBreakpad();
+#endif
 };
 
 #ifdef DEBUG
@@ -226,11 +231,13 @@ AppManagerPrivate::AppManagerPrivate()
 ,lastProjectLoadedCreatedDuringRC2Or3(false)
 ,args()
 ,mainModule(0)
+#ifdef NATRON_USE_BREAKPAD
 ,breakpadHandler()
 ,crashReporter()
 ,crashReporterBreakpadPipe()
 ,crashClientServer()
 ,crashServerConnection(0)
+#endif
 {
     setMaxCacheFiles();
     
@@ -859,9 +866,11 @@ AppManager::~AppManager()
     
     tearDownPython();
     
+#ifdef NATRON_USE_BREAKPAD
     if (_imp->crashReporter) {
         _imp->crashReporter->terminate();
     }
+#endif
     
     if (qApp) {
         delete qApp;
@@ -891,12 +900,14 @@ AppManager::initializeQApp(int &argc,
     new QCoreApplication(argc,argv);
 }
 
+#ifdef NATRON_USE_BREAKPAD
 void
 AppManagerPrivate::initBreakpad()
 {
     if (appPTR->isBackground()) {
         return;
     }
+    
     assert(!breakpadHandler);
     std::srand(2000);
     int randomNumber = std::rand();
@@ -926,6 +937,7 @@ AppManagerPrivate::initBreakpad()
     
     
 }
+#endif
 
 bool
 AppManager::loadInternal(const CLArgs& cl)
@@ -998,8 +1010,9 @@ AppManager::loadInternal(const CLArgs& cl)
 
     Natron::Log::instance(); //< enable logging
     
+#ifdef NATRON_USE_BREAKPAD
     _imp->initBreakpad();
-    
+#endif
     
     _imp->_settings->initializeKnobsPublic();
     ///Call restore after initializing knobs
@@ -3123,6 +3136,7 @@ AppManager::isProjectAlreadyOpened(const std::string& projectFilePath) const
 	return -1;
 }
 
+#ifdef NATRON_USE_BREAKPAD
 void
 AppManager::onCrashReporterOutputWritten()
 {
@@ -3161,7 +3175,9 @@ AppManager::onCrashReporterOutputWritten()
 
 
 }
+#endif
 
+#ifdef NATRON_USE_BREAKPAD
 void
 AppManager::onNewCrashReporterConnectionPending()
 {
@@ -3174,6 +3190,7 @@ AppManager::onNewCrashReporterConnectionPending()
     
     QObject::connect( _imp->crashServerConnection, SIGNAL( readyRead() ), this, SLOT( onCrashReporterOutputWritten() ) );
 }
+#endif
 
 namespace Natron {
 void
