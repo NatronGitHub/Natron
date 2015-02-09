@@ -14,7 +14,7 @@ if "%3" == "1" (
 	set DEPLOY_DIR=%CWD%\autobuild\deploy%BITS%
 ) else (
 	set BUILD_DIR=%CWD%\build%BITS%
-	set DEPLOY_DIR=%CWD%\build\deploy%BITS%
+	set DEPLOY_DIR=%CWD%\build%BITS%\deploy%BITS%
 )
 
 set IO_BRANCH=master
