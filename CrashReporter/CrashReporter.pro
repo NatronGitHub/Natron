@@ -91,13 +91,19 @@ unix:!mac {
                 $$BREAKPAD_PATH/client/linux/minidump_writer/linux_dumper.cc \
                 $$BREAKPAD_PATH/client/linux/minidump_writer/linux_core_dumper.cc \
                 $$BREAKPAD_PATH/client/linux/minidump_writer/linux_ptrace_dumper.cc \
+                $$BREAKPAD_PATH/client/linux/dump_writer_common/seccomp_unwinder.cc \
+                $$BREAKPAD_PATH/client/linux/dump_writer_common/thread_info.cc \
+                $$BREAKPAD_PATH/client/linux/dump_writer_common/ucontext_reader.cc \
                 $$BREAKPAD_PATH/common/linux/guid_creator.cc \
                 $$BREAKPAD_PATH/common/linux/file_id.cc \
                 $$BREAKPAD_PATH/common/linux/linux_libc_support.cc \
                 $$BREAKPAD_PATH/common/linux/memory_mapped_file.cc \
                 $$BREAKPAD_PATH/common/linux/elfutils.cc \
                 $$BREAKPAD_PATH/common/linux/elf_core_dump.cc \
-                $$BREAKPAD_PATH/common/linux/dump_symbols.cc
+                $$BREAKPAD_PATH/common/linux/dump_symbols.cc \
+                $$BREAKPAD_PATH/common/module.cc \
+                $$BREAKPAD_PATH/common/stabs_reader.cc \
+                $$BREAKPAD_PATH/common/stabs_to_module.cc
 
 }
 
