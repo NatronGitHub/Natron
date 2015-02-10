@@ -96,6 +96,8 @@ unix:!mac {
                 $$BREAKPAD_PATH/common/linux/linux_libc_support.cc \
                 $$BREAKPAD_PATH/common/linux/memory_mapped_file.cc \
                 $$BREAKPAD_PATH/common/linux/elfutils.cc \
+                $$BREAKPAD_PATH/common/linux/elf_core_dump.cc \
+                $$BREAKPAD_PATH/common/linux/dump_symbols.cc
 
 }
 
