@@ -1963,7 +1963,7 @@ Settings::getFileFormatsForReadingAndReader(std::map<std::string,std::string>* f
         int index = _readersMapping[i]->getValue();
 
         assert( index < (int)entries.size() );
-        std::string name = _readersMapping[i]->getName();
+        std::string name = _readersMapping[i]->getOriginalName();
         std::size_t prefix = name.find("Reader.");
         assert(prefix != std::string::npos);
         name.erase(prefix,7);
@@ -1979,7 +1979,7 @@ Settings::getFileFormatsForWritingAndWriter(std::map<std::string,std::string>* f
         int index = _writersMapping[i]->getValue();
 
         assert( index < (int)entries.size() );
-        std::string name = _writersMapping[i]->getName();
+        std::string name = _writersMapping[i]->getOriginalName();
         std::size_t prefix = name.find("Writer.");
         assert(prefix != std::string::npos);
         name.erase(prefix,7);
