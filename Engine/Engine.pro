@@ -356,8 +356,7 @@ mac {
 # other *nix
 unix:!mac {
         SOURCES += $$BREAKPAD_PATH/client/linux/handler/exception_handler.cc \
-                $$BREAKPAD_PATH/client/linux/handler/minidump_generator.cc \
-                $$BREAKPAD_PATH/client/linux/handler/linux_thread.cc \
+                $$BREAKPAD_PATH/client/linux/handler/minidump_descriptor.cc \
                 $$BREAKPAD_PATH/client/linux/crash_generation/crash_generation_client.cc \
                 $$BREAKPAD_PATH/common/linux/guid_creator.cc \
                 $$BREAKPAD_PATH/common/linux/file_id.cc
