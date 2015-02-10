@@ -16,7 +16,13 @@
 #include <QString>
 #include <QDir>
 
+#if defined(Q_OS_MAC)
 #include "client/mac/crash_generation/crash_generation_server.h"
+#elif defined(Q_OS_LINUX)
+#include "client/linux/crash_generation/crash_generation_server.h"
+#elif defined(Q_OS_WIN32)
+#include "client/windows/crash_generation/crash_generation_server.h"
+#endif
 #include "CrashDialog.h"
 
 
