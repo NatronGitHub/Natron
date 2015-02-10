@@ -88,7 +88,9 @@ unix:!mac {
                 $$BREAKPAD_PATH/client/linux/handler/minidump_descriptor.cc \
                 $$BREAKPAD_PATH/client/linux/crash_generation/crash_generation_server.cc \
                 $$BREAKPAD_PATH/common/linux/guid_creator.cc \
-                $$BREAKPAD_PATH/common/linux/file_id.cc
+                $$BREAKPAD_PATH/common/linux/file_id.cc \
+                $$BREAKPAD_PATH/common/linux/linux_libc_support.cc \
+                $$BREAKPAD_PATH/common/linux/memory_mapped_file.cc
 }
 
 win32 {
