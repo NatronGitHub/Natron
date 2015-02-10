@@ -106,10 +106,24 @@ unix:!mac {
                 $$BREAKPAD_PATH/common/linux/elfutils.cc \
                 $$BREAKPAD_PATH/common/linux/elf_core_dump.cc \
                 $$BREAKPAD_PATH/common/linux/dump_symbols.cc \
+		$$BREAKPAD_PATH/common/linux/elf_symbols_to_module.cc \
+		$$BREAKPAD_PATH/common/linux/safe_readlink.cc \
+		$$BREAKPAD_PATH/common/linux/crc32.cc \
                 $$BREAKPAD_PATH/common/module.cc \
+                $$BREAKPAD_PATH/common/language.cc \
                 $$BREAKPAD_PATH/common/stabs_reader.cc \
-                $$BREAKPAD_PATH/common/stabs_to_module.cc
+                $$BREAKPAD_PATH/common/stabs_to_module.cc \
+		$$BREAKPAD_PATH/common/test_assembler.cc \
+                $$BREAKPAD_PATH/common/dwarf_cu_to_module.cc \
+                $$BREAKPAD_PATH/common/dwarf_cfi_to_module.cc \
+                $$BREAKPAD_PATH/common/dwarf_line_to_module.cc \
+		$$BREAKPAD_PATH/common/dwarf/dwarf2reader.cc \
+ 		$$BREAKPAD_PATH/common/dwarf/bytereader.cc \
+		$$BREAKPAD_PATH/common/dwarf/cfi_assembler.cc \
+		$$BREAKPAD_PATH/common/dwarf/functioninfo.cc \
+		$$BREAKPAD_PATH/common/dwarf/dwarf2diehandler.cc 
 
+		
 }
 
 win32 {
