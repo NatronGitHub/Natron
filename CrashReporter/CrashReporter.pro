@@ -44,6 +44,11 @@ macx {
   LIBS += -framework CoreServices
 }
 
+
+unix:!mac {
+    DEFINES += N_UNDF=0
+}
+
 SOURCES += \
     CrashDialog.cpp \
     main.cpp
