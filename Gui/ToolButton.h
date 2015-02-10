@@ -12,6 +12,10 @@
 #ifndef TOOLBUTTON_H
 #define TOOLBUTTON_H
 
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
@@ -19,11 +23,12 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QIcon>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
-#ifndef Q_MOC_RUN
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
+#include <boost/shared_ptr.hpp>
 #endif
 class PluginGroupNode;
-class AppInstance;
+class GuiAppInstance;
 
 class QMenu;
 class QAction;
@@ -36,15 +41,23 @@ class ToolButton
 
 public:
 
-    ToolButton( AppInstance* app,
-                PluginGroupNode* pluginToolButton,
+
+    ToolButton( GuiAppInstance* app,
+                const boost::shared_ptr<PluginGroupNode>& pluginToolButton,
                 const QString & pluginID,
+                int major,
+                int minor,
                 const QString & label,
                 QIcon icon = QIcon() );
 
     virtual ~ToolButton();
 
     const QString & getID() const;
+    
+    int getPluginMajor() const;
+    
+    int getPluginMinor() const;
+    
     const QString & getLabel() const;
     const QIcon & getIcon() const;
 
@@ -61,9 +74,9 @@ public:
 
     void setAction(QAction* action);
 
-    PluginGroupNode* getPluginToolButton() const;
+    boost::shared_ptr<PluginGroupNode> getPluginToolButton() const;
 
-public slots:
+public Q_SLOTS:
 
     void onTriggered();
 

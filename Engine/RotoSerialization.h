@@ -11,10 +11,14 @@
 #ifndef ROTOSERIALIZATION_H
 #define ROTOSERIALIZATION_H
 
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
 #include "Engine/RotoContext.h"
 #include "Engine/RotoContextPrivate.h"
 
-#ifndef Q_MOC_RUN
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/serialization/base_object.hpp>
 #include <boost/serialization/export.hpp>
 #include <boost/serialization/list.hpp>
@@ -33,6 +37,12 @@
 #define BEZIER_CP_INTRODUCES_OFFSET 2
 #define BEZIER_CP_FIX_BUG_CURVE_POINTER 3
 #define BEZIER_CP_VERSION BEZIER_CP_FIX_BUG_CURVE_POINTER
+
+#define ROTO_ITEM_INTRODUCES_LABEL 2
+#define ROTO_ITEM_VERSION ROTO_ITEM_INTRODUCES_LABEL
+
+#define ROTO_CTX_REMOVE_COUNTERS 2
+#define ROTO_CTX_VERSION ROTO_CTX_REMOVE_COUNTERS
 
 template<class Archive>
 void
@@ -146,10 +156,10 @@ class RotoItemSerialization
 public:
 
     RotoItemSerialization()
-        : name()
-          , activated(false)
-          , parentLayerName()
-          , locked(false)
+    : name()
+    , activated(false)
+    , parentLayerName()
+    , locked(false)
     {
     }
 
@@ -166,6 +176,7 @@ private:
     {
         (void)version;
         ar & boost::serialization::make_nvp("Name",name);
+        ar & boost::serialization::make_nvp("Label",label);
         ar & boost::serialization::make_nvp("Activated",activated);
         ar & boost::serialization::make_nvp("ParentLayer",parentLayerName);
         ar & boost::serialization::make_nvp("Locked",locked);
@@ -177,6 +188,9 @@ private:
     {
         (void)version;
         ar & boost::serialization::make_nvp("Name",name);
+        if ( version >= ROTO_ITEM_INTRODUCES_LABEL) {
+            ar & boost::serialization::make_nvp("Label",label);
+        }
         ar & boost::serialization::make_nvp("Activated",activated);
         ar & boost::serialization::make_nvp("ParentLayer",parentLayerName);
         ar & boost::serialization::make_nvp("Locked",locked);
@@ -184,11 +198,14 @@ private:
 
     BOOST_SERIALIZATION_SPLIT_MEMBER()
 
-    std::string name;
+    std::string name,label;
     bool activated;
     std::string parentLayerName;
     bool locked;
 };
+
+BOOST_CLASS_VERSION(RotoItemSerialization,ROTO_ITEM_VERSION)
+
 
 //BOOST_SERIALIZATION_ASSUME_ABSTRACT(RotoItemSerialization);
 
@@ -458,7 +475,6 @@ public:
         , _autoKeying(false)
         , _rippleEdit(false)
         , _featherLink(false)
-        , _itemCounters()
     {
     }
 
@@ -480,21 +496,22 @@ private:
         ar & boost::serialization::make_nvp("RippleEdit",_rippleEdit);
         ar & boost::serialization::make_nvp("FeatherLink",_featherLink);
         ar & boost::serialization::make_nvp("Selection",_selectedItems);
-        ar & boost::serialization::make_nvp("Counters",_itemCounters);
     }
 
     template<class Archive>
     void load(Archive & ar,
               const unsigned int version)
     {
-        (void)version;
 
         ar & boost::serialization::make_nvp("BaseLayer",_baseLayer);
         ar & boost::serialization::make_nvp("AutoKeying",_autoKeying);
         ar & boost::serialization::make_nvp("RippleEdit",_rippleEdit);
         ar & boost::serialization::make_nvp("FeatherLink",_featherLink);
         ar & boost::serialization::make_nvp("Selection",_selectedItems);
-        ar & boost::serialization::make_nvp("Counters",_itemCounters);
+        if (version < ROTO_CTX_REMOVE_COUNTERS) {
+            std::map<std::string,int> _itemCounters;
+            ar & boost::serialization::make_nvp("Counters",_itemCounters);
+        }
     }
 
     BOOST_SERIALIZATION_SPLIT_MEMBER()
@@ -504,7 +521,9 @@ private:
     bool _autoKeying;
     bool _rippleEdit;
     bool _featherLink;
-    std::map<std::string,int> _itemCounters;
 };
+
+BOOST_CLASS_VERSION(RotoContextSerialization,ROTO_CTX_VERSION)
+
 
 #endif // ROTOSERIALIZATION_H

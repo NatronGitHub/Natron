@@ -12,18 +12,29 @@
 #ifndef NATRON_GUI_VIEWERTAB_H_
 #define NATRON_GUI_VIEWERTAB_H_
 
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QWidget>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
-#ifndef Q_MOC_RUN
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #endif
 #include "Global/GlobalDefines.h"
+#include "Engine/ScriptObject.h"
+#include "Gui/FromQtEnums.h"
 
+
+namespace Natron
+{
+    class Node;
+}
 class ViewerGL;
 class ViewerInstance;
 class Gui;
@@ -38,6 +49,7 @@ struct RotoGuiSharedData;
 struct ViewerTabPrivate;
 class ViewerTab
     : public QWidget
+    , public ScriptObject
 {
     Q_OBJECT
 
@@ -90,6 +102,18 @@ public:
     bool notifyOverlaysFocusGained(double scaleX,double scaleY);
 
     bool notifyOverlaysFocusLost(double scaleX,double scaleY);
+    
+private:
+    
+    bool notifyOverlaysPenDown_internal(const boost::shared_ptr<Natron::Node>& node, double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, QMouseEvent* e);
+    
+    bool notifyOverlaysPenMotion_internal(const boost::shared_ptr<Natron::Node>& node,double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, QMouseEvent* e);
+    bool notifyOverlaysKeyDown_internal(const boost::shared_ptr<Natron::Node>& node,double scaleX,double scaleY,QKeyEvent* e,Natron::Key k,
+                                        Natron::KeyboardModifiers km);
+    bool notifyOverlaysKeyRepeat_internal(const boost::shared_ptr<Natron::Node>& node,double scaleX,double scaleY,QKeyEvent* e,Natron::Key k,
+                                          Natron::KeyboardModifiers km);
+public:
+    
 
 
     ////////
@@ -110,8 +134,12 @@ public:
     void setGain(double d);
 
     double getGain() const;
+    
+    static std::string getChannelsString(Natron::DisplayChannelsEnum c);
 
     std::string getChannelsString() const;
+    
+    Natron::DisplayChannelsEnum getChannels() const;
 
     void setChannels(const std::string & channelsStr);
 
@@ -163,8 +191,6 @@ public:
     Natron::ViewerCompositingOperatorEnum getCompositingOperator() const;
 
     void setCompositingOperator(Natron::ViewerCompositingOperatorEnum op);
-
-    bool isFrameRangeLocked() const;
     
     bool isFPSLocked() const;
 
@@ -199,7 +225,20 @@ public:
     
 	void redrawGLWidgets();
 
-public slots:
+    void getTimelineBounds(int* left,int* right) const;
+    
+    void setTimelineBounds(int left,int right);
+    
+    ///Calls setTimelineBounds + set the frame range line edit
+    void setFrameRange(int left,int right);
+    
+    void setFrameRangeEdited(bool edited);
+    
+    void setPlaybackMode(Natron::PlaybackModeEnum mode);
+    
+    Natron::PlaybackModeEnum getPlaybackMode() const;
+    
+public Q_SLOTS:
 
     void startPause(bool);
     void abortRendering();
@@ -251,6 +290,10 @@ public slots:
     void onFirstInputNameChanged(const QString & text);
 
     void onSecondInputNameChanged(const QString & text);
+    
+    void setInputA(int index);
+    
+    void setInputB(int index);
 
     void onActiveInputsChanged();
 
@@ -259,16 +302,12 @@ public slots:
     void onInputChanged(int inputNb);
 
     void onFrameRangeEditingFinished();
-
-    void onCanSetFrameRangeButtonClicked(bool toggled);
-    void onCanSetFrameRangeLabelClicked(bool toggled);
-    void setFrameRangeLocked(bool toggled);
     
     void onCanSetFPSClicked(bool toggled);
     void onCanSetFPSLabelClicked(bool toggled);
     void setFPSLocked(bool fpsLocked);
 
-    void onTimelineBoundariesChanged(SequenceTime,SequenceTime,int);
+    void onTimelineBoundariesChanged(SequenceTime,SequenceTime);
     
     void setLeftToolbarVisible(bool visible);
     void setRightToolbarVisible(bool visible);
@@ -303,7 +342,14 @@ public slots:
     void setTurboButtonDown(bool down);
     
     void onClipPreferencesChanged();
+    
+    void onInternalNodeLabelChanged(const QString& name);
+    void onInternalNodeScriptNameChanged(const QString& name);
+    
 private:
+    
+    void onCompositingOperatorChangedInternal(Natron::ViewerCompositingOperatorEnum oldOp,Natron::ViewerCompositingOperatorEnum newOp);
+
     
     void manageTimelineSlot(bool disconnectPrevious,const boost::shared_ptr<TimeLine>& timeline);
 

@@ -9,6 +9,10 @@
  *
  */
 
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
 #include "OfxEffectInstance.h"
 
 #include <locale>
@@ -193,7 +197,7 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
 //                                                        _effect->getDescriptor().getPluginGrouping() );
 
 
-        blockEvaluation();
+        beginChanges();
         OfxStatus stat;
         {
             SET_CAN_SET_VALUE(true);
@@ -216,7 +220,7 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
             getNode()->createRotoContextConditionnally();
             
             getNode()->initializeInputs();
-            getNode()->initializeKnobs( serialization ? *serialization : NodeSerialization( getApp() ), disableRenderScaleSupport ? 1 : 0 );
+            getNode()->initializeKnobs(disableRenderScaleSupport ? 1 : 0 );
             
             ///before calling the createInstanceAction, load values
             if ( serialization && !serialization->isNull() ) {
@@ -229,9 +233,9 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
             
             //////////////////////////////////////////////////////
             ///////For READERS & WRITERS only we open an image file dialog
-            if (allowFileDialogs && isReader() && !(serialization && !serialization->isNull()) && paramValues.empty()) {
+            if (!getApp()->isCreatingPythonGroup() && allowFileDialogs && isReader() && !(serialization && !serialization->isNull()) && paramValues.empty()) {
                 images = getApp()->openImageFileDialog();
-            } else if (allowFileDialogs && isWriter() && !(serialization && !serialization->isNull())  && paramValues.empty()) {
+            } else if (!getApp()->isCreatingPythonGroup() && allowFileDialogs && isWriter() && !(serialization && !serialization->isNull())  && paramValues.empty()) {
                 images = getApp()->saveImageFileDialog();
             }
             if (!images.empty()) {
@@ -249,7 +253,7 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
                 stat = _effect->createInstanceAction();
             }
             _created = true;
-            unblockEvaluation();
+            
             
         } // SET_CAN_SET_VALUE(true);
         
@@ -326,18 +330,22 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
     ///that we set
     for (std::list<boost::shared_ptr<KnobSerialization> >::const_iterator it = paramValues.begin(); it != paramValues.end();++it) {
         boost::shared_ptr<KnobI> knob = getKnobByName((*it)->getName());
-        assert(knob);
-        for (int i = 0; i < knob->getDimension(); ++i) {
-            knob->evaluateValueChange(i, Natron::eValueChangedReasonUserEdited, true);
+        if (knob) {
+            for (int i = 0; i < knob->getDimension(); ++i) {
+                knob->evaluateValueChange(i, Natron::eValueChangedReasonUserEdited);
+            }
+        } else {
+            qDebug() << "WARNING: No such parameter " << (*it)->getName().c_str();
         }
     }
     
     if (!images.empty()) {
         boost::shared_ptr<KnobI> fileNameKnob = getKnobByName(kOfxImageEffectFileParamName);
         if (fileNameKnob) {
-            fileNameKnob->evaluateValueChange(0,Natron::eValueChangedReasonUserEdited, true);
+            fileNameKnob->evaluateValueChange(0,Natron::eValueChangedReasonUserEdited);
         }
     }
+    endChanges();
     
 } // createOfxImageEffectInstance
 
@@ -412,9 +420,20 @@ OfxEffectInstance::tryInitializeOverlayInteracts()
         std::vector<std::string> slaveParams;
         _overlayInteract->getSlaveToParam(slaveParams);
         for (U32 i = 0; i < slaveParams.size(); ++i) {
-            boost::shared_ptr<KnobI> param = getKnobByName(slaveParams[i]);
-            assert(param);
-            _overlaySlaves.push_back((void*)param.get());
+            boost::shared_ptr<KnobI> param ;
+            const std::vector< boost::shared_ptr<KnobI> > & knobs = getKnobs();
+            for (std::vector< boost::shared_ptr<KnobI> >::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+                if ((*it)->getOriginalName() == slaveParams[i]) {
+                    param = *it;
+                    break;
+                    
+                }
+            }
+            if (!param) {
+                qDebug() << "OfxEffectInstance::tryInitializeOverlayInteracts(): slaveToParam " << slaveParams[i].c_str() << " not available";
+            } else {
+                _overlaySlaves.push_back((void*)param.get());
+            }
         }
         
         getApp()->redrawAllViewers();
@@ -541,12 +560,82 @@ ofxExtractAllPartsOfGrouping(const QString & pluginIdentifier,
     QStringList out;
     if ( pluginIdentifier.startsWith("com.genarts.sapphire.") || s.startsWith("Sapphire ") || str.startsWith(" Sapphire ") ) {
         out.push_back("Sapphire");
+
     } else if ( pluginIdentifier.startsWith("com.genarts.monsters.") || s.startsWith("Monsters ") || str.startsWith(" Monsters ") ) {
         out.push_back("Monsters");
+
     } else if (pluginIdentifier == "uk.co.thefoundry.keylight.keylight") {
         s = PLUGIN_GROUP_KEYER;
+
     } else if (pluginIdentifier == "uk.co.thefoundry.noisetools.denoise") {
         s = PLUGIN_GROUP_FILTER;
+
+    } else if ( (pluginIdentifier == "tuttle.avreader") ||
+               (pluginIdentifier == "tuttle.avwriter") ||
+               (pluginIdentifier == "tuttle.dpxwriter") ||
+               (pluginIdentifier == "tuttle.exrreader") ||
+               (pluginIdentifier == "tuttle.exrwriter") ||
+               (pluginIdentifier == "tuttle.imagemagickreader") ||
+               (pluginIdentifier == "tuttle.jpeg2000reader") ||
+               (pluginIdentifier == "tuttle.jpeg2000writer") ||
+               (pluginIdentifier == "tuttle.jpegreader") ||
+               (pluginIdentifier == "tuttle.jpegwriter") ||
+               (pluginIdentifier == "tuttle.oiioreader") ||
+               (pluginIdentifier == "tuttle.oiiowriter") ||
+               (pluginIdentifier == "tuttle.pngreader") ||
+               (pluginIdentifier == "tuttle.pngwriter") ||
+               (pluginIdentifier == "tuttle.rawreader") ||
+               (pluginIdentifier == "tuttle.turbojpegreader") ||
+               (pluginIdentifier == "tuttle.turbojpegwriter") ) {
+        out.push_back(PLUGIN_GROUP_IMAGE);
+        if ( pluginIdentifier.endsWith("reader") ) {
+            s = PLUGIN_GROUP_IMAGE_READERS;
+        } else {
+            s = PLUGIN_GROUP_IMAGE_WRITERS;
+        }
+
+    } else if ( (pluginIdentifier == "tuttle.checkerboard") ||
+               (pluginIdentifier == "tuttle.colorbars") ||
+               (pluginIdentifier == "tuttle.colorcube") || // TuttleColorCube
+               (pluginIdentifier == "tuttle.colorgradient") ||
+               (pluginIdentifier == "tuttle.colorwheel") ||
+               (pluginIdentifier == "tuttle.constant") ||
+               (pluginIdentifier == "tuttle.inputbuffer") ||
+               (pluginIdentifier == "tuttle.outputbuffer") ||
+               (pluginIdentifier == "tuttle.ramp") ||
+               (pluginIdentifier == "tuttle.seexpr") ) {
+        s = PLUGIN_GROUP_IMAGE;
+
+    } else if ( (pluginIdentifier == "tuttle.bitdepth") ||
+               (pluginIdentifier == "tuttle.colorgradation") ||
+               (pluginIdentifier == "tuttle.colorspace") ||
+               (pluginIdentifier == "tuttle.colorsuppress") ||
+               (pluginIdentifier == "tuttle.colortransfer") ||
+               (pluginIdentifier == "tuttle.colortransform") ||
+               (pluginIdentifier == "tuttle.ctl") ||
+               (pluginIdentifier == "tuttle.invert") ||
+               (pluginIdentifier == "tuttle.lut") ||
+               (pluginIdentifier == "tuttle.normalize") ) {
+        s = PLUGIN_GROUP_COLOR;
+
+    } else if ( (pluginIdentifier == "tuttle.ocio.colorspace") ||
+               (pluginIdentifier == "tuttle.ocio.lut") ) {
+        out.push_back(PLUGIN_GROUP_COLOR);
+        s = "OCIO";
+
+    } else if ( (pluginIdentifier == "tuttle.gamma") ||
+               (pluginIdentifier == "tuttle.mathoperator") ) {
+        out.push_back(PLUGIN_GROUP_COLOR);
+        s = "Math";
+
+    } else if ( (pluginIdentifier == "tuttle.channelshuffle") ) {
+        s = PLUGIN_GROUP_CHANNEL;
+
+    } else if ( (pluginIdentifier == "tuttle.component") ||
+               (pluginIdentifier == "tuttle.fade") ||
+               (pluginIdentifier == "tuttle.merge") ) {
+        s = PLUGIN_GROUP_MERGE;
+
     } else if ( (pluginIdentifier == "tuttle.anisotropicdiffusion") ||
                 (pluginIdentifier == "tuttle.anisotropictensors") ||
                 (pluginIdentifier == "tuttle.blur") ||
@@ -557,89 +646,46 @@ ofxExtractAllPartsOfGrouping(const QString & pluginIdentifier,
                 (pluginIdentifier == "tuttle.sobel") ||
                 (pluginIdentifier == "tuttle.thinning") ) {
         s = PLUGIN_GROUP_FILTER;
-    } else if ( (pluginIdentifier == "tuttle.bitdepth") ||
-                (pluginIdentifier == "tuttle.colorgradation") ||
-                (pluginIdentifier == "tuttle.colorspace") ||
-                (pluginIdentifier == "tuttle.colorsuppress") ||
-                (pluginIdentifier == "tuttle.colortransfer") ||
-                (pluginIdentifier == "tuttle.colortransform") ||
-                (pluginIdentifier == "tuttle.ctl") ||
-                (pluginIdentifier == "tuttle.gamma") ||
-                (pluginIdentifier == "tuttle.invert") ||
-                (pluginIdentifier == "tuttle.normalize") ) {
-        s = PLUGIN_GROUP_COLOR;
-    } else if ( (pluginIdentifier == "tuttle.ocio.colorspace") ||
-                (pluginIdentifier == "tuttle.ocio.lut") ) {
-        out.push_back(PLUGIN_GROUP_COLOR);
-        s = "OCIO";
+
+    } else if ( (pluginIdentifier == "tuttle.crop") ||
+               (pluginIdentifier == "tuttle.flip") ||
+               (pluginIdentifier == "tuttle.lensdistort") ||
+               (pluginIdentifier == "tuttle.move2d") ||
+               (pluginIdentifier == "tuttle.pinning") ||
+               (pluginIdentifier == "tuttle.pushpixel") ||
+               (pluginIdentifier == "tuttle.resize") ||
+               (pluginIdentifier == "tuttle.swscale") ||
+               (pluginIdentifier == "tuttle.warp") ) {
+        s = PLUGIN_GROUP_TRANSFORM;
+
+    } else if ( (pluginIdentifier == "tuttle.timeshift") ) {
+        s = PLUGIN_GROUP_TIME;
+
+    } else if ( (pluginIdentifier == "tuttle.text") ) {
+        s = PLUGIN_GROUP_PAINT;
+
     } else if ( (pluginIdentifier == "tuttle.basickeyer") ||
                 (pluginIdentifier == "tuttle.colorspacekeyer") ||
                 (pluginIdentifier == "tuttle.histogramkeyer") ||
                 (pluginIdentifier == "tuttle.idkeyer") ) {
         s = PLUGIN_GROUP_KEYER;
-    } else if ( (pluginIdentifier == "tuttle.avreader") ||
-                (pluginIdentifier == "tuttle.avwriter") ||
-                (pluginIdentifier == "tuttle.dpxwriter") ||
-                (pluginIdentifier == "tuttle.exrreader") ||
-                (pluginIdentifier == "tuttle.exrwriter") ||
-                (pluginIdentifier == "tuttle.imagemagickreader") ||
-                (pluginIdentifier == "tuttle.jpeg2000reader") ||
-                (pluginIdentifier == "tuttle.jpeg2000writer") ||
-                (pluginIdentifier == "tuttle.jpegreader") ||
-                (pluginIdentifier == "tuttle.jpegwriter") ||
-                (pluginIdentifier == "tuttle.oiioreader") ||
-                (pluginIdentifier == "tuttle.oiiowriter") ||
-                (pluginIdentifier == "tuttle.pngreader") ||
-                (pluginIdentifier == "tuttle.pngwriter") ||
-                (pluginIdentifier == "tuttle.rawreader") ||
-                (pluginIdentifier == "tuttle.turbojpegreader") ||
-                (pluginIdentifier == "tuttle.turbojpegwriter") ) {
-        out.push_back(PLUGIN_GROUP_IMAGE);
-        if ( pluginIdentifier.endsWith("reader") ) {
-            s = PLUGIN_GROUP_IMAGE_READERS;
-        } else {
-            s = PLUGIN_GROUP_IMAGE_WRITERS;
-        }
-    } else if ( (pluginIdentifier == "tuttle.checkerboard") ||
-                (pluginIdentifier == "tuttle.colorbars") ||
-                (pluginIdentifier == "tuttle.colorcube") ||
-                (pluginIdentifier == "tuttle.colorwheel") ||
-                (pluginIdentifier == "tuttle.constant") ||
-                (pluginIdentifier == "tuttle.inputbuffer") ||
-                (pluginIdentifier == "tuttle.outputbuffer") ||
-                (pluginIdentifier == "tuttle.ramp") ||
-                (pluginIdentifier == "tuttle.seexpr") ) {
-        s = PLUGIN_GROUP_IMAGE;
-    } else if ( (pluginIdentifier == "tuttle.text") ) {
-        s = PLUGIN_GROUP_PAINT;
-    } else if ( (pluginIdentifier == "tuttle.component") ||
-                (pluginIdentifier == "tuttle.fade") ||
-                (pluginIdentifier == "tuttle.merge") ) {
-        s = PLUGIN_GROUP_MERGE;
-    } else if ( (pluginIdentifier == "tuttle.crop") ||
-                (pluginIdentifier == "tuttle.flip") ||
-                (pluginIdentifier == "tuttle.lensdistort") ||
-                (pluginIdentifier == "tuttle.move2d") ||
-                (pluginIdentifier == "tuttle.pinning") ||
-                (pluginIdentifier == "tuttle.pushpixel") ||
-                (pluginIdentifier == "tuttle.resize") ||
-                (pluginIdentifier == "tuttle.swscale") ||
-                (pluginIdentifier == "tuttle.warp") ) {
-        s = PLUGIN_GROUP_TRANSFORM;
-    } else if ( (pluginIdentifier == "tuttle.mathoperator") ) {
-        out.push_back(PLUGIN_GROUP_COLOR);
-        s = "Math";
-    } else if ( (pluginIdentifier == "tuttle.timeshift") ) {
-        s = PLUGIN_GROUP_TIME;
-    } else if ( (pluginIdentifier == "tuttle.channelshuffle") ) {
-        s = PLUGIN_GROUP_CHANNEL;
+
+    } else if ( (pluginIdentifier == "tuttle.colorCube") || // TuttleColorCubeViewer
+               (pluginIdentifier == "tuttle.colorcubeviewer") ||
+               (pluginIdentifier == "tuttle.diff") ||
+               (pluginIdentifier == "tuttle.dummy") ||
+               (pluginIdentifier == "tuttle.histogram") ||
+               (pluginIdentifier == "tuttle.imagestatistics") ) {
+        s = PLUGIN_GROUP_OTHER;
+        
+    } else if ( (pluginIdentifier == "tuttle.debugimageeffectapi") ) {
+        out.push_back(PLUGIN_GROUP_OTHER);
+        s = "Test";
     }
 
+    // The following plugins are pretty much useless for use within Natron, keep them in the Tuttle group:
     /*
-       (pluginIdentifier == "tuttle.diff") ||
-       (pluginIdentifier == "tuttle.dummy") ||
-       (pluginIdentifier == "tuttle.histogram") ||
-       (pluginIdentifier == "tuttle.imagestatistics") ||
+       (pluginIdentifier == "tuttle.print") ||
        (pluginIdentifier == "tuttle.viewer") ||
      */
     return out + s.split('/');
@@ -797,7 +843,9 @@ OfxEffectInstance::isInputRotoBrush(int inputNb) const
 {
     assert(_context != eContextNone);
     MappedInputV inputs = inputClipsCopyWithoutOutput();
-    assert( inputNb < (int)inputs.size() );
+    if ( inputNb >= (int)inputs.size() ) {
+        return false;
+    }
 
     ///Maybe too crude ? Not like many plug-ins use the paint context except Natron's roto node.
     return inputs[inputs.size() - 1 - inputNb]->getName() == "Roto" && getNode()->isRotoNode();
@@ -834,7 +882,7 @@ OfxEffectInstance::onInputChanged(int inputNo)
     /**
      * The plug-in might call getImage, set a valid thread storage on the tree.
      **/
-    Node::ParallelRenderArgsSetter frameRenderArgs(_node.get(),
+    ParallelRenderArgsSetter frameRenderArgs(getNode().get(),
                                                    time,
                                                    0 /*view*/,
                                                    true,
@@ -1019,17 +1067,17 @@ clipPrefsProxy(OfxEffectInstance* self,
             }
             ///Otherwise if the bit-depth conversion will be lossy, warn the user
             else if ( Image::isBitDepthConversionLossy(input_outputNatronDepth, outputClipDepthNatron) ) {
-                bitDepthWarning.append( instance->getName().c_str() );
+                bitDepthWarning.append( instance->getNode()->getLabel_mt_safe().c_str() );
                 bitDepthWarning.append(" (" + QString( Image::getDepthString(input_outputNatronDepth).c_str() ) + ")");
                 bitDepthWarning.append(" ----> ");
-                bitDepthWarning.append( self->getName_mt_safe().c_str() );
+                bitDepthWarning.append( self->getNode()->getLabel_mt_safe().c_str() );
                 bitDepthWarning.append(" (" + QString( Image::getDepthString(outputClipDepthNatron).c_str() ) + ")");
                 bitDepthWarning.append('\n');
                 setBitDepthWarning = true;
             }
             
             if (!self->effectInstance()->supportsMultipleClipPARs() && foundClipPrefs->second.par != outputAspectRatio && foundClipPrefs->first->getConnected()) {
-                qDebug() << self->getName_mt_safe().c_str() << ": An input clip ("<< foundClipPrefs->first->getName().c_str()
+                qDebug() << self->getScriptName_mt_safe().c_str() << ": An input clip ("<< foundClipPrefs->first->getName().c_str()
                 << ") has a pixel aspect ratio (" << foundClipPrefs->second.par
                 << ") different than the output clip (" << outputAspectRatio << ") but it doesn't support multiple clips PAR. "
                 << "This should have been handled earlier before connecting the nodes, @see Node::canConnectInput.";
@@ -1383,11 +1431,13 @@ OfxEffectInstance::getRegionsOfInterest(SequenceTime time,
         return;
     }
     assert(outputRoD.x2 >= outputRoD.x1 && outputRoD.y2 >= outputRoD.y1);
+    (void)outputRoD;
     assert(renderWindow.x2 >= renderWindow.x1 && renderWindow.y2 >= renderWindow.y1);
 
     {
         bool scaleIsOne = (scale.x == 1. && scale.y == 1.);
         assert( !( (supportsRenderScaleMaybe() == eSupportsNo) && !scaleIsOne ) );
+        (void)scaleIsOne;
     }
 
     OfxStatus stat;
@@ -1400,7 +1450,7 @@ OfxEffectInstance::getRegionsOfInterest(SequenceTime time,
 
         bool skipDiscarding = false;
         if (getRecursionLevel() > 1) {
-            qDebug() << "getRegionsOfInterest cannot be called recursively as an action. Please check this.";
+            // getRegionsOfInterest may be called recursively as a result of calling fetchImage() from an action
             skipDiscarding = true;
         }
         ClipsThreadStorageSetter clipSetter(effectInstance(),
@@ -1420,7 +1470,7 @@ OfxEffectInstance::getRegionsOfInterest(SequenceTime time,
 
 
     if ( (stat != kOfxStatOK) && (stat != kOfxStatReplyDefault) ) {
-        appPTR->writeToOfxLog_mt_safe(QString( getNode()->getName_mt_safe().c_str() ) + "Failed to specify the region of interest from inputs.");
+        appPTR->writeToOfxLog_mt_safe(QString( getNode()->getScriptName_mt_safe().c_str() ) + "Failed to specify the region of interest from inputs.");
     }
     if (stat != kOfxStatReplyDefault) {
         
@@ -1448,12 +1498,11 @@ OfxEffectInstance::getRegionsOfInterest(SequenceTime time,
         for (std::map<std::string,OFX::Host::ImageEffect::ClipInstance*>::const_iterator it = clips.begin(); it!=clips.end(); ++it) {
             if (!it->second->isOutput()) {
                 OfxClipInstance* natronClip = dynamic_cast<OfxClipInstance*>(it->second);
-                assert(natronClip);
                 EffectInstance* inputNode = natronClip ? natronClip->getAssociatedNode() : 0;
                 if (inputNode) {
                     ret->insert( std::make_pair(inputNode, renderWindow) );
                 }
-
+                assert(natronClip);
             }
         }
     }
@@ -1479,7 +1528,7 @@ OfxEffectInstance::getFramesNeeded(SequenceTime time)
         stat = _effect->getFrameNeededAction( (OfxTime)time, inputRanges );
     }
     if ( (stat != kOfxStatOK) && (stat != kOfxStatReplyDefault) ) {
-        Natron::errorDialog( getName(), QObject::tr("Failed to specify the frame ranges needed from inputs.").toStdString() );
+        Natron::errorDialog( getScriptName_mt_safe(), QObject::tr("Failed to specify the frame ranges needed from inputs.").toStdString() );
     } else if (stat == kOfxStatOK) {
         for (OFX::Host::ImageEffect::RangeMap::iterator it = inputRanges.begin(); it != inputRanges.end(); ++it) {
             OfxClipInstance* clip = dynamic_cast<OfxClipInstance*>(it->first);
@@ -1684,6 +1733,7 @@ OfxEffectInstance::isIdentity(SequenceTime time,
         OfxClipInstance* natronClip = dynamic_cast<OfxClipInstance*>(clip);
         assert(natronClip);
         if (!natronClip) {
+            // coverity[dead_error_line]
             qDebug() << "Error in OfxEffectInstance::render(): kOfxImageEffectActionIsIdentity returned an unknown clip: " << inputclip.c_str();
 
             return false;
@@ -1717,6 +1767,7 @@ OfxEffectInstance::beginSequenceRender(SequenceTime first,
     {
         bool scaleIsOne = (scale.x == 1. && scale.y == 1.);
         assert( !( (supportsRenderScaleMaybe() == eSupportsNo) && !scaleIsOne ) );
+        (void)scaleIsOne;
     }
 
     OfxStatus stat;
@@ -1762,6 +1813,7 @@ OfxEffectInstance::endSequenceRender(SequenceTime first,
     {
         bool scaleIsOne = (scale.x == 1. && scale.y == 1.);
         assert( !( (supportsRenderScaleMaybe() == eSupportsNo) && !scaleIsOne ) );
+        (void)scaleIsOne;
     }
 
     OfxStatus stat;
@@ -1842,6 +1894,7 @@ OfxEffectInstance::render(SequenceTime time,
         }
     }
 # endif // DEBUG
+    (void)output;
     {
         bool skipDiscarding = false;
         if (getRecursionLevel() > 1) {
@@ -1936,16 +1989,16 @@ OfxEffectInstance::initializeOverlayInteract()
 }
 
 void
-OfxEffectInstance::drawOverlay(double /*scaleX*/,
-                               double /*scaleY*/)
+OfxEffectInstance::drawOverlay(double scaleX,
+                               double scaleY)
 {
     if (!_initialized) {
         return;
     }
     if (_overlayInteract) {
         OfxPointD rs;
-        rs.x = 1.; //scaleX;
-        rs.y = 1.; //scaleY;
+        rs.x = scaleX;
+        rs.y = scaleY;
         OfxTime time = getApp()->getTimeLine()->currentFrame();
 
        /* if (getRecursionLevel() == 1) {
@@ -1985,8 +2038,8 @@ OfxEffectInstance::setCurrentViewportForOverlays(OverlaySupport* viewport)
 }
 
 bool
-OfxEffectInstance::onOverlayPenDown(double /*scaleX*/,
-                                    double /*scaleY*/,
+OfxEffectInstance::onOverlayPenDown(double scaleX,
+                                    double scaleY,
                                     const QPointF & viewportPos,
                                     const QPointF & pos)
 {
@@ -1995,8 +2048,8 @@ OfxEffectInstance::onOverlayPenDown(double /*scaleX*/,
     }
     if (_overlayInteract) {
         OfxPointD rs;
-        rs.x = 1.; //scaleX;
-        rs.y = 1.; //scaleY;
+        rs.x = scaleX;
+        rs.y = scaleY;
         OfxPointD penPos;
         penPos.x = pos.x();
         penPos.y = pos.y();
@@ -2033,8 +2086,8 @@ OfxEffectInstance::onOverlayPenDown(double /*scaleX*/,
 }
 
 bool
-OfxEffectInstance::onOverlayPenMotion(double /*scaleX*/,
-                                      double /*scaleY*/,
+OfxEffectInstance::onOverlayPenMotion(double scaleX,
+                                      double scaleY,
                                       const QPointF & viewportPos,
                                       const QPointF & pos)
 {
@@ -2043,8 +2096,8 @@ OfxEffectInstance::onOverlayPenMotion(double /*scaleX*/,
     }
     if (_overlayInteract) {
         OfxPointD rs;
-        rs.x = 1.; //scaleX;
-        rs.y = 1.; //scaleY;
+        rs.x = scaleX;
+        rs.y = scaleY;
         OfxPointD penPos;
         penPos.x = pos.x();
         penPos.y = pos.y();
@@ -2081,8 +2134,8 @@ OfxEffectInstance::onOverlayPenMotion(double /*scaleX*/,
 }
 
 bool
-OfxEffectInstance::onOverlayPenUp(double /*scaleX*/,
-                                  double /*scaleY*/,
+OfxEffectInstance::onOverlayPenUp(double scaleX,
+                                  double scaleY,
                                   const QPointF & viewportPos,
                                   const QPointF & pos)
 {
@@ -2091,8 +2144,8 @@ OfxEffectInstance::onOverlayPenUp(double /*scaleX*/,
     }
     if (_overlayInteract) {
         OfxPointD rs;
-        rs.x = 1.; //scaleX;
-        rs.y = 1.; //scaleY;
+        rs.x = scaleX;
+        rs.y = scaleY;
         OfxPointD penPos;
         penPos.x = pos.x();
         penPos.y = pos.y();
@@ -2128,8 +2181,8 @@ OfxEffectInstance::onOverlayPenUp(double /*scaleX*/,
 }
 
 bool
-OfxEffectInstance::onOverlayKeyDown(double /*scaleX*/,
-                                    double /*scaleY*/,
+OfxEffectInstance::onOverlayKeyDown(double scaleX,
+                                    double scaleY,
                                     Natron::Key key,
                                     Natron::KeyboardModifiers /*modifiers*/)
 {
@@ -2138,8 +2191,8 @@ OfxEffectInstance::onOverlayKeyDown(double /*scaleX*/,
     }
     if (_overlayInteract) {
         OfxPointD rs;
-        rs.x = 1.; //scaleX;
-        rs.y = 1.; //scaleY;
+        rs.x = scaleX;
+        rs.y = scaleY;
         OfxTime time = getApp()->getTimeLine()->currentFrame();
         QByteArray keyStr;
 /*
@@ -2167,8 +2220,8 @@ OfxEffectInstance::onOverlayKeyDown(double /*scaleX*/,
 }
 
 bool
-OfxEffectInstance::onOverlayKeyUp(double /*scaleX*/,
-                                  double /*scaleY*/,
+OfxEffectInstance::onOverlayKeyUp(double scaleX,
+                                  double scaleY,
                                   Natron::Key key,
                                   Natron::KeyboardModifiers /* modifiers*/)
 {
@@ -2177,8 +2230,8 @@ OfxEffectInstance::onOverlayKeyUp(double /*scaleX*/,
     }
     if (_overlayInteract) {
         OfxPointD rs;
-        rs.x = 1.; //scaleX;
-        rs.y = 1.; //scaleY;
+        rs.x = scaleX;
+        rs.y = scaleY;
         OfxTime time = getApp()->getTimeLine()->currentFrame();
         QByteArray keyStr;
 
@@ -2209,8 +2262,8 @@ OfxEffectInstance::onOverlayKeyUp(double /*scaleX*/,
 }
 
 bool
-OfxEffectInstance::onOverlayKeyRepeat(double /*scaleX*/,
-                                      double /*scaleY*/,
+OfxEffectInstance::onOverlayKeyRepeat(double scaleX,
+                                      double scaleY,
                                       Natron::Key key,
                                       Natron::KeyboardModifiers /*modifiers*/)
 {
@@ -2219,8 +2272,8 @@ OfxEffectInstance::onOverlayKeyRepeat(double /*scaleX*/,
     }
     if (_overlayInteract) {
         OfxPointD rs;
-        rs.x = 1.; //scaleX;
-        rs.y = 1.; //scaleY;
+        rs.x = scaleX;
+        rs.y = scaleY;
         OfxTime time = getApp()->getTimeLine()->currentFrame();
         QByteArray keyStr;
 /*
@@ -2248,16 +2301,16 @@ OfxEffectInstance::onOverlayKeyRepeat(double /*scaleX*/,
 }
 
 bool
-OfxEffectInstance::onOverlayFocusGained(double /*scaleX*/,
-                                        double /*scaleY*/)
+OfxEffectInstance::onOverlayFocusGained(double scaleX,
+                                        double scaleY)
 {
     if (!_initialized) {
         return false;
     }
     if (_overlayInteract) {
         OfxPointD rs;
-        rs.x = 1.; //scaleX;
-        rs.y = 1.; //scaleY;
+        rs.x = scaleX;
+        rs.y = scaleY;
         OfxTime time = getApp()->getTimeLine()->currentFrame();
         OfxStatus stat;
 /*
@@ -2283,16 +2336,16 @@ OfxEffectInstance::onOverlayFocusGained(double /*scaleX*/,
 }
 
 bool
-OfxEffectInstance::onOverlayFocusLost(double /*scaleX*/,
-                                      double /*scaleY*/)
+OfxEffectInstance::onOverlayFocusLost(double scaleX,
+                                      double scaleY)
 {
     if (!_initialized) {
         return false;
     }
     if (_overlayInteract) {
         OfxPointD rs;
-        rs.x = 1.; //scaleX;
-        rs.y = 1.; //scaleY;
+        rs.x = scaleX;
+        rs.y = scaleY;
         OfxTime time = getApp()->getTimeLine()->currentFrame();
         OfxStatus stat;
         
@@ -2359,7 +2412,7 @@ OfxEffectInstance::knobChanged(KnobI* k,
 
     ///If the param changed is a button and the node is disabled don't do anything which might
     ///trigger an analysis
-    if ( (reason == eValueChangedReasonUserEdited) && dynamic_cast<Button_Knob*>(k) && _node->isNodeDisabled() ) {
+    if ( (reason == eValueChangedReasonUserEdited) && dynamic_cast<Button_Knob*>(k) && getNode()->isNodeDisabled() ) {
         return;
     }
 
@@ -2375,7 +2428,15 @@ OfxEffectInstance::knobChanged(KnobI* k,
     std::string ofxReason = natronValueChangedReasonToOfxValueChangedReason(reason);
     assert( !ofxReason.empty() ); // crashes when resetting to defaults
     OfxPointD renderScale;
-    renderScale.x = renderScale.y = 1;
+    if (isDoingInteractAction()) {
+        assert(_overlayInteract);
+        OverlaySupport* lastInteract = _overlayInteract->getLastCallingViewport();
+        assert(lastInteract);
+        unsigned int mmLevel = lastInteract->getCurrentRenderScale();
+        renderScale.x = renderScale.y = 1 << mmLevel;
+    } else {
+        renderScale.x = renderScale.y = 1;
+    }
     OfxStatus stat = kOfxStatOK;
     
     int recursionLevel = getRecursionLevel();
@@ -2394,17 +2455,17 @@ OfxEffectInstance::knobChanged(KnobI* k,
             ///getClipPreferences() so we don't take the clips preferences lock for read here otherwise we would
             ///create a deadlock. This code then assumes that the instance changed action of the plug-in doesn't require
             ///the clip preferences to stay the same throughout the action.
-            stat = effectInstance()->paramInstanceChangedAction(k->getName(), ofxReason,(OfxTime)time,renderScale);
+            stat = effectInstance()->paramInstanceChangedAction(k->getOriginalName(), ofxReason,(OfxTime)time,renderScale);
         } else {
             ///This action as all the overlay interacts actions can trigger recursive actions, such as
             ///getClipPreferences() so we don't take the clips preferences lock for read here otherwise we would
             ///create a deadlock. This code then assumes that the instance changed action of the plug-in doesn't require
             ///the clip preferences to stay the same throughout the action.
-            stat = effectInstance()->paramInstanceChangedAction(k->getName(), ofxReason,(OfxTime)time,renderScale);
+            stat = effectInstance()->paramInstanceChangedAction(k->getOriginalName(), ofxReason,(OfxTime)time,renderScale);
         }
     }
     if ( (stat != kOfxStatOK) && (stat != kOfxStatReplyDefault) ) {
-        QString err( QString( getNode()->getName_mt_safe().c_str() ) + ": An error occured while changing parameter " +
+        QString err( QString( getNode()->getScriptName_mt_safe().c_str() ) + ": An error occured while changing parameter " +
                     k->getDescription().c_str() );
         appPTR->writeToOfxLog_mt_safe(err);
         
@@ -2415,15 +2476,17 @@ OfxEffectInstance::knobChanged(KnobI* k,
         originatedFromMainThread) { //< change didnt occur in main-thread in the first, palce don't attempt to draw the overlay
         
         ///Run the following only in the main-thread
-        
-        if ( _effect->isClipPreferencesSlaveParam( k->getName() ) ) {
+
+        if ( _effect->isClipPreferencesSlaveParam( k->getOriginalName() ) ) {
             RECURSIVE_ACTION();
             checkOFXClipPreferences_public(time, renderScale, ofxReason,true, true);
         }
-        if (_overlayInteract) {
-            if (std::find(_overlaySlaves.begin(), _overlaySlaves.end(), (void*)k) != _overlaySlaves.end()) {
-                incrementRedrawNeededCounter();
-            }
+        if (_overlayInteract && getNode()->shouldDrawOverlay()) {
+            // Some plugins (e.g. by digital film tools) forget to set kOfxInteractPropSlaveToParam.
+            // Most hosts trigger a redraw if the plugin has an active overlay.
+            //if (std::find(_overlaySlaves.begin(), _overlaySlaves.end(), (void*)k) != _overlaySlaves.end()) {
+            incrementRedrawNeededCounter();
+            //}
 
             if (recursionLevel == 1 && checkIfOverlayRedrawNeeded()) {
                 stat = _overlayInteract->redraw();
@@ -2446,7 +2509,7 @@ OfxEffectInstance::beginKnobsValuesChanged(Natron::ValueChangedReasonEnum reason
     ///getClipPreferences() so we don't take the clips preferences lock for read here otherwise we would
     ///create a deadlock. This code then assumes that the instance changed action of the plug-in doesn't require
     ///the clip preferences to stay the same throughout the action.
-    (void)effectInstance()->beginInstanceChangedAction(natronValueChangedReasonToOfxValueChangedReason(reason));
+    ignore_result(effectInstance()->beginInstanceChangedAction(natronValueChangedReasonToOfxValueChangedReason(reason)));
 }
 
 void
@@ -2462,7 +2525,7 @@ OfxEffectInstance::endKnobsValuesChanged(Natron::ValueChangedReasonEnum reason)
     ///getClipPreferences() so we don't take the clips preferences lock for read here otherwise we would
     ///create a deadlock. This code then assumes that the instance changed action of the plug-in doesn't require
     ///the clip preferences to stay the same throughout the action.
-    (void)effectInstance()->endInstanceChangedAction(natronValueChangedReasonToOfxValueChangedReason(reason));
+    ignore_result(effectInstance()->endInstanceChangedAction(natronValueChangedReasonToOfxValueChangedReason(reason)));
 
 }
 
@@ -2662,9 +2725,7 @@ const std::string &
 OfxEffectInstance::ofxGetOutputPremultiplication() const
 {
     static const std::string v(kOfxImagePreMultiplied);
-    OFX::Host::ImageEffect::ClipInstance* clip = effectInstance()->getClip(kOfxImageEffectOutputClipName);
-
-    assert(clip);
+    assert(effectInstance()->getClip(kOfxImageEffectOutputClipName));
     
     if (getRecursionLevel() > 0) {
         const std::string & premult = effectInstance()->getOutputPreMultiplication();
@@ -2756,7 +2817,6 @@ OfxEffectInstance::getTransform(SequenceTime time,
     {
         bool skipDiscarding = false;
         if (getRecursionLevel() > 1) {
-            qDebug() << "renderAction cannot be called recursively as an action. Please check this.";
             skipDiscarding = true;
         }
         
@@ -2796,7 +2856,9 @@ OfxEffectInstance::getTransform(SequenceTime time,
         return Natron::eStatusFailed;
     }
     *inputToTransform = natronClip->getAssociatedNode();
-    
+    if (!*inputToTransform) {
+        return Natron::eStatusFailed;
+    }
     return Natron::eStatusOK;
 }
 
@@ -2816,6 +2878,7 @@ OfxEffectInstance::clearTransform(int inputNb)
     assert(clip);
     clip->clearTransform();
 }
+
 
 bool
 OfxEffectInstance::isFrameVarying() const

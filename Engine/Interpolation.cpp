@@ -1,10 +1,13 @@
-
 //  Natron
 //
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 //  Created by Frédéric Devernay on 06/03/2014.
+
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
 
 #include "Interpolation.h"
 
@@ -535,19 +538,22 @@ Natron::integrate(double tcur,
 }
 
 namespace {
-enum eSolType
+enum SolTypeEnum
 {
-    SOLMIN, SOLMAX
+    eSolTypeMin,
+    eSolTypeMax
 };
 
-enum eFuncType
+enum FuncTypeEnum
 {
-    CLAMPMIN, CLAMPMAX, CUBIC
+    eFuncTypeClampMin,
+    eFuncTypeClampMax,
+    eFuncTypeCubic
 };
 
 struct Sol
 {
-    Sol(eSolType _type,
+    Sol(SolTypeEnum _type,
         double _t,
         int _order,
         double _deriv)
@@ -555,7 +561,7 @@ struct Sol
     {
     }
 
-    eSolType type;
+    SolTypeEnum type;
     double t;
     int order;
     double deriv;
@@ -572,39 +578,39 @@ struct Sol_less_than_t
 }
 
 // comptute the function type after sol, from the function type before sol
-static eFuncType
-statusUpdate(eFuncType status,
+static FuncTypeEnum
+statusUpdate(FuncTypeEnum status,
              const Sol & sol)
 {
     switch (status) {
-    case CLAMPMIN:
-        assert(sol.type == SOLMIN);
+    case eFuncTypeClampMin:
+        assert(sol.type == eSolTypeMin);
         assert(sol.deriv >= /*0*/ -EQN_EPS);
         if (sol.order % 2) {
             // only odd solution orders may change the status
-            return CUBIC;
+            return eFuncTypeCubic;
         }
         break;
-    case CLAMPMAX:
-        assert(sol.type == SOLMAX);
+    case eFuncTypeClampMax:
+        assert(sol.type == eSolTypeMax);
         assert(sol.deriv <= /*0*/ EQN_EPS);
         if (sol.order % 2) {
             // only odd solution orders may change the status
-            return CUBIC;
+            return eFuncTypeCubic;
         }
         break;
-    case CUBIC:
-        if (sol.type == SOLMIN) {
+    case eFuncTypeCubic:
+        if (sol.type == eSolTypeMin) {
             assert(sol.deriv <= /*0*/ EQN_EPS);
             if (sol.order % 2) {
                 // only odd solution orders may change the status
-                return CLAMPMIN;
+                return eFuncTypeClampMin;
             }
         } else {
             assert(sol.deriv >= /*0*/ -EQN_EPS);
             if (sol.order % 2) {
                 // only odd solution orders may change the status
-                return CLAMPMAX;
+                return eFuncTypeClampMax;
             }
         }
         break;
@@ -672,10 +678,10 @@ Natron::integrate_clamp(double tcur,
     // algorithm: order the solutions, sort them wrt time. The cubic sections are where there are transitions bewteen min and max solutions.
     std::vector<Sol> sols;
     for (int i = 0; i < nmax; ++i) {
-        sols.push_back( Sol( SOLMAX,tmax[i],omax[i],cubicDerive(c0, c1, c2, c3, tmax[i]) ) );
+        sols.push_back( Sol( eSolTypeMax,tmax[i],omax[i],cubicDerive(c0, c1, c2, c3, tmax[i]) ) );
     }
     for (int i = 0; i < nmin; ++i) {
-        sols.push_back( Sol( SOLMIN,tmin[i],omin[i],cubicDerive(c0, c1, c2, c3, tmin[i]) ) );
+        sols.push_back( Sol( eSolTypeMin,tmin[i],omin[i],cubicDerive(c0, c1, c2, c3, tmin[i]) ) );
     }
 
     const double t2 = (time2 - tcur) / (tnext - tcur);
@@ -701,15 +707,15 @@ Natron::integrate_clamp(double tcur,
     // sort the solutions wrt time
     std::sort( sols.begin(), sols.end(), Sol_less_than_t() );
     // find out the status before the first solution
-    eFuncType status;
-    if (sols[0].type == SOLMAX) {
+    FuncTypeEnum status;
+    if (sols[0].type == eSolTypeMax) {
         // a non-constant cubic cannot remain within [vmin,vmax] at -infinity
         assert(sols[0].deriv < /*0*/ EQN_EPS);
-        status = CLAMPMAX;
+        status = eFuncTypeClampMax;
     } else {
         // a non-constant cubic cannot remain within [vmin,vmax] at -infinity
         assert(sols[0].deriv > /*0*/ -EQN_EPS);
-        status = CLAMPMIN;
+        status = eFuncTypeClampMin;
     }
 
     // find out the status at t1
@@ -724,13 +730,13 @@ Natron::integrate_clamp(double tcur,
     while (it != sols.end() && it->t < t2) {
         // integrate from t to it->t
         switch (status) {
-        case CLAMPMAX:
+        case eFuncTypeClampMax:
             ret += (it->t - t) * vmax;
             break;
-        case CLAMPMIN:
+        case eFuncTypeClampMin:
             ret += (it->t - t) * vmin;
             break;
-        case CUBIC:
+        case eFuncTypeCubic:
             ret += cubicIntegrate(c0, c1, c2, c3, it->t) - cubicIntegrate(c0, c1, c2, c3, t);
             break;
         }
@@ -740,13 +746,13 @@ Natron::integrate_clamp(double tcur,
     }
     // integrate from t to t2
     switch (status) {
-    case CLAMPMAX:
+    case eFuncTypeClampMax:
         ret += (t2 - t) * vmax;
         break;
-    case CLAMPMIN:
+    case eFuncTypeClampMin:
         ret += (t2 - t) * vmin;
         break;
-    case CUBIC:
+    case eFuncTypeCubic:
         ret += cubicIntegrate(c0, c1, c2, c3, t2) - cubicIntegrate(c0, c1, c2, c3, t);
         break;
     }

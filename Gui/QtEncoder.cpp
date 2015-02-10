@@ -9,6 +9,9 @@
  *
  */
 
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
 
 #include "QtEncoder.h"
 
@@ -48,7 +51,7 @@ QtWriter::~QtWriter()
 std::string
 QtWriter::getPluginID() const
 {
-    return NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.WriteQt";
+    return PLUGINID_NATRON_WRITEQT;
 }
 
 std::string
@@ -108,8 +111,7 @@ QtWriter::getFrameRange(SequenceTime *first,
             *last = 0;
         }
     } else if (index == 1) {
-        *first = getApp()->getTimeLine()->leftBound();
-        *last = getApp()->getTimeLine()->rightBound();
+        getApp()->getFrameRange(first, last);
     } else {
         *first = _firstFrameKnob->getValue();
         *last = _lastFrameKnob->getValue();
@@ -119,7 +121,7 @@ QtWriter::getFrameRange(SequenceTime *first,
 void
 QtWriter::initializeKnobs()
 {
-    Natron::warningDialog( getName(), QObject::tr("This plugin exists only to help the developpers team to test %1"
+    Natron::warningDialog( getScriptName_mt_safe(), QObject::tr("This plugin exists only to help the developpers team to test %1"
                                                   ". You cannot use it to render a project.").arg(NATRON_APPLICATION_NAME).toStdString() );
 
 
@@ -164,8 +166,8 @@ QtWriter::knobChanged(KnobI* k,
             _firstFrameKnob->setSecret(true);
             _lastFrameKnob->setSecret(true);
         } else {
-            int first = getApp()->getTimeLine()->firstFrame();
-            int last = getApp()->getTimeLine()->lastFrame();
+            int first,last;
+            getApp()->getFrameRange(&first, &last);
             _firstFrameKnob->setValue(first,0);
             _firstFrameKnob->setDisplayMinimum(first);
             _firstFrameKnob->setDisplayMaximum(last);
@@ -176,7 +178,6 @@ QtWriter::knobChanged(KnobI* k,
             _lastFrameKnob->setDisplayMaximum(last);
             _lastFrameKnob->setSecret(false);
 
-            createKnobDynamically();
         }
     }
 }
@@ -260,7 +261,7 @@ QtWriter::render(SequenceTime time,
     }
 
     _lut->to_byte_packed(buf, (const float*)src->pixelAt(0, 0), roi, src->getBounds(), roi,
-                         Natron::Color::PACKING_RGBA, Natron::Color::PACKING_BGRA, true, premult);
+                         Natron::Color::ePixelPackingRGBA, Natron::Color::ePixelPackingBGRA, true, premult);
 
     QImage img(buf,roi.width(),roi.height(),type);
     std::string filename = _fileKnob->getValue();

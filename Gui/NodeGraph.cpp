@@ -8,6 +8,10 @@
  *
  */
 
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
 #include "NodeGraph.h"
 
 #include <cstdlib>
@@ -63,7 +67,9 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/NodeSerialization.h"
 #include "Engine/Node.h"
 #include "Engine/NoOp.h"
+#include "Engine/BackDrop.h"
 #include "Engine/OutputSchedulerThread.h"
+#include "Engine/NodeGroup.h"
 
 #include "Gui/TabWidget.h"
 #include "Gui/Edge.h"
@@ -80,7 +86,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/GuiAppInstance.h"
 #include "Gui/NodeGuiSerialization.h"
 #include "Gui/CurveEditor.h"
-#include "Gui/NodeBackDrop.h"
+#include "Gui/BackDropGui.h"
 #include "Gui/NodeBackDropSerialization.h"
 #include "Gui/NodeGraphUndoRedo.h"
 #include "Gui/NodeCreationDialog.h"
@@ -92,8 +98,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #define NATRON_CACHE_SIZE_TEXT_REFRESH_INTERVAL_MS 1000
 
-#define NATRON_BACKDROP_DEFAULT_WIDTH 80
-#define NATRON_BACKDROP_DEFAULT_HEIGHT 80
+
 
 #define NATRON_NODE_DUPLICATE_X_OFFSET 50
 
@@ -109,41 +114,19 @@ using std::cout; using std::endl;
 
 
 namespace {
-struct NodeClipBoard
+
+
+
+enum EventStateEnum
 {
-    std::list<boost::shared_ptr<NodeSerialization> > nodes;
-    std::list<boost::shared_ptr<NodeGuiSerialization> > nodesUI;
-    std::list<boost::shared_ptr<NodeBackDropSerialization> > bds;
-
-    NodeClipBoard()
-        : nodes()
-          , nodesUI()
-          , bds()
-    {
-    }
-
-    bool isEmpty() const
-    {
-        return nodes.empty() && nodesUI.empty() && bds.empty();
-    }
-};
-
-enum EVENT_STATE
-{
-    DEFAULT,
-    MOVING_AREA,
-    ARROW_DRAGGING,
-    NAVIGATOR_DRAGGING,
-    NODE_DRAGGING,
-    BACKDROP_DRAGGING,
-    BACKDROP_RESIZING,
-    SELECTION_RECT,
-};
-
-struct NodeSelection
-{
-    std::list< boost::shared_ptr<NodeGui> > nodes;
-    std::list<NodeBackDrop*> bds;
+    eEventStateNone,
+    eEventStateMovingArea,
+    eEventStateZoomingArea,
+    eEventStateDraggingArrow,
+    eEventStateDraggingNavigator,
+    eEventStateDraggingNode,
+    eEventStateResizingBackdrop,
+    eEventStateSelectionRect,
 };
 
 class Navigator
@@ -247,17 +230,20 @@ struct NodeGraphPrivate
 {
     NodeGraph* _publicInterface;
     Gui* _gui;
-    QPointF _lastScenePosClick;
+    
+    boost::weak_ptr<NodeCollection> group;
+    
+    QPoint _lastMousePos;
     QPointF _lastNodeDragStartPoint;
-    QPointF _lastSelectionStartPoint;
-    EVENT_STATE _evtState;
-    boost::shared_ptr<NodeGui> _magnifiedNode;
+    QPoint _lastSelectionStartPoint;
+    EventStateEnum _evtState;
+    NodeGuiPtr _magnifiedNode;
     double _nodeSelectedScaleBeforeMagnif;
     bool _magnifOn;
     Edge* _arrowSelected;
     mutable QMutex _nodesMutex;
-    std::list<boost::shared_ptr<NodeGui> > _nodes;
-    std::list<boost::shared_ptr<NodeGui> > _nodesTrash;
+    NodeGuiList _nodes;
+    NodeGuiList _nodesTrash;
 
     ///Enables the "Tab" shortcut to popup the node creation dialog.
     ///This is set to true on enterEvent and set back to false on leaveEvent
@@ -272,70 +258,75 @@ struct NodeGraphPrivate
     QMenu* _menu;
     QGraphicsItem *_tL,*_tR,*_bR,*_bL;
     bool _refreshOverlays;
-    NodeClipBoard _nodeClipBoard;
+
     Edge* _highLightedEdge;
-    boost::shared_ptr<NodeGui> _mergeHintNode;
+    NodeGuiPtr _mergeHintNode;
 
     ///This is a hint edge we show when _highLightedEdge is not NULL to display a possible connection.
     Edge* _hintInputEdge;
     Edge* _hintOutputEdge;
-    std::list<NodeBackDrop*> _backdrops;
-    NodeBackDrop* _backdropResized; //< the backdrop being resized
-    bool _firstMove;
-    NodeSelection _selection;
     
-    std::map<NodeBackDrop*,std::list<boost::shared_ptr<NodeGui> > > _nodesWithinBDAtPenDown;
+    NodeGuiPtr _backdropResized; //< the backdrop being resized
+    
+    bool _firstMove;
+    NodeGuiList _selection;
+    
+    std::map<NodeGuiPtr,NodeGuiList> _nodesWithinBDAtPenDown;
     
     QGraphicsRectItem* _selectionRect;
     bool _bendPointsVisible;
     bool _knobLinksVisible;
     double _accumDelta;
     bool _detailsVisible;
+    bool _mergeMoveCommands;
+    bool _hasMovedOnce;
     
     NodeGraphPrivate(Gui* gui,
-                     NodeGraph* p)
-        : _publicInterface(p)
-          , _gui(gui)
-          , _lastScenePosClick()
-          , _lastNodeDragStartPoint()
-          , _lastSelectionStartPoint()
-          , _evtState(DEFAULT)
-          , _magnifiedNode()
-          , _nodeSelectedScaleBeforeMagnif(1.)
-          , _magnifOn(false)
-          , _arrowSelected(NULL)
-          , _nodesMutex()
-          , _nodes()
-          , _nodesTrash()
-          , _nodeCreationShortcutEnabled(false)
-          , _lastNodeCreatedName()
-          , _root(NULL)
-          , _nodeRoot(NULL)
-          , _cacheSizeText(NULL)
-          , _refreshCacheTextTimer()
-          , _navigator(NULL)
-          , _undoStack(NULL)
-          , _menu(NULL)
-          , _tL(NULL)
-          , _tR(NULL)
-          , _bR(NULL)
-          , _bL(NULL)
-          , _refreshOverlays(false)
-          , _nodeClipBoard()
-          , _highLightedEdge(NULL)
-          , _mergeHintNode()
-          , _hintInputEdge(NULL)
-          , _hintOutputEdge(NULL)
-          , _backdrops()
-          , _backdropResized(NULL)
-          , _firstMove(true)
-          , _selection()
-          , _nodesWithinBDAtPenDown()
-          , _selectionRect(NULL)
-          , _bendPointsVisible(false)
-          , _knobLinksVisible(true)
-          , _accumDelta(0)
-          , _detailsVisible(false)
+                     NodeGraph* p,
+                     const boost::shared_ptr<NodeCollection>& group)
+    : _publicInterface(p)
+    , _gui(gui)
+    , group(group)
+    , _lastMousePos()
+    , _lastNodeDragStartPoint()
+    , _lastSelectionStartPoint()
+    , _evtState(eEventStateNone)
+    , _magnifiedNode()
+    , _nodeSelectedScaleBeforeMagnif(1.)
+    , _magnifOn(false)
+    , _arrowSelected(NULL)
+    , _nodesMutex()
+    , _nodes()
+    , _nodesTrash()
+    , _nodeCreationShortcutEnabled(false)
+    , _lastNodeCreatedName()
+    , _root(NULL)
+    , _nodeRoot(NULL)
+    , _cacheSizeText(NULL)
+    , _refreshCacheTextTimer()
+    , _navigator(NULL)
+    , _undoStack(NULL)
+    , _menu(NULL)
+    , _tL(NULL)
+    , _tR(NULL)
+    , _bR(NULL)
+    , _bL(NULL)
+    , _refreshOverlays(false)
+    , _highLightedEdge(NULL)
+    , _mergeHintNode()
+    , _hintInputEdge(NULL)
+    , _hintOutputEdge(NULL)
+    , _backdropResized()
+    , _firstMove(true)
+    , _selection()
+    , _nodesWithinBDAtPenDown()
+    , _selectionRect(NULL)
+    , _bendPointsVisible(false)
+    , _knobLinksVisible(true)
+    , _accumDelta(0)
+    , _detailsVisible(false)
+    , _mergeMoveCommands(false)
+    , _hasMovedOnce(false)
     {
     }
 
@@ -343,7 +334,7 @@ struct NodeGraphPrivate
 
     QRectF calcNodesBoundingRect();
 
-    void copyNodesInternal(NodeClipBoard & clipboard);
+    void copyNodesInternal(const NodeGuiList& selection,NodeClipBoard & clipboard);
     void pasteNodesInternal(const NodeClipBoard & clipboard,const QPointF& scenPos);
 
     /**
@@ -352,14 +343,11 @@ struct NodeGraphPrivate
      **/
     boost::shared_ptr<NodeGui> pasteNode(const NodeSerialization & internalSerialization,
                                          const NodeGuiSerialization & guiSerialization,
-                                         const QPointF & offset);
+                                         const QPointF & offset,
+                                         const boost::shared_ptr<NodeCollection>& group,
+                                         const std::string& parentName,
+                                         bool clone);
 
-    /**
-     * @brief Create a new node backdrop given the serialization of another one
-     * @param offset[in] The offset applied to the new backdrop position relative to the serialized backdrop's position.
-     **/
-    NodeBackDrop* pasteBackdrop(const NodeBackDropSerialization & serialization,
-                                const QPointF & offset);
 
     /**
      * @brief This is called once all nodes of a clipboard have been pasted to try to restore connections between them
@@ -379,22 +367,56 @@ struct NodeGraphPrivate
 
     void toggleSelectedNodesEnabled();
     
-    
 };
 
+static void makeFullyQualifiedLabel(Natron::Node* node,std::string* ret)
+{
+    boost::shared_ptr<NodeCollection> parent = node->getGroup();
+    NodeGroup* isParentGrp = dynamic_cast<NodeGroup*>(parent.get());
+    std::string toPreprend = node->getLabel();
+    if (isParentGrp) {
+        toPreprend.insert(0, "/");
+    }
+    ret->insert(0, toPreprend);
+    if (isParentGrp) {
+        makeFullyQualifiedLabel(isParentGrp->getNode().get(), ret);
+    }
+}
+
 NodeGraph::NodeGraph(Gui* gui,
+                     const boost::shared_ptr<NodeCollection>& group,
                      QGraphicsScene* scene,
                      QWidget *parent)
     : QGraphicsView(scene,parent)
-      , _imp( new NodeGraphPrivate(gui,this) )
+    , NodeGraphI()
+    , ScriptObject()
+      , _imp( new NodeGraphPrivate(gui,this, group) )
 {
+    
+    group->setNodeGraphPointer(this);
+    
     setAcceptDrops(true);
 
-    QObject::connect( _imp->_gui->getApp()->getProject().get(), SIGNAL( nodesCleared() ), this, SLOT( onProjectNodesCleared() ) );
 
+    NodeGroup* isGrp = dynamic_cast<NodeGroup*>(group.get());
+    if (isGrp) {
+        setScriptName(isGrp->getNode()->getFullyQualifiedName());
+        std::string label;
+        makeFullyQualifiedLabel(isGrp->getNode().get(),&label);
+        setLabel(label);
+        QObject::connect(isGrp->getNode().get(), SIGNAL(labelChanged(QString)), this, SLOT( onGroupNameChanged(QString)));
+        QObject::connect(isGrp->getNode().get(), SIGNAL(scriptNameChanged(QString)), this, SLOT( onGroupScriptNameChanged(QString)));
+    } else {
+        setScriptName(kNodeGraphObjectName);
+        setLabel(QObject::tr("Node Graph").toStdString());
+    }
+    
+    
+    
+    
     setMouseTracking(true);
     setCacheMode(CacheBackground);
-    setViewportUpdateMode(QGraphicsView::FullViewportUpdate);
+    setViewportUpdateMode(QGraphicsView::BoundingRectViewportUpdate);
     setRenderHint(QPainter::Antialiasing);
     setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
     //setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
@@ -500,14 +522,19 @@ NodeGraph::~NodeGraph()
     QObject::disconnect( &_imp->_refreshCacheTextTimer,SIGNAL( timeout() ),this,SLOT( updateCacheSizeText() ) );
     _imp->_nodeCreationShortcutEnabled = false;
 
-    //onProjectNodesCleared();
 }
 
 
 const std::list< boost::shared_ptr<NodeGui> > &
 NodeGraph::getSelectedNodes() const
 {
-    return _imp->_selection.nodes;
+    return _imp->_selection;
+}
+
+boost::shared_ptr<NodeCollection>
+NodeGraph::getGroup() const
+{
+    return _imp->group.lock();
 }
 
 QGraphicsItem*
@@ -526,12 +553,16 @@ void
 NodeGraph::discardGuiPointer()
 {
     _imp->_gui = 0;
+    boost::shared_ptr<NodeCollection> group = getGroup();
+    if (group) {
+        group->discardNodeGraphPointer();
+    }
 }
 
 void
-NodeGraph::onProjectNodesCleared()
+NodeGraph::onNodesCleared()
 {
-    _imp->_selection.nodes.clear();
+    _imp->_selection.clear();
     std::list<boost::shared_ptr<NodeGui> > nodesCpy;
     {
         QMutexLocker l(&_imp->_nodesMutex);
@@ -544,16 +575,12 @@ NodeGraph::onProjectNodesCleared()
     while ( !_imp->_nodesTrash.empty() ) {
         deleteNodepluginsly( *( _imp->_nodesTrash.begin() ) );
     }
-    _imp->_selection.nodes.clear();
+    _imp->_selection.clear();
     _imp->_magnifiedNode.reset();
     _imp->_nodes.clear();
     _imp->_nodesTrash.clear();
     _imp->_undoStack->clear();
 
-    for (std::list<NodeBackDrop*>::iterator it = _imp->_backdrops.begin(); it != _imp->_backdrops.end(); ++it) {
-        delete *it;
-    }
-    _imp->_backdrops.clear();
 }
 
 void
@@ -613,40 +640,73 @@ NodeGraph::createNodeGUI(QVBoxLayout *dockContainer,
 {
     boost::shared_ptr<NodeGui> node_ui;
     Dot* isDot = dynamic_cast<Dot*>( node->getLiveInstance() );
-
-    if (!isDot) {
-        node_ui.reset( new NodeGui(_imp->_nodeRoot) );
-    } else {
+    BackDrop* isBd = dynamic_cast<BackDrop*>(node->getLiveInstance());
+    
+    if (isDot) {
         node_ui.reset( new DotGui(_imp->_nodeRoot) );
+    } else if (isBd) {
+        node_ui.reset(new BackDropGui(_imp->_nodeRoot));
+    } else {
+        node_ui.reset( new NodeGui(_imp->_nodeRoot) );
     }
-    node_ui->initialize(this, node_ui, dockContainer, node, requestedByLoad);
+    
+    node_ui->initialize(this, dockContainer, node, requestedByLoad);
 
+    if (isBd) {
+        BackDropGui* bd = dynamic_cast<BackDropGui*>(node_ui.get());
+        NodeGuiList selectedNodes = _imp->_selection;
+        if ( !selectedNodes.empty() ) {
+            ///make the backdrop large enough to contain the selected nodes and position it correctly
+            QRectF bbox;
+            for (std::list<boost::shared_ptr<NodeGui> >::iterator it = selectedNodes.begin(); it != selectedNodes.end(); ++it) {
+                QRectF nodeBbox = (*it)->mapToScene( (*it)->boundingRect() ).boundingRect();
+                bbox = bbox.united(nodeBbox);
+            }
+            
+            double border50 = mapToScene(QPoint(50,0)).x();
+            double border0 = mapToScene(QPoint(0,0)).x();
+            double border = border50 - border0;
+            double headerHeight = bd->getFrameNameHeight();
+            QPointF scenePos(bbox.x() - border, bbox.y() - border);
+            
+            bd->setPos(bd->mapToParent(bd->mapFromScene(scenePos)));
+            bd->resize(bbox.width() + 2 * border, bbox.height() + 2 * border - headerHeight);
+        }
+
+    }
+
+    
+    {
+        QMutexLocker l(&_imp->_nodesMutex);
+        _imp->_nodes.push_back(node_ui);
+    }
     ///only move main instances
     if ( node->getParentMultiInstanceName().empty() ) {
-        if (_imp->_selection.nodes.empty()) {
+        if (_imp->_selection.empty()) {
             autoConnect = false;
         }
         if ( (xPosHint != INT_MIN) && (yPosHint != INT_MIN) && !autoConnect ) {
             QPointF pos = node_ui->mapToParent( node_ui->mapFromScene( QPointF(xPosHint,yPosHint) ) );
             node_ui->refreshPosition( pos.x(),pos.y(), true );
         } else {
-            moveNodesForIdealPosition(node_ui,autoConnect);
+            if (!isBd) {
+                moveNodesForIdealPosition(node_ui,autoConnect);
+            }
         }
     }
 
-    {
-        QMutexLocker l(&_imp->_nodesMutex);
-        _imp->_nodes.push_back(node_ui);
-    }
     QUndoStack* nodeStack = node_ui->getUndoStack();
     if (nodeStack) {
         _imp->_gui->registerNewUndoStack(nodeStack);
     }
-
+    
     if (pushUndoRedoCommand) {
         pushUndoCommand( new AddMultipleNodesCommand(this,node_ui) );
+    } else if (!requestedByLoad) {
+        selectNode(node_ui, false);
     }
-    _imp->_evtState = DEFAULT;
+
+    _imp->_evtState = eEventStateNone;
 
     return node_ui;
 }
@@ -654,6 +714,11 @@ NodeGraph::createNodeGUI(QVBoxLayout *dockContainer,
 void
 NodeGraph::moveNodesForIdealPosition(boost::shared_ptr<NodeGui> node,bool autoConnect)
 {
+    BackDropGui* isBd = dynamic_cast<BackDropGui*>(node.get());
+    if (isBd) {
+        return;
+    }
+    
     QRectF viewPos = visibleSceneRect();
 
     ///3 possible values:
@@ -663,8 +728,12 @@ NodeGraph::moveNodesForIdealPosition(boost::shared_ptr<NodeGui> node,bool autoCo
     int behavior = 0;
     boost::shared_ptr<NodeGui> selected;
 
-    if (_imp->_selection.nodes.size() == 1) {
-        selected = _imp->_selection.nodes.front();
+    if (_imp->_selection.size() == 1) {
+        selected = _imp->_selection.front();
+        BackDropGui* isBd = dynamic_cast<BackDropGui*>(selected.get());
+        if (isBd) {
+            selected.reset();
+        }
     }
 
     if (!selected || !autoConnect) {
@@ -718,6 +787,13 @@ NodeGraph::moveNodesForIdealPosition(boost::shared_ptr<NodeGui> node,bool autoCo
             }
         }
     }
+    
+    boost::shared_ptr<Natron::Node> createdNodeInternal = node->getNode();
+    boost::shared_ptr<Natron::Node> selectedNodeInternal;
+    if (selected) {
+       selectedNodeInternal = selected->getNode();
+    }
+
 
     ///if behaviour is 1 , just check that we can effectively connect the node to avoid moving them for nothing
     ///otherwise fallback on behaviour 0
@@ -734,6 +810,10 @@ NodeGraph::moveNodesForIdealPosition(boost::shared_ptr<NodeGui> node,bool autoCo
             behavior = 0;
         }
     }
+    
+   
+    boost::shared_ptr<Natron::Project> proj = getGui()->getApp()->getProject();
+
 
     ///default
     QPointF position;
@@ -743,90 +823,275 @@ NodeGraph::moveNodesForIdealPosition(boost::shared_ptr<NodeGui> node,bool autoCo
     }
     ///pop it above the selected node
     else if (behavior == 1) {
+        
+        ///If this is the first connected input, insert it in a "linear" way so the tree remains vertical
+        int nbConnectedInput = 0;
+        
+        const std::vector<Edge*> & selectedNodeInputs = selected->getInputsArrows();
+        for (std::vector<Edge*>::const_iterator it = selectedNodeInputs.begin() ; it != selectedNodeInputs.end() ; ++it) {
+            boost::shared_ptr<NodeGui> input;
+            if (*it) {
+                input = (*it)->getSource();
+            }
+            if (input) {
+                ++nbConnectedInput;
+            }
+        }
+        
+        ///connect it to the first input
         QSize selectedNodeSize = selected->getSize();
         QSize createdNodeSize = node->getSize();
-        QPointF selectedNodeMiddlePos = selected->scenePos() +
-                                        QPointF(selectedNodeSize.width() / 2, selectedNodeSize.height() / 2);
 
-
-        position.setX(selectedNodeMiddlePos.x() - createdNodeSize.width() / 2);
-        position.setY( selectedNodeMiddlePos.y() - selectedNodeSize.height() / 2 - NodeGui::DEFAULT_OFFSET_BETWEEN_NODES
-                       - createdNodeSize.height() );
-
-        QRectF createdNodeRect( position.x(),position.y(),createdNodeSize.width(),createdNodeSize.height() );
-
-        ///now that we have the position of the node, move the inputs of the selected node to make some space for this node
-        const std::map<int,Edge*> & selectedNodeInputs = selected->getInputsArrows();
-        for (std::map<int,Edge*>::const_iterator it = selectedNodeInputs.begin(); it != selectedNodeInputs.end(); ++it) {
-            if ( it->second->hasSource() ) {
-                it->second->getSource()->moveAbovePositionRecursively(createdNodeRect);
+        
+        if (nbConnectedInput == 0) {
+            
+            QPointF selectedNodeMiddlePos = selected->scenePos() +
+            QPointF(selectedNodeSize.width() / 2, selectedNodeSize.height() / 2);
+            
+            
+            position.setX(selectedNodeMiddlePos.x() - createdNodeSize.width() / 2);
+            position.setY( selectedNodeMiddlePos.y() - selectedNodeSize.height() / 2 - NodeGui::DEFAULT_OFFSET_BETWEEN_NODES
+                          - createdNodeSize.height() );
+            
+            QRectF createdNodeRect( position.x(),position.y(),createdNodeSize.width(),createdNodeSize.height() );
+            
+            ///now that we have the position of the node, move the inputs of the selected node to make some space for this node
+            
+            for (std::vector<Edge*>::const_iterator it = selectedNodeInputs.begin(); it != selectedNodeInputs.end(); ++it) {
+                if ( (*it)->hasSource() ) {
+                    (*it)->getSource()->moveAbovePositionRecursively(createdNodeRect);
+                }
+            }
+            
+            int selectedInput = selectedNodeInternal->getPreferredInputForConnection();
+            if (selectedInput != -1) {
+                bool ok = proj->connectNodes(selectedInput, createdNodeInternal, selectedNodeInternal.get(),true);
+                assert(ok);
+            }
+            
+        } else {
+            
+            
+            QRectF selectedBbox = selected->mapToScene(selected->boundingRect()).boundingRect();
+            QPointF selectedCenter = selectedBbox.center();
+            
+            double y = selectedCenter.y() - selectedNodeSize.height() / 2.
+            - NodeGui::DEFAULT_OFFSET_BETWEEN_NODES - createdNodeSize.height();
+            double x = selectedCenter.x() + nbConnectedInput * 150;
+            
+            position.setX(x  - createdNodeSize.width() / 2.);
+            position.setY(y);
+            
+            int index = selectedNodeInternal->getPreferredInputForConnection();
+            if (index != -1) {
+                
+                ///Create a dot to make things nicer
+                CreateNodeArgs args(PLUGINID_NATRON_DOT,
+                                    std::string(),
+                                    -1,
+                                    -1,
+                                    false, //< don't autoconnect
+                                    INT_MIN,
+                                    INT_MIN,
+                                    true,
+                                    true,
+                                    QString(),
+                                    CreateNodeArgs::DefaultValuesList(),
+                                    createdNodeInternal->getGroup());
+                boost::shared_ptr<Natron::Node> dotNode = _imp->_gui->getApp()->createNode(args);
+                assert(dotNode);
+                boost::shared_ptr<NodeGuiI> dotNodeGui_i = dotNode->getNodeGui();
+                assert(dotNodeGui_i);
+                
+                double dotW,dotH;
+                dotNodeGui_i->getSize(&dotW,&dotH);
+                dotNodeGui_i->setPosition(x - dotW / 2., selectedCenter.y() - dotH / 2.);
+                
+                ///connect the nodes
+                
+                int index = selectedNodeInternal->getPreferredInputForConnection();
+                
+                bool ok = proj->connectNodes(index, dotNode, selectedNodeInternal.get(), true);
+                assert(ok);
+                
+                proj->connectNodes(0, createdNodeInternal, dotNode.get());
+                
             }
         }
     }
     ///pop it below the selected node
     else {
-        QSize selectedNodeSize = selected->getSize();
-        QSize createdNodeSize = node->getSize();
-        QPointF selectedNodeMiddlePos = selected->scenePos() +
-                                        QPointF(selectedNodeSize.width() / 2, selectedNodeSize.height() / 2);
 
-        ///actually move the created node where the selected node is
-        position.setX(selectedNodeMiddlePos.x() - createdNodeSize.width() / 2);
-        position.setY(selectedNodeMiddlePos.y() + (selectedNodeSize.height() / 2) + NodeGui::DEFAULT_OFFSET_BETWEEN_NODES);
-
-        QRectF createdNodeRect( position.x(),position.y(),createdNodeSize.width(),createdNodeSize.height() );
-
-        ///and move the selected node below recusively
-        const std::list<Natron::Node* > & outputs = selected->getNode()->getOutputs();
-        for (std::list<Natron::Node* >::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
-            assert(*it);
-            boost::shared_ptr<NodeGui> output = _imp->_gui->getApp()->getNodeGui(*it);
-            assert(output);
-            output->moveBelowPositionRecursively(createdNodeRect);
+        const std::list<Natron::Node*>& outputs = selectedNodeInternal->getOutputs();
+        if (!createdNodeInternal->isOutputNode() || outputs.empty()) {
+            QSize selectedNodeSize = selected->getSize();
+            QSize createdNodeSize = node->getSize();
+            QPointF selectedNodeMiddlePos = selected->scenePos() +
+            QPointF(selectedNodeSize.width() / 2, selectedNodeSize.height() / 2);
+            
+            ///actually move the created node where the selected node is
+            position.setX(selectedNodeMiddlePos.x() - createdNodeSize.width() / 2);
+            position.setY(selectedNodeMiddlePos.y() + (selectedNodeSize.height() / 2) + NodeGui::DEFAULT_OFFSET_BETWEEN_NODES);
+            
+            QRectF createdNodeRect( position.x(),position.y(),createdNodeSize.width(),createdNodeSize.height() );
+            
+            ///and move the selected node below recusively
+            const std::list<Natron::Node* > & outputs = selected->getNode()->getOutputs();
+            for (std::list<Natron::Node* >::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
+                assert(*it);
+                boost::shared_ptr<NodeGuiI> output_i = (*it)->getNodeGui();
+                assert(output_i);
+                NodeGui* output = dynamic_cast<NodeGui*>(output_i.get());
+                output->moveBelowPositionRecursively(createdNodeRect);
+            }
+            
+            if ( !createdNodeInternal->isOutputNode() ) {
+                ///we find all the nodes that were previously connected to the selected node,
+                ///and connect them to the created node instead.
+                std::map<Natron::Node*,int> outputsConnectedToSelectedNode;
+                selectedNodeInternal->getOutputsConnectedToThisNode(&outputsConnectedToSelectedNode);
+                for (std::map<Natron::Node*,int>::iterator it = outputsConnectedToSelectedNode.begin();
+                     it != outputsConnectedToSelectedNode.end(); ++it) {
+                    if (it->first->getParentMultiInstanceName().empty()) {
+                        bool ok = proj->disconnectNodes(selectedNodeInternal.get(), it->first);
+                        assert(ok);
+                        
+                        ignore_result(proj->connectNodes(it->second, createdNodeInternal, it->first));
+                        //assert(ok); Might not be ok if the disconnectNodes() action above was queued
+                    }
+                }
+            }
+            
+            ///finally we connect the created node to the selected node
+            int createdInput = createdNodeInternal->getPreferredInputForConnection();
+            if (createdInput != -1) {
+                bool ok = proj->connectNodes(createdInput, selectedNodeInternal, createdNodeInternal.get());
+                assert(ok);
+            }
+            
+        } else {
+            ///the created node is an output node and the selected node already has several outputs, create it aside
+            QSize createdNodeSize = node->getSize();
+            QRectF selectedBbox = selected->mapToScene(selected->boundingRect()).boundingRect();
+            QPointF selectedCenter = selectedBbox.center();
+            
+            double y = selectedCenter.y() + selectedBbox.height() / 2.
+            + NodeGui::DEFAULT_OFFSET_BETWEEN_NODES;
+            double x = selectedCenter.x() + (int)outputs.size() * 150;
+            
+            position.setX(x  - createdNodeSize.width() / 2.);
+            position.setY(y);
+            
+            int index = createdNodeInternal->getPreferredInputForConnection();
+            if (index != -1) {
+                ///Create a dot to make things nicer
+                CreateNodeArgs args(PLUGINID_NATRON_DOT,
+                                    std::string(),
+                                    -1,
+                                    -1,
+                                    false, //< don't autoconnect
+                                    INT_MIN,
+                                    INT_MIN,
+                                    true,
+                                    true,
+                                    QString(),
+                                    CreateNodeArgs::DefaultValuesList(),
+                                    createdNodeInternal->getGroup());
+                boost::shared_ptr<Natron::Node> dotNode = _imp->_gui->getApp()->createNode(args);
+                assert(dotNode);
+                boost::shared_ptr<NodeGuiI> dotNodeGui_i = dotNode->getNodeGui();
+                assert(dotNodeGui_i);
+                
+                double dotW,dotH;
+                dotNodeGui_i->getSize(&dotW,&dotH);
+                dotNodeGui_i->setPosition(x - dotW / 2., selectedCenter.y() - dotH / 2.);
+                
+                ///connect the nodes
+                
+                int index = createdNodeInternal->getPreferredInputForConnection();
+                
+                bool ok = proj->connectNodes(index, dotNode, createdNodeInternal.get(), true);
+                assert(ok);
+                
+                proj->connectNodes(0, selectedNodeInternal, dotNode.get());
+                
+            }
         }
+        
+        
     }
     position = node->mapFromScene(position);
     position = node->mapToParent(position);
-    node->setPos( position.x(), position.y() );
+    node->setPosition( position.x(), position.y() );
 } // moveNodesForIdealPosition
 
 void
 NodeGraph::mousePressEvent(QMouseEvent* e)
 {
     assert(e);
-
+    _imp->_hasMovedOnce = false;
+    _imp->_mergeMoveCommands = false;
     if ( buttonDownIsMiddle(e) ) {
-        _imp->_evtState = MOVING_AREA;
+        _imp->_evtState = eEventStateMovingArea;
 
         return;
     }
 
     bool didSomething = false;
 
-    _imp->_lastScenePosClick = mapToScene( e->pos() );
+    _imp->_lastMousePos = e->pos();
+    QPointF lastMousePosScene = mapToScene(_imp->_lastMousePos.x(),_imp->_lastMousePos.y());
 
-    boost::shared_ptr<NodeGui> selected;
+    if ((e->buttons() & Qt::MiddleButton) && (buttonControlAlt(e) == Qt::AltModifier || (e->buttons() & Qt::LeftButton)) ) {
+        // Alt + middle = zoom or left + middle = zoom
+        _imp->_evtState = eEventStateZoomingArea;
+        return;
+    }
+    
+    NodeGuiPtr selected;
     Edge* selectedEdge = 0;
     Edge* selectedBendPoint = 0;
     {
+        
         QMutexLocker l(&_imp->_nodesMutex);
-        for (std::list<boost::shared_ptr<NodeGui> >::reverse_iterator it = _imp->_nodes.rbegin(); it != _imp->_nodes.rend(); ++it) {
-            QPointF evpt = (*it)->mapFromScene(_imp->_lastScenePosClick);
-            if ( (*it)->isVisible() && (*it)->isActive() && (*it)->contains(evpt) ) {
-                selected = *it;
-                break;
+        
+        ///Find matches, sorted by depth
+        std::map<double,NodeGuiPtr> matches;
+        for (NodeGuiList::reverse_iterator it = _imp->_nodes.rbegin(); it != _imp->_nodes.rend(); ++it) {
+            QPointF evpt = (*it)->mapFromScene(lastMousePosScene);
+            if ( (*it)->isVisible() && (*it)->isActive() ) {
+                
+                BackDropGui* isBd = dynamic_cast<BackDropGui*>(it->get());
+                if (isBd) {
+                    if (isBd->isNearbyNameFrame(evpt)) {
+                        matches.insert(std::make_pair((*it)->zValue(),*it));
+                    } else if (isBd->isNearbyResizeHandle(evpt)) {
+                        selected = *it;
+                        _imp->_backdropResized = *it;
+                        _imp->_evtState = eEventStateResizingBackdrop;
+                        break;
+                    }
+                } else {
+                    if ((*it)->contains(evpt)) {
+                        matches.insert(std::make_pair((*it)->zValue(),*it));
+                    }
+                }
+                
             }
+        }
+        if (!matches.empty() && _imp->_evtState != eEventStateResizingBackdrop) {
+            selected = matches.rbegin()->second;
         }
         if (!selected) {
             ///try to find a selected edge
-            for (std::list<boost::shared_ptr<NodeGui> >::reverse_iterator it = _imp->_nodes.rbegin(); it != _imp->_nodes.rend(); ++it) {
-                boost::shared_ptr<NodeGui> & n = *it;
-                Edge* bendPointEdge = n->hasBendPointNearbyPoint(_imp->_lastScenePosClick);
+            for (NodeGuiList::reverse_iterator it = _imp->_nodes.rbegin(); it != _imp->_nodes.rend(); ++it) {
+                Edge* bendPointEdge = (*it)->hasBendPointNearbyPoint(lastMousePosScene);
+
                 if (bendPointEdge) {
                     selectedBendPoint = bendPointEdge;
                     break;
                 }
-                Edge* edge = n->hasEdgeNearbyPoint(_imp->_lastScenePosClick);
+                Edge* edge = (*it)->hasEdgeNearbyPoint(lastMousePosScene);
                 if (edge) {
                     selectedEdge = edge;
                 }
@@ -838,18 +1103,35 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
     if (selected) {
         didSomething = true;
         if ( buttonDownIsLeft(e) ) {
-            _imp->_magnifiedNode = selected;
+            
+            BackDropGui* isBd = dynamic_cast<BackDropGui*>(selected.get());
+            if (!isBd) {
+                _imp->_magnifiedNode = selected;
+            }
+            
             if ( !selected->getIsSelected() ) {
                 selectNode( selected, modCASIsShift(e) );
             } else if ( modCASIsShift(e) ) {
-                std::list<boost::shared_ptr<NodeGui> >::iterator it = std::find(_imp->_selection.nodes.begin(),
-                                                                                _imp->_selection.nodes.end(),selected);
-                if ( it != _imp->_selection.nodes.end() ) {
+                NodeGuiList::iterator it = std::find(_imp->_selection.begin(),
+                                                     _imp->_selection.end(),selected);
+                if ( it != _imp->_selection.end() ) {
                     (*it)->setUserSelected(false);
-                    _imp->_selection.nodes.erase(it);
+                    _imp->_selection.erase(it);
                 }
             }
-            _imp->_evtState = NODE_DRAGGING;
+            if (_imp->_evtState != eEventStateResizingBackdrop) {
+                _imp->_evtState = eEventStateDraggingNode;
+            }
+            ///build the _nodesWithinBDAtPenDown map
+            _imp->_nodesWithinBDAtPenDown.clear();
+            for (NodeGuiList::iterator it = _imp->_selection.begin(); it != _imp->_selection.end(); ++it) {
+                BackDropGui* isBd = dynamic_cast<BackDropGui*>(it->get());
+                if (isBd) {
+                    NodeGuiList nodesWithin = getNodesWithinBackDrop(*it);
+                    _imp->_nodesWithinBDAtPenDown.insert(std::make_pair(*it,nodesWithin));
+                }
+            }
+
             _imp->_lastNodeDragStartPoint = selected->pos();
         } else if ( buttonDownIsRight(e) ) {
             if ( !selected->getIsSelected() ) {
@@ -858,10 +1140,9 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
         }
     } else if (selectedBendPoint) {
         _imp->setNodesBendPointsVisible(false);
-
-        CreateNodeArgs args("Dot",
+        
+        CreateNodeArgs args(PLUGINID_NATRON_DOT,
                             std::string(),
-                            -1,
                             -1,
                             -1,
                             false, //< don't autoconnect
@@ -870,47 +1151,50 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
                             false, //<< don't push an undo command
                             true,
                             QString(),
-                            CreateNodeArgs::DefaultValuesList());
+                            CreateNodeArgs::DefaultValuesList(),
+                            _imp->group.lock());
         boost::shared_ptr<Natron::Node> dotNode = _imp->_gui->getApp()->createNode(args);
         assert(dotNode);
-        boost::shared_ptr<NodeGui> dotNodeGui = _imp->_gui->getApp()->getNodeGui(dotNode);
+        boost::shared_ptr<NodeGuiI> dotNodeGui_i = dotNode->getNodeGui();
+        boost::shared_ptr<NodeGui> dotNodeGui = boost::dynamic_pointer_cast<NodeGui>(dotNodeGui_i);
         assert(dotNodeGui);
-
+        
         std::list<boost::shared_ptr<NodeGui> > nodesList;
         nodesList.push_back(dotNodeGui);
-
+        
         ///Now connect the node to the edge input
         boost::shared_ptr<Natron::Node> inputNode = selectedBendPoint->getSource()->getNode();
         assert(inputNode);
         ///disconnect previous connection
         boost::shared_ptr<Natron::Node> outputNode = selectedBendPoint->getDest()->getNode();
         assert(outputNode);
-
+        
         int inputNb = outputNode->inputIndex( inputNode.get() );
         assert(inputNb != -1);
         bool ok = _imp->_gui->getApp()->getProject()->disconnectNodes(inputNode.get(), outputNode.get());
         assert(ok);
-
+        
         ok = _imp->_gui->getApp()->getProject()->connectNodes(0, inputNode, dotNode.get());
         assert(ok);
-
+        
         _imp->_gui->getApp()->getProject()->connectNodes(inputNb,dotNode,outputNode.get());
+        
+        QPointF pos = dotNodeGui->mapToParent( dotNodeGui->mapFromScene(lastMousePosScene) );
 
-        QPointF pos = dotNodeGui->mapToParent( dotNodeGui->mapFromScene(_imp->_lastScenePosClick) );
         dotNodeGui->refreshPosition( pos.x(), pos.y() );
         if ( !dotNodeGui->getIsSelected() ) {
             selectNode( dotNodeGui, modCASIsShift(e) );
         }
-        pushUndoCommand( new AddMultipleNodesCommand( this,nodesList,std::list<NodeBackDrop*>() ) );
-
+        pushUndoCommand( new AddMultipleNodesCommand( this,nodesList) );
         
-        _imp->_evtState = NODE_DRAGGING;
+        
+        _imp->_evtState = eEventStateDraggingNode;
         _imp->_lastNodeDragStartPoint = dotNodeGui->pos();
         didSomething = true;
     } else if (selectedEdge) {
         _imp->_arrowSelected = selectedEdge;
         didSomething = true;
-        _imp->_evtState = ARROW_DRAGGING;
+        _imp->_evtState = eEventStateDraggingArrow;
     }
     
     ///Test if mouse is inside the navigator
@@ -921,64 +1205,14 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
             updateNavigator();
             _imp->_refreshOverlays = true;
             centerOn(mousePosSceneCoordinates);
-            _imp->_evtState = NAVIGATOR_DRAGGING;
+            _imp->_evtState = eEventStateDraggingNavigator;
             didSomething = true;
         }
     }
-                      
 
-    if (_imp->_evtState == DEFAULT) {
-        ///check if nearby a backdrop
-        for (std::list<NodeBackDrop*>::iterator it = _imp->_backdrops.begin(); it != _imp->_backdrops.end(); ++it) {
-            if ( buttonDownIsLeft(e) ) {
-                bool nearbyHeader = (*it)->isNearbyHeader(_imp->_lastScenePosClick);
-                bool nearbyResizeHandle = (*it)->isNearbyResizeHandle(_imp->_lastScenePosClick);
-
-
-                if (nearbyHeader || nearbyResizeHandle) {
-                    if ( buttonDownIsLeft(e) ) {
-                        didSomething = true;
-                        if ( !(*it)->getIsSelected() ) {
-                            selectBackDrop( *it, modCASIsShift(e) );
-                        } else if ( modCASIsShift(e) ) {
-                            std::list<NodeBackDrop* >::iterator found = std::find(_imp->_selection.bds.begin(),
-                                                                                  _imp->_selection.bds.end(),*it);
-                            if ( found != _imp->_selection.bds.end() ) {
-                                (*it)->setUserSelected(false);
-                                _imp->_selection.bds.erase(found);
-                            }
-                        }
-
-                        if (nearbyHeader) {
-                            _imp->_evtState = BACKDROP_DRAGGING;
-                        } else if (nearbyResizeHandle) {
-                            _imp->_backdropResized = *it;
-                            _imp->_evtState = BACKDROP_RESIZING;
-                        }
-                    } else if ( buttonDownIsRight(e) ) {
-                        if ( !(*it)->getIsSelected() ) {
-                            selectBackDrop(*it,true); ///< don't wipe the selection
-                        }
-                    }
-                    break;
-                }
-            }
-        }
-    }
-    if (_imp->_evtState == BACKDROP_DRAGGING) {
-        ///build the _nodesWithinBDAtPenDown map
-        _imp->_nodesWithinBDAtPenDown.clear();
-        for (std::list<NodeBackDrop*>::iterator it = _imp->_backdrops.begin(); it != _imp->_backdrops.end(); ++it) {
-            if ((*it)->getIsSelected()) {
-                std::list<boost::shared_ptr<NodeGui> > nodesWithin = getNodesWithinBackDrop(*it);
-                _imp->_nodesWithinBDAtPenDown.insert(std::make_pair(*it,nodesWithin));
-            }
-        }
-    }
-    
     ///Don't forget to reset back to null the _backdropResized pointer
-    if (_imp->_evtState != BACKDROP_RESIZING) {
-        _imp->_backdropResized = NULL;
+    if (_imp->_evtState != eEventStateResizingBackdrop) {
+        _imp->_backdropResized.reset();
     }
 
     if ( buttonDownIsRight(e) ) {
@@ -990,13 +1224,13 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
             if ( !modCASIsShift(e) ) {
                 deselect();
             }
-            _imp->_evtState = SELECTION_RECT;
-            _imp->_lastSelectionStartPoint = _imp->_lastScenePosClick;
-            QPointF clickPos = _imp->_selectionRect->mapFromScene(_imp->_lastScenePosClick);
+            _imp->_evtState = eEventStateSelectionRect;
+            _imp->_lastSelectionStartPoint = _imp->_lastMousePos;
+            QPointF clickPos = _imp->_selectionRect->mapFromScene(lastMousePosScene);
             _imp->_selectionRect->setRect(clickPos.x(), clickPos.y(), 0, 0);
-            _imp->_selectionRect->show();
+            //_imp->_selectionRect->show();
         } else if ( buttonDownIsMiddle(e) ) {
-            _imp->_evtState = MOVING_AREA;
+            _imp->_evtState = eEventStateMovingArea;
             QGraphicsView::mousePressEvent(e);
         }
     }
@@ -1066,15 +1300,12 @@ NodeGraph::deselect()
 {
     {
         QMutexLocker l(&_imp->_nodesMutex);
-        for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_selection.nodes.begin(); it != _imp->_selection.nodes.end(); ++it) {
+        for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_selection.begin(); it != _imp->_selection.end(); ++it) {
             (*it)->setUserSelected(false);
         }
     }
-    for (std::list<NodeBackDrop*>::iterator it = _imp->_selection.bds.begin(); it != _imp->_selection.bds.end(); ++it) {
-        (*it)->setUserSelected(false);
-    }
-    _imp->_selection.nodes.clear();
-    _imp->_selection.bds.clear();
+  
+    _imp->_selection.clear();
 
     if (_imp->_magnifiedNode && _imp->_magnifOn) {
         _imp->_magnifOn = false;
@@ -1085,12 +1316,16 @@ NodeGraph::deselect()
 void
 NodeGraph::mouseReleaseEvent(QMouseEvent* e)
 {
-    EVENT_STATE state = _imp->_evtState;
+    EventStateEnum state = _imp->_evtState;
 
-    _imp->_firstMove = true;
-    _imp->_evtState = DEFAULT;
     _imp->_nodesWithinBDAtPenDown.clear();
-    if (state == ARROW_DRAGGING) {
+    _imp->_mergeMoveCommands = false;
+    _imp->_firstMove = true;
+    _imp->_evtState = eEventStateNone;
+    _imp->_nodesWithinBDAtPenDown.clear();
+    
+    bool hasMovedOnce = modCASIsControl(e) || _imp->_hasMovedOnce;
+    if (state == eEventStateDraggingArrow && hasMovedOnce) {
         
         QRectF sceneR = visibleSceneRect();
         
@@ -1110,7 +1345,7 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
             
             if (n->isActive() && n->isVisible() && bbox.intersects(sceneR) &&
                 n->isNearby(ep) &&
-                n->getNode()->getName() != nodeHoldingEdge->getNode()->getName()) {
+                n->getNode()->getScriptName() != nodeHoldingEdge->getNode()->getScriptName()) {
                 
                 if ( !_imp->_arrowSelected->isOutputEdge() ) {
                     
@@ -1121,16 +1356,17 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
                             
                             QString error = QString(tr("You cannot connect ") +  "%1" + " to " + "%2"  + tr(" because they don't have the same pixel aspect ratio (")
                                                     + "%3 / %4 " +  tr(") and ") + "%1 " + " doesn't support inputs with different pixel aspect ratio.")
-                            .arg(nodeHoldingEdge->getNode()->getName().c_str())
-                            .arg(n->getNode()->getName().c_str())
+                            .arg(nodeHoldingEdge->getNode()->getLabel().c_str())
+                            .arg(n->getNode()->getLabel().c_str())
                             .arg(nodeHoldingEdge->getNode()->getLiveInstance()->getPreferredAspectRatio())
                             .arg(n->getNode()->getLiveInstance()->getPreferredAspectRatio());
                             Natron::errorDialog(tr("Different pixel aspect").toStdString(),
                                                 error.toStdString());
                         } else if (linkRetCode == Natron::Node::eCanConnectInput_differentFPS) {
-                            QString error = QString(tr("You cannot connect ") +  "%1" + " to " + "%2"  + tr(" because they don't have the same frame rate (") + "%3 / %4)")
-                            .arg(nodeHoldingEdge->getNode()->getName().c_str())
-                            .arg(n->getNode()->getName().c_str())
+
+                            QString error = QString(tr("You cannot connect ") +  "%1" + " to " + "%2"  + tr(" because they don't have the same frame rate (") + "%3 / %4). Either change the FPS from the Read node parameters or change the settings of the project.")
+                            .arg(nodeHoldingEdge->getNode()->getLabel().c_str())
+                            .arg(n->getNode()->getLabel().c_str())
                             .arg(nodeHoldingEdge->getNode()->getLiveInstance()->getPreferredFrameRate())
                             .arg(n->getNode()->getLiveInstance()->getPreferredFrameRate());
                             Natron::errorDialog(tr("Different frame rate").toStdString(),
@@ -1155,16 +1391,17 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
                                 
                                 QString error = QString(tr("You cannot connect ") +  "%1" + " to " + "%2"  + tr(" because they don't have the same pixel aspect ratio (")
                                                         + "%3 / %4 " +  tr(") and ") + "%1 " + " doesn't support inputs with different pixel aspect ratio.")
-                                .arg(n->getNode()->getName().c_str())
-                                .arg(nodeHoldingEdge->getNode()->getName().c_str())
+                                .arg(n->getNode()->getLabel().c_str())
+                                .arg(nodeHoldingEdge->getNode()->getLabel().c_str())
                                 .arg(n->getNode()->getLiveInstance()->getPreferredAspectRatio())
                                 .arg(nodeHoldingEdge->getNode()->getLiveInstance()->getPreferredAspectRatio());
                                 Natron::errorDialog(tr("Different pixel aspect").toStdString(),
                                                     error.toStdString());
                             } else if (linkRetCode == Natron::Node::eCanConnectInput_differentFPS) {
-                                QString error = QString(tr("You cannot connect ") +  "%1" + " to " + "%2"  + tr(" because they don't have the same frame rate (") + "%3 / %4)")
-                                .arg(nodeHoldingEdge->getNode()->getName().c_str())
-                                .arg(n->getNode()->getName().c_str())
+
+                                QString error = QString(tr("You cannot connect ") +  "%1" + " to " + "%2"  + tr(" because they don't have the same frame rate (") + "%3 / %4). Either change the FPS from the Read node parameters or change the settings of the project.")
+                                .arg(nodeHoldingEdge->getNode()->getLabel().c_str())
+                                .arg(n->getNode()->getLabel().c_str())
                                 .arg(nodeHoldingEdge->getNode()->getLiveInstance()->getPreferredFrameRate())
                                 .arg(n->getNode()->getLiveInstance()->getPreferredFrameRate());
                                 Natron::errorDialog(tr("Different frame rate").toStdString(),
@@ -1176,11 +1413,10 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
                             break;
                         }
                         
-                        const std::map<int,Edge*> & inputEdges = n->getInputsArrows();
-                        std::map<int,Edge*>::const_iterator foundInput = inputEdges.find(preferredInput);
-                        assert( foundInput != inputEdges.end() );
-                        pushUndoCommand( new ConnectCommand( this,foundInput->second,
-                                                                  foundInput->second->getSource(),_imp->_arrowSelected->getSource() ) );
+                        Edge* foundInput = n->getInputArrow(preferredInput);
+                        assert(foundInput);
+                        pushUndoCommand( new ConnectCommand( this,foundInput,
+                                                                  foundInput->getSource(),_imp->_arrowSelected->getSource() ) );
                     }
                 }
                 foundSrc = true;
@@ -1200,11 +1436,17 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
         
         nodeHoldingEdge->refreshEdges();
         scene()->update();
-    } else if (state == NODE_DRAGGING) {
-        if ( !_imp->_selection.nodes.empty() ) {
+    } else if (state == eEventStateDraggingNode) {
+        if ( !_imp->_selection.empty() ) {
             ///now if there was a hint displayed, use it to actually make connections.
+            
             if (_imp->_highLightedEdge) {
-                boost::shared_ptr<NodeGui> selectedNode = _imp->_selection.nodes.front();
+                
+                _imp->_highLightedEdge->setUseHighlight(false);
+
+                boost::shared_ptr<NodeGui> selectedNode = _imp->_selection.front();
+                
+                _imp->_highLightedEdge->setUseHighlight(false);
                 if ( _imp->_highLightedEdge->isOutputEdge() ) {
                     int prefInput = selectedNode->getNode()->getPreferredInputForConnection();
                     if (prefInput != -1) {
@@ -1240,13 +1482,13 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
                         }
                     }
                 }
-                _imp->_highLightedEdge->setUseHighlight(false);
+
                 _imp->_highLightedEdge = 0;
                 _imp->_hintInputEdge->hide();
                 _imp->_hintOutputEdge->hide();
             } else if (_imp->_mergeHintNode) {
                 _imp->_mergeHintNode->setMergeHintActive(false);
-                boost::shared_ptr<NodeGui> selectedNode = _imp->_selection.nodes.front();
+                boost::shared_ptr<NodeGui> selectedNode = _imp->_selection.front();
                 selectedNode->setMergeHintActive(false);
                 
                 if (getGui()) {
@@ -1268,8 +1510,18 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
                                                 selectedNodeCenter.y() + selectedNodeBbox.height() / 2.) + NodeGui::DEFAULT_OFFSET_BETWEEN_NODES);
                     
                     
-                    CreateNodeArgs args("net.sf.openfx.mergeplugin","",-1,-1,-1,false,newNodePos.x(),newNodePos.y(),true,true,QString(),
-                                        CreateNodeArgs::DefaultValuesList());
+                    CreateNodeArgs args(PLUGINID_OFX_MERGE,
+                                        "",
+                                        -1,
+                                        -1,
+                                        false,
+                                        newNodePos.x(),newNodePos.y(),
+                                        true,
+                                        true,
+                                        QString(),
+                                        CreateNodeArgs::DefaultValuesList(),
+                                        getGroup());
+
                     
                     boost::shared_ptr<Natron::Node> mergeNode = getGui()->getApp()->createNode(args);
                     if (mergeNode) {
@@ -1283,55 +1535,56 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
                 _imp->_mergeHintNode.reset();
             }
         }
-    } else if (state == SELECTION_RECT) {
+    } else if (state == eEventStateSelectionRect) {
         _imp->_selectionRect->hide();
         _imp->editSelectionFromSelectionRectangle( modCASIsShift(e) );
     }
-    scene()->update();
-    update();
-    setCursor( QCursor(Qt::ArrowCursor) );
+    unsetCursor();
 } // mouseReleaseEvent
 
 void
 NodeGraph::mouseMoveEvent(QMouseEvent* e)
 {
     QPointF newPos = mapToScene( e->pos() );
-    double dx = _imp->_root->mapFromScene(newPos).x() - _imp->_root->mapFromScene(_imp->_lastScenePosClick).x();
-    double dy = _imp->_root->mapFromScene(newPos).y() - _imp->_root->mapFromScene(_imp->_lastScenePosClick).y();
-
     
+    QPointF lastMousePosScene = mapToScene(_imp->_lastMousePos.x(),_imp->_lastMousePos.y());
+    
+    double dx = _imp->_root->mapFromScene(newPos).x() - _imp->_root->mapFromScene(lastMousePosScene).x();
+    double dy = _imp->_root->mapFromScene(newPos).y() - _imp->_root->mapFromScene(lastMousePosScene).y();
 
+    _imp->_hasMovedOnce = true;
+    
+    bool mustUpdate = true;
     
     QRectF sceneR = visibleSceneRect();
-    if (_imp->_evtState != SELECTION_RECT && _imp->_evtState != ARROW_DRAGGING) {
+    if (_imp->_evtState != eEventStateSelectionRect && _imp->_evtState != eEventStateDraggingArrow) {
         ///set cursor
         boost::shared_ptr<NodeGui> selected;
         Edge* selectedEdge = 0;
         {
             bool optionalInputsAutoHidden = areOptionalInputsAutoHidden();
             QMutexLocker l(&_imp->_nodesMutex);
-            for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
-                boost::shared_ptr<NodeGui> & n = *it;
-                QPointF evpt = n->mapFromScene(newPos);
+            for (NodeGuiList::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
+                QPointF evpt = (*it)->mapFromScene(newPos);
                 
-                QRectF bbox = n->mapToScene(n->boundingRect()).boundingRect();
-                if (n->isActive() && bbox.intersects(sceneR)) {
-                    if (n->contains(evpt)) {
-                        selected = n;
+                QRectF bbox = (*it)->mapToScene((*it)->boundingRect()).boundingRect();
+                if ((*it)->isActive() && bbox.intersects(sceneR)) {
+                    if ((*it)->contains(evpt)) {
+                        selected = (*it);
                         if (optionalInputsAutoHidden) {
-                            n->setOptionalInputsVisible(true);
+                            (*it)->setOptionalInputsVisible(true);
                         } else {
                             break;
                         }
                     } else {
-                        Edge* edge = n->hasEdgeNearbyPoint(newPos);
+                        Edge* edge = (*it)->hasEdgeNearbyPoint(newPos);
                         if (edge) {
                             selectedEdge = edge;
                             if (!optionalInputsAutoHidden) {
                                 break;
                             }
-                        } else if (optionalInputsAutoHidden && !n->getIsSelected()) {
-                            n->setOptionalInputsVisible(false);
+                        } else if (optionalInputsAutoHidden && !(*it)->getIsSelected()) {
+                            (*it)->setOptionalInputsVisible(false);
                         }
                     }
                 }
@@ -1342,14 +1595,14 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
             setCursor( QCursor(Qt::OpenHandCursor) );
         } else if (selectedEdge) {
         } else if (!selectedEdge && !selected) {
-            setCursor( QCursor(Qt::ArrowCursor) );
+            unsetCursor();
         }
     }
 
     bool mustUpdateNavigator = false;
     ///Apply actions
     switch (_imp->_evtState) {
-    case ARROW_DRAGGING: {
+    case eEventStateDraggingArrow: {
         QPointF np = _imp->_arrowSelected->mapFromScene(newPos);
         if ( _imp->_arrowSelected->isOutputEdge() ) {
             _imp->_arrowSelected->dragDest(np);
@@ -1358,64 +1611,69 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
         }
         break;
     }
-    case NODE_DRAGGING:
-    case BACKDROP_DRAGGING: {
-        if ( !_imp->_selection.nodes.empty() || !_imp->_selection.bds.empty() ) {
+    case eEventStateDraggingNode: {
+        if ( !_imp->_selection.empty() ) {
+            
+            bool controlDown = modCASIsControl(e);
+
             std::list<MoveMultipleNodesCommand::NodeToMove> nodesToMove;
-            for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_selection.nodes.begin();
-                 it != _imp->_selection.nodes.end(); ++it) {
+            for (NodeGuiList::iterator it = _imp->_selection.begin();
+                 it != _imp->_selection.end(); ++it) {
+            
                 MoveMultipleNodesCommand::NodeToMove n;
                 n.node = *it;
                 n.isWithinBD = false;
                 nodesToMove.push_back(n);
+                
+                std::map<NodeGuiPtr,NodeGuiList>::iterator foundBd = _imp->_nodesWithinBDAtPenDown.find(*it);
+                if (!controlDown && foundBd != _imp->_nodesWithinBDAtPenDown.end()) {
+                    for (NodeGuiList::iterator it2 = foundBd->second.begin();
+                         it2 != foundBd->second.end(); ++it2) {
+                        ///add it only if it's not already in the list
+                        bool found = false;
+                        for (std::list<MoveMultipleNodesCommand::NodeToMove>::iterator it3 = nodesToMove.begin();
+                             it3 != nodesToMove.end(); ++it3) {
+                            if (it3->node.lock() == *it2) {
+                                found = true;
+                                break;
+                            }
+                        }
+                        if (!found) {
+                            MoveMultipleNodesCommand::NodeToMove n;
+                            n.node = *it2;
+                            n.isWithinBD = true;
+                            nodesToMove.push_back(n);
+                        }
+                    }
+
+                }
             }
             //= _imp->_selection.nodes;
 
-            if ( ( ( _imp->_evtState == BACKDROP_DRAGGING) && !modCASIsControl(e) ) ||
-                 ( _imp->_evtState == NODE_DRAGGING) ) {
-                ///For all backdrops also move all the nodes contained within it
-                for (std::list<NodeBackDrop*>::iterator it = _imp->_selection.bds.begin(); it != _imp->_selection.bds.end(); ++it) {
-                    
-                    std::map<NodeBackDrop*,std::list<boost::shared_ptr<NodeGui> > >::iterator foundBd = _imp->_nodesWithinBDAtPenDown.find(*it);
-                    if (foundBd != _imp->_nodesWithinBDAtPenDown.end()) {
-                        
-                        for (std::list<boost::shared_ptr<NodeGui> >::iterator it2 = foundBd->second.begin();
-                             it2 != foundBd->second.end(); ++it2) {
-                            ///add it only if it's not already in the list
-                            bool found = false;
-                            for (std::list<MoveMultipleNodesCommand::NodeToMove>::iterator it3 = nodesToMove.begin();
-                                 it3 != nodesToMove.end(); ++it3) {
-                                if (it3->node == *it2) {
-                                    found = true;
-                                    break;
-                                }
-                            }
-                            if (!found) {
-                                MoveMultipleNodesCommand::NodeToMove n;
-                                n.node = *it2;
-                                n.isWithinBD = true;
-                                nodesToMove.push_back(n);
-                            }
-                        }
-
-                    }
-                }
-            }
             mustUpdateNavigator = true;
             pushUndoCommand( new MoveMultipleNodesCommand(nodesToMove,
-                                                                 _imp->_selection.bds,
-                                                                 newPos.x() - _imp->_lastScenePosClick.x(),
-                                                                 newPos.y() - _imp->_lastScenePosClick.y(),newPos) );
+                                                          newPos.x() - lastMousePosScene.x(),
+                                                          newPos.y() - lastMousePosScene.y(),
+                                                          _imp->_mergeMoveCommands,
+                                                          newPos) );
+            if (!_imp->_mergeMoveCommands) {
+                _imp->_mergeMoveCommands = true;
+            }
         }
-
-        if (_imp->_selection.nodes.size() == 1) {
+        
+        if (_imp->_selection.size() == 1) {
             ///try to find a nearby edge
-            boost::shared_ptr<NodeGui> selectedNode = _imp->_selection.nodes.front();
+            boost::shared_ptr<NodeGui> selectedNode = _imp->_selection.front();
             boost::shared_ptr<Natron::Node> internalNode = selectedNode->getNode();
             
             bool doMergeHints = e->modifiers().testFlag(Qt::ControlModifier) && e->modifiers().testFlag(Qt::ShiftModifier);
-            
             bool doHints = appPTR->getCurrentSettings()->isConnectionHintEnabled();
+            
+            BackDropGui* isBd = dynamic_cast<BackDropGui*>(selectedNode.get());
+            if (isBd) {
+                doMergeHints = false;
+                doHints = false;
+            }
             
             if (!doMergeHints) {
                 ///for readers already connected don't show hint
@@ -1438,17 +1696,16 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
                 Edge* edge = 0;
                 {
                     QMutexLocker l(&_imp->_nodesMutex);
-                    for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
-                        boost::shared_ptr<NodeGui> & n = *it;
+                    for (NodeGuiList::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
                         
-                        QRectF nodeBbox = n->mapToScene(n->boundingRect()).boundingRect();
-                        if ( n != selectedNode && n->isVisible() && nodeBbox.intersects(sceneR)) {
+                        QRectF nodeBbox = (*it)->mapToScene((*it)->boundingRect()).boundingRect();
+                        if ( (*it) != selectedNode && (*it)->isVisible() && nodeBbox.intersects(sceneR)) {
                             
                             if (doMergeHints) {
                                 
-                                QRectF nodeRect = n->mapToParent(n->boundingRect()).boundingRect();
+                                QRectF nodeRect = (*it)->mapToParent((*it)->boundingRect()).boundingRect();
                                 
-                                boost::shared_ptr<Natron::Node> internalNode = n->getNode();
+                                boost::shared_ptr<Natron::Node> internalNode = (*it)->getNode();
                                 
                                 
                                 if (!internalNode->isOutputNode() && nodeRect.intersects(rect)) {
@@ -1472,15 +1729,15 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
                                         }
                                     }
                                     if (isValid) {
-                                        nodeToShowMergeRect = n;
+                                        nodeToShowMergeRect = *it;
                                     }
                                 } else {
-                                    n->setMergeHintActive(false);
+                                    (*it)->setMergeHintActive(false);
                                 }
                                 
                             } else {
                                 
-                                edge = n->hasEdgeNearbyRect(rect);
+                                edge = (*it)->hasEdgeNearbyRect(rect);
                                 
                                 ///if the edge input is the selected node don't continue
                                 if ( edge && ( edge->getSource() == selectedNode) ) {
@@ -1593,13 +1850,13 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
         setCursor( QCursor(Qt::ClosedHandCursor) );
         break;
     }
-    case MOVING_AREA: {
+    case eEventStateMovingArea: {
         mustUpdateNavigator = true;
         _imp->_root->moveBy(dx, dy);
         setCursor( QCursor(Qt::SizeAllCursor) );
         break;
     }
-    case BACKDROP_RESIZING: {
+    case eEventStateResizingBackdrop: {
         mustUpdateNavigator = true;
         assert(_imp->_backdropResized);
         QPointF p = _imp->_backdropResized->scenePos();
@@ -1608,53 +1865,61 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
         pushUndoCommand( new ResizeBackDropCommand(_imp->_backdropResized,w,h) );
         break;
     }
-    case SELECTION_RECT: {
-        QPointF startDrag = _imp->_selectionRect->mapFromScene(_imp->_lastSelectionStartPoint);
+    case eEventStateSelectionRect: {
+        QPointF lastSelectionScene = mapToScene(_imp->_lastSelectionStartPoint);
+        QPointF startDrag = _imp->_selectionRect->mapFromScene(lastSelectionScene);
         QPointF cur = _imp->_selectionRect->mapFromScene(newPos);
         double xmin = std::min( cur.x(),startDrag.x() );
         double xmax = std::max( cur.x(),startDrag.x() );
         double ymin = std::min( cur.y(),startDrag.y() );
         double ymax = std::max( cur.y(),startDrag.y() );
         _imp->_selectionRect->setRect(xmin,ymin,xmax - xmin,ymax - ymin);
+        _imp->_selectionRect->show();
         break;
     }
-    case NAVIGATOR_DRAGGING: {
+    case eEventStateDraggingNavigator: {
         QPointF mousePosSceneCoordinates;
         bool insideNavigator = isNearbyNavigator(e->pos(), mousePosSceneCoordinates);
         if (insideNavigator) {
             _imp->_refreshOverlays = true;
             centerOn(mousePosSceneCoordinates);
-            _imp->_lastScenePosClick = newPos;
+            _imp->_lastMousePos = e->pos();
             return;
         }
+        
+    } break;
+    case eEventStateZoomingArea: {
+            int delta = 2*((e->x() - _imp->_lastMousePos.x()) - (e->y() - _imp->_lastMousePos.y()));
+            setTransformationAnchor(QGraphicsView::AnchorViewCenter);
+            wheelEventInternal(modCASIsControl(e),delta);
+            setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
     } break;
     default:
+            mustUpdate = false;
         break;
     } // switch
 
     
-    _imp->_lastScenePosClick = newPos;
+    _imp->_lastMousePos = e->pos();
 
     if (mustUpdateNavigator) {
         _imp->_refreshOverlays = true;
     }
-
-    update();
+    
+    if (mustUpdate) {
+        update();
+    }
     QGraphicsView::mouseMoveEvent(e);
 } // mouseMoveEvent
 
 void
 NodeGraphPrivate::resetSelection()
 {
-    for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _selection.nodes.begin(); it != _selection.nodes.end(); ++it) {
-        (*it)->setUserSelected(false);
-    }
-    for (std::list<NodeBackDrop*>::iterator it = _selection.bds.begin(); it != _selection.bds.end(); ++it) {
+    for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _selection.begin(); it != _selection.end(); ++it) {
         (*it)->setUserSelected(false);
     }
 
-    _selection.nodes.clear();
-    _selection.bds.clear();
+    _selection.clear();
 }
 
 void
@@ -1666,82 +1931,73 @@ NodeGraphPrivate::editSelectionFromSelectionRectangle(bool addToSelection)
 
     QRectF selection = _selectionRect->mapToScene( _selectionRect->rect() ).boundingRect();
 
-    for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
+    for (NodeGuiList::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
         QRectF bbox = (*it)->mapToScene( (*it)->boundingRect() ).boundingRect();
         if ( selection.contains(bbox) ) {
             
-            std::list<boost::shared_ptr<NodeGui> >::iterator foundInSel = std::find(_selection.nodes.begin(),_selection.nodes.end(),*it);
-            if (foundInSel != _selection.nodes.end()) {
+            NodeGuiList::iterator foundInSel = std::find(_selection.begin(),_selection.end(),*it);
+            if (foundInSel != _selection.end()) {
                 continue;
             }
             
-            _selection.nodes.push_back(*it);
-            (*it)->setUserSelected(true);
-        }
-    }
-    for (std::list<NodeBackDrop*>::iterator it = _backdrops.begin(); it != _backdrops.end(); ++it) {
-        QRectF bbox = (*it)->mapToScene( (*it)->boundingRect() ).boundingRect();
-        if ( selection.contains(bbox) ) {
-            
-            std::list<NodeBackDrop* >::iterator foundInSel = std::find(_selection.bds.begin(),_selection.bds.end(),*it);
-            if (foundInSel != _selection.bds.end()) {
-                continue;
-            }
-            
-            _selection.bds.push_back(*it);
+            _selection.push_back(*it);
             (*it)->setUserSelected(true);
         }
     }
 }
 
 void
-NodeGraph::mouseDoubleClickEvent(QMouseEvent* e)
+NodeGraph::mouseDoubleClickEvent(QMouseEvent* /*e*/)
 {
-    std::list<boost::shared_ptr<NodeGui> > nodes = getAllActiveNodes_mt_safe();
+    
+    QPointF lastMousePosScene = mapToScene(_imp->_lastMousePos);
 
-    for (std::list<boost::shared_ptr<NodeGui> >::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        QPointF evpt = (*it)->mapFromScene(_imp->_lastScenePosClick);
+    NodeGuiList nodes = getAllActiveNodes_mt_safe();
+    
+    ///Matches sorted by depth
+    std::map<double,NodeGuiPtr> matches;
+    for (NodeGuiList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        QPointF evpt = (*it)->mapFromScene(lastMousePosScene);
         if ( (*it)->isVisible() && (*it)->isActive() && (*it)->contains(evpt) && (*it)->getSettingPanel() ) {
-            if ( !(*it)->isSettingsPanelVisible() ) {
-                (*it)->setVisibleSettingsPanel(true);
-            }
-            if ( !(*it)->wasBeginEditCalled() ) {
-                (*it)->beginEditKnobs();
-            }
-            _imp->_gui->putSettingsPanelFirst( (*it)->getSettingPanel() );
-            getGui()->getApp()->redrawAllViewers();
-
-            return;
+            matches.insert(std::make_pair((*it)->zValue(), *it));
         }
     }
-
-    for (std::list<NodeBackDrop*>::iterator it = _imp->_backdrops.begin(); it != _imp->_backdrops.end(); ++it) {
-        if ( (*it)->isNearbyHeader(_imp->_lastScenePosClick) ) {
-            
-            if (e->modifiers().testFlag(Qt::ControlModifier)) {
-                ///Clear all visible panels and open the panels of all nodes in the backdrop
-                _imp->_gui->clearAllVisiblePanels();
-                
-                int maxPanels = appPTR->getCurrentSettings()->getMaxPanelsOpened();
-                std::list<boost::shared_ptr<NodeGui> > containedNodes = getNodesWithinBackDrop(*it);
-                int count = 0;
-                for (std::list<boost::shared_ptr<NodeGui> >::iterator it2 = containedNodes.begin(); it2 != containedNodes.end(); ++it2,++count) {
-                    if (count >= maxPanels) {
-                        break;
-                    }
-                    (*it2)->setVisibleSettingsPanel(true);
-                }
-                
-                
-            } else {
-                if ( (*it)->isSettingsPanelClosed() ) {
-                    (*it)->setSettingsPanelClosed(false);
-                }
-                _imp->_gui->putSettingsPanelFirst( (*it)->getSettingsPanel() );
-            }
-            return;
+    if (!matches.empty()) {
+        const NodeGuiPtr& node = matches.rbegin()->second;
+        if ( !node->isSettingsPanelVisible() ) {
+            node->setVisibleSettingsPanel(true);
         }
+        if ( !node->wasBeginEditCalled() ) {
+            node->beginEditKnobs();
+        }
+        _imp->_gui->putSettingsPanelFirst( node->getSettingPanel() );
+        
+        NodeGroup* isGrp = dynamic_cast<NodeGroup*>(node->getNode()->getLiveInstance());
+        if (isGrp) {
+            NodeGraphI* graph_i = isGrp->getNodeGraph();
+            assert(graph_i);
+            NodeGraph* graph = dynamic_cast<NodeGraph*>(graph_i);
+            if (graph) {
+                TabWidget* isParentTab = dynamic_cast<TabWidget*>(graph->parentWidget());
+                if (isParentTab) {
+                    isParentTab->setCurrentWidget(graph);
+                } else {
+                    NodeGraph* lastSelectedGraph = _imp->_gui->getLastSelectedGraph();
+                    ///We're in the double click event, it should've entered the focus in event beforehand!
+                    assert(lastSelectedGraph == this);
+                    
+                    isParentTab = dynamic_cast<TabWidget*>(lastSelectedGraph->parentWidget());
+                    assert(isParentTab);
+                    isParentTab->appendTab(graph,graph);
+
+                }
+                QTimer::singleShot(25, graph, SLOT(centerOnAllNodes()));
+            }
+        }
+        
+        getGui()->getApp()->redrawAllViewers();
     }
+
 }
 
 bool
@@ -1779,31 +2035,30 @@ NodeGraph::onNodeCreationDialogFinished()
 
     if (dialog) {
         QDialog::DialogCode ret = (QDialog::DialogCode)dialog->result();
-        QString res = dialog->getNodeName();
+        int major;
+        QString res = dialog->getNodeName(&major);
         _imp->_lastNodeCreatedName = res;
         dialog->deleteLater();
 
         switch (ret) {
         case QDialog::Accepted: {
-           
-            const std::vector<Natron::Plugin*> & allPlugins = appPTR->getPluginsList();
-            for (U32 i = 0; i < allPlugins.size(); ++i) {
-                if (allPlugins[i]->getPluginID() == res) {
-                    QPointF posHint = mapToScene( mapFromGlobal( QCursor::pos() ) );
-                    getGui()->getApp()->createNode( CreateNodeArgs( res,
-                                                                   "",
-                                                                   -1,
-                                                                   -1,
-                                                                   -1,
-                                                                   true,
-                                                                   posHint.x(),
-                                                                   posHint.y(),
-                                                                   true,
-                                                                   true,
-                                                                   QString(),
-                                                                   CreateNodeArgs::DefaultValuesList()) );
-                    break;
-                }
+            
+            const Natron::PluginsMap & allPlugins = appPTR->getPluginsList();
+            Natron::PluginsMap::const_iterator found = allPlugins.find(res.toStdString());
+            if (found != allPlugins.end()) {
+                QPointF posHint = mapToScene( mapFromGlobal( QCursor::pos() ) );
+                getGui()->getApp()->createNode( CreateNodeArgs( res,
+                                                               "",
+                                                               major,
+                                                               -1,
+                                                               true,
+                                                               posHint.x(),
+                                                               posHint.y(),
+                                                               true,
+                                                               true,
+                                                               QString(),
+                                                               CreateNodeArgs::DefaultValuesList(),
+                                                               getGroup()) );
             }
             break;
         }
@@ -1858,27 +2113,29 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
         selectAllNodes(false);
     } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphSelectAllVisible, modifiers, key) ) {
         selectAllNodes(true);
+    } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphMakeGroup, modifiers, key) ) {
+        createGroupFromSelection();
     } else if (key == Qt::Key_Control) {
         _imp->setNodesBendPointsVisible(true);
     } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphSelectUp, modifiers, key) ||
                 isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphNavigateUpstream, modifiers, key) ) {
         ///We try to find if the last selected node has an input, if so move selection (or add to selection)
         ///the first valid input node
-        if ( !_imp->_selection.nodes.empty() ) {
-            boost::shared_ptr<NodeGui> lastSelected = ( *_imp->_selection.nodes.rbegin() );
-            const std::map<int,Edge*> & inputs = lastSelected->getInputsArrows();
-            for (std::map<int,Edge*>::const_iterator it = inputs.begin(); it != inputs.end(); ++it) {
-                if ( it->second->hasSource() ) {
-                    boost::shared_ptr<NodeGui> input = it->second->getSource();
+        if ( !_imp->_selection.empty() ) {
+            boost::shared_ptr<NodeGui> lastSelected = ( *_imp->_selection.rbegin() );
+            const std::vector<Edge*> & inputs = lastSelected->getInputsArrows();
+            for (U32 i = 0; i < inputs.size() ;++i) {
+                if ( inputs[i]->hasSource() ) {
+                    boost::shared_ptr<NodeGui> input = inputs[i]->getSource();
                     if ( input->getIsSelected() && modCASIsShift(e) ) {
-                        std::list<boost::shared_ptr<NodeGui> >::iterator found = std::find(_imp->_selection.nodes.begin(),
-                                                                                           _imp->_selection.nodes.end(),lastSelected);
-                        if ( found != _imp->_selection.nodes.end() ) {
+                        std::list<boost::shared_ptr<NodeGui> >::iterator found = std::find(_imp->_selection.begin(),
+                                                                                           _imp->_selection.end(),lastSelected);
+                        if ( found != _imp->_selection.end() ) {
                             lastSelected->setUserSelected(false);
-                            _imp->_selection.nodes.erase(found);
+                            _imp->_selection.erase(found);
                         }
                     } else {
-                        selectNode( it->second->getSource(), modCASIsShift(e) );
+                        selectNode( inputs[i]->getSource(), modCASIsShift(e) );
                     }
                     break;
                 }
@@ -1888,18 +2145,19 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
                 isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphNavigateDownstream, modifiers, key) ) {
         ///We try to find if the last selected node has an output, if so move selection (or add to selection)
         ///the first valid output node
-        if ( !_imp->_selection.nodes.empty() ) {
-            boost::shared_ptr<NodeGui> lastSelected = ( *_imp->_selection.nodes.rbegin() );
+        if ( !_imp->_selection.empty() ) {
+            boost::shared_ptr<NodeGui> lastSelected = ( *_imp->_selection.rbegin() );
             const std::list<Natron::Node* > & outputs = lastSelected->getNode()->getOutputs();
             if ( !outputs.empty() ) {
-                boost::shared_ptr<NodeGui> output = getGui()->getApp()->getNodeGui( outputs.front() );
+                boost::shared_ptr<NodeGuiI> output_i = outputs.front()->getNodeGui();
+                boost::shared_ptr<NodeGui> output = boost::dynamic_pointer_cast<NodeGui>(output_i);
                 assert(output);
                 if ( output->getIsSelected() && modCASIsShift(e) ) {
-                    std::list<boost::shared_ptr<NodeGui> >::iterator found = std::find(_imp->_selection.nodes.begin(),
-                                                                                       _imp->_selection.nodes.end(),lastSelected);
-                    if ( found != _imp->_selection.nodes.end() ) {
+                    std::list<boost::shared_ptr<NodeGui> >::iterator found = std::find(_imp->_selection.begin(),
+                                                                                       _imp->_selection.end(),lastSelected);
+                    if ( found != _imp->_selection.end() ) {
                         lastSelected->setUserSelected(false);
-                        _imp->_selection.nodes.erase(found);
+                        _imp->_selection.erase(found);
                     }
                 } else {
                     selectNode( output, modCASIsShift(e) );
@@ -1951,7 +2209,7 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
     } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphRenameNode, modifiers, key) ) {
         popRenameDialog(QCursor::pos());
     } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphExtractNode, modifiers, key) ) {
-        pushUndoCommand(new ExtractNodeUndoRedoCommand(this,_imp->_selection.nodes));
+        pushUndoCommand(new ExtractNodeUndoRedoCommand(this,_imp->_selection));
     } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphTogglePreview, modifiers, key) ) {
         togglePreviewsForSelectedNodes();
     } else {
@@ -1964,27 +2222,31 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
         
         if (!intercepted) {
             /// Search for a node which has a shortcut bound
-            const std::vector<Natron::Plugin*> & allPlugins = appPTR->getPluginsList();
-            for (U32 i = 0; i < allPlugins.size(); ++i) {
-                if ( allPlugins[i]->getHasShortcut() ) {
+            const Natron::PluginsMap & allPlugins = appPTR->getPluginsList();
+            for (Natron::PluginsMap::const_iterator it = allPlugins.begin() ;it != allPlugins.end() ;++it) {
+                
+                assert(!it->second.empty());
+                Natron::Plugin* plugin = *it->second.rbegin();
+                
+                if ( plugin->getHasShortcut() ) {
                     QString group(kShortcutGroupNodes);
-                    QStringList groupingSplit = allPlugins[i]->getGrouping();
+                    QStringList groupingSplit = plugin->getGrouping();
                     for (int j = 0; j < groupingSplit.size(); ++j) {
                         group.push_back('/');
                         group.push_back(groupingSplit[j]);
                     }
-                    if ( isKeybind(group.toStdString().c_str(), allPlugins[i]->getPluginID().toStdString().c_str(), modifiers, key) ) {
+                    if ( isKeybind(group.toStdString().c_str(), plugin->getPluginID(), modifiers, key) ) {
                         QPointF hint = mapToScene( mapFromGlobal( QCursor::pos() ) );
-                        getGui()->getApp()->createNode( CreateNodeArgs( allPlugins[i]->getPluginID(),
+                        getGui()->getApp()->createNode( CreateNodeArgs( plugin->getPluginID(),
                                                                        "",
                                                                        -1,-1,
-                                                                       -1,
                                                                        true,
                                                                        hint.x(),hint.y(),
                                                                        true,
                                                                        true,
                                                                        QString(),
-                                                                       CreateNodeArgs::DefaultValuesList()) );
+                                                                       CreateNodeArgs::DefaultValuesList(),
+                                                                       getGroup()) );
                         intercepted = true;
                         break;
                     }
@@ -2008,8 +2270,8 @@ NodeGraph::toggleAutoTurbo()
 void
 NodeGraphPrivate::rearrangeSelectedNodes()
 {
-    if ( !_selection.nodes.empty() ) {
-        _publicInterface->pushUndoCommand( new RearrangeNodesCommand(_selection.nodes) );
+    if ( !_selection.empty() ) {
+        _publicInterface->pushUndoCommand( new RearrangeNodesCommand(_selection) );
     }
 }
 
@@ -2019,15 +2281,15 @@ NodeGraphPrivate::setNodesBendPointsVisible(bool visible)
     _bendPointsVisible = visible;
 
     for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
-        const std::map<int,Edge*> & edges = (*it)->getInputsArrows();
-        for (std::map<int,Edge*>::const_iterator it2 = edges.begin(); it2 != edges.end(); ++it2) {
+        const std::vector<Edge*> & edges = (*it)->getInputsArrows();
+        for (std::vector<Edge*>::const_iterator it2 = edges.begin(); it2 != edges.end(); ++it2) {
             if (visible) {
-                if ( !it2->second->isOutputEdge() && it2->second->hasSource() && (it2->second->line().length() > 50) ) {
-                    it2->second->setBendPointVisible(visible);
+                if ( !(*it2)->isOutputEdge() && (*it2)->hasSource() && ((*it2)->line().length() > 50) ) {
+                    (*it2)->setBendPointVisible(visible);
                 }
             } else {
-                if ( !it2->second->isOutputEdge() ) {
-                    it2->second->setBendPointVisible(visible);
+                if ( (*it2) && !(*it2)->isOutputEdge() ) {
+                    (*it2)->setBendPointVisible(visible);
                 }
             }
         }
@@ -2044,26 +2306,16 @@ NodeGraph::selectAllNodes(bool onlyInVisiblePortion)
             QRectF bbox = (*it)->mapToScene( (*it)->boundingRect() ).boundingRect();
             if ( r.intersects(bbox) && (*it)->isActive() && (*it)->isVisible() ) {
                 (*it)->setUserSelected(true);
-                _imp->_selection.nodes.push_back(*it);
+                _imp->_selection.push_back(*it);
             }
         }
-        for (std::list<NodeBackDrop*>::iterator it = _imp->_backdrops.begin(); it != _imp->_backdrops.end(); ++it) {
-            QRectF bbox = (*it)->mapToScene( (*it)->boundingRect() ).boundingRect();
-            if ( r.intersects(bbox) ) {
-                (*it)->setUserSelected(true);
-                _imp->_selection.bds.push_back(*it);
-            }
-        }
+  
     } else {
         for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
             if ( (*it)->isActive() && (*it)->isVisible() ) {
                 (*it)->setUserSelected(true);
-                _imp->_selection.nodes.push_back(*it);
+                _imp->_selection.push_back(*it);
             }
-        }
-        for (std::list<NodeBackDrop*>::iterator it = _imp->_backdrops.begin(); it != _imp->_backdrops.end(); ++it) {
-            (*it)->setUserSelected(true);
-            _imp->_selection.bds.push_back(*it);
         }
     }
 }
@@ -2072,16 +2324,16 @@ void
 NodeGraph::connectCurrentViewerToSelection(int inputNB)
 {
     if ( !_imp->_gui->getLastSelectedViewer() ) {
-        _imp->_gui->getApp()->createNode(  CreateNodeArgs(NATRON_VIEWER_ID,
+        _imp->_gui->getApp()->createNode(  CreateNodeArgs(PLUGINID_NATRON_VIEWER,
                                                           "",
                                                           -1,-1,
-                                                          -1,
                                                           true,
                                                           INT_MIN,INT_MIN,
                                                           true,
                                                           true,
                                                           QString(),
-                                                          CreateNodeArgs::DefaultValuesList()) );
+                                                          CreateNodeArgs::DefaultValuesList(),
+                                                          getGroup()) );
     }
 
     ///get a pointer to the last user selected viewer
@@ -2094,19 +2346,20 @@ NodeGraph::connectCurrentViewerToSelection(int inputNB)
     }
 
     ///get a ptr to the NodeGui
-    boost::shared_ptr<NodeGui> gui = _imp->_gui->getApp()->getNodeGui(v);
+    boost::shared_ptr<NodeGuiI> gui_i = v->getNodeGui();
+    boost::shared_ptr<NodeGui> gui = boost::dynamic_pointer_cast<NodeGui>(gui_i);
     assert(gui);
 
     ///if there's no selected node or the viewer is selected, then try refreshing that input nb if it is connected.
-    bool viewerAlreadySelected = std::find(_imp->_selection.nodes.begin(),_imp->_selection.nodes.end(),gui) != _imp->_selection.nodes.end();
-    if (_imp->_selection.nodes.empty() || (_imp->_selection.nodes.size() > 1) || viewerAlreadySelected) {
+    bool viewerAlreadySelected = std::find(_imp->_selection.begin(),_imp->_selection.end(),gui) != _imp->_selection.end();
+    if (_imp->_selection.empty() || (_imp->_selection.size() > 1) || viewerAlreadySelected) {
         v->setActiveInputAndRefresh(inputNB);
         gui->refreshEdges();
 
         return;
     }
 
-    boost::shared_ptr<NodeGui> selected = _imp->_selection.nodes.front();
+    boost::shared_ptr<NodeGui> selected = _imp->_selection.front();
 
 
     if ( !selected->getNode()->canOthersConnectToThisNode() ) {
@@ -2115,14 +2368,15 @@ NodeGraph::connectCurrentViewerToSelection(int inputNB)
 
     ///if the node doesn't have the input 'inputNb' created yet, populate enough input
     ///so it can be created.
-    NodeGui::InputEdgesMap::const_iterator it = gui->getInputsArrows().find(inputNB);
-    while ( it == gui->getInputsArrows().end() ) {
+    Edge* foundInput = gui->getInputArrow(inputNB);
+    while (!foundInput) {
         v->addEmptyInput();
-        it = gui->getInputsArrows().find(inputNB);
+        foundInput = gui->getInputArrow(inputNB);
     }
-
+    assert(foundInput);
+  
     ///and push a connect command to the selected node.
-    pushUndoCommand( new ConnectCommand(this,it->second,it->second->getSource(),selected) );
+    pushUndoCommand( new ConnectCommand(this,foundInput,foundInput->getSource(),selected) );
 
     ///Set the viewer as the selected node (also wipe the current selection)
     selectNode(gui,false);
@@ -2173,26 +2427,17 @@ NodeGraph::setVisibleNodeDetails(bool visible)
     for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = _imp->_nodes.begin(); it!= _imp->_nodes.end(); ++it) {
         (*it)->setVisibleDetails(visible);
     }
-    for (std::list<NodeBackDrop*>::const_iterator it =_imp->_backdrops.begin(); it != _imp->_backdrops.end(); ++it) {
-        (*it)->setVisibleDetails(visible);
-    }
 }
 
 void
-NodeGraph::wheelEvent(QWheelEvent* e)
+NodeGraph::wheelEventInternal(bool ctrlDown,double delta)
 {
-    if (e->orientation() != Qt::Vertical) {
-        return;
-    }
-    QPointF newPos = mapToScene( e->pos() );
-    
-    double scaleFactor = pow( NATRON_WHEEL_ZOOM_PER_DELTA, e->delta() );
-    
+    double scaleFactor = pow( NATRON_WHEEL_ZOOM_PER_DELTA, delta);
     QTransform transfo = transform();
     
     double currentZoomFactor = transfo.mapRect( QRectF(0, 0, 1, 1) ).width();
     double newZoomfactor = currentZoomFactor * scaleFactor;
-    if (newZoomfactor < 0.05 || newZoomfactor > 40) {
+    if ((newZoomfactor < 0.01 && scaleFactor < 1.) || (newZoomfactor > 50 && scaleFactor > 1.)) {
         return;
     }
     if (newZoomfactor < 0.4) {
@@ -2201,41 +2446,35 @@ NodeGraph::wheelEvent(QWheelEvent* e)
         setVisibleNodeDetails(true);
     }
     
-    if (modCASIsControl(e) && _imp->_magnifiedNode) {
+    if (ctrlDown && _imp->_magnifiedNode) {
         if (!_imp->_magnifOn) {
             _imp->_magnifOn = true;
             _imp->_nodeSelectedScaleBeforeMagnif = _imp->_magnifiedNode->scale();
         }
         _imp->_magnifiedNode->setScale_natron(_imp->_magnifiedNode->scale() * scaleFactor);
     } else {
-//        QPointF centerScene = visibleSceneRect().center();
-//        QPoint center = visibleWidgetRect().center();
-//        QPointF deltaScene;
-//        deltaScene.rx() = e->x() - center.x();
-//        deltaScene.ry() = e->y() - center.y();
-//        QTransform t = transform();
-//        centerOn(newPos);
-//        //t.translate(-deltaScene.x(),-deltaScene.y());
-//        t.scale(scaleFactor,scaleFactor);
-//        //t.translate(deltaScene.x(),deltaScene.y());
-//        setTransform(t);
-//        centerOn(centerScene);
- 
-        //       scale(scaleFactor,scaleFactor);
-        //QPointF delta =
-        
 
-        _imp->_accumDelta += e->delta();
+        _imp->_accumDelta += delta;
         if (std::abs(_imp->_accumDelta) > 60) {
             scaleFactor = pow( NATRON_WHEEL_ZOOM_PER_DELTA, _imp->_accumDelta );
-            setSceneRect(NATRON_SCENE_MIN,NATRON_SCENE_MIN,NATRON_SCENE_MAX,NATRON_SCENE_MAX);
+           // setSceneRect(NATRON_SCENE_MIN,NATRON_SCENE_MIN,NATRON_SCENE_MAX,NATRON_SCENE_MAX);
             scale(scaleFactor,scaleFactor);
             _imp->_accumDelta = 0;
         }
         _imp->_refreshOverlays = true;
-
+        
     }
-    _imp->_lastScenePosClick = newPos;
+
+}
+
+void
+NodeGraph::wheelEvent(QWheelEvent* e)
+{
+    if (e->orientation() != Qt::Vertical) {
+        return;
+    }
+    wheelEventInternal(modCASIsControl(e), e->delta());
+    _imp->_lastMousePos = e->pos();
 }
 
 void
@@ -2255,6 +2494,14 @@ NodeGraph::keyReleaseEvent(QKeyEvent* e)
 void
 NodeGraph::removeNode(const boost::shared_ptr<NodeGui> & node)
 {
+    NodeGroup* isGrp = dynamic_cast<NodeGroup*>(getGroup().get());
+    if (isGrp && node->getNode()->getPluginID() == PLUGINID_NATRON_OUTPUT) {
+        Natron::errorDialog(tr("Operation failed").toStdString(), tr("You cannot remove the Output node of a group, it "
+                                                                     "needs to exist for the group to work properly.")
+                            .toStdString());
+        return;
+    }
+
     const std::vector<boost::shared_ptr<KnobI> > & knobs = node->getNode()->getKnobs();
 
     for (U32 i = 0; i < knobs.size(); ++i) {
@@ -2274,7 +2521,7 @@ NodeGraph::removeNode(const boost::shared_ptr<NodeGui> & node)
                                                                                                   "parameters from which other parameters "
                                                                                                   "of the project rely on through expressions "
                                                                                                   "or links. Deleting this node will "
-                                                                                                  "remove these expressions pluginsly "
+                                                                                                  "remove these expressions  "
                                                                                                   "and undoing the action will not recover "
                                                                                                   "them. Do you wish to continue ?")
                                                                    .toStdString(), false );
@@ -2287,30 +2534,38 @@ NodeGraph::removeNode(const boost::shared_ptr<NodeGui> & node)
 
     node->setUserSelected(false);
     std::list<boost::shared_ptr<NodeGui> > nodesToRemove;
-    std::list<NodeBackDrop*> bds;
     nodesToRemove.push_back(node);
-    pushUndoCommand( new RemoveMultipleNodesCommand(this,nodesToRemove,bds) );
+    pushUndoCommand( new RemoveMultipleNodesCommand(this,nodesToRemove) );
 }
 
 void
 NodeGraph::deleteSelection()
 {
-    if ( !_imp->_selection.nodes.empty() || !_imp->_selection.bds.empty() ) {
-        std::list<boost::shared_ptr<NodeGui> > nodesToRemove = _imp->_selection.nodes;
+    if ( !_imp->_selection.empty()) {
+        NodeGuiList nodesToRemove = _imp->_selection;
 
+        
         ///For all backdrops also move all the nodes contained within it
-        for (std::list<NodeBackDrop*>::iterator it = _imp->_selection.bds.begin(); it != _imp->_selection.bds.end(); ++it) {
-            std::list<boost::shared_ptr<NodeGui> > nodesWithinBD = getNodesWithinBackDrop(*it);
-            for (std::list<boost::shared_ptr<NodeGui> >::iterator it2 = nodesWithinBD.begin(); it2 != nodesWithinBD.end(); ++it2) {
-                std::list<boost::shared_ptr<NodeGui> >::iterator found = std::find(nodesToRemove.begin(),nodesToRemove.end(),*it2);
-                if ( found == nodesToRemove.end() ) {
+        for (NodeGuiList::iterator it = nodesToRemove.begin(); it != nodesToRemove.end(); ++it) {
+            NodeGuiList nodesWithinBD = getNodesWithinBackDrop(*it);
+            for (NodeGuiList::iterator it2 = nodesWithinBD.begin(); it2 != nodesWithinBD.end(); ++it2) {
+                NodeGuiList::iterator found = std::find(nodesToRemove.begin(),nodesToRemove.end(),*it2);
+                if ( found == nodesToRemove.end()) {
                     nodesToRemove.push_back(*it2);
                 }
             }
         }
 
 
-        for (std::list<boost::shared_ptr<NodeGui> >::iterator it = nodesToRemove.begin(); it != nodesToRemove.end(); ++it) {
+        for (NodeGuiList::iterator it = nodesToRemove.begin(); it != nodesToRemove.end(); ++it) {
+            
+            if ((*it)->getNode()->getPluginID() == PLUGINID_NATRON_OUTPUT) {
+                Natron::errorDialog(tr("Operation failed").toStdString(), tr("You cannot remove the Output node of a group, it "
+                                                                             "needs to exist for the group to work properly.")
+                                    .toStdString());
+                return;
+            }
+            
             const std::vector<boost::shared_ptr<KnobI> > & knobs = (*it)->getNode()->getKnobs();
             bool mustBreak = false;
             for (U32 i = 0; i < knobs.size(); ++i) {
@@ -2348,18 +2603,14 @@ NodeGraph::deleteSelection()
             }
         }
 
-        for (std::list<NodeBackDrop*>::iterator it = _imp->_selection.bds.begin(); it != _imp->_selection.bds.end(); ++it) {
+
+        for (NodeGuiList::iterator it = nodesToRemove.begin(); it != nodesToRemove.end(); ++it) {
             (*it)->setUserSelected(false);
         }
 
-        for (std::list<boost::shared_ptr<NodeGui> >::iterator it = nodesToRemove.begin(); it != nodesToRemove.end(); ++it) {
-            (*it)->setUserSelected(false);
-        }
 
-
-        pushUndoCommand( new RemoveMultipleNodesCommand(this,nodesToRemove,_imp->_selection.bds) );
-        _imp->_selection.nodes.clear();
-        _imp->_selection.bds.clear();
+        pushUndoCommand( new RemoveMultipleNodesCommand(this,nodesToRemove) );
+        _imp->_selection.clear();
     }
 } // deleteSelection
 
@@ -2370,15 +2621,15 @@ NodeGraph::selectNode(const boost::shared_ptr<NodeGui> & n,
     if ( !n->isVisible() ) {
         return;
     }
-    bool alreadyInSelection = std::find(_imp->_selection.nodes.begin(),_imp->_selection.nodes.end(),n) != _imp->_selection.nodes.end();
+    bool alreadyInSelection = std::find(_imp->_selection.begin(),_imp->_selection.end(),n) != _imp->_selection.end();
 
 
     assert(n);
     if (addToSelection && !alreadyInSelection) {
-        _imp->_selection.nodes.push_back(n);
+        _imp->_selection.push_back(n);
     } else if (!addToSelection) {
         clearSelection();
-        _imp->_selection.nodes.push_back(n);
+        _imp->_selection.push_back(n);
     }
 
     n->setUserSelected(true);
@@ -2396,8 +2647,8 @@ NodeGraph::selectNode(const boost::shared_ptr<NodeGui> & n,
 
     bool magnifiedNodeSelected = false;
     if (_imp->_magnifiedNode) {
-        magnifiedNodeSelected = std::find(_imp->_selection.nodes.begin(),_imp->_selection.nodes.end(),_imp->_magnifiedNode)
-                                != _imp->_selection.nodes.end();
+        magnifiedNodeSelected = std::find(_imp->_selection.begin(),_imp->_selection.end(),_imp->_magnifiedNode)
+                                != _imp->_selection.end();
     }
     if (magnifiedNodeSelected && _imp->_magnifOn) {
         _imp->_magnifOn = false;
@@ -2419,42 +2670,13 @@ NodeGraph::clearSelection()
 {
     {
         QMutexLocker l(&_imp->_nodesMutex);
-        for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_selection.nodes.begin(); it != _imp->_selection.nodes.end(); ++it) {
+        for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_selection.begin(); it != _imp->_selection.end(); ++it) {
             (*it)->setUserSelected(false);
         }
     }
-    for (std::list<NodeBackDrop*>::iterator it = _imp->_selection.bds.begin(); it != _imp->_selection.bds.end(); ++it) {
-        (*it)->setUserSelected(false);
-    }
-    _imp->_selection.nodes.clear();
-    _imp->_selection.bds.clear();
 
-}
+    _imp->_selection.clear();
 
-void
-NodeGraph::selectBackDrop(NodeBackDrop* bd,
-                          bool addToSelection)
-{
-    bool alreadyInSelection = std::find(_imp->_selection.bds.begin(),_imp->_selection.bds.end(),bd) != _imp->_selection.bds.end();
-
-    assert(bd);
-    if (addToSelection && !alreadyInSelection) {
-        _imp->_selection.bds.push_back(bd);
-    } else if (!addToSelection) {
-        {
-            QMutexLocker l(&_imp->_nodesMutex);
-            for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_selection.nodes.begin(); it != _imp->_selection.nodes.end(); ++it) {
-                (*it)->setUserSelected(false);
-            }
-        }
-        for (std::list<NodeBackDrop*>::iterator it = _imp->_selection.bds.begin(); it != _imp->_selection.bds.end(); ++it) {
-            (*it)->setUserSelected(false);
-        }
-        _imp->_selection.bds.clear();
-        _imp->_selection.nodes.clear();
-        _imp->_selection.bds.push_back(bd);
-    }
-    bd->setUserSelected(true);
 }
 
 void
@@ -2481,15 +2703,6 @@ NodeGraph::areAllNodesVisible()
             }
         }
     }
-    for (std::list<NodeBackDrop*>::iterator it = _imp->_backdrops.begin(); it != _imp->_backdrops.end(); ++it) {
-        if ((*it)->isVisible()) {
-            QRectF bbox = (*it)->mapToScene( (*it)->boundingRect() ).boundingRect();
-            if ( !rect.contains(bbox) ) {
-                return false;
-            }
-        }
-    }
-
     return true;
 }
 
@@ -2566,15 +2779,22 @@ NodeGraph::getFullSceneScreenShot()
 
     int xOffset = ( img.width() - renderImage.width() ) / 2;
     int yOffset = ( img.height() - renderImage.height() ) / 2;
-    assert( ( xOffset + renderImage.width() ) <= img.width() && ( yOffset + renderImage.height() ) <= img.height() );
 
     int yDest = yOffset;
     for (int y = 0; y < renderImage.height(); ++y,++yDest) {
+       
+        if (yDest >= img.height()) {
+            break;
+        }
         QRgb* dst_pixels = (QRgb*)img.scanLine(yDest);
         const QRgb* src_pixels = (const QRgb*)renderImage.scanLine(y);
         int xDest = xOffset;
         for (int x = 0; x < renderImage.width(); ++x,++xDest) {
-            dst_pixels[xDest] = src_pixels[x];
+            if (xDest >= img.width()) {
+                dst_pixels[xDest] = qRgba(0, 0, 0, 0);
+            } else {
+                dst_pixels[xDest] = src_pixels[x];
+            }
         }
     }
 
@@ -2599,6 +2819,15 @@ void
 NodeGraph::moveToTrash(NodeGui* node)
 {
     assert(node);
+    for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_selection.begin();
+         it != _imp->_selection.end(); ++it) {
+        if (it->get() == node) {
+            (*it)->setUserSelected(false);
+            _imp->_selection.erase(it);
+            break;
+        }
+    }
+    
     QMutexLocker l(&_imp->_nodesMutex);
     for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
         if ( (*it).get() == node ) {
@@ -2664,8 +2893,13 @@ QDirModelPrivate_size(quint64 bytes)
 void
 NodeGraph::updateCacheSizeText()
 {
-    _imp->_cacheSizeText->setPlainText( tr("Memory cache size: %1")
-                                        .arg( QDirModelPrivate_size( appPTR->getCachesTotalMemorySize() ) ) );
+    QString oldText = _imp->_cacheSizeText->toPlainText();
+    quint64 cacheSize = appPTR->getCachesTotalMemorySize();
+    QString cacheSizeStr = QDirModelPrivate_size(cacheSize);
+    QString newText = tr("Memory cache size: ") + cacheSizeStr;
+    if (newText != oldText) {
+        _imp->_cacheSizeText->setPlainText(newText);
+    }
 }
 
 QRectF
@@ -2679,10 +2913,7 @@ NodeGraphPrivate::calcNodesBoundingRect()
             ret = ret.united( (*it)->boundingRectWithEdges() );
         }
     }
-    for (std::list<NodeBackDrop*>::iterator it = _backdrops.begin(); it != _backdrops.end(); ++it) {
-        ret = ret.united( (*it)->mapToScene( (*it)->boundingRect() ).boundingRect() );
-    }
-
+ 
     return ret;
 }
 
@@ -2751,7 +2982,7 @@ NodeGraph::showMenu(const QPoint & pos)
     
     QAction* pasteAction = new ActionWithShortcut(kShortcutGroupNodegraph,kShortcutIDActionGraphPaste,
                                                   kShortcutDescActionGraphPaste,editMenu);
-    pasteAction->setEnabled( !_imp->_nodeClipBoard.isEmpty() );
+    pasteAction->setEnabled( !appPTR->isNodeClipBoardEmpty() );
     QObject::connect( pasteAction,SIGNAL( triggered() ),this,SLOT( pasteNodeClipBoards() ) );
     editMenu->addAction(pasteAction);
     
@@ -2790,6 +3021,10 @@ NodeGraph::showMenu(const QPoint & pos)
     QObject::connect( disableNodes, SIGNAL( triggered() ), this, SLOT( toggleSelectedNodesEnabled() ) );
     editMenu->addAction(disableNodes);
     
+    QAction* groupFromSel = new ActionWithShortcut(kShortcutGroupNodegraph, kShortcutIDActionGraphMakeGroup,
+                                                   kShortcutDescActionGraphMakeGroup,editMenu);
+    QObject::connect( groupFromSel, SIGNAL( triggered() ), this, SLOT( createGroupFromSelection() ) );
+    editMenu->addAction(groupFromSel);
     
     QAction* displayCacheInfoAction = new ActionWithShortcut(kShortcutGroupNodegraph,kShortcutIDActionGraphShowCacheSize,
                                                              kShortcutDescActionGraphShowCacheSize,_imp->_menu);
@@ -2926,7 +3161,17 @@ NodeGraph::dropEvent(QDropEvent* e)
             CreateNodeArgs::DefaultValuesList defaultValues;
             defaultValues.push_back(createDefaultValueForParam<std::string>(kOfxImageEffectFileParamName, pattern));
             
-            CreateNodeArgs args(found->second.c_str(),"",-1,-1,-1,true,INT_MIN,INT_MIN,true,true,QString(),defaultValues);
+            CreateNodeArgs args(found->second.c_str(),
+                                "",
+                                -1,
+                                -1,
+                                true,
+                                INT_MIN,INT_MIN,
+                                true,
+                                true,
+                                QString(),
+                                defaultValues,
+                                getGroup());
             boost::shared_ptr<Natron::Node>  n = getGui()->getApp()->createNode(args);
         }
     }
@@ -2955,8 +3200,8 @@ NodeGraph::togglePreviewsForSelectedNodes()
 {
     QMutexLocker l(&_imp->_nodesMutex);
 
-    for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_selection.nodes.begin();
-         it != _imp->_selection.nodes.end();
+    for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_selection.begin();
+         it != _imp->_selection.end();
          ++it) {
         (*it)->togglePreview();
     }
@@ -2967,8 +3212,8 @@ NodeGraph::switchInputs1and2ForSelectedNodes()
 {
     QMutexLocker l(&_imp->_nodesMutex);
 
-    for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_selection.nodes.begin();
-         it != _imp->_selection.nodes.end();
+    for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_selection.begin();
+         it != _imp->_selection.end();
          ++it) {
         (*it)->onSwitchInputActionTriggered();
     }
@@ -2984,27 +3229,25 @@ NodeGraph::centerOnItem(QGraphicsItem* item)
 void
 NodeGraph::copySelectedNodes()
 {
-    if ( _imp->_selection.nodes.empty() && _imp->_selection.bds.empty() ) {
+    if ( _imp->_selection.empty()) {
         Natron::warningDialog( tr("Copy").toStdString(), tr("You must select at least a node to copy first.").toStdString() );
 
         return;
     }
 
-    _imp->copyNodesInternal(_imp->_nodeClipBoard);
+    _imp->copyNodesInternal(_imp->_selection,appPTR->getNodeClipBoard());
 }
 
 void
 NodeGraphPrivate::resetAllClipboards()
 {
-    _nodeClipBoard.nodesUI.clear();
-    _nodeClipBoard.nodes.clear();
-    _nodeClipBoard.bds.clear();
+    appPTR->clearNodeClipBoard();
 }
 
 void
 NodeGraph::cutSelectedNodes()
 {
-    if ( _imp->_selection.nodes.empty() && _imp->_selection.bds.empty() ) {
+    if ( _imp->_selection.empty() ) {
         Natron::warningDialog( tr("Cut").toStdString(), tr("You must select at least a node to cut first.").toStdString() );
 
         return;
@@ -3017,23 +3260,18 @@ void
 NodeGraph::pasteNodeClipBoards()
 {
     QPointF position = _imp->_root->mapFromScene(mapToScene(mapFromGlobal(QCursor::pos())));
-    _imp->pasteNodesInternal(_imp->_nodeClipBoard,position);
+    _imp->pasteNodesInternal(appPTR->getNodeClipBoard(),position);
 }
 
 void
-NodeGraphPrivate::copyNodesInternal(NodeClipBoard & clipboard)
+NodeGraphPrivate::copyNodesInternal(const NodeGuiList& selection,NodeClipBoard & clipboard)
 {
     ///Clear clipboard
-    clipboard.bds.clear();
     clipboard.nodes.clear();
     clipboard.nodesUI.clear();
 
-    std::list<boost::shared_ptr<NodeGui> > nodesToCopy = _selection.nodes;
-    for (std::list<NodeBackDrop*>::iterator it = _selection.bds.begin(); it != _selection.bds.end(); ++it) {
-        boost::shared_ptr<NodeBackDropSerialization> bdS( new NodeBackDropSerialization() );
-        bdS->initialize(*it);
-        clipboard.bds.push_back(bdS);
-
+    NodeGuiList nodesToCopy = selection;
+    for (NodeGuiList::iterator it = nodesToCopy.begin(); it != nodesToCopy.end(); ++it) {
         ///Also copy all nodes within the backdrop
         std::list<boost::shared_ptr<NodeGui> > nodesWithinBD = _publicInterface->getNodesWithinBackDrop(*it);
         for (std::list<boost::shared_ptr<NodeGui> >::iterator it2 = nodesWithinBD.begin(); it2 != nodesWithinBD.end(); ++it2) {
@@ -3043,22 +3281,15 @@ NodeGraphPrivate::copyNodesInternal(NodeClipBoard & clipboard)
             }
         }
     }
-
-    for (std::list<boost::shared_ptr<NodeGui> >::iterator it = nodesToCopy.begin(); it != nodesToCopy.end(); ++it) {
-        if ( (*it)->getNode()->isMultiInstance() ) {
-            QString err = QString("%1 cannot be copied.").arg( (*it)->getNode()->getName().c_str() );
-            Natron::errorDialog( "Copy", err.toStdString() );
-
-            return;
+    
+    for (NodeGuiList::iterator it = nodesToCopy.begin(); it != nodesToCopy.end(); ++it) {
+        if ((*it)->isVisible()) {
+            boost::shared_ptr<NodeSerialization> ns( new NodeSerialization( (*it)->getNode(), true ) );
+            boost::shared_ptr<NodeGuiSerialization> nGuiS(new NodeGuiSerialization);
+            (*it)->serialize( nGuiS.get() );
+            clipboard.nodes.push_back(ns);
+            clipboard.nodesUI.push_back(nGuiS);
         }
-    }
-
-    for (std::list<boost::shared_ptr<NodeGui> >::iterator it = nodesToCopy.begin(); it != nodesToCopy.end(); ++it) {
-        boost::shared_ptr<NodeSerialization> ns( new NodeSerialization( (*it)->getNode(), true ) );
-        boost::shared_ptr<NodeGuiSerialization> nGuiS(new NodeGuiSerialization);
-        (*it)->serialize( nGuiS.get() );
-        clipboard.nodes.push_back(ns);
-        clipboard.nodesUI.push_back(nGuiS);
     }
 }
 
@@ -3067,42 +3298,24 @@ NodeGraphPrivate::pasteNodesInternal(const NodeClipBoard & clipboard,const QPoin
 {
     if ( !clipboard.isEmpty() ) {
         std::list<boost::shared_ptr<NodeGui> > newNodes;
-        std::list<NodeBackDrop*> newBds;
         double xmax = INT_MIN;
         double xmin = INT_MAX;
         double ymin = INT_MAX;
         double ymax = INT_MIN;
-        ///find out what is the right most X coordinate and offset relative to that coordinate
-        for (std::list <boost::shared_ptr<NodeBackDropSerialization> >::const_iterator it = clipboard.bds.begin();
-             it != clipboard.bds.end(); ++it) {
-            double x,y;
-            int w,h;
-            (*it)->getPos(x, y);
-            (*it)->getSize(w, h);
-            if ( (x + w) > xmax ) {
-                xmax = x + w;
-            }
-            if (x < xmin) {
-                xmin = x;
-            }
-            if ( (y + h) > ymax ) {
-                ymax = y + h;
-            }
-            if (y < ymin) {
-                ymin = y;
-            }
-        }
+
         for (std::list<boost::shared_ptr<NodeGuiSerialization> >::const_iterator it = clipboard.nodesUI.begin();
              it != clipboard.nodesUI.end(); ++it) {
             double x = (*it)->getX();
             double y = (*it)->getY();
-            if (x > xmax) {
+            double w,h;
+            (*it)->getSize(&w,&h);
+            if ((x + w) > xmax) {
                 xmax = x;
             }
             if (x < xmin) {
                 xmin = x;
             }
-            if (y > ymax) {
+            if ((y + h)> ymax) {
                 ymax = y;
             }
             if (y < ymin) {
@@ -3113,18 +3326,11 @@ NodeGraphPrivate::pasteNodesInternal(const NodeClipBoard & clipboard,const QPoin
 
         QPointF offset(scenePos.x() - ((xmin + xmax) / 2.), scenePos.y() - ((ymin + ymax) / 2.));
 
-        for (std::list <boost::shared_ptr<NodeBackDropSerialization> >::const_iterator it = clipboard.bds.begin();
-             it != clipboard.bds.end(); ++it) {
-            NodeBackDrop* bd = pasteBackdrop(**it,offset);
-            newBds.push_back(bd);
-        }
-
-
         assert( clipboard.nodes.size() == clipboard.nodesUI.size() );
         std::list<boost::shared_ptr<NodeSerialization> >::const_iterator itOther = clipboard.nodes.begin();
         for (std::list<boost::shared_ptr<NodeGuiSerialization> >::const_iterator it = clipboard.nodesUI.begin();
              it != clipboard.nodesUI.end(); ++it,++itOther) {
-            boost::shared_ptr<NodeGui> node = pasteNode( **itOther,**it,offset);
+            boost::shared_ptr<NodeGui> node = pasteNode( **itOther,**it,offset,group.lock(),std::string(), false);
             newNodes.push_back(node);
         }
         assert( clipboard.nodes.size() == newNodes.size() );
@@ -3133,45 +3339,59 @@ NodeGraphPrivate::pasteNodesInternal(const NodeClipBoard & clipboard,const QPoin
         restoreConnections(clipboard.nodes, newNodes);
 
 
-        _publicInterface->pushUndoCommand( new AddMultipleNodesCommand(_publicInterface,newNodes,newBds) );
+        _publicInterface->pushUndoCommand( new AddMultipleNodesCommand(_publicInterface,newNodes) );
     }
 } // pasteNodesInternal
 
 boost::shared_ptr<NodeGui>
 NodeGraphPrivate::pasteNode(const NodeSerialization & internalSerialization,
                             const NodeGuiSerialization & guiSerialization,
-                            const QPointF & offset)
+                            const QPointF & offset,
+                            const boost::shared_ptr<NodeCollection>& grp,
+                            const std::string& parentName,
+                            bool clone)
 {
     boost::shared_ptr<Natron::Node> n = _gui->getApp()->loadNode( LoadNodeArgs(internalSerialization.getPluginID().c_str(),
-                                                                               "",
+                                                                               parentName,
                                                                                internalSerialization.getPluginMajorVersion(),
-                                                                               internalSerialization.getPluginMinorVersion(),&internalSerialization,false) );
-
-    assert(n);
-    boost::shared_ptr<NodeGui> gui = _gui->getApp()->getNodeGui(n);
-    assert(gui);
-
-    int no = 1;
+                                                                               internalSerialization.getPluginMinorVersion(),
+                                                                               &internalSerialization,
+                                                                               true,
+                                                                               grp) );
     
-    std::stringstream ss;
-    ss << internalSerialization.getPluginLabel();
-    ss << '.';
-    ss << no;
-    while ( _publicInterface->checkIfNodeNameExists( ss.str(),gui.get() ) ) {
-        ++no;
-        ss.str( std::string() );
-        ss.clear();
-        ss << internalSerialization.getPluginLabel();
-        ss << '.';
+    assert(n);
+    boost::shared_ptr<NodeGuiI> gui_i = n->getNodeGui();
+    boost::shared_ptr<NodeGui> gui = boost::dynamic_pointer_cast<NodeGui>(gui_i);
+    assert(gui);
+    
+    std::string name;
+    if (internalSerialization.getNode()->getGroup() != group.lock() || grp != group.lock()) {
+        name = internalSerialization.getNodeScriptName();
+        n->setScriptName( name);
+        n->setLabel(internalSerialization.getNodeLabel());
+    } else {
+        int no = 1;
+        std::stringstream ss;
+        ss << internalSerialization.getNodeScriptName();
+        ss << '_';
         ss << no;
+        name = ss.str();
+        while ( grp->checkIfNodeNameExists( name,n.get() ) ) {
+            ++no;
+            ss.str( std::string() );
+            ss.clear();
+            ss << internalSerialization.getNodeScriptName();
+            ss << '_';
+            ss << no;
+            name = ss.str();
+        }
+        n->setScriptName( name);
     }
-
-    n->setName( ss.str().c_str() );
 
     const std::string & masterNodeName = internalSerialization.getMasterNodeName();
     if ( masterNodeName.empty() ) {
-        std::vector<boost::shared_ptr<Natron::Node> > allNodes;
-        _gui->getApp()->getActiveNodes(&allNodes);
+        std::list<boost::shared_ptr<Natron::Node> > allNodes;
+        _gui->getApp()->getProject()->getActiveNodes(&allNodes);
         n->restoreKnobsLinks(internalSerialization,allNodes);
     } else {
         boost::shared_ptr<Natron::Node> masterNode = _gui->getApp()->getProject()->getNodeByName(masterNodeName);
@@ -3182,12 +3402,56 @@ NodeGraphPrivate::pasteNode(const NodeSerialization & internalSerialization,
         }
     }
 
-
+    //We don't want the clone to have the same hash as the original
+    n->incrementKnobsAge();
+    
     gui->copyFrom(guiSerialization);
     QPointF newPos = gui->pos() + offset;
-    gui->refreshPosition( newPos.x(), newPos.y() );
+    gui->setPosition( newPos.x(), newPos.y() );
     gui->forceComputePreview( _gui->getApp()->getProject()->currentFrame() );
-
+    
+    if (clone) {
+        DotGui* isDot = dynamic_cast<DotGui*>( gui.get() );
+        ///Dots cannot be cloned, just copy them
+        if (!isDot) {
+            n->getLiveInstance()->slaveAllKnobs( internalSerialization.getNode()->getLiveInstance() );
+        }
+    }
+    
+    ///Recurse if this is a group or multi-instance
+    NodePtr serializedNode = internalSerialization.getNode();
+    assert(serializedNode);
+    boost::shared_ptr<NodeGroup> isGrp =
+    boost::dynamic_pointer_cast<NodeGroup>(n->getLiveInstance()->shared_from_this());
+    
+    const std::list<boost::shared_ptr<NodeSerialization> >& nodes = internalSerialization.getNodesCollection();
+    
+    if (!nodes.empty()) {
+        
+        std::string parentName;
+        boost::shared_ptr<NodeCollection> collection;
+        if (isGrp) {
+            collection = isGrp;
+        } else {
+            assert(n->isMultiInstance());
+            collection = n->getGroup();
+            parentName = n->getScriptName_mt_safe();
+        }
+        std::list<NodeGuiPtr> newNodes;
+        for (std::list<boost::shared_ptr<NodeSerialization> >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+            NodePtr child = (*it)->getNode();
+            assert(child);
+            boost::shared_ptr<NodeGuiI> child_gui_i = child->getNodeGui();
+            NodeGui* child_gui = dynamic_cast<NodeGui*>(child_gui_i.get());
+            NodeGuiSerialization gS;
+            gS.initialize(child_gui);
+            NodeGuiPtr newChild = pasteNode(**it, gS, QPointF(0,0),collection,parentName,clone);
+            if (newChild) {
+                newNodes.push_back(newChild);
+            }
+        }
+        restoreConnections(nodes, newNodes);
+    }
     return gui;
 }
 
@@ -3209,7 +3473,7 @@ NodeGraphPrivate::restoreConnections(const std::list<boost::shared_ptr<NodeSeria
             ///find a node with the containing the same name. It should not match exactly because there's already
             /// the "-copy" that was added to its name
             for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it2 = newNodes.begin(); it2 != newNodes.end(); ++it2) {
-                if ( (*it2)->getNode()->getName().find(inputNames[i]) != std::string::npos ) {
+                if ( (*it2)->getNode()->getScriptName().find(inputNames[i]) != std::string::npos ) {
                     _publicInterface->getGui()->getApp()->getProject()->connectNodes( i, (*it2)->getNode(), (*it)->getNode().get() );
                     break;
                 }
@@ -3218,35 +3482,11 @@ NodeGraphPrivate::restoreConnections(const std::list<boost::shared_ptr<NodeSeria
     }
 }
 
-NodeBackDrop*
-NodeGraphPrivate::pasteBackdrop(const NodeBackDropSerialization & serialization,
-                                const QPointF & offset)
-{
-    NodeBackDrop* bd = new NodeBackDrop(_publicInterface,_root);
-    QString name( serialization.getName().c_str() );
-
-    name.append(" - copy");
-    QString bearName = name;
-    int no = 0;
-    while ( _publicInterface->checkIfBackDropNameExists(name,NULL) ) {
-        ++no;
-        name = bearName;
-        name.append( QString::number(no) );
-    }
-
-    bd->initialize( name, true,serialization,_gui->getPropertiesLayout() );
-    _publicInterface->insertNewBackDrop(bd);
-    double x,y;
-    serialization.getPos(x, y);
-    bd->setPos_mt_safe(QPointF(x,y) + offset);
-
-    return bd;
-}
 
 void
 NodeGraph::duplicateSelectedNodes()
 {
-    if ( _imp->_selection.nodes.empty() && _imp->_selection.bds.empty() ) {
+    if ( _imp->_selection.empty() && _imp->_selection.empty() ) {
         Natron::warningDialog( tr("Duplicate").toStdString(), tr("You must select at least a node to duplicate first.").toStdString() );
 
         return;
@@ -3254,7 +3494,7 @@ NodeGraph::duplicateSelectedNodes()
 
     ///Don't use the member clipboard as the user might have something copied
     NodeClipBoard tmpClipboard;
-    _imp->copyNodesInternal(tmpClipboard);
+    _imp->copyNodesInternal(_imp->_selection,tmpClipboard);
     QPointF scenePos = _imp->_root->mapFromScene(mapToScene(mapFromGlobal(QCursor::pos())));
     _imp->pasteNodesInternal(tmpClipboard,scenePos);
 }
@@ -3264,9 +3504,8 @@ NodeGraph::cloneSelectedNodes()
 {
     QPointF scenePos = _imp->_root->mapFromScene(mapToScene(mapFromGlobal(QCursor::pos())));
     
-    if ( _imp->_selection.nodes.empty() && _imp->_selection.bds.empty() ) {
+    if (_imp->_selection.empty()) {
         Natron::warningDialog( tr("Clone").toStdString(), tr("You must select at least a node to clone first.").toStdString() );
-
         return;
     }
 
@@ -3274,11 +3513,10 @@ NodeGraph::cloneSelectedNodes()
     double xmin = INT_MAX;
     double ymin = INT_MAX;
     double ymax = INT_MIN;
-    std::list<boost::shared_ptr<NodeGui> > nodesToCopy = _imp->_selection.nodes;
-    for (std::list<NodeBackDrop*>::iterator it = _imp->_selection.bds.begin(); it != _imp->_selection.bds.end(); ++it) {
-        if ( (*it)->isSlave() ) {
+    NodeGuiList nodesToCopy = _imp->_selection;
+    for (NodeGuiList::iterator it = _imp->_selection.begin(); it != _imp->_selection.end(); ++it) {
+        if ( (*it)->getNode()->getMasterNode()) {
             Natron::errorDialog( tr("Clone").toStdString(), tr("You cannot clone a node which is already a clone.").toStdString() );
-
             return;
         }
         QRectF bbox = (*it)->mapToScene((*it)->boundingRect()).boundingRect();
@@ -3295,32 +3533,21 @@ NodeGraph::cloneSelectedNodes()
         if (bbox.y() < ymin) {
             ymin = bbox.y();
         }
-
+        
         ///Also copy all nodes within the backdrop
-        std::list<boost::shared_ptr<NodeGui> > nodesWithinBD = getNodesWithinBackDrop(*it);
-        for (std::list<boost::shared_ptr<NodeGui> >::iterator it2 = nodesWithinBD.begin(); it2 != nodesWithinBD.end(); ++it2) {
-            std::list<boost::shared_ptr<NodeGui> >::iterator found = std::find(nodesToCopy.begin(),nodesToCopy.end(),*it2);
-            if ( found == nodesToCopy.end() ) {
-                nodesToCopy.push_back(*it2);
+        BackDropGui* isBd = dynamic_cast<BackDropGui*>(it->get());
+        if (isBd) {
+            NodeGuiList nodesWithinBD = getNodesWithinBackDrop(*it);
+            for (NodeGuiList::iterator it2 = nodesWithinBD.begin(); it2 != nodesWithinBD.end(); ++it2) {
+                NodeGuiList::iterator found = std::find(nodesToCopy.begin(),nodesToCopy.end(),*it2);
+                if ( found == nodesToCopy.end() ) {
+                    nodesToCopy.push_back(*it2);
+                }
             }
         }
     }
 
-    for (std::list<boost::shared_ptr<NodeGui> >::iterator it = nodesToCopy.begin(); it != nodesToCopy.end(); ++it) {
-        QRectF bbox = (*it)->mapToScene((*it)->boundingRect()).boundingRect();
-        if ( ( bbox.x() + bbox.width() ) > xmax ) {
-            xmax = bbox.x() + bbox.width();
-        }
-        if (bbox.x() < xmin) {
-            xmin = bbox.x();
-        }
-        if ( ( bbox.y() + bbox.height() ) > ymax ) {
-            ymax = ( bbox.y() + bbox.height() );
-        }
-        if (bbox.y() < ymin) {
-            ymin = bbox.y();
-        }
-        
+    for (NodeGuiList::iterator it = nodesToCopy.begin(); it != nodesToCopy.end(); ++it) {
         if ( (*it)->getNode()->getLiveInstance()->isSlave() ) {
             Natron::errorDialog( tr("Clone").toStdString(), tr("You cannot clone a node which is already a clone.").toStdString() );
 
@@ -3333,7 +3560,7 @@ NodeGraph::cloneSelectedNodes()
             return;
         }
         if ( (*it)->getNode()->isMultiInstance() ) {
-            QString err = QString("%1 cannot be cloned.").arg( (*it)->getNode()->getName_mt_safe().c_str() );
+            QString err = QString("%1 cannot be cloned.").arg( (*it)->getNode()->getLabel().c_str() );
             Natron::errorDialog( tr("Clone").toStdString(),
                                  tr( err.toStdString().c_str() ).toStdString() );
 
@@ -3343,43 +3570,32 @@ NodeGraph::cloneSelectedNodes()
 
     QPointF offset(scenePos.x() - ((xmax + xmin) / 2.), scenePos.y() -  ((ymax + ymin) / 2.));
     std::list<boost::shared_ptr<NodeGui> > newNodes;
-    std::list<NodeBackDrop*> newBackdrops;
     std::list <boost::shared_ptr<NodeSerialization> > serializations;
-    for (std::list<boost::shared_ptr<NodeGui> >::iterator it = nodesToCopy.begin(); it != nodesToCopy.end(); ++it) {
+    
+    for (NodeGuiList::iterator it = nodesToCopy.begin(); it != nodesToCopy.end(); ++it) {
         boost::shared_ptr<NodeSerialization>  internalSerialization( new NodeSerialization( (*it)->getNode() ) );
         NodeGuiSerialization guiSerialization;
         (*it)->serialize(&guiSerialization);
-        boost::shared_ptr<NodeGui> clone = _imp->pasteNode( *internalSerialization, guiSerialization, offset );
-        DotGui* isDot = dynamic_cast<DotGui*>( clone.get() );
-        ///Dots cannot be cloned, just copy them
-        if (!isDot) {
-            clone->getNode()->getLiveInstance()->slaveAllKnobs( (*it)->getNode()->getLiveInstance() );
-        }
-
+        boost::shared_ptr<NodeGui> clone = _imp->pasteNode( *internalSerialization, guiSerialization, offset,
+                                                           _imp->group.lock(),std::string(),true );
+      
         newNodes.push_back(clone);
         serializations.push_back(internalSerialization);
     }
 
-    for (std::list<NodeBackDrop*>::iterator it = _imp->_selection.bds.begin(); it != _imp->_selection.bds.end(); ++it) {
-        NodeBackDropSerialization s;
-        s.initialize(*it);
-        NodeBackDrop* bd = _imp->pasteBackdrop( s,offset );
-        bd->slaveTo(*it);
-        newBackdrops.push_back(bd);
-    }
 
     assert( serializations.size() == newNodes.size() );
     ///restore connections
     _imp->restoreConnections(serializations, newNodes);
 
 
-    pushUndoCommand( new AddMultipleNodesCommand(this,newNodes,newBackdrops) );
+    pushUndoCommand( new AddMultipleNodesCommand(this,newNodes) );
 } // cloneSelectedNodes
 
 void
 NodeGraph::decloneSelectedNodes()
 {
-    if ( _imp->_selection.nodes.empty() && _imp->_selection.bds.empty() ) {
+    if ( _imp->_selection.empty() ) {
         Natron::warningDialog( tr("Declone").toStdString(), tr("You must select at least a node to declone first.").toStdString() );
 
         return;
@@ -3387,44 +3603,25 @@ NodeGraph::decloneSelectedNodes()
     std::list<boost::shared_ptr<NodeGui> > nodesToDeclone;
 
 
-    for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_selection.nodes.begin(); it != _imp->_selection.nodes.end(); ++it) {
-        if ( (*it)->getNode()->getLiveInstance()->isSlave() ) {
-            nodesToDeclone.push_back(*it);
-        }
-    }
-
-    for (std::list<NodeBackDrop*>::iterator it = _imp->_selection.bds.begin(); it != _imp->_selection.bds.end(); ++it) {
-        if ( (*it)->isSlave() ) {
+    for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_selection.begin(); it != _imp->_selection.end(); ++it) {
+        
+        BackDropGui* isBd = dynamic_cast<BackDropGui*>(it->get());
+        if (isBd) {
             ///Also copy all nodes within the backdrop
-            std::list<boost::shared_ptr<NodeGui> > nodesWithinBD = getNodesWithinBackDrop(*it);
-            for (std::list<boost::shared_ptr<NodeGui> >::iterator it2 = nodesWithinBD.begin(); it2 != nodesWithinBD.end(); ++it2) {
-                std::list<boost::shared_ptr<NodeGui> >::iterator found = std::find(nodesToDeclone.begin(),nodesToDeclone.end(),*it2);
+            NodeGuiList nodesWithinBD = getNodesWithinBackDrop(*it);
+            for (NodeGuiList::iterator it2 = nodesWithinBD.begin(); it2 != nodesWithinBD.end(); ++it2) {
+                NodeGuiList::iterator found = std::find(nodesToDeclone.begin(),nodesToDeclone.end(),*it2);
                 if ( found == nodesToDeclone.end() ) {
                     nodesToDeclone.push_back(*it2);
                 }
             }
         }
-    }
-    pushUndoCommand( new DecloneMultipleNodesCommand(this,nodesToDeclone,_imp->_selection.bds) );
-}
-
-boost::shared_ptr<NodeGui>
-NodeGraph::getNodeGuiSharedPtr(const NodeGui* n) const
-{
-    for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
-        if ( (*it).get() == n ) {
-            return *it;
+        if ( (*it)->getNode()->getLiveInstance()->isSlave() ) {
+            nodesToDeclone.push_back(*it);
         }
     }
-    for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = _imp->_nodesTrash.begin(); it != _imp->_nodesTrash.end(); ++it) {
-        if ( (*it).get() == n ) {
-            return *it;
-        }
-    }
-    ///it must either be in the trash or in the active nodes
-    assert(false);
 
-    return boost::shared_ptr<NodeGui>();
+    pushUndoCommand( new DecloneMultipleNodesCommand(this,nodesToDeclone) );
 }
 
 void
@@ -3437,10 +3634,12 @@ NodeGraph::setUndoRedoStackLimit(int limit)
 void
 NodeGraph::deleteNodepluginsly(boost::shared_ptr<NodeGui> n)
 {
+    assert(n);
     boost::shared_ptr<Natron::Node> internalNode = n->getNode();
 
-    assert(internalNode);
-    internalNode->deactivate(std::list< Natron::Node* >(),false,false,true,false);
+    if (internalNode) {
+        internalNode->deactivate(std::list< Natron::Node* >(),false,false,true,false);
+    }
     std::list<boost::shared_ptr<NodeGui> >::iterator it = std::find(_imp->_nodesTrash.begin(),_imp->_nodesTrash.end(),n);
 
     if ( it != _imp->_nodesTrash.end() ) {
@@ -3460,34 +3659,55 @@ NodeGraph::deleteNodepluginsly(boost::shared_ptr<NodeGui> n)
     n->discardGraphPointer();
 
     if ( getGui() ) {
-        getGui()->removeRotoInterface(n.get(),true);
+        
+        if ( internalNode->isRotoNode() ) {
+            getGui()->removeRotoInterface(n.get(),true);
+        }
+        
+        if (internalNode->isTrackerNode()) {
+            getGui()->removeTrackerInterface(n.get(), true);
+        }
 
         ///now that we made the command dirty, delete the node everywhere in Natron
         getGui()->getApp()->deleteNode(n);
 
 
         getGui()->getCurveEditor()->removeNode( n.get() );
-        std::list<boost::shared_ptr<NodeGui> >::iterator found = std::find(_imp->_selection.nodes.begin(),_imp->_selection.nodes.end(),n);
-        if ( found != _imp->_selection.nodes.end() ) {
+        std::list<boost::shared_ptr<NodeGui> >::iterator found = std::find(_imp->_selection.begin(),_imp->_selection.end(),n);
+        if ( found != _imp->_selection.end() ) {
             n->setUserSelected(false);
-            _imp->_selection.nodes.erase(found);
+            _imp->_selection.erase(found);
+        }
+        
+        if (internalNode && internalNode->getLiveInstance()) {
+            NodeGroup* isGrp = dynamic_cast<NodeGroup*>(internalNode->getLiveInstance());
+            if (isGrp) {
+                NodeGraphI* graph_i = isGrp->getNodeGraph();
+                if (graph_i) {
+                    NodeGraph* graph = dynamic_cast<NodeGraph*>(graph_i);
+                    getGui()->removeGroupGui(graph, true);
+                }
+            }
         }
     }
-
-    ///remove the node from the clipboard if it is
-    for (std::list< boost::shared_ptr<NodeSerialization> >::iterator it = _imp->_nodeClipBoard.nodes.begin();
-         it != _imp->_nodeClipBoard.nodes.end(); ++it) {
-        if ( (*it)->getNode() == internalNode ) {
-            _imp->_nodeClipBoard.nodes.erase(it);
-            break;
+    
+    if (internalNode) {
+        ///remove the node from the clipboard if it is
+        NodeClipBoard &cb = appPTR->getNodeClipBoard();
+        for (std::list< boost::shared_ptr<NodeSerialization> >::iterator it = cb.nodes.begin();
+             it != cb.nodes.end(); ++it) {
+            if ( (*it)->getNode() == internalNode ) {
+                cb.nodes.erase(it);
+                break;
+            }
         }
-    }
-
-    for (std::list<boost::shared_ptr<NodeGuiSerialization> >::iterator it = _imp->_nodeClipBoard.nodesUI.begin();
-         it != _imp->_nodeClipBoard.nodesUI.end(); ++it) {
-        if ( (*it)->getName() == internalNode->getName() ) {
-            _imp->_nodeClipBoard.nodesUI.erase(it);
-            break;
+        
+        for (std::list<boost::shared_ptr<NodeGuiSerialization> >::iterator it = cb.nodesUI.begin();
+             it != cb.nodesUI.end(); ++it) {
+            if ( (*it)->getFullySpecifiedName() == internalNode->getFullyQualifiedName() ) {
+                cb.nodesUI.erase(it);
+                break;
+            }
         }
     }
 } // deleteNodepluginsly
@@ -3507,12 +3727,7 @@ NodeGraph::invalidateAllNodesParenting()
             (*it)->scene()->removeItem( it->get() );
         }
     }
-    for (std::list<NodeBackDrop*>::iterator it = _imp->_backdrops.begin(); it != _imp->_backdrops.end(); ++it) {
-        (*it)->setParentItem(NULL);
-        if ( (*it)->scene() ) {
-            (*it)->scene()->removeItem(*it);
-        }
-    }
+
 }
 
 void
@@ -3523,7 +3738,7 @@ NodeGraph::centerOnAllNodes()
     double xmax = INT_MIN;
     double ymin = INT_MAX;
     double ymax = INT_MIN;
-    if (_imp->_selection.nodes.empty() && _imp->_selection.bds.empty()) {
+    if (_imp->_selection.empty()) {
         QMutexLocker l(&_imp->_nodesMutex);
 
 
@@ -3538,17 +3753,8 @@ NodeGraph::centerOnAllNodes()
             }
         }
         
-        for (std::list<NodeBackDrop*>::iterator it = _imp->_backdrops.begin(); it != _imp->_backdrops.end(); ++it) {
-            if ((*it)->isVisible()) {
-                QRectF bbox = (*it)->mapToScene( (*it)->boundingRect() ).boundingRect();
-                xmin = std::min( xmin,bbox.x() );
-                ymin = std::min( ymin,bbox.y() );
-                xmax = std::max( xmax,bbox.x() + bbox.width() );
-                ymax = std::max( ymax,bbox.y() + bbox.height() );
-            }
-        }
     } else {
-        for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_selection.nodes.begin(); it != _imp->_selection.nodes.end(); ++it) {
+        for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_selection.begin(); it != _imp->_selection.end(); ++it) {
             if ( /*(*it)->isActive() && */(*it)->isVisible() ) {
                 QSize size = (*it)->getSize();
                 QPointF pos = (*it)->scenePos();
@@ -3556,16 +3762,6 @@ NodeGraph::centerOnAllNodes()
                 xmax = std::max( xmax,pos.x() + size.width() );
                 ymin = std::min( ymin,pos.y() );
                 ymax = std::max( ymax,pos.y() + size.height() ); 
-            }
-        }
-        
-        for (std::list<NodeBackDrop*>::iterator it = _imp->_selection.bds.begin(); it != _imp->_selection.bds.end(); ++it) {
-            if ((*it)->isVisible()) {
-                QRectF bbox = (*it)->mapToScene( (*it)->boundingRect() ).boundingRect();
-                xmin = std::min( xmin,bbox.x() );
-                ymin = std::min( ymin,bbox.y() );
-                xmax = std::max( xmax,bbox.x() + bbox.width() );
-                ymax = std::max( ymax,bbox.y() + bbox.height() );
             }
         }
 
@@ -3634,103 +3830,13 @@ NodeGraph::toggleAutoHideInputs(bool setSettings)
     }
 }
 
-NodeBackDrop*
-NodeGraph::createBackDrop(QVBoxLayout *dockContainer,
-                          bool requestedByLoad,
-                          const NodeBackDropSerialization & serialization)
+std::list<boost::shared_ptr<NodeGui> > NodeGraph::getNodesWithinBackDrop(const boost::shared_ptr<NodeGui>& bd) const
 {
-    QString name(NATRON_BACKDROP_NODE_NAME);
-    int no = _imp->_backdrops.size() + 1;
-
-    name += QString::number(no);
-    while ( checkIfBackDropNameExists(name,NULL) ) {
-        ++no;
-        name = QString(NATRON_BACKDROP_NODE_NAME);
-        name += QString::number(no);
+    BackDropGui* isBd = dynamic_cast<BackDropGui*>(bd.get());
+    if (!isBd) {
+        return std::list<boost::shared_ptr<NodeGui> >();
     }
-    NodeBackDrop* bd = new NodeBackDrop(this,_imp->_root);
-    bd->initialize(name, requestedByLoad,serialization, dockContainer);
-    _imp->_backdrops.push_back(bd);
-    if (!requestedByLoad) {
-        std::list<boost::shared_ptr<NodeGui> > selectedNodes = _imp->_selection.nodes;
-        pushUndoCommand( new AddMultipleNodesCommand(this,bd) );
-        if ( !selectedNodes.empty() ) {
-            ///make the backdrop large enough to contain the selected nodes and position it correctly
-            QRectF bbox;
-            for (std::list<boost::shared_ptr<NodeGui> >::iterator it = selectedNodes.begin(); it != selectedNodes.end(); ++it) {
-                QRectF nodeBbox = (*it)->mapToScene( (*it)->boundingRect() ).boundingRect();
-                bbox = bbox.united(nodeBbox);
-            }
-
-            double border50 = mapToScene(QPoint(50,0)).x();
-            double border0 = mapToScene(QPoint(0,0)).x();
-            double border = border50 - border0;
-            double headerHeight = bd->getHeaderHeight();
-            QPointF scenePos(bbox.x() - border, bbox.y() - border);
-            
-            bd->setPos(bd->mapToParent(bd->mapFromScene(scenePos)));
-            bd->resize(bbox.width() + 2 * border, bbox.height() + 2 * border - headerHeight);
-        } else {
-            QRectF viewPos = visibleSceneRect();
-            QPointF mapped = bd->mapFromScene( QPointF( ( viewPos.bottomRight().x() + viewPos.topLeft().x() ) / 2.,
-                                                        ( viewPos.topLeft().y() + viewPos.bottomRight().y() ) / 2. ) );
-            mapped = bd->mapToParent(mapped);
-            bd->setPos(mapped);
-            bd->resize(NATRON_BACKDROP_DEFAULT_WIDTH,NATRON_BACKDROP_DEFAULT_HEIGHT);
-        }
-    }
-
-    return bd;
-}
-
-bool
-NodeGraph::checkIfBackDropNameExists(const QString & n,
-                                     const NodeBackDrop* bd) const
-{
-    for (std::list<NodeBackDrop*>::const_iterator it = _imp->_backdrops.begin(); it != _imp->_backdrops.end(); ++it) {
-        if ( ( (*it)->getName() == n ) && ( (*it) != bd ) ) {
-            return true;
-        }
-    }
-
-    return false;
-}
-
-bool
-NodeGraph::checkIfNodeNameExists(const std::string & n,
-                                 const NodeGui* node) const
-{
-    for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
-        if ( (it->get() != node) && ( (*it)->getNode()->getName() == n ) ) {
-            return true;
-        }
-    }
-
-    return false;
-}
-
-std::list<NodeBackDrop*>
-NodeGraph::getBackDrops() const
-{
-    return _imp->_backdrops;
-}
-
-std::list<NodeBackDrop*>
-NodeGraph::getActiveBackDrops() const
-{
-    std::list<NodeBackDrop*> ret;
-
-    for (std::list<NodeBackDrop*>::const_iterator it = _imp->_backdrops.begin(); it != _imp->_backdrops.end(); ++it) {
-        if ( (*it)->isVisible() ) {
-            ret.push_back(*it);
-        }
-    }
-
-    return ret;
-}
-
-std::list<boost::shared_ptr<NodeGui> > NodeGraph::getNodesWithinBackDrop(const NodeBackDrop* bd) const
-{
+    
     QRectF bbox = bd->mapToScene( bd->boundingRect() ).boundingRect();
     std::list<boost::shared_ptr<NodeGui> > ret;
     QMutexLocker l(&_imp->_nodesMutex);
@@ -3743,22 +3849,6 @@ std::list<boost::shared_ptr<NodeGui> > NodeGraph::getNodesWithinBackDrop(const N
     }
 
     return ret;
-}
-
-void
-NodeGraph::insertNewBackDrop(NodeBackDrop* bd)
-{
-    _imp->_backdrops.push_back(bd);
-}
-
-void
-NodeGraph::removeBackDrop(NodeBackDrop* bd)
-{
-    std::list<NodeBackDrop*>::iterator it = std::find(_imp->_backdrops.begin(),_imp->_backdrops.end(),bd);
-
-    if ( it != _imp->_backdrops.end() ) {
-        _imp->_backdrops.erase(it);
-    }
 }
 
 void
@@ -3790,11 +3880,12 @@ NodeGraph::onTimeChanged(SequenceTime time,
         }
         (*it)->refreshKnobsAfterTimeChange(time);
     }
-    Natron::OutputEffectInstance* lastTimelineSeekCaller = project->getLastTimelineSeekCaller();
+    
+    ViewerInstance* leadViewer = getGui()->getApp()->getLastViewerUsingTimeline();
 
     ///Syncrhronize viewers
     for (U32 i = 0; i < viewers.size(); ++i) {
-        if ( (viewers[i] != lastTimelineSeekCaller) || (reason == eTimelineChangeReasonUserSeek) ) {
+        if ( (viewers[i] != leadViewer) || (reason == eTimelineChangeReasonUserSeek) ) {
             viewers[i]->renderCurrentFrame(reason != eTimelineChangeReasonPlaybackSeek);
         }
     }
@@ -3833,7 +3924,9 @@ void
 NodeGraph::focusInEvent(QFocusEvent* e)
 {
     QGraphicsView::focusInEvent(e);
-
+    if (_imp->_gui) {
+        _imp->_gui->setLastSelectedGraph(this);
+    }
     _imp->_undoStack->setActive();
 }
 
@@ -3857,19 +3950,19 @@ NodeGraphPrivate::toggleSelectedNodesEnabled()
 {
     std::list<boost::shared_ptr<NodeGui> > toProcess;
 
-    for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _selection.nodes.begin(); it != _selection.nodes.end(); ++it) {
+    for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _selection.begin(); it != _selection.end(); ++it) {
         if ( (*it)->getNode()->isNodeDisabled() ) {
             toProcess.push_back(*it);
         }
     }
     ///if some nodes are disabled , enable them before
 
-    if ( toProcess.size() == _selection.nodes.size() ) {
-        _publicInterface->pushUndoCommand( new EnableNodesCommand(_selection.nodes) );
+    if ( toProcess.size() == _selection.size() ) {
+        _publicInterface->pushUndoCommand( new EnableNodesCommand(_selection) );
     } else if (toProcess.size() > 0) {
         _publicInterface->pushUndoCommand( new EnableNodesCommand(toProcess) );
     } else {
-        _publicInterface->pushUndoCommand( new DisableNodesCommand(_selection.nodes) );
+        _publicInterface->pushUndoCommand( new DisableNodesCommand(_selection) );
     }
 }
 
@@ -3907,21 +4000,18 @@ void
 NodeGraph::popRenameDialog(const QPoint& pos)
 {
     boost::shared_ptr<NodeGui> node;
-    NodeBackDrop* bd = 0;
-    if (_imp->_selection.nodes.size() == 1 && _imp->_selection.bds.empty()) {
-        node = _imp->_selection.nodes.front();
-    } else if (_imp->_selection.nodes.empty() && _imp->_selection.bds.size() == 1) {
-        bd = _imp->_selection.bds.front();
+    if (_imp->_selection.size() == 1 ) {
+        node = _imp->_selection.front();
     } else {
         return;
     }
     
-    assert(node || bd);
+    assert(node);
 
     
     QPoint realPos = pos;
     
-    EditNodeNameDialog* dialog = new EditNodeNameDialog(this,node,bd,this);
+    EditNodeNameDialog* dialog = new EditNodeNameDialog(this,node,this);
     
     if (realPos.x() == 0 && realPos.y() == 0) {
         QPoint global = QCursor::pos();
@@ -3956,7 +4046,6 @@ struct FindNodeDialogPrivate
     
     QString currentFilter;
     std::list<boost::shared_ptr<NodeGui> > nodeResults;
-    std::list<NodeBackDrop*> bdResults;
     int currentFindIndex;
     
     QVBoxLayout* mainLayout;
@@ -3975,7 +4064,6 @@ struct FindNodeDialogPrivate
     : graph(graph)
     , currentFilter()
     , nodeResults()
-    , bdResults()
     , currentFindIndex(-1)
     , mainLayout(0)
     , label(0)
@@ -4047,7 +4135,6 @@ FindNodeDialog::updateFindResults(const QString& filter)
     _imp->currentFilter = filter;
     _imp->currentFindIndex = 0;
     _imp->nodeResults.clear();
-    _imp->bdResults.clear();
     
     _imp->graph->deselect();
     
@@ -4058,7 +4145,6 @@ FindNodeDialog::updateFindResults(const QString& filter)
     Qt::CaseSensitivity sensitivity = _imp->caseSensitivity->isChecked() ? Qt::CaseSensitive : Qt::CaseInsensitive;
     
     const std::list<boost::shared_ptr<NodeGui> >& activeNodes = _imp->graph->getAllActiveNodes();
-    std::list<NodeBackDrop*> activeBds = _imp->graph->getActiveBackDrops();
     
     if (_imp->unixWildcards->isChecked()) {
         QRegExp exp(filter,sensitivity,QRegExp::Wildcard);
@@ -4069,32 +4155,20 @@ FindNodeDialog::updateFindResults(const QString& filter)
         
         
         for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = activeNodes.begin(); it!=activeNodes.end(); ++it) {
-            if ((*it)->isVisible() && exp.exactMatch((*it)->getNode()->getName().c_str())) {
+            if ((*it)->isVisible() && exp.exactMatch((*it)->getNode()->getLabel().c_str())) {
                 _imp->nodeResults.push_back(*it);
-            }
-        }
-        
-        for (std::list<NodeBackDrop*>::const_iterator it = activeBds.begin(); it!=activeBds.end(); ++it) {
-            if (exp.exactMatch((*it)->getName())) {
-                _imp->bdResults.push_back(*it);
             }
         }
     } else {
         for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = activeNodes.begin(); it!=activeNodes.end(); ++it) {
-            if ((*it)->isVisible() && QString((*it)->getNode()->getName().c_str()).contains(filter,sensitivity)) {
+            if ((*it)->isVisible() && QString((*it)->getNode()->getLabel().c_str()).contains(filter,sensitivity)) {
                 _imp->nodeResults.push_back(*it);
-            }
-        }
-        
-        for (std::list<NodeBackDrop*>::const_iterator it = activeBds.begin(); it!=activeBds.end(); ++it) {
-            if ((*it)->getName().contains(filter,sensitivity)) {
-                _imp->bdResults.push_back(*it);
             }
         }
 
     }
     
-    if ((_imp->nodeResults.size() + _imp->bdResults.size()) == 0) {
+    if ((_imp->nodeResults.size()) == 0) {
         _imp->resultLabel->setText("");
     }
 
@@ -4105,32 +4179,22 @@ FindNodeDialog::updateFindResults(const QString& filter)
 void
 FindNodeDialog::selectNextResult()
 {
-    if (_imp->currentFindIndex >= (int)(_imp->bdResults.size() + _imp->nodeResults.size())) {
+    if (_imp->currentFindIndex >= (int)(_imp->nodeResults.size())) {
         _imp->currentFindIndex = 0;
     }
     
-    if (_imp->bdResults.empty() && _imp->nodeResults.empty()) {
+    if (_imp->nodeResults.empty()) {
         return;
     }
     
-    if (_imp->currentFindIndex >= (int)_imp->nodeResults.size()) {
-        std::list<NodeBackDrop*>::iterator it = _imp->bdResults.begin();
-        int index = _imp->currentFindIndex - _imp->nodeResults.size();
-        assert(index >= 0);
-        std::advance(it,index);
-        
-        _imp->graph->selectBackDrop(*it, false);
-        _imp->graph->centerOnItem(*it);
-    } else {
-        
-        std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->nodeResults.begin();
-        std::advance(it,_imp->currentFindIndex);
-        
-        _imp->graph->selectNode(*it, false);
-        _imp->graph->centerOnItem(it->get());
-    }
+    std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->nodeResults.begin();
+    std::advance(it,_imp->currentFindIndex);
     
-    QString text = QString("Selecting result %1 of %2").arg(_imp->currentFindIndex + 1).arg(_imp->nodeResults.size() + _imp->bdResults.size());
+    _imp->graph->selectNode(*it, false);
+    _imp->graph->centerOnItem(it->get());
+    
+    
+    QString text = QString("Selecting result %1 of %2").arg(_imp->currentFindIndex + 1).arg(_imp->nodeResults.size());
     _imp->resultLabel->setText(text);
 
     
@@ -4204,22 +4268,20 @@ struct EditNodeNameDialogPrivate
     
     LineEdit* field;
     boost::shared_ptr<NodeGui> node;
-    NodeBackDrop* bd;
     NodeGraph* graph;
     
-    EditNodeNameDialogPrivate(NodeGraph* graph,const boost::shared_ptr<NodeGui>& node,NodeBackDrop* bd)
+    EditNodeNameDialogPrivate(NodeGraph* graph,const boost::shared_ptr<NodeGui>& node)
     : field(0)
     , node(node)
-    , bd(bd)
     , graph(graph)
     {
         
     }
 };
 
-EditNodeNameDialog::EditNodeNameDialog(NodeGraph* graph,const boost::shared_ptr<NodeGui>& node,NodeBackDrop* bd,QWidget* parent)
+EditNodeNameDialog::EditNodeNameDialog(NodeGraph* graph,const boost::shared_ptr<NodeGui>& node,QWidget* parent)
 : QDialog(parent)
-, _imp(new EditNodeNameDialogPrivate(graph,node,bd))
+, _imp(new EditNodeNameDialogPrivate(graph,node))
 {
     QVBoxLayout* mainLayout = new QVBoxLayout(this);
     mainLayout->setContentsMargins(0, 0, 0, 0);
@@ -4252,7 +4314,9 @@ void
 EditNodeNameDialog::keyPressEvent(QKeyEvent* e)
 {
     if ( (e->key() == Qt::Key_Return) || (e->key() == Qt::Key_Enter) ) {
-        _imp->graph->pushUndoCommand(new RenameNodeUndoRedoCommand(_imp->node,_imp->bd,_imp->field->text()));
+        QString newName = _imp->field->text();
+        QString oldName = QString(_imp->node->getNode()->getLabel().c_str());
+        _imp->graph->pushUndoCommand(new RenameNodeUndoRedoCommand(_imp->node,oldName,newName));
         accept();
     } else if (e->key() == Qt::Key_Escape) {
         reject();
@@ -4273,5 +4337,68 @@ NodeGraph::onNodeNameEditDialogFinished()
 void
 NodeGraph::extractSelectedNode()
 {
-    pushUndoCommand(new ExtractNodeUndoRedoCommand(this,_imp->_selection.nodes));
+    pushUndoCommand(new ExtractNodeUndoRedoCommand(this,_imp->_selection));
+}
+
+void
+NodeGraph::createGroupFromSelection()
+{
+    pushUndoCommand(new GroupFromSelectionCommand(this,_imp->_selection));
+}
+
+void
+NodeGraph::onGroupNameChanged(const QString& name)
+{
+    
+    setLabel(name.toStdString());
+    TabWidget* parent = dynamic_cast<TabWidget*>(parentWidget() );
+    if (parent) {
+        parent->setTabLabel(this, name);
+    }
+}
+
+void
+NodeGraph::onGroupScriptNameChanged(const QString& /*name*/)
+{
+    assert( qApp && qApp->thread() == QThread::currentThread() );
+    
+    boost::shared_ptr<NodeCollection> group = getGroup();
+    if (!group) {
+        return;
+    }
+    NodeGroup* isGrp = dynamic_cast<NodeGroup*>(group.get());
+    if (!isGrp) {
+        return;
+    }
+    std::string newName = isGrp->getNode()->getFullyQualifiedName();
+    std::string oldName = getScriptName();
+    getGui()->unregisterTab(this);
+    setScriptName(newName);
+    getGui()->registerTab(this,this);
+    TabWidget* parent = dynamic_cast<TabWidget*>(parentWidget() );
+    if (parent) {
+        parent->onTabScriptNameChanged(this, oldName, newName);
+    }
+
+}
+
+void
+NodeGraph::copyNodesAndCreateInGroup(const std::list<boost::shared_ptr<NodeGui> >& nodes,
+                                     const boost::shared_ptr<NodeCollection>& group)
+{
+    NodeClipBoard clipboard;
+    _imp->copyNodesInternal(nodes,clipboard);
+    
+    NodeGuiList newNodes;
+    std::list<boost::shared_ptr<NodeSerialization> >::const_iterator itOther = clipboard.nodes.begin();
+    for (std::list<boost::shared_ptr<NodeGuiSerialization> >::const_iterator it = clipboard.nodesUI.begin();
+         it != clipboard.nodesUI.end(); ++it,++itOther) {
+        boost::shared_ptr<NodeGui> node = _imp->pasteNode( **itOther,**it,QPointF(0,0),group,std::string(), false);
+        newNodes.push_back(node);
+    }
+    assert( clipboard.nodes.size() == newNodes.size() );
+    
+    ///Now that all nodes have been duplicated, try to restore nodes connections
+    _imp->restoreConnections(clipboard.nodes, newNodes);
+
 }

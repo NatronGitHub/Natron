@@ -12,6 +12,10 @@
 #ifndef NATRON_ENGINE_KNOBTYPES_H_
 #define NATRON_ENGINE_KNOBTYPES_H_
 
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
 #include <vector>
 #include <string>
 #include <map>
@@ -72,7 +76,7 @@ public:
     const std::vector<int> &getIncrements() const;
 
 
-signals:
+Q_SIGNALS:
 
 
     void incrementChanged(int incr, int index = 0);
@@ -138,11 +142,11 @@ class Double_Knob
 
 public:
 
-    enum NormalizedState
+    enum NormalizedStateEnum
     {
-        NORMALIZATION_NONE = 0, ///< indicating that the dimension holds a  non-normalized value.
-        NORMALIZATION_X, ///< indicating that the dimension holds a value normalized against the X dimension of the project format
-        NORMALIZATION_Y ///< indicating that the dimension holds a value normalized against the Y dimension of the project format
+        eNormalizedStateNone = 0, ///< indicating that the dimension holds a  non-normalized value.
+        eNormalizedStateX, ///< indicating that the dimension holds a value normalized against the X dimension of the project format
+        eNormalizedStateY ///< indicating that the dimension holds a value normalized against the Y dimension of the project format
     };
 
     static KnobHelper * BuildKnob(KnobHolder* holder,
@@ -177,7 +181,7 @@ public:
 
     static const std::string & typeNameStatic();
 
-    NormalizedState getNormalizedState(int dimension) const
+    NormalizedStateEnum getNormalizedState(int dimension) const
     {
         assert(dimension < 2 && dimension >= 0);
         if (dimension == 0) {
@@ -188,7 +192,7 @@ public:
     }
 
     void setNormalizedState(int dimension,
-                            NormalizedState state)
+                            NormalizedStateEnum state)
     {
         assert(dimension < 2 && dimension >= 0);
         if (dimension == 0) {
@@ -281,14 +285,14 @@ public:
 
     void serializeTracks(std::list<SerializedTrack>* tracks);
 
-    void restoreTracks(const std::list <SerializedTrack> & tracks,const std::vector<boost::shared_ptr<Natron::Node> > & activeNodes);
+    void restoreTracks(const std::list <SerializedTrack> & tracks,const std::list<boost::shared_ptr<Natron::Node> > & activeNodes);
 
-public slots:
+public Q_SLOTS:
 
     void onNodeDeactivated();
     void onNodeActivated();
 
-signals:
+Q_SIGNALS:
 
     void incrementChanged(double incr, int index = 0);
 
@@ -310,8 +314,8 @@ private:
 
     /// to support ofx deprecated normalizd params:
     /// the first and second dimensions of the double param( hence a pair ) have a normalized state.
-    /// BY default they have NORMALIZATION_NONE
-    std::pair<NormalizedState, NormalizedState> _normalizationXY;
+    /// BY default they have eNormalizedStateNone
+    std::pair<NormalizedStateEnum, NormalizedStateEnum> _normalizationXY;
 
     ///For double params respecting the kOfxParamCoordinatesNormalised
     ///This tells us that only the default value is stored normalized.
@@ -403,6 +407,8 @@ public:
     std::vector<std::string> getEntries_mt_safe() const;
     std::vector<std::string> getEntriesHelp_mt_safe() const;
     std::string getActiveEntryText_mt_safe() const;
+    
+    int getNumEntries() const;
 
     /// Can this type be animated?
     /// ChoiceParam animation may not be quite perfect yet,
@@ -417,7 +423,7 @@ public:
     
     void choiceRestoration(Choice_Knob* knob,const ChoiceExtraData* data);
 
-signals:
+Q_SIGNALS:
 
     void populated();
 
@@ -500,12 +506,12 @@ public:
 
     void activateAllDimensions()
     {
-        emit mustActivateAllDimensions();
+        Q_EMIT mustActivateAllDimensions();
     }
 
     void setPickingEnabled(bool enabled)
     {
-        emit pickingEnabled(enabled);
+        Q_EMIT pickingEnabled(enabled);
     }
 
     /**
@@ -518,12 +524,19 @@ public:
      * @brief Convenience function for RGBA color params
      **/
     void setValues(double r,double g,double b,double a);
+    
+    /**
+     * @brief When simplified, the GUI of the knob should not have any spinbox and sliders but just a label to click and openup a color dialog
+     **/
+    void setSimplified(bool simp);
+    bool isSimplified() const;
+    
 
-public slots:
+public Q_SLOTS:
 
     void onDimensionSwitchToggled(bool b);
 
-signals:
+Q_SIGNALS:
 
     void pickingEnabled(bool);
 
@@ -541,6 +554,7 @@ private:
 
 private:
     bool _allDimensionsEnabled;
+    bool _simplifiedMode;
     static const std::string _typeNameStr;
 };
 
@@ -619,6 +633,12 @@ public:
     {
         return _isCustom;
     }
+    
+    /**
+     * @brief Relevant for multi-lines with rich text enables. It tells if
+     * the string has content without the html tags
+     **/
+    bool hasContentWithoutHtmlTags() const;
 
 private:
 
@@ -658,6 +678,12 @@ public:
                bool declaredByPlugin);
 
     void addKnob(boost::shared_ptr<KnobI> k);
+    void removeKnob(KnobI* k);
+    
+    void moveOneStepUp(KnobI* k);
+    void moveOneStepDown(KnobI* k);
+    
+    void insertKnob(int index, const boost::shared_ptr<KnobI>& k);
 
     const std::vector< boost::shared_ptr<KnobI> > &getChildren() const;
 
@@ -701,6 +727,14 @@ public:
 
     void addKnob(const boost::shared_ptr<KnobI>& k);
     
+
+    void moveOneStepUp(KnobI* k);
+    void moveOneStepDown(KnobI* k);
+    
+    void removeKnob(KnobI* k);
+    
+    void insertKnob(int index, const boost::shared_ptr<KnobI>& k);
+
     const std::vector< boost::shared_ptr<KnobI> > & getChildren() const
     {
         return _children;
@@ -754,16 +788,31 @@ public:
     std::pair<double,double> getParametricRange() const WARN_UNUSED_RETURN;
     boost::shared_ptr<Curve> getParametricCurve(int dimension) const;
     Natron::StatusEnum addControlPoint(int dimension,double key,double value) WARN_UNUSED_RETURN;
-    Natron::StatusEnum getValue(int dimension,double parametricPosition,double *returnValue) WARN_UNUSED_RETURN;
-    Natron::StatusEnum getNControlPoints(int dimension,int *returnValue) WARN_UNUSED_RETURN;
+    Natron::StatusEnum getValue(int dimension,double parametricPosition,double *returnValue) const WARN_UNUSED_RETURN;
+    Natron::StatusEnum getNControlPoints(int dimension,int *returnValue) const WARN_UNUSED_RETURN;
     Natron::StatusEnum getNthControlPoint(int dimension,
                                       int nthCtl,
                                       double *key,
-                                      double *value) WARN_UNUSED_RETURN;
+                                      double *value) const WARN_UNUSED_RETURN;
+    Natron::StatusEnum getNthControlPoint(int dimension,
+                                          int nthCtl,
+                                          double *key,
+                                          double *value,
+                                          double *leftDerivative,
+                                          double *rightDerivative) const WARN_UNUSED_RETURN;
     Natron::StatusEnum setNthControlPoint(int dimension,
                                       int nthCtl,
                                       double key,
                                       double value) WARN_UNUSED_RETURN;
+    
+    Natron::StatusEnum setNthControlPoint(int dimension,
+                                          int nthCtl,
+                                          double key,
+                                          double value,
+                                          double leftDerivative,
+                                          double rightDerivative) WARN_UNUSED_RETURN;
+
+    
     Natron::StatusEnum deleteControlPoint(int dimension, int nthCtl) WARN_UNUSED_RETURN;
     Natron::StatusEnum deleteAllControlPoints(int dimension) WARN_UNUSED_RETURN;
     static const std::string & typeNameStatic() WARN_UNUSED_RETURN;
@@ -772,24 +821,24 @@ public:
 
     void loadParametricCurves(const std::list< Curve > & curves);
 
-public slots:
+public Q_SLOTS:
 
     virtual void drawCustomBackground()
     {
-        emit customBackgroundRequested();
+        Q_EMIT customBackgroundRequested();
     }
 
     virtual void initializeOverlayInteract(OverlaySupport* widget)
     {
-        emit mustInitializeOverlayInteract(widget);
+        Q_EMIT mustInitializeOverlayInteract(widget);
     }
 
     virtual void resetToDefault(const QVector<int> & dimensions)
     {
-        emit mustResetToDefault(dimensions);
+        Q_EMIT mustResetToDefault(dimensions);
     }
 
-signals:
+Q_SIGNALS:
 
     //emitted by drawCustomBackground()
     //if you can't overload drawCustomBackground()
@@ -802,6 +851,7 @@ signals:
 
     void mustResetToDefault(QVector<int>);
 
+    void curveColorChanged(int);
 private:
 
     virtual void resetExtraToDefaultValue(int dimension) OVERRIDE FINAL;

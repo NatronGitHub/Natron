@@ -9,6 +9,10 @@
  *
  */
 
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
 #include "ScaleSliderQWidget.h"
 
 #include <vector>
@@ -21,6 +25,10 @@ CLANG_DIAG_ON(unused-private-field)
 #include <QtGui/QMouseEvent>
 #include <QtGui/QPainter>
 #include <QStyleOption>
+
+#include "Engine/Settings.h"
+#include "Engine/Image.h"
+#include "Engine/KnobTypes.h"
 
 #include "Gui/ticks.h"
 #include "Gui/GuiApplicationManager.h"
@@ -41,8 +49,6 @@ struct ScaleSliderQWidgetPrivate
     double value;
     bool dragging;
     QFont* font;
-    QColor textColor;
-    QColor scaleColor;
     QColor sliderColor;
     bool initialized;
     bool mustInitializeSliderPosition;
@@ -50,12 +56,12 @@ struct ScaleSliderQWidgetPrivate
     bool ctrlDown;
     bool shiftDown;
     double currentZoom;
-    ScaleSliderQWidget::DataType dataType;
+    ScaleSliderQWidget::DataTypeEnum dataType;
     
     ScaleSliderQWidgetPrivate(double min,
                               double max,
                               double initialPos,
-                              ScaleSliderQWidget::DataType dataType,
+                              ScaleSliderQWidget::DataTypeEnum dataType,
                               Natron::ScaleTypeEnum type)
     : zoomCtx()
     , oldClick()
@@ -65,8 +71,6 @@ struct ScaleSliderQWidgetPrivate
     , value(initialPos)
     , dragging(false)
     , font(new QFont(appFont,NATRON_FONT_SIZE_8))
-    , textColor(200,200,200,255)
-    , scaleColor(100,100,100,255)
     , sliderColor(97,83,30,255)
     , initialized(false)
     , mustInitializeSliderPosition(true)
@@ -83,7 +87,7 @@ struct ScaleSliderQWidgetPrivate
 ScaleSliderQWidget::ScaleSliderQWidget(double min,
                                        double max,
                                        double initialPos,
-                                       DataType dataType,
+                                       DataTypeEnum dataType,
                                        Natron::ScaleTypeEnum type,
                                        QWidget* parent)
     : QWidget(parent)
@@ -172,7 +176,7 @@ ScaleSliderQWidget::mouseMoveEvent(QMouseEvent* e)
 void
 ScaleSliderQWidget::mouseReleaseEvent(QMouseEvent* e)
 {
-    emit editingFinished();
+    Q_EMIT editingFinished();
     QWidget::mouseReleaseEvent(e);
 }
 
@@ -258,7 +262,7 @@ ScaleSliderQWidget::seekInternal(double v)
     if (_imp->initialized) {
         update();
     }
-    emit positionChanged(v);
+    Q_EMIT positionChanged(v);
 }
 
 
@@ -312,8 +316,16 @@ ScaleSliderQWidget::paintEvent(QPaintEvent* /*e*/)
     QPainter p(this);
     style()->drawPrimitive(QStyle::PE_Widget, &opt, &p, this);
 
+    double txtR,txtG,txtB;
+    appPTR->getCurrentSettings()->getTextColor(&txtR, &txtG, &txtB);
+    QColor textColor;
+    textColor.setRgbF(Natron::clamp(txtR), Natron::clamp(txtG), Natron::clamp(txtB));
+    
+    QColor scaleColor;
+    scaleColor.setRgbF(textColor.redF() / 2., textColor.greenF() / 2., textColor.blueF() / 2.);
+    
     QFontMetrics fontM(*_imp->font);
-    p.setPen(_imp->scaleColor);
+    p.setPen(scaleColor);
 
     QPointF btmLeft = _imp->zoomCtx.toZoomCoordinates(0,height() - 1);
     QPointF topRight = _imp->zoomCtx.toZoomCoordinates(width() - 1, 0);
@@ -356,7 +368,7 @@ ScaleSliderQWidget::paintEvent(QPaintEvent* /*e*/)
         double value = i * smallTickSize + offset;
         const double tickSize = ticks[i - m1] * smallTickSize;
         const double alpha = ticks_alpha(smallestTickSize, largestTickSize, tickSize);
-        QColor color(_imp->textColor);
+        QColor color(textColor);
         color.setAlphaF(alpha);
         QPen pen(color);
         pen.setWidthF(1.9);
@@ -380,7 +392,7 @@ ScaleSliderQWidget::paintEvent(QPaintEvent* /*e*/)
                     // draw it with a lower alpha
                     alphaText *= (tickSizePixel - sSizePixel) / (double)minTickSizeTextPixel;
                 }
-                QColor c = _imp->readOnly || !isEnabled() ? Qt::black : _imp->textColor;
+                QColor c = _imp->readOnly || !isEnabled() ? Qt::black : textColor;
                 c.setAlphaF(alphaText);
                 p.setFont(*_imp->font);
                 p.setPen(c);

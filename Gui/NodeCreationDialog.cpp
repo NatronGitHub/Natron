@@ -3,6 +3,9 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
 
 #include "NodeCreationDialog.h"
 
@@ -21,6 +24,7 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
+#include "Engine/AppManager.h"
 #include "Engine/Plugin.h"
 #include "Gui/LineEdit.h"
 #include "Gui/GuiApplicationManager.h"
@@ -83,8 +87,8 @@ CompleterLineEdit::filterText(const QString & txt)
     if ( txt.isEmpty() ) {
         sl = _imp->words;
     } else {
-        for (int i = 0; i < _imp->words.size(); ++i) {
-            if ( _imp->words[i].contains(txt,Qt::CaseInsensitive) ) {
+        for (int i = 0; i < _imp->ids.size(); ++i) {
+            if ( _imp->ids[i].contains(txt,Qt::CaseInsensitive) ) {
                 sl << _imp->words[i];
             }
         }
@@ -117,7 +121,7 @@ CompleterLineEdit::setTextFromIndex(const QModelIndex & index)
     QString text = index.data().toString();
 
     setText(text);
-    emit itemCompletionChosen();
+    Q_EMIT itemCompletionChosen();
     _imp->listView->hide();
     if (_imp->quickExitEnabled) {
         _imp->dialog->accept();
@@ -173,7 +177,7 @@ CompleterLineEdit::keyPressEvent(QKeyEvent* e)
         _imp->listView->hide();
         if (_imp->model->rowCount() == 1) {
             setText( _imp->model->index(0).data().toString() );
-            emit itemCompletionChosen();
+            Q_EMIT itemCompletionChosen();
             if (_imp->quickExitEnabled) {
                 _imp->dialog->accept();
             }
@@ -183,7 +187,7 @@ CompleterLineEdit::keyPressEvent(QKeyEvent* e)
             QModelIndexList indexes = selection.indexes();
             if (indexes.size() == 1) {
                 setText( _imp->model->index( indexes[0].row() ).data().toString() );
-                emit itemCompletionChosen();
+                Q_EMIT itemCompletionChosen();
                 if (_imp->quickExitEnabled) {
                     _imp->dialog->accept();
                 }
@@ -209,7 +213,7 @@ struct NodeCreationDialogPrivate
 {
     QVBoxLayout* layout;
     CompleterLineEdit* textEdit;
-    std::vector<Natron::Plugin*> items;
+    Natron::PluginsMap items;
 
     NodeCreationDialogPrivate()
         : layout(NULL)
@@ -234,13 +238,55 @@ NodeCreationDialog::NodeCreationDialog(const QString& initialFilter,QWidget* par
     QStringList ids;
     QStringList names;
     QString initialFilterName;
-    for (unsigned int i = 0; i < _imp->items.size(); ++i) {
-        ids.push_back( _imp->items[i]->getPluginID() );
-        names.push_back( _imp->items[i]->generateUserFriendlyPluginID() );
-        if (ids[i] == initialFilter) {
-            initialFilterName = names[i];
+    std::string stdInitialFilter = initialFilter.toStdString();
+    int i = 0;
+    for (Natron::PluginsMap::iterator it = _imp->items.begin(); it != _imp->items.end(); ++it) {
+        
+        if (!Natron::isPluginCreatable(it->first)) {
+            continue;
         }
-    }
+        
+        if (it->second.size() == 1) {
+            QString name = (*it->second.begin())->generateUserFriendlyPluginID();
+            names.push_back(name);
+            
+            int indexOfBracket = name.lastIndexOf("  [");
+            if (indexOfBracket != -1) {
+                name = name.left(indexOfBracket);
+            }
+            ids.push_back(name);
+            if (it->first == stdInitialFilter) {
+                initialFilterName = names[i];
+            }
+            ++i;
+        } else {
+            QString bestMajorName;
+            for (Natron::PluginMajorsOrdered::reverse_iterator it2 = it->second.rbegin(); it2 != it->second.rend(); ++it2) {
+                QString name;
+                if (it2 == it->second.rbegin()) {
+                    name = (*it2)->generateUserFriendlyPluginID();
+                    bestMajorName = name;
+                } else {
+                    name = (*it2)->generateUserFriendlyPluginIDMajorEncoded();
+                }
+                names.push_back(name);
+                
+                
+                int indexOfBracket = name.lastIndexOf("  [");
+                if (indexOfBracket != -1) {
+                    name = name.left(indexOfBracket);
+                }
+                ids.push_back(name);
+                
+                ++i;
+
+            }
+            if (it->first == stdInitialFilter) {
+                initialFilterName = bestMajorName;
+            }
+        }
+        
+            }
     
     
     ids.sort();
@@ -267,12 +313,30 @@ NodeCreationDialog::~NodeCreationDialog()
 }
 
 QString
-NodeCreationDialog::getNodeName() const
+NodeCreationDialog::getNodeName(int *major) const
 {
     QString name = _imp->textEdit->text();
-    for (U32 i = 0; i < _imp->items.size(); ++i) {
-        if (_imp->items[i]->generateUserFriendlyPluginID() == name) {
-            return _imp->items[i]->getPluginID();
+    
+    for (Natron::PluginsMap::iterator it = _imp->items.begin(); it != _imp->items.end(); ++it) {
+        if (it->second.size() == 1) {
+            if ((*it->second.begin())->generateUserFriendlyPluginID() == name) {
+                *major = (*(it->second.begin()))->getMajorVersion();
+                return (*it->second.begin())->getPluginID();
+            }
+        } else {
+            for (Natron::PluginMajorsOrdered::reverse_iterator it2 = it->second.rbegin(); it2 != it->second.rend(); ++it2) {
+                if (it2 == it->second.rbegin()) {
+                    if ((*it2)->generateUserFriendlyPluginID() == name) {
+                        *major = (*it2)->getMajorVersion();
+                        return (*it2)->getPluginID();
+                    }
+                } else {
+                    if ((*it2)->generateUserFriendlyPluginIDMajorEncoded() == name) {
+                        *major = (*it2)->getMajorVersion();
+                        return (*it2)->getPluginID();
+                    }
+                }
+            }
         }
     }
     return QString();

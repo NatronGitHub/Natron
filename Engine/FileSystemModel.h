@@ -10,7 +10,12 @@
 
 #ifndef FILESYSTEMMODEL_H
 #define FILESYSTEMMODEL_H
-#ifndef Q_MOC_RUN
+
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
 #endif
@@ -79,6 +84,9 @@ public:
      **/
     void addChild(const boost::shared_ptr<FileSystemItem>& child);
     
+    void addChild(const boost::shared_ptr<SequenceParsing::SequenceFromFiles>& sequence,
+                  const QFileInfo& info);
+    
     /**
      * @brief Remove all children, MT-safe
      **/
@@ -117,7 +125,7 @@ public:
     void fetchDirectory(const boost::shared_ptr<FileSystemItem>& item);
     
     bool isWorking() const;
-signals:
+Q_SIGNALS:
     
     void directoryLoaded(QString);
     
@@ -275,7 +283,7 @@ public:
     
     void onSortIndicatorChanged(int logicalIndex,Qt::SortOrder order);
     
-public slots:
+public Q_SLOTS:
     
     void onDirectoryLoadedByGatherer(const QString& directory);
     
@@ -283,7 +291,7 @@ public slots:
     
     void onWatchedFileChanged(const QString& file);
     
-signals:
+Q_SIGNALS:
     
     void rootPathChanged(QString);
     

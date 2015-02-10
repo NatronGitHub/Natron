@@ -8,6 +8,10 @@
  *
  */
 
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
 #include "PreferencesPanel.h"
 
 CLANG_DIAG_OFF(deprecated)
@@ -31,29 +35,30 @@ PreferencesPanel::PreferencesPanel(boost::shared_ptr<Settings> settings,
     : QWidget(parent)
       , _gui(parent)
       , _settings(settings)
+      , _closeIsOK(false)
 {
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
 
-    setWindowFlags(Qt::WindowStaysOnTopHint | Qt::Window);
+    setWindowFlags(Qt::Window);
     setWindowTitle( tr("Preferences") );
     _mainLayout = new QVBoxLayout(this);
     _mainLayout->setContentsMargins(0,0,0,0);
     _mainLayout->setSpacing(0);
 
-    _panel = new DockablePanel(_gui,_settings.get(),_mainLayout,DockablePanel::NO_HEADER,true,
-                               "","",false,"",this);
-    _panel->setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Expanding);
+    _panel = new DockablePanel(_gui,_settings.get(), _mainLayout, DockablePanel::eHeaderModeNoHeader,true,
+                               "", "", false,"", this);
+    _panel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     _mainLayout->addWidget(_panel);
 
     _buttonBox = new QDialogButtonBox(Qt::Horizontal);
     _applyB = new Button( tr("Apply") );
-    _applyB->setToolTip( Qt::convertFromPlainText(tr("Apply changes without closing the window."),Qt::WhiteSpaceNormal) );
+    _applyB->setToolTip( Qt::convertFromPlainText(tr("Apply changes without closing the window."), Qt::WhiteSpaceNormal) );
     _restoreDefaultsB = new Button( tr("Restore defaults") );
-    _restoreDefaultsB->setToolTip( Qt::convertFromPlainText(tr("Restore default values for all preferences."),Qt::WhiteSpaceNormal) );
+    _restoreDefaultsB->setToolTip( Qt::convertFromPlainText(tr("Restore default values for all preferences."), Qt::WhiteSpaceNormal) );
     _cancelB = new Button( tr("Cancel") );
-    _cancelB->setToolTip( Qt::convertFromPlainText(tr("Cancel changes that were not applied and close the window."),Qt::WhiteSpaceNormal) );
+    _cancelB->setToolTip( Qt::convertFromPlainText(tr("Cancel changes that were not applied and close the window."), Qt::WhiteSpaceNormal) );
     _okB = new Button( tr("OK") );
-    _okB->setToolTip( Qt::convertFromPlainText(tr("Apply changes and close the window."),Qt::WhiteSpaceNormal) );
+    _okB->setToolTip( Qt::convertFromPlainText(tr("Apply changes and close the window."), Qt::WhiteSpaceNormal) );
     _buttonBox->addButton(_applyB, QDialogButtonBox::ApplyRole);
     _buttonBox->addButton(_restoreDefaultsB, QDialogButtonBox::ResetRole);
     _buttonBox->addButton(_cancelB, QDialogButtonBox::RejectRole);
@@ -99,6 +104,7 @@ void
 PreferencesPanel::applyChangesAndClose()
 {
     _settings->saveSettings();
+    _closeIsOK = true;
     close();
 }
 
@@ -115,10 +121,10 @@ PreferencesPanel::showEvent(QShowEvent* /*e*/)
 void
 PreferencesPanel::closeEvent(QCloseEvent*)
 {
-    if ( _settings->wereChangesMadeSinceLastSave() ) {
-        _settings->blockEvaluation();
+    if ( !_closeIsOK && _settings->wereChangesMadeSinceLastSave() ) {
+        _settings->beginChanges();
         _settings->restoreSettings();
-        _settings->unblockEvaluation();
+        _settings->endChanges();
     }
 }
 

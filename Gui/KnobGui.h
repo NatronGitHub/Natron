@@ -12,6 +12,10 @@
 #ifndef NATRON_GUI_KNOBGUI_H_
 #define NATRON_GUI_KNOBGUI_H_
 
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
@@ -19,7 +23,7 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QDialog>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
-#ifndef Q_MOC_RUN
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
 #endif
 #include "Global/GlobalDefines.h"
@@ -46,6 +50,7 @@ class Button;
 class AnimationButton; //used by KnobGui
 class DockablePanel; //used by KnobGui
 class Gui;
+class NodeGui;
 
 class KnobGui
     : public QObject,public KnobGuiI
@@ -59,7 +64,21 @@ public:
             DockablePanel* container);
 
     virtual ~KnobGui() OVERRIDE;
-
+    
+    DockablePanel* getContainer();
+    
+    void removeGui();
+    
+    void callDeleteLater();
+    
+protected:
+    /**
+     * @brief Override this to delete all user interface created for this knob
+     **/
+    virtual void removeSpecificGui() = 0;
+    
+    
+public:
 
     /**
      * @brief This function must return a pointer to the internal knob.
@@ -83,7 +102,6 @@ public:
                    QWidget* fieldContainer,
                    QLabel* label,
                    QHBoxLayout* layout,
-                   int row,
                    bool isOnNewLine,
                    const std::vector< boost::shared_ptr< KnobI > > & knobsOnSameLine);
 
@@ -141,18 +159,14 @@ public:
                  Natron::ValueChangedReasonEnum reason)
     {
         Knob<T>* knob = dynamic_cast<Knob<T>*>( getKnob().get() );
-        KnobHelper::ValueChangedReturnCode ret;
-        if (reason == Natron::eValueChangedReasonUserEdited) {
-            ret = knob->onValueChanged(v, dimension, Natron::eValueChangedReasonUserEdited, newKey);
-        } else {
-            ret = knob->setValue(v,dimension,false);
-        }
+        KnobHelper::ValueChangedReturnCodeEnum ret = knob->setValue(v,dimension,reason,newKey);
+        
         if (ret > 0) {
             assert(newKey);
-            if (ret == KnobHelper::KEYFRAME_ADDED) {
+            if (ret == KnobHelper::eValueChangedReturnCodeKeyframeAdded) {
                 setKeyframeMarkerOnTimeline( newKey->getTime() );
             }
-            emit keyFrameSet();
+            Q_EMIT keyFrameSet();
         }
         if (refreshGui) {
             updateGUI(dimension);
@@ -171,6 +185,8 @@ public:
     
     ///Should set to the underlying knob the gui ptr
     virtual void setKnobGuiPointer() OVERRIDE FINAL;
+    
+    virtual void onKnobDeletion() OVERRIDE FINAL;
 
     virtual bool isGuiFrozenForPlayback() const OVERRIDE FINAL;
 
@@ -187,7 +203,7 @@ public:
      **/
     bool isSecretRecursive() const;
     
-public slots:
+public Q_SLOTS:
 
     void onRefreshGuiCurve(int dimension);
     
@@ -254,9 +270,6 @@ public slots:
     void onLinkToActionTriggered();
     void linkTo(int dimension);
 
-    void onUnlinkActionTriggered();
-    void unlink();
-
     void onResetDefaultValuesActionTriggered();
 
     ///Actually restores all dimensions, the parameter is disregarded.
@@ -270,13 +283,22 @@ public slots:
 
     void onAnimationLevelChanged(int dim,int level);
 
-    void onAppendParamEditChanged(const Variant & v,int dim,int time,bool createNewCommand,bool setKeyFrame);
+    void onAppendParamEditChanged(int reason,const Variant & v,int dim,int time,bool createNewCommand,bool setKeyFrame);
 
     void onFrozenChanged(bool frozen);
 
     void updateCurveEditorKeyframes();
 
-signals:
+    void onSetExprActionTriggered();
+    
+    void onClearExprActionTriggered();
+    
+    void onEditExprDialogFinished();
+    
+    void onExprChanged(int dimension);
+    
+    void onHelpChanged();
+Q_SIGNALS:
 
     void knobUndoneChange();
 
@@ -341,7 +363,11 @@ private:
                                        Natron::AnimationLevelEnum /*level*/)
     {
     }
+    
+    virtual void reflectExpressionState(int /*dimension*/,bool /*hasExpr*/) {}
 
+    virtual void updateToolTip() {}
+    
     void createAnimationMenu(QMenu* menu,int dimension);
 
     void createAnimationButton(QHBoxLayout* layout);
@@ -371,13 +397,106 @@ public:
 
     boost::shared_ptr<KnobI> getSelectedKnobs() const;
 
-public slots:
+public Q_SLOTS:
 
     void onNodeComboEditingFinished();
 
 private:
 
     boost::scoped_ptr<LinkToKnobDialogPrivate> _imp;
+};
+
+
+struct EditScriptDialogPrivate;
+class EditScriptDialog : public QDialog
+{
+    Q_OBJECT
+    
+public:
+    
+    EditScriptDialog(QWidget* parent);
+    
+    virtual ~EditScriptDialog();
+    
+    void create(const QString& initialScript,bool makeUseRetButton);
+    
+    QString getExpression(bool* hasRetVariable) const;
+    
+    bool isUseRetButtonChecked() const;
+    
+public Q_SLOTS:
+    
+    void onUseRetButtonClicked(bool useRet);
+    void onTextEditChanged();
+    void onHelpRequested();
+    
+    
+protected:
+    
+    virtual void setTitle() = 0;
+    
+    virtual bool hasRetVariable() const { return false; }
+    
+    virtual void getImportedModules(QStringList& modules) const = 0;
+    
+    virtual void getDeclaredVariables(std::list<std::pair<QString,QString> >& variables) const = 0;
+    
+    virtual QString compileExpression(const QString& expr) = 0;
+
+    static QString getHelpPart1();
+    
+    static QString getHelpThisNodeVariable();
+    
+    static QString getHelpThisGroupVariable();
+    
+    static QString getHelpThisParamVariable();
+    
+    static QString getHelpDimensionVariable();
+    
+    static QString getHelpPart2();
+    
+    virtual QString getCustomHelp() = 0;
+
+private:
+    
+    void compileAndSetResult(const QString& script);
+    
+    virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
+    
+    
+    boost::scoped_ptr<EditScriptDialogPrivate> _imp;
+};
+
+class EditExpressionDialog : public EditScriptDialog
+{
+    
+    int _dimension;
+    KnobGui* _knob;
+    
+public:
+    
+    EditExpressionDialog(int dimension,KnobGui* knob,QWidget* parent);
+    
+    virtual ~EditExpressionDialog()
+    {
+    }
+    
+    int getDimension() const;
+
+private:
+    
+    virtual void getImportedModules(QStringList& modules) const OVERRIDE FINAL;
+    
+    virtual void getDeclaredVariables(std::list<std::pair<QString,QString> >& variables) const OVERRIDE FINAL;
+    
+    virtual bool hasRetVariable() const OVERRIDE FINAL;
+    
+    virtual void setTitle() OVERRIDE FINAL;
+    
+    virtual QString compileExpression(const QString& expr) OVERRIDE FINAL;
+
+    virtual QString getCustomHelp() OVERRIDE FINAL;
+
 };
 
 #endif // NATRON_GUI_KNOBGUI_H_

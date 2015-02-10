@@ -8,6 +8,10 @@
  *
  */
 
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
 #include "Gui/ComboBox.h"
 
 #include <cassert>
@@ -24,6 +28,10 @@ CLANG_DIAG_OFF(deprecated-register) //'register' storage class specifier is depr
 #include <QMouseEvent>
 CLANG_DIAG_ON(unused-private-field)
 CLANG_DIAG_ON(deprecated-register)
+
+#include "Engine/Settings.h"
+#include "Engine/KnobTypes.h"
+#include "Engine/Image.h"
 
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/MenuWithToolTips.h"
@@ -55,7 +63,7 @@ ComboBox::ComboBox(QWidget* parent)
 
     setFrameShape(QFrame::Box);
 
-    setCurrentIndex(-1);
+    setCurrentIndex(0);
 
     _menu = new MenuWithToolTips(this);
 
@@ -221,19 +229,27 @@ ComboBox::paintEvent(QPaintEvent* /*e*/)
         if (_clicked || _dirty) {
             fillColor = Qt::black;
         } else {
+            double r,g,b;
             switch (_animation) {
                 case 0:
-                default:
-                    fillColor.setRgb(71,71,71);
-                    break;
-                case 1:
-                    fillColor.setRgb(86,117,156);
-                    break;
-                case 2:
-                    fillColor.setRgb(21,97,248);
-                    break;
+                default: {
                     
+                    appPTR->getCurrentSettings()->getRaisedColor(&r, &g, &b);
+                }   break;
+                case 1: {
+                    appPTR->getCurrentSettings()->getInterpolatedColor(&r, &g, &b);
+                }   break;
+                case 2:
+                {
+                    appPTR->getCurrentSettings()->getKeyframeColor(&r, &g, &b);
+                }   break;
+                case 3:
+                {
+                    appPTR->getCurrentSettings()->getExprColor(&r, &g, &b);
+                }   break;
             }
+            fillColor.setRgb(Natron::clamp(r) * 256,Natron::clamp(g) * 256,Natron::clamp(b) * 256);
+
         }
         
         double fw = frameWidth();
@@ -242,7 +258,10 @@ ComboBox::paintEvent(QPaintEvent* /*e*/)
         if (!hasFocus()) {
             pen.setColor(Qt::black);
         } else {
-            pen.setColor(QColor(243,137,0));
+            double r,g,b;
+            appPTR->getCurrentSettings()->getSelectionColor(&r, &g, &b);
+            QColor c;
+            c.setRgb(Natron::clamp(r) * 256,Natron::clamp(g) * 256,Natron::clamp(b) * 256);
             fw = 2;
         }
         p.setPen(pen);
@@ -266,7 +285,9 @@ ComboBox::paintEvent(QPaintEvent* /*e*/)
     } else if (!_enabled) {
         textColor = Qt::black;
     } else {
-        textColor.setRgb(200,200,200);
+        double r,g,b;
+        appPTR->getCurrentSettings()->getTextColor(&r, &g, &b);
+        textColor.setRgb(Natron::clamp(r) * 256,Natron::clamp(g) * 256,Natron::clamp(b) * 256);
     }
     {
         Qt::Alignment align = QStyle::visualAlignment(Qt::LeftToRight, QFlag(_align));
@@ -386,7 +407,7 @@ ComboBox::insertItem(int index,
     QAction* action =  new QAction(this);
     action->setText(item);
     if ( !toolTip.isEmpty() ) {
-        action->setToolTip( Qt::convertFromPlainText(toolTip, Qt::WhiteSpaceNormal) );
+        action->setToolTip( Qt::convertFromPlainText(toolTip.trimmed(), Qt::WhiteSpaceNormal) );
     }
     if ( !icon.isNull() ) {
         action->setIcon(icon);
@@ -434,7 +455,7 @@ ComboBox::addItem(const QString & item,
         action->setShortcut(key);
     }
     if ( !toolTip.isEmpty() ) {
-        action->setToolTip( Qt::convertFromPlainText(toolTip, Qt::WhiteSpaceNormal) );
+        action->setToolTip( Qt::convertFromPlainText(toolTip.trimmed(), Qt::WhiteSpaceNormal) );
     }
     addAction(action);
 }
@@ -451,8 +472,8 @@ ComboBox::setCurrentText(const QString & text)
     int index = setCurrentText_internal(text);
 
     if (index != -1) {
-        emit currentIndexChanged(index);
-        emit currentIndexChanged( getCurrentIndexText() );
+        Q_EMIT currentIndexChanged(index);
+        Q_EMIT currentIndexChanged( getCurrentIndexText() );
     }
 }
 
@@ -509,6 +530,9 @@ ComboBox::activeIndex() const
 QString
 ComboBox::getCurrentIndexText() const
 {
+    if (_actions.empty()) {
+        return QString();
+    }
     assert( _currentIndex < (int)_actions.size() );
 
     return _actions[_currentIndex]->text();
@@ -525,12 +549,12 @@ ComboBox::setCurrentIndex_internal(int index)
     }
     str = text;
 
-    _currentText = str;
     QFontMetrics m = fontMetrics();
     setMinimumWidth( m.width(str) + 2 * DROP_DOWN_ICON_SIZE);
 
-    if (index != -1 && index != _currentIndex) {
+    if ((index != -1 && index != _currentIndex) || _currentText != str) {
         _currentIndex = index;
+        _currentText = str;
         updateLabel();
         return true;
     } else {
@@ -545,9 +569,9 @@ ComboBox::setCurrentIndex(int index)
         return;
     }
     if ( setCurrentIndex_internal(index) ) {
-        ///emit the signal only if the entry changed
-        emit currentIndexChanged(_currentIndex);
-        emit currentIndexChanged( getCurrentIndexText() );
+        ///Q_EMIT the signal only if the entry changed
+        Q_EMIT currentIndexChanged(_currentIndex);
+        Q_EMIT currentIndexChanged( getCurrentIndexText() );
     }
 }
 
@@ -679,6 +703,12 @@ ComboBox::setReadOnly(bool readOnly)
 {
     _readOnly = readOnly;
     repaint();
+}
+
+bool
+ComboBox::getEnabled_natron() const
+{
+    return _enabled;
 }
 
 void

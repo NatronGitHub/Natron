@@ -9,6 +9,10 @@
  *
  */
 
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
 #include "QtDecoder.h"
 
 #include <stdexcept>
@@ -60,7 +64,7 @@ QtReader::~QtReader()
 std::string
 QtReader::getPluginID() const
 {
-    return NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.ReadQt";;
+    return PLUGINID_NATRON_READQT;
 }
 
 std::string
@@ -84,7 +88,7 @@ QtReader::getDescription() const
 void
 QtReader::initializeKnobs()
 {
-    Natron::warningDialog( getName(), QObject::tr("This plugin exists only to help the developers team to test %1"
+    Natron::warningDialog( getScriptName_mt_safe(), QObject::tr("This plugin exists only to help the developers team to test %1"
                                                   ". You cannot use it when rendering a project.").arg(NATRON_APPLICATION_NAME).toStdString() );
 
 
@@ -379,13 +383,13 @@ QtReader::getFilenameAtSequenceTime(SequenceTime time,
 {
     int missingChoice = _missingFrameChoice->getValue();
 
-    filename = _fileKnob->getFileName(time, 0);
+    filename = _fileKnob->getFileName(time);
 
     switch (missingChoice) {
     case 0:     // Load nearest
                 ///the nearest frame search went out of range and couldn't find a frame.
         if ( filename.empty() ) {
-            filename = _fileKnob->getFileName(time, 0);
+            filename = _fileKnob->getFileName(time);
             if ( filename.empty() ) {
                 setPersistentMessage( Natron::eMessageTypeError, QObject::tr("Nearest frame search went out of range").toStdString() );
             }
@@ -475,12 +479,12 @@ QtReader::render(SequenceTime /*time*/,
     case QImage::Format_ARGB32:     // The image is stored using a 32-bit ARGB format (0xAARRGGBB).
         //might have to invert y coordinates here
         _lut->from_byte_packed( (float*)output->pixelAt(0, 0), _img->bits(), roi, output->getBounds(), output->getBounds(),
-                                Natron::Color::PACKING_BGRA,Natron::Color::PACKING_RGBA,true,false );
+                                Natron::Color::ePixelPackingBGRA,Natron::Color::ePixelPackingRGBA,true,false );
         break;
     case QImage::Format_ARGB32_Premultiplied:     // The image is stored using a premultiplied 32-bit ARGB format (0xAARRGGBB).
         //might have to invert y coordinates here
         _lut->from_byte_packed( (float*)output->pixelAt(0, 0), _img->bits(), roi, output->getBounds(), output->getBounds(),
-                                Natron::Color::PACKING_BGRA,Natron::Color::PACKING_RGBA,true,true );
+                                Natron::Color::ePixelPackingBGRA,Natron::Color::ePixelPackingRGBA,true,true );
         break;
     case QImage::Format_Mono:     // The image is stored using 1-bit per pixel. Bytes are packed with the most significant bit (MSB) first.
     case QImage::Format_MonoLSB:     // The image is stored using 1-bit per pixel. Bytes are packed with the less significant bit (LSB) first.
@@ -493,7 +497,7 @@ QtReader::render(SequenceTime /*time*/,
     {
         QImage img = _img->convertToFormat(QImage::Format_ARGB32);
         _lut->from_byte_packed( (float*)output->pixelAt(0, 0), img.bits(), roi, output->getBounds(), output->getBounds(),
-                                Natron::Color::PACKING_BGRA, Natron::Color::PACKING_RGBA, true, false );
+                                Natron::Color::ePixelPackingBGRA, Natron::Color::ePixelPackingRGBA, true, false );
         break;
     }
     case QImage::Format_ARGB8565_Premultiplied:     // The image is stored using a premultiplied 24-bit ARGB format (8-5-6-5).
@@ -503,7 +507,7 @@ QtReader::render(SequenceTime /*time*/,
     {
         QImage img = _img->convertToFormat(QImage::Format_ARGB32_Premultiplied);
         _lut->from_byte_packed( (float*)output->pixelAt(0, 0), img.bits(), roi, output->getBounds(), output->getBounds(),
-                                Natron::Color::PACKING_BGRA, Natron::Color::PACKING_RGBA, true, true );
+                                Natron::Color::ePixelPackingBGRA, Natron::Color::ePixelPackingRGBA, true, true );
         break;
     }
     case QImage::Format_Invalid:

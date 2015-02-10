@@ -11,15 +11,22 @@
 
 #ifndef OPENGLVIEWERI_H
 #define OPENGLVIEWERI_H
-#ifndef Q_MOC_RUN
+
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
 #endif
 #include "Engine/OverlaySupport.h"
 #include "Engine/Rect.h"
+
 class Format;
 struct TextureRect;
 class QString;
 class TimeLine;
+
 namespace Natron
 {
     class Image;
@@ -30,11 +37,11 @@ class OpenGLViewerI
 {
 public:
 
-    enum BitDepth
+    enum BitDepthEnum
     {
-        BYTE = 0,
-        HALF_FLOAT,
-        FLOAT
+        eBitDepthByte = 0,
+        eBitDepthHalf,
+        eBitDepthFloat
     };
 
     OpenGLViewerI()
@@ -71,7 +78,7 @@ public:
     /**
      * @brief Must return the bit depth of the texture used to render. (Byte, half or float)
      **/
-    virtual BitDepth getBitDepth() const = 0;
+    virtual BitDepthEnum getBitDepth() const = 0;
 
     /**
      * @brief Returns true if the user has enabled the region of interest
@@ -129,10 +136,6 @@ public:
      **/
     virtual bool supportsGLSL() const = 0;
 
-    /**
-     * @brief Overrides to refresh any gui indicating the name of the underlying node.
-     **/
-    virtual void onViewerNodeNameChanged(const QString & name) = 0;
 
     /**
      * @brief Called when the live instance of the viewer node is killed. (i.e: when the node is deleted).
@@ -149,16 +152,17 @@ public:
      * @brief Must return the time currently displayed
      **/
     virtual int getCurrentlyDisplayedTime() const = 0;
+    
+    /**
+     * @brief Get the viewer's timeline's range
+     **/
+    virtual void getViewerFrameRange(int* first,int* last) const = 0;
 
     /**
      * @brief Must return the current compositing operator applied to the viewer input A and B.
      **/
     virtual Natron::ViewerCompositingOperatorEnum getCompositingOperator() const = 0;
 
-    /**
-     * @brief Returns whether the user sould be able to edit the frame range or not.
-     **/
-    virtual bool isFrameRangeLocked() const = 0;
     
     /**
      * @brief Must return a pointer to the current timeline used by the Viewer

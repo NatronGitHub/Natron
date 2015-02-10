@@ -8,6 +8,11 @@
  * contact: immarespond at gmail dot com
  *
  */
+
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
 #include "OfxClipInstance.h"
 
 #include <cfloat>
@@ -31,6 +36,7 @@
 #include "Engine/Transform.h"
 
 #include <nuke/fnOfxExtensions.h>
+
 
 using namespace Natron;
 
@@ -277,8 +283,10 @@ OfxClipInstance::getFrameRange(double &startFrame,
         assert(_nodeInstance);
         assert( _nodeInstance->getApp() );
         assert( _nodeInstance->getApp()->getTimeLine() );
-        startFrame = _nodeInstance->getApp()->getTimeLine()->leftBound();
-        endFrame = _nodeInstance->getApp()->getTimeLine()->rightBound();
+        int first,last;
+        _nodeInstance->getApp()->getFrameRange(&first, &last);
+        startFrame = first;
+        endFrame = last;
     }
 }
 
@@ -462,7 +470,7 @@ OfxClipInstance::getStereoscopicImage(OfxTime time,
         hasLocalData = false;
 #ifdef DEBUG
         if (QThread::currentThread() != qApp->thread()) {
-            qDebug() << _nodeInstance->getNode()->getName_mt_safe().c_str() << " is trying to call clipGetImage on a thread "
+            qDebug() << _nodeInstance->getNode()->getScriptName_mt_safe().c_str() << " is trying to call clipGetImage on a thread "
             "not controlled by Natron (probably from the multi-thread suite).\n If you're a developer of that plug-in, please "
             "fix it.";
             
@@ -485,14 +493,14 @@ OfxClipInstance::getStereoscopicImage(OfxTime time,
     boost::shared_ptr<Transform::Matrix3x3> transform;
     bool usingReroute ;
     int rerouteInputNb;
-    Natron::EffectInstance* node ;
+    Natron::EffectInstance* node =0;
     unsigned int mipMapLevel;
     if (hasLocalData) {
         const ActionLocalData& args = _lastActionData.localData();
         if (!args.isViewValid) {
 #ifdef DEBUG
             if (QThread::currentThread() != qApp->thread()) {
-                qDebug() << _nodeInstance->getNode()->getName_mt_safe().c_str() << " is trying to call clipGetImage on a thread "
+                qDebug() << _nodeInstance->getNode()->getScriptName_mt_safe().c_str() << " is trying to call clipGetImage on a thread "
                 "not controlled by Natron (probably from the multi-thread suite).\n If you're a developer of that plug-in, please "
                 "fix it. Natron is now going to try to recover from that mistake but doing so can yield unpredictable results.";
             }
@@ -516,6 +524,7 @@ OfxClipInstance::getStereoscopicImage(OfxTime time,
             rerouteInputNb = -1;
         } else {
             node = args.rerouteNode;
+            assert(node);
             rerouteInputNb = args.rerouteInputNb;
             transform = args.matrix;
             usingReroute = true;
@@ -545,7 +554,7 @@ OfxClipInstance::getImageInternal(OfxTime time,
                                   Natron::EffectInstance* node,
                                   const boost::shared_ptr<Transform::Matrix3x3>& transform)
 {
-    assert( !isOutput() );
+    assert( !isOutput() && node);
     // input has been rendered just find it in the cache
     RectD bounds;
     if (optionalBounds) {
@@ -554,8 +563,6 @@ OfxClipInstance::getImageInternal(OfxTime time,
         bounds.x2 = optionalBounds->x2;
         bounds.y2 = optionalBounds->y2;
     }
-
-    
 
     Natron::ImageComponentsEnum comps =  ofxComponentsToNatronComponents( getComponents() );
     Natron::ImageBitDepthEnum bitDepth = ofxDepthToNatronDepth( getPixelDepth() );
@@ -582,6 +589,7 @@ OfxClipInstance::getImageInternal(OfxTime time,
                 bool isProjectFormat;
                 StatusEnum stat = node->getRegionOfDefinition_public(node->getHash(), time, renderScale, view, &rod, &isProjectFormat);
                 assert(stat == Natron::eStatusOK);
+                (void)stat;
             }
             node->getRegionsOfInterest_public(time, renderScale, rod, rod, 0,&regionsOfInterests);
         }
@@ -612,7 +620,9 @@ OfxClipInstance::getImageInternal(OfxTime time,
         EffectInstance::RenderRoIArgs args((SequenceTime)time,renderScale,mipMapLevel,
                                            view,false,pixelRoI,RectD(),comps,bitDepth,3,true,inputImages);
         image = inputNode->renderRoI(args);
+
         _nodeInstance->addThreadLocalInputImageTempPointer(image);
+
         renderWindow = pixelRoI;
         
     } else {
@@ -847,24 +857,13 @@ OfxClipInstance::getAssociatedNode() const
 }
 
 
+
 void
 OfxClipInstance::setRenderedView(int view)
 {
-    if ( _lastActionData.hasLocalData() ) {
-        ActionLocalData & args = _lastActionData.localData();
-#ifdef DEBUG
-        if (QThread::currentThread() != qApp->thread() && args.isViewValid && args.view != view) {
-            qDebug() << "Clips thread storage already set...most probably this is due to a recursive action being called. Please check this.";
-        }
-#endif
-        args.view = view;
-        args.isViewValid =  true;
-    } else {
-        ActionLocalData args;
-        args.view = view;
-        args.isViewValid =  true;
-        _lastActionData.setLocalData(args);
-    }
+    ActionLocalData & args = _lastActionData.localData();
+    args.view = view;
+    args.isViewValid = true;
 }
 
 
@@ -879,21 +878,9 @@ OfxClipInstance::discardView()
 void
 OfxClipInstance::setMipMapLevel(unsigned int mipMapLevel)
 {
-    if ( _lastActionData.hasLocalData() ) {
-        ActionLocalData & args = _lastActionData.localData();
-#ifdef DEBUG
-        if (QThread::currentThread() != qApp->thread() && args.isMipmapLevelValid && args.mipMapLevel != mipMapLevel) {
-            qDebug() << "Clips thread storage already set...most probably this is due to a recursive action being called. Please check this.";
-        }
-#endif
-        args.mipMapLevel = mipMapLevel;
-        args.isMipmapLevelValid =  true;
-    } else {
-        ActionLocalData args;
-        args.mipMapLevel = mipMapLevel;
-        args.isMipmapLevelValid =  true;
-        _lastActionData.setLocalData(args);
-    }
+    ActionLocalData & args = _lastActionData.localData();
+    args.mipMapLevel = mipMapLevel;
+    args.isMipmapLevelValid =  true;
 }
 
 void
@@ -906,26 +893,13 @@ OfxClipInstance::discardMipMapLevel()
 void
 OfxClipInstance::setTransformAndReRouteInput(const Transform::Matrix3x3& m,Natron::EffectInstance* rerouteInput,int newInputNb)
 {
-    if ( _lastActionData.hasLocalData() ) {
-        ActionLocalData & args = _lastActionData.localData();
-#ifdef DEBUG
-        if (QThread::currentThread() != qApp->thread() && args.isTransformDataValid) {
-            qDebug() << "Clips thread storage already set...most probably this is due to a recursive action being called. Please check this.";
-        }
-#endif
-        args.matrix.reset(new Transform::Matrix3x3(m));
-        args.rerouteInputNb = newInputNb;
-        args.rerouteNode = rerouteInput;
-        args.isTransformDataValid = true;
-    } else {
-        ActionLocalData args;
-        args.matrix.reset(new Transform::Matrix3x3(m));
-        args.rerouteInputNb = newInputNb;
-        args.rerouteNode = rerouteInput;
-        args.isTransformDataValid = true;
-        _lastActionData.setLocalData(args);
-    }
-  }
+    assert(rerouteInput);
+    ActionLocalData & args = _lastActionData.localData();
+    args.matrix.reset(new Transform::Matrix3x3(m));
+    args.rerouteInputNb = newInputNb;
+    args.rerouteNode = rerouteInput;
+    args.isTransformDataValid = true;
+}
 
 void
 OfxClipInstance::clearTransform()

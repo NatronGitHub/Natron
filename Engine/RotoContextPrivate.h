@@ -11,11 +11,15 @@
 #ifndef ROTOCONTEXTPRIVATE_H
 #define ROTOCONTEXTPRIVATE_H
 
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
 #include <list>
 #include <map>
 #include <string>
 
-#ifndef Q_MOC_RUN
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
 #endif
@@ -43,7 +47,13 @@
 #define ROTO_DEFAULT_COLOR_G 1.
 #define ROTO_DEFAULT_COLOR_B 1.
 
-#define kRotoNameHint "Name of the layer or curve"
+
+#define kRotoScriptNameHint "Script-name of the item for Python scripts. It cannot be edited."
+
+#define kRotoLabelHint "Label of the layer or curve"
+
+#define kRotoNameHint "Name of the layer or curve."
+
 
 #define kRotoOpacityParam "opacity"
 #define kRotoOpacityParamLabel "Opacity"
@@ -63,7 +73,7 @@
 #define kRotoActivatedParam "activated"
 #define kRotoActivatedParamLabel "Activated"
 #define kRotoActivatedHint \
-    "Controls whether the selected shape(s) should be visible and rendered or not." \
+    "Controls whether the selected shape(s) should be rendered or not." \
     "Note that you can animate this parameter so you can activate/deactive the shape " \
     "throughout the time."
 
@@ -260,7 +270,7 @@ class RotoLayer;
 struct RotoItemPrivate
 {
     boost::weak_ptr<RotoContext> context;
-    std::string name;
+    std::string scriptName,label;
     boost::weak_ptr<RotoLayer> parentLayer;
 
     ////This controls whether the item (and all its children if it is a layer)
@@ -275,11 +285,12 @@ struct RotoItemPrivate
     RotoItemPrivate(const boost::shared_ptr<RotoContext> context,
                     const std::string & n,
                     const boost::shared_ptr<RotoLayer>& parent)
-        : context(context)
-          , name(n)
-          , parentLayer(parent)
-          , globallyActivated(true)
-          , locked(false)
+    : context(context)
+    , scriptName(n)
+    , label(n)
+    , parentLayer(parent)
+    , globallyActivated(true)
+    , locked(false)
     {
     }
 };
@@ -550,7 +561,7 @@ struct RotoContextPrivate
     bool autoKeying;
     bool rippleEdit;
     bool featherLink;
-    Natron::Node* node;
+    boost::weak_ptr<Natron::Node> node;
     U64 age;
 
     ///These are knobs that take the value of the selected splines info.
@@ -565,10 +576,6 @@ struct RotoContextPrivate
     boost::shared_ptr<Color_Knob> colorKnob;
 
     std::list<boost::shared_ptr<KnobI> > knobs; //< list for easy access to all knobs
-    
-    ////For each base item ("Rectangle","Ellipse","Bezier", etc...) a basic countr
-    ////to give a unique default name to each shape
-    std::map<std::string, int> itemCounters;
 
 
     ///This keeps track  of the items linked to the context knobs
@@ -579,15 +586,15 @@ struct RotoContextPrivate
     U64 lastRenderHash;
     boost::shared_ptr<Natron::Image> lastRenderedImage;
 
-    RotoContextPrivate(Natron::Node* n )
-        : rotoContextMutex()
-          , layers()
-          , autoKeying(true)
-          , rippleEdit(false)
-          , featherLink(true)
-          , node(n)
-          , age(0)
-          , lastRenderHash(0)
+    RotoContextPrivate(const boost::shared_ptr<Natron::Node>& n )
+    : rotoContextMutex()
+    , layers()
+    , autoKeying(true)
+    , rippleEdit(false)
+    , featherLink(true)
+    , node(n)
+    , age(0)
+    , lastRenderHash(0)
     {
         assert( n && n->getLiveInstance() );
         Natron::EffectInstance* effect = n->getLiveInstance();
@@ -630,7 +637,7 @@ struct RotoContextPrivate
         activated = Natron::createKnob<Bool_Knob>(effect, kRotoActivatedParamLabel, 1, false);
         activated->setHintToolTip(kRotoActivatedHint);
         activated->setName(kRotoActivatedParam);
-        activated->turnOffNewLine();
+        activated->setAddNewLine(false);
         activated->setDefaultValue(true);
         activated->setAllDimensionsEnabled(false);
         activated->setIsPersistant(false);

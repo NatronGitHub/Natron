@@ -9,6 +9,10 @@
  *
  */
 
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
 #include "NodeSerialization.h"
 
 #include "Engine/AppInstance.h"
@@ -16,6 +20,7 @@
 #include "Engine/Node.h"
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/RotoSerialization.h"
+#include "Engine/NodeGroupSerialization.h"
 #include "Engine/RotoContext.h"
 
 NodeSerialization::NodeSerialization(const boost::shared_ptr<Natron::Node> & n,bool serializeInputs,bool copyKnobs)
@@ -23,17 +28,16 @@ NodeSerialization::NodeSerialization(const boost::shared_ptr<Natron::Node> & n,b
     , _nbKnobs(0)
     , _knobsValues()
     , _knobsAge(0)
-    , _pluginLabel()
+    , _nodeLabel()
+    , _nodeScriptName()
     , _pluginID()
     , _pluginMajorVersion(-1)
     , _pluginMinorVersion(-1)
     , _hasRotoContext(false)
     , _node()
-    , _app(NULL)
 {
     if (n) {
         _node = n;
-        _app = _node->getApp();
 
         ///All this code is MT-safe
 
@@ -44,14 +48,21 @@ NodeSerialization::NodeSerialization(const boost::shared_ptr<Natron::Node> & n,b
             dynamic_cast<OfxEffectInstance*>( n->getLiveInstance() )->syncPrivateData_other_thread();
         }
 
-        const std::vector< boost::shared_ptr<KnobI> > & knobs = n->getKnobs();
+        std::vector< boost::shared_ptr<KnobI> >  knobs = n->getLiveInstance()->getKnobs_mt_safe();
 
+        std::list<boost::shared_ptr<KnobI> > userPages;
         for (U32 i  = 0; i < knobs.size(); ++i) {
             Group_Knob* isGroup = dynamic_cast<Group_Knob*>( knobs[i].get() );
             Page_Knob* isPage = dynamic_cast<Page_Knob*>( knobs[i].get() );
             Button_Knob* isButton = dynamic_cast<Button_Knob*>( knobs[i].get() );
             Choice_Knob* isChoice = dynamic_cast<Choice_Knob*>( knobs[i].get() );
-            if (knobs[i]->getIsPersistant() && !isGroup && !isPage && !isButton) {
+            
+            if (isPage && knobs[i]->isUserKnob()) {
+                userPages.push_back(knobs[i]);
+                continue;
+            }
+            
+            if (!knobs[i]->isUserKnob() && knobs[i]->getIsPersistant() && !isGroup && !isPage && !isButton) {
                 
                 ///For choice do a deepclone because we need entries
                 bool doCopyKnobs = isChoice ? true : copyKnobs;
@@ -60,11 +71,19 @@ NodeSerialization::NodeSerialization(const boost::shared_ptr<Natron::Node> & n,b
                 _knobsValues.push_back(newKnobSer);
             }
         }
+        
         _nbKnobs = (int)_knobsValues.size();
+        
+        for (std::list<boost::shared_ptr<KnobI> >::const_iterator it = userPages.begin(); it!=userPages.end(); ++it) {
+            boost::shared_ptr<GroupKnobSerialization> s(new GroupKnobSerialization(*it));
+            _userPages.push_back(s);
+        }
 
         _knobsAge = n->getKnobsAge();
 
-        _pluginLabel = n->getName_mt_safe();
+        _nodeLabel = n->getLabel_mt_safe();
+        
+        _nodeScriptName = n->getScriptName_mt_safe();
 
         _pluginID = n->getPluginID();
 
@@ -78,7 +97,7 @@ NodeSerialization::NodeSerialization(const boost::shared_ptr<Natron::Node> & n,b
 
         boost::shared_ptr<Natron::Node> masterNode = n->getMasterNode();
         if (masterNode) {
-            _masterNodeName = masterNode->getName_mt_safe();
+            _masterNodeName = masterNode->getFullyQualifiedName();
         }
 
         boost::shared_ptr<RotoContext> roto = n->getRotoContext();
@@ -89,9 +108,35 @@ NodeSerialization::NodeSerialization(const boost::shared_ptr<Natron::Node> & n,b
             _hasRotoContext = false;
         }
 
-        _multiInstanceParentName = n->getParentMultiInstanceName();
+        
+        NodeGroup* isGrp = dynamic_cast<NodeGroup*>(n->getLiveInstance());
+        if (isGrp) {
+            NodeList nodes;
+            isGrp->getActiveNodes(&nodes);
+            
+            _children.clear();
+            
+            for (NodeList::iterator it = nodes.begin(); it != nodes.end() ; ++it) {
+                boost::shared_ptr<NodeSerialization> state(new NodeSerialization(*it));
+                _children.push_back(state);
+            }
 
+        }
+
+         _multiInstanceParentName = n->getParentMultiInstanceName();
+        
+        std::list<NodePtr> childrenMultiInstance;
+        _node->getChildrenMultiInstance(&childrenMultiInstance);
+        if (!childrenMultiInstance.empty()) {
+            assert(!isGrp);
+            for (NodeList::iterator it = childrenMultiInstance.begin(); it != childrenMultiInstance.end() ; ++it) {
+                if ((*it)->isActivated()) {
+                    boost::shared_ptr<NodeSerialization> state(new NodeSerialization(*it));
+                    _children.push_back(state);
+                }
+            }
+        }
+        
         _isNull = false;
     }
 }
-

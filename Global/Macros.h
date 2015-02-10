@@ -33,17 +33,23 @@
 #define NATRON_PROJECT_ENV_VAR_NAME "Project"
 #define NATRON_OCIO_ENV_VAR_NAME "OCIO"
 #define NATRON_DEFAULT_OCIO_CONFIG_NAME "blender"
+
+//Define here the name of the Engine module that was chosen in the typesystem_engine.xml
+#define NATRON_ENGINE_PYTHON_MODULE_NAME "NatronEngine"
+#define NATRON_GUI_PYTHON_MODULE_NAME "NatronGui"
+
 #define NATRON_ENV_VAR_NAME_START_TAG "<Name>"
 #define NATRON_ENV_VAR_NAME_END_TAG "</Name>"
 #define NATRON_ENV_VAR_VALUE_START_TAG "<Value>"
 #define NATRON_ENV_VAR_VALUE_END_TAG "</Value>"
+
 #define NATRON_PROJECT_ENV_VAR_MAX_RECURSION 100
 #define NATRON_MAX_CACHE_FILES_OPENED 20000
 #define NATRON_CUSTOM_HTML_TAG_START "<" NATRON_APPLICATION_NAME ">"
 #define NATRON_CUSTOM_HTML_TAG_END "</" NATRON_APPLICATION_NAME ">"
 
 //////////////////////////////////////////Natron version/////////////////////////////////////////////
-#define NATRON_VERSION_MAJOR 1
+#define NATRON_VERSION_MAJOR 2
 #define NATRON_VERSION_MINOR 0
 #define NATRON_VERSION_REVISION 0
 
@@ -85,7 +91,7 @@ NATRON_VERSION_MINOR, \
 NATRON_VERSION_REVISION)
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#define NATRON_ROOT "/"
+#define NATRON_PATH_ENV_VAR "NATRON_PLUGIN_PATH"
 #define NATRON_IMAGES_PATH ":/Resources/Images/"
 #define NATRON_APPLICATION_ICON_PATH NATRON_IMAGES_PATH "natronIcon256_linux.png"
 
@@ -95,12 +101,6 @@ NATRON_VERSION_REVISION)
 #define NATRON_ICON_SET_BLACK_AND_WHITE "2"
 #define NATRON_ICON_SET_FADED_COLOURS "3"
 #define NATRON_ICON_SET_NUMBER NATRON_ICON_SET_FADED_COLOURS
-
-#define NATRON_PLUGINS_PATH  NATRON_ROOT "Plugins/"
-#define NATRON_KNOBS_PLUGINS_PATH NATRON_PLUGINS_PATH "Knobs/"
-#define NATRON_NODES_PLUGINS_PATH NATRON_PLUGINS_PATH "Nodes/"
-
-#define NATRON_BACKDROP_NODE_NAME "BackDrop"
 
 #define PLUGIN_GROUP_IMAGE "Image"
 #define PLUGIN_GROUP_IMAGE_READERS "Readers"
@@ -369,8 +369,19 @@ NATRON_VERSION_REVISION)
 
 #if COMPILER(GCC)
 #define WARN_UNUSED_RETURN __attribute__ ( (warn_unused_result) )
+// a very simple template function to actually ignore the return value of functions define with WARN_UNUSED_RETURN
+template<typename T>
+inline T ignore_result(T x __attribute__((unused)))
+{
+    return x;
+}
 #else
 #define WARN_UNUSED_RETURN
+template<typename T>
+inline T ignore_result(T x)
+{
+    return x;
+}
 #endif
 
 /* OVERRIDE and FINAL */

@@ -1,6 +1,10 @@
 #ifndef CACHEENTRY_H
 #define CACHEENTRY_H
 
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
 #include <iostream>
 #include <cassert>
 #include <cstdio> // for std::remove
@@ -10,7 +14,7 @@
 #include <QtCore/QFile>
 #include <QtCore/QDir>
 #include <QtCore/QDebug>
-#ifndef Q_MOC_RUN
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/utility.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
@@ -74,7 +78,7 @@ public:
             _storageMode = eStorageModeDisk;
             _path = path;
             try {
-                _backingFile.reset( new MemoryFile(_path,MemoryFile::if_exists_keep_if_dont_exists_create) );
+                _backingFile.reset( new MemoryFile(_path,MemoryFile::eFileOpenModeEnumIfExistsKeepElseCreate) );
             } catch (const std::runtime_error & r) {
                 std::cout << r.what() << std::endl;
 
@@ -121,7 +125,7 @@ public:
     {
         assert(!_backingFile && _storageMode == eStorageModeDisk);
         try{
-            _backingFile.reset( new MemoryFile(_path,MemoryFile::if_exists_keep_if_dont_exists_create) );
+            _backingFile.reset( new MemoryFile(_path,MemoryFile::eFileOpenModeEnumIfExistsKeepElseCreate) );
         } catch (const std::exception & e) {
             _backingFile.reset();
             throw std::bad_alloc();

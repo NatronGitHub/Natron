@@ -7,6 +7,11 @@
 //  Created by Frédéric Devernay on 03/09/13.
 //
 //
+
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
 #include "OfxHost.h"
 
 #include <cassert>
@@ -66,7 +71,6 @@ using namespace Natron;
 
 Natron::OfxHost::OfxHost()
     : _imageEffectPluginCache( new OFX::Host::ImageEffect::PluginCache(*this) )
-    , _ofxPlugins()
 #ifdef MULTI_THREAD_SUITE_USES_THREAD_SAFE_MUTEX_ALLOCATION
     , _pluginsMutexes()
     , _pluginsMutexesLock(new QMutex)
@@ -256,43 +260,48 @@ Natron::OfxHost::clearPersistentMessage()
 
 void
 Natron::OfxHost::getPluginAndContextByID(const std::string & pluginID,
+                                         int major, int /*minor*/,
                                          OFX::Host::ImageEffect::ImageEffectPlugin** plugin,
                                          std::string & context)
 {
+    _imageEffectPluginCache->getPluginsByIDMajor();
     // throws out_of_range if the plugin does not exist
     // Note: std::map.at() is C++11
-    OFXPluginsIterator found = _ofxPlugins.find(pluginID);
-    if (found == _ofxPlugins.end()) {
-        throw std::out_of_range(std::string("Error: No such plugin ") + pluginID);
+    const std::map<OFX::Host::ImageEffect::MajorPlugin,OFX::Host::ImageEffect::ImageEffectPlugin *> & ofxPlugins =
+    _imageEffectPluginCache->getPluginsByIDMajor();
+    
+    OFX::Host::ImageEffect::ImageEffectPlugin* p = 0;
+    for (std::map<OFX::Host::ImageEffect::MajorPlugin,OFX::Host::ImageEffect::ImageEffectPlugin *>::const_iterator it = ofxPlugins.begin();
+         it != ofxPlugins.end();++it) {
+        if (it->first.getId() == pluginID && it->first.getMajor() == major) {
+            p = it->second;
+            break;
+        }
     }
-    const OFXPluginEntry & ofxPlugin = found->second;
-
-    *plugin = _imageEffectPluginCache->getPluginById(ofxPlugin.openfxId);
-    if ( !(*plugin) ) {
-        throw std::runtime_error(std::string("Error: Could not get plugin ") + ofxPlugin.openfxId);
+        
+    if (!p) {
+        throw std::out_of_range(std::string("Error: No such plug-in ") + pluginID);
     }
-
-
+    *plugin = p;
+    
     OFX::Host::PluginHandle *pluginHandle;
     // getPluginHandle() must be called before getContexts():
     // it calls kOfxActionLoad on the plugin, which may set properties (including supported contexts)
     try {
         pluginHandle = (*plugin)->getPluginHandle();
-    } catch (const std::exception & e) {
-        throw std::runtime_error( std::string("Error: Could not get plugin handle for plugin ") + pluginID + ": " + e.what() );
     } catch (...) {
-        throw std::runtime_error(std::string("Error: Could not get plugin handle for plugin ") + pluginID);
+        throw std::runtime_error(std::string("Error: Description failed while loading ") + pluginID);
     }
 
     if (!pluginHandle) {
-        throw std::runtime_error(std::string("Error: Could not get plugin handle for plugin ") + pluginID);
+        throw std::runtime_error(std::string("Error: Description failed while loading ") + pluginID);
     }
     assert(pluginHandle->getOfxPlugin() && pluginHandle->getOfxPlugin()->mainEntry);
 
     const std::set<std::string> & contexts = (*plugin)->getContexts();
 
     if (contexts.size() == 0) {
-        throw std::runtime_error( std::string("Error: Plugins supports no context") );
+        throw std::runtime_error( std::string("Error: Plug-in does not support any context") );
         //context = kOfxImageEffectContextGeneral;
         //plugin->addContext(kOfxImageEffectContextGeneral);
     } else if (contexts.size() == 1) {
@@ -357,7 +366,7 @@ Natron::OfxHost::getPluginAndContextByID(const std::string & pluginID,
     }
 } // getPluginAndContextByID
 
-AbstractOfxEffectInstance*
+boost::shared_ptr<AbstractOfxEffectInstance>
 Natron::OfxHost::createOfxEffect(const std::string & name,
                                  boost::shared_ptr<Natron::Node> node,
                                  const NodeSerialization* serialization,
@@ -366,12 +375,13 @@ Natron::OfxHost::createOfxEffect(const std::string & name,
                                  bool disableRenderScaleSupport)
 {
     assert(node);
-    OFX::Host::ImageEffect::ImageEffectPlugin *plugin;
+    OFX::Host::ImageEffect::ImageEffectPlugin *plugin = 0;
     std::string context;
+    const Natron::Plugin* natronPlugin = node->getPlugin();
+    assert(natronPlugin);
+    getPluginAndContextByID(name,natronPlugin->getMajorVersion(),natronPlugin->getMinorVersion(),&plugin,context);
 
-    getPluginAndContextByID(name,&plugin,context);
-
-    AbstractOfxEffectInstance* hostSideEffect = new OfxEffectInstance(node);
+    boost::shared_ptr<AbstractOfxEffectInstance> hostSideEffect(new OfxEffectInstance(node));
     if ( node && !node->getLiveInstance() ) {
         node->setLiveInstance(hostSideEffect);
     }
@@ -415,11 +425,11 @@ Natron::OfxHost::loadOFXPlugins(std::map<std::string,std::vector< std::pair<std:
     OFX::Host::PluginCache::getPluginCache()->addFileToPath("/Library/OFX/Nuke");
 #endif
 
-    QStringList extraPluginsSearchPaths = appPTR->getCurrentSettings()->getPluginsExtraSearchPaths();
-    for (int i = 0; i < extraPluginsSearchPaths.size(); ++i) {
-        std::string path = extraPluginsSearchPaths.at(i).toStdString();
-        if ( !path.empty() ) {
-            OFX::Host::PluginCache::getPluginCache()->addFileToPath(path);
+    std::list<std::string> extraPluginsSearchPaths;
+    appPTR->getCurrentSettings()->getOpenFXPluginsSearchPaths(&extraPluginsSearchPaths);
+    for (std::list<std::string>::iterator it = extraPluginsSearchPaths.begin(); it != extraPluginsSearchPaths.end(); ++it) {
+        if ( !(*it).empty() ) {
+            OFX::Host::PluginCache::getPluginCache()->addFileToPath(*it);
         }
     }
 
@@ -439,7 +449,7 @@ Natron::OfxHost::loadOFXPlugins(std::map<std::string,std::vector< std::pair<std:
     // On OSX, it will be ~/Library/Caches/<organization>/<application>/OFXCache.xml
     //on Linux ~/.cache/<organization>/<application>/OFXCache.xml
     //on windows:
-    QString ofxcachename = Natron::StandardPaths::writableLocation(Natron::StandardPaths::CacheLocation) + QDir::separator() + "OFXCache.xml";
+    QString ofxcachename = Natron::StandardPaths::writableLocation(Natron::StandardPaths::eStandardLocationCache) + QDir::separator() + "OFXCache.xml";
     std::ifstream ifs( ofxcachename.toStdString().c_str() );
     if ( ifs.is_open() ) {
         OFX::Host::PluginCache::getPluginCache()->readCache(ifs);
@@ -452,8 +462,12 @@ Natron::OfxHost::loadOFXPlugins(std::map<std::string,std::vector< std::pair<std:
     writeOFXCache();
 
     /*Filling node name list and plugin grouping*/
-    const std::map<std::string,OFX::Host::ImageEffect::ImageEffectPlugin *> & ofxPlugins = _imageEffectPluginCache->getPluginsByID();
-    for (std::map<std::string,OFX::Host::ImageEffect::ImageEffectPlugin *>::const_iterator it = ofxPlugins.begin();
+    typedef std::map<OFX::Host::ImageEffect::MajorPlugin,OFX::Host::ImageEffect::ImageEffectPlugin *> PMap;
+    const PMap& ofxPlugins =
+    _imageEffectPluginCache->getPluginsByIDMajor();
+    
+    
+    for (PMap::const_iterator it = ofxPlugins.begin();
          it != ofxPlugins.end(); ++it) {
         OFX::Host::ImageEffect::ImageEffectPlugin* p = it->second;
         assert(p);
@@ -474,21 +488,29 @@ Natron::OfxHost::loadOFXPlugins(std::map<std::string,std::vector< std::pair<std:
 
         assert( p->getBinary() );
         QString iconFilename = QString( bundlePath.c_str() ) + "/Contents/Resources/";
-        iconFilename.append( p->getDescriptor().getProps().getStringProperty(kOfxPropIcon,1).c_str() );
-        iconFilename.append(openfxId.c_str());
-        iconFilename.append(".png");
+        std::string pngIcon;
+        try {
+            // kOfxPropIcon is normally only defined for parameter desctriptors
+            // (see <http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#ParameterProperties>)
+            // but let's assume it may also be defained on the plugin descriptor.
+            pngIcon = p->getDescriptor().getProps().getStringProperty(kOfxPropIcon, 1); // dimension 1 is PNG icon
+        } catch (OFX::Host::Property::Exception) {
+        }
+        if (pngIcon.empty()) {
+            // no icon defined by kOfxPropIcon, use the default value
+            pngIcon = openfxId + ".png";
+        }
+        iconFilename.append( pngIcon.c_str() );
         QString groupIconFilename;
         if (groups.size() > 0) {
             groupIconFilename = QString( p->getBinary()->getBundlePath().c_str() ) + "/Contents/Resources/";
-            groupIconFilename.append( p->getDescriptor().getProps().getStringProperty(kOfxPropIcon,1).c_str() );
+            // the plugin grouping has no descriptor, just try the default filename.
             groupIconFilename.append(groups[0]);
             groupIconFilename.append(".png");
         } else {
             //Use default Misc group when the plug-in doesn't belong to a group
             groups.push_back(PLUGIN_GROUP_DEFAULT);
         }
-
-        _ofxPlugins[openfxId] = OFXPluginEntry(openfxId, grouping);
 
         
         const std::set<std::string> & contexts = p->getContexts();
@@ -503,7 +525,7 @@ Natron::OfxHost::loadOFXPlugins(std::map<std::string,std::vector< std::pair<std:
                                 p->getIdentifier().c_str(),
                                 foundReader != contexts.end(),
                                 foundWriter != contexts.end(),
-                                new Natron::LibraryBinary(Natron::LibraryBinary::BUILTIN),
+                                new Natron::LibraryBinary(Natron::LibraryBinary::eLibraryTypeBuiltin),
                                 p->getDescriptor().getRenderThreadSafety() == kOfxImageEffectRenderUnsafe,
                                 p->getVersionMajor(), p->getVersionMinor() );
 
@@ -558,7 +580,7 @@ void
 Natron::OfxHost::writeOFXCache()
 {
     /// and write a new cache, long version with everything in there
-    QString ofxcachename = Natron::StandardPaths::writableLocation(Natron::StandardPaths::CacheLocation);
+    QString ofxcachename = Natron::StandardPaths::writableLocation(Natron::StandardPaths::eStandardLocationCache);
 
     QDir().mkpath(ofxcachename);
     ofxcachename +=  QDir::separator();
@@ -573,7 +595,7 @@ Natron::OfxHost::writeOFXCache()
 void
 Natron::OfxHost::clearPluginsLoadedCache()
 {
-    QString ofxcachename = Natron::StandardPaths::writableLocation(Natron::StandardPaths::CacheLocation);
+    QString ofxcachename = Natron::StandardPaths::writableLocation(Natron::StandardPaths::eStandardLocationCache);
 
     QDir().mkpath(ofxcachename);
     ofxcachename +=  QDir::separator();

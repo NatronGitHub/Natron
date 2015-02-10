@@ -11,6 +11,10 @@
 #ifndef PROJECTPRIVATE_H
 #define PROJECTPRIVATE_H
 
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
 #include <map>
 #include <list>
 #include "Global/Macros.h"
@@ -80,21 +84,27 @@ struct ProjectPrivate
     boost::shared_ptr<Int_Knob> viewsCount;
     boost::shared_ptr<Int_Knob> mainView;
     boost::shared_ptr<Bool_Knob> previewMode; //< auto or manual
-    boost::shared_ptr<Choice_Knob> colorSpace8bits,colorSpace16bits,colorSpace32bits;
+    boost::shared_ptr<Choice_Knob> colorSpace8u;
+    boost::shared_ptr<Choice_Knob> colorSpace16u;
+    boost::shared_ptr<Choice_Knob> colorSpace32f;
     boost::shared_ptr<Double_Knob> frameRate;
+    boost::shared_ptr<Int_Knob> frameRange;
+    boost::shared_ptr<Bool_Knob> lockFrameRange;
     
     boost::shared_ptr<String_Knob> natronVersion;
     boost::shared_ptr<String_Knob> originalAuthorName,lastAuthorName;
     boost::shared_ptr<String_Knob> projectCreationDate;
     boost::shared_ptr<String_Knob> saveDate;
     
+    boost::shared_ptr<String_Knob> onProjectLoadCB;
+    boost::shared_ptr<String_Knob> onProjectSaveCB;
+    boost::shared_ptr<String_Knob> onProjectCloseCB;
+    boost::shared_ptr<String_Knob> onNodeCreated;
+    boost::shared_ptr<String_Knob> onNodeDeleted;
+    
     boost::shared_ptr<TimeLine> timeline; // global timeline
-    mutable QMutex nodesLock; //< protects nodeCounters & currentNodes
-    std::map<std::string,int> nodeCounters; //< basic counters to instantiate nodes with an index in the node graph
     bool autoSetProjectFormat;
-    std::vector< boost::shared_ptr<Natron::Node> > currentNodes;
-    Natron::Project* project;
-    Natron::OutputEffectInstance* lastTimelineSeekCaller;
+
     mutable QMutex isLoadingProjectMutex;
     bool isLoadingProject; //< true when the project is loading
     bool isLoadingProjectInternal; //< true when loading the internal project (not gui)
@@ -102,7 +112,7 @@ struct ProjectPrivate
     bool isSavingProject; //< true when the project is saving
     boost::shared_ptr<QTimer> autoSaveTimer;
     std::list<boost::shared_ptr<QFutureWatcher<void> > > autoSaveFutures;
-
+    bool projectClosing;
     
     ProjectPrivate(Natron::Project* project);
 

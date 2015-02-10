@@ -12,13 +12,17 @@
 #ifndef NATRON_ENGINE_VIEWERNODE_H_
 #define NATRON_ENGINE_VIEWERNODE_H_
 
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
 #include <string>
 
 #include "Global/Macros.h"
 #include "Engine/Rect.h"
 #include "Engine/EffectInstance.h"
 
-#define NATRON_VIEWER_ID NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.Viewer"
+class ParallelRenderArgsSetter;
 namespace Natron {
 class Image;
 class FrameEntry;
@@ -32,23 +36,10 @@ class OpenGLViewerI;
 struct TextureRect;
 
 class ViewerInstance
-: public QObject, public Natron::OutputEffectInstance
+: public Natron::OutputEffectInstance
 {
     Q_OBJECT
     
-public:
-    
-    
-    
-    enum DisplayChannels
-    {
-        RGB = 0,
-        R,
-        G,
-        B,
-        A,
-        LUMINANCE
-    };
 
 public:
     static Natron::EffectInstance* BuildEffect(boost::shared_ptr<Natron::Node> n) WARN_UNUSED_RETURN;
@@ -76,12 +67,16 @@ public:
         U64 activeInputHash;
         boost::shared_ptr<Natron::FrameKey> key;
         boost::shared_ptr<UpdateViewerParams> params;
+        boost::shared_ptr<ParallelRenderArgsSetter> frameArgs;
     };
     
     /**
      * @brief Look-up the cache and try to find a matching texture for the portion to render.
      **/
-    Natron::StatusEnum getRenderViewerArgsAndCheckCache(SequenceTime time, int view, int textureIndex, U64 viewerHash,
+    Natron::StatusEnum getRenderViewerArgsAndCheckCache(SequenceTime time,
+                                                        bool isSequential,
+                                                        bool canAbort,
+                                                        int view, int textureIndex, U64 viewerHash,
                                                         ViewerArgs* outArgs);
 
     
@@ -120,7 +115,7 @@ public:
 
     int getMipMapLevelFromZoomFactor() const WARN_UNUSED_RETURN;
 
-    DisplayChannels getChannels() const WARN_UNUSED_RETURN;
+    Natron::DisplayChannelsEnum getChannels() const WARN_UNUSED_RETURN;
 
     /**
      * @brief This is a short-cut, this is primarily used when the user switch the
@@ -135,7 +130,7 @@ public:
     }
 
 
-    void setDisplayChannels(DisplayChannels channels);
+    void setDisplayChannels(Natron::DisplayChannelsEnum channels);
 
 
     bool isAutoContrastEnabled() const WARN_UNUSED_RETURN;
@@ -145,7 +140,7 @@ public:
     /**
      * @brief Returns the current view, MT-safe
      **/
-    int getCurrentView() const;
+    int getViewerCurrentView() const;
 
     void onGainChanged(double exp);
 
@@ -160,12 +155,16 @@ public:
     void setInputB(int inputNb);
 
     void getActiveInputs(int & a,int &b) const;
-
-    bool isFrameRangeLocked() const;
     
     int getLastRenderedTime() const;
+    
+    virtual SequenceTime getCurrentTime() const OVERRIDE WARN_UNUSED_RETURN;
+    
+    virtual int getCurrentView() const OVERRIDE WARN_UNUSED_RETURN;
 
     boost::shared_ptr<TimeLine> getTimeline() const;
+    
+    void getTimelineBounds(int* first,int* last) const;
     
     static const Natron::Color::Lut* lutFromColorspace(Natron::ViewerColorSpaceEnum cs) WARN_UNUSED_RETURN;
     
@@ -174,17 +173,19 @@ public:
                                          const std::string & reason,
                                          bool forceGetClipPrefAction) OVERRIDE FINAL;
     
-    void callRedrawOnMainThread() { emit s_callRedrawOnMainThread(); }
+    void callRedrawOnMainThread() { Q_EMIT s_callRedrawOnMainThread(); }
 
-    void s_viewerRenderingStarted() { emit viewerRenderingStarted(); }
+    struct ViewerInstancePrivate;
     
-    void s_viewerRenderingEnded() { emit viewerRenderingEnded(); }
-public slots:
+public Q_SLOTS:
+    
+    void s_viewerRenderingStarted() { Q_EMIT viewerRenderingStarted(); }
+    
+    void s_viewerRenderingEnded() { Q_EMIT viewerRenderingEnded(); }
 
 
     void onMipMapLevelChanged(int level);
 
-    void onNodeNameChanged(const QString &);
 
     /**
      * @brief Redraws the OpenGL viewer. Can only be called on the main-thread.
@@ -195,7 +196,7 @@ public slots:
     void executeDisconnectTextureRequestOnMainThread(int index);
 
 
-signals:
+Q_SIGNALS:
     
     void s_callRedrawOnMainThread();
 
@@ -236,7 +237,7 @@ private:
 
     virtual std::string getPluginID() const OVERRIDE FINAL
     {
-        return NATRON_VIEWER_ID;
+        return PLUGINID_NATRON_VIEWER;
     }
 
     virtual std::string getPluginLabel() const OVERRIDE FINAL
@@ -278,7 +279,6 @@ private:
     
 private:
     
-    struct ViewerInstancePrivate;
     boost::scoped_ptr<ViewerInstancePrivate> _imp;
 };
 

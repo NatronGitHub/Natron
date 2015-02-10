@@ -12,6 +12,10 @@
 #ifndef NATRON_ENGINE_SETTINGS_H_
 #define NATRON_ENGINE_SETTINGS_H_
 
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
 #include <string>
 #include <map>
 #include <vector>
@@ -35,11 +39,13 @@ class Page_Knob;
 class Double_Knob;
 class Int_Knob;
 class Bool_Knob;
+class Group_Knob;
 class Choice_Knob;
 class Path_Knob;
 class Color_Knob;
 class String_Knob;
 class QSettings;
+class Separator_Knob;
 class Settings
     : public KnobHolder
 {
@@ -95,7 +101,7 @@ public:
 
     void populateWriterPluginsAndFormats(const std::map<std::string,std::vector< std::pair<std::string,double> > > & rows);
     
-    void populatePluginsTab(const std::vector<Natron::Plugin*>& plugins,std::vector<Natron::Plugin*>& pluginsToIgnore);
+    void populatePluginsTab(std::vector<Natron::Plugin*>& pluginsToIgnore);
     
     void populateSystemFonts(const QSettings& settings,const std::vector<std::string>& fonts);
 
@@ -121,7 +127,7 @@ public:
 
     bool isAutoPreviewOnForNewProjects() const;
 
-    QStringList getPluginsExtraSearchPaths() const;
+    void getOpenFXPluginsSearchPaths(std::list<std::string>* paths) const;
 
     bool isRenderInSeparatedProcessEnabled() const;
 
@@ -150,8 +156,6 @@ public:
     bool preferBundledPlugins() const;
 
     void getDefaultNodeColor(float *r,float *g,float *b) const;
-
-    void getDefaultSelectedNodeColor(float *r,float *g,float *b) const;
 
     void getDefaultBackDropColor(float *r,float *g,float *b) const;
 
@@ -227,6 +231,37 @@ public:
     
     void setOptionalInputsAutoHidden(bool hidden);
     bool areOptionalInputsAutoHidden() const;
+    
+    void getPythonGroupsSearchPaths(std::list<std::string>* templates) const;
+    void appendPythonGroupsPath(const std::string& path);
+    
+    std::string getOnProjectCreatedCB();
+    std::string getDefaultOnProjectLoadedCB();
+    std::string getDefaultOnProjectSaveCB();
+    std::string getDefaultOnProjectCloseCB();
+    std::string getDefaultOnNodeCreatedCB();
+    std::string getDefaultOnNodeDeleteCB();
+    
+    bool isAutoDeclaredVariablePrintActivated() const;
+    
+    bool isPluginIconActivatedOnNodeGraph() const;
+    
+    void getSunkenColor(double* r,double* g,double* b) const;
+    void getBaseColor(double* r,double* g,double* b) const;
+    void getRaisedColor(double* r,double* g,double* b) const;
+    void getSelectionColor(double* r,double* g,double* b) const;
+    void getInterpolatedColor(double* r,double* g,double* b) const;
+    void getKeyframeColor(double* r,double* g,double* b) const;
+    void getExprColor(double* r,double* g,double* b) const;
+    void getTextColor(double* r,double* g,double* b) const;
+    void getTimelinePlayheadColor(double* r,double* g,double* b) const;
+    void getTimelineBoundsColor(double* r,double* g,double* b) const;
+    void getTimelineBGColor(double* r,double* g,double* b) const;
+    void getCachedFrameColor(double* r,double* g,double* b) const;
+    void getDiskCachedColor(double* r,double* g,double* b) const;
+    void getCurveEditorBGColor(double* r,double* g,double* b) const;
+    void getCurveEditorGridColor(double* r,double* g,double* b) const;
+    void getCurveEditorScaleColor(double* r,double* g,double* b) const;
 private:
 
     virtual void initializeKnobs() OVERRIDE FINAL;
@@ -239,9 +274,7 @@ private:
 
     boost::shared_ptr<Page_Knob> _generalTab;
     boost::shared_ptr<Bool_Knob> _natronSettingsExist;
-    boost::shared_ptr<Choice_Knob> _fontChoice;
-    boost::shared_ptr<Choice_Knob> _systemFontChoice;
-    boost::shared_ptr<Int_Knob> _fontSize;
+  
     boost::shared_ptr<Bool_Knob> _checkForUpdates;
     boost::shared_ptr<Bool_Knob> _notifyOnFileChange;
     boost::shared_ptr<Int_Knob> _autoSaveDelay;
@@ -307,8 +340,8 @@ private:
     boost::shared_ptr<Int_Knob> _disconnectedArrowLength;
     boost::shared_ptr<Bool_Knob> _hideOptionalInputsAutomatically;
     boost::shared_ptr<Bool_Knob> _useInputAForMergeAutoConnect;
+    boost::shared_ptr<Bool_Knob> _usePluginIconsInNodeGraph;
     boost::shared_ptr<Color_Knob> _defaultNodeColor;
-    boost::shared_ptr<Color_Knob> _defaultSelectedNodeColor;
     boost::shared_ptr<Color_Knob> _defaultBackdropColor;
     boost::shared_ptr<Color_Knob> _defaultGeneratorColor;
     boost::shared_ptr<Color_Knob> _defaultReaderColor;
@@ -329,9 +362,46 @@ private:
     std::vector< boost::shared_ptr<Choice_Knob> >  _writersMapping;
     
     boost::shared_ptr<Path_Knob> _extraPluginPaths;
+    boost::shared_ptr<Path_Knob> _templatesPluginPaths;
     boost::shared_ptr<Bool_Knob> _preferBundledPlugins;
     boost::shared_ptr<Bool_Knob> _loadBundledPlugins;
     boost::shared_ptr<Page_Knob> _pluginsTab;
+    
+    boost::shared_ptr<Page_Knob> _pythonPage;
+    boost::shared_ptr<String_Knob> _onProjectCreated;
+    boost::shared_ptr<String_Knob> _defaultOnProjectLoaded;
+    boost::shared_ptr<String_Knob> _defaultOnProjectSave;
+    boost::shared_ptr<String_Knob> _defaultOnProjectClose;
+    boost::shared_ptr<String_Knob> _defaultOnNodeCreated;
+    boost::shared_ptr<String_Knob> _defaultOnNodeDelete;
+    
+    boost::shared_ptr<Bool_Knob> _echoVariableDeclarationToPython;
+    boost::shared_ptr<Page_Knob> _appearanceTab;
+    
+    boost::shared_ptr<Choice_Knob> _fontChoice;
+    boost::shared_ptr<Choice_Knob> _systemFontChoice;
+    boost::shared_ptr<Int_Knob> _fontSize;
+    
+    boost::shared_ptr<Group_Knob> _guiColors;
+    boost::shared_ptr<Color_Knob> _sunkenColor;
+    boost::shared_ptr<Color_Knob> _baseColor;
+    boost::shared_ptr<Color_Knob> _raisedColor;
+    boost::shared_ptr<Color_Knob> _selectionColor;
+    boost::shared_ptr<Color_Knob> _textColor;
+    boost::shared_ptr<Color_Knob> _timelinePlayheadColor;
+    boost::shared_ptr<Color_Knob> _timelineBGColor;
+    boost::shared_ptr<Color_Knob> _timelineBoundsColor;
+    boost::shared_ptr<Color_Knob> _interpolatedColor;
+    boost::shared_ptr<Color_Knob> _keyframeColor;
+    boost::shared_ptr<Color_Knob> _exprColor;
+    boost::shared_ptr<Color_Knob> _cachedFrameColor;
+    boost::shared_ptr<Color_Knob> _diskCachedFrameColor;
+    
+    boost::shared_ptr<Group_Knob> _curveEditorColors;
+    boost::shared_ptr<Color_Knob> _curveEditorBGColor;
+    boost::shared_ptr<Color_Knob> _gridColor;
+    boost::shared_ptr<Color_Knob> _curveEditorScaleColor;
+    
     
     std::map<std::string,boost::shared_ptr<Choice_Knob> > _perPluginRenderScaleSupport;
     bool _wereChangesMadeSinceLastSave;

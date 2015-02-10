@@ -13,11 +13,15 @@
 #ifndef ROTOUNDOCOMMAND_H
 #define ROTOUNDOCOMMAND_H
 
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
 #include <list>
 #include <map>
 #include <QUndoCommand>
 #include <QList>
-#ifndef Q_MOC_RUN
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
 #endif
@@ -62,7 +66,7 @@ private:
     double _dx,_dy;
     bool _featherLinkEnabled;
     bool _rippleEditEnabled;
-    int _selectedTool; //< corresponds to the RotoGui::Roto_Tool enum
+    int _selectedTool; //< corresponds to the RotoGui::RotoToolEnum enum
     int _time; //< the time at which the change was made
     std::list<boost::shared_ptr<Bezier> > _selectedCurves;
     std::list<int> _indexesToMove; //< indexes of the control points
@@ -94,9 +98,7 @@ public:
                          double ty,
                          double sx,
                          double sy,
-                         int time,
-                         TransformPointsSelectionEnum type,
-                         const QRectF& bbox);
+                         int time);
 
     virtual ~TransformUndoCommand();
 
@@ -112,7 +114,7 @@ private:
     bool _firstRedoCalled; //< false by default
     RotoGui* _roto;
     bool _rippleEditEnabled;
-    int _selectedTool; //< corresponds to the RotoGui::Roto_Tool enum
+    int _selectedTool; //< corresponds to the RotoGui::RotoToolEnum enum
     boost::shared_ptr<Transform::Matrix3x3> _matrix;
     int _time; //< the time at which the change was made
     std::list<boost::shared_ptr<Bezier> > _selectedCurves;
@@ -574,10 +576,10 @@ class PasteItemUndoCommand
 {
 public:
 
-    enum Mode
+    enum PasteModeEnum
     {
-        CopyToLayer = 0,
-        CopyToItem
+        ePasteModeCopyToLayer = 0,
+        ePasteModeCopyToItem
     };
 
     struct PastedItem
@@ -600,7 +602,7 @@ public:
 private:
 
     RotoPanel* _roto;
-    Mode _mode;
+    PasteModeEnum _mode;
     QTreeWidgetItem* _targetTreeItem;
     boost::shared_ptr<RotoItem> _targetItem;
     boost::shared_ptr<RotoItem> _oldTargetItem;

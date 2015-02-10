@@ -1,0 +1,219 @@
+.. module:: NatronGui
+.. _GuiApp:
+
+GuiApp
+*********
+
+**Inherits** :doc:`App`
+
+
+Synopsis
+-------------
+
+This class is used for GUI application instances.
+See :ref:`detailed<guiApp.details>` description...
+
+
+Functions
+^^^^^^^^^
+
+*    def :meth:`createModalDialog<NatronGui.GuiApp.createModalDialog>` ()
+*    def :meth:`getFilenameDialog<NatronGui.GuiApp.getFilenameDialog>` (filters[, location=None])
+*    def :meth:`getSequenceDialog<NatronGui.GuiApp.getSequenceDialog>` (filters[, location=None])
+*    def :meth:`getDirectoryDialog<NatronGui.GuiApp.getDirectoryDialog>` ([location=None])
+*    def :meth:`getRGBColorDialog<NatronGui.GuiApp.getRGBColorDialog>` ()
+*    def :meth:`getTabWidget<NatronGui.GuiApp.getTabWidget>` (scriptName)
+*    def :meth:`getSelectedNodes<NatronGui.GuiApp.getSelectedNodes>` ([group=None])
+*    def :meth:`getViewer<NatronGui.GuiApp.getViewer>` (scriptName)
+*    def :meth:`getUserPanel<NatronGui.GuiApp.getUserPanel>` (scriptName)
+*    def :meth:`moveTab<NatronGui.GuiApp.moveTab>` (tabScriptName,pane)
+*    def :meth:`saveFilenameDialog<NatronGui.GuiApp.saveFilenameDialog>` (filters[, location=None])
+*    def :meth:`saveSequenceDialog<NatronGui.GuiApp.saveSequenceDialog>` (filters[, location=None])
+*    def :meth:`registerPythonPanel<NatronGui.GuiApp.registerPythonPanel>` (panel,pythonFunction)
+*    def :meth:`unregisterPythonPanel<NatronGui.GuiApp.unregisterPythonPanel>` (panel)
+
+
+.. _guiApp.details:
+
+Detailed Description
+---------------------------
+
+See :doc:`App` for the documentation of base functionnalities of this class.
+
+To create a new :doc:`modal dialog<NatronGui.PyModalDialog>` , use the 
+:func:`createModalDialog()<NatronGui.GuiApp.createModalDialog>`function.
+
+Several functions are made available to pop dialogs to ask the user for filename(s) or colors.
+See :func:`getFilenameDialog(filters,location)<NatronGui.GuiApp.getFilenameDialog>` and
+:func:`getRGBColorDialog()<NatronGui.GuiApp.getRGBColorDialog>`.
+
+To create a new custom python panel, there are several ways to do it:
+
+	* Sub-class the :doc:`PyPanel` class and make your own PySide widget 
+	* Create a :doc:`PyPanel`object and add controls using user parameters (as done for modal dialogs)
+	
+Once created, you can register the panel in the project so that it gets saved into the layout
+by calling :func:`registerPythonPanel(panel,pythonFunction)<NatronGui.GuiApp.registerPythonPanel>`
+
+Member functions description
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. method:: NatronGui.GuiApp.createModalDialog()
+
+    :rtype: :class:`PyModalDialog<NatronGui.PyModalDialog>`
+
+Creates a :doc:`modal dialog<NatronGui.PyModalDialog>` : the control will not be returned to the user until the dialog is not closed.
+Once the dialog is created, you can enrich it with :doc:`parameters<NatronEngine.Param>` or even
+raw PySide Qt widgets.
+To show the dialog call the function :func:`exec()<>` on the dialog.
+
+
+.. method:: NatronGui.GuiApp.getFilenameDialog(filters[, location=None])
+	
+	:param filters: :class:`sequence`
+	:param location: :class:`str`
+    :rtype: :class:`str`
+    
+Opens-up a file dialog to ask the user for a single filename which already exists.
+
+*filters* is a list of  file extensions that should be displayed in the file dialog.
+
+*location* is the initial location the dialog should display, unless it is empty in which
+case the dialog will display the last location that was opened previously by a dialog.
+
+
+.. method:: NatronGui.GuiApp.getSequenceDialog(filters[, location=None])
+	
+	:param filters: :class:`sequence`
+	:param location: :class:`str`
+    :rtype: :class:`str`
+    
+Same as :func:`getFilenameDialog(filters,location)<NatronGui.GuiApp.getFilenameDialog>` but
+the dialog will accept sequence of files.
+
+
+.. method:: NatronGui.GuiApp.getDirectoryDialog([location=None])
+	
+	:param location: :class:`str`
+    :rtype: :class:`str`
+    
+Same as :func:`getFilenameDialog(filters,location)<NatronGui.GuiApp.getFilenameDialog>` but
+the dialog will only accept directories as a result.
+
+
+
+.. method:: NatronGui.GuiApp.saveFilenameDialog(filters[, location=None])
+	
+	:param filters: :class:`sequence`
+	:param location: :class:`str`
+    :rtype: :class:`str`
+    
+Opens-up a file dialog to ask the user for a single filename. If the file already exists,
+the user will be warned about potential overriding of the file.
+
+*filters* is a list of  file extensions that should be displayed in the file dialog.
+
+*location* is the initial location the dialog should display, unless it is empty in which
+case the dialog will display the last location that was opened previously by a dialog.
+
+
+
+.. method:: NatronGui.GuiApp.saveSequenceDialog(filters[, location=None])
+	
+	:param filters: :class:`sequence`
+	:param location: :class:`str`
+    :rtype: :class:`str`
+    
+Same as :func:`saveFilenameDialog(filters,location)<NatronGui.GuiApp.saveFilenameDialog>` but
+the dialog will accept sequence of files.
+
+
+
+
+.. method:: NatronGui.GuiApp.getRGBColorDialog()
+	
+    :rtype: :class:`ColorTuple<NatronEngine.ColorTuple>`
+    
+Opens-up a color dialog to ask the user for an RGB color.
+
+
+
+
+
+.. method:: NatronGui.GuiApp.getTabWidget(scriptName)
+	
+	:param scriptName: :class:`str`
+    :rtype: :class:`PyTabWidget<NatronGui.PyTabWidget>`
+    
+Returns the tab-widget with the given *scriptName*. The *scriptName* of a tab-widget can
+be found in the user interface when hovering with the mouse the "Manage layout" button (in the top left-hand
+corner of the pane)
+
+.. figure:: ../../paneScriptName.png
+	:width: 300px
+	:align: center
+	
+	
+
+.. method:: NatronGui.GuiApp.moveTab(tabScriptName,pane)
+	
+	:param tabScriptName: :class:`str`
+	:param pane: :class:`PyTabWidget<NatronGui.PyTabWidget>`
+    :rtype: :class:`bool`
+
+Attempts to move the tab with the given *tabScriptName* into the given *pane* and make it current in the *pane*.
+This function returns True upon success or False otherwise. 
+
+.. warning:: 
+
+	Moving tabs that are not registered to
+	the application via :func:`registerPythonPanel(panel,pythonFunction)<NatronGui.GuiApp.registerPythonPanel>`
+	will not work.
+	
+	
+.. method:: NatronGui.GuiApp.registerPythonPanel(panel,pythonFunction)
+
+	:param panel: :class:`PyPanel<NatronGui.PyPanel>`
+	:param scriptName: :class:`str`
+    
+Registers the *given* panel into the project. When registered, the panel will be saved
+into the layout for the current project and a new entry in the "Panes" sub-menu of the 
+"Manage layouts" button  (in the top left-hand corner of each tab widget) will appear
+for this panel.
+*pythonFunction* is the name of a python-defined function that takes no argument that should
+be used to re-create the panel.
+
+.. method:: NatronGui.GuiApp.unregisterPythonPanel(panel)
+
+	:param panel: :class:`PyPanel<NatronGui.PyPanel>`
+    
+Unregisters a previously registered panel.
+
+
+.. method:: NatronGui.GuiApp.getSelectedNodes([group = None])
+
+	:rtype: :class:`sequence`
+
+Returns a sequence of :ref:`nodes<Effect>` currently selected in the given *group*.
+If no *group* is specified, this will return the selection in the main node graph::
+
+	topLevelSelection = app.getSelectedNodes()
+	
+	group = app.createNode("fr.inria.built-in.Group")
+	
+	groupSelection = app.getSelectedNodes(group)
+	
+	
+.. method :: NatronGui.GuiApp.getViewer(scriptName)
+
+	:param scriptName: :class:`str`
+	
+Returns the viewer with the given *scriptName* if one can be found.
+
+
+.. method :: NatronGui.GuiApp.getUserPanel(scriptName)
+
+	:param scriptName: :class:`str`
+	
+Returns a user panel matching the given *scriptName* if there is any.
+

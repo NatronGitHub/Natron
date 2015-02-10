@@ -12,11 +12,15 @@
 #ifndef KNOBROTO_H
 #define KNOBROTO_H
 
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
 #include <list>
 #include <set>
 #include <string>
 
-#ifndef Q_MOC_RUN
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
@@ -35,7 +39,7 @@ CLANG_DIAG_ON(deprecated-declarations)
 
 #define kRotoLayerBaseName "Layer"
 #define kRotoBezierBaseName "Bezier"
-#define kRotoBSplineBaseName "B-Spline"
+#define kRotoBSplineBaseName "BSpline"
 #define kRotoEllipseBaseName "Ellipse"
 #define kRotoRectangleBaseName "Rectangle"
 
@@ -122,6 +126,8 @@ public:
     void setRightBezierStaticPosition(double x,double y);
 
     void removeKeyframe(int time);
+    
+    void removeAnimation(int currentTime);
 
     ///returns true if a keyframe was set
     bool cuspPoint(int time,bool autoKeying,bool rippleEdit,const std::pair<double,double>& pixelScale);
@@ -146,6 +152,12 @@ public:
     bool hasKeyFrameAtTime(int time) const;
 
     void getKeyframeTimes(std::set<int>* times) const;
+    
+    void getKeyFrames(std::list<std::pair<int,Natron::KeyframeTypeEnum> >* keys) const;
+    
+    int getKeyFrameIndex(double time) const;
+    
+    void setKeyFrameInterpolation(Natron::KeyframeTypeEnum interp,int index);
 
     int getKeyframeTime(int index) const;
 
@@ -233,9 +245,15 @@ public:
     virtual void clone(const RotoItem*  other);
 
     ///only callable on the main-thread
-    void setName(const std::string & name);
+    bool setScriptName(const std::string & name);
 
-    std::string getName_mt_safe() const;
+    std::string getScriptName() const;
+    
+    std::string getFullyQualifiedName() const;
+    
+    std::string getLabel() const;
+    
+    void setLabel(const std::string& label);
 
     ///only callable on the main-thread
     void setParentLayer(boost::shared_ptr<RotoLayer> layer);
@@ -360,23 +378,26 @@ public:
      * If isGloballyActivated() returns false, this function will return false aswell.
      **/
     bool isActivated(int time) const;
+    void setActivated(bool a, int time);
 
     /**
      * @brief The opacity of the curve
      **/
     double getOpacity(int time) const;
+    void setOpacity(double o,int time);
 
     /**
      * @brief The distance of the feather is the distance from the control point to the feather point plus
      * the feather distance returned by this function.
      **/
     double getFeatherDistance(int time) const;
+    void setFeatherDistance(double d,int time);
 
     /**
      * @brief The fall-off rate: 0.5 means half color is faded at half distance.
      **/
     double getFeatherFallOff(int time) const;
-
+    void setFeatherFallOff(double f,int time);
 
     /**
      * @brief The color that the GUI should use to draw the overlay of the shape
@@ -387,8 +408,11 @@ public:
     bool getInverted(int time) const;
 
     void getColor(int time,double* color) const;
-
-    int getCompositingOperator(int time) const;
+    void setColor(int time,double r,double g,double b);
+    
+    int getCompositingOperator() const;
+    
+    void setCompositingOperator(int op);
 
     std::string getCompositingOperatorToolTip() const;
     boost::shared_ptr<Bool_Knob> getActivatedKnob() const;
@@ -403,7 +427,7 @@ public:
 
     const std::list<boost::shared_ptr<KnobI> >& getKnobs() const;
     
-signals:
+Q_SIGNALS:
 
 #ifdef NATRON_ROTO_INVERTIBLE
     void invertedStateChanged();
@@ -414,6 +438,8 @@ signals:
     void shapeColorChanged();
 
     void compositingOperatorChanged(int,int);
+
+    
 
 private:
 
@@ -457,7 +483,7 @@ public:
     ///only callable on the main-thread
     ///No check is done to figure out if the item already exists in this layer
     ///this is up to the caller responsability
-    void addItem(const boost::shared_ptr<RotoItem>& item);
+    void addItem(const boost::shared_ptr<RotoItem>& item,bool declareToPython = true);
 
     ///Inserts the item into the layer before the indicated index.
     ///The same restrictions as addItem are applied.
@@ -518,7 +544,7 @@ public:
      * This function is used to build-up the curve as opposed to addControlPointAfterIndex which is there to
      * edit an already fully shaped spline.
      **/
-    boost::shared_ptr<BezierCP> addControlPoint(double x,double y);
+    boost::shared_ptr<BezierCP> addControlPoint(double x,double y,int time);
 
     /**
      * @brief Adds a new control point to the curve after the control point at the given index.
@@ -614,7 +640,6 @@ public:
 
     /**
      * @brief This function is a combinaison of setPosition + setLeftBezierPoint / setRightBeziePoint
-     * It only works for feather points!
      **/
     void setPointAtIndex(bool feather,int index,int time,double x,double y,double lx,double ly,double rx,double ry);
 
@@ -628,6 +653,11 @@ public:
      * @brief Removes the feather point at the given index by making it equal the "true" control point.
      **/
     void removeFeatherAtIndex(int index);
+    
+    /**
+     * @brief Expand the feather point in the direction of the feather distance by the given distance.
+     **/
+    //void expandFeatherAtIndex(int index,double distance);
 
     /**
      * @brief Smooth the curvature of the bezier at the given index by expanding the tangents.
@@ -654,6 +684,11 @@ public:
      * @brief Removes a keyframe at the given time if any.
      **/
     void removeKeyframe(int time);
+        
+    /**
+     * @brief Removes all animation
+     **/
+    void removeAnimation();
     
     /**
      * @brief Moves a keyframe
@@ -704,11 +739,11 @@ public:
      **/
     const std::list< boost::shared_ptr<BezierCP> > & getFeatherPoints() const;
     std::list< boost::shared_ptr<BezierCP> > getFeatherPoints_mt_safe() const;
-    enum ControlPointSelectionPref
+    enum ControlPointSelectionPrefEnum
     {
-        FEATHER_FIRST = 0,
-        CONTROL_POINT_FIRST,
-        WHATEVER_FIRST
+        eControlPointSelectionPrefFeatherFirst = 0,
+        eControlPointSelectionPrefControlPointFirst,
+        eControlPointSelectionPrefWhateverFirst
     };
 
     /**
@@ -717,7 +752,7 @@ public:
      * if the first is a control point, or the other way around).
      **/
     std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> >
-    isNearbyControlPoint(double x,double y,double acceptance,ControlPointSelectionPref pref,int* index) const;
+    isNearbyControlPoint(double x,double y,double acceptance,ControlPointSelectionPrefEnum pref,int* index) const;
 
     /**
      * @brief Given the control point in parameter, return its index in the curve's control points list.
@@ -778,10 +813,10 @@ public:
                                                  std::list<boost::shared_ptr<BezierCP> >::const_iterator prevFp, //< iterator pointing to the feather before curFp
                                                  std::list<boost::shared_ptr<BezierCP> >::const_iterator curFp, //< iterator pointing to fp
                                                  std::list<boost::shared_ptr<BezierCP> >::const_iterator nextFp); //< iterator pointing after curFp
-    enum FillRule
+    enum FillRuleEnum
     {
-        OddEvenFill,
-        WindingFill
+        eFillRuleOddEven,
+        eFillRuleWinding
     };
 
 #pragma message WARN("pointInPolygon should not be used, see comment")
@@ -797,8 +832,8 @@ public:
        Of course an 8-shaped polygon doesn't have an outside, but it still has an orientation. The feather direction
        should follow this orientation.
      */
-    static bool pointInPolygon(const Natron::Point & p,const std::list<Natron::Point> & polygon,
-                               const RectD & featherPolyBBox,FillRule rule);
+    static bool pointInPolygon(const Natron::Point & p, const std::list<Natron::Point> & polygon,
+                               const RectD & featherPolyBBox, FillRuleEnum rule);
 
     /**
      * @brief Must be implemented by the derived class to save the state into
@@ -815,6 +850,8 @@ public:
     virtual void load(const RotoItemSerialization & obj) OVERRIDE;
 
     void getKeyframeTimes(std::set<int> *times) const;
+    
+    void getKeyframeTimesAndInterpolation(std::list<std::pair<int,Natron::KeyframeTypeEnum> > *keys) const;
 
     /**
      * @brief Get the nearest previous keyframe from the given time.
@@ -827,8 +864,13 @@ public:
      * If nothing was found INT_MAX is returned.
      **/
     int getNextKeyframeTime(int time) const;
+    
+    int getKeyFrameIndex(double time) const;
+    
+    void setKeyFrameInterpolation(Natron::KeyframeTypeEnum interp,int index);
 
-signals:
+
+Q_SIGNALS:
 
     void aboutToClone();
 
@@ -837,6 +879,8 @@ signals:
     void keyframeSet(int time);
 
     void keyframeRemoved(int time);
+    
+    void animationRemoved();
     
     void controlPointAdded();
     
@@ -862,14 +906,14 @@ class RotoContext
 
 public:
 
-    enum SelectionReason
+    enum SelectionReasonEnum
     {
-        OVERLAY_INTERACT = 0, ///when the user presses an interact
-        SETTINGS_PANEL, ///when the user interacts with the settings panel
-        OTHER ///when the project loader restores the selection
+        eSelectionReasonOverlayInteract = 0, ///when the user presses an interact
+        eSelectionReasonSettingsPanel, ///when the user interacts with the settings panel
+        eSelectionReasonOther ///when the project loader restores the selection
     };
 
-    RotoContext(Natron::Node* node);
+    RotoContext(const boost::shared_ptr<Natron::Node>& node);
 
     virtual ~RotoContext();
     
@@ -903,25 +947,39 @@ public:
     int getTimelineCurrentTime() const;
 
     /**
-     * @brief Add a new layer to the currently selected layer.
+     * @brief Create a new layer to the currently selected layer.
      **/
     boost::shared_ptr<RotoLayer> addLayer();
+private:
+    
+    boost::shared_ptr<RotoLayer> addLayerInternal(bool declarePython);
+public:
+    
+    
+    /**
+     * @brief Add an existing layer to the layers
+     **/
     void addLayer(const boost::shared_ptr<RotoLayer> & layer);
+    
 
     /**
      * @brief Make a new bezier curve and append it into the currently selected layer.
      * @param baseName A hint to name the item. It can be something like "Bezier", "Ellipse", "Rectangle" , etc...
      **/
-    boost::shared_ptr<Bezier> makeBezier(double x,double y,const std::string & baseName);
-
+    boost::shared_ptr<Bezier> makeBezier(double x,double y,const std::string & baseName,int time);
+    boost::shared_ptr<Bezier> makeEllipse(double x,double y,double diameter,bool fromCenter,int time);
+    boost::shared_ptr<Bezier> makeSquare(double x,double y,double initialSize,int time);
+    
+    std::string generateUniqueName(const std::string& baseName);
+    
     /**
      * @brief Removes the given item from the context. This also removes the item from the selection
      * if it was selected. If the item has children, this will also remove all the children.
      **/
-    void removeItem(const boost::shared_ptr<RotoItem>& item, SelectionReason reason = OTHER);
+    void removeItem(const boost::shared_ptr<RotoItem>& item, SelectionReasonEnum reason = eSelectionReasonOther);
 
     ///This is here for undo/redo purpose. Do not call this
-    void addItem(const boost::shared_ptr<RotoLayer>& layer, int indexInLayer, const boost::shared_ptr<RotoItem> & item,SelectionReason reason);
+    void addItem(const boost::shared_ptr<RotoLayer>& layer, int indexInLayer, const boost::shared_ptr<RotoItem> & item,SelectionReasonEnum reason);
     /**
      * @brief Returns a const ref to the layers list. This can only be called from
      * the main thread.
@@ -980,28 +1038,30 @@ public:
     /**
      * @brief This must be called by the GUI whenever an item is selected. This is recursive for layers.
      **/
-    void select(const boost::shared_ptr<RotoItem> & b,RotoContext::SelectionReason reason);
+    void select(const boost::shared_ptr<RotoItem> & b, RotoContext::SelectionReasonEnum reason);
 
     ///for convenience
-    void select(const std::list<boost::shared_ptr<Bezier> > & beziers,RotoContext::SelectionReason reason);
-    void select(const std::list<boost::shared_ptr<RotoItem> > & items,RotoContext::SelectionReason reason);
+    void select(const std::list<boost::shared_ptr<Bezier> > & beziers, RotoContext::SelectionReasonEnum reason);
+    void select(const std::list<boost::shared_ptr<RotoItem> > & items, RotoContext::SelectionReasonEnum reason);
 
     /**
      * @brief This must be called by the GUI whenever an item is deselected. This is recursive for layers.
      **/
-    void deselect(const boost::shared_ptr<RotoItem> & b,RotoContext::SelectionReason reason);
+    void deselect(const boost::shared_ptr<RotoItem> & b, RotoContext::SelectionReasonEnum reason);
 
     ///for convenience
-    void deselect(const std::list<boost::shared_ptr<Bezier> > & beziers,RotoContext::SelectionReason reason);
-    void deselect(const std::list<boost::shared_ptr<RotoItem> > & items,RotoContext::SelectionReason reason);
+    void deselect(const std::list<boost::shared_ptr<Bezier> > & beziers, RotoContext::SelectionReasonEnum reason);
+    void deselect(const std::list<boost::shared_ptr<RotoItem> > & items, RotoContext::SelectionReasonEnum reason);
 
-    void clearSelection(RotoContext::SelectionReason reason);
+    void clearSelection(RotoContext::SelectionReasonEnum reason);
 
     ///only callable on main-thread
     void setKeyframeOnSelectedCurves();
 
     ///only callable on main-thread
     void removeKeyframeOnSelectedCurves();
+    
+    void removeAnimationOnSelectedCurves();
 
     ///only callable on main-thread
     void goToPreviousKeyframe();
@@ -1029,6 +1089,8 @@ public:
     
     int getNCurves() const;
     
+    boost::shared_ptr<Natron::Node> getNode() const;
+    
     boost::shared_ptr<RotoLayer> getLayerByName(const std::string & n) const;
     boost::shared_ptr<RotoItem> getItemByName(const std::string & n) const;
     boost::shared_ptr<RotoItem> getLastInsertedItem() const;
@@ -1039,7 +1101,6 @@ public:
     boost::shared_ptr<Color_Knob> getColorKnob() const;
 
 
-    void setLastItemLocked(const boost::shared_ptr<RotoItem> & item);
     boost::shared_ptr<RotoItem> getLastItemLocked() const;
     boost::shared_ptr<RotoLayer> getDeepestSelectedLayer() const;
 
@@ -1054,13 +1115,23 @@ public:
      **/
     std::string getRotoNodeName() const;
     
-    void onItemNameChanged(const boost::shared_ptr<RotoItem>& item);
+    void onItemScriptNameChanged(const boost::shared_ptr<RotoItem>& item);
+    void onItemLabelChanged(const boost::shared_ptr<RotoItem>& item);
+    
+    void onItemKnobChanged();
 
-signals:
+    void declarePythonFields();
+    
+    void changeItemScriptName(const std::string& oldFullyQualifiedName,const std::string& newFullyQUalifiedName);
+    
+    void declareItemAsPythonField(const boost::shared_ptr<RotoItem>& item);
+    void removeItemAsPythonField(const boost::shared_ptr<RotoItem>& item);
+    
+Q_SIGNALS:
 
     /**
      * Emitted when the selection is changed. The integer corresponds to the
-     * RotoContext::SelectionReason enum.
+     * RotoContext::SelectionReasonEnum enum.
      **/
     void selectionChanged(int);
 
@@ -1074,9 +1145,10 @@ signals:
 
     void itemLockedChanged();
     
-    void itemNameChanged(const boost::shared_ptr<RotoItem>&);
+    void itemScriptNameChanged(const boost::shared_ptr<RotoItem>&);
+    void itemLabelChanged(const boost::shared_ptr<RotoItem>&);
 
-public slots:
+public Q_SLOTS:
 
     void onAutoKeyingChanged(bool enabled);
 
@@ -1087,11 +1159,11 @@ public slots:
     void onSelectedKnobCurveChanged();
 
 private:
-
+    
     void selectInternal(const boost::shared_ptr<RotoItem>& b);
     void deselectInternal(boost::shared_ptr<RotoItem> b);
 
-    void removeItemRecursively(const boost::shared_ptr<RotoItem>& item,SelectionReason reason);
+    void removeItemRecursively(const boost::shared_ptr<RotoItem>& item,SelectionReasonEnum reason);
 
     /**
      * @brief First searches through the selected layer which one is the deepest in the hierarchy.

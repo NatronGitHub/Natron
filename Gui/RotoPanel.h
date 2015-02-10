@@ -6,9 +6,15 @@
 
 #ifndef ROTOPANEL_H
 #define ROTOPANEL_H
-#ifndef Q_MOC_RUN
+
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
+#include <boost/weak_ptr.hpp>
 #endif
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
@@ -36,7 +42,7 @@ class RotoPanel
 public:
 
 
-    RotoPanel(NodeGui* n,
+    RotoPanel(const boost::shared_ptr<NodeGui>& n,
               QWidget* parent = 0);
 
     virtual ~RotoPanel();
@@ -58,8 +64,10 @@ public:
 
     void makeCustomWidgetsForItem(const boost::shared_ptr<RotoDrawableItem>& item,
                                   QTreeWidgetItem* treeItem = NULL);
+    
+    boost::shared_ptr<NodeGui> getNode() const;
 
-public slots:
+public Q_SLOTS:
 
     void onGoToPrevKeyframeButtonClicked();
 
@@ -68,6 +76,8 @@ public slots:
     void onAddKeyframeButtonClicked();
 
     void onRemoveKeyframeButtonClicked();
+    
+    void onRemoveAnimationButtonClicked();
 
     void onAddLayerButtonClicked();
 
@@ -79,6 +89,8 @@ public slots:
     void onSelectedBezierKeyframeSet(int time);
 
     void onSelectedBezierKeyframeRemoved(int time);
+
+    void onSelectedBezierAnimationRemoved();
 
     void onSelectedBezierAboutToClone();
 
@@ -142,6 +154,9 @@ public slots:
     void onSettingsPanelClosed(bool closed);
 
     void onItemColorDialogEdited(const QColor & color);
+    
+    void onItemLabelChanged(const boost::shared_ptr<RotoItem>& item);
+    void onItemScriptNameChanged(const boost::shared_ptr<RotoItem>& item);
 
 private:
 

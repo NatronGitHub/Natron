@@ -6,6 +6,10 @@
 #ifndef NATRON_GUI_KNOBUNDOCOMMAND_H_
 #define NATRON_GUI_KNOBUNDOCOMMAND_H_
 
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
 #include <map>
 #include <vector>
 
@@ -93,16 +97,11 @@ private:
         bool modifiedKeyFrame = false;
         int i = 0;
 
-        typename std::list<T>::iterator next = _oldValue.begin();
-        ++next;
-        _knob->getKnob()->blockEvaluation();
-        for (typename std::list<T>::iterator it = _oldValue.begin(); it != _oldValue.end(); ++it,++next) {
+        _knob->getKnob()->beginChanges();
+        
+        for (typename std::list<T>::iterator it = _oldValue.begin(); it != _oldValue.end(); ++it) {
             int dimension = _dimension == -1 ? i : _dimension;
-            bool isLast = next == _oldValue.end();
-            if (isLast) {
-                _knob->getKnob()->unblockEvaluation();
-            }
-
+          
             _knob->setValue(dimension,*it,NULL,true,Natron::eValueChangedReasonUserEdited);
             if ( _knob->getKnob()->getHolder()->getApp() ) {
                 if (_valueChangedReturnCode[i] == 1) { //the value change also added a keyframe
@@ -115,11 +114,13 @@ private:
                     modifiedKeyFrame = true;
                 }
             }
+
+            
             ++i;
-            if ( next == _oldValue.end() ) {
-                --next;
-            }
+    
         }
+        
+        _knob->getKnob()->endChanges();
         if (modifiedKeyFrame) {
             _knob->getGui()->getCurveEditor()->getCurveWidget()->refreshSelectedKeys();
         }
@@ -138,16 +139,12 @@ private:
 
         bool modifiedKeyFrames = false;
 
-        _knob->getKnob()->blockEvaluation();
+        _knob->getKnob()->beginChanges();
         int i = 0;
-        typename std::list<T>::iterator next = _newValue.begin();
-        ++next;
-        for (typename std::list<T>::iterator it = _newValue.begin(); it != _newValue.end(); ++it,++next) {
+        
+        for (typename std::list<T>::iterator it = _newValue.begin(); it != _newValue.end(); ++it) {
             int dimension = _dimension == -1 ? i : _dimension;
-            bool isLast = next == _newValue.end();
-            if (isLast) {
-                _knob->getKnob()->unblockEvaluation();
-            }
+    
 
             boost::shared_ptr<Curve> c = _knob->getKnob()->getCurve(dimension);
             //find out if there's already an existing keyframe before calling setValue
@@ -163,19 +160,18 @@ private:
                 refreshGui = _refreshGuiFirstTime;
             }
             _valueChangedReturnCode[i] = _knob->setValue(dimension,*it,&_newKeys[i],refreshGui,Natron::eValueChangedReasonUserEdited);
-            if (_valueChangedReturnCode[i] != KnobHelper::NO_KEYFRAME_ADDED) {
+            if (_valueChangedReturnCode[i] != KnobHelper::eValueChangedReturnCodeNoKeyframeAdded) {
                 modifiedKeyFrames = true;
             }
-
+    
             ///if we added a keyframe, prevent this command to merge with any other command
-            if (_valueChangedReturnCode[i] == KnobHelper::KEYFRAME_ADDED) {
+            if (_valueChangedReturnCode[i] == KnobHelper::eValueChangedReturnCodeKeyframeAdded) {
                 _merge = false;
             }
             ++i;
-            if ( next == _newValue.end() ) {
-                --next;
-            }
+        
         }
+        _knob->getKnob()->endChanges();
 
         if (modifiedKeyFrames) {
             _knob->getGui()->getCurveEditor()->getCurveWidget()->refreshSelectedKeys();
@@ -247,7 +243,7 @@ class MultipleKnobEditsUndoCommand
     ParamsMap knobs;
     bool createNew;
     bool firstRedoCalled;
-
+    Natron::ValueChangedReasonEnum _reason;
 public:
 
     /**
@@ -256,6 +252,7 @@ public:
      * @param setKeyFrame if true, the command will use setValueAtTime instead of setValue in the redo() command.
      **/
     MultipleKnobEditsUndoCommand(KnobGui* knob,
+                                 Natron::ValueChangedReasonEnum reason,
                                  bool createNew,
                                  bool setKeyFrame,
                                  const Variant & value,
@@ -312,6 +309,29 @@ public:
 private:
 
     std::list<boost::shared_ptr<KnobI> > _knobs,_clones;
+};
+
+class SetExpressionCommand
+: public QUndoCommand
+{
+public:
+    
+    SetExpressionCommand(const boost::shared_ptr<KnobI> & knob,
+                         bool hasRetVar,
+                         int dimension,
+                         const std::string& expr,
+                         QUndoCommand *parent = 0);
+    virtual void undo();
+    virtual void redo();
+    
+private:
+    
+    boost::shared_ptr<KnobI > _knob;
+    std::vector<std::string> _oldExprs;
+    std::vector<bool> _hadRetVar;
+    std::string _newExpr;
+    bool _hasRetVar;
+    int _dimension;
 };
 
 #endif // NATRON_GUI_KNOBUNDOCOMMAND_H_

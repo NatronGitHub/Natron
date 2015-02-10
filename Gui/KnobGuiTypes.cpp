@@ -7,8 +7,11 @@
  * contact: immarespond at gmail dot com
  *
  */
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
 
-#include "Gui/KnobGuiTypes.h"
+#include "KnobGuiTypes.h"
 
 #include <cfloat>
 
@@ -73,8 +76,16 @@ CLANG_DIAG_ON(uninitialized)
 using namespace Natron;
 using std::make_pair;
 
-// convenience private classes
 
+static bool shouldSliderBeVisible(int sliderMin,int sliderMax)
+{
+    return (sliderMax > sliderMin) && ( (sliderMax - sliderMin) < SLIDER_MAX_RANGE ) && (sliderMax < INT_MAX) && (sliderMin > INT_MIN);
+}
+
+static bool shouldSliderBeVisible(double sliderMin,double sliderMax)
+{
+    return (sliderMax > sliderMin) && ( (sliderMax - sliderMin) < SLIDER_MAX_RANGE ) && (sliderMax < DBL_MAX) && (sliderMin > -DBL_MAX);
+}
 
 //==========================INT_KNOB_GUI======================================
 Int_KnobGui::Int_KnobGui(boost::shared_ptr<KnobI> knob,
@@ -98,13 +109,14 @@ Int_KnobGui::Int_KnobGui(boost::shared_ptr<KnobI> knob,
 
 Int_KnobGui::~Int_KnobGui()
 {
-//    for (U32 i  = 0; i < _spinBoxes.size(); ++i) {
-//        delete _spinBoxes[i].first;
-//        delete _spinBoxes[i].second;
-//    }
-//    if (_slider) {
-//        delete _slider;
-//    }
+}
+
+void
+Int_KnobGui::removeSpecificGui()
+{
+    container->setParent(NULL);
+    delete container;
+    _spinBoxes.clear();
 }
 
 void
@@ -112,7 +124,7 @@ Int_KnobGui::createWidget(QHBoxLayout* layout)
 {
     
     int dim = _knob->getDimension();
-    QWidget *container = new QWidget( layout->parentWidget() );
+    container = new QWidget( layout->parentWidget() );
     QHBoxLayout *containerLayout = new QHBoxLayout(container);
 
     container->setLayout(containerLayout);
@@ -140,7 +152,8 @@ Int_KnobGui::createWidget(QHBoxLayout* layout)
 #endif
     
     for (int i = 0; i < dim; ++i) {
-        QWidget *boxContainer = new QWidget( layout->parentWidget() );
+
+        QWidget *boxContainer = new QWidget( container );
         boxContainer->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
         QHBoxLayout *boxContainerLayout = new QHBoxLayout(boxContainer);
         boxContainer->setLayout(boxContainerLayout);
@@ -156,7 +169,7 @@ Int_KnobGui::createWidget(QHBoxLayout* layout)
             subDesc->setFont( QFont(appFont,appFontSize) );
             boxContainerLayout->addWidget(subDesc);
         }
-        SpinBox *box = new SpinBox(layout->parentWidget(), SpinBox::INT_SPINBOX);
+        SpinBox *box = new SpinBox(layout->parentWidget(), SpinBox::eSpinBoxTypeInt);
         QObject::connect( box, SIGNAL( valueChanged(double) ), this, SLOT( onSpinBoxValueChanged() ) );
 
         ///set the copy/link actions in the right click menu
@@ -170,24 +183,23 @@ Int_KnobGui::createWidget(QHBoxLayout* layout)
 #endif
         
         box->setIncrement(increments[i]);
-        if ( hasToolTip() ) {
-            box->setToolTip( toolTip() );
-        }
+
         boxContainerLayout->addWidget(box);
         containerLayout->addWidget(boxContainer);
         _spinBoxes.push_back( make_pair(box, subDesc) );
     }
     
+    bool sliderVisible = false;
     if (!_knob->isSliderDisabled()) {
         int dispmin = displayMins[0];
         int dispmax = displayMaxs[0];
         
-        if (dispmin < -SLIDER_MAX_RANGE) {
-            dispmin = -SLIDER_MAX_RANGE;
-        }
-        if (dispmax > SLIDER_MAX_RANGE) {
-            dispmax = SLIDER_MAX_RANGE;
-        }
+//        if (dispmin < -SLIDER_MAX_RANGE) {
+//            dispmin = -SLIDER_MAX_RANGE;
+//        }
+//        if (dispmax > SLIDER_MAX_RANGE) {
+//            dispmax = SLIDER_MAX_RANGE;
+//        }
         
         _slider = new ScaleSliderQWidget( dispmin, dispmax,_knob->getValue(0,false),
                                          ScaleSliderQWidget::eDataTypeInt,Natron::eScaleTypeLinear, layout->parentWidget() );
@@ -200,11 +212,12 @@ Int_KnobGui::createWidget(QHBoxLayout* layout)
         
         containerLayout->addWidget(_slider);
         onDisplayMinMaxChanged(dispmin, dispmax);
+        sliderVisible = shouldSliderBeVisible(dispmin, dispmax);
     }
 
-    if (dim > 1 && !_knob->isSliderDisabled() ) {
+    if (dim > 1 && !_knob->isSliderDisabled() && sliderVisible) {
         _dimensionSwitchButton = new Button(QIcon(),QString::number(dim),container);
-        _dimensionSwitchButton->setToolTip(Qt::convertFromPlainText(tr("Switch between a single value for all dimensions and multiple values"), Qt::WhiteSpaceNormal));
+        _dimensionSwitchButton->setToolTip(Qt::convertFromPlainText(tr("Switch between a single value for all dimensions and multiple values."), Qt::WhiteSpaceNormal));
         _dimensionSwitchButton->setFocusPolicy(Qt::NoFocus);
         _dimensionSwitchButton->setFixedSize(17, 17);
         _dimensionSwitchButton->setCheckable(true);
@@ -260,13 +273,11 @@ Int_KnobGui::onDimensionSwitchClicked()
         int dim = _knob->getDimension();
         if (dim > 1) {
             double value(_spinBoxes[0].first->value());
-            _knob->blockEvaluation();
+            _knob->beginChanges();
             for (int i = 1; i < dim; ++i) {
-                if (i == dim -1) {
-                    _knob->unblockEvaluation();
-                }
                 _knob->setValue(value,i);
             }
+            _knob->endChanges();
         }
     }
     
@@ -313,7 +324,6 @@ Int_KnobGui::foldAllDimensions()
 }
 
 
-
 void
 Int_KnobGui::onDisplayMinMaxChanged(double mini,
                                     double maxi,
@@ -333,7 +343,7 @@ Int_KnobGui::onDisplayMinMaxChanged(double mini,
                 sliderMax = max;
             }
         }
-        if ( (sliderMax > sliderMin) && ( (sliderMax - sliderMin) < SLIDER_MAX_RANGE ) && (sliderMax < INT_MAX) && (sliderMin > INT_MIN) ) {
+        if (shouldSliderBeVisible(sliderMin,sliderMax)) {
             _slider->show();
         } else {
             _slider->hide();
@@ -356,6 +366,18 @@ Int_KnobGui::updateGUI(int dimension)
 {
     int v = _knob->getValue(dimension,false);
 
+    if (_dimensionSwitchButton && !_dimensionSwitchButton->isChecked()) {
+        for (int i = 0; i < _knob->getDimension(); ++i) {
+            
+            if (i == dimension) {
+                continue;
+            }
+            if (_knob->getValue(i,false) != v) {
+                expandAllDimensions();
+            }
+        }
+    }
+    
     if (_slider) {
         _slider->seekScalePosition(v);
     }
@@ -513,6 +535,7 @@ Int_KnobGui::_show()
 void
 Int_KnobGui::setEnabled()
 {
+    bool enabled0 = getKnob()->isEnabled(0);
     for (U32 i = 0; i < _spinBoxes.size(); ++i) {
         bool b = getKnob()->isEnabled(i);
         //_spinBoxes[i].first->setEnabled(b);
@@ -522,7 +545,11 @@ Int_KnobGui::setEnabled()
         }
     }
     if (_slider) {
-        _slider->setReadOnly( !getKnob()->isEnabled(0) );
+        _slider->setReadOnly( !enabled0 );
+    }
+    
+    if (_dimensionSwitchButton) {
+        _dimensionSwitchButton->setEnabled(enabled0);
     }
 }
 
@@ -550,11 +577,35 @@ boost::shared_ptr<KnobI> Int_KnobGui::getKnob() const
     return _knob;
 }
 
+void
+Int_KnobGui::reflectExpressionState(int dimension,bool hasExpr)
+{
+    _spinBoxes[dimension].first->setAnimation(3);
+    _spinBoxes[dimension].first->setReadOnly(hasExpr);
+    if (_slider) {
+        _slider->setReadOnly(hasExpr);
+    }
+}
+
+void
+Int_KnobGui::updateToolTip()
+{
+    if ( hasToolTip() ) {
+        QString tt = toolTip();
+        for (int i = 0; i < _knob->getDimension();++i) {
+            _spinBoxes[i].first->setToolTip( tt );
+        }
+        if (_slider) {
+            _slider->setToolTip(tt);
+        }
+    }
+}
 //==========================BOOL_KNOB_GUI======================================
 
 Bool_KnobGui::Bool_KnobGui(boost::shared_ptr<KnobI> knob,
                            DockablePanel *container)
     : KnobGui(knob, container)
+    , _checkBox(0)
 {
     _knob = boost::dynamic_pointer_cast<Bool_Knob>(knob);
 }
@@ -563,9 +614,7 @@ void
 Bool_KnobGui::createWidget(QHBoxLayout* layout)
 {
     _checkBox = new AnimatedCheckBox( layout->parentWidget() );
-    if ( hasToolTip() ) {
-        _checkBox->setToolTip( toolTip() );
-    }
+
     _checkBox->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     QObject::connect( _checkBox, SIGNAL( toggled(bool) ), this, SLOT( onCheckBoxStateChanged(bool) ) );
     QObject::connect( this, SIGNAL( labelClicked(bool) ), this, SLOT( onCheckBoxStateChanged(bool) ) );
@@ -578,7 +627,13 @@ Bool_KnobGui::createWidget(QHBoxLayout* layout)
 
 Bool_KnobGui::~Bool_KnobGui()
 {
-   // delete _checkBox;
+
+}
+
+void Bool_KnobGui::removeSpecificGui()
+{
+    _checkBox->setParent(0);
+    delete _checkBox;
 }
 
 void
@@ -652,9 +707,28 @@ Bool_KnobGui::setDirty(bool dirty)
     _checkBox->setDirty(dirty);
 }
 
-boost::shared_ptr<KnobI> Bool_KnobGui::getKnob() const
+boost::shared_ptr<KnobI>
+Bool_KnobGui::getKnob() const
 {
     return _knob;
+}
+
+void
+Bool_KnobGui::reflectExpressionState(int /*dimension*/,bool hasExpr)
+{
+    _checkBox->setAnimation(3);
+    _checkBox->setReadOnly(hasExpr);
+}
+
+void
+Bool_KnobGui::updateToolTip()
+{
+    if ( hasToolTip() ) {
+        QString tt = toolTip();
+        for (int i = 0; i < _knob->getDimension();++i) {
+            _checkBox->setToolTip( tt );
+        }
+    }
 }
 
 //=============================DOUBLE_KNOB_GUI===================================
@@ -682,27 +756,26 @@ Double_KnobGui::valueAccordingToType(bool normalize,
     if ( (dimension != 0) && (dimension != 1) ) {
         return;
     }
-
-    if (dimension == 0) {
-        Double_Knob::NormalizedState state = _knob->getNormalizedState(dimension);
-        if (state == Double_Knob::NORMALIZATION_X) {
-            Format f;
-            getKnob()->getHolder()->getApp()->getProject()->getProjectDefaultFormat(&f);
-            if (normalize) {
-                *value /= f.width();
-            } else {
-                *value *= f.width();
-            }
-        } else if (state == Double_Knob::NORMALIZATION_Y) {
-            Format f;
-            getKnob()->getHolder()->getApp()->getProject()->getProjectDefaultFormat(&f);
-            if (normalize) {
-                *value /= f.height();
-            } else {
-                *value *= f.height();
-            }
+    
+    Double_Knob::NormalizedStateEnum state = _knob->getNormalizedState(dimension);
+    if (state == Double_Knob::eNormalizedStateX) {
+        Format f;
+        getKnob()->getHolder()->getApp()->getProject()->getProjectDefaultFormat(&f);
+        if (normalize) {
+            *value /= f.width();
+        } else {
+            *value *= f.width();
+        }
+    } else if (state == Double_Knob::eNormalizedStateY) {
+        Format f;
+        getKnob()->getHolder()->getApp()->getProject()->getProjectDefaultFormat(&f);
+        if (normalize) {
+            *value /= f.height();
+        } else {
+            *value *= f.height();
         }
     }
+    
 }
 
 bool
@@ -733,21 +806,22 @@ Double_KnobGui::Double_KnobGui(boost::shared_ptr<KnobI> knob,
 
 Double_KnobGui::~Double_KnobGui()
 {
-//    for (U32 i  = 0; i < _spinBoxes.size(); ++i) {
-//        delete _spinBoxes[i].first;
-//        delete _spinBoxes[i].second;
-//    }
-//    if (_slider) {
-//        delete _slider;
-//    }
+
+}
+
+void Double_KnobGui::removeSpecificGui()
+{
+    delete container;
+    _spinBoxes.clear();
 }
 
 void
 Double_KnobGui::createWidget(QHBoxLayout* layout)
 {
-    layout->parentWidget()->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
-    QWidget *container = new QWidget( layout->parentWidget() );
+
+    container = new QWidget( layout->parentWidget() );
     QHBoxLayout *containerLayout = new QHBoxLayout(container);
+    layout->addWidget(container);
 
     container->setLayout(containerLayout);
     containerLayout->setContentsMargins(0, 0, 0, 0);
@@ -776,7 +850,8 @@ Double_KnobGui::createWidget(QHBoxLayout* layout)
 #endif
     const std::vector<int> &decimals = _knob->getDecimals();
     for (int i = 0; i < dim; ++i) {
-        QWidget *boxContainer = new QWidget( layout->parentWidget() );
+
+        QWidget *boxContainer = new QWidget( container );
         boxContainer->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
         QHBoxLayout *boxContainerLayout = new QHBoxLayout(boxContainer);
         boxContainer->setLayout(boxContainerLayout);
@@ -792,7 +867,7 @@ Double_KnobGui::createWidget(QHBoxLayout* layout)
             subDesc->setFont( QFont(appFont,appFontSize) );
             boxContainerLayout->addWidget(subDesc);
         }
-        SpinBox *box = new SpinBox(layout->parentWidget(), SpinBox::DOUBLE_SPINBOX);
+        SpinBox *box = new SpinBox(layout->parentWidget(), SpinBox::eSpinBoxTypeDouble);
         QObject::connect( box, SIGNAL( valueChanged(double) ), this, SLOT( onSpinBoxValueChanged() ) );
         
         ///set the copy/link actions in the right click menu
@@ -812,15 +887,14 @@ Double_KnobGui::createWidget(QHBoxLayout* layout)
         box->decimals(decimals[i]);
         
         box->setIncrement(increments[i]);
-        if ( hasToolTip() ) {
-            box->setToolTip( toolTip() );
-        }
+       
         boxContainerLayout->addWidget(box);
+
         containerLayout->addWidget(boxContainer);
         _spinBoxes.push_back( make_pair(box, subDesc) );
     }
     
-    
+    bool sliderVisible = false;
     if ( !_knob->isSliderDisabled()) {
         double dispmin = displayMins[0];
         double dispmax = displayMaxs[0];
@@ -856,15 +930,15 @@ Double_KnobGui::createWidget(QHBoxLayout* layout)
         QObject::connect( _slider, SIGNAL( positionChanged(double) ), this, SLOT( onSliderValueChanged(double) ) );
         QObject::connect( _slider, SIGNAL( editingFinished() ), this, SLOT( onSliderEditingFinished() ) );
         containerLayout->addWidget(_slider);
-        
+        sliderVisible = shouldSliderBeVisible(dispmin, dispmax);
         onDisplayMinMaxChanged(dispmin, dispmax);
         
     }
     
     
-    if (dim > 1 && !_knob->isSliderDisabled() ) {
+    if (dim > 1 && !_knob->isSliderDisabled() && sliderVisible ) {
         _dimensionSwitchButton = new Button(QIcon(),QString::number(dim),container);
-        _dimensionSwitchButton->setToolTip(Qt::convertFromPlainText(tr("Switch between a single value for all dimensions and multiple values"), Qt::WhiteSpaceNormal));
+        _dimensionSwitchButton->setToolTip(Qt::convertFromPlainText(tr("Switch between a single value for all dimensions and multiple values."), Qt::WhiteSpaceNormal));
         _dimensionSwitchButton->setFixedSize(17, 17);
         _dimensionSwitchButton->setFocusPolicy(Qt::NoFocus);
         _dimensionSwitchButton->setCheckable(true);
@@ -888,7 +962,6 @@ Double_KnobGui::createWidget(QHBoxLayout* layout)
         QObject::connect( _dimensionSwitchButton, SIGNAL( clicked(bool) ), this, SLOT( onDimensionSwitchClicked() ) );
 
     }
-    layout->addWidget(container);
 
 } // createWidget
 
@@ -906,13 +979,11 @@ Double_KnobGui::onDimensionSwitchClicked()
         int dim = _knob->getDimension();
         if (dim > 1) {
             double value(_spinBoxes[0].first->value());
-            _knob->blockEvaluation();
+            _knob->beginChanges();
             for (int i = 1; i < dim; ++i) {
-                if (i == dim -1) {
-                    _knob->unblockEvaluation();
-                }
                 _knob->setValue(value,i);
             }
+            _knob->endChanges();
         }
     }
 
@@ -988,11 +1059,11 @@ Double_KnobGui::onDisplayMinMaxChanged(double mini,
             }
         }
         
-        if ( (sliderMax > sliderMin) && ( (sliderMax - sliderMin) < SLIDER_MAX_RANGE ) && (sliderMax < DBL_MAX) && (sliderMin > -DBL_MAX) ) {
+        if (shouldSliderBeVisible(sliderMin, sliderMax)) {
             _digits = std::max(0., std::ceil(-std::log10(sliderMax - sliderMin) + 2.));
-            _slider->show();
+            _slider->setVisible(true);
         } else {
-            _slider->hide();
+            _slider->setVisible(false);
         }
         
         _slider->setMinimumAndMaximum(sliderMin, sliderMax);
@@ -1021,6 +1092,19 @@ Double_KnobGui::updateGUI(int dimension)
 {
     double v = _knob->getValue(dimension,false);
     valueAccordingToType(false, dimension, &v);
+    
+    if (_dimensionSwitchButton && !_dimensionSwitchButton->isChecked()) {
+        for (int i = 0; i < _knob->getDimension(); ++i) {
+            
+            if (i == dimension) {
+                continue;
+            }
+            if (_knob->getValue(i,false) != v) {
+                expandAllDimensions();
+            }
+        }
+    }
+    
     if (_slider) {
         _slider->seekScalePosition(v);
     }
@@ -1191,6 +1275,8 @@ Double_KnobGui::_show()
 void
 Double_KnobGui::setEnabled()
 {
+    bool enabled0 = getKnob()->isEnabled(0);
+    
     for (U32 i = 0; i < _spinBoxes.size(); ++i) {
         bool b = getKnob()->isEnabled(i);
         //_spinBoxes[i].first->setEnabled(b);
@@ -1200,7 +1286,11 @@ Double_KnobGui::setEnabled()
         }
     }
     if (_slider) {
-        _slider->setReadOnly( !getKnob()->isEnabled(0) );
+        _slider->setReadOnly( !enabled0 );
+    }
+    
+    if (_dimensionSwitchButton) {
+        _dimensionSwitchButton->setEnabled(enabled0);
     }
 
 }
@@ -1224,9 +1314,34 @@ Double_KnobGui::setDirty(bool dirty)
     }
 }
 
-boost::shared_ptr<KnobI> Double_KnobGui::getKnob() const
+boost::shared_ptr<KnobI>
+Double_KnobGui::getKnob() const
 {
     return _knob;
+}
+
+void
+Double_KnobGui::reflectExpressionState(int dimension,bool hasExpr)
+{
+    _spinBoxes[dimension].first->setAnimation(3);
+    _spinBoxes[dimension].first->setReadOnly(hasExpr);
+    if (_slider) {
+        _slider->setReadOnly(hasExpr);
+    }
+}
+
+void
+Double_KnobGui::updateToolTip()
+{
+    if ( hasToolTip() ) {
+        QString tt = toolTip();
+        for (int i = 0; i < _knob->getDimension();++i) {
+            _spinBoxes[i].first->setToolTip( tt );
+        }
+        if (_slider) {
+            _slider->setToolTip(tt);
+        }
+    }
 }
 
 //=============================BUTTON_KNOB_GUI===================================
@@ -1244,15 +1359,29 @@ Button_KnobGui::createWidget(QHBoxLayout* layout)
 {
     QString label( _knob->getDescription().c_str() );
     const std::string & iconFilePath = _knob->getIconFilePath();
+    
+    QString filePath(iconFilePath.c_str());
+    if (!iconFilePath.empty() && !QFile::exists(filePath)) {
+        ///Search all natron paths for a file
+        
+        QStringList paths = appPTR->getAllNonOFXPluginsPaths();
+        for (int i = 0; i < paths.size(); ++i) {
+            filePath = paths[i] + QChar('/') + filePath;
+            if (QFile::exists(filePath)) {
+                break;
+            }
+        }
+    }
+    
     QPixmap pix;
 
-    if ( pix.load( iconFilePath.c_str() ) ) {
+    if (pix.load(filePath)) {
         _button = new Button( QIcon(pix),"",layout->parentWidget() );
         _button->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     } else {
         _button = new Button( label,layout->parentWidget() );
     }
-    QObject::connect( _button, SIGNAL( clicked() ), this, SLOT( emitValueChanged() ) );
+    QObject::connect( _button, SIGNAL(clicked()), this, SLOT(emitValueChanged()));
     if ( hasToolTip() ) {
         _button->setToolTip( toolTip() );
     }
@@ -1261,13 +1390,17 @@ Button_KnobGui::createWidget(QHBoxLayout* layout)
 
 Button_KnobGui::~Button_KnobGui()
 {
-  //  delete _button;
+}
+
+void Button_KnobGui::removeSpecificGui()
+{
+    delete _button;
 }
 
 void
 Button_KnobGui::emitValueChanged()
 {
-    dynamic_cast<Button_Knob*>( getKnob().get() )->onValueChanged(true, 0, Natron::eValueChangedReasonUserEdited, NULL);
+    _knob->evaluateValueChange(0, Natron::eValueChangedReasonUserEdited);
 }
 
 void
@@ -1306,6 +1439,7 @@ boost::shared_ptr<KnobI> Button_KnobGui::getKnob() const
 Choice_KnobGui::Choice_KnobGui(boost::shared_ptr<KnobI> knob,
                                DockablePanel *container)
     : KnobGui(knob, container)
+    , _comboBox(0)
 {
     _knob = boost::dynamic_pointer_cast<Choice_Knob>(knob);
     _entries = _knob->getEntries_mt_safe();
@@ -1314,7 +1448,12 @@ Choice_KnobGui::Choice_KnobGui(boost::shared_ptr<KnobI> knob,
 
 Choice_KnobGui::~Choice_KnobGui()
 {
-   // delete _comboBox;
+   
+}
+
+void Choice_KnobGui::removeSpecificGui()
+{
+    delete _comboBox;
 }
 
 void
@@ -1356,14 +1495,23 @@ Choice_KnobGui::onEntriesPopulated()
     ///we don't want that to happen because the index actually didn't change.
     _comboBox->setCurrentIndex_no_emit(activeIndex);
 
-    QString tt = getScriptNameHtml();
-    QString realTt( _knob->getHintToolTipFull().c_str() );
-    if ( !realTt.isEmpty() ) {
-        realTt = Qt::convertFromPlainText(realTt,Qt::WhiteSpaceNormal);
-        tt.append(realTt);
-    }
-    _comboBox->setToolTip(tt);
+    updateToolTip();
 }
+
+void
+Choice_KnobGui::reflectExpressionState(int /*dimension*/,bool hasExpr)
+{
+    _comboBox->setAnimation(3);
+    _comboBox->setReadOnly(hasExpr);
+}
+
+void
+Choice_KnobGui::updateToolTip()
+{
+    QString tt = toolTip();
+    _comboBox->setToolTip( tt );
+}
+
 
 void
 Choice_KnobGui::updateGUI(int /*dimension*/)
@@ -1443,6 +1591,7 @@ boost::shared_ptr<KnobI> Choice_KnobGui::getKnob() const
 Separator_KnobGui::Separator_KnobGui(boost::shared_ptr<KnobI> knob,
                                      DockablePanel *container)
     : KnobGui(knob, container)
+    , _line(0)
 {
     _knob = boost::dynamic_pointer_cast<Separator_Knob>(knob);
 }
@@ -1463,7 +1612,12 @@ Separator_KnobGui::createWidget(QHBoxLayout* layout)
 
 Separator_KnobGui::~Separator_KnobGui()
 {
-    //delete _line;
+    
+}
+
+void Separator_KnobGui::removeSpecificGui()
+{
+    delete _line;
 }
 
 void
@@ -1525,7 +1679,12 @@ Color_KnobGui::Color_KnobGui(boost::shared_ptr<KnobI> knob,
 
 Color_KnobGui::~Color_KnobGui()
 {
-   // delete mainContainer;
+   
+}
+
+void Color_KnobGui::removeSpecificGui()
+{
+   delete mainContainer;
 }
 
 void
@@ -1535,32 +1694,32 @@ Color_KnobGui::createWidget(QHBoxLayout* layout)
     mainContainer = new QWidget( layout->parentWidget() );
     mainLayout = new QHBoxLayout(mainContainer);
     mainLayout->setContentsMargins(0, 0, 0, 0);
-
+    
     boxContainers = new QWidget(mainContainer);
     boxContainers->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
     boxLayout = new QHBoxLayout(boxContainers);
     boxLayout->setContentsMargins(0, 0, 0, 0);
     boxLayout->setSpacing(1);
-
+    
 #ifdef SPINBOX_TAKE_PLUGIN_RANGE_INTO_ACCOUNT
     const std::vector<double> & minimums = _knob->getMinimums();
     const std::vector<double> & maximums = _knob->getMaximums();
 #endif
     
-    _rBox = new SpinBox(boxContainers, SpinBox::DOUBLE_SPINBOX);
+    _rBox = new SpinBox(boxContainers, SpinBox::eSpinBoxTypeDouble);
     QObject::connect( _rBox, SIGNAL( valueChanged(double) ), this, SLOT( onColorChanged() ) );
-
+    
     if (_dimension >= 3) {
-        _gBox = new SpinBox(boxContainers, SpinBox::DOUBLE_SPINBOX);
+        _gBox = new SpinBox(boxContainers, SpinBox::eSpinBoxTypeDouble);
         QObject::connect( _gBox, SIGNAL( valueChanged(double) ), this, SLOT( onColorChanged() ) );
-        _bBox = new SpinBox(boxContainers, SpinBox::DOUBLE_SPINBOX);
+        _bBox = new SpinBox(boxContainers, SpinBox::eSpinBoxTypeDouble);
         QObject::connect( _bBox, SIGNAL( valueChanged(double) ), this, SLOT( onColorChanged() ) );
     }
     if (_dimension >= 4) {
-        _aBox = new SpinBox(boxContainers, SpinBox::DOUBLE_SPINBOX);
+        _aBox = new SpinBox(boxContainers, SpinBox::eSpinBoxTypeDouble);
         QObject::connect( _aBox, SIGNAL( valueChanged(double) ), this, SLOT( onColorChanged() ) );
     }
-
+    
 #ifdef SPINBOX_TAKE_PLUGIN_RANGE_INTO_ACCOUNT
     _rBox->setMaximum(maximums[0]);
     _rBox->setMinimum(minimums[0]);
@@ -1568,7 +1727,7 @@ Color_KnobGui::createWidget(QHBoxLayout* layout)
     
     _rBox->decimals(6);
     _rBox->setIncrement(0.001);
-
+    
     ///set the copy/link actions in the right click menu
     enableRightClickMenu(_rBox,0);
 
@@ -1589,7 +1748,7 @@ Color_KnobGui::createWidget(QHBoxLayout* layout)
     }
     boxLayout->addWidget(_rLabel);
     boxLayout->addWidget(_rBox);
-
+    
     if (_dimension >= 3) {
         
 #ifdef SPINBOX_TAKE_PLUGIN_RANGE_INTO_ACCOUNT
@@ -1599,10 +1758,10 @@ Color_KnobGui::createWidget(QHBoxLayout* layout)
         
         _gBox->decimals(6);
         _gBox->setIncrement(0.001);
-
+        
         ///set the copy/link actions in the right click menu
         enableRightClickMenu(_gBox,1);
-
+        
         if ( hasToolTip() ) {
             _gBox->setToolTip( toolTip() );
         }
@@ -1611,7 +1770,7 @@ Color_KnobGui::createWidget(QHBoxLayout* layout)
         if (!dimLabel.empty()) {
             dimLabel.append(":");
         }
-
+        
         _gLabel = new QLabel(QString(dimLabel.c_str()).toLower(), boxContainers);
         _gLabel->setFont(font);
         if ( hasToolTip() ) {
@@ -1619,7 +1778,7 @@ Color_KnobGui::createWidget(QHBoxLayout* layout)
         }
         boxLayout->addWidget(_gLabel);
         boxLayout->addWidget(_gBox);
-
+        
 #ifdef SPINBOX_TAKE_PLUGIN_RANGE_INTO_ACCOUNT
         _bBox->setMaximum(maximums[2]);
         _bBox->setMinimum(minimums[2]);
@@ -1627,11 +1786,11 @@ Color_KnobGui::createWidget(QHBoxLayout* layout)
         
         _bBox->decimals(6);
         _bBox->setIncrement(0.001);
-
+        
         ///set the copy/link actions in the right click menu
         enableRightClickMenu(_bBox,2);
-
-
+        
+        
         if ( hasToolTip() ) {
             _bBox->setToolTip( toolTip() );
         }
@@ -1640,7 +1799,7 @@ Color_KnobGui::createWidget(QHBoxLayout* layout)
         if (!dimLabel.empty()) {
             dimLabel.append(":");
         }
-
+        
         _bLabel = new QLabel(QString(dimLabel.c_str()).toLower(), boxContainers);
         _bLabel->setFont(font);
         if ( hasToolTip() ) {
@@ -1648,7 +1807,8 @@ Color_KnobGui::createWidget(QHBoxLayout* layout)
         }
         boxLayout->addWidget(_bLabel);
         boxLayout->addWidget(_bBox);
-    }
+    } //       if (_dimension >= 3) {
+    
     if (_dimension >= 4) {
 #ifdef SPINBOX_TAKE_PLUGIN_RANGE_INTO_ACCOUNT
         _aBox->setMaximum(maximums[3]);
@@ -1657,11 +1817,11 @@ Color_KnobGui::createWidget(QHBoxLayout* layout)
         
         _aBox->decimals(6);
         _aBox->setIncrement(0.001);
-
+        
         ///set the copy/link actions in the right click menu
         enableRightClickMenu(_aBox,3);
-
-
+        
+        
         if ( hasToolTip() ) {
             _aBox->setToolTip( toolTip() );
         }
@@ -1670,7 +1830,7 @@ Color_KnobGui::createWidget(QHBoxLayout* layout)
         if (!dimLabel.empty()) {
             dimLabel.append(":");
         }
-
+        
         _aLabel = new QLabel(QString(dimLabel.c_str()).toLower(), boxContainers);
         _aLabel->setFont(font);
         if ( hasToolTip() ) {
@@ -1678,8 +1838,8 @@ Color_KnobGui::createWidget(QHBoxLayout* layout)
         }
         boxLayout->addWidget(_aLabel);
         boxLayout->addWidget(_aBox);
-    }
-
+    } // if (_dimension >= 4) {
+    
     const std::vector<double> & displayMinimums = _knob->getDisplayMinimums();
     const std::vector<double> & displayMaximums = _knob->getDisplayMaximums();
     double slidermin = *std::min_element( displayMinimums.begin(), displayMinimums.end() );
@@ -1695,34 +1855,39 @@ Color_KnobGui::createWidget(QHBoxLayout* layout)
     _slider->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     QObject::connect( _slider, SIGNAL( positionChanged(double) ), this, SLOT( onSliderValueChanged(double) ) );
     _slider->hide();
-
+    
     colorContainer = new QWidget(mainContainer);
     colorLayout = new QHBoxLayout(colorContainer);
     colorContainer->setLayout(colorLayout);
     colorLayout->setContentsMargins(0, 0, 0, 0);
     colorLayout->setSpacing(0);
-
-    _colorLabel = new ColorPickerLabel(colorContainer);
+    
+    _colorLabel = new ColorPickerLabel(this,colorContainer);
     QObject::connect( _colorLabel,SIGNAL( pickingEnabled(bool) ),this,SLOT( onPickingEnabled(bool) ) );
     colorLayout->addWidget(_colorLabel);
-
+    
+    if (_knob->isSimplified()) {
+        colorLayout->addSpacing(5);
+    }
+    
     QPixmap buttonPix;
     appPTR->getIcon(NATRON_PIXMAP_COLORWHEEL, &buttonPix);
-
+    
     _colorDialogButton = new Button(QIcon(buttonPix), "", colorContainer);
     _colorDialogButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-    _colorDialogButton->setToolTip(Qt::convertFromPlainText(tr("Open the color dialog"), Qt::WhiteSpaceNormal));
+    _colorDialogButton->setToolTip(Qt::convertFromPlainText(tr("Open the color dialog."), Qt::WhiteSpaceNormal));
     _colorDialogButton->setFocusPolicy(Qt::NoFocus);
     QObject::connect( _colorDialogButton, SIGNAL( clicked() ), this, SLOT( showColorDialog() ) );
     colorLayout->addWidget(_colorDialogButton);
-
+    
+    bool enableAllDimensions = false;
+    
     _dimensionSwitchButton = new Button(QIcon(),QString::number(_dimension),colorContainer);
-    _dimensionSwitchButton->setToolTip(Qt::convertFromPlainText(tr("Switch between a single value for all dimensions and multiple values"), Qt::WhiteSpaceNormal));
+    _dimensionSwitchButton->setToolTip(Qt::convertFromPlainText(tr("Switch between a single value for all dimensions and multiple values."), Qt::WhiteSpaceNormal));
     _dimensionSwitchButton->setFocusPolicy(Qt::NoFocus);
     _dimensionSwitchButton->setFixedSize(17, 17);
     _dimensionSwitchButton->setCheckable(true);
-
-    bool enableAllDimensions = false;
+    
     double firstDimensionValue = _knob->getValue(0,false);
     if (_dimension > 1) {
         if (_knob->getValue(1,false) != firstDimensionValue) {
@@ -1737,22 +1902,30 @@ Color_KnobGui::createWidget(QHBoxLayout* layout)
             enableAllDimensions = true;
         }
     }
-
-
-    colorLayout->addWidget(_dimensionSwitchButton);
-
-    mainLayout->addWidget(boxContainers);
-    mainLayout->addWidget(_slider);
-    mainLayout->addWidget(colorContainer);
-
-    layout->addWidget(mainContainer);
-
+    
+    
     _dimensionSwitchButton->setChecked(enableAllDimensions);
     if (!enableAllDimensions) {
         _rBox->setValue( _knob->getValue(0,false) );
     }
     onDimensionSwitchClicked();
     QObject::connect( _dimensionSwitchButton, SIGNAL( clicked() ), this, SLOT( onDimensionSwitchClicked() ) );
+    
+    colorLayout->addWidget(_dimensionSwitchButton);
+    
+    mainLayout->addWidget(boxContainers);
+    mainLayout->addWidget(_slider);
+    
+    mainLayout->addWidget(colorContainer);
+    
+    layout->addWidget(mainContainer);
+    
+    if (_knob->isSimplified()) {
+        boxContainers->hide();
+        _slider->hide();
+        _dimensionSwitchButton->hide();
+    }
+    
 } // createWidget
 
 void
@@ -1794,7 +1967,7 @@ Color_KnobGui::expandAllDimensions()
             _aBox->show();
         }
     }
-    emit dimensionSwitchToggled(true);
+    Q_EMIT dimensionSwitchToggled(true);
 }
 
 void
@@ -1815,12 +1988,15 @@ Color_KnobGui::foldAllDimensions()
             _aBox->hide();
         }
     }
-    emit dimensionSwitchToggled(false);
+    Q_EMIT dimensionSwitchToggled(false);
 }
 
 void
 Color_KnobGui::onDimensionSwitchClicked()
 {
+    if (_knob->isSimplified()) {
+        return;
+    }
     if ( _dimensionSwitchButton->isChecked() ) {
         expandAllDimensions();
     } else {
@@ -1895,94 +2071,115 @@ Color_KnobGui::setEnabled()
 
     //_rBox->setEnabled(r);
     _rBox->setReadOnly(!r);
+    _rLabel->setEnabled(r);
 
-    if ( _slider->isVisible() ) {
-        _slider->setReadOnly(!r);
-    }
-
+    _slider->setReadOnly(!r);
+    _colorDialogButton->setEnabled(r);
+    
     if (_dimension >= 3) {
         bool g = _knob->isEnabled(1);
         bool b = _knob->isEnabled(2);
         //_gBox->setEnabled(g);
         _gBox->setReadOnly(!g);
+        _gLabel->setEnabled(g);
         //_bBox->setEnabled(b);
         _bBox->setReadOnly(!b);
+        _bLabel->setEnabled(b);
     }
     if (_dimension >= 4) {
         bool a = _knob->isEnabled(3);
         //_aBox->setEnabled(a);
         _aBox->setReadOnly(!a);
+        _aLabel->setEnabled(a);
     }
+    _dimensionSwitchButton->setEnabled(r);
+    _colorLabel->setEnabledMode(r);
 }
 
 void
 Color_KnobGui::updateGUI(int dimension)
 {
-    assert(dimension < _dimension && dimension >= 0 && dimension <= 3);
-    double value = _knob->getValue(dimension,false);
-    switch (dimension) {
-    case 0: {
-        _rBox->setValue(value);
-        _slider->seekScalePosition(value);
-        if ( !_knob->areAllDimensionsEnabled() ) {
-            _gBox->setValue(value);
-            _bBox->setValue(value);
-            if (_dimension >= 4) {
-                _aBox->setValue(value);
+    if (_knob->isSimplified()) {
+        double r = 0.,g = 0.,b = 0.,a = 1.;
+        r = _knob->getValue(0,false);
+        if (_dimension > 1) {
+            g = _knob->getValue(1,false);
+            b = _knob->getValue(2,false);
+            if (_dimension > 3) {
+                a = _knob->getValue(3,false);
             }
         }
-        break;
-    }
-    case 1:
-        _gBox->setValue(value);
-        break;
-    case 2:
-        _bBox->setValue(value);
-        break;
-    case 3:
-        _aBox->setValue(value);
-        break;
-    default:
-        throw std::logic_error("wrong dimension");
+        updateLabel(r, g, b, a);
+    } else {
+        assert(dimension < _dimension && dimension >= 0 && dimension <= 3);
+        double value = _knob->getValue(dimension,false);
+        
+        if (!_knob->areAllDimensionsEnabled()) {
+            for (int i = 0; i < _knob->getDimension(); ++i) {
+                
+                if (i == dimension) {
+                    continue;
+                }
+                if (_knob->getValue(i,false) != value) {
+                    expandAllDimensions();
+                }
+            }
+        }
+        
+        switch (dimension) {
+            case 0: {
+                _rBox->setValue(value);
+                _slider->seekScalePosition(value);
+                if ( !_knob->areAllDimensionsEnabled() ) {
+                    _gBox->setValue(value);
+                    _bBox->setValue(value);
+                    if (_dimension >= 4) {
+                        _aBox->setValue(value);
+                    }
+                }
+                break;
+            }
+            case 1:
+                _gBox->setValue(value);
+                break;
+            case 2:
+                _bBox->setValue(value);
+                break;
+            case 3:
+                _aBox->setValue(value);
+                break;
+            default:
+                throw std::logic_error("wrong dimension");
+        }
+        
+        
+        double r = _rBox->value();
+        double g = r;
+        double b = r;
+        double a = 1.;
+        
+        if (_dimension >= 3) {
+            g = _gBox->value();
+            b = _bBox->value();
+        }
+        if (_dimension >= 4) {
+            a = _aBox->value();
+        }
+        updateLabel(r, g, b, a);
     }
 
 
-    double r = _rBox->value();
-    double g = r;
-    double b = r;
-    double a = 1.;
-
-    if (_dimension >= 3) {
-        g = _gBox->value();
-        b = _bBox->value();
-    }
-    if (_dimension >= 4) {
-        a = _aBox->value();
-    }
-    updateLabel(r, g, b, a);
-
-//    bool colorsEqual = true;
-//    if (_dimension == 3) {
-//        colorsEqual = (r == g && r == b);
-//    } else {
-//        colorsEqual = (r == g && r == b && r == a);
-//    }
-//    if (!_knob->areAllDimensionsEnabled() && !colorsEqual) {
-//        expandAllDimensions();
-//    } else if (_knob->areAllDimensionsEnabled() && colorsEqual) {
-//        foldAllDimensions();
-//    }
 } // updateGUI
 
 void
 Color_KnobGui::reflectAnimationLevel(int dimension,
                                      Natron::AnimationLevelEnum level)
 {
+    if (_knob->isSimplified()) {
+        return;
+    }
     switch (level) {
         case Natron::eAnimationLevelNone: {
-            if (_rBox->getAnimation() == 0) {
-                return;
-            }
             switch (dimension) {
                 case 0:
                     _rBox->setAnimation(0);
@@ -2003,9 +2200,6 @@ Color_KnobGui::reflectAnimationLevel(int dimension,
         }  break;
         case Natron::eAnimationLevelInterpolatedValue: {
             switch (dimension) {
-                    if (_rBox->getAnimation() == 1) {
-                        return;
-                    }
                 case 0:
                     _rBox->setAnimation(1);
                     break;
@@ -2025,9 +2219,6 @@ Color_KnobGui::reflectAnimationLevel(int dimension,
         }    break;
         case Natron::eAnimationLevelOnKeyframe: {
             switch (dimension) {
-                    if (_rBox->getAnimation() == 2) {
-                        return;
-                    }
                 case 0:
                     _rBox->setAnimation(2);
                     break;
@@ -2052,24 +2243,67 @@ Color_KnobGui::reflectAnimationLevel(int dimension,
 } // reflectAnimationLevel
 
 void
+Color_KnobGui::reflectExpressionState(int dimension,bool hasExpr)
+{
+    switch (dimension) {
+        case 0:
+            _rBox->setAnimation(3);
+            _rBox->setReadOnly(hasExpr);
+            break;
+        case 1:
+            _gBox->setAnimation(3);
+            _gBox->setReadOnly(hasExpr);
+            break;
+        case 2:
+            _bBox->setAnimation(3);
+            _bBox->setReadOnly(hasExpr);
+            break;
+        case 3:
+            _aBox->setAnimation(3);
+            _aBox->setReadOnly(hasExpr);
+            break;
+        default:
+            break;
+    }
+    
+}
+
+void
+Color_KnobGui::updateToolTip()
+{
+    if (hasToolTip()) {
+        QString tt = toolTip();
+        _rBox->setToolTip(tt);
+        if (_dimension >= 3) {
+            _gBox->setToolTip(tt);
+            _bBox->setToolTip(tt);
+            if (_dimension >= 4) {
+                _aBox->setToolTip(tt);
+            }
+        }
+        _slider->setToolTip(tt);
+    }
+}
+
+void
 Color_KnobGui::showColorDialog()
 {
     QColorDialog dialog( _rBox->parentWidget() );
 
-    double curR = _rBox->value();
+    double curR = _knob->getValue(0,false);
+    _lastColor[0] = curR;
     double curG = curR;
     double curB = curR;
     double curA = 1.;
     if (_dimension > 1) {
-        curG = _gBox->value();
-        curB = _bBox->value();
+        curG = _knob->getValue(1,false);
+        _lastColor[1] =  curG;
+        curB = _knob->getValue(2,false);
+        _lastColor[2] = curB;
     }
     if (_dimension > 3) {
-        curA = _aBox->value();
-    }
-
-    for (int i = 0; i < _dimension; ++i) {
-        _lastColor[i] = _knob->getValue(i,false);
+        curA = _knob->getValue(3,false);
+        _lastColor[3] = curA;
     }
 
     QColor curColor;
@@ -2081,16 +2315,16 @@ Color_KnobGui::showColorDialog()
     QObject::connect( &dialog,SIGNAL( currentColorChanged(QColor) ),this,SLOT( onDialogCurrentColorChanged(QColor) ) );
     if (!dialog.exec()) {
         
-        _knob->blockEvaluation();
+        _knob->beginChanges();
 
         for (int i = 0; i < _dimension; ++i) {
             _knob->setValue(_lastColor[i],i);
         }
-        _knob->unblockEvaluation();
+        _knob->endChanges();
 
     } else {
         
-        _knob->blockEvaluation();
+        _knob->beginChanges();
 
         ///refresh the last value so that the undo command retrieves the value that was prior to opening the dialog
         for (int i = 0; i < _dimension; ++i) {
@@ -2098,7 +2332,7 @@ Color_KnobGui::showColorDialog()
         }
 
         ///if only the first dimension is displayed, switch back to all dimensions
-        if ( !_dimensionSwitchButton->isChecked() ) {
+        if (_dimensionSwitchButton &&  !_dimensionSwitchButton->isChecked() ) {
             _dimensionSwitchButton->setChecked(true);
             _dimensionSwitchButton->setDown(true);
             onDimensionSwitchClicked();
@@ -2134,16 +2368,16 @@ Color_KnobGui::showColorDialog()
 
         onColorChanged();
         
-        _knob->unblockEvaluation();
+        _knob->endChanges();
 
     }
-    _knob->evaluateValueChange(0, eValueChangedReasonNatronGuiEdited, true);
+    _knob->evaluateValueChange(0, eValueChangedReasonNatronGuiEdited);
 } // showColorDialog
 
 void
 Color_KnobGui::onDialogCurrentColorChanged(const QColor & color)
 {
-    _knob->blockEvaluation();
+    _knob->beginChanges();
     _knob->setValue(Natron::Color::from_func_srgb(color.redF()), 0);
     if (_dimension > 1) {
         _knob->setValue(Natron::Color::from_func_srgb(color.greenF()), 1);
@@ -2153,8 +2387,7 @@ Color_KnobGui::onDialogCurrentColorChanged(const QColor & color)
 //            _knob->setValue(color.alphaF(), 3); // no conversion, alpha is linear
 //        }
     }
-    _knob->unblockEvaluation();
-    _knob->evaluateValueChange(0, eValueChangedReasonNatronGuiEdited, true);
+    _knob->endChanges();
 }
 
 void
@@ -2189,19 +2422,32 @@ Color_KnobGui::onColorChanged()
     if (_dimension >= 4) {
         newValues.push_back(a);
     }
-
-    updateLabel(r, g, b, a);
-    pushUndoCommand( new KnobUndoCommand<double>(this, _knob->getValueForEachDimension_mt_safe(), newValues,false) );
+    std::list<double> oldValues = _knob->getValueForEachDimension_mt_safe();
+    assert(oldValues.size() == newValues.size());
+    std::list<double>::iterator itNew = newValues.begin();
+    for (std::list<double>::iterator it = oldValues.begin() ; it != oldValues.end() ; ++it, ++itNew) {
+        if (*it != *itNew) {
+            updateLabel(r, g, b, a);
+            pushUndoCommand( new KnobUndoCommand<double>(this, oldValues, newValues,false) );
+            break;
+        }
+    }
+    
+    
 }
 
 void
 Color_KnobGui::updateLabel(double r, double g, double b, double a)
 {
     QColor color;
-    color.setRgbF(Natron::clamp(Natron::Color::to_func_srgb(r)),
-                  Natron::clamp(Natron::Color::to_func_srgb(g)),
-                  Natron::clamp(Natron::Color::to_func_srgb(b)),
-                  Natron::clamp(a));
+    r = Natron::clamp(_knob->isSimplified() ? r : Natron::Color::to_func_srgb(r));
+    g = Natron::clamp(_knob->isSimplified() ? g : Natron::Color::to_func_srgb(g));
+    b = Natron::clamp(_knob->isSimplified() ? b : Natron::Color::to_func_srgb(b));
+    a = Natron::clamp(a);
+    color.setRgbF(r,
+                  g,
+                  b,
+                  a);
     _colorLabel->setColor(color);
 }
 
@@ -2230,33 +2476,36 @@ Color_KnobGui::_hide()
 void
 Color_KnobGui::_show()
 {
-    bool areAllDimensionShown = _dimensionSwitchButton->isChecked();
-
-    _rBox->show();
-    if (areAllDimensionShown) {
-        _rLabel->show();
-        if (_dimension >= 3) {
-            _gBox->show();
-            _gLabel->show();
-            _bBox->show();
-            _bLabel->show();
+    if (!_knob->isSimplified()) {
+        bool areAllDimensionShown = _dimensionSwitchButton->isChecked();
+        
+        _rBox->show();
+        if (areAllDimensionShown) {
+            _rLabel->show();
+            if (_dimension >= 3) {
+                _gBox->show();
+                _gLabel->show();
+                _bBox->show();
+                _bLabel->show();
+            }
+            if (_dimension >= 4) {
+                _aBox->show();
+                _aLabel->show();
+            }
+        } else {
+            _slider->show();
         }
-        if (_dimension >= 4) {
-            _aBox->show();
-            _aLabel->show();
-        }
-    } else {
-        _slider->show();
+        
+        _dimensionSwitchButton->show();
     }
-
-    _dimensionSwitchButton->show();
     _colorLabel->show();
     _colorDialogButton->show();
 }
 
-ColorPickerLabel::ColorPickerLabel(QWidget* parent)
+ColorPickerLabel::ColorPickerLabel(Color_KnobGui* knob,QWidget* parent)
     : QLabel(parent)
       , _pickingEnabled(false)
+    , _knob(knob)
 {
     setToolTip( Qt::convertFromPlainText(tr("To pick a color on a viewer, click this and then press control + left click on any viewer.\n"
                                             "You can also pick the average color of a given rectangle by holding control + shift + left click\n. "
@@ -2271,7 +2520,7 @@ void
 ColorPickerLabel::mousePressEvent(QMouseEvent*)
 {
     _pickingEnabled = !_pickingEnabled;
-    emit pickingEnabled(_pickingEnabled);
+    Q_EMIT pickingEnabled(_pickingEnabled);
     setColor(_currentColor); //< refresh the icon
 }
 
@@ -2290,8 +2539,22 @@ ColorPickerLabel::leaveEvent(QEvent*)
 void
 ColorPickerLabel::setPickingEnabled(bool enabled)
 {
+    if (!isEnabled()) {
+        return;
+    }
     _pickingEnabled = enabled;
     setColor(_currentColor);
+}
+
+void
+ColorPickerLabel::setEnabledMode(bool enabled)
+{
+    setEnabled(enabled);
+    if (!enabled && _pickingEnabled) {
+        _pickingEnabled = false;
+        setColor(_currentColor);
+        _knob->getGui()->removeColorPicker(boost::dynamic_pointer_cast<Color_Knob>(_knob->getKnob()));
+    }
 }
 
 void
@@ -2337,11 +2600,10 @@ void
 Color_KnobGui::onPickingEnabled(bool enabled)
 {
     if ( getKnob()->getHolder()->getApp() ) {
-        boost::shared_ptr<Color_Knob> colorKnob = boost::dynamic_pointer_cast<Color_Knob>( getKnob() );
         if (enabled) {
-            getGui()->registerNewColorPicker(colorKnob);
+            getGui()->registerNewColorPicker(_knob);
         } else {
-            getGui()->removeColorPicker(colorKnob);
+            getGui()->removeColorPicker(_knob);
         }
     }
 }
@@ -2416,7 +2678,7 @@ AnimatingTextEdit::focusOutEvent(QFocusEvent* e)
 {
     if (_hasChanged) {
         _hasChanged = false;
-        emit editingFinished();
+        Q_EMIT editingFinished();
     }
     QTextEdit::focusOutEvent(e);
 }
@@ -2427,7 +2689,7 @@ AnimatingTextEdit::keyPressEvent(QKeyEvent* e)
     if (e->key() == Qt::Key_Return) {
         if (_hasChanged) {
             _hasChanged = false;
-            emit editingFinished();
+            Q_EMIT editingFinished();
         }
     }
     _hasChanged = true;
@@ -2460,6 +2722,9 @@ String_KnobGui::String_KnobGui(boost::shared_ptr<KnobI> knob,
       , _setItalicButton(0)
       , _fontSizeSpinBox(0)
       , _fontColorButton(0)
+      , _fontSize(0)
+      , _boldActivated(false)
+      , _italicActivated(false)
       , _label(0)
 {
     _knob = boost::dynamic_pointer_cast<String_Knob>(knob);
@@ -2476,15 +2741,8 @@ String_KnobGui::createWidget(QHBoxLayout* layout)
 
         bool useRichText = _knob->usesRichText();
         _textEdit = new AnimatingTextEdit(_container);
-        if ( hasToolTip() ) {
-            QString tt = toolTip();
-            if (useRichText) {
-                tt += tr(" This text area supports html encoding. "
-                         "Please check <a href=http://qt-project.org/doc/qt-5/richtext-html-subset.html>Qt website</a> for more info. ");
-            }
-            _textEdit->setAcceptRichText(useRichText);
-            _textEdit->setToolTip(tt);
-        }
+        _textEdit->setAcceptRichText(useRichText);
+
 
         _mainLayout->addWidget(_textEdit);
 
@@ -2563,6 +2821,7 @@ String_KnobGui::createWidget(QHBoxLayout* layout)
         layout->addWidget(_container);
     } else if ( _knob->isLabel() ) {
         _label = new QLabel( layout->parentWidget() );
+
         if ( hasToolTip() ) {
             _label->setToolTip( toolTip() );
         }
@@ -2570,6 +2829,7 @@ String_KnobGui::createWidget(QHBoxLayout* layout)
         layout->addWidget(_label);
     } else {
         _lineEdit = new LineEdit( layout->parentWidget() );
+
         if ( hasToolTip() ) {
             _lineEdit->setToolTip( toolTip() );
         }
@@ -2589,9 +2849,14 @@ String_KnobGui::createWidget(QHBoxLayout* layout)
 
 String_KnobGui::~String_KnobGui()
 {
-//    delete _lineEdit;
-//    delete _label;
-//    delete _container;
+}
+
+void String_KnobGui::removeSpecificGui()
+{
+    delete _lineEdit;
+    delete _label;
+    delete _container;
+
 }
 
 void
@@ -3090,7 +3355,24 @@ String_KnobGui::removeNatronHtmlTag(QString text)
 }
 
 QString
-String_KnobGui::removeAutoAddedHtmlTags(QString text) const
+String_KnobGui::getNatronHtmlTagContent(QString text)
+{
+    QString label = removeAutoAddedHtmlTags(text,false);
+    QString startTag(NATRON_CUSTOM_HTML_TAG_START);
+    int startCustomData = label.indexOf(startTag);
+    if (startCustomData != -1) {
+        QString endTag(NATRON_CUSTOM_HTML_TAG_END);
+        int endCustomData = label.indexOf(endTag,startCustomData);
+        assert(endCustomData != -1);
+        label = label.remove(endCustomData, endTag.size());
+        label = label.remove(startCustomData, startTag.size());
+    }
+    return label;
+}
+
+
+QString
+String_KnobGui::removeAutoAddedHtmlTags(QString text,bool removeNatronTag)
 {
     QString toFind = QString(kFontSizeTag);
     int i = text.indexOf(toFind);
@@ -3145,7 +3427,11 @@ String_KnobGui::removeAutoAddedHtmlTags(QString text) const
     }
 
     ///we also remove any custom data added by natron so the user doesn't see it
-    return removeNatronHtmlTag(text);
+    if (removeNatronTag) {
+        return removeNatronHtmlTag(text);
+    } else {
+        return text;
+    }
 } // removeAutoAddedHtmlTags
 
 void
@@ -3263,16 +3549,12 @@ String_KnobGui::reflectAnimationLevel(int /*dimension*/,
     
     if ( _knob->isMultiLine() ) {
         assert(_textEdit);
-        if (_textEdit->getAnimation() != value) {
-            _textEdit->setAnimation(value);
-        }
+        _textEdit->setAnimation(value);
     } else if ( _knob->isLabel() ) {
         assert(_label);
     } else {
         assert(_lineEdit);
-        if (_lineEdit->getAnimation() != value) {
-            _lineEdit->setAnimation(value);
-        }
+        _lineEdit->setAnimation(value);
     }
 }
 
@@ -3301,15 +3583,49 @@ String_KnobGui::setDirty(bool dirty)
     }
 }
 
-boost::shared_ptr<KnobI> String_KnobGui::getKnob() const
+boost::shared_ptr<KnobI>
+String_KnobGui::getKnob() const
 {
     return _knob;
 }
 
+void
+String_KnobGui::reflectExpressionState(int /*dimension*/,bool hasExpr)
+{
+    if (_textEdit) {
+        _textEdit->setAnimation(3);
+        _textEdit->setReadOnly(hasExpr);
+    } else if (_lineEdit) {
+        _lineEdit->setAnimation(3);
+        _lineEdit->setReadOnly(hasExpr);
+    }
+}
+
+void
+String_KnobGui::updateToolTip()
+{
+    if (hasToolTip()) {
+        QString tt = toolTip();
+        if (_textEdit) {
+            bool useRichText = _knob->usesRichText();
+            if (useRichText) {
+                tt += tr(" This text area supports html encoding. "
+                         "Please check <a href=http://qt-project.org/doc/qt-5/richtext-html-subset.html>Qt website</a> for more info. ");
+            }
+            _textEdit->setToolTip(tt);
+        } else if (_lineEdit) {
+            _lineEdit->setToolTip(tt);
+        } else if (_label) {
+            _label->setToolTip(tt);
+        }
+    }
+}
+
 //=============================GROUP_KNOB_GUI===================================
 GroupBoxLabel::GroupBoxLabel(QWidget *parent)
-    : QLabel(parent),
-      _checked(false)
+: QLabel(parent)
+, _checked(false)
+
 {
     QObject::connect( this, SIGNAL( checked(bool) ), this, SLOT( setChecked(bool) ) );
 }
@@ -3329,26 +3645,46 @@ GroupBoxLabel::setChecked(bool b)
 
 Group_KnobGui::Group_KnobGui(boost::shared_ptr<KnobI> knob,
                              DockablePanel *container)
-    : KnobGui(knob, container)
-      , _checked(false)
-      , _button(0)
+: KnobGui(knob, container)
+, _checked(false)
+, _button(0)
+, _children()
+, _childrenToEnable()
+, _tabGroup(0)
+, _knob( boost::dynamic_pointer_cast<Group_Knob>(knob))
 {
-    _knob = boost::dynamic_pointer_cast<Group_Knob>(knob);
+
 }
 
 Group_KnobGui::~Group_KnobGui()
 {
-   // delete _button;
-    //    for(U32 i  = 0 ; i < _children.size(); ++i){
-    //        delete _children[i].first;
-    //    }
+    
+}
+
+TabGroup*
+Group_KnobGui::getOrCreateTabWidget()
+{
+    if (_tabGroup) {
+        return _tabGroup;
+    }
+    
+    _tabGroup = new TabGroup(getContainer());
+    return _tabGroup;
+}
+
+void Group_KnobGui::removeSpecificGui()
+{
+    delete _button;
+//    for (std::list<KnobGui*>::iterator it = _children.begin() ;it!= _children.end();++it) {
+//        (*it)->removeSpecificGui();
+//        delete *it;
+//    }
 }
 
 void
-Group_KnobGui::addKnob(KnobGui *child,
-                       int row)
+Group_KnobGui::addKnob(KnobGui *child)
 {
-    _children.push_back( std::make_pair( child, row ) );
+    _children.push_back(child);
 }
 
 bool
@@ -3382,12 +3718,13 @@ Group_KnobGui::setChecked(bool b)
     ///the children back with an offset relative to the group.
     int realIndexInLayout = getActualIndexInLayout();
     int startChildIndex = realIndexInLayout + 1;
-    for (U32 i = 0; i < _children.size(); ++i) {
+    
+    for (std::list<KnobGui*>::iterator it = _children.begin(); it != _children.end(); ++it) {
         if (!b) {
-            _children[i].first->hide();
-        } else if ( !_children[i].first->getKnob()->getIsSecret() ) {
-            _children[i].first->show(startChildIndex);
-            if ( !_children[i].first->getKnob()->isNewLineTurnedOff() ) {
+            (*it)->hide();
+        } else if ( !(*it)->getKnob()->getIsSecret() ) {
+            (*it)->show(startChildIndex);
+            if ( (*it)->getKnob()->isNewLineActivated() ) {
                 ++startChildIndex;
             }
         }
@@ -3423,8 +3760,8 @@ Group_KnobGui::_hide()
     if (_button) {
         _button->hide();
     }
-    for (U32 i = 0; i < _children.size(); ++i) {
-        _children[i].first->hide();
+    for (std::list<KnobGui*>::iterator it = _children.begin(); it != _children.end(); ++it) {
+        (*it)->hide();
     }
 }
 
@@ -3439,8 +3776,8 @@ Group_KnobGui::_show()
     }
 
     if (_checked) {
-        for (U32 i = 0; i < _children.size(); ++i) {
-            _children[i].first->show();
+        for (std::list<KnobGui*>::iterator it = _children.begin(); it != _children.end(); ++it) {
+            (*it)->show();
         }
     }
 }
@@ -3461,15 +3798,15 @@ Group_KnobGui::setEnabled()
         }
     } else {
         _childrenToEnable.clear();
-        for (U32 i = 0; i < _children.size(); ++i) {
+        for (std::list<KnobGui*>::iterator it = _children.begin(); it != _children.end(); ++it) {
             std::vector<int> dimensions;
-            for (int j = 0; j < _children[i].first->getKnob()->getDimension(); ++j) {
-                if ( _children[i].first->getKnob()->isEnabled(j) ) {
-                    _children[i].first->getKnob()->setEnabled(j, false);
+            for (int j = 0; j < (*it)->getKnob()->getDimension(); ++j) {
+                if ( (*it)->getKnob()->isEnabled(j) ) {
+                    (*it)->getKnob()->setEnabled(j, false);
                     dimensions.push_back(j);
                 }
             }
-            _childrenToEnable.push_back( std::make_pair(_children[i].first, dimensions) );
+            _childrenToEnable.push_back( std::make_pair(*it, dimensions) );
         }
     }
 }
@@ -3483,19 +3820,26 @@ boost::shared_ptr<KnobI> Group_KnobGui::getKnob() const
 
 Parametric_KnobGui::Parametric_KnobGui(boost::shared_ptr<KnobI> knob,
                                        DockablePanel *container)
-    : KnobGui(knob, container)
-      , _curveWidget(NULL)
-      , _tree(NULL)
-      , _resetButton(NULL)
-      , _curves()
+: KnobGui(knob, container)
+, treeColumn(NULL)
+, _curveWidget(NULL)
+, _tree(NULL)
+, _resetButton(NULL)
+, _curves()
 {
     _knob = boost::dynamic_pointer_cast<Parametric_Knob>(knob);
+    QObject::connect(_knob.get(), SIGNAL(curveColorChanged(int)), this, SLOT(onColorChanged(int)));
 }
 
 Parametric_KnobGui::~Parametric_KnobGui()
 {
-//    delete _curveWidget;
-//    delete _tree;
+    
+}
+
+void Parametric_KnobGui::removeSpecificGui()
+{
+    delete _curveWidget;
+    delete treeColumn;
 }
 
 void
@@ -3504,7 +3848,7 @@ Parametric_KnobGui::createWidget(QHBoxLayout* layout)
     QObject::connect( _knob.get(), SIGNAL( curveChanged(int) ), this, SLOT( onCurveChanged(int) ) );
 
     //layout->parentWidget()->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
-    QWidget* treeColumn = new QWidget( layout->parentWidget() );
+    treeColumn = new QWidget( layout->parentWidget() );
     QVBoxLayout* treeColumnLayout = new QVBoxLayout(treeColumn);
     treeColumnLayout->setContentsMargins(0, 0, 0, 0);
 
@@ -3518,13 +3862,13 @@ Parametric_KnobGui::createWidget(QHBoxLayout* layout)
     treeColumnLayout->addWidget(_tree);
 
     _resetButton = new Button("Reset",treeColumn);
-    _resetButton->setToolTip( Qt::convertFromPlainText(tr("Reset the selected curves in the tree to their default shape"), Qt::WhiteSpaceNormal) );
+    _resetButton->setToolTip( Qt::convertFromPlainText(tr("Reset the selected curves in the tree to their default shape."), Qt::WhiteSpaceNormal) );
     QObject::connect( _resetButton, SIGNAL( clicked() ), this, SLOT( resetSelectedCurves() ) );
     treeColumnLayout->addWidget(_resetButton);
 
     layout->addWidget(treeColumn);
 
-    _curveWidget = new CurveWidget( getGui(),boost::shared_ptr<TimeLine>(),layout->parentWidget() );
+    _curveWidget = new CurveWidget( getGui(),this, boost::shared_ptr<TimeLine>(),layout->parentWidget() );
     _curveWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     if ( hasToolTip() ) {
         _curveWidget->setToolTip( toolTip() );
@@ -3559,6 +3903,20 @@ Parametric_KnobGui::createWidget(QHBoxLayout* layout)
     _curveWidget->centerOn(visibleCurves);
     QObject::connect( _tree, SIGNAL( itemSelectionChanged() ),this,SLOT( onItemsSelectionChanged() ) );
 } // createWidget
+
+void
+Parametric_KnobGui::onColorChanged(int dimension)
+{
+    double r, g, b;
+    _knob->getCurveColor(dimension, &r, &g, &b);
+    CurveGuis::iterator found = _curves.find(dimension);
+    if (found != _curves.end()) {
+        QColor c;
+        c.setRgbF(r, g, b);
+        found->second.curve->setColor(c);
+    }
+    _curveWidget->update();
+}
 
 void
 Parametric_KnobGui::_hide()
@@ -3627,6 +3985,20 @@ Parametric_KnobGui::onItemsSelectionChanged()
 
     _curveWidget->showCurvesAndHideOthers(curves);
     _curveWidget->centerOn(curves); //remove this if you don't want the editor to switch to a curve on a selection change
+}
+
+void
+Parametric_KnobGui::getSelectedCurves(std::vector<CurveGui*>* selection)
+{
+    QList<QTreeWidgetItem*> selected = _tree->selectedItems();
+    for (int i = 0; i < selected.size(); ++i) {
+        //find the items in the curves
+        for (CurveGuis::iterator it = _curves.begin(); it != _curves.end(); ++it) {
+            if ( it->second.treeItem == selected.at(i) ) {
+                selection->push_back(it->second.curve);
+            }
+        }
+    }
 }
 
 void

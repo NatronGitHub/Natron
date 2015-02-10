@@ -8,10 +8,15 @@
  *
  */
 
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
 #include "Project.h"
 
 #include <fstream>
 #include <algorithm>
+#include <ios>
 #include <cstdlib> // strtoul
 #include <cerrno> // errno
 
@@ -75,11 +80,12 @@ static std::string generateUserFriendlyNatronVersionName()
     std::string ret(NATRON_APPLICATION_NAME);
     ret.append(" v");
     ret.append(NATRON_VERSION_STRING);
-    if (NATRON_DEVELOPMENT_STATUS == NATRON_DEVELOPMENT_ALPHA) {
+    const std::string status(NATRON_DEVELOPMENT_STATUS);
+    if (status == NATRON_DEVELOPMENT_ALPHA) {
         ret.append(" " NATRON_DEVELOPMENT_ALPHA);
-    } else if (NATRON_DEVELOPMENT_STATUS == NATRON_DEVELOPMENT_BETA) {
+    } else if (status == NATRON_DEVELOPMENT_BETA) {
         ret.append(" " NATRON_DEVELOPMENT_BETA);
-    } else if (NATRON_DEVELOPMENT_STATUS == NATRON_DEVELOPMENT_RELEASE_CANDIDATE) {
+    } else if (status == NATRON_DEVELOPMENT_RELEASE_CANDIDATE) {
         ret.append(" " NATRON_DEVELOPMENT_RELEASE_CANDIDATE);
         ret.append(QString::number(NATRON_BUILD_NUMBER).toStdString());
     }
@@ -88,9 +94,9 @@ static std::string generateUserFriendlyNatronVersionName()
 
 namespace Natron {
 Project::Project(AppInstance* appInstance)
-    : QObject()
-      , KnobHolder(appInstance)
-      , _imp( new ProjectPrivate(this) )
+    : NodeCollection(appInstance)
+    , KnobHolder(appInstance)
+    , _imp( new ProjectPrivate(this) )
 {
     QObject::connect( _imp->autoSaveTimer.get(), SIGNAL( timeout() ), this, SLOT( onAutoSaveTimerTriggered() ) );
 }
@@ -106,6 +112,23 @@ Project::~Project()
     ///Even if the user replied she/he didn't want to save the current work, we keep an autosave of it.
     //removeAutoSaves();
 }
+    
+class LoadProjectSplashScreen_RAII
+{
+    AppInstance* app;
+public:
+    
+    LoadProjectSplashScreen_RAII(AppInstance* app,const QString& filename)
+    : app(app)
+    {
+        app->createLoadProjectSplashScreen(filename);
+    }
+    
+    ~LoadProjectSplashScreen_RAII()
+    {
+        app->closeLoadPRojectSplashScreen();
+    }
+};
 
   
 bool
@@ -121,7 +144,11 @@ Project::loadProject(const QString & path,
     reset();
 
     try {
-        loadProjectInternal(path,name,false,path);
+        QString realPath = path;
+        if (!realPath.endsWith('/')) {
+            realPath.push_back('/');
+        }
+        loadProjectInternal(realPath,name,false,path);
     } catch (const std::exception & e) {
         {
             QMutexLocker l(&_imp->isLoadingProjectMutex);
@@ -129,16 +156,16 @@ Project::loadProject(const QString & path,
         }
         Natron::errorDialog( QObject::tr("Project loader").toStdString(), QObject::tr("Error while loading project").toStdString() + ": " + e.what() );
         if ( !appPTR->isBackground() ) {
-            getApp()->createNode(  CreateNodeArgs(NATRON_VIEWER_ID,
+            getApp()->createNode(  CreateNodeArgs(PLUGINID_NATRON_VIEWER,
                                                   "",
                                                   -1,-1,
-                                                  -1,
                                                   true,
                                                   INT_MIN,INT_MIN,
                                                   true,
                                                   true,
                                                   QString(),
-                                                  CreateNodeArgs::DefaultValuesList()) );
+                                                  CreateNodeArgs::DefaultValuesList(),
+                                                  shared_from_this()) );
         }
 
         return false;
@@ -149,16 +176,16 @@ Project::loadProject(const QString & path,
         }
         Natron::errorDialog( QObject::tr("Project loader").toStdString(), QObject::tr("Unkown error while loading project").toStdString() );
         if ( !appPTR->isBackground() ) {
-            getApp()->createNode(  CreateNodeArgs(NATRON_VIEWER_ID,
+            getApp()->createNode(  CreateNodeArgs(PLUGINID_NATRON_VIEWER,
                                                   "",
                                                   -1,-1,
-                                                  -1,
                                                   true,
                                                   INT_MIN,INT_MIN,
                                                   true,
                                                   true,
                                                   QString(),
-                                                  CreateNodeArgs::DefaultValuesList()) );
+                                                  CreateNodeArgs::DefaultValuesList(),
+                                                  shared_from_this()) );
         }
 
         return false;
@@ -199,11 +226,6 @@ Project::loadProjectInternal(const QString & path,
     } catch (const std::ifstream::failure & e) {
         throw std::runtime_error( std::string("Exception occured when opening file ") + filePath.toStdString() + ": " + e.what() );
     }
-    {
-        std::string projName = isAutoSave  && !realFilePath.isEmpty() ? realFilePath.toStdString() : name.toStdString();
-        std::string loadMessage = tr("Loading ").toStdString() + projName + " ...";
-        getApp()->startProgress(this, loadMessage, false);
-    }
     
     if (NATRON_VERSION_MAJOR == 1 && NATRON_VERSION_MINOR == 0 && NATRON_VERSION_REVISION == 0) {
         
@@ -228,7 +250,10 @@ Project::loadProjectInternal(const QString & path,
         }
     }
     
+    LoadProjectSplashScreen_RAII __raii_splashscreen__(getApp(),isAutoSave  && !realFilePath.isEmpty() ? realFilePath : name);
+    
     try {
+        
         {
             QMutexLocker k(&_imp->isLoadingProjectMutex);
             _imp->isLoadingProjectInternal = true;
@@ -251,45 +276,56 @@ Project::loadProjectInternal(const QString & path,
         }
     } catch (const boost::archive::archive_exception & e) {
         ifile.close();
-        getApp()->endProgress(this);
         {
             QMutexLocker k(&_imp->isLoadingProjectMutex);
             _imp->isLoadingProjectInternal = false;
         }
         throw std::runtime_error( e.what() );
-    } catch (const std::exception & e) {
+    } catch (const std::ios_base::failure& e) {
         ifile.close();
         getApp()->endProgress(this);
         {
             QMutexLocker k(&_imp->isLoadingProjectMutex);
             _imp->isLoadingProjectInternal = false;
         }
-        throw std::runtime_error( std::string("Failed to read the project file: ") + std::string( e.what() ) );
+        throw std::runtime_error( std::string("Failed to read the project file: I/O failure (") + e.what() + ")");
+    } catch (const std::exception & e) {
+        ifile.close();
+        {
+            QMutexLocker k(&_imp->isLoadingProjectMutex);
+            _imp->isLoadingProjectInternal = false;
+        }
+        throw std::runtime_error( std::string("Failed to read the project file: ") + e.what() );
+    } catch (...) {
+        ifile.close();
+        getApp()->endProgress(this);
+        {
+            QMutexLocker k(&_imp->isLoadingProjectMutex);
+            _imp->isLoadingProjectInternal = false;
+        }
+        throw std::runtime_error("Failed to read the project file");
     }
 
     ifile.close();
-    getApp()->endProgress(this);
-    emit projectNameChanged(name);
+    
+    _imp->natronVersion->setValue(generateUserFriendlyNatronVersionName(),0);
+    Q_EMIT projectNameChanged(name);
+    
+    std::string onProjectLoad = getOnProjectLoadCB();
+    if (!onProjectLoad.empty()) {
+        std::string err,output;
+        QString appID = QString("app%1").arg(getApp()->getAppID() + 1);
+        onProjectLoad.insert(0, "app = " + appID.toStdString() + "\n");
+        if (!Natron::interpretPythonScript(onProjectLoad + "()\n", &err, &output)) {
+            getApp()->appendToScriptEditor("Failed to run onProjectLoad callback: " + err);
+        } else {
+            getApp()->appendToScriptEditor(output);
+        }
+    }
+    
     return ret;
 }
 
-void
-Project::refreshViewersAndPreviews()
-{
-    assert(QThread::currentThread() == qApp->thread());
-    
-    if ( !appPTR->isBackground() ) {
-        int time = _imp->timeline->currentFrame();
-        for (U32 i = 0; i < _imp->currentNodes.size(); ++i) {
-            assert(_imp->currentNodes[i]);
-            _imp->currentNodes[i]->computePreviewImage(time);
-            ViewerInstance* n = dynamic_cast<ViewerInstance*>(_imp->currentNodes[i]->getLiveInstance());
-            if (n) {
-                n->getRenderEngine()->renderCurrentFrame(true);
-            }
-        }
-    }
-}
 
 QString
 Project::saveProject(const QString & path,
@@ -425,9 +461,45 @@ Project::saveProjectInternal(const QString & path,
     } else {
         filePath = path + actualFileName;
     }
+    
+    std::string onProjectSave = getOnProjectSaveCB();
+    if (!onProjectSave.empty()) {
+        std::stringstream ss;
+        ss << "autoSave = ";
+        if (autoSave) {
+            ss << "True\n";
+        } else {
+            ss << "False\n";
+        }
+        ss << "filename = " << filePath.toStdString() << "\n";
+        QString appID = QString("app%1").arg(getApp()->getAppID() + 1);
+        ss << "app = " <<  appID.toStdString() << "\n";
+        ss << "ret = " << onProjectSave << "()\n";
+        ss << "del filename\ndel autoSave\n";
+        onProjectSave = ss.str();
+        std::string err;
+        std::string output;
+        if (!Natron::interpretPythonScript(onProjectSave, &err, &output)) {
+            getApp()->appendToScriptEditor("Failed to run onProjectSave callback: " + err);
+        } else {
+            PyObject* mainModule = getMainModule();
+            assert(mainModule);
+            PyObject* ret = PyObject_GetAttrString(mainModule, "ret");
+            assert(ret);
+            if (ret) {
+                filePath = QString(PY3String_asString(ret).c_str());
+                bool ok = Natron::interpretPythonScript("del ret\n", &err, 0);
+                assert(ok);
+                (void)ok;
+            }
+            if (!output.empty()) {
+                getApp()->appendToScriptEditor(output);
+            }
+        }
+    }
 
     ///Use a temporary file to save, so if Natron crashes it doesn't corrupt the user save.
-    QString tmpFilename = StandardPaths::writableLocation(StandardPaths::TempLocation);
+    QString tmpFilename = StandardPaths::writableLocation(StandardPaths::eStandardLocationTemp);
     tmpFilename.append( QDir::separator() );
     tmpFilename.append( QString::number( time.toMSecsSinceEpoch() ) );
 
@@ -490,13 +562,13 @@ Project::saveProjectInternal(const QString & path,
     
     if (!autoSave) {
         _imp->projectName = name;
-        emit projectNameChanged(name); //< notify the gui so it can update the title
+        Q_EMIT projectNameChanged(name); //< notify the gui so it can update the title
         _imp->projectPath = path;
         _imp->hasProjectBeenSavedByUser = true;
         _imp->ageSinceLastSave = time;
     } else {
         if (!isRenderSave) {
-            emit projectNameChanged(_imp->projectName + " (*)");
+            Q_EMIT projectNameChanged(_imp->projectName + " (*)");
         }
     }
     _imp->lastAutoSave = time;
@@ -545,20 +617,7 @@ Project::onAutoSaveTimerTriggered()
     
     ///check that all schedulers are not working.
     ///If so launch an auto-save, otherwise, restart the timer.
-    bool canAutoSave = true;
-    {
-        QMutexLocker l(&_imp->nodesLock);
-        for (std::vector< boost::shared_ptr<Natron::Node> >::iterator it = _imp->currentNodes.begin(); it != _imp->currentNodes.end(); ++it) {
-            if ( (*it)->isOutputNode() ) {
-                Natron::OutputEffectInstance* effect = dynamic_cast<Natron::OutputEffectInstance*>( (*it)->getLiveInstance() );
-                assert(effect);
-                if ( effect->getRenderEngine()->hasThreadsWorking() ) {
-                    canAutoSave = false;
-                    break;
-                }
-            }
-        }
-    }
+    bool canAutoSave = !hasNodeRendering() && !getApp()->isShowingDialog();
 
     if (canAutoSave) {
         boost::shared_ptr<QFutureWatcher<void> > watcher(new QFutureWatcher<void>);
@@ -654,28 +713,28 @@ Project::findAndTryLoadAutoSave()
                     loadOK = loadProjectInternal(savesDir.path() + QDir::separator(), entry,true,existingFilePath);
                 } catch (const std::exception & e) {
                     Natron::errorDialog( QObject::tr("Project loader").toStdString(), QObject::tr("Error while loading auto-saved project").toStdString() + ": " + e.what() );
-                    getApp()->createNode(  CreateNodeArgs(NATRON_VIEWER_ID,
+                    getApp()->createNode(  CreateNodeArgs(PLUGINID_NATRON_VIEWER,
                                                           "",
                                                           -1,-1,
-                                                          -1,
                                                           true,
                                                           INT_MIN,INT_MIN,
                                                           true,
                                                           true,
                                                           QString(),
-                                                          CreateNodeArgs::DefaultValuesList()) );
+                                                          CreateNodeArgs::DefaultValuesList(),
+                                                          shared_from_this()) );
                 } catch (...) {
                     Natron::errorDialog( QObject::tr("Project loader").toStdString(), QObject::tr("Error while loading auto-saved project").toStdString() );
-                    getApp()->createNode(  CreateNodeArgs(NATRON_VIEWER_ID,
+                    getApp()->createNode(  CreateNodeArgs(PLUGINID_NATRON_VIEWER,
                                                           "",
                                                           -1,-1,
-                                                          -1,
                                                           true,
                                                           INT_MIN,INT_MIN,
                                                           true,
                                                           true,
                                                           QString(),
-                                                          CreateNodeArgs::DefaultValuesList()) );
+                                                          CreateNodeArgs::DefaultValuesList(),
+                                                          shared_from_this()) );
                 }
 
                 ///Process all events before flagging that we're no longer loading the project
@@ -703,7 +762,7 @@ Project::findAndTryLoadAutoSave()
                 _imp->lastAutoSave = QDateTime::currentDateTime();
                 _imp->ageSinceLastSave = QDateTime();
 
-                emit projectNameChanged(_imp->projectName + " (*)");
+                Q_EMIT projectNameChanged(_imp->projectName + " (*)");
 
                 refreshViewersAndPreviews();
 
@@ -768,7 +827,7 @@ Project::initializeKnobs()
         entries.push_back( formatStr.toStdString() );
         _imp->builtinFormats.push_back(*f);
     }
-    _imp->formatKnob->turnOffNewLine();
+    _imp->formatKnob->setAddNewLine(false);
 
     _imp->formatKnob->populateChoices(entries);
     _imp->formatKnob->setAnimationEnabled(false);
@@ -785,7 +844,7 @@ Project::initializeKnobs()
     _imp->viewsCount->setDefaultValue(1,0);
     _imp->viewsCount->disableSlider();
     _imp->viewsCount->setEvaluateOnChange(false);
-    _imp->viewsCount->turnOffNewLine();
+    _imp->viewsCount->setAddNewLine(false);
     page->addKnob(_imp->viewsCount);
 
     _imp->mainView = Natron::createKnob<Int_Knob>(this, "Main view");
@@ -812,29 +871,53 @@ Project::initializeKnobs()
     colorSpaces.push_back("sRGB");
     colorSpaces.push_back("Linear");
     colorSpaces.push_back("Rec.709");
-    _imp->colorSpace8bits = Natron::createKnob<Choice_Knob>(this, "Colorspace for 8 bits images");
-    _imp->colorSpace8bits->setName("8bitCS");
-    _imp->colorSpace8bits->setHintToolTip("Defines the color-space in which 8 bits images are assumed to be by default.");
-    _imp->colorSpace8bits->setAnimationEnabled(false);
-    _imp->colorSpace8bits->populateChoices(colorSpaces);
-    _imp->colorSpace8bits->setDefaultValue(0);
-    page->addKnob(_imp->colorSpace8bits);
+    _imp->colorSpace8u = Natron::createKnob<Choice_Knob>(this, "Colorspace for 8-bit integer images");
+    _imp->colorSpace8u->setName("defaultColorSpace8u");
+    _imp->colorSpace8u->setHintToolTip("Defines the color-space in which 8-bit images are assumed to be by default.");
+    _imp->colorSpace8u->setAnimationEnabled(false);
+    _imp->colorSpace8u->populateChoices(colorSpaces);
+    _imp->colorSpace8u->setDefaultValue(0);
+    page->addKnob(_imp->colorSpace8u);
     
-    _imp->colorSpace16bits = Natron::createKnob<Choice_Knob>(this, "Colorspace for 16 bits images");
-    _imp->colorSpace16bits->setName("16bitCS");
-    _imp->colorSpace16bits->setHintToolTip("Defines the color-space in which 16 bits images are assumed to be by default.");
-    _imp->colorSpace16bits->setAnimationEnabled(false);
-    _imp->colorSpace16bits->populateChoices(colorSpaces);
-    _imp->colorSpace16bits->setDefaultValue(2);
-    page->addKnob(_imp->colorSpace16bits);
+    _imp->colorSpace16u = Natron::createKnob<Choice_Knob>(this, "Colorspace for 16-bit integer images");
+    _imp->colorSpace16u->setName("defaultColorSpace16u");
+    _imp->colorSpace16u->setHintToolTip("Defines the color-space in which 16-bit integer images are assumed to be by default.");
+    _imp->colorSpace16u->setAnimationEnabled(false);
+    _imp->colorSpace16u->populateChoices(colorSpaces);
+    _imp->colorSpace16u->setDefaultValue(2);
+    page->addKnob(_imp->colorSpace16u);
     
-    _imp->colorSpace32bits = Natron::createKnob<Choice_Knob>(this, "Colorspace for 32 bits fp images");
-    _imp->colorSpace32bits->setName("32bitCS");
-    _imp->colorSpace32bits->setHintToolTip("Defines the color-space in which 32 bits floating point images are assumed to be by default.");
-    _imp->colorSpace32bits->setAnimationEnabled(false);
-    _imp->colorSpace32bits->populateChoices(colorSpaces);
-    _imp->colorSpace32bits->setDefaultValue(1);
-    page->addKnob(_imp->colorSpace32bits);
+    _imp->colorSpace32f = Natron::createKnob<Choice_Knob>(this, "Colorspace for 32-bit floating point images");
+    _imp->colorSpace32f->setName("defaultColorSpace32f");
+    _imp->colorSpace32f->setHintToolTip("Defines the color-space in which 32-bit floating point images are assumed to be by default.");
+    _imp->colorSpace32f->setAnimationEnabled(false);
+    _imp->colorSpace32f->populateChoices(colorSpaces);
+    _imp->colorSpace32f->setDefaultValue(1);
+    page->addKnob(_imp->colorSpace32f);
+    
+    _imp->frameRange = Natron::createKnob<Int_Knob>(this, "Frame range",2);
+    _imp->frameRange->setDefaultValue(1,0);
+    _imp->frameRange->setDefaultValue(1,1);
+    _imp->frameRange->setDimensionName(0, "first");
+    _imp->frameRange->setDimensionName(1, "last");
+    _imp->frameRange->setEvaluateOnChange(false);
+    _imp->frameRange->setName("frameRange");
+    _imp->frameRange->setHintToolTip("The frame range of the project as seen by the plug-ins. New viewers are created automatically "
+                                     "with this frame-range. By default when a new Reader node is created, its frame range "
+                                     "is unioned to this "
+                                     "frame-range, unless the Lock frame range parameter is checked.");
+    _imp->frameRange->setAnimationEnabled(false);
+    _imp->frameRange->setAddNewLine(false);
+    page->addKnob(_imp->frameRange);
+    
+    _imp->lockFrameRange = Natron::createKnob<Bool_Knob>(this, "Lock range");
+    _imp->lockFrameRange->setName("lockRange");
+    _imp->lockFrameRange->setDefaultValue(false);
+    _imp->lockFrameRange->setAnimationEnabled(false);
+    _imp->lockFrameRange->setHintToolTip("By default when a new Reader node is created, its frame range is unioned to the "
+                                         "project frame-range, unless this parameter is checked.");
+    _imp->lockFrameRange->setEvaluateOnChange(false);
+    page->addKnob(_imp->lockFrameRange);
     
     _imp->frameRate = Natron::createKnob<Double_Knob>(this, "Frame rate");
     _imp->frameRate->setName("frameRate");
@@ -903,29 +986,103 @@ Project::initializeKnobs()
     comments->setAnimationEnabled(false);
     infoPage->addKnob(comments);
     
-    emit knobsInitialized();
+    boost::shared_ptr<Page_Knob> pythonPage = Natron::createKnob<Page_Knob>(this, "Python");
+    _imp->onProjectLoadCB = Natron::createKnob<String_Knob>(this, "After project loaded");
+    _imp->onProjectLoadCB->setName("afterProjectLoad");
+    _imp->onProjectLoadCB->setHintToolTip("Add here the name of a Python-defined function that will be called each time this project "
+                                          "is loaded either from an auto-save or by a user action. It will be called immediately after all "
+                                          "nodes are re-created. This callback will not be called when creating new projects. "
+                                          "The variable \"app\" will be declared prior to calling the function, pointing to the project being loaded.");
+    _imp->onProjectLoadCB->setAnimationEnabled(false);
+    std::string onProjectLoad = appPTR->getCurrentSettings()->getDefaultOnProjectLoadedCB();
+    _imp->onProjectLoadCB->setValue(onProjectLoad, 0);
+    pythonPage->addKnob(_imp->onProjectLoadCB);
+    
+    
+    _imp->onProjectSaveCB = Natron::createKnob<String_Knob>(this, "Before project save");
+    _imp->onProjectSaveCB->setName("beforeProjectSave");
+    _imp->onProjectSaveCB->setHintToolTip("Add here the name of a Python-defined function that will be called each time this project "
+                                          "is saved by the user. This will be called prior to actually saving the project and can be used "
+                                          "to change the filename of the file.\n"
+                                          "The global variable \"filename\" will be declared. This function should then "
+                                          "return the filename under which the file should be saved.\n"
+                                          "The global boolean variable \"autoSave\" will be declared. If True it means that the callback "
+                                          "was triggered from an auto-save, otherwise from a regular user save. "
+                                          "The variable \"app\" will be declared prior to calling the function, pointing to the current app instance.");
+    _imp->onProjectSaveCB->setAnimationEnabled(false);
+    std::string onProjectSave = appPTR->getCurrentSettings()->getDefaultOnProjectSaveCB();
+    _imp->onProjectSaveCB->setValue(onProjectSave, 0);
+    pythonPage->addKnob(_imp->onProjectSaveCB);
+    
+    _imp->onProjectCloseCB = Natron::createKnob<String_Knob>(this, "Before project close");
+    _imp->onProjectCloseCB->setName("beforeProjectClose");
+    _imp->onProjectCloseCB->setHintToolTip("Add here the name of a Python-defined function that will be called each time this project "
+                                          "is closed or if the user closes the application while this project is opened. This is called "
+                                           "prior to removing anything from the project. "
+                                           "The variable \"app\" will be declared prior to calling the function, pointing to the project being closed.");
+    _imp->onProjectCloseCB->setAnimationEnabled(false);
+    std::string onProjectClose = appPTR->getCurrentSettings()->getDefaultOnProjectCloseCB();
+    _imp->onProjectCloseCB->setValue(onProjectClose, 0);
+    pythonPage->addKnob(_imp->onProjectCloseCB);
+    
+    _imp->onNodeCreated = Natron::createKnob<String_Knob>(this, "After node created");
+    _imp->onNodeCreated->setName("afterNodeCreated");
+    _imp->onNodeCreated->setHintToolTip("Add here the name of a Python-defined function that will be called each time a node "
+                                           "is created. The boolean variable userEdited will be set to True if the node was created "
+                                        "by the user or False otherwise (such as when loading a project, or pasting a node).\n"
+                                        "The global variable \"thisNode\" will be declared beforhand, referencing the node that has "
+                                        "created. "
+                                        "The variable \"app\" will be declared prior to calling the function, pointing to the current app instance.");
+    _imp->onNodeCreated->setAnimationEnabled(false);
+    std::string onNodeCreated = appPTR->getCurrentSettings()->getDefaultOnNodeCreatedCB();
+    _imp->onNodeCreated->setValue(onNodeCreated, 0);
+    pythonPage->addKnob(_imp->onNodeCreated);
+    
+    _imp->onNodeDeleted = Natron::createKnob<String_Knob>(this, "Before node removal");
+    _imp->onNodeDeleted->setName("beforeNodeRemoval");
+    _imp->onNodeDeleted->setHintToolTip("Add here the name of a Python-defined function that will be called each time a node "
+                                        "is about to be deleted. \n"
+                                        "The global variable \"thisNode\" will be declared, referencing the node that is to be "
+                                        "deleted. \n"
+                                        "Note that this function will not be called when the project is closing. "
+                                        "The variable \"app\" will be declared prior to calling the function, pointing to the current app instance.");
+    _imp->onNodeDeleted->setAnimationEnabled(false);
+    std::string onNodeDelete = appPTR->getCurrentSettings()->getDefaultOnNodeDeleteCB();
+    _imp->onNodeDeleted->setValue(onNodeDelete, 0);
+    pythonPage->addKnob(_imp->onNodeDeleted);
+    
+
+    
+    comments->setAsMultiLine();
+    comments->setAnimationEnabled(false);
+    infoPage->addKnob(comments);
+    
+    Q_EMIT knobsInitialized();
 } // initializeKnobs
 
 void
-Project::evaluate(KnobI* knob,
-                  bool isSignificant,
+Project::evaluate(KnobI* /*knob*/,
+                  bool /*isSignificant*/,
                   Natron::ValueChangedReasonEnum /*reason*/)
 {
     assert(QThread::currentThread() == qApp->thread());
-    if (isSignificant && knob != _imp->formatKnob.get()) {
+
+   /* if (isSignificant && knob != _imp->formatKnob.get()) {
         getCurrentNodes();
+    
+        NodeList nodes = getNodes();
         
-        for (U32 i = 0; i < _imp->currentNodes.size(); ++i) {
-            assert(_imp->currentNodes[i]);
-            _imp->currentNodes[i]->incrementKnobsAge();
+        for (NodeList::iterator it = nodes.begin(); it != nodes.end() ; ++it) {
+            assert(*it);
+            (*it)->incrementKnobsAge();
 
             
-            ViewerInstance* n = dynamic_cast<ViewerInstance*>( _imp->currentNodes[i]->getLiveInstance() );
+            ViewerInstance* n = dynamic_cast<ViewerInstance*>( (*it)->getLiveInstance() );
             if (n) {
                 n->renderCurrentFrame(true);
             }
         }
-    }
+    }*/
 }
 
 // don't return a reference to a mutex-protected object!
@@ -938,135 +1095,20 @@ Project::getProjectDefaultFormat(Format *f) const
     _imp->findFormat(index, f);
 }
 
-///only called on the main thread
+
+    
 void
-Project::initNodeCountersAndSetName(Node* n)
+Project::ensureAllProcessingThreadsFinished()
 {
-    assert(n);
-    QMutexLocker l(&_imp->nodesLock);
-    std::map<std::string,int>::iterator it = _imp->nodeCounters.find( n->getPluginID() );
-    QString pluginLabel = n->getPluginLabel().c_str();
-    int foundOFX = pluginLabel.lastIndexOf("OFX");
-    if (foundOFX != -1) {
-        pluginLabel = pluginLabel.remove(foundOFX, 3);
-    }
-    if ( it != _imp->nodeCounters.end() ) {
-        it->second++;
-
-        n->setName( pluginLabel + QString::number(it->second) );
-    } else {
-        _imp->nodeCounters.insert( make_pair(n->getPluginID(), 1) );
-        n->setName( pluginLabel + QString::number(1) );
-    }
-}
-
-void
-Project::getNodeCounters(std::map<std::string,int>* counters) const
-{
-    QMutexLocker l(&_imp->nodesLock);
-
-    *counters = _imp->nodeCounters;
-}
-
-void
-Project::addNodeToProject(boost::shared_ptr<Natron::Node> n)
-{
-    QMutexLocker l(&_imp->nodesLock);
-
-    _imp->currentNodes.push_back(n);
-}
-
-void
-Project::removeNodeFromProject(const boost::shared_ptr<Natron::Node> & n)
-{
-    assert( QThread::currentThread() == qApp->thread() );
-    {
-        QMutexLocker l(&_imp->nodesLock);
-        for (std::vector<boost::shared_ptr<Natron::Node> >::iterator it = _imp->currentNodes.begin(); it != _imp->currentNodes.end(); ++it) {
-            if (*it == n) {
-                _imp->currentNodes.erase(it);
-                break;
-            }
-        }
-    }
-    n->removeReferences();
-}
-
-void
-Project::clearNodes(bool emitSignal)
-{
-    std::vector<boost::shared_ptr<Natron::Node> > nodesToDelete;
-    {
-        QMutexLocker l(&_imp->nodesLock);
-        nodesToDelete = _imp->currentNodes;
-    }
-
-    ///First quit any processing
-    for (U32 i = 0; i < nodesToDelete.size(); ++i) {
-        nodesToDelete[i]->quitAnyProcessing();
-    }
-    ///Kill thread pool so threads are killed before killing thread storage
+    quitAnyProcessingForAllNodes();
     QThreadPool::globalInstance()->waitForDone();
-
-
-    ///Kill effects
-    for (U32 i = 0; i < nodesToDelete.size(); ++i) {
-        nodesToDelete[i]->deactivate(std::list<Natron::Node* >(),false,false,true,false);
-    }
-
-    for (U32 i = 0; i < nodesToDelete.size(); ++i) {
-        nodesToDelete[i]->removeReferences();
-    }
-
-
-    {
-        QMutexLocker l(&_imp->nodesLock);
-        _imp->currentNodes.clear();
-    }
-
-    nodesToDelete.clear();
-
-    if (emitSignal) {
-        emit nodesCleared();
-    }
 }
-
-void
-Project::setFrameRange(int first,
-                       int last)
-{
-    _imp->timeline->setFrameRange(first,last);
-}
-
 int
 Project::currentFrame() const
 {
     return _imp->timeline->currentFrame();
 }
 
-int
-Project::firstFrame() const
-{
-    return _imp->timeline->firstFrame();
-}
-
-int
-Project::lastFrame() const
-{
-    return _imp->timeline->lastFrame();
-}
-
-int
-Project::leftBound() const
-{
-    return _imp->timeline->leftBound();
-}
-
-int
-Project::rightBound() const
-{
-    return _imp->timeline->rightBound();
-}
 
 int
 Project::tryAddProjectFormat(const Format & f)
@@ -1125,21 +1167,6 @@ int
 Project::getProjectMainView() const
 {
     return _imp->mainView->getValue();
-}
-
-std::vector<boost::shared_ptr<Natron::Node> > Project::getCurrentNodes() const
-{
-    QMutexLocker l(&_imp->nodesLock);
-
-    return _imp->currentNodes;
-}
-
-bool
-Project::hasNodes() const
-{
-    QMutexLocker l(&_imp->nodesLock);
-
-    return !_imp->currentNodes.empty();
 }
 
 QString
@@ -1224,21 +1251,6 @@ Project::getAdditionalFormats(std::list<Format> *formats) const
     *formats = _imp->additionalFormats;
 }
 
-void
-Project::setLastTimelineSeekCaller(Natron::OutputEffectInstance* output)
-{
-    QMutexLocker l(&_imp->projectLock);
-
-    _imp->lastTimelineSeekCaller = output;
-}
-
-Natron::OutputEffectInstance*
-Project::getLastTimelineSeekCaller() const
-{
-    QMutexLocker l(&_imp->projectLock);
-
-    return _imp->lastTimelineSeekCaller;
-}
 
 bool
 Project::isSaveUpToDate() const
@@ -1257,11 +1269,10 @@ Project::save(ProjectSerialization* serializationObject) const
 bool
 Project::load(const ProjectSerialization & obj,const QString& name,const QString& path,bool isAutoSave,const QString& realFilePath)
 {
-    _imp->nodeCounters.clear();
     bool ret = _imp->restoreFromSerialization(obj,name,path,isAutoSave,realFilePath);
     Format f;
     getProjectDefaultFormat(&f);
-    emit formatChanged(f);
+    Q_EMIT formatChanged(f);
     return ret;
 }
 
@@ -1299,26 +1310,21 @@ Project::onKnobValueChanged(KnobI* knob,
         if (found) {
             if (reason == Natron::eValueChangedReasonUserEdited) {
                 ///Increase all nodes age in the project so all cache is invalidated: some effects images might rely on the project format
-                QMutexLocker k(&_imp->nodesLock);
-                for (std::vector< boost::shared_ptr<Natron::Node> >::iterator it = _imp->currentNodes.begin(); it != _imp->currentNodes.end();++it)
-                {
+                NodeList nodes = getNodes();
+                for (NodeList::iterator it = nodes.begin(); it != nodes.end();++it) {
                     (*it)->incrementKnobsAge();
                 }
             }
-            emit formatChanged(frmt);
+            Q_EMIT formatChanged(frmt);
         }
     } else if ( knob == _imp->addFormatKnob.get() ) {
-        emit mustCreateFormat();
+        Q_EMIT mustCreateFormat();
     } else if ( knob == _imp->previewMode.get() ) {
-        emit autoPreviewChanged( _imp->previewMode->getValue() );
+        Q_EMIT autoPreviewChanged( _imp->previewMode->getValue() );
     }  else if ( knob == _imp->frameRate.get() ) {
-        std::vector< boost::shared_ptr<Natron::Node> > nodes ;
-        {
-            QMutexLocker k(&_imp->nodesLock);
-            nodes = _imp->currentNodes;
-        }
+        NodeList nodes = getNodes();
         std::list <Natron::Node*> markedNodes;
-        for (std::vector< boost::shared_ptr<Natron::Node> >::iterator it = nodes.begin();
+        for (NodeList::iterator it = nodes.begin();
              it != nodes.end();++it)  {
             if ((*it)->isOutputNode()) {
                 (*it)->restoreClipPreferencesRecursive(markedNodes);
@@ -1326,6 +1332,10 @@ Project::onKnobValueChanged(KnobI* knob,
                 
         }
 
+    } else if (knob == _imp->frameRange.get()) {
+        int first = _imp->frameRange->getValue(0);
+        int last = _imp->frameRange->getValue(1);
+        Q_EMIT frameRangeChanged(first, last);
     }
 }
 
@@ -1360,13 +1370,7 @@ Project::isGraphWorthLess() const
      */
 
     ///If it has never auto-saved, then the user didn't do anything, hence the project is worthless.
-    int nbNodes;
-    {
-        QMutexLocker k(&_imp->nodesLock);
-        nbNodes = (int)_imp->currentNodes.size();
-    }
-    
-    return (!hasEverAutoSaved() && !hasProjectBeenSavedByUser()) || nbNodes == 0;
+    return (!hasEverAutoSaved() && !hasProjectBeenSavedByUser()) || !hasNodes();
 }
 
 void
@@ -1398,12 +1402,34 @@ Project::removeAutoSaves()
 QString
 Project::autoSavesDir()
 {
-    return Natron::StandardPaths::writableLocation(Natron::StandardPaths::DataLocation) + QDir::separator() + "Autosaves";
+    return Natron::StandardPaths::writableLocation(Natron::StandardPaths::eStandardLocationData) + QDir::separator() + "Autosaves";
+}
+    
+void
+Project::resetProject()
+{
+    reset();
+    if (!appPTR->isBackground()) {
+        createViewer();
+    }
 }
 
 void
 Project::reset()
 {
+    assert(QThread::currentThread() == qApp->thread());
+    
+    _imp->projectClosing = true;
+    std::string onProjectClose = getOnProjectCloseCB();
+    if (!onProjectClose.empty()) {
+        std::string err;
+        if (!Natron::interpretPythonScript(onProjectClose + "()\n", &err, 0)) {
+            Natron::errorDialog(tr("Callback failure").toStdString(), tr("Error when running the onProjectClose callback: ").toStdString()
+                                + err);
+        }
+        
+    }
+    
     {
         QMutexLocker l(&_imp->projectLock);
         _imp->autoSetProjectFormat = appPTR->getCurrentSettings()->isAutoProjectFormatEnabled();
@@ -1413,25 +1439,25 @@ Project::reset()
         _imp->projectPath.clear();
         _imp->autoSaveTimer->stop();
         _imp->additionalFormats.clear();
-        _imp->nodeCounters.clear();
     }
     _imp->timeline->removeAllKeyframesIndicators();
     const std::vector<boost::shared_ptr<KnobI> > & knobs = getKnobs();
 
+    beginChanges();
     for (U32 i = 0; i < knobs.size(); ++i) {
-        knobs[i]->blockEvaluation();
         for (int j = 0; j < knobs[i]->getDimension(); ++j) {
             knobs[i]->resetToDefaultValue(j);
         }
-        knobs[i]->unblockEvaluation();
     }
 
-    _imp->envVars->blockEvaluation();
+
     onOCIOConfigPathChanged(appPTR->getOCIOConfigPath(),true);
-    _imp->envVars->unblockEvaluation();
     
-    emit projectNameChanged(NATRON_PROJECT_UNTITLED);
-    clearNodes();
+    endChanges(true);
+    
+    Q_EMIT projectNameChanged(NATRON_PROJECT_UNTITLED);
+    clearNodes(true);
+    _imp->projectClosing = false;
 }
 
 bool
@@ -1457,7 +1483,6 @@ Project::setOrAddProjectFormat(const Format & frmt,
     }
 
     Format dispW;
-    bool formatSet = false;
     {
         QMutexLocker l(&_imp->formatMutex);
 
@@ -1472,94 +1497,13 @@ Project::setOrAddProjectFormat(const Format & frmt,
             } else {
                 setProjectDefaultFormat(dispW);
             }
-            formatSet = true;
         } else if (!skipAdd) {
             dispW = frmt;
             tryAddProjectFormat(dispW);
         }
     }
-    if (formatSet) {
-        emit formatChanged(dispW);
-    }
 }
 
-///do not need to lock this function as all calls are thread-safe already
-bool
-Project::connectNodes(int inputNumber,
-                      const std::string & parentName,
-                      Node* output)
-{
-    const std::vector<boost::shared_ptr<Node> > nodes = getCurrentNodes();
-
-    for (U32 i = 0; i < nodes.size(); ++i) {
-        assert(nodes[i]);
-        if (nodes[i]->getName() == parentName) {
-            return connectNodes(inputNumber,nodes[i], output);
-        }
-    }
-
-    return false;
-}
-
-bool
-Project::connectNodes(int inputNumber,
-                      boost::shared_ptr<Node> input,
-                      Node* output,
-                      bool force)
-{
-    ////Only called by the main-thread
-    assert( QThread::currentThread() == qApp->thread() );
-
-    boost::shared_ptr<Node> existingInput = output->getInput(inputNumber);
-    if (force && existingInput) {
-        bool ok = disconnectNodes(existingInput.get(), output);
-        assert(ok);
-        if (input->getMaxInputCount() > 0) {
-            ok = connectNodes(input->getPreferredInputForConnection(), existingInput, input.get());
-            assert(ok);
-        }
-    }
-    
-    if (!input) {
-        return true;
-    }
-
-
-    if ( !output->connectInput(input, inputNumber) ) {
-        return false;
-    }
-  
-    return true;
-}
-
-bool
-Project::disconnectNodes(Node* input,
-                         Node* output,
-                         bool autoReconnect)
-{
-    boost::shared_ptr<Node> inputToReconnectTo;
-    int indexOfInput = output->inputIndex( input );
-
-    if (indexOfInput == -1) {
-        return false;
-    }
-
-    int inputsCount = input->getMaxInputCount();
-    if (inputsCount == 1) {
-        inputToReconnectTo = input->getInput(0);
-    }
-
-    
-    if (output->disconnectInput(input) < 0) {
-        return false;
-    }
-
-    if (autoReconnect && inputToReconnectTo) {
-        connectNodes(indexOfInput, inputToReconnectTo, output);
-    }
-
-    return true;
-}
 
 bool
 Project::tryLock() const
@@ -1574,114 +1518,6 @@ Project::unlock() const
     _imp->projectLock.unlock();
 }
 
-bool
-Project::autoConnectNodes(boost::shared_ptr<Node> selected,
-                          boost::shared_ptr<Node> created)
-{
-    ///We follow this rule:
-    //        1) selected is output
-    //          a) created is output --> fail
-    //          b) created is input --> connect input
-    //          c) created is regular --> connect input
-    //        2) selected is input
-    //          a) created is output --> connect output
-    //          b) created is input --> fail
-    //          c) created is regular --> connect output
-    //        3) selected is regular
-    //          a) created is output--> connect output
-    //          b) created is input --> connect input
-    //          c) created is regular --> connect output
-
-    ///if true if will connect 'created' as input of 'selected',
-    ///otherwise as output.
-    bool connectAsInput = false;
-
-    ///cannot connect 2 input nodes together: case 2-b)
-    if ( (selected->getMaxInputCount() == 0) && (created->getMaxInputCount() == 0) ) {
-        return false;
-    }
-    ///cannot connect 2 output nodes together: case 1-a)
-    if ( selected->isOutputNode() && created->isOutputNode() ) {
-        return false;
-    }
-
-    ///1)
-    if ( selected->isOutputNode() ) {
-        ///assert we're not in 1-a)
-        assert( !created->isOutputNode() );
-
-        ///for either cases 1-b) or 1-c) we just connect the created node as input of the selected node.
-        connectAsInput = true;
-    }
-    ///2) and 3) are similar exceptfor case b)
-    else {
-        ///case 2 or 3- a): connect the created node as output of the selected node.
-        if ( created->isOutputNode() ) {
-            connectAsInput = false;
-        }
-        ///case b)
-        else if (created->getMaxInputCount() == 0) {
-            assert(selected->getMaxInputCount() != 0);
-            ///case 3-b): connect the created node as input of the selected node
-            connectAsInput = true;
-        }
-        ///case c) connect created as output of the selected node
-        else {
-            connectAsInput = false;
-        }
-    }
-    
-    bool ret = false;
-    if (connectAsInput) {
-        
-        ///connect it to the first input
-        int selectedInput = selected->getPreferredInputForConnection();
-        if (selectedInput != -1) {
-            bool ok = connectNodes(selectedInput, created, selected.get(),true);
-            assert(ok);
-            ret = true;
-        } else {
-            ret = false;
-        }
-        
-    } else {
-        if ( !created->isOutputNode() ) {
-            ///we find all the nodes that were previously connected to the selected node,
-            ///and connect them to the created node instead.
-            std::map<Node*,int> outputsConnectedToSelectedNode;
-            selected->getOutputsConnectedToThisNode(&outputsConnectedToSelectedNode);
-            for (std::map<Node*,int>::iterator it = outputsConnectedToSelectedNode.begin();
-                 it != outputsConnectedToSelectedNode.end(); ++it) {
-                if (it->first->getParentMultiInstanceName().empty()) {
-                    bool ok = disconnectNodes(selected.get(), it->first);
-                    assert(ok);
-                    
-                    (void)connectNodes(it->second, created, it->first);
-                    //assert(ok); Might not be ok if the disconnectNodes() action above was queued
-                }
-            }
-        }
-        ///finally we connect the created node to the selected node
-        int createdInput = created->getPreferredInputForConnection();
-        if (createdInput != -1) {
-            bool ok = connectNodes(createdInput, selected, created.get());
-            assert(ok);
-            ret = true;
-        } else {
-            ret = false;
-        }
-    }
-
-    ///update the render trees
-    std::list<ViewerInstance* > viewers;
-    created->hasViewersConnected(&viewers);
-    for (std::list<ViewerInstance* >::iterator it = viewers.begin(); it != viewers.end(); ++it) {
-        (*it)->renderCurrentFrame(true);
-    }
-
-    return ret;
-} // autoConnectNodes
-
 qint64
 Project::getProjectCreationTime() const
 {
@@ -1690,49 +1526,25 @@ Project::getProjectCreationTime() const
     return _imp->projectCreationTime.toMSecsSinceEpoch();
 }
 
-boost::shared_ptr<Natron::Node> Project::getNodeByName(const std::string & name) const
-{
-    QMutexLocker l(&_imp->nodesLock);
-
-    for (U32 i = 0; i < _imp->currentNodes.size(); ++i) {
-        if (_imp->currentNodes[i]->getName() == name) {
-            return _imp->currentNodes[i];
-        }
-    }
-
-    return boost::shared_ptr<Natron::Node>();
-}
-
-boost::shared_ptr<Natron::Node> Project::getNodePointer(Natron::Node* n) const
-{
-    QMutexLocker l(&_imp->nodesLock);
-
-    for (U32 i = 0; i < _imp->currentNodes.size(); ++i) {
-        if (_imp->currentNodes[i].get() == n) {
-            return _imp->currentNodes[i];
-        }
-    }
-
-    return boost::shared_ptr<Natron::Node>();
-}
-
 Natron::ViewerColorSpaceEnum
 Project::getDefaultColorSpaceForBitDepth(Natron::ImageBitDepthEnum bitdepth) const
 {
     switch (bitdepth) {
     case Natron::eImageBitDepthByte:
 
-        return (Natron::ViewerColorSpaceEnum)_imp->colorSpace8bits->getValue();
+        return (Natron::ViewerColorSpaceEnum)_imp->colorSpace8u->getValue();
     case Natron::eImageBitDepthShort:
 
-        return (Natron::ViewerColorSpaceEnum)_imp->colorSpace16bits->getValue();
+        return (Natron::ViewerColorSpaceEnum)_imp->colorSpace16u->getValue();
     case Natron::eImageBitDepthFloat:
 
-        return (Natron::ViewerColorSpaceEnum)_imp->colorSpace32bits->getValue();
+        return (Natron::ViewerColorSpaceEnum)_imp->colorSpace32f->getValue();
     case Natron::eImageBitDepthNone:
         assert(false);
         break;
     }
+
+    return eViewerColorSpaceLinear;
 }
 
 // Functions to escape / unescape characters from XML strings
@@ -1991,86 +1803,7 @@ Project::fixFilePath(const std::string& projectPathName,const std::string& newPr
         return true;
     }
 }
-    
-void
-Project::fixRelativeFilePaths(const std::string& projectPathName,const std::string& newProjectPath,bool blockEval)
-{
-    std::vector<boost::shared_ptr<Natron::Node> > nodes;
-    {
-        QMutexLocker l(&_imp->nodesLock);
-        nodes = _imp->currentNodes;
-    }
-    
-    for (U32 i = 0; i < nodes.size(); ++i) {
-        if (nodes[i]->isActivated()) {
-            if (blockEval) {
-                nodes[i]->getLiveInstance()->blockEvaluation();
-            }
-            const std::vector<boost::shared_ptr<KnobI> >& knobs = nodes[i]->getKnobs();
-            for (U32 j = 0; j < knobs.size(); ++j) {
-                
-                Knob<std::string>* isString = dynamic_cast< Knob<std::string>* >(knobs[j].get());
-                String_Knob* isStringKnob = dynamic_cast<String_Knob*>(isString);
-                if (!isString || isStringKnob || knobs[j] == _imp->envVars) {
-                    continue;
-                }
-                
-                std::string filepath = isString->getValue();
-                
-                if (!filepath.empty()) {
-                    if (fixFilePath(projectPathName, newProjectPath, filepath)) {
-                        isString->setValue(filepath, 0);
-                    }
-                }
-            }
-            if (blockEval) {
-                nodes[i]->getLiveInstance()->unblockEvaluation();
-            }
-            
-        }
-    }
- 
-}
-    
-void
-Project::fixPathName(const std::string& oldName,const std::string& newName)
-{
-    std::vector<boost::shared_ptr<Natron::Node> > nodes;
-    {
-        QMutexLocker l(&_imp->nodesLock);
-        nodes = _imp->currentNodes;
-    }
-    
-    for (U32 i = 0; i < nodes.size(); ++i) {
-        if (nodes[i]->isActivated()) {
-            const std::vector<boost::shared_ptr<KnobI> >& knobs = nodes[i]->getKnobs();
-            for (U32 j = 0; j < knobs.size(); ++j) {
-                
-                Knob<std::string>* isString = dynamic_cast< Knob<std::string>* >(knobs[j].get());
-                String_Knob* isStringKnob = dynamic_cast<String_Knob*>(isString);
-                if (!isString || isStringKnob || knobs[j] == _imp->envVars) {
-                    continue;
-                }
-                
-                std::string filepath = isString->getValue();
-                
-                if (filepath.size() >= (oldName.size() + 2) &&
-                    filepath[0] == '[' &&
-                    filepath[oldName.size() + 1] == ']' &&
-                    filepath.substr(1,oldName.size()) == oldName) {
-                    
-                    filepath.replace(1, oldName.size(), newName);
-                    isString->setValue(filepath, 0);
-                }
-            }
-            
-        }
-    }
-
-}
-    
-    
-bool
+ bool
 Project::isRelative(const std::string& str)
 {
 #ifdef __NATRON_WIN32__
@@ -2153,55 +1886,150 @@ Project::makeRelativeToProject(std::string& str)
 void
 Project::onOCIOConfigPathChanged(const std::string& path,bool block)
 {
-    if (block) {
-        blockEvaluation();
-    }
-    std::string env = _imp->envVars->getValue();
-    std::map<std::string, std::string> envMap;
-    makeEnvMap(env, envMap);
+    beginChanges();
     
-    ///If there was already a OCIO variable, update it, otherwise create it
-    
-    std::map<std::string, std::string>::iterator foundOCIO = envMap.find(NATRON_OCIO_ENV_VAR_NAME);
-    if (foundOCIO != envMap.end()) {
-        foundOCIO->second = path;
-    } else {
-        envMap.insert(std::make_pair(NATRON_OCIO_ENV_VAR_NAME, path));
-    }
+    try {
+        std::string env = _imp->envVars->getValue();
+        std::map<std::string, std::string> envMap;
+        makeEnvMap(env, envMap);
 
-    std::string newEnv;
-    for (std::map<std::string, std::string>::iterator it = envMap.begin(); it!=envMap.end();++it) {
-        // In order to use XML tags, the text inside the tags has to be escaped.
-        newEnv += NATRON_ENV_VAR_NAME_START_TAG;
-        newEnv += Project::escapeXML(it->first);
-        newEnv += NATRON_ENV_VAR_NAME_END_TAG;
-        newEnv += NATRON_ENV_VAR_VALUE_START_TAG;
-        newEnv += Project::escapeXML(it->second);
-        newEnv += NATRON_ENV_VAR_VALUE_END_TAG;
-    }
-    if (env != newEnv) {
-        if (appPTR->getCurrentSettings()->isAutoFixRelativeFilePathEnabled()) {
-            fixRelativeFilePaths(NATRON_OCIO_ENV_VAR_NAME, path,block);
+        ///If there was already a OCIO variable, update it, otherwise create it
+
+        std::map<std::string, std::string>::iterator foundOCIO = envMap.find(NATRON_OCIO_ENV_VAR_NAME);
+        if (foundOCIO != envMap.end()) {
+            foundOCIO->second = path;
+        } else {
+            envMap.insert(std::make_pair(NATRON_OCIO_ENV_VAR_NAME, path));
         }
-        _imp->envVars->setValue(newEnv, 0);
+
+        std::string newEnv;
+        for (std::map<std::string, std::string>::iterator it = envMap.begin(); it!=envMap.end();++it) {
+            // In order to use XML tags, the text inside the tags has to be escaped.
+            newEnv += NATRON_ENV_VAR_NAME_START_TAG;
+            newEnv += Project::escapeXML(it->first);
+            newEnv += NATRON_ENV_VAR_NAME_END_TAG;
+            newEnv += NATRON_ENV_VAR_VALUE_START_TAG;
+            newEnv += Project::escapeXML(it->second);
+            newEnv += NATRON_ENV_VAR_VALUE_END_TAG;
+        }
+        if (env != newEnv) {
+            if (appPTR->getCurrentSettings()->isAutoFixRelativeFilePathEnabled()) {
+                fixRelativeFilePaths(NATRON_OCIO_ENV_VAR_NAME, path,block);
+            }
+            _imp->envVars->setValue(newEnv, 0);
+        }
+    } catch (std::logic_error) {
+        // ignore
     }
-    if (block) {
-        unblockEvaluation();
-    }
+    endChanges(block);
+    
 }
 
-void
-Project::setAllNodesAborted(bool aborted)
-{
-    QMutexLocker k(&_imp->nodesLock);
-    for (U32 i = 0; i < _imp->currentNodes.size(); ++i) {
-        _imp->currentNodes[i]->setAborted(aborted);
-    }
-}
 double
 Project::getProjectFrameRate() const
 {
     return _imp->frameRate->getValue();
+}
+    
+boost::shared_ptr<Path_Knob>
+Project::getEnvVarKnob() const
+{
+    return _imp->envVars;
+}
+    
+    
+    
+std::string
+Project::getOnProjectLoadCB() const
+{
+    return _imp->onProjectLoadCB->getValue();
+}
+    
+std::string
+Project::getOnProjectSaveCB() const
+{
+    return _imp->onProjectSaveCB->getValue();
+}
+    
+std::string
+Project::getOnProjectCloseCB() const
+{
+    return _imp->onProjectCloseCB->getValue();
+}
+
+std::string
+Project::getOnNodeCreatedCB() const
+{
+    return _imp->onNodeCreated->getValue();
+}
+    
+std::string
+Project::getOnNodeDeleteCB() const
+{
+    return _imp->onNodeDeleted->getValue();
+}
+    
+bool
+Project::isProjectClosing() const
+{
+    assert(QThread::currentThread() == qApp->thread());
+    return _imp->projectClosing;
+}
+    
+bool
+Project::isFrameRangeLocked() const
+{
+    return _imp->lockFrameRange->getValue();
+}
+    
+void
+Project::getFrameRange(int* first,int* last) const
+{
+    *first = _imp->frameRange->getValue(0);
+    *last = _imp->frameRange->getValue(1);
+}
+    
+void
+Project::unionFrameRangeWith(int first,int last)
+{
+    
+    int curFirst,curLast;
+    curFirst = _imp->frameRange->getValue(0);
+    curLast = _imp->frameRange->getValue(1);
+    curFirst = std::min(first, curFirst);
+    curLast = std::max(last, curLast);
+    beginChanges();
+    _imp->frameRange->setValue(curFirst, 0);
+    _imp->frameRange->setValue(curLast, 1);
+    endChanges();
+
+}
+    
+void
+Project::recomputeFrameRangeFromReaders()
+{
+    int first = 1,last = 1;
+    recomputeFrameRangeForAllReaders(&first, &last);
+    
+    beginChanges();
+    _imp->frameRange->setValue(first, 0);
+    _imp->frameRange->setValue(last, 1);
+    endChanges();
+}
+    
+void
+Project::createViewer()
+{
+    getApp()->createNode( CreateNodeArgs(PLUGINID_NATRON_VIEWER,
+                                         "",
+                                         -1,-1,
+                                         true,
+                                         INT_MIN,INT_MIN,
+                                         true,
+                                         true,
+                                         QString(),
+                                         CreateNodeArgs::DefaultValuesList(),
+                                         shared_from_this()) );
 }
     
 } //namespace Natron

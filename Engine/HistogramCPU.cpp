@@ -3,6 +3,9 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
 
 #include "HistogramCPU.h"
 
@@ -111,7 +114,7 @@ HistogramCPU::~HistogramCPU()
 }
 
 void
-HistogramCPU::computeHistogram(int mode,      //< corresponds to the enum Histogram::DisplayMode
+HistogramCPU::computeHistogram(int mode,      //< corresponds to the enum Histogram::DisplayModeEnum
                                const boost::shared_ptr<Natron::Image> & image,
                                const RectI & rect,
                                int binsCount,
@@ -419,7 +422,7 @@ computeHistogramStatic(const HistogramRequest & request,
     }
     assert(histo);
 
-    /// keep the mode parameter in sync with Histogram::DisplayMode
+    /// keep the mode parameter in sync with Histogram::DisplayModeEnum
 
     int mode = request.mode;
 
@@ -536,7 +539,7 @@ HistogramCPU::run()
             QMutexLocker l(&_imp->producedMutex);
             _imp->produced.push_back(ret);
         }
-        emit histogramProduced();
+        Q_EMIT histogramProduced();
     }
 } // run
 

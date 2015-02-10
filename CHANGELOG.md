@@ -1,3 +1,67 @@
+Natron 1.2.0
+------------
+
+- Overlays on the viewer are now transformed by all Transform effects such as CornerPin,Transform 
+
+- The user interface colors can now be changed in the "Appearance" tab of the Preferences of Natron
+
+- Bezier curves motion now have a constant or linear interpolation 
+
+- The dialog that pops up when trying to merge 2 clips that do not have a matching FPS is now a bit clearer regarding possible solutions
+
+- Wacom support is now more intuitive and supported on all widgets that can zoom or pan.
+
+- New "Image statistics" node to analyse various significant values from an image
+
+- It is now possible to connect any node to a Writer node
+
+Bug fixes:
+
+    - ReadFFMPEG would crash when reading video files with a videostream bitdepth > 8bit
+    - ReadFFMPEG would crash when reading image sequences
+    - The viewer would not redraw correctly 
+    - The nodegraph would not redraw correctly, hence producing a latency effect
+    - Readers would not recognize some image sequences
+    - Some TIFF files would not be read correctly by the ReadOIIO node
+
+Known issues:
+
+    - Stereo workflows are broken and will be re-introduced with a more clever approach in the next version. The only way for now is to use a Switch node.
+    
+    
+
+
+Natron 1.1.0
+-------------
+
+- Fix stability of the software as a whole. This build has been reported to be robust to several hours of work.
+
+- The tracker node can now be offset to track elements that go beyond the bounds of the image
+
+- The roto node interaction has been improved:
+
+- The composing of selection is now easier
+
+    - A new button can now toggle on/off the click capture of the bounding box of selected points
+    - The smooth/cusp options are now applied with smaller steps and depending of the zoom factor
+    - A simple left click is required to cycle through tool buttons and a right click to open the menu
+    - A new button in the settings panel allows to clear the animation of the selected Beziers
+    - Only the keyframes of the selected shapes are now displayed on the timeline instead of all shapes keyframes
+
+- CurveEditor: added a filter to display only nodes containing the filter
+
+- CurveEditor: double-clicking the item of a node will open the settings panel much like a double-click in the NodeGraph does
+
+- The interpolation submenu of the animation menu of the parameter is working again
+
+- A simple click on an arrow of the node graph no longer disconnects nodes to prevent mistakes, instead now, to disconnect only with a simple click it is required to hold the control modifier.
+
+- Playback: The behaviour when using multiple viewers is now much more logical: all viewers are kept in sync and follow the frame range of the viewer that started the playback. The frame range is now per viewer.
+
+- The frame range is now a property of the project: Each time a Reader node the frame range of the project is unioned with the frame range of the sequence read (unless the Lock range parameter is checked). New viewers that have their frame range untouched will use the project frame range by default.
+
+- New nodes: Add, Multiply, Gamma, ColorConvert, SharpenInvDiff, SharpenShock
+
 Natron 1.0.0 "Stable release"
 ----------------------------
 

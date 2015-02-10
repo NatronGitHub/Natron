@@ -8,6 +8,10 @@
  *
  */
 
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
 #include "NodeGraphUndoRedo.h"
 
 CLANG_DIAG_OFF(deprecated)
@@ -27,27 +31,26 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/Gui.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/Edge.h"
-#include "Gui/NodeBackDrop.h"
 #include "Gui/MultiInstancePanel.h"
 #define MINIMUM_VERTICAL_SPACE_BETWEEN_NODES 10
 
-typedef boost::shared_ptr<NodeGui> NodeGuiPtr;
+
 
 MoveMultipleNodesCommand::MoveMultipleNodesCommand(const std::list<NodeToMove> & nodes,
-                                                   const std::list<NodeBackDrop*> & bds,
                                                    double dx,
                                                    double dy,
+                                                   bool doMerge,
                                                    const QPointF & mouseScenePos,
                                                    QUndoCommand *parent)
     : QUndoCommand(parent)
       , _firstRedoCalled(false)
       , _nodes(nodes)
-      , _bds(bds)
       , _mouseScenePos(mouseScenePos)
       , _dx(dx)
       , _dy(dy)
+      , _doMerge(doMerge)
 {
-    assert( !nodes.empty() || !bds.empty() );
+    assert( !nodes.empty() );
 }
 
 void
@@ -56,13 +59,9 @@ MoveMultipleNodesCommand::move(bool skipMagnet,
                                double dy)
 {
     for (std::list<NodeToMove>::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
-        QPointF pos = it->node->getPos_mt_safe();
-        it->node->refreshPosition(pos.x() + dx, pos.y() + dy,it->isWithinBD || _nodes.size() > 1 || skipMagnet,_mouseScenePos);
-    }
-    for (std::list<NodeBackDrop*>::iterator it = _bds.begin(); it != _bds.end(); ++it) {
-        QPointF pos = (*it)->getPos_mt_safe();
-        pos += QPointF(dx,dy);
-        (*it)->setPos_mt_safe(pos);
+        NodeGuiPtr node = it->node.lock();
+        QPointF pos = node->getPos_mt_safe();
+        node->refreshPosition(pos.x() + dx, pos.y() + dy,it->isWithinBD || _nodes.size() > 1 || skipMagnet,_mouseScenePos);
     }
 }
 
@@ -89,21 +88,16 @@ MoveMultipleNodesCommand::mergeWith(const QUndoCommand *command)
     if (!mvCmd) {
         return false;
     }
-    if ( ( mvCmd->_bds.size() != _bds.size() ) || ( mvCmd->_nodes.size() != _nodes.size() ) ) {
+    if (!mvCmd->_doMerge || !_doMerge) {
+        return false;
+    }
+    if (( mvCmd->_nodes.size() != _nodes.size() ) ) {
         return false;
     }
     {
         std::list<NodeToMove >::const_iterator itOther = mvCmd->_nodes.begin();
         for (std::list<NodeToMove>::const_iterator it = _nodes.begin(); it != _nodes.end(); ++it,++itOther) {
-            if (it->node != itOther->node) {
-                return false;
-            }
-        }
-    }
-    {
-        std::list<NodeBackDrop*>::const_iterator itOther = mvCmd->_bds.begin();
-        for (std::list<NodeBackDrop*>::const_iterator it = _bds.begin(); it != _bds.end(); ++it,++itOther) {
-            if (*itOther != *it) {
+            if (it->node.lock() != itOther->node.lock()) {
                 return false;
             }
         }
@@ -116,15 +110,16 @@ MoveMultipleNodesCommand::mergeWith(const QUndoCommand *command)
 
 AddMultipleNodesCommand::AddMultipleNodesCommand(NodeGraph* graph,
                                                  const std::list<boost::shared_ptr<NodeGui> > & nodes,
-                                                 const std::list<NodeBackDrop*> & bds,
                                                  QUndoCommand *parent)
     : QUndoCommand(parent)
-      , _nodes(nodes)
-      , _bds(bds)
+      , _nodes()
       , _graph(graph)
       , _firstRedoCalled(false)
       , _isUndone(false)
 {
+    for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        _nodes.push_back(*it);
+    }
 }
 
 AddMultipleNodesCommand::AddMultipleNodesCommand(NodeGraph* graph,
@@ -132,7 +127,6 @@ AddMultipleNodesCommand::AddMultipleNodesCommand(NodeGraph* graph,
                                                  QUndoCommand* parent)
     : QUndoCommand(parent)
       , _nodes()
-      , _bds()
       , _graph(graph)
       , _firstRedoCalled(false)
       , _isUndone(false)
@@ -140,30 +134,13 @@ AddMultipleNodesCommand::AddMultipleNodesCommand(NodeGraph* graph,
     _nodes.push_back(node);
 }
 
-AddMultipleNodesCommand::AddMultipleNodesCommand(NodeGraph* graph,
-                                                 NodeBackDrop* bd,
-                                                 QUndoCommand* parent)
-    : QUndoCommand(parent)
-      , _nodes()
-      , _bds()
-      , _graph(graph)
-      , _firstRedoCalled(false)
-      , _isUndone(false)
-{
-    _bds.push_back(bd);
-}
+
 
 AddMultipleNodesCommand::~AddMultipleNodesCommand()
 {
     if (_isUndone) {
-        for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
-            _graph->deleteNodepluginsly(*it);
-        }
-
-        for (std::list<NodeBackDrop*>::iterator it = _bds.begin(); it != _bds.end(); ++it) {
-            (*it)->setParentItem(NULL);
-            _graph->removeBackDrop(*it);
-            delete *it;
+        for (std::list<boost::weak_ptr<NodeGui> >::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
+            _graph->deleteNodepluginsly(it->lock());
         }
     }
 }
@@ -174,18 +151,16 @@ AddMultipleNodesCommand::undo()
     _isUndone = true;
     std::list<ViewerInstance*> viewersToRefresh;
 
-    for (std::list<NodeBackDrop*>::iterator it = _bds.begin(); it != _bds.end(); ++it) {
-        (*it)->deactivate();
-    }
 
-    for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
-        (*it)->getNode()->deactivate(std::list< Natron::Node* >(), //outputs to disconnect
+    for (std::list<boost::weak_ptr<NodeGui> >::const_iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
+        NodeGuiPtr node = it->lock();
+        node->getNode()->deactivate(std::list< Natron::Node* >(), //outputs to disconnect
                                      true, //disconnect all nodes, disregarding the first parameter.
                                      true, //reconnect outputs to inputs of this node?
                                      true, //hide nodeGui?
                                      false); // triggerRender
         std::list<ViewerInstance* > viewers;
-        (*it)->getNode()->hasViewersConnected(&viewers);
+        node->getNode()->hasViewersConnected(&viewers);
         for (std::list<ViewerInstance* >::iterator it2 = viewers.begin(); it2 != viewers.end(); ++it2) {
             std::list<ViewerInstance*>::iterator foundViewer = std::find(viewersToRefresh.begin(), viewersToRefresh.end(), *it2);
             if ( foundViewer == viewersToRefresh.end() ) {
@@ -211,23 +186,26 @@ AddMultipleNodesCommand::redo()
 {
     _isUndone = false;
     std::list<ViewerInstance*> viewersToRefresh;
+    
+    std::list<boost::shared_ptr<NodeGui> > nodes;
+    for (std::list<boost::weak_ptr<NodeGui> >::const_iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
+        nodes.push_back(it->lock());
+    }
     if (_firstRedoCalled) {
-        for (std::list<NodeBackDrop*>::iterator it = _bds.begin(); it != _bds.end(); ++it) {
-            (*it)->activate();
-        }
-
-        for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
+  
+        for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
             (*it)->getNode()->activate(std::list< Natron::Node* >(), //inputs to restore
                                        true, //restore all inputs ?
                                        false); //triggerRender
         }
     }
     
-    _graph->setSelection(_nodes);
+    
+    _graph->setSelection(nodes);
 
     _graph->getGui()->getApp()->triggerAutoSave();
 
-    for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
+    for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         std::list<ViewerInstance* > viewers;
         (*it)->getNode()->hasViewersConnected(&viewers);
         for (std::list<ViewerInstance* >::iterator it2 = viewers.begin(); it2 != viewers.end(); ++it2) {
@@ -240,7 +218,9 @@ AddMultipleNodesCommand::redo()
     
 
     for (std::list<ViewerInstance* >::iterator it = viewersToRefresh.begin(); it != viewersToRefresh.end(); ++it) {
-        (*it)->renderCurrentFrame(true);
+        if ((*it)->getUiContext()) {
+            (*it)->renderCurrentFrame(true);
+        }
     }
 
 
@@ -250,11 +230,9 @@ AddMultipleNodesCommand::redo()
 
 RemoveMultipleNodesCommand::RemoveMultipleNodesCommand(NodeGraph* graph,
                                                        const std::list<boost::shared_ptr<NodeGui> > & nodes,
-                                                       const std::list<NodeBackDrop*> & bds,
                                                        QUndoCommand *parent)
     : QUndoCommand(parent)
       , _nodes()
-      , _bds(bds)
       , _graph(graph)
       , _isRedone(false)
 {
@@ -284,13 +262,10 @@ RemoveMultipleNodesCommand::~RemoveMultipleNodesCommand()
 {
     if (_isRedone) {
         for (std::list<NodeToRemove>::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
-            _graph->deleteNodepluginsly(it->node);
-        }
-
-        for (std::list<NodeBackDrop*>::iterator it = _bds.begin(); it != _bds.end(); ++it) {
-            (*it)->setParentItem(NULL);
-            _graph->removeBackDrop(*it);
-            delete *it;
+            boost::shared_ptr<NodeGui> n = it->node.lock();
+            if (n) {
+                _graph->deleteNodepluginsly(n);
+            }
         }
     }
 }
@@ -306,12 +281,14 @@ RemoveMultipleNodesCommand::undo()
         ++next;
     }
     for (std::list<NodeToRemove>::iterator it = _nodes.begin(); it != _nodes.end(); ++it,++next) {
-        it->node->getNode()->activate(it->outputsToRestore,false,false);
-        if ( it->node->isSettingsPanelVisible() ) {
-            it->node->getNode()->showKeyframesOnTimeline( next == _nodes.end() );
+        
+        NodeGuiPtr node = it->node.lock();
+        node->getNode()->activate(it->outputsToRestore,false,false);
+        if ( node->isSettingsPanelVisible() ) {
+            node->getNode()->showKeyframesOnTimeline( next == _nodes.end() );
         }
         std::list<ViewerInstance* > viewers;
-        it->node->getNode()->hasViewersConnected(&viewers);
+        node->getNode()->hasViewersConnected(&viewers);
         for (std::list<ViewerInstance* >::iterator it2 = viewers.begin(); it2 != viewers.end(); ++it2) {
             std::list<ViewerInstance*>::iterator foundViewer = std::find(viewersToRefresh.begin(), viewersToRefresh.end(), *it2);
             if ( foundViewer == viewersToRefresh.end() ) {
@@ -324,10 +301,6 @@ RemoveMultipleNodesCommand::undo()
             --next;
         }
     }
-    for (std::list<NodeBackDrop*>::iterator it = _bds.begin(); it != _bds.end(); ++it) {
-        (*it)->activate();
-    }
-
     for (std::list<ViewerInstance* >::iterator it = viewersToRefresh.begin(); it != viewersToRefresh.end(); ++it) {
         (*it)->renderCurrentFrame(true);
     }
@@ -351,11 +324,13 @@ RemoveMultipleNodesCommand::redo()
         ++next;
     }
     for (std::list<NodeToRemove>::iterator it = _nodes.begin(); it != _nodes.end(); ++it,++next) {
+        
+        NodeGuiPtr node = it->node.lock();
         ///Make a copy before calling deactivate which will modify the list
-        std::list<Natron::Node* > outputs = it->node->getNode()->getOutputs();
+        std::list<Natron::Node* > outputs = node->getNode()->getOutputs();
         
         std::list<ViewerInstance* > viewers;
-        it->node->getNode()->hasViewersConnected(&viewers);
+        node->getNode()->hasViewersConnected(&viewers);
         for (std::list<ViewerInstance* >::iterator it2 = viewers.begin(); it2 != viewers.end(); ++it2) {
             std::list<ViewerInstance*>::iterator foundViewer = std::find(viewersToRefresh.begin(), viewersToRefresh.end(), *it2);
             if ( foundViewer == viewersToRefresh.end() ) {
@@ -363,7 +338,7 @@ RemoveMultipleNodesCommand::redo()
             }
         }
 
-        it->node->getNode()->deactivate(it->outputsToRestore,false,_nodes.size() == 1,true,false);
+        node->getNode()->deactivate(it->outputsToRestore,false,_nodes.size() == 1,true,false);
 
 
         if (_nodes.size() == 1) {
@@ -398,17 +373,14 @@ RemoveMultipleNodesCommand::redo()
                 }
             }
         }
-        if ( it->node->isSettingsPanelVisible() ) {
-            it->node->getNode()->hideKeyframesFromTimeline( next == _nodes.end() );
+        if ( node->isSettingsPanelVisible() ) {
+            node->getNode()->hideKeyframesFromTimeline( next == _nodes.end() );
         }
 
         ///On Windows going pass .end() will crash...
         if ( next == _nodes.end() ) {
             --next;
         }
-    }
-    for (std::list<NodeBackDrop*>::iterator it = _bds.begin(); it != _bds.end(); ++it) {
-        (*it)->deactivate();
     }
 
     for (std::list<ViewerInstance* >::iterator it = viewersToRefresh.begin(); it != viewersToRefresh.end(); ++it) {
@@ -429,29 +401,28 @@ ConnectCommand::ConnectCommand(NodeGraph* graph,
                                const boost::shared_ptr<NodeGui> & newSrc,
                                QUndoCommand *parent)
     : QUndoCommand(parent),
-      _edge(edge),
       _oldSrc(oldSrc),
       _newSrc(newSrc),
       _dst( edge->getDest() ),
       _graph(graph),
       _inputNb( edge->getInputNumber() )
 {
-    assert(_dst);
+    assert(_dst.lock());
 }
 
 void
 ConnectCommand::undo()
 {
-    doConnect(_newSrc ? _newSrc->getNode() : boost::shared_ptr<Natron::Node>(),
-              _oldSrc ? _oldSrc->getNode() : boost::shared_ptr<Natron::Node>());
+    doConnect(_newSrc.lock() ? _newSrc.lock()->getNode() : boost::shared_ptr<Natron::Node>(),
+              _oldSrc.lock() ? _oldSrc.lock()->getNode() : boost::shared_ptr<Natron::Node>());
    
 } // undo
 
 void
 ConnectCommand::redo()
 {
-    doConnect(_oldSrc ? _oldSrc->getNode() : boost::shared_ptr<Natron::Node>(),
-              _newSrc ? _newSrc->getNode() : boost::shared_ptr<Natron::Node>());
+    doConnect(_oldSrc.lock() ? _oldSrc.lock()->getNode() : boost::shared_ptr<Natron::Node>(),
+              _newSrc.lock() ? _newSrc.lock()->getNode() : boost::shared_ptr<Natron::Node>());
 } // redo
 
 
@@ -460,15 +431,16 @@ void
 ConnectCommand::doConnect(const boost::shared_ptr<Natron::Node> &oldSrc,
                const boost::shared_ptr<Natron::Node> & newSrc)
 {
-    boost::shared_ptr<Natron::Node> internalDst =  _dst->getNode();
+    NodeGuiPtr dst = _dst.lock();
+    boost::shared_ptr<Natron::Node> internalDst =  dst->getNode();
     InspectorNode* inspector = dynamic_cast<InspectorNode*>(internalDst.get());
     
     if (newSrc) {
         setText( QObject::tr("Connect %1 to %2")
-                .arg(internalDst->getName().c_str() ).arg( newSrc->getName().c_str() ) );
+                .arg(internalDst->getLabel().c_str() ).arg( newSrc->getLabel().c_str() ) );
     } else {
         setText( QObject::tr("Disconnect %1")
-                .arg(internalDst->getName().c_str() ) );
+                .arg(internalDst->getLabel().c_str() ) );
     }
 
     
@@ -492,18 +464,9 @@ ConnectCommand::doConnect(const boost::shared_ptr<Natron::Node> &oldSrc,
                 _graph->getGui()->getApp()->getProject()->connectNodes(_inputNb, newSrc, inspector);
             }
         }
-        ///after disconnect calls the _edge pointer might be invalid since the edges might have been destroyed.
-        NodeGui::InputEdgesMap::const_iterator it = _dst->getInputsArrows().find(_inputNb);
-        while ( it == _dst->getInputsArrows().end() ) {
-            inspector->addEmptyInput();
-            it = _dst->getInputsArrows().find(_inputNb);
-        }
-        _edge = it->second;
-        _inputNb = _edge->getInputNumber();
-
+      
         
     } else {
-        //_edge->setSource(_newSrc);
         
         if (oldSrc && newSrc) {
             internalDst->replaceInput(newSrc, _inputNb);
@@ -517,8 +480,8 @@ ConnectCommand::doConnect(const boost::shared_ptr<Natron::Node> &oldSrc,
         }
     }
     
-    assert(_dst);
-    _dst->refreshEdges();
+    assert(_dst.lock());
+    dst->refreshEdges();
 
     ///if the node has no inputs, all the viewers attached to that node should be black.
     std::list<ViewerInstance* > viewers;
@@ -534,7 +497,7 @@ ConnectCommand::doConnect(const boost::shared_ptr<Natron::Node> &oldSrc,
 
 }
 
-ResizeBackDropCommand::ResizeBackDropCommand(NodeBackDrop* bd,
+ResizeBackDropCommand::ResizeBackDropCommand(const NodeGuiPtr& bd,
                                              int w,
                                              int h,
                                              QUndoCommand *parent)
@@ -559,14 +522,14 @@ void
 ResizeBackDropCommand::undo()
 {
     _bd->resize(_oldW, _oldH);
-    setText( QObject::tr("Resize %1").arg( _bd->getName() ) );
+    setText( QObject::tr("Resize %1").arg( _bd->getNode()->getLabel().c_str() ) );
 }
 
 void
 ResizeBackDropCommand::redo()
 {
     _bd->resize(_w, _h);
-    setText( QObject::tr("Resize %1").arg( _bd->getName() ) );
+    setText( QObject::tr("Resize %1").arg( _bd->getNode()->getLabel().c_str() ) );
 }
 
 bool
@@ -588,28 +551,20 @@ ResizeBackDropCommand::mergeWith(const QUndoCommand *command)
 
 DecloneMultipleNodesCommand::DecloneMultipleNodesCommand(NodeGraph* graph,
                                                          const std::list<boost::shared_ptr<NodeGui> > & nodes,
-                                                         const std::list<NodeBackDrop*> & bds,
                                                          QUndoCommand *parent)
     : QUndoCommand(parent)
       , _nodes()
-      , _bds()
       , _graph(graph)
 {
     for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         NodeToDeclone n;
         n.node = *it;
         n.master = (*it)->getNode()->getMasterNode();
-        assert(n.master);
+        assert(n.master.lock());
         _nodes.push_back(n);
     }
 
-    for (std::list<NodeBackDrop*>::const_iterator it = bds.begin(); it != bds.end(); ++it) {
-        BDToDeclone b;
-        b.bd = *it;
-        b.master = (*it)->getMaster();
-        assert(b.master);
-        _bds.push_back(b);
-    }
+
 }
 
 DecloneMultipleNodesCommand::~DecloneMultipleNodesCommand()
@@ -620,11 +575,9 @@ void
 DecloneMultipleNodesCommand::undo()
 {
     for (std::list<NodeToDeclone>::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
-        it->node->getNode()->getLiveInstance()->slaveAllKnobs( it->master->getLiveInstance() );
+        it->node.lock()->getNode()->getLiveInstance()->slaveAllKnobs( it->master.lock()->getLiveInstance() );
     }
-    for (std::list<BDToDeclone>::iterator it = _bds.begin(); it != _bds.end(); ++it) {
-        it->bd->slaveTo(it->master);
-    }
+
     _graph->getGui()->getApp()->triggerAutoSave();
     setText( QObject::tr("Declone node") );
 }
@@ -633,11 +586,9 @@ void
 DecloneMultipleNodesCommand::redo()
 {
     for (std::list<NodeToDeclone>::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
-        it->node->getNode()->getLiveInstance()->unslaveAllKnobs();
+        it->node.lock()->getNode()->getLiveInstance()->unslaveAllKnobs();
     }
-    for (std::list<BDToDeclone>::iterator it = _bds.begin(); it != _bds.end(); ++it) {
-        it->bd->unslave();
-    }
+
     _graph->getGui()->getApp()->triggerAutoSave();
     setText( QObject::tr("Declone node") );
 }
@@ -710,13 +661,13 @@ Tree::buildTreeInternal(const std::list<NodeGuiPtr>& selectedNodes,
 {
     QSize nodeSize = currentNode->getSize();
     boost::shared_ptr<Natron::Node> internalNode = currentNode->getNode();
-    const std::map<int,Edge*> & inputs = currentNode->getInputsArrows();
+    const std::vector<Edge*> & inputs = currentNode->getInputsArrows();
     NodeGuiPtr firstNonMaskInput;
     std::list<NodeGuiPtr> otherNonMaskInputs;
     std::list<NodeGuiPtr> maskInputs;
 
-    for (std::map<int,Edge*>::const_iterator it = inputs.begin(); it != inputs.end(); ++it) {
-        NodeGuiPtr source = it->second->getSource();
+    for (U32 i = 0; i < inputs.size() ; ++i) {
+        NodeGuiPtr source = inputs[i]->getSource();
         
         ///Check if the source is selected
         std::list<NodeGuiPtr>::const_iterator foundSelected = std::find(selectedNodes.begin(),selectedNodes.end(),source);
@@ -725,7 +676,7 @@ Tree::buildTreeInternal(const std::list<NodeGuiPtr>& selectedNodes,
         }
         
         if (source) {
-            bool isMask = internalNode->getLiveInstance()->isInputMask(it->first);
+            bool isMask = internalNode->getLiveInstance()->isInputMask(i);
             if (!firstNonMaskInput && !isMask) {
                 firstNonMaskInput = source;
                 for (std::list<TreeNode>::iterator it2 = nodes.begin(); it2 != nodes.end(); ++it2) {
@@ -810,7 +761,7 @@ Tree::buildTreeInternal(const std::list<NodeGuiPtr>& selectedNodes,
             maskInputsPos.push_back(p);
         }
 
-        ///Now that we built the tree at this level, call this function again on the inputs that we just treated
+        ///Now that we built the tree at this level, call this function again on the inputs that we just processed
         if (firstNonMaskInput) {
             buildTreeInternal(selectedNodes, firstNonMaskInput.get(),firstNonMaskInputPos, usedNodes);
         }
@@ -957,15 +908,18 @@ RearrangeNodesCommand::redo()
 DisableNodesCommand::DisableNodesCommand(const std::list<boost::shared_ptr<NodeGui> > & nodes,
                                          QUndoCommand *parent)
     : QUndoCommand(parent)
-      , _nodes(nodes)
+      , _nodes()
 {
+    for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        _nodes.push_back(*it);
+    }
 }
 
 void
 DisableNodesCommand::undo()
 {
-    for (std::list<NodeGuiPtr>::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
-        (*it)->getNode()->setNodeDisabled(false);
+    for (std::list<boost::weak_ptr<NodeGui> >::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
+        it->lock()->getNode()->setNodeDisabled(false);
     }
     setText( QObject::tr("Disable nodes") );
 }
@@ -973,8 +927,8 @@ DisableNodesCommand::undo()
 void
 DisableNodesCommand::redo()
 {
-    for (std::list<NodeGuiPtr>::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
-        (*it)->getNode()->setNodeDisabled(true);
+    for (std::list<boost::weak_ptr<NodeGui> >::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
+        it->lock()->getNode()->setNodeDisabled(true);
     }
     setText( QObject::tr("Disable nodes") );
 }
@@ -982,15 +936,18 @@ DisableNodesCommand::redo()
 EnableNodesCommand::EnableNodesCommand(const std::list<boost::shared_ptr<NodeGui> > & nodes,
                                        QUndoCommand *parent)
     : QUndoCommand(parent)
-      , _nodes(nodes)
+      , _nodes()
 {
+    for (std::list<boost::shared_ptr<NodeGui> > ::const_iterator it = nodes.begin(); it !=nodes.end(); ++it) {
+        _nodes.push_back(*it);
+    }
 }
 
 void
 EnableNodesCommand::undo()
 {
-    for (std::list<NodeGuiPtr>::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
-        (*it)->getNode()->setNodeDisabled(true);
+    for (std::list<boost::weak_ptr<NodeGui> >::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
+        it->lock()->getNode()->setNodeDisabled(true);
     }
     setText( QObject::tr("Enable nodes") );
 }
@@ -998,8 +955,8 @@ EnableNodesCommand::undo()
 void
 EnableNodesCommand::redo()
 {
-    for (std::list<NodeGuiPtr>::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
-        (*it)->getNode()->setNodeDisabled(false);
+    for (std::list<boost::weak_ptr<NodeGui> >::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
+        it->lock()->getNode()->setNodeDisabled(false);
     }
     setText( QObject::tr("Enable nodes") );
 }
@@ -1015,6 +972,15 @@ LoadNodePresetsCommand::LoadNodePresetsCommand(const boost::shared_ptr<NodeGui> 
 , _newSerializations(serialization)
 {
 
+}
+
+void
+LoadNodePresetsCommand::getListAsShared(const std::list< boost::weak_ptr<Natron::Node> >& original,
+                     std::list< boost::shared_ptr<Natron::Node> >& shared) const
+{
+    for (std::list< boost::weak_ptr<Natron::Node> >::const_iterator it = original.begin(); it != original.end(); ++it) {
+        shared.push_back(it->lock());
+    }
 }
 
 LoadNodePresetsCommand::~LoadNodePresetsCommand()
@@ -1037,12 +1003,16 @@ LoadNodePresetsCommand::undo()
     
     _isUndone = true;
     
-    boost::shared_ptr<Natron::Node> internalNode = _node->getNode();
-    boost::shared_ptr<MultiInstancePanel> panel = _node->getMultiInstancePanel();
+    NodeGuiPtr node = _node.lock();
+    boost::shared_ptr<Natron::Node> internalNode = node->getNode();
+    boost::shared_ptr<MultiInstancePanel> panel = node->getMultiInstancePanel();
     internalNode->loadKnobs(*_oldSerialization.front(),true);
     if (panel) {
-        panel->removeInstances(_newChildren);
-        panel->addInstances(_oldChildren);
+        std::list< boost::shared_ptr<Natron::Node> > newChildren,oldChildren;
+        getListAsShared(_newChildren, newChildren);
+        getListAsShared(_oldChildren, oldChildren);
+        panel->removeInstances(newChildren);
+        panel->addInstances(oldChildren);
     }
     internalNode->getLiveInstance()->evaluate_public(NULL, true, Natron::eValueChangedReasonUserEdited);
     internalNode->getApp()->triggerAutoSave();
@@ -1053,20 +1023,21 @@ void
 LoadNodePresetsCommand::redo()
 {
     
+    NodeGuiPtr node = _node.lock();
 
-    boost::shared_ptr<Natron::Node> internalNode = _node->getNode();
-    boost::shared_ptr<MultiInstancePanel> panel = _node->getMultiInstancePanel();
+    boost::shared_ptr<Natron::Node> internalNode = node->getNode();
+    boost::shared_ptr<MultiInstancePanel> panel = node->getMultiInstancePanel();
 
     if (!_firstRedoCalled) {
        
         ///Serialize the current state of the node
-        _node->serializeInternal(_oldSerialization,true);
+        node->serializeInternal(_oldSerialization,true);
         
         if (panel) {
-            const std::list<std::pair<boost::shared_ptr<Natron::Node>,bool> >& children = panel->getInstances();
-            for (std::list<std::pair<boost::shared_ptr<Natron::Node>,bool> >::const_iterator it = children.begin();
+            const std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> >& children = panel->getInstances();
+            for (std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> >::const_iterator it = children.begin();
                  it != children.end(); ++it) {
-                _oldChildren.push_back(it->first);
+                _oldChildren.push_back(it->first.lock());
             }
         }
         
@@ -1088,9 +1059,12 @@ LoadNodePresetsCommand::redo()
     
     internalNode->loadKnobs(*_newSerializations.front(),true);
     if (panel) {
-        panel->removeInstances(_oldChildren);
+        std::list< boost::shared_ptr<Natron::Node> > oldChildren,newChildren;
+        getListAsShared(_oldChildren, oldChildren);
+        getListAsShared(_newChildren, newChildren);
+        panel->removeInstances(oldChildren);
         if (_firstRedoCalled) {
-            panel->addInstances(_newChildren);
+            panel->addInstances(newChildren);
         }
     }
     internalNode->getLiveInstance()->evaluate_public(NULL, true, Natron::eValueChangedReasonUserEdited);
@@ -1103,19 +1077,15 @@ LoadNodePresetsCommand::redo()
 
 
 RenameNodeUndoRedoCommand::RenameNodeUndoRedoCommand(const boost::shared_ptr<NodeGui> & node,
-                                                     NodeBackDrop* bd,
+                                                     const QString& oldName,
                                                      const QString& newName)
 : QUndoCommand()
 , _node(node)
-, _bd(bd)
+, _oldName(oldName)
 , _newName(newName)
 {
-    assert(node || bd);
-    if (node) {
-        _oldName = node->getNode()->getName().c_str();
-    } else if (bd) {
-        _oldName = bd->getName();
-    }
+    assert(node);
+   
 }
 
 RenameNodeUndoRedoCommand::~RenameNodeUndoRedoCommand()
@@ -1126,28 +1096,29 @@ RenameNodeUndoRedoCommand::~RenameNodeUndoRedoCommand()
 void
 RenameNodeUndoRedoCommand::undo()
 {
-    if (_node) {
-        _node->trySetName(_oldName);
-    } else if (_bd) {
-        _bd->trySetName(_oldName);
-    }
+    NodeGuiPtr node = _node.lock();
+    node->setName(_oldName);
     setText(QObject::tr("Rename node"));
 }
 
 void RenameNodeUndoRedoCommand::redo()
 {
-    if (_node) {
-        _node->trySetName(_newName);
-    } else if (_bd) {
-        _bd->trySetName(_newName);
-    }
+    NodeGuiPtr node = _node.lock();
+    node->setName(_newName);
     setText(QObject::tr("Rename node"));
 }
 
+static void
+sharedToWeak(const std::vector<boost::shared_ptr<Natron::Node> >& shared,
+                  std::vector<boost::weak_ptr<Natron::Node> >& weak)
+{
+    for (std::vector<boost::shared_ptr<Natron::Node> >::const_iterator it = shared.begin(); it != shared.end(); ++it) {
+        weak.push_back(*it);
+    }
+}
 
 
-
-static void addTreeInputs(const std::list<boost::shared_ptr<NodeGui> >& nodes,const boost::shared_ptr<NodeGui>& node,ExtractNodeUndoRedoCommand::ExtractedTree& tree,
+static void addTreeInputs(const std::list<boost::shared_ptr<NodeGui> >& nodes,const boost::shared_ptr<NodeGui>& node,ExtractedTree& tree,
                           std::list<boost::shared_ptr<NodeGui> >& markedNodes)
 {
     if (std::find(markedNodes.begin(), markedNodes.end(), node) != markedNodes.end()) {
@@ -1159,17 +1130,17 @@ static void addTreeInputs(const std::list<boost::shared_ptr<NodeGui> >& nodes,co
     }
     
     if (!hasNodeInputsInList(nodes,node)) {
-        ExtractNodeUndoRedoCommand::ExtractedInput input;
+        ExtractedInput input;
         input.node = node;
-        input.inputs = node->getNode()->getInputs_mt_safe();
+        sharedToWeak(node->getNode()->getInputs_mt_safe(),input.inputs);
         tree.inputs.push_back(input);
         markedNodes.push_back(node);
     } else {
         tree.inbetweenNodes.push_back(node);
         markedNodes.push_back(node);
-        const std::map<int,Edge*>& inputs = node->getInputsArrows();
-        for (std::map<int,Edge*>::const_iterator it2 = inputs.begin() ; it2!=inputs.end(); ++it2) {
-            boost::shared_ptr<NodeGui> input = it2->second->getSource();
+        const std::vector<Edge*>& inputs = node->getInputsArrows();
+        for (std::vector<Edge*>::const_iterator it2 = inputs.begin() ; it2!=inputs.end(); ++it2) {
+            boost::shared_ptr<NodeGui> input = (*it2)->getSource();
             if (input) {
                 addTreeInputs(nodes, input, tree, markedNodes);
             }
@@ -1177,16 +1148,10 @@ static void addTreeInputs(const std::list<boost::shared_ptr<NodeGui> >& nodes,co
     }
 }
 
-
-///////////////
-
-ExtractNodeUndoRedoCommand::ExtractNodeUndoRedoCommand(NodeGraph* graph,const std::list<boost::shared_ptr<NodeGui> >& nodes)
-: QUndoCommand()
-, _graph(graph)
-, _trees()
+static void extractTreesFromNodes(const std::list<boost::shared_ptr<NodeGui> >& nodes,std::list<ExtractedTree>& trees)
 {
     std::list<boost::shared_ptr<NodeGui> > markedNodes;
-
+    
     for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = nodes.begin(); it!=nodes.end(); ++it) {
         bool isOutput = !hasNodeOutputsInList(nodes, *it);
         if (isOutput) {
@@ -1199,9 +1164,9 @@ ExtractNodeUndoRedoCommand::ExtractNodeUndoRedoCommand(NodeGraph* graph,const st
                 tree.output.outputs.push_back(std::make_pair(idx,*it2));
             }
             
-            const std::map<int,Edge*>& inputs = (*it)->getInputsArrows();
-            for (std::map<int,Edge*>::const_iterator it2 = inputs.begin() ; it2!=inputs.end(); ++it2) {
-                boost::shared_ptr<NodeGui> input = it2->second->getSource();
+            const std::vector<Edge*>& inputs = (*it)->getInputsArrows();
+            for (U32 i = 0; i < inputs.size(); ++i) {
+                boost::shared_ptr<NodeGui> input = inputs[i]->getSource();
                 if (input) {
                     addTreeInputs(nodes, input, tree, markedNodes);
                 }
@@ -1210,15 +1175,26 @@ ExtractNodeUndoRedoCommand::ExtractNodeUndoRedoCommand(NodeGraph* graph,const st
             if (tree.inputs.empty()) {
                 ExtractedInput input;
                 input.node = *it;
-                input.inputs = n->getInputs_mt_safe();
+                sharedToWeak(n->getInputs_mt_safe(),input.inputs);
                 tree.inputs.push_back(input);
             }
             
-            _trees.push_back(tree);
+            trees.push_back(tree);
         }
     }
 
+}
+
+
+///////////////
+
+ExtractNodeUndoRedoCommand::ExtractNodeUndoRedoCommand(NodeGraph* graph,const std::list<boost::shared_ptr<NodeGui> >& nodes)
+: QUndoCommand()
+, _graph(graph)
+, _trees()
+{
     
+    extractTreesFromNodes(nodes, _trees);
 }
 
 ExtractNodeUndoRedoCommand::~ExtractNodeUndoRedoCommand()
@@ -1233,38 +1209,42 @@ ExtractNodeUndoRedoCommand::undo()
     
     for (std::list<ExtractedTree>::iterator it = _trees.begin(); it!=_trees.end(); ++it) {
         
+        NodeGuiPtr output = it->output.node.lock();
         ///Connect and move output
         for (std::list<std::pair<int,Natron::Node*> >::iterator it2 = it->output.outputs.begin(); it2 != it->output.outputs.end(); ++it2) {
             it2->second->disconnectInput(it2->first);
-            it2->second->connectInput(it->output.node->getNode(),it2->first);
+            it2->second->connectInput(output->getNode(),it2->first);
         }
         
-        QPointF curPos = it->output.node->getPos_mt_safe();
-        it->output.node->refreshPosition(curPos.x() - 200, curPos.y(),true);
+        QPointF curPos = output->getPos_mt_safe();
+        output->refreshPosition(curPos.x() - 200, curPos.y(),true);
         
         ///Connect and move inputs
         for (std::list<ExtractedInput>::iterator it2 = it->inputs.begin(); it2 != it->inputs.end(); ++it2) {
+            
+            NodeGuiPtr input = it2->node.lock();
             for (U32 i  =  0; i < it2->inputs.size(); ++i) {
-                if (it2->inputs[i]) {
-                    it2->node->getNode()->connectInput(it2->inputs[i],i);
+                if (it2->inputs[i].lock()) {
+                    input->getNode()->connectInput(it2->inputs[i].lock(),i);
                 }
             }
             
-            if (it2->node != it->output.node) {
-                QPointF curPos = it2->node->getPos_mt_safe();
-                it2->node->refreshPosition(curPos.x() - 200, curPos.y(),true);
+            if (input != output) {
+                QPointF curPos = input->getPos_mt_safe();
+                input->refreshPosition(curPos.x() - 200, curPos.y(),true);
             }
         }
         
         ///Move all other nodes
         
-        for (std::list<boost::shared_ptr<NodeGui> >::iterator it2 = it->inbetweenNodes.begin() ; it2 != it->inbetweenNodes.end(); ++it2) {
-            QPointF curPos = (*it2)->getPos_mt_safe();
-            (*it2)->refreshPosition(curPos.x() - 200, curPos.y(),true);
+        for (std::list<boost::weak_ptr<NodeGui> >::iterator it2 = it->inbetweenNodes.begin() ; it2 != it->inbetweenNodes.end(); ++it2) {
+            NodeGuiPtr node = it2->lock();
+            QPointF curPos = node->getPos_mt_safe();
+            node->refreshPosition(curPos.x() - 200, curPos.y(),true);
         }
         
         std::list<ViewerInstance* > tmp;
-        it->output.node->getNode()->hasViewersConnected(&tmp);
+        output->getNode()->hasViewersConnected(&tmp);
         
         for (std::list<ViewerInstance* >::iterator it2 = tmp.begin() ; it2 != tmp.end(); ++it2) {
             viewers.insert(*it2);
@@ -1287,7 +1267,9 @@ ExtractNodeUndoRedoCommand::redo()
     
     for (std::list<ExtractedTree>::iterator it = _trees.begin(); it!=_trees.end(); ++it) {
         std::list<ViewerInstance* > tmp;
-        it->output.node->getNode()->hasViewersConnected(&tmp);
+        
+        NodeGuiPtr output = it->output.node.lock();
+        output->getNode()->hasViewersConnected(&tmp);
         
         for (std::list<ViewerInstance* >::iterator it2 = tmp.begin() ; it2 != tmp.end(); ++it2) {
             viewers.insert(*it2);
@@ -1299,13 +1281,14 @@ ExtractNodeUndoRedoCommand::redo()
         if (it->output.outputs.size() == 1 && it->inputs.size() == 1) {
             const ExtractedInput& selectedInput = it->inputs.front();
             
-            const std::vector<boost::shared_ptr<Natron::Node> > &inputs = selectedInput.inputs;
+            const std::vector<boost::weak_ptr<Natron::Node> > &inputs = selectedInput.inputs;
+            NodeGuiPtr selectedInputNode = selectedInput.node.lock();
             
             boost::shared_ptr<Natron::Node> inputToConnectTo ;
             for (U32 i = 0; i < inputs.size() ;++i) {
-                if (inputs[i] && !selectedInput.node->getNode()->getLiveInstance()->isInputOptional(i) &&
-                    !selectedInput.node->getNode()->getLiveInstance()->isInputRotoBrush(i)) {
-                    inputToConnectTo = inputs[i];
+                if (inputs[i].lock() && !selectedInputNode->getNode()->getLiveInstance()->isInputOptional(i) &&
+                    !selectedInputNode->getNode()->getLiveInstance()->isInputRotoBrush(i)) {
+                    inputToConnectTo = inputs[i].lock();
                     break;
                 }
             }
@@ -1326,29 +1309,31 @@ ExtractNodeUndoRedoCommand::redo()
             }
         }
         
-        QPointF curPos = it->output.node->getPos_mt_safe();
-        it->output.node->refreshPosition(curPos.x() + 200, curPos.y(),true);
+        QPointF curPos = output->getPos_mt_safe();
+        output->refreshPosition(curPos.x() + 200, curPos.y(),true);
         
        
         
         ///Disconnect and move inputs
         for (std::list<ExtractedInput>::iterator it2 = it->inputs.begin(); it2 != it->inputs.end(); ++it2) {
+            NodeGuiPtr node = it2->node.lock();
             for (U32 i  =  0; i < it2->inputs.size(); ++i) {
-                if (it2->inputs[i]) {
-                    it2->node->getNode()->disconnectInput(i);
+                if (it2->inputs[i].lock()) {
+                    node->getNode()->disconnectInput(i);
                 }
             }
-            if (it2->node != it->output.node) {
-                QPointF curPos = it2->node->getPos_mt_safe();
-                it2->node->refreshPosition(curPos.x() + 200, curPos.y(),true);
+            if (node != output) {
+                QPointF curPos = node->getPos_mt_safe();
+                node->refreshPosition(curPos.x() + 200, curPos.y(),true);
             }
         }
         
         ///Move all other nodes
         
-        for (std::list<boost::shared_ptr<NodeGui> >::iterator it2 = it->inbetweenNodes.begin() ; it2 != it->inbetweenNodes.end(); ++it2) {
-            QPointF curPos = (*it2)->getPos_mt_safe();
-            (*it2)->refreshPosition(curPos.x() + 200, curPos.y(),true);
+        for (std::list<boost::weak_ptr<NodeGui> >::iterator it2 = it->inbetweenNodes.begin() ; it2 != it->inbetweenNodes.end(); ++it2) {
+            NodeGuiPtr node = it2->lock();
+            QPointF curPos = node->getPos_mt_safe();
+            node->refreshPosition(curPos.x() + 200, curPos.y(),true);
         }
     }
     
@@ -1360,4 +1345,96 @@ ExtractNodeUndoRedoCommand::redo()
     
 
     setText(QObject::tr("Extract node"));
+}
+
+
+GroupFromSelectionCommand::GroupFromSelectionCommand(NodeGraph* graph,const NodeGuiList & nodes)
+: QUndoCommand()
+, _graph(graph)
+, _group()
+, _firstRedoCalled(false)
+, _isRedone(false)
+{
+    
+    NodeGuiList selection = nodes;
+    for (NodeGuiList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        _originalNodes.push_back(*it);
+    }
+    CreateNodeArgs groupArgs(PLUGINID_NATRON_GROUP,
+                             "",
+                             -1,-1,
+                             true, //< autoconnect
+                             INT_MIN,INT_MIN,
+                             false, //< push undo/redo command
+                             true, // add to project
+                             QString(),
+                             CreateNodeArgs::DefaultValuesList(),
+                             _graph->getGroup());
+    NodePtr containerNode = _graph->getGui()->getApp()->createNode(groupArgs);
+    boost::shared_ptr<NodeGroup> isGrp = boost::dynamic_pointer_cast<NodeGroup>(containerNode->getLiveInstance()->shared_from_this());
+    assert(isGrp);
+    boost::shared_ptr<NodeGuiI> container_i = containerNode->getNodeGui();
+    assert(container_i);
+    _group = boost::dynamic_pointer_cast<NodeGui>(container_i);
+    assert(_group.lock());
+    _graph->copyNodesAndCreateInGroup(selection,isGrp);
+    
+}
+
+GroupFromSelectionCommand::~GroupFromSelectionCommand()
+{
+    
+}
+
+void
+GroupFromSelectionCommand::undo()
+{
+    
+    for (std::list<boost::weak_ptr<NodeGui> >::iterator it = _originalNodes.begin(); it != _originalNodes.end(); ++it) {
+        NodeGuiPtr node = it->lock();
+        node->getNode()->activate(std::list< Natron::Node* >(),true,false);
+    }
+    _group.lock()->getNode()->deactivate(std::list< Natron::Node* >(),
+                                         true,
+                                         false,
+                                         true,
+                                         true);
+
+    _isRedone = false;
+    setText(QObject::tr("Group from selection"));
+}
+
+void
+GroupFromSelectionCommand::redo()
+{
+   
+    for (std::list<boost::weak_ptr<NodeGui> >::iterator it = _originalNodes.begin(); it != _originalNodes.end(); ++it) {
+        NodeGuiPtr node = it->lock();
+        node->getNode()->deactivate(std::list< Natron::Node* >(),
+                                    true,
+                                    false,
+                                    true,
+                                    false);
+    }
+    
+    if (_firstRedoCalled) {
+        _group.lock()->getNode()->activate(std::list< Natron::Node* >(),true,false);
+    }
+    
+    std::list<ViewerInstance*> viewers;
+    _graph->getGroup()->getViewers(&viewers);
+    for (std::list<ViewerInstance*>::iterator it = viewers.begin(); it != viewers.end(); ++it) {
+        (*it)->renderCurrentFrame(true);
+    }
+    NodeGroup* isGrp = dynamic_cast<NodeGroup*>(_group.lock()->getNode()->getLiveInstance());
+    assert(isGrp);
+    NodeGraphI* graph_i = isGrp->getNodeGraph();
+    assert(graph_i);
+    NodeGraph* graph = dynamic_cast<NodeGraph*>(graph_i);
+    assert(graph);
+    graph->centerOnAllNodes();
+    
+    _firstRedoCalled = true;
+    _isRedone = true;
+    setText(QObject::tr("Group from selection"));
 }

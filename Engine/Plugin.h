@@ -12,9 +12,20 @@
 #ifndef PLUGIN_H
 #define PLUGIN_H
 
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
 #include <vector>
+#include <set>
+#include <map>
 #include <QString>
 #include <QStringList>
+
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#include <boost/shared_ptr.hpp>
+#include <boost/weak_ptr.hpp>
+#endif
 
 class QMutex;
 namespace Natron {
@@ -26,18 +37,24 @@ class PluginGroupNode
     QString _id;
     QString _label;
     QString _iconPath;
-    std::vector<PluginGroupNode*> _children;
-    PluginGroupNode* _parent;
-
+    int _major,_minor;
+    std::list<boost::shared_ptr<PluginGroupNode> > _children;
+    boost::weak_ptr<PluginGroupNode> _parent;
+    bool _notHighestMajorVersion;
 public:
     PluginGroupNode(const QString & pluginID,
                     const QString & pluginLabel,
-                    const QString & iconPath)
-        : _id(pluginID)
-          , _label(pluginLabel)
-          , _iconPath(iconPath)
-          , _children()
-          , _parent(NULL)
+                    const QString & iconPath,
+                    int major,
+                    int minor)
+    : _id(pluginID)
+    , _label(pluginLabel)
+    , _iconPath(iconPath)
+    , _major(major)
+    , _minor(minor)
+    , _children()
+    , _parent()
+    , _notHighestMajorVersion(false)
     {
     }
 
@@ -49,6 +66,11 @@ public:
     const QString & getLabel() const
     {
         return _label;
+    }
+    
+    const QString getLabelVersionMajorEncoded() const
+    {
+        return _label + ' ' + QString::number(_major);
     }
 
     void setLabel(const QString & label)
@@ -66,27 +88,47 @@ public:
         _iconPath = iconPath;
     }
 
-    const std::vector<PluginGroupNode*> & getChildren() const
+    const std::list<boost::shared_ptr<PluginGroupNode> > & getChildren() const
     {
         return _children;
     }
 
-    void tryAddChild(PluginGroupNode* plugin);
+    void tryAddChild(const boost::shared_ptr<PluginGroupNode>& plugin);
     void tryRemoveChild(PluginGroupNode* plugin);
     
-    PluginGroupNode* getParent() const
+    boost::shared_ptr<PluginGroupNode> getParent() const
     {
-        return _parent;
+        return _parent.lock();
     }
 
-    void setParent(PluginGroupNode* parent)
+    void setParent(const boost::shared_ptr<PluginGroupNode>& parent)
     {
         _parent = parent;
     }
 
     bool hasParent() const
     {
-        return _parent != NULL;
+        return _parent.lock().get() != NULL;
+    }
+    
+    int getMajorVersion() const
+    {
+        return _major;
+    }
+    
+    int getMinorVersion() const
+    {
+        return _minor;
+    }
+    
+    bool getNotHighestMajorVersion() const
+    {
+        return _notHighestMajorVersion;
+    }
+    
+    void setNotHighestMajorVersion(bool v)
+    {
+        _notHighestMajorVersion = v;
     }
 };
 
@@ -103,24 +145,26 @@ class Plugin
     QMutex* _lock;
     int _majorVersion;
     int _minorVersion;
-    bool _hasShortcutSet; //< to speed up the keypress event of Nodegraph, this is used to find out quickly whether it has a shortcut or not.
+    mutable bool _hasShortcutSet; //< to speed up the keypress event of Nodegraph, this is used to find out quickly whether it has a shortcut or not.
     bool _isReader,_isWriter;
+    QString _pythonModule;
 public:
 
     Plugin()
-        : _binary(NULL)
-          , _id()
-          , _label()
-          , _iconFilePath()
-          , _groupIconFilePath()
-          , _grouping()
-          , _ofxPluginID()
-          , _lock()
-          , _majorVersion(0)
-          , _minorVersion(0)
-          , _hasShortcutSet(false)
-          , _isReader(false)
-          , _isWriter(false)
+    : _binary(NULL)
+    , _id()
+    , _label()
+    , _iconFilePath()
+    , _groupIconFilePath()
+    , _grouping()
+    , _ofxPluginID()
+    , _lock()
+    , _majorVersion(0)
+    , _minorVersion(0)
+    , _hasShortcutSet(false)
+    , _isReader(false)
+    , _isWriter(false)
+    , _pythonModule()
     {
     }
 
@@ -158,6 +202,7 @@ public:
     {
         _id = id;
     }
+    
 
     const QString & getPluginID() const
     {
@@ -182,11 +227,28 @@ public:
         return _label;
     }
     
+    const QString getLabelVersionMajorMinorEncoded() const
+    {
+        return _label + ' ' + QString::number(_majorVersion) + '.' + QString::number(_minorVersion);
+    }
+    
+    const QString getLabelVersionMajorEncoded() const
+    {
+        return _label + ' ' + QString::number(_majorVersion);
+    }
+    
     QString generateUserFriendlyPluginID() const
     {
         QString grouping = _grouping.size() > 0 ? _grouping[0] : QString();
         return _label + "  [" + grouping + "]";
     }
+    
+    QString generateUserFriendlyPluginIDMajorEncoded() const
+    {
+        QString grouping = _grouping.size() > 0 ? _grouping[0] : QString();
+        return getLabelVersionMajorEncoded() + "  [" + grouping + "]";
+    }
+
     
     const QString & getPluginOFXID() const
     {
@@ -228,7 +290,7 @@ public:
         return _minorVersion;
     }
 
-    void setHasShortcut(bool has)
+    void setHasShortcut(bool has) const
     {
         _hasShortcutSet = has;
     }
@@ -237,7 +299,28 @@ public:
     {
         return _hasShortcutSet;
     }
+    
+    void setPythonModule(const QString& module)
+    {
+        _pythonModule = module;
+    }
+    
+    const QString& getPythonModule() const {
+        return _pythonModule;
+    }
 };
+    
+struct Plugin_compare_major
+{
+    bool operator() (const Plugin* const lhs,
+                     const Plugin* const rhs) const
+    {
+        return lhs->getMajorVersion() < rhs->getMajorVersion();
+    }
+};
+    
+typedef std::set<Plugin*,Plugin_compare_major> PluginMajorsOrdered;
+typedef std::map<std::string,PluginMajorsOrdered> PluginsMap;
 }
 
 #endif // PLUGIN_H

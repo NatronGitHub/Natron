@@ -12,6 +12,10 @@
 #ifndef CURVE_WIDGET_H
 #define CURVE_WIDGET_H
 
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
 #include <set>
 
 #include "Global/GLIncludes.h" //!<must be included before QGlWidget because of gl.h and glew.h
@@ -23,7 +27,7 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QDialog>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
-#ifndef Q_MOC_RUN
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #endif
@@ -32,6 +36,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/OverlaySupport.h"
 #include "Engine/Curve.h"
 
+class CurveSelection;
 class QFont;
 class Variant;
 class TimeLine;
@@ -100,7 +105,7 @@ public:
     void setVisibleAndRefresh(bool visible);
 
     /**
-     * @brief same as setVisibleAndRefresh() but doesn't emit any signal for a repaint
+     * @brief same as setVisibleAndRefresh() but doesn't Q_EMIT any signal for a repaint
      **/
     void setVisible(bool visible);
 
@@ -121,10 +126,7 @@ public:
      **/
     virtual double evaluate(double x) const;
     
-    boost::shared_ptr<Curve>  getInternalCurve() const
-    {
-        return _internalCurve;
-    }
+    virtual boost::shared_ptr<Curve>  getInternalCurve() const;
 
     void drawCurve(int curveIndex,int curvesCount);
 
@@ -135,8 +137,10 @@ public:
     virtual bool areKeyFramesValuesClampedToIntegers() const;
     virtual bool isYComponentMovable() const;
     virtual KeyFrameSet getKeyFrames() const;
+    virtual int getKeyFrameIndex(double time) const = 0;
+    virtual void setKeyFrameInterpolation(Natron::KeyframeTypeEnum interp,int index) = 0;
     
-signals:
+Q_SIGNALS:
 
     void curveChanged();
     
@@ -145,7 +149,13 @@ signals:
 private:
 
     std::pair<KeyFrame,bool> nextPointForSegment(double x1,double* x2,const KeyFrameSet & keyframes);
+    
+protected:
+    
     boost::shared_ptr<Curve> _internalCurve; ///ptr to the internal curve
+    
+private:
+    
     QString _name; /// the name of the curve
     QColor _color; /// the color that must be used to draw the curve
     int _thickness; /// its thickness
@@ -181,6 +191,8 @@ public:
     
     virtual ~KnobCurveGui();
     
+    virtual boost::shared_ptr<Curve>  getInternalCurve() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
     KnobGui* getKnobGui() const
     {
         return _knob;
@@ -194,6 +206,10 @@ public:
     {
         return _dimension;
     }
+    
+    virtual int getKeyFrameIndex(double time) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual void setKeyFrameInterpolation(Natron::KeyframeTypeEnum interp,int index) OVERRIDE FINAL;
+
     
 private:
     
@@ -228,12 +244,17 @@ public:
     virtual bool areKeyFramesValuesClampedToIntegers() const { return true; }
     virtual bool isYComponentMovable() const { return false; }
     virtual KeyFrameSet getKeyFrames() const;
+    
+    virtual int getKeyFrameIndex(double time) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual void setKeyFrameInterpolation(Natron::KeyframeTypeEnum interp,int index) OVERRIDE FINAL;
+
 private:
     
     
     boost::shared_ptr<Bezier> _bezier;
     boost::shared_ptr<RotoContext> _rotoContext;
 };
+
 
 class QMenu;
 class CurveWidgetPrivate;
@@ -250,6 +271,7 @@ public:
 
     /*Pass a null timeline ptr if you don't want interaction with the global timeline. */
     CurveWidget(Gui* gui,
+                CurveSelection* selection,
                 boost::shared_ptr<TimeLine> timeline = boost::shared_ptr<TimeLine>(),
                 QWidget* parent = NULL,
                 const QGLWidget* shareWidget = NULL);
@@ -305,13 +327,14 @@ public:
      **/
     virtual void getBackgroundColour(double &r, double &g, double &b) const OVERRIDE FINAL;
 
+    virtual unsigned int getCurrentRenderScale() const OVERRIDE FINAL { return 0; }
     
     virtual void saveOpenGLContext() OVERRIDE FINAL;
     virtual void restoreOpenGLContext() OVERRIDE FINAL;
     
     void pushUndoCommand(QUndoCommand* cmd);
 
-public slots:
+public Q_SLOTS:
 
     void refreshDisplayedTangents();
 
@@ -347,7 +370,7 @@ public slots:
 
     void onTimeLineFrameChanged(SequenceTime time, int reason);
 
-    void onTimeLineBoundariesChanged(SequenceTime left, SequenceTime right, int);
+    void onTimeLineBoundariesChanged(int,int);
 
     void onCurveChanged();
 
@@ -423,7 +446,7 @@ public:
 
     void getCurveColumns(std::map<int,CurveGui*>* columns) const;
 
-public slots:
+public Q_SLOTS:
 
     void open_file();
 
@@ -496,12 +519,12 @@ public:
     
     virtual ~EditKeyFrameDialog();
     
-signals:
+Q_SIGNALS:
     
     void valueChanged(int dimension,double value);
     
     
-public slots:
+public Q_SLOTS:
     
     void onXSpinBoxValueChanged(double d);
     void onYSpinBoxValueChanged(double d);

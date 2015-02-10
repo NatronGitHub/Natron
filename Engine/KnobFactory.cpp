@@ -8,6 +8,11 @@
  * contact: immarespond at gmail dot com
  *
  */
+
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
 #include "KnobFactory.h"
 
 #include "Global/GlobalDefines.h"
@@ -31,7 +36,7 @@ typedef KnobHelper* (*KnobBuilder)(KnobHolder*  holder, const std::string &descr
 /***********************************FACTORY******************************************/
 KnobFactory::KnobFactory()
 {
-    loadKnobPlugins();
+    loadBultinKnobs();
 }
 
 KnobFactory::~KnobFactory()
@@ -42,26 +47,7 @@ KnobFactory::~KnobFactory()
     _loadedKnobs.clear();
 }
 
-void
-KnobFactory::loadKnobPlugins()
-{
-    std::vector<LibraryBinary *> plugins = AppManager::loadPlugins(NATRON_KNOBS_PLUGINS_PATH);
-    std::vector<std::string> functions;
 
-    functions.push_back("BuildKnob");
-    for (U32 i = 0; i < plugins.size(); ++i) {
-        if ( plugins[i]->loadFunctions(functions) ) {
-            std::pair<bool, KnobBuilder> builder = plugins[i]->findFunction<KnobBuilder>("BuildKnob");
-            if (builder.first) {
-                boost::shared_ptr<KnobHelper> knob( builder.second( (KnobHolder*)NULL, "", 1,false ) );
-                _loadedKnobs.insert( make_pair(knob->typeName(), plugins[i]) );
-            }
-        } else {
-            delete plugins[i];
-        }
-    }
-    loadBultinKnobs();
-}
 
 template<typename K>
 static std::pair<std::string,LibraryBinary *>

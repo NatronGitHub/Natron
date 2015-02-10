@@ -7,10 +7,14 @@
 #ifndef NODEBACKDROPSERIALIZATION_H
 #define NODEBACKDROPSERIALIZATION_H
 
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
 #include <string>
 
 #include "Global/Macros.h"
-#ifndef Q_MOC_RUN
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 CLANG_DIAG_OFF(unused-parameter)
 // /opt/local/include/boost/serialization/smart_cast.hpp:254:25: warning: unused parameter 'u' [-Wunused-parameter]
 #include <boost/archive/xml_iarchive.hpp>
@@ -25,16 +29,17 @@ CLANG_DIAG_ON(unused-parameter)
 #define NODE_BACKDROP_INTRODUCES_SELECTED 2
 #define NODE_BACKDROP_SERIALIZATION_VERSION NODE_BACKDROP_INTRODUCES_SELECTED
 
-class NodeBackDrop;
+/**
+  This class is completly deprecated do not use it.
+  We keep it for backward compatibility with old projects prior to Natron v1.1
+ **/
 
 class NodeBackDropSerialization
 {
 public:
     NodeBackDropSerialization();
 
-    void initialize(const NodeBackDrop* n);
-
-    std::string getName() const
+    std::string getFullySpecifiedName() const
     {
         return name;
     }

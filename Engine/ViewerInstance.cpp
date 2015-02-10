@@ -9,6 +9,10 @@
  *
  */
 
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
 #include "ViewerInstancePrivate.h"
 
 #include <boost/shared_ptr.hpp>
@@ -60,7 +64,7 @@ static void scaleToTexture32bits(std::pair<int,int> yRange,
                                  float *output);
 static std::pair<double, double>
 findAutoContrastVminVmax(boost::shared_ptr<const Natron::Image> inputImage,
-                         ViewerInstance::DisplayChannels channels,
+                         Natron::DisplayChannelsEnum channels,
                          const RectI & rect);
 static void renderFunctor(std::pair<int,int> yRange,
                           const RenderViewerArgs & args,
@@ -147,9 +151,7 @@ ViewerInstance::ViewerInstance(boost::shared_ptr<Node> node)
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
-    if (node) {
-        connect( node.get(),SIGNAL( nameChanged(QString) ),this,SLOT( onNodeNameChanged(QString) ) );
-    }
+   
     QObject::connect( this,SIGNAL( disconnectTextureRequest(int) ),this,SLOT( executeDisconnectTextureRequestOnMainThread(int) ) );
     QObject::connect( _imp.get(),SIGNAL( mustRedrawViewer() ),this,SLOT( redrawViewer() ) );
     QObject::connect( this,SIGNAL( s_callRedrawOnMainThread() ), this, SLOT( redrawViewer() ) );
@@ -234,17 +236,6 @@ ViewerInstance::invalidateUiContext()
     _imp->uiContext = NULL;
 }
 
-void
-ViewerInstance::onNodeNameChanged(const QString & name)
-{
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-
-    ///update the gui tab name
-    if (_imp->uiContext) {
-        _imp->uiContext->onViewerNodeNameChanged(name);
-    }
-}
 
 
 int
@@ -334,16 +325,17 @@ ViewerInstance::renderViewer(int view,
 
 static void checkTreeCanRender_internal(Node* node,bool* ret)
 {
-    const std::vector<boost::shared_ptr<Node> > inputs = node->getInputs_copy();
-    for (U32 i = 0; i < inputs.size(); ++i) {
-        if (!inputs[i]) {
+    int maxInput = node->getMaxInputCount();
+    for (int i = 0; i < maxInput; ++i) {
+        NodePtr input = node->getInput(i);
+        if (!input) {
             if (!node->getLiveInstance()->isInputOptional(i)) {
                 *ret = false;
                 return;
             }
             
         } else {
-            checkTreeCanRender_internal(inputs[i].get(), ret);
+            checkTreeCanRender_internal(input.get(), ret);
             if (!ret) {
                 return;
             }
@@ -362,10 +354,18 @@ static bool checkTreeCanRender(Node* node)
 }
 
 
+
+
 Natron::StatusEnum
-ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time, int view, int textureIndex, U64 viewerHash,
+ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
+                                                 bool isSequential,
+                                                 bool canAbort,
+                                                 int view, int textureIndex, U64 viewerHash,
                                                  ViewerArgs* outArgs)
 {
+    U64 renderAge = _imp->getRenderAge(textureIndex);
+    
+    
     if (textureIndex == 0) {
         QMutexLocker l(&_imp->activeInputsMutex);
         outArgs->activeInputIndex =  _imp->activeInputs[0];
@@ -382,7 +382,7 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time, int view, in
     }
     
     if (!outArgs->activeInputToRender || !checkTreeCanRender(outArgs->activeInputToRender->getNode().get())) {
-        emit disconnectTextureRequest(textureIndex);
+        Q_EMIT disconnectTextureRequest(textureIndex);
         return eStatusFailed;
     }
     
@@ -438,12 +438,29 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time, int view, in
     
     const double par = outArgs->activeInputToRender->getPreferredAspectRatio();
     
+    
+    ///need to set TLS for getROD()
+    ParallelRenderArgsSetter frameArgs(outArgs->activeInputToRender->getNode().get(),
+                                                   time,
+                                                   view,
+                                                   !isSequential,  // is this render due to user interaction ?
+                                                   isSequential, // is this sequential ?
+                                                   canAbort,
+                                                   outArgs->activeInputHash,
+                                                   false,
+                                                   getTimeline().get());
+
+    
     ///Get the RoD here to be able to figure out what is the RoI of the Viewer.
     StatusEnum stat = outArgs->activeInputToRender->getRegionOfDefinition_public(outArgs->activeInputHash,time,
                                                                         supportsRS ==  eSupportsNo ? scaleOne : scale,
                                                                         view, &rod, &isRodProjectFormat);
     if (stat == eStatusFailed) {
-        emit disconnectTextureRequest(textureIndex);
+        Q_EMIT disconnectTextureRequest(textureIndex);
+        if (!isSequential) {
+            _imp->checkAndUpdateRenderAge(textureIndex,renderAge);
+        }
+
         return stat;
     }
     // update scale after the first call to getRegionOfDefinition
@@ -459,7 +476,7 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time, int view, in
     assert(_imp->uiContext);
     
     bool autoContrast;
-    ViewerInstance::DisplayChannels channels;
+    Natron::DisplayChannelsEnum channels;
     {
         QMutexLocker locker(&_imp->viewerParamsMutex);
         autoContrast = _imp->viewerParamsAutoContrast;
@@ -473,8 +490,11 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time, int view, in
     _imp->uiContext->getImageRectangleDisplayedRoundedToTileSize(rod, par, mipMapLevel);
     
     if ( (roi.width() == 0) || (roi.height() == 0) ) {
-        emit disconnectTextureRequest(textureIndex);
+        Q_EMIT disconnectTextureRequest(textureIndex);
         outArgs->params.reset();
+        if (!isSequential) {
+            _imp->checkAndUpdateRenderAge(textureIndex,renderAge);
+        }
         return eStatusReplyDefault;
     }
     
@@ -483,6 +503,9 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time, int view, in
     // start UpdateViewerParams scope
     //
     outArgs->params.reset(new UpdateViewerParams);
+    outArgs->params->isSequential = isSequential;
+    outArgs->params->renderAge = renderAge;
+    outArgs->params->setUniqueID(textureIndex);
     outArgs->params->srcPremult = outArgs->activeInputToRender->getOutputPremultiplication();
     
     ///Texture rect contains the pixel coordinates in the image to be rendered
@@ -499,10 +522,10 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time, int view, in
     assert(outArgs->params->bytesCount > 0);
     
     assert(_imp->uiContext);
-    OpenGLViewerI::BitDepth bitDepth = _imp->uiContext->getBitDepth();
+    OpenGLViewerI::BitDepthEnum bitDepth = _imp->uiContext->getBitDepth();
     
     //half float is not supported yet so it is the same as float
-    if ( (bitDepth == OpenGLViewerI::FLOAT) || (bitDepth == OpenGLViewerI::HALF_FLOAT) ) {
+    if ( (bitDepth == OpenGLViewerI::eBitDepthFloat) || (bitDepth == OpenGLViewerI::eBitDepthHalf) ) {
         outArgs->params->bytesCount *= sizeof(float);
     }
     
@@ -516,7 +539,7 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time, int view, in
         outArgs->params->gain = _imp->viewerParamsGain;
         outArgs->params->lut = _imp->viewerParamsLut;
     }
-    std::string inputToRenderName = outArgs->activeInputToRender->getNode()->getName_mt_safe();
+    std::string inputToRenderName = outArgs->activeInputToRender->getNode()->getScriptName_mt_safe();
     
     outArgs->key.reset(new FrameKey(time,
                  viewerHash,
@@ -585,7 +608,8 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time, int view, in
             ///The thread rendering the frame entry might have been aborted and the entry removed from the cache
             ///but another thread might successfully have found it in the cache. This flag is to notify it the frame
             ///is invalid.
-            isCached = false;
+            outArgs->params->cachedFrame.reset();
+            return eStatusOK;
         }
         
         // how do you make sure cachedFrame->data() is not freed after this line?
@@ -604,7 +628,6 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time, int view, in
             _imp->lastRenderedHashValid = true;
         }
         
-        
     }
     return eStatusOK;
 }
@@ -614,6 +637,9 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time, int view, in
                                 if (inArgs.params->cachedFrame) { \
                                     inArgs.params->cachedFrame->setAborted(true); \
                                     appPTR->removeFromViewerCache(inArgs.params->cachedFrame); \
+                                } \
+                                if (!isSequentialRender) { \
+                                    _imp->checkAndUpdateRenderAge(inArgs.params->textureIndex,inArgs.params->renderAge); \
                                 } \
                                 return eStatusReplyDefault; \
                             }
@@ -635,7 +661,7 @@ ViewerInstance::renderViewer_internal(int view,
     roi.y2 = inArgs.params->textureRect.y2;
     
     bool autoContrast;
-    ViewerInstance::DisplayChannels channels;
+    Natron::DisplayChannelsEnum channels;
     {
         QMutexLocker locker(&_imp->viewerParamsMutex);
         autoContrast = _imp->viewerParamsAutoContrast;
@@ -645,6 +671,9 @@ ViewerInstance::renderViewer_internal(int view,
     ///Check that we were not aborted already
     if ( !isSequentialRender && (inArgs.activeInputToRender->getHash() != inArgs.activeInputHash ||
                                  inArgs.params->time != getTimeline()->currentFrame()) ) {
+        if (!isSequentialRender) {
+            _imp->checkAndUpdateRenderAge(inArgs.params->textureIndex,inArgs.params->renderAge);
+        }
         return eStatusReplyDefault;
     }
     
@@ -681,7 +710,9 @@ ViewerInstance::renderViewer_internal(int view,
             ss << "Failed to allocate a texture of ";
             ss << printAsRAM( cachedFrameParams->getElementsCount() * sizeof(FrameEntry::data_t) ).toStdString();
             Natron::errorDialog( QObject::tr("Out of memory").toStdString(),ss.str() );
-            
+            if (!isSequentialRender) {
+                _imp->checkAndUpdateRenderAge(inArgs.params->textureIndex,inArgs.params->renderAge);
+            }
             return eStatusFailed;
         }
         
@@ -720,18 +751,18 @@ ViewerInstance::renderViewer_internal(int view,
     
     {
         
-        EffectInstance::NotifyInputNRenderingStarted_RAII inputNIsRendering_RAII(_node.get(),inArgs.activeInputIndex);
+        EffectInstance::NotifyInputNRenderingStarted_RAII inputNIsRendering_RAII(getNode().get(),inArgs.activeInputIndex);
         
-        Node::ParallelRenderArgsSetter frameRenderArgs(inArgs.activeInputToRender->getNode().get(),
-                                                       inArgs.params->time,
-                                                       view,
-                                                       !isSequentialRender,  // is this render due to user interaction ?
-                                                       isSequentialRender, // is this sequential ?
-                                                       canAbort,
-                                                       inArgs.activeInputHash,
-                                                       false,
-                                                       getTimeline().get());
-        
+        ParallelRenderArgsSetter frameArgs(inArgs.activeInputToRender->getNode().get(),
+                                           inArgs.params->time,
+                                           view,
+                                           !isSequentialRender,  // is this render due to user interaction ?
+                                           isSequentialRender, // is this sequential ?
+                                           canAbort,
+                                           inArgs.activeInputHash,
+                                           false,
+                                           getTimeline().get());
+
         
         
         // If an exception occurs here it is probably fatal, since
@@ -753,6 +784,9 @@ ViewerInstance::renderViewer_internal(int view,
             if (!inArgs.params->image) {
                 if (inArgs.params->cachedFrame) {
                     inArgs.params->cachedFrame->setAborted(true);
+                    if (!isSequentialRender) {
+                        _imp->checkAndUpdateRenderAge(inArgs.params->textureIndex,inArgs.params->renderAge);
+                    }
                     appPTR->removeFromViewerCache(inArgs.params->cachedFrame);
                 }
                 return eStatusReplyDefault;
@@ -770,14 +804,10 @@ ViewerInstance::renderViewer_internal(int view,
         
     } // EffectInstance::NotifyInputNRenderingStarted_RAII inputNIsRendering_RAII(_node.get(),activeInputIndex);
     
-    ///Re-check the RoI of the viewer after we rendered. If the user was zooming in/out, it might have changed
-    ///and we don't want to erase all the texture for nothing. E.g: when the user is currently zoomed in on a few
-    ///pixels of the image, when dezooming, several renders will be triggered, but we don't want the intermediate renders
-    ///to clear portions of the texture, just the last one.
-    RectI roiAfterRender = _imp->uiContext->getImageRectangleDisplayedRoundedToTileSize(inArgs.params->rod,
-                                                                                        inArgs.params->textureRect.par,
-                                                                                        inArgs.params->mipMapLevel);
-    if (!autoContrast && roi != roiAfterRender) {
+   
+    ///We check that the render age is still OK and that no other renders were triggered, in which case we should not need to
+    ///refresh the viewer.
+    if (!_imp->checkAgeNoUpdate(inArgs.params->textureIndex,inArgs.params->renderAge)) {
         if (inArgs.params->cachedFrame) {
             inArgs.params->cachedFrame->setAborted(true);
             appPTR->removeFromViewerCache(inArgs.params->cachedFrame);
@@ -934,7 +964,7 @@ renderFunctor(std::pair<int,int> yRange,
 {
     assert(args.texRect.y1 <= yRange.first && yRange.first <= yRange.second && yRange.second <= args.texRect.y2);
 
-    if ( (args.bitDepth == OpenGLViewerI::FLOAT) || (args.bitDepth == OpenGLViewerI::HALF_FLOAT) ) {
+    if ( (args.bitDepth == OpenGLViewerI::eBitDepthFloat) || (args.bitDepth == OpenGLViewerI::eBitDepthHalf) ) {
         // image is stored as linear, the OpenGL shader with do gamma/sRGB/Rec709 decompression, as well as gain and offset
         scaleToTexture32bits(yRange, args,viewer, (float*)buffer);
     } else {
@@ -946,7 +976,7 @@ renderFunctor(std::pair<int,int> yRange,
 template <int nComps>
 std::pair<double, double>
 findAutoContrastVminVmax_internal(boost::shared_ptr<const Natron::Image> inputImage,
-                         ViewerInstance::DisplayChannels channels,
+                         Natron::DisplayChannelsEnum channels,
                          const RectI & rect)
 {
     double localVmin = std::numeric_limits<double>::infinity();
@@ -981,27 +1011,27 @@ findAutoContrastVminVmax_internal(boost::shared_ptr<const Natron::Image> inputIm
             
             double mini, maxi;
             switch (channels) {
-                case ViewerInstance::RGB:
+                case Natron::eDisplayChannelsRGB:
                     mini = std::min(std::min(r,g),b);
                     maxi = std::max(std::max(r,g),b);
                     break;
-                case ViewerInstance::LUMINANCE:
+                case Natron::eDisplayChannelsY:
                     mini = r = 0.299 * r + 0.587 * g + 0.114 * b;
                     maxi = mini;
                     break;
-                case ViewerInstance::R:
+                case Natron::eDisplayChannelsR:
                     mini = r;
                     maxi = mini;
                     break;
-                case ViewerInstance::G:
+                case Natron::eDisplayChannelsG:
                     mini = g;
                     maxi = mini;
                     break;
-                case ViewerInstance::B:
+                case Natron::eDisplayChannelsB:
                     mini = b;
                     maxi = mini;
                     break;
-                case ViewerInstance::A:
+                case Natron::eDisplayChannelsA:
                     mini = a;
                     maxi = mini;
                     break;
@@ -1027,7 +1057,7 @@ findAutoContrastVminVmax_internal(boost::shared_ptr<const Natron::Image> inputIm
 
 std::pair<double, double>
 findAutoContrastVminVmax(boost::shared_ptr<const Natron::Image> inputImage,
-                         ViewerInstance::DisplayChannels channels,
+                         Natron::DisplayChannelsEnum channels,
                          const RectI & rect)
 {
     switch (inputImage->getComponents()) {
@@ -1051,7 +1081,7 @@ scaleToTexture8bits_internal(const std::pair<int,int> & yRange,
 {
     size_t pixelSize = sizeof(PIX);
     
-    const bool luminance = (args.channels == ViewerInstance::LUMINANCE);
+    const bool luminance = (args.channels == Natron::eDisplayChannelsY);
     
     ///offset the output buffer at the starting point
     output += ( (yRange.first - args.texRect.y1) / args.closestPowerOf2 ) * args.texRect.w;
@@ -1210,21 +1240,21 @@ scaleToTexture8bitsForDepthForComponents(const std::pair<int,int> & yRange,
                             U32* output)
 {
     switch (args.channels) {
-        case ViewerInstance::RGB:
-        case ViewerInstance::LUMINANCE:
+        case Natron::eDisplayChannelsRGB:
+        case Natron::eDisplayChannelsY:
 
             scaleToTexture8bitsForPremult<PIX, maxValue, nComps, 0, 1, 2>(yRange, args,viewer, output);
             break;
-        case ViewerInstance::G:
+        case Natron::eDisplayChannelsG:
             scaleToTexture8bitsForPremult<PIX, maxValue, nComps, 1, 1, 1>(yRange, args,viewer, output);
             break;
-        case ViewerInstance::B:
+        case Natron::eDisplayChannelsB:
             scaleToTexture8bitsForPremult<PIX, maxValue, nComps, 2, 2, 2>(yRange, args,viewer, output);
             break;
-        case ViewerInstance::A:
+        case Natron::eDisplayChannelsA:
             scaleToTexture8bitsForPremult<PIX, maxValue, nComps, 3, 3, 3>(yRange, args,viewer, output);
             break;
-        case ViewerInstance::R:
+        case Natron::eDisplayChannelsR:
         default:
             scaleToTexture8bitsForPremult<PIX, maxValue, nComps, 0, 0, 0>(yRange, args,viewer, output);
 
@@ -1286,7 +1316,7 @@ scaleToTexture32bitsInternal(const std::pair<int,int> & yRange,
                              float *output)
 {
     size_t pixelSize = sizeof(PIX);
-    const bool luminance = (args.channels == ViewerInstance::LUMINANCE);
+    const bool luminance = (args.channels == Natron::eDisplayChannelsY);
 
     ///the width of the output buffer multiplied by the channels count
     int dst_width = args.texRect.w * 4;
@@ -1382,7 +1412,7 @@ scaleToTexture32bitsInternal(const std::pair<int,int> & yRange,
             *dst_pixels++ = b;
             *dst_pixels++ = a;
 
-            src_pixels += args.closestPowerOf2 * 4;
+            src_pixels += args.closestPowerOf2 * nComps;
         }
         ++dstY;
     }
@@ -1417,8 +1447,8 @@ scaleToTexture32bitsForDepthForComponents(const std::pair<int,int> & yRange,
                              float *output)
 {
     switch (args.channels) {
-        case ViewerInstance::RGB:
-        case ViewerInstance::LUMINANCE:
+        case Natron::eDisplayChannelsRGB:
+        case Natron::eDisplayChannelsY:
             switch (nComps) {
                 case 1:
                     scaleToTexture32bitsForPremult<PIX, maxValue, nComps, 0, 0, 0>(yRange, args,viewer, output);
@@ -1431,7 +1461,7 @@ scaleToTexture32bitsForDepthForComponents(const std::pair<int,int> & yRange,
                     break;
             }
             break;
-        case ViewerInstance::G:
+        case Natron::eDisplayChannelsG:
             switch (nComps) {
                 case 1:
                     scaleToTexture32bitsForPremult<PIX, maxValue, nComps, 0, 0, 0>(yRange, args,viewer, output);
@@ -1444,7 +1474,7 @@ scaleToTexture32bitsForDepthForComponents(const std::pair<int,int> & yRange,
                     break;
             }
             break;
-        case ViewerInstance::B:
+        case Natron::eDisplayChannelsB:
             switch (nComps) {
                 case 1:
                     scaleToTexture32bitsForPremult<PIX, maxValue, nComps, 0, 0, 0>(yRange, args,viewer, output);
@@ -1457,7 +1487,7 @@ scaleToTexture32bitsForDepthForComponents(const std::pair<int,int> & yRange,
                     break;
             }
             break;
-        case ViewerInstance::A:
+        case Natron::eDisplayChannelsA:
             switch (nComps) {
                 case 1:
                 case 3:
@@ -1470,7 +1500,7 @@ scaleToTexture32bitsForDepthForComponents(const std::pair<int,int> & yRange,
                     break;
             }
             break;
-        case ViewerInstance::R:
+        case Natron::eDisplayChannelsR:
         default:
             scaleToTexture32bitsForPremult<PIX, maxValue, nComps, 0, 0, 0>(yRange, args,viewer, output);
             break;
@@ -1544,23 +1574,29 @@ ViewerInstance::ViewerInstancePrivate::updateViewer(boost::shared_ptr<UpdateView
     
     assert(params->ramBuffer);
     
-    uiContext->transferBufferFromRAMtoGPU(params->ramBuffer,
-                                          params->image,
-                                          params->time,
-                                          params->rod,
-                                          params->bytesCount,
-                                          params->textureRect,
-                                          params->gain,
-                                          params->offset,
-                                          params->lut,
-                                          updateViewerPboIndex,
-                                          params->mipMapLevel,
-                                          params->srcPremult,
-                                          params->textureIndex);
-    updateViewerPboIndex = (updateViewerPboIndex + 1) % 2;
-    
-    
-    uiContext->updateColorPicker(params->textureIndex);
+    bool doUpdate = true;
+    if (!params->isSequential && !checkAndUpdateRenderAge(params->textureIndex,params->renderAge)) {
+        doUpdate = false;
+    }
+    if (doUpdate) {
+        uiContext->transferBufferFromRAMtoGPU(params->ramBuffer,
+                                              params->image,
+                                              params->time,
+                                              params->rod,
+                                              params->bytesCount,
+                                              params->textureRect,
+                                              params->gain,
+                                              params->offset,
+                                              params->lut,
+                                              updateViewerPboIndex,
+                                              params->mipMapLevel,
+                                              params->srcPremult,
+                                              params->textureIndex);
+        updateViewerPboIndex = (updateViewerPboIndex + 1) % 2;
+        
+        
+        uiContext->updateColorPicker(params->textureIndex);
+    }
     //
     //        updateViewerRunning = false;
     //    }
@@ -1593,7 +1629,7 @@ ViewerInstance::onGainChanged(double exp)
         _imp->viewerParamsGain = exp;
     }
     assert(_imp->uiContext);
-    if ( ( (_imp->uiContext->getBitDepth() == OpenGLViewerI::BYTE) || !_imp->uiContext->supportsGLSL() )
+    if ( ( (_imp->uiContext->getBitDepth() == OpenGLViewerI::eBitDepthByte) || !_imp->uiContext->supportsGLSL() )
          && !getApp()->getProject()->isLoadingProject() ) {
         renderCurrentFrame(true);
     } else {
@@ -1655,7 +1691,7 @@ ViewerInstance::onColorSpaceChanged(Natron::ViewerColorSpaceEnum colorspace)
         _imp->viewerParamsLut = colorspace;
     }
     assert(_imp->uiContext);
-    if ( ( (_imp->uiContext->getBitDepth() == OpenGLViewerI::BYTE) || !_imp->uiContext->supportsGLSL() )
+    if ( ( (_imp->uiContext->getBitDepth() == OpenGLViewerI::eBitDepthByte) || !_imp->uiContext->supportsGLSL() )
         && !getApp()->getProject()->isLoadingProject() ) {
         renderCurrentFrame(true);
     } else {
@@ -1664,7 +1700,7 @@ ViewerInstance::onColorSpaceChanged(Natron::ViewerColorSpaceEnum colorspace)
 }
 
 void
-ViewerInstance::setDisplayChannels(DisplayChannels channels)
+ViewerInstance::setDisplayChannels(DisplayChannelsEnum channels)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
@@ -1685,7 +1721,7 @@ ViewerInstance::disconnectViewer()
 
     //_lastRenderedImage.reset(); // if you uncomment this, _lastRenderedImage is not set back when you reconnect the viewer immediately after disconnecting
     if (_imp->uiContext) {
-        emit viewerDisconnected();
+        Q_EMIT viewerDisconnected();
     }
 }
 
@@ -1745,7 +1781,7 @@ ViewerInstance::getMipMapLevel() const
 }
 
 
-ViewerInstance::DisplayChannels
+Natron::DisplayChannelsEnum
 ViewerInstance::getChannels() const
 {
     // MT-SAFE: called from main thread and Serialization (pooled) thread
@@ -1764,7 +1800,7 @@ ViewerInstance::addAcceptedComponents(int /*inputNb*/,
 }
 
 int
-ViewerInstance::getCurrentView() const
+ViewerInstance::getViewerCurrentView() const
 {
     return _imp->uiContext ? _imp->uiContext->getCurrentView() : 0;
 }
@@ -1787,20 +1823,20 @@ ViewerInstance::onInputChanged(int inputNb)
             bool autoWipeEnabled = appPTR->getCurrentSettings()->isAutoWipeEnabled();
             if (_imp->activeInputs[0] == -1 || !autoWipeEnabled) {
                 _imp->activeInputs[0] = inputNb;
-            } else if (_imp->activeInputs[0] != inputNb) {
+            } else {
                 _imp->activeInputs[1] = inputNb;
             }
         }
     }
-    emit activeInputsChanged();
-    emit refreshOptionalState();
-    emit clipPreferencesChanged();
+    Q_EMIT activeInputsChanged();
+    Q_EMIT refreshOptionalState();
+    Q_EMIT clipPreferencesChanged();
 }
 
 void
 ViewerInstance::restoreClipPreferences()
 {
-    emit clipPreferencesChanged();
+    Q_EMIT clipPreferencesChanged();
 }
 
 void
@@ -1809,7 +1845,7 @@ ViewerInstance::checkOFXClipPreferences(double /*time*/,
                              const std::string & /*reason*/,
                              bool /*forceGetClipPrefAction*/)
 {
-    emit clipPreferencesChanged();
+    Q_EMIT clipPreferencesChanged();
 }
 
 void
@@ -1838,7 +1874,7 @@ ViewerInstance::setInputA(int inputNb)
         QMutexLocker l(&_imp->activeInputsMutex);
         _imp->activeInputs[0] = inputNb;
     }
-    emit refreshOptionalState();
+    Q_EMIT refreshOptionalState();
 }
 
 void
@@ -1849,13 +1885,7 @@ ViewerInstance::setInputB(int inputNb)
         QMutexLocker l(&_imp->activeInputsMutex);
         _imp->activeInputs[1] = inputNb;
     }
-    emit refreshOptionalState();
-}
-
-bool
-ViewerInstance::isFrameRangeLocked() const
-{
-    return _imp->uiContext ? _imp->uiContext->isFrameRangeLocked() : true;
+    Q_EMIT refreshOptionalState();
 }
 
 int
@@ -1870,6 +1900,17 @@ ViewerInstance::getTimeline() const
     return _imp->uiContext ? _imp->uiContext->getTimeline() : getApp()->getTimeLine();
 }
 
+void
+ViewerInstance::getTimelineBounds(int* first,int* last) const
+{
+    if (_imp->uiContext) {
+        _imp->uiContext->getViewerFrameRange(first, last);
+    } else {
+        *first = 0;
+        *last = 0;
+    }
+}
+
 
 int
 ViewerInstance::getMipMapLevelFromZoomFactor() const
@@ -1877,5 +1918,17 @@ ViewerInstance::getMipMapLevelFromZoomFactor() const
     double zoomFactor = _imp->uiContext->getZoomFactor();
     double closestPowerOf2 = zoomFactor >= 1 ? 1 : std::pow( 2,-std::ceil(std::log(zoomFactor) / M_LN2) );
     return std::log(closestPowerOf2) / M_LN2;
+}
+
+SequenceTime
+ViewerInstance::getCurrentTime() const
+{
+    return getFrameRenderArgsCurrentTime();
+}
+
+int
+ViewerInstance::getCurrentView() const
+{
+    return getFrameRenderArgsCurrentView();
 }
 

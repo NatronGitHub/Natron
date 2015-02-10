@@ -12,6 +12,10 @@
 #ifndef OVERLAYSUPPORT_H
 #define OVERLAYSUPPORT_H
 
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
 /**
  * @class An abstract interface for overlay holders. Any OpenGL widget capable of drawing overlays should
  * implement this interface.
@@ -63,6 +67,11 @@ public:
      * @brief Must restore all OpenGL bits saved in saveOpenGLContext()
      **/
     virtual void restoreOpenGLContext() = 0;
+    
+    /**
+     * @brief Get the current mipmapLevel applied by the viewer
+     **/
+    virtual unsigned int getCurrentRenderScale() const = 0;
 };
 
 #endif // OVERLAYSUPPORT_H

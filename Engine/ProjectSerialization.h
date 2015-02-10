@@ -12,8 +12,12 @@
 #ifndef PROJECTSERIALIZATION_H
 #define PROJECTSERIALIZATION_H
 
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
 #include "Global/Macros.h"
-#ifndef Q_MOC_RUN
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 CLANG_DIAG_OFF(unused-parameter)
 // /opt/local/include/boost/serialization/smart_cast.hpp:254:25: warning: unused parameter 'u' [-Wunused-parameter]
 #include <boost/archive/xml_iarchive.hpp>
@@ -35,53 +39,51 @@ CLANG_DIAG_ON(unused-parameter)
 #include "Engine/TimeLine.h"
 #include "Engine/Node.h"
 #include "Engine/NodeSerialization.h"
+#include "Engine/NodeGroupSerialization.h"
 #include "Engine/KnobSerialization.h"
 
 #define PROJECT_SERIALIZATION_INTRODUCES_NATRON_VERSION 2
-#define PROJECT_SERIALIZATION_VERSION PROJECT_SERIALIZATION_INTRODUCES_NATRON_VERSION
+#define PROJECT_SERIALIZATION_REMOVES_NODE_COUNTERS 3
+#define PROJECT_SERIALIZATION_REMOVES_TIMELINE_BOUNDS 4
+#define PROJECT_SERIALIZATION_INTRODUCES_GROUPS 5
+#define PROJECT_SERIALIZATION_VERSION PROJECT_SERIALIZATION_INTRODUCES_GROUPS
 
 class AppInstance;
 class ProjectSerialization
 {
-    std::list< NodeSerialization > _serializedNodes;
+    NodeCollectionSerialization _nodes;
     std::list<Format> _additionalFormats;
     std::list< boost::shared_ptr<KnobSerialization> > _projectKnobs;
-    SequenceTime _timelineLeft,_timelineRight,_timelineCurrent;
+    SequenceTime _timelineCurrent;
     qint64 _creationDate;
-    std::map<std::string,int> _nodeCounters;
     AppInstance* _app;
-
+    unsigned int _version;
+    
 public:
 
     ProjectSerialization(AppInstance* app)
-        : _timelineLeft(0)
-        , _timelineRight(0)
-        , _timelineCurrent(0)
+        : _timelineCurrent(0)
         , _creationDate(0)
         , _app(app)
+        , _version(0)
     {
     }
 
     ~ProjectSerialization()
     {
-        _serializedNodes.clear();
+        
     }
 
+    unsigned int getVersion() const
+    {
+        return _version;
+    }
+    
     void initialize(const Natron::Project* project);
 
     SequenceTime getCurrentTime() const
     {
         return _timelineCurrent;
-    }
-
-    SequenceTime getLeftBoundTime() const
-    {
-        return _timelineLeft;
-    }
-
-    SequenceTime getRightBoundTime() const
-    {
-        return _timelineRight;
     }
 
     const std::list< boost::shared_ptr<KnobSerialization>  > & getProjectKnobsValues() const
@@ -94,9 +96,9 @@ public:
         return _additionalFormats;
     }
 
-    const std::list< NodeSerialization > & getNodesSerialization() const
+    const NodeCollectionSerialization & getNodesSerialization() const
     {
-        return _serializedNodes;
+        return _nodes;
     }
 
     qint64 getCreationDate() const
@@ -104,10 +106,6 @@ public:
         return _creationDate;
     }
 
-    const std::map<std::string,int> & getNodeCounters() const
-    {
-        return _nodeCounters;
-    }
 
     friend class boost::serialization::access;
     template<class Archive>
@@ -130,14 +128,8 @@ public:
         natronVersion.append(isApplication32Bits() ? "32bit" : "64bit");
         ar & boost::serialization::make_nvp("NatronVersion",natronVersion);
         
-        int nodesCount = (int)_serializedNodes.size();
-        ar & boost::serialization::make_nvp("NodesCount",nodesCount);
-
-        for (std::list< NodeSerialization >::const_iterator it = _serializedNodes.begin();
-             it != _serializedNodes.end();
-             ++it) {
-            ar & boost::serialization::make_nvp("item",*it);
-        }
+        ar & boost::serialization::make_nvp("NodesCollection",_nodes);
+        
         int knobsCount = _projectKnobs.size();
         ar & boost::serialization::make_nvp("ProjectKnobsCount",knobsCount);
         for (std::list< boost::shared_ptr<KnobSerialization> >::const_iterator it = _projectKnobs.begin();
@@ -147,9 +139,6 @@ public:
         }
         ar & boost::serialization::make_nvp("AdditionalFormats", _additionalFormats);
         ar & boost::serialization::make_nvp("Timeline_current_time", _timelineCurrent);
-        ar & boost::serialization::make_nvp("Timeline_left_bound", _timelineLeft);
-        ar & boost::serialization::make_nvp("Timeline_right_bound", _timelineRight);
-        ar & boost::serialization::make_nvp("NodeCounters", _nodeCounters);
         ar & boost::serialization::make_nvp("CreationDate", _creationDate);
     }
 
@@ -157,20 +146,51 @@ public:
     void load(Archive & ar,
               const unsigned int version)
     {
+        _version = version;
         if (version >= PROJECT_SERIALIZATION_INTRODUCES_NATRON_VERSION) {
             std::string natronVersion;
             ar & boost::serialization::make_nvp("NatronVersion",natronVersion);
+            std::string toFind(NATRON_APPLICATION_NAME " v");
+            std::size_t foundV = natronVersion.find(toFind);
+            if (foundV != std::string::npos) {
+                foundV += toFind.size();
+                toFind = std::string(" from git branch");
+                std::size_t foundFrom = natronVersion.find(toFind);
+                if (foundFrom != std::string::npos) {
+                    std::string vStr;
+                    for (std::size_t i = foundV; i < foundFrom; ++i) {
+                        vStr.push_back(natronVersion[i]);
+                    }
+                    QStringList splits = QString(vStr.c_str()).split('.');
+                    if (splits.size() == 3) {
+                        int major,minor,rev;
+                        major = splits[0].toInt();
+                        minor = splits[1].toInt();
+                        rev = splits[2].toInt();
+                        if (NATRON_VERSION_ENCODE(major, minor, rev) > NATRON_VERSION_ENCODED) {
+                            throw std::invalid_argument("The given project was produced with a more recent and incompatible version of Natron.");
+                        }
+                    }
+                    
+                }
+            }
             
-        } 
-        assert(_app);
-        int nodesCount;
-        ar & boost::serialization::make_nvp("NodesCount",nodesCount);
-        for (int i = 0; i < nodesCount; ++i) {
-            NodeSerialization ns(_app);
-            ar & boost::serialization::make_nvp("item",ns);
-            _serializedNodes.push_back(ns);
         }
-
+        assert(_app);
+        (void)_app;
+        
+        if (version < PROJECT_SERIALIZATION_INTRODUCES_GROUPS) {
+            int nodesCount;
+            ar & boost::serialization::make_nvp("NodesCount",nodesCount);
+            for (int i = 0; i < nodesCount; ++i) {
+                boost::shared_ptr<NodeSerialization> ns(new NodeSerialization);
+                ar & boost::serialization::make_nvp("item",*ns);
+                _nodes.addNodeSerialization(ns);
+            }
+        } else {
+            ar & boost::serialization::make_nvp("NodesCollection",_nodes);
+        }
+        
         int knobsCount;
         ar & boost::serialization::make_nvp("ProjectKnobsCount",knobsCount);
         
@@ -182,9 +202,15 @@ public:
 
         ar & boost::serialization::make_nvp("AdditionalFormats", _additionalFormats);
         ar & boost::serialization::make_nvp("Timeline_current_time", _timelineCurrent);
-        ar & boost::serialization::make_nvp("Timeline_left_bound", _timelineLeft);
-        ar & boost::serialization::make_nvp("Timeline_right_bound", _timelineRight);
-        ar & boost::serialization::make_nvp("NodeCounters", _nodeCounters);
+        if (version < PROJECT_SERIALIZATION_REMOVES_TIMELINE_BOUNDS) {
+            SequenceTime left,right;
+            ar & boost::serialization::make_nvp("Timeline_left_bound", left);
+            ar & boost::serialization::make_nvp("Timeline_right_bound", right);
+        }
+        if (version < PROJECT_SERIALIZATION_REMOVES_NODE_COUNTERS) {
+            std::map<std::string,int> _nodeCounters;
+            ar & boost::serialization::make_nvp("NodeCounters", _nodeCounters);
+        }
         ar & boost::serialization::make_nvp("CreationDate", _creationDate);
     }
 

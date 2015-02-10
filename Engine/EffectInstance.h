@@ -11,10 +11,17 @@
 
 #ifndef NATRON_ENGINE_EFFECTINSTANCE_H_
 #define NATRON_ENGINE_EFFECTINSTANCE_H_
+
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
 #include <list>
-#ifndef Q_MOC_RUN
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
+#include <boost/weak_ptr.hpp>
+#include <boost/enable_shared_from_this.hpp>
 #endif
 #include "Global/GlobalDefines.h"
 #include "Global/KeySymbols.h"
@@ -22,12 +29,35 @@
 #include "Engine/Rect.h"
 #include "Engine/ImageLocker.h"
 
+// Various useful plugin IDs, @see EffectInstance::getPluginID()
+#define PLUGINID_OFX_MERGE        "net.sf.openfx.MergePlugin"
+#define PLUGINID_OFX_TRACKERPM    "net.sf.openfx.TrackerPM"
+#define PLUGINID_OFX_DOTEXAMPLE   "net.sf.openfx.dotexample"
+#define PLUGINID_OFX_READOIIO     "fr.inria.openfx.ReadOIIO"
+#define PLUGINID_OFX_WRITEOIIO    "fr.inria.openfx.WriteOIIO"
+#define PLUGINID_OFX_ROTO         "net.sf.openfx.RotoPlugin"
+#define PLUGINID_OFX_TRANSFORM    "net.sf.openfx.TransformPlugin"
+#define PLUGINID_OFX_GRADE        "net.sf.openfx.GradePlugin"
+#define PLUGINID_OFX_COLORCORRECT "net.sf.openfx.ColorCorrectPlugin"
+#define PLUGINID_OFX_BLURCIMG     "net.sf.cimg.CImgBlur"
+
+#define PLUGINID_NATRON_VIEWER    (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.Viewer")
+#define PLUGINID_NATRON_DISKCACHE (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.DiskCache")
+#define PLUGINID_NATRON_DOT       (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.Dot")
+#define PLUGINID_NATRON_READQT    (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.ReadQt")
+#define PLUGINID_NATRON_WRITEQT   (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.WriteQt")
+#define PLUGINID_NATRON_GROUP     (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.Group")
+#define PLUGINID_NATRON_INPUT     (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.Input")
+#define PLUGINID_NATRON_OUTPUT    (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.Output")
+#define PLUGINID_NATRON_BACKDROP  (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.BackDrop")
+
 class Hash64;
 class Format;
 class TimeLine;
 class OverlaySupport;
 class PluginMemory;
 class BlockingBackgroundRender;
+class NodeSerialization;
 class RenderEngine;
 class BufferableObject;
 namespace Transform {
@@ -108,6 +138,7 @@ class ImageParams;
 class EffectInstance
     : public NamedKnobHolder
     , public LockManagerI<Natron::Image>
+    , public boost::enable_shared_from_this<Natron::EffectInstance>
 {
 public:
 
@@ -198,7 +229,7 @@ public:
      **/
     boost::shared_ptr<Natron::Node> getNode() const WARN_UNUSED_RETURN
     {
-        return _node;
+    return _node.lock();
     }
 
     /**
@@ -226,8 +257,8 @@ public:
     /**
      * @brief Forwarded to the node's name
      **/
-    const std::string & getName() const WARN_UNUSED_RETURN;
-    virtual std::string getName_mt_safe() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    const std::string & getScriptName() const WARN_UNUSED_RETURN;
+    virtual std::string getScriptName_mt_safe() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     /**
      * @brief Forwarded to the node's render format
@@ -460,8 +491,7 @@ public:
                                              Natron::ImageComponentsEnum components,
                                              Natron::ImageBitDepthEnum nodeBitDepthPref,
                                              Natron::ImageComponentsEnum nodeComponentsPref,
-                                             int channelForAlpha,
-                                             /*const RectD& rod,*/
+                                             const RectI& renderWindow,
                                              const std::list<boost::shared_ptr<Natron::Image> >& inputImages,
                                              boost::shared_ptr<Natron::Image>* image);
 
@@ -571,9 +601,15 @@ public:
 
     virtual bool canSetValue() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
-    virtual SequenceTime getCurrentTime() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual SequenceTime getCurrentTime() const OVERRIDE WARN_UNUSED_RETURN;
+
+    virtual int getCurrentView() const OVERRIDE WARN_UNUSED_RETURN;
 
     virtual bool getCanTransform() const { return false; }
+
+    SequenceTime getFrameRenderArgsCurrentTime() const;
+
+    int getFrameRenderArgsCurrentView() const;
 
     virtual bool getCanApplyTransform(Natron::EffectInstance** /*effect*/) const { return false; }
 
@@ -583,6 +619,7 @@ public:
     virtual void clearTransform(int /*inputNb*/) {}
 
     bool getThreadLocalRegionsOfInterests(EffectInstance::RoIMap& roiMap) const;
+
 
     void getThreadLocalInputImages(std::list<boost::shared_ptr<Natron::Image> >* images) const;
 
@@ -599,6 +636,7 @@ public:
      **/
     bool isFrameVaryingOrAnimated_Recursive() const;
 
+    
 protected:
     /**
      * @brief Must fill the image 'output' for the region of interest 'roi' at the given time and
@@ -837,18 +875,6 @@ public:
 
 
     /**
-     * @brief
-     * You must call this in order to notify the GUI of any change (add/delete) for knobs not made during
-     * initializeKnobs().
-     * For example you may want to remove some knobs in response to a value changed of another knob.
-     * This is something that OpenFX does not provide but we make it possible for Natron plugins.
-     * - To properly delete a knob just call the destructor of the knob.
-     * - To properly delete
-     **/
-    void createKnobDynamically();
-
-
-    /**
      * @brief Used to bracket a series of call to onKnobValueChanged(...) in case many complex changes are done
      * at once. If not called, onKnobValueChanged() will call automatically bracket its call be a begin/end
      * but this can lead to worse performance. You can overload this to make all changes to params at once.
@@ -1022,6 +1048,7 @@ public:
      * This function is here to update the last render args thread storage.
      **/
     void updateThreadLocalRenderTime(int time);
+
     
     /**
      * @brief If the caller thread is currently rendering an image, it will return a pointer to it
@@ -1087,11 +1114,13 @@ protected:
         return Natron::eStatusOK;
     }
 
+
 public:
 
     ///Doesn't do anything, instead we overriden onKnobValueChanged_public
     virtual void onKnobValueChanged(KnobI* k, Natron::ValueChangedReasonEnum reason,SequenceTime time,
                                     bool originatedFromMainThread) OVERRIDE FINAL;
+
     Natron::StatusEnum beginSequenceRender_public(SequenceTime first, SequenceTime last,
                                               SequenceTime step, bool interactive, const RenderScale & scale,
                                               bool isSequentialRender, bool isRenderResponseToUserInteraction,
@@ -1122,6 +1151,19 @@ public:
 
     bool isDoingInteractAction() const WARN_UNUSED_RETURN;
 
+    /* @brief Overlay support:
+    * Just overload this function in your operator.
+    * No need to include any OpenGL related header.
+    * The coordinate space is  defined by the displayWindow
+    * (i.e: (0,0) = bottomLeft and  width() and height() being
+    * respectivly the width and height of the frame.)
+    */
+    virtual bool hasOverlay() const
+    {
+        return false;
+    }
+
+
 protected:
 
     /**
@@ -1142,17 +1184,6 @@ protected:
     {
     }
 
-    /* @brief Overlay support:
-     * Just overload this function in your operator.
-     * No need to include any OpenGL related header.
-     * The coordinate space is  defined by the displayWindow
-     * (i.e: (0,0) = bottomLeft and  width() and height() being
-     * respectivly the width and height of the frame.)
-     */
-    virtual bool hasOverlay() const
-    {
-        return false;
-    }
 
     virtual void drawOverlay(double /*scaleX*/,
                              double /*scaleY*/)
@@ -1220,7 +1251,7 @@ protected:
     }
    
     
-    boost::shared_ptr<Node> _node; //< the node holding this effect
+    boost::weak_ptr<Node> _node; //< the node holding this effect
 
 private:
 
@@ -1282,6 +1313,7 @@ private:
 );
 
     bool renderInputImagesForRoI(bool createImageInCache,
+                                 const std::list< boost::shared_ptr<Natron::Image> >& argsInputImages,
                                  SequenceTime time,
                                  int view,
                                  double par,
@@ -1346,7 +1378,9 @@ private:
 
 
     virtual void onAllKnobsSlaved(bool isSlave,KnobHolder* master) OVERRIDE FINAL;
-    virtual void onKnobSlaved(const boost::shared_ptr<KnobI> & knob,int dimension,bool isSlave,KnobHolder* master) OVERRIDE FINAL;
+    virtual void onKnobSlaved(KnobI* slave,KnobI* master,
+                              int dimension,
+                              bool isSlave) OVERRIDE FINAL;
 
 
     struct TiledRenderingFunctorArgs
@@ -1363,11 +1397,11 @@ private:
         boost::shared_ptr<Natron::Image>  renderMappedImage;
     };
 
-    enum RenderingFunctorRet
+    enum RenderingFunctorRetEnum
     {
-        eRenderingFunctorFailed, //< must stop rendering
-        eRenderingFunctorOK, //< ok, move on
-        eRenderingFunctorTakeImageLock //< take the image lock because another thread is rendering part of something we need
+        eRenderingFunctorRetFailed, //< must stop rendering
+        eRenderingFunctorRetOK, //< ok, move on
+        eRenderingFunctorRetTakeImageLock //< take the image lock because another thread is rendering part of something we need
     };
 
     ///These are the image passed to the plug-in to render
@@ -1391,12 +1425,12 @@ private:
     /// - 4) Plugin needs remapping and downscaling
     ///    * renderMappedImage points to fullScaleMappedImage
     ///    * We render in fullScaledMappedImage, then convert into "image" and then downscale into downscaledImage.
-    RenderingFunctorRet tiledRenderingFunctor(const TiledRenderingFunctorArgs& args,
+    RenderingFunctorRetEnum tiledRenderingFunctor(const TiledRenderingFunctorArgs& args,
                                              const ParallelRenderArgs& frameArgs,
                                              bool setThreadLocalStorage,
                                              const RectI & downscaledRectToRender );
 
-    RenderingFunctorRet tiledRenderingFunctor(const RenderArgs & args,
+    RenderingFunctorRetEnum tiledRenderingFunctor(const RenderArgs & args,
                                              const ParallelRenderArgs& frameArgs,
                                              const std::list<boost::shared_ptr<Natron::Image> >& inputImages,
                                              bool setThreadLocalStorage,

@@ -9,6 +9,10 @@
  *
  */
 
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
 #include "Lut.h"
 
 #include <cstring> // for memcpy
@@ -150,33 +154,33 @@ intersects(const RectI & what,
 }
 
 void
-getOffsetsForPacking(PixelPacking format,
+getOffsetsForPacking(PixelPackingEnum format,
                      int *r,
                      int *g,
                      int *b,
                      int *a)
 {
-    if (format == PACKING_BGRA) {
+    if (format == ePixelPackingBGRA) {
         *b = 0;
         *g = 1;
         *r = 2;
         *a = 3;
-    } else if (format == PACKING_RGBA) {
+    } else if (format == ePixelPackingRGBA) {
         *r = 0;
         *g = 1;
         *b = 2;
         *a = 3;
-    } else if (format == PACKING_RGB) {
+    } else if (format == ePixelPackingRGB) {
         *r = 0;
         *g = 1;
         *b = 2;
         *a = -1;
-    } else if (format == PACKING_BGR) {
+    } else if (format == ePixelPackingBGR) {
         *r = 0;
         *g = 1;
         *b = 2;
         *a = -1;
-    } else if (format == PACKING_PLANAR) {
+    } else if (format == ePixelPackingPLANAR) {
         *r = 0;
         *g = 1;
         *b = 2;
@@ -397,8 +401,8 @@ Lut::to_byte_packed(unsigned char* to,
                     const RectI & conversionRect,
                     const RectI & srcBounds,
                     const RectI & dstBounds,
-                    PixelPacking inputPacking,
-                    PixelPacking outputPacking,
+                    PixelPackingEnum inputPacking,
+                    PixelPackingEnum outputPacking,
                     bool invertY,
                     bool premult) const
 {
@@ -410,8 +414,8 @@ Lut::to_byte_packed(unsigned char* to,
     }
 
 
-    bool inputHasAlpha = inputPacking == PACKING_BGRA || inputPacking == PACKING_RGBA;
-    bool outputHasAlpha = outputPacking == PACKING_BGRA || outputPacking == PACKING_RGBA;
+    bool inputHasAlpha = inputPacking == ePixelPackingBGRA || inputPacking == ePixelPackingRGBA;
+    bool outputHasAlpha = outputPacking == ePixelPackingBGRA || outputPacking == ePixelPackingRGBA;
     int inROffset, inGOffset, inBOffset, inAOffset;
     int outROffset, outGOffset, outBOffset, outAOffset;
     getOffsetsForPacking(inputPacking, &inROffset, &inGOffset, &inBOffset, &inAOffset);
@@ -478,8 +482,8 @@ Lut::to_short_packed(unsigned short* /*to*/,
                      const RectI & /*conversionRect*/,
                      const RectI & /*srcBounds*/,
                      const RectI & /*dstBounds*/,
-                     PixelPacking /*inputPacking*/,
-                     PixelPacking /*outputPacking*/,
+                     PixelPackingEnum /*inputPacking*/,
+                     PixelPackingEnum /*outputPacking*/,
                      bool /*invertY*/,
                      bool /*premult*/) const
 {
@@ -492,8 +496,8 @@ Lut::to_float_packed(float* to,
                      const RectI & conversionRect,
                      const RectI & srcBounds,
                      const RectI & dstBounds,
-                     PixelPacking inputPacking,
-                     PixelPacking outputPacking,
+                     PixelPackingEnum inputPacking,
+                     PixelPackingEnum outputPacking,
                      bool invertY,
                      bool premult) const
 {
@@ -504,8 +508,8 @@ Lut::to_float_packed(float* to,
         return;
     }
 
-    bool inputHasAlpha = inputPacking == PACKING_BGRA || inputPacking == PACKING_RGBA;
-    bool outputHasAlpha = outputPacking == PACKING_BGRA || outputPacking == PACKING_RGBA;
+    bool inputHasAlpha = inputPacking == ePixelPackingBGRA || inputPacking == ePixelPackingRGBA;
+    bool outputHasAlpha = outputPacking == ePixelPackingBGRA || outputPacking == ePixelPackingRGBA;
     int inROffset, inGOffset, inBOffset, inAOffset;
     int outROffset, outGOffset, outBOffset, outAOffset;
     getOffsetsForPacking(inputPacking, &inROffset, &inGOffset, &inBOffset, &inAOffset);
@@ -599,12 +603,12 @@ Lut::from_byte_packed(float* to,
                       const RectI & conversionRect,
                       const RectI & srcBounds,
                       const RectI & dstBounds,
-                      PixelPacking inputPacking,
-                      PixelPacking outputPacking,
+                      PixelPackingEnum inputPacking,
+                      PixelPackingEnum outputPacking,
                       bool invertY,
                       bool premult) const
 {
-    if ( ( inputPacking == PACKING_PLANAR) || ( outputPacking == PACKING_PLANAR) ) {
+    if ( ( inputPacking == ePixelPackingPLANAR) || ( outputPacking == ePixelPackingPLANAR) ) {
         throw std::runtime_error("Invalid pixel format.");
     }
 
@@ -615,8 +619,8 @@ Lut::from_byte_packed(float* to,
     }
 
 
-    bool inputHasAlpha = inputPacking == PACKING_BGRA || inputPacking == PACKING_RGBA;
-    bool outputHasAlpha = outputPacking == PACKING_BGRA || outputPacking == PACKING_RGBA;
+    bool inputHasAlpha = inputPacking == ePixelPackingBGRA || inputPacking == ePixelPackingRGBA;
+    bool outputHasAlpha = outputPacking == ePixelPackingBGRA || outputPacking == ePixelPackingRGBA;
     int inROffset, inGOffset, inBOffset, inAOffset;
     int outROffset, outGOffset, outBOffset, outAOffset;
     getOffsetsForPacking(inputPacking, &inROffset, &inGOffset, &inBOffset, &inAOffset);
@@ -677,8 +681,8 @@ Lut::from_short_packed(float* /*to*/,
                        const RectI & /*conversionRect*/,
                        const RectI & /*srcBounds*/,
                        const RectI & /*dstBounds*/,
-                       PixelPacking /*inputPacking*/,
-                       PixelPacking /*outputPacking*/,
+                       PixelPackingEnum /*inputPacking*/,
+                       PixelPackingEnum /*outputPacking*/,
                        bool /*invertY*/,
                        bool /*premult*/) const
 {
@@ -691,12 +695,12 @@ Lut::from_float_packed(float* to,
                        const RectI & conversionRect,
                        const RectI & srcBounds,
                        const RectI & dstBounds,
-                       PixelPacking inputPacking,
-                       PixelPacking outputPacking,
+                       PixelPackingEnum inputPacking,
+                       PixelPackingEnum outputPacking,
                        bool invertY,
                        bool premult) const
 {
-    if ( ( inputPacking == PACKING_PLANAR) || ( outputPacking == PACKING_PLANAR) ) {
+    if ( ( inputPacking == ePixelPackingPLANAR) || ( outputPacking == ePixelPackingPLANAR) ) {
         throw std::runtime_error("Invalid pixel format.");
     }
 
@@ -707,8 +711,8 @@ Lut::from_float_packed(float* to,
     }
 
 
-    bool inputHasAlpha = inputPacking == PACKING_BGRA || inputPacking == PACKING_RGBA;
-    bool outputHasAlpha = outputPacking == PACKING_BGRA || outputPacking == PACKING_RGBA;
+    bool inputHasAlpha = inputPacking == ePixelPackingBGRA || inputPacking == ePixelPackingRGBA;
+    bool outputHasAlpha = outputPacking == ePixelPackingBGRA || outputPacking == ePixelPackingRGBA;
     int inROffset, inGOffset, inBOffset, inAOffset;
     int outROffset, outGOffset, outBOffset, outAOffset;
     getOffsetsForPacking(inputPacking, &inROffset, &inGOffset, &inBOffset, &inAOffset);
@@ -801,12 +805,12 @@ from_byte_packed(float *to,
                  const RectI &conversionRect,
                  const RectI &srcBounds,
                  const RectI &dstBounds,
-                 PixelPacking inputPacking,
-                 PixelPacking outputPacking,
+                 PixelPackingEnum inputPacking,
+                 PixelPackingEnum outputPacking,
                  bool invertY )
 
 {
-    if ( ( inputPacking == PACKING_PLANAR) || ( outputPacking == PACKING_PLANAR) ) {
+    if ( ( inputPacking == ePixelPackingPLANAR) || ( outputPacking == ePixelPackingPLANAR) ) {
         throw std::runtime_error("Invalid pixel format.");
     }
 
@@ -817,8 +821,8 @@ from_byte_packed(float *to,
     }
 
 
-    bool inputHasAlpha = inputPacking == PACKING_BGRA || inputPacking == PACKING_RGBA;
-    bool outputHasAlpha = outputPacking == PACKING_BGRA || outputPacking == PACKING_RGBA;
+    bool inputHasAlpha = inputPacking == ePixelPackingBGRA || inputPacking == ePixelPackingRGBA;
+    bool outputHasAlpha = outputPacking == ePixelPackingBGRA || outputPacking == ePixelPackingRGBA;
     int inROffset, inGOffset, inBOffset, inAOffset;
     int outROffset, outGOffset, outBOffset, outAOffset;
     getOffsetsForPacking(inputPacking, &inROffset, &inGOffset, &inBOffset, &inAOffset);
@@ -857,8 +861,8 @@ from_short_packed(float */*to*/,
                   const RectI & /*rect*/,
                   const RectI & /*srcRod*/,
                   const RectI & /*rod*/,
-                  PixelPacking /*inputFormat*/,
-                  PixelPacking /*format*/,
+                  PixelPackingEnum /*inputFormat*/,
+                  PixelPackingEnum /*format*/,
                   bool /*invertY*/)
 {
     throw std::runtime_error("Linear::from_short_packed not yet implemented.");
@@ -870,11 +874,11 @@ from_float_packed(float *to,
                   const RectI &conversionRect,
                   const RectI &srcBounds,
                   const RectI &dstBounds,
-                  PixelPacking inputPacking,
-                  PixelPacking outputPacking,
+                  PixelPackingEnum inputPacking,
+                  PixelPackingEnum outputPacking,
                   bool invertY)
 {
-    if ( ( inputPacking == PACKING_PLANAR) || ( outputPacking == PACKING_PLANAR) ) {
+    if ( ( inputPacking == ePixelPackingPLANAR) || ( outputPacking == ePixelPackingPLANAR) ) {
         throw std::runtime_error("This function is not meant for planar buffers.");
     }
 
@@ -886,12 +890,12 @@ from_float_packed(float *to,
     }
 
 
-    if ( ( inputPacking == PACKING_PLANAR) || ( outputPacking == PACKING_PLANAR) ) {
+    if ( ( inputPacking == ePixelPackingPLANAR) || ( outputPacking == ePixelPackingPLANAR) ) {
         throw std::runtime_error("Invalid pixel format.");
     }
 
-    bool inputHasAlpha = inputPacking == PACKING_BGRA || inputPacking == PACKING_RGBA;
-    bool outputHasAlpha = outputPacking == PACKING_BGRA || outputPacking == PACKING_RGBA;
+    bool inputHasAlpha = inputPacking == ePixelPackingBGRA || inputPacking == ePixelPackingRGBA;
+    bool outputHasAlpha = outputPacking == ePixelPackingBGRA || outputPacking == ePixelPackingRGBA;
     int inROffset, inGOffset, inBOffset, inAOffset;
     int outROffset, outGOffset, outBOffset, outAOffset;
     getOffsetsForPacking(inputPacking, &inROffset, &inGOffset, &inBOffset, &inAOffset);
@@ -1056,12 +1060,12 @@ to_byte_packed(unsigned char* to,
                const RectI & conversionRect,
                const RectI & srcBounds,
                const RectI & dstBounds,
-               PixelPacking inputPacking,
-               PixelPacking outputPacking,
+               PixelPackingEnum inputPacking,
+               PixelPackingEnum outputPacking,
                bool invertY,
                bool premult)
 {
-    if ( ( inputPacking == PACKING_PLANAR) || ( outputPacking == PACKING_PLANAR) ) {
+    if ( ( inputPacking == ePixelPackingPLANAR) || ( outputPacking == ePixelPackingPLANAR) ) {
         throw std::runtime_error("This function is not meant for planar buffers.");
     }
 
@@ -1072,8 +1076,8 @@ to_byte_packed(unsigned char* to,
     }
 
 
-    bool inputHasAlpha = inputPacking == PACKING_BGRA || inputPacking == PACKING_RGBA;
-    bool outputHasAlpha = outputPacking == PACKING_BGRA || outputPacking == PACKING_RGBA;
+    bool inputHasAlpha = inputPacking == ePixelPackingBGRA || inputPacking == ePixelPackingRGBA;
+    bool outputHasAlpha = outputPacking == ePixelPackingBGRA || outputPacking == ePixelPackingRGBA;
     int inROffset, inGOffset, inBOffset, inAOffset;
     int outROffset, outGOffset, outBOffset, outAOffset;
     getOffsetsForPacking(inputPacking, &inROffset, &inGOffset, &inBOffset, &inAOffset);
@@ -1136,8 +1140,8 @@ to_short_packed(unsigned short* to,
                 const RectI & conversionRect,
                 const RectI & srcBounds,
                 const RectI & dstBounds,
-                PixelPacking inputPacking,
-                PixelPacking outputPacking,
+                PixelPackingEnum inputPacking,
+                PixelPackingEnum outputPacking,
                 bool invertY,
                 bool premult)
 {
@@ -1159,12 +1163,12 @@ to_float_packed(float* to,
                 const RectI & conversionRect,
                 const RectI & srcBounds,
                 const RectI & dstBounds,
-                PixelPacking inputPacking,
-                PixelPacking outputPacking,
+                PixelPackingEnum inputPacking,
+                PixelPackingEnum outputPacking,
                 bool invertY,
                 bool premult)
 {
-    if ( ( inputPacking == PACKING_PLANAR) || ( outputPacking == PACKING_PLANAR) ) {
+    if ( ( inputPacking == ePixelPackingPLANAR) || ( outputPacking == ePixelPackingPLANAR) ) {
         throw std::runtime_error("Invalid pixel format.");
     }
 
@@ -1175,8 +1179,8 @@ to_float_packed(float* to,
     }
 
 
-    bool inputHasAlpha = inputPacking == PACKING_BGRA || inputPacking == PACKING_RGBA;
-    bool outputHasAlpha = outputPacking == PACKING_BGRA || outputPacking == PACKING_RGBA;
+    bool inputHasAlpha = inputPacking == ePixelPackingBGRA || inputPacking == ePixelPackingRGBA;
+    bool outputHasAlpha = outputPacking == ePixelPackingBGRA || outputPacking == ePixelPackingRGBA;
     int inROffset, inGOffset, inBOffset, inAOffset;
     int outROffset, outGOffset, outBOffset, outAOffset;
     getOffsetsForPacking(inputPacking, &inROffset, &inGOffset, &inBOffset, &inAOffset);

@@ -8,6 +8,11 @@
 
 #ifndef NATRON_ENGINE_TIMELINE_H_
 #define NATRON_ENGINE_TIMELINE_H_
+
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
 #include <list>
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
@@ -24,8 +29,8 @@ CLANG_DIAG_ON(deprecated)
  * The _currentFrame represents the current time in the time space. It doesn't have to be within any aforementioned interval.
  **/
 namespace Natron {
-class OutputEffectInstance;
 class Project;
+class OutputEffectInstance;
 class Node;
 }
 
@@ -42,25 +47,16 @@ public:
     {
     }
 
-    SequenceTime firstFrame() const;
-
-    SequenceTime lastFrame() const;
-
     SequenceTime currentFrame() const;
 
-    SequenceTime leftBound() const;
+    void seekFrame(SequenceTime frame,
+                   bool updateLastCaller,
+                   Natron::OutputEffectInstance* caller,
+                   Natron::TimelineChangeReasonEnum reason);
 
-    SequenceTime rightBound() const;
+    void incrementCurrentFrame();
 
-    void setFrameRange(SequenceTime first, SequenceTime last);
-
-    void setBoundaries(SequenceTime leftBound,SequenceTime rightBound);
-
-    void seekFrame(SequenceTime frame,Natron::OutputEffectInstance* caller, Natron::TimelineChangeReasonEnum reason);
-
-    void incrementCurrentFrame(Natron::OutputEffectInstance* caller);
-
-    void decrementCurrentFrame(Natron::OutputEffectInstance* caller);
+    void decrementCurrentFrame();
 
     void removeAllKeyframesIndicators();
 
@@ -96,31 +92,28 @@ public:
 
     void getKeyframes(std::list<SequenceTime>* keys) const;
 
-public slots:
+public Q_SLOTS:
+
+
     void onFrameChanged(SequenceTime frame);
 
-    void onBoundariesChanged(SequenceTime left,SequenceTime right);
 
     void goToPreviousKeyframe();
 
     void goToNextKeyframe();
 
-signals:
+Q_SIGNALS:
 
-    void frameRangeChanged(SequenceTime,SequenceTime);
-    void boundariesChanged(SequenceTime,SequenceTime,int reason);
     //reason being a Natron::TimelineChangeReasonEnum
     void frameChanged(SequenceTime,int reason);
 
     void keyframeIndicatorsChanged();
 
 private:
+    
     mutable QMutex _lock; // protects the following SequenceTime members
-    SequenceTime _firstFrame;
-    SequenceTime _lastFrame;
     SequenceTime _currentFrame;
-    SequenceTime _leftBoundary, _rightBoundary; //these boundaries are within the interval [firstFrame,lastFrame]
-
+    
     // not MT-safe
     std::list<SequenceTime> _keyframes;
     Natron::Project* _project;

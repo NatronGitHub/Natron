@@ -4,12 +4,23 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 
-#ifndef QUESTIONDIALOG_H
-#define MESSAGE_BOX_H
-#ifndef Q_MOC_RUN
+#ifndef _NATRON_MESSAGE_BOX_H_
+#define _NATRON_MESSAGE_BOX_H_
+
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
 #endif
+
+#include "Global/Macros.h"
+CLANG_DIAG_OFF(deprecated)
+CLANG_DIAG_OFF(uninitialized)
 #include <QDialog>
+CLANG_DIAG_ON(deprecated)
+CLANG_DIAG_ON(uninitialized)
 
 #include "Global/GlobalDefines.h"
 
@@ -47,7 +58,7 @@ public:
     
     bool isCheckBoxChecked() const;
     
-public slots:
+public Q_SLOTS:
     
     void onButtonClicked(QAbstractButton* button);
     
@@ -67,4 +78,4 @@ private:
 
 }
 
-#endif // QUESTIONDIALOG_H
+#endif // _NATRON_MESSAGE_BOX_H_

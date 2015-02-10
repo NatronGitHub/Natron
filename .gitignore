@@ -9,6 +9,7 @@ build
 DerivedData
 Natron.xcodeproj
 NatronRenderer.xcodeproj
+NatronCrashReporter.xcodeproj
 Tests.xcodeproj
 HostSupport.xcodeproj
 Gui.xcodeproj
@@ -50,7 +51,7 @@ x64/
 build/
 [Bb]in/
 [Oo]bj/
-
+*autobuild*
 # MSTest test Results
 [Tt]est[Rr]esult*/
 [Bb]uild[Ll]og.*
@@ -200,3 +201,8 @@ test_dot_generator0.jpg
 Tests/Plugins
 pch
 *.filters
+
+# Python
+*.pyc
+
+Renderer/NatronRenderer

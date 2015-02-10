@@ -1,0 +1,41 @@
+.. module:: NatronEngine
+.. _ButtonParam:
+
+ButtonParam
+***********
+
+**Inherits** :doc:`Param`
+
+Synopsis
+--------
+
+A button parameter that appears in the settings panel of the node.
+
+.. figure:: buttonParam.png
+
+To insert code to be executed upon a user click of the button, register a function to the
+onParamChanged callback on the node.
+
+Functions
+^^^^^^^^^
+
+*    def :meth:`setIconFilePath<NatronEngine.ButtonParam.setIconFilePath>` (icon)
+
+
+Member functions description
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+.. method:: NatronEngine.ButtonParam.setIconFilePath(icon)
+
+
+    :param icon: :class:`str<NatronEngine.std::string>`
+
+Set here the icon file path for the button. This should be either an absolute path or
+a file-path relative to a path in the NATRON_PLUGIN_PATH.
+
+
+
+
+
+

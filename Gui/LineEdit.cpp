@@ -9,6 +9,10 @@
  *
  */
 
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
 #include "LineEdit.h"
 
 CLANG_DIAG_OFF(deprecated)
@@ -69,7 +73,7 @@ LineEdit::dropEvent(QDropEvent* e)
     }
     if ( !path.isEmpty() ) {
         setText(path);
-        emit textDropped();
+        Q_EMIT textDropped();
     }
 }
 
@@ -121,6 +125,6 @@ LineEdit::keyPressEvent(QKeyEvent* e)
 {
     QLineEdit::keyPressEvent(e);
     if (e->matches(QKeySequence::Paste)) {
-        emit textPasted();
+        Q_EMIT textPasted();
     }
 }

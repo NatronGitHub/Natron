@@ -9,6 +9,9 @@
  *
  */
 
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
 
 #include "BaseTest.h"
 
@@ -36,20 +39,20 @@ BaseTest::registerTestPlugins()
 {
     _allTestPluginIDs.clear();
 
-    _dotGeneratorPluginID = QString("net.sf.openfx.dotexample");
+    _dotGeneratorPluginID = PLUGINID_OFX_DOTEXAMPLE;
     _allTestPluginIDs.push_back(_dotGeneratorPluginID);
 
-    _readOIIOPluginID = QString("fr.inria.openfx.readoiio");
+    _readOIIOPluginID = PLUGINID_OFX_READOIIO;
     _allTestPluginIDs.push_back(_readOIIOPluginID);
 
-    _writeOIIOPluginID = QString("fr.inria.openfx.writeoiio");
+    _writeOIIOPluginID = PLUGINID_OFX_WRITEOIIO;
     _allTestPluginIDs.push_back(_writeOIIOPluginID);
 
     for (unsigned int i = 0; i < _allTestPluginIDs.size(); ++i) {
         ///make sure the generic test plugin is present
         Natron::LibraryBinary* bin = NULL;
         try {
-            Natron::Plugin* p = appPTR->getPluginBinary(_allTestPluginIDs[i], -1, -1);
+            Natron::Plugin* p = appPTR->getPluginBinary(_allTestPluginIDs[i], -1, -1, false);
             if (p) {
                 bin = p->getLibraryBinary();
             }
@@ -67,8 +70,8 @@ BaseTest::SetUp()
 {
     AppManager* manager = new AppManager;
     int argc = 0;
-
-    manager->load(argc,NULL,QString(),QStringList(),std::list<std::pair<int,int> >(),QString());
+    CLArgs cl;
+    manager->load(argc, 0, cl);
 
     _app = manager->getTopLevelInstance();
 
@@ -90,8 +93,9 @@ boost::shared_ptr<Natron::Node> BaseTest::createNode(const QString & pluginID,
 {
     boost::shared_ptr<Node> ret =  _app->createNode( CreateNodeArgs(pluginID,
                                                                     "",
-                                                                    majorVersion,minorVersion,-1,true,INT_MIN,INT_MIN,true,true,
-                                                                    QString(),CreateNodeArgs::DefaultValuesList()) );
+                                                                    majorVersion,minorVersion,true,INT_MIN,INT_MIN,true,true,
+                                                                    QString(),CreateNodeArgs::DefaultValuesList(),
+                                                                    _app->getProject()) );
 
     EXPECT_NE(ret.get(),(Natron::Node*)NULL);
 

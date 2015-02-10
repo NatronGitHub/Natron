@@ -9,6 +9,10 @@
  *
  */
 
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
 #include "Plugin.h"
 
 #include <QMutex>
@@ -28,10 +32,10 @@ Plugin::~Plugin()
 }
 
 void
-PluginGroupNode::tryAddChild(PluginGroupNode* plugin)
+PluginGroupNode::tryAddChild(const boost::shared_ptr<PluginGroupNode>& plugin)
 {
-    for (unsigned int i = 0; i < _children.size(); ++i) {
-        if (_children[i] == plugin) {
+    for (std::list<boost::shared_ptr<PluginGroupNode> >::iterator it = _children.begin() ;it!=_children.end();++it) {
+        if (*it == plugin) {
             return;
         }
     }
@@ -41,8 +45,8 @@ PluginGroupNode::tryAddChild(PluginGroupNode* plugin)
 void
 PluginGroupNode::tryRemoveChild(PluginGroupNode* plugin)
 {
-    for (std::vector<PluginGroupNode*>::iterator it = _children.begin(); it != _children.end(); ++it) {
-        if (*it == plugin) {
+    for (std::list<boost::shared_ptr<PluginGroupNode> >::iterator it = _children.begin(); it != _children.end(); ++it) {
+        if (it->get() == plugin) {
             _children.erase(it);
             return;
         }

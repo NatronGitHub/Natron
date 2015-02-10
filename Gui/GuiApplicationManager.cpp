@@ -9,6 +9,10 @@
  *
  */
 
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
 #include "GuiApplicationManager.h"
 
 ///gui
@@ -50,6 +54,11 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/GuiAppInstance.h"
 #include "Gui/CurveWidget.h"
 #include "Gui/ActionShortcuts.h"
+CLANG_DIAG_OFF(mismatched-tags)
+GCC_DIAG_OFF(unused-parameter)
+#include "NatronGui/natrongui_python.h"
+CLANG_DIAG_ON(mismatched-tags)
+GCC_DIAG_ON(unused-parameter)
 
 /**
  * @macro Registers a keybind to the application.
@@ -96,12 +105,18 @@ struct KnobsClipBoard
     std::map<int,std::string> stringAnimation; //< for animating string knobs
     bool isEmpty; //< is the clipboard empty
     bool copyAnimation; //< should we copy all the animation or not
+    
+    std::string appID;
+    std::string nodeFullyQualifiedName;
+    std::string paramName;
 };
+
+
 
 struct GuiApplicationManagerPrivate
 {
     GuiApplicationManager* _publicInterface;
-    std::list<PluginGroupNode*> _toolButtons;
+    std::list<boost::shared_ptr<PluginGroupNode> > _topLevelToolButtons;
     boost::scoped_ptr<KnobsClipBoard> _knobsClipBoard;
     boost::scoped_ptr<KnobGuiFactory> _knobGuiFactory;
     QCursor* _colorPickerCursor;
@@ -117,24 +132,31 @@ struct GuiApplicationManagerPrivate
     QString _fontFamily;
     int _fontSize;
     
+    NodeClipBoard _nodeCB;
+    
+    std::list<PythonUserCommand> pythonCommands;
+    
     GuiApplicationManagerPrivate(GuiApplicationManager* publicInterface)
         :   _publicInterface(publicInterface)
-          , _toolButtons()
-          , _knobsClipBoard(new KnobsClipBoard)
-          , _knobGuiFactory( new KnobGuiFactory() )
-          , _colorPickerCursor(NULL)
-          , _splashScreen(NULL)
-          , _openFileRequest()
-          , _actionShortcuts()
-          , _shortcutsChangedVersion(false)
-          , _fontFamily()
-          , _fontSize(0)
+    , _topLevelToolButtons()
+    , _knobsClipBoard(new KnobsClipBoard)
+    , _knobGuiFactory( new KnobGuiFactory() )
+    , _colorPickerCursor(NULL)
+    , _splashScreen(NULL)
+    , _openFileRequest()
+    , _actionShortcuts()
+    , _shortcutsChangedVersion(false)
+    , _fontFamily()
+    , _fontSize(0)
+    , _nodeCB()
+    , pythonCommands()
     {
     }
 
     void createColorPickerCursor();
     
-    void removePluginToolButton(const QString& pluginID);
+    void removePluginToolButtonInternal(const boost::shared_ptr<PluginGroupNode>& n,const QStringList& grouping);
+    void removePluginToolButton(const QStringList& grouping);
 
     void addStandardKeybind(const QString & grouping,const QString & id,
                             const QString & description,QKeySequence::StandardKey key);
@@ -148,6 +170,13 @@ struct GuiApplicationManagerPrivate
     void addMouseShortcut(const QString & grouping,const QString & id,
                           const QString & description,
                           const Qt::KeyboardModifiers & modifiers,Qt::MouseButton button);
+    
+    boost::shared_ptr<PluginGroupNode>  findPluginToolButtonInternal(const boost::shared_ptr<PluginGroupNode>& parent,
+                                                                     const QStringList & grouping,
+                                                                     const QString & name,
+                                                                     const QString & iconPath,
+                                                                     int major,
+                                                                     int minor);
 };
 
 GuiApplicationManager::GuiApplicationManager()
@@ -158,9 +187,7 @@ GuiApplicationManager::GuiApplicationManager()
 
 GuiApplicationManager::~GuiApplicationManager()
 {
-    for (std::list<PluginGroupNode*>::iterator it = _imp->_toolButtons.begin() ; it!=_imp->_toolButtons.end();++it) {
-        delete *it;
-    }
+   
     delete _imp->_colorPickerCursor;
     for (AppShortcuts::iterator it = _imp->_actionShortcuts.begin(); it != _imp->_actionShortcuts.end(); ++it) {
         for (GroupShortcuts::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
@@ -369,6 +396,14 @@ GuiApplicationManager::getIcon(Natron::PixmapEnum e,
                 break;
             case NATRON_PIXMAP_COLORWHEEL:
                 img.load(NATRON_IMAGES_PATH "colorwheel.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_OVERLAY:
+                img.load(NATRON_IMAGES_PATH "colorwheel_overlay.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_ROTO_MERGE:
+                img.load(NATRON_IMAGES_PATH "roto_merge.png");
                 *pix = QPixmap::fromImage(img);
                 break;
             case NATRON_PIXMAP_COLOR_PICKER:
@@ -664,6 +699,175 @@ GuiApplicationManager::getIcon(Natron::PixmapEnum e,
                 img.load(NATRON_IMAGES_PATH "addTrack.png");
                 *pix = QPixmap::fromImage(img);
                 break;
+            case NATRON_PIXMAP_SCRIPT_CLEAR_OUTPUT:
+                img.load(NATRON_IMAGES_PATH "clearOutput.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_SCRIPT_EXEC_SCRIPT:
+                img.load(NATRON_IMAGES_PATH "execScript.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_SCRIPT_LOAD_EXEC_SCRIPT:
+                img.load(NATRON_IMAGES_PATH "loadAndExecScript.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_SCRIPT_LOAD_SCRIPT:
+                img.load(NATRON_IMAGES_PATH "loadScript.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_SCRIPT_NEXT_SCRIPT:
+                img.load(NATRON_IMAGES_PATH "nextScript.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_SCRIPT_OUTPUT_PANE_ACTIVATED:
+                img.load(NATRON_IMAGES_PATH "outputPanelActivated.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_SCRIPT_OUTPUT_PANE_DEACTIVATED:
+                img.load(NATRON_IMAGES_PATH "outputPanelDeactivated.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_SCRIPT_PREVIOUS_SCRIPT:
+                img.load(NATRON_IMAGES_PATH "previousScript.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_SCRIPT_SAVE_SCRIPT:
+                img.load(NATRON_IMAGES_PATH "saveScript.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+                
+            case NATRON_PIXMAP_MERGE_ATOP:
+                img.load(NATRON_IMAGES_PATH "merge_atop.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_MERGE_AVERAGE:
+                img.load(NATRON_IMAGES_PATH "merge_average.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_MERGE_COLOR_BURN:
+                img.load(NATRON_IMAGES_PATH "merge_color_burn.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_MERGE_COLOR_DODGE:
+                img.load(NATRON_IMAGES_PATH "merge_color_dodge.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_MERGE_CONJOINT_OVER:
+                img.load(NATRON_IMAGES_PATH "merge_conjoint_over.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_MERGE_COPY:
+                img.load(NATRON_IMAGES_PATH "merge_copy.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_MERGE_DIFFERENCE:
+                img.load(NATRON_IMAGES_PATH "merge_difference.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_MERGE_DISJOINT_OVER:
+                img.load(NATRON_IMAGES_PATH "merge_disjoint_over.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_MERGE_DIVIDE:
+                img.load(NATRON_IMAGES_PATH "merge_divide.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_MERGE_EXCLUSION:
+                img.load(NATRON_IMAGES_PATH "merge_exclusion.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_MERGE_FREEZE:
+                img.load(NATRON_IMAGES_PATH "merge_freeze.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_MERGE_FROM:
+                img.load(NATRON_IMAGES_PATH "merge_from.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_MERGE_GEOMETRIC:
+                img.load(NATRON_IMAGES_PATH "merge_geometric.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_MERGE_HARD_LIGHT:
+                img.load(NATRON_IMAGES_PATH "merge_hard_light.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_MERGE_HYPOT:
+                img.load(NATRON_IMAGES_PATH "merge_hypot.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_MERGE_IN:
+                img.load(NATRON_IMAGES_PATH "merge_in.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_MERGE_INTERPOLATED:
+                img.load(NATRON_IMAGES_PATH "merge_interpolated.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_MERGE_MASK:
+                img.load(NATRON_IMAGES_PATH "merge_mask.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_MERGE_MAX:
+                img.load(NATRON_IMAGES_PATH "merge_max.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_MERGE_MIN:
+                img.load(NATRON_IMAGES_PATH "merge_min.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_MERGE_MINUS:
+                img.load(NATRON_IMAGES_PATH "merge_minus.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_MERGE_MULTIPLY:
+                img.load(NATRON_IMAGES_PATH "merge_multiply.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_MERGE_OUT:
+                img.load(NATRON_IMAGES_PATH "merge_out.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_MERGE_OVER:
+                img.load(NATRON_IMAGES_PATH "merge_over.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_MERGE_OVERLAY:
+                img.load(NATRON_IMAGES_PATH "merge_overlay.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_MERGE_PINLIGHT:
+                img.load(NATRON_IMAGES_PATH "merge_pinlight.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_MERGE_PLUS:
+                img.load(NATRON_IMAGES_PATH "merge_plus.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_MERGE_REFLECT:
+                img.load(NATRON_IMAGES_PATH "merge_reflect.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_MERGE_SCREEN:
+                img.load(NATRON_IMAGES_PATH "merge_screen.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_MERGE_SOFT_LIGHT:
+                img.load(NATRON_IMAGES_PATH "merge_soft_light.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_MERGE_STENCIL:
+                img.load(NATRON_IMAGES_PATH "merge_stencil.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_MERGE_UNDER:
+                img.load(NATRON_IMAGES_PATH "merge_under.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_MERGE_XOR:
+                img.load(NATRON_IMAGES_PATH "merge_xor.png");
+                *pix = QPixmap::fromImage(img);
+                break;
             default:
                 assert(!"Missing image.");
         } // switch
@@ -671,10 +875,10 @@ GuiApplicationManager::getIcon(Natron::PixmapEnum e,
     }
 } // getIcon
 
-const std::list<PluginGroupNode*> &
-GuiApplicationManager::getPluginsToolButtons() const
+const std::list<boost::shared_ptr<PluginGroupNode> >&
+GuiApplicationManager::getTopLevelPluginsToolButtons() const
 {
-    return _imp->_toolButtons;
+    return _imp->_topLevelToolButtons;
 }
 
 const QCursor &
@@ -700,7 +904,6 @@ GuiApplicationManager::initGui()
     QStringList fontFilenames;
     fontFilenames << fontResource.arg("DroidSans");
     fontFilenames << fontResource.arg("DroidSans-Bold");
-    fontFilenames << fontResource.arg("Muli-Regular");
     foreach(QString fontFilename, fontFilenames) {
         _imp->_splashScreen->updateText("Loading font " + fontFilename);
         //qDebug() << "attempting to load" << fontFilename;
@@ -725,7 +928,6 @@ GuiApplicationManager::initGui()
 void
 GuiApplicationManager::onPluginLoaded(Natron::Plugin* plugin)
 {
-    PluginGroupNode* parent = NULL;
     QString shortcutGrouping(kShortcutGroupNodes);
     const QStringList & groups = plugin->getGrouping();
     const QString & pluginID = plugin->getPluginID();
@@ -733,100 +935,189 @@ GuiApplicationManager::onPluginLoaded(Natron::Plugin* plugin)
     const QString & pluginIconPath = plugin->getIconFilePath();
     const QString & groupIconPath = plugin->getGroupIconFilePath();
 
+    QStringList groupingWithID = groups;
+    groupingWithID.push_back(pluginID);
+    boost::shared_ptr<PluginGroupNode> child = findPluginToolButtonOrCreate(groupingWithID,
+                                                                            pluginLabel,
+                                                                            groupIconPath,
+                                                                            pluginIconPath,
+                                                                            plugin->getMajorVersion(),
+                                                                            plugin->getMinorVersion());
     for (int i = 0; i < groups.size(); ++i) {
-        PluginGroupNode* child = findPluginToolButtonOrCreate(groups.at(i),groups.at(i),groupIconPath);
-        if ( parent && (parent != child) ) {
-            parent->tryAddChild(child);
-            child->setParent(parent);
-        }
-        parent = child;
+       
         shortcutGrouping.push_back('/');
         shortcutGrouping.push_back(groups[i]);
     }
-    PluginGroupNode* lastChild = findPluginToolButtonOrCreate(pluginID,pluginLabel,pluginIconPath);
-    if ( parent && (parent != lastChild) ) {
-        parent->tryAddChild(lastChild);
-        lastChild->setParent(parent);
-    }
+    
     Qt::KeyboardModifiers modifiers = Qt::NoModifier;
     Qt::Key symbol = (Qt::Key)0;
     bool hasShortcut = true;
 
     /*These are the plug-ins which have a default shortcut. Other plug-ins can have a user-assigned shortcut.*/
-    if (pluginID == "net.sf.openfx.transformplugin") {
+    if (pluginID == PLUGINID_OFX_TRANSFORM) {
         symbol = Qt::Key_T;
-    } else if (pluginID == "net.sf.openfx.rotoplugin") {
+    } else if (pluginID == PLUGINID_OFX_ROTO) {
         symbol = Qt::Key_O;
-    } else if (pluginID == "net.sf.openfx.mergeplugin") {
+    } else if (pluginID == PLUGINID_OFX_MERGE) {
         symbol = Qt::Key_M;
-    } else if (pluginID == "net.sf.openfx.gradeplugin") {
+    } else if (pluginID == PLUGINID_OFX_GRADE) {
         symbol = Qt::Key_G;
-    } else if (pluginID == "net.sf.openfx.colorcorrectplugin") {
+    } else if (pluginID == PLUGINID_OFX_COLORCORRECT) {
         symbol = Qt::Key_C;
-    } else if (pluginID == "net.sf.cimg.cimgblur") {
+    } else if (pluginID == PLUGINID_OFX_BLURCIMG) {
         symbol = Qt::Key_B;
     } else {
         hasShortcut = false;
     }
     plugin->setHasShortcut(hasShortcut);
-    _imp->addKeybind(shortcutGrouping, pluginID, pluginLabel, modifiers, symbol);
+    
+    if (Natron::isPluginCreatable(plugin->getPluginID().toStdString())) {
+        _imp->addKeybind(shortcutGrouping, pluginID, pluginLabel, modifiers, symbol);
+    }
+    
 }
 
 void
 GuiApplicationManager::ignorePlugin(Natron::Plugin* plugin)
 {
-    _imp->removePluginToolButton(plugin->getPluginID());
+    _imp->removePluginToolButton(plugin->getGrouping());
     _imp->removeKeybind(kShortcutGroupNodes, plugin->getPluginID());
 }
 
-static void removeChildRecursively(PluginGroupNode* plugin,PluginGroupNode* parent,std::list<PluginGroupNode*>* toDelete)
-{
-    parent->tryRemoveChild(plugin);
-    if (parent->getChildren().empty()) {
-        toDelete->push_back(parent);
-        if (parent->getParent()) {
-            removeChildRecursively(parent, parent->getParent(), toDelete);
-        }
-    }
-}
 
 void
-GuiApplicationManagerPrivate::removePluginToolButton(const QString& pluginID)
+GuiApplicationManagerPrivate::removePluginToolButtonInternal(const boost::shared_ptr<PluginGroupNode>& n,const QStringList& grouping)
 {
-    std::list<PluginGroupNode*> toDelete;
-    for (std::list<PluginGroupNode*>::iterator it = _toolButtons.begin(); it != _toolButtons.end(); ++it) {
-        if ((*it)->getID() == pluginID) {
-            if ((*it)->getParent()) {
-                removeChildRecursively(*it,(*it)->getParent(),&toDelete);
+    assert(grouping.size() > 0);
+    
+    const std::list<boost::shared_ptr<PluginGroupNode> >& children = n->getChildren();
+    for (std::list<boost::shared_ptr<PluginGroupNode> >::const_iterator it = children.begin();
+         it != children.end(); ++it) {
+        if ((*it)->getID() == grouping[0]) {
+            
+            if (grouping.size() > 1) {
+                QStringList newGrouping;
+                for (int i = 1; i < grouping.size(); ++i) {
+                    newGrouping.push_back(grouping[i]);
+                }
+                removePluginToolButtonInternal(*it, newGrouping);
+                if ((*it)->getChildren().empty()) {
+                    n->tryRemoveChild(it->get());
+                }
+            } else {
+                n->tryRemoveChild(it->get());
             }
-            delete *it;
-            _toolButtons.erase(it);
             break;
         }
     }
+}
+void
+GuiApplicationManagerPrivate::removePluginToolButton(const QStringList& grouping)
+{
+    assert(grouping.size() > 0);
     
-    for (std::list<PluginGroupNode*>::iterator it = toDelete.begin(); it != toDelete.end(); ++it) {
-        std::list<PluginGroupNode*>::iterator found = std::find(_toolButtons.begin(),_toolButtons.end(),*it);
-        if (found != _toolButtons.end()) {
-            delete *found;
-            _toolButtons.erase(found);
+    for (std::list<boost::shared_ptr<PluginGroupNode> >::iterator it = _topLevelToolButtons.begin();
+         it != _topLevelToolButtons.end(); ++it) {
+        if ((*it)->getID() == grouping[0]) {
+            
+            if (grouping.size() > 1) {
+                QStringList newGrouping;
+                for (int i = 1; i < grouping.size(); ++i) {
+                    newGrouping.push_back(grouping[i]);
+                }
+                removePluginToolButtonInternal(*it, newGrouping);
+                if ((*it)->getChildren().empty()) {
+                    _topLevelToolButtons.erase(it);
+                }
+            } else {
+                _topLevelToolButtons.erase(it);
+            }
+            break;
         }
     }
 }
 
-PluginGroupNode*
-GuiApplicationManager::findPluginToolButtonOrCreate(const QString & pluginID,
-                                                    const QString & name,
-                                                    const QString & iconPath)
+boost::shared_ptr<PluginGroupNode>
+GuiApplicationManagerPrivate::findPluginToolButtonInternal(const boost::shared_ptr<PluginGroupNode>& parent,
+                                                           const QStringList & grouping,
+                                                           const QString & name,
+                                                           const QString & iconPath,
+                                                           int major,
+                                                           int minor)
 {
-    for (std::list<PluginGroupNode*>::iterator it = _imp->_toolButtons.begin(); it != _imp->_toolButtons.end(); ++it) {
-        if ((*it)->getID() == pluginID) {
-            return *it;
+    assert(grouping.size() > 0);
+    
+    const std::list<boost::shared_ptr<PluginGroupNode> >& children = parent->getChildren();
+    
+    for (std::list<boost::shared_ptr<PluginGroupNode> >::const_iterator it = children.begin(); it != children.end(); ++it) {
+        if ((*it)->getID() == grouping[0]) {
+            
+            if (grouping.size() > 1) {
+                QStringList newGrouping;
+                for (int i = 1; i < grouping.size(); ++i) {
+                    newGrouping.push_back(grouping[i]);
+                }
+                return findPluginToolButtonInternal(*it, newGrouping, name, iconPath, major,minor);
+            }
+            if (major == (*it)->getMajorVersion()) {
+                return *it;
+            } else {
+                (*it)->setNotHighestMajorVersion(true);
+            }
         }
     }
-    PluginGroupNode* ret = new PluginGroupNode(pluginID,name,iconPath);
-    _imp->_toolButtons.push_back(ret);
+    boost::shared_ptr<PluginGroupNode> ret(new PluginGroupNode(grouping[0],grouping.size() == 1 ? name : grouping[0],iconPath,major,minor));
+    parent->tryAddChild(ret);
+    ret->setParent(parent);
+    
+    if (grouping.size() > 1) {
+        QStringList newGrouping;
+        for (int i = 1; i < grouping.size(); ++i) {
+            newGrouping.push_back(grouping[i]);
+        }
+        return findPluginToolButtonInternal(ret, newGrouping, name, iconPath, major,minor);
+    }
+    return ret;
+}
 
+boost::shared_ptr<PluginGroupNode>
+GuiApplicationManager::findPluginToolButtonOrCreate(const QStringList & grouping,
+                                                    const QString & name,
+                                                    const QString& groupIconPath,
+                                                    const QString & iconPath,
+                                                    int major,
+                                                    int minor)
+{
+    assert(grouping.size() > 0);
+    
+    for (std::list<boost::shared_ptr<PluginGroupNode> >::iterator it = _imp->_topLevelToolButtons.begin(); it != _imp->_topLevelToolButtons.end(); ++it) {
+        if ((*it)->getID() == grouping[0]) {
+            
+            if (grouping.size() > 1) {
+                QStringList newGrouping;
+                for (int i = 1; i < grouping.size(); ++i) {
+                    newGrouping.push_back(grouping[i]);
+                }
+                return _imp->findPluginToolButtonInternal(*it, newGrouping, name, iconPath, major , minor);
+            }
+            if (major == (*it)->getMajorVersion()) {
+                return *it;
+            } else {
+                (*it)->setNotHighestMajorVersion(true);
+            }
+        }
+    }
+    
+    boost::shared_ptr<PluginGroupNode> ret(new PluginGroupNode(grouping[0],grouping.size() == 1 ? name : grouping[0],iconPath,major,minor));
+    _imp->_topLevelToolButtons.push_back(ret);
+    if (grouping.size() > 1) {
+        ret->setIconPath(groupIconPath);
+        QStringList newGrouping;
+        for (int i = 1; i < grouping.size(); ++i) {
+            newGrouping.push_back(grouping[i]);
+        }
+        return _imp->findPluginToolButtonInternal(ret, newGrouping, name, iconPath, major,minor);
+    }
     return ret;
 }
 
@@ -868,7 +1159,10 @@ GuiApplicationManager::setKnobClipBoard(bool copyAnimation,
                                         const std::list<Variant> & values,
                                         const std::list<boost::shared_ptr<Curve> > & animation,
                                         const std::map<int,std::string> & stringAnimation,
-                                        const std::list<boost::shared_ptr<Curve> > & parametricCurves)
+                                        const std::list<boost::shared_ptr<Curve> > & parametricCurves,
+                                        const std::string& appID,
+                                        const std::string& nodeFullyQualifiedName,
+                                        const std::string& paramName)
 {
     _imp->_knobsClipBoard->copyAnimation = copyAnimation;
     _imp->_knobsClipBoard->isEmpty = false;
@@ -876,6 +1170,9 @@ GuiApplicationManager::setKnobClipBoard(bool copyAnimation,
     _imp->_knobsClipBoard->curves = animation;
     _imp->_knobsClipBoard->stringAnimation = stringAnimation;
     _imp->_knobsClipBoard->parametricCurves = parametricCurves;
+    _imp->_knobsClipBoard->appID = appID;
+    _imp->_knobsClipBoard->nodeFullyQualifiedName = nodeFullyQualifiedName;
+    _imp->_knobsClipBoard->paramName = paramName;
 }
 
 void
@@ -883,13 +1180,19 @@ GuiApplicationManager::getKnobClipBoard(bool* copyAnimation,
                                         std::list<Variant>* values,
                                         std::list<boost::shared_ptr<Curve> >* animation,
                                         std::map<int,std::string>* stringAnimation,
-                                        std::list<boost::shared_ptr<Curve> >* parametricCurves) const
+                                        std::list<boost::shared_ptr<Curve> >* parametricCurves,
+                                        std::string* appID,
+                                        std::string* nodeFullyQualifiedName,
+                                        std::string* paramName) const
 {
     *copyAnimation = _imp->_knobsClipBoard->copyAnimation;
     *values = _imp->_knobsClipBoard->values;
     *animation = _imp->_knobsClipBoard->curves;
     *stringAnimation = _imp->_knobsClipBoard->stringAnimation;
     *parametricCurves = _imp->_knobsClipBoard->parametricCurves;
+    *appID = _imp->_knobsClipBoard->appID;
+    *nodeFullyQualifiedName = _imp->_knobsClipBoard->nodeFullyQualifiedName;
+    *paramName = _imp->_knobsClipBoard->paramName;
 }
 
 void
@@ -898,7 +1201,11 @@ GuiApplicationManager::updateAllRecentFileMenus()
     const std::map<int,AppInstanceRef> & instances = getAppInstances();
 
     for (std::map<int,AppInstanceRef>::const_iterator it = instances.begin(); it != instances.end(); ++it) {
-        dynamic_cast<GuiAppInstance*>(it->second.app)->getGui()->updateRecentFileActions();
+        GuiAppInstance* appInstance = dynamic_cast<GuiAppInstance*>(it->second.app);
+        assert(appInstance);
+        Gui* gui = appInstance->getGui();
+        assert(gui);
+        gui->updateRecentFileActions();
     }
 }
 
@@ -914,8 +1221,7 @@ GuiApplicationManager::setLoadingStatus(const QString & str)
 }
 
 void
-GuiApplicationManager::loadBuiltinNodePlugins(std::vector<Natron::Plugin*>* plugins,
-                                              std::map<std::string,std::vector< std::pair<std::string,double> > >* readersMap,
+GuiApplicationManager::loadBuiltinNodePlugins(std::map<std::string,std::vector< std::pair<std::string,double> > >* readersMap,
                                               std::map<std::string,std::vector< std::pair<std::string,double> > >* writersMap)
 {
     ////Use ReadQt and WriteQt only for debug versions of Natron.
@@ -932,12 +1238,9 @@ GuiApplicationManager::loadBuiltinNodePlugins(std::vector<Natron::Plugin*>* plug
         readerFunctions.insert( std::make_pair("BuildEffect", (void*)&QtReader::BuildEffect) );
         LibraryBinary *readerPlugin = new LibraryBinary(readerFunctions);
         assert(readerPlugin);
-        Natron::Plugin* plugin = new Natron::Plugin( readerPlugin,reader->getPluginID().c_str(),reader->getPluginLabel().c_str(),
-                                                     "","",grouping,"",(QMutex*)NULL,reader->getMajorVersion(),reader->getMinorVersion() ,
-                                                    true,false);
-        plugins->push_back(plugin);
-        onPluginLoaded(plugin);
-
+        
+        registerPlugin(grouping, reader->getPluginID().c_str(), reader->getPluginLabel().c_str(), "", "", "", false, false, readerPlugin, false, reader->getMajorVersion(), reader->getMinorVersion());
+ 
         std::vector<std::string> extensions = reader->supportedFileFormats();
         for (U32 k = 0; k < extensions.size(); ++k) {
             std::map<std::string,std::vector< std::pair<std::string,double> > >::iterator it;
@@ -960,11 +1263,10 @@ GuiApplicationManager::loadBuiltinNodePlugins(std::vector<Natron::Plugin*>* plug
         writerFunctions.insert( std::make_pair("BuildEffect", (void*)&QtWriter::BuildEffect) );
         LibraryBinary *writerPlugin = new LibraryBinary(writerFunctions);
         assert(writerPlugin);
-        Natron::Plugin* plugin = new Natron::Plugin( writerPlugin,writer->getPluginID().c_str(),writer->getPluginLabel().c_str(),
-                                                     "","",grouping,"",(QMutex*)NULL,writer->getMajorVersion(),writer->getMinorVersion(),
-                                                    false,true);
-        plugins->push_back(plugin);
-        onPluginLoaded(plugin);
+        
+        registerPlugin(grouping, writer->getPluginID().c_str(), writer->getPluginLabel().c_str(),"", "", "", false, false, writerPlugin, false, writer->getMajorVersion(), writer->getMinorVersion());
+        
+
 
         std::vector<std::string> extensions = writer->supportedFileFormats();
         for (U32 k = 0; k < extensions.size(); ++k) {
@@ -992,24 +1294,13 @@ GuiApplicationManager::loadBuiltinNodePlugins(std::vector<Natron::Plugin*>* plug
         viewerFunctions.insert( std::make_pair("BuildEffect", (void*)&ViewerInstance::BuildEffect) );
         LibraryBinary *viewerPlugin = new LibraryBinary(viewerFunctions);
         assert(viewerPlugin);
-        Natron::Plugin* plugin = new Natron::Plugin( viewerPlugin,viewer->getPluginID().c_str(),viewer->getPluginLabel().c_str(),
-                                                     NATRON_IMAGES_PATH "viewer_icon.png","",grouping,"",(QMutex*)NULL,
-                                                    viewer->getMajorVersion(),viewer->getMinorVersion(),
-                                                    false,false);
-        plugins->push_back(plugin);
-        onPluginLoaded(plugin);
-    }
+        
+        registerPlugin(grouping, viewer->getPluginID().c_str(), viewer->getPluginLabel().c_str(),NATRON_IMAGES_PATH "viewer_icon.png", "", "", false, false, viewerPlugin, false, viewer->getMajorVersion(), viewer->getMinorVersion());
 
-    {
-        QString label(NATRON_BACKDROP_NODE_NAME);
-        QStringList backdropGrouping(PLUGIN_GROUP_OTHER);
-        Natron::Plugin* plugin = new Natron::Plugin(NULL,label,label,NATRON_IMAGES_PATH "backdrop_icon.png","",backdropGrouping,"",NULL,1,0,false,false);
-        plugins->push_back(plugin);
-        onPluginLoaded(plugin);
     }
 
     ///Also load the plug-ins of the AppManager
-    AppManager::loadBuiltinNodePlugins(plugins, readersMap, writersMap);
+    AppManager::loadBuiltinNodePlugins(readersMap, writersMap);
 } // loadBuiltinNodePlugins
 
 AppInstance*
@@ -1096,9 +1387,6 @@ GuiApplicationManager::initializeQApp(int &argc,
     if (settings.contains("font")) {
         QString fontChoiceEntry = settings.value("font").toString();
         
-        //fontChoiceEntry == Muli
-        //font_i == 1 == NATRON_FONT_ALT
-        //font_i == 2 == System font
         if (fontChoiceEntry == "System fonts...") {
             
             if (settings.contains("systemFont")) {
@@ -1176,8 +1464,11 @@ GuiApplicationManager::handleOpenFileRequest()
 
     AppInstance* mainApp = getAppInstance(0);
     GuiAppInstance* guiApp = dynamic_cast<GuiAppInstance*>(mainApp);
-    guiApp->getGui()->openProject(_imp->_openFileRequest.toStdString());
-    _imp->_openFileRequest.clear();
+    assert(guiApp);
+    if (guiApp) {
+        guiApp->getGui()->openProject(_imp->_openFileRequest.toStdString());
+        _imp->_openFileRequest.clear();
+    }
 }
 
 void
@@ -1196,7 +1487,7 @@ GuiApplicationManager::exitApp()
 
     for (std::map<int,AppInstanceRef>::const_iterator it = instances.begin(); it != instances.end(); ++it) {
         GuiAppInstance* app = dynamic_cast<GuiAppInstance*>(it->second.app);
-        if ( !app->getGui()->closeInstance() ) {
+        if ( app && !app->getGui()->closeInstance() ) {
             return;
         }
     }
@@ -1399,12 +1690,11 @@ GuiApplicationManager::loadShortcuts()
                 //If this is a node shortcut, notify the Plugin object that it has a shortcut.
                 if ( (kAction->currentShortcut != (Qt::Key)0) &&
                      it->first.startsWith(kShortcutGroupNodes) ) {
-                    const std::vector<Natron::Plugin*> & allPlugins = getPluginsList();
-                    for (U32 i = 0; i < allPlugins.size(); ++i) {
-                        if (allPlugins[i]->getPluginID() == it2->first) {
-                            allPlugins[i]->setHasShortcut(true);
-                            break;
-                        }
+                    const PluginsMap & allPlugins = getPluginsList();
+                    PluginsMap::const_iterator found = allPlugins.find(it2->first.toStdString());
+                    if (found != allPlugins.end()) {
+                        assert(found->second.size() > 0);
+                        (*found->second.rbegin())->setHasShortcut(true);
                     }
                 }
             }
@@ -1449,7 +1739,7 @@ GuiApplicationManager::populateShortcuts()
 
     registerKeybind(kShortcutGroupGlobal, kShortcutIDActionSaveAndIncrVersion, kShortcutDescActionSaveAndIncrVersion, Qt::ControlModifier | Qt::ShiftModifier |
                     Qt::AltModifier, Qt::Key_S);
-    
+    registerKeybind(kShortcutGroupGlobal, kShortcutIDActionExportProject, kShortcutDescActionExportProject, Qt::NoModifier, (Qt::Key)0);
     registerKeybind(kShortcutGroupGlobal, kShortcutIDActionShowAbout, kShortcutDescActionShowAbout, Qt::NoModifier, (Qt::Key)0);
 
     registerKeybind(kShortcutGroupGlobal, kShortcutIDActionImportLayout, kShortcutDescActionImportLayout, Qt::NoModifier, (Qt::Key)0);
@@ -1485,6 +1775,8 @@ GuiApplicationManager::populateShortcuts()
     registerKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput10, kShortcutDescActionConnectViewerToInput10, Qt::NoModifier, Qt::Key_0);
 
     registerKeybind(kShortcutGroupGlobal, kShortcutIDActionShowPaneFullScreen, kShortcutDescActionShowPaneFullScreen, Qt::NoModifier, Qt::Key_Space);
+    registerKeybind(kShortcutGroupGlobal, kShortcutIDActionNextTab, kShortcutDescActionNextTab, Qt::ControlModifier, Qt::Key_T);
+    registerKeybind(kShortcutGroupGlobal, kShortcutIDActionCloseTab, kShortcutDescActionCloseTab, Qt::ShiftModifier, Qt::Key_Escape);
 
     ///Viewer
     registerKeybind(kShortcutGroupViewer, kShortcutIDActionLuminance, kShortcutDescActionLuminance, Qt::NoModifier, Qt::Key_Y);
@@ -1513,9 +1805,12 @@ GuiApplicationManager::populateShortcuts()
     registerKeybind(kShortcutGroupViewer, kShortcutIDActionHideAll, kShortcutDescActionHideAll, Qt::NoModifier, (Qt::Key)0);
     registerKeybind(kShortcutGroupViewer, kShortcutIDActionShowAll, kShortcutDescActionShowAll, Qt::NoModifier, (Qt::Key)0);
     registerKeybind(kShortcutGroupViewer, kShortcutIDActionZoomLevel100, kShortcutDescActionZoomLevel100, Qt::ControlModifier, Qt::Key_1);
+    registerKeybind(kShortcutGroupViewer, kShortcutIDToggleWipe, kShortcutDescToggleWipe, Qt::NoModifier, Qt::Key_W);
     
     registerMouseShortcut(kShortcutGroupViewer, kShortcutIDMousePickColor, kShortcutDescMousePickColor, Qt::ControlModifier, Qt::LeftButton);
     registerMouseShortcut(kShortcutGroupViewer, kShortcutIDMouseRectanglePick, kShortcutDescMouseRectanglePick, Qt::ShiftModifier | Qt::ControlModifier, Qt::LeftButton);
+    
+    
 
     ///Player
     registerKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevious, kShortcutDescActionPlayerPrevious, Qt::NoModifier, Qt::Key_Left);
@@ -1544,6 +1839,12 @@ GuiApplicationManager::populateShortcuts()
     registerKeybind(kShortcutGroupRoto, kShortcutIDActionRotoSmooth, kShortcutDescActionRotoSmooth, Qt::NoModifier, Qt::Key_Z);
     registerKeybind(kShortcutGroupRoto, kShortcutIDActionRotoCuspBezier, kShortcutDescActionRotoCuspBezier, Qt::ShiftModifier, Qt::Key_Z);
     registerKeybind(kShortcutGroupRoto, kShortcutIDActionRotoRemoveFeather, kShortcutDescActionRotoRemoveFeather, Qt::ShiftModifier, Qt::Key_E);
+    registerKeybind(kShortcutGroupRoto, kShortcutIDActionRotoLinkToTrack, kShortcutDescActionRotoLinkToTrack, Qt::NoModifier, (Qt::Key)0);
+    registerKeybind(kShortcutGroupRoto, kShortcutIDActionRotoUnlinkToTrack, kShortcutDescActionRotoUnlinkToTrack,
+                    Qt::NoModifier, (Qt::Key)0);
+    registerKeybind(kShortcutGroupRoto, kShortcutIDActionRotoLockCurve, kShortcutDescActionRotoLockCurve,
+                    Qt::ShiftModifier, Qt::Key_L);
+
 
     ///Tracking
     registerKeybind(kShortcutGroupTracking, kShortcutIDActionTrackingSelectAll, kShortcutDescActionTrackingSelectAll, Qt::ControlModifier, Qt::Key_A);
@@ -1587,7 +1888,9 @@ GuiApplicationManager::populateShortcuts()
     registerKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphRenameNode, kShortcutDescActionGraphRenameNode, Qt::NoModifier, Qt::Key_N);
     registerKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphExtractNode, kShortcutDescActionGraphExtractNode, Qt::ControlModifier | Qt::ShiftModifier,
                     Qt::Key_X);
-
+    registerKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphMakeGroup, kShortcutDescActionGraphMakeGroup, Qt::ControlModifier | Qt::ShiftModifier,
+                    Qt::Key_G);
+    
     ///CurveEditor
     registerKeybind(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorRemoveKeys, kShortcutDescActionCurveEditorRemoveKeys, Qt::NoModifier,Qt::Key_Backspace);
     registerKeybind(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorConstant, kShortcutDescActionCurveEditorConstant, Qt::NoModifier, Qt::Key_K);
@@ -1838,12 +2141,11 @@ GuiApplicationManager::notifyShortcutChanged(KeyBoundAction* action)
         if ( it->first.startsWith(kShortcutGroupNodes) ) {
             for (GroupShortcuts::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
                 if (it2->second == action) {
-                    const std::vector<Natron::Plugin*> & allPlugins = getPluginsList();
-                    for (U32 i = 0; i < allPlugins.size(); ++i) {
-                        if (allPlugins[i]->getPluginID() == it2->first) {
-                            allPlugins[i]->setHasShortcut(action->currentShortcut != (Qt::Key)0);
-                            break;
-                        }
+                    const PluginsMap & allPlugins = getPluginsList();
+                    PluginsMap::const_iterator found = allPlugins.find(it2->first.toStdString());
+                    if (found != allPlugins.end()) {
+                        assert(found->second.size() > 0);
+                        (*found->second.rbegin())->setHasShortcut(action->currentShortcut != (Qt::Key)0);
                     }
                     break;
                 }
@@ -1870,6 +2172,82 @@ GuiApplicationManager::clearLastRenderedTextures()
         GuiAppInstance* guiApp = dynamic_cast<GuiAppInstance*>(it->second.app);
         if (guiApp) {
             guiApp->clearAllLastRenderedImages();
+        }
+    }
+}
+
+bool
+GuiApplicationManager::isNodeClipBoardEmpty() const
+{
+    return _imp->_nodeCB.isEmpty();
+}
+
+NodeClipBoard&
+GuiApplicationManager::getNodeClipBoard()
+{
+    return _imp->_nodeCB;
+}
+
+void
+GuiApplicationManager::clearNodeClipBoard()
+{
+    _imp->_nodeCB.nodes.clear();
+    _imp->_nodeCB.nodesUI.clear();
+}
+
+
+///The symbol has been generated by Shiboken in  Engine/NatronEngine/natronengine_module_wrapper.cpp
+extern "C"
+{
+    PyObject* PyInit_NatronGui();
+}
+
+
+void
+GuiApplicationManager::initBuiltinPythonModules()
+{
+    AppManager::initBuiltinPythonModules();
+    
+    int ret = PyImport_AppendInittab(NATRON_GUI_PYTHON_MODULE_NAME,&PyInit_NatronGui);
+    if (ret == -1) {
+        throw std::runtime_error("Failed to initialize built-in Python module.");
+    }
+    
+}
+
+void
+GuiApplicationManager::addCommand(const QString& grouping,const std::string& pythonFunction, Qt::Key key,const Qt::KeyboardModifiers& modifiers)
+{
+    
+    QStringList split = grouping.split('/');
+    if (grouping.isEmpty() || split.isEmpty()) {
+        return;
+    }
+    PythonUserCommand c;
+    c.grouping = grouping;
+    c.pythonFunction = pythonFunction;
+    c.key = key;
+    c.modifiers = modifiers;
+    _imp->pythonCommands.push_back(c);
+    
+    
+    registerKeybind(kShortcutGroupGlobal, split[split.size() -1], split[split.size() - 1], modifiers, key);
+}
+
+
+const std::list<PythonUserCommand>&
+GuiApplicationManager::getUserPythonCommands() const
+{
+    return _imp->pythonCommands;
+}
+void
+GuiApplicationManager::reloadStylesheets()
+{
+    const std::map<int,AppInstanceRef>& instances = getAppInstances();
+    for (std::map<int,AppInstanceRef>::const_iterator it = instances.begin(); it != instances.end(); ++it) {
+        GuiAppInstance* guiApp = dynamic_cast<GuiAppInstance*>(it->second.app);
+        if (guiApp) {
+            guiApp->reloadStylesheet();
         }
     }
 }

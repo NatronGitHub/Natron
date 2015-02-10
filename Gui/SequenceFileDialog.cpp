@@ -8,8 +8,12 @@
  *
  */
 
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
 
 #include "SequenceFileDialog.h"
+
 #if defined(Q_OS_UNIX)
 #include <pwd.h>
 #include <unistd.h> // for pathconf() on OS X
@@ -158,15 +162,47 @@ public:
 
 #endif // 0
 
+#ifdef __NATRON_WIN32__
+
+static QString mapPathWithDriveLetterToPathWithNetworkShareName(const QString& path)
+{
+	if (path.size() <= 2) {
+		return path;
+	}
+
+	QString ret;
+	if (path[0].isLetter() && path[1] == QChar(':')) {
+
+		QString driveName = path.mid(0,2);
+
+		TCHAR szDeviceName[512]; 
+		DWORD dwResult, cchBuff = sizeof(szDeviceName);
+		dwResult = WNetGetConnection(driveName.toStdString().c_str(), szDeviceName, &cchBuff);
+		if (dwResult == NO_ERROR) {
+			ret = path.mid(2,-1);
+
+			//Replace \\ with / 
+			QString qDeviceName(szDeviceName);
+			qDeviceName.replace('\\','/');
+			ret.prepend(qDeviceName);
+			return ret;
+		} 
+	}  
+	ret = path;
+	return ret;
 
 
+}
+
+
+#endif
 
 ///////////////////////// SequenceFileDialog
 
 SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmit the stylesheet to the dialog
                                        const std::vector<std::string> & filters, // the user accepted file types
                                        bool isSequenceDialog, // true if this dialog can display sequences
-                                       FileDialogMode mode, // if it is an open or save dialog
+                                       FileDialogModeEnum mode, // if it is an open or save dialog
                                        const std::string & currentDirectory,// the directory to show first
                                        Gui* gui,
                                        bool allowRelativePaths)
@@ -256,7 +292,7 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
     _buttonsWidget = new QWidget(this);
     _buttonsLayout = new QHBoxLayout(_buttonsWidget);
     _buttonsWidget->setLayout(_buttonsLayout);
-    if (mode == OPEN_DIALOG) {
+    if (mode == eFileDialogModeOpen) {
         _lookInLabel = new QLabel(tr("Look in:"),_buttonsWidget);
     } else {
         _lookInLabel = new QLabel(tr("Save in:"),_buttonsWidget);
@@ -335,7 +371,7 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
     
     _centerAreaLayout->addWidget(_centerSplitter);
     
-    if (mode == OPEN_DIALOG && isSequenceDialog) {
+    if (mode == eFileDialogModeOpen && isSequenceDialog) {
         QPixmap pixPreviewButtonEnabled,pixPreviewButtonDisabled;
         appPTR->getIcon(Natron::NATRON_PIXMAP_PLAYER_PLAY_ENABLED, &pixPreviewButtonEnabled);
         appPTR->getIcon(Natron::NATRON_PIXMAP_PLAYER_PLAY_DISABLED, &pixPreviewButtonDisabled);
@@ -396,20 +432,20 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
     QObject::connect( _sequenceButton,SIGNAL( currentIndexChanged(int) ),this,SLOT( sequenceComboBoxSlot(int) ) );
     _selectionLayout->addWidget(_sequenceButton);
 
-    if ( !isSequenceDialog || (_dialogMode == DIR_DIALOG) ) {
+    if ( !isSequenceDialog || (_dialogMode == eFileDialogModeDir) ) {
         _sequenceButton->setVisible(false);
     }
     _selectionLineEdit = new LineEdit(_selectionWidget);
     _selectionLayout->addWidget(_selectionLineEdit);
 
-    if ( (mode == SequenceFileDialog::OPEN_DIALOG) || (mode == SequenceFileDialog::DIR_DIALOG) ) {
+    if ( (mode == SequenceFileDialog::eFileDialogModeOpen) || (mode == SequenceFileDialog::eFileDialogModeDir) ) {
         _openButton = new Button(tr("Open"),_selectionWidget);
     } else {
         _openButton = new Button(tr("Save"),_selectionWidget);
     }
     _selectionLayout->addWidget(_openButton);
 
-    if (_dialogMode != DIR_DIALOG) {
+    if (_dialogMode != eFileDialogModeDir) {
         QObject::connect( _openButton, SIGNAL( clicked() ), this, SLOT( openSelectedFiles() ) );
     } else {
         QObject::connect( _openButton,SIGNAL( clicked() ),this,SLOT( selectDirectory() ) );
@@ -422,10 +458,10 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
     _filterLineLayout->setContentsMargins(0, 0, 0, 0);
     _filterLineWidget->setLayout(_filterLineLayout);
 
-    if (_dialogMode == OPEN_DIALOG) {
+    if (_dialogMode == eFileDialogModeOpen) {
         _filterLabel = new QLabel(tr("Filter:"),_filterLineWidget);
         _filterLineLayout->addWidget(_filterLabel);
-    } else if (_dialogMode == SAVE_DIALOG) {
+    } else if (_dialogMode == eFileDialogModeSave) {
         _filterLabel = new QLabel(tr("File type:"),_filterLineWidget);
         _filterLineLayout->addWidget(_filterLabel);
     }
@@ -438,7 +474,7 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
 
     QString filter = FileSystemModel::generateRegexpFilterFromFileExtensions(_filters);
 
-    if (_dialogMode == SAVE_DIALOG) {
+    if (_dialogMode == eFileDialogModeSave) {
         _fileExtensionCombo = new ComboBox(_filterWidget);
         for (int i = 0; i < _filters.size(); ++i) {
             _fileExtensionCombo->addItem( _filters[i] );
@@ -446,11 +482,14 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
         _filterLineLayout->addWidget(_fileExtensionCombo);
         QObject::connect( _fileExtensionCombo, SIGNAL( currentIndexChanged(int) ), this, SLOT( onFileExtensionComboChanged(int) ) );
         if (isSequenceDialog) {
-            _fileExtensionCombo->setCurrentIndex( _fileExtensionCombo->itemIndex("jpg") );
+            int idx = _fileExtensionCombo->itemIndex("jpg");
+            if (idx >= 0) {
+                _fileExtensionCombo->setCurrentIndex(idx);
+            }
         }
     }
 
-    if (_dialogMode != DIR_DIALOG) {
+    if (_dialogMode != eFileDialogModeDir) {
         _filterLineEdit = new LineEdit(_filterWidget);
         _filterLayout->addWidget(_filterLineEdit);
         _filterLineEdit->setText(filter);
@@ -494,7 +533,7 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
     QItemSelectionModel *selectionModel = _view->selectionModel();
     QObject::connect( selectionModel, SIGNAL( selectionChanged(QItemSelection,QItemSelection) ),this, SLOT( onSelectionChanged() ) );
     QObject::connect( _selectionLineEdit, SIGNAL( textChanged(QString) ),this, SLOT( autoCompleteFileName(QString) ) );
-    if (_dialogMode == SAVE_DIALOG) {
+    if (_dialogMode == eFileDialogModeSave) {
         QObject::connect( _selectionLineEdit,SIGNAL( textEdited(QString) ),this,SLOT( onSelectionLineEditing(QString) ) );
     }
     QObject::connect( _view, SIGNAL( customContextMenuRequested(QPoint) ),
@@ -506,13 +545,13 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
     
     createMenuActions();
 
-    if (_dialogMode == OPEN_DIALOG) {
+    if (_dialogMode == eFileDialogModeOpen) {
         if (isSequenceDialog) {
             setWindowTitle( tr("Open Sequence") );
         } else {
             setWindowTitle( tr("Open File") );
         }
-    } else if (_dialogMode == SAVE_DIALOG) {
+    } else if (_dialogMode == eFileDialogModeSave) {
         if (isSequenceDialog) {
             setWindowTitle( tr("Save Sequence") );
         } else {
@@ -698,7 +737,7 @@ SequenceFileDialog::restoreState(const QByteArray & state)
 void
 SequenceFileDialog::setFileExtensionOnLineEdit(const QString & ext)
 {
-    assert(_dialogMode == SAVE_DIALOG);
+    assert(_dialogMode == eFileDialogModeSave);
 
     QString str  = _selectionLineEdit->text();
     if ( str.isEmpty() ) {
@@ -868,7 +907,7 @@ SequenceFileDialog::onSelectionChanged()
     proxyAndSetLineEditText(absolutePath);
 
     if (!item->isDir()) {
-        if (_dialogMode == SAVE_DIALOG) {
+        if (_dialogMode == eFileDialogModeSave) {
             QString extension = item->fileExtension();
             for (int i = 0; i < _fileExtensionCombo->count(); ++i) {
                 if ( _fileExtensionCombo->itemText(i) == extension ) {
@@ -913,14 +952,14 @@ SequenceFileDialog::setDirectory(const QString &directory)
     }
     _requestedDir = newDirectory;
     _model->setRootPath(newDirectory);
-    _createDirButton->setEnabled(_dialogMode != OPEN_DIALOG);
+    _createDirButton->setEnabled(_dialogMode != eFileDialogModeOpen);
     if ( !newDirectory.isEmpty() && newDirectory.at(newDirectory.size() - 1) != QChar('/') ) {
         newDirectory.append("/");
     }
 
     _selectionLineEdit->blockSignals(true);
 
-    if ( (_dialogMode == OPEN_DIALOG) || (_dialogMode == DIR_DIALOG) ) {
+    if ( (_dialogMode == eFileDialogModeOpen) || (_dialogMode == eFileDialogModeDir) ) {
         proxyAndSetLineEditText(newDirectory);
     } else {
         ///find out if there's already a filename typed by the user
@@ -1435,9 +1474,9 @@ SequenceFileDialog::openSelectedFiles()
 {
     QString str = _selectionLineEdit->text();
 
-    if (_dialogMode != DIR_DIALOG) {
+    if (_dialogMode != eFileDialogModeDir) {
         if ( !isDirectory(str) ) {
-            if (_dialogMode == OPEN_DIALOG) {
+            if (_dialogMode == eFileDialogModeOpen) {
                 std::string pattern = selectedFiles();
                 if ( !pattern.empty() ) {
                     teardownPreview();
@@ -1726,27 +1765,39 @@ SequenceFileDialog::selectedFiles()
             Natron::Project::makeRelativeToVariable(varName, varPath, selection);
         }
     }
+
+#ifdef __NATRON_WIN32__
+	QString ret = mapPathWithDriveLetterToPathWithNetworkShareName(selection.c_str());
+	selection = ret.toStdString();
+#endif
     return selection;
 }
 
 std::string
 SequenceFileDialog::filesToSave()
 {
-    assert(_dialogMode == SAVE_DIALOG);
+    assert(_dialogMode == eFileDialogModeSave);
     QString text = _selectionLineEdit->text();
     ///Find last dot position and remove everything after the extension which we might added on the line edit
     int lastDotPos = text.lastIndexOf('.');
+
+	QString ret;
     if (lastDotPos != -1) {
         int i = lastDotPos + 1;
         while (i < text.size() && text.at(i) != QChar(' ')) {
             ++i;
         }
-        return text.mid(0,i).toStdString();
+        ret =  text.mid(0,i);
         
     } else {
-        return text.toStdString();
+        ret = text;
     }
-    
+
+#ifdef __NATRON_WIN32__
+    ret = mapPathWithDriveLetterToPathWithNetworkShareName(ret);
+#endif
+
+	return ret.toStdString();
 }
 
 QDir
@@ -1767,7 +1818,14 @@ SequenceFileDialog::selectedDirectory() const
             Natron::Project::makeRelativeToVariable(pathName, pathValue, path);
         }
     }
-    return path;
+
+
+#ifdef __NATRON_WIN32__
+	QString ret = mapPathWithDriveLetterToPathWithNetworkShareName(path.c_str());
+	path = ret.toStdString();
+#endif
+	
+	return path;
 }
 
 QModelIndex
@@ -2381,7 +2439,7 @@ void
 FavoriteView::clicked(const QModelIndex &index)
 {
     QUrl url = model()->index(index.row(), 0).data(UrlModel::UrlRole).toUrl();
-    emit urlRequested(url);
+    Q_EMIT urlRequested(url);
 
     selectUrl(url);
 }
@@ -2690,7 +2748,7 @@ SequenceFileDialog::appendFilesFromDirRecursively(QDir* currentDir,
 void
 SequenceFileDialog::onSelectionLineEditing(const QString & text)
 {
-    if (_dialogMode != SAVE_DIALOG) {
+    if (_dialogMode != eFileDialogModeSave) {
         return;
     }
     QString textCpy = text;
@@ -2715,34 +2773,56 @@ SequenceFileDialog::onTogglePreviewButtonClicked(bool toggled)
         if (!_preview->viewerUI->parentWidget()) {
             _centerAreaLayout->addWidget(_preview->viewerUI);
         }
-        _preview->viewerUI->show();
+        if (!_preview->viewerUI->isVisible()) {
+            _preview->viewerUI->setVisible(true);
+        }
         refreshPreviewAfterSelectionChange();
     } else {
-        _preview->viewerUI->hide();
+        if (_preview->viewerUI->isVisible()) {
+            _preview->viewerUI->setVisible(false);
+        }
     }
 }
 
 void
 SequenceFileDialog::createViewerPreviewNode()
 {
-    CreateNodeArgs args(NATRON_VIEWER_ID,
+    CreateNodeArgs args(PLUGINID_NATRON_VIEWER,
                         "",
                         -1,-1,
-                        -1,
                         false,
                         INT_MIN,
                         INT_MIN,
                         false,
                         false,
                         NATRON_FILE_DIALOG_PREVIEW_VIEWER_NAME,
-                        CreateNodeArgs::DefaultValuesList());
+                        CreateNodeArgs::DefaultValuesList(),
+                        _gui->getApp()->getProject());
     
-    boost::shared_ptr<Natron::Node> viewer = _gui->getApp()->createNode(args);
-    _preview->viewerNode = _gui->getApp()->getNodeGui(viewer);
+    _preview->viewerNodeInternal = _gui->getApp()->createNode(args);
+    assert(_preview->viewerNodeInternal);
+    boost::shared_ptr<NodeGuiI> viewerNodeGui = _preview->viewerNodeInternal->getNodeGui();
+    _preview->viewerNode = boost::dynamic_pointer_cast<NodeGui>(viewerNodeGui);
     assert(_preview->viewerNode);
     _preview->viewerNode->hideGui();
-    _preview->viewerUI = dynamic_cast<ViewerGL*>(dynamic_cast<ViewerInstance*>(viewer->getLiveInstance())->getUiContext())->getViewerTab();
+    
+    ViewerInstance* viewerInstance = dynamic_cast<ViewerInstance*>(_preview->viewerNodeInternal->getLiveInstance());
+    assert(viewerInstance);
+    if (!viewerInstance) {
+        // coverity[dead_error_line]
+        return;
+    }
+    ViewerGL* viewerGL = dynamic_cast<ViewerGL*>(viewerInstance->getUiContext());
+    assert(viewerGL);
+    if (!viewerGL) {
+        // coverity[dead_error_line]
+        return;
+    }
+    _preview->viewerUI = viewerGL->getViewerTab();
     assert(_preview->viewerUI);
+    if (!_preview->viewerUI) {
+        return;
+    }
     _preview->viewerUI->setAsFileDialogViewer();
     
     ///Set a custom timeline so that it is not in synced with the rest of the viewers of the app
@@ -2756,7 +2836,7 @@ SequenceFileDialog::createViewerPreviewNode()
     _preview->viewerUI->setPlayerVisible(false);
     TabWidget* parent = dynamic_cast<TabWidget*>(_preview->viewerUI->parentWidget());
     if (parent) {
-        parent->removeTab(_preview->viewerUI);
+        parent->removeTab(_preview->viewerUI,true);
     }
     _preview->viewerUI->setParent(NULL);
 }
@@ -2771,29 +2851,30 @@ SequenceFileDialog::findOrCreatePreviewReader(const std::string& filetype)
         if ( found == readersForFormat.end() ) {
             return boost::shared_ptr<NodeGui>();
         }
-        std::map<std::string,boost::shared_ptr<NodeGui> >::iterator foundReader = _preview->readerNodes.find(found->second);
+        std::map<std::string,std::pair< boost::shared_ptr<Natron::Node>, boost::shared_ptr<NodeGui> > >::iterator foundReader = _preview->readerNodes.find(found->second);
         if (foundReader == _preview->readerNodes.end()) {
             
             CreateNodeArgs args(found->second.c_str(),
                                 "",
                                 -1,-1,
-                                -1,
                                 false,
                                 INT_MIN,
                                 INT_MIN,
                                 false,
                                 false,
-                                QString(NATRON_FILE_DIALOG_PREVIEW_READER_NAME) +  QString(found->second.c_str()),
-                                CreateNodeArgs::DefaultValuesList());
+                                QString(NATRON_FILE_DIALOG_PREVIEW_READER_NAME) +  QString(found->first.c_str()),
+                                CreateNodeArgs::DefaultValuesList(),
+                                _gui->getApp()->getProject());
             
             boost::shared_ptr<Natron::Node> reader = _gui->getApp()->createNode(args);
-            boost::shared_ptr<NodeGui> readerGui = _gui->getApp()->getNodeGui(reader);
+            boost::shared_ptr<NodeGuiI> readerGui_i = reader->getNodeGui();
+            boost::shared_ptr<NodeGui> readerGui = boost::dynamic_pointer_cast<NodeGui>(readerGui_i);
             assert(readerGui);
             readerGui->hideGui();
-            _preview->readerNodes.insert(std::make_pair(found->second,readerGui));
+            _preview->readerNodes.insert(std::make_pair(found->second,std::make_pair(reader,readerGui)));
             return readerGui;
         } else {
-            return foundReader->second;
+            return foundReader->second.second;
         }
     }
     return  boost::shared_ptr<NodeGui>();

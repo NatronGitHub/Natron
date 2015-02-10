@@ -12,6 +12,10 @@
 #ifndef NATRON_ENGINE_IMAGE_H_
 #define NATRON_ENGINE_IMAGE_H_
 
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
 #include <list>
 #include <map>
 
@@ -390,7 +394,8 @@ namespace Natron {
      * given mipmap level,
      * and then computes the mipmap of the given level of that rectangle.
      **/
-        void downscaleMipMap(const RectI & roi, unsigned int fromLevel, unsigned int toLevel, bool copyBitMap, Natron::Image* output) const;
+        void downscaleMipMap(const RectI & roi, unsigned int fromLevel, unsigned int toLevel, bool copyBitMap,
+                             Natron::Image* output) const;
 
         /**
      * @brief Upscales a portion of this image into output.
@@ -452,8 +457,11 @@ namespace Natron {
                              bool copyBitMap,
                              bool requiresUnpremult,
                              Natron::Image* dstImg) const;
-        
-        void checkForNaNs(const RectI& roi);
+
+        /**
+         * @brief returns true if image contains NaNs or infinite values, and fix them.
+         */
+        bool checkForNaNs(const RectI& roi) WARN_UNUSED_RETURN;
 
         void copyBitmapRowPortion(int x1, int x2,int y, const Image& other);
 
@@ -467,18 +475,22 @@ namespace Natron {
      * function computes the mip map of this image in the given roi.
      * If roi is NOT a power of 2, then it will be rounded to the closest power of 2.
      **/
-        void buildMipMapLevel(const RectI & roiCanonical, unsigned int level, bool copyBitMap,Natron::Image* output) const;
+        void buildMipMapLevel(const RectI & roiCanonical, unsigned int level, bool copyBitMap,
+                              Natron::Image* output) const;
 
 
         /**
      * @brief Halve the given roi of this image into output.
      * If the RoI bounds are odd, the largest enclosing RoI with even bounds will be considered.
      **/
-        void halveRoI(const RectI & roi, bool copyBitMap, Natron::Image* output) const;
+        void halveRoI(const RectI & roi, bool copyBitMap,
+                      Natron::Image* output) const;
         
 
         template <typename PIX, int maxValue>
-        void halveRoIForDepth(const RectI & roi, bool copyBitMap, Natron::Image* output) const;
+        void halveRoIForDepth(const RectI & roi,
+                              bool copyBitMap,
+                              Natron::Image* output) const;
 
         /**
      * @brief Same as halveRoI but for 1D only (either width == 1 or height == 1)

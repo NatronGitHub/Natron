@@ -12,6 +12,10 @@
 #ifndef SPLASHSCREEN_H
 #define SPLASHSCREEN_H
 
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
@@ -40,6 +44,29 @@ public:
 
 private:
 
+    virtual void paintEvent(QPaintEvent* e) OVERRIDE FINAL;
+};
+
+
+class LoadProjectSplashScreen
+: public QWidget
+{
+    QPixmap _pixmap;
+    QString _text;
+    QString _projectName;
+    
+public:
+    
+    LoadProjectSplashScreen(const QString & filePath);
+    
+    virtual ~LoadProjectSplashScreen()
+    {
+    }
+    
+    void updateText(const QString & text);
+
+private:
+    
     virtual void paintEvent(QPaintEvent* e) OVERRIDE FINAL;
 };
 

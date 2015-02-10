@@ -53,12 +53,10 @@
 int gettimeofday (struct timeval *tv, void *tz);
 #endif
 
-enum PlayState
+enum PlayStateEnum
 {
-    PREPARE_TO_RUN,
-    RUNNING,
-    PREPARE_TO_PAUSE,
-    PAUSE,
+    ePlayStateRunning,
+    ePlayStatePause,
 };
 
 class QMutex;
@@ -82,10 +80,10 @@ public:
     // the redrawWindow() function in the display thread calls
     // waitUntilNextFrameIsDue() before displaying each frame.
     //
-    // If playState == RUNNING, then waitUntilNextFrameIsDue()
+    // If playState == ePlayStateRunning, then waitUntilNextFrameIsDue()
     // sleeps until the apropriate amount of time has elapsed
     // since the last call to waitUntilNextFrameIsDue().
-    // If playState != RUNNING, then waitUntilNextFrameIsDue()
+    // If playState != ePlayStateRunning, then waitUntilNextFrameIsDue()
     // returns immediately.
     //--------------------------------------------------------
 
@@ -104,9 +102,9 @@ public:
     // Current play state
     //-------------------
 
-    PlayState playState;
+    PlayStateEnum playState;
     
-signals:
+Q_SIGNALS:
     
     void fpsChanged(double actualfps,double desiredfps);
 

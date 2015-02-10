@@ -11,7 +11,12 @@
 
 #ifndef NATRON_GUI_FEEDBACKSPINBOX_H_
 #define NATRON_GUI_FEEDBACKSPINBOX_H_
-#ifndef Q_MOC_RUN
+
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
 #endif
 #include "Gui/LineEdit.h"
@@ -28,13 +33,14 @@ class SpinBox
 
 public:
 
-    enum SPINBOX_TYPE
+    enum SpinBoxTypeEnum
     {
-        INT_SPINBOX = 0,DOUBLE_SPINBOX
+        eSpinBoxTypeInt = 0,
+        eSpinBoxTypeDouble
     };
 
     explicit SpinBox(QWidget* parent = 0,
-                     SPINBOX_TYPE type = INT_SPINBOX);
+                     SpinBoxTypeEnum type = eSpinBoxTypeInt);
 
     virtual ~SpinBox() OVERRIDE;
 
@@ -84,11 +90,11 @@ private:
 
     bool validateText();
 
-signals:
+Q_SIGNALS:
 
     void valueChanged(double d);
 
-public slots:
+public Q_SLOTS:
 
     void setValue(double d);
 

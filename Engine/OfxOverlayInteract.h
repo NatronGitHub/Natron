@@ -11,6 +11,10 @@
 #ifndef NATRON_ENGINE_OFXOVERLAYINTERACT_H_
 #define NATRON_ENGINE_OFXOVERLAYINTERACT_H_
 
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
 #include <ofxhImageEffect.h>
 
 #include "Global/Macros.h"
@@ -32,12 +36,12 @@ public:
     virtual ~NatronOverlayInteractSupport();
 
     void setCallingViewport(OverlaySupport* viewport);
+    
+    OverlaySupport* getLastCallingViewport() const;
 
     /*Swaps the buffer of the attached viewer*/
     OfxStatus n_swapBuffers();
 
-    /*Calls updateGL() on the attached viewer*/
-    OfxStatus n_redraw();
 
     /// hooks to kOfxInteractPropViewportSize in the property set
     /// this is actually redundant and is to be deprecated
@@ -49,8 +53,8 @@ public:
     // hooks to kOfxInteractPropBackgroundColour in the property set
     void n_getBackgroundColour(double &r, double &g, double &b) const;
 
-    // hooks to kOfxPropOverlayColour in the property set
-    void n_getOverlayColour(double &r, double &g, double &b) const;
+    // hooks to kOfxInteractPropSuggestedColour and kOfxPropOverlayColour in the property set
+    bool n_getSuggestedColour(double &r, double &g, double &b) const;
 };
 
 class OfxImageEffectInstance;
@@ -74,10 +78,7 @@ public:
     }
 
     /*Calls updateGL() on the attached viewer*/
-    virtual OfxStatus redraw()
-    {
-        return n_redraw();
-    }
+    virtual OfxStatus redraw();
 
     /// hooks to kOfxInteractPropViewportSize in the property set
     /// this is actually redundant and is to be deprecated
@@ -102,16 +103,10 @@ public:
         n_getBackgroundColour(r, g, b);
     }
 
-#ifdef OFX_EXTENSIONS_NUKE
-    // hooks to kOfxPropOverlayColour in the property set
-    virtual void getOverlayColour(double &r,
-                                  double &g,
-                                  double &b) const
-    {
-        n_getOverlayColour(r, g, b);
-    }
-
-#endif
+    // hooks to kOfxInteractPropSuggestedColour and kOfxPropOverlayColour in the property set
+    virtual bool getSuggestedColour(double &r,
+                                    double &g,
+                                    double &b) const;
 
     /// call create instance
     virtual OfxStatus createInstanceAction() OVERRIDE FINAL;
@@ -248,11 +243,9 @@ public:
         return n_swapBuffers();
     }
 
-    /*Calls updateGL() on the attached viewer*/
-    virtual OfxStatus redraw()
-    {
-        return n_redraw();
-    }
+    /*Calls updateGL() on all viewers*/
+    virtual OfxStatus redraw();
+
 
     /// hooks to kOfxInteractPropViewportSize in the property set
     /// this is actually redundant and is to be deprecated
@@ -277,20 +270,17 @@ public:
         n_getBackgroundColour(r, g, b);
     }
 
-#ifdef OFX_EXTENSIONS_NUKE
-    // hooks to kOfxPropOverlayColour in the property set
-    virtual void getOverlayColour(double &r,
-                                  double &g,
-                                  double &b) const
+    // hooks to kOfxInteractPropSuggestedColour and kOfxPropOverlayColour in the property set
+    virtual bool getSuggestedColour(double &r,
+                                    double &g,
+                                    double &b) const
     {
-        n_getOverlayColour(r, g, b);
+        return n_getSuggestedColour(r, g, b);
     }
 
-#endif
+    void getMinimumSize(double & minW, double & minH) const;
 
-    void getMinimumSize(int & minW,int & minH) const;
-
-    void getPreferredSize(int & pW,int & pH) const;
+    void getPreferredSize(int & pW, int & pH) const;
 
     void getSize(int &w,int &h) const;
 

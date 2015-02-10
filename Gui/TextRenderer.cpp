@@ -4,7 +4,11 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#include "Gui/TextRenderer.h"
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
+#include "TextRenderer.h"
 
 #include <boost/shared_ptr.hpp>
 
@@ -242,6 +246,8 @@ TextRenderer::~TextRenderer()
 void
 TextRenderer::renderText(float x,
                          float y,
+                         float scalex,
+                         float scaley,
                          const QString &text,
                          const QColor &color,
                          const QFont &font) const
@@ -261,12 +267,13 @@ TextRenderer::renderText(float x,
     glGetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&savedTexture);
     {
         GLProtectAttrib a(GL_ENABLE_BIT | GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT | GL_TRANSFORM_BIT);
-        GLProtectMatrix pr(GL_PROJECTION);
+        GLProtectMatrix pr(GL_MODELVIEW);
 
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         glEnable(GL_TEXTURE_2D);
         GLuint texture = 0;
+
         glTranslatef(x, y, 0);
         glColor4f( color.redF(), color.greenF(), color.blueF(), color.alphaF() );
         for (int i = 0; i < text.length(); ++i) {
@@ -284,14 +291,14 @@ TextRenderer::renderText(float x,
             glTexCoord2f(c->xTexCoords[0], c->yTexCoords[0]);
             glVertex2f(0, 0);
             glTexCoord2f(c->xTexCoords[1], c->yTexCoords[0]);
-            glVertex2f(c->w, 0);
+            glVertex2f(c->w * scalex, 0);
             glTexCoord2f(c->xTexCoords[1], c->yTexCoords[1]);
-            glVertex2f(c->w, c->h);
+            glVertex2f(c->w * scalex, c->h * scaley);
             glTexCoord2f(c->xTexCoords[0], c->yTexCoords[1]);
-            glVertex2f(0, c->h);
+            glVertex2f(0, c->h * scaley);
             glEnd();
             glCheckErrorIgnoreOSXBug();
-            glTranslatef(c->w, 0, 0);
+            glTranslatef(c->w * scalex, 0, 0);
             glCheckError();
         }
     } // GLProtectAttrib a(GL_ENABLE_BIT | GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT | GL_TRANSFORM_BIT);

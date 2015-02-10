@@ -9,6 +9,10 @@
  *
  */
 
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
 #include "Curve.h"
 
 #include <algorithm>
@@ -447,6 +451,7 @@ Curve::removeKeyFrameWithIndex(int index)
     removeKeyFrame( atIndex(index) );
 }
 
+
 void
 Curve::removeKeyFrameWithTime(double time)
 {
@@ -458,6 +463,45 @@ Curve::removeKeyFrameWithTime(double time)
     }
 
     removeKeyFrame(it);
+}
+
+void
+Curve::removeKeyFramesBeforeTime(double time,std::list<int>* keyframeRemoved)
+{
+    KeyFrameSet newSet;
+    QWriteLocker l(&_imp->_lock);
+    for (KeyFrameSet::iterator it = _imp->keyFrames.begin(); it != _imp->keyFrames.end(); ++it) {
+        if (it->getTime() < time) {
+            keyframeRemoved->push_back(it->getTime());
+            continue;
+        }
+        newSet.insert(*it);
+    }
+    _imp->keyFrames = newSet;
+    if (!_imp->keyFrames.empty()) {
+        refreshDerivatives(Curve::eCurveChangedReasonKeyframeChanged, _imp->keyFrames.begin());
+    }
+}
+
+void
+Curve::removeKeyFramesAfterTime(double time,std::list<int>* keyframeRemoved)
+{
+    KeyFrameSet newSet;
+    QWriteLocker l(&_imp->_lock);
+    for (KeyFrameSet::iterator it = _imp->keyFrames.begin(); it != _imp->keyFrames.end(); ++it) {
+        if (it->getTime() > time) {
+            keyframeRemoved->push_back(it->getTime());
+            continue;
+        }
+        newSet.insert(*it);
+    }
+    _imp->keyFrames = newSet;
+    if (!_imp->keyFrames.empty()) {
+        KeyFrameSet::iterator last = _imp->keyFrames.end();
+        --last;
+        refreshDerivatives(Curve::eCurveChangedReasonKeyframeChanged, last);
+    }
+
 }
 
 bool
@@ -625,6 +669,7 @@ interParams(const KeyFrameSet &keyFrames,
             Natron::KeyframeTypeEnum *interpNext)
 {
 //#pragma message WARN("Unused parameter 't'") //the parameter is good enough for asserts
+    (void)t;
     assert( itup == keyFrames.end() || t < itup->getTime() );
     if ( itup == keyFrames.begin() ) {
         //if all keys have a greater time

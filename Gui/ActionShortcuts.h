@@ -9,12 +9,23 @@
 /**
  * @brief In this file all Natron's actions that can have their shortcut edited should be listed.
  **/
+
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
 #include <map>
 #include <list>
+
+#include "Global/Macros.h"
+CLANG_DIAG_OFF(deprecated)
+CLANG_DIAG_OFF(uninitialized)
 #include <QKeyEvent>
 #include <QMouseEvent>
 #include <QString>
 #include <QAction>
+CLANG_DIAG_ON(deprecated)
+CLANG_DIAG_ON(uninitialized)
 
 #define kShortcutGroupGlobal "Global"
 #define kShortcutGroupNodegraph "NodeGraph"
@@ -43,6 +54,9 @@
 
 #define kShortcutIDActionSaveAndIncrVersion "saveAndIncr"
 #define kShortcutDescActionSaveAndIncrVersion "Version project"
+
+#define kShortcutIDActionExportProject "exportAsGroup"
+#define kShortcutDescActionExportProject "Export project as group"
 
 #define kShortcutIDActionPreferences "preferences"
 #define kShortcutDescActionPreferences "Preferences"
@@ -134,6 +148,12 @@
 #define kShortcutIDActionDefaultLayout "restoreDefaultLayout"
 #define kShortcutDescActionDefaultLayout "Restore default layout"
 
+#define kShortcutIDActionNextTab "nextTab"
+#define kShortcutDescActionNextTab "Next Tab"
+
+#define kShortcutIDActionCloseTab "closeTab"
+#define kShortcutDescActionCloseTab "Close Tab"
+
 /////////VIEWER SHORTCUTS
 #define kShortcutIDActionLuminance "luminance"
 #define kShortcutDescActionLuminance "Luminance"
@@ -184,7 +204,7 @@
 #define kShortcutDescActionZoomLevel100 "100%"
 
 #define kShortcutIDActionHideOverlays "hideOverlays"
-#define kShortcutDescActionHideOverlays "Show/Hide overlays"
+#define kShortcutDescActionHideOverlays "Enable overlays"
 
 #define kShortcutIDActionHidePlayer "hidePlayer"
 #define kShortcutDescActionHidePlayer "Show/Hide player"
@@ -215,6 +235,9 @@
 
 #define kShortcutIDMouseRectanglePick "rectanglePick"
 #define kShortcutDescMouseRectanglePick "Rectangle colour picker"
+
+#define kShortcutIDToggleWipe "toggleWipe"
+#define kShortcutDescToggleWipe "Toggle wipe"
 
 ///////////PLAYER SHORTCUTS
 
@@ -291,6 +314,15 @@
 
 #define kShortcutIDActionRotoRemoveFeather "rmvFeather"
 #define kShortcutDescActionRotoRemoveFeather "Remove feather"
+
+#define kShortcutIDActionRotoLinkToTrack "linkToTrack"
+#define kShortcutDescActionRotoLinkToTrack "Link to track"
+
+#define kShortcutIDActionRotoUnlinkToTrack "unlinkFromTrack"
+#define kShortcutDescActionRotoUnlinkToTrack "Unlink from track"
+
+#define kShortcutIDActionRotoLockCurve "lock"
+#define kShortcutDescActionRotoLockCurve "Lock shape"
 
 ///////////TRACKING SHORTCUTS
 #define kShortcutIDActionTrackingSelectAll "selectAll"
@@ -405,6 +437,10 @@
 
 #define kShortcutIDActionGraphExtractNode "extractNode"
 #define kShortcutDescActionGraphExtractNode "Extract node"
+
+#define kShortcutIDActionGraphMakeGroup "makeGroup"
+#define kShortcutDescActionGraphMakeGroup "Group from selection"
+
 ///////////CURVEEDITOR SHORTCUTS
 #define kShortcutIDActionCurveEditorRemoveKeys "remove"
 #define kShortcutDescActionCurveEditorRemoveKeys "Delete keyframes"
@@ -565,6 +601,7 @@ public:
 
     MouseAction()
         : BoundAction()
+        , button(Qt::NoButton)
     {
     }
 

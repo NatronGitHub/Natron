@@ -8,7 +8,12 @@
  *
  */
 
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
 #include "DiskCacheNode.h"
+
 #include "Engine/Node.h"
 #include "Engine/Image.h"
 #include "Engine/AppInstance.h"
@@ -67,7 +72,7 @@ DiskCacheNode::initializeKnobs()
     _imp->frameRange->setAnimationEnabled(false);
     std::vector<std::string> choices;
     choices.push_back("Input frame range");
-    choices.push_back("Timeline bounds");
+    choices.push_back("Project frame range");
     choices.push_back("Manual");
     _imp->frameRange->populateChoices(choices);
     _imp->frameRange->setEvaluateOnChange(false);
@@ -79,7 +84,7 @@ DiskCacheNode::initializeKnobs()
     _imp->firstFrame->setName("firstFrame");
     _imp->firstFrame->disableSlider();
     _imp->firstFrame->setEvaluateOnChange(false);
-    _imp->firstFrame->turnOffNewLine();
+    _imp->firstFrame->setAddNewLine(false);
     _imp->firstFrame->setDefaultValue(1);
     _imp->firstFrame->setSecret(true);
     page->addKnob(_imp->firstFrame);
@@ -144,9 +149,7 @@ DiskCacheNode::getFrameRange(SequenceTime *first,SequenceTime *last)
             }
         } break;
         case 1: {
-            boost::shared_ptr<TimeLine> tl = getApp()->getTimeLine();
-            *first = tl->leftBound();
-            *last = tl->rightBound();
+            getApp()->getFrameRange(first, last);
         } break;
         case 2: {
             *first = _imp->firstFrame->getValue();

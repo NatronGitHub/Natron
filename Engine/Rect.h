@@ -12,6 +12,10 @@
 #ifndef NATRON_ENGINE_RECT_H_
 #define NATRON_ENGINE_RECT_H_
 
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
 #include <cassert>
 #include <iostream>
 #include <vector>
@@ -20,7 +24,7 @@
 
 #include "Global/GlobalDefines.h"
 
-#ifndef Q_MOC_RUN
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 CLANG_DIAG_OFF(unused-parameter)
 // /opt/local/include/boost/serialization/smart_cast.hpp:254:25: warning: unused parameter 'u' [-Wunused-parameter]
 #include <boost/archive/xml_iarchive.hpp>
@@ -296,10 +300,6 @@ public:
     bool isInfinite() const
     {
         return x1 <= kOfxFlagInfiniteMin || x2 >= kOfxFlagInfiniteMax || y1 <= kOfxFlagInfiniteMin || y2 >= kOfxFlagInfiniteMax;
-    }
-
-    operator bool() const {
-        return !isNull();
     }
 
     void clear()
@@ -639,10 +639,6 @@ public:
     bool isNull() const
     {
         return (x2 <= x1) || (y2 <= y1);
-    }
-
-    operator bool() const {
-        return !isNull();
     }
 
     void clear()

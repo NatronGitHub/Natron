@@ -3,8 +3,12 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
 
 #include "CustomParamInteract.h"
+
 #include <QThread>
 #include <QCoreApplication>
 #include <QMouseEvent>
@@ -59,7 +63,7 @@ CustomParamInteract::CustomParamInteract(KnobGui* knob,
     : QGLWidget(parent)
       , _imp( new CustomParamInteractPrivate(knob,ofxParamHandle,entryPoint) )
 {
-    int minW,minH;
+    double minW,minH;
 
     entryPoint->getMinimumSize(minW, minH);
     setMinimumSize(minW, minH);
@@ -85,14 +89,10 @@ CustomParamInteract::paintGL()
      */
     {
         GLProtectAttrib a(GL_TRANSFORM_BIT);
-        GLProtectMatrix m(GL_MODELVIEW);
         GLProtectMatrix p(GL_PROJECTION);
-
-        glMatrixMode(GL_PROJECTION);
         glLoadIdentity();
         glOrtho(-0.5, width() - 0.5, -0.5, height() - 0.5, 1, -1);
-
-        glMatrixMode(GL_MODELVIEW);
+        GLProtectMatrix m(GL_MODELVIEW);
         glLoadIdentity();
 
         /*A parameter's interact draw function will have full responsibility for drawing the interact, including clearing the background and swapping buffers.*/
@@ -176,11 +176,15 @@ CustomParamInteract::saveOpenGLContext()
 
     glGetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&_imp->savedTexture);
     //glGetIntegerv(GL_ACTIVE_TEXTURE, (GLint*)&_imp->activeTexture);
+    glCheckAttribStack();
     glPushAttrib(GL_ALL_ATTRIB_BITS);
+    glCheckClientAttribStack();
     glPushClientAttrib(GL_ALL_ATTRIB_BITS);
     glMatrixMode(GL_PROJECTION);
+    glCheckProjectionStack();
     glPushMatrix();
     glMatrixMode(GL_MODELVIEW);
+    glCheckModelviewStack();
     glPushMatrix();
 
     // set defaults to work around OFX plugin bugs

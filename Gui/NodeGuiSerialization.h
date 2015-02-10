@@ -13,18 +13,26 @@
 #ifndef NODEGUISERIALIZATION_H
 #define NODEGUISERIALIZATION_H
 
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
 #include "Global/Macros.h"
-#ifndef Q_MOC_RUN
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 CLANG_DIAG_OFF(unused-parameter)
 // /opt/local/include/boost/serialization/smart_cast.hpp:254:25: warning: unused parameter 'u' [-Wunused-parameter]
 #include <boost/archive/xml_iarchive.hpp>
 CLANG_DIAG_ON(unused-parameter)
 #include <boost/archive/xml_oarchive.hpp>
 #include <boost/serialization/version.hpp>
+#include <boost/serialization/split_member.hpp>
 #endif
 #define NODE_GUI_INTRODUCES_COLOR 2
 #define NODE_GUI_INTRODUCES_SELECTED 3
-#define NODE_GUI_SERIALIZATION_VERSION NODE_GUI_INTRODUCES_SELECTED
+#define NODE_GUI_MERGE_BACKDROP 4
+#define NODE_GUI_INTRODUCES_OVERLAY_COLOR 5
+#define NODE_GUI_SERIALIZATION_VERSION NODE_GUI_INTRODUCES_OVERLAY_COLOR
+#include "Engine/AppManager.h"
 
 class NodeGui;
 class NodeGuiSerialization
@@ -32,8 +40,7 @@ class NodeGuiSerialization
 public:
 
     NodeGuiSerialization()
-        : _nodeName()
-        , _posX(0.)
+        : _posX(0.)
         , _posY(0.)
         , _previewEnabled(false)
         , _r(0.)
@@ -44,7 +51,7 @@ public:
     {
     }
 
-    void initialize(const boost::shared_ptr<NodeGui> & n);
+    void initialize(const NodeGui* n);
 
     double getX() const
     {
@@ -55,13 +62,19 @@ public:
     {
         return _posY;
     }
+    
+    void getSize(double* w,double *h) const
+    {
+        *w = _width;
+        *h = _height;
+    }
 
     bool isPreviewEnabled() const
     {
         return _previewEnabled;
     }
 
-    const std::string & getName() const
+    const std::string & getFullySpecifiedName() const
     {
         return _nodeName;
     }
@@ -85,25 +98,66 @@ public:
         return _selected;
     }
 
+    bool getOverlayColor(double* r,double* g,double* b) const {
+        if (!_hasOverlayColor) {
+            return false;
+        }
+        *r = _overlayR;
+        *g = _overlayG;
+        *b = _overlayB;
+        return true;
+    }
+    
 private:
 
     std::string _nodeName;
     double _posX,_posY;
+    double _width,_height;
     bool _previewEnabled;
     float _r,_g,_b; //< color
     bool _colorWasFound;
     bool _selected;
 
+    double _overlayR,_overlayG,_overlayB;
+    bool _hasOverlayColor;
+    
     friend class boost::serialization::access;
     template<class Archive>
-    void serialize(Archive & ar,
-                   const unsigned int version)
+    void save(Archive & ar,
+                   const unsigned int /*version*/) const
     {
         ar & boost::serialization::make_nvp("Name",_nodeName);
         ar & boost::serialization::make_nvp("X_position",_posX);
         ar & boost::serialization::make_nvp("Y_position",_posY);
         ar & boost::serialization::make_nvp("Preview_enabled",_previewEnabled);
-
+        
+        ar & boost::serialization::make_nvp("r",_r);
+        ar & boost::serialization::make_nvp("g",_g);
+        ar & boost::serialization::make_nvp("b",_b);
+        
+        ar & boost::serialization::make_nvp("Selected",_selected);
+        
+        
+        ar & boost::serialization::make_nvp("Width",_width);
+        ar & boost::serialization::make_nvp("Height",_height);
+        
+        ar & boost::serialization::make_nvp("HasOverlayColor",_hasOverlayColor);
+        if (_hasOverlayColor) {
+            ar & boost::serialization::make_nvp("oR",_overlayR);
+            ar & boost::serialization::make_nvp("oG",_overlayG);
+            ar & boost::serialization::make_nvp("oB",_overlayB);
+        }
+    }
+    
+    template<class Archive>
+    void load(Archive & ar,
+              const unsigned int version)
+    {
+        ar & boost::serialization::make_nvp("Name",_nodeName);
+        ar & boost::serialization::make_nvp("X_position",_posX);
+        ar & boost::serialization::make_nvp("Y_position",_posY);
+        ar & boost::serialization::make_nvp("Preview_enabled",_previewEnabled);
+        
         if (version >= NODE_GUI_INTRODUCES_COLOR) {
             ar & boost::serialization::make_nvp("r",_r);
             ar & boost::serialization::make_nvp("g",_g);
@@ -113,7 +167,28 @@ private:
         if (version >= NODE_GUI_INTRODUCES_SELECTED) {
             ar & boost::serialization::make_nvp("Selected",_selected);
         }
+        
+        if (version >= NODE_GUI_MERGE_BACKDROP) {
+            ar & boost::serialization::make_nvp("Width",_width);
+            ar & boost::serialization::make_nvp("Height",_height);
+        } else {
+            _nodeName = Natron::makeNameScriptFriendly(_nodeName);
+        }
+        
+        if (version >= NODE_GUI_INTRODUCES_OVERLAY_COLOR) {
+            ar & boost::serialization::make_nvp("HasOverlayColor",_hasOverlayColor);
+            if (_hasOverlayColor) {
+                ar & boost::serialization::make_nvp("oR",_overlayR);
+                ar & boost::serialization::make_nvp("oG",_overlayG);
+                ar & boost::serialization::make_nvp("oB",_overlayB);
+            }
+        } else {
+            _hasOverlayColor = false;
+        }
     }
+
+    
+    BOOST_SERIALIZATION_SPLIT_MEMBER()
 };
 
 BOOST_CLASS_VERSION(NodeGuiSerialization, NODE_GUI_SERIALIZATION_VERSION)

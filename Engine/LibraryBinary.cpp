@@ -1,4 +1,3 @@
-
 //  Natron
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -8,6 +7,11 @@
  * contact: immarespond at gmail dot com
  *
  */
+
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
 #include "LibraryBinary.h"
 
 #include <cassert>
@@ -20,7 +24,7 @@
 
 using namespace Natron;
 
-LibraryBinary::LibraryBinary(LibraryBinary::LibraryType type)
+LibraryBinary::LibraryBinary(LibraryBinary::LibraryTypeEnum type)
     : _type(type)
       , _library(0)
       , _valid(false)
@@ -28,7 +32,7 @@ LibraryBinary::LibraryBinary(LibraryBinary::LibraryType type)
 }
 
 LibraryBinary::LibraryBinary(const std::map<std::string, void *> &functions)
-    : _type(LibraryBinary::BUILTIN)
+    : _type(LibraryBinary::eLibraryTypeBuiltin)
       , _library(0)
       , _valid(false)
 {
@@ -44,7 +48,7 @@ LibraryBinary::LibraryBinary(const std::map<std::string, void *> &functions)
 }
 
 LibraryBinary::LibraryBinary(const std::string & binaryPath)
-    : _type(LibraryBinary::EXTERNAL)
+    : _type(LibraryBinary::eLibraryTypeExternal)
       , _library(0)
       , _valid(false)
 {
@@ -53,7 +57,7 @@ LibraryBinary::LibraryBinary(const std::string & binaryPath)
 
 LibraryBinary::LibraryBinary(const std::string & binaryPath,
                              const std::vector<std::string> & funcNames)
-    : _type(LibraryBinary::EXTERNAL)
+    : _type(LibraryBinary::eLibraryTypeExternal)
       , _library(0)
       , _valid(false)
 {
@@ -67,7 +71,7 @@ bool
 LibraryBinary::loadBinary(const std::string & binaryPath)
 {
     assert(!_valid);
-    if (_type != EXTERNAL) {
+    if (_type != eLibraryTypeExternal) {
         std::cout << "Trying to load a binary but the library is a built-in library." << std::endl;
 
         return false;
@@ -77,7 +81,7 @@ LibraryBinary::loadBinary(const std::string & binaryPath)
 #ifdef __NATRON_WIN32__
     _library = LoadLibrary( binaryPath.c_str() );
 #elif defined(__NATRON_UNIX__)
-    _library = dlopen(binaryPath.c_str(),RTLD_LAZY);
+    _library = dlopen(binaryPath.c_str(), RTLD_LAZY|RTLD_LOCAL);
 #endif
     if (!_library) {
 #ifdef __NATRON_UNIX__

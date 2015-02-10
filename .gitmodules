@@ -13,3 +13,6 @@
 [submodule "libs/SequenceParsing"]
 	path = libs/SequenceParsing
 	url = https://github.com/MrKepzie/SequenceParsing
+[submodule "google-breakpad"]
+	path = google-breakpad
+	url = https://github.com/MrKepzie/google-breakpad

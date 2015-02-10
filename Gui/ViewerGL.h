@@ -12,9 +12,13 @@
 #ifndef NATRON_GUI_VIEWERGL_H_
 #define NATRON_GUI_VIEWERGL_H_
 
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
 #include <vector>
 #include <utility>
-#ifndef Q_MOC_RUN
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
 #endif
 #include "Global/Macros.h"
@@ -100,7 +104,7 @@ public:
     virtual bool isClippingImageToProjectWindow() const OVERRIDE FINAL;
 
 
-    OpenGLViewerI::BitDepth getBitDepth() const OVERRIDE FINAL;
+    OpenGLViewerI::BitDepthEnum getBitDepth() const OVERRIDE FINAL;
 
     /**
      *@brief Hack to allow the resizeEvent to be publicly used elsewhere.
@@ -188,7 +192,11 @@ public:
     void updatePersistentMessage();
     void updatePersistentMessageToWidth(int w);
     
-public slots:
+
+    virtual void getViewerFrameRange(int* first,int* last) const OVERRIDE FINAL;
+    
+
+public Q_SLOTS:
 
 
     /**
@@ -219,26 +227,35 @@ public slots:
     void clearColorBuffer(double r = 0.,double g = 0.,double b = 0.,double a = 1.);
 
     void toggleOverlays();
+    
+    void toggleWipe();
 
     void onProjectFormatChanged(const Format & format);
-
-    virtual void makeOpenGLcontextCurrent() OVERRIDE FINAL;
-    virtual void onViewerNodeNameChanged(const QString & name) OVERRIDE FINAL;
-    virtual void removeGUI() OVERRIDE FINAL;
-    virtual int getCurrentView() const OVERRIDE FINAL;
     
-    virtual boost::shared_ptr<TimeLine> getTimeline() const OVERRIDE FINAL;
+    void onCheckerboardSettingsChanged();
 
+    
     /**
      * @brief Reset the wipe position so it is in the center of the B input.
      * If B input is disconnected it goes in the middle of the A input.
      * Otherwise it goes in the middle of the project window
      **/
     void resetWipeControls();
-
-    void onCheckerboardSettingsChanged();
     
     void clearLastRenderedTexture();
+    
+private:
+    
+    void onProjectFormatChangedInternal(const Format & format,bool triggerRender);
+public:
+    
+
+    virtual void makeOpenGLcontextCurrent() OVERRIDE FINAL;
+    virtual void removeGUI() OVERRIDE FINAL;
+    virtual int getCurrentView() const OVERRIDE FINAL;
+    
+    virtual boost::shared_ptr<TimeLine> getTimeline() const OVERRIDE FINAL;
+
 
 public:
 
@@ -297,7 +314,6 @@ public:
     bool getZoomOrPannedSinceLastFit() const;
 
     virtual Natron::ViewerCompositingOperatorEnum getCompositingOperator() const OVERRIDE FINAL;
-    virtual bool isFrameRangeLocked() const OVERRIDE FINAL;
 
     ///Not MT-Safe
     void getSelectionRectangle(double &left,double &right,double &bottom,double &top) const;
@@ -314,9 +330,11 @@ public:
     
     /**
      * @brief Called by the Histogram when it wants to refresh. It returns a pointer to the last
-     * rendered image by the viewer.
+     * rendered image by the viewer. It doesn't re-render the image if it is not present.
      **/
     boost::shared_ptr<Natron::Image> getLastRenderedImage(int textureIndex) const;
+    
+    boost::shared_ptr<Natron::Image> getLastRenderedImageByMipMapLevel(int textureIndex,unsigned int mipMapLevel) const;
 
     /**
      * @brief Get the color of the currently displayed image at position x,y.
@@ -326,19 +344,22 @@ public:
      * X and Y are in CANONICAL COORDINATES
      * @return true if the point is inside the image and colors were set
      **/
-    bool getColorAt(double x, double y, bool forceLinear, int textureIndex, float* r, float* g, float* b, float* a) WARN_UNUSED_RETURN;
+    bool getColorAt(double x, double y, bool forceLinear, int textureIndex, float* r,
+                    float* g, float* b, float* a,unsigned int* mipMapLevel) WARN_UNUSED_RETURN;
     
     // same as getColor, but computes the mean over a given rectangle
     bool getColorAtRect(const RectD &rect, // rectangle in canonical coordinates
-                        bool forceLinear, int textureIndex, float* r, float* g, float* b, float* a);
+                        bool forceLinear, int textureIndex, float* r, float* g, float* b, float* a, unsigned int* mipMapLevel);
     
+    
+    virtual unsigned int getCurrentRenderScale() const OVERRIDE FINAL;
     
     ///same as getMipMapLevel but with the zoomFactor taken into account
     int getMipMapLevelCombinedToZoomFactor() const WARN_UNUSED_RETURN;
     
     virtual int getCurrentlyDisplayedTime() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     
-signals:
+Q_SIGNALS:
 
     /**
      *@brief Signal emitted when the current zoom factor changed.
@@ -418,18 +439,18 @@ private:
     void initShaderGLSL(); // init shaders
 
 
-    enum DrawPolygonMode
+    enum DrawPolygonModeEnum
     {
-        ALL_PLANE = 0,
-        WIPE_LEFT_PLANE,
-        WIPE_RIGHT_PLANE
+        eDrawPolygonModeWhole = 0,
+        eDrawPolygonModeWipeLeft,
+        eDrawPolygonModeWipeRight
     };
 
     /**
      *@brief Fill the rendering VAO with vertices and texture coordinates
      * that depends upon the currently displayed texture.
      **/
-    void drawRenderingVAO(unsigned int mipMapLevel,int textureIndex,DrawPolygonMode polygonMode);
+    void drawRenderingVAO(unsigned int mipMapLevel,int textureIndex,DrawPolygonModeEnum polygonMode);
 
     /**
      *@brief Makes the viewer display black only.

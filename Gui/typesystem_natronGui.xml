@@ -1,0 +1,132 @@
+<?xml version="1.0"?>
+<!--  Natron
+ 
+ This Source Code Form is subject to the terms of the Mozilla Public
+ License, v. 2.0. If a copy of the MPL was not distributed with this
+ file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+ 
+ Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
+ contact: immarespond at gmail dot com
+ -->
+<typesystem package="NatronGui">
+
+    <!--Load QtGui typesystem-->
+    <load-typesystem name="typesystem_gui.xml" generate="no" />
+    <!--Load Engine typesystem-->
+    <load-typesystem name="typesystem_engine.xml" generate="no" />
+
+
+
+    <object-type name="GuiApp">
+        <modify-function signature="getTabWidget(std::string)const">
+            <modify-argument index="return">
+                <define-ownership class="target" owner="target"/>
+            </modify-argument>
+        </modify-function>
+        <modify-function signature="getSelectedNodes(Group*)const">
+            <inject-code class="target" position="beginning">
+                std::list&lt;Effect*&gt; effects = %CPPSELF.%FUNCTION_NAME(%ARGUMENT_NAMES);
+                PyObject* ret = PyList_New((int) effects.size());
+                int idx = 0;
+                for (std::list&lt;Effect*&gt;::iterator it = effects.begin(); it!=effects.end(); ++it,++idx) {
+                PyObject* item = %CONVERTTOPYTHON[Effect*](*it);
+                // Ownership transferences.
+                Shiboken::Object::getOwnership(item);
+                PyList_SET_ITEM(ret, idx, item);
+                }
+                return ret;
+            </inject-code>
+        </modify-function>
+        <modify-function signature="getViewer(std::string)const">
+            <modify-argument index="return">
+                <define-ownership class="target" owner="target"/>
+            </modify-argument>
+        </modify-function>
+    </object-type>
+    
+    <object-type name="PyViewer">
+        <modify-function signature="getFrameRange(int*,int*)const">
+            <modify-argument index="return">
+                <replace-type modified-type="PyObject"/>
+            </modify-argument>
+            <modify-argument index="1">
+                <remove-argument/>
+            </modify-argument>
+            <modify-argument index="2">
+                <remove-argument/>
+            </modify-argument>
+            <inject-code class="target" position="beginning">
+                int x,y;
+                %CPPSELF.%FUNCTION_NAME(&amp;x,&amp;y);
+                %PYARG_0 = PyTuple_New(2);
+                PyTuple_SET_ITEM(%PYARG_0, 0, %CONVERTTOPYTHON[int](x));
+                PyTuple_SET_ITEM(%PYARG_0, 1, %CONVERTTOPYTHON[int](y));
+                return %PYARG_0;
+            </inject-code>
+        </modify-function>
+    </object-type>
+
+    <object-type name="PyGuiApplication">
+        <modify-function signature="getGuiInstance(int)const">
+            <modify-argument index="return">
+                <define-ownership class="target" owner="target"/>
+            </modify-argument>
+        </modify-function>
+
+    </object-type>
+
+	<object-type name="PyModalDialog">
+        <modify-function signature="getParam(std::string)const">
+            <modify-argument index="return">
+                <define-ownership class="target" owner="target"/>
+            </modify-argument>
+        </modify-function>
+	</object-type>
+    
+    <object-type name="PyPanel">
+        <modify-function signature="getParam(std::string)const">
+            <modify-argument index="return">
+                <define-ownership class="target" owner="target"/>
+            </modify-argument>
+        </modify-function>
+        <modify-function signature="getParams()const">
+            <inject-code class="target" position="beginning">
+                std::list&lt;Param*&gt; params = %CPPSELF.%FUNCTION_NAME(%ARGUMENT_NAMES);
+                PyObject* ret = PyList_New((int) params.size());
+                int idx = 0;
+                for (std::list&lt;Param*&gt;::iterator it = params.begin(); it!=params.end(); ++it,++idx) {
+                PyObject* item = %CONVERTTOPYTHON[Param*](*it);
+                // Ownership transferences.
+                Shiboken::Object::getOwnership(item);
+                PyList_SET_ITEM(ret, idx, item);
+                }
+                return ret;
+            </inject-code>
+        </modify-function>
+        <modify-function signature="save_serialization_thread()const" remove="all"/>
+    </object-type>
+    
+    <object-type name="PyTabWidget">
+        <modify-function signature="splitHorizontally()">
+            <modify-argument index="return">
+                <define-ownership class="target" owner="target"/>
+            </modify-argument>
+        </modify-function>
+        <modify-function signature="splitVertically()">
+            <modify-argument index="return">
+                <define-ownership class="target" owner="target"/>
+            </modify-argument>
+        </modify-function>
+        <modify-function signature="appendTab(PyPanel*)">
+            <inject-code class="target" position="beginning">
+                %RETURN_TYPE %0 = %CPPSELF.%FUNCTION_NAME(%1);
+                %PYARG_0 = %CONVERTTOPYTHON[%RETURN_TYPE](%0);
+            </inject-code>
+        </modify-function>
+        <modify-function signature="insertTab(int,PyPanel*)">
+            <inject-code class="target" position="beginning">
+                %CPPSELF.%FUNCTION_NAME(%1,%2);
+            </inject-code>
+        </modify-function>
+    </object-type>
+</typesystem>

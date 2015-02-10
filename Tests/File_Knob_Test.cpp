@@ -4,6 +4,10 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
 #include <gtest/gtest.h>
 
 #include <QString>
@@ -24,7 +28,7 @@ TEST(SequenceParsing,TestHashCharacter) {
     QStringList fileNames;
     int sequenceItemsCount = 10;
     ///create temporary files as a sequence and try to read that sequence.
-    QString tempPath = Natron::StandardPaths::writableLocation(Natron::StandardPaths::TempLocation);
+    QString tempPath = Natron::StandardPaths::writableLocation(Natron::StandardPaths::eStandardLocationTemp);
     QDir dir(tempPath);
 
     dir.mkpath(".");
@@ -183,7 +187,7 @@ TEST(SequenceParsing,TestHashCharacter) {
 TEST(SequenceParsing,TestPrintfLikeSyntax) {
     int sequenceItemsCount = 10;
     ///create temporary files as a sequence and try to read that sequence.
-    QString tempPath = Natron::StandardPaths::writableLocation(Natron::StandardPaths::TempLocation);
+    QString tempPath = Natron::StandardPaths::writableLocation(Natron::StandardPaths::eStandardLocationTemp);
     QDir dir(tempPath);
 
     dir.mkpath(".");
@@ -286,7 +290,7 @@ TEST(SequenceParsing,TestPrintfLikeSyntax) {
 TEST(SequenceParsing,TestViews) {
     int sequenceItemsCount = 11;
     ///create temporary files as a sequence and try to read that sequence.
-    QString tempPath = Natron::StandardPaths::writableLocation(Natron::StandardPaths::TempLocation);
+    QString tempPath = Natron::StandardPaths::writableLocation(Natron::StandardPaths::eStandardLocationTemp);
     QDir dir(tempPath);
 
     dir.mkpath(".");
@@ -486,7 +490,7 @@ TEST(FileNameContent,GeneralTest) {
     ASSERT_TRUE(file1Content.getPath() == "/Users/Test/");
     ASSERT_TRUE(file1Content.absoluteFileName() == file1);
 
-    ASSERT_TRUE(file1Content.getFilePattern() == "mysequence###0.jpg");
+    ASSERT_TRUE(file1Content.getFilePattern(3) == "mysequence###0.jpg");
     std::string numberStr;
     ASSERT_TRUE( file1Content.getNumberByIndex(0, &numberStr) );
     ASSERT_TRUE(numberStr == "001");
@@ -514,8 +518,8 @@ TEST(SequenceFromFiles,SimpleTest) {
     EXPECT_EQ( file1.fileName(), sequence.generateUserFriendlySequencePattern() );
     EXPECT_EQ( "jpg", sequence.fileExtension() );
     EXPECT_TRUE( sequence.isSingleFile() );
-    EXPECT_EQ( INT_MIN, sequence.getFirstFrame() );
-    EXPECT_EQ( INT_MAX, sequence.getLastFrame() );
+    EXPECT_EQ( 0, sequence.getFirstFrame() );
+    EXPECT_EQ( 0, sequence.getLastFrame() );
     EXPECT_TRUE( sequence.contains( file1.absoluteFileName() ) );
 
     ///now add valid files
@@ -565,7 +569,7 @@ TEST(SequenceFromFiles,ComplexTest) {
         EXPECT_TRUE( sequence.tryInsertFile( FileNameContent("/Users/Test/23489.jpg") ) );
         EXPECT_TRUE( sequence.tryInsertFile( FileNameContent("/Users/Test/00001.jpg") ) );
         EXPECT_FALSE( sequence.tryInsertFile( FileNameContent("/Users/Test/0001.jpg") ) );
-        EXPECT_TRUE( sequence.tryInsertFile( FileNameContent("/Users/Test/122938.jpg") ) );
+        EXPECT_FALSE( sequence.tryInsertFile( FileNameContent("/Users/Test/122938.jpg") ) );
         EXPECT_FALSE( sequence.tryInsertFile( FileNameContent("/Users/Test/000002.jpg") ) );
         EXPECT_TRUE(sequence.generateValidSequencePattern() == "/Users/Test/#####.jpg");
     }

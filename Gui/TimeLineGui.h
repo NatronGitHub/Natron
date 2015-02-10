@@ -12,8 +12,12 @@
 #ifndef NATRON_GUI_TIMELINE_H_
 #define NATRON_GUI_TIMELINE_H_
 
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+
 #include <list>
-#ifndef Q_MOC_RUN
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
 #endif
@@ -50,17 +54,20 @@ public:
 
     virtual ~TimeLineGui() OVERRIDE;
     
+    void discardGuiPointer();
+    
     void setTimeline(const boost::shared_ptr<TimeLine>& timeline);
     boost::shared_ptr<TimeLine> getTimeline() const;
 
     /*initialises the boundaries on the timeline*/
     void setBoundaries(SequenceTime first, SequenceTime last);
+    
 
-    SequenceTime firstFrame() const;
-    SequenceTime lastFrame() const;
     SequenceTime leftBound() const;
     SequenceTime rightBound() const;
     SequenceTime currentFrame() const;
+    
+    void getBounds(SequenceTime* left,SequenceTime* right) const;
 
     void setCursorColor(const QColor & cursorColor);
     void setBoundsColor(const QColor & boundsColor);
@@ -96,14 +103,16 @@ public:
      * a main window (an AppInstance) draw some cached line because another instance is running some playback or rendering something.
      **/
     void disconnectSlotsFromViewerCache();
+    
+    bool isFrameRangeEdited() const;
+    
+    void setFrameRangeEdited(bool edited);
 
-public slots:
+public Q_SLOTS:
 
     void centerOn(SequenceTime left,SequenceTime right);
 
     void onFrameChanged(SequenceTime,int);
-    void onFrameRangeChanged(SequenceTime first, SequenceTime last);
-    void onBoundariesChanged(SequenceTime, SequenceTime, int);
 
     void onCachedFrameAdded(SequenceTime time);
     void onCachedFrameRemoved(SequenceTime time,int storage);
@@ -114,8 +123,12 @@ public slots:
     void clearCachedFrames();
 
     void onKeyframesIndicatorsChanged();
+    
+    void onProjectFrameRangeChanged(int,int);
 
 private:
+    
+    void setBoundariesInternal(SequenceTime first, SequenceTime last,bool emitSignal);
 
     virtual void initializeGL() OVERRIDE FINAL;
     virtual void resizeGL(int width,int height) OVERRIDE FINAL;
@@ -128,7 +141,7 @@ private:
     virtual void leaveEvent(QEvent* e) OVERRIDE FINAL;
     virtual QSize sizeHint() const OVERRIDE FINAL;
 
-signals:
+Q_SIGNALS:
 
     void frameChanged(SequenceTime);
     void boundariesChanged(SequenceTime,SequenceTime);
