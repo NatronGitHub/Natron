@@ -13,14 +13,14 @@ fi
 
 
 ## check out a specific tag
-CONFIG=release
-NATRONBRANCH=tags/v1.0.0-rc1
-OFXBRANCH=tags/Natron-1.0.0-RC1
+#CONFIG=release
+#NATRONBRANCH=tags/v1.0.0-rc1
+#OFXBRANCH=tags/Natron-1.0.0-RC1
 
 ## check out the workshop branch
-#CONFIG=debug
-#NATRONBRANCH=workshop
-#OFXBRANCH=master
+CONFIG=release
+NATRONBRANCH=workshop
+OFXBRANCH=master
 
 # required macports ports (first ones are for Natron, then for OFX plugins and TuttleOFX)
 PORTS="boost qt4-mac boost glew cairo expat     jpeg openexr ffmpeg openjpeg15 libcaca freetype lcms swig ImageMagick lcms2 libraw nasm opencolorio openimageio swig-python py27-numpy flex bison openexr opencv seexpr ctl fontconfig"
