@@ -15,7 +15,7 @@
 #include <QTextStream>
 #include <QFile>
 #include <QFrame>
-#include <Qlabel>
+#include <QLabel>
 #include <QHBoxLayout>
 #include <QGridLayout>
 #include <QVBoxLayout>

@@ -338,7 +338,7 @@ unix {
 mac {
         # hack to make minidump_generator.cc compile as it uses
         # esp instead of __esp
-        # DEFINES += __DARWIN_UNIX03=0 -- looks like we doesn't need it anymore
+        # DEFINES += __DARWIN_UNIX03=0 -- looks like we do not need it anymore
 
         SOURCES += $$BREAKPAD_PATH/client/mac/handler/exception_handler.cc \
                 $$BREAKPAD_PATH/client/mac/handler/minidump_generator.cc \
@@ -356,8 +356,7 @@ mac {
 # other *nix
 unix:!mac {
         SOURCES += $$BREAKPAD_PATH/client/linux/handler/exception_handler.cc \
-                $$BREAKPAD_PATH/client/linux/handler/minidump_generator.cc \
-                $$BREAKPAD_PATH/client/linux/handler/linux_thread.cc \
+                $$BREAKPAD_PATH/client/linux/handler/minidump_descriptor.cc \
                 $$BREAKPAD_PATH/client/linux/crash_generation/crash_generation_client.cc \
                 $$BREAKPAD_PATH/common/linux/guid_creator.cc \
                 $$BREAKPAD_PATH/common/linux/file_id.cc
