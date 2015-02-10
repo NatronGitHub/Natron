@@ -980,6 +980,7 @@ ViewerGL::resizeGL(int width,
     if ( (height == 0) || (width == 0) ) { // prevent division by 0
         return;
     }
+    glCheckError();
     glViewport (0, 0, width, height);
     bool zoomSinceLastFit;
     int oldWidth,oldHeight;
@@ -1237,12 +1238,14 @@ ViewerGL::clearColorBuffer(double r,
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
     assert( QGLContext::currentContext() == context() );
+    glCheckError();
     {
         GLProtectAttrib att(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT);
 
         glClearColor(r,g,b,a);
         glClear(GL_COLOR_BUFFER_BIT);
     } // GLProtectAttrib a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT);
+    glCheckErrorIgnoreOSXBug();
 }
 
 void
@@ -1327,7 +1330,7 @@ ViewerGL::drawOverlay(unsigned int mipMapLevel)
                            _imp->currentViewerInfo_topRightBBOXoverlay[i], _imp->rodOverlayColor,*_imp->textFont);
                 renderText(dataW.left(), dataW.bottom(),
                            _imp->currentViewerInfo_btmLeftBBOXoverlay[i], _imp->rodOverlayColor,*_imp->textFont);
-
+                glCheckError();
 
                 QPointF topRight2( dataW.right(), dataW.top() );
                 QPointF topLeft2( dataW.left(),dataW.top() );
@@ -1353,7 +1356,7 @@ ViewerGL::drawOverlay(unsigned int mipMapLevel)
                 glVertex3f(btmRight2.x(),btmRight2.y(),1);
                 glEnd();
                 glDisable(GL_LINE_STIPPLE);
-                glCheckError();
+                glCheckErrorIgnoreOSXBug();
             }
         }
 
@@ -1376,7 +1379,7 @@ ViewerGL::drawOverlay(unsigned int mipMapLevel)
         glColor4f(1., 1., 1., 1.);
         double scale = 1. / (1 << mipMapLevel);
         _imp->viewerTab->drawOverlays(scale,scale);
-        glCheckError();
+        glCheckErrorIgnoreOSXBug();
 
         if (_imp->pickerState == ePickerStateRectangle) {
             if ( _imp->viewerTab->getGui()->hasPickers() ) {
@@ -3755,37 +3758,37 @@ ViewerGL::populateMenu()
 void
 ViewerGL::renderText(double x,
                      double y,
-                     const QString &string,
-                     const QColor & color,
-                     const QFont & font)
+                     const QString &text,
+                     const QColor &color,
+                     const QFont &font)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
     assert( QGLContext::currentContext() == context() );
 
-    if ( string.isEmpty() ) {
+    if ( text.isEmpty() ) {
         return;
     }
+    double w = (double)width();
+    double h = (double)height();
+    double bottom;
+    double left;
+    double top;
+    double right;
     {
-        //GLProtectAttrib a(GL_TRANSFORM_BIT); // GL_MODELVIEW is active by default
-        GLProtectMatrix p(GL_PROJECTION);
-        glLoadIdentity();
-        double h = (double)height();
-        double w = (double)width();
-        /*we put the ortho proj to the widget coords, draw the elements and revert back to the old orthographic proj.*/
-        glOrtho(0, w, 0, h, 1, -1);
-        GLProtectMatrix pmv(GL_MODELVIEW);
-        glLoadIdentity();
-
-        QPointF pos;
-        {
-            QMutexLocker l(&_imp->zoomCtxMutex);
-            pos = _imp->zoomCtx.toWidgetCoordinates(x, y);
-        }
-        glCheckError();
-        _imp->textRenderer.renderText(pos.x(),h - pos.y(),string,color,font);
-        glCheckError();
-    } // GLProtectAttrib a(GL_TRANSFORM_BIT);
+        QMutexLocker l(&_imp->zoomCtxMutex);
+        bottom = _imp->zoomCtx.bottom();
+        left = _imp->zoomCtx.left();
+        top =  _imp->zoomCtx.top();
+        right = _imp->zoomCtx.right();
+    }
+    if (w <= 0 || h <= 0 || right <= left || top <= bottom) {
+        return;
+    }
+    double scalex = (right-left) / w;
+    double scaley = (top-bottom) / h;
+    _imp->textRenderer.renderText(x, y, scalex, scaley, text, color, font);
+    glCheckError();
 }
 
 void
@@ -4498,11 +4501,15 @@ ViewerGL::saveOpenGLContext()
 
     glGetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&_imp->savedTexture);
     //glGetIntegerv(GL_ACTIVE_TEXTURE, (GLint*)&_imp->activeTexture);
+    glCheckAttribStack();
     glPushAttrib(GL_ALL_ATTRIB_BITS);
+    glCheckClientAttribStack();
     glPushClientAttrib(GL_ALL_ATTRIB_BITS);
     glMatrixMode(GL_PROJECTION);
+    glCheckProjectionStack();
     glPushMatrix();
     glMatrixMode(GL_MODELVIEW);
+    glCheckModelviewStack();
     glPushMatrix();
 
     // set defaults to work around OFX plugin bugs

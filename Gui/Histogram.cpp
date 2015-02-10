@@ -820,10 +820,12 @@ startRenderingTo(GLuint fboId,
     glDrawBuffer(attachment);
     glViewport(0,0,w,h);
     glMatrixMode(GL_PROJECTION);
+    glCheckProjectionStack();
     glPushMatrix();
     glLoadIdentity();
     glOrtho(0, w, 0, h, 1, -1);
     glMatrixMode(GL_MODELVIEW);
+    glCheckModelviewStack();
     glPushMatrix();
     glLoadIdentity();
 }
@@ -1800,22 +1802,18 @@ Histogram::renderText(double x,
         return;
     }
 
-    glCheckError();
-    {
-        GLProtectAttrib a(GL_TRANSFORM_BIT);
-        GLProtectMatrix p(GL_PROJECTION);
-        glLoadIdentity();
-        double h = (double)height();
-        double w = (double)width();
-        /*we put the ortho proj to the widget coords, draw the elements and revert back to the old orthographic proj.*/
-        glOrtho(0, w, 0, h, 1, -1);
-        glMatrixMode(GL_MODELVIEW);
-        
-        QPointF pos = _imp->zoomCtx.toWidgetCoordinates(x, y);
-        glCheckError();
-        _imp->textRenderer.renderText(pos.x(),h - pos.y(),text,color,font);
-        glCheckError();
-    } // GLProtectAttrib a(GL_TRANSFORM_BIT);
+    double w = (double)width();
+    double h = (double)height();
+    double bottom = _imp->zoomCtx.bottom();
+    double left = _imp->zoomCtx.left();
+    double top =  _imp->zoomCtx.top();
+    double right = _imp->zoomCtx.right();
+    if (w <= 0 || h <= 0 || right <= left || top <= bottom) {
+        return;
+    }
+    double scalex = (right-left) / w;
+    double scaley = (top-bottom) / h;
+    _imp->textRenderer.renderText(x, y, scalex, scaley, text, color, font);
     glCheckError();
 }
 
