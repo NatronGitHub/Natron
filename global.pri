@@ -174,22 +174,24 @@ unix {
      # using a custom config.pri
      shiboken: PKGCONFIG += shiboken
      pyside:   PKGCONFIG += pyside
+     # The following hack also works with Homebrew if pyside is installed with option --with-python3
      macx {
-       # The following hack also works with Homebrew if pyside is installed with option --with-python3
        shiboken {
+         PKGCONFIG -= shiboken
          PYSIDE_PKG_CONFIG_PATH = $$system($$PYTHON_CONFIG --prefix)/lib/pkgconfig
          INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir shiboken)
          # the sed stuff is to work around an Xcode generator bug
          LIBS += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --libs shiboken | sed -e s/-undefined\\ dynamic_lookup//)
        }
        pyside {
+         PKGCONFIG -= pyside
          PYSIDE_PKG_CONFIG_PATH = $$system($$PYTHON_CONFIG --prefix)/lib/pkgconfig
          INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside)
          INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside)/QtCore
          # QtGui include are needed because it looks for Qt::convertFromPlainText which is defined in
          # qtextdocument.h in the QtGui module.
          INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside)/QtGui
-         QT += gui
+         INCLUDEPATH += $$system(pkg-config --variable=includedir QtGui)
          LIBS += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --libs pyside)
        }
      }
