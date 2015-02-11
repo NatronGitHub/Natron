@@ -788,7 +788,7 @@ public:
     QMenu* _rightClickMenu;
     QColor _selectedCurveColor;
     QColor _nextCurveAddedColor;
-    TextRenderer _textRenderer;
+    TextRenderer textRenderer;
     QFont* _font;
     Curves _curves;
     SelectedKeys _selectedKeyFrames;
@@ -836,7 +836,7 @@ CurveWidgetPrivate::CurveWidgetPrivate(Gui* gui,
       , _rightClickMenu( new QMenu(widget) )
       , _selectedCurveColor(255,255,89,255)
       , _nextCurveAddedColor()
-      , _textRenderer()
+      , textRenderer()
       , _font( new QFont(appFont,appFontSize) )
       , _curves()
       , _selectedKeyFrames()
@@ -2257,11 +2257,15 @@ CurveWidget::saveOpenGLContext()
 
     glGetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&_imp->savedTexture);
     //glGetIntegerv(GL_ACTIVE_TEXTURE, (GLint*)&_imp->activeTexture);
+    glCheckAttribStack();
     glPushAttrib(GL_ALL_ATTRIB_BITS);
-    glPushClientAttrib(GL_ALL_ATTRIB_BITS);
+    glCheckClientAttribStack();
+    glPushClientAttrib(GL_CLIENT_ALL_ATTRIB_BITS);
     glMatrixMode(GL_PROJECTION);
+    glCheckProjectionStack();
     glPushMatrix();
     glMatrixMode(GL_MODELVIEW);
+    glCheckModelviewStack();
     glPushMatrix();
 
     // set defaults to work around OFX plugin bugs
@@ -2390,22 +2394,20 @@ CurveWidget::renderText(double x,
     if ( text.isEmpty() ) {
         return;
     }
+
+    double w = (double)width();
+    double h = (double)height();
+    double bottom = _imp->zoomCtx.bottom();
+    double left = _imp->zoomCtx.left();
+    double top =  _imp->zoomCtx.top();
+    double right = _imp->zoomCtx.right();
+    if (w <= 0 || h <= 0 || right <= left || top <= bottom) {
+        return;
+    }
+    double scalex = (right-left) / w;
+    double scaley = (top-bottom) / h;
+    _imp->textRenderer.renderText(x, y, scalex, scaley, text, color, font);
     glCheckError();
-    {
-        GLProtectAttrib a(GL_TRANSFORM_BIT);
-        /*we put the ortho proj to the widget coords, draw the elements and revert back to the old orthographic proj.*/
-        double h = (double)height();
-        double w = (double)width();
-        GLProtectMatrix p(GL_PROJECTION);
-        glLoadIdentity();
-        glOrtho(0, w, 0, h, 1, -1);
-        glMatrixMode(GL_MODELVIEW);
-        
-        QPointF pos = toWidgetCoordinates(x, y);
-        glCheckError();
-        _imp->_textRenderer.renderText(pos.x(),h - pos.y(),text,color,font);
-        glCheckError();
-    } // GLProtectAttrib a(GL_TRANSFORM_BIT);
 }
 
 void

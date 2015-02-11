@@ -246,6 +246,8 @@ TextRenderer::~TextRenderer()
 void
 TextRenderer::renderText(float x,
                          float y,
+                         float scalex,
+                         float scaley,
                          const QString &text,
                          const QColor &color,
                          const QFont &font) const
@@ -289,14 +291,14 @@ TextRenderer::renderText(float x,
             glTexCoord2f(c->xTexCoords[0], c->yTexCoords[0]);
             glVertex2f(0, 0);
             glTexCoord2f(c->xTexCoords[1], c->yTexCoords[0]);
-            glVertex2f(c->w, 0);
+            glVertex2f(c->w * scalex, 0);
             glTexCoord2f(c->xTexCoords[1], c->yTexCoords[1]);
-            glVertex2f(c->w, c->h);
+            glVertex2f(c->w * scalex, c->h * scaley);
             glTexCoord2f(c->xTexCoords[0], c->yTexCoords[1]);
-            glVertex2f(0, c->h);
+            glVertex2f(0, c->h * scaley);
             glEnd();
             glCheckErrorIgnoreOSXBug();
-            glTranslatef(c->w, 0, 0);
+            glTranslatef(c->w * scalex, 0, 0);
             glCheckError();
         }
     } // GLProtectAttrib a(GL_ENABLE_BIT | GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT | GL_TRANSFORM_BIT);

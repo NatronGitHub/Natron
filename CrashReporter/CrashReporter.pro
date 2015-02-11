@@ -44,6 +44,11 @@ macx {
   LIBS += -framework CoreServices
 }
 
+
+unix:!mac {
+    DEFINES += N_UNDF=0
+}
+
 SOURCES += \
     CrashDialog.cpp \
     main.cpp
@@ -87,8 +92,38 @@ unix:!mac {
         SOURCES += \
                 $$BREAKPAD_PATH/client/linux/handler/minidump_descriptor.cc \
                 $$BREAKPAD_PATH/client/linux/crash_generation/crash_generation_server.cc \
+                $$BREAKPAD_PATH/client/linux/minidump_writer/minidump_writer.cc \
+                $$BREAKPAD_PATH/client/linux/minidump_writer/linux_dumper.cc \
+                $$BREAKPAD_PATH/client/linux/minidump_writer/linux_core_dumper.cc \
+                $$BREAKPAD_PATH/client/linux/minidump_writer/linux_ptrace_dumper.cc \
+                $$BREAKPAD_PATH/client/linux/dump_writer_common/seccomp_unwinder.cc \
+                $$BREAKPAD_PATH/client/linux/dump_writer_common/thread_info.cc \
+                $$BREAKPAD_PATH/client/linux/dump_writer_common/ucontext_reader.cc \
                 $$BREAKPAD_PATH/common/linux/guid_creator.cc \
-                $$BREAKPAD_PATH/common/linux/file_id.cc
+                $$BREAKPAD_PATH/common/linux/file_id.cc \
+                $$BREAKPAD_PATH/common/linux/linux_libc_support.cc \
+                $$BREAKPAD_PATH/common/linux/memory_mapped_file.cc \
+                $$BREAKPAD_PATH/common/linux/elfutils.cc \
+                $$BREAKPAD_PATH/common/linux/elf_core_dump.cc \
+                $$BREAKPAD_PATH/common/linux/dump_symbols.cc \
+		$$BREAKPAD_PATH/common/linux/elf_symbols_to_module.cc \
+		$$BREAKPAD_PATH/common/linux/safe_readlink.cc \
+		$$BREAKPAD_PATH/common/linux/crc32.cc \
+                $$BREAKPAD_PATH/common/module.cc \
+                $$BREAKPAD_PATH/common/language.cc \
+                $$BREAKPAD_PATH/common/stabs_reader.cc \
+                $$BREAKPAD_PATH/common/stabs_to_module.cc \
+		$$BREAKPAD_PATH/common/test_assembler.cc \
+                $$BREAKPAD_PATH/common/dwarf_cu_to_module.cc \
+                $$BREAKPAD_PATH/common/dwarf_cfi_to_module.cc \
+                $$BREAKPAD_PATH/common/dwarf_line_to_module.cc \
+		$$BREAKPAD_PATH/common/dwarf/dwarf2reader.cc \
+ 		$$BREAKPAD_PATH/common/dwarf/bytereader.cc \
+		$$BREAKPAD_PATH/common/dwarf/cfi_assembler.cc \
+		$$BREAKPAD_PATH/common/dwarf/functioninfo.cc \
+		$$BREAKPAD_PATH/common/dwarf/dwarf2diehandler.cc 
+
+		
 }
 
 win32 {
