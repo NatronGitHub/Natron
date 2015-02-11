@@ -2433,7 +2433,9 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
         internalNode->registerPluginMemory(_imp->memoryHeldByLastRenderedImages[textureIndex]);
         emit imageChanged(textureIndex,true);
     } else {
-        emit imageChanged(textureIndex,false);
+        if (!_imp->lastRenderedImage[textureIndex][mipMapLevel]) {
+            emit imageChanged(textureIndex,false);
+        }
     }
     setRegionOfDefinition(rod,region.par,textureIndex);
 
