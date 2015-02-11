@@ -2431,10 +2431,13 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
         }
         _imp->memoryHeldByLastRenderedImages[textureIndex] = image->size();
         internalNode->registerPluginMemory(_imp->memoryHeldByLastRenderedImages[textureIndex]);
+        emit imageChanged(textureIndex,true);
+    } else {
+        emit imageChanged(textureIndex,false);
     }
     setRegionOfDefinition(rod,region.par,textureIndex);
 
-    emit imageChanged(textureIndex);
+    
 }
 
 void
