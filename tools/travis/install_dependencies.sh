@@ -68,6 +68,7 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     echo 'pyside: INCLUDEPATH += $$system(pkg-config --variable=includedir pyside)' >> config.pri
     echo 'pyside: INCLUDEPATH += $$system(pkg-config --variable=includedir pyside)/QtCore' >> config.pri
     echo 'pyside: INCLUDEPATH += $$system(pkg-config --variable=includedir pyside)/QtGui' >> config.pri
+    echo 'pyside: INCLUDEPATH += $$system(pkg-config --variable=includedir QtGui)' >> config.pri
     echo 'pyside: LIBS += -lpyside.cpython-32mu' >> config.pri
     # pyside doesn't have PySide::getWrapperForQObject on Ubuntu 12.04LTS Precise 
     echo 'pyside: DEFINES += PYSIDE_OLD' >> config.pri
