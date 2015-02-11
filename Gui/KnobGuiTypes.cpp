@@ -298,8 +298,10 @@ Int_KnobGui::expandAllDimensions()
     _dimensionSwitchButton->setChecked(true);
     _dimensionSwitchButton->setDown(true);
     _slider->hide();
-    for (int i = 1; i < _knob->getDimension(); ++i) {
-        _spinBoxes[i].first->show();
+    for (int i = 0; i < _knob->getDimension(); ++i) {
+        if (i > 0) {
+            _spinBoxes[i].first->show();
+        }
         if (_spinBoxes[i].second) {
             _spinBoxes[i].second->show();
         }
@@ -314,9 +316,14 @@ Int_KnobGui::foldAllDimensions()
     }
     _dimensionSwitchButton->setChecked(false);
     _dimensionSwitchButton->setDown(false);
+    if (_spinBoxes[0].second) {
+        _spinBoxes[0].second->hide();
+    }
     _slider->show();
-    for (int i = 1; i < _knob->getDimension(); ++i) {
-        _spinBoxes[i].first->hide();
+    for (int i = 0; i < _knob->getDimension(); ++i) {
+        if (i > 0) {
+            _spinBoxes[i].first->hide();
+        }
         if (_spinBoxes[i].second) {
             _spinBoxes[i].second->hide();
         }
@@ -513,6 +520,8 @@ Int_KnobGui::_show()
         
         if (!_dimensionSwitchButton || (i > 0 && _dimensionSwitchButton->isChecked()) || (i == 0)) {
             _spinBoxes[i].first->show();
+        }
+        if (!_dimensionSwitchButton || _dimensionSwitchButton->isChecked()) {
             if (_spinBoxes[i].second) {
                 _spinBoxes[i].second->show();
             }
@@ -998,8 +1007,10 @@ Double_KnobGui::expandAllDimensions()
     _dimensionSwitchButton->setChecked(true);
     _dimensionSwitchButton->setDown(true);
     _slider->hide();
-    for (int i = 1; i < _knob->getDimension(); ++i) {
-        _spinBoxes[i].first->show();
+    for (int i = 0; i < _knob->getDimension(); ++i) {
+        if (i > 0) {
+            _spinBoxes[i].first->show();
+        }
         if (_spinBoxes[i].second) {
             _spinBoxes[i].second->show();
         }
@@ -1015,8 +1026,10 @@ Double_KnobGui::foldAllDimensions()
     _dimensionSwitchButton->setChecked(false);
     _dimensionSwitchButton->setDown(false);
     _slider->show();
-    for (int i = 1; i < _knob->getDimension(); ++i) {
-        _spinBoxes[i].first->hide();
+    for (int i = 0; i < _knob->getDimension(); ++i) {
+        if (i > 0) {
+            _spinBoxes[i].first->hide();
+        }
         if (_spinBoxes[i].second) {
             _spinBoxes[i].second->hide();
         }
@@ -1255,6 +1268,8 @@ Double_KnobGui::_show()
         
         if (!_dimensionSwitchButton || (i > 0 && _dimensionSwitchButton->isChecked()) || (i == 0)) {
             _spinBoxes[i].first->show();
+        }
+        if (!_dimensionSwitchButton || _dimensionSwitchButton->isChecked()) {
             if (_spinBoxes[i].second) {
                 _spinBoxes[i].second->show();
             }
