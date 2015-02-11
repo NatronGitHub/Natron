@@ -1145,12 +1145,12 @@ RotoItem::load(const RotoItemSerialization &obj)
         for (std::size_t i = 0; i < _imp->scriptName.size(); ++i) {
             
             ///Ignore starting digits
-            if (cpy.empty() && std::isdigit(_imp->scriptName[i])) {
+            if (cpy.empty() && std::isdigit(_imp->scriptName[i],loc)) {
                 continue;
             }
             
             ///Spaces becomes underscores
-            if (std::isspace(_imp->scriptName[i])){
+            if (std::isspace(_imp->scriptName[i],loc)){
                 cpy.push_back('_');
             }
             

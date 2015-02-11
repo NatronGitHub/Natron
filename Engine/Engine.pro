@@ -35,6 +35,10 @@ INCLUDEPATH += $$PWD/..
 INCLUDEPATH += $$PWD/../Global
 INCLUDEPATH += $$PWD/../libs/SequenceParsing
 
+#To overcome wrongly generated #include <...> by shiboken
+INCLUDEPATH += $$PWD
+INCLUDEPATH += $$PWD/NatronEngine
+DEPENDPATH += $$PWD/NatronEngine
 DEPENDPATH += $$PWD/../Global
 
 win32-msvc* {

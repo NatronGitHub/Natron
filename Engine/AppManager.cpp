@@ -190,7 +190,9 @@ struct AppManagerPrivate
 #ifdef DEBUG
 void crash_application()
 {
+#ifdef __NATRON_UNIX__
     sleep(2);
+#endif
     volatile int* a = (int*)(NULL);
     *a = 1;
 }
@@ -2946,7 +2948,7 @@ char2wchar(char* arg)
     /* Cannot use C locale for escaping; manually escape as if charset
      is ASCII (i.e. escape all bytes > 128. This will still roundtrip
      correctly in the locale's charset, which must be an ASCII superset. */
-    res = malloc((strlen(arg)+1)*sizeof(wchar_t));
+    res = (wchar_t*)malloc((strlen(arg)+1)*sizeof(wchar_t));
     if (!res) goto oom;
     in = (unsigned char*)arg;
     out = res;
@@ -3472,14 +3474,14 @@ makeNameScriptFriendly(const std::string& str)
     for (std::size_t i = 0; i < str.size(); ++i) {
         
         ///Ignore starting digits
-        if (cpy.empty() && std::isdigit(str[i])) {
+        if (cpy.empty() && std::isdigit(str[i],loc)) {
             cpy.push_back('p');
             cpy.push_back(str[i]);
             continue;
         }
         
         ///Spaces becomes underscores
-        if (std::isspace(str[i])){
+        if (std::isspace(str[i],loc)){
             cpy.push_back('_');
         }
         
