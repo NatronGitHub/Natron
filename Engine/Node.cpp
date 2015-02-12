@@ -790,9 +790,10 @@ Node::Implementation::restoreKnobLinksRecursive(const GroupKnobSerialization* gr
     for (std::list <boost::shared_ptr<KnobSerializationBase> >::const_iterator it = children.begin(); it != children.end(); ++it) {
         GroupKnobSerialization* isGrp = dynamic_cast<GroupKnobSerialization*>(it->get());
         KnobSerialization* isRegular = dynamic_cast<KnobSerialization*>(it->get());
+        assert(isGrp || isRegular);
         if (isGrp) {
             restoreKnobLinksRecursive(isGrp,allNodes);
-        } else {
+        } else if (isRegular) {
             boost::shared_ptr<KnobI> knob =  _publicInterface->getKnobByName( isRegular->getName() );
             if (!knob) {
                 appPTR->writeToOfxLog_mt_safe("Couldn't find a parameter named " + QString((*it)->getName().c_str()));
@@ -2107,33 +2108,27 @@ Node::hasOutputConnected() const
     }
     if ( QThread::currentThread() == qApp->thread() ) {
         if (_imp->outputs.size() == 1) {
-            if (_imp->outputs.front()->isTrackerNode() && _imp->outputs.front()->isMultiInstance()) {
-                return false;
-            } else {
-                return true;
-            }
+
+            return !(_imp->outputs.front()->isTrackerNode() && _imp->outputs.front()->isMultiInstance());
+
         } else if (_imp->outputs.size() > 1) {
+
             return true;
-        } else {
-            return false;
         }
-        return _imp->outputs.size() > 0;
+
     } else {
         QMutexLocker l(&_imp->outputsMutex);
         if (_imp->outputs.size() == 1) {
-            if (_imp->outputs.front()->isTrackerNode() && _imp->outputs.front()->isMultiInstance()) {
-                return false;
-            } else {
-                return true;
-            }
-        } else if (_imp->outputs.size() > 1) {
-            return true;
-        } else {
-            return false;
-        }
-        return _imp->outputs.size() > 0;
 
+            return !(_imp->outputs.front()->isTrackerNode() && _imp->outputs.front()->isMultiInstance());
+
+        } else if (_imp->outputs.size() > 1) {
+
+            return true;
+        }
     }
+
+    return false;
 }
 
 bool

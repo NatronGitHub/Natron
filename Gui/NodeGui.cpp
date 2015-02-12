@@ -1620,7 +1620,9 @@ NodeGui::hideGui()
             assert(graph_i);
             NodeGraph* graph = dynamic_cast<NodeGraph*>(graph_i);
             assert(graph);
-            _graph->getGui()->removeGroupGui(graph, false);
+            if (graph) {
+                _graph->getGui()->removeGroupGui(graph, false);
+            }
         }
     }
 } // hideGui

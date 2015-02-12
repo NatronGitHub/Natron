@@ -91,6 +91,7 @@ static bool shouldSliderBeVisible(double sliderMin,double sliderMax)
 Int_KnobGui::Int_KnobGui(boost::shared_ptr<KnobI> knob,
                          DockablePanel *container)
     : KnobGui(knob, container)
+      , _container(0)
       , _slider(0)
       , _dimensionSwitchButton(0)
 {
@@ -114,8 +115,8 @@ Int_KnobGui::~Int_KnobGui()
 void
 Int_KnobGui::removeSpecificGui()
 {
-    container->setParent(NULL);
-    delete container;
+    _container->setParent(NULL);
+    delete _container;
     _spinBoxes.clear();
 }
 
@@ -124,10 +125,10 @@ Int_KnobGui::createWidget(QHBoxLayout* layout)
 {
     
     int dim = _knob->getDimension();
-    container = new QWidget( layout->parentWidget() );
-    QHBoxLayout *containerLayout = new QHBoxLayout(container);
+    _container = new QWidget( layout->parentWidget() );
+    QHBoxLayout *containerLayout = new QHBoxLayout(_container);
 
-    container->setLayout(containerLayout);
+    _container->setLayout(containerLayout);
     containerLayout->setSpacing(3);
     containerLayout->setContentsMargins(0, 0, 0, 0);
 
@@ -796,6 +797,7 @@ Double_KnobGui::shouldAddStretch() const
 Double_KnobGui::Double_KnobGui(boost::shared_ptr<KnobI> knob,
                                DockablePanel *container)
 : KnobGui(knob, container)
+, _container(0)
 , _slider(0)
 , _dimensionSwitchButton(0)
 , _digits(0.)
@@ -820,7 +822,7 @@ Double_KnobGui::~Double_KnobGui()
 
 void Double_KnobGui::removeSpecificGui()
 {
-    delete container;
+    delete _container;
     _spinBoxes.clear();
 }
 
@@ -828,11 +830,11 @@ void
 Double_KnobGui::createWidget(QHBoxLayout* layout)
 {
 
-    container = new QWidget( layout->parentWidget() );
-    QHBoxLayout *containerLayout = new QHBoxLayout(container);
-    layout->addWidget(container);
+    _container = new QWidget( layout->parentWidget() );
+    QHBoxLayout *containerLayout = new QHBoxLayout(_container);
+    layout->addWidget(_container);
 
-    container->setLayout(containerLayout);
+    _container->setLayout(containerLayout);
     containerLayout->setContentsMargins(0, 0, 0, 0);
     containerLayout->setSpacing(3);
 
@@ -860,7 +862,7 @@ Double_KnobGui::createWidget(QHBoxLayout* layout)
     const std::vector<int> &decimals = _knob->getDecimals();
     for (int i = 0; i < dim; ++i) {
 
-        QWidget *boxContainer = new QWidget( container );
+        QWidget *boxContainer = new QWidget( _container );
         boxContainer->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
         QHBoxLayout *boxContainerLayout = new QHBoxLayout(boxContainer);
         boxContainer->setLayout(boxContainerLayout);
@@ -946,7 +948,7 @@ Double_KnobGui::createWidget(QHBoxLayout* layout)
     
     
     if (dim > 1 && !_knob->isSliderDisabled() && sliderVisible ) {
-        _dimensionSwitchButton = new Button(QIcon(),QString::number(dim),container);
+        _dimensionSwitchButton = new Button(QIcon(),QString::number(dim), _container);
         _dimensionSwitchButton->setToolTip(Qt::convertFromPlainText(tr("Switch between a single value for all dimensions and multiple values."), Qt::WhiteSpaceNormal));
         _dimensionSwitchButton->setFixedSize(17, 17);
         _dimensionSwitchButton->setFocusPolicy(Qt::NoFocus);

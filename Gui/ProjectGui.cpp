@@ -438,7 +438,10 @@ ProjectGui::load(boost::archive::xml_iarchive & archive)
         assert(bd);
         bd->resize(w,h);
         String_Knob* iStr = dynamic_cast<String_Knob*>(labelSerialization.get());
-        bd->onLabelChanged(iStr->getValue().c_str());
+        assert(iStr);
+        if (iStr) {
+            bd->onLabelChanged(iStr->getValue().c_str());
+        }
         float r,g,b;
         it->getColor(r, g, b);
         QColor c;

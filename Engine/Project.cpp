@@ -1918,11 +1918,11 @@ Project::onOCIOConfigPathChanged(const std::string& path,bool block)
             }
             _imp->envVars->setValue(newEnv, 0);
         }
+        endChanges(block);
+        
     } catch (std::logic_error) {
         // ignore
     }
-    endChanges(block);
-    
 }
 
 double

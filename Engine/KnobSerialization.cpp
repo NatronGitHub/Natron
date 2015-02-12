@@ -30,9 +30,10 @@ ValueSerialization::ValueSerialization(const boost::shared_ptr<KnobI> & knob,
                                        int dimension)
     : _knob(knob)
     , _dimension(dimension)
-
+    , _master()
+    , _expression()
+    , _exprHasRetVar(false)
 {
-
 }
 
 ValueSerialization::ValueSerialization(const boost::shared_ptr<KnobI> & knob,
@@ -41,6 +42,9 @@ ValueSerialization::ValueSerialization(const boost::shared_ptr<KnobI> & knob,
                    const std::string& expr)
 : _knob(knob)
 , _dimension(dimension)
+, _master()
+, _expression(expr)
+, _exprHasRetVar(exprHasRetVar)
 {
     std::pair< int, boost::shared_ptr<KnobI> > m = knob->getMaster(dimension);
     if ( m.second && !knob->isMastersPersistenceIgnored() ) {
@@ -48,14 +52,12 @@ ValueSerialization::ValueSerialization(const boost::shared_ptr<KnobI> & knob,
         NamedKnobHolder* holder = dynamic_cast<NamedKnobHolder*>( m.second->getHolder() );
         
         assert(holder);
+        // coverity[dead_error_line]
         _master.masterNodeName = holder ? holder->getScriptName_mt_safe() : "";
         _master.masterKnobName = m.second->getName();
     } else {
         _master.masterDimension = -1;
     }
-    _expression = expr;
-    _exprHasRetVar = exprHasRetVar;
-
 }
 
 boost::shared_ptr<KnobI> KnobSerialization::createKnob(const std::string & typeName,

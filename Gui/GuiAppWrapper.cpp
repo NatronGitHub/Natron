@@ -233,15 +233,13 @@ GuiApp::getSelectedNodes(Group* group) const
         graph = _app->getGui()->getNodeGraph();
     }
     assert(graph);
-    if (!graph) {
-        return ret;
-    }
-    
-    const std::list<boost::shared_ptr<NodeGui> >& nodes = graph->getSelectedNodes();
-    for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        NodePtr node = (*it)->getNode();
-        if (node->isActivated() && !node->getParentMultiInstance()) {
-            ret.push_back(new Effect(node));
+    if (graph) {
+        const std::list<boost::shared_ptr<NodeGui> >& nodes = graph->getSelectedNodes();
+        for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+            NodePtr node = (*it)->getNode();
+            if (node->isActivated() && !node->getParentMultiInstance()) {
+                ret.push_back(new Effect(node));
+            }
         }
     }
     return ret;
@@ -279,7 +277,8 @@ PyViewer::PyViewer(const boost::shared_ptr<Natron::Node>& node)
 {
     ViewerInstance* viewer = dynamic_cast<ViewerInstance*>(node->getLiveInstance());
     assert(viewer);
-    _viewer = dynamic_cast<ViewerGL*>(viewer->getUiContext())->getViewerTab();
+    ViewerGL* viewerGL = dynamic_cast<ViewerGL*>(viewer->getUiContext());
+    _viewer = viewerGL ? viewerGL->getViewerTab() : NULL;
     assert(_viewer);
 }
 
