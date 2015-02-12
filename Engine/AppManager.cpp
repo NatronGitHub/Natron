@@ -194,7 +194,7 @@ void crash_application()
     sleep(2);
 #endif
     volatile int* a = (int*)(NULL);
-    // coverity[car_deref_op]
+    // coverity[var_deref_op]
     *a = 1;
 }
 #endif
