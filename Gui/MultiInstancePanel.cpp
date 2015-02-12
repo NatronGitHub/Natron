@@ -334,8 +334,7 @@ TableItemDelegate::paint(QPainter * painter,
     Natron::AnimationLevelEnum level = eAnimationLevelNone;
     boost::shared_ptr<KnobI> knob = _panel->getKnobForItem(item, &dim);
     if (knob) {
-        
-        Natron::AnimationLevelEnum level = knob->getAnimationLevel(dim);
+        level = knob->getAnimationLevel(dim);
         if (level == eAnimationLevelNone) {
             QStyledItemDelegate::paint(painter,option,index);
             
