@@ -299,6 +299,9 @@ struct ViewerGL::Implementation
     QPointF lastPickerPos;
     QRectF pickerRect;
 
+    // projection info, only used by the main thread
+    QPointF glShadow; //!< pixel size in projection coordinates - used to create shadow
+
     //////////////////////////////////////////////////////////
     // The following are accessed from various threads
     QMutex userRoIMutex;
@@ -972,23 +975,24 @@ ViewerGL::displayingImage() const
 }
 
 void
-ViewerGL::resizeGL(int width,
-                   int height)
+ViewerGL::resizeGL(int w,
+                   int h)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-    if ( (height == 0) || (width == 0) ) { // prevent division by 0
+    if ( (h == 0) || (w == 0) ) { // prevent division by 0
         return;
     }
     glCheckError();
-    glViewport (0, 0, width, height);
+    assert(w == width() && h == height()); // if this crashes here, then the viewport size has to be stored to compute glShadow
+    glViewport (0, 0, w, h);
     bool zoomSinceLastFit;
     int oldWidth,oldHeight;
     {
         QMutexLocker(&_imp->zoomCtxMutex);
         oldWidth = _imp->zoomCtx.screenWidth();
         oldHeight = _imp->zoomCtx.screenHeight();
-        _imp->zoomCtx.setScreenSize(width, height);
+        _imp->zoomCtx.setScreenSize(w, h);
         zoomSinceLastFit = _imp->zoomOrPannedSinceLastFit;
     }
     glCheckError();
@@ -1001,11 +1005,11 @@ ViewerGL::resizeGL(int width,
     }
     if ( viewer->getUiContext() && _imp->viewerTab->getGui() &&
          !_imp->viewerTab->getGui()->getApp()->getProject()->isLoadingProject() &&
-         ( ( oldWidth != width) || ( oldHeight != height) ) ) {
+         ( ( oldWidth != w) || ( oldHeight != h) ) ) {
         viewer->renderCurrentFrame(false);
         
         if (!_imp->persistentMessages.empty()) {
-            updatePersistentMessageToWidth(width - 20);
+            updatePersistentMessageToWidth(w - 20);
         } else {
             updateGL();
         }
@@ -1082,19 +1086,21 @@ ViewerGL::paintGL()
         // Note: the OFX spec says that the GL_MODELVIEW should be the identity matrix
         // http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#ImageEffectOverlays
         // However,
-        // - Nuke uses a different matrix
+        // - Nuke uses a different matrix (RoD.width is the width of the RoD of the displayed image)
         // - Nuke transforms the interacts using the modelview if there are Transform nodes between the viewer and the interact.
 
 
         glMatrixMode(GL_PROJECTION);
         glLoadIdentity();
         glOrtho(zoomLeft, zoomRight, zoomBottom, zoomTop, -1, 1);
-        glScalef(256., 256., 1.0); // for compatibility with Nuke
-        glTranslatef(1, 1, 0);     // for compatibility with Nuke
+        _imp->glShadow.setX( (zoomRight - zoomLeft)/width() );
+        _imp->glShadow.setY( (zoomTop - zoomBottom)/height() );
+        //glScalef(RoD.width, RoD.width, 1.0); // for compatibility with Nuke
+        //glTranslatef(1, 1, 0);     // for compatibility with Nuke
         glMatrixMode(GL_MODELVIEW);
         glLoadIdentity();
-        glTranslatef(-1, -1, 0);        // for compatibility with Nuke
-        glScalef(1/256., 1./256., 1.0); // for compatibility with Nuke
+        //glTranslatef(-1, -1, 0);        // for compatibility with Nuke
+        //glScalef(1/RoD.width, 1./RoD.width, 1.0); // for compatibility with Nuke
 
         glCheckError();
 
@@ -1594,7 +1600,7 @@ ViewerGL::drawWipeControl()
             glMatrixMode(GL_PROJECTION);
             int direction = (l == 0) ? 1 : -1;
             // translate (1,-1) pixels
-            glTranslated(direction * zoomScreenPixelWidth / 256, -direction * zoomScreenPixelHeight / 256, 0);
+            glTranslated(direction * _imp->glShadow.x(), -direction * _imp->glShadow.x(), 0);
             glMatrixMode(GL_MODELVIEW); // Modelview should be used on Nuke
             
             if (l == 0) {
