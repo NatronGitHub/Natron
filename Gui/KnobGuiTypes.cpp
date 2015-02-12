@@ -154,7 +154,7 @@ Int_KnobGui::createWidget(QHBoxLayout* layout)
     
     for (int i = 0; i < dim; ++i) {
 
-        QWidget *boxContainer = new QWidget( container );
+        QWidget *boxContainer = new QWidget( _container );
         boxContainer->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
         QHBoxLayout *boxContainerLayout = new QHBoxLayout(boxContainer);
         boxContainer->setLayout(boxContainerLayout);
@@ -217,7 +217,7 @@ Int_KnobGui::createWidget(QHBoxLayout* layout)
     }
 
     if (dim > 1 && !_knob->isSliderDisabled() && sliderVisible) {
-        _dimensionSwitchButton = new Button(QIcon(),QString::number(dim),container);
+        _dimensionSwitchButton = new Button(QIcon(),QString::number(dim),_container);
         _dimensionSwitchButton->setToolTip(Qt::convertFromPlainText(tr("Switch between a single value for all dimensions and multiple values."), Qt::WhiteSpaceNormal));
         _dimensionSwitchButton->setFocusPolicy(Qt::NoFocus);
         _dimensionSwitchButton->setFixedSize(17, 17);
@@ -244,7 +244,7 @@ Int_KnobGui::createWidget(QHBoxLayout* layout)
     }
 
     
-    layout->addWidget(container);
+    layout->addWidget(_container);
 } // createWidget
 
 #ifdef SPINBOX_TAKE_PLUGIN_RANGE_INTO_ACCOUNT
