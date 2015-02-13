@@ -121,12 +121,12 @@ pyside {
 	INCLUDEPATH += $$quote(C:\\Python34\\Lib\\site-packages\\PySide\\include\\PySide\\QtGui)
 	INCLUDEPATH += $$quote(C:\\Python34\\Lib\\site-packages\\PySide\\include\\PySide\\QtCore)
 	INCLUDEPATH += $$quote(C:\\Qt\\4.8.6_win32\\include\\QtGui)
-	LIBS += -L$$quote(C:\\Users\\lex\Documents\\GitHub\\Natron3rdParty\\pyside-1.2.2\\lib) -lpyside-python3.4
+	LIBS += -L$$quote(C:\\Python34\\Lib\\site-packages\\PySide) -lpyside-python3.4
 }
 
 shiboken {
 	INCLUDEPATH += $$quote(C:\\Python34\\Lib\\site-packages\\PySide\\include\\shiboken)
-	LIBS += -L$$quote(C:\\Users\\lex\\Documents\\GitHub\\Natron3rdParty\\shiboken-1.2.2\\lib\\x64) -lshiboken-python3.4
+	LIBS += -L$$quote(C:\\Python34\\Lib\\site-packages\\PySide) -lshiboken-python3.4
 }
 
 }
@@ -166,14 +166,15 @@ pyside {
 	INCLUDEPATH += $$quote(C:\\Python34_win32\\Lib\\site-packages\\PySide\\include\\PySide\\QtGui)
 	INCLUDEPATH += $$quote(C:\\Python34_win32\\Lib\\site-packages\\PySide\\include\\PySide\\QtCore)
 	INCLUDEPATH += $$quote(C:\\Qt\\4.8.6_win32\\include\\QtGui)
-	LIBS += -L$$quote(C:\\Users\\lex\\Documents\\GitHub\\Natron3rdParty\\pyside-1.2.2\\lib) -lpyside-python3.4
+	LIBS += -L$$quote(C:\\Python34_win32\\Lib\\site-packages\\PySide) -lpyside-python3.4
 }
 
 shiboken {
 	INCLUDEPATH += $$quote(C:\\Python34_win32\\Lib\\site-packages\\PySide\\include\\shiboken)
-	LIBS += -L$$quote(C:\\Users\\lex\\Documents\\GitHub\\Natron3rdParty\\shiboken-1.2.2\\lib\\win32) -lshiboken-python3.4
+	LIBS += -L$$quote(C:\\Python34_win32\\Lib\\site-packages\\PySide) -lshiboken-python3.4
 }
 }
+
 
 ---------------------------------------------
 

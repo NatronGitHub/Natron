@@ -174,13 +174,13 @@ if "%CONFIGURATION%" == "Release" (
 	copy /Y %PYTHON_DIR%\Lib\site-packages\PySide\shiboken-python3.4.dll %DEPLOY_DIR%\bin
 	copy /Y %PYTHON_DIR%\Lib\site-packages\PySide\pyside-python3.4.dll %DEPLOY_DIR%\bin
 	copy /Y %PYTHON_DIR%\DLLs\python3.dll %DEPLOY_DIR%\bin	
-	mkdir -p %PYTHON_DIR%\DLLs %DEPLOY_DIR%\bin\DLLs
+	mkdir %PYTHON_DIR%\DLLs %DEPLOY_DIR%\bin\DLLs
 	xcopy /Y /E %PYTHON_DIR%\DLLs %DEPLOY_DIR%\bin\DLLs
-	mkdir -p %PYTHON_DIR%\Lib %DEPLOY_DIR%\bin\Lib
+	mkdir %PYTHON_DIR%\Lib %DEPLOY_DIR%\bin\Lib
 	xcopy /Y /E %PYTHON_DIR%\Lib %DEPLOY_DIR%\bin\Lib
 	for /d %%G in (%DEPLOY_DIR%\bin\Lib\__pycache__,%DEPLOY_DIR%\bin\Lib\*\__pycache__,%DEPLOY_DIR%\bin\Lib\site-packages) do rd /s /q "%%~G"
-	mkdir -p %DEPLOY_DIR%\bin\Lib\site-packages
-	mkdir -p %DEPLOY_DIR%\Plugins\PySide
+	mkdir %DEPLOY_DIR%\bin\Lib\site-packages
+	mkdir %DEPLOY_DIR%\Plugins\PySide
 	copy /Y %PYTHON_DIR%\Lib\site-packages\PySide\__init__.py %DEPLOY_DIR%\Plugins\PySide
 	copy /Y %PYTHON_DIR%\Lib\site-packages\PySide\_utils.py %DEPLOY_DIR%\Plugins\PySide
 	copy /Y %PYTHON_DIR%\Lib\site-packages\PySide\*.pyd %DEPLOY_DIR%\Plugins\PySide
