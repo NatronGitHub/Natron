@@ -87,18 +87,17 @@ Of course you need to provide valid paths that are valid on your system.
 
 Here's an example of a config.pri file that supports both 32bit and 64bit builds:
 ---------------------------------------
-
 64bit {
 
 boost {
-        INCLUDEPATH +=  $$quote(C:\\local\\boost_1_55_0_vs2010_x86)
-        CONFIG(release, debug|release): LIBS += -L$$quote(C:\\local\\boost_1_55_0_vs2010_x86\\lib64-msvc-10.0) -lboost_serialization-vc100-mt-1_55
-		CONFIG(debug, debug|release):  LIBS += -L$$quote(C:\\local\\boost_1_55_0_vs2010_x86\\lib64-msvc-10.0) -lboost_serialization-vc100-mt-gd-1_55
+        INCLUDEPATH +=  $$quote(C:\\boost)
+        CONFIG(release, debug|release): LIBS += -L$$quote(C:\\boost\\x64) -lboost_serialization-vc100-mt-1_57
+		CONFIG(debug, debug|release):  LIBS += -L$$quote(C:\\boost\\x64) -lboost_serialization-vc100-mt-gd-1_57
 }
 
 glew{
-    INCLUDEPATH +=  $$quote(C:\\local\\glew\\include)
-    LIBS += -L$$quote(C:\\local\\glew\\lib\\Release\\x64) -lglew32
+    INCLUDEPATH +=  $$quote(C:\\glew\\include)
+    LIBS += -L$$quote(C:\\glew\\lib\\Release\\x64) -lglew32
 }
 
 expat{
@@ -112,20 +111,38 @@ cairo {
 	LIBS += -L$$quote(C:\\Users\\lex\\Documents\\GitHub\\Natron3rdParty\\cairo_1.12\\lib\\x64) -lcairo
 }
 
+python {
+	INCLUDEPATH += $$quote(C:\\Python34\\include)
+	LIBS += -L$$quote(C:\\Python34\\libs) -lpython3
+}
+
+pyside {
+	INCLUDEPATH += $$quote(C:\\Python34\\Lib\\site-packages\\PySide\\include\\PySide)
+	INCLUDEPATH += $$quote(C:\\Python34\\Lib\\site-packages\\PySide\\include\\PySide\\QtGui)
+	INCLUDEPATH += $$quote(C:\\Python34\\Lib\\site-packages\\PySide\\include\\PySide\\QtCore)
+	INCLUDEPATH += $$quote(C:\\Qt\\4.8.6_win32\\include\\QtGui)
+	LIBS += -L$$quote(C:\\Users\\lex\Documents\\GitHub\\Natron3rdParty\\pyside-1.2.2\\lib) -lpyside-python3.4
+}
+
+shiboken {
+	INCLUDEPATH += $$quote(C:\\Python34\\Lib\\site-packages\\PySide\\include\\shiboken)
+	LIBS += -L$$quote(C:\\Users\\lex\\Documents\\GitHub\\Natron3rdParty\\shiboken-1.2.2\\lib\\x64) -lshiboken-python3.4
+}
+
 }
 
 32bit {
 
 
 boost {
-        INCLUDEPATH +=  $$quote(C:\\local\\boost_1_55_0_vs2010_x86)
-        CONFIG(release, debug|release): LIBS += -L$$quote(C:\\local\\boost_1_55_0_vs2010_x86\\lib) -lboost_serialization-vc100-mt-1_55
-		CONFIG(debug, debug|release): LIBS += -L$$quote(C:\\local\\boost_1_55_0_vs2010_x86\\lib) -lboost_serialization-vc100-mt-gd-1_55
+        INCLUDEPATH +=  $$quote(C:\\boost)
+        CONFIG(release, debug|release): LIBS += -L$$quote(C:\\boost\\win32) -lboost_serialization-vc100-mt-1_57
+		CONFIG(debug, debug|release): LIBS += -L$$quote(C:\\boost\\win32) -lboost_serialization-vc100-mt-gd-1_57
 }
 
 glew{
-    INCLUDEPATH +=  $$quote(C:\\local\\glew\\include)
-    LIBS += -L$$quote(C:\\local\\glew\\lib\\Release\\Win32) -lglew32
+    INCLUDEPATH +=  $$quote(C:\\glew\\include)
+    LIBS += -L$$quote(C:\\glew\\lib\\Release\\win32) -lglew32
 }
 
 expat{
@@ -136,9 +153,26 @@ expat{
 
 cairo {
 	INCLUDEPATH += $$quote(C:\\Users\\lex\\Documents\\GitHub\\Natron3rdParty\\cairo_1.12\\include)
-	LIBS += -L$$quote(C:\\Users\\lex\\Documents\\GitHub\\Natron3rdParty\\cairo_1.12\\lib\\x86) -lcairo
+	LIBS += -L$$quote(C:\\Users\\lex\\Documents\\GitHub\\Natron3rdParty\\cairo_1.12\\lib\\win32) -lcairo
 }
 
+python {
+	INCLUDEPATH += $$quote(C:\\Python34_win32\\include)
+	LIBS += -L$$quote(C:\\Python34_win32\\libs) -lpython3
+}
+
+pyside {
+	INCLUDEPATH += $$quote(C:\\Python34_win32\\Lib\\site-packages\\PySide\\include\\PySide)
+	INCLUDEPATH += $$quote(C:\\Python34_win32\\Lib\\site-packages\\PySide\\include\\PySide\\QtGui)
+	INCLUDEPATH += $$quote(C:\\Python34_win32\\Lib\\site-packages\\PySide\\include\\PySide\\QtCore)
+	INCLUDEPATH += $$quote(C:\\Qt\\4.8.6_win32\\include\\QtGui)
+	LIBS += -L$$quote(C:\\Users\\lex\\Documents\\GitHub\\Natron3rdParty\\pyside-1.2.2\\lib) -lpyside-python3.4
+}
+
+shiboken {
+	INCLUDEPATH += $$quote(C:\\Python34_win32\\Lib\\site-packages\\PySide\\include\\shiboken)
+	LIBS += -L$$quote(C:\\Users\\lex\\Documents\\GitHub\\Natron3rdParty\\shiboken-1.2.2\\lib\\win32) -lshiboken-python3.4
+}
 }
 
 ---------------------------------------------
@@ -171,6 +205,14 @@ In 64 bits mode (target x64), qmake doesn't set the target machine, it leaves th
 You'll have to set it manually in the properties of the HostSupport/Gui/Engine projects, as following:
 Right click on the project, Configuration Properties,Librarian,General, Target Machine. Set it to Machinex64
 
+	
+### Generating Python bindings
+
+This is not required as generated files are already in the repository. You would need to run it if you were to extend or modify the Python bindings via the
+typesystem.xml file. See the documentation of shiboken for an explanation of the command line arguments.
+
+shiboken  --avoid-protected-hack --enable-pyside-extensions --include-paths=..\Engine;..\Global;C:\Qt\4.8.6_win32\include;C:\Python34\Lib\site-packages\PySide\include\PySide --typesystem-paths=C:\Python34\Lib\site-packages\PySide\typesystems --output-directory=Engine Engine\Pyside_Engine_Python.h Engine\typesystem_engine.xml
+shiboken  --avoid-protected-hack --enable-pyside-extensions --include-paths=..\Engine;..\Gui;..\Global;C:\Qt\4.8.6_win32\includeC;\Python34\Lib\site-packages\PySide\include\PySide  --typesystem-paths=C:\Python34\Lib\site-packages\PySide\typesystems;Engine --output-directory=Gui Gui\Pyside_Gui_Python.h  Gui\typesystem_natronGui.xml
 ### 32 bits vs 64 bits builds
 
 Depending on the target architecture the dependencies are not the same. This can be achieved with the switch CONFIG+=64bit or CONFIG+=32bit
@@ -190,3 +232,4 @@ In other words if I wanted to build both 32bits and 64bits version I would call:
 
 	MSBuild Project32.sln /p:Configuration=Release;Platform=win32 /t:Natron /m
 	MSBuild Project64.sln /p:Configuration=Release;Platform=x64 /t:Natron /m
+

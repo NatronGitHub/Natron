@@ -21,8 +21,9 @@
 #include <QReadWriteLock>
 #include <QCoreApplication>
 #include <QtConcurrentRun>
-
+#if !defined(SBK_RUN) && !defined(Q_MOC_RUN)
 #include <boost/bind.hpp>
+#endif
 #include <SequenceParsing.h>
 
 #include "Global/MemoryInfo.h"

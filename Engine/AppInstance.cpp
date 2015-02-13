@@ -26,8 +26,9 @@
 #include <QEventLoop>
 #include <QSettings>
 
-
+#if !defined(SBK_RUN) && !defined(Q_MOC_RUN)
 #include <boost/bind.hpp>
+#endif
 
 #include "Global/QtCompat.h"
 
