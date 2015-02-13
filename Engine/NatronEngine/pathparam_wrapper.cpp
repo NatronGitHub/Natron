@@ -1,7 +1,4 @@
 
-//workaround to access protected functions
-#define protected public
-
 // default includes
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(mismatched-tags)
@@ -23,6 +20,10 @@ GCC_DIAG_OFF(missing-field-initializers)
 
 // Native ---------------------------------------------------------
 
+void PathParamWrapper::pysideInitQtMetaTypes()
+{
+}
+
 PathParamWrapper::~PathParamWrapper()
 {
     SbkObject* wrapper = Shiboken::BindingManager::instance().retrieveWrapper(this);
@@ -34,11 +35,11 @@ PathParamWrapper::~PathParamWrapper()
 extern "C" {
 static PyObject* Sbk_PathParamFunc_setAsMultiPathTable(PyObject* self)
 {
-    ::PathParam* cppSelf = 0;
+    PathParamWrapper* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = ((::PathParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PATHPARAM_IDX], (SbkObject*)self));
+    cppSelf = (PathParamWrapper*)((::PathParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PATHPARAM_IDX], (SbkObject*)self));
 
     // Call function/method
     {
@@ -184,4 +185,5 @@ void init_PathParam(PyObject* module)
     Shiboken::ObjectType::setTypeDiscoveryFunctionV2(&Sbk_PathParam_Type, &Sbk_PathParam_typeDiscovery);
 
 
+    PathParamWrapper::pysideInitQtMetaTypes();
 }

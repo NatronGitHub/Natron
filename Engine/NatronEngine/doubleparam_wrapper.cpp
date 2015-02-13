@@ -1,7 +1,4 @@
 
-//workaround to access protected functions
-#define protected public
-
 // default includes
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(mismatched-tags)
@@ -23,6 +20,10 @@ GCC_DIAG_OFF(missing-field-initializers)
 
 // Native ---------------------------------------------------------
 
+void DoubleParamWrapper::pysideInitQtMetaTypes()
+{
+}
+
 DoubleParamWrapper::~DoubleParamWrapper()
 {
     SbkObject* wrapper = Shiboken::BindingManager::instance().retrieveWrapper(this);
@@ -34,11 +35,11 @@ DoubleParamWrapper::~DoubleParamWrapper()
 extern "C" {
 static PyObject* Sbk_DoubleParamFunc_addAsDependencyOf(PyObject* self, PyObject* args)
 {
-    ::DoubleParam* cppSelf = 0;
+    DoubleParamWrapper* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = ((::DoubleParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_DOUBLEPARAM_IDX], (SbkObject*)self));
+    cppSelf = (DoubleParamWrapper*)((::DoubleParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_DOUBLEPARAM_IDX], (SbkObject*)self));
     PyObject* pyResult = 0;
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { 0, 0 };
@@ -96,11 +97,11 @@ static PyObject* Sbk_DoubleParamFunc_addAsDependencyOf(PyObject* self, PyObject*
 
 static PyObject* Sbk_DoubleParamFunc_get(PyObject* self, PyObject* args)
 {
-    ::DoubleParam* cppSelf = 0;
+    DoubleParamWrapper* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = ((::DoubleParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_DOUBLEPARAM_IDX], (SbkObject*)self));
+    cppSelf = (DoubleParamWrapper*)((::DoubleParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_DOUBLEPARAM_IDX], (SbkObject*)self));
     PyObject* pyResult = 0;
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { 0 };
@@ -136,7 +137,7 @@ static PyObject* Sbk_DoubleParamFunc_get(PyObject* self, PyObject* args)
             if (!PyErr_Occurred()) {
                 // get()const
                 PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-                double cppResult = const_cast<const ::DoubleParam*>(cppSelf)->get();
+                double cppResult = const_cast<const ::DoubleParamWrapper*>(cppSelf)->get();
                 PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
                 pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &cppResult);
             }
@@ -150,7 +151,7 @@ static PyObject* Sbk_DoubleParamFunc_get(PyObject* self, PyObject* args)
             if (!PyErr_Occurred()) {
                 // get(int)const
                 PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-                double cppResult = const_cast<const ::DoubleParam*>(cppSelf)->get(cppArg0);
+                double cppResult = const_cast<const ::DoubleParamWrapper*>(cppSelf)->get(cppArg0);
                 PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
                 pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &cppResult);
             }
@@ -172,11 +173,11 @@ static PyObject* Sbk_DoubleParamFunc_get(PyObject* self, PyObject* args)
 
 static PyObject* Sbk_DoubleParamFunc_getDefaultValue(PyObject* self, PyObject* args, PyObject* kwds)
 {
-    ::DoubleParam* cppSelf = 0;
+    DoubleParamWrapper* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = ((::DoubleParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_DOUBLEPARAM_IDX], (SbkObject*)self));
+    cppSelf = (DoubleParamWrapper*)((::DoubleParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_DOUBLEPARAM_IDX], (SbkObject*)self));
     PyObject* pyResult = 0;
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { 0 };
@@ -225,7 +226,7 @@ static PyObject* Sbk_DoubleParamFunc_getDefaultValue(PyObject* self, PyObject* a
         if (!PyErr_Occurred()) {
             // getDefaultValue(int)const
             PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            double cppResult = const_cast<const ::DoubleParam*>(cppSelf)->getDefaultValue(cppArg0);
+            double cppResult = const_cast<const ::DoubleParamWrapper*>(cppSelf)->getDefaultValue(cppArg0);
             PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &cppResult);
         }
@@ -245,11 +246,11 @@ static PyObject* Sbk_DoubleParamFunc_getDefaultValue(PyObject* self, PyObject* a
 
 static PyObject* Sbk_DoubleParamFunc_getDisplayMaximum(PyObject* self, PyObject* pyArg)
 {
-    ::DoubleParam* cppSelf = 0;
+    DoubleParamWrapper* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = ((::DoubleParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_DOUBLEPARAM_IDX], (SbkObject*)self));
+    cppSelf = (DoubleParamWrapper*)((::DoubleParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_DOUBLEPARAM_IDX], (SbkObject*)self));
     PyObject* pyResult = 0;
     int overloadId = -1;
     PythonToCppFunc pythonToCpp;
@@ -272,7 +273,7 @@ static PyObject* Sbk_DoubleParamFunc_getDisplayMaximum(PyObject* self, PyObject*
         if (!PyErr_Occurred()) {
             // getDisplayMaximum(int)const
             PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            double cppResult = const_cast<const ::DoubleParam*>(cppSelf)->getDisplayMaximum(cppArg0);
+            double cppResult = const_cast<const ::DoubleParamWrapper*>(cppSelf)->getDisplayMaximum(cppArg0);
             PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &cppResult);
         }
@@ -292,11 +293,11 @@ static PyObject* Sbk_DoubleParamFunc_getDisplayMaximum(PyObject* self, PyObject*
 
 static PyObject* Sbk_DoubleParamFunc_getDisplayMinimum(PyObject* self, PyObject* pyArg)
 {
-    ::DoubleParam* cppSelf = 0;
+    DoubleParamWrapper* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = ((::DoubleParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_DOUBLEPARAM_IDX], (SbkObject*)self));
+    cppSelf = (DoubleParamWrapper*)((::DoubleParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_DOUBLEPARAM_IDX], (SbkObject*)self));
     PyObject* pyResult = 0;
     int overloadId = -1;
     PythonToCppFunc pythonToCpp;
@@ -319,7 +320,7 @@ static PyObject* Sbk_DoubleParamFunc_getDisplayMinimum(PyObject* self, PyObject*
         if (!PyErr_Occurred()) {
             // getDisplayMinimum(int)const
             PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            double cppResult = const_cast<const ::DoubleParam*>(cppSelf)->getDisplayMinimum(cppArg0);
+            double cppResult = const_cast<const ::DoubleParamWrapper*>(cppSelf)->getDisplayMinimum(cppArg0);
             PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &cppResult);
         }
@@ -339,11 +340,11 @@ static PyObject* Sbk_DoubleParamFunc_getDisplayMinimum(PyObject* self, PyObject*
 
 static PyObject* Sbk_DoubleParamFunc_getMaximum(PyObject* self, PyObject* args, PyObject* kwds)
 {
-    ::DoubleParam* cppSelf = 0;
+    DoubleParamWrapper* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = ((::DoubleParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_DOUBLEPARAM_IDX], (SbkObject*)self));
+    cppSelf = (DoubleParamWrapper*)((::DoubleParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_DOUBLEPARAM_IDX], (SbkObject*)self));
     PyObject* pyResult = 0;
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { 0 };
@@ -392,7 +393,7 @@ static PyObject* Sbk_DoubleParamFunc_getMaximum(PyObject* self, PyObject* args, 
         if (!PyErr_Occurred()) {
             // getMaximum(int)const
             PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            double cppResult = const_cast<const ::DoubleParam*>(cppSelf)->getMaximum(cppArg0);
+            double cppResult = const_cast<const ::DoubleParamWrapper*>(cppSelf)->getMaximum(cppArg0);
             PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &cppResult);
         }
@@ -412,11 +413,11 @@ static PyObject* Sbk_DoubleParamFunc_getMaximum(PyObject* self, PyObject* args, 
 
 static PyObject* Sbk_DoubleParamFunc_getMinimum(PyObject* self, PyObject* args, PyObject* kwds)
 {
-    ::DoubleParam* cppSelf = 0;
+    DoubleParamWrapper* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = ((::DoubleParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_DOUBLEPARAM_IDX], (SbkObject*)self));
+    cppSelf = (DoubleParamWrapper*)((::DoubleParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_DOUBLEPARAM_IDX], (SbkObject*)self));
     PyObject* pyResult = 0;
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { 0 };
@@ -465,7 +466,7 @@ static PyObject* Sbk_DoubleParamFunc_getMinimum(PyObject* self, PyObject* args, 
         if (!PyErr_Occurred()) {
             // getMinimum(int)const
             PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            double cppResult = const_cast<const ::DoubleParam*>(cppSelf)->getMinimum(cppArg0);
+            double cppResult = const_cast<const ::DoubleParamWrapper*>(cppSelf)->getMinimum(cppArg0);
             PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &cppResult);
         }
@@ -485,11 +486,11 @@ static PyObject* Sbk_DoubleParamFunc_getMinimum(PyObject* self, PyObject* args, 
 
 static PyObject* Sbk_DoubleParamFunc_getValue(PyObject* self, PyObject* args, PyObject* kwds)
 {
-    ::DoubleParam* cppSelf = 0;
+    DoubleParamWrapper* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = ((::DoubleParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_DOUBLEPARAM_IDX], (SbkObject*)self));
+    cppSelf = (DoubleParamWrapper*)((::DoubleParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_DOUBLEPARAM_IDX], (SbkObject*)self));
     PyObject* pyResult = 0;
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { 0 };
@@ -538,7 +539,7 @@ static PyObject* Sbk_DoubleParamFunc_getValue(PyObject* self, PyObject* args, Py
         if (!PyErr_Occurred()) {
             // getValue(int)const
             PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            double cppResult = const_cast<const ::DoubleParam*>(cppSelf)->getValue(cppArg0);
+            double cppResult = const_cast<const ::DoubleParamWrapper*>(cppSelf)->getValue(cppArg0);
             PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &cppResult);
         }
@@ -558,11 +559,11 @@ static PyObject* Sbk_DoubleParamFunc_getValue(PyObject* self, PyObject* args, Py
 
 static PyObject* Sbk_DoubleParamFunc_getValueAtTime(PyObject* self, PyObject* args, PyObject* kwds)
 {
-    ::DoubleParam* cppSelf = 0;
+    DoubleParamWrapper* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = ((::DoubleParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_DOUBLEPARAM_IDX], (SbkObject*)self));
+    cppSelf = (DoubleParamWrapper*)((::DoubleParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_DOUBLEPARAM_IDX], (SbkObject*)self));
     PyObject* pyResult = 0;
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { 0, 0 };
@@ -618,7 +619,7 @@ static PyObject* Sbk_DoubleParamFunc_getValueAtTime(PyObject* self, PyObject* ar
         if (!PyErr_Occurred()) {
             // getValueAtTime(int,int)const
             PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            double cppResult = const_cast<const ::DoubleParam*>(cppSelf)->getValueAtTime(cppArg0, cppArg1);
+            double cppResult = const_cast<const ::DoubleParamWrapper*>(cppSelf)->getValueAtTime(cppArg0, cppArg1);
             PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &cppResult);
         }
@@ -638,11 +639,11 @@ static PyObject* Sbk_DoubleParamFunc_getValueAtTime(PyObject* self, PyObject* ar
 
 static PyObject* Sbk_DoubleParamFunc_restoreDefaultValue(PyObject* self, PyObject* args, PyObject* kwds)
 {
-    ::DoubleParam* cppSelf = 0;
+    DoubleParamWrapper* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = ((::DoubleParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_DOUBLEPARAM_IDX], (SbkObject*)self));
+    cppSelf = (DoubleParamWrapper*)((::DoubleParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_DOUBLEPARAM_IDX], (SbkObject*)self));
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { 0 };
     SBK_UNUSED(pythonToCpp)
@@ -712,11 +713,11 @@ static PyObject* Sbk_DoubleParamFunc_restoreDefaultValue(PyObject* self, PyObjec
 
 static PyObject* Sbk_DoubleParamFunc_set(PyObject* self, PyObject* args)
 {
-    ::DoubleParam* cppSelf = 0;
+    DoubleParamWrapper* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = ((::DoubleParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_DOUBLEPARAM_IDX], (SbkObject*)self));
+    cppSelf = (DoubleParamWrapper*)((::DoubleParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_DOUBLEPARAM_IDX], (SbkObject*)self));
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { 0, 0 };
     SBK_UNUSED(pythonToCpp)
@@ -798,11 +799,11 @@ static PyObject* Sbk_DoubleParamFunc_set(PyObject* self, PyObject* args)
 
 static PyObject* Sbk_DoubleParamFunc_setDefaultValue(PyObject* self, PyObject* args, PyObject* kwds)
 {
-    ::DoubleParam* cppSelf = 0;
+    DoubleParamWrapper* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = ((::DoubleParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_DOUBLEPARAM_IDX], (SbkObject*)self));
+    cppSelf = (DoubleParamWrapper*)((::DoubleParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_DOUBLEPARAM_IDX], (SbkObject*)self));
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { 0, 0 };
     SBK_UNUSED(pythonToCpp)
@@ -875,11 +876,11 @@ static PyObject* Sbk_DoubleParamFunc_setDefaultValue(PyObject* self, PyObject* a
 
 static PyObject* Sbk_DoubleParamFunc_setDisplayMaximum(PyObject* self, PyObject* args, PyObject* kwds)
 {
-    ::DoubleParam* cppSelf = 0;
+    DoubleParamWrapper* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = ((::DoubleParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_DOUBLEPARAM_IDX], (SbkObject*)self));
+    cppSelf = (DoubleParamWrapper*)((::DoubleParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_DOUBLEPARAM_IDX], (SbkObject*)self));
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { 0, 0 };
     SBK_UNUSED(pythonToCpp)
@@ -952,11 +953,11 @@ static PyObject* Sbk_DoubleParamFunc_setDisplayMaximum(PyObject* self, PyObject*
 
 static PyObject* Sbk_DoubleParamFunc_setDisplayMinimum(PyObject* self, PyObject* args, PyObject* kwds)
 {
-    ::DoubleParam* cppSelf = 0;
+    DoubleParamWrapper* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = ((::DoubleParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_DOUBLEPARAM_IDX], (SbkObject*)self));
+    cppSelf = (DoubleParamWrapper*)((::DoubleParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_DOUBLEPARAM_IDX], (SbkObject*)self));
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { 0, 0 };
     SBK_UNUSED(pythonToCpp)
@@ -1029,11 +1030,11 @@ static PyObject* Sbk_DoubleParamFunc_setDisplayMinimum(PyObject* self, PyObject*
 
 static PyObject* Sbk_DoubleParamFunc_setMaximum(PyObject* self, PyObject* args, PyObject* kwds)
 {
-    ::DoubleParam* cppSelf = 0;
+    DoubleParamWrapper* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = ((::DoubleParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_DOUBLEPARAM_IDX], (SbkObject*)self));
+    cppSelf = (DoubleParamWrapper*)((::DoubleParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_DOUBLEPARAM_IDX], (SbkObject*)self));
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { 0, 0 };
     SBK_UNUSED(pythonToCpp)
@@ -1106,11 +1107,11 @@ static PyObject* Sbk_DoubleParamFunc_setMaximum(PyObject* self, PyObject* args, 
 
 static PyObject* Sbk_DoubleParamFunc_setMinimum(PyObject* self, PyObject* args, PyObject* kwds)
 {
-    ::DoubleParam* cppSelf = 0;
+    DoubleParamWrapper* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = ((::DoubleParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_DOUBLEPARAM_IDX], (SbkObject*)self));
+    cppSelf = (DoubleParamWrapper*)((::DoubleParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_DOUBLEPARAM_IDX], (SbkObject*)self));
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { 0, 0 };
     SBK_UNUSED(pythonToCpp)
@@ -1183,11 +1184,11 @@ static PyObject* Sbk_DoubleParamFunc_setMinimum(PyObject* self, PyObject* args, 
 
 static PyObject* Sbk_DoubleParamFunc_setValue(PyObject* self, PyObject* args, PyObject* kwds)
 {
-    ::DoubleParam* cppSelf = 0;
+    DoubleParamWrapper* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = ((::DoubleParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_DOUBLEPARAM_IDX], (SbkObject*)self));
+    cppSelf = (DoubleParamWrapper*)((::DoubleParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_DOUBLEPARAM_IDX], (SbkObject*)self));
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { 0, 0 };
     SBK_UNUSED(pythonToCpp)
@@ -1264,11 +1265,11 @@ static PyObject* Sbk_DoubleParamFunc_setValue(PyObject* self, PyObject* args, Py
 
 static PyObject* Sbk_DoubleParamFunc_setValueAtTime(PyObject* self, PyObject* args, PyObject* kwds)
 {
-    ::DoubleParam* cppSelf = 0;
+    DoubleParamWrapper* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = ((::DoubleParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_DOUBLEPARAM_IDX], (SbkObject*)self));
+    cppSelf = (DoubleParamWrapper*)((::DoubleParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_DOUBLEPARAM_IDX], (SbkObject*)self));
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { 0, 0, 0 };
     SBK_UNUSED(pythonToCpp)
@@ -1491,4 +1492,5 @@ void init_DoubleParam(PyObject* module)
     Shiboken::ObjectType::setTypeDiscoveryFunctionV2(&Sbk_DoubleParam_Type, &Sbk_DoubleParam_typeDiscovery);
 
 
+    DoubleParamWrapper::pysideInitQtMetaTypes();
 }

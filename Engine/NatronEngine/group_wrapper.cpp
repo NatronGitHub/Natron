@@ -1,7 +1,4 @@
 
-//workaround to access protected functions
-#define protected public
-
 // default includes
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(mismatched-tags)
@@ -23,6 +20,10 @@ GCC_DIAG_OFF(missing-field-initializers)
 
 
 // Native ---------------------------------------------------------
+
+void GroupWrapper::pysideInitQtMetaTypes()
+{
+}
 
 GroupWrapper::GroupWrapper() : Group() {
     // ... middle
@@ -278,4 +279,5 @@ void init_Group(PyObject* module)
 
 
 
+    GroupWrapper::pysideInitQtMetaTypes();
 }

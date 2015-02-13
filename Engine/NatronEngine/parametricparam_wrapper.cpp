@@ -1,7 +1,4 @@
 
-//workaround to access protected functions
-#define protected public
-
 // default includes
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(mismatched-tags)
@@ -23,6 +20,10 @@ GCC_DIAG_OFF(missing-field-initializers)
 
 // Native ---------------------------------------------------------
 
+void ParametricParamWrapper::pysideInitQtMetaTypes()
+{
+}
+
 ParametricParamWrapper::~ParametricParamWrapper()
 {
     SbkObject* wrapper = Shiboken::BindingManager::instance().retrieveWrapper(this);
@@ -34,11 +35,11 @@ ParametricParamWrapper::~ParametricParamWrapper()
 extern "C" {
 static PyObject* Sbk_ParametricParamFunc_addControlPoint(PyObject* self, PyObject* args)
 {
-    ::ParametricParam* cppSelf = 0;
+    ParametricParamWrapper* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = ((::ParametricParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAMETRICPARAM_IDX], (SbkObject*)self));
+    cppSelf = (ParametricParamWrapper*)((::ParametricParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAMETRICPARAM_IDX], (SbkObject*)self));
     PyObject* pyResult = 0;
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { 0, 0, 0 };
@@ -77,7 +78,7 @@ static PyObject* Sbk_ParametricParamFunc_addControlPoint(PyObject* self, PyObjec
         if (!PyErr_Occurred()) {
             // addControlPoint(int,double,double)
             PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            Natron::StatusEnum cppResult = cppSelf->addControlPoint(cppArg0, cppArg1, cppArg2);
+            Natron::StatusEnum cppResult = Natron::StatusEnum(cppSelf->addControlPoint(cppArg0, cppArg1, cppArg2));
             PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(SBK_CONVERTER(SbkNatronEngineTypes[SBK_NATRON_STATUSENUM_IDX]), &cppResult);
         }
@@ -97,11 +98,11 @@ static PyObject* Sbk_ParametricParamFunc_addControlPoint(PyObject* self, PyObjec
 
 static PyObject* Sbk_ParametricParamFunc_deleteAllControlPoints(PyObject* self, PyObject* pyArg)
 {
-    ::ParametricParam* cppSelf = 0;
+    ParametricParamWrapper* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = ((::ParametricParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAMETRICPARAM_IDX], (SbkObject*)self));
+    cppSelf = (ParametricParamWrapper*)((::ParametricParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAMETRICPARAM_IDX], (SbkObject*)self));
     PyObject* pyResult = 0;
     int overloadId = -1;
     PythonToCppFunc pythonToCpp;
@@ -124,7 +125,7 @@ static PyObject* Sbk_ParametricParamFunc_deleteAllControlPoints(PyObject* self, 
         if (!PyErr_Occurred()) {
             // deleteAllControlPoints(int)
             PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            Natron::StatusEnum cppResult = cppSelf->deleteAllControlPoints(cppArg0);
+            Natron::StatusEnum cppResult = Natron::StatusEnum(cppSelf->deleteAllControlPoints(cppArg0));
             PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(SBK_CONVERTER(SbkNatronEngineTypes[SBK_NATRON_STATUSENUM_IDX]), &cppResult);
         }
@@ -144,11 +145,11 @@ static PyObject* Sbk_ParametricParamFunc_deleteAllControlPoints(PyObject* self, 
 
 static PyObject* Sbk_ParametricParamFunc_deleteControlPoint(PyObject* self, PyObject* args)
 {
-    ::ParametricParam* cppSelf = 0;
+    ParametricParamWrapper* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = ((::ParametricParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAMETRICPARAM_IDX], (SbkObject*)self));
+    cppSelf = (ParametricParamWrapper*)((::ParametricParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAMETRICPARAM_IDX], (SbkObject*)self));
     PyObject* pyResult = 0;
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { 0, 0 };
@@ -184,7 +185,7 @@ static PyObject* Sbk_ParametricParamFunc_deleteControlPoint(PyObject* self, PyOb
         if (!PyErr_Occurred()) {
             // deleteControlPoint(int,int)
             PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            Natron::StatusEnum cppResult = cppSelf->deleteControlPoint(cppArg0, cppArg1);
+            Natron::StatusEnum cppResult = Natron::StatusEnum(cppSelf->deleteControlPoint(cppArg0, cppArg1));
             PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(SBK_CONVERTER(SbkNatronEngineTypes[SBK_NATRON_STATUSENUM_IDX]), &cppResult);
         }
@@ -204,11 +205,11 @@ static PyObject* Sbk_ParametricParamFunc_deleteControlPoint(PyObject* self, PyOb
 
 static PyObject* Sbk_ParametricParamFunc_getCurveColor(PyObject* self, PyObject* pyArg)
 {
-    ::ParametricParam* cppSelf = 0;
+    ParametricParamWrapper* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = ((::ParametricParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAMETRICPARAM_IDX], (SbkObject*)self));
+    cppSelf = (ParametricParamWrapper*)((::ParametricParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAMETRICPARAM_IDX], (SbkObject*)self));
     PyObject* pyResult = 0;
     int overloadId = -1;
     PythonToCppFunc pythonToCpp;
@@ -257,11 +258,11 @@ static PyObject* Sbk_ParametricParamFunc_getCurveColor(PyObject* self, PyObject*
 
 static PyObject* Sbk_ParametricParamFunc_getNControlPoints(PyObject* self, PyObject* pyArg)
 {
-    ::ParametricParam* cppSelf = 0;
+    ParametricParamWrapper* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = ((::ParametricParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAMETRICPARAM_IDX], (SbkObject*)self));
+    cppSelf = (ParametricParamWrapper*)((::ParametricParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAMETRICPARAM_IDX], (SbkObject*)self));
     PyObject* pyResult = 0;
     int overloadId = -1;
     PythonToCppFunc pythonToCpp;
@@ -284,7 +285,7 @@ static PyObject* Sbk_ParametricParamFunc_getNControlPoints(PyObject* self, PyObj
         if (!PyErr_Occurred()) {
             // getNControlPoints(int)const
             PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            int cppResult = const_cast<const ::ParametricParam*>(cppSelf)->getNControlPoints(cppArg0);
+            int cppResult = const_cast<const ::ParametricParamWrapper*>(cppSelf)->getNControlPoints(cppArg0);
             PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<int>(), &cppResult);
         }
@@ -304,11 +305,11 @@ static PyObject* Sbk_ParametricParamFunc_getNControlPoints(PyObject* self, PyObj
 
 static PyObject* Sbk_ParametricParamFunc_getNthControlPoint(PyObject* self, PyObject* args)
 {
-    ::ParametricParam* cppSelf = 0;
+    ParametricParamWrapper* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = ((::ParametricParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAMETRICPARAM_IDX], (SbkObject*)self));
+    cppSelf = (ParametricParamWrapper*)((::ParametricParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAMETRICPARAM_IDX], (SbkObject*)self));
     PyObject* pyResult = 0;
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { 0, 0 };
@@ -375,11 +376,11 @@ static PyObject* Sbk_ParametricParamFunc_getNthControlPoint(PyObject* self, PyOb
 
 static PyObject* Sbk_ParametricParamFunc_getValue(PyObject* self, PyObject* args)
 {
-    ::ParametricParam* cppSelf = 0;
+    ParametricParamWrapper* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = ((::ParametricParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAMETRICPARAM_IDX], (SbkObject*)self));
+    cppSelf = (ParametricParamWrapper*)((::ParametricParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAMETRICPARAM_IDX], (SbkObject*)self));
     PyObject* pyResult = 0;
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { 0, 0 };
@@ -415,7 +416,7 @@ static PyObject* Sbk_ParametricParamFunc_getValue(PyObject* self, PyObject* args
         if (!PyErr_Occurred()) {
             // getValue(int,double)const
             PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            double cppResult = const_cast<const ::ParametricParam*>(cppSelf)->getValue(cppArg0, cppArg1);
+            double cppResult = const_cast<const ::ParametricParamWrapper*>(cppSelf)->getValue(cppArg0, cppArg1);
             PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &cppResult);
         }
@@ -435,11 +436,11 @@ static PyObject* Sbk_ParametricParamFunc_getValue(PyObject* self, PyObject* args
 
 static PyObject* Sbk_ParametricParamFunc_setCurveColor(PyObject* self, PyObject* args)
 {
-    ::ParametricParam* cppSelf = 0;
+    ParametricParamWrapper* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = ((::ParametricParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAMETRICPARAM_IDX], (SbkObject*)self));
+    cppSelf = (ParametricParamWrapper*)((::ParametricParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAMETRICPARAM_IDX], (SbkObject*)self));
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { 0, 0, 0, 0 };
     SBK_UNUSED(pythonToCpp)
@@ -498,11 +499,11 @@ static PyObject* Sbk_ParametricParamFunc_setCurveColor(PyObject* self, PyObject*
 
 static PyObject* Sbk_ParametricParamFunc_setNthControlPoint(PyObject* self, PyObject* args)
 {
-    ::ParametricParam* cppSelf = 0;
+    ParametricParamWrapper* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = ((::ParametricParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAMETRICPARAM_IDX], (SbkObject*)self));
+    cppSelf = (ParametricParamWrapper*)((::ParametricParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAMETRICPARAM_IDX], (SbkObject*)self));
     PyObject* pyResult = 0;
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { 0, 0, 0, 0, 0, 0 };
@@ -550,7 +551,7 @@ static PyObject* Sbk_ParametricParamFunc_setNthControlPoint(PyObject* self, PyOb
         if (!PyErr_Occurred()) {
             // setNthControlPoint(int,int,double,double,double,double)
             PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            Natron::StatusEnum cppResult = cppSelf->setNthControlPoint(cppArg0, cppArg1, cppArg2, cppArg3, cppArg4, cppArg5);
+            Natron::StatusEnum cppResult = Natron::StatusEnum(cppSelf->setNthControlPoint(cppArg0, cppArg1, cppArg2, cppArg3, cppArg4, cppArg5));
             PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(SBK_CONVERTER(SbkNatronEngineTypes[SBK_NATRON_STATUSENUM_IDX]), &cppResult);
         }
@@ -703,4 +704,5 @@ void init_ParametricParam(PyObject* module)
     Shiboken::ObjectType::setTypeDiscoveryFunctionV2(&Sbk_ParametricParam_Type, &Sbk_ParametricParam_typeDiscovery);
 
 
+    ParametricParamWrapper::pysideInitQtMetaTypes();
 }
