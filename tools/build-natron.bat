@@ -62,11 +62,13 @@ if "%BITS%" == "32" (
 	echo Building Natron x86 32 bit %CONFIGURATION%.
 	set BUILD_SUB_DIR=win32
 	set QT_LIBRARIES_DIR=C:\Qt\4.8.6_win32
+	set PYTHON_DIR=C:\Python34_win32
 	set MSVC_CONF=Win32
 ) else if "%BITS%" == "64" (
 	echo Building Natron x86 64 bit %CONFIGURATION%.
 	set BUILD_SUB_DIR=x64
 	set QT_LIBRARIES_DIR=%DEP_PATH%\Qt4.8.6_64bit
+	set PYTHON_DIR=C:\Python34
 	set MSVC_CONF=x64
 ) else (
 	echo Architecture must be either 32 or 64 bits.
@@ -126,7 +128,7 @@ if "%BITS%" == "64" (
 	sed -e "/\/ResourceCompile>/a <Lib>\n    <TargetMachine>MachineX64</TargetMachine>\n</Lib>" -i Engine\Engine.vcxproj Gui\Gui.vcxproj HostSupport\HostSupport.vcxproj
 
 	:: Qmake in the path is the Qmake 32 bit hence the visual studio solution is setup to build against
-	:: 32bit libraries of Qt. The following is to use our compiled version of Qt 64bit
+	:: 32bit libraries of Qt. The following is to use our compiled version of Qt 64bit 
 	::for /f "tokens=*" %a in ('echo %DEP_PATH%^| sed "s/\\/\\\\/g"') do set DEP_PATH_ESCAPED=%a
 	sed -e "/<AdditionalDependencies>/ s/c:\\Qt\\4.8.6_win32/c:\\Users\\Lex\\Documents\\Github\\Natron3rdParty\\Qt4.8.6_64bit/g" -i App\Natron.vcxproj Renderer\NatronRenderer.vcxproj Tests\Tests.vcxproj
 )
@@ -169,6 +171,19 @@ if "%CONFIGURATION%" == "Release" (
 	copy /Y %DEP_PATH%\cairo_1.12\lib\%BUILD_SUB_DIR%\cairo.dll %DEPLOY_DIR%\bin
 	copy /Y C:\glew\bin\Release\%BUILD_SUB_DIR%\glew32.dll %DEPLOY_DIR%\bin
 	copy /Y C:\boost\%BUILD_SUB_DIR%\boost_serialization-vc100-mt-1_57.dll %DEPLOY_DIR%\bin
+	copy /Y %PYTHON_DIR%\Lib\site-packages\PySide\shiboken-python3.4.dll %DEPLOY_DIR%\bin
+	copy /Y %PYTHON_DIR%\Lib\site-packages\PySide\pyside-python3.4.dll %DEPLOY_DIR%\bin
+	copy /Y %PYTHON_DIR%\DLLs\python3.dll %DEPLOY_DIR%\bin	
+	mkdir -p %PYTHON_DIR%\DLLs %DEPLOY_DIR%\bin\DLLs
+	xcopy /Y /E %PYTHON_DIR%\DLLs %DEPLOY_DIR%\bin\DLLs
+	mkdir -p %PYTHON_DIR%\Lib %DEPLOY_DIR%\bin\Lib
+	xcopy /Y /E %PYTHON_DIR%\Lib %DEPLOY_DIR%\bin\Lib
+	for /d %%G in (%DEPLOY_DIR%\bin\Lib\__pycache__,%DEPLOY_DIR%\bin\Lib\*\__pycache__,%DEPLOY_DIR%\bin\Lib\site-packages) do rd /s /q "%%~G"
+	mkdir -p %DEPLOY_DIR%\bin\Lib\site-packages
+	mkdir -p %DEPLOY_DIR%\Plugins\PySide
+	copy /Y %PYTHON_DIR%\Lib\site-packages\PySide\__init__.py %DEPLOY_DIR%\Plugins\PySide
+	copy /Y %PYTHON_DIR%\Lib\site-packages\PySide\_utils.py %DEPLOY_DIR%\Plugins\PySide
+	copy /Y %PYTHON_DIR%\Lib\site-packages\PySide\*.pyd %DEPLOY_DIR%\Plugins\PySide
 	
 	if "%BITS%" == "32" (
 		copy /Y "C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\redist\x86\Microsoft.VC100.CRT\msvcp100.dll" %DEPLOY_DIR%\bin
