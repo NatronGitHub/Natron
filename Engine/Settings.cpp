@@ -1990,7 +1990,12 @@ Settings::getFileFormatsForWritingAndWriter(std::map<std::string,std::string>* f
 void
 Settings::getOpenFXPluginsSearchPaths(std::list<std::string>* paths) const
 {
-    _extraPluginPaths->getPaths(paths);
+    assert(paths);
+    try {
+        _extraPluginPaths->getPaths(paths);
+    } catch (std::logic_error) {
+        paths->clear();
+    }
 }
 
 void

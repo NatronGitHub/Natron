@@ -654,8 +654,9 @@ NodeGraph::createNodeGUI(QVBoxLayout *dockContainer,
 
     if (isBd) {
         BackDropGui* bd = dynamic_cast<BackDropGui*>(node_ui.get());
+        assert(bd);
         NodeGuiList selectedNodes = _imp->_selection;
-        if ( !selectedNodes.empty() ) {
+        if ( bd && !selectedNodes.empty() ) {
             ///make the backdrop large enough to contain the selected nodes and position it correctly
             QRectF bbox;
             for (std::list<boost::shared_ptr<NodeGui> >::iterator it = selectedNodes.begin(); it != selectedNodes.end(); ++it) {
@@ -942,7 +943,10 @@ NodeGraph::moveNodesForIdealPosition(boost::shared_ptr<NodeGui> node,bool autoCo
                 boost::shared_ptr<NodeGuiI> output_i = (*it)->getNodeGui();
                 assert(output_i);
                 NodeGui* output = dynamic_cast<NodeGui*>(output_i.get());
-                output->moveBelowPositionRecursively(createdNodeRect);
+                assert(output);
+                if (output) {
+                    output->moveBelowPositionRecursively(createdNodeRect);
+                }
             }
             
             if ( !createdNodeInternal->isOutputNode() ) {
@@ -3443,11 +3447,14 @@ NodeGraphPrivate::pasteNode(const NodeSerialization & internalSerialization,
             assert(child);
             boost::shared_ptr<NodeGuiI> child_gui_i = child->getNodeGui();
             NodeGui* child_gui = dynamic_cast<NodeGui*>(child_gui_i.get());
-            NodeGuiSerialization gS;
-            gS.initialize(child_gui);
-            NodeGuiPtr newChild = pasteNode(**it, gS, QPointF(0,0),collection,parentName,clone);
-            if (newChild) {
-                newNodes.push_back(newChild);
+            assert(child_gui);
+            if (child_gui) {
+                NodeGuiSerialization gS;
+                gS.initialize(child_gui);
+                NodeGuiPtr newChild = pasteNode(**it, gS, QPointF(0,0),collection,parentName,clone);
+                if (newChild) {
+                    newNodes.push_back(newChild);
+                }
             }
         }
         restoreConnections(nodes, newNodes);
@@ -3685,7 +3692,10 @@ NodeGraph::deleteNodepluginsly(boost::shared_ptr<NodeGui> n)
                 NodeGraphI* graph_i = isGrp->getNodeGraph();
                 if (graph_i) {
                     NodeGraph* graph = dynamic_cast<NodeGraph*>(graph_i);
-                    getGui()->removeGroupGui(graph, true);
+                    assert(graph);
+                    if (graph) {
+                        getGui()->removeGroupGui(graph, true);
+                    }
                 }
             }
         }

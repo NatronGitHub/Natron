@@ -47,6 +47,7 @@ main(int argc,
         
         AppManager manager;
 
+        // coverity[tainted_data]
         if (!manager.load(argc,argv,args) ) {
             return 1;
         } else {
@@ -56,6 +57,7 @@ main(int argc,
         
         GuiApplicationManager manager;
         
+        // coverity[tainted_data]
         bool loaded = manager.load(argc,argv,args);
         if (!loaded) {
             return 1;

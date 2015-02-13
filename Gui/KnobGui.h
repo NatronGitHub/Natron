@@ -158,9 +158,12 @@ public:
                  bool refreshGui,
                  Natron::ValueChangedReasonEnum reason)
     {
+        KnobHelper::ValueChangedReturnCodeEnum ret = KnobHelper::eValueChangedReturnCodeNothingChanged;
         Knob<T>* knob = dynamic_cast<Knob<T>*>( getKnob().get() );
-        KnobHelper::ValueChangedReturnCodeEnum ret = knob->setValue(v,dimension,reason,newKey);
-        
+        assert(knob);
+        if (knob) {
+            ret = knob->setValue(v,dimension,reason,newKey);
+        }
         if (ret > 0) {
             assert(newKey);
             if (ret == KnobHelper::eValueChangedReturnCodeKeyframeAdded) {

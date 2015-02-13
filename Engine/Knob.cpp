@@ -2288,13 +2288,14 @@ KnobHelper::addListener(bool isExpression,int fromExprDimension,KnobI* knob)
 {
     assert(fromExprDimension != -1);
     KnobHelper* slave = dynamic_cast<KnobHelper*>(knob);
-    
-    if ( slave->getHolder() && slave->getSignalSlotHandler() && getSignalSlotHandler() ) {
+    assert(slave);
+
+    if ( slave && slave->getHolder() && slave->getSignalSlotHandler() && getSignalSlotHandler() ) {
         ///hackish way to get a shared ptr to this knob
         slave->getHolder()->onKnobSlaved(slave, this,fromExprDimension,true );
     }
     
-    if (slave->_signalSlotHandler && _signalSlotHandler) {
+    if (slave && slave->_signalSlotHandler && _signalSlotHandler) {
         if (!isExpression) {
             QObject::connect(_signalSlotHandler.get() , SIGNAL( updateSlaves(int) ),slave->_signalSlotHandler.get() , SLOT( onMasterChanged(int) ) );
         } else {
@@ -2318,8 +2319,8 @@ void
 KnobHelper::removeListener(KnobI* knob)
 {
     KnobHelper* other = dynamic_cast<KnobHelper*>(knob);
-    
-    if (other->_signalSlotHandler && _signalSlotHandler) {
+    assert(other);
+    if (other && other->_signalSlotHandler && _signalSlotHandler) {
         QObject::disconnect( other->_signalSlotHandler.get(), SIGNAL( updateSlaves(int) ), _signalSlotHandler.get(), SLOT( onMasterChanged(int) ) );
     }
     

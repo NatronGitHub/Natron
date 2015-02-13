@@ -590,6 +590,7 @@ OfxImageEffectInstance::addParamsToTheirParents()
             if (grp && knobHolder) {
                 grp->addKnob( knobHolder->getKnob() );
             } else {
+                // coverity[dead_error_line]
                 qDebug() << "Warning: attempting to set a parent which is not a group to parameter " << (*it)->getName().c_str();
                 continue;
             }

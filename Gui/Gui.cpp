@@ -2249,7 +2249,9 @@ Gui::removeViewerTab(ViewerTab* tab,
         assert(graph_i);
         NodeGraph* graph = dynamic_cast<NodeGraph*>(graph_i);
         assert(graph);
-        graph->removeNode(gui);
+        if (graph) {
+            graph->removeNode(gui);
+        }
     } else {
         tab->hide();
 
