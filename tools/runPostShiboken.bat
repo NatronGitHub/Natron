@@ -8,3 +8,7 @@ sed -e "/SbkPySide_QtCoreTypeConverters;/d" -i  Gui/NatronGui/natrongui_module_w
 sed -e "/SbkNatronEngineTypes;/d" -i Gui/NatronGui/natrongui_module_wrapper.cpp
 sed -e "/SbkNatronEngineTypeConverters;/d" -i Gui/NatronGui/natrongui_module_wrapper.cpp
 sed -e "s/cleanTypesAttributes/cleanGuiTypesAttributes/g" -i Gui/NatronGui/natrongui_module_wrapper.cpp
+
+
+rm sed*
+rm */sed*

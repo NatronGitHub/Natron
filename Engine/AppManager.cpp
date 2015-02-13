@@ -2999,7 +2999,39 @@ Natron::PY3String_asString(PyObject* obj)
 void
 AppManager::initPython(int argc,char* argv[])
 {
-    
+    QString pythonPath(qgetenv("PYTHONPATH"));
+    //Add the Python distribution of Natron to the Python path
+    QString binPath = QCoreApplication::applicationDirPath();
+    binPath = QDir::toNativeSeparators(binPath);
+    bool pathEmpty = pythonPath.isEmpty();
+    QString toPrepend;
+#ifdef __NATRON_WIN32__
+    //toPrepend.append(binPath + "\\Lib");
+    //toPrepend.append(';');
+    toPrepend.append(binPath + "\\..\\Plugins");
+    if (!pathEmpty) {
+        toPrepend.push_back(';');
+    }
+#elif defined(__NATRON_OSX__)
+    toPrepend.append(binPath + "/../Frameworks/Python.framework/Versions/3.4/lib/python3.4");
+    toPrepend.append(';');
+    toPrepend.append(binPath + "/../Plugins");
+    if (!pathEmpty) {
+        toPrepend.push_back(':');
+    }
+#elif defined(__NATRON_LINUX__)
+    toPrepend.append(binPath + "/../lib/python3.4");
+    toPrepend.append(';');
+    toPrepend.append(binPath + "/../Plugins");
+    if (!pathEmpty) {
+        toPrepend.push_back(':');
+    }
+#endif
+
+
+    pythonPath.prepend(toPrepend);
+    qputenv("PYTHONPATH",pythonPath.toLatin1());
+    std::cout << "PYTHONPATH: " << pythonPath.toStdString() << std::endl;
     _imp->args.resize(argc);
     for (int i = 0; i < argc; ++i) {
         _imp->args[i] = char2wchar(argv[i]);
@@ -3009,9 +3041,12 @@ AppManager::initPython(int argc,char* argv[])
     
     ///Must be called prior to Py_Initialize
     initBuiltinPythonModules();
-    
+    //Py_NoSiteFlag = 1; 
     Py_Initialize();
-    
+#ifdef __NATRON_WIN32__
+    static std::wstring pythonHome = Natron::s2ws(std::string("."));
+    Py_SetPythonHome(const_cast<wchar_t*>(pythonHome.c_str()));
+#endif
     _imp->mainModule = PyImport_ImportModule("__main__"); //create main module , new ref
     
     PySys_SetArgv(argc,_imp->args.data()); /// relative module import
