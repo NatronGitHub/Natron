@@ -379,6 +379,7 @@ public:
         eCanConnectInput_indexOutOfRange,
         eCanConnectInput_inputAlreadyConnected,
         eCanConnectInput_givenNodeNotConnectable,
+        eCanConnectInput_groupHasNoOutput,
         eCanConnectInput_graphCycles,
         eCanConnectInput_differentPars,
         eCanConnectInput_differentFPS

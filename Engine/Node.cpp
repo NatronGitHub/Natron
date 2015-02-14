@@ -2189,6 +2189,11 @@ Node::canConnectInput(const boost::shared_ptr<Node>& input,int inputNumber) cons
         return eCanConnectInput_givenNodeNotConnectable;
     }
     
+    NodeGroup* isGrp = dynamic_cast<NodeGroup*>(input->getLiveInstance());
+    if (isGrp && !isGrp->getOutputNode()) {
+        return eCanConnectInput_groupHasNoOutput;
+    }
+    
     if (getParentMultiInstance() || input->getParentMultiInstance()) {
         return eCanConnectInput_inputAlreadyConnected;
     }
@@ -2711,7 +2716,7 @@ Node::deactivate(const std::list< Node* > & outputsToDisconnect,
         
         if (hasOnlyOneInputConnected) {
             if (firstNonOptionalInput != -1) {
-                inputToConnectTo = getInput(firstNonOptionalInput);
+                inputToConnectTo = getRealInput(firstNonOptionalInput);
             } else if (firstOptionalInput) {
                 inputToConnectTo = firstOptionalInput;
             }

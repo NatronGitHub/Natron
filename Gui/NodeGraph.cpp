@@ -1358,7 +1358,7 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
                     if (linkRetCode != Natron::Node::eCanConnectInput_ok && linkRetCode != Natron::Node::eCanConnectInput_inputAlreadyConnected) {
                         if (linkRetCode == Natron::Node::eCanConnectInput_differentPars) {
                             
-                            QString error = QString(tr("You cannot connect ") +  "%1" + " to " + "%2"  + tr(" because they don't have the same pixel aspect ratio (")
+                            QString error = QString(tr("You cannot connect ") +  "%1" + tr(" to ") + "%2"  + tr(" because they don't have the same pixel aspect ratio (")
                                                     + "%3 / %4 " +  tr(") and ") + "%1 " + " doesn't support inputs with different pixel aspect ratio.")
                             .arg(nodeHoldingEdge->getNode()->getLabel().c_str())
                             .arg(n->getNode()->getLabel().c_str())
@@ -1368,11 +1368,19 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
                                                 error.toStdString());
                         } else if (linkRetCode == Natron::Node::eCanConnectInput_differentFPS) {
 
-                            QString error = QString(tr("You cannot connect ") +  "%1" + " to " + "%2"  + tr(" because they don't have the same frame rate (") + "%3 / %4). Either change the FPS from the Read node parameters or change the settings of the project.")
+                            QString error = QString(tr("You cannot connect ") +  "%1" + tr(" to ") + "%2"  + tr(" because they don't have the same frame rate (") + "%3 / %4). Either change the FPS from the Read node parameters or change the settings of the project.")
                             .arg(nodeHoldingEdge->getNode()->getLabel().c_str())
                             .arg(n->getNode()->getLabel().c_str())
                             .arg(nodeHoldingEdge->getNode()->getLiveInstance()->getPreferredFrameRate())
                             .arg(n->getNode()->getLiveInstance()->getPreferredFrameRate());
+                            Natron::errorDialog(tr("Different frame rate").toStdString(),
+                                                error.toStdString());
+
+                        } else if (linkRetCode == Natron::Node::eCanConnectInput_groupHasNoOutput) {
+                            QString error = QString(tr("You cannot connect ") + "%1 " + tr(" to ") + " %2 " + tr("because it is a group which does "
+                                                                                                                 "not have an Output node."))
+                            .arg(nodeHoldingEdge->getNode()->getLabel().c_str())
+                            .arg(n->getNode()->getLabel().c_str());
                             Natron::errorDialog(tr("Different frame rate").toStdString(),
                                                 error.toStdString());
 
@@ -1411,7 +1419,16 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
                                 Natron::errorDialog(tr("Different frame rate").toStdString(),
                                                     error.toStdString());
 
+                            } else if (linkRetCode == Natron::Node::eCanConnectInput_groupHasNoOutput) {
+                                QString error = QString(tr("You cannot connect ") + "%1 " + tr(" to ") + " %2 " + tr("because it is a group which does "
+                                                                                                                     "not have an Output node."))
+                                .arg(nodeHoldingEdge->getNode()->getLabel().c_str())
+                                .arg(n->getNode()->getLabel().c_str());
+                                Natron::errorDialog(tr("Different frame rate").toStdString(),
+                                                    error.toStdString());
+                                
                             }
+
 
                             
                             break;
@@ -2498,13 +2515,7 @@ NodeGraph::keyReleaseEvent(QKeyEvent* e)
 void
 NodeGraph::removeNode(const boost::shared_ptr<NodeGui> & node)
 {
-    NodeGroup* isGrp = dynamic_cast<NodeGroup*>(getGroup().get());
-    if (isGrp && node->getNode()->getPluginID() == PLUGINID_NATRON_OUTPUT) {
-        Natron::errorDialog(tr("Operation failed").toStdString(), tr("You cannot remove the Output node of a group, it "
-                                                                     "needs to exist for the group to work properly.")
-                            .toStdString());
-        return;
-    }
+ 
 
     const std::vector<boost::shared_ptr<KnobI> > & knobs = node->getNode()->getKnobs();
 
@@ -2562,13 +2573,6 @@ NodeGraph::deleteSelection()
 
 
         for (NodeGuiList::iterator it = nodesToRemove.begin(); it != nodesToRemove.end(); ++it) {
-            
-            if ((*it)->getNode()->getPluginID() == PLUGINID_NATRON_OUTPUT) {
-                Natron::errorDialog(tr("Operation failed").toStdString(), tr("You cannot remove the Output node of a group, it "
-                                                                             "needs to exist for the group to work properly.")
-                                    .toStdString());
-                return;
-            }
             
             const std::vector<boost::shared_ptr<KnobI> > & knobs = (*it)->getNode()->getKnobs();
             bool mustBreak = false;
