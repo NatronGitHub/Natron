@@ -7,7 +7,7 @@ Required: Install git, best is the github app.
 
 In order to have Natron compiling, first you need to install the required libraries.
 An alternative is to download the pre-compiled binaries provided by MrKepzie from
-[Dropbox](https://www.dropbox.com/s/k2kuyhaze4855ti/Natron3rdParty.zip)
+https://sourceforge.net/projects/natron/files/Natron_Windows_3rdParty.zip/download
 They contain:
 * Qt 4.8.5 compiled for 64 bits as dlls. 32 bits version can be downloaded from the Qt website (see below)
 * Qt 5.3.0  compiled for 64 bits as dlls. 32 bits version can be downloaded from the Qt website (see below)

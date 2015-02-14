@@ -62,12 +62,14 @@ if "%BITS%" == "32" (
 	echo Building Natron x86 32 bit %CONFIGURATION%.
 	set BUILD_SUB_DIR=win32
 	set QT_LIBRARIES_DIR=C:\Qt\4.8.6_win32
+	set PYTHON_DLL_DIR=C:\Windows\SysWOW64
 	set PYTHON_DIR=C:\Python34_win32
 	set MSVC_CONF=Win32
 ) else if "%BITS%" == "64" (
 	echo Building Natron x86 64 bit %CONFIGURATION%.
 	set BUILD_SUB_DIR=x64
 	set QT_LIBRARIES_DIR=%DEP_PATH%\Qt4.8.6_64bit
+	set PYTHON_DLL_DIR=C:\Windows\System32
 	set PYTHON_DIR=C:\Python34
 	set MSVC_CONF=x64
 ) else (
@@ -173,7 +175,7 @@ if "%CONFIGURATION%" == "Release" (
 	copy /Y C:\boost\%BUILD_SUB_DIR%\boost_serialization-vc100-mt-1_57.dll %DEPLOY_DIR%\bin
 	copy /Y %PYTHON_DIR%\Lib\site-packages\PySide\shiboken-python3.4.dll %DEPLOY_DIR%\bin
 	copy /Y %PYTHON_DIR%\Lib\site-packages\PySide\pyside-python3.4.dll %DEPLOY_DIR%\bin
-	copy /Y %PYTHON_DIR%\DLLs\python3.dll %DEPLOY_DIR%\bin	
+	copy /Y %PYTHON_DLL_DIR%\python34.dll %DEPLOY_DIR%\bin	
 	mkdir %PYTHON_DIR%\DLLs %DEPLOY_DIR%\bin\DLLs
 	xcopy /Y /E %PYTHON_DIR%\DLLs %DEPLOY_DIR%\bin\DLLs
 	mkdir %PYTHON_DIR%\Lib %DEPLOY_DIR%\bin\Lib
