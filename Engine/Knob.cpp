@@ -342,7 +342,8 @@ KnobHelper::~KnobHelper()
 void
 KnobHelper::deleteKnob()
 {
-    for (std::list<KnobI*>::iterator it = _imp->listeners.begin(); it != _imp->listeners.end(); ++it) {
+    std::list<KnobI*> listenersCpy = _imp->listeners;
+    for (std::list<KnobI*>::iterator it = listenersCpy.begin(); it != listenersCpy.end(); ++it) {
         for (int i = 0; i < (*it)->getDimension(); ++i) {
             (*it)->clearExpression(i);
         }

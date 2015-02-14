@@ -621,8 +621,12 @@ Node::getHashValue() const
 }
 
 void
-Node::computeHash()
+Node::computeHashInternal(std::list<Natron::Node*>& marked)
 {
+    if (std::find(marked.begin(), marked.end(), this) != marked.end()) {
+        return;
+    }
+    
     ///Always called in the main thread
     assert( QThread::currentThread() == qApp->thread() );
     if (!_imp->inputsInitialized) {
@@ -677,14 +681,37 @@ Node::computeHash()
         _imp->hash.computeHash();
     }
     
+    marked.push_back(this);
+    
     ///call it on all the outputs
     std::list<Node*> outputs;
     getOutputsWithGroupRedirection(outputs);
     for (std::list<Node*>::iterator it = outputs.begin(); it != outputs.end(); ++it) {
         assert(*it);
-        (*it)->computeHash();
+        (*it)->computeHashInternal(marked);
     }
+    
     _imp->liveInstance->onNodeHashChanged(getHashValue());
+    
+    ///If the node is a group, call it on all nodes in the group
+    ///Also force a change to their hash
+    NodeGroup* group = dynamic_cast<NodeGroup*>(getLiveInstance());
+    if (group) {
+        NodeList nodes = group->getNodes();
+        for (NodeList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+            assert(*it);
+            (*it)->incrementKnobsAge();
+            (*it)->computeHashInternal(marked);
+        }
+    }
+
+}
+
+void
+Node::computeHash()
+{
+    std::list<Natron::Node*> marked;
+    computeHashInternal(marked);
     
 } // computeHash
 

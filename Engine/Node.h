@@ -967,6 +967,8 @@ protected:
 
 private:
     
+    void computeHashInternal(std::list<Natron::Node*>& marked);
+    
     void declareRotoPythonField();
 
     
