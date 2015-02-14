@@ -3921,9 +3921,10 @@ Node::computeFrameRangeForReader(const KnobI* fileKnob)
                 leftBound = seq.begin()->first;
                 rightBound = seq.rbegin()->first;
             }
-            
+            originalFrameRange->beginChanges();
             originalFrameRange->setValue(leftBound, 0);
             originalFrameRange->setValue(rightBound, 1);
+            originalFrameRange->endChanges();
             
         }
     }
