@@ -1968,7 +1968,7 @@ NodeGraphPrivate::editSelectionFromSelectionRectangle(bool addToSelection)
 }
 
 void
-NodeGraph::mouseDoubleClickEvent(QMouseEvent* /*e*/)
+NodeGraph::mouseDoubleClickEvent(QMouseEvent* e)
 {
     
     QPointF lastMousePosScene = mapToScene(_imp->_lastMousePos);
@@ -1985,34 +1985,40 @@ NodeGraph::mouseDoubleClickEvent(QMouseEvent* /*e*/)
     }
     if (!matches.empty()) {
         const NodeGuiPtr& node = matches.rbegin()->second;
-        if ( !node->isSettingsPanelVisible() ) {
-            node->setVisibleSettingsPanel(true);
+        if (modCASIsControl(e)) {
+            node->getSettingPanel()->floatPanel();
+        } else {
+            if ( !node->isSettingsPanelVisible() ) {
+                node->setVisibleSettingsPanel(true);
+            }
+            _imp->_gui->putSettingsPanelFirst( node->getSettingPanel() );
         }
         if ( !node->wasBeginEditCalled() ) {
             node->beginEditKnobs();
         }
-        _imp->_gui->putSettingsPanelFirst( node->getSettingPanel() );
         
-        NodeGroup* isGrp = dynamic_cast<NodeGroup*>(node->getNode()->getLiveInstance());
-        if (isGrp) {
-            NodeGraphI* graph_i = isGrp->getNodeGraph();
-            assert(graph_i);
-            NodeGraph* graph = dynamic_cast<NodeGraph*>(graph_i);
-            if (graph) {
-                TabWidget* isParentTab = dynamic_cast<TabWidget*>(graph->parentWidget());
-                if (isParentTab) {
-                    isParentTab->setCurrentWidget(graph);
-                } else {
-                    NodeGraph* lastSelectedGraph = _imp->_gui->getLastSelectedGraph();
-                    ///We're in the double click event, it should've entered the focus in event beforehand!
-                    assert(lastSelectedGraph == this);
-                    
-                    isParentTab = dynamic_cast<TabWidget*>(lastSelectedGraph->parentWidget());
-                    assert(isParentTab);
-                    isParentTab->appendTab(graph,graph);
-
+        if (modCASIsShift(e)) {
+            NodeGroup* isGrp = dynamic_cast<NodeGroup*>(node->getNode()->getLiveInstance());
+            if (isGrp) {
+                NodeGraphI* graph_i = isGrp->getNodeGraph();
+                assert(graph_i);
+                NodeGraph* graph = dynamic_cast<NodeGraph*>(graph_i);
+                if (graph) {
+                    TabWidget* isParentTab = dynamic_cast<TabWidget*>(graph->parentWidget());
+                    if (isParentTab) {
+                        isParentTab->setCurrentWidget(graph);
+                    } else {
+                        NodeGraph* lastSelectedGraph = _imp->_gui->getLastSelectedGraph();
+                        ///We're in the double click event, it should've entered the focus in event beforehand!
+                        assert(lastSelectedGraph == this);
+                        
+                        isParentTab = dynamic_cast<TabWidget*>(lastSelectedGraph->parentWidget());
+                        assert(isParentTab);
+                        isParentTab->appendTab(graph,graph);
+                        
+                    }
+                    QTimer::singleShot(25, graph, SLOT(centerOnAllNodes()));
                 }
-                QTimer::singleShot(25, graph, SLOT(centerOnAllNodes()));
             }
         }
         
