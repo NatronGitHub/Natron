@@ -1648,7 +1648,7 @@ Settings::populateReaderPluginsAndFormats(const std::map<std::string,std::vector
     std::vector<boost::shared_ptr<KnobI> > knobs;
     for (std::map<std::string,std::vector< std::pair<std::string,double> > >::const_iterator it = rows.begin(); it != rows.end(); ++it) {
         boost::shared_ptr<Choice_Knob> k = Natron::createKnob<Choice_Knob>(this, it->first);
-        k->setName("Reader." + it->first);
+        k->setName("Reader_" + it->first);
         k->setAnimationEnabled(false);
         
         std::vector<std::string> entries;
@@ -1683,7 +1683,7 @@ Settings::populateWriterPluginsAndFormats(const std::map<std::string,std::vector
 
     for (std::map<std::string,std::vector< std::pair<std::string,double> > >::const_iterator it = rows.begin(); it != rows.end(); ++it) {
         boost::shared_ptr<Choice_Knob> k = Natron::createKnob<Choice_Knob>(this, it->first);
-        k->setName("Writer." + it->first);
+        k->setName("Writer_" + it->first);
         k->setAnimationEnabled(false);
         
         std::vector<std::string> entries;
@@ -1964,7 +1964,7 @@ Settings::getFileFormatsForReadingAndReader(std::map<std::string,std::string>* f
 
         assert( index < (int)entries.size() );
         std::string name = _readersMapping[i]->getName();
-        std::size_t prefix = name.find("Reader.");
+        std::size_t prefix = name.find("Reader_");
         assert(prefix != std::string::npos);
         name.erase(prefix,7);
         formats->insert( std::make_pair(name,entries[index]) );
@@ -1980,7 +1980,7 @@ Settings::getFileFormatsForWritingAndWriter(std::map<std::string,std::string>* f
 
         assert( index < (int)entries.size() );
         std::string name = _writersMapping[i]->getName();
-        std::size_t prefix = name.find("Writer.");
+        std::size_t prefix = name.find("Writer_");
         assert(prefix != std::string::npos);
         name.erase(prefix,7);
         formats->insert( std::make_pair(name,entries[index]) );
