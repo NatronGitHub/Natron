@@ -1421,6 +1421,8 @@ KnobHelperPrivate::parseListenersFromExpression(int dimension)
 std::string
 KnobHelper::validateExpression(const std::string& expression,int dimension,bool hasRetVariable,std::string* resultAsString)
 {
+    Natron::PythonGILLocker pgl;
+    
     if (expression.empty()) {
         throw std::invalid_argument("empty expression");;
     }
