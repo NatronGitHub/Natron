@@ -346,6 +346,8 @@ public:
     
     virtual void closeLoadPRojectSplashScreen() {}
     
+    std::string getAppIDString() const;
+    
 public Q_SLOTS:
     
     void quit();

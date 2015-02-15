@@ -870,12 +870,13 @@ GuiAppInstance::discardLastViewerUsingTimeline()
 void
 GuiAppInstance::declareCurrentAppVariable_Python()
 {
+    std::string appIDStr = getAppIDString();
     /// define the app variable
     std::stringstream ss;
-    ss << "app" << getAppID() + 1 << " = natron.getGuiInstance(" << getAppID() << ") \n";
+    ss << appIDStr << " = natron.getGuiInstance(" << getAppID() << ") \n";
     const std::vector<boost::shared_ptr<KnobI> >& knobs = getProject()->getKnobs();
     for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
-        ss << "app" << getAppID() + 1 << "." << (*it)->getName() << " = app" << getAppID() + 1 << ".getProjectParam('" <<
+        ss << appIDStr << "." << (*it)->getName() << " = "  << appIDStr  << ".getProjectParam('" <<
         (*it)->getName() << "')\n";
     }
 

@@ -167,10 +167,14 @@ static PyObject* Sbk_EffectFunc_connectInput(PyObject* self, PyObject* args)
 
         if (!PyErr_Occurred()) {
             // connectInput(int,const Effect*)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            bool cppResult = cppSelf->connectInput(cppArg0, cppArg1);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            // Begin code injection
+
+            bool cppResult = cppSelf->connectInput(cppArg0,cppArg1);
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), &cppResult);
+
+            // End of code injection
+
+
         }
     }
 
@@ -322,9 +326,13 @@ static PyObject* Sbk_EffectFunc_disconnectInput(PyObject* self, PyObject* pyArg)
 
         if (!PyErr_Occurred()) {
             // disconnectInput(int)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            // Begin code injection
+
             cppSelf->disconnectInput(cppArg0);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+
+            // End of code injection
+
+
         }
     }
 

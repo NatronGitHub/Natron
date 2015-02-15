@@ -5869,7 +5869,7 @@ RotoContextPrivate::applyAndDestroyMask(cairo_t* cr,
 void
 RotoContext::changeItemScriptName(const std::string& oldFullyQualifiedName,const std::string& newFullyQUalifiedName)
 {
-    std::string appID = QString("app%1").arg(getNode()->getApp()->getAppID()+1).toStdString();
+    std::string appID = getNode()->getApp()->getAppIDString();
     std::string nodeName = appID + "." + getNode()->getFullyQualifiedName();
     std::string err;
     
@@ -5887,7 +5887,7 @@ RotoContext::changeItemScriptName(const std::string& oldFullyQualifiedName,const
 void
 RotoContext::removeItemAsPythonField(const boost::shared_ptr<RotoItem>& item)
 {
-    std::string appID = QString("app%1").arg(getNode()->getApp()->getAppID()+1).toStdString();
+    std::string appID = getNode()->getApp()->getAppIDString();
     std::string nodeName = appID + "." + getNode()->getFullyQualifiedName();
     std::string err;
     std::string script = "del " + nodeName + ".roto." + item->getFullyQualifiedName() + "\n";
@@ -5904,7 +5904,7 @@ RotoContext::removeItemAsPythonField(const boost::shared_ptr<RotoItem>& item)
 void
 RotoContext::declareItemAsPythonField(const boost::shared_ptr<RotoItem>& item)
 {
-    std::string appID = QString("app%1").arg(getNode()->getApp()->getAppID()+1).toStdString();
+    std::string appID = getNode()->getApp()->getAppIDString();
     std::string nodeName = appID + "." + getNode()->getFullyQualifiedName();
     RotoLayer* isLayer = dynamic_cast<RotoLayer*>(item.get());
     

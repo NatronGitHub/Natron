@@ -539,7 +539,7 @@ void
 Node::declareRotoPythonField()
 {
     assert(_imp->rotoContext);
-    std::string appID = QString("app%1").arg(getApp()->getAppID()+1).toStdString();
+    std::string appID = getApp()->getAppIDString();
     std::string fullyQualifiedName = appID + "." +getFullyQualifiedName();
     std::string err;
     std::string script = fullyQualifiedName + ".roto = " + fullyQualifiedName + ".getRotoContext()\n";
@@ -4629,15 +4629,15 @@ Node::declareCurrentNodeVariable_Python(std::string* deleteScript) const
     
     NodeGroup* isParentGrp = dynamic_cast<NodeGroup*>(collection.get());
     
-    int appID = getApp()->getAppID() + 1 ;
+    std::string appID = getApp()->getAppIDString();
     ///Now define the thisNode variable
     std::stringstream ss;
-    ss << "app = " << "app" << appID << "\n";
+    ss << "app = " << appID << "\n";
     if (isParentGrp) {
-        ss << "thisGroup = " << "app" << appID << "." << isParentGrp->getNode()->getFullyQualifiedName() << "\n";
+        ss << "thisGroup = " << appID << "." << isParentGrp->getNode()->getFullyQualifiedName() << "\n";
         deleteScript->append("del thisGroup\n");
     }
-    ss << "thisNode = " << "app" << appID << "." << getFullyQualifiedName() <<  "\n";
+    ss << "thisNode = " << appID << "." << getFullyQualifiedName() <<  "\n";
     deleteScript->append("del thisNode\n");
     return ss.str();
 }
@@ -4735,10 +4735,12 @@ static PyObject* getAttrRecursive(const std::string& fullyQualifiedName,PyObject
 void
 Node::declareNodeVariableToPython(const std::string& nodeName)
 {
+    Natron::PythonGILLocker pgl;
+    
     PyObject* mainModule = appPTR->getMainModule();
     assert(mainModule);
     
-    std::string appID = QString("app%1").arg(getApp()->getAppID() + 1).toStdString();
+    std::string appID = getApp()->getAppIDString();
     
     std::string varName = appID + "." + nodeName;
     bool alreadyDefined = false;
@@ -4764,7 +4766,7 @@ void
 Node::setNodeVariableToPython(const std::string& oldName,const std::string& newName)
 {
 
-    QString appID = QString("app%1").arg(getApp()->getAppID() + 1);
+    QString appID(getApp()->getAppIDString().c_str());
     QString str = QString(appID + ".%1 = " + appID + ".%2\ndel " + appID + ".%2\n").arg(newName.c_str()).arg(oldName.c_str());
     std::string script = str.toStdString();
     std::string err;
@@ -4783,7 +4785,7 @@ Node::deleteNodeVariableToPython(const std::string& nodeName)
     if (getParentMultiInstance()) {
         return;
     }
-    QString appID = QString("app%1").arg(getApp()->getAppID() + 1);
+    QString appID(getApp()->getAppIDString().c_str());
     QString str = QString("del " + appID + ".%1").arg(nodeName.c_str());
     std::string script = str.toStdString();
     std::string err;
@@ -4801,6 +4803,8 @@ Node::deleteNodeVariableToPython(const std::string& nodeName)
 void
 Node::declarePythonFields()
 {
+    Natron::PythonGILLocker pgl;
+    
     if (!getGroup()) {
         return ;
     }
@@ -4808,7 +4812,7 @@ Node::declarePythonFields()
     std::locale locale;
     std::string fullName = getFullyQualifiedName();
     
-    std::string appID = QString("app%1").arg(getApp()->getAppID() + 1).toStdString();
+    std::string appID = getApp()->getAppIDString();
     bool alreadyDefined = false;
     
     std::string nodeFullName = appID + "." + fullName;
@@ -4835,6 +4839,7 @@ Node::declareParameterAsNodeField(const std::string& nodeName,PyObject* nodeObj,
     if (PyObject_HasAttrString(nodeObj, parameterName.c_str())) {
         return;
     }
+    
     std::string script = nodeName +  "." + parameterName + " = " +
     nodeName + ".getParam(\"" + parameterName + "\")\n";
     std::string err;
@@ -4863,7 +4868,7 @@ Node::Implementation::runOnNodeCreatedCB(bool userEdited)
     std::string delScript;
     std::string thisNode = _publicInterface->declareCurrentNodeVariable_Python(&delScript);
     
-    QString appID = QString("app%1").arg(_publicInterface->getApp()->getAppID() + 1);
+    std::string appID = _publicInterface->getApp()->getAppIDString();
     
     std::stringstream ss;
     ss << thisNode;
@@ -4872,7 +4877,7 @@ Node::Implementation::runOnNodeCreatedCB(bool userEdited)
     } else {
         ss << "userEdited = False\n";
     }
-    ss << "app = " << appID.toStdString() << "\n";
+    ss << "app = " << appID << "\n";
     ss << cb << "()\n";
     ss << delScript << "del userEdited\n";
     
@@ -4895,11 +4900,11 @@ Node::Implementation::runOnNodeDeleteCB()
     std::string delScript;
     std::string thisNode = _publicInterface->declareCurrentNodeVariable_Python(&delScript);
     
-    QString appID = QString("app%1").arg(_publicInterface->getApp()->getAppID() + 1);
+    std::string appID = _publicInterface->getApp()->getAppIDString();
     
     std::stringstream ss;
     ss << thisNode;
-    ss << "app = " << appID.toStdString() << "\n";
+    ss << "app = " << appID << "\n";
     ss << cb << "()\n" << delScript;
     
     std::string err;

@@ -1300,7 +1300,7 @@ KnobGui::copyToClipBoard(bool copyAnimation) const
         }
     }
     
-    std::string appID = QString("app%1").arg(getGui()->getApp()->getAppID() + 1).toStdString();
+    std::string appID = getGui()->getApp()->getAppIDString();
     std::string nodeFullyQualifiedName;
     KnobHolder* holder = getKnob()->getHolder();
     if (holder) {

@@ -74,10 +74,14 @@ static PyObject* Sbk_Int3DParamFunc_get(PyObject* self, PyObject* args)
 
             if (!PyErr_Occurred()) {
                 // get()const
-                PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-                Int3DTuple* cppResult = new Int3DTuple(const_cast<const ::Int3DParamWrapper*>(cppSelf)->get());
-                PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
-                pyResult = Shiboken::Object::newObject((SbkObjectType*)SbkNatronEngineTypes[SBK_INT3DTUPLE_IDX], cppResult, true, true);
+                // Begin code injection
+
+                Int3DTuple cppResult = cppSelf->get();
+                pyResult = Shiboken::Conversions::copyToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_INT3DTUPLE_IDX], &cppResult);
+
+                // End of code injection
+
+
             }
             break;
         }
@@ -88,10 +92,14 @@ static PyObject* Sbk_Int3DParamFunc_get(PyObject* self, PyObject* args)
 
             if (!PyErr_Occurred()) {
                 // get(int)const
-                PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-                Int3DTuple* cppResult = new Int3DTuple(const_cast<const ::Int3DParamWrapper*>(cppSelf)->get(cppArg0));
-                PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
-                pyResult = Shiboken::Object::newObject((SbkObjectType*)SbkNatronEngineTypes[SBK_INT3DTUPLE_IDX], cppResult, true, true);
+                // Begin code injection
+
+                Int3DTuple cppResult = cppSelf->get(cppArg0);
+                pyResult = Shiboken::Conversions::copyToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_INT3DTUPLE_IDX], &cppResult);
+
+                // End of code injection
+
+
             }
             break;
         }

@@ -1494,6 +1494,8 @@ KnobHelper::validateExpression(const std::string& expression,int dimension,bool 
 void
 KnobHelper::setExpression(int dimension,const std::string& expression,bool hasRetVariable)
 {
+    Natron::PythonGILLocker pgl;
+    
     ///Clear previous expr
     clearExpression(dimension);
     
@@ -1522,7 +1524,7 @@ KnobHelper::setExpression(int dimension,const std::string& expression,bool hasRe
         ++_expressionsRecursionLevel;
         
         try {
-        
+            Natron::PythonGILLocker pgl;
             PyObject* ret = executeExpression(dimension);
             Py_DECREF(ret); //< new ref
 
@@ -1570,6 +1572,7 @@ KnobHelper::isExpressionUsingRetVariable(int dimension) const
 void
 KnobHelper::clearExpression(int dimension)
 {
+    Natron::PythonGILLocker pgl;
     {
         QMutexLocker k(&_imp->expressionMutex);
         _imp->expressions[dimension].expression.clear();
@@ -1635,17 +1638,24 @@ KnobHelper::expressionChanged(int dimension)
 PyObject*
 KnobHelper::executeExpression(int dimension) const
 {
+    
     Expr exp;
     {
         QMutexLocker k(&_imp->expressionMutex);
         exp = _imp->expressions[dimension];
     }
+    
     //returns a new ref, this function's documentation is not clear onto what it returns...
     //https://docs.python.org/2/c-api/veryhigh.html
     PyObject* mainModule = getMainModule();
     PyObject* globalDict = PyModule_GetDict(mainModule);
+    
+
+    
     PyObject* evalRet = PyEval_EvalCode(exp.code, globalDict, 0);
     Py_XDECREF(evalRet);
+    
+    
     
     if (PyErr_Occurred()) {
 #ifdef DEBUG

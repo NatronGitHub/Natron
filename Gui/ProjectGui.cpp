@@ -483,9 +483,9 @@ ProjectGui::load(boost::archive::xml_iarchive & archive)
     }
 
     if (!pythonPanels.empty()) {
-        QString appID = QString("app%1").arg(_gui->getApp()->getAppID() + 1);
+        std::string appID = _gui->getApp()->getAppIDString();
         std::string err;
-        bool ok = Natron::interpretPythonScript("app = " + appID.toStdString() + "\n", &err, 0);
+        bool ok = Natron::interpretPythonScript("app = " + appID + "\n", &err, 0);
         assert(ok);
     }
     for (std::list<boost::shared_ptr<PythonPanelSerialization> >::const_iterator it = pythonPanels.begin(); it != pythonPanels.end(); ++it) {
