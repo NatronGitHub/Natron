@@ -369,7 +369,7 @@ Q_SIGNALS:
     /**
      * @brief Emitted when the image texture changes.
      **/
-    void imageChanged(int texIndex);
+    void imageChanged(int texIndex,bool hasImageBackEnd);
 
     /**
      * @brief Emitted when the selection rectangle has changed.

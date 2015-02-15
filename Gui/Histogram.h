@@ -78,7 +78,7 @@ public Q_SLOTS:
 
     void onCurrentViewerChanged(QAction*);
 
-    void onViewerImageChanged(ViewerGL* viewer,int texIndex);
+    void onViewerImageChanged(ViewerGL* viewer,int texIndex,bool hasImageBackend);
 
 private:
 

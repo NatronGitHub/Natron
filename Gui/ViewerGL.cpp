@@ -2445,10 +2445,14 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
         }
         _imp->memoryHeldByLastRenderedImages[textureIndex] = image->size();
         internalNode->registerPluginMemory(_imp->memoryHeldByLastRenderedImages[textureIndex]);
+        Q_EMIT imageChanged(textureIndex,true);
+    } else {
+        if (!_imp->lastRenderedImage[textureIndex][mipMapLevel]) {
+            Q_EMIT imageChanged(textureIndex,false);
+        }
     }
     setRegionOfDefinition(rod,region.par,textureIndex);
 
-    Q_EMIT imageChanged(textureIndex);
 }
 
 void

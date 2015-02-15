@@ -2251,7 +2251,7 @@ OfxEffectInstance::onOverlayKeyUp(double scaleX,
             assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
         }
         
-        assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
+        //assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
         if (stat == kOfxStatOK) {
             return true;
         }
@@ -2326,7 +2326,7 @@ OfxEffectInstance::onOverlayFocusGained(double scaleX,
         SET_CAN_SET_VALUE(true);
         stat = _overlayInteract->gainFocusAction(time, rs);
         /*}*/
-        assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
+        //assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
         if (stat == kOfxStatOK) {
             return true;
         }
@@ -2364,7 +2364,7 @@ OfxEffectInstance::onOverlayFocusLost(double scaleX,
         stat = _overlayInteract->loseFocusAction(time, rs);
         /*}*/
 
-        assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
+        //assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
         if (stat == kOfxStatOK) {
             return true;
         }
