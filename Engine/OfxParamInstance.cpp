@@ -994,10 +994,12 @@ OfxRGBAInstance::set(double r,
                      double b,
                      double a)
 {
+    _knob->beginChanges();
     _knob->setValueFromPlugin(r,0);
     _knob->setValueFromPlugin(g,1);
     _knob->setValueFromPlugin(b,2);
     _knob->setValueFromPlugin(a,3);
+    _knob->endChanges();
 
     return kOfxStatOK;
 }
@@ -1013,11 +1015,12 @@ OfxRGBAInstance::set(OfxTime time,
         qDebug() << "Attempting to call setValueAtTime on a parameter that does not have animation enabled";
         return set(r,g,b,a);
     }
+    _knob->beginChanges();
     _knob->setValueAtTimeFromPlugin(time,r,0);
     _knob->setValueAtTimeFromPlugin(time,g,1);
     _knob->setValueAtTimeFromPlugin(time,b,2);
     _knob->setValueAtTimeFromPlugin(time,a,3);
-
+    _knob->endChanges();
     return kOfxStatOK;
 }
 
