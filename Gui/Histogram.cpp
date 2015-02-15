@@ -105,6 +105,8 @@ struct HistogramPrivate
           , vmin(0)
           , vmax(0)
           , binsCount(0)
+          , mipMapLevel(0)
+          , hasImage(false)
 #endif
          , sizeH()
     {
@@ -118,6 +120,10 @@ struct HistogramPrivate
     void drawScale();
 
     void drawPicker();
+    
+    void drawWarnings();
+    
+    void drawMissingImage();
 
     void updatePicker(double x);
 
@@ -238,6 +244,8 @@ struct HistogramPrivate
     unsigned int pixelsCount;
     double vmin,vmax; //< the x range of the histogram
     unsigned int binsCount;
+    unsigned int mipMapLevel;
+    bool hasImage;
 #endif // !NATRON_HISTOGRAM_USING_OPENGL
     
     QSize sizeH;
@@ -432,7 +440,7 @@ boost::shared_ptr<Natron::Image> HistogramPrivate::getHistogramImage(RectI* imag
         ViewerTab* lastSelectedViewer = gui->getLastSelectedViewer();
         boost::shared_ptr<Natron::Image> ret;
         if (lastSelectedViewer) {
-            ret = lastSelectedViewer->getViewer()->getLastRenderedImage(textureIndex);
+            ret = lastSelectedViewer->getViewer()->getLastRenderedImageByMipMapLevel(textureIndex,lastSelectedViewer->getInternalNode()->getMipMapLevelFromZoomFactor());
         }
         if (ret) {
             if (!useImageRoD) {
@@ -552,12 +560,13 @@ Histogram::onCurrentViewerChanged(QAction*)
 
 void
 Histogram::onViewerImageChanged(ViewerGL* viewer,
-                                int texIndex)
+                                int texIndex,
+                                bool hasImageBackend)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
-    if (viewer) {
+    if (viewer && hasImageBackend) {
         QString viewerName = viewer->getInternalNode()->getScriptName_mt_safe().c_str();
         ViewerTab* lastSelectedViewer = _imp->gui->getLastSelectedViewer();
         QString currentViewerName;
@@ -574,10 +583,15 @@ Histogram::onViewerImageChanged(ViewerGL* viewer,
                 QAction* currentInput = _imp->viewerCurrentInputGroup->checkedAction();
                 if ( currentInput && (currentInput->data().toInt() == texIndex) ) {
                     computeHistogramAndRefresh();
+                    return;
                 }
             }
         }
     }
+    
+    _imp->hasImage =false;
+    update();
+    
 }
 
 QSize
@@ -1116,19 +1130,27 @@ Histogram::paintGL()
         GLProtectMatrix m(GL_MODELVIEW);
         glLoadIdentity();
         glCheckError();
-
+        
         glClearColor(0,0,0,1);
         glClear(GL_COLOR_BUFFER_BIT);
         glCheckErrorIgnoreOSXBug();
-
+        
         _imp->drawScale();
-
+        
+        if (_imp->hasImage) {
 #ifndef NATRON_HISTOGRAM_USING_OPENGL
-        _imp->drawHistogramCPU();
+            _imp->drawHistogramCPU();
 #endif
-        if (_imp->drawCoordinates) {
-            _imp->drawPicker();
+            if (_imp->drawCoordinates) {
+                _imp->drawPicker();
+            }
+            
+            _imp->drawWarnings();
+            
+        } else {
+            _imp->drawMissingImage();
         }
+        
         glCheckError();
     } // GLProtectAttrib a(GL_TRANSFORM_BIT | GL_COLOR_BUFFER_BIT);
 } // paintGL
@@ -1427,6 +1449,8 @@ Histogram::computeHistogramAndRefresh(bool forceEvenIfNotVisible)
     boost::shared_ptr<Natron::Image> image = _imp->getHistogramImage(&rect);
     if (image) {
         _imp->histogramThread.computeHistogram(_imp->mode, image, rect, width(),vmin,vmax,_imp->filterSize);
+    } else {
+        _imp->hasImage = false;
     }
 
 #endif
@@ -1446,9 +1470,10 @@ Histogram::onCPUHistogramComputed()
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
     int mode;
-    bool success = _imp->histogramThread.getMostRecentlyProducedHistogram(&_imp->histogram1, &_imp->histogram2, &_imp->histogram3, &_imp->binsCount, &_imp->pixelsCount, &mode,&_imp->vmin,&_imp->vmax);
+    bool success = _imp->histogramThread.getMostRecentlyProducedHistogram(&_imp->histogram1, &_imp->histogram2, &_imp->histogram3, &_imp->binsCount, &_imp->pixelsCount, &mode,&_imp->vmin,&_imp->vmax,&_imp->mipMapLevel);
     assert(success);
     if (success) {
+        _imp->hasImage = true;
         update();
     }
 }
@@ -1556,6 +1581,54 @@ HistogramPrivate::drawScale()
     } // GLProtectAttrib a(GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT | GL_ENABLE_BIT);
     glCheckError();
 } // drawScale
+
+void
+HistogramPrivate::drawWarnings()
+{
+    // always running in the main thread
+    assert( qApp && qApp->thread() == QThread::currentThread() );
+    assert( QGLContext::currentContext() == widget->context() );
+    if (mipMapLevel > 0) {
+        QFontMetrics m(_font);
+        QString str(QObject::tr("Image downscaled"));
+        int strWidth = m.width(str);
+        QPointF pos = zoomCtx.toZoomCoordinates(widget->width() - strWidth - 10,5 * m.height() + 30);
+        glCheckError();
+        widget->renderText(pos.x(), pos.y(), str,QColor(220,220,0), _font);
+        glCheckError();
+    }
+
+}
+
+void
+HistogramPrivate::drawMissingImage()
+{
+    QPointF topLeft = zoomCtx.toZoomCoordinates(0, 0);
+    QPointF btmRight = zoomCtx.toZoomCoordinates(widget->width(), widget->height());
+    QPointF topRight(btmRight.x(),topLeft.y());
+    QPointF btmLeft(topLeft.x(),btmRight.y());
+    {
+        GLProtectAttrib a(GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT | GL_ENABLE_BIT);
+        
+        glColor4f(0.9,0.9,0,1);
+        glLineWidth(1.5);
+        glBegin(GL_LINES);
+        glVertex2f(topLeft.x(),topLeft.y());
+        glVertex2f(btmRight.x(),btmRight.y());
+        glVertex2f(btmLeft.x(),btmLeft.y());
+        glVertex2f(topRight.x(),topRight.y());
+        glEnd();
+        glLineWidth(1.);
+    }
+    
+    QString txt(QObject::tr("Missing image"));
+    QFontMetrics m(_font);
+    int strWidth = m.width(txt);
+    QPointF pos = zoomCtx.toZoomCoordinates(widget->width() / 2. - strWidth / 2., m.height() + 10);
+    glCheckError();
+    widget->renderText(pos.x(), pos.y(), txt,QColor(220,0,0), _font);
+    glCheckError();
+}
 
 void
 HistogramPrivate::drawPicker()

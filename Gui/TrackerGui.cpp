@@ -266,7 +266,7 @@ TrackerGui::drawOverlays(double scaleX,
                 Double_Knob* dblKnob = dynamic_cast<Double_Knob*>( newInstanceKnob.get() );
                 assert(dblKnob);
 
-                GLProtectMatrix p(GL_PROJECTION);
+                //GLProtectMatrix p(GL_PROJECTION); // useless (we do two glTranslate in opposite directions)
                 for (int l = 0; l < 2; ++l) {
                     // shadow (uses GL_PROJECTION)
                     glMatrixMode(GL_PROJECTION);
@@ -307,7 +307,7 @@ TrackerGui::drawOverlays(double scaleX,
             glEnable(GL_LINE_SMOOTH);
             glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
             glLineWidth(1.5);
-            GLProtectMatrix p(GL_PROJECTION);
+            //GLProtectMatrix p(GL_PROJECTION); // useless (we do two glTranslate in opposite directions)
             for (int l = 0; l < 2; ++l) {
                 // shadow (uses GL_PROJECTION)
                 glMatrixMode(GL_PROJECTION);

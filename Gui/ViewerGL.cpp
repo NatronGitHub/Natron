@@ -1076,7 +1076,7 @@ ViewerGL::paintGL()
     }
 
     {
-        GLProtectAttrib a(GL_TRANSFORM_BIT);
+        //GLProtectAttrib a(GL_TRANSFORM_BIT); // GL_MODELVIEW is active by default
 
         // Note: the OFX spec says that the GL_MODELVIEW should be the identity matrix
         // http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#ImageEffectOverlays
@@ -1579,7 +1579,7 @@ ViewerGL::drawWipeControl()
 
     {
         GLProtectAttrib a(GL_ENABLE_BIT | GL_LINE_BIT | GL_CURRENT_BIT | GL_HINT_BIT | GL_TRANSFORM_BIT | GL_COLOR_BUFFER_BIT);
-        GLProtectMatrix p(GL_PROJECTION);
+        //GLProtectMatrix p(GL_PROJECTION); // useless (we do two glTranslate in opposite directions)
 
         // Draw everything twice
         // l = 0: shadow
@@ -2436,10 +2436,14 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
         }
         _imp->memoryHeldByLastRenderedImages[textureIndex] = image->size();
         internalNode->registerPluginMemory(_imp->memoryHeldByLastRenderedImages[textureIndex]);
+        Q_EMIT imageChanged(textureIndex,true);
+    } else {
+        if (!_imp->lastRenderedImage[textureIndex][mipMapLevel]) {
+            Q_EMIT imageChanged(textureIndex,false);
+        }
     }
     setRegionOfDefinition(rod,region.par,textureIndex);
 
-    Q_EMIT imageChanged(textureIndex);
 }
 
 void
@@ -3767,7 +3771,7 @@ ViewerGL::renderText(double x,
         return;
     }
     {
-        GLProtectAttrib a(GL_TRANSFORM_BIT);
+        //GLProtectAttrib a(GL_TRANSFORM_BIT); // GL_MODELVIEW is active by default
         GLProtectMatrix p(GL_PROJECTION);
         glLoadIdentity();
         double h = (double)height();
