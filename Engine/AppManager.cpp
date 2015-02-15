@@ -3562,12 +3562,16 @@ PythonGILLocker::PythonGILLocker()
     ///Take the GIL for this thread
     state = PyGILState_Ensure();
     assert(PyThreadState_Get());
-    assert(PY_VERSION_HEX < 0x030400F0 || PyGILState_Check()); // Not available prior to Python 3.4
+#if !defined(NDEBUG) && PY_VERSION_HEX >= 0x030400F0
+    assert(PyGILState_Check()); // Not available prior to Python 3.4
+#endif
 }
     
 PythonGILLocker::~PythonGILLocker()
 {
-    assert(PY_VERSION_HEX < 0x030400F0 || PyGILState_Check());  // Not available prior to Python 3.4
+#if !defined(NDEBUG) && PY_VERSION_HEX >= 0x030400F0
+    assert(PyGILState_Check());  // Not available prior to Python 3.4
+#endif
     
     ///Release the GIL, no thread will own it afterwards.
     PyGILState_Release(state);
