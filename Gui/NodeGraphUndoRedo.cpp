@@ -1432,8 +1432,9 @@ GroupFromSelectionCommand::redo()
     assert(graph_i);
     NodeGraph* graph = dynamic_cast<NodeGraph*>(graph_i);
     assert(graph);
-    graph->centerOnAllNodes();
-    
+    if (graph) {
+        graph->centerOnAllNodes();
+    }
     _firstRedoCalled = true;
     _isRedone = true;
     setText(QObject::tr("Group from selection"));

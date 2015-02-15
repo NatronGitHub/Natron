@@ -490,56 +490,49 @@ DockablePanel::DockablePanel(Gui* gui ,
         if (iseffect) {
             boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
             float r,g,b;
-            
-            
-            if (iseffect) {
-                BackDrop* isBd = dynamic_cast<BackDrop*>(iseffect);
-                
-                std::list<std::string> grouping;
-                iseffect->getPluginGrouping(&grouping);
-                std::string majGroup = grouping.empty() ? "" : grouping.front();
+            BackDrop* isBd = dynamic_cast<BackDrop*>(iseffect);
 
-                if ( iseffect->isReader() ) {
-                    settings->getReaderColor(&r, &g, &b);
-                } else if (isBd) {
-                    settings->getDefaultBackDropColor(&r, &g, &b);
-                } else if ( iseffect->isWriter() ) {
-                    settings->getWriterColor(&r, &g, &b);
-                } else if ( iseffect->isGenerator() ) {
-                    settings->getGeneratorColor(&r, &g, &b);
-                } else if (majGroup == PLUGIN_GROUP_COLOR) {
-                    settings->getColorGroupColor(&r, &g, &b);
-                } else if (majGroup == PLUGIN_GROUP_FILTER) {
-                    settings->getFilterGroupColor(&r, &g, &b);
-                } else if (majGroup == PLUGIN_GROUP_CHANNEL) {
-                    settings->getChannelGroupColor(&r, &g, &b);
-                } else if (majGroup == PLUGIN_GROUP_KEYER) {
-                    settings->getKeyerGroupColor(&r, &g, &b);
-                } else if (majGroup == PLUGIN_GROUP_MERGE) {
-                    settings->getMergeGroupColor(&r, &g, &b);
-                } else if (majGroup == PLUGIN_GROUP_PAINT) {
-                    settings->getDrawGroupColor(&r, &g, &b);
-                } else if (majGroup == PLUGIN_GROUP_TIME) {
-                    settings->getTimeGroupColor(&r, &g, &b);
-                } else if (majGroup == PLUGIN_GROUP_TRANSFORM) {
-                    settings->getTransformGroupColor(&r, &g, &b);
-                } else if (majGroup == PLUGIN_GROUP_MULTIVIEW) {
-                    settings->getViewsGroupColor(&r, &g, &b);
-                } else if (majGroup == PLUGIN_GROUP_DEEP) {
-                    settings->getDeepGroupColor(&r, &g, &b);
-                } else {
-                    settings->getDefaultNodeColor(&r, &g, &b);
-                }
-            }  else {
-                r = g = b = 0.7;
+            std::list<std::string> grouping;
+            iseffect->getPluginGrouping(&grouping);
+            std::string majGroup = grouping.empty() ? "" : grouping.front();
+
+            if ( iseffect->isReader() ) {
+                settings->getReaderColor(&r, &g, &b);
+            } else if (isBd) {
+                settings->getDefaultBackDropColor(&r, &g, &b);
+            } else if ( iseffect->isWriter() ) {
+                settings->getWriterColor(&r, &g, &b);
+            } else if ( iseffect->isGenerator() ) {
+                settings->getGeneratorColor(&r, &g, &b);
+            } else if (majGroup == PLUGIN_GROUP_COLOR) {
+                settings->getColorGroupColor(&r, &g, &b);
+            } else if (majGroup == PLUGIN_GROUP_FILTER) {
+                settings->getFilterGroupColor(&r, &g, &b);
+            } else if (majGroup == PLUGIN_GROUP_CHANNEL) {
+                settings->getChannelGroupColor(&r, &g, &b);
+            } else if (majGroup == PLUGIN_GROUP_KEYER) {
+                settings->getKeyerGroupColor(&r, &g, &b);
+            } else if (majGroup == PLUGIN_GROUP_MERGE) {
+                settings->getMergeGroupColor(&r, &g, &b);
+            } else if (majGroup == PLUGIN_GROUP_PAINT) {
+                settings->getDrawGroupColor(&r, &g, &b);
+            } else if (majGroup == PLUGIN_GROUP_TIME) {
+                settings->getTimeGroupColor(&r, &g, &b);
+            } else if (majGroup == PLUGIN_GROUP_TRANSFORM) {
+                settings->getTransformGroupColor(&r, &g, &b);
+            } else if (majGroup == PLUGIN_GROUP_MULTIVIEW) {
+                settings->getViewsGroupColor(&r, &g, &b);
+            } else if (majGroup == PLUGIN_GROUP_DEEP) {
+                settings->getDeepGroupColor(&r, &g, &b);
+            } else {
+                settings->getDefaultNodeColor(&r, &g, &b);
             }
-            
-            
+
             _imp->_currentColor.setRgbF( Natron::clamp(r), Natron::clamp(g), Natron::clamp(b) );
             QPixmap p(NATRON_MEDIUM_BUTTON_SIZE,NATRON_MEDIUM_BUTTON_SIZE);
             p.fill(_imp->_currentColor);
 
-            
+
             _imp->_colorButton = new Button(QIcon(p),"",_imp->_headerWidget);
             _imp->_colorButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
             _imp->_colorButton->setToolTip( Qt::convertFromPlainText(tr("Set here the color of the node in the nodegraph. "

@@ -1,7 +1,4 @@
 
-//workaround to access protected functions
-#define protected public
-
 // default includes
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(mismatched-tags)
@@ -23,6 +20,10 @@ GCC_DIAG_OFF(missing-field-initializers)
 
 // Native ---------------------------------------------------------
 
+void BooleanParamWrapper::pysideInitQtMetaTypes()
+{
+}
+
 BooleanParamWrapper::~BooleanParamWrapper()
 {
     SbkObject* wrapper = Shiboken::BindingManager::instance().retrieveWrapper(this);
@@ -34,11 +35,11 @@ BooleanParamWrapper::~BooleanParamWrapper()
 extern "C" {
 static PyObject* Sbk_BooleanParamFunc_addAsDependencyOf(PyObject* self, PyObject* args)
 {
-    ::BooleanParam* cppSelf = 0;
+    BooleanParamWrapper* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = ((::BooleanParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_BOOLEANPARAM_IDX], (SbkObject*)self));
+    cppSelf = (BooleanParamWrapper*)((::BooleanParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_BOOLEANPARAM_IDX], (SbkObject*)self));
     PyObject* pyResult = 0;
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { 0, 0 };
@@ -96,11 +97,11 @@ static PyObject* Sbk_BooleanParamFunc_addAsDependencyOf(PyObject* self, PyObject
 
 static PyObject* Sbk_BooleanParamFunc_get(PyObject* self, PyObject* args)
 {
-    ::BooleanParam* cppSelf = 0;
+    BooleanParamWrapper* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = ((::BooleanParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_BOOLEANPARAM_IDX], (SbkObject*)self));
+    cppSelf = (BooleanParamWrapper*)((::BooleanParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_BOOLEANPARAM_IDX], (SbkObject*)self));
     PyObject* pyResult = 0;
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { 0 };
@@ -136,7 +137,7 @@ static PyObject* Sbk_BooleanParamFunc_get(PyObject* self, PyObject* args)
             if (!PyErr_Occurred()) {
                 // get()const
                 PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-                bool cppResult = const_cast<const ::BooleanParam*>(cppSelf)->get();
+                bool cppResult = const_cast<const ::BooleanParamWrapper*>(cppSelf)->get();
                 PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
                 pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), &cppResult);
             }
@@ -150,7 +151,7 @@ static PyObject* Sbk_BooleanParamFunc_get(PyObject* self, PyObject* args)
             if (!PyErr_Occurred()) {
                 // get(int)const
                 PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-                bool cppResult = const_cast<const ::BooleanParam*>(cppSelf)->get(cppArg0);
+                bool cppResult = const_cast<const ::BooleanParamWrapper*>(cppSelf)->get(cppArg0);
                 PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
                 pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), &cppResult);
             }
@@ -172,11 +173,11 @@ static PyObject* Sbk_BooleanParamFunc_get(PyObject* self, PyObject* args)
 
 static PyObject* Sbk_BooleanParamFunc_getDefaultValue(PyObject* self)
 {
-    ::BooleanParam* cppSelf = 0;
+    BooleanParamWrapper* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = ((::BooleanParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_BOOLEANPARAM_IDX], (SbkObject*)self));
+    cppSelf = (BooleanParamWrapper*)((::BooleanParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_BOOLEANPARAM_IDX], (SbkObject*)self));
     PyObject* pyResult = 0;
 
     // Call function/method
@@ -185,7 +186,7 @@ static PyObject* Sbk_BooleanParamFunc_getDefaultValue(PyObject* self)
         if (!PyErr_Occurred()) {
             // getDefaultValue()const
             PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            bool cppResult = const_cast<const ::BooleanParam*>(cppSelf)->getDefaultValue();
+            bool cppResult = const_cast<const ::BooleanParamWrapper*>(cppSelf)->getDefaultValue();
             PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), &cppResult);
         }
@@ -200,11 +201,11 @@ static PyObject* Sbk_BooleanParamFunc_getDefaultValue(PyObject* self)
 
 static PyObject* Sbk_BooleanParamFunc_getValue(PyObject* self)
 {
-    ::BooleanParam* cppSelf = 0;
+    BooleanParamWrapper* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = ((::BooleanParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_BOOLEANPARAM_IDX], (SbkObject*)self));
+    cppSelf = (BooleanParamWrapper*)((::BooleanParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_BOOLEANPARAM_IDX], (SbkObject*)self));
     PyObject* pyResult = 0;
 
     // Call function/method
@@ -213,7 +214,7 @@ static PyObject* Sbk_BooleanParamFunc_getValue(PyObject* self)
         if (!PyErr_Occurred()) {
             // getValue()const
             PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            bool cppResult = const_cast<const ::BooleanParam*>(cppSelf)->getValue();
+            bool cppResult = const_cast<const ::BooleanParamWrapper*>(cppSelf)->getValue();
             PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), &cppResult);
         }
@@ -228,11 +229,11 @@ static PyObject* Sbk_BooleanParamFunc_getValue(PyObject* self)
 
 static PyObject* Sbk_BooleanParamFunc_getValueAtTime(PyObject* self, PyObject* pyArg)
 {
-    ::BooleanParam* cppSelf = 0;
+    BooleanParamWrapper* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = ((::BooleanParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_BOOLEANPARAM_IDX], (SbkObject*)self));
+    cppSelf = (BooleanParamWrapper*)((::BooleanParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_BOOLEANPARAM_IDX], (SbkObject*)self));
     PyObject* pyResult = 0;
     int overloadId = -1;
     PythonToCppFunc pythonToCpp;
@@ -255,7 +256,7 @@ static PyObject* Sbk_BooleanParamFunc_getValueAtTime(PyObject* self, PyObject* p
         if (!PyErr_Occurred()) {
             // getValueAtTime(int)const
             PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            bool cppResult = const_cast<const ::BooleanParam*>(cppSelf)->getValueAtTime(cppArg0);
+            bool cppResult = const_cast<const ::BooleanParamWrapper*>(cppSelf)->getValueAtTime(cppArg0);
             PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), &cppResult);
         }
@@ -275,11 +276,11 @@ static PyObject* Sbk_BooleanParamFunc_getValueAtTime(PyObject* self, PyObject* p
 
 static PyObject* Sbk_BooleanParamFunc_restoreDefaultValue(PyObject* self)
 {
-    ::BooleanParam* cppSelf = 0;
+    BooleanParamWrapper* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = ((::BooleanParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_BOOLEANPARAM_IDX], (SbkObject*)self));
+    cppSelf = (BooleanParamWrapper*)((::BooleanParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_BOOLEANPARAM_IDX], (SbkObject*)self));
 
     // Call function/method
     {
@@ -304,11 +305,11 @@ static PyObject* Sbk_BooleanParamFunc_restoreDefaultValue(PyObject* self)
 
 static PyObject* Sbk_BooleanParamFunc_set(PyObject* self, PyObject* args)
 {
-    ::BooleanParam* cppSelf = 0;
+    BooleanParamWrapper* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = ((::BooleanParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_BOOLEANPARAM_IDX], (SbkObject*)self));
+    cppSelf = (BooleanParamWrapper*)((::BooleanParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_BOOLEANPARAM_IDX], (SbkObject*)self));
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { 0, 0 };
     SBK_UNUSED(pythonToCpp)
@@ -390,11 +391,11 @@ static PyObject* Sbk_BooleanParamFunc_set(PyObject* self, PyObject* args)
 
 static PyObject* Sbk_BooleanParamFunc_setDefaultValue(PyObject* self, PyObject* pyArg)
 {
-    ::BooleanParam* cppSelf = 0;
+    BooleanParamWrapper* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = ((::BooleanParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_BOOLEANPARAM_IDX], (SbkObject*)self));
+    cppSelf = (BooleanParamWrapper*)((::BooleanParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_BOOLEANPARAM_IDX], (SbkObject*)self));
     int overloadId = -1;
     PythonToCppFunc pythonToCpp;
     SBK_UNUSED(pythonToCpp)
@@ -434,11 +435,11 @@ static PyObject* Sbk_BooleanParamFunc_setDefaultValue(PyObject* self, PyObject* 
 
 static PyObject* Sbk_BooleanParamFunc_setValue(PyObject* self, PyObject* pyArg)
 {
-    ::BooleanParam* cppSelf = 0;
+    BooleanParamWrapper* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = ((::BooleanParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_BOOLEANPARAM_IDX], (SbkObject*)self));
+    cppSelf = (BooleanParamWrapper*)((::BooleanParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_BOOLEANPARAM_IDX], (SbkObject*)self));
     int overloadId = -1;
     PythonToCppFunc pythonToCpp;
     SBK_UNUSED(pythonToCpp)
@@ -482,11 +483,11 @@ static PyObject* Sbk_BooleanParamFunc_setValue(PyObject* self, PyObject* pyArg)
 
 static PyObject* Sbk_BooleanParamFunc_setValueAtTime(PyObject* self, PyObject* args)
 {
-    ::BooleanParam* cppSelf = 0;
+    BooleanParamWrapper* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = ((::BooleanParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_BOOLEANPARAM_IDX], (SbkObject*)self));
+    cppSelf = (BooleanParamWrapper*)((::BooleanParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_BOOLEANPARAM_IDX], (SbkObject*)self));
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { 0, 0 };
     SBK_UNUSED(pythonToCpp)
@@ -677,4 +678,5 @@ void init_BooleanParam(PyObject* module)
     Shiboken::ObjectType::setTypeDiscoveryFunctionV2(&Sbk_BooleanParam_Type, &Sbk_BooleanParam_typeDiscovery);
 
 
+    BooleanParamWrapper::pysideInitQtMetaTypes();
 }

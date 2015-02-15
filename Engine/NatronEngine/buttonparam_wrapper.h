@@ -1,8 +1,6 @@
 #ifndef SBK_BUTTONPARAMWRAPPER_H
 #define SBK_BUTTONPARAMWRAPPER_H
 
-#define protected public
-
 #include <shiboken.h>
 
 #include <ParameterWrapper.h>
@@ -10,6 +8,7 @@
 class ButtonParamWrapper : public ButtonParam
 {
 public:
+    inline void _addAsDependencyOf_protected(int fromExprDimension, Param * param) { ButtonParam::_addAsDependencyOf(fromExprDimension, param); }
     virtual ~ButtonParamWrapper();
     static void pysideInitQtMetaTypes();
 };

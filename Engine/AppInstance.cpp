@@ -26,8 +26,9 @@
 #include <QEventLoop>
 #include <QSettings>
 
-
+#if !defined(SBK_RUN) && !defined(Q_MOC_RUN)
 #include <boost/bind.hpp>
+#endif
 
 #include "Global/QtCompat.h"
 
@@ -1029,17 +1030,27 @@ AppInstance::printAutoDeclaredVariable(const std::string& /*str*/)
 void
 AppInstance::execOnProjectCreatedCallback()
 {
-    QString appID = QString("app%1").arg(getAppID() + 1);
     std::string cb = appPTR->getCurrentSettings()->getOnProjectCreatedCB();
     if (cb.empty()) {
         return;
     }
-    std::string script = "app = " + appID.toStdString() + "\n" +  cb + "()\n" + "del app\n";
+    std::string script = "app = " + getAppIDString() + "\n" +  cb + "()\n" + "del app\n";
     
     std::string err,output;
     if (!Natron::interpretPythonScript(script, &err, &output)) {
         appendToScriptEditor(err);
     } else {
         appendToScriptEditor(output);
+    }
+}
+
+std::string
+AppInstance::getAppIDString() const
+{
+    if (appPTR->isBackground()) {
+        return std::string("app");
+    } else {
+        QString appID =  QString("app%1").arg(getAppID() + 1);
+        return appID.toStdString();
     }
 }

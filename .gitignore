@@ -5,6 +5,9 @@
 moc*.cpp
 *moc
 build
+build32
+build64
+sed*
 *latex*
 DerivedData
 Natron.xcodeproj

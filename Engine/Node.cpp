@@ -539,7 +539,7 @@ void
 Node::declareRotoPythonField()
 {
     assert(_imp->rotoContext);
-    std::string appID = QString("app%1").arg(getApp()->getAppID()+1).toStdString();
+    std::string appID = getApp()->getAppIDString();
     std::string fullyQualifiedName = appID + "." +getFullyQualifiedName();
     std::string err;
     std::string script = fullyQualifiedName + ".roto = " + fullyQualifiedName + ".getRotoContext()\n";
@@ -621,8 +621,12 @@ Node::getHashValue() const
 }
 
 void
-Node::computeHash()
+Node::computeHashInternal(std::list<Natron::Node*>& marked)
 {
+    if (std::find(marked.begin(), marked.end(), this) != marked.end()) {
+        return;
+    }
+    
     ///Always called in the main thread
     assert( QThread::currentThread() == qApp->thread() );
     if (!_imp->inputsInitialized) {
@@ -677,14 +681,37 @@ Node::computeHash()
         _imp->hash.computeHash();
     }
     
+    marked.push_back(this);
+    
     ///call it on all the outputs
     std::list<Node*> outputs;
     getOutputsWithGroupRedirection(outputs);
     for (std::list<Node*>::iterator it = outputs.begin(); it != outputs.end(); ++it) {
         assert(*it);
-        (*it)->computeHash();
+        (*it)->computeHashInternal(marked);
     }
+    
     _imp->liveInstance->onNodeHashChanged(getHashValue());
+    
+    ///If the node is a group, call it on all nodes in the group
+    ///Also force a change to their hash
+    NodeGroup* group = dynamic_cast<NodeGroup*>(getLiveInstance());
+    if (group) {
+        NodeList nodes = group->getNodes();
+        for (NodeList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+            assert(*it);
+            (*it)->incrementKnobsAge();
+            (*it)->computeHashInternal(marked);
+        }
+    }
+
+}
+
+void
+Node::computeHash()
+{
+    std::list<Natron::Node*> marked;
+    computeHashInternal(marked);
     
 } // computeHash
 
@@ -790,9 +817,10 @@ Node::Implementation::restoreKnobLinksRecursive(const GroupKnobSerialization* gr
     for (std::list <boost::shared_ptr<KnobSerializationBase> >::const_iterator it = children.begin(); it != children.end(); ++it) {
         GroupKnobSerialization* isGrp = dynamic_cast<GroupKnobSerialization*>(it->get());
         KnobSerialization* isRegular = dynamic_cast<KnobSerialization*>(it->get());
+        assert(isGrp || isRegular);
         if (isGrp) {
             restoreKnobLinksRecursive(isGrp,allNodes);
-        } else {
+        } else if (isRegular) {
             boost::shared_ptr<KnobI> knob =  _publicInterface->getKnobByName( isRegular->getName() );
             if (!knob) {
                 appPTR->writeToOfxLog_mt_safe("Couldn't find a parameter named " + QString((*it)->getName().c_str()));
@@ -2107,33 +2135,27 @@ Node::hasOutputConnected() const
     }
     if ( QThread::currentThread() == qApp->thread() ) {
         if (_imp->outputs.size() == 1) {
-            if (_imp->outputs.front()->isTrackerNode() && _imp->outputs.front()->isMultiInstance()) {
-                return false;
-            } else {
-                return true;
-            }
+
+            return !(_imp->outputs.front()->isTrackerNode() && _imp->outputs.front()->isMultiInstance());
+
         } else if (_imp->outputs.size() > 1) {
+
             return true;
-        } else {
-            return false;
         }
-        return _imp->outputs.size() > 0;
+
     } else {
         QMutexLocker l(&_imp->outputsMutex);
         if (_imp->outputs.size() == 1) {
-            if (_imp->outputs.front()->isTrackerNode() && _imp->outputs.front()->isMultiInstance()) {
-                return false;
-            } else {
-                return true;
-            }
-        } else if (_imp->outputs.size() > 1) {
-            return true;
-        } else {
-            return false;
-        }
-        return _imp->outputs.size() > 0;
 
+            return !(_imp->outputs.front()->isTrackerNode() && _imp->outputs.front()->isMultiInstance());
+
+        } else if (_imp->outputs.size() > 1) {
+
+            return true;
+        }
     }
+
+    return false;
 }
 
 bool
@@ -2192,6 +2214,11 @@ Node::canConnectInput(const boost::shared_ptr<Node>& input,int inputNumber) cons
     ///No-one is allowed to connect to the other node
     if (!input->canOthersConnectToThisNode()) {
         return eCanConnectInput_givenNodeNotConnectable;
+    }
+    
+    NodeGroup* isGrp = dynamic_cast<NodeGroup*>(input->getLiveInstance());
+    if (isGrp && !isGrp->getOutputNode()) {
+        return eCanConnectInput_groupHasNoOutput;
     }
     
     if (getParentMultiInstance() || input->getParentMultiInstance()) {
@@ -2716,7 +2743,7 @@ Node::deactivate(const std::list< Node* > & outputsToDisconnect,
         
         if (hasOnlyOneInputConnected) {
             if (firstNonOptionalInput != -1) {
-                inputToConnectTo = getInput(firstNonOptionalInput);
+                inputToConnectTo = getRealInput(firstNonOptionalInput);
             } else if (firstOptionalInput) {
                 inputToConnectTo = firstOptionalInput;
             }
@@ -3894,9 +3921,10 @@ Node::computeFrameRangeForReader(const KnobI* fileKnob)
                 leftBound = seq.begin()->first;
                 rightBound = seq.rbegin()->first;
             }
-            
+            originalFrameRange->beginChanges();
             originalFrameRange->setValue(leftBound, 0);
             originalFrameRange->setValue(rightBound, 1);
+            originalFrameRange->endChanges();
             
         }
     }
@@ -4601,15 +4629,15 @@ Node::declareCurrentNodeVariable_Python(std::string* deleteScript) const
     
     NodeGroup* isParentGrp = dynamic_cast<NodeGroup*>(collection.get());
     
-    int appID = getApp()->getAppID() + 1 ;
+    std::string appID = getApp()->getAppIDString();
     ///Now define the thisNode variable
     std::stringstream ss;
-    ss << "app = " << "app" << appID << "\n";
+    ss << "app = " << appID << "\n";
     if (isParentGrp) {
-        ss << "thisGroup = " << "app" << appID << "." << isParentGrp->getNode()->getFullyQualifiedName() << "\n";
+        ss << "thisGroup = " << appID << "." << isParentGrp->getNode()->getFullyQualifiedName() << "\n";
         deleteScript->append("del thisGroup\n");
     }
-    ss << "thisNode = " << "app" << appID << "." << getFullyQualifiedName() <<  "\n";
+    ss << "thisNode = " << appID << "." << getFullyQualifiedName() <<  "\n";
     deleteScript->append("del thisNode\n");
     return ss.str();
 }
@@ -4707,10 +4735,12 @@ static PyObject* getAttrRecursive(const std::string& fullyQualifiedName,PyObject
 void
 Node::declareNodeVariableToPython(const std::string& nodeName)
 {
+    Natron::PythonGILLocker pgl;
+    
     PyObject* mainModule = appPTR->getMainModule();
     assert(mainModule);
     
-    std::string appID = QString("app%1").arg(getApp()->getAppID() + 1).toStdString();
+    std::string appID = getApp()->getAppIDString();
     
     std::string varName = appID + "." + nodeName;
     bool alreadyDefined = false;
@@ -4736,7 +4766,7 @@ void
 Node::setNodeVariableToPython(const std::string& oldName,const std::string& newName)
 {
 
-    QString appID = QString("app%1").arg(getApp()->getAppID() + 1);
+    QString appID(getApp()->getAppIDString().c_str());
     QString str = QString(appID + ".%1 = " + appID + ".%2\ndel " + appID + ".%2\n").arg(newName.c_str()).arg(oldName.c_str());
     std::string script = str.toStdString();
     std::string err;
@@ -4755,7 +4785,7 @@ Node::deleteNodeVariableToPython(const std::string& nodeName)
     if (getParentMultiInstance()) {
         return;
     }
-    QString appID = QString("app%1").arg(getApp()->getAppID() + 1);
+    QString appID(getApp()->getAppIDString().c_str());
     QString str = QString("del " + appID + ".%1").arg(nodeName.c_str());
     std::string script = str.toStdString();
     std::string err;
@@ -4773,6 +4803,8 @@ Node::deleteNodeVariableToPython(const std::string& nodeName)
 void
 Node::declarePythonFields()
 {
+    Natron::PythonGILLocker pgl;
+    
     if (!getGroup()) {
         return ;
     }
@@ -4780,7 +4812,7 @@ Node::declarePythonFields()
     std::locale locale;
     std::string fullName = getFullyQualifiedName();
     
-    std::string appID = QString("app%1").arg(getApp()->getAppID() + 1).toStdString();
+    std::string appID = getApp()->getAppIDString();
     bool alreadyDefined = false;
     
     std::string nodeFullName = appID + "." + fullName;
@@ -4807,6 +4839,7 @@ Node::declareParameterAsNodeField(const std::string& nodeName,PyObject* nodeObj,
     if (PyObject_HasAttrString(nodeObj, parameterName.c_str())) {
         return;
     }
+    
     std::string script = nodeName +  "." + parameterName + " = " +
     nodeName + ".getParam(\"" + parameterName + "\")\n";
     std::string err;
@@ -4835,7 +4868,7 @@ Node::Implementation::runOnNodeCreatedCB(bool userEdited)
     std::string delScript;
     std::string thisNode = _publicInterface->declareCurrentNodeVariable_Python(&delScript);
     
-    QString appID = QString("app%1").arg(_publicInterface->getApp()->getAppID() + 1);
+    std::string appID = _publicInterface->getApp()->getAppIDString();
     
     std::stringstream ss;
     ss << thisNode;
@@ -4844,7 +4877,7 @@ Node::Implementation::runOnNodeCreatedCB(bool userEdited)
     } else {
         ss << "userEdited = False\n";
     }
-    ss << "app = " << appID.toStdString() << "\n";
+    ss << "app = " << appID << "\n";
     ss << cb << "()\n";
     ss << delScript << "del userEdited\n";
     
@@ -4867,11 +4900,11 @@ Node::Implementation::runOnNodeDeleteCB()
     std::string delScript;
     std::string thisNode = _publicInterface->declareCurrentNodeVariable_Python(&delScript);
     
-    QString appID = QString("app%1").arg(_publicInterface->getApp()->getAppID() + 1);
+    std::string appID = _publicInterface->getApp()->getAppIDString();
     
     std::stringstream ss;
     ss << thisNode;
-    ss << "app = " << appID.toStdString() << "\n";
+    ss << "app = " << appID << "\n";
     ss << cb << "()\n" << delScript;
     
     std::string err;

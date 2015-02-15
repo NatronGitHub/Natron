@@ -91,6 +91,7 @@ static bool shouldSliderBeVisible(double sliderMin,double sliderMax)
 Int_KnobGui::Int_KnobGui(boost::shared_ptr<KnobI> knob,
                          DockablePanel *container)
     : KnobGui(knob, container)
+      , _container(0)
       , _slider(0)
       , _dimensionSwitchButton(0)
 {
@@ -114,8 +115,8 @@ Int_KnobGui::~Int_KnobGui()
 void
 Int_KnobGui::removeSpecificGui()
 {
-    container->setParent(NULL);
-    delete container;
+    _container->setParent(NULL);
+    delete _container;
     _spinBoxes.clear();
 }
 
@@ -124,10 +125,10 @@ Int_KnobGui::createWidget(QHBoxLayout* layout)
 {
     
     int dim = _knob->getDimension();
-    container = new QWidget( layout->parentWidget() );
-    QHBoxLayout *containerLayout = new QHBoxLayout(container);
+    _container = new QWidget( layout->parentWidget() );
+    QHBoxLayout *containerLayout = new QHBoxLayout(_container);
 
-    container->setLayout(containerLayout);
+    _container->setLayout(containerLayout);
     containerLayout->setSpacing(3);
     containerLayout->setContentsMargins(0, 0, 0, 0);
 
@@ -153,7 +154,7 @@ Int_KnobGui::createWidget(QHBoxLayout* layout)
     
     for (int i = 0; i < dim; ++i) {
 
-        QWidget *boxContainer = new QWidget( container );
+        QWidget *boxContainer = new QWidget( _container );
         boxContainer->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
         QHBoxLayout *boxContainerLayout = new QHBoxLayout(boxContainer);
         boxContainer->setLayout(boxContainerLayout);
@@ -216,7 +217,7 @@ Int_KnobGui::createWidget(QHBoxLayout* layout)
     }
 
     if (dim > 1 && !_knob->isSliderDisabled() && sliderVisible) {
-        _dimensionSwitchButton = new Button(QIcon(),QString::number(dim),container);
+        _dimensionSwitchButton = new Button(QIcon(),QString::number(dim),_container);
         _dimensionSwitchButton->setToolTip(Qt::convertFromPlainText(tr("Switch between a single value for all dimensions and multiple values."), Qt::WhiteSpaceNormal));
         _dimensionSwitchButton->setFocusPolicy(Qt::NoFocus);
         _dimensionSwitchButton->setFixedSize(17, 17);
@@ -243,7 +244,7 @@ Int_KnobGui::createWidget(QHBoxLayout* layout)
     }
 
     
-    layout->addWidget(container);
+    layout->addWidget(_container);
 } // createWidget
 
 #ifdef SPINBOX_TAKE_PLUGIN_RANGE_INTO_ACCOUNT
@@ -298,8 +299,10 @@ Int_KnobGui::expandAllDimensions()
     _dimensionSwitchButton->setChecked(true);
     _dimensionSwitchButton->setDown(true);
     _slider->hide();
-    for (int i = 1; i < _knob->getDimension(); ++i) {
-        _spinBoxes[i].first->show();
+    for (int i = 0; i < _knob->getDimension(); ++i) {
+        if (i > 0) {
+            _spinBoxes[i].first->show();
+        }
         if (_spinBoxes[i].second) {
             _spinBoxes[i].second->show();
         }
@@ -314,9 +317,14 @@ Int_KnobGui::foldAllDimensions()
     }
     _dimensionSwitchButton->setChecked(false);
     _dimensionSwitchButton->setDown(false);
+    if (_spinBoxes[0].second) {
+        _spinBoxes[0].second->hide();
+    }
     _slider->show();
-    for (int i = 1; i < _knob->getDimension(); ++i) {
-        _spinBoxes[i].first->hide();
+    for (int i = 0; i < _knob->getDimension(); ++i) {
+        if (i > 0) {
+            _spinBoxes[i].first->hide();
+        }
         if (_spinBoxes[i].second) {
             _spinBoxes[i].second->hide();
         }
@@ -513,6 +521,8 @@ Int_KnobGui::_show()
         
         if (!_dimensionSwitchButton || (i > 0 && _dimensionSwitchButton->isChecked()) || (i == 0)) {
             _spinBoxes[i].first->show();
+        }
+        if (!_dimensionSwitchButton || _dimensionSwitchButton->isChecked()) {
             if (_spinBoxes[i].second) {
                 _spinBoxes[i].second->show();
             }
@@ -787,6 +797,7 @@ Double_KnobGui::shouldAddStretch() const
 Double_KnobGui::Double_KnobGui(boost::shared_ptr<KnobI> knob,
                                DockablePanel *container)
 : KnobGui(knob, container)
+, _container(0)
 , _slider(0)
 , _dimensionSwitchButton(0)
 , _digits(0.)
@@ -811,7 +822,7 @@ Double_KnobGui::~Double_KnobGui()
 
 void Double_KnobGui::removeSpecificGui()
 {
-    delete container;
+    delete _container;
     _spinBoxes.clear();
 }
 
@@ -819,11 +830,11 @@ void
 Double_KnobGui::createWidget(QHBoxLayout* layout)
 {
 
-    container = new QWidget( layout->parentWidget() );
-    QHBoxLayout *containerLayout = new QHBoxLayout(container);
-    layout->addWidget(container);
+    _container = new QWidget( layout->parentWidget() );
+    QHBoxLayout *containerLayout = new QHBoxLayout(_container);
+    layout->addWidget(_container);
 
-    container->setLayout(containerLayout);
+    _container->setLayout(containerLayout);
     containerLayout->setContentsMargins(0, 0, 0, 0);
     containerLayout->setSpacing(3);
 
@@ -851,7 +862,7 @@ Double_KnobGui::createWidget(QHBoxLayout* layout)
     const std::vector<int> &decimals = _knob->getDecimals();
     for (int i = 0; i < dim; ++i) {
 
-        QWidget *boxContainer = new QWidget( container );
+        QWidget *boxContainer = new QWidget( _container );
         boxContainer->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
         QHBoxLayout *boxContainerLayout = new QHBoxLayout(boxContainer);
         boxContainer->setLayout(boxContainerLayout);
@@ -937,7 +948,7 @@ Double_KnobGui::createWidget(QHBoxLayout* layout)
     
     
     if (dim > 1 && !_knob->isSliderDisabled() && sliderVisible ) {
-        _dimensionSwitchButton = new Button(QIcon(),QString::number(dim),container);
+        _dimensionSwitchButton = new Button(QIcon(),QString::number(dim), _container);
         _dimensionSwitchButton->setToolTip(Qt::convertFromPlainText(tr("Switch between a single value for all dimensions and multiple values."), Qt::WhiteSpaceNormal));
         _dimensionSwitchButton->setFixedSize(17, 17);
         _dimensionSwitchButton->setFocusPolicy(Qt::NoFocus);
@@ -998,8 +1009,10 @@ Double_KnobGui::expandAllDimensions()
     _dimensionSwitchButton->setChecked(true);
     _dimensionSwitchButton->setDown(true);
     _slider->hide();
-    for (int i = 1; i < _knob->getDimension(); ++i) {
-        _spinBoxes[i].first->show();
+    for (int i = 0; i < _knob->getDimension(); ++i) {
+        if (i > 0) {
+            _spinBoxes[i].first->show();
+        }
         if (_spinBoxes[i].second) {
             _spinBoxes[i].second->show();
         }
@@ -1015,8 +1028,10 @@ Double_KnobGui::foldAllDimensions()
     _dimensionSwitchButton->setChecked(false);
     _dimensionSwitchButton->setDown(false);
     _slider->show();
-    for (int i = 1; i < _knob->getDimension(); ++i) {
-        _spinBoxes[i].first->hide();
+    for (int i = 0; i < _knob->getDimension(); ++i) {
+        if (i > 0) {
+            _spinBoxes[i].first->hide();
+        }
         if (_spinBoxes[i].second) {
             _spinBoxes[i].second->hide();
         }
@@ -1255,6 +1270,8 @@ Double_KnobGui::_show()
         
         if (!_dimensionSwitchButton || (i > 0 && _dimensionSwitchButton->isChecked()) || (i == 0)) {
             _spinBoxes[i].first->show();
+        }
+        if (!_dimensionSwitchButton || _dimensionSwitchButton->isChecked()) {
             if (_spinBoxes[i].second) {
                 _spinBoxes[i].second->show();
             }

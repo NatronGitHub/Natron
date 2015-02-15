@@ -333,6 +333,7 @@ Knob<std::string>::pyObjectToType(PyObject* o) const
 template <typename T>
 T Knob<T>::evaluateExpression(int dimension) const
 {
+    Natron::PythonGILLocker pgl;
     PyObject *ret;
     try {
         ret = executeExpression(dimension);
@@ -1376,7 +1377,7 @@ Knob<T>::onTimeChanged(SequenceTime /*time*/)
     }
     for (int i = 0; i < dims; ++i) {
         
-        if (_signalSlotHandler && isAnimated(i)) {
+        if (_signalSlotHandler && (isAnimated(i) || !getExpression(i).empty())) {
             _signalSlotHandler->s_valueChanged(i, Natron::eValueChangedReasonTimeChanged);
         }
         checkAnimationLevel(i);

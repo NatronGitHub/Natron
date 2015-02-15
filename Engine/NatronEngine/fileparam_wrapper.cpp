@@ -1,7 +1,4 @@
 
-//workaround to access protected functions
-#define protected public
-
 // default includes
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(mismatched-tags)
@@ -23,6 +20,10 @@ GCC_DIAG_OFF(missing-field-initializers)
 
 // Native ---------------------------------------------------------
 
+void FileParamWrapper::pysideInitQtMetaTypes()
+{
+}
+
 FileParamWrapper::~FileParamWrapper()
 {
     SbkObject* wrapper = Shiboken::BindingManager::instance().retrieveWrapper(this);
@@ -34,11 +35,11 @@ FileParamWrapper::~FileParamWrapper()
 extern "C" {
 static PyObject* Sbk_FileParamFunc_openFile(PyObject* self)
 {
-    ::FileParam* cppSelf = 0;
+    FileParamWrapper* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = ((::FileParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_FILEPARAM_IDX], (SbkObject*)self));
+    cppSelf = (FileParamWrapper*)((::FileParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_FILEPARAM_IDX], (SbkObject*)self));
 
     // Call function/method
     {
@@ -59,11 +60,11 @@ static PyObject* Sbk_FileParamFunc_openFile(PyObject* self)
 
 static PyObject* Sbk_FileParamFunc_setSequenceEnabled(PyObject* self, PyObject* pyArg)
 {
-    ::FileParam* cppSelf = 0;
+    FileParamWrapper* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = ((::FileParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_FILEPARAM_IDX], (SbkObject*)self));
+    cppSelf = (FileParamWrapper*)((::FileParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_FILEPARAM_IDX], (SbkObject*)self));
     int overloadId = -1;
     PythonToCppFunc pythonToCpp;
     SBK_UNUSED(pythonToCpp)
@@ -229,4 +230,5 @@ void init_FileParam(PyObject* module)
     Shiboken::ObjectType::setTypeDiscoveryFunctionV2(&Sbk_FileParam_Type, &Sbk_FileParam_typeDiscovery);
 
 
+    FileParamWrapper::pysideInitQtMetaTypes();
 }

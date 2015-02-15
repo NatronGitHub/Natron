@@ -1541,14 +1541,8 @@ TabWidget::setObjectName_mt_safe(const QString & str)
     tt.prepend(toPre);
     _imp->leftCornerButton->setToolTip(tt);
     
-    std::string appID;
-    {
-        std::stringstream ss;
-        ss << "app" << _imp->gui->getApp()->getAppID() + 1;
-        appID = ss.str();
-    }
+    std::string appID = _imp->gui->getApp()->getAppIDString();
 
-    
     std::stringstream ss;
     if (!oldName.empty()) {
         ss << "if hasattr(" << appID << ", '"  << oldName << "'):\n";
@@ -1648,7 +1642,7 @@ TabWidget::onTabScriptNameChanged(QWidget* tab,const std::string& oldName,const 
     }
     
     std::string paneName = objectName_mt_safe().toStdString();
-    std::string appID = QString("app%1").arg(_imp->gui->getApp()->getAppID() + 1).toStdString();
+    std::string appID = _imp->gui->getApp()->getAppIDString();
 
     std::stringstream ss;
     ss << "if hasattr(" << appID << "." << paneName << ",\"" << oldName << "\"):\n";
@@ -1673,7 +1667,7 @@ TabWidgetPrivate::declareTabToPython(QWidget* widget,const std::string& tabName)
     }
     
     std::string paneName = _publicInterface->objectName_mt_safe().toStdString();
-    std::string appID = QString("app%1").arg(gui->getApp()->getAppID() + 1).toStdString();
+    std::string appID = gui->getApp()->getAppIDString();
     std::stringstream ss;
     ss << appID << "." << paneName << "." << tabName << " = " << appID << ".";
     if (isViewer) {
@@ -1701,7 +1695,7 @@ TabWidgetPrivate::removeTabToPython(QWidget* widget,const std::string& tabName)
     }
     
     std::string paneName = _publicInterface->objectName_mt_safe().toStdString();
-    std::string appID = QString("app%1").arg(gui->getApp()->getAppID() + 1).toStdString();
+    std::string appID = gui->getApp()->getAppIDString();
     std::stringstream ss;
     ss << "del " << appID << "." << paneName << "." << tabName ;
 

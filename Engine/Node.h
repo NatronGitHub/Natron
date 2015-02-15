@@ -379,6 +379,7 @@ public:
         eCanConnectInput_indexOutOfRange,
         eCanConnectInput_inputAlreadyConnected,
         eCanConnectInput_givenNodeNotConnectable,
+        eCanConnectInput_groupHasNoOutput,
         eCanConnectInput_graphCycles,
         eCanConnectInput_differentPars,
         eCanConnectInput_differentFPS
@@ -965,6 +966,8 @@ protected:
     void computeHash();
 
 private:
+    
+    void computeHashInternal(std::list<Natron::Node*>& marked);
     
     void declareRotoPythonField();
 

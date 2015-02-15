@@ -1,7 +1,4 @@
 
-//workaround to access protected functions
-#define protected public
-
 // default includes
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(mismatched-tags)
@@ -23,6 +20,10 @@ GCC_DIAG_OFF(missing-field-initializers)
 
 // Native ---------------------------------------------------------
 
+void GroupParamWrapper::pysideInitQtMetaTypes()
+{
+}
+
 GroupParamWrapper::~GroupParamWrapper()
 {
     SbkObject* wrapper = Shiboken::BindingManager::instance().retrieveWrapper(this);
@@ -34,11 +35,11 @@ GroupParamWrapper::~GroupParamWrapper()
 extern "C" {
 static PyObject* Sbk_GroupParamFunc_addParam(PyObject* self, PyObject* pyArg)
 {
-    ::GroupParam* cppSelf = 0;
+    GroupParamWrapper* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = ((::GroupParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_GROUPPARAM_IDX], (SbkObject*)self));
+    cppSelf = (GroupParamWrapper*)((::GroupParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_GROUPPARAM_IDX], (SbkObject*)self));
     int overloadId = -1;
     PythonToCppFunc pythonToCpp;
     SBK_UNUSED(pythonToCpp)
@@ -80,11 +81,11 @@ static PyObject* Sbk_GroupParamFunc_addParam(PyObject* self, PyObject* pyArg)
 
 static PyObject* Sbk_GroupParamFunc_getIsOpened(PyObject* self)
 {
-    ::GroupParam* cppSelf = 0;
+    GroupParamWrapper* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = ((::GroupParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_GROUPPARAM_IDX], (SbkObject*)self));
+    cppSelf = (GroupParamWrapper*)((::GroupParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_GROUPPARAM_IDX], (SbkObject*)self));
     PyObject* pyResult = 0;
 
     // Call function/method
@@ -93,7 +94,7 @@ static PyObject* Sbk_GroupParamFunc_getIsOpened(PyObject* self)
         if (!PyErr_Occurred()) {
             // getIsOpened()const
             PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            bool cppResult = const_cast<const ::GroupParam*>(cppSelf)->getIsOpened();
+            bool cppResult = const_cast<const ::GroupParamWrapper*>(cppSelf)->getIsOpened();
             PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), &cppResult);
         }
@@ -108,11 +109,11 @@ static PyObject* Sbk_GroupParamFunc_getIsOpened(PyObject* self)
 
 static PyObject* Sbk_GroupParamFunc_setAsTab(PyObject* self)
 {
-    ::GroupParam* cppSelf = 0;
+    GroupParamWrapper* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = ((::GroupParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_GROUPPARAM_IDX], (SbkObject*)self));
+    cppSelf = (GroupParamWrapper*)((::GroupParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_GROUPPARAM_IDX], (SbkObject*)self));
 
     // Call function/method
     {
@@ -133,11 +134,11 @@ static PyObject* Sbk_GroupParamFunc_setAsTab(PyObject* self)
 
 static PyObject* Sbk_GroupParamFunc_setOpened(PyObject* self, PyObject* pyArg)
 {
-    ::GroupParam* cppSelf = 0;
+    GroupParamWrapper* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = ((::GroupParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_GROUPPARAM_IDX], (SbkObject*)self));
+    cppSelf = (GroupParamWrapper*)((::GroupParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_GROUPPARAM_IDX], (SbkObject*)self));
     int overloadId = -1;
     PythonToCppFunc pythonToCpp;
     SBK_UNUSED(pythonToCpp)
@@ -309,4 +310,5 @@ void init_GroupParam(PyObject* module)
     Shiboken::ObjectType::setTypeDiscoveryFunctionV2(&Sbk_GroupParam_Type, &Sbk_GroupParam_typeDiscovery);
 
 
+    GroupParamWrapper::pysideInitQtMetaTypes();
 }

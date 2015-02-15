@@ -689,6 +689,18 @@ void compilePyScript(const std::string& script,PyObject** code);
 std::string PY3String_asString(PyObject* obj);
     
 std::string makeNameScriptFriendly(const std::string& str);
+    
+/**
+ * @brief Small helper class to use as RAII to hold the GIL (Global Interpreter Lock) before calling ANY Python code.
+ **/
+class PythonGILLocker
+{
+    PyGILState_STATE state;
+public:
+    PythonGILLocker();
+    
+    ~PythonGILLocker();
+};
 } // namespace Natron
 
 

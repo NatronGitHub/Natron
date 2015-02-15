@@ -3,9 +3,6 @@
 #ifndef SBK_NATRONENGINE_PYTHON_H
 #define SBK_NATRONENGINE_PYTHON_H
 
-//workaround to access protected functions
-#define protected public
-
 #include <sbkpython.h>
 #include <conversions.h>
 #include <sbkenum.h>
