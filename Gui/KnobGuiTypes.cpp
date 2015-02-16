@@ -800,7 +800,6 @@ Double_KnobGui::Double_KnobGui(boost::shared_ptr<KnobI> knob,
 , _container(0)
 , _slider(0)
 , _dimensionSwitchButton(0)
-, _digits(0.)
 {
     _knob = boost::dynamic_pointer_cast<Double_Knob>(knob);
     assert(_knob);
@@ -1061,7 +1060,8 @@ Double_KnobGui::onDisplayMinMaxChanged(double mini,
         valueAccordingToType(false, index, &mini);
         valueAccordingToType(false, index, &maxi);
         
-        double sliderMin = mini,sliderMax = maxi;
+        double sliderMin = mini;
+        double sliderMax = maxi;
         
         if ( (maxi - mini) >= SLIDER_MAX_RANGE ) {
             ///use min max for slider if dispmin/dispmax was not set
@@ -1075,7 +1075,6 @@ Double_KnobGui::onDisplayMinMaxChanged(double mini,
         }
         
         if (shouldSliderBeVisible(sliderMin, sliderMax)) {
-            _digits = std::max(0., std::ceil(-std::log10(sliderMax - sliderMin) + 2.));
             _slider->setVisible(true);
         } else {
             _slider->setVisible(false);
@@ -1200,7 +1199,8 @@ void
 Double_KnobGui::sliderEditingEnd(double d)
 {
     QString str;
-    str.setNum(d, 'f', _digits);
+    int digits = std::max(0,(int)-std::floor(std::log10(_slider->increment())));
+    str.setNum(d, 'f', digits);
     d = str.toDouble();
     if (_dimensionSwitchButton) {
         int dims = _knob->getDimension();

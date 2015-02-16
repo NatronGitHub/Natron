@@ -200,6 +200,12 @@ ScaleSliderQWidget::keyPressEvent(QKeyEvent* e)
     QWidget::keyPressEvent(e);
 }
 
+double
+ScaleSliderQWidget::increment()
+{
+    return (_imp->zoomCtx.right() - _imp->zoomCtx.left()) / width();
+}
+
 void
 ScaleSliderQWidget::keyReleaseEvent(QKeyEvent* e)
 {
