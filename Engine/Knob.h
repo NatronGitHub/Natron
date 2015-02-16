@@ -503,7 +503,10 @@ public:
      * @param force If set to true, this function will not check if the expression is valid nor will it attempt to compile/evaluate it, it will
      * just store it. This flag is used for serialisation, you should always pass false
      **/
+protected:
     virtual void setExpressionInternal(int dimension,const std::string& expression,bool hasRetVariable,bool clearResults) = 0;
+public:
+    
     void restoreExpression(int dimension,const std::string& expression,bool hasRetVariable) {
         setExpressionInternal(dimension, expression, hasRetVariable, false);
     }

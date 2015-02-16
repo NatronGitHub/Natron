@@ -2276,7 +2276,9 @@ KnobHelper::onExprDependencyChanged(KnobI* knob,int /*dimension*/)
             }
         }
     }
+    
     for (std::set<int>::const_iterator it = dimensionsToEvaluate.begin();it != dimensionsToEvaluate.end(); ++it) {
+        clearExpressionsResults(*it);
         evaluateValueChange(*it, Natron::eValueChangedReasonSlaveRefresh);
     }
 }

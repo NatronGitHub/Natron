@@ -164,7 +164,7 @@ public:
         if (knob) {
             ret = knob->setValue(v,dimension,reason,newKey);
         }
-        if (ret > 0) {
+        if (ret > 0 && ret != KnobHelper::eValueChangedReturnCodeNothingChanged) {
             assert(newKey);
             if (ret == KnobHelper::eValueChangedReturnCodeKeyframeAdded) {
                 setKeyframeMarkerOnTimeline( newKey->getTime() );
