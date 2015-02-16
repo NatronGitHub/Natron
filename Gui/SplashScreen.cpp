@@ -88,7 +88,7 @@ SplashScreen::paintEvent(QPaintEvent*)
 
 
 LoadProjectSplashScreen::LoadProjectSplashScreen(const QString & filePath)
-: QWidget(0,Qt::ToolTip | Qt::FramelessWindowHint | Qt::X11BypassWindowManagerHint)
+: QWidget(0,Qt::SplashScreen)
 , _pixmap()
 , _text()
 , _projectName(filePath)
