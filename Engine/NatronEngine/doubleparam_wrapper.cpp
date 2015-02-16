@@ -136,14 +136,10 @@ static PyObject* Sbk_DoubleParamFunc_get(PyObject* self, PyObject* args)
 
             if (!PyErr_Occurred()) {
                 // get()const
-                // Begin code injection
-
-                double cppResult = cppSelf->get();
+                PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+                double cppResult = const_cast<const ::DoubleParamWrapper*>(cppSelf)->get();
+                PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
                 pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &cppResult);
-
-                // End of code injection
-
-
             }
             break;
         }
@@ -154,14 +150,10 @@ static PyObject* Sbk_DoubleParamFunc_get(PyObject* self, PyObject* args)
 
             if (!PyErr_Occurred()) {
                 // get(int)const
-                // Begin code injection
-
-                double cppResult = cppSelf->get(cppArg0);
+                PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+                double cppResult = const_cast<const ::DoubleParamWrapper*>(cppSelf)->get(cppArg0);
+                PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
                 pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &cppResult);
-
-                // End of code injection
-
-
             }
             break;
         }
@@ -546,14 +538,10 @@ static PyObject* Sbk_DoubleParamFunc_getValue(PyObject* self, PyObject* args, Py
 
         if (!PyErr_Occurred()) {
             // getValue(int)const
-            // Begin code injection
-
-            double cppResult = cppSelf->getValue(cppArg0);
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            double cppResult = const_cast<const ::DoubleParamWrapper*>(cppSelf)->getValue(cppArg0);
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &cppResult);
-
-            // End of code injection
-
-
         }
     }
 
@@ -625,17 +613,15 @@ static PyObject* Sbk_DoubleParamFunc_getValueAtTime(PyObject* self, PyObject* ar
         }
         int cppArg0;
         pythonToCpp[0](pyArgs[0], &cppArg0);
+        int cppArg1 = 0;
+        if (pythonToCpp[1]) pythonToCpp[1](pyArgs[1], &cppArg1);
 
         if (!PyErr_Occurred()) {
             // getValueAtTime(int,int)const
-            // Begin code injection
-
-            double cppResult = cppSelf->getValueAtTime(cppArg0);
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            double cppResult = const_cast<const ::DoubleParamWrapper*>(cppSelf)->getValueAtTime(cppArg0, cppArg1);
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &cppResult);
-
-            // End of code injection
-
-
         }
     }
 
@@ -704,13 +690,9 @@ static PyObject* Sbk_DoubleParamFunc_restoreDefaultValue(PyObject* self, PyObjec
 
         if (!PyErr_Occurred()) {
             // restoreDefaultValue(int)
-            // Begin code injection
-
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             cppSelf->restoreDefaultValue(cppArg0);
-
-            // End of code injection
-
-
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
         }
     }
 
@@ -769,13 +751,9 @@ static PyObject* Sbk_DoubleParamFunc_set(PyObject* self, PyObject* args)
 
             if (!PyErr_Occurred()) {
                 // set(double)
-                // Begin code injection
-
+                PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
                 cppSelf->set(cppArg0);
-
-                // End of code injection
-
-
+                PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             }
             break;
         }
@@ -788,13 +766,9 @@ static PyObject* Sbk_DoubleParamFunc_set(PyObject* self, PyObject* args)
 
             if (!PyErr_Occurred()) {
                 // set(double,int)
-                // Begin code injection
-
-                cppSelf->set(cppArg0,cppArg1);
-
-                // End of code injection
-
-
+                PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+                cppSelf->set(cppArg0, cppArg1);
+                PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             }
             break;
         }
@@ -1256,13 +1230,9 @@ static PyObject* Sbk_DoubleParamFunc_setValue(PyObject* self, PyObject* args, Py
 
         if (!PyErr_Occurred()) {
             // setValue(double,int)
-            // Begin code injection
-
-            cppSelf->setValue(cppArg0,cppArg1);
-
-            // End of code injection
-
-
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            cppSelf->setValue(cppArg0, cppArg1);
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
         }
     }
 
@@ -1341,13 +1311,9 @@ static PyObject* Sbk_DoubleParamFunc_setValueAtTime(PyObject* self, PyObject* ar
 
         if (!PyErr_Occurred()) {
             // setValueAtTime(double,int,int)
-            // Begin code injection
-
-            cppSelf->setValueAtTime(cppArg0,cppArg1,cppArg2);
-
-            // End of code injection
-
-
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            cppSelf->setValueAtTime(cppArg0, cppArg1, cppArg2);
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
         }
     }
 

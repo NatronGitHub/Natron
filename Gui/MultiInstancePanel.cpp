@@ -2237,8 +2237,14 @@ TrackerPanelPrivate::createCornerPinFromSelection(const std::list<Node*> & selec
         if (!linked) {
             toPoints[i]->cloneAndUpdateGui(centers[i].get());
         } else {
-            dynamic_cast<KnobI*>(toPoints[i].get())->slaveTo(0, centers[i], 0);
-            dynamic_cast<KnobI*>(toPoints[i].get())->slaveTo(1, centers[i], 1);
+            Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(centers[i]->getHolder());
+            assert(effect);
+            
+            std::stringstream ss;
+            ss << "thisGroup." << effect->getNode()->getFullyQualifiedName() << "." << centers[i]->getName() << ".get()[dimension]";
+            std::string expr = ss.str();
+            dynamic_cast<KnobI*>(toPoints[i].get())->setExpression(0, expr, false);
+            dynamic_cast<KnobI*>(toPoints[i].get())->setExpression(1, expr, false);
         }
     }
 

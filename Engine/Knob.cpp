@@ -1211,13 +1211,15 @@ KnobI::declareCurrentKnobVariable_Python(KnobI* knob,int dimension,std::string& 
     EffectInstance* effect = dynamic_cast<EffectInstance*>(holder);
     if (effect) {
         
+        NodePtr node = effect->getNode();
+        
         //import the math module as expression often rely on it
         Natron::ensureScriptHasModuleImport("math", script);
         
         std::size_t firstLineAfterImport = findNewLineStartAfterImports(script);
         
         std::string deleteThisNodeStr;
-        std::string thisNodeStr = effect->getNode()->declareCurrentNodeVariable_Python(&deleteThisNodeStr);
+        std::string thisNodeStr = node->declareCurrentNodeVariable_Python(&deleteThisNodeStr);
         ///Now define the variables in the scope
         std::stringstream ss;
         ss << thisNodeStr;
@@ -1229,7 +1231,7 @@ KnobI::declareCurrentKnobVariable_Python(KnobI* knob,int dimension,std::string& 
         
         std::string deleteNodesInScope;
         ///define the nodes that are in the scope of this knob
-        std::string nodesInScope = effect->getNode()->declareAllNodesVariableInScope_Python(&deleteNodesInScope);
+        std::string nodesInScope = node->declareAllNodesVariableInScope_Python(&deleteNodesInScope);
         ss << nodesInScope;
         
         std::string toInsert = ss.str();

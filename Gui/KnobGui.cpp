@@ -2282,7 +2282,7 @@ void
 EditExpressionDialog::getDeclaredVariables(std::list<std::pair<QString,QString> >& variables) const
 {
     variables.push_back(std::make_pair("thisNode", tr("the current node")));
-    variables.push_back(std::make_pair("thisGroup", tr("Defined only if thisNode belongs to a group, it references the parent group node")));
+    variables.push_back(std::make_pair("thisGroup", tr("When thisNode belongs to a group, it references the parent group node, otherwise it will reference the current application instance")));
     variables.push_back(std::make_pair("thisParam", tr("the current param being edited")));
     variables.push_back(std::make_pair("dimension", tr("Defined only if the parameter is multi-dimensional, it references the dimension of the parameter being edited (0-based index")));
     variables.push_back(std::make_pair("frame", tr("the current time on the timeline")));

@@ -74,14 +74,10 @@ static PyObject* Sbk_Double3DParamFunc_get(PyObject* self, PyObject* args)
 
             if (!PyErr_Occurred()) {
                 // get()const
-                // Begin code injection
-
-                Double3DTuple cppResult = cppSelf->get();
-                pyResult = Shiboken::Conversions::copyToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_DOUBLE3DTUPLE_IDX], &cppResult);
-
-                // End of code injection
-
-
+                PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+                Double3DTuple* cppResult = new Double3DTuple(const_cast<const ::Double3DParamWrapper*>(cppSelf)->get());
+                PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+                pyResult = Shiboken::Object::newObject((SbkObjectType*)SbkNatronEngineTypes[SBK_DOUBLE3DTUPLE_IDX], cppResult, true, true);
             }
             break;
         }
@@ -92,14 +88,10 @@ static PyObject* Sbk_Double3DParamFunc_get(PyObject* self, PyObject* args)
 
             if (!PyErr_Occurred()) {
                 // get(int)const
-                // Begin code injection
-
-                Double3DTuple cppResult = cppSelf->get(cppArg0);
-                pyResult = Shiboken::Conversions::copyToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_DOUBLE3DTUPLE_IDX], &cppResult);
-
-                // End of code injection
-
-
+                PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+                Double3DTuple* cppResult = new Double3DTuple(const_cast<const ::Double3DParamWrapper*>(cppSelf)->get(cppArg0));
+                PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+                pyResult = Shiboken::Object::newObject((SbkObjectType*)SbkNatronEngineTypes[SBK_DOUBLE3DTUPLE_IDX], cppResult, true, true);
             }
             break;
         }

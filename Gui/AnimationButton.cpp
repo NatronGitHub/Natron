@@ -62,7 +62,7 @@ AnimationButton::mouseMoveEvent(QMouseEvent* e)
             return;
         }
         std::stringstream expr;
-        expr << effect->getNode()->getFullyQualifiedName() << "." << _knob->getKnob()->getName()
+        expr << "thisGroup." << effect->getNode()->getFullyQualifiedName() << "." << _knob->getKnob()->getName()
         << ".get()";
         if (_knob->getKnob()->getDimension() > 1) {
             expr << "[dimension]";

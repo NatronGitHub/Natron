@@ -4636,6 +4636,8 @@ Node::declareCurrentNodeVariable_Python(std::string* deleteScript) const
     if (isParentGrp) {
         ss << "thisGroup = " << appID << "." << isParentGrp->getNode()->getFullyQualifiedName() << "\n";
         deleteScript->append("del thisGroup\n");
+    } else {
+        ss << "thisGroup = " << appID << "\n";
     }
     ss << "thisNode = " << appID << "." << getFullyQualifiedName() <<  "\n";
     deleteScript->append("del thisNode\n");
@@ -4649,7 +4651,7 @@ Node::declareAllNodesVariableInScope_Python(std::string* deleteScript) const
         return std::string();
     }
     
-    int appID = getApp()->getAppID() + 1;
+    std::string appID = getApp()->getAppIDString();
     
     boost::shared_ptr<NodeCollection> collection = getGroup();
     NodeGroup* isContainerGrp = dynamic_cast<NodeGroup*>(collection.get());
@@ -4658,33 +4660,35 @@ Node::declareAllNodesVariableInScope_Python(std::string* deleteScript) const
     std::string mustDeleteContainer;
     if (isContainerGrp) {
         std::string containerName = isContainerGrp->getNode()->getFullyQualifiedName();
-        ss << containerName  << " = app" << appID << "." <<
+        ss << containerName  << " = " << appID << "." <<
         containerName  << "\n";
         mustDeleteContainer = "del " + containerName + "\n";
-    } else {
-        
-        NodeList siblings = collection->getNodes();
-        for (NodeList::iterator it = siblings.begin(); it != siblings.end(); ++it) {
-            if ((*it)->isActivated()) {
-                std::string name = (*it)->getFullyQualifiedName();
-                ss << name << " = app" << appID << "." <<
-                name << "\n";
+    }
+    
+    NodeList siblings = collection->getNodes();
+    for (NodeList::iterator it = siblings.begin(); it != siblings.end(); ++it) {
+        if ((*it)->isActivated() && !(*it)->getParentMultiInstance()) {
+            std::string name = (*it)->getFullyQualifiedName();
+            ss << name << " = " << appID << "." <<
+            name << "\n";
+            if (!isContainerGrp) {
                 deleteScript->append("del " + name + "\n");
             }
         }
-        
-        NodeGroup* isGrp = dynamic_cast<NodeGroup*>(getLiveInstance());
-        if (isGrp) {
-            NodeList children = isGrp->getNodes();
-            for (NodeList::iterator it = children.begin(); it != children.end(); ++it) {
-                if ((*it)->isActivated()) {
-                    std::string name = (*it)->getFullyQualifiedName();
-                    ss << name << " = app" << appID << "." <<
-                    name << "\n";
-                }
+    }
+    
+    NodeGroup* isGrp = dynamic_cast<NodeGroup*>(getLiveInstance());
+    if (isGrp) {
+        NodeList children = isGrp->getNodes();
+        for (NodeList::iterator it = children.begin(); it != children.end(); ++it) {
+            if ((*it)->isActivated() && !(*it)->getParentMultiInstance()) {
+                std::string name = (*it)->getFullyQualifiedName();
+                ss << name << " = " << appID << "." <<
+                name << "\n";
             }
         }
     }
+    
     if (!mustDeleteContainer.empty()) {
         ///Delete the group after all children
         deleteScript->append(mustDeleteContainer);
