@@ -3010,8 +3010,6 @@ AppManager::initPython(int argc,char* argv[])
     bool pathEmpty = pythonPath.isEmpty();
     QString toPrepend;
 #ifdef __NATRON_WIN32__
-    //toPrepend.append(binPath + "\\Lib");
-    //toPrepend.append(';');
     toPrepend.append(binPath + "\\..\\Plugins");
     if (!pathEmpty) {
         toPrepend.push_back(';');
@@ -3049,6 +3047,12 @@ AppManager::initPython(int argc,char* argv[])
     Py_Initialize();
 #ifdef __NATRON_WIN32__
     static std::wstring pythonHome = Natron::s2ws(std::string("."));
+    Py_SetPythonHome(const_cast<wchar_t*>(pythonHome.c_str()));
+#elif defined(__NATRON_LINUX__)
+    static std::wstring pythonHome = Natron::s2ws(std::string("."));
+    Py_SetPythonHome(const_cast<wchar_t*>(pythonHome.c_str()));
+#elif defined(__NATRON_OSX__)
+    static std::wstring pythonHome = Natron::s2ws(std::string(".");
     Py_SetPythonHome(const_cast<wchar_t*>(pythonHome.c_str()));
 #endif
     _imp->mainModule = PyImport_ImportModule("__main__"); //create main module , new ref
