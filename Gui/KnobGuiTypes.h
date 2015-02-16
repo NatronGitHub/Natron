@@ -275,7 +275,6 @@ private:
     ScaleSliderQWidget *_slider;
     Button *_dimensionSwitchButton;
     boost::shared_ptr<Double_Knob> _knob;
-    int _digits;
 };
 
 //================================
