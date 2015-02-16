@@ -48,7 +48,8 @@ CLANG_DIAG_ON(unused-parameter)
 #define VALUE_SERIALIZATION_INTRODUCES_CHOICE_LABEL 2
 #define VALUE_SERIALIZATION_INTRODUCES_EXPRESSIONS 3
 #define VALUE_SERIALIZATION_REMOVES_EXTRA_DATA 4
-#define VALUE_SERIALIZATION_VERSION VALUE_SERIALIZATION_REMOVES_EXTRA_DATA
+#define VALUE_SERIALIZATION_INTRODUCES_EXPRESSIONS_RESULTS 5
+#define VALUE_SERIALIZATION_VERSION VALUE_SERIALIZATION_INTRODUCES_EXPRESSIONS_RESULTS
 
 
 struct MasterSerialization
@@ -155,15 +156,18 @@ struct ValueSerialization
     void save(Archive & ar,
               const unsigned int /*version*/) const
     {
-        Int_Knob* isInt = dynamic_cast<Int_Knob*>( _knob.get() );
-        Bool_Knob* isBool = dynamic_cast<Bool_Knob*>( _knob.get() );
-        Double_Knob* isDouble = dynamic_cast<Double_Knob*>( _knob.get() );
+        Knob<int>* isInt = dynamic_cast<Knob<int>*>( _knob.get() );
+        Knob<bool>* isBool = dynamic_cast<Knob<bool>*>( _knob.get() );
+        Knob<double>* isDouble = dynamic_cast<Knob<double>*>( _knob.get() );
         Choice_Knob* isChoice = dynamic_cast<Choice_Knob*>( _knob.get() );
-        String_Knob* isString = dynamic_cast<String_Knob*>( _knob.get() );
-        File_Knob* isFile = dynamic_cast<File_Knob*>( _knob.get() );
-        OutputFile_Knob* isOutputFile = dynamic_cast<OutputFile_Knob*>( _knob.get() );
-        Path_Knob* isPath = dynamic_cast<Path_Knob*>( _knob.get() );
-        Color_Knob* isColor = dynamic_cast<Color_Knob*>( _knob.get() );
+        Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>( _knob.get() );
+        Parametric_Knob* isParametric = dynamic_cast<Parametric_Knob*>(_knob.get());
+
+        Page_Knob* isPage = dynamic_cast<Page_Knob*>(_knob.get());
+        Group_Knob* isGrp = dynamic_cast<Group_Knob*>(_knob.get());
+        Separator_Knob* isSep = dynamic_cast<Separator_Knob*>(_knob.get());
+        Button_Knob* btn = dynamic_cast<Button_Knob*>(_knob.get());
+        
         bool enabled = _knob->isEnabled(_dimension);
         ar & boost::serialization::make_nvp("Enabled",enabled);
         bool hasAnimation = _knob->isAnimated(_dimension);
@@ -173,13 +177,13 @@ struct ValueSerialization
             ar & boost::serialization::make_nvp("Curve",*( _knob->getCurve(_dimension,true) ));
         }
 
-        if (isInt) {
+        if (isInt && !isChoice) {
             int v = isInt->getValue(_dimension);
             ar & boost::serialization::make_nvp("Value",v);
-        } else if (isBool) {
+        } else if (isBool && !isPage && !isGrp && !isSep && !btn) {
             bool v = isBool->getValue(_dimension);
             ar & boost::serialization::make_nvp("Value",v);
-        } else if (isDouble) {
+        } else if (isDouble && !isParametric) {
             double v = isDouble->getValue(_dimension);
             ar & boost::serialization::make_nvp("Value",v);
         } else if (isChoice) {
@@ -194,19 +198,6 @@ struct ValueSerialization
         } else if (isString) {
             std::string v = isString->getValue(_dimension);
             ar & boost::serialization::make_nvp("Value",v);
-            
-        } else if (isFile) {
-            std::string v = isFile->getValue(_dimension);
-            ar & boost::serialization::make_nvp("Value",v);
-        } else if (isOutputFile) {
-            std::string v = isOutputFile->getValue(_dimension);
-            ar & boost::serialization::make_nvp("Value",v);
-        } else if (isPath) {
-            std::string v = isPath->getValue(_dimension);
-            ar & boost::serialization::make_nvp("Value",v);
-        } else if (isColor) {
-            double v = isColor->getValue(_dimension);
-            ar & boost::serialization::make_nvp("Value",v);
         }
 
         bool hasMaster = _knob->isSlave(_dimension);
@@ -217,21 +208,45 @@ struct ValueSerialization
         
         ar & boost::serialization::make_nvp("Expression",_expression);
         ar & boost::serialization::make_nvp("ExprHasRet",_exprHasRetVar);
+        
+        if (isInt) {
+            std::map<SequenceTime,int> exprValues;
+            isInt->getExpressionResults(_dimension, exprValues);
+            ar & boost::serialization::make_nvp("ExprResults",exprValues);
+        } else if (isBool) {
+            std::map<SequenceTime,bool> exprValues;
+            isBool->getExpressionResults(_dimension, exprValues);
+            ar & boost::serialization::make_nvp("ExprResults",exprValues);
+        } else if (isDouble) {
+            std::map<SequenceTime,double> exprValues;
+            isDouble->getExpressionResults(_dimension, exprValues);
+            ar & boost::serialization::make_nvp("ExprResults",exprValues);
+        } else if (isString) {
+            std::map<SequenceTime,std::string> exprValues;
+            isString->getExpressionResults(_dimension, exprValues);
+            ar & boost::serialization::make_nvp("ExprResults",exprValues);
+        }
+        
+        
     } // save
 
     template<class Archive>
     void load(Archive & ar,
               const unsigned int version)
     {
-        Int_Knob* isInt = dynamic_cast<Int_Knob*>( _knob.get() );
-        Bool_Knob* isBool = dynamic_cast<Bool_Knob*>( _knob.get() );
-        Double_Knob* isDouble = dynamic_cast<Double_Knob*>( _knob.get() );
+        Knob<int>* isInt = dynamic_cast<Knob<int>*>( _knob.get() );
+        Knob<bool>* isBool = dynamic_cast<Knob<bool>*>( _knob.get() );
+        Knob<double>* isDouble = dynamic_cast<Knob<double>*>( _knob.get() );
         Choice_Knob* isChoice = dynamic_cast<Choice_Knob*>( _knob.get() );
-        String_Knob* isString = dynamic_cast<String_Knob*>( _knob.get() );
-        File_Knob* isFile = dynamic_cast<File_Knob*>( _knob.get() );
-        OutputFile_Knob* isOutputFile = dynamic_cast<OutputFile_Knob*>( _knob.get() );
-        Path_Knob* isPath = dynamic_cast<Path_Knob*>( _knob.get() );
-        Color_Knob* isColor = dynamic_cast<Color_Knob*>( _knob.get() );
+        Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>( _knob.get() );
+        File_Knob* isFile = dynamic_cast<File_Knob*>(_knob.get());
+        Parametric_Knob* isParametric = dynamic_cast<Parametric_Knob*>(_knob.get());
+        Page_Knob* isPage = dynamic_cast<Page_Knob*>(_knob.get());
+        Group_Knob* isGrp = dynamic_cast<Group_Knob*>(_knob.get());
+        Separator_Knob* isSep = dynamic_cast<Separator_Knob*>(_knob.get());
+        Button_Knob* btn = dynamic_cast<Button_Knob*>(_knob.get());
+
+        
         bool enabled;
         ar & boost::serialization::make_nvp("Enabled",enabled);
 
@@ -256,15 +271,15 @@ struct ValueSerialization
             }
         }
 
-        if (isInt) {
+        if (isInt && !isChoice) {
             int v;
             ar & boost::serialization::make_nvp("Value",v);
             isInt->setValue(v,_dimension);
-        } else if (isBool) {
+        } else if (isBool && !isGrp && !isPage && !isSep && !btn) {
             bool v;
             ar & boost::serialization::make_nvp("Value",v);
             isBool->setValue(v,_dimension);
-        } else if (isDouble) {
+        } else if (isDouble && !isParametric) {
             double v;
             ar & boost::serialization::make_nvp("Value",v);
             isDouble->setValue(v,_dimension);
@@ -282,7 +297,7 @@ struct ValueSerialization
             }
             isChoice->setValue(v, _dimension);
 
-        } else if (isString) {
+        } else if (isString && !isFile) {
             std::string v;
             ar & boost::serialization::make_nvp("Value",v);
             isString->setValue(v,_dimension);
@@ -299,18 +314,6 @@ struct ValueSerialization
                                                               &v);
             }
             isFile->setValue(v,_dimension);
-        } else if (isOutputFile) {
-            std::string v;
-            ar & boost::serialization::make_nvp("Value",v);
-            isOutputFile->setValue(v,_dimension);
-        } else if (isPath) {
-            std::string v;
-            ar & boost::serialization::make_nvp("Value",v);
-            isPath->setValue(v,_dimension);
-        } else if (isColor) {
-            double v;
-            ar & boost::serialization::make_nvp("Value",v);
-            isColor->setValue(v,_dimension);
         }
 
         ///We cannot restore the master yet. It has to be done in another pass.
@@ -323,6 +326,27 @@ struct ValueSerialization
         if (version >= VALUE_SERIALIZATION_INTRODUCES_EXPRESSIONS) {
             ar & boost::serialization::make_nvp("Expression",_expression);
             ar & boost::serialization::make_nvp("ExprHasRet",_exprHasRetVar);
+        }
+        
+        if (version >= VALUE_SERIALIZATION_INTRODUCES_EXPRESSIONS_RESULTS) {
+            if (isInt) {
+                std::map<SequenceTime,int> exprValues;
+                ar & boost::serialization::make_nvp("ExprResults",exprValues);
+                isInt->setExpressionResults(_dimension, exprValues);
+            } else if (isBool) {
+                std::map<SequenceTime,bool> exprValues;
+                ar & boost::serialization::make_nvp("ExprResults",exprValues);
+                isBool->setExpressionResults(_dimension, exprValues);
+            } else if (isDouble) {
+                std::map<SequenceTime,double> exprValues;
+                ar & boost::serialization::make_nvp("ExprResults",exprValues);
+                isDouble->setExpressionResults(_dimension, exprValues);
+            } else if (isString) {
+                std::map<SequenceTime,std::string> exprValues;
+                ar & boost::serialization::make_nvp("ExprResults",exprValues);
+                isString->setExpressionResults(_dimension, exprValues);
+            }
+
         }
     } // load
 

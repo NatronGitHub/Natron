@@ -345,7 +345,7 @@ KnobHelper::deleteKnob()
     std::list<KnobI*> listenersCpy = _imp->listeners;
     for (std::list<KnobI*>::iterator it = listenersCpy.begin(); it != listenersCpy.end(); ++it) {
         for (int i = 0; i < (*it)->getDimension(); ++i) {
-            (*it)->clearExpression(i);
+            (*it)->clearExpression(i,true);
         }
     }
     
@@ -1494,12 +1494,12 @@ KnobHelper::validateExpression(const std::string& expression,int dimension,bool 
 }
 
 void
-KnobHelper::setExpression(int dimension,const std::string& expression,bool hasRetVariable)
+KnobHelper::setExpressionInternal(int dimension,const std::string& expression,bool hasRetVariable,bool clearResults)
 {
     Natron::PythonGILLocker pgl;
     
     ///Clear previous expr
-    clearExpression(dimension);
+    clearExpression(dimension,clearResults);
     
     if (expression.empty()) {
         return ;
@@ -1532,7 +1532,7 @@ KnobHelper::setExpression(int dimension,const std::string& expression,bool hasRe
 
         } catch (const std::runtime_error& e) {
             --_expressionsRecursionLevel;
-            clearExpression(dimension);
+            clearExpression(dimension,clearResults);
             throw e;
         }
         --_expressionsRecursionLevel;
@@ -1572,7 +1572,7 @@ KnobHelper::isExpressionUsingRetVariable(int dimension) const
 }
 
 void
-KnobHelper::clearExpression(int dimension)
+KnobHelper::clearExpression(int dimension,bool clearResults)
 {
     Natron::PythonGILLocker pgl;
     {
@@ -1619,7 +1619,9 @@ KnobHelper::clearExpression(int dimension)
             }
         }
     }
-    
+    if (clearResults) {
+        clearExpressionsResults(dimension);
+    }
     expressionChanged(dimension);
     
 }
@@ -2289,6 +2291,7 @@ KnobHelper::cloneExpressions(KnobI* other,int dimension)
                 std::string expr = other->getExpression(i);
                 bool hasRet = other->isExpressionUsingRetVariable(i);
                 (void)setExpression(i, expr,hasRet);
+                cloneExpressionsResults(other,i);
             }
         }
     } catch(...) {
@@ -2359,6 +2362,13 @@ KnobHelper::getCurrentTime() const
 {
     KnobHolder* holder = getHolder();
     return holder && holder->getApp() ? holder->getCurrentTime() : 0;
+}
+
+int
+KnobHelper::getCurrentView() const
+{
+    KnobHolder* holder = getHolder();
+    return holder && holder->getApp() ? holder->getCurrentView() : 0;
 }
 
 /***************************KNOB HOLDER******************************************/

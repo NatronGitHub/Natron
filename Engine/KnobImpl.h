@@ -86,6 +86,7 @@ Knob<T>::Knob(KnobHolder*  holder,
       , _valueMutex(QReadWriteLock::Recursive)
       , _values(dimension)
       , _defaultValues(dimension)
+      , _exprRes(dimension)
       , _minMaxMutex(QReadWriteLock::Recursive)
       , _minimums(dimension)
       , _maximums(dimension)
@@ -357,10 +358,21 @@ Knob<std::string>::getValue(int dimension,bool /*clampToMinMax*/) const
 {
     std::string hasExpr = getExpression(dimension);
     if (!hasExpr.empty()) {
-        QMutexLocker k(&_expressionRecursionLevelMutex);
+        ///Check first if a value was already computed:
+        SequenceTime time = getCurrentTime();
+        
+        QWriteLocker k(&_valueMutex);
+        
+        FrameValueMap::iterator found = _exprRes[dimension].find(time);
+        if (found != _exprRes[dimension].end()) {
+            return found->second;
+        }
+        
+        QMutexLocker locker(&_expressionRecursionLevelMutex);
         if (_expressionsRecursionLevel == 0) {
             ++_expressionsRecursionLevel;
             std::string ret = evaluateExpression(dimension);
+            _exprRes[dimension].insert(std::make_pair(time,ret));
             --_expressionsRecursionLevel;
             return ret;
         }
@@ -407,8 +419,19 @@ Knob<T>::getValue(int dimension,bool clamp) const
     std::string hasExpr = getExpression(dimension);
     if (!hasExpr.empty()) {
         
+        ///Check first if a value was already computed:
+        SequenceTime time = getCurrentTime();
+        
+        QWriteLocker k(&_valueMutex);
+        
+        typename FrameValueMap::iterator found = _exprRes[dimension].find(time);
+        if (found != _exprRes[dimension].end()) {
+            return found->second;
+        }
+
+        
         ///Prevent recursive call of the expression
-        QMutexLocker k(&_expressionRecursionLevelMutex);
+        QMutexLocker locker(&_expressionRecursionLevelMutex);
         if (_expressionsRecursionLevel == 0) {
             ++_expressionsRecursionLevel;
             T ret = evaluateExpression(dimension);
@@ -416,10 +439,10 @@ Knob<T>::getValue(int dimension,bool clamp) const
             
             
             if (clamp) {
-                return clampToMinMax(ret,dimension);
-            } else {
-                return ret;
+                ret =  clampToMinMax(ret,dimension);
             }
+            _exprRes[dimension].insert(std::make_pair(time,ret));
+            return ret;
         }
       
     }
@@ -468,11 +491,21 @@ Knob<std::string>::getValueAtTime(double time,
     std::string hasExpr = getExpression(dimension);
     if (!hasExpr.empty()) {
         
+        ///Check first if a value was already computed:
+        QWriteLocker k(&_valueMutex);
+        
+        FrameValueMap::iterator found = _exprRes[dimension].find(time);
+        if (found != _exprRes[dimension].end()) {
+            return found->second;
+        }
+
+        
         ///Prevent recursive call of the expression
-        QMutexLocker k(&_expressionRecursionLevelMutex);
+        QMutexLocker locker(&_expressionRecursionLevelMutex);
         if (_expressionsRecursionLevel == 0) {
             ++_expressionsRecursionLevel;
             std::string ret =  evaluateExpression(dimension);
+            _exprRes[dimension].insert(std::make_pair(time,ret));
             --_expressionsRecursionLevel;
             return ret;
         }
@@ -535,8 +568,19 @@ Knob<T>::getValueAtTime(double time,
     std::string hasExpr = getExpression(dimension);
     if (!hasExpr.empty()) {
         
+        ///Check first if a value was already computed:
+        
+        QWriteLocker k(&_valueMutex);
+        
+        typename FrameValueMap::iterator found = _exprRes[dimension].find(time);
+        if (found != _exprRes[dimension].end()) {
+            return found->second;
+        }
+        
+
+        
         ///Prevent recursive call of the expression
-        QMutexLocker k(&_expressionRecursionLevelMutex);
+        QMutexLocker locker(&_expressionRecursionLevelMutex);
         if (_expressionsRecursionLevel == 0) {
 
             ++_expressionsRecursionLevel;
@@ -544,11 +588,11 @@ Knob<T>::getValueAtTime(double time,
             --_expressionsRecursionLevel;
             
             if (clamp) {
-                return clampToMinMax(ret,dimension);
-            } else {
-                return ret;
+                ret = clampToMinMax(ret,dimension);
             }
             
+            _exprRes[dimension].insert(std::make_pair(time,ret));
+            return ret;
         }
     }
     
@@ -1487,7 +1531,7 @@ Knob<double>::resetToDefaultValue(int dimension)
     Double_Knob* isDouble = dynamic_cast<Double_Knob*>(this);
     double def;
     
-    clearExpression(dimension);
+    clearExpression(dimension,true);
     
     {
         QReadLocker l(&_valueMutex);
@@ -1627,6 +1671,23 @@ Knob<std::string>::cloneValues(KnobI* other, int dimension)
             }
         }
     }
+}
+
+template <typename T>
+void
+Knob<T>::cloneExpressionsResults(KnobI* other,int dimension)
+{
+    Knob<T>* knob = dynamic_cast<Knob<T>* >(other);
+    
+    //Only clone expr results of the same type
+    if (!knob) {
+        return;
+    }
+    
+    FrameValueMap results;
+    knob->getExpressionResults(dimension,results);
+    QWriteLocker k(&_valueMutex);
+    _exprRes[dimension] = results;
 }
 
 template<typename T>
