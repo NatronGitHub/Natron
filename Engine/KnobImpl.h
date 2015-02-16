@@ -1377,7 +1377,7 @@ Knob<T>::onTimeChanged(SequenceTime /*time*/)
     }
     for (int i = 0; i < dims; ++i) {
         
-        if (_signalSlotHandler && isAnimated(i)) {
+        if (_signalSlotHandler && (isAnimated(i) || !getExpression(i).empty())) {
             _signalSlotHandler->s_valueChanged(i, Natron::eValueChangedReasonTimeChanged);
         }
         checkAnimationLevel(i);
