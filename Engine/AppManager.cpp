@@ -3016,14 +3016,14 @@ AppManager::initPython(int argc,char* argv[])
     }
 #elif defined(__NATRON_OSX__)
     toPrepend.append(binPath + "/../Frameworks/Python.framework/Versions/3.4/lib/python3.4");
-    toPrepend.append(';');
+    toPrepend.append(':');
     toPrepend.append(binPath + "/../Plugins");
     if (!pathEmpty) {
         toPrepend.push_back(':');
     }
 #elif defined(__NATRON_LINUX__)
     toPrepend.append(binPath + "/../lib/python3.4");
-    toPrepend.append(';');
+    toPrepend.append(':');
     toPrepend.append(binPath + "/../Plugins");
     if (!pathEmpty) {
         toPrepend.push_back(':');
@@ -3049,10 +3049,10 @@ AppManager::initPython(int argc,char* argv[])
     static std::wstring pythonHome = Natron::s2ws(std::string("."));
     Py_SetPythonHome(const_cast<wchar_t*>(pythonHome.c_str()));
 #elif defined(__NATRON_LINUX__)
-    static std::wstring pythonHome = Natron::s2ws(std::string("."));
+    static std::wstring pythonHome = Natron::s2ws(std::string("../lib"));
     Py_SetPythonHome(const_cast<wchar_t*>(pythonHome.c_str()));
 #elif defined(__NATRON_OSX__)
-    static std::wstring pythonHome = Natron::s2ws(std::string(".");
+    static std::wstring pythonHome = Natron::s2ws(std::string("../Frameworks/Python.framework/Versions/3.4/lib");
     Py_SetPythonHome(const_cast<wchar_t*>(pythonHome.c_str()));
 #endif
     _imp->mainModule = PyImport_ImportModule("__main__"); //create main module , new ref
