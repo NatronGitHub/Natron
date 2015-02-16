@@ -2706,7 +2706,7 @@ Node::deactivate(const std::list< Node* > & outputsToDisconnect,
                 
                 std::string hasExpr = (*it)->getExpression(dim);
                 if (!hasExpr.empty()) {
-                    (*it)->clearExpression(dim);
+                    (*it)->clearExpression(dim,true);
                 }
             }
         }
