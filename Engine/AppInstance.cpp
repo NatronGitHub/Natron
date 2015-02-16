@@ -988,6 +988,12 @@ AppInstance::declareCurrentAppVariable_Python()
     bool ok = Natron::interpretPythonScript(script, &err, 0);
     assert(ok);
     (void)ok;
+
+    if (appPTR->getAppType() == AppManager::eAppTypeBackground) {
+        std::string err;
+        ok = Natron::interpretPythonScript("app = app1\n", &err, 0);
+        assert(ok);
+    }
 }
 
 
