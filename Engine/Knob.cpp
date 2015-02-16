@@ -342,7 +342,8 @@ KnobHelper::~KnobHelper()
 void
 KnobHelper::deleteKnob()
 {
-    for (std::list<KnobI*>::iterator it = _imp->listeners.begin(); it != _imp->listeners.end(); ++it) {
+    std::list<KnobI*> listenersCpy = _imp->listeners;
+    for (std::list<KnobI*>::iterator it = listenersCpy.begin(); it != listenersCpy.end(); ++it) {
         for (int i = 0; i < (*it)->getDimension(); ++i) {
             (*it)->clearExpression(i);
         }
@@ -1420,6 +1421,8 @@ KnobHelperPrivate::parseListenersFromExpression(int dimension)
 std::string
 KnobHelper::validateExpression(const std::string& expression,int dimension,bool hasRetVariable,std::string* resultAsString)
 {
+    Natron::PythonGILLocker pgl;
+    
     if (expression.empty()) {
         throw std::invalid_argument("empty expression");;
     }
@@ -1493,6 +1496,8 @@ KnobHelper::validateExpression(const std::string& expression,int dimension,bool 
 void
 KnobHelper::setExpression(int dimension,const std::string& expression,bool hasRetVariable)
 {
+    Natron::PythonGILLocker pgl;
+    
     ///Clear previous expr
     clearExpression(dimension);
     
@@ -1521,7 +1526,7 @@ KnobHelper::setExpression(int dimension,const std::string& expression,bool hasRe
         ++_expressionsRecursionLevel;
         
         try {
-        
+            Natron::PythonGILLocker pgl;
             PyObject* ret = executeExpression(dimension);
             Py_DECREF(ret); //< new ref
 
@@ -1569,6 +1574,7 @@ KnobHelper::isExpressionUsingRetVariable(int dimension) const
 void
 KnobHelper::clearExpression(int dimension)
 {
+    Natron::PythonGILLocker pgl;
     {
         QMutexLocker k(&_imp->expressionMutex);
         _imp->expressions[dimension].expression.clear();
@@ -1634,17 +1640,24 @@ KnobHelper::expressionChanged(int dimension)
 PyObject*
 KnobHelper::executeExpression(int dimension) const
 {
+    
     Expr exp;
     {
         QMutexLocker k(&_imp->expressionMutex);
         exp = _imp->expressions[dimension];
     }
+    
     //returns a new ref, this function's documentation is not clear onto what it returns...
     //https://docs.python.org/2/c-api/veryhigh.html
     PyObject* mainModule = getMainModule();
     PyObject* globalDict = PyModule_GetDict(mainModule);
+    
+
+    
     PyObject* evalRet = PyEval_EvalCode(exp.code, globalDict, 0);
     Py_XDECREF(evalRet);
+    
+    
     
     if (PyErr_Occurred()) {
 #ifdef DEBUG
@@ -2288,13 +2301,14 @@ KnobHelper::addListener(bool isExpression,int fromExprDimension,KnobI* knob)
 {
     assert(fromExprDimension != -1);
     KnobHelper* slave = dynamic_cast<KnobHelper*>(knob);
-    
-    if ( slave->getHolder() && slave->getSignalSlotHandler() && getSignalSlotHandler() ) {
+    assert(slave);
+
+    if ( slave && slave->getHolder() && slave->getSignalSlotHandler() && getSignalSlotHandler() ) {
         ///hackish way to get a shared ptr to this knob
         slave->getHolder()->onKnobSlaved(slave, this,fromExprDimension,true );
     }
     
-    if (slave->_signalSlotHandler && _signalSlotHandler) {
+    if (slave && slave->_signalSlotHandler && _signalSlotHandler) {
         if (!isExpression) {
             QObject::connect(_signalSlotHandler.get() , SIGNAL( updateSlaves(int) ),slave->_signalSlotHandler.get() , SLOT( onMasterChanged(int) ) );
         } else {
@@ -2318,8 +2332,8 @@ void
 KnobHelper::removeListener(KnobI* knob)
 {
     KnobHelper* other = dynamic_cast<KnobHelper*>(knob);
-    
-    if (other->_signalSlotHandler && _signalSlotHandler) {
+    assert(other);
+    if (other && other->_signalSlotHandler && _signalSlotHandler) {
         QObject::disconnect( other->_signalSlotHandler.get(), SIGNAL( updateSlaves(int) ), _signalSlotHandler.get(), SLOT( onMasterChanged(int) ) );
     }
     

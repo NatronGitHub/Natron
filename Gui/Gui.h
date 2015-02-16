@@ -602,7 +602,7 @@ public Q_SLOTS:
 
     void onNodeNameChanged(const QString & name);
 
-    void onViewerImageChanged(int texIndex);
+    void onViewerImageChanged(int texIndex,bool hasImageBackend);
 
     boost::shared_ptr<Natron::Node> createReader();
     boost::shared_ptr<Natron::Node> createWriter();

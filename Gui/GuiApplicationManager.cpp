@@ -808,6 +808,10 @@ GuiApplicationManager::getIcon(Natron::PixmapEnum e,
                 img.load(NATRON_IMAGES_PATH "merge_mask.png");
                 *pix = QPixmap::fromImage(img);
                 break;
+            case NATRON_PIXMAP_MERGE_MATTE:
+                img.load(NATRON_IMAGES_PATH "merge_matte.png");
+                *pix = QPixmap::fromImage(img);
+                break;
             case NATRON_PIXMAP_MERGE_MAX:
                 img.load(NATRON_IMAGES_PATH "merge_max.png");
                 *pix = QPixmap::fromImage(img);

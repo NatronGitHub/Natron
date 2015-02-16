@@ -1809,10 +1809,10 @@ void
 ViewerInstance::onInputChanged(int inputNb)
 {
     assert( QThread::currentThread() == qApp->thread() );
-    EffectInstance* inp = getInput(inputNb);
+    NodePtr inputNode = getNode()->getRealInput(inputNb);
     {
         QMutexLocker l(&_imp->activeInputsMutex);
-        if (!inp) {
+        if (!inputNode) {
             ///check if the input was one of the active ones if so set to -1
             if (_imp->activeInputs[0] == inputNb) {
                 _imp->activeInputs[0] = -1;

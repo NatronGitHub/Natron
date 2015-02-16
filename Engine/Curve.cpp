@@ -17,8 +17,9 @@
 
 #include <algorithm>
 #include <stdexcept>
+#if !defined(SBK_RUN) && !defined(Q_MOC_RUN)
 #include <boost/math/special_functions/fpclassify.hpp>
-
+#endif
 #include "Engine/AppManager.h"
 
 #include "Engine/CurvePrivate.h"

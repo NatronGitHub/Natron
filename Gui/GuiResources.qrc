@@ -201,10 +201,12 @@
         <file>Resources/Images/loadProjectSplashscreen.png</file>
         <file>Resources/Images/merge_difference.png</file>
         <file>Resources/Images/merge_divide.png</file>
+        <file>Resources/Images/merge_matte.png</file>
         <file>Resources/Images/merge_max.png</file>
         <file>Resources/Images/merge_min.png</file>
         <file>Resources/Images/merge_minus.png</file>
         <file>Resources/Images/merge_multiply.png</file>
+        <file>Resources/Images/merge_over.png</file>
         <file>Resources/Images/merge_plus.png</file>
         <file>Resources/Images/merge_screen.png</file>
     </qresource>

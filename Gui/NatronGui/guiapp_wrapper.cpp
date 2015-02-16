@@ -1,7 +1,4 @@
 
-//workaround to access protected functions
-#define protected public
-
 // default includes
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(mismatched-tags)
@@ -28,6 +25,10 @@ GCC_DIAG_OFF(missing-field-initializers)
 
 
 // Native ---------------------------------------------------------
+
+void GuiAppWrapper::pysideInitQtMetaTypes()
+{
+}
 
 GuiAppWrapper::~GuiAppWrapper()
 {
@@ -1028,4 +1029,5 @@ void init_GuiApp(PyObject* module)
     Shiboken::ObjectType::setTypeDiscoveryFunctionV2(&Sbk_GuiApp_Type, &Sbk_GuiApp_typeDiscovery);
 
 
+    GuiAppWrapper::pysideInitQtMetaTypes();
 }

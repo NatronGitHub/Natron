@@ -142,6 +142,7 @@ struct AppManagerPrivate
     std::vector<wchar_t*> args;
     
     PyObject* mainModule;
+    PyThreadState* mainThreadState;
     
 #ifdef NATRON_USE_BREAKPAD
     boost::shared_ptr<google_breakpad::ExceptionHandler> breakpadHandler;
@@ -194,6 +195,7 @@ void crash_application()
     sleep(2);
 #endif
     volatile int* a = (int*)(NULL);
+    // coverity[var_deref_op]
     *a = 1;
 }
 #endif
@@ -233,6 +235,7 @@ AppManagerPrivate::AppManagerPrivate()
 ,lastProjectLoadedCreatedDuringRC2Or3(false)
 ,args()
 ,mainModule(0)
+,mainThreadState(0)
 #ifdef NATRON_USE_BREAKPAD
 ,breakpadHandler()
 ,crashReporter()
@@ -1594,6 +1597,8 @@ AppManager::getAllNonOFXPluginsPaths() const
 void
 AppManager::loadPythonGroups()
 {
+    Natron::PythonGILLocker pgl;
+    
     QStringList templatesSearchPath = getAllNonOFXPluginsPaths();
     
     QString script("import sys\n"
@@ -2998,7 +3003,39 @@ Natron::PY3String_asString(PyObject* obj)
 void
 AppManager::initPython(int argc,char* argv[])
 {
-    
+    QString pythonPath(qgetenv("PYTHONPATH"));
+    //Add the Python distribution of Natron to the Python path
+    QString binPath = QCoreApplication::applicationDirPath();
+    binPath = QDir::toNativeSeparators(binPath);
+    bool pathEmpty = pythonPath.isEmpty();
+    QString toPrepend;
+#ifdef __NATRON_WIN32__
+    //toPrepend.append(binPath + "\\Lib");
+    //toPrepend.append(';');
+    toPrepend.append(binPath + "\\..\\Plugins");
+    if (!pathEmpty) {
+        toPrepend.push_back(';');
+    }
+#elif defined(__NATRON_OSX__)
+    toPrepend.append(binPath + "/../Frameworks/Python.framework/Versions/3.4/lib/python3.4");
+    toPrepend.append(';');
+    toPrepend.append(binPath + "/../Plugins");
+    if (!pathEmpty) {
+        toPrepend.push_back(':');
+    }
+#elif defined(__NATRON_LINUX__)
+    toPrepend.append(binPath + "/../lib/python3.4");
+    toPrepend.append(';');
+    toPrepend.append(binPath + "/../Plugins");
+    if (!pathEmpty) {
+        toPrepend.push_back(':');
+    }
+#endif
+
+
+    pythonPath.prepend(toPrepend);
+    qputenv("PYTHONPATH",pythonPath.toLatin1());
+
     _imp->args.resize(argc);
     for (int i = 0; i < argc; ++i) {
         _imp->args[i] = char2wchar(argv[i]);
@@ -3008,12 +3045,23 @@ AppManager::initPython(int argc,char* argv[])
     
     ///Must be called prior to Py_Initialize
     initBuiltinPythonModules();
-    
+    //Py_NoSiteFlag = 1; 
     Py_Initialize();
-    
+#ifdef __NATRON_WIN32__
+    static std::wstring pythonHome = Natron::s2ws(std::string("."));
+    Py_SetPythonHome(const_cast<wchar_t*>(pythonHome.c_str()));
+#endif
     _imp->mainModule = PyImport_ImportModule("__main__"); //create main module , new ref
     
     PySys_SetArgv(argc,_imp->args.data()); /// relative module import
+    //_PyEval_SetSwitchInterval(LONG_MAX);
+    //See answer for http://stackoverflow.com/questions/15470367/pyeval-initthreads-in-python-3-how-when-to-call-it-the-saga-continues-ad-naus
+    PyEval_InitThreads();
+    
+    ///Do as per http://wiki.blender.org/index.php/Dev:2.4/Source/Python/API/Threads
+    ///All calls to the Python API should call Natron::PythonGILLocker beforehand.
+    _imp->mainThreadState = PyGILState_GetThisThreadState();
+    PyEval_ReleaseThread(_imp->mainThreadState);
     
     std::string err;
     bool ok = interpretPythonScript("import sys\nimport " + std::string(NATRON_ENGINE_PYTHON_MODULE_NAME), &err, 0);
@@ -3047,12 +3095,18 @@ AppManager::initPython(int argc,char* argv[])
         assert(ok);
     }
     
+#ifndef NDEBUG
+    Natron::PythonGILLocker pgl;
     assert(PyObject_HasAttrString(_imp->mainModule, "natron") == 1);
+#endif
 }
 
 void
 AppManager::tearDownPython()
 {
+    ///See http://wiki.blender.org/index.php/Dev:2.4/Source/Python/API/Threads
+    PyGILState_Ensure();
+    
     Py_DECREF(_imp->mainModule);
     Py_Finalize();
 }
@@ -3107,6 +3161,11 @@ AppManager::launchPythonInterpreter()
     bool ok = Natron::interpretPythonScript("app = app1\n", &err, 0);
     assert(ok);
     (void)ok;
+    
+    ///Take the GIL since we're going in interpreter mode.
+    //PyEval_ReleaseThread(_imp->mainThreadState);
+    Natron::PythonGILLocker pgl;
+    
     Py_Main(1, &_imp->args[0]);
 }
 
@@ -3369,6 +3428,8 @@ std::size_t ensureScriptHasModuleImport(const std::string& moduleName,std::strin
     
 bool interpretPythonScript(const std::string& script,std::string* error,std::string* output)
 {
+    Natron::PythonGILLocker pgl;
+    
     PyObject* mainModule = getMainModule();
     PyObject* dict = PyModule_GetDict(mainModule);
     
@@ -3436,6 +3497,9 @@ bool isPluginCreatable(const std::string& /*pluginID*/)
     
 void compilePyScript(const std::string& script,PyObject** code)
 {
+    ///Must be locked
+    assert(PyThreadState_Get());
+    
     *code = (PyObject*)Py_CompileString(script.c_str(), "<string>", Py_file_input);
     if (PyErr_Occurred() || !*code) {
 #ifdef DEBUG
@@ -3493,5 +3557,24 @@ makeNameScriptFriendly(const std::string& str)
     return cpy;
 }
 
+PythonGILLocker::PythonGILLocker()
+{
+    ///Take the GIL for this thread
+    state = PyGILState_Ensure();
+    assert(PyThreadState_Get());
+#if !defined(NDEBUG) && PY_VERSION_HEX >= 0x030400F0
+    assert(PyGILState_Check()); // Not available prior to Python 3.4
+#endif
+}
+    
+PythonGILLocker::~PythonGILLocker()
+{
+#if !defined(NDEBUG) && PY_VERSION_HEX >= 0x030400F0
+    assert(PyGILState_Check());  // Not available prior to Python 3.4
+#endif
+    
+    ///Release the GIL, no thread will own it afterwards.
+    PyGILState_Release(state);
+}
     
 } //Namespace Natron

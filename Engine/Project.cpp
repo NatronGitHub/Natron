@@ -94,8 +94,8 @@ static std::string generateUserFriendlyNatronVersionName()
 
 namespace Natron {
 Project::Project(AppInstance* appInstance)
-    : NodeCollection(appInstance)
-    , KnobHolder(appInstance)
+    : KnobHolder(appInstance)
+    , NodeCollection(appInstance)
     , _imp( new ProjectPrivate(this) )
 {
     QObject::connect( _imp->autoSaveTimer.get(), SIGNAL( timeout() ), this, SLOT( onAutoSaveTimerTriggered() ) );
@@ -314,8 +314,8 @@ Project::loadProjectInternal(const QString & path,
     std::string onProjectLoad = getOnProjectLoadCB();
     if (!onProjectLoad.empty()) {
         std::string err,output;
-        QString appID = QString("app%1").arg(getApp()->getAppID() + 1);
-        onProjectLoad.insert(0, "app = " + appID.toStdString() + "\n");
+        std::string appID = getApp()->getAppIDString();
+        onProjectLoad.insert(0, "app = " + appID + "\n");
         if (!Natron::interpretPythonScript(onProjectLoad + "()\n", &err, &output)) {
             getApp()->appendToScriptEditor("Failed to run onProjectLoad callback: " + err);
         } else {
@@ -472,8 +472,8 @@ Project::saveProjectInternal(const QString & path,
             ss << "False\n";
         }
         ss << "filename = " << filePath.toStdString() << "\n";
-        QString appID = QString("app%1").arg(getApp()->getAppID() + 1);
-        ss << "app = " <<  appID.toStdString() << "\n";
+        std::string appID = getApp()->getAppIDString();
+        ss << "app = " <<  appID << "\n";
         ss << "ret = " << onProjectSave << "()\n";
         ss << "del filename\ndel autoSave\n";
         onProjectSave = ss.str();
@@ -1918,11 +1918,11 @@ Project::onOCIOConfigPathChanged(const std::string& path,bool block)
             }
             _imp->envVars->setValue(newEnv, 0);
         }
+        endChanges(block);
+        
     } catch (std::logic_error) {
         // ignore
     }
-    endChanges(block);
-    
 }
 
 double
@@ -2020,6 +2020,9 @@ Project::recomputeFrameRangeFromReaders()
 void
 Project::createViewer()
 {
+    if (appPTR->isBackground()) {
+        return;
+    }
     getApp()->createNode( CreateNodeArgs(PLUGINID_NATRON_VIEWER,
                                          "",
                                          -1,-1,

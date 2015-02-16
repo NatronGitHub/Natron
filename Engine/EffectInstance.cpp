@@ -21,8 +21,9 @@
 #include <QReadWriteLock>
 #include <QCoreApplication>
 #include <QtConcurrentRun>
-
+#if !defined(SBK_RUN) && !defined(Q_MOC_RUN)
 #include <boost/bind.hpp>
+#endif
 #include <SequenceParsing.h>
 
 #include "Global/MemoryInfo.h"
@@ -1549,7 +1550,8 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool useCache,
             }
             
             if (imgMMlevel == mipMapLevel && Image::hasEnoughDataToConvert(imgComps,components) &&
-            getSizeOfForBitDepth(imgDepth) >= getSizeOfForBitDepth(bitdepth)/* && imgComps == components && imgDepth == bitdepth*/) {
+            getSizeOfForBitDepth(imgDepth) >= getSizeOfForBitDepth(bitdepth)/* && imgComps == components && imgDepth == bitdepth*/
+                && (*it)->getBounds().contains(renderWindow)) {
                 
                 ///We found  a matching image
                 
@@ -1558,7 +1560,7 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool useCache,
             } else {
                 
                 
-                if (imgMMlevel > mipMapLevel || !Image::hasEnoughDataToConvert(imgComps,components) ||
+                if (imgMMlevel >= mipMapLevel || !Image::hasEnoughDataToConvert(imgComps,components) ||
                     getSizeOfForBitDepth(imgDepth) < getSizeOfForBitDepth(bitdepth)) {
                     ///Either smaller resolution or not enough components or bit-depth is not as deep, don't use the image
                     continue;
@@ -4180,13 +4182,15 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
         return;
     }
 
-    NodePtr node = getNode();
-    node->onEffectKnobValueChanged(k, reason);
-
     
     if (isReader() && k->getName() == kOfxImageEffectFileParamName) {
         getNode()->computeFrameRangeForReader(k);
     }
+    
+    
+    NodePtr node = getNode();
+    node->onEffectKnobValueChanged(k, reason);
+
     
     KnobHelper* kh = dynamic_cast<KnobHelper*>(k);
     assert(kh);

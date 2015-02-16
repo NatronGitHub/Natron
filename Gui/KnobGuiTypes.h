@@ -149,7 +149,7 @@ private:
 
 private:
     std::vector<std::pair<SpinBox *, QLabel *> > _spinBoxes;
-    QWidget *container;
+    QWidget *_container;
     ScaleSliderQWidget *_slider;
     Button *_dimensionSwitchButton;
     boost::shared_ptr<Int_Knob> _knob;
@@ -271,7 +271,7 @@ private:
     
 private:
     std::vector<std::pair<SpinBox *, QLabel *> > _spinBoxes;
-    QWidget *container;
+    QWidget *_container;
     ScaleSliderQWidget *_slider;
     Button *_dimensionSwitchButton;
     boost::shared_ptr<Double_Knob> _knob;

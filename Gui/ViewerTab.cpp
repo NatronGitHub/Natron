@@ -1090,9 +1090,9 @@ ViewerTab::onColorSpaceComboBoxChanged(int v)
 
     if (v == 0) {
         colorspace = Natron::eViewerColorSpaceLinear;
-    } else if (1) {
+    } else if (v == 1) {
         colorspace = Natron::eViewerColorSpaceSRGB;
-    } else if (2) {
+    } else if (v == 2) {
         colorspace = Natron::eViewerColorSpaceRec709;
     } else {
         assert(false);

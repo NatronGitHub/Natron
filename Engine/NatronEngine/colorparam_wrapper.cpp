@@ -1,7 +1,4 @@
 
-//workaround to access protected functions
-#define protected public
-
 // default includes
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(mismatched-tags)
@@ -23,6 +20,10 @@ GCC_DIAG_OFF(missing-field-initializers)
 
 // Native ---------------------------------------------------------
 
+void ColorParamWrapper::pysideInitQtMetaTypes()
+{
+}
+
 ColorParamWrapper::~ColorParamWrapper()
 {
     SbkObject* wrapper = Shiboken::BindingManager::instance().retrieveWrapper(this);
@@ -34,11 +35,11 @@ ColorParamWrapper::~ColorParamWrapper()
 extern "C" {
 static PyObject* Sbk_ColorParamFunc_addAsDependencyOf(PyObject* self, PyObject* args)
 {
-    ::ColorParam* cppSelf = 0;
+    ColorParamWrapper* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = ((::ColorParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_COLORPARAM_IDX], (SbkObject*)self));
+    cppSelf = (ColorParamWrapper*)((::ColorParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_COLORPARAM_IDX], (SbkObject*)self));
     PyObject* pyResult = 0;
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { 0, 0 };
@@ -96,11 +97,11 @@ static PyObject* Sbk_ColorParamFunc_addAsDependencyOf(PyObject* self, PyObject* 
 
 static PyObject* Sbk_ColorParamFunc_get(PyObject* self, PyObject* args)
 {
-    ::ColorParam* cppSelf = 0;
+    ColorParamWrapper* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = ((::ColorParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_COLORPARAM_IDX], (SbkObject*)self));
+    cppSelf = (ColorParamWrapper*)((::ColorParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_COLORPARAM_IDX], (SbkObject*)self));
     PyObject* pyResult = 0;
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { 0 };
@@ -136,7 +137,7 @@ static PyObject* Sbk_ColorParamFunc_get(PyObject* self, PyObject* args)
             if (!PyErr_Occurred()) {
                 // get()const
                 PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-                ColorTuple* cppResult = new ColorTuple(const_cast<const ::ColorParam*>(cppSelf)->get());
+                ColorTuple* cppResult = new ColorTuple(const_cast<const ::ColorParamWrapper*>(cppSelf)->get());
                 PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
                 pyResult = Shiboken::Object::newObject((SbkObjectType*)SbkNatronEngineTypes[SBK_COLORTUPLE_IDX], cppResult, true, true);
             }
@@ -150,7 +151,7 @@ static PyObject* Sbk_ColorParamFunc_get(PyObject* self, PyObject* args)
             if (!PyErr_Occurred()) {
                 // get(int)const
                 PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-                ColorTuple* cppResult = new ColorTuple(const_cast<const ::ColorParam*>(cppSelf)->get(cppArg0));
+                ColorTuple* cppResult = new ColorTuple(const_cast<const ::ColorParamWrapper*>(cppSelf)->get(cppArg0));
                 PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
                 pyResult = Shiboken::Object::newObject((SbkObjectType*)SbkNatronEngineTypes[SBK_COLORTUPLE_IDX], cppResult, true, true);
             }
@@ -172,11 +173,11 @@ static PyObject* Sbk_ColorParamFunc_get(PyObject* self, PyObject* args)
 
 static PyObject* Sbk_ColorParamFunc_getDefaultValue(PyObject* self, PyObject* args, PyObject* kwds)
 {
-    ::ColorParam* cppSelf = 0;
+    ColorParamWrapper* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = ((::ColorParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_COLORPARAM_IDX], (SbkObject*)self));
+    cppSelf = (ColorParamWrapper*)((::ColorParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_COLORPARAM_IDX], (SbkObject*)self));
     PyObject* pyResult = 0;
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { 0 };
@@ -225,7 +226,7 @@ static PyObject* Sbk_ColorParamFunc_getDefaultValue(PyObject* self, PyObject* ar
         if (!PyErr_Occurred()) {
             // getDefaultValue(int)const
             PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            double cppResult = const_cast<const ::ColorParam*>(cppSelf)->getDefaultValue(cppArg0);
+            double cppResult = const_cast<const ::ColorParamWrapper*>(cppSelf)->getDefaultValue(cppArg0);
             PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &cppResult);
         }
@@ -245,11 +246,11 @@ static PyObject* Sbk_ColorParamFunc_getDefaultValue(PyObject* self, PyObject* ar
 
 static PyObject* Sbk_ColorParamFunc_getDisplayMaximum(PyObject* self, PyObject* pyArg)
 {
-    ::ColorParam* cppSelf = 0;
+    ColorParamWrapper* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = ((::ColorParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_COLORPARAM_IDX], (SbkObject*)self));
+    cppSelf = (ColorParamWrapper*)((::ColorParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_COLORPARAM_IDX], (SbkObject*)self));
     PyObject* pyResult = 0;
     int overloadId = -1;
     PythonToCppFunc pythonToCpp;
@@ -272,7 +273,7 @@ static PyObject* Sbk_ColorParamFunc_getDisplayMaximum(PyObject* self, PyObject* 
         if (!PyErr_Occurred()) {
             // getDisplayMaximum(int)const
             PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            double cppResult = const_cast<const ::ColorParam*>(cppSelf)->getDisplayMaximum(cppArg0);
+            double cppResult = const_cast<const ::ColorParamWrapper*>(cppSelf)->getDisplayMaximum(cppArg0);
             PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &cppResult);
         }
@@ -292,11 +293,11 @@ static PyObject* Sbk_ColorParamFunc_getDisplayMaximum(PyObject* self, PyObject* 
 
 static PyObject* Sbk_ColorParamFunc_getDisplayMinimum(PyObject* self, PyObject* pyArg)
 {
-    ::ColorParam* cppSelf = 0;
+    ColorParamWrapper* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = ((::ColorParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_COLORPARAM_IDX], (SbkObject*)self));
+    cppSelf = (ColorParamWrapper*)((::ColorParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_COLORPARAM_IDX], (SbkObject*)self));
     PyObject* pyResult = 0;
     int overloadId = -1;
     PythonToCppFunc pythonToCpp;
@@ -319,7 +320,7 @@ static PyObject* Sbk_ColorParamFunc_getDisplayMinimum(PyObject* self, PyObject* 
         if (!PyErr_Occurred()) {
             // getDisplayMinimum(int)const
             PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            double cppResult = const_cast<const ::ColorParam*>(cppSelf)->getDisplayMinimum(cppArg0);
+            double cppResult = const_cast<const ::ColorParamWrapper*>(cppSelf)->getDisplayMinimum(cppArg0);
             PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &cppResult);
         }
@@ -339,11 +340,11 @@ static PyObject* Sbk_ColorParamFunc_getDisplayMinimum(PyObject* self, PyObject* 
 
 static PyObject* Sbk_ColorParamFunc_getMaximum(PyObject* self, PyObject* args, PyObject* kwds)
 {
-    ::ColorParam* cppSelf = 0;
+    ColorParamWrapper* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = ((::ColorParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_COLORPARAM_IDX], (SbkObject*)self));
+    cppSelf = (ColorParamWrapper*)((::ColorParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_COLORPARAM_IDX], (SbkObject*)self));
     PyObject* pyResult = 0;
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { 0 };
@@ -392,7 +393,7 @@ static PyObject* Sbk_ColorParamFunc_getMaximum(PyObject* self, PyObject* args, P
         if (!PyErr_Occurred()) {
             // getMaximum(int)const
             PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            double cppResult = const_cast<const ::ColorParam*>(cppSelf)->getMaximum(cppArg0);
+            double cppResult = const_cast<const ::ColorParamWrapper*>(cppSelf)->getMaximum(cppArg0);
             PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &cppResult);
         }
@@ -412,11 +413,11 @@ static PyObject* Sbk_ColorParamFunc_getMaximum(PyObject* self, PyObject* args, P
 
 static PyObject* Sbk_ColorParamFunc_getMinimum(PyObject* self, PyObject* args, PyObject* kwds)
 {
-    ::ColorParam* cppSelf = 0;
+    ColorParamWrapper* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = ((::ColorParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_COLORPARAM_IDX], (SbkObject*)self));
+    cppSelf = (ColorParamWrapper*)((::ColorParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_COLORPARAM_IDX], (SbkObject*)self));
     PyObject* pyResult = 0;
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { 0 };
@@ -465,7 +466,7 @@ static PyObject* Sbk_ColorParamFunc_getMinimum(PyObject* self, PyObject* args, P
         if (!PyErr_Occurred()) {
             // getMinimum(int)const
             PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            double cppResult = const_cast<const ::ColorParam*>(cppSelf)->getMinimum(cppArg0);
+            double cppResult = const_cast<const ::ColorParamWrapper*>(cppSelf)->getMinimum(cppArg0);
             PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &cppResult);
         }
@@ -485,11 +486,11 @@ static PyObject* Sbk_ColorParamFunc_getMinimum(PyObject* self, PyObject* args, P
 
 static PyObject* Sbk_ColorParamFunc_getValue(PyObject* self, PyObject* args, PyObject* kwds)
 {
-    ::ColorParam* cppSelf = 0;
+    ColorParamWrapper* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = ((::ColorParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_COLORPARAM_IDX], (SbkObject*)self));
+    cppSelf = (ColorParamWrapper*)((::ColorParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_COLORPARAM_IDX], (SbkObject*)self));
     PyObject* pyResult = 0;
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { 0 };
@@ -538,7 +539,7 @@ static PyObject* Sbk_ColorParamFunc_getValue(PyObject* self, PyObject* args, PyO
         if (!PyErr_Occurred()) {
             // getValue(int)const
             PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            double cppResult = const_cast<const ::ColorParam*>(cppSelf)->getValue(cppArg0);
+            double cppResult = const_cast<const ::ColorParamWrapper*>(cppSelf)->getValue(cppArg0);
             PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &cppResult);
         }
@@ -558,11 +559,11 @@ static PyObject* Sbk_ColorParamFunc_getValue(PyObject* self, PyObject* args, PyO
 
 static PyObject* Sbk_ColorParamFunc_getValueAtTime(PyObject* self, PyObject* args, PyObject* kwds)
 {
-    ::ColorParam* cppSelf = 0;
+    ColorParamWrapper* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = ((::ColorParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_COLORPARAM_IDX], (SbkObject*)self));
+    cppSelf = (ColorParamWrapper*)((::ColorParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_COLORPARAM_IDX], (SbkObject*)self));
     PyObject* pyResult = 0;
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { 0, 0 };
@@ -618,7 +619,7 @@ static PyObject* Sbk_ColorParamFunc_getValueAtTime(PyObject* self, PyObject* arg
         if (!PyErr_Occurred()) {
             // getValueAtTime(int,int)const
             PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            double cppResult = const_cast<const ::ColorParam*>(cppSelf)->getValueAtTime(cppArg0, cppArg1);
+            double cppResult = const_cast<const ::ColorParamWrapper*>(cppSelf)->getValueAtTime(cppArg0, cppArg1);
             PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &cppResult);
         }
@@ -638,11 +639,11 @@ static PyObject* Sbk_ColorParamFunc_getValueAtTime(PyObject* self, PyObject* arg
 
 static PyObject* Sbk_ColorParamFunc_restoreDefaultValue(PyObject* self, PyObject* args, PyObject* kwds)
 {
-    ::ColorParam* cppSelf = 0;
+    ColorParamWrapper* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = ((::ColorParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_COLORPARAM_IDX], (SbkObject*)self));
+    cppSelf = (ColorParamWrapper*)((::ColorParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_COLORPARAM_IDX], (SbkObject*)self));
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { 0 };
     SBK_UNUSED(pythonToCpp)
@@ -712,11 +713,11 @@ static PyObject* Sbk_ColorParamFunc_restoreDefaultValue(PyObject* self, PyObject
 
 static PyObject* Sbk_ColorParamFunc_set(PyObject* self, PyObject* args)
 {
-    ::ColorParam* cppSelf = 0;
+    ColorParamWrapper* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = ((::ColorParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_COLORPARAM_IDX], (SbkObject*)self));
+    cppSelf = (ColorParamWrapper*)((::ColorParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_COLORPARAM_IDX], (SbkObject*)self));
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { 0, 0, 0, 0, 0 };
     SBK_UNUSED(pythonToCpp)
@@ -866,11 +867,11 @@ static PyObject* Sbk_ColorParamFunc_set(PyObject* self, PyObject* args)
 
 static PyObject* Sbk_ColorParamFunc_setDefaultValue(PyObject* self, PyObject* args, PyObject* kwds)
 {
-    ::ColorParam* cppSelf = 0;
+    ColorParamWrapper* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = ((::ColorParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_COLORPARAM_IDX], (SbkObject*)self));
+    cppSelf = (ColorParamWrapper*)((::ColorParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_COLORPARAM_IDX], (SbkObject*)self));
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { 0, 0 };
     SBK_UNUSED(pythonToCpp)
@@ -943,11 +944,11 @@ static PyObject* Sbk_ColorParamFunc_setDefaultValue(PyObject* self, PyObject* ar
 
 static PyObject* Sbk_ColorParamFunc_setDisplayMaximum(PyObject* self, PyObject* args, PyObject* kwds)
 {
-    ::ColorParam* cppSelf = 0;
+    ColorParamWrapper* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = ((::ColorParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_COLORPARAM_IDX], (SbkObject*)self));
+    cppSelf = (ColorParamWrapper*)((::ColorParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_COLORPARAM_IDX], (SbkObject*)self));
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { 0, 0 };
     SBK_UNUSED(pythonToCpp)
@@ -1020,11 +1021,11 @@ static PyObject* Sbk_ColorParamFunc_setDisplayMaximum(PyObject* self, PyObject* 
 
 static PyObject* Sbk_ColorParamFunc_setDisplayMinimum(PyObject* self, PyObject* args, PyObject* kwds)
 {
-    ::ColorParam* cppSelf = 0;
+    ColorParamWrapper* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = ((::ColorParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_COLORPARAM_IDX], (SbkObject*)self));
+    cppSelf = (ColorParamWrapper*)((::ColorParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_COLORPARAM_IDX], (SbkObject*)self));
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { 0, 0 };
     SBK_UNUSED(pythonToCpp)
@@ -1097,11 +1098,11 @@ static PyObject* Sbk_ColorParamFunc_setDisplayMinimum(PyObject* self, PyObject* 
 
 static PyObject* Sbk_ColorParamFunc_setMaximum(PyObject* self, PyObject* args, PyObject* kwds)
 {
-    ::ColorParam* cppSelf = 0;
+    ColorParamWrapper* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = ((::ColorParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_COLORPARAM_IDX], (SbkObject*)self));
+    cppSelf = (ColorParamWrapper*)((::ColorParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_COLORPARAM_IDX], (SbkObject*)self));
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { 0, 0 };
     SBK_UNUSED(pythonToCpp)
@@ -1174,11 +1175,11 @@ static PyObject* Sbk_ColorParamFunc_setMaximum(PyObject* self, PyObject* args, P
 
 static PyObject* Sbk_ColorParamFunc_setMinimum(PyObject* self, PyObject* args, PyObject* kwds)
 {
-    ::ColorParam* cppSelf = 0;
+    ColorParamWrapper* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = ((::ColorParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_COLORPARAM_IDX], (SbkObject*)self));
+    cppSelf = (ColorParamWrapper*)((::ColorParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_COLORPARAM_IDX], (SbkObject*)self));
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { 0, 0 };
     SBK_UNUSED(pythonToCpp)
@@ -1251,11 +1252,11 @@ static PyObject* Sbk_ColorParamFunc_setMinimum(PyObject* self, PyObject* args, P
 
 static PyObject* Sbk_ColorParamFunc_setValue(PyObject* self, PyObject* args, PyObject* kwds)
 {
-    ::ColorParam* cppSelf = 0;
+    ColorParamWrapper* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = ((::ColorParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_COLORPARAM_IDX], (SbkObject*)self));
+    cppSelf = (ColorParamWrapper*)((::ColorParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_COLORPARAM_IDX], (SbkObject*)self));
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { 0, 0 };
     SBK_UNUSED(pythonToCpp)
@@ -1332,11 +1333,11 @@ static PyObject* Sbk_ColorParamFunc_setValue(PyObject* self, PyObject* args, PyO
 
 static PyObject* Sbk_ColorParamFunc_setValueAtTime(PyObject* self, PyObject* args, PyObject* kwds)
 {
-    ::ColorParam* cppSelf = 0;
+    ColorParamWrapper* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = ((::ColorParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_COLORPARAM_IDX], (SbkObject*)self));
+    cppSelf = (ColorParamWrapper*)((::ColorParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_COLORPARAM_IDX], (SbkObject*)self));
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { 0, 0, 0 };
     SBK_UNUSED(pythonToCpp)
@@ -1559,4 +1560,5 @@ void init_ColorParam(PyObject* module)
     Shiboken::ObjectType::setTypeDiscoveryFunctionV2(&Sbk_ColorParam_Type, &Sbk_ColorParam_typeDiscovery);
 
 
+    ColorParamWrapper::pysideInitQtMetaTypes();
 }

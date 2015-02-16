@@ -654,8 +654,9 @@ NodeGraph::createNodeGUI(QVBoxLayout *dockContainer,
 
     if (isBd) {
         BackDropGui* bd = dynamic_cast<BackDropGui*>(node_ui.get());
+        assert(bd);
         NodeGuiList selectedNodes = _imp->_selection;
-        if ( !selectedNodes.empty() ) {
+        if ( bd && !selectedNodes.empty() ) {
             ///make the backdrop large enough to contain the selected nodes and position it correctly
             QRectF bbox;
             for (std::list<boost::shared_ptr<NodeGui> >::iterator it = selectedNodes.begin(); it != selectedNodes.end(); ++it) {
@@ -942,7 +943,10 @@ NodeGraph::moveNodesForIdealPosition(boost::shared_ptr<NodeGui> node,bool autoCo
                 boost::shared_ptr<NodeGuiI> output_i = (*it)->getNodeGui();
                 assert(output_i);
                 NodeGui* output = dynamic_cast<NodeGui*>(output_i.get());
-                output->moveBelowPositionRecursively(createdNodeRect);
+                assert(output);
+                if (output) {
+                    output->moveBelowPositionRecursively(createdNodeRect);
+                }
             }
             
             if ( !createdNodeInternal->isOutputNode() ) {
@@ -1354,7 +1358,7 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
                     if (linkRetCode != Natron::Node::eCanConnectInput_ok && linkRetCode != Natron::Node::eCanConnectInput_inputAlreadyConnected) {
                         if (linkRetCode == Natron::Node::eCanConnectInput_differentPars) {
                             
-                            QString error = QString(tr("You cannot connect ") +  "%1" + " to " + "%2"  + tr(" because they don't have the same pixel aspect ratio (")
+                            QString error = QString(tr("You cannot connect ") +  "%1" + tr(" to ") + "%2"  + tr(" because they don't have the same pixel aspect ratio (")
                                                     + "%3 / %4 " +  tr(") and ") + "%1 " + " doesn't support inputs with different pixel aspect ratio.")
                             .arg(nodeHoldingEdge->getNode()->getLabel().c_str())
                             .arg(n->getNode()->getLabel().c_str())
@@ -1364,11 +1368,19 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
                                                 error.toStdString());
                         } else if (linkRetCode == Natron::Node::eCanConnectInput_differentFPS) {
 
-                            QString error = QString(tr("You cannot connect ") +  "%1" + " to " + "%2"  + tr(" because they don't have the same frame rate (") + "%3 / %4). Either change the FPS from the Read node parameters or change the settings of the project.")
+                            QString error = QString(tr("You cannot connect ") +  "%1" + tr(" to ") + "%2"  + tr(" because they don't have the same frame rate (") + "%3 / %4). Either change the FPS from the Read node parameters or change the settings of the project.")
                             .arg(nodeHoldingEdge->getNode()->getLabel().c_str())
                             .arg(n->getNode()->getLabel().c_str())
                             .arg(nodeHoldingEdge->getNode()->getLiveInstance()->getPreferredFrameRate())
                             .arg(n->getNode()->getLiveInstance()->getPreferredFrameRate());
+                            Natron::errorDialog(tr("Different frame rate").toStdString(),
+                                                error.toStdString());
+
+                        } else if (linkRetCode == Natron::Node::eCanConnectInput_groupHasNoOutput) {
+                            QString error = QString(tr("You cannot connect ") + "%1 " + tr(" to ") + " %2 " + tr("because it is a group which does "
+                                                                                                                 "not have an Output node."))
+                            .arg(nodeHoldingEdge->getNode()->getLabel().c_str())
+                            .arg(n->getNode()->getLabel().c_str());
                             Natron::errorDialog(tr("Different frame rate").toStdString(),
                                                 error.toStdString());
 
@@ -1407,7 +1419,16 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
                                 Natron::errorDialog(tr("Different frame rate").toStdString(),
                                                     error.toStdString());
 
+                            } else if (linkRetCode == Natron::Node::eCanConnectInput_groupHasNoOutput) {
+                                QString error = QString(tr("You cannot connect ") + "%1 " + tr(" to ") + " %2 " + tr("because it is a group which does "
+                                                                                                                     "not have an Output node."))
+                                .arg(nodeHoldingEdge->getNode()->getLabel().c_str())
+                                .arg(n->getNode()->getLabel().c_str());
+                                Natron::errorDialog(tr("Different frame rate").toStdString(),
+                                                    error.toStdString());
+                                
                             }
+
 
                             
                             break;
@@ -1947,7 +1968,7 @@ NodeGraphPrivate::editSelectionFromSelectionRectangle(bool addToSelection)
 }
 
 void
-NodeGraph::mouseDoubleClickEvent(QMouseEvent* /*e*/)
+NodeGraph::mouseDoubleClickEvent(QMouseEvent* e)
 {
     
     QPointF lastMousePosScene = mapToScene(_imp->_lastMousePos);
@@ -1964,34 +1985,40 @@ NodeGraph::mouseDoubleClickEvent(QMouseEvent* /*e*/)
     }
     if (!matches.empty()) {
         const NodeGuiPtr& node = matches.rbegin()->second;
-        if ( !node->isSettingsPanelVisible() ) {
-            node->setVisibleSettingsPanel(true);
+        if (modCASIsControl(e)) {
+            node->getSettingPanel()->floatPanel();
+        } else {
+            if ( !node->isSettingsPanelVisible() ) {
+                node->setVisibleSettingsPanel(true);
+            }
+            _imp->_gui->putSettingsPanelFirst( node->getSettingPanel() );
         }
         if ( !node->wasBeginEditCalled() ) {
             node->beginEditKnobs();
         }
-        _imp->_gui->putSettingsPanelFirst( node->getSettingPanel() );
         
-        NodeGroup* isGrp = dynamic_cast<NodeGroup*>(node->getNode()->getLiveInstance());
-        if (isGrp) {
-            NodeGraphI* graph_i = isGrp->getNodeGraph();
-            assert(graph_i);
-            NodeGraph* graph = dynamic_cast<NodeGraph*>(graph_i);
-            if (graph) {
-                TabWidget* isParentTab = dynamic_cast<TabWidget*>(graph->parentWidget());
-                if (isParentTab) {
-                    isParentTab->setCurrentWidget(graph);
-                } else {
-                    NodeGraph* lastSelectedGraph = _imp->_gui->getLastSelectedGraph();
-                    ///We're in the double click event, it should've entered the focus in event beforehand!
-                    assert(lastSelectedGraph == this);
-                    
-                    isParentTab = dynamic_cast<TabWidget*>(lastSelectedGraph->parentWidget());
-                    assert(isParentTab);
-                    isParentTab->appendTab(graph,graph);
-
+        if (modCASIsShift(e)) {
+            NodeGroup* isGrp = dynamic_cast<NodeGroup*>(node->getNode()->getLiveInstance());
+            if (isGrp) {
+                NodeGraphI* graph_i = isGrp->getNodeGraph();
+                assert(graph_i);
+                NodeGraph* graph = dynamic_cast<NodeGraph*>(graph_i);
+                if (graph) {
+                    TabWidget* isParentTab = dynamic_cast<TabWidget*>(graph->parentWidget());
+                    if (isParentTab) {
+                        isParentTab->setCurrentWidget(graph);
+                    } else {
+                        NodeGraph* lastSelectedGraph = _imp->_gui->getLastSelectedGraph();
+                        ///We're in the double click event, it should've entered the focus in event beforehand!
+                        assert(lastSelectedGraph == this);
+                        
+                        isParentTab = dynamic_cast<TabWidget*>(lastSelectedGraph->parentWidget());
+                        assert(isParentTab);
+                        isParentTab->appendTab(graph,graph);
+                        
+                    }
+                    QTimer::singleShot(25, graph, SLOT(centerOnAllNodes()));
                 }
-                QTimer::singleShot(25, graph, SLOT(centerOnAllNodes()));
             }
         }
         
@@ -2494,13 +2521,7 @@ NodeGraph::keyReleaseEvent(QKeyEvent* e)
 void
 NodeGraph::removeNode(const boost::shared_ptr<NodeGui> & node)
 {
-    NodeGroup* isGrp = dynamic_cast<NodeGroup*>(getGroup().get());
-    if (isGrp && node->getNode()->getPluginID() == PLUGINID_NATRON_OUTPUT) {
-        Natron::errorDialog(tr("Operation failed").toStdString(), tr("You cannot remove the Output node of a group, it "
-                                                                     "needs to exist for the group to work properly.")
-                            .toStdString());
-        return;
-    }
+ 
 
     const std::vector<boost::shared_ptr<KnobI> > & knobs = node->getNode()->getKnobs();
 
@@ -2558,13 +2579,6 @@ NodeGraph::deleteSelection()
 
 
         for (NodeGuiList::iterator it = nodesToRemove.begin(); it != nodesToRemove.end(); ++it) {
-            
-            if ((*it)->getNode()->getPluginID() == PLUGINID_NATRON_OUTPUT) {
-                Natron::errorDialog(tr("Operation failed").toStdString(), tr("You cannot remove the Output node of a group, it "
-                                                                             "needs to exist for the group to work properly.")
-                                    .toStdString());
-                return;
-            }
             
             const std::vector<boost::shared_ptr<KnobI> > & knobs = (*it)->getNode()->getKnobs();
             bool mustBreak = false;
@@ -3443,11 +3457,14 @@ NodeGraphPrivate::pasteNode(const NodeSerialization & internalSerialization,
             assert(child);
             boost::shared_ptr<NodeGuiI> child_gui_i = child->getNodeGui();
             NodeGui* child_gui = dynamic_cast<NodeGui*>(child_gui_i.get());
-            NodeGuiSerialization gS;
-            gS.initialize(child_gui);
-            NodeGuiPtr newChild = pasteNode(**it, gS, QPointF(0,0),collection,parentName,clone);
-            if (newChild) {
-                newNodes.push_back(newChild);
+            assert(child_gui);
+            if (child_gui) {
+                NodeGuiSerialization gS;
+                gS.initialize(child_gui);
+                NodeGuiPtr newChild = pasteNode(**it, gS, QPointF(0,0),collection,parentName,clone);
+                if (newChild) {
+                    newNodes.push_back(newChild);
+                }
             }
         }
         restoreConnections(nodes, newNodes);
@@ -3685,7 +3702,10 @@ NodeGraph::deleteNodepluginsly(boost::shared_ptr<NodeGui> n)
                 NodeGraphI* graph_i = isGrp->getNodeGraph();
                 if (graph_i) {
                     NodeGraph* graph = dynamic_cast<NodeGraph*>(graph_i);
-                    getGui()->removeGroupGui(graph, true);
+                    assert(graph);
+                    if (graph) {
+                        getGui()->removeGroupGui(graph, true);
+                    }
                 }
             }
         }

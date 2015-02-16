@@ -438,7 +438,10 @@ ProjectGui::load(boost::archive::xml_iarchive & archive)
         assert(bd);
         bd->resize(w,h);
         String_Knob* iStr = dynamic_cast<String_Knob*>(labelSerialization.get());
-        bd->onLabelChanged(iStr->getValue().c_str());
+        assert(iStr);
+        if (iStr) {
+            bd->onLabelChanged(iStr->getValue().c_str());
+        }
         float r,g,b;
         it->getColor(r, g, b);
         QColor c;
@@ -480,9 +483,9 @@ ProjectGui::load(boost::archive::xml_iarchive & archive)
     }
 
     if (!pythonPanels.empty()) {
-        QString appID = QString("app%1").arg(_gui->getApp()->getAppID() + 1);
+        std::string appID = _gui->getApp()->getAppIDString();
         std::string err;
-        bool ok = Natron::interpretPythonScript("app = " + appID.toStdString() + "\n", &err, 0);
+        bool ok = Natron::interpretPythonScript("app = " + appID + "\n", &err, 0);
         assert(ok);
     }
     for (std::list<boost::shared_ptr<PythonPanelSerialization> >::const_iterator it = pythonPanels.begin(); it != pythonPanels.end(); ++it) {

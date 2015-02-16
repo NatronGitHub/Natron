@@ -88,7 +88,7 @@ DialogParamHolder::onKnobValueChanged(KnobI* k,
         reason == Natron::eValueChangedReasonUserEdited;
         
         std::stringstream ss;
-        ss << "app = app" << getApp()->getAppID() + 1 << "\n";
+        ss << "app = " << getApp()->getAppIDString() << "\n";
         ss << "userEdited = ";
         if (userEdited) {
             ss << "True\n";

@@ -40,6 +40,11 @@ INCLUDEPATH += $$PWD/../Engine
 INCLUDEPATH += $$PWD/../Engine/NatronEngine
 INCLUDEPATH += $$PWD/../Global
 
+#To overcome wrongly generated #include <...> by shiboken
+INCLUDEPATH += $$PWD
+INCLUDEPATH += $$PWD/NatronGui
+DEPENDPATH += $$PWD/NatronGui
+
 win32-msvc* {
 	CONFIG(64bit) {
 		QMAKE_LFLAGS += /MACHINE:X64

@@ -2116,7 +2116,7 @@ Gui::addNewViewerTab(ViewerInstance* viewer,
     }
 
     ViewerTab* tab = new ViewerTab(rotoNodesList,currentRoto.first,trackerNodesList,currentTracker.first,this,viewer,where);
-    QObject::connect( tab->getViewer(),SIGNAL( imageChanged(int) ),this,SLOT( onViewerImageChanged(int) ) );
+    QObject::connect( tab->getViewer(),SIGNAL( imageChanged(int,bool) ),this,SLOT( onViewerImageChanged(int,bool) ) );
     {
         QMutexLocker l(&_imp->_viewerTabsMutex);
         _imp->_viewerTabs.push_back(tab);
@@ -2128,7 +2128,7 @@ Gui::addNewViewerTab(ViewerInstance* viewer,
 }
 
 void
-Gui::onViewerImageChanged(int texIndex)
+Gui::onViewerImageChanged(int texIndex,bool hasImageBackend)
 {
     ///notify all histograms a viewer image changed
     ViewerGL* viewer = qobject_cast<ViewerGL*>( sender() );
@@ -2136,7 +2136,7 @@ Gui::onViewerImageChanged(int texIndex)
     if (viewer) {
         QMutexLocker l(&_imp->_histogramsMutex);
         for (std::list<Histogram*>::iterator it = _imp->_histograms.begin(); it != _imp->_histograms.end(); ++it) {
-            (*it)->onViewerImageChanged(viewer,texIndex);
+            (*it)->onViewerImageChanged(viewer,texIndex,hasImageBackend);
         }
     }
 }
@@ -2249,7 +2249,9 @@ Gui::removeViewerTab(ViewerTab* tab,
         assert(graph_i);
         NodeGraph* graph = dynamic_cast<NodeGraph*>(graph_i);
         assert(graph);
-        graph->removeNode(gui);
+        if (graph) {
+            graph->removeNode(gui);
+        }
     } else {
         tab->hide();
 

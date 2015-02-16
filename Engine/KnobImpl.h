@@ -333,6 +333,7 @@ Knob<std::string>::pyObjectToType(PyObject* o) const
 template <typename T>
 T Knob<T>::evaluateExpression(int dimension) const
 {
+    Natron::PythonGILLocker pgl;
     PyObject *ret;
     try {
         ret = executeExpression(dimension);
