@@ -2975,7 +2975,16 @@ EffectInstance::renderRoIInternal(SequenceTime time,
             tiledArgs.renderMappedImage = renderMappedImage;
             tiledArgs.par = par;
             tiledArgs.renderFullScaleThenDownscale = renderFullScaleThenDownscale;
-            
+//#define NATRON_HOSTFRAMETHREADING_SEQUENTIAL // sequential execution of host threading
+#ifdef NATRON_HOSTFRAMETHREADING_SEQUENTIAL
+            std::vector<EffectInstance::RenderingFunctorRetEnum> ret(splitRects.size());
+            for (size_t i = 0; i < splitRects.size(); ++i) {
+                ret[i] = tiledRenderingFunctor(tiledArgs,
+                                               frameArgs,
+                                               true,
+                                               splitRects[i]);
+            }
+#else
             // the bitmap is checked again at the beginning of EffectInstance::tiledRenderingFunctor()
             QFuture<EffectInstance::RenderingFunctorRetEnum> ret = QtConcurrent::mapped( splitRects,
                                                                                     boost::bind(&EffectInstance::tiledRenderingFunctor,
@@ -2985,7 +2994,7 @@ EffectInstance::renderRoIInternal(SequenceTime time,
                                                                                                 true,
                                                                                                 _1) );
             ret.waitForFinished();
-
+#endif
             ///never call endsequence render here if the render is sequential
 
             if (callBegin) {
@@ -2999,7 +3008,12 @@ EffectInstance::renderRoIInternal(SequenceTime time,
                 }
             }
             
-            for (QFuture<EffectInstance::RenderingFunctorRetEnum>::const_iterator it2 = ret.begin(); it2 != ret.end(); ++it2) {
+#ifdef NATRON_HOSTFRAMETHREADING_SEQUENTIAL
+            std::vector<EffectInstance::RenderingFunctorRetEnum>::const_iterator it2;
+#else
+            QFuture<EffectInstance::RenderingFunctorRetEnum>::const_iterator it2;
+#endif
+            for (it2 = ret.begin(); it2 != ret.end(); ++it2) {
                 if ( (*it2) == EffectInstance::eRenderingFunctorRetFailed ) {
                     renderStatus = eStatusFailed;
                     break;
