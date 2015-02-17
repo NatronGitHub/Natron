@@ -3727,6 +3727,8 @@ void
 Gui::showSettings()
 {
     _imp->_settingsGui->show();
+    _imp->_settingsGui->raise();
+    _imp->_settingsGui->activateWindow();
 }
 
 void
@@ -3801,6 +3803,8 @@ void
 Gui::showAbout()
 {
     _imp->_aboutWindow->show();
+    _imp->_aboutWindow->raise();
+    _imp->_aboutWindow->activateWindow();
     ignore_result(_imp->_aboutWindow->exec());
 }
 
@@ -3808,6 +3812,8 @@ void
 Gui::showShortcutEditor()
 {
     _imp->shortcutEditor->show();
+    _imp->shortcutEditor->raise();
+    _imp->shortcutEditor->activateWindow();
 }
 
 void
