@@ -441,6 +441,7 @@ Int_KnobGui::reflectAnimationLevel(int dimension,
 void
 Int_KnobGui::onSliderValueChanged(double d)
 {
+    assert(_knob->isEnabled(0));
     bool penUpOnly = appPTR->getCurrentSettings()->getRenderOnEditingFinishedOnly();
 
     if (penUpOnly) {
@@ -452,6 +453,7 @@ Int_KnobGui::onSliderValueChanged(double d)
 void
 Int_KnobGui::onSliderEditingFinished()
 {
+    assert(_knob->isEnabled(0));
     bool penUpOnly = appPTR->getCurrentSettings()->getRenderOnEditingFinishedOnly();
 
     if (!penUpOnly) {
@@ -1175,6 +1177,7 @@ Double_KnobGui::reflectAnimationLevel(int dimension,
 void
 Double_KnobGui::onSliderValueChanged(double d)
 {
+    assert(_knob->isEnabled(0));
     bool penUpOnly = appPTR->getCurrentSettings()->getRenderOnEditingFinishedOnly();
 
     if (penUpOnly) {
@@ -1186,6 +1189,7 @@ Double_KnobGui::onSliderValueChanged(double d)
 void
 Double_KnobGui::onSliderEditingFinished()
 {
+    assert(_knob->isEnabled(0));
     bool penUpOnly = appPTR->getCurrentSettings()->getRenderOnEditingFinishedOnly();
 
     if (!penUpOnly) {
@@ -1198,6 +1202,7 @@ Double_KnobGui::onSliderEditingFinished()
 void
 Double_KnobGui::sliderEditingEnd(double d)
 {
+    assert(_knob->isEnabled(0));
     QString str;
     int digits = std::max(0,(int)-std::floor(std::log10(_slider->increment())));
     str.setNum(d, 'f', digits);
@@ -1955,6 +1960,7 @@ Color_KnobGui::onMustShowAllDimension()
 void
 Color_KnobGui::onSliderValueChanged(double v)
 {
+    assert(_knob->isEnabled(0));
     _rBox->setValue(v);
     if (_dimension > 1) {
         _gBox->setValue(v);
