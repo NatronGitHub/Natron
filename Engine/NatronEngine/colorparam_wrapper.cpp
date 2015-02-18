@@ -690,13 +690,9 @@ static PyObject* Sbk_ColorParamFunc_restoreDefaultValue(PyObject* self, PyObject
 
         if (!PyErr_Occurred()) {
             // restoreDefaultValue(int)
-            // Begin code injection
-
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             cppSelf->restoreDefaultValue(cppArg0);
-
-            // End of code injection
-
-
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
         }
     }
 
@@ -771,13 +767,9 @@ static PyObject* Sbk_ColorParamFunc_set(PyObject* self, PyObject* args)
 
             if (!PyErr_Occurred()) {
                 // set(double,double,double)
-                // Begin code injection
-
-                cppSelf->set(cppArg0,cppArg1,cppArg2);
-
-                // End of code injection
-
-
+                PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+                cppSelf->set(cppArg0, cppArg1, cppArg2);
+                PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             }
             break;
         }
@@ -794,13 +786,9 @@ static PyObject* Sbk_ColorParamFunc_set(PyObject* self, PyObject* args)
 
             if (!PyErr_Occurred()) {
                 // set(double,double,double,double)
-                // Begin code injection
-
-                cppSelf->set(cppArg0,cppArg1,cppArg2,cppArg3);
-
-                // End of code injection
-
-
+                PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+                cppSelf->set(cppArg0, cppArg1, cppArg2, cppArg3);
+                PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             }
             break;
         }
@@ -819,13 +807,9 @@ static PyObject* Sbk_ColorParamFunc_set(PyObject* self, PyObject* args)
 
             if (!PyErr_Occurred()) {
                 // set(double,double,double,double,int)
-                // Begin code injection
-
-                cppSelf->set(cppArg0,cppArg1,cppArg2,cppArg3,cppArg4);
-
-                // End of code injection
-
-
+                PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+                cppSelf->set(cppArg0, cppArg1, cppArg2, cppArg3, cppArg4);
+                PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             }
             break;
         }
@@ -842,13 +826,9 @@ static PyObject* Sbk_ColorParamFunc_set(PyObject* self, PyObject* args)
 
             if (!PyErr_Occurred()) {
                 // set(double,double,double,int)
-                // Begin code injection
-
-                cppSelf->set(cppArg0,cppArg1,cppArg2,cppArg3);
-
-                // End of code injection
-
-
+                PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+                cppSelf->set(cppArg0, cppArg1, cppArg2, cppArg3);
+                PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             }
             break;
         }
@@ -1310,13 +1290,9 @@ static PyObject* Sbk_ColorParamFunc_setValue(PyObject* self, PyObject* args, PyO
 
         if (!PyErr_Occurred()) {
             // setValue(double,int)
-            // Begin code injection
-
-            cppSelf->setValue(cppArg0,cppArg1);
-
-            // End of code injection
-
-
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            cppSelf->setValue(cppArg0, cppArg1);
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
         }
     }
 
@@ -1395,13 +1371,9 @@ static PyObject* Sbk_ColorParamFunc_setValueAtTime(PyObject* self, PyObject* arg
 
         if (!PyErr_Occurred()) {
             // setValueAtTime(double,int,int)
-            // Begin code injection
-
-            cppSelf->setValueAtTime(cppArg0,cppArg1,cppArg2);
-
-            // End of code injection
-
-
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            cppSelf->setValueAtTime(cppArg0, cppArg1, cppArg2);
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
         }
     }
 

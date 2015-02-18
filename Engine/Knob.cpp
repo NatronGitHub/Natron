@@ -1211,13 +1211,15 @@ KnobI::declareCurrentKnobVariable_Python(KnobI* knob,int dimension,std::string& 
     EffectInstance* effect = dynamic_cast<EffectInstance*>(holder);
     if (effect) {
         
+        NodePtr node = effect->getNode();
+        
         //import the math module as expression often rely on it
         Natron::ensureScriptHasModuleImport("math", script);
         
         std::size_t firstLineAfterImport = findNewLineStartAfterImports(script);
         
         std::string deleteThisNodeStr;
-        std::string thisNodeStr = effect->getNode()->declareCurrentNodeVariable_Python(&deleteThisNodeStr);
+        std::string thisNodeStr = node->declareCurrentNodeVariable_Python(&deleteThisNodeStr);
         ///Now define the variables in the scope
         std::stringstream ss;
         ss << thisNodeStr;
@@ -1229,7 +1231,7 @@ KnobI::declareCurrentKnobVariable_Python(KnobI* knob,int dimension,std::string& 
         
         std::string deleteNodesInScope;
         ///define the nodes that are in the scope of this knob
-        std::string nodesInScope = effect->getNode()->declareAllNodesVariableInScope_Python(&deleteNodesInScope);
+        std::string nodesInScope = node->declareAllNodesVariableInScope_Python(&deleteNodesInScope);
         ss << nodesInScope;
         
         std::string toInsert = ss.str();
@@ -2276,7 +2278,9 @@ KnobHelper::onExprDependencyChanged(KnobI* knob,int /*dimension*/)
             }
         }
     }
+    
     for (std::set<int>::const_iterator it = dimensionsToEvaluate.begin();it != dimensionsToEvaluate.end(); ++it) {
+        clearExpressionsResults(*it);
         evaluateValueChange(*it, Natron::eValueChangedReasonSlaveRefresh);
     }
 }
@@ -2286,12 +2290,15 @@ KnobHelper::cloneExpressions(KnobI* other,int dimension)
 {
     assert((int)_imp->expressions.size() == getDimension());
     try {
-        for (int i = 0; i < getDimension(); ++i) {
+        int dims = std::min(getDimension(),other->getDimension());
+        for (int i = 0; i < dims; ++i) {
             if (i == dimension || dimension == -1) {
                 std::string expr = other->getExpression(i);
                 bool hasRet = other->isExpressionUsingRetVariable(i);
-                (void)setExpression(i, expr,hasRet);
-                cloneExpressionsResults(other,i);
+                if (!expr.empty()) {
+                    (void)setExpression(i, expr,hasRet);
+                    cloneExpressionsResults(other,i);
+                }
             }
         }
     } catch(...) {

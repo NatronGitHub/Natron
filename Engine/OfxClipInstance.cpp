@@ -356,6 +356,15 @@ OfxClipInstance::getContinuousSamples() const
     return false;
 }
 
+OfxRectD
+OfxClipInstance::getRegionOfDefinition(OfxTime time, int view) const
+{
+#pragma message WARN("TODO")
+    OfxRectD d;
+    d.x1 = d.x2 = d.y1 = d.y2 = 0.;
+    return d;
+}
+
 /// override this to return the rod on the clip canonical coords!
 OfxRectD
 OfxClipInstance::getRegionOfDefinition(OfxTime time) const
@@ -453,6 +462,13 @@ OfxClipInstance::getImage(OfxTime time,
                           const OfxRectD *optionalBounds)
 {
     return getStereoscopicImage(time, -1, optionalBounds);
+}
+
+OFX::Host::ImageEffect::Image*
+OfxClipInstance::getImagePlane(OfxTime time, int view, const std::string& plane,const OfxRectD *optionalBounds)
+{
+#pragma message WARN("TODO")
+    return NULL;
 }
 
 

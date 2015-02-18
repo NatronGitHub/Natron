@@ -337,6 +337,9 @@ private:
     }
 
     virtual void focusInEvent(QFocusEvent* e) OVERRIDE FINAL;
+
+    QString helpString() const;
+
     boost::scoped_ptr<DockablePanelPrivate> _imp;
 };
 

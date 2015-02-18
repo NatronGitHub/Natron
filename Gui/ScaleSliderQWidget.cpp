@@ -176,7 +176,9 @@ ScaleSliderQWidget::mouseMoveEvent(QMouseEvent* e)
 void
 ScaleSliderQWidget::mouseReleaseEvent(QMouseEvent* e)
 {
-    Q_EMIT editingFinished();
+    if (!_imp->readOnly) {
+        Q_EMIT editingFinished();
+    }
     QWidget::mouseReleaseEvent(e);
 }
 
@@ -198,6 +200,12 @@ ScaleSliderQWidget::keyPressEvent(QKeyEvent* e)
         update();
     }
     QWidget::keyPressEvent(e);
+}
+
+double
+ScaleSliderQWidget::increment()
+{
+    return (_imp->zoomCtx.right() - _imp->zoomCtx.left()) / width();
 }
 
 void

@@ -898,7 +898,7 @@ ViewerInstance::renderViewer_internal(int view,
                 future.waitForFinished();
                 
                 std::pair<double,double> vMinMax;
-                foreach ( vMinMax, future.results() ) {
+                Q_FOREACH ( vMinMax, future.results() ) {
                     if (vMinMax.first < vmin) {
                         vmin = vMinMax.first;
                     }

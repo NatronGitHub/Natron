@@ -441,6 +441,7 @@ Int_KnobGui::reflectAnimationLevel(int dimension,
 void
 Int_KnobGui::onSliderValueChanged(double d)
 {
+    assert(_knob->isEnabled(0));
     bool penUpOnly = appPTR->getCurrentSettings()->getRenderOnEditingFinishedOnly();
 
     if (penUpOnly) {
@@ -452,6 +453,7 @@ Int_KnobGui::onSliderValueChanged(double d)
 void
 Int_KnobGui::onSliderEditingFinished()
 {
+    assert(_knob->isEnabled(0));
     bool penUpOnly = appPTR->getCurrentSettings()->getRenderOnEditingFinishedOnly();
 
     if (!penUpOnly) {
@@ -800,7 +802,6 @@ Double_KnobGui::Double_KnobGui(boost::shared_ptr<KnobI> knob,
 , _container(0)
 , _slider(0)
 , _dimensionSwitchButton(0)
-, _digits(0.)
 {
     _knob = boost::dynamic_pointer_cast<Double_Knob>(knob);
     assert(_knob);
@@ -1061,7 +1062,8 @@ Double_KnobGui::onDisplayMinMaxChanged(double mini,
         valueAccordingToType(false, index, &mini);
         valueAccordingToType(false, index, &maxi);
         
-        double sliderMin = mini,sliderMax = maxi;
+        double sliderMin = mini;
+        double sliderMax = maxi;
         
         if ( (maxi - mini) >= SLIDER_MAX_RANGE ) {
             ///use min max for slider if dispmin/dispmax was not set
@@ -1075,7 +1077,6 @@ Double_KnobGui::onDisplayMinMaxChanged(double mini,
         }
         
         if (shouldSliderBeVisible(sliderMin, sliderMax)) {
-            _digits = std::max(0., std::ceil(-std::log10(sliderMax - sliderMin) + 2.));
             _slider->setVisible(true);
         } else {
             _slider->setVisible(false);
@@ -1176,6 +1177,7 @@ Double_KnobGui::reflectAnimationLevel(int dimension,
 void
 Double_KnobGui::onSliderValueChanged(double d)
 {
+    assert(_knob->isEnabled(0));
     bool penUpOnly = appPTR->getCurrentSettings()->getRenderOnEditingFinishedOnly();
 
     if (penUpOnly) {
@@ -1187,6 +1189,7 @@ Double_KnobGui::onSliderValueChanged(double d)
 void
 Double_KnobGui::onSliderEditingFinished()
 {
+    assert(_knob->isEnabled(0));
     bool penUpOnly = appPTR->getCurrentSettings()->getRenderOnEditingFinishedOnly();
 
     if (!penUpOnly) {
@@ -1199,8 +1202,10 @@ Double_KnobGui::onSliderEditingFinished()
 void
 Double_KnobGui::sliderEditingEnd(double d)
 {
+    assert(_knob->isEnabled(0));
     QString str;
-    str.setNum(d, 'f', _digits);
+    int digits = std::max(0,(int)-std::floor(std::log10(_slider->increment())));
+    str.setNum(d, 'f', digits);
     d = str.toDouble();
     if (_dimensionSwitchButton) {
         int dims = _knob->getDimension();
@@ -1955,6 +1960,7 @@ Color_KnobGui::onMustShowAllDimension()
 void
 Color_KnobGui::onSliderValueChanged(double v)
 {
+    assert(_knob->isEnabled(0));
     _rBox->setValue(v);
     if (_dimension > 1) {
         _gBox->setValue(v);

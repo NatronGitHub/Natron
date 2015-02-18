@@ -441,35 +441,7 @@ public:
         std::cout << "top = " << y2 << std::endl;
     }
 
-    static std::vector<RectI> splitRectIntoSmallerRect(const RectI & rect,
-                                                       int splitsCount)
-    {
-        std::vector<RectI> ret;
-
-        if ( rect.isNull() ) {
-            return ret;
-        }
-        int averagePixelsPerSplit = std::ceil(double( rect.area() ) / (double)splitsCount);
-        /*if the splits happen to have less pixels than 1 scan-line contains, just do scan-line rendering*/
-        if ( averagePixelsPerSplit < rect.width() ) {
-            for (int i = rect.bottom(); i < rect.top(); ++i) {
-                ret.push_back( RectI(rect.left(),i,rect.right(),i + 1) );
-            }
-        } else {
-            //we round to the ceil
-            int scanLinesCount = std::ceil( (double)averagePixelsPerSplit / (double)rect.width() );
-            int startBox = rect.bottom();
-            while (startBox < rect.top() - scanLinesCount) {
-                ret.push_back( RectI(rect.left(),startBox,rect.right(),startBox + scanLinesCount) );
-                startBox += scanLinesCount;
-            }
-            if ( startBox < rect.top() ) {
-                ret.push_back( RectI( rect.left(),startBox,rect.right(),rect.top() ) );
-            }
-        }
-
-        return ret;
-    }
+    std::vector<RectI> splitIntoSmallerRects(int splitsCount) const;
 
     static RectI fromOfxRectI(const OfxRectI & r)
     {

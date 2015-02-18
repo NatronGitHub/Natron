@@ -100,13 +100,36 @@ Natron::OfxHost::setProperties()
        Assimilator
        Dustbuster
        DaVinciResolve
+       DaVinciResolveLite
        Mistika
        com.apple.shake
        Baselight
        IRIDAS Framecycler
+       com.chinadigitalvideo.dx
        Ramen
        TuttleOfx
        fr.inria.Natron
+     
+     Other possible names:
+     Nuke
+     Autodesk Toxik Render Utility
+     Autodesk Toxik Python Bindings
+     Toxik
+     Fusion
+     film master
+     film cutter
+     data conform
+     nucoda
+     phoenix
+     Film Master
+     Baselight
+     Scratch
+     DS OFX Host
+     Avid DS
+     Vegas
+     CDV DX
+     Resolve
+
      */
     _properties.setStringProperty( kOfxPropName,appPTR->getCurrentSettings()->getHostName() );
     _properties.setStringProperty(kOfxPropLabel, NATRON_APPLICATION_NAME); // "nuke" //< use this to pass for nuke
@@ -153,6 +176,9 @@ Natron::OfxHost::setProperties()
 
     ///Nuke transform suite
     _properties.setIntProperty(kFnOfxImageEffectCanTransform, 1);
+    
+    ///Plane suite
+    _properties.setIntProperty(kFnOfxImageEffectPropMultiPlanar, 0);
 }
 
 OFX::Host::ImageEffect::Instance*

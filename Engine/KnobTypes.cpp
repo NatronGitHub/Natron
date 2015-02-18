@@ -342,11 +342,12 @@ Double_Knob::restoreTracks(const std::list <SerializedTrack> & tracks,
     for (std::list< SerializedTrack >::const_iterator it = tracks.begin(); it != tracks.end(); ++it) {
         RotoContext* roto = 0;
         ///speed-up by remembering the last one
-        if (it->rotoNodeName == lastNodeName) {
+        std::string scriptFriendlyRoto = Natron::makeNameScriptFriendly(it->rotoNodeName);
+        if (it->rotoNodeName == lastNodeName || scriptFriendlyRoto == lastNodeName) {
             roto = lastRoto;
         } else {
             for (std::list<boost::shared_ptr<Node> >::const_iterator it2 = activeNodes.begin(); it2 != activeNodes.end() ;++it2) {
-                if ((*it2)->getScriptName() == it->rotoNodeName) {
+                if ((*it2)->getScriptName() == it->rotoNodeName || (*it2)->getScriptName() == scriptFriendlyRoto) {
                     lastNodeName = (*it2)->getScriptName();
                     boost::shared_ptr<RotoContext> rotoCtx = (*it2)->getRotoContext();
                     assert(rotoCtx);
@@ -357,10 +358,15 @@ Double_Knob::restoreTracks(const std::list <SerializedTrack> & tracks,
             }
         }
         if (roto) {
+            
             boost::shared_ptr<RotoItem> item = roto->getItemByName(it->bezierName);
             if (!item) {
-                qDebug() << "Failed to restore slaved track " << it->bezierName.c_str();
-                break;
+                std::string scriptFriendlyBezier = Natron::makeNameScriptFriendly(it->bezierName);
+                item = roto->getItemByName(scriptFriendlyBezier);
+                if (!item) {
+                    qDebug() << "Failed to restore slaved track " << it->bezierName.c_str();
+                    break;
+                }
             }
             boost::shared_ptr<Bezier> isBezier = boost::dynamic_pointer_cast<Bezier>(item);
             assert(isBezier);
