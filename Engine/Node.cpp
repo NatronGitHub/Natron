@@ -1167,7 +1167,9 @@ Node::removeReferences(bool ensureThreadsFinished)
     appPTR->removeAllImagesFromCacheWithMatchingKey( getHashValue() );
     deleteNodeVariableToPython(getFullyQualifiedName());
     _imp->liveInstance.reset();
-    getGroup()->removeNode(shared_from_this());
+    if (getGroup()) {
+        getGroup()->removeNode(shared_from_this());
+    }
 }
 
 const std::vector<std::string> &
@@ -1479,8 +1481,12 @@ bool
 Node::setScriptName(const std::string& name)
 {
     std::string newName;
-    if (!getGroup()->setNodeName(name,false, true, &newName)) {
-        return false;
+    if (getGroup()) {
+        if (!getGroup()->setNodeName(name,false, true, &newName)) {
+            return false;
+        }
+    } else {
+        newName = name;
     }
     
     if (dynamic_cast<GroupOutput*>(_imp->liveInstance.get())) {
