@@ -1499,15 +1499,10 @@ MultiInstancePanel::resetInstances(const std::list<Natron::Node*> & instances)
 }
 
 void
-MultiInstancePanel::evaluate(KnobI* knob,
+MultiInstancePanel::evaluate(KnobI* /*knob*/,
                              bool /*isSignificant*/,
-                             Natron::ValueChangedReasonEnum reason)
+                             Natron::ValueChangedReasonEnum /*reason*/)
 {
-    Button_Knob* isButton = dynamic_cast<Button_Knob*>(knob);
-
-    if ( isButton && (reason == eValueChangedReasonUserEdited) ) {
-        onButtonTriggered(isButton);
-    }
 }
 
 void
@@ -1542,32 +1537,33 @@ MultiInstancePanel::onKnobValueChanged(KnobI* k,
         }
     } else {
         if (reason == Natron::eValueChangedReasonUserEdited) {
-            ///Buttons are already handled in evaluate()
-            Button_Knob* isButton = dynamic_cast<Button_Knob*>(k);
-            if (isButton) {
-                return;
-            }
-            ///for all selected instances update the same knob because it might not be slaved (see
-            ///onSelectionChanged for an explanation why)
-            for (Nodes::iterator it = _imp->instances.begin(); it != _imp->instances.end(); ++it) {
-                if (it->second) {
-                    boost::shared_ptr<KnobI> sameKnob = it->first.lock()->getKnobByName( k->getName() );
-                    assert(sameKnob);
-                    Knob<int>* isInt = dynamic_cast<Knob<int>*>( sameKnob.get() );
-                    Knob<bool>* isBool = dynamic_cast<Knob<bool>*>( sameKnob.get() );
-                    Knob<double>* isDouble = dynamic_cast<Knob<double>*>( sameKnob.get() );
-                    Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>( sameKnob.get() );
-                    if (isInt) {
-                        isInt->clone(k);
-                    } else if (isBool) {
-                        isBool->clone(k);
-                    } else if (isDouble) {
-                        isDouble->clone(k);
-                    } else if (isString) {
-                        isString->clone(k);
+            Button_Knob* isButton = dynamic_cast<Button_Knob*>(k);            
+            if ( isButton && (reason == eValueChangedReasonUserEdited) ) {
+                onButtonTriggered(isButton);
+            } else {
+                
+                ///for all selected instances update the same knob because it might not be slaved (see
+                ///onSelectionChanged for an explanation why)
+                for (Nodes::iterator it = _imp->instances.begin(); it != _imp->instances.end(); ++it) {
+                    if (it->second) {
+                        boost::shared_ptr<KnobI> sameKnob = it->first.lock()->getKnobByName( k->getName() );
+                        assert(sameKnob);
+                        Knob<int>* isInt = dynamic_cast<Knob<int>*>( sameKnob.get() );
+                        Knob<bool>* isBool = dynamic_cast<Knob<bool>*>( sameKnob.get() );
+                        Knob<double>* isDouble = dynamic_cast<Knob<double>*>( sameKnob.get() );
+                        Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>( sameKnob.get() );
+                        if (isInt) {
+                            isInt->clone(k);
+                        } else if (isBool) {
+                            isBool->clone(k);
+                        } else if (isDouble) {
+                            isDouble->clone(k);
+                        } else if (isString) {
+                            isString->clone(k);
+                        }
+                        
+                        sameKnob->getHolder()->onKnobValueChanged_public(sameKnob.get(), eValueChangedReasonPluginEdited,time, true);
                     }
-
-                    sameKnob->getHolder()->onKnobValueChanged_public(sameKnob.get(), eValueChangedReasonPluginEdited,time, true);
                 }
             }
         }
@@ -1575,7 +1571,7 @@ MultiInstancePanel::onKnobValueChanged(KnobI* k,
 }
 
 namespace  {
-enum ExportTransformTypeEnum
+    enum ExportTransformTypeEnum
 {
     eExportTransformTypeStabilize,
     eExportTransformTypeMatchMove

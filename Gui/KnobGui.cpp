@@ -585,7 +585,7 @@ KnobGui::createAnimationMenu(QMenu* menu,int dimension)
     
     menu->addSeparator();
     std::string hasExpr = knob->getExpression(0);
-    if (dimension != -1 || knob->getDimension() == 1) {
+    if ((dimension != -1 || knob->getDimension() == 1) && isEnabled) {
         
         
         QAction* setExprAction = new QAction(!hasExpr.empty() ? tr("Edit expression...") : tr("Set expression..."),menu);
@@ -601,7 +601,7 @@ KnobGui::createAnimationMenu(QMenu* menu,int dimension)
         }
     }
     
-    if (knob->getDimension() > 1) {
+    if (knob->getDimension() > 1 && isEnabled) {
             QAction* setExprsAction = new QAction(!hasExpr.empty() ? tr("Edit expression (all dimensions)") :
                                                   tr("Set expression (all dimensions)"),menu);
             setExprsAction->setData(-1);

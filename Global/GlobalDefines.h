@@ -42,8 +42,9 @@ CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_ON(deprecated)
 #include "Global/Enums.h"
 
-#undef foreach
-#define foreach Q_FOREACH
+// boost and C++11 also have a foreach. this breaks it. DON'T UNCOMMENT THIS.
+//#undef foreach
+//#define foreach Q_FOREACH
 
 
 typedef boost::uint32_t U32;

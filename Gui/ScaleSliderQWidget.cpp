@@ -176,7 +176,9 @@ ScaleSliderQWidget::mouseMoveEvent(QMouseEvent* e)
 void
 ScaleSliderQWidget::mouseReleaseEvent(QMouseEvent* e)
 {
-    Q_EMIT editingFinished();
+    if (!_imp->readOnly) {
+        Q_EMIT editingFinished();
+    }
     QWidget::mouseReleaseEvent(e);
 }
 

@@ -110,6 +110,7 @@ SOURCES += \
     ProjectPrivate.cpp \
     ProjectSerialization.cpp \
     PySideCompat.cpp \
+    Rect.cpp \
     RotoContext.cpp \
     RotoSerialization.cpp  \
     RotoWrapper.cpp \
