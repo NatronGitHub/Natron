@@ -19,7 +19,7 @@
 #include <vector>
 #include <string>
 #include <set>
-
+#include <map>
 
 #include <QtCore/QReadWriteLock>
 #include <QtCore/QMutex>
@@ -503,8 +503,17 @@ public:
      * @param force If set to true, this function will not check if the expression is valid nor will it attempt to compile/evaluate it, it will
      * just store it. This flag is used for serialisation, you should always pass false
      **/
-    virtual void setExpression(int dimension,const std::string& expression,bool hasRetVariable) = 0;
-    virtual void clearExpression(int dimension) = 0;
+protected:
+    virtual void setExpressionInternal(int dimension,const std::string& expression,bool hasRetVariable,bool clearResults) = 0;
+public:
+    
+    void restoreExpression(int dimension,const std::string& expression,bool hasRetVariable) {
+        setExpressionInternal(dimension, expression, hasRetVariable, false);
+    }
+    void setExpression(int dimension,const std::string& expression,bool hasRetVariable) {
+        setExpressionInternal(dimension, expression, hasRetVariable, true);
+    }
+    virtual void clearExpression(int dimension,bool clearResults) = 0;
     virtual std::string getExpression(int dimension) const = 0;
     
     /**
@@ -833,9 +842,14 @@ public:
     virtual void dequeueValuesSet(bool disableEvaluation) = 0;
     
     /**
-     * @brief Returns the current time if attached to a timeline
+     * @brief Returns the current time if attached to a timeline or the time being rendered
      **/
     virtual SequenceTime getCurrentTime() const = 0;
+    
+    /**
+     * @brief Returns the current view being rendered
+     **/
+    virtual int getCurrentView() const = 0;
     
     
     virtual boost::shared_ptr<KnobSignalSlotHandler> getSignalSlotHandler() const = 0;
@@ -1053,8 +1067,8 @@ public:
     virtual boost::shared_ptr<Curve> getCurve(int dimension = 0,bool byPassMaster = false) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isAnimated(int dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool hasAnimation() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual void setExpression(int dimension,const std::string& expression,bool hasRetVariable) OVERRIDE FINAL;
-    virtual void clearExpression(int dimension) OVERRIDE FINAL;
+    virtual void setExpressionInternal(int dimension,const std::string& expression,bool hasRetVariable,bool clearResults) OVERRIDE FINAL;
+    virtual void clearExpression(int dimension,bool clearResults) OVERRIDE FINAL;
     virtual std::string validateExpression(const std::string& expression,int dimension,bool hasRetVariable,
                                            std::string* resultAsString) OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void onExprDependencyChanged(KnobI* knob,int dimension) OVERRIDE FINAL;
@@ -1108,6 +1122,7 @@ public:
     virtual bool isMastersPersistenceIgnored() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void copyAnimationToClipboard() const OVERRIDE FINAL;
     virtual SequenceTime getCurrentTime() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual int getCurrentView() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual std::string getDimensionName(int dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setDimensionName(int dim,const std::string & name) OVERRIDE FINAL;
     
@@ -1144,7 +1159,7 @@ public:
     virtual void removeListener(KnobI* knob) OVERRIDE FINAL;
 
     virtual void getListeners(std::list<KnobI*> & listeners) const OVERRIDE FINAL;
-
+    
 protected:
 
 
@@ -1166,6 +1181,8 @@ protected:
     }
     
     void cloneExpressions(KnobI* other,int dimension = -1);
+    
+    virtual void cloneExpressionsResults(KnobI* /*other*/,int /*dimension = -1*/) {}
 
     /**
      * @brief Override to copy extra properties, such as the entries for a combobox for example.
@@ -1188,6 +1205,8 @@ protected:
     virtual void animationRemoved_virtual(int /*dimension*/)
     {
     }
+    
+    virtual void clearExpressionsResults(int /*dimension*/) {}
     
     void cloneGuiCurvesIfNeeded(std::map<int,Natron::ValueChangedReasonEnum>& modifiedDimensions);
     
@@ -1230,6 +1249,16 @@ public:
 
     typedef T DataType;
 
+
+    /*
+     For each dimension, the results of the expressions at a given pair <frame,time> is stored so
+     that we're able to get the same value again for the same render.
+     Of course, this saved in the project to retrieve the same values between 2 runs of the project.
+     */
+    typedef std::map<SequenceTime,T> FrameValueMap;
+    typedef std::vector<FrameValueMap> ExprResults;
+
+    
     /**
      * @brief Make a knob for the given KnobHolder with the given description (the label displayed on
      * its interface) and with the given dimension. The dimension parameter is used for example for the
@@ -1406,6 +1435,24 @@ public:
     T getDisplayMinimum(int dimension = 0) const;
     T getDisplayMaximum(int dimension = 0) const;
     
+    void getExpressionsResults(ExprResults& results)
+    {
+        QReadLocker k(&_valueMutex);
+        results = _exprRes;
+    }
+
+    void getExpressionResults(int dim,FrameValueMap& map)
+    {
+        QReadLocker k(&_valueMutex);
+        map = _exprRes[dim];
+    }
+    
+    void setExpressionResults(int dim,const FrameValueMap& map)
+    {
+        QWriteLocker k(&_valueMutex);
+        _exprRes[dim] = map;
+    }
+    
 protected:
     
     virtual void resetExtraToDefaultValue(int /*dimension*/) {}
@@ -1420,6 +1467,8 @@ private:
     void signalDisplayMinMaxChanged(const T& mini,const T& maxi,int dimension);
 
     void cloneValues(KnobI* other,int dimension);
+    
+    virtual void cloneExpressionsResults(KnobI* other,int dimension = -1) OVERRIDE FINAL;
 
     T getValueFromMaster(int dimension);
 
@@ -1435,6 +1484,12 @@ private:
     void makeKeyFrame(Curve* curve,double time,const T& v,KeyFrame* key);
     
     void queueSetValue(const T& v,int dimension);
+    
+    virtual void clearExpressionsResults(int dimension)
+    {
+        QWriteLocker k(&_valueMutex);
+        _exprRes[dimension].clear();
+    }
     
 public:
     
@@ -1477,12 +1532,14 @@ private:
         virtual ~QueuedSetValueAtTime() {}
     };
     
-
+   
+   
     ///Here is all the stuff we couldn't get rid of the template parameter
 
-    mutable QReadWriteLock _valueMutex; //< protects _values & _defaultValues
+    mutable QReadWriteLock _valueMutex; //< protects _values & _defaultValues & ExprResults
     std::vector<T> _values;
     std::vector<T> _defaultValues;
+    mutable ExprResults _exprRes;
     
     //Only for double and int
     mutable QReadWriteLock _minMaxMutex;

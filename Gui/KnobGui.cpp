@@ -585,7 +585,7 @@ KnobGui::createAnimationMenu(QMenu* menu,int dimension)
     
     menu->addSeparator();
     std::string hasExpr = knob->getExpression(0);
-    if (dimension != -1 || knob->getDimension() == 1) {
+    if ((dimension != -1 || knob->getDimension() == 1) && isEnabled) {
         
         
         QAction* setExprAction = new QAction(!hasExpr.empty() ? tr("Edit expression...") : tr("Set expression..."),menu);
@@ -601,7 +601,7 @@ KnobGui::createAnimationMenu(QMenu* menu,int dimension)
         }
     }
     
-    if (knob->getDimension() > 1) {
+    if (knob->getDimension() > 1 && isEnabled) {
             QAction* setExprsAction = new QAction(!hasExpr.empty() ? tr("Edit expression (all dimensions)") :
                                                   tr("Set expression (all dimensions)"),menu);
             setExprsAction->setData(-1);
@@ -2282,7 +2282,7 @@ void
 EditExpressionDialog::getDeclaredVariables(std::list<std::pair<QString,QString> >& variables) const
 {
     variables.push_back(std::make_pair("thisNode", tr("the current node")));
-    variables.push_back(std::make_pair("thisGroup", tr("Defined only if thisNode belongs to a group, it references the parent group node")));
+    variables.push_back(std::make_pair("thisGroup", tr("When thisNode belongs to a group, it references the parent group node, otherwise it will reference the current application instance")));
     variables.push_back(std::make_pair("thisParam", tr("the current param being edited")));
     variables.push_back(std::make_pair("dimension", tr("Defined only if the parameter is multi-dimensional, it references the dimension of the parameter being edited (0-based index")));
     variables.push_back(std::make_pair("frame", tr("the current time on the timeline")));

@@ -74,14 +74,10 @@ static PyObject* Sbk_Double2DParamFunc_get(PyObject* self, PyObject* args)
 
             if (!PyErr_Occurred()) {
                 // get()const
-                // Begin code injection
-
-                Double2DTuple cppResult = cppSelf->get();
-                pyResult = Shiboken::Conversions::copyToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_DOUBLE2DTUPLE_IDX], &cppResult);
-
-                // End of code injection
-
-
+                PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+                Double2DTuple* cppResult = new Double2DTuple(const_cast<const ::Double2DParamWrapper*>(cppSelf)->get());
+                PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+                pyResult = Shiboken::Object::newObject((SbkObjectType*)SbkNatronEngineTypes[SBK_DOUBLE2DTUPLE_IDX], cppResult, true, true);
             }
             break;
         }
@@ -92,14 +88,10 @@ static PyObject* Sbk_Double2DParamFunc_get(PyObject* self, PyObject* args)
 
             if (!PyErr_Occurred()) {
                 // get(int)const
-                // Begin code injection
-
-                Double2DTuple cppResult = cppSelf->get(cppArg0);
-                pyResult = Shiboken::Conversions::copyToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_DOUBLE2DTUPLE_IDX], &cppResult);
-
-                // End of code injection
-
-
+                PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+                Double2DTuple* cppResult = new Double2DTuple(const_cast<const ::Double2DParamWrapper*>(cppSelf)->get(cppArg0));
+                PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+                pyResult = Shiboken::Object::newObject((SbkObjectType*)SbkNatronEngineTypes[SBK_DOUBLE2DTUPLE_IDX], cppResult, true, true);
             }
             break;
         }
@@ -165,13 +157,9 @@ static PyObject* Sbk_Double2DParamFunc_set(PyObject* self, PyObject* args)
 
             if (!PyErr_Occurred()) {
                 // set(double,double)
-                // Begin code injection
-
-                cppSelf->set(cppArg0,cppArg1);
-
-                // End of code injection
-
-
+                PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+                cppSelf->set(cppArg0, cppArg1);
+                PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             }
             break;
         }
@@ -186,13 +174,9 @@ static PyObject* Sbk_Double2DParamFunc_set(PyObject* self, PyObject* args)
 
             if (!PyErr_Occurred()) {
                 // set(double,double,int)
-                // Begin code injection
-
-                cppSelf->set(cppArg0,cppArg1,cppArg2);
-
-                // End of code injection
-
-
+                PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+                cppSelf->set(cppArg0, cppArg1, cppArg2);
+                PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             }
             break;
         }

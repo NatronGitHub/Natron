@@ -210,6 +210,15 @@ From the "File" menu, select "Export project as group".
 	exporting a project containing Readers will probably not work very well in another project
 	or computer because of file-paths no longer pointing to a valid location.
 	
+	
+.. warning:: 
+
+	If you were to write a group plug-in and then want to have your expressions persist when 
+	your group will be instantiated, it is important to prefix the name of the nodes you reference
+	in your expression by the **thisGroup.** prefix. Without it, Natron thinks you're referencing
+	a top-level node, i.e: a node which belongs to the main node-graph, however, since you're using 
+	a group, all your nodes are no longer top-level and the expression will fail.
+	
 Moving nodes between groups
 ----------------------------
 

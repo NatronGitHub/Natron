@@ -74,14 +74,10 @@ static PyObject* Sbk_Int2DParamFunc_get(PyObject* self, PyObject* args)
 
             if (!PyErr_Occurred()) {
                 // get()const
-                // Begin code injection
-
-                Int2DTuple cppResult = cppSelf->get();
-                pyResult = Shiboken::Conversions::copyToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_INT2DTUPLE_IDX], &cppResult);
-
-                // End of code injection
-
-
+                PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+                Int2DTuple* cppResult = new Int2DTuple(const_cast<const ::Int2DParamWrapper*>(cppSelf)->get());
+                PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+                pyResult = Shiboken::Object::newObject((SbkObjectType*)SbkNatronEngineTypes[SBK_INT2DTUPLE_IDX], cppResult, true, true);
             }
             break;
         }
@@ -92,14 +88,10 @@ static PyObject* Sbk_Int2DParamFunc_get(PyObject* self, PyObject* args)
 
             if (!PyErr_Occurred()) {
                 // get(int)const
-                // Begin code injection
-
-                Int2DTuple cppResult = cppSelf->get(cppArg0);
-                pyResult = Shiboken::Conversions::copyToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_INT2DTUPLE_IDX], &cppResult);
-
-                // End of code injection
-
-
+                PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+                Int2DTuple* cppResult = new Int2DTuple(const_cast<const ::Int2DParamWrapper*>(cppSelf)->get(cppArg0));
+                PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+                pyResult = Shiboken::Object::newObject((SbkObjectType*)SbkNatronEngineTypes[SBK_INT2DTUPLE_IDX], cppResult, true, true);
             }
             break;
         }

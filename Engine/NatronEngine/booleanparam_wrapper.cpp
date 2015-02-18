@@ -287,13 +287,9 @@ static PyObject* Sbk_BooleanParamFunc_restoreDefaultValue(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // restoreDefaultValue()
-            // Begin code injection
-
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             cppSelf->restoreDefaultValue();
-
-            // End of code injection
-
-
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
         }
     }
 
@@ -347,13 +343,9 @@ static PyObject* Sbk_BooleanParamFunc_set(PyObject* self, PyObject* args)
 
             if (!PyErr_Occurred()) {
                 // set(bool)
-                // Begin code injection
-
+                PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
                 cppSelf->set(cppArg0);
-
-                // End of code injection
-
-
+                PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             }
             break;
         }
@@ -366,13 +358,9 @@ static PyObject* Sbk_BooleanParamFunc_set(PyObject* self, PyObject* args)
 
             if (!PyErr_Occurred()) {
                 // set(bool,int)
-                // Begin code injection
-
-                cppSelf->set(cppArg0,cppArg1);
-
-                // End of code injection
-
-
+                PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+                cppSelf->set(cppArg0, cppArg1);
+                PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             }
             break;
         }
@@ -460,13 +448,9 @@ static PyObject* Sbk_BooleanParamFunc_setValue(PyObject* self, PyObject* pyArg)
 
         if (!PyErr_Occurred()) {
             // setValue(bool)
-            // Begin code injection
-
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             cppSelf->setValue(cppArg0);
-
-            // End of code injection
-
-
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
         }
     }
 
@@ -521,13 +505,9 @@ static PyObject* Sbk_BooleanParamFunc_setValueAtTime(PyObject* self, PyObject* a
 
         if (!PyErr_Occurred()) {
             // setValueAtTime(bool,int)
-            // Begin code injection
-
-            cppSelf->setValueAtTime(cppArg0,cppArg1);
-
-            // End of code injection
-
-
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            cppSelf->setValueAtTime(cppArg0, cppArg1);
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
         }
     }
 

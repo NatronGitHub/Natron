@@ -345,7 +345,7 @@ KnobHelper::deleteKnob()
     std::list<KnobI*> listenersCpy = _imp->listeners;
     for (std::list<KnobI*>::iterator it = listenersCpy.begin(); it != listenersCpy.end(); ++it) {
         for (int i = 0; i < (*it)->getDimension(); ++i) {
-            (*it)->clearExpression(i);
+            (*it)->clearExpression(i,true);
         }
     }
     
@@ -1211,13 +1211,15 @@ KnobI::declareCurrentKnobVariable_Python(KnobI* knob,int dimension,std::string& 
     EffectInstance* effect = dynamic_cast<EffectInstance*>(holder);
     if (effect) {
         
+        NodePtr node = effect->getNode();
+        
         //import the math module as expression often rely on it
         Natron::ensureScriptHasModuleImport("math", script);
         
         std::size_t firstLineAfterImport = findNewLineStartAfterImports(script);
         
         std::string deleteThisNodeStr;
-        std::string thisNodeStr = effect->getNode()->declareCurrentNodeVariable_Python(&deleteThisNodeStr);
+        std::string thisNodeStr = node->declareCurrentNodeVariable_Python(&deleteThisNodeStr);
         ///Now define the variables in the scope
         std::stringstream ss;
         ss << thisNodeStr;
@@ -1229,7 +1231,7 @@ KnobI::declareCurrentKnobVariable_Python(KnobI* knob,int dimension,std::string& 
         
         std::string deleteNodesInScope;
         ///define the nodes that are in the scope of this knob
-        std::string nodesInScope = effect->getNode()->declareAllNodesVariableInScope_Python(&deleteNodesInScope);
+        std::string nodesInScope = node->declareAllNodesVariableInScope_Python(&deleteNodesInScope);
         ss << nodesInScope;
         
         std::string toInsert = ss.str();
@@ -1494,12 +1496,12 @@ KnobHelper::validateExpression(const std::string& expression,int dimension,bool 
 }
 
 void
-KnobHelper::setExpression(int dimension,const std::string& expression,bool hasRetVariable)
+KnobHelper::setExpressionInternal(int dimension,const std::string& expression,bool hasRetVariable,bool clearResults)
 {
     Natron::PythonGILLocker pgl;
     
     ///Clear previous expr
-    clearExpression(dimension);
+    clearExpression(dimension,clearResults);
     
     if (expression.empty()) {
         return ;
@@ -1532,7 +1534,7 @@ KnobHelper::setExpression(int dimension,const std::string& expression,bool hasRe
 
         } catch (const std::runtime_error& e) {
             --_expressionsRecursionLevel;
-            clearExpression(dimension);
+            clearExpression(dimension,clearResults);
             throw e;
         }
         --_expressionsRecursionLevel;
@@ -1572,7 +1574,7 @@ KnobHelper::isExpressionUsingRetVariable(int dimension) const
 }
 
 void
-KnobHelper::clearExpression(int dimension)
+KnobHelper::clearExpression(int dimension,bool clearResults)
 {
     Natron::PythonGILLocker pgl;
     {
@@ -1619,7 +1621,9 @@ KnobHelper::clearExpression(int dimension)
             }
         }
     }
-    
+    if (clearResults) {
+        clearExpressionsResults(dimension);
+    }
     expressionChanged(dimension);
     
 }
@@ -2274,7 +2278,9 @@ KnobHelper::onExprDependencyChanged(KnobI* knob,int /*dimension*/)
             }
         }
     }
+    
     for (std::set<int>::const_iterator it = dimensionsToEvaluate.begin();it != dimensionsToEvaluate.end(); ++it) {
+        clearExpressionsResults(*it);
         evaluateValueChange(*it, Natron::eValueChangedReasonSlaveRefresh);
     }
 }
@@ -2289,6 +2295,7 @@ KnobHelper::cloneExpressions(KnobI* other,int dimension)
                 std::string expr = other->getExpression(i);
                 bool hasRet = other->isExpressionUsingRetVariable(i);
                 (void)setExpression(i, expr,hasRet);
+                cloneExpressionsResults(other,i);
             }
         }
     } catch(...) {
@@ -2359,6 +2366,13 @@ KnobHelper::getCurrentTime() const
 {
     KnobHolder* holder = getHolder();
     return holder && holder->getApp() ? holder->getCurrentTime() : 0;
+}
+
+int
+KnobHelper::getCurrentView() const
+{
+    KnobHolder* holder = getHolder();
+    return holder && holder->getApp() ? holder->getCurrentView() : 0;
 }
 
 /***************************KNOB HOLDER******************************************/

@@ -70,6 +70,8 @@ public:
     
     void setReadOnly(bool ro);
 
+    // the size of a pixel increment (used to round the value)
+    double increment();
     
 Q_SIGNALS:
     void editingFinished();

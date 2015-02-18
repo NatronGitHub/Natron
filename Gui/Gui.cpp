@@ -3372,15 +3372,18 @@ Gui::onDoDialog(int type,
 
     if (type == 0) {
         QMessageBox critical(QMessageBox::Critical, title, msg, QMessageBox::NoButton, this, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint | Qt::WindowStaysOnTopHint);
+        critical.setWindowFlags(critical.windowFlags() | Qt::WindowStaysOnTopHint);
         critical.setTextFormat(Qt::RichText);   //this is what makes the links clickable
         ignore_result(critical.exec());
     } else if (type == 1) {
         QMessageBox warning(QMessageBox::Warning, title, msg, QMessageBox::NoButton, this, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint | Qt::WindowStaysOnTopHint);
         warning.setTextFormat(Qt::RichText);
+        warning.setWindowFlags(warning.windowFlags() | Qt::WindowStaysOnTopHint);
         ignore_result(warning.exec());
     } else if (type == 2) {
         QMessageBox info(QMessageBox::Information, title, (msg.count() > 1000 ? msg.left(1000) : msg), QMessageBox::NoButton, this, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint | Qt::WindowStaysOnTopHint);
         info.setTextFormat(Qt::RichText);
+        info.setWindowFlags(info.windowFlags() | Qt::WindowStaysOnTopHint);
         if (msg.count() > 1000) {
             QGridLayout *layout = qobject_cast<QGridLayout *>(info.layout());
             if (layout) {
@@ -3396,6 +3399,7 @@ Gui::onDoDialog(int type,
         QMessageBox ques(QMessageBox::Question, title, msg, QtEnumConvert::toQtStandarButtons(buttons),
                          this, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint | Qt::WindowStaysOnTopHint);
         ques.setDefaultButton( QtEnumConvert::toQtStandardButton( (Natron::StandardButtonEnum)defaultB ) );
+        ques.setWindowFlags(ques.windowFlags() | Qt::WindowStaysOnTopHint);
         if ( ques.exec() ) {
             _imp->_lastQuestionDialogAnswer = QtEnumConvert::fromQtStandardButton( ques.standardButton( ques.clickedButton() ) );
         }
@@ -3481,6 +3485,7 @@ Gui::onDoDialogWithStopAskingCheckbox(int type,const QString & title,const QStri
     
     QCheckBox* stopAskingCheckbox = new QCheckBox(tr("Do not show this again"),&dialog);
     dialog.setCheckBox(stopAskingCheckbox);
+    dialog.setWindowFlags(dialog.windowFlags() | Qt::WindowStaysOnTopHint);
     if ( dialog.exec() ) {
         _imp->_lastQuestionDialogAnswer = dialog.getReply();
         _imp->_lastStopAskingAnswer = stopAskingCheckbox->isChecked();
@@ -3590,16 +3595,32 @@ GuiPrivate::restoreGuiGeometry()
     settings.endGroup();
 
     if ( settings.contains("LastOpenProjectDialogPath") ) {
-        _lastLoadSequenceOpenedDir = settings.value("LastOpenProjectDialogPath").toString();
+        _lastLoadProjectOpenedDir = settings.value("LastOpenProjectDialogPath").toString();
+        QDir d(_lastLoadProjectOpenedDir);
+        if (!d.exists()) {
+            _lastLoadProjectOpenedDir.clear();
+        }
     }
     if ( settings.contains("LastSaveProjectDialogPath") ) {
-        _lastLoadSequenceOpenedDir = settings.value("LastSaveProjectDialogPath").toString();
+        _lastSaveProjectOpenedDir = settings.value("LastSaveProjectDialogPath").toString();
+        QDir d(_lastSaveProjectOpenedDir);
+        if (!d.exists()) {
+            _lastSaveProjectOpenedDir.clear();
+        }
     }
     if ( settings.contains("LastLoadSequenceDialogPath") ) {
         _lastLoadSequenceOpenedDir = settings.value("LastLoadSequenceDialogPath").toString();
+        QDir d(_lastLoadSequenceOpenedDir);
+        if (!d.exists()) {
+            _lastLoadSequenceOpenedDir.clear();
+        }
     }
     if ( settings.contains("LastSaveSequenceDialogPath") ) {
-        _lastLoadSequenceOpenedDir = settings.value("LastSaveSequenceDialogPath").toString();
+        _lastSaveSequenceOpenedDir = settings.value("LastSaveSequenceDialogPath").toString();
+        QDir d(_lastSaveSequenceOpenedDir);
+        if (!d.exists()) {
+            _lastSaveSequenceOpenedDir.clear();
+        }
     }
     if (settings.contains("LastPluginDir")) {
         _lastPluginDir = settings.value("LastPluginDir").toString();
@@ -3706,6 +3727,8 @@ void
 Gui::showSettings()
 {
     _imp->_settingsGui->show();
+    _imp->_settingsGui->raise();
+    _imp->_settingsGui->activateWindow();
 }
 
 void
@@ -3780,6 +3803,8 @@ void
 Gui::showAbout()
 {
     _imp->_aboutWindow->show();
+    _imp->_aboutWindow->raise();
+    _imp->_aboutWindow->activateWindow();
     ignore_result(_imp->_aboutWindow->exec());
 }
 
@@ -3787,6 +3812,8 @@ void
 Gui::showShortcutEditor()
 {
     _imp->shortcutEditor->show();
+    _imp->shortcutEditor->raise();
+    _imp->shortcutEditor->activateWindow();
 }
 
 void

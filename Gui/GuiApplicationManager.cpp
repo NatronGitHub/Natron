@@ -908,7 +908,7 @@ GuiApplicationManager::initGui()
     QStringList fontFilenames;
     fontFilenames << fontResource.arg("DroidSans");
     fontFilenames << fontResource.arg("DroidSans-Bold");
-    foreach(QString fontFilename, fontFilenames) {
+    Q_FOREACH (QString fontFilename, fontFilenames) {
         _imp->_splashScreen->updateText("Loading font " + fontFilename);
         //qDebug() << "attempting to load" << fontFilename;
         int fontID = QFontDatabase::addApplicationFont(fontFilename);

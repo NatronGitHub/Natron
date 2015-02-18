@@ -841,7 +841,7 @@ AppManager::~AppManager()
         }
     }
 
-    foreach(Format * f,_imp->_formats) {
+    Q_FOREACH (Format * f, _imp->_formats) {
         delete f;
     }
 
@@ -2446,7 +2446,7 @@ AppManagerPrivate::cleanUpCacheDiskStructure(const QString & cachePath)
     QStringList etr = cacheFolder.entryList(QDir::NoDotAndDotDot);
     // if not 256 subdirs, we re-create the cache
     if (etr.size() < 256) {
-        foreach(QString e, etr) {
+        Q_FOREACH (QString e, etr) {
             cacheFolder.rmdir(e);
         }
     }
