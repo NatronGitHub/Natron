@@ -263,6 +263,7 @@ Settings::initializeKnobs()
     
     _hostName = Natron::createKnob<String_Knob>(this, "Host name");
     _hostName->setName("hostName");
+#pragma message WARN("TODO: make a choice menu out of these host names (with a 'custom host' entry), and tell the user to restart Natron when it is changed.")
     _hostName->setHintToolTip("This is the name of the OpenFX host (application) as it appears to the OpenFX plugins. "
                               "Changing it to the name of another application can help loading some plugins which "
                               "restrict their usage to specific OpenFX hosts. You shoud leave "
@@ -270,18 +271,20 @@ Settings::initializeKnobs()
                               "Changing this takes effect upon the next application launch, and requires clearing "
                               "the OpenFX plugins cache from the Cache menu. "
                               "Here is a list of known OpenFX hosts: \n"
-                              "uk.co.thefoundry.nuke \n"
-                              "com.eyeonline.Fusion \n"
-                              "com.sonycreativesoftware.vegas \n"
-                              "Autodesk Toxik \n"
-                              "Assimilator \n"
-                              "Dustbuster \n"
-                              "DaVinciResolve \n"
-                              "Mistika \n"
-                              "com.apple.shake \n"
-                              "Baselight \n"
-                              "IRIDAS Framecycler \n"
-                              "Ramen \n"
+                              "uk.co.thefoundry.nuke\n"
+                              "com.eyeonline.Fusion\n"
+                              "com.sonycreativesoftware.vegas\n"
+                              "Autodesk Toxik\n"
+                              "Assimilator\n"
+                              "Dustbuster\n"
+                              "DaVinciResolve\n"
+                              "DaVinciResolveLite\n"
+                              "Mistika\n"
+                              "com.apple.shake\n"
+                              "Baselight\n"
+                              "IRIDAS Framecycler\n"
+                              "Ramen\n"
+                              "TuttleOfx\n"
                               "\n"
                               "The default host name is: \n"
                               NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB "." NATRON_APPLICATION_NAME);
@@ -1819,7 +1822,7 @@ Settings::populatePluginsTab(std::vector<Natron::Plugin*>& pluginsToIgnore)
     
     std::map<Natron::Plugin*,PerPluginKnobs> pluginsMap;
     
-    std::set< std::string > groupNames;
+    std::map< std::string,std::string > groupNames;
     ///First pass to exctract all groups
     for (PluginsMap::const_iterator it = plugins.begin(); it != plugins.end(); ++it) {
     
@@ -1830,16 +1833,18 @@ Settings::populatePluginsTab(std::vector<Natron::Plugin*>& pluginsToIgnore)
         
         const QStringList& grouping = (*it->second.rbegin())->getGrouping();
         if (grouping.size() > 0) {
-            groupNames.insert(grouping[0].toStdString());
+            
+            groupNames.insert(std::make_pair(Natron::makeNameScriptFriendly(grouping[0].toStdString()),grouping[0].toStdString()));
         }
     }
     
     ///Now create all groups
 
     std::list< boost::shared_ptr<Group_Knob> > groups;
-    for (std::set< std::string >::iterator it = groupNames.begin(); it != groupNames.end(); ++it) {
-        boost::shared_ptr<Group_Knob>  g = Natron::createKnob<Group_Knob>(this, *it);
-        g->setName(*it);
+    for (std::map< std::string,std::string >::iterator it = groupNames.begin(); it != groupNames.end(); ++it) {
+        boost::shared_ptr<Group_Knob>  g = Natron::createKnob<Group_Knob>(this, it->second);
+        g->setName(it->first);
+        _pluginsTab->addKnob(g);
         groups.push_back(g);
     }
     
@@ -1861,7 +1866,7 @@ Settings::populatePluginsTab(std::vector<Natron::Plugin*>& pluginsToIgnore)
         const QStringList& grouping = plugin->getGrouping();
         if (grouping.size() > 0) {
             
-            std::string mainGroup = grouping[0].toStdString();
+            std::string mainGroup = Natron::makeNameScriptFriendly(grouping[0].toStdString());
             
             ///Find the corresponding group
             for (std::list< boost::shared_ptr<Group_Knob> >::const_iterator it2 = groups.begin(); it2 != groups.end(); ++it2) {
@@ -1887,7 +1892,6 @@ Settings::populatePluginsTab(std::vector<Natron::Plugin*>& pluginsToIgnore)
             group->addKnob(pluginLabel);
         }
         
-        _pluginsTab->addKnob(pluginLabel);
         
         boost::shared_ptr<Bool_Knob> pluginActivation = Natron::createKnob<Bool_Knob>(this, "Enabled");
         pluginActivation->setDefaultValue(filterDefaultActivatedPlugin(plugin->getPluginID()));
@@ -1898,7 +1902,6 @@ Settings::populatePluginsTab(std::vector<Natron::Plugin*>& pluginsToIgnore)
         if (group) {
             group->addKnob(pluginActivation);
         }
-        _pluginsTab->addKnob(pluginActivation);
         
         knobsToRestore.push_back(pluginActivation);
         
@@ -1916,13 +1919,9 @@ Settings::populatePluginsTab(std::vector<Natron::Plugin*>& pluginsToIgnore)
         if (group) {
             group->addKnob(zoomSupport);
         }
-        _pluginsTab->addKnob(zoomSupport);
         
         knobsToRestore.push_back(zoomSupport);
-        
-        if (group) {
-            _pluginsTab->addKnob(group);
-        }
+ 
         
         pluginsMap.insert(std::make_pair(plugin, PerPluginKnobs(pluginActivation,zoomSupport)));
 

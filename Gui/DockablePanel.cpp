@@ -442,6 +442,7 @@ DockablePanel::DockablePanel(Gui* gui ,
             QPixmap pixHelp;
             appPTR->getIcon(NATRON_PIXMAP_HELP_WIDGET,&pixHelp);
             _imp->_helpButton = new Button(QIcon(pixHelp),"",_imp->_headerWidget);
+            _imp->_helpButton->setToolTip(helpString());
             _imp->_helpButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
             _imp->_helpButton->setFocusPolicy(Qt::NoFocus);
             
@@ -1487,12 +1488,14 @@ DockablePanelPrivate::addPage(Page_Knob* /*page*/,const QString & name)
     if (_tabWidget) {
         if (name == NATRON_USER_MANAGED_KNOBS_PAGE_LABEL) {
             _tabWidget->insertTab(0,newTab,name);
+            _tabWidget->setCurrentIndex(0);
         } else {
             _tabWidget->addTab(newTab,name);
         }
     } else {
         if (name == NATRON_USER_MANAGED_KNOBS_PAGE_LABEL) {
             _horizLayout->insertWidget(0, newTab);
+            _tabWidget->setCurrentIndex(0);
         } else {
             _horizLayout->addWidget(newTab);
         }
@@ -1543,36 +1546,44 @@ DockablePanel::onRedoPressed()
     Q_EMIT redoneChange();
 }
 
+QString
+DockablePanel::helpString() const
+{
+    //Base help
+    QString tt = Qt::convertFromPlainText(_imp->_helpToolTip, Qt::WhiteSpaceNormal);
+
+    Natron::EffectInstance* iseffect = dynamic_cast<Natron::EffectInstance*>(_imp->_holder);
+    if (iseffect) {
+        //Prepend the plugin ID
+        const Natron::Plugin* plugin = iseffect->getNode()->getPlugin();
+        assert(plugin);
+        if (plugin) {
+            QString pluginLabelVersioned = plugin->getPluginID();
+            QString toAppend = QString(" version %1.%2").arg(plugin->getMajorVersion()).arg(plugin->getMinorVersion());
+            pluginLabelVersioned.append(toAppend);
+
+            if (!pluginLabelVersioned.isEmpty()) {
+                QString toPrepend("<p><b>");
+                toPrepend.append(pluginLabelVersioned);
+                toPrepend.append("</b></p>");
+                tt.prepend(toPrepend);
+            }
+        }
+    }
+    return tt;
+}
+
 void
 DockablePanel::showHelp()
 {
-    
     Natron::EffectInstance* iseffect = dynamic_cast<Natron::EffectInstance*>(_imp->_holder);
-    QString pluginLabelVersioned;
     if (iseffect) {
-        
-        //Base help
-        QString tt = Qt::convertFromPlainText(_imp->_helpToolTip, Qt::WhiteSpaceNormal);
-        
-        
-        //Prepend the plugin ID
         const Natron::Plugin* plugin = iseffect->getNode()->getPlugin();
-        pluginLabelVersioned = plugin->getPluginID();
-        QString toAppend = QString(" version %1.%2").arg(plugin->getMajorVersion()).arg(plugin->getMinorVersion());
-        pluginLabelVersioned.append(toAppend);
-
-        if (!pluginLabelVersioned.isEmpty()) {
-            QString toPrepend("<p><b>");
-            toPrepend.append(pluginLabelVersioned);
-            toPrepend.append("</b></p>");
-            tt.prepend(toPrepend);
+        assert(plugin);
+        if (plugin) {
+            Natron::informationDialog(plugin->getPluginLabel().toStdString(), helpString().toStdString(), true);
         }
-        
-        Natron::informationDialog(plugin->getPluginLabel().toStdString(), tt.toStdString(),true);
     }
-    
-
-
 }
 
 

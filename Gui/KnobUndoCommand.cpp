@@ -491,10 +491,16 @@ RestoreDefaultsCommand::redo()
 {
     std::list<SequenceTime> times;
     const boost::shared_ptr<KnobI> & first = _knobs.front();
-    boost::shared_ptr<TimeLine> timeline = first->getHolder()->getApp()->getTimeLine();
+    
+    boost::shared_ptr<TimeLine> timeline;
+    
+    KnobHolder* holder = first->getHolder();
+    if (holder && holder->getApp()) {
+        timeline = holder->getApp()->getTimeLine();
+    }
     
     for (std::list<boost::shared_ptr<KnobI> >::iterator it = _knobs.begin(); it != _knobs.end(); ++it) {
-        if ( (*it)->getHolder()->getApp() ) {
+        if ( (*it)->getHolder() && (*it)->getHolder()->getApp() ) {
             int dim = (*it)->getDimension();
             for (int i = 0; i < dim; ++i) {
                 boost::shared_ptr<Curve> c = (*it)->getCurve(i);
@@ -514,10 +520,12 @@ RestoreDefaultsCommand::redo()
         (*it)->endChanges();
     }
     timeline->removeMultipleKeyframeIndicator(times,true);
-
-    first->getHolder()->evaluate_public(NULL, true, Natron::eValueChangedReasonUserEdited);
-    if ( first->getHolder()->getApp() ) {
-        first->getHolder()->getApp()->redrawAllViewers();
+    
+    if (first->getHolder()) {
+        first->getHolder()->evaluate_public(NULL, true, Natron::eValueChangedReasonUserEdited);
+        if (first->getHolder()->getApp() ) {
+            first->getHolder()->getApp()->redrawAllViewers();
+        }
     }
     setText( QObject::tr("Restore default value(s)") );
 }

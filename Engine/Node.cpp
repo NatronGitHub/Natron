@@ -4583,7 +4583,7 @@ Node::isSettingsPanelOpened() const
             return master->isSettingsPanelOpened();
         }
         for (KnobLinkList::iterator it = _imp->nodeLinks.begin(); it != _imp->nodeLinks.end(); ++it) {
-            if (it->masterNode->isSettingsPanelOpened()) {
+            if (it->masterNode.get() != this && it->masterNode->isSettingsPanelOpened()) {
                 return true;
             }
         }

@@ -2290,12 +2290,15 @@ KnobHelper::cloneExpressions(KnobI* other,int dimension)
 {
     assert((int)_imp->expressions.size() == getDimension());
     try {
-        for (int i = 0; i < getDimension(); ++i) {
+        int dims = std::min(getDimension(),other->getDimension());
+        for (int i = 0; i < dims; ++i) {
             if (i == dimension || dimension == -1) {
                 std::string expr = other->getExpression(i);
                 bool hasRet = other->isExpressionUsingRetVariable(i);
-                (void)setExpression(i, expr,hasRet);
-                cloneExpressionsResults(other,i);
+                if (!expr.empty()) {
+                    (void)setExpression(i, expr,hasRet);
+                    cloneExpressionsResults(other,i);
+                }
             }
         }
     } catch(...) {
