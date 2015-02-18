@@ -1498,6 +1498,8 @@ KnobHelper::validateExpression(const std::string& expression,int dimension,bool 
 void
 KnobHelper::setExpressionInternal(int dimension,const std::string& expression,bool hasRetVariable,bool clearResults)
 {
+    assert(dimension >= 0 && dimension < getDimension());
+    
     Natron::PythonGILLocker pgl;
     
     ///Clear previous expr
@@ -1528,7 +1530,6 @@ KnobHelper::setExpressionInternal(int dimension,const std::string& expression,bo
         ++_expressionsRecursionLevel;
         
         try {
-            Natron::PythonGILLocker pgl;
             PyObject* ret = executeExpression(dimension);
             Py_DECREF(ret); //< new ref
 
