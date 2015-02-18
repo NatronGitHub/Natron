@@ -1554,7 +1554,7 @@ KnobHelper::setExpressionInternal(int dimension,const std::string& expression,bo
     }
     
     //Parse listeners of the expression, to keep track of dependencies to indicate them to the user.
-    {
+    if (getHolder()) {
         QMutexLocker k(&_expressionRecursionLevelMutex);
         assert(_expressionsRecursionLevel == 0);
         ++_expressionsRecursionLevel;
