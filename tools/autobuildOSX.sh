@@ -95,10 +95,9 @@ fi
 fi
 
 if [ "$FAIL" != "1" ]; then
-#  TAG=$(date +"%m-%d-%Y-%H-%M")
   rm -rf repo
   mkdir repo
-  DMGNAME=Natron-snapshots-$GITV_NATRON.dmg
+  DMGNAME=Natron-snapshots-$GITV_NATRON.dmg 
   mv Natron.dmg repo/$DMGNAME || FAIL=1 
   if [ "$FAIL" != "1" ]; then
     rsync -avz -e ssh --delete repo kepzlol@frs.sourceforge.net:/home/frs/project/natron/snapshots/$PKGOS$BIT

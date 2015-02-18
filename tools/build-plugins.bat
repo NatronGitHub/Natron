@@ -71,9 +71,21 @@ set /p GITV_MISC=<curVersion.txt
 echo "Building openfx-misc at commit " %GITV_MISC% %BITS%bit %CONFIGURATION%
 
 cd Misc
+set errorlevel=0
 devenv Misc.sln /Build "%CONFIGURATION%|%MSVC_CONF%" /Project Support
+if "%errorlevel%" == "1" (
+	goto fail
+)
+set errorlevel=0
 devenv Misc.sln /Build "%CONFIGURATION%|%MSVC_CONF%" /Project Misc
+if "%errorlevel%" == "1" (
+	goto fail
+)
+set errorlevel=0
 devenv Misc.sln /Build "%CONFIGURATION%|%MSVC_CONF%" /Project CImg
+if "%errorlevel%" == "1" (
+	goto fail
+)
 
 if exist "%DEPLOY_DIR%\Plugins\Misc.ofx.bundle" (
 	rmdir /S /Q %DEPLOY_DIR%\Plugins\Misc.ofx.bundle
