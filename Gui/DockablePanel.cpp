@@ -1488,12 +1488,14 @@ DockablePanelPrivate::addPage(Page_Knob* /*page*/,const QString & name)
     if (_tabWidget) {
         if (name == NATRON_USER_MANAGED_KNOBS_PAGE_LABEL) {
             _tabWidget->insertTab(0,newTab,name);
+            _tabWidget->setCurrentIndex(0);
         } else {
             _tabWidget->addTab(newTab,name);
         }
     } else {
         if (name == NATRON_USER_MANAGED_KNOBS_PAGE_LABEL) {
             _horizLayout->insertWidget(0, newTab);
+            _tabWidget->setCurrentIndex(0);
         } else {
             _horizLayout->addWidget(newTab);
         }
