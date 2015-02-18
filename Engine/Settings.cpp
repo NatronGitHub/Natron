@@ -1819,7 +1819,7 @@ Settings::populatePluginsTab(std::vector<Natron::Plugin*>& pluginsToIgnore)
     
     std::map<Natron::Plugin*,PerPluginKnobs> pluginsMap;
     
-    std::set< std::string > groupNames;
+    std::map< std::string,std::string > groupNames;
     ///First pass to exctract all groups
     for (PluginsMap::const_iterator it = plugins.begin(); it != plugins.end(); ++it) {
     
@@ -1830,16 +1830,18 @@ Settings::populatePluginsTab(std::vector<Natron::Plugin*>& pluginsToIgnore)
         
         const QStringList& grouping = (*it->second.rbegin())->getGrouping();
         if (grouping.size() > 0) {
-            groupNames.insert(grouping[0].toStdString());
+            
+            groupNames.insert(std::make_pair(Natron::makeNameScriptFriendly(grouping[0].toStdString()),grouping[0].toStdString()));
         }
     }
     
     ///Now create all groups
 
     std::list< boost::shared_ptr<Group_Knob> > groups;
-    for (std::set< std::string >::iterator it = groupNames.begin(); it != groupNames.end(); ++it) {
-        boost::shared_ptr<Group_Knob>  g = Natron::createKnob<Group_Knob>(this, *it);
-        g->setName(*it);
+    for (std::map< std::string,std::string >::iterator it = groupNames.begin(); it != groupNames.end(); ++it) {
+        boost::shared_ptr<Group_Knob>  g = Natron::createKnob<Group_Knob>(this, it->second);
+        g->setName(it->first);
+        _pluginsTab->addKnob(g);
         groups.push_back(g);
     }
     
@@ -1861,7 +1863,7 @@ Settings::populatePluginsTab(std::vector<Natron::Plugin*>& pluginsToIgnore)
         const QStringList& grouping = plugin->getGrouping();
         if (grouping.size() > 0) {
             
-            std::string mainGroup = grouping[0].toStdString();
+            std::string mainGroup = Natron::makeNameScriptFriendly(grouping[0].toStdString());
             
             ///Find the corresponding group
             for (std::list< boost::shared_ptr<Group_Knob> >::const_iterator it2 = groups.begin(); it2 != groups.end(); ++it2) {
@@ -1887,7 +1889,6 @@ Settings::populatePluginsTab(std::vector<Natron::Plugin*>& pluginsToIgnore)
             group->addKnob(pluginLabel);
         }
         
-        _pluginsTab->addKnob(pluginLabel);
         
         boost::shared_ptr<Bool_Knob> pluginActivation = Natron::createKnob<Bool_Knob>(this, "Enabled");
         pluginActivation->setDefaultValue(filterDefaultActivatedPlugin(plugin->getPluginID()));
@@ -1898,7 +1899,6 @@ Settings::populatePluginsTab(std::vector<Natron::Plugin*>& pluginsToIgnore)
         if (group) {
             group->addKnob(pluginActivation);
         }
-        _pluginsTab->addKnob(pluginActivation);
         
         knobsToRestore.push_back(pluginActivation);
         
@@ -1916,13 +1916,9 @@ Settings::populatePluginsTab(std::vector<Natron::Plugin*>& pluginsToIgnore)
         if (group) {
             group->addKnob(zoomSupport);
         }
-        _pluginsTab->addKnob(zoomSupport);
         
         knobsToRestore.push_back(zoomSupport);
-        
-        if (group) {
-            _pluginsTab->addKnob(group);
-        }
+ 
         
         pluginsMap.insert(std::make_pair(plugin, PerPluginKnobs(pluginActivation,zoomSupport)));
 
