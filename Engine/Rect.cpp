@@ -44,6 +44,7 @@ std::vector<RectI> RectI::splitIntoSmallerRects(int splitsCount) const
         double avgArea = std::max((double)MINAREA, area() / (double)splitsCount);
         int numCols = std::max(1, (int)(width() / std::sqrt(avgArea)));
         int numRows = std::max(1, std::min(splitsCount / numCols, (int)(area()/(MINAREA*numCols)))); // integer division
+        numCols = std::max(1, std::min(splitsCount / numRows, (int)(area()/(MINAREA*numRows))));
         assert(splitsCount >= numRows * numCols);
         for (int i = 0; i < numRows; ++i) {
             int y1 = bottom() + i     * height() / numRows;
