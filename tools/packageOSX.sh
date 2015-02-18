@@ -23,7 +23,7 @@ NATRONBRANCH=workshop
 OFXBRANCH=master
 
 # required macports ports (first ones are for Natron, then for OFX plugins and TuttleOFX)
-PORTS="boost qt4-mac boost glew cairo expat     jpeg openexr ffmpeg openjpeg15 libcaca freetype lcms swig ImageMagick lcms2 libraw nasm opencolorio openimageio swig-python py27-numpy flex bison openexr opencv seexpr ctl fontconfig"
+PORTS="boost qt4-mac boost glew cairo expat     jpeg openexr ffmpeg openjpeg15 libcaca freetype lcms swig ImageMagick lcms2 libraw nasm opencolorio openimageio swig-python py27-numpy flex bison openexr opencv seexpr ctl fontconfig py34-shiboken py34-pyside"
 
 PORTSOK=yes
 for p in $PORTS; do
@@ -87,10 +87,10 @@ if [ "$OS" = "Darwin" ]; then
   echo "Building for architecture $BITS"
 fi
 
-if [ -e build ]; then
-  echo "Directory 'build' already exists, please remove it"
-  exit 1
-fi
+#if [ -e build ]; then
+#  echo "Directory 'build' already exists, please remove it"
+#  exit 1
+#fi
 
 mkdir build
 cd build
@@ -108,32 +108,101 @@ cd Natron
 cat > config.pri <<EOF
 boost {
     INCLUDEPATH += /opt/local/include
-    LIBS += -L/opt/local/lib -lboost_serialization-mt -lboost_thread-mt -lboost_system-mt
+    LIBS += -L/opt/local/lib -lboost_serialization-mt
+}
+shiboken {
+    PKGCONFIG -= shiboken
+    INCLUDEPATH += /opt/local/include/shiboken-3.4  
+    LIBS += -L/opt/local/lib -lshiboken.cpython-34m
 }
 EOF
 qmake -r CONFIG+="$CONFIG" CONFIG+=`echo $BITS| awk '{print tolower($0)}'` CONFIG+=noassertions
 make $MAKEJFLAGS || exit
+
+
 macdeployqt App/${APP} || exit
+mv App/${APP}/Contents/PlugIns App/${APP}/Contents/Plugins || exit 1
+
+rm App/${APP}/Contents/Resources/qt.conf || exit 1
+cat > App/${APP}/Contents/Resources/qt.conf <<EOF
+[Paths]
+Plugins = Plugins
+EOF
+
 cp Renderer/NatronRenderer App/${APP}/Contents/MacOS
 bin=App/${APP}/Contents/MacOS/NatronRenderer
-for l in boost_serialization-mt boost_thread-mt boost_system-mt expat.1 cairo.2; do
+for l in boost_serialization-mt boost_thread-mt boost_system-mt expat.1 cairo.2 pyside.cpython-34m.1.2 shiboken.cpython-34m.1.2 intl.8; do
   lib=lib${l}.dylib
   install_name_tool -change /opt/local/lib/$lib @executable_path/../Frameworks/$lib $bin
 done
 for f in QtNetwork QtCore; do
   install_name_tool -change /opt/local/Library/Frameworks/${f}.framework/Versions/4/${f} @executable_path/../Frameworks/${f}.framework/Versions/4/${f} $bin
 done
+
+#Copy the whole Python framework with libraries 
+
+#mkdir -p App/${APP}/Contents/Frameworks/Python.framework/Versions/3.4
+for f in Python; do
+  install_name_tool -change /opt/local/Library/Frameworks/${f}.framework/Versions/3.4/${f} @executable_path/../Frameworks/${f}.framework/Versions/3.4/${f} $bin
+done
 if otool -L App/${APP}/Contents/MacOS/NatronRenderer  |fgrep /opt/local; then
   echo "Error: MacPorts libraries remaining in $bin, please check"
   exit 1
 fi
+
+mkdir -p App/${APP}/Contents/Frameworks/Python.framework/Versions/3.4/lib
+cp -r /opt/local/Library/Frameworks/Python.framework/Versions/3.4/lib/python3.4 App/${APP}/Contents/Frameworks/Python.framework/Versions/3.4/lib
+cp -r /opt/local/Library/Frameworks/Python.framework/Versions/3.4/Resources App/${APP}/Contents/Frameworks/Python.framework/Versions/3.4
+ln -s App/${APP}/Contents/Frameworks/Python.framework/Versions/3.4/Python App/${APP}/Contents/Frameworks/Python.framework/Versions/3.4/lib/libpython3.4.dylib
+ln -s App/${APP}/Contents/Frameworks/Python.framework/Versions/3.4/Python App/${APP}/Contents/Frameworks/Python.framework/Versions/3.4/lib/libpython3.4m.dylib
+rm -rf App/${APP}/Contents/Frameworks/Python.framework/Versions/3.4/lib/python3.4/site-packages/*
+rm -rf App/${APP}/Contents/Frameworks/Python.framework/Versions/3.4/lib/python3.4/__pycache__
+rm -rf App/${APP}/Contents/Frameworks/Python.framework/Versions/3.4/lib/python3.4/*/__pycache__
+
+#FILES=$(ls -l opt/local/Library/Frameworks/Python.framework/Versions/3.4/lib|awk '{print $9}')
+#for f in FILES; do
+#    #FILE=echo "{$f}" | sed "s/cpython-34.//g"
+#    cp -r $f App/${APP}/Contents/Frameworks/Python.framework/Versions/3.4/lib/$FILE || exit 1
+#done
+
+
+
+#Do the same for crash reporter
+cp CrashReporter/NatronCrashReporter App/${APP}/Contents/MacOS
+bin=App/${APP}/Contents/MacOS/NatronCrashReporter
+for f in QtGui QtNetwork QtCore; do
+  install_name_tool -change /opt/local/Library/Frameworks/${f}.framework/Versions/4/${f} @executable_path/../Frameworks/${f}.framework/Versions/4/${f} $bin
+done
+
+if otool -L App/${APP}/Contents/MacOS/NatronCrashReporter  |fgrep /opt/local; then
+  echo "Error: MacPorts libraries remaining in $bin, please check"
+  exit 1
+fi
 cd ..
+
 
 PLUGINDIR=Natron/App/${APP}/Contents/Plugins
 if [ ! -d $PLUGINDIR ]; then
   echo "Error: plugin directory '$PLUGINDIR' does not exist"
   exit 1
 fi
+
+#Copy Pyside in the plugin dir
+mkdir -p  $PLUGINDIR/PySide
+
+for lib in QtCore QtGui QtNetwork QtOpenGL;do
+cp /opt/local/Library/Frameworks/Python.framework/Versions/3.4/lib/python3.4/site-packages/PySide/${lib}.so $PLUGINDIR/PySide/${lib}.so
+bin=$PLUGINDIR/PySide/${lib}.so
+for f in QtCore QtGui QtNetwork QtOpenGL; do
+  install_name_tool -change /opt/local/Library/Frameworks/${f}.framework/Versions/4/${f} @executable_path/../Frameworks/${f}.framework/Versions/4/${f} $bin
+done
+for l in  pyside.cpython-34m.1.2 shiboken.cpython-34m.1.2; do
+  dylib=lib${l}.dylib
+  install_name_tool -change /opt/local/lib/$dylib @executable_path/../Frameworks/$dylib $bin
+done
+done
+cp  /opt/local/Library/Frameworks/Python.framework/Versions/3.4/lib/python3.4/site-packages/PySide/__init__.py $PLUGINDIR/PySide
+cp  /opt/local/Library/Frameworks/Python.framework/Versions/3.4/lib/python3.4/site-packages/PySide/_utils.py $PLUGINDIR/PySide
 
 #compile openfx-io
 cd openfx-io
