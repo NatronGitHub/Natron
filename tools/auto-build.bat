@@ -96,9 +96,19 @@ for /l %%i in (1, 1, 2) do (
 		set BIT=32
 	)
 	cd %CWD%
+	set errorlevel=0
 	call build-natron.bat %NATRON_BRANCH% !BIT! 0 Release 1
+	if "%errorlevel%" == "1" (
+		echo BUILD FAILED
+		goto main_loop
+	)
 	cd %CWD%
+	set errorlevel=0
 	call build-plugins.bat !BIT! Release 1
+	if "%errorlevel%" == "1" (
+		echo BUILD FAILED
+		goto main_loop
+	)
 	if exist "%TMP%\repo\Windows!BIT!" (
 		rmdir /S /Q %TMP%\repo\Windows!BIT!
 	)
