@@ -442,6 +442,12 @@ public:
 
     
     std::string getKnobChangedCallback() const;
+    
+    std::string getInputChangedCallback() const;
+
+protected:
+    
+    void runInputChangedCallback(int index);
 private:
     
     /**

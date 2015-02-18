@@ -139,6 +139,65 @@ Example
 		#...
 		app.player.setParamChangedCallback("myPlayerParamChangedCallback")
 	
+The After input changed callback
+----------------------------------
+
+Similarly to the param changed callback, this function is called whenever an input connection of
+the node is changed. 
+
+.. note::
+	
+	This function will be called even when loading a project 
+	
+The **inputIndex** variable will be defined and identifying the input which just got connected/disconnected.
+You can fetch the input at the given index with the :func:`getInput(index)<>` function of the :ref:`Effect<Effect>` class.
+	
+Natron will also declare for you the following variables:
+	
+	* The **thisNode** variable. This is a :ref:`Effect<Effect>` holding the input which just changed
+	
+	* The **thisGroup** variable. This is a :ref:`Effect<Effect>` pointing to the group  holding **thisNode**.
+	 Note that it will be declared only if **thisNode** is part of a group.
+	
+	* The **app** variable will be set so it points to the correct :ref:`application instance<App>`.
+
+Registering the input changed callback
+----------------------------------------
+
+To register the input changed callback of an :ref:`Effect<Effect>`, you can do so in
+the settings panel of the node, in the "Node" tab, by entering the name of your Python function:
+
+.. figure:: inputChangedPanel.png
+	:width: 400px
+	:align: center
+
+You can also set the callback directly from the script: The callback is just another :ref:`parameter<Param>`
+of the node, on which you can call :func:`setValue(value)<>` to set the name of the callback
+
+::
+
+	def inputChangedCallback():
+		...
+
+	app.Merge1.onInputChanged.set("inputChangedCallback")
+	
+	
+Example
+^^^^^^^^
+::
+
+	# This simple callback just prints the input node name if connected or "None" otherwise
+	# node changes
+	def inputChangedCallback():
+		inp = thisNode.getInput(inputIndex)
+		if not inp is None:
+			print("Input ",inputIndex," is ",inp.getScriptName())
+		else:
+			print("Input ",inputIndex," is None")
+	
+	app.Merge1.onInputChanged.set("inputChangedCallback")
+
+
 The After project created callback
 -----------------------------------
 

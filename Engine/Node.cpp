@@ -204,6 +204,8 @@ struct Node::Implementation
     
     void appendChild(const boost::shared_ptr<Natron::Node>& child);
     
+    void runInputChangedCallback(int index,const std::string& script);
+    
     Node* _publicInterface;
     
     boost::weak_ptr<NodeCollection> group;
@@ -275,6 +277,7 @@ struct Node::Implementation
     boost::shared_ptr<Bool_Knob> previewEnabledKnob;
     boost::shared_ptr<Bool_Knob> disableNodeKnob;
     boost::shared_ptr<String_Knob> knobChangedCallback;
+    boost::shared_ptr<String_Knob> inputChangedCallback;
     
     boost::shared_ptr<Page_Knob> infoPage;
     boost::shared_ptr<String_Knob> infoDisclaimer;
@@ -1690,7 +1693,7 @@ Node::initializeKnobs(int renderScaleSupportPref)
         }
         _imp->nodeSettingsPage->addKnob(_imp->useFullScaleImagesWhenRenderScaleUnsupported);
         
-        _imp->knobChangedCallback = Natron::createKnob<String_Knob>(_imp->liveInstance.get(), "On param changed callback");
+        _imp->knobChangedCallback = Natron::createKnob<String_Knob>(_imp->liveInstance.get(), "After param changed callback");
         _imp->knobChangedCallback->setHintToolTip("Set here the name of a function defined in Python which will be called for each  "
                                                   "parameter change. Either define this function in the Script Editor "
                                                   "or in the init.py script or even in the script of a Python group plug-in. "
@@ -1703,6 +1706,22 @@ Node::initializeKnobs(int renderScaleSupportPref)
         _imp->knobChangedCallback->setAnimationEnabled(false);
         _imp->knobChangedCallback->setName("onParamChanged");
         _imp->nodeSettingsPage->addKnob(_imp->knobChangedCallback);
+        
+        _imp->inputChangedCallback = Natron::createKnob<String_Knob>(_imp->liveInstance.get(), "After input changed callback");
+        _imp->inputChangedCallback->setHintToolTip("Set here the name of a function defined in Python which will be called after "
+                                                   "each connection is changed for the inputs of the node. "
+                                                   "Either define this function in the Script Editor "
+                                                   "or in the init.py script or even in the script of a Python group plug-in. "
+                                                   "Several variables are declared for convenience when the callback is called, "
+                                                   "namely:\n"
+                                                   "- inputIndex: the index of the input which changed, you can query the node "
+                                                   "connected to the input by calling the getInput(...) function. "
+                                                   "- thisNode: The node holding the parameter\n"
+                                                   "- thisGroup: The group holding thisNode (only if thisNode belongs to a group)");
+        
+        _imp->inputChangedCallback->setAnimationEnabled(false);
+        _imp->inputChangedCallback->setName("onInputChanged");
+        _imp->nodeSettingsPage->addKnob(_imp->inputChangedCallback);
         
         _imp->infoPage = Natron::createKnob<Page_Knob>(_imp->liveInstance.get(), "Info",1,false);
         _imp->infoPage->setName("info");
@@ -2330,6 +2349,12 @@ Node::connectInput(const boost::shared_ptr<Node> & input,
     
     _imp->ifGroupForceHashChangeOfInputs();
     
+    std::string inputChangedCB = getInputChangedCallback();
+    if (!inputChangedCB.empty()) {
+        _imp->runInputChangedCallback(inputNumber, inputChangedCB);
+    }
+
+    
     return true;
 }
 
@@ -2404,6 +2429,12 @@ Node::replaceInput(const boost::shared_ptr<Node>& input,int inputNumber)
     computeHash();
     
     _imp->ifGroupForceHashChangeOfInputs();
+    
+    std::string inputChangedCB = getInputChangedCallback();
+    if (!inputChangedCB.empty()) {
+        _imp->runInputChangedCallback(inputNumber, inputChangedCB);
+    }
+
     
     return true;
 }
@@ -2486,6 +2517,13 @@ Node::switchInput0And1()
     onInputChanged(inputBIndex);
     computeHash();
     
+    std::string inputChangedCB = getInputChangedCallback();
+    if (!inputChangedCB.empty()) {
+        _imp->runInputChangedCallback(inputAIndex, inputChangedCB);
+        _imp->runInputChangedCallback(inputBIndex, inputChangedCB);
+    }
+
+    
     _imp->ifGroupForceHashChangeOfInputs();
 
 } // switchInput0And1
@@ -2564,6 +2602,11 @@ Node::disconnectInput(int inputNumber)
     computeHash();
     
     _imp->ifGroupForceHashChangeOfInputs();
+    
+    std::string inputChangedCB = getInputChangedCallback();
+    if (!inputChangedCB.empty()) {
+        _imp->runInputChangedCallback(inputNumber, inputChangedCB);
+    }
     return inputNumber;
 }
 
@@ -2596,7 +2639,13 @@ Node::disconnectInput(Node* input)
                 onInputChanged(i);
                 computeHash();
                 
-                _imp->ifGroupForceHashChangeOfInputs();                
+                _imp->ifGroupForceHashChangeOfInputs();
+                
+                std::string inputChangedCB = getInputChangedCallback();
+                if (!inputChangedCB.empty()) {
+                    _imp->runInputChangedCallback(i, inputChangedCB);
+                }
+                
                 l.relock();
                 
                 return i;
@@ -4868,6 +4917,12 @@ Node::getKnobChangedCallback() const
     return _imp->knobChangedCallback ? _imp->knobChangedCallback->getValue() : std::string();
 }
 
+std::string
+Node::getInputChangedCallback() const
+{
+    return _imp->inputChangedCallback ? _imp->inputChangedCallback->getValue() : std::string();
+}
+
 void
 Node::Implementation::runOnNodeCreatedCB(bool userEdited)
 {
@@ -4948,6 +5003,37 @@ std::string
 Node::getAfterFrameRenderCallback() const
 {
     return _imp->afterFrameRender ? _imp->afterFrameRender->getValue() : std::string();
+}
+
+void
+Node::runInputChangedCallback(int index)
+{
+    std::string cb = getInputChangedCallback();
+    if (!cb.empty()) {
+        _imp->runInputChangedCallback(index, cb);
+    }
+}
+
+void
+Node::Implementation::runInputChangedCallback(int index,const std::string& callback)
+{
+    std::stringstream ss;
+    std::string script;
+    std::string deleteNodeScript;
+    std::string nodeScript = _publicInterface->declareCurrentNodeVariable_Python(&deleteNodeScript);
+    ss << nodeScript;
+    ss << "inputIndex = " << index << "\n";
+    ss << callback << "()\n";
+    ss << deleteNodeScript;
+    script = ss.str();
+    std::string err;
+    std::string output;
+    if (!Natron::interpretPythonScript(script, &err,&output)) {
+        _publicInterface->getApp()->appendToScriptEditor(QObject::tr("Failed to execute callback: ").toStdString() + err);
+    } else {
+        _publicInterface->getApp()->appendToScriptEditor(output);
+    }
+
 }
 
 //////////////////////////////////
@@ -5099,6 +5185,10 @@ InspectorNode::setActiveInputAndRefresh(int inputNb)
     computeHash();
     Q_EMIT inputChanged(inputNb);
     onInputChanged(inputNb);
+
+    runInputChangedCallback(inputNb);
+    
+    
     if ( isOutputNode() ) {
         Natron::OutputEffectInstance* oei = dynamic_cast<Natron::OutputEffectInstance*>( getLiveInstance() );
         assert(oei);
