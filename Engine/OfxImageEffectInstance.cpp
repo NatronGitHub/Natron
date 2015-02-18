@@ -299,13 +299,15 @@ OfxImageEffectInstance::getRenderScaleRecursive(double &x,
 OfxStatus
 OfxImageEffectInstance::getViewCount(int *nViews) const
 {
-
+#pragma message WARN("TODO")
+    return kOfxStatFailed;
 }
 
 OfxStatus
 OfxImageEffectInstance::getViewName(int viewIndex,char** name) const
 {
-    
+#pragma message WARN("TODO")
+    return kOfxStatFailed;
 }
 
 ///These props are properties of the PARAMETER descriptor but the describe function of the INTERACT descriptor

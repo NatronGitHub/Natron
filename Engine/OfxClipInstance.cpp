@@ -359,7 +359,10 @@ OfxClipInstance::getContinuousSamples() const
 OfxRectD
 OfxClipInstance::getRegionOfDefinition(OfxTime time, int view) const
 {
-    
+#pragma message WARN("TODO")
+    OfxRectD d;
+    d.x1 = d.x2 = d.y1 = d.y2 = 0.;
+    return d;
 }
 
 /// override this to return the rod on the clip canonical coords!
