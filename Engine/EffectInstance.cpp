@@ -2962,7 +2962,7 @@ EffectInstance::renderRoIInternal(SequenceTime time,
             if (nbThreads == 0) {
                 nbThreads = QThreadPool::globalInstance()->maxThreadCount();
             }
-            std::vector<RectI> splitRects = RectI::splitRectIntoSmallerRect(downscaledRectToRender, nbThreads);
+            std::vector<RectI> splitRects = downscaledRectToRender.splitIntoSmallerRects(nbThreads);
             
             TiledRenderingFunctorArgs tiledArgs;
             tiledArgs.args = &args;
