@@ -467,7 +467,8 @@ OfxClipInstance::getImage(OfxTime time,
 OFX::Host::ImageEffect::Image*
 OfxClipInstance::getImagePlane(OfxTime time, int view, const std::string& plane,const OfxRectD *optionalBounds)
 {
-    
+#pragma message WARN("TODO")
+    return NULL;
 }
 
 
