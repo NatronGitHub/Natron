@@ -153,6 +153,9 @@ Natron::OfxHost::setProperties()
 
     ///Nuke transform suite
     _properties.setIntProperty(kFnOfxImageEffectCanTransform, 1);
+    
+    ///Plane suite
+    _properties.setIntProperty(kFnOfxImageEffectPropMultiPlanar, 0);
 }
 
 OFX::Host::ImageEffect::Instance*

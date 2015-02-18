@@ -295,6 +295,19 @@ OfxImageEffectInstance::getRenderScaleRecursive(double &x,
     }
 }
 
+
+OfxStatus
+OfxImageEffectInstance::getViewCount(int *nViews) const
+{
+
+}
+
+OfxStatus
+OfxImageEffectInstance::getViewName(int viewIndex,char** name) const
+{
+    
+}
+
 ///These props are properties of the PARAMETER descriptor but the describe function of the INTERACT descriptor
 ///expects those properties to exist, so we add them to the INTERACT descriptor.
 static const OFX::Host::Property::PropSpec interactDescProps[] = {
