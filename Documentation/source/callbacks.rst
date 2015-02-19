@@ -49,8 +49,7 @@ will be declared by Natron:
 	
 	* The **thisNode** variable. This is a :ref:`Effect<Effect>` pointing to the effect holding **thisParam**
 	
-	* The **thisGroup** variable. This is a :ref:`Effect<Effect>` pointing to the group  holding **thisNode**.
-	 Note that it will be declared only if **thisNode** is part of a group.
+	* The **thisGroup** variable. This is a :ref:`Effect<Effect>` pointing to the group  holding **thisNode**. Note that it will be declared only if **thisNode** is part of a group.
 	
 	* The **app** variable will be set so it points to the correct :ref:`application instance<App>`.
 	
@@ -156,8 +155,7 @@ Natron will also declare for you the following variables:
 	
 	* The **thisNode** variable. This is a :ref:`Effect<Effect>` holding the input which just changed
 	
-	* The **thisGroup** variable. This is a :ref:`Effect<Effect>` pointing to the group  holding **thisNode**.
-	 Note that it will be declared only if **thisNode** is part of a group.
+	* The **thisGroup** variable. This is a :ref:`Effect<Effect>` pointing to the group  holding **thisNode**. Note that it will be declared only if **thisNode** is part of a group.
 	
 	* The **app** variable will be set so it points to the correct :ref:`application instance<App>`.
 
@@ -199,7 +197,7 @@ Example
 
 
 The After project created callback
------------------------------------
+-------------------------------------
 
 This function is called whenever a new project is created, that is either when launching Natron
 without loading a project, or when clicking "Create a new project" or "Close project".
@@ -235,7 +233,7 @@ Example, taken from the initGui.py script provided as example in :ref:`this sect
 	
 
 The After project loaded callback
-----------------------------------
+-------------------------------------
 
 This function is very similar to the After project created callback but is a per-project callback,
 called only when a project is loaded from an auto-save or from user interaction.
@@ -267,7 +265,7 @@ This is a good place to do some checks to opened projects or to setup something:
 	You can set a default After project loaded callback for all new projects in the *Preferences-->Python* tab.
 	
 The Before project save callback
---------------------------------
+----------------------------------
 
 This function will be called prior to saving a project either via an auto-save or from
 user interaction.
@@ -426,7 +424,7 @@ You can set the callback from the Write node settings panel in the "Python" tab.
 This function can be used to communicate with external programs for example.
 
 The After frame rendered callback:
----------------------------------
+-----------------------------------
 
 This function is called after each frame is finished rendering with a Write node. 
 
