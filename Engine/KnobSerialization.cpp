@@ -147,9 +147,9 @@ KnobSerialization::restoreTracks(const boost::shared_ptr<KnobI> & knob,
 void
 KnobSerialization::restoreExpressions(const boost::shared_ptr<KnobI> & knob)
 {
-    assert((int)_expressions.size() == knob->getDimension());
+    int dims = std::min(knob->getDimension(), _knob->getDimension());
     try {
-        for (int i = 0; i < knob->getDimension(); ++i) {
+        for (int i = 0; i < dims; ++i) {
             (void)knob->restoreExpression(i, _expressions[i].first, _expressions[i].second);
         }
     } catch (const std::exception& e) {
