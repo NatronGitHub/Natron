@@ -540,3 +540,25 @@ Effect::getRotoContext() const
     }
     return 0;
 }
+
+bool
+Effect::getRegionOfDefinition(int time,int view,QRectF* rod) const
+{
+    if (!_node || !_node->getLiveInstance()) {
+        return false;
+    }
+    U64 hash = _node->getHashValue();
+    RenderScale s;
+    s.x = s.y = 1.;
+    RectD regionOfDefinition;
+    bool isProject;
+    Natron::StatusEnum stat = _node->getLiveInstance()->getRegionOfDefinition_public(hash, time, s, view, &regionOfDefinition, &isProject);
+    if (stat != Natron::eStatusOK) {
+        return false;
+    }
+    rod->setLeft(regionOfDefinition.x1);
+    rod->setBottom(regionOfDefinition.y1);
+    rod->setRight(regionOfDefinition.x2);
+    rod->setTop(regionOfDefinition.y2);
+    return true;
+}

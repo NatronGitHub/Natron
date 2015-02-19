@@ -552,6 +552,23 @@
                 <define-ownership class="target" owner="target"/>
             </modify-argument>
         </modify-function>
+        <modify-function signature="getRegionOfDefinition(int,int,QRectF*)const">
+            <modify-argument index="3">
+                <remove-argument/>
+            </modify-argument>
+            <modify-argument index="return">
+                <replace-type modified-type="PyTuple"/>
+            </modify-argument>
+            <inject-code class="target" position="beginning">
+                QRectF rect;
+                %RETURN_TYPE %0 = %CPPSELF.%FUNCTION_NAME(%1,%2,&amp;rect);
+                %PYARG_0 = PyTuple_New(2);
+                PyTuple_SET_ITEM(%PYARG_0, 0, %CONVERTTOPYTHON[%RETURN_TYPE](%0));
+                PyTuple_SET_ITEM(%PYARG_0, 1, %CONVERTTOPYTHON[QRectF](rect));
+                return %PYARG_0;
+            </inject-code>
+            
+        </modify-function>
     </object-type>
 
     

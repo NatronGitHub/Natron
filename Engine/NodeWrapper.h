@@ -25,6 +25,7 @@
 #include <boost/shared_ptr.hpp>
 #endif
 
+#include <QRectF>
 #include "Engine/NodeGroupWrapper.h"
 #include "Engine/ParameterWrapper.h"
 
@@ -317,6 +318,8 @@ public:
      * @brief Get the roto context for this node if it has any. At the time of writing only the Roto node has a roto context.
      **/
     Roto* getRotoContext() const;
+    
+    bool getRegionOfDefinition(int time,int view,QRectF* rod) const;
     
     static Param* createParamWrapperForKnob(const boost::shared_ptr<KnobI>& knob);
 };
