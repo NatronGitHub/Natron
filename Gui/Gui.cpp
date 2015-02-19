@@ -4794,6 +4794,7 @@ FloatingWidget::FloatingWidget(Gui* gui,
     : QWidget(parent)
       , SerializableWindow()
       , _embeddedWidget(0)
+      , _scrollArea(0)
       , _layout(0)
       , _gui(gui)
 {
@@ -4801,7 +4802,9 @@ FloatingWidget::FloatingWidget(Gui* gui,
     setAttribute(Qt::WA_DeleteOnClose,true);
     _layout = new QVBoxLayout(this);
     _layout->setContentsMargins(0, 0, 0, 0);
-    setLayout(_layout);
+    _scrollArea = new QScrollArea(this);
+    _layout->addWidget(_scrollArea);
+   // _scrollArea->setWidgetResizable(true);
 }
 
 static void
@@ -4841,11 +4844,15 @@ FloatingWidget::setWidget(QWidget* w)
         return;
     }
     _embeddedWidget = w;
-    w->setParent(this);
-    assert(_layout);
-    _layout->addWidget(w);
+    _scrollArea->setWidget(w);
     w->setVisible(true);
     w->setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Expanding);
+    
+    QDesktopWidget* dw = qApp->desktop();
+    assert(dw);
+    QRect geom = dw->screenGeometry();
+    widgetSize.setWidth(std::min(widgetSize.width(),geom.width()));
+    widgetSize.setHeight(std::min(widgetSize.height(),geom.height()));
     resize(widgetSize);
     show();
 }
@@ -4856,7 +4863,7 @@ FloatingWidget::removeEmbeddedWidget()
     if (!_embeddedWidget) {
         return;
     }
-    _layout->removeWidget(_embeddedWidget);
+    //_scrollArea->setViewport(0);
     _embeddedWidget->setParent(NULL);
     _embeddedWidget = 0;
     // _embeddedWidget->setVisible(false);

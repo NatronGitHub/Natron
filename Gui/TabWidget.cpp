@@ -434,9 +434,14 @@ TabWidget::closePane()
         return;
     }
 
-    FloatingWidget* isFloating = dynamic_cast<FloatingWidget*>( parentWidget() );
-    if ( isFloating && (isFloating->getEmbeddedWidget() == this) ) {
-        isFloating->close();
+    QWidget* parent = parentWidget();
+    while (parent) {
+        FloatingWidget* isFloating = dynamic_cast<FloatingWidget*>(parent);
+        if ( isFloating && (isFloating->getEmbeddedWidget() == this) ) {
+            isFloating->close();
+            break;
+        }
+        parent = parent->parentWidget();
     }
 
 

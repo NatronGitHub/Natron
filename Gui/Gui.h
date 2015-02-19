@@ -698,6 +698,7 @@ private:
     virtual void resizeEvent(QResizeEvent* e) OVERRIDE FINAL;
     virtual void closeEvent(QCloseEvent* e) OVERRIDE;
     QWidget* _embeddedWidget;
+    QScrollArea* _scrollArea;
     QVBoxLayout* _layout;
     Gui* _gui;
 };
