@@ -361,11 +361,17 @@ TabWidget::moveToNextTab()
 void
 TabWidget::tryCloseFloatingPane()
 {
-    FloatingWidget* parent = dynamic_cast<FloatingWidget*>( parentWidget() );
-
-    if (parent) {
-        parent->close();
+    QWidget* parent = parentWidget();
+    while (parent) {
+        FloatingWidget* fw = dynamic_cast<FloatingWidget*>(parent);
+        if (fw) {
+            fw->close();
+            return;
+        }
+        parent = parent->parentWidget();
     }
+
+   
 }
 
 static void
@@ -398,7 +404,16 @@ TabWidget::closeSplitterAndMoveOtherSplitToParent(Splitter* container)
     assert(otherSplit);
 
     Splitter* parentSplitter = dynamic_cast<Splitter*>( container->parentWidget() );
-    FloatingWidget* parentWindow = dynamic_cast<FloatingWidget*>( container->parentWidget() );
+    QWidget* parent = container->parentWidget();
+    
+    FloatingWidget* parentWindow = 0;
+    while (parent) {
+        parentWindow = dynamic_cast<FloatingWidget*>(parent);
+        if (parentWindow) {
+            break;
+        }
+        parent = parent->parentWidget();
+    }
 
     assert(parentSplitter || parentWindow);
 
@@ -494,12 +509,17 @@ TabWidget::closePane()
 void
 TabWidget::floatPane(QPoint* position)
 {
-    FloatingWidget* isParentFloating = dynamic_cast<FloatingWidget*>( parentWidget() );
-
-    if (isParentFloating) {
-        return;
+    
+    QWidget* parent = parentWidget();
+    while (parent) {
+        FloatingWidget* isParentFloating = dynamic_cast<FloatingWidget*>(parent);
+        if (isParentFloating) {
+            return;
+        }
+        parent = parent->parentWidget();
     }
 
+    
     FloatingWidget* floatingW = new FloatingWidget(_imp->gui,_imp->gui);
     Splitter* parentSplitter = dynamic_cast<Splitter*>( parentWidget() );
     setParent(0);
@@ -664,7 +684,16 @@ TabWidget*
 TabWidget::splitInternal(bool autoSave,
                          Qt::Orientation orientation)
 {
-    FloatingWidget* parentIsFloating = dynamic_cast<FloatingWidget*>( parentWidget() );
+    QWidget* parent = parentWidget();
+    FloatingWidget* parentIsFloating = 0;
+    while (parent) {
+        parentIsFloating = dynamic_cast<FloatingWidget*>(parent);
+        if (parent) {
+            break;
+        }
+        parent = parent->parentWidget();
+    }
+
     Splitter* parentIsSplitter = dynamic_cast<Splitter*>( parentWidget() );
 
     assert(parentIsSplitter || parentIsFloating);

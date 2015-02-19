@@ -4804,7 +4804,7 @@ FloatingWidget::FloatingWidget(Gui* gui,
     _layout->setContentsMargins(0, 0, 0, 0);
     _scrollArea = new QScrollArea(this);
     _layout->addWidget(_scrollArea);
-   // _scrollArea->setWidgetResizable(true);
+    _scrollArea->setWidgetResizable(true);
 }
 
 static void
