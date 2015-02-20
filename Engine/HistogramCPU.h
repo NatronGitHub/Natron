@@ -53,7 +53,7 @@ public:
                                           unsigned int* binsCount,
                                           unsigned int* pixelsCount,
                                           int* mode,
-                                          double* vmin,double* vmax);
+                                          double* vmin,double* vmax,unsigned int* mipMapLevel);
 
     void quitAnyComputation();
 

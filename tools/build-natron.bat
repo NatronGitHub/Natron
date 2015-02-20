@@ -5,7 +5,17 @@
 :: http://boost.teeks99.com/
 :: - glew in C:\glew, where libraries are in C:\glew\bin\win32 and C:\glew\bin\x64, downloaded here:
 :: https://sourceforge.net/projects/glew/files/glew/1.12.0/glew-1.12.0-win32.zip/download
-@echo off
+:@echo off
+
+goto start
+
+:SetFromReg
+FOR /F "tokens=2,*" %%A IN ('REG query "%~1" /v "%~2"^|find /I "REG_"') DO (
+    call set %~3=%%B
+)
+goto :EOF
+
+:start
 
 set CWD=%cd%
 
@@ -51,7 +61,7 @@ if "%5" == "1" (
 if "%BITS%" == "32" (
 	echo Building Natron x86 32 bit %CONFIGURATION%.
 	set BUILD_SUB_DIR=win32
-	set QT_LIBRARIES_DIR=C:\Qt\Qt4.8.6_win32
+	set QT_LIBRARIES_DIR=C:\Qt\4.8.6_win32
 	set MSVC_CONF=Win32
 ) else if "%BITS%" == "64" (
 	echo Building Natron x86 64 bit %CONFIGURATION%.
@@ -95,14 +105,26 @@ copy /Y %CWD%\..\config.pri config.pri
 copy /Y %CWD%\callQmake.bat callQmake.bat
 ::start /i /b /wait callQmake.bat %BITS%
 
-call "cmd /c callQmake.bat %BITS%"
+
+set Platform=
+REM Special handling for Path
+call :SetFromReg "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Environment" Path Path
+setlocal
+set u=
+call :SetFromReg "HKCU\Environment" Path u
+endlocal&if not "%Path%"=="" if not "%u%"=="" set Path=%Path%;%u%
+
+::start /i /wait explorer.exe cmd /k call callQmake.bat %BITS%
+call callQmake.bat %BITS%
 call "C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\bin\amd64\vcvars64.bat"
 :: By default Visual Studio 2010 solution files build for 32 bit. Moreover it does not
 :: provide any way to change to /MACHINE:X64 from command-line, hence we do it by hend using sed
 :: See http://www.cmake.org/Bug/view.php?id=11240 for reference
 setlocal EnableDelayedExpansion
-sed -e "/\/ResourceCompile>/a <Lib>\n    <TargetMachine>MachineX64</TargetMachine>\n</Lib>" -i Engine\Engine.vcxproj Gui\Gui.vcxproj HostSupport\HostSupport.vcxproj
+
 if "%BITS%" == "64" (
+	sed -e "/\/ResourceCompile>/a <Lib>\n    <TargetMachine>MachineX64</TargetMachine>\n</Lib>" -i Engine\Engine.vcxproj Gui\Gui.vcxproj HostSupport\HostSupport.vcxproj
+
 	:: Qmake in the path is the Qmake 32 bit hence the visual studio solution is setup to build against
 	:: 32bit libraries of Qt. The following is to use our compiled version of Qt 64bit
 	::for /f "tokens=*" %a in ('echo %DEP_PATH%^| sed "s/\\/\\\\/g"') do set DEP_PATH_ESCAPED=%a
