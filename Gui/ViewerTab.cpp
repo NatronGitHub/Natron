@@ -3873,7 +3873,7 @@ ViewerTabPrivate::getOverlayTransform(int time,
     Natron::EffectInstance* input = 0;
     Natron::StatusEnum stat = eStatusReplyDefault;
     Transform::Matrix3x3 mat;
-    if (!currentNode->getNode()->isNodeDisabled()) {
+    if (!currentNode->getNode()->isNodeDisabled() && currentNode->getCanTransform()) {
         stat = currentNode->getTransform_public(time, s, view, &input, &mat);
     }
     if (stat == eStatusFailed) {
