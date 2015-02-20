@@ -518,6 +518,8 @@ public:
     Double2DTuple get(int frame) const;
     void set(double x, double y);
     void set(double x, double y, int frame);
+    
+    void activatePointInteract();
 };
 
 class Double3DParam : public Double2DParam

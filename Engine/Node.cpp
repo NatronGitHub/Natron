@@ -174,6 +174,7 @@ struct Node::Implementation
     , persistentMessageType(0)
     , persistentMessageMutex()
     , guiPointer()
+    , nativePositionOverlays()
     {        
         ///Initialize timers
         gettimeofday(&lastRenderStartedSlotCallTime, 0);
@@ -338,6 +339,8 @@ struct Node::Implementation
     mutable QMutex persistentMessageMutex;
     
     boost::weak_ptr<NodeGuiI> guiPointer;
+    
+    std::list<boost::shared_ptr<Double_Knob> > nativePositionOverlays;
 };
 
 /**
@@ -4004,6 +4007,154 @@ Node::shouldDrawOverlay() const
         return false;
     }
     return gui_i->shouldDrawOverlay();
+}
+
+void
+Node::drawDefaultOverlay(double scaleX,double scaleY)
+{
+    boost::shared_ptr<NodeGuiI> nodeGui = getNodeGui();
+    if (nodeGui) {
+        nodeGui->drawDefaultOverlay(scaleX, scaleY);
+    }
+}
+
+bool
+Node::onOverlayPenDownDefault(double scaleX,double scaleY,const QPointF & viewportPos, const QPointF & pos)
+{
+    boost::shared_ptr<NodeGuiI> nodeGui = getNodeGui();
+    if (nodeGui) {
+        return nodeGui->onOverlayPenDownDefault(scaleX, scaleY, viewportPos, pos);
+    }
+    return false;
+}
+
+bool
+Node::onOverlayPenMotionDefault(double scaleX,double scaleY,const QPointF & viewportPos, const QPointF & pos)
+{
+    boost::shared_ptr<NodeGuiI> nodeGui = getNodeGui();
+    if (nodeGui) {
+        return nodeGui->onOverlayPenMotionDefault(scaleX, scaleY, viewportPos, pos);
+    }
+    return false;
+}
+
+bool
+Node::onOverlayPenUpDefault(double scaleX,double scaleY,const QPointF & viewportPos, const QPointF & pos)
+{
+    boost::shared_ptr<NodeGuiI> nodeGui = getNodeGui();
+    if (nodeGui) {
+        return nodeGui->onOverlayPenUpDefault(scaleX, scaleY, viewportPos, pos);
+    }
+    return false;
+}
+
+bool
+Node::onOverlayKeyDownDefault(double scaleX,double scaleY,Natron::Key key,Natron::KeyboardModifiers modifiers)
+{
+    boost::shared_ptr<NodeGuiI> nodeGui = getNodeGui();
+    if (nodeGui) {
+        return nodeGui->onOverlayKeyDownDefault(scaleX, scaleY, key, modifiers);
+    }
+    return false;
+}
+
+bool
+Node::onOverlayKeyUpDefault(double scaleX,double scaleY,Natron::Key key,Natron::KeyboardModifiers modifiers)
+{
+    boost::shared_ptr<NodeGuiI> nodeGui = getNodeGui();
+    if (nodeGui) {
+        return nodeGui->onOverlayKeyUpDefault(scaleX, scaleY, key, modifiers);
+    }
+    return false;
+}
+
+bool
+Node::onOverlayKeyRepeatDefault(double scaleX,double scaleY,Natron::Key key,Natron::KeyboardModifiers modifiers)
+{
+    boost::shared_ptr<NodeGuiI> nodeGui = getNodeGui();
+    if (nodeGui) {
+        return nodeGui->onOverlayKeyRepeatDefault(scaleX, scaleY, key, modifiers);
+    }
+    return false;
+}
+
+bool
+Node::onOverlayFocusGainedDefault(double scaleX,double scaleY)
+{
+    boost::shared_ptr<NodeGuiI> nodeGui = getNodeGui();
+    if (nodeGui) {
+        return nodeGui->onOverlayFocusGainedDefault(scaleX, scaleY);
+    }
+    return false;
+}
+
+bool
+Node::onOverlayFocusLostDefault(double scaleX,double scaleY)
+{
+    boost::shared_ptr<NodeGuiI> nodeGui = getNodeGui();
+    if (nodeGui) {
+        return nodeGui->onOverlayFocusLostDefault(scaleX, scaleY);
+    }
+    return false;
+}
+
+void
+Node::addDefaultPositionOverlay(const boost::shared_ptr<Double_Knob>& position)
+{
+    assert(QThread::currentThread() == qApp->thread());
+    if (appPTR->isBackground()) {
+        return;
+    }
+    boost::shared_ptr<NodeGuiI> nodeGui = getNodeGui();
+    if (!nodeGui) {
+        _imp->nativePositionOverlays.push_back(position);
+    } else if (position->getDimension() == 2) {
+        nodeGui->addDefaultPositionInteract(position);
+    }
+}
+
+void
+Node::initializeDefaultOverlays()
+{
+    boost::shared_ptr<NodeGuiI> nodeGui = getNodeGui();
+    if (!nodeGui) {
+        return;
+    }
+    for (std::list<boost::shared_ptr<Double_Knob> > ::iterator it = _imp->nativePositionOverlays.begin(); it!=_imp->nativePositionOverlays.end(); ++it)
+    {
+        nodeGui->addDefaultPositionInteract(*it);
+    }
+    _imp->nativePositionOverlays.clear();
+}
+
+bool
+Node::hasDefaultOverlayForParam(const KnobI* knob) const
+{
+    boost::shared_ptr<NodeGuiI> nodeGui = getNodeGui();
+    if (nodeGui && nodeGui->hasDefaultOverlayForParam(knob)) {
+        return true;
+    }
+    return false;
+
+}
+
+bool
+Node::hasDefaultOverlay() const
+{
+    boost::shared_ptr<NodeGuiI> nodeGui = getNodeGui();
+    if (nodeGui && nodeGui->hasDefaultOverlay()) {
+        return true;
+    }
+    return false;
+}
+
+void
+Node::setCurrentViewportForDefaultOverlays(OverlaySupport* viewPort)
+{
+    boost::shared_ptr<NodeGuiI> nodeGui = getNodeGui();
+    if (nodeGui && nodeGui->hasDefaultOverlay()) {
+        nodeGui->setCurrentViewportForDefaultOverlays(viewPort);
+    }
 }
 
 void

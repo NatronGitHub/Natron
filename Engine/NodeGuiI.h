@@ -16,6 +16,13 @@
 // "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
 #include <Python.h>
 
+#include "Global/KeySymbols.h"
+#include "Global/Enums.h"
+
+class QPointF;
+class Double_Knob;
+class KnobI;
+class OverlaySupport;
 namespace Natron {
 class Node;
 }
@@ -81,6 +88,36 @@ public :
      * @brief Get the suggested overlay colour
      **/
     virtual bool getOverlayColor(double* r, double* g, double* b) const = 0;
+    
+    /**
+     * @brief Add a default viewer overlay for the given point parameter
+     **/
+    virtual void addDefaultPositionInteract(const boost::shared_ptr<Double_Knob>& point) = 0;
+    
+    virtual void drawDefaultOverlay(double scaleX,double scaleY)  = 0;
+    
+    virtual bool onOverlayPenDownDefault(double scaleX,double scaleY,const QPointF & viewportPos, const QPointF & pos)  = 0;
+    
+    virtual bool onOverlayPenMotionDefault(double scaleX,double scaleY,const QPointF & viewportPos, const QPointF & pos)  = 0;
+    
+    virtual bool onOverlayPenUpDefault(double scaleX,double scaleY,const QPointF & viewportPos, const QPointF & pos)  = 0;
+    
+    virtual bool onOverlayKeyDownDefault(double scaleX,double scaleY,Natron::Key key,Natron::KeyboardModifiers modifiers)  = 0;
+    
+    virtual bool onOverlayKeyUpDefault(double scaleX,double scaleY,Natron::Key key,Natron::KeyboardModifiers modifiers)  = 0;
+    
+    virtual bool onOverlayKeyRepeatDefault(double scaleX,double scaleY,Natron::Key key,Natron::KeyboardModifiers modifiers) = 0;
+    
+    virtual bool onOverlayFocusGainedDefault(double scaleX,double scaleY) = 0;
+    
+    virtual bool onOverlayFocusLostDefault(double scaleX,double scaleY) = 0;
+    
+    virtual bool hasDefaultOverlay() const = 0;
+    
+    virtual void setCurrentViewportForDefaultOverlays(OverlaySupport* viewPort) = 0;
+    
+    virtual bool hasDefaultOverlayForParam(const KnobI* param) = 0;
+
 };
 
 #endif // NODEGUII_H

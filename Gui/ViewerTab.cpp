@@ -1658,7 +1658,7 @@ ViewerTab::drawOverlays(double scaleX,
             
             Natron::EffectInstance* effect = (*it)->getLiveInstance();
             assert(effect);
-            effect->setCurrentViewportForOverlays(_imp->viewer);
+            effect->setCurrentViewportForOverlays_public(_imp->viewer);
             effect->drawOverlay_public(scaleX,scaleY);
         }
 #ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
@@ -1728,7 +1728,7 @@ ViewerTab::notifyOverlaysPenDown_internal(const boost::shared_ptr<Natron::Node>&
         
         Natron::EffectInstance* effect = node->getLiveInstance();
         assert(effect);
-        effect->setCurrentViewportForOverlays(_imp->viewer);
+        effect->setCurrentViewportForOverlays_public(_imp->viewer);
         bool didSmthing = effect->onOverlayPenDown_public(scaleX,scaleY,transformViewportPos, transformPos);
         if (didSmthing) {
             //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
@@ -1930,7 +1930,7 @@ ViewerTab::notifyOverlaysPenMotion_internal(const boost::shared_ptr<Natron::Node
         
         Natron::EffectInstance* effect = node->getLiveInstance();
         assert(effect);
-        effect->setCurrentViewportForOverlays(_imp->viewer);
+        effect->setCurrentViewportForOverlays_public(_imp->viewer);
         bool didSmthing = effect->onOverlayPenMotion_public(scaleX,scaleY,transformViewportPos, transformPos);
         if (didSmthing) {
             //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
@@ -2063,7 +2063,7 @@ ViewerTab::notifyOverlaysPenUp(double scaleX,
         
         Natron::EffectInstance* effect = (*it)->getLiveInstance();
         assert(effect);
-        effect->setCurrentViewportForOverlays(_imp->viewer);
+        effect->setCurrentViewportForOverlays_public(_imp->viewer);
         didSomething |= effect->onOverlayPenUp_public(scaleX,scaleY,transformViewportPos, transformPos);
         
         
@@ -2104,7 +2104,7 @@ ViewerTab::notifyOverlaysKeyDown_internal(const boost::shared_ptr<Natron::Node>&
         
         Natron::EffectInstance* effect = node->getLiveInstance();
         assert(effect);
-        effect->setCurrentViewportForOverlays(_imp->viewer);
+        effect->setCurrentViewportForOverlays_public(_imp->viewer);
         bool didSmthing = effect->onOverlayKeyDown_public(scaleX,scaleY,k,km);
         if (didSmthing) {
             //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
@@ -2197,7 +2197,7 @@ ViewerTab::notifyOverlaysKeyUp(double scaleX,
             }
         }
         
-        effect->setCurrentViewportForOverlays(_imp->viewer);
+        effect->setCurrentViewportForOverlays_public(_imp->viewer);
         didSomething |= effect->onOverlayKeyUp_public( scaleX,scaleY,
                                             QtEnumConvert::fromQtKey( (Qt::Key)e->key() ),QtEnumConvert::fromQtModifiers( e->modifiers() ) );
         
@@ -2233,7 +2233,7 @@ ViewerTab::notifyOverlaysKeyRepeat_internal(const boost::shared_ptr<Natron::Node
         //}
         Natron::EffectInstance* effect = node->getLiveInstance();
         assert(effect);
-        effect->setCurrentViewportForOverlays(_imp->viewer);
+        effect->setCurrentViewportForOverlays_public(_imp->viewer);
         bool didSmthing = effect->onOverlayKeyRepeat_public( scaleX,scaleY,k,km);
         if (didSmthing) {
             //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
@@ -2307,7 +2307,7 @@ ViewerTab::notifyOverlaysFocusGained(double scaleX,
         Natron::EffectInstance* effect = (*it)->getLiveInstance();
         assert(effect);
         
-        effect->setCurrentViewportForOverlays(_imp->viewer);
+        effect->setCurrentViewportForOverlays_public(_imp->viewer);
         bool didSmthing = effect->onOverlayFocusGained_public(scaleX,scaleY);
         if (didSmthing) {
             ret = true;
@@ -2352,7 +2352,7 @@ ViewerTab::notifyOverlaysFocusLost(double scaleX,
         Natron::EffectInstance* effect = (*it)->getLiveInstance();
         assert(effect);
         
-        effect->setCurrentViewportForOverlays(_imp->viewer);
+        effect->setCurrentViewportForOverlays_public(_imp->viewer);
         bool didSmthing = effect->onOverlayFocusLost_public(scaleX,scaleY);
         if (didSmthing) {
             ret = true;

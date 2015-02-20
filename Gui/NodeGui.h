@@ -37,6 +37,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Global/GlobalDefines.h"
 #include "Engine/NodeGuiI.h"
 
+class DefaultOverlay;
 class Edge;
 class QPainterPath;
 class QScrollArea;
@@ -346,7 +347,35 @@ public:
     int getFrameNameHeight() const;
     
     virtual bool getOverlayColor(double* r, double* g, double* b) const OVERRIDE FINAL;
+    
+    virtual void addDefaultPositionInteract(const boost::shared_ptr<Double_Knob>& point) OVERRIDE FINAL;
+    
+    boost::shared_ptr<DefaultOverlay> getDefaultOverlay() const WARN_UNUSED_RETURN;
+    
+    virtual void drawDefaultOverlay(double scaleX,double scaleY)  OVERRIDE FINAL;
+    
+    virtual bool onOverlayPenDownDefault(double scaleX,double scaleY,const QPointF & viewportPos, const QPointF & pos)  OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
+    virtual bool onOverlayPenMotionDefault(double scaleX,double scaleY,const QPointF & viewportPos, const QPointF & pos)  OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
+    virtual bool onOverlayPenUpDefault(double scaleX,double scaleY,const QPointF & viewportPos, const QPointF & pos)  OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
+    virtual bool onOverlayKeyDownDefault(double scaleX,double scaleY,Natron::Key key,Natron::KeyboardModifiers modifiers) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
+    virtual bool onOverlayKeyUpDefault(double scaleX,double scaleY,Natron::Key key,Natron::KeyboardModifiers modifiers)  OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
+    virtual bool onOverlayKeyRepeatDefault(double scaleX,double scaleY,Natron::Key key,Natron::KeyboardModifiers modifiers) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
+    virtual bool onOverlayFocusGainedDefault(double scaleX,double scaleY) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
+    virtual bool onOverlayFocusLostDefault(double scaleX,double scaleY) OVERRIDE FINAL WARN_UNUSED_RETURN;
 
+    virtual bool hasDefaultOverlay() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
+    virtual void setCurrentViewportForDefaultOverlays(OverlaySupport* viewPort) OVERRIDE FINAL;
+
+    virtual bool hasDefaultOverlayForParam(const KnobI* param) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
 protected:
     
     virtual int getBaseDepth() const { return 20; }
@@ -577,7 +606,9 @@ private:
     ///For the serialization thread
     mutable QMutex _mtSafeSizeMutex;
     int _mtSafeWidth,_mtSafeHeight;
-      
+    
+    boost::shared_ptr<DefaultOverlay> _defaultOverlay;
+    
 };
 
 

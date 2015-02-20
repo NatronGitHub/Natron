@@ -257,7 +257,7 @@ TrackerGui::drawOverlays(double scaleX,
                 ///The track is selected, use the plug-ins interact
                 Natron::EffectInstance* effect = instance->getLiveInstance();
                 assert(effect);
-                effect->setCurrentViewportForOverlays( _imp->viewer->getViewer() );
+                effect->setCurrentViewportForOverlays_public( _imp->viewer->getViewer() );
                 effect->drawOverlay_public(scaleX,scaleY);
             } else {
                 ///Draw a custom interact, indicating the track isn't selected
@@ -359,7 +359,7 @@ TrackerGui::penDown(double scaleX,
         if ( it->second && !instance->isNodeDisabled() ) {
             Natron::EffectInstance* effect = instance->getLiveInstance();
             assert(effect);
-            effect->setCurrentViewportForOverlays( _imp->viewer->getViewer() );
+            effect->setCurrentViewportForOverlays_public( _imp->viewer->getViewer() );
             didSomething = effect->onOverlayPenDown_public(scaleX,scaleY,viewportPos, pos);
         }
     }
@@ -436,7 +436,7 @@ TrackerGui::penMotion(double scaleX,
         if ( it->second && !instance->isNodeDisabled() ) {
             Natron::EffectInstance* effect = instance->getLiveInstance();
             assert(effect);
-            effect->setCurrentViewportForOverlays( _imp->viewer->getViewer() );
+            effect->setCurrentViewportForOverlays_public( _imp->viewer->getViewer() );
             if ( effect->onOverlayPenMotion_public(scaleX,scaleY,viewportPos, pos) ) {
                 didSomething = true;
             }
@@ -468,7 +468,7 @@ TrackerGui::penUp(double scaleX,
         if ( it->second && !instance->isNodeDisabled() ) {
             Natron::EffectInstance* effect = instance->getLiveInstance();
             assert(effect);
-            effect->setCurrentViewportForOverlays( _imp->viewer->getViewer() );
+            effect->setCurrentViewportForOverlays_public( _imp->viewer->getViewer() );
             didSomething = effect->onOverlayPenUp_public(scaleX,scaleY,viewportPos, pos);
             if (didSomething) {
                 return true;
@@ -502,7 +502,7 @@ TrackerGui::keyDown(double scaleX,
         if ( it->second && !instance->isNodeDisabled() ) {
             Natron::EffectInstance* effect = instance->getLiveInstance();
             assert(effect);
-            effect->setCurrentViewportForOverlays( _imp->viewer->getViewer() );
+            effect->setCurrentViewportForOverlays_public( _imp->viewer->getViewer() );
             didSomething = effect->onOverlayKeyDown_public(scaleX, scaleY, natronKey, natronMod);
             if (didSomething) {
                 return true;
@@ -576,7 +576,7 @@ TrackerGui::keyUp(double scaleX,
         if ( it->second && !instance->isNodeDisabled() ) {
             Natron::EffectInstance* effect = instance->getLiveInstance();
             assert(effect);
-            effect->setCurrentViewportForOverlays( _imp->viewer->getViewer() );
+            effect->setCurrentViewportForOverlays_public( _imp->viewer->getViewer() );
             didSomething = effect->onOverlayKeyUp_public(scaleX, scaleY, natronKey, natronMod);
             if (didSomething) {
                 return true;
@@ -609,7 +609,7 @@ TrackerGui::loseFocus(double scaleX,
         if ( it->second && !instance->isNodeDisabled() ) {
             Natron::EffectInstance* effect = instance->getLiveInstance();
             assert(effect);
-            effect->setCurrentViewportForOverlays( _imp->viewer->getViewer() );
+            effect->setCurrentViewportForOverlays_public( _imp->viewer->getViewer() );
             didSomething |= effect->onOverlayFocusLost_public(scaleX, scaleY);
         }
     }

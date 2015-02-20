@@ -16,6 +16,7 @@ See :doc:`DoubleParam` for more informations on this class.
 Functions
 ^^^^^^^^^
 
+*	 def :meth:`activatePointInteract<NatronEngine.Double2DParam.activatePointInteract` ()
 *    def :meth:`get<NatronEngine.Double2DParam.get>` ()
 *    def :meth:`get<NatronEngine.Double2DParam.get>` (frame)
 *    def :meth:`set<NatronEngine.Double2DParam.set>` (x, y)
@@ -24,6 +25,15 @@ Functions
 
 Member functions description
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. method:: NatronEngine.Double2DParam.activatePointInteract()
+
+When called, the parameter will have its own overlay interact on the viewer as a point
+that the user can select and drag.
+
+.. figure:: ../../positionInteract.png
+	:width: 400px
+	:align: center
 
 .. method:: NatronEngine.Double2DParam.get()
 	

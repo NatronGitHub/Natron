@@ -2070,9 +2070,10 @@ OfxEffectInstance::onOverlayPenDown(double scaleX,
 
         OfxStatus stat = _overlayInteract->penDownAction(time, rs, penPos, penPosViewport, 1.);
         
+
         if (getRecursionLevel() == 1 && checkIfOverlayRedrawNeeded()) {
-            stat = _overlayInteract->redraw();
-            assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
+            OfxStatus redrawstat = _overlayInteract->redraw();
+            assert(redrawstat == kOfxStatOK || redrawstat == kOfxStatReplyDefault);
         }
 
         if (stat == kOfxStatOK) {
@@ -2428,8 +2429,7 @@ OfxEffectInstance::knobChanged(KnobI* k,
     std::string ofxReason = natronValueChangedReasonToOfxValueChangedReason(reason);
     assert( !ofxReason.empty() ); // crashes when resetting to defaults
     OfxPointD renderScale;
-    if (isDoingInteractAction()) {
-        assert(_overlayInteract);
+    if (isDoingInteractAction() && _overlayInteract) {
         OverlaySupport* lastInteract = _overlayInteract->getLastCallingViewport();
         assert(lastInteract);
         unsigned int mmLevel = lastInteract->getCurrentRenderScale();
@@ -2481,7 +2481,7 @@ OfxEffectInstance::knobChanged(KnobI* k,
             RECURSIVE_ACTION();
             checkOFXClipPreferences_public(time, renderScale, ofxReason,true, true);
         }
-        if (_overlayInteract && getNode()->shouldDrawOverlay()) {
+        if (_overlayInteract && getNode()->shouldDrawOverlay() && !getNode()->hasDefaultOverlayForParam(k)) {
             // Some plugins (e.g. by digital film tools) forget to set kOfxInteractPropSlaveToParam.
             // Most hosts trigger a redraw if the plugin has an active overlay.
             //if (std::find(_overlaySlaves.begin(), _overlaySlaves.end(), (void*)k) != _overlaySlaves.end()) {

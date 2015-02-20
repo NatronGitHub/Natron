@@ -33,6 +33,31 @@ Double2DParamWrapper::~Double2DParamWrapper()
 // Target ---------------------------------------------------------
 
 extern "C" {
+static PyObject* Sbk_Double2DParamFunc_activatePointInteract(PyObject* self)
+{
+    Double2DParamWrapper* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = (Double2DParamWrapper*)((::Double2DParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_DOUBLE2DPARAM_IDX], (SbkObject*)self));
+
+    // Call function/method
+    {
+
+        if (!PyErr_Occurred()) {
+            // activatePointInteract()
+            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+            cppSelf->activatePointInteract();
+            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+        }
+    }
+
+    if (PyErr_Occurred()) {
+        return 0;
+    }
+    Py_RETURN_NONE;
+}
+
 static PyObject* Sbk_Double2DParamFunc_get(PyObject* self, PyObject* args)
 {
     Double2DParamWrapper* cppSelf = 0;
@@ -194,6 +219,7 @@ static PyObject* Sbk_Double2DParamFunc_set(PyObject* self, PyObject* args)
 }
 
 static PyMethodDef Sbk_Double2DParam_methods[] = {
+    {"activatePointInteract", (PyCFunction)Sbk_Double2DParamFunc_activatePointInteract, METH_NOARGS},
     {"get", (PyCFunction)Sbk_Double2DParamFunc_get, METH_VARARGS},
     {"set", (PyCFunction)Sbk_Double2DParamFunc_set, METH_VARARGS},
 

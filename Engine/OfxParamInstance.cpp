@@ -1413,6 +1413,10 @@ OfxDouble2DInstance::OfxDouble2DInstance(OfxEffectInstance* node,
     setDisplayRange();
     _knob->setIncrement(increment);
     _knob->setDecimals(decimals);
+    
+    if (properties.getIntProperty(kOfxParamPropUseHostOverlayHandle) == 1) {
+        _knob->setHasNativeOverlayHandle(true);
+    }
 
     if (coordSystem == kOfxParamCoordinatesNormalised) {
         _knob->setDefaultValuesNormalized( dims,def.get() );

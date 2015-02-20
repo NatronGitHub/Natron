@@ -66,6 +66,7 @@ SOURCES += \
     CurveEditorUndoRedo.cpp \
     CurveWidget.cpp \
     CustomParamInteract.cpp \
+    DefaultOverlays.cpp \
     DockablePanel.cpp \
     Edge.cpp \
     FromQtEnums.cpp \
@@ -142,6 +143,7 @@ HEADERS += \
     CurveSelection.h \
     CurveWidget.h \
     CustomParamInteract.h \
+    DefaultOverlays.h \
     DockablePanel.h \
     Edge.h \
     FromQtEnums.h \

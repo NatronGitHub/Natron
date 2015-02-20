@@ -856,9 +856,16 @@ public:
     {
     }
 
-    virtual void setCurrentViewportForOverlays(OverlaySupport* /*viewport*/)
-    {
-    }
+    void setCurrentViewportForOverlays_public(OverlaySupport* viewport);
+
+protected:
+
+virtual void setCurrentViewportForOverlays(OverlaySupport* /*viewport*/)
+{
+}
+
+public:
+
 
     /**
      * @brief Overload this and return true if your operator should dislay a preview image by default.

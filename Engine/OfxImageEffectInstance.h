@@ -29,6 +29,7 @@ class RectD;
 
 namespace OFX {
     namespace Host {
+        class Plugin;
         namespace Property
         {
             class Set;
@@ -286,6 +287,23 @@ private:
        This has nothing to do with the base class _params member! */
     std::map<OFX::Host::Param::Instance*,std::string> _parentingMap;
 };
+
+class OfxImageEffectDescriptor : public OFX::Host::ImageEffect::Descriptor
+{
+public:
+    
+    OfxImageEffectDescriptor(OFX::Host::Plugin *plug);
+    
+    OfxImageEffectDescriptor(const std::string &bundlePath, OFX::Host::Plugin *plug);
+    
+    OfxImageEffectDescriptor(const OFX::Host::ImageEffect::Descriptor &rootContext,
+                             OFX::Host::Plugin *plugin);
+    
+    virtual OFX::Host::Param::Descriptor *paramDefine(const char *paramType,
+                                    const char *name) OVERRIDE FINAL;
+    
+};
+
 } // namespace Natron
 
 #endif // ifndef NATRON_ENGINE_OFXIMAGEEFFECTINSTANCE_H_

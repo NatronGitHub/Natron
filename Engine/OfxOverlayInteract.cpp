@@ -27,25 +27,17 @@
 
 using namespace Natron;
 
-namespace {
-    // an RAII class to save OpenGL context
-    class OGLContextSaver {
-    public:
-        OGLContextSaver(OverlaySupport* viewport)
-        : _viewport(viewport)
-        {
-            assert(_viewport);
-            _viewport->saveOpenGLContext();
-        }
-
-        ~OGLContextSaver() {
-            _viewport->restoreOpenGLContext();
-        }
-
-    private:
-        OverlaySupport* const _viewport;
-    };
+NatronOverlayInteractSupport::OGLContextSaver::OGLContextSaver(OverlaySupport* viewport)
+: _viewport(viewport)
+{
+    assert(_viewport);
+    _viewport->saveOpenGLContext();
 }
+
+NatronOverlayInteractSupport::OGLContextSaver::~OGLContextSaver() {
+    _viewport->restoreOpenGLContext();
+}
+
 
 OfxOverlayInteract::OfxOverlayInteract(OfxImageEffectInstance &v,
                                        int bitDepthPerComponent,
@@ -71,7 +63,7 @@ OfxStatus
 OfxOverlayInteract::drawAction(OfxTime time,
                                const OfxPointD &renderScale)
 {
-    OGLContextSaver s(_viewport);
+    NatronOverlayInteractSupport::OGLContextSaver s(_viewport);
     OfxStatus stat = OFX::Host::ImageEffect::OverlayInteract::drawAction(time, renderScale);
     return stat;
 }

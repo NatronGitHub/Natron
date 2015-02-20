@@ -198,7 +198,7 @@ OFX::Host::ImageEffect::Descriptor *
 Natron::OfxHost::makeDescriptor(OFX::Host::ImageEffect::ImageEffectPlugin* plugin)
 {
     assert(plugin);
-    OFX::Host::ImageEffect::Descriptor *desc = new OFX::Host::ImageEffect::Descriptor(plugin);
+    OFX::Host::ImageEffect::Descriptor *desc = new OfxImageEffectDescriptor(plugin);
 
     return desc;
 }
@@ -209,7 +209,7 @@ Natron::OfxHost::makeDescriptor(const OFX::Host::ImageEffect::Descriptor &rootCo
                                 OFX::Host::ImageEffect::ImageEffectPlugin *plugin)
 {
     assert(plugin);
-    OFX::Host::ImageEffect::Descriptor *desc = new OFX::Host::ImageEffect::Descriptor(rootContext, plugin);
+    OFX::Host::ImageEffect::Descriptor *desc = new OfxImageEffectDescriptor(rootContext, plugin);
 
     return desc;
 }
@@ -220,7 +220,7 @@ Natron::OfxHost::makeDescriptor(const std::string &bundlePath,
                                 OFX::Host::ImageEffect::ImageEffectPlugin *plugin)
 {
     assert(plugin);
-    OFX::Host::ImageEffect::Descriptor *desc = new OFX::Host::ImageEffect::Descriptor(bundlePath, plugin);
+    OFX::Host::ImageEffect::Descriptor *desc = new OfxImageEffectDescriptor(bundlePath, plugin);
 
     return desc;
 }

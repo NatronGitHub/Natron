@@ -1038,3 +1038,51 @@ OfxImageEffectInstance::isInAnalysis() const
 {
     return _properties.getIntProperty(kOfxImageEffectPropInAnalysis) == 1;
 }
+
+OfxImageEffectDescriptor::OfxImageEffectDescriptor(OFX::Host::Plugin *plug)
+: OFX::Host::ImageEffect::Descriptor(plug)
+{
+    
+}
+
+OfxImageEffectDescriptor::OfxImageEffectDescriptor(const std::string &bundlePath, OFX::Host::Plugin *plug)
+: OFX::Host::ImageEffect::Descriptor(bundlePath,plug)
+{
+    
+}
+
+
+OfxImageEffectDescriptor::OfxImageEffectDescriptor(const OFX::Host::ImageEffect::Descriptor &rootContext,
+                         OFX::Host::Plugin *plugin)
+: OFX::Host::ImageEffect::Descriptor(rootContext,plugin)
+{
+    
+}
+
+OFX::Host::Param::Descriptor *
+OfxImageEffectDescriptor::paramDefine(const char *paramType,
+                                        const char *name)
+{
+    static const OFX::Host::Property::PropSpec nativeOverlaysProps[] = {
+        { kOfxParamPropHasHostOverlayHandle,  OFX::Host::Property::eInt,    1,    true,    "0" },
+        { kOfxParamPropUseHostOverlayHandle,  OFX::Host::Property::eInt,    1,    false,    "0" },
+        OFX::Host::Property::propSpecEnd
+    };
+    
+    OFX::Host::Param::Descriptor *ret = OFX::Host::Param::SetDescriptor::paramDefine(paramType, name);
+    OFX::Host::Property::Set& props = ret->getProperties();
+    props.addProperties(nativeOverlaysProps);
+    
+    if (strcmp(paramType, kOfxParamTypeDouble2D) == 0) {
+        
+        const std::string& type = props.getStringProperty(kOfxParamPropDoubleType) ;
+        if (type == std::string(kOfxParamDoubleTypePlain) ||
+            type == std::string(kOfxParamDoubleTypeNormalisedXYAbsolute) ||
+            type == std::string(kOfxParamDoubleTypeNormalisedXY) ||
+            type == std::string(kOfxParamDoubleTypeXY) ||
+            type == std::string(kOfxParamDoubleTypeXYAbsolute)) {
+            props.setIntProperty(kOfxParamPropHasHostOverlayHandle, 1);
+        }
+    }
+    return ret;
+}

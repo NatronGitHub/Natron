@@ -52,6 +52,7 @@ class TimeLine;
 class NodeSerialization;
 class KnobSerialization;
 class KnobHolder;
+class OverlaySupport;
 class Double_Knob;
 class NodeGuiI;
 class RotoContext;
@@ -856,6 +857,35 @@ public:
     bool getOverlayColor(double* r,double* g,double* b) const;
     
     bool shouldDrawOverlay() const;
+    
+    
+    void drawDefaultOverlay(double scaleX,double scaleY);
+    
+    bool onOverlayPenDownDefault(double scaleX,double scaleY,const QPointF & viewportPos, const QPointF & pos) WARN_UNUSED_RETURN;
+    
+    bool onOverlayPenMotionDefault(double scaleX,double scaleY,const QPointF & viewportPos, const QPointF & pos) WARN_UNUSED_RETURN;
+    
+    bool onOverlayPenUpDefault(double scaleX,double scaleY,const QPointF & viewportPos, const QPointF & pos) WARN_UNUSED_RETURN;
+    
+    bool onOverlayKeyDownDefault(double scaleX,double scaleY,Natron::Key key,Natron::KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
+    
+    bool onOverlayKeyUpDefault(double scaleX,double scaleY,Natron::Key key,Natron::KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
+    
+    bool onOverlayKeyRepeatDefault(double scaleX,double scaleY,Natron::Key key,Natron::KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
+    
+    bool onOverlayFocusGainedDefault(double scaleX,double scaleY) WARN_UNUSED_RETURN;
+    
+    bool onOverlayFocusLostDefault(double scaleX,double scaleY) WARN_UNUSED_RETURN;
+    
+    void addDefaultPositionOverlay(const boost::shared_ptr<Double_Knob>& position);
+    
+    void initializeDefaultOverlays();
+    
+    bool hasDefaultOverlay() const;
+    
+    void setCurrentViewportForDefaultOverlays(OverlaySupport* viewPort);
+    
+    bool hasDefaultOverlayForParam(const KnobI* knob) const;
 
 private:
     

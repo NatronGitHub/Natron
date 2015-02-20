@@ -13,7 +13,8 @@
 #include <Python.h>
 
 #include "ParameterWrapper.h"
-
+#include "Engine/EffectInstance.h"
+#include "Engine/Node.h"
 
 Param::Param(const boost::shared_ptr<KnobI>& knob)
 : _knob(knob)
@@ -597,6 +598,21 @@ Double2DParam::set(double x, double y, int frame)
 }
 
 void
+Double2DParam::activatePointInteract()
+{
+    KnobHolder* holder = _doubleKnob->getHolder();
+    if (holder && _doubleKnob->getDimension() == 2) {
+        Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(holder);
+        if (effect) {
+            boost::shared_ptr<Natron::Node> node = effect->getNode();
+            if (node) {
+                node->addDefaultPositionOverlay(_doubleKnob);
+            }
+        }
+    }
+}
+
+void
 Double3DParam::set(double x, double y, double z, int frame)
 {
     _doubleKnob->beginChanges();
@@ -605,6 +621,7 @@ Double3DParam::set(double x, double y, double z, int frame)
     _doubleKnob->setValueAtTime(frame,z, 2);
     _doubleKnob->endChanges();
 }
+
 
 double
 DoubleParam::getValue(int dimension) const

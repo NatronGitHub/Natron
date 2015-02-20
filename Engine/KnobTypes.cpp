@@ -163,7 +163,7 @@ Double_Knob::Double_Knob(KnobHolder* holder,
 , _disableSlider(false)
 , _normalizationXY()
 , _defaultStoredNormalized(false)
-
+, _hasNativeOverlayHandle(false)
 {
     _normalizationXY.first = eNormalizedStateNone;
     _normalizationXY.second = eNormalizedStateNone;
@@ -172,6 +172,34 @@ Double_Knob::Double_Knob(KnobHolder* holder,
         _increments[i] = 1.;
         _decimals[i] = 2;
     }
+}
+
+void
+Double_Knob::setHasNativeOverlayHandle(bool handle)
+{
+    KnobHolder* holder = getHolder();
+    if (holder && handle) {
+        Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(holder);
+        if (!effect) {
+            return;
+        }
+        if (!effect->getNode()) {
+            return;
+        }
+        boost::shared_ptr<KnobI> thisShared = holder->getKnobByName(getName());
+        assert(thisShared);
+        boost::shared_ptr<Double_Knob> thisSharedDouble = boost::dynamic_pointer_cast<Double_Knob>(thisShared);
+        assert(thisSharedDouble);
+        effect->getNode()->addDefaultPositionOverlay(thisSharedDouble);
+       _hasNativeOverlayHandle = handle;
+    }
+    
+}
+
+bool
+Double_Knob::getHasNativeOverlayHandle()
+{
+    return _hasNativeOverlayHandle;
 }
 
 void

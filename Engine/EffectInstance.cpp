@@ -3581,12 +3581,19 @@ EffectInstance::onKnobSlaved(KnobI* slave,KnobI* master,
 }
 
 void
+EffectInstance::setCurrentViewportForOverlays_public(OverlaySupport* viewport)
+{
+    getNode()->setCurrentViewportForDefaultOverlays(viewport);
+    setCurrentViewportForOverlays(viewport);
+}
+
+void
 EffectInstance::drawOverlay_public(double scaleX,
                                    double scaleY)
 {
     ///cannot be run in another thread
     assert( QThread::currentThread() == qApp->thread() );
-    if ( !hasOverlay() ) {
+    if ( !hasOverlay() && !getNode()->hasDefaultOverlay() ) {
         return;
     }
 
@@ -3594,6 +3601,7 @@ EffectInstance::drawOverlay_public(double scaleX,
 
     _imp->setDuringInteractAction(true);
     drawOverlay(scaleX,scaleY);
+    getNode()->drawDefaultOverlay(scaleX, scaleY);
     _imp->setDuringInteractAction(false);
 }
 
@@ -3605,7 +3613,7 @@ EffectInstance::onOverlayPenDown_public(double scaleX,
 {
     ///cannot be run in another thread
     assert( QThread::currentThread() == qApp->thread() );
-    if ( !hasOverlay() ) {
+    if ( !hasOverlay()  && !getNode()->hasDefaultOverlay() ) {
         return false;
     }
     
@@ -3614,6 +3622,9 @@ EffectInstance::onOverlayPenDown_public(double scaleX,
         NON_RECURSIVE_ACTION();
         _imp->setDuringInteractAction(true);
         ret = onOverlayPenDown(scaleX,scaleY,viewportPos, pos);
+        if (!ret) {
+            ret |= getNode()->onOverlayPenDownDefault(scaleX, scaleY, viewportPos, pos);
+        }
         _imp->setDuringInteractAction(false);
     }
     checkIfRenderNeeded();
@@ -3629,7 +3640,7 @@ EffectInstance::onOverlayPenMotion_public(double scaleX,
 {
     ///cannot be run in another thread
     assert( QThread::currentThread() == qApp->thread() );
-    if ( !hasOverlay() ) {
+    if ( !hasOverlay()  && !getNode()->hasDefaultOverlay() ) {
         return false;
     }
     
@@ -3637,6 +3648,9 @@ EffectInstance::onOverlayPenMotion_public(double scaleX,
     NON_RECURSIVE_ACTION();
     _imp->setDuringInteractAction(true);
     bool ret = onOverlayPenMotion(scaleX,scaleY,viewportPos, pos);
+    if (!ret) {
+        ret |= getNode()->onOverlayPenMotionDefault(scaleX, scaleY, viewportPos, pos);
+    }
     _imp->setDuringInteractAction(false);
     //Don't chek if render is needed on pen motion, wait for the pen up
 
@@ -3652,7 +3666,7 @@ EffectInstance::onOverlayPenUp_public(double scaleX,
 {
     ///cannot be run in another thread
     assert( QThread::currentThread() == qApp->thread() );
-    if ( !hasOverlay() ) {
+    if ( !hasOverlay()  && !getNode()->hasDefaultOverlay() ) {
         return false;
     }
     bool ret;
@@ -3660,6 +3674,9 @@ EffectInstance::onOverlayPenUp_public(double scaleX,
         NON_RECURSIVE_ACTION();
         _imp->setDuringInteractAction(true);
         ret = onOverlayPenUp(scaleX,scaleY,viewportPos, pos);
+        if (!ret) {
+            ret |= getNode()->onOverlayPenUpDefault(scaleX, scaleY, viewportPos, pos);
+        }
         _imp->setDuringInteractAction(false);
     }
     checkIfRenderNeeded();
@@ -3675,7 +3692,7 @@ EffectInstance::onOverlayKeyDown_public(double scaleX,
 {
     ///cannot be run in another thread
     assert( QThread::currentThread() == qApp->thread() );
-    if ( !hasOverlay() ) {
+    if ( !hasOverlay()  && !getNode()->hasDefaultOverlay() ) {
         return false;
     }
 
@@ -3684,6 +3701,9 @@ EffectInstance::onOverlayKeyDown_public(double scaleX,
         NON_RECURSIVE_ACTION();
         _imp->setDuringInteractAction(true);
         ret = onOverlayKeyDown(scaleX,scaleY,key, modifiers);
+        if (!ret) {
+            ret |= getNode()->onOverlayKeyDownDefault(scaleX, scaleY, key, modifiers);
+        }
         _imp->setDuringInteractAction(false);
     }
     checkIfRenderNeeded();
@@ -3699,7 +3719,7 @@ EffectInstance::onOverlayKeyUp_public(double scaleX,
 {
     ///cannot be run in another thread
     assert( QThread::currentThread() == qApp->thread() );
-    if ( !hasOverlay() ) {
+    if ( !hasOverlay()  && !getNode()->hasDefaultOverlay() ) {
         return false;
     }
     
@@ -3709,6 +3729,9 @@ EffectInstance::onOverlayKeyUp_public(double scaleX,
         
         _imp->setDuringInteractAction(true);
         ret = onOverlayKeyUp(scaleX, scaleY, key, modifiers);
+        if (!ret) {
+            ret |= getNode()->onOverlayKeyUpDefault(scaleX, scaleY, key, modifiers);
+        }
         _imp->setDuringInteractAction(false);
     }
     checkIfRenderNeeded();
@@ -3724,7 +3747,7 @@ EffectInstance::onOverlayKeyRepeat_public(double scaleX,
 {
     ///cannot be run in another thread
     assert( QThread::currentThread() == qApp->thread() );
-    if ( !hasOverlay() ) {
+    if ( !hasOverlay()  && !getNode()->hasDefaultOverlay() ) {
         return false;
     }
     
@@ -3733,6 +3756,9 @@ EffectInstance::onOverlayKeyRepeat_public(double scaleX,
         NON_RECURSIVE_ACTION();
         _imp->setDuringInteractAction(true);
         ret = onOverlayKeyRepeat(scaleX,scaleY,key, modifiers);
+        if (!ret) {
+            ret |= getNode()->onOverlayKeyRepeatDefault(scaleX, scaleY, key, modifiers);
+        }
         _imp->setDuringInteractAction(false);
     }
     checkIfRenderNeeded();
@@ -3746,7 +3772,7 @@ EffectInstance::onOverlayFocusGained_public(double scaleX,
 {
     ///cannot be run in another thread
     assert( QThread::currentThread() == qApp->thread() );
-    if ( !hasOverlay() ) {
+    if ( !hasOverlay() && !getNode()->hasDefaultOverlay()  ) {
         return false;
     }
     
@@ -3755,6 +3781,9 @@ EffectInstance::onOverlayFocusGained_public(double scaleX,
         NON_RECURSIVE_ACTION();
         _imp->setDuringInteractAction(true);
         ret = onOverlayFocusGained(scaleX,scaleY);
+        if (!ret) {
+            ret |= getNode()->onOverlayFocusGainedDefault(scaleX, scaleY);
+        }
         _imp->setDuringInteractAction(false);
     }
     checkIfRenderNeeded();
@@ -3768,7 +3797,7 @@ EffectInstance::onOverlayFocusLost_public(double scaleX,
 {
     ///cannot be run in another thread
     assert( QThread::currentThread() == qApp->thread() );
-    if ( !hasOverlay() ) {
+    if ( !hasOverlay() && !getNode()->hasDefaultOverlay()  ) {
         return false;
     }
     bool ret;
@@ -3777,6 +3806,9 @@ EffectInstance::onOverlayFocusLost_public(double scaleX,
         NON_RECURSIVE_ACTION();
         _imp->setDuringInteractAction(true);
         ret = onOverlayFocusLost(scaleX,scaleY);
+        if (!ret) {
+            ret |= getNode()->onOverlayFocusLostDefault(scaleX, scaleY);
+        }
         _imp->setDuringInteractAction(false);
     }
     checkIfRenderNeeded();
