@@ -593,8 +593,10 @@ void
 Int_KnobGui::reflectExpressionState(int dimension,bool hasExpr)
 {
     _spinBoxes[dimension].first->setAnimation(3);
-    _spinBoxes[dimension].first->setReadOnly(hasExpr);
-    if (_slider) {
+    if (!_spinBoxes[dimension].first->isReadOnly()) {
+        _spinBoxes[dimension].first->setReadOnly(hasExpr);
+    }
+    if (_slider && !_slider->isReadOnly()) {
         _slider->setReadOnly(hasExpr);
     }
 }
@@ -1346,8 +1348,11 @@ void
 Double_KnobGui::reflectExpressionState(int dimension,bool hasExpr)
 {
     _spinBoxes[dimension].first->setAnimation(3);
-    _spinBoxes[dimension].first->setReadOnly(hasExpr);
-    if (_slider) {
+    if (!_spinBoxes[dimension].first->isReadOnly()) {
+        _spinBoxes[dimension].first->setReadOnly(hasExpr);
+    }
+    if (_slider && !_slider->isReadOnly()) {
+        
         _slider->setReadOnly(hasExpr);
     }
 }
