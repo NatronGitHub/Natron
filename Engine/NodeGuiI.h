@@ -117,6 +117,8 @@ public :
     virtual void setCurrentViewportForDefaultOverlays(OverlaySupport* viewPort) = 0;
     
     virtual bool hasDefaultOverlayForParam(const KnobI* param) = 0;
+    
+    virtual void removeDefaultOverlay(KnobI* knob) = 0;
 
 };
 

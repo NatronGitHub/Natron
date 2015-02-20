@@ -178,7 +178,7 @@ void
 Double_Knob::setHasNativeOverlayHandle(bool handle)
 {
     KnobHolder* holder = getHolder();
-    if (holder && handle) {
+    if (holder) {
         Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(holder);
         if (!effect) {
             return;
@@ -190,14 +190,18 @@ Double_Knob::setHasNativeOverlayHandle(bool handle)
         assert(thisShared);
         boost::shared_ptr<Double_Knob> thisSharedDouble = boost::dynamic_pointer_cast<Double_Knob>(thisShared);
         assert(thisSharedDouble);
-        effect->getNode()->addDefaultPositionOverlay(thisSharedDouble);
+        if (handle) {
+            effect->getNode()->addDefaultPositionOverlay(thisSharedDouble);
+        } else {
+            effect->getNode()->removeDefaultOverlay(this);
+        }
        _hasNativeOverlayHandle = handle;
     }
     
 }
 
 bool
-Double_Knob::getHasNativeOverlayHandle()
+Double_Knob::getHasNativeOverlayHandle() const
 {
     return _hasNativeOverlayHandle;
 }

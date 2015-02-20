@@ -879,6 +879,8 @@ public:
     
     void addDefaultPositionOverlay(const boost::shared_ptr<Double_Knob>& position);
     
+    void removeDefaultOverlay(KnobI* knob);
+    
     void initializeDefaultOverlays();
     
     bool hasDefaultOverlay() const;

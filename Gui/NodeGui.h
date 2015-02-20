@@ -376,6 +376,7 @@ public:
 
     virtual bool hasDefaultOverlayForParam(const KnobI* param) OVERRIDE FINAL WARN_UNUSED_RETURN;
     
+    virtual void removeDefaultOverlay(KnobI* knob) OVERRIDE FINAL;
 protected:
     
     virtual int getBaseDepth() const { return 20; }

@@ -289,7 +289,9 @@ public:
 
     void setHasNativeOverlayHandle(bool handle);
     
-    bool getHasNativeOverlayHandle();
+    bool getHasNativeOverlayHandle() const;
+    
+    virtual bool useNativeOverlayHandle() const { return getHasNativeOverlayHandle(); }
     
 public Q_SLOTS:
 

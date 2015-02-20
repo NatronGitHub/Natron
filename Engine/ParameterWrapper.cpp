@@ -598,18 +598,12 @@ Double2DParam::set(double x, double y, int frame)
 }
 
 void
-Double2DParam::activatePointInteract()
+Double2DParam::setUsePointInteract(bool use)
 {
-    KnobHolder* holder = _doubleKnob->getHolder();
-    if (holder && _doubleKnob->getDimension() == 2) {
-        Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(holder);
-        if (effect) {
-            boost::shared_ptr<Natron::Node> node = effect->getNode();
-            if (node) {
-                node->addDefaultPositionOverlay(_doubleKnob);
-            }
-        }
+    if (!_doubleKnob) {
+        return;
     }
+    _doubleKnob->setHasNativeOverlayHandle(use);
 }
 
 void

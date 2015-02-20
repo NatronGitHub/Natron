@@ -10,7 +10,7 @@
 
 
 #include "DefaultOverlays.h"
-#include <vector>
+#include <list>
 #include <cmath>
 
 #include "Gui/NodeGui.h"
@@ -73,7 +73,7 @@ inline double fround(double val,
     return pscale10 * std::floor(val / pscale10 + 0.5);
 }
     
-typedef std::vector<PositionInteract> PositionInteracts;
+typedef std::list<PositionInteract> PositionInteracts;
     
 }
 
@@ -375,6 +375,26 @@ DefaultOverlay::hasDefaultOverlayForParam(const KnobI* param)
         if (it->param.get() == param) {
             return true;
         }
+    }
+    return false;
+}
+
+void
+DefaultOverlay::removeDefaultOverlay(KnobI* knob)
+{
+    for (PositionInteracts::iterator it = _imp->positions.begin(); it != _imp->positions.end(); ++it) {
+        if (it->param.get() == knob) {
+            _imp->positions.erase(it);
+            return;
+        }
+    }
+}
+
+bool
+DefaultOverlay::isEmpty() const
+{
+    if (_imp->positions.empty()) {
+        return true;
     }
     return false;
 }

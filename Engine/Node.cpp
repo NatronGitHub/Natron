@@ -858,6 +858,7 @@ Node::restoreKnobsLinks(const NodeSerialization & serialization,
         (*it)->restoreKnobLinks(knob,allNodes);
         (*it)->restoreExpressions(knob);
         (*it)->restoreTracks(knob,allNodes);
+      
     }
     
     const std::list<boost::shared_ptr<GroupKnobSerialization> >& userKnobs = serialization.getUserPages();
@@ -942,6 +943,14 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
                 }
                 k->setMinimumsAndMaximums(minimums, maximums);
                 knob = k;
+                
+                if (isRegular->getUseHostOverlayHandle()) {
+                    Double_Knob* isDbl = dynamic_cast<Double_Knob*>(knob.get());
+                    if (isDbl) {
+                        isDbl->setHasNativeOverlayHandle(true);
+                    }
+                }
+                
             } else if (isBool) {
                 boost::shared_ptr<Bool_Knob> k = Natron::createKnob<Bool_Knob>(liveInstance.get(), isRegular->getLabel() ,
                                                                              sKnob->getDimension(), false);
@@ -4096,6 +4105,15 @@ Node::onOverlayFocusLostDefault(double scaleX,double scaleY)
         return nodeGui->onOverlayFocusLostDefault(scaleX, scaleY);
     }
     return false;
+}
+
+void
+Node::removeDefaultOverlay(KnobI* knob)
+{
+    boost::shared_ptr<NodeGuiI> nodeGui = getNodeGui();
+    if (nodeGui) {
+        nodeGui->removeDefaultOverlay(knob);
+    }
 }
 
 void

@@ -3299,3 +3299,15 @@ NodeGui::hasDefaultOverlayForParam(const KnobI* param)
     }
     return false;
 }
+
+void
+NodeGui::removeDefaultOverlay(KnobI* knob)
+{
+    if (_defaultOverlay) {
+        _defaultOverlay->removeDefaultOverlay(knob);
+        if (_defaultOverlay->isEmpty()) {
+            _defaultOverlay.reset();
+        }
+    }
+}
+

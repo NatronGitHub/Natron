@@ -95,6 +95,10 @@ public:
     
     bool hasDefaultOverlayForParam(const KnobI* param) ;
     
+    void removeDefaultOverlay(KnobI* knob);
+    
+    bool isEmpty() const;
+    
 private:
     
     boost::scoped_ptr<DefaultOverlayPrivate> _imp;

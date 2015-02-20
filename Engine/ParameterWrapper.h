@@ -519,7 +519,7 @@ public:
     void set(double x, double y);
     void set(double x, double y, int frame);
     
-    void activatePointInteract();
+    void setUsePointInteract(bool use);
 };
 
 class Double3DParam : public Double2DParam

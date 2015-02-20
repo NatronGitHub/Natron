@@ -872,6 +872,7 @@ public:
     virtual void addListener(bool isExpression,int fromExprDimension,KnobI* knob) = 0;
     virtual void removeListener(KnobI* knob) = 0;
 
+    virtual bool useNativeOverlayHandle() const { return false; }
 protected:
 
     /**

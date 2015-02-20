@@ -382,11 +382,11 @@ ProjectGui::load(boost::archive::xml_iarchive & archive)
                 tab->setInfobarVisible(found->second.infobarVisible);
                 tab->setTimelineVisible(found->second.timelineVisible);
                 tab->setCheckerboardEnabled(found->second.checkerboardEnabled);
-                tab->setTimelineBounds(found->second.leftBound, found->second.rightBound);
                 if (found->second.version >= VIEWER_DATA_REMOVES_FRAME_RANGE_LOCK) {
+                    tab->setFrameRange(found->second.leftBound, found->second.rightBound);
                     tab->setFrameRangeEdited(leftBound != found->second.leftBound || rightBound != found->second.rightBound);
                 } else {
-                    tab->setTimelineBounds(leftBound, rightBound);
+                    tab->setFrameRange(leftBound, rightBound);
                     tab->setFrameRangeEdited(false);
                 }
                 if (!found->second.fpsLocked) {

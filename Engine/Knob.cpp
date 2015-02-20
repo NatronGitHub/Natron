@@ -376,6 +376,14 @@ KnobHelper::deleteKnob()
     if (_imp->gui) {
         _imp->gui->onKnobDeletion();
     }
+    
+    KnobHolder* holder = getHolder();
+    if (holder && useNativeOverlayHandle()) {
+        Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(holder);
+        if (effect) {
+            effect->getNode()->removeDefaultOverlay(this);
+        }
+    }
 }
 
 void

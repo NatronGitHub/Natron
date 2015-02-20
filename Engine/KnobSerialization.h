@@ -43,7 +43,8 @@ CLANG_DIAG_ON(unused-parameter)
 #define KNOB_SERIALIZATION_INTRODUCES_CHOICE_LABEL 4
 #define KNOB_SERIALIZATION_INTRODUCES_USER_KNOB 5
 #define KNOB_SERIALIZATION_NODE_SCRIPT_NAME 6
-#define KNOB_SERIALIZATION_VERSION KNOB_SERIALIZATION_NODE_SCRIPT_NAME
+#define KNOB_SERIALIZATION_INTRODUCES_NATIVE_OVERLAYS 7
+#define KNOB_SERIALIZATION_VERSION KNOB_SERIALIZATION_INTRODUCES_NATIVE_OVERLAYS
 
 #define VALUE_SERIALIZATION_INTRODUCES_CHOICE_LABEL 2
 #define VALUE_SERIALIZATION_INTRODUCES_EXPRESSIONS 3
@@ -227,6 +228,7 @@ struct ValueSerialization
             ar & boost::serialization::make_nvp("ExprResults",exprValues);
         }
         
+      
         
     } // save
 
@@ -393,6 +395,7 @@ class KnobSerialization : public KnobSerializationBase
     bool _isPersistent;
     bool _animationEnabled;
     std::string _tooltip;
+    bool _useHostOverlay;
 
     
     friend class boost::serialization::access;
@@ -474,6 +477,11 @@ class KnobSerialization : public KnobSerializationBase
                     ar & boost::serialization::make_nvp("IsMultiLine",tdata->multiLine);
                     ar & boost::serialization::make_nvp("UseRichText",tdata->richText);
                 }
+            }
+            
+            if (isDouble && isDouble->getDimension() == 2) {
+                bool useOverlay = isDouble->getHasNativeOverlayHandle();
+                ar & boost::serialization::make_nvp("HasOverlayHandle",useOverlay);
             }
         }
     }
@@ -608,6 +616,12 @@ class KnobSerialization : public KnobSerializationBase
                     ar & boost::serialization::make_nvp("MultiPath",extraData->multiPath);
                     _extraData = extraData;
                 }
+                
+                
+                if (isDbl && version >= KNOB_SERIALIZATION_INTRODUCES_NATIVE_OVERLAYS && isDbl->getDimension() == 2) {
+                    ar & boost::serialization::make_nvp("HasOverlayHandle",_useHostOverlay);
+                    
+                }
             }
         }
         
@@ -730,6 +744,7 @@ public:
         , _isPersistent(false)
         , _animationEnabled(false)
         , _tooltip()
+        , _useHostOverlay(false)
 
     {
         
@@ -789,6 +804,11 @@ public:
     
     std::string getHintToolTip() const {
         return _tooltip;
+    }
+    
+    bool getUseHostOverlayHandle() const
+    {
+        return _useHostOverlay;
     }
     
 private:
