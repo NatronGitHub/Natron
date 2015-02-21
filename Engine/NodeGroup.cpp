@@ -1386,7 +1386,7 @@ static void exportUserKnob(const boost::shared_ptr<KnobI>& knob,const QString& f
             WRITE_INDENT(1); ts << "entries = [ (" << ESC(entries[0]) << ", " << ESC(helps[0]) << "),\n";
             for (U32 i = 1; i < entries.size(); ++i) {
                 QString endToken = (i == entries.size() - 1) ? ")]" : "),";
-                WRITE_INDENT(1); WRITE_STRING("(" + ESC(entries[0]) + ", " + ESC(helps[0]) + endToken);
+                WRITE_INDENT(1); WRITE_STRING("(" + ESC(entries[i]) + ", " + ESC(helps[i]) + endToken);
             }
             WRITE_INDENT(1); WRITE_STATIC_LINE("param.setOptions(entries)");
             WRITE_INDENT(1); WRITE_STATIC_LINE("del entries");
