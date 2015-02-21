@@ -279,8 +279,13 @@ struct DockablePanelPrivate
     bool _isClosed; //< accessed by serialization thread too
     
     QString _helpToolTip;
+    QString _pluginID;
+    unsigned _pluginVersionMajor,_pluginVersionMinor;
+    
     
     bool _pagesEnabled;
+    
+    QLabel* _iconLabel;
     
     DockablePanelPrivate(DockablePanel* publicI,
                          Gui* gui,
@@ -330,7 +335,11 @@ struct DockablePanelPrivate
     ,_isClosedMutex()
     ,_isClosed(false)
     ,_helpToolTip(helpToolTip)
+    ,_pluginID()
+    ,_pluginVersionMajor(0)
+    ,_pluginVersionMinor(0)
     ,_pagesEnabled(true)
+    ,_iconLabel(0)
     {
     }
 
@@ -410,19 +419,25 @@ DockablePanel::DockablePanel(Gui* gui ,
         
         if (iseffect) {
             
+            _imp->_iconLabel = new QLabel(getHeaderWidget());
+            _imp->_iconLabel->setContentsMargins(2, 2, 2, 2);
+            _imp->_iconLabel->setToolTip(pluginLabelVersioned);
+            _imp->_headerLayout->addWidget(_imp->_iconLabel);
+
 
             std::string iconFilePath = iseffect->getNode()->getPluginIconFilePath();
             if (!iconFilePath.empty()) {
+               
                 QPixmap ic;
                 if (ic.load(iconFilePath.c_str())) {
                     ic = ic.scaled(NATRON_MEDIUM_BUTTON_SIZE - 2,NATRON_MEDIUM_BUTTON_SIZE - 2,Qt::IgnoreAspectRatio,Qt::SmoothTransformation);
-                    QLabel* iconLabel = new QLabel(getHeaderWidget());
-                    iconLabel->setContentsMargins(2, 2, 2, 2);
-                    iconLabel->setPixmap(ic);
-                    iconLabel->setToolTip(pluginLabelVersioned);
-                    _imp->_headerLayout->addWidget(iconLabel);
+                    _imp->_iconLabel->setPixmap(ic);
+                } else {
+                    _imp->_iconLabel->hide();
                 }
                 
+            } else {
+                _imp->_iconLabel->hide();
             }
             
             QPixmap pixCenter;
@@ -442,6 +457,13 @@ DockablePanel::DockablePanel(Gui* gui ,
             QPixmap pixHelp;
             appPTR->getIcon(NATRON_PIXMAP_HELP_WIDGET,&pixHelp);
             _imp->_helpButton = new Button(QIcon(pixHelp),"",_imp->_headerWidget);
+            
+            const Natron::Plugin* plugin = iseffect->getNode()->getPlugin();
+            assert(plugin);
+            _imp->_pluginID = plugin->getPluginID();
+            _imp->_pluginVersionMajor = plugin->getMajorVersion();
+            _imp->_pluginVersionMinor = plugin->getMinorVersion();
+            
             _imp->_helpButton->setToolTip(helpString());
             _imp->_helpButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
             _imp->_helpButton->setFocusPolicy(Qt::NoFocus);
@@ -698,7 +720,50 @@ DockablePanel::turnOffPages()
     _imp->addPage(userPage.get(), userPage->getDescription().c_str());
     
 }
-                                 
+
+void
+DockablePanel::setPluginIDAndVersion(const std::string& pluginLabel,const std::string& pluginID,unsigned int version)
+{
+    if (_imp->_iconLabel) {
+        QString pluginLabelVersioned(pluginLabel.c_str());
+        QString toAppend = QString(" version %1").arg(version);
+        pluginLabelVersioned.append(toAppend);
+        _imp->_iconLabel->setToolTip(pluginLabelVersioned);
+    }
+    if (_imp->_helpButton) {
+        
+        
+        
+        Natron::EffectInstance* iseffect = dynamic_cast<Natron::EffectInstance*>(_imp->_holder);
+        if (iseffect) {
+            _imp->_pluginID = pluginID.c_str();
+            _imp->_pluginVersionMajor = version;
+            _imp->_pluginVersionMinor = 0;
+            _imp->_helpButton->setToolTip(helpString());
+        }
+        
+    }
+}
+
+void
+DockablePanel::setPluginIcon(const QPixmap& pix)
+{
+    if (_imp->_iconLabel) {
+        _imp->_iconLabel->setPixmap(pix);
+        if (!_imp->_iconLabel->isVisible()) {
+            _imp->_iconLabel->show();
+        }
+    }
+}
+
+void
+DockablePanel::setPluginDescription(const std::string& description)
+{
+    _imp->_helpToolTip = description.c_str();
+    _imp->_helpButton->setToolTip(helpString());
+}
+
+
 void
 DockablePanel::onNodeScriptChanged(const QString& label)
 {
@@ -1554,11 +1619,9 @@ DockablePanel::helpString() const
     Natron::EffectInstance* iseffect = dynamic_cast<Natron::EffectInstance*>(_imp->_holder);
     if (iseffect) {
         //Prepend the plugin ID
-        const Natron::Plugin* plugin = iseffect->getNode()->getPlugin();
-        assert(plugin);
-        if (plugin) {
-            QString pluginLabelVersioned = plugin->getPluginID();
-            QString toAppend = QString(" version %1.%2").arg(plugin->getMajorVersion()).arg(plugin->getMinorVersion());
+        if (!_imp->_pluginID.isEmpty()) {
+            QString pluginLabelVersioned(_imp->_pluginID);
+            QString toAppend = QString(" version %1.%2").arg(_imp->_pluginVersionMajor).arg(_imp->_pluginVersionMinor);
             pluginLabelVersioned.append(toAppend);
 
             if (!pluginLabelVersioned.isEmpty()) {

@@ -40,7 +40,8 @@ CLANG_DIAG_ON(unused-parameter)
 #define NODE_SERIALIZATION_INTRODUCES_GROUPS 5
 #define NODE_SERIALIZATION_EMBEDS_MULTI_INSTANCE_CHILDREN 6
 #define NODE_SERIALIZATION_INTRODUCES_SCRIPT_NAME 7
-#define NODE_SERIALIZATION_CURRENT_VERSION NODE_SERIALIZATION_INTRODUCES_SCRIPT_NAME
+#define NODE_SERIALIZATION_INTRODUCES_PYTHON_MODULE 8
+#define NODE_SERIALIZATION_CURRENT_VERSION NODE_SERIALIZATION_INTRODUCES_PYTHON_MODULE
 
 namespace Natron {
 class Node;
@@ -94,6 +95,11 @@ public:
     const std::string & getPluginID() const
     {
         return _pluginID;
+    }
+    
+    const std::string& getPythonModule() const
+    {
+        return _pythonModule;
     }
 
     const std::vector<std::string> & getInputs() const
@@ -181,6 +187,8 @@ private:
     ///If this node is a group or a multi-instance, this is the children
     std::list< boost::shared_ptr<NodeSerialization> > _children;
     
+    std::string _pythonModule;
+    
     friend class boost::serialization::access;
     template<class Archive>
     void save(Archive & ar,
@@ -189,6 +197,9 @@ private:
         ar & boost::serialization::make_nvp("Plugin_label",_nodeLabel);
         ar & boost::serialization::make_nvp("Plugin_script_name",_nodeScriptName);
         ar & boost::serialization::make_nvp("Plugin_id",_pluginID);
+        if (_pluginID == PLUGINID_NATRON_GROUP) {
+            ar & boost::serialization::make_nvp("PythonModule",_pythonModule);
+        }
         ar & boost::serialization::make_nvp("Plugin_major_version",_pluginMajorVersion);
         ar & boost::serialization::make_nvp("Plugin_minor_version",_pluginMinorVersion);
         ar & boost::serialization::make_nvp("KnobsCount", _nbKnobs);
@@ -239,6 +250,13 @@ private:
             _nodeScriptName = Natron::makeNameScriptFriendly(_nodeLabel);
         }
         ar & boost::serialization::make_nvp("Plugin_id",_pluginID);
+        
+        if (version >= NODE_SERIALIZATION_INTRODUCES_PYTHON_MODULE) {
+            if (_pluginID == PLUGINID_NATRON_GROUP) {
+                ar & boost::serialization::make_nvp("PythonModule",_pythonModule);
+            }
+        }
+        
         ar & boost::serialization::make_nvp("Plugin_major_version",_pluginMajorVersion);
         ar & boost::serialization::make_nvp("Plugin_minor_version",_pluginMinorVersion);
         ar & boost::serialization::make_nvp("KnobsCount", _nbKnobs);

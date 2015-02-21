@@ -261,6 +261,11 @@ To work as a plug-in, your script should implemented the following functions::
 	def getGrouping():
 		return GROUPING
 		
+	# This function is optional and should return a string describing the plug-in to the user.
+	# This is the text that will show up when the user press the "?" button on the settings panel.
+	def getDescription():
+		return DESCRIPTION
+		
 	# This function is mandatory and should re-create all the nodes and parameters state
 	# of the group.
 	# The group parameter is a group node that has been created by Natron and that  will host all

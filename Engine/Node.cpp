@@ -175,6 +175,8 @@ struct Node::Implementation
     , persistentMessageMutex()
     , guiPointer()
     , nativePositionOverlays()
+    , pluginPythonModuleMutex()
+    , pluginPythonModule()
     {        
         ///Initialize timers
         gettimeofday(&lastRenderStartedSlotCallTime, 0);
@@ -341,6 +343,9 @@ struct Node::Implementation
     boost::weak_ptr<NodeGuiI> guiPointer;
     
     std::list<boost::shared_ptr<Double_Knob> > nativePositionOverlays;
+    
+    mutable QMutex pluginPythonModuleMutex;
+    std::string pluginPythonModule;
 };
 
 /**
@@ -4143,6 +4148,52 @@ Node::initializeDefaultOverlays()
         nodeGui->addDefaultPositionInteract(*it);
     }
     _imp->nativePositionOverlays.clear();
+}
+
+void
+Node::setPluginIconFilePath(const std::string& iconFilePath)
+{
+    boost::shared_ptr<NodeGuiI> nodeGui = getNodeGui();
+    if (!nodeGui) {
+        return;
+    }
+    nodeGui->setPluginIconFilePath(iconFilePath);
+}
+
+void
+Node::setPluginDescription(const std::string& description)
+{
+    boost::shared_ptr<NodeGuiI> nodeGui = getNodeGui();
+    if (!nodeGui) {
+        return;
+    }
+    nodeGui->setPluginDescription(description);
+}
+
+
+void
+Node::setPluginIDAndVersionForGui(const std::string& pluginLabel,const std::string& pluginID,unsigned int version)
+{
+    boost::shared_ptr<NodeGuiI> nodeGui = getNodeGui();
+    if (!nodeGui) {
+        return;
+    }
+    nodeGui->setPluginIDAndVersion(pluginLabel,pluginID, version);
+
+}
+
+void
+Node::setPluginPythonModule(const std::string& pythonModule)
+{
+    QMutexLocker k(&_imp->pluginPythonModuleMutex);
+    _imp->pluginPythonModule = pythonModule;
+}
+
+std::string
+Node::getPluginPythonModule() const
+{
+    QMutexLocker k(&_imp->pluginPythonModuleMutex);
+    return _imp->pluginPythonModule;
 }
 
 bool

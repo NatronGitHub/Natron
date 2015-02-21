@@ -259,6 +259,11 @@ public:
     {
         return _iconFilePath;
     }
+    
+    void setIconFilePath(const QString& filePath)
+    {
+        _iconFilePath = filePath;
+    }
 
     const QString & getGroupIconFilePath() const
     {

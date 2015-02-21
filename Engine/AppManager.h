@@ -690,6 +690,15 @@ std::string PY3String_asString(PyObject* obj);
     
 std::string makeNameScriptFriendly(const std::string& str);
     
+bool getGroupInfos(const std::string& modulePath,
+                   const std::string& pythonModule,
+                   std::string* pluginID,
+                   std::string* pluginLabel,
+                   std::string* iconFilePath,
+                   std::string* grouping,
+                   std::string* description,
+                   unsigned int* version);
+    
 /**
  * @brief Small helper class to use as RAII to hold the GIL (Global Interpreter Lock) before calling ANY Python code.
  **/

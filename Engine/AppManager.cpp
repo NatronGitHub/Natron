@@ -1601,34 +1601,12 @@ AppManager::loadPythonGroups()
     
     QStringList templatesSearchPath = getAllNonOFXPluginsPaths();
     
-    QString script("import sys\n"
-                   "import %1\n"
-                   "ret = True\n"
-                   "if not hasattr(%1,\"createInstance\") or not hasattr(%1.createInstance,\"__call__\"):\n"
-                   "    ret = False\n"
-                   "if not hasattr(%1,\"getLabel\") or not hasattr(%1.getLabel,\"__call__\"):\n"
-                   "    ret = False\n"
-                   "if ret == True:\n"
-                   "    global templateLabel\n"
-                   "    templateLabel = %1.getLabel()\n"
-                   "pluginID = templateLabel\n"
-                   "version = 1\n"
-                   "if hasattr(%1,\"getVersion\") and hasattr(%1.getVersion,\"__call__\"):\n"
-                   "    version = %1.getVersion()\n"
-                   "if hasattr(%1,\"getPluginID\") and hasattr(%1.getPluginID,\"__call__\"):\n"
-                   "    pluginID = %1.getPluginID()\n"
-                   "if ret == True and hasattr(%1,\"getIconPath\") and hasattr(%1.getIconPath,\"__call__\"):\n"
-                   "    global templateIcon\n"
-                   "    templateIcon = %1.getIconPath()\n"
-                   "if ret == True and hasattr(%1,\"getGrouping\") and hasattr(%1.getGrouping,\"__call__\"):\n"
-                   "    global templateGrouping\n"
-                   "    templateGrouping =  %1.getGrouping()\n");
+    
     
     QStringList filters;
     filters << "*.py";
     
     std::string err;
-    PyObject* mainModule = getMainModule();
     
     QStringList allPlugins;
 
@@ -1692,75 +1670,20 @@ AppManager::loadPythonGroups()
             moduleName = moduleName.remove(0,lastSlash + 1);
         }
         
-        std::string toRun = script.arg(moduleName).toStdString();
+        std::string pluginLabel,pluginID,pluginGrouping,iconFilePath,pluginDescription;
+        unsigned int version;
         
-        if (!interpretPythonScript(toRun, &err, 0)) {
-            qDebug() << "Python group load failure: " << err.c_str();
-            continue;
-        }
-        PyObject* retObj = PyObject_GetAttrString(mainModule,"ret"); //new ref
-        assert(retObj);
-        if (PyObject_IsTrue(retObj) == 0) {
-            Py_XDECREF(retObj);
-        } else {
-            Py_XDECREF(retObj);
+        if (getGroupInfos(modulePath.toStdString(),moduleName.toStdString(), &pluginID, &pluginLabel, &iconFilePath, &pluginGrouping, &pluginDescription, &version)) {
             
-            std::string deleteScript("del ret\n"
-                                     "del templateLabel\n");
+            QStringList grouping = QString(pluginGrouping.c_str()).split(QChar('/'));
+            Natron::Plugin* p = registerPlugin(grouping, pluginID.c_str(), pluginLabel.c_str(), iconFilePath.c_str(), QString(), QString(), false, false, 0, false, version, 0);
             
-            int version = 1;
-            QString label,iconPath,grouping;
-            
-            PyObject* labelObj = 0;
-            labelObj = PyObject_GetAttrString(mainModule,"templateLabel"); //new ref
-        
-            PyObject* iconObj = 0;
-            if (PyObject_HasAttrString(mainModule, "templateIcon")) {
-                iconObj = PyObject_GetAttrString(mainModule,"templateIcon"); //new ref
-            }
-            PyObject* iconGrouping = 0;
-            if (PyObject_HasAttrString(mainModule, "templateGrouping")) {
-                iconGrouping = PyObject_GetAttrString(mainModule,"templateGrouping"); //new ref
-            }
-            assert(labelObj);
-            
-            label = QString(PY3String_asString(labelObj).c_str());
-            Py_XDECREF(labelObj);
-            
-            if (iconObj) {
-                iconPath = QString(PY3String_asString(iconObj).c_str());
-                deleteScript.append("del templateIcon\n");
-                Py_XDECREF(iconObj);
-            }
-            if (iconGrouping) {
-                grouping = QString(PY3String_asString(iconGrouping).c_str());
-                deleteScript.append("del templateGrouping\n");
-                Py_XDECREF(iconGrouping);
-                
-            }
-            
-            if (grouping.isEmpty()) {
-                grouping = PLUGIN_GROUP_OTHER;
-            }
-            
-            setLoadingStatus("Python: Loading " + label);
-            
-            QFileInfo iconInfo(modulePath + iconPath);
-            QString iconFullPath =  iconInfo.canonicalFilePath();
-            
-            bool ok = interpretPythonScript(deleteScript, &err, NULL);
-            assert(ok);
-            (void)ok;
-            
-            Natron::Plugin* p = registerPlugin(grouping.split(QChar('/')), label, label, iconFullPath, QString(), QString(), false, false, 0, false, version, 0);
-            
-            p->setPythonModule(moduleName);
+            p->setPythonModule(modulePath + moduleName);
             
         }
         
     }
 }
-
 
 Natron::Plugin*
 AppManager::registerPlugin(const QStringList & groups,
@@ -3579,5 +3502,141 @@ PythonGILLocker::~PythonGILLocker()
     ///Release the GIL, no thread will own it afterwards.
     PyGILState_Release(state);
 }
+    
+bool
+getGroupInfos(const std::string& modulePath,
+              const std::string& pythonModule,
+              std::string* pluginID,
+              std::string* pluginLabel,
+              std::string* iconFilePath,
+              std::string* grouping,
+              std::string* description,
+              unsigned int* version)
+{
+    Natron::PythonGILLocker pgl;
+    
+    QString script("import sys\n"
+                   "import %1\n"
+                   "ret = True\n"
+                   "if not hasattr(%1,\"createInstance\") or not hasattr(%1.createInstance,\"__call__\"):\n"
+                   "    ret = False\n"
+                   "if not hasattr(%1,\"getLabel\") or not hasattr(%1.getLabel,\"__call__\"):\n"
+                   "    ret = False\n"
+                   "if ret == True:\n"
+                   "    global templateLabel\n"
+                   "    templateLabel = %1.getLabel()\n"
+                   "pluginID = templateLabel\n"
+                   "version = 1\n"
+                   "if hasattr(%1,\"getVersion\") and hasattr(%1.getVersion,\"__call__\"):\n"
+                   "    version = %1.getVersion()\n"
+                   "if hasattr(%1,\"getDescription\") and hasattr(%1.getDescription,\"__call__\"):\n"
+                   "    global description\n"
+                   "    description = %1.getDescription()\n"
+                   "if hasattr(%1,\"getPluginID\") and hasattr(%1.getPluginID,\"__call__\"):\n"
+                   "    pluginID = %1.getPluginID()\n"
+                   "if ret == True and hasattr(%1,\"getIconPath\") and hasattr(%1.getIconPath,\"__call__\"):\n"
+                   "    global templateIcon\n"
+                   "    templateIcon = %1.getIconPath()\n"
+                   "if ret == True and hasattr(%1,\"getGrouping\") and hasattr(%1.getGrouping,\"__call__\"):\n"
+                   "    global templateGrouping\n"
+                   "    templateGrouping =  %1.getGrouping()\n");
+    
+    std::string toRun = script.arg(pythonModule.c_str()).toStdString();
+    
+    std::string err;
+    if (!interpretPythonScript(toRun, &err, 0)) {
+        qDebug() << "Python group load failure: " << err.c_str();
+        return false;
+    }
+    
+    PyObject* mainModule = getMainModule();
+    PyObject* retObj = PyObject_GetAttrString(mainModule,"ret"); //new ref
+    assert(retObj);
+    if (PyObject_IsTrue(retObj) == 0) {
+        Py_XDECREF(retObj);
+        return false;
+    } else {
+        Py_XDECREF(retObj);
+        
+        std::string deleteScript("del ret\n"
+                                 "del templateLabel\n");
+        
+        
+        PyObject* labelObj = 0;
+        labelObj = PyObject_GetAttrString(mainModule,"templateLabel"); //new ref
+        
+        PyObject* idObj = 0;
+        idObj = PyObject_GetAttrString(mainModule,"pluginID"); //new ref
+        
+        PyObject* iconObj = 0;
+        if (PyObject_HasAttrString(mainModule, "templateIcon")) {
+            iconObj = PyObject_GetAttrString(mainModule,"templateIcon"); //new ref
+        }
+        PyObject* iconGrouping = 0;
+        if (PyObject_HasAttrString(mainModule, "templateGrouping")) {
+            iconGrouping = PyObject_GetAttrString(mainModule,"templateGrouping"); //new ref
+        }
+        
+        PyObject* versionObj = 0;
+        if (PyObject_HasAttrString(mainModule, "version")) {
+            versionObj = PyObject_GetAttrString(mainModule,"version"); //new ref
+        }
+        
+        PyObject* pluginDescriptionObj = 0;
+        if (PyObject_HasAttrString(mainModule, "description")) {
+            pluginDescriptionObj = PyObject_GetAttrString(mainModule,"description"); //new ref
+        }
+        
+        assert(labelObj);
+        
+        *pluginLabel = PY3String_asString(labelObj);
+        Py_XDECREF(labelObj);
+        
+        if (idObj) {
+            *pluginID = PY3String_asString(idObj);
+            deleteScript.append("del pluginID\n");
+            Py_XDECREF(idObj);
+        }
+        
+        if (iconObj) {
+            *iconFilePath = PY3String_asString(iconObj);
+            QFileInfo iconInfo(QString(modulePath.c_str()) + QString(iconFilePath->c_str()));
+            *iconFilePath =  iconInfo.canonicalFilePath().toStdString();
+
+            deleteScript.append("del templateIcon\n");
+            Py_XDECREF(iconObj);
+        }
+        if (iconGrouping) {
+            *grouping = PY3String_asString(iconGrouping);
+            deleteScript.append("del templateGrouping\n");
+            Py_XDECREF(iconGrouping);
+        }
+        
+        if (versionObj) {
+            *version = (unsigned int)PyLong_AsLong(versionObj);
+            deleteScript.append("del version\n");
+            Py_XDECREF(versionObj);
+        }
+        
+        if (pluginDescriptionObj) {
+            *description = PY3String_asString(pluginDescriptionObj);
+            deleteScript.append("del description\n");
+            Py_XDECREF(pluginDescriptionObj);
+        }
+        
+        if (grouping->empty()) {
+            *grouping = PLUGIN_GROUP_OTHER;
+        }
+        
+        appPTR->setLoadingStatus(QString(QObject::tr("Python: Loading ")) + QString(pluginLabel->c_str()));
+        
+        bool ok = interpretPythonScript(deleteScript, &err, NULL);
+        assert(ok);
+        (void)ok;
+        return true;
+    }
+}
+    
+
     
 } //Namespace Natron

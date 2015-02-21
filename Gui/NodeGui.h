@@ -377,6 +377,13 @@ public:
     virtual bool hasDefaultOverlayForParam(const KnobI* param) OVERRIDE FINAL WARN_UNUSED_RETURN;
     
     virtual void removeDefaultOverlay(KnobI* knob) OVERRIDE FINAL;
+    
+    virtual void setPluginIconFilePath(const std::string& filePath) OVERRIDE FINAL;
+    
+    virtual void setPluginDescription(const std::string& description) OVERRIDE FINAL;
+    
+    virtual void setPluginIDAndVersion(const std::string& pluginLabel,const std::string& pluginID,unsigned int version) OVERRIDE FINAL;
+    
 protected:
     
     virtual int getBaseDepth() const { return 20; }
@@ -659,6 +666,9 @@ public Q_SLOTS:
     void onButtonClicked();
     
     void onOkClicked();
+    
+    void onLabelEditingFinished();
+    
 private:
     
     boost::scoped_ptr<ExportGroupTemplateDialogPrivate> _imp;

@@ -119,7 +119,12 @@ public :
     virtual bool hasDefaultOverlayForParam(const KnobI* param) = 0;
     
     virtual void removeDefaultOverlay(KnobI* knob) = 0;
+    
+    virtual void setPluginIconFilePath(const std::string& filePath) = 0;
+    
+    virtual void setPluginDescription(const std::string& description) = 0;
 
+    virtual void setPluginIDAndVersion(const std::string& pluginLabel,const std::string& pluginID,unsigned int version) = 0;
 };
 
 #endif // NODEGUII_H

@@ -889,6 +889,16 @@ public:
     
     bool hasDefaultOverlayForParam(const KnobI* knob) const;
 
+    void setPluginIconFilePath(const std::string& iconFilePath);
+    
+    void setPluginDescription(const std::string& description);
+    
+    void setPluginIDAndVersionForGui(const std::string& pluginLabel,const std::string& pluginID,unsigned int version);
+    
+    void setPluginPythonModule(const std::string& pythonModule);
+    
+    std::string getPluginPythonModule() const;
+    
 private:
     
     void setNameInternal(const std::string& name);

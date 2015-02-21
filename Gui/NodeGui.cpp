@@ -463,17 +463,28 @@ NodeGui::createGui()
     }
     
     const QString& iconFilePath = getNode()->getPlugin()->getIconFilePath();
-    if (!iconFilePath.isEmpty() && appPTR->getCurrentSettings()->isPluginIconActivatedOnNodeGraph()) {
+    
+    if (appPTR->getCurrentSettings()->isPluginIconActivatedOnNodeGraph()) {
+        _pluginIcon = new QGraphicsPixmapItem(this);
+        _pluginIcon->setZValue(depth + 1);
+        _pluginIconFrame = new QGraphicsRectItem(this);
+        _pluginIconFrame->setZValue(depth);
+        _pluginIconFrame->setBrush(QColor(50,50,50));
+    }
+    
+    
+    if (!iconFilePath.isEmpty()) {
         QPixmap pix(iconFilePath);
         if (QFile::exists(iconFilePath) && !pix.isNull()) {
             pix = pix.scaled(NATRON_PLUGIN_ICON_SIZE,NATRON_PLUGIN_ICON_SIZE,Qt::IgnoreAspectRatio,Qt::SmoothTransformation);
-            _pluginIcon = new QGraphicsPixmapItem(pix,this);
-            _pluginIcon->setZValue(depth + 1);
-            _pluginIconFrame = new QGraphicsRectItem(this);
-            _pluginIconFrame->setZValue(depth);
-            _pluginIconFrame->setBrush(QColor(50,50,50));
+            _pluginIcon->setPixmap(pix);
+        } else {
+            _pluginIcon->hide();
+            _pluginIconFrame->hide();
         }
-        
+    } else {
+        _pluginIcon->hide();
+        _pluginIconFrame->hide();
     }
     
     if (getNode()->getPlugin()->getPluginID() == QString(PLUGINID_OFX_MERGE)) {
@@ -2904,6 +2915,9 @@ struct ExportGroupTemplateDialogPrivate
     QLabel* labelLabel;
     LineEdit* labelEdit;
     
+    QLabel* idLabel;
+    LineEdit* idEdit;
+    
     QLabel* groupingLabel;
     LineEdit* groupingEdit;
     
@@ -2914,6 +2928,9 @@ struct ExportGroupTemplateDialogPrivate
     QLabel* iconPathLabel;
     LineEdit* iconPath;
     
+    QLabel* descriptionLabel;
+    LineEdit* descriptionEdit;
+    
     QDialogButtonBox *buttons;
     
     ExportGroupTemplateDialogPrivate(NodeCollection* group,Gui* gui)
@@ -2922,6 +2939,8 @@ struct ExportGroupTemplateDialogPrivate
     , mainLayout(0)
     , labelLabel(0)
     , labelEdit(0)
+    , idLabel(0)
+    , idEdit(0)
     , groupingLabel(0)
     , groupingEdit(0)
     , fileLabel(0)
@@ -2929,6 +2948,8 @@ struct ExportGroupTemplateDialogPrivate
     , openButton(0)
     , iconPathLabel(0)
     , iconPath(0)
+    , descriptionLabel(0)
+    , descriptionEdit(0)
     , buttons(0)
     {
         
@@ -2948,7 +2969,20 @@ ExportGroupTemplateDialog::ExportGroupTemplateDialog(NodeCollection* group,Gui* 
     QString labelTt = Qt::convertFromPlainText(tr("Set the label of the group as the user will see it in the user interface"),Qt::WhiteSpaceNormal);
     _imp->labelLabel->setToolTip(labelTt);
     _imp->labelEdit = new LineEdit(this);
+    _imp->labelEdit->setPlaceholderText("MyPlugin");
+    QObject::connect(_imp->labelEdit,SIGNAL(editingFinished()), this , SLOT(onLabelEditingFinished()));
     _imp->labelEdit->setToolTip(labelTt);
+    
+    _imp->idLabel = new QLabel(tr("Unique ID"),this);
+    _imp->idLabel->setFont(font);
+    QString idTt = Qt::convertFromPlainText(tr("The unique ID is used by " NATRON_APPLICATION_NAME "to identify the plug-in in various "
+                                               "places in the application. Generally this contains domain and sub-domains names "
+                                               "such as fr.inria.group.XXX. If 2 plug-ins happen to have the same ID they will be "
+                                               "gathered by version. If 2 plug-ins have the same ID and version, the first loaded in the"
+                                               " search-paths will take precedence over the other."),Qt::WhiteSpaceNormal);
+    _imp->idEdit = new LineEdit(this);
+    _imp->idEdit->setPlaceholderText("org.organization.pyplugs.XXX");
+    _imp->idEdit->setToolTip(idTt);
     
     _imp->groupingLabel = new QLabel(tr("Grouping"),this);
     _imp->groupingLabel->setFont(font);
@@ -2957,6 +2991,7 @@ ExportGroupTemplateDialog::ExportGroupTemplateDialog(NodeCollection* group,Gui* 
     _imp->groupingLabel->setToolTip(groupingTt);
     
     _imp->groupingEdit = new LineEdit(this);
+    _imp->groupingEdit->setPlaceholderText("Color/Transform");
     _imp->groupingEdit->setToolTip(groupingTt);
     
     
@@ -2966,13 +3001,24 @@ ExportGroupTemplateDialog::ExportGroupTemplateDialog(NodeCollection* group,Gui* 
                                                  "The path is relative to the Python script."),Qt::WhiteSpaceNormal);
     _imp->iconPathLabel->setToolTip(iconTt);
     _imp->iconPath = new LineEdit(this);
+    _imp->iconPath->setPlaceholderText("Label.png");
     _imp->iconPath->setToolTip(iconTt);
+    
+    _imp->descriptionLabel = new QLabel(tr("Description"),this);
+    _imp->descriptionLabel->setFont(font);
+    QString descTt =  Qt::convertFromPlainText(tr("Set here the (optional) plug-in description that the user will see when clicking the "
+                                                  " \"?\" button on the settings panel of the node."),Qt::WhiteSpaceNormal);
+    _imp->descriptionEdit = new LineEdit(this);
+    _imp->descriptionEdit->setToolTip(descTt);
+    _imp->descriptionEdit->setPlaceholderText(tr("This plug-in can be used to produce XXX effect..."));
     
     _imp->fileLabel = new QLabel(tr("Directory"),this);
     _imp->fileLabel->setFont(font);
     QString fileTt  = Qt::convertFromPlainText(tr("Specify here the directory where to export the Python script"),Qt::WhiteSpaceNormal);
     _imp->fileLabel->setToolTip(fileTt);
     _imp->fileEdit = new LineEdit(this);
+    
+    
     _imp->fileEdit->setToolTip(fileTt);
     
     
@@ -2989,16 +3035,25 @@ ExportGroupTemplateDialog::ExportGroupTemplateDialog(NodeCollection* group,Gui* 
     QObject::connect(_imp->buttons, SIGNAL(accepted()), this, SLOT(onOkClicked()));
     QObject::connect(_imp->buttons, SIGNAL(rejected()), this, SLOT(reject()));
     
-    _imp->mainLayout->addWidget(_imp->labelLabel, 0, 0 , 1 , 1);
-    _imp->mainLayout->addWidget(_imp->labelEdit, 0, 1,  1 , 2);
-    _imp->mainLayout->addWidget(_imp->groupingLabel, 1, 0,  1 , 1);
-    _imp->mainLayout->addWidget(_imp->groupingEdit, 1, 1,  1 , 2);
-    _imp->mainLayout->addWidget(_imp->iconPathLabel, 2, 0 , 1 , 1);
-    _imp->mainLayout->addWidget(_imp->iconPath, 2, 1 , 1 , 2);
-    _imp->mainLayout->addWidget(_imp->fileLabel, 3, 0 , 1 , 1);
-    _imp->mainLayout->addWidget(_imp->fileEdit, 3, 1, 1 , 1);
-    _imp->mainLayout->addWidget(_imp->openButton, 3, 2, 1, 1);
-    _imp->mainLayout->addWidget(_imp->buttons, 4, 0, 1, 3);
+    
+    _imp->mainLayout->addWidget(_imp->idLabel, 0, 0 , 1 , 1);
+    _imp->mainLayout->addWidget(_imp->idEdit, 0, 1,  1 , 2);
+    _imp->mainLayout->addWidget(_imp->labelLabel, 1, 0 , 1 , 1);
+    _imp->mainLayout->addWidget(_imp->labelEdit, 1, 1,  1 , 2);
+    _imp->mainLayout->addWidget(_imp->groupingLabel, 2, 0,  1 , 1);
+    _imp->mainLayout->addWidget(_imp->groupingEdit, 2, 1,  1 , 2);
+    _imp->mainLayout->addWidget(_imp->iconPathLabel, 3, 0 , 1 , 1);
+    _imp->mainLayout->addWidget(_imp->iconPath, 3, 1 , 1 , 2);
+    _imp->mainLayout->addWidget(_imp->descriptionLabel, 4, 0 , 1 , 1);
+    _imp->mainLayout->addWidget(_imp->descriptionEdit, 4, 1 , 1 , 2);
+    _imp->mainLayout->addWidget(_imp->fileLabel, 5, 0 , 1 , 1);
+    _imp->mainLayout->addWidget(_imp->fileEdit, 5, 1, 1 , 1);
+    _imp->mainLayout->addWidget(_imp->openButton, 5, 2, 1, 1);
+    _imp->mainLayout->addWidget(_imp->buttons, 6, 0, 1, 3);
+    
+    resize(400,sizeHint().height());
+    
+    
 }
 
 ExportGroupTemplateDialog::~ExportGroupTemplateDialog()
@@ -3022,6 +3077,14 @@ ExportGroupTemplateDialog::onButtonClicked()
 }
 
 void
+ExportGroupTemplateDialog::onLabelEditingFinished()
+{
+    if (_imp->idEdit->text().isEmpty()) {
+        _imp->idEdit->setText(_imp->labelEdit->text());
+    }
+}
+
+void
 ExportGroupTemplateDialog::onOkClicked()
 {
     QString dirPath = _imp->fileEdit->text();
@@ -3037,12 +3100,19 @@ ExportGroupTemplateDialog::onOkClicked()
     }
     QString pluginLabel = _imp->labelEdit->text();
     if (pluginLabel.isEmpty()) {
-        Natron::errorDialog(tr("Error").toStdString(), tr("You must specify a unique label to identify the script").toStdString());
+        Natron::errorDialog(tr("Error").toStdString(), tr("You must specify a label to name the script").toStdString());
+        return;
+    }
+    
+    QString pluginID = _imp->idEdit->text();
+    if (pluginID.isEmpty()) {
+        Natron::errorDialog(tr("Error").toStdString(), tr("You must specify a unique ID to identify the script").toStdString());
         return;
     }
     
     QString iconPath = _imp->iconPath->text();
     QString grouping = _imp->groupingEdit->text();
+    QString description = _imp->descriptionEdit->text();
     
     QString filePath = d.absolutePath() + "/" + pluginLabel + ".py";
     
@@ -3089,7 +3159,7 @@ ExportGroupTemplateDialog::onOkClicked()
     
     QTextStream ts(&file);
     QString content;
-    _imp->group->exportGroupToPython(pluginLabel, iconPath, grouping, content);
+    _imp->group->exportGroupToPython(pluginID, pluginLabel, description, iconPath, grouping, content);
     ts << content;
 
     accept();
@@ -3308,6 +3378,54 @@ NodeGui::removeDefaultOverlay(KnobI* knob)
         if (_defaultOverlay->isEmpty()) {
             _defaultOverlay.reset();
         }
+    }
+}
+
+void
+NodeGui::setPluginIconFilePath(const std::string& filePath)
+{
+    QPixmap p(filePath.c_str());
+    if (p.isNull()) {
+        return;
+    }
+    p = p.scaled(NATRON_PLUGIN_ICON_SIZE,NATRON_PLUGIN_ICON_SIZE,Qt::IgnoreAspectRatio,Qt::SmoothTransformation);
+    
+    if (getSettingPanel()) {
+        getSettingPanel()->setPluginIcon(p);
+    }
+    if (_pluginIcon) {
+        
+        _pluginIcon->setPixmap(p);
+        if (!_pluginIcon->isVisible()) {
+            _pluginIcon->show();
+            _pluginIconFrame->show();
+        }
+        double w,h;
+        getSize(&w, &h);
+        w = NODE_WIDTH + NATRON_PLUGIN_ICON_SIZE + PLUGIN_ICON_OFFSET * 2;
+        resize(w,h);
+        
+        double x,y;
+        getPosition(&x, &y);
+        x -= (NATRON_PLUGIN_ICON_SIZE) / 2. + PLUGIN_ICON_OFFSET;
+        setPosition(x, y);
+        
+    }
+}
+
+void
+NodeGui::setPluginIDAndVersion(const std::string& pluginLabel,const std::string& pluginID,unsigned int version)
+{
+    if (getSettingPanel()) {
+        getSettingPanel()->setPluginIDAndVersion(pluginLabel,pluginID, version);
+    }
+}
+
+void
+NodeGui::setPluginDescription(const std::string& description)
+{
+    if (getSettingPanel()) {
+        getSettingPanel()->setPluginDescription(description);
     }
 }
 

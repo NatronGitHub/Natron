@@ -229,7 +229,9 @@ public:
      **/
     virtual void notifyNodeNameChanged(const boost::shared_ptr<Natron::Node>& /*node*/) {}
     
-    void exportGroupToPython(const QString& pluginLabel,
+    void exportGroupToPython(const QString& pluginID,
+                             const QString& pluginLabel,
+                             const QString& pluginDescription,
                              const QString& pluginIconPath,
                              const QString& pluginGrouping,
                              QString& output);

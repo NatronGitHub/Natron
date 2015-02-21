@@ -490,6 +490,93 @@ AppInstance::loadPythonScript(const QFileInfo& file)
     return true;
 }
 
+boost::shared_ptr<Natron::Node>
+AppInstance::createNodeFromPythonModule(Natron::Plugin* plugin,
+                                        const boost::shared_ptr<NodeCollection>& group,
+                                        bool requestedByLoad,
+                                        const NodeSerialization & serialization)
+
+{
+    QString pythonModulePath = plugin->getPythonModule();
+    QString moduleName;
+    QString modulePath;
+    int foundLastSlash = pythonModulePath.lastIndexOf('/');
+    if (foundLastSlash != -1) {
+        modulePath = pythonModulePath.mid(0,foundLastSlash + 1);
+        moduleName = pythonModulePath.remove(0,foundLastSlash + 1);
+    }
+    
+    boost::shared_ptr<Natron::Node> node;
+    FlagSetter fs(true,&_imp->_creatingGroup);
+    
+    CreateNodeArgs groupArgs(PLUGINID_NATRON_GROUP,
+                             "",
+                             -1,-1,
+                             true, //< autoconnect
+                             INT_MIN,INT_MIN,
+                             true, //< push undo/redo command
+                             true, // add to project
+                             QString(),
+                             CreateNodeArgs::DefaultValuesList(),
+                             group);
+    NodePtr containerNode = createNode(groupArgs);
+    if (!containerNode) {
+        return containerNode;
+    }
+    std::string containerName;
+    group->initNodeName(plugin->getPluginLabel().toStdString(),&containerName);
+    containerNode->setScriptName(containerName);
+    
+    
+    if (!requestedByLoad) {
+        std::string containerFullySpecifiedName = containerNode->getFullyQualifiedName();
+        
+        int appID = getAppID() + 1;
+        
+        std::stringstream ss;
+        ss << moduleName.toStdString();
+        ss << ".createInstance(app" << appID;
+        ss << ", app" << appID << "." << containerFullySpecifiedName;
+        ss << ")\n";
+        std::string err;
+        if (!Natron::interpretPythonScript(ss.str(), &err, NULL)) {
+            Natron::errorDialog(tr("Group plugin creation error").toStdString(), err);
+            containerNode->destroyNode(false);
+            return node;
+        } else {
+            node = containerNode;
+        }
+    } else {
+        containerNode->loadKnobs(serialization);
+        if (!serialization.isNull() && !serialization.getUserPages().empty()) {
+            containerNode->getLiveInstance()->refreshKnobs();
+        }
+        node = containerNode;
+    }
+    
+    if (!moduleName.isEmpty()) {
+        setGroupLabelIDAndVersion(node,modulePath, moduleName);
+    }
+
+    return node;
+}
+
+
+void
+AppInstance::setGroupLabelIDAndVersion(const boost::shared_ptr<Natron::Node>& node,
+                                       const QString& pythonModulePath,
+                               const QString &pythonModule)
+{
+    std::string pluginID,pluginLabel,iconFilePath,pluginGrouping,description;
+    unsigned int version;
+    if (Natron::getGroupInfos(pythonModulePath.toStdString(),pythonModule.toStdString(), &pluginID, &pluginLabel, &iconFilePath, &pluginGrouping, &description, &version)) {
+        node->setPluginIconFilePath(iconFilePath);
+        node->setPluginDescription(description);
+        node->setPluginIDAndVersionForGui(pluginLabel, pluginID, version);
+        node->setPluginPythonModule(QString(pythonModulePath + pythonModule).toStdString());
+    }
+    
+}
 
 
 boost::shared_ptr<Natron::Node>
@@ -537,52 +624,7 @@ AppInstance::createNodeInternal(const QString & pluginID,
 
     const QString& pythonModule = plugin->getPythonModule();
     if (!pythonModule.isEmpty()) {
-        
-        FlagSetter fs(true,&_imp->_creatingGroup);
-        
-        CreateNodeArgs groupArgs(PLUGINID_NATRON_GROUP,
-                                 "",
-                                 -1,-1,
-                                 true, //< autoconnect
-                                 INT_MIN,INT_MIN,
-                                 true, //< push undo/redo command
-                                 true, // add to project
-                                 QString(),
-                                 CreateNodeArgs::DefaultValuesList(),
-                                 group);
-        NodePtr containerNode = createNode(groupArgs);
-        if (!containerNode) {
-            return containerNode;
-        }
-        std::string containerName;
-        group->initNodeName(plugin->getPluginLabel().toStdString(),&containerName);
-        containerNode->setScriptName(containerName);
-        
-        if (!requestedByLoad) {
-            std::string containerFullySpecifiedName = containerNode->getFullyQualifiedName();
-            
-            int appID = getAppID() + 1;
-            
-            std::stringstream ss;
-            ss << pythonModule.toStdString();
-            ss << ".createInstance(app" << appID;
-            ss << ", app" << appID << "." << containerFullySpecifiedName;
-            ss << ")\n";
-            std::string err;
-            if (!Natron::interpretPythonScript(ss.str(), &err, NULL)) {
-                Natron::errorDialog(tr("Group plugin creation error").toStdString(), err);
-                containerNode->destroyNode(false);
-                return node;
-            } else {
-                return containerNode;
-            }
-        } else {
-            containerNode->loadKnobs(serialization);
-            if (!serialization.isNull() && !serialization.getUserPages().empty()) {
-                containerNode->getLiveInstance()->refreshKnobs();
-            }
-            return containerNode;
-        }
+        return createNodeFromPythonModule(plugin, group, requestedByLoad, serialization);
     }
 
     std::string foundPluginID = plugin->getPluginID().toStdString();
@@ -647,45 +689,59 @@ AppInstance::createNodeInternal(const QString & pluginID,
     
     boost::shared_ptr<NodeGroup> isGrp = boost::dynamic_pointer_cast<NodeGroup>(node->getLiveInstance()->shared_from_this());
 
-    if (isGrp && !requestedByLoad && !_imp->_creatingGroup) {
+    if (isGrp) {
         
-        //if the node is a group and we're not loading the project, create one input and one output
-        NodePtr input,output;
-        
-        {
-            CreateNodeArgs args(PLUGINID_NATRON_OUTPUT,
-                                std::string(),
-                                -1,
-                                -1,
-                                false, //< don't autoconnect
-                                INT_MIN,
-                                INT_MIN,
-                                false, //<< don't push an undo command
-                                true,
-                                QString(),
-                                CreateNodeArgs::DefaultValuesList(),
-                                isGrp);
-            output = createNode(args);
-            output->setScriptName("Output");
-            assert(output);
+        if (requestedByLoad) {
+            if (!serialization.isNull() && !serialization.getPythonModule().empty()) {
+                
+                QString pythonModulePath(serialization.getPythonModule().c_str());
+                QString moduleName;
+                QString modulePath;
+                int foundLastSlash = pythonModulePath.lastIndexOf('/');
+                if (foundLastSlash != -1) {
+                    modulePath = pythonModulePath.mid(0,foundLastSlash + 1);
+                    moduleName = pythonModulePath.remove(0,foundLastSlash + 1);
+                }
+                setGroupLabelIDAndVersion(node, modulePath, moduleName);
+            }
+        } else if (!requestedByLoad && !_imp->_creatingGroup) {
+            //if the node is a group and we're not loading the project, create one input and one output
+            NodePtr input,output;
+            
+            {
+                CreateNodeArgs args(PLUGINID_NATRON_OUTPUT,
+                                    std::string(),
+                                    -1,
+                                    -1,
+                                    false, //< don't autoconnect
+                                    INT_MIN,
+                                    INT_MIN,
+                                    false, //<< don't push an undo command
+                                    true,
+                                    QString(),
+                                    CreateNodeArgs::DefaultValuesList(),
+                                    isGrp);
+                output = createNode(args);
+                output->setScriptName("Output");
+                assert(output);
+            }
+            {
+                CreateNodeArgs args(PLUGINID_NATRON_INPUT,
+                                    std::string(),
+                                    -1,
+                                    -1,
+                                    true, // autoconnect
+                                    INT_MIN,
+                                    INT_MIN,
+                                    false, //<< don't push an undo command
+                                    true,
+                                    QString(),
+                                    CreateNodeArgs::DefaultValuesList(),
+                                    isGrp);
+                input = createNode(args);
+                assert(input);
+            }
         }
-        {
-            CreateNodeArgs args(PLUGINID_NATRON_INPUT,
-                                std::string(),
-                                -1,
-                                -1,
-                                true, // autoconnect
-                                INT_MIN,
-                                INT_MIN,
-                                false, //<< don't push an undo command
-                                true,
-                                QString(),
-                                CreateNodeArgs::DefaultValuesList(),
-                                isGrp);
-            input = createNode(args);
-            assert(input);
-        }
-       
     }
     
     return node;

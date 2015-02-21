@@ -1899,7 +1899,9 @@ static void exportGroupInternal(const NodeCollection* collection,const QString& 
 }
 
 void
-NodeCollection::exportGroupToPython(const QString& pluginLabel,
+NodeCollection::exportGroupToPython(const QString& pluginID,
+                                    const QString& pluginLabel,
+                                    const QString& pluginDescription,
                                     const QString& pluginIconPath,
                                     const QString& pluginGrouping,
                                     QString& output)
@@ -1914,7 +1916,7 @@ NodeCollection::exportGroupToPython(const QString& pluginLabel,
     WRITE_STATIC_LINE("");
    
     WRITE_STATIC_LINE("def getPluginID():");
-    WRITE_INDENT(1);WRITE_STRING("return \"" + pluginLabel + "\"");
+    WRITE_INDENT(1);WRITE_STRING("return \"" + pluginID + "\"");
     WRITE_STATIC_LINE("");
     
     WRITE_STATIC_LINE("def getLabel():");
@@ -1934,7 +1936,13 @@ NodeCollection::exportGroupToPython(const QString& pluginLabel,
     WRITE_STATIC_LINE("def getGrouping():");
     WRITE_INDENT(1);WRITE_STRING("return \"" + pluginGrouping + "\"");
     WRITE_STATIC_LINE("");
-
+    
+    if (!pluginDescription.isEmpty()) {
+        WRITE_STATIC_LINE("def getDescription():");
+        WRITE_INDENT(1);WRITE_STRING("return \"" + pluginDescription + "\"");
+        WRITE_STATIC_LINE("");
+    }
+    
     
     WRITE_STATIC_LINE("def createInstance(app,group):");
     WRITE_STATIC_LINE("");
