@@ -44,7 +44,8 @@ CLANG_DIAG_ON(unused-parameter)
 #define KNOB_SERIALIZATION_INTRODUCES_USER_KNOB 5
 #define KNOB_SERIALIZATION_NODE_SCRIPT_NAME 6
 #define KNOB_SERIALIZATION_INTRODUCES_NATIVE_OVERLAYS 7
-#define KNOB_SERIALIZATION_VERSION KNOB_SERIALIZATION_INTRODUCES_NATIVE_OVERLAYS
+#define KNOB_SERIALIZATION_INTRODUCES_CHOICE_HELP_STRINGS 8
+#define KNOB_SERIALIZATION_VERSION KNOB_SERIALIZATION_INTRODUCES_CHOICE_HELP_STRINGS
 
 #define VALUE_SERIALIZATION_INTRODUCES_CHOICE_LABEL 2
 #define VALUE_SERIALIZATION_INTRODUCES_EXPRESSIONS 3
@@ -92,13 +93,13 @@ public:
     
     
     
-    ChoiceExtraData() : TypeExtraData(), _choiceString() , _entries() {}
+    ChoiceExtraData() : TypeExtraData(), _choiceString() , _entries() , _helpStrings() {}
     
     virtual ~ChoiceExtraData() {}
     
     std::string _choiceString;
     std::vector<std::string> _entries;
-    
+    std::vector<std::string> _helpStrings;
 };
 
 class FileExtraData: public TypeExtraData
@@ -465,6 +466,7 @@ class KnobSerialization : public KnobSerializationBase
                 
                 if (cdata) {
                     ar & boost::serialization::make_nvp("Entries",cdata->_entries);
+                    ar & boost::serialization::make_nvp("Helps",cdata->_helpStrings);
                 } else if (vdata) {
                     ar & boost::serialization::make_nvp("Min",vdata->min);
                     ar & boost::serialization::make_nvp("Max",vdata->max);
@@ -582,6 +584,9 @@ class KnobSerialization : public KnobSerializationBase
                     ChoiceExtraData* data = dynamic_cast<ChoiceExtraData*>(_extraData);
                     assert(data);
                     ar & boost::serialization::make_nvp("Entries",data->_entries);
+                    if (version >= KNOB_SERIALIZATION_INTRODUCES_CHOICE_HELP_STRINGS) {
+                        ar & boost::serialization::make_nvp("Helps",data->_helpStrings);
+                    }
                 }
                 
                 String_Knob* isString = dynamic_cast<String_Knob*>(_knob.get());
@@ -680,6 +685,7 @@ public:
         if (isChoice) {
             ChoiceExtraData* extraData = new ChoiceExtraData;
             extraData->_entries = isChoice->getEntries_mt_safe();
+            extraData->_helpStrings = isChoice->getEntriesHelp_mt_safe();
             int idx = isChoice->getValue();
             if (idx >= 0 && idx < (int)extraData->_entries.size()) {
                 extraData->_choiceString = extraData->_entries[idx];

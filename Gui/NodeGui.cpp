@@ -464,27 +464,20 @@ NodeGui::createGui()
     
     const QString& iconFilePath = getNode()->getPlugin()->getIconFilePath();
     
-    if (appPTR->getCurrentSettings()->isPluginIconActivatedOnNodeGraph()) {
-        _pluginIcon = new QGraphicsPixmapItem(this);
-        _pluginIcon->setZValue(depth + 1);
-        _pluginIconFrame = new QGraphicsRectItem(this);
-        _pluginIconFrame->setZValue(depth);
-        _pluginIconFrame->setBrush(QColor(50,50,50));
-    }
     
-    
-    if (!iconFilePath.isEmpty()) {
+    if (!iconFilePath.isEmpty() && appPTR->getCurrentSettings()->isPluginIconActivatedOnNodeGraph()) {
+
+        
         QPixmap pix(iconFilePath);
         if (QFile::exists(iconFilePath) && !pix.isNull()) {
+            _pluginIcon = new QGraphicsPixmapItem(this);
+            _pluginIcon->setZValue(depth + 1);
+            _pluginIconFrame = new QGraphicsRectItem(this);
+            _pluginIconFrame->setZValue(depth);
+            _pluginIconFrame->setBrush(QColor(50,50,50));
             pix = pix.scaled(NATRON_PLUGIN_ICON_SIZE,NATRON_PLUGIN_ICON_SIZE,Qt::IgnoreAspectRatio,Qt::SmoothTransformation);
             _pluginIcon->setPixmap(pix);
-        } else {
-            _pluginIcon->hide();
-            _pluginIconFrame->hide();
         }
-    } else {
-        _pluginIcon->hide();
-        _pluginIconFrame->hide();
     }
     
     if (getNode()->getPlugin()->getPluginID() == QString(PLUGINID_OFX_MERGE)) {
@@ -3385,7 +3378,7 @@ void
 NodeGui::setPluginIconFilePath(const std::string& filePath)
 {
     QPixmap p(filePath.c_str());
-    if (p.isNull()) {
+    if (p.isNull() || !appPTR->getCurrentSettings()->isPluginIconActivatedOnNodeGraph()) {
         return;
     }
     p = p.scaled(NATRON_PLUGIN_ICON_SIZE,NATRON_PLUGIN_ICON_SIZE,Qt::IgnoreAspectRatio,Qt::SmoothTransformation);
@@ -3393,6 +3386,15 @@ NodeGui::setPluginIconFilePath(const std::string& filePath)
     if (getSettingPanel()) {
         getSettingPanel()->setPluginIcon(p);
     }
+    
+    if (!_pluginIcon) {
+        _pluginIcon = new QGraphicsPixmapItem(this);
+        _pluginIcon->setZValue(getBaseDepth() + 1);
+        _pluginIconFrame = new QGraphicsRectItem(this);
+        _pluginIconFrame->setZValue(getBaseDepth());
+        _pluginIconFrame->setBrush(QColor(50,50,50));
+    }
+    
     if (_pluginIcon) {
         
         _pluginIcon->setPixmap(p);

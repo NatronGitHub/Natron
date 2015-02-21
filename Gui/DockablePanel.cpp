@@ -4018,14 +4018,19 @@ AddKnobDialogPrivate::createKnobFromSelection(int index,int optionalGroupIndex)
             while (!stream.atEnd()) {
                 QString line = stream.readLine();
                 int foundHelp = line.indexOf("<?>");
-                if (foundHelp) {
+                if (foundHelp != -1) {
                     QString entry = line.mid(0,foundHelp);
                     QString help = line.mid(foundHelp + 3,-1);
+                    for (int i = 0; i < (int)entries.size() - (int)helps.size(); ++i) {
+                        helps.push_back("");
+                    }
                     entries.push_back(entry.toStdString());
                     helps.push_back(help.toStdString());
                 } else {
                     entries.push_back(line.toStdString());
-                    helps.push_back("");
+                    if (!helps.empty()) {
+                        helps.push_back("");
+                    }
                 }
             }
             k->populateChoices(entries,helps);

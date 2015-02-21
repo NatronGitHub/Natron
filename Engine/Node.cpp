@@ -965,7 +965,7 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
                                                                                sKnob->getDimension(), false);
                 const ChoiceExtraData* data = dynamic_cast<const ChoiceExtraData*>(isRegular->getExtraData());
                 assert(data);
-                k->populateChoices(data->_entries);
+                k->populateChoices(data->_entries,data->_helpStrings);
                 knob = k;
             } else if (isColor) {
                 boost::shared_ptr<Color_Knob> k = Natron::createKnob<Color_Knob>(liveInstance.get(), isRegular->getLabel() ,
