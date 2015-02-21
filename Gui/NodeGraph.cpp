@@ -649,7 +649,7 @@ NodeGraph::createNodeGUI(QVBoxLayout *dockContainer,
     } else {
         node_ui.reset( new NodeGui(_imp->_nodeRoot) );
     }
-    
+    assert(node_ui);
     node_ui->initialize(this, dockContainer, node, requestedByLoad);
 
     if (isBd) {
