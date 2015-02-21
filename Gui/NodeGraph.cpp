@@ -1345,6 +1345,11 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
         for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
             boost::shared_ptr<NodeGui> & n = *it;
             
+            BackDropGui* isBd = dynamic_cast<BackDropGui*>(n.get());
+            if (isBd) {
+                continue;
+            }
+            
             QRectF bbox = n->mapToScene(n->boundingRect()).boundingRect();
             
             if (n->isActive() && n->isVisible() && bbox.intersects(sceneR) &&
