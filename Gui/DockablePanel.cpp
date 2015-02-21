@@ -1504,7 +1504,7 @@ RightClickableWidget::enterEvent(QEvent* e)
 }
 
 PageMap::iterator
-DockablePanelPrivate::addPage(Page_Knob* /*page*/,const QString & name)
+DockablePanelPrivate::addPage(Page_Knob* page,const QString & name)
 {
     if (!_pagesEnabled && _pages.size() > 0) {
         return _pages.begin();
@@ -1551,14 +1551,14 @@ DockablePanelPrivate::addPage(Page_Knob* /*page*/,const QString & name)
     tabLayout->setSpacing(NATRON_FORM_LAYOUT_LINES_SPACING);
     
     if (_tabWidget) {
-        if (name == NATRON_USER_MANAGED_KNOBS_PAGE_LABEL) {
+        if (name == NATRON_USER_MANAGED_KNOBS_PAGE_LABEL || (page && page->isUserKnob())) {
             _tabWidget->insertTab(0,newTab,name);
             _tabWidget->setCurrentIndex(0);
         } else {
             _tabWidget->addTab(newTab,name);
         }
     } else {
-        if (name == NATRON_USER_MANAGED_KNOBS_PAGE_LABEL) {
+        if (name == NATRON_USER_MANAGED_KNOBS_PAGE_LABEL || (page && page->isUserKnob())) {
             _horizLayout->insertWidget(0, newTab);
         } else {
             _horizLayout->addWidget(newTab);
