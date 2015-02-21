@@ -3275,6 +3275,7 @@ static int getChoiceIndexFromKnobType(KnobI* knob)
     Path_Knob* isPath = dynamic_cast<Path_Knob*>(knob);
     Group_Knob* isGrp = dynamic_cast<Group_Knob*>(knob);
     Page_Knob* isPage = dynamic_cast<Page_Knob*>(knob);
+    Button_Knob* isBtn = dynamic_cast<Button_Knob*>(knob);
     
     if (isInt) {
         if (dim == 1) {
@@ -3318,6 +3319,8 @@ static int getChoiceIndexFromKnobType(KnobI* knob)
         return 15;
     } else if (isPage) {
         return 16;
+    } else if (isBtn) {
+        return 17;
     }
     return -1;
 }
@@ -3426,6 +3429,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,const boost::shared_ptr<KnobI>
             _imp->typeChoice->addItem("Directory");
             _imp->typeChoice->addItem("Group");
             _imp->typeChoice->addItem("Page");
+            _imp->typeChoice->addItem("Button");
             QObject::connect(_imp->typeChoice, SIGNAL(currentIndexChanged(int)),this, SLOT(onTypeCurrentIndexChanged(int)));
             
             thirdRowLayout->addWidget(_imp->typeChoice);
@@ -3942,6 +3946,21 @@ AddKnobDialog::onTypeCurrentIndexChanged(int index)
             _imp->setVisibleGrpAsTab(false);
             _imp->setVisibleParent(false);
             break;
+        case 17: // button
+            _imp->setVisibleAnimates(false);
+            _imp->setVisibleEvaluate(false);
+            _imp->setVisibleHide(false);
+            _imp->setVisibleMenuItems(false);
+            _imp->setVisibleMinMax(false);
+            _imp->setVisibleStartNewLine(true);
+            _imp->setVisibleMultiLine(false);
+            _imp->setVisibleMultiPath(false);
+            _imp->setVisibleRichText(false);
+            _imp->setVisibleSequence(false);
+            _imp->setVisibleGrpAsTab(false);
+            _imp->setVisibleParent(true);
+
+            break;
         default:
             break;
     }
@@ -4087,6 +4106,10 @@ AddKnobDialogPrivate::createKnobFromSelection(int index,int optionalGroupIndex)
         } break;
         case 16: {
             boost::shared_ptr<Page_Knob> k = Natron::createKnob<Page_Knob>(panel->getHolder(), label, 1, false);
+            knob = k;
+        } break;
+        case 17: {
+            boost::shared_ptr<Button_Knob> k = Natron::createKnob<Button_Knob>(panel->getHolder(), label, 1, false);
             knob = k;
         } break;
         default:

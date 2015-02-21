@@ -921,8 +921,9 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
             File_Knob* isFile = dynamic_cast<File_Knob*>(sKnob.get());
             OutputFile_Knob* isOutFile = dynamic_cast<OutputFile_Knob*>(sKnob.get());
             Path_Knob* isPath = dynamic_cast<Path_Knob*>(sKnob.get());
+            Button_Knob* isBtn = dynamic_cast<Button_Knob*>(sKnob.get());
             
-            assert(isInt || isDbl || isBool || isChoice || isColor || isStr || isFile || isOutFile || isPath);
+            assert(isInt || isDbl || isBool || isChoice || isColor || isStr || isFile || isOutFile || isPath || isBtn);
             
             if (isInt) {
                 boost::shared_ptr<Int_Knob> k = Natron::createKnob<Int_Knob>(liveInstance.get(), isRegular->getLabel() ,
@@ -1016,6 +1017,10 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
                 if (data->multiPath) {
                     k->setMultiPath(true);
                 }
+                knob = k;
+            } else if (isBtn) {
+                boost::shared_ptr<Button_Knob> k = Natron::createKnob<Button_Knob>(liveInstance.get(), isRegular->getLabel() ,
+                                                                               sKnob->getDimension(), false);
                 knob = k;
             }
             

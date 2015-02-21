@@ -85,6 +85,8 @@ boost::shared_ptr<KnobI> KnobSerialization::createKnob(const std::string & typeN
         ret.reset( new File_Knob(NULL,"",dimension,false) );
     } else if ( typeName == OutputFile_Knob::typeNameStatic() ) {
         ret.reset( new OutputFile_Knob(NULL,"",dimension,false) );
+    } else if ( typeName == Button_Knob::typeNameStatic() ) {
+        ret.reset(new Button_Knob(NULL,"",dimension,false));
     }
     if (ret) {
         ret->populate();
