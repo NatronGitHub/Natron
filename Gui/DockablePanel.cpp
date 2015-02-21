@@ -2068,12 +2068,6 @@ DockablePanel::onOverlayButtonClicked()
             _imp->_overlayColor = c;
             _imp->_hasOverlayColor = true;
         }
-        std::list<boost::shared_ptr<Natron::Node> > overlayNodes;
-        getGui()->getNodesEntitledForOverlays(overlayNodes);
-        std::list<boost::shared_ptr<Natron::Node> >::iterator found = std::find(overlayNodes.begin(),overlayNodes.end(),node);
-        if (found != overlayNodes.end()) {
-            getGui()->getApp()->redrawAllViewers();
-        }
     } else {
         if (!hadOverlayColor) {
             {
@@ -2084,7 +2078,12 @@ DockablePanel::onOverlayButtonClicked()
             appPTR->getIcon(Natron::NATRON_PIXMAP_OVERLAY,&pixOverlay);
             _imp->_overlayButton->setIcon(QIcon(pixOverlay));
         }
-        onOverlayColorDialogColorChanged(oldColor);
+    }
+    std::list<boost::shared_ptr<Natron::Node> > overlayNodes;
+    getGui()->getNodesEntitledForOverlays(overlayNodes);
+    std::list<boost::shared_ptr<Natron::Node> >::iterator found = std::find(overlayNodes.begin(),overlayNodes.end(),node);
+    if (found != overlayNodes.end()) {
+        getGui()->getApp()->redrawAllViewers();
     }
 
 }
