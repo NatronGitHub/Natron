@@ -915,6 +915,8 @@ TabWidget::removeTab(int index,bool userAction)
             _imp->gui->removeViewerTab(isViewer,false,false);
         } else if (isHisto) {
             _imp->gui->removeHistogram(isHisto);
+            //Return because at this point isHisto is invalid
+            return tab;
         } else {
             ///Do not delete unique widgets such as the properties bin, node graph or curve editor
             tab->setVisible(false);
