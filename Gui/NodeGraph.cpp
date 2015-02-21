@@ -2606,9 +2606,9 @@ NodeGraph::deleteSelection()
                                                                               "parameters from which other parameters "
                                                                               "of the project rely on through expressions "
                                                                               "or links. Deleting this node will "
-                                                                              "remove these expressions pluginsly "
-                                                                              "and undoing the action will not recover "
-                                                                              "them. Do you wish to continue ?")
+                                                                              "remove these expressions. "
+                                                                              ". Undoing the action will not recover "
+                                                                              "them. \nContinue anyway ?")
                                                                            .toStdString(), false );
                     if (reply == Natron::eStandardButtonNo) {
                         return;

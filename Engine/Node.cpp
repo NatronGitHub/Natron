@@ -4879,18 +4879,12 @@ Node::restoreClipPreferencesRecursive(std::list<Natron::Node*>& markedNodes)
     if (found != markedNodes.end()) {
         return;
     }
+
     
-    InputsV inputs;
-    
-    {
-        QMutexLocker k(&_imp->inputsMutex);
-        inputs = _imp->inputs;
-    }
-    
-    
-    for (InputsV::iterator it = inputs.begin(); it != inputs.end(); ++it) {
-        if ((*it)) {
-            (*it)->restoreClipPreferencesRecursive(markedNodes);
+    for (int i = 0; i < getLiveInstance()->getMaxInputCount(); ++i) {
+        NodePtr input = getInput(i);
+        if (input) {
+            input->restoreClipPreferencesRecursive(markedNodes);
         }
     }
     

@@ -188,8 +188,7 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
     
     _publicInterface->getApp()->updateProjectLoadStatus(QObject::tr("Restoring graph stream preferences"));
     
-    size_t nodesToRestorePreferencesNb = nodesToRestorePreferences.size();
-    if (nodesToRestorePreferencesNb) {
+    if (nodesToRestorePreferences.size() > 0) {
         for (std::list<Natron::Node*>::iterator it = nodesToRestorePreferences.begin(); it!=nodesToRestorePreferences.end(); ++it) {
             (*it)->restoreClipPreferencesRecursive(markedNodes);
         }

@@ -1025,9 +1025,7 @@ public:
     /**
      * @brief Called everytimes an input connection is changed
      **/
-    virtual void onInputChanged(int /*inputNo*/)
-    {
-    }
+    virtual void onInputChanged(int inputNo);
 
     /**
      * @brief Called after the project has restored all nodes and their links, to set clip preferences.

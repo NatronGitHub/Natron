@@ -3930,6 +3930,16 @@ EffectInstance::isIdentity_public(U64 hash,
     }
 }
 
+void
+EffectInstance::onInputChanged(int /*inputNo*/)
+{
+    if ( !getApp()->getProject()->isLoadingProject() ) {
+        RenderScale s;
+        s.x = s.y = 1.;
+        checkOFXClipPreferences_public(getCurrentTime(), s, kOfxChangeUserEdited,true, true);
+    }
+}
+
 Natron::StatusEnum
 EffectInstance::getRegionOfDefinition_public(U64 hash,
                                              SequenceTime time,
@@ -4125,7 +4135,37 @@ EffectInstance::getPreferredDepthAndComponents(int inputNb,
                                                Natron::ImageBitDepthEnum* depth) const
 {
     ///find closest to RGBA
-    *comp = findClosestSupportedComponents(inputNb, Natron::eImageComponentRGBA);
+    EffectInstance* inp = 0;
+    
+    Natron::ImageComponentsEnum inputComps = Natron::eImageComponentRGBA;
+    if (inputNb != -1) {
+        inp = getInput(inputNb);
+        if (inp) {
+            Natron::ImageBitDepthEnum depth;
+            inp->getPreferredDepthAndComponents(-1, &inputComps, &depth);
+        }
+    } else {
+        Natron::ImageComponentsEnum maxComps  = Natron::eImageComponentNone;
+        for (int i = 0; i < getMaxInputCount(); ++i) {
+            EffectInstance* input = getInput(i);
+            if (input) {
+                Natron::ImageComponentsEnum inputComps;
+                Natron::ImageBitDepthEnum inputDepth;
+                input->getPreferredDepthAndComponents(-1, &inputComps, &inputDepth);
+                if (Natron::getElementsCountForComponents(inputComps) > Natron::getElementsCountForComponents(maxComps)) {
+                    maxComps = inputComps;
+                }
+            }
+        }
+        
+        if (maxComps == Natron::eImageComponentNone) {
+            inputComps = Natron::eImageComponentRGBA;
+        } else {
+            inputComps = maxComps;
+        }
+        
+    }
+    *comp = findClosestSupportedComponents(inputNb, inputComps);
 
     ///find deepest bitdepth
     *depth = getBitDepth();
