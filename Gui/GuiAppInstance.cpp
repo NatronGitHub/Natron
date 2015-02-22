@@ -967,4 +967,11 @@ GuiAppInstance::onGroupCreationFinished(const boost::shared_ptr<Natron::Node>& n
     assert(node_gui_i);
     boost::shared_ptr<NodeGui> nodeGui = boost::dynamic_pointer_cast<NodeGui>(node_gui_i);
     graph->moveNodesForIdealPosition(nodeGui, true);
+    
+    std::list<ViewerInstance* > viewers;
+    node->hasViewersConnected(&viewers);
+    for (std::list<ViewerInstance* >::iterator it2 = viewers.begin(); it2 != viewers.end(); ++it2) {
+        (*it2)->renderCurrentFrame(false);
+    }
+    
 }
