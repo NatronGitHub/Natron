@@ -2436,10 +2436,10 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
             
 # ifdef DEBUG
 
-            /*qDebug() << getNode()->getScriptName_mt_safe().c_str() << ": render view " << args.view << " " << rectsToRender.size() << " rectangles";
+            qDebug() << getNode()->getScriptName_mt_safe().c_str() << ": render view " << args.view << " " << rectsToRender.size() << " rectangles";
             for (std::list<RectI>::const_iterator it = rectsToRender.begin(); it != rectsToRender.end(); ++it) {
                 qDebug() << "rect: " << "x1= " <<  it->x1 << " , x2= " << it->x2 << " , y1= " << it->y1 << " , y2= " << it->y2;
-            }*/
+            }
 # endif
             renderRetCode = renderRoIInternal(args.time,
                                               args.mipMapLevel,

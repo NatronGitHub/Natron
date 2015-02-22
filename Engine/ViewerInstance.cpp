@@ -381,7 +381,7 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
         outArgs->activeInputToRender = upstreamInput->getNearestNonDisabled();
     }
     
-    if (!outArgs->activeInputToRender || !checkTreeCanRender(outArgs->activeInputToRender->getNode().get())) {
+    if (!upstreamInput || !outArgs->activeInputToRender || !checkTreeCanRender(outArgs->activeInputToRender->getNode().get())) {
         Q_EMIT disconnectTextureRequest(textureIndex);
         return eStatusFailed;
     }
