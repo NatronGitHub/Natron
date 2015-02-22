@@ -127,10 +127,6 @@ public:
 
     const std::list<boost::shared_ptr<NodeGui> > & getSelectedNodes() const;
 
-    void setLastSelectedViewer(ViewerTab* tab);
-
-    ViewerTab* getLastSelectedViewer() const;
-
     bool eventFilter(QObject *target, QEvent* e);
 
     void createViewerGui(boost::shared_ptr<Natron::Node> viewer);

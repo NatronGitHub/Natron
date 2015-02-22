@@ -2748,23 +2748,12 @@ Node::deactivate(const std::list< Node* > & outputsToDisconnect,
     if (!_imp->liveInstance || !isActivated()) {
         return;
     }
-    
-    ///If the node is a group, deactivate all nodes within the group first
-    NodeGroup* isGrp = dynamic_cast<NodeGroup*>(getLiveInstance());
-    if (isGrp) {
-        NodeList nodes = isGrp->getNodes();
-        for (NodeList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-            (*it)->deactivate(std::list< Node* >(),false,false,true,false);
-        }
-    }
-    
-    ///If the node has children (i.e it is a multi-instance), deactivate its children
-    for (std::list<boost::weak_ptr<Node> >::iterator it = _imp->children.begin(); it != _imp->children.end(); ++it) {
-        it->lock()->deactivate(std::list< Node* >(),false,false,true,false);
-    }
-    
     //first tell the gui to clear any persistent message linked to this node
     clearPersistentMessage(false);
+    
+    boost::shared_ptr<NodeCollection> parentCol = getGroup();
+    assert(parentCol);
+    NodeGroup* isParentGroup = dynamic_cast<NodeGroup*>(parentCol.get());
     
     ///For all knobs that have listeners, kill expressions
     const std::vector<boost::shared_ptr<KnobI> > & knobs = getKnobs();
@@ -2772,9 +2761,26 @@ Node::deactivate(const std::list< Node* > & outputsToDisconnect,
         std::list<KnobI*> listeners;
         knobs[i]->getListeners(listeners);
         for (std::list<KnobI*>::iterator it = listeners.begin(); it != listeners.end(); ++it) {
-            if ((*it)->getHolder() == _imp->liveInstance.get()) {
+            KnobHolder* holder = (*it)->getHolder();
+            if (!holder) {
                 continue;
             }
+            if (holder == _imp->liveInstance.get() || holder == isParentGroup) {
+                continue;
+            }
+            
+            Natron::EffectInstance* isEffect = dynamic_cast<Natron::EffectInstance*>(holder);
+            if (!isEffect) {
+                continue;
+            }
+            
+            boost::shared_ptr<NodeCollection> effectParent = isEffect->getNode()->getGroup();
+            assert(effectParent);
+            NodeGroup* isEffectParentGroup = dynamic_cast<NodeGroup*>(effectParent.get());
+            if (isEffectParentGroup && isEffectParentGroup == getLiveInstance()) {
+                continue;
+            }
+            
             for (int dim = 0; dim < (*it)->getDimension(); ++dim) {
                 std::pair<int, boost::shared_ptr<KnobI> > master = (*it)->getMaster(dim);
                 if (master.second == knobs[i]) {
@@ -2799,6 +2805,7 @@ Node::deactivate(const std::list< Node* > & outputsToDisconnect,
         
         ///No need to lock guiInputs is only written to by the mainthread
         for (U32 i = 0; i < _imp->inputs.size(); ++i) {
+            
             if (_imp->inputs[i]) {
                 if ( !_imp->liveInstance->isInputOptional(i) ) {
                     if (firstNonOptionalInput == -1) {
@@ -2890,9 +2897,8 @@ Node::deactivate(const std::list< Node* > & outputsToDisconnect,
     ///_imp->liveInstance->clearPluginMemoryChunks();
     clearLastRenderedImage();
     
-    boost::shared_ptr<NodeCollection> group = getGroup();
-    if (group) {
-        group->notifyNodeDeactivated(shared_from_this());
+    if (parentCol) {
+        parentCol->notifyNodeDeactivated(shared_from_this());
     }
     
     if (hideGui) {
@@ -2902,6 +2908,25 @@ Node::deactivate(const std::list< Node* > & outputsToDisconnect,
         QMutexLocker l(&_imp->activatedMutex);
         _imp->activated = false;
     }
+    
+    
+    ///If the node is a group, deactivate all nodes within the group
+    NodeGroup* isGrp = dynamic_cast<NodeGroup*>(getLiveInstance());
+    if (isGrp) {
+        isGrp->setIsDeactivatingGroup(true);
+        NodeList nodes = isGrp->getNodes();
+        for (NodeList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+            (*it)->deactivate(std::list< Node* >(),false,false,true,false);
+        }
+        isGrp->setIsDeactivatingGroup(false);
+    }
+    
+    ///If the node has children (i.e it is a multi-instance), deactivate its children
+    for (std::list<boost::weak_ptr<Node> >::iterator it = _imp->children.begin(); it != _imp->children.end(); ++it) {
+        it->lock()->deactivate(std::list< Node* >(),false,false,true,false);
+    }
+    
+
     
     if (!getApp()->getProject()->isProjectClosing()) {
         _imp->runOnNodeDeleteCB();
@@ -2918,21 +2943,6 @@ Node::activate(const std::list< Node* > & outputsToRestore,
     assert( QThread::currentThread() == qApp->thread() );
     if (!_imp->liveInstance || isActivated()) {
         return;
-    }
-    
-    
-    ///If the node is a group, activate all nodes within the group first
-    NodeGroup* isGrp = dynamic_cast<NodeGroup*>(getLiveInstance());
-    if (isGrp) {
-        NodeList nodes = isGrp->getNodes();
-        for (NodeList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-            (*it)->activate(std::list< Node* >(),false,false);
-        }
-    }
-    
-    ///If the node has children (i.e it is a multi-instance), activate its children
-    for (std::list<boost::weak_ptr<Node> >::iterator it = _imp->children.begin(); it != _imp->children.end(); ++it) {
-        it->lock()->activate(std::list< Node* >(),false,false);
     }
 
     
@@ -2989,6 +2999,22 @@ Node::activate(const std::list< Node* > & outputsToRestore,
         group->notifyNodeActivated(shared_from_this());
     }
     Q_EMIT activated(triggerRender);
+    
+    ///If the node is a group, activate all nodes within the group first
+    NodeGroup* isGrp = dynamic_cast<NodeGroup*>(getLiveInstance());
+    if (isGrp) {
+        isGrp->setIsActivatingGroup(true);
+        NodeList nodes = isGrp->getNodes();
+        for (NodeList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+            (*it)->activate(std::list< Node* >(),false,false);
+        }
+        isGrp->setIsActivatingGroup(false);
+    }
+    
+    ///If the node has children (i.e it is a multi-instance), activate its children
+    for (std::list<boost::weak_ptr<Node> >::iterator it = _imp->children.begin(); it != _imp->children.end(); ++it) {
+        it->lock()->activate(std::list< Node* >(),false,false);
+    }
     
     _imp->runOnNodeCreatedCB(true);
 } // activate

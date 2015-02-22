@@ -843,12 +843,12 @@ DockablePanelTabWidget::keyPressEvent(QKeyEvent* event)
     Qt::KeyboardModifiers modifiers = event->modifiers();
     
     if (isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevious, modifiers, key)) {
-        if ( _gui->getLastSelectedViewer() ) {
-            _gui->getLastSelectedViewer()->previousFrame();
+        if ( _gui->getNodeGraph()->getLastSelectedViewer() ) {
+            _gui->getNodeGraph()->getLastSelectedViewer()->previousFrame();
         }
     } else if (isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerNext, modifiers, key) ) {
-        if ( _gui->getLastSelectedViewer() ) {
-            _gui->getLastSelectedViewer()->nextFrame();
+        if ( _gui->getNodeGraph()->getLastSelectedViewer() ) {
+            _gui->getNodeGraph()->getLastSelectedViewer()->nextFrame();
         }
     } else {
         QTabWidget::keyPressEvent(event);

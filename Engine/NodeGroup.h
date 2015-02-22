@@ -329,6 +329,11 @@ public:
     
     void getInputsOutputs(std::list<Natron::Node* >* nodes) const;
     
+    bool getIsDeactivatingGroup() const;
+    void setIsDeactivatingGroup(bool b);
+    
+    bool getIsActivatingGroup() const;
+    void setIsActivatingGroup(bool b);
     
 private:
     

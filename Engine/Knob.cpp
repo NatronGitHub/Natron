@@ -2263,11 +2263,13 @@ KnobHelper::onMasterChanged(KnobI* master,
     for (U32 i = 0; i < masters.size(); ++i) {
         if (masters[i].second.get() == master && masters[i].first == masterDimension) {
             
-            ///We still want to clone the master's dimension because otherwise we couldn't edit the curve e.g in the curve editor
-            ///For example we use it for roto knobs where selected beziers have their knobs slaved to the gui knobs
-            clone(master,i);
-            
-            evaluateValueChange(i, Natron::eValueChangedReasonSlaveRefresh);
+            if (getExpression(i).empty()) {
+                ///We still want to clone the master's dimension because otherwise we couldn't edit the curve e.g in the curve editor
+                ///For example we use it for roto knobs where selected beziers have their knobs slaved to the gui knobs
+                clone(master,i);
+                
+                evaluateValueChange(i, Natron::eValueChangedReasonSlaveRefresh);
+            }
             
             return;
         }

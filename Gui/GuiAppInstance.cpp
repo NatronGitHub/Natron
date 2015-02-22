@@ -946,3 +946,32 @@ GuiAppInstance::clearOverlayRedrawRequests()
     assert(QThread::currentThread() == qApp->thread());
     _imp->overlayRedrawRequests = 0;
 }
+
+void
+GuiAppInstance::onGroupCreationFinished(const boost::shared_ptr<Natron::Node>& node)
+{
+    NodeGraph* graph = 0;
+    boost::shared_ptr<NodeCollection> collection = node->getGroup();
+    assert(collection);
+    NodeGroup* isGrp = dynamic_cast<NodeGroup*>(collection.get());
+    if (isGrp) {
+        NodeGraphI* graph_i = isGrp->getNodeGraph();
+        assert(graph_i);
+        graph = dynamic_cast<NodeGraph*>(graph_i);
+    } else {
+        graph = _imp->_gui->getNodeGraph();
+    }
+    assert(graph);
+    
+    boost::shared_ptr<NodeGuiI> node_gui_i = node->getNodeGui();
+    assert(node_gui_i);
+    boost::shared_ptr<NodeGui> nodeGui = boost::dynamic_pointer_cast<NodeGui>(node_gui_i);
+    graph->moveNodesForIdealPosition(nodeGui, true);
+    
+    std::list<ViewerInstance* > viewers;
+    node->hasViewersConnected(&viewers);
+    for (std::list<ViewerInstance* >::iterator it2 = viewers.begin(); it2 != viewers.end(); ++it2) {
+        (*it2)->renderCurrentFrame(false);
+    }
+    
+}

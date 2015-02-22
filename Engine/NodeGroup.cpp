@@ -825,12 +825,16 @@ struct NodeGroupPrivate
 {
     std::vector<boost::weak_ptr<Node> > inputs;
     std::list<boost::weak_ptr<Node> > outputs;
+    bool isDeactivatingGroup;
+    bool isActivatingGroup;
     
     boost::shared_ptr<Button_Knob> exportAsTemplate;
     
     NodeGroupPrivate()
     : inputs()
     , outputs()
+    , isDeactivatingGroup(false)
+    , isActivatingGroup(false)
     , exportAsTemplate()
     {
         
@@ -845,6 +849,33 @@ NodeGroup::NodeGroup(const NodePtr &node)
     setSupportsRenderScaleMaybe(EffectInstance::eSupportsYes);
 }
 
+bool
+NodeGroup::getIsDeactivatingGroup() const
+{
+    assert(QThread::currentThread() == qApp->thread());
+    return _imp->isDeactivatingGroup;
+}
+
+void
+NodeGroup::setIsDeactivatingGroup(bool b)
+{
+    assert(QThread::currentThread() == qApp->thread());
+    _imp->isDeactivatingGroup = b;
+}
+
+bool
+NodeGroup::getIsActivatingGroup() const
+{
+    assert(QThread::currentThread() == qApp->thread());
+    return _imp->isActivatingGroup;
+}
+
+void
+NodeGroup::setIsActivatingGroup(bool b)
+{
+    assert(QThread::currentThread() == qApp->thread());
+    _imp->isActivatingGroup = b;
+}
 
 NodeGroup::~NodeGroup()
 {
@@ -981,6 +1012,10 @@ NodeGroup::initializeKnobs()
 void
 NodeGroup::notifyNodeDeactivated(const boost::shared_ptr<Natron::Node>& node)
 {
+    
+    if (getIsDeactivatingGroup()) {
+        return;
+    }
     NodePtr thisNode = getNode();
     GroupInput* isInput = dynamic_cast<GroupInput*>(node->getLiveInstance());
     if (isInput) {
@@ -989,7 +1024,9 @@ NodeGroup::notifyNodeDeactivated(const boost::shared_ptr<Natron::Node>& node)
             if (node == input) {
                 
                 ///Also disconnect the real input
+                
                 thisNode->disconnectInput(i);
+                
                 
                 _imp->inputs.erase(_imp->inputs.begin() + i);
                 thisNode->initializeInputs();
@@ -1022,6 +1059,11 @@ NodeGroup::notifyNodeDeactivated(const boost::shared_ptr<Natron::Node>& node)
 void
 NodeGroup::notifyNodeActivated(const boost::shared_ptr<Natron::Node>& node)
 {
+    
+    if (getIsActivatingGroup()) {
+        return;
+    }
+    
     NodePtr thisNode = getNode();
 
     GroupInput* isInput = dynamic_cast<GroupInput*>(node->getLiveInstance());
