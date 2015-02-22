@@ -149,6 +149,11 @@ public:
     /// If bounds is not null, fetch the indicated section of the canonical image plane.
     /// If view is -1, guess it (e.g. from the last renderargs)
     virtual OFX::Host::ImageEffect::Image* getStereoscopicImage(OfxTime time, int view, const OfxRectD *optionalBounds) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
+    virtual OFX::Host::ImageEffect::Image* getImagePlane(OfxTime time, int view, const std::string& plane,const OfxRectD *optionalBounds) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
+    /// override this to return the rod on the clip for the given view
+    virtual OfxRectD getRegionOfDefinition(OfxTime time, int view) const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     /// given the colour component, find the nearest set of supported colour components
     /// override this for extra wierd custom component depths
