@@ -197,7 +197,6 @@ struct GuiPrivate
 {
     Gui* _gui; //< ptr to the public interface
     bool _isUserScrubbingTimeline; //< true if the user is actively moving the cursor on the timeline. False on mouse release.
-    ViewerTab* _lastSelectedViewer; //< a ptr to the last selected ViewerTab
     GuiAppInstance* _appInstance; //< ptr to the appInstance
 
     ///Dialogs handling members
@@ -382,7 +381,6 @@ struct GuiPrivate
                Gui* gui)
     : _gui(gui)
     , _isUserScrubbingTimeline(false)
-    , _lastSelectedViewer(NULL)
     , _appInstance(app)
     , _uiUsingMainThreadCond()
     , _uiUsingMainThread(false)
@@ -786,7 +784,20 @@ Gui::createViewerGui(boost::shared_ptr<Node> viewer)
 
     ViewerInstance* v = dynamic_cast<ViewerInstance*>( viewer->getLiveInstance() );
     assert(v);
-    _imp->_lastSelectedViewer = addNewViewerTab(v, where);
+    
+    NodeGraph* graph = 0;
+    boost::shared_ptr<NodeCollection> collection = viewer->getGroup();
+    assert(collection);
+    NodeGroup* isGrp = dynamic_cast<NodeGroup*>(collection.get());
+    if (isGrp) {
+        NodeGraphI* graph_i = isGrp->getNodeGraph();
+        assert(graph_i);
+        graph = dynamic_cast<NodeGraph*>(graph_i);
+    } else {
+        graph = getNodeGraph();
+    }
+    assert(graph);
+    graph->setLastSelectedViewer(addNewViewerTab(v, where));
 }
 
 
@@ -2217,17 +2228,40 @@ Gui::removeViewerTab(ViewerTab* tab,
 {
     assert(tab);
     unregisterTab(tab);
-    if (_imp->_lastSelectedViewer == tab) {
+    
+    NodeGraph* graph = 0;
+    boost::shared_ptr<NodeCollection> collection = tab->getInternalNode()->getNode()->getGroup();
+    assert(collection);
+    NodeGroup* isGrp = dynamic_cast<NodeGroup*>(collection.get());
+    if (isGrp) {
+        NodeGraphI* graph_i = isGrp->getNodeGraph();
+        assert(graph_i);
+        graph = dynamic_cast<NodeGraph*>(graph_i);
+    } else {
+        graph = getNodeGraph();
+    }
+    assert(graph);
+
+    ViewerTab* lastSelectedViewer = graph->getLastSelectedViewer();
+    
+    if (lastSelectedViewer == tab) {
         bool foundOne = false;
-        for (std::list<ViewerTab*>::const_iterator it = _imp->_viewerTabs.begin(); it != _imp->_viewerTabs.end(); ++it) {
-            if ( ( (*it) != tab ) && (*it)->getInternalNode()->getNode()->isActivated() ) {
-                foundOne = true;
-                _imp->_lastSelectedViewer = *it;
-                break;
+        NodeList nodes = collection->getNodes();
+        for (NodeList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+            ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>((*it)->getLiveInstance());
+            if (!isViewer || isViewer == tab->getInternalNode() || !(*it)->isActivated()) {
+                continue;
             }
+            OpenGLViewerI* viewerI = isViewer->getUiContext();
+            assert(viewerI);
+            ViewerGL* glViewer = dynamic_cast<ViewerGL*>(viewerI);
+            assert(glViewer);
+            graph->setLastSelectedViewer(glViewer->getViewerTab());
+            foundOne = true;
+            break;
         }
         if (!foundOne) {
-            _imp->_lastSelectedViewer = 0;
+            graph->setLastSelectedViewer(0);
         }
     }
 
@@ -3504,61 +3538,121 @@ Gui::selectNode(boost::shared_ptr<NodeGui> node)
 void
 Gui::connectInput1()
 {
-    _imp->_nodeGraphArea->connectCurrentViewerToSelection(0);
+    NodeGraph* graph = 0;
+    if (_imp->_lastFocusedGraph) {
+        graph = _imp->_lastFocusedGraph;
+    } else {
+        graph = _imp->_nodeGraphArea;
+    }
+    graph->connectCurrentViewerToSelection(0);
 }
 
 void
 Gui::connectInput2()
 {
-    _imp->_nodeGraphArea->connectCurrentViewerToSelection(1);
+    NodeGraph* graph = 0;
+    if (_imp->_lastFocusedGraph) {
+        graph = _imp->_lastFocusedGraph;
+    } else {
+        graph = _imp->_nodeGraphArea;
+    }
+    graph->connectCurrentViewerToSelection(1);
 }
 
 void
 Gui::connectInput3()
 {
-    _imp->_nodeGraphArea->connectCurrentViewerToSelection(2);
+    NodeGraph* graph = 0;
+    if (_imp->_lastFocusedGraph) {
+        graph = _imp->_lastFocusedGraph;
+    } else {
+        graph = _imp->_nodeGraphArea;
+    }
+    graph->connectCurrentViewerToSelection(2);
 }
 
 void
 Gui::connectInput4()
 {
-    _imp->_nodeGraphArea->connectCurrentViewerToSelection(3);
+    NodeGraph* graph = 0;
+    if (_imp->_lastFocusedGraph) {
+        graph = _imp->_lastFocusedGraph;
+    } else {
+        graph = _imp->_nodeGraphArea;
+    }
+    graph->connectCurrentViewerToSelection(3);
 }
 
 void
 Gui::connectInput5()
 {
-    _imp->_nodeGraphArea->connectCurrentViewerToSelection(4);
+    NodeGraph* graph = 0;
+    if (_imp->_lastFocusedGraph) {
+        graph = _imp->_lastFocusedGraph;
+    } else {
+        graph = _imp->_nodeGraphArea;
+    }
+    graph->connectCurrentViewerToSelection(4);
 }
 
 void
 Gui::connectInput6()
 {
-    _imp->_nodeGraphArea->connectCurrentViewerToSelection(5);
+    NodeGraph* graph = 0;
+    if (_imp->_lastFocusedGraph) {
+        graph = _imp->_lastFocusedGraph;
+    } else {
+        graph = _imp->_nodeGraphArea;
+    }
+    graph->connectCurrentViewerToSelection(5);
 }
 
 void
 Gui::connectInput7()
 {
-    _imp->_nodeGraphArea->connectCurrentViewerToSelection(6);
+    NodeGraph* graph = 0;
+    if (_imp->_lastFocusedGraph) {
+        graph = _imp->_lastFocusedGraph;
+    } else {
+        graph = _imp->_nodeGraphArea;
+    }
+    graph->connectCurrentViewerToSelection(6);
 }
 
 void
 Gui::connectInput8()
 {
-    _imp->_nodeGraphArea->connectCurrentViewerToSelection(7);
+    NodeGraph* graph = 0;
+    if (_imp->_lastFocusedGraph) {
+        graph = _imp->_lastFocusedGraph;
+    } else {
+        graph = _imp->_nodeGraphArea;
+    }
+    graph->connectCurrentViewerToSelection(7);
 }
 
 void
 Gui::connectInput9()
 {
-    _imp->_nodeGraphArea->connectCurrentViewerToSelection(8);
+    NodeGraph* graph = 0;
+    if (_imp->_lastFocusedGraph) {
+        graph = _imp->_lastFocusedGraph;
+    } else {
+        graph = _imp->_nodeGraphArea;
+    }
+    graph->connectCurrentViewerToSelection(8);
 }
 
 void
 Gui::connectInput10()
 {
-    _imp->_nodeGraphArea->connectCurrentViewerToSelection(9);
+    NodeGraph* graph = 0;
+    if (_imp->_lastFocusedGraph) {
+        graph = _imp->_lastFocusedGraph;
+    } else {
+        graph = _imp->_nodeGraphArea;
+    }
+    graph->connectCurrentViewerToSelection(9);
 }
 
 void
@@ -4040,17 +4134,7 @@ Gui::onProcessHandlerStarted(const QString & sequenceName,
     dialog->show();
 }
 
-void
-Gui::setLastSelectedViewer(ViewerTab* tab)
-{
-    _imp->_lastSelectedViewer = tab;
-}
 
-ViewerTab*
-Gui::getLastSelectedViewer() const
-{
-    return _imp->_lastSelectedViewer;
-}
 
 void
 Gui::setNextViewerAnchor(TabWidget* where)
@@ -4697,28 +4781,28 @@ Gui::keyPressEvent(QKeyEvent* e)
     Qt::KeyboardModifiers modifiers = e->modifiers();
     
     if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevious, modifiers, key) ) {
-        if ( getLastSelectedViewer() ) {
-            getLastSelectedViewer()->previousFrame();
+        if ( getNodeGraph()->getLastSelectedViewer() ) {
+            getNodeGraph()->getLastSelectedViewer()->previousFrame();
         }
     } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerNext, modifiers, key) ) {
-        if ( getLastSelectedViewer() ) {
-            getLastSelectedViewer()->nextFrame();
+        if ( getNodeGraph()->getLastSelectedViewer() ) {
+            getNodeGraph()->getLastSelectedViewer()->nextFrame();
         }
     } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerFirst, modifiers, key) ) {
-        if ( getLastSelectedViewer() ) {
-            getLastSelectedViewer()->firstFrame();
+        if ( getNodeGraph()->getLastSelectedViewer() ) {
+            getNodeGraph()->getLastSelectedViewer()->firstFrame();
         }
     } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerLast, modifiers, key) ) {
-        if ( getLastSelectedViewer() ) {
-            getLastSelectedViewer()->lastFrame();
+        if ( getNodeGraph()->getLastSelectedViewer() ) {
+            getNodeGraph()->getLastSelectedViewer()->lastFrame();
         }
     } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevIncr, modifiers, key) ) {
-        if ( getLastSelectedViewer() ) {
-            getLastSelectedViewer()->previousIncrement();
+        if ( getNodeGraph()->getLastSelectedViewer() ) {
+            getNodeGraph()->getLastSelectedViewer()->previousIncrement();
         }
     } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerNextIncr, modifiers, key) ) {
-        if ( getLastSelectedViewer() ) {
-            getLastSelectedViewer()->nextIncrement();
+        if ( getNodeGraph()->getLastSelectedViewer() ) {
+            getNodeGraph()->getLastSelectedViewer()->nextIncrement();
         }
     } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevKF, modifiers, key) ) {
         getApp()->getTimeLine()->goToPreviousKeyframe();

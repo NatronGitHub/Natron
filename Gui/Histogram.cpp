@@ -437,7 +437,7 @@ boost::shared_ptr<Natron::Image> HistogramPrivate::getHistogramImage(RectI* imag
         return boost::shared_ptr<Natron::Image>();
     } else if (index == 1) {
         //current viewer
-        ViewerTab* lastSelectedViewer = gui->getLastSelectedViewer();
+        ViewerTab* lastSelectedViewer = gui->getNodeGraph()->getLastSelectedViewer();
         boost::shared_ptr<Natron::Image> ret;
         if (lastSelectedViewer) {
             ret = lastSelectedViewer->getViewer()->getLastRenderedImageByMipMapLevel(textureIndex,lastSelectedViewer->getInternalNode()->getMipMapLevelFromZoomFactor());
@@ -568,7 +568,7 @@ Histogram::onViewerImageChanged(ViewerGL* viewer,
 
     if (viewer && hasImageBackend) {
         QString viewerName = viewer->getInternalNode()->getScriptName_mt_safe().c_str();
-        ViewerTab* lastSelectedViewer = _imp->gui->getLastSelectedViewer();
+        ViewerTab* lastSelectedViewer = _imp->gui->getNodeGraph()->getLastSelectedViewer();
         QString currentViewerName;
         if (lastSelectedViewer) {
             currentViewerName = lastSelectedViewer->getInternalNode()->getScriptName_mt_safe().c_str();

@@ -281,6 +281,8 @@ struct NodeGraphPrivate
     bool _mergeMoveCommands;
     bool _hasMovedOnce;
     
+    ViewerTab* lastSelectedViewer;
+    
     NodeGraphPrivate(Gui* gui,
                      NodeGraph* p,
                      const boost::shared_ptr<NodeCollection>& group)
@@ -327,6 +329,7 @@ struct NodeGraphPrivate
     , _detailsVisible(false)
     , _mergeMoveCommands(false)
     , _hasMovedOnce(false)
+    , lastSelectedViewer(0)
     {
     }
 
@@ -2197,28 +2200,28 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
             }
         }
     } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerFirst, modifiers, key) ) {
-        if ( getGui()->getLastSelectedViewer() ) {
-            getGui()->getLastSelectedViewer()->firstFrame();
+        if ( getLastSelectedViewer() ) {
+            getLastSelectedViewer()->firstFrame();
         }
     } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerLast, modifiers, key) ) {
-        if ( getGui()->getLastSelectedViewer() ) {
-            getGui()->getLastSelectedViewer()->lastFrame();
+        if ( getLastSelectedViewer() ) {
+            getLastSelectedViewer()->lastFrame();
         }
     } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevIncr, modifiers, key) ) {
-        if ( getGui()->getLastSelectedViewer() ) {
-            getGui()->getLastSelectedViewer()->previousIncrement();
+        if ( getLastSelectedViewer() ) {
+            getLastSelectedViewer()->previousIncrement();
         }
     } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerNextIncr, modifiers, key) ) {
-        if ( getGui()->getLastSelectedViewer() ) {
-            getGui()->getLastSelectedViewer()->nextIncrement();
+        if ( getLastSelectedViewer() ) {
+            getLastSelectedViewer()->nextIncrement();
         }
     }else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerNext, modifiers, key) ) {
-        if ( getGui()->getLastSelectedViewer() ) {
-            getGui()->getLastSelectedViewer()->nextFrame();
+        if ( getLastSelectedViewer() ) {
+            getLastSelectedViewer()->nextFrame();
         }
     } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevious, modifiers, key) ) {
-        if ( getGui()->getLastSelectedViewer() ) {
-            getGui()->getLastSelectedViewer()->previousFrame();
+        if ( getLastSelectedViewer() ) {
+            getLastSelectedViewer()->previousFrame();
         }
     }else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevKF, modifiers, key) ) {
         getGui()->getApp()->getTimeLine()->goToPreviousKeyframe();
@@ -2355,7 +2358,7 @@ NodeGraph::selectAllNodes(bool onlyInVisiblePortion)
 void
 NodeGraph::connectCurrentViewerToSelection(int inputNB)
 {
-    if ( !_imp->_gui->getLastSelectedViewer() ) {
+    if ( !getLastSelectedViewer() ) {
         _imp->_gui->getApp()->createNode(  CreateNodeArgs(PLUGINID_NATRON_VIEWER,
                                                           "",
                                                           -1,-1,
@@ -2369,7 +2372,7 @@ NodeGraph::connectCurrentViewerToSelection(int inputNB)
     }
 
     ///get a pointer to the last user selected viewer
-    boost::shared_ptr<InspectorNode> v = boost::dynamic_pointer_cast<InspectorNode>( _imp->_gui->getLastSelectedViewer()->
+    boost::shared_ptr<InspectorNode> v = boost::dynamic_pointer_cast<InspectorNode>( getLastSelectedViewer()->
                                                                                      getInternalNode()->getNode() );
 
     ///if the node is no longer active (i.e: it was deleted by the user), don't do anything.
@@ -2527,9 +2530,10 @@ void
 NodeGraph::removeNode(const boost::shared_ptr<NodeGui> & node)
 {
  
-
+    NodeGroup* isGrp = dynamic_cast<NodeGroup*>(node->getNode()->getLiveInstance());
     const std::vector<boost::shared_ptr<KnobI> > & knobs = node->getNode()->getKnobs();
 
+    
     for (U32 i = 0; i < knobs.size(); ++i) {
         std::list<KnobI*> listeners;
         knobs[i]->getListeners(listeners);
@@ -2537,6 +2541,13 @@ NodeGraph::removeNode(const boost::shared_ptr<NodeGui> & node)
         bool foundEffect = false;
         for (std::list<KnobI*>::iterator it2 = listeners.begin(); it2 != listeners.end(); ++it2) {
             EffectInstance* isEffect = dynamic_cast<EffectInstance*>( (*it2)->getHolder() );
+            if (!isEffect) {
+                continue;
+            }
+            if (isGrp && isEffect->getNode()->getGroup().get() == isGrp) {
+                continue;
+            }
+            
             if ( isEffect && ( isEffect != node->getNode()->getLiveInstance() ) ) {
                 foundEffect = true;
                 break;
@@ -2587,6 +2598,9 @@ NodeGraph::deleteSelection()
             
             const std::vector<boost::shared_ptr<KnobI> > & knobs = (*it)->getNode()->getKnobs();
             bool mustBreak = false;
+            
+            NodeGroup* isGrp = dynamic_cast<NodeGroup*>((*it)->getNode()->getLiveInstance());
+            
             for (U32 i = 0; i < knobs.size(); ++i) {
                 std::list<KnobI*> listeners;
                 knobs[i]->getListeners(listeners);
@@ -2595,6 +2609,14 @@ NodeGraph::deleteSelection()
                 bool foundEffect = false;
                 for (std::list<KnobI*>::iterator it2 = listeners.begin(); it2 != listeners.end(); ++it2) {
                     EffectInstance* isEffect = dynamic_cast<EffectInstance*>( (*it2)->getHolder() );
+                    
+                    if (!isEffect) {
+                        continue;
+                    }
+                    if (isGrp && isEffect->getNode()->getGroup().get() == isGrp) {
+                        continue;
+                    }
+                    
                     if ( isEffect && ( isEffect != (*it)->getNode()->getLiveInstance() ) ) {
                         foundEffect = true;
                         break;
@@ -2659,7 +2681,7 @@ NodeGraph::selectNode(const boost::shared_ptr<NodeGui> & n,
         const std::list<ViewerTab*> & viewerTabs = _imp->_gui->getViewersList();
         for (std::list<ViewerTab*>::const_iterator it = viewerTabs.begin(); it != viewerTabs.end(); ++it) {
             if ( (*it)->getViewer() == viewer ) {
-                _imp->_gui->setLastSelectedViewer( (*it) );
+                setLastSelectedViewer( (*it) );
             }
         }
     }
@@ -2673,6 +2695,18 @@ NodeGraph::selectNode(const boost::shared_ptr<NodeGui> & n,
         _imp->_magnifOn = false;
         _imp->_magnifiedNode->setScale_natron(_imp->_nodeSelectedScaleBeforeMagnif);
     }
+}
+
+void
+NodeGraph::setLastSelectedViewer(ViewerTab* tab)
+{
+    _imp->lastSelectedViewer = tab;
+}
+
+ViewerTab*
+NodeGraph::getLastSelectedViewer() const
+{
+    return _imp->lastSelectedViewer;
 }
 
 void

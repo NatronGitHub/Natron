@@ -47,6 +47,7 @@ class NodeSerialization;
 class NodeGuiSerialization;
 class NodeBackDropSerialization;
 class NodeCollection;
+class ViewerTab;
 struct NodeGraphPrivate;
 namespace Natron {
 class Node;
@@ -140,7 +141,11 @@ public:
 
     virtual void onNodesCleared() OVERRIDE FINAL;
     
-   public Q_SLOTS:
+    void setLastSelectedViewer(ViewerTab* tab);
+    
+    ViewerTab* getLastSelectedViewer() const;
+    
+public Q_SLOTS:
 
     void deleteSelection();
 
@@ -207,6 +212,8 @@ public:
     
     void onGroupNameChanged(const QString& name);
     void onGroupScriptNameChanged(const QString& name);
+    
+    
     
 private:
 

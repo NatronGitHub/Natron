@@ -592,12 +592,21 @@ boost::shared_ptr<KnobI> Int_KnobGui::getKnob() const
 void
 Int_KnobGui::reflectExpressionState(int dimension,bool hasExpr)
 {
-    _spinBoxes[dimension].first->setAnimation(3);
-    if (!_spinBoxes[dimension].first->isReadOnly()) {
+    if (!hasExpr) {
+        Natron::AnimationLevelEnum lvl = _knob->getAnimationLevel(dimension);
+        _spinBoxes[dimension].first->setAnimation((int)lvl);
+        bool isEnabled = _knob->isEnabled(dimension);
+        _spinBoxes[dimension].first->setReadOnly(!isEnabled);
+        if (_slider) {
+            bool isEnabled0 = _knob->isEnabled(0);
+            _slider->setReadOnly(!isEnabled0);
+        }
+    } else {
+        _spinBoxes[dimension].first->setAnimation(3);
         _spinBoxes[dimension].first->setReadOnly(hasExpr);
-    }
-    if (_slider && !_slider->isReadOnly()) {
-        _slider->setReadOnly(hasExpr);
+        if (_slider) {
+            _slider->setReadOnly(hasExpr);
+        }
     }
 }
 
@@ -1347,13 +1356,21 @@ Double_KnobGui::getKnob() const
 void
 Double_KnobGui::reflectExpressionState(int dimension,bool hasExpr)
 {
-    _spinBoxes[dimension].first->setAnimation(3);
-    if (!_spinBoxes[dimension].first->isReadOnly()) {
+    if (!hasExpr) {
+        Natron::AnimationLevelEnum lvl = _knob->getAnimationLevel(dimension);
+        _spinBoxes[dimension].first->setAnimation((int)lvl);
+        bool isEnabled = _knob->isEnabled(dimension);
+        _spinBoxes[dimension].first->setReadOnly(!isEnabled);
+        if (_slider) {
+            bool isEnabled0 = _knob->isEnabled(0);
+            _slider->setReadOnly(!isEnabled0);
+        }
+    } else {
+        _spinBoxes[dimension].first->setAnimation(3);
         _spinBoxes[dimension].first->setReadOnly(hasExpr);
-    }
-    if (_slider && !_slider->isReadOnly()) {
-        
-        _slider->setReadOnly(hasExpr);
+        if (_slider) {
+            _slider->setReadOnly(hasExpr);
+        }
     }
 }
 

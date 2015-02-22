@@ -1392,12 +1392,26 @@ ViewerTab::refresh()
 ViewerTab::~ViewerTab()
 {
     if (_imp->gui) {
+        NodeGraph* graph = 0;
         if (_imp->viewerNode) {
+            boost::shared_ptr<NodeCollection> collection = _imp->viewerNode->getNode()->getGroup();
+            if (collection) {
+                NodeGroup* isGrp = dynamic_cast<NodeGroup*>(collection.get());
+                if (isGrp) {
+                    NodeGraphI* graph_i = isGrp->getNodeGraph();
+                    if (graph_i) {
+                        graph = dynamic_cast<NodeGraph*>(graph_i);
+                        assert(graph);
+                    }
+                }
+            }
             _imp->viewerNode->invalidateUiContext();
+        } else {
+            graph = _imp->gui->getNodeGraph();
         }
-        if ( _imp->app && !_imp->app->isClosing() && (_imp->gui->getLastSelectedViewer() == this) ) {
-            assert(_imp->gui);
-            _imp->gui->setLastSelectedViewer(NULL);
+        assert(graph);
+        if ( _imp->app && !_imp->app->isClosing() && (graph->getLastSelectedViewer() == this) ) {
+            graph->setLastSelectedViewer(0);
         }
     }
     for (std::map<NodeGui*,RotoGui*>::iterator it = _imp->rotoNodes.begin(); it != _imp->rotoNodes.end(); ++it) {

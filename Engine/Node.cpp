@@ -2919,21 +2919,6 @@ Node::activate(const std::list< Node* > & outputsToRestore,
     if (!_imp->liveInstance || isActivated()) {
         return;
     }
-    
-    
-    ///If the node is a group, activate all nodes within the group first
-    NodeGroup* isGrp = dynamic_cast<NodeGroup*>(getLiveInstance());
-    if (isGrp) {
-        NodeList nodes = isGrp->getNodes();
-        for (NodeList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-            (*it)->activate(std::list< Node* >(),false,false);
-        }
-    }
-    
-    ///If the node has children (i.e it is a multi-instance), activate its children
-    for (std::list<boost::weak_ptr<Node> >::iterator it = _imp->children.begin(); it != _imp->children.end(); ++it) {
-        it->lock()->activate(std::list< Node* >(),false,false);
-    }
 
     
     ///No need to lock, guiInputs is only written to by the main-thread
@@ -2989,6 +2974,20 @@ Node::activate(const std::list< Node* > & outputsToRestore,
         group->notifyNodeActivated(shared_from_this());
     }
     Q_EMIT activated(triggerRender);
+    
+    ///If the node is a group, activate all nodes within the group first
+    NodeGroup* isGrp = dynamic_cast<NodeGroup*>(getLiveInstance());
+    if (isGrp) {
+        NodeList nodes = isGrp->getNodes();
+        for (NodeList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+            (*it)->activate(std::list< Node* >(),false,false);
+        }
+    }
+    
+    ///If the node has children (i.e it is a multi-instance), activate its children
+    for (std::list<boost::weak_ptr<Node> >::iterator it = _imp->children.begin(); it != _imp->children.end(); ++it) {
+        it->lock()->activate(std::list< Node* >(),false,false);
+    }
     
     _imp->runOnNodeCreatedCB(true);
 } // activate

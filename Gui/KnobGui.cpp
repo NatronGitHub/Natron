@@ -593,27 +593,25 @@ KnobGui::createAnimationMenu(QMenu* menu,int dimension)
         setExprAction->setData(dimension);
         menu->addAction(setExprAction);
         
-        if (!hasExpr.empty()) {
-            QAction* clearExprAction = new QAction(tr("Clear expression"),menu);
-            QObject::connect(clearExprAction,SIGNAL(triggered() ),this,SLOT(onClearExprActionTriggered()));
-            clearExprAction->setData(dimension);
-            menu->addAction(clearExprAction);
-        }
+        QAction* clearExprAction = new QAction(tr("Clear expression"),menu);
+        QObject::connect(clearExprAction,SIGNAL(triggered() ),this,SLOT(onClearExprActionTriggered()));
+        clearExprAction->setData(dimension);
+        menu->addAction(clearExprAction);
+        
     }
     
     if (knob->getDimension() > 1 && isEnabled) {
-            QAction* setExprsAction = new QAction(!hasExpr.empty() ? tr("Edit expression (all dimensions)") :
-                                                  tr("Set expression (all dimensions)"),menu);
-            setExprsAction->setData(-1);
-            QObject::connect(setExprsAction,SIGNAL(triggered() ),this,SLOT(onSetExprActionTriggered()));
-            menu->addAction(setExprsAction);
-        if (!hasExpr.empty()) {
-            
-            QAction* clearExprAction = new QAction(tr("Clear expression (all dimensions)"),menu);
-            QObject::connect(clearExprAction,SIGNAL(triggered() ),this,SLOT(onClearExprActionTriggered()));
-            clearExprAction->setData(-1);
-            menu->addAction(clearExprAction);
-        }
+        QAction* setExprsAction = new QAction(!hasExpr.empty() ? tr("Edit expression (all dimensions)") :
+                                              tr("Set expression (all dimensions)"),menu);
+        setExprsAction->setData(-1);
+        QObject::connect(setExprsAction,SIGNAL(triggered() ),this,SLOT(onSetExprActionTriggered()));
+        menu->addAction(setExprsAction);
+        
+        QAction* clearExprAction = new QAction(tr("Clear expression (all dimensions)"),menu);
+        QObject::connect(clearExprAction,SIGNAL(triggered() ),this,SLOT(onClearExprActionTriggered()));
+        clearExprAction->setData(-1);
+        menu->addAction(clearExprAction);
+        
         
     }
 } // createAnimationMenu
