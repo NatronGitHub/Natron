@@ -135,7 +135,7 @@ public:
     virtual OfxStatus getViewCount(int *nViews) const OVERRIDE FINAL;
 
     virtual OfxStatus getViewName(int viewIndex,char** name) const OVERRIDE FINAL;
-
+    
     /// Run the clip preferences action from the effect.
     ///
     /// This will look into the input clips and output clip
