@@ -370,7 +370,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
 {
     installEventFilter(this);
     
-    std::string nodeName =  node->getNode()->getScriptName();
+    std::string nodeName =  node->getNode()->getFullyQualifiedName();
     setScriptName(nodeName);
     setLabel(nodeName);
     

@@ -145,6 +145,15 @@ public:
     
     ViewerTab* getLastSelectedViewer() const;
     
+    /**
+     * @brief Given the node, it tries to move it to the ideal position
+     * according to the position of the selected node and its inputs/outputs.
+     * This is used when creating a node to position it correctly.
+     * It will move the inputs / outputs slightly to fit this node into the nodegraph
+     * so they do not overlap.
+     **/
+    void moveNodesForIdealPosition(boost::shared_ptr<NodeGui> n,bool autoConnect);
+    
 public Q_SLOTS:
 
     void deleteSelection();
@@ -216,16 +225,6 @@ public Q_SLOTS:
     
     
 private:
-
-
-    /**
-     * @brief Given the node, it tries to move it to the ideal position
-     * according to the position of the selected node and its inputs/outputs.
-     * This is used when creating a node to position it correctly.
-     * It will move the inputs / outputs slightly to fit this node into the nodegraph
-     * so they do not overlap.
-     **/
-    void moveNodesForIdealPosition(boost::shared_ptr<NodeGui> n,bool autoConnect);
     
     bool isNearbyNavigator(const QPoint& widgetPos,QPointF& scenePos) const;
 

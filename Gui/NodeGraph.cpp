@@ -644,6 +644,7 @@ NodeGraph::createNodeGUI(QVBoxLayout *dockContainer,
     boost::shared_ptr<NodeGui> node_ui;
     Dot* isDot = dynamic_cast<Dot*>( node->getLiveInstance() );
     BackDrop* isBd = dynamic_cast<BackDrop*>(node->getLiveInstance());
+    NodeGroup* isGrp = dynamic_cast<NodeGroup*>(node->getLiveInstance());
     
     if (isDot) {
         node_ui.reset( new DotGui(_imp->_nodeRoot) );
@@ -693,7 +694,7 @@ NodeGraph::createNodeGUI(QVBoxLayout *dockContainer,
             QPointF pos = node_ui->mapToParent( node_ui->mapFromScene( QPointF(xPosHint,yPosHint) ) );
             node_ui->refreshPosition( pos.x(),pos.y(), true );
         } else {
-            if (!isBd) {
+            if (!isBd && !isGrp) {
                 moveNodesForIdealPosition(node_ui,autoConnect);
             }
         }
@@ -707,7 +708,9 @@ NodeGraph::createNodeGUI(QVBoxLayout *dockContainer,
     if (pushUndoRedoCommand) {
         pushUndoCommand( new AddMultipleNodesCommand(this,node_ui) );
     } else if (!requestedByLoad) {
-        selectNode(node_ui, false);
+        if (!isGrp) {
+            selectNode(node_ui, false);
+        }
     }
 
     _imp->_evtState = eEventStateNone;

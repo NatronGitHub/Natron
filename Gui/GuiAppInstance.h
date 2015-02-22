@@ -175,6 +175,7 @@ public:
     void projectFormatChanged(const Format& f);
 private:
 
+    virtual void onGroupCreationFinished(const boost::shared_ptr<Natron::Node>& node) OVERRIDE FINAL;
     
     virtual void createNodeGui(const boost::shared_ptr<Natron::Node> &node,
                                const boost::shared_ptr<Natron::Node>&  parentMultiInstance,

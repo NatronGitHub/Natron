@@ -558,6 +558,9 @@ AppInstance::createNodeFromPythonModule(Natron::Plugin* plugin,
         setGroupLabelIDAndVersion(node,modulePath, moduleName);
     }
 
+    ///Now that the group is created and all nodes loaded, autoconnect the group like other nodes.
+    onGroupCreationFinished(node);
+    
     return node;
 }
 
@@ -741,6 +744,9 @@ AppInstance::createNodeInternal(const QString & pluginID,
                 input = createNode(args);
                 assert(input);
             }
+            
+            ///Now that the group is created and all nodes loaded, autoconnect the group like other nodes.
+            onGroupCreationFinished(node);
         }
     }
     

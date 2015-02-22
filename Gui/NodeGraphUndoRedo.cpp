@@ -201,7 +201,10 @@ AddMultipleNodesCommand::redo()
     }
     
     
-    _graph->setSelection(nodes);
+    if (nodes.size() != 1 || !dynamic_cast<NodeGroup*>(nodes.front()->getNode()->getLiveInstance())) {
+        _graph->setSelection(nodes);
+    }
+
 
     _graph->getGui()->getApp()->triggerAutoSave();
 

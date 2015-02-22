@@ -370,6 +370,8 @@ Q_SIGNALS:
     void pluginsPopulated();
 
 protected:
+    
+    virtual void onGroupCreationFinished(const boost::shared_ptr<Natron::Node>& /*node*/) {}
 
     virtual void createNodeGui(const boost::shared_ptr<Natron::Node>& /*node*/,
                                const boost::shared_ptr<Natron::Node>&  /*parentmultiinstance*/,
