@@ -237,6 +237,7 @@ public:
                              QString& output);
     
     void checkSupportsRenderScaleOKForAllNodes();
+    
 
 private:
     
@@ -304,6 +305,10 @@ public:
     virtual std::string getDescription() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     
     virtual std::string getInputLabel(int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
+    virtual SequenceTime getCurrentTime() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+
+    virtual int getCurrentView() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     
     virtual void addAcceptedComponents(int inputNb,std::list<Natron::ImageComponentsEnum>* comps) OVERRIDE FINAL;
     virtual void addSupportedBitDepth(std::list<Natron::ImageBitDepthEnum>* depths) const OVERRIDE FINAL;

@@ -4598,8 +4598,7 @@ Node::invalidateParallelRenderArgsInternal(std::list<Natron::Node*>& markedNodes
     
     ///mark this
     markedNodes.push_back(this);
-    
-    
+
     ///Call recursively
     int maxInpu = _imp->liveInstance->getMaxInputCount();
     for (int i = 0; i < maxInpu; ++i) {
@@ -4662,8 +4661,7 @@ Node::setParallelRenderArgsInternal(int time,
     
     ///mark this
     markedNodes.push_back(this);
-    
-    
+   
     ///Call recursively
     
     int maxInpu = _imp->liveInstance->getMaxInputCount();

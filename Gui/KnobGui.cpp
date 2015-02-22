@@ -1895,11 +1895,11 @@ void
 KnobGui::onAnimationLevelChanged(int dim,int level)
 {
     if (!_imp->customInteract) {
-        std::string expr = getKnob()->getExpression(dim);
-        reflectExpressionState(dim,!expr.empty());
-        if (expr.empty()) {
+        //std::string expr = getKnob()->getExpression(dim);
+        //reflectExpressionState(dim,!expr.empty());
+        //if (expr.empty()) {
             reflectAnimationLevel(dim, (Natron::AnimationLevelEnum)level);
-        }
+        //}
         
     }
 }

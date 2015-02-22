@@ -1436,12 +1436,6 @@ public:
     T getDisplayMinimum(int dimension = 0) const;
     T getDisplayMaximum(int dimension = 0) const;
     
-    void getExpressionsResults(ExprResults& results)
-    {
-        QReadLocker k(&_valueMutex);
-        results = _exprRes;
-    }
-
     void getExpressionResults(int dim,FrameValueMap& map)
     {
         QReadLocker k(&_valueMutex);
@@ -1499,6 +1493,8 @@ public:
 private:
     
     T evaluateExpression(int dimension) const;
+    
+    bool getValueFromExpression(int time,int dimension,bool clamp,T* ret) const;
 
     //////////////////////////////////////////////////////////////////////
     /////////////////////////////////// End implementation of KnobI

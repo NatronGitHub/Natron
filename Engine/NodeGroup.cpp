@@ -902,6 +902,27 @@ NodeGroup::getInputLabel(int inputNb) const
     return inputName.toStdString();
 }
 
+SequenceTime
+NodeGroup::getCurrentTime() const
+{
+    NodePtr node = getOutputNodeInput();
+    if (node) {
+        return node->getLiveInstance()->getCurrentTime();
+    }
+    return EffectInstance::getCurrentTime();
+}
+
+int
+NodeGroup::getCurrentView() const
+{
+    NodePtr node = getOutputNodeInput();
+    if (node) {
+        return node->getLiveInstance()->getCurrentView();
+    }
+    return EffectInstance::getCurrentView();
+
+}
+
 bool
 NodeGroup::isInputOptional(int inputNb) const
 {

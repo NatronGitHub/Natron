@@ -2072,7 +2072,9 @@ KnobHelper::setAnimationLevel(int dimension,
         _imp->animationLevel[dimension] = level;
     }
     if ( _signalSlotHandler && _imp->gui && !_imp->gui->isGuiFrozenForPlayback() ) {
-        _signalSlotHandler->s_animationLevelChanged( dimension,(int)level );
+        if (getExpression(dimension).empty()) {
+            _signalSlotHandler->s_animationLevelChanged( dimension,(int)level );
+        }
     }
 }
 

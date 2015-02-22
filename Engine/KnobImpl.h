@@ -347,6 +347,37 @@ T Knob<T>::evaluateExpression(int dimension) const
     return val;
 }
 
+template <typename T>
+bool Knob<T>::getValueFromExpression(int time,int dimension,bool clamp,T* ret) const
+{
+    
+    ///Prevent recursive call of the expression
+    QMutexLocker locker(&_expressionRecursionLevelMutex);
+    if (_expressionsRecursionLevel == 0) {
+        
+        ///Check first if a value was already computed:
+        
+        QWriteLocker k(&_valueMutex);
+        typename FrameValueMap::iterator found = _exprRes[dimension].find(time);
+        if (found != _exprRes[dimension].end()) {
+            *ret = found->second;
+            return true;
+        }
+        
+        ++_expressionsRecursionLevel;
+        *ret = evaluateExpression(dimension);
+        --_expressionsRecursionLevel;
+        
+        
+        if (clamp) {
+            *ret =  clampToMinMax(*ret,dimension);
+        }
+        _exprRes[dimension].insert(std::make_pair(time,*ret));
+        return true;
+    }
+    return false;
+}
+
 //Declare the specialization before defining it to avoid the following
 //error: explicit specialization of 'getValueAtTime' after instantiation
 template<>
@@ -358,28 +389,9 @@ Knob<std::string>::getValue(int dimension,bool /*clampToMinMax*/) const
 {
     std::string hasExpr = getExpression(dimension);
     if (!hasExpr.empty()) {
-        ///Check first if a value was already computed:
+        std::string ret;
         SequenceTime time = getCurrentTime();
-        
-        {
-            QReadLocker k(&_valueMutex);
-            
-            
-            FrameValueMap::iterator found = _exprRes[dimension].find(time);
-            if (found != _exprRes[dimension].end()) {
-                return found->second;
-            }
-            
-        }
-        
-        QMutexLocker locker(&_expressionRecursionLevelMutex);
-        if (_expressionsRecursionLevel == 0) {
-            ++_expressionsRecursionLevel;
-            std::string ret = evaluateExpression(dimension);
-            
-            QWriteLocker k(&_valueMutex);
-            _exprRes[dimension].insert(std::make_pair(time,ret));
-            --_expressionsRecursionLevel;
+        if (getValueFromExpression(time,dimension,false,&ret)) {
             return ret;
         }
     }
@@ -424,37 +436,11 @@ Knob<T>::getValue(int dimension,bool clamp) const
 {
     std::string hasExpr = getExpression(dimension);
     if (!hasExpr.empty()) {
-        
-        ///Check first if a value was already computed:
+        T ret;
         SequenceTime time = getCurrentTime();
-        
-        {
-            QReadLocker k(&_valueMutex);
-            
-            typename FrameValueMap::iterator found = _exprRes[dimension].find(time);
-            if (found != _exprRes[dimension].end()) {
-                return found->second;
-            }
-        }
-        
-        
-        ///Prevent recursive call of the expression
-        QMutexLocker locker(&_expressionRecursionLevelMutex);
-        if (_expressionsRecursionLevel == 0) {
-            ++_expressionsRecursionLevel;
-            T ret = evaluateExpression(dimension);
-            --_expressionsRecursionLevel;
-            
-            
-            if (clamp) {
-                ret =  clampToMinMax(ret,dimension);
-            }
-            
-            QWriteLocker k(&_valueMutex);
-            _exprRes[dimension].insert(std::make_pair(time,ret));
+        if (getValueFromExpression(time,dimension,true,&ret)) {
             return ret;
         }
-      
     }
     
     if ( isAnimated(dimension) ) {
@@ -479,6 +465,7 @@ Knob<T>::getValue(int dimension,bool clamp) const
             return (T)isDouble->getValue(master.first,clamp);
         }
     }
+    
     QReadLocker l(&_valueMutex);
     if (clamp ) {
         T ret = _values[dimension];
@@ -500,33 +487,10 @@ Knob<std::string>::getValueAtTime(double time,
 
     std::string hasExpr = getExpression(dimension);
     if (!hasExpr.empty()) {
-        
-        ///Check first if a value was already computed:
-        {
-            QReadLocker k(&_valueMutex);
-            
-            
-            FrameValueMap::iterator found = _exprRes[dimension].find(time);
-            if (found != _exprRes[dimension].end()) {
-                return found->second;
-            }
-            
-        }
-        
-        
-        ///Prevent recursive call of the expression
-        QMutexLocker locker(&_expressionRecursionLevelMutex);
-        if (_expressionsRecursionLevel == 0) {
-            ++_expressionsRecursionLevel;
-            std::string ret =  evaluateExpression(dimension);
-            
-            QWriteLocker k(&_valueMutex);
-            _exprRes[dimension].insert(std::make_pair(time,ret));
-
-            --_expressionsRecursionLevel;
+        std::string ret;
+        if (getValueFromExpression(time,dimension,false,&ret)) {
             return ret;
         }
-        
     }
     
     ///if the knob is slaved to another knob, returns the other knob value
@@ -584,33 +548,8 @@ Knob<T>::getValueAtTime(double time,
     
     std::string hasExpr = getExpression(dimension);
     if (!hasExpr.empty()) {
-        
-        ///Check first if a value was already computed:
-        
-        {
-            QReadLocker k(&_valueMutex);
-            typename FrameValueMap::iterator found = _exprRes[dimension].find(time);
-            if (found != _exprRes[dimension].end()) {
-                return found->second;
-            }
-            
-        }
-        
-        
-        ///Prevent recursive call of the expression
-        QMutexLocker locker(&_expressionRecursionLevelMutex);
-        if (_expressionsRecursionLevel == 0) {
-
-            ++_expressionsRecursionLevel;
-            T ret = evaluateExpression(dimension);
-            --_expressionsRecursionLevel;
-            
-            if (clamp) {
-                ret = clampToMinMax(ret,dimension);
-            }
-            
-            QWriteLocker k(&_valueMutex);
-            _exprRes[dimension].insert(std::make_pair(time,ret));
+        T ret;
+        if (getValueFromExpression(time,dimension,true,&ret)) {
             return ret;
         }
     }

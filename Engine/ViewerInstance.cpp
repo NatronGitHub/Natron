@@ -375,10 +375,10 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
     }
     
     
-    outArgs->activeInputToRender = getInput(outArgs->activeInputIndex);
+    EffectInstance* upstreamInput = getInput(outArgs->activeInputIndex);
     
-    if (outArgs->activeInputToRender) {
-        outArgs->activeInputToRender = outArgs->activeInputToRender->getNearestNonDisabled();
+    if (upstreamInput) {
+        outArgs->activeInputToRender = upstreamInput->getNearestNonDisabled();
     }
     
     if (!outArgs->activeInputToRender || !checkTreeCanRender(outArgs->activeInputToRender->getNode().get())) {
@@ -440,7 +440,7 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
     
     
     ///need to set TLS for getROD()
-    ParallelRenderArgsSetter frameArgs(outArgs->activeInputToRender->getNode().get(),
+    ParallelRenderArgsSetter frameArgs(upstreamInput->getNode().get(),
                                                    time,
                                                    view,
                                                    !isSequential,  // is this render due to user interaction ?
@@ -753,7 +753,14 @@ ViewerInstance::renderViewer_internal(int view,
         
         EffectInstance::NotifyInputNRenderingStarted_RAII inputNIsRendering_RAII(getNode().get(),inArgs.activeInputIndex);
         
-        ParallelRenderArgsSetter frameArgs(inArgs.activeInputToRender->getNode().get(),
+        EffectInstance* upstreamInput = getInput(inArgs.activeInputIndex);
+        NodePtr inputToSetRenderArgs;
+        if (upstreamInput) {
+            inputToSetRenderArgs = upstreamInput->getNode();
+        } else {
+            inputToSetRenderArgs = inArgs.activeInputToRender->getNode();
+        }
+        ParallelRenderArgsSetter frameArgs(inputToSetRenderArgs.get(),
                                            inArgs.params->time,
                                            view,
                                            !isSequentialRender,  // is this render due to user interaction ?
