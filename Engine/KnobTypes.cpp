@@ -1342,6 +1342,29 @@ Parametric_Knob::addControlPoint(int dimension,
 }
 
 Natron::StatusEnum
+Parametric_Knob::addHorizontalControlPoint(int dimension,double key,double value)
+{
+    ///Mt-safe as Curve is MT-safe
+    if (dimension >= (int)_curves.size() ||
+        boost::math::isnan(key) ||
+        boost::math::isinf(key) ||
+        boost::math::isnan(value) ||
+        boost::math::isinf(value)) {
+        return eStatusFailed;
+    }
+    
+    KeyFrame k(key,value);
+    k.setInterpolation(Natron::eKeyframeTypeBroken);
+    k.setLeftDerivative(0);
+    k.setRightDerivative(0);
+    _curves[dimension]->addKeyFrame(k);
+    emit curveChanged(dimension);
+    
+    return eStatusOK;
+ 
+}
+
+Natron::StatusEnum
 Parametric_Knob::getValue(int dimension,
                           double parametricPosition,
                           double *returnValue) const

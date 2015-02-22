@@ -3189,8 +3189,13 @@ OfxParametricInstance::addControlPoint(int curveIndex,
         boost::math::isinf(value)) {
         return kOfxStatFailed;
     }
-
-    Natron::StatusEnum stat = _knob->addControlPoint(curveIndex, key, value);
+    
+    Natron::StatusEnum stat;
+    if (_effect->getPluginID() == PLUGINID_OFX_COLORCORRECT) {
+        stat = _knob->addHorizontalControlPoint(curveIndex, key, value);
+    } else {
+        stat = _knob->addControlPoint(curveIndex, key, value);
+    }
 
     if (stat == Natron::eStatusOK) {
         return kOfxStatOK;

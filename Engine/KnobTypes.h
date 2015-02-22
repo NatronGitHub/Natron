@@ -795,8 +795,9 @@ public:
     std::pair<double,double> getParametricRange() const WARN_UNUSED_RETURN;
     boost::shared_ptr<Curve> getParametricCurve(int dimension) const;
     Natron::StatusEnum addControlPoint(int dimension,double key,double value) WARN_UNUSED_RETURN;
-    Natron::StatusEnum getValue(int dimension,double parametricPosition,double *returnValue) const WARN_UNUSED_RETURN;
-    Natron::StatusEnum getNControlPoints(int dimension,int *returnValue) const WARN_UNUSED_RETURN;
+    Natron::StatusEnum addHorizontalControlPoint(int dimension,double key,double value) WARN_UNUSED_RETURN;
+    Natron::StatusEnum getValue(int dimension,double parametricPosition,double *returnValue) WARN_UNUSED_RETURN;
+    Natron::StatusEnum getNControlPoints(int dimension,int *returnValue) WARN_UNUSED_RETURN;
     Natron::StatusEnum getNthControlPoint(int dimension,
                                       int nthCtl,
                                       double *key,
