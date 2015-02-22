@@ -2230,11 +2230,16 @@ Gui::removeViewerTab(ViewerTab* tab,
     unregisterTab(tab);
     
     NodeGraph* graph = 0;
-    assert(tab->getInternalNode());
-    assert(tab->getInternalNode()->getNode());
-    boost::shared_ptr<NodeCollection> collection = tab->getInternalNode()->getNode()->getGroup();
-    assert(collection);
-    NodeGroup* isGrp = dynamic_cast<NodeGroup*>(collection.get());
+
+    NodeGroup* isGrp = 0;
+    
+    boost::shared_ptr<NodeCollection> collection;
+    if (tab->getInternalNode() && tab->getInternalNode()->getNode()) {
+       boost::shared_ptr<NodeCollection> collection = tab->getInternalNode()->getNode()->getGroup();
+        isGrp = dynamic_cast<NodeGroup*>(collection.get());
+    }
+
+    
     if (isGrp) {
         NodeGraphI* graph_i = isGrp->getNodeGraph();
         assert(graph_i);
@@ -2248,7 +2253,10 @@ Gui::removeViewerTab(ViewerTab* tab,
     
     if (lastSelectedViewer == tab) {
         bool foundOne = false;
-        NodeList nodes = collection->getNodes();
+        NodeList nodes;
+        if (collection) {
+            nodes = collection->getNodes();
+        }
         for (NodeList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
             ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>((*it)->getLiveInstance());
             if (!isViewer || isViewer == tab->getInternalNode() || !(*it)->isActivated()) {
