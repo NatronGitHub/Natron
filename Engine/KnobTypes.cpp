@@ -1358,7 +1358,7 @@ Parametric_Knob::addHorizontalControlPoint(int dimension,double key,double value
     k.setLeftDerivative(0);
     k.setRightDerivative(0);
     _curves[dimension]->addKeyFrame(k);
-    emit curveChanged(dimension);
+    Q_EMIT curveChanged(dimension);
     
     return eStatusOK;
  
