@@ -2230,6 +2230,8 @@ Gui::removeViewerTab(ViewerTab* tab,
     unregisterTab(tab);
     
     NodeGraph* graph = 0;
+    assert(tab->getInternalNode());
+    assert(tab->getInternalNode()->getNode());
     boost::shared_ptr<NodeCollection> collection = tab->getInternalNode()->getNode()->getGroup();
     assert(collection);
     NodeGroup* isGrp = dynamic_cast<NodeGroup*>(collection.get());
