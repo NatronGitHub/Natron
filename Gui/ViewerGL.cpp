@@ -1226,6 +1226,15 @@ ViewerGL::paintGL()
         glCheckError();
         if (_imp->overlay) {
             drawOverlay(getCurrentRenderScale());
+        } else {
+            const QFont& f = font();
+            QFontMetrics fm(f);
+            QPointF pos;
+            {
+                QMutexLocker k(&_imp->zoomCtxMutex);
+                pos = _imp->zoomCtx.toZoomCoordinates(10, height() - fm.height());
+            }
+            renderText(pos.x(), pos.y(), tr("Overlays off"), QColor(200,0,0), f);
         }
         
         if (_imp->ms == eMouseStateSelecting) {
