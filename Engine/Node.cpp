@@ -2049,8 +2049,9 @@ Node::getInput(int index) const
                 boost::shared_ptr<NodeCollection> collection = ret->getGroup();
                 assert(collection);
                 isGrp = dynamic_cast<NodeGroup*>(collection.get());
-                assert(isGrp);
-                ret = isGrp->getRealInputForInput(ret);
+                if (isGrp) {
+                    ret = isGrp->getRealInputForInput(ret);
+                }
             }
         }
         
