@@ -443,6 +443,7 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
     } else {
         _openButton = new Button(tr("Save"),_selectionWidget);
     }
+    _openButton->setFocusPolicy(Qt::TabFocus);
     _selectionLayout->addWidget(_openButton);
 
     if (_dialogMode != eFileDialogModeDir) {
@@ -572,6 +573,7 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
     if (!isSequenceDialog) {
         enableSequenceMode(false);
     }
+    _selectionLineEdit->setFocus();
 }
 
 SequenceFileDialog::~SequenceFileDialog()
