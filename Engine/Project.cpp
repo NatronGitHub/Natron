@@ -1310,10 +1310,14 @@ Project::onKnobValueChanged(KnobI* knob,
         if (found) {
             if (reason == Natron::eValueChangedReasonUserEdited) {
                 ///Increase all nodes age in the project so all cache is invalidated: some effects images might rely on the project format
-                NodeList nodes = getNodes();
+                NodeList nodes;
+                getNodes_recursive(nodes);
                 for (NodeList::iterator it = nodes.begin(); it != nodes.end();++it) {
                     (*it)->incrementKnobsAge();
                 }
+                
+                ///Format change, hence probably the PAR so run getClipPreferences again
+                forceGetClipPreferencesOnAllTrees();
             }
             Q_EMIT formatChanged(frmt);
         }
@@ -2034,6 +2038,121 @@ Project::createViewer()
                                          CreateNodeArgs::DefaultValuesList(),
                                          shared_from_this()) );
 }
+    
+static bool hasNodeOutputsInList(const std::list<boost::shared_ptr<Natron::Node> >& nodes,const boost::shared_ptr<Natron::Node>& node)
+{
+    const std::list<Natron::Node*>& outputs = node->getOutputs();
+    
+    bool foundOutput = false;
+    for (std::list<boost::shared_ptr<Natron::Node> >::const_iterator it = nodes.begin(); it!=nodes.end(); ++it) {
+        if (*it != node) {
+            std::list<Natron::Node*>::const_iterator found = std::find(outputs.begin(),outputs.end(),it->get());
+            if (found != outputs.end()) {
+                foundOutput = true;
+                break;
+            }
+        }
+    }
+    return foundOutput;
+}
+    
+static bool hasNodeInputsInList(const std::list<boost::shared_ptr<Natron::Node> >& nodes,const boost::shared_ptr<Natron::Node>& node)
+{
+    const std::vector<boost::shared_ptr<Natron::Node> >& inputs = node->getInputs_mt_safe();
+    
+    bool foundInput = false;
+    for (std::list<boost::shared_ptr<Natron::Node> >::const_iterator it = nodes.begin(); it!=nodes.end(); ++it) {
+        if (*it != node) {
+            std::vector<boost::shared_ptr<Natron::Node> >::const_iterator found = std::find(inputs.begin(),inputs.end(),*it);
+            if (found != inputs.end()) {
+                foundInput = true;
+                break;
+            }
+        }
+    }
+    return foundInput;
+}
+    
+static void addTreeInputs(const std::list<boost::shared_ptr<Natron::Node> >& nodes,const boost::shared_ptr<Natron::Node>& node,
+                              Project::NodesTree& tree,
+                              std::list<boost::shared_ptr<Natron::Node> >& markedNodes)
+{
+    if (std::find(markedNodes.begin(), markedNodes.end(), node) != markedNodes.end()) {
+        return;
+    }
+    
+    if (std::find(nodes.begin(), nodes.end(), node) == nodes.end()) {
+        return;
+    }
+    
+    if (!hasNodeInputsInList(nodes,node)) {
+        Project::TreeInput input;
+        input.node = node;
+        input.inputs = node->getInputs_mt_safe();
+        tree.inputs.push_back(input);
+        markedNodes.push_back(node);
+    } else {
+        tree.inbetweenNodes.push_back(node);
+        markedNodes.push_back(node);
+        const std::vector<boost::shared_ptr<Natron::Node> >& inputs = node->getInputs_mt_safe();
+        for (std::vector<boost::shared_ptr<Natron::Node> >::const_iterator it2 = inputs.begin() ; it2!=inputs.end(); ++it2) {
+            if (*it2) {
+                addTreeInputs(nodes, *it2, tree, markedNodes);
+            }
+        }
+    }
+}
+    
+void Project::extractTreesFromNodes(const std::list<boost::shared_ptr<Natron::Node> >& nodes,std::list<Project::NodesTree>& trees)
+{
+    std::list<boost::shared_ptr<Natron::Node> > markedNodes;
+    
+    for (std::list<boost::shared_ptr<Natron::Node> >::const_iterator it = nodes.begin(); it!=nodes.end(); ++it) {
+        bool isOutput = !hasNodeOutputsInList(nodes, *it);
+        if (isOutput) {
+            NodesTree tree;
+            tree.output.node = *it;
+
+            const std::list<Natron::Node* >& outputs = (*it)->getOutputs();
+            for (std::list<Natron::Node*>::const_iterator it2 = outputs.begin();it2!=outputs.end();++it2) {
+                int idx = (*it2)->inputIndex(it->get());
+                tree.output.outputs.push_back(std::make_pair(idx,*it2));
+            }
+            
+            const std::vector<boost::shared_ptr<Natron::Node> >& inputs = (*it)->getInputs_mt_safe();
+            for (U32 i = 0; i < inputs.size(); ++i) {
+                if (inputs[i]) {
+                    addTreeInputs(nodes, inputs[i], tree, markedNodes);
+                }
+            }
+            
+            if (tree.inputs.empty()) {
+                TreeInput input;
+                input.node = *it;
+                input.inputs = (*it)->getInputs_mt_safe();
+                tree.inputs.push_back(input);
+            }
+            
+            trees.push_back(tree);
+        }
+    }
+    
+}
+  
+void
+Project::forceGetClipPreferencesOnAllTrees()
+{
+    NodeList nodes;
+    getNodes_recursive(nodes);
+    std::list<Project::NodesTree> trees;
+    Project::extractTreesFromNodes(nodes, trees);
+    
+    std::list<Natron::Node*> markedNodes;
+    for (std::list<Project::NodesTree>::iterator it = trees.begin(); it!=trees.end(); ++it) {
+        it->output.node->restoreClipPreferencesRecursive(markedNodes);
+    }
+}
+
     
 } //namespace Natron
 

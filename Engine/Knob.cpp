@@ -265,6 +265,9 @@ struct KnobHelperPrivate
     mutable QMutex expressionMutex;
     std::vector<Expr> expressions;
     
+    mutable QMutex lastRandomHashMutex;
+    mutable U32 lastRandomHash;
+    
     KnobHelperPrivate(KnobHelper* publicInterface_,
                       KnobHolder*  holder_,
                       int dimension_,
@@ -308,6 +311,7 @@ struct KnobHelperPrivate
     , dimensionNames(dimension_)
     , expressionMutex()
     , expressions()
+    , lastRandomHash(0)
     {
         mustCloneGuiCurves.resize(dimension);
         mustCloneInternalCurves.resize(dimension);
@@ -1233,6 +1237,7 @@ KnobI::declareCurrentKnobVariable_Python(KnobI* knob,int dimension,std::string& 
         ss << thisNodeStr;
         ss << "thisParam = thisNode." << knob->getName() << "\n";
         ss << "frame = thisParam.getCurrentTime() \n";
+        ss << "random = thisParam.random\n";
         if (dimension != -1) {
             ss << "dimension = " << dimension << "\n";
         }
@@ -1246,6 +1251,7 @@ KnobI::declareCurrentKnobVariable_Python(KnobI* knob,int dimension,std::string& 
         script.insert(firstLineAfterImport, toInsert);
         script.append("\n");
         script.append("del thisParam\n");
+        script.append("del random\n");
         script.append("del frame\n");
         if (dimension != -1) {
             script.append("del dimension\n");
@@ -2389,6 +2395,43 @@ KnobHelper::getCurrentView() const
 {
     KnobHolder* holder = getHolder();
     return holder && holder->getApp() ? holder->getCurrentView() : 0;
+}
+
+
+
+double
+KnobHelper::random(unsigned int seed) const
+{
+    randomSeed(seed);
+    return random();
+}
+
+double
+KnobHelper::random() const
+{
+    QMutexLocker k(&_imp->lastRandomHashMutex);
+    _imp->lastRandomHash = hashFunction(_imp->lastRandomHash);
+    return (double)_imp->lastRandomHash / (double)0x100000000LL;
+}
+
+void
+KnobHelper::randomSeed(unsigned int seed) const
+{
+    
+    U64 hash = 0;
+    KnobHolder* holder = getHolder();
+    if (holder) {
+        Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(holder);
+        if (effect) {
+            hash = effect->getHash();
+        }
+    }
+    U32 hash32 = (U32)hash;
+    hash32 += seed;
+    hash32 += getCurrentTime();
+    
+    QMutexLocker k(&_imp->lastRandomHashMutex);
+    _imp->lastRandomHash = hash32;
 }
 
 /***************************KNOB HOLDER******************************************/

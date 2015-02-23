@@ -103,6 +103,28 @@ NodeCollection::getNodes() const
 }
 
 void
+NodeCollection::getNodes_recursive(NodeList& nodes) const
+{
+    std::list<NodeGroup*> groupToRecurse;
+    
+    {
+        QMutexLocker k(&_imp->nodesMutex);
+        for (NodeList::const_iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
+            nodes.push_back(*it);
+            NodeGroup* isGrp = dynamic_cast<NodeGroup*>((*it)->getLiveInstance());
+            if (isGrp) {
+                groupToRecurse.push_back(isGrp);
+            }
+        }
+        
+    }
+    
+    for (std::list<NodeGroup*>::const_iterator it = groupToRecurse.begin(); it != groupToRecurse.end(); ++it) {
+        (*it)->getNodes_recursive(nodes);
+    }
+}
+
+void
 NodeCollection::addNode(const NodePtr& node)
 {
     {
@@ -211,22 +233,6 @@ NodeCollection::quitAnyProcessingForAllNodes()
         if (isGrp) {
             isGrp->quitAnyProcessingForAllNodes();
         }
-    }
-}
-
-void
-NodeCollection::checkSupportsRenderScaleOKForAllNodes()
-{
-    NodeList nodes = getNodes();
-    for (NodeList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        if ((*it)->getLiveInstance()->supportsRenderScaleMaybe() == EffectInstance::eSupportsMaybe) {
-            (*it)->getLiveInstance()->restoreClipPreferences();
-        }
-        NodeGroup* isGrp = dynamic_cast<NodeGroup*>((*it)->getLiveInstance());
-        if (isGrp) {
-            isGrp->checkSupportsRenderScaleOKForAllNodes();
-        }
-
     }
 }
 

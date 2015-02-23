@@ -178,6 +178,24 @@ Param::copy(Param* other, int dimension)
     return true;
 }
 
+double
+Param::random() const
+{
+    if (!_knob) {
+        return 0;
+    }
+    return _knob->random();
+}
+
+double
+Param::random(unsigned int seed) const
+{
+    if (!_knob) {
+        return 0;
+    }
+    return _knob->random(seed);
+}
+
 AnimatedParam::AnimatedParam(const boost::shared_ptr<KnobI>& knob)
 : Param(knob)
 {

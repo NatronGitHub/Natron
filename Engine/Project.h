@@ -252,6 +252,30 @@ public:
     void createViewer();
     
     void resetProject();
+    
+    
+    struct TreeOutput
+    {
+        boost::shared_ptr<Natron::Node> node;
+        std::list<std::pair<int,Natron::Node*> > outputs;
+    };
+    
+    struct TreeInput
+    {
+        boost::shared_ptr<Natron::Node> node;
+        std::vector<boost::shared_ptr<Natron::Node> > inputs;
+    };
+    
+    struct NodesTree
+    {
+        TreeOutput output;
+        std::list<TreeInput> inputs;
+        std::list<boost::shared_ptr<Natron::Node> > inbetweenNodes;
+    };
+    
+    static void extractTreesFromNodes(const std::list<boost::shared_ptr<Natron::Node> >& nodes,std::list<Project::NodesTree>& trees);
+    
+    void forceGetClipPreferencesOnAllTrees();
 
 public Q_SLOTS:
 

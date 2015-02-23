@@ -58,6 +58,11 @@ public:
     NodeList getNodes() const;
     
     /**
+     * @brief Same as getNodes() except that this function recurse in sub-groups.
+     **/
+    void getNodes_recursive(NodeList& nodes) const;
+    
+    /**
      * @brief Adds a node to the collection. MT-safe.
      **/
     void addNode(const NodePtr& node);
@@ -235,9 +240,7 @@ public:
                              const QString& pluginIconPath,
                              const QString& pluginGrouping,
                              QString& output);
-    
-    void checkSupportsRenderScaleOKForAllNodes();
-    
+        
 
 private:
     

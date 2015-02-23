@@ -1030,9 +1030,7 @@ public:
     /**
      * @brief Called after the project has restored all nodes and their links, to set clip preferences.
      **/
-    virtual void restoreClipPreferences()
-    {
-    }
+    virtual void restoreClipPreferences();
 
     /**
      * @brief Returns the current frame this effect is rendering depending

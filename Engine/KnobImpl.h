@@ -331,11 +331,25 @@ Knob<std::string>::pyObjectToType(PyObject* o) const
     return std::string(Natron::PY3String_asString(o));
 }
 
+
+inline unsigned int hashFunction(unsigned int a)
+{
+    a = (a ^ 61) ^ (a >> 16);
+    a = a + (a << 3);
+    a = a ^ (a >> 4);
+    a = a * 0x27d4eb2d;
+    a = a ^ (a >> 15);
+    return a;
+}
+
 template <typename T>
 T Knob<T>::evaluateExpression(int dimension) const
 {
     Natron::PythonGILLocker pgl;
     PyObject *ret;
+    
+    ///Reset the random state to reproduce the sequence
+    randomSeed(hashFunction(dimension));
     try {
         ret = executeExpression(dimension);
     } catch (...) {

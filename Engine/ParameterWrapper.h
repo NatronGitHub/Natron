@@ -143,6 +143,13 @@ public:
      **/
     bool copy(Param* other, int dimension = -1);
     
+    /**
+     * @brief Returns a pseudo-random number. This will always be the same for the same time on the timeline.
+     * The version with the seed can be used to retrieve the same value for 2 successive randoms
+     **/
+    double random() const;
+    double random(unsigned int seed) const;
+    
 protected:
     
     /**

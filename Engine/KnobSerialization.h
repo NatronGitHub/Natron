@@ -51,7 +51,8 @@ CLANG_DIAG_ON(unused-parameter)
 #define VALUE_SERIALIZATION_INTRODUCES_EXPRESSIONS 3
 #define VALUE_SERIALIZATION_REMOVES_EXTRA_DATA 4
 #define VALUE_SERIALIZATION_INTRODUCES_EXPRESSIONS_RESULTS 5
-#define VALUE_SERIALIZATION_VERSION VALUE_SERIALIZATION_INTRODUCES_EXPRESSIONS_RESULTS
+#define VALUE_SERIALIZATION_REMOVES_EXPRESSIONS_RESULTS 6
+#define VALUE_SERIALIZATION_VERSION VALUE_SERIALIZATION_REMOVES_EXPRESSIONS_RESULTS
 
 
 struct MasterSerialization
@@ -210,26 +211,7 @@ struct ValueSerialization
         
         ar & boost::serialization::make_nvp("Expression",_expression);
         ar & boost::serialization::make_nvp("ExprHasRet",_exprHasRetVar);
-        
-        if (isInt) {
-            std::map<SequenceTime,int> exprValues;
-            isInt->getExpressionResults(_dimension, exprValues);
-            ar & boost::serialization::make_nvp("ExprResults",exprValues);
-        } else if (isBool) {
-            std::map<SequenceTime,bool> exprValues;
-            isBool->getExpressionResults(_dimension, exprValues);
-            ar & boost::serialization::make_nvp("ExprResults",exprValues);
-        } else if (isDouble) {
-            std::map<SequenceTime,double> exprValues;
-            isDouble->getExpressionResults(_dimension, exprValues);
-            ar & boost::serialization::make_nvp("ExprResults",exprValues);
-        } else if (isString) {
-            std::map<SequenceTime,std::string> exprValues;
-            isString->getExpressionResults(_dimension, exprValues);
-            ar & boost::serialization::make_nvp("ExprResults",exprValues);
-        }
-        
-      
+
         
     } // save
 
@@ -331,23 +313,19 @@ struct ValueSerialization
             ar & boost::serialization::make_nvp("ExprHasRet",_exprHasRetVar);
         }
         
-        if (version >= VALUE_SERIALIZATION_INTRODUCES_EXPRESSIONS_RESULTS) {
+        if (version >= VALUE_SERIALIZATION_INTRODUCES_EXPRESSIONS_RESULTS && version < VALUE_SERIALIZATION_REMOVES_EXPRESSIONS_RESULTS) {
             if (isInt) {
                 std::map<SequenceTime,int> exprValues;
                 ar & boost::serialization::make_nvp("ExprResults",exprValues);
-                isInt->setExpressionResults(_dimension, exprValues);
             } else if (isBool) {
                 std::map<SequenceTime,bool> exprValues;
                 ar & boost::serialization::make_nvp("ExprResults",exprValues);
-                isBool->setExpressionResults(_dimension, exprValues);
             } else if (isDouble) {
                 std::map<SequenceTime,double> exprValues;
                 ar & boost::serialization::make_nvp("ExprResults",exprValues);
-                isDouble->setExpressionResults(_dimension, exprValues);
             } else if (isString) {
                 std::map<SequenceTime,std::string> exprValues;
                 ar & boost::serialization::make_nvp("ExprResults",exprValues);
-                isString->setExpressionResults(_dimension, exprValues);
             }
 
         }

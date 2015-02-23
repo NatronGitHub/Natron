@@ -432,6 +432,9 @@ public:
      **/
     virtual boost::shared_ptr<Curve> getGuiCurve(int dimension) const = 0;
 
+    virtual double random(unsigned int seed) const = 0;
+    virtual double random() const = 0;
+    
 protected:
 
     
@@ -513,6 +516,9 @@ public:
     void setExpression(int dimension,const std::string& expression,bool hasRetVariable) {
         setExpressionInternal(dimension, expression, hasRetVariable, true);
     }
+    
+    virtual void clearExpressionsResults(int dimension) = 0;
+    
     virtual void clearExpression(int dimension,bool clearResults) = 0;
     virtual std::string getExpression(int dimension) const = 0;
     
@@ -1033,7 +1039,13 @@ public:
     virtual void beginChanges() OVERRIDE FINAL;
     virtual void endChanges() OVERRIDE FINAL;
     virtual void evaluateValueChange(int dimension,Natron::ValueChangedReasonEnum reason) OVERRIDE FINAL;
-
+    
+    virtual double random(unsigned int seed) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual double random() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+protected:
+    
+    void randomSeed(unsigned int seed) const;
+    
 private:
 
     
@@ -1161,6 +1173,8 @@ public:
 
     virtual void getListeners(std::list<KnobI*> & listeners) const OVERRIDE FINAL;
     
+    virtual void clearExpressionsResults(int /*dimension*/) {}
+
 protected:
 
 
@@ -1206,8 +1220,6 @@ protected:
     virtual void animationRemoved_virtual(int /*dimension*/)
     {
     }
-    
-    virtual void clearExpressionsResults(int /*dimension*/) {}
     
     void cloneGuiCurvesIfNeeded(std::map<int,Natron::ValueChangedReasonEnum>& modifiedDimensions);
     
@@ -1441,13 +1453,7 @@ public:
         QReadLocker k(&_valueMutex);
         map = _exprRes[dim];
     }
-    
-    void setExpressionResults(int dim,const FrameValueMap& map)
-    {
-        QWriteLocker k(&_valueMutex);
-        _exprRes[dim] = map;
-    }
-    
+
 protected:
     
     virtual void resetExtraToDefaultValue(int /*dimension*/) {}

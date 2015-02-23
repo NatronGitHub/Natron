@@ -4483,6 +4483,12 @@ EffectInstance::getNearestNonIdentity(int time)
 }
 
 void
+EffectInstance::restoreClipPreferences()
+{
+    setSupportsRenderScaleMaybe(eSupportsYes);
+}
+
+void
 EffectInstance::onNodeHashChanged(U64 hash)
 {
     
@@ -4491,6 +4497,13 @@ EffectInstance::onNodeHashChanged(U64 hash)
     
     ///Invalidate actions cache
     _imp->actionsCache.invalidateAll(hash);
+    
+    const std::vector<boost::shared_ptr<KnobI> >& knobs = getKnobs();
+    for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+        for (int i = 0; i < (*it)->getDimension(); ++i) {
+            (*it)->clearExpressionsResults(i);
+        }
+    }
 }
 
 bool

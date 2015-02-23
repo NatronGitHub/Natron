@@ -29,6 +29,8 @@ Functions
 *    def :meth:`getParent<NatronEngine.Param.getParent>` ()
 *    def :meth:`getScriptName<NatronEngine.Param.getScriptName>` ()
 *    def :meth:`getTypeName<NatronEngine.Param.getTypeName>` ()
+*	 def :meth:`random<NatronEngine.Param.random` ()
+*	 def :meth:`random<NatronEngine.Param.random` (seed)
 *    def :meth:`setAddNewLine<NatronEngine.Param.setAddNewLine>` (a)
 *    def :meth:`setAnimationEnabled<NatronEngine.Param.setAnimationEnabled>` (e)
 *    def :meth:`setEnabled<NatronEngine.Param.setEnabled>` (enabled[, dimension=0])
@@ -343,6 +345,37 @@ the *label* and the *script name*
 Returns the type-name of the parameter.
 
 
+.. method:: NatronEngine.Param.random()
+
+	:rtype: :class:`float<PySide.QtCore.float>`
+
+Returns a pseudo-random value in the interval [0, 1[. 
+The value is produced such that for a given parameter it will always be the same for a 
+given time on the timeline, so that the value can be reproduced exactly.
+
+
+.. note::
+
+	Note that if you're calling multiple times random() in the same parameter expression,
+	each call would return a different value, but they would all return the same value again
+	if the expressions is interpreted at the same time, e.g::
+	
+		# Would always return the same value at a given timeline's time.
+		random() - random() 
+		
+Note that you can ensure that random() returns a given value by calling the overloaded
+function :func:`random(seed)<NatronEngine.Param.random>` instead.
+
+.. method:: NatronEngine.Param.random(seed)
+
+	:param seed: :class:`unsigned int<PySide.QtCore.int>`
+	:rtype: :class:`float<PySide.QtCore.float>`	
+
+Same as :func:`random()<NatronEngine.Param.random>` but takes a **seed** in parameter to control
+the value returned by the function. E.g::
+
+	ret = random(2) - random(2) 
+	# ret == 0 always
 
 
 .. method:: NatronEngine.Param.setAddNewLine(a)

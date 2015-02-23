@@ -586,6 +586,82 @@ static PyObject* Sbk_ParamFunc_getTypeName(PyObject* self)
     return pyResult;
 }
 
+static PyObject* Sbk_ParamFunc_random(PyObject* self, PyObject* args)
+{
+    ParamWrapper* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = (ParamWrapper*)((::Param*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAM_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp[] = { 0 };
+    SBK_UNUSED(pythonToCpp)
+    int numArgs = PyTuple_GET_SIZE(args);
+    PyObject* pyArgs[] = {0};
+
+    // invalid argument lengths
+
+
+    if (!PyArg_UnpackTuple(args, "random", 0, 1, &(pyArgs[0])))
+        return 0;
+
+
+    // Overloaded function decisor
+    // 0: random()const
+    // 1: random(uint)const
+    if (numArgs == 0) {
+        overloadId = 0; // random()const
+    } else if (numArgs == 1
+        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<unsigned int>(), (pyArgs[0])))) {
+        overloadId = 1; // random(uint)const
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_ParamFunc_random_TypeError;
+
+    // Call function/method
+    switch (overloadId) {
+        case 0: // random() const
+        {
+
+            if (!PyErr_Occurred()) {
+                // random()const
+                PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+                double cppResult = const_cast<const ::ParamWrapper*>(cppSelf)->random();
+                PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+                pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &cppResult);
+            }
+            break;
+        }
+        case 1: // random(unsigned int seed) const
+        {
+            unsigned int cppArg0;
+            pythonToCpp[0](pyArgs[0], &cppArg0);
+
+            if (!PyErr_Occurred()) {
+                // random(uint)const
+                PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
+                double cppResult = const_cast<const ::ParamWrapper*>(cppSelf)->random(cppArg0);
+                PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+                pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &cppResult);
+            }
+            break;
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+
+    Sbk_ParamFunc_random_TypeError:
+        const char* overloads[] = {"", "unsigned int", 0};
+        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.Param.random", overloads);
+        return 0;
+}
+
 static PyObject* Sbk_ParamFunc_setAddNewLine(PyObject* self, PyObject* pyArg)
 {
     ParamWrapper* cppSelf = 0;
@@ -943,6 +1019,7 @@ static PyMethodDef Sbk_Param_methods[] = {
     {"getParent", (PyCFunction)Sbk_ParamFunc_getParent, METH_NOARGS},
     {"getScriptName", (PyCFunction)Sbk_ParamFunc_getScriptName, METH_NOARGS},
     {"getTypeName", (PyCFunction)Sbk_ParamFunc_getTypeName, METH_NOARGS},
+    {"random", (PyCFunction)Sbk_ParamFunc_random, METH_VARARGS},
     {"setAddNewLine", (PyCFunction)Sbk_ParamFunc_setAddNewLine, METH_O},
     {"setAnimationEnabled", (PyCFunction)Sbk_ParamFunc_setAnimationEnabled, METH_O},
     {"setEnabled", (PyCFunction)Sbk_ParamFunc_setEnabled, METH_VARARGS|METH_KEYWORDS},
