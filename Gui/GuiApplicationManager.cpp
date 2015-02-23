@@ -93,7 +93,7 @@ GCC_DIAG_ON(unused-parameter)
 
 //Increment this when making change to default shortcuts or changes that would break expected default shortcuts
 //in a way. This way the user will get prompted to restore default shortcuts on next launch
-#define NATRON_SHORTCUTS_DEFAULT_VERSION 2
+#define NATRON_SHORTCUTS_DEFAULT_VERSION 3
 
 using namespace Natron;
 
@@ -970,6 +970,9 @@ GuiApplicationManager::onPluginLoaded(Natron::Plugin* plugin)
         symbol = Qt::Key_C;
     } else if (pluginID == PLUGINID_OFX_BLURCIMG) {
         symbol = Qt::Key_B;
+    } else if (pluginID == PLUGINID_NATRON_DOT) {
+        symbol = Qt::Key_Period;
+        modifiers |= Qt::ShiftModifier;
     } else {
         hasShortcut = false;
     }
