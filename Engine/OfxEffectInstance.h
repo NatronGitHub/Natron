@@ -64,7 +64,9 @@ public:
     }
 
     virtual void createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
-                                              const std::string & context,const NodeSerialization* serialization,
+                                              OFX::Host::ImageEffect::Descriptor* desc,
+                                              Natron::ContextEnum context,
+                                              const NodeSerialization* serialization,
                                                const std::list<boost::shared_ptr<KnobSerialization> >& paramValues,
                                               bool allowFileDialogs,
                                               bool disableRenderScaleSupport) = 0;
@@ -89,8 +91,10 @@ public:
     virtual ~OfxEffectInstance();
 
     void createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
-                                      const std::string & context,const NodeSerialization* serialization,
-                                       const std::list<boost::shared_ptr<KnobSerialization> >& paramValues,
+                                      OFX::Host::ImageEffect::Descriptor* desc,
+                                      Natron::ContextEnum context,
+                                      const NodeSerialization* serialization,
+                                      const std::list<boost::shared_ptr<KnobSerialization> >& paramValues,
                                       bool allowFileDialogs,
                                       bool disableRenderScaleSupport) OVERRIDE FINAL;
 
@@ -278,7 +282,9 @@ public:
 
     OfxClipInstance* getClipCorrespondingToInput(int inputNo) const;
 
-
+    
+    static Natron::ContextEnum mapToContextEnum(const std::string &s);
+    static std::string mapContextToString(Natron::ContextEnum ctx);
 
 public Q_SLOTS:
 
@@ -290,21 +296,7 @@ Q_SIGNALS:
     void syncPrivateDataRequested();
 
 private:
-    /** @brief Enumerates the contexts a plugin can be used in */
-    enum ContextEnum
-    {
-        eContextNone,
-        eContextGenerator,
-        eContextFilter,
-        eContextTransition,
-        eContextPaint,
-        eContextGeneral,
-        eContextRetimer,
-        eContextReader,
-        eContextWriter,
-    };
-
-    ContextEnum mapToContextEnum(const std::string &s);
+ 
 
 
     void tryInitializeOverlayInteracts();
@@ -391,7 +383,7 @@ private:
     mutable EffectInstance::RenderSafetyEnum _renderSafety;
     mutable bool _wasRenderSafetySet;
     mutable QReadWriteLock* _renderSafetyLock;
-    ContextEnum _context;
+    Natron::ContextEnum _context;
     mutable QReadWriteLock* _preferencesLock;
 #ifdef DEBUG
     Natron::ThreadStorage<bool> _canSetValue;

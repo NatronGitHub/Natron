@@ -136,7 +136,8 @@ OfxEffectInstance::OfxEffectInstance(boost::shared_ptr<Natron::Node> node)
 
 void
 OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
-                                                const std::string & context,
+                                                OFX::Host::ImageEffect::Descriptor* desc,
+                                                Natron::ContextEnum context,
                                                 const NodeSerialization* serialization,
                                                  const std::list<boost::shared_ptr<KnobSerialization> >& paramValues,
                                                 bool allowFileDialogs,
@@ -153,14 +154,17 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
 
     ///Only called from the main thread.
     assert( QThread::currentThread() == qApp->thread() );
-    ContextEnum ctx = mapToContextEnum(context);
-
-    if (disableRenderScaleSupport || ctx == eContextWriter) {
+    assert(plugin && desc && context != eContextNone);
+    
+    _context = context;
+    if (disableRenderScaleSupport || context == eContextWriter) {
         setAsOutputNode();
         // Writers don't support render scale (full-resolution images are written to disk)
         setSupportsRenderScaleMaybe(eSupportsNo);
     }
-    if (ctx == eContextReader) {
+    
+    
+    if (context == eContextReader) {
         // Tuttle readers don't support render scale as of 11/8/2014, but may crash (at least in debug configuration).
         // TuttleAVReader crashes on an assert in copy_and_convert_pixels( avSrcView, this->_dstView );
         std::string prefix("tuttle.");
@@ -169,33 +173,14 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
         }
     }
 
-    OFX::Host::PluginHandle* ph = plugin->getPluginHandle();
-    assert( ph->getOfxPlugin() );
-    assert(ph->getOfxPlugin()->mainEntry);
-    (void)ph;
-    OFX::Host::ImageEffect::Descriptor* desc = NULL;
-    desc = plugin->getContext(context);
-    if (!desc) {
-        throw std::runtime_error(std::string("Failed to get description for OFX plugin in context ") + context);
-    }
-    _context = mapToContextEnum(context);
-    
     std::string images;
 
     try {
-        _effect = new Natron::OfxImageEffectInstance(plugin,*desc,context,false);
+        _effect = new Natron::OfxImageEffectInstance(plugin,*desc,mapContextToString(context),false);
         assert(_effect);
         _effect->setOfxEffectInstance( dynamic_cast<OfxEffectInstance*>(this) );
 
         _natronPluginID = plugin->getIdentifier();
-//        _natronPluginID = generateImageEffectClassName( _effect->getPlugin()->getIdentifier(),
-//                                                        _effect->getPlugin()->getVersionMajor(),
-//                                                        _effect->getPlugin()->getVersionMinor(),
-//                                                        _effect->getDescriptor().getShortLabel(),
-//                                                        _effect->getDescriptor().getLabel(),
-//                                                        _effect->getDescriptor().getLongLabel(),
-//                                                        _effect->getDescriptor().getPluginGrouping() );
-
 
         beginChanges();
         OfxStatus stat;
@@ -759,7 +744,7 @@ OfxEffectInstance::getInputLabel(int inputNb) const
 
     MappedInputV copy = inputClipsCopyWithoutOutput();
     if ( inputNb < (int)copy.size() ) {
-        return copy[copy.size() - 1 - inputNb]->getShortLabel();
+        return copy[inputNb]->getShortLabel();
     } else {
         return EffectInstance::getInputLabel(inputNb);
     }
@@ -789,7 +774,7 @@ OfxEffectInstance::getClipCorrespondingToInput(int inputNo) const
     assert(_context != eContextNone);
     OfxEffectInstance::MappedInputV clips = inputClipsCopyWithoutOutput();
     assert( inputNo < (int)clips.size() );
-    OFX::Host::ImageEffect::ClipInstance* clip = _effect->getClip( clips[clips.size() - 1 - inputNo]->getName() );
+    OFX::Host::ImageEffect::ClipInstance* clip = _effect->getClip( clips[inputNo]->getName() );
     assert(clip);
 
     return dynamic_cast<OfxClipInstance*>(clip);
@@ -817,7 +802,7 @@ OfxEffectInstance::isInputOptional(int inputNb) const
     assert(_context != eContextNone);
     MappedInputV inputs = inputClipsCopyWithoutOutput();
     assert( inputNb < (int)inputs.size() );
-    if ( inputs[inputs.size() - 1 - inputNb]->isOptional() ) {
+    if ( inputs[inputNb]->isOptional() ) {
         return true;
     } else {
         if ( isInputRotoBrush(inputNb) ) {
@@ -835,7 +820,7 @@ OfxEffectInstance::isInputMask(int inputNb) const
     MappedInputV inputs = inputClipsCopyWithoutOutput();
     assert( inputNb < (int)inputs.size() );
 
-    return inputs[inputs.size() - 1 - inputNb]->isMask();
+    return inputs[inputNb]->isMask();
 }
 
 bool
@@ -848,7 +833,7 @@ OfxEffectInstance::isInputRotoBrush(int inputNb) const
     }
 
     ///Maybe too crude ? Not like many plug-ins use the paint context except Natron's roto node.
-    return inputs[inputs.size() - 1 - inputNb]->getName() == "Roto" && getNode()->isRotoNode();
+    return inputs[inputNb]->getName() == "Roto" && getNode()->isRotoNode();
 }
 
 int
@@ -858,7 +843,7 @@ OfxEffectInstance::getRotoBrushInputIndex() const
     MappedInputV inputs = inputClipsCopyWithoutOutput();
     for (U32 i = 0; i < inputs.size(); ++i) {
         if (inputs[i]->getName() == "Roto") {
-            return inputs.size() - 1 - i;
+            return i;
         }
     }
     return -1;
@@ -940,7 +925,7 @@ OfxEffectInstance::onInputChanged(int inputNo)
 }
 
 /** @brief map a std::string to a context */
-OfxEffectInstance::ContextEnum
+Natron::ContextEnum
 OfxEffectInstance::mapToContextEnum(const std::string &s)
 {
     if (s == kOfxImageEffectContextGenerator) {
@@ -969,6 +954,33 @@ OfxEffectInstance::mapToContextEnum(const std::string &s)
     }
     qDebug() << "OfxEffectInstance::mapToContextEnum: Unknown image effect context '" << s.c_str() << "'";
     throw std::invalid_argument(s);
+}
+
+std::string
+OfxEffectInstance::mapContextToString(Natron::ContextEnum ctx)
+{
+    switch (ctx) {
+        case Natron::eContextGenerator:
+            return kOfxImageEffectContextGenerator;
+        case Natron::eContextFilter:
+            return kOfxImageEffectContextFilter;
+        case Natron::eContextTransition:
+            return kOfxImageEffectContextTransition;
+        case Natron::eContextPaint:
+            return kOfxImageEffectContextPaint;
+        case Natron::eContextGeneral:
+            return kOfxImageEffectContextGeneral;
+        case Natron::eContextRetimer:
+            return kOfxImageEffectContextRetimer;
+        case Natron::eContextReader:
+            return kOfxImageEffectContextReader;
+        case Natron::eContextWriter:
+            return kOfxImageEffectContextWriter;
+        case Natron::eContextNone:
+        default:
+            break;
+    }
+    return std::string();
 }
 
 /**

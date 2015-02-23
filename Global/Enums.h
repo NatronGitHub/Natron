@@ -395,6 +395,20 @@ enum DisplayChannelsEnum
     eDisplayChannelsY
 };
     
+    /** @brief Enumerates the contexts a plugin can be used in */
+enum ContextEnum
+{
+    eContextNone,
+    eContextGenerator,
+    eContextFilter,
+    eContextTransition,
+    eContextPaint,
+    eContextGeneral,
+    eContextRetimer,
+    eContextReader,
+    eContextWriter,
+};
+    
 }
 Q_DECLARE_METATYPE(Natron::StandardButtons)
 

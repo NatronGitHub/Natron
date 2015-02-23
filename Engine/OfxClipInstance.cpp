@@ -855,7 +855,7 @@ OfxClipInstance::getInputNb() const
         }
     }
 
-    return inputs.size() - 1 - index;
+    return index;
 }
 
 Natron::EffectInstance*

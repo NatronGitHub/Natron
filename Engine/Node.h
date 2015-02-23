@@ -331,6 +331,8 @@ public:
 
     const std::vector<std::string> & getInputLabels() const;
     std::string getInputLabel(int inputNb) const;
+    
+    int getInputNumberFromLabel(const std::string& inputLabel) const;
 
     bool isInputConnected(int inputNb) const;
 
@@ -372,7 +374,7 @@ public:
      * as they are in the internal inputs vector. Disconnected inputs are
      * represented as empty strings.
      **/
-    void getInputNames(std::vector<std::string> & inputNames) const;
+    void getInputNames(std::map<std::string,std::string> & inputNames) const;
     
     enum CanConnectInputReturnValue
     {
@@ -898,6 +900,7 @@ public:
     void setPluginPythonModule(const std::string& pythonModule);
     
     std::string getPluginPythonModule() const;
+  
     
 private:
     
@@ -1065,13 +1068,14 @@ class InspectorNode
     Q_OBJECT
     
     int _inputsCount;
-
+    int _maxInputs;
 
 public:
 
     InspectorNode(AppInstance* app,
                   const boost::shared_ptr<NodeCollection>& group,
-                  Natron::Plugin* plugin);
+                  Natron::Plugin* plugin,
+                  int maxInputs);
 
     virtual ~InspectorNode();
 

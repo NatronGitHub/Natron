@@ -23,6 +23,7 @@
 #include <ofxhImageEffectAPI.h>
 
 #include "Global/Macros.h"
+#include "Global/Enums.h"
 
 //#define MULTI_THREAD_SUITE_USES_THREAD_SAFE_MUTEX_ALLOCATION
 
@@ -103,7 +104,7 @@ public:
 
     virtual OFX::Host::Memory::Instance* newMemoryInstance(size_t nBytes) OVERRIDE FINAL WARN_UNUSED_RETURN;
     
-    boost::shared_ptr<AbstractOfxEffectInstance> createOfxEffect(const std::string & name,boost::shared_ptr<Node> node,
+    boost::shared_ptr<AbstractOfxEffectInstance> createOfxEffect(boost::shared_ptr<Node> node,
                                                const NodeSerialization* serialization,
                                                 const std::list<boost::shared_ptr<KnobSerialization> >& paramValues,
                                                 bool allowFileDialogs,
@@ -119,10 +120,12 @@ public:
     void clearPluginsLoadedCache();
 
     void setThreadAsActionCaller(bool actionCaller);
+    
+    static OFX::Host::ImageEffect::Descriptor* getPluginContextAndDescribe(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
+                                                                           Natron::ContextEnum* ctx);
 private:
 
-    void getPluginAndContextByID(const std::string & pluginID, int major, int minor,
-                                 OFX::Host::ImageEffect::ImageEffectPlugin** plugin,std::string & context);
+    
 
     /*Writes all plugins loaded and their descriptors to
        the OFX plugin cache. (called by the destructor) */

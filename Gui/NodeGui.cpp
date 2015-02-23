@@ -1177,21 +1177,21 @@ NodeGui::initializeInputs()
 
 
     double piDividedbyX = M_PI / (inputsCount + 1);
-    double angle = M_PI - piDividedbyX;
+    double angle =  piDividedbyX;
   
     int maskIndex = 0;
     for (U32 i = 0; i < _inputEdges.size(); ++i) {
         if (!node->getLiveInstance()->isInputRotoBrush(i)) {
             double edgeAngle;
-            bool decrAngle = true;
+            bool incrAngle = true;
             if (node->getLiveInstance()->isInputMask(i)) {
                 if (maskIndex == 0) {
                     edgeAngle = 0;
-                    decrAngle = false;
+                    incrAngle = false;
                     ++maskIndex;
                 } else if (maskIndex == 1) {
                     edgeAngle = M_PI;
-                    decrAngle = false;
+                    incrAngle = false;
                     ++maskIndex;
                 } else {
                     edgeAngle = angle;
@@ -1200,8 +1200,8 @@ NodeGui::initializeInputs()
                 edgeAngle = angle;
             }
             _inputEdges[i]->setAngle(edgeAngle);
-            if (decrAngle) {
-                angle -= piDividedbyX;
+            if (incrAngle) {
+                angle += piDividedbyX;
             }
             if (!_inputEdges[i]->hasSource()) {
                 _inputEdges[i]->initLine();

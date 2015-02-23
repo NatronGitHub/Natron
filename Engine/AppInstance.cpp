@@ -43,6 +43,7 @@
 #include "Engine/Settings.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/NoOp.h"
+#include "Engine/OfxHost.h"
 
 using namespace Natron;
 
@@ -582,6 +583,39 @@ AppInstance::setGroupLabelIDAndVersion(const boost::shared_ptr<Natron::Node>& no
 }
 
 
+
+/**
+ * @brief An inspector node is like a viewer node with hidden inputs that unfolds one after another.
+ * This functions returns the number of inputs to use for inspectors or 0 for a regular node.
+ **/
+static int isEntitledForInspector(Natron::Plugin* plugin,OFX::Host::ImageEffect::Descriptor* ofxDesc)  {
+    
+    if (plugin->getPluginID() == PLUGINID_NATRON_VIEWER) {
+        return 10;
+    }
+    
+    if (!ofxDesc) {
+        return 0;
+    }
+    
+    const std::map<std::string,OFX::Host::ImageEffect::ClipDescriptor*>& clips = ofxDesc->getClips();
+    int nInputs = 0;
+    for (std::map<std::string,OFX::Host::ImageEffect::ClipDescriptor*>::const_iterator it = clips.begin(); it != clips.end(); ++it) {
+        if (!it->second->isOutput()) {
+            
+            if (!it->second->isOptional()) {
+                return 0;
+            } else {
+                ++nInputs;
+            }
+        }
+    }
+    if (nInputs > 4) {
+        return nInputs;
+    }
+    return 0;
+}
+
 boost::shared_ptr<Natron::Node>
 AppInstance::createNodeInternal(const QString & pluginID,
                                 const std::string & multiInstanceParentName,
@@ -631,11 +665,25 @@ AppInstance::createNodeInternal(const QString & pluginID,
     }
 
     std::string foundPluginID = plugin->getPluginID().toStdString();
-
-    if (foundPluginID != PLUGINID_NATRON_VIEWER) { // for now only the viewer can be an inspector.
+    
+    ContextEnum ctx;
+    OFX::Host::ImageEffect::Descriptor* ofxDesc = plugin->getOfxDesc(&ctx);
+    
+    if (!ofxDesc) {
+        OFX::Host::ImageEffect::ImageEffectPlugin* ofxPlugin = plugin->getOfxPlugin();
+        if (ofxPlugin) {
+            ofxDesc = Natron::OfxHost::getPluginContextAndDescribe(ofxPlugin,&ctx);
+            assert(ofxDesc);
+            plugin->setOfxDesc(ofxDesc, ctx);
+        }
+    }
+    
+    int nInputsForInspector = isEntitledForInspector(plugin,ofxDesc);
+    
+    if (!nInputsForInspector) {
         node.reset( new Node(this, addToProject ? group : boost::shared_ptr<NodeCollection>(), plugin) );
     } else {
-        node.reset( new InspectorNode(this, addToProject ? group : boost::shared_ptr<NodeCollection>(), plugin) );
+        node.reset( new InspectorNode(this, addToProject ? group : boost::shared_ptr<NodeCollection>(), plugin,nInputsForInspector) );
     }
     
     {

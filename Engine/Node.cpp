@@ -469,7 +469,7 @@ Node::load(const std::string & parentMultiInstanceName,
         }
     } else { //ofx plugin
                 
-        _imp->liveInstance = appPTR->createOFXEffect(getPluginID(),thisShared,&serialization,paramValues,!isFileDialogPreviewReader,renderScaleSupportPreference == 1);
+        _imp->liveInstance = appPTR->createOFXEffect(thisShared,&serialization,paramValues,!isFileDialogPreviewReader,renderScaleSupportPreference == 1);
         assert(_imp->liveInstance);
         _imp->liveInstance->initializeOverlayInteract();
     }
@@ -1225,7 +1225,7 @@ Node::getOutputs_mt_safe(std::list<Node* >& outputs) const
 }
 
 void
-Node::getInputNames(std::vector<std::string> & inputNames) const
+Node::getInputNames(std::map<std::string,std::string> & inputNames) const
 {
     ///This is called by the serialization thread.
     ///We use the guiInputs because we want to serialize exactly how the tree was to the user
@@ -1235,14 +1235,14 @@ Node::getInputNames(std::vector<std::string> & inputNames) const
         parent->getInputNames(inputNames);
         return;
     }
-    int maxInp = _imp->liveInstance->getMaxInputCount();
     
     QMutexLocker l(&_imp->inputsMutex);
-    for (int i = 0; i < maxInp; ++i) {
+    assert(_imp->inputs.size() == _imp->inputLabels.size());
+    for (U32 i = 0;i < _imp->inputs.size(); ++i) {
         if (_imp->inputs[i]) {
-            inputNames.push_back( _imp->inputs[i]->getScriptName_mt_safe() );
+            inputNames.insert(std::make_pair(_imp->inputLabels[i], _imp->inputs[i]->getScriptName_mt_safe()) );
         } else {
-            inputNames.push_back("");
+            inputNames.insert(std::make_pair(_imp->inputLabels[i],""));
         }
     }
 }
@@ -2130,6 +2130,19 @@ Node::getInputLabel(int inputNb) const
     }
     
     return _imp->inputLabels[inputNb];
+}
+
+int
+Node::getInputNumberFromLabel(const std::string& inputLabel) const
+{
+    assert(_imp->inputsInitialized);
+    QMutexLocker l(&_imp->inputsMutex);
+    for (U32 i = 0; i < _imp->inputLabels.size(); ++i) {
+        if (_imp->inputLabels[i] == inputLabel) {
+            return i;
+        }
+    }
+    return -1;
 }
 
 bool
@@ -4627,7 +4640,7 @@ Node::invalidateParallelRenderArgsInternal(std::list<Natron::Node*>& markedNodes
     markedNodes.push_back(this);
 
     ///Call recursively
-    int maxInpu = _imp->liveInstance->getMaxInputCount();
+    int maxInpu = getMaxInputCount();
     for (int i = 0; i < maxInpu; ++i) {
         boost::shared_ptr<Node> input = getInput(i);
         if (input) {
@@ -4691,7 +4704,7 @@ Node::setParallelRenderArgsInternal(int time,
    
     ///Call recursively
     
-    int maxInpu = _imp->liveInstance->getMaxInputCount();
+    int maxInpu = getMaxInputCount();
     for (int i = 0; i < maxInpu; ++i) {
         boost::shared_ptr<Node> input = getInput(i);
         if (input) {
@@ -4906,7 +4919,7 @@ Node::restoreClipPreferencesRecursive(std::list<Natron::Node*>& markedNodes)
     }
 
     
-    for (int i = 0; i < getLiveInstance()->getMaxInputCount(); ++i) {
+    for (int i = 0; i < getMaxInputCount(); ++i) {
         NodePtr input = getInput(i);
         if (input) {
             input->restoreClipPreferencesRecursive(markedNodes);
@@ -5284,9 +5297,11 @@ Node::Implementation::runInputChangedCallback(int index,const std::string& callb
 
 InspectorNode::InspectorNode(AppInstance* app,
                              const boost::shared_ptr<NodeCollection>& group,
-                             Natron::Plugin* plugin)
+                             Natron::Plugin* plugin,
+                             int maxInputs)
 : Node(app,group,plugin)
 , _inputsCount(1)
+, _maxInputs(maxInputs)
 {
 }
 
@@ -5301,8 +5316,8 @@ InspectorNode::connectInput(const boost::shared_ptr<Node>& input,
     ///Only called by the main-thread
     assert( QThread::currentThread() == qApp->thread() );
     
-    ///cannot connect more than 10 inputs.
-    assert(inputNumber <= 10);
+    ///cannot connect more than _maxInputs inputs.
+    assert(inputNumber <= _maxInputs);
     
     assert(input);
     
@@ -5324,7 +5339,7 @@ InspectorNode::connectInput(const boost::shared_ptr<Node>& input,
     
     /*Adding all empty edges so it creates at least the inputNB'th one.*/
     while (inputNumber >= _inputsCount) {
-        ///this function might not succeed if we already have 10 inputs OR the last input is already empty
+        ///this function might not succeed if we already have _maxInputs inputs OR the last input is already empty
         addEmptyInput();
     }
   
@@ -5344,8 +5359,8 @@ InspectorNode::tryAddEmptyInput()
     assert( QThread::currentThread() == qApp->thread() );
     
     
-    ///if we already reached 10 inputs, just don't do anything
-    if (_inputsCount <= 10) {
+    ///if we already reached _maxInputs inputs, just don't do anything
+    if (_inputsCount < _maxInputs) {
         if (_inputsCount > 0) {
             ///if there are already living inputs, look at the last one
             ///and if it is not connected, just don't add an input.

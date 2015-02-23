@@ -3522,18 +3522,26 @@ NodeGraphPrivate::restoreConnections(const std::list<boost::shared_ptr<NodeSeria
     std::list<boost::shared_ptr<NodeSerialization> >::const_iterator itSer = serializations.begin();
 
     for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = newNodes.begin(); it != newNodes.end(); ++it,++itSer) {
-        const std::vector<std::string> & inputNames = (*itSer)->getInputs();
+        const std::map<std::string,std::string> & inputNames = (*itSer)->getInputs();
 
         ///Restore each input
-        for (U32 i = 0; i < inputNames.size(); ++i) {
-            if ( inputNames[i].empty() ) {
+        for (std::map<std::string,std::string>::const_iterator it2 = inputNames.begin(); it2 != inputNames.end(); ++it2) {
+            if ( it2->second.empty() ) {
                 continue;
             }
-            ///find a node with the containing the same name. It should not match exactly because there's already
+            
+            int index = (*it)->getNode()->getInputNumberFromLabel(it2->first);
+            if (index == -1) {
+                qDebug() << "Could not find an input named " << it2->first.c_str();
+                continue;
+            }
+            
+            
+            ///find a node  containing the same name. It should not match exactly because there's already
             /// the "-copy" that was added to its name
-            for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it2 = newNodes.begin(); it2 != newNodes.end(); ++it2) {
-                if ( (*it2)->getNode()->getScriptName().find(inputNames[i]) != std::string::npos ) {
-                    _publicInterface->getGui()->getApp()->getProject()->connectNodes( i, (*it2)->getNode(), (*it)->getNode().get() );
+            for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it3 = newNodes.begin(); it3 != newNodes.end(); ++it3) {
+                if ( (*it3)->getNode()->getScriptName().find(it2->second) != std::string::npos ) {
+                    _publicInterface->getGui()->getApp()->getProject()->connectNodes( index, (*it3)->getNode(), (*it)->getNode().get() );
                     break;
                 }
             }

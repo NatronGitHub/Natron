@@ -41,7 +41,8 @@ CLANG_DIAG_ON(unused-parameter)
 #define NODE_SERIALIZATION_EMBEDS_MULTI_INSTANCE_CHILDREN 6
 #define NODE_SERIALIZATION_INTRODUCES_SCRIPT_NAME 7
 #define NODE_SERIALIZATION_INTRODUCES_PYTHON_MODULE 8
-#define NODE_SERIALIZATION_CURRENT_VERSION NODE_SERIALIZATION_INTRODUCES_PYTHON_MODULE
+#define NODE_SERIALIZATION_CHANGE_INPUTS_SERIALIZATION 9
+#define NODE_SERIALIZATION_CURRENT_VERSION NODE_SERIALIZATION_CHANGE_INPUTS_SERIALIZATION
 
 namespace Natron {
 class Node;
@@ -102,14 +103,16 @@ public:
         return _pythonModule;
     }
 
-    const std::vector<std::string> & getInputs() const
+    const std::vector<std::string> & getOldInputs() const
+    {
+        return _oldInputs;
+    }
+    
+    const std::map<std::string,std::string>& getInputs() const
     {
         return _inputs;
     }
-    
-    void setInputs(const std::vector<std::string>& inputs) {
-        _inputs = inputs;
-    }
+
 
     int getPluginMajorVersion() const
     {
@@ -177,7 +180,8 @@ private:
     int _pluginMajorVersion;
     int _pluginMinorVersion;
     std::string _masterNodeName;
-    std::vector<std::string> _inputs;
+    std::map<std::string,std::string> _inputs;
+    std::vector<std::string> _oldInputs;
     bool _hasRotoContext;
     RotoContextSerialization _rotoContext;
     boost::shared_ptr<Natron::Node> _node;
@@ -265,12 +269,18 @@ private:
             ar & boost::serialization::make_nvp("item",*ks);
             _knobsValues.push_back(ks);
         }
-        ar & boost::serialization::make_nvp("Inputs_map",_inputs);
-        if (version < NODE_SERIALIZATION_INTRODUCES_SCRIPT_NAME) {
-            for (U32 i = 0; i < _inputs.size(); ++i) {
-                _inputs[i] = Natron::makeNameScriptFriendly(_inputs[i]);
+        
+        if (version < NODE_SERIALIZATION_CHANGE_INPUTS_SERIALIZATION) {
+            ar & boost::serialization::make_nvp("Inputs_map",_oldInputs);
+            if (version < NODE_SERIALIZATION_INTRODUCES_SCRIPT_NAME) {
+                for (U32 i = 0; i < _oldInputs.size(); ++i) {
+                    _oldInputs[i] = Natron::makeNameScriptFriendly(_oldInputs[i]);
+                }
             }
+        } else {
+            ar & boost::serialization::make_nvp("Inputs_map",_inputs);
         }
+        
         ar & boost::serialization::make_nvp("KnobsAge",_knobsAge);
         ar & boost::serialization::make_nvp("MasterNode",_masterNodeName);
         if (version < NODE_SERIALIZATION_INTRODUCES_SCRIPT_NAME) {

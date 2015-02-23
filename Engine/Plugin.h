@@ -27,6 +27,18 @@
 #include <boost/weak_ptr.hpp>
 #endif
 
+#include "Global/Enums.h"
+
+
+namespace OFX{
+    namespace Host{
+        namespace ImageEffect{
+            class ImageEffectPlugin;
+            class Descriptor;
+        }
+    }
+}
+
 class QMutex;
 namespace Natron {
 class LibraryBinary;
@@ -148,6 +160,10 @@ class Plugin
     mutable bool _hasShortcutSet; //< to speed up the keypress event of Nodegraph, this is used to find out quickly whether it has a shortcut or not.
     bool _isReader,_isWriter;
     QString _pythonModule;
+    OFX::Host::ImageEffect::ImageEffectPlugin* _ofxPlugin;
+    OFX::Host::ImageEffect::Descriptor* _ofxDescriptor;
+    ContextEnum _ofxContext;
+    
 public:
 
     Plugin()
@@ -165,6 +181,9 @@ public:
     , _isReader(false)
     , _isWriter(false)
     , _pythonModule()
+    , _ofxPlugin(0)
+    , _ofxDescriptor(0)
+    , _ofxContext(eContextNone)
     {
     }
 
@@ -193,6 +212,9 @@ public:
           , _hasShortcutSet(false)
           , _isReader(isReader)
           , _isWriter(isWriter)
+          , _ofxPlugin(0)
+          , _ofxDescriptor(0)
+          , _ofxContext(eContextNone)
     {
     }
 
@@ -313,6 +335,30 @@ public:
     const QString& getPythonModule() const {
         return _pythonModule;
     }
+    
+    void setOfxPlugin(OFX::Host::ImageEffect::ImageEffectPlugin* p)
+    {
+        _ofxPlugin = p;
+    }
+    
+    OFX::Host::ImageEffect::ImageEffectPlugin* getOfxPlugin() const
+    {
+        return _ofxPlugin;
+    }
+    
+    OFX::Host::ImageEffect::Descriptor* getOfxDesc(ContextEnum* ctx) const
+    {
+        *ctx = _ofxContext;
+        return _ofxDescriptor;
+    }
+    
+    void setOfxDesc(OFX::Host::ImageEffect::Descriptor* desc,ContextEnum ctx)
+    {
+        assert(ctx != Natron::eContextNone);
+        _ofxDescriptor = desc;
+        _ofxContext = ctx;
+    }
+    
 };
     
 struct Plugin_compare_major

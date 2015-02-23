@@ -1959,14 +1959,13 @@ AppManager::getPluginBinary(const QString & pluginId,
 }
 
 boost::shared_ptr<Natron::EffectInstance>
-AppManager::createOFXEffect(const std::string & pluginID,
-                            boost::shared_ptr<Natron::Node> node,
+AppManager::createOFXEffect(boost::shared_ptr<Natron::Node> node,
                             const NodeSerialization* serialization,
                             const std::list<boost::shared_ptr<KnobSerialization> >& paramValues,
                             bool allowFileDialogs,
                             bool disableRenderScaleSupport) const
 {
-    return _imp->ofxHost->createOfxEffect(pluginID, node,serialization,paramValues,allowFileDialogs,disableRenderScaleSupport);
+    return _imp->ofxHost->createOfxEffect(node,serialization,paramValues,allowFileDialogs,disableRenderScaleSupport);
 }
 
 void
