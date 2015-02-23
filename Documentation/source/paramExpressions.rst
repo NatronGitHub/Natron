@@ -232,6 +232,22 @@ Instead you can just type the following in your expression::
 
 	myOtherNode.myOtherNodeParam.get() * random()
 	
+The :func:`random(min = 0.,max = 1.)<>` function also takes 2 optional arguments indicating
+the range into which the return value should fall in. The range is defined by [min,max[. 
+When using this function in your expression, make sure to add a '.' after the numbers so that
+the interpreter understands your using :func:`random(min,max)<>` and not :func:`random(seed)<>`
+::
+	#Returns a random floating point value in the range [1., 10.[
+	random(1.,10.)
+
+For integers, use the :func:`randomInt(min,max)<>` function instead::
+
+	#Returns a random integer in the range [1,100[
+	randomInt(1,100)
+	
+	#Using the randomInt function with a given seed
+	seed = 5
+	randomInt(seed)
 
 	
 Expressions persistence

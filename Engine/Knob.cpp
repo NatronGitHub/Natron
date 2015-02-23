@@ -1238,6 +1238,7 @@ KnobI::declareCurrentKnobVariable_Python(KnobI* knob,int dimension,std::string& 
         ss << "thisParam = thisNode." << knob->getName() << "\n";
         ss << "frame = thisParam.getCurrentTime() \n";
         ss << "random = thisParam.random\n";
+        ss << "randomInt = thisParam.randomInt\n";
         if (dimension != -1) {
             ss << "dimension = " << dimension << "\n";
         }
@@ -1251,7 +1252,7 @@ KnobI::declareCurrentKnobVariable_Python(KnobI* knob,int dimension,std::string& 
         script.insert(firstLineAfterImport, toInsert);
         script.append("\n");
         script.append("del thisParam\n");
-        script.append("del random\n");
+        script.append("del random\ndel randomInt\n");
         script.append("del frame\n");
         if (dimension != -1) {
             script.append("del dimension\n");
@@ -2407,11 +2408,24 @@ KnobHelper::random(unsigned int seed) const
 }
 
 double
-KnobHelper::random() const
+KnobHelper::random(double min,double max) const
 {
     QMutexLocker k(&_imp->lastRandomHashMutex);
     _imp->lastRandomHash = hashFunction(_imp->lastRandomHash);
-    return (double)_imp->lastRandomHash / (double)0x100000000LL;
+    return ((double)_imp->lastRandomHash / (double)0x100000000LL) * (max - min)  + min;
+}
+
+int
+KnobHelper::randomInt(unsigned int seed) const
+{
+    randomSeed(seed);
+    return randomInt();
+}
+
+int
+KnobHelper::randomInt(int min,int max) const
+{
+    return (int)random(min,max);
 }
 
 void

@@ -433,7 +433,9 @@ public:
     virtual boost::shared_ptr<Curve> getGuiCurve(int dimension) const = 0;
 
     virtual double random(unsigned int seed) const = 0;
-    virtual double random() const = 0;
+    virtual double random(double min = 0.,double max = 1.) const = 0;
+    virtual int randomInt(unsigned int seed) const = 0;
+    virtual int randomInt(int min = INT_MIN,int max = INT_MAX) const = 0;
     
 protected:
 
@@ -1041,7 +1043,9 @@ public:
     virtual void evaluateValueChange(int dimension,Natron::ValueChangedReasonEnum reason) OVERRIDE FINAL;
     
     virtual double random(unsigned int seed) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual double random() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual double random(double min = 0., double max = 1.) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual int randomInt(unsigned int seed) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual int randomInt(int min = 0,int max = INT_MAX) const OVERRIDE FINAL WARN_UNUSED_RETURN;
 protected:
     
     void randomSeed(unsigned int seed) const;

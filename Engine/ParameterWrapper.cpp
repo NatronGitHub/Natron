@@ -179,12 +179,12 @@ Param::copy(Param* other, int dimension)
 }
 
 double
-Param::random() const
+Param::random(double min,double max) const
 {
     if (!_knob) {
         return 0;
     }
-    return _knob->random();
+    return _knob->random(min,max);
 }
 
 double
@@ -194,6 +194,24 @@ Param::random(unsigned int seed) const
         return 0;
     }
     return _knob->random(seed);
+}
+
+int
+Param::randomInt(int min, int max)
+{
+    if (!_knob) {
+        return 0;
+    }
+    return _knob->randomInt(min,max);
+}
+
+int
+Param::randomInt(unsigned int seed) const
+{
+    if (!_knob) {
+        return 0;
+    }
+    return _knob->randomInt(seed);
 }
 
 AnimatedParam::AnimatedParam(const boost::shared_ptr<KnobI>& knob)
