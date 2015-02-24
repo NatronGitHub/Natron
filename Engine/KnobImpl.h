@@ -377,14 +377,14 @@ bool Knob<T>::getValueFromExpression(int time,int dimension,bool clamp,T* ret) c
     
     ///Check first if a value was already computed:
     
-    {
-        QReadLocker k(&_valueMutex);
-        typename FrameValueMap::iterator found = _exprRes[dimension].find(time);
-        if (found != _exprRes[dimension].end()) {
-            *ret = found->second;
-            return true;
-        }
+    
+    QWriteLocker k(&_valueMutex);
+    typename FrameValueMap::iterator found = _exprRes[dimension].find(time);
+    if (found != _exprRes[dimension].end()) {
+        *ret = found->second;
+        return true;
     }
+    
     
     {
         EXPR_RECURSION_LEVEL();
@@ -395,7 +395,7 @@ bool Knob<T>::getValueFromExpression(int time,int dimension,bool clamp,T* ret) c
         *ret =  clampToMinMax(*ret,dimension);
     }
     
-    QWriteLocker k(&_valueMutex);
+    //QWriteLocker k(&_valueMutex);
     _exprRes[dimension].insert(std::make_pair(time,*ret));
     return true;
 

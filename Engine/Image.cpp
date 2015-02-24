@@ -597,6 +597,13 @@ Image::makeParams(int cost,
                   Natron::ImageBitDepthEnum bitdepth,
                   const std::map<int, std::vector<RangeD> > & framesNeeded)
 {
+#ifdef DEBUG
+    RectI pixelRod;
+    rod.toPixelEnclosing(mipMapLevel, par, &pixelRod);
+    assert(bounds.left() >= pixelRod.left() && bounds.right() <= pixelRod.right() &&
+           bounds.bottom() >= pixelRod.bottom() && bounds.top() <= pixelRod.top());
+#endif
+    
     return boost::shared_ptr<ImageParams>( new ImageParams(cost,
                                                            rod,
                                                            par,
