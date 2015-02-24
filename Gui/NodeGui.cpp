@@ -1124,14 +1124,17 @@ NodeGui::initializeInputsForInspector()
     double piDividedbyX = M_PI / (maxInitiallyOnTopVisibleInputs + 1);
 
     double angle =  piDividedbyX;
-    
+    bool maskAside = false;
     U32 lastInputConnected = -1;
     for (U32 i = 0; i < _inputEdges.size(); ++i) {
-
+        bool isMask = node->getLiveInstance()->isInputMask(i);
         
-        if ((int)i < maxInitiallyOnTopVisibleInputs) {
+        if ((int)i < maxInitiallyOnTopVisibleInputs || (isMask && maskAside)) {
             _inputEdges[i]->setAngle(angle);
             angle += piDividedbyX;
+        } else if (isMask && !maskAside) {
+            _inputEdges[i]->setAngle(0);
+            maskAside = true;
         } else {
             _inputEdges[i]->setAngle(M_PI);
         }
@@ -1147,7 +1150,7 @@ NodeGui::initializeInputsForInspector()
     
     bool inputAsideDisplayed = false;
     for (U32 i = 0; i < _inputEdges.size(); ++i) {
-        if (_inputEdges[i]->hasSource()) {
+        if (_inputEdges[i]->hasSource() || node->getLiveInstance()->isInputMask(i)) {
             _inputEdges[i]->setVisible(true);
         } else {
             if ((int)i < maxInitiallyOnTopVisibleInputs) {
@@ -1304,9 +1307,7 @@ NodeGui::setOptionalInputsVisible(bool visible)
     NodePtr node = getNode();
     
     InspectorNode* isInspector = dynamic_cast<InspectorNode*>(node.get());
-    if (isInspector) {
-        return;
-    }
+   
   
     if (visible != _optionalInputsVisible) {
         _optionalInputsVisible = visible;
@@ -1315,7 +1316,13 @@ NodeGui::setOptionalInputsVisible(bool visible)
             if (node->getLiveInstance()->isInputOptional(i) &&
                 !node->getRealInput(i) &&
                 !_inputEdges[i]->isRotoEdge()) {
-                _inputEdges[i]->setVisible(visible);
+                if (isInspector) {
+                    if (node->getLiveInstance()->isInputMask(i)) {
+                        _inputEdges[i]->setVisible(visible);
+                    }
+                } else {
+                    _inputEdges[i]->setVisible(visible);
+                }
             }
         }
     }
