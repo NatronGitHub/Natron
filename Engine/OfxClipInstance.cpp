@@ -228,14 +228,14 @@ OfxClipInstance::getAspectRatio() const
     if (isOutput()) {
         return _aspectRatio;
     }
-    
+
     EffectInstance* input = getAssociatedNode();
-    if (input) {
-        return input->getPreferredAspectRatio();
-    } else if (_nodeInstance) {
+    if (!input || getName() == "Roto") {
         Format f;
         _nodeInstance->getRenderFormat(&f);
         return f.getPixelAspectRatio();
+    } else if (_nodeInstance) {
+        return input->getPreferredAspectRatio();
     }
     return 0.; // invalid value
 }
