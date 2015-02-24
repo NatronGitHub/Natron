@@ -1261,7 +1261,7 @@ static bool exportKnobValues(const boost::shared_ptr<KnobI> knob,
                 }
                 
             }
-        } else {
+        } else { // !isParametric
             boost::shared_ptr<Curve> curve = knob->getCurve(i, true);
             if (curve) {
                 KeyFrameSet keys = curve->getKeyFrames_mt_safe();
@@ -1326,8 +1326,9 @@ static bool exportKnobValues(const boost::shared_ptr<KnobI> knob,
                     QString vStr = v ? "True" : "False";
                     WRITE_INDENT(1); WRITE_STRING("param.setValue(" + vStr + ")");
                 }
-            }
-        }
+            } // if ((!curve || curve->getKeyFramesCount() == 0) && knob->hasModifications(i)) {
+            
+        } // if (isParametric) {
         
     } // for (int i = 0; i < (*it2)->getDimension(); ++i)
     if (mustDefineParam && hasExportedValue) {
@@ -1371,6 +1372,9 @@ static void exportUserKnob(const boost::shared_ptr<KnobI>& knob,const QString& f
         }
         WRITE_INDENT(1); WRITE_STRING("param = " + fullyQualifiedNodeName + createToken + ESC(isInt->getName()) +
                                       ", " + ESC(isInt->getDescription()) + ")");
+        
+        std::vector<int> defaultValues = isInt->getDefaultValues_mt_safe();
+        assert((int)defaultValues.size() == isInt->getDimension());
         for (int i = 0; i < isInt->getDimension() ; ++i) {
             int min = isInt->getMinimum(i);
             int max = isInt->getMaximum(i);
@@ -1392,7 +1396,9 @@ static void exportUserKnob(const boost::shared_ptr<KnobI>& knob,const QString& f
                 WRITE_INDENT(1); WRITE_STRING("param.setDisplayMaximum(" + NUM(dMax) + ", " +
                                               NUM(i) + ")");
             }
-            
+            if (defaultValues[i] != 0) {
+                WRITE_INDENT(1); WRITE_STRING("param.setDefaultValue(" + NUM(defaultValues[i]) + ", " + NUM(i) + ")");
+            }
         }
     } else if (isDouble) {
         QString createToken;
@@ -1413,6 +1419,9 @@ static void exportUserKnob(const boost::shared_ptr<KnobI>& knob,const QString& f
         }
         WRITE_INDENT(1); WRITE_STRING("param = " + fullyQualifiedNodeName + createToken + ESC(isDouble->getName()) +
                                       ", " + ESC(isDouble->getDescription()) + ")");
+        
+        std::vector<double> defaultValues = isDouble->getDefaultValues_mt_safe();
+        assert((int)defaultValues.size() == isDouble->getDimension());
         for (int i = 0; i < isDouble->getDimension() ; ++i) {
             double min = isDouble->getMinimum(i);
             double max = isDouble->getMaximum(i);
@@ -1434,12 +1443,24 @@ static void exportUserKnob(const boost::shared_ptr<KnobI>& knob,const QString& f
                 WRITE_INDENT(1); WRITE_STRING("param.setDisplayMaximum(" + NUM(dMax) + ", " +
                                               NUM(i) + ")");
             }
-            
+            if (defaultValues[i] != 0.) {
+                WRITE_INDENT(1); WRITE_STRING("param.setDefaultValue(" + NUM(defaultValues[i]) + ", " + NUM(i) + ")");
+            }
         }
 
     } else if (isBool) {
+        
         WRITE_INDENT(1); WRITE_STRING("param = " + fullyQualifiedNodeName + ".createBooleanParam(" + ESC(isBool->getName()) +
                                       ", " + ESC(isBool->getDescription()) + ")");
+        
+        std::vector<bool> defaultValues = isBool->getDefaultValues_mt_safe();
+        assert((int)defaultValues.size() == isBool->getDimension());
+        
+        if (defaultValues[0]) {
+            WRITE_INDENT(1); WRITE_STRING("param.setDefaultValue(" + NUM(defaultValues[0]) + ")");
+        }
+        
+        
     } else if (isChoice) {
         WRITE_INDENT(1); WRITE_STRING("param = " + fullyQualifiedNodeName + ".createChoiceParam(" +
                                       ESC(isChoice->getName()) +
@@ -1460,10 +1481,21 @@ static void exportUserKnob(const boost::shared_ptr<KnobI>& knob,const QString& f
             WRITE_INDENT(1); WRITE_STATIC_LINE("param.setOptions(entries)");
             WRITE_INDENT(1); WRITE_STATIC_LINE("del entries");
         }
+        
+        std::vector<int> defaultValues = isChoice->getDefaultValues_mt_safe();
+        assert((int)defaultValues.size() == isChoice->getDimension());
+        if (defaultValues[0] != 0) {
+            WRITE_INDENT(1); WRITE_STRING("param.setDefaultValue(" + NUM(defaultValues[0]) + ")");
+        }
+        
     } else if (isColor) {
         QString hasAlphaStr = (isColor->getDimension() == 4) ? "True" : "False";
         WRITE_INDENT(1); WRITE_STRING("param = " + fullyQualifiedNodeName + ".createColorParam(" + ESC(isColor->getName()) +
                                       ", " + ESC(isColor->getDescription()) + ", " + hasAlphaStr +  ")");
+        
+        std::vector<double> defaultValues = isColor->getDefaultValues_mt_safe();
+        assert((int)defaultValues.size() == isColor->getDimension());
+        
         for (int i = 0; i < isColor->getDimension() ; ++i) {
             double min = isColor->getMinimum(i);
             double max = isColor->getMaximum(i);
@@ -1485,7 +1517,9 @@ static void exportUserKnob(const boost::shared_ptr<KnobI>& knob,const QString& f
                 WRITE_INDENT(1); WRITE_STRING("param.setDisplayMaximum(" + NUM(dMax) + ", " +
                                               NUM(i) + ")");
             }
-            
+            if (defaultValues[i] != 0.) {
+                WRITE_INDENT(1); WRITE_STRING("param.setDefaultValue(" + NUM(defaultValues[i]) + ", " + NUM(i) + ")");
+            }
         }
 
     } else if (isButton) {
@@ -1511,11 +1545,27 @@ static void exportUserKnob(const boost::shared_ptr<KnobI>& knob,const QString& f
             typeStr = "eStringTypeDefault";
         }
         WRITE_INDENT(1); WRITE_STRING("param.setType(NatronEngine.StringParam.TypeEnum." + typeStr + ")");
+        
+        std::vector<std::string> defaultValues = isStr->getDefaultValues_mt_safe();
+        assert((int)defaultValues.size() == isStr->getDimension());
+        QString def(defaultValues[0].c_str());
+        if (!def.isEmpty()) {
+            WRITE_INDENT(1); WRITE_STRING("param.setDefaultValue(" + ESC(def) + ")");
+        }
+        
     } else if (isFile) {
         WRITE_INDENT(1); WRITE_STRING("param = " + fullyQualifiedNodeName + ".createFileParam(" + ESC(isFile->getName()) +
                                       ", " + ESC(isFile->getDescription()) + ")");
         QString seqStr = isFile->isInputImageFile() ? "True" : "False";
         WRITE_INDENT(1); WRITE_STRING("param.setSequenceEnabled("+ seqStr + ")");
+        
+        std::vector<std::string> defaultValues = isFile->getDefaultValues_mt_safe();
+        assert((int)defaultValues.size() == isFile->getDimension());
+        QString def(defaultValues[0].c_str());
+        if (!def.isEmpty()) {
+            WRITE_INDENT(1); WRITE_STRING("param.setDefaultValue(" + def + ")");
+        }
+        
     } else if (isOutFile) {
         WRITE_INDENT(1); WRITE_STRING("param = " + fullyQualifiedNodeName + ".createOutputFileParam(" +
                                       ESC(isOutFile->getName()) +
@@ -1523,6 +1573,14 @@ static void exportUserKnob(const boost::shared_ptr<KnobI>& knob,const QString& f
         assert(isOutFile); 
         QString seqStr = isOutFile->isOutputImageFile() ? "True" : "False";
         WRITE_INDENT(1); WRITE_STRING("param.setSequenceEnabled("+ seqStr + ")");
+        
+        std::vector<std::string> defaultValues = isOutFile->getDefaultValues_mt_safe();
+        assert((int)defaultValues.size() == isOutFile->getDimension());
+        QString def(defaultValues[0].c_str());
+        if (!def.isEmpty()) {
+            WRITE_INDENT(1); WRITE_STRING("param.setDefaultValue(" + ESC(def) + ")");
+        }
+
     } else if (isPath) {
         WRITE_INDENT(1); WRITE_STRING("param = " + fullyQualifiedNodeName + ".createPathParam(" +
                                       ESC(isPath->getName()) +
@@ -1530,6 +1588,14 @@ static void exportUserKnob(const boost::shared_ptr<KnobI>& knob,const QString& f
         if (isPath->isMultiPath()) {
             WRITE_INDENT(1); WRITE_STRING("param.setAsMultiPathTable()");
         }
+        
+        std::vector<std::string> defaultValues = isPath->getDefaultValues_mt_safe();
+        assert((int)defaultValues.size() == isPath->getDimension());
+        QString def(defaultValues[0].c_str());
+        if (!def.isEmpty()) {
+            WRITE_INDENT(1); WRITE_STRING("param.setDefaultValue(" + ESC(def) + ")");
+        }
+
     } else if (isGrp) {
         WRITE_INDENT(1); WRITE_STRING("param = " + fullyQualifiedNodeName + ".createGroupParam(" +
                                       ESC(isGrp->getName()) +
@@ -1546,6 +1612,7 @@ static void exportUserKnob(const boost::shared_ptr<KnobI>& knob,const QString& f
     }
     
     WRITE_STATIC_LINE("");
+
     if (group) {
         QString grpFullName = fullyQualifiedNodeName + "." + QString(group->getName().c_str());
         WRITE_INDENT(1); WRITE_STATIC_LINE("#Add the param to the group, no need to add it to the page");

@@ -3151,6 +3151,23 @@ struct AddKnobDialogPrivate
     QLabel* maxLabel;
     SpinBox* maxBox;
     
+    enum DefaultValueType
+    {
+        eDefaultValueTypeInt,
+        eDefaultValueTypeDouble,
+        eDefaultValueTypeBool,
+        eDefaultValueTypeString
+    };
+    
+    
+    QLabel* defaultValueLabel;
+    SpinBox* default0;
+    SpinBox* default1;
+    SpinBox* default2;
+    SpinBox* default3;
+    LineEdit* defaultStr;
+    QCheckBox* defaultBool;
+    
     QLabel* menuItemsLabel;
     QTextEdit* menuItemsEdit;
     
@@ -3205,6 +3222,13 @@ struct AddKnobDialogPrivate
     , minBox(0)
     , maxLabel(0)
     , maxBox(0)
+    , defaultValueLabel(0)
+    , default0(0)
+    , default1(0)
+    , default2(0)
+    , default3(0)
+    , defaultStr(0)
+    , defaultBool(0)
     , menuItemsLabel(0)
     , menuItemsEdit(0)
     , multiLineLabel(0)
@@ -3252,6 +3276,8 @@ struct AddKnobDialogPrivate
     void setVisibleParent(bool visible);
     
     void setVisiblePage(bool visible);
+    
+    void setVisibleDefaultValues(bool visible,AddKnobDialogPrivate::DefaultValueType type,int dimensions);
     
     void createKnobFromSelection(int type,int optionalGroupIndex = -1);
     
@@ -3651,6 +3677,49 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,const boost::shared_ptr<KnobI>
         _imp->mainLayout->addRow(_imp->minLabel, minMaxContainer);
     }
     
+    {
+        QWidget* defValContainer = new QWidget(this);
+        QHBoxLayout* defValLayout = new QHBoxLayout(defValContainer);
+        defValLayout->setContentsMargins(0, 0, 0, 0);
+        _imp->defaultValueLabel = new QLabel(tr("Default value:"),defValContainer);
+        _imp->defaultValueLabel->setFont(font);
+        
+        _imp->default0 = new SpinBox(defValContainer,SpinBox::eSpinBoxTypeDouble);
+        _imp->default0->setValue(0);
+        _imp->default0->setToolTip(Qt::convertFromPlainText(tr("Set the default value for the parameter (dimension 0)")));
+        defValLayout->addWidget(_imp->default0);
+        
+        _imp->default1 = new SpinBox(defValContainer,SpinBox::eSpinBoxTypeDouble);
+        _imp->default1->setValue(0);
+        _imp->default1->setToolTip(Qt::convertFromPlainText(tr("Set the default value for the parameter (dimension 1)")));
+        defValLayout->addWidget(_imp->default1);
+        
+        _imp->default2 = new SpinBox(defValContainer,SpinBox::eSpinBoxTypeDouble);
+        _imp->default2->setValue(0);
+        _imp->default2->setToolTip(Qt::convertFromPlainText(tr("Set the default value for the parameter (dimension 2)")));
+        defValLayout->addWidget(_imp->default2);
+        
+        _imp->default3 = new SpinBox(defValContainer,SpinBox::eSpinBoxTypeDouble);
+        _imp->default3->setValue(0);
+        _imp->default3->setToolTip(Qt::convertFromPlainText(tr("Set the default value for the parameter (dimension 3)")));
+        defValLayout->addWidget(_imp->default3);
+
+        
+        _imp->defaultStr = new LineEdit(defValContainer);
+        _imp->defaultStr->setToolTip(Qt::convertFromPlainText(tr("Set the default value for the parameter")));
+        defValLayout->addWidget(_imp->defaultStr);
+        
+        
+        _imp->defaultBool = new QCheckBox(defValContainer);
+        _imp->defaultBool->setToolTip(Qt::convertFromPlainText(tr("Set the default value for the parameter")));
+        _imp->defaultBool->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE,NATRON_MEDIUM_BUTTON_SIZE);
+        defValLayout->addWidget(_imp->defaultBool);
+
+        defValLayout->addStretch();
+        
+        _imp->mainLayout->addRow(_imp->defaultValueLabel, defValContainer);
+    }
+    
     
     const std::map<boost::shared_ptr<KnobI>,KnobGui*>& knobs = _imp->panel->getKnobs();
     for (std::map<boost::shared_ptr<KnobI>,KnobGui*>::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
@@ -3831,6 +3900,21 @@ AddKnobDialog::onTypeCurrentIndexChanged(int index)
             _imp->setVisibleSequence(false);
             _imp->setVisibleGrpAsTab(false);
             _imp->setVisibleParent(true);
+            if (index == 0 || index == 3) {
+                _imp->setVisibleDefaultValues(true,
+                                              index == 0 ? AddKnobDialogPrivate::eDefaultValueTypeInt : AddKnobDialogPrivate::eDefaultValueTypeDouble,
+                                              1);
+            } else if (index == 1 || index == 4) {
+                _imp->setVisibleDefaultValues(true,
+                                              index == 1 ? AddKnobDialogPrivate::eDefaultValueTypeInt : AddKnobDialogPrivate::eDefaultValueTypeDouble,
+                                              2);
+            } else if (index == 2 || index == 5 || index == 6) {
+                _imp->setVisibleDefaultValues(true,
+                                              index == 2 ? AddKnobDialogPrivate::eDefaultValueTypeInt : AddKnobDialogPrivate::eDefaultValueTypeDouble,
+                                              3);
+            } else if (index == 7) {
+                _imp->setVisibleDefaultValues(true,AddKnobDialogPrivate::eDefaultValueTypeDouble,4);
+            }
             break;
         case 8: // choice
             _imp->setVisibleAnimates(true);
@@ -3845,6 +3929,7 @@ AddKnobDialog::onTypeCurrentIndexChanged(int index)
             _imp->setVisibleSequence(false);
             _imp->setVisibleGrpAsTab(false);
             _imp->setVisibleParent(true);
+            _imp->setVisibleDefaultValues(true,AddKnobDialogPrivate::eDefaultValueTypeInt,1);
             break;
         case 9: // bool
             _imp->setVisibleAnimates(true);
@@ -3859,6 +3944,7 @@ AddKnobDialog::onTypeCurrentIndexChanged(int index)
             _imp->setVisibleSequence(false);
             _imp->setVisibleGrpAsTab(false);
             _imp->setVisibleParent(true);
+            _imp->setVisibleDefaultValues(true,AddKnobDialogPrivate::eDefaultValueTypeBool,1);
             break;
         case 10: // label
             _imp->setVisibleAnimates(false);
@@ -3873,6 +3959,7 @@ AddKnobDialog::onTypeCurrentIndexChanged(int index)
             _imp->setVisibleSequence(false);
             _imp->setVisibleGrpAsTab(false);
             _imp->setVisibleParent(true);
+            _imp->setVisibleDefaultValues(true,AddKnobDialogPrivate::eDefaultValueTypeString,1);
             break;
         case 11: // text input
             _imp->setVisibleAnimates(true);
@@ -3887,6 +3974,7 @@ AddKnobDialog::onTypeCurrentIndexChanged(int index)
             _imp->setVisibleSequence(false);
             _imp->setVisibleGrpAsTab(false);
             _imp->setVisibleParent(true);
+            _imp->setVisibleDefaultValues(true,AddKnobDialogPrivate::eDefaultValueTypeString,1);
             break;
         case 12: // input file
         case 13: // output file
@@ -3902,6 +3990,7 @@ AddKnobDialog::onTypeCurrentIndexChanged(int index)
             _imp->setVisibleSequence(true);
             _imp->setVisibleGrpAsTab(false);
             _imp->setVisibleParent(true);
+            _imp->setVisibleDefaultValues(true,AddKnobDialogPrivate::eDefaultValueTypeString,1);
             break;
         case 14: // path
             _imp->setVisibleAnimates(false);
@@ -3916,6 +4005,7 @@ AddKnobDialog::onTypeCurrentIndexChanged(int index)
             _imp->setVisibleSequence(false);
             _imp->setVisibleGrpAsTab(false);
             _imp->setVisibleParent(true);
+            _imp->setVisibleDefaultValues(true,AddKnobDialogPrivate::eDefaultValueTypeString,1);
             break;
         case 15: // grp
             _imp->setVisibleAnimates(false);
@@ -3930,6 +4020,7 @@ AddKnobDialog::onTypeCurrentIndexChanged(int index)
             _imp->setVisibleSequence(false);
             _imp->setVisibleGrpAsTab(true);
             _imp->setVisibleParent(false);
+            _imp->setVisibleDefaultValues(false,AddKnobDialogPrivate::eDefaultValueTypeInt,1);
             break;
         case 16: // page
             _imp->setVisibleAnimates(false);
@@ -3944,6 +4035,7 @@ AddKnobDialog::onTypeCurrentIndexChanged(int index)
             _imp->setVisibleSequence(false);
             _imp->setVisibleGrpAsTab(false);
             _imp->setVisibleParent(false);
+            _imp->setVisibleDefaultValues(false,AddKnobDialogPrivate::eDefaultValueTypeInt,1);
             break;
         case 17: // button
             _imp->setVisibleAnimates(false);
@@ -3958,7 +4050,7 @@ AddKnobDialog::onTypeCurrentIndexChanged(int index)
             _imp->setVisibleSequence(false);
             _imp->setVisibleGrpAsTab(false);
             _imp->setVisibleParent(true);
-
+            _imp->setVisibleDefaultValues(false,AddKnobDialogPrivate::eDefaultValueTypeInt,1);
             break;
         default:
             break;
@@ -3996,6 +4088,19 @@ AddKnobDialogPrivate::createKnobFromSelection(int index,int optionalGroupIndex)
                 maxs[i] = std::floor(maxBox->value() + 0.5);
             }
             k->setMinimumsAndMaximums(mins, maxs);
+            std::vector<int> defValues;
+            if (dim >= 1) {
+                defValues.push_back(default0->value());
+            }
+            if (dim >= 2) {
+                defValues.push_back(default1->value());
+            }
+            if (dim >= 3) {
+                defValues.push_back(default2->value());
+            }
+            for (U32 i = 0; i < defValues.size(); ++i) {
+                k->setDefaultValue(defValues[i],i);
+            }
             knob = k;
         } break;
         case 3:
@@ -4011,6 +4116,21 @@ AddKnobDialogPrivate::createKnobFromSelection(int index,int optionalGroupIndex)
                 maxs[i] = maxBox->value();
             }
             k->setMinimumsAndMaximums(mins, maxs);
+            std::vector<double> defValues;
+            if (dim >= 1) {
+                defValues.push_back(default0->value());
+            }
+            if (dim >= 2) {
+                defValues.push_back(default1->value());
+            }
+            if (dim >= 3) {
+                defValues.push_back(default2->value());
+            }
+            for (U32 i = 0; i < defValues.size(); ++i) {
+                k->setDefaultValue(defValues[i],i);
+            }
+
+            
             knob = k;
         } break;
         case 6:
@@ -4024,10 +4144,28 @@ AddKnobDialogPrivate::createKnobFromSelection(int index,int optionalGroupIndex)
                 mins[i] = minBox->value();
                 maxs[i] = maxBox->value();
             }
+            std::vector<double> defValues;
+            if (dim >= 1) {
+                defValues.push_back(default0->value());
+            }
+            if (dim >= 2) {
+                defValues.push_back(default1->value());
+            }
+            if (dim >= 3) {
+                defValues.push_back(default2->value());
+            }
+            if (dim >= 4) {
+                defValues.push_back(default3->value());
+            }
+            for (U32 i = 0; i < defValues.size(); ++i) {
+                k->setDefaultValue(defValues[i],i);
+            }
+
             k->setMinimumsAndMaximums(mins, maxs);
             knob = k;
         }  break;
         case 8: {
+
             boost::shared_ptr<Choice_Knob> k = Natron::createKnob<Choice_Knob>(panel->getHolder(), label, 1, false);
             QString entriesRaw = menuItemsEdit->toPlainText();
             QTextStream stream(&entriesRaw);
@@ -4052,10 +4190,18 @@ AddKnobDialogPrivate::createKnobFromSelection(int index,int optionalGroupIndex)
                 }
             }
             k->populateChoices(entries,helps);
+            
+            int defValue = default0->value();
+            if (defValue < (int)entries.size() && defValue >= 0) {
+                k->setDefaultValue(defValue);
+            }
+            
             knob = k;
         } break;
         case 9: {
             boost::shared_ptr<Bool_Knob> k = Natron::createKnob<Bool_Knob>(panel->getHolder(), label, 1, false);
+            bool defValue = defaultBool->isChecked();
+            k->setDefaultValue(defValue);
             knob = k;
         }   break;
         case 10:
@@ -4071,7 +4217,8 @@ AddKnobDialogPrivate::createKnobFromSelection(int index,int optionalGroupIndex)
                     k->setAsLabel();
                 }
             }
-            
+            std::string defValue = defaultStr->text().toStdString();
+            k->setDefaultValue(defValue);
             knob = k;
         }   break;
         case 12: {
@@ -4079,6 +4226,8 @@ AddKnobDialogPrivate::createKnobFromSelection(int index,int optionalGroupIndex)
             if (sequenceDialog->isChecked()) {
                 k->setAsInputImage();
             }
+            std::string defValue = defaultStr->text().toStdString();
+            k->setDefaultValue(defValue);
             knob = k;
         } break;
         case 13: {
@@ -4086,6 +4235,8 @@ AddKnobDialogPrivate::createKnobFromSelection(int index,int optionalGroupIndex)
             if (sequenceDialog->isChecked()) {
                 k->setAsOutputImageFile();
             }
+            std::string defValue = defaultStr->text().toStdString();
+            k->setDefaultValue(defValue);
             knob = k;
         } break;
         case 14: {
@@ -4093,6 +4244,8 @@ AddKnobDialogPrivate::createKnobFromSelection(int index,int optionalGroupIndex)
             if (multiPath->isChecked()) {
                 k->setMultiPath(true);
             }
+            std::string defValue = defaultStr->text().toStdString();
+            k->setDefaultValue(defValue);
             knob = k;
         } break;
         case 15: {
@@ -4402,3 +4555,72 @@ AddKnobDialogPrivate::setVisiblePage(bool visible)
         parentPageLabel->setVisible(visible);
     }
 }
+
+void
+AddKnobDialogPrivate::setVisibleDefaultValues(bool visible,AddKnobDialogPrivate::DefaultValueType type,int dimensions)
+{
+    if (!visible) {
+        defaultStr->setVisible(false);
+        default0->setVisible(false);
+        default1->setVisible(false);
+        default2->setVisible(false);
+        default3->setVisible(false);
+        defaultValueLabel->setVisible(false);
+    } else {
+        defaultValueLabel->setVisible(true);
+
+        if (type == eDefaultValueTypeInt || type == eDefaultValueTypeDouble) {
+            defaultStr->setVisible(false);
+            defaultBool->setVisible(false);
+            if (dimensions == 1) {
+                default0->setVisible(true);
+                default1->setVisible(false);
+                default2->setVisible(false);
+                default3->setVisible(false);
+            } else if (dimensions == 2) {
+                default0->setVisible(true);
+                default1->setVisible(true);
+                default2->setVisible(false);
+                default3->setVisible(false);
+            } else if (dimensions == 3) {
+                default0->setVisible(true);
+                default1->setVisible(true);
+                default2->setVisible(true);
+                default3->setVisible(false);
+            } else if (dimensions == 4) {
+                default0->setVisible(true);
+                default1->setVisible(true);
+                default2->setVisible(true);
+                default3->setVisible(true);
+            } else {
+                assert(false);
+            }
+            if (type == eDefaultValueTypeDouble) {
+                default0->setType(SpinBox::eSpinBoxTypeDouble);
+                default1->setType(SpinBox::eSpinBoxTypeDouble);
+                default2->setType(SpinBox::eSpinBoxTypeDouble);
+                default3->setType(SpinBox::eSpinBoxTypeDouble);
+            } else {
+                default0->setType(SpinBox::eSpinBoxTypeInt);
+                default1->setType(SpinBox::eSpinBoxTypeInt);
+                default2->setType(SpinBox::eSpinBoxTypeInt);
+                default3->setType(SpinBox::eSpinBoxTypeInt);
+            }
+        } else if (type == eDefaultValueTypeString) {
+            defaultStr->setVisible(true);
+            default0->setVisible(false);
+            default1->setVisible(false);
+            default2->setVisible(false);
+            default3->setVisible(false);
+            defaultBool->setVisible(false);
+        } else {
+            defaultStr->setVisible(false);
+            default0->setVisible(false);
+            default1->setVisible(false);
+            default2->setVisible(false);
+            default3->setVisible(false);
+            defaultBool->setVisible(true);
+        }
+    }
+}
+

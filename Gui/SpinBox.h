@@ -43,6 +43,8 @@ public:
                      SpinBoxTypeEnum type = eSpinBoxTypeInt);
 
     virtual ~SpinBox() OVERRIDE;
+    
+    void setType(SpinBoxTypeEnum type);
 
     ///Set the digits after the decimal point.
     void decimals(int d);
