@@ -4885,14 +4885,13 @@ Gui::addShortcut(BoundAction* action)
 
 FloatingWidget::FloatingWidget(Gui* gui,
                                QWidget* parent)
-    : QWidget(parent)
+    : QWidget(parent, Qt::Tool) // use Qt::Tool instead of Qt::Window to get a minimal titlebar
       , SerializableWindow()
       , _embeddedWidget(0)
       , _scrollArea(0)
       , _layout(0)
       , _gui(gui)
 {
-    setWindowFlags(Qt::Window);
     setAttribute(Qt::WA_DeleteOnClose,true);
     _layout = new QVBoxLayout(this);
     _layout->setContentsMargins(0, 0, 0, 0);
