@@ -357,6 +357,20 @@ struct ViewerTabPrivate
 #endif
 };
 
+static void makeFullyQualifiedLabel(Natron::Node* node,std::string* ret)
+{
+    boost::shared_ptr<NodeCollection> parent = node->getGroup();
+    NodeGroup* isParentGrp = dynamic_cast<NodeGroup*>(parent.get());
+    std::string toPreprend = node->getLabel();
+    if (isParentGrp) {
+        toPreprend.insert(0, "/");
+    }
+    ret->insert(0, toPreprend);
+    if (isParentGrp) {
+        makeFullyQualifiedLabel(isParentGrp->getNode().get(), ret);
+    }
+}
+
 ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
                      NodeGui* currentRoto,
                      const std::list<NodeGui*> & existingTrackerNodes,
@@ -371,8 +385,15 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     installEventFilter(this);
     
     std::string nodeName =  node->getNode()->getFullyQualifiedName();
+    for (std::size_t i = 0; i < nodeName.size(); ++i) {
+        if (nodeName[i] == '.') {
+            nodeName[i] = '_';
+        }
+    }
     setScriptName(nodeName);
-    setLabel(nodeName);
+    std::string label;
+    makeFullyQualifiedLabel(node->getNode().get(), &label);
+    setLabel(label);
     
     NodePtr internalNode = node->getNode();
     QObject::connect(internalNode.get(), SIGNAL(scriptNameChanged(QString)), this, SLOT(onInternalNodeScriptNameChanged(QString)));
@@ -3860,7 +3881,14 @@ ViewerTab::onInternalNodeScriptNameChanged(const QString& /*name*/)
     // always running in the main thread
     std::string newName = _imp->viewerNode->getNode()->getFullyQualifiedName();
     std::string oldName = getScriptName();
-  
+    
+    for (std::size_t i = 0; i < newName.size(); ++i) {
+        if (newName[i] == '.') {
+            newName[i] = '_';
+        }
+    }
+
+    
     assert( qApp && qApp->thread() == QThread::currentThread() );
     getGui()->unregisterTab(this);
     setScriptName(newName);

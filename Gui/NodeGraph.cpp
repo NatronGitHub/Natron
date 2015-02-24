@@ -403,7 +403,14 @@ NodeGraph::NodeGraph(Gui* gui,
 
     NodeGroup* isGrp = dynamic_cast<NodeGroup*>(group.get());
     if (isGrp) {
-        setScriptName(isGrp->getNode()->getFullyQualifiedName());
+        
+        std::string newName = isGrp->getNode()->getFullyQualifiedName();
+        for (std::size_t i = 0; i < newName.size(); ++i) {
+            if (newName[i] == '.') {
+                newName[i] = '_';
+            }
+        }
+        setScriptName(newName);
         std::string label;
         makeFullyQualifiedLabel(isGrp->getNode().get(),&label);
         setLabel(label);
@@ -4437,7 +4444,17 @@ NodeGraph::onGroupScriptNameChanged(const QString& /*name*/)
         return;
     }
     std::string newName = isGrp->getNode()->getFullyQualifiedName();
+    for (std::size_t i = 0; i < newName.size(); ++i) {
+        if (newName[i] == '.') {
+            newName[i] = '_';
+        }
+    }
     std::string oldName = getScriptName();
+    for (std::size_t i = 0; i < oldName.size(); ++i) {
+        if (oldName[i] == '.') {
+            oldName[i] = '_';
+        }
+    }
     getGui()->unregisterTab(this);
     setScriptName(newName);
     getGui()->registerTab(this,this);
