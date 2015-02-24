@@ -1109,6 +1109,63 @@ NodeGui::getOverlayColor(double* r, double* g, double* b) const
 }
 
 void
+NodeGui::initializeInputsForInspector()
+{
+    NodePtr node = getNode();
+    assert(node);
+    
+    ///If the node is a viewer, display 1 input and another one aside and hide all others.
+    ///If the node is something else (switch, merge) show 2 inputs and another one aside an hide all others.
+    
+    bool isViewer = dynamic_cast<ViewerInstance*>(node->getLiveInstance()) != 0;
+    
+    int maxInitiallyOnTopVisibleInputs = isViewer ? 1 : 2;
+    
+    double piDividedbyX = M_PI / (maxInitiallyOnTopVisibleInputs + 1);
+
+    double angle =  piDividedbyX;
+    
+    U32 lastInputConnected = -1;
+    for (U32 i = 0; i < _inputEdges.size(); ++i) {
+
+        
+        if ((int)i < maxInitiallyOnTopVisibleInputs) {
+            _inputEdges[i]->setAngle(angle);
+            angle += piDividedbyX;
+        } else {
+            _inputEdges[i]->setAngle(M_PI);
+        }
+        
+        if (!_inputEdges[i]->hasSource()) {
+            _inputEdges[i]->initLine();
+        } else {
+            lastInputConnected = i;
+        }
+        
+    }
+    
+    
+    bool inputAsideDisplayed = false;
+    for (U32 i = 0; i < _inputEdges.size(); ++i) {
+        if (_inputEdges[i]->hasSource()) {
+            _inputEdges[i]->setVisible(true);
+        } else {
+            if ((int)i < maxInitiallyOnTopVisibleInputs) {
+                _inputEdges[i]->setVisible(true);
+            } else {
+                if (!inputAsideDisplayed) {
+                    _inputEdges[i]->setVisible(true);
+                    inputAsideDisplayed = true;
+                } else {
+                    _inputEdges[i]->setVisible(false);
+                }
+            }
+        }
+    }
+    
+}
+
+void
 NodeGui::initializeInputs()
 {
     ///Also refresh the output position
@@ -1157,56 +1214,48 @@ NodeGui::initializeInputs()
 
     }
 
+
+    
     refreshDashedStateOfEdges();
     
     InspectorNode* isInspector = dynamic_cast<InspectorNode*>( node.get() );
     if (isInspector) {
-        ///if the node is an inspector and it has only 1 empty input, display it aside
-        if ( (emptyInputsCount == 1) && (node->getMaxInputCount() > 1) ) {
-            for (InputEdges::iterator it = _inputEdges.begin(); it != _inputEdges.end(); ++it) {
-                if ( (*it) ) {
-                    if (!(*it)->hasSource()) {
-                        (*it)->setAngle(M_PI);
+        initializeInputsForInspector();
+    } else {
+        double piDividedbyX = M_PI / (inputsCount + 1);
+
+        double angle =  piDividedbyX;
+        
+        int maskIndex = 0;
+        for (U32 i = 0; i < _inputEdges.size(); ++i) {
+            if (!node->getLiveInstance()->isInputRotoBrush(i)) {
+                double edgeAngle;
+                bool incrAngle = true;
+                if (node->getLiveInstance()->isInputMask(i)) {
+                    if (maskIndex == 0) {
+                        edgeAngle = 0;
+                        incrAngle = false;
+                        ++maskIndex;
+                    } else if (maskIndex == 1) {
+                        edgeAngle = M_PI;
+                        incrAngle = false;
+                        ++maskIndex;
+                    } else {
+                        edgeAngle = angle;
                     }
-                    (*it)->initLine();
-                }
-            }
-            return;
-        }
-    }
-
-
-    double piDividedbyX = M_PI / (inputsCount + 1);
-    double angle =  piDividedbyX;
-  
-    int maskIndex = 0;
-    for (U32 i = 0; i < _inputEdges.size(); ++i) {
-        if (!node->getLiveInstance()->isInputRotoBrush(i)) {
-            double edgeAngle;
-            bool incrAngle = true;
-            if (node->getLiveInstance()->isInputMask(i)) {
-                if (maskIndex == 0) {
-                    edgeAngle = 0;
-                    incrAngle = false;
-                    ++maskIndex;
-                } else if (maskIndex == 1) {
-                    edgeAngle = M_PI;
-                    incrAngle = false;
-                    ++maskIndex;
                 } else {
                     edgeAngle = angle;
                 }
-            } else {
-                edgeAngle = angle;
-            }
-            _inputEdges[i]->setAngle(edgeAngle);
-            if (incrAngle) {
-                angle += piDividedbyX;
-            }
-            if (!_inputEdges[i]->hasSource()) {
-                _inputEdges[i]->initLine();
+                _inputEdges[i]->setAngle(edgeAngle);
+                if (incrAngle) {
+                    angle += piDividedbyX;
+                }
+                if (!_inputEdges[i]->hasSource()) {
+                    _inputEdges[i]->initLine();
+                }
             }
         }
+        
     }
 } // initializeInputs
 
@@ -1253,9 +1302,15 @@ NodeGui::setOptionalInputsVisible(bool visible)
 {
     ///Don't do this for inspectors
     NodePtr node = getNode();
+    
+    InspectorNode* isInspector = dynamic_cast<InspectorNode*>(node.get());
+    if (isInspector) {
+        return;
+    }
   
     if (visible != _optionalInputsVisible) {
         _optionalInputsVisible = visible;
+        
         for (U32 i = 0; i < _inputEdges.size() ; ++i) {
             if (node->getLiveInstance()->isInputOptional(i) &&
                 !node->getRealInput(i) &&
@@ -1406,6 +1461,13 @@ NodeGui::connectEdge(int edgeNumber)
     }
     
     _inputEdges[edgeNumber]->setSource(src);
+    
+    NodePtr node = getNode();
+    assert(node);
+    if (dynamic_cast<InspectorNode*>(node.get())) {
+        initializeInputsForInspector();
+    }
+    
     return true;
     
 }

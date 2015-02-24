@@ -5300,7 +5300,6 @@ InspectorNode::InspectorNode(AppInstance* app,
                              Natron::Plugin* plugin,
                              int maxInputs)
 : Node(app,group,plugin)
-, _inputsCount(1)
 , _maxInputs(maxInputs)
 {
 }
@@ -5337,107 +5336,18 @@ InspectorNode::connectInput(const boost::shared_ptr<Node>& input,
         }
     }
     
-    /*Adding all empty edges so it creates at least the inputNB'th one.*/
-    while (inputNumber >= _inputsCount) {
-        ///this function might not succeed if we already have _maxInputs inputs OR the last input is already empty
-        addEmptyInput();
-    }
-  
-    
     if ( !Node::connectInput(input, inputNumber) ) {
         computeHash();
     }
-    tryAddEmptyInput();
     
     return true;
 }
 
-bool
-InspectorNode::tryAddEmptyInput()
-{
-    ///Only called by the main-thread
-    assert( QThread::currentThread() == qApp->thread() );
-    
-    
-    ///if we already reached _maxInputs inputs, just don't do anything
-    if (_inputsCount < _maxInputs) {
-        if (_inputsCount > 0) {
-            ///if there are already living inputs, look at the last one
-            ///and if it is not connected, just don't add an input.
-            ///Otherwise, add an empty input.
-            if (getInput(_inputsCount - 1) != NULL) {
-                addEmptyInput();
-                
-                return true;
-            }
-        } else {
-            ///there'is no inputs yet, just add one.
-            addEmptyInput();
-            
-            return true;
-        }
-    }
-    
-    return false;
-}
-
-void
-InspectorNode::addEmptyInput()
-{
-    ///Only called by the main-thread
-    assert( QThread::currentThread() == qApp->thread() );
-
-    ++_inputsCount;
-    initializeInputs();
-}
-
-void
-InspectorNode::removeEmptyInputs()
-{
-    ///Only called by the main-thread
-    assert( QThread::currentThread() == qApp->thread() );
-    
-    /*While there're NULL inputs at the tail of the map,remove them.
-     Stops at the first non-NULL input.*/
-    while (_inputsCount > 1) {
-        if ( (!getInput(_inputsCount - 1)) && (!getInput(_inputsCount - 2)) ) {
-            --_inputsCount;
-            initializeInputs();
-        } else {
-            return;
-        }
-    }
-}
-
-int
-InspectorNode::disconnectInput(int inputNumber)
-{
-    ///Only called by the main-thread
-    assert( QThread::currentThread() == qApp->thread() );
-    
-    int ret = Node::disconnectInput(inputNumber);
-    
-    if (ret != -1) {
-        removeEmptyInputs();
-
-    }
-    
-    return ret;
-}
-
-int
-InspectorNode::disconnectInput(Node* input)
-{
-    ///Only called by the main-thread
-    assert( QThread::currentThread() == qApp->thread() );
-    
-    return disconnectInput( inputIndex( input ) );
-}
 
 void
 InspectorNode::setActiveInputAndRefresh(int inputNb)
 {
-    if ( ( inputNb > (_inputsCount - 1) ) || (inputNb < 0) || (getInput(inputNb) == NULL) ) {
+    if ( ( inputNb > (_maxInputs - 1) ) || (inputNb < 0) || (getInput(inputNb) == NULL) ) {
         return;
     }
 
@@ -5460,13 +5370,11 @@ InspectorNode::setActiveInputAndRefresh(int inputNb)
 int
 InspectorNode::getPreferredInputForConnection()
 {
-    for (int i = 0; i < _inputsCount; ++i) {
+    for (int i = 0; i < _maxInputs; ++i) {
         if (!getInput(i)) {
             return i;
         }
     }
-    ///No free input, make a new one
-    addEmptyInput();
-    return _inputsCount - 1;
+    return -1;
 }
 

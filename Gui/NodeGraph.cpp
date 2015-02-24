@@ -2407,10 +2407,6 @@ NodeGraph::connectCurrentViewerToSelection(int inputNB)
     ///if the node doesn't have the input 'inputNb' created yet, populate enough input
     ///so it can be created.
     Edge* foundInput = gui->getInputArrow(inputNB);
-    while (!foundInput) {
-        v->addEmptyInput();
-        foundInput = gui->getInputArrow(inputNB);
-    }
     assert(foundInput);
   
     ///and push a connect command to the selected node.

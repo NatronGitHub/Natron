@@ -1067,7 +1067,6 @@ class InspectorNode
 {
     Q_OBJECT
     
-    int _inputsCount;
     int _maxInputs;
 
 public:
@@ -1081,22 +1080,12 @@ public:
 
     virtual int getMaxInputCount() const OVERRIDE
     {
-        return _inputsCount;
+        return _maxInputs;
     }
 
     virtual bool connectInput(const boost::shared_ptr<Node>& input,int inputNumber) OVERRIDE;
-    virtual int disconnectInput(int inputNumber) OVERRIDE;
-    virtual int disconnectInput(Node* input) OVERRIDE;
-
-
 
     virtual int getPreferredInputForConnection()  OVERRIDE FINAL;
-
-    bool tryAddEmptyInput();
-
-    void addEmptyInput();
-
-    void removeEmptyInputs();
 
     void setActiveInputAndRefresh(int inputNb);
 

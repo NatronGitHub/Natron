@@ -530,6 +530,7 @@ private:
 
     void refreshCurrentBrush();
     
+    void initializeInputsForInspector();
 
 
     /*pointer to the dag*/
