@@ -1178,7 +1178,31 @@ public:
     virtual void getListeners(std::list<KnobI*> & listeners) const OVERRIDE FINAL;
     
     virtual void clearExpressionsResults(int /*dimension*/) {}
-
+    
+    void incrementExpressionRecursionLevel() const;
+    
+    void decrementExpressionRecursionLevel() const;
+    
+    int getExpressionRecursionLevel() const;
+    
+    class ExprRecursionLevel_RAII
+    {
+        const KnobHelper* _k;
+    public:
+        
+        ExprRecursionLevel_RAII(const KnobHelper* k)
+        : _k(k)
+        {
+            k->incrementExpressionRecursionLevel();
+        }
+        
+        ~ExprRecursionLevel_RAII()
+        {
+            _k->decrementExpressionRecursionLevel();
+        }
+        
+    };
+    
 protected:
 
 
@@ -1238,13 +1262,12 @@ protected:
     void setGuiCurveHasChanged(int dimension,bool changed);
 
     void checkAnimationLevel(int dimension);
-    boost::shared_ptr<KnobSignalSlotHandler> _signalSlotHandler;
+    
+    void clearExpressionsResultsIfNeeded(std::map<int,Natron::ValueChangedReasonEnum>& modifiedDimensions);
 
     
-protected:
     
-    mutable int _expressionsRecursionLevel;
-    mutable QMutex _expressionRecursionLevelMutex;
+    boost::shared_ptr<KnobSignalSlotHandler> _signalSlotHandler;
 
 private:
     

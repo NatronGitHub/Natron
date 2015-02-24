@@ -429,6 +429,15 @@ public:
 
     virtual void reloadStylesheets() {}
     
+    void takeNatronGIL();
+    
+    void releaseNatronGIL();
+    
+    
+#ifdef Q_OS_UNIX
+    static QString qt_tildeExpansion(const QString &path, bool *expanded = 0);
+#endif
+    
 public Q_SLOTS:
     
 #ifdef NATRON_USE_BREAKPAD
@@ -461,14 +470,14 @@ public Q_SLOTS:
     void onMaxPanelsOpenedChanged(int maxPanels);
 
 
-#ifdef Q_OS_UNIX
-    static QString qt_tildeExpansion(const QString &path, bool *expanded = 0);
-#endif
 
+    
 Q_SIGNALS:
 
 
     void checkerboardSettingsChanged();
+    
+    
 protected:
 
     virtual void initGui()

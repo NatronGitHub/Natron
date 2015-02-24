@@ -152,6 +152,8 @@ struct AppManagerPrivate
     QLocalSocket* crashServerConnection;
 #endif
     
+    QMutex natronPythonGIL;
+    
     AppManagerPrivate();
     
     ~AppManagerPrivate()
@@ -243,6 +245,7 @@ AppManagerPrivate::AppManagerPrivate()
 ,crashClientServer()
 ,crashServerConnection(0)
 #endif
+,natronPythonGIL(QMutex::Recursive)
 {
     setMaxCacheFiles();
     
@@ -301,6 +304,18 @@ AppManager::AppManager()
 {
     assert(!_instance);
     _instance = this;
+}
+
+void
+AppManager::takeNatronGIL()
+{
+    _imp->natronPythonGIL.lock();
+}
+
+void
+AppManager::releaseNatronGIL()
+{
+    _imp->natronPythonGIL.unlock();
 }
 
 struct CLArgsPrivate
@@ -2979,14 +2994,18 @@ AppManager::initPython(int argc,char* argv[])
     _imp->mainModule = PyImport_ImportModule("__main__"); //create main module , new ref
     
     PySys_SetArgv(argc,_imp->args.data()); /// relative module import
-    //_PyEval_SetSwitchInterval(LONG_MAX);
+    
+    //See http://wiki.blender.org/index.php/Dev:2.4/Source/Python/API/Threads
+    //Python releases the GIL every 100 virtual Python instructions, we do not want that to happen in the middle of an expression.
+    _PyEval_SetSwitchInterval(LONG_MAX);
+    
     //See answer for http://stackoverflow.com/questions/15470367/pyeval-initthreads-in-python-3-how-when-to-call-it-the-saga-continues-ad-naus
     PyEval_InitThreads();
     
     ///Do as per http://wiki.blender.org/index.php/Dev:2.4/Source/Python/API/Threads
     ///All calls to the Python API should call Natron::PythonGILLocker beforehand.
-    _imp->mainThreadState = PyGILState_GetThisThreadState();
-    PyEval_ReleaseThread(_imp->mainThreadState);
+    //_imp->mainThreadState = PyGILState_GetThisThreadState();
+    //PyEval_ReleaseThread(_imp->mainThreadState);
     
     std::string err;
     bool ok = interpretPythonScript("import sys\nimport " + std::string(NATRON_ENGINE_PYTHON_MODULE_NAME), &err, 0);
@@ -3087,9 +3106,7 @@ AppManager::launchPythonInterpreter()
     assert(ok);
     (void)ok;
     
-    ///Take the GIL since we're going in interpreter mode.
-    //PyEval_ReleaseThread(_imp->mainThreadState);
-    Natron::PythonGILLocker pgl;
+   // Natron::PythonGILLocker pgl;
     
     Py_Main(1, &_imp->args[0]);
 }
@@ -3484,22 +3501,25 @@ makeNameScriptFriendly(const std::string& str)
 
 PythonGILLocker::PythonGILLocker()
 {
-    ///Take the GIL for this thread
-    state = PyGILState_Ensure();
-    assert(PyThreadState_Get());
-#if !defined(NDEBUG) && PY_VERSION_HEX >= 0x030400F0
-    assert(PyGILState_Check()); // Not available prior to Python 3.4
-#endif
+    appPTR->takeNatronGIL();
+//    ///Take the GIL for this thread
+//    state = PyGILState_Ensure();
+//    assert(PyThreadState_Get());
+//#if !defined(NDEBUG) && PY_VERSION_HEX >= 0x030400F0
+//    assert(PyGILState_Check()); // Not available prior to Python 3.4
+//#endif
 }
     
 PythonGILLocker::~PythonGILLocker()
 {
-#if !defined(NDEBUG) && PY_VERSION_HEX >= 0x030400F0
-    assert(PyGILState_Check());  // Not available prior to Python 3.4
-#endif
+    appPTR->releaseNatronGIL();
     
-    ///Release the GIL, no thread will own it afterwards.
-    PyGILState_Release(state);
+//#if !defined(NDEBUG) && PY_VERSION_HEX >= 0x030400F0
+//    assert(PyGILState_Check());  // Not available prior to Python 3.4
+//#endif
+//    
+//    ///Release the GIL, no thread will own it afterwards.
+//    PyGILState_Release(state);
 }
     
 bool

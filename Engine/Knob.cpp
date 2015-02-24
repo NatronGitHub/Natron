@@ -253,6 +253,9 @@ struct KnobHelperPrivate
     std::vector<bool> mustCloneGuiCurves;
     std::vector<bool> mustCloneInternalCurves;
     
+    ///Used by deQueueValuesSet to know whether we should clear expressions results or not
+    std::vector<bool> mustClearExprResults;
+    
     ///A blind handle to the ofx param, needed for custom overlay interacts
     void* ofxParamHandle;
     
@@ -267,6 +270,9 @@ struct KnobHelperPrivate
     
     mutable QMutex lastRandomHashMutex;
     mutable U32 lastRandomHash;
+    
+    ///Used to prevent recursive calls for expressions
+    mutable ThreadStorage<int> expressionRecursionLevel;
     
     KnobHelperPrivate(KnobHelper* publicInterface_,
                       KnobHolder*  holder_,
@@ -306,19 +312,24 @@ struct KnobHelperPrivate
     , gui(0)
     , mustCloneGuiCurvesMutex()
     , mustCloneGuiCurves()
+    , mustCloneInternalCurves()
+    , mustClearExprResults()
     , ofxParamHandle(0)
     , isInstanceSpecific(false)
     , dimensionNames(dimension_)
     , expressionMutex()
     , expressions()
     , lastRandomHash(0)
+    , expressionRecursionLevel()
     {
         mustCloneGuiCurves.resize(dimension);
         mustCloneInternalCurves.resize(dimension);
+        mustClearExprResults.reserve(dimension);
         expressions.resize(dimension);
         for (int i = 0; i < dimension_; ++i) {
             mustCloneGuiCurves[i] = false;
             mustCloneInternalCurves[i] = false;
+            mustClearExprResults[i] = false;
         }
     }
     
@@ -332,8 +343,6 @@ KnobHelper::KnobHelper(KnobHolder* holder,
                        int dimension,
                        bool declaredByPlugin)
 : _signalSlotHandler()
-, _expressionsRecursionLevel(0)
-, _expressionRecursionLevelMutex(QMutex::Recursive)
 , _imp( new KnobHelperPrivate(this,holder,dimension,description,declaredByPlugin) )
 {
 }
@@ -341,6 +350,37 @@ KnobHelper::KnobHelper(KnobHolder* holder,
 KnobHelper::~KnobHelper()
 {
     
+}
+
+void
+KnobHelper::incrementExpressionRecursionLevel() const
+{
+    if (!_imp->expressionRecursionLevel.hasLocalData()) {
+        _imp->expressionRecursionLevel.localData() = 1;
+    } else {
+        int& tls = _imp->expressionRecursionLevel.localData();
+        ++tls;
+    }
+    
+}
+
+void
+KnobHelper::decrementExpressionRecursionLevel() const
+{
+    assert(_imp->expressionRecursionLevel.hasLocalData());
+    int& tls = _imp->expressionRecursionLevel.localData();
+    --tls;
+}
+
+int
+KnobHelper::getExpressionRecursionLevel() const
+{
+    if (!_imp->expressionRecursionLevel.hasLocalData()) {
+        return 0;
+    } else {
+        int& tls = _imp->expressionRecursionLevel.localData();
+        return tls;
+    }
 }
 
 void
@@ -915,6 +955,19 @@ KnobHelper::removeAnimation(int dimension,
 }
 
 void
+KnobHelper::clearExpressionsResultsIfNeeded(std::map<int,Natron::ValueChangedReasonEnum>& modifiedDimensions)
+{
+    QMutexLocker k(&_imp->mustCloneGuiCurvesMutex);
+    for (int i = 0; i < getDimension(); ++i) {
+        if (_imp->mustClearExprResults[i]) {
+            clearExpressionsResults(i);
+            _imp->mustClearExprResults[i] = false;
+            modifiedDimensions.insert(std::make_pair(i, Natron::eValueChangedReasonNatronInternalEdited));
+        }
+    }
+}
+
+void
 KnobHelper::cloneInternalCurvesIfNeeded(std::map<int,Natron::ValueChangedReasonEnum>& modifiedDimensions)
 {
     QMutexLocker k(&_imp->mustCloneGuiCurvesMutex);
@@ -1464,12 +1517,9 @@ KnobHelper::validateExpression(const std::string& expression,int dimension,bool 
     std::string error;
     
     {
-        QMutexLocker k(&_expressionRecursionLevelMutex);
-        assert(_expressionsRecursionLevel == 0);
-        ++_expressionsRecursionLevel;
+        EXPR_RECURSION_LEVEL();
         
         if (!interpretPythonScript(exprCpy, &error, 0)) {
-            --_expressionsRecursionLevel;
             throw std::runtime_error(error);
         }
         PyObject *ret = PyObject_GetAttrString(Natron::getMainModule(),"ret"); //get our ret variable created above
@@ -1478,13 +1528,10 @@ KnobHelper::validateExpression(const std::string& expression,int dimension,bool 
 #ifdef DEBUG
             PyErr_Print();
 #endif
-            --_expressionsRecursionLevel;
             throw std::runtime_error("return value must be assigned to the \"ret\" variable");
         }
   
-        --_expressionsRecursionLevel;
 
-        /// execute
         Knob<double>* isDouble = dynamic_cast<Knob<double>*>(this);
         Knob<int>* isInt = dynamic_cast<Knob<int>*>(this);
         Knob<bool>* isBool = dynamic_cast<Knob<bool>*>(this);
@@ -1540,21 +1587,16 @@ KnobHelper::setExpressionInternal(int dimension,const std::string& expression,bo
     
     //Try to execute the expression at least once to check that it works.
     {
-        QMutexLocker k(&_expressionRecursionLevelMutex);
-        assert(_expressionsRecursionLevel == 0);
-        ++_expressionsRecursionLevel;
+        EXPR_RECURSION_LEVEL();
         
         try {
             PyObject* ret = executeExpression(dimension);
             Py_DECREF(ret); //< new ref
 
         } catch (const std::runtime_error& e) {
-            --_expressionsRecursionLevel;
             clearExpression(dimension,clearResults);
             throw e;
         }
-        --_expressionsRecursionLevel;
-
     }
     
     
@@ -1570,12 +1612,8 @@ KnobHelper::setExpressionInternal(int dimension,const std::string& expression,bo
     
     //Parse listeners of the expression, to keep track of dependencies to indicate them to the user.
     if (getHolder()) {
-        QMutexLocker k(&_expressionRecursionLevelMutex);
-        assert(_expressionsRecursionLevel == 0);
-        ++_expressionsRecursionLevel;
-        _imp->parseListenersFromExpression(dimension);
-        --_expressionsRecursionLevel;
-        
+        EXPR_RECURSION_LEVEL();
+        _imp->parseListenersFromExpression(dimension);        
     }
     
     //Notify the expr. has changed
@@ -1682,6 +1720,26 @@ KnobHelper::executeExpression(int dimension) const
     if (PyErr_Occurred()) {
 #ifdef DEBUG
         PyErr_Print();
+        ///Gui session, do stdout, stderr redirection
+        if (PyObject_HasAttrString(mainModule, "catchErr")) {
+            std::string error;
+            PyObject* errCatcher = PyObject_GetAttrString(mainModule,"catchErr"); //get our catchOutErr created above, new ref
+            PyObject *errorObj = 0;
+            if (errCatcher) {
+                errorObj = PyObject_GetAttrString(errCatcher,"value"); //get the  stderr from our catchErr object, new ref
+                assert(errorObj);
+                error = std::string(PY3String_asString(errorObj));
+                PyObject* unicode = PyUnicode_FromString("");
+                PyObject_SetAttrString(errCatcher, "value", unicode);
+                Py_DECREF(errorObj);
+                Py_DECREF(errCatcher);
+                qDebug() << "Expression dump\n=========================================================";
+                qDebug() << exp.expression.c_str();
+                qDebug() << error.c_str();
+            }
+
+        }
+
 #endif
         throw std::runtime_error("Failed to execute compiled Python code");
     }
@@ -2299,9 +2357,15 @@ KnobHelper::onExprDependencyChanged(KnobI* knob,int /*dimension*/)
         }
     }
     
+    KnobHolder* holder = getHolder();
     for (std::set<int>::const_iterator it = dimensionsToEvaluate.begin();it != dimensionsToEvaluate.end(); ++it) {
-        clearExpressionsResults(*it);
-        evaluateValueChange(*it, Natron::eValueChangedReasonSlaveRefresh);
+        if (holder && !holder->canSetValue()) {
+            QMutexLocker k(&_imp->mustCloneGuiCurvesMutex);
+            _imp->mustClearExprResults[*it] = true;
+        } else {
+            clearExpressionsResults(*it);
+            evaluateValueChange(*it, Natron::eValueChangedReasonSlaveRefresh);
+        }
     }
 }
 
@@ -2609,6 +2673,8 @@ KnobHolder::refreshKnobs()
         _imp->settingsPanel->scanForNewKnobs();
     }
 }
+
+
 
 void
 KnobHolder::removeDynamicKnob(KnobI* knob)
