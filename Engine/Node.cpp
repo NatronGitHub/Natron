@@ -1026,6 +1026,7 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
             
             assert(knob);
             knob->clone(sKnob.get());
+            knob->cloneDefaultValues(sKnob.get());
             knob->setAsUserKnob();
             if (group) {
                 group->addKnob(knob);

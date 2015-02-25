@@ -439,7 +439,6 @@ private:
 
     virtual bool canAnimate() const OVERRIDE FINAL;
     virtual const std::string & typeName() const OVERRIDE FINAL;
-    virtual void deepCloneExtraData(KnobI* other) OVERRIDE FINAL;
 private:
     
     mutable QMutex _entriesMutex;

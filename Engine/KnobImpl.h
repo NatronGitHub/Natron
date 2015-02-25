@@ -1281,6 +1281,14 @@ Knob<T>::getDefaultValues_mt_safe() const
 }
 
 template<typename T>
+T
+Knob<T>::getDefaultValue(int dimension) const
+{
+    QReadLocker l(&_valueMutex);
+    return _defaultValues[dimension];
+}
+
+template<typename T>
 void
 Knob<T>::setDefaultValue(const T & v,
                          int dimension)
@@ -1800,21 +1808,19 @@ Knob<T>::cloneAndUpdateGui(KnobI* other,int dimension)
 
 template <typename T>
 void
-Knob<T>::deepClone(KnobI* other)
+Knob<T>::cloneDefaultValues(KnobI* other)
 {
-    cloneAndUpdateGui(other);
-    for (int i = 0; i < getDimension(); ++i) {
-        if (!other->isEnabled(i)) {
-            setEnabled(i,false);
-        }
+    int dims = std::min(getDimension(), other->getDimension());
+    Knob<T>* otherT = dynamic_cast<Knob<T>*>(other);
+    assert(otherT);
+    if (!otherT) {
+        return;
     }
     
-    if (other->getIsSecret()) {
-        setSecret(true);
+    for (int i = 0; i < dims; ++i) {
+        setDefaultValue(otherT->getDefaultValue(i),i);
     }
-    
-    setName(other->getName());
-    deepCloneExtraData(other);
+
 
 }
 
