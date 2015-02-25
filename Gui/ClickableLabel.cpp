@@ -23,7 +23,7 @@ ClickableLabel::ClickableLabel(const QString &text,
       animation(0),
       sunkenStyle(false)
 {
-    setFont( QFont(appFont,appFontSize) );
+    //setFont( QFont(appFont,appFontSize) );
 }
 
 void

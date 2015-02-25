@@ -167,7 +167,7 @@ Int_KnobGui::createWidget(QHBoxLayout* layout)
                 dimLabel.append(":");
             }
             subDesc = new QLabel(QString(dimLabel.c_str()), boxContainer);
-            subDesc->setFont( QFont(appFont,appFontSize) );
+            //subDesc->setFont( QFont(appFont,appFontSize) );
             boxContainerLayout->addWidget(subDesc);
         }
         SpinBox *box = new SpinBox(layout->parentWidget(), SpinBox::eSpinBoxTypeInt);
@@ -887,7 +887,7 @@ Double_KnobGui::createWidget(QHBoxLayout* layout)
                 dimLabel.append(":");
             }
             subDesc = new QLabel(QString(dimLabel.c_str()), boxContainer);
-            subDesc->setFont( QFont(appFont,appFontSize) );
+            //subDesc->setFont( QFont(appFont,appFontSize) );
             boxContainerLayout->addWidget(subDesc);
         }
         SpinBox *box = new SpinBox(layout->parentWidget(), SpinBox::eSpinBoxTypeDouble);
@@ -1779,14 +1779,14 @@ Color_KnobGui::createWidget(QHBoxLayout* layout)
         _rBox->setToolTip( toolTip() );
     }
     
-    QFont font(appFont,appFontSize);
+    //QFont font(appFont,appFontSize);
     
     std::string dimLabel = _knob->getDimensionName(0);
     if (!dimLabel.empty()) {
         dimLabel.append(":");
     }
     _rLabel = new QLabel(QString(dimLabel.c_str()).toLower(), boxContainers);
-    _rLabel->setFont(font);
+    //_rLabel->setFont(font);
     if ( hasToolTip() ) {
         _rLabel->setToolTip( toolTip() );
     }
@@ -1816,7 +1816,7 @@ Color_KnobGui::createWidget(QHBoxLayout* layout)
         }
         
         _gLabel = new QLabel(QString(dimLabel.c_str()).toLower(), boxContainers);
-        _gLabel->setFont(font);
+        //_gLabel->setFont(font);
         if ( hasToolTip() ) {
             _gLabel->setToolTip( toolTip() );
         }
@@ -1845,7 +1845,7 @@ Color_KnobGui::createWidget(QHBoxLayout* layout)
         }
         
         _bLabel = new QLabel(QString(dimLabel.c_str()).toLower(), boxContainers);
-        _bLabel->setFont(font);
+        //_bLabel->setFont(font);
         if ( hasToolTip() ) {
             _bLabel->setToolTip( toolTip() );
         }
@@ -1876,7 +1876,7 @@ Color_KnobGui::createWidget(QHBoxLayout* layout)
         }
         
         _aLabel = new QLabel(QString(dimLabel.c_str()).toLower(), boxContainers);
-        _aLabel->setFont(font);
+        //_aLabel->setFont(font);
         if ( hasToolTip() ) {
             _aLabel->setToolTip( toolTip() );
         }
@@ -2870,7 +2870,7 @@ String_KnobGui::createWidget(QHBoxLayout* layout)
         if ( hasToolTip() ) {
             _label->setToolTip( toolTip() );
         }
-        _label->setFont(QFont(appFont,appFontSize));
+        //_label->setFont(QFont(appFont,appFontSize));
         layout->addWidget(_label);
     } else {
         _lineEdit = new LineEdit( layout->parentWidget() );
@@ -3115,8 +3115,8 @@ String_KnobGui::restoreTextInfoFromString()
 
 void
 String_KnobGui::parseFont(const QString & label,
-                          QFont & f,
-                          QColor& color)
+                          QFont *f,
+                          QColor *color)
 {
     QString toFind = QString(kFontSizeTag);
     int startFontTag = label.indexOf(toFind);
@@ -3141,14 +3141,14 @@ String_KnobGui::parseFont(const QString & label,
         ++j;
     }
 
-    f.setPointSize( sizeStr.toInt() );
-    f.setFamily(faceStr);
+    f->setPointSize( sizeStr.toInt() );
+    f->setFamily(faceStr);
     
     {
         toFind = QString(kBoldStartTag);
         int foundBold = label.indexOf(toFind);
         if (foundBold != -1) {
-            f.setBold(true);
+            f->setBold(true);
         }
     }
     
@@ -3156,7 +3156,7 @@ String_KnobGui::parseFont(const QString & label,
         toFind = QString(kItalicStartTag);
         int foundItalic = label.indexOf(toFind);
         if (foundItalic != -1) {
-            f.setItalic(true);
+            f->setItalic(true);
         }
     }
     {
@@ -3170,7 +3170,7 @@ String_KnobGui::parseFont(const QString & label,
                 currentColor.push_back( label.at(j) );
                 ++j;
             }
-            color = QColor(currentColor);
+            *color = QColor(currentColor);
         }
     }
 }

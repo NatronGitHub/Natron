@@ -230,7 +230,7 @@ struct ViewerGL::Implementation
             lastRenderedImage[i].resize(MAX_MIP_MAP_LEVELS);
         }
         assert( qApp && qApp->thread() == QThread::currentThread() );
-        menu->setFont( QFont(appFont,appFontSize) );
+        //menu->setFont( QFont(appFont,appFontSize) );
         
 //        QDesktopWidget* desktop = QApplication::desktop();
 //        QRect r = desktop->screenGeometry();
@@ -3725,7 +3725,7 @@ ViewerGL::populateMenu()
     _imp->menu->addAction(toggleWipe);
     
     QMenu* showHideMenu = new QMenu(tr("Show/Hide"),_imp->menu);
-    showHideMenu->setFont(QFont(appFont,appFontSize));
+    //showHideMenu->setFont(QFont(appFont,appFontSize));
     _imp->menu->addAction(showHideMenu->menuAction());
     
     

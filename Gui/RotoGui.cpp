@@ -3222,7 +3222,7 @@ RotoGui::showMenuForCurve(const boost::shared_ptr<Bezier> & curve)
     QPoint pos = QCursor::pos();
     QMenu menu(_imp->viewer);
 
-    menu.setFont( QFont(appFont,appFontSize) );
+    //menu.setFont( QFont(appFont,appFontSize) );
 
     ActionWithShortcut* selectAllAction = new ActionWithShortcut(kShortcutGroupRoto,
                                                                  kShortcutIDActionRotoSelectAll,
@@ -3425,7 +3425,7 @@ RotoGui::showMenuForControlPoint(const boost::shared_ptr<Bezier> & curve,
     QPoint pos = QCursor::pos();
     QMenu menu(_imp->viewer);
 
-    menu.setFont( QFont(appFont,appFontSize) );
+    //menu.setFont( QFont(appFont,appFontSize) );
 
     ActionWithShortcut* deleteCp =new ActionWithShortcut(kShortcutGroupRoto,
                                                          kShortcutIDActionRotoDelete,

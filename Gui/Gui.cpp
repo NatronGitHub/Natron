@@ -2622,7 +2622,7 @@ Gui::findOrCreateToolButton(const boost::shared_ptr<PluginGroupNode>& plugin)
         pluginsToolButton->setAction(action);
     } else {
         QMenu* menu = new QMenu(this);
-        menu->setFont( QFont(appFont,appFontSize) );
+        //menu->setFont( QFont(appFont,appFontSize) );
         menu->setTitle( pluginsToolButton->getLabel() );
         pluginsToolButton->setMenu(menu);
         pluginsToolButton->setAction( menu->menuAction() );

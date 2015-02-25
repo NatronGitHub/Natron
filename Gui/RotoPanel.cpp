@@ -1866,7 +1866,7 @@ RotoPanel::showItemMenu(QTreeWidgetItem* item,
     _imp->lastRightClickedItem = item;
 
     QMenu menu(this);
-    menu.setFont( QFont(appFont,appFontSize) );
+    //menu.setFont( QFont(appFont,appFontSize) );
     menu.setShortcutEnabled(false);
     QAction* addLayerAct = menu.addAction( tr("Add layer") );
     QObject::connect( addLayerAct, SIGNAL( triggered() ), this, SLOT( onAddLayerActionTriggered() ) );

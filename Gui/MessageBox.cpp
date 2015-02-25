@@ -120,16 +120,16 @@ MessageBox::init(const QString & title,
         _imp->questionLabel->setAlignment(Qt::AlignVCenter | Qt::AlignLeft);
         _imp->questionLabel->setOpenExternalLinks(true);
         _imp->questionLabel->setContentsMargins(16, 0, 0, 0);
-        QFont f(appFont,appFontSize);
-        _imp->questionLabel->setFont(f);
+        //QFont f(appFont,appFontSize);
+        //_imp->questionLabel->setFont(f);
         _imp->vLayout->addWidget(_imp->questionLabel);
     } else {
         _imp->infoEdit = new QTextEdit(message,_imp->vContainer);
         _imp->infoEdit->setReadOnly(true);
         _imp->infoEdit->setContentsMargins(16, 0, 0, 0);
         _imp->infoEdit->setAlignment(Qt::AlignVCenter | Qt::AlignLeft);
-        QFont f(appFont,appFontSize);
-        _imp->infoEdit->setFont(f);
+        //QFont f(appFont,appFontSize);
+        //_imp->infoEdit->setFont(f);
         _imp->vLayout->addWidget(_imp->infoEdit);
     }
     

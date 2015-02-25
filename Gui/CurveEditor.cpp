@@ -132,7 +132,7 @@ CurveEditor::CurveEditor(Gui* gui,
     
     QString filterTt = tr("Show in the curve editor only nodes containing the following filter");
     _imp->filterLabel = new QLabel("Filter:",_imp->filterContainer);
-    _imp->filterLabel->setFont(QFont(appFont,appFontSize));
+    //_imp->filterLabel->setFont(QFont(appFont,appFontSize));
     _imp->filterLabel->setToolTip(filterTt);
     _imp->filterEdit = new LineEdit(_imp->filterContainer);
     _imp->filterEdit->setToolTip(filterTt);

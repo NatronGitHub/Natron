@@ -270,16 +270,16 @@ Histogram::Histogram(Gui* gui,
     _imp->sizeH = QSize(10000,10000);
     
     _imp->rightClickMenu = new QMenu(this);
-    _imp->rightClickMenu->setFont( QFont(appFont,appFontSize) );
+    //_imp->rightClickMenu->setFont( QFont(appFont,appFontSize) );
 
     _imp->histogramSelectionMenu = new QMenu(tr("Viewer target"),_imp->rightClickMenu);
-    _imp->histogramSelectionMenu->setFont( QFont(appFont,appFontSize) );
+    //_imp->histogramSelectionMenu->setFont( QFont(appFont,appFontSize) );
     _imp->rightClickMenu->addAction( _imp->histogramSelectionMenu->menuAction() );
 
     _imp->histogramSelectionGroup = new QActionGroup(_imp->histogramSelectionMenu);
 
     _imp->viewerCurrentInputMenu = new QMenu(tr("Viewer input"),_imp->rightClickMenu);
-    _imp->viewerCurrentInputMenu->setFont( QFont(appFont,appFontSize) );
+    //_imp->viewerCurrentInputMenu->setFont( QFont(appFont,appFontSize) );
     _imp->rightClickMenu->addAction( _imp->viewerCurrentInputMenu->menuAction() );
 
     _imp->viewerCurrentInputGroup = new QActionGroup(_imp->viewerCurrentInputMenu);
@@ -303,7 +303,7 @@ Histogram::Histogram(Gui* gui,
     _imp->viewerCurrentInputMenu->addAction(inputBAction);
 
     _imp->modeMenu = new QMenu(tr("Display mode"),_imp->rightClickMenu);
-    _imp->modeMenu->setFont( QFont(appFont,appFontSize) );
+    //_imp->modeMenu->setFont( QFont(appFont,appFontSize) );
     _imp->rightClickMenu->addAction( _imp->modeMenu->menuAction() );
 
     _imp->fullImage = new QAction(_imp->rightClickMenu);
@@ -314,7 +314,7 @@ Histogram::Histogram(Gui* gui,
     _imp->rightClickMenu->addAction(_imp->fullImage);
 
     _imp->filterMenu = new QMenu(tr("Smoothing"),_imp->rightClickMenu);
-    _imp->filterMenu->setFont( QFont(appFont,appFontSize) );
+    //_imp->filterMenu->setFont( QFont(appFont,appFontSize) );
     _imp->rightClickMenu->addAction( _imp->filterMenu->menuAction() );
 
     _imp->modeActions = new QActionGroup(_imp->modeMenu);

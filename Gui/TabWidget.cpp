@@ -232,8 +232,8 @@ void
 TabWidget::createMenu()
 {
     MenuWithToolTips menu(_imp->gui);
-    QFont f(appFont,appFontSize);
-    menu.setFont(f) ;
+    //QFont f(appFont,appFontSize);
+    //menu.setFont(f) ;
     QPixmap pixV,pixM,pixH,pixC,pixA;
     appPTR->getIcon(NATRON_PIXMAP_TAB_WIDGET_SPLIT_VERTICALLY,&pixV);
     appPTR->getIcon(NATRON_PIXMAP_TAB_WIDGET_SPLIT_HORIZONTALLY,&pixH);
@@ -290,7 +290,7 @@ TabWidget::createMenu()
     std::map<PyPanel*,std::string> userPanels = _imp->gui->getPythonPanels();
     if (!userPanels.empty()) {
         QMenu* userPanelsMenu = new QMenu(tr("User panels"),&menu);
-        userPanelsMenu->setFont(f);
+        //userPanelsMenu->setFont(f);
         menu.addAction(userPanelsMenu->menuAction());
         
         

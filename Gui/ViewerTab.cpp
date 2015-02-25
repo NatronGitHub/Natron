@@ -841,10 +841,10 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
 
     _imp->playerLayout->addStretch();
     
-    QFont font(appFont,appFontSize);
+    //QFont font(appFont,appFontSize);
     
     _imp->canEditFrameRangeLabel = new ClickableLabel(tr("Frame range"),_imp->playerButtonsContainer);
-    _imp->canEditFrameRangeLabel->setFont(font);
+    //_imp->canEditFrameRangeLabel->setFont(font);
     
     _imp->playerLayout->addWidget(_imp->canEditFrameRangeLabel);
 
@@ -877,7 +877,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->canEditFpsLabel = new ClickableLabel(tr("fps"),_imp->playerButtonsContainer);
     QObject::connect(_imp->canEditFpsLabel, SIGNAL(clicked(bool)),this,SLOT(onCanSetFPSLabelClicked(bool)));
     _imp->canEditFpsLabel->setToolTip(canEditFpsBoxTT);
-    _imp->canEditFpsLabel->setFont(font);
+    //_imp->canEditFpsLabel->setFont(font);
     
     _imp->playerLayout->addWidget(_imp->canEditFpsBox);
     _imp->playerLayout->addWidget(_imp->canEditFpsLabel);

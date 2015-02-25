@@ -1140,8 +1140,8 @@ SequenceItemDelegate::paint(QPainter * painter,
     }
     
     QString filename = item->fileName();
-    QFont f(appFont,appFontSize);
-    painter->setFont(f);
+    //QFont f(appFont,appFontSize);
+    //painter->setFont(f);
     if (option.state & QStyle::State_Selected) {
         painter->fillRect( geom, option.palette.highlight() );
     }
@@ -1184,7 +1184,7 @@ SequenceItemDelegate::paint(QPainter * painter,
         
 #ifdef FILE_DIALOG_DISABLE_ICONS
         QRect textRect( geom.x() + 5,geom.y(),geom.width() - 5,geom.height() );
-        //QFont f = painter->font();
+        QFont f = painter->font();
         if (isDir) {
             //change the font to bold
             f.setBold(true);
@@ -1872,8 +1872,8 @@ SequenceFileDialog::showFilterMenu()
     position.ry() += _filterLineEdit->height();
     QList<QAction *> actions;
 
-    QFont font(appFont,appFontSize);
-    QFontMetrics fm(font);
+    //QFont font(appFont,appFontSize);
+    QFontMetrics fm(font());
     
     QString defaultString = FileSystemModel::generateRegexpFilterFromFileExtensions(_filters);
     int w = fm.width(defaultString);
@@ -1902,7 +1902,7 @@ SequenceFileDialog::showFilterMenu()
 
     if (actions.count() > 0) {
         QMenu menu(_filterLineEdit);
-        menu.setFont(font);
+        //menu.setFont(font);
         menu.addActions(actions);
       //  menu.setFixedSize( _filterLineEdit->width(),menu.sizeHint().height() );
         menu.exec(position);
@@ -2467,7 +2467,7 @@ FavoriteView::showMenu(const QPoint &position)
     }
     if (actions.count() > 0) {
         QMenu menu(this);
-        menu.setFont(QFont(appFont,appFontSize));
+        //menu.setFont(QFont(appFont,appFontSize));
         menu.addActions(actions);
         menu.exec( mapToGlobal(position) );
     }

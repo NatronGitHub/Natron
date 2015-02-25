@@ -37,6 +37,6 @@ Button::Button(const QIcon & icon,
 void
 Button::initInternal()
 {
-    setFont( QFont(appFont,appFontSize) );
+    //setFont( QFont(appFont,appFontSize) );
 }
 

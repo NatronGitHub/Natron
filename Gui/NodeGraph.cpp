@@ -494,7 +494,7 @@ NodeGraph::NodeGraph(Gui* gui,
     setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 
     _imp->_menu = new QMenu(this);
-    _imp->_menu->setFont( QFont(appFont,appFontSize) );
+    //_imp->_menu->setFont( QFont(appFont,appFontSize) );
 
     QObject::connect( _imp->_gui->getApp()->getTimeLine().get(),SIGNAL( frameChanged(SequenceTime,int) ),
                       this,SLOT( onTimeChanged(SequenceTime,int) ) );
@@ -3023,9 +3023,9 @@ NodeGraph::showMenu(const QPoint & pos)
     _imp->_menu->addAction(findAction);
     _imp->_menu->addSeparator();
     
-    QFont font(appFont,appFontSize);
+    //QFont font(appFont,appFontSize);
     QMenu* editMenu = new QMenu(tr("Edit"),_imp->_menu);
-    editMenu->setFont(font);
+    //editMenu->setFont(font);
     _imp->_menu->addAction( editMenu->menuAction() );
     
     QAction* copyAction = new ActionWithShortcut(kShortcutGroupNodegraph,kShortcutIDActionGraphCopy,
@@ -4160,7 +4160,7 @@ FindNodeDialog::FindNodeDialog(NodeGraph* graph,QWidget* parent)
     _imp->mainLayout->setContentsMargins(0, 0, 0, 0);
     
     _imp->label = new QLabel(tr("Select all nodes containing this text:"),this);
-    _imp->label->setFont(QFont(appFont,appFontSize));
+    //_imp->label->setFont(QFont(appFont,appFontSize));
     _imp->mainLayout->addWidget(_imp->label);
 
     _imp->filter = new LineEdit(this);
@@ -4183,7 +4183,7 @@ FindNodeDialog::FindNodeDialog(NodeGraph* graph,QWidget* parent)
     
     _imp->resultLabel = new QLabel(this);
     _imp->mainLayout->addWidget(_imp->resultLabel);
-    _imp->resultLabel->setFont(QFont(appFont,appFontSize));
+    //_imp->resultLabel->setFont(QFont(appFont,appFontSize));
     
     _imp->buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel,Qt::Horizontal,this);
     QObject::connect(_imp->buttons, SIGNAL(accepted()), this, SLOT(onOkClicked()));

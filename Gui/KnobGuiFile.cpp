@@ -378,7 +378,7 @@ File_KnobGui::addRightClickMenuEntries(QMenu* menu)
 
     menu->addSeparator();
     QMenu* qtMenu = _lineEdit->createStandardContextMenu();
-    qtMenu->setFont(QFont(appFont,appFontSize));
+    //qtMenu->setFont(QFont(appFont,appFontSize));
     qtMenu->setTitle(tr("Edit"));
     menu->addMenu(qtMenu);
 }
@@ -620,7 +620,7 @@ OutputFile_KnobGui::addRightClickMenuEntries(QMenu* menu)
     
     menu->addSeparator();
     QMenu* qtMenu = _lineEdit->createStandardContextMenu();
-    qtMenu->setFont(QFont(appFont,appFontSize));
+    //qtMenu->setFont(QFont(appFont,appFontSize));
     qtMenu->setTitle(tr("Edit"));
     menu->addMenu(qtMenu);
 }
@@ -1220,7 +1220,7 @@ Path_KnobGui::addRightClickMenuEntries(QMenu* menu)
         
         menu->addSeparator();
         QMenu* qtMenu = _lineEdit->createStandardContextMenu();
-        qtMenu->setFont(QFont(appFont,appFontSize));
+        //qtMenu->setFont(QFont(appFont,appFontSize));
         qtMenu->setTitle(tr("Edit"));
         menu->addMenu(qtMenu);
     }

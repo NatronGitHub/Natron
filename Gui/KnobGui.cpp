@@ -124,7 +124,7 @@ struct KnobGui::KnobGuiPrivate
     , guiCurves()
     , guiRemoved(false)
     {
-        copyRightClickMenu->setFont( QFont(appFont,appFontSize) );
+        //copyRightClickMenu->setFont( QFont(appFont,appFontSize) );
     }
     
     void removeFromKnobsOnSameLineVector(const boost::shared_ptr<KnobI>& knob)
@@ -302,7 +302,7 @@ void
 KnobGui::createAnimationButton(QHBoxLayout* layout)
 {
     _imp->animationMenu = new QMenu( layout->parentWidget() );
-    _imp->animationMenu->setFont( QFont(appFont,appFontSize) );
+    //_imp->animationMenu->setFont( QFont(appFont,appFontSize) );
     QPixmap pix;
     appPTR->getIcon(Natron::NATRON_PIXMAP_CURVE, &pix);
     _imp->animationButton = new AnimationButton( this,QIcon(pix),"",layout->parentWidget() );
@@ -520,7 +520,7 @@ KnobGui::createAnimationMenu(QMenu* menu,int dimension)
             }
 
             QMenu* interpolationMenu = new QMenu(menu);
-            interpolationMenu->setFont( QFont(appFont,appFontSize) );
+            //interpolationMenu->setFont( QFont(appFont,appFontSize) );
             interpolationMenu->setTitle("Interpolation");
             menu->addAction( interpolationMenu->menuAction() );
             if (!isEnabled) {
@@ -2020,7 +2020,7 @@ EditScriptDialog::create(const QString& initialScript,bool makeUseRetButton)
     }
     
     _imp->expressionLabel = new QLabel(labelHtml,this);
-    _imp->expressionLabel->setFont(font);
+    //_imp->expressionLabel->setFont(font);
     _imp->mainLayout->addWidget(_imp->expressionLabel);
     
     _imp->expressionEdit = new ScriptTextEdit(this);
@@ -2062,7 +2062,7 @@ EditScriptDialog::create(const QString& initialScript,bool makeUseRetButton)
     _imp->mainLayout->addWidget(_imp->midButtonsContainer);
     
     _imp->resultLabel = new QLabel(tr("Result:"),this);
-    _imp->resultLabel->setFont(font);
+    //_imp->resultLabel->setFont(font);
     _imp->mainLayout->addWidget(_imp->resultLabel);
     
     _imp->resultEdit = new ScriptTextEdit(this);

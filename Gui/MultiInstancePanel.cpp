@@ -2269,7 +2269,7 @@ TrackerPanel::showMenuForInstance(Natron::Node* instance)
 {
     QMenu menu( getGui() );
 
-    menu.setFont( QFont(appFont,appFontSize) );
+    //menu.setFont( QFont(appFont,appFontSize) );
 
     QAction* copyTrackAnimation = new QAction(tr("Copy track animation"),&menu);
     menu.addAction(copyTrackAnimation);

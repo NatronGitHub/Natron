@@ -145,7 +145,7 @@ BackDropGuiPrivate::refreshLabelText(int nameHeight,const QString &text)
     QFont f;
     QColor color;
     if (!text.isEmpty()) {
-        String_KnobGui::parseFont(textLabel, f, color);
+        String_KnobGui::parseFont(textLabel, &f, &color);
         label->setFont(f);
     }
     

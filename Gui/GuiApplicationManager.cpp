@@ -894,6 +894,64 @@ GuiApplicationManager::getColorPickerCursor() const
 void
 GuiApplicationManager::initGui()
 {
+    QSettings settings(NATRON_ORGANIZATION_NAME,NATRON_APPLICATION_NAME);
+
+    //load custom fonts
+    QString fontResource = QString(":/Resources/Fonts/%1.ttf");
+    QStringList fontFilenames;
+    fontFilenames << fontResource.arg("DroidSans");
+    fontFilenames << fontResource.arg("DroidSans-Bold");
+    Q_FOREACH (QString fontFilename, fontFilenames) {
+        int fontID = QFontDatabase::addApplicationFont(fontFilename);
+        qDebug() << "fontID=" << fontID << "families=" << QFontDatabase::applicationFontFamilies(fontID);
+    }
+    QString fontFamily(NATRON_FONT);
+    int fontSize = NATRON_FONT_SIZE_11;
+
+    if (settings.contains("font")) {
+        QString fontChoiceEntry = settings.value("font").toString();
+
+        if (fontChoiceEntry == "System fonts...") {
+
+            if (settings.contains("systemFont")) {
+                fontFamily = settings.value("systemFont").toString();
+            }
+        } else {
+            fontFamily = fontChoiceEntry;
+        }
+    }
+    if (settings.contains("fontSize")) {
+        fontSize = settings.value("fontSize").toInt();
+    }
+    //fontFamily = "Courier"; fontSize = 24; // for debugging purposes
+    qDebug() << "Setting application font to " << fontFamily << fontSize;
+    {
+        QFontDatabase database;
+        Q_FOREACH (const QString &family, database.families()) {
+            if (family == fontFamily) {
+                qDebug() << "... found" << fontFamily << "available styles:";
+                Q_FOREACH (const QString &style, database.styles(family)) {
+                    qDebug() << family << style;
+                }
+            }
+        }
+        QFont font(fontFamily, fontSize);
+        if (!font.exactMatch()) {
+            QFontInfo fi(font);
+            qDebug() << "Not an exact match, got: " << fi.family() << fi.pointSize();
+        }
+        QApplication::setFont(font);
+#ifdef Q_OS_MAC
+        // https://bugreports.qt.io/browse/QTBUG-32789
+        QFont::insertSubstitution(".Lucida Grande UI", fontFamily/*"Lucida Grande"*/);
+        // https://bugreports.qt.io/browse/QTBUG-40833
+        QFont::insertSubstitution(".Helvetica Neue DeskInterface", fontFamily/*"Helvetica Neue"*/);
+        // there are lots of remaining bugs on Yosemite in 4.8.6, to be fixed in 4.8.7&
+#endif
+    }
+    _imp->_fontFamily = fontFamily;
+    _imp->_fontSize = fontSize;
+
     /*Display a splashscreen while we wait for the engine to load*/
     QString filename(NATRON_IMAGES_PATH "splashscreen.png");
 
@@ -903,19 +961,7 @@ GuiApplicationManager::initGui()
     appPTR->getIcon(Natron::NATRON_PIXMAP_APP_ICON, &appIcPixmap);
     QIcon appIc(appIcPixmap);
     qApp->setWindowIcon(appIc);
-    //load custom fonts
-    QString fontResource = QString(":/Resources/Fonts/%1.ttf");
-    QStringList fontFilenames;
-    fontFilenames << fontResource.arg("DroidSans");
-    fontFilenames << fontResource.arg("DroidSans-Bold");
-    Q_FOREACH (QString fontFilename, fontFilenames) {
-        _imp->_splashScreen->updateText("Loading font " + fontFilename);
-        //qDebug() << "attempting to load" << fontFilename;
-        int fontID = QFontDatabase::addApplicationFont(fontFilename);
-        qDebug() << "fontID=" << fontID << "families=" << QFontDatabase::applicationFontFamilies(fontID);
-    }
     
-    QSettings settings(NATRON_ORGANIZATION_NAME,NATRON_APPLICATION_NAME);
     QFontDatabase db;
     QStringList families = db.families();
     std::vector<std::string> systemFonts(families.size());
@@ -1383,33 +1429,6 @@ GuiApplicationManager::initializeQApp(int &argc,
 
     app->setQuitOnLastWindowClosed(true);
     Q_INIT_RESOURCE(GuiResources);
-    
-    
-    QSettings settings(NATRON_ORGANIZATION_NAME,NATRON_APPLICATION_NAME);
-    
-    
-    QString fontFamily(NATRON_FONT);
-    int fontSize = NATRON_FONT_SIZE_11;
-    
-    if (settings.contains("font")) {
-        QString fontChoiceEntry = settings.value("font").toString();
-        
-        if (fontChoiceEntry == "System fonts...") {
-            
-            if (settings.contains("systemFont")) {
-                fontFamily = settings.value("systemFont").toString();
-            }
-        } else {
-            fontFamily = fontChoiceEntry;
-        }
-    }
-    if (settings.contains("fontSize")) {
-        fontSize = settings.value("fontSize").toInt();
-    }
-    qDebug() << "Setting application font to " << fontFamily << " " << fontSize;
-    app->setFont( QFont(fontFamily, fontSize) );
-    _imp->_fontFamily = fontFamily;
-    _imp->_fontSize = fontSize;
     
     ///Register all the shortcuts.
     populateShortcuts();
