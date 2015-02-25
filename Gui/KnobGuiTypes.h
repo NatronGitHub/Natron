@@ -22,7 +22,6 @@
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QObject>
-#include <QLabel>
 #include <QStyledItemDelegate>
 #include <QTextEdit>
 CLANG_DIAG_ON(deprecated)
@@ -36,6 +35,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/CurveSelection.h"
 #include "Gui/KnobGui.h"
+#include "Gui/Label.h"
 
 //Define this if you want the spinbox to clamp to the plugin defined range
 //#define SPINBOX_TAKE_PLUGIN_RANGE_INTO_ACCOUNT
@@ -70,13 +70,15 @@ class Button;
 class SpinBox;
 class ComboBox;
 class ScaleSliderQWidget;
-class GroupBoxLabel;
 class CurveWidget;
 class KnobCurveGui;
 class TabGroup;
 
 // private classes, defined in KnobGuiTypes.cpp
+namespace Natron {
+class GroupBoxLabel;
 class ClickableLabel;
+}
 class AnimatedCheckBox;
 
 namespace Natron {
@@ -148,7 +150,7 @@ private:
     virtual void updateToolTip() OVERRIDE FINAL;
 
 private:
-    std::vector<std::pair<SpinBox *, QLabel *> > _spinBoxes;
+    std::vector<std::pair<SpinBox *, Natron::Label *> > _spinBoxes;
     QWidget *_container;
     ScaleSliderQWidget *_slider;
     Button *_dimensionSwitchButton;
@@ -270,7 +272,7 @@ private:
     virtual void updateToolTip() OVERRIDE FINAL;
     
 private:
-    std::vector<std::pair<SpinBox *, QLabel *> > _spinBoxes;
+    std::vector<std::pair<SpinBox *, Natron::Label *> > _spinBoxes;
     QWidget *_container;
     ScaleSliderQWidget *_slider;
     Button *_dimensionSwitchButton;
@@ -432,7 +434,7 @@ private:
 
 class Color_KnobGui;
 class ColorPickerLabel
-    : public QLabel
+    : public Natron::Label
 {
     Q_OBJECT
 
@@ -545,10 +547,10 @@ private:
     QHBoxLayout *boxLayout;
     QWidget *colorContainer;
     QHBoxLayout *colorLayout;
-    QLabel *_rLabel;
-    QLabel *_gLabel;
-    QLabel *_bLabel;
-    QLabel *_aLabel;
+    Natron::Label *_rLabel;
+    Natron::Label *_gLabel;
+    Natron::Label *_bLabel;
+    Natron::Label *_aLabel;
     SpinBox *_rBox;
     SpinBox *_gBox;
     SpinBox *_bBox;
@@ -723,7 +725,7 @@ private:
     bool _italicActivated;
     QString _fontFamily;
     QColor _fontColor;
-    QLabel *_label; //< if label
+    Natron::Label *_label; //< if label
     boost::shared_ptr<String_Knob> _knob;
 };
 
@@ -780,7 +782,7 @@ private:
 
 private:
     bool _checked;
-    GroupBoxLabel *_button;
+    Natron::GroupBoxLabel *_button;
     std::list<KnobGui*> _children;
     std::vector< std::pair<KnobGui*,std::vector<int> > > _childrenToEnable; //< when re-enabling a group, what are the children that we should set
     TabGroup* _tabGroup;

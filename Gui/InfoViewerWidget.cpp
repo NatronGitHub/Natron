@@ -17,7 +17,6 @@
 #include <iostream>
 #include <QtGui/QImage>
 #include <QHBoxLayout>
-#include <QLabel>
 #include <QThread>
 #include <QPaintEvent>
 #include <QPainter>
@@ -27,6 +26,7 @@
 #include "Engine/Lut.h"
 #include "Engine/Image.h"
 #include "Gui/ViewerGL.h"
+#include "Gui/Label.h"
 
 using std::cout; using std::endl;
 using namespace Natron;
@@ -79,7 +79,7 @@ InfoViewerWidget::InfoViewerWidget(ViewerGL* v,
     layout->setSpacing(0);
     layout->setContentsMargins(0, 0, 0, 0);
 
-    descriptionLabel = new QLabel(this);
+    descriptionLabel = new Natron::Label(this);
     {
         const QFont& font = descriptionLabel->font();
 
@@ -93,14 +93,14 @@ InfoViewerWidget::InfoViewerWidget(ViewerGL* v,
         int width = fm.width("A:");
         descriptionLabel->setMinimumWidth(width);
     }
-    imageFormat = new QLabel(this);
+    imageFormat = new Natron::Label(this);
     {
         QFontMetrics fm = imageFormat->fontMetrics();
         int width = fm.width("RGBA32f");
         imageFormat->setMinimumWidth(width);
     }
 
-    resolution = new QLabel(this);
+    resolution = new Natron::Label(this);
     {
         QFontMetrics fm = resolution->fontMetrics();
         int width = fm.width("00000x00000");
@@ -108,7 +108,7 @@ InfoViewerWidget::InfoViewerWidget(ViewerGL* v,
     }
 
 
-    coordDispWindow = new QLabel(this);
+    coordDispWindow = new Natron::Label(this);
     {
         QFontMetrics fm = coordDispWindow->fontMetrics();
         int width = fm.width("RoD: 000 000 0000 0000");
@@ -116,7 +116,7 @@ InfoViewerWidget::InfoViewerWidget(ViewerGL* v,
         coordDispWindow->setMinimumWidth(width);
     }
    
-    _fpsLabel = new QLabel(this);
+    _fpsLabel = new Natron::Label(this);
     {
         QFontMetrics fm = _fpsLabel->fontMetrics();
         int width = fm.width("100 fps");
@@ -125,24 +125,24 @@ InfoViewerWidget::InfoViewerWidget(ViewerGL* v,
         _fpsLabel->hide();
     }
     
-    coordMouse = new QLabel(this);
+    coordMouse = new Natron::Label(this);
     {
         QFontMetrics fm = coordMouse->fontMetrics();
         int width = fm.width("x=00000 y=00000");
         coordMouse->setMinimumWidth(width);
     }
 
-    rgbaValues = new QLabel(this);
+    rgbaValues = new Natron::Label(this);
     {
         QFontMetrics fm = rgbaValues->fontMetrics();
         int width = fm.width("0.00000 0.00000 0.00000 ~ ");
         rgbaValues->setMinimumWidth(width);
     }
 
-    color = new QLabel(this);
+    color = new Natron::Label(this);
     color->setFixedSize(20, 20);
     
-    hvl_lastOption = new QLabel(this);
+    hvl_lastOption = new Natron::Label(this);
     {
         QFontMetrics fm = hvl_lastOption->fontMetrics();
         int width = fm.width("H:000 S:0.00 V:0.00 L:0.00000");

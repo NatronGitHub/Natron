@@ -48,7 +48,7 @@ struct ScaleSliderQWidgetPrivate
     Natron::ScaleTypeEnum type;
     double value;
     bool dragging;
-    QFont* font;
+    QFont font;
     QColor sliderColor;
     bool initialized;
     bool mustInitializeSliderPosition;
@@ -58,7 +58,8 @@ struct ScaleSliderQWidgetPrivate
     double currentZoom;
     ScaleSliderQWidget::DataTypeEnum dataType;
     
-    ScaleSliderQWidgetPrivate(double min,
+    ScaleSliderQWidgetPrivate(QWidget* parent,
+                              double min,
                               double max,
                               double initialPos,
                               ScaleSliderQWidget::DataTypeEnum dataType,
@@ -70,7 +71,7 @@ struct ScaleSliderQWidgetPrivate
     , type(type)
     , value(initialPos)
     , dragging(false)
-    , font(new QFont(appFont,NATRON_FONT_SIZE_8))
+    , font(parent->font())
     , sliderColor(97,83,30,255)
     , initialized(false)
     , mustInitializeSliderPosition(true)
@@ -80,7 +81,7 @@ struct ScaleSliderQWidgetPrivate
     , currentZoom(1.)
     , dataType(dataType)
     {
-        
+        font.setPointSize((font.pointSize() * NATRON_FONT_SIZE_8) / NATRON_FONT_SIZE_12);
     }
 };
 
@@ -91,7 +92,7 @@ ScaleSliderQWidget::ScaleSliderQWidget(double min,
                                        Natron::ScaleTypeEnum type,
                                        QWidget* parent)
     : QWidget(parent)
-    , _imp(new ScaleSliderQWidgetPrivate(min,max,initialPos,dataType,type))
+    , _imp(new ScaleSliderQWidgetPrivate(parent,min,max,initialPos,dataType,type))
 {
     setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
     QSize sizeh = sizeHint();
@@ -114,7 +115,6 @@ ScaleSliderQWidget::minimumSizeHint() const
 
 ScaleSliderQWidget::~ScaleSliderQWidget()
 {
-    delete _imp->font;
 }
 
 Natron::ScaleTypeEnum
@@ -332,7 +332,7 @@ ScaleSliderQWidget::paintEvent(QPaintEvent* /*e*/)
     QColor scaleColor;
     scaleColor.setRgbF(textColor.redF() / 2., textColor.greenF() / 2., textColor.blueF() / 2.);
     
-    QFontMetrics fontM(*_imp->font);
+    QFontMetrics fontM(_imp->font);
     p.setPen(scaleColor);
 
     QPointF btmLeft = _imp->zoomCtx.toZoomCoordinates(0,height() - 1);
@@ -402,7 +402,7 @@ ScaleSliderQWidget::paintEvent(QPaintEvent* /*e*/)
                 }
                 QColor c = _imp->readOnly || !isEnabled() ? Qt::black : textColor;
                 c.setAlphaF(alphaText);
-                p.setFont(*_imp->font);
+                p.setFont(_imp->font);
                 p.setPen(c);
 
                 QPointF textPos = _imp->zoomCtx.toWidgetCoordinates( value, btmLeft.y() );

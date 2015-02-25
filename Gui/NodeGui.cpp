@@ -2974,23 +2974,23 @@ struct ExportGroupTemplateDialogPrivate
     NodeCollection* group;
     QGridLayout* mainLayout;
     
-    QLabel* labelLabel;
+    Natron::Label* labelLabel;
     LineEdit* labelEdit;
     
-    QLabel* idLabel;
+    Natron::Label* idLabel;
     LineEdit* idEdit;
     
-    QLabel* groupingLabel;
+    Natron::Label* groupingLabel;
     LineEdit* groupingEdit;
     
-    QLabel* fileLabel;
+    Natron::Label* fileLabel;
     LineEdit* fileEdit;
     Button* openButton;
     
-    QLabel* iconPathLabel;
+    Natron::Label* iconPathLabel;
     LineEdit* iconPath;
     
-    QLabel* descriptionLabel;
+    Natron::Label* descriptionLabel;
     LineEdit* descriptionEdit;
     
     QDialogButtonBox *buttons;
@@ -3023,11 +3023,8 @@ ExportGroupTemplateDialog::ExportGroupTemplateDialog(NodeCollection* group,Gui* 
 , _imp(new ExportGroupTemplateDialogPrivate(group,gui))
 {
     _imp->mainLayout = new QGridLayout(this);
-    
-    //QFont font(appFont,appFontSize);
-    
-    _imp->labelLabel = new QLabel(tr("Label"),this);
-    //_imp->labelLabel->setFont(font);
+
+    _imp->labelLabel = new Natron::Label(tr("Label"),this);
     QString labelTt = Qt::convertFromPlainText(tr("Set the label of the group as the user will see it in the user interface"),Qt::WhiteSpaceNormal);
     _imp->labelLabel->setToolTip(labelTt);
     _imp->labelEdit = new LineEdit(this);
@@ -3035,8 +3032,7 @@ ExportGroupTemplateDialog::ExportGroupTemplateDialog(NodeCollection* group,Gui* 
     QObject::connect(_imp->labelEdit,SIGNAL(editingFinished()), this , SLOT(onLabelEditingFinished()));
     _imp->labelEdit->setToolTip(labelTt);
     
-    _imp->idLabel = new QLabel(tr("Unique ID"),this);
-    //_imp->idLabel->setFont(font);
+    _imp->idLabel = new Natron::Label(tr("Unique ID"),this);
     QString idTt = Qt::convertFromPlainText(tr("The unique ID is used by " NATRON_APPLICATION_NAME "to identify the plug-in in various "
                                                "places in the application. Generally this contains domain and sub-domains names "
                                                "such as fr.inria.group.XXX. If 2 plug-ins happen to have the same ID they will be "
@@ -3046,8 +3042,7 @@ ExportGroupTemplateDialog::ExportGroupTemplateDialog(NodeCollection* group,Gui* 
     _imp->idEdit->setPlaceholderText("org.organization.pyplugs.XXX");
     _imp->idEdit->setToolTip(idTt);
     
-    _imp->groupingLabel = new QLabel(tr("Grouping"),this);
-    //_imp->groupingLabel->setFont(font);
+    _imp->groupingLabel = new Natron::Label(tr("Grouping"),this);
     QString groupingTt = Qt::convertFromPlainText(tr("The grouping of the plug-in specifies where the plug-in will be located in the menus. "
                                                      "E.g: Color/Transform, or Draw. Each sub-level must be separated by a '/' "),Qt::WhiteSpaceNormal);
     _imp->groupingLabel->setToolTip(groupingTt);
@@ -3057,8 +3052,7 @@ ExportGroupTemplateDialog::ExportGroupTemplateDialog(NodeCollection* group,Gui* 
     _imp->groupingEdit->setToolTip(groupingTt);
     
     
-    _imp->iconPathLabel = new QLabel(tr("Icon relative path"),this);
-    //_imp->iconPathLabel->setFont(font);
+    _imp->iconPathLabel = new Natron::Label(tr("Icon relative path"),this);
     QString iconTt = Qt::convertFromPlainText(tr("Set here the file path of an optional icon to identify the plug-in. "
                                                  "The path is relative to the Python script."),Qt::WhiteSpaceNormal);
     _imp->iconPathLabel->setToolTip(iconTt);
@@ -3066,16 +3060,14 @@ ExportGroupTemplateDialog::ExportGroupTemplateDialog(NodeCollection* group,Gui* 
     _imp->iconPath->setPlaceholderText("Label.png");
     _imp->iconPath->setToolTip(iconTt);
     
-    _imp->descriptionLabel = new QLabel(tr("Description"),this);
-    //_imp->descriptionLabel->setFont(font);
+    _imp->descriptionLabel = new Natron::Label(tr("Description"),this);
     QString descTt =  Qt::convertFromPlainText(tr("Set here the (optional) plug-in description that the user will see when clicking the "
                                                   " \"?\" button on the settings panel of the node."),Qt::WhiteSpaceNormal);
     _imp->descriptionEdit = new LineEdit(this);
     _imp->descriptionEdit->setToolTip(descTt);
     _imp->descriptionEdit->setPlaceholderText(tr("This plug-in can be used to produce XXX effect..."));
     
-    _imp->fileLabel = new QLabel(tr("Directory"),this);
-    //_imp->fileLabel->setFont(font);
+    _imp->fileLabel = new Natron::Label(tr("Directory"),this);
     QString fileTt  = Qt::convertFromPlainText(tr("Specify here the directory where to export the Python script"),Qt::WhiteSpaceNormal);
     _imp->fileLabel->setToolTip(fileTt);
     _imp->fileEdit = new LineEdit(this);
@@ -3093,7 +3085,6 @@ ExportGroupTemplateDialog::ExportGroupTemplateDialog(NodeCollection* group,Gui* 
     
     _imp->buttons = new QDialogButtonBox(QDialogButtonBox::StandardButtons(QDialogButtonBox::Ok | QDialogButtonBox::Cancel),
                                          Qt::Horizontal,this);
-    //_imp->buttons->setFont(font);
     QObject::connect(_imp->buttons, SIGNAL(accepted()), this, SLOT(onOkClicked()));
     QObject::connect(_imp->buttons, SIGNAL(rejected()), this, SLOT(reject()));
     

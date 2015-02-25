@@ -15,7 +15,6 @@ CLANG_DIAG_OFF(deprecated)
 #include <QHBoxLayout>
 #include <QVBoxLayout>
 #include <QTabWidget>
-#include <QLabel>
 #include <QFile>
 #include <QTextCodec>
 CLANG_DIAG_ON(deprecated)
@@ -24,6 +23,7 @@ CLANG_DIAG_ON(deprecated)
 #include "Global/GitVersion.h"
 #include "Gui/Button.h"
 #include "Gui/Gui.h"
+#include "Gui/Label.h"
 
 AboutWindow::AboutWindow(Gui* gui,
                          QWidget* parent)
@@ -34,7 +34,7 @@ AboutWindow::AboutWindow(Gui* gui,
     _mainLayout = new QVBoxLayout(this);
     setLayout(_mainLayout);
 
-    _iconLabel = new QLabel(this);
+    _iconLabel = new Natron::Label(this);
     _iconLabel->setPixmap( QPixmap(NATRON_APPLICATION_ICON_PATH).scaled(128, 128) );
     _mainLayout->addWidget(_iconLabel);
 

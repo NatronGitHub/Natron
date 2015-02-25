@@ -14,14 +14,17 @@
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QObject>
-#include <QLabel> // in QtGui on Qt4, in QtWidgets on Qt5
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 #include "Global/Macros.h"
 
+#include "Label.h"
+
+namespace Natron {
+ 
 class ClickableLabel
-    : public QLabel
+    : public Label
 {
     Q_OBJECT Q_PROPERTY(bool dirty READ getDirty WRITE setDirty)
     Q_PROPERTY( int animation READ getAnimation WRITE setAnimation)
@@ -88,4 +91,5 @@ private:
     bool sunkenStyle;
 };
 
+} // namespace Natron
 #endif // NATRON_GUI_CLICKABLELABEL_H_

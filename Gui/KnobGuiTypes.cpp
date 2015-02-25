@@ -21,7 +21,6 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QHBoxLayout>
 #include <QStyle>
 #include <QColorDialog>
-#include <QLabel>
 #include <QToolTip>
 #include <QTreeWidget>
 #include <QTreeWidgetItem>
@@ -59,6 +58,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/CurveWidget.h"
 #include "Gui/DockablePanel.h"
 #include "Gui/ClickableLabel.h"
+#include "Gui/Label.h"
 
 #include "ofxNatron.h"
 
@@ -160,13 +160,13 @@ Int_KnobGui::createWidget(QHBoxLayout* layout)
         boxContainer->setLayout(boxContainerLayout);
         boxContainerLayout->setContentsMargins(0, 0, 0, 0);
         boxContainerLayout->setSpacing(3);
-        QLabel *subDesc = 0;
+        Natron::Label *subDesc = 0;
         if (dim != 1) {
             std::string dimLabel = getKnob()->getDimensionName(i);
             if (!dimLabel.empty()) {
                 dimLabel.append(":");
             }
-            subDesc = new QLabel(QString(dimLabel.c_str()), boxContainer);
+            subDesc = new Natron::Label(QString(dimLabel.c_str()), boxContainer);
             //subDesc->setFont( QFont(appFont,appFontSize) );
             boxContainerLayout->addWidget(subDesc);
         }
@@ -880,13 +880,13 @@ Double_KnobGui::createWidget(QHBoxLayout* layout)
         boxContainer->setLayout(boxContainerLayout);
         boxContainerLayout->setContentsMargins(0, 0, 0, 0);
         boxContainerLayout->setSpacing(3);
-        QLabel *subDesc = 0;
+        Natron::Label *subDesc = 0;
         if (dim != 1) {
             std::string dimLabel = getKnob()->getDimensionName(i);
             if (!dimLabel.empty()) {
                 dimLabel.append(":");
             }
-            subDesc = new QLabel(QString(dimLabel.c_str()), boxContainer);
+            subDesc = new Natron::Label(QString(dimLabel.c_str()), boxContainer);
             //subDesc->setFont( QFont(appFont,appFontSize) );
             boxContainerLayout->addWidget(subDesc);
         }
@@ -1785,7 +1785,7 @@ Color_KnobGui::createWidget(QHBoxLayout* layout)
     if (!dimLabel.empty()) {
         dimLabel.append(":");
     }
-    _rLabel = new QLabel(QString(dimLabel.c_str()).toLower(), boxContainers);
+    _rLabel = new Natron::Label(QString(dimLabel.c_str()).toLower(), boxContainers);
     //_rLabel->setFont(font);
     if ( hasToolTip() ) {
         _rLabel->setToolTip( toolTip() );
@@ -1815,7 +1815,7 @@ Color_KnobGui::createWidget(QHBoxLayout* layout)
             dimLabel.append(":");
         }
         
-        _gLabel = new QLabel(QString(dimLabel.c_str()).toLower(), boxContainers);
+        _gLabel = new Natron::Label(QString(dimLabel.c_str()).toLower(), boxContainers);
         //_gLabel->setFont(font);
         if ( hasToolTip() ) {
             _gLabel->setToolTip( toolTip() );
@@ -1844,7 +1844,7 @@ Color_KnobGui::createWidget(QHBoxLayout* layout)
             dimLabel.append(":");
         }
         
-        _bLabel = new QLabel(QString(dimLabel.c_str()).toLower(), boxContainers);
+        _bLabel = new Natron::Label(QString(dimLabel.c_str()).toLower(), boxContainers);
         //_bLabel->setFont(font);
         if ( hasToolTip() ) {
             _bLabel->setToolTip( toolTip() );
@@ -1875,7 +1875,7 @@ Color_KnobGui::createWidget(QHBoxLayout* layout)
             dimLabel.append(":");
         }
         
-        _aLabel = new QLabel(QString(dimLabel.c_str()).toLower(), boxContainers);
+        _aLabel = new Natron::Label(QString(dimLabel.c_str()).toLower(), boxContainers);
         //_aLabel->setFont(font);
         if ( hasToolTip() ) {
             _aLabel->setToolTip( toolTip() );
@@ -2548,7 +2548,7 @@ Color_KnobGui::_show()
 }
 
 ColorPickerLabel::ColorPickerLabel(Color_KnobGui* knob,QWidget* parent)
-    : QLabel(parent)
+    : Natron::Label(parent)
       , _pickingEnabled(false)
     , _knob(knob)
 {
@@ -2865,7 +2865,7 @@ String_KnobGui::createWidget(QHBoxLayout* layout)
 
         layout->addWidget(_container);
     } else if ( _knob->isLabel() ) {
-        _label = new QLabel( layout->parentWidget() );
+        _label = new Natron::Label( layout->parentWidget() );
 
         if ( hasToolTip() ) {
             _label->setToolTip( toolTip() );
@@ -3668,7 +3668,7 @@ String_KnobGui::updateToolTip()
 
 //=============================GROUP_KNOB_GUI===================================
 GroupBoxLabel::GroupBoxLabel(QWidget *parent)
-: QLabel(parent)
+: Natron::Label(parent)
 , _checked(false)
 
 {

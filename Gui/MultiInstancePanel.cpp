@@ -26,7 +26,6 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QStyledItemDelegate>
 #include <QUndoCommand>
 #include <QPainter>
-#include <QLabel>
 #include <QWaitCondition>
 #include <QtConcurrentMap>
 #include <QMenu>
@@ -35,6 +34,15 @@ CLANG_DIAG_ON(uninitialized)
 
 #include <boost/bind.hpp>
 #include <boost/weak_ptr.hpp>
+
+#include "Engine/Node.h"
+#include "Engine/KnobTypes.h"
+#include "Engine/KnobFile.h"
+#include "Engine/EffectInstance.h"
+#include "Engine/Curve.h"
+#include "Engine/TimeLine.h"
+
+#include <ofxNatron.h>
 
 #include "Gui/Button.h"
 #include "Gui/ComboBox.h"
@@ -47,15 +55,8 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/DockablePanel.h"
 #include "Gui/NodeGraph.h"
 #include "Gui/Gui.h"
+#include "Gui/Label.h"
 
-#include "Engine/Node.h"
-#include "Engine/KnobTypes.h"
-#include "Engine/KnobFile.h"
-#include "Engine/EffectInstance.h"
-#include "Engine/Curve.h"
-#include "Engine/TimeLine.h"
-
-#include <ofxNatron.h>
 
 #define kTrackBackwardButtonName "trackBackward"
 #define kTrackPreviousButtonName "trackPrevious"
@@ -1587,7 +1588,7 @@ struct TrackerPanelPrivate
     mutable QMutex updateViewerMutex;
     bool updateViewerOnTrackingEnabled;
     
-    QLabel* exportLabel;
+    Natron::Label* exportLabel;
     QWidget* exportContainer;
     QHBoxLayout* exportLayout;
     ComboBox* exportChoice;
@@ -1640,7 +1641,7 @@ TrackerPanel::~TrackerPanel()
 void
 TrackerPanel::appendExtraGui(QVBoxLayout* layout)
 {
-    _imp->exportLabel = new QLabel( tr("Export data"),layout->parentWidget() );
+    _imp->exportLabel = new Natron::Label( tr("Export data"),layout->parentWidget() );
     layout->addWidget(_imp->exportLabel);
     layout->addSpacing(10);
     _imp->exportContainer = new QWidget( layout->parentWidget() );

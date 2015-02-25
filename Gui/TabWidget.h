@@ -44,7 +44,6 @@ class QVBoxLayout;
 class QMenu;
 class Button;
 class QMouseEvent;
-class QLabel;
 class QDropEvent;
 class QDragEnterEvent;
 class QDragLeaveEvent;

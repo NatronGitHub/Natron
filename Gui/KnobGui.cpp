@@ -38,7 +38,6 @@ CLANG_DIAG_ON(unused-private-field)
 #include <QGroupBox>
 #include <QtGui/QVector4D>
 #include <QStyleFactory>
-#include <QLabel>
 #include <QMenu>
 #include <QComboBox>
 #include <QDialogButtonBox>
@@ -79,6 +78,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Gui/CustomParamInteract.h"
 #include "Gui/NodeCreationDialog.h"
 #include "Gui/ScriptTextEdit.h"
+#include "Gui/Label.h"
 
 using namespace Natron;
 
@@ -241,7 +241,7 @@ KnobGui::pushUndoCommand(QUndoCommand* cmd)
 void
 KnobGui::createGUI(QGridLayout* containerLayout,
                    QWidget* fieldContainer,
-                   QLabel* label,
+                   Natron::Label* label,
                    QHBoxLayout* layout,
                    bool isOnNewLine,
                    const std::vector< boost::shared_ptr< KnobI > > & knobsOnSameLine)
@@ -1401,7 +1401,7 @@ struct LinkToKnobDialogPrivate
     QVBoxLayout* mainLayout;
     QHBoxLayout* firstLineLayout;
     QWidget* firstLine;
-    QLabel* selectNodeLabel;
+    Natron::Label* selectNodeLabel;
     CompleterLineEdit* nodeSelectionCombo;
     ComboBox* knobSelectionCombo;
     QDialogButtonBox* buttons;
@@ -1441,7 +1441,7 @@ LinkToKnobDialog::LinkToKnobDialog(KnobGui* from,
     QObject::connect( _imp->buttons, SIGNAL( rejected() ), this, SLOT( reject() ) );
     _imp->mainLayout->addWidget(_imp->buttons);
 
-    _imp->selectNodeLabel = new QLabel(tr("Parent:"),_imp->firstLine);
+    _imp->selectNodeLabel = new Natron::Label(tr("Parent:"),_imp->firstLine);
     _imp->firstLineLayout->addWidget(_imp->selectNodeLabel);
 
 
@@ -1950,7 +1950,7 @@ struct EditScriptDialogPrivate
 {
     QVBoxLayout* mainLayout;
     
-    QLabel* expressionLabel;
+    Natron::Label* expressionLabel;
     ScriptTextEdit* expressionEdit;
     
     QWidget* midButtonsContainer;
@@ -1959,7 +1959,7 @@ struct EditScriptDialogPrivate
     Button* useRetButton;
     Button* helpButton;
     
-    QLabel* resultLabel;
+    Natron::Label* resultLabel;
     ScriptTextEdit* resultEdit;
     
     QDialogButtonBox* buttons;
@@ -2019,7 +2019,7 @@ EditScriptDialog::create(const QString& initialScript,bool makeUseRetButton)
         labelHtml.append("<p>" + tr("Note that parameters can be referenced by drag&dropping them from their animation button.") + "</p>");
     }
     
-    _imp->expressionLabel = new QLabel(labelHtml,this);
+    _imp->expressionLabel = new Natron::Label(labelHtml,this);
     //_imp->expressionLabel->setFont(font);
     _imp->mainLayout->addWidget(_imp->expressionLabel);
     
@@ -2061,7 +2061,7 @@ EditScriptDialog::create(const QString& initialScript,bool makeUseRetButton)
     
     _imp->mainLayout->addWidget(_imp->midButtonsContainer);
     
-    _imp->resultLabel = new QLabel(tr("Result:"),this);
+    _imp->resultLabel = new Natron::Label(tr("Result:"),this);
     //_imp->resultLabel->setFont(font);
     _imp->mainLayout->addWidget(_imp->resultLabel);
     

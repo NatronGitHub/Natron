@@ -81,6 +81,7 @@ SOURCES += \
     KnobGuiFile.cpp \
     KnobGuiTypes.cpp \
     KnobUndoCommand.cpp \
+    Label.cpp \
     LineEdit.cpp \
     MessageBox.cpp \
     MenuWithToolTips.cpp \
@@ -161,6 +162,7 @@ HEADERS += \
     KnobGuiFile.h \
     KnobGuiTypes.h \
     KnobUndoCommand.h \
+    Label.h \
     LineEdit.h \
     MessageBox.h \
     MenuWithToolTips.h \

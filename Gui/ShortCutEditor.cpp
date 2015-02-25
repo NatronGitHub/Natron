@@ -24,7 +24,6 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QTreeWidgetItem>
 #include <QHBoxLayout>
 #include <QGroupBox>
-#include <QLabel>
 #include <QTextDocument>
 #include <QStyledItemDelegate>
 #include <QPainter>
@@ -35,6 +34,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/Button.h"
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/ActionShortcuts.h"
+#include "Gui/Label.h"
 
 struct GuiBoundAction
 {
@@ -109,7 +109,7 @@ struct ShortCutEditorPrivate
     HackedTreeWidget* tree;
     QGroupBox* shortcutGroup;
     QHBoxLayout* shortcutGroupLayout;
-    QLabel* shortcutLabel;
+    Natron::Label* shortcutLabel;
     KeybindRecorder* shortcutEditor;
     Button* validateButton;
     Button* clearButton;
@@ -265,7 +265,7 @@ ShortCutEditor::ShortCutEditor(QWidget* parent)
     _imp->shortcutGroupLayout = new QHBoxLayout(_imp->shortcutGroup);
     _imp->shortcutGroupLayout->setContentsMargins(0, 0, 0, 0);
 
-    _imp->shortcutLabel = new QLabel(_imp->shortcutGroup);
+    _imp->shortcutLabel = new Natron::Label(_imp->shortcutGroup);
     _imp->shortcutLabel->setText( tr("Sequence:") );
     _imp->shortcutGroupLayout->addWidget(_imp->shortcutLabel);
 

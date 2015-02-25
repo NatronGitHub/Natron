@@ -32,7 +32,6 @@ class Button;
 class QWidget;
 class QHBoxLayout;
 class QVBoxLayout;
-class QLabel;
 class ComboBox;
 class SpinBox;
 class LineEdit;
@@ -51,6 +50,7 @@ class xml_archive;
 
 namespace Natron {
 class Project;
+class Label;
 }
 
 class ProjectGui
@@ -155,15 +155,15 @@ private:
     ComboBox* _copyFromViewerCombo;
     QWidget* _parametersLine;
     QHBoxLayout* _parametersLineLayout;
-    QLabel* _widthLabel;
+    Natron::Label* _widthLabel;
     SpinBox* _widthSpinBox;
-    QLabel* _heightLabel;
+    Natron::Label* _heightLabel;
     SpinBox* _heightSpinBox;
-    QLabel* _pixelAspectLabel;
+    Natron::Label* _pixelAspectLabel;
     SpinBox* _pixelAspectSpinBox;
     QWidget* _formatNameLine;
     QHBoxLayout* _formatNameLayout;
-    QLabel* _nameLabel;
+    Natron::Label* _nameLabel;
     LineEdit* _nameLineEdit;
     QWidget* _buttonsLine;
     QHBoxLayout* _buttonsLineLayout;

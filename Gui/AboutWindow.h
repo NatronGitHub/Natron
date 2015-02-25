@@ -19,18 +19,20 @@ CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 class QTextBrowser;
-class QLabel;
 class QTabWidget;
 class QVBoxLayout;
 class QHBoxLayout;
 class Button;
 class Gui;
+namespace Natron {
+    class Label;
+}
 
 class AboutWindow
     : public QDialog
 {
     QVBoxLayout* _mainLayout;
-    QLabel* _iconLabel;
+    Natron::Label* _iconLabel;
     QTabWidget* _tabWidget;
     QTextBrowser* _aboutText;
     QTextBrowser* _libsText;

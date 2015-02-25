@@ -12,7 +12,6 @@
 #include <QHBoxLayout>
 #include <QVBoxLayout>
 #include <QCheckBox>
-#include <QLabel>
 #include <QSplitter>
 #include <QDesktopWidget>
 #include <QGLShaderProgram>

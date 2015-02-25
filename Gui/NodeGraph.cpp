@@ -43,7 +43,6 @@ CLANG_DIAG_ON(unused-private-field)
 #include <QtCore/QRectF>
 #include <QRegExp>
 #include <QtCore/QTimer>
-#include <QLabel>
 #include <QAction>
 #include <QPainter>
 CLANG_DIAG_OFF(deprecated)
@@ -95,6 +94,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/CurveWidget.h"
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/Histogram.h"
+#include "Gui/Label.h"
 
 #define NATRON_CACHE_SIZE_TEXT_REFRESH_INTERVAL_MS 1000
 
@@ -4122,13 +4122,13 @@ struct FindNodeDialogPrivate
     int currentFindIndex;
     
     QVBoxLayout* mainLayout;
-    QLabel* label;
+    Natron::Label* label;
     
 
     QCheckBox* unixWildcards;
     QCheckBox* caseSensitivity;
 
-    QLabel* resultLabel;
+    Natron::Label* resultLabel;
     LineEdit* filter;
     QDialogButtonBox* buttons;
     
@@ -4159,7 +4159,7 @@ FindNodeDialog::FindNodeDialog(NodeGraph* graph,QWidget* parent)
     _imp->mainLayout = new QVBoxLayout(this);
     _imp->mainLayout->setContentsMargins(0, 0, 0, 0);
     
-    _imp->label = new QLabel(tr("Select all nodes containing this text:"),this);
+    _imp->label = new Natron::Label(tr("Select all nodes containing this text:"),this);
     //_imp->label->setFont(QFont(appFont,appFontSize));
     _imp->mainLayout->addWidget(_imp->label);
 
@@ -4181,7 +4181,7 @@ FindNodeDialog::FindNodeDialog(NodeGraph* graph,QWidget* parent)
     _imp->mainLayout->addWidget(_imp->caseSensitivity);
     
     
-    _imp->resultLabel = new QLabel(this);
+    _imp->resultLabel = new Natron::Label(this);
     _imp->mainLayout->addWidget(_imp->resultLabel);
     //_imp->resultLabel->setFont(QFont(appFont,appFontSize));
     

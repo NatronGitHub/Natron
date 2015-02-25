@@ -23,7 +23,6 @@
 #include <QSpacerItem>
 #include <QGridLayout>
 #include <QGroupBox>
-#include <QLabel>
 #include <QVBoxLayout>
 #include <QAbstractItemView>
 #include <QCheckBox>
@@ -65,6 +64,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Gui/MultiInstancePanel.h"
 #include "Gui/GuiMacros.h"
 #include "Gui/ActionShortcuts.h"
+#include "Gui/Label.h"
 
 #define NATRON_TRANSFORM_AFFECTS_OVERLAYS
 
@@ -169,10 +169,10 @@ struct ViewerTabPrivate
     Button* activateRenderScale;
     bool renderScaleActive;
     ComboBox* renderScaleCombo;
-    QLabel* firstInputLabel;
+    Natron::Label* firstInputLabel;
     ComboBox* firstInputImage;
     ComboBox* compositingOperator;
-    QLabel* secondInputLabel;
+    Natron::Label* secondInputLabel;
     ComboBox* secondInputImage;
 
     /*2nd row*/
@@ -527,7 +527,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
 
     _imp->firstRowLayout->addStretch();
 
-    _imp->firstInputLabel = new QLabel("A:",_imp->firstSettingsRow);
+    _imp->firstInputLabel = new Natron::Label("A:",_imp->firstSettingsRow);
     _imp->firstRowLayout->addWidget(_imp->firstInputLabel);
 
     _imp->firstInputImage = new ComboBox(_imp->firstSettingsRow);
@@ -545,7 +545,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->compositingOperator->addItem("Wipe",QIcon(),QKeySequence(),"Wipe betweens A and B");
     _imp->firstRowLayout->addWidget(_imp->compositingOperator);
 
-    _imp->secondInputLabel = new QLabel("B:",_imp->firstSettingsRow);
+    _imp->secondInputLabel = new Natron::Label("B:",_imp->firstSettingsRow);
     _imp->firstRowLayout->addWidget(_imp->secondInputLabel);
 
     _imp->secondInputImage = new ComboBox(_imp->firstSettingsRow);

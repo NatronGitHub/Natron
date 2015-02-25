@@ -9,21 +9,23 @@
 
 #include "ClickableLabel.h"
 
+#include <QApplication>
 #include <QEvent>
 #include <QStyle>
 
 #include "Gui/GuiApplicationManager.h"
 
+using namespace Natron;
+
 ClickableLabel::ClickableLabel(const QString &text,
                                QWidget *parent)
-    : QLabel(text, parent),
+    : Label(text, parent),
       _toggled(false),
       dirty(false),
       readOnly(false),
       animation(0),
       sunkenStyle(false)
 {
-    //setFont( QFont(appFont,appFontSize) );
 }
 
 void
@@ -33,7 +35,7 @@ ClickableLabel::mousePressEvent(QMouseEvent* e)
         _toggled = !_toggled;
         Q_EMIT clicked(_toggled);
     }
-    QLabel::mousePressEvent(e);
+    Label::mousePressEvent(e);
 }
 
 void

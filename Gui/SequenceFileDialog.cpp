@@ -30,7 +30,6 @@
 #include <QListView>
 #include <QHeaderView>
 #include <QCheckBox>
-#include <QLabel>
 #include <QFileIconProvider>
 #include <QFileSystemModel>
 #include <QInputDialog>
@@ -67,25 +66,29 @@ CLANG_DIAG_ON(unused-private-field)
 
 #include <QtCore/QSettings>
 
-#include "Global/QtCompat.h"
-#include "Gui/Button.h"
-#include "Gui/LineEdit.h"
-#include "Gui/ComboBox.h"
-#include "Gui/GuiApplicationManager.h"
-#include "Global/MemoryInfo.h"
-#include "Gui/Gui.h"
-#include "Gui/NodeGui.h"
-#include "Gui/GuiAppInstance.h"
-#include "Gui/ViewerTab.h"
-#include "Gui/ViewerGL.h"
-#include "Gui/TabWidget.h"
 #include <SequenceParsing.h>
+
+#include "Global/QtCompat.h"
+#include "Global/MemoryInfo.h"
 
 #include "Engine/Node.h"
 #include "Engine/Settings.h"
 #include "Engine/KnobFile.h"
 #include "Engine/Project.h"
 #include "Engine/ViewerInstance.h"
+
+#include "Gui/Button.h"
+#include "Gui/LineEdit.h"
+#include "Gui/ComboBox.h"
+#include "Gui/GuiApplicationManager.h"
+#include "Gui/Gui.h"
+#include "Gui/NodeGui.h"
+#include "Gui/GuiAppInstance.h"
+#include "Gui/ViewerTab.h"
+#include "Gui/ViewerGL.h"
+#include "Gui/TabWidget.h"
+#include "Gui/Label.h"
+
 
 #define FILE_DIALOG_DISABLE_ICONS
 
@@ -293,9 +296,9 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
     _buttonsLayout = new QHBoxLayout(_buttonsWidget);
     _buttonsWidget->setLayout(_buttonsLayout);
     if (mode == eFileDialogModeOpen) {
-        _lookInLabel = new QLabel(tr("Look in:"),_buttonsWidget);
+        _lookInLabel = new Natron::Label(tr("Look in:"),_buttonsWidget);
     } else {
-        _lookInLabel = new QLabel(tr("Save in:"),_buttonsWidget);
+        _lookInLabel = new Natron::Label(tr("Save in:"),_buttonsWidget);
     }
     _buttonsLayout->addWidget(_lookInLabel);
 
@@ -397,7 +400,7 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
     _selectionLayout->setContentsMargins(0, 0, 0, 0);
     _selectionWidget->setLayout(_selectionLayout);
 
-    _relativeLabel = new QLabel(tr("Relative to:"),_selectionWidget);
+    _relativeLabel = new Natron::Label(tr("Relative to:"),_selectionWidget);
     _selectionLayout->addWidget(_relativeLabel);
     
     _relativeChoice = new ComboBox(_selectionWidget);
@@ -460,10 +463,10 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
     _filterLineWidget->setLayout(_filterLineLayout);
 
     if (_dialogMode == eFileDialogModeOpen) {
-        _filterLabel = new QLabel(tr("Filter:"),_filterLineWidget);
+        _filterLabel = new Natron::Label(tr("Filter:"),_filterLineWidget);
         _filterLineLayout->addWidget(_filterLabel);
     } else if (_dialogMode == eFileDialogModeSave) {
-        _filterLabel = new QLabel(tr("File type:"),_filterLineWidget);
+        _filterLabel = new Natron::Label(tr("File type:"),_filterLineWidget);
         _filterLineLayout->addWidget(_filterLabel);
     }
 
@@ -1374,7 +1377,7 @@ AddFavoriteDialog::AddFavoriteDialog(SequenceFileDialog* fd,
     setLayout(_mainLayout);
     setWindowTitle( tr("New favorite") );
 
-    _descriptionLabel = new QLabel("",this);
+    _descriptionLabel = new Natron::Label("",this);
     _mainLayout->addWidget(_descriptionLabel);
 
     _secondLine = new QWidget(this);

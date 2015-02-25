@@ -15,7 +15,6 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QHBoxLayout>
 #include <QVBoxLayout>
 #include <QDialogButtonBox>
-#include <QLabel>
 #include <QStyle>
 #include <QPushButton>
 #include <QCheckBox>
@@ -27,6 +26,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/FromQtEnums.h"
 #include "Gui/GuiApplicationManager.h"
+#include "Gui/Label.h"
 
 namespace Natron {
 struct MessageBoxPrivate
@@ -36,10 +36,10 @@ struct MessageBoxPrivate
     QHBoxLayout* mainLayout;
     QVBoxLayout* vLayout;
     
-    QLabel* infoLabel;
+    Natron::Label* infoLabel;
     
     QWidget* vContainer;
-    QLabel* questionLabel;
+    Natron::Label* questionLabel;
     QTextEdit* infoEdit; //< used if the text is too long so the user can scroll
     QCheckBox* checkbox;
     
@@ -88,7 +88,7 @@ MessageBox::init(const QString & title,
 {
     _imp->mainLayout = new QHBoxLayout(this);
     
-    _imp->infoLabel = new QLabel(this);
+    _imp->infoLabel = new Natron::Label(this);
     _imp->infoLabel->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
     
     QStyle::StandardPixmap pixType;
@@ -115,7 +115,7 @@ MessageBox::init(const QString & title,
     _imp->vLayout = new QVBoxLayout(_imp->vContainer);
     
     if (message.size() < 1000) {
-        _imp->questionLabel = new QLabel(message,_imp->vContainer);
+        _imp->questionLabel = new Natron::Label(message,_imp->vContainer);
         _imp->questionLabel->setTextInteractionFlags(Qt::TextInteractionFlags(style()->styleHint(QStyle::SH_MessageBox_TextInteractionFlags, 0, this)));
         _imp->questionLabel->setAlignment(Qt::AlignVCenter | Qt::AlignLeft);
         _imp->questionLabel->setOpenExternalLinks(true);
