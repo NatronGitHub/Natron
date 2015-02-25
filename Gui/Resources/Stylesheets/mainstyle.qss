@@ -310,7 +310,7 @@ QMainWindow {
     background-color: %2;
 }
 
-/*QCheckBox::indicator:unchecked {
+QCheckBox::indicator:unchecked {
     image: url(:/Resources/Images/checkbox.png);
 }
 QCheckBox::indicator:checked {
@@ -327,7 +327,7 @@ QCheckBox::indicator:unchecked:hover {
 }
 QCheckBox::indicator:unchecked:focus {
     image: url(:/Resources/Images/checkbox_hovered.png);
-}*/
+}
 QCheckBox {
     color : %5
 }
