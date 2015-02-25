@@ -36,7 +36,8 @@ class LineEdit
 {
     Q_OBJECT Q_PROPERTY( int animation READ getAnimation WRITE setAnimation)
     Q_PROPERTY(bool dirty READ getDirty WRITE setDirty)
-
+    Q_PROPERTY(bool altered READ getAltered WRITE setAltered)
+    
 public:
     explicit LineEdit(QWidget* parent = 0);
     virtual ~LineEdit() OVERRIDE;
@@ -54,6 +55,12 @@ public:
     }
 
     void setDirty(bool b);
+    
+    void setAltered(bool b);
+    bool getAltered() const
+    {
+        return altered;
+    }
 
 Q_SIGNALS:
     
@@ -80,6 +87,7 @@ private:
     
     int animation;
     bool dirty;
+    bool altered;
 };
 
 

@@ -259,6 +259,7 @@ public:
     void getKeyframeColor(double* r,double* g,double* b) const;
     void getExprColor(double* r,double* g,double* b) const;
     void getTextColor(double* r,double* g,double* b) const;
+    void getAltTextColor(double* r,double* g,double* b) const;
     void getTimelinePlayheadColor(double* r,double* g,double* b) const;
     void getTimelineBoundsColor(double* r,double* g,double* b) const;
     void getTimelineBGColor(double* r,double* g,double* b) const;
@@ -399,6 +400,7 @@ private:
     boost::shared_ptr<Color_Knob> _raisedColor;
     boost::shared_ptr<Color_Knob> _selectionColor;
     boost::shared_ptr<Color_Knob> _textColor;
+    boost::shared_ptr<Color_Knob> _altTextColor;
     boost::shared_ptr<Color_Knob> _timelinePlayheadColor;
     boost::shared_ptr<Color_Knob> _timelineBGColor;
     boost::shared_ptr<Color_Knob> _timelineBoundsColor;

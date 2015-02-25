@@ -274,6 +274,9 @@ struct KnobHelperPrivate
     ///Used to prevent recursive calls for expressions
     mutable ThreadStorage<int> expressionRecursionLevel;
     
+    mutable QMutex hasModificationsMutex;
+    std::vector<bool> hasModifications;
+    
     KnobHelperPrivate(KnobHelper* publicInterface_,
                       KnobHolder*  holder_,
                       int dimension_,
@@ -321,15 +324,19 @@ struct KnobHelperPrivate
     , expressions()
     , lastRandomHash(0)
     , expressionRecursionLevel()
+    , hasModificationsMutex()
+    , hasModifications()
     {
         mustCloneGuiCurves.resize(dimension);
         mustCloneInternalCurves.resize(dimension);
         mustClearExprResults.reserve(dimension);
         expressions.resize(dimension);
+        hasModifications.resize(dimension);
         for (int i = 0; i < dimension_; ++i) {
             mustCloneGuiCurves[i] = false;
             mustCloneInternalCurves[i] = false;
             mustClearExprResults[i] = false;
+            hasModifications[i] = false;
         }
     }
     
@@ -1144,6 +1151,7 @@ KnobHelper::evaluateValueChange(int dimension,
     }
     
     if (!guiFrozen  && _signalSlotHandler) {
+        computeHasModifications();
         _signalSlotHandler->s_valueChanged(dimension,(int)reason);
         if (getHolder()) {
             _signalSlotHandler->s_updateDependencies(dimension);
@@ -2510,6 +2518,45 @@ KnobHelper::randomSeed(unsigned int seed) const
     
     QMutexLocker k(&_imp->lastRandomHashMutex);
     _imp->lastRandomHash = hash32;
+}
+
+bool
+KnobHelper::hasModifications() const
+{
+    QMutexLocker k(&_imp->hasModificationsMutex);
+    for (int i = 0; i < _imp->dimension; ++i) {
+        if (_imp->hasModifications[i]) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool
+KnobHelper::hasModifications(int dimension) const
+{
+    if (dimension < 0 || dimension >= _imp->dimension) {
+        throw std::invalid_argument("KnobHelper::hasModifications: Dimension out of range");
+    }
+    QMutexLocker k(&_imp->hasModificationsMutex);
+    return _imp->hasModifications[dimension];
+}
+
+bool
+KnobHelper::setHasModifications(int dimension,bool value,bool lock)
+{
+    assert(dimension >= 0 && dimension < _imp->dimension);
+    bool ret;
+    if (lock) {
+        QMutexLocker k(&_imp->hasModificationsMutex);
+        ret = _imp->hasModifications[dimension] != value;
+        _imp->hasModifications[dimension] = value;
+    } else {
+        assert(!_imp->hasModificationsMutex.tryLock());
+        ret = _imp->hasModifications[dimension] != value;
+        _imp->hasModifications[dimension] = value;
+    }
+    return ret;
 }
 
 /***************************KNOB HOLDER******************************************/

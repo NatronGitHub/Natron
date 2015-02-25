@@ -1889,52 +1889,36 @@ Knob<T>::dequeueValuesSet(bool disableEvaluation)
 }
 
 template <typename T>
-bool Knob<T>::hasModifications() const
+void Knob<T>::computeHasModifications()
 {
+    bool oneChanged = false;
     for (int i = 0; i < getDimension(); ++i) {
         
+        bool hasModif = false;
         std::string expr = getExpression(i);
         if (!expr.empty()) {
-            return true;
+            hasModif = true;
         }
         
-        boost::shared_ptr<Curve> c = getCurve(i);
-        if (c && c->isAnimated()) {
-            return true;
+        if (!hasModif) {
+            boost::shared_ptr<Curve> c = getCurve(i);
+            if (c && c->isAnimated()) {
+                hasModif = true;
+            }
         }
         
         ///Check expressions too in the future
-        
-        QReadLocker k(&_valueMutex);
-        if (_values[i] != _defaultValues[i]) {
-            return true;
+        if (!hasModif) {
+            QReadLocker k(&_valueMutex);
+            if (_values[i] != _defaultValues[i]) {
+                hasModif = true;
+            }
         }
+        oneChanged |= setHasModifications(i, hasModif, true);
     }
-    return false;
-}
-
-template <typename T>
-bool Knob<T>::hasModifications(int dimension) const
-{
-    boost::shared_ptr<Curve> c = getCurve(dimension);
-    
-    std::string expr = getExpression(dimension);
-    if (!expr.empty()) {
-        return true;
+    if (oneChanged && _signalSlotHandler) {
+        _signalSlotHandler->s_hasModificationsChanged();
     }
-    
-    if (c && c->isAnimated()) {
-        return true;
-    }
-    
-    ///Check expressions too in the future
-    
-    QReadLocker k(&_valueMutex);
-    if (_values[dimension] != _defaultValues[dimension]) {
-        return true;
-    }
-    
-    return false;
 }
 
 #endif // KNOBIMPL_H

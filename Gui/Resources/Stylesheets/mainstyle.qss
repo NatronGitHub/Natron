@@ -1,6 +1,7 @@
 /* -*- mode: css -*- */
 /*%1 = selection-color  %2 = medium background  %3 = soft background %4 = strong background %5 = text colour*/
 /*%6 = interpolated value color %7 = keyframe value color %8 = disabled editable text (black) %9 = expression value color*/
+/*%10 = altered text colour*/
 /*You have to fill the arguments with  stylesheet-representable colours.*/
 
 QWidget {
@@ -12,6 +13,13 @@ QLabel {
     color: %5;
 }
 
+Natron--Label[altered="true"] {
+    color: %10;
+}
+
+Natron--Label[altered="false"] {
+    color: %5;
+}
 
 NodeSettingsPanel[_selected="true"] {
     border:1px solid white;
@@ -178,50 +186,54 @@ ComboBox {
     border: 1px solid black;
 }
 
-ClickableLabel[dirty="false"][animation="0"][sunkenStyle="false"]{
+Natron--ClickableLabel[dirty="false"][animation="0"][sunkenStyle="false"]{
     background-color: %2;
-    color: %5;
 }
-ClickableLabel[dirty="false"][animation="0"][sunkenStyle="true"]{
+Natron--ClickableLabel[dirty="false"][animation="0"][sunkenStyle="true"]{
     background-color: %3;
-    color: %5;
 }
-ClickableLabel[dirty="true"][animation="0"]{
+Natron--ClickableLabel[dirty="true"][animation="0"]{
     background-color: black;
-    color: %5;
 }
-ClickableLabel[dirty="false"][animation="1"]{
+Natron--ClickableLabel[dirty="false"][animation="1"]{
     background-color: %6;
-    color: %5;
 }
-ClickableLabel[dirty="true"][animation="1"]{
+Natron--ClickableLabel[dirty="true"][animation="1"]{
     background-color: black;
     color: %6;
 }
-ClickableLabel[dirty="false"][animation="2"]{
+Natron--ClickableLabel[dirty="false"][animation="2"]{
     background-color: %7;
-    color: %5;
 }
-ClickableLabel[dirty="true"][animation="2"]{
+Natron--ClickableLabel[dirty="true"][animation="2"]{
     background-color: black;
     color: %7;
 }
-ClickableLabel[dirty="false"][animation="3"]{
+Natron--ClickableLabel[dirty="false"][animation="3"]{
     background-color: %7;
     color: %9;
 }
-ClickableLabel[dirty="true"][animation="3"]{
+Natron--ClickableLabel[dirty="true"][animation="3"]{
     background-color: black;
     color: %9;
 }
-ClickableLabel[readOnly="true"][dirty="false"]{
+Natron--ClickableLabel[readOnly="true"][dirty="false"]{
     background-color: %2;
     color : %8;
 }
-ClickableLabel[readOnly="true"][dirty="true"]{
+Natron--ClickableLabel[readOnly="true"][dirty="true"]{
     background-color: black;
     color : %8;
 }
+
+Natron--ClickableLabel[altered="true"]{
+    color : %10;
+}
+
+Natron--ClickableLabel[altered="false"]{
+    color : %5;
+}
+
 QLabel:disabled {
     background-color: %2;
     color : black;
@@ -298,7 +310,7 @@ QMainWindow {
     background-color: %2;
 }
 
-QCheckBox::indicator:unchecked {
+/*QCheckBox::indicator:unchecked {
     image: url(:/Resources/Images/checkbox.png);
 }
 QCheckBox::indicator:checked {
@@ -315,7 +327,7 @@ QCheckBox::indicator:unchecked:hover {
 }
 QCheckBox::indicator:unchecked:focus {
     image: url(:/Resources/Images/checkbox_hovered.png);
-}
+}*/
 QCheckBox {
     color : %5
 }
@@ -495,6 +507,15 @@ SpinBox[animation="3"] {
 }
 SpinBox[dirty="true"] {
     background-color: black;
+    color: %5;
+}
+
+SpinBox[altered="true"][dirty="false"] {
+    color: %10;
+}
+
+SpinBox[altered="false"] {
+    color: %5;
 }
 
 LineEdit[animation="0"] {
@@ -513,6 +534,9 @@ LineEdit[dirty="true"] {
     background-color: black;
 }
 
+LineEdit[altered="true"] {
+    color: %10;
+}
 
 AnimatingTextEdit[animation="0"] {
     background-color: %3;
@@ -557,7 +581,7 @@ QTextEdit:focus {
 }
 
 
-AnimatedCheckBox[animation="1"]::indicator:unchecked {
+/*AnimatedCheckBox[animation="1"]::indicator:unchecked {
     image: url(:/Resources/Images/checkbox_animation1_unchecked.png);
 }
 AnimatedCheckBox[animation="1"]::indicator:checked {
@@ -622,7 +646,7 @@ AnimatedCheckBox[dirty="true"]::indicator:checked{
 }
 AnimatedCheckBox[dirty="true"]::indicator:unchecked{
     image: url(:/Resources/Images/checkbox_dirty_unchecked.png);
-}
+}*/
 
 QMenuBar
 {

@@ -57,6 +57,7 @@ struct ScaleSliderQWidgetPrivate
     bool shiftDown;
     double currentZoom;
     ScaleSliderQWidget::DataTypeEnum dataType;
+    bool altered;
     
     ScaleSliderQWidgetPrivate(QWidget* parent,
                               double min,
@@ -72,7 +73,7 @@ struct ScaleSliderQWidgetPrivate
     , value(initialPos)
     , dragging(false)
     , font(parent->font())
-    , sliderColor(97,83,30,255)
+    , sliderColor(85,116,114)
     , initialized(false)
     , mustInitializeSliderPosition(true)
     , readOnly(false)
@@ -80,6 +81,7 @@ struct ScaleSliderQWidgetPrivate
     , shiftDown(false)
     , currentZoom(1.)
     , dataType(dataType)
+    , altered(false)
     {
         font.setPointSize((font.pointSize() * NATRON_FONT_SIZE_8) / NATRON_FONT_SIZE_12);
     }
@@ -209,6 +211,19 @@ ScaleSliderQWidget::increment()
 }
 
 void
+ScaleSliderQWidget::setAltered(bool b)
+{
+    _imp->altered = b;
+    repaint();
+}
+
+bool
+ScaleSliderQWidget::getAltered() const
+{
+    return _imp->altered;
+}
+
+void
 ScaleSliderQWidget::keyReleaseEvent(QKeyEvent* e)
 {
     if (e->key() == Qt::Key_Control) {
@@ -325,7 +340,12 @@ ScaleSliderQWidget::paintEvent(QPaintEvent* /*e*/)
     style()->drawPrimitive(QStyle::PE_Widget, &opt, &p, this);
 
     double txtR,txtG,txtB;
-    appPTR->getCurrentSettings()->getTextColor(&txtR, &txtG, &txtB);
+    if (_imp->altered) {
+        appPTR->getCurrentSettings()->getAltTextColor(&txtR, &txtG, &txtB);
+    } else {
+        appPTR->getCurrentSettings()->getTextColor(&txtR, &txtG, &txtB);
+    }
+    
     QColor textColor;
     textColor.setRgbF(Natron::clamp(txtR), Natron::clamp(txtG), Natron::clamp(txtB));
     

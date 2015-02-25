@@ -303,6 +303,9 @@ public Q_SLOTS:
     void onExprChanged(int dimension);
     
     void onHelpChanged();
+    
+    void onHasModificationsChanged();
+    
 Q_SIGNALS:
 
     void knobUndoneChange();
@@ -340,6 +343,7 @@ protected:
 
     virtual void addRightClickMenuEntries(QMenu* /*menu*/) {}
     
+    virtual void reflectModificationsState() {}
     
 private:
 

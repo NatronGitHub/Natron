@@ -345,7 +345,14 @@ Settings::initializeKnobs()
     _textColor->setName("text");
     _textColor->setAnimationEnabled(false);
     _textColor->setSimplified(true);
+    _textColor->setAddNewLine(false);
     _guiColors->addKnob(_textColor);
+    
+    _altTextColor =  Natron::createKnob<Color_Knob>(this, "Unmodified text",3);
+    _altTextColor->setName("unmodifiedText");
+    _altTextColor->setAnimationEnabled(false);
+    _altTextColor->setSimplified(true);
+    _guiColors->addKnob(_altTextColor);
     
     _timelinePlayheadColor =  Natron::createKnob<Color_Knob>(this, "Timeline playhead",3);
     _timelinePlayheadColor->setName("timelinePlayhead");
@@ -1119,6 +1126,10 @@ Settings::setDefaultValues()
     _textColor->setDefaultValue(0.78,1);
     _textColor->setDefaultValue(0.78,2);
     
+    _altTextColor->setDefaultValue(0.6,0);
+    _altTextColor->setDefaultValue(0.6,1);
+    _altTextColor->setDefaultValue(0.6,2);
+    
     _timelinePlayheadColor->setDefaultValue(0.95,0);
     _timelinePlayheadColor->setDefaultValue(0.54,1);
     _timelinePlayheadColor->setDefaultValue(0.,2);
@@ -1587,10 +1598,23 @@ Settings::onKnobValueChanged(KnobI* k,
         appPTR->onCheckerboardSettingsChanged();
     }  else if (k == _hideOptionalInputsAutomatically.get() && !_restoringSettings && reason == Natron::eValueChangedReasonUserEdited) {
         appPTR->toggleAutoHideGraphInputs();
-    } else if (!_restoringSettings && (k == _sunkenColor.get() || k == _baseColor.get() || k == _raisedColor.get() || k == _selectionColor.get() || k == _textColor.get()
-               || k == _timelinePlayheadColor.get() || k == _timelineBoundsColor.get() || k == _timelineBGColor.get() ||
-               k == _interpolatedColor.get() || k == _keyframeColor.get() || k == _cachedFrameColor.get() || k == _diskCachedFrameColor.get() ||
-               k == _curveEditorBGColor.get() || k == _gridColor.get() || k == _curveEditorScaleColor.get())) {
+    } else if (!_restoringSettings &&
+               (k == _sunkenColor.get() ||
+                k == _baseColor.get() ||
+                k == _raisedColor.get() ||
+                k == _selectionColor.get() ||
+                k == _textColor.get() ||
+                k == _altTextColor.get() ||
+                k == _timelinePlayheadColor.get() ||
+                k == _timelineBoundsColor.get() ||
+                k == _timelineBGColor.get() ||
+                k == _interpolatedColor.get() ||
+                k == _keyframeColor.get() ||
+                k == _cachedFrameColor.get() ||
+                k == _diskCachedFrameColor.get() ||
+                k == _curveEditorBGColor.get() ||
+                k == _gridColor.get() ||
+                k == _curveEditorScaleColor.get())) {
         appPTR->reloadStylesheets();
     }
 } // onKnobValueChanged
@@ -1993,6 +2017,12 @@ Settings::populateSystemFonts(const QSettings& settings,const std::vector<std::s
 {
     _systemFontChoice->populateChoices(fonts);
     
+    for (U32 i = 0; i < fonts.size(); ++i) {
+        if (fonts[i] == NATRON_FONT) {
+            _systemFontChoice->setDefaultValue(i);
+            break;
+        }
+    }
     ///Now restore properly the system font choice
     QString name(_systemFontChoice->getName().c_str());
     if (settings.contains(name)) {
@@ -2645,6 +2675,16 @@ Settings::getTextColor(double* r,double* g,double* b) const
     *g = _textColor->getValue(1);
     *b = _textColor->getValue(2);
 }
+
+void
+Settings::getAltTextColor(double* r,double* g,double* b) const
+{
+    *r = _altTextColor->getValue(0);
+    *g = _altTextColor->getValue(1);
+    *b = _altTextColor->getValue(2);
+}
+
+
 
 void
 Settings::getTimelinePlayheadColor(double* r,double* g,double* b) const

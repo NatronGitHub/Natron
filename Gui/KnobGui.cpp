@@ -98,7 +98,7 @@ struct KnobGui::KnobGuiPrivate
     std::vector< boost::shared_ptr< KnobI > > knobsOnSameLine;
     QGridLayout* containerLayout;
     QWidget* field;
-    QWidget* descriptionLabel;
+    Natron::Label* descriptionLabel;
     bool isOnNewLine;
     CustomParamInteract* customInteract;
 
@@ -166,6 +166,7 @@ KnobGui::KnobGui(boost::shared_ptr<KnobI> knob,
         QObject::connect( handler,SIGNAL( frozenChanged(bool) ),this,SLOT( onFrozenChanged(bool) ) );
         QObject::connect( handler,SIGNAL( helpChanged() ),this,SLOT( onHelpChanged() ) );
         QObject::connect( handler,SIGNAL( expressionChanged(int) ),this,SLOT( onExprChanged(int) ) );
+        QObject::connect( handler,SIGNAL( hasModificationsChanged() ),this,SLOT( onHasModificationsChanged() ) );
     }
     _imp->guiCurves.resize(knob->getDimension());
     if (knob->canAnimate()) {
@@ -273,6 +274,7 @@ KnobGui::createGUI(QGridLayout* containerLayout,
         layout->addWidget(_imp->customInteract);
     } else {
         createWidget(layout);
+        onHasModificationsChanged();
         updateToolTip();
     }
     if ( knob->isAnimationEnabled() ) {
@@ -2319,5 +2321,17 @@ KnobGui::onKnobDeletion()
 {
     _imp->container->deleteKnobGui(getKnob());
 }
+
+
+void
+KnobGui::onHasModificationsChanged()
+{
+    if (_imp->descriptionLabel) {
+        bool hasModif = getKnob()->hasModifications();
+        _imp->descriptionLabel->setAltered(!hasModif);
+    }
+    reflectModificationsState();
+}
+
 
 

@@ -623,6 +623,21 @@ Int_KnobGui::updateToolTip()
         }
     }
 }
+
+void
+Int_KnobGui::reflectModificationsState()
+{
+    bool hasModif = _knob->hasModifications();
+    for (U32 i = 0; i < _spinBoxes.size(); ++i) {
+        _spinBoxes[i].first->setAltered(!hasModif);
+        if (_spinBoxes[i].second) {
+            _spinBoxes[i].second->setAltered(!hasModif);
+        }
+    }
+    if (_slider) {
+        _slider->setAltered(!hasModif);
+    }
+}
 //==========================BOOL_KNOB_GUI======================================
 
 Bool_KnobGui::Bool_KnobGui(boost::shared_ptr<KnobI> knob,
@@ -638,8 +653,8 @@ Bool_KnobGui::createWidget(QHBoxLayout* layout)
 {
     _checkBox = new AnimatedCheckBox( layout->parentWidget() );
 
-    _checkBox->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-    QObject::connect( _checkBox, SIGNAL( toggled(bool) ), this, SLOT( onCheckBoxStateChanged(bool) ) );
+    //_checkBox->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
+    QObject::connect( _checkBox, SIGNAL( clicked(bool) ), this, SLOT( onCheckBoxStateChanged(bool) ) );
     QObject::connect( this, SIGNAL( labelClicked(bool) ), this, SLOT( onCheckBoxStateChanged(bool) ) );
 
     ///set the copy/link actions in the right click menu
@@ -662,9 +677,7 @@ void Bool_KnobGui::removeSpecificGui()
 void
 Bool_KnobGui::updateGUI(int /*dimension*/)
 {
-    _checkBox->blockSignals(true);
     _checkBox->setChecked( _knob->getValue(0,false) );
-    _checkBox->blockSignals(false);
 }
 
 void
@@ -1388,6 +1401,21 @@ Double_KnobGui::updateToolTip()
     }
 }
 
+void
+Double_KnobGui::reflectModificationsState() {
+    bool hasModif = _knob->hasModifications();
+    for (U32 i = 0; i < _spinBoxes.size(); ++i) {
+        _spinBoxes[i].first->setAltered(!hasModif);
+        if (_spinBoxes[i].second) {
+            _spinBoxes[i].second->setAltered(!hasModif);
+        }
+    }
+    if (_slider) {
+        _slider->setAltered(!hasModif);
+    }
+}
+
+
 //=============================BUTTON_KNOB_GUI===================================
 
 Button_KnobGui::Button_KnobGui(boost::shared_ptr<KnobI> knob,
@@ -1629,6 +1657,12 @@ boost::shared_ptr<KnobI> Choice_KnobGui::getKnob() const
     return _knob;
 }
 
+void
+Choice_KnobGui::reflectModificationsState()
+{
+    bool hasModif = _knob->hasModifications();
+    _comboBox->setAltered(!hasModif);
+}
 
 //=============================SEPARATOR_KNOB_GUI===================================
 
@@ -2688,6 +2722,36 @@ boost::shared_ptr<KnobI> Color_KnobGui::getKnob() const
     return _knob;
 }
 
+void
+Color_KnobGui::reflectModificationsState()
+{
+    bool hasModif = _knob->hasModifications();
+    
+    if (_rLabel) {
+        _rLabel->setAltered(!hasModif);
+    }
+    _rBox->setAltered(!hasModif);
+    if (_dimension > 1) {
+        if (_gLabel) {
+            _gLabel->setAltered(!hasModif);
+        }
+        _gBox->setAltered(!hasModif);
+        if (_bLabel) {
+            _bLabel->setAltered(!hasModif);
+        }
+        _bBox->setAltered(!hasModif);
+    }
+    if (_dimension > 3) {
+        if (_aLabel) {
+            _aLabel->setAltered(!hasModif);
+        }
+        _aBox->setAltered(!hasModif);
+    }
+    if (_slider) {
+        _slider->setAltered(!hasModif);
+    }
+}
+
 //=============================STRING_KNOB_GUI===================================
 
 void
@@ -3663,6 +3727,15 @@ String_KnobGui::updateToolTip()
         } else if (_label) {
             _label->setToolTip(tt);
         }
+    }
+}
+
+void
+String_KnobGui::reflectModificationsState()
+{
+    bool hasModif = _knob->hasModifications();
+    if (_lineEdit) {
+        _lineEdit->setAltered(!hasModif);
     }
 }
 

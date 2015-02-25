@@ -10,20 +10,40 @@
 #include "Label.h"
 
 #include <QApplication>
+#include <QStyle>
 
 using namespace Natron;
 
 Label::Label(const QString &text,
              QWidget *parent,
              Qt::WindowFlags f)
-    : QLabel(text, parent, f)
+: QLabel(text, parent, f)
+, altered(false)
+
 {
     setFont(QApplication::font()); // necessary, or the labels will get the default font size
 }
 
 Label::Label(QWidget *parent,
              Qt::WindowFlags f)
-    : QLabel(parent, f)
+: QLabel(parent, f)
+, altered(false)
 {
     setFont(QApplication::font()); // necessary, or the labels will get the default font size
+}
+
+
+bool
+Label::getAltered() const
+{
+    return altered;
+}
+
+void
+Label::setAltered(bool a)
+{
+    altered = a;
+    style()->unpolish(this);
+    style()->polish(this);
+    repaint();
 }

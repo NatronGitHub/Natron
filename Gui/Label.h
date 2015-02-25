@@ -25,6 +25,9 @@ namespace Natron {
 class Label
     : public QLabel
 {
+    
+    Q_OBJECT
+    Q_PROPERTY(bool altered READ getAltered WRITE setAltered)
 
 public:
 
@@ -34,6 +37,14 @@ public:
 
     Label(QWidget *parent = 0,
           Qt::WindowFlags f = 0);
+    
+    bool getAltered() const;
+    
+    void setAltered(bool a);
+    
+private:
+    
+    bool altered;
 };
 
 } // namespace Natron

@@ -1998,6 +1998,7 @@ Gui::loadStyleSheet()
     double intR,intG,intB;
     double kfR,kfG,kfB;
     double eR,eG,eB;
+    double altR,altG,altB;
     boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
     
     settings->getSelectionColor(&selR, &selG, &selB);
@@ -2005,9 +2006,11 @@ Gui::loadStyleSheet()
     settings->getSunkenColor(&sunkR, &sunkG, &sunkB);
     settings->getRaisedColor(&raisR, &raisG, &raisB);
     settings->getTextColor(&txtR, &txtG, &txtB);
+    settings->getAltTextColor(&altR, &altG, &altB);
     settings->getInterpolatedColor(&intR, &intG, &intB);
     settings->getKeyframeColor(&kfR, &kfG, &kfB);
     settings->getExprColor(&eR, &eG, &eB);
+    //settings->
     QString selStr = QString("rgb(%1,%2,%3)").arg(Natron::clamp(selR) * 256).arg(Natron::clamp(selG) * 256).arg(Natron::clamp(selB) * 256);
     QString sunkStr = QString("rgb(%1,%2,%3)").arg(Natron::clamp(sunkR) * 256).arg(Natron::clamp(sunkG) * 256).arg(Natron::clamp(sunkB) * 256);
     QString baseStr = QString("rgb(%1,%2,%3)").arg(Natron::clamp(baseR) * 256).arg(Natron::clamp(baseG) * 256).arg(Natron::clamp(baseB) * 256);
@@ -2016,6 +2019,7 @@ Gui::loadStyleSheet()
     QString intStr = QString("rgb(%1,%2,%3)").arg(Natron::clamp(intR) * 256).arg(Natron::clamp(intG) * 256).arg(Natron::clamp(intB) * 256);
     QString kfStr = QString("rgb(%1,%2,%3)").arg(Natron::clamp(kfR) * 256).arg(Natron::clamp(kfG) * 256).arg(Natron::clamp(kfB) * 256);
     QString eStr = QString("rgb(%1,%2,%3)").arg(Natron::clamp(eR) * 256).arg(Natron::clamp(eG) * 256).arg(Natron::clamp(eB) * 256);
+    QString altStr = QString("rgb(%1,%2,%3)").arg(Natron::clamp(altR) * 256).arg(Natron::clamp(altG) * 256).arg(Natron::clamp(altB) * 256);
     QFile qss(":/Resources/Stylesheets/mainstyle.qss");
 
     if ( qss.open(QIODevice::ReadOnly
@@ -2031,7 +2035,8 @@ Gui::loadStyleSheet()
                       .arg(intStr) // %6: interpolated value color
                       .arg(kfStr) // %7: keyframe value color
                       .arg("rgb(0,0,0)")  // %8: disabled editable text
-                      .arg(eStr)); // %9: expression background color
+                      .arg(eStr) // %9: expression background color
+                      .arg(altStr)); // %10 = altered text color
     }
 }
 

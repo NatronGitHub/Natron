@@ -185,6 +185,12 @@ public:
     {
         Q_EMIT keyFrameInterpolationChanged(time,dimension);
     }
+    
+    void s_hasModificationsChanged()
+    {
+        Q_EMIT hasModificationsChanged();
+    }
+    
 public Q_SLOTS:
 
     /**
@@ -278,6 +284,8 @@ Q_SIGNALS:
     void helpChanged();
     
     void expressionChanged(int dimension);
+    
+    void hasModificationsChanged();
 };
 
 struct KnobChange
@@ -356,6 +364,7 @@ public:
      **/
     virtual bool hasModifications() const = 0;
     virtual bool hasModifications(int dimension) const = 0;
+    virtual void computeHasModifications() = 0;
 
     /**
      * @brief If the parameter is multidimensional, this is the label thats the that will be displayed
@@ -881,8 +890,12 @@ public:
     virtual void removeListener(KnobI* knob) = 0;
 
     virtual bool useNativeOverlayHandle() const { return false; }
+
+    
 protected:
 
+    virtual bool setHasModifications(int dimension,bool value,bool lock) = 0;
+    
     /**
      * @brief Slaves the value for the given dimension to the curve
      * at the same dimension for the knob 'other'.
@@ -1143,12 +1156,19 @@ public:
     virtual std::string getDimensionName(int dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setDimensionName(int dim,const std::string & name) OVERRIDE FINAL;
     
+    virtual bool hasModifications() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool hasModifications(int dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
 private:
+    
 
     virtual bool slaveTo(int dimension,const boost::shared_ptr<KnobI> &  other,int otherDimension,Natron::ValueChangedReasonEnum reason
                          ,bool ignoreMasterPersistence) OVERRIDE FINAL WARN_UNUSED_RETURN;
 
 protected:
+    
+    virtual bool setHasModifications(int dimension,bool value,bool lock) OVERRIDE FINAL;
+
 
     /**
      * @brief Protected so the implementation of unSlave can actually use this to reset the master pointer
@@ -1312,9 +1332,8 @@ public:
     virtual ~Knob();
 
     
-    virtual bool hasModifications() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool hasModifications(int dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-
+    
+    virtual void computeHasModifications() OVERRIDE FINAL;
 
     /**
      * @brief Get the current value of the knob for the given dimension.

@@ -148,6 +148,7 @@ private:
     virtual void reflectAnimationLevel(int dimension,Natron::AnimationLevelEnum level) OVERRIDE FINAL;
     virtual void reflectExpressionState(int dimension,bool hasExpr) OVERRIDE FINAL;
     virtual void updateToolTip() OVERRIDE FINAL;
+    virtual void reflectModificationsState() OVERRIDE FINAL;
 
 private:
     std::vector<std::pair<SpinBox *, Natron::Label *> > _spinBoxes;
@@ -270,7 +271,7 @@ private:
     virtual void reflectAnimationLevel(int dimension,Natron::AnimationLevelEnum level) OVERRIDE FINAL;
     virtual void reflectExpressionState(int dimension,bool hasExpr) OVERRIDE FINAL;
     virtual void updateToolTip() OVERRIDE FINAL;
-    
+    virtual void reflectModificationsState() OVERRIDE FINAL;
 private:
     std::vector<std::pair<SpinBox *, Natron::Label *> > _spinBoxes;
     QWidget *_container;
@@ -371,6 +372,7 @@ private:
     virtual void reflectAnimationLevel(int dimension,Natron::AnimationLevelEnum level) OVERRIDE FINAL;
     virtual void reflectExpressionState(int dimension,bool hasExpr) OVERRIDE FINAL;
     virtual void updateToolTip() OVERRIDE FINAL;
+    virtual void reflectModificationsState() OVERRIDE FINAL;
     
     std::vector<std::string> _entries;
     ComboBox *_comboBox;
@@ -537,6 +539,7 @@ private:
     virtual void reflectAnimationLevel(int dimension,Natron::AnimationLevelEnum level) OVERRIDE FINAL;
     virtual void reflectExpressionState(int dimension,bool hasExpr) OVERRIDE FINAL;
     virtual void updateToolTip() OVERRIDE FINAL;
+    virtual void reflectModificationsState() OVERRIDE FINAL;
     
     void updateLabel(double r, double g, double b, double a);
 
@@ -694,6 +697,7 @@ private:
     virtual void setReadOnly(bool readOnly,int dimension) OVERRIDE FINAL;
     virtual void reflectExpressionState(int dimension,bool hasExpr) OVERRIDE FINAL;
     virtual void updateToolTip() OVERRIDE FINAL;
+    virtual void reflectModificationsState() OVERRIDE FINAL;
     
     void mergeFormat(const QTextCharFormat & fmt);
 
