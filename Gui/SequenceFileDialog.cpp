@@ -1191,7 +1191,6 @@ SequenceItemDelegate::paint(QPainter * painter,
         if (isDir) {
             //change the font to bold
             f.setBold(true);
-            f.setPointSize(f.pointSize() + 1);
         } else {
             f.setBold(false);
         }

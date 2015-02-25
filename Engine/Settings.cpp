@@ -1521,7 +1521,7 @@ Settings::onKnobValueChanged(KnobI* k,
         appPTR->onCheckerboardSettingsChanged();
     } else if ( k == _fontChoice.get() ) {
         int index = _fontChoice->getValue();
-        _systemFontChoice->setSecret(index != 2);
+        _systemFontChoice->setSecret(index != 1);
         if (appPTR->getTopLevelInstance() && !_hasWarnedOnceOnFontChanged) {
             Natron::warningDialog(QObject::tr("Font change").toStdString(),
                                   QObject::tr("Changing the font requires a restart of " NATRON_APPLICATION_NAME).toStdString());
