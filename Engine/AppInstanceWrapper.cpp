@@ -151,7 +151,7 @@ AppSettings::getParams() const
 void
 AppSettings::saveSettings()
 {
-    _settings->saveSettings();
+    _settings->saveAllSettings();
 }
 
 void AppSettings::restoreDefaultSettings()
