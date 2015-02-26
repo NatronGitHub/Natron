@@ -292,7 +292,7 @@ Settings::initializeKnobs()
     //////////////APPEARANCE TAB/////////////////
     _appearanceTab = Natron::createKnob<Page_Knob>(this, "Appearance");
     
-    _systemFontChoice = Natron::createKnob<Choice_Knob>(this, "System font");
+    _systemFontChoice = Natron::createKnob<Choice_Knob>(this, "Font");
     _systemFontChoice->setHintToolTip("List of all fonts available on your system");
     _systemFontChoice->setName("systemFont");
     _systemFontChoice->setAddNewLine(false);
