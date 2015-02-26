@@ -19,6 +19,7 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QApplication>
 #include <QListView>
 #include <QDesktopWidget>
+#include <QRegExp>
 #include <QApplication>
 #include <QStringListModel>
 CLANG_DIAG_ON(deprecated)
@@ -87,8 +88,16 @@ CompleterLineEdit::filterText(const QString & txt)
     if ( txt.isEmpty() ) {
         sl = _imp->words;
     } else {
+        
+        QString pattern;
+        for (int i = 0; i < txt.size(); ++i) {
+            pattern.push_back('*');
+            pattern.push_back(txt[i]);
+        }
+        pattern.push_back('*');
+        QRegExp expr(pattern,Qt::CaseInsensitive,QRegExp::WildcardUnix);
         for (int i = 0; i < _imp->ids.size(); ++i) {
-            if ( _imp->ids[i].contains(txt,Qt::CaseInsensitive) ) {
+            if ( _imp->ids[i].contains(expr) ) {
                 sl << _imp->words[i];
             }
         }
