@@ -568,7 +568,7 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
             isCached = false;
             outArgs->params->cachedFrame.reset();
         }
-        
+
         if (isCached) {
             assert(outArgs->params->cachedFrame);
             cachedFrameParams = outArgs->params->cachedFrame->getParams();
@@ -650,7 +650,7 @@ ViewerInstance::renderViewer_internal(int view,
                                       bool isSequentialRender,
                                       U64 viewerHash,
                                       bool canAbort,
-                                      const ViewerArgs& inArgs)
+                                      ViewerArgs& inArgs)
 {
     assert(!inArgs.params->ramBuffer);
     
@@ -720,8 +720,8 @@ ViewerInstance::renderViewer_internal(int view,
             //entryLocker.lock(inArgs.params->cachedFrame);
             if (!entryLocker.tryLock(inArgs.params->cachedFrame)) {
                 ///Another thread is rendering it, just return it is not useful to keep this thread waiting.
-                inArgs.params->cachedFrame.reset();
-                return eStatusOK;
+                inArgs.params.reset();
+                return eStatusReplyDefault;
             }
         } else {
             ///The entry has already been locked by the cache

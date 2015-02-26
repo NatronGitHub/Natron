@@ -2458,6 +2458,8 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
     } else {
         if (!_imp->lastRenderedImage[textureIndex][mipMapLevel]) {
             Q_EMIT imageChanged(textureIndex,false);
+        } else {
+            Q_EMIT imageChanged(textureIndex,true);
         }
     }
     setRegionOfDefinition(rod,region.par,textureIndex);
