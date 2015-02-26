@@ -42,6 +42,7 @@
 #include "Global/MemoryInfo.h"
 #include "Engine/ViewerInstance.h"
 #include "Engine/OfxOverlayInteract.h"
+#include "Engine/Project.h"
 
 using namespace Natron;
 
@@ -299,8 +300,8 @@ OfxImageEffectInstance::getRenderScaleRecursive(double &x,
 OfxStatus
 OfxImageEffectInstance::getViewCount(int *nViews) const
 {
-#pragma message WARN("TODO")
-    return kOfxStatFailed;
+    *nViews = getOfxEffectInstance()->getApp()->getProject()->getProjectViewsCount();
+    return kOfxStatOK;
 }
 
 OfxStatus
@@ -995,6 +996,24 @@ OfxImageEffectInstance::getClipPreferences_safe(std::map<OfxClipInstance*, ClipP
 #       ifdef OFX_DEBUG_ACTIONS
     std::cout << _outputFrameRate<<","<<_outputFielding<<","<<_outputPreMultiplication<<","<<_continuousSamples<<","<<_frameVarying<<std::endl;
 #       endif
+    
+    
+    ////With the multi-plane suite, we also need to setup extra components with getClipComponents
+    
+    /*int nViews;
+    getViewCount(&nViews);
+    int time = getOfxEffectInstance()->getCurrentTime();
+    OFX::Host::ImageEffect::ComponentsMap compMap;
+    for (int view = 0; view < nViews; ++view) {
+        OfxTime passThroughTime;
+        int passThroughView;
+        OFX::Host::ImageEffect::ClipInstance* passThroughClip;
+        OfxStatus stat = getClipComponentsAction(time, view, compMap, passThroughClip, passThroughTime, passThroughView);
+        if (stat != kOfxStatFailed) {
+            
+        }
+    }*/
+    
     
     _clipPrefsDirty  = false;
     

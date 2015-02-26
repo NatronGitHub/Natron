@@ -52,6 +52,7 @@ OfxClipInstance::OfxClipInstance(OfxEffectInstance* nodeInstance
       , _effect(effect)
       , _aspectRatio(1.)
       , _lastActionData()
+      , _componentsPresent()
 {
     assert(_nodeInstance);
     assert(_effect);
@@ -218,6 +219,44 @@ OfxClipInstance::getPremult() const
     return opaqueStr;
 }
 
+std::vector<Natron::ImageComponentsEnum>
+OfxClipInstance::getComponentsPresents(int view)
+{
+    std::vector<Natron::ImageComponentsEnum> ret;
+    ComponentsPresentMap::iterator foundView = _componentsPresent.find(view);
+    assert(foundView != _componentsPresent.end());
+    for (U32 i = 0; i < foundView->second.first.size(); ++i) {
+        ret.push_back(foundView->second.first[i].comp);
+    }
+    return ret;
+}
+
+std::vector<Natron::ImageComponentsEnum>
+OfxClipInstance::getUnmappedComponentsPresents(int view)
+{
+    EffectInstance* effect =  getAssociatedNode() ;
+    
+    ///The clip might be identity and we want the data of the node that will be upstream not of the identity one
+    if (!isOutput() && effect) {
+        effect = effect->getNearestNonIdentity(_nodeInstance->getApp()->getTimeLine()->currentFrame());
+    }
+    
+    std::vector<Natron::ImageComponentsEnum> ret;
+    if (effect) {
+        effect->getComponentsPresent(-1, view, &ret);
+        return ret;
+    }
+    
+    ///Input is not connected
+    ComponentsPresentMap::iterator foundView = _componentsPresent.find(view);
+    assert(foundView != _componentsPresent.end());
+    for (U32 i = 0; i < foundView->second.first.size(); ++i) {
+        ret.push_back(foundView->second.first[i].comp);
+    }
+    return ret;
+}
+                                                                
+
 // Pixel Aspect Ratio -
 //
 //  The pixel aspect ratio of a clip or image.
@@ -356,13 +395,85 @@ OfxClipInstance::getContinuousSamples() const
     return false;
 }
 
+void
+OfxClipInstance::getRegionOfDefinitionInternal(OfxTime time,int view, unsigned int mipmapLevel,Natron::EffectInstance* associatedNode,
+                                               OfxRectD* ret) const
+{
+    
+    if ( (getName() == "Roto") && _nodeInstance->getNode()->isRotoNode() ) {
+        boost::shared_ptr<RotoContext> rotoCtx =  _nodeInstance->getNode()->getRotoContext();
+        assert(rotoCtx);
+        RectD rod;
+        rotoCtx->getMaskRegionOfDefinition(time, view, &rod);
+        ret->x1 = rod.x1;
+        ret->x2 = rod.x2;
+        ret->y1 = rod.y1;
+        ret->y2 = rod.y2;
+        return;
+    }
+    
+    
+    if (associatedNode) {
+        bool isProjectFormat;
+        
+        U64 nodeHash = associatedNode->getRenderHash();
+        RectD rod;
+        RenderScale scale;
+        scale.x = scale.y = Natron::Image::getScaleFromMipMapLevel(mipmapLevel);
+        Natron::StatusEnum st = associatedNode->getRegionOfDefinition_public(nodeHash,time, scale, view, &rod, &isProjectFormat);
+        if (st == eStatusFailed) {
+            ret->x1 = 0.;
+            ret->x2 = 0.;
+            ret->y1 = 0.;
+            ret->y2 = 0.;
+        } else {
+            ret->x1 = rod.left();
+            ret->x2 = rod.right();
+            ret->y1 = rod.bottom();
+            ret->y2 = rod.top();
+        }
+        
+    } else {
+        ret->x1 = 0.;
+        ret->x2 = 0.;
+        ret->y1 = 0.;
+        ret->y2 = 0.;
+    }
+
+}
+
 OfxRectD
 OfxClipInstance::getRegionOfDefinition(OfxTime time, int view) const
 {
-#pragma message WARN("TODO")
-    OfxRectD d;
-    d.x1 = d.x2 = d.y1 = d.y2 = 0.;
-    return d;
+    OfxRectD rod;
+    unsigned int mipmapLevel;
+    Natron::EffectInstance* associatedNode = getAssociatedNode();
+    
+    /// The node might be disabled, hence we navigate upstream to find the first non disabled node.
+    if (associatedNode) {
+        associatedNode = associatedNode->getNearestNonDisabled();
+    }
+    ///We don't have to do the same kind of navigation if the effect is identity because the effect is supposed to have
+    ///the same RoD as the input if it is identity.
+    
+    if (!associatedNode) {
+        ///Doesn't matter, input is not connected
+        mipmapLevel = 0;
+    } else {
+        if (_lastActionData.hasLocalData()) {
+            const ActionLocalData& args = _lastActionData.localData();
+            if (args.isMipmapLevelValid) {
+                mipmapLevel = args.mipMapLevel;
+            } else {
+                mipmapLevel = 0;
+            }
+        } else {
+            mipmapLevel = 0;
+        }
+        
+    }
+    getRegionOfDefinitionInternal(time, view, mipmapLevel, associatedNode, &rod);
+    return rod;
 }
 
 
@@ -371,7 +482,6 @@ OfxRectD
 OfxClipInstance::getRegionOfDefinition(OfxTime time) const
 {
     OfxRectD ret;
-    RectD rod; // rod is in canonical coordinates
     unsigned int mipmapLevel;
     int view;
     Natron::EffectInstance* associatedNode = getAssociatedNode();
@@ -406,49 +516,7 @@ OfxClipInstance::getRegionOfDefinition(OfxTime time) const
         }
         
     }
-
-
-    if ( (getName() == "Roto") && _nodeInstance->getNode()->isRotoNode() ) {
-        boost::shared_ptr<RotoContext> rotoCtx =  _nodeInstance->getNode()->getRotoContext();
-        assert(rotoCtx);
-        RectD rod;
-        rotoCtx->getMaskRegionOfDefinition(time, view, &rod);
-        ret.x1 = rod.x1;
-        ret.x2 = rod.x2;
-        ret.y1 = rod.y1;
-        ret.y2 = rod.y2;
-
-        return ret;
-    }
-
-
-    if (associatedNode) {
-        bool isProjectFormat;
-
-        U64 nodeHash = associatedNode->getRenderHash();
-        
-        RenderScale scale;
-        scale.x = scale.y = Natron::Image::getScaleFromMipMapLevel(mipmapLevel);
-        Natron::StatusEnum st = associatedNode->getRegionOfDefinition_public(nodeHash,time, scale, view, &rod, &isProjectFormat);
-        if (st == eStatusFailed) {
-            ret.x1 = 0.;
-            ret.x2 = 0.;
-            ret.y1 = 0.;
-            ret.y2 = 0.;
-        } else {
-            ret.x1 = rod.left();
-            ret.x2 = rod.right();
-            ret.y1 = rod.bottom();
-            ret.y2 = rod.top();
-        }
-        
-    } else {
-        ret.x1 = 0.;
-        ret.x2 = 0.;
-        ret.y1 = 0.;
-        ret.y2 = 0.;
-    }
-
+    getRegionOfDefinitionInternal(time, view, mipmapLevel, associatedNode, &ret);
     return ret;
 } // getRegionOfDefinition
 
@@ -664,25 +732,26 @@ std::string
 OfxClipInstance::natronsComponentsToOfxComponents(Natron::ImageComponentsEnum comp)
 {
     switch (comp) {
-    case Natron::eImageComponentNone:
-
-        return kOfxImageComponentNone;
-        break;
-    case Natron::eImageComponentAlpha:
-
-        return kOfxImageComponentAlpha;
-        break;
-    case Natron::eImageComponentRGB:
-
-        return kOfxImageComponentRGB;
-        break;
-    case Natron::eImageComponentRGBA:
-
-        return kOfxImageComponentRGBA;
-        break;
-    default:
-        assert(false);    //comp unsupported
-        break;
+        case Natron::eImageComponentNone:
+            return kOfxImageComponentNone;
+            
+        case Natron::eImageComponentAlpha:
+            return kOfxImageComponentAlpha;
+            
+        case Natron::eImageComponentRGB:
+            return kOfxImageComponentRGB;
+            
+        case Natron::eImageComponentRGBA:
+            return kOfxImageComponentRGBA;
+            
+        case Natron::eImageComponentsMotionVectors:
+            return kFnOfxImageComponentMotionVectors;
+            
+        case Natron::eImageComponentsStereoDisparity:
+            return kFnOfxImageComponentStereoDisparity;
+        default:
+            assert(false);    //comp unsupported
+            break;
     }
 }
 
@@ -697,6 +766,10 @@ OfxClipInstance::ofxComponentsToNatronComponents(const std::string & comp)
         return Natron::eImageComponentRGB;
     } else if (comp == kOfxImageComponentNone) {
         return Natron::eImageComponentNone;
+    } else if (comp == kFnOfxImageComponentMotionVectors) {
+        return Natron::eImageComponentsMotionVectors;
+    } else if (comp == kFnOfxImageComponentStereoDisparity) {
+        return Natron::eImageComponentsStereoDisparity;
     } else {
         throw std::runtime_error(comp + ": unsupported component "); //< comp unsupported
     }
@@ -975,3 +1048,27 @@ OfxClipInstance::findSupportedComp(const std::string &s) const
     return none;
 
 }
+
+
+const std::vector<std::string>&
+OfxClipInstance::getComponentsPresent() const
+{
+    int view = 0;
+    
+    if (_lastActionData.hasLocalData()) {
+        const ActionLocalData& args = _lastActionData.localData();
+        if (args.isViewValid) {
+            view = args.view;
+        } else {
+            view = 0;
+        }
+    } else {
+        view = 0;
+    }
+    
+    ComponentsPresentMap::const_iterator foundView = _componentsPresent.find(view);
+    assert(foundView != _componentsPresent.end());
+    return foundView->second.second;
+}
+
+

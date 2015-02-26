@@ -427,6 +427,11 @@ public:
     virtual void getPreferredDepthAndComponents(int inputNb,Natron::ImageComponentsEnum* comp,Natron::ImageBitDepthEnum* depth) const;
 
     /**
+     * @brief With  the support of the multi-plane suite, a plug-in can have several components present on different planes
+     **/
+    virtual void getComponentsPresent(int inputNb, int view, std::vector<Natron::ImageComponentsEnum>* comps) const;
+
+    /**
      * @brief Override to get the preffered premultiplication flag for the output image
      **/
     virtual Natron::ImagePremultiplicationEnum getOutputPremultiplication() const

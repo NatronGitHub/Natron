@@ -318,7 +318,9 @@ enum ImageComponentsEnum
     eImageComponentNone = 0,
     eImageComponentAlpha,
     eImageComponentRGB,
-    eImageComponentRGBA
+    eImageComponentRGBA,
+    eImageComponentsMotionVectors,
+    eImageComponentsStereoDisparity
 };
 
 enum ImagePremultiplicationEnum

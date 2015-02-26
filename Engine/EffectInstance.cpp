@@ -4171,6 +4171,31 @@ EffectInstance::getPreferredDepthAndComponents(int inputNb,
     *depth = getBitDepth();
 }
 
+void
+EffectInstance::getComponentsPresent(int inputNb, int view, std::vector<Natron::ImageComponentsEnum>* comps) const
+{
+    EffectInstance* inp = 0;
+    if (inputNb != -1) {
+        inp = getInput(inputNb);
+        if (inp) {
+            inp->getComponentsPresent(-1, view, comps);
+        }
+    } else {
+        for (int i = 0; i < getMaxInputCount(); ++i) {
+            EffectInstance* input = getInput(i);
+            if (input) {
+                input->getComponentsPresent(-1, view, comps);
+                break;
+            }
+        }
+        
+        for (std::vector<Natron::ImageComponentsEnum>::iterator it = comps->begin(); it != comps->end(); ++it) {
+            *it = findClosestSupportedComponents(inputNb, *it);
+        }
+    }
+    
+}
+
 int
 EffectInstance::getMaskChannel(int inputNb) const
 {

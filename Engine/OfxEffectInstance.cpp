@@ -2697,6 +2697,31 @@ OfxEffectInstance::getPreferredDepthAndComponents(int inputNb,
     }
 }
 
+void
+OfxEffectInstance::getComponentsPresent(int inputNb, int view, std::vector<Natron::ImageComponentsEnum>* comps) const
+{
+    OfxClipInstance* clip;
+    
+    if (inputNb == -1) {
+        clip = dynamic_cast<OfxClipInstance*>( _effect->getClip(kOfxImageEffectOutputClipName) );
+    } else {
+        clip = getClipCorrespondingToInput(inputNb);
+    }
+    assert(clip);
+    
+#pragma message WARN("We need to properly handle custom components here when we will implement deep data")
+    if (getRecursionLevel() > 0) {
+        const std::vector<std::string>& compsPresents = clip->getComponentsPresent();
+        for (std::vector<std::string>::const_iterator it = compsPresents.begin(); it != compsPresents.end(); ++it) {
+            comps->push_back(OfxClipInstance::ofxComponentsToNatronComponents(*it));
+        }
+    } else {
+        ///Take the preferences lock to be sure we're not writing them
+        QReadLocker l(_preferencesLock);
+        *comps = clip->getComponentsPresents(view);
+    }
+}
+
 Natron::SequentialPreferenceEnum
 OfxEffectInstance::getSequentialPreference() const
 {

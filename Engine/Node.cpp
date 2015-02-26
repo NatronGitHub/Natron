@@ -3859,12 +3859,19 @@ Node::findClosestSupportedComponents(int inputNb,
         }
         std::list<Natron::ImageComponentsEnum>::const_iterator closestComp = comps.end();
         for (std::list<Natron::ImageComponentsEnum>::const_iterator it = comps.begin(); it != comps.end(); ++it) {
-            if ( closestComp == comps.end() ) {
-                closestComp = it;
+            
+            if (comp == Natron::eImageComponentsMotionVectors || comp == Natron::eImageComponentsStereoDisparity) {
+                if (*it == comp) {
+                    return comp;
+                }
             } else {
-                if ( std::abs(getElementsCountForComponents(*it) - compCount) <
-                    std::abs(getElementsCountForComponents(*closestComp) - compCount) ) {
+                if ( closestComp == comps.end() ) {
                     closestComp = it;
+                } else {
+                    if ( std::abs(getElementsCountForComponents(*it) - compCount) <
+                        std::abs(getElementsCountForComponents(*closestComp) - compCount) ) {
+                        closestComp = it;
+                    }
                 }
             }
         }
@@ -3879,12 +3886,19 @@ Node::findClosestSupportedComponents(int inputNb,
         }
         std::list<Natron::ImageComponentsEnum>::const_iterator closestComp = comps.end();
         for (std::list<Natron::ImageComponentsEnum>::const_iterator it = comps.begin(); it != comps.end(); ++it) {
-            if ( closestComp == comps.end() ) {
-                closestComp = it;
+            
+            if (comp == Natron::eImageComponentsMotionVectors || comp == Natron::eImageComponentsStereoDisparity) {
+                if (*it == comp) {
+                    return comp;
+                }
             } else {
-                if ( std::abs(getElementsCountForComponents(*it) - compCount) <
-                    std::abs(getElementsCountForComponents(*closestComp) - compCount) ) {
+                if ( closestComp == comps.end() ) {
                     closestComp = it;
+                } else {
+                    if ( std::abs(getElementsCountForComponents(*it) - compCount) <
+                        std::abs(getElementsCountForComponents(*closestComp) - compCount) ) {
+                        closestComp = it;
+                    }
                 }
             }
         }
@@ -4919,6 +4933,10 @@ Node::restoreClipPreferencesRecursive(std::list<Natron::Node*>& markedNodes)
         return;
     }
 
+    /*
+     * Always call getClipPreferences on the inputs first since the preference of this node may 
+     * depend on the inputs.
+     */
     
     for (int i = 0; i < getMaxInputCount(); ++i) {
         NodePtr input = getInput(i);
@@ -4927,7 +4945,12 @@ Node::restoreClipPreferencesRecursive(std::list<Natron::Node*>& markedNodes)
         }
     }
     
+    /*
+     * And now call getClipPreferences on ourselves
+     */
+    
     _imp->liveInstance->restoreClipPreferences();
+    
     markedNodes.push_back(this);
     
 }

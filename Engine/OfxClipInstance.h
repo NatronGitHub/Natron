@@ -24,6 +24,7 @@ CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_ON(deprecated)
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
+#include <boost/weak_ptr.hpp>
 #endif
 //ofx
 #include <ofxhImageEffect.h>
@@ -131,6 +132,19 @@ public:
     //  0 if the images can only be sampled at discreet times (eg: the clip is a sequence of frames),
     //  1 if the images can only be sampled continuously (eg: the clip is infact an animating roto spline and can be rendered anywhen).
     virtual bool getContinuousSamples() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
+    /// Returns the components present on the effect. Much like getComponents() it can also
+    /// return components from other planes.
+    /// Returns a vector since the function getStringPropertyN does not exist. Only getStringProperty
+    /// with an index exists.
+    virtual const std::vector<std::string>& getComponentsPresent() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
+    
+    std::vector<Natron::ImageComponentsEnum> getComponentsPresents(int view);
+    
+    /// This is to be called while in getClipPreferences_safe, otherwise getComponentsPresent
+    /// is to be called
+    std::vector<Natron::ImageComponentsEnum> getUnmappedComponentsPresents(int view);
 
     /// override this to fill in the image at the given time.
     /// The bounds of the image on the image plane should be
@@ -197,6 +211,9 @@ public:
     
 private:
 
+    void getRegionOfDefinitionInternal(OfxTime time,int view, unsigned int mipmapLevel,Natron::EffectInstance* associatedNode,
+                                       OfxRectD* rod) const;
+    
     OFX::Host::ImageEffect::Image* getImageInternal(OfxTime time,const OfxPointD & renderScale, int view, const OfxRectD *optionalBounds,
                                                     bool usingReroute,
                                                     int rerouteInputNb,
@@ -239,6 +256,21 @@ private:
     };
 
     Natron::ThreadStorage<ActionLocalData> _lastActionData; //< foreach  thread, the args
+    
+    
+    struct CompPresent
+    {
+        ///The component in question
+        Natron::ImageComponentsEnum comp;
+        
+        ///For input clips, the node from which to fetch the components, otherwise NULL for output clips
+        boost::weak_ptr<Natron::Node> node;
+    };
+    
+    /// map <view, vector< pair< component, ofxcomponent> > >
+    typedef std::map<int,std::pair<std::vector<CompPresent>,std::vector<std::string> > > ComponentsPresentMap;
+    ComponentsPresentMap _componentsPresent;
+    
 };
 
 class OfxImage
