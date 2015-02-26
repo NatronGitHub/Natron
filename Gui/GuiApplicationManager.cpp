@@ -910,7 +910,7 @@ GuiApplicationManager::initGui()
 
     if (settings.contains("font")) {
         QString fontChoiceEntry = settings.value("font").toString();
-
+#pragma message WARN("FIXME: obsolete code")
         if (fontChoiceEntry == "System fonts...") {
 
             if (settings.contains("systemFont")) {
@@ -963,7 +963,7 @@ GuiApplicationManager::initGui()
     qApp->setWindowIcon(appIc);
     
     QFontDatabase db;
-    QStringList families = db.families();
+    QStringList families = db.families(QFontDatabase::Latin); // We need a Latin font for the UI
     std::vector<std::string> systemFonts(families.size());
     for (int i = 0; i < families.size(); ++i) {
         systemFonts[i] = families[i].toStdString();
