@@ -690,20 +690,6 @@ Choice_Knob::getHintToolTipFull() const
 }
 
 void
-Choice_Knob::deepCloneExtraData(KnobI* other)
-{
-    Choice_Knob* isChoice = dynamic_cast<Choice_Knob*>(other);
-    if (!isChoice) {
-        return;
-    }
-    
-    
-    QMutexLocker l(&_entriesMutex);
-    _entries = isChoice->getEntries_mt_safe();
-    _entriesHelp = isChoice->getEntriesHelp_mt_safe();
-}
-
-void
 Choice_Knob::choiceRestoration(Choice_Knob* knob,const ChoiceExtraData* data)
 {
     assert(knob && data);

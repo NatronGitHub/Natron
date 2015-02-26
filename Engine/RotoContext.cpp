@@ -1238,7 +1238,7 @@ serializeRotoKnob(const boost::shared_ptr<KnobI> & knob,
         knob->unSlave(0,false);
     }
 
-    serialization->initialize(knob,false);
+    serialization->initialize(knob);
 
     if (wasSlaved) {
         knob->slaveTo(0, master.second, master.first);

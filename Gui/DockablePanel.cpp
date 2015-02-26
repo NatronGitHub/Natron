@@ -3700,6 +3700,39 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,const boost::shared_ptr<KnobI>
         defValLayout->addStretch();
         
         _imp->mainLayout->addRow(_imp->defaultValueLabel, defValContainer);
+        
+        
+        Knob<double>* isDbl = dynamic_cast<Knob<double>*>(knob.get());
+        Knob<int>* isInt = dynamic_cast<Knob<int>*>(knob.get());
+        Bool_Knob* isBool = dynamic_cast<Bool_Knob*>(knob.get());
+        Knob<std::string>* isStr = dynamic_cast<Knob<std::string>*>(knob.get());
+        
+        if (isDbl) {
+            _imp->default0->setValue(isDbl->getDefaultValue(0));
+            if (isDbl->getDimension() >= 2) {
+                _imp->default1->setValue(isDbl->getDefaultValue(1));
+            }
+            if (isDbl->getDimension() >= 3) {
+                _imp->default2->setValue(isDbl->getDefaultValue(2));
+            }
+            if (isDbl->getDimension() >= 4) {
+                _imp->default3->setValue(isDbl->getDefaultValue(3));
+            }
+        } else if (isInt) {
+            _imp->default0->setValue(isInt->getDefaultValue(0));
+            if (isInt->getDimension() >= 2) {
+                _imp->default1->setValue(isInt->getDefaultValue(1));
+            }
+            if (isInt->getDimension() >= 3) {
+                _imp->default2->setValue(isInt->getDefaultValue(2));
+            }
+
+        } else if (isBool) {
+            _imp->defaultBool->setChecked(isBool->getDefaultValue(0));
+        } else if (isStr) {
+            _imp->defaultStr->setText(isStr->getDefaultValue(0).c_str());
+        }
+        
     }
     
     
@@ -3816,7 +3849,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,const boost::shared_ptr<KnobI>
     _imp->panel->setUserPageActiveIndex();
     
     if (knob) {
-        _imp->originalKnobSerialization.reset(new KnobSerialization(knob, false));
+        _imp->originalKnobSerialization.reset(new KnobSerialization(knob));
     }
 }
 
