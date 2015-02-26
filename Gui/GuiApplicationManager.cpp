@@ -907,19 +907,16 @@ GuiApplicationManager::initGui()
     }
     QString fontFamily(NATRON_FONT);
     int fontSize = NATRON_FONT_SIZE_11;
-
-    if (settings.contains("font")) {
-        QString fontChoiceEntry = settings.value("font").toString();
-#pragma message WARN("FIXME: obsolete code")
-        if (fontChoiceEntry == "System fonts...") {
-
-            if (settings.contains("systemFont")) {
-                fontFamily = settings.value("systemFont").toString();
-            }
-        } else {
-            fontFamily = fontChoiceEntry;
+    
+    
+    ///Do not load old font stored in the setting "systemFont" on Natron < 2 because it might contain a crappy font.
+    if (settings.contains("SoftwareVersion") && settings.value("SoftwareVersion").toInt() >= 2) {
+        if (settings.contains("systemFont")) {
+            fontFamily = settings.value("systemFont").toString();
         }
     }
+    
+    
     if (settings.contains("fontSize")) {
         fontSize = settings.value("fontSize").toInt();
     }

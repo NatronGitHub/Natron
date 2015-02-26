@@ -1257,6 +1257,7 @@ Settings::saveSettings(const std::vector<KnobI*>& knobs,bool doWarnings)
     std::vector<KnobI*> changedKnobs;
     
     QSettings settings(NATRON_ORGANIZATION_NAME,NATRON_APPLICATION_NAME);
+    settings.setValue("SoftwareVersionMajor", NATRON_VERSION_MAJOR);
     for (U32 i = 0; i < knobs.size(); ++i) {
         Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>(knobs[i]);
         Knob<int>* isInt = dynamic_cast<Knob<int>*>(knobs[i]);
