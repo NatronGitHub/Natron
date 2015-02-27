@@ -1124,6 +1124,17 @@ DockablePanelPrivate::createKnobGui(const boost::shared_ptr<KnobI> &knob)
 boost::shared_ptr<Page_Knob>
 DockablePanelPrivate::ensureDefaultPageKnobCreated()
 {
+    const std::vector< boost::shared_ptr<KnobI> > & knobs = _holder->getKnobs();
+    ///find in all knobs a page param to set this param into
+    for (U32 i = 0; i < knobs.size(); ++i) {
+        boost::shared_ptr<Page_Knob> p = boost::dynamic_pointer_cast<Page_Knob>(knobs[i]);
+        if ( p && (p->getDescription() != NATRON_PARAMETER_PAGE_NAME_INFO) && (p->getDescription() != NATRON_PARAMETER_PAGE_NAME_EXTRA) ) {
+            addPage(p.get(),  p->getDescription().c_str() );
+            return p;
+        }
+    }
+
+    
     boost::shared_ptr<KnobI> knob = _holder->getKnobByName(_defaultPageName.toStdString());
     boost::shared_ptr<Page_Knob> pk;
     if (!knob) {
@@ -1317,29 +1328,9 @@ DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI> & knob,
 
             ////find in which page the knob should be
             Page_Knob* isTopLevelParentAPage = dynamic_cast<Page_Knob*>(parentKnobTmp);
-            PageMap::iterator page = _pages.end();
+            assert(isTopLevelParentAPage);
             
-            if (isTopLevelParentAPage) {
-                page = addPage(isTopLevelParentAPage, isTopLevelParentAPage->getDescription().c_str() );
-            } else {
-                
-                ///the parent cannot be a group and not have a page at this point since we ensured the parent group
-                ///is created so far.
-                assert(!dynamic_cast<Group_Knob*>(parentKnobTmp));
-                
-                ///the top level parent is not a page
-                if (knob->isUserKnob()) {
-                    ///Use the user page as default for user knobs
-                    boost::shared_ptr<Page_Knob> userPage = _holder->getOrCreateUserPageKnob();
-                    page = addPage(userPage.get(), userPage->getDescription().c_str());
-                    userPage->addKnob(knob);
-                
-                } else {
-                    page = getDefaultPage(knob);
-                }
-                
-            } // if (isTopLevelParentAPage) {
-
+            PageMap::iterator page = addPage(isTopLevelParentAPage, isTopLevelParentAPage->getDescription().c_str());
             assert( page != _pages.end() );
 
             ///retrieve the form layout
