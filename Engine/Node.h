@@ -352,8 +352,16 @@ public:
      * empty input if they are all optionals, or -1 if nothing matches the 2 first conditions..
      * if all inputs are connected.
      **/
-    virtual int getPreferredInputForConnection() ;
-
+    virtual int getPreferredInputForConnection()  const;
+    virtual int getPreferredInput() const;
+    
+private:
+    
+    int getPreferredInputInternal(bool connected) const;
+    
+public:
+    
+    
     /**
      * @brief Returns in 'outputs' a map of all nodes connected to this node
      * where the value of the map is the input index from which these outputs
@@ -1085,7 +1093,14 @@ public:
 
     virtual bool connectInput(const boost::shared_ptr<Node>& input,int inputNumber) OVERRIDE;
 
-    virtual int getPreferredInputForConnection()  OVERRIDE FINAL;
+    virtual int getPreferredInputForConnection() const OVERRIDE FINAL;
+    virtual int getPreferredInput() const OVERRIDE FINAL;
+
+private:
+
+    int getPreferredInputInternal(bool connected) const;
+
+public:
 
     void setActiveInputAndRefresh(int inputNb);
 

@@ -254,14 +254,25 @@ public:
     virtual void addAcceptedComponents(int inputNb, std::list<Natron::ImageComponentsEnum>* comps) OVERRIDE FINAL;
     virtual void addSupportedBitDepth(std::list<Natron::ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
     virtual void getPreferredDepthAndComponents(int inputNb, Natron::ImageComponentsEnum* comp, Natron::ImageBitDepthEnum* depth) const OVERRIDE FINAL;
-    virtual void getComponentsPresent(int inputNb, int view, std::vector<Natron::ImageComponentsEnum>* comps) const OVERRIDE FINAL;
     virtual Natron::SequentialPreferenceEnum getSequentialPreference() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual Natron::ImagePremultiplicationEnum getOutputPremultiplication() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void checkOFXClipPreferences(double time,
                                      const RenderScale & scale,
                                      const std::string & reason,
                                          bool forceGetClipPrefAction) OVERRIDE FINAL;
+    
+    virtual void getComponentsNeededAndProduced(SequenceTime time, int view,
+                                                ComponentsNeededMap* comps,
+                                                SequenceTime* passThroughTime,
+                                                int* passThroughView,
+                                                boost::shared_ptr<Natron::Node>* passThroughInput) ;
 
+
+    virtual bool isMultiPlanar() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool isPassThroughForNonRenderedPlanes() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool isViewAware() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool isViewInvariant() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
 public:
 
     virtual double getPreferredAspectRatio() const OVERRIDE FINAL WARN_UNUSED_RETURN;

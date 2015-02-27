@@ -2698,28 +2698,82 @@ OfxEffectInstance::getPreferredDepthAndComponents(int inputNb,
 }
 
 void
-OfxEffectInstance::getComponentsPresent(int inputNb, int view, std::vector<Natron::ImageComponentsEnum>* comps) const
+OfxEffectInstance::getComponentsNeededAndProduced(SequenceTime time, int view,
+                                            ComponentsNeededMap* comps,
+                                            SequenceTime* passThroughTime,
+                                            int* passThroughView,
+                                            boost::shared_ptr<Natron::Node>* passThroughInput) 
 {
-    OfxClipInstance* clip;
-    
-    if (inputNb == -1) {
-        clip = dynamic_cast<OfxClipInstance*>( _effect->getClip(kOfxImageEffectOutputClipName) );
-    } else {
-        clip = getClipCorrespondingToInput(inputNb);
-    }
-    assert(clip);
-    
-#pragma message WARN("We need to properly handle custom components here when we will implement deep data")
-    if (getRecursionLevel() > 0) {
-        const std::vector<std::string>& compsPresents = clip->getComponentsPresent();
-        for (std::vector<std::string>::const_iterator it = compsPresents.begin(); it != compsPresents.end(); ++it) {
-            comps->push_back(OfxClipInstance::ofxComponentsToNatronComponents(*it));
+    OfxStatus stat ;
+    {
+        bool skipDiscarding = false;
+        if (getRecursionLevel() > 1) {
+            skipDiscarding = true;
         }
-    } else {
-        ///Take the preferences lock to be sure we're not writing them
-        QReadLocker l(_preferencesLock);
-        *comps = clip->getComponentsPresents(view);
-    }
+        
+        SET_CAN_SET_VALUE(false);
+        
+        
+        ClipsThreadStorageSetter clipSetter(effectInstance(),
+                                            skipDiscarding,
+                                            true, //< setView ?
+                                            view,
+                                            false,//< set mipmaplevel ?
+                                            0);
+        
+        
+        OFX::Host::ImageEffect::ComponentsMap compMap;
+        OFX::Host::ImageEffect::ClipInstance* ptClip = 0;
+        OfxTime ptTime;
+        stat = effectInstance()->getClipComponentsAction((OfxTime)time, view, compMap, ptClip, ptTime, *passThroughView);
+        if (stat != kOfxStatFailed) {
+            assert(ptClip);
+            OfxClipInstance* clip = dynamic_cast<OfxClipInstance*>(ptClip);
+            assert(clip);
+            *passThroughInput = clip->getAssociatedNode()->getNode();
+            *passThroughTime = (SequenceTime)ptTime;
+            
+            for (OFX::Host::ImageEffect::ComponentsMap::iterator it = compMap.begin(); it != compMap.end(); ++it) {
+                
+                OfxClipInstance* clip = dynamic_cast<OfxClipInstance*>(it->first);
+                assert(clip);
+                int index = clip->getInputNb();
+                
+                std::vector<Natron::ImageComponentsEnum> compNeeded;
+                for (std::list<std::string>::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
+                    compNeeded.push_back(OfxClipInstance::ofxComponentsToNatronComponents(*it2));
+                }
+                comps->insert(std::make_pair(index, compNeeded));
+            }
+        }
+        
+    } // ClipsThreadStorageSetter
+    
+
+}
+
+bool
+OfxEffectInstance::isMultiPlanar() const
+{
+    return effectInstance()->isMultiPlanar();
+}
+
+bool
+OfxEffectInstance::isPassThroughForNonRenderedPlanes() const
+{
+    return effectInstance()->isPassThroughForNonRenderedPlanes();
+}
+
+bool
+OfxEffectInstance::isViewAware() const
+{
+    return effectInstance()->isViewAware();
+}
+
+bool
+OfxEffectInstance::isViewInvariant() const
+{
+    return effectInstance()->isViewInvariant();
 }
 
 Natron::SequentialPreferenceEnum
@@ -2857,7 +2911,6 @@ OfxEffectInstance::getTransform(SequenceTime time,
         if (getRecursionLevel() > 1) {
             skipDiscarding = true;
         }
-        
         SET_CAN_SET_VALUE(false);
         
         

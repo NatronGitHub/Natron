@@ -1000,7 +1000,7 @@ OfxImageEffectInstance::getClipPreferences_safe(std::map<OfxClipInstance*, ClipP
     
     ////With the multi-plane suite, we also need to setup extra components with getClipComponents
     
-    /*int nViews;
+    int nViews;
     getViewCount(&nViews);
     int time = getOfxEffectInstance()->getCurrentTime();
     OFX::Host::ImageEffect::ComponentsMap compMap;
@@ -1010,9 +1010,11 @@ OfxImageEffectInstance::getClipPreferences_safe(std::map<OfxClipInstance*, ClipP
         OFX::Host::ImageEffect::ClipInstance* passThroughClip;
         OfxStatus stat = getClipComponentsAction(time, view, compMap, passThroughClip, passThroughTime, passThroughView);
         if (stat != kOfxStatFailed) {
-            
+            for (OFX::Host::ImageEffect::ComponentsMap::iterator it = compMap.begin(); it != compMap.end(); ++it) {
+                
+            }
         }
-    }*/
+    }
     
     
     _clipPrefsDirty  = false;

@@ -143,6 +143,8 @@ class EffectInstance
 public:
 
     typedef std::map<EffectInstance*,RectD> RoIMap; // RoIs are in canonical coordinates
+    typedef std::map<Natron::ImageComponentsEnum,boost::weak_ptr<Natron::Node> > ComponentsAvailableMap;
+    typedef std::map<int,std::vector<Natron::ImageComponentsEnum> > ComponentsNeededMap;
     typedef std::map<int, std::vector<RangeD> > FramesNeededMap;
 
     struct RenderRoIArgs
@@ -426,10 +428,7 @@ public:
      **/
     virtual void getPreferredDepthAndComponents(int inputNb,Natron::ImageComponentsEnum* comp,Natron::ImageBitDepthEnum* depth) const;
 
-    /**
-     * @brief With  the support of the multi-plane suite, a plug-in can have several components present on different planes
-     **/
-    virtual void getComponentsPresent(int inputNb, int view, std::vector<Natron::ImageComponentsEnum>* comps) const;
+
 
     /**
      * @brief Override to get the preffered premultiplication flag for the output image
@@ -641,7 +640,15 @@ public:
      **/
     bool isFrameVaryingOrAnimated_Recursive() const;
 
-    
+
+    virtual bool isMultiPlanar() const { return false; }
+
+    virtual bool isPassThroughForNonRenderedPlanes() const { return true; }
+
+    virtual bool isViewAware() const { return false; }
+
+    virtual bool isViewInvariant() const { return false; }
+
 protected:
     /**
      * @brief Must fill the image 'output' for the region of interest 'roi' at the given time and
@@ -1171,6 +1178,24 @@ public:
         return false;
     }
 
+    /**
+    * @brief Returns the components available on each input for this effect at the given time.
+    **/
+    void getComponentsAvailable(SequenceTime time, ComponentsAvailableMap* comps) ;
+
+private:
+
+    void getComponentsAvailableRecursive(SequenceTime time, int view,ComponentsAvailableMap* comps,
+                                         std::list<Natron::EffectInstance*>* markedNodes) ;
+
+public:
+
+    void getComponentsNeededAndProduced_public(SequenceTime time, int view,
+                                               ComponentsNeededMap* comps,
+                                           SequenceTime* passThroughTime,
+                                           int* passThroughView,
+                                           boost::shared_ptr<Natron::Node>* passThroughInput) ;
+
 
 protected:
 
@@ -1182,6 +1207,19 @@ protected:
     {
     };
 
+
+
+
+    /**
+     * @brief Returns a map of the components produced by this effect and the components needed by the inputs of this effect.
+     * The output is mapped against -1. For all components not produced and if this effect is passthrough, it should use the
+     * passThroughInput to fetch the components needed.
+     **/
+    virtual void getComponentsNeededAndProduced(SequenceTime time, int view,
+                                            ComponentsNeededMap* comps,
+                                            SequenceTime* passThroughTime,
+                                            int* passThroughView,
+                                            boost::shared_ptr<Natron::Node>* passThroughInput) ;
 
 
     /**

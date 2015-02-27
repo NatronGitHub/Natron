@@ -4171,29 +4171,160 @@ EffectInstance::getPreferredDepthAndComponents(int inputNb,
     *depth = getBitDepth();
 }
 
-void
-EffectInstance::getComponentsPresent(int inputNb, int view, std::vector<Natron::ImageComponentsEnum>* comps) const
+static bool isComponentNeededFromInputClip(Natron::ImageComponentsEnum comp,
+                                           const EffectInstance::ComponentsNeededMap& compMap)
 {
-    EffectInstance* inp = 0;
-    if (inputNb != -1) {
-        inp = getInput(inputNb);
-        if (inp) {
-            inp->getComponentsPresent(-1, view, comps);
-        }
-    } else {
-        for (int i = 0; i < getMaxInputCount(); ++i) {
-            EffectInstance* input = getInput(i);
-            if (input) {
-                input->getComponentsPresent(-1, view, comps);
-                break;
-            }
+    for (EffectInstance::ComponentsNeededMap::const_iterator it = compMap.begin(); it != compMap.end(); ++it) {
+        
+        if (it->first == -1) {
+            ///Not an input node, continue
+            continue;
         }
         
-        for (std::vector<Natron::ImageComponentsEnum>::iterator it = comps->begin(); it != comps->end(); ++it) {
-            *it = findClosestSupportedComponents(inputNb, *it);
+        for (std::vector<Natron::ImageComponentsEnum>::const_iterator it2 = it->second.begin();
+             it2 != it->second.end(); ++it2) {
+            if (*it2 == comp) {
+                ///The component is needed and asked for to the input
+                return true;
+            }
         }
     }
     
+    ///The component
+    return false;
+}
+
+void
+EffectInstance::getComponentsAvailableRecursive(SequenceTime time, int view, ComponentsAvailableMap* comps,
+                                                std::list<Natron::EffectInstance*>* markedNodes)
+{
+    if (std::find(markedNodes->begin(), markedNodes->end(), this) != markedNodes->end()) {
+        return;
+    }
+    
+    ComponentsNeededMap neededComps;
+    SequenceTime ptTime;
+    int ptView;
+    boost::shared_ptr<Natron::Node> ptInput;
+    getComponentsNeededAndProduced_public(time, view, &neededComps, &ptTime, &ptView, &ptInput);
+    
+    ComponentsNeededMap::iterator foundOutput = neededComps.find(-1);
+    assert(foundOutput != neededComps.end());
+    
+    ///Foreach component produced by the node at the given (view,time),  try
+    ///to add it to the components available. Since we are recursing upstream, it is probably
+    ///already in there, in which case we ignore it and keep the one from below.
+    for (std::vector<Natron::ImageComponentsEnum>::iterator it = foundOutput->second.begin();
+         it != foundOutput->second.end(); ++it) {
+        
+        ComponentsAvailableMap::iterator alreadyExisting = comps->find(*it);
+        
+        //If the component already exists from below in the tree, do not add it
+        if (alreadyExisting == comps->end()) {
+            comps->insert(std::make_pair(*it, getNode()));
+        }
+    }
+    
+    markedNodes->push_back(this);
+    
+    
+    ///If the plug-in is not pass-through, only consider the components processed by the plug-in in output,
+    ///so we do not need to recurse.
+    if (isPassThroughForNonRenderedPlanes()) {
+        
+        bool doHeuristicForPassThrough = false;
+        if (isMultiPlanar()) {
+            if (!ptInput) {
+                doHeuristicForPassThrough = true;
+            }
+        } else {
+            doHeuristicForPassThrough = true;
+        }
+        
+        if (doHeuristicForPassThrough) {
+            int inp = getNode()->getPreferredInput();
+            ptInput = getNode()->getInput(inp);
+        }
+        
+        if (ptInput) {
+            ptInput->getLiveInstance()->getComponentsAvailableRecursive(time, view, comps, markedNodes);
+        }
+        
+    }
+}
+
+void
+EffectInstance::getComponentsAvailable(SequenceTime time, ComponentsAvailableMap* comps)
+{
+    int nViews = getApp()->getProject()->getProjectViewsCount();
+    
+    ///Union components over all views
+    for (int view = 0; view < nViews; ++view) {
+        std::list<Natron::EffectInstance*> marks;
+        getComponentsAvailableRecursive(time, view, comps, &marks);
+        
+    }
+}
+
+void
+EffectInstance::getComponentsNeededAndProduced(SequenceTime time, int view,
+                                    ComponentsNeededMap* comps,
+                                    SequenceTime* passThroughTime,
+                                    int* passThroughView,
+                                    boost::shared_ptr<Natron::Node>* passThroughInput)
+{
+    *passThroughTime = time;
+    *passThroughView = view;
+    
+    Natron::ImageComponentsEnum outputComp;
+    Natron::ImageBitDepthEnum outputDepth;
+    getPreferredDepthAndComponents(-1, &outputComp , &outputDepth);
+    
+    std::vector<Natron::ImageComponentsEnum> outputCompVec;
+    outputCompVec.push_back(outputComp);
+    
+    comps->insert(std::make_pair(-1, outputCompVec));
+    
+    NodePtr firstConnectedOptional;
+    for (int i = 0; i < getMaxInputCount(); ++i) {
+        NodePtr node = getNode()->getInput(i);
+        if (!node) {
+            continue;
+        }
+        if (isInputRotoBrush(i)) {
+            continue;
+        }
+        
+        Natron::ImageComponentsEnum comp;
+        Natron::ImageBitDepthEnum depth;
+        getPreferredDepthAndComponents(-1, &comp, &depth);
+        
+        std::vector<Natron::ImageComponentsEnum> compVect;
+        compVect.push_back(comp);
+        comps->insert(std::make_pair(i, compVect));
+        
+        if (!isInputOptional(i)) {
+            *passThroughInput = node;
+        } else {
+            firstConnectedOptional = node;
+        }
+    }
+    if (!*passThroughInput) {
+        *passThroughInput = firstConnectedOptional;
+    }
+    
+}
+
+void
+EffectInstance::getComponentsNeededAndProduced_public(SequenceTime time, int view,
+                                               ComponentsNeededMap* comps,
+                                               SequenceTime* passThroughTime,
+                                               int* passThroughView,
+                                               boost::shared_ptr<Natron::Node>* passThroughInput)
+
+{
+    RECURSIVE_ACTION();
+    getComponentsNeededAndProduced_public(time, view, comps, passThroughTime, passThroughView, passThroughInput);
 }
 
 int

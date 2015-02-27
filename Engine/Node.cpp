@@ -1249,7 +1249,7 @@ Node::getInputNames(std::map<std::string,std::string> & inputNames) const
 }
 
 int
-Node::getPreferredInputForConnection() 
+Node::getPreferredInputInternal(bool connected) const
 {
     assert( QThread::currentThread() == qApp->thread() );
     if (getMaxInputCount() == 0) {
@@ -1261,8 +1261,11 @@ Node::getPreferredInputForConnection()
         std::string inputNameToFind(kOfxImageEffectSimpleSourceClipName);
         int maxinputs = getMaxInputCount();
         for (int i = 0; i < maxinputs ; ++i) {
-            if (getInputLabel(i) == inputNameToFind && !getInput(i)) {
-                return i;
+            if (getInputLabel(i) == inputNameToFind) {
+                NodePtr inp = getInput(i);
+                if ((connected && inp) || (!connected && !inp)) {
+                    return i;
+                }
             }
         }
     }
@@ -1274,13 +1277,16 @@ Node::getPreferredInputForConnection()
         std::string inputNameToFind("A");
         int maxinputs = getMaxInputCount();
         for (int i = 0; i < maxinputs ; ++i) {
-            if (getInputLabel(i) == inputNameToFind && !getInput(i)) {
-                return i;
+            if (getInputLabel(i) == inputNameToFind ) {
+                NodePtr inp = getInput(i);
+                if ((connected && inp) || (!connected && !inp)) {
+                    return i;
+                }
             }
         }
     }
     
-   
+    
     
     ///we return the first non-optional empty input
     int firstNonOptionalEmptyInput = -1;
@@ -1292,7 +1298,8 @@ Node::getPreferredInputForConnection()
             if (_imp->liveInstance->isInputRotoBrush(i)) {
                 continue;
             }
-            if (!_imp->inputs[i]) {
+            
+            if ((connected && _imp->inputs[i]) || (!connected && !_imp->inputs[i])) {
                 if ( !_imp->liveInstance->isInputOptional(i) ) {
                     if (firstNonOptionalEmptyInput == -1) {
                         firstNonOptionalEmptyInput = i;
@@ -1309,7 +1316,7 @@ Node::getPreferredInputForConnection()
         }
     }
     
-   
+    
     ///Default to the first non optional empty input
     if (firstNonOptionalEmptyInput != -1) {
         return firstNonOptionalEmptyInput;
@@ -1326,13 +1333,26 @@ Node::getPreferredInputForConnection()
             } else {
                 return *first;
             }
-
+            
         } else if (!optionalEmptyMasks.empty()) {
             return optionalEmptyMasks.front();
         } else {
             return -1;
         }
     }
+
+}
+
+int
+Node::getPreferredInput() const
+{
+    return getPreferredInputInternal(true);
+}
+
+int
+Node::getPreferredInputForConnection() const
+{
+    return getPreferredInputInternal(false);
 }
 
 void
@@ -5392,13 +5412,26 @@ InspectorNode::setActiveInputAndRefresh(int inputNb)
 }
 
 int
-InspectorNode::getPreferredInputForConnection()
+InspectorNode::getPreferredInputInternal(bool connected) const
 {
     for (int i = 0; i < _maxInputs; ++i) {
-        if (!getInput(i)) {
+        NodePtr inp = getInput(i);
+        if ((!inp && !connected) || (inp && connected)) {
             return i;
         }
     }
     return -1;
+}
+
+int
+InspectorNode::getPreferredInput() const
+{
+    return getPreferredInputInternal(true);
+}
+
+int
+InspectorNode::getPreferredInputForConnection() const
+{
+    return getPreferredInputInternal(false);
 }
 

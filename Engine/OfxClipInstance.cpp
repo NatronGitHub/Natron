@@ -219,43 +219,37 @@ OfxClipInstance::getPremult() const
     return opaqueStr;
 }
 
-std::vector<Natron::ImageComponentsEnum>
-OfxClipInstance::getComponentsPresents(int view)
-{
-    std::vector<Natron::ImageComponentsEnum> ret;
-    ComponentsPresentMap::iterator foundView = _componentsPresent.find(view);
-    assert(foundView != _componentsPresent.end());
-    for (U32 i = 0; i < foundView->second.first.size(); ++i) {
-        ret.push_back(foundView->second.first[i].comp);
-    }
-    return ret;
-}
 
-std::vector<Natron::ImageComponentsEnum>
-OfxClipInstance::getUnmappedComponentsPresents(int view)
+/*
+ * We have to use TLS here because the OpenFX API necessitate that strings
+ * live through the entire duration of the calling action. The is the only way
+ * to have it thread-safe and local to a current calling time.
+ */
+const std::vector<std::string>&
+OfxClipInstance::getComponentsPresent() const
 {
-    EffectInstance* effect =  getAssociatedNode() ;
     
-    ///The clip might be identity and we want the data of the node that will be upstream not of the identity one
-    if (!isOutput() && effect) {
-        effect = effect->getNearestNonIdentity(_nodeInstance->getApp()->getTimeLine()->currentFrame());
-    }
+    ComponentsPresentMap& ret = _componentsPresent.localData();
+    ret.clear();
     
-    std::vector<Natron::ImageComponentsEnum> ret;
-    if (effect) {
-        effect->getComponentsPresent(-1, view, &ret);
+    Natron::EffectInstance* effect = getAssociatedNode();
+    if (!effect) {
         return ret;
     }
     
-    ///Input is not connected
-    ComponentsPresentMap::iterator foundView = _componentsPresent.find(view);
-    assert(foundView != _componentsPresent.end());
-    for (U32 i = 0; i < foundView->second.first.size(); ++i) {
-        ret.push_back(foundView->second.first[i].comp);
+    
+    int time = effect->getCurrentTime();
+    
+    EffectInstance::ComponentsAvailableMap comps;
+    effect->getComponentsAvailable(time, &comps);
+    
+    for (EffectInstance::ComponentsAvailableMap::iterator it = comps.begin(); it != comps.end(); ++it) {
+        ret.push_back(natronsComponentsToOfxComponents(it->first));
     }
+    
     return ret;
 }
-                                                                
+
 
 // Pixel Aspect Ratio -
 //
@@ -1047,28 +1041,6 @@ OfxClipInstance::findSupportedComp(const std::string &s) const
     
     return none;
 
-}
-
-
-const std::vector<std::string>&
-OfxClipInstance::getComponentsPresent() const
-{
-    int view = 0;
-    
-    if (_lastActionData.hasLocalData()) {
-        const ActionLocalData& args = _lastActionData.localData();
-        if (args.isViewValid) {
-            view = args.view;
-        } else {
-            view = 0;
-        }
-    } else {
-        view = 0;
-    }
-    
-    ComponentsPresentMap::const_iterator foundView = _componentsPresent.find(view);
-    assert(foundView != _componentsPresent.end());
-    return foundView->second.second;
 }
 
 
