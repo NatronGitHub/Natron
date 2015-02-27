@@ -1004,7 +1004,7 @@ NodeGroup::isInputMask(int inputNb) const
 void
 NodeGroup::initializeKnobs()
 {
-    boost::shared_ptr<KnobI> nodePage = getKnobByName(NATRON_EXTRA_PARAMETER_PAGE_NAME);
+    boost::shared_ptr<KnobI> nodePage = getKnobByName(NATRON_PARAMETER_PAGE_NAME_EXTRA);
     assert(nodePage);
     Page_Knob* isPage = dynamic_cast<Page_Knob*>(nodePage.get());
     assert(isPage);

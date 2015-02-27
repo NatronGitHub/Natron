@@ -1651,8 +1651,8 @@ Node::initializeKnobs(int renderScaleSupportPref)
                 std::string enableMaskName(std::string(kEnableMaskKnobName) + std::string("_") + maskName);
                 enableMaskKnob->setName(enableMaskName);
                 enableMaskKnob->setAnimationEnabled(false);
-                enableMaskKnob->setHintToolTip("Enable the mask to come from the channel named by the choice parameter on the right. "
-                                               "Turning this off will act as though the mask was disconnected.");
+                enableMaskKnob->setHintToolTip(tr("Enable the mask to come from the channel named by the choice parameter on the right. "
+                                               "Turning this off will act as though the mask was disconnected.").toStdString());
                 
                 boost::shared_ptr<Choice_Knob> maskChannelKnob = Natron::createKnob<Choice_Knob>(_imp->liveInstance.get(), "",1,false);
                 _imp->maskChannelKnob.insert( std::make_pair(i,maskChannelKnob) );
@@ -1666,8 +1666,8 @@ Node::initializeKnobs(int renderScaleSupportPref)
                 maskChannelKnob->setDefaultValue(4, 0);
                 maskChannelKnob->setAnimationEnabled(false);
                 maskChannelKnob->setAddNewLine(false);
-                maskChannelKnob->setHintToolTip("Use this channel from the original input to mix the output with the original input. "
-                                                "Setting this to None is the same as disabling the mask.");
+                maskChannelKnob->setHintToolTip(tr("Use this channel from the original input to mix the output with the original input. "
+                                                "Setting this to None is the same as disabling the mask.").toStdString());
                 std::string channelMaskName(kMaskChannelKnobName + std::string("_") + maskName);
                 maskChannelKnob->setName(channelMaskName);
             }
@@ -1675,17 +1675,17 @@ Node::initializeKnobs(int renderScaleSupportPref)
     }
     
     if (!isDot &&!isViewer) {
-        _imp->nodeSettingsPage = Natron::createKnob<Page_Knob>(_imp->liveInstance.get(), NATRON_EXTRA_PARAMETER_PAGE_NAME,1,false);
+        _imp->nodeSettingsPage = Natron::createKnob<Page_Knob>(_imp->liveInstance.get(), NATRON_PARAMETER_PAGE_NAME_EXTRA,1,false);
         
         _imp->nodeLabelKnob = Natron::createKnob<String_Knob>(_imp->liveInstance.get(),
-                                                              isBd ? "Name label" : "Label",1,false);
+                                                              isBd ? tr("Name label").toStdString() : tr("Label").toStdString(),1,false);
         assert(_imp->nodeLabelKnob);
         _imp->nodeLabelKnob->setName(kUserLabelKnobName);
         _imp->nodeLabelKnob->setAnimationEnabled(false);
         _imp->nodeLabelKnob->setEvaluateOnChange(false);
         _imp->nodeLabelKnob->setAsMultiLine();
         _imp->nodeLabelKnob->setUsesRichText(true);
-        _imp->nodeLabelKnob->setHintToolTip("This label gets appended to the node name on the node graph.");
+        _imp->nodeLabelKnob->setHintToolTip(tr("This label gets appended to the node name on the node graph.").toStdString());
         _imp->nodeSettingsPage->addKnob(_imp->nodeLabelKnob);
     }
     if (!isBd && !isDot && !isViewer) {
@@ -1696,11 +1696,11 @@ Node::initializeKnobs(int renderScaleSupportPref)
         _imp->forceCaching->setAddNewLine(false);
         _imp->forceCaching->setIsPersistant(true);
         _imp->forceCaching->setEvaluateOnChange(false);
-        _imp->forceCaching->setHintToolTip("When checked, the output of this node will always be kept in the RAM cache for fast access of already computed "
-                                           "images.");
+        _imp->forceCaching->setHintToolTip(tr("When checked, the output of this node will always be kept in the RAM cache for fast access of already computed "
+                                           "images.").toStdString());
         _imp->nodeSettingsPage->addKnob(_imp->forceCaching);
         
-        _imp->previewEnabledKnob = Natron::createKnob<Bool_Knob>(_imp->liveInstance.get(), "Preview enabled",1,false);
+        _imp->previewEnabledKnob = Natron::createKnob<Bool_Knob>(_imp->liveInstance.get(), tr("Preview enabled").toStdString(),1,false);
         assert(_imp->previewEnabledKnob);
         _imp->previewEnabledKnob->setDefaultValue( makePreviewByDefault() );
         _imp->previewEnabledKnob->setName(kEnablePreviewKnobName);
@@ -1708,7 +1708,7 @@ Node::initializeKnobs(int renderScaleSupportPref)
         _imp->previewEnabledKnob->setAddNewLine(false);
         _imp->previewEnabledKnob->setIsPersistant(false);
         _imp->previewEnabledKnob->setEvaluateOnChange(false);
-        _imp->previewEnabledKnob->setHintToolTip("Whether to show a preview on the node box in the node-graph.");
+        _imp->previewEnabledKnob->setHintToolTip(tr("Whether to show a preview on the node box in the node-graph.").toStdString());
         _imp->nodeSettingsPage->addKnob(_imp->previewEnabledKnob);
         
         _imp->disableNodeKnob = Natron::createKnob<Bool_Knob>(_imp->liveInstance.get(), "Disable",1,false);
@@ -1720,24 +1720,24 @@ Node::initializeKnobs(int renderScaleSupportPref)
         _imp->disableNodeKnob->setHintToolTip("When disabled, this node acts as a pass through.");
         _imp->nodeSettingsPage->addKnob(_imp->disableNodeKnob);
         
-        _imp->useFullScaleImagesWhenRenderScaleUnsupported = Natron::createKnob<Bool_Knob>(_imp->liveInstance.get(), "Render high def. upstream",1,false);
+        _imp->useFullScaleImagesWhenRenderScaleUnsupported = Natron::createKnob<Bool_Knob>(_imp->liveInstance.get(), tr("Render high def. upstream").toStdString(),1,false);
         _imp->useFullScaleImagesWhenRenderScaleUnsupported->setAnimationEnabled(false);
         _imp->useFullScaleImagesWhenRenderScaleUnsupported->setDefaultValue(false);
         _imp->useFullScaleImagesWhenRenderScaleUnsupported->setName("highDefUpstream");
-        _imp->useFullScaleImagesWhenRenderScaleUnsupported->setHintToolTip("This node doesn't support rendering images at a scale lower than 1, it "
+        _imp->useFullScaleImagesWhenRenderScaleUnsupported->setHintToolTip(tr("This node doesn't support rendering images at a scale lower than 1, it "
                                                                            "can only render high definition images. When checked this parameter controls "
                                                                            "whether the rest of the graph upstream should be rendered with a high quality too or at "
                                                                            "the most optimal resolution for the current viewer's viewport. Typically checking this "
                                                                            "means that an image will be slow to be rendered, but once rendered it will stick in the cache "
                                                                            "whichever zoom level you're using on the Viewer, whereas when unchecked it will be much "
-                                                                           "faster to render but will have to be recomputed when zooming in/out in the Viewer.");
+                                                                           "faster to render but will have to be recomputed when zooming in/out in the Viewer.").toStdString());
         if (renderScaleSupportPref == 0 && getLiveInstance()->supportsRenderScaleMaybe() == EffectInstance::eSupportsYes) {
             _imp->useFullScaleImagesWhenRenderScaleUnsupported->setSecret(true);
         }
         _imp->nodeSettingsPage->addKnob(_imp->useFullScaleImagesWhenRenderScaleUnsupported);
         
-        _imp->knobChangedCallback = Natron::createKnob<String_Knob>(_imp->liveInstance.get(), "After param changed callback");
-        _imp->knobChangedCallback->setHintToolTip("Set here the name of a function defined in Python which will be called for each  "
+        _imp->knobChangedCallback = Natron::createKnob<String_Knob>(_imp->liveInstance.get(), tr("After param changed callback").toStdString());
+        _imp->knobChangedCallback->setHintToolTip(tr("Set here the name of a function defined in Python which will be called for each  "
                                                   "parameter change. Either define this function in the Script Editor "
                                                   "or in the init.py script or even in the script of a Python group plug-in. "
                                                   "Several variables are declared for convenience when the callback is called, namely:\n"
@@ -1745,13 +1745,13 @@ Node::initializeKnobs(int renderScaleSupportPref)
                                                   "- userEdited: A boolean informing whether the change was due to user interaction or "
                                                   "because something internally triggered the change.\n"
                                                   "- thisNode: The node holding the parameter\n"
-                                                  "- thisGroup: The group holding thisNode (only if thisNode belongs to a group)");
+                                                  "- thisGroup: The group holding thisNode (only if thisNode belongs to a group)").toStdString());
         _imp->knobChangedCallback->setAnimationEnabled(false);
         _imp->knobChangedCallback->setName("onParamChanged");
         _imp->nodeSettingsPage->addKnob(_imp->knobChangedCallback);
         
-        _imp->inputChangedCallback = Natron::createKnob<String_Knob>(_imp->liveInstance.get(), "After input changed callback");
-        _imp->inputChangedCallback->setHintToolTip("Set here the name of a function defined in Python which will be called after "
+        _imp->inputChangedCallback = Natron::createKnob<String_Knob>(_imp->liveInstance.get(), tr("After input changed callback").toStdString());
+        _imp->inputChangedCallback->setHintToolTip(tr("Set here the name of a function defined in Python which will be called after "
                                                    "each connection is changed for the inputs of the node. "
                                                    "Either define this function in the Script Editor "
                                                    "or in the init.py script or even in the script of a Python group plug-in. "
@@ -1760,16 +1760,16 @@ Node::initializeKnobs(int renderScaleSupportPref)
                                                    "- inputIndex: the index of the input which changed, you can query the node "
                                                    "connected to the input by calling the getInput(...) function. "
                                                    "- thisNode: The node holding the parameter\n"
-                                                   "- thisGroup: The group holding thisNode (only if thisNode belongs to a group)");
+                                                   "- thisGroup: The group holding thisNode (only if thisNode belongs to a group)").toStdString());
         
         _imp->inputChangedCallback->setAnimationEnabled(false);
         _imp->inputChangedCallback->setName("onInputChanged");
         _imp->nodeSettingsPage->addKnob(_imp->inputChangedCallback);
         
-        _imp->infoPage = Natron::createKnob<Page_Knob>(_imp->liveInstance.get(), "Info",1,false);
-        _imp->infoPage->setName("info");
+        _imp->infoPage = Natron::createKnob<Page_Knob>(_imp->liveInstance.get(), tr("Info").toStdString(), 1, false);
+        _imp->infoPage->setName(NATRON_PARAMETER_PAGE_NAME_INFO);
         
-        _imp->infoDisclaimer = Natron::createKnob<String_Knob>(_imp->liveInstance.get(), "Input and output informations",1,false);
+        _imp->infoDisclaimer = Natron::createKnob<String_Knob>(_imp->liveInstance.get(), tr("Input and output informations").toStdString(), 1, false);
         _imp->infoDisclaimer->setName("infoDisclaimer");
         _imp->infoDisclaimer->setAnimationEnabled(false);
         _imp->infoDisclaimer->setIsPersistant(false);
@@ -1781,7 +1781,7 @@ Node::initializeKnobs(int renderScaleSupportPref)
         
         for (int i = 0; i < inputsCount; ++i) {
             std::string inputLabel = getInputLabel(i);
-            boost::shared_ptr<String_Knob> inputInfo = Natron::createKnob<String_Knob>(_imp->liveInstance.get(), std::string(inputLabel + " Info"), 1, false);
+            boost::shared_ptr<String_Knob> inputInfo = Natron::createKnob<String_Knob>(_imp->liveInstance.get(), inputLabel + ' ' + tr("Info").toStdString(), 1, false);
             inputInfo->setName(inputLabel + "Info");
             inputInfo->setAnimationEnabled(false);
             inputInfo->setIsPersistant(false);
@@ -1802,53 +1802,53 @@ Node::initializeKnobs(int renderScaleSupportPref)
         _imp->outputFormat->setAsLabel();
         _imp->infoPage->addKnob(_imp->outputFormat);
         
-        _imp->refreshInfoButton = Natron::createKnob<Button_Knob>(_imp->liveInstance.get(), "Refresh Info");
+        _imp->refreshInfoButton = Natron::createKnob<Button_Knob>(_imp->liveInstance.get(), tr("Refresh Info").toStdString());
         _imp->refreshInfoButton->setName("refreshButton");
         _imp->refreshInfoButton->setEvaluateOnChange(false);
         _imp->infoPage->addKnob(_imp->refreshInfoButton);
         
         if (_imp->liveInstance->isWriter()) {
-            boost::shared_ptr<Page_Knob> pythonPage = Natron::createKnob<Page_Knob>(_imp->liveInstance.get(), "Python");
+            boost::shared_ptr<Page_Knob> pythonPage = Natron::createKnob<Page_Knob>(_imp->liveInstance.get(), tr("Python").toStdString());
             
-            _imp->beforeFrameRender =  Natron::createKnob<String_Knob>(_imp->liveInstance.get(), "Before frame render");
+            _imp->beforeFrameRender =  Natron::createKnob<String_Knob>(_imp->liveInstance.get(), tr("Before frame render").toStdString());
             _imp->beforeFrameRender->setName("beforeFrameRender");
             _imp->beforeFrameRender->setAnimationEnabled(false);
-            _imp->beforeFrameRender->setHintToolTip("Add here the name of a Python defined function that will be called before rendering "
+            _imp->beforeFrameRender->setHintToolTip(tr("Add here the name of a Python defined function that will be called before rendering "
                                                     "any frame.\n "
                                                     "The variable \"app\" will be declared prior to calling the function, pointing to the current app instance.\n"
                                                     "\nThe variable \"thisNode\" will be declared when calling the function, "
-                                                    "referencing the writer node.");
+                                                    "referencing the writer node.").toStdString());
             pythonPage->addKnob(_imp->beforeFrameRender);
             
-            _imp->beforeRender =  Natron::createKnob<String_Knob>(_imp->liveInstance.get(), "Before render");
+            _imp->beforeRender =  Natron::createKnob<String_Knob>(_imp->liveInstance.get(), tr("Before render").toStdString());
             _imp->beforeRender->setName("beforeRender");
             _imp->beforeRender->setAnimationEnabled(false);
-            _imp->beforeRender->setHintToolTip("Add here the name of a Python defined function that will be called once when "
+            _imp->beforeRender->setHintToolTip(tr("Add here the name of a Python defined function that will be called once when "
                                                "starting rendering.\n "
                                                 "The variable \"app\" will be declared prior to calling the function, pointing to the current app instance.\n"
                                                "\nThe variable \"thisNode\" will be declared when calling the function, "
-                                               "referencing the writer node.");
+                                               "referencing the writer node.").toStdString());
             pythonPage->addKnob(_imp->beforeRender);
             
-            _imp->afterFrameRender =  Natron::createKnob<String_Knob>(_imp->liveInstance.get(), "After frame render");
+            _imp->afterFrameRender =  Natron::createKnob<String_Knob>(_imp->liveInstance.get(), tr("After frame render").toStdString());
             _imp->afterFrameRender->setName("afterFrameRender");
             _imp->afterFrameRender->setAnimationEnabled(false);
-            _imp->afterFrameRender->setHintToolTip("Add here the name of a Python defined function that will be called after rendering "
+            _imp->afterFrameRender->setHintToolTip(tr("Add here the name of a Python defined function that will be called after rendering "
                                                     "any frame.\n "
                                                    "The variable \"app\" will be declared prior to calling the function, pointing to the current app instance.\n"
                                                    "\nThe variable \"thisNode\" will be declared when calling the function, "
-                                                   "referencing the writer node.");
+                                                   "referencing the writer node.").toStdString());
             pythonPage->addKnob(_imp->afterFrameRender);
             
-            _imp->afterRender =  Natron::createKnob<String_Knob>(_imp->liveInstance.get(), "After render");
+            _imp->afterRender =  Natron::createKnob<String_Knob>(_imp->liveInstance.get(), tr("After render").toStdString());
             _imp->afterRender->setName("afterRender");
             _imp->afterRender->setAnimationEnabled(false);
-            _imp->afterRender->setHintToolTip("Add here the name of a Python defined function that will be called once when the rendering "
+            _imp->afterRender->setHintToolTip(tr("Add here the name of a Python defined function that will be called once when the rendering "
                                                     "is finished.\n "
                                               "The boolean variable \"aborted\" will be set to True if the render was aborted or False otherwise.\n"
                                               "The variable \"app\" will be declared prior to calling the function, pointing to the current app instance.\n"
                                               "\nThe variable \"thisNode\" will be declare, "
-                                              "referencing the writer node.");
+                                              "referencing the writer node.").toStdString());
             pythonPage->addKnob(_imp->afterRender);
         }
         

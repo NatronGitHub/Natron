@@ -35,7 +35,8 @@ CLANG_DIAG_ON(deprecated)
 #include "Engine/AppManager.h"
 #include "Global/KeySymbols.h"
 
-#define NATRON_EXTRA_PARAMETER_PAGE_NAME "Node"
+#define NATRON_PARAMETER_PAGE_NAME_EXTRA "Node"
+#define NATRON_PARAMETER_PAGE_NAME_INFO "Info"
 
 #define kDisableNodeKnobName "disableNode"
 #define kUserLabelKnobName "userTextArea"
