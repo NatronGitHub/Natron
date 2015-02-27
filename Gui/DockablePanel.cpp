@@ -345,6 +345,8 @@ struct DockablePanelPrivate
 
     /*inserts a new page to the dockable panel.*/
     PageMap::iterator addPage(Page_Knob* page,const QString & name);
+    
+    boost::shared_ptr<Page_Knob> ensureDefaultPageKnobCreated() ;
 
 
     void initializeKnobVector(const std::vector< boost::shared_ptr< KnobI> > & knobs,
@@ -1053,7 +1055,7 @@ DockablePanel::initializeKnobsInternal()
             ///find in all knobs a page param (that is not the extra one added by Natron) to set this param into
             for (U32 i = 0; i < knobs.size(); ++i) {
                 Page_Knob* p = dynamic_cast<Page_Knob*>( knobs[i].get() );
-                if ( p && (p->getDescription() != NATRON_EXTRA_PARAMETER_PAGE_NAME) ) {
+                if ( p && (p->getDescription() != NATRON_PARAMETER_PAGE_NAME_INFO) && (p->getDescription() != NATRON_PARAMETER_PAGE_NAME_EXTRA) ) {
                     parentTab = _imp->addPage(p, p->getDescription().c_str() );
                     break;
                 }
@@ -1119,6 +1121,21 @@ DockablePanelPrivate::createKnobGui(const boost::shared_ptr<KnobI> &knob)
     return ret;
 }
 
+boost::shared_ptr<Page_Knob>
+DockablePanelPrivate::ensureDefaultPageKnobCreated()
+{
+    boost::shared_ptr<KnobI> knob = _holder->getKnobByName(_defaultPageName.toStdString());
+    boost::shared_ptr<Page_Knob> pk;
+    if (!knob) {
+        pk = Natron::createKnob<Page_Knob>(_holder, _defaultPageName.toStdString());
+    } else {
+        pk = boost::dynamic_pointer_cast<Page_Knob>(knob);
+    }
+    assert(pk);
+    addPage(pk.get(), _defaultPageName);
+    return pk;
+}
+
 PageMap::iterator
 DockablePanelPrivate::getDefaultPage(const boost::shared_ptr<KnobI> &knob)
 {
@@ -1127,7 +1144,7 @@ DockablePanelPrivate::getDefaultPage(const boost::shared_ptr<KnobI> &knob)
     ///find in all knobs a page param to set this param into
     for (U32 i = 0; i < knobs.size(); ++i) {
         Page_Knob* p = dynamic_cast<Page_Knob*>( knobs[i].get() );
-        if ( p && (p->getDescription() != NATRON_EXTRA_PARAMETER_PAGE_NAME) ) {
+        if ( p && (p->getDescription() != NATRON_PARAMETER_PAGE_NAME_INFO) && (p->getDescription() != NATRON_PARAMETER_PAGE_NAME_EXTRA) ) {
             page = addPage(p,  p->getDescription().c_str() );
             p->addKnob(knob);
             break;
@@ -1198,6 +1215,12 @@ DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI> & knob,
             parentGui = dynamic_cast<Group_KnobGui*>( findKnobGuiOrCreate( parentKnob,true,ret->getFieldContainer() ) );
         }
 
+        ///So far the knob could have no parent, in which case we force it to be in the default page.
+        if (!parentKnob) {
+            boost::shared_ptr<Page_Knob> defPage = ensureDefaultPageKnobCreated();
+            defPage->addKnob(knob);
+            parentKnob = defPage;
+        }
 
         ///if widgets for the KnobGui have already been created, don't do the following
         ///For group only create the gui if it is not  a tab.
@@ -1211,7 +1234,9 @@ DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI> & knob,
                 } else {
                     page = addPage(parentIsPage, parentIsPage->getDescription().c_str() );
                 }
+                bool existed = true;
                 if (!page->second.groupAsTab) {
+                    existed = false;
                     page->second.groupAsTab = new TabGroup(_publicInterface);
                 }
                 page->second.groupAsTab->addTab(isGroup, isGroup->getDescription().c_str());
@@ -1225,8 +1250,9 @@ DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI> & knob,
                     layout = dynamic_cast<QGridLayout*>( page->second.tab->layout() );
                 }
                 assert(layout);
-                
-                layout->addWidget(page->second.groupAsTab, page->second.currentRow, 0, 1, 2);
+                if (!existed) {
+                    layout->addWidget(page->second.groupAsTab, page->second.currentRow, 0, 1, 2);
+                }
             } else {
                 assert(parentIsGroup);
                 assert(parentGui);
@@ -1362,11 +1388,36 @@ DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI> & knob,
                 QObject::connect( label, SIGNAL( clicked(bool) ), ret, SIGNAL( labelClicked(bool) ) );
             }
 
-
-            if ( parentIsGroup && parentIsGroup->isTab() ) {
-                assert(parentGui);
+            /*
+             * Find out in which layout the knob should be: either in the layout of the page or in the layout of
+             * the nearest parent group tab in the hierarchy
+             */
+            boost::shared_ptr<Group_Knob> closestParentGroupTab;
+            boost::shared_ptr<KnobI> parentTmp = parentKnob;
+            assert(parentKnobTmp);
+            while (!closestParentGroupTab) {
+                boost::shared_ptr<Group_Knob> parentGroup = boost::dynamic_pointer_cast<Group_Knob>(parentTmp);
+                if (parentGroup && parentGroup->isTab()) {
+                    closestParentGroupTab = parentGroup;
+                }
+                parentTmp = parentTmp->getParentKnob();
+                if (!parentTmp) {
+                    break;
+                }
                 
-                boost::shared_ptr<KnobI> parentParent = parentIsGroup->getParentKnob();
+            }
+            
+            if (closestParentGroupTab) {
+                
+                /*
+                 * At this point we know that the parent group (which is a tab in the TabWidget) will have at least 1 knob
+                 * so ensure it is added to the TabWidget.
+                 * There are 2 possibilities, either the parent of the group tab is another group, in which case we have to 
+                 * make sure the TabWidget is visible in the parent TabWidget of the group, otherwise we just add the TabWidget
+                 * to the on of the page.
+                 */
+                
+                boost::shared_ptr<KnobI> parentParent = closestParentGroupTab->getParentKnob();
                 Group_Knob* parentParentIsGroup = dynamic_cast<Group_Knob*>(parentParent.get());
                 Page_Knob* parentParentIsPage = dynamic_cast<Page_Knob*>(parentParent.get());
                 
@@ -1377,13 +1428,13 @@ DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI> & knob,
                     assert(parentParentGroupGui);
                     TabGroup* groupAsTab = parentParentGroupGui->getOrCreateTabWidget();
                     assert(groupAsTab);
-                    layout = groupAsTab->addTab(parentIsGroup, parentIsGroup->getDescription().c_str());
+                    layout = groupAsTab->addTab(closestParentGroupTab, closestParentGroupTab->getDescription().c_str());
                     
                 } else if (parentParentIsPage) {
                     PageMap::iterator page = addPage(parentParentIsPage, parentParentIsPage->getDescription().c_str());
                     assert(page != _pages.end());
                     assert(page->second.groupAsTab);
-                    layout = page->second.groupAsTab->addTab(parentIsGroup, parentIsGroup->getDescription().c_str());
+                    layout = page->second.groupAsTab->addTab(closestParentGroupTab, closestParentGroupTab->getDescription().c_str());
                 }
                 assert(layout);
                 
@@ -1398,7 +1449,7 @@ DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI> & knob,
             ///Must add the row to the layout before calling setSecret()
             if (makeNewLine) {
                 int rowIndex;
-                if (parentIsGroup && parentIsGroup->isTab()) {
+                if (closestParentGroupTab) {
                     rowIndex = layout->rowCount();
                 } else if (parentGui && knob->isDynamicallyCreated()) {
                     const std::list<KnobGui*>& children = parentGui->getChildren();
@@ -1413,15 +1464,52 @@ DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI> & knob,
                 }
                 
                 fieldContainer->layout()->setAlignment(Qt::AlignLeft);
+                
+                
                 if (!label || !ret->showDescriptionLabel() || label->text().isEmpty()) {
                     layout->addWidget(fieldContainer,rowIndex,0, 1, 2);
                 } else {
+                    
                     layout->addWidget(fieldContainer,rowIndex,1, 1, 1);
                     layout->addWidget(label, rowIndex, 0, 1, 1, Qt::AlignRight);
+        
+                }
+                
+                
+                if (closestParentGroupTab) {
+                    ///See http://stackoverflow.com/questions/14033902/qt-qgridlayout-automatically-centers-moves-items-to-the-middle for
+                    ///a bug of QGridLayout: basically all items are centered, but we would like to add stretch in the bottom of the layout.
+                    ///To do this we add an empty widget with an expanding vertical size policy.
+                    QWidget* foundSpacer = 0;
+                    for (int i = 0; i < layout->rowCount(); ++i) {
+                        QLayoutItem* item = layout->itemAtPosition(i, 0);
+                        if (!item) {
+                            continue;
+                        }
+                        QWidget* w = item->widget();
+                        if (!w) {
+                            continue;
+                        }
+                        if (w->objectName() == "emptyWidget") {
+                            foundSpacer = w;
+                            break;
+                        }
+                    }
+                    if (foundSpacer) {
+                        layout->removeWidget(foundSpacer);
+                    } else {
+                        foundSpacer = new QWidget(layout->parentWidget());
+                        foundSpacer->setObjectName("emptyWidget");
+                        foundSpacer->setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Expanding);
+
+                    }
+                    
+                    ///And add our stretch
+                    layout->addWidget(foundSpacer,layout->rowCount(), 0, 1, 2);
                 }
                 
             }
-            
+
             ret->setSecret();
             
             if (knob->isNewLineActivated() && ret->shouldAddStretch()) {

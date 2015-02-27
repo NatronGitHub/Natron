@@ -929,7 +929,7 @@ Project::initializeKnobs()
     _imp->frameRate->setDisplayMaximum(50.);
     page->addKnob(_imp->frameRate);
     
-    boost::shared_ptr<Page_Knob> infoPage = Natron::createKnob<Page_Knob>(this, "Info");
+    boost::shared_ptr<Page_Knob> infoPage = Natron::createKnob<Page_Knob>(this, tr("Info").toStdString());
     
     _imp->natronVersion = Natron::createKnob<String_Knob>(this, "Saved with");
     _imp->natronVersion->setName("softwareVersion");
