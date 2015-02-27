@@ -1125,7 +1125,6 @@ NodeGui::initializeInputsForInspector()
 
     double angle =  piDividedbyX;
     bool maskAside = false;
-    U32 lastInputConnected = -1;
     for (U32 i = 0; i < _inputEdges.size(); ++i) {
         bool isMask = node->getLiveInstance()->isInputMask(i);
         
@@ -1141,10 +1140,7 @@ NodeGui::initializeInputsForInspector()
         
         if (!_inputEdges[i]->hasSource()) {
             _inputEdges[i]->initLine();
-        } else {
-            lastInputConnected = i;
         }
-        
     }
     
     

@@ -1071,8 +1071,12 @@ AppManager::loadInternal(const CLArgs& cl)
     }
 
     /*loading all plugins*/
-    loadAllPlugins();
-    _imp->loadBuiltinFormats();
+    try {
+        loadAllPlugins();
+        _imp->loadBuiltinFormats();
+    } catch (std::logic_error) {
+        // ignore
+    }
 
     if ( isBackground() && !cl.getIPCPipeName().isEmpty() ) {
         _imp->initProcessInputChannel(cl.getIPCPipeName());
@@ -3500,6 +3504,7 @@ makeNameScriptFriendly(const std::string& str)
 }
 
 PythonGILLocker::PythonGILLocker()
+    : state(PyGILState_UNLOCKED)
 {
     appPTR->takeNatronGIL();
 //    ///Take the GIL for this thread
