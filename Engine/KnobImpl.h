@@ -1814,6 +1814,7 @@ Knob<T>::cloneDefaultValues(KnobI* other)
     Knob<T>* otherT = dynamic_cast<Knob<T>*>(other);
     assert(otherT);
     if (!otherT) {
+        // coverity[dead_error_line]
         return;
     }
     
