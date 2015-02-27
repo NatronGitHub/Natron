@@ -274,21 +274,21 @@ DefaultOverlay::penUp(double time,
     OfxPointD pscale;
     n_getPixelScale(pscale.x, pscale.y);
     
+    bool didSomething = false;
     for (PositionInteracts::iterator it = _imp->positions.begin(); it != _imp->positions.end(); ++it) {
+        if (it->state == ePositionInteractStatePicked && !_imp->interactiveDrag) {
+            double x = fround(_imp->lastPenPos.x(), pscale.x);
+            double y = fround(_imp->lastPenPos.y(), pscale.y);
+            it->param->setValue(x , 0);
+            it->param->setValue(y , 1);
 
-        double x = fround(_imp->lastPenPos.x(), pscale.x);
-        double y = fround(_imp->lastPenPos.y(), pscale.y);
-        it->param->setValue(x , 0);
-        it->param->setValue(y , 1);
-        
-        it->state = ePositionInteractStatePoised;
-        penMotion(time,renderScale,penPos,penPosViewport,pressure);
-        
-        return true;
-        
+            it->state = ePositionInteractStatePoised;
+            penMotion(time,renderScale,penPos,penPosViewport,pressure);
+            didSomething = true;
+        }
     }
-    return false;
-
+    
+    return didSomething;
 }
 
 

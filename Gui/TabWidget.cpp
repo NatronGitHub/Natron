@@ -688,7 +688,7 @@ TabWidget::splitInternal(bool autoSave,
     FloatingWidget* parentIsFloating = 0;
     while (parent) {
         parentIsFloating = dynamic_cast<FloatingWidget*>(parent);
-        if (parent) {
+        if (parentIsFloating) {
             break;
         }
         parent = parent->parentWidget();

@@ -265,7 +265,9 @@ OfxClipInstance::getAspectRatio() const
     EffectInstance* input = getAssociatedNode();
     if (!input || getName() == "Roto") {
         Format f;
-        _nodeInstance->getRenderFormat(&f);
+        if (_nodeInstance) {
+            _nodeInstance->getRenderFormat(&f);
+        }
         return f.getPixelAspectRatio();
     } else if (_nodeInstance) {
         return input->getPreferredAspectRatio();

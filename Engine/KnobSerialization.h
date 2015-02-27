@@ -676,6 +676,7 @@ public:
         , _isPersistent(false)
         , _animationEnabled(false)
         , _tooltip()
+        , _useHostOverlay(false)
     {
         initialize(knob);
     }
@@ -772,9 +773,7 @@ public:
         , _animationEnabled(false)
         , _tooltip()
         , _useHostOverlay(false)
-
     {
-        
     }
 
     ~KnobSerialization() { delete _extraData; }
