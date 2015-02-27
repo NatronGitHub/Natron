@@ -1713,6 +1713,7 @@ Knob<T>::clone(KnobI* other,
     if (getHolder()) {
         getHolder()->updateHasAnimation();
     }
+    computeHasModifications();
 }
 
 template<typename T>
