@@ -1766,7 +1766,7 @@ Node::initializeKnobs(int renderScaleSupportPref)
         _imp->inputChangedCallback->setName("onInputChanged");
         _imp->nodeSettingsPage->addKnob(_imp->inputChangedCallback);
         
-        _imp->infoPage = Natron::createKnob<Page_Knob>(_imp->liveInstance.get(), "Info",1,false);
+        _imp->infoPage = Natron::createKnob<Page_Knob>(_imp->liveInstance.get(), NATRON_INFO_PARAMETER_PAGE_NAME,1,false);
         _imp->infoPage->setName("info");
         
         _imp->infoDisclaimer = Natron::createKnob<String_Knob>(_imp->liveInstance.get(), "Input and output informations",1,false);

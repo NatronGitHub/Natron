@@ -1415,6 +1415,24 @@ private:
                                          RoIMap* inputRois_p, //!< output, only set if optionalBoundsParam != NULL
                                          RectD* optionalBounds_p); //!< output, only set if optionalBoundsParam != NULL
 
+
+    bool allocateImagePlane(const ImageKey& key,
+                            const RectD& rod,
+                            const RectI& downscaleImageBounds,
+                            const RectI& fullScaleImageBounds,
+                            bool isProjectFormat,
+                            const FramesNeededMap& framesNeeded,
+                            Natron::ImageComponentsEnum components,
+                            Natron::ImageBitDepthEnum depth,
+                            double par,
+                            unsigned int mipmapLevel,
+                            bool renderFullScaleThenDownscale,
+                            bool renderScaleOneUpstreamIfRenderScaleSupportDisabled,
+                            bool useDiskCache,
+                            bool createInCache,
+                            boost::shared_ptr<Natron::Image>* fullScaleImage,
+                            boost::shared_ptr<Natron::Image>* downscaleImage);
+
     /**
      * @brief Must be implemented to evaluate a value change
      * made to a knob(e.g: force a new render).

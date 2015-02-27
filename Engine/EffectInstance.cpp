@@ -1803,6 +1803,139 @@ public:
 };
 
 
+bool
+EffectInstance::allocateImagePlane(const ImageKey& key,
+                                   const RectD& rod,
+                                   const RectI& downscaleImageBounds,
+                                   const RectI& fullScaleImageBounds,
+                                   bool isProjectFormat,
+                                   const FramesNeededMap& framesNeeded,
+                                   Natron::ImageComponentsEnum components,
+                                   Natron::ImageBitDepthEnum depth,
+                                   double par,
+                                   unsigned int mipmapLevel,
+                                   bool renderFullScaleThenDownscale,
+                                   bool renderScaleOneUpstreamIfRenderScaleSupportDisabled,
+                                   bool useDiskCache,
+                                   bool createInCache,
+                                   boost::shared_ptr<Natron::Image>* fullScaleImage,
+                                   boost::shared_ptr<Natron::Image>* downscaleImage)
+{
+    //Controls whether images are stored on disk or in RAM, 0 = RAM, 1 = mmap
+    int cost = useDiskCache ? 1 : 0;
+    
+    //If we're rendering full scale and with input images at full scale, don't cache the downscale image since it is cheap to
+    //recreate, instead cache the full-scale image
+    if (renderFullScaleThenDownscale && renderScaleOneUpstreamIfRenderScaleSupportDisabled) {
+        
+        downscaleImage->reset( new Natron::Image(components, rod, downscaleImageBounds, mipmapLevel, par, depth, true) );
+        
+    } else {
+        
+        ///Cache the image with the requested components instead of the remapped ones
+        boost::shared_ptr<Natron::ImageParams> cachedImgParams = Natron::Image::makeParams(cost,
+                                                                                           rod,
+                                                                                           downscaleImageBounds,
+                                                                                           par,
+                                                                                           mipmapLevel,
+                                                                                           isProjectFormat,
+                                                                                           components,
+                                                                                           depth,
+                                                                                           framesNeeded);
+        
+        //Take the lock after getting the image from the cache or while allocating it
+        ///to make sure a thread will not attempt to write to the image while its being allocated.
+        ///When calling allocateMemory() on the image, the cache already has the lock since it added it
+        ///so taking this lock now ensures the image will be allocated completetly
+        
+        ImageLocker imageLock(this);
+        
+        ImagePtr newImage;
+        if (createInCache) {
+            bool cached = !useDiskCache ? Natron::getImageFromCacheOrCreate(key, cachedImgParams, &imageLock, &newImage) :
+            Natron::getImageFromDiskCacheOrCreate(key, cachedImgParams, &imageLock, &newImage);
+            
+            if (!newImage) {
+                std::stringstream ss;
+                ss << "Failed to allocate an image of ";
+                ss << printAsRAM( cachedImgParams->getElementsCount() * sizeof(Image::data_t) ).toStdString();
+                Natron::errorDialog( QObject::tr("Out of memory").toStdString(),ss.str() );
+                
+                return false;
+            }
+            
+            assert(newImage);
+            assert(newImage->getRoD() == rod);
+            
+            if (!cached) {
+                newImage->allocateMemory();
+            } else {
+                ///lock the image because it might not be allocated yet
+                imageLock.lock(newImage);
+            }
+        } else {
+            newImage.reset(new Natron::Image(key, cachedImgParams));
+        }
+        
+        *fullScaleImage = newImage;
+        *downscaleImage = *fullScaleImage;
+    }
+    
+    if (renderFullScaleThenDownscale) {
+        
+        if (!renderScaleOneUpstreamIfRenderScaleSupportDisabled) {
+            
+            ///The upscaled image will be rendered using input images at lower def... which means really crappy results, don't cache this image!
+            fullScaleImage->reset( new Natron::Image(components, rod, fullScaleImageBounds, 0, par, depth, true) );
+            
+        } else {
+            
+            boost::shared_ptr<Natron::ImageParams> upscaledImageParams = Natron::Image::makeParams(cost,
+                                                                                                   rod,
+                                                                                                   fullScaleImageBounds,
+                                                                                                   par,
+                                                                                                   0,
+                                                                                                   isProjectFormat,
+                                                                                                   components,
+                                                                                                   depth,
+                                                                                                   framesNeeded);
+            
+            if (createInCache) {
+                //The upscaled image will be rendered with input images at full def, it is then the best possibly rendered image so cache it!
+                ImageLocker upscaledImageLock(this);
+                
+                fullScaleImage->reset();
+                
+                bool cached = !useDiskCache ?
+                Natron::getImageFromCacheOrCreate(key, upscaledImageParams, &upscaledImageLock, fullScaleImage) :
+                Natron::getImageFromDiskCacheOrCreate(key, upscaledImageParams, &upscaledImageLock, fullScaleImage) ;
+                
+                if (!*fullScaleImage) {
+                    std::stringstream ss;
+                    ss << "Failed to allocate an image of ";
+                    ss << printAsRAM( upscaledImageParams->getElementsCount() * sizeof(Image::data_t) ).toStdString();
+                    Natron::errorDialog( QObject::tr("Out of memory").toStdString(),ss.str() );
+                    
+                    return false;
+                }
+
+                
+                if (!cached) {
+                    (*fullScaleImage)->allocateMemory();
+                } else {
+                    ///lock the image because it might not be allocated yet
+                    upscaledImageLock.lock(*fullScaleImage);
+                }
+            } else {
+                fullScaleImage->reset(new Natron::Image(key, upscaledImageParams));
+            }
+        }
+        
+    }
+    return true;
+}
+
+
 boost::shared_ptr<Natron::Image>
 EffectInstance::renderRoI(const RenderRoIArgs & args)
 {
@@ -2279,127 +2412,19 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
         inputImagesHolder.reset(new InputImagesHolder_RAII(inputImages,&_imp->inputImages));
     }
     
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////// Allocate image in the cache ///////////////////////////////////////////////////////////////
+    
     if (!image) {
         
-        
-        ///The image is not cached
-        
-        // why should the rod be empty here?
-        assert( !rod.isNull() );
-        
-        
-        //Controls whether images are stored on disk or in RAM, 0 = RAM, 1 = mmap
-        int cost = useDiskCacheNode ? 1 : 0;
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        ////////////////////////////// Allocate image in the cache /////////////////////////////////////////////////////////////
     
-        //If we're rendering full scale and with input images at full scale, don't cache the downscale image since it is cheap to
-        //recreate, instead cache the full-scale image
-        if (useImageAsOutput) {
-            
-            downscaledImage.reset( new Natron::Image(outputComponents, rod, downscaledImageBounds, args.mipMapLevel, par, outputDepth, true) );
-            
-        } else {
-
-            ///Cache the image with the requested components instead of the remapped ones
-            cachedImgParams = Natron::Image::makeParams(cost,
-                                                        rod,
-                                                        downscaledImageBounds,
-                                                        par,
-                                                        args.mipMapLevel,
-                                                        isProjectFormat,
-                                                        outputComponents,
-                                                        outputDepth,
-                                                        framesNeeded);
-            
-            //Take the lock after getting the image from the cache or while allocating it
-            ///to make sure a thread will not attempt to write to the image while its being allocated.
-            ///When calling allocateMemory() on the image, the cache already has the lock since it added it
-            ///so taking this lock now ensures the image will be allocated completetly
-            
-            ImageLocker imageLock(this);
-            
-            ImagePtr newImage;
-            if (createInCache) {
-                bool cached = !useDiskCacheNode ? Natron::getImageFromCacheOrCreate(key, cachedImgParams, &imageLock, &newImage) :
-                                                  Natron::getImageFromDiskCacheOrCreate(key, cachedImgParams, &imageLock, &newImage);
-                
-                if (!newImage) {
-                    std::stringstream ss;
-                    ss << "Failed to allocate an image of ";
-                    ss << printAsRAM( cachedImgParams->getElementsCount() * sizeof(Image::data_t) ).toStdString();
-                    Natron::errorDialog( QObject::tr("Out of memory").toStdString(),ss.str() );
-                    
-                    return newImage;
-                }
-                
-                assert(newImage);
-                assert(newImage->getRoD() == rod);
-                
-                if (!cached) {
-                    newImage->allocateMemory();
-                } else {
-                    ///lock the image because it might not be allocated yet
-                    imageLock.lock(newImage);
-                }
-            } else {
-                newImage.reset(new Natron::Image(key, cachedImgParams));
-            }
-            
-            image = newImage;
-            downscaledImage = image;
-        }
-        
-        if (renderFullScaleThenDownscale) {
-            
-            ///Allocate the upscaled image
-            assert(renderMappedMipMapLevel == 0);
-
-            if (!useImageAsOutput) {
-                
-                ///The upscaled image will be rendered using input images at lower def... which means really crappy results, don't cache this image!
-                image.reset( new Natron::Image(outputComponents, rod, upscaledImageBounds, renderMappedMipMapLevel, downscaledImage->getPixelAspectRatio(), outputDepth, true) );
-                
-            } else {
-                
-                boost::shared_ptr<Natron::ImageParams> upscaledImageParams = Natron::Image::makeParams(cost,
-                                                                                                       rod,
-                                                                                                       upscaledImageBounds,
-                                                                                                       downscaledImage->getPixelAspectRatio(),
-                                                                                                       0,
-                                                                                                       isProjectFormat,
-                                                                                                       outputComponents,
-                                                                                                       outputDepth,
-                                                                                                       framesNeeded);
-
-                if (createInCache) {
-                    //The upscaled image will be rendered with input images at full def, it is then the best possibly rendered image so cache it!
-                    ImageLocker upscaledImageLock(this);
-                    
-                    image.reset();
-                    
-                    bool cached = !useDiskCacheNode ?
-                    Natron::getImageFromCacheOrCreate(key, upscaledImageParams, &upscaledImageLock, &image) :
-                    Natron::getImageFromDiskCacheOrCreate(key, upscaledImageParams, &upscaledImageLock, &image) ;
-                    
-                    if (!cached) {
-                        image->allocateMemory();
-                    } else {
-                        ///lock the image because it might not be allocated yet
-                        upscaledImageLock.lock(image);
-                    }
-                } else {
-                    image.reset(new Natron::Image(key, upscaledImageParams));
-                }
-            }
-            
-        }
-        
+        ///The image is not cached
+        allocateImagePlane(key, rod, downscaledImageBounds, upscaledImageBounds, isProjectFormat, framesNeeded, outputComponents, outputDepth, par, args.mipMapLevel, renderFullScaleThenDownscale, renderScaleOneUpstreamIfRenderScaleSupportDisabled, useDiskCacheNode, createInCache, &image, &downscaledImage);
         
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        ////////////////////////////// End allocation of image in cache ///////////////////////////////////////////////////////////////
-    } // if (!image) (the image is not cached)
-    else {
+        ////////////////////////////// End allocation of image in cache ////////////////////////////////////////////////////////
+        
+    } else {
         if (renderFullScaleThenDownscale && image->getMipMapLevel() == 0) {
             //Allocate a downscale image that will be cheap to create
             ///The upscaled image will be rendered using input images at lower def... which means really crappy results, don't cache this image!
@@ -4169,29 +4194,6 @@ EffectInstance::getPreferredDepthAndComponents(int inputNb,
 
     ///find deepest bitdepth
     *depth = getBitDepth();
-}
-
-static bool isComponentNeededFromInputClip(Natron::ImageComponentsEnum comp,
-                                           const EffectInstance::ComponentsNeededMap& compMap)
-{
-    for (EffectInstance::ComponentsNeededMap::const_iterator it = compMap.begin(); it != compMap.end(); ++it) {
-        
-        if (it->first == -1) {
-            ///Not an input node, continue
-            continue;
-        }
-        
-        for (std::vector<Natron::ImageComponentsEnum>::const_iterator it2 = it->second.begin();
-             it2 != it->second.end(); ++it2) {
-            if (*it2 == comp) {
-                ///The component is needed and asked for to the input
-                return true;
-            }
-        }
-    }
-    
-    ///The component
-    return false;
 }
 
 void
