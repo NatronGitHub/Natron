@@ -109,7 +109,13 @@ git log|head -1|awk "{print $2}" > curVersion.txt
 set /p GITV_IO=<curVersion.txt
 echo "Building openfx-io at commit " %GITV_IO% %BITS%bit %CONFIGURATION%
 
+set errorlevel=0
 devenv IO.sln /Build "%CONFIGURATION%|%MSVC_CONF%"
+if "%errorlevel%" == "1" (
+	goto fail
+)
+
+
 if exist "%DEPLOY_DIR%\Plugins\IO.ofx.bundle" (
 	rmdir /S /Q %DEPLOY_DIR%\Plugins\IO.ofx.bundle
 )
@@ -123,7 +129,7 @@ copy /Y %DEP_PATH%\ffmpeg_2.4\lib\%BUILD_SUB_DIR%\swscale-3.dll %DEPLOY_DIR%\Plu
 copy INRIA.IO.manifest %DEPLOY_DIR%\Plugins\IO.ofx.bundle\Contents\%OFX_CONF_SUB_DIR%
 cd %DEPLOY_DIR%\Plugins\IO.ofx.bundle\Contents\%OFX_CONF_SUB_DIR%
 mt -manifest INRIA.IO.manifest -outputresource:IO.ofx;2
-
+set errorlevel=0
 cd %CWD%
 
 goto success
