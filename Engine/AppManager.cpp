@@ -930,11 +930,10 @@ AppManagerPrivate::initBreakpad()
     
     assert(!breakpadHandler);
     std::srand(2000);
-    int randomNumber = std::rand();
     QString filename;
     int handle;
     {
-        QTemporaryFile tmpf( NATRON_APPLICATION_NAME "_CRASH_PIPE_" + QString::number(randomNumber) );
+        QTemporaryFile tmpf(NATRON_APPLICATION_NAME "_CRASH_PIPE_");
         tmpf.open();
         handle = tmpf.handle();
         filename = tmpf.fileName();

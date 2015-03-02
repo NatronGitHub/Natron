@@ -324,6 +324,7 @@ Lut::to_byte_planar(unsigned char* to,
 {
     validate();
     unsigned char *end = to + W * outDelta;
+    // coverity[dont_call]
     int start = rand() % W;
     const float *q;
     unsigned char *p;
@@ -428,6 +429,7 @@ Lut::to_byte_packed(unsigned char* to,
     validate();
 
     for (int y = rect.y1; y < rect.y2; ++y) {
+        // coverity[dont_call]
         int start = rand() % (rect.x2 - rect.x1) + rect.x1;
         unsigned error_r, error_g, error_b;
         error_r = error_g = error_b = 0x80;
@@ -940,6 +942,7 @@ to_byte_planar(unsigned char *to,
 {
     if (!alpha) {
         unsigned char *end = to + W * outDelta;
+        // coverity[dont_call]
         int start = rand() % W;
         const float *q;
         unsigned char *p;
@@ -974,6 +977,7 @@ to_byte_planar(unsigned char *to,
         }
     } else {
         unsigned char *end = to + W * outDelta;
+        // coverity[dont_call]
         int start = rand() % W;
         const float *q;
         const float *a = alpha;
@@ -1088,6 +1092,7 @@ to_byte_packed(unsigned char* to,
     outPackingSize = outputHasAlpha ? 4 : 3;
 
     for (int y = rect.y1; y < rect.y2; ++y) {
+        // coverity[dont_call]
         int start = rand() % (rect.x2 - rect.x1) + rect.x1;
         unsigned error_r, error_g, error_b;
         error_r = error_g = error_b = 0x80;

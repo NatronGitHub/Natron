@@ -1852,6 +1852,7 @@ convertToFormatInternal_sameComps(const RectI & renderWindow,
         return;
     }
     for (int y = 0; y < intersection.height(); ++y) {
+        // coverity[dont_call]
         int start = rand() % intersection.width();
         const SRCPIX* srcPixels = (const SRCPIX*)srcImg.pixelAt(intersection.x1 + start, intersection.y1 + y);
         DSTPIX* dstPixels = (DSTPIX*)dstImg.pixelAt(intersection.x1 + start, intersection.y1 + y);
@@ -1994,6 +1995,7 @@ convertToFormatInternal(const RectI & renderWindow,
     for (int y = 0; y < intersection.height(); ++y) {
         
         ///Start of the line for error diffusion
+        // coverity[dont_call]
         int start = rand() % intersection.width();
         
         const SRCPIX* srcPixels = (const SRCPIX*)srcImg.pixelAt(intersection.x1 + start, intersection.y1 + y);

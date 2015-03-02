@@ -1096,7 +1096,7 @@ scaleToTexture8bits_internal(const std::pair<int,int> & yRange,
     ///iterating over the scan-lines of the input image
     int dstY = 0;
     for (int y = yRange.first; y < yRange.second; y += args.closestPowerOf2) {
-        
+        // coverity[dont_call]
         int start = (int)( rand() % std::max( ( (args.texRect.x2 - args.texRect.x1) / args.closestPowerOf2 ),1 ) );
         const PIX* src_pixels = (const PIX*)args.inputImage->pixelAt(args.texRect.x1, y);
         U32* dst_pixels = output + dstY * args.texRect.w;
