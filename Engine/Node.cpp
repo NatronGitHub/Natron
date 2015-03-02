@@ -1251,7 +1251,6 @@ Node::getInputNames(std::map<std::string,std::string> & inputNames) const
 int
 Node::getPreferredInputInternal(bool connected) const
 {
-    assert( QThread::currentThread() == qApp->thread() );
     if (getMaxInputCount() == 0) {
         return -1;
     }

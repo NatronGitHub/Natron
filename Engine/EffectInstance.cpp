@@ -2157,7 +2157,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
                 found = it2;
                 break;
             } else {
-                if (isColorComponents && it2->first.isColorPlane()) {
+                if (isColorComponents && it2->first.isColorPlane() && isSupportedComponent(-1, it2->first)) {
                     //We found another set of components in the color plane, take it
                     found = it2;
                     break;
@@ -2421,6 +2421,8 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
         }
     }
     
+    assert(!planesToRender.planes.empty());
+    
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     /////////////////////////////////End cache lookup//////////////////////////////////////////////////////////
     
@@ -2436,7 +2438,11 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
     bool cacheAlmostFull = appPTR->isNodeCacheAlmostFull();
     
     
-    ImagePtr isPlaneCached = planesToRender.planes.begin()->second.fullscaleImage;
+    ImagePtr isPlaneCached;
+    
+    if (!planesToRender.planes.empty()) {
+        isPlaneCached = planesToRender.planes.begin()->second.fullscaleImage;
+    }
     
     if (isPlaneCached) {
         ///We check what is left to render.
@@ -2671,7 +2677,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
 # ifdef DEBUG
             {
                 const std::list<RectI>& rectsToRender = planesToRender.rectsToRender;
-                qDebug() << getNode()->getScriptName_mt_safe().c_str() << ": render view " << args.view << " " << rectsToRender.size() << " rectangles";
+                qDebug() << getNode()->getScriptName_mt_safe().c_str() << ": render view " << args.view << ", " << rectsToRender.size() << " rectangles";
                 for (std::list<RectI>::const_iterator it = rectsToRender.begin(); it != rectsToRender.end(); ++it) {
                     qDebug() << "rect: " << "x1= " <<  it->x1 << " , x2= " << it->x2 << " , y1= " << it->y1 << " , y2= " << it->y2;
                 }
@@ -2703,7 +2709,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
             ///of this image
             
             for (std::map<ImageComponents, PlaneToRender>::iterator it = planesToRender.planes.begin(); it!=planesToRender.planes.end(); ++it) {
-                if (renderAborted) {
+                if (!renderAborted) {
                     if (renderRetCode == eRenderRoIStatusRenderFailed || !planesToRender.isBeingRenderedElsewhere) {
                         _imp->unmarkImageAsBeingRendered(useImageAsOutput ? it->second.fullscaleImage : it->second.downscaleImage,
                                                          renderRetCode == eRenderRoIStatusRenderFailed);
@@ -2770,7 +2776,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
                                              getApp()->getDefaultColorSpaceForBitDepth(it->second.downscaleImage->getBitDepth()),
                                              getApp()->getDefaultColorSpaceForBitDepth(args.bitdepth),
                                              args.channelForAlpha, false, false, unPremultIfNeeded, tmp.get());
-          
+            it->second.downscaleImage = tmp;
         }
         
         assert(it->second.downscaleImage->getComponents() == it->first && it->second.downscaleImage->getBitDepth() == args.bitdepth);
@@ -4601,7 +4607,40 @@ EffectInstance::getComponentsNeededAndProduced_public(SequenceTime time, int vie
 
 {
     RECURSIVE_ACTION();
-    getComponentsNeededAndProduced_public(time, view, comps, passThroughTime, passThroughView, passThroughInput);
+    
+    if (isMultiPlanar()) {
+        getComponentsNeededAndProduced(time, view, comps, passThroughTime, passThroughView, passThroughInput);
+    } else {
+        *passThroughTime = time;
+        *passThroughView = view;
+        int idx = getNode()->getPreferredInput();
+        *passThroughInput = getNode()->getInput(idx);
+        {
+            std::vector<ImageComponents> compVec;
+            std::list<ImageComponents> prefComps;
+            ImageBitDepthEnum prefDepth;
+            getPreferredDepthAndComponents(-1, &prefComps, &prefDepth);
+            assert(prefComps.size() == 1);
+            compVec.push_back(prefComps.front());
+            comps->insert(std::make_pair(-1, compVec));
+        }
+        
+        int maxInput = getMaxInputCount();
+        for (int i = 0; i < maxInput; ++i) {
+            EffectInstance* input = getInput(i);
+            if (input) {
+                std::vector<ImageComponents> compVec;
+                std::list<ImageComponents> prefComps;
+                ImageBitDepthEnum prefDepth;
+                input->getPreferredDepthAndComponents(-1, &prefComps, &prefDepth);
+                for (std::list<ImageComponents>::iterator it = prefComps.begin(); it!=prefComps.end(); ++it) {
+                    compVec.push_back(*it);
+                }
+                
+                comps->insert(std::make_pair(i, compVec));
+            }
+        }
+    }
 }
 
 int

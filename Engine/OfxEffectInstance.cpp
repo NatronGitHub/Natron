@@ -2763,10 +2763,13 @@ OfxEffectInstance::getComponentsNeededAndProduced(SequenceTime time, int view,
         OfxTime ptTime;
         stat = effectInstance()->getClipComponentsAction((OfxTime)time, view, compMap, ptClip, ptTime, *passThroughView);
         if (stat != kOfxStatFailed) {
-            assert(ptClip);
-            OfxClipInstance* clip = dynamic_cast<OfxClipInstance*>(ptClip);
-            assert(clip);
-            *passThroughInput = clip->getAssociatedNode()->getNode();
+            
+            if (ptClip) {
+                OfxClipInstance* clip = dynamic_cast<OfxClipInstance*>(ptClip);
+                if (clip) {
+                    *passThroughInput = clip->getAssociatedNode()->getNode();
+                }
+            }
             *passThroughTime = (SequenceTime)ptTime;
             
             for (OFX::Host::ImageEffect::ComponentsMap::iterator it = compMap.begin(); it != compMap.end(); ++it) {

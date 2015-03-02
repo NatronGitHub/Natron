@@ -127,8 +127,13 @@ OfxClipInstance::getUnmappedComponents() const
         inputNode->getPreferredDepthAndComponents(-1, &comps, &depth);
         assert(!comps.empty());
         
-        const Natron::ImageComponents& comp = comps.front();
+        Natron::ImageComponents comp = comps.front();
         std::string& tls = _unmappedComponents.localData();
+        
+        //default to RGBA
+        if (comp.getNumComponents() == 0) {
+            comp = Natron::ImageComponents::getRGBAComponents();
+        }
         tls = natronsComponentsToOfxComponents(comp);
         return tls;
         
@@ -520,10 +525,27 @@ OfxClipInstance::getImage(OfxTime time,
     return getStereoscopicImage(time, -1, optionalBounds);
 }
 
+static std::string ofxPlaneToNatronPlane(const std::string& plane)
+{
+    if (plane == kFnOfxImagePlaneColour) {
+        return kNatronColorPlaneName;
+    } else if (plane == kFnOfxImagePlaneForwardMotionVector) {
+        return kNatronForwardMotionVectorsPlaneName;
+    } else if (plane == kFnOfxImagePlaneBackwardMotionVector) {
+        return kNatronBackwardMotionVectorsPlaneName;
+    } else if (plane == kFnOfxImagePlaneStereoDisparityLeft) {
+        return kNatronDisparityLeftPlaneName;
+    } else if (plane == kFnOfxImagePlaneStereoDisparityRight) {
+        return kNatronDisparityRightPlaneName;
+    }
+    return std::string();
+}
+
 OFX::Host::ImageEffect::Image*
 OfxClipInstance::getImagePlane(OfxTime time, int view, const std::string& plane,const OfxRectD *optionalBounds)
 {
     
+    std::string natronPlaneName = ofxPlaneToNatronPlane(plane);
     
     OfxPointD scale;
     scale.x = scale.y = 1.;
@@ -551,7 +573,7 @@ OfxClipInstance::getImagePlane(OfxTime time, int view, const std::string& plane,
         
         ImagePtr outputImage;
         for (ImageList::iterator it = outputPlanes.begin(); it!=outputPlanes.end(); ++it) {
-            if ((*it)->getComponents().getLayerName() == plane) {
+            if ((*it)->getComponents().getLayerName() == natronPlaneName) {
                 outputImage = *it;
                 break;
             }
@@ -617,7 +639,7 @@ OfxClipInstance::getImagePlane(OfxTime time, int view, const std::string& plane,
     scale.x = Image::getScaleFromMipMapLevel(mipMapLevel);
     scale.y = scale.x;
     
-    return getImageInternal(time, scale, view, optionalBounds, plane, usingReroute, rerouteInputNb, node, transform);
+    return getImageInternal(time, scale, view, optionalBounds, natronPlaneName, usingReroute, rerouteInputNb, node, transform);
 }
 
 OFX::Host::ImageEffect::Image*

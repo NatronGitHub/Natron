@@ -37,7 +37,7 @@ ImageComponents::~ImageComponents()
 bool
 ImageComponents::isColorPlane() const
 {
-    return _componentsName == kNatronColorPlaneName;
+    return _layerName == kNatronColorPlaneName;
 }
 
 bool
