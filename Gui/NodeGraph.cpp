@@ -3523,7 +3523,7 @@ NodeGraphPrivate::restoreConnections(const std::list<boost::shared_ptr<NodeSeria
 {
     ///For all nodes restore its connections
     std::list<boost::shared_ptr<NodeSerialization> >::const_iterator itSer = serializations.begin();
-
+    assert(serializations.size() == newNodes.size());
     for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = newNodes.begin(); it != newNodes.end(); ++it,++itSer) {
         const std::map<std::string,std::string> & inputNames = (*itSer)->getInputs();
 
@@ -3543,7 +3543,7 @@ NodeGraphPrivate::restoreConnections(const std::list<boost::shared_ptr<NodeSeria
             ///find a node  containing the same name. It should not match exactly because there's already
             /// the "-copy" that was added to its name
             for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it3 = newNodes.begin(); it3 != newNodes.end(); ++it3) {
-                if ( (*it3)->getNode()->getScriptName().find(it2->second) != std::string::npos ) {
+                if ( (*it3)->getNode()->getScriptName() == it2->second ) {
                     _publicInterface->getGui()->getApp()->getProject()->connectNodes( index, (*it3)->getNode(), (*it)->getNode().get() );
                     break;
                 }
