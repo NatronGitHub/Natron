@@ -494,7 +494,7 @@ NodeGui::createGui()
     _persistentMessage->setZValue(depth + 3);
     QFont f = _persistentMessage->font();
     f.setPixelSize(25);
-    //_persistentMessage->setFont(f);
+    _persistentMessage->setFont(f);
     _persistentMessage->hide();
 
     _stateIndicator = new QGraphicsRectItem(this);
