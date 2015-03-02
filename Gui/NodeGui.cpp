@@ -494,7 +494,7 @@ NodeGui::createGui()
     _persistentMessage->setZValue(depth + 3);
     QFont f = _persistentMessage->font();
     f.setPixelSize(25);
-    //_persistentMessage->setFont(f);
+    _persistentMessage->setFont(f);
     _persistentMessage->hide();
 
     _stateIndicator = new QGraphicsRectItem(this);
@@ -3019,14 +3019,7 @@ ExportGroupTemplateDialog::ExportGroupTemplateDialog(NodeCollection* group,Gui* 
 , _imp(new ExportGroupTemplateDialogPrivate(group,gui))
 {
     _imp->mainLayout = new QGridLayout(this);
-
-    _imp->labelLabel = new Natron::Label(tr("Label"),this);
-    QString labelTt = Qt::convertFromPlainText(tr("Set the label of the group as the user will see it in the user interface"),Qt::WhiteSpaceNormal);
-    _imp->labelLabel->setToolTip(labelTt);
-    _imp->labelEdit = new LineEdit(this);
-    _imp->labelEdit->setPlaceholderText("MyPlugin");
-    QObject::connect(_imp->labelEdit,SIGNAL(editingFinished()), this , SLOT(onLabelEditingFinished()));
-    _imp->labelEdit->setToolTip(labelTt);
+    
     
     _imp->idLabel = new Natron::Label(tr("Unique ID"),this);
     QString idTt = Qt::convertFromPlainText(tr("The unique ID is used by " NATRON_APPLICATION_NAME "to identify the plug-in in various "
@@ -3037,6 +3030,16 @@ ExportGroupTemplateDialog::ExportGroupTemplateDialog(NodeCollection* group,Gui* 
     _imp->idEdit = new LineEdit(this);
     _imp->idEdit->setPlaceholderText("org.organization.pyplugs.XXX");
     _imp->idEdit->setToolTip(idTt);
+
+
+    _imp->labelLabel = new Natron::Label(tr("Label"),this);
+    QString labelTt = Qt::convertFromPlainText(tr("Set the label of the group as the user will see it in the user interface"),Qt::WhiteSpaceNormal);
+    _imp->labelLabel->setToolTip(labelTt);
+    _imp->labelEdit = new LineEdit(this);
+    _imp->labelEdit->setPlaceholderText("MyPlugin");
+    QObject::connect(_imp->labelEdit,SIGNAL(editingFinished()), this , SLOT(onLabelEditingFinished()));
+    _imp->labelEdit->setToolTip(labelTt);
+    
     
     _imp->groupingLabel = new Natron::Label(tr("Grouping"),this);
     QString groupingTt = Qt::convertFromPlainText(tr("The grouping of the plug-in specifies where the plug-in will be located in the menus. "

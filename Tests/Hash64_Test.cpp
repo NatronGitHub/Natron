@@ -35,9 +35,11 @@ TEST(Hash64,GeneralTest) {
     ASSERT_FALSE( hash1.valid() );
 
     srand(2000);
+    // coverity[dont_call]
     int hash1ElementCount = rand() % 100 + 80;
     std::vector<int> hash1Elements;
     for (int i = 0; i < hash1ElementCount; ++i) {
+        // coverity[dont_call]
         int v = rand();
         hash1Elements.push_back(v);
         hash1.append<int>(v);
@@ -59,8 +61,10 @@ TEST(Hash64,GeneralTest) {
     hash2.reset();
     ASSERT_FALSE( hash2.valid() );
 
+    // coverity[dont_call]
     int hash2ElementCount = hash1ElementCount + (rand() % 10 + 1);
     for (int i = 0; i < hash2ElementCount; ++i) {
+        // coverity[dont_call]
         hash2.append<int>( rand() );
     }
     hash2.computeHash();

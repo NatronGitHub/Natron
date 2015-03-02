@@ -276,13 +276,15 @@ DefaultOverlay::penUp(double time,
     
     bool didSomething = false;
     for (PositionInteracts::iterator it = _imp->positions.begin(); it != _imp->positions.end(); ++it) {
-        if (it->state == ePositionInteractStatePicked && !_imp->interactiveDrag) {
-            double x = fround(_imp->lastPenPos.x(), pscale.x);
-            double y = fround(_imp->lastPenPos.y(), pscale.y);
-            it->param->setValue(x , 0);
-            it->param->setValue(y , 1);
+        if (it->state == ePositionInteractStatePicked) {
+            if (!_imp->interactiveDrag) {
+                double x = fround(_imp->lastPenPos.x(), pscale.x);
+                double y = fround(_imp->lastPenPos.y(), pscale.y);
+                it->param->setValue(x , 0);
+                it->param->setValue(y , 1);
+            }
 
-            it->state = ePositionInteractStatePoised;
+            it->state = ePositionInteractStateInactive;
             penMotion(time,renderScale,penPos,penPosViewport,pressure);
             didSomething = true;
         }
@@ -364,6 +366,9 @@ bool
 DefaultOverlay::loseFocus(double  /*time*/,
                const RenderScale &/*renderScale*/)
 {
+    for (PositionInteracts::iterator it = _imp->positions.begin(); it != _imp->positions.end(); ++it) {
+        it->state = ePositionInteractStateInactive;
+    }
     return false;
 }
 

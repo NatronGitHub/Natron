@@ -25,6 +25,8 @@
 
 #include "Engine/Knob.h"
 
+#define kQSettingsSoftwareMajorVersionSettingName "SoftwareVersionMajor"
+
 /*The current settings in the preferences menu.
    @todo Move this class to QSettings instead*/
 

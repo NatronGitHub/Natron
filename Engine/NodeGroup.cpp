@@ -1175,19 +1175,38 @@ NodeGroup::knobChanged(KnobI* k,Natron::ValueChangedReasonEnum /*reason*/,
     }
 }
 
-static bool isCharToEscape(const QChar& c)
-{
-    return c == '\\' || c == '"' || c == '\'' || c == '\n' || c == '\t' || c == '\r';
-}
 
 static QString escapeString(const QString& str)
 {
-    QString ret = str;
-    for (int i = 0; i < ret.size(); ++i) {
-        if ((i == 0 && isCharToEscape(ret[i])) ||
-            (i > 0 && isCharToEscape(ret[i]) && ret[i - 1] != QChar('\\'))) {
-            ret.insert(i, QChar('\\'));
+    QString ret;
+    for (int i = 0; i < str.size(); ++i) {
+        
+        if (i == 0 || str[i -1] != QChar('\\')) {
+            if (str[i] == '\\') {
+                ret.append('\\');
+                ret.append('\\');
+            } else if (str[i] == '"') {
+                ret.append('\\');
+                ret.append('"');
+            } else if (str[i] == '\'') {
+                ret.append('\\');
+                ret.append('\'');
+            } else if (str[i] == '\n') {
+                ret.append('\\');
+                ret.append('n');
+            } else if (str[i] == '\t') {
+                ret.append('\\');
+                ret.append('t');
+            } else if (str[i] == '\r') {
+                ret.append('\\');
+                ret.append('r');
+            } else {
+                ret.append(str[i]);
+            }
+        } else {
+            ret.append(str[i]);
         }
+        
     }
     ret.prepend('"');
     ret.append('"');

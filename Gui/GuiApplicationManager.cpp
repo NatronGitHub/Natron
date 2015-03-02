@@ -910,7 +910,7 @@ GuiApplicationManager::initGui()
     
     
     ///Do not load old font stored in the setting "systemFont" on Natron < 2 because it might contain a crappy font.
-    if (settings.contains("SoftwareVersion") && settings.value("SoftwareVersion").toInt() >= 2) {
+    if (settings.contains(kQSettingsSoftwareMajorVersionSettingName) && settings.value(kQSettingsSoftwareMajorVersionSettingName).toInt() >= 2) {
         if (settings.contains("systemFont")) {
             fontFamily = settings.value("systemFont").toString();
         }
