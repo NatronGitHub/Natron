@@ -3000,7 +3000,7 @@ AppManager::initPython(int argc,char* argv[])
     
     //See http://wiki.blender.org/index.php/Dev:2.4/Source/Python/API/Threads
     //Python releases the GIL every 100 virtual Python instructions, we do not want that to happen in the middle of an expression.
-    _PyEval_SetSwitchInterval(LONG_MAX);
+    //_PyEval_SetSwitchInterval(LONG_MAX);
     
     //See answer for http://stackoverflow.com/questions/15470367/pyeval-initthreads-in-python-3-how-when-to-call-it-the-saga-continues-ad-naus
     PyEval_InitThreads();
