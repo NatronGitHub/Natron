@@ -672,7 +672,14 @@ AppInstance::createNodeInternal(const QString & pluginID,
     if (!ofxDesc) {
         OFX::Host::ImageEffect::ImageEffectPlugin* ofxPlugin = plugin->getOfxPlugin();
         if (ofxPlugin) {
-            ofxDesc = Natron::OfxHost::getPluginContextAndDescribe(ofxPlugin,&ctx);
+            
+            try {
+                ofxDesc = Natron::OfxHost::getPluginContextAndDescribe(ofxPlugin,&ctx);
+            } catch (const std::exception& e) {
+                errorDialog(tr("Error while creating node").toStdString(), tr("Failed to create an instance of ").toStdString()
+                            + pluginID.toStdString() + ": " + e.what(), false);
+                return NodePtr();
+            }
             assert(ofxDesc);
             plugin->setOfxDesc(ofxDesc, ctx);
         }
