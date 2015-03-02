@@ -4620,25 +4620,27 @@ EffectInstance::getComponentsNeededAndProduced_public(SequenceTime time, int vie
             std::list<ImageComponents> prefComps;
             ImageBitDepthEnum prefDepth;
             getPreferredDepthAndComponents(-1, &prefComps, &prefDepth);
-            assert(prefComps.size() == 1);
-            compVec.push_back(prefComps.front());
+            for (std::list<ImageComponents>::iterator it = prefComps.begin(); it!=prefComps.end(); ++it) {
+                compVec.push_back(*it);
+            }
             comps->insert(std::make_pair(-1, compVec));
         }
         
         int maxInput = getMaxInputCount();
         for (int i = 0; i < maxInput; ++i) {
             EffectInstance* input = getInput(i);
+            std::vector<ImageComponents> compVec;
+            
             if (input) {
-                std::vector<ImageComponents> compVec;
                 std::list<ImageComponents> prefComps;
                 ImageBitDepthEnum prefDepth;
                 input->getPreferredDepthAndComponents(-1, &prefComps, &prefDepth);
                 for (std::list<ImageComponents>::iterator it = prefComps.begin(); it!=prefComps.end(); ++it) {
                     compVec.push_back(*it);
                 }
-                
-                comps->insert(std::make_pair(i, compVec));
             }
+            comps->insert(std::make_pair(i, compVec));
+
         }
     }
 }
