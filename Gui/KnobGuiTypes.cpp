@@ -2869,8 +2869,7 @@ String_KnobGui::createWidget(QHBoxLayout* layout)
             _richTextOptionsLayout->setSpacing(8);
 
             _fontCombo = new QFontComboBox(_richTextOptions);
-            QFont font("Verdana",NATRON_FONT_SIZE_12);
-            _fontCombo->setCurrentFont(font);
+            _fontCombo->setCurrentFont(QApplication::font());
             _fontCombo->setToolTip( tr("Font") );
             _richTextOptionsLayout->addWidget(_fontCombo);
 

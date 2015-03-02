@@ -30,6 +30,7 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QGridLayout>
 #include <QFile>
 #include <QDialogButtonBox>
+#include <QApplication>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
@@ -2514,10 +2515,10 @@ NodeGui::setNameItemHtml(const QString & name,
         
     } else {
         ///Default to something not too bad
-        QString fontTag = QString("<font size=\"%1\" color=\"%2\" face=\"%3\">")
-                          .arg(6)
-                          .arg( QColor(Qt::black).name() )
-                          .arg("Verdana");
+        QString fontTag = (QString("<font size=\"%1\" color=\"%2\" face=\"%3\">")
+                           .arg(6)
+                           .arg( QColor(Qt::black).name() )
+                           .arg(QApplication::font().family()));
         textLabel.append(fontTag);
         textLabel.append(name);
         textLabel.append("</font>");
