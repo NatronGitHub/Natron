@@ -366,7 +366,10 @@ bool
 DefaultOverlay::loseFocus(double  /*time*/,
                const RenderScale &/*renderScale*/)
 {
-    it->state = ePositionInteractStateInactive;
+    for (PositionInteracts::iterator it = _imp->positions.begin(); it != _imp->positions.end(); ++it) {
+        it->state = ePositionInteractStateInactive;
+    }
+    
     return false;
 }
 
