@@ -745,9 +745,14 @@ ViewerInstance::renderViewer_internal(int view,
     assert(inArgs.params->ramBuffer);
     
     
-    ImageComponentsEnum components;
+    std::list<ImageComponents> components;
     ImageBitDepthEnum imageDepth;
     inArgs.activeInputToRender->getPreferredDepthAndComponents(-1, &components, &imageDepth);
+    assert(!components.empty());
+    
+#pragma message WARN("Request here what the viewer is displaying")
+    std::list<ImageComponents> requestedComponents;
+    requestedComponents.push_back(components.front());
     
     {
         
@@ -778,16 +783,19 @@ ViewerInstance::renderViewer_internal(int view,
         // We catch it  and rethrow it just to notify the rendering is done.
         try {
             
-            inArgs.params->image = inArgs.activeInputToRender->renderRoI(EffectInstance::RenderRoIArgs(inArgs.params->time,
+            ImageList planes = inArgs.activeInputToRender->renderRoI(EffectInstance::RenderRoIArgs(inArgs.params->time,
                                                                                          inArgs.key->getScale(),
                                                                                          inArgs.params->mipMapLevel,
                                                                                          view,
                                                                                          inArgs.forceRender,
                                                                                          roi,
                                                                                          inArgs.params->rod,
-                                                                                         components,
+                                                                                         requestedComponents,
                                                                                          imageDepth) );
-            
+            assert(planes.size() == 0 || planes.size() == 1);
+            if (!planes.empty()) {
+                inArgs.params->image = planes.front();
+            }
             if (!inArgs.params->image) {
                 if (inArgs.params->cachedFrame) {
                     inArgs.params->cachedFrame->setAborted(true);
@@ -980,11 +988,12 @@ renderFunctor(std::pair<int,int> yRange,
     }
 }
 
-template <int nComps>
+inline
 std::pair<double, double>
-findAutoContrastVminVmax_internal(boost::shared_ptr<const Natron::Image> inputImage,
-                         Natron::DisplayChannelsEnum channels,
-                         const RectI & rect)
+findAutoContrastVminVmax_generic(boost::shared_ptr<const Natron::Image> inputImage,
+                                 int nComps,
+                                 Natron::DisplayChannelsEnum channels,
+                                 const RectI & rect)
 {
     double localVmin = std::numeric_limits<double>::infinity();
     double localVmax = -std::numeric_limits<double>::infinity();
@@ -1061,28 +1070,38 @@ findAutoContrastVminVmax_internal(boost::shared_ptr<const Natron::Image> inputIm
     return std::make_pair(localVmin, localVmax);
 }
 
+template <int nComps>
+std::pair<double, double>
+findAutoContrastVminVmax_internal(boost::shared_ptr<const Natron::Image> inputImage,
+                                  Natron::DisplayChannelsEnum channels,
+                                  const RectI & rect)
+{
+    return findAutoContrastVminVmax_generic(inputImage, nComps, channels, rect);
+}
 
 std::pair<double, double>
 findAutoContrastVminVmax(boost::shared_ptr<const Natron::Image> inputImage,
                          Natron::DisplayChannelsEnum channels,
                          const RectI & rect)
 {
-    switch (inputImage->getComponents()) {
-        case Natron::eImageComponentRGBA:
-            return findAutoContrastVminVmax_internal<4>(inputImage, channels, rect);
-        case Natron::eImageComponentRGB:
-            return findAutoContrastVminVmax_internal<3>(inputImage, channels, rect);
-        case Natron::eImageComponentAlpha:
-            return findAutoContrastVminVmax_internal<1>(inputImage, channels, rect);
-        default:
-            return std::make_pair(0,1);
+    int nComps = inputImage->getComponents().getNumComponents();
+    if (nComps == 4) {
+        return findAutoContrastVminVmax_internal<4>(inputImage, channels, rect);
+    } else if (nComps == 3) {
+        return findAutoContrastVminVmax_internal<3>(inputImage, channels, rect);
+    } else if (nComps == 1) {
+        return findAutoContrastVminVmax_internal<1>(inputImage, channels, rect);
+    } else {
+        return findAutoContrastVminVmax_generic(inputImage, nComps, channels, rect);
     }
+    
 } // findAutoContrastVminVmax
 
-template <typename PIX,int maxValue,int nComps,bool opaque,int rOffset,int gOffset,int bOffset>
+template <typename PIX,int maxValue,bool opaque,int rOffset,int gOffset,int bOffset>
 void
-scaleToTexture8bits_internal(const std::pair<int,int> & yRange,
+scaleToTexture8bits_generic(const std::pair<int,int> & yRange,
                              const RenderViewerArgs & args,
+                             int nComps,
                              ViewerInstance* /*viewer*/,
                              U32* output)
 {
@@ -1216,58 +1235,76 @@ scaleToTexture8bits_internal(const std::pair<int,int> & yRange,
         }
         ++dstY;
     }
-} // scaleToTexture8bits_internal
+} // scaleToTexture8bits_generic
 
 
-template <typename PIX,int maxValue,int nComps,int rOffset,int gOffset,int bOffset>
+template <typename PIX,int maxValue,int nComps,bool opaque,int rOffset,int gOffset,int bOffset>
+void
+scaleToTexture8bits_internal(const std::pair<int,int> & yRange,
+                             const RenderViewerArgs & args,
+                             ViewerInstance* viewer,
+                             U32* output)
+{
+    scaleToTexture8bits_generic<PIX, maxValue, opaque, rOffset, gOffset, bOffset>(yRange, args, nComps, viewer, output);
+}
+
+template <typename PIX,int maxValue, bool opaque, int rOffset, int gOffset, int bOffset>
+void
+scaleToTexture8bitsForDepthForComponents(const std::pair<int,int> & yRange,
+                                         const RenderViewerArgs & args,
+                                         ViewerInstance* viewer,
+                                         U32* output)
+{
+    int nComps = args.inputImage->getComponents().getNumComponents();
+    switch (nComps) {
+        case 4:
+            scaleToTexture8bits_internal<PIX,maxValue,4 , opaque, rOffset,gOffset,bOffset>(yRange,args,viewer,output);
+            break;
+        case Natron::eImageComponentRGB:
+            scaleToTexture8bits_internal<PIX,maxValue,3, opaque, rOffset,gOffset,bOffset>(yRange,args,viewer,output);
+            break;
+        case Natron::eImageComponentAlpha:
+            scaleToTexture8bits_internal<PIX,maxValue,1, opaque, rOffset,gOffset,bOffset>(yRange,args,viewer,output);
+            break;
+        default:
+            scaleToTexture8bits_generic<PIX, maxValue, opaque, rOffset, gOffset, bOffset>(yRange, args, nComps, viewer, output);
+            break;
+    }
+}
+
+template <typename PIX,int maxValue,bool opaque>
 void
 scaleToTexture8bitsForPremult(const std::pair<int,int> & yRange,
                              const RenderViewerArgs & args,
                              ViewerInstance* viewer,
                              U32* output)
 {
-    switch (args.srcPremult) {
-        case Natron::eImagePremultiplicationOpaque:
-            scaleToTexture8bits_internal<PIX, maxValue, nComps, true, rOffset, gOffset, bOffset>(yRange, args,viewer, output);
-            break;
-        case Natron::eImagePremultiplicationPremultiplied:
-        case Natron::eImagePremultiplicationUnPremultiplied:
-        default:
-            scaleToTexture8bits_internal<PIX, maxValue, nComps, false, rOffset, gOffset, bOffset>(yRange, args,viewer, output);
-            break;
-            
-    }
-}
-
-template <typename PIX,int maxValue,int nComps>
-void
-scaleToTexture8bitsForDepthForComponents(const std::pair<int,int> & yRange,
-                            const RenderViewerArgs & args,
-                            ViewerInstance* viewer,
-                            U32* output)
-{
+    
     switch (args.channels) {
         case Natron::eDisplayChannelsRGB:
         case Natron::eDisplayChannelsY:
-
-            scaleToTexture8bitsForPremult<PIX, maxValue, nComps, 0, 1, 2>(yRange, args,viewer, output);
+            
+            scaleToTexture8bitsForDepthForComponents<PIX, maxValue, opaque, 0, 1, 2>(yRange, args,viewer, output);
             break;
         case Natron::eDisplayChannelsG:
-            scaleToTexture8bitsForPremult<PIX, maxValue, nComps, 1, 1, 1>(yRange, args,viewer, output);
+            scaleToTexture8bitsForDepthForComponents<PIX, maxValue, opaque, 1, 1, 1>(yRange, args,viewer, output);
             break;
         case Natron::eDisplayChannelsB:
-            scaleToTexture8bitsForPremult<PIX, maxValue, nComps, 2, 2, 2>(yRange, args,viewer, output);
+            scaleToTexture8bitsForDepthForComponents<PIX, maxValue, opaque, 2, 2, 2>(yRange, args,viewer, output);
             break;
         case Natron::eDisplayChannelsA:
-            scaleToTexture8bitsForPremult<PIX, maxValue, nComps, 3, 3, 3>(yRange, args,viewer, output);
+            scaleToTexture8bitsForDepthForComponents<PIX, maxValue, opaque, 3, 3, 3>(yRange, args,viewer, output);
             break;
         case Natron::eDisplayChannelsR:
         default:
-            scaleToTexture8bitsForPremult<PIX, maxValue, nComps, 0, 0, 0>(yRange, args,viewer, output);
-
+            scaleToTexture8bitsForDepthForComponents<PIX, maxValue, opaque, 0, 0, 0>(yRange, args,viewer, output);
+            
             break;
     }
+    
+   
 }
+
 
 template <typename PIX,int maxValue>
 void
@@ -1276,19 +1313,16 @@ scaleToTexture8bitsForDepth(const std::pair<int,int> & yRange,
                             ViewerInstance* viewer,
                             U32* output)
 {
-    Natron::ImageComponentsEnum comps = args.inputImage->getComponents();
-    switch (comps) {
-        case Natron::eImageComponentRGBA:
-            scaleToTexture8bitsForDepthForComponents<PIX,maxValue,4>(yRange,args,viewer,output);
+    switch (args.srcPremult) {
+        case Natron::eImagePremultiplicationOpaque:
+            scaleToTexture8bitsForPremult<PIX, maxValue, true>(yRange, args,viewer, output);
             break;
-        case Natron::eImageComponentRGB:
-            scaleToTexture8bitsForDepthForComponents<PIX,maxValue,3>(yRange,args,viewer,output);
-            break;
-        case Natron::eImageComponentAlpha:
-            scaleToTexture8bitsForDepthForComponents<PIX,maxValue,1>(yRange,args,viewer,output);
-            break;
+        case Natron::eImagePremultiplicationPremultiplied:
+        case Natron::eImagePremultiplicationUnPremultiplied:
         default:
+            scaleToTexture8bitsForPremult<PIX, maxValue, false>(yRange, args,viewer, output);
             break;
+            
     }
 }
 
@@ -1315,12 +1349,13 @@ scaleToTexture8bits(std::pair<int,int> yRange,
     }
 } // scaleToTexture8bits
 
-template <typename PIX,int maxValue,int nComps,bool opaque,int rOffset,int gOffset,int bOffset>
+template <typename PIX,int maxValue,bool opaque,int rOffset,int gOffset,int bOffset>
 void
-scaleToTexture32bitsInternal(const std::pair<int,int> & yRange,
-                             const RenderViewerArgs & args,
-                             ViewerInstance* viewer,
-                             float *output)
+scaleToTexture32bitsGeneric(const std::pair<int,int> & yRange,
+                            const RenderViewerArgs & args,
+                            int nComps,
+                            ViewerInstance* viewer,
+                            float *output)
 {
     size_t pixelSize = sizeof(PIX);
     const bool luminance = (args.channels == Natron::eDisplayChannelsY);
@@ -1423,93 +1458,68 @@ scaleToTexture32bitsInternal(const std::pair<int,int> & yRange,
         }
         ++dstY;
     }
-} // scaleToTexture32bitsInternal
+} // scaleToTexture32bitsGeneric
 
-
-template <typename PIX,int maxValue,int nComps,int rOffset,int gOffset,int bOffset>
+template <typename PIX,int maxValue,int nComps,bool opaque,int rOffset,int gOffset,int bOffset>
 void
-scaleToTexture32bitsForPremult(const std::pair<int,int> & yRange,
+scaleToTexture32bitsInternal(const std::pair<int,int> & yRange,
                              const RenderViewerArgs & args,
-                            ViewerInstance* viewer,
-                             float *output)
-{
-    switch (args.srcPremult) {
-        case Natron::eImagePremultiplicationOpaque:
-            scaleToTexture32bitsInternal<PIX, maxValue, nComps, true, rOffset, gOffset, bOffset>(yRange, args,viewer, output);
-            break;
-        case Natron::eImagePremultiplicationPremultiplied:
-        case Natron::eImagePremultiplicationUnPremultiplied:
-        default:
-            scaleToTexture32bitsInternal<PIX, maxValue, nComps, false, rOffset, gOffset, bOffset>(yRange, args,viewer, output);
-            break;
-        
-    }
+                             ViewerInstance* viewer,
+                             float *output) {
+    scaleToTexture32bitsGeneric<PIX, maxValue, opaque, rOffset, gOffset, bOffset>(yRange, args, nComps, viewer, output);
 }
 
-template <typename PIX,int maxValue,int nComps>
+template <typename PIX,int maxValue,bool opaque,int rOffset,int gOffset,int bOffset>
 void
 scaleToTexture32bitsForDepthForComponents(const std::pair<int,int> & yRange,
                              const RenderViewerArgs & args,
                             ViewerInstance* viewer,
                              float *output)
 {
+    int  nComps = args.inputImage->getComponents().getNumComponents();
+    switch (nComps) {
+        case 4:
+            scaleToTexture32bitsInternal<PIX,maxValue,4, opaque, rOffset,gOffset,bOffset>(yRange,args,viewer,output);
+            break;
+        case 3:
+            scaleToTexture32bitsInternal<PIX,maxValue,3, opaque, rOffset,gOffset,bOffset>(yRange,args,viewer,output);
+            break;
+        case 1:
+            scaleToTexture32bitsInternal<PIX,maxValue,1, opaque, rOffset,gOffset,bOffset>(yRange,args,viewer,output);
+            break;
+        default:
+            scaleToTexture32bitsGeneric<PIX,maxValue, opaque, rOffset,gOffset,bOffset>(yRange,args,nComps,viewer,output);
+            break;
+    }
+}
+
+template <typename PIX,int maxValue,bool opaque>
+void
+scaleToTexture32bitsForPremultForComponents(const std::pair<int,int> & yRange,
+                             const RenderViewerArgs & args,
+                            ViewerInstance* viewer,
+                             float *output)
+{
+    
+ 
+    
     switch (args.channels) {
         case Natron::eDisplayChannelsRGB:
         case Natron::eDisplayChannelsY:
-            switch (nComps) {
-                case 1:
-                    scaleToTexture32bitsForPremult<PIX, maxValue, nComps, 0, 0, 0>(yRange, args,viewer, output);
-                    break;
-                case 3:
-                case 4:
-                    scaleToTexture32bitsForPremult<PIX, maxValue, nComps, 0, 1, 2>(yRange, args,viewer, output);
-                    break;
-                default:
-                    break;
-            }
+            scaleToTexture32bitsForDepthForComponents<PIX, maxValue, opaque, 0, 1, 2>(yRange, args,viewer, output);
             break;
         case Natron::eDisplayChannelsG:
-            switch (nComps) {
-                case 1:
-                    scaleToTexture32bitsForPremult<PIX, maxValue, nComps, 0, 0, 0>(yRange, args,viewer, output);
-                    break;
-                case 3:
-                case 4:
-                    scaleToTexture32bitsForPremult<PIX, maxValue, nComps, 1, 1, 1>(yRange, args,viewer, output);
-                    break;
-                default:
-                    break;
-            }
+            scaleToTexture32bitsForDepthForComponents<PIX, maxValue, opaque, 1, 1, 1>(yRange, args,viewer, output);
             break;
         case Natron::eDisplayChannelsB:
-            switch (nComps) {
-                case 1:
-                    scaleToTexture32bitsForPremult<PIX, maxValue, nComps, 0, 0, 0>(yRange, args,viewer, output);
-                    break;
-                case 3:
-                case 4:
-                    scaleToTexture32bitsForPremult<PIX, maxValue, nComps, 2, 2, 2>(yRange, args,viewer, output);
-                    break;
-                default:
-                    break;
-            }
+            scaleToTexture32bitsForDepthForComponents<PIX, maxValue, opaque, 2, 2, 2>(yRange, args,viewer, output);
             break;
         case Natron::eDisplayChannelsA:
-            switch (nComps) {
-                case 1:
-                case 3:
-                    scaleToTexture32bitsForPremult<PIX, maxValue, nComps, 0, 0, 0>(yRange, args,viewer, output);
-                    break;
-                case 4:
-                    scaleToTexture32bitsForPremult<PIX, maxValue, nComps, 3, 3, 3>(yRange, args,viewer, output);
-                    break;
-                default:
-                    break;
-            }
+            scaleToTexture32bitsForDepthForComponents<PIX, maxValue, opaque, 3, 3, 3>(yRange, args,viewer, output);
             break;
         case Natron::eDisplayChannelsR:
         default:
-            scaleToTexture32bitsForPremult<PIX, maxValue, nComps, 0, 0, 0>(yRange, args,viewer, output);
+            scaleToTexture32bitsForDepthForComponents<PIX, maxValue, opaque, 0, 0, 0>(yRange, args,viewer, output);
             break;
     }
 
@@ -1517,25 +1527,24 @@ scaleToTexture32bitsForDepthForComponents(const std::pair<int,int> & yRange,
 
 template <typename PIX,int maxValue>
 void
-scaleToTexture32bitsForDepth(const std::pair<int,int> & yRange,
+scaleToTexture32bitsForPremult(const std::pair<int,int> & yRange,
                              const RenderViewerArgs & args,
                              ViewerInstance* viewer,
                              float *output)
 {
-    Natron::ImageComponentsEnum comps = args.inputImage->getComponents();
-    switch (comps) {
-        case Natron::eImageComponentRGBA:
-            scaleToTexture32bitsForDepthForComponents<PIX,maxValue,4>(yRange,args,viewer,output);
+    switch (args.srcPremult) {
+        case Natron::eImagePremultiplicationOpaque:
+            scaleToTexture32bitsForPremultForComponents<PIX, maxValue, true>(yRange, args,viewer, output);
             break;
-        case Natron::eImageComponentRGB:
-            scaleToTexture32bitsForDepthForComponents<PIX,maxValue,3>(yRange,args,viewer,output);
-            break;
-        case Natron::eImageComponentAlpha:
-            scaleToTexture32bitsForDepthForComponents<PIX,maxValue,1>(yRange,args,viewer,output);
-            break;
+        case Natron::eImagePremultiplicationPremultiplied:
+        case Natron::eImagePremultiplicationUnPremultiplied:
         default:
+            scaleToTexture32bitsForPremultForComponents<PIX, maxValue, false>(yRange, args,viewer, output);
             break;
+            
     }
+    
+    
 }
 
 void
@@ -1548,13 +1557,13 @@ scaleToTexture32bits(std::pair<int,int> yRange,
 
     switch ( args.inputImage->getBitDepth() ) {
         case Natron::eImageBitDepthFloat:
-            scaleToTexture32bitsForDepth<float, 1>(yRange, args,viewer, output);
+            scaleToTexture32bitsForPremult<float, 1>(yRange, args,viewer, output);
             break;
         case Natron::eImageBitDepthByte:
-            scaleToTexture32bitsForDepth<unsigned char, 255>(yRange, args,viewer, output);
+            scaleToTexture32bitsForPremult<unsigned char, 255>(yRange, args,viewer, output);
             break;
         case Natron::eImageBitDepthShort:
-            scaleToTexture32bitsForDepth<unsigned short, 65535>(yRange, args,viewer, output);
+            scaleToTexture32bitsForPremult<unsigned short, 65535>(yRange, args,viewer, output);
             break;
         case Natron::eImageBitDepthNone:
             break;
@@ -1800,10 +1809,12 @@ ViewerInstance::getChannels() const
 
 void
 ViewerInstance::addAcceptedComponents(int /*inputNb*/,
-                                      std::list<Natron::ImageComponentsEnum>* comps)
+                                      std::list<Natron::ImageComponents>* comps)
 {
     ///Viewer only supports RGBA for now.
-    comps->push_back(Natron::eImageComponentRGBA);
+    comps->push_back(ImageComponents::getRGBAComponents());
+    comps->push_back(ImageComponents::getRGBComponents());
+    comps->push_back(ImageComponents::getAlphaComponents());
 }
 
 int

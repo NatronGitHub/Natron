@@ -45,6 +45,7 @@ CLANG_DIAG_ON(deprecated-declarations)
 
 namespace Natron {
 class Image;
+class ImageComponents;
 class Node;
 }
 namespace boost {
@@ -1007,7 +1008,7 @@ public:
      **/
     boost::shared_ptr<Natron::Image> renderMask(bool useCache,
                                                 const RectI & roi,
-                                                Natron::ImageComponentsEnum components,
+                                                const Natron::ImageComponents& components,
                                                 U64 nodeHash,
                                                 U64 ageToRender,
                                                 const RectD & nodeRoD,

@@ -26,6 +26,7 @@ CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/Format.h"
+#include "Engine/ImageComponents.h"
 
 class ViewerGL;
 namespace Natron {
@@ -51,7 +52,7 @@ public:
 
     void setDataWindow(const RectI & r); // in canonical coordinates
 
-    void setImageFormat(Natron::ImageComponentsEnum comp,Natron::ImageBitDepthEnum depth);
+    void setImageFormat(const Natron::ImageComponents& comp,Natron::ImageBitDepthEnum depth);
 
     void setColor(float r,float g,float b,float a);
 
@@ -91,7 +92,7 @@ private:
     Natron::Label* hvl_lastOption;
     Natron::Label* _fpsLabel;
     ViewerGL* viewer;
-    Natron::ImageComponentsEnum _comp;
+    Natron::ImageComponents _comp;
     bool _colorValid;
     bool _colorApprox;
     double currentColor[4];

@@ -84,8 +84,8 @@ public:
                                   int view,
                                   bool isSequentialRender,
                                   bool isRenderResponseToUserInteraction,
-                                  boost::shared_ptr<Natron::Image> output) OVERRIDE;
-    virtual void addAcceptedComponents(int inputNb,std::list<Natron::ImageComponentsEnum>* comps) OVERRIDE FINAL;
+                                  const std::list<boost::shared_ptr<Natron::Image> >& output) OVERRIDE;
+    virtual void addAcceptedComponents(int inputNb,std::list<Natron::ImageComponents>* comps) OVERRIDE FINAL;
     virtual void addSupportedBitDepth(std::list<Natron::ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
 
 protected:

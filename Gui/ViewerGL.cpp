@@ -4676,29 +4676,27 @@ getColorAtInternal(Natron::Image* image,
         return false;
     }
     
-    Natron::ImageComponentsEnum comps = image->getComponents();
-    switch (comps) {
-        case Natron::eImageComponentRGBA:
-            *r = pix[0] / (float)maxValue;
-            *g = pix[1] / (float)maxValue;
-            *b = pix[2] / (float)maxValue;
-            *a = pix[3] / (float)maxValue;
-            break;
-        case Natron::eImageComponentRGB:
-            *r = pix[0] / (float)maxValue;
-            *g = pix[1] / (float)maxValue;
-            *b = pix[2] / (float)maxValue;
-            *a = 1.;
-            break;
-        case Natron::eImageComponentAlpha:
-            *r = 0.;
-            *g = 0.;
-            *b = 0.;
-            *a = pix[0] / (float)maxValue;
-            break;
-        default:
-            assert(false);
-            break;
+    int  nComps = image->getComponents().getNumComponents();
+    if (nComps >= 4) {
+        *r = pix[0] / (float)maxValue;
+        *g = pix[1] / (float)maxValue;
+        *b = pix[2] / (float)maxValue;
+        *a = pix[3] / (float)maxValue;
+    } else if (nComps == 3) {
+        *r = pix[0] / (float)maxValue;
+        *g = pix[1] / (float)maxValue;
+        *b = pix[2] / (float)maxValue;
+        *a = 1.;
+    } else if (nComps == 2) {
+        *r = pix[0] / (float)maxValue;
+        *g = pix[1] / (float)maxValue;
+        *b = 1.;
+        *a = 1.;
+    } else {
+        *r = 0.;
+        *g = 0.;
+        *b = 0.;
+        *a = pix[0] / (float)maxValue;
     }
     
     

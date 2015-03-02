@@ -27,6 +27,7 @@ CLANG_DIAG_ON(deprecated)
 #include <QtCore/QReadWriteLock>
 
 #include "Engine/ImageKey.h"
+#include "Engine/ImageComponents.h"
 #include "Engine/ImageParams.h"
 #include "Engine/CacheEntry.h"
 #include "Engine/Rect.h"
@@ -137,7 +138,7 @@ namespace Natron {
         /*This constructor can be used to allocate a local Image. The deallocation should
        then be handled by the user. Note that no view number is passed in parameter
        as it is not needed.*/
-        Image(ImageComponentsEnum components,
+        Image(const ImageComponents& components,
               const RectD & regionOfDefinition,    //!< rod in canonical coordinates
               const RectI & bounds,    //!< bounds in pixel coordinates
               unsigned int mipMapLevel,
@@ -168,9 +169,9 @@ namespace Natron {
                                                          const double par,
                                                          unsigned int mipMapLevel,
                                                          bool isRoDProjectFormat,
-                                                         ImageComponentsEnum components,
+                                                         const ImageComponents& components,
                                                          Natron::ImageBitDepthEnum bitdepth,
-                                                         const std::map<int, std::vector<RangeD> > & framesNeeded);
+                                                         const std::map<int, std::map<int,std::vector<RangeD> > > & framesNeeded);
         
         static boost::shared_ptr<ImageParams> makeParams(int cost,
                                                          const RectD & rod,    // the image rod in canonical coordinates
@@ -178,9 +179,9 @@ namespace Natron {
                                                          const double par,
                                                          unsigned int mipMapLevel,
                                                          bool isRoDProjectFormat,
-                                                         ImageComponentsEnum components,
+                                                         const ImageComponents& components,
                                                          Natron::ImageBitDepthEnum bitdepth,
-                                                         const std::map<int, std::vector<RangeD> > & framesNeeded);
+                                                         const std::map<int, std::map<int,std::vector<RangeD> > >& framesNeeded);
 
         
 #ifdef DEBUG
@@ -233,18 +234,19 @@ namespace Natron {
 
         unsigned int getComponentsCount() const;
 
-        ImageComponentsEnum getComponents() const
+        const ImageComponents& getComponents() const
         {
-            return this->_components;
+            return this->_params->getComponents();
         }
 
+        
         /**
      * @brief This function returns true if the components 'from' have enough components to
      * convert to the 'to' components.
      * e.g: RGBA to RGB would return true , the opposite would return false.
      **/
         static bool hasEnoughDataToConvert(Natron::ImageComponentsEnum from, Natron::ImageComponentsEnum to);
-        static std::string getFormatString(Natron::ImageComponentsEnum comps, Natron::ImageBitDepthEnum depth);
+        static std::string getFormatString(const Natron::ImageComponents& comps, Natron::ImageBitDepthEnum depth);
         static std::string getDepthString(Natron::ImageBitDepthEnum depth);
         static bool isBitDepthConversionLossy(Natron::ImageBitDepthEnum from, Natron::ImageBitDepthEnum to);
         Natron::ImageBitDepthEnum getBitDepth() const
@@ -517,7 +519,6 @@ namespace Natron {
 
     private:
         Natron::ImageBitDepthEnum _bitDepth;
-        ImageComponentsEnum _components;
         mutable QReadWriteLock _lock;
         Bitmap _bitmap;
         RectD _rod;     // rod in canonical coordinates (not the same as the OFX::Image RoD, which is in pixel coordinates)
