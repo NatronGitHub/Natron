@@ -153,7 +153,7 @@
         <file>Resources/Images/restoreDefaultEnabled.png</file>
         <file>Resources/Images/viewer_roiDisabled.png</file>
         <file>Resources/Images/viewer_roiEnabled.png</file>
-        <file>Resources/Images/layout_anchor.png</file>
+        <file>Resources/Images/layout_anchor.png</file> 
         <file>Resources/Images/settings.png</file>
         <file>Resources/Images/bounce.png</file>
         <file>Resources/Images/play_enabled.png</file>
@@ -209,5 +209,8 @@
         <file>Resources/Images/merge_over.png</file>
         <file>Resources/Images/merge_plus.png</file>
         <file>Resources/Images/merge_screen.png</file>
+        <file>Resources/Images/group_icon.png</file>
+        <file>Resources/Images/input_icon.png</file>
+        <file>Resources/Images/output_icon.png</file>
     </qresource>
 </RCC>
