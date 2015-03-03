@@ -40,9 +40,9 @@ void
 ImageComponents::serialize(Archive & ar,
           const unsigned int /*version*/)
 {
-    ar &  boost::serialization::make_nvp("Min",_layerName);
-    ar &  boost::serialization::make_nvp("Min",_componentsName);
-    ar &  boost::serialization::make_nvp("Min",_count);
+    ar &  boost::serialization::make_nvp("Layer",_layerName);
+    ar &  boost::serialization::make_nvp("Components",_componentNames);
+    ar &  boost::serialization::make_nvp("CompName",_globalComponentsName);
 }
 
 template<class Archive>

@@ -13,20 +13,47 @@
 
 using namespace Natron;
 
+static const char* rgbaComps[4] = {"r","g","b","a"};
+static const char* rgbComps[3] = {"r","g","b"};
+static const char* alphaComps[1] = {"alpha"};
+static const char* motionComps[2] = {"u","v"};
+static const char* disparityComps[2] = {"x","y"};
+
 ImageComponents::ImageComponents()
 : _layerName("none")
-, _componentsName("none")
-, _count(0)
+, _componentNames()
+, _globalComponentsName("none")
 {
     
 }
 
-ImageComponents::ImageComponents(const std::string& layerName,const std::string& componentsName,int count)
+ImageComponents::ImageComponents(const std::string& layerName,
+                                 const std::string& globalCompName,
+                                 const std::vector<std::string>& componentsName)
 : _layerName(layerName)
-, _componentsName(componentsName)
-, _count(count)
+, _componentNames(componentsName)
+, _globalComponentsName(globalCompName)
 {
-    
+    if (_globalComponentsName.empty()) {
+        //Heuristic to give an appropriate name to components
+        for (std::size_t i = 0; i < componentsName.size(); ++i) {
+            _globalComponentsName.append(componentsName[i]);
+        }
+    }
+}
+
+ImageComponents::ImageComponents(const std::string& layerName,
+                const std::string& globalCompName,
+                const char** componentsName,
+                int count)
+: _layerName(layerName)
+, _componentNames()
+, _globalComponentsName(globalCompName)
+{
+    _componentNames.resize(count);
+    for (int i = 0; i < count; ++i) {
+        _componentNames[i] = std::string(componentsName[i]);
+    }
 }
 
 ImageComponents::~ImageComponents()
@@ -47,7 +74,7 @@ ImageComponents::isConvertibleTo(const ImageComponents& other) const
         return false;
     }
     
-    if (_componentsName == kNatronColorPlaneName && other._componentsName == kNatronColorPlaneName) {
+    if (_layerName == kNatronColorPlaneName && other._layerName == kNatronColorPlaneName) {
         return true;
     }
     return false;
@@ -56,23 +83,36 @@ ImageComponents::isConvertibleTo(const ImageComponents& other) const
 bool
 ImageComponents::operator==(const ImageComponents& other) const
 {
-    return _layerName == other._layerName &&
-    _componentsName == other._componentsName &&
-    _count == other._count;
+    if (_componentNames.size() != other._componentNames.size()) {
+        return false;
+    }
+    
+    for (std::size_t i = 0; i < _componentNames.size(); ++i) {
+        if (_componentNames[i] != other._componentNames[i]) {
+            return false;
+        }
+    }
+    return _layerName == other._layerName;
 }
 
 bool
 ImageComponents::operator<(const ImageComponents& other) const
 {
-    if (_count < other._count) {
-        return true;
-    }
+
     if (_layerName < other._layerName) {
         return true;
     }
     
-    if (_componentsName < other._componentsName) {
+    if (_componentNames.size() < other._componentNames.size()) {
         return true;
+    } else if (_componentNames.size() > other._componentNames.size()) {
+        return false;
+    }
+    
+    for (std::size_t i = 0; i < _componentNames.size(); ++i) {
+        if (_componentNames[i] < other._componentNames[i]) {
+            return true;
+        }
     }
     
     return false;
@@ -81,7 +121,7 @@ ImageComponents::operator<(const ImageComponents& other) const
 int
 ImageComponents::getNumComponents() const
 {
-    return _count;
+    return (int)_componentNames.size();
 }
 
 const std::string&
@@ -90,66 +130,71 @@ ImageComponents::getLayerName() const
     return _layerName;
 }
 
-const std::string&
-ImageComponents::getComponentsName() const
+const std::vector<std::string>&
+ImageComponents::getComponentsNames() const
 {
-    return _componentsName;
+    return _componentNames;
 }
 
+const std::string&
+ImageComponents::getComponentsGlobalName() const
+{
+    return _globalComponentsName;
+}
 
 const ImageComponents&
 ImageComponents::getNoneComponents()
 {
-    static const ImageComponents comp("none","none",0);
+    static const ImageComponents comp("none","none",std::vector<std::string>());
     return comp;
 }
 
 const ImageComponents&
 ImageComponents::getRGBAComponents()
 {
-    static const ImageComponents comp(kNatronColorPlaneName,kNatronRGBAComponentsName,4);
+    static const ImageComponents comp(kNatronColorPlaneName,kNatronRGBAComponentsName,rgbaComps,4);
     return comp;
 }
 
 const ImageComponents&
 ImageComponents::getRGBComponents()
 {
-    static const ImageComponents comp(kNatronColorPlaneName,kNatronRGBComponentsName,3);
+    static const ImageComponents comp(kNatronColorPlaneName,kNatronRGBComponentsName,rgbComps,3);
     return comp;
 }
 
 const ImageComponents&
 ImageComponents::getAlphaComponents()
 {
-    static const ImageComponents comp(kNatronColorPlaneName,kNatronAlphaComponentsName,1);
+    static const ImageComponents comp(kNatronColorPlaneName,kNatronAlphaComponentsName,alphaComps,1);
     return comp;
 }
 
 const ImageComponents&
 ImageComponents::getBackwardMotionComponents()
 {
-    static const ImageComponents comp(kNatronBackwardMotionVectorsPlaneName,kNatronMotionComponentsName,2);
+    static const ImageComponents comp(kNatronBackwardMotionVectorsPlaneName,kNatronMotionComponentsName,motionComps,2);
     return comp;
 }
 
 const ImageComponents&
 ImageComponents::getForwardMotionComponents()
 {
-    static const ImageComponents comp(kNatronForwardMotionVectorsPlaneName,kNatronMotionComponentsName,2);
+    static const ImageComponents comp(kNatronForwardMotionVectorsPlaneName,kNatronMotionComponentsName,motionComps,2);
     return comp;
 }
 
 const ImageComponents&
 ImageComponents::getDisparityLeftComponents()
 {
-    static const ImageComponents comp(kNatronDisparityLeftPlaneName,kNatronDisparityComponentsName,2);
+    static const ImageComponents comp(kNatronDisparityLeftPlaneName,kNatronDisparityComponentsName,disparityComps,2);
     return comp;
 }
 
 const ImageComponents&
 ImageComponents::getDisparityRightComponents()
 {
-    static const ImageComponents comp(kNatronDisparityRightPlaneName,kNatronDisparityComponentsName,2);
+    static const ImageComponents comp(kNatronDisparityRightPlaneName,kNatronDisparityComponentsName,disparityComps,2);
     return comp;
 }
 

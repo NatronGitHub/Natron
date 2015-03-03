@@ -239,6 +239,8 @@ public:
     
     Natron::PlaybackModeEnum getPlaybackMode() const;
     
+    void refreshLayerAndAlphaChannelComboBox();
+    
 public Q_SLOTS:
 
     void startPause(bool);
@@ -346,6 +348,9 @@ public Q_SLOTS:
     
     void onInternalNodeLabelChanged(const QString& name);
     void onInternalNodeScriptNameChanged(const QString& name);
+    
+    void onAlphaChannelComboChanged(int index);
+    void onLayerComboChanged(int index);
     
 private:
     

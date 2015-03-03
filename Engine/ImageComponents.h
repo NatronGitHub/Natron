@@ -25,7 +25,7 @@ CLANG_DIAG_ON(unused-parameter)
 #include <boost/archive/binary_oarchive.hpp>
 #endif
 
-#define kNatronColorPlaneName "rgba"
+#define kNatronColorPlaneName "color"
 #define kNatronBackwardMotionVectorsPlaneName "backward"
 #define kNatronForwardMotionVectorsPlaneName "forward"
 #define kNatronDisparityLeftPlaneName "disparityL"
@@ -47,19 +47,33 @@ public:
     
     ImageComponents();
     
-    ImageComponents(const std::string& layerName,const std::string& componentsName,int count);
+    ImageComponents(const std::string& layerName,
+                    const std::string& globalCompName,
+                    const std::vector<std::string>& componentsName);
+    
+    ImageComponents(const std::string& layerName,
+                    const std::string& globalCompName,
+                    const char** componentsName,
+                    int count);
     
     ~ImageComponents();
     
+    // Is it Alpha, RGB or RGBA
     bool isColorPlane() const;
     
+    // Only color plane (isColorPlane()) can be convertible
     bool isConvertibleTo(const ImageComponents& other) const;
     
     int getNumComponents() const;
     
+    ///E.g color
     const std::string& getLayerName() const;
     
-    const std::string& getComponentsName() const;
+    ///E.g ["r","g","b","a"]
+    const std::vector<std::string>& getComponentsNames() const;
+    
+    ///E.g "rgba"
+    const std::string& getComponentsGlobalName() const;
     
     bool operator==(const ImageComponents& other) const;
     
@@ -91,8 +105,9 @@ private:
     
     
     
-    std::string _layerName,_componentsName;
-    int _count;
+    std::string _layerName;
+    std::vector<std::string> _componentNames;
+    std::string _globalComponentsName;
 };
 
 }

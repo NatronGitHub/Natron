@@ -869,7 +869,7 @@ std::string
 Image::getFormatString(const Natron::ImageComponents& comps,
                        Natron::ImageBitDepthEnum depth)
 {
-    std::string s = comps.getLayerName() + '.' + comps.getComponentsName();
+    std::string s = comps.getLayerName() + '.' + comps.getComponentsGlobalName();
     s.append( getDepthString(depth) );
 
     return s;

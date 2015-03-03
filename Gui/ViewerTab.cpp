@@ -157,6 +157,8 @@ struct ViewerTabPrivate
 
     /*1st row*/
     //ComboBox* viewerLayers;
+    ComboBox* layerChoice;
+    ComboBox* alphaChannelChoice;
     ChannelsComboBox* viewerChannels;
     ComboBox* zoomCombobox;
     Button* centerViewerButton;
@@ -265,6 +267,8 @@ struct ViewerTabPrivate
         , secondSettingsRow(NULL)
         , firstRowLayout(NULL)
         , secondRowLayout(NULL)
+        , layerChoice(NULL)
+        , alphaChannelChoice(NULL)
         , viewerChannels(NULL)
         , zoomCombobox(NULL)
         , centerViewerButton(NULL)
@@ -414,8 +418,11 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->firstRowLayout->setSpacing(0);
     _imp->mainLayout->addWidget(_imp->firstSettingsRow);
 
-    // _viewerLayers = new ComboBox(_firstSettingsRow);
-    //_firstRowLayout->addWidget(_viewerLayers);
+    _imp->layerChoice = new ComboBox(_imp->firstSettingsRow);
+    _imp->firstRowLayout->addWidget(_imp->layerChoice);
+    
+    _imp->alphaChannelChoice = new ComboBox(_imp->firstSettingsRow);
+    _imp->firstRowLayout->addWidget(_imp->alphaChannelChoice);
 
     _imp->viewerChannels = new ChannelsComboBox(_imp->firstSettingsRow);
     _imp->viewerChannels->setToolTip( "<p><b>" + tr("Channels") + ": \n</b></p>"
@@ -3983,3 +3990,47 @@ ViewerTabPrivate::getOverlayTransform(int time,
 
 }
 #endif
+
+void
+ViewerTab::refreshLayerAndAlphaChannelComboBox()
+{
+    if (!_imp->viewerNode) {
+        return;
+    }
+    
+    int activeInputIdx[2];
+    _imp->viewerNode->getActiveInputs(activeInputIdx[0], activeInputIdx[1]);
+    EffectInstance* activeInput[2] = {0, 0};
+    
+    std::set<ImageComponents> components;
+    
+    for (int i = 0; i < 2; ++i) {
+        activeInput[i] = _imp->viewerNode->getInput(activeInputIdx[i]);
+        if (activeInput[i]) {
+            EffectInstance::ComponentsAvailableMap compsAvailable;
+            activeInput[i]->getComponentsAvailable(_imp->gui->getApp()->getTimeLine()->currentFrame(), &compsAvailable);
+            for (EffectInstance::ComponentsAvailableMap::iterator it = compsAvailable.begin(); it != compsAvailable.end(); ++it) {
+                components.insert(it->first);
+            }
+        }
+    }
+
+    _imp->layerChoice->clear();
+    _imp->alphaChannelChoice->clear();
+    
+    for (std::set<ImageComponents>::iterator it = components.begin(); it!=components.end(); ++it) {
+        _imp->layerChoice->addItem(QString(it->getLayerName().c_str()) + '.' + QString(it->getComponentsName().c_str()));
+    }
+}
+
+void
+ViewerTab::onAlphaChannelComboChanged(int index)
+{
+    
+}
+
+void
+ViewerTab::onLayerComboChanged(int index)
+{
+    
+}
