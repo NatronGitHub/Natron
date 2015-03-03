@@ -26,6 +26,7 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QStyledItemDelegate>
 #include <QUndoCommand>
 #include <QPainter>
+#include <QCheckBox>
 #include <QWaitCondition>
 #include <QtConcurrentMap>
 #include <QMenu>
@@ -659,7 +660,7 @@ MultiInstancePanelPrivate::addTableRow(const boost::shared_ptr<Natron::Node> & n
 
     ///first add the enabled column
     {
-        AnimatedCheckBox* checkbox = new AnimatedCheckBox();
+        QCheckBox* checkbox = new QCheckBox();
         QObject::connect( checkbox,SIGNAL( toggled(bool) ),publicInterface,SLOT( onCheckBoxChecked(bool) ) );
         checkbox->setChecked( !node->isNodeDisabled() );
         view->setCellWidget(newRowIndex, COL_ENABLED, checkbox);
