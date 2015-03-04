@@ -352,7 +352,8 @@ Project::saveProject(const QString & path,
     try {
         if (!autoS) {
             //if  (!isSaveUpToDate() || !QFile::exists(path+name)) {
-
+            //We are saving, do not autosave.
+            _imp->autoSaveTimer->stop();
             ret = saveProjectInternal(path,name);
             
             ///We just saved, any auto-save left is then worthless

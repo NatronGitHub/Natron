@@ -3053,12 +3053,9 @@ KnobHolder::endChanges(bool discardEverything)
     {
         QMutexLocker l(&_imp->evaluationBlockedMutex);
         
-        if (_imp->evaluationBlocked > 0) {
-            --_imp->evaluationBlocked;
-        }
        // std::cout <<"DECR: " << _imp->evaluationBlocked << std::endl;
         
-        evaluate = _imp->evaluationBlocked == 0;
+        evaluate = _imp->evaluationBlocked == 1;
             
         if (evaluate) {
             knobChanged = _imp->knobChanged;
@@ -3081,12 +3078,30 @@ KnobHolder::endChanges(bool discardEverything)
                 knob = it->first;
             }
         }
+        
+        {
+            QMutexLocker l(&_imp->evaluationBlockedMutex);
+            
+            if (_imp->evaluationBlocked > 0) {
+                --_imp->evaluationBlocked;
+            }
+        }
+        
         if (significant) {
             Natron::ValueChangedReasonEnum reason = knobChanged.begin()->second.reason;
             if (!isMT) {
                 Q_EMIT doEvaluateOnMainThread(knob, significant, reason);
             } else {
                 evaluate_public(knob, significant, reason);
+            }
+        }
+    } else {
+        
+        {
+            QMutexLocker l(&_imp->evaluationBlockedMutex);
+            
+            if (_imp->evaluationBlocked > 0) {
+                --_imp->evaluationBlocked;
             }
         }
     }

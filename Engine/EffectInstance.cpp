@@ -4424,11 +4424,7 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
                                           bool originatedFromMainThread)
 {
 
-    if ( isEvaluationBlocked() ) {
-        return;
-    }
 
-    
     if (isReader() && k->getName() == kOfxImageEffectFileParamName) {
         getNode()->computeFrameRangeForReader(k);
     }

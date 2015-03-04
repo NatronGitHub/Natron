@@ -4351,7 +4351,7 @@ Node::onEffectKnobValueChanged(KnobI* what,
     } else if ( (what->getName() == kOfxImageEffectFileParamName) && _imp->liveInstance->isReader() ) {
         ///Refresh the preview automatically if the filename changed
         incrementKnobsAge(); //< since evaluate() is called after knobChanged we have to do this  by hand
-        computePreviewImage( getApp()->getTimeLine()->currentFrame() );
+        //computePreviewImage( getApp()->getTimeLine()->currentFrame() );
         
         ///union the project frame range if not locked with the reader frame range
         bool isLocked = getApp()->getProject()->isFrameRangeLocked();
