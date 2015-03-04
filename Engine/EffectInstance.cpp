@@ -2378,8 +2378,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
     }
     
     ///Pre-render input images before allocating the image if we need to render
-    if (!rectsToRender.empty()) {
-        
+    for (std::list<RectI>::iterator it = rectsToRender.begin(); it != rectsToRender.end(); ++it) {
         if (!renderInputImagesForRoI(createInCache,
                                      args.inputImagesList,
                                      args.time,
@@ -2388,7 +2387,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
                                      nodeHash,
                                      frameRenderArgs.rotoAge,
                                      rod,
-                                     roi,
+                                     *it,
                                      canonicalRoI,
                                      transformMatrix,
                                      transformInputNb,
@@ -2405,7 +2404,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
             return ImagePtr();
         }
     }
-    
+  
     ///We hold our input images in thread-storage, so that the getImage function can find them afterwards, even if the node doesn't cache its output.
     boost::shared_ptr<InputImagesHolder_RAII> inputImagesHolder;
     if (!rectsToRender.empty() && !inputImages.empty()) {
