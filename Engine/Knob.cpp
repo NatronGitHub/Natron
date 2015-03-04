@@ -3066,6 +3066,13 @@ KnobHolder::endChanges(bool discardEverything)
     }
     if (evaluate && !knobChanged.empty()) {
         if (discardEverything) {
+            {
+                QMutexLocker l(&_imp->evaluationBlockedMutex);
+                
+                if (_imp->evaluationBlocked > 0) {
+                    --_imp->evaluationBlocked;
+                }
+            }
             return;
         }
         
