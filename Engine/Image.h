@@ -688,7 +688,7 @@ namespace Natron {
         void upscaleMipMapForDepth(const RectI & roi, unsigned int fromLevel, unsigned int toLevel, Natron::Image* output) const;
 
         template<typename PIX>
-        void pasteFromForDepth(const Natron::Image & src, const RectI & srcRoi, bool copyBitmap = true);
+        void pasteFromForDepth(const Natron::Image & src, const RectI & srcRoi, bool copyBitmap = true, bool takeSrcLock = true);
 
         template <typename PIX, int maxValue>
         void fillForDepth(const RectI & roi,float r,float g,float b,float a);

@@ -488,6 +488,7 @@ public:
                                              const Natron::ImageKey& key,
                                              unsigned int mipMapLevel,
                                              const RectI& bounds,
+                                             const RectD& rod,
                                              Natron::ImageBitDepthEnum bitdepth,
                                              Natron::ImageComponentsEnum components,
                                              Natron::ImageBitDepthEnum nodeBitDepthPref,

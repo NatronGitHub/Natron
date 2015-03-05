@@ -324,9 +324,9 @@ public:
                int t)
     {
         x1 = std::min(x1, l);
-        x2 = std::max(x1, std::max(x2, r) );
+        x2 = std::max(x2, r);
         y1 = std::min(y1, b);
-        y2 = std::max(y1, std::max(y2, t) );
+        y2 = std::max(y2, t);
 
     }
 
@@ -636,18 +636,10 @@ public:
                double r,
                double t)
     {
-        if ( l < left() ) {
-            x1 = l;
-        }
-        if ( b < bottom() ) {
-            y1 = b;
-        }
-        if ( r > right() ) {
-            x2 = r;
-        }
-        if ( t > top() ) {
-            y2 = t;
-        }
+        x1 = std::min(x1, l);
+        x2 = std::max(x2, r);
+        y1 = std::min(y1, b);
+        y2 = std::max(y2, t);
     }
 
     /*intersection of two boxes*/

@@ -1533,6 +1533,7 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool useCache,
                                                     const Natron::ImageKey& key,
                                                     unsigned int mipMapLevel,
                                                     const RectI& bounds,
+                                                    const RectD& rod,
                                                     Natron::ImageBitDepthEnum bitdepth,
                                                     Natron::ImageComponentsEnum components,
                                                     Natron::ImageBitDepthEnum nodePrefDepth,
@@ -1637,11 +1638,11 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool useCache,
                 downscaledBounds.merge(bounds);
                 
                 RectI pixelRoD;
-                oldParams->getRoD().toPixelEnclosing(mipMapLevel, oldParams->getPixelAspectRatio(), &pixelRoD);
+                rod.toPixelEnclosing(mipMapLevel, oldParams->getPixelAspectRatio(), &pixelRoD);
                 downscaledBounds.intersect(pixelRoD, &downscaledBounds);
                 
                 boost::shared_ptr<ImageParams> imageParams = Image::makeParams(oldParams->getCost(),
-                                                                               oldParams->getRoD(),/*rod,*/
+                                                                               rod,
                                                                                downscaledBounds,
                                                                                oldParams->getPixelAspectRatio(),
                                                                                mipMapLevel,
@@ -1675,6 +1676,7 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool useCache,
             }
             
             *image = imageToConvert;
+            assert(imageToConvert->getBounds().contains(bounds));
             
         } else if (*image) { //  else if (imageToConvert && !*image)
             
@@ -1688,6 +1690,7 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool useCache,
              */
    
             (*image)->ensureBounds(bounds);
+            assert((*image)->getBounds().contains(bounds));
 
         }
         
@@ -2251,6 +2254,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
     bool isBeingRenderedElsewhere = false;
     getImageFromCacheAndConvertIfNeeded(createInCache, useDiskCacheNode, key, renderMappedMipMapLevel,
                                         useImageAsOutput ? upscaledImageBounds : downscaledImageBounds,
+                                        rod,
                                         args.bitdepth, args.components,
                                         outputDepth, outputComponents,args.inputImagesList, &image);
 
@@ -2354,6 +2358,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
     if (redoCacheLookup) {
         getImageFromCacheAndConvertIfNeeded(createInCache, useDiskCacheNode, key, renderMappedMipMapLevel,
                                             useImageAsOutput ? upscaledImageBounds : downscaledImageBounds,
+                                            rod,
                                             args.bitdepth, args.components,
                                             outputDepth,outputComponents,
                                             args.inputImagesList, &image);

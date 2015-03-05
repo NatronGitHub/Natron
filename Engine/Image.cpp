@@ -648,56 +648,14 @@ Image::checkBounds_debug()
 }
 #endif
 
-void
-Image::ensureBounds(const RectI& newBounds)
-{
- 
-    RectI merge = newBounds;
-    {
-        QReadLocker k(&_entryLock);
-        if (_bounds.contains(newBounds)) {
-            return;
-        }
-        merge.merge(_bounds);
-    }
-    
-    
-    ///Copy to a temp buffer of the good size
-    boost::scoped_ptr<Image> tmpImg(new Image(getComponents(),
-                                              getRoD(),
-                                              merge,
-                                              getMipMapLevel(),
-                                              getPixelAspectRatio(),
-                                              getBitDepth(),
-                                              usesBitMap()));
-    tmpImg->pasteFrom(*this, _bounds, usesBitMap());
-    
-    
-    QWriteLocker k(&_entryLock);
-    
-    ///Another thread might have taken the lock
-    if (_bounds.contains(merge)) {
-        return;
-    }
-
-    ///Change the size of the current buffer
-    _bounds = merge;
-    _params->setBounds(merge);
-    
-    swapBuffer(*tmpImg);
-    if (usesBitMap()) {
-        _bitmap.swap(tmpImg->_bitmap);
-    }
-
-}
-    
 
 // code proofread and fixed by @devernay on 8/8/2014
 template<typename PIX>
 void
 Image::pasteFromForDepth(const Natron::Image & srcImg,
                          const RectI & srcRoi,
-                         bool copyBitmap)
+                         bool copyBitmap,
+                         bool takeSrcLock)
 {
     ///Cannot copy images with different bit depth, this is not the purpose of this function.
     ///@see convert
@@ -706,14 +664,18 @@ Image::pasteFromForDepth(const Natron::Image & srcImg,
     // NOTE: before removing the following asserts, please explain why an empty image may happen
     
     QWriteLocker k(&_entryLock);
-    QReadLocker k2(&srcImg._entryLock);
+    
+    boost::shared_ptr<QReadLocker> k2;
+    if (takeSrcLock) {
+        k2.reset(new QReadLocker(&srcImg._entryLock));
+    }
     
     const RectI & bounds = _bounds;
     const RectI & srcBounds = srcImg._bounds;
-
+    
     assert( !bounds.isNull() );
     assert( !srcBounds.isNull() );
-
+    
     // only copy the intersection of roi, bounds and otherBounds
     RectI roi = srcRoi;
     bool doInteresect = roi.intersect(bounds, &roi);
@@ -726,10 +688,10 @@ Image::pasteFromForDepth(const Natron::Image & srcImg,
         // no intersection between roi and the bounds of the other image
         return;
     }
-
+    
     assert( getComponents() == srcImg.getComponents() );
     int components = getElementsCountForComponents( getComponents() );
-
+    
     if (copyBitmap) {
         copyBitmapPortion(roi, srcImg);
     }
@@ -751,6 +713,61 @@ Image::pasteFromForDepth(const Natron::Image & srcImg,
     }
 }
 
+
+void
+Image::ensureBounds(const RectI& newBounds)
+{
+    
+    
+    if (getBounds().contains(newBounds)) {
+        return;
+    }
+    
+    QWriteLocker k(&_entryLock);
+    
+    RectI merge = newBounds;
+    merge.merge(_bounds);
+    
+    
+    
+    ///Copy to a temp buffer of the good size
+    boost::scoped_ptr<Image> tmpImg(new Image(getComponents(),
+                                              getRoD(),
+                                              merge,
+                                              getMipMapLevel(),
+                                              getPixelAspectRatio(),
+                                              getBitDepth(),
+                                              usesBitMap()));
+    
+    Natron::ImageBitDepthEnum depth = getBitDepth();
+    
+    switch (depth) {
+        case eImageBitDepthByte:
+            tmpImg->pasteFromForDepth<unsigned char>(*this, _bounds, usesBitMap(), false);
+            break;
+        case eImageBitDepthShort:
+            tmpImg->pasteFromForDepth<unsigned short>(*this, _bounds, usesBitMap(), false);
+            break;
+        case eImageBitDepthFloat:
+            tmpImg->pasteFromForDepth<float>(*this, _bounds, usesBitMap(), false);
+            break;
+        case eImageBitDepthNone:
+            break;
+    }
+      
+
+    ///Change the size of the current buffer
+    _bounds = merge;
+    _params->setBounds(merge);
+    assert(_bounds.contains(newBounds));
+    swapBuffer(*tmpImg);
+    if (usesBitMap()) {
+        _bitmap.swap(tmpImg->_bitmap);
+    }
+
+}
+    
+
 // code proofread and fixed by @devernay on 8/8/2014
 void
 Image::pasteFrom(const Natron::Image & src,
@@ -763,13 +780,13 @@ Image::pasteFrom(const Natron::Image & src,
 
     switch (depth) {
     case eImageBitDepthByte:
-        pasteFromForDepth<unsigned char>(src, srcRoi, copyBitmap);
+        pasteFromForDepth<unsigned char>(src, srcRoi, copyBitmap, true);
         break;
     case eImageBitDepthShort:
-        pasteFromForDepth<unsigned short>(src, srcRoi, copyBitmap);
+        pasteFromForDepth<unsigned short>(src, srcRoi, copyBitmap, true);
         break;
     case eImageBitDepthFloat:
-        pasteFromForDepth<float>(src, srcRoi, copyBitmap);
+        pasteFromForDepth<float>(src, srcRoi, copyBitmap, true);
         break;
     case eImageBitDepthNone:
         break;
