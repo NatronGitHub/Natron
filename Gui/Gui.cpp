@@ -4315,10 +4315,12 @@ Gui::debugImage(const Natron::Image* image,
 
         return;
     }
-    const RectI & rod = image->getBounds();
+    RectI  rod = image->getBounds();
     QImage output(rod.width(),rod.height(),QImage::Format_ARGB32);
     const Natron::Color::Lut* lut = Natron::Color::LutManager::sRGBLut();
-    const float* from = (const float*)image->pixelAt( rod.left(), rod.bottom() );
+    
+    Natron::Image::ReadAccess acc = image->getReadRights();
+    const float* from = (const float*)acc.pixelAt( rod.left(), rod.bottom() );
 
     ///offset the pointer to 0,0
     from -= ( ( rod.bottom() * image->getRowElements() ) + rod.left() * image->getComponentsCount() );

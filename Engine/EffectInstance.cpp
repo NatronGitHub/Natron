@@ -49,6 +49,8 @@
 #include "Engine/Transform.h"
 #include "Engine/DiskCacheNode.h"
 
+//#define NATRON_ALWAYS_ALLOCATE_FULL_IMAGE_BOUNDS
+
 using namespace Natron;
 
 
@@ -733,11 +735,9 @@ EffectInstance::setParallelRenderArgs(int time,
                                       bool canAbort,
                                       U64 nodeHash,
                                       U64 rotoAge,
-                                      bool canSetValue,
                                       const TimeLine* timeline)
 {
     ParallelRenderArgs& args = _imp->frameRenderArgs.localData();
-    args.canSetValue = canSetValue;
     args.time = time;
     args.timeline = timeline;
     args.view = view;
@@ -746,23 +746,21 @@ EffectInstance::setParallelRenderArgs(int time,
     
     args.nodeHash = nodeHash;
     args.rotoAge = rotoAge;
-    
     args.canAbort = canAbort;
     
     ++args.validArgs;
     
 }
 
-bool
+void
 EffectInstance::invalidateParallelRenderArgs()
 {
     if (_imp->frameRenderArgs.hasLocalData()) {
         ParallelRenderArgs& args = _imp->frameRenderArgs.localData();
         --args.validArgs;
-        return args.canSetValue;
+        assert(args.validArgs >= 0);
     } else {
         qDebug() << "Frame render args thread storage not set, this is probably because the graph changed while rendering.";
-        return true;
     }
 }
 
@@ -1487,16 +1485,58 @@ EffectInstance::NotifyInputNRenderingStarted_RAII::~NotifyInputNRenderingStarted
     }
 }
 
+static void getOrCreateFromCacheInternal(const ImageKey& key,
+                                         const boost::shared_ptr<ImageParams>& params,
+                                         bool useCache,
+                                         bool useDiskCache,
+                                         ImagePtr* image)
+{
+    
+    
+    if (useCache) {
+        !useDiskCache ? Natron::getImageFromCacheOrCreate(key, params, image) :
+        Natron::getImageFromDiskCacheOrCreate(key, params, image);
+        
+        if (!*image) {
+            std::stringstream ss;
+            ss << "Failed to allocate an image of ";
+            ss << printAsRAM( params->getElementsCount() * sizeof(Image::data_t) ).toStdString();
+            Natron::errorDialog( QObject::tr("Out of memory").toStdString(),ss.str() );
+            return;
+        }
+    
+        /*
+         * Note that at this point the image is already exposed to other threads and another one might already have allocated it.
+         * This function does nothing if it has been reallocated already.
+         */
+        (*image)->allocateMemory();
+        
+        
+        
+        /*
+         * Another thread might have allocated the same image in the cache but with another RoI, make sure
+         * it is big enough for us, or resize it to our needs.
+         */
+        
+
+        (*image)->ensureBounds(params->getBounds());
+        
+        
+    } else {
+        image->reset(new Image(key, params));
+    }
+}
+
 void
 EffectInstance::getImageFromCacheAndConvertIfNeeded(bool useCache,
                                                     bool useDiskCache,
                                                     const Natron::ImageKey& key,
                                                     unsigned int mipMapLevel,
+                                                    const RectI& bounds,
                                                     Natron::ImageBitDepthEnum bitdepth,
                                                     Natron::ImageComponentsEnum components,
                                                     Natron::ImageBitDepthEnum nodePrefDepth,
                                                     Natron::ImageComponentsEnum nodePrefComps,
-                                                    const RectI& renderWindow,
                                                     const std::list<boost::shared_ptr<Natron::Image> >& inputImages,
                                                     boost::shared_ptr<Natron::Image>* image)
 {
@@ -1550,8 +1590,7 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool useCache,
             }
             
             if (imgMMlevel == mipMapLevel && Image::hasEnoughDataToConvert(imgComps,components) &&
-            getSizeOfForBitDepth(imgDepth) >= getSizeOfForBitDepth(bitdepth)/* && imgComps == components && imgDepth == bitdepth*/
-                && (*it)->getBounds().contains(renderWindow)) {
+            getSizeOfForBitDepth(imgDepth) >= getSizeOfForBitDepth(bitdepth)/* && imgComps == components && imgDepth == bitdepth*/) {
                 
                 ///We found  a matching image
                 
@@ -1584,19 +1623,26 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool useCache,
         
         if (imageToConvert && !*image) {
 
+            ///Ensure the image is allocated
+            (imageToConvert)->allocateMemory();
+
             
-            //Take the lock after getting the image from the cache
-            ///to make sure a thread will not attempt to write to the image while its being allocated.
-            ///When calling allocateMemory() on the image, the cache already has the lock since it added it
-            ///so taking this lock now ensures the image will be allocated completetly
-
-            ImageLocker locker(this, imageToConvert);
-
             if (imageToConvert->getMipMapLevel() != mipMapLevel) {
                 boost::shared_ptr<ImageParams> oldParams = imageToConvert->getParams();
                 
+                assert(imageToConvert->getMipMapLevel() < mipMapLevel);
+                
+                RectI imgToConvertBounds = imageToConvert->getBounds();
+                RectI downscaledBounds = imgToConvertBounds.downscalePowerOfTwoSmallestEnclosing(mipMapLevel - imageToConvert->getMipMapLevel());
+                downscaledBounds.merge(bounds);
+                
+                RectI pixelRoD;
+                oldParams->getRoD().toPixelEnclosing(mipMapLevel, oldParams->getPixelAspectRatio(), &pixelRoD);
+                downscaledBounds.intersect(pixelRoD, &downscaledBounds);
+                
                 boost::shared_ptr<ImageParams> imageParams = Image::makeParams(oldParams->getCost(),
                                                                                oldParams->getRoD(),/*rod,*/
+                                                                               downscaledBounds,
                                                                                oldParams->getPixelAspectRatio(),
                                                                                mipMapLevel,
                                                                                oldParams->isRodProjectFormat(),
@@ -1604,50 +1650,45 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool useCache,
                                                                                oldParams->getBitDepth(),
                                                                                oldParams->getFramesNeeded());
                 
-                if (!imageParams->getBounds().contains(renderWindow)) {
-                    return;
-                }
                 
                 imageParams->setMipMapLevel(mipMapLevel);
                 
                 
-                ///Allocate the image in the cache, it may be useful later
-                ImageLocker imageLock(this);
-                
                 boost::shared_ptr<Image> img;
-                if (useCache) {
-                    bool cached = !useDiskCache ? Natron::getImageFromCacheOrCreate(key, imageParams, &imageLock, &img) :
-                                                  Natron::getImageFromDiskCacheOrCreate(key, imageParams, &imageLock, &img);
-                    assert(img);
-                    if (!cached) {
-                        img->allocateMemory();
-                    } else {
-                        ///lock the image because it might not be allocated yet
-                        imageLock.lock(img);
-                    }
-                } else {
-                    img.reset(new Image(key, imageParams));
+                getOrCreateFromCacheInternal(key,imageParams,useCache,useDiskCache,&img);
+                if (!img) {
+                    return;
                 }
-                imageToConvert->downscaleMipMap(imageToConvert->getBounds(),
+                
+                imageToConvert->downscaleMipMap(imgToConvertBounds,
                                                 imageToConvert->getMipMapLevel(), img->getMipMapLevel() ,
                                                 useCache && imageToConvert->usesBitMap(),
                                                 img.get());
                 
                 imageToConvert = img;
+            
+
+                imageToConvert->ensureBounds(bounds);
                 
+
+
             }
             
             *image = imageToConvert;
             
         } else if (*image) { //  else if (imageToConvert && !*image)
             
-            //Take the lock after getting the image from the cache
-            ///to make sure a thread will not attempt to write to the image while its being allocated.
-            ///When calling allocateMemory() on the image, the cache already has the lock since it added it
-            ///so taking this lock now ensures the image will be allocated completetly
+            ///Ensure the image is allocated
+            (*image)->allocateMemory();
+            
+            
+            /*
+             * Another thread might have allocated the same image in the cache but with another RoI, make sure
+             * it is big enough for us, or resize it to our needs.
+             */
+   
+            (*image)->ensureBounds(bounds);
 
-            ImageLocker locker(this,*image);
-            assert(*image);
         }
         
     }
@@ -1848,36 +1889,12 @@ EffectInstance::allocateImagePlane(const ImageKey& key,
         ///When calling allocateMemory() on the image, the cache already has the lock since it added it
         ///so taking this lock now ensures the image will be allocated completetly
         
-        ImageLocker imageLock(this);
-        
-        ImagePtr newImage;
-        if (createInCache) {
-            bool cached = !useDiskCache ? Natron::getImageFromCacheOrCreate(key, cachedImgParams, &imageLock, &newImage) :
-            Natron::getImageFromDiskCacheOrCreate(key, cachedImgParams, &imageLock, &newImage);
-            
-            if (!newImage) {
-                std::stringstream ss;
-                ss << "Failed to allocate an image of ";
-                ss << printAsRAM( cachedImgParams->getElementsCount() * sizeof(Image::data_t) ).toStdString();
-                Natron::errorDialog( QObject::tr("Out of memory").toStdString(),ss.str() );
-                
-                return false;
-            }
-            
-            assert(newImage);
-            assert(newImage->getRoD() == rod);
-            
-            if (!cached) {
-                newImage->allocateMemory();
-            } else {
-                ///lock the image because it might not be allocated yet
-                imageLock.lock(newImage);
-            }
-        } else {
-            newImage.reset(new Natron::Image(key, cachedImgParams));
+        getOrCreateFromCacheInternal(key,cachedImgParams,createInCache,useDiskCache,fullScaleImage);
+        if (!*fullScaleImage) {
+            return false;
         }
         
-        *fullScaleImage = newImage;
+        
         *downscaleImage = *fullScaleImage;
     }
     
@@ -1900,34 +1917,13 @@ EffectInstance::allocateImagePlane(const ImageKey& key,
                                                                                                    depth,
                                                                                                    framesNeeded);
             
-            if (createInCache) {
-                //The upscaled image will be rendered with input images at full def, it is then the best possibly rendered image so cache it!
-                ImageLocker upscaledImageLock(this);
-                
-                fullScaleImage->reset();
-                
-                bool cached = !useDiskCache ?
-                Natron::getImageFromCacheOrCreate(key, upscaledImageParams, &upscaledImageLock, fullScaleImage) :
-                Natron::getImageFromDiskCacheOrCreate(key, upscaledImageParams, &upscaledImageLock, fullScaleImage) ;
-                
-                if (!*fullScaleImage) {
-                    std::stringstream ss;
-                    ss << "Failed to allocate an image of ";
-                    ss << printAsRAM( upscaledImageParams->getElementsCount() * sizeof(Image::data_t) ).toStdString();
-                    Natron::errorDialog( QObject::tr("Out of memory").toStdString(),ss.str() );
-                    
-                    return false;
-                }
-
-                
-                if (!cached) {
-                    (*fullScaleImage)->allocateMemory();
-                } else {
-                    ///lock the image because it might not be allocated yet
-                    upscaledImageLock.lock(*fullScaleImage);
-                }
-            } else {
-                fullScaleImage->reset(new Natron::Image(key, upscaledImageParams));
+            //The upscaled image will be rendered with input images at full def, it is then the best possibly rendered image so cache it!
+            
+            fullScaleImage->reset();
+            getOrCreateFromCacheInternal(key,upscaledImageParams,createInCache,useDiskCache,fullScaleImage);
+            
+            if (!*fullScaleImage) {
+                return false;
             }
         }
         
@@ -2144,6 +2140,73 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     /////////////////////////////////End transform concatenations//////////////////////////////////////////////////////////
     
+    /*We pass the 2 images (image & downscaledImage). Depending on the context we want to render in one or the other one:
+     If (renderFullScaleThenDownscale and renderScaleOneUpstreamIfRenderScaleSupportDisabled)
+     the image that is held by the cache will be 'image' and it will then be downscaled if needed.
+     However if the render scale is not supported but input images are not rendered at full-scale  ,
+     we don't want to cache the full-scale image because it will be low res. Instead in that case we cache the downscaled image
+     */
+    bool useImageAsOutput;
+    RectI roi;
+    
+    if (renderFullScaleThenDownscale && renderScaleOneUpstreamIfRenderScaleSupportDisabled) {
+        
+        //We cache 'image', hence the RoI should be expressed in its coordinates
+        //renderRoIInternal should check the bitmap of 'image' and not downscaledImage!
+        RectD canonicalRoI;
+        args.roi.toCanonical(args.mipMapLevel, par, rod, &canonicalRoI);
+        canonicalRoI.toPixelEnclosing(0, par, &roi);
+        useImageAsOutput = true;
+    } else {
+        
+        //In that case the plug-in either supports render scale or doesn't support render scale but uses downscaled inputs
+        //renderRoIInternal should check the bitmap of downscaledImage and not 'image'!
+        roi = args.roi;
+        useImageAsOutput = false;
+    }
+    
+    
+    RectI downscaledImageBounds,upscaledImageBounds;
+    rod.toPixelEnclosing(args.mipMapLevel, par, &downscaledImageBounds);
+    rod.toPixelEnclosing(0, par, &upscaledImageBounds);
+    
+    bool tilesSupported = supportsTiles();
+    
+    
+    Natron::ImageBitDepthEnum outputDepth;
+    Natron::ImageComponentsEnum outputComponents;
+    getPreferredDepthAndComponents(-1, &outputComponents, &outputDepth);
+    
+    
+    ///Make sure the RoI falls within the image bounds
+    ///Intersection will be in pixel coordinates
+    if (tilesSupported) {
+        if (useImageAsOutput) {
+            if (!roi.intersect(upscaledImageBounds, &roi)) {
+                return ImagePtr();
+            }
+#ifndef NATRON_ALWAYS_ALLOCATE_FULL_IMAGE_BOUNDS
+            ///just allocate the roi
+            upscaledImageBounds.intersect(roi, &upscaledImageBounds);
+#endif
+            assert(roi.x1 >= upscaledImageBounds.x1 && roi.y1 >= upscaledImageBounds.y1 &&
+                   roi.x2 <= upscaledImageBounds.x2 && roi.y2 <= upscaledImageBounds.y2);
+            
+        } else {
+            if (!roi.intersect(downscaledImageBounds, &roi)) {
+                return ImagePtr();
+            }
+#ifndef NATRON_ALWAYS_ALLOCATE_FULL_IMAGE_BOUNDS
+            ///just allocate the roi
+            downscaledImageBounds.intersect(roi, &downscaledImageBounds);
+#endif
+            assert(roi.x1 >= downscaledImageBounds.x1 && roi.y1 >= downscaledImageBounds.y1 &&
+                   roi.x2 <= downscaledImageBounds.x2 && roi.y2 <= downscaledImageBounds.y2);
+        }
+    } else {
+        roi = useImageAsOutput ? upscaledImageBounds : downscaledImageBounds;
+    }
+
     
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////// Look-up the cache ///////////////////////////////////////////////////////////////
@@ -2181,18 +2244,15 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
         }
     }
     
-    bool tilesSupported = supportsTiles();
 
-    
-    Natron::ImageBitDepthEnum outputDepth;
-    Natron::ImageComponentsEnum outputComponents;
-    getPreferredDepthAndComponents(-1, &outputComponents, &outputDepth);
 
     boost::shared_ptr<ImageParams> cachedImgParams;
     
     bool isBeingRenderedElsewhere = false;
-    getImageFromCacheAndConvertIfNeeded(createInCache, useDiskCacheNode, key, renderMappedMipMapLevel,args.bitdepth, args.components,
-                                        outputDepth, outputComponents,args.roi,args.inputImagesList, &image);
+    getImageFromCacheAndConvertIfNeeded(createInCache, useDiskCacheNode, key, renderMappedMipMapLevel,
+                                        useImageAsOutput ? upscaledImageBounds : downscaledImageBounds,
+                                        args.bitdepth, args.components,
+                                        outputDepth, outputComponents,args.inputImagesList, &image);
 
     
     if (byPassCache) {
@@ -2229,76 +2289,10 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
     }
     
     
-    RoIMap inputsRoi;
+    ///For each rect to render a RoIMap
+    std::list<RoIMap> inputsRoi;
     std::list <boost::shared_ptr<Image> > inputImages;
 
-    /*We pass the 2 images (image & downscaledImage). Depending on the context we want to render in one or the other one:
-     If (renderFullScaleThenDownscale and renderScaleOneUpstreamIfRenderScaleSupportDisabled)
-     the image that is held by the cache will be 'image' and it will then be downscaled if needed.
-     However if the render scale is not supported but input images are not rendered at full-scale  ,
-     we don't want to cache the full-scale image because it will be low res. Instead in that case we cache the downscaled image
-     */
-    bool useImageAsOutput;
-    RectI roi;
-    
-    if (renderFullScaleThenDownscale && renderScaleOneUpstreamIfRenderScaleSupportDisabled) {
-        
-        //We cache 'image', hence the RoI should be expressed in its coordinates
-        //renderRoIInternal should check the bitmap of 'image' and not downscaledImage!
-        RectD canonicalRoI;
-        args.roi.toCanonical(args.mipMapLevel, par, rod, &canonicalRoI);
-        canonicalRoI.toPixelEnclosing(0, par, &roi);
-        useImageAsOutput = true;
-    } else {
-        
-        //In that case the plug-in either supports render scale or doesn't support render scale but uses downscaled inputs
-        //renderRoIInternal should check the bitmap of downscaledImage and not 'image'!
-        roi = args.roi;
-        useImageAsOutput = false;
-    }
-    
-    
-    RectI downscaledImageBounds,upscaledImageBounds;
-    rod.toPixelEnclosing(args.mipMapLevel, par, &downscaledImageBounds);
-    rod.toPixelEnclosing(0, par, &upscaledImageBounds);
-    
-
-
-    ///Make sure the RoI falls within the image bounds
-    ///Intersection will be in pixel coordinates
-    if (tilesSupported) {
-        if (useImageAsOutput) {
-            if (!roi.intersect(upscaledImageBounds, &roi)) {
-                return ImagePtr();
-            }
-            if (!createInCache) {
-                ///If we don't cache the image, just allocate the roi
-                upscaledImageBounds.intersect(roi, &upscaledImageBounds);
-            }
-            assert(roi.x1 >= upscaledImageBounds.x1 && roi.y1 >= upscaledImageBounds.y1 &&
-                   roi.x2 <= upscaledImageBounds.x2 && roi.y2 <= upscaledImageBounds.y2);
-            
-        } else {
-            if (!roi.intersect(downscaledImageBounds, &roi)) {
-                return ImagePtr();
-            }
-            if (!createInCache) {
-                ///If we don't cache the image, just allocate the roi
-                downscaledImageBounds.intersect(roi, &downscaledImageBounds);
-            }
-            assert(roi.x1 >= downscaledImageBounds.x1 && roi.y1 >= downscaledImageBounds.y1 &&
-                   roi.x2 <= downscaledImageBounds.x2 && roi.y2 <= downscaledImageBounds.y2);
-        }
-    } else {
-        roi = useImageAsOutput ? upscaledImageBounds : downscaledImageBounds;
-    }
-    
-    RectD canonicalRoI;
-    if (useImageAsOutput) {
-        roi.toCanonical(0, par, rod, &canonicalRoI);
-    } else {
-        roi.toCanonical(args.mipMapLevel, par, rod, &canonicalRoI);
-    }
     
     /// If the list is empty then we already rendered it all
     /// Each rect in this list is in pixel coordinate (downscaled)
@@ -2359,9 +2353,10 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
 
     if (redoCacheLookup) {
         getImageFromCacheAndConvertIfNeeded(createInCache, useDiskCacheNode, key, renderMappedMipMapLevel,
+                                            useImageAsOutput ? upscaledImageBounds : downscaledImageBounds,
                                             args.bitdepth, args.components,
                                             outputDepth,outputComponents,
-                                            args.roi,args.inputImagesList, &image);
+                                            args.inputImagesList, &image);
         if (image) {
             cachedImgParams = image->getParams();
             ///We check what is left to render.
@@ -2376,9 +2371,20 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
 #endif
         }
     }
+
     
     ///Pre-render input images before allocating the image if we need to render
     for (std::list<RectI>::iterator it = rectsToRender.begin(); it != rectsToRender.end(); ++it) {
+        
+        
+        RectD canonicalRoI;
+        if (useImageAsOutput) {
+            it->toCanonical(0, par, rod, &canonicalRoI);
+        } else {
+            it->toCanonical(args.mipMapLevel, par, rod, &canonicalRoI);
+        }
+
+        RoIMap roim;
         if (!renderInputImagesForRoI(createInCache,
                                      args.inputImagesList,
                                      args.time,
@@ -2400,9 +2406,10 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
                                      byPassCache,
                                      framesNeeded,
                                      &inputImages,
-                                     &inputsRoi)) {
+                                     &roim)) {
             return ImagePtr();
         }
+        inputsRoi.push_back(roim);
     }
   
     ///We hold our input images in thread-storage, so that the getImage function can find them afterwards, even if the node doesn't cache its output.
@@ -2537,6 +2544,12 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
     assert( isSupportedBitDepth(outputDepth) && isSupportedComponent(-1, outputComponents) );
     
     if (imageConversionNeeded && renderRetCode != eRenderRoIStatusRenderFailed) {
+        
+        /**
+         * Lock the downscaled image so it cannot be resized while creating the temp image and calling convertToFormat.
+         **/
+        Image::ReadAccess acc = downscaledImage->getReadRights();
+        
         boost::shared_ptr<Image> tmp( new Image(args.components, downscaledImage->getRoD(), downscaledImage->getBounds(), mipMapLevel,downscaledImage->getPixelAspectRatio(), args.bitdepth, false) );
         
         bool unPremultIfNeeded = getOutputPremultiplication() == eImagePremultiplicationPremultiplied;
@@ -2758,7 +2771,7 @@ EffectInstance::renderRoIInternal(SequenceTime time,
                                   int channelForAlpha,
                                   bool renderFullScaleThenDownscale,
                                   bool useScaleOneInputImages,
-                                  const RoIMap& inputsRoi,
+                                  const std::list<RoIMap>& inputsRoi,
                                   const std::list<boost::shared_ptr<Natron::Image> >& inputImages
 #if NATRON_ENABLE_TRIMAP
                                   ,bool *isBeingRenderedElsewhere
@@ -2810,7 +2823,10 @@ EffectInstance::renderRoIInternal(SequenceTime time,
         renderingNotifier.reset(new NotifyRenderingStarted_RAII(getNode().get()));
     }
     
-    for (std::list<RectI>::const_iterator it = rectsToRender.begin(); it != rectsToRender.end(); ++it) {
+    assert(inputsRoi.size() == rectsToRender.size());
+    
+    std::list<RoIMap>::const_iterator roiIT = inputsRoi.begin();
+    for (std::list<RectI>::const_iterator it = rectsToRender.begin(); it != rectsToRender.end(); ++it,++roiIT) {
         
         RectI downscaledRectToRender = *it; // please leave it as const, copy it if necessary
 
@@ -2840,6 +2856,19 @@ EffectInstance::renderRoIInternal(SequenceTime time,
             renderMappedRectToRender = downscaledRectToRender;
         }
         
+        
+        /*
+         * Allocate a local temporary buffer onto which the plug-in will render, and then safely
+         * copy this buffer to the shared (among threads) image.
+         */
+        ImagePtr tmpImage(new Image(renderMappedImage->getComponents(),
+                                    renderMappedImage->getRoD(),
+                                    renderMappedRectToRender,
+                                    renderMappedImage->getMipMapLevel(),
+                                    renderMappedImage->getPixelAspectRatio(),
+                                    renderMappedImage->getBitDepth(),
+                                    false)); //< no bitmap
+        
         Implementation::ScopedRenderArgs scopedArgs(&_imp->renderArgs);
         scopedArgs.setArgs_firstPass(rod,
                                      renderMappedRectToRender,
@@ -2849,7 +2878,7 @@ EffectInstance::renderRoIInternal(SequenceTime time,
                                      false, //< if we reached here the node is not an identity!
                                      0.,
                                      -1,
-                                     renderMappedImage);
+                                     tmpImage);
         
         
         int firstFrame, lastFrame;
@@ -2859,7 +2888,7 @@ EffectInstance::renderRoIInternal(SequenceTime time,
         ///whole time the render action is called, so they can be fetched in the
         ///getImage() call.
         /// @see EffectInstance::getImage
-        scopedArgs.setArgs_secondPass(inputsRoi,firstFrame,lastFrame);
+        scopedArgs.setArgs_secondPass(*roiIT,firstFrame,lastFrame);
         const RenderArgs & args = scopedArgs.getArgs();
 
 
@@ -2997,6 +3026,7 @@ EffectInstance::renderRoIInternal(SequenceTime time,
             tiledArgs.downscaledImage = downscaledImage;
             tiledArgs.fullScaleImage = image;
             tiledArgs.renderMappedImage = renderMappedImage;
+            tiledArgs.tmpImage = tmpImage;
             tiledArgs.par = par;
             tiledArgs.renderFullScaleThenDownscale = renderFullScaleThenDownscale;
 //#define NATRON_HOSTFRAMETHREADING_SEQUENTIAL // sequential execution of host threading
@@ -3088,7 +3118,8 @@ EffectInstance::renderRoIInternal(SequenceTime time,
                                                                    par,
                                                                    downscaledImage,
                                                                    image,
-                                                                   renderMappedImage);
+                                                                   renderMappedImage,
+                                                                   tmpImage);
 
             delete locker;
             
@@ -3140,7 +3171,8 @@ EffectInstance::tiledRenderingFunctor(const TiledRenderingFunctorArgs& args,
                                  args.par,
                                  args.downscaledImage,
                                  args.fullScaleImage,
-                                 args.renderMappedImage);
+                                 args.renderMappedImage,
+                                 args.tmpImage);
 }
 
 EffectInstance::RenderingFunctorRetEnum
@@ -3156,7 +3188,8 @@ EffectInstance::tiledRenderingFunctor(const RenderArgs & args,
                                       const double par,
                                       const boost::shared_ptr<Natron::Image> & downscaledImage,
                                       const boost::shared_ptr<Natron::Image> & fullScaleImage,
-                                      const boost::shared_ptr<Natron::Image> & renderMappedImage)
+                                      const boost::shared_ptr<Natron::Image> & renderMappedImage,
+                                      const boost::shared_ptr<Natron::Image> & tmpImage)
 {
 #ifndef NDEBUG
     assert(renderMappedImage);
@@ -3173,7 +3206,7 @@ EffectInstance::tiledRenderingFunctor(const RenderArgs & args,
 
     // at this point, it may be unnecessary to call render because it was done a long time ago => check the bitmap here!
 # ifndef NDEBUG
-    const RectI & renderBounds = renderMappedImage->getBounds();
+    RectI  renderBounds = renderMappedImage->getBounds();
 # endif
     assert(renderBounds.x1 <= downscaledRectToRender.x1 && downscaledRectToRender.x2 <= renderBounds.x2 &&
            renderBounds.y1 <= downscaledRectToRender.y1 && downscaledRectToRender.y2 <= renderBounds.y2);
@@ -3260,7 +3293,6 @@ EffectInstance::tiledRenderingFunctor(const RenderArgs & args,
                                                                   frameArgs.isSequentialRender,
                                                                   frameArgs.canAbort,
                                                                   frameArgs.nodeHash,
-                                                                  frameArgs.canSetValue,
                                                                   frameArgs.timeline) );
         
         scopedInputImages.reset(new InputImagesHolder_RAII(inputImages,&_imp->inputImages));
@@ -3281,17 +3313,21 @@ EffectInstance::tiledRenderingFunctor(const RenderArgs & args,
     }
 #endif
     
+    /// Render in the temporary image
+    
     RenderScale originalScale;
     originalScale.x = downscaledImage->getScale();
     originalScale.y = originalScale.x;
 
+    assert(tmpImage->getBounds().contains(renderRectToRender));
+    
     Natron::StatusEnum st = render_public(time,
                                           originalScale,
                                           renderMappedScale,
                                           renderRectToRender, view,
                                           isSequentialRender,
                                           isRenderResponseToUserInteraction,
-                                          renderMappedImage);
+                                          tmpImage);
     
     bool renderAborted = aborted();
     
@@ -3314,7 +3350,7 @@ EffectInstance::tiledRenderingFunctor(const RenderArgs & args,
         
         
         //Check for NaNs
-        if (renderMappedImage->checkForNaNs(renderRectToRender)) {
+        if (tmpImage->checkForNaNs(renderRectToRender)) {
             qDebug() << getNode()->getScriptName_mt_safe().c_str() << ": rendered rectangle (" << renderRectToRender.x1 << ',' << renderRectToRender.y1 << ")-(" << renderRectToRender.x2 << ',' << renderRectToRender.y2 << ") contains invalid values.";
         }
         
@@ -3326,13 +3362,18 @@ EffectInstance::tiledRenderingFunctor(const RenderArgs & args,
             ///If !renderUseScaleOneInputs the image is not cached and we know it will be rendered completly so it is safe to do this here and take advantage
             ///of the multi-threading.
             if (mipMapLevel != 0 && !renderUseScaleOneInputs) {
+      
                 assert(fullScaleImage != downscaledImage);
-                fullScaleImage->downscaleMipMap( renderRectToRender, 0, mipMapLevel, false,downscaledImage.get() );
+                tmpImage->downscaleMipMap( renderRectToRender, 0, mipMapLevel, false,downscaledImage.get() );
                 downscaledImage->markForRendered(downscaledRectToRender);
             } else {
+
+                fullScaleImage->pasteFrom(*tmpImage, renderRectToRender,false);
                 fullScaleImage->markForRendered(renderRectToRender);
             }
         } else {
+            
+            downscaledImage->pasteFrom(*tmpImage, downscaledRectToRender,false);
             downscaledImage->markForRendered(downscaledRectToRender);
         }
         
@@ -4447,7 +4488,6 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
                                                        false,
                                                        false,
                                                        getHash(),
-                                                       true,
                                                        getApp()->getTimeLine().get());
 
         RECURSIVE_ACTION();

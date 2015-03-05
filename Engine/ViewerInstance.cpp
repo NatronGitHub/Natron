@@ -308,7 +308,7 @@ ViewerInstance::renderViewer(int view,
         
         if (args[i] && args[i]->params) {
             assert(args[i]->params->textureIndex == i);
-            ret[i] = renderViewer_internal(view, singleThreaded, isSequentialRender, viewerHash, canAbort,*args[i]);
+            ret[i] = renderViewer_internal(view, singleThreaded, isSequentialRender, viewerHash, canAbort, *args[i]);
             if (ret[i] == eStatusReplyDefault) {
                 args[i].reset();
             }
@@ -438,23 +438,26 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
     
     const double par = outArgs->activeInputToRender->getPreferredAspectRatio();
     
+    /**
+     * @brief Start flagging that we're rendering for as long as the viewer is active.
+     **/
+    outArgs->isRenderingFlag.reset(new RenderingFlagSetter(outArgs->activeInputToRender->getNode().get()));
     
     ///need to set TLS for getROD()
-    ParallelRenderArgsSetter frameArgs(upstreamInput->getNode().get(),
-                                                   time,
-                                                   view,
-                                                   !isSequential,  // is this render due to user interaction ?
-                                                   isSequential, // is this sequential ?
-                                                   canAbort,
-                                                   outArgs->activeInputHash,
-                                                   false,
-                                                   getTimeline().get());
-
+    ParallelRenderArgsSetter frameArgs(outArgs->activeInputToRender->getNode().get(),
+                                 time,
+                                 view,
+                                 !isSequential,  // is this render due to user interaction ?
+                                 isSequential, // is this sequential ?
+                                 canAbort,
+                                 outArgs->activeInputHash,
+                                 getTimeline().get());
+    
     
     ///Get the RoD here to be able to figure out what is the RoI of the Viewer.
     StatusEnum stat = outArgs->activeInputToRender->getRegionOfDefinition_public(outArgs->activeInputHash,time,
-                                                                        supportsRS ==  eSupportsNo ? scaleOne : scale,
-                                                                        view, &rod, &isRodProjectFormat);
+                                                                                 supportsRS ==  eSupportsNo ? scaleOne : scale,
+                                                                                 view, &rod, &isRodProjectFormat);
     if (stat == eStatusFailed) {
         Q_EMIT disconnectTextureRequest(textureIndex);
         if (!isSequential) {
@@ -703,7 +706,7 @@ ViewerInstance::renderViewer_internal(int view,
         
         boost::shared_ptr<Natron::FrameParams> cachedFrameParams =
         FrameEntry::makeParams(bounds,inArgs.key->getBitDepth(), inArgs.params->textureRect.w, inArgs.params->textureRect.h);
-        bool textureIsCached = Natron::getTextureFromCacheOrCreate(*(inArgs.key), cachedFrameParams, &entryLocker,
+        Natron::getTextureFromCacheOrCreate(*(inArgs.key), cachedFrameParams,
                                                                    &inArgs.params->cachedFrame);
         if (!inArgs.params->cachedFrame) {
             std::stringstream ss;
@@ -716,17 +719,16 @@ ViewerInstance::renderViewer_internal(int view,
             return eStatusFailed;
         }
         
-        if (textureIsCached) {
-            //entryLocker.lock(inArgs.params->cachedFrame);
-            if (!entryLocker.tryLock(inArgs.params->cachedFrame)) {
-                ///Another thread is rendering it, just return it is not useful to keep this thread waiting.
-                inArgs.params.reset();
-                return eStatusReplyDefault;
-            }
-        } else {
-            ///The entry has already been locked by the cache
-            inArgs.params->cachedFrame->allocateMemory();
+        if (!entryLocker.tryLock(inArgs.params->cachedFrame)) {
+            ///Another thread is rendering it, just return it is not useful to keep this thread waiting.
+            inArgs.params.reset();
+            return eStatusReplyDefault;
         }
+        
+        ///The entry has already been locked by the cache
+        inArgs.params->cachedFrame->allocateMemory();
+        
+    
         
         assert(inArgs.params->cachedFrame);
         // how do you make sure cachedFrame->data() is not freed after this line?
@@ -760,17 +762,18 @@ ViewerInstance::renderViewer_internal(int view,
         } else {
             inputToSetRenderArgs = inArgs.activeInputToRender->getNode();
         }
-        ParallelRenderArgsSetter frameArgs(inputToSetRenderArgs.get(),
+        
+        ///Make sure the parallel render args are set on the thread and die when rendering is finished
+        ParallelRenderArgsSetter frameArgs(inArgs.activeInputToRender->getNode().get(),
                                            inArgs.params->time,
                                            view,
-                                           !isSequentialRender,  // is this render due to user interaction ?
-                                           isSequentialRender, // is this sequential ?
+                                           !isSequentialRender,
+                                           isSequentialRender,
                                            canAbort,
                                            inArgs.activeInputHash,
-                                           false,
                                            getTimeline().get());
 
-        
+
         
         // If an exception occurs here it is probably fatal, since
         // it comes from Natron itself. All exceptions from plugins are already caught
@@ -806,9 +809,7 @@ ViewerInstance::renderViewer_internal(int view,
             abortCheck(inArgs.activeInputToRender);
             throw;
         }
-        
-        
-        
+                
     } // EffectInstance::NotifyInputNRenderingStarted_RAII inputNIsRendering_RAII(_node.get(),activeInputIndex);
     
    
@@ -989,8 +990,10 @@ findAutoContrastVminVmax_internal(boost::shared_ptr<const Natron::Image> inputIm
     double localVmin = std::numeric_limits<double>::infinity();
     double localVmax = -std::numeric_limits<double>::infinity();
     
+    Natron::Image::ReadAccess acc = inputImage->getReadRights();
+    
     for (int y = rect.bottom(); y < rect.top(); ++y) {
-        const float* src_pixels = (const float*)inputImage->pixelAt(rect.left(),y);
+        const float* src_pixels = (const float*)acc.pixelAt(rect.left(),y);
         ///we fill the scan-line with all the pixels of the input image
         for (int x = rect.left(); x < rect.right(); ++x) {
             
@@ -1090,6 +1093,8 @@ scaleToTexture8bits_internal(const std::pair<int,int> & yRange,
     
     const bool luminance = (args.channels == Natron::eDisplayChannelsY);
     
+    Natron::Image::ReadAccess acc = args.inputImage->getReadRights();
+    
     ///offset the output buffer at the starting point
     output += ( (yRange.first - args.texRect.y1) / args.closestPowerOf2 ) * args.texRect.w;
 
@@ -1098,7 +1103,7 @@ scaleToTexture8bits_internal(const std::pair<int,int> & yRange,
     for (int y = yRange.first; y < yRange.second; y += args.closestPowerOf2) {
         // coverity[dont_call]
         int start = (int)( rand() % std::max( ( (args.texRect.x2 - args.texRect.x1) / args.closestPowerOf2 ),1 ) );
-        const PIX* src_pixels = (const PIX*)args.inputImage->pixelAt(args.texRect.x1, y);
+        const PIX* src_pixels = (const PIX*)acc.pixelAt(args.texRect.x1, y);
         U32* dst_pixels = output + dstY * args.texRect.w;
         
         /* go fowards from starting point to end of line: */
@@ -1331,6 +1336,9 @@ scaleToTexture32bitsInternal(const std::pair<int,int> & yRange,
     ///offset the output buffer at the starting point
     output += ( (yRange.first - args.texRect.y1) / args.closestPowerOf2 ) * dst_width;
 
+    
+    Natron::Image::ReadAccess acc = args.inputImage->getReadRights();
+    
     ///iterating over the scan-lines of the input image
     int dstY = 0;
     for (int y = yRange.first; y < yRange.second; y += args.closestPowerOf2) {
@@ -1339,7 +1347,7 @@ scaleToTexture32bitsInternal(const std::pair<int,int> & yRange,
             return;
         }
         
-        const float* src_pixels = (const float*)args.inputImage->pixelAt(args.texRect.x1, y);
+        const float* src_pixels = (const float*)acc.pixelAt(args.texRect.x1, y);
         float* dst_pixels = output + dstY * dst_width;
 
         ///we fill the scan-line with all the pixels of the input image

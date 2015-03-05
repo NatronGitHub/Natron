@@ -566,7 +566,7 @@ OfxClipInstance::getStereoscopicImage(OfxTime time,
             return NULL;
         }
         //The output clip doesn't have any transform matrix
-        return new OfxImage(outputImage,renderWindow,boost::shared_ptr<Transform::Matrix3x3>(),*this);
+        return new OfxImage(outputImage,false,renderWindow,boost::shared_ptr<Transform::Matrix3x3>(),*this);
     }
     
     
@@ -719,7 +719,7 @@ OfxClipInstance::getImageInternal(OfxTime time,
         if (renderWindow.isNull()) {
             return NULL;
         } else {
-            return new OfxImage(image,renderWindow,transform,*this);
+            return new OfxImage(image,true,renderWindow,transform,*this);
         }
     }
 }
@@ -812,13 +812,19 @@ OfxClipInstance::natronsDepthToOfxDepth(Natron::ImageBitDepthEnum depth)
 
 
 OfxImage::OfxImage(boost::shared_ptr<Natron::Image> internalImage,
+                   bool isSrcImage,
                    const RectI& renderWindow,
                    const boost::shared_ptr<Transform::Matrix3x3>& mat,
                    OfxClipInstance &clip)
-    : OFX::Host::ImageEffect::Image(clip)
-      , _bitDepth(OfxImage::eBitDepthFloat)
-      , _floatImage(internalImage)
+: OFX::Host::ImageEffect::Image(clip)
+, _bitDepth(OfxImage::eBitDepthFloat)
+, _floatImage(internalImage)
+, _imgAccess()
 {
+    
+    assert(internalImage);
+    
+    
     unsigned int mipMapLevel = internalImage->getMipMapLevel();
     RenderScale scale;
 
@@ -830,7 +836,7 @@ OfxImage::OfxImage(boost::shared_ptr<Natron::Image> internalImage,
    
     
     // data ptr
-    const RectI & bounds = internalImage->getBounds();
+    RectI bounds = internalImage->getBounds();
     
     ///Do not activate this assert! The render window passed to renderRoI can be bigger than the actual RoD of the effect
     ///in which case it is just clipped to the RoD.
@@ -839,8 +845,23 @@ OfxImage::OfxImage(boost::shared_ptr<Natron::Image> internalImage,
     renderWindow.intersect(bounds, &pluginsSeenBounds);
     
     const RectD & rod = internalImage->getRoD(); // Not the OFX RoD!!! Natron::Image::getRoD() is in *CANONICAL* coordinates
-    unsigned char* ptr = internalImage->pixelAt( pluginsSeenBounds.left(), pluginsSeenBounds.bottom() );
-    setPointerProperty( kOfxImagePropData, ptr);
+    
+    if (isSrcImage) {
+        boost::shared_ptr<Natron::Image::ReadAccess> access(new Natron::Image::ReadAccess(internalImage.get()));
+        const unsigned char* ptr = access->pixelAt( pluginsSeenBounds.left(), pluginsSeenBounds.bottom() );
+        assert(ptr);
+        setPointerProperty( kOfxImagePropData, const_cast<unsigned char*>(ptr));
+        _imgAccess = access;
+    } else {
+        boost::shared_ptr<Natron::Image::WriteAccess> access(new Natron::Image::WriteAccess(internalImage.get()));
+        unsigned char* ptr = access->pixelAt( pluginsSeenBounds.left(), pluginsSeenBounds.bottom() );
+        assert(ptr);
+        setPointerProperty( kOfxImagePropData, ptr);
+        _imgAccess = access;
+    }
+    
+    
+    
     
     ///We set the render window that was given to the render thread instead of the actual bounds of the image
     ///so we're sure the plug-in doesn't attempt to access outside pixels.
@@ -896,18 +917,6 @@ OfxImage::OfxImage(boost::shared_ptr<Natron::Image> internalImage,
     
 }
 
-OfxRGBAColourF*
-OfxImage::pixelF(int x,
-                 int y) const
-{
-    assert(_bitDepth == eBitDepthFloat);
-    const RectI & bounds = _floatImage->getBounds();
-    if ( ( x >= bounds.left() ) && ( x < bounds.right() ) && ( y >= bounds.bottom() ) && ( y < bounds.top() ) ) {
-        return reinterpret_cast<OfxRGBAColourF*>( _floatImage->pixelAt(x, y) );
-    }
-
-    return 0;
-}
 
 int
 OfxClipInstance::getInputNb() const

@@ -23,6 +23,7 @@
 #include "Engine/EffectInstance.h"
 
 class ParallelRenderArgsSetter;
+class RenderingFlagSetter;
 namespace Natron {
 class Image;
 class FrameEntry;
@@ -67,7 +68,7 @@ public:
         U64 activeInputHash;
         boost::shared_ptr<Natron::FrameKey> key;
         boost::shared_ptr<UpdateViewerParams> params;
-        boost::shared_ptr<ParallelRenderArgsSetter> frameArgs;
+        boost::shared_ptr<RenderingFlagSetter> isRenderingFlag;
     };
     
     /**
@@ -92,7 +93,7 @@ public:
      **/
     Natron::StatusEnum renderViewer(int view,bool singleThreaded,bool isSequentialRender,
                                 U64 viewerHash,
-                                bool canAbort,
+                                    bool canAbort,
                                 boost::shared_ptr<ViewerInstance::ViewerArgs> args[2]) WARN_UNUSED_RETURN;
 
 

@@ -789,10 +789,12 @@ public:
                                bool isSequential,
                                bool canAbort,
                                U64 nodeHash,
-                               bool canSetValue,
                                const TimeLine* timeline);
     
     void invalidateParallelRenderArgs();
+    
+    void setNodeIsRendering();
+    void unsetNodeIsRendering();
     
     /**
      * @brief Returns true if the parallel render args thread-storage is set
@@ -1043,9 +1045,11 @@ private:
                                        bool isSequential,
                                        U64 nodeHash,
                                        bool canAbort,
-                                       bool canSetValue,
                                        const TimeLine* timeline,
                                        std::list<Natron::Node*>& markedNodes);
+    
+    void setNodeIsRenderingInternal(std::list<Natron::Node*>& markedNodes);
+    void setNodeIsNoLongerRenderingInternal(std::list<Natron::Node*>& markedNodes);
     
 
 
@@ -1120,16 +1124,32 @@ public:
                              bool isSequential,
                              bool canAbort,
                              U64 nodeHash,
-                             bool canSetValue,
                              const TimeLine* timeline)
     : node(n)
     {
-        node->setParallelRenderArgs(time,view,isRenderUserInteraction,isSequential,canAbort,nodeHash,canSetValue,timeline);
+        node->setParallelRenderArgs(time,view,isRenderUserInteraction,isSequential,canAbort,nodeHash,timeline);
     }
     
     ~ParallelRenderArgsSetter()
     {
         node->invalidateParallelRenderArgs();
+    }
+};
+
+class RenderingFlagSetter
+{
+    Natron::Node* node;
+public:
+    
+    RenderingFlagSetter(Natron::Node* n)
+    : node(n)
+    {
+        node->setNodeIsRendering();
+    }
+    
+    ~RenderingFlagSetter()
+    {
+        node->unsetNodeIsRendering();
     }
 };
 

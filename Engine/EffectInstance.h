@@ -105,20 +105,16 @@ struct ParallelRenderArgs
     /// True if this frame can be aborted (false for preview and tracking)
     bool canAbort;
     
-    ///Can the plug-in call setValue while the action is active
-    bool canSetValue;
-    
     ParallelRenderArgs()
     : time(0)
     , timeline(0)
     , view(0)
     , nodeHash(0)
     , rotoAge(0)
-    , validArgs(false)
+    , validArgs(0)
     , isRenderResponseToUserInteraction(false)
     , isSequentialRender(false)
     , canAbort(false)
-    , canSetValue(false)
     {
         
     }
@@ -491,11 +487,11 @@ public:
                                              bool useDiskCache,
                                              const Natron::ImageKey& key,
                                              unsigned int mipMapLevel,
+                                             const RectI& bounds,
                                              Natron::ImageBitDepthEnum bitdepth,
                                              Natron::ImageComponentsEnum components,
                                              Natron::ImageBitDepthEnum nodeBitDepthPref,
                                              Natron::ImageComponentsEnum nodeComponentsPref,
-                                             const RectI& renderWindow,
                                              const std::list<boost::shared_ptr<Natron::Image> >& inputImages,
                                              boost::shared_ptr<Natron::Image>* image);
 
@@ -535,13 +531,12 @@ public:
                                bool canAbort,
                                U64 nodeHash,
                                U64 rotoAge,
-                               bool canSetValue,
                                const TimeLine* timeline);
 
     /**
      *@returns whether the effect was flagged with canSetValue = true or false
      **/
-    bool invalidateParallelRenderArgs();
+    void invalidateParallelRenderArgs();
 
     /**
      * @breif Don't override this one, override onKnobValueChanged instead.
@@ -1351,7 +1346,7 @@ private:
                                           int channelForAlpha,
                                           bool renderFullScaleThenDownscale,
                                           bool useScaleOneInputImages,
-                                          const RoIMap& inputRoisParam,
+                                          const std::list<RoIMap>& inputRoisParam,
                                           const std::list<boost::shared_ptr<Natron::Image> >& inputImagesParam
 #if NATRON_ENABLE_TRIMAP
                                           ,bool *isBeingRenderedElsewhere
@@ -1459,6 +1454,7 @@ private:
         boost::shared_ptr<Natron::Image>  downscaledImage;
         boost::shared_ptr<Natron::Image>  fullScaleImage;
         boost::shared_ptr<Natron::Image>  renderMappedImage;
+        boost::shared_ptr<Natron::Image>  tmpImage;
     };
 
     enum RenderingFunctorRetEnum
@@ -1506,7 +1502,8 @@ private:
                                              const double par,
                                              const boost::shared_ptr<Natron::Image> & downscaledImage,
                                              const boost::shared_ptr<Natron::Image> & fullScaleImage,
-                                             const boost::shared_ptr<Natron::Image> & renderMappedImage);
+                                             const boost::shared_ptr<Natron::Image> & renderMappedImage,
+                                             const boost::shared_ptr<Natron::Image> & tmpImage);
 
     /**
      * @brief Returns the index of the input if inputEffect is a valid input connected to this effect, otherwise returns -1.

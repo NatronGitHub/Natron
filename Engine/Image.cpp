@@ -444,6 +444,13 @@ Natron::Bitmap::clear(const RectI& roi)
     }
 }
 
+void
+Natron::Bitmap::swap(Bitmap& other)
+{
+    _map.swap(other._map);
+    _bounds = other._bounds;
+}
+
 const char*
 Natron::Bitmap::getBitmapAt(int x,
                             int y) const
@@ -641,11 +648,49 @@ Image::checkBounds_debug()
 }
 #endif
 
-//boost::shared_ptr<ImageParams>
-//Image::getParams() const WARN_UNUSED_RETURN
-//{
-//    return boost::dynamic_pointer_cast<ImageParams>(_params);
-//}
+void
+Image::ensureBounds(const RectI& newBounds)
+{
+ 
+    RectI merge = newBounds;
+    {
+        QReadLocker k(&_entryLock);
+        if (_bounds.contains(newBounds)) {
+            return;
+        }
+        merge.merge(_bounds);
+    }
+    
+    
+    ///Copy to a temp buffer of the good size
+    boost::scoped_ptr<Image> tmpImg(new Image(getComponents(),
+                                              getRoD(),
+                                              merge,
+                                              getMipMapLevel(),
+                                              getPixelAspectRatio(),
+                                              getBitDepth(),
+                                              usesBitMap()));
+    tmpImg->pasteFrom(*this, _bounds, usesBitMap());
+    
+    
+    QWriteLocker k(&_entryLock);
+    
+    ///Another thread might have taken the lock
+    if (_bounds.contains(merge)) {
+        return;
+    }
+
+    ///Change the size of the current buffer
+    _bounds = merge;
+    _params->setBounds(merge);
+    
+    swapBuffer(*tmpImg);
+    if (usesBitMap()) {
+        _bitmap.swap(tmpImg->_bitmap);
+    }
+
+}
+    
 
 // code proofread and fixed by @devernay on 8/8/2014
 template<typename PIX>
@@ -659,8 +704,12 @@ Image::pasteFromForDepth(const Natron::Image & srcImg,
     assert( getBitDepth() == srcImg.getBitDepth() );
     assert( (getBitDepth() == eImageBitDepthByte && sizeof(PIX) == 1) || (getBitDepth() == eImageBitDepthShort && sizeof(PIX) == 2) || (getBitDepth() == eImageBitDepthFloat && sizeof(PIX) == 4) );
     // NOTE: before removing the following asserts, please explain why an empty image may happen
-    const RectI & bounds = getBounds();
-    const RectI & srcBounds = srcImg.getBounds();
+    
+    QWriteLocker k(&_entryLock);
+    QReadLocker k2(&srcImg._entryLock);
+    
+    const RectI & bounds = _bounds;
+    const RectI & srcBounds = srcImg._bounds;
 
     assert( !bounds.isNull() );
     assert( !srcBounds.isNull() );
@@ -685,9 +734,19 @@ Image::pasteFromForDepth(const Natron::Image & srcImg,
         copyBitmapPortion(roi, srcImg);
     }
     // now we're safe: both images contain the area in roi
-    for (int y = roi.y1; y < roi.y2; ++y) {
-        const PIX* src = (const PIX*)srcImg.pixelAt(roi.x1, y);
-        PIX* dst = (PIX*)pixelAt(roi.x1, y);
+    
+    int srcRowElements = components * srcBounds.width();
+    int dstRowElements = components * bounds.width();
+    
+    const PIX* src = (const PIX*)srcImg.pixelAt(roi.x1, roi.y1);
+    PIX* dst = (PIX*)pixelAt(roi.x1, roi.y1);
+    
+    assert(src && dst);
+    
+    for (int y = roi.y1; y < roi.y2;
+         ++y,
+         src += srcRowElements,
+         dst += dstRowElements) {
         memcpy(dst, src, roi.width() * sizeof(PIX) * components);
     }
 }
@@ -698,6 +757,8 @@ Image::pasteFrom(const Natron::Image & src,
                  const RectI & srcRoi,
                  bool copyBitmap)
 {
+    
+    
     Natron::ImageBitDepthEnum depth = getBitDepth();
 
     switch (depth) {
@@ -732,13 +793,13 @@ Image::fillForDepth(const RectI & roi_,
     }
 
     RectI roi = roi_;
-    bool doInteresect = roi.intersect(getBounds(), &roi);
+    bool doInteresect = roi.intersect(_bounds, &roi);
     if (!doInteresect) {
         // no intersection between roi and the bounds of the image
         return;
     }
 
-    int rowElems = (int)getRowElements();
+    int rowElems = (int)getComponentsCount() * _bounds.width();
     const float fillValue[4] = {
         comps == Natron::eImageComponentAlpha ? a : r, g, b, a
     };
@@ -763,6 +824,9 @@ Image::fill(const RectI & roi,
             float b,
             float a)
 {
+    
+    QWriteLocker k(&_entryLock);
+    
     switch ( getBitDepth() ) {
     case eImageBitDepthByte:
         fillForDepth<unsigned char, 255>(roi, r, g, b, a);
@@ -927,6 +991,7 @@ Image::isBitDepthConversionLossy(Natron::ImageBitDepthEnum from,
 unsigned int
 Image::getRowElements() const
 {
+    QReadLocker k(&_entryLock);
     return getComponentsCount() * _bounds.width();
 }
 
@@ -950,8 +1015,8 @@ Image::halveRoIForDepth(const RectI & roi,
     }
 
     ///The source rectangle, intersected to this image region of definition in pixels
-    const RectI &srcBounds = getBounds();
-    const RectI &dstBounds = output->getBounds();
+    const RectI &srcBounds = _bounds;
+    const RectI &dstBounds = output->_bounds;
     const RectI &srcBmBounds = _bitmap.getBounds();
     const RectI &dstBmBounds = output->_bitmap.getBounds();
     assert(!copyBitMap || usesBitMap());
@@ -979,8 +1044,8 @@ Image::halveRoIForDepth(const RectI & roi,
 
     
     /// Take the lock for both bitmaps since we're about to read/write from them!
-    QWriteLocker k1(&output->_lock);
-    QReadLocker k2(&_lock);
+    QWriteLocker k1(&output->_entryLock);
+    QReadLocker k2(&_entryLock);
     
     const PIX* const srcPixels      = (const PIX*)pixelAt(srcBounds.x1,   srcBounds.y1);
     const char* const srcBmPixels   = _bitmap.getBitmapAt(srcBmBounds.x1, srcBmBounds.y1);
@@ -1092,7 +1157,7 @@ Image::halveRoI(const RectI & roi,
 {
     switch ( getBitDepth() ) {
     case eImageBitDepthByte:
-            halveRoIForDepth<unsigned char,255>(roi, copyBitMap,  output);
+        halveRoIForDepth<unsigned char,255>(roi, copyBitMap,  output);
         break;
     case eImageBitDepthShort:
         halveRoIForDepth<unsigned short,65535>(roi,copyBitMap, output);
@@ -1116,14 +1181,20 @@ Image::halve1DImageForDepth(const RectI & roi,
 
     assert(width == 1 || height == 1); /// must be 1D
     assert( output->getComponents() == getComponents() );
-    const RectI & srcBounds = getBounds();
-    const RectI & dstBounds = output->getBounds();
+    const RectI & srcBounds = _bounds;
+    const RectI & dstBounds = output->_bounds;
 //    assert(dstBounds.x1 * 2 == roi.x1 &&
 //           dstBounds.y1 * 2 == roi.y1 &&
 //           (
 //               dstBounds.x2 * 2 == roi.x2 || // we halve in only 1 dimension
 //               dstBounds.y2 * 2 == roi.y2)
 //           );
+    
+    /// Take the lock for both bitmaps since we're about to read/write from them!
+    QWriteLocker k1(&output->_entryLock);
+    QReadLocker k2(&_entryLock);
+    
+
 
     int components = getElementsCountForComponents( getComponents() );
     int halfWidth = width / 2;
@@ -1205,10 +1276,10 @@ Image::downscaleMipMap(const RectI & roi,
     buildMipMapLevel( roi, downscaleLvls, copyBitMap, tmpImg.get() );
 
     // check that the downscaled mipmap is inside the output image (it may not be equal to it)
-    assert(dstRoI.x1 >= output->getBounds().x1);
-    assert(dstRoI.x2 <= output->getBounds().x2);
-    assert(dstRoI.y1 >= output->getBounds().y1);
-    assert(dstRoI.y2 <= output->getBounds().y2);
+    assert(dstRoI.x1 >= output->_bounds.x1);
+    assert(dstRoI.x2 <= output->_bounds.x2);
+    assert(dstRoI.y1 >= output->_bounds.y1);
+    assert(dstRoI.y2 <= output->_bounds.y2);
 
     ///Now copy the result of tmpImg into the output image
     output->pasteFrom(*tmpImg, dstRoI, copyBitMap);
@@ -1221,6 +1292,8 @@ Image::checkForNaNs(const RectI& roi)
     if (getBitDepth() != eImageBitDepthFloat) {
         return false;
     }
+ 
+    QWriteLocker k(&_entryLock);
     
     unsigned int compsCount = getComponentsCount();
 
@@ -1268,7 +1341,7 @@ Image::upscaleMipMapForDepth(const RectI & roi,
 
     const RectI & srcRoi = roi;
 
-    dstRoi.intersect(output->getBounds(), &dstRoi); //output may be a bit smaller than the upscaled RoI
+    dstRoi.intersect(output->_bounds, &dstRoi); //output may be a bit smaller than the upscaled RoI
     int scale = 1 << (fromLevel - toLevel);
 
     assert( output->getComponents() == getComponents() );
@@ -1276,8 +1349,12 @@ Image::upscaleMipMapForDepth(const RectI & roi,
     if (components == 0) {
         return;
     }
-    int srcRowSize = getBounds().width() * components;
-    int dstRowSize = output->getBounds().width() * components;
+    
+    QWriteLocker k1(&output->_entryLock);
+    QReadLocker k2(&_entryLock);
+    
+    int srcRowSize = _bounds.width() * components;
+    int dstRowSize = output->_bounds.width() * components;
     const PIX *src = (const PIX*)pixelAt(srcRoi.x1, srcRoi.y1);
     PIX* dst = (PIX*)output->pixelAt(dstRoi.x1, dstRoi.y1);
     assert(src && dst);
@@ -1352,11 +1429,15 @@ Image::scaleBoxForDepth(const RectI & roi,
     assert( getBitDepth() == output->getBitDepth() );
     assert( (getBitDepth() == eImageBitDepthByte && sizeof(PIX) == 1) || (getBitDepth() == eImageBitDepthShort && sizeof(PIX) == 2) || (getBitDepth() == eImageBitDepthFloat && sizeof(PIX) == 4) );
 
+    
+    QWriteLocker k1(&output->_entryLock);
+    QReadLocker k2(&_entryLock);
+    
     ///The destination rectangle
-    const RectI & dstBounds = output->getBounds();
+    const RectI & dstBounds = output->_bounds;
 
     ///The source rectangle, intersected to this image region of definition in pixels
-    const RectI & srcBounds = getBounds();
+    const RectI & srcBounds = _bounds;
     RectI srcRoi = roi;
     srcRoi.intersect(srcBounds, &srcRoi);
 
@@ -1369,6 +1450,7 @@ Image::scaleBoxForDepth(const RectI & roi,
 
         return;
     }
+   
 
     RenderScale scale;
     // FIXME: should use the RoD instead of RoI/bounds !
@@ -1765,8 +1847,6 @@ lutFromColorspace(Natron::ViewerColorSpaceEnum cs)
 void
 Image::copyBitmapRowPortion(int x1, int x2,int y, const Image& other)
 {
-    QWriteLocker k1(&_lock);
-    QReadLocker k2(&other._lock);
     _bitmap.copyRowPortion(x1, x2, y, other._bitmap);
 }
 
@@ -1787,8 +1867,6 @@ Bitmap::copyRowPortion(int x1,int x2,int y,const Bitmap& other)
 void
 Image::copyBitmapPortion(const RectI& roi, const Image& other)
 {
-    QWriteLocker k1(&_lock);
-    QReadLocker k2(&other._lock);
     _bitmap.copyBitmapPortion(roi, other._bitmap);
 
 }
@@ -1823,7 +1901,7 @@ Bitmap::copyBitmapPortion(const RectI& roi, const Bitmap& other)
 ///Fast version when components are the same
 template <typename SRCPIX,typename DSTPIX,int srcMaxValue,int dstMaxValue>
 void
-convertToFormatInternal_sameComps(const RectI & renderWindow,
+Image::convertToFormatInternal_sameComps(const RectI & renderWindow,
                                   const Image & srcImg,
                                   Image & dstImg,
                                   Natron::ViewerColorSpaceEnum srcColorSpace,
@@ -1831,7 +1909,7 @@ convertToFormatInternal_sameComps(const RectI & renderWindow,
                                   bool invert,
                                   bool copyBitmap)
 {
-    const RectI & r = srcImg.getBounds();
+    const RectI & r = srcImg._bounds;
     RectI intersection;
 
     if ( !renderWindow.intersect(r, &intersection) ) {
@@ -1844,6 +1922,7 @@ convertToFormatInternal_sameComps(const RectI & renderWindow,
     const Natron::Color::Lut* srcLut = lutFromColorspace(srcColorSpace);
     const Natron::Color::Lut* dstLut = lutFromColorspace(dstColorSpace);
 
+    
     ///no colorspace conversion applied when luts are the same
     if (srcLut == dstLut) {
         srcLut = dstLut = 0;
@@ -1929,7 +2008,7 @@ convertToFormatInternal_sameComps(const RectI & renderWindow,
 
 template <typename SRCPIX,typename DSTPIX,int srcMaxValue,int dstMaxValue,int srcNComps,int dstNComps>
 void
-convertToFormatInternal(const RectI & renderWindow,
+Image::convertToFormatInternal(const RectI & renderWindow,
                         const Image & srcImg,
                         Image & dstImg,
                         Natron::ViewerColorSpaceEnum srcColorSpace,
@@ -1939,7 +2018,7 @@ convertToFormatInternal(const RectI & renderWindow,
                         bool copyBitmap,
                         bool requiresUnpremult)
 {
-    const RectI & r = srcImg.getBounds();
+    const RectI & r = srcImg._bounds;
     RectI intersection;
 
     if ( !renderWindow.intersect(r, &intersection) ) {
@@ -2154,7 +2233,7 @@ convertToFormatInternal(const RectI & renderWindow,
 
 template <typename SRCPIX,typename DSTPIX,int srcMaxValue,int dstMaxValue>
 void
-convertToFormatInternalForDepth(const RectI & renderWindow,
+Image::convertToFormatInternalForDepth(const RectI & renderWindow,
                                 const Image & srcImg,
                                 Image & dstImg,
                                 Natron::ViewerColorSpaceEnum srcColorSpace,
@@ -2247,7 +2326,12 @@ Image::convertToFormat(const RectI & renderWindow,
                        bool requiresUnpremult,
                        Natron::Image* dstImg) const
 {
-    assert( getBounds() == dstImg->getBounds() );
+
+    QWriteLocker k(&dstImg->_entryLock);
+    QReadLocker k2(&_entryLock);
+    
+    assert( _bounds == dstImg->_bounds );
+
 
     if ( dstImg->getComponents() == getComponents() ) {
         switch ( dstImg->getBitDepth() ) {

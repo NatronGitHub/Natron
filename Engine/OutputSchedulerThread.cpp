@@ -1887,15 +1887,17 @@ private:
                     RectI renderWindow;
                     rod.toPixelEnclosing(scale, par, &renderWindow);
                     
-                    ParallelRenderArgsSetter frameRenderARgs(activeInputToRender->getNode().get(),
+                    ParallelRenderArgsSetter frameRenderArgs(activeInputToRender->getNode().get(),
                                                                    time,
                                                                    i,
                                                                    false,  // is this render due to user interaction ?
                                                                    canOnlyHandleOneView, // is this sequential ?
                                                                    true,
                                                                    activeInputToRenderHash,
-                                                                   false,
                                                                    _imp->output->getApp()->getTimeLine().get());
+                    
+                    
+                    RenderingFlagSetter flagIsRendering(activeInputToRender->getNode().get());
                     
                     boost::shared_ptr<Natron::Image> img =
                     activeInputToRender->renderRoI( EffectInstance::RenderRoIArgs(time, //< the time at which to render
@@ -1978,8 +1980,9 @@ DefaultScheduler::processFrame(const BufferedFrames& frames)
                                                        canOnlyHandleOneView, // is this sequential ?
                                                        true,
                                                        hash,
-                                                       false,
                                                        _effect->getApp()->getTimeLine().get());
+        
+        RenderingFlagSetter flagIsRendering(_effect->getNode().get());
         
         ImagePtr inputImage = boost::dynamic_pointer_cast<Natron::Image>(it->frame);
         assert(inputImage);
@@ -2582,10 +2585,10 @@ struct CurrentFrameFunctorArgs
 {
     int view;
     ViewerInstance* viewer;
-    bool canAbort;
     U64 viewerHash;
     RequestedFrame* request;
     ViewerCurrentFrameRequestSchedulerPrivate* scheduler;
+    bool canAbort;
     boost::shared_ptr<ViewerInstance::ViewerArgs> args[2];
 };
 
@@ -2866,10 +2869,10 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool canAbort)
         functorArgs.view = view;
         functorArgs.args[0] = args[0];
         functorArgs.args[1] = args[1];
-        functorArgs.canAbort = canAbort;
         functorArgs.viewerHash = viewerHash;
         functorArgs.scheduler = _imp.get();
         functorArgs.request = 0;
+        functorArgs.canAbort = canAbort;
         if (appPTR->getCurrentSettings()->getNumberOfThreads() == -1) {
             renderCurrentFrameFunctor(functorArgs);
         } else {

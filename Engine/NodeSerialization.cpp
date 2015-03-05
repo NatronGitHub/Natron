@@ -132,6 +132,7 @@ NodeSerialization::NodeSerialization(const boost::shared_ptr<Natron::Node> & n,b
         if (!childrenMultiInstance.empty()) {
             assert(!isGrp);
             for (NodeList::iterator it = childrenMultiInstance.begin(); it != childrenMultiInstance.end() ; ++it) {
+                assert((*it)->getParentMultiInstance());
                 if ((*it)->isActivated()) {
                     boost::shared_ptr<NodeSerialization> state(new NodeSerialization(*it));
                     _children.push_back(state);

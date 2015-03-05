@@ -224,13 +224,11 @@ public:
      * @brief Same as getImage, but if it couldn't find a matching image in the cache, it will create one with the given parameters.
      **/
     bool getImageOrCreate(const Natron::ImageKey & key,const boost::shared_ptr<Natron::ImageParams>& params,
-                          ImageLocker* imageLocker,
                           boost::shared_ptr<Natron::Image>* returnValue) const;
     
     bool getImage_diskCache(const Natron::ImageKey & key,std::list<boost::shared_ptr<Natron::Image> >* returnValue) const;
     
     bool getImageOrCreate_diskCache(const Natron::ImageKey & key,const boost::shared_ptr<Natron::ImageParams>& params,
-                          ImageLocker* imageLocker,
                           boost::shared_ptr<Natron::Image>* returnValue) const;
     
 
@@ -238,7 +236,6 @@ public:
                     boost::shared_ptr<Natron::FrameEntry>* returnValue) const;
 
     bool getTextureOrCreate(const Natron::FrameKey & key,const boost::shared_ptr<Natron::FrameParams>& params,
-                            FrameEntryLocker* entryLocker,
                             boost::shared_ptr<Natron::FrameEntry>* returnValue) const;
 
     U64 getCachesTotalMemorySize() const;
@@ -582,10 +579,9 @@ getImageFromCache(const Natron::ImageKey & key,
 inline bool
 getImageFromCacheOrCreate(const Natron::ImageKey & key,
                           const boost::shared_ptr<Natron::ImageParams>& params,
-                          ImageLocker* imageLocker,
                           boost::shared_ptr<Natron::Image>* returnValue)
 {
-    return appPTR->getImageOrCreate(key,params, imageLocker, returnValue);
+    return appPTR->getImageOrCreate(key,params, returnValue);
 }
     
 inline bool
@@ -598,10 +594,9 @@ getImageFromDiskCache(const Natron::ImageKey & key,
 inline bool
 getImageFromDiskCacheOrCreate(const Natron::ImageKey & key,
                               const boost::shared_ptr<Natron::ImageParams>& params,
-                              ImageLocker* imageLocker,
                               boost::shared_ptr<Natron::Image>* returnValue)
 {
-    return appPTR->getImageOrCreate_diskCache(key,params, imageLocker, returnValue);
+    return appPTR->getImageOrCreate_diskCache(key,params, returnValue);
 }
     
 
@@ -615,10 +610,9 @@ getTextureFromCache(const Natron::FrameKey & key,
 inline bool
 getTextureFromCacheOrCreate(const Natron::FrameKey & key,
                             const boost::shared_ptr<Natron::FrameParams> &params,
-                            FrameEntryLocker* entryLocker,
                             boost::shared_ptr<Natron::FrameEntry>* returnValue)
 {
-    return appPTR->getTextureOrCreate(key,params,entryLocker, returnValue);
+    return appPTR->getTextureOrCreate(key,params, returnValue);
 }
     
 /**
@@ -713,7 +707,7 @@ bool getGroupInfos(const std::string& modulePath,
  **/
 class PythonGILLocker
 {
-    PyGILState_STATE state;
+   // PyGILState_STATE state;
 public:
     PythonGILLocker();
     

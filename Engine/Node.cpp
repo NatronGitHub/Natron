@@ -573,6 +573,11 @@ void
 Node::Implementation::appendChild(const boost::shared_ptr<Natron::Node>& child)
 {
     QMutexLocker k(&childrenMutex);
+    for (std::list<boost::weak_ptr<Natron::Node> >::iterator it = children.begin(); it!=children.end(); ++it) {
+        if (it->lock() == child) {
+            return;
+        }
+    }
     children.push_back(child);
 }
 
@@ -3106,13 +3111,16 @@ namespace {
             zoomFactor = yZoomFactor;
             *dstWidth = srcBounds.width() * zoomFactor;
         }
+        
+        Natron::Image::ReadAccess acc = srcImg.getReadRights();
+        
         assert(elemCount >= 3);
         
         for (int i = 0; i < *dstHeight; ++i) {
             double y = (i - *dstHeight / 2.) / zoomFactor + (srcBounds.y1 + srcBounds.y2) / 2.;
             int yi = std::floor(y + 0.5);
             U32 *dst_pixels = dstPixels + *dstWidth * (*dstHeight - 1 - i);
-            const PIX* src_pixels = (const PIX*)srcImg.pixelAt(srcBounds.x1, yi);
+            const PIX* src_pixels = (const PIX*)acc.pixelAt(srcBounds.x1, yi);
             if (!src_pixels) {
                 // out of bounds
                 for (int j = 0; j < *dstWidth; ++j) {
@@ -3221,8 +3229,9 @@ Node::makePreviewImage(SequenceTime time,
                                              false,
                                              false,
                                              nodeHash,
-                                             false,
                                              getApp()->getTimeLine().get());
+    
+    RenderingFlagSetter flagIsRendering(this);
     
     // Exceptions are caught because the program can run without a preview,
     // but any exception in renderROI is probably fatal.
@@ -4611,17 +4620,129 @@ Node::canOthersConnectToThisNode() const
 }
 
 void
+Node::setNodeIsRenderingInternal(std::list<Natron::Node*>& markedNodes)
+{
+    ///If marked, we alredy set render args
+    std::list<Natron::Node*>::iterator found = std::find(markedNodes.begin(), markedNodes.end(), this);
+    if (found != markedNodes.end()) {
+        return;
+    }
+    
+    ///Wait for the main-thread to be done dequeuing the connect actions queue
+    if (QThread::currentThread() != qApp->thread()) {
+        bool mustQuitProcessing;
+        {
+            QMutexLocker k(&_imp->mustQuitProcessingMutex);
+            mustQuitProcessing = _imp->mustQuitProcessing;
+        }
+        QMutexLocker k(&_imp->nodeIsDequeuingMutex);
+        while (_imp->nodeIsDequeuing && !aborted() && !mustQuitProcessing) {
+            _imp->nodeIsDequeuingCond.wait(&_imp->nodeIsDequeuingMutex);
+            {
+                QMutexLocker k(&_imp->mustQuitProcessingMutex);
+                mustQuitProcessing = _imp->mustQuitProcessing;
+            }
+        }
+    }
+    
+    ///Increment the node is rendering counter
+    QMutexLocker nrLocker(&_imp->nodeIsRenderingMutex);
+    ++_imp->nodeIsRendering;
+    
+    
+    
+    ///mark this
+    markedNodes.push_back(this);
+    
+    ///Call recursively
+    
+    int maxInpu = getMaxInputCount();
+    for (int i = 0; i < maxInpu; ++i) {
+        boost::shared_ptr<Node> input = getInput(i);
+        if (input) {
+            input->setNodeIsRenderingInternal(markedNodes);
+            
+        }
+    }
+}
+
+void
+Node::setNodeIsNoLongerRenderingInternal(std::list<Natron::Node*>& markedNodes)
+{
+    
+    ///If marked, we alredy set render args
+    std::list<Natron::Node*>::iterator found = std::find(markedNodes.begin(), markedNodes.end(), this);
+    if (found != markedNodes.end()) {
+        return;
+    }
+    
+    bool mustDequeue ;
+    {
+        int nodeIsRendering;
+        ///Decrement the node is rendering counter
+        QMutexLocker k(&_imp->nodeIsRenderingMutex);
+        --_imp->nodeIsRendering;
+        assert(_imp->nodeIsRendering >= 0);
+        nodeIsRendering = _imp->nodeIsRendering;
+        
+        
+        mustDequeue = nodeIsRendering == 0 && !appPTR->isBackground();
+    }
+    
+    if (mustDequeue) {
+        
+        ///Flag that the node is dequeuing.
+        ///We don't wait here but in the setParallelRenderArgsInternal instead
+        {
+            QMutexLocker k(&_imp->nodeIsDequeuingMutex);
+            _imp->nodeIsDequeuing = true;
+        }
+        Q_EMIT mustDequeueActions();
+    }
+    
+    
+    ///mark this
+    markedNodes.push_back(this);
+    
+    ///Call recursively
+    
+    int maxInpu = getMaxInputCount();
+    for (int i = 0; i < maxInpu; ++i) {
+        boost::shared_ptr<Node> input = getInput(i);
+        if (input) {
+            input->setNodeIsNoLongerRenderingInternal(markedNodes);
+            
+        }
+    }
+
+
+}
+
+void
+Node::setNodeIsRendering()
+{
+    std::list<Natron::Node*> marked;
+    setNodeIsRenderingInternal(marked);
+}
+
+void
+Node::unsetNodeIsRendering()
+{
+    std::list<Natron::Node*> marked;
+    setNodeIsNoLongerRenderingInternal(marked);
+}
+
+void
 Node::setParallelRenderArgs(int time,
                             int view,
                             bool isRenderUserInteraction,
                             bool isSequential,
                             bool canAbort,
                             U64 nodeHash,
-                            bool canSetValue,
                             const TimeLine* timeline)
 {
     std::list<Natron::Node*> marked;
-    setParallelRenderArgsInternal(time, view, isRenderUserInteraction, isSequential, nodeHash,canAbort, canSetValue, timeline, marked);
+    setParallelRenderArgsInternal(time, view, isRenderUserInteraction, isSequential, nodeHash,canAbort, timeline, marked);
 }
 
 void
@@ -4639,39 +4760,8 @@ Node::invalidateParallelRenderArgsInternal(std::list<Natron::Node*>& markedNodes
     if (found != markedNodes.end()) {
         return;
     }
-    bool wasCanSetValueSet = _imp->liveInstance->invalidateParallelRenderArgs();
+    _imp->liveInstance->invalidateParallelRenderArgs();
     
-    bool mustDequeue ;
-    {
-        int nodeIsRendering;
-        if (QThread::currentThread() != qApp->thread()) {
-            
-            if (!wasCanSetValueSet) {
-                ///Decrement the node is rendering counter
-                QMutexLocker k(&_imp->nodeIsRenderingMutex);
-                --_imp->nodeIsRendering;
-                assert(_imp->nodeIsRendering >= 0);
-                nodeIsRendering = _imp->nodeIsRendering;
-            } else {
-                nodeIsRendering = 0;
-            }
-        } else {
-            nodeIsRendering = 0;
-        }
-        
-        mustDequeue = nodeIsRendering == 0 && !appPTR->isBackground();
-    }
-    
-    if (mustDequeue) {
-        
-        ///Flag that the node is dequeuing.
-        ///We don't wait here but in the setParallelRenderArgsInternal instead
-        {
-            QMutexLocker k(&_imp->nodeIsDequeuingMutex);
-            _imp->nodeIsDequeuing = true;
-        }
-        Q_EMIT mustDequeueActions();
-    }
     
     ///mark this
     markedNodes.push_back(this);
@@ -4694,7 +4784,6 @@ Node::setParallelRenderArgsInternal(int time,
                                     bool isSequential,
                                     U64 nodeHash,
                                     bool canAbort,
-                                    bool canSetValue,
                                     const TimeLine* timeline,
                                     std::list<Natron::Node*>& markedNodes)
 {
@@ -4711,30 +4800,9 @@ Node::setParallelRenderArgsInternal(int time,
         rotoAge = 0;
     }
     
-    _imp->liveInstance->setParallelRenderArgs(time, view, isRenderUserInteraction, isSequential, canAbort, nodeHash, rotoAge,canSetValue, timeline);
+    _imp->liveInstance->setParallelRenderArgs(time, view, isRenderUserInteraction, isSequential, canAbort, nodeHash, rotoAge, timeline);
     
     
-    ///Wait for the main-thread to be done dequeuing the connect actions queue
-    if (QThread::currentThread() != qApp->thread()) {
-        bool mustQuitProcessing;
-        {
-            QMutexLocker k(&_imp->mustQuitProcessingMutex);
-            mustQuitProcessing = _imp->mustQuitProcessing;
-        }
-        QMutexLocker k(&_imp->nodeIsDequeuingMutex);
-        while (_imp->nodeIsDequeuing && !aborted() && !mustQuitProcessing) {
-            _imp->nodeIsDequeuingCond.wait(&_imp->nodeIsDequeuingMutex);
-            {
-                QMutexLocker k(&_imp->mustQuitProcessingMutex);
-                mustQuitProcessing = _imp->mustQuitProcessing;
-            }
-        }
-        if (!canSetValue) {
-            ///Increment the node is rendering counter
-            QMutexLocker nrLocker(&_imp->nodeIsRenderingMutex);
-            ++_imp->nodeIsRendering;
-        }
-    }
     
     ///mark this
     markedNodes.push_back(this);
@@ -4745,7 +4813,7 @@ Node::setParallelRenderArgsInternal(int time,
     for (int i = 0; i < maxInpu; ++i) {
         boost::shared_ptr<Node> input = getInput(i);
         if (input) {
-            input->setParallelRenderArgsInternal(time, view, isRenderUserInteraction, isSequential, input->getHashValue(),canAbort, canSetValue,  timeline, markedNodes);
+            input->setParallelRenderArgsInternal(time, view, isRenderUserInteraction, isSequential, input->getHashValue(),canAbort,  timeline, markedNodes);
             
         }
     }

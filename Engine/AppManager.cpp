@@ -2051,10 +2051,9 @@ AppManager::getImage(const Natron::ImageKey & key,
 bool
 AppManager::getImageOrCreate(const Natron::ImageKey & key,
                              const boost::shared_ptr<Natron::ImageParams>& params,
-                             ImageLocker* imageLocker,
                              boost::shared_ptr<Natron::Image>* returnValue) const
 {
-    return _imp->_nodeCache->getOrCreate(key,params,imageLocker,returnValue);
+    return _imp->_nodeCache->getOrCreate(key,params,returnValue);
 }
 
 bool
@@ -2065,10 +2064,9 @@ AppManager::getImage_diskCache(const Natron::ImageKey & key,std::list<boost::sha
 
 bool
 AppManager::getImageOrCreate_diskCache(const Natron::ImageKey & key,const boost::shared_ptr<Natron::ImageParams>& params,
-                                ImageLocker* imageLocker,
                                 boost::shared_ptr<Natron::Image>* returnValue) const
 {
-    return _imp->_diskCache->getOrCreate(key, params, imageLocker, returnValue);
+    return _imp->_diskCache->getOrCreate(key, params, returnValue);
 }
 
 
@@ -2095,11 +2093,10 @@ AppManager::getTexture(const Natron::FrameKey & key,
 bool
 AppManager::getTextureOrCreate(const Natron::FrameKey & key,
                                const boost::shared_ptr<Natron::FrameParams>& params,
-                               FrameEntryLocker* entryLocker,
                                boost::shared_ptr<Natron::FrameEntry>* returnValue) const
 {
     
-    return _imp->_viewerCache->getOrCreate(key, params,entryLocker,returnValue);
+    return _imp->_viewerCache->getOrCreate(key, params,returnValue);
 }
 
 bool
@@ -3503,7 +3500,7 @@ makeNameScriptFriendly(const std::string& str)
 }
 
 PythonGILLocker::PythonGILLocker()
-    : state(PyGILState_UNLOCKED)
+//    : state(PyGILState_UNLOCKED)
 {
     appPTR->takeNatronGIL();
 //    ///Take the GIL for this thread

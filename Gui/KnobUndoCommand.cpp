@@ -519,7 +519,9 @@ RestoreDefaultsCommand::redo()
         }
         (*it)->endChanges();
     }
-    timeline->removeMultipleKeyframeIndicator(times,true);
+    if (timeline) {
+        timeline->removeMultipleKeyframeIndicator(times,true);
+    }
     
     if (first->getHolder()) {
         first->getHolder()->evaluate_public(NULL, true, Natron::eValueChangedReasonUserEdited);
