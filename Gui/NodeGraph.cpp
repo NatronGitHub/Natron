@@ -1561,11 +1561,17 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
                                         CreateNodeArgs::DefaultValuesList(),
                                         getGroup());
 
+                
                     
                     boost::shared_ptr<Natron::Node> mergeNode = getGui()->getApp()->createNode(args);
+                    
                     if (mergeNode) {
-                        mergeNode->connectInput(selectedNode->getNode(), 1);
-                        mergeNode->connectInput(_imp->_mergeHintNode->getNode(), 2);
+                        
+                        int aIndex = mergeNode->getInputNumberFromLabel("A");
+                        int bIndex = mergeNode->getInputNumberFromLabel("B");
+                        assert(aIndex != -1 && bIndex != -1);
+                        mergeNode->connectInput(selectedNode->getNode(), aIndex);
+                        mergeNode->connectInput(_imp->_mergeHintNode->getNode(), bIndex);
                     }
                     
                    

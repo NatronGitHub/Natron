@@ -1277,19 +1277,37 @@ Node::getPreferredInputInternal(bool connected) const
     
     
     bool useInputA = appPTR->getCurrentSettings()->isMergeAutoConnectingToAInput();
+    
+    ///Find an input named A
+    std::string inputNameToFind,otherName;
     if (useInputA) {
-        ///Find an input named A
-        std::string inputNameToFind("A");
-        int maxinputs = getMaxInputCount();
-        for (int i = 0; i < maxinputs ; ++i) {
-            if (getInputLabel(i) == inputNameToFind ) {
-                NodePtr inp = getInput(i);
-                if ((connected && inp) || (!connected && !inp)) {
-                    return i;
-                }
+        inputNameToFind = "A";
+        otherName = "B";
+    } else {
+        inputNameToFind = "B";
+        otherName = "A";
+    }
+    int foundOther = -1;
+    int maxinputs = getMaxInputCount();
+    for (int i = 0; i < maxinputs ; ++i) {
+        std::string inputLabel = getInputLabel(i);
+        if (inputLabel == inputNameToFind ) {
+            NodePtr inp = getInput(i);
+            if ((connected && inp) || (!connected && !inp)) {
+                return i;
             }
+        } else if (inputLabel == otherName) {
+            foundOther = i;
+            break;
         }
     }
+    if (foundOther != -1) {
+        NodePtr inp = getInput(foundOther);
+        if ((connected && inp) || (!connected && !inp)) {
+            return foundOther;
+        }
+    }
+    
     
     
     

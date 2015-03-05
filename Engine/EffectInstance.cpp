@@ -4554,7 +4554,7 @@ EffectInstance::getNearestNonDisabled() const
 
         ///We cycle in reverse by default. It should be a setting of the application.
         ///In this case it will return input B instead of input A of a merge for example.
-        for (int i = maxInp - 1; i >= 0; --i) {
+        for (int i = 0; i < maxInp; ++i) {
             Natron::EffectInstance* inp = getInput(i);
             bool optional = isInputOptional(i);
             if (inp) {
@@ -4602,7 +4602,7 @@ EffectInstance::getNearestNonDisabledPrevious(int* inputNb)
     
     ///We cycle in reverse by default. It should be a setting of the application.
     ///In this case it will return input B instead of input A of a merge for example.
-    for (int i = maxInp - 1; i >= 0; --i) {
+    for (int i = 0; i < maxInp; ++i) {
         Natron::EffectInstance* inp = getInput(i);
         bool optional = isInputOptional(i);
         if (inp) {
