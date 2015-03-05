@@ -1358,6 +1358,7 @@ private:
 #endif
 );
 
+    /// \returns false if rendering was aborted
     bool renderInputImagesForRoI(bool createImageInCache,
                                  const std::list< boost::shared_ptr<Natron::Image> >& argsInputImages,
                                  SequenceTime time,
