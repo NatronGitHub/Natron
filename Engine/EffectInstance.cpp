@@ -2407,6 +2407,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
                                      framesNeeded,
                                      &inputImages,
                                      &roim)) {
+                // rendering was aborted
             return ImagePtr();
         }
         inputsRoi.push_back(roim);
@@ -2582,6 +2583,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
 } // renderRoI
 
 
+/// \returns false if rendering was aborted
 bool
 EffectInstance::renderInputImagesForRoI(bool createImageInCache,
                                         const std::list< boost::shared_ptr<Natron::Image> >& argsInputImages,
