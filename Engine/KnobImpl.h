@@ -1301,6 +1301,17 @@ Knob<T>::setDefaultValue(const T & v,
     resetToDefaultValue(dimension);
 }
 
+template <typename T>
+void
+Knob<T>::setDefaultValueWithoutApplying(const T& v,int dimension)
+{
+    assert( dimension < getDimension() );
+    {
+        QWriteLocker l(&_valueMutex);
+        _defaultValues[dimension] = v;
+    }
+}
+
 template<typename T>
 void
 Knob<T>::populate()

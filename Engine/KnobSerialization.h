@@ -638,19 +638,19 @@ class KnobSerialization : public KnobSerializationBase
                         if (isDoubleVal) {
                             double def;
                             ar & boost::serialization::make_nvp("DefaultValue",def);
-                            isDoubleVal->setDefaultValue(def,i);
+                            isDoubleVal->setDefaultValueWithoutApplying(def,i);
                         } else if (isIntVal) {
                             int def;
                             ar & boost::serialization::make_nvp("DefaultValue",def);
-                            isIntVal->setDefaultValue(def,i);
+                            isIntVal->setDefaultValueWithoutApplying(def,i);
                         } else if (isBool) {
                             bool def;
                             ar & boost::serialization::make_nvp("DefaultValue",def);
-                            isBool->setDefaultValue(def,i);
+                            isBool->setDefaultValueWithoutApplying(def,i);
                         } else if (isStr) {
                             std::string def;
                             ar & boost::serialization::make_nvp("DefaultValue",def);
-                            isStr->setDefaultValue(def,i);
+                            isStr->setDefaultValueWithoutApplying(def,i);
                         }
                     }
                 }
