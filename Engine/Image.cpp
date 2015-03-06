@@ -1030,6 +1030,10 @@ Image::halveRoIForDepth(const RectI & roi,
 
         return;
     }
+    
+    /// Take the lock for both bitmaps since we're about to read/write from them!
+    QWriteLocker k1(&output->_entryLock);
+    QReadLocker k2(&_entryLock);
 
     ///The source rectangle, intersected to this image region of definition in pixels
     const RectI &srcBounds = _bounds;
@@ -1060,9 +1064,7 @@ Image::halveRoIForDepth(const RectI & roi,
     dstRoI.y2 = std::ceil(srcRoI.y2 / 2.);
 
     
-    /// Take the lock for both bitmaps since we're about to read/write from them!
-    QWriteLocker k1(&output->_entryLock);
-    QReadLocker k2(&_entryLock);
+  
     
     const PIX* const srcPixels      = (const PIX*)pixelAt(srcBounds.x1,   srcBounds.y1);
     const char* const srcBmPixels   = _bitmap.getBitmapAt(srcBmBounds.x1, srcBmBounds.y1);
@@ -1198,6 +1200,12 @@ Image::halve1DImageForDepth(const RectI & roi,
 
     assert(width == 1 || height == 1); /// must be 1D
     assert( output->getComponents() == getComponents() );
+    
+    /// Take the lock for both bitmaps since we're about to read/write from them!
+    QWriteLocker k1(&output->_entryLock);
+    QReadLocker k2(&_entryLock);
+
+    
     const RectI & srcBounds = _bounds;
     const RectI & dstBounds = output->_bounds;
 //    assert(dstBounds.x1 * 2 == roi.x1 &&
@@ -1207,9 +1215,6 @@ Image::halve1DImageForDepth(const RectI & roi,
 //               dstBounds.y2 * 2 == roi.y2)
 //           );
     
-    /// Take the lock for both bitmaps since we're about to read/write from them!
-    QWriteLocker k1(&output->_entryLock);
-    QReadLocker k2(&_entryLock);
     
 
 
@@ -1874,7 +1879,7 @@ Bitmap::copyRowPortion(int x1,int x2,int y,const Bitmap& other)
     char* dstBitmap = getBitmapAt(x1, y);
     const char* end = dstBitmap + (x2 - x1);
     while (dstBitmap < end) {
-        *dstBitmap = *srcBitmap == PIXEL_UNAVAILABLE ? 0 : *srcBitmap;
+        *dstBitmap = /**srcBitmap == PIXEL_UNAVAILABLE ? 0 : */*srcBitmap;
         ++dstBitmap;
         ++srcBitmap;
     }
@@ -1908,7 +1913,7 @@ Bitmap::copyBitmapPortion(const RectI& roi, const Bitmap& other)
         const char* srcEnd = srcBitmap + roi.width();
         char* dstCur = dstBitmap;
         while (srcCur < srcEnd) {
-            *dstCur = *srcCur == PIXEL_UNAVAILABLE ? 0 : *srcCur;
+            *dstCur = /**srcCur == PIXEL_UNAVAILABLE ? 0 : */*srcCur;
             ++srcCur;
             ++dstCur;
         }
