@@ -1348,7 +1348,7 @@ private:
                                           bool renderFullScaleThenDownscale,
                                           bool useScaleOneInputImages,
                                           const std::list<RoIMap>& inputRoisParam,
-                                          const std::list<boost::shared_ptr<Natron::Image> >& inputImagesParam
+                                          const std::list<std::list<boost::shared_ptr<Natron::Image> > >& inputImagesParam
 #if NATRON_ENABLE_TRIMAP
                                           ,bool *isBeingRenderedElsewhere
 #endif

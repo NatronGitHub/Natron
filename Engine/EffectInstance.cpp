@@ -2295,7 +2295,9 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
     
     ///For each rect to render a RoIMap
     std::list<RoIMap> inputsRoi;
-    std::list <boost::shared_ptr<Image> > inputImages;
+    
+    ///For each rect to render, the input images
+    std::list<ImageList> inputImages;
 
     
     /// If the list is empty then we already rendered it all
@@ -2390,6 +2392,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
         }
 
         RoIMap roim;
+        ImageList imgs;
         if (!renderInputImagesForRoI(createInCache,
                                      args.inputImagesList,
                                      args.time,
@@ -2410,19 +2413,16 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
                                      renderScaleOneUpstreamIfRenderScaleSupportDisabled,
                                      byPassCache,
                                      framesNeeded,
-                                     &inputImages,
+                                     &imgs,
                                      &roim)) {
                 // rendering was aborted
             return ImagePtr();
         }
         inputsRoi.push_back(roim);
+        inputImages.push_back(imgs);
     }
   
-    ///We hold our input images in thread-storage, so that the getImage function can find them afterwards, even if the node doesn't cache its output.
-    boost::shared_ptr<InputImagesHolder_RAII> inputImagesHolder;
-    if (!rectsToRender.empty() && !inputImages.empty()) {
-        inputImagesHolder.reset(new InputImagesHolder_RAII(inputImages,&_imp->inputImages));
-    }
+
     
     
     if (!image) {
@@ -2779,7 +2779,7 @@ EffectInstance::renderRoIInternal(SequenceTime time,
                                   bool renderFullScaleThenDownscale,
                                   bool useScaleOneInputImages,
                                   const std::list<RoIMap>& inputsRoi,
-                                  const std::list<boost::shared_ptr<Natron::Image> >& inputImages
+                                  const std::list<std::list<boost::shared_ptr<Natron::Image> > >& inputImages
 #if NATRON_ENABLE_TRIMAP
                                   ,bool *isBeingRenderedElsewhere
 #endif
@@ -2830,10 +2830,18 @@ EffectInstance::renderRoIInternal(SequenceTime time,
         renderingNotifier.reset(new NotifyRenderingStarted_RAII(getNode().get()));
     }
     
-    assert(inputsRoi.size() == rectsToRender.size());
+    assert(inputsRoi.size() == rectsToRender.size() && inputImages.size() == rectsToRender.size());
     
     std::list<RoIMap>::const_iterator roiIT = inputsRoi.begin();
-    for (std::list<RectI>::const_iterator it = rectsToRender.begin(); it != rectsToRender.end(); ++it,++roiIT) {
+    std::list<ImageList>::const_iterator inputImgIt = inputImages.begin();
+    for (std::list<RectI>::const_iterator it = rectsToRender.begin(); it != rectsToRender.end(); ++it,++roiIT,++inputImgIt) {
+        
+        
+        ///We hold our input images in thread-storage, so that the getImage function can find them afterwards, even if the node doesn't cache its output.
+        boost::shared_ptr<InputImagesHolder_RAII> inputImagesHolder;
+        if (!rectsToRender.empty() && !inputImages.empty()) {
+            inputImagesHolder.reset(new InputImagesHolder_RAII(*inputImgIt,&_imp->inputImages));
+        }
         
         RectI downscaledRectToRender = *it; // please leave it as const, copy it if necessary
 
@@ -2904,8 +2912,8 @@ EffectInstance::renderRoIInternal(SequenceTime time,
         scale.x = Image::getScaleFromMipMapLevel(mipMapLevel);
         scale.y = scale.x;
         // check the dimensions of all input and output images
-        for (std::list< boost::shared_ptr<Natron::Image> >::const_iterator it = inputImages.begin();
-             it != inputImages.end();
+        for (std::list< boost::shared_ptr<Natron::Image> >::const_iterator it = inputImgIt->begin();
+             it != inputImgIt->end();
              ++it) {
 
             assert(useScaleOneInputImages || (*it)->getMipMapLevel() == mipMapLevel);
@@ -3027,7 +3035,7 @@ EffectInstance::renderRoIInternal(SequenceTime time,
             TiledRenderingFunctorArgs tiledArgs;
             tiledArgs.args = &args;
             tiledArgs.isSequentialRender = isSequentialRender;
-            tiledArgs.inputImages = inputImages;
+            tiledArgs.inputImages = *inputImgIt;
             tiledArgs.renderUseScaleOneInputs = useScaleOneInputImages;
             tiledArgs.isRenderResponseToUserInteraction = isRenderMadeInResponseToUserInteraction;
             tiledArgs.downscaledImage = downscaledImage;
@@ -3115,7 +3123,7 @@ EffectInstance::renderRoIInternal(SequenceTime time,
             
             RenderingFunctorRetEnum functorRet = tiledRenderingFunctor(args,
                                                                    frameArgs,
-                                                                   inputImages,
+                                                                   *inputImgIt,
                                                                    false,
                                                                    renderFullScaleThenDownscale,
                                                                    useScaleOneInputImages,
