@@ -1107,7 +1107,11 @@ Node::isRenderingPreview() const
 bool
 Node::hasOverlay() const
 {
-    return _imp->liveInstance ? _imp->liveInstance->hasOverlay() : false;
+    if (!_imp->liveInstance) {
+        return false;
+    }
+
+    return _imp->liveInstance->hasOverlay();
 }
 
 void
