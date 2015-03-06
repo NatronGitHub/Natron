@@ -29,6 +29,73 @@ namespace Natron {
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////BUFFER////////////////////////////////////////////////////
 
+template <typename T>
+class RamBuffer
+{
+    T* data;
+    U64 count;
+    
+public:
+    
+    RamBuffer()
+    : data(0)
+    , count(0)
+    {
+        
+    }
+    
+    T* getData()
+    {
+        return data;
+    }
+    
+    const T* getData() const
+    {
+        return data;
+    }
+    
+    void swap(RamBuffer& other)
+    {
+        std::swap(data, other.data);
+        std::swap(count, other.count);
+    }
+    
+    U64 size() const
+    {
+        return count;
+    }
+    
+    void resize(U64 size)
+    {
+        assert(size > 0);
+        count = size;
+        if (data) {
+            free(data);
+            data = 0;
+        }
+        data = (T*)malloc(size * sizeof(T));
+        if (!data) {
+            throw std::bad_alloc();
+        }
+    }
+    
+    void clear()
+    {
+        count = 0;
+        if (data) {
+            free(data);
+            data = 0;
+        }
+    }
+    
+    ~RamBuffer()
+    {
+        if (data) {
+            free(data);
+            data = 0;
+        }
+    }
+};
 
 /** @brief Buffer represents  an internal buffer that can be allocated on different devices.
  * For now the class is simple and can only be either on disk using mmap or in RAM using malloc.
@@ -51,13 +118,13 @@ public:
 
 
     Buffer()
-        : _path()
-          , _buffer()
-          , _backingFile()
-          , _storageMode(eStorageModeRAM)
+    : _path()
+    , _buffer()
+    , _backingFile()
+    , _storageMode(eStorageModeRAM)
     {
     }
-
+    
     ~Buffer()
     {
         deallocate();
@@ -111,7 +178,6 @@ public:
     {
         if (_storageMode == eStorageModeRAM) {
             assert(_buffer.size() > 0); // could be 0 if we allocate 0...
-            _buffer.clear();
             _buffer.resize(count);
         } else if (_storageMode == eStorageModeDisk) {
             assert(_backingFile);
@@ -128,10 +194,9 @@ public:
             if (other._storageMode == eStorageModeRAM) {
                 _buffer.swap(other._buffer);
             } else {
-                _buffer.clear();
                 _buffer.resize(other._backingFile->size() / sizeof(DataType));
                 const char* src = other._backingFile->data();
-                char* dst = (char*)_buffer.data();
+                char* dst = (char*)_buffer.getData();
                 memcpy(dst,src,other._backingFile->size());
             }
         } else if (_storageMode == eStorageModeDisk) {
@@ -141,7 +206,7 @@ public:
                 _path = other._path;
             } else {
                 _backingFile->resize(other._buffer.size() * sizeof(DataType));
-                const char* src = (const char*)other._buffer.data();
+                const char* src = (const char*)other._buffer.getData();
                 char* dst = (char*)_backingFile->data();
                 memcpy(dst,src,other._buffer.size() * sizeof(DataType));
             }
@@ -227,7 +292,7 @@ public:
                 return NULL;
             }
         } else {
-            return &_buffer.front();
+            return _buffer.getData();
         }
     }
 
@@ -236,7 +301,7 @@ public:
         if (_storageMode == eStorageModeDisk) {
             return (const DataType*)_backingFile->data();
         } else {
-            return &_buffer.front();
+            return _buffer.getData();
         }
     }
 
@@ -248,7 +313,7 @@ public:
 private:
 
     std::string _path;
-    std::vector<DataType> _buffer;
+    RamBuffer<DataType> _buffer;
 
     /*mutable so the reOpenFileMapping function can reopen the mmaped file. It doesn't
        change the underlying data*/
