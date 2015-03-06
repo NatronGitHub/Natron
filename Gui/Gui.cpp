@@ -5018,19 +5018,22 @@ Gui::getNodesEntitledForOverlays(std::list<boost::shared_ptr<Natron::Node> >& no
                         if (node->isSettingsPanelVisible() &&
                             !node->isSettingsPanelMinimized() &&
                             instance->isActivated() &&
+                            instance->hasOverlay() &&
                             it->second &&
                             !instance->isNodeDisabled()) {
                             nodes.push_back(instance);
                         }
                     }
-                    if (!internalNode->isNodeDisabled() &&
+                    if (internalNode->hasOverlay() &&
+                        !internalNode->isNodeDisabled() &&
                         node->isSettingsPanelVisible() &&
-                        !node->isSettingsPanelMinimized() ) {
+                        !node->isSettingsPanelMinimized()) {
                         nodes.push_back(node->getNode());
                     }
 
                 } else {
-                    if (!internalNode->isNodeDisabled() &&
+                    if (internalNode->hasOverlay() &&
+                        !internalNode->isNodeDisabled() &&
                         internalNode->isActivated() &&
                         node->isSettingsPanelVisible() &&
                         !node->isSettingsPanelMinimized() ) {
