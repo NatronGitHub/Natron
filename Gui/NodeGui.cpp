@@ -465,9 +465,9 @@ NodeGui::createGui()
     
     const QString& iconFilePath = getNode()->getPlugin()->getIconFilePath();
     
+    BackDropGui* isBd = dynamic_cast<BackDropGui*>(this);
     
-    if (!iconFilePath.isEmpty() && appPTR->getCurrentSettings()->isPluginIconActivatedOnNodeGraph()) {
-
+    if (!isBd && !iconFilePath.isEmpty() && appPTR->getCurrentSettings()->isPluginIconActivatedOnNodeGraph()) {
         
         QPixmap pix(iconFilePath);
         if (QFile::exists(iconFilePath) && !pix.isNull()) {
@@ -666,16 +666,21 @@ NodeGui::isNearbyResizeHandle(const QPointF& pos) const
 }
 
 void
-NodeGui::adjustSizeToContent(int* /*w*/,int *h)
+NodeGui::adjustSizeToContent(int* /*w*/,int *h,bool adjustToTextSize)
 {
     QRectF labelBbox = _nameItem->boundingRect();
-    *h = std::max((double)*h, labelBbox.height() * 1.2);
+    if (adjustToTextSize) {
+        *h = labelBbox.height() * 1.2;
+    } else {
+        *h = std::max((double)*h, labelBbox.height() * 1.2);
+    }
 }
 
 void
 NodeGui::resize(int width,
                 int height,
-                bool forceSize )
+                bool forceSize,
+                bool adjustToTextSize)
 {
     if (!canResize()) {
         return;
@@ -684,7 +689,7 @@ NodeGui::resize(int width,
     QPointF topLeft = mapFromParent( pos() );
     QRectF labelBbox = _nameItem->boundingRect();
 
-    adjustSizeToContent(&width,&height);
+    adjustSizeToContent(&width,&height,adjustToTextSize);
     
     bool hasPluginIcon = _pluginIcon != NULL;
     
@@ -2535,7 +2540,8 @@ NodeGui::setNameItemHtml(const QString & name,
     }
     _nameItem->setFont(f);
 
-    refreshSize();
+    QRectF bbox = boundingRect();
+    resize(bbox.width(),bbox.height(),false,true);
 //    QRectF currentBbox = boundingRect();
 //    QRectF labelBbox = _nameItem->boundingRect();
 //    resize( currentBbox.width(), std::max( currentBbox.height(),labelBbox.height() ) );

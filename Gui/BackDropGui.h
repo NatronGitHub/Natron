@@ -60,7 +60,7 @@ private:
         return true;
     }
     
-    virtual void adjustSizeToContent(int *w,int *h) OVERRIDE FINAL;
+    virtual void adjustSizeToContent(int *w,int *h,bool adjustToTextSize) OVERRIDE FINAL;
         
     virtual void getInitialSize(int *w, int *h) const OVERRIDE FINAL;
     

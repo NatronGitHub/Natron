@@ -398,7 +398,7 @@ protected:
     
     void getSizeWithPreview(int *w, int *h) const;
     
-    virtual void adjustSizeToContent(int *w,int *h);
+    virtual void adjustSizeToContent(int *w,int *h,bool adjustToTextSize);
     
     virtual void resizeExtraContent(int /*w*/,int /*h*/,bool /*forceResize*/) {}
     
@@ -419,7 +419,7 @@ public Q_SLOTS:
      * @brief Updates the position of the items contained by the node to fit into
      * the new width and height.
      **/
-    void resize(int width,int height, bool forceSize = false);
+    void resize(int width,int height, bool forceSize = false, bool adjustToTextSize = false);
     
     void refreshSize();
 
