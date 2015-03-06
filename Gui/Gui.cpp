@@ -5012,18 +5012,18 @@ Gui::getNodesEntitledForOverlays(std::list<boost::shared_ptr<Natron::Node> >& no
             if (node && internalNode) {
                 boost::shared_ptr<MultiInstancePanel> multiInstance = node->getMultiInstancePanel();
                 if (multiInstance) {
-                    const std::list< std::pair<boost::weak_ptr<Natron::Node>,bool > >& instances = multiInstance->getInstances();
-                    for (std::list< std::pair<boost::weak_ptr<Natron::Node>,bool > >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
-                        NodePtr instance = it->first.lock();
-                        if (node->isSettingsPanelVisible() &&
-                            !node->isSettingsPanelMinimized() &&
-                            instance->isActivated() &&
-                            instance->hasOverlay() &&
-                            it->second &&
-                            !instance->isNodeDisabled()) {
-                            nodes.push_back(instance);
-                        }
-                    }
+//                    const std::list< std::pair<boost::weak_ptr<Natron::Node>,bool > >& instances = multiInstance->getInstances();
+//                    for (std::list< std::pair<boost::weak_ptr<Natron::Node>,bool > >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
+//                        NodePtr instance = it->first.lock();
+//                        if (node->isSettingsPanelVisible() &&
+//                            !node->isSettingsPanelMinimized() &&
+//                            instance->isActivated() &&
+//                            instance->hasOverlay() &&
+//                            it->second &&
+//                            !instance->isNodeDisabled()) {
+//                            nodes.push_back(instance);
+//                        }
+//                    }
                     if (internalNode->hasOverlay() &&
                         !internalNode->isNodeDisabled() &&
                         node->isSettingsPanelVisible() &&

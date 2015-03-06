@@ -1302,7 +1302,6 @@ Node::getPreferredInputInternal(bool connected) const
             }
         } else if (inputLabel == otherName) {
             foundOther = i;
-            break;
         }
     }
     if (foundOther != -1) {
