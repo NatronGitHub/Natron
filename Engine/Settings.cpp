@@ -1730,19 +1730,18 @@ Settings::populateReaderPluginsAndFormats(const std::map<std::string,std::vector
         boost::shared_ptr<Choice_Knob> k = Natron::createKnob<Choice_Knob>(this, it->first);
         k->setName("Reader_" + it->first);
         k->setAnimationEnabled(false);
-        
+
         std::vector<std::string> entries;
         double bestPluginEvaluation = -2; //< tuttle's notation extension starts at -1
         int bestPluginIndex = -1;
-        
-        
+
         for (U32 i = 0; i < it->second.size(); ++i) {
-            
+            //qDebug() << it->first.c_str() << "candidate" << i << it->second[i].first.c_str() << it->second[i].second;
             if (it->second[i].second > bestPluginEvaluation) {
                 bestPluginIndex = i;
+                bestPluginEvaluation = it->second[i].second;
             }
             entries.push_back(it->second[i].first);
-            
         }
         if (bestPluginIndex > -1) {
             k->setDefaultValue(bestPluginIndex,0);
@@ -1765,19 +1764,18 @@ Settings::populateWriterPluginsAndFormats(const std::map<std::string,std::vector
         boost::shared_ptr<Choice_Knob> k = Natron::createKnob<Choice_Knob>(this, it->first);
         k->setName("Writer_" + it->first);
         k->setAnimationEnabled(false);
-        
+
         std::vector<std::string> entries;
         double bestPluginEvaluation = -2; //< tuttle's notation extension starts at -1
         int bestPluginIndex = -1;
-        
-        
+
         for (U32 i = 0; i < it->second.size(); ++i) {
-            
+            //qDebug() << it->first.c_str() << "candidate" << i << it->second[i].first.c_str() << it->second[i].second;
             if (it->second[i].second > bestPluginEvaluation) {
                 bestPluginIndex = i;
+                bestPluginEvaluation = it->second[i].second;
             }
             entries.push_back(it->second[i].first);
-            
         }
         if (bestPluginIndex > -1) {
             k->setDefaultValue(bestPluginIndex,0);
