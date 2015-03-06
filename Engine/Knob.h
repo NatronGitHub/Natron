@@ -292,8 +292,9 @@ struct KnobChange
 {
     Natron::ValueChangedReasonEnum reason;
     bool originatedFromMainThread;
+    KnobI* knob;
 };
-typedef std::map<KnobI*,KnobChange> ChangesMap;
+typedef std::list<KnobChange> ChangesList;
 
 
 class KnobI

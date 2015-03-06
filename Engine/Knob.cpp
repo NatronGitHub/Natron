@@ -2605,7 +2605,7 @@ struct KnobHolder::KnobHolderPrivate
     
     mutable QMutex evaluationBlockedMutex;
     int evaluationBlocked;
-    ChangesMap knobChanged;
+    ChangesList knobChanged;
     
     bool changeSignificant;
 
@@ -3048,7 +3048,7 @@ KnobHolder::endChanges(bool discardEverything)
     }
     
     bool evaluate = false;
-    ChangesMap knobChanged;
+    ChangesList knobChanged;
     bool significant = false;
     {
         QMutexLocker l(&_imp->evaluationBlockedMutex);
@@ -3056,15 +3056,14 @@ KnobHolder::endChanges(bool discardEverything)
        // std::cout <<"DECR: " << _imp->evaluationBlocked << std::endl;
         
         evaluate = _imp->evaluationBlocked == 1;
-            
+        knobChanged = _imp->knobChanged;
+        _imp->knobChanged.clear();
         if (evaluate) {
-            knobChanged = _imp->knobChanged;
-            _imp->knobChanged.clear();
             significant = _imp->changeSignificant;
             _imp->changeSignificant = false;
         }
     }
-    if (evaluate && !knobChanged.empty()) {
+    if (!knobChanged.empty()) {
         if (discardEverything) {
             {
                 QMutexLocker l(&_imp->evaluationBlockedMutex);
@@ -3077,12 +3076,12 @@ KnobHolder::endChanges(bool discardEverything)
         }
         
         KnobI* knob = 0;
-        for (ChangesMap::iterator it = knobChanged.begin(); it!=knobChanged.end(); ++it) {
-            if (it->first) {
-                onKnobValueChanged_public(it->first, it->second.reason, getCurrentTime(), it->second.originatedFromMainThread);
+        for (ChangesList::iterator it = knobChanged.begin(); it!=knobChanged.end(); ++it) {
+            if (it->knob) {
+                onKnobValueChanged_public(it->knob, it->reason, getCurrentTime(), it->originatedFromMainThread);
             }
-            if (!knob && it->first) {
-                knob = it->first;
+            if (!knob && it->knob) {
+                knob = it->knob;
             }
         }
         
@@ -3094,8 +3093,8 @@ KnobHolder::endChanges(bool discardEverything)
             }
         }
         
-        if (significant) {
-            Natron::ValueChangedReasonEnum reason = knobChanged.begin()->second.reason;
+        if (evaluate && significant) {
+            Natron::ValueChangedReasonEnum reason = knobChanged.begin()->reason;
             if (!isMT) {
                 Q_EMIT doEvaluateOnMainThread(knob, significant, reason);
             } else {
@@ -3127,7 +3126,10 @@ KnobHolder::appendValueChange(KnobI* knob,Natron::ValueChangedReasonEnum reason)
         KnobChange k;
         k.reason = reason;
         k.originatedFromMainThread = QThread::currentThread() == qApp->thread();
-        _imp->knobChanged.insert(std::make_pair(knob,k));
+        k.knob = knob;
+        
+        //Push it front so instanceChanged is called on the latest first (LIFO)
+        _imp->knobChanged.push_front(k);
         if (knob) {
             _imp->changeSignificant |= knob->getEvaluateOnChange();
         }
