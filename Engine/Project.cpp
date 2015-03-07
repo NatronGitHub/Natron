@@ -2140,19 +2140,6 @@ void Project::extractTreesFromNodes(const std::list<boost::shared_ptr<Natron::No
     
 }
   
-void
-Project::forceGetClipPreferencesOnAllTrees()
-{
-    NodeList nodes;
-    getNodes_recursive(nodes);
-    std::list<Project::NodesTree> trees;
-    Project::extractTreesFromNodes(nodes, trees);
-    
-    std::list<Natron::Node*> markedNodes;
-    for (std::list<Project::NodesTree>::iterator it = trees.begin(); it!=trees.end(); ++it) {
-        it->output.node->restoreClipPreferencesRecursive(markedNodes);
-    }
-}
 
     
 } //namespace Natron

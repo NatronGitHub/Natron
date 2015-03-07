@@ -827,6 +827,20 @@ NodeCollection::recomputeFrameRangeForAllReaders(int* firstFrame,int* lastFrame)
     }
 }
 
+void
+NodeCollection::forceGetClipPreferencesOnAllTrees()
+{
+    NodeList nodes;
+    getNodes_recursive(nodes);
+    std::list<Project::NodesTree> trees;
+    Project::extractTreesFromNodes(nodes, trees);
+    
+    std::list<Natron::Node*> markedNodes;
+    for (std::list<Project::NodesTree>::iterator it = trees.begin(); it!=trees.end(); ++it) {
+        it->output.node->restoreClipPreferencesRecursive(markedNodes);
+    }
+}
+
 
 void
 NodeCollection::setParallelRenderArgs(int time,
@@ -1520,6 +1534,31 @@ static bool exportKnobValues(const boost::shared_ptr<KnobI> knob,
         } // if (isParametric) {
         
     } // for (int i = 0; i < (*it2)->getDimension(); ++i)
+    
+    if (knob->getIsSecret()) {
+        if (!hasExportedValue) {
+            hasExportedValue = true;
+            if (mustDefineParam) {
+                WRITE_INDENT(1); WRITE_STRING("param = " + paramFullName);
+            }
+        }
+
+        WRITE_INDENT(1); WRITE_STRING("param.setVisible(False)");
+    }
+    
+    for (int i = 0; i < knob->getDimension(); ++i) {
+        if (!knob->isEnabled(i)) {
+            if (!hasExportedValue) {
+                hasExportedValue = true;
+                if (mustDefineParam) {
+                    WRITE_INDENT(1); WRITE_STRING("param = " + paramFullName);
+                }
+            }
+
+            WRITE_INDENT(1); WRITE_STRING("param.setEnabled(False, " +  NUM(i) + ")");
+        }
+    }
+    
     if (mustDefineParam && hasExportedValue) {
         WRITE_INDENT(1); WRITE_STRING("del param");
     }
@@ -1837,15 +1876,7 @@ static void exportUserKnob(const boost::shared_ptr<KnobI>& knob,const QString& f
         WRITE_INDENT(1); WRITE_STRING("param.setAnimationEnabled(" + animStr + ")");
     }
     
-    if (knob->getIsSecret()) {
-        WRITE_INDENT(1); WRITE_STRING("param.setVisible(False)");
-    }
     
-    for (int i = 0; i < knob->getDimension(); ++i) {
-        if (!knob->isEnabled(i)) {
-            WRITE_INDENT(1); WRITE_STRING("param.setEnabled(False, " +  NUM(i) + ")");
-        }
-    }
     
     exportKnobValues(knob,"", false, ts);
     WRITE_INDENT(1); WRITE_STRING(fullyQualifiedNodeName + "." + QString(knob->getName().c_str()) + " = param");
