@@ -4541,10 +4541,6 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
     if (isReader() && k->getName() == kOfxImageEffectFileParamName) {
         getNode()->computeFrameRangeForReader(k);
     }
-    
-    
-    NodePtr node = getNode();
-    node->onEffectKnobValueChanged(k, reason);
 
     
     KnobHelper* kh = dynamic_cast<KnobHelper*>(k);
@@ -4565,6 +4561,9 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
         RECURSIVE_ACTION();
         knobChanged(k, reason, /*view*/ 0, time, originatedFromMainThread);
     }
+    
+    NodePtr node = getNode();
+    node->onEffectKnobValueChanged(k, reason);
     
     ///If there's a knobChanged Python callback, run it
     std::string pythonCB = getNode()->getKnobChangedCallback();
