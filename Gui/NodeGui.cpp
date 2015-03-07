@@ -299,7 +299,7 @@ NodeGui::initialize(NodeGraph* dag,
 
     
     if (internalNode->getPluginID() == PLUGINID_OFX_MERGE) {
-        boost::shared_ptr<KnobI> knob = internalNode->getKnobByName(kOfxParamStringSublabelName);
+        boost::shared_ptr<KnobI> knob = internalNode->getKnobByName(kNatronOfxParamStringSublabelName);
         assert(knob);
         String_Knob* strKnob = dynamic_cast<String_Knob*>(knob.get());
         if (strKnob) {
@@ -2556,7 +2556,7 @@ NodeGui::onNodeExtraLabelChanged(const QString & label)
     NodePtr node = getNode();
     _nodeLabel = label;
     if ( node->isMultiInstance() ) {
-        ///The multi-instances store in the kOfxParamStringSublabelName knob the name of the instance
+        ///The multi-instances store in the kNatronOfxParamStringSublabelName knob the name of the instance
         ///Since the "main-instance" is the one displayed on the node-graph we don't want it to display its name
         ///hence we remove it
         _nodeLabel = String_KnobGui::removeNatronHtmlTag(_nodeLabel);

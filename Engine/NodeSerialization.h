@@ -113,6 +113,13 @@ public:
         return _inputs;
     }
 
+    void switchInput(const std::string& oldInputName,const std::string& newInputName) {
+        for (std::map<std::string,std::string>::iterator it = _inputs.begin(); it!=_inputs.end(); ++it) {
+            if (it->second == oldInputName) {
+                it->second = newInputName;
+            }
+        }
+    }
 
     int getPluginMajorVersion() const
     {

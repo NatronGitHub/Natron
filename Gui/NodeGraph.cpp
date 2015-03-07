@@ -3392,11 +3392,18 @@ NodeGraphPrivate::pasteNodesInternal(const NodeClipBoard & clipboard,const QPoin
         QPointF offset(scenePos.x() - ((xmin + xmax) / 2.), scenePos.y() - ((ymin + ymax) / 2.));
 
         assert( clipboard.nodes.size() == clipboard.nodesUI.size() );
-        std::list<boost::shared_ptr<NodeSerialization> >::const_iterator itOther = clipboard.nodes.begin();
+        
+        std::list<boost::shared_ptr<NodeSerialization> > internalNodesClipBoard = clipboard.nodes;
+        std::list<boost::shared_ptr<NodeSerialization> >::iterator itOther = internalNodesClipBoard.begin();
         for (std::list<boost::shared_ptr<NodeGuiSerialization> >::const_iterator it = clipboard.nodesUI.begin();
              it != clipboard.nodesUI.end(); ++it,++itOther) {
             boost::shared_ptr<NodeGui> node = pasteNode( **itOther,**it,offset,group.lock(),std::string(), false);
             newNodes.push_back(node);
+            
+            ///The script-name of the copy node is different than the one of the original one, update all input connections in the serialization
+            for (std::list<boost::shared_ptr<NodeSerialization> >::iterator it2 = internalNodesClipBoard.begin(); it2!=internalNodesClipBoard.end(); ++it2) {
+                (*it2)->switchInput((*itOther)->getNodeScriptName(), node->getNode()->getScriptName());
+            }
         }
         assert( clipboard.nodes.size() == newNodes.size() );
 
@@ -3657,6 +3664,13 @@ NodeGraph::cloneSelectedNodes()
       
         newNodes.push_back(clone);
         serializations.push_back(internalSerialization);
+        
+        ///The script-name of the copy node is different than the one of the original one, update all input connections in the serialization
+        for (std::list<boost::shared_ptr<NodeSerialization> >::iterator it2 = serializations.begin(); it2!=serializations.end(); ++it2) {
+            (*it2)->switchInput(internalSerialization->getNodeScriptName(), clone->getNode()->getScriptName());
+        }
+
+        
     }
 
 
