@@ -2541,7 +2541,7 @@ NodeGui::setNameItemHtml(const QString & name,
     _nameItem->setFont(f);
 
     QRectF bbox = boundingRect();
-    resize(bbox.width(),bbox.height(),false,true);
+    resize(bbox.width(),bbox.height(),false,!label.isEmpty());
 //    QRectF currentBbox = boundingRect();
 //    QRectF labelBbox = _nameItem->boundingRect();
 //    resize( currentBbox.width(), std::max( currentBbox.height(),labelBbox.height() ) );

@@ -875,7 +875,7 @@ NodeCollection::setParallelRenderArgs(int time,
         }
         
         
-        NodeGroup* isGrp = dynamic_cast<NodeGroup*>(this);
+        NodeGroup* isGrp = dynamic_cast<NodeGroup*>((*it)->getLiveInstance());
         if (isGrp) {
             isGrp->setParallelRenderArgs(time, view, isRenderUserInteraction, isSequential, canAbort, timeline);
         }
@@ -905,7 +905,7 @@ NodeCollection::invalidateParallelRenderArgs()
         }
         
         
-        NodeGroup* isGrp = dynamic_cast<NodeGroup*>(this);
+        NodeGroup* isGrp = dynamic_cast<NodeGroup*>((*it)->getLiveInstance());
         if (isGrp) {
             isGrp->invalidateParallelRenderArgs();
         }
@@ -939,7 +939,7 @@ NodeCollection::getParallelRenderArgs(std::map<boost::shared_ptr<Natron::Node>,P
         }
         
         
-        const NodeGroup* isGrp = dynamic_cast<const NodeGroup*>(this);
+        const NodeGroup* isGrp = dynamic_cast<const NodeGroup*>((*it)->getLiveInstance());
         if (isGrp) {
             isGrp->getParallelRenderArgs(argsMap);
         }
@@ -961,7 +961,8 @@ ParallelRenderArgsSetter::ParallelRenderArgsSetter(NodeCollection* n,
 }
 
 ParallelRenderArgsSetter::ParallelRenderArgsSetter(const std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs >& args)
-: argsMap(args)
+: collection(0)
+, argsMap(args)
 {
     for (std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs >::iterator it = argsMap.begin(); it!=argsMap.end(); ++it) {
         it->first->getLiveInstance()->setParallelRenderArgsTLS(it->second);

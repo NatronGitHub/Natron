@@ -756,7 +756,10 @@ void
 EffectInstance::setParallelRenderArgsTLS(const ParallelRenderArgs& args)
 {
     assert(args.validArgs);
-    _imp->frameRenderArgs.localData() = args;
+    ParallelRenderArgs& tls = _imp->frameRenderArgs.localData();
+    int curValid = tls.validArgs;
+    tls = args;
+    tls.validArgs = curValid + 1;
 }
 
 
