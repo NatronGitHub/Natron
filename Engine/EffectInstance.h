@@ -525,7 +525,7 @@ public:
     * @brief Sets render preferences for the rendering of a frame for the current thread.
     * This is thread local storage. This is NOT local to a call to renderRoI
     **/
-    void setParallelRenderArgs(int time,
+    void setParallelRenderArgsTLS(int time,
                                int view,
                                bool isRenderUserInteraction,
                                bool isSequential,
@@ -534,10 +534,14 @@ public:
                                U64 rotoAge,
                                const TimeLine* timeline);
 
+    void setParallelRenderArgsTLS(const ParallelRenderArgs& args); 
+
     /**
      *@returns whether the effect was flagged with canSetValue = true or false
      **/
-    void invalidateParallelRenderArgs();
+    void invalidateParallelRenderArgsTLS();
+
+    ParallelRenderArgs getParallelRenderArgsTLS() const;
 
     /**
      * @breif Don't override this one, override onKnobValueChanged instead.
@@ -1489,13 +1493,13 @@ private:
     ///    * We render in fullScaledMappedImage, then convert into "image" and then downscale into downscaledImage.
     RenderingFunctorRetEnum tiledRenderingFunctor(const TiledRenderingFunctorArgs& args,
                                              const ParallelRenderArgs& frameArgs,
-                                             bool setThreadLocalStorage,
+                                             const std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs >& frameTls,
                                              const RectI & downscaledRectToRender );
 
     RenderingFunctorRetEnum tiledRenderingFunctor(const RenderArgs & args,
                                              const ParallelRenderArgs& frameArgs,
                                              const std::list<boost::shared_ptr<Natron::Image> >& inputImages,
-                                             bool setThreadLocalStorage,
+                                             const std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs >& frameTls,
                                              bool renderFullScaleThenDownscale,
                                              bool renderUseScaleOneInputs,
                                              bool isSequentialRender,

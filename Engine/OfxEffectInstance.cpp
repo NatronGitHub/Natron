@@ -867,14 +867,13 @@ OfxEffectInstance::onInputChanged(int inputNo)
     /**
      * The plug-in might call getImage, set a valid thread storage on the tree.
      **/
-    ParallelRenderArgsSetter frameRenderArgs(getNode().get(),
-                                                   time,
-                                                   0 /*view*/,
-                                                   true,
-                                                   false,
-                                                   false,
-                                                   getHash(),
-                                                   getApp()->getTimeLine().get());
+    ParallelRenderArgsSetter frameRenderArgs(getApp()->getProject().get(),
+                                             time,
+                                             0 /*view*/,
+                                             true,
+                                             false,
+                                             false,
+                                             getApp()->getTimeLine().get());
     
     ///Don't do clip preferences while loading a project, they will be refreshed globally once the project is loaded.
     

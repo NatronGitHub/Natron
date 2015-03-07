@@ -268,8 +268,8 @@ NodeCollection::refreshViewersAndPreviews()
     if ( !appPTR->isBackground() ) {
         int time = _imp->app->getTimeLine()->currentFrame();
         
-        QMutexLocker k(&_imp->nodesMutex);
-        for (NodeList::iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
+        NodeList nodes = getNodes();
+        for (NodeList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
             assert(*it);
             (*it)->computePreviewImage(time);
             NodeGroup* isGrp = dynamic_cast<NodeGroup*>((*it)->getLiveInstance());
@@ -827,8 +827,150 @@ NodeCollection::recomputeFrameRangeForAllReaders(int* firstFrame,int* lastFrame)
     }
 }
 
+
+void
+NodeCollection::setParallelRenderArgs(int time,
+                                      int view,
+                                      bool isRenderUserInteraction,
+                                      bool isSequential,
+                                      bool canAbort,
+                                      const TimeLine* timeline)
+{
+    NodeList nodes = getNodes();
+    for (NodeList::iterator it = nodes.begin(); it!=nodes.end(); ++it) {
+        U64 rotoAge;
+        boost::shared_ptr<RotoContext> roto = (*it)->getRotoContext();
+        if (roto) {
+            rotoAge = roto->getAge();
+        } else {
+            rotoAge = 0;
+        }
+        
+        (*it)->getLiveInstance()->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, (*it)->getHashValue(), rotoAge, timeline);
+        
+        if ((*it)->isMultiInstance()) {
+            
+            ///If the node has children, set the thread-local storage on them too, even if they do not render, it can be useful for expressions
+            ///on parameters.
+            NodeList children;
+            (*it)->getChildrenMultiInstance(&children);
+            for (NodeList::iterator it2 = children.begin(); it2!=children.end(); ++it2) {
+                (*it2)->getLiveInstance()->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, (*it2)->getHashValue(), rotoAge, timeline);
+                
+            }
+        }
+        
+        
+        NodeGroup* isGrp = dynamic_cast<NodeGroup*>(this);
+        if (isGrp) {
+            isGrp->setParallelRenderArgs(time, view, isRenderUserInteraction, isSequential, canAbort, timeline);
+        }
+
+    }
+}
+
+
+void
+NodeCollection::invalidateParallelRenderArgs()
+{
+    
+    NodeList nodes = getNodes();
+    for (NodeList::iterator it = nodes.begin(); it!=nodes.end(); ++it) {
+        (*it)->getLiveInstance()->invalidateParallelRenderArgsTLS();
+        
+        if ((*it)->isMultiInstance()) {
+            
+            ///If the node has children, set the thread-local storage on them too, even if they do not render, it can be useful for expressions
+            ///on parameters.
+            NodeList children;
+            (*it)->getChildrenMultiInstance(&children);
+            for (NodeList::iterator it2 = children.begin(); it2!=children.end(); ++it2) {
+                (*it2)->getLiveInstance()->invalidateParallelRenderArgsTLS();
+                
+            }
+        }
+        
+        
+        NodeGroup* isGrp = dynamic_cast<NodeGroup*>(this);
+        if (isGrp) {
+            isGrp->invalidateParallelRenderArgs();
+        }
+    }
+    
+}
+
+
+void
+NodeCollection::getParallelRenderArgs(std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs >& argsMap) const
+{
+    NodeList nodes = getNodes();
+    for (NodeList::iterator it = nodes.begin(); it!=nodes.end(); ++it) {
+        ParallelRenderArgs args = (*it)->getLiveInstance()->getParallelRenderArgsTLS();
+        if (args.validArgs) {
+            argsMap.insert(std::make_pair(*it, args));
+        }
+        
+        if ((*it)->isMultiInstance()) {
+            
+            ///If the node has children, set the thread-local storage on them too, even if they do not render, it can be useful for expressions
+            ///on parameters.
+            NodeList children;
+            (*it)->getChildrenMultiInstance(&children);
+            for (NodeList::iterator it2 = children.begin(); it2!=children.end(); ++it2) {
+                ParallelRenderArgs childArgs = (*it2)->getLiveInstance()->getParallelRenderArgsTLS();
+                if (childArgs.validArgs) {
+                    argsMap.insert(std::make_pair(*it2, childArgs));
+                }
+            }
+        }
+        
+        
+        const NodeGroup* isGrp = dynamic_cast<const NodeGroup*>(this);
+        if (isGrp) {
+            isGrp->getParallelRenderArgs(argsMap);
+        }
+
+    }
+}
+
+ParallelRenderArgsSetter::ParallelRenderArgsSetter(NodeCollection* n,
+                         int time,
+                         int view,
+                         bool isRenderUserInteraction,
+                         bool isSequential,
+                         bool canAbort,
+                         const TimeLine* timeline)
+: collection(n)
+, argsMap()
+{
+    collection->setParallelRenderArgs(time,view,isRenderUserInteraction,isSequential,canAbort,timeline);
+}
+
+ParallelRenderArgsSetter::ParallelRenderArgsSetter(const std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs >& args)
+: argsMap(args)
+{
+    for (std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs >::iterator it = argsMap.begin(); it!=argsMap.end(); ++it) {
+        it->first->getLiveInstance()->setParallelRenderArgsTLS(it->second);
+    }
+}
+
+ParallelRenderArgsSetter::~ParallelRenderArgsSetter()
+{
+    if (collection) {
+        collection->invalidateParallelRenderArgs();
+    } else {
+        for (std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs >::iterator it = argsMap.begin(); it!=argsMap.end(); ++it) {
+            it->first->getLiveInstance()->invalidateParallelRenderArgsTLS();
+        }
+    }
+}
+
+
+
+
 struct NodeGroupPrivate
 {
+    mutable QMutex nodesLock; // protects inputs & outputs
     std::vector<boost::weak_ptr<Node> > inputs;
     std::list<boost::weak_ptr<Node> > outputs;
     bool isDeactivatingGroup;
@@ -837,7 +979,8 @@ struct NodeGroupPrivate
     boost::shared_ptr<Button_Knob> exportAsTemplate;
     
     NodeGroupPrivate()
-    : inputs()
+    : nodesLock(QMutex::Recursive)
+    , inputs()
     , outputs()
     , isDeactivatingGroup(false)
     , isActivatingGroup(false)
@@ -1023,31 +1166,35 @@ NodeGroup::notifyNodeDeactivated(const boost::shared_ptr<Natron::Node>& node)
         return;
     }
     NodePtr thisNode = getNode();
-    GroupInput* isInput = dynamic_cast<GroupInput*>(node->getLiveInstance());
-    if (isInput) {
-        for (U32 i = 0; i < _imp->inputs.size(); ++i) {
-            NodePtr input = _imp->inputs[i].lock();
-            if (node == input) {
-                
-                ///Also disconnect the real input
-                
-                thisNode->disconnectInput(i);
-                
-                
-                _imp->inputs.erase(_imp->inputs.begin() + i);
-                thisNode->initializeInputs();
-                return;
+    
+    {
+        QMutexLocker k(&_imp->nodesLock);
+        GroupInput* isInput = dynamic_cast<GroupInput*>(node->getLiveInstance());
+        if (isInput) {
+            for (U32 i = 0; i < _imp->inputs.size(); ++i) {
+                NodePtr input = _imp->inputs[i].lock();
+                if (node == input) {
+                    
+                    ///Also disconnect the real input
+                    
+                    thisNode->disconnectInput(i);
+                    
+                    
+                    _imp->inputs.erase(_imp->inputs.begin() + i);
+                    thisNode->initializeInputs();
+                    return;
+                }
             }
+            ///The input must have been tracked before
+            assert(false);
         }
-        ///The input must have been tracked before
-        assert(false);
-    }
-    GroupOutput* isOutput = dynamic_cast<GroupOutput*>(node->getLiveInstance());
-    if (isOutput) {
-        for (std::list<boost::weak_ptr<Natron::Node> >::iterator it = _imp->outputs.begin(); it !=_imp->outputs.end(); ++it) {
-            if (it->lock()->getLiveInstance() == isOutput) {
-                _imp->outputs.erase(it);
-                break;
+        GroupOutput* isOutput = dynamic_cast<GroupOutput*>(node->getLiveInstance());
+        if (isOutput) {
+            for (std::list<boost::weak_ptr<Natron::Node> >::iterator it = _imp->outputs.begin(); it !=_imp->outputs.end(); ++it) {
+                if (it->lock()->getLiveInstance() == isOutput) {
+                    _imp->outputs.erase(it);
+                    break;
+                }
             }
         }
     }
@@ -1071,17 +1218,19 @@ NodeGroup::notifyNodeActivated(const boost::shared_ptr<Natron::Node>& node)
     }
     
     NodePtr thisNode = getNode();
-
-    GroupInput* isInput = dynamic_cast<GroupInput*>(node->getLiveInstance());
-    if (isInput) {
-        _imp->inputs.push_back(node);
-        thisNode->initializeInputs();
-    }
-    GroupOutput* isOutput = dynamic_cast<GroupOutput*>(node->getLiveInstance());
-    if (isOutput) {
-        _imp->outputs.push_back(node);
-    }
     
+    {
+        QMutexLocker k(&_imp->nodesLock);
+        GroupInput* isInput = dynamic_cast<GroupInput*>(node->getLiveInstance());
+        if (isInput) {
+            _imp->inputs.push_back(node);
+            thisNode->initializeInputs();
+        }
+        GroupOutput* isOutput = dynamic_cast<GroupOutput*>(node->getLiveInstance());
+        if (isOutput) {
+            _imp->outputs.push_back(node);
+        }
+    }
     ///Notify outputs of the group nodes that their inputs may have changed
     const std::list<Natron::Node*>& outputs = thisNode->getOutputs();
     for (std::list<Natron::Node*>::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
@@ -1115,11 +1264,26 @@ NodeGroup::notifyNodeNameChanged(const boost::shared_ptr<Natron::Node>& node)
 boost::shared_ptr<Natron::Node>
 NodeGroup::getOutputNode() const
 {
+    QMutexLocker k(&_imp->nodesLock);
     ///A group can only have a single output.
     if (_imp->outputs.empty()) {
         return NodePtr();
     }
     return _imp->outputs.front().lock();
+}
+
+NodeList
+NodeGroup::getAllOutputNodes() const
+{
+    NodeList ret;
+    QMutexLocker k(&_imp->nodesLock);
+    for (std::list<boost::weak_ptr<Natron::Node> >::const_iterator it = _imp->outputs.begin(); it!=_imp->outputs.end(); ++it) {
+        NodePtr node = it->lock();
+        if (node) {
+            ret.push_back(node);
+        }
+    }
+    return ret;
 }
 
 boost::shared_ptr<Natron::Node>
@@ -1135,9 +1299,13 @@ NodeGroup::getOutputNodeInput() const
 boost::shared_ptr<Natron::Node>
 NodeGroup::getRealInputForInput(const boost::shared_ptr<Natron::Node>& input) const
 {
-    for (U32 i = 0; i < _imp->inputs.size(); ++i) {
-        if (_imp->inputs[i].lock() == input) {
-            return getNode()->getInput(i);
+    
+    {
+        QMutexLocker k(&_imp->nodesLock);
+        for (U32 i = 0; i < _imp->inputs.size(); ++i) {
+            if (_imp->inputs[i].lock() == input) {
+                return getNode()->getInput(i);
+            }
         }
     }
     return boost::shared_ptr<Natron::Node>();
@@ -1146,6 +1314,7 @@ NodeGroup::getRealInputForInput(const boost::shared_ptr<Natron::Node>& input) co
 void
 NodeGroup::getInputsOutputs(std::list<Natron::Node* >* nodes) const
 {
+    QMutexLocker k(&_imp->nodesLock);
     for (U32 i = 0; i < _imp->inputs.size(); ++i) {
         std::list<Natron::Node*> outputs;
         _imp->inputs[i].lock()->getOutputs_mt_safe(outputs);
@@ -1156,6 +1325,7 @@ NodeGroup::getInputsOutputs(std::list<Natron::Node* >* nodes) const
 void
 NodeGroup::getInputs(std::vector<boost::shared_ptr<Natron::Node> >* inputs) const
 {
+    QMutexLocker k(&_imp->nodesLock);
     for (U32 i = 0; i < _imp->inputs.size(); ++i) {
         inputs->push_back(_imp->inputs[i].lock());
     }

@@ -1887,13 +1887,12 @@ private:
                     RectI renderWindow;
                     rod.toPixelEnclosing(scale, par, &renderWindow);
                     
-                    ParallelRenderArgsSetter frameRenderArgs(activeInputToRender->getNode().get(),
+                    ParallelRenderArgsSetter frameRenderArgs(activeInputToRender->getApp()->getProject().get(),
                                                                    time,
                                                                    i,
                                                                    false,  // is this render due to user interaction ?
                                                                    canOnlyHandleOneView, // is this sequential ?
                                                                    true,
-                                                                   activeInputToRenderHash,
                                                                    _imp->output->getApp()->getTimeLine().get());
                     
                     
@@ -1973,13 +1972,12 @@ DefaultScheduler::processFrame(const BufferedFrames& frames)
         ignore_result(_effect->getRegionOfDefinition_public(hash,it->time, scale, it->view, &rod, &isProjectFormat));
         rod.toPixelEnclosing(0, par, &roi);
         
-        ParallelRenderArgsSetter frameRenderARgs(_effect->getNode().get(),
+        ParallelRenderArgsSetter frameRenderARgs(_effect->getApp()->getProject().get(),
                                                        it->time,
                                                        it->view,
                                                        false,  // is this render due to user interaction ?
                                                        canOnlyHandleOneView, // is this sequential ?
                                                        true,
-                                                       hash,
                                                        _effect->getApp()->getTimeLine().get());
         
         RenderingFlagSetter flagIsRendering(_effect->getNode().get());

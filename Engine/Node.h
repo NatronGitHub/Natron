@@ -779,19 +779,6 @@ public:
      **/
     void getAllKnobsKeyframes(std::list<SequenceTime>* keyframes);
     
-    /**
-     * @brief Recursively sets render preferences for the rendering of a frame for the current thread.
-     * This is thread local storage
-     **/
-    void setParallelRenderArgs(int time,
-                               int view,
-                               bool isRenderUserInteraction,
-                               bool isSequential,
-                               bool canAbort,
-                               U64 nodeHash,
-                               const TimeLine* timeline);
-    
-    void invalidateParallelRenderArgs();
     
     void setNodeIsRendering();
     void unsetNodeIsRendering();
@@ -1036,17 +1023,6 @@ private:
 
     
     std::string makeInfoForInput(int inputNumber) const;
-
-    void invalidateParallelRenderArgsInternal(std::list<Natron::Node*>& markedNodes);
-    
-    void setParallelRenderArgsInternal(int time,
-                                       int view,
-                                       bool isRenderUserInteraction,
-                                       bool isSequential,
-                                       U64 nodeHash,
-                                       bool canAbort,
-                                       const TimeLine* timeline,
-                                       std::list<Natron::Node*>& markedNodes);
     
     void setNodeIsRenderingInternal(std::list<Natron::Node*>& markedNodes);
     void setNodeIsNoLongerRenderingInternal(std::list<Natron::Node*>& markedNodes);
@@ -1112,29 +1088,6 @@ public:
 
 };
 
-class ParallelRenderArgsSetter
-{
-    Natron::Node* node;
-public:
-    
-    ParallelRenderArgsSetter(Natron::Node* n,
-                             int time,
-                             int view,
-                             bool isRenderUserInteraction,
-                             bool isSequential,
-                             bool canAbort,
-                             U64 nodeHash,
-                             const TimeLine* timeline)
-    : node(n)
-    {
-        node->setParallelRenderArgs(time,view,isRenderUserInteraction,isSequential,canAbort,nodeHash,timeline);
-    }
-    
-    ~ParallelRenderArgsSetter()
-    {
-        node->invalidateParallelRenderArgs();
-    }
-};
 
 class RenderingFlagSetter
 {

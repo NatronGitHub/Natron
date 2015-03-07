@@ -728,7 +728,7 @@ EffectInstance::clearPluginMemoryChunks()
 }
 
 void
-EffectInstance::setParallelRenderArgs(int time,
+EffectInstance::setParallelRenderArgsTLS(int time,
                                       int view,
                                       bool isRenderUserInteraction,
                                       bool isSequential,
@@ -753,7 +753,15 @@ EffectInstance::setParallelRenderArgs(int time,
 }
 
 void
-EffectInstance::invalidateParallelRenderArgs()
+EffectInstance::setParallelRenderArgsTLS(const ParallelRenderArgs& args)
+{
+    assert(args.validArgs);
+    _imp->frameRenderArgs.localData() = args;
+}
+
+
+void
+EffectInstance::invalidateParallelRenderArgsTLS()
 {
     if (_imp->frameRenderArgs.hasLocalData()) {
         ParallelRenderArgs& args = _imp->frameRenderArgs.localData();
@@ -761,6 +769,17 @@ EffectInstance::invalidateParallelRenderArgs()
         assert(args.validArgs >= 0);
     } else {
         qDebug() << "Frame render args thread storage not set, this is probably because the graph changed while rendering.";
+    }
+}
+
+ParallelRenderArgs
+EffectInstance::getParallelRenderArgsTLS() const
+{
+    if (_imp->frameRenderArgs.hasLocalData()) {
+        return _imp->frameRenderArgs.localData();
+    } else {
+        qDebug() << "Frame render args thread storage not set, this is probably because the graph changed while rendering.";
+        return ParallelRenderArgs();
     }
 }
 
@@ -2473,10 +2492,10 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
             
 # ifdef DEBUG
 
-            qDebug() <<'('<<QThread::currentThread()->objectName()<<")--> "<< getNode()->getScriptName_mt_safe().c_str() << ": render view " << args.view << " " << rectsToRender.size() << " rectangles";
+            /*qDebug() <<'('<<QThread::currentThread()->objectName()<<")--> "<< getNode()->getScriptName_mt_safe().c_str() << ": render view " << args.view << " " << rectsToRender.size() << " rectangles";
             for (std::list<RectI>::const_iterator it = rectsToRender.begin(); it != rectsToRender.end(); ++it) {
                 qDebug() << "rect: " << "x1= " <<  it->x1 << " , y1= " << it->y1 << " , x2= " << it->x2 << " , y2= " << it->y2;
-            }
+            }*/
 # endif
             renderRetCode = renderRoIInternal(args.time,
                                               args.mipMapLevel,
@@ -2830,6 +2849,44 @@ EffectInstance::renderRoIInternal(SequenceTime time,
         renderingNotifier.reset(new NotifyRenderingStarted_RAII(getNode().get()));
     }
     
+    
+    
+    
+    /*depending on the thread-safety of the plug-in we render with a different
+     amount of threads*/
+    EffectInstance::RenderSafetyEnum safety = renderThreadSafety();
+    
+    ///if the project lock is already locked at this point, don't start any other thread
+    ///as it would lead to a deadlock when the project is loading.
+    ///Just fall back to Fully_safe
+    int nbThreads = appPTR->getCurrentSettings()->getNumberOfThreads();
+    if (safety == eRenderSafetyFullySafeFrame) {
+        ///If the plug-in is eRenderSafetyFullySafeFrame that means it wants the host to perform SMP aka slice up the RoI into chunks
+        ///but if the effect doesn't support tiles it won't work.
+        ///Also check that the number of threads indicating by the settings are appropriate for this render mode.
+        if ( !tilesSupported || (nbThreads == -1) || (nbThreads == 1) ||
+            ( (nbThreads == 0) && (appPTR->getHardwareIdealThreadCount() == 1) ) ||
+            ( QThreadPool::globalInstance()->activeThreadCount() >= QThreadPool::globalInstance()->maxThreadCount() ) ) {
+            safety = eRenderSafetyFullySafe;
+        } else {
+            if ( !getApp()->getProject()->tryLock() ) {
+                safety = eRenderSafetyFullySafe;
+            } else {
+                getApp()->getProject()->unlock();
+            }
+        }
+    }
+    
+    std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs > tlsCopy;
+    if (safety == eRenderSafetyFullySafeFrame) {
+        /*
+         * Since we're about to start new threads potentially, copy all the thread local storage on all nodes (any node may be involved in
+         * expressions, and we need to retrieve the exact local time of render).
+         */
+        getApp()->getProject()->getParallelRenderArgs(tlsCopy);
+
+    }
+    
     assert(inputsRoi.size() == rectsToRender.size() && inputImages.size() == rectsToRender.size());
     
     std::list<RoIMap>::const_iterator roiIT = inputsRoi.begin();
@@ -2996,31 +3053,6 @@ EffectInstance::renderRoIInternal(SequenceTime time,
             }
         }
 
-        /*depending on the thread-safety of the plug-in we render with a different
-           amount of threads*/
-        EffectInstance::RenderSafetyEnum safety = renderThreadSafety();
-
-        ///if the project lock is already locked at this point, don't start any other thread
-        ///as it would lead to a deadlock when the project is loading.
-        ///Just fall back to Fully_safe
-        int nbThreads = appPTR->getCurrentSettings()->getNumberOfThreads();
-        if (safety == eRenderSafetyFullySafeFrame) {
-            ///If the plug-in is eRenderSafetyFullySafeFrame that means it wants the host to perform SMP aka slice up the RoI into chunks
-            ///but if the effect doesn't support tiles it won't work.
-            ///Also check that the number of threads indicating by the settings are appropriate for this render mode.
-            if ( !tilesSupported || (nbThreads == -1) || (nbThreads == 1) ||
-                ( (nbThreads == 0) && (appPTR->getHardwareIdealThreadCount() == 1) ) ||
-                 ( QThreadPool::globalInstance()->activeThreadCount() >= QThreadPool::globalInstance()->maxThreadCount() ) ) {
-                safety = eRenderSafetyFullySafe;
-            } else {
-                if ( !getApp()->getProject()->tryLock() ) {
-                    safety = eRenderSafetyFullySafe;
-                } else {
-                    getApp()->getProject()->unlock();
-                }
-            }
-        }
-        
         assert(_imp->frameRenderArgs.hasLocalData());
         const ParallelRenderArgs& frameArgs = _imp->frameRenderArgs.localData();
 
@@ -3060,7 +3092,7 @@ EffectInstance::renderRoIInternal(SequenceTime time,
                                                                                                 this,
                                                                                                 tiledArgs,
                                                                                                 frameArgs,
-                                                                                                true,
+                                                                                                tlsCopy,
                                                                                                 _1) );
             ret.waitForFinished();
 #endif
@@ -3124,7 +3156,7 @@ EffectInstance::renderRoIInternal(SequenceTime time,
             RenderingFunctorRetEnum functorRet = tiledRenderingFunctor(args,
                                                                    frameArgs,
                                                                    *inputImgIt,
-                                                                   false,
+                                                                   tlsCopy,
                                                                    renderFullScaleThenDownscale,
                                                                    useScaleOneInputImages,
                                                                    isSequentialRender,
@@ -3171,13 +3203,13 @@ EffectInstance::renderRoIInternal(SequenceTime time,
 EffectInstance::RenderingFunctorRetEnum
 EffectInstance::tiledRenderingFunctor(const TiledRenderingFunctorArgs& args,
                                       const ParallelRenderArgs& frameArgs,
-                                     bool setThreadLocalStorage,
+                                     const std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs >& frameTLS,
                                      const RectI & downscaledRectToRender )
 {
     return tiledRenderingFunctor(*args.args,
                                  frameArgs,
                                  args.inputImages,
-                                 setThreadLocalStorage,
+                                 frameTLS,
                                  args.renderFullScaleThenDownscale,
                                  args.renderUseScaleOneInputs,
                                  args.isSequentialRender,
@@ -3194,7 +3226,7 @@ EffectInstance::RenderingFunctorRetEnum
 EffectInstance::tiledRenderingFunctor(const RenderArgs & args,
                                       const ParallelRenderArgs& frameArgs,
                                       const std::list<boost::shared_ptr<Natron::Image> >& inputImages,
-                                      bool setThreadLocalStorage,
+                                      const std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs >& frameTLS,
                                       bool renderFullScaleThenDownscale,
                                       bool renderUseScaleOneInputs,
                                       bool isSequentialRender,
@@ -3243,7 +3275,7 @@ EffectInstance::tiledRenderingFunctor(const RenderArgs & args,
     boost::shared_ptr<InputImagesHolder_RAII> scopedInputImages;
     
     bool isBeingRenderedElseWhere = false;
-    if (!setThreadLocalStorage) {
+    if (frameTLS.empty()) {
         renderRectToRender = args._renderWindowPixel;
     } else {
 
@@ -3332,14 +3364,7 @@ EffectInstance::tiledRenderingFunctor(const RenderArgs & args,
         argsCpy._renderWindowPixel = renderRectToRender;
         
         scopedArgs.reset( new Implementation::ScopedRenderArgs(&_imp->renderArgs,argsCpy) );
-        scopedFrameArgs.reset( new ParallelRenderArgsSetter(getNode().get(),
-                                                                  frameArgs.time,
-                                                                  frameArgs.view,
-                                                                  frameArgs.isRenderResponseToUserInteraction,
-                                                                  frameArgs.isSequentialRender,
-                                                                  frameArgs.canAbort,
-                                                                  frameArgs.nodeHash,
-                                                                  frameArgs.timeline) );
+        scopedFrameArgs.reset( new ParallelRenderArgsSetter(frameTLS));
         
         scopedInputImages.reset(new InputImagesHolder_RAII(inputImages,&_imp->inputImages));
     }
@@ -4452,7 +4477,6 @@ EffectInstance::getThreadLocalRenderTime() const
             return args.time;
         }
     }
-    
     return getApp()->getTimeLine()->currentFrame();
 }
 
@@ -4526,15 +4550,14 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
         ////We set the thread storage render args so that if the instance changed action
         ////tries to call getImage it can render with good parameters.
         
-
-        ParallelRenderArgsSetter frameRenderArgs(node.get(),
-                                                       time,
-                                                       0, /*view*/
-                                                       true,
-                                                       false,
-                                                       false,
-                                                       getHash(),
-                                                       getApp()->getTimeLine().get());
+        
+        ParallelRenderArgsSetter frameRenderArgs(getApp()->getProject().get(),
+                                                 time,
+                                                 0, /*view*/
+                                                 true,
+                                                 false,
+                                                 false,
+                                                 getApp()->getTimeLine().get());
 
         RECURSIVE_ACTION();
         knobChanged(k, reason, /*view*/ 0, time, originatedFromMainThread);

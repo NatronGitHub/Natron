@@ -3243,13 +3243,12 @@ Node::makePreviewImage(SequenceTime time,
     RectI renderWindow;
     rod.toPixelEnclosing(mipMapLevel, par, &renderWindow);
     
-    ParallelRenderArgsSetter frameRenderArgs(this,
+    ParallelRenderArgsSetter frameRenderArgs(getApp()->getProject().get(),
                                              time,
                                              0, //< preview only renders view 0 (left)
                                              true,
                                              false,
                                              false,
-                                             nodeHash,
                                              getApp()->getTimeLine().get());
     
     RenderingFlagSetter flagIsRendering(this);
@@ -4751,94 +4750,6 @@ Node::unsetNodeIsRendering()
 {
     std::list<Natron::Node*> marked;
     setNodeIsNoLongerRenderingInternal(marked);
-}
-
-void
-Node::setParallelRenderArgs(int time,
-                            int view,
-                            bool isRenderUserInteraction,
-                            bool isSequential,
-                            bool canAbort,
-                            U64 nodeHash,
-                            const TimeLine* timeline)
-{
-    std::list<Natron::Node*> marked;
-    setParallelRenderArgsInternal(time, view, isRenderUserInteraction, isSequential, nodeHash,canAbort, timeline, marked);
-}
-
-void
-Node::invalidateParallelRenderArgs()
-{
-    std::list<Natron::Node*> marked;
-    invalidateParallelRenderArgsInternal(marked);
-}
-
-void
-Node::invalidateParallelRenderArgsInternal(std::list<Natron::Node*>& markedNodes)
-{
-    ///If marked, we alredy set render args
-    std::list<Natron::Node*>::iterator found = std::find(markedNodes.begin(), markedNodes.end(), this);
-    if (found != markedNodes.end()) {
-        return;
-    }
-    _imp->liveInstance->invalidateParallelRenderArgs();
-    
-    
-    ///mark this
-    markedNodes.push_back(this);
-
-    ///Call recursively
-    int maxInpu = getMaxInputCount();
-    for (int i = 0; i < maxInpu; ++i) {
-        boost::shared_ptr<Node> input = getInput(i);
-        if (input) {
-            input->invalidateParallelRenderArgsInternal(markedNodes);
-        }
-    }
-    
-}
-
-void
-Node::setParallelRenderArgsInternal(int time,
-                                    int view,
-                                    bool isRenderUserInteraction,
-                                    bool isSequential,
-                                    U64 nodeHash,
-                                    bool canAbort,
-                                    const TimeLine* timeline,
-                                    std::list<Natron::Node*>& markedNodes)
-{
-    ///If marked, we alredy set render args
-    std::list<Natron::Node*>::iterator found = std::find(markedNodes.begin(), markedNodes.end(), this);
-    if (found != markedNodes.end()) {
-        return;
-    }
-    
-    U64 rotoAge;
-    if (_imp->rotoContext) {
-        rotoAge = _imp->rotoContext->getAge();
-    } else {
-        rotoAge = 0;
-    }
-    
-    _imp->liveInstance->setParallelRenderArgs(time, view, isRenderUserInteraction, isSequential, canAbort, nodeHash, rotoAge, timeline);
-    
-    
-    
-    ///mark this
-    markedNodes.push_back(this);
-   
-    ///Call recursively
-    
-    int maxInpu = getMaxInputCount();
-    for (int i = 0; i < maxInpu; ++i) {
-        boost::shared_ptr<Node> input = getInput(i);
-        if (input) {
-            input->setParallelRenderArgsInternal(time, view, isRenderUserInteraction, isSequential, input->getHashValue(),canAbort,  timeline, markedNodes);
-            
-        }
-    }
-    
 }
 
 bool

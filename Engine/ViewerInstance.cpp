@@ -444,13 +444,12 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
     outArgs->isRenderingFlag.reset(new RenderingFlagSetter(outArgs->activeInputToRender->getNode().get()));
     
     ///need to set TLS for getROD()
-    ParallelRenderArgsSetter frameArgs(outArgs->activeInputToRender->getNode().get(),
+    ParallelRenderArgsSetter frameArgs(getApp()->getProject().get(),
                                  time,
                                  view,
                                  !isSequential,  // is this render due to user interaction ?
                                  isSequential, // is this sequential ?
                                  canAbort,
-                                 outArgs->activeInputHash,
                                  getTimeline().get());
     
     
@@ -764,13 +763,12 @@ ViewerInstance::renderViewer_internal(int view,
         }
         
         ///Make sure the parallel render args are set on the thread and die when rendering is finished
-        ParallelRenderArgsSetter frameArgs(inArgs.activeInputToRender->getNode().get(),
+        ParallelRenderArgsSetter frameArgs(getApp()->getProject().get(),
                                            inArgs.params->time,
                                            view,
                                            !isSequentialRender,
                                            isSequentialRender,
                                            canAbort,
-                                           inArgs.activeInputHash,
                                            getTimeline().get());
 
 
