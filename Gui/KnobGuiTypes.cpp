@@ -3070,7 +3070,7 @@ String_KnobGui::restoreTextInfoFromString()
         EffectInstance* effect = dynamic_cast<EffectInstance*>( _knob->getHolder() );
         /// If the node has a sublabel, restore it in the label
         if ( effect && (_knob->getName() == kUserLabelKnobName) ) {
-            boost::shared_ptr<KnobI> knob = effect->getKnobByName(kOfxParamStringSublabelName);
+            boost::shared_ptr<KnobI> knob = effect->getKnobByName(kNatronOfxParamStringSublabelName);
             if (knob) {
                 String_Knob* strKnob = dynamic_cast<String_Knob*>( knob.get() );
                 if (strKnob) {
