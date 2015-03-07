@@ -584,7 +584,7 @@ OfxClipInstance::getImagePlane(OfxTime time, int view, const std::string& plane,
             return 0;
         }
         //The output clip doesn't have any transform matrix
-        return new OfxImage(outputImage,renderWindow,boost::shared_ptr<Transform::Matrix3x3>(),*this);
+        return new OfxImage(outputImage,false,renderWindow,boost::shared_ptr<Transform::Matrix3x3>(),*this);
     }
     
     
@@ -766,7 +766,7 @@ OfxClipInstance::getImageInternal(OfxTime time,
         if (renderWindow.isNull()) {
             return NULL;
         } else {
-            return new OfxImage(image,renderWindow,transform,*this);
+            return new OfxImage(image,true,renderWindow,transform,*this);
         }
     }
 }
@@ -782,14 +782,17 @@ OfxClipInstance::natronsComponentsToOfxComponents(const Natron::ImageComponents&
         return kOfxImageComponentRGB;
     } else if (comp == ImageComponents::getRGBAComponents()) {
         return kOfxImageComponentRGBA;
-    } else if (comp.getComponentsName() == kNatronMotionComponentsName) {
+    } else if (comp.getComponentsGlobalName() == kNatronMotionComponentsName) {
         return kFnOfxImageComponentMotionVectors;
-    } else if (comp.getComponentsName() == kNatronDisparityComponentsName) {
+    } else if (comp.getComponentsGlobalName() == kNatronDisparityComponentsName) {
         return kFnOfxImageComponentStereoDisparity;
     } else {
         std::stringstream ss;
-        ss << kNatronOfxImageComponentsPlane << comp.getLayerName() << kNatronOfxImageComponentsName << comp.getComponentsName()
-        << kNatronOfxImageComponentsCount << comp.getNumComponents();
+        const std::vector<std::string>& channels = comp.getComponentsNames();
+        ss << kNatronOfxImageComponentsPlane << comp.getLayerName();
+        for (U32 i = 0; i < channels.size(); ++i) {
+            ss << kNatronOfxImageComponentsPlaneChannel << channels[i];
+        }
         return ss.str();
         
     }
@@ -816,34 +819,44 @@ OfxClipInstance::ofxComponentsToNatronComponents(const std::string & comp)
     } else {
         std::string layerName;
         std::string compsName;
-        std::string countStr;
+        std::vector<std::string> channelNames;
         static std::string foundPlaneStr(kNatronOfxImageComponentsPlane);
-        static std::string foundCompsStr(kNatronOfxImageComponentsName);
-        static std::string foundCountStr(kNatronOfxImageComponentsCount);
+        static std::string foundChannelStr(kNatronOfxImageComponentsPlaneChannel);
         
         std::size_t foundPlane = comp.find(foundPlaneStr);
         if (foundPlane == std::string::npos) {
             throw std::runtime_error("Unsupported components type: " + comp);
         }
-        std::size_t foundComps = comp.find(foundCompsStr,foundPlane + foundPlaneStr.size());
-        if (foundComps == std::string::npos) {
-            throw std::runtime_error("Unsupported components type: " + comp);
-        }
-        std::size_t foundCount = comp.find(foundCountStr,foundComps + foundCompsStr.size());
-        if (foundCount == std::string::npos) {
+        
+        std::size_t foundChannel = comp.find(foundChannelStr,foundPlane + foundPlaneStr.size());
+        if (foundChannel == std::string::npos) {
             throw std::runtime_error("Unsupported components type: " + comp);
         }
         
-        for (std::size_t i = foundPlane + foundPlaneStr.size(); i < foundComps; ++i) {
+        
+        for (std::size_t i = foundPlane + foundPlaneStr.size(); i < foundChannel; ++i) {
             layerName.push_back(comp[i]);
         }
-        for (std::size_t i = foundComps + foundCompsStr.size(); i < foundCount; ++i) {
-            compsName.push_back(comp[i]);
+        
+        while (foundChannel != std::string::npos) {
+            
+            std::size_t nextChannel = comp.find(foundChannelStr,foundChannel + foundChannelStr.size());
+
+            std::size_t end = nextChannel == std::string::npos ? comp.size() : nextChannel;
+            
+            std::string chan;
+            for (std::size_t i = foundChannel + foundChannelStr.size(); i < end; ++i) {
+                chan.push_back(comp[i]);
+            }
+            channelNames.push_back(chan);
+            compsName.append(chan);
+            
+            foundChannel = nextChannel;
         }
-        for (std::size_t i = foundCount + foundCountStr.size(); i < comp.size(); ++i) {
-            countStr.push_back(comp[i]);
-        }
-        ret.push_back(ImageComponents(layerName,compsName,std::atoi(countStr.c_str())));
+
+       
+        
+        ret.push_back(ImageComponents(layerName,compsName,channelNames));
     }
     return ret;
 }
@@ -889,13 +902,18 @@ OfxClipInstance::natronsDepthToOfxDepth(Natron::ImageBitDepthEnum depth)
 
 
 OfxImage::OfxImage(boost::shared_ptr<Natron::Image> internalImage,
+                   bool isSrcImage,
                    const RectI& renderWindow,
                    const boost::shared_ptr<Transform::Matrix3x3>& mat,
                    OfxClipInstance &clip)
-    : OFX::Host::ImageEffect::Image(clip)
-      , _bitDepth(OfxImage::eBitDepthFloat)
-      , _floatImage(internalImage)
+: OFX::Host::ImageEffect::Image(clip)
+, _floatImage(internalImage)
+, _imgAccess()
 {
+    
+    assert(internalImage);
+    
+    
     unsigned int mipMapLevel = internalImage->getMipMapLevel();
     RenderScale scale;
 
@@ -907,7 +925,7 @@ OfxImage::OfxImage(boost::shared_ptr<Natron::Image> internalImage,
    
     
     // data ptr
-    const RectI & bounds = internalImage->getBounds();
+    RectI bounds = internalImage->getBounds();
     
     ///Do not activate this assert! The render window passed to renderRoI can be bigger than the actual RoD of the effect
     ///in which case it is just clipped to the RoD.
@@ -916,8 +934,23 @@ OfxImage::OfxImage(boost::shared_ptr<Natron::Image> internalImage,
     renderWindow.intersect(bounds, &pluginsSeenBounds);
     
     const RectD & rod = internalImage->getRoD(); // Not the OFX RoD!!! Natron::Image::getRoD() is in *CANONICAL* coordinates
-    unsigned char* ptr = internalImage->pixelAt( pluginsSeenBounds.left(), pluginsSeenBounds.bottom() );
-    setPointerProperty( kOfxImagePropData, ptr);
+    
+    if (isSrcImage) {
+        boost::shared_ptr<Natron::Image::ReadAccess> access(new Natron::Image::ReadAccess(internalImage.get()));
+        const unsigned char* ptr = access->pixelAt( pluginsSeenBounds.left(), pluginsSeenBounds.bottom() );
+        assert(ptr);
+        setPointerProperty( kOfxImagePropData, const_cast<unsigned char*>(ptr));
+        _imgAccess = access;
+    } else {
+        boost::shared_ptr<Natron::Image::WriteAccess> access(new Natron::Image::WriteAccess(internalImage.get()));
+        unsigned char* ptr = access->pixelAt( pluginsSeenBounds.left(), pluginsSeenBounds.bottom() );
+        assert(ptr);
+        setPointerProperty( kOfxImagePropData, ptr);
+        _imgAccess = access;
+    }
+    
+    
+    
     
     ///We set the render window that was given to the render thread instead of the actual bounds of the image
     ///so we're sure the plug-in doesn't attempt to access outside pixels.
@@ -973,18 +1006,6 @@ OfxImage::OfxImage(boost::shared_ptr<Natron::Image> internalImage,
     
 }
 
-OfxRGBAColourF*
-OfxImage::pixelF(int x,
-                 int y) const
-{
-    assert(_bitDepth == eBitDepthFloat);
-    const RectI & bounds = _floatImage->getBounds();
-    if ( ( x >= bounds.left() ) && ( x < bounds.right() ) && ( y >= bounds.bottom() ) && ( y < bounds.top() ) ) {
-        return reinterpret_cast<OfxRGBAColourF*>( _floatImage->pixelAt(x, y) );
-    }
-
-    return 0;
-}
 
 int
 OfxClipInstance::getInputNb() const

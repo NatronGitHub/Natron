@@ -292,8 +292,9 @@ struct KnobChange
 {
     Natron::ValueChangedReasonEnum reason;
     bool originatedFromMainThread;
+    KnobI* knob;
 };
-typedef std::map<KnobI*,KnobChange> ChangesMap;
+typedef std::list<KnobChange> ChangesList;
 
 
 class KnobI
@@ -1428,7 +1429,7 @@ public:
      * @brief Set a default value for the particular dimension.
      **/
     void setDefaultValue(const T & v,int dimension = 0);
-
+    void setDefaultValueWithoutApplying(const T& v,int dimension = 0);
 
     //////////////////////////////////////////////////////////////////////
     ///////////////////////////////////

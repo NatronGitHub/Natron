@@ -853,7 +853,7 @@ void
 OfxEffectInstance::onInputChanged(int inputNo)
 {
     
-    if (getApp()->getProject()->isLoadingProject()) {
+    if (getApp()->getProject()->isLoadingProject() || getApp()->isCreatingPythonGroup()) {
         return;
     }
     assert(_context != eContextNone);
@@ -867,15 +867,13 @@ OfxEffectInstance::onInputChanged(int inputNo)
     /**
      * The plug-in might call getImage, set a valid thread storage on the tree.
      **/
-    ParallelRenderArgsSetter frameRenderArgs(getNode().get(),
-                                                   time,
-                                                   0 /*view*/,
-                                                   true,
-                                                   false,
-                                                   false,
-                                                   getHash(),
-                                                   true,
-                                                   getApp()->getTimeLine().get());
+    ParallelRenderArgsSetter frameRenderArgs(getApp()->getProject().get(),
+                                             time,
+                                             0 /*view*/,
+                                             true,
+                                             false,
+                                             false,
+                                             getApp()->getTimeLine().get());
     
     ///Don't do clip preferences while loading a project, they will be refreshed globally once the project is loaded.
     
@@ -902,9 +900,7 @@ OfxEffectInstance::onInputChanged(int inputNo)
             }
 
         }
-        if ( !getApp()->getProject()->isLoadingProject() ) {
-            checkOFXClipPreferences_public(time,s,kOfxChangeUserEdited,true, true);
-        }
+        checkOFXClipPreferences_public(time,s,kOfxChangeUserEdited,true, true);
     }
     
     {
@@ -1176,7 +1172,7 @@ OfxEffectInstance::checkOFXClipPreferences(double time,
     ////////////////////////////////////////////////////////////////
     ////////////////////////////////
     //////////////// STEP 4: If our proxy remapping changed some clips preferences, notifying the plug-in of the clips which changed
-    if (!getApp()->getProject()->isLoadingProject()) {
+    if (!getApp()->getProject()->isLoadingProject() && !getApp()->isCreatingPythonGroup()) {
         RECURSIVE_ACTION();
         SET_CAN_SET_VALUE(true);
         if (!modifiedClips.empty()) {

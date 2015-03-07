@@ -275,7 +275,6 @@ public:
     
     static void extractTreesFromNodes(const std::list<boost::shared_ptr<Natron::Node> >& nodes,std::list<Project::NodesTree>& trees);
     
-    void forceGetClipPreferencesOnAllTrees();
 
 public Q_SLOTS:
 

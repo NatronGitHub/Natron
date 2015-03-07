@@ -879,7 +879,7 @@ DockablePanel::onRestoreDefaultsButtonClicked()
                 Group_Knob* isGroup = dynamic_cast<Group_Knob*>( it2->get() );
                 Separator_Knob* isSeparator = dynamic_cast<Separator_Knob*>( it2->get() );
                 if ( !isBtn && !isPage && !isGroup && !isSeparator && ( (*it2)->getName() != kUserLabelKnobName ) &&
-                     ( (*it2)->getName() != kOfxParamStringSublabelName ) ) {
+                     ( (*it2)->getName() != kNatronOfxParamStringSublabelName ) ) {
                     knobsList.push_back(*it2);
                 }
             }
@@ -893,7 +893,7 @@ DockablePanel::onRestoreDefaultsButtonClicked()
             Group_Knob* isGroup = dynamic_cast<Group_Knob*>( it->get() );
             Separator_Knob* isSeparator = dynamic_cast<Separator_Knob*>( it->get() );
             if ( !isBtn && !isPage && !isGroup && !isSeparator && ( (*it)->getName() != kUserLabelKnobName ) &&
-                 ( (*it)->getName() != kOfxParamStringSublabelName ) ) {
+                 ( (*it)->getName() != kNatronOfxParamStringSublabelName ) ) {
                 knobsList.push_back(*it);
             }
         }

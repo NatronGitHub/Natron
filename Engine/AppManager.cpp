@@ -1446,7 +1446,7 @@ AppManager::loadBuiltinNodePlugins(std::map<std::string,std::vector< std::pair<s
         for (std::list<std::string>::iterator it = grouping.begin(); it != grouping.end(); ++it) {
             qgrouping.push_back( it->c_str() );
         }
-        registerPlugin(qgrouping, node->getPluginID().c_str(), node->getPluginLabel().c_str(), "", "", "", false, false, binary, false, node->getMajorVersion(), node->getMinorVersion());
+        registerPlugin(qgrouping, node->getPluginID().c_str(), node->getPluginLabel().c_str(), NATRON_IMAGES_PATH "backdrop_icon.png", "", "", false, false, binary, false, node->getMajorVersion(), node->getMinorVersion());
     }
     {
         boost::shared_ptr<EffectInstance> node( GroupOutput::BuildEffect( boost::shared_ptr<Natron::Node>() ) );
@@ -1462,7 +1462,7 @@ AppManager::loadBuiltinNodePlugins(std::map<std::string,std::vector< std::pair<s
         for (std::list<std::string>::iterator it = grouping.begin(); it != grouping.end(); ++it) {
             qgrouping.push_back( it->c_str() );
         }
-        registerPlugin(qgrouping, node->getPluginID().c_str(), node->getPluginLabel().c_str(), "", "", "", false, false, binary, false, node->getMajorVersion(), node->getMinorVersion());
+        registerPlugin(qgrouping, node->getPluginID().c_str(), node->getPluginLabel().c_str(), NATRON_IMAGES_PATH "output_icon.png", "", "", false, false, binary, false, node->getMajorVersion(), node->getMinorVersion());
     }
     {
         boost::shared_ptr<EffectInstance> node( GroupInput::BuildEffect( boost::shared_ptr<Natron::Node>() ) );
@@ -1478,7 +1478,7 @@ AppManager::loadBuiltinNodePlugins(std::map<std::string,std::vector< std::pair<s
         for (std::list<std::string>::iterator it = grouping.begin(); it != grouping.end(); ++it) {
             qgrouping.push_back( it->c_str() );
         }
-        registerPlugin(qgrouping, node->getPluginID().c_str(), node->getPluginLabel().c_str(), "", "", "", false, false, binary, false, node->getMajorVersion(), node->getMinorVersion());
+        registerPlugin(qgrouping, node->getPluginID().c_str(), node->getPluginLabel().c_str(), NATRON_IMAGES_PATH "input_icon.png", "", "", false, false, binary, false, node->getMajorVersion(), node->getMinorVersion());
     }
     {
         boost::shared_ptr<EffectInstance> groupNode( NodeGroup::BuildEffect( boost::shared_ptr<Natron::Node>() ) );
@@ -1494,7 +1494,7 @@ AppManager::loadBuiltinNodePlugins(std::map<std::string,std::vector< std::pair<s
         for (std::list<std::string>::iterator it = grouping.begin(); it != grouping.end(); ++it) {
             qgrouping.push_back( it->c_str() );
         }
-        registerPlugin(qgrouping, groupNode->getPluginID().c_str(), groupNode->getPluginLabel().c_str(), "", "", "", false, false, binary, false, groupNode->getMajorVersion(), groupNode->getMinorVersion());
+        registerPlugin(qgrouping, groupNode->getPluginID().c_str(), groupNode->getPluginLabel().c_str(), NATRON_IMAGES_PATH "group_icon.png", "", "", false, false, binary, false, groupNode->getMajorVersion(), groupNode->getMinorVersion());
     }
     {
         boost::shared_ptr<EffectInstance> dotNode( Dot::BuildEffect( boost::shared_ptr<Natron::Node>() ) );
@@ -2051,10 +2051,9 @@ AppManager::getImage(const Natron::ImageKey & key,
 bool
 AppManager::getImageOrCreate(const Natron::ImageKey & key,
                              const boost::shared_ptr<Natron::ImageParams>& params,
-                             ImageLocker* imageLocker,
                              boost::shared_ptr<Natron::Image>* returnValue) const
 {
-    return _imp->_nodeCache->getOrCreate(key,params,imageLocker,returnValue);
+    return _imp->_nodeCache->getOrCreate(key,params,returnValue);
 }
 
 bool
@@ -2065,10 +2064,9 @@ AppManager::getImage_diskCache(const Natron::ImageKey & key,std::list<boost::sha
 
 bool
 AppManager::getImageOrCreate_diskCache(const Natron::ImageKey & key,const boost::shared_ptr<Natron::ImageParams>& params,
-                                ImageLocker* imageLocker,
                                 boost::shared_ptr<Natron::Image>* returnValue) const
 {
-    return _imp->_diskCache->getOrCreate(key, params, imageLocker, returnValue);
+    return _imp->_diskCache->getOrCreate(key, params, returnValue);
 }
 
 
@@ -2095,11 +2093,10 @@ AppManager::getTexture(const Natron::FrameKey & key,
 bool
 AppManager::getTextureOrCreate(const Natron::FrameKey & key,
                                const boost::shared_ptr<Natron::FrameParams>& params,
-                               FrameEntryLocker* entryLocker,
                                boost::shared_ptr<Natron::FrameEntry>* returnValue) const
 {
     
-    return _imp->_viewerCache->getOrCreate(key, params,entryLocker,returnValue);
+    return _imp->_viewerCache->getOrCreate(key, params,returnValue);
 }
 
 bool
@@ -3000,7 +2997,7 @@ AppManager::initPython(int argc,char* argv[])
     
     //See http://wiki.blender.org/index.php/Dev:2.4/Source/Python/API/Threads
     //Python releases the GIL every 100 virtual Python instructions, we do not want that to happen in the middle of an expression.
-    _PyEval_SetSwitchInterval(LONG_MAX);
+    //_PyEval_SetSwitchInterval(LONG_MAX);
     
     //See answer for http://stackoverflow.com/questions/15470367/pyeval-initthreads-in-python-3-how-when-to-call-it-the-saga-continues-ad-naus
     PyEval_InitThreads();
@@ -3503,7 +3500,7 @@ makeNameScriptFriendly(const std::string& str)
 }
 
 PythonGILLocker::PythonGILLocker()
-    : state(PyGILState_UNLOCKED)
+//    : state(PyGILState_UNLOCKED)
 {
     appPTR->takeNatronGIL();
 //    ///Take the GIL for this thread

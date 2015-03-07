@@ -149,6 +149,12 @@ public:
     {
         return _bounds;
     }
+    
+    void setBounds(const RectI& bounds)
+    {
+        _bounds = bounds;
+        setElementsCount(bounds.area() * _components.getNumComponents() * getSizeOfForBitDepth(_bitdepth));
+    }
 
     bool isRodProjectFormat() const
     {

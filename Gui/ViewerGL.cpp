@@ -4670,7 +4670,9 @@ getColorAtInternal(Natron::Image* image,
                    float* b,
                    float* a)
 {
-    const PIX* pix = (const PIX*)image->pixelAt(x, y);
+    Image::ReadAccess racc = image->getReadRights();
+    
+    const PIX* pix = (const PIX*)racc.pixelAt(x, y);
     
     if (!pix) {
         return false;

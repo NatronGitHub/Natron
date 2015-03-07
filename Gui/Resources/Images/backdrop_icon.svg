@@ -1,23 +1,29 @@
-<?xml version="1.0" encoding="iso-8859-1"?>
-<!-- Generator: Adobe Illustrator 16.0.3, SVG Export Plug-In . SVG Version: 6.00 Build 0)  -->
+<?xml version="1.0" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="127px"
-	 height="127px" viewBox="0 0 127 127" style="enable-background:new 0 0 127 127;" xml:space="preserve">
-<g id="Ot_BackDrop">
-	<g>
-		<rect x="2" y="3" style="fill:#254359;" width="122" height="122"/>
-		<path d="M121,6v116H5V6H121 M127,0H-1v128h128V0L127,0z"/>
-	</g>
-	<g>
-		<rect x="2" y="3" style="fill:#36576B;" width="122" height="29"/>
-		<path style="fill:#080808;" d="M121,6v23H5V6H121 M127,0H-1v35h128V0L127,0z"/>
-	</g>
-	<g>
-		<polygon style="fill:#36576B;" points="95.329,125 124,97.526 124,125 		"/>
-		<path style="fill:#080808;" d="M121,104v18h-18.008L121,104.386 M127,90.666L87.666,128H127V90.666L127,90.666z"/>
-	</g>
-	<line style="fill:none;stroke:#000000;stroke-width:6;stroke-miterlimit:10;" x1="46" y1="17" x2="81" y2="17"/>
-</g>
-<g id="Layer_1">
-</g>
+<svg width="128px" height="128px" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:1.41421;">
+    <g>
+        <g id="Ot BackDrop">
+            <g>
+                <rect x="2.5" y="3.5" width="122" height="122" style="fill:rgb(102,102,102);fill-rule:nonzero;"/>
+            </g>
+            <g>
+                <path d="M0,128L127.863,128L127.863,0L0,0L0,128ZM5.03397,6.04724L121.821,6.04724L121.821,122.96L5.03397,122.96L5.03397,6.04724Z" style="fill:black;fill-rule:nonzero;"/>
+            </g>
+            <g>
+                <rect x="2.5" y="0" width="122" height="29" style="fill:rgb(140,140,140);fill-rule:nonzero;"/>
+            </g>
+            <g>
+                <path d="M0,35L127.863,35L127.863,0L0,0L0,35ZM5.03397,6L121.821,6L121.821,28.999L5.03397,28.999L5.03397,6Z" style="fill:rgb(8,8,8);fill-rule:nonzero;"/>
+            </g>
+            <g>
+                <path d="M99.33,128L128,100.526L128,128L99.33,128Z" style="fill:rgb(140,140,140);fill-rule:nonzero;"/>
+            </g>
+            <g>
+                <path d="M89.72,128L128,128L128,91.666L89.72,128ZM122,105.387L122,123L103.993,123L122,105.387Z" style="fill:rgb(8,8,8);fill-rule:nonzero;"/>
+            </g>
+            <g>
+                <rect x="46" y="14.5833" width="35" height="6" style="fill:black;"/>
+            </g>
+        </g>
+    </g>
 </svg>

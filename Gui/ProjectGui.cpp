@@ -436,6 +436,7 @@ ProjectGui::load(boost::archive::xml_iarchive & archive)
         assert(gui_i);
         BackDropGui* bd = dynamic_cast<BackDropGui*>(gui_i.get());
         assert(bd);
+        bd->setVisibleSettingsPanel(false);
         bd->resize(w,h);
         String_Knob* iStr = dynamic_cast<String_Knob*>(labelSerialization.get());
         assert(iStr);

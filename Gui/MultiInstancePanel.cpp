@@ -26,6 +26,7 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QStyledItemDelegate>
 #include <QUndoCommand>
 #include <QPainter>
+#include <QCheckBox>
 #include <QWaitCondition>
 #include <QtConcurrentMap>
 #include <QMenu>
@@ -659,7 +660,7 @@ MultiInstancePanelPrivate::addTableRow(const boost::shared_ptr<Natron::Node> & n
 
     ///first add the enabled column
     {
-        AnimatedCheckBox* checkbox = new AnimatedCheckBox();
+        QCheckBox* checkbox = new QCheckBox();
         QObject::connect( checkbox,SIGNAL( toggled(bool) ),publicInterface,SLOT( onCheckBoxChecked(bool) ) );
         checkbox->setChecked( !node->isNodeDisabled() );
         view->setCellWidget(newRowIndex, COL_ENABLED, checkbox);
@@ -1483,7 +1484,7 @@ MultiInstancePanel::resetInstances(const std::list<Natron::Node*> & instances)
         for (U32 i = 0; i < knobs.size(); ++i) {
             Button_Knob* isBtn = dynamic_cast<Button_Knob*>( knobs[i].get() );
 
-            if ( !isBtn && (knobs[i]->getName() != kUserLabelKnobName) && (knobs[i]->getName() != kOfxParamStringSublabelName) ) {
+            if ( !isBtn && (knobs[i]->getName() != kUserLabelKnobName) && (knobs[i]->getName() != kNatronOfxParamStringSublabelName) ) {
                 knobs[i]->beginChanges();
                 int dims = knobs[i]->getDimension();
                 for (int j = 0; j < dims; ++j) {

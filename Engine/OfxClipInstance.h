@@ -44,6 +44,7 @@ struct Matrix3x3;
 }
 namespace Natron {
 class EffectInstance;
+class GenericAccess;
 class OfxImageEffectInstance;
 class Image;
 class Node;
@@ -300,6 +301,7 @@ public:
 
 
     explicit OfxImage(boost::shared_ptr<Natron::Image> internalImage,
+                      bool isSrcImage,
                       const RectI& renderWindow,
                       const boost::shared_ptr<Transform::Matrix3x3>& mat,
                       OfxClipInstance &clip);
@@ -308,21 +310,11 @@ public:
     {
     }
 
-    BitDepthEnum bitDepth() const
-    {
-        return _bitDepth;
-    }
-
-    OfxRGBAColourF* pixelF(int x, int y) const;
-    boost::shared_ptr<Natron::Image> getInternalImageF() const
-    {
-        return _floatImage;
-    }
 
 private:
 
-    BitDepthEnum _bitDepth;
     boost::shared_ptr<Natron::Image> _floatImage;
+    boost::shared_ptr<Natron::GenericAccess> _imgAccess;
 };
 
 #endif // NATRON_ENGINE_OFXCLIPINSTANCE_H_

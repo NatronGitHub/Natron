@@ -50,17 +50,35 @@ using namespace Natron;
 class FlagSetter {
     
     bool* p;
+    QMutex* lock;
+    
 public:
     
     FlagSetter(bool initialValue,bool* p)
     : p(p)
+    , lock(0)
     {
         *p = initialValue;
     }
     
+    FlagSetter(bool initialValue,bool* p, QMutex* mutex)
+    : p(p)
+    , lock(mutex)
+    {
+        lock->lock();
+        *p = initialValue;
+        lock->unlock();
+    }
+    
     ~FlagSetter()
     {
+        if (lock) {
+            lock->lock();
+        }
         *p = !*p;
+        if (lock) {
+            lock->unlock();
+        }
     }
 };
 
@@ -71,6 +89,7 @@ struct AppInstancePrivate
     int _appID; //< the unique ID of this instance (or window)
     bool _projectCreatedWithLowerCaseIDs;
     
+    mutable QMutex creatingGroupMutex;
     bool _creatingGroup;
     
     
@@ -79,6 +98,7 @@ struct AppInstancePrivate
     : _currentProject( new Natron::Project(app) )
     , _appID(appID)
     , _projectCreatedWithLowerCaseIDs(false)
+    , creatingGroupMutex()
     , _creatingGroup(false)
     {
     }
@@ -473,7 +493,7 @@ AppInstance::loadPythonScript(const QFileInfo& file)
     
     if (hasCreateInstance) {
         std::string output;
-        FlagSetter flag(true, &_imp->_creatingGroup);
+        FlagSetter flag(true, &_imp->_creatingGroup, &_imp->creatingGroupMutex);
         if (!Natron::interpretPythonScript(filename.toStdString() + ".createInstance(app,app)", &err, &output)) {
             Natron::errorDialog(tr("Python").toStdString(), err);
             return false;
@@ -508,57 +528,61 @@ AppInstance::createNodeFromPythonModule(Natron::Plugin* plugin,
     }
     
     boost::shared_ptr<Natron::Node> node;
-    FlagSetter fs(true,&_imp->_creatingGroup);
     
-    CreateNodeArgs groupArgs(PLUGINID_NATRON_GROUP,
-                             "",
-                             -1,-1,
-                             true, //< autoconnect
-                             INT_MIN,INT_MIN,
-                             true, //< push undo/redo command
-                             true, // add to project
-                             QString(),
-                             CreateNodeArgs::DefaultValuesList(),
-                             group);
-    NodePtr containerNode = createNode(groupArgs);
-    if (!containerNode) {
-        return containerNode;
-    }
-    std::string containerName;
-    group->initNodeName(plugin->getPluginLabel().toStdString(),&containerName);
-    containerNode->setScriptName(containerName);
-    
-    
-    if (!requestedByLoad) {
-        std::string containerFullySpecifiedName = containerNode->getFullyQualifiedName();
+    {
+        FlagSetter fs(true,&_imp->_creatingGroup,&_imp->creatingGroupMutex);
         
-        int appID = getAppID() + 1;
+        CreateNodeArgs groupArgs(PLUGINID_NATRON_GROUP,
+                                 "",
+                                 -1,-1,
+                                 true, //< autoconnect
+                                 INT_MIN,INT_MIN,
+                                 true, //< push undo/redo command
+                                 true, // add to project
+                                 QString(),
+                                 CreateNodeArgs::DefaultValuesList(),
+                                 group);
+        NodePtr containerNode = createNode(groupArgs);
+        if (!containerNode) {
+            return containerNode;
+        }
+        std::string containerName;
+        group->initNodeName(plugin->getPluginLabel().toStdString(),&containerName);
+        containerNode->setScriptName(containerName);
         
-        std::stringstream ss;
-        ss << moduleName.toStdString();
-        ss << ".createInstance(app" << appID;
-        ss << ", app" << appID << "." << containerFullySpecifiedName;
-        ss << ")\n";
-        std::string err;
-        if (!Natron::interpretPythonScript(ss.str(), &err, NULL)) {
-            Natron::errorDialog(tr("Group plugin creation error").toStdString(), err);
-            containerNode->destroyNode(false);
-            return node;
+        
+        if (!requestedByLoad) {
+            std::string containerFullySpecifiedName = containerNode->getFullyQualifiedName();
+            
+            int appID = getAppID() + 1;
+            
+            std::stringstream ss;
+            ss << moduleName.toStdString();
+            ss << ".createInstance(app" << appID;
+            ss << ", app" << appID << "." << containerFullySpecifiedName;
+            ss << ")\n";
+            std::string err;
+            if (!Natron::interpretPythonScript(ss.str(), &err, NULL)) {
+                Natron::errorDialog(tr("Group plugin creation error").toStdString(), err);
+                containerNode->destroyNode(false);
+                return node;
+            } else {
+                node = containerNode;
+            }
         } else {
+            containerNode->loadKnobs(serialization);
+            if (!serialization.isNull() && !serialization.getUserPages().empty()) {
+                containerNode->getLiveInstance()->refreshKnobs();
+            }
             node = containerNode;
         }
-    } else {
-        containerNode->loadKnobs(serialization);
-        if (!serialization.isNull() && !serialization.getUserPages().empty()) {
-            containerNode->getLiveInstance()->refreshKnobs();
+        
+        if (!moduleName.isEmpty()) {
+            setGroupLabelIDAndVersion(node,modulePath, moduleName);
         }
-        node = containerNode;
-    }
+        
+    } //FlagSetter fs(true,&_imp->_creatingGroup,&_imp->creatingGroupMutex);
     
-    if (!moduleName.isEmpty()) {
-        setGroupLabelIDAndVersion(node,modulePath, moduleName);
-    }
-
     ///Now that the group is created and all nodes loaded, autoconnect the group like other nodes.
     onGroupCreationFinished(node);
     
@@ -1135,6 +1159,7 @@ AppInstance::wasProjectCreatedWithLowerCaseIDs() const
 bool
 AppInstance::isCreatingPythonGroup() const
 {
+    QMutexLocker k(&_imp->creatingGroupMutex);
     return _imp->_creatingGroup;
 }
 
@@ -1176,4 +1201,18 @@ AppInstance::getAppIDString() const
         QString appID =  QString("app%1").arg(getAppID() + 1);
         return appID.toStdString();
     }
+}
+
+void
+AppInstance::onGroupCreationFinished(const boost::shared_ptr<Natron::Node>& node)
+{
+//    assert(node);
+//    if (!_imp->_currentProject->isLoadingProject()) {
+//        NodeGroup* isGrp = dynamic_cast<NodeGroup*>(node->getLiveInstance());
+//        assert(isGrp);
+//        if (!isGrp) {
+//            return;
+//        }
+//        isGrp->forceGetClipPreferencesOnAllTrees();
+//    }
 }

@@ -105,12 +105,14 @@ BackDropGui::onLabelChanged(const QString& label)
 
 
 void
-BackDropGui::adjustSizeToContent(int *w,int *h)
+BackDropGui::adjustSizeToContent(int *w,int *h,bool /*adjustToTextSize*/)
 {
-    NodeGui::adjustSizeToContent(w, h);
+    NodeGui::adjustSizeToContent(w, h,false);
     QRectF labelBbox = _imp->label->boundingRect();
+    
     *h = std::max((double)*h,labelBbox.height() * 1.5);
     *w = std::max((double)*w, _imp->label->textWidth());
+    
 }
 
 void
@@ -151,9 +153,12 @@ BackDropGuiPrivate::refreshLabelText(int nameHeight,const QString &text)
     
     label->setHtml(textLabel);
 
-    QRectF labelBbox = label->boundingRect();
+    
     QRectF bbox = _publicInterface->boundingRect();
-    int w = std::max( bbox.width(), label->textWidth() );
+    
+    //label->adjustSize();
+    int w = std::max( bbox.width(), label->textWidth() * 1.2 );
+    QRectF labelBbox = label->boundingRect();
     int h = std::max( labelBbox.height() + nameHeight + 10, bbox.height() );
     _publicInterface->resize(w, h);
     _publicInterface->update();

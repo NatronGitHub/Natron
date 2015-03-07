@@ -352,7 +352,8 @@ Project::saveProject(const QString & path,
     try {
         if (!autoS) {
             //if  (!isSaveUpToDate() || !QFile::exists(path+name)) {
-
+            //We are saving, do not autosave.
+            _imp->autoSaveTimer->stop();
             ret = saveProjectInternal(path,name);
             
             ///We just saved, any auto-save left is then worthless
@@ -2139,19 +2140,6 @@ void Project::extractTreesFromNodes(const std::list<boost::shared_ptr<Natron::No
     
 }
   
-void
-Project::forceGetClipPreferencesOnAllTrees()
-{
-    NodeList nodes;
-    getNodes_recursive(nodes);
-    std::list<Project::NodesTree> trees;
-    Project::extractTreesFromNodes(nodes, trees);
-    
-    std::list<Natron::Node*> markedNodes;
-    for (std::list<Project::NodesTree>::iterator it = trees.begin(); it!=trees.end(); ++it) {
-        it->output.node->restoreClipPreferencesRecursive(markedNodes);
-    }
-}
 
     
 } //namespace Natron

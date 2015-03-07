@@ -201,7 +201,7 @@ HistogramCPU::getMostRecentlyProducedHistogram(std::vector<float>* histogram1,
 ///"function has not external linkage"
 struct pix_red
 {
-    static float val(float *pix)
+    static float val(const float *pix)
     {
         return pix[0];
     }
@@ -209,7 +209,7 @@ struct pix_red
 
 struct pix_green
 {
-    static float val(float *pix)
+    static float val(const float *pix)
     {
         return pix[1];
     }
@@ -217,7 +217,7 @@ struct pix_green
 
 struct pix_blue
 {
-    static float val(float *pix)
+    static float val(const float *pix)
     {
         return pix[2];
     }
@@ -225,7 +225,7 @@ struct pix_blue
 
 struct pix_alpha
 {
-    static float val(float *pix)
+    static float val(const float *pix)
     {
         return pix[3];
     }
@@ -233,14 +233,14 @@ struct pix_alpha
 
 struct pix_lum
 {
-    static float val(float *pix)
+    static float val(const float *pix)
     {
         return 0.299 * pix[0] + 0.587 * pix[1] + 0.114 * pix[2];
     }
 };
 
 
-template <float pix_func(float*)>
+template <float pix_func(const float*)>
 void
 computeHisto(const HistogramRequest & request,
              int upscale,
@@ -254,9 +254,11 @@ computeHisto(const HistogramRequest & request,
     ///Images come from the viewer which is in float.
     assert(request.image->getBitDepth() == Natron::eImageBitDepthFloat);
 
+    Natron::Image::ReadAccess acc = request.image->getReadRights();
+    
     for (int y = request.rect.bottom(); y < request.rect.top(); ++y) {
         for (int x = request.rect.left(); x < request.rect.right(); ++x) {
-            float *pix = (float*)request.image->pixelAt(x, y);
+            const float *pix = (const float*)acc.pixelAt(x, y);
             float v = pix_func(pix);
             if ( (request.vmin <= v) && (v < request.vmax) ) {
                 int index = (int)( (v - request.vmin) / binSize );

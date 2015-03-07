@@ -106,20 +106,16 @@ struct ParallelRenderArgs
     /// True if this frame can be aborted (false for preview and tracking)
     bool canAbort;
     
-    ///Can the plug-in call setValue while the action is active
-    bool canSetValue;
-    
     ParallelRenderArgs()
     : time(0)
     , timeline(0)
     , view(0)
     , nodeHash(0)
     , rotoAge(0)
-    , validArgs(false)
+    , validArgs(0)
     , isRenderResponseToUserInteraction(false)
     , isSequentialRender(false)
     , canAbort(false)
-    , canSetValue(false)
     {
         
     }
@@ -495,11 +491,12 @@ public:
                                              bool useDiskCache,
                                              const Natron::ImageKey& key,
                                              unsigned int mipMapLevel,
+                                             const RectI& bounds,
+                                             const RectD& rod,
                                              Natron::ImageBitDepthEnum bitdepth,
                                              const Natron::ImageComponents& components,
                                              Natron::ImageBitDepthEnum nodeBitDepthPref,
                                              const Natron::ImageComponents& nodeComponentsPref,
-                                             const RectI& renderWindow,
                                              const std::list<boost::shared_ptr<Natron::Image> >& inputImages,
                                              boost::shared_ptr<Natron::Image>* image);
 
@@ -532,20 +529,23 @@ public:
     * @brief Sets render preferences for the rendering of a frame for the current thread.
     * This is thread local storage. This is NOT local to a call to renderRoI
     **/
-    void setParallelRenderArgs(int time,
+    void setParallelRenderArgsTLS(int time,
                                int view,
                                bool isRenderUserInteraction,
                                bool isSequential,
                                bool canAbort,
                                U64 nodeHash,
                                U64 rotoAge,
-                               bool canSetValue,
                                const TimeLine* timeline);
+
+    void setParallelRenderArgsTLS(const ParallelRenderArgs& args); 
 
     /**
      *@returns whether the effect was flagged with canSetValue = true or false
      **/
-    bool invalidateParallelRenderArgs();
+    void invalidateParallelRenderArgsTLS();
+
+    ParallelRenderArgs getParallelRenderArgsTLS() const;
 
     /**
      * @breif Don't override this one, override onKnobValueChanged instead.
@@ -1374,9 +1374,10 @@ private:
                                           int channelForAlpha,
                                           bool renderFullScaleThenDownscale,
                                           bool useScaleOneInputImages,
-                                          const RoIMap& inputRoisParam,
-                                          const std::list<boost::shared_ptr<Natron::Image> >& inputImagesParam);
+                                          const std::list<RoIMap>& inputRoisParam,
+                                          const std::list<std::list<boost::shared_ptr<Natron::Image> > >& inputImagesParam);
 
+    /// \returns false if rendering was aborted
     bool renderInputImagesForRoI(bool createImageInCache,
                                  const std::list< boost::shared_ptr<Natron::Image> >& argsInputImages,
                                  SequenceTime time,
@@ -1476,6 +1477,7 @@ private:
         bool isRenderResponseToUserInteraction;
         double par;
         const ImagePlanesToRender* planes;
+        std::list<boost::shared_ptr<Natron::Image> > tmpPlanes;
     };
 
     enum RenderingFunctorRetEnum
@@ -1507,21 +1509,22 @@ private:
     ///    * renderMappedImage points to fullScaleMappedImage
     ///    * We render in fullScaledMappedImage, then convert into "image" and then downscale into downscaledImage.
     RenderingFunctorRetEnum tiledRenderingFunctor(const TiledRenderingFunctorArgs& args,
-                                             const ParallelRenderArgs& frameArgs,
-                                             bool setThreadLocalStorage,
-                                             const RectI & downscaledRectToRender );
+                                              const ParallelRenderArgs& frameArgs,
+                                              const std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs >& frameTls,
+                                              const RectI & downscaledRectToRender );
 
     RenderingFunctorRetEnum tiledRenderingFunctor(const RenderArgs & args,
-                                             const ParallelRenderArgs& frameArgs,
-                                             const std::list<boost::shared_ptr<Natron::Image> >& inputImages,
-                                             bool setThreadLocalStorage,
-                                             bool renderFullScaleThenDownscale,
-                                             bool renderUseScaleOneInputs,
-                                             bool isSequentialRender,
-                                             bool isRenderResponseToUserInteraction,
-                                             const RectI & downscaledRectToRender,
-                                             const double par,
-                                             const ImagePlanesToRender& planes);
+                                              const ParallelRenderArgs& frameArgs,
+                                              const std::list<boost::shared_ptr<Natron::Image> >& inputImages,
+                                              const std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs >& frameTls,
+                                              bool renderFullScaleThenDownscale,
+                                              bool renderUseScaleOneInputs,
+                                              bool isSequentialRender,
+                                              bool isRenderResponseToUserInteraction,
+                                              const RectI & downscaledRectToRender,
+                                              const double par,
+                                              const ImagePlanesToRender& planes,
+                                              const std::list<boost::shared_ptr<Natron::Image> >& tmpPlanes );
 
     /**
      * @brief Returns the index of the input if inputEffect is a valid input connected to this effect, otherwise returns -1.

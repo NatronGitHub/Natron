@@ -30,6 +30,7 @@ namespace Natron {
 class Node;
 class OutputEffectInstance;
 }
+class TimeLine;
 class NodeGraphI;
 class KnobI;
 class ViewerInstance;
@@ -209,6 +210,22 @@ public:
     void recomputeFrameRangeForAllReaders(int* firstFrame,int* lastFrame);
     
     /**
+     * @brief Recursively sets render preferences for the rendering of a frame for the current thread.
+     * This is thread local storage
+     **/
+    void setParallelRenderArgs(int time,
+                               int view,
+                               bool isRenderUserInteraction,
+                               bool isSequential,
+                               bool canAbort,
+                               const TimeLine* timeline);
+    void invalidateParallelRenderArgs();
+    
+    void getParallelRenderArgs(std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs >& argsMap) const;
+    
+    void forceGetClipPreferencesOnAllTrees();
+    
+    /**
      * @brief Callback called when a node of the collection is being deactivated
      **/
     virtual void notifyNodeDeactivated(const boost::shared_ptr<Natron::Node>& /*node*/) {}
@@ -246,6 +263,28 @@ private:
     
     boost::scoped_ptr<NodeCollectionPrivate> _imp;
 };
+
+struct ParallelRenderArgs;
+class ParallelRenderArgsSetter
+{
+    NodeCollection* collection;
+    std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs > argsMap;
+    
+public:
+    
+    ParallelRenderArgsSetter(NodeCollection* n,
+                             int time,
+                             int view,
+                             bool isRenderUserInteraction,
+                             bool isSequential,
+                             bool canAbort,
+                             const TimeLine* timeline);
+    
+    ParallelRenderArgsSetter(const std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs >& args);
+    
+    ~ParallelRenderArgsSetter();
+};
+
 
 struct NodeGroupPrivate;
 class NodeGroup : public Natron::OutputEffectInstance, public NodeCollection
@@ -323,6 +362,8 @@ public:
     virtual void notifyNodeNameChanged(const boost::shared_ptr<Natron::Node>& node) OVERRIDE FINAL;
     
     boost::shared_ptr<Natron::Node> getOutputNode() const;
+    
+    std::list<boost::shared_ptr<Natron::Node> > getAllOutputNodes() const;
     
     boost::shared_ptr<Natron::Node> getOutputNodeInput() const;
     

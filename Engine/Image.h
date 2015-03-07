@@ -37,6 +37,17 @@ CLANG_DIAG_ON(deprecated)
 namespace Natron {
 
     
+    class GenericAccess
+    {
+    public:
+        
+        GenericAccess() {}
+        
+        virtual ~GenericAccess() {
+            
+        }
+    };
+    
     class Bitmap
     {
     public:
@@ -59,7 +70,6 @@ namespace Natron {
 
         void initialize(const RectI & bounds)
         {
-            assert(_map.size() == 0);
             _bounds = bounds;
             _map.resize( _bounds.area() );
 
@@ -99,6 +109,8 @@ namespace Natron {
 #endif
         
         void clear(const RectI& roi);
+        
+        void swap(Natron::Bitmap& other);
 
         const char* getBitmap() const
         {
@@ -190,7 +202,12 @@ namespace Natron {
 
        // boost::shared_ptr<ImageParams> getParams() const WARN_UNUSED_RETURN;
 
-
+        /**
+         * @brief Resizes this image so it contains newBounds, copying all the content of the current bounds of the image into
+         * a new buffer. This is not thread-safe and should be called only while under an ImageLocker 
+         **/
+        void ensureBounds(const RectI& newBounds);
+        
         /**
      * @brief Returns the region of definition of the image in canonical coordinates. It doesn't have any
      * scale applied to it. In order to return the true pixel data window you must call getBounds()
@@ -206,13 +223,21 @@ namespace Natron {
      * This is equivalent to calling getRoD().mipMapLevel(getMipMapLevel());
      * but slightly faster since it is stored as a member of the image.
      **/
-        const RectI & getBounds() const
+        RectI getBounds() const
         {
+            QReadLocker k(&_entryLock);
             return _bounds;
         };
         virtual size_t size() const OVERRIDE FINAL
         {
-            return dataSize() + _bitmap.getBounds().area();
+            std::size_t dt = dataSize();
+            
+            bool got = _entryLock.tryLockForRead();
+            dt += _bitmap.getBounds().area();
+            if (got) {
+                _entryLock.unlock();
+            }
+            return dt;
         }
 
 
@@ -253,48 +278,204 @@ namespace Natron {
         {
             return this->_bitDepth;
         }
-
+        
         double getPixelAspectRatio() const
         {
             return this->_par;
         }
-
+        
+        
         /**
-     * @brief Access pixels. The pointer must be cast to the appropriate type afterwards.
-     **/
-        unsigned char* pixelAt(int x,int y);
-        const unsigned char* pixelAt(int x,int y) const;
-
-        /**
-     * @brief Same as getElementsCount(getComponents()) * getBounds().width()
-     **/
+         * @brief Same as getElementsCount(getComponents()) * getBounds().width()
+         **/
         unsigned int getRowElements() const;
+        
+       
+        
+        /**
+         * @brief Lock the image for reading, while this object is living, the image buffer can't be written to.
+         * You must ensure that the image will live as long as this object lives otherwise the pointer will be invalidated.
+         * You may no longer use the pointer returned by pixelAt once this object dies.
+         **/
+        class ReadAccess : public GenericAccess
+        {
+            const Image* img;
+        public:
+            
+            ReadAccess(const Image* img)
+            : GenericAccess()
+            , img(img)
+            {
+                img->lockForRead();
+            }
+            
+            ReadAccess(const ReadAccess& other)
+            : GenericAccess()
+            , img(other.img)
+            {
+                //This is a recursive lock so it doesn't matter if we take it twice
+                img->lockForRead();
+            }
+            
+            virtual ~ReadAccess()
+            {
+                img->unlock();
+            }
+            
+            /**
+             * @brief Access pixels. The pointer must be cast to the appropriate type afterwards.
+             **/
+            const unsigned char* pixelAt(int x,int y) const
+            {
+                return img->pixelAt(x, y);
+            }
+        };
+        
+        /**
+         * @brief Lock the image for writing, while this object is living, the image buffer can't be read.
+         * You must ensure that the image will live as long as this object lives otherwise the pointer will be invalidated.
+         * You may no longer use the pointer returned by pixelAt once this object dies.
+         **/
+        class WriteAccess : public GenericAccess
+        {
+            Image* img;
+        public:
+            
+            WriteAccess(Image* img)
+            : GenericAccess()
+            , img(img)
+            {
+                img->lockForWrite();
+            }
+            
+            WriteAccess(const WriteAccess& other)
+            : GenericAccess()
+            , img(other.img)
+            {
+                //This is a recursive lock so it doesn't matter if we take it twice
+                img->lockForWrite();
+            }
+            
+            virtual ~WriteAccess()
+            {
+                img->unlock();
+            }
+            
+            /**
+             * @brief Access pixels. The pointer must be cast to the appropriate type afterwards.
+             **/
+            unsigned char* pixelAt(int x,int y)
+            {
+                return img->pixelAt(x, y);
+            }
+        };
+        
+        ReadAccess getReadRights() const
+        {
+            return ReadAccess(this);
+        }
+        
+        WriteAccess getWriteRights()
+        {
+            return WriteAccess(this);
+        }
+        
+    private:
+        
+        friend class ReadAccess;
+        friend class WriteAccess;
+        
+        /**
+         * These are private accessors to the buffer. They may only exclusively called while under the lock
+         * of an image.
+         **/
+        
         const char* getBitmapAt(int x,
                                 int y) const
         {
             return this->_bitmap.getBitmapAt(x,y);
         }
-
+        
         char* getBitmapAt(int x,
                           int y)
         {
             return this->_bitmap.getBitmapAt(x,y);
         }
-
+        
         /**
-     * @brief Returns a list of portions of image that are not yet rendered within the
-     * region of interest given. This internally uses the bitmap to know what portion
-     * are already rendered in the image. It aims to return the minimal
-     * area to render. Since this problem is quite hard to solve,the different portions
-     * of image returned may contain already rendered pixels.
-     **/
+         * @brief Access pixels. The pointer must be cast to the appropriate type afterwards.
+         **/
+        unsigned char* pixelAt(int x,int y);
+        const unsigned char* pixelAt(int x,int y) const;
+        
+        
+        void lockForRead() const
+        {
+            _entryLock.lockForRead();
+        }
+        
+        void lockForWrite() const
+        {
+            _entryLock.lockForWrite();
+        }
+        
+        void unlock() const
+        {
+            _entryLock.unlock();
+        }
+        
+        
+        template <typename SRCPIX,typename DSTPIX,int srcMaxValue,int dstMaxValue>
+        static void
+        convertToFormatInternal_sameComps(const RectI & renderWindow,
+                                          const Image & srcImg,
+                                          Image & dstImg,
+                                          Natron::ViewerColorSpaceEnum srcColorSpace,
+                                          Natron::ViewerColorSpaceEnum dstColorSpace,
+                                          bool invert,
+                                          bool copyBitmap);
+        
+        template <typename SRCPIX,typename DSTPIX,int srcMaxValue,int dstMaxValue,int srcNComps,int dstNComps>
+        static void
+        convertToFormatInternal(const RectI & renderWindow,
+                                const Image & srcImg,
+                                Image & dstImg,
+                                Natron::ViewerColorSpaceEnum srcColorSpace,
+                                Natron::ViewerColorSpaceEnum dstColorSpace,
+                                int channelForAlpha,
+                                bool invert,
+                                bool copyBitmap,
+                                bool requiresUnpremult);
+        
+        
+        template <typename SRCPIX,typename DSTPIX,int srcMaxValue,int dstMaxValue>
+        static void
+        convertToFormatInternalForDepth(const RectI & renderWindow,
+                                        const Image & srcImg,
+                                        Image & dstImg,
+                                        Natron::ViewerColorSpaceEnum srcColorSpace,
+                                        Natron::ViewerColorSpaceEnum dstColorSpace,
+                                        int channelForAlpha,
+                                        bool invert,
+                                        bool copyBitmap,
+                                        bool requiresUnpremult);
+    public:
+        
+        
+        /**
+         * @brief Returns a list of portions of image that are not yet rendered within the
+         * region of interest given. This internally uses the bitmap to know what portion
+         * are already rendered in the image. It aims to return the minimal
+         * area to render. Since this problem is quite hard to solve,the different portions
+         * of image returned may contain already rendered pixels.
+         **/
 #if NATRON_ENABLE_TRIMAP
         void getRestToRender_trimap(const RectI & regionOfInterest,std::list<RectI>& ret,bool* isBeingRenderedElsewhere) const
         {
             if (!_useBitmap) {
                 return;
             }
-            QReadLocker locker(&_lock);
+            QReadLocker locker(&_entryLock);
             _bitmap.minimalNonMarkedRects_trimap(regionOfInterest, ret, isBeingRenderedElsewhere);
         }
 #endif
@@ -303,7 +484,7 @@ namespace Natron {
             if (!_useBitmap) {
                 return ;
             }
-            QReadLocker locker(&_lock);
+            QReadLocker locker(&_entryLock);
             _bitmap.minimalNonMarkedRects(regionOfInterest,ret);
         }
 
@@ -313,7 +494,7 @@ namespace Natron {
             if (!_useBitmap) {
                 return regionOfInterest;
             }
-            QReadLocker locker(&_lock);
+            QReadLocker locker(&_entryLock);
             return _bitmap.minimalNonMarkedBbox_trimap(regionOfInterest,isBeingRenderedElsewhere);
         }
 #endif
@@ -322,7 +503,7 @@ namespace Natron {
             if (!_useBitmap) {
                 return regionOfInterest;
             }
-            QReadLocker locker(&_lock);
+            QReadLocker locker(&_entryLock);
             return _bitmap.minimalNonMarkedBbox(regionOfInterest);
         }
 
@@ -331,7 +512,7 @@ namespace Natron {
             if (!_useBitmap) {
                 return;
             }
-            QWriteLocker locker(&_lock);
+            QWriteLocker locker(&_entryLock);
 
             _bitmap.markForRendered(roi);
         }
@@ -343,7 +524,7 @@ namespace Natron {
             if (!_useBitmap) {
                 return;
             }
-            QWriteLocker locker(&_lock);
+            QWriteLocker locker(&_entryLock);
             
             _bitmap.markForRendering(roi);
         }
@@ -354,7 +535,7 @@ namespace Natron {
             if (!_useBitmap) {
                 return;
             }
-            QWriteLocker locker(&_lock);
+            QWriteLocker locker(&_entryLock);
             
             _bitmap.clear(roi);
         }
@@ -509,7 +690,7 @@ namespace Natron {
         void upscaleMipMapForDepth(const RectI & roi, unsigned int fromLevel, unsigned int toLevel, Natron::Image* output) const;
 
         template<typename PIX>
-        void pasteFromForDepth(const Natron::Image & src, const RectI & srcRoi, bool copyBitmap = true);
+        void pasteFromForDepth(const Natron::Image & src, const RectI & srcRoi, bool copyBitmap = true, bool takeSrcLock = true);
 
         template <typename PIX, int maxValue>
         void fillForDepth(const RectI & roi,float r,float g,float b,float a);
@@ -519,7 +700,6 @@ namespace Natron {
 
     private:
         Natron::ImageBitDepthEnum _bitDepth;
-        mutable QReadWriteLock _lock;
         Bitmap _bitmap;
         RectD _rod;     // rod in canonical coordinates (not the same as the OFX::Image RoD, which is in pixel coordinates)
         RectI _bounds;

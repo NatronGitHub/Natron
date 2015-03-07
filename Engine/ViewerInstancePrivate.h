@@ -24,6 +24,7 @@
 #include <QtCore/QCoreApplication>
 
 #include "Engine/OutputSchedulerThread.h"
+#include "Engine/ImageComponents.h"
 #include "Engine/FrameEntry.h"
 #include "Engine/Settings.h"
 #include "Engine/TextureRect.h"
@@ -149,6 +150,9 @@ public:
     , viewerParamsLut(Natron::eViewerColorSpaceSRGB)
     , viewerParamsAutoContrast(false)
     , viewerParamsChannels(Natron::eDisplayChannelsRGB)
+    , viewerParamsLayer(Natron::ImageComponents::getRGBAComponents())
+    , viewerParamsAlphaLayer(Natron::ImageComponents::getRGBAComponents())
+    , viewerParamsAlphaChannelName("a")
     , viewerMipMapLevel(0)
     , activeInputsMutex()
     , activeInputs()
@@ -285,14 +289,11 @@ public:
                                                  0 = sRGB ,  1 = linear , 2 = Rec 709*/
     bool viewerParamsAutoContrast;
     Natron::DisplayChannelsEnum viewerParamsChannels;
+    Natron::ImageComponents viewerParamsLayer;
+    Natron::ImageComponents viewerParamsAlphaLayer;
+    std::string viewerParamsAlphaChannelName;
     unsigned int viewerMipMapLevel; //< the mipmap level the viewer should render at (0 == no downscaling)
-    
-    ////Commented-out: Now that the VideoEngine is gone, there can be several threads running  the render function
-    ////and we have no way to identify the threads since they belong to a thread pool.
-    // store the threadId of the VideoEngine thread - used for debugging purposes
-    //mutable QMutex threadIdMutex;
-    //QThread *threadIdVideoEngine;
-    
+
     mutable QMutex activeInputsMutex;
     int activeInputs[2]; //< indexes of the inputs used for the wipe
     

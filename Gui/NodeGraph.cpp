@@ -1561,11 +1561,17 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
                                         CreateNodeArgs::DefaultValuesList(),
                                         getGroup());
 
+                
                     
                     boost::shared_ptr<Natron::Node> mergeNode = getGui()->getApp()->createNode(args);
+                    
                     if (mergeNode) {
-                        mergeNode->connectInput(selectedNode->getNode(), 1);
-                        mergeNode->connectInput(_imp->_mergeHintNode->getNode(), 2);
+                        
+                        int aIndex = mergeNode->getInputNumberFromLabel("A");
+                        int bIndex = mergeNode->getInputNumberFromLabel("B");
+                        assert(aIndex != -1 && bIndex != -1);
+                        mergeNode->connectInput(selectedNode->getNode(), aIndex);
+                        mergeNode->connectInput(_imp->_mergeHintNode->getNode(), bIndex);
                     }
                     
                    
@@ -3523,7 +3529,7 @@ NodeGraphPrivate::restoreConnections(const std::list<boost::shared_ptr<NodeSeria
 {
     ///For all nodes restore its connections
     std::list<boost::shared_ptr<NodeSerialization> >::const_iterator itSer = serializations.begin();
-
+    assert(serializations.size() == newNodes.size());
     for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = newNodes.begin(); it != newNodes.end(); ++it,++itSer) {
         const std::map<std::string,std::string> & inputNames = (*itSer)->getInputs();
 
@@ -3543,7 +3549,7 @@ NodeGraphPrivate::restoreConnections(const std::list<boost::shared_ptr<NodeSeria
             ///find a node  containing the same name. It should not match exactly because there's already
             /// the "-copy" that was added to its name
             for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it3 = newNodes.begin(); it3 != newNodes.end(); ++it3) {
-                if ( (*it3)->getNode()->getScriptName().find(it2->second) != std::string::npos ) {
+                if ( (*it3)->getNode()->getScriptName() == it2->second ) {
                     _publicInterface->getGui()->getApp()->getProject()->connectNodes( index, (*it3)->getNode(), (*it)->getNode().get() );
                     break;
                 }

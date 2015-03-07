@@ -4315,10 +4315,12 @@ Gui::debugImage(const Natron::Image* image,
 
         return;
     }
-    const RectI & rod = image->getBounds();
+    RectI  rod = image->getBounds();
     QImage output(rod.width(),rod.height(),QImage::Format_ARGB32);
     const Natron::Color::Lut* lut = Natron::Color::LutManager::sRGBLut();
-    const float* from = (const float*)image->pixelAt( rod.left(), rod.bottom() );
+    
+    Natron::Image::ReadAccess acc = image->getReadRights();
+    const float* from = (const float*)acc.pixelAt( rod.left(), rod.bottom() );
 
     ///offset the pointer to 0,0
     from -= ( ( rod.bottom() * image->getRowElements() ) + rod.left() * image->getComponentsCount() );
@@ -5010,25 +5012,28 @@ Gui::getNodesEntitledForOverlays(std::list<boost::shared_ptr<Natron::Node> >& no
             if (node && internalNode) {
                 boost::shared_ptr<MultiInstancePanel> multiInstance = node->getMultiInstancePanel();
                 if (multiInstance) {
-                    const std::list< std::pair<boost::weak_ptr<Natron::Node>,bool > >& instances = multiInstance->getInstances();
-                    for (std::list< std::pair<boost::weak_ptr<Natron::Node>,bool > >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
-                        NodePtr instance = it->first.lock();
-                        if (node->isSettingsPanelVisible() &&
-                            !node->isSettingsPanelMinimized() &&
-                            instance->isActivated() &&
-                            it->second &&
-                            !instance->isNodeDisabled()) {
-                            nodes.push_back(instance);
-                        }
-                    }
-                    if (!internalNode->isNodeDisabled() &&
+//                    const std::list< std::pair<boost::weak_ptr<Natron::Node>,bool > >& instances = multiInstance->getInstances();
+//                    for (std::list< std::pair<boost::weak_ptr<Natron::Node>,bool > >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
+//                        NodePtr instance = it->first.lock();
+//                        if (node->isSettingsPanelVisible() &&
+//                            !node->isSettingsPanelMinimized() &&
+//                            instance->isActivated() &&
+//                            instance->hasOverlay() &&
+//                            it->second &&
+//                            !instance->isNodeDisabled()) {
+//                            nodes.push_back(instance);
+//                        }
+//                    }
+                    if (internalNode->hasOverlay() &&
+                        !internalNode->isNodeDisabled() &&
                         node->isSettingsPanelVisible() &&
-                        !node->isSettingsPanelMinimized() ) {
+                        !node->isSettingsPanelMinimized()) {
                         nodes.push_back(node->getNode());
                     }
 
                 } else {
-                    if (!internalNode->isNodeDisabled() &&
+                    if ((internalNode->hasOverlay() || internalNode->getRotoContext()) &&
+                        !internalNode->isNodeDisabled() &&
                         internalNode->isActivated() &&
                         node->isSettingsPanelVisible() &&
                         !node->isSettingsPanelMinimized() ) {

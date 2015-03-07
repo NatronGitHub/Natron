@@ -359,6 +359,8 @@ struct ViewerTabPrivate
                              Natron::EffectInstance* currentNode,
                              Transform::Matrix3x3* transform) const;
 #endif
+    
+    void getComponentsAvailabel(std::set<ImageComponents>* comps) const;
 };
 
 static void makeFullyQualifiedLabel(Natron::Node* node,std::string* ret)
@@ -419,9 +421,16 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->mainLayout->addWidget(_imp->firstSettingsRow);
 
     _imp->layerChoice = new ComboBox(_imp->firstSettingsRow);
+    _imp->layerChoice->setToolTip("<p><b>" + tr("Layer") + ": \n</b></p>"
+                                  + tr("The layer that the Viewer node will fetch upstream in the tree. "
+                                       "The channels of the layer will be mapped to the RGBA channels of the viewer according to "
+                                       "its number of channels. (e.g: UV would be mapped to RG)"));
     _imp->firstRowLayout->addWidget(_imp->layerChoice);
     
     _imp->alphaChannelChoice = new ComboBox(_imp->firstSettingsRow);
+    _imp->alphaChannelChoice->setToolTip("<p><b>" + tr("Alpha channel") + ": \n</b></p>"
+                                         + tr("Select here a channel of any layer that will be used when displaying the "
+                                              "alpha channel with the <b>Channels</b> choice on the right."));
     _imp->firstRowLayout->addWidget(_imp->alphaChannelChoice);
 
     _imp->viewerChannels = new ChannelsComboBox(_imp->firstSettingsRow);
@@ -1108,6 +1117,8 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Preferred);
     
     _imp->viewerNode->setUiContext(getViewer());
+    
+    refreshLayerAndAlphaChannelComboBox();
 
 }
 
@@ -3270,7 +3281,7 @@ ViewerTab::onClipPreferencesChanged()
         }
         onSpinboxFpsChanged(_imp->fpsBox->value());
     }
-
+    refreshLayerAndAlphaChannelComboBox();
 }
 
 void
@@ -3320,6 +3331,8 @@ ViewerTab::onInputChanged(int inputNb)
             _imp->inputNamesMap.erase(found);
         }
     }
+    
+    refreshLayerAndAlphaChannelComboBox();
 }
 
 void
@@ -3992,45 +4005,116 @@ ViewerTabPrivate::getOverlayTransform(int time,
 #endif
 
 void
+ViewerTabPrivate::getComponentsAvailabel(std::set<ImageComponents>* comps) const
+{
+    int activeInputIdx[2];
+    viewerNode->getActiveInputs(activeInputIdx[0], activeInputIdx[1]);
+    EffectInstance* activeInput[2] = {0, 0};
+    for (int i = 0; i < 2; ++i) {
+        activeInput[i] = viewerNode->getInput(activeInputIdx[i]);
+        if (activeInput[i]) {
+            EffectInstance::ComponentsAvailableMap compsAvailable;
+            activeInput[i]->getComponentsAvailable(gui->getApp()->getTimeLine()->currentFrame(), &compsAvailable);
+            for (EffectInstance::ComponentsAvailableMap::iterator it = compsAvailable.begin(); it != compsAvailable.end(); ++it) {
+                comps->insert(it->first);
+            }
+        }
+    }
+
+}
+
+void
 ViewerTab::refreshLayerAndAlphaChannelComboBox()
 {
     if (!_imp->viewerNode) {
         return;
     }
     
-    int activeInputIdx[2];
-    _imp->viewerNode->getActiveInputs(activeInputIdx[0], activeInputIdx[1]);
-    EffectInstance* activeInput[2] = {0, 0};
+    
+    bool mustSetAlphaChoice = _imp->layerChoice->count() == 0;
     
     std::set<ImageComponents> components;
+    _imp->getComponentsAvailabel(&components);
     
-    for (int i = 0; i < 2; ++i) {
-        activeInput[i] = _imp->viewerNode->getInput(activeInputIdx[i]);
-        if (activeInput[i]) {
-            EffectInstance::ComponentsAvailableMap compsAvailable;
-            activeInput[i]->getComponentsAvailable(_imp->gui->getApp()->getTimeLine()->currentFrame(), &compsAvailable);
-            for (EffectInstance::ComponentsAvailableMap::iterator it = compsAvailable.begin(); it != compsAvailable.end(); ++it) {
-                components.insert(it->first);
-            }
-        }
-    }
-
     _imp->layerChoice->clear();
     _imp->alphaChannelChoice->clear();
     
+    _imp->alphaChannelChoice->addItem("-");
     for (std::set<ImageComponents>::iterator it = components.begin(); it!=components.end(); ++it) {
-        _imp->layerChoice->addItem(QString(it->getLayerName().c_str()) + '.' + QString(it->getComponentsName().c_str()));
+        QString layerName(it->getLayerName().c_str());
+        _imp->layerChoice->addItem(layerName + '.' + QString(it->getComponentsGlobalName().c_str()));
+        const std::vector<std::string>& channels = it->getComponentsNames();
+        
+        
+        for (U32 i = 0; i < channels.size(); ++i) {
+            _imp->alphaChannelChoice->addItem(layerName + '.' + QString(channels[i].c_str()));
+        }
+        if (mustSetAlphaChoice) {
+            if (layerName == kNatronColorPlaneName) {
+                //There's RGBA or alpha, set it to A
+                std::string alphaChoice;
+                if (channels.size() == 4) {
+                    alphaChoice = channels[3];
+                } else if (channels.size() == 1) {
+                    alphaChoice = channels[0];
+                }
+                _imp->alphaChannelChoice->setCurrentIndex_no_emit(_imp->alphaChannelChoice->count() - 1);
+                _imp->viewerNode->setAlphaChannel(*it, alphaChoice);
+                mustSetAlphaChoice = false;
+            }
+        }
+        
+        
     }
 }
 
 void
 ViewerTab::onAlphaChannelComboChanged(int index)
 {
-    
+    std::set<ImageComponents> components;
+    _imp->getComponentsAvailabel(&components);
+    int i = 1; // because of the "-" choice
+    for (std::set<ImageComponents>::iterator it = components.begin(); it != components.end(); ++it) {
+        
+        const std::vector<std::string>& channels = it->getComponentsNames();
+        if (index >= ((int)channels.size() + i)) {
+            i += channels.size();
+        } else {
+            for (U32 j = 0; j < channels.size(); ++j,++i) {
+                if (i == index) {
+                    _imp->viewerNode->setAlphaChannel(*it, channels[j]);
+                    return;
+                }
+            }
+            
+        }
+    }
 }
 
 void
 ViewerTab::onLayerComboChanged(int index)
 {
-    
+    std::set<ImageComponents> components;
+    _imp->getComponentsAvailabel(&components);
+    if (index >= (int)components.size() || index < 0) {
+        qDebug() << "ViewerTab::onLayerComboChanged: invalid index";
+        return;
+    }
+    int i = 0;
+    int chanCount = 1; // because of the "-" choice
+    for (std::set<ImageComponents>::iterator it = components.begin(); it != components.end(); ++it,++i) {
+        
+        chanCount += it->getComponentsNames().size();
+        if (i == index) {
+            _imp->viewerNode->setActiveLayer(*it);
+            
+            ///If it has an alpha channel, set it
+            if (it->getComponentsNames().size() == 4) {
+                _imp->alphaChannelChoice->setCurrentIndex_no_emit(chanCount - 1);
+                _imp->viewerNode->setAlphaChannel(*it, it->getComponentsNames()[3]);
+            }
+            return;
+        }
+    }
+
 }

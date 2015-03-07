@@ -30,6 +30,7 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QGridLayout>
 #include <QFile>
 #include <QDialogButtonBox>
+#include <QApplication>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
@@ -298,7 +299,7 @@ NodeGui::initialize(NodeGraph* dag,
 
     
     if (internalNode->getPluginID() == PLUGINID_OFX_MERGE) {
-        boost::shared_ptr<KnobI> knob = internalNode->getKnobByName(kOfxParamStringSublabelName);
+        boost::shared_ptr<KnobI> knob = internalNode->getKnobByName(kNatronOfxParamStringSublabelName);
         assert(knob);
         String_Knob* strKnob = dynamic_cast<String_Knob*>(knob.get());
         if (strKnob) {
@@ -464,9 +465,9 @@ NodeGui::createGui()
     
     const QString& iconFilePath = getNode()->getPlugin()->getIconFilePath();
     
+    BackDropGui* isBd = dynamic_cast<BackDropGui*>(this);
     
-    if (!iconFilePath.isEmpty() && appPTR->getCurrentSettings()->isPluginIconActivatedOnNodeGraph()) {
-
+    if (!isBd && !iconFilePath.isEmpty() && appPTR->getCurrentSettings()->isPluginIconActivatedOnNodeGraph()) {
         
         QPixmap pix(iconFilePath);
         if (QFile::exists(iconFilePath) && !pix.isNull()) {
@@ -665,16 +666,21 @@ NodeGui::isNearbyResizeHandle(const QPointF& pos) const
 }
 
 void
-NodeGui::adjustSizeToContent(int* /*w*/,int *h)
+NodeGui::adjustSizeToContent(int* /*w*/,int *h,bool adjustToTextSize)
 {
     QRectF labelBbox = _nameItem->boundingRect();
-    *h = std::max((double)*h, labelBbox.height() * 1.2);
+    if (adjustToTextSize) {
+        *h = labelBbox.height() * 1.2;
+    } else {
+        *h = std::max((double)*h, labelBbox.height() * 1.2);
+    }
 }
 
 void
 NodeGui::resize(int width,
                 int height,
-                bool forceSize )
+                bool forceSize,
+                bool adjustToTextSize)
 {
     if (!canResize()) {
         return;
@@ -683,7 +689,7 @@ NodeGui::resize(int width,
     QPointF topLeft = mapFromParent( pos() );
     QRectF labelBbox = _nameItem->boundingRect();
 
-    adjustSizeToContent(&width,&height);
+    adjustSizeToContent(&width,&height,adjustToTextSize);
     
     bool hasPluginIcon = _pluginIcon != NULL;
     
@@ -2514,10 +2520,10 @@ NodeGui::setNameItemHtml(const QString & name,
         
     } else {
         ///Default to something not too bad
-        QString fontTag = QString("<font size=\"%1\" color=\"%2\" face=\"%3\">")
-                          .arg(6)
-                          .arg( QColor(Qt::black).name() )
-                          .arg("Verdana");
+        QString fontTag = (QString("<font size=\"%1\" color=\"%2\" face=\"%3\">")
+                           .arg(6)
+                           .arg( QColor(Qt::black).name() )
+                           .arg(QApplication::font().family()));
         textLabel.append(fontTag);
         textLabel.append(name);
         textLabel.append("</font>");
@@ -2534,7 +2540,8 @@ NodeGui::setNameItemHtml(const QString & name,
     }
     _nameItem->setFont(f);
 
-    refreshSize();
+    QRectF bbox = boundingRect();
+    resize(bbox.width(),bbox.height(),false,!label.isEmpty());
 //    QRectF currentBbox = boundingRect();
 //    QRectF labelBbox = _nameItem->boundingRect();
 //    resize( currentBbox.width(), std::max( currentBbox.height(),labelBbox.height() ) );
@@ -2549,7 +2556,7 @@ NodeGui::onNodeExtraLabelChanged(const QString & label)
     NodePtr node = getNode();
     _nodeLabel = label;
     if ( node->isMultiInstance() ) {
-        ///The multi-instances store in the kOfxParamStringSublabelName knob the name of the instance
+        ///The multi-instances store in the kNatronOfxParamStringSublabelName knob the name of the instance
         ///Since the "main-instance" is the one displayed on the node-graph we don't want it to display its name
         ///hence we remove it
         _nodeLabel = String_KnobGui::removeNatronHtmlTag(_nodeLabel);
