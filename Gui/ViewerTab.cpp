@@ -3807,6 +3807,18 @@ ViewerTab::setDesiredFps(double fps)
 }
 
 void
+ViewerTab::setProjection(double zoomLeft, double zoomBottom, double zoomFactor, double zoomAspectRatio)
+{
+    
+    _imp->viewer->setProjection(zoomLeft, zoomBottom, zoomFactor, zoomAspectRatio);
+    QString str = QString::number(zoomFactor * 100);
+    str.append( QChar('%') );
+    str.prepend("  ");
+    str.append("  ");
+    _imp->zoomCombobox->setCurrentText_no_emit(str);
+}
+
+void
 ViewerTab::onViewerRenderingStarted()
 {
     
