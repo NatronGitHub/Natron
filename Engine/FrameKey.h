@@ -19,6 +19,7 @@
 
 #include "Engine/KeyHelper.h"
 #include "Engine/TextureRect.h"
+#include "Engine/ImageComponents.h"
 
 namespace Natron {
 class FrameKey
@@ -38,7 +39,9 @@ public:
              int view,
              const TextureRect & textureRect,
              const RenderScale & scale,
-             const std::string & inputName);
+             const std::string & inputName,
+             const ImageComponents& layer,
+             const std::string& alphaChannelFullName);
 
     void fillHash(Hash64* hash) const;
 
@@ -102,6 +105,8 @@ private:
     TextureRect _textureRect;     // texture rectangle definition (bounds in the original image + width and height)
     RenderScale _scale;
     std::string _inputName;
+    ImageComponents _layer;
+    std::string _alphaChannelFullName; /// e.g: color.a , only used if _channels if A
 };
 }
 

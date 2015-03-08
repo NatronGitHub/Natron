@@ -28,6 +28,8 @@ FrameKey::FrameKey()
 , _view(0)
 , _textureRect()
 , _scale()
+, _layer()
+, _alphaChannelFullName()
 {
     _scale.x = _scale.y = 0.;
 }
@@ -41,7 +43,9 @@ FrameKey::FrameKey(SequenceTime time,
                    int view,
                    const TextureRect & textureRect,
                    const RenderScale & scale,
-                   const std::string & inputName)
+                   const std::string & inputName,
+                   const ImageComponents& layer,
+                   const std::string& alphaChannelFullName)
 : KeyHelper<U64>()
 , _time(time)
 , _treeVersion(treeVersion)
@@ -53,6 +57,8 @@ FrameKey::FrameKey(SequenceTime time,
 , _textureRect(textureRect)
 , _scale(scale)
 , _inputName(inputName)
+, _layer(layer)
+, _alphaChannelFullName(alphaChannelFullName)
 {
 }
 
@@ -75,9 +81,17 @@ FrameKey::fillHash(Hash64* hash) const
     hash->append(_textureRect.closestPo2);
     hash->append(_scale.x);
     hash->append(_scale.y);
-    for (size_t i = 0; i < _inputName.size(); ++i) {
-        hash->append( _inputName.at(i) );
+    Hash64_appendQString(hash,_layer.getLayerName().c_str());
+    const std::vector<std::string>& channels = _layer.getComponentsNames();
+    for (std::size_t i = 0; i < channels.size(); ++i) {
+        Hash64_appendQString(hash,channels[i].c_str());
     }
+    if (!_alphaChannelFullName.empty()) {
+        Hash64_appendQString(hash,_alphaChannelFullName.c_str());
+    }
+    
+    Hash64_appendQString(hash, _inputName.c_str());
+ 
 }
 
 bool
@@ -93,5 +107,7 @@ FrameKey::operator==(const FrameKey & other) const
     _textureRect == other._textureRect &&
     _scale.x == other._scale.x &&
     _scale.y == other._scale.y &&
-    _inputName == other._inputName;
+    _inputName == other._inputName &&
+    _layer == other._layer &&
+    _alphaChannelFullName == other._alphaChannelFullName;
 }

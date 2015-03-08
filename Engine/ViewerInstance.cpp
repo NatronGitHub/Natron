@@ -540,19 +540,24 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
         QMutexLocker locker(&_imp->viewerParamsMutex);
         outArgs->params->gain = _imp->viewerParamsGain;
         outArgs->params->lut = _imp->viewerParamsLut;
+        outArgs->params->layer = _imp->viewerParamsLayer;
+        outArgs->params->alphaLayer = _imp->viewerParamsAlphaLayer;
+        outArgs->params->alphaChannelName = _imp->viewerParamsAlphaChannelName;
     }
     std::string inputToRenderName = outArgs->activeInputToRender->getNode()->getScriptName_mt_safe();
     
     outArgs->key.reset(new FrameKey(time,
-                 viewerHash,
-                 outArgs->params->gain,
-                 outArgs->params->lut,
-                 (int)bitDepth,
-                 channels,
-                 view,
-                 outArgs->params->textureRect,
-                 scale,
-                 inputToRenderName));
+                                    viewerHash,
+                                    outArgs->params->gain,
+                                    outArgs->params->lut,
+                                    (int)bitDepth,
+                                    channels,
+                                    view,
+                                    outArgs->params->textureRect,
+                                    scale,
+                                    inputToRenderName,
+                                    outArgs->params->layer,
+                                    outArgs->params->alphaLayer.getLayerName() + outArgs->params->alphaChannelName));
     
     bool isCached = false;
     
@@ -753,14 +758,29 @@ ViewerInstance::renderViewer_internal(int view,
     
 
     std::list<ImageComponents> requestedComponents;
-    {
-        QMutexLocker k(&_imp->viewerParamsMutex);
-        requestedComponents.push_back(_imp->viewerParamsLayer);
-        if (!_imp->viewerParamsAlphaChannelName.empty() &&
-            _imp->viewerParamsAlphaLayer.getLayerName() != _imp->viewerParamsLayer.getLayerName()) {
-            requestedComponents.push_back(_imp->viewerParamsAlphaLayer);
+    
+    
+    if ((Natron::DisplayChannelsEnum)inArgs.key->getChannels() != Natron::eDisplayChannelsA) {
+        ///We fetch the Layer specified in the gui
+        requestedComponents.push_back(inArgs.params->layer);
+    } else {
+        ///We fetch the alpha layer
+        if (!inArgs.params->alphaChannelName.empty()) {
+            requestedComponents.push_back(inArgs.params->alphaLayer);
         }
     }
+    
+    if (requestedComponents.empty()) {
+        if (inArgs.params->cachedFrame) {
+            inArgs.params->cachedFrame->setAborted(true);
+            if (!isSequentialRender) {
+                _imp->checkAndUpdateRenderAge(inArgs.params->textureIndex,inArgs.params->renderAge);
+            }
+            appPTR->removeFromViewerCache(inArgs.params->cachedFrame);
+        }
+        return eStatusOK;
+    }
+    
     
     
     {
@@ -864,7 +884,6 @@ ViewerInstance::renderViewer_internal(int view,
                                     inArgs.params->textureRect,
                                     channels,
                                     inArgs.params->srcPremult,
-                                    1,
                                     inArgs.key->getBitDepth(),
                                     inArgs.params->gain,
                                     inArgs.params->offset,
@@ -946,7 +965,6 @@ ViewerInstance::renderViewer_internal(int view,
                                     inArgs.params->textureRect,
                                     channels,
                                     inArgs.params->srcPremult,
-                                    1,
                                     inArgs.key->getBitDepth(),
                                     inArgs.params->gain,
                                     inArgs.params->offset,
@@ -1118,64 +1136,70 @@ scaleToTexture8bits_generic(const std::pair<int,int> & yRange,
     
     const bool luminance = (args.channels == Natron::eDisplayChannelsY);
     
-    Natron::Image::ReadAccess acc = args.inputImage->getReadRights();
+    Natron::Image::ReadAccess acc = Natron::Image::ReadAccess(args.inputImage.get());
     
     ///offset the output buffer at the starting point
-    output += ( (yRange.first - args.texRect.y1) / args.closestPowerOf2 ) * args.texRect.w;
+    U32* dst_pixels = output + (yRange.first - args.texRect.y1) * args.texRect.w;
 
-    ///iterating over the scan-lines of the input image
-    int dstY = 0;
-    for (int y = yRange.first; y < yRange.second; y += args.closestPowerOf2) {
-        // coverity[dont_call]
-        int start = (int)( rand() % std::max( ( (args.texRect.x2 - args.texRect.x1) / args.closestPowerOf2 ),1 ) );
-        const PIX* src_pixels = (const PIX*)acc.pixelAt(args.texRect.x1, y);
-        U32* dst_pixels = output + dstY * args.texRect.w;
+    ///Cannot be an empty rect
+    assert(args.texRect.x2 > args.texRect.x1);
+    
+    const PIX* src_pixels = (const PIX*)acc.pixelAt(args.texRect.x1, yRange.first);
+    const int srcRowElements = (int)args.inputImage->getRowElements();
+    
+    for (int y = yRange.first; y < yRange.second;
+         ++y,
+         dst_pixels += args.texRect.w,
+         src_pixels += srcRowElements) {
         
-        /* go fowards from starting point to end of line: */
+        
+        // coverity[dont_call]
+        int start = (int)(rand() % (args.texRect.x2 - args.texRect.x1));
+        
+
         for (int backward = 0; backward < 2; ++backward) {
-            int dstIndex = backward ? start - 1 : start;
-            int srcIndex = dstIndex * args.closestPowerOf2; //< offset from src_pixels
-            assert( backward == 1 || ( srcIndex >= 0 && srcIndex < (args.texRect.x2 - args.texRect.x1) ) );
+            
+            int index = backward ? start - 1 : start;
+            
+            assert( backward == 1 || ( index >= 0 && index < (args.texRect.x2 - args.texRect.x1) ) );
 
             unsigned error_r = 0x80;
             unsigned error_g = 0x80;
             unsigned error_b = 0x80;
-
-            while (dstIndex < args.texRect.w && dstIndex >= 0) {
-                if ( srcIndex >= ( args.texRect.x2 - args.texRect.x1) ) {
-                    break;
-                } else {
-                    double r,g,b;
-                    int a;
-                    switch (nComps) {
-                        case 4:
-                            r = (src_pixels ? src_pixels[srcIndex * nComps + rOffset] : 0.);
-                            g = (src_pixels ? src_pixels[srcIndex * nComps + gOffset] : 0.);
-                            b = (src_pixels ? src_pixels[srcIndex * nComps + bOffset] : 0.);
-                            if (opaque) {
-                                a = 255;
-                            } else {
-                                a = (src_pixels ? Color::floatToInt<256>(src_pixels[srcIndex * nComps + 3]) : 0);
-                            }
-                            break;
-                        case 3:
-                            r = (src_pixels && rOffset < nComps) ? src_pixels[srcIndex * nComps + rOffset] : 0.;
-                            g = (src_pixels && gOffset < nComps) ? src_pixels[srcIndex * nComps + gOffset] : 0.;
-                            b = (src_pixels && bOffset < nComps) ? src_pixels[srcIndex * nComps + bOffset] : 0.;
-                            a = (src_pixels ? 255 : 0);
-                            break;
-                        case 1:
-                            r = src_pixels ? src_pixels[srcIndex] : 0.;
-                            g = b = r;
-                            a = src_pixels ? 255 : 0;
-                            break;
-                        default:
-                            assert(false);
-                            break;
-                    }
-                    
-                    
-                    switch ( pixelSize ) {
+            
+            while (index < args.texRect.w && index >= 0) {
+                
+                double r,g,b;
+                int a;
+                switch (nComps) {
+                    case 4:
+                        r = (src_pixels ? src_pixels[index * nComps + rOffset] : 0.);
+                        g = (src_pixels ? src_pixels[index * nComps + gOffset] : 0.);
+                        b = (src_pixels ? src_pixels[index * nComps + bOffset] : 0.);
+                        if (opaque) {
+                            a = 255;
+                        } else {
+                            a = (src_pixels ? Color::floatToInt<256>(src_pixels[index * nComps + 3]) : 0);
+                        }
+                        break;
+                    case 3:
+                        r = (src_pixels && rOffset < nComps) ? src_pixels[index * nComps + rOffset] : 0.;
+                        g = (src_pixels && gOffset < nComps) ? src_pixels[index * nComps + gOffset] : 0.;
+                        b = (src_pixels && bOffset < nComps) ? src_pixels[index * nComps + bOffset] : 0.;
+                        a = (src_pixels ? 255 : 0);
+                        break;
+                    case 1:
+                        r = src_pixels ? src_pixels[index] : 0.;
+                        g = b = r;
+                        a = src_pixels ? 255 : 0;
+                        break;
+                    default:
+                        assert(false);
+                        break;
+                }
+                
+                
+                switch ( pixelSize ) {
                     case sizeof(unsigned char): //byte
                         if (args.srcColorSpace) {
                             r = args.srcColorSpace->fromColorSpaceUint8ToLinearFloatFast( (unsigned char)r );
@@ -1207,45 +1231,44 @@ scaleToTexture8bits_generic(const std::pair<int,int> & yRange,
                         break;
                     default:
                         break;
-                    }
-
-                    r =  r * args.gain + args.offset;
-                    g =  g * args.gain + args.offset;
-                    b =  b * args.gain + args.offset;
-
-                    if (luminance) {
-                        r = 0.299 * r + 0.587 * g + 0.114 * b;
-                        g = r;
-                        b = r;
-                    }
-
-                    if (!args.colorSpace) {
-                        dst_pixels[dstIndex] = toBGRA(Color::floatToInt<256>(r),
-                                                      Color::floatToInt<256>(g),
-                                                      Color::floatToInt<256>(b),
-                                                      a);
-                    } else {
-                        error_r = (error_r & 0xff) + args.colorSpace->toColorSpaceUint8xxFromLinearFloatFast(r);
-                        error_g = (error_g & 0xff) + args.colorSpace->toColorSpaceUint8xxFromLinearFloatFast(g);
-                        error_b = (error_b & 0xff) + args.colorSpace->toColorSpaceUint8xxFromLinearFloatFast(b);
-                        assert(error_r < 0x10000 && error_g < 0x10000 && error_b < 0x10000);
-                        dst_pixels[dstIndex] = toBGRA( (U8)(error_r >> 8),
-                                                       (U8)(error_g >> 8),
-                                                       (U8)(error_b >> 8),
-                                                       a );
-                    }
                 }
-                if (backward) {
-                    --dstIndex;
-                    srcIndex -= args.closestPowerOf2;
+                
+                r =  r * args.gain + args.offset;
+                g =  g * args.gain + args.offset;
+                b =  b * args.gain + args.offset;
+                
+                if (luminance) {
+                    r = 0.299 * r + 0.587 * g + 0.114 * b;
+                    g = r;
+                    b = r;
+                }
+                
+                if (!args.colorSpace) {
+                    dst_pixels[index] = toBGRA(Color::floatToInt<256>(r),
+                                               Color::floatToInt<256>(g),
+                                               Color::floatToInt<256>(b),
+                                               a);
                 } else {
-                    ++dstIndex;
-                    srcIndex += args.closestPowerOf2;
+                    error_r = (error_r & 0xff) + args.colorSpace->toColorSpaceUint8xxFromLinearFloatFast(r);
+                    error_g = (error_g & 0xff) + args.colorSpace->toColorSpaceUint8xxFromLinearFloatFast(g);
+                    error_b = (error_b & 0xff) + args.colorSpace->toColorSpaceUint8xxFromLinearFloatFast(b);
+                    assert(error_r < 0x10000 && error_g < 0x10000 && error_b < 0x10000);
+                    dst_pixels[index] = toBGRA((U8)(error_r >> 8),
+                                               (U8)(error_g >> 8),
+                                               (U8)(error_b >> 8),
+                                               a);
                 }
-            }
-        }
-        ++dstY;
-    }
+                
+                if (backward) {
+                    --index;
+                } else {
+                    ++index;
+                }
+                
+            } // while (index < args.texRect.w && index >= 0) {
+            
+        } // for (int backward = 0; backward < 2; ++backward) {
+    } // for (int y = yRange.first; y < yRange.second;
 } // scaleToTexture8bits_generic
 
 
@@ -1374,46 +1397,50 @@ scaleToTexture32bitsGeneric(const std::pair<int,int> & yRange,
     ///the width of the output buffer multiplied by the channels count
     int dst_width = args.texRect.w * 4;
 
-    ///offset the output buffer at the starting point
-    output += ( (yRange.first - args.texRect.y1) / args.closestPowerOf2 ) * dst_width;
+    
+    Natron::Image::ReadAccess acc = Natron::Image::ReadAccess(args.inputImage.get());
 
+    float* dst_pixels =  output + (yRange.first - args.texRect.y1) * dst_width;
+    const float* src_pixels = (const float*)acc.pixelAt(args.texRect.x1, yRange.first);
+
+    assert(args.texRect.w == args.texRect.x2 - args.texRect.x1);
     
-    Natron::Image::ReadAccess acc = args.inputImage->getReadRights();
+    const int srcRowElements = (const int)args.inputImage->getRowElements();
     
-    ///iterating over the scan-lines of the input image
-    int dstY = 0;
-    for (int y = yRange.first; y < yRange.second; y += args.closestPowerOf2) {
+    for (int y = yRange.first; y < yRange.second;
+         ++y,
+         src_pixels += srcRowElements) {
         
         if (viewer->aborted()) {
             return;
         }
         
-        const float* src_pixels = (const float*)acc.pixelAt(args.texRect.x1, y);
-        float* dst_pixels = output + dstY * dst_width;
 
-        ///we fill the scan-line with all the pixels of the input image
-        for (int x = args.texRect.x1; x < args.texRect.x2; x += args.closestPowerOf2) {
+        for (int x = 0; x < args.texRect.w;
+             ++x,
+             dst_pixels += 4) {
+            
             double r,g,b,a;
             
             switch (nComps) {
                 case 4:
-                    r = (double)(src_pixels[rOffset]);
-                    g = (double)src_pixels[gOffset];
-                    b = (double)src_pixels[bOffset];
+                    r = (double)(src_pixels[x * nComps + rOffset]);
+                    g = (double)src_pixels[x * nComps + gOffset];
+                    b = (double)src_pixels[x * nComps + bOffset];
                     if (opaque) {
                         a = 1.;
                     } else {
-                        a = (nComps < 4) ? 1. : src_pixels[3];
+                        a = (nComps < 4) ? 1. : src_pixels[x * nComps + 3];
                     }
                     break;
                 case 3:
-                    r = (double)(src_pixels[rOffset]);
-                    g = (double)src_pixels[gOffset];
-                    b = (double)src_pixels[bOffset];
+                    r = (double)(src_pixels[x * nComps + rOffset]);
+                    g = (double)src_pixels[x * nComps + gOffset];
+                    b = (double)src_pixels[x * nComps + bOffset];
                     a = 1.;
                     break;
                 case 1:
-                    a = (nComps < 4) ? 1. : *src_pixels;
+                    a = (nComps < 4) ? 1. : src_pixels[x];
                     r = g = b = a;
                     a = 1.;
                     break;
@@ -1463,14 +1490,12 @@ scaleToTexture32bitsGeneric(const std::pair<int,int> & yRange,
                 g = r;
                 b = r;
             }
-            *dst_pixels++ = r;
-            *dst_pixels++ = g;
-            *dst_pixels++ = b;
-            *dst_pixels++ = a;
+            *dst_pixels = r;
+            *(dst_pixels + 1) = g;
+            *(dst_pixels + 2) = b;
+            *(dst_pixels + 3) = a;
 
-            src_pixels += args.closestPowerOf2 * nComps;
         }
-        ++dstY;
     }
 } // scaleToTexture32bitsGeneric
 

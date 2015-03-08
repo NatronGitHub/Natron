@@ -42,7 +42,6 @@ struct RenderViewerArgs
                      const TextureRect & texRect_,
                      Natron::DisplayChannelsEnum channels_,
                       Natron::ImagePremultiplicationEnum srcPremult_,
-                     int closestPowerOf2_,
                      int bitDepth_,
                      double gain_,
                      double offset_,
@@ -52,7 +51,6 @@ struct RenderViewerArgs
           , texRect(texRect_)
           , channels(channels_)
           , srcPremult(srcPremult_)
-          , closestPowerOf2(closestPowerOf2_)
           , bitDepth(bitDepth_)
           , gain(gain_)
           , offset(offset_)
@@ -65,7 +63,6 @@ struct RenderViewerArgs
     TextureRect texRect;
     Natron::DisplayChannelsEnum channels;
     Natron::ImagePremultiplicationEnum srcPremult;
-    int closestPowerOf2;
     int bitDepth;
     double gain;
     double offset;
@@ -80,23 +77,26 @@ class UpdateViewerParams : public BufferableObject
 public:
     
     UpdateViewerParams()
-        : ramBuffer(NULL)
-          , mustFreeRamBuffer(false)
-          , textureIndex(0)
-          , time(0)
-          , textureRect()
-          , srcPremult(Natron::eImagePremultiplicationOpaque)
-          , bytesCount(0)
-          , gain(1.)
-          , offset(0.)
-          , mipMapLevel(0)
-          , premult(Natron::eImagePremultiplicationOpaque)
-          , lut(Natron::eViewerColorSpaceSRGB)
-          , cachedFrame()
-          , image()
-          , rod()
-          , renderAge(0)
-          , isSequential(false)
+    : ramBuffer(NULL)
+    , mustFreeRamBuffer(false)
+    , textureIndex(0)
+    , time(0)
+    , textureRect()
+    , srcPremult(Natron::eImagePremultiplicationOpaque)
+    , bytesCount(0)
+    , gain(1.)
+    , offset(0.)
+    , mipMapLevel(0)
+    , premult(Natron::eImagePremultiplicationOpaque)
+    , lut(Natron::eViewerColorSpaceSRGB)
+    , layer()
+    , alphaLayer()
+    , alphaChannelName()
+    , cachedFrame()
+    , image()
+    , rod()
+    , renderAge(0)
+    , isSequential(false)
     {
     }
     
@@ -123,6 +123,9 @@ public:
     unsigned int mipMapLevel;
     Natron::ImagePremultiplicationEnum premult;
     Natron::ViewerColorSpaceEnum lut;
+    Natron::ImageComponents layer;
+    Natron::ImageComponents alphaLayer;
+    std::string alphaChannelName;
     
     // put a shared_ptr here, so that the cache entry is never released before the end of updateViewer()
     boost::shared_ptr<Natron::FrameEntry> cachedFrame;
