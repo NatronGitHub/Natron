@@ -197,6 +197,9 @@ public:
     int getInputNb() const WARN_UNUSED_RETURN;
 
     Natron::EffectInstance* getAssociatedNode() const WARN_UNUSED_RETURN;
+    
+    static Natron::ImageComponents ofxPlaneToNatronPlane(const std::string& plane);
+    static std::string natronsPlaneToOfxPlane(const Natron::ImageComponents& plane);
     static std::string natronsComponentsToOfxComponents(const Natron::ImageComponents& comp);
     static std::list<Natron::ImageComponents> ofxComponentsToNatronComponents(const std::string & comp);
     static Natron::ImageBitDepthEnum ofxDepthToNatronDepth(const std::string & depth);

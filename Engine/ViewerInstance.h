@@ -133,7 +133,7 @@ public:
 
     void setDisplayChannels(Natron::DisplayChannelsEnum channels);
     
-    void setActiveLayer(const Natron::ImageComponents& layer);
+    void setActiveLayer(const Natron::ImageComponents& layer, bool doRender);
     
     void setAlphaChannel(const Natron::ImageComponents& layer, const std::string& channelName);
 

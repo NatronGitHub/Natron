@@ -525,27 +525,102 @@ OfxClipInstance::getImage(OfxTime time,
     return getStereoscopicImage(time, -1, optionalBounds);
 }
 
-static std::string ofxPlaneToNatronPlane(const std::string& plane)
+static std::string natronCustomCompToOfxComp(const ImageComponents &comp) {
+    std::stringstream ss;
+    const std::vector<std::string>& channels = comp.getComponentsNames();
+    ss << kNatronOfxImageComponentsPlane << comp.getLayerName();
+    for (U32 i = 0; i < channels.size(); ++i) {
+        ss << kNatronOfxImageComponentsPlaneChannel << channels[i];
+    }
+    return ss.str();
+}
+
+static ImageComponents ofxCustomCompToNatronComp(const std::string& comp)
+{
+    std::string layerName;
+    std::string compsName;
+    std::vector<std::string> channelNames;
+    static std::string foundPlaneStr(kNatronOfxImageComponentsPlane);
+    static std::string foundChannelStr(kNatronOfxImageComponentsPlaneChannel);
+    
+    std::size_t foundPlane = comp.find(foundPlaneStr);
+    if (foundPlane == std::string::npos) {
+        throw std::runtime_error("Unsupported components type: " + comp);
+    }
+    
+    std::size_t foundChannel = comp.find(foundChannelStr,foundPlane + foundPlaneStr.size());
+    if (foundChannel == std::string::npos) {
+        throw std::runtime_error("Unsupported components type: " + comp);
+    }
+    
+    
+    for (std::size_t i = foundPlane + foundPlaneStr.size(); i < foundChannel; ++i) {
+        layerName.push_back(comp[i]);
+    }
+    
+    while (foundChannel != std::string::npos) {
+        
+        std::size_t nextChannel = comp.find(foundChannelStr,foundChannel + foundChannelStr.size());
+        
+        std::size_t end = nextChannel == std::string::npos ? comp.size() : nextChannel;
+        
+        std::string chan;
+        for (std::size_t i = foundChannel + foundChannelStr.size(); i < end; ++i) {
+            chan.push_back(comp[i]);
+        }
+        channelNames.push_back(chan);
+        compsName.append(chan);
+        
+        foundChannel = nextChannel;
+    }
+    
+    
+    
+    return ImageComponents(layerName,compsName,channelNames);
+}
+
+ImageComponents
+OfxClipInstance::ofxPlaneToNatronPlane(const std::string& plane)
 {
     if (plane == kFnOfxImagePlaneColour) {
-        return kNatronColorPlaneName;
+        return ImageComponents::getRGBAComponents();
     } else if (plane == kFnOfxImagePlaneForwardMotionVector) {
-        return kNatronForwardMotionVectorsPlaneName;
+        return ImageComponents::getForwardMotionComponents();
     } else if (plane == kFnOfxImagePlaneBackwardMotionVector) {
-        return kNatronBackwardMotionVectorsPlaneName;
+        return ImageComponents::getBackwardMotionComponents();
     } else if (plane == kFnOfxImagePlaneStereoDisparityLeft) {
-        return kNatronDisparityLeftPlaneName;
+        return ImageComponents::getDisparityLeftComponents();
     } else if (plane == kFnOfxImagePlaneStereoDisparityRight) {
-        return kNatronDisparityRightPlaneName;
+        return ImageComponents::getDisparityRightComponents();
+    } else {
+        return ofxCustomCompToNatronComp(plane);
     }
-    return std::string();
+
+}
+
+std::string
+OfxClipInstance::natronsPlaneToOfxPlane(const Natron::ImageComponents& plane)
+{
+    if (plane.getLayerName() == kNatronColorPlaneName) {
+        return kFnOfxImagePlaneColour;
+    } else if (plane.getLayerName() == kNatronForwardMotionVectorsPlaneName) {
+        return kFnOfxImagePlaneForwardMotionVector;
+    } else if (plane.getLayerName() == kNatronBackwardMotionVectorsPlaneName) {
+        return kFnOfxImagePlaneBackwardMotionVector;
+    } else if (plane.getLayerName() == kNatronDisparityLeftPlaneName) {
+        return kFnOfxImagePlaneStereoDisparityLeft;
+    } else if (plane.getLayerName() == kNatronDisparityRightPlaneName) {
+        return kFnOfxImagePlaneStereoDisparityRight;
+    } else {
+        return natronCustomCompToOfxComp(plane);
+    }
 }
 
 OFX::Host::ImageEffect::Image*
 OfxClipInstance::getImagePlane(OfxTime time, int view, const std::string& plane,const OfxRectD *optionalBounds)
 {
     
-    std::string natronPlaneName = ofxPlaneToNatronPlane(plane);
+    ImageComponents natronPlane = ofxPlaneToNatronPlane(plane);
     
     OfxPointD scale;
     scale.x = scale.y = 1.;
@@ -564,7 +639,7 @@ OfxClipInstance::getImagePlane(OfxTime time, int view, const std::string& plane,
     }
     assert( _lastActionData.hasLocalData() );
     if ( isOutput() ) {
-        ImageList outputPlanes;
+        std::map<ImageComponents,EffectInstance::PlaneToRender> outputPlanes;
         RectI renderWindow;
         bool ok = _nodeInstance->getThreadLocalRenderedPlanes(&outputPlanes,&renderWindow);
         if (!ok) {
@@ -572,11 +647,15 @@ OfxClipInstance::getImagePlane(OfxTime time, int view, const std::string& plane,
         }
         
         ImagePtr outputImage;
-        for (ImageList::iterator it = outputPlanes.begin(); it!=outputPlanes.end(); ++it) {
-            if ((*it)->getComponents().getLayerName() == natronPlaneName) {
-                outputImage = *it;
+        for (std::map<ImageComponents,EffectInstance::PlaneToRender>::iterator it = outputPlanes.begin(); it!=outputPlanes.end(); ++it) {
+            if (it->first.getLayerName() == natronPlane.getLayerName()) {
+                outputImage = it->second.tmpImage;
                 break;
             }
+        }
+        
+        if (!outputImage) {
+            outputImage = _nodeInstance->allocateImagePlaneAndSetInThreadLocalStorage(natronPlane);
         }
         
         assert(outputImage);
@@ -639,7 +718,7 @@ OfxClipInstance::getImagePlane(OfxTime time, int view, const std::string& plane,
     scale.x = Image::getScaleFromMipMapLevel(mipMapLevel);
     scale.y = scale.x;
     
-    return getImageInternal(time, scale, view, optionalBounds, natronPlaneName, usingReroute, rerouteInputNb, node, transform);
+    return getImageInternal(time, scale, view, optionalBounds, natronPlane.getLayerName(), usingReroute, rerouteInputNb, node, transform);
 }
 
 OFX::Host::ImageEffect::Image*
@@ -787,14 +866,7 @@ OfxClipInstance::natronsComponentsToOfxComponents(const Natron::ImageComponents&
     } else if (comp.getComponentsGlobalName() == kNatronDisparityComponentsName) {
         return kFnOfxImageComponentStereoDisparity;
     } else {
-        std::stringstream ss;
-        const std::vector<std::string>& channels = comp.getComponentsNames();
-        ss << kNatronOfxImageComponentsPlane << comp.getLayerName();
-        for (U32 i = 0; i < channels.size(); ++i) {
-            ss << kNatronOfxImageComponentsPlaneChannel << channels[i];
-        }
-        return ss.str();
-        
+        return natronCustomCompToOfxComp(comp);
     }
 }
 
@@ -817,46 +889,7 @@ OfxClipInstance::ofxComponentsToNatronComponents(const std::string & comp)
         ret.push_back(ImageComponents::getDisparityLeftComponents());
         ret.push_back(ImageComponents::getDisparityRightComponents());
     } else {
-        std::string layerName;
-        std::string compsName;
-        std::vector<std::string> channelNames;
-        static std::string foundPlaneStr(kNatronOfxImageComponentsPlane);
-        static std::string foundChannelStr(kNatronOfxImageComponentsPlaneChannel);
-        
-        std::size_t foundPlane = comp.find(foundPlaneStr);
-        if (foundPlane == std::string::npos) {
-            throw std::runtime_error("Unsupported components type: " + comp);
-        }
-        
-        std::size_t foundChannel = comp.find(foundChannelStr,foundPlane + foundPlaneStr.size());
-        if (foundChannel == std::string::npos) {
-            throw std::runtime_error("Unsupported components type: " + comp);
-        }
-        
-        
-        for (std::size_t i = foundPlane + foundPlaneStr.size(); i < foundChannel; ++i) {
-            layerName.push_back(comp[i]);
-        }
-        
-        while (foundChannel != std::string::npos) {
-            
-            std::size_t nextChannel = comp.find(foundChannelStr,foundChannel + foundChannelStr.size());
-
-            std::size_t end = nextChannel == std::string::npos ? comp.size() : nextChannel;
-            
-            std::string chan;
-            for (std::size_t i = foundChannel + foundChannelStr.size(); i < end; ++i) {
-                chan.push_back(comp[i]);
-            }
-            channelNames.push_back(chan);
-            compsName.append(chan);
-            
-            foundChannel = nextChannel;
-        }
-
-       
-        
-        ret.push_back(ImageComponents(layerName,compsName,channelNames));
+        ret.push_back(ofxCustomCompToNatronComp(comp));
     }
     return ret;
 }

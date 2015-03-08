@@ -96,7 +96,7 @@ InfoViewerWidget::InfoViewerWidget(ViewerGL* v,
     imageFormat = new Natron::Label(this);
     {
         QFontMetrics fm = imageFormat->fontMetrics();
-        int width = fm.width("RGBA32f");
+        int width = fm.width("backward.motion32f");
         imageFormat->setMinimumWidth(width);
     }
 
@@ -270,6 +270,13 @@ InfoViewerWidget::setColor(float r,
     } else if (_comp.getNumComponents() == 1) {
         values = QString("<font color=\"#DBE0E0\" face=\"%2\" size=%3>%1</font>")
             .arg(aS).arg(font.family()).arg(font.pixelSize());
+    } else if (_comp.getNumComponents() == 2) {
+        values = QString("<font color='#d93232' face=\"%3\" size=%4>%1  </font>"
+                         "<font color='#00a700' face=\"%3\" size=%4>%2  </font>")
+        .arg(rS)
+        .arg(gS)
+        .arg(font.family())
+        .arg(font.pixelSize());
     } else if (_comp.getNumComponents() == 3) {
         values = QString("<font color='#d93232' face=\"%4\" size=%5>%1  </font>"
                            "<font color='#00a700' face=\"%4\" size=%5>%2  </font>"

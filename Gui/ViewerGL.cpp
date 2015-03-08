@@ -4769,13 +4769,18 @@ ViewerGL::getColorAt(double x,
     ViewerColorSpaceEnum srcCS = _imp->viewerTab->getGui()->getApp()->getDefaultColorSpaceForBitDepth(depth);
     const Natron::Color::Lut* dstColorSpace;
     const Natron::Color::Lut* srcColorSpace;
-    if ( (srcCS == _imp->displayingImageLut) && ( (_imp->displayingImageLut == eViewerColorSpaceLinear) || !forceLinear ) ) {
+    if ( (srcCS == _imp->displayingImageLut)
+        && ( (_imp->displayingImageLut == eViewerColorSpaceLinear) || !forceLinear ) ) {
         // identity transform
         srcColorSpace = 0;
         dstColorSpace = 0;
     } else {
-        srcColorSpace = ViewerInstance::lutFromColorspace(srcCS);
-        dstColorSpace = ViewerInstance::lutFromColorspace(_imp->displayingImageLut);
+        if (img->getComponents().isColorPlane()) {
+            srcColorSpace = ViewerInstance::lutFromColorspace(srcCS);
+            dstColorSpace = ViewerInstance::lutFromColorspace(_imp->displayingImageLut);
+        } else {
+            srcColorSpace = dstColorSpace = 0;
+        }
     }
     
     const double par = img->getPixelAspectRatio();

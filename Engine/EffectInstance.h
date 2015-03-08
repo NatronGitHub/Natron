@@ -501,6 +501,14 @@ public:
                                              boost::shared_ptr<Natron::Image>* image);
 
 
+    /**
+     * @brief This function is to be called by getImage() when the plug-ins renders more planes than the ones suggested
+     * by the render action. We allocate those extra planes and cache them so they were not rendered for nothing.
+     * Note that the plug-ins may call this only while in the render action, and there must be other planes to render.
+     **/
+    boost::shared_ptr<Natron::Image> allocateImagePlaneAndSetInThreadLocalStorage(const Natron::ImageComponents& plane);
+
+
     class NotifyRenderingStarted_RAII
     {
         Node* _node;
@@ -1068,7 +1076,32 @@ public:
      **/
     void updateThreadLocalRenderTime(int time);
 
+    struct PlaneToRender
+    {
+        boost::shared_ptr<Natron::Image> fullscaleImage,downscaleImage,renderMappedImage,tmpImage;
+        
+        /**
+         * This is set to true if this plane is allocated with allocateImagePlaneAndSetInThreadLocalStorage()
+         **/
+        bool isAllocatedOnTheFly;
+    };
+
+    struct ImagePlanesToRender
+    {
+        std::list<RectI> rectsToRender;
+        std::map<Natron::ImageComponents, PlaneToRender> planes;
+        bool isBeingRenderedElsewhere;
+        
     
+        ImagePlanesToRender()
+        : rectsToRender(), planes(), isBeingRenderedElsewhere(false)
+        {
+        
+        }
+    };
+
+
+
     /**
      * @brief If the caller thread is currently rendering an image, it will return a pointer to it
      * otherwise it will return NULL.
@@ -1077,7 +1110,7 @@ public:
      *
      * WARNING: This call isexpensive and this function should not be called many times.
      **/
-    bool getThreadLocalRenderedPlanes(std::list<boost::shared_ptr<Natron::Image> >*  image,RectI* renderWindow) const;
+    bool getThreadLocalRenderedPlanes(std::map<Natron::ImageComponents,PlaneToRender >*  planes,RectI* renderWindow) const;
 
     /**
      * @brief Called when the associated node's hash has changed.
@@ -1316,25 +1349,6 @@ private:
     };
 
 
-    struct PlaneToRender
-    {
-        boost::shared_ptr<Natron::Image> fullscaleImage,downscaleImage,renderMappedImage;
-    };
-
-    struct ImagePlanesToRender
-    {
-        std::list<RectI> rectsToRender;
-        std::map<Natron::ImageComponents, PlaneToRender> planes;
-        bool isBeingRenderedElsewhere;
-
-        
-        ImagePlanesToRender()
-        : rectsToRender(), planes(), isBeingRenderedElsewhere(false)
-        {
-            
-        }
-    };
-
 
     /**
      * @brief The internal of renderRoI, mainly it calls render and handles the thread safety of the effect.
@@ -1477,7 +1491,6 @@ private:
         bool isRenderResponseToUserInteraction;
         double par;
         const ImagePlanesToRender* planes;
-        std::list<boost::shared_ptr<Natron::Image> > tmpPlanes;
     };
 
     enum RenderingFunctorRetEnum
@@ -1523,8 +1536,7 @@ private:
                                               bool isRenderResponseToUserInteraction,
                                               const RectI & downscaledRectToRender,
                                               const double par,
-                                              const ImagePlanesToRender& planes,
-                                              const std::list<boost::shared_ptr<Natron::Image> >& tmpPlanes );
+                                              const ImagePlanesToRender& planes);
 
     /**
      * @brief Returns the index of the input if inputEffect is a valid input connected to this effect, otherwise returns -1.

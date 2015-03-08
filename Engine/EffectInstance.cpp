@@ -62,6 +62,7 @@ class OutputFile_Knob;
 namespace  {
     struct ActionKey {
         double time;
+        int view;
         unsigned int mipMapLevel;
     };
     
@@ -77,6 +78,12 @@ namespace  {
             } else if (lhs.time == rhs.time) {
                 if (lhs.mipMapLevel < rhs.mipMapLevel) {
                     return true;
+                } else if (lhs.mipMapLevel == rhs.mipMapLevel) {
+                    if (lhs.view < rhs.view) {
+                        return true;
+                    } else {
+                        return false;
+                    }
                 } else {
                     return false;
                 }
@@ -141,13 +148,14 @@ namespace  {
         }
         
         
-        bool getIdentityResult(U64 hash,double time,unsigned int mipMapLevel,int* inputNbIdentity,double* identityTime) {
+        bool getIdentityResult(U64 hash,double time, int view, unsigned int mipMapLevel,int* inputNbIdentity,double* identityTime) {
             QMutexLocker l(&_cacheMutex);
             if (hash != _cacheHash)
                 return false;
             
             ActionKey key;
             key.time = time;
+            key.view = view;
             key.mipMapLevel = mipMapLevel;
             
             IdentityCacheMap::const_iterator found = _identityCache.find(key);
@@ -159,13 +167,14 @@ namespace  {
             return false;
         }
         
-        void setIdentityResult(double time,unsigned int mipMapLevel,int inputNbIdentity,double identityTime)
+        void setIdentityResult(double time, int view, unsigned int mipMapLevel,int inputNbIdentity,double identityTime)
         {
             QMutexLocker l(&_cacheMutex);
            
             
             ActionKey key;
             key.time = time;
+            key.view = view;
             key.mipMapLevel = mipMapLevel;
             
             IdentityCacheMap::iterator found = _identityCache.find(key);
@@ -181,13 +190,14 @@ namespace  {
             
         }
         
-        bool getRoDResult(U64 hash,double time,unsigned int mipMapLevel,RectD* rod) {
+        bool getRoDResult(U64 hash,double time, int view,unsigned int mipMapLevel,RectD* rod) {
             QMutexLocker l(&_cacheMutex);
             if (hash != _cacheHash)
                 return false;
             
             ActionKey key;
             key.time = time;
+            key.view = view;
             key.mipMapLevel = mipMapLevel;
             
             RoDCacheMap::const_iterator found = _rodCache.find(key);
@@ -198,13 +208,14 @@ namespace  {
             return false;
         }
         
-        void setRoDResult(double time,unsigned int mipMapLevel,const RectD& rod)
+        void setRoDResult(double time, int view, unsigned int mipMapLevel,const RectD& rod)
         {
             QMutexLocker l(&_cacheMutex);
             
             
             ActionKey key;
             key.time = time;
+            key.view = view;
             key.mipMapLevel = mipMapLevel;
             
             RoDCacheMap::iterator found = _rodCache.find(key);
@@ -255,7 +266,7 @@ struct EffectInstance::RenderArgs
     bool _isIdentity;
     SequenceTime _identityTime;
     int _identityInputNb;
-    ImageList _outputPlanes;
+    std::map<Natron::ImageComponents,PlaneToRender> _outputPlanes;
     
     int _firstFrame,_lastFrame;
     
@@ -523,7 +534,7 @@ struct EffectInstance::Implementation
                          bool isIdentity,
                          SequenceTime identityTime,
                          int inputNbIdentity,
-                         const ImageList& outputPlanes,
+                         const std::map<Natron::ImageComponents,PlaneToRender>& outputPlanes,
                          int firstFrame,
                          int lastFrame)
             : args()
@@ -596,7 +607,7 @@ struct EffectInstance::Implementation
                                bool isIdentity,
                                SequenceTime identityTime,
                                int inputNbIdentity,
-                               const ImageList& outputPlanes)
+                               const std::map<Natron::ImageComponents,PlaneToRender>& outputPlanes)
         {
             args._rod = rod;
             args._renderWindowPixel = renderWindow;
@@ -2127,7 +2138,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
                                                         identity,
                                                         inputTimeIdentity,
                                                         inputNbIdentity,
-                                                        ImageList(),
+                                                        std::map<Natron::ImageComponents,PlaneToRender>(),
                                                         firstFrame,
                                                         lastFrame);
             Natron::EffectInstance* inputEffectIdentity = getInput(inputNbIdentity);
@@ -2213,6 +2224,11 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
             }
             renderMappedImages.push_back(inputPlanes.front());
         }
+    }
+    
+    ///There might be only planes to render that were fetched from upstream
+    if (requestedComponents.empty()) {
+        return renderMappedImages;
     }
     
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -2445,6 +2461,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
             }
             
             plane.downscaleImage = plane.fullscaleImage;
+            plane.isAllocatedOnTheFly = false;
             planesToRender.planes.insert(std::make_pair(*it, plane));
         }
     }
@@ -3189,21 +3206,25 @@ EffectInstance::renderRoIInternal(SequenceTime time,
             renderMappedRectToRender = downscaledRectToRender;
         }
         
-        ImageList tmpPlanes;
         for (std::map<Natron::ImageComponents, PlaneToRender>::iterator it2 = planesToRender.planes.begin(); it2 != planesToRender.planes.end(); ++it2) {
+            
             /*
-             * Allocate a local temporary buffer onto which the plug-in will render, and then safely
+             * When using the cache, allocate a local temporary buffer onto which the plug-in will render, and then safely
              * copy this buffer to the shared (among threads) image.
              */
-            ImagePtr tmpImage(new Image(it2->second.renderMappedImage->getComponents(),
-                                        it2->second.renderMappedImage->getRoD(),
-                                        renderMappedRectToRender,
-                                        it2->second.renderMappedImage->getMipMapLevel(),
-                                        it2->second.renderMappedImage->getPixelAspectRatio(),
-                                        it2->second.renderMappedImage->getBitDepth(),
-                                        false)); //< no bitmap
-            tmpPlanes.push_back(tmpImage);
-
+            if (it2->second.renderMappedImage->usesBitMap()) {
+                it2->second.tmpImage.reset(new Image(it2->second.renderMappedImage->getComponents(),
+                                            it2->second.renderMappedImage->getRoD(),
+                                            renderMappedRectToRender,
+                                            it2->second.renderMappedImage->getMipMapLevel(),
+                                            it2->second.renderMappedImage->getPixelAspectRatio(),
+                                            it2->second.renderMappedImage->getBitDepth(),
+                                            false)); //< no bitmap
+                
+            } else {
+                it2->second.tmpImage = it2->second.renderMappedImage;
+            }
+            
         }
         
         Implementation::ScopedRenderArgs scopedArgs(&_imp->renderArgs);
@@ -3215,7 +3236,7 @@ EffectInstance::renderRoIInternal(SequenceTime time,
                                      false, //< if we reached here the node is not an identity!
                                      0.,
                                      -1,
-                                     tmpPlanes);
+                                     planesToRender.planes);
         
         
         int firstFrame, lastFrame;
@@ -3336,7 +3357,6 @@ EffectInstance::renderRoIInternal(SequenceTime time,
             tiledArgs.renderUseScaleOneInputs = useScaleOneInputImages;
             tiledArgs.isRenderResponseToUserInteraction = isRenderMadeInResponseToUserInteraction;
             tiledArgs.planes = &planesToRender;
-            tiledArgs.tmpPlanes = tmpPlanes;
             tiledArgs.par = par;
             tiledArgs.renderFullScaleThenDownscale = renderFullScaleThenDownscale;
 //#define NATRON_HOSTFRAMETHREADING_SEQUENTIAL // sequential execution of host threading
@@ -3426,8 +3446,7 @@ EffectInstance::renderRoIInternal(SequenceTime time,
                                                                        isRenderMadeInResponseToUserInteraction,
                                                                        downscaledRectToRender,
                                                                        par,
-                                                                       planesToRender,
-                                                                       tmpPlanes);
+                                                                       planesToRender);
             
 
             delete locker;
@@ -3478,8 +3497,7 @@ EffectInstance::tiledRenderingFunctor(const TiledRenderingFunctorArgs& args,
                                  args.isRenderResponseToUserInteraction,
                                  downscaledRectToRender,
                                  args.par,
-                                 *args.planes,
-                                 args.tmpPlanes);
+                                 *args.planes);
 }
 
 EffectInstance::RenderingFunctorRetEnum
@@ -3493,8 +3511,7 @@ EffectInstance::tiledRenderingFunctor(const RenderArgs & args,
                                       bool isRenderResponseToUserInteraction,
                                       const RectI & downscaledRectToRender,
                                       const double par,
-                                      const ImagePlanesToRender& planes,
-                                      const std::list<boost::shared_ptr<Natron::Image> >& tmpPlanes )
+                                      const ImagePlanesToRender& planes)
 {
     
     const PlaneToRender& firstPlane = planes.planes.begin()->second;
@@ -3651,8 +3668,11 @@ EffectInstance::tiledRenderingFunctor(const RenderArgs & args,
     originalScale.x = firstPlane.downscaleImage->getScale();
     originalScale.y = originalScale.x;
 
-    assert(planes.planes.size() == tmpPlanes.size());
-    
+    ImageList tmpPlanes;
+    for (std::map<Natron::ImageComponents,PlaneToRender>::const_iterator it = planes.planes.begin(); it!=planes.planes.end(); ++it) {
+        assert(it->second.tmpImage);
+        tmpPlanes.push_back(it->second.tmpImage);
+    }
     Natron::StatusEnum st = render_public(time,
                                           originalScale,
                                           renderMappedScale,
@@ -3663,12 +3683,23 @@ EffectInstance::tiledRenderingFunctor(const RenderArgs & args,
     
     bool renderAborted = aborted();
     
+    /*
+     * Since new planes can have been allocated on the fly by allocateImagePlaneAndSetInThreadLocalStorage(), refresh
+     * the planes map from the thread local storage.
+     */
+    assert(_imp->renderArgs.hasLocalData());
+    const RenderArgs& curRenderArgs = _imp->renderArgs.localData();
+    assert(curRenderArgs._validArgs);
+
+    std::map<Natron::ImageComponents,PlaneToRender> outputPlanes = curRenderArgs._outputPlanes;
+    assert(!outputPlanes.empty());
+    
     if (st != eStatusOK) {
 #if NATRON_ENABLE_TRIMAP
         if (!frameArgs.canAbort && frameArgs.isRenderResponseToUserInteraction) {
             assert(!renderAborted);
             
-            for (std::map<ImageComponents,PlaneToRender>::const_iterator it = planes.planes.begin(); it!=planes.planes.end(); ++it) {
+            for (std::map<ImageComponents,PlaneToRender>::const_iterator it = outputPlanes.begin(); it!=outputPlanes.end(); ++it) {
                 if (renderFullScaleThenDownscale && renderUseScaleOneInputs) {
                     it->second.fullscaleImage->clearBitmap(renderRectToRender);
                 } else {
@@ -3686,30 +3717,45 @@ EffectInstance::tiledRenderingFunctor(const RenderArgs & args,
         
         
         //Check for NaNs
-        ImageList::const_iterator tmpIT = tmpPlanes.begin();
-        for (std::map<ImageComponents,PlaneToRender>::const_iterator it = planes.planes.begin(); it!=planes.planes.end(); ++it,++tmpIT) {
-            if ((*tmpIT)->checkForNaNs(renderRectToRender)) {
+        for (std::map<ImageComponents,PlaneToRender>::const_iterator it = outputPlanes.begin(); it!=outputPlanes.end(); ++it) {
+            if (it->second.tmpImage->checkForNaNs(renderRectToRender)) {
                 qDebug() << getNode()->getScriptName_mt_safe().c_str() << ": rendered rectangle (" << renderRectToRender.x1 << ',' << renderRectToRender.y1 << ")-(" << renderRectToRender.x2 << ',' << renderRectToRender.y2 << ") contains invalid values.";
             }
             
-            ///copy the rectangle rendered in the full scale image to the downscaled output
-            if (renderFullScaleThenDownscale) {
-                
-                ///If we're using renderUseScaleOneInputs, the full scale image is cached, hence we're not sure that the whole part of the image will be downscaled.
-                ///Instead we do all the downscale at once at the end of renderRoI().
-                ///If !renderUseScaleOneInputs the image is not cached and we know it will be rendered completly so it is safe to do this here and take advantage
-                ///of the multi-threading.
-                if (mipMapLevel != 0 && !renderUseScaleOneInputs) {
-                    assert(it->second.fullscaleImage != it->second.downscaleImage);
-                    (*tmpIT)->downscaleMipMap( renderRectToRender, 0, mipMapLevel, false,it->second.downscaleImage.get() );
-                    it->second.downscaleImage->markForRendered(downscaledRectToRender);
-                } else {
-                    it->second.fullscaleImage->pasteFrom(**tmpIT, renderRectToRender, false);
-                    it->second.fullscaleImage->markForRendered(renderRectToRender);
+            if (it->second.isAllocatedOnTheFly) {
+                ///Plane allocated on the fly only have a temp image if using the cache and it is defined over the render window only
+                if (it->second.tmpImage != it->second.renderMappedImage) {
+                    assert(it->second.tmpImage->getBounds() == renderRectToRender);
+                    it->second.renderMappedImage->pasteFrom(*(it->second.tmpImage), it->second.tmpImage->getBounds(), false);
                 }
+                it->second.renderMappedImage->markForRendered(renderRectToRender);
+                
             } else {
-                it->second.downscaleImage->pasteFrom(**tmpIT, downscaledRectToRender,false);
-                it->second.downscaleImage->markForRendered(downscaledRectToRender);
+                
+                ///copy the rectangle rendered in the full scale image to the downscaled output
+                if (renderFullScaleThenDownscale) {
+                    
+                    ///If we're using renderUseScaleOneInputs, the full scale image is cached, hence we're not sure that the whole part of the image will be downscaled.
+                    ///Instead we do all the downscale at once at the end of renderRoI().
+                    ///If !renderUseScaleOneInputs the image is not cached and we know it will be rendered completly so it is safe to do this here and take advantage
+                    ///of the multi-threading.
+                    if (mipMapLevel != 0 && !renderUseScaleOneInputs) {
+                        assert(it->second.fullscaleImage != it->second.downscaleImage && it->second.renderMappedImage == it->second.fullscaleImage);
+                        it->second.tmpImage->downscaleMipMap( renderRectToRender, 0, mipMapLevel, false,it->second.downscaleImage.get() );
+                        it->second.downscaleImage->markForRendered(downscaledRectToRender);
+                    } else {
+                        assert(it->second.renderMappedImage == it->second.fullscaleImage);
+                        if (it->second.tmpImage != it->second.renderMappedImage) {
+                            it->second.fullscaleImage->pasteFrom(*it->second.tmpImage, renderRectToRender, false);
+                        }
+                        it->second.fullscaleImage->markForRendered(renderRectToRender);
+                    }
+                } else {
+                    if (it->second.tmpImage != it->second.downscaleImage) {
+                        it->second.downscaleImage->pasteFrom(*it->second.tmpImage, downscaledRectToRender,false);
+                    }
+                    it->second.downscaleImage->markForRendered(downscaledRectToRender);
+                }
             }
         }
         
@@ -3718,6 +3764,70 @@ EffectInstance::tiledRenderingFunctor(const RenderArgs & args,
     
     return isBeingRenderedElseWhere ? eRenderingFunctorRetTakeImageLock : eRenderingFunctorRetOK;
 } // tiledRenderingFunctor
+
+ImagePtr
+EffectInstance::allocateImagePlaneAndSetInThreadLocalStorage(const Natron::ImageComponents& plane)
+{
+    /*
+     * The idea here is that we may have asked the plug-in to render say motion.forward, but it can only render both fotward 
+     * and backward at a time.
+     * So it needs to allocate motion.backward and store it in the cache for efficiency. 
+     * Note that when calling this, the plug-in is already in the render action, hence in case of Host frame threading, 
+     * this function will be called as many times as there were thread used by the host frame threading.
+     * For all other planes, there was a local temporary image, shared among all threads for the calls to render.
+     * Since we may be in a thread of the host frame threading, only allocate a temporary image of the size of the rectangle
+     * to render and mark that we're a plane allocated on the fly so that the tiledRenderingFunctor can know this is a plane
+     * to handle specifically.
+     */
+    
+    if (_imp->renderArgs.hasLocalData()) {
+        RenderArgs& args = _imp->renderArgs.localData();
+        if (args._validArgs) {
+            
+            assert(!args._outputPlanes.empty());
+            
+            const PlaneToRender& firstPlane = args._outputPlanes.begin()->second;
+            
+            bool useCache = firstPlane.fullscaleImage->usesBitMap() || firstPlane.downscaleImage->usesBitMap();
+            
+            const ImagePtr& img = firstPlane.fullscaleImage->usesBitMap() ? firstPlane.fullscaleImage : firstPlane.downscaleImage;
+            
+            boost::shared_ptr<ImageParams> params = img->getParams();
+            
+            PlaneToRender p;
+            bool ok = allocateImagePlane(img->getKey(), img->getRoD(), img->getBounds(), img->getBounds(), false, params->getFramesNeeded(), plane, img->getBitDepth(), img->getPixelAspectRatio(), img->getMipMapLevel(), false, false, false, useCache, &p.fullscaleImage, &p.downscaleImage);
+            if (!ok) {
+                return ImagePtr();
+            } else {
+                
+                p.renderMappedImage = p.downscaleImage;
+                p.isAllocatedOnTheFly = true;
+                
+                /*
+                 * Allocate a temporary image for rendering only if using cache
+                 */
+                if (useCache) {
+                    p.tmpImage.reset(new Image(p.renderMappedImage->getComponents(),
+                                               p.renderMappedImage->getRoD(),
+                                               args._renderWindowPixel,
+                                               p.renderMappedImage->getMipMapLevel(),
+                                               p.renderMappedImage->getPixelAspectRatio(),
+                                               p.renderMappedImage->getBitDepth(),
+                                               false));
+                } else {
+                    p.tmpImage = p.renderMappedImage;
+                }
+                args._outputPlanes.insert(std::make_pair(plane,p));
+                return p.downscaleImage;
+            }
+            
+        } else {
+            return ImagePtr();
+        }
+    } else {
+        return ImagePtr();
+    }
+} // allocateImagePlaneAndSetInThreadLocalStorage
 
 void
 EffectInstance::openImageFileKnob()
@@ -4268,7 +4378,7 @@ EffectInstance::isIdentity_public(U64 hash,
     unsigned int mipMapLevel = Image::getLevelFromScale(scale.x);
     
     double timeF = 0.;
-    bool foundInCache = _imp->actionsCache.getIdentityResult(hash, time, mipMapLevel, inputNb, &timeF);
+    bool foundInCache = _imp->actionsCache.getIdentityResult(hash, time, view, mipMapLevel, inputNb, &timeF);
     if (foundInCache) {
         *inputTime = timeF;
         return *inputNb >= 0 || *inputNb == -2;
@@ -4326,7 +4436,7 @@ EffectInstance::isIdentity_public(U64 hash,
             *inputNb = -1;
             *inputTime = time;
         }
-        _imp->actionsCache.setIdentityResult(time, mipMapLevel, *inputNb, *inputTime);
+        _imp->actionsCache.setIdentityResult(time, view, mipMapLevel, *inputNb, *inputTime);
         return ret;
     }
 }
@@ -4354,7 +4464,7 @@ EffectInstance::getRegionOfDefinition_public(U64 hash,
     }
     
     unsigned int mipMapLevel = Image::getLevelFromScale(scale.x);
-    bool foundInCache = _imp->actionsCache.getRoDResult(hash, time, mipMapLevel, rod);
+    bool foundInCache = _imp->actionsCache.getRoDResult(hash, time, view, mipMapLevel, rod);
     if (foundInCache) {
         *isProjectFormat = false;
         if (rod->isNull()) {
@@ -4378,20 +4488,19 @@ EffectInstance::getRegionOfDefinition_public(U64 hash,
         RenderScale scaleOne;
         scaleOne.x = scaleOne.y = 1.;
         {
-#pragma message WARN("Be view dependent for the RoD and the action cache")
             RECURSIVE_ACTION();
             ret = getRegionOfDefinition(hash,time, supportsRenderScaleMaybe() == eSupportsNo ? scaleOne : scale, view, rod);
             
             if ( (ret != eStatusOK) && (ret != eStatusReplyDefault) ) {
                 // rod is not valid
                 _imp->actionsCache.invalidateAll(hash);
-                _imp->actionsCache.setRoDResult(time, mipMapLevel, RectD());
+                _imp->actionsCache.setRoDResult(time, view, mipMapLevel, RectD());
                 return ret;
             }
             
             if (rod->isNull()) {
                 _imp->actionsCache.invalidateAll(hash);
-                _imp->actionsCache.setRoDResult(time, mipMapLevel, RectD());
+                _imp->actionsCache.setRoDResult(time, view, mipMapLevel, RectD());
                 return eStatusFailed;
             }
             
@@ -4401,7 +4510,7 @@ EffectInstance::getRegionOfDefinition_public(U64 hash,
         *isProjectFormat = ifInfiniteApplyHeuristic(hash,time, scale, view, rod);
         assert(rod->x1 <= rod->x2 && rod->y1 <= rod->y2);
 
-        _imp->actionsCache.setRoDResult( time, mipMapLevel, *rod);
+        _imp->actionsCache.setRoDResult( time, view,  mipMapLevel, *rod);
         return ret;
     }
 }
@@ -4804,13 +4913,13 @@ EffectInstance::getThreadLocalRenderTime() const
 }
 
 bool
-EffectInstance::getThreadLocalRenderedPlanes(std::list<boost::shared_ptr<Natron::Image> >* image,RectI* renderWindow) const
+EffectInstance::getThreadLocalRenderedPlanes(std::map<Natron::ImageComponents,PlaneToRender> *outputPlanes,RectI* renderWindow) const
 {
     if (_imp->renderArgs.hasLocalData()) {
         const RenderArgs& args = _imp->renderArgs.localData();
         if (args._validArgs) {
             assert(!args._outputPlanes.empty());
-            *image = args._outputPlanes;
+            *outputPlanes = args._outputPlanes;
             *renderWindow = args._renderWindowPixel;
             return true;
         }

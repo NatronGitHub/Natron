@@ -762,7 +762,9 @@ ViewerInstance::renderViewer_internal(int view,
     int alphaChannelIndex = -1;
     if ((Natron::DisplayChannelsEnum)inArgs.key->getChannels() != Natron::eDisplayChannelsA) {
         ///We fetch the Layer specified in the gui
-        requestedComponents.push_back(inArgs.params->layer);
+        if (inArgs.params->layer.getNumComponents() > 0) {
+            requestedComponents.push_back(inArgs.params->layer);
+        }
     } else {
         ///We fetch the alpha layer
         if (!inArgs.params->alphaChannelName.empty()) {
@@ -1197,6 +1199,11 @@ scaleToTexture8bits_generic(const std::pair<int,int> & yRange,
                         g = (src_pixels && gOffset < nComps) ? src_pixels[index * nComps + gOffset] : 0.;
                         b = (src_pixels && bOffset < nComps) ? src_pixels[index * nComps + bOffset] : 0.;
                         a = (src_pixels ? 255 : 0);
+                } else if (nComps == 2) {
+                    r = (src_pixels && rOffset < nComps) ? src_pixels[index * nComps + rOffset] : 0.;
+                    g = (src_pixels && gOffset < nComps) ? src_pixels[index * nComps + gOffset] : 0.;
+                    b = 0;
+                    a = (src_pixels ? 255 : 0);
                 } else if (nComps == 1) {
                     r = src_pixels ? src_pixels[index] : 0.;
                     g = b = r;
@@ -1304,6 +1311,9 @@ scaleToTexture8bitsForDepthForComponents(const std::pair<int,int> & yRange,
             break;
         case 3:
             scaleToTexture8bits_internal<PIX,maxValue,3, opaque, rOffset,gOffset,bOffset>(yRange,args,viewer,output);
+            break;
+        case 2:
+            scaleToTexture8bits_internal<PIX,maxValue,2, opaque, rOffset,gOffset,bOffset>(yRange,args,viewer,output);
             break;
         case 1:
             scaleToTexture8bits_internal<PIX,maxValue,1, opaque, rOffset,gOffset,bOffset>(yRange,args,viewer,output);
@@ -1463,6 +1473,11 @@ scaleToTexture32bitsGeneric(const std::pair<int,int> & yRange,
                 g = (double)src_pixels[x * nComps + gOffset];
                 b = (double)src_pixels[x * nComps + bOffset];
                 a = 1.;
+            } else if (nComps == 2) {
+                r = (double)(src_pixels[x * nComps + rOffset]);
+                g = (double)src_pixels[x * nComps + gOffset];
+                b = 0.;
+                a = 1.;
             } else if (nComps == 1) {
                 a = (nComps < 4) ? 1. : src_pixels[x];
                 r = g = b = a;
@@ -1544,6 +1559,9 @@ scaleToTexture32bitsForDepthForComponents(const std::pair<int,int> & yRange,
             break;
         case 3:
             scaleToTexture32bitsInternal<PIX,maxValue,3, opaque, rOffset,gOffset,bOffset>(yRange,args,viewer,output);
+            break;
+        case 2:
+            scaleToTexture32bitsInternal<PIX,maxValue,2, opaque, rOffset,gOffset,bOffset>(yRange,args,viewer,output);
             break;
         case 1:
             scaleToTexture32bitsInternal<PIX,maxValue,1, opaque, rOffset,gOffset,bOffset>(yRange,args,viewer,output);
@@ -1812,7 +1830,7 @@ ViewerInstance::setDisplayChannels(DisplayChannelsEnum channels)
 }
 
 void
-ViewerInstance::setActiveLayer(const Natron::ImageComponents& layer)
+ViewerInstance::setActiveLayer(const Natron::ImageComponents& layer, bool doRender)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
@@ -1820,7 +1838,7 @@ ViewerInstance::setActiveLayer(const Natron::ImageComponents& layer)
         QMutexLocker l(&_imp->viewerParamsMutex);
         _imp->viewerParamsLayer = layer;
     }
-    if ( !getApp()->getProject()->isLoadingProject() ) {
+    if ( doRender && !getApp()->getProject()->isLoadingProject() ) {
         renderCurrentFrame(true);
     }
 }

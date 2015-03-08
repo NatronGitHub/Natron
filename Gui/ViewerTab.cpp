@@ -4032,12 +4032,8 @@ ViewerTab::refreshLayerAndAlphaChannelComboBox()
         return;
     }
     
-    
-    bool mustSetAlphaChoice = _imp->alphaChannelChoice->count() <= 1;
-    bool mustSetLayerChoice = _imp->layerChoice->count() <= 1;
-    
-    int layerCurChoice = _imp->layerChoice->activeIndex();
-    int alphaCurChoice = _imp->alphaChannelChoice->activeIndex();
+    QString layerCurChoice = _imp->layerChoice->getCurrentIndexText();
+    QString alphaCurChoice = _imp->alphaChannelChoice->getCurrentIndexText();
     
     std::set<ImageComponents> components;
     _imp->getComponentsAvailabel(&components);
@@ -4048,53 +4044,123 @@ ViewerTab::refreshLayerAndAlphaChannelComboBox()
     _imp->layerChoice->addItem("-");
     _imp->alphaChannelChoice->addItem("-");
     
-    bool hasSetAlpha = false;
-    bool hasSetLayer = false;
+    std::set<ImageComponents>::iterator foundColorIt = components.end();
+    std::set<ImageComponents>::iterator foundOtherIt = components.end();
+    std::set<ImageComponents>::iterator foundCurIt = components.end();
+    std::set<ImageComponents>::iterator foundCurAlphaIt = components.end();
+    std::string foundAlphaChannel;
     
     for (std::set<ImageComponents>::iterator it = components.begin(); it!=components.end(); ++it) {
         QString layerName(it->getLayerName().c_str());
-        _imp->layerChoice->addItem(layerName + '.' + QString(it->getComponentsGlobalName().c_str()));
+        QString itemName = layerName + '.' + QString(it->getComponentsGlobalName().c_str());
+        _imp->layerChoice->addItem(itemName);
         
-        if (mustSetLayerChoice) {
-            if (layerName == kNatronColorPlaneName) {
-                _imp->layerChoice->setCurrentIndex_no_emit(_imp->layerChoice->count() - 1);
-                _imp->viewerNode->setActiveLayer(*it);
-                hasSetLayer = true;
-                mustSetLayerChoice = false;
-            }
+        if (itemName == layerCurChoice) {
+            foundCurIt = it;
+        }
+        
+        if (layerName == kNatronColorPlaneName) {
+            foundColorIt = it;
+        } else {
+            foundOtherIt = it;
         }
         
         const std::vector<std::string>& channels = it->getComponentsNames();
         for (U32 i = 0; i < channels.size(); ++i) {
-            _imp->alphaChannelChoice->addItem(layerName + '.' + QString(channels[i].c_str()));
-        }
-        if (mustSetAlphaChoice) {
-            if (layerName == kNatronColorPlaneName) {
-                //There's RGBA or alpha, set it to A
-                std::string alphaChoice;
-                if (channels.size() == 4) {
-                    alphaChoice = channels[3];
-                } else if (channels.size() == 1) {
-                    alphaChoice = channels[0];
-                }
-                if (!alphaChoice.empty()) {
-                    _imp->alphaChannelChoice->setCurrentIndex_no_emit(_imp->alphaChannelChoice->count() - 1);
-                    hasSetAlpha = true;
-                } else {
-                    alphaCurChoice = 0;
-                }
-                
-                _imp->viewerNode->setAlphaChannel(*it, alphaChoice);
-                mustSetAlphaChoice = false;
+            QString itemName = layerName + '.' + QString(channels[i].c_str());
+            if (itemName == alphaCurChoice) {
+                foundCurAlphaIt = it;
+                foundAlphaChannel = channels[i];
             }
+            _imp->alphaChannelChoice->addItem(itemName);
         }
         
+        if (layerName == kNatronColorPlaneName) {
+            //There's RGBA or alpha, set it to A
+            std::string alphaChoice;
+            if (channels.size() == 4) {
+                alphaChoice = channels[3];
+            } else if (channels.size() == 1) {
+                alphaChoice = channels[0];
+            }
+            if (!alphaChoice.empty()) {
+                _imp->alphaChannelChoice->setCurrentIndex_no_emit(_imp->alphaChannelChoice->count() - 1);
+            } else {
+                alphaCurChoice = _imp->alphaChannelChoice->itemText(0);
+            }
+            
+            _imp->viewerNode->setAlphaChannel(*it, alphaChoice);
+        }
+        
+        
     }
-    if (!hasSetLayer) {
-        _imp->layerChoice->setCurrentIndex_no_emit(layerCurChoice >= _imp->layerChoice->count() ? 0 : layerCurChoice);
+    
+    int layerIdx;
+    if (foundCurIt == components.end()) {
+        layerCurChoice = "-";
     }
-    if (!hasSetAlpha) {
-        _imp->alphaChannelChoice->setCurrentIndex_no_emit(alphaCurChoice >= _imp->alphaChannelChoice->count() ? 0 : alphaCurChoice);
+
+    
+    
+    if (layerCurChoice == "-") {
+        
+        ///Try to find color plane, otherwise fallback on any other layer
+        if (foundColorIt != components.end()) {
+            layerCurChoice = QString(foundColorIt->getLayerName().c_str())
+            + '.' + QString(foundColorIt->getComponentsGlobalName().c_str());
+            foundCurIt = foundColorIt;
+            
+        } else if (foundOtherIt != components.end()) {
+            layerCurChoice = QString(foundOtherIt->getLayerName().c_str())
+            + '.' + QString(foundOtherIt->getComponentsGlobalName().c_str());
+            foundCurIt = foundOtherIt;
+        } else {
+            layerCurChoice = "-";
+            foundCurIt = components.end();
+        }
+        
+        
+    }
+    layerIdx = _imp->layerChoice->itemIndex(layerCurChoice);
+    
+    
+    
+    _imp->layerChoice->setCurrentIndex_no_emit(layerIdx);
+    if (foundCurIt == components.end()) {
+        _imp->viewerNode->setActiveLayer(ImageComponents::getNoneComponents(), false);
+    } else {
+        _imp->viewerNode->setActiveLayer(*foundCurIt, false);
+    }
+    
+    int alphaIdx;
+    if (foundCurAlphaIt == components.end() || foundAlphaChannel.empty()) {
+        alphaCurChoice = "-";
+    }
+    
+    if (alphaCurChoice == "-") {
+        
+        ///Try to find color plane, otherwise fallback on any other layer
+        if (foundColorIt != components.end() && foundColorIt->getComponentsNames().size() == 4) {
+            alphaCurChoice = QString(foundColorIt->getLayerName().c_str())
+            + '.' + QString(foundColorIt->getComponentsNames()[3].c_str());
+            foundAlphaChannel = foundColorIt->getComponentsNames()[3];
+            foundCurAlphaIt = foundColorIt;
+            
+            
+        } else {
+            alphaCurChoice = "-";
+            foundCurAlphaIt = components.end();
+        }
+        
+        
+    }
+    alphaIdx = _imp->layerChoice->itemIndex(alphaCurChoice);
+    
+    _imp->alphaChannelChoice->setCurrentIndex_no_emit(alphaIdx);
+    if (foundCurAlphaIt != components.end()) {
+        _imp->viewerNode->setAlphaChannel(*foundCurAlphaIt, foundAlphaChannel);
+    } else {
+        _imp->viewerNode->setAlphaChannel(ImageComponents::getNoneComponents(), std::string());
     }
 }
 
@@ -4119,6 +4185,7 @@ ViewerTab::onAlphaChannelComboChanged(int index)
             
         }
     }
+    _imp->viewerNode->setAlphaChannel(ImageComponents::getNoneComponents(), std::string());
 }
 
 void
@@ -4126,7 +4193,7 @@ ViewerTab::onLayerComboChanged(int index)
 {
     std::set<ImageComponents> components;
     _imp->getComponentsAvailabel(&components);
-    if (index >= (int)components.size() || index < 0) {
+    if (index >= (int)(components.size() + 1) || index < 0) {
         qDebug() << "ViewerTab::onLayerComboChanged: invalid index";
         return;
     }
@@ -4136,7 +4203,7 @@ ViewerTab::onLayerComboChanged(int index)
         
         chanCount += it->getComponentsNames().size();
         if (i == index) {
-            _imp->viewerNode->setActiveLayer(*it);
+            _imp->viewerNode->setActiveLayer(*it, true);
             
             ///If it has an alpha channel, set it
             if (it->getComponentsNames().size() == 4) {
@@ -4146,5 +4213,8 @@ ViewerTab::onLayerComboChanged(int index)
             return;
         }
     }
-
+    
+    _imp->viewerNode->setActiveLayer(ImageComponents::getNoneComponents(), true);
+    _imp->alphaChannelChoice->setCurrentIndex_no_emit(0);
+    _imp->viewerNode->setAlphaChannel(ImageComponents::getNoneComponents(), std::string());
 }

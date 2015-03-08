@@ -267,12 +267,12 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
                 double time = range.min;
                 
                 OfxRectD rod;
-                OfxStatus rodstat = _effect->getRegionOfDefinitionAction(time, scaleOne, rod);
+                OfxStatus rodstat = _effect->getRegionOfDefinitionAction(time, scaleOne, 0, rod);
                 if ( (rodstat == kOfxStatOK) || (rodstat == kOfxStatReplyDefault) ) {
                     OfxPointD scale;
                     scale.x = 0.5;
                     scale.y = 0.5;
-                    rodstat = _effect->getRegionOfDefinitionAction(time, scale, rod);
+                    rodstat = _effect->getRegionOfDefinitionAction(time, scale, 0, rod);
                     if ( (rodstat == kOfxStatOK) || (rodstat == kOfxStatReplyDefault) ) {
                         setSupportsRenderScaleMaybe(eSupportsYes);
                     } else {
@@ -886,12 +886,12 @@ OfxEffectInstance::onInputChanged(int inputNo)
             OfxRectD rod;
             OfxPointD scaleOne;
             scaleOne.x = scaleOne.y = 1.;
-            OfxStatus rodstat = _effect->getRegionOfDefinitionAction(time, scaleOne, rod);
+            OfxStatus rodstat = _effect->getRegionOfDefinitionAction(time, scaleOne, 0, rod);
             if ( (rodstat == kOfxStatOK) || (rodstat == kOfxStatReplyDefault) ) {
                 OfxPointD scale;
                 scale.x = 0.5;
                 scale.y = 0.5;
-                rodstat = _effect->getRegionOfDefinitionAction(time, scale, rod);
+                rodstat = _effect->getRegionOfDefinitionAction(time, scale, 0, rod);
                 if ( (rodstat == kOfxStatOK) || (rodstat == kOfxStatReplyDefault) ) {
                     setSupportsRenderScaleMaybe(eSupportsYes);
                 } else {
@@ -1207,12 +1207,12 @@ OfxEffectInstance::restoreClipPreferences()
             OfxRectD rod;
             OfxPointD scaleOne;
             scaleOne.x = scaleOne.y = 1.;
-            OfxStatus rodstat = _effect->getRegionOfDefinitionAction(time, scaleOne, rod);
+            OfxStatus rodstat = _effect->getRegionOfDefinitionAction(time, scaleOne, 0, rod);
             if ( (rodstat == kOfxStatOK) || (rodstat == kOfxStatReplyDefault) ) {
                 OfxPointD scale;
                 scale.x = 0.5;
                 scale.y = 0.5;
-                rodstat = _effect->getRegionOfDefinitionAction(time, scale, rod);
+                rodstat = _effect->getRegionOfDefinitionAction(time, scale, 0, rod);
                 if ( (rodstat == kOfxStatOK) || (rodstat == kOfxStatReplyDefault) ) {
                     setSupportsRenderScaleMaybe(eSupportsYes);
                 } else {
@@ -1286,11 +1286,11 @@ OfxEffectInstance::getRegionOfDefinition(U64 hash,
         
         {
             if (getRecursionLevel() > 1) {
-                stat = _effect->getRegionOfDefinitionAction(time, scale, ofxRod);
+                stat = _effect->getRegionOfDefinitionAction(time, scale, view, ofxRod);
             } else {
                 ///Take the preferences lock so that it cannot be modified throughout the action.
                 QReadLocker preferencesLocker(_preferencesLock);
-                stat = _effect->getRegionOfDefinitionAction(time, scale, ofxRod);
+                stat = _effect->getRegionOfDefinitionAction(time, scale, view, ofxRod);
             }
         }
         if ( !scaleIsOne && (supportsRS == eSupportsMaybe) ) {
@@ -1307,11 +1307,11 @@ OfxEffectInstance::getRegionOfDefinition(U64 hash,
                     SET_CAN_SET_VALUE(false);
                     
                     if (getRecursionLevel() > 1) {
-                        stat = _effect->getRegionOfDefinitionAction(time, scaleOne, ofxRod);
+                        stat = _effect->getRegionOfDefinitionAction(time, scaleOne, view, ofxRod);
                     } else {
                         ///Take the preferences lock so that it cannot be modified throughout the action.
                         QReadLocker preferencesLocker(_preferencesLock);
-                        stat = _effect->getRegionOfDefinitionAction(time, scaleOne, ofxRod);
+                        stat = _effect->getRegionOfDefinitionAction(time, scaleOne, view, ofxRod);
                     }
                 }
                 
@@ -1472,7 +1472,7 @@ OfxEffectInstance::getRegionsOfInterest(SequenceTime time,
         
         ///Take the preferences lock so that it cannot be modified throughout the action.
         QReadLocker preferencesLocker(_preferencesLock);
-        stat = _effect->getRegionOfInterestAction( (OfxTime)time, scale,
+        stat = _effect->getRegionOfInterestAction( (OfxTime)time, scale, view,
                                                    roi, inputRois );
     }
 
@@ -1723,11 +1723,11 @@ OfxEffectInstance::isIdentity(SequenceTime time,
         
         {
             if (getRecursionLevel() > 1) {
-                stat = _effect->isIdentityAction(inputTimeOfx, field, ofxRoI, scale, inputclip);
+                stat = _effect->isIdentityAction(inputTimeOfx, field, ofxRoI, scale, view, inputclip);
             } else {
                 ///Take the preferences lock so that it cannot be modified throughout the action.
                 QReadLocker preferencesLocker(_preferencesLock);
-                stat = _effect->isIdentityAction(inputTimeOfx, field, ofxRoI, scale, inputclip);
+                stat = _effect->isIdentityAction(inputTimeOfx, field, ofxRoI, scale, view, inputclip);
             }
         }
         if ( !scaleIsOne && (supportsRS == eSupportsMaybe) ) {
@@ -1747,11 +1747,11 @@ OfxEffectInstance::isIdentity(SequenceTime time,
                 ofxRoI.y2 = roi.top();
                 
                 if (getRecursionLevel() > 1) {
-                    stat = _effect->isIdentityAction(inputTimeOfx, field, ofxRoI, scaleOne, inputclip);
+                    stat = _effect->isIdentityAction(inputTimeOfx, field, ofxRoI, scaleOne, view, inputclip);
                 } else {
                     ///Take the preferences lock so that it cannot be modified throughout the action.
                     QReadLocker preferencesLocker(_preferencesLock);
-                    stat = _effect->isIdentityAction(inputTimeOfx, field, ofxRoI, scaleOne, inputclip);
+                    stat = _effect->isIdentityAction(inputTimeOfx, field, ofxRoI, scaleOne, view, inputclip);
                 }
                 if ( (stat == kOfxStatOK) || (stat == kOfxStatReplyDefault) ) {
                     // we got success with scale = 1, which means it doesn't support renderscale after all
@@ -1910,6 +1910,12 @@ OfxEffectInstance::render(SequenceTime time,
     int viewsCount = getApp()->getProject()->getProjectViewsCount();
     OfxStatus stat;
     const std::string field = kOfxImageFieldNone; // TODO: support interlaced data
+    
+    std::list<std::string> ofxPlanes;
+    for (std::list<boost::shared_ptr<Natron::Image> >::const_iterator it = outputPlanes.begin(); it!=outputPlanes.end(); ++it) {
+        ofxPlanes.push_back(OfxClipInstance::natronsPlaneToOfxPlane((*it)->getComponents()));
+    }
+    
     ///before calling render, set the render scale thread storage for each clip
 # ifdef DEBUG
     {
@@ -1958,13 +1964,14 @@ OfxEffectInstance::render(SequenceTime time,
         ///Take the preferences lock so that it cannot be modified throughout the action.
         QReadLocker preferencesLocker(_preferencesLock);
         stat = _effect->renderAction( (OfxTime)time,
-                                      field,
-                                      ofxRoI,
-                                      mappedScale,
-                                      isSequentialRender,
-                                      isRenderResponseToUserInteraction,
-                                      view,
-                                      viewsCount );
+                                     field,
+                                     ofxRoI,
+                                     mappedScale,
+                                     isSequentialRender,
+                                     isRenderResponseToUserInteraction,
+                                     view,
+                                     viewsCount,
+                                     ofxPlanes);
     }
 
     if (stat != kOfxStatOK) {
