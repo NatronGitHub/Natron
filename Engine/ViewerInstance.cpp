@@ -759,7 +759,7 @@ ViewerInstance::renderViewer_internal(int view,
 
     std::list<ImageComponents> requestedComponents;
     
-    
+    int alphaChannelIndex = -1;
     if ((Natron::DisplayChannelsEnum)inArgs.key->getChannels() != Natron::eDisplayChannelsA) {
         ///We fetch the Layer specified in the gui
         requestedComponents.push_back(inArgs.params->layer);
@@ -767,6 +767,14 @@ ViewerInstance::renderViewer_internal(int view,
         ///We fetch the alpha layer
         if (!inArgs.params->alphaChannelName.empty()) {
             requestedComponents.push_back(inArgs.params->alphaLayer);
+            const std::vector<std::string>& channels = inArgs.params->alphaLayer.getComponentsNames();
+            for (std::size_t i = 0; i < channels.size(); ++i) {
+                if (channels[i] == inArgs.params->alphaChannelName) {
+                    alphaChannelIndex = i;
+                    break;
+                }
+            }
+            assert(alphaChannelIndex != -1);
         }
     }
     
@@ -863,6 +871,7 @@ ViewerInstance::renderViewer_internal(int view,
     
     ViewerColorSpaceEnum srcColorSpace = getApp()->getDefaultColorSpaceForBitDepth( inArgs.params->image->getBitDepth() );
     
+    assert(alphaChannelIndex < (int)inArgs.params->image->getComponentsCount());
     
     if (singleThreaded) {
         if (autoContrast) {
@@ -880,7 +889,7 @@ ViewerInstance::renderViewer_internal(int view,
             inArgs.params->offset = -vmin / ( vmax - vmin);
         }
         
-        const RenderViewerArgs args( inArgs.params->image,
+        const RenderViewerArgs args(inArgs.params->image,
                                     inArgs.params->textureRect,
                                     channels,
                                     inArgs.params->srcPremult,
@@ -888,7 +897,8 @@ ViewerInstance::renderViewer_internal(int view,
                                     inArgs.params->gain,
                                     inArgs.params->offset,
                                     lutFromColorspace(srcColorSpace),
-                                    lutFromColorspace(inArgs.params->lut) );
+                                    lutFromColorspace(inArgs.params->lut),
+                                    alphaChannelIndex);
         
         renderFunctor(std::make_pair(roi.y1,roi.y2),
                       args,
@@ -969,7 +979,8 @@ ViewerInstance::renderViewer_internal(int view,
                                     inArgs.params->gain,
                                     inArgs.params->offset,
                                     lutFromColorspace(srcColorSpace),
-                                    lutFromColorspace(inArgs.params->lut));
+                                    lutFromColorspace(inArgs.params->lut),
+                                    alphaChannelIndex);
         if (runInCurrentThread) {
             renderFunctor(std::make_pair(inArgs.params->textureRect.y1,inArgs.params->textureRect.y2),
                           args, this, inArgs.params->ramBuffer);
@@ -1171,8 +1182,8 @@ scaleToTexture8bits_generic(const std::pair<int,int> & yRange,
                 
                 double r,g,b;
                 int a;
-                switch (nComps) {
-                    case 4:
+                
+                if (nComps >= 4) {
                         r = (src_pixels ? src_pixels[index * nComps + rOffset] : 0.);
                         g = (src_pixels ? src_pixels[index * nComps + gOffset] : 0.);
                         b = (src_pixels ? src_pixels[index * nComps + bOffset] : 0.);
@@ -1181,22 +1192,19 @@ scaleToTexture8bits_generic(const std::pair<int,int> & yRange,
                         } else {
                             a = (src_pixels ? Color::floatToInt<256>(src_pixels[index * nComps + 3]) : 0);
                         }
-                        break;
-                    case 3:
+                } else if (nComps == 3) {
                         r = (src_pixels && rOffset < nComps) ? src_pixels[index * nComps + rOffset] : 0.;
                         g = (src_pixels && gOffset < nComps) ? src_pixels[index * nComps + gOffset] : 0.;
                         b = (src_pixels && bOffset < nComps) ? src_pixels[index * nComps + bOffset] : 0.;
                         a = (src_pixels ? 255 : 0);
-                        break;
-                    case 1:
-                        r = src_pixels ? src_pixels[index] : 0.;
-                        g = b = r;
-                        a = src_pixels ? 255 : 0;
-                        break;
-                    default:
-                        assert(false);
-                        break;
+                } else if (nComps == 1) {
+                    r = src_pixels ? src_pixels[index] : 0.;
+                    g = b = r;
+                    a = src_pixels ? 255 : 0;
+                } else {
+                    assert(false);
                 }
+                
                 
                 
                 switch ( pixelSize ) {
@@ -1294,10 +1302,10 @@ scaleToTexture8bitsForDepthForComponents(const std::pair<int,int> & yRange,
         case 4:
             scaleToTexture8bits_internal<PIX,maxValue,4 , opaque, rOffset,gOffset,bOffset>(yRange,args,viewer,output);
             break;
-        case Natron::eImageComponentRGB:
+        case 3:
             scaleToTexture8bits_internal<PIX,maxValue,3, opaque, rOffset,gOffset,bOffset>(yRange,args,viewer,output);
             break;
-        case Natron::eImageComponentAlpha:
+        case 1:
             scaleToTexture8bits_internal<PIX,maxValue,1, opaque, rOffset,gOffset,bOffset>(yRange,args,viewer,output);
             break;
         default:
@@ -1327,7 +1335,26 @@ scaleToTexture8bitsForPremult(const std::pair<int,int> & yRange,
             scaleToTexture8bitsForDepthForComponents<PIX, maxValue, opaque, 2, 2, 2>(yRange, args,viewer, output);
             break;
         case Natron::eDisplayChannelsA:
-            scaleToTexture8bitsForDepthForComponents<PIX, maxValue, opaque, 3, 3, 3>(yRange, args,viewer, output);
+            switch (args.alphaChannelIndex) {
+                case -1:
+                    scaleToTexture8bitsForDepthForComponents<PIX, maxValue, opaque, 3, 3, 3>(yRange, args,viewer, output);
+                    break;
+                case 0:
+                    scaleToTexture8bitsForDepthForComponents<PIX, maxValue, opaque, 0, 0, 0>(yRange, args,viewer, output);
+                    break;
+                case 1:
+                    scaleToTexture8bitsForDepthForComponents<PIX, maxValue, opaque, 1, 1, 1>(yRange, args,viewer, output);
+                    break;
+                case 2:
+                    scaleToTexture8bitsForDepthForComponents<PIX, maxValue, opaque, 2, 2, 2>(yRange, args,viewer, output);
+                    break;
+                case 3:
+                    scaleToTexture8bitsForDepthForComponents<PIX, maxValue, opaque, 3, 3, 3>(yRange, args,viewer, output);
+                    break;
+                default:
+                    scaleToTexture8bitsForDepthForComponents<PIX, maxValue, opaque, 3, 3, 3>(yRange, args,viewer, output);
+            }
+            
             break;
         case Natron::eDisplayChannelsR:
         default:
@@ -1422,33 +1449,28 @@ scaleToTexture32bitsGeneric(const std::pair<int,int> & yRange,
             
             double r,g,b,a;
             
-            switch (nComps) {
-                case 4:
-                    r = (double)(src_pixels[x * nComps + rOffset]);
-                    g = (double)src_pixels[x * nComps + gOffset];
-                    b = (double)src_pixels[x * nComps + bOffset];
-                    if (opaque) {
-                        a = 1.;
-                    } else {
-                        a = (nComps < 4) ? 1. : src_pixels[x * nComps + 3];
-                    }
-                    break;
-                case 3:
-                    r = (double)(src_pixels[x * nComps + rOffset]);
-                    g = (double)src_pixels[x * nComps + gOffset];
-                    b = (double)src_pixels[x * nComps + bOffset];
+            if (nComps >= 4) {
+                r = (double)(src_pixels[x * nComps + rOffset]);
+                g = (double)src_pixels[x * nComps + gOffset];
+                b = (double)src_pixels[x * nComps + bOffset];
+                if (opaque) {
                     a = 1.;
-                    break;
-                case 1:
-                    a = (nComps < 4) ? 1. : src_pixels[x];
-                    r = g = b = a;
-                    a = 1.;
-                    break;
-                default:
-                    assert(false);
-                    r = g = b = a = 0.;
-                    break;
+                } else {
+                    a = (nComps < 4) ? 1. : src_pixels[x * nComps + 3];
+                }
+            } else if (nComps == 3) {
+                r = (double)(src_pixels[x * nComps + rOffset]);
+                g = (double)src_pixels[x * nComps + gOffset];
+                b = (double)src_pixels[x * nComps + bOffset];
+                a = 1.;
+            } else if (nComps == 1) {
+                a = (nComps < 4) ? 1. : src_pixels[x];
+                r = g = b = a;
+                a = 1.;
+            } else {
+                assert(false);
             }
+            
             
             switch ( pixelSize ) {
             case sizeof(unsigned char):
@@ -1554,7 +1576,27 @@ scaleToTexture32bitsForPremultForComponents(const std::pair<int,int> & yRange,
             scaleToTexture32bitsForDepthForComponents<PIX, maxValue, opaque, 2, 2, 2>(yRange, args,viewer, output);
             break;
         case Natron::eDisplayChannelsA:
-            scaleToTexture32bitsForDepthForComponents<PIX, maxValue, opaque, 3, 3, 3>(yRange, args,viewer, output);
+            switch (args.alphaChannelIndex) {
+                case -1:
+                    scaleToTexture32bitsForDepthForComponents<PIX, maxValue, opaque, 3, 3, 3>(yRange, args,viewer, output);
+                    break;
+                case 0:
+                    scaleToTexture32bitsForDepthForComponents<PIX, maxValue, opaque, 0, 0, 0>(yRange, args,viewer, output);
+                    break;
+                case 1:
+                    scaleToTexture32bitsForDepthForComponents<PIX, maxValue, opaque, 1, 1, 1>(yRange, args,viewer, output);
+                    break;
+                case 2:
+                    scaleToTexture32bitsForDepthForComponents<PIX, maxValue, opaque, 2, 2, 2>(yRange, args,viewer, output);
+                    break;
+                case 3:
+                    scaleToTexture32bitsForDepthForComponents<PIX, maxValue, opaque, 3, 3, 3>(yRange, args,viewer, output);
+                    break;
+                default:
+                    scaleToTexture32bitsForDepthForComponents<PIX, maxValue, opaque, 3, 3, 3>(yRange, args,viewer, output);
+                    break;
+            }
+            
             break;
         case Natron::eDisplayChannelsR:
         default:

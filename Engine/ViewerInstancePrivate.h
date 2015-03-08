@@ -41,21 +41,23 @@ struct RenderViewerArgs
     RenderViewerArgs(boost::shared_ptr<const Natron::Image> inputImage_,
                      const TextureRect & texRect_,
                      Natron::DisplayChannelsEnum channels_,
-                      Natron::ImagePremultiplicationEnum srcPremult_,
+                     Natron::ImagePremultiplicationEnum srcPremult_,
                      int bitDepth_,
                      double gain_,
                      double offset_,
                      const Natron::Color::Lut* srcColorSpace_,
-                     const Natron::Color::Lut* colorSpace_)
-        : inputImage(inputImage_)
-          , texRect(texRect_)
-          , channels(channels_)
-          , srcPremult(srcPremult_)
-          , bitDepth(bitDepth_)
-          , gain(gain_)
-          , offset(offset_)
-          , srcColorSpace(srcColorSpace_)
-          , colorSpace(colorSpace_)
+                     const Natron::Color::Lut* colorSpace_,
+                     int alphaChannelIndex_)
+    : inputImage(inputImage_)
+    , texRect(texRect_)
+    , channels(channels_)
+    , srcPremult(srcPremult_)
+    , bitDepth(bitDepth_)
+    , gain(gain_)
+    , offset(offset_)
+    , srcColorSpace(srcColorSpace_)
+    , colorSpace(colorSpace_)
+    , alphaChannelIndex(alphaChannelIndex_)
     {
     }
 
@@ -68,6 +70,7 @@ struct RenderViewerArgs
     double offset;
     const Natron::Color::Lut* srcColorSpace;
     const Natron::Color::Lut* colorSpace;
+    int alphaChannelIndex;
 };
 
 /// parameters send from the scheduler thread to updateViewer() (which runs in the main thread)
