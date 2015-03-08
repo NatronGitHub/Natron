@@ -3861,6 +3861,9 @@ Node::onMasterNodeDeactivated()
 {
     ///Only called by the main-thread
     assert( QThread::currentThread() == qApp->thread() );
+    if (!_imp->liveInstance) {
+        return;
+    }
     _imp->liveInstance->unslaveAllKnobs();
 }
 
