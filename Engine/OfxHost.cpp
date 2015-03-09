@@ -769,6 +769,7 @@ public:
           , _customArg(customArg)
           , _stat(stat)
     {
+        setObjectName("Multi-thread suite");
     }
 
     void run() OVERRIDE

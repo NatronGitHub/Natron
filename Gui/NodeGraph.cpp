@@ -653,6 +653,10 @@ NodeGraph::createNodeGUI(QVBoxLayout *dockContainer,
     BackDrop* isBd = dynamic_cast<BackDrop*>(node->getLiveInstance());
     NodeGroup* isGrp = dynamic_cast<NodeGroup*>(node->getLiveInstance());
     
+    
+    ///prevent multiple render requests while creating node and connecting it
+    getGui()->getApp()->setCreatingNode(true);
+    
     if (isDot) {
         node_ui.reset( new DotGui(_imp->_nodeRoot) );
     } else if (isBd) {
@@ -706,6 +710,8 @@ NodeGraph::createNodeGUI(QVBoxLayout *dockContainer,
             }
         }
     }
+    
+    getGui()->getApp()->setCreatingNode(false);
 
     QUndoStack* nodeStack = node_ui->getUndoStack();
     if (nodeStack) {

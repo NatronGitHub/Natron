@@ -91,7 +91,7 @@ struct AppInstancePrivate
     
     mutable QMutex creatingGroupMutex;
     bool _creatingGroup;
-    
+    bool _creatingNode;
     
     AppInstancePrivate(int appID,
                        AppInstance* app)
@@ -100,6 +100,7 @@ struct AppInstancePrivate
     , _projectCreatedWithLowerCaseIDs(false)
     , creatingGroupMutex()
     , _creatingGroup(false)
+    , _creatingNode(false)
     {
     }
     
@@ -128,6 +129,20 @@ AppInstance::~AppInstance()
     ///deleting nodes might reference the project.
     _imp->_currentProject->clearNodes(false);
     _imp->_currentProject->discardAppPointer();
+}
+
+void
+AppInstance::setCreatingNode(bool b)
+{
+    QMutexLocker k(&_imp->creatingGroupMutex);
+    _imp->_creatingNode = b;
+}
+
+bool
+AppInstance::isCreatingNode() const
+{
+    QMutexLocker k(&_imp->creatingGroupMutex);
+    return _imp->_creatingNode;
 }
 
 void

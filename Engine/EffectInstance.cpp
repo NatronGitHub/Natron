@@ -3323,12 +3323,35 @@ EffectInstance::renderRoIInternal(SequenceTime time,
         ///We only need to call begin if we've not already called it.
         bool callBegin = false;
 
-        ///neer call beginsequenceRender here if the render is sequential
+        /// call beginsequenceRender here if the render is sequential
         
         Natron::SequentialPreferenceEnum pref = getSequentialPreference();
         if (!isWriter() || pref == eSequentialPreferenceNotSequential) {
             callBegin = true;
         }
+        
+        
+        // eRenderSafetyInstanceSafe means that there is at most one render per instance
+        // NOTE: the per-instance lock should probably be shared between
+        // all clones of the same instance, because an InstanceSafe plugin may assume it is the sole owner of the output image,
+        // and read-write on it.
+        // It is probably safer to assume that several clones may write to the same output image only in the eRenderSafetyFullySafe case.
+        
+        // eRenderSafetyFullySafe means that there is only one render per FRAME : the lock is by image and handled in Node.cpp
+        ///locks belongs to an instance)
+        
+        boost::shared_ptr<QMutexLocker> locker;
+        
+        if (safety == eRenderSafetyInstanceSafe) {
+            locker.reset(new QMutexLocker( &getNode()->getRenderInstancesSharedMutex()));
+        } else if (safety == eRenderSafetyUnsafe) {
+            const Natron::Plugin* p = getNode()->getPlugin();
+            assert(p);
+            
+            locker.reset(new QMutexLocker(appPTR->getMutexForPlugin(p->getPluginID(), p->getMajorVersion(), p->getMinorVersion())));
+        }
+        ///For eRenderSafetyFullySafe, don't take any lock, the image already has a lock on itself so we're sure it can't be written to by 2 different threads.
+
 
         if (callBegin) {
             assert( !( (supportsRenderScaleMaybe() == eSupportsNo) && !(renderMappedScale.x == 1. && renderMappedScale.y == 1.) ) );
@@ -3414,26 +3437,6 @@ EffectInstance::renderRoIInternal(SequenceTime time,
         case eRenderSafetyInstanceSafe:     // indicating that any instance can have a single 'render' call at any one time,
         case eRenderSafetyFullySafe:        // indicating that any instance of a plugin can have multiple renders running simultaneously
         case eRenderSafetyUnsafe: {     // indicating that only a single 'render' call can be made at any time amoung all instances
-            // eRenderSafetyInstanceSafe means that there is at most one render per instance
-            // NOTE: the per-instance lock should probably be shared between
-            // all clones of the same instance, because an InstanceSafe plugin may assume it is the sole owner of the output image,
-            // and read-write on it.
-            // It is probably safer to assume that several clones may write to the same output image only in the eRenderSafetyFullySafe case.
-
-            // eRenderSafetyFullySafe means that there is only one render per FRAME : the lock is by image and handled in Node.cpp
-            ///locks belongs to an instance)
-
-            QMutexLocker *locker = 0;
-
-            if (safety == eRenderSafetyInstanceSafe) {
-                locker = new QMutexLocker( &getNode()->getRenderInstancesSharedMutex() );
-            } else if (safety == eRenderSafetyUnsafe) {
-                const Natron::Plugin* p = getNode()->getPlugin();
-                assert(p);
-                
-                locker = new QMutexLocker( appPTR->getMutexForPlugin(p->getPluginID(), p->getMajorVersion(), p->getMinorVersion()) );
-            }
-            ///For eRenderSafetyFullySafe, don't take any lock, the image already has a lock on itself so we're sure it can't be written to by 2 different threads.
             
             
             RenderingFunctorRetEnum functorRet = tiledRenderingFunctor(args,
@@ -3449,7 +3452,6 @@ EffectInstance::renderRoIInternal(SequenceTime time,
                                                                        planesToRender);
             
 
-            delete locker;
             
             if (functorRet == eRenderingFunctorRetFailed) {
                 renderStatus = eStatusFailed;

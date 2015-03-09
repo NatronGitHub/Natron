@@ -349,6 +349,9 @@ public:
     
     std::string getAppIDString() const;
     
+    void setCreatingNode(bool b);
+    bool isCreatingNode() const;
+    
 public Q_SLOTS:
     
     void quit();

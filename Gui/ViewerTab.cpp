@@ -3334,7 +3334,7 @@ ViewerTab::onInputChanged(int inputNb)
         }
     }
     
-    refreshLayerAndAlphaChannelComboBox();
+    //refreshLayerAndAlphaChannelComboBox();
 }
 
 void
@@ -4122,7 +4122,8 @@ ViewerTab::refreshLayerAndAlphaChannelComboBox()
         
     }
     layerIdx = _imp->layerChoice->itemIndex(layerCurChoice);
-    
+    assert(layerIdx != -1);
+
     
     
     _imp->layerChoice->setCurrentIndex_no_emit(layerIdx);
@@ -4154,7 +4155,11 @@ ViewerTab::refreshLayerAndAlphaChannelComboBox()
         
         
     }
+    
     alphaIdx = _imp->layerChoice->itemIndex(alphaCurChoice);
+    if (alphaIdx == -1) {
+        alphaIdx = 0;
+    }
     
     _imp->alphaChannelChoice->setCurrentIndex_no_emit(alphaIdx);
     if (foundCurAlphaIt != components.end()) {

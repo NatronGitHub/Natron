@@ -538,7 +538,7 @@ ComboBox::getCurrentIndexText() const
     if (_actions.empty()) {
         return QString();
     }
-    assert( _currentIndex < (int)_actions.size() );
+    assert( _currentIndex < (int)_actions.size() && _currentIndex >= 0);
 
     return _actions[_currentIndex]->text();
 }

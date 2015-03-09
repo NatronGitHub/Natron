@@ -3119,10 +3119,10 @@ KnobHolder::appendValueChange(KnobI* knob,Natron::ValueChangedReasonEnum reason)
 {
     {
         QMutexLocker l(&_imp->evaluationBlockedMutex);
-        if (!_imp->evaluationBlocked) {
-            ++_imp->evaluationBlocked;
-           // std::cout <<"INCR: " << _imp->evaluationBlocked << std::endl;
-        }
+//        if (!_imp->evaluationBlocked) {
+//            ++_imp->evaluationBlocked;
+//           // std::cout <<"INCR: " << _imp->evaluationBlocked << std::endl;
+//        }
         KnobChange k;
         k.reason = reason;
         k.originatedFromMainThread = QThread::currentThread() == qApp->thread();

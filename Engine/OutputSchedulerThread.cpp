@@ -2834,7 +2834,7 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool canAbort)
     Natron::StatusEnum status[2] = {
         eStatusFailed, eStatusFailed
     };
-    if (!_imp->viewer->getUiContext()) {
+    if (!_imp->viewer->getUiContext() || _imp->viewer->getApp()->isCreatingNode()) {
         return;
     }
     boost::shared_ptr<ViewerInstance::ViewerArgs> args[2];
