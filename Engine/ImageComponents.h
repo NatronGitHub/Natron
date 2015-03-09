@@ -13,7 +13,7 @@
 #define IMAGECOMPONENTS_H
 
 #include <string>
-
+#include <vector>
 
 #include "Global/Macros.h"
 
