@@ -3345,8 +3345,7 @@ EffectInstance::renderRoIInternal(SequenceTime time,
         } else if (safety == eRenderSafetyUnsafe) {
             const Natron::Plugin* p = getNode()->getPlugin();
             assert(p);
-            
-            locker.reset(new QMutexLocker(appPTR->getMutexForPlugin(p->getPluginID(), p->getMajorVersion(), p->getMinorVersion())));
+            locker.reset(new QMutexLocker(p->getPluginLock()));
         }
         ///For eRenderSafetyFullySafe, don't take any lock, the image already has a lock on itself so we're sure it can't be written to by 2 different threads.
 
@@ -4397,6 +4396,14 @@ EffectInstance::isIdentity_public(U64 hash,
         ///EDIT: We now allow isIdentity to be called recursively.
         RECURSIVE_ACTION();
         
+        ///Lock actions for unsafe plug-ins
+        boost::shared_ptr<QMutexLocker> locker;
+        if (renderThreadSafety() == eRenderSafetyUnsafe) {
+            const Natron::Plugin* p = getNode()->getPlugin();
+            assert(p);
+            locker.reset(new QMutexLocker(p->getPluginLock()));
+        }
+        
         bool ret = false;
         
         if (appPTR->isBackground() && dynamic_cast<DiskCacheNode*>(this) != NULL) {
@@ -4489,6 +4496,15 @@ EffectInstance::getRegionOfDefinition_public(U64 hash,
         scaleOne.x = scaleOne.y = 1.;
         {
             RECURSIVE_ACTION();
+            
+            ///Lock actions for unsafe plug-ins
+            boost::shared_ptr<QMutexLocker> locker;
+            if (renderThreadSafety() == eRenderSafetyUnsafe) {
+                const Natron::Plugin* p = getNode()->getPlugin();
+                assert(p);
+                locker.reset(new QMutexLocker(p->getPluginLock()));
+            }
+            
             ret = getRegionOfDefinition(hash,time, supportsRenderScaleMaybe() == eSupportsNo ? scaleOne : scale, view, rod);
             
             if ( (ret != eStatusOK) && (ret != eStatusReplyDefault) ) {
@@ -4526,6 +4542,15 @@ EffectInstance::getRegionsOfInterest_public(SequenceTime time,
     NON_RECURSIVE_ACTION();
     assert(outputRoD.x2 >= outputRoD.x1 && outputRoD.y2 >= outputRoD.y1);
     assert(renderWindow.x2 >= renderWindow.x1 && renderWindow.y2 >= renderWindow.y1);
+    
+    ///Lock actions for unsafe plug-ins
+    boost::shared_ptr<QMutexLocker> locker;
+    if (renderThreadSafety() == eRenderSafetyUnsafe) {
+        const Natron::Plugin* p = getNode()->getPlugin();
+        assert(p);
+        locker.reset(new QMutexLocker(p->getPluginLock()));
+    }
+    
     getRegionsOfInterest(time, scale, outputRoD, renderWindow, view,ret);
     
 }
@@ -4534,6 +4559,14 @@ EffectInstance::FramesNeededMap
 EffectInstance::getFramesNeeded_public(SequenceTime time,int view)
 {
     NON_RECURSIVE_ACTION();
+    
+    ///Lock actions for unsafe plug-ins
+    boost::shared_ptr<QMutexLocker> locker;
+    if (renderThreadSafety() == eRenderSafetyUnsafe) {
+        const Natron::Plugin* p = getNode()->getPlugin();
+        assert(p);
+        locker.reset(new QMutexLocker(p->getPluginLock()));
+    }
 
     return getFramesNeeded(time, view);
 }
@@ -4610,7 +4643,7 @@ EffectInstance::endSequenceRender_public(SequenceTime first,
         --_imp->beginEndRenderCount.localData();
         assert(_imp->beginEndRenderCount.localData() >= 0);
     }
-
+    
     return endSequenceRender(first, last, step, interactive, scale, isSequentialRender, isRenderResponseToUserInteraction, view);
 }
 
