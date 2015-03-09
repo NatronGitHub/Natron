@@ -802,7 +802,7 @@ TabWidget::appendTab(const QIcon & icon,
         _imp->gui->registerTab(widget,object);
 
         _imp->tabs.push_back(std::make_pair(widget,object));
-        widget->setParent(this);
+        //widget->setParent(this);
         _imp->modifyingTabBar = true;
         _imp->tabBar->addTab(icon,label.c_str());
         _imp->tabBar->updateGeometry(); //< necessary

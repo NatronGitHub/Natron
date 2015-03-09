@@ -4101,7 +4101,7 @@ ViewerTab::refreshLayerAndAlphaChannelComboBox()
                 alphaCurChoice = _imp->alphaChannelChoice->itemText(0);
             }
             
-            _imp->viewerNode->setAlphaChannel(*it, alphaChoice);
+            _imp->viewerNode->setAlphaChannel(*it, alphaChoice, false);
         }
         
         
@@ -4175,9 +4175,9 @@ ViewerTab::refreshLayerAndAlphaChannelComboBox()
     
     _imp->alphaChannelChoice->setCurrentIndex_no_emit(alphaIdx);
     if (foundCurAlphaIt != components.end()) {
-        _imp->viewerNode->setAlphaChannel(*foundCurAlphaIt, foundAlphaChannel);
+        _imp->viewerNode->setAlphaChannel(*foundCurAlphaIt, foundAlphaChannel, false);
     } else {
-        _imp->viewerNode->setAlphaChannel(ImageComponents::getNoneComponents(), std::string());
+        _imp->viewerNode->setAlphaChannel(ImageComponents::getNoneComponents(), std::string(), false);
     }
 }
 
@@ -4195,14 +4195,14 @@ ViewerTab::onAlphaChannelComboChanged(int index)
         } else {
             for (U32 j = 0; j < channels.size(); ++j,++i) {
                 if (i == index) {
-                    _imp->viewerNode->setAlphaChannel(*it, channels[j]);
+                    _imp->viewerNode->setAlphaChannel(*it, channels[j], true);
                     return;
                 }
             }
             
         }
     }
-    _imp->viewerNode->setAlphaChannel(ImageComponents::getNoneComponents(), std::string());
+    _imp->viewerNode->setAlphaChannel(ImageComponents::getNoneComponents(), std::string(), true);
 }
 
 void
@@ -4225,13 +4225,14 @@ ViewerTab::onLayerComboChanged(int index)
             ///If it has an alpha channel, set it
             if (it->getComponentsNames().size() == 4) {
                 _imp->alphaChannelChoice->setCurrentIndex_no_emit(chanCount - 1);
-                _imp->viewerNode->setAlphaChannel(*it, it->getComponentsNames()[3]);
+                _imp->viewerNode->setAlphaChannel(*it, it->getComponentsNames()[3], true);
             }
             return;
         }
     }
     
-    _imp->viewerNode->setActiveLayer(ImageComponents::getNoneComponents(), true);
     _imp->alphaChannelChoice->setCurrentIndex_no_emit(0);
-    _imp->viewerNode->setAlphaChannel(ImageComponents::getNoneComponents(), std::string());
+    _imp->viewerNode->setAlphaChannel(ImageComponents::getNoneComponents(), std::string(), false);
+    _imp->viewerNode->setActiveLayer(ImageComponents::getNoneComponents(), true);
+    
 }

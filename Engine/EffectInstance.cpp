@@ -1200,7 +1200,7 @@ EffectInstance::getImage(int inputNb,
         assert(outputComps.size() == 1 && outputComps.front().isColorPlane());
         
         boost::shared_ptr<Natron::Image> mask =  roto->renderMask(true,pixelRoI, outputComps.front(), nodeHash,rotoAge,
-                                                                  RectD(), time, depth, view, mipMapLevel, inputImagesThreadLocal, byPassCache);
+                                                                  rod, time, depth, view, mipMapLevel, inputImagesThreadLocal, byPassCache);
         if (inputImagesThreadLocal.empty()) {
             ///If the effect is analysis (e.g: Tracker) there's no input images in the tread local storage, hence add it
             _imp->addInputImageTempPointer(mask);
@@ -2947,7 +2947,9 @@ EffectInstance::renderInputImagesForRoI(bool createImageInCache,
         
         ///There cannot be frames needed without components needed.
         ComponentsNeededMap::iterator foundCompsNeeded = neededComps.find(it->first);
-        assert(foundCompsNeeded != neededComps.end());
+        if (foundCompsNeeded == neededComps.end()) {
+            continue;
+        }
         
         EffectInstance* inputEffect;
         if (it->first == transformInputNb) {
@@ -2957,9 +2959,12 @@ EffectInstance::renderInputImagesForRoI(bool createImageInCache,
             inputEffect = getInput(it->first);
         }
         if (inputEffect) {
+            
             ///What region are we interested in for this input effect ? (This is in Canonical coords)
             RoIMap::iterator foundInputRoI = inputsRoi->find(inputEffect);
-            assert( foundInputRoI != inputsRoi->end() );
+            if(foundInputRoI == inputsRoi->end()) {
+                continue;
+            }
             
             ///Convert to pixel coords the RoI
             if ( foundInputRoI->second.isInfinite() ) {

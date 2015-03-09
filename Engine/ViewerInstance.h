@@ -135,7 +135,7 @@ public:
     
     void setActiveLayer(const Natron::ImageComponents& layer, bool doRender);
     
-    void setAlphaChannel(const Natron::ImageComponents& layer, const std::string& channelName);
+    void setAlphaChannel(const Natron::ImageComponents& layer, const std::string& channelName, bool doRender);
 
     bool isAutoContrastEnabled() const WARN_UNUSED_RETURN;
 

@@ -1844,7 +1844,7 @@ ViewerInstance::setActiveLayer(const Natron::ImageComponents& layer, bool doRend
 }
 
 void
-ViewerInstance::setAlphaChannel(const Natron::ImageComponents& layer, const std::string& channelName)
+ViewerInstance::setAlphaChannel(const Natron::ImageComponents& layer, const std::string& channelName, bool doRender)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
@@ -1853,7 +1853,7 @@ ViewerInstance::setAlphaChannel(const Natron::ImageComponents& layer, const std:
         _imp->viewerParamsAlphaLayer = layer;
         _imp->viewerParamsAlphaChannelName = channelName;
     }
-    if ( !getApp()->getProject()->isLoadingProject() ) {
+    if ( doRender && !getApp()->getProject()->isLoadingProject() ) {
         renderCurrentFrame(true);
     }
 }

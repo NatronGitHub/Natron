@@ -1589,7 +1589,7 @@ Gui::restoreLayout(bool wipePrevious,
             assert(mainWidget);
             QWidget* window;
             if ( (*it)->isMainWindow ) {
-                mainWidget->setParent(_imp->_leftRightSplitter);
+               // mainWidget->setParent(_imp->_leftRightSplitter);
                 _imp->_leftRightSplitter->addWidget_mt_safe(mainWidget);
                 window = this;
             } else {
