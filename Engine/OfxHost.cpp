@@ -175,7 +175,7 @@ Natron::OfxHost::setProperties()
     _properties.setIntProperty( kOfxParamHostPropSupportsBooleanAnimation, Bool_Knob::canAnimateStatic() );
     _properties.setIntProperty( kOfxParamHostPropSupportsCustomAnimation, String_Knob::canAnimateStatic() );
     _properties.setIntProperty(kOfxParamHostPropMaxParameters, -1);
-    _properties.setIntProperty(kOfxParamHostPropMaxPages, -1);
+    _properties.setIntProperty(kOfxParamHostPropMaxPages, 0);
     _properties.setIntProperty(kOfxParamHostPropPageRowColumnCount, 0, 0 );
     _properties.setIntProperty(kOfxParamHostPropPageRowColumnCount, 0, 1 );
     _properties.setIntProperty(kOfxImageEffectInstancePropSequentialRender, 2);
