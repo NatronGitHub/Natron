@@ -149,10 +149,17 @@ Natron::OfxHost::setProperties()
     if (appPTR->getCurrentSettings()->areRGBPixelComponentsSupported()) {
         _properties.setStringProperty(kOfxImageEffectPropSupportedComponents,  kOfxImageComponentRGB, 2);
     }
+    _properties.setStringProperty(kOfxImageEffectPropSupportedComponents,  kFnOfxImageComponentMotionVectors, 3);
+    _properties.setStringProperty(kOfxImageEffectPropSupportedComponents,  kFnOfxImageComponentStereoDisparity, 4);
+    
     _properties.setStringProperty(kOfxImageEffectPropSupportedContexts, kOfxImageEffectContextGenerator, 0 );
     _properties.setStringProperty(kOfxImageEffectPropSupportedContexts, kOfxImageEffectContextFilter, 1);
     _properties.setStringProperty(kOfxImageEffectPropSupportedContexts, kOfxImageEffectContextGeneral, 2 );
     _properties.setStringProperty(kOfxImageEffectPropSupportedContexts, kOfxImageEffectContextTransition, 3 );
+    
+    ///Setting these makes The Foundry Furnace plug-ins fail in the load action
+    //_properties.setStringProperty(kOfxImageEffectPropSupportedContexts, kOfxImageEffectContextReader, 4 );
+    //_properties.setStringProperty(kOfxImageEffectPropSupportedContexts, kOfxImageEffectContextWriter, 5 );
 
     _properties.setStringProperty(kOfxImageEffectPropSupportedPixelDepths,kOfxBitDepthFloat,0);
     _properties.setStringProperty(kOfxImageEffectPropSupportedPixelDepths,kOfxBitDepthShort,1);
@@ -168,7 +175,7 @@ Natron::OfxHost::setProperties()
     _properties.setIntProperty( kOfxParamHostPropSupportsBooleanAnimation, Bool_Knob::canAnimateStatic() );
     _properties.setIntProperty( kOfxParamHostPropSupportsCustomAnimation, String_Knob::canAnimateStatic() );
     _properties.setIntProperty(kOfxParamHostPropMaxParameters, -1);
-    _properties.setIntProperty(kOfxParamHostPropMaxPages, 0);
+    _properties.setIntProperty(kOfxParamHostPropMaxPages, -1);
     _properties.setIntProperty(kOfxParamHostPropPageRowColumnCount, 0, 0 );
     _properties.setIntProperty(kOfxParamHostPropPageRowColumnCount, 0, 1 );
     _properties.setIntProperty(kOfxImageEffectInstancePropSequentialRender, 2);
@@ -178,7 +185,7 @@ Natron::OfxHost::setProperties()
     _properties.setIntProperty(kFnOfxImageEffectCanTransform, 1);
     
     ///Plane suite
-    _properties.setIntProperty(kFnOfxImageEffectPropMultiPlanar, 0);
+    _properties.setIntProperty(kFnOfxImageEffectPropMultiPlanar, 1);
 }
 
 OFX::Host::ImageEffect::Instance*
@@ -762,6 +769,7 @@ public:
           , _customArg(customArg)
           , _stat(stat)
     {
+        setObjectName("Multi-thread suite");
     }
 
     void run() OVERRIDE

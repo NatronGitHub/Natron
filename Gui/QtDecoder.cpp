@@ -461,8 +461,12 @@ QtReader::render(SequenceTime /*time*/,
                  int /*view*/,
                  bool /*isSequentialRender*/,
                  bool /*isRenderResponseToUserInteraction*/,
-                 boost::shared_ptr<Natron::Image> output)
+                 const std::list<boost::shared_ptr<Natron::Image> >& outputPlanes)
 {
+    assert(outputPlanes.size() == 1);
+    
+    const ImagePtr& output = outputPlanes.front();
+    
     int missingFrameChoice = _missingFrameChoice->getValue();
 
     if (!_img) {
@@ -525,10 +529,10 @@ QtReader::render(SequenceTime /*time*/,
 
 void
 QtReader::addAcceptedComponents(int /*inputNb*/,
-                                std::list<Natron::ImageComponentsEnum>* comps)
+                                std::list<Natron::ImageComponents>* comps)
 {
     ///QtReader only supports RGBA for now.
-    comps->push_back(Natron::eImageComponentRGBA);
+    comps->push_back(ImageComponents::getRGBAComponents());
 }
 
 void

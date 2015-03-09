@@ -9,6 +9,7 @@
 
 #include "Engine/NonKeyParams.h"
 #include "Engine/Format.h"
+#include "Engine/ImageComponents.h"
 
 
 namespace Natron {
@@ -29,10 +30,38 @@ inline int
     case eImageComponentRGBA:
 
         return 4;
+    case eImageComponentsMotionVectors:
+    case eImageComponentsStereoDisparity:
+            return 2;
     }
     assert(false);
 
     return 0;
+}
+    
+inline bool isColorComponents(Natron::ImageComponentsEnum comp)
+{
+    switch (comp) {
+        case eImageComponentNone:
+            
+            return false;
+        case eImageComponentAlpha:
+            
+            return true;
+        case eImageComponentRGB:
+            
+            return true;
+        case eImageComponentRGBA:
+            
+            return true;
+        case eImageComponentsMotionVectors:
+        case eImageComponentsStereoDisparity:
+            return false;
+    }
+    assert(false);
+    
+    return 0;
+  
 }
 
 inline int
@@ -65,7 +94,7 @@ public:
         , _bounds()
         , _isRoDProjectFormat(false)
         , _framesNeeded()
-        , _components(Natron::eImageComponentRGBA)
+        , _components(ImageComponents::getRGBAComponents())
         , _bitdepth(Natron::eImageBitDepthFloat)
         , _mipMapLevel(0)
         , _par(1.)
@@ -92,9 +121,9 @@ public:
                 const RectI & bounds,
                 Natron::ImageBitDepthEnum bitdepth,
                 bool isRoDProjectFormat,
-                ImageComponentsEnum components,
-                const std::map<int, std::vector<RangeD> > & framesNeeded)
-        : NonKeyParams( cost,bounds.area() * getElementsCountForComponents(components) * getSizeOfForBitDepth(bitdepth) )
+                const ImageComponents& components,
+                const std::map<int, std::map<int,std::vector<RangeD> > > & framesNeeded)
+        : NonKeyParams( cost,bounds.area() * components.getNumComponents() * getSizeOfForBitDepth(bitdepth) )
         , _rod(rod)
         , _bounds(bounds)
         , _isRoDProjectFormat(isRoDProjectFormat)
@@ -124,7 +153,7 @@ public:
     void setBounds(const RectI& bounds)
     {
         _bounds = bounds;
-        setElementsCount(bounds.area() * getElementsCountForComponents(_components) * getSizeOfForBitDepth(_bitdepth));
+        setElementsCount(bounds.area() * _components.getNumComponents() * getSizeOfForBitDepth(_bitdepth));
     }
 
     bool isRodProjectFormat() const
@@ -142,17 +171,17 @@ public:
         _bitdepth = bitdepth;
     }
     
-    const std::map<int, std::vector<RangeD> > & getFramesNeeded() const
+    const std::map<int, std::map<int,std::vector<RangeD> > > & getFramesNeeded() const
     {
         return _framesNeeded;
     }
 
-    ImageComponentsEnum getComponents() const
+    const ImageComponents& getComponents() const
     {
         return _components;
     }
 
-    void setComponents(ImageComponentsEnum comps)
+    void setComponents(const ImageComponents& comps)
     {
         _components = comps;
     }
@@ -181,18 +210,22 @@ public:
         if ( other._framesNeeded.size() != _framesNeeded.size() ) {
             return false;
         }
-        std::map<int,std::vector<RangeD> >::const_iterator it = _framesNeeded.begin();
-        for (std::map<int,std::vector<RangeD> >::const_iterator itOther = other._framesNeeded.begin();
-             itOther != other._framesNeeded.end(); ++itOther) {
+        std::map<int, std::map<int,std::vector<RangeD> > >::const_iterator it = _framesNeeded.begin();
+        for (std::map<int, std::map<int,std::vector<RangeD> > >::const_iterator itOther = other._framesNeeded.begin();
+             itOther != other._framesNeeded.end(); ++itOther, ++it) {
             if ( it->second.size() != itOther->second.size() ) {
                 return false;
             }
-            for (U32 i = 0; i < it->second.size(); ++i) {
-                if ( (it->second[i].min != itOther->second[i].min) || (it->second[i].max != itOther->second[i].max) ) {
-                    return false;
+            
+            std::map<int,std::vector<RangeD> > ::const_iterator it2Other = itOther->second.begin();
+            for (std::map<int,std::vector<RangeD> > ::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2,++it2Other) {
+                for (U32 i = 0; i < it2->second.size(); ++i) {
+                    if ( (it2->second[i].min != it2Other->second[i].min) || (it2->second[i].max != it2Other->second[i].max) ) {
+                        return false;
+                    }
                 }
             }
-            ++it;
+           
         }
         
         return _rod == other._rod
@@ -217,8 +250,8 @@ private:
     /// the caller should update the rod to the current project format.
     /// This is because the project format might have changed since this image was cached.
     bool _isRoDProjectFormat;
-    std::map<int, std::vector<RangeD> > _framesNeeded;
-    Natron::ImageComponentsEnum _components;
+    std::map<int, std::map<int,std::vector<RangeD> > > _framesNeeded;
+    Natron::ImageComponents _components;
     Natron::ImageBitDepthEnum _bitdepth;
     unsigned int _mipMapLevel;
     double _par;

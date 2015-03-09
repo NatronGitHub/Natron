@@ -44,11 +44,11 @@ DiskCacheNode::DiskCacheNode(boost::shared_ptr<Node> node)
 
 
 void
-DiskCacheNode::addAcceptedComponents(int /*inputNb*/,std::list<Natron::ImageComponentsEnum>* comps)
+DiskCacheNode::addAcceptedComponents(int /*inputNb*/,std::list<Natron::ImageComponents>* comps)
 {
-    comps->push_back(Natron::eImageComponentRGBA);
-    comps->push_back(Natron::eImageComponentRGB);
-    comps->push_back(Natron::eImageComponentAlpha);
+    comps->push_back(ImageComponents::getRGBAComponents());
+    comps->push_back(ImageComponents::getRGBComponents());
+    comps->push_back(ImageComponents::getAlphaComponents());
 }
 void
 DiskCacheNode::addSupportedBitDepth(std::list<Natron::ImageBitDepthEnum>* depths) const
@@ -161,13 +161,13 @@ DiskCacheNode::getFrameRange(SequenceTime *first,SequenceTime *last)
 }
 
 void
-DiskCacheNode::getPreferredDepthAndComponents(int /*inputNb*/,Natron::ImageComponentsEnum* comp,Natron::ImageBitDepthEnum* depth) const
+DiskCacheNode::getPreferredDepthAndComponents(int /*inputNb*/,std::list<Natron::ImageComponents>* comp,Natron::ImageBitDepthEnum* depth) const
 {
     EffectInstance* input = getInput(0);
     if (input) {
         return input->getPreferredDepthAndComponents(-1, comp, depth);
     } else {
-        *comp = eImageComponentRGBA;
+        comp->push_back(ImageComponents::getRGBAComponents());
         *depth = eImageBitDepthFloat;
     }
 }
@@ -205,8 +205,10 @@ DiskCacheNode::render(SequenceTime time,
                       int view,
                       bool /*isSequentialRender*/,
                       bool /*isRenderResponseToUserInteraction*/,
-                      boost::shared_ptr<Natron::Image> output)
+                      const ImageList& outputPlanes)
 {
+    
+    assert(outputPlanes.size() == 1);
     
     EffectInstance* input = getInput(0);
     if (!input) {
@@ -214,23 +216,29 @@ DiskCacheNode::render(SequenceTime time,
     }
     
     ImageBitDepthEnum bitdepth;
-    ImageComponentsEnum components;
+    std::list<ImageComponents> components;
     input->getPreferredDepthAndComponents(-1, &components, &bitdepth);
     double par = input->getPreferredAspectRatio();
     
-    RectI roiPixel;
-    boost::shared_ptr<Image> srcImg = getImage(0, time, originalScale, view, NULL, components, bitdepth, par, false, &roiPixel);
+    const ImagePtr& output = outputPlanes.front();
     
-    if (srcImg->getMipMapLevel() != output->getMipMapLevel()) {
-        throw std::runtime_error("Host gave image with wrong scale");
-    }
-    if (srcImg->getComponents() != output->getComponents() || srcImg->getBitDepth() != output->getBitDepth()) {
+    for (std::list<ImageComponents> ::const_iterator it =components.begin(); it!=components.end(); ++it) {
+        RectI roiPixel;
         
+        ImagePtr srcImg = getImage(0, time, originalScale, view, NULL, *it, bitdepth, par, false, &roiPixel);
+        
+        if (srcImg->getMipMapLevel() != output->getMipMapLevel()) {
+            throw std::runtime_error("Host gave image with wrong scale");
+        }
+        if (srcImg->getComponents() != output->getComponents() || srcImg->getBitDepth() != output->getBitDepth()) {
+            
+            
+            srcImg->convertToFormat(roi, getApp()->getDefaultColorSpaceForBitDepth( srcImg->getBitDepth() ),
+                                    getApp()->getDefaultColorSpaceForBitDepth(output->getBitDepth()), 3, false, true, false, output.get());
+        } else {
+            output->pasteFrom(*srcImg, roi, output->usesBitMap() && srcImg->usesBitMap());
+        }
 
-        srcImg->convertToFormat(roi, getApp()->getDefaultColorSpaceForBitDepth( srcImg->getBitDepth() ),
-                                getApp()->getDefaultColorSpaceForBitDepth(output->getBitDepth()), 3, false, true, false, output.get());
-    } else {
-        output->pasteFrom(*srcImg, roi, output->usesBitMap() && srcImg->usesBitMap());
     }
     
     return eStatusOK;

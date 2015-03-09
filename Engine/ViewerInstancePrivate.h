@@ -24,6 +24,7 @@
 #include <QtCore/QCoreApplication>
 
 #include "Engine/OutputSchedulerThread.h"
+#include "Engine/ImageComponents.h"
 #include "Engine/FrameEntry.h"
 #include "Engine/Settings.h"
 #include "Engine/TextureRect.h"
@@ -40,23 +41,23 @@ struct RenderViewerArgs
     RenderViewerArgs(boost::shared_ptr<const Natron::Image> inputImage_,
                      const TextureRect & texRect_,
                      Natron::DisplayChannelsEnum channels_,
-                      Natron::ImagePremultiplicationEnum srcPremult_,
-                     int closestPowerOf2_,
+                     Natron::ImagePremultiplicationEnum srcPremult_,
                      int bitDepth_,
                      double gain_,
                      double offset_,
                      const Natron::Color::Lut* srcColorSpace_,
-                     const Natron::Color::Lut* colorSpace_)
-        : inputImage(inputImage_)
-          , texRect(texRect_)
-          , channels(channels_)
-          , srcPremult(srcPremult_)
-          , closestPowerOf2(closestPowerOf2_)
-          , bitDepth(bitDepth_)
-          , gain(gain_)
-          , offset(offset_)
-          , srcColorSpace(srcColorSpace_)
-          , colorSpace(colorSpace_)
+                     const Natron::Color::Lut* colorSpace_,
+                     int alphaChannelIndex_)
+    : inputImage(inputImage_)
+    , texRect(texRect_)
+    , channels(channels_)
+    , srcPremult(srcPremult_)
+    , bitDepth(bitDepth_)
+    , gain(gain_)
+    , offset(offset_)
+    , srcColorSpace(srcColorSpace_)
+    , colorSpace(colorSpace_)
+    , alphaChannelIndex(alphaChannelIndex_)
     {
     }
 
@@ -64,12 +65,12 @@ struct RenderViewerArgs
     TextureRect texRect;
     Natron::DisplayChannelsEnum channels;
     Natron::ImagePremultiplicationEnum srcPremult;
-    int closestPowerOf2;
     int bitDepth;
     double gain;
     double offset;
     const Natron::Color::Lut* srcColorSpace;
     const Natron::Color::Lut* colorSpace;
+    int alphaChannelIndex;
 };
 
 /// parameters send from the scheduler thread to updateViewer() (which runs in the main thread)
@@ -79,23 +80,26 @@ class UpdateViewerParams : public BufferableObject
 public:
     
     UpdateViewerParams()
-        : ramBuffer(NULL)
-          , mustFreeRamBuffer(false)
-          , textureIndex(0)
-          , time(0)
-          , textureRect()
-          , srcPremult(Natron::eImagePremultiplicationOpaque)
-          , bytesCount(0)
-          , gain(1.)
-          , offset(0.)
-          , mipMapLevel(0)
-          , premult(Natron::eImagePremultiplicationOpaque)
-          , lut(Natron::eViewerColorSpaceSRGB)
-          , cachedFrame()
-          , image()
-          , rod()
-          , renderAge(0)
-          , isSequential(false)
+    : ramBuffer(NULL)
+    , mustFreeRamBuffer(false)
+    , textureIndex(0)
+    , time(0)
+    , textureRect()
+    , srcPremult(Natron::eImagePremultiplicationOpaque)
+    , bytesCount(0)
+    , gain(1.)
+    , offset(0.)
+    , mipMapLevel(0)
+    , premult(Natron::eImagePremultiplicationOpaque)
+    , lut(Natron::eViewerColorSpaceSRGB)
+    , layer()
+    , alphaLayer()
+    , alphaChannelName()
+    , cachedFrame()
+    , image()
+    , rod()
+    , renderAge(0)
+    , isSequential(false)
     {
     }
     
@@ -122,6 +126,9 @@ public:
     unsigned int mipMapLevel;
     Natron::ImagePremultiplicationEnum premult;
     Natron::ViewerColorSpaceEnum lut;
+    Natron::ImageComponents layer;
+    Natron::ImageComponents alphaLayer;
+    std::string alphaChannelName;
     
     // put a shared_ptr here, so that the cache entry is never released before the end of updateViewer()
     boost::shared_ptr<Natron::FrameEntry> cachedFrame;
@@ -149,6 +156,9 @@ public:
     , viewerParamsLut(Natron::eViewerColorSpaceSRGB)
     , viewerParamsAutoContrast(false)
     , viewerParamsChannels(Natron::eDisplayChannelsRGB)
+    , viewerParamsLayer(Natron::ImageComponents::getRGBAComponents())
+    , viewerParamsAlphaLayer(Natron::ImageComponents::getRGBAComponents())
+    , viewerParamsAlphaChannelName("a")
     , viewerMipMapLevel(0)
     , activeInputsMutex()
     , activeInputs()
@@ -285,14 +295,11 @@ public:
                                                  0 = sRGB ,  1 = linear , 2 = Rec 709*/
     bool viewerParamsAutoContrast;
     Natron::DisplayChannelsEnum viewerParamsChannels;
+    Natron::ImageComponents viewerParamsLayer;
+    Natron::ImageComponents viewerParamsAlphaLayer;
+    std::string viewerParamsAlphaChannelName;
     unsigned int viewerMipMapLevel; //< the mipmap level the viewer should render at (0 == no downscaling)
-    
-    ////Commented-out: Now that the VideoEngine is gone, there can be several threads running  the render function
-    ////and we have no way to identify the threads since they belong to a thread pool.
-    // store the threadId of the VideoEngine thread - used for debugging purposes
-    //mutable QMutex threadIdMutex;
-    //QThread *threadIdVideoEngine;
-    
+
     mutable QMutex activeInputsMutex;
     int activeInputs[2]; //< indexes of the inputs used for the wipe
     

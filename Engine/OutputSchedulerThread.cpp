@@ -1881,7 +1881,7 @@ private:
                 
                 StatusEnum stat = activeInputToRender->getRegionOfDefinition_public(activeInputToRenderHash,time, scale, i, &rod, &isProjectFormat);
                 if (stat != eStatusFailed) {
-                    ImageComponentsEnum components;
+                    std::list<ImageComponents> components;
                     ImageBitDepthEnum imageDepth;
                     activeInputToRender->getPreferredDepthAndComponents(-1, &components, &imageDepth);
                     RectI renderWindow;
@@ -1895,10 +1895,9 @@ private:
                                                                    true,
                                                                    _imp->output->getApp()->getTimeLine().get());
                     
-                    
                     RenderingFlagSetter flagIsRendering(activeInputToRender->getNode().get());
-                    
-                    boost::shared_ptr<Natron::Image> img =
+
+                    ImageList planes =
                     activeInputToRender->renderRoI( EffectInstance::RenderRoIArgs(time, //< the time at which to render
                                                                                   scale, //< the scale at which to render
                                                                                   mipMapLevel, //< the mipmap level (redundant with the scale)
@@ -1911,7 +1910,9 @@ private:
                     
                     ///If we need sequential rendering, pass the image to the output scheduler that will ensure the sequential ordering
                     if (!renderDirectly) {
-                        _imp->scheduler->appendToBuffer(time, i, boost::dynamic_pointer_cast<BufferableObject>(img));
+                        for (ImageList::iterator it = planes.begin(); it != planes.end(); ++it) {
+                            _imp->scheduler->appendToBuffer(time, i, boost::dynamic_pointer_cast<BufferableObject>(*it));
+                        }
                     } else {
                         _imp->scheduler->notifyFrameRendered(time,i,viewsCount,eSchedulingPolicyFFA);
                     }
@@ -1959,7 +1960,7 @@ DefaultScheduler::processFrame(const BufferedFrames& frames)
     RectD rod;
     RectI roi;
     
-    Natron::ImageComponentsEnum components;
+    std::list<Natron::ImageComponents> components;
     Natron::ImageBitDepthEnum imageDepth;
     _effect->getPreferredDepthAndComponents(-1, &components, &imageDepth);
     
@@ -2833,7 +2834,7 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool canAbort)
     Natron::StatusEnum status[2] = {
         eStatusFailed, eStatusFailed
     };
-    if (!_imp->viewer->getUiContext()) {
+    if (!_imp->viewer->getUiContext() || _imp->viewer->getApp()->isCreatingNode()) {
         return;
     }
     boost::shared_ptr<ViewerInstance::ViewerArgs> args[2];

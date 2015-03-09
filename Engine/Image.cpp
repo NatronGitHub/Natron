@@ -481,7 +481,6 @@ Image::Image(const ImageKey & key,
     : CacheEntryHelper<unsigned char, ImageKey,ImageParams>(key, params, cache,storage,path)
     , _useBitmap(true)
 {
-    _components = params->getComponents();
     _bitDepth = params->getBitDepth();
     _rod = params->getRoD();
     _bounds = params->getBounds();
@@ -497,7 +496,6 @@ Image::Image(const ImageKey & key,
 : CacheEntryHelper<unsigned char, ImageKey,ImageParams>(key, params, NULL,Natron::eStorageModeRAM,std::string())
 , _useBitmap(false)
 {
-    _components = params->getComponents();
     _bitDepth = params->getBitDepth();
     _rod = params->getRoD();
     _bounds = params->getBounds();
@@ -514,7 +512,7 @@ Image::Image(const ImageKey & key,
 /*This constructor can be used to allocate a local Image. The deallocation should
    then be handled by the user. Note that no view number is passed in parameter
    as it is not needed.*/
-Image::Image(ImageComponentsEnum components,
+Image::Image(const ImageComponents& components,
              const RectD & regionOfDefinition, //!< rod in canonical coordinates
              const RectI & bounds, //!< bounds in pixel coordinates
              unsigned int mipMapLevel,
@@ -526,21 +524,20 @@ Image::Image(ImageComponentsEnum components,
 {
     
     setCacheEntry(makeKey(0,false,0,0),
-                  boost::shared_ptr<ImageParams>( new ImageParams( 0,
+                  boost::shared_ptr<ImageParams>( new ImageParams( mipMapLevel,
                                                                    regionOfDefinition,
-                                                                   1.,
+                                                                   par,
                                                                    mipMapLevel,
                                                                    bounds,
                                                                    bitdepth,
                                                                    false,
                                                                    components,
-                                                                   std::map<int,std::vector<RangeD> >() ) ),
+                                                                   std::map<int, std::map<int,std::vector<RangeD> > >() ) ),
                   NULL,
                   Natron::eStorageModeRAM,
                   std::string()
                   );
 
-    _components = components;
     _bitDepth = bitdepth;
     _rod = regionOfDefinition;
     _bounds = _params->getBounds();
@@ -589,9 +586,9 @@ Image::makeParams(int cost,
                   const double par,
                   unsigned int mipMapLevel,
                   bool isRoDProjectFormat,
-                  ImageComponentsEnum components,
+                  const ImageComponents& components,
                   Natron::ImageBitDepthEnum bitdepth,
-                  const std::map<int, std::vector<RangeD> > & framesNeeded)
+                  const std::map<int, std::map<int,std::vector<RangeD> > > & framesNeeded)
 {
     RectI bounds;
 
@@ -615,9 +612,9 @@ Image::makeParams(int cost,
                   const double par,
                   unsigned int mipMapLevel,
                   bool isRoDProjectFormat,
-                  ImageComponentsEnum components,
+                  const ImageComponents& components,
                   Natron::ImageBitDepthEnum bitdepth,
-                  const std::map<int, std::vector<RangeD> > & framesNeeded)
+                  const std::map<int, std::map<int,std::vector<RangeD> > > & framesNeeded)
 {
 #ifdef DEBUG
     RectI pixelRod;
@@ -690,8 +687,8 @@ Image::pasteFromForDepth(const Natron::Image & srcImg,
     }
     
     assert( getComponents() == srcImg.getComponents() );
-    int components = getElementsCountForComponents( getComponents() );
-    
+
+    int components = getComponents().getNumComponents();
     if (copyBitmap) {
         copyBitmapPortion(roi, srcImg);
     }
@@ -804,8 +801,9 @@ Image::fillForDepth(const RectI & roi_,
 {
     assert( (getBitDepth() == eImageBitDepthByte && sizeof(PIX) == 1) || (getBitDepth() == eImageBitDepthShort && sizeof(PIX) == 2) || (getBitDepth() == eImageBitDepthFloat && sizeof(PIX) == 4) );
 
-    ImageComponentsEnum comps = getComponents();
-    if (comps == eImageComponentNone) {
+    const ImageComponents& comps = getComponents();
+    int nComps = comps.getNumComponents();
+    if (nComps == 0) {
         return;
     }
 
@@ -818,9 +816,9 @@ Image::fillForDepth(const RectI & roi_,
 
     int rowElems = (int)getComponentsCount() * _bounds.width();
     const float fillValue[4] = {
-        comps == Natron::eImageComponentAlpha ? a : r, g, b, a
+        nComps == 1 ? a : r, g, b, a
     };
-    int nComps = getElementsCountForComponents(comps);
+    
 
     // now we're safe: the image contains the area in roi
     PIX* dst = (PIX*)pixelAt(roi.x1, roi.y1);
@@ -863,7 +861,7 @@ unsigned char*
 Image::pixelAt(int x,
                int y)
 {
-    int compsCount = getElementsCountForComponents( getComponents() );
+    int compsCount = getComponents().getNumComponents();
 
     if ( ( x < _bounds.left() ) || ( x >= _bounds.right() ) || ( y < _bounds.bottom() ) || ( y >= _bounds.top() )) {
         return NULL;
@@ -880,7 +878,7 @@ const unsigned char*
 Image::pixelAt(int x,
                int y) const
 {
-    int compsCount = getElementsCountForComponents( getComponents() );
+    int compsCount = getComponents().getNumComponents();
     
     if ( ( x < _bounds.left() ) || ( x >= _bounds.right() ) || ( y < _bounds.bottom() ) || ( y >= _bounds.top() )) {
         return NULL;
@@ -896,7 +894,7 @@ Image::pixelAt(int x,
 unsigned int
 Image::getComponentsCount() const
 {
-    return getElementsCountForComponents( getComponents() );
+    return getComponents().getNumComponents();
 }
 
 bool
@@ -949,24 +947,10 @@ Image::hasEnoughDataToConvert(Natron::ImageComponentsEnum from,
 }
 
 std::string
-Image::getFormatString(Natron::ImageComponentsEnum comps,
+Image::getFormatString(const Natron::ImageComponents& comps,
                        Natron::ImageBitDepthEnum depth)
 {
-    std::string s;
-
-    switch (comps) {
-    case Natron::eImageComponentRGBA:
-        s += "RGBA";
-        break;
-    case Natron::eImageComponentRGB:
-        s += "RGB";
-        break;
-    case Natron::eImageComponentAlpha:
-        s += "Alpha";
-        break;
-    default:
-        break;
-    }
+    std::string s = comps.getLayerName() + '.' + comps.getComponentsGlobalName();
     s.append( getDepthString(depth) );
 
     return s;
@@ -1053,7 +1037,7 @@ Image::halveRoIForDepth(const RectI & roi,
     //           dstRoD.height()*2 <= roi.height());
     assert( getComponents() == output->getComponents() );
 
-    int nComponents = getElementsCountForComponents( getComponents() );
+    int nComponents = getComponents().getNumComponents();
     RectI dstRoI;
     RectI srcRoI = roi;
     srcRoI.intersect(srcBounds, &srcRoI); // intersect srcRoI with the region of definition
@@ -1218,7 +1202,7 @@ Image::halve1DImageForDepth(const RectI & roi,
     
 
 
-    int components = getElementsCountForComponents( getComponents() );
+    int components = getComponents().getNumComponents();
     int halfWidth = width / 2;
     int halfHeight = height / 2;
     if (height == 1) { //1 row
@@ -1367,7 +1351,7 @@ Image::upscaleMipMapForDepth(const RectI & roi,
     int scale = 1 << (fromLevel - toLevel);
 
     assert( output->getComponents() == getComponents() );
-    int components = getElementsCountForComponents( getComponents() );
+    int components = getComponents().getNumComponents();
     if (components == 0) {
         return;
     }
@@ -1494,7 +1478,7 @@ Image::scaleBoxForDepth(const RectI & roi,
     PIX* dst = (PIX*)output->pixelAt(dstBounds.x1, dstBounds.y1);
     assert(src && dst);
     assert( output->getComponents() == getComponents() );
-    int components = getElementsCountForComponents( getComponents() );
+    int components = getComponents().getNumComponents();
     int rowSize = srcBounds.width() * components;
     float totals[4];
 
@@ -2152,10 +2136,10 @@ Image::convertToFormatInternal(const RectI & renderWindow,
                         }
                     } else {
                         ///In this case we've RGB or RGBA input and outputs
-                        assert(srcImg.getComponents() != dstImg.getComponents());
+                        assert(srcNComps != dstNComps);
                         
-                        bool unpremultChannel = (srcImg.getComponents() == Natron::eImageComponentRGBA &&
-                                                 dstImg.getComponents() == Natron::eImageComponentRGB &&
+                        bool unpremultChannel = (srcNComps == 4 &&
+                                                 dstNComps == 3 &&
                                                  requiresUnpremult);
                         
                         ///This is only set if unpremultChannel is true
@@ -2265,8 +2249,8 @@ Image::convertToFormatInternalForDepth(const RectI & renderWindow,
                                 bool copyBitmap,
                                 bool requiresUnpremult)
 {
-    int dstNComp = getElementsCountForComponents( dstImg.getComponents() );
-    int srcNComp = getElementsCountForComponents( srcImg.getComponents() );
+    int dstNComp = dstImg.getComponents().getNumComponents();
+    int srcNComp = srcImg.getComponents().getNumComponents();
     
     switch (srcNComp) {
         case 1:
@@ -2349,11 +2333,13 @@ Image::convertToFormat(const RectI & renderWindow,
                        Natron::Image* dstImg) const
 {
 
+
     QWriteLocker k(&dstImg->_entryLock);
     QReadLocker k2(&_entryLock);
     
     assert( _bounds == dstImg->_bounds );
-
+    //Can only convert among the color plane
+    assert(dstImg->getComponents().isColorPlane() && getComponents().isColorPlane());
 
     if ( dstImg->getComponents() == getComponents() ) {
         switch ( dstImg->getBitDepth() ) {

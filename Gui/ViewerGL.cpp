@@ -4690,29 +4690,27 @@ getColorAtInternal(Natron::Image* image,
         return false;
     }
     
-    Natron::ImageComponentsEnum comps = image->getComponents();
-    switch (comps) {
-        case Natron::eImageComponentRGBA:
-            *r = pix[0] / (float)maxValue;
-            *g = pix[1] / (float)maxValue;
-            *b = pix[2] / (float)maxValue;
-            *a = pix[3] / (float)maxValue;
-            break;
-        case Natron::eImageComponentRGB:
-            *r = pix[0] / (float)maxValue;
-            *g = pix[1] / (float)maxValue;
-            *b = pix[2] / (float)maxValue;
-            *a = 1.;
-            break;
-        case Natron::eImageComponentAlpha:
-            *r = 0.;
-            *g = 0.;
-            *b = 0.;
-            *a = pix[0] / (float)maxValue;
-            break;
-        default:
-            assert(false);
-            break;
+    int  nComps = image->getComponents().getNumComponents();
+    if (nComps >= 4) {
+        *r = pix[0] / (float)maxValue;
+        *g = pix[1] / (float)maxValue;
+        *b = pix[2] / (float)maxValue;
+        *a = pix[3] / (float)maxValue;
+    } else if (nComps == 3) {
+        *r = pix[0] / (float)maxValue;
+        *g = pix[1] / (float)maxValue;
+        *b = pix[2] / (float)maxValue;
+        *a = 1.;
+    } else if (nComps == 2) {
+        *r = pix[0] / (float)maxValue;
+        *g = pix[1] / (float)maxValue;
+        *b = 1.;
+        *a = 1.;
+    } else {
+        *r = 0.;
+        *g = 0.;
+        *b = 0.;
+        *a = pix[0] / (float)maxValue;
     }
     
     
@@ -4783,13 +4781,18 @@ ViewerGL::getColorAt(double x,
     ViewerColorSpaceEnum srcCS = _imp->viewerTab->getGui()->getApp()->getDefaultColorSpaceForBitDepth(depth);
     const Natron::Color::Lut* dstColorSpace;
     const Natron::Color::Lut* srcColorSpace;
-    if ( (srcCS == _imp->displayingImageLut) && ( (_imp->displayingImageLut == eViewerColorSpaceLinear) || !forceLinear ) ) {
+    if ( (srcCS == _imp->displayingImageLut)
+        && ( (_imp->displayingImageLut == eViewerColorSpaceLinear) || !forceLinear ) ) {
         // identity transform
         srcColorSpace = 0;
         dstColorSpace = 0;
     } else {
-        srcColorSpace = ViewerInstance::lutFromColorspace(srcCS);
-        dstColorSpace = ViewerInstance::lutFromColorspace(_imp->displayingImageLut);
+        if (img->getComponents().isColorPlane()) {
+            srcColorSpace = ViewerInstance::lutFromColorspace(srcCS);
+            dstColorSpace = ViewerInstance::lutFromColorspace(_imp->displayingImageLut);
+        } else {
+            srcColorSpace = dstColorSpace = 0;
+        }
     }
     
     const double par = img->getPixelAspectRatio();

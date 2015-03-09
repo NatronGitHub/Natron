@@ -1062,11 +1062,11 @@ NodeGroup::getDescription() const
 
 void
 NodeGroup::addAcceptedComponents(int /*inputNb*/,
-                                std::list<Natron::ImageComponentsEnum>* comps)
+                                std::list<Natron::ImageComponents>* comps)
 {
-    comps->push_back(Natron::eImageComponentRGB);
-    comps->push_back(Natron::eImageComponentRGBA);
-    comps->push_back(Natron::eImageComponentAlpha);
+    comps->push_back(ImageComponents::getRGBAComponents());
+    comps->push_back(ImageComponents::getRGBComponents());
+    comps->push_back(ImageComponents::getAlphaComponents());
 }
 
 void

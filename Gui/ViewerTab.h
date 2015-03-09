@@ -34,6 +34,7 @@ CLANG_DIAG_ON(uninitialized)
 namespace Natron
 {
     class Node;
+    class ImageComponents;
 }
 class ViewerGL;
 class ViewerInstance;
@@ -221,7 +222,7 @@ public:
     void setDesiredFps(double fps);
 
     ///Called by ViewerGL when the image changes to refresh the info bar
-    void setImageFormat(int textureIndex,Natron::ImageComponentsEnum components,Natron::ImageBitDepthEnum depth);
+    void setImageFormat(int textureIndex,const Natron::ImageComponents& components,Natron::ImageBitDepthEnum depth);
     
 	void redrawGLWidgets();
 
@@ -238,7 +239,11 @@ public:
     
     Natron::PlaybackModeEnum getPlaybackMode() const;
     
+
+    void refreshLayerAndAlphaChannelComboBox();
+
     void setProjection(double zoomLeft, double zoomBottom, double zoomFactor, double zoomAspectRatio);
+
     
 public Q_SLOTS:
 
@@ -347,6 +352,9 @@ public Q_SLOTS:
     
     void onInternalNodeLabelChanged(const QString& name);
     void onInternalNodeScriptNameChanged(const QString& name);
+    
+    void onAlphaChannelComboChanged(int index);
+    void onLayerComboChanged(int index);
     
 private:
     

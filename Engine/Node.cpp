@@ -236,8 +236,8 @@ struct Node::Implementation
     boost::shared_ptr<Natron::EffectInstance>  liveInstance; //< the effect hosted by this node
     
     ///These two are also protected by inputsMutex
-    std::vector< std::list<Natron::ImageComponentsEnum> > inputsComponents;
-    std::list<Natron::ImageComponentsEnum> outputComponents;
+    std::vector< std::list<Natron::ImageComponents> > inputsComponents;
+    std::list<Natron::ImageComponents> outputComponents;
     
     mutable QMutex nameMutex;
     std::vector<std::string> inputLabels; // inputs name
@@ -1260,7 +1260,6 @@ Node::getInputNames(std::map<std::string,std::string> & inputNames) const
 int
 Node::getPreferredInputInternal(bool connected) const
 {
-    assert( QThread::currentThread() == qApp->thread() );
     if (getMaxInputCount() == 0) {
         return -1;
     }
@@ -1602,7 +1601,7 @@ Node::makeInfoForInput(int inputNumber) const
         return inputName + ": disconnected";
     }
     
-    Natron::ImageComponentsEnum comps;
+    std::list<Natron::ImageComponents> comps;
     Natron::ImageBitDepthEnum depth;
     Natron::ImagePremultiplicationEnum premult;
     
@@ -1623,6 +1622,7 @@ Node::makeInfoForInput(int inputNumber) const
     }
     
     _imp->liveInstance->getPreferredDepthAndComponents(inputNumber, &comps, &depth);
+    assert(!comps.empty());
     
     RenderScale scale;
     scale.x = scale.y = 1.;
@@ -1635,8 +1635,21 @@ Node::makeInfoForInput(int inputNumber) const
     
     std::stringstream ss;
     ss << "<b><font color=\"orange\">"<< inputName << ":\n" << "</font></b>"
-    << "<b>Image Format:</b> " << Natron::Image::getFormatString(comps, depth)
-    << "\n<b>Alpha premultiplication:</b> " << premultStr
+    << "<b>Image Format:</b> ";
+    
+    std::list<Natron::ImageComponents>::iterator next = comps.begin();
+    if (!comps.empty()) {
+        ++next;
+    }
+    for (std::list<Natron::ImageComponents>::iterator it = comps.begin(); it!=comps.end(); ++it) {
+        ss << Natron::Image::getFormatString(*it, depth);
+        if (next != comps.end()) {
+            ss << ", ";
+            ++next;
+        }
+    }
+    
+    ss << "\n<b>Alpha premultiplication:</b> " << premultStr
     << "\n<b>Pixel aspect ratio:</b> " << par;
     if (stat != Natron::eStatusFailed) {
         ss << "\n<b>Region of Definition:</b> ";
@@ -3239,7 +3252,6 @@ Node::makePreviewImage(SequenceTime time,
     
     const double par = _imp->liveInstance->getPreferredAspectRatio();
     
-    boost::shared_ptr<Image> img;
     RectI renderWindow;
     rod.toPixelEnclosing(mipMapLevel, par, &renderWindow);
     
@@ -3251,31 +3263,36 @@ Node::makePreviewImage(SequenceTime time,
                                              false,
                                              getApp()->getTimeLine().get());
     
+    std::list<ImageComponents> requestedComps;
+    requestedComps.push_back(ImageComponents::getRGBComponents());
     RenderingFlagSetter flagIsRendering(this);
     
     // Exceptions are caught because the program can run without a preview,
     // but any exception in renderROI is probably fatal.
+    ImageList planes;
     try {
-        img = _imp->liveInstance->renderRoI( EffectInstance::RenderRoIArgs( time,
-                                                                           scale,
-                                                                           mipMapLevel,
-                                                                           0, //< preview only renders view 0 (left)
-                                                                           false,
-                                                                           renderWindow,
-                                                                           rod,
-                                                                           Natron::eImageComponentRGB, //< preview is always rgb...
-                                                                           getBitDepth() ) );
+        planes = _imp->liveInstance->renderRoI( EffectInstance::RenderRoIArgs( time,
+                                                                              scale,
+                                                                              mipMapLevel,
+                                                                              0, //< preview only renders view 0 (left)
+                                                                              false,
+                                                                              renderWindow,
+                                                                              rod,
+                                                                              requestedComps, //< preview is always rgb...
+                                                                              getBitDepth() ) );
     } catch (...) {
         qDebug() << "Error: Cannot render preview";
         return false;
     }
     
-    if (!img) {
+    if (planes.empty()) {
         return false;
     }
     
-    ImageComponentsEnum components = img->getComponents();
-    int elemCount = getElementsCountForComponents(components);
+    const ImagePtr& img = planes.front();
+    
+    const ImageComponents& components = img->getComponents();
+    int elemCount = components.getNumComponents();
     
     ///we convert only when input is Linear.
     //Rec709 and srGB is acceptable for preview
@@ -3877,44 +3894,43 @@ Node::getMasterNode() const
 
 bool
 Node::isSupportedComponent(int inputNb,
-                           Natron::ImageComponentsEnum comp) const
+                           const Natron::ImageComponents& comp) const
 {
     QMutexLocker l(&_imp->inputsMutex);
     
     if (inputNb >= 0) {
         assert( inputNb < (int)_imp->inputsComponents.size() );
-        std::list<Natron::ImageComponentsEnum>::const_iterator found =
+        std::list<Natron::ImageComponents>::const_iterator found =
         std::find(_imp->inputsComponents[inputNb].begin(),_imp->inputsComponents[inputNb].end(),comp);
         
         return found != _imp->inputsComponents[inputNb].end();
     } else {
         assert(inputNb == -1);
-        std::list<Natron::ImageComponentsEnum>::const_iterator found =
+        std::list<Natron::ImageComponents>::const_iterator found =
         std::find(_imp->outputComponents.begin(),_imp->outputComponents.end(),comp);
         
         return found != _imp->outputComponents.end();
     }
 }
 
-Natron::ImageComponentsEnum
+Natron::ImageComponents
 Node::findClosestSupportedComponents(int inputNb,
-                                     Natron::ImageComponentsEnum comp) const
+                                     const Natron::ImageComponents& comp) const
 {
-    int compCount = getElementsCountForComponents(comp);
     QMutexLocker l(&_imp->inputsMutex);
     
     if (inputNb >= 0) {
         assert( inputNb < (int)_imp->inputsComponents.size() );
         
         
-        const std::list<Natron::ImageComponentsEnum> & comps = _imp->inputsComponents[inputNb];
+        const std::list<Natron::ImageComponents> & comps = _imp->inputsComponents[inputNb];
         if ( comps.empty() ) {
-            return Natron::eImageComponentNone;
+            return ImageComponents::getNoneComponents();
         }
-        std::list<Natron::ImageComponentsEnum>::const_iterator closestComp = comps.end();
-        for (std::list<Natron::ImageComponentsEnum>::const_iterator it = comps.begin(); it != comps.end(); ++it) {
+        std::list<Natron::ImageComponents>::const_iterator closestComp = comps.end();
+        for (std::list<Natron::ImageComponents>::const_iterator it = comps.begin(); it != comps.end(); ++it) {
             
-            if (comp == Natron::eImageComponentsMotionVectors || comp == Natron::eImageComponentsStereoDisparity) {
+            if (!comp.isColorPlane()) {
                 if (*it == comp) {
                     return comp;
                 }
@@ -3922,8 +3938,8 @@ Node::findClosestSupportedComponents(int inputNb,
                 if ( closestComp == comps.end() ) {
                     closestComp = it;
                 } else {
-                    if ( std::abs(getElementsCountForComponents(*it) - compCount) <
-                        std::abs(getElementsCountForComponents(*closestComp) - compCount) ) {
+                    if ( std::abs(it->getNumComponents() - comp.getNumComponents()) <
+                        std::abs(closestComp->getNumComponents() - comp.getNumComponents()) ) {
                         closestComp = it;
                     }
                 }
@@ -3934,14 +3950,14 @@ Node::findClosestSupportedComponents(int inputNb,
         return *closestComp;
     } else {
         assert(inputNb == -1);
-        const std::list<Natron::ImageComponentsEnum> & comps = _imp->outputComponents;
+        const std::list<Natron::ImageComponents> & comps = _imp->outputComponents;
         if ( comps.empty() ) {
-            return Natron::eImageComponentNone;
+            return ImageComponents::getNoneComponents();
         }
-        std::list<Natron::ImageComponentsEnum>::const_iterator closestComp = comps.end();
-        for (std::list<Natron::ImageComponentsEnum>::const_iterator it = comps.begin(); it != comps.end(); ++it) {
+        std::list<Natron::ImageComponents>::const_iterator closestComp = comps.end();
+        for (std::list<Natron::ImageComponents>::const_iterator it = comps.begin(); it != comps.end(); ++it) {
             
-            if (comp == Natron::eImageComponentsMotionVectors || comp == Natron::eImageComponentsStereoDisparity) {
+            if (!comp.isColorPlane()) {
                 if (*it == comp) {
                     return comp;
                 }
@@ -3949,8 +3965,8 @@ Node::findClosestSupportedComponents(int inputNb,
                 if ( closestComp == comps.end() ) {
                     closestComp = it;
                 } else {
-                    if ( std::abs(getElementsCountForComponents(*it) - compCount) <
-                        std::abs(getElementsCountForComponents(*closestComp) - compCount) ) {
+                    if ( std::abs(it->getNumComponents() - comp.getNumComponents()) <
+                        std::abs(closestComp->getNumComponents() - comp.getNumComponents()) ) {
                         closestComp = it;
                     }
                 }

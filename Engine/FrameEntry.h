@@ -56,16 +56,7 @@ public:
     {
     }
 
-    static FrameKey makeKey(SequenceTime time,
-                            U64 treeVersion,
-                            double gain,
-                            int lut,
-                            int bitDepth,
-                            int channels,
-                            int view,
-                            const TextureRect & textureRect,
-                            const RenderScale & scale,
-                            const std::string & inputName) WARN_UNUSED_RETURN;
+    
     static boost::shared_ptr<FrameParams> makeParams(const RectI & rod,
                                                      int bitDepth,
                                                      int texW,

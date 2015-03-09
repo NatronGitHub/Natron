@@ -30,7 +30,19 @@ serialize(Archive & ar,
     ar &  boost::serialization::make_nvp("Min",r.min);
     ar &  boost::serialization::make_nvp("Max",r.max);
 }
+    
+
 }
+}
+
+template<class Archive>
+void
+ImageComponents::serialize(Archive & ar,
+          const unsigned int /*version*/)
+{
+    ar &  boost::serialization::make_nvp("Layer",_layerName);
+    ar &  boost::serialization::make_nvp("Components",_componentNames);
+    ar &  boost::serialization::make_nvp("CompName",_globalComponentsName);
 }
 
 template<class Archive>

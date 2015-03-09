@@ -132,7 +132,10 @@ public:
 
 
     void setDisplayChannels(Natron::DisplayChannelsEnum channels);
-
+    
+    void setActiveLayer(const Natron::ImageComponents& layer, bool doRender);
+    
+    void setAlphaChannel(const Natron::ImageComponents& layer, const std::string& channelName);
 
     bool isAutoContrastEnabled() const WARN_UNUSED_RETURN;
 
@@ -263,7 +266,7 @@ private:
         return Natron::EffectInstance::eRenderSafetyFullySafe;
     }
 
-    virtual void addAcceptedComponents(int inputNb,std::list<Natron::ImageComponentsEnum>* comps) OVERRIDE FINAL;
+    virtual void addAcceptedComponents(int inputNb,std::list<Natron::ImageComponents>* comps) OVERRIDE FINAL;
     virtual void addSupportedBitDepth(std::list<Natron::ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
     /*******************************************/
     

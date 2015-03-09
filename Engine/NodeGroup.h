@@ -352,7 +352,7 @@ public:
 
     virtual int getCurrentView() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     
-    virtual void addAcceptedComponents(int inputNb,std::list<Natron::ImageComponentsEnum>* comps) OVERRIDE FINAL;
+    virtual void addAcceptedComponents(int inputNb,std::list<Natron::ImageComponents>* comps) OVERRIDE FINAL;
     virtual void addSupportedBitDepth(std::list<Natron::ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
 
     virtual void notifyNodeDeactivated(const boost::shared_ptr<Natron::Node>& node) OVERRIDE FINAL;

@@ -34,6 +34,7 @@ CLANG_DIAG_ON(deprecated)
 
 #include "Engine/Image.h"
 #include "Engine/ThreadStorage.h"
+#include "Engine/ImageComponents.h"
 
 class OfxImage;
 class OfxEffectInstance;
@@ -196,8 +197,11 @@ public:
     int getInputNb() const WARN_UNUSED_RETURN;
 
     Natron::EffectInstance* getAssociatedNode() const WARN_UNUSED_RETURN;
-    static std::string natronsComponentsToOfxComponents(Natron::ImageComponentsEnum comp);
-    static Natron::ImageComponentsEnum ofxComponentsToNatronComponents(const std::string & comp);
+    
+    static Natron::ImageComponents ofxPlaneToNatronPlane(const std::string& plane);
+    static std::string natronsPlaneToOfxPlane(const Natron::ImageComponents& plane);
+    static std::string natronsComponentsToOfxComponents(const Natron::ImageComponents& comp);
+    static std::list<Natron::ImageComponents> ofxComponentsToNatronComponents(const std::string & comp);
     static Natron::ImageBitDepthEnum ofxDepthToNatronDepth(const std::string & depth);
     static std::string natronsDepthToOfxDepth(Natron::ImageBitDepthEnum depth);
 
@@ -210,6 +214,7 @@ private:
                                        OfxRectD* rod) const;
     
     OFX::Host::ImageEffect::Image* getImageInternal(OfxTime time,const OfxPointD & renderScale, int view, const OfxRectD *optionalBounds,
+                                                    const std::string& plane,
                                                     bool usingReroute,
                                                     int rerouteInputNb,
                                                     Natron::EffectInstance* node,
@@ -269,6 +274,8 @@ private:
     typedef std::vector<std::string>  ComponentsPresentMap;
     mutable Natron::ThreadStorage<ComponentsPresentMap> _componentsPresent;
     
+    mutable Natron::ThreadStorage<std::string> _unmappedComponents;
+    
 };
 
 class OfxImage
@@ -309,7 +316,6 @@ public:
 
 private:
 
-    BitDepthEnum _bitDepth;
     boost::shared_ptr<Natron::Image> _floatImage;
     boost::shared_ptr<Natron::GenericAccess> _imgAccess;
 };

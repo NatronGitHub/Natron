@@ -5354,7 +5354,7 @@ convertCairoImageToNatronImage(cairo_surface_t* cairoImg,
 boost::shared_ptr<Natron::Image>
 RotoContext::renderMask(bool useCache,
                         const RectI & roi,
-                        Natron::ImageComponentsEnum components,
+                        const Natron::ImageComponents& components,
                         U64 nodeHash,
                         U64 ageToRender,
                         const RectD & nodeRoD, //!< rod in canonical coordinates
@@ -5427,7 +5427,7 @@ RotoContext::renderMask(bool useCache,
                                            false,
                                            components,
                                            depth,
-                                           std::map<int, std::vector<RangeD> >() );
+                                           std::map<int,std::map<int, std::vector<RangeD> > >() );
         
         Natron::getImageFromCacheOrCreate(key, params, &image);
         if (!image) {
@@ -5459,23 +5459,19 @@ RotoContext::renderMask(bool useCache,
     roi.intersect(pixelRod, &clippedRoI);
 
     cairo_format_t cairoImgFormat;
-    switch (components) {
-    case Natron::eImageComponentAlpha:
+    
+    if (components.getNumComponents() == 1) {
         cairoImgFormat = CAIRO_FORMAT_A8;
-        break;
-    case Natron::eImageComponentRGB:
+    } else if (components.getNumComponents() == 3) {
         cairoImgFormat = CAIRO_FORMAT_RGB24;
-        break;
-    case Natron::eImageComponentRGBA:
+    } else if (components.getNumComponents() == 4) {
         cairoImgFormat = CAIRO_FORMAT_ARGB32;
-        break;
-    default:
+    } else {
         cairoImgFormat = CAIRO_FORMAT_A8;
-        break;
     }
 
     ////Allocate the cairo temporary buffer
-    cairo_surface_t* cairoImg = cairo_image_surface_create( cairoImgFormat, pixelRod.width(), pixelRod.height() );
+    cairo_surface_t* cairoImg = cairo_image_surface_create(cairoImgFormat, pixelRod.width(), pixelRod.height() );
     cairo_surface_set_device_offset(cairoImg, -pixelRod.x1, -pixelRod.y1);
     if (cairo_surface_status(cairoImg) != CAIRO_STATUS_SUCCESS) {
         appPTR->removeFromNodeCache(image);

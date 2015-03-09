@@ -267,12 +267,12 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
                 double time = range.min;
                 
                 OfxRectD rod;
-                OfxStatus rodstat = _effect->getRegionOfDefinitionAction(time, scaleOne, rod);
+                OfxStatus rodstat = _effect->getRegionOfDefinitionAction(time, scaleOne, 0, rod);
                 if ( (rodstat == kOfxStatOK) || (rodstat == kOfxStatReplyDefault) ) {
                     OfxPointD scale;
                     scale.x = 0.5;
                     scale.y = 0.5;
-                    rodstat = _effect->getRegionOfDefinitionAction(time, scale, rod);
+                    rodstat = _effect->getRegionOfDefinitionAction(time, scale, 0, rod);
                     if ( (rodstat == kOfxStatOK) || (rodstat == kOfxStatReplyDefault) ) {
                         setSupportsRenderScaleMaybe(eSupportsYes);
                     } else {
@@ -886,12 +886,12 @@ OfxEffectInstance::onInputChanged(int inputNo)
             OfxRectD rod;
             OfxPointD scaleOne;
             scaleOne.x = scaleOne.y = 1.;
-            OfxStatus rodstat = _effect->getRegionOfDefinitionAction(time, scaleOne, rod);
+            OfxStatus rodstat = _effect->getRegionOfDefinitionAction(time, scaleOne, 0, rod);
             if ( (rodstat == kOfxStatOK) || (rodstat == kOfxStatReplyDefault) ) {
                 OfxPointD scale;
                 scale.x = 0.5;
                 scale.y = 0.5;
-                rodstat = _effect->getRegionOfDefinitionAction(time, scale, rod);
+                rodstat = _effect->getRegionOfDefinitionAction(time, scale, 0, rod);
                 if ( (rodstat == kOfxStatOK) || (rodstat == kOfxStatReplyDefault) ) {
                     setSupportsRenderScaleMaybe(eSupportsYes);
                 } else {
@@ -1207,12 +1207,12 @@ OfxEffectInstance::restoreClipPreferences()
             OfxRectD rod;
             OfxPointD scaleOne;
             scaleOne.x = scaleOne.y = 1.;
-            OfxStatus rodstat = _effect->getRegionOfDefinitionAction(time, scaleOne, rod);
+            OfxStatus rodstat = _effect->getRegionOfDefinitionAction(time, scaleOne, 0, rod);
             if ( (rodstat == kOfxStatOK) || (rodstat == kOfxStatReplyDefault) ) {
                 OfxPointD scale;
                 scale.x = 0.5;
                 scale.y = 0.5;
-                rodstat = _effect->getRegionOfDefinitionAction(time, scale, rod);
+                rodstat = _effect->getRegionOfDefinitionAction(time, scale, 0, rod);
                 if ( (rodstat == kOfxStatOK) || (rodstat == kOfxStatReplyDefault) ) {
                     setSupportsRenderScaleMaybe(eSupportsYes);
                 } else {
@@ -1286,11 +1286,11 @@ OfxEffectInstance::getRegionOfDefinition(U64 hash,
         
         {
             if (getRecursionLevel() > 1) {
-                stat = _effect->getRegionOfDefinitionAction(time, scale, ofxRod);
+                stat = _effect->getRegionOfDefinitionAction(time, scale, view, ofxRod);
             } else {
                 ///Take the preferences lock so that it cannot be modified throughout the action.
                 QReadLocker preferencesLocker(_preferencesLock);
-                stat = _effect->getRegionOfDefinitionAction(time, scale, ofxRod);
+                stat = _effect->getRegionOfDefinitionAction(time, scale, view, ofxRod);
             }
         }
         if ( !scaleIsOne && (supportsRS == eSupportsMaybe) ) {
@@ -1307,11 +1307,11 @@ OfxEffectInstance::getRegionOfDefinition(U64 hash,
                     SET_CAN_SET_VALUE(false);
                     
                     if (getRecursionLevel() > 1) {
-                        stat = _effect->getRegionOfDefinitionAction(time, scaleOne, ofxRod);
+                        stat = _effect->getRegionOfDefinitionAction(time, scaleOne, view, ofxRod);
                     } else {
                         ///Take the preferences lock so that it cannot be modified throughout the action.
                         QReadLocker preferencesLocker(_preferencesLock);
-                        stat = _effect->getRegionOfDefinitionAction(time, scaleOne, ofxRod);
+                        stat = _effect->getRegionOfDefinitionAction(time, scaleOne, view, ofxRod);
                     }
                 }
                 
@@ -1472,7 +1472,7 @@ OfxEffectInstance::getRegionsOfInterest(SequenceTime time,
         
         ///Take the preferences lock so that it cannot be modified throughout the action.
         QReadLocker preferencesLocker(_preferencesLock);
-        stat = _effect->getRegionOfInterestAction( (OfxTime)time, scale,
+        stat = _effect->getRegionOfInterestAction( (OfxTime)time, scale, view,
                                                    roi, inputRois );
     }
 
@@ -1518,40 +1518,71 @@ OfxEffectInstance::getRegionsOfInterest(SequenceTime time,
 } // getRegionsOfInterest
 
 Natron::EffectInstance::FramesNeededMap
-OfxEffectInstance::getFramesNeeded(SequenceTime time)
+OfxEffectInstance::getFramesNeeded(SequenceTime time, int view)
 {
     assert(_context != eContextNone);
     EffectInstance::FramesNeededMap ret;
     if (!_initialized) {
         return ret;
     }
-    OFX::Host::ImageEffect::RangeMap inputRanges;
     assert(_effect);
     OfxStatus stat;
-    {
-        SET_CAN_SET_VALUE(false);
-
-        ///Take the preferences lock so that it cannot be modified throughout the action.
-        QReadLocker preferencesLocker(_preferencesLock);
-        stat = _effect->getFrameNeededAction( (OfxTime)time, inputRanges );
-    }
-    if ( (stat != kOfxStatOK) && (stat != kOfxStatReplyDefault) ) {
-        Natron::errorDialog( getScriptName_mt_safe(), QObject::tr("Failed to specify the frame ranges needed from inputs.").toStdString() );
-    } else if (stat == kOfxStatOK) {
-        for (OFX::Host::ImageEffect::RangeMap::iterator it = inputRanges.begin(); it != inputRanges.end(); ++it) {
-            OfxClipInstance* clip = dynamic_cast<OfxClipInstance*>(it->first);
-            assert(clip);
-            if (clip) {
-                int inputNb = clip->getInputNb();
-                if (inputNb != -1) {
-                    ret.insert( std::make_pair(inputNb,it->second) );
+    
+    if (isViewAware()) {
+        
+        OFX::Host::ImageEffect::ViewsRangeMap inputRanges;
+        {
+            SET_CAN_SET_VALUE(false);
+            
+            ///Take the preferences lock so that it cannot be modified throughout the action.
+            QReadLocker preferencesLocker(_preferencesLock);
+            stat = _effect->getFrameViewsNeeded( (OfxTime)time, view, inputRanges );
+        }
+        
+        if ( (stat != kOfxStatOK) && (stat != kOfxStatReplyDefault) ) {
+            Natron::errorDialog( getScriptName_mt_safe(), QObject::tr("Failed to specify the frame ranges needed from inputs.").toStdString() );
+        } else if (stat == kOfxStatOK) {
+            for (OFX::Host::ImageEffect::ViewsRangeMap::iterator it = inputRanges.begin(); it != inputRanges.end(); ++it) {
+                OfxClipInstance* clip = dynamic_cast<OfxClipInstance*>(it->first);
+                assert(clip);
+                if (clip) {
+                    int inputNb = clip->getInputNb();
+                    if (inputNb != -1) {
+                        ret.insert( std::make_pair(inputNb,it->second) );
+                    }
                 }
             }
         }
-    } else if (stat == kOfxStatReplyDefault) {
-        return Natron::EffectInstance::getFramesNeeded(time);
-    }
 
+    } else {
+        OFX::Host::ImageEffect::RangeMap inputRanges;
+        {
+            SET_CAN_SET_VALUE(false);
+            
+            ///Take the preferences lock so that it cannot be modified throughout the action.
+            QReadLocker preferencesLocker(_preferencesLock);
+            stat = _effect->getFrameNeededAction( (OfxTime)time, inputRanges );
+        }
+        if ( (stat != kOfxStatOK) && (stat != kOfxStatReplyDefault) ) {
+            Natron::errorDialog( getScriptName_mt_safe(), QObject::tr("Failed to specify the frame ranges needed from inputs.").toStdString() );
+        } else if (stat == kOfxStatOK) {
+            for (OFX::Host::ImageEffect::RangeMap::iterator it = inputRanges.begin(); it != inputRanges.end(); ++it) {
+                OfxClipInstance* clip = dynamic_cast<OfxClipInstance*>(it->first);
+                assert(clip);
+                if (clip) {
+                    int inputNb = clip->getInputNb();
+                    if (inputNb != -1) {
+                        std::map<int, std::vector<OfxRangeD> > viewRangeMap;
+                        viewRangeMap.insert(std::make_pair(view, it->second));
+                        ret.insert(std::make_pair(inputNb, viewRangeMap));
+                    }
+                }
+            }
+        }
+    }
+    if (stat == kOfxStatReplyDefault) {
+        return Natron::EffectInstance::getFramesNeeded(time,view);
+    }
     return ret;
 }
 
@@ -1692,11 +1723,11 @@ OfxEffectInstance::isIdentity(SequenceTime time,
         
         {
             if (getRecursionLevel() > 1) {
-                stat = _effect->isIdentityAction(inputTimeOfx, field, ofxRoI, scale, inputclip);
+                stat = _effect->isIdentityAction(inputTimeOfx, field, ofxRoI, scale, view, inputclip);
             } else {
                 ///Take the preferences lock so that it cannot be modified throughout the action.
                 QReadLocker preferencesLocker(_preferencesLock);
-                stat = _effect->isIdentityAction(inputTimeOfx, field, ofxRoI, scale, inputclip);
+                stat = _effect->isIdentityAction(inputTimeOfx, field, ofxRoI, scale, view, inputclip);
             }
         }
         if ( !scaleIsOne && (supportsRS == eSupportsMaybe) ) {
@@ -1716,11 +1747,11 @@ OfxEffectInstance::isIdentity(SequenceTime time,
                 ofxRoI.y2 = roi.top();
                 
                 if (getRecursionLevel() > 1) {
-                    stat = _effect->isIdentityAction(inputTimeOfx, field, ofxRoI, scaleOne, inputclip);
+                    stat = _effect->isIdentityAction(inputTimeOfx, field, ofxRoI, scaleOne, view, inputclip);
                 } else {
                     ///Take the preferences lock so that it cannot be modified throughout the action.
                     QReadLocker preferencesLocker(_preferencesLock);
-                    stat = _effect->isIdentityAction(inputTimeOfx, field, ofxRoI, scaleOne, inputclip);
+                    stat = _effect->isIdentityAction(inputTimeOfx, field, ofxRoI, scaleOne, view, inputclip);
                 }
                 if ( (stat == kOfxStatOK) || (stat == kOfxStatReplyDefault) ) {
                     // we got success with scale = 1, which means it doesn't support renderscale after all
@@ -1861,12 +1892,16 @@ OfxEffectInstance::render(SequenceTime time,
                           int view,
                           bool isSequentialRender,
                           bool isRenderResponseToUserInteraction,
-                          boost::shared_ptr<Natron::Image> output)
+                          const std::list<boost::shared_ptr<Natron::Image> >& outputPlanes)
 {
     if (!_initialized) {
         return Natron::eStatusFailed;
     }
 
+    assert(!outputPlanes.empty());
+    
+    const ImagePtr& firstPlane = outputPlanes.front();
+    
     OfxRectI ofxRoI;
     ofxRoI.x1 = roi.left();
     ofxRoI.x2 = roi.right();
@@ -1875,14 +1910,20 @@ OfxEffectInstance::render(SequenceTime time,
     int viewsCount = getApp()->getProject()->getProjectViewsCount();
     OfxStatus stat;
     const std::string field = kOfxImageFieldNone; // TODO: support interlaced data
+    
+    std::list<std::string> ofxPlanes;
+    for (std::list<boost::shared_ptr<Natron::Image> >::const_iterator it = outputPlanes.begin(); it!=outputPlanes.end(); ++it) {
+        ofxPlanes.push_back(OfxClipInstance::natronsPlaneToOfxPlane((*it)->getComponents()));
+    }
+    
     ///before calling render, set the render scale thread storage for each clip
 # ifdef DEBUG
     {
         // check the dimensions of output images
-        const RectI & dstBounds = output->getBounds();
-        const RectD & dstRodCanonical = output->getRoD();
+        const RectI & dstBounds = firstPlane->getBounds();
+        const RectD & dstRodCanonical = firstPlane->getRoD();
         RectI dstRod;
-        dstRodCanonical.toPixelEnclosing(mappedScale, output->getPixelAspectRatio(), &dstRod);
+        dstRodCanonical.toPixelEnclosing(mappedScale, firstPlane->getPixelAspectRatio(), &dstRod);
 
         if ( !supportsTiles() ) {
             // http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxImageEffectPropSupportsTiles
@@ -1902,7 +1943,6 @@ OfxEffectInstance::render(SequenceTime time,
         }
     }
 # endif // DEBUG
-    (void)output;
     {
         bool skipDiscarding = false;
         if (getRecursionLevel() > 1) {
@@ -1924,13 +1964,14 @@ OfxEffectInstance::render(SequenceTime time,
         ///Take the preferences lock so that it cannot be modified throughout the action.
         QReadLocker preferencesLocker(_preferencesLock);
         stat = _effect->renderAction( (OfxTime)time,
-                                      field,
-                                      ofxRoI,
-                                      mappedScale,
-                                      isSequentialRender,
-                                      isRenderResponseToUserInteraction,
-                                      view,
-                                      viewsCount );
+                                     field,
+                                     ofxRoI,
+                                     mappedScale,
+                                     isSequentialRender,
+                                     isRenderResponseToUserInteraction,
+                                     view,
+                                     viewsCount,
+                                     ofxPlanes);
     }
 
     if (stat != kOfxStatOK) {
@@ -2622,7 +2663,7 @@ OfxEffectInstance::onSyncPrivateDataRequested()
 
 void
 OfxEffectInstance::addAcceptedComponents(int inputNb,
-                                         std::list<Natron::ImageComponentsEnum>* comps)
+                                         std::list<Natron::ImageComponents>* comps)
 {
     if (inputNb >= 0) {
         OfxClipInstance* clip = getClipCorrespondingToInput(inputNb);
@@ -2630,7 +2671,8 @@ OfxEffectInstance::addAcceptedComponents(int inputNb,
         const std::vector<std::string> & supportedComps = clip->getSupportedComponents();
         for (U32 i = 0; i < supportedComps.size(); ++i) {
             try {
-                comps->push_back( OfxClipInstance::ofxComponentsToNatronComponents(supportedComps[i]) );
+                std::list<Natron::ImageComponents> ofxComp = OfxClipInstance::ofxComponentsToNatronComponents(supportedComps[i]);
+                comps->insert(comps->end(), ofxComp.begin(), ofxComp.end());
             } catch (const std::runtime_error &e) {
                 // ignore unsupported components
             }
@@ -2642,7 +2684,8 @@ OfxEffectInstance::addAcceptedComponents(int inputNb,
         const std::vector<std::string> & supportedComps = clip->getSupportedComponents();
         for (U32 i = 0; i < supportedComps.size(); ++i) {
             try {
-                comps->push_back( OfxClipInstance::ofxComponentsToNatronComponents(supportedComps[i]) );
+                std::list<Natron::ImageComponents> ofxComp = OfxClipInstance::ofxComponentsToNatronComponents(supportedComps[i]);
+                comps->insert(comps->end(), ofxComp.begin(), ofxComp.end());
             } catch (const std::runtime_error &e) {
                 // ignore unsupported components
             }
@@ -2669,7 +2712,7 @@ OfxEffectInstance::addSupportedBitDepth(std::list<Natron::ImageBitDepthEnum>* de
 
 void
 OfxEffectInstance::getPreferredDepthAndComponents(int inputNb,
-                                                  Natron::ImageComponentsEnum* comp,
+                                                  std::list<Natron::ImageComponents>* comp,
                                                   Natron::ImageBitDepthEnum* depth) const
 {
     OfxClipInstance* clip;
@@ -2723,10 +2766,13 @@ OfxEffectInstance::getComponentsNeededAndProduced(SequenceTime time, int view,
         OfxTime ptTime;
         stat = effectInstance()->getClipComponentsAction((OfxTime)time, view, compMap, ptClip, ptTime, *passThroughView);
         if (stat != kOfxStatFailed) {
-            assert(ptClip);
-            OfxClipInstance* clip = dynamic_cast<OfxClipInstance*>(ptClip);
-            assert(clip);
-            *passThroughInput = clip->getAssociatedNode()->getNode();
+            
+            if (ptClip) {
+                OfxClipInstance* clip = dynamic_cast<OfxClipInstance*>(ptClip);
+                if (clip) {
+                    *passThroughInput = clip->getAssociatedNode()->getNode();
+                }
+            }
             *passThroughTime = (SequenceTime)ptTime;
             
             for (OFX::Host::ImageEffect::ComponentsMap::iterator it = compMap.begin(); it != compMap.end(); ++it) {
@@ -2735,9 +2781,10 @@ OfxEffectInstance::getComponentsNeededAndProduced(SequenceTime time, int view,
                 assert(clip);
                 int index = clip->getInputNb();
                 
-                std::vector<Natron::ImageComponentsEnum> compNeeded;
+                std::vector<Natron::ImageComponents> compNeeded;
                 for (std::list<std::string>::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
-                    compNeeded.push_back(OfxClipInstance::ofxComponentsToNatronComponents(*it2));
+                    std::list<Natron::ImageComponents> ofxComp = OfxClipInstance::ofxComponentsToNatronComponents(*it2);
+                    compNeeded.insert(compNeeded.end(), ofxComp.begin(), ofxComp.end());
                 }
                 comps->insert(std::make_pair(index, compNeeded));
             }

@@ -34,6 +34,7 @@ CLANG_DIAG_ON(deprecated)
 #endif
 #include "Engine/AppManager.h"
 #include "Global/KeySymbols.h"
+#include "Engine/ImageComponents.h"
 
 #define NATRON_PARAMETER_PAGE_NAME_EXTRA "Node"
 #define NATRON_PARAMETER_PAGE_NAME_INFO "Info"
@@ -267,13 +268,13 @@ public:
      * @brief Returns true if the given input supports the given components. If inputNb equals -1
      * then this function will check whether the effect can produce the given components.
      **/
-    bool isSupportedComponent(int inputNb,Natron::ImageComponentsEnum comp) const;
+    bool isSupportedComponent(int inputNb,const Natron::ImageComponents& comp) const;
 
     /**
      * @brief Returns the most appropriate components that can be supported by the inputNb.
      * If inputNb equals -1 then this function will check the output components.
      **/
-    Natron::ImageComponentsEnum findClosestSupportedComponents(int inputNb,Natron::ImageComponentsEnum comp) const;
+    Natron::ImageComponents findClosestSupportedComponents(int inputNb,const Natron::ImageComponents& comp) const;
 
     /**
      * @brief Returns the index of the channel to use to produce the mask.
