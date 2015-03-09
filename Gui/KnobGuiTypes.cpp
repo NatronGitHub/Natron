@@ -655,7 +655,7 @@ Bool_KnobGui::createWidget(QHBoxLayout* layout)
 
     //_checkBox->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     QObject::connect( _checkBox, SIGNAL( clicked(bool) ), this, SLOT( onCheckBoxStateChanged(bool) ) );
-    QObject::connect( this, SIGNAL( labelClicked(bool) ), this, SLOT( onCheckBoxStateChanged(bool) ) );
+    QObject::connect( this, SIGNAL( labelClicked(bool) ), this, SLOT( onLabelClicked(bool) ) );
 
     ///set the copy/link actions in the right click menu
     enableRightClickMenu(_checkBox,0);
@@ -705,9 +705,16 @@ Bool_KnobGui::reflectAnimationLevel(int /*dimension*/,
 }
 
 void
+Bool_KnobGui::onLabelClicked(bool b)
+{
+    _checkBox->setChecked(b);
+    pushUndoCommand( new KnobUndoCommand<bool>(this,_knob->getValue(0,false),b, 0, false) );
+}
+
+void
 Bool_KnobGui::onCheckBoxStateChanged(bool b)
 {
-    pushUndoCommand( new KnobUndoCommand<bool>(this,_knob->getValue(0,false),b) );
+    pushUndoCommand( new KnobUndoCommand<bool>(this,_knob->getValue(0,false),b, 0, false) );
 }
 
 void
@@ -1545,7 +1552,7 @@ Choice_KnobGui::createWidget(QHBoxLayout* layout)
 void
 Choice_KnobGui::onCurrentIndexChanged(int i)
 {
-    pushUndoCommand( new KnobUndoCommand<int>(this,_knob->getValue(0,false),i) );
+    pushUndoCommand( new KnobUndoCommand<int>(this,_knob->getValue(0,false),i, false) );
 }
 
 void

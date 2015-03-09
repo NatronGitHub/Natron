@@ -67,6 +67,7 @@ AnimatedCheckBox::keyPressEvent(QKeyEvent* e)
         checked = !checked;
         Q_EMIT toggled(checked);
         Q_EMIT clicked(checked);
+        repaint();
     } else {
         QFrame::keyPressEvent(e);
     }
@@ -79,8 +80,10 @@ AnimatedCheckBox::mousePressEvent(QMouseEvent* e)
         return;
     } else {
         checked = !checked;
+        repaint();
         Q_EMIT clicked(checked);
         Q_EMIT toggled(checked);
+        
     }
 }
 

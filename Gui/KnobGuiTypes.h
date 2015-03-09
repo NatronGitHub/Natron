@@ -185,7 +185,7 @@ public:
 public Q_SLOTS:
 
     void onCheckBoxStateChanged(bool);
-
+    void onLabelClicked(bool);
 private:
 
     
