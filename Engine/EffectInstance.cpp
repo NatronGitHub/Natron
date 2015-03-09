@@ -2113,6 +2113,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
                     ///This special value of -2 indicates that the plugin is identity of itself at another time
                     RenderRoIArgs argCpy = args;
                     argCpy.time = inputTimeIdentity;
+                    argCpy.preComputedRoD.clear(); //< clear as the RoD of the identity input might not be the same (reproducible with Blur)
                     
                     return renderRoI(argCpy);
                 }
