@@ -2590,6 +2590,8 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
     
     if (redoCacheLookup) {
         
+        planesToRender.rectsToRender.clear();
+        
         for (std::map<ImageComponents, PlaneToRender>::iterator it = planesToRender.planes.begin(); it != planesToRender.planes.end(); ++it) {
             
             /*
@@ -2656,7 +2658,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
         
         hasSomethingToRender = !planesToRender.rectsToRender.empty();
         
-    }
+    } // if (redoCacheLookup) {
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////// Allocate planes in the cache ////////////////////////////////////////////////////////////
