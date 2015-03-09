@@ -239,7 +239,11 @@ public:
     
     Natron::PlaybackModeEnum getPlaybackMode() const;
     
+
     void refreshLayerAndAlphaChannelComboBox();
+
+    void setProjection(double zoomLeft, double zoomBottom, double zoomFactor, double zoomAspectRatio);
+
     
 public Q_SLOTS:
 

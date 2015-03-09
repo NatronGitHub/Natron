@@ -3317,9 +3317,13 @@ ViewerGL::fitImageToFormat()
 
     double old_zoomFactor;
     double zoomFactor;
+    unsigned int oldMipMapLevel,newMipMapLevel;
     {
         QMutexLocker(&_imp->zoomCtxMutex);
         old_zoomFactor = _imp->zoomCtx.factor();
+        oldMipMapLevel = std::log(old_zoomFactor >= 1 ? 1 :
+                                  std::pow( 2,-std::ceil(std::log(old_zoomFactor) / M_LN2) )) / M_LN2;
+
         // set the PAR first
         //_imp->zoomCtx.setZoom(0., 0., 1., 1.);
         // leave 4% of margin around
@@ -3327,6 +3331,9 @@ ViewerGL::fitImageToFormat()
         zoomFactor = _imp->zoomCtx.factor();
         _imp->zoomOrPannedSinceLastFit = false;
     }
+    newMipMapLevel = std::log(zoomFactor >= 1 ? 1 :
+                              std::pow( 2,-std::ceil(std::log(zoomFactor) / M_LN2) )) / M_LN2;
+    
     _imp->oldClick = QPoint(); // reset mouse posn
 
     if (old_zoomFactor != zoomFactor) {
@@ -3336,9 +3343,14 @@ ViewerGL::fitImageToFormat()
         }
         Q_EMIT zoomChanged(zoomFactorInt);
     }
-    ///Clear green cached line so the user doesn't expect to see things in the cache
-    ///since we're changing the zoom factor
-    _imp->viewerTab->clearTimelineCacheLine();
+    
+    if (newMipMapLevel != oldMipMapLevel) {
+        ///Clear green cached line so the user doesn't expect to see things in the cache
+        ///since we're changing the zoom factor
+        _imp->viewerTab->clearTimelineCacheLine();
+    }
+    
+    _imp->viewerTab->getInternalNode()->renderCurrentFrame(false);
 }
 
 /**
