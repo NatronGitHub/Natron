@@ -2560,7 +2560,6 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
         RoIMap roim;
         ImageList imgs;
         if (!renderInputImagesForRoI(createInCache,
-                                     args.inputImagesList,
                                      args.time,
                                      args.view,
                                      par,
@@ -2863,7 +2862,6 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
 /// \returns false if rendering was aborted
 bool
 EffectInstance::renderInputImagesForRoI(bool createImageInCache,
-                                        const std::list< boost::shared_ptr<Natron::Image> >& argsInputImages,
                                         SequenceTime time,
                                         int view,
                                         double par,
@@ -2924,12 +2922,6 @@ EffectInstance::renderInputImagesForRoI(bool createImageInCache,
         inputsRoi->insert(std::make_pair(transformRerouteInput->getInput(newTransformedInputNb), transformedRenderWindow));
         
     }
-    
-    if (!argsInputImages.empty()) {
-        *inputImages = argsInputImages;
-        return true;
-    }
-    
     
     ComponentsNeededMap neededComps;
     SequenceTime ptTime;
