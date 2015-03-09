@@ -3972,7 +3972,9 @@ Node::findClosestSupportedComponents(int inputNb,
                 }
             }
         }
-        assert( closestComp != comps.end() );
+        if (closestComp == comps.end()) {
+            return ImageComponents::getNoneComponents();
+        }
         
         return *closestComp;
     }
@@ -4720,8 +4722,11 @@ Node::setNodeIsNoLongerRenderingInternal(std::list<Natron::Node*>& markedNodes)
         int nodeIsRendering;
         ///Decrement the node is rendering counter
         QMutexLocker k(&_imp->nodeIsRenderingMutex);
-        --_imp->nodeIsRendering;
-        assert(_imp->nodeIsRendering >= 0);
+        if (_imp->nodeIsRendering > 1) {
+            --_imp->nodeIsRendering;
+        } else {
+            _imp->nodeIsRendering = 0;
+        }
         nodeIsRendering = _imp->nodeIsRendering;
         
         
