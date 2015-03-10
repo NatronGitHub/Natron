@@ -341,6 +341,7 @@ public Q_SLOTS:
     void onSpinboxFpsChanged(double fps);
     
     void onEngineStopped();
+    void onEngineStarted(bool forward);
     
     void onViewerRenderingStarted();
     

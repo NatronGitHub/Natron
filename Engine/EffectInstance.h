@@ -1079,11 +1079,23 @@ public:
     struct PlaneToRender
     {
         boost::shared_ptr<Natron::Image> fullscaleImage,downscaleImage,renderMappedImage,tmpImage;
+        void* originalCachedImage;
         
         /**
          * This is set to true if this plane is allocated with allocateImagePlaneAndSetInThreadLocalStorage()
          **/
         bool isAllocatedOnTheFly;
+        
+        PlaneToRender()
+        : fullscaleImage()
+        , downscaleImage()
+        , renderMappedImage()
+        , tmpImage()
+        , originalCachedImage(0)
+        , isAllocatedOnTheFly(false)
+        {
+            
+        }
     };
 
     struct ImagePlanesToRender
@@ -1219,8 +1231,6 @@ public:
     * @brief Returns the components available on each input for this effect at the given time.
     **/
     void getComponentsAvailable(SequenceTime time, ComponentsAvailableMap* comps) ;
-
-    virtual void onNodeNoLongerRendering() {}
 
 private:
 

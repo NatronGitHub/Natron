@@ -4734,9 +4734,7 @@ Node::setNodeIsNoLongerRenderingInternal(std::list<Natron::Node*>& markedNodes)
     }
     
     if (mustDequeue) {
-        
-        ///Notify the viewer it has finished rendering
-        _imp->liveInstance->onNodeNoLongerRendering();
+
         
         ///Flag that the node is dequeuing.
         ///We don't wait here but in the setParallelRenderArgsInternal instead

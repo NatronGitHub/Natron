@@ -647,6 +647,9 @@ Q_SIGNALS:
      * This will not be emitted after calling renderCurrentFrame
      **/
     void renderFinished(int retCode);
+    
+    
+    void renderStarted(bool forward);
 
     /**
     * @brief Emitted when gui is frozen and rendering is finished to update all knobs
@@ -668,8 +671,10 @@ private:
      **/
     void s_fpsChanged(double actual,double desired) { Q_EMIT fpsChanged(actual, desired); }
     void s_frameRendered(int time) { Q_EMIT frameRendered(time); }
+    void s_renderStarted(bool forward) { Q_EMIT renderStarted(forward); }
     void s_renderFinished(int retCode) { Q_EMIT renderFinished(retCode); }
     void s_refreshAllKnobs() { Q_EMIT refreshAllKnobs(); }
+    
     boost::scoped_ptr<RenderEnginePrivate> _imp;
 };
 

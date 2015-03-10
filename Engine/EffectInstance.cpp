@@ -2313,8 +2313,10 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
                 return ImageList();
             }
 #ifndef NATRON_ALWAYS_ALLOCATE_FULL_IMAGE_BOUNDS
-            ///just allocate the roi
-            upscaledImageBounds.intersect(roi, &upscaledImageBounds);
+            if (tilesSupported) {
+                ///just allocate the roi
+                upscaledImageBounds.intersect(roi, &upscaledImageBounds);
+            }
 #endif
             assert(roi.x1 >= upscaledImageBounds.x1 && roi.y1 >= upscaledImageBounds.y1 &&
                    roi.x2 <= upscaledImageBounds.x2 && roi.y2 <= upscaledImageBounds.y2);
@@ -2324,8 +2326,10 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
                 return ImageList();
             }
 #ifndef NATRON_ALWAYS_ALLOCATE_FULL_IMAGE_BOUNDS
-            ///just allocate the roi
-            downscaledImageBounds.intersect(roi, &downscaledImageBounds);
+            if (tilesSupported) {
+                ///just allocate the roi
+                downscaledImageBounds.intersect(roi, &downscaledImageBounds);
+            }
 #endif
             assert(roi.x1 >= downscaledImageBounds.x1 && roi.y1 >= downscaledImageBounds.y1 &&
                    roi.x2 <= downscaledImageBounds.x2 && roi.y2 <= downscaledImageBounds.y2);
@@ -2454,7 +2458,9 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
                     //Clear all previous planes
                     for (std::map<ImageComponents, PlaneToRender>::iterator it2 = planesToRender.planes.begin();
                          it2 != planesToRender.planes.end(); ++it2) {
-                        appPTR->removeFromNodeCache(it2->second.fullscaleImage);
+                        if (it2->second.fullscaleImage) {
+                            appPTR->removeFromNodeCache(it2->second.fullscaleImage);
+                        }
                         it2->second.fullscaleImage.reset();
                         it2->second.downscaleImage.reset();
                     }
@@ -2511,6 +2517,11 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
             planesToRender.rectsToRender.clear();
             planesToRender.rectsToRender.push_back(roi);
             for (std::map<ImageComponents, PlaneToRender>::iterator it2 = planesToRender.planes.begin(); it2 != planesToRender.planes.end(); ++it2) {
+                //Keep track of the original cached image for the re-lookup afterward, if the pointer doesn't match the first look-up, don't consider
+                //the image because the region to render might have changed and we might have to re-trigger a render on inputs again.
+                
+                ///Make sure to never dereference originalCachedImage! We only compare it (that's why it s a void*)
+                it2->second.originalCachedImage = it2->second.fullscaleImage.get();
                 it2->second.fullscaleImage.reset();
                 it2->second.downscaleImage.reset();
             }
@@ -2590,8 +2601,6 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
     
     if (redoCacheLookup) {
         
-        planesToRender.rectsToRender.clear();
-        
         for (std::map<ImageComponents, PlaneToRender>::iterator it = planesToRender.planes.begin(); it != planesToRender.planes.end(); ++it) {
             
             /*
@@ -2619,7 +2628,9 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
                                                 outputDepth,*components,
                                                 args.inputImagesList, &it->second.fullscaleImage);
             
-            if (it->second.fullscaleImage) {
+            ///We must retrieve from the cache exactly the originally retrieved image, otherwise we might have to call  renderInputImagesForRoI
+            ///again, which could create a vicious cycle.
+            if (it->second.fullscaleImage && it->second.fullscaleImage.get() == it->second.originalCachedImage) {
                 it->second.downscaleImage = it->second.fullscaleImage;
             } else {
                 for (std::map<ImageComponents, PlaneToRender>::iterator it2 = planesToRender.planes.begin(); it2 != planesToRender.planes.end(); ++it2) {
@@ -2634,29 +2645,57 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
         
         isPlaneCached = planesToRender.planes.begin()->second.fullscaleImage;
         
-        if (isPlaneCached) {
-            ///We check what is left to render.
-#if NATRON_ENABLE_TRIMAP
-            if (!frameRenderArgs.canAbort && frameRenderArgs.isRenderResponseToUserInteraction) {
-                isPlaneCached->getRestToRender_trimap(roi, planesToRender.rectsToRender, &planesToRender.isBeingRenderedElsewhere);
-            } else {
-                isPlaneCached->getRestToRender(roi, planesToRender.rectsToRender);
-            }
-#else
-            isPlaneCached->getRestToRender(roi, planesToRender.rectsToRender);
-#endif
-        } else {
+        if (!isPlaneCached) {
             planesToRender.rectsToRender.clear();
             if (tilesSupported) {
                 planesToRender.rectsToRender.push_back(roi);
             } else {
                 planesToRender.rectsToRender.push_back(useImageAsOutput ? upscaledImageBounds : downscaledImageBounds);
             }
+            inputImages.clear();
+            inputsRoi.clear();
             
+            ///We must re-copute input images because we might not have rendered what's needed
+            for (std::list<RectI>::iterator it = planesToRender.rectsToRender.begin(); it != planesToRender.rectsToRender.end(); ++it) {
+                
+                
+                RectD canonicalRoI;
+                if (useImageAsOutput) {
+                    it->toCanonical(0, par, rod, &canonicalRoI);
+                } else {
+                    it->toCanonical(args.mipMapLevel, par, rod, &canonicalRoI);
+                }
+                
+                RoIMap roim;
+                ImageList imgs;
+                if (!renderInputImagesForRoI(createInCache,
+                                             args.time,
+                                             args.view,
+                                             par,
+                                             nodeHash,
+                                             frameRenderArgs.rotoAge,
+                                             rod,
+                                             *it,
+                                             canonicalRoI,
+                                             transformMatrix,
+                                             transformInputNb,
+                                             newInputNb,
+                                             newInputAfterConcat,
+                                             args.mipMapLevel,
+                                             args.scale,
+                                             renderMappedScale,
+                                             renderScaleOneUpstreamIfRenderScaleSupportDisabled,
+                                             byPassCache,
+                                             framesNeeded,
+                                             &imgs,
+                                             &roim)) {
+                    //Render was aborted
+                    return ImageList();
+                }
+                inputsRoi.push_back(roim);
+                inputImages.push_back(imgs);
+            }
         }
-
-        
-        hasSomethingToRender = !planesToRender.rectsToRender.empty();
         
     } // if (redoCacheLookup) {
 

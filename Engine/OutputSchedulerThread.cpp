@@ -762,6 +762,7 @@ OutputSchedulerThread::startRender()
     ///They will be in the range determined by firstFrame-lastFrame
     int startingFrame;
     int firstFrame,lastFrame;
+    bool forward;
     {
         ///Copy the last requested run args
         
@@ -770,9 +771,13 @@ OutputSchedulerThread::startRender()
         firstFrame = _imp->livingRunArgs.firstFrame;
         lastFrame = _imp->livingRunArgs.lastFrame;
         startingFrame = timelineGetTime();
+        forward = _imp->livingRunArgs.timelineDirection == OutputSchedulerThread::eRenderDirectionForward;
     }
     
     aboutToStartRender();
+    
+    ///Notify everyone that the render is started
+    _imp->engine->s_renderStarted(forward);
     
     ///Flag that we're now doing work
     {

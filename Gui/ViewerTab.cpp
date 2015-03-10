@@ -1085,7 +1085,8 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     QObject::connect( _imp->viewerNode,SIGNAL( viewerDisconnected() ),this,SLOT( disconnectViewer() ) );
     QObject::connect( _imp->fpsBox, SIGNAL( valueChanged(double) ), this, SLOT( onSpinboxFpsChanged(double) ) );
 
-    QObject::connect( _imp->viewerNode,SIGNAL( renderFinished() ),this,SLOT( onEngineStopped() ) );
+    QObject::connect( _imp->viewerNode->getRenderEngine(),SIGNAL( renderFinished(int) ),this,SLOT( onEngineStopped() ) );
+    QObject::connect( _imp->viewerNode->getRenderEngine(),SIGNAL( renderStarted(bool) ),this,SLOT( onEngineStarted(bool) ) );
     manageSlotsForInfoWidget(0,true);
 
     QObject::connect( _imp->clipToProjectFormatButton,SIGNAL( clicked(bool) ),this,SLOT( onClipToProjectButtonToggle(bool) ) );
@@ -1277,12 +1278,6 @@ ViewerTab::startPause(bool b)
     abortRendering();
     if (b) {
         _imp->gui->getApp()->setLastViewerUsingTimeline(_imp->viewerNode->getNode());
-        _imp->play_Forward_Button->setDown(true);
-        _imp->play_Forward_Button->setChecked(true);
-        if (appPTR->getCurrentSettings()->isAutoTurboEnabled()) {
-            _imp->gui->onFreezeUIButtonClicked(true);
-        }
-        boost::shared_ptr<TimeLine> timeline = _imp->timeLineGui->getTimeline();
         _imp->viewerNode->getRenderEngine()->renderFromCurrentFrame(OutputSchedulerThread::eRenderDirectionForward);
     }
 }
@@ -1305,6 +1300,24 @@ ViewerTab::abortRendering()
         if (isViewer) {
             isViewer->getRenderEngine()->abortRendering(true);
         }
+    }
+}
+
+void
+ViewerTab::onEngineStarted(bool forward)
+{
+    if (!_imp->gui) {
+        return;
+    }
+    
+    _imp->play_Forward_Button->setDown(forward);
+    _imp->play_Forward_Button->setChecked(forward);
+    
+    _imp->play_Backward_Button->setDown(!forward);
+    _imp->play_Backward_Button->setChecked(!forward);
+
+    if (!_imp->gui->isGUIFrozen() && appPTR->getCurrentSettings()->isAutoTurboEnabled()) {
+        _imp->gui->onFreezeUIButtonClicked(true);
     }
 }
 
@@ -1335,12 +1348,6 @@ ViewerTab::startBackward(bool b)
     abortRendering();
     if (b) {
         _imp->gui->getApp()->setLastViewerUsingTimeline(_imp->viewerNode->getNode());
-        _imp->play_Backward_Button->setDown(true);
-        _imp->play_Backward_Button->setChecked(true);
-        if (appPTR->getCurrentSettings()->isAutoTurboEnabled()) {
-            _imp->gui->onFreezeUIButtonClicked(true);
-        }
-        boost::shared_ptr<TimeLine> timeline = _imp->timeLineGui->getTimeline();
         _imp->viewerNode->getRenderEngine()->renderFromCurrentFrame(OutputSchedulerThread::eRenderDirectionBackward);
 
     }
@@ -3366,11 +3373,11 @@ ViewerTab::manageSlotsForInfoWidget(int textureIndex,
     assert(engine);
     if (connect) {
         QObject::connect( engine, SIGNAL( fpsChanged(double,double) ), _imp->infoWidget[textureIndex], SLOT( setFps(double,double) ) );
-        QObject::connect( _imp->viewerNode,SIGNAL( renderFinished() ),_imp->infoWidget[textureIndex],SLOT( hideFps() ) );
+        QObject::connect( engine,SIGNAL( renderFinished(int) ),_imp->infoWidget[textureIndex],SLOT( hideFps() ) );
     } else {
         QObject::disconnect( engine, SIGNAL( fpsChanged(double,double) ), _imp->infoWidget[textureIndex],
                             SLOT( setFps(double,double) ) );
-        QObject::disconnect( _imp->viewerNode,SIGNAL( renderFinished() ),_imp->infoWidget[textureIndex],SLOT( hideFps() ) );
+        QObject::disconnect( engine,SIGNAL( renderFinished(int) ),_imp->infoWidget[textureIndex],SLOT( hideFps() ) );
     }
 }
 
