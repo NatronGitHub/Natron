@@ -361,13 +361,11 @@ GuiAppInstance::createNodeGui(const boost::shared_ptr<Natron::Node> &node,
 
     ///must be called after initializeKnobs as it populates the node's knobs in the curve editor;
     _imp->_gui->addNodeGuiToCurveEditor(nodegui);
-    
-   
-    
-    
+
     if (!loadRequest && !isViewer) {
         ///we make sure we can have a clean preview.
         node->computePreviewImage( getTimeLine()->currentFrame() );
+        
         triggerAutoSave();
     }
 } // createNodeGui
