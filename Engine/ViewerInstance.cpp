@@ -452,7 +452,7 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
     /**
      * @brief Start flagging that we're rendering for as long as the viewer is active.
      **/
-    outArgs->isRenderingFlag.reset(new RenderingFlagSetter(outArgs->activeInputToRender->getNode().get()));
+    outArgs->isRenderingFlag.reset(new RenderingFlagSetter(getNode().get()));
     
     
     ///Get the RoD here to be able to figure out what is the RoI of the Viewer.
