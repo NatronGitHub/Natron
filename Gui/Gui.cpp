@@ -695,6 +695,7 @@ Gui::abortProject(bool quitApp)
     } else {
         _imp->_appInstance->resetPreviewProvider();
         _imp->_appInstance->getProject()->closeProject();
+        centerAllNodeGraphsWithTimer();
         restoreDefaultLayout();
     }
 

@@ -670,7 +670,13 @@ NodeGui::adjustSizeToContent(int* /*w*/,int *h,bool adjustToTextSize)
 {
     QRectF labelBbox = _nameItem->boundingRect();
     if (adjustToTextSize) {
-        *h = labelBbox.height() * 1.2;
+        if (_previewPixmap && _previewPixmap->isVisible()) {
+            int pw,ph;
+            getSizeWithPreview(&pw, &ph);
+            *h = ph;
+        } else {
+            *h = labelBbox.height() * 1.2;
+        }
     } else {
         *h = std::max((double)*h, labelBbox.height() * 1.2);
     }
