@@ -1085,7 +1085,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     QObject::connect( _imp->viewerNode,SIGNAL( viewerDisconnected() ),this,SLOT( disconnectViewer() ) );
     QObject::connect( _imp->fpsBox, SIGNAL( valueChanged(double) ), this, SLOT( onSpinboxFpsChanged(double) ) );
 
-    QObject::connect( _imp->viewerNode->getRenderEngine(),SIGNAL( renderFinished(int) ),this,SLOT( onEngineStopped() ) );
+    QObject::connect( _imp->viewerNode,SIGNAL( renderFinished() ),this,SLOT( onEngineStopped() ) );
     manageSlotsForInfoWidget(0,true);
 
     QObject::connect( _imp->clipToProjectFormatButton,SIGNAL( clicked(bool) ),this,SLOT( onClipToProjectButtonToggle(bool) ) );
@@ -1314,10 +1314,16 @@ ViewerTab::onEngineStopped()
     if (!_imp->gui) {
         return;
     }
-    _imp->play_Forward_Button->setDown(false);
-    _imp->play_Backward_Button->setDown(false);
-    _imp->play_Forward_Button->setChecked(false);
-    _imp->play_Backward_Button->setChecked(false);
+    
+    if (_imp->play_Forward_Button->isDown()) {
+        _imp->play_Forward_Button->setDown(false);
+        _imp->play_Forward_Button->setChecked(false);
+    }
+    
+    if (_imp->play_Backward_Button->isDown()) {
+        _imp->play_Backward_Button->setDown(false);
+        _imp->play_Backward_Button->setChecked(false);
+    }
     if (_imp->gui->isGUIFrozen() && appPTR->getCurrentSettings()->isAutoTurboEnabled()) {
         _imp->gui->onFreezeUIButtonClicked(false);
     }
@@ -3360,11 +3366,11 @@ ViewerTab::manageSlotsForInfoWidget(int textureIndex,
     assert(engine);
     if (connect) {
         QObject::connect( engine, SIGNAL( fpsChanged(double,double) ), _imp->infoWidget[textureIndex], SLOT( setFps(double,double) ) );
-        QObject::connect( engine,SIGNAL( renderFinished(int) ),_imp->infoWidget[textureIndex],SLOT( hideFps() ) );
+        QObject::connect( _imp->viewerNode,SIGNAL( renderFinished() ),_imp->infoWidget[textureIndex],SLOT( hideFps() ) );
     } else {
         QObject::disconnect( engine, SIGNAL( fpsChanged(double,double) ), _imp->infoWidget[textureIndex],
                             SLOT( setFps(double,double) ) );
-        QObject::disconnect( engine,SIGNAL( renderFinished(int) ),_imp->infoWidget[textureIndex],SLOT( hideFps() ) );
+        QObject::disconnect( _imp->viewerNode,SIGNAL( renderFinished() ),_imp->infoWidget[textureIndex],SLOT( hideFps() ) );
     }
 }
 

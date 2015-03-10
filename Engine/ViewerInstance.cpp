@@ -438,10 +438,7 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
     
     const double par = outArgs->activeInputToRender->getPreferredAspectRatio();
     
-    /**
-     * @brief Start flagging that we're rendering for as long as the viewer is active.
-     **/
-    outArgs->isRenderingFlag.reset(new RenderingFlagSetter(outArgs->activeInputToRender->getNode().get()));
+   
     
     ///need to set TLS for getROD()
     ParallelRenderArgsSetter frameArgs(getApp()->getProject().get(),
@@ -451,6 +448,11 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
                                  isSequential, // is this sequential ?
                                  canAbort,
                                  getTimeline().get());
+    
+    /**
+     * @brief Start flagging that we're rendering for as long as the viewer is active.
+     **/
+    outArgs->isRenderingFlag.reset(new RenderingFlagSetter(outArgs->activeInputToRender->getNode().get()));
     
     
     ///Get the RoD here to be able to figure out what is the RoI of the Viewer.

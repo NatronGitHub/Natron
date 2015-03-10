@@ -4861,6 +4861,9 @@ Gui::onFreezeUIButtonClicked(bool clicked)
 {
     {
         QMutexLocker k(&_imp->_isGUIFrozenMutex);
+        if (_imp->_isGUIFrozen == clicked) {
+            return;
+        }
         _imp->_isGUIFrozen = clicked;
     }
     {

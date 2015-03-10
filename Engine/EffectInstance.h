@@ -1220,6 +1220,8 @@ public:
     **/
     void getComponentsAvailable(SequenceTime time, ComponentsAvailableMap* comps) ;
 
+    virtual void onNodeNoLongerRendering() {}
+
 private:
 
     void getComponentsAvailableRecursive(SequenceTime time, int view,ComponentsAvailableMap* comps,

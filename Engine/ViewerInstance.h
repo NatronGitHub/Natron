@@ -178,6 +178,8 @@ public:
                                          bool forceGetClipPrefAction) OVERRIDE FINAL;
     
     void callRedrawOnMainThread() { Q_EMIT s_callRedrawOnMainThread(); }
+    
+    virtual void onNodeNoLongerRendering() OVERRIDE FINAL { Q_EMIT renderFinished(); }
 
     struct ViewerInstancePrivate;
     
@@ -201,6 +203,8 @@ public Q_SLOTS:
 
 
 Q_SIGNALS:
+    
+    void renderFinished();
     
     void s_callRedrawOnMainThread();
 

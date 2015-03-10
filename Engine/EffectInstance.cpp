@@ -836,7 +836,7 @@ EffectInstance::aborted() const
      if ( !_imp->frameRenderArgs.hasLocalData() ) {
         
         ///No local data, we're either not rendering or calling this from a thread not controlled by Natron
-        return false;
+        return isAbortedFromPlayback();
         
     } else {
         
