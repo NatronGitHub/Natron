@@ -13,7 +13,7 @@
 #include <Python.h>
 
 #include "DockablePanel.h"
-
+#include <cfloat>
 #include <iostream>
 #include <fstream>
 #include <QLayout>
@@ -3224,6 +3224,12 @@ struct AddKnobDialogPrivate
     Natron::Label* maxLabel;
     SpinBox* maxBox;
     
+    Natron::Label* dminLabel;
+    SpinBox* dminBox;
+    
+    Natron::Label* dmaxLabel;
+    SpinBox* dmaxBox;
+    
     enum DefaultValueType
     {
         eDefaultValueTypeInt,
@@ -3295,6 +3301,10 @@ struct AddKnobDialogPrivate
     , minBox(0)
     , maxLabel(0)
     , maxBox(0)
+    , dminLabel(0)
+    , dminBox(0)
+    , dmaxLabel(0)
+    , dmaxBox(0)
     , defaultValueLabel(0)
     , default0(0)
     , default1(0)
@@ -3692,20 +3702,42 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,const boost::shared_ptr<KnobI>
     }
     {
         QWidget* minMaxContainer = new QWidget(this);
+        QWidget* dminMaxContainer = new QWidget(this);
         QHBoxLayout* minMaxLayout = new QHBoxLayout(minMaxContainer);
+        QHBoxLayout* dminMaxLayout = new QHBoxLayout(dminMaxContainer);
         minMaxLayout->setContentsMargins(0, 0, 0, 0);
+        dminMaxLayout->setContentsMargins(0, 0, 0, 0);
         _imp->minLabel = new Natron::Label(tr("Minimum:"),minMaxContainer);
 
         _imp->minBox = new SpinBox(minMaxContainer,SpinBox::eSpinBoxTypeDouble);
-        _imp->minBox->setToolTip(Qt::convertFromPlainText(tr("Set the minimum value for the parameter")));
+        _imp->minBox->setToolTip(Qt::convertFromPlainText(tr("Set the minimum value for the parameter. Even though the user might input "
+                                                             "a value higher or lower than the specified min/max range, internally the "
+                                                             "real value will be clamped to this interval.")));
         minMaxLayout->addWidget(_imp->minBox);
         
         _imp->maxLabel = new Natron::Label(tr("Maximum:"),minMaxContainer);
         _imp->maxBox = new SpinBox(minMaxContainer,SpinBox::eSpinBoxTypeDouble);
-        _imp->maxBox->setToolTip(Qt::convertFromPlainText(tr("Set the maximum value for the parameter")));
+        _imp->maxBox->setToolTip(Qt::convertFromPlainText(tr("Set the maximum value for the parameter. Even though the user might input "
+                                                             "a value higher or lower than the specified min/max range, internally the "
+                                                             "real value will be clamped to this interval.")));
         minMaxLayout->addWidget(_imp->maxLabel);
         minMaxLayout->addWidget(_imp->maxBox);
         minMaxLayout->addStretch();
+        
+        _imp->dminLabel = new Natron::Label(tr("Display Minimum:"),dminMaxContainer);
+        _imp->dminBox = new SpinBox(dminMaxContainer,SpinBox::eSpinBoxTypeDouble);
+        _imp->dminBox->setToolTip(Qt::convertFromPlainText(tr("Set the display minimum value for the parameter. This is a hint that is typically "
+                                                              "used to set the range of the slider.")));
+        dminMaxLayout->addWidget(_imp->dminBox);
+        
+        _imp->dmaxLabel = new Natron::Label(tr("Display Maximum:"),dminMaxContainer);
+        _imp->dmaxBox = new SpinBox(dminMaxContainer,SpinBox::eSpinBoxTypeDouble);
+        _imp->dmaxBox->setToolTip(Qt::convertFromPlainText(tr("Set the display maximum value for the parameter. This is a hint that is typically "
+                                                              "used to set the range of the slider.")));
+        dminMaxLayout->addWidget(_imp->dmaxLabel);
+        dminMaxLayout->addWidget(_imp->dmaxBox);
+       
+        dminMaxLayout->addStretch();
         
         Double_Knob* isDbl = dynamic_cast<Double_Knob*>(knob.get());
         Int_Knob* isInt = dynamic_cast<Int_Knob*>(knob.get());
@@ -3715,23 +3747,36 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,const boost::shared_ptr<KnobI>
         if (isDbl) {
             double min = isDbl->getMinimum(0);
             double max = isDbl->getMaximum(0);
+            double dmin = isDbl->getDisplayMinimum(0);
+            double dmax = isDbl->getDisplayMaximum(0);
             _imp->minBox->setValue(min);
             _imp->maxBox->setValue(max);
+            _imp->dminBox->setValue(dmin);
+            _imp->dmaxBox->setValue(dmax);
         } else if (isInt) {
             int min = isInt->getMinimum(0);
             int max = isInt->getMaximum(0);
+            int dmin = isInt->getDisplayMinimum(0);
+            int dmax = isInt->getDisplayMaximum(0);
             _imp->minBox->setValue(min);
             _imp->maxBox->setValue(max);
+            _imp->dminBox->setValue(dmin);
+            _imp->dmaxBox->setValue(dmax);
 
         } else if (isColor) {
             double min = isColor->getMinimum(0);
             double max = isColor->getMaximum(0);
+            double dmin = isColor->getDisplayMinimum(0);
+            double dmax = isColor->getDisplayMaximum(0);
             _imp->minBox->setValue(min);
             _imp->maxBox->setValue(max);
+            _imp->dminBox->setValue(dmin);
+            _imp->dmaxBox->setValue(dmax);
 
         }
         
         _imp->mainLayout->addRow(_imp->minLabel, minMaxContainer);
+        _imp->mainLayout->addRow(_imp->dminLabel, dminMaxContainer);
     }
     
     {
@@ -4168,13 +4213,17 @@ AddKnobDialogPrivate::createKnobFromSelection(int index,int optionalGroupIndex)
             //int
             int dim = index + 1;
             boost::shared_ptr<Int_Knob> k = Natron::createKnob<Int_Knob>(panel->getHolder(), label, dim, false);
-            std::vector<int> mins(dim);
-            std::vector<int> maxs(dim);
+            std::vector<int> mins(dim),dmins(dim);
+            std::vector<int> maxs(dim),dmaxs(dim);
+            
             for (int i = 0; i < dim; ++i) {
                 mins[i] = std::floor(minBox->value() + 0.5);
+                dmins[i] = std::floor(dminBox->value() + 0.5);
                 maxs[i] = std::floor(maxBox->value() + 0.5);
+                dmaxs[i] = std::floor(dmaxBox->value() + 0.5);
             }
             k->setMinimumsAndMaximums(mins, maxs);
+            k->setDisplayMinimumsAndMaximums(dmins, dmaxs);
             std::vector<int> defValues;
             if (dim >= 1) {
                 defValues.push_back(default0->value());
@@ -4196,13 +4245,16 @@ AddKnobDialogPrivate::createKnobFromSelection(int index,int optionalGroupIndex)
             //double
             int dim = index - 2;
             boost::shared_ptr<Double_Knob> k = Natron::createKnob<Double_Knob>(panel->getHolder(), label, dim, false);
-            std::vector<double> mins(dim);
-            std::vector<double> maxs(dim);
+            std::vector<double> mins(dim),dmins(dim);
+            std::vector<double> maxs(dim),dmaxs(dim);
             for (int i = 0; i < dim; ++i) {
                 mins[i] = minBox->value();
+                dmins[i] = dminBox->value();
                 maxs[i] = maxBox->value();
+                dmaxs[i] = dmaxBox->value();
             }
             k->setMinimumsAndMaximums(mins, maxs);
+            k->setDisplayMinimumsAndMaximums(dmins, dmaxs);
             std::vector<double> defValues;
             if (dim >= 1) {
                 defValues.push_back(default0->value());
@@ -4225,11 +4277,13 @@ AddKnobDialogPrivate::createKnobFromSelection(int index,int optionalGroupIndex)
             // color
             int dim = index - 3;
             boost::shared_ptr<Color_Knob> k = Natron::createKnob<Color_Knob>(panel->getHolder(), label, dim, false);
-            std::vector<double> mins(dim);
-            std::vector<double> maxs(dim);
+            std::vector<double> mins(dim),dmins(dim);
+            std::vector<double> maxs(dim),dmaxs(dim);
             for (int i = 0; i < dim; ++i) {
                 mins[i] = minBox->value();
+                dmins[i] = dminBox->value();
                 maxs[i] = maxBox->value();
+                dmaxs[i] = dmaxBox->value();
             }
             std::vector<double> defValues;
             if (dim >= 1) {
@@ -4249,6 +4303,7 @@ AddKnobDialogPrivate::createKnobFromSelection(int index,int optionalGroupIndex)
             }
 
             k->setMinimumsAndMaximums(mins, maxs);
+            k->setDisplayMinimumsAndMaximums(dmins, dmaxs);
             knob = k;
         }  break;
         case 8: {
@@ -4513,16 +4568,24 @@ AddKnobDialogPrivate::setVisibleMinMax(bool visible)
     minBox->setVisible(visible);
     maxLabel->setVisible(visible);
     maxBox->setVisible(visible);
+    dminLabel->setVisible(visible);
+    dminBox->setVisible(visible);
+    dmaxLabel->setVisible(visible);
+    dmaxBox->setVisible(visible);
     if (typeChoice) {
         int type = typeChoice->activeIndex();
         
         if (type == 6 || type == 7) {
             // color range to 0-1
-            minBox->setValue(0.);
-            maxBox->setValue(1.);
+            minBox->setValue(INT_MIN);
+            maxBox->setValue(INT_MAX);
+            dminBox->setValue(0.);
+            dmaxBox->setValue(1.);
         } else {
-            minBox->setValue(0);
-            maxBox->setValue(100);
+            minBox->setValue(INT_MIN);
+            maxBox->setValue(INT_MAX);
+            dminBox->setValue(0);
+            dmaxBox->setValue(100);
         }
     }
 }
