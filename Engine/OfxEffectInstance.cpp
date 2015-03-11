@@ -459,7 +459,14 @@ OfxEffectInstance::isOutput() const
 bool
 OfxEffectInstance::isGenerator() const
 {
-#if 0
+#if 1
+    /*
+     * This is to deal with effects that can be both filters and generators (e.g: like constant or S_Zap)
+     * Some plug-ins unfortunately do not behave exactly the same in these 2 contexts and we want them to behave
+     * as a general context. So we just look for the presence of the generator context to determine if the plug-in
+     * is really a generator or not.
+     */
+    
     assert( effectInstance() );
     const std::set<std::string> & contexts = effectInstance()->getPlugin()->getContexts();
     std::set<std::string>::const_iterator foundGenerator = contexts.find(kOfxImageEffectContextGenerator);
