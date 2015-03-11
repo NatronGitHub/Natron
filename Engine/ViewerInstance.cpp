@@ -351,7 +351,6 @@ static void checkTreeCanRender_internal(Node* node,std::list<Node*>& marked,bool
     }
     if (!hasInputConnected && (!node->getLiveInstance()->isGenerator() &&
             !node->getLiveInstance()->isReader())) {
-        std::cout << node->getScriptName_mt_safe() << std::endl;
         *ret = false;
         return;
     }
