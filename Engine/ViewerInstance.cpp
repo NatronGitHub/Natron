@@ -350,7 +350,7 @@ static void checkTreeCanRender_internal(Node* node,std::list<Node*>& marked,bool
         }
     }
     if (!hasInputConnected && (!node->getLiveInstance()->isGenerator() &&
-            !node->getLiveInstance()->isReader())) {
+            !node->getLiveInstance()->isReader() && !node->getRotoContext())) {
         *ret = false;
         return;
     }
