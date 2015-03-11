@@ -826,7 +826,7 @@ OfxClipInstance::getImageInternal(OfxTime time,
             return 0;
         }
         
-        const ImagePtr& image = planes.front();
+        image = planes.front();
         _nodeInstance->addThreadLocalInputImageTempPointer(image);
 
         renderWindow = pixelRoI;

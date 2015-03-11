@@ -2932,16 +2932,9 @@ OfxEffectInstance::getCanTransform() const
 }
 
 bool
-OfxEffectInstance::getCanApplyTransform(Natron::EffectInstance** effect) const
+OfxEffectInstance::getInputsHoldingTransform(std::list<int>* inputs) const
 {
-    OfxClipInstance* transformClip = 0;
-    bool canApply = effectInstance()->getCanApplyTransform(&transformClip);
-    if (!transformClip || !canApply) {
-        return false;
-    }
-    
-    *effect = transformClip->getAssociatedNode();
-    return true;
+    return effectInstance()->getInputsHoldingTransform(inputs);
 }
 
 Natron::StatusEnum
@@ -3006,12 +2999,14 @@ OfxEffectInstance::getTransform(SequenceTime time,
 }
 
 void
-OfxEffectInstance::rerouteInputAndSetTransform(int inputNb,Natron::EffectInstance* newInput,
-                                               int newInputNb,const Transform::Matrix3x3& m)
+OfxEffectInstance::rerouteInputAndSetTransform(const std::list<InputMatrix>& inputTransforms)
 {
-    OfxClipInstance* clip = getClipCorrespondingToInput(inputNb);
-    assert(clip);
-    clip->setTransformAndReRouteInput(m, newInput, newInputNb);
+    for (std::list<InputMatrix>::const_iterator it = inputTransforms.begin(); it!=inputTransforms.end(); ++it) {
+        OfxClipInstance* clip = getClipCorrespondingToInput(it->inputNb);
+        assert(clip);
+        clip->setTransformAndReRouteInput(*it->cat, it->newInputEffect, it->newInputNbToFetchFrom);
+    }
+    
 }
 
 void

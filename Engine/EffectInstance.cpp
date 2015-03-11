@@ -1743,151 +1743,149 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool useCache,
 
 }
 
-bool
+void
 EffectInstance::tryConcatenateTransforms(const RenderRoIArgs& args,
-                                         int* inputTransformNb,
-                                         Natron::EffectInstance** newInputEffect,
-                                         int *newInputNbToFetchFrom,
-                                         boost::shared_ptr<Transform::Matrix3x3>* cat,
-                                         bool* isResultIdentity)
+                                         std::list<InputMatrix>* inputTransforms)
 {
     
     bool canTransform = getCanTransform();
-    Natron::EffectInstance* inputTransformEffect = 0;
     
     //An effect might not be able to concatenate transforms but can still apply a transform (e.g CornerPinMasked)
-    bool canApplyTransform = getCanApplyTransform(&inputTransformEffect);
+    std::list<int> inputHoldingTransforms;
+    bool canApplyTransform = getInputsHoldingTransform(&inputHoldingTransforms);
+    assert(inputHoldingTransforms.empty() || canApplyTransform);
     
-    if (canTransform || (canApplyTransform && inputTransformEffect)) {
-        
-        Transform::Matrix3x3 thisNodeTransform;
-        
-        *inputTransformNb = getInputNumber(inputTransformEffect);
-        assert(*inputTransformNb != -1);
-        
-        assert(inputTransformEffect);
-        
-        std::list<Transform::Matrix3x3> matricesByOrder; // from downstream to upstream
-        
-        Natron::EffectInstance* inputToTransform = 0;
-        
-        if (canTransform) {
-            inputToTransform = 0;
-            Natron::StatusEnum stat = getTransform_public(args.time, args.scale, args.view, &inputToTransform, &thisNodeTransform);
-            if (stat == eStatusOK) {
-                inputTransformEffect = inputToTransform;
-            }
-        }
-        
-        *newInputEffect = inputTransformEffect;
-        *newInputNbToFetchFrom = *inputTransformNb;
-       
-        // recursion upstream
-        
-        bool inputCanTransform = false;
-        bool inputIsDisabled  =  inputTransformEffect->getNode()->isNodeDisabled();
-        
-        if (!inputIsDisabled) {
-            inputCanTransform = inputTransformEffect->getCanTransform();
-        }
-        
-        
-        while (inputTransformEffect && (inputCanTransform || inputIsDisabled)) {
-            //input is either disabled, or identity or can concatenate a transform too
-            
-            if (inputIsDisabled) {
-                
-                int prefInput;
-                inputTransformEffect = inputTransformEffect->getNearestNonDisabledPrevious(&prefInput);
-                if (prefInput == -1) {
-                    *newInputEffect = 0;
-                    *newInputNbToFetchFrom = -1;
-                    *inputTransformNb = -1;
-                    return false;
-                }
-                
-                *newInputEffect = inputTransformEffect;
-                *newInputNbToFetchFrom = prefInput;
-                inputTransformEffect = inputTransformEffect->getInput(prefInput);
-                            
-            } else if (inputCanTransform) {
-                Transform::Matrix3x3 m;
-                inputToTransform = 0;
-                Natron::StatusEnum stat = inputTransformEffect->getTransform_public(args.time, args.scale, args.view, &inputToTransform, &m);
-                if (stat == eStatusOK) {
-                    matricesByOrder.push_back(m);
-                    *newInputNbToFetchFrom = inputTransformEffect->getInputNumber(inputToTransform);
-                    *newInputEffect = inputTransformEffect;
-                    inputTransformEffect = inputToTransform;
-                } else {
-                    break;
-                }
-            } else  {
-                assert(false);
-            }
-            
-            
-            if (inputTransformEffect) {
-                inputIsDisabled = inputTransformEffect->getNode()->isNodeDisabled();
-                if (!inputIsDisabled) {
-                    inputCanTransform = inputTransformEffect->getCanTransform();
-                }
-            }
-        }
-        
-        
-        if (inputTransformEffect && !matricesByOrder.empty()) {
-            
-            assert(!inputCanTransform && !inputIsDisabled);
-            assert(*newInputEffect);
-            
-            ///Now actually concatenate matrices together
-            cat->reset(new Transform::Matrix3x3);
-            std::list<Transform::Matrix3x3>::reverse_iterator it = matricesByOrder.rbegin();
-            **cat = *it;
-            ++it;
-            while (it != matricesByOrder.rend()) {
-                **cat = Transform::matMul(**cat, *it);
-                ++it;
-            }
-            
-            if (canTransform) {
-                //Check if the result of all the matrices is an identity
-                Transform::Matrix3x3 tmp = Transform::matMul(**cat, thisNodeTransform);
-                *isResultIdentity = tmp.isIdentity();
-            } else {
-                *isResultIdentity = false;
-            }
-            
-            
-            return true;
+    Transform::Matrix3x3 thisNodeTransform;
+    Natron::EffectInstance* inputToTransform = 0;
+    
+    bool getTransformSucceeded = false;
+    
+    if (canTransform) {
+        /*
+         * If getting the transform does not succeed, then this effect is treated as any other ones.
+         */
+        assert(canApplyTransform);
+        Natron::StatusEnum stat = getTransform_public(args.time, args.scale, args.view, &inputToTransform, &thisNodeTransform);
+        if (stat == eStatusOK) {
+            getTransformSucceeded = true;
         }
     }
-    
-    *newInputEffect = 0;
-    *newInputNbToFetchFrom = -1;
-    *inputTransformNb = -1;
 
-    return false;
+    
+    if ((canTransform && getTransformSucceeded) || (!canTransform && canApplyTransform && !inputHoldingTransforms.empty())) {
+        
+        assert(!inputHoldingTransforms.empty());
+      
+        for (std::list<int>::iterator it = inputHoldingTransforms.begin(); it!=inputHoldingTransforms.end(); ++it) {
+            
+            EffectInstance* input = getInput(*it);
+            if (!input) {
+                continue;
+            }
+            std::list<Transform::Matrix3x3> matricesByOrder; // from downstream to upstream
+
+            InputMatrix im;
+            im.inputNb = *it;
+            im.newInputEffect = input;
+            im.newInputNbToFetchFrom = im.inputNb;
+
+            
+            // recursion upstream
+            bool inputCanTransform = false;
+            bool inputIsDisabled  =  input->getNode()->isNodeDisabled();
+            
+            if (!inputIsDisabled) {
+                inputCanTransform = input->getCanTransform();
+            }
+            
+            
+            while (input && (inputCanTransform || inputIsDisabled)) {
+                
+                //input is either disabled, or identity or can concatenate a transform too
+                if (inputIsDisabled) {
+                    
+                    int prefInput;
+                    input = input->getNearestNonDisabledPrevious(&prefInput);
+                    if (prefInput == -1) {
+                        break;
+                    }
+                    
+                    if (input) {
+                        im.newInputNbToFetchFrom = prefInput;
+                        im.newInputEffect = input;
+                    }
+                    
+                } else if (inputCanTransform) {
+                    Transform::Matrix3x3 m;
+                    inputToTransform = 0;
+                    Natron::StatusEnum stat = input->getTransform_public(args.time, args.scale, args.view, &inputToTransform, &m);
+                    if (stat == eStatusOK) {
+                        matricesByOrder.push_back(m);
+                        if (inputToTransform) {
+                            im.newInputNbToFetchFrom = input->getInputNumber(inputToTransform);
+                            im.newInputEffect = input;
+                            input = inputToTransform;
+                        }
+                    } else {
+                        break;
+                    }
+                } else  {
+                    assert(false);
+                }
+                
+                
+                if (input) {
+                    inputIsDisabled = input->getNode()->isNodeDisabled();
+                    if (!inputIsDisabled) {
+                        inputCanTransform = input->getCanTransform();
+                    }
+                }
+            }
+            
+            
+            if (input && !matricesByOrder.empty()) {
+                
+                assert(!inputCanTransform && !inputIsDisabled);
+                assert(im.newInputEffect);
+                
+                ///Now actually concatenate matrices together
+                im.cat.reset(new Transform::Matrix3x3);
+                std::list<Transform::Matrix3x3>::reverse_iterator it2 = matricesByOrder.rbegin();
+                *im.cat = *it2;
+                ++it2;
+                while (it2 != matricesByOrder.rend()) {
+                    *im.cat = Transform::matMul(*im.cat, *it2);
+                    ++it2;
+                }
+                
+                inputTransforms->push_back(im);
+            }
+            
+        } //  for (std::list<int>::iterator it = inputHoldingTransforms.begin(); it!=inputHoldingTransforms.end(); ++it)
+
+    } // if ((canTransform && getTransformSucceeded) || (canApplyTransform && !inputHoldingTransforms.empty()))
 
 }
 
 class TransformReroute_RAII
 {
-    int inputNb;
-    Natron::EffectInstance* self;
+    EffectInstance* self;
+    std::list<EffectInstance::InputMatrix> transforms;
 public:
     
-    TransformReroute_RAII(EffectInstance* self,int inputNb,Natron::EffectInstance* input,int newInputNb,const boost::shared_ptr<Transform::Matrix3x3>& matrix)
-    : inputNb(inputNb)
-    , self(self)
+    TransformReroute_RAII(EffectInstance* self,const std::list<EffectInstance::InputMatrix>& inputTransforms)
+    : self(self)
+    , transforms(inputTransforms)
     {
-        self->rerouteInputAndSetTransform(inputNb, input, newInputNb, *matrix);
+        self->rerouteInputAndSetTransform(inputTransforms);
     }
     
     ~TransformReroute_RAII()
     {
-        self->clearTransform(inputNb);
+        for (std::list<EffectInstance::InputMatrix>::iterator it = transforms.begin(); it!=transforms.end(); ++it) {
+            self->clearTransform(it->inputNb);
+        }
+        
     }
 };
 
@@ -2241,33 +2239,17 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////// Transform concatenations ///////////////////////////////////////////////////////////////
     ///Try to concatenate transform effects
-    boost::shared_ptr<Transform::Matrix3x3> transformMatrix;
-    Natron::EffectInstance* newInputAfterConcat = 0;
-    int transformInputNb = -1;
-    int newInputNb = -1;
-    bool isResultingTransformIdentity;
-    bool hasConcat;
-    
+    std::list<InputMatrix> inputsToTransform;
     if (appPTR->getCurrentSettings()->isTransformConcatenationEnabled()) {
-        hasConcat = tryConcatenateTransforms(args, &transformInputNb, &newInputAfterConcat, &newInputNb, &transformMatrix, &isResultingTransformIdentity);
-    } else {
-        hasConcat = false;
+        tryConcatenateTransforms(args, &inputsToTransform);
     }
     
-    
-    assert((!hasConcat && (transformInputNb == -1) && (newInputAfterConcat == 0) && (newInputNb == -1)) ||
-           (hasConcat && transformMatrix && (transformInputNb != -1) && newInputAfterConcat && (newInputNb != -1)));
-    
+    ///Ok now we have the concatenation of all matrices, set it on the associated clip and reroute the tree
     boost::shared_ptr<TransformReroute_RAII> transformConcatenationReroute;
-    
-    if (hasConcat) {
-        if (isResultingTransformIdentity) {
-            ///The transform matrix is identity! fetch directly the image from inputTransformEffect
-            return newInputAfterConcat->renderRoI(args);
-        }
-        ///Ok now we have the concatenation of all matrices, set it on the associated clip and reroute the tree
-        transformConcatenationReroute.reset(new TransformReroute_RAII(this, transformInputNb, newInputAfterConcat, newInputNb, transformMatrix));
+    if (!inputsToTransform.empty()) {
+        transformConcatenationReroute.reset(new TransformReroute_RAII(this,inputsToTransform));
     }
+    
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     /////////////////////////////////End transform concatenations//////////////////////////////////////////////////////////
     
@@ -2582,10 +2564,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
                                      rod,
                                      *it,
                                      canonicalRoI,
-                                     transformMatrix,
-                                     transformInputNb,
-                                     newInputNb,
-                                     newInputAfterConcat,
+                                     inputsToTransform,
                                      args.mipMapLevel,
                                      args.scale,
                                      renderMappedScale,
@@ -2679,10 +2658,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
                                              rod,
                                              *it,
                                              canonicalRoI,
-                                             transformMatrix,
-                                             transformInputNb,
-                                             newInputNb,
-                                             newInputAfterConcat,
+                                             inputsToTransform,
                                              args.mipMapLevel,
                                              args.scale,
                                              renderMappedScale,
@@ -2914,10 +2890,7 @@ EffectInstance::renderInputImagesForRoI(bool createImageInCache,
                                         const RectD& rod,
                                         const RectI& downscaledRenderWindow,
                                         const RectD& canonicalRenderWindow,
-                                        const boost::shared_ptr<Transform::Matrix3x3>& transformMatrix,
-                                        int transformInputNb,
-                                        int newTransformedInputNb,
-                                        Natron::EffectInstance* transformRerouteInput,
+                                        const std::list<InputMatrix>& inputTransforms,
                                         unsigned int mipMapLevel,
                                         const RenderScale & scale,
                                         const RenderScale& renderMappedScale,
@@ -2934,13 +2907,14 @@ EffectInstance::renderInputImagesForRoI(bool createImageInCache,
         << "an empty list with getFramesNeededAction";
     }
 #endif
-    if (transformMatrix) {
-        //Transform the RoIs by the inverse of the transform matrix (which is in pixel coordinates)
+    
+    std::map<int, EffectInstance*> reroutesMap;
+    //Transform the RoIs by the inverse of the transform matrix (which is in pixel coordinates)
+    for (std::list<InputMatrix>::const_iterator it = inputTransforms.begin(); it != inputTransforms.end(); ++it) {
         
         RectD transformedRenderWindow;
         
-        
-        Natron::EffectInstance* effectInTransformInput = getInput(transformInputNb);
+        Natron::EffectInstance* effectInTransformInput = getInput(it->inputNb);
         assert(effectInTransformInput);
         
         RoIMap::iterator foundRoI = inputsRoi->find(effectInTransformInput);
@@ -2948,9 +2922,9 @@ EffectInstance::renderInputImagesForRoI(bool createImageInCache,
         
         // invert it
         Transform::Matrix3x3 invertTransform;
-        double det = Transform::matDeterminant(*transformMatrix);
+        double det = Transform::matDeterminant(*it->cat);
         if (det != 0.) {
-            invertTransform = Transform::matInverse(*transformMatrix, det);
+            invertTransform = Transform::matInverse(*it->cat, det);
         }
         
         Transform::Matrix3x3 canonicalToPixel = Transform::matCanonicalToPixel(par, scale.x,
@@ -2963,10 +2937,11 @@ EffectInstance::renderInputImagesForRoI(bool createImageInCache,
         
         //Replace the original RoI by the transformed RoI
         inputsRoi->erase(foundRoI);
-        inputsRoi->insert(std::make_pair(transformRerouteInput->getInput(newTransformedInputNb), transformedRenderWindow));
-        
+        inputsRoi->insert(std::make_pair(it->newInputEffect->getInput(it->newInputNbToFetchFrom), transformedRenderWindow));
+        reroutesMap.insert(std::make_pair(it->inputNb, it->newInputEffect));
+
     }
-    
+
     ComponentsNeededMap neededComps;
     SequenceTime ptTime;
     int ptView;
@@ -2988,12 +2963,13 @@ EffectInstance::renderInputImagesForRoI(bool createImageInCache,
         }
         
         EffectInstance* inputEffect;
-        if (it->first == transformInputNb) {
-            assert(transformRerouteInput);
-            inputEffect = transformRerouteInput->getInput(it->first);
+        std::map<int, EffectInstance*>::iterator foundReroute = reroutesMap.find(it->first);
+        if (foundReroute != reroutesMap.end()) {
+            inputEffect = foundReroute->second->getInput(it->first);
         } else {
             inputEffect = getInput(it->first);
         }
+
         if (inputEffect) {
             
             ///What region are we interested in for this input effect ? (This is in Canonical coords)

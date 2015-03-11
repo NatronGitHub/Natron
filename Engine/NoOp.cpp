@@ -76,6 +76,13 @@ NoOpBase::getTransform(SequenceTime /*time*/,
     return Natron::eStatusOK;
 }
 
+bool
+NoOpBase::getInputsHoldingTransform(std::list<int>* inputs) const
+{
+    inputs->push_back(0);
+    return true;
+}
+
 std::string
 GroupInput::getDescription() const
 {

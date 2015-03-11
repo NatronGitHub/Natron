@@ -1042,22 +1042,27 @@ OfxImageEffectInstance::getClips() const
 }
 
 bool
-OfxImageEffectInstance::getCanApplyTransform(OfxClipInstance** clip) const
+OfxImageEffectInstance::getInputsHoldingTransform(std::list<int>* inputs) const
 {
-    if (!clip) {
+    if (!inputs) {
         return false;
     }
     for (std::map<std::string,OFX::Host::ImageEffect::ClipInstance*>::const_iterator it = _clips.begin(); it != _clips.end(); ++it) {
         if (it->second && it->second->canTransform()) {
+            
+            ///Output clip should not have the property set.
             assert(!it->second->isOutput());
             if (it->second->isOutput()) {
                 return false;
             }
-            *clip = dynamic_cast<OfxClipInstance*>(it->second);
-            return (*clip != NULL);
+            
+            
+            OfxClipInstance* clip = dynamic_cast<OfxClipInstance*>(it->second);
+            assert(clip);
+            inputs->push_back(clip->getInputNb());
         }
     }
-    return false;
+    return !inputs->empty();
 }
 
 bool

@@ -627,10 +627,17 @@ public:
 
     int getFrameRenderArgsCurrentView() const;
 
-    virtual bool getCanApplyTransform(Natron::EffectInstance** /*effect*/) const { return false; }
+    virtual bool getInputsHoldingTransform(std::list<int>* /*inputs*/) const { return false; }
 
-    virtual void rerouteInputAndSetTransform(int /*inputNb*/,Natron::EffectInstance* /*newInput*/,
-                                             int /*newInputNb*/,const Transform::Matrix3x3& /*m*/) {}
+    struct InputMatrix
+    {
+        int inputNb;
+        Natron::EffectInstance* newInputEffect;
+        int newInputNbToFetchFrom;
+        boost::shared_ptr<Transform::Matrix3x3> cat;
+    };
+
+    virtual void rerouteInputAndSetTransform(const std::list<InputMatrix>& /*inputTransforms*/) {}
 
     virtual void clearTransform(int /*inputNb*/) {}
 
@@ -1413,10 +1420,7 @@ private:
                                  const RectD& rod,
                                  const RectI& downscaledRenderWindow,
                                  const RectD& canonicalRenderWindow,
-                                 const boost::shared_ptr<Transform::Matrix3x3>& transformMatrix,
-                                 int transformInputNb,
-                                 int newTransformedInputNb,
-                                 Natron::EffectInstance* transformRerouteInput,
+                                 const std::list<InputMatrix>& transformMatrix,
                                  unsigned int mipMapLevel,
                                  const RenderScale & scale,
                                  const RenderScale& renderMappedScale,
@@ -1427,20 +1431,12 @@ private:
                                  RoIMap* inputsRoI);
 
 
+
     /**
      * @brief Check if Transform effects concatenation is possible on the current node and node upstream.
-     * @param inputTransformNb[out] if this node can concatenate, then it will be set to the input number concatenated
-     * @param newInputEffect[out] will be set to the new input upstream replacing the original main input.
-     * @param cat[out] the concatenation matrix of all transforms
-     * @param isResultIdentity[out] if true then the result of all the transforms upstream plus the one of this node is an identity matrix
-     * @return True if the nodes has concatenated nodes, false otherwise.
      **/
-    bool tryConcatenateTransforms(const RenderRoIArgs& args,
-                                  int* inputTransformNb,
-                                  Natron::EffectInstance** newInputEffect,
-                                  int *newInputNbToFetchFrom,
-                                  boost::shared_ptr<Transform::Matrix3x3>* cat,
-                                  bool* isResultIdentity);
+    void tryConcatenateTransforms(const RenderRoIArgs& args,
+                                  std::list<InputMatrix>* inputTransforms);
 
     /**
      * @brief Called by getImage when the thread-storage was not set by the caller thread (mostly because this is a thread that is not
