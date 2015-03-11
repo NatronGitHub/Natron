@@ -2480,6 +2480,11 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
         isPlaneCached = planesToRender.planes.begin()->second.fullscaleImage;
     }
     
+    if (!isPlaneCached && args.roi.isNull()) {
+        ///Empty RoI and nothing in the cache with matching args, return empty planes.
+        return ImageList();
+    }
+    
     if (isPlaneCached) {
         ///We check what is left to render.
 #if NATRON_ENABLE_TRIMAP
@@ -2917,8 +2922,13 @@ EffectInstance::renderInputImagesForRoI(bool createImageInCache,
         Natron::EffectInstance* effectInTransformInput = getInput(it->inputNb);
         assert(effectInTransformInput);
         
+        
+        
         RoIMap::iterator foundRoI = inputsRoi->find(effectInTransformInput);
-        assert(foundRoI != inputsRoi->end());
+        if (foundRoI == inputsRoi->end()) {
+            //There might be no RoI because it was null 
+            continue;
+        }
         
         // invert it
         Transform::Matrix3x3 invertTransform;

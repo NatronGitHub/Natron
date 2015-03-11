@@ -1503,9 +1503,9 @@ OfxEffectInstance::getRegionsOfInterest(SequenceTime time,
                 ///The RoI might be infinite if the getRoI action of the plug-in doesn't do anything and the input effect has an
                 ///infinite rod.
                 ifInfiniteclipRectToProjectDefault(&inputRoi);
-                if (!inputRoi.isNull()) {
+                //if (!inputRoi.isNull()) {
                     ret->insert( std::make_pair(inputNode,inputRoi) );
-                }
+                //}
             }
         }
         
