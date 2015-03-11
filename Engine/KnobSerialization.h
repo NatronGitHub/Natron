@@ -46,7 +46,8 @@ CLANG_DIAG_ON(unused-parameter)
 #define KNOB_SERIALIZATION_INTRODUCES_NATIVE_OVERLAYS 7
 #define KNOB_SERIALIZATION_INTRODUCES_CHOICE_HELP_STRINGS 8
 #define KNOB_SERIALIZATION_INTRODUCES_DEFAULT_VALUES 9
-#define KNOB_SERIALIZATION_VERSION KNOB_SERIALIZATION_INTRODUCES_DEFAULT_VALUES
+#define KNOB_SERIALIZATION_INTRODUCES_DISPLAY_MIN_MAX 10
+#define KNOB_SERIALIZATION_VERSION KNOB_SERIALIZATION_INTRODUCES_DISPLAY_MIN_MAX
 
 #define VALUE_SERIALIZATION_INTRODUCES_CHOICE_LABEL 2
 #define VALUE_SERIALIZATION_INTRODUCES_EXPRESSIONS 3
@@ -134,7 +135,7 @@ class ValueExtraData: public TypeExtraData
 {
     public:
     ValueExtraData() : TypeExtraData() , min(0.), max(0.) {}
-    double min,max;
+    double min,max,dmin,dmax;
 };
 
 struct ValueSerialization
@@ -449,6 +450,8 @@ class KnobSerialization : public KnobSerializationBase
                 } else if (vdata) {
                     ar & boost::serialization::make_nvp("Min",vdata->min);
                     ar & boost::serialization::make_nvp("Max",vdata->max);
+                    ar & boost::serialization::make_nvp("DMin",vdata->dmin);
+                    ar & boost::serialization::make_nvp("DMax",vdata->dmax);
                 } else if (fdata) {
                     ar & boost::serialization::make_nvp("Sequences",fdata->useSequences);
                 } else if (pdata) {
@@ -604,6 +607,10 @@ class KnobSerialization : public KnobSerializationBase
                     ValueExtraData* extraData = new ValueExtraData;
                     ar & boost::serialization::make_nvp("Min",extraData->min);
                     ar & boost::serialization::make_nvp("Max",extraData->max);
+                    if (version >= KNOB_SERIALIZATION_INTRODUCES_DISPLAY_MIN_MAX) {
+                        ar & boost::serialization::make_nvp("DMin",extraData->dmin);
+                        ar & boost::serialization::make_nvp("DMax",extraData->dmax);
+                    }
                     _extraData = extraData;
                 }
                 
@@ -731,12 +738,18 @@ public:
                 if (isDbl) {
                     extraData->min = isDbl->getMinimum();
                     extraData->max = isDbl->getMaximum();
+                    extraData->dmin = isDbl->getDisplayMinimum();
+                    extraData->dmax = isDbl->getDisplayMaximum();
                 } else if (isInt) {
                     extraData->min = isInt->getMinimum();
                     extraData->max = isInt->getMaximum();
+                    extraData->dmin = isInt->getDisplayMinimum();
+                    extraData->dmax = isInt->getDisplayMaximum();
                 } else if (isColor) {
                     extraData->min = isColor->getMinimum();
                     extraData->max = isColor->getMaximum();
+                    extraData->dmin = isColor->getDisplayMinimum();
+                    extraData->dmax = isColor->getDisplayMaximum();
                 }
                 _extraData = extraData;
             }

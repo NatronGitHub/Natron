@@ -935,24 +935,30 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
                                                                              sKnob->getDimension(), false);
                 const ValueExtraData* data = dynamic_cast<const ValueExtraData*>(isRegular->getExtraData());
                 assert(data);
-                std::vector<int> minimums,maximums;
+                std::vector<int> minimums,maximums,dminimums,dmaximums;
                 for (int i = 0; i < k->getDimension(); ++i) {
                     minimums.push_back(data->min);
                     maximums.push_back(data->max);
+                    dminimums.push_back(data->dmin);
+                    dmaximums.push_back(data->dmax);
                 }
                 k->setMinimumsAndMaximums(minimums, maximums);
+                k->setDisplayMinimumsAndMaximums(dminimums, dmaximums);
                 knob = k;
             } else if (isDbl) {
                 boost::shared_ptr<Double_Knob> k = Natron::createKnob<Double_Knob>(liveInstance.get(), isRegular->getLabel() ,
                                                                              sKnob->getDimension(), false);
                 const ValueExtraData* data = dynamic_cast<const ValueExtraData*>(isRegular->getExtraData());
                 assert(data);
-                std::vector<double> minimums,maximums;
+                std::vector<double> minimums,maximums,dminimums,dmaximums;
                 for (int i = 0; i < k->getDimension(); ++i) {
                     minimums.push_back(data->min);
                     maximums.push_back(data->max);
+                    dminimums.push_back(data->dmin);
+                    dmaximums.push_back(data->dmax);
                 }
                 k->setMinimumsAndMaximums(minimums, maximums);
+                k->setDisplayMinimumsAndMaximums(dminimums, dmaximums);
                 knob = k;
                 
                 if (isRegular->getUseHostOverlayHandle()) {
@@ -976,6 +982,17 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
             } else if (isColor) {
                 boost::shared_ptr<Color_Knob> k = Natron::createKnob<Color_Knob>(liveInstance.get(), isRegular->getLabel() ,
                                                                                sKnob->getDimension(), false);
+                const ValueExtraData* data = dynamic_cast<const ValueExtraData*>(isRegular->getExtraData());
+                assert(data);
+                std::vector<double> minimums,maximums,dminimums,dmaximums;
+                for (int i = 0; i < k->getDimension(); ++i) {
+                    minimums.push_back(data->min);
+                    maximums.push_back(data->max);
+                    dminimums.push_back(data->dmin);
+                    dmaximums.push_back(data->dmax);
+                }
+                k->setMinimumsAndMaximums(minimums, maximums);
+                k->setDisplayMinimumsAndMaximums(dminimums, dmaximums);
                 knob = k;
 
             } else if (isStr) {
