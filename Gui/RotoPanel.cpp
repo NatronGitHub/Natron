@@ -1625,10 +1625,14 @@ checkIfProcessedRecursive(QTreeWidgetItem* matcher,
                         QTreeWidgetItem* item,
                         bool *ret)
 {
+    if (!item) {
+        *ret = false;
+        return;
+    }
     if (item == matcher) {
         *ret = true;
     } else {
-        if ( item->parent() ) {
+        if ( item && item->parent() ) {
             checkIfProcessedRecursive(matcher,item->parent(),ret);
         }
     }
@@ -1775,7 +1779,9 @@ TreeWidget::dragAndDropHandler(const QMimeData* mime,
                     return false;
                 } // switch
                 dropped.push_back(ret);
-                processedItems.push_back(ret->dropped);
+                if (ret->dropped) {
+                    processedItems.push_back(ret->dropped);
+                }
             } //  if (it != roleDataMap.end())
         } // while (!stream.atEnd())
     } //if (mime->hasFormat("application/x-qabstractitemmodeldatalist"))
