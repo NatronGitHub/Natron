@@ -3063,6 +3063,7 @@ KnobHolder::endChanges(bool discardEverything)
             _imp->changeSignificant = false;
         }
     }
+    KnobI* knob = 0;
     if (!knobChanged.empty()) {
         if (discardEverything) {
             {
@@ -3075,7 +3076,6 @@ KnobHolder::endChanges(bool discardEverything)
             return;
         }
         
-        KnobI* knob = 0;
         for (ChangesList::iterator it = knobChanged.begin(); it!=knobChanged.end(); ++it) {
             if (it->knob) {
                 onKnobValueChanged_public(it->knob, it->reason, getCurrentTime(), it->originatedFromMainThread);
@@ -3085,30 +3085,23 @@ KnobHolder::endChanges(bool discardEverything)
             }
         }
         
-        {
-            QMutexLocker l(&_imp->evaluationBlockedMutex);
-            
-            if (_imp->evaluationBlocked > 0) {
-                --_imp->evaluationBlocked;
-            }
-        }
+    }
+    {
+        QMutexLocker l(&_imp->evaluationBlockedMutex);
         
-        if (evaluate && significant) {
-            Natron::ValueChangedReasonEnum reason = knobChanged.begin()->reason;
-            if (!isMT) {
-                Q_EMIT doEvaluateOnMainThread(knob, significant, reason);
-            } else {
-                evaluate_public(knob, significant, reason);
-            }
+        if (_imp->evaluationBlocked > 0) {
+            --_imp->evaluationBlocked;
         }
-    } else {
-        
-        {
-            QMutexLocker l(&_imp->evaluationBlockedMutex);
-            
-            if (_imp->evaluationBlocked > 0) {
-                --_imp->evaluationBlocked;
-            }
+    }
+    
+    
+    
+    if (evaluate && significant) {
+        Natron::ValueChangedReasonEnum reason = knobChanged.begin()->reason;
+        if (!isMT) {
+            Q_EMIT doEvaluateOnMainThread(knob, significant, reason);
+        } else {
+            evaluate_public(knob, significant, reason);
         }
     }
 }
