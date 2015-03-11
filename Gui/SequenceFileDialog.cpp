@@ -724,11 +724,12 @@ SequenceFileDialog::restoreState(const QByteArray & state)
         history.pop_front();
     }
     setHistory(history);
-    setDirectory(currentDirectory);
     QHeaderView *headerView = _view->header();
     if ( !headerView->restoreState(headerData) ) {
         return false;
     }
+    setDirectory(currentDirectory);
+
     QList<QAction*> actions = headerView->actions();
     QAbstractItemModel *abstractModel = _model.get();
     int total = qMin(abstractModel->columnCount( QModelIndex() ), actions.count() + 1);
