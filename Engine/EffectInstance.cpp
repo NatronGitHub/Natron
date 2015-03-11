@@ -778,7 +778,9 @@ EffectInstance::invalidateParallelRenderArgsTLS()
     if (_imp->frameRenderArgs.hasLocalData()) {
         ParallelRenderArgs& args = _imp->frameRenderArgs.localData();
         --args.validArgs;
-        assert(args.validArgs >= 0);
+        if (args.validArgs < 0) {
+            args.validArgs = 0;
+        }
     } else {
         qDebug() << "Frame render args thread storage not set, this is probably because the graph changed while rendering.";
     }

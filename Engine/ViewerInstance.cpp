@@ -323,9 +323,16 @@ ViewerInstance::renderViewer(int view,
     return eStatusOK;
 }
 
-static void checkTreeCanRender_internal(Node* node,bool* ret)
+static void checkTreeCanRender_internal(Node* node,std::list<Node*>& marked,bool* ret)
 {
+    if (std::find(marked.begin(), marked.end(), node) != marked.end()) {
+        return;
+    }
+
+    marked.push_back(node);
+
     int maxInput = node->getMaxInputCount();
+    bool hasInputConnected = false;
     for (int i = 0; i < maxInput; ++i) {
         NodePtr input = node->getInput(i);
         if (!input) {
@@ -335,11 +342,18 @@ static void checkTreeCanRender_internal(Node* node,bool* ret)
             }
             
         } else {
-            checkTreeCanRender_internal(input.get(), ret);
+            hasInputConnected = true;
+            checkTreeCanRender_internal(input.get(), marked, ret);
             if (!ret) {
                 return;
             }
         }
+    }
+    if (!hasInputConnected && (!node->getLiveInstance()->isGenerator() &&
+            !node->getLiveInstance()->isReader())) {
+        std::cout << node->getScriptName_mt_safe() << std::endl;
+        *ret = false;
+        return;
     }
 }
 
@@ -349,7 +363,8 @@ static void checkTreeCanRender_internal(Node* node,bool* ret)
 static bool checkTreeCanRender(Node* node)
 {
     bool ret = true;
-    checkTreeCanRender_internal(node,&ret);
+    std::list<Node*> marked;
+    checkTreeCanRender_internal(node,marked,&ret);
     return ret;
 }
 
