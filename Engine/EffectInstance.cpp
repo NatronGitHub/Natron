@@ -1845,7 +1845,6 @@ EffectInstance::tryConcatenateTransforms(const RenderRoIArgs& args,
             
             if (input && !matricesByOrder.empty()) {
                 
-                assert(!inputCanTransform && !inputIsDisabled);
                 assert(im.newInputEffect);
                 
                 ///Now actually concatenate matrices together
