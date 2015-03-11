@@ -1136,7 +1136,7 @@ NodeGroup::isInputOptional(int inputNb) const
     }
     GroupInput* input = dynamic_cast<GroupInput*>(n->getLiveInstance());
     assert(input);
-    boost::shared_ptr<KnobI> knob = input->getKnobByName("optional");
+    boost::shared_ptr<KnobI> knob = input->getKnobByName(kNatronGroupInputIsOptionalParamName);
     assert(knob);
     Bool_Knob* isBool = dynamic_cast<Bool_Knob*>(knob.get());
     assert(isBool);
@@ -1157,7 +1157,7 @@ NodeGroup::isInputMask(int inputNb) const
     }
     GroupInput* input = dynamic_cast<GroupInput*>(n->getLiveInstance());
     assert(input);
-    boost::shared_ptr<KnobI> knob = input->getKnobByName("isMask");
+    boost::shared_ptr<KnobI> knob = input->getKnobByName(kNatronGroupInputIsMaskParamName);
     assert(knob);
     Bool_Knob* isBool = dynamic_cast<Bool_Knob*>(knob.get());
     assert(isBool);

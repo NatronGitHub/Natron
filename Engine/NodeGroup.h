@@ -23,6 +23,9 @@
 
 #include "Engine/EffectInstance.h"
 
+#define kNatronGroupInputIsMaskParamName "isMask"
+#define kNatronGroupInputIsOptionalParamName "optional"
+
 typedef boost::shared_ptr<Natron::Node> NodePtr;
 typedef std::list<NodePtr> NodeList;
 

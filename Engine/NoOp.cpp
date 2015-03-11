@@ -92,13 +92,13 @@ GroupInput::initializeKnobs()
     optional->setHintToolTip("When checked, this input of the group will be optional, i.e it will not be required that it is connected "
                              "for the render to work. ");
     optional->setAnimationEnabled(false);
-    optional->setName("optional");
+    optional->setName(kNatronGroupInputIsOptionalParamName);
     page->addKnob(optional);
     
     mask = Natron::createKnob<Bool_Knob>(this, "Mask");
     mask->setHintToolTip("When checked, this input of the group will be considered as a mask. A mask is always optional.");
     mask->setAnimationEnabled(false);
-    mask->setName("isMask");
+    mask->setName(kNatronGroupInputIsMaskParamName);
     page->addKnob(mask);
 
 }

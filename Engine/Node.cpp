@@ -4426,6 +4426,20 @@ Node::onEffectKnobValueChanged(KnobI* what,
         _imp->outputFormat->setValue(outputInfo, 0);
  
     }
+    
+    GroupInput* isInput = dynamic_cast<GroupInput*>(_imp->liveInstance.get());
+    if (isInput) {
+        if (what->getName() == kNatronGroupInputIsOptionalParamName
+            || what->getName() == kNatronGroupInputIsMaskParamName) {
+            boost::shared_ptr<NodeCollection> col = isInput->getNode()->getGroup();
+            assert(col);
+            NodeGroup* isGrp = dynamic_cast<NodeGroup*>(col.get());
+            assert(isGrp);
+            
+            ///Refresh input arrows of the node to reflect the state
+            isGrp->getNode()->initializeInputs();
+        }
+    }
 }
 
 void

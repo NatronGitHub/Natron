@@ -1128,7 +1128,7 @@ KnobHelper::evaluateValueChange(int dimension,
     /// For eValueChangedReasonTimeChanged we never call the instanceChangedAction and evaluate otherwise it would just throttle down
     /// the application responsiveness
     if (reason != Natron::eValueChangedReasonTimeChanged && _imp->holder) {
-        if ( ( app && !app->getProject()->isLoadingProject() && !app->isCreatingPythonGroup()) || !app ) {
+        if ( ( app && !app->getProject()->isLoadingProject() /*&& !app->isCreatingPythonGroup()*/) || !app ) {
             
             if (_imp->holder->isEvaluationBlocked()) {
                 _imp->holder->appendValueChange(this,reason);
