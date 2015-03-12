@@ -223,7 +223,7 @@ ShortCutEditor::ShortCutEditor(QWidget* parent)
     _imp->mainLayout = new QVBoxLayout(this);
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
     setWindowFlags(Qt::WindowStaysOnTopHint | Qt::Window);
-    setWindowTitle( tr("Shortcuts editor") );
+    setWindowTitle( tr("Shortcuts Editor") );
     _imp->tree = new HackedTreeWidget(this);
     _imp->tree->setColumnCount(2);
     QStringList headers;
@@ -503,7 +503,7 @@ ShortCutEditor::onValidateButtonClicked()
                     QString err = QString("Cannot bind this shortcut because the following action is already using it: %1")
                                   .arg( it2->item->text(0) );
                     _imp->shortcutEditor->clear();
-                    Natron::errorDialog( tr("Shortcut editor").toStdString(), tr( err.toStdString().c_str() ).toStdString() );
+                    Natron::errorDialog( tr("Shortcuts Editor").toStdString(), tr( err.toStdString().c_str() ).toStdString() );
 
                     return;
                 }

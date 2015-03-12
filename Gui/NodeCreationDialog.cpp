@@ -286,7 +286,7 @@ NodeCreationDialog::NodeCreationDialog(const QString& initialFilter,QWidget* par
     : QDialog(parent)
       , _imp( new NodeCreationDialogPrivate() )
 {
-    setWindowTitle( tr("Node creation tool") );
+    setWindowTitle( tr("Node Creation Tool") );
     setWindowFlags(Qt::Window | Qt::CustomizeWindowHint);
     setObjectName("nodeCreationDialog");
     setAttribute(Qt::WA_DeleteOnClose,false);

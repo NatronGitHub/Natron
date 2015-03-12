@@ -107,7 +107,7 @@ CrashDialog::CrashDialog(const QString &filePath)
                            .arg("rgb(180, 200, 100)") ); // %9: expression background color
         }
     
-    setWindowTitle(tr("Natron issue reporter"));
+    setWindowTitle(tr("Natron Issue Reporter"));
     
     _mainLayout = new QVBoxLayout(this);
     

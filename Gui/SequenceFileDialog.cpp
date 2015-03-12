@@ -562,7 +562,7 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
             setWindowTitle( tr("Save File") );
         }
     } else {
-        setWindowTitle( tr("Select directory") );
+        setWindowTitle( tr("Select Directory") );
     }
 
     QSettings settings(NATRON_ORGANIZATION_NAME,NATRON_APPLICATION_NAME);
@@ -1344,7 +1344,7 @@ SequenceFileDialog::createDir()
     QString newFolderString;
     QInputDialog dialog(this);
     dialog.setLabelText( tr("Folder name:") );
-    dialog.setWindowTitle( tr("New folder") );
+    dialog.setWindowTitle( tr("New Folder") );
     if ( dialog.exec() ) {
         newFolderString = dialog.textValue();
         if ( !newFolderString.isEmpty() ) {
@@ -1375,7 +1375,7 @@ AddFavoriteDialog::AddFavoriteDialog(SequenceFileDialog* fd,
     _mainLayout->setSpacing(0);
     _mainLayout->setContentsMargins(5, 5, 0, 0);
     setLayout(_mainLayout);
-    setWindowTitle( tr("New favorite") );
+    setWindowTitle( tr("New Favorite") );
 
     _descriptionLabel = new Natron::Label("",this);
     _mainLayout->addWidget(_descriptionLabel);
@@ -2389,8 +2389,8 @@ FavoriteView::rename()
     }
     QString newName;
     QInputDialog dialog(this);
-    dialog.setLabelText( tr("Favorite name:") );
-    dialog.setWindowTitle( tr("Rename favorite") );
+    dialog.setLabelText( tr("Favorite Name:") );
+    dialog.setWindowTitle( tr("Rename Favorite") );
     if ( dialog.exec() ) {
         newName = dialog.textValue();
     }
@@ -2422,8 +2422,8 @@ FavoriteView::editUrl()
     }
     QString newName;
     QInputDialog dialog(this);
-    dialog.setLabelText( tr("Folder path:") );
-    dialog.setWindowTitle( tr("Change folder path") );
+    dialog.setLabelText( tr("Folder Path:") );
+    dialog.setWindowTitle( tr("Change Folder Path") );
     if ( dialog.exec() ) {
         newName = dialog.textValue();
     }
