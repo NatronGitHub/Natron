@@ -787,7 +787,7 @@ Project::initializeKnobs()
 {
     boost::shared_ptr<Page_Knob> page = Natron::createKnob<Page_Knob>(this, "Settings");
 
-    _imp->envVars = Natron::createKnob<Path_Knob>(this, "Project paths");
+    _imp->envVars = Natron::createKnob<Path_Knob>(this, "Project Paths");
     _imp->envVars->setName("projectPaths");
     _imp->envVars->setHintToolTip("Specify here project paths. Any path can be used "
                                   "in file paths and can be used between brackets, for example: \n"
@@ -833,11 +833,11 @@ Project::initializeKnobs()
     _imp->formatKnob->populateChoices(entries);
     _imp->formatKnob->setAnimationEnabled(false);
     page->addKnob(_imp->formatKnob);
-    _imp->addFormatKnob = Natron::createKnob<Button_Knob>(this,"New format...");
+    _imp->addFormatKnob = Natron::createKnob<Button_Knob>(this, "New Format...");
     _imp->addFormatKnob->setName("newFormat");
     page->addKnob(_imp->addFormatKnob);
 
-    _imp->viewsCount = Natron::createKnob<Int_Knob>(this,"Number of views");
+    _imp->viewsCount = Natron::createKnob<Int_Knob>(this, "Number of Views");
     _imp->viewsCount->setName("noViews");
     _imp->viewsCount->setAnimationEnabled(false);
     _imp->viewsCount->setMinimum(1);
@@ -848,7 +848,7 @@ Project::initializeKnobs()
     _imp->viewsCount->setAddNewLine(false);
     page->addKnob(_imp->viewsCount);
 
-    _imp->mainView = Natron::createKnob<Int_Knob>(this, "Main view");
+    _imp->mainView = Natron::createKnob<Int_Knob>(this, "Main View");
     _imp->mainView->setName("mainView");
     _imp->mainView->disableSlider();
     _imp->mainView->setDefaultValue(0);
@@ -857,7 +857,7 @@ Project::initializeKnobs()
     _imp->mainView->setAnimationEnabled(false);
     page->addKnob(_imp->mainView);
 
-    _imp->previewMode = Natron::createKnob<Bool_Knob>(this, "Auto previews");
+    _imp->previewMode = Natron::createKnob<Bool_Knob>(this, "Auto Previews");
     _imp->previewMode->setName("autoPreviews");
     _imp->previewMode->setHintToolTip("When checked, preview images on the node graph will be "
                                       "refreshed automatically. You can uncheck this option to improve performances."
@@ -872,7 +872,7 @@ Project::initializeKnobs()
     colorSpaces.push_back("sRGB");
     colorSpaces.push_back("Linear");
     colorSpaces.push_back("Rec.709");
-    _imp->colorSpace8u = Natron::createKnob<Choice_Knob>(this, "Colorspace for 8-bit integer images");
+    _imp->colorSpace8u = Natron::createKnob<Choice_Knob>(this, "Colorspace for 8-Bit Integer Images");
     _imp->colorSpace8u->setName("defaultColorSpace8u");
     _imp->colorSpace8u->setHintToolTip("Defines the color-space in which 8-bit images are assumed to be by default.");
     _imp->colorSpace8u->setAnimationEnabled(false);
@@ -880,7 +880,7 @@ Project::initializeKnobs()
     _imp->colorSpace8u->setDefaultValue(0);
     page->addKnob(_imp->colorSpace8u);
     
-    _imp->colorSpace16u = Natron::createKnob<Choice_Knob>(this, "Colorspace for 16-bit integer images");
+    _imp->colorSpace16u = Natron::createKnob<Choice_Knob>(this, "Colorspace for 16-Bit Integer Images");
     _imp->colorSpace16u->setName("defaultColorSpace16u");
     _imp->colorSpace16u->setHintToolTip("Defines the color-space in which 16-bit integer images are assumed to be by default.");
     _imp->colorSpace16u->setAnimationEnabled(false);
@@ -888,7 +888,7 @@ Project::initializeKnobs()
     _imp->colorSpace16u->setDefaultValue(2);
     page->addKnob(_imp->colorSpace16u);
     
-    _imp->colorSpace32f = Natron::createKnob<Choice_Knob>(this, "Colorspace for 32-bit floating point images");
+    _imp->colorSpace32f = Natron::createKnob<Choice_Knob>(this, "Colorspace for 32-Bit Floating Point Images");
     _imp->colorSpace32f->setName("defaultColorSpace32f");
     _imp->colorSpace32f->setHintToolTip("Defines the color-space in which 32-bit floating point images are assumed to be by default.");
     _imp->colorSpace32f->setAnimationEnabled(false);
@@ -896,7 +896,7 @@ Project::initializeKnobs()
     _imp->colorSpace32f->setDefaultValue(1);
     page->addKnob(_imp->colorSpace32f);
     
-    _imp->frameRange = Natron::createKnob<Int_Knob>(this, "Frame range",2);
+    _imp->frameRange = Natron::createKnob<Int_Knob>(this, "Frame Range",2);
     _imp->frameRange->setDefaultValue(1,0);
     _imp->frameRange->setDefaultValue(1,1);
     _imp->frameRange->setDimensionName(0, "first");
@@ -911,7 +911,7 @@ Project::initializeKnobs()
     _imp->frameRange->setAddNewLine(false);
     page->addKnob(_imp->frameRange);
     
-    _imp->lockFrameRange = Natron::createKnob<Bool_Knob>(this, "Lock range");
+    _imp->lockFrameRange = Natron::createKnob<Bool_Knob>(this, "Lock Range");
     _imp->lockFrameRange->setName("lockRange");
     _imp->lockFrameRange->setDefaultValue(false);
     _imp->lockFrameRange->setAnimationEnabled(false);
@@ -920,7 +920,7 @@ Project::initializeKnobs()
     _imp->lockFrameRange->setEvaluateOnChange(false);
     page->addKnob(_imp->lockFrameRange);
     
-    _imp->frameRate = Natron::createKnob<Double_Knob>(this, "Frame rate");
+    _imp->frameRate = Natron::createKnob<Double_Knob>(this, "Frame Rate");
     _imp->frameRate->setName("frameRate");
     _imp->frameRate->setHintToolTip("The frame rate of the project. This will serve as a default value for all effects that don't produce "
                                     "special frame rates.");
@@ -932,7 +932,7 @@ Project::initializeKnobs()
     
     boost::shared_ptr<Page_Knob> infoPage = Natron::createKnob<Page_Knob>(this, tr("Info").toStdString());
     
-    _imp->natronVersion = Natron::createKnob<String_Knob>(this, "Saved with");
+    _imp->natronVersion = Natron::createKnob<String_Knob>(this, "Saved With");
     _imp->natronVersion->setName("softwareVersion");
     _imp->natronVersion->setHintToolTip("The version of " NATRON_APPLICATION_NAME " that saved this project for the last time.");
     _imp->natronVersion->setAsLabel();
@@ -942,7 +942,7 @@ Project::initializeKnobs()
     _imp->natronVersion->setDefaultValue(generateUserFriendlyNatronVersionName());
     infoPage->addKnob(_imp->natronVersion);
     
-    _imp->originalAuthorName = Natron::createKnob<String_Knob>(this, "Original author");
+    _imp->originalAuthorName = Natron::createKnob<String_Knob>(this, "Original Author");
     _imp->originalAuthorName->setName("originalAuthor");
     _imp->originalAuthorName->setHintToolTip("The user name and host name of the original author of the project.");
     _imp->originalAuthorName->setAsLabel();
@@ -952,7 +952,7 @@ Project::initializeKnobs()
     _imp->originalAuthorName->setDefaultValue(authorName);
     infoPage->addKnob(_imp->originalAuthorName);
     
-    _imp->lastAuthorName = Natron::createKnob<String_Knob>(this, "Last author");
+    _imp->lastAuthorName = Natron::createKnob<String_Knob>(this, "Last Author");
     _imp->lastAuthorName->setName("lastAuthor");
     _imp->lastAuthorName->setHintToolTip("The user name and host name of the last author of the project.");
     _imp->lastAuthorName->setAsLabel();
@@ -962,7 +962,7 @@ Project::initializeKnobs()
     infoPage->addKnob(_imp->lastAuthorName);
 
 
-    _imp->projectCreationDate = Natron::createKnob<String_Knob>(this, "Created on");
+    _imp->projectCreationDate = Natron::createKnob<String_Knob>(this, "Created On");
     _imp->projectCreationDate->setName("creationDate");
     _imp->projectCreationDate->setHintToolTip("The creation date of the project.");
     _imp->projectCreationDate->setAsLabel();
@@ -971,7 +971,7 @@ Project::initializeKnobs()
     _imp->projectCreationDate->setDefaultValue(QDateTime::currentDateTime().toString().toStdString());
     infoPage->addKnob(_imp->projectCreationDate);
     
-    _imp->saveDate = Natron::createKnob<String_Knob>(this, "Last saved on");
+    _imp->saveDate = Natron::createKnob<String_Knob>(this, "Last Saved On");
     _imp->saveDate->setName("lastSaveDate");
     _imp->saveDate->setHintToolTip("The date this project was last saved.");
     _imp->saveDate->setAsLabel();
@@ -988,7 +988,7 @@ Project::initializeKnobs()
     infoPage->addKnob(comments);
     
     boost::shared_ptr<Page_Knob> pythonPage = Natron::createKnob<Page_Knob>(this, "Python");
-    _imp->onProjectLoadCB = Natron::createKnob<String_Knob>(this, "After project loaded");
+    _imp->onProjectLoadCB = Natron::createKnob<String_Knob>(this, "After Project Loaded");
     _imp->onProjectLoadCB->setName("afterProjectLoad");
     _imp->onProjectLoadCB->setHintToolTip("Add here the name of a Python-defined function that will be called each time this project "
                                           "is loaded either from an auto-save or by a user action. It will be called immediately after all "
@@ -1000,7 +1000,7 @@ Project::initializeKnobs()
     pythonPage->addKnob(_imp->onProjectLoadCB);
     
     
-    _imp->onProjectSaveCB = Natron::createKnob<String_Knob>(this, "Before project save");
+    _imp->onProjectSaveCB = Natron::createKnob<String_Knob>(this, "Before Project Save");
     _imp->onProjectSaveCB->setName("beforeProjectSave");
     _imp->onProjectSaveCB->setHintToolTip("Add here the name of a Python-defined function that will be called each time this project "
                                           "is saved by the user. This will be called prior to actually saving the project and can be used "
@@ -1015,7 +1015,7 @@ Project::initializeKnobs()
     _imp->onProjectSaveCB->setValue(onProjectSave, 0);
     pythonPage->addKnob(_imp->onProjectSaveCB);
     
-    _imp->onProjectCloseCB = Natron::createKnob<String_Knob>(this, "Before project close");
+    _imp->onProjectCloseCB = Natron::createKnob<String_Knob>(this, "Before Project Close");
     _imp->onProjectCloseCB->setName("beforeProjectClose");
     _imp->onProjectCloseCB->setHintToolTip("Add here the name of a Python-defined function that will be called each time this project "
                                           "is closed or if the user closes the application while this project is opened. This is called "
@@ -1026,7 +1026,7 @@ Project::initializeKnobs()
     _imp->onProjectCloseCB->setValue(onProjectClose, 0);
     pythonPage->addKnob(_imp->onProjectCloseCB);
     
-    _imp->onNodeCreated = Natron::createKnob<String_Knob>(this, "After node created");
+    _imp->onNodeCreated = Natron::createKnob<String_Knob>(this, "After Node Created");
     _imp->onNodeCreated->setName("afterNodeCreated");
     _imp->onNodeCreated->setHintToolTip("Add here the name of a Python-defined function that will be called each time a node "
                                            "is created. The boolean variable userEdited will be set to True if the node was created "
@@ -1039,7 +1039,7 @@ Project::initializeKnobs()
     _imp->onNodeCreated->setValue(onNodeCreated, 0);
     pythonPage->addKnob(_imp->onNodeCreated);
     
-    _imp->onNodeDeleted = Natron::createKnob<String_Knob>(this, "Before node removal");
+    _imp->onNodeDeleted = Natron::createKnob<String_Knob>(this, "Before Node Removal");
     _imp->onNodeDeleted->setName("beforeNodeRemoval");
     _imp->onNodeDeleted->setHintToolTip("Add here the name of a Python-defined function that will be called each time a node "
                                         "is about to be deleted. \n"
