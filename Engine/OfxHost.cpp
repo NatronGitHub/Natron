@@ -37,9 +37,9 @@ CLANG_DIAG_ON(deprecated-register)
 
 //ofx
 #include <ofxParametricParam.h>
-
+#ifdef OFX_EXTENSIONS_NUKE
 #include <nuke/fnOfxExtensions.h>
-
+#endif
 #include <ofxNatron.h>
 
 //ofx host support
@@ -182,16 +182,18 @@ Natron::OfxHost::setProperties()
     _properties.setIntProperty(kOfxParamHostPropPageRowColumnCount, 0, 1 );
     _properties.setIntProperty(kOfxImageEffectInstancePropSequentialRender, 2);
     _properties.setIntProperty(kOfxParamHostPropSupportsParametricAnimation, 0);
-
+#ifdef OFX_EXTENSIONS_NUKE
     ///Nuke transform suite
     _properties.setIntProperty(kFnOfxImageEffectCanTransform, 1);
     
     ///Plane suite
     _properties.setIntProperty(kFnOfxImageEffectPropMultiPlanar, 1);
-    
+#endif
+#ifdef OFX_EXTENSIONS_NATRON
     ///Natron extensions
     _properties.setIntProperty(kNatronOfxHostIsNatron, 1);
     _properties.setIntProperty(kNatronOfxParamHostPropSupportsDynamicChoices, 1);
+#endif
     
 }
 
