@@ -1849,10 +1849,10 @@ EffectInstance::tryConcatenateTransforms(const RenderRoIArgs& args,
                 
                 ///Now actually concatenate matrices together
                 im.cat.reset(new Transform::Matrix3x3);
-                std::list<Transform::Matrix3x3>::reverse_iterator it2 = matricesByOrder.rbegin();
+                std::list<Transform::Matrix3x3>::iterator it2 = matricesByOrder.begin();
                 *im.cat = *it2;
                 ++it2;
-                while (it2 != matricesByOrder.rend()) {
+                while (it2 != matricesByOrder.end()) {
                     *im.cat = Transform::matMul(*im.cat, *it2);
                     ++it2;
                 }
