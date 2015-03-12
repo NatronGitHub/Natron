@@ -246,6 +246,16 @@ OfxClipInstance::getComponentsPresent() const
     return ret;
 }
 
+int
+OfxClipInstance::getDimension(const std::string &name) const OFX_EXCEPTION_SPEC
+{
+    if (name == kFnOfxImageEffectPropComponentsPresent) {
+#pragma message WARN("Improve this")
+        return (int)getComponentsPresent().size();
+    }
+    return OFX::Host::ImageEffect::ClipInstance::getDimension(name);
+}
+
 
 // Pixel Aspect Ratio -
 //

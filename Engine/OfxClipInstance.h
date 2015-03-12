@@ -142,6 +142,9 @@ public:
     virtual const std::vector<std::string>& getComponentsPresent() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     
     
+    virtual int getDimension(const std::string &name) const OFX_EXCEPTION_SPEC;
+    
+    
     /// override this to fill in the image at the given time.
     /// The bounds of the image on the image plane should be
     /// 'appropriate', typically the value returned in getRegionsOfInterest
