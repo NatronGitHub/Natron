@@ -40,6 +40,8 @@ CLANG_DIAG_ON(deprecated-register)
 
 #include <nuke/fnOfxExtensions.h>
 
+#include <ofxNatron.h>
+
 //ofx host support
 #include <ofxhPluginAPICache.h>
 #include <ofxhImageEffect.h>
@@ -186,6 +188,11 @@ Natron::OfxHost::setProperties()
     
     ///Plane suite
     _properties.setIntProperty(kFnOfxImageEffectPropMultiPlanar, 1);
+    
+    ///Natron extensions
+    _properties.setIntProperty(kNatronOfxHostIsNatron, 1);
+    _properties.setIntProperty(kNatronOfxParamHostPropSupportsDynamicChoices, 1);
+    
 }
 
 OFX::Host::ImageEffect::Instance*
