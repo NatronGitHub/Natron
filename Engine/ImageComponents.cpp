@@ -98,6 +98,9 @@ ImageComponents::operator==(const ImageComponents& other) const
 bool
 ImageComponents::operator<(const ImageComponents& other) const
 {
+    if (_layerName != other._layerName && isColorPlane()) {
+        return true;
+    }
 
     if (_layerName < other._layerName) {
         return true;

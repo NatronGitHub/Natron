@@ -1641,6 +1641,9 @@ Node::makeInfoForInput(int inputNumber) const
     _imp->liveInstance->getPreferredDepthAndComponents(inputNumber, &comps, &depth);
     assert(!comps.empty());
     
+    EffectInstance::ComponentsAvailableMap availableComps;
+    _imp->liveInstance->getComponentsAvailable(getApp()->getTimeLine()->currentFrame(), &availableComps);
+    
     RenderScale scale;
     scale.x = scale.y = 1.;
     RectD rod;
@@ -1652,16 +1655,24 @@ Node::makeInfoForInput(int inputNumber) const
     
     std::stringstream ss;
     ss << "<b><font color=\"orange\">"<< inputName << ":\n" << "</font></b>"
-    << "<b>Image Format:</b> ";
+    << "<b>Image Format:</b>\n";
     
-    std::list<Natron::ImageComponents>::iterator next = comps.begin();
+    EffectInstance::ComponentsAvailableMap::iterator next = availableComps.begin();
     if (!comps.empty()) {
         ++next;
     }
-    for (std::list<Natron::ImageComponents>::iterator it = comps.begin(); it!=comps.end(); ++it) {
-        ss << Natron::Image::getFormatString(*it, depth);
-        if (next != comps.end()) {
-            ss << ", ";
+    for (EffectInstance::ComponentsAvailableMap::iterator it = availableComps.begin(); it!=availableComps.end(); ++it) {
+        NodePtr origin = it->second.lock();
+        if (origin.get() != this || inputNumber == -1) {
+            ss << Natron::Image::getFormatString(it->first, depth);
+            if (origin) {
+                ss << ": (" << origin->getLabel_mt_safe() << ")";
+            }
+        }
+        if (next != availableComps.end()) {
+            if (origin.get() != this || inputNumber == -1) {
+                ss << "\n";
+            }
             ++next;
         }
     }
