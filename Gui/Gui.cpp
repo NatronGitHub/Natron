@@ -2616,10 +2616,6 @@ Gui::findOrCreateToolButton(const boost::shared_ptr<PluginGroupNode> & plugin)
 
     if (isLeaf) {
         QString label = plugin->getNotHighestMajorVersion() ? plugin->getLabelVersionMajorEncoded() : plugin->getLabel();
-        int foundOFX = label.lastIndexOf("OFX");
-        if (foundOFX != -1) {
-            label = label.remove(foundOFX, 3);
-        }
         assert(parentToolButton);
         QAction* action = new QAction(this);
         action->setText(label);

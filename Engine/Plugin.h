@@ -220,144 +220,62 @@ public:
 
     ~Plugin();
 
-    void setPluginID(const QString & id)
-    {
-        _id = id;
-    }
+    void setPluginID(const QString & id);
     
 
-    const QString & getPluginID() const
-    {
-        return _id;
-    }
+    const QString & getPluginID() const;
     
-    bool isReader() const {
-        return _isReader;
-    }
+    bool isReader() const ;
     
-    bool isWriter() const {
-        return _isWriter;
-    }
+    bool isWriter() const ;
 
-    void setPluginLabel(const QString & label)
-    {
-        _label = label;
-    }
+    void setPluginLabel(const QString & label);
 
-    const QString & getPluginLabel() const
-    {
-        return _label;
-    }
+    const QString & getPluginLabel() const;
     
-    const QString getLabelVersionMajorMinorEncoded() const
-    {
-        return _label + ' ' + QString::number(_majorVersion) + '.' + QString::number(_minorVersion);
-    }
+    const QString getLabelVersionMajorMinorEncoded() const;
     
-    const QString getLabelVersionMajorEncoded() const
-    {
-        return _label + ' ' + QString::number(_majorVersion);
-    }
+    const QString getLabelWithoutOFX() const;
     
-    QString generateUserFriendlyPluginID() const
-    {
-        QString grouping = _grouping.size() > 0 ? _grouping[0] : QString();
-        return _label + "  [" + grouping + "]";
-    }
+    const QString getLabelVersionMajorEncoded() const;
     
-    QString generateUserFriendlyPluginIDMajorEncoded() const
-    {
-        QString grouping = _grouping.size() > 0 ? _grouping[0] : QString();
-        return getLabelVersionMajorEncoded() + "  [" + grouping + "]";
-    }
+    QString generateUserFriendlyPluginID() const;
+    
+    QString generateUserFriendlyPluginIDMajorEncoded() const;
 
+    const QString & getPluginOFXID() const;
+
+    const QString & getIconFilePath() const;
     
-    const QString & getPluginOFXID() const
-    {
-        return _ofxPluginID;
-    }
+    void setIconFilePath(const QString& filePath);
 
-    const QString & getIconFilePath() const
-    {
-        return _iconFilePath;
-    }
+    const QString & getGroupIconFilePath() const;
+
+    const QStringList & getGrouping() const;
     
-    void setIconFilePath(const QString& filePath)
-    {
-        _iconFilePath = filePath;
-    }
+    QMutex* getPluginLock() const;
 
-    const QString & getGroupIconFilePath() const
-    {
-        return _groupIconFilePath;
-    }
+    Natron::LibraryBinary* getLibraryBinary() const;
 
-    const QStringList & getGrouping() const
-    {
-        return _grouping;
-    }
+    int getMajorVersion() const;
 
-    QMutex* getPluginLock() const
-    {
-        return _lock;
-    }
+    int getMinorVersion() const;
 
-    Natron::LibraryBinary* getLibraryBinary() const
-    {
-        return _binary;
-    }
+    void setHasShortcut(bool has) const;
 
-    int getMajorVersion() const
-    {
-        return _majorVersion;
-    }
-
-    int getMinorVersion() const
-    {
-        return _minorVersion;
-    }
-
-    void setHasShortcut(bool has) const
-    {
-        _hasShortcutSet = has;
-    }
-
-    bool getHasShortcut() const
-    {
-        return _hasShortcutSet;
-    }
+    bool getHasShortcut() const;
     
-    void setPythonModule(const QString& module)
-    {
-        _pythonModule = module;
-    }
+    void setPythonModule(const QString& module);
     
-    const QString& getPythonModule() const {
-        return _pythonModule;
-    }
+    const QString& getPythonModule() const ;
     
-    void setOfxPlugin(OFX::Host::ImageEffect::ImageEffectPlugin* p)
-    {
-        _ofxPlugin = p;
-    }
+    void setOfxPlugin(OFX::Host::ImageEffect::ImageEffectPlugin* p);
     
-    OFX::Host::ImageEffect::ImageEffectPlugin* getOfxPlugin() const
-    {
-        return _ofxPlugin;
-    }
+    OFX::Host::ImageEffect::ImageEffectPlugin* getOfxPlugin() const;
     
-    OFX::Host::ImageEffect::Descriptor* getOfxDesc(ContextEnum* ctx) const
-    {
-        *ctx = _ofxContext;
-        return _ofxDescriptor;
-    }
+    OFX::Host::ImageEffect::Descriptor* getOfxDesc(ContextEnum* ctx) const;
     
-    void setOfxDesc(OFX::Host::ImageEffect::Descriptor* desc,ContextEnum ctx)
-    {
-        assert(ctx != Natron::eContextNone);
-        _ofxDescriptor = desc;
-        _ofxContext = ctx;
-    }
+    void setOfxDesc(OFX::Host::ImageEffect::Descriptor* desc,ContextEnum ctx);
     
 };
     

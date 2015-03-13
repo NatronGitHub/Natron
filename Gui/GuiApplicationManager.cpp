@@ -978,7 +978,7 @@ GuiApplicationManager::onPluginLoaded(Natron::Plugin* plugin)
     QString shortcutGrouping(kShortcutGroupNodes);
     const QStringList & groups = plugin->getGrouping();
     const QString & pluginID = plugin->getPluginID();
-    const QString & pluginLabel = plugin->getPluginLabel();
+    const QString  pluginLabel = plugin->getLabelWithoutOFX();
     const QString & pluginIconPath = plugin->getIconFilePath();
     const QString & groupIconPath = plugin->getGroupIconFilePath();
 
