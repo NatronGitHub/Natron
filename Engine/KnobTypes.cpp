@@ -16,6 +16,7 @@
 #include "KnobTypes.h"
 
 #include <cfloat>
+#include <locale>
 #include <sstream>
 #include <boost/math/special_functions/fpclassify.hpp>
 
@@ -689,6 +690,22 @@ Choice_Knob::getHintToolTipFull() const
     return ss.str();
 }
 
+static bool caseInsensitiveCompare(const std::string& a,const std::string& b)
+{
+    if (a.size() != b.size()) {
+        return false;
+    }
+    std::locale loc;
+    for (std::size_t i = 0; i < a.size(); ++i) {
+        char aLow = std::tolower(a[i],loc);
+        char bLow = std::tolower(b[i],loc);
+        if (aLow != bLow) {
+            return false;
+        }
+    }
+    return true;
+}
+
 void
 Choice_Knob::choiceRestoration(Choice_Knob* knob,const ChoiceExtraData* data)
 {
@@ -711,9 +728,10 @@ Choice_Knob::choiceRestoration(Choice_Knob* knob,const ChoiceExtraData* data)
         setValue(serializedIndex, 0);
     } else {
         // try to find the same label at some other index
-        std::vector<std::string>::iterator it = std::find(_entries.begin(), _entries.end(), data->_choiceString);
-        if ( it != _entries.end() ) {
-            setValue(std::distance(_entries.begin(), it), 0);
+        for (std::size_t i = 0; i < _entries.size(); ++i) {
+            if (caseInsensitiveCompare(_entries[i], data->_choiceString)) {
+                setValue(i, 0);
+            }
         }
     }
     

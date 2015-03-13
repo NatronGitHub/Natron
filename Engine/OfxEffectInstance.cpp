@@ -2778,7 +2778,7 @@ OfxEffectInstance::getComponentsNeededAndProduced(SequenceTime time, int view,
             
             if (ptClip) {
                 OfxClipInstance* clip = dynamic_cast<OfxClipInstance*>(ptClip);
-                if (clip) {
+                if (clip && clip->getAssociatedNode()) {
                     *passThroughInput = clip->getAssociatedNode()->getNode();
                 }
             }
