@@ -4691,6 +4691,12 @@ Gui::removeVisibleDockablePanel(DockablePanel* panel)
     }
 }
 
+const std::list<DockablePanel*>&
+Gui::getVisiblePanels() const
+{
+    return _imp->openedPanels;
+}
+
 void
 Gui::onMaxVisibleDockablePanelChanged(int maxPanels)
 {

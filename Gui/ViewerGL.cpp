@@ -71,6 +71,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Gui/CurveWidget.h"
 #include "Gui/Histogram.h"
 #include "Gui/NodeGui.h"
+#include "Gui/DockablePanel.h"
 
 // warning: 'gluErrorString' is deprecated: first deprecated in OS X 10.9 [-Wdeprecated-declarations]
 CLANG_DIAG_OFF(deprecated-declarations)
@@ -3834,28 +3835,38 @@ ViewerGL::updatePersistentMessageToWidth(int w)
         return;
     }
     
-    std::list<boost::shared_ptr<Natron::Node> >  nodes;
-    _imp->viewerTab->getGui()->getNodesEntitledForOverlays(nodes);
+    const std::list<DockablePanel*>& openedPanels = _imp->viewerTab->getGui()->getVisiblePanels();
     
     _imp->persistentMessages.clear();
     QStringList allMessages;
     
     int type = 0;
     ///Draw overlays in reverse order of appearance
-    std::list<boost::shared_ptr<Natron::Node> >::reverse_iterator next = nodes.rbegin();
-    if (!nodes.empty()) {
+    std::list<DockablePanel*>::const_iterator next = openedPanels.begin();
+    if (!openedPanels.empty()) {
         ++next;
     }
     int nbNonEmpty = 0;
-    for (std::list<boost::shared_ptr<Natron::Node> >::reverse_iterator it = nodes.rbegin(); it != nodes.rend(); ++it) {
+    for (std::list<DockablePanel*>::const_iterator it = openedPanels.begin(); it != openedPanels.end(); ++it) {
+        
+        const NodeSettingsPanel* isNodePanel = dynamic_cast<const NodeSettingsPanel*>(*it);
+        if (!isNodePanel) {
+            continue;
+        }
+        
+        NodePtr node = isNodePanel->getNode()->getNode();
+        if (!node) {
+            continue;
+        }
+        
         QString mess;
         int nType;
-        (*it)->getPersistentMessage(&mess, &nType);
+        node->getPersistentMessage(&mess, &nType);
         if (!mess.isEmpty()) {
              allMessages.append(mess);
             ++nbNonEmpty;
         }
-        if (next != nodes.rend()) {
+        if (next != openedPanels.end()) {
             ++next;
         }
         

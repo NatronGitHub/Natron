@@ -1485,7 +1485,7 @@ OfxEffectInstance::getRegionsOfInterest(SequenceTime time,
 
 
     if ( (stat != kOfxStatOK) && (stat != kOfxStatReplyDefault) ) {
-        appPTR->writeToOfxLog_mt_safe(QString( getNode()->getScriptName_mt_safe().c_str() ) + "Failed to specify the region of interest from inputs.");
+        throw std::runtime_error("getFramesNeeded action failed");
     }
     if (stat != kOfxStatReplyDefault) {
         
@@ -1549,7 +1549,7 @@ OfxEffectInstance::getFramesNeeded(SequenceTime time, int view)
         }
         
         if ( (stat != kOfxStatOK) && (stat != kOfxStatReplyDefault) ) {
-            Natron::errorDialog( getScriptName_mt_safe(), QObject::tr("Failed to specify the frame ranges needed from inputs.").toStdString() );
+            throw std::runtime_error("getFramesNeeded action failed");
         } else if (stat == kOfxStatOK) {
             for (OFX::Host::ImageEffect::ViewsRangeMap::iterator it = inputRanges.begin(); it != inputRanges.end(); ++it) {
                 OfxClipInstance* clip = dynamic_cast<OfxClipInstance*>(it->first);
@@ -1573,7 +1573,7 @@ OfxEffectInstance::getFramesNeeded(SequenceTime time, int view)
             stat = _effect->getFrameNeededAction( (OfxTime)time, inputRanges );
         }
         if ( (stat != kOfxStatOK) && (stat != kOfxStatReplyDefault) ) {
-            Natron::errorDialog( getScriptName_mt_safe(), QObject::tr("Failed to specify the frame ranges needed from inputs.").toStdString() );
+            throw std::runtime_error("getFramesNeeded action failed");
         } else if (stat == kOfxStatOK) {
             for (OFX::Host::ImageEffect::RangeMap::iterator it = inputRanges.begin(); it != inputRanges.end(); ++it) {
                 OfxClipInstance* clip = dynamic_cast<OfxClipInstance*>(it->first);
