@@ -1293,12 +1293,12 @@ ViewerTab::abortRendering()
         _imp->gui->onFreezeUIButtonClicked(false);
     }
     ///Abort all viewers because they are all synchronised.
-    const std::list<boost::shared_ptr<NodeGui> > & activeNodes = _imp->gui->getNodeGraph()->getAllActiveNodes();
+    const std::list<ViewerTab*> & activeNodes = _imp->gui->getViewersList();
 
-    for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = activeNodes.begin(); it != activeNodes.end(); ++it) {
-        ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>( (*it)->getNode()->getLiveInstance() );
-        if (isViewer) {
-            isViewer->getRenderEngine()->abortRendering(true);
+    for (std::list<ViewerTab*>::const_iterator it = activeNodes.begin(); it != activeNodes.end(); ++it) {
+        ViewerInstance* viewer = (*it)->getInternalNode();
+        if (viewer) {
+            viewer->getRenderEngine()->abortRendering(true);
         }
     }
 }
