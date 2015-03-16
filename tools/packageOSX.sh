@@ -206,7 +206,7 @@ cp  /opt/local/Library/Frameworks/Python.framework/Versions/3.4/lib/python3.4/si
 
 #compile openfx-io
 cd openfx-io
-make BITS=$BITS CONFIG=$CONFIG OCIO_HOME=/opt/local OIIO_HOME=/opt/local $MAKEJFLAGS || exit
+make BITS=$BITS CONFIG=$CONFIG OCIO_HOME=/opt/local OIIO_HOME=/opt/local SEEXPR_HOME=/opt/local $MAKEJFLAGS || exit
 mv IO/$OS-$BITS-$CONFIG/IO.ofx.bundle "../$PLUGINDIR" || exit
 cd ..
 
