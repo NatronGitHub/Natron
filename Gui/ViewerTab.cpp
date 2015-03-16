@@ -3846,7 +3846,7 @@ ViewerTab::setProjection(double zoomLeft, double zoomBottom, double zoomFactor, 
 {
     
     _imp->viewer->setProjection(zoomLeft, zoomBottom, zoomFactor, zoomAspectRatio);
-    QString str = QString::number(zoomFactor * 100);
+    QString str = QString::number(std::floor(zoomFactor * 100 + 0.5));
     str.append( QChar('%') );
     str.prepend("  ");
     str.append("  ");
