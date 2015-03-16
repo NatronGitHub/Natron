@@ -2864,7 +2864,7 @@ String_KnobGui::createWidget(QHBoxLayout* layout)
 
         QObject::connect( _textEdit, SIGNAL( editingFinished() ), this, SLOT( onTextChanged() ) );
        // layout->parentWidget()->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
-        _textEdit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+        _textEdit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
         ///set the copy/link actions in the right click menu
         enableRightClickMenu(_textEdit,0);
