@@ -2856,15 +2856,18 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
             /**
              * Lock the downscaled image so it cannot be resized while creating the temp image and calling convertToFormat.
              **/
-            Image::ReadAccess acc = it->second.downscaleImage->getReadRights();
-            
-            boost::shared_ptr<Image> tmp( new Image(it->first, it->second.downscaleImage->getRoD(), it->second.downscaleImage->getBounds(), mipMapLevel,it->second.downscaleImage->getPixelAspectRatio(), args.bitdepth, false) );
-            
-            bool unPremultIfNeeded = getOutputPremultiplication() == eImagePremultiplicationPremultiplied;
-            it->second.downscaleImage->convertToFormat(it->second.downscaleImage->getBounds(),
-                                             getApp()->getDefaultColorSpaceForBitDepth(it->second.downscaleImage->getBitDepth()),
-                                             getApp()->getDefaultColorSpaceForBitDepth(args.bitdepth),
-                                             args.channelForAlpha, false, false, unPremultIfNeeded, tmp.get());
+            boost::shared_ptr<Image> tmp;
+            {
+                Image::ReadAccess acc = it->second.downscaleImage->getReadRights();
+                
+                tmp.reset( new Image(it->first, it->second.downscaleImage->getRoD(), it->second.downscaleImage->getBounds(), mipMapLevel,it->second.downscaleImage->getPixelAspectRatio(), args.bitdepth, false) );
+                
+                bool unPremultIfNeeded = getOutputPremultiplication() == eImagePremultiplicationPremultiplied;
+                it->second.downscaleImage->convertToFormat(it->second.downscaleImage->getBounds(),
+                                                           getApp()->getDefaultColorSpaceForBitDepth(it->second.downscaleImage->getBitDepth()),
+                                                           getApp()->getDefaultColorSpaceForBitDepth(args.bitdepth),
+                                                           args.channelForAlpha, false, false, unPremultIfNeeded, tmp.get());
+            }
             it->second.downscaleImage = tmp;
         }
         
