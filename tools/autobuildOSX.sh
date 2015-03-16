@@ -95,6 +95,7 @@ fi
 fi
 
 if [ "$FAIL" != "1" ]; then
+  rm -rf build
   rm -rf repo
   mkdir repo
   DMGNAME=Natron-snapshots-$GITV_NATRON.dmg 
