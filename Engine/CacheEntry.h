@@ -847,7 +847,7 @@ private:
     {
         
         if (!fileExists(path)) {
-            throw std::bad_alloc();
+            throw std::runtime_error("Cache restore, no such file: " + path);
         }
         _data.restoreBufferFromFile(path);
        
