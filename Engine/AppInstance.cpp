@@ -734,14 +734,17 @@ AppInstance::createNodeInternal(const QString & pluginID,
     
     {
         ///Furnace plug-ins don't handle using the thread pool
-        if (foundPluginID.find("uk.co.thefoundry.furnace") != std::string::npos && appPTR->getUseThreadPool()) {
+        boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
+        if (foundPluginID.find("uk.co.thefoundry.furnace") != std::string::npos &&
+            (settings->useGlobalThreadPool() || settings->getNumberOfParallelRenders() != 1)) {
             Natron::StandardButtonEnum reply = Natron::questionDialog(tr("Warning").toStdString(),
                                                                   tr("The settings of the application are currently set to use "
                                                                      "the global thread-pool for rendering effects. The Foundry Furnace "
                                                                      "is known not to work well when this setting is checked. "
                                                                      "Would you like to turn it off ? ").toStdString(), false);
             if (reply == Natron::eStandardButtonYes) {
-                appPTR->getCurrentSettings()->setUseGlobalThreadPool(false);
+                settings->setUseGlobalThreadPool(false);
+                settings->setNumberOfParallelRenders(1);
             }
         }
     }

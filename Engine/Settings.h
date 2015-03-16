@@ -94,6 +94,8 @@ public:
     
     int getNumberOfParallelRenders() const;
     
+    void setNumberOfParallelRenders(int nb);
+    
     int getNumberOfThreadsPerEffect() const;
     
     bool useGlobalThreadPool() const;

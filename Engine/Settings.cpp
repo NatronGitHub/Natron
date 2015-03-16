@@ -2407,6 +2407,12 @@ int Settings::getNumberOfParallelRenders() const
 
 }
 
+void
+Settings::setNumberOfParallelRenders(int nb)
+{
+    _numberOfParallelRenders->setValue(nb, 0);
+}
+
 bool
 Settings::areRGBPixelComponentsSupported() const
 {
