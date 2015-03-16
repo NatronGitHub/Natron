@@ -195,6 +195,7 @@ public:
     
     void discardMipMapLevel();
     
+    void clearOfxImagesTLS();
 
     //returns the index of this clip if it is an input clip, otherwise -1.
     int getInputNb() const WARN_UNUSED_RETURN;
@@ -247,16 +248,19 @@ private:
         boost::shared_ptr<Transform::Matrix3x3> matrix; //< if the clip is associated to a node that can transform
         Natron::EffectInstance* rerouteNode; //< if the associated node is a concatenated transform, this is the effect from which to fetch images from
         int rerouteInputNb;
-
+        
+        std::list<OfxImage*> imagesBeingRendered;
+        
         ActionLocalData()
-            : isViewValid(false)
-            , view(0)
-            , isMipmapLevelValid(false)
-            , mipMapLevel(false)
-            , isTransformDataValid(false)
-            , matrix()
-            , rerouteNode(0)
-            , rerouteInputNb(-1)
+        : isViewValid(false)
+        , view(0)
+        , isMipmapLevelValid(false)
+        , mipMapLevel(false)
+        , isTransformDataValid(false)
+        , matrix()
+        , rerouteNode(0)
+        , rerouteInputNb(-1)
+        , imagesBeingRendered()
         {
         }
     };
@@ -316,6 +320,10 @@ public:
     {
     }
 
+    boost::shared_ptr<Natron::Image> getInternalImage() const
+    {
+        return _floatImage;
+    }
 
 private:
 

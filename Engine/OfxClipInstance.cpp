@@ -672,8 +672,20 @@ OfxClipInstance::getImagePlane(OfxTime time, int view, const std::string& plane,
         if (!outputImage) {
             return 0;
         }
+        
+        
+        ActionLocalData& args = _lastActionData.localData();
+        for (std::list<OfxImage*>::const_iterator it = args.imagesBeingRendered.begin(); it!=args.imagesBeingRendered.end(); ++it) {
+            if ((*it)->getInternalImage() == outputImage) {
+                (*it)->addReference();
+                return *it;
+            }
+        }
+        
         //The output clip doesn't have any transform matrix
-        return new OfxImage(outputImage,false,renderWindow,boost::shared_ptr<Transform::Matrix3x3>(),*this);
+        OfxImage* ret =  new OfxImage(outputImage,false,renderWindow,boost::shared_ptr<Transform::Matrix3x3>(),*this);
+        args.imagesBeingRendered.push_back(ret);
+        return ret;
     }
     
     
@@ -1121,7 +1133,11 @@ void
 OfxClipInstance::discardMipMapLevel()
 {
     assert( _lastActionData.hasLocalData() );
-    _lastActionData.localData().isMipmapLevelValid = false;
+    ActionLocalData& data = _lastActionData.localData();
+    data.isMipmapLevelValid = false;
+    
+    //Also clear images that may be left s
+    data.imagesBeingRendered.clear();
 }
 
 void
@@ -1140,6 +1156,13 @@ OfxClipInstance::clearTransform()
 {
     assert(_lastActionData.hasLocalData());
     _lastActionData.localData().isTransformDataValid = false;
+}
+
+void
+OfxClipInstance::clearOfxImagesTLS()
+{
+    assert(_lastActionData.hasLocalData());
+    _lastActionData.localData().imagesBeingRendered.clear();
 }
 
 const std::string &

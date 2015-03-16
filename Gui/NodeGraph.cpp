@@ -792,14 +792,14 @@ NodeGraph::moveNodesForIdealPosition(boost::shared_ptr<NodeGui> node,bool autoCo
                 behavior = 2;
             }
             ///case b)
-            else if (node->getNode()->getMaxInputCount() == 0) {
-                if (selected->getNode()->getMaxInputCount() == 0) {
-                    ///case 2-b) just do default we don't know what else to do
-                    behavior = 0;
-                } else {
+            else if (node->getNode()->isInputNode()) {
+//                if (selected->getNode()->isInputNode()) {
+//                    ///case 2-b) just do default we don't know what else to do
+//                    behavior = 0;
+//                } else {
                     ///case 3-b): connect the created node as input of the selected node
                     behavior = 1;
-                }
+//                }
             }
             ///case c) connect created as output of the selected node
             else {

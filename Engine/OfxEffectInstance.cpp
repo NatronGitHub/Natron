@@ -794,7 +794,7 @@ OfxEffectInstance::getMaxInputCount() const
     const std::string & context = effectInstance()->getContext();
     if ( (context == kOfxImageEffectContextReader) ||
          ( context == kOfxImageEffectContextGenerator) ) {
-        return 0;
+        return 1;
     } else {
         assert( effectInstance() );
         int totalClips = effectInstance()->getDescriptor().getClips().size();
