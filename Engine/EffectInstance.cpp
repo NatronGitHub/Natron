@@ -519,9 +519,9 @@ struct EffectInstance::Implementation
      **/
     class ScopedRenderArgs
     {
-        RenderArgs args;
+        RenderArgs* localData;
         ThreadStorage<RenderArgs>* _dst;
-
+        
     public:
         
         ScopedRenderArgs(ThreadStorage<RenderArgs>* dst,
@@ -537,30 +537,29 @@ struct EffectInstance::Implementation
                          const std::map<Natron::ImageComponents,PlaneToRender>& outputPlanes,
                          int firstFrame,
                          int lastFrame)
-            : args()
-              , _dst(dst)
+            : localData(&dst->localData())
+            , _dst(dst)
         {
             assert(_dst);
 
-            args._rod = rod;
-            args._renderWindowPixel = renderWindow;
-            args._time = time;
-            args._view = view;
-            args._channelForAlpha = channelForAlpha;
-            args._isIdentity = isIdentity;
-            args._identityTime = identityTime;
-            args._identityInputNb = inputNbIdentity;
-            args._outputPlanes = outputPlanes;
-            args._regionOfInterestResults = roiMap;
-            args._firstFrame = firstFrame;
-            args._lastFrame = lastFrame;
-            args._validArgs = true;
-            _dst->localData() = args;
+            localData->_rod = rod;
+            localData->_renderWindowPixel = renderWindow;
+            localData->_time = time;
+            localData->_view = view;
+            localData->_channelForAlpha = channelForAlpha;
+            localData->_isIdentity = isIdentity;
+            localData->_identityTime = identityTime;
+            localData->_identityInputNb = inputNbIdentity;
+            localData->_outputPlanes = outputPlanes;
+            localData->_regionOfInterestResults = roiMap;
+            localData->_firstFrame = firstFrame;
+            localData->_lastFrame = lastFrame;
+            localData->_validArgs = true;
 
         }
         
         ScopedRenderArgs(ThreadStorage<RenderArgs>* dst)
-        : args()
+        : localData(&dst->localData())
         , _dst(dst)
         {
             assert(_dst);
@@ -570,30 +569,22 @@ struct EffectInstance::Implementation
 
         ScopedRenderArgs(ThreadStorage<RenderArgs>* dst,
                          const RenderArgs & a)
-            : args(a)
+            : localData(&dst->localData())
               , _dst(dst)
         {
-            RenderArgs& tls = _dst->localData();
-            args._validArgs = true;
-            tls = args;
+            *localData = a;
+            localData->_validArgs = true;
         }
 
         ~ScopedRenderArgs()
         {
             assert( _dst->hasLocalData() );
-            args._outputPlanes.clear();
-            args._validArgs = false;
-            RenderArgs& tls = _dst->localData();
-            tls._outputPlanes.clear();
-            tls._validArgs = false;
+            localData->_outputPlanes.clear();
+            localData->_validArgs = false;
         }
 
-        /**
-         * @brief WARNING: Returns the args that have been passed to the constructor.
-         **/
-        const RenderArgs & getArgs() const
-        {
-            return args;
+        RenderArgs& getLocalData() {
+            return *localData;
         }
         
         ///Setup the first pass on thread-local storage.
@@ -606,30 +597,26 @@ struct EffectInstance::Implementation
                                int channelForAlpha,
                                bool isIdentity,
                                SequenceTime identityTime,
-                               int inputNbIdentity,
-                               const std::map<Natron::ImageComponents,PlaneToRender>& outputPlanes)
+                               int inputNbIdentity)
         {
-            args._rod = rod;
-            args._renderWindowPixel = renderWindow;
-            args._time = time;
-            args._view = view;
-            args._channelForAlpha = channelForAlpha;
-            args._isIdentity = isIdentity;
-            args._identityTime = identityTime;
-            args._identityInputNb = inputNbIdentity;
-            args._outputPlanes = outputPlanes;
-            args._validArgs = true;
-            _dst->localData() = args;
+            localData->_rod = rod;
+            localData->_renderWindowPixel = renderWindow;
+            localData->_time = time;
+            localData->_view = view;
+            localData->_channelForAlpha = channelForAlpha;
+            localData->_isIdentity = isIdentity;
+            localData->_identityTime = identityTime;
+            localData->_identityInputNb = inputNbIdentity;
+            localData->_validArgs = true;
         }
         
         void setArgs_secondPass(const RoIMap & roiMap,
                                 int firstFrame,
                                 int lastFrame) {
-            args._regionOfInterestResults = roiMap;
-            args._firstFrame = firstFrame;
-            args._lastFrame = lastFrame;
-            args._validArgs = true;
-            _dst->localData() = args;
+            localData->_regionOfInterestResults = roiMap;
+            localData->_firstFrame = firstFrame;
+            localData->_lastFrame = lastFrame;
+            localData->_validArgs = true;
         }
         
 
@@ -3109,7 +3096,7 @@ EffectInstance::renderRoIInternal(SequenceTime time,
                                   bool renderFullScaleThenDownscale,
                                   bool useScaleOneInputImages,
                                   const std::list<RoIMap>& inputsRoi,
-                                  const std::list<std::list<boost::shared_ptr<Natron::Image> > >& inputImages)
+                                  std::list<std::list<boost::shared_ptr<Natron::Image> > >& inputImages)
 {
     EffectInstance::RenderRoIStatusEnum retCode;
     
@@ -3201,6 +3188,8 @@ EffectInstance::renderRoIInternal(SequenceTime time,
     for (std::list<RectI>::const_iterator it = planesToRender.rectsToRender.begin(); it != planesToRender.rectsToRender.end(); ++it,++roiIT,++inputImgIt) {
         
         
+        assert(!it->isNull());
+        
         ///We hold our input images in thread-storage, so that the getImage function can find them afterwards, even if the node doesn't cache its output.
         boost::shared_ptr<InputImagesHolder_RAII> inputImagesHolder;
         if (!inputImages.empty()) {
@@ -3235,27 +3224,6 @@ EffectInstance::renderRoIInternal(SequenceTime time,
             renderMappedRectToRender = downscaledRectToRender;
         }
         
-        for (std::map<Natron::ImageComponents, PlaneToRender>::iterator it2 = planesToRender.planes.begin(); it2 != planesToRender.planes.end(); ++it2) {
-            
-            /*
-             * When using the cache, allocate a local temporary buffer onto which the plug-in will render, and then safely
-             * copy this buffer to the shared (among threads) image.
-             */
-            if (it2->second.renderMappedImage->usesBitMap()) {
-                it2->second.tmpImage.reset(new Image(it2->second.renderMappedImage->getComponents(),
-                                            it2->second.renderMappedImage->getRoD(),
-                                            renderMappedRectToRender,
-                                            it2->second.renderMappedImage->getMipMapLevel(),
-                                            it2->second.renderMappedImage->getPixelAspectRatio(),
-                                            it2->second.renderMappedImage->getBitDepth(),
-                                            false)); //< no bitmap
-                
-            } else {
-                it2->second.tmpImage = it2->second.renderMappedImage;
-            }
-            
-        }
-        
         Implementation::ScopedRenderArgs scopedArgs(&_imp->renderArgs);
         scopedArgs.setArgs_firstPass(rod,
                                      renderMappedRectToRender,
@@ -3264,8 +3232,7 @@ EffectInstance::renderRoIInternal(SequenceTime time,
                                      channelForAlpha,
                                      false, //< if we reached here the node is not an identity!
                                      0.,
-                                     -1,
-                                     planesToRender.planes);
+                                     -1);
         
         
         int firstFrame, lastFrame;
@@ -3276,7 +3243,7 @@ EffectInstance::renderRoIInternal(SequenceTime time,
         ///getImage() call.
         /// @see EffectInstance::getImage
         scopedArgs.setArgs_secondPass(*roiIT,firstFrame,lastFrame);
-        const RenderArgs & args = scopedArgs.getArgs();
+        RenderArgs & args = scopedArgs.getLocalData();
 
 
 #ifndef NDEBUG
@@ -3531,7 +3498,7 @@ EffectInstance::tiledRenderingFunctor(const TiledRenderingFunctorArgs& args,
 }
 
 EffectInstance::RenderingFunctorRetEnum
-EffectInstance::tiledRenderingFunctor(const RenderArgs & args,
+EffectInstance::tiledRenderingFunctor(RenderArgs & args,
                                       const ParallelRenderArgs& frameArgs,
                                       const std::list<boost::shared_ptr<Natron::Image> >& inputImages,
                                       const std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs >& frameTLS,
@@ -3541,7 +3508,7 @@ EffectInstance::tiledRenderingFunctor(const RenderArgs & args,
                                       bool isRenderResponseToUserInteraction,
                                       const RectI & downscaledRectToRender,
                                       const double par,
-                                      const ImagePlanesToRender& planes)
+                                      ImagePlanesToRender& planes)
 {
     
     const PlaneToRender& firstPlane = planes.planes.begin()->second;
@@ -3581,11 +3548,34 @@ EffectInstance::tiledRenderingFunctor(const RenderArgs & args,
     
     boost::shared_ptr<InputImagesHolder_RAII> scopedInputImages;
     
+    ImageList tmpPlanes;
+    
     bool isBeingRenderedElseWhere = false;
     if (frameTLS.empty()) {
         renderRectToRender = args._renderWindowPixel;
+        
+        for (std::map<Natron::ImageComponents, PlaneToRender>::iterator it = planes.planes.begin(); it != planes.planes.end(); ++it) {
+            /*
+             * When using the cache, allocate a local temporary buffer onto which the plug-in will render, and then safely
+             * copy this buffer to the shared (among threads) image.
+             */
+            if (it->second.renderMappedImage->usesBitMap()) {
+                it->second.tmpImage.reset(new Image(it->second.renderMappedImage->getComponents(),
+                                                    it->second.renderMappedImage->getRoD(),
+                                                    renderRectToRender,
+                                                    it->second.renderMappedImage->getMipMapLevel(),
+                                                    it->second.renderMappedImage->getPixelAspectRatio(),
+                                                    it->second.renderMappedImage->getBitDepth(),
+                                                    false)); //< no bitmap
+                
+            } else {
+                it->second.tmpImage = it->second.renderMappedImage;
+            }
+            tmpPlanes.push_back(it->second.tmpImage);
+        }
+        args._outputPlanes = planes.planes;
     } else {
-
+        
         ///At this point if we're in eRenderSafetyFullySafeFrame mode, we are a thread that might have been launched way after
         ///the time renderRectToRender was computed. We recompute it to update the portion to render.
         ///Note that if it is bigger than the initial rectangle, we don't render the bigger rectangle since we cannot
@@ -3667,9 +3657,36 @@ EffectInstance::tiledRenderingFunctor(const RenderArgs & args,
             
         }
         
+        if ( renderRectToRender.isNull() ) {
+            ///We've got nothing to do
+            return isBeingRenderedElseWhere ? eRenderingFunctorRetTakeImageLock : eRenderingFunctorRetOK;
+        }
+        
         RenderArgs argsCpy(args);
         ///Update the renderWindow which might have changed
         argsCpy._renderWindowPixel = renderRectToRender;
+        argsCpy._outputPlanes = planes.planes;
+        
+        for (std::map<Natron::ImageComponents, PlaneToRender>::iterator it = argsCpy._outputPlanes.begin();
+             it != argsCpy._outputPlanes.end(); ++it) {
+            /*
+             * When using the cache, allocate a local temporary buffer onto which the plug-in will render, and then safely
+             * copy this buffer to the shared (among threads) image.
+             */
+            if (it->second.renderMappedImage->usesBitMap()) {
+                it->second.tmpImage.reset(new Image(it->second.renderMappedImage->getComponents(),
+                                                    it->second.renderMappedImage->getRoD(),
+                                                    renderRectToRender,
+                                                    it->second.renderMappedImage->getMipMapLevel(),
+                                                    it->second.renderMappedImage->getPixelAspectRatio(),
+                                                    it->second.renderMappedImage->getBitDepth(),
+                                                    false)); //< no bitmap
+                
+            } else {
+                it->second.tmpImage = it->second.renderMappedImage;
+            }
+            tmpPlanes.push_back(it->second.tmpImage);
+        }
         
         scopedArgs.reset( new Implementation::ScopedRenderArgs(&_imp->renderArgs,argsCpy) );
         scopedFrameArgs.reset( new ParallelRenderArgsSetter(frameTLS));
@@ -3677,10 +3694,6 @@ EffectInstance::tiledRenderingFunctor(const RenderArgs & args,
         scopedInputImages.reset(new InputImagesHolder_RAII(inputImages,&_imp->inputImages));
     }
     
-    if ( renderRectToRender.isNull() ) {
-        ///We've got nothing to do
-        return isBeingRenderedElseWhere ? eRenderingFunctorRetTakeImageLock : eRenderingFunctorRetOK;
-    }
     
 #if NATRON_ENABLE_TRIMAP
     if (!frameArgs.canAbort && frameArgs.isRenderResponseToUserInteraction) {
@@ -3698,11 +3711,6 @@ EffectInstance::tiledRenderingFunctor(const RenderArgs & args,
     originalScale.x = firstPlane.downscaleImage->getScale();
     originalScale.y = originalScale.x;
 
-    ImageList tmpPlanes;
-    for (std::map<Natron::ImageComponents,PlaneToRender>::const_iterator it = planes.planes.begin(); it!=planes.planes.end(); ++it) {
-        assert(it->second.tmpImage);
-        tmpPlanes.push_back(it->second.tmpImage);
-    }
     Natron::StatusEnum st = render_public(time,
                                           originalScale,
                                           renderMappedScale,

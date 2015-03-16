@@ -1408,7 +1408,7 @@ private:
                                           bool renderFullScaleThenDownscale,
                                           bool useScaleOneInputImages,
                                           const std::list<RoIMap>& inputRoisParam,
-                                          const std::list<std::list<boost::shared_ptr<Natron::Image> > >& inputImagesParam);
+                                          std::list<std::list<boost::shared_ptr<Natron::Image> > >& inputImagesParam);
 
     /// \returns false if rendering was aborted
     bool renderInputImagesForRoI(bool createImageInCache,
@@ -1490,14 +1490,14 @@ private:
 
     struct TiledRenderingFunctorArgs
     {
-        const RenderArgs* args;
+        RenderArgs* args;
         std::list<boost::shared_ptr<Natron::Image> > inputImages;
         bool renderFullScaleThenDownscale;
         bool renderUseScaleOneInputs;
         bool isSequentialRender;
         bool isRenderResponseToUserInteraction;
         double par;
-        const ImagePlanesToRender* planes;
+        ImagePlanesToRender* planes;
     };
 
     enum RenderingFunctorRetEnum
@@ -1533,7 +1533,7 @@ private:
                                               const std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs >& frameTls,
                                               const RectI & downscaledRectToRender );
 
-    RenderingFunctorRetEnum tiledRenderingFunctor(const RenderArgs & args,
+    RenderingFunctorRetEnum tiledRenderingFunctor(RenderArgs & args,
                                               const ParallelRenderArgs& frameArgs,
                                               const std::list<boost::shared_ptr<Natron::Image> >& inputImages,
                                               const std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs >& frameTls,
@@ -1543,7 +1543,7 @@ private:
                                               bool isRenderResponseToUserInteraction,
                                               const RectI & downscaledRectToRender,
                                               const double par,
-                                              const ImagePlanesToRender& planes);
+                                              ImagePlanesToRender& planes);
 
     /**
      * @brief Returns the index of the input if inputEffect is a valid input connected to this effect, otherwise returns -1.
