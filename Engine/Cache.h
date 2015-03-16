@@ -1294,7 +1294,7 @@ public:
                 
                 ///This will not put the entry back into RAM, instead we just insert back the entry into the disk cache
                 value->restoreMetaDataFromFile(it->size);
-            } catch (const std::bad_alloc & e) {
+            } catch (const std::exception & e) {
                 qDebug() << e.what();
                 continue;
             }
