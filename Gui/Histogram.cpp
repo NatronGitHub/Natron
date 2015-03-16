@@ -12,7 +12,6 @@
 #include <QHBoxLayout>
 #include <QVBoxLayout>
 #include <QCheckBox>
-#include <QLabel>
 #include <QSplitter>
 #include <QDesktopWidget>
 #include <QGLShaderProgram>
@@ -270,16 +269,16 @@ Histogram::Histogram(Gui* gui,
     _imp->sizeH = QSize(10000,10000);
     
     _imp->rightClickMenu = new QMenu(this);
-    _imp->rightClickMenu->setFont( QFont(appFont,appFontSize) );
+    //_imp->rightClickMenu->setFont( QFont(appFont,appFontSize) );
 
     _imp->histogramSelectionMenu = new QMenu(tr("Viewer target"),_imp->rightClickMenu);
-    _imp->histogramSelectionMenu->setFont( QFont(appFont,appFontSize) );
+    //_imp->histogramSelectionMenu->setFont( QFont(appFont,appFontSize) );
     _imp->rightClickMenu->addAction( _imp->histogramSelectionMenu->menuAction() );
 
     _imp->histogramSelectionGroup = new QActionGroup(_imp->histogramSelectionMenu);
 
     _imp->viewerCurrentInputMenu = new QMenu(tr("Viewer input"),_imp->rightClickMenu);
-    _imp->viewerCurrentInputMenu->setFont( QFont(appFont,appFontSize) );
+    //_imp->viewerCurrentInputMenu->setFont( QFont(appFont,appFontSize) );
     _imp->rightClickMenu->addAction( _imp->viewerCurrentInputMenu->menuAction() );
 
     _imp->viewerCurrentInputGroup = new QActionGroup(_imp->viewerCurrentInputMenu);
@@ -303,7 +302,7 @@ Histogram::Histogram(Gui* gui,
     _imp->viewerCurrentInputMenu->addAction(inputBAction);
 
     _imp->modeMenu = new QMenu(tr("Display mode"),_imp->rightClickMenu);
-    _imp->modeMenu->setFont( QFont(appFont,appFontSize) );
+    //_imp->modeMenu->setFont( QFont(appFont,appFontSize) );
     _imp->rightClickMenu->addAction( _imp->modeMenu->menuAction() );
 
     _imp->fullImage = new QAction(_imp->rightClickMenu);
@@ -314,7 +313,7 @@ Histogram::Histogram(Gui* gui,
     _imp->rightClickMenu->addAction(_imp->fullImage);
 
     _imp->filterMenu = new QMenu(tr("Smoothing"),_imp->rightClickMenu);
-    _imp->filterMenu->setFont( QFont(appFont,appFontSize) );
+    //_imp->filterMenu->setFont( QFont(appFont,appFontSize) );
     _imp->rightClickMenu->addAction( _imp->filterMenu->menuAction() );
 
     _imp->modeActions = new QActionGroup(_imp->modeMenu);
@@ -437,7 +436,7 @@ boost::shared_ptr<Natron::Image> HistogramPrivate::getHistogramImage(RectI* imag
         return boost::shared_ptr<Natron::Image>();
     } else if (index == 1) {
         //current viewer
-        ViewerTab* lastSelectedViewer = gui->getLastSelectedViewer();
+        ViewerTab* lastSelectedViewer = gui->getNodeGraph()->getLastSelectedViewer();
         boost::shared_ptr<Natron::Image> ret;
         if (lastSelectedViewer) {
             ret = lastSelectedViewer->getViewer()->getLastRenderedImageByMipMapLevel(textureIndex,lastSelectedViewer->getInternalNode()->getMipMapLevelFromZoomFactor());
@@ -568,7 +567,7 @@ Histogram::onViewerImageChanged(ViewerGL* viewer,
 
     if (viewer && hasImageBackend) {
         QString viewerName = viewer->getInternalNode()->getScriptName_mt_safe().c_str();
-        ViewerTab* lastSelectedViewer = _imp->gui->getLastSelectedViewer();
+        ViewerTab* lastSelectedViewer = _imp->gui->getNodeGraph()->getLastSelectedViewer();
         QString currentViewerName;
         if (lastSelectedViewer) {
             currentViewerName = lastSelectedViewer->getInternalNode()->getScriptName_mt_safe().c_str();

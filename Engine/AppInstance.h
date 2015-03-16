@@ -46,6 +46,7 @@ class NodeCollection;
 class CLArgs;
 namespace Natron {
 class Node;
+class Plugin;
 class Project;
 class EffectInstance;
 class OutputEffectInstance;
@@ -348,6 +349,9 @@ public:
     
     std::string getAppIDString() const;
     
+    void setCreatingNode(bool b);
+    bool isCreatingNode() const;
+    
 public Q_SLOTS:
     
     void quit();
@@ -369,6 +373,8 @@ Q_SIGNALS:
     void pluginsPopulated();
 
 protected:
+    
+    virtual void onGroupCreationFinished(const boost::shared_ptr<Natron::Node>& node);
 
     virtual void createNodeGui(const boost::shared_ptr<Natron::Node>& /*node*/,
                                const boost::shared_ptr<Natron::Node>&  /*parentmultiinstance*/,
@@ -394,6 +400,16 @@ private:
                                                        bool pushUndoRedoCommand,bool addToProject,const QString& fixedName,
                                                        const CreateNodeArgs::DefaultValuesList& paramValues,
                                                        const boost::shared_ptr<NodeCollection>& group);
+    
+    void setGroupLabelIDAndVersion(const boost::shared_ptr<Natron::Node>& node,
+                                   const QString& pythonModulePath,
+                                   const QString &pythonModule);
+    
+    boost::shared_ptr<Natron::Node> createNodeFromPythonModule(Natron::Plugin* plugin,
+                                                               const boost::shared_ptr<NodeCollection>& group,
+                                                               bool requestedByLoad,
+                                                               const NodeSerialization & serialization);
+    
     boost::scoped_ptr<AppInstancePrivate> _imp;
 };
 

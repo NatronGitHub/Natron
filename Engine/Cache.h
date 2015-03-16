@@ -508,7 +508,6 @@ private:
     
     void createInternal(const typename EntryType::key_type & key,
                 const ParamsTypePtr& params,
-                ImageLockerHelper<EntryType>* imageLocker,
                 EntryTypePtr* returnValue) const
     {
         //_lock must not be taken here
@@ -610,11 +609,7 @@ private:
                 *returnValue = EntryTypePtr();
             }
             
-            if (*returnValue) {
-                ///Take the lock before sealing the entry into the cache, making sure no-one will be able to get the image before it's allocated
-                assert(imageLocker);
-                imageLocker->lock(*returnValue);
-                
+            if (*returnValue) {                
                 sealEntry(*returnValue, true);
             }
             
@@ -653,7 +648,6 @@ public:
      **/
     bool getOrCreate(const typename EntryType::key_type & key,
                      const ParamsTypePtr& params,
-                     ImageLockerHelper<EntryType>* imageLocker,
                      EntryTypePtr* returnValue) const
     {
         
@@ -679,7 +673,7 @@ public:
                 }
             }
             
-            createInternal(key,params,imageLocker,returnValue);
+            createInternal(key,params,returnValue);
             return false;
             
         } // getlocker

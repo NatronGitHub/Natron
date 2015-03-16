@@ -66,6 +66,7 @@ SOURCES += \
     CurveEditorUndoRedo.cpp \
     CurveWidget.cpp \
     CustomParamInteract.cpp \
+    DefaultOverlays.cpp \
     DockablePanel.cpp \
     Edge.cpp \
     FromQtEnums.cpp \
@@ -80,6 +81,7 @@ SOURCES += \
     KnobGuiFile.cpp \
     KnobGuiTypes.cpp \
     KnobUndoCommand.cpp \
+    Label.cpp \
     LineEdit.cpp \
     MessageBox.cpp \
     MenuWithToolTips.cpp \
@@ -142,6 +144,7 @@ HEADERS += \
     CurveSelection.h \
     CurveWidget.h \
     CustomParamInteract.h \
+    DefaultOverlays.h \
     DockablePanel.h \
     Edge.h \
     FromQtEnums.h \
@@ -159,6 +162,7 @@ HEADERS += \
     KnobGuiFile.h \
     KnobGuiTypes.h \
     KnobUndoCommand.h \
+    Label.h \
     LineEdit.h \
     MessageBox.h \
     MenuWithToolTips.h \

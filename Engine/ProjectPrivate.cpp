@@ -174,28 +174,11 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
     }
 
     
-    
-    ///Now that everything is connected, check clip preferences on all OpenFX effects
-    std::list<Natron::Node*> markedNodes;
-    std::list<Natron::Node*> nodesToRestorePreferences;
-    
-    NodeList nodes = _publicInterface->getNodes();
-    for (NodeList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        if ((*it)->isOutputNode()) {
-            nodesToRestorePreferences.push_back(it->get());
-        }
-    }
-    
     _publicInterface->getApp()->updateProjectLoadStatus(QObject::tr("Restoring graph stream preferences"));
     
-    size_t nodesToRestorePreferencesNb = nodesToRestorePreferences.size();
-    if (nodesToRestorePreferencesNb) {
-        for (std::list<Natron::Node*>::iterator it = nodesToRestorePreferences.begin(); it!=nodesToRestorePreferences.end(); ++it) {
-            (*it)->restoreClipPreferencesRecursive(markedNodes);
-        }
-    }
+   
     
-    _publicInterface->checkSupportsRenderScaleOKForAllNodes();
+    _publicInterface->forceGetClipPreferencesOnAllTrees();
     
     QDateTime time = QDateTime::currentDateTime();
     autoSetProjectFormat = false;

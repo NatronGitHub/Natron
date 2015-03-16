@@ -93,7 +93,7 @@ GCC_DIAG_ON(unused-parameter)
 
 //Increment this when making change to default shortcuts or changes that would break expected default shortcuts
 //in a way. This way the user will get prompted to restore default shortcuts on next launch
-#define NATRON_SHORTCUTS_DEFAULT_VERSION 2
+#define NATRON_SHORTCUTS_DEFAULT_VERSION 3
 
 using namespace Natron;
 
@@ -894,6 +894,61 @@ GuiApplicationManager::getColorPickerCursor() const
 void
 GuiApplicationManager::initGui()
 {
+    QSettings settings(NATRON_ORGANIZATION_NAME,NATRON_APPLICATION_NAME);
+
+    //load custom fonts
+    QString fontResource = QString(":/Resources/Fonts/%1.ttf");
+    QStringList fontFilenames;
+    fontFilenames << fontResource.arg("DroidSans");
+    fontFilenames << fontResource.arg("DroidSans-Bold");
+    Q_FOREACH (QString fontFilename, fontFilenames) {
+        int fontID = QFontDatabase::addApplicationFont(fontFilename);
+        qDebug() << "fontID=" << fontID << "families=" << QFontDatabase::applicationFontFamilies(fontID);
+    }
+    QString fontFamily(NATRON_FONT);
+    int fontSize = NATRON_FONT_SIZE_11;
+    
+    
+    ///Do not load old font stored in the setting "systemFont" on Natron < 2 because it might contain a crappy font.
+    if (settings.contains(kQSettingsSoftwareMajorVersionSettingName) && settings.value(kQSettingsSoftwareMajorVersionSettingName).toInt() >= 2) {
+        if (settings.contains("systemFont")) {
+            fontFamily = settings.value("systemFont").toString();
+        }
+    }
+    
+    
+    if (settings.contains("fontSize")) {
+        fontSize = settings.value("fontSize").toInt();
+    }
+    //fontFamily = "Courier"; fontSize = 24; // for debugging purposes
+    qDebug() << "Setting application font to " << fontFamily << fontSize;
+    {
+        QFontDatabase database;
+        Q_FOREACH (const QString &family, database.families()) {
+            if (family == fontFamily) {
+                qDebug() << "... found" << fontFamily << "available styles:";
+                Q_FOREACH (const QString &style, database.styles(family)) {
+                    qDebug() << family << style;
+                }
+            }
+        }
+        QFont font(fontFamily, fontSize);
+        if (!font.exactMatch()) {
+            QFontInfo fi(font);
+            qDebug() << "Not an exact match, got: " << fi.family() << fi.pointSize();
+        }
+        QApplication::setFont(font);
+#ifdef Q_OS_MAC
+        // https://bugreports.qt.io/browse/QTBUG-32789
+        QFont::insertSubstitution(".Lucida Grande UI", fontFamily/*"Lucida Grande"*/);
+        // https://bugreports.qt.io/browse/QTBUG-40833
+        QFont::insertSubstitution(".Helvetica Neue DeskInterface", fontFamily/*"Helvetica Neue"*/);
+        // there are lots of remaining bugs on Yosemite in 4.8.6, to be fixed in 4.8.7&
+#endif
+    }
+    _imp->_fontFamily = fontFamily;
+    _imp->_fontSize = fontSize;
+
     /*Display a splashscreen while we wait for the engine to load*/
     QString filename(NATRON_IMAGES_PATH "splashscreen.png");
 
@@ -903,21 +958,9 @@ GuiApplicationManager::initGui()
     appPTR->getIcon(Natron::NATRON_PIXMAP_APP_ICON, &appIcPixmap);
     QIcon appIc(appIcPixmap);
     qApp->setWindowIcon(appIc);
-    //load custom fonts
-    QString fontResource = QString(":/Resources/Fonts/%1.ttf");
-    QStringList fontFilenames;
-    fontFilenames << fontResource.arg("DroidSans");
-    fontFilenames << fontResource.arg("DroidSans-Bold");
-    Q_FOREACH (QString fontFilename, fontFilenames) {
-        _imp->_splashScreen->updateText("Loading font " + fontFilename);
-        //qDebug() << "attempting to load" << fontFilename;
-        int fontID = QFontDatabase::addApplicationFont(fontFilename);
-        qDebug() << "fontID=" << fontID << "families=" << QFontDatabase::applicationFontFamilies(fontID);
-    }
     
-    QSettings settings(NATRON_ORGANIZATION_NAME,NATRON_APPLICATION_NAME);
     QFontDatabase db;
-    QStringList families = db.families();
+    QStringList families = db.families(QFontDatabase::Latin); // We need a Latin font for the UI
     std::vector<std::string> systemFonts(families.size());
     for (int i = 0; i < families.size(); ++i) {
         systemFonts[i] = families[i].toStdString();
@@ -935,7 +978,7 @@ GuiApplicationManager::onPluginLoaded(Natron::Plugin* plugin)
     QString shortcutGrouping(kShortcutGroupNodes);
     const QStringList & groups = plugin->getGrouping();
     const QString & pluginID = plugin->getPluginID();
-    const QString & pluginLabel = plugin->getPluginLabel();
+    const QString  pluginLabel = plugin->getLabelWithoutOFX();
     const QString & pluginIconPath = plugin->getIconFilePath();
     const QString & groupIconPath = plugin->getGroupIconFilePath();
 
@@ -970,6 +1013,9 @@ GuiApplicationManager::onPluginLoaded(Natron::Plugin* plugin)
         symbol = Qt::Key_C;
     } else if (pluginID == PLUGINID_OFX_BLURCIMG) {
         symbol = Qt::Key_B;
+    } else if (pluginID == PLUGINID_NATRON_DOT) {
+        symbol = Qt::Key_Period;
+        modifiers |= Qt::ShiftModifier;
     } else {
         hasShortcut = false;
     }
@@ -1381,33 +1427,6 @@ GuiApplicationManager::initializeQApp(int &argc,
     app->setQuitOnLastWindowClosed(true);
     Q_INIT_RESOURCE(GuiResources);
     
-    
-    QSettings settings(NATRON_ORGANIZATION_NAME,NATRON_APPLICATION_NAME);
-    
-    
-    QString fontFamily(NATRON_FONT);
-    int fontSize = NATRON_FONT_SIZE_11;
-    
-    if (settings.contains("font")) {
-        QString fontChoiceEntry = settings.value("font").toString();
-        
-        if (fontChoiceEntry == "System fonts...") {
-            
-            if (settings.contains("systemFont")) {
-                fontFamily = settings.value("systemFont").toString();
-            }
-        } else {
-            fontFamily = fontChoiceEntry;
-        }
-    }
-    if (settings.contains("fontSize")) {
-        fontSize = settings.value("fontSize").toInt();
-    }
-    qDebug() << "Setting application font to " << fontFamily << " " << fontSize;
-    app->setFont( QFont(fontFamily, fontSize) );
-    _imp->_fontFamily = fontFamily;
-    _imp->_fontSize = fontSize;
-    
     ///Register all the shortcuts.
     populateShortcuts();
 }
@@ -1755,7 +1774,8 @@ GuiApplicationManager::populateShortcuts()
     registerKeybind(kShortcutGroupGlobal, kShortcutIDActionShowShortcutEditor, kShortcutDescActionShowShortcutEditor, Qt::NoModifier, (Qt::Key)0);
 
     registerKeybind(kShortcutGroupGlobal, kShortcutIDActionNewViewer, kShortcutDescActionNewViewer, Qt::ControlModifier, Qt::Key_I);
-    registerKeybind(kShortcutGroupGlobal, kShortcutIDActionFullscreen, kShortcutDescActionFullscreen, Qt::ControlModifier | Qt::AltModifier, Qt::Key_F);
+    registerKeybind(kShortcutGroupGlobal, kShortcutIDActionFullscreen, kShortcutDescActionFullscreen, Qt::AltModifier, Qt::Key_S); // as in Nuke
+    //registerKeybind(kShortcutGroupGlobal, kShortcutIDActionFullscreen, kShortcutDescActionFullscreen, Qt::ControlModifier | Qt::AltModifier, Qt::Key_F);
 
     registerKeybind(kShortcutGroupGlobal, kShortcutIDActionClearDiskCache, kShortcutDescActionClearDiskCache, Qt::NoModifier,(Qt::Key)0);
     registerKeybind(kShortcutGroupGlobal, kShortcutIDActionClearPlaybackCache, kShortcutDescActionClearPlaybackCache, Qt::NoModifier,(Qt::Key)0);

@@ -32,6 +32,7 @@ Functions
 *    def :meth:`getParams<NatronEngine.Effect.getParams>` ()
 *    def :meth:`getPluginID<NatronEngine.Effect.getPluginID>` ()
 *    def :meth:`getPosition<NatronEngine.Effect.getPosition>` ()
+*	 def :meth:`getRegionOfDefinition<NatronEngine.Effect.getRegionOfDefinition>` (time,view)
 *    def :meth:`getRotoContext<NatronEngine.Effect.getRotoContext>` ()
 *    def :meth:`getScriptName<NatronEngine.Effect.getScriptName>` ()
 *    def :meth:`getSize<NatronEngine.Effect.getSize>` ()
@@ -291,7 +292,17 @@ Note that in background mode, if used, this function will always return [0,0] an
 should NOT be used.
 
 
+.. method:: NatronEngine.Effect.getRegionOfDefinition(time,view)
 
+	:param time: :class:`int`
+	:param view: :class:`view`
+	:rtype: :class:`PySide.QtCore.QRectF`
+	
+Returns the bounding box of the image produced by this effect in canonical coordinates. 
+This is exactly the value displayed in the "Info" tab of the settings panel of the node
+for the "Output".
+This can be useful for example to set the position of a point parameter to the center
+of the region of definition.
 
 .. method:: NatronEngine.Effect.getRotoContext()
 

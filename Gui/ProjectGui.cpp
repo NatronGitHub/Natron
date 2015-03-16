@@ -20,7 +20,6 @@ CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QVBoxLayout>
 #include <QHBoxLayout>
-#include <QLabel>
 #include <QSplitter>
 #include <QTimer>
 #include <QDebug>
@@ -58,6 +57,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/BackDropGui.h"
 #include "Gui/ScriptEditor.h"
 #include "Gui/PythonPanels.h"
+#include "Gui/Label.h"
 
 ProjectGui::ProjectGui(Gui* gui)
     : _gui(gui)
@@ -168,7 +168,7 @@ AddFormatDialog::AddFormatDialog(Natron::Project *project,
     _parametersLineLayout = new QHBoxLayout(_parametersLine);
     _mainLayout->addWidget(_parametersLine);
 
-    _widthLabel = new QLabel("w:",_parametersLine);
+    _widthLabel = new Natron::Label("w:",_parametersLine);
     _parametersLineLayout->addWidget(_widthLabel);
     _widthSpinBox = new SpinBox(this,SpinBox::eSpinBoxTypeInt);
     _widthSpinBox->setMaximum(99999);
@@ -177,7 +177,7 @@ AddFormatDialog::AddFormatDialog(Natron::Project *project,
     _parametersLineLayout->addWidget(_widthSpinBox);
 
 
-    _heightLabel = new QLabel("h:",_parametersLine);
+    _heightLabel = new Natron::Label("h:",_parametersLine);
     _parametersLineLayout->addWidget(_heightLabel);
     _heightSpinBox = new SpinBox(this,SpinBox::eSpinBoxTypeInt);
     _heightSpinBox->setMaximum(99999);
@@ -186,7 +186,7 @@ AddFormatDialog::AddFormatDialog(Natron::Project *project,
     _parametersLineLayout->addWidget(_heightSpinBox);
 
 
-    _pixelAspectLabel = new QLabel(tr("pixel aspect:"),_parametersLine);
+    _pixelAspectLabel = new Natron::Label(tr("pixel aspect:"),_parametersLine);
     _parametersLineLayout->addWidget(_pixelAspectLabel);
     _pixelAspectSpinBox = new SpinBox(this,SpinBox::eSpinBoxTypeDouble);
     _pixelAspectSpinBox->setMinimum(0.);
@@ -200,7 +200,7 @@ AddFormatDialog::AddFormatDialog(Natron::Project *project,
     _mainLayout->addWidget(_formatNameLine);
 
 
-    _nameLabel = new QLabel(tr("Name:"),_formatNameLine);
+    _nameLabel = new Natron::Label(tr("Name:"),_formatNameLine);
     _formatNameLayout->addWidget(_nameLabel);
     _nameLineEdit = new LineEdit(_formatNameLine);
     _formatNameLayout->addWidget(_nameLineEdit);
@@ -363,7 +363,7 @@ ProjectGui::load(boost::archive::xml_iarchive & archive)
             std::map<std::string, ViewerData >::const_iterator found = viewersProjections.find(name);
             if ( found != viewersProjections.end() ) {
                 ViewerTab* tab = _gui->getApp()->getGui()->getViewerTabForInstance(viewer);
-                tab->getViewer()->setProjection(found->second.zoomLeft, found->second.zoomBottom, found->second.zoomFactor, 1.);
+                tab->setProjection(found->second.zoomLeft, found->second.zoomBottom, found->second.zoomFactor, 1.);
                 tab->setChannels(found->second.channels);
                 tab->setColorSpace(found->second.colorSpace);
                 tab->setGain(found->second.gain);
@@ -382,11 +382,11 @@ ProjectGui::load(boost::archive::xml_iarchive & archive)
                 tab->setInfobarVisible(found->second.infobarVisible);
                 tab->setTimelineVisible(found->second.timelineVisible);
                 tab->setCheckerboardEnabled(found->second.checkerboardEnabled);
-                tab->setTimelineBounds(found->second.leftBound, found->second.rightBound);
                 if (found->second.version >= VIEWER_DATA_REMOVES_FRAME_RANGE_LOCK) {
+                    tab->setFrameRange(found->second.leftBound, found->second.rightBound);
                     tab->setFrameRangeEdited(leftBound != found->second.leftBound || rightBound != found->second.rightBound);
                 } else {
-                    tab->setTimelineBounds(leftBound, rightBound);
+                    tab->setFrameRange(leftBound, rightBound);
                     tab->setFrameRangeEdited(false);
                 }
                 if (!found->second.fpsLocked) {
@@ -436,6 +436,7 @@ ProjectGui::load(boost::archive::xml_iarchive & archive)
         assert(gui_i);
         BackDropGui* bd = dynamic_cast<BackDropGui*>(gui_i.get());
         assert(bd);
+        bd->setVisibleSettingsPanel(false);
         bd->resize(w,h);
         String_Knob* iStr = dynamic_cast<String_Knob*>(labelSerialization.get());
         assert(iStr);

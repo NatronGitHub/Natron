@@ -97,13 +97,13 @@ public:
     }
 
     virtual Natron::StatusEnum render(SequenceTime time,
-                                  const RenderScale& originalScale,
-                                  const RenderScale & mappedScale,
-                                  const RectI & roi
-                                  ,int view,
-                                  bool /*isSequentialRender*/,
-                                  bool /*isRenderResponseToUserInteraction*/,
-                                  boost::shared_ptr<Natron::Image> output) OVERRIDE;
+                                      const RenderScale& originalScale,
+                                      const RenderScale & mappedScale,
+                                      const RectI & roi
+                                      ,int view,
+                                      bool /*isSequentialRender*/,
+                                      bool /*isRenderResponseToUserInteraction*/,
+                                      const std::list<boost::shared_ptr<Natron::Image>  >& output) OVERRIDE;
     virtual void knobChanged(KnobI* k, Natron::ValueChangedReasonEnum reason, int view, SequenceTime time,
                              bool originatedFromMainThread) OVERRIDE FINAL;
     virtual Natron::EffectInstance::RenderSafetyEnum renderThreadSafety() const OVERRIDE
@@ -111,7 +111,7 @@ public:
         return Natron::EffectInstance::eRenderSafetyInstanceSafe;
     }
 
-    virtual void addAcceptedComponents(int inputNb,std::list<Natron::ImageComponentsEnum>* comps) OVERRIDE FINAL;
+    virtual void addAcceptedComponents(int inputNb,std::list<Natron::ImageComponents>* comps) OVERRIDE FINAL;
     virtual void addSupportedBitDepth(std::list<Natron::ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
 
     virtual bool isFrameVarying() const OVERRIDE FINAL WARN_UNUSED_RETURN { return true; }

@@ -127,10 +127,6 @@ public:
 
     const std::list<boost::shared_ptr<NodeGui> > & getSelectedNodes() const;
 
-    void setLastSelectedViewer(ViewerTab* tab);
-
-    ViewerTab* getLastSelectedViewer() const;
-
     bool eventFilter(QObject *target, QEvent* e);
 
     void createViewerGui(boost::shared_ptr<Natron::Node> viewer);
@@ -448,6 +444,8 @@ public:
     void addVisibleDockablePanel(DockablePanel* panel);
     void removeVisibleDockablePanel(DockablePanel* panel);
     
+    const std::list<DockablePanel*>& getVisiblePanels() const;
+    
     std::list<ToolButton*> getToolButtonsOrdered() const;
 
     void setToolButtonMenuOpened(QToolButton* button);
@@ -698,6 +696,7 @@ private:
     virtual void resizeEvent(QResizeEvent* e) OVERRIDE FINAL;
     virtual void closeEvent(QCloseEvent* e) OVERRIDE;
     QWidget* _embeddedWidget;
+    QScrollArea* _scrollArea;
     QVBoxLayout* _layout;
     Gui* _gui;
 };

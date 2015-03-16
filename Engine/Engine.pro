@@ -73,6 +73,7 @@ SOURCES += \
     Hash64.cpp \
     HistogramCPU.cpp \
     Image.cpp \
+    ImageComponents.cpp \
     ImageKey.cpp \
     ImageParamsSerialization.cpp \
     Interpolation.cpp \
@@ -188,6 +189,7 @@ HEADERS += \
     HistogramCPU.h \
     ImageInfo.h \
     Image.h \
+    ImageComponents.h \
     ImageKey.h \
     ImageLocker.h \
     ImageSerialization.h \

@@ -24,6 +24,7 @@ CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_ON(deprecated)
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
+#include <boost/weak_ptr.hpp>
 #endif
 //ofx
 #include <ofxhImageEffect.h>
@@ -33,6 +34,7 @@ CLANG_DIAG_ON(deprecated)
 
 #include "Engine/Image.h"
 #include "Engine/ThreadStorage.h"
+#include "Engine/ImageComponents.h"
 
 class OfxImage;
 class OfxEffectInstance;
@@ -42,6 +44,7 @@ struct Matrix3x3;
 }
 namespace Natron {
 class EffectInstance;
+class GenericAccess;
 class OfxImageEffectInstance;
 class Image;
 class Node;
@@ -131,7 +134,17 @@ public:
     //  0 if the images can only be sampled at discreet times (eg: the clip is a sequence of frames),
     //  1 if the images can only be sampled continuously (eg: the clip is infact an animating roto spline and can be rendered anywhen).
     virtual bool getContinuousSamples() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-
+    
+    /// Returns the components present on the effect. Much like getComponents() it can also
+    /// return components from other planes.
+    /// Returns a vector since the function getStringPropertyN does not exist. Only getStringProperty
+    /// with an index exists.
+    virtual const std::vector<std::string>& getComponentsPresent() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
+    
+    virtual int getDimension(const std::string &name) const OFX_EXCEPTION_SPEC;
+    
+    
     /// override this to fill in the image at the given time.
     /// The bounds of the image on the image plane should be
     /// 'appropriate', typically the value returned in getRegionsOfInterest
@@ -187,8 +200,11 @@ public:
     int getInputNb() const WARN_UNUSED_RETURN;
 
     Natron::EffectInstance* getAssociatedNode() const WARN_UNUSED_RETURN;
-    static std::string natronsComponentsToOfxComponents(Natron::ImageComponentsEnum comp);
-    static Natron::ImageComponentsEnum ofxComponentsToNatronComponents(const std::string & comp);
+    
+    static Natron::ImageComponents ofxPlaneToNatronPlane(const std::string& plane);
+    static std::string natronsPlaneToOfxPlane(const Natron::ImageComponents& plane);
+    static std::string natronsComponentsToOfxComponents(const Natron::ImageComponents& comp);
+    static std::list<Natron::ImageComponents> ofxComponentsToNatronComponents(const std::string & comp);
     static Natron::ImageBitDepthEnum ofxDepthToNatronDepth(const std::string & depth);
     static std::string natronsDepthToOfxDepth(Natron::ImageBitDepthEnum depth);
 
@@ -197,11 +213,18 @@ public:
     
 private:
 
+    void getRegionOfDefinitionInternal(OfxTime time,int view, unsigned int mipmapLevel,Natron::EffectInstance* associatedNode,
+                                       OfxRectD* rod) const;
+    
     OFX::Host::ImageEffect::Image* getImageInternal(OfxTime time,const OfxPointD & renderScale, int view, const OfxRectD *optionalBounds,
+                                                    const std::string& plane,
                                                     bool usingReroute,
                                                     int rerouteInputNb,
                                                     Natron::EffectInstance* node,
                                                     const boost::shared_ptr<Transform::Matrix3x3>& transform);
+    
+    
+    
     OfxEffectInstance* _nodeInstance;
     Natron::OfxImageEffectInstance* const _effect;
     double _aspectRatio;
@@ -239,6 +262,23 @@ private:
     };
 
     Natron::ThreadStorage<ActionLocalData> _lastActionData; //< foreach  thread, the args
+    
+    
+   /* struct CompPresent
+    {
+        ///The component in question
+        Natron::ImageComponentsEnum comp;
+        
+        ///For input clips, the node from which to fetch the components, otherwise NULL for output clips
+        boost::weak_ptr<Natron::Node> node;
+    };*/
+    
+    ///  pair< component, ofxcomponent> 
+    typedef std::vector<std::string>  ComponentsPresentMap;
+    mutable Natron::ThreadStorage<ComponentsPresentMap> _componentsPresent;
+    
+    mutable Natron::ThreadStorage<std::string> _unmappedComponents;
+    
 };
 
 class OfxImage
@@ -267,6 +307,7 @@ public:
 
 
     explicit OfxImage(boost::shared_ptr<Natron::Image> internalImage,
+                      bool isSrcImage,
                       const RectI& renderWindow,
                       const boost::shared_ptr<Transform::Matrix3x3>& mat,
                       OfxClipInstance &clip);
@@ -275,21 +316,11 @@ public:
     {
     }
 
-    BitDepthEnum bitDepth() const
-    {
-        return _bitDepth;
-    }
-
-    OfxRGBAColourF* pixelF(int x, int y) const;
-    boost::shared_ptr<Natron::Image> getInternalImageF() const
-    {
-        return _floatImage;
-    }
 
 private:
 
-    BitDepthEnum _bitDepth;
     boost::shared_ptr<Natron::Image> _floatImage;
+    boost::shared_ptr<Natron::GenericAccess> _imgAccess;
 };
 
 #endif // NATRON_ENGINE_OFXCLIPINSTANCE_H_

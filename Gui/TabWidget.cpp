@@ -232,8 +232,8 @@ void
 TabWidget::createMenu()
 {
     MenuWithToolTips menu(_imp->gui);
-    QFont f(appFont,appFontSize);
-    menu.setFont(f) ;
+    //QFont f(appFont,appFontSize);
+    //menu.setFont(f) ;
     QPixmap pixV,pixM,pixH,pixC,pixA;
     appPTR->getIcon(NATRON_PIXMAP_TAB_WIDGET_SPLIT_VERTICALLY,&pixV);
     appPTR->getIcon(NATRON_PIXMAP_TAB_WIDGET_SPLIT_HORIZONTALLY,&pixH);
@@ -290,7 +290,7 @@ TabWidget::createMenu()
     std::map<PyPanel*,std::string> userPanels = _imp->gui->getPythonPanels();
     if (!userPanels.empty()) {
         QMenu* userPanelsMenu = new QMenu(tr("User panels"),&menu);
-        userPanelsMenu->setFont(f);
+        //userPanelsMenu->setFont(f);
         menu.addAction(userPanelsMenu->menuAction());
         
         
@@ -361,11 +361,17 @@ TabWidget::moveToNextTab()
 void
 TabWidget::tryCloseFloatingPane()
 {
-    FloatingWidget* parent = dynamic_cast<FloatingWidget*>( parentWidget() );
-
-    if (parent) {
-        parent->close();
+    QWidget* parent = parentWidget();
+    while (parent) {
+        FloatingWidget* fw = dynamic_cast<FloatingWidget*>(parent);
+        if (fw) {
+            fw->close();
+            return;
+        }
+        parent = parent->parentWidget();
     }
+
+   
 }
 
 static void
@@ -398,7 +404,16 @@ TabWidget::closeSplitterAndMoveOtherSplitToParent(Splitter* container)
     assert(otherSplit);
 
     Splitter* parentSplitter = dynamic_cast<Splitter*>( container->parentWidget() );
-    FloatingWidget* parentWindow = dynamic_cast<FloatingWidget*>( container->parentWidget() );
+    QWidget* parent = container->parentWidget();
+    
+    FloatingWidget* parentWindow = 0;
+    while (parent) {
+        parentWindow = dynamic_cast<FloatingWidget*>(parent);
+        if (parentWindow) {
+            break;
+        }
+        parent = parent->parentWidget();
+    }
 
     assert(parentSplitter || parentWindow);
 
@@ -434,9 +449,14 @@ TabWidget::closePane()
         return;
     }
 
-    FloatingWidget* isFloating = dynamic_cast<FloatingWidget*>( parentWidget() );
-    if ( isFloating && (isFloating->getEmbeddedWidget() == this) ) {
-        isFloating->close();
+    QWidget* parent = parentWidget();
+    while (parent) {
+        FloatingWidget* isFloating = dynamic_cast<FloatingWidget*>(parent);
+        if ( isFloating && (isFloating->getEmbeddedWidget() == this) ) {
+            isFloating->close();
+            break;
+        }
+        parent = parent->parentWidget();
     }
 
 
@@ -489,12 +509,17 @@ TabWidget::closePane()
 void
 TabWidget::floatPane(QPoint* position)
 {
-    FloatingWidget* isParentFloating = dynamic_cast<FloatingWidget*>( parentWidget() );
-
-    if (isParentFloating) {
-        return;
+    
+    QWidget* parent = parentWidget();
+    while (parent) {
+        FloatingWidget* isParentFloating = dynamic_cast<FloatingWidget*>(parent);
+        if (isParentFloating) {
+            return;
+        }
+        parent = parent->parentWidget();
     }
 
+    
     FloatingWidget* floatingW = new FloatingWidget(_imp->gui,_imp->gui);
     Splitter* parentSplitter = dynamic_cast<Splitter*>( parentWidget() );
     setParent(0);
@@ -659,7 +684,16 @@ TabWidget*
 TabWidget::splitInternal(bool autoSave,
                          Qt::Orientation orientation)
 {
-    FloatingWidget* parentIsFloating = dynamic_cast<FloatingWidget*>( parentWidget() );
+    QWidget* parent = parentWidget();
+    FloatingWidget* parentIsFloating = 0;
+    while (parent) {
+        parentIsFloating = dynamic_cast<FloatingWidget*>(parent);
+        if (parentIsFloating) {
+            break;
+        }
+        parent = parent->parentWidget();
+    }
+
     Splitter* parentIsSplitter = dynamic_cast<Splitter*>( parentWidget() );
 
     assert(parentIsSplitter || parentIsFloating);
@@ -768,7 +802,7 @@ TabWidget::appendTab(const QIcon & icon,
         _imp->gui->registerTab(widget,object);
 
         _imp->tabs.push_back(std::make_pair(widget,object));
-        widget->setParent(this);
+        //widget->setParent(this);
         _imp->modifyingTabBar = true;
         _imp->tabBar->addTab(icon,label.c_str());
         _imp->tabBar->updateGeometry(); //< necessary
@@ -881,6 +915,8 @@ TabWidget::removeTab(int index,bool userAction)
             _imp->gui->removeViewerTab(isViewer,false,false);
         } else if (isHisto) {
             _imp->gui->removeHistogram(isHisto);
+            //Return because at this point isHisto is invalid
+            return tab;
         } else {
             ///Do not delete unique widgets such as the properties bin, node graph or curve editor
             tab->setVisible(false);

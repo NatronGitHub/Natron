@@ -287,6 +287,12 @@ public:
 
     void restoreTracks(const std::list <SerializedTrack> & tracks,const std::list<boost::shared_ptr<Natron::Node> > & activeNodes);
 
+    void setHasNativeOverlayHandle(bool handle);
+    
+    bool getHasNativeOverlayHandle() const;
+    
+    virtual bool useNativeOverlayHandle() const { return getHasNativeOverlayHandle(); }
+    
 public Q_SLOTS:
 
     void onNodeDeactivated();
@@ -321,6 +327,7 @@ private:
     ///This tells us that only the default value is stored normalized.
     ///This SHOULD NOT bet set for old deprecated < OpenFX 1.2 normalized parameters.
     bool _defaultStoredNormalized;
+    bool _hasNativeOverlayHandle;
     static const std::string _typeNameStr;
 };
 
@@ -432,7 +439,6 @@ private:
 
     virtual bool canAnimate() const OVERRIDE FINAL;
     virtual const std::string & typeName() const OVERRIDE FINAL;
-    virtual void deepCloneExtraData(KnobI* other) OVERRIDE FINAL;
 private:
     
     mutable QMutex _entriesMutex;
@@ -788,6 +794,7 @@ public:
     std::pair<double,double> getParametricRange() const WARN_UNUSED_RETURN;
     boost::shared_ptr<Curve> getParametricCurve(int dimension) const;
     Natron::StatusEnum addControlPoint(int dimension,double key,double value) WARN_UNUSED_RETURN;
+    Natron::StatusEnum addHorizontalControlPoint(int dimension,double key,double value) WARN_UNUSED_RETURN;
     Natron::StatusEnum getValue(int dimension,double parametricPosition,double *returnValue) const WARN_UNUSED_RETURN;
     Natron::StatusEnum getNControlPoints(int dimension,int *returnValue) const WARN_UNUSED_RETURN;
     Natron::StatusEnum getNthControlPoint(int dimension,

@@ -13,6 +13,8 @@
 #include "Engine/NodeGroup.h"
 #include "Engine/Transform.h"
 
+using namespace Natron;
+
 NoOpBase::NoOpBase(boost::shared_ptr<Natron::Node> n)
     : Natron::OutputEffectInstance(n)
 {
@@ -21,11 +23,11 @@ NoOpBase::NoOpBase(boost::shared_ptr<Natron::Node> n)
 
 void
 NoOpBase::addAcceptedComponents(int /*inputNb*/,
-                                std::list<Natron::ImageComponentsEnum>* comps)
+                                std::list<Natron::ImageComponents>* comps)
 {
-    comps->push_back(Natron::eImageComponentRGB);
-    comps->push_back(Natron::eImageComponentRGBA);
-    comps->push_back(Natron::eImageComponentAlpha);
+    comps->push_back(ImageComponents::getRGBComponents());
+    comps->push_back(ImageComponents::getRGBAComponents());
+    comps->push_back(ImageComponents::getAlphaComponents());
 }
 
 void
@@ -74,6 +76,13 @@ NoOpBase::getTransform(SequenceTime /*time*/,
     return Natron::eStatusOK;
 }
 
+bool
+NoOpBase::getInputsHoldingTransform(std::list<int>* inputs) const
+{
+    inputs->push_back(0);
+    return true;
+}
+
 std::string
 GroupInput::getDescription() const
 {
@@ -90,13 +99,13 @@ GroupInput::initializeKnobs()
     optional->setHintToolTip("When checked, this input of the group will be optional, i.e it will not be required that it is connected "
                              "for the render to work. ");
     optional->setAnimationEnabled(false);
-    optional->setName("optional");
+    optional->setName(kNatronGroupInputIsOptionalParamName);
     page->addKnob(optional);
     
     mask = Natron::createKnob<Bool_Knob>(this, "Mask");
     mask->setHintToolTip("When checked, this input of the group will be considered as a mask. A mask is always optional.");
     mask->setAnimationEnabled(false);
-    mask->setName("isMask");
+    mask->setName(kNatronGroupInputIsMaskParamName);
     page->addKnob(mask);
 
 }

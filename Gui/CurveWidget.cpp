@@ -23,7 +23,6 @@ CLANG_DIAG_OFF(unused-private-field)
 CLANG_DIAG_ON(unused-private-field)
 #include <QtCore/QRectF>
 #include <QtGui/QPolygonF>
-#include <QLabel> // in QtGui on Qt4, in QtWidgets on Qt5
 #include <QHBoxLayout> // in QtGui on Qt4, in QtWidgets on Qt5
 #include <QVBoxLayout> // in QtGui on Qt4, in QtWidgets on Qt5
 #include <QTextStream>
@@ -65,6 +64,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Gui/Histogram.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/CurveSelection.h"
+#include "Gui/Label.h"
 
 // warning: 'gluErrorString' is deprecated: first deprecated in OS X 10.9 [-Wdeprecated-declarations]
 CLANG_DIAG_OFF(deprecated-declarations)
@@ -869,7 +869,7 @@ CurveWidgetPrivate::CurveWidgetPrivate(Gui* gui,
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
     _nextCurveAddedColor.setHsv(200,255,255);
-    _rightClickMenu->setFont( QFont(appFont,appFontSize) );
+    //_rightClickMenu->setFont( QFont(appFont,appFontSize) );
     _gui->registerNewUndoStack( _undoStack.get() );
     
 }
@@ -895,22 +895,22 @@ CurveWidgetPrivate::createMenu()
     _rightClickMenu->clear();
 
     QMenu* fileMenu = new QMenu(_rightClickMenu);
-    fileMenu->setFont( QFont(appFont,appFontSize) );
+    //fileMenu->setFont( QFont(appFont,appFontSize) );
     fileMenu->setTitle( QObject::tr("File") );
     _rightClickMenu->addAction( fileMenu->menuAction() );
 
     QMenu* editMenu = new QMenu(_rightClickMenu);
-    editMenu->setFont( QFont(appFont,appFontSize) );
+    //editMenu->setFont( QFont(appFont,appFontSize) );
     editMenu->setTitle( QObject::tr("Edit") );
     _rightClickMenu->addAction( editMenu->menuAction() );
 
     QMenu* interpMenu = new QMenu(_rightClickMenu);
-    interpMenu->setFont( QFont(appFont,appFontSize) );
+    //interpMenu->setFont( QFont(appFont,appFontSize) );
     interpMenu->setTitle( QObject::tr("Interpolation") );
     _rightClickMenu->addAction( interpMenu->menuAction() );
 
     QMenu* viewMenu = new QMenu(_rightClickMenu);
-    viewMenu->setFont( QFont(appFont,appFontSize) );
+    //viewMenu->setFont( QFont(appFont,appFontSize) );
     viewMenu->setTitle( QObject::tr("View") );
     _rightClickMenu->addAction( viewMenu->menuAction() );
 
@@ -3729,7 +3729,7 @@ ImportExportCurveDialog::ImportExportCurveDialog(bool isExportDialog,
     //////File
     _fileContainer = new QWidget(this);
     _fileLayout = new QHBoxLayout(_fileContainer);
-    _fileLabel = new QLabel(tr("File:"),_fileContainer);
+    _fileLabel = new Label(tr("File:"),_fileContainer);
     _fileLayout->addWidget(_fileLabel);
     _fileLineEdit = new LineEdit(_fileContainer);
     _fileLineEdit->setPlaceholderText( tr("File path...") );
@@ -3746,7 +3746,7 @@ ImportExportCurveDialog::ImportExportCurveDialog(bool isExportDialog,
     //////x start value
     _startContainer = new QWidget(this);
     _startLayout = new QHBoxLayout(_startContainer);
-    _startLabel = new QLabel(tr("X start value:"),_startContainer);
+    _startLabel = new Label(tr("X start value:"),_startContainer);
     _startLayout->addWidget(_startLabel);
     _startSpinBox = new SpinBox(_startContainer,SpinBox::eSpinBoxTypeDouble);
     _startSpinBox->setValue(0);
@@ -3756,7 +3756,7 @@ ImportExportCurveDialog::ImportExportCurveDialog(bool isExportDialog,
     //////x increment
     _incrContainer = new QWidget(this);
     _incrLayout = new QHBoxLayout(_incrContainer);
-    _incrLabel = new QLabel(tr("X increment:"),_incrContainer);
+    _incrLabel = new Label(tr("X increment:"),_incrContainer);
     _incrLayout->addWidget(_incrLabel);
     _incrSpinBox = new SpinBox(_incrContainer,SpinBox::eSpinBoxTypeDouble);
     _incrSpinBox->setValue(0.01);
@@ -3767,7 +3767,8 @@ ImportExportCurveDialog::ImportExportCurveDialog(bool isExportDialog,
     if (isExportDialog) {
         _endContainer = new QWidget(this);
         _endLayout = new QHBoxLayout(_endContainer);
-        _endLabel = new QLabel(tr("X end value:"),_endContainer);
+        _endLabel = new Natron::Label(tr("X end value:"),_endContainer);
+        _endLabel->setFont(QApplication::font()); // necessary, or the labels will get the default font size
         _endLayout->addWidget(_endLabel);
         _endSpinBox = new SpinBox(_endContainer,SpinBox::eSpinBoxTypeDouble);
         _endSpinBox->setValue(1);
@@ -3794,7 +3795,8 @@ ImportExportCurveDialog::ImportExportCurveDialog(bool isExportDialog,
         column._curve = curves[i];
         column._curveContainer = new QWidget(this);
         column._curveLayout = new QHBoxLayout(column._curveContainer);
-        column._curveLabel = new QLabel( curves[i]->getName() + tr(" column:") );
+        column._curveLabel = new Natron::Label( curves[i]->getName() + tr(" column:") );
+        column._curveLabel->setFont(QApplication::font()); // necessary, or the labels will get the default font size
         column._curveLayout->addWidget(column._curveLabel);
         column._curveSpinBox = new SpinBox(column._curveContainer,SpinBox::eSpinBoxTypeInt);
         column._curveSpinBox->setValue( (double)i + 1. );
@@ -3907,9 +3909,9 @@ struct EditKeyFrameDialogPrivate
     
     QWidget* boxContainer;
     QHBoxLayout* boxLayout;
-    QLabel* xLabel;
+    Natron::Label* xLabel;
     SpinBox* xSpinbox;
-    QLabel* yLabel;
+    Natron::Label* yLabel;
     SpinBox* ySpinbox;
     
     bool wasAccepted;
@@ -3966,7 +3968,8 @@ EditKeyFrameDialog::EditKeyFrameDialog(EditModeEnum mode,CurveWidget* curveWidge
             xLabel = QString(tr("Right slope: "));
             break;
     }
-    _imp->xLabel = new QLabel(xLabel,_imp->boxContainer);
+    _imp->xLabel = new Natron::Label(xLabel,_imp->boxContainer);
+    _imp->xLabel->setFont(QApplication::font()); // necessary, or the labels will get the default font size
     _imp->boxLayout->addWidget(_imp->xLabel);
     
     SpinBox::SpinBoxTypeEnum xType;
@@ -3985,7 +3988,8 @@ EditKeyFrameDialog::EditKeyFrameDialog(EditModeEnum mode,CurveWidget* curveWidge
     if (mode == eEditModeKeyframePosition) {
         
 
-        _imp->yLabel = new QLabel("y: ",_imp->boxContainer);
+        _imp->yLabel = new Natron::Label("y: ",_imp->boxContainer);
+        _imp->yLabel->setFont(QApplication::font()); // necessary, or the labels will get the default font size
         _imp->boxLayout->addWidget(_imp->yLabel);
         
         bool clampedToInt = key->curve->areKeyFramesValuesClampedToIntegers() ;

@@ -203,7 +203,52 @@ the following code would work::
  
 Note that when choosing the *Link to...* option when right-clicking a parameter, Natron writes
 automatically an expression to copy the parameter to link to for you. 
+
+
+Using random in expressions:
+-----------------------------
+
+Sometimes it might be useful to add a random generator to produce noise on a value.
+However the noise produced must be reproducible such that when rendering multiple times the same
+frame or when loading the project again it would use the same value.
+
+We had to add a specific random function in Natron that takes into account the state of a
+parameter and the current time on the timeline as a seed function to random.
+
+.. warning::
 	
+	We advise against using the functions provided by the module random.py of the Python
+	standard library, as the values produced by these functions will not be reproducible 
+	between 2 runs of Natron for the same project.
+	
+The Natron specific random functions are exposed in the :ref:`Param<Param>`class. 
+
+When executing an expression, Natron pre-declares the **random()** function so that you do not
+have to do stuff like::
+	
+	thisParam.random()
+	
+Instead you can just type the following in your expression::
+
+	myOtherNode.myOtherNodeParam.get() * random()
+	
+The :func:`random(min = 0.,max = 1.)<>` function also takes 2 optional arguments indicating
+the range into which the return value should fall in. The range is defined by [min,max[. 
+When using this function in your expression, make sure to add a '.' after the numbers so that
+the interpreter understands your using :func:`random(min,max)<>` and not :func:`random(seed)<>`
+::
+	#Returns a random floating point value in the range [1., 10.[
+	random(1.,10.)
+
+For integers, use the :func:`randomInt(min,max)<>` function instead::
+
+	#Returns a random integer in the range [1,100[
+	randomInt(1,100)
+	
+	#Using the randomInt function with a given seed
+	seed = 5
+	randomInt(seed)
+
 	
 Expressions persistence
 ------------------------

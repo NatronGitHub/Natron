@@ -37,7 +37,9 @@ class QVBoxLayout; //used by KnobGui
 class QHBoxLayout; //used by KnobGui
 class QGridLayout;
 class QMenu;
-class QLabel;
+namespace Natron {
+class Label;
+}
 class QString;
 
 // Engine
@@ -100,7 +102,7 @@ public:
 
     void createGUI(QGridLayout* containerLayout,
                    QWidget* fieldContainer,
-                   QLabel* label,
+                   Natron::Label* label,
                    QHBoxLayout* layout,
                    bool isOnNewLine,
                    const std::vector< boost::shared_ptr< KnobI > > & knobsOnSameLine);
@@ -301,6 +303,9 @@ public Q_SLOTS:
     void onExprChanged(int dimension);
     
     void onHelpChanged();
+    
+    void onHasModificationsChanged();
+    
 Q_SIGNALS:
 
     void knobUndoneChange();
@@ -338,6 +343,7 @@ protected:
 
     virtual void addRightClickMenuEntries(QMenu* /*menu*/) {}
     
+    virtual void reflectModificationsState() {}
     
 private:
 

@@ -27,6 +27,18 @@
 #include <boost/weak_ptr.hpp>
 #endif
 
+#include "Global/Enums.h"
+
+
+namespace OFX{
+    namespace Host{
+        namespace ImageEffect{
+            class ImageEffectPlugin;
+            class Descriptor;
+        }
+    }
+}
+
 class QMutex;
 namespace Natron {
 class LibraryBinary;
@@ -148,6 +160,10 @@ class Plugin
     mutable bool _hasShortcutSet; //< to speed up the keypress event of Nodegraph, this is used to find out quickly whether it has a shortcut or not.
     bool _isReader,_isWriter;
     QString _pythonModule;
+    OFX::Host::ImageEffect::ImageEffectPlugin* _ofxPlugin;
+    OFX::Host::ImageEffect::Descriptor* _ofxDescriptor;
+    ContextEnum _ofxContext;
+    
 public:
 
     Plugin()
@@ -165,6 +181,9 @@ public:
     , _isReader(false)
     , _isWriter(false)
     , _pythonModule()
+    , _ofxPlugin(0)
+    , _ofxDescriptor(0)
+    , _ofxContext(eContextNone)
     {
     }
 
@@ -193,121 +212,71 @@ public:
           , _hasShortcutSet(false)
           , _isReader(isReader)
           , _isWriter(isWriter)
+          , _ofxPlugin(0)
+          , _ofxDescriptor(0)
+          , _ofxContext(eContextNone)
     {
     }
 
     ~Plugin();
 
-    void setPluginID(const QString & id)
-    {
-        _id = id;
-    }
+    void setPluginID(const QString & id);
     
 
-    const QString & getPluginID() const
-    {
-        return _id;
-    }
+    const QString & getPluginID() const;
     
-    bool isReader() const {
-        return _isReader;
-    }
+    bool isReader() const ;
     
-    bool isWriter() const {
-        return _isWriter;
-    }
+    bool isWriter() const ;
 
-    void setPluginLabel(const QString & label)
-    {
-        _label = label;
-    }
+    void setPluginLabel(const QString & label);
 
-    const QString & getPluginLabel() const
-    {
-        return _label;
-    }
+    const QString & getPluginLabel() const;
     
-    const QString getLabelVersionMajorMinorEncoded() const
-    {
-        return _label + ' ' + QString::number(_majorVersion) + '.' + QString::number(_minorVersion);
-    }
+    const QString getLabelVersionMajorMinorEncoded() const;
     
-    const QString getLabelVersionMajorEncoded() const
-    {
-        return _label + ' ' + QString::number(_majorVersion);
-    }
+    const QString getLabelWithoutOFX() const;
     
-    QString generateUserFriendlyPluginID() const
-    {
-        QString grouping = _grouping.size() > 0 ? _grouping[0] : QString();
-        return _label + "  [" + grouping + "]";
-    }
+    const QString getLabelVersionMajorEncoded() const;
     
-    QString generateUserFriendlyPluginIDMajorEncoded() const
-    {
-        QString grouping = _grouping.size() > 0 ? _grouping[0] : QString();
-        return getLabelVersionMajorEncoded() + "  [" + grouping + "]";
-    }
-
+    QString generateUserFriendlyPluginID() const;
     
-    const QString & getPluginOFXID() const
-    {
-        return _ofxPluginID;
-    }
+    QString generateUserFriendlyPluginIDMajorEncoded() const;
 
-    const QString & getIconFilePath() const
-    {
-        return _iconFilePath;
-    }
+    const QString & getPluginOFXID() const;
 
-    const QString & getGroupIconFilePath() const
-    {
-        return _groupIconFilePath;
-    }
-
-    const QStringList & getGrouping() const
-    {
-        return _grouping;
-    }
-
-    QMutex* getPluginLock() const
-    {
-        return _lock;
-    }
-
-    Natron::LibraryBinary* getLibraryBinary() const
-    {
-        return _binary;
-    }
-
-    int getMajorVersion() const
-    {
-        return _majorVersion;
-    }
-
-    int getMinorVersion() const
-    {
-        return _minorVersion;
-    }
-
-    void setHasShortcut(bool has) const
-    {
-        _hasShortcutSet = has;
-    }
-
-    bool getHasShortcut() const
-    {
-        return _hasShortcutSet;
-    }
+    const QString & getIconFilePath() const;
     
-    void setPythonModule(const QString& module)
-    {
-        _pythonModule = module;
-    }
+    void setIconFilePath(const QString& filePath);
+
+    const QString & getGroupIconFilePath() const;
+
+    const QStringList & getGrouping() const;
     
-    const QString& getPythonModule() const {
-        return _pythonModule;
-    }
+    QMutex* getPluginLock() const;
+
+    Natron::LibraryBinary* getLibraryBinary() const;
+
+    int getMajorVersion() const;
+
+    int getMinorVersion() const;
+
+    void setHasShortcut(bool has) const;
+
+    bool getHasShortcut() const;
+    
+    void setPythonModule(const QString& module);
+    
+    const QString& getPythonModule() const ;
+    
+    void setOfxPlugin(OFX::Host::ImageEffect::ImageEffectPlugin* p);
+    
+    OFX::Host::ImageEffect::ImageEffectPlugin* getOfxPlugin() const;
+    
+    OFX::Host::ImageEffect::Descriptor* getOfxDesc(ContextEnum* ctx) const;
+    
+    void setOfxDesc(OFX::Host::ImageEffect::Descriptor* desc,ContextEnum ctx);
+    
 };
     
 struct Plugin_compare_major

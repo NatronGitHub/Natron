@@ -38,6 +38,7 @@ LineEdit::LineEdit(QWidget* parent)
     : QLineEdit(parent)
       , animation(0)
       , dirty(false)
+      , altered(false)
 {
     setAttribute(Qt::WA_MacShowFocusRect,0);
     connect( this, SIGNAL( editingFinished() ), this, SLOT( onEditingFinished() ) );
@@ -119,6 +120,14 @@ LineEdit::setDirty(bool b)
     repaint();
 }
 
+void
+LineEdit::setAltered(bool b)
+{
+    altered = b;
+    style()->unpolish(this);
+    style()->polish(this);
+    repaint();
+}
 
 void
 LineEdit::keyPressEvent(QKeyEvent* e)

@@ -23,7 +23,6 @@
 #include <QSpacerItem>
 #include <QGridLayout>
 #include <QGroupBox>
-#include <QLabel>
 #include <QVBoxLayout>
 #include <QAbstractItemView>
 #include <QCheckBox>
@@ -65,6 +64,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Gui/MultiInstancePanel.h"
 #include "Gui/GuiMacros.h"
 #include "Gui/ActionShortcuts.h"
+#include "Gui/Label.h"
 
 #define NATRON_TRANSFORM_AFFECTS_OVERLAYS
 
@@ -157,6 +157,8 @@ struct ViewerTabPrivate
 
     /*1st row*/
     //ComboBox* viewerLayers;
+    ComboBox* layerChoice;
+    ComboBox* alphaChannelChoice;
     ChannelsComboBox* viewerChannels;
     ComboBox* zoomCombobox;
     Button* centerViewerButton;
@@ -169,10 +171,10 @@ struct ViewerTabPrivate
     Button* activateRenderScale;
     bool renderScaleActive;
     ComboBox* renderScaleCombo;
-    QLabel* firstInputLabel;
+    Natron::Label* firstInputLabel;
     ComboBox* firstInputImage;
     ComboBox* compositingOperator;
-    QLabel* secondInputLabel;
+    Natron::Label* secondInputLabel;
     ComboBox* secondInputImage;
 
     /*2nd row*/
@@ -265,6 +267,8 @@ struct ViewerTabPrivate
         , secondSettingsRow(NULL)
         , firstRowLayout(NULL)
         , secondRowLayout(NULL)
+        , layerChoice(NULL)
+        , alphaChannelChoice(NULL)
         , viewerChannels(NULL)
         , zoomCombobox(NULL)
         , centerViewerButton(NULL)
@@ -355,7 +359,23 @@ struct ViewerTabPrivate
                              Natron::EffectInstance* currentNode,
                              Transform::Matrix3x3* transform) const;
 #endif
+    
+    void getComponentsAvailabel(std::set<ImageComponents>* comps) const;
 };
+
+static void makeFullyQualifiedLabel(Natron::Node* node,std::string* ret)
+{
+    boost::shared_ptr<NodeCollection> parent = node->getGroup();
+    NodeGroup* isParentGrp = dynamic_cast<NodeGroup*>(parent.get());
+    std::string toPreprend = node->getLabel();
+    if (isParentGrp) {
+        toPreprend.insert(0, "/");
+    }
+    ret->insert(0, toPreprend);
+    if (isParentGrp) {
+        makeFullyQualifiedLabel(isParentGrp->getNode().get(), ret);
+    }
+}
 
 ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
                      NodeGui* currentRoto,
@@ -370,9 +390,16 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
 {
     installEventFilter(this);
     
-    std::string nodeName =  node->getNode()->getScriptName();
+    std::string nodeName =  node->getNode()->getFullyQualifiedName();
+    for (std::size_t i = 0; i < nodeName.size(); ++i) {
+        if (nodeName[i] == '.') {
+            nodeName[i] = '_';
+        }
+    }
     setScriptName(nodeName);
-    setLabel(nodeName);
+    std::string label;
+    makeFullyQualifiedLabel(node->getNode().get(), &label);
+    setLabel(label);
     
     NodePtr internalNode = node->getNode();
     QObject::connect(internalNode.get(), SIGNAL(scriptNameChanged(QString)), this, SLOT(onInternalNodeScriptNameChanged(QString)));
@@ -393,8 +420,20 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->firstRowLayout->setSpacing(0);
     _imp->mainLayout->addWidget(_imp->firstSettingsRow);
 
-    // _viewerLayers = new ComboBox(_firstSettingsRow);
-    //_firstRowLayout->addWidget(_viewerLayers);
+    _imp->layerChoice = new ComboBox(_imp->firstSettingsRow);
+    _imp->layerChoice->setToolTip("<p><b>" + tr("Layer") + ": \n</b></p>"
+                                  + tr("The layer that the Viewer node will fetch upstream in the tree. "
+                                       "The channels of the layer will be mapped to the RGBA channels of the viewer according to "
+                                       "its number of channels. (e.g: UV would be mapped to RG)"));
+    QObject::connect(_imp->layerChoice,SIGNAL(currentIndexChanged(int)),this,SLOT(onLayerComboChanged(int)));
+    _imp->firstRowLayout->addWidget(_imp->layerChoice);
+    
+    _imp->alphaChannelChoice = new ComboBox(_imp->firstSettingsRow);
+    _imp->alphaChannelChoice->setToolTip("<p><b>" + tr("Alpha channel") + ": \n</b></p>"
+                                         + tr("Select here a channel of any layer that will be used when displaying the "
+                                              "alpha channel with the <b>Channels</b> choice on the right."));
+    QObject::connect(_imp->alphaChannelChoice,SIGNAL(currentIndexChanged(int)),this,SLOT(onAlphaChannelComboChanged(int)));
+    _imp->firstRowLayout->addWidget(_imp->alphaChannelChoice);
 
     _imp->viewerChannels = new ChannelsComboBox(_imp->firstSettingsRow);
     _imp->viewerChannels->setToolTip( "<p><b>" + tr("Channels") + ": \n</b></p>"
@@ -506,7 +545,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
 
     _imp->firstRowLayout->addStretch();
 
-    _imp->firstInputLabel = new QLabel("A:",_imp->firstSettingsRow);
+    _imp->firstInputLabel = new Natron::Label("A:",_imp->firstSettingsRow);
     _imp->firstRowLayout->addWidget(_imp->firstInputLabel);
 
     _imp->firstInputImage = new ComboBox(_imp->firstSettingsRow);
@@ -524,7 +563,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->compositingOperator->addItem("Wipe",QIcon(),QKeySequence(),"Wipe betweens A and B");
     _imp->firstRowLayout->addWidget(_imp->compositingOperator);
 
-    _imp->secondInputLabel = new QLabel("B:",_imp->firstSettingsRow);
+    _imp->secondInputLabel = new Natron::Label("B:",_imp->firstSettingsRow);
     _imp->firstRowLayout->addWidget(_imp->secondInputLabel);
 
     _imp->secondInputImage = new ComboBox(_imp->firstSettingsRow);
@@ -820,10 +859,10 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
 
     _imp->playerLayout->addStretch();
     
-    QFont font(appFont,appFontSize);
+    //QFont font(appFont,appFontSize);
     
     _imp->canEditFrameRangeLabel = new ClickableLabel(tr("Frame range"),_imp->playerButtonsContainer);
-    _imp->canEditFrameRangeLabel->setFont(font);
+    //_imp->canEditFrameRangeLabel->setFont(font);
     
     _imp->playerLayout->addWidget(_imp->canEditFrameRangeLabel);
 
@@ -856,7 +895,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->canEditFpsLabel = new ClickableLabel(tr("fps"),_imp->playerButtonsContainer);
     QObject::connect(_imp->canEditFpsLabel, SIGNAL(clicked(bool)),this,SLOT(onCanSetFPSLabelClicked(bool)));
     _imp->canEditFpsLabel->setToolTip(canEditFpsBoxTT);
-    _imp->canEditFpsLabel->setFont(font);
+    //_imp->canEditFpsLabel->setFont(font);
     
     _imp->playerLayout->addWidget(_imp->canEditFpsBox);
     _imp->playerLayout->addWidget(_imp->canEditFpsLabel);
@@ -1047,6 +1086,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     QObject::connect( _imp->fpsBox, SIGNAL( valueChanged(double) ), this, SLOT( onSpinboxFpsChanged(double) ) );
 
     QObject::connect( _imp->viewerNode->getRenderEngine(),SIGNAL( renderFinished(int) ),this,SLOT( onEngineStopped() ) );
+    QObject::connect( _imp->viewerNode->getRenderEngine(),SIGNAL( renderStarted(bool) ),this,SLOT( onEngineStarted(bool) ) );
     manageSlotsForInfoWidget(0,true);
 
     QObject::connect( _imp->clipToProjectFormatButton,SIGNAL( clicked(bool) ),this,SLOT( onClipToProjectButtonToggle(bool) ) );
@@ -1080,6 +1120,8 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Preferred);
     
     _imp->viewerNode->setUiContext(getViewer());
+    
+    refreshLayerAndAlphaChannelComboBox();
 
 }
 
@@ -1236,12 +1278,6 @@ ViewerTab::startPause(bool b)
     abortRendering();
     if (b) {
         _imp->gui->getApp()->setLastViewerUsingTimeline(_imp->viewerNode->getNode());
-        _imp->play_Forward_Button->setDown(true);
-        _imp->play_Forward_Button->setChecked(true);
-        if (appPTR->getCurrentSettings()->isAutoTurboEnabled()) {
-            _imp->gui->onFreezeUIButtonClicked(true);
-        }
-        boost::shared_ptr<TimeLine> timeline = _imp->timeLineGui->getTimeline();
         _imp->viewerNode->getRenderEngine()->renderFromCurrentFrame(OutputSchedulerThread::eRenderDirectionForward);
     }
 }
@@ -1268,15 +1304,39 @@ ViewerTab::abortRendering()
 }
 
 void
+ViewerTab::onEngineStarted(bool forward)
+{
+    if (!_imp->gui) {
+        return;
+    }
+    
+    _imp->play_Forward_Button->setDown(forward);
+    _imp->play_Forward_Button->setChecked(forward);
+    
+    _imp->play_Backward_Button->setDown(!forward);
+    _imp->play_Backward_Button->setChecked(!forward);
+
+    if (!_imp->gui->isGUIFrozen() && appPTR->getCurrentSettings()->isAutoTurboEnabled()) {
+        _imp->gui->onFreezeUIButtonClicked(true);
+    }
+}
+
+void
 ViewerTab::onEngineStopped()
 {
     if (!_imp->gui) {
         return;
     }
-    _imp->play_Forward_Button->setDown(false);
-    _imp->play_Backward_Button->setDown(false);
-    _imp->play_Forward_Button->setChecked(false);
-    _imp->play_Backward_Button->setChecked(false);
+    
+    if (_imp->play_Forward_Button->isDown()) {
+        _imp->play_Forward_Button->setDown(false);
+        _imp->play_Forward_Button->setChecked(false);
+    }
+    
+    if (_imp->play_Backward_Button->isDown()) {
+        _imp->play_Backward_Button->setDown(false);
+        _imp->play_Backward_Button->setChecked(false);
+    }
     if (_imp->gui->isGUIFrozen() && appPTR->getCurrentSettings()->isAutoTurboEnabled()) {
         _imp->gui->onFreezeUIButtonClicked(false);
     }
@@ -1288,12 +1348,6 @@ ViewerTab::startBackward(bool b)
     abortRendering();
     if (b) {
         _imp->gui->getApp()->setLastViewerUsingTimeline(_imp->viewerNode->getNode());
-        _imp->play_Backward_Button->setDown(true);
-        _imp->play_Backward_Button->setChecked(true);
-        if (appPTR->getCurrentSettings()->isAutoTurboEnabled()) {
-            _imp->gui->onFreezeUIButtonClicked(true);
-        }
-        boost::shared_ptr<TimeLine> timeline = _imp->timeLineGui->getTimeline();
         _imp->viewerNode->getRenderEngine()->renderFromCurrentFrame(OutputSchedulerThread::eRenderDirectionBackward);
 
     }
@@ -1392,12 +1446,26 @@ ViewerTab::refresh()
 ViewerTab::~ViewerTab()
 {
     if (_imp->gui) {
+        NodeGraph* graph = 0;
         if (_imp->viewerNode) {
+            boost::shared_ptr<NodeCollection> collection = _imp->viewerNode->getNode()->getGroup();
+            if (collection) {
+                NodeGroup* isGrp = dynamic_cast<NodeGroup*>(collection.get());
+                if (isGrp) {
+                    NodeGraphI* graph_i = isGrp->getNodeGraph();
+                    if (graph_i) {
+                        graph = dynamic_cast<NodeGraph*>(graph_i);
+                        assert(graph);
+                    }
+                }
+            }
             _imp->viewerNode->invalidateUiContext();
+        } else {
+            graph = _imp->gui->getNodeGraph();
         }
-        if ( _imp->app && !_imp->app->isClosing() && (_imp->gui->getLastSelectedViewer() == this) ) {
-            assert(_imp->gui);
-            _imp->gui->setLastSelectedViewer(NULL);
+        assert(graph);
+        if ( _imp->app && !_imp->app->isClosing() && (graph->getLastSelectedViewer() == this) ) {
+            graph->setLastSelectedViewer(0);
         }
     }
     for (std::map<NodeGui*,RotoGui*>::iterator it = _imp->rotoNodes.begin(); it != _imp->rotoNodes.end(); ++it) {
@@ -1658,7 +1726,7 @@ ViewerTab::drawOverlays(double scaleX,
             
             Natron::EffectInstance* effect = (*it)->getLiveInstance();
             assert(effect);
-            effect->setCurrentViewportForOverlays(_imp->viewer);
+            effect->setCurrentViewportForOverlays_public(_imp->viewer);
             effect->drawOverlay_public(scaleX,scaleY);
         }
 #ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
@@ -1728,7 +1796,7 @@ ViewerTab::notifyOverlaysPenDown_internal(const boost::shared_ptr<Natron::Node>&
         
         Natron::EffectInstance* effect = node->getLiveInstance();
         assert(effect);
-        effect->setCurrentViewportForOverlays(_imp->viewer);
+        effect->setCurrentViewportForOverlays_public(_imp->viewer);
         bool didSmthing = effect->onOverlayPenDown_public(scaleX,scaleY,transformViewportPos, transformPos);
         if (didSmthing) {
             //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
@@ -1930,7 +1998,7 @@ ViewerTab::notifyOverlaysPenMotion_internal(const boost::shared_ptr<Natron::Node
         
         Natron::EffectInstance* effect = node->getLiveInstance();
         assert(effect);
-        effect->setCurrentViewportForOverlays(_imp->viewer);
+        effect->setCurrentViewportForOverlays_public(_imp->viewer);
         bool didSmthing = effect->onOverlayPenMotion_public(scaleX,scaleY,transformViewportPos, transformPos);
         if (didSmthing) {
             //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
@@ -2063,7 +2131,7 @@ ViewerTab::notifyOverlaysPenUp(double scaleX,
         
         Natron::EffectInstance* effect = (*it)->getLiveInstance();
         assert(effect);
-        effect->setCurrentViewportForOverlays(_imp->viewer);
+        effect->setCurrentViewportForOverlays_public(_imp->viewer);
         didSomething |= effect->onOverlayPenUp_public(scaleX,scaleY,transformViewportPos, transformPos);
         
         
@@ -2104,7 +2172,7 @@ ViewerTab::notifyOverlaysKeyDown_internal(const boost::shared_ptr<Natron::Node>&
         
         Natron::EffectInstance* effect = node->getLiveInstance();
         assert(effect);
-        effect->setCurrentViewportForOverlays(_imp->viewer);
+        effect->setCurrentViewportForOverlays_public(_imp->viewer);
         bool didSmthing = effect->onOverlayKeyDown_public(scaleX,scaleY,k,km);
         if (didSmthing) {
             //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
@@ -2197,7 +2265,7 @@ ViewerTab::notifyOverlaysKeyUp(double scaleX,
             }
         }
         
-        effect->setCurrentViewportForOverlays(_imp->viewer);
+        effect->setCurrentViewportForOverlays_public(_imp->viewer);
         didSomething |= effect->onOverlayKeyUp_public( scaleX,scaleY,
                                             QtEnumConvert::fromQtKey( (Qt::Key)e->key() ),QtEnumConvert::fromQtModifiers( e->modifiers() ) );
         
@@ -2233,7 +2301,7 @@ ViewerTab::notifyOverlaysKeyRepeat_internal(const boost::shared_ptr<Natron::Node
         //}
         Natron::EffectInstance* effect = node->getLiveInstance();
         assert(effect);
-        effect->setCurrentViewportForOverlays(_imp->viewer);
+        effect->setCurrentViewportForOverlays_public(_imp->viewer);
         bool didSmthing = effect->onOverlayKeyRepeat_public( scaleX,scaleY,k,km);
         if (didSmthing) {
             //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
@@ -2307,7 +2375,7 @@ ViewerTab::notifyOverlaysFocusGained(double scaleX,
         Natron::EffectInstance* effect = (*it)->getLiveInstance();
         assert(effect);
         
-        effect->setCurrentViewportForOverlays(_imp->viewer);
+        effect->setCurrentViewportForOverlays_public(_imp->viewer);
         bool didSmthing = effect->onOverlayFocusGained_public(scaleX,scaleY);
         if (didSmthing) {
             ret = true;
@@ -2352,7 +2420,7 @@ ViewerTab::notifyOverlaysFocusLost(double scaleX,
         Natron::EffectInstance* effect = (*it)->getLiveInstance();
         assert(effect);
         
-        effect->setCurrentViewportForOverlays(_imp->viewer);
+        effect->setCurrentViewportForOverlays_public(_imp->viewer);
         bool didSmthing = effect->onOverlayFocusLost_public(scaleX,scaleY);
         if (didSmthing) {
             ret = true;
@@ -3228,7 +3296,7 @@ ViewerTab::onClipPreferencesChanged()
         }
         onSpinboxFpsChanged(_imp->fpsBox->value());
     }
-
+    refreshLayerAndAlphaChannelComboBox();
 }
 
 void
@@ -3278,6 +3346,8 @@ ViewerTab::onInputChanged(int inputNb)
             _imp->inputNamesMap.erase(found);
         }
     }
+    
+    //refreshLayerAndAlphaChannelComboBox();
 }
 
 void
@@ -3312,7 +3382,7 @@ ViewerTab::manageSlotsForInfoWidget(int textureIndex,
 }
 
 void
-ViewerTab::setImageFormat(int textureIndex,Natron::ImageComponentsEnum components,Natron::ImageBitDepthEnum depth)
+ViewerTab::setImageFormat(int textureIndex,const Natron::ImageComponents& components,Natron::ImageBitDepthEnum depth)
 {
     _imp->infoWidget[textureIndex]->setImageFormat(components,depth);
 }
@@ -3772,6 +3842,18 @@ ViewerTab::setDesiredFps(double fps)
 }
 
 void
+ViewerTab::setProjection(double zoomLeft, double zoomBottom, double zoomFactor, double zoomAspectRatio)
+{
+    
+    _imp->viewer->setProjection(zoomLeft, zoomBottom, zoomFactor, zoomAspectRatio);
+    QString str = QString::number(zoomFactor * 100);
+    str.append( QChar('%') );
+    str.prepend("  ");
+    str.append("  ");
+    _imp->zoomCombobox->setCurrentText_no_emit(str);
+}
+
+void
 ViewerTab::onViewerRenderingStarted()
 {
     
@@ -3846,7 +3928,14 @@ ViewerTab::onInternalNodeScriptNameChanged(const QString& /*name*/)
     // always running in the main thread
     std::string newName = _imp->viewerNode->getNode()->getFullyQualifiedName();
     std::string oldName = getScriptName();
-  
+    
+    for (std::size_t i = 0; i < newName.size(); ++i) {
+        if (newName[i] == '.') {
+            newName[i] = '_';
+        }
+    }
+
+    
     assert( qApp && qApp->thread() == QThread::currentThread() );
     getGui()->unregisterTab(this);
     setScriptName(newName);
@@ -3873,7 +3962,7 @@ ViewerTabPrivate::getOverlayTransform(int time,
     Natron::EffectInstance* input = 0;
     Natron::StatusEnum stat = eStatusReplyDefault;
     Transform::Matrix3x3 mat;
-    if (!currentNode->getNode()->isNodeDisabled()) {
+    if (!currentNode->getNode()->isNodeDisabled() && currentNode->getCanTransform()) {
         stat = currentNode->getTransform_public(time, s, view, &input, &mat);
     }
     if (stat == eStatusFailed) {
@@ -3941,3 +4030,222 @@ ViewerTabPrivate::getOverlayTransform(int time,
 
 }
 #endif
+
+void
+ViewerTabPrivate::getComponentsAvailabel(std::set<ImageComponents>* comps) const
+{
+    int activeInputIdx[2];
+    viewerNode->getActiveInputs(activeInputIdx[0], activeInputIdx[1]);
+    EffectInstance* activeInput[2] = {0, 0};
+    for (int i = 0; i < 2; ++i) {
+        activeInput[i] = viewerNode->getInput(activeInputIdx[i]);
+        if (activeInput[i]) {
+            EffectInstance::ComponentsAvailableMap compsAvailable;
+            activeInput[i]->getComponentsAvailable(gui->getApp()->getTimeLine()->currentFrame(), &compsAvailable);
+            for (EffectInstance::ComponentsAvailableMap::iterator it = compsAvailable.begin(); it != compsAvailable.end(); ++it) {
+                comps->insert(it->first);
+            }
+        }
+    }
+
+}
+
+void
+ViewerTab::refreshLayerAndAlphaChannelComboBox()
+{
+    if (!_imp->viewerNode) {
+        return;
+    }
+    
+    QString layerCurChoice = _imp->layerChoice->getCurrentIndexText();
+    QString alphaCurChoice = _imp->alphaChannelChoice->getCurrentIndexText();
+    
+    std::set<ImageComponents> components;
+    _imp->getComponentsAvailabel(&components);
+    
+    _imp->layerChoice->clear();
+    _imp->alphaChannelChoice->clear();
+    
+    _imp->layerChoice->addItem("-");
+    _imp->alphaChannelChoice->addItem("-");
+    
+    std::set<ImageComponents>::iterator foundColorIt = components.end();
+    std::set<ImageComponents>::iterator foundOtherIt = components.end();
+    std::set<ImageComponents>::iterator foundCurIt = components.end();
+    std::set<ImageComponents>::iterator foundCurAlphaIt = components.end();
+    std::string foundAlphaChannel;
+    
+    for (std::set<ImageComponents>::iterator it = components.begin(); it!=components.end(); ++it) {
+        QString layerName(it->getLayerName().c_str());
+        QString itemName = layerName + '.' + QString(it->getComponentsGlobalName().c_str());
+        _imp->layerChoice->addItem(itemName);
+        
+        if (itemName == layerCurChoice) {
+            foundCurIt = it;
+        }
+        
+        if (layerName == kNatronColorPlaneName) {
+            foundColorIt = it;
+        } else {
+            foundOtherIt = it;
+        }
+        
+        const std::vector<std::string>& channels = it->getComponentsNames();
+        for (U32 i = 0; i < channels.size(); ++i) {
+            QString itemName = layerName + '.' + QString(channels[i].c_str());
+            if (itemName == alphaCurChoice) {
+                foundCurAlphaIt = it;
+                foundAlphaChannel = channels[i];
+            }
+            _imp->alphaChannelChoice->addItem(itemName);
+        }
+        
+        if (layerName == kNatronColorPlaneName) {
+            //There's RGBA or alpha, set it to A
+            std::string alphaChoice;
+            if (channels.size() == 4) {
+                alphaChoice = channels[3];
+            } else if (channels.size() == 1) {
+                alphaChoice = channels[0];
+            }
+            if (!alphaChoice.empty()) {
+                _imp->alphaChannelChoice->setCurrentIndex_no_emit(_imp->alphaChannelChoice->count() - 1);
+            } else {
+                alphaCurChoice = _imp->alphaChannelChoice->itemText(0);
+            }
+            
+            _imp->viewerNode->setAlphaChannel(*it, alphaChoice, false);
+        }
+        
+        
+    }
+    
+    int layerIdx;
+    if (foundCurIt == components.end()) {
+        layerCurChoice = "-";
+    }
+
+    
+    
+    if (layerCurChoice == "-") {
+        
+        ///Try to find color plane, otherwise fallback on any other layer
+        if (foundColorIt != components.end()) {
+            layerCurChoice = QString(foundColorIt->getLayerName().c_str())
+            + '.' + QString(foundColorIt->getComponentsGlobalName().c_str());
+            foundCurIt = foundColorIt;
+            
+        } else if (foundOtherIt != components.end()) {
+            layerCurChoice = QString(foundOtherIt->getLayerName().c_str())
+            + '.' + QString(foundOtherIt->getComponentsGlobalName().c_str());
+            foundCurIt = foundOtherIt;
+        } else {
+            layerCurChoice = "-";
+            foundCurIt = components.end();
+        }
+        
+        
+    }
+    layerIdx = _imp->layerChoice->itemIndex(layerCurChoice);
+    assert(layerIdx != -1);
+
+    
+    
+    _imp->layerChoice->setCurrentIndex_no_emit(layerIdx);
+    if (foundCurIt == components.end()) {
+        _imp->viewerNode->setActiveLayer(ImageComponents::getNoneComponents(), false);
+    } else {
+        _imp->viewerNode->setActiveLayer(*foundCurIt, false);
+    }
+    
+    int alphaIdx;
+    if (foundCurAlphaIt == components.end() || foundAlphaChannel.empty()) {
+        alphaCurChoice = "-";
+    }
+    
+    if (alphaCurChoice == "-") {
+        
+        ///Try to find color plane, otherwise fallback on any other layer
+        if (foundColorIt != components.end() && foundColorIt->getComponentsNames().size() == 4) {
+            alphaCurChoice = QString(foundColorIt->getLayerName().c_str())
+            + '.' + QString(foundColorIt->getComponentsNames()[3].c_str());
+            foundAlphaChannel = foundColorIt->getComponentsNames()[3];
+            foundCurAlphaIt = foundColorIt;
+            
+            
+        } else {
+            alphaCurChoice = "-";
+            foundCurAlphaIt = components.end();
+        }
+        
+        
+    }
+    
+    alphaIdx = _imp->layerChoice->itemIndex(alphaCurChoice);
+    if (alphaIdx == -1) {
+        alphaIdx = 0;
+    }
+    
+    _imp->alphaChannelChoice->setCurrentIndex_no_emit(alphaIdx);
+    if (foundCurAlphaIt != components.end()) {
+        _imp->viewerNode->setAlphaChannel(*foundCurAlphaIt, foundAlphaChannel, false);
+    } else {
+        _imp->viewerNode->setAlphaChannel(ImageComponents::getNoneComponents(), std::string(), false);
+    }
+}
+
+void
+ViewerTab::onAlphaChannelComboChanged(int index)
+{
+    std::set<ImageComponents> components;
+    _imp->getComponentsAvailabel(&components);
+    int i = 1; // because of the "-" choice
+    for (std::set<ImageComponents>::iterator it = components.begin(); it != components.end(); ++it) {
+        
+        const std::vector<std::string>& channels = it->getComponentsNames();
+        if (index >= ((int)channels.size() + i)) {
+            i += channels.size();
+        } else {
+            for (U32 j = 0; j < channels.size(); ++j,++i) {
+                if (i == index) {
+                    _imp->viewerNode->setAlphaChannel(*it, channels[j], true);
+                    return;
+                }
+            }
+            
+        }
+    }
+    _imp->viewerNode->setAlphaChannel(ImageComponents::getNoneComponents(), std::string(), true);
+}
+
+void
+ViewerTab::onLayerComboChanged(int index)
+{
+    std::set<ImageComponents> components;
+    _imp->getComponentsAvailabel(&components);
+    if (index >= (int)(components.size() + 1) || index < 0) {
+        qDebug() << "ViewerTab::onLayerComboChanged: invalid index";
+        return;
+    }
+    int i = 1; // because of the "-" choice
+    int chanCount = 1; // because of the "-" choice
+    for (std::set<ImageComponents>::iterator it = components.begin(); it != components.end(); ++it,++i) {
+        
+        chanCount += it->getComponentsNames().size();
+        if (i == index) {
+            _imp->viewerNode->setActiveLayer(*it, true);
+            
+            ///If it has an alpha channel, set it
+            if (it->getComponentsNames().size() == 4) {
+                _imp->alphaChannelChoice->setCurrentIndex_no_emit(chanCount - 1);
+                _imp->viewerNode->setAlphaChannel(*it, it->getComponentsNames()[3], true);
+            }
+            return;
+        }
+    }
+    
+    _imp->alphaChannelChoice->setCurrentIndex_no_emit(0);
+    _imp->viewerNode->setAlphaChannel(ImageComponents::getNoneComponents(), std::string(), false);
+    _imp->viewerNode->setActiveLayer(ImageComponents::getNoneComponents(), true);
+    
+}

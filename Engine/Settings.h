@@ -25,6 +25,8 @@
 
 #include "Engine/Knob.h"
 
+#define kQSettingsSoftwareMajorVersionSettingName "SoftwareVersionMajor"
+
 /*The current settings in the preferences menu.
    @todo Move this class to QSettings instead*/
 
@@ -34,6 +36,7 @@ class LibraryBinary;
 class Plugin;
 }
 
+class KnobI;
 class File_Knob;
 class Page_Knob;
 class Double_Knob;
@@ -49,6 +52,9 @@ class Separator_Knob;
 class Settings
     : public KnobHolder
 {
+    
+    Q_OBJECT
+    
 public:
 
     Settings(AppInstance* appInstance);
@@ -110,20 +116,21 @@ public:
     void getFileFormatsForWritingAndWriter(std::map<std::string,std::string>* formats);
 
     ///save the settings to the application's settings
-    void saveSettings();
+    void saveSettings(const std::vector<KnobI*>& settings,bool doWarnings);
+    
+    void saveAllSettings();
+    
+    void saveSetting(KnobI* knob) {
+        std::vector<KnobI*> knobs;
+        knobs.push_back(knob);
+        saveSettings(knobs,false);
+    }
 
     ///restores the settings from disk
     void restoreSettings();
-
-    bool wereChangesMadeSinceLastSave() const
-    {
-        return _wereChangesMadeSinceLastSave;
-    }
-
-    void resetWereChangesMadeSinceLastSave()
-    {
-        _wereChangesMadeSinceLastSave = false;
-    }
+    
+    void restoreKnobsFromSettings(const std::vector<boost::shared_ptr<KnobI> >& knobs);
+    void restoreKnobsFromSettings(const std::vector<KnobI*>& knobs);
 
     bool isAutoPreviewOnForNewProjects() const;
 
@@ -254,6 +261,7 @@ public:
     void getKeyframeColor(double* r,double* g,double* b) const;
     void getExprColor(double* r,double* g,double* b) const;
     void getTextColor(double* r,double* g,double* b) const;
+    void getAltTextColor(double* r,double* g,double* b) const;
     void getTimelinePlayheadColor(double* r,double* g,double* b) const;
     void getTimelineBoundsColor(double* r,double* g,double* b) const;
     void getTimelineBGColor(double* r,double* g,double* b) const;
@@ -262,10 +270,17 @@ public:
     void getCurveEditorBGColor(double* r,double* g,double* b) const;
     void getCurveEditorGridColor(double* r,double* g,double* b) const;
     void getCurveEditorScaleColor(double* r,double* g,double* b) const;
+    
+Q_SIGNALS:
+    
+    void settingChanged(KnobI* knob);
+    
 private:
 
     virtual void initializeKnobs() OVERRIDE FINAL;
 
+    void warnChangedKnobs(const std::vector<KnobI*>& knobs);
+    
     void setCachingLabels();
     void setDefaultValues();
 
@@ -378,7 +393,6 @@ private:
     boost::shared_ptr<Bool_Knob> _echoVariableDeclarationToPython;
     boost::shared_ptr<Page_Knob> _appearanceTab;
     
-    boost::shared_ptr<Choice_Knob> _fontChoice;
     boost::shared_ptr<Choice_Knob> _systemFontChoice;
     boost::shared_ptr<Int_Knob> _fontSize;
     
@@ -388,6 +402,7 @@ private:
     boost::shared_ptr<Color_Knob> _raisedColor;
     boost::shared_ptr<Color_Knob> _selectionColor;
     boost::shared_ptr<Color_Knob> _textColor;
+    boost::shared_ptr<Color_Knob> _altTextColor;
     boost::shared_ptr<Color_Knob> _timelinePlayheadColor;
     boost::shared_ptr<Color_Knob> _timelineBGColor;
     boost::shared_ptr<Color_Knob> _timelineBoundsColor;
@@ -404,11 +419,9 @@ private:
     
     
     std::map<std::string,boost::shared_ptr<Choice_Knob> > _perPluginRenderScaleSupport;
-    bool _wereChangesMadeSinceLastSave;
     bool _restoringSettings;
     bool _ocioRestored;
     bool _settingsExisted;
-    bool _hasWarnedOnceOnFontChanged ;
 };
 
 #endif // NATRON_ENGINE_SETTINGS_H_

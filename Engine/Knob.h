@@ -185,6 +185,12 @@ public:
     {
         Q_EMIT keyFrameInterpolationChanged(time,dimension);
     }
+    
+    void s_hasModificationsChanged()
+    {
+        Q_EMIT hasModificationsChanged();
+    }
+    
 public Q_SLOTS:
 
     /**
@@ -278,14 +284,17 @@ Q_SIGNALS:
     void helpChanged();
     
     void expressionChanged(int dimension);
+    
+    void hasModificationsChanged();
 };
 
 struct KnobChange
 {
     Natron::ValueChangedReasonEnum reason;
     bool originatedFromMainThread;
+    KnobI* knob;
 };
-typedef std::map<KnobI*,KnobChange> ChangesMap;
+typedef std::list<KnobChange> ChangesList;
 
 
 class KnobI
@@ -356,6 +365,7 @@ public:
      **/
     virtual bool hasModifications() const = 0;
     virtual bool hasModifications(int dimension) const = 0;
+    virtual void computeHasModifications() = 0;
 
     /**
      * @brief If the parameter is multidimensional, this is the label thats the that will be displayed
@@ -403,11 +413,7 @@ public:
      **/
     virtual void cloneAndUpdateGui(KnobI* other,int dimension = -1) = 0;
 
-    /**
-     * @brief Performs the same as cloneAndUpdateGui, but also copies the properties of the knob such as whether it is enabled, secret,
-     * the name of the knob, etc...
-     **/
-    virtual void deepClone(KnobI* other) = 0;
+    virtual void cloneDefaultValues(KnobI* other) = 0;
     
     /**
      * @brief Same as clone(const boost::shared_ptr<KnobI>& ) except that the given offset is applied
@@ -432,6 +438,11 @@ public:
      **/
     virtual boost::shared_ptr<Curve> getGuiCurve(int dimension) const = 0;
 
+    virtual double random(unsigned int seed) const = 0;
+    virtual double random(double min = 0.,double max = 1.) const = 0;
+    virtual int randomInt(unsigned int seed) const = 0;
+    virtual int randomInt(int min = INT_MIN,int max = INT_MAX) const = 0;
+    
 protected:
 
     
@@ -513,6 +524,9 @@ public:
     void setExpression(int dimension,const std::string& expression,bool hasRetVariable) {
         setExpressionInternal(dimension, expression, hasRetVariable, true);
     }
+    
+    virtual void clearExpressionsResults(int dimension) = 0;
+    
     virtual void clearExpression(int dimension,bool clearResults) = 0;
     virtual std::string getExpression(int dimension) const = 0;
     
@@ -872,8 +886,13 @@ public:
     virtual void addListener(bool isExpression,int fromExprDimension,KnobI* knob) = 0;
     virtual void removeListener(KnobI* knob) = 0;
 
+    virtual bool useNativeOverlayHandle() const { return false; }
+
+    
 protected:
 
+    virtual bool setHasModifications(int dimension,bool value,bool lock) = 0;
+    
     /**
      * @brief Slaves the value for the given dimension to the curve
      * at the same dimension for the knob 'other'.
@@ -1032,7 +1051,15 @@ public:
     virtual void beginChanges() OVERRIDE FINAL;
     virtual void endChanges() OVERRIDE FINAL;
     virtual void evaluateValueChange(int dimension,Natron::ValueChangedReasonEnum reason) OVERRIDE FINAL;
-
+    
+    virtual double random(unsigned int seed) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual double random(double min = 0., double max = 1.) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual int randomInt(unsigned int seed) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual int randomInt(int min = 0,int max = INT_MAX) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+protected:
+    
+    void randomSeed(unsigned int seed) const;
+    
 private:
 
     
@@ -1126,12 +1153,19 @@ public:
     virtual std::string getDimensionName(int dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setDimensionName(int dim,const std::string & name) OVERRIDE FINAL;
     
+    virtual bool hasModifications() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool hasModifications(int dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
 private:
+    
 
     virtual bool slaveTo(int dimension,const boost::shared_ptr<KnobI> &  other,int otherDimension,Natron::ValueChangedReasonEnum reason
                          ,bool ignoreMasterPersistence) OVERRIDE FINAL WARN_UNUSED_RETURN;
 
 protected:
+    
+    virtual bool setHasModifications(int dimension,bool value,bool lock) OVERRIDE FINAL;
+
 
     /**
      * @brief Protected so the implementation of unSlave can actually use this to reset the master pointer
@@ -1160,6 +1194,32 @@ public:
 
     virtual void getListeners(std::list<KnobI*> & listeners) const OVERRIDE FINAL;
     
+    virtual void clearExpressionsResults(int /*dimension*/) {}
+    
+    void incrementExpressionRecursionLevel() const;
+    
+    void decrementExpressionRecursionLevel() const;
+    
+    int getExpressionRecursionLevel() const;
+    
+    class ExprRecursionLevel_RAII
+    {
+        const KnobHelper* _k;
+    public:
+        
+        ExprRecursionLevel_RAII(const KnobHelper* k)
+        : _k(k)
+        {
+            k->incrementExpressionRecursionLevel();
+        }
+        
+        ~ExprRecursionLevel_RAII()
+        {
+            _k->decrementExpressionRecursionLevel();
+        }
+        
+    };
+    
 protected:
 
 
@@ -1184,10 +1244,6 @@ protected:
     
     virtual void cloneExpressionsResults(KnobI* /*other*/,int /*dimension = -1*/) {}
 
-    /**
-     * @brief Override to copy extra properties, such as the entries for a combobox for example.
-     **/
-    virtual void deepCloneExtraData(KnobI* /*other*/) {}
     
     /**
      * @brief Called when a keyframe is removed.
@@ -1206,8 +1262,6 @@ protected:
     {
     }
     
-    virtual void clearExpressionsResults(int /*dimension*/) {}
-    
     void cloneGuiCurvesIfNeeded(std::map<int,Natron::ValueChangedReasonEnum>& modifiedDimensions);
     
     void cloneInternalCurvesIfNeeded(std::map<int,Natron::ValueChangedReasonEnum>& modifiedDimensions);
@@ -1221,13 +1275,12 @@ protected:
     void setGuiCurveHasChanged(int dimension,bool changed);
 
     void checkAnimationLevel(int dimension);
-    boost::shared_ptr<KnobSignalSlotHandler> _signalSlotHandler;
+    
+    void clearExpressionsResultsIfNeeded(std::map<int,Natron::ValueChangedReasonEnum>& modifiedDimensions);
 
     
-protected:
     
-    mutable int _expressionsRecursionLevel;
-    mutable QMutex _expressionRecursionLevelMutex;
+    boost::shared_ptr<KnobSignalSlotHandler> _signalSlotHandler;
 
 private:
     
@@ -1272,9 +1325,8 @@ public:
     virtual ~Knob();
 
     
-    virtual bool hasModifications() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool hasModifications(int dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-
+    
+    virtual void computeHasModifications() OVERRIDE FINAL;
 
     /**
      * @brief Get the current value of the knob for the given dimension.
@@ -1371,12 +1423,13 @@ public:
      * @brief Get Default values
      **/
     std::vector<T> getDefaultValues_mt_safe() const WARN_UNUSED_RETURN;
+    T getDefaultValue(int dimension) const WARN_UNUSED_RETURN;
 
     /**
      * @brief Set a default value for the particular dimension.
      **/
     void setDefaultValue(const T & v,int dimension = 0);
-
+    void setDefaultValueWithoutApplying(const T& v,int dimension = 0);
 
     //////////////////////////////////////////////////////////////////////
     ///////////////////////////////////
@@ -1410,7 +1463,7 @@ public:
     virtual void clone(KnobI* other,int dimension = -1)  OVERRIDE FINAL;
     virtual void clone(KnobI* other,SequenceTime offset, const RangeD* range,int dimension = -1) OVERRIDE FINAL;
     virtual void cloneAndUpdateGui(KnobI* other,int dimension = -1) OVERRIDE FINAL;
-    virtual void deepClone(KnobI* other)  OVERRIDE FINAL;
+    virtual void cloneDefaultValues(KnobI* other) OVERRIDE FINAL;
     
     virtual void dequeueValuesSet(bool disableEvaluation) OVERRIDE FINAL;
     
@@ -1435,24 +1488,12 @@ public:
     T getDisplayMinimum(int dimension = 0) const;
     T getDisplayMaximum(int dimension = 0) const;
     
-    void getExpressionsResults(ExprResults& results)
-    {
-        QReadLocker k(&_valueMutex);
-        results = _exprRes;
-    }
-
     void getExpressionResults(int dim,FrameValueMap& map)
     {
         QReadLocker k(&_valueMutex);
         map = _exprRes[dim];
     }
-    
-    void setExpressionResults(int dim,const FrameValueMap& map)
-    {
-        QWriteLocker k(&_valueMutex);
-        _exprRes[dim] = map;
-    }
-    
+
 protected:
     
     virtual void resetExtraToDefaultValue(int /*dimension*/) {}
@@ -1498,6 +1539,8 @@ public:
 private:
     
     T evaluateExpression(int dimension) const;
+    
+    bool getValueFromExpression(int time,int dimension,bool clamp,T* ret) const;
 
     //////////////////////////////////////////////////////////////////////
     /////////////////////////////////// End implementation of KnobI

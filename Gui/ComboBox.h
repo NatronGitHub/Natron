@@ -48,6 +48,7 @@ private:
     int _animation;
     bool _clicked;
     bool _dirty;
+    bool _altered;
     
     int _currentIndex;
     QString _currentText;
@@ -115,6 +116,9 @@ public:
     void setReadOnly(bool readOnly);
     
     bool getEnabled_natron() const;
+    
+    void setAltered(bool b);
+    bool getAltered() const;
 
 public Q_SLOTS:
 

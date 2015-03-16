@@ -34,8 +34,11 @@ CLANG_DIAG_ON(deprecated)
 #endif
 #include "Engine/AppManager.h"
 #include "Global/KeySymbols.h"
+#include "Engine/ImageComponents.h"
 
-#define NATRON_EXTRA_PARAMETER_PAGE_NAME "Node"
+#define NATRON_PARAMETER_PAGE_NAME_EXTRA "Node"
+#define NATRON_PARAMETER_PAGE_NAME_INFO "Info"
+
 
 #define kDisableNodeKnobName "disableNode"
 #define kUserLabelKnobName "userTextArea"
@@ -52,6 +55,7 @@ class TimeLine;
 class NodeSerialization;
 class KnobSerialization;
 class KnobHolder;
+class OverlaySupport;
 class Double_Knob;
 class NodeGuiI;
 class RotoContext;
@@ -264,13 +268,13 @@ public:
      * @brief Returns true if the given input supports the given components. If inputNb equals -1
      * then this function will check whether the effect can produce the given components.
      **/
-    bool isSupportedComponent(int inputNb,Natron::ImageComponentsEnum comp) const;
+    bool isSupportedComponent(int inputNb,const Natron::ImageComponents& comp) const;
 
     /**
      * @brief Returns the most appropriate components that can be supported by the inputNb.
      * If inputNb equals -1 then this function will check the output components.
      **/
-    Natron::ImageComponentsEnum findClosestSupportedComponents(int inputNb,Natron::ImageComponentsEnum comp) const;
+    Natron::ImageComponents findClosestSupportedComponents(int inputNb,const Natron::ImageComponents& comp) const;
 
     /**
      * @brief Returns the index of the channel to use to produce the mask.
@@ -330,6 +334,8 @@ public:
 
     const std::vector<std::string> & getInputLabels() const;
     std::string getInputLabel(int inputNb) const;
+    
+    int getInputNumberFromLabel(const std::string& inputLabel) const;
 
     bool isInputConnected(int inputNb) const;
 
@@ -349,8 +355,16 @@ public:
      * empty input if they are all optionals, or -1 if nothing matches the 2 first conditions..
      * if all inputs are connected.
      **/
-    virtual int getPreferredInputForConnection() ;
-
+    virtual int getPreferredInputForConnection()  const;
+    virtual int getPreferredInput() const;
+    
+private:
+    
+    int getPreferredInputInternal(bool connected) const;
+    
+public:
+    
+    
     /**
      * @brief Returns in 'outputs' a map of all nodes connected to this node
      * where the value of the map is the input index from which these outputs
@@ -371,7 +385,7 @@ public:
      * as they are in the internal inputs vector. Disconnected inputs are
      * represented as empty strings.
      **/
-    void getInputNames(std::vector<std::string> & inputNames) const;
+    void getInputNames(std::map<std::string,std::string> & inputNames) const;
     
     enum CanConnectInputReturnValue
     {
@@ -442,6 +456,12 @@ public:
 
     
     std::string getKnobChangedCallback() const;
+    
+    std::string getInputChangedCallback() const;
+
+protected:
+    
+    void runInputChangedCallback(int index);
 private:
     
     /**
@@ -760,20 +780,9 @@ public:
      **/
     void getAllKnobsKeyframes(std::list<SequenceTime>* keyframes);
     
-    /**
-     * @brief Recursively sets render preferences for the rendering of a frame for the current thread.
-     * This is thread local storage
-     **/
-    void setParallelRenderArgs(int time,
-                               int view,
-                               bool isRenderUserInteraction,
-                               bool isSequential,
-                               bool canAbort,
-                               U64 nodeHash,
-                               bool canSetValue,
-                               const TimeLine* timeline);
     
-    void invalidateParallelRenderArgs();
+    void setNodeIsRendering();
+    void unsetNodeIsRendering();
     
     /**
      * @brief Returns true if the parallel render args thread-storage is set
@@ -850,7 +859,49 @@ public:
     bool getOverlayColor(double* r,double* g,double* b) const;
     
     bool shouldDrawOverlay() const;
+    
+    
+    void drawDefaultOverlay(double scaleX,double scaleY);
+    
+    bool onOverlayPenDownDefault(double scaleX,double scaleY,const QPointF & viewportPos, const QPointF & pos) WARN_UNUSED_RETURN;
+    
+    bool onOverlayPenMotionDefault(double scaleX,double scaleY,const QPointF & viewportPos, const QPointF & pos) WARN_UNUSED_RETURN;
+    
+    bool onOverlayPenUpDefault(double scaleX,double scaleY,const QPointF & viewportPos, const QPointF & pos) WARN_UNUSED_RETURN;
+    
+    bool onOverlayKeyDownDefault(double scaleX,double scaleY,Natron::Key key,Natron::KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
+    
+    bool onOverlayKeyUpDefault(double scaleX,double scaleY,Natron::Key key,Natron::KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
+    
+    bool onOverlayKeyRepeatDefault(double scaleX,double scaleY,Natron::Key key,Natron::KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
+    
+    bool onOverlayFocusGainedDefault(double scaleX,double scaleY) WARN_UNUSED_RETURN;
+    
+    bool onOverlayFocusLostDefault(double scaleX,double scaleY) WARN_UNUSED_RETURN;
+    
+    void addDefaultPositionOverlay(const boost::shared_ptr<Double_Knob>& position);
+    
+    void removeDefaultOverlay(KnobI* knob);
+    
+    void initializeDefaultOverlays();
+    
+    bool hasDefaultOverlay() const;
+    
+    void setCurrentViewportForDefaultOverlays(OverlaySupport* viewPort);
+    
+    bool hasDefaultOverlayForParam(const KnobI* knob) const;
 
+    void setPluginIconFilePath(const std::string& iconFilePath);
+    
+    void setPluginDescription(const std::string& description);
+    
+    void setPluginIDAndVersionForGui(const std::string& pluginLabel,const std::string& pluginID,unsigned int version);
+    
+    void setPluginPythonModule(const std::string& pythonModule);
+    
+    std::string getPluginPythonModule() const;
+  
+    
 private:
     
     void setNameInternal(const std::string& name);
@@ -973,18 +1024,9 @@ private:
 
     
     std::string makeInfoForInput(int inputNumber) const;
-
-    void invalidateParallelRenderArgsInternal(std::list<Natron::Node*>& markedNodes);
     
-    void setParallelRenderArgsInternal(int time,
-                                       int view,
-                                       bool isRenderUserInteraction,
-                                       bool isSequential,
-                                       U64 nodeHash,
-                                       bool canAbort,
-                                       bool canSetValue,
-                                       const TimeLine* timeline,
-                                       std::list<Natron::Node*>& markedNodes);
+    void setNodeIsRenderingInternal(std::list<Natron::Node*>& markedNodes);
+    void setNodeIsNoLongerRenderingInternal(std::list<Natron::Node*>& markedNodes);
     
 
 
@@ -1016,62 +1058,52 @@ class InspectorNode
 {
     Q_OBJECT
     
-    int _inputsCount;
-
+    int _maxInputs;
 
 public:
 
     InspectorNode(AppInstance* app,
                   const boost::shared_ptr<NodeCollection>& group,
-                  Natron::Plugin* plugin);
+                  Natron::Plugin* plugin,
+                  int maxInputs);
 
     virtual ~InspectorNode();
 
     virtual int getMaxInputCount() const OVERRIDE
     {
-        return _inputsCount;
+        return _maxInputs;
     }
 
     virtual bool connectInput(const boost::shared_ptr<Node>& input,int inputNumber) OVERRIDE;
-    virtual int disconnectInput(int inputNumber) OVERRIDE;
-    virtual int disconnectInput(Node* input) OVERRIDE;
 
+    virtual int getPreferredInputForConnection() const OVERRIDE FINAL;
+    virtual int getPreferredInput() const OVERRIDE FINAL;
 
+private:
 
-    virtual int getPreferredInputForConnection()  OVERRIDE FINAL;
+    int getPreferredInputInternal(bool connected) const;
 
-    bool tryAddEmptyInput();
-
-    void addEmptyInput();
-
-    void removeEmptyInputs();
+public:
 
     void setActiveInputAndRefresh(int inputNb);
 
 };
 
-class ParallelRenderArgsSetter
+
+class RenderingFlagSetter
 {
     Natron::Node* node;
 public:
     
-    ParallelRenderArgsSetter(Natron::Node* n,
-                             int time,
-                             int view,
-                             bool isRenderUserInteraction,
-                             bool isSequential,
-                             bool canAbort,
-                             U64 nodeHash,
-                             bool canSetValue,
-                             const TimeLine* timeline)
+    RenderingFlagSetter(Natron::Node* n)
     : node(n)
     {
-        node->setParallelRenderArgs(time,view,isRenderUserInteraction,isSequential,canAbort,nodeHash,canSetValue,timeline);
+        node->setNodeIsRendering();
     }
     
-    ~ParallelRenderArgsSetter()
+    ~RenderingFlagSetter()
     {
-        node->invalidateParallelRenderArgs();
+        node->unsetNodeIsRendering();
     }
 };
 

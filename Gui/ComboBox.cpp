@@ -49,6 +49,7 @@ ComboBox::ComboBox(QWidget* parent)
     , _animation(0)
     , _clicked(false)
     , _dirty(false)
+    , _altered(false)
     , _currentIndex(0)
     , _currentText()
     , _separators()
@@ -282,6 +283,10 @@ ComboBox::paintEvent(QPaintEvent* /*e*/)
     QColor textColor;
     if (_readOnly) {
         textColor.setRgb(100,100,100);
+    } else if (_altered) {
+        double aR,aG,aB;
+        appPTR->getCurrentSettings()->getAltTextColor(&aR, &aG, &aB);
+        textColor.setRgbF(aR, aG, aB);
     } else if (!_enabled) {
         textColor = Qt::black;
     } else {
@@ -533,7 +538,7 @@ ComboBox::getCurrentIndexText() const
     if (_actions.empty()) {
         return QString();
     }
-    assert( _currentIndex < (int)_actions.size() );
+    assert( _currentIndex < (int)_actions.size() && _currentIndex >= 0);
 
     return _actions[_currentIndex]->text();
 }
@@ -738,3 +743,15 @@ ComboBox::setDirty(bool b)
     repaint();
 }
 
+void
+ComboBox::setAltered(bool b)
+{
+    _altered = b;
+    repaint();
+}
+
+bool
+ComboBox::getAltered() const
+{
+    return _altered;
+}

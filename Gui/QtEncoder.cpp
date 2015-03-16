@@ -242,8 +242,11 @@ QtWriter::render(SequenceTime time,
                  int view,
                  bool /*isSequentialRender*/,
                  bool /*isRenderResponseToUserInteraction*/,
-                 boost::shared_ptr<Natron::Image> output)
+                 const std::list<boost::shared_ptr<Natron::Image> >& outputPlanes)
 {
+    assert(outputPlanes.size() == 1);
+    const ImagePtr& output = outputPlanes.front();
+    
     boost::shared_ptr<Natron::Image> src = getImage(0, time, mappedScale, view, NULL, output->getComponents(), output->getBitDepth(),1, false,NULL);
 
     if ( hasOutputConnected() ) {
@@ -259,8 +262,10 @@ QtWriter::render(SequenceTime time,
     } else {
         type = QImage::Format_ARGB32;
     }
+    
+    Natron::Image::WriteAccess acc = output->getWriteRights();
 
-    _lut->to_byte_packed(buf, (const float*)src->pixelAt(0, 0), roi, src->getBounds(), roi,
+    _lut->to_byte_packed(buf, (const float*)acc.pixelAt(0, 0), roi, src->getBounds(), roi,
                          Natron::Color::ePixelPackingRGBA, Natron::Color::ePixelPackingBGRA, true, premult);
 
     QImage img(buf,roi.width(),roi.height(),type);
@@ -275,10 +280,10 @@ QtWriter::render(SequenceTime time,
 
 void
 QtWriter::addAcceptedComponents(int /*inputNb*/,
-                                std::list<Natron::ImageComponentsEnum>* comps)
+                                std::list<Natron::ImageComponents>* comps)
 {
     ///QtWriter only supports RGBA for now.
-    comps->push_back(Natron::eImageComponentRGBA);
+    comps->push_back(ImageComponents::getRGBAComponents());
 }
 
 void

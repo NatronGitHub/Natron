@@ -34,11 +34,19 @@ class CompleterLineEdit
     Q_OBJECT
 
 public:
+    
+    /// map<weight, pair<ID,Label> >
+    typedef std::multimap<int,std::pair<QString,QString> > PluginsNamesMap;
 
+    CompleterLineEdit(const PluginsNamesMap& plugins,
+                      bool quickExit,
+                      QDialog* parent);
+    
     CompleterLineEdit(const QStringList & displayWords,
                       const QStringList & internalIds,
                       bool quickExit,
                       QDialog* parent);
+
 
     virtual ~CompleterLineEdit();
 

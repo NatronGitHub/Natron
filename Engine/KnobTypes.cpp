@@ -16,6 +16,7 @@
 #include "KnobTypes.h"
 
 #include <cfloat>
+#include <locale>
 #include <sstream>
 #include <boost/math/special_functions/fpclassify.hpp>
 
@@ -163,7 +164,7 @@ Double_Knob::Double_Knob(KnobHolder* holder,
 , _disableSlider(false)
 , _normalizationXY()
 , _defaultStoredNormalized(false)
-
+, _hasNativeOverlayHandle(false)
 {
     _normalizationXY.first = eNormalizedStateNone;
     _normalizationXY.second = eNormalizedStateNone;
@@ -172,6 +173,38 @@ Double_Knob::Double_Knob(KnobHolder* holder,
         _increments[i] = 1.;
         _decimals[i] = 2;
     }
+}
+
+void
+Double_Knob::setHasNativeOverlayHandle(bool handle)
+{
+    KnobHolder* holder = getHolder();
+    if (holder) {
+        Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(holder);
+        if (!effect) {
+            return;
+        }
+        if (!effect->getNode()) {
+            return;
+        }
+        boost::shared_ptr<KnobI> thisShared = holder->getKnobByName(getName());
+        assert(thisShared);
+        boost::shared_ptr<Double_Knob> thisSharedDouble = boost::dynamic_pointer_cast<Double_Knob>(thisShared);
+        assert(thisSharedDouble);
+        if (handle) {
+            effect->getNode()->addDefaultPositionOverlay(thisSharedDouble);
+        } else {
+            effect->getNode()->removeDefaultOverlay(this);
+        }
+       _hasNativeOverlayHandle = handle;
+    }
+    
+}
+
+bool
+Double_Knob::getHasNativeOverlayHandle() const
+{
+    return _hasNativeOverlayHandle;
 }
 
 void
@@ -657,18 +690,20 @@ Choice_Knob::getHintToolTipFull() const
     return ss.str();
 }
 
-void
-Choice_Knob::deepCloneExtraData(KnobI* other)
+static bool caseInsensitiveCompare(const std::string& a,const std::string& b)
 {
-    Choice_Knob* isChoice = dynamic_cast<Choice_Knob*>(other);
-    if (!isChoice) {
-        return;
+    if (a.size() != b.size()) {
+        return false;
     }
-    
-    
-    QMutexLocker l(&_entriesMutex);
-    _entries = isChoice->getEntries_mt_safe();
-    _entriesHelp = isChoice->getEntriesHelp_mt_safe();
+    std::locale loc;
+    for (std::size_t i = 0; i < a.size(); ++i) {
+        char aLow = std::tolower(a[i],loc);
+        char bLow = std::tolower(b[i],loc);
+        if (aLow != bLow) {
+            return false;
+        }
+    }
+    return true;
 }
 
 void
@@ -693,9 +728,10 @@ Choice_Knob::choiceRestoration(Choice_Knob* knob,const ChoiceExtraData* data)
         setValue(serializedIndex, 0);
     } else {
         // try to find the same label at some other index
-        std::vector<std::string>::iterator it = std::find(_entries.begin(), _entries.end(), data->_choiceString);
-        if ( it != _entries.end() ) {
-            setValue(std::distance(_entries.begin(), it), 0);
+        for (std::size_t i = 0; i < _entries.size(); ++i) {
+            if (caseInsensitiveCompare(_entries[i], data->_choiceString)) {
+                setValue(i, 0);
+            }
         }
     }
     
@@ -1307,6 +1343,29 @@ Parametric_Knob::addControlPoint(int dimension,
     Q_EMIT curveChanged(dimension);
     
     return eStatusOK;
+}
+
+Natron::StatusEnum
+Parametric_Knob::addHorizontalControlPoint(int dimension,double key,double value)
+{
+    ///Mt-safe as Curve is MT-safe
+    if (dimension >= (int)_curves.size() ||
+        boost::math::isnan(key) ||
+        boost::math::isinf(key) ||
+        boost::math::isnan(value) ||
+        boost::math::isinf(value)) {
+        return eStatusFailed;
+    }
+    
+    KeyFrame k(key,value);
+    k.setInterpolation(Natron::eKeyframeTypeBroken);
+    k.setLeftDerivative(0);
+    k.setRightDerivative(0);
+    _curves[dimension]->addKeyFrame(k);
+    Q_EMIT curveChanged(dimension);
+    
+    return eStatusOK;
+ 
 }
 
 Natron::StatusEnum

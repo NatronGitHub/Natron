@@ -44,6 +44,8 @@ GCC_DIAG_ON(unused-parameter)
 #include "Engine/KnobTypes.h"
 
 
+#define EXPR_RECURSION_LEVEL() KnobHelper::ExprRecursionLevel_RAII __recursionLevelIncrementer__(this)
+
 ///template specializations
 
 template <typename T>
@@ -331,11 +333,25 @@ Knob<std::string>::pyObjectToType(PyObject* o) const
     return std::string(Natron::PY3String_asString(o));
 }
 
+
+inline unsigned int hashFunction(unsigned int a)
+{
+    a = (a ^ 61) ^ (a >> 16);
+    a = a + (a << 3);
+    a = a ^ (a >> 4);
+    a = a * 0x27d4eb2d;
+    a = a ^ (a >> 15);
+    return a;
+}
+
 template <typename T>
 T Knob<T>::evaluateExpression(int dimension) const
 {
     Natron::PythonGILLocker pgl;
     PyObject *ret;
+    
+    ///Reset the random state to reproduce the sequence
+    randomSeed(hashFunction(dimension));
     try {
         ret = executeExpression(dimension);
     } catch (...) {
@@ -345,6 +361,44 @@ T Knob<T>::evaluateExpression(int dimension) const
     T val =  pyObjectToType(ret);
     Py_DECREF(ret); //< new ref
     return val;
+}
+
+template <typename T>
+bool Knob<T>::getValueFromExpression(int time,int dimension,bool clamp,T* ret) const
+{
+    
+    ///Prevent recursive call of the expression
+    
+    
+    if (getExpressionRecursionLevel() > 0) {
+        return false;
+    }
+    
+    
+    ///Check first if a value was already computed:
+    
+    
+    QWriteLocker k(&_valueMutex);
+    typename FrameValueMap::iterator found = _exprRes[dimension].find(time);
+    if (found != _exprRes[dimension].end()) {
+        *ret = found->second;
+        return true;
+    }
+    
+    
+    {
+        EXPR_RECURSION_LEVEL();
+        *ret = evaluateExpression(dimension);
+    }
+    
+    if (clamp) {
+        *ret =  clampToMinMax(*ret,dimension);
+    }
+    
+    //QWriteLocker k(&_valueMutex);
+    _exprRes[dimension].insert(std::make_pair(time,*ret));
+    return true;
+
 }
 
 //Declare the specialization before defining it to avoid the following
@@ -358,22 +412,9 @@ Knob<std::string>::getValue(int dimension,bool /*clampToMinMax*/) const
 {
     std::string hasExpr = getExpression(dimension);
     if (!hasExpr.empty()) {
-        ///Check first if a value was already computed:
+        std::string ret;
         SequenceTime time = getCurrentTime();
-        
-        QWriteLocker k(&_valueMutex);
-        
-        FrameValueMap::iterator found = _exprRes[dimension].find(time);
-        if (found != _exprRes[dimension].end()) {
-            return found->second;
-        }
-        
-        QMutexLocker locker(&_expressionRecursionLevelMutex);
-        if (_expressionsRecursionLevel == 0) {
-            ++_expressionsRecursionLevel;
-            std::string ret = evaluateExpression(dimension);
-            _exprRes[dimension].insert(std::make_pair(time,ret));
-            --_expressionsRecursionLevel;
+        if (getValueFromExpression(time,dimension,false,&ret)) {
             return ret;
         }
     }
@@ -418,33 +459,11 @@ Knob<T>::getValue(int dimension,bool clamp) const
 {
     std::string hasExpr = getExpression(dimension);
     if (!hasExpr.empty()) {
-        
-        ///Check first if a value was already computed:
+        T ret;
         SequenceTime time = getCurrentTime();
-        
-        QWriteLocker k(&_valueMutex);
-        
-        typename FrameValueMap::iterator found = _exprRes[dimension].find(time);
-        if (found != _exprRes[dimension].end()) {
-            return found->second;
-        }
-
-        
-        ///Prevent recursive call of the expression
-        QMutexLocker locker(&_expressionRecursionLevelMutex);
-        if (_expressionsRecursionLevel == 0) {
-            ++_expressionsRecursionLevel;
-            T ret = evaluateExpression(dimension);
-            --_expressionsRecursionLevel;
-            
-            
-            if (clamp) {
-                ret =  clampToMinMax(ret,dimension);
-            }
-            _exprRes[dimension].insert(std::make_pair(time,ret));
+        if (getValueFromExpression(time,dimension,true,&ret)) {
             return ret;
         }
-      
     }
     
     if ( isAnimated(dimension) ) {
@@ -469,6 +488,7 @@ Knob<T>::getValue(int dimension,bool clamp) const
             return (T)isDouble->getValue(master.first,clamp);
         }
     }
+
     QReadLocker l(&_valueMutex);
     if (clamp ) {
         T ret = _values[dimension];
@@ -490,26 +510,10 @@ Knob<std::string>::getValueAtTime(double time,
 
     std::string hasExpr = getExpression(dimension);
     if (!hasExpr.empty()) {
-        
-        ///Check first if a value was already computed:
-        QWriteLocker k(&_valueMutex);
-        
-        FrameValueMap::iterator found = _exprRes[dimension].find(time);
-        if (found != _exprRes[dimension].end()) {
-            return found->second;
-        }
-
-        
-        ///Prevent recursive call of the expression
-        QMutexLocker locker(&_expressionRecursionLevelMutex);
-        if (_expressionsRecursionLevel == 0) {
-            ++_expressionsRecursionLevel;
-            std::string ret =  evaluateExpression(dimension);
-            _exprRes[dimension].insert(std::make_pair(time,ret));
-            --_expressionsRecursionLevel;
+        std::string ret;
+        if (getValueFromExpression(time,dimension,false,&ret)) {
             return ret;
         }
-        
     }
     
     ///if the knob is slaved to another knob, returns the other knob value
@@ -567,31 +571,8 @@ Knob<T>::getValueAtTime(double time,
     
     std::string hasExpr = getExpression(dimension);
     if (!hasExpr.empty()) {
-        
-        ///Check first if a value was already computed:
-        
-        QWriteLocker k(&_valueMutex);
-        
-        typename FrameValueMap::iterator found = _exprRes[dimension].find(time);
-        if (found != _exprRes[dimension].end()) {
-            return found->second;
-        }
-        
-
-        
-        ///Prevent recursive call of the expression
-        QMutexLocker locker(&_expressionRecursionLevelMutex);
-        if (_expressionsRecursionLevel == 0) {
-
-            ++_expressionsRecursionLevel;
-            T ret = evaluateExpression(dimension);
-            --_expressionsRecursionLevel;
-            
-            if (clamp) {
-                ret = clampToMinMax(ret,dimension);
-            }
-            
-            _exprRes[dimension].insert(std::make_pair(time,ret));
+        T ret;
+        if (getValueFromExpression(time,dimension,true,&ret)) {
             return ret;
         }
     }
@@ -1300,6 +1281,14 @@ Knob<T>::getDefaultValues_mt_safe() const
 }
 
 template<typename T>
+T
+Knob<T>::getDefaultValue(int dimension) const
+{
+    QReadLocker l(&_valueMutex);
+    return _defaultValues[dimension];
+}
+
+template<typename T>
 void
 Knob<T>::setDefaultValue(const T & v,
                          int dimension)
@@ -1310,6 +1299,17 @@ Knob<T>::setDefaultValue(const T & v,
         _defaultValues[dimension] = v;
     }
     resetToDefaultValue(dimension);
+}
+
+template <typename T>
+void
+Knob<T>::setDefaultValueWithoutApplying(const T& v,int dimension)
+{
+    assert( dimension < getDimension() );
+    {
+        QWriteLocker l(&_valueMutex);
+        _defaultValues[dimension] = v;
+    }
 }
 
 template<typename T>
@@ -1724,6 +1724,7 @@ Knob<T>::clone(KnobI* other,
     if (getHolder()) {
         getHolder()->updateHasAnimation();
     }
+    computeHasModifications();
 }
 
 template<typename T>
@@ -1819,21 +1820,20 @@ Knob<T>::cloneAndUpdateGui(KnobI* other,int dimension)
 
 template <typename T>
 void
-Knob<T>::deepClone(KnobI* other)
+Knob<T>::cloneDefaultValues(KnobI* other)
 {
-    cloneAndUpdateGui(other);
-    for (int i = 0; i < getDimension(); ++i) {
-        if (!other->isEnabled(i)) {
-            setEnabled(i,false);
-        }
+    int dims = std::min(getDimension(), other->getDimension());
+    Knob<T>* otherT = dynamic_cast<Knob<T>*>(other);
+    assert(otherT);
+    if (!otherT) {
+        // coverity[dead_error_line]
+        return;
     }
     
-    if (other->getIsSecret()) {
-        setSecret(true);
+    for (int i = 0; i < dims; ++i) {
+        setDefaultValue(otherT->getDefaultValue(i),i);
     }
-    
-    setName(other->getName());
-    deepCloneExtraData(other);
+
 
 }
 
@@ -1894,6 +1894,8 @@ Knob<T>::dequeueValuesSet(bool disableEvaluation)
     }
     cloneInternalCurvesIfNeeded(dimensionChanged);
 
+    clearExpressionsResultsIfNeeded(dimensionChanged);
+    
     if (!disableEvaluation && !dimensionChanged.empty()) {
         
         beginChanges();
@@ -1906,52 +1908,36 @@ Knob<T>::dequeueValuesSet(bool disableEvaluation)
 }
 
 template <typename T>
-bool Knob<T>::hasModifications() const
+void Knob<T>::computeHasModifications()
 {
+    bool oneChanged = false;
     for (int i = 0; i < getDimension(); ++i) {
         
+        bool hasModif = false;
         std::string expr = getExpression(i);
         if (!expr.empty()) {
-            return true;
+            hasModif = true;
         }
         
-        boost::shared_ptr<Curve> c = getCurve(i);
-        if (c && c->isAnimated()) {
-            return true;
+        if (!hasModif) {
+            boost::shared_ptr<Curve> c = getCurve(i);
+            if (c && c->isAnimated()) {
+                hasModif = true;
+            }
         }
         
         ///Check expressions too in the future
-        
-        QReadLocker k(&_valueMutex);
-        if (_values[i] != _defaultValues[i]) {
-            return true;
+        if (!hasModif) {
+            QReadLocker k(&_valueMutex);
+            if (_values[i] != _defaultValues[i]) {
+                hasModif = true;
+            }
         }
+        oneChanged |= setHasModifications(i, hasModif, true);
     }
-    return false;
-}
-
-template <typename T>
-bool Knob<T>::hasModifications(int dimension) const
-{
-    boost::shared_ptr<Curve> c = getCurve(dimension);
-    
-    std::string expr = getExpression(dimension);
-    if (!expr.empty()) {
-        return true;
+    if (oneChanged && _signalSlotHandler) {
+        _signalSlotHandler->s_hasModificationsChanged();
     }
-    
-    if (c && c->isAnimated()) {
-        return true;
-    }
-    
-    ///Check expressions too in the future
-    
-    QReadLocker k(&_valueMutex);
-    if (_values[dimension] != _defaultValues[dimension]) {
-        return true;
-    }
-    
-    return false;
 }
 
 #endif // KNOBIMPL_H

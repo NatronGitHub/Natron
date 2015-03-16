@@ -31,6 +31,188 @@ Plugin::~Plugin()
     }
 }
 
+
+void
+Plugin::setPluginID(const QString & id)
+{
+    _id = id;
+}
+
+
+const QString &
+Plugin::getPluginID() const
+{
+    return _id;
+}
+
+bool
+Plugin::isReader() const {
+    return _isReader;
+}
+
+bool
+Plugin::isWriter() const {
+    return _isWriter;
+}
+
+void
+Plugin::setPluginLabel(const QString & label)
+{
+    _label = label;
+}
+
+const QString &
+Plugin::getPluginLabel() const
+{
+    return _label;
+}
+
+const QString
+Plugin::getLabelVersionMajorMinorEncoded() const
+{
+    return getLabelWithoutOFX() + ' ' + QString::number(_majorVersion) + '.' + QString::number(_minorVersion);
+}
+
+const QString
+Plugin::getLabelWithoutOFX() const
+{
+    if (_label.endsWith("OIIOOFX")) {
+        return _label.mid(0,_label.size() - 7);
+    } else if (_label.endsWith("OFX")) {
+        return _label.mid(0,_label.size() - 3);
+    } else if (_label.endsWith("CImg")) {
+        return _label.mid(0,_label.size() - 4);
+    } else if (_label.endsWith("OIIO")) {
+        return _label.mid(0,_label.size() - 4);
+    }
+    return _label;
+}
+
+const QString
+Plugin::getLabelVersionMajorEncoded() const
+{
+    return getLabelWithoutOFX() + ' ' + QString::number(_majorVersion);
+}
+
+QString
+Plugin::generateUserFriendlyPluginID() const
+{
+    QString grouping = _grouping.size() > 0 ? _grouping[0] : QString();
+    return getLabelWithoutOFX() + "  [" + grouping + "]";
+}
+
+QString
+Plugin::generateUserFriendlyPluginIDMajorEncoded() const
+{
+    QString grouping = _grouping.size() > 0 ? _grouping[0] : QString();
+    return getLabelVersionMajorEncoded() + "  [" + grouping + "]";
+}
+
+
+const QString&
+Plugin::getPluginOFXID() const
+{
+    return _ofxPluginID;
+}
+
+const QString&
+Plugin::getIconFilePath() const
+{
+    return _iconFilePath;
+}
+
+void
+Plugin::setIconFilePath(const QString& filePath)
+{
+    _iconFilePath = filePath;
+}
+
+const QString&
+Plugin::getGroupIconFilePath() const
+{
+    return _groupIconFilePath;
+}
+
+const QStringList&
+Plugin::getGrouping() const
+{
+    return _grouping;
+}
+
+QMutex*
+Plugin::getPluginLock() const
+{
+    return _lock;
+}
+
+Natron::LibraryBinary*
+Plugin::getLibraryBinary() const
+{
+    return _binary;
+}
+
+int
+Plugin::getMajorVersion() const
+{
+    return _majorVersion;
+}
+
+int
+Plugin::getMinorVersion() const
+{
+    return _minorVersion;
+}
+
+void
+Plugin::setHasShortcut(bool has) const
+{
+    _hasShortcutSet = has;
+}
+
+bool
+Plugin::getHasShortcut() const
+{
+    return _hasShortcutSet;
+}
+
+void
+Plugin::setPythonModule(const QString& module)
+{
+    _pythonModule = module;
+}
+
+const QString&
+Plugin::getPythonModule() const {
+    return _pythonModule;
+}
+
+void
+Plugin::setOfxPlugin(OFX::Host::ImageEffect::ImageEffectPlugin* p)
+{
+    _ofxPlugin = p;
+}
+
+OFX::Host::ImageEffect::ImageEffectPlugin*
+Plugin::getOfxPlugin() const
+{
+    return _ofxPlugin;
+}
+
+OFX::Host::ImageEffect::Descriptor*
+Plugin::getOfxDesc(ContextEnum* ctx) const
+{
+    *ctx = _ofxContext;
+    return _ofxDescriptor;
+}
+
+void
+Plugin::setOfxDesc(OFX::Host::ImageEffect::Descriptor* desc,ContextEnum ctx)
+{
+    assert(ctx != Natron::eContextNone);
+    _ofxDescriptor = desc;
+    _ofxContext = ctx;
+}
+
 void
 PluginGroupNode::tryAddChild(const boost::shared_ptr<PluginGroupNode>& plugin)
 {

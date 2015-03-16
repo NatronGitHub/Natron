@@ -24,7 +24,6 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QTreeWidgetItem>
 #include <QHBoxLayout>
 #include <QGroupBox>
-#include <QLabel>
 #include <QTextDocument>
 #include <QStyledItemDelegate>
 #include <QPainter>
@@ -35,6 +34,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/Button.h"
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/ActionShortcuts.h"
+#include "Gui/Label.h"
 
 struct GuiBoundAction
 {
@@ -109,7 +109,7 @@ struct ShortCutEditorPrivate
     HackedTreeWidget* tree;
     QGroupBox* shortcutGroup;
     QHBoxLayout* shortcutGroupLayout;
-    QLabel* shortcutLabel;
+    Natron::Label* shortcutLabel;
     KeybindRecorder* shortcutEditor;
     Button* validateButton;
     Button* clearButton;
@@ -223,7 +223,7 @@ ShortCutEditor::ShortCutEditor(QWidget* parent)
     _imp->mainLayout = new QVBoxLayout(this);
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
     setWindowFlags(Qt::WindowStaysOnTopHint | Qt::Window);
-    setWindowTitle( tr("Shortcuts editor") );
+    setWindowTitle( tr("Shortcuts Editor") );
     _imp->tree = new HackedTreeWidget(this);
     _imp->tree->setColumnCount(2);
     QStringList headers;
@@ -265,7 +265,7 @@ ShortCutEditor::ShortCutEditor(QWidget* parent)
     _imp->shortcutGroupLayout = new QHBoxLayout(_imp->shortcutGroup);
     _imp->shortcutGroupLayout->setContentsMargins(0, 0, 0, 0);
 
-    _imp->shortcutLabel = new QLabel(_imp->shortcutGroup);
+    _imp->shortcutLabel = new Natron::Label(_imp->shortcutGroup);
     _imp->shortcutLabel->setText( tr("Sequence:") );
     _imp->shortcutGroupLayout->addWidget(_imp->shortcutLabel);
 
@@ -503,7 +503,7 @@ ShortCutEditor::onValidateButtonClicked()
                     QString err = QString("Cannot bind this shortcut because the following action is already using it: %1")
                                   .arg( it2->item->text(0) );
                     _imp->shortcutEditor->clear();
-                    Natron::errorDialog( tr("Shortcut editor").toStdString(), tr( err.toStdString().c_str() ).toStdString() );
+                    Natron::errorDialog( tr("Shortcuts Editor").toStdString(), tr( err.toStdString().c_str() ).toStdString() );
 
                     return;
                 }

@@ -1238,7 +1238,7 @@ serializeRotoKnob(const boost::shared_ptr<KnobI> & knob,
         knob->unSlave(0,false);
     }
 
-    serialization->initialize(knob,false);
+    serialization->initialize(knob);
 
     if (wasSlaved) {
         knob->slaveTo(0, master.second, master.first);
@@ -5329,8 +5329,10 @@ convertCairoImageToNatronImage(cairo_surface_t* cairoImg,
     int stride = cairo_image_surface_get_stride(cairoImg);
     int comps = (int)image->getComponentsCount();
 
+    Natron::Image::WriteAccess acc = image->getWriteRights();
+    
     for (int y = 0; y < pixelRod.height(); ++y, srcPix += stride) {
-        PIX* dstPix = (PIX*)image->pixelAt(pixelRod.x1, pixelRod.y1 + y);
+        PIX* dstPix = (PIX*)acc.pixelAt(pixelRod.x1, pixelRod.y1 + y);
         assert(dstPix);
 
         for (int x = 0; x < pixelRod.width(); ++x) {
@@ -5352,7 +5354,7 @@ convertCairoImageToNatronImage(cairo_surface_t* cairoImg,
 boost::shared_ptr<Natron::Image>
 RotoContext::renderMask(bool useCache,
                         const RectI & roi,
-                        Natron::ImageComponentsEnum components,
+                        const Natron::ImageComponents& components,
                         U64 nodeHash,
                         U64 ageToRender,
                         const RectD & nodeRoD, //!< rod in canonical coordinates
@@ -5403,8 +5405,11 @@ RotoContext::renderMask(bool useCache,
     
     if (!byPassCache) {
 
-        getNode()->getLiveInstance()->getImageFromCacheAndConvertIfNeeded(useCache, false,  key, mipmapLevel, depth, components,
-                                                                           depth, components,roi,inputImages,&image);
+        getNode()->getLiveInstance()->getImageFromCacheAndConvertIfNeeded(useCache, false,  key, mipmapLevel,
+                                                                          roi,
+                                                                          nodeRoD,
+                                                                          depth, components,
+                                                                           depth, components,inputImages,&image);
         if (image) {
             params = image->getParams();
         }
@@ -5413,18 +5418,18 @@ RotoContext::renderMask(bool useCache,
     ///If there's only 1 shape to render and this shape is inverted, initialize the image
     ///with the invert instead of the default fill value to speed up rendering
     if (!image) {
-        ImageLocker imgLocker(node->getLiveInstance());
         
         params = Natron::Image::makeParams( 0,
                                            nodeRoD,
+                                           roi,
                                            1., // par
                                            mipmapLevel,
                                            false,
                                            components,
                                            depth,
-                                           std::map<int, std::vector<RangeD> >() );
+                                           std::map<int,std::map<int, std::vector<RangeD> > >() );
         
-        bool cached = Natron::getImageFromCacheOrCreate(key, params, &imgLocker, &image);
+        Natron::getImageFromCacheOrCreate(key, params, &image);
         if (!image) {
             std::stringstream ss;
             ss << "Failed to allocate an image of ";
@@ -5433,12 +5438,17 @@ RotoContext::renderMask(bool useCache,
             
             return image;
         }
-        if (!cached) {
-            image->allocateMemory();
-        } else {
-            ///lock the image because it might not be allocated yet
-            imgLocker.lock(image);
-        }
+        
+        ///Does nothing if image is already alloc
+        image->allocateMemory();
+        
+        /*
+         * Another thread might have allocated the same image in the cache but with another RoI, make sure
+         * it is big enough for us, or resize it to our needs.
+         */
+        
+        image->ensureBounds(params->getBounds());
+    
         
     }
 
@@ -5449,23 +5459,19 @@ RotoContext::renderMask(bool useCache,
     roi.intersect(pixelRod, &clippedRoI);
 
     cairo_format_t cairoImgFormat;
-    switch (components) {
-    case Natron::eImageComponentAlpha:
+    
+    if (components.getNumComponents() == 1) {
         cairoImgFormat = CAIRO_FORMAT_A8;
-        break;
-    case Natron::eImageComponentRGB:
+    } else if (components.getNumComponents() == 3) {
         cairoImgFormat = CAIRO_FORMAT_RGB24;
-        break;
-    case Natron::eImageComponentRGBA:
+    } else if (components.getNumComponents() == 4) {
         cairoImgFormat = CAIRO_FORMAT_ARGB32;
-        break;
-    default:
+    } else {
         cairoImgFormat = CAIRO_FORMAT_A8;
-        break;
     }
 
     ////Allocate the cairo temporary buffer
-    cairo_surface_t* cairoImg = cairo_image_surface_create( cairoImgFormat, pixelRod.width(), pixelRod.height() );
+    cairo_surface_t* cairoImg = cairo_image_surface_create(cairoImgFormat, pixelRod.width(), pixelRod.height() );
     cairo_surface_set_device_offset(cairoImg, -pixelRod.x1, -pixelRod.y1);
     if (cairo_surface_status(cairoImg) != CAIRO_STATUS_SUCCESS) {
         appPTR->removeFromNodeCache(image);

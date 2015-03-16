@@ -184,12 +184,37 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
             thisNode->restoreKnobsLinks(**it,nodes);
         }
         
-        const std::vector<std::string> & inputs = (*it)->getInputs();
-        for (U32 j = 0; j < inputs.size(); ++j) {
-            if ( !inputs[j].empty() && !group->connectNodes(j, inputs[j],thisNode.get()) ) {
-                std::string message = std::string("Failed to connect node ") + (*it)->getNodeScriptName() + " to " + inputs[j];
-                appPTR->writeToOfxLog_mt_safe(message.c_str());
-                mustShowErrorsLog =true;
+        const std::vector<std::string> & oldInputs = (*it)->getOldInputs();
+        if (!oldInputs.empty()) {
+            
+            /*
+             * Prior to Natron v2 OpenFX effects had their inputs reversed internally
+             */
+            bool isOfxEffect = thisNode->isOpenFXNode();
+            
+            for (U32 j = 0; j < oldInputs.size(); ++j) {
+                if ( !oldInputs[j].empty() && !group->connectNodes(isOfxEffect ? oldInputs.size() - 1 - j : j, oldInputs[j],thisNode.get()) ) {
+                    std::string message = std::string("Failed to connect node ") + (*it)->getNodeScriptName() + " to " + oldInputs[j];
+                    appPTR->writeToOfxLog_mt_safe(message.c_str());
+                    mustShowErrorsLog =true;
+                }
+            }
+        } else {
+            const std::map<std::string,std::string>& inputs = (*it)->getInputs();
+            for (std::map<std::string,std::string>::const_iterator it2 = inputs.begin(); it2 != inputs.end(); ++it2) {
+                if (it2->second.empty()) {
+                    continue;
+                }
+                int index = thisNode->getInputNumberFromLabel(it2->first);
+                if (index == -1) {
+                    appPTR->writeToOfxLog_mt_safe(QString("Could not find input named ") + it2->first.c_str());
+                    continue;
+                }
+                if (!it2->second.empty() && !group->connectNodes(index, it2->second, thisNode.get())) {
+                    std::string message = std::string("Failed to connect node ") + (*it)->getNodeScriptName() + " to " + it2->second;
+                    appPTR->writeToOfxLog_mt_safe(message.c_str());
+                    mustShowErrorsLog =true;
+                }
             }
         }
     }
@@ -197,13 +222,37 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
     ///Also reconnect parents of multiinstance nodes that were created on the fly
     for (std::map<boost::shared_ptr<Natron::Node>, std::list<boost::shared_ptr<NodeSerialization> >::const_iterator >::const_iterator
          it = parentsToReconnect.begin(); it != parentsToReconnect.end(); ++it) {
-        const std::vector<std::string> & inputs = (*it->second)->getInputs();
-        for (U32 j = 0; j < inputs.size(); ++j) {
-            if ( !inputs[j].empty() && !group->connectNodes(j, inputs[j],it->first.get()) ) {
-                std::string message = std::string("Failed to connect node ") + it->first->getPluginLabel() + " to " + inputs[j];
-                appPTR->writeToOfxLog_mt_safe(message.c_str());
-                mustShowErrorsLog =true;
-                
+        const std::vector<std::string> & oldInputs = (*it->second)->getOldInputs();
+        if (!oldInputs.empty()) {
+            /*
+             * Prior to Natron v2 OpenFX effects had their inputs reversed internally
+             */
+            bool isOfxEffect = it->first->isOpenFXNode();
+            
+            for (U32 j = 0; j < oldInputs.size(); ++j) {
+                if ( !oldInputs[j].empty() && !group->connectNodes(isOfxEffect ? oldInputs.size() - 1 - j : j, oldInputs[j],it->first.get()) ) {
+                    std::string message = std::string("Failed to connect node ") + it->first->getPluginLabel() + " to " + oldInputs[j];
+                    appPTR->writeToOfxLog_mt_safe(message.c_str());
+                    mustShowErrorsLog =true;
+                    
+                }
+            }
+        } else {
+            const std::map<std::string,std::string>& inputs = (*it->second)->getInputs();
+            for (std::map<std::string,std::string>::const_iterator it2 = inputs.begin(); it2 != inputs.end(); ++it2) {
+                if (it2->second.empty()) {
+                    continue;
+                }
+                int index = it->first->getInputNumberFromLabel(it2->first);
+                if (index == -1) {
+                    appPTR->writeToOfxLog_mt_safe(QString("Could not find input named ") + it2->first.c_str());
+                    continue;
+                }
+                if (!it2->second.empty() && !group->connectNodes(index, it2->second, it->first.get())) {
+                    std::string message = std::string("Failed to connect node ") + it->first->getPluginLabel() + " to " + it2->second;
+                    appPTR->writeToOfxLog_mt_safe(message.c_str());
+                    mustShowErrorsLog =true;
+                }
             }
         }
     }

@@ -55,6 +55,17 @@ public:
 
     // hooks to kOfxInteractPropSuggestedColour and kOfxPropOverlayColour in the property set
     bool n_getSuggestedColour(double &r, double &g, double &b) const;
+    
+    // an RAII class to save OpenGL context
+    class OGLContextSaver {
+    public:
+        OGLContextSaver(OverlaySupport* viewport);
+        
+        ~OGLContextSaver();
+        
+    private:
+        OverlaySupport* const _viewport;
+    };
 };
 
 class OfxImageEffectInstance;

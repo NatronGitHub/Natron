@@ -30,7 +30,6 @@
 #include <QListView>
 #include <QHeaderView>
 #include <QCheckBox>
-#include <QLabel>
 #include <QFileIconProvider>
 #include <QFileSystemModel>
 #include <QInputDialog>
@@ -67,25 +66,29 @@ CLANG_DIAG_ON(unused-private-field)
 
 #include <QtCore/QSettings>
 
-#include "Global/QtCompat.h"
-#include "Gui/Button.h"
-#include "Gui/LineEdit.h"
-#include "Gui/ComboBox.h"
-#include "Gui/GuiApplicationManager.h"
-#include "Global/MemoryInfo.h"
-#include "Gui/Gui.h"
-#include "Gui/NodeGui.h"
-#include "Gui/GuiAppInstance.h"
-#include "Gui/ViewerTab.h"
-#include "Gui/ViewerGL.h"
-#include "Gui/TabWidget.h"
 #include <SequenceParsing.h>
+
+#include "Global/QtCompat.h"
+#include "Global/MemoryInfo.h"
 
 #include "Engine/Node.h"
 #include "Engine/Settings.h"
 #include "Engine/KnobFile.h"
 #include "Engine/Project.h"
 #include "Engine/ViewerInstance.h"
+
+#include "Gui/Button.h"
+#include "Gui/LineEdit.h"
+#include "Gui/ComboBox.h"
+#include "Gui/GuiApplicationManager.h"
+#include "Gui/Gui.h"
+#include "Gui/NodeGui.h"
+#include "Gui/GuiAppInstance.h"
+#include "Gui/ViewerTab.h"
+#include "Gui/ViewerGL.h"
+#include "Gui/TabWidget.h"
+#include "Gui/Label.h"
+
 
 #define FILE_DIALOG_DISABLE_ICONS
 
@@ -293,9 +296,9 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
     _buttonsLayout = new QHBoxLayout(_buttonsWidget);
     _buttonsWidget->setLayout(_buttonsLayout);
     if (mode == eFileDialogModeOpen) {
-        _lookInLabel = new QLabel(tr("Look in:"),_buttonsWidget);
+        _lookInLabel = new Natron::Label(tr("Look in:"),_buttonsWidget);
     } else {
-        _lookInLabel = new QLabel(tr("Save in:"),_buttonsWidget);
+        _lookInLabel = new Natron::Label(tr("Save in:"),_buttonsWidget);
     }
     _buttonsLayout->addWidget(_lookInLabel);
 
@@ -397,7 +400,7 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
     _selectionLayout->setContentsMargins(0, 0, 0, 0);
     _selectionWidget->setLayout(_selectionLayout);
 
-    _relativeLabel = new QLabel(tr("Relative to:"),_selectionWidget);
+    _relativeLabel = new Natron::Label(tr("Relative to:"),_selectionWidget);
     _selectionLayout->addWidget(_relativeLabel);
     
     _relativeChoice = new ComboBox(_selectionWidget);
@@ -443,6 +446,7 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
     } else {
         _openButton = new Button(tr("Save"),_selectionWidget);
     }
+    _openButton->setFocusPolicy(Qt::TabFocus);
     _selectionLayout->addWidget(_openButton);
 
     if (_dialogMode != eFileDialogModeDir) {
@@ -459,10 +463,10 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
     _filterLineWidget->setLayout(_filterLineLayout);
 
     if (_dialogMode == eFileDialogModeOpen) {
-        _filterLabel = new QLabel(tr("Filter:"),_filterLineWidget);
+        _filterLabel = new Natron::Label(tr("Filter:"),_filterLineWidget);
         _filterLineLayout->addWidget(_filterLabel);
     } else if (_dialogMode == eFileDialogModeSave) {
-        _filterLabel = new QLabel(tr("File type:"),_filterLineWidget);
+        _filterLabel = new Natron::Label(tr("File type:"),_filterLineWidget);
         _filterLineLayout->addWidget(_filterLabel);
     }
 
@@ -558,7 +562,7 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
             setWindowTitle( tr("Save File") );
         }
     } else {
-        setWindowTitle( tr("Select directory") );
+        setWindowTitle( tr("Select Directory") );
     }
 
     QSettings settings(NATRON_ORGANIZATION_NAME,NATRON_APPLICATION_NAME);
@@ -572,6 +576,7 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
     if (!isSequenceDialog) {
         enableSequenceMode(false);
     }
+    _selectionLineEdit->setFocus();
 }
 
 SequenceFileDialog::~SequenceFileDialog()
@@ -719,11 +724,12 @@ SequenceFileDialog::restoreState(const QByteArray & state)
         history.pop_front();
     }
     setHistory(history);
-    setDirectory(currentDirectory);
     QHeaderView *headerView = _view->header();
     if ( !headerView->restoreState(headerData) ) {
         return false;
     }
+    setDirectory(currentDirectory);
+
     QList<QAction*> actions = headerView->actions();
     QAbstractItemModel *abstractModel = _model.get();
     int total = qMin(abstractModel->columnCount( QModelIndex() ), actions.count() + 1);
@@ -1138,8 +1144,8 @@ SequenceItemDelegate::paint(QPainter * painter,
     }
     
     QString filename = item->fileName();
-    QFont f(appFont,appFontSize);
-    painter->setFont(f);
+    //QFont f(appFont,appFontSize);
+    //painter->setFont(f);
     if (option.state & QStyle::State_Selected) {
         painter->fillRect( geom, option.palette.highlight() );
     }
@@ -1182,11 +1188,10 @@ SequenceItemDelegate::paint(QPainter * painter,
         
 #ifdef FILE_DIALOG_DISABLE_ICONS
         QRect textRect( geom.x() + 5,geom.y(),geom.width() - 5,geom.height() );
-        //QFont f = painter->font();
+        QFont f = painter->font();
         if (isDir) {
             //change the font to bold
             f.setBold(true);
-            f.setPointSize(f.pointSize() + 1);
         } else {
             f.setBold(false);
         }
@@ -1339,7 +1344,7 @@ SequenceFileDialog::createDir()
     QString newFolderString;
     QInputDialog dialog(this);
     dialog.setLabelText( tr("Folder name:") );
-    dialog.setWindowTitle( tr("New folder") );
+    dialog.setWindowTitle( tr("New Folder") );
     if ( dialog.exec() ) {
         newFolderString = dialog.textValue();
         if ( !newFolderString.isEmpty() ) {
@@ -1370,9 +1375,9 @@ AddFavoriteDialog::AddFavoriteDialog(SequenceFileDialog* fd,
     _mainLayout->setSpacing(0);
     _mainLayout->setContentsMargins(5, 5, 0, 0);
     setLayout(_mainLayout);
-    setWindowTitle( tr("New favorite") );
+    setWindowTitle( tr("New Favorite") );
 
-    _descriptionLabel = new QLabel("",this);
+    _descriptionLabel = new Natron::Label("",this);
     _mainLayout->addWidget(_descriptionLabel);
 
     _secondLine = new QWidget(this);
@@ -1870,8 +1875,8 @@ SequenceFileDialog::showFilterMenu()
     position.ry() += _filterLineEdit->height();
     QList<QAction *> actions;
 
-    QFont font(appFont,appFontSize);
-    QFontMetrics fm(font);
+    //QFont font(appFont,appFontSize);
+    QFontMetrics fm(font());
     
     QString defaultString = FileSystemModel::generateRegexpFilterFromFileExtensions(_filters);
     int w = fm.width(defaultString);
@@ -1900,7 +1905,7 @@ SequenceFileDialog::showFilterMenu()
 
     if (actions.count() > 0) {
         QMenu menu(_filterLineEdit);
-        menu.setFont(font);
+        //menu.setFont(font);
         menu.addActions(actions);
       //  menu.setFixedSize( _filterLineEdit->width(),menu.sizeHint().height() );
         menu.exec(position);
@@ -2384,8 +2389,8 @@ FavoriteView::rename()
     }
     QString newName;
     QInputDialog dialog(this);
-    dialog.setLabelText( tr("Favorite name:") );
-    dialog.setWindowTitle( tr("Rename favorite") );
+    dialog.setLabelText( tr("Favorite Name:") );
+    dialog.setWindowTitle( tr("Rename Favorite") );
     if ( dialog.exec() ) {
         newName = dialog.textValue();
     }
@@ -2417,8 +2422,8 @@ FavoriteView::editUrl()
     }
     QString newName;
     QInputDialog dialog(this);
-    dialog.setLabelText( tr("Folder path:") );
-    dialog.setWindowTitle( tr("Change folder path") );
+    dialog.setLabelText( tr("Folder Path:") );
+    dialog.setWindowTitle( tr("Change Folder Path") );
     if ( dialog.exec() ) {
         newName = dialog.textValue();
     }
@@ -2465,7 +2470,7 @@ FavoriteView::showMenu(const QPoint &position)
     }
     if (actions.count() > 0) {
         QMenu menu(this);
-        menu.setFont(QFont(appFont,appFontSize));
+        //menu.setFont(QFont(appFont,appFontSize));
         menu.addActions(actions);
         menu.exec( mapToGlobal(position) );
     }

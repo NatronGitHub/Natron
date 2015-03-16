@@ -57,7 +57,9 @@ class Button;
 class QCheckBox;
 class ComboBox;
 class QWidget;
-class QLabel;
+namespace Natron {
+class Label;
+}
 class QFileInfo;
 class QHBoxLayout;
 class QVBoxLayout;
@@ -551,7 +553,7 @@ private:
     boost::scoped_ptr<QFileSystemModel> _lookinViewModel;
     QVBoxLayout* _mainLayout;
     QString _requestedDir;
-    QLabel* _lookInLabel;
+    Natron::Label* _lookInLabel;
     FileDialogComboBox* _lookInCombobox;
     Button* _previousButton;
     Button* _nextButton;
@@ -562,10 +564,10 @@ private:
     Button* _addFavoriteButton;
     Button* _removeFavoriteButton;
     LineEdit* _selectionLineEdit;
-    QLabel* _relativeLabel;
+    Natron::Label* _relativeLabel;
     ComboBox* _relativeChoice;
     ComboBox* _sequenceButton;
-    QLabel* _filterLabel;
+    Natron::Label* _filterLabel;
     LineEdit* _filterLineEdit;
     Button* _filterDropDown;
     ComboBox* _fileExtensionCombo;
@@ -630,7 +632,7 @@ class AddFavoriteDialog
     Q_OBJECT
 
     QVBoxLayout* _mainLayout;
-    QLabel* _descriptionLabel;
+    Natron::Label* _descriptionLabel;
     QWidget* _secondLine;
     QHBoxLayout* _secondLineLayout;
     LineEdit* _pathLineEdit;

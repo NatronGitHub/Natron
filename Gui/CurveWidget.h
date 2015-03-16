@@ -50,7 +50,10 @@ class Bezier;
 class RotoContext;
 class QVBoxLayout;
 class QHBoxLayout;
-class QLabel;
+namespace Natron {
+    class Label;
+}
+
 class CurveGui
     : public QObject
 {
@@ -458,26 +461,26 @@ private:
     //////File
     QWidget* _fileContainer;
     QHBoxLayout* _fileLayout;
-    QLabel* _fileLabel;
+    Natron::Label* _fileLabel;
     LineEdit* _fileLineEdit;
     Button* _fileBrowseButton;
 
     //////x start value
     QWidget* _startContainer;
     QHBoxLayout* _startLayout;
-    QLabel* _startLabel;
+    Natron::Label* _startLabel;
     SpinBox* _startSpinBox;
 
     //////x increment
     QWidget* _incrContainer;
     QHBoxLayout* _incrLayout;
-    QLabel* _incrLabel;
+    Natron::Label* _incrLabel;
     SpinBox* _incrSpinBox;
 
     //////x end value
     QWidget* _endContainer;
     QHBoxLayout* _endLayout;
-    QLabel* _endLabel;
+    Natron::Label* _endLabel;
     SpinBox* _endSpinBox;
 
 
@@ -487,7 +490,7 @@ private:
         CurveGui* _curve;
         QWidget* _curveContainer;
         QHBoxLayout* _curveLayout;
-        QLabel* _curveLabel;
+        Natron::Label* _curveLabel;
         SpinBox* _curveSpinBox;
     };
 

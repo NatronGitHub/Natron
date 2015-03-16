@@ -30,7 +30,7 @@ class SpinBox
     Q_OBJECT Q_PROPERTY(int animation READ getAnimation WRITE setAnimation)
 
     Q_PROPERTY(bool dirty READ getDirty WRITE setDirty)
-
+    
 public:
 
     enum SpinBoxTypeEnum
@@ -43,6 +43,8 @@ public:
                      SpinBoxTypeEnum type = eSpinBoxTypeInt);
 
     virtual ~SpinBox() OVERRIDE;
+    
+    void setType(SpinBoxTypeEnum type);
 
     ///Set the digits after the decimal point.
     void decimals(int d);
@@ -112,6 +114,7 @@ private:
     ///Used by the stylesheet , they are Q_PROPERTIES
     int animation; // 0 = no animation, 1 = interpolated, 2 = equals keyframe value
     bool dirty;
+    bool altered;
     boost::scoped_ptr<SpinBoxPrivate> _imp;
 };
 

@@ -20,7 +20,6 @@
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QVBoxLayout>
-#include <QLabel>
 #include <QProgressBar>
 #include <QFrame>
 #include <QTextBrowser>
@@ -35,15 +34,16 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/Button.h"
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/Gui.h"
+#include "Gui/Label.h"
 
 struct RenderingProgressDialogPrivate
 {
     Gui* _gui;
     QVBoxLayout* _mainLayout;
-    QLabel* _totalLabel;
+    Natron::Label* _totalLabel;
     QProgressBar* _totalProgress;
     QFrame* _separator;
-    QLabel* _perFrameLabel;
+    Natron::Label* _perFrameLabel;
     QProgressBar* _perFrameProgress;
     Button* _cancelButton;
     QString _sequenceName;
@@ -201,7 +201,7 @@ RenderingProgressDialog::RenderingProgressDialog(Gui* gui,
     _imp->_mainLayout->setContentsMargins(5, 5, 0, 0);
     _imp->_mainLayout->setSpacing(5);
 
-    _imp->_totalLabel = new QLabel(tr("Total progress:"),this);
+    _imp->_totalLabel = new Natron::Label(tr("Total progress:"),this);
     _imp->_mainLayout->addWidget(_imp->_totalLabel);
     _imp->_totalProgress = new QProgressBar(this);
     _imp->_totalProgress->setRange(0, 100);
@@ -220,7 +220,7 @@ RenderingProgressDialog::RenderingProgressDialog(Gui* gui,
     QString txt("Frame ");
     txt.append( QString::number(firstFrame) );
     txt.append(":");
-    _imp->_perFrameLabel = new QLabel(txt,this);
+    _imp->_perFrameLabel = new Natron::Label(txt,this);
     _imp->_mainLayout->addWidget(_imp->_perFrameLabel);
 
     _imp->_perFrameProgress = new QProgressBar(this);

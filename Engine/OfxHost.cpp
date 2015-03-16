@@ -37,8 +37,10 @@ CLANG_DIAG_ON(deprecated-register)
 
 //ofx
 #include <ofxParametricParam.h>
-
+#ifdef OFX_EXTENSIONS_NUKE
 #include <nuke/fnOfxExtensions.h>
+#endif
+#include <ofxNatron.h>
 
 //ofx host support
 #include <ofxhPluginAPICache.h>
@@ -149,10 +151,17 @@ Natron::OfxHost::setProperties()
     if (appPTR->getCurrentSettings()->areRGBPixelComponentsSupported()) {
         _properties.setStringProperty(kOfxImageEffectPropSupportedComponents,  kOfxImageComponentRGB, 2);
     }
+    _properties.setStringProperty(kOfxImageEffectPropSupportedComponents,  kFnOfxImageComponentMotionVectors, 3);
+    _properties.setStringProperty(kOfxImageEffectPropSupportedComponents,  kFnOfxImageComponentStereoDisparity, 4);
+    
     _properties.setStringProperty(kOfxImageEffectPropSupportedContexts, kOfxImageEffectContextGenerator, 0 );
     _properties.setStringProperty(kOfxImageEffectPropSupportedContexts, kOfxImageEffectContextFilter, 1);
     _properties.setStringProperty(kOfxImageEffectPropSupportedContexts, kOfxImageEffectContextGeneral, 2 );
     _properties.setStringProperty(kOfxImageEffectPropSupportedContexts, kOfxImageEffectContextTransition, 3 );
+    
+    ///Setting these makes The Foundry Furnace plug-ins fail in the load action
+    //_properties.setStringProperty(kOfxImageEffectPropSupportedContexts, kOfxImageEffectContextReader, 4 );
+    //_properties.setStringProperty(kOfxImageEffectPropSupportedContexts, kOfxImageEffectContextWriter, 5 );
 
     _properties.setStringProperty(kOfxImageEffectPropSupportedPixelDepths,kOfxBitDepthFloat,0);
     _properties.setStringProperty(kOfxImageEffectPropSupportedPixelDepths,kOfxBitDepthShort,1);
@@ -173,12 +182,19 @@ Natron::OfxHost::setProperties()
     _properties.setIntProperty(kOfxParamHostPropPageRowColumnCount, 0, 1 );
     _properties.setIntProperty(kOfxImageEffectInstancePropSequentialRender, 2);
     _properties.setIntProperty(kOfxParamHostPropSupportsParametricAnimation, 0);
-
+#ifdef OFX_EXTENSIONS_NUKE
     ///Nuke transform suite
     _properties.setIntProperty(kFnOfxImageEffectCanTransform, 1);
     
     ///Plane suite
-    _properties.setIntProperty(kFnOfxImageEffectPropMultiPlanar, 0);
+    _properties.setIntProperty(kFnOfxImageEffectPropMultiPlanar, 1);
+#endif
+#ifdef OFX_EXTENSIONS_NATRON
+    ///Natron extensions
+    _properties.setIntProperty(kNatronOfxHostIsNatron, 1);
+    _properties.setIntProperty(kNatronOfxParamHostPropSupportsDynamicChoices, 1);
+#endif
+    
 }
 
 OFX::Host::ImageEffect::Instance*
@@ -198,7 +214,7 @@ OFX::Host::ImageEffect::Descriptor *
 Natron::OfxHost::makeDescriptor(OFX::Host::ImageEffect::ImageEffectPlugin* plugin)
 {
     assert(plugin);
-    OFX::Host::ImageEffect::Descriptor *desc = new OFX::Host::ImageEffect::Descriptor(plugin);
+    OFX::Host::ImageEffect::Descriptor *desc = new OfxImageEffectDescriptor(plugin);
 
     return desc;
 }
@@ -209,7 +225,7 @@ Natron::OfxHost::makeDescriptor(const OFX::Host::ImageEffect::Descriptor &rootCo
                                 OFX::Host::ImageEffect::ImageEffectPlugin *plugin)
 {
     assert(plugin);
-    OFX::Host::ImageEffect::Descriptor *desc = new OFX::Host::ImageEffect::Descriptor(rootContext, plugin);
+    OFX::Host::ImageEffect::Descriptor *desc = new OfxImageEffectDescriptor(rootContext, plugin);
 
     return desc;
 }
@@ -220,7 +236,7 @@ Natron::OfxHost::makeDescriptor(const std::string &bundlePath,
                                 OFX::Host::ImageEffect::ImageEffectPlugin *plugin)
 {
     assert(plugin);
-    OFX::Host::ImageEffect::Descriptor *desc = new OFX::Host::ImageEffect::Descriptor(bundlePath, plugin);
+    OFX::Host::ImageEffect::Descriptor *desc = new OfxImageEffectDescriptor(bundlePath, plugin);
 
     return desc;
 }
@@ -284,135 +300,137 @@ Natron::OfxHost::clearPersistentMessage()
     return kOfxStatOK;
 }
 
-void
-Natron::OfxHost::getPluginAndContextByID(const std::string & pluginID,
-                                         int major, int /*minor*/,
-                                         OFX::Host::ImageEffect::ImageEffectPlugin** plugin,
-                                         std::string & context)
+static std::string getContext_internal(const std::set<std::string> & contexts)
 {
-    _imageEffectPluginCache->getPluginsByIDMajor();
-    // throws out_of_range if the plugin does not exist
-    // Note: std::map.at() is C++11
-    const std::map<OFX::Host::ImageEffect::MajorPlugin,OFX::Host::ImageEffect::ImageEffectPlugin *> & ofxPlugins =
-    _imageEffectPluginCache->getPluginsByIDMajor();
-    
-    OFX::Host::ImageEffect::ImageEffectPlugin* p = 0;
-    for (std::map<OFX::Host::ImageEffect::MajorPlugin,OFX::Host::ImageEffect::ImageEffectPlugin *>::const_iterator it = ofxPlugins.begin();
-         it != ofxPlugins.end();++it) {
-        if (it->first.getId() == pluginID && it->first.getMajor() == major) {
-            p = it->second;
-            break;
-        }
-    }
-        
-    if (!p) {
-        throw std::out_of_range(std::string("Error: No such plug-in ") + pluginID);
-    }
-    *plugin = p;
-    
-    OFX::Host::PluginHandle *pluginHandle;
-    // getPluginHandle() must be called before getContexts():
-    // it calls kOfxActionLoad on the plugin, which may set properties (including supported contexts)
-    try {
-        pluginHandle = (*plugin)->getPluginHandle();
-    } catch (...) {
-        throw std::runtime_error(std::string("Error: Description failed while loading ") + pluginID);
-    }
-
-    if (!pluginHandle) {
-        throw std::runtime_error(std::string("Error: Description failed while loading ") + pluginID);
-    }
-    assert(pluginHandle->getOfxPlugin() && pluginHandle->getOfxPlugin()->mainEntry);
-
-    const std::set<std::string> & contexts = (*plugin)->getContexts();
-
+    std::string context;
     if (contexts.size() == 0) {
         throw std::runtime_error( std::string("Error: Plug-in does not support any context") );
         //context = kOfxImageEffectContextGeneral;
         //plugin->addContext(kOfxImageEffectContextGeneral);
     } else if (contexts.size() == 1) {
         context = ( *contexts.begin() );
+        return context;
     } else {
         std::set<std::string>::iterator found = contexts.find(kOfxImageEffectContextReader);
         bool reader = found != contexts.end();
         if (reader) {
             context = kOfxImageEffectContextReader;
-
-            return;
+            return context;
         }
-
+        
         found = contexts.find(kOfxImageEffectContextWriter);
         bool writer = found != contexts.end();
         if (writer) {
             context = kOfxImageEffectContextWriter;
-
-            return;
+            
+            return context;
         }
-
-
+        
+        
         found = contexts.find(kOfxImageEffectContextGeneral);
         bool general = found != contexts.end();
         if (general) {
             context = kOfxImageEffectContextGeneral;
-
-            return;
+            
+            return context;
         }
-
+        
         found = contexts.find(kOfxImageEffectContextFilter);
         bool filter = found != contexts.end();
         if (filter) {
             context = kOfxImageEffectContextFilter;
-
-            return;
+            
+            return context;
         }
-
+        
         found = contexts.find(kOfxImageEffectContextPaint);
         bool paint = found != contexts.end();
         if (paint) {
             context = kOfxImageEffectContextPaint;
-
-            return;
+            
+            return context;
         }
-
+        
         found = contexts.find(kOfxImageEffectContextGenerator);
         bool generator = found != contexts.end();
         if (generator) {
             context = kOfxImageEffectContextGenerator;
-
-            return;
+            
+            return context;
         }
-
+        
         found = contexts.find(kOfxImageEffectContextTransition);
         bool transition = found != contexts.end();
         if (transition) {
             context = kOfxImageEffectContextTransition;
-
-            return;
+            
+            return context;
         }
     }
-} // getPluginAndContextByID
+    return context;
+
+}
+
+OFX::Host::ImageEffect::Descriptor*
+Natron::OfxHost::getPluginContextAndDescribe(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
+                                             Natron::ContextEnum* ctx)
+{
+    OFX::Host::PluginHandle *pluginHandle;
+    // getPluginHandle() must be called before getContexts():
+    // it calls kOfxActionLoad on the plugin, which may set properties (including supported contexts)
+    try {
+        pluginHandle = plugin->getPluginHandle();
+    } catch (...) {
+        throw std::runtime_error(std::string("Error: Description failed while loading ") + plugin->getIdentifier());
+    }
+    
+    if (!pluginHandle) {
+        throw std::runtime_error(std::string("Error: Description failed while loading ") + plugin->getIdentifier());
+    }
+    assert(pluginHandle->getOfxPlugin() && pluginHandle->getOfxPlugin()->mainEntry);
+    
+    const std::set<std::string> & contexts = plugin->getContexts();
+    
+    std::string context = getContext_internal(contexts);
+    if (context.empty()) {
+        throw std::invalid_argument(QObject::tr("OpenFX plug-in has no valid context.").toStdString());
+    }
+    
+    OFX::Host::PluginHandle* ph = plugin->getPluginHandle();
+    assert( ph->getOfxPlugin() );
+    assert(ph->getOfxPlugin()->mainEntry);
+    (void)ph;
+    OFX::Host::ImageEffect::Descriptor* desc = NULL;
+    desc = plugin->getContext(context);
+    if (!desc) {
+        throw std::runtime_error(std::string("Failed to get description for OFX plugin in context ") + context);
+    }
+    *ctx = OfxEffectInstance::mapToContextEnum(context);
+    return desc;
+}
 
 boost::shared_ptr<AbstractOfxEffectInstance>
-Natron::OfxHost::createOfxEffect(const std::string & name,
-                                 boost::shared_ptr<Natron::Node> node,
+Natron::OfxHost::createOfxEffect(boost::shared_ptr<Natron::Node> node,
                                  const NodeSerialization* serialization,
                                  const std::list<boost::shared_ptr<KnobSerialization> >& paramValues,
                                  bool allowFileDialogs,
                                  bool disableRenderScaleSupport)
 {
     assert(node);
-    OFX::Host::ImageEffect::ImageEffectPlugin *plugin = 0;
-    std::string context;
     const Natron::Plugin* natronPlugin = node->getPlugin();
     assert(natronPlugin);
-    getPluginAndContextByID(name,natronPlugin->getMajorVersion(),natronPlugin->getMinorVersion(),&plugin,context);
+    ContextEnum ctx;
+    OFX::Host::ImageEffect::Descriptor* desc = natronPlugin->getOfxDesc(&ctx);
+    OFX::Host::ImageEffect::ImageEffectPlugin* plugin = natronPlugin->getOfxPlugin();
+    assert(plugin && desc && ctx != eContextNone);
+    
 
     boost::shared_ptr<AbstractOfxEffectInstance> hostSideEffect(new OfxEffectInstance(node));
     if ( node && !node->getLiveInstance() ) {
         node->setLiveInstance(hostSideEffect);
     }
 
-    hostSideEffect->createOfxImageEffectInstance(plugin, context,serialization,paramValues,allowFileDialogs,disableRenderScaleSupport);
+    hostSideEffect->createOfxImageEffectInstance(plugin, desc, ctx,serialization,paramValues,allowFileDialogs,disableRenderScaleSupport);
 
     return hostSideEffect;
 }
@@ -547,19 +565,20 @@ Natron::OfxHost::loadOFXPlugins(std::map<std::string,std::vector< std::pair<std:
         std::set<std::string>::const_iterator foundReader = contexts.find(kOfxImageEffectContextReader);
         std::set<std::string>::const_iterator foundWriter = contexts.find(kOfxImageEffectContextWriter);
         
-        appPTR->registerPlugin( groups,
-                                openfxId.c_str(),
-                                pluginLabel.c_str(),
-                                iconFilename,
-                                groupIconFilename,
-                                p->getIdentifier().c_str(),
-                                foundReader != contexts.end(),
-                                foundWriter != contexts.end(),
-                                new Natron::LibraryBinary(Natron::LibraryBinary::eLibraryTypeBuiltin),
-                                p->getDescriptor().getRenderThreadSafety() == kOfxImageEffectRenderUnsafe,
-                                p->getVersionMajor(), p->getVersionMinor() );
-
-
+        Natron::Plugin* natronPlugin = appPTR->registerPlugin( groups,
+                                                              openfxId.c_str(),
+                                                              pluginLabel.c_str(),
+                                                              iconFilename,
+                                                              groupIconFilename,
+                                                              p->getIdentifier().c_str(),
+                                                              foundReader != contexts.end(),
+                                                              foundWriter != contexts.end(),
+                                                              new Natron::LibraryBinary(Natron::LibraryBinary::eLibraryTypeBuiltin),
+                                                              p->getDescriptor().getRenderThreadSafety() == kOfxImageEffectRenderUnsafe,
+                                                              p->getVersionMajor(), p->getVersionMinor() );
+        
+        natronPlugin->setOfxPlugin(p);
+        
         ///if this plugin's descriptor has the kTuttleOfxImageEffectPropSupportedExtensions property,
         ///use it to fill the readersMap and writersMap
         int formatsCount = p->getDescriptor().getProps().getDimension(kTuttleOfxImageEffectPropSupportedExtensions);
@@ -759,6 +778,7 @@ public:
           , _customArg(customArg)
           , _stat(stat)
     {
+        setObjectName("Multi-thread suite");
     }
 
     void run() OVERRIDE

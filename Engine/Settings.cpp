@@ -41,11 +41,9 @@ using namespace Natron;
 
 Settings::Settings(AppInstance* appInstance)
     : KnobHolder(appInstance)
-      , _wereChangesMadeSinceLastSave(false)
       , _restoringSettings(false)
       , _ocioRestored(false)
       , _settingsExisted(false)
-      , _hasWarnedOnceOnFontChanged(false)
 {
 }
 
@@ -178,8 +176,8 @@ Settings::initializeKnobs()
     _renderInSeparateProcess = Natron::createKnob<Bool_Knob>(this, "Render in a separate process");
     _renderInSeparateProcess->setName("renderNewProcess");
     _renderInSeparateProcess->setAnimationEnabled(false);
-    _renderInSeparateProcess->setHintToolTip("If true, " NATRON_APPLICATION_NAME " renders frames to disk in "
-                                             "a separate process (disabling it is only useful for debugging).");
+    _renderInSeparateProcess->setHintToolTip("If true, " NATRON_APPLICATION_NAME " will render frames to disk in "
+                                             "a separate process so that if the main application crashes, the render goes on.");
     _generalTab->addKnob(_renderInSeparateProcess);
 
     _autoPreviewEnabledForNewProjects = Natron::createKnob<Bool_Knob>(this, "Auto-preview enabled by default for new projects");
@@ -294,24 +292,11 @@ Settings::initializeKnobs()
     //////////////APPEARANCE TAB/////////////////
     _appearanceTab = Natron::createKnob<Page_Knob>(this, "Appearance");
     
-    _fontChoice = Natron::createKnob<Choice_Knob>(this, "Font");
-    _fontChoice->setName("font");
-    _fontChoice->setHintToolTip("You can choose here between fonts bundled with Natron or among fonts available on your system");
-    std::vector<std::string> fontEntries;
-    fontEntries.push_back("Droid Sans");
-    fontEntries.push_back("System fonts...");
-    _fontChoice->populateChoices(fontEntries);
-    _fontChoice->setAddNewLine(false);
-    _fontChoice->setAnimationEnabled(false);
-    
-    _appearanceTab->addKnob(_fontChoice);
-    
-    _systemFontChoice = Natron::createKnob<Choice_Knob>(this, "System font");
+    _systemFontChoice = Natron::createKnob<Choice_Knob>(this, "Font");
     _systemFontChoice->setHintToolTip("List of all fonts available on your system");
     _systemFontChoice->setName("systemFont");
     _systemFontChoice->setAddNewLine(false);
     _systemFontChoice->setAnimationEnabled(false);
-    _systemFontChoice->setSecret(true);
     _appearanceTab->addKnob(_systemFontChoice);
     
     _fontSize = Natron::createKnob<Int_Knob>(this, "Font size");
@@ -360,7 +345,14 @@ Settings::initializeKnobs()
     _textColor->setName("text");
     _textColor->setAnimationEnabled(false);
     _textColor->setSimplified(true);
+    _textColor->setAddNewLine(false);
     _guiColors->addKnob(_textColor);
+    
+    _altTextColor =  Natron::createKnob<Color_Knob>(this, "Unmodified text",3);
+    _altTextColor->setName("unmodifiedText");
+    _altTextColor->setAnimationEnabled(false);
+    _altTextColor->setSimplified(true);
+    _guiColors->addKnob(_altTextColor);
     
     _timelinePlayheadColor =  Natron::createKnob<Color_Knob>(this, "Timeline playhead",3);
     _timelinePlayheadColor->setName("timelinePlayhead");
@@ -998,7 +990,6 @@ Settings::setDefaultValues()
     beginKnobsValuesChanged(Natron::eValueChangedReasonPluginEdited);
     _hostName->setDefaultValue(NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB "." NATRON_APPLICATION_NAME);
     _natronSettingsExist->setDefaultValue(false);
-    _fontChoice->setDefaultValue(0);
     _systemFontChoice->setDefaultValue(0);
     _fontSize->setDefaultValue(NATRON_FONT_SIZE_10);
     _checkForUpdates->setDefaultValue(false);
@@ -1135,6 +1126,10 @@ Settings::setDefaultValues()
     _textColor->setDefaultValue(0.78,1);
     _textColor->setDefaultValue(0.78,2);
     
+    _altTextColor->setDefaultValue(0.6,0);
+    _altTextColor->setDefaultValue(0.6,1);
+    _altTextColor->setDefaultValue(0.6,2);
+    
     _timelinePlayheadColor->setDefaultValue(0.95,0);
     _timelinePlayheadColor->setDefaultValue(0.54,1);
     _timelinePlayheadColor->setDefaultValue(0.,2);
@@ -1184,62 +1179,175 @@ Settings::setDefaultValues()
 } // setDefaultValues
 
 void
-Settings::saveSettings()
+Settings::warnChangedKnobs(const std::vector<KnobI*>& knobs)
 {
-    _wereChangesMadeSinceLastSave = false;
+    bool didFontWarn = false;
+    bool didOCIOWarn = false;
+    
+    for (U32 i = 0; i < knobs.size(); ++i) {
+        if ((knobs[i] == _fontSize.get() ||
+             knobs[i] == _systemFontChoice.get())
+            && !didFontWarn) {
+            
+            didOCIOWarn = true;
+            Natron::warningDialog(QObject::tr("Font change").toStdString(),
+                                  QObject::tr("Changing the font requires a restart of " NATRON_APPLICATION_NAME).toStdString());
+            
+            
+            
+        } else if ((knobs[i] == _ocioConfigKnob.get() ||
+                    knobs[i] == _customOcioConfigFile.get())
+                   && !didOCIOWarn) {
+            didOCIOWarn = true;
+            bool warnOcioChanged = _warnOcioConfigKnobChanged->getValue();
+            if (warnOcioChanged) {
+                bool stopAsking = false;
+                Natron::warningDialog(QObject::tr("OCIO config changed").toStdString(),
+                                      QObject::tr("The OpenColorIO config change requires a restart of "
+                                                  NATRON_APPLICATION_NAME " to be effective.").toStdString(),&stopAsking);
+                if (stopAsking) {
+                    _warnOcioConfigKnobChanged->setValue(false,0);
+                    saveSetting(_warnOcioConfigKnobChanged.get());
+                }
+
+            }
+        } else if (knobs[i] == _texturesMode.get()) {
+            std::map<int,AppInstanceRef> apps = appPTR->getAppInstances();
+            bool isFirstViewer = true;
+            for (std::map<int,AppInstanceRef>::iterator it = apps.begin(); it != apps.end(); ++it) {
+                
+                std::list<ViewerInstance*> allViewers;
+                it->second.app->getProject()->getViewers(&allViewers);
+                for (std::list<ViewerInstance*>::iterator it = allViewers.begin(); it != allViewers.end(); ++it) {
+                    
+                    
+                    if (isFirstViewer) {
+                        if ( !(*it)->supportsGLSL() && (_texturesMode->getValue() != 0) ) {
+                            Natron::errorDialog( QObject::tr("Viewer").toStdString(), QObject::tr("You need OpenGL GLSL in order to use 32 bit fp textures.\n"
+                                                                                                  "Reverting to 8bits textures.").toStdString() );
+                            _texturesMode->setValue(0,0);
+                            saveSetting(_texturesMode.get());
+                            return;
+                        }
+                    }
+                    (*it)->renderCurrentFrame(true);
+                    
+                }
+            }
+        }
+                   
+    }
+}
+
+void
+Settings::saveAllSettings()
+{
+    const std::vector<boost::shared_ptr<KnobI> > &knobs = getKnobs();
+    std::vector<KnobI*> k(knobs.size());
+    for (U32 i = 0; i < knobs.size(); ++i) {
+        k[i] = knobs[i].get();
+    }
+    saveSettings(k, false);
+}
+
+void
+Settings::saveSettings(const std::vector<KnobI*>& knobs,bool doWarnings)
+{
+    
+    std::vector<KnobI*> changedKnobs;
     
     QSettings settings(NATRON_ORGANIZATION_NAME,NATRON_APPLICATION_NAME);
-    const std::vector<boost::shared_ptr<KnobI> >& knobs = getKnobs();
+    settings.setValue(kQSettingsSoftwareMajorVersionSettingName, NATRON_VERSION_MAJOR);
     for (U32 i = 0; i < knobs.size(); ++i) {
-        Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>(knobs[i].get());
-        Knob<int>* isInt = dynamic_cast<Knob<int>*>(knobs[i].get());
-        Choice_Knob* isChoice = dynamic_cast<Choice_Knob*>(knobs[i].get());
-        Knob<double>* isDouble = dynamic_cast<Knob<double>*>(knobs[i].get());
-        Knob<bool>* isBool = dynamic_cast<Knob<bool>*>(knobs[i].get());
+        Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>(knobs[i]);
+        Knob<int>* isInt = dynamic_cast<Knob<int>*>(knobs[i]);
+        Choice_Knob* isChoice = dynamic_cast<Choice_Knob*>(knobs[i]);
+        Knob<double>* isDouble = dynamic_cast<Knob<double>*>(knobs[i]);
+        Knob<bool>* isBool = dynamic_cast<Knob<bool>*>(knobs[i]);
 
         const std::string& name = knobs[i]->getName();
         for (int j = 0; j < knobs[i]->getDimension(); ++j) {
-            std::string dimensionName = knobs[i]->getDimension() > 1 ? name + '.' + knobs[i]->getDimensionName(j) : name;
+            QString dimensionName;
+            if (knobs[i]->getDimension() > 1) {
+                dimensionName =  QString(name.c_str()) + '.' + knobs[i]->getDimensionName(j).c_str();
+            } else {
+                dimensionName = name.c_str();
+            }
             try {
                 if (isString) {
-                    settings.setValue(dimensionName.c_str(), QVariant(isString->getValue(j).c_str()));
+                    QString old = settings.value(dimensionName).toString();
+                    QString newValue(isString->getValue(j).c_str());
+                    if (old != newValue) {
+                        changedKnobs.push_back(knobs[i]);
+                    }
+                    settings.setValue(dimensionName, QVariant(newValue));
+
                 } else if (isInt) {
                     if (isChoice) {
                         ///For choices,serialize the choice name instead
-                        int index = isChoice->getValue(j);
+                        int newIndex = isChoice->getValue(j);
+                            const std::vector<std::string> entries = isChoice->getEntries_mt_safe();
+                            if (newIndex < (int)entries.size() ) {
+                                QString oldValue = settings.value(dimensionName).toString();
+                                QString newValue(entries[newIndex].c_str());
+                                if (oldValue != newValue) {
+                                    changedKnobs.push_back(knobs[i]);
+                                }
+                                settings.setValue(dimensionName, QVariant(newValue));
 
-                        const std::vector<std::string> entries = isChoice->getEntries_mt_safe();
-                        if (index < (int)entries.size() ) {
-                            settings.setValue(dimensionName.c_str(), QVariant(entries[index].c_str()));
-                        }
+                            }
                     } else {
-                        settings.setValue(dimensionName.c_str(), QVariant(isInt->getValue(j)));
+                        
+                        int newValue = isInt->getValue(j);
+                        int oldValue = settings.value(dimensionName, QVariant(INT_MIN)).toInt();
+                        if (newValue != oldValue) {
+                            changedKnobs.push_back(knobs[i]);
+                        }
+                        settings.setValue(dimensionName, QVariant(newValue));
                     }
-
+                    
                 } else if (isDouble) {
-                    settings.setValue(dimensionName.c_str(), QVariant(isDouble->getValue(j)));
+                    
+                    double newValue = isDouble->getValue(j);
+                    double oldValue = settings.value(dimensionName, QVariant(INT_MIN)).toDouble();
+                    if (newValue != oldValue) {
+                        changedKnobs.push_back(knobs[i]);
+                    }
+                    settings.setValue(dimensionName, QVariant(newValue));
                 } else if (isBool) {
-                    settings.setValue(dimensionName.c_str(), QVariant(isBool->getValue(j)));
+                    
+                    bool newValue = isBool->getValue(j);
+                    bool oldValue = settings.value(dimensionName).toBool();
+                    if (newValue != oldValue) {
+                        changedKnobs.push_back(knobs[i]);
+                    }
+                    settings.setValue(dimensionName, QVariant(newValue));
                 } else {
                     assert(false);
                 }
             } catch (std::logic_error) {
                 // ignore
             }
-        }
+        } // for (int j = 0; j < knobs[i]->getDimension(); ++j) {
+    } // for (U32 i = 0; i < knobs.size(); ++i) {
+    
+    if (doWarnings) {
+        warnChangedKnobs(changedKnobs);
     }
+    
 } // saveSettings
 
-static void restoreKnobsSettings(const std::vector<boost::shared_ptr<KnobI> >& knobs) {
-    
+void
+Settings::restoreKnobsFromSettings(const std::vector<KnobI*>& knobs)
+{
     QSettings settings(NATRON_ORGANIZATION_NAME,NATRON_APPLICATION_NAME);
     
     for (U32 i = 0; i < knobs.size(); ++i) {
-        Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>(knobs[i].get());
-        Knob<int>* isInt = dynamic_cast<Knob<int>*>(knobs[i].get());
-        Choice_Knob* isChoice = dynamic_cast<Choice_Knob*>(knobs[i].get());
-        Knob<double>* isDouble = dynamic_cast<Knob<double>*>(knobs[i].get());
-        Knob<bool>* isBool = dynamic_cast<Knob<bool>*>(knobs[i].get());
+        Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>(knobs[i]);
+        Knob<int>* isInt = dynamic_cast<Knob<int>*>(knobs[i]);
+        Choice_Knob* isChoice = dynamic_cast<Choice_Knob*>(knobs[i]);
+        Knob<double>* isDouble = dynamic_cast<Knob<double>*>(knobs[i]);
+        Knob<bool>* isBool = dynamic_cast<Knob<bool>*>(knobs[i]);
         
         const std::string& name = knobs[i]->getName();
         
@@ -1299,13 +1407,22 @@ static void restoreKnobsSettings(const std::vector<boost::shared_ptr<KnobI> >& k
 }
 
 void
+Settings::restoreKnobsFromSettings(const std::vector<boost::shared_ptr<KnobI> >& knobs) {
+    
+    std::vector<KnobI*> k(knobs.size());
+    for (U32 i = 0; i < knobs.size(); ++i) {
+        k[i] = knobs[i].get();
+    }
+    restoreKnobsFromSettings(k);
+}
+
+void
 Settings::restoreSettings()
 {
     _restoringSettings = true;
-    _wereChangesMadeSinceLastSave = false;
     
     const std::vector<boost::shared_ptr<KnobI> >& knobs = getKnobs();
-    restoreKnobsSettings(knobs);
+    restoreKnobsFromSettings(knobs);
 
     if (!_ocioRestored) {
         ///Load even though there's no settings!
@@ -1318,13 +1435,7 @@ Settings::restoreSettings()
 
         if (!_settingsExisted) {
             _natronSettingsExist->setValue(true, 0);
-            saveSettings();
-        }
-
-        int font_i = _fontChoice->getValue();
-        if (font_i == 2) {
-            //System font, show it
-            _systemFontChoice->setSecret(false);
+            saveSetting(_natronSettingsExist.get());
         }
 
         appPTR->setNThreadsPerEffect(getNumberOfThreadsPerEffect());
@@ -1418,32 +1529,10 @@ Settings::onKnobValueChanged(KnobI* k,
                              SequenceTime /*time*/,
                              bool /*originatedFromMainThread*/)
 {
-    _wereChangesMadeSinceLastSave = true;
-
-    if ( k == _texturesMode.get() ) {
-        std::map<int,AppInstanceRef> apps = appPTR->getAppInstances();
-        bool isFirstViewer = true;
-        for (std::map<int,AppInstanceRef>::iterator it = apps.begin(); it != apps.end(); ++it) {
-            
-            std::list<ViewerInstance*> allViewers;
-            it->second.app->getProject()->getViewers(&allViewers);
-            for (std::list<ViewerInstance*>::iterator it = allViewers.begin(); it != allViewers.end(); ++it) {
-                
-                
-                if (isFirstViewer) {
-                    if ( !(*it)->supportsGLSL() && (_texturesMode->getValue() != 0) ) {
-                        Natron::errorDialog( QObject::tr("Viewer").toStdString(), QObject::tr("You need OpenGL GLSL in order to use 32 bit fp textures.\n"
-                                                                                              "Reverting to 8bits textures.").toStdString() );
-                        _texturesMode->setValue(0,0);
-                        
-                        return;
-                    }
-                }
-                (*it)->renderCurrentFrame(true);
-                
-            }
-        }
-    } else if ( k == _maxViewerDiskCacheGB.get() ) {
+    
+    Q_EMIT settingChanged(k);
+    
+    if ( k == _maxViewerDiskCacheGB.get() ) {
         if (!_restoringSettings) {
             appPTR->setApplicationsCachesMaximumViewerDiskSpace( getMaximumViewerDiskCacheSize() );
         }
@@ -1484,17 +1573,6 @@ Settings::onKnobValueChanged(KnobI* k,
         }
         tryLoadOpenColorIOConfig();
         
-        bool warnOcioChanged = _warnOcioConfigKnobChanged->getValue();
-        if (warnOcioChanged && appPTR->getTopLevelInstance()) {
-            bool stopAsking = false;
-            Natron::warningDialog(QObject::tr("OCIO config changed").toStdString(),
-                                  QObject::tr("The OpenColorIO config change requires a restart of "
-                                              NATRON_APPLICATION_NAME " to be effective.").toStdString(),&stopAsking);
-            if (stopAsking) {
-                _warnOcioConfigKnobChanged->setValue(false,0);
-            }
-        }
-        
     } else if ( k == _useThreadPool.get() ) {
         bool useTP = _useThreadPool->getValue();
         appPTR->setUseThreadPool(useTP);
@@ -1519,26 +1597,25 @@ Settings::onKnobValueChanged(KnobI* k,
         appPTR->onMaxPanelsOpenedChanged( _maxPanelsOpened->getValue() );
     } else if ( k == _checkerboardTileSize.get() || k == _checkerboardColor1.get() || k == _checkerboardColor2.get() ) {
         appPTR->onCheckerboardSettingsChanged();
-    } else if ( k == _fontChoice.get() ) {
-        int index = _fontChoice->getValue();
-        _systemFontChoice->setSecret(index != 2);
-        if (appPTR->getTopLevelInstance() && !_hasWarnedOnceOnFontChanged) {
-            Natron::warningDialog(QObject::tr("Font change").toStdString(),
-                                  QObject::tr("Changing the font requires a restart of " NATRON_APPLICATION_NAME).toStdString());
-            _hasWarnedOnceOnFontChanged = true;
-        }
-    } else if ( k == _fontSize.get() || k == _systemFontChoice.get() ) {
-        if (appPTR->getTopLevelInstance() && !_hasWarnedOnceOnFontChanged) {
-            Natron::warningDialog(QObject::tr("Font change").toStdString(),
-                                  QObject::tr("Changing the font requires a restart of " NATRON_APPLICATION_NAME).toStdString());
-            _hasWarnedOnceOnFontChanged = true;
-        }
-    } else if (k == _hideOptionalInputsAutomatically.get() && !_restoringSettings && reason == Natron::eValueChangedReasonUserEdited) {
+    }  else if (k == _hideOptionalInputsAutomatically.get() && !_restoringSettings && reason == Natron::eValueChangedReasonUserEdited) {
         appPTR->toggleAutoHideGraphInputs();
-    } else if (!_restoringSettings && (k == _sunkenColor.get() || k == _baseColor.get() || k == _raisedColor.get() || k == _selectionColor.get() || k == _textColor.get()
-               || k == _timelinePlayheadColor.get() || k == _timelineBoundsColor.get() || k == _timelineBGColor.get() ||
-               k == _interpolatedColor.get() || k == _keyframeColor.get() || k == _cachedFrameColor.get() || k == _diskCachedFrameColor.get() ||
-               k == _curveEditorBGColor.get() || k == _gridColor.get() || k == _curveEditorScaleColor.get())) {
+    } else if (!_restoringSettings &&
+               (k == _sunkenColor.get() ||
+                k == _baseColor.get() ||
+                k == _raisedColor.get() ||
+                k == _selectionColor.get() ||
+                k == _textColor.get() ||
+                k == _altTextColor.get() ||
+                k == _timelinePlayheadColor.get() ||
+                k == _timelineBoundsColor.get() ||
+                k == _timelineBGColor.get() ||
+                k == _interpolatedColor.get() ||
+                k == _keyframeColor.get() ||
+                k == _cachedFrameColor.get() ||
+                k == _diskCachedFrameColor.get() ||
+                k == _curveEditorBGColor.get() ||
+                k == _gridColor.get() ||
+                k == _curveEditorScaleColor.get())) {
         appPTR->reloadStylesheets();
     }
 } // onKnobValueChanged
@@ -1653,19 +1730,18 @@ Settings::populateReaderPluginsAndFormats(const std::map<std::string,std::vector
         boost::shared_ptr<Choice_Knob> k = Natron::createKnob<Choice_Knob>(this, it->first);
         k->setName("Reader_" + it->first);
         k->setAnimationEnabled(false);
-        
+
         std::vector<std::string> entries;
         double bestPluginEvaluation = -2; //< tuttle's notation extension starts at -1
         int bestPluginIndex = -1;
-        
-        
+
         for (U32 i = 0; i < it->second.size(); ++i) {
-            
+            //qDebug() << it->first.c_str() << "candidate" << i << it->second[i].first.c_str() << it->second[i].second;
             if (it->second[i].second > bestPluginEvaluation) {
                 bestPluginIndex = i;
+                bestPluginEvaluation = it->second[i].second;
             }
             entries.push_back(it->second[i].first);
-            
         }
         if (bestPluginIndex > -1) {
             k->setDefaultValue(bestPluginIndex,0);
@@ -1675,7 +1751,7 @@ Settings::populateReaderPluginsAndFormats(const std::map<std::string,std::vector
         _readersTab->addKnob(k);
         knobs.push_back(k);
     }
-    restoreKnobsSettings(knobs);
+    restoreKnobsFromSettings(knobs);
 
 }
 
@@ -1688,19 +1764,18 @@ Settings::populateWriterPluginsAndFormats(const std::map<std::string,std::vector
         boost::shared_ptr<Choice_Knob> k = Natron::createKnob<Choice_Knob>(this, it->first);
         k->setName("Writer_" + it->first);
         k->setAnimationEnabled(false);
-        
+
         std::vector<std::string> entries;
         double bestPluginEvaluation = -2; //< tuttle's notation extension starts at -1
         int bestPluginIndex = -1;
-        
-        
+
         for (U32 i = 0; i < it->second.size(); ++i) {
-            
+            //qDebug() << it->first.c_str() << "candidate" << i << it->second[i].first.c_str() << it->second[i].second;
             if (it->second[i].second > bestPluginEvaluation) {
                 bestPluginIndex = i;
+                bestPluginEvaluation = it->second[i].second;
             }
             entries.push_back(it->second[i].first);
-            
         }
         if (bestPluginIndex > -1) {
             k->setDefaultValue(bestPluginIndex,0);
@@ -1711,7 +1786,7 @@ Settings::populateWriterPluginsAndFormats(const std::map<std::string,std::vector
         knobs.push_back(k);
 
     }
-    restoreKnobsSettings(knobs);
+    restoreKnobsFromSettings(knobs);
 }
 
 static bool filterDefaultActivatedPlugin(const QString& /*ofxPluginID*/)
@@ -1941,6 +2016,12 @@ Settings::populateSystemFonts(const QSettings& settings,const std::vector<std::s
 {
     _systemFontChoice->populateChoices(fonts);
     
+    for (U32 i = 0; i < fonts.size(); ++i) {
+        if (fonts[i] == NATRON_FONT) {
+            _systemFontChoice->setDefaultValue(i);
+            break;
+        }
+    }
     ///Now restore properly the system font choice
     QString name(_systemFontChoice->getName().c_str());
     if (settings.contains(name)) {
@@ -2053,7 +2134,7 @@ void
 Settings::setCheckUpdatesEnabled(bool enabled)
 {
     _checkForUpdates->setValue(enabled, 0);
-    saveSettings();
+    saveSetting(_checkForUpdates.get());
 }
 
 int
@@ -2386,10 +2467,9 @@ Settings::doOCIOStartupCheckIfNeeded()
                                      Natron::StandardButtons(Natron::eStandardButtonYes | Natron::eStandardButtonNo),
                                      Natron::eStandardButtonYes,
                                     &stopAsking);
-        bool mustSaveSettings = false;
 		if (stopAsking != !docheck) {
 			_ocioStartupCheck->setValue(!stopAsking,0);
-			mustSaveSettings = true;
+            saveSetting(_ocioStartupCheck.get());
 		}
         
         if (reply == Natron::eStandardButtonYes) {
@@ -2403,17 +2483,14 @@ Settings::doOCIOStartupCheckIfNeeded()
             }
             if (defaultIndex != -1) {
                 _ocioConfigKnob->setValue(defaultIndex,0);
-				mustSaveSettings = true;
+                saveSetting(_ocioConfigKnob.get());
             } else {
                 Natron::warningDialog("OCIO config", QObject::tr("The " NATRON_DEFAULT_OCIO_CONFIG_NAME " config could not be found. "
                                                                  "This is probably because you're not using the OpenColorIO-Configs folder that should "
                                                                  "be bundled with your " NATRON_APPLICATION_NAME " installation.").toStdString());
             }
         }
-        if (mustSaveSettings) {
-			saveSettings();
 
-		}
     }
 }
 
@@ -2597,6 +2674,16 @@ Settings::getTextColor(double* r,double* g,double* b) const
     *g = _textColor->getValue(1);
     *b = _textColor->getValue(2);
 }
+
+void
+Settings::getAltTextColor(double* r,double* g,double* b) const
+{
+    *r = _altTextColor->getValue(0);
+    *g = _altTextColor->getValue(1);
+    *b = _altTextColor->getValue(2);
+}
+
+
 
 void
 Settings::getTimelinePlayheadColor(double* r,double* g,double* b) const

@@ -13,7 +13,8 @@
 #include <Python.h>
 
 #include "ParameterWrapper.h"
-
+#include "Engine/EffectInstance.h"
+#include "Engine/Node.h"
 
 Param::Param(const boost::shared_ptr<KnobI>& knob)
 : _knob(knob)
@@ -175,6 +176,42 @@ Param::copy(Param* other, int dimension)
     }
     _knob->cloneAndUpdateGui(other->_knob.get(), dimension);
     return true;
+}
+
+double
+Param::random(double min,double max) const
+{
+    if (!_knob) {
+        return 0;
+    }
+    return _knob->random(min,max);
+}
+
+double
+Param::random(unsigned int seed) const
+{
+    if (!_knob) {
+        return 0;
+    }
+    return _knob->random(seed);
+}
+
+int
+Param::randomInt(int min, int max)
+{
+    if (!_knob) {
+        return 0;
+    }
+    return _knob->randomInt(min,max);
+}
+
+int
+Param::randomInt(unsigned int seed) const
+{
+    if (!_knob) {
+        return 0;
+    }
+    return _knob->randomInt(seed);
 }
 
 AnimatedParam::AnimatedParam(const boost::shared_ptr<KnobI>& knob)
@@ -597,6 +634,15 @@ Double2DParam::set(double x, double y, int frame)
 }
 
 void
+Double2DParam::setUsePointInteract(bool use)
+{
+    if (!_doubleKnob) {
+        return;
+    }
+    _doubleKnob->setHasNativeOverlayHandle(use);
+}
+
+void
 Double3DParam::set(double x, double y, double z, int frame)
 {
     _doubleKnob->beginChanges();
@@ -605,6 +651,7 @@ Double3DParam::set(double x, double y, double z, int frame)
     _doubleKnob->setValueAtTime(frame,z, 2);
     _doubleKnob->endChanges();
 }
+
 
 double
 DoubleParam::getValue(int dimension) const

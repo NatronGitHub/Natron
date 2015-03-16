@@ -75,30 +75,17 @@ SpinBox::SpinBox(QWidget* parent,
 : LineEdit(parent)
 , animation(0)
 , dirty(false)
+, altered(false)
 , _imp( new SpinBoxPrivate(type) )
 {
-    switch (_imp->type) {
-        case eSpinBoxTypeDouble:
-            _imp->mini.setValue<double>(-DBL_MAX);
-            _imp->maxi.setValue<double>(DBL_MAX);
-            _imp->doubleValidator = new QDoubleValidator;
-            _imp->doubleValidator->setTop(DBL_MAX);
-            _imp->doubleValidator->setBottom(-DBL_MAX);
-            break;
-        case eSpinBoxTypeInt:
-            _imp->intValidator = new QIntValidator;
-            _imp->mini.setValue<int>(INT_MIN);
-            _imp->maxi.setValue<int>(INT_MAX);
-            _imp->intValidator->setTop(INT_MAX);
-            _imp->intValidator->setBottom(INT_MIN);
-            break;
-    }
     QObject::connect( this, SIGNAL( returnPressed() ), this, SLOT( interpretReturn() ) );
     setValue(0);
     setMaximumWidth(50);
     setMinimumWidth(35);
-    decimals(_imp->decimals);
     setFocusPolicy(Qt::WheelFocus); // mouse wheel gives focus too - see also SpinBox::focusInEvent()
+    decimals(_imp->decimals);
+
+    setType(type);
 }
 
 SpinBox::~SpinBox()
@@ -109,6 +96,39 @@ SpinBox::~SpinBox()
             break;
         case eSpinBoxTypeInt:
             delete _imp->intValidator;
+            break;
+    }
+}
+
+void
+SpinBox::setType(SpinBoxTypeEnum type)
+{
+    _imp->type = type;
+    if (_imp->doubleValidator) {
+        delete _imp->doubleValidator;
+        _imp->doubleValidator = 0;
+    }
+    if (_imp->intValidator) {
+        delete _imp->intValidator;
+        _imp->intValidator = 0;
+    }
+    switch (_imp->type) {
+        case eSpinBoxTypeDouble:
+            _imp->mini.setValue<double>(-DBL_MAX);
+            _imp->maxi.setValue<double>(DBL_MAX);
+            _imp->doubleValidator = new QDoubleValidator;
+            _imp->doubleValidator->setTop(DBL_MAX);
+            _imp->doubleValidator->setBottom(-DBL_MAX);
+            setValue_internal(value(),true);
+            break;
+        case eSpinBoxTypeInt:
+            _imp->intValidator = new QIntValidator;
+            _imp->mini.setValue<int>(INT_MIN);
+            _imp->maxi.setValue<int>(INT_MAX);
+            _imp->intValidator->setTop(INT_MAX);
+            _imp->intValidator->setBottom(INT_MIN);
+            setValue_internal((int)std::floor(value() + 0.5),true);
+
             break;
     }
 }

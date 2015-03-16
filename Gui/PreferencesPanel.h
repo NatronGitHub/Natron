@@ -33,6 +33,7 @@ class QVBoxLayout;
 //class QHBoxLayout;
 class QDialogButtonBox;
 class Button;
+class KnobI;
 class Gui;
 class PreferencesPanel
     : public QWidget
@@ -52,9 +53,9 @@ public Q_SLOTS:
 
     void cancelChanges();
 
-    void applyChanges();
-
-    void applyChangesAndClose();
+    void saveChangesAndClose();
+    
+    void onSettingChanged(KnobI* knob);
 
 private:
 
@@ -68,10 +69,10 @@ private:
     DockablePanel* _panel;
     QDialogButtonBox* _buttonBox;
     Button* _restoreDefaultsB;
-    Button* _applyB;
     Button* _cancelB;
     Button* _okB;
     boost::shared_ptr<Settings> _settings;
+    std::vector<KnobI*> _changedKnobs;
     bool _closeIsOK;
 };
 

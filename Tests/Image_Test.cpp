@@ -70,6 +70,7 @@ TEST(BitmapTest,SimpleRect) {
 
 TEST(ImageKeyTest,Equality) {
     srand(2000);
+    // coverity[dont_call]
     int randomHashKey1 = rand();
     SequenceTime time1 = 0;
     int view1 = 0;
@@ -90,6 +91,7 @@ TEST(ImageKeyTest,Equality) {
 
 TEST(ImageKeyTest,Difference) {
     srand(2000);
+    // coverity[dont_call]
     int randomHashKey1 = rand() % 100;
     SequenceTime time1 = 0;
     int view1 = 0;
@@ -99,6 +101,7 @@ TEST(ImageKeyTest,Difference) {
 
 
     ///make a second ImageKey different to the first
+    // coverity[dont_call]
     int randomHashKey2 = rand() % 1000  + 150;
     SequenceTime time2 = time1;
     int view2 = view1;

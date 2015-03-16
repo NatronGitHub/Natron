@@ -29,18 +29,3 @@ FrameEntry::makeParams(const RectI & rod,
 }
 
 
-
-FrameKey
-FrameEntry::makeKey(SequenceTime time,
-                    U64 treeVersion,
-                    double gain,
-                    int lut,
-                    int bitDepth,
-                    int channels,
-                    int view,
-                    const TextureRect & textureRect,
-                    const RenderScale & scale,
-                    const std::string & inputName)
-{
-    return FrameKey(time,treeVersion,gain,lut,bitDepth,channels,view,textureRect,scale,inputName);
-}

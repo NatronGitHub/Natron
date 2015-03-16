@@ -42,6 +42,7 @@
 #include "Global/MemoryInfo.h"
 #include "Engine/ViewerInstance.h"
 #include "Engine/OfxOverlayInteract.h"
+#include "Engine/Project.h"
 
 using namespace Natron;
 
@@ -299,8 +300,8 @@ OfxImageEffectInstance::getRenderScaleRecursive(double &x,
 OfxStatus
 OfxImageEffectInstance::getViewCount(int *nViews) const
 {
-#pragma message WARN("TODO")
-    return kOfxStatFailed;
+    *nViews = getOfxEffectInstance()->getApp()->getProject()->getProjectViewsCount();
+    return kOfxStatOK;
 }
 
 OfxStatus
@@ -685,7 +686,10 @@ OfxImageEffectInstance::addParamsToTheirParents()
 OfxStatus
 OfxImageEffectInstance::editBegin(const std::string & /*name*/)
 {
-    _ofxEffectInstance->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOnCreateNewCommand);
+    ///Don't push undo/redo actions while creating a group
+    if (!_ofxEffectInstance->getApp()->isCreatingPythonGroup()) {
+        _ofxEffectInstance->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOnCreateNewCommand);
+    }
 
     return kOfxStatOK;
 }
@@ -696,7 +700,10 @@ OfxImageEffectInstance::editBegin(const std::string & /*name*/)
 OfxStatus
 OfxImageEffectInstance::editEnd()
 {
-    _ofxEffectInstance->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOff);
+    ///Don't push undo/redo actions while creating a group
+    if (!_ofxEffectInstance->getApp()->isCreatingPythonGroup()) {
+        _ofxEffectInstance->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOff);
+    }
 
     return kOfxStatOK;
 }
@@ -990,6 +997,7 @@ OfxImageEffectInstance::getClipPreferences_safe(std::map<OfxClipInstance*, ClipP
     std::cout << _outputFrameRate<<","<<_outputFielding<<","<<_outputPreMultiplication<<","<<_continuousSamples<<","<<_frameVarying<<std::endl;
 #       endif
     
+    
     _clipPrefsDirty  = false;
     
     return true;
@@ -1015,26 +1023,79 @@ OfxImageEffectInstance::getClips() const
 }
 
 bool
-OfxImageEffectInstance::getCanApplyTransform(OfxClipInstance** clip) const
+OfxImageEffectInstance::getInputsHoldingTransform(std::list<int>* inputs) const
 {
-    if (!clip) {
+    if (!inputs) {
         return false;
     }
     for (std::map<std::string,OFX::Host::ImageEffect::ClipInstance*>::const_iterator it = _clips.begin(); it != _clips.end(); ++it) {
         if (it->second && it->second->canTransform()) {
+            
+            ///Output clip should not have the property set.
             assert(!it->second->isOutput());
             if (it->second->isOutput()) {
                 return false;
             }
-            *clip = dynamic_cast<OfxClipInstance*>(it->second);
-            return (*clip != NULL);
+            
+            
+            OfxClipInstance* clip = dynamic_cast<OfxClipInstance*>(it->second);
+            assert(clip);
+            inputs->push_back(clip->getInputNb());
         }
     }
-    return false;
+    return !inputs->empty();
 }
 
 bool
 OfxImageEffectInstance::isInAnalysis() const
 {
     return _properties.getIntProperty(kOfxImageEffectPropInAnalysis) == 1;
+}
+
+OfxImageEffectDescriptor::OfxImageEffectDescriptor(OFX::Host::Plugin *plug)
+: OFX::Host::ImageEffect::Descriptor(plug)
+{
+    
+}
+
+OfxImageEffectDescriptor::OfxImageEffectDescriptor(const std::string &bundlePath, OFX::Host::Plugin *plug)
+: OFX::Host::ImageEffect::Descriptor(bundlePath,plug)
+{
+    
+}
+
+
+OfxImageEffectDescriptor::OfxImageEffectDescriptor(const OFX::Host::ImageEffect::Descriptor &rootContext,
+                         OFX::Host::Plugin *plugin)
+: OFX::Host::ImageEffect::Descriptor(rootContext,plugin)
+{
+    
+}
+
+OFX::Host::Param::Descriptor *
+OfxImageEffectDescriptor::paramDefine(const char *paramType,
+                                        const char *name)
+{
+    static const OFX::Host::Property::PropSpec nativeOverlaysProps[] = {
+        { kOfxParamPropHasHostOverlayHandle,  OFX::Host::Property::eInt,    1,    true,    "0" },
+        { kOfxParamPropUseHostOverlayHandle,  OFX::Host::Property::eInt,    1,    false,    "0" },
+        OFX::Host::Property::propSpecEnd
+    };
+    
+    OFX::Host::Param::Descriptor *ret = OFX::Host::Param::SetDescriptor::paramDefine(paramType, name);
+    OFX::Host::Property::Set& props = ret->getProperties();
+    props.addProperties(nativeOverlaysProps);
+    
+    if (strcmp(paramType, kOfxParamTypeDouble2D) == 0) {
+        
+        const std::string& type = props.getStringProperty(kOfxParamPropDoubleType) ;
+        if (type == std::string(kOfxParamDoubleTypePlain) ||
+            type == std::string(kOfxParamDoubleTypeNormalisedXYAbsolute) ||
+            type == std::string(kOfxParamDoubleTypeNormalisedXY) ||
+            type == std::string(kOfxParamDoubleTypeXY) ||
+            type == std::string(kOfxParamDoubleTypeXYAbsolute)) {
+            props.setIntProperty(kOfxParamPropHasHostOverlayHandle, 1);
+        }
+    }
+    return ret;
 }

@@ -18,12 +18,14 @@
 #include <Python.h>
 
 #include "Engine/FrameEntry.h"
+#include "Engine/ImageParamsSerialization.h"
 #include "Engine/TextureRectSerialization.h"
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/serialization/version.hpp>
 #endif
 #define FRAME_KEY_INTRODUCES_INPUT_NAME 2
-#define FRAME_KEY_VERSION FRAME_KEY_INTRODUCES_INPUT_NAME
+#define FRAME_KEY_INTRODUCES_LAYERS 3
+#define FRAME_KEY_VERSION FRAME_KEY_INTRODUCES_LAYERS
 template<class Archive>
 void
 Natron::FrameKey::serialize(Archive & ar,
@@ -42,6 +44,11 @@ Natron::FrameKey::serialize(Archive & ar,
 
     if (version >= FRAME_KEY_VERSION) {
         ar & boost::serialization::make_nvp("InputName", _inputName);
+    }
+    
+    if (version >= FRAME_KEY_INTRODUCES_LAYERS) {
+        ar & boost::serialization::make_nvp("Layer", _layer);
+        ar & boost::serialization::make_nvp("Alpha", _alphaChannelFullName);
     }
 }
 

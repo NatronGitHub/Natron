@@ -180,4 +180,11 @@ shiboken --enable-pyside-extensions --include-paths=../Global:`pkg-config --vari
 
 Instructions to build the [openfx-io](https://github.com/MrKepzie/openfx-io) and [openfx-misc](https://github.com/devernay/openfx-misc) sets of plugins can also be found in the [tools/packageOSX.sh](https://github.com/MrKepzie/Natron/blob/workshop/tools/packageOSX.sh) script if you are using MacPorts, or in the .travis.yml file in their respective github repositories if you are using homebrew ([openfx-misc/.travis.yml](https://github.com/devernay/openfx-misc/blob/master/.travis.yml), [openfx-io/.travis.yml](https://github.com/MrKepzie/openfx-io/blob/master/.travis.yml).
 
-Compiling [TuttleOFX](https://github.com/tuttleofx/TuttleOFX) is a bit trickier, but you can find [instructions for building on MacPorts as well as precompiled universal binaries](http://devernay.free.fr/hacks/openfx/#OSXTuttleOFX). Building on homebrew is also possible by following these two scripts: [install_dependencies.sh](https://github.com/tuttleofx/TuttleOFX/blob/develop/tools/travis/install_dependencies.sh) and [build.sh](https://github.com/tuttleofx/TuttleOFX/blob/develop/tools/travis/build.sh).
+
+You can install [TuttleOFX](http://www.tuttleofx.org/) using homebrew:
+
+	brew tap homebrew/science homebrew/x11 homebrew/python cbenhagen/video
+	brew install tuttleofx
+
+
+Or have a look at the [instructions for building on MacPorts as well as precompiled universal binaries](http://devernay.free.fr/hacks/openfx/#OSXTuttleOFX).

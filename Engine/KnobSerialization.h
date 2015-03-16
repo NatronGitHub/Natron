@@ -43,13 +43,18 @@ CLANG_DIAG_ON(unused-parameter)
 #define KNOB_SERIALIZATION_INTRODUCES_CHOICE_LABEL 4
 #define KNOB_SERIALIZATION_INTRODUCES_USER_KNOB 5
 #define KNOB_SERIALIZATION_NODE_SCRIPT_NAME 6
-#define KNOB_SERIALIZATION_VERSION KNOB_SERIALIZATION_NODE_SCRIPT_NAME
+#define KNOB_SERIALIZATION_INTRODUCES_NATIVE_OVERLAYS 7
+#define KNOB_SERIALIZATION_INTRODUCES_CHOICE_HELP_STRINGS 8
+#define KNOB_SERIALIZATION_INTRODUCES_DEFAULT_VALUES 9
+#define KNOB_SERIALIZATION_INTRODUCES_DISPLAY_MIN_MAX 10
+#define KNOB_SERIALIZATION_VERSION KNOB_SERIALIZATION_INTRODUCES_DISPLAY_MIN_MAX
 
 #define VALUE_SERIALIZATION_INTRODUCES_CHOICE_LABEL 2
 #define VALUE_SERIALIZATION_INTRODUCES_EXPRESSIONS 3
 #define VALUE_SERIALIZATION_REMOVES_EXTRA_DATA 4
 #define VALUE_SERIALIZATION_INTRODUCES_EXPRESSIONS_RESULTS 5
-#define VALUE_SERIALIZATION_VERSION VALUE_SERIALIZATION_INTRODUCES_EXPRESSIONS_RESULTS
+#define VALUE_SERIALIZATION_REMOVES_EXPRESSIONS_RESULTS 6
+#define VALUE_SERIALIZATION_VERSION VALUE_SERIALIZATION_REMOVES_EXPRESSIONS_RESULTS
 
 
 struct MasterSerialization
@@ -91,13 +96,13 @@ public:
     
     
     
-    ChoiceExtraData() : TypeExtraData(), _choiceString() , _entries() {}
+    ChoiceExtraData() : TypeExtraData(), _choiceString() , _entries() , _helpStrings() {}
     
     virtual ~ChoiceExtraData() {}
     
     std::string _choiceString;
     std::vector<std::string> _entries;
-    
+    std::vector<std::string> _helpStrings;
 };
 
 class FileExtraData: public TypeExtraData
@@ -130,7 +135,7 @@ class ValueExtraData: public TypeExtraData
 {
     public:
     ValueExtraData() : TypeExtraData() , min(0.), max(0.) {}
-    double min,max;
+    double min,max,dmin,dmax;
 };
 
 struct ValueSerialization
@@ -208,25 +213,7 @@ struct ValueSerialization
         
         ar & boost::serialization::make_nvp("Expression",_expression);
         ar & boost::serialization::make_nvp("ExprHasRet",_exprHasRetVar);
-        
-        if (isInt) {
-            std::map<SequenceTime,int> exprValues;
-            isInt->getExpressionResults(_dimension, exprValues);
-            ar & boost::serialization::make_nvp("ExprResults",exprValues);
-        } else if (isBool) {
-            std::map<SequenceTime,bool> exprValues;
-            isBool->getExpressionResults(_dimension, exprValues);
-            ar & boost::serialization::make_nvp("ExprResults",exprValues);
-        } else if (isDouble) {
-            std::map<SequenceTime,double> exprValues;
-            isDouble->getExpressionResults(_dimension, exprValues);
-            ar & boost::serialization::make_nvp("ExprResults",exprValues);
-        } else if (isString) {
-            std::map<SequenceTime,std::string> exprValues;
-            isString->getExpressionResults(_dimension, exprValues);
-            ar & boost::serialization::make_nvp("ExprResults",exprValues);
-        }
-        
+
         
     } // save
 
@@ -328,23 +315,19 @@ struct ValueSerialization
             ar & boost::serialization::make_nvp("ExprHasRet",_exprHasRetVar);
         }
         
-        if (version >= VALUE_SERIALIZATION_INTRODUCES_EXPRESSIONS_RESULTS) {
+        if (version >= VALUE_SERIALIZATION_INTRODUCES_EXPRESSIONS_RESULTS && version < VALUE_SERIALIZATION_REMOVES_EXPRESSIONS_RESULTS) {
             if (isInt) {
                 std::map<SequenceTime,int> exprValues;
                 ar & boost::serialization::make_nvp("ExprResults",exprValues);
-                isInt->setExpressionResults(_dimension, exprValues);
             } else if (isBool) {
                 std::map<SequenceTime,bool> exprValues;
                 ar & boost::serialization::make_nvp("ExprResults",exprValues);
-                isBool->setExpressionResults(_dimension, exprValues);
             } else if (isDouble) {
                 std::map<SequenceTime,double> exprValues;
                 ar & boost::serialization::make_nvp("ExprResults",exprValues);
-                isDouble->setExpressionResults(_dimension, exprValues);
             } else if (isString) {
                 std::map<SequenceTime,std::string> exprValues;
                 ar & boost::serialization::make_nvp("ExprResults",exprValues);
-                isString->setExpressionResults(_dimension, exprValues);
             }
 
         }
@@ -393,6 +376,7 @@ class KnobSerialization : public KnobSerializationBase
     bool _isPersistent;
     bool _animationEnabled;
     std::string _tooltip;
+    bool _useHostOverlay;
 
     
     friend class boost::serialization::access;
@@ -462,9 +446,12 @@ class KnobSerialization : public KnobSerializationBase
                 
                 if (cdata) {
                     ar & boost::serialization::make_nvp("Entries",cdata->_entries);
+                    ar & boost::serialization::make_nvp("Helps",cdata->_helpStrings);
                 } else if (vdata) {
                     ar & boost::serialization::make_nvp("Min",vdata->min);
                     ar & boost::serialization::make_nvp("Max",vdata->max);
+                    ar & boost::serialization::make_nvp("DMin",vdata->dmin);
+                    ar & boost::serialization::make_nvp("DMax",vdata->dmax);
                 } else if (fdata) {
                     ar & boost::serialization::make_nvp("Sequences",fdata->useSequences);
                 } else if (pdata) {
@@ -473,6 +460,32 @@ class KnobSerialization : public KnobSerializationBase
                     ar & boost::serialization::make_nvp("IsLabel",tdata->label);
                     ar & boost::serialization::make_nvp("IsMultiLine",tdata->multiLine);
                     ar & boost::serialization::make_nvp("UseRichText",tdata->richText);
+                }
+            }
+            
+            if (isDouble && isDouble->getDimension() == 2) {
+                bool useOverlay = isDouble->getHasNativeOverlayHandle();
+                ar & boost::serialization::make_nvp("HasOverlayHandle",useOverlay);
+            }
+            
+            Knob<double>* isDbl = dynamic_cast<Knob<double>*>(_knob.get());
+            Knob<int>* isInt = dynamic_cast<Knob<int>*>(_knob.get());
+            Bool_Knob* isBool = dynamic_cast<Bool_Knob*>(_knob.get());
+            Knob<std::string>* isStr = dynamic_cast<Knob<std::string>*>(_knob.get());
+            
+            for (int i = 0; i < _knob->getDimension(); ++i) {
+                if (isDbl) {
+                    double def = isDbl->getDefaultValue(i);
+                    ar & boost::serialization::make_nvp("DefaultValue",def);
+                } else if (isInt) {
+                    int def = isInt->getDefaultValue(i);
+                    ar & boost::serialization::make_nvp("DefaultValue",def);
+                } else if (isBool) {
+                    bool def = isBool->getDefaultValue(i);
+                    ar & boost::serialization::make_nvp("DefaultValue",def);
+                } else if (isStr) {
+                    std::string def = isStr->getDefaultValue(i);
+                    ar & boost::serialization::make_nvp("DefaultValue",def);
                 }
             }
         }
@@ -574,6 +587,9 @@ class KnobSerialization : public KnobSerializationBase
                     ChoiceExtraData* data = dynamic_cast<ChoiceExtraData*>(_extraData);
                     assert(data);
                     ar & boost::serialization::make_nvp("Entries",data->_entries);
+                    if (version >= KNOB_SERIALIZATION_INTRODUCES_CHOICE_HELP_STRINGS) {
+                        ar & boost::serialization::make_nvp("Helps",data->_helpStrings);
+                    }
                 }
                 
                 String_Knob* isString = dynamic_cast<String_Knob*>(_knob.get());
@@ -591,6 +607,10 @@ class KnobSerialization : public KnobSerializationBase
                     ValueExtraData* extraData = new ValueExtraData;
                     ar & boost::serialization::make_nvp("Min",extraData->min);
                     ar & boost::serialization::make_nvp("Max",extraData->max);
+                    if (version >= KNOB_SERIALIZATION_INTRODUCES_DISPLAY_MIN_MAX) {
+                        ar & boost::serialization::make_nvp("DMin",extraData->dmin);
+                        ar & boost::serialization::make_nvp("DMax",extraData->dmax);
+                    }
                     _extraData = extraData;
                 }
                 
@@ -608,6 +628,40 @@ class KnobSerialization : public KnobSerializationBase
                     ar & boost::serialization::make_nvp("MultiPath",extraData->multiPath);
                     _extraData = extraData;
                 }
+                
+                
+                if (isDbl && version >= KNOB_SERIALIZATION_INTRODUCES_NATIVE_OVERLAYS && isDbl->getDimension() == 2) {
+                    ar & boost::serialization::make_nvp("HasOverlayHandle",_useHostOverlay);
+                    
+                }
+                
+                if (version >= KNOB_SERIALIZATION_INTRODUCES_DEFAULT_VALUES) {
+                    Knob<double>* isDoubleVal = dynamic_cast<Knob<double>*>(_knob.get());
+                    Knob<int>* isIntVal = dynamic_cast<Knob<int>*>(_knob.get());
+                    Bool_Knob* isBool = dynamic_cast<Bool_Knob*>(_knob.get());
+                    Knob<std::string>* isStr = dynamic_cast<Knob<std::string>*>(_knob.get());
+                    
+                    for (int i = 0; i < _knob->getDimension(); ++i) {
+                        if (isDoubleVal) {
+                            double def;
+                            ar & boost::serialization::make_nvp("DefaultValue",def);
+                            isDoubleVal->setDefaultValueWithoutApplying(def,i);
+                        } else if (isIntVal) {
+                            int def;
+                            ar & boost::serialization::make_nvp("DefaultValue",def);
+                            isIntVal->setDefaultValueWithoutApplying(def,i);
+                        } else if (isBool) {
+                            bool def;
+                            ar & boost::serialization::make_nvp("DefaultValue",def);
+                            isBool->setDefaultValueWithoutApplying(def,i);
+                        } else if (isStr) {
+                            std::string def;
+                            ar & boost::serialization::make_nvp("DefaultValue",def);
+                            isStr->setDefaultValueWithoutApplying(def,i);
+                        }
+                    }
+                }
+                
             }
         }
         
@@ -618,7 +672,7 @@ class KnobSerialization : public KnobSerializationBase
 public:
 
     ///Constructor used to serialize
-    explicit KnobSerialization(const boost::shared_ptr<KnobI> & knob,bool copyKnob)
+    explicit KnobSerialization(const boost::shared_ptr<KnobI> & knob)
         : _knob()
         , _dimension(0)
         , _extraData(NULL)
@@ -629,23 +683,17 @@ public:
         , _isPersistent(false)
         , _animationEnabled(false)
         , _tooltip()
+        , _useHostOverlay(false)
     {
-        initialize(knob,copyKnob);
+        initialize(knob);
     }
 
     ///Doing the empty param constructor + this function is the same
     ///as calling the constructore above
-    void initialize(const boost::shared_ptr<KnobI> & knob,bool copyKnob)
+    void initialize(const boost::shared_ptr<KnobI> & knob)
     {
-        if (copyKnob) {
-            _knob = createKnob(knob->typeName(), knob->getDimension());
-            _knob->deepClone(knob.get());
-            
-        } else {
-            _knob = knob;
-        }
         
-        
+        _knob = knob;
         
         _typeName = knob->typeName();
         _dimension = knob->getDimension();
@@ -666,6 +714,7 @@ public:
         if (isChoice) {
             ChoiceExtraData* extraData = new ChoiceExtraData;
             extraData->_entries = isChoice->getEntries_mt_safe();
+            extraData->_helpStrings = isChoice->getEntriesHelp_mt_safe();
             int idx = isChoice->getValue();
             if (idx >= 0 && idx < (int)extraData->_entries.size()) {
                 extraData->_choiceString = extraData->_entries[idx];
@@ -689,12 +738,18 @@ public:
                 if (isDbl) {
                     extraData->min = isDbl->getMinimum();
                     extraData->max = isDbl->getMaximum();
+                    extraData->dmin = isDbl->getDisplayMinimum();
+                    extraData->dmax = isDbl->getDisplayMaximum();
                 } else if (isInt) {
                     extraData->min = isInt->getMinimum();
                     extraData->max = isInt->getMaximum();
+                    extraData->dmin = isInt->getDisplayMinimum();
+                    extraData->dmax = isInt->getDisplayMaximum();
                 } else if (isColor) {
                     extraData->min = isColor->getMinimum();
                     extraData->max = isColor->getMaximum();
+                    extraData->dmin = isColor->getDisplayMinimum();
+                    extraData->dmax = isColor->getDisplayMaximum();
                 }
                 _extraData = extraData;
             }
@@ -730,9 +785,8 @@ public:
         , _isPersistent(false)
         , _animationEnabled(false)
         , _tooltip()
-
+        , _useHostOverlay(false)
     {
-        
     }
 
     ~KnobSerialization() { delete _extraData; }
@@ -791,6 +845,11 @@ public:
         return _tooltip;
     }
     
+    bool getUseHostOverlayHandle() const
+    {
+        return _useHostOverlay;
+    }
+    
 private:
 };
 
@@ -806,7 +865,7 @@ namespace Natron {
         knob->populate();
         knob->setName(paramName);
         knob->setValue(value,0);
-        boost::shared_ptr<KnobSerialization> ret(new KnobSerialization(knob,false));
+        boost::shared_ptr<KnobSerialization> ret(new KnobSerialization(knob));
         return ret;
     }
     
@@ -869,8 +928,8 @@ public:
                 _children.push_back(serialisation);
             } else {
                 //Choice_Knob* isChoice = dynamic_cast<Choice_Knob*>(children[i].get());
-                bool copyKnob = false;//isChoice != NULL;
-                boost::shared_ptr<KnobSerialization> serialisation(new KnobSerialization(children[i], copyKnob));
+                //bool copyKnob = false;//isChoice != NULL;
+                boost::shared_ptr<KnobSerialization> serialisation(new KnobSerialization(children[i]));
                 _children.push_back(serialisation);
             }
         }

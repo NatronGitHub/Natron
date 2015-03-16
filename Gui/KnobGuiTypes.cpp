@@ -21,7 +21,6 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QHBoxLayout>
 #include <QStyle>
 #include <QColorDialog>
-#include <QLabel>
 #include <QToolTip>
 #include <QTreeWidget>
 #include <QTreeWidgetItem>
@@ -59,6 +58,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/CurveWidget.h"
 #include "Gui/DockablePanel.h"
 #include "Gui/ClickableLabel.h"
+#include "Gui/Label.h"
 
 #include "ofxNatron.h"
 
@@ -160,14 +160,14 @@ Int_KnobGui::createWidget(QHBoxLayout* layout)
         boxContainer->setLayout(boxContainerLayout);
         boxContainerLayout->setContentsMargins(0, 0, 0, 0);
         boxContainerLayout->setSpacing(3);
-        QLabel *subDesc = 0;
+        Natron::Label *subDesc = 0;
         if (dim != 1) {
             std::string dimLabel = getKnob()->getDimensionName(i);
             if (!dimLabel.empty()) {
                 dimLabel.append(":");
             }
-            subDesc = new QLabel(QString(dimLabel.c_str()), boxContainer);
-            subDesc->setFont( QFont(appFont,appFontSize) );
+            subDesc = new Natron::Label(QString(dimLabel.c_str()), boxContainer);
+            //subDesc->setFont( QFont(appFont,appFontSize) );
             boxContainerLayout->addWidget(subDesc);
         }
         SpinBox *box = new SpinBox(layout->parentWidget(), SpinBox::eSpinBoxTypeInt);
@@ -592,10 +592,21 @@ boost::shared_ptr<KnobI> Int_KnobGui::getKnob() const
 void
 Int_KnobGui::reflectExpressionState(int dimension,bool hasExpr)
 {
-    _spinBoxes[dimension].first->setAnimation(3);
-    _spinBoxes[dimension].first->setReadOnly(hasExpr);
-    if (_slider) {
-        _slider->setReadOnly(hasExpr);
+    if (!hasExpr) {
+        Natron::AnimationLevelEnum lvl = _knob->getAnimationLevel(dimension);
+        _spinBoxes[dimension].first->setAnimation((int)lvl);
+        bool isEnabled = _knob->isEnabled(dimension);
+        _spinBoxes[dimension].first->setReadOnly(!isEnabled);
+        if (_slider) {
+            bool isEnabled0 = _knob->isEnabled(0);
+            _slider->setReadOnly(!isEnabled0);
+        }
+    } else {
+        _spinBoxes[dimension].first->setAnimation(3);
+        _spinBoxes[dimension].first->setReadOnly(hasExpr);
+        if (_slider) {
+            _slider->setReadOnly(hasExpr);
+        }
     }
 }
 
@@ -610,6 +621,21 @@ Int_KnobGui::updateToolTip()
         if (_slider) {
             _slider->setToolTip(tt);
         }
+    }
+}
+
+void
+Int_KnobGui::reflectModificationsState()
+{
+    bool hasModif = _knob->hasModifications();
+    for (U32 i = 0; i < _spinBoxes.size(); ++i) {
+        _spinBoxes[i].first->setAltered(!hasModif);
+        if (_spinBoxes[i].second) {
+            _spinBoxes[i].second->setAltered(!hasModif);
+        }
+    }
+    if (_slider) {
+        _slider->setAltered(!hasModif);
     }
 }
 //==========================BOOL_KNOB_GUI======================================
@@ -627,9 +653,9 @@ Bool_KnobGui::createWidget(QHBoxLayout* layout)
 {
     _checkBox = new AnimatedCheckBox( layout->parentWidget() );
 
-    _checkBox->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-    QObject::connect( _checkBox, SIGNAL( toggled(bool) ), this, SLOT( onCheckBoxStateChanged(bool) ) );
-    QObject::connect( this, SIGNAL( labelClicked(bool) ), this, SLOT( onCheckBoxStateChanged(bool) ) );
+    //_checkBox->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
+    QObject::connect( _checkBox, SIGNAL( clicked(bool) ), this, SLOT( onCheckBoxStateChanged(bool) ) );
+    QObject::connect( this, SIGNAL( labelClicked(bool) ), this, SLOT( onLabelClicked(bool) ) );
 
     ///set the copy/link actions in the right click menu
     enableRightClickMenu(_checkBox,0);
@@ -651,9 +677,7 @@ void Bool_KnobGui::removeSpecificGui()
 void
 Bool_KnobGui::updateGUI(int /*dimension*/)
 {
-    _checkBox->blockSignals(true);
     _checkBox->setChecked( _knob->getValue(0,false) );
-    _checkBox->blockSignals(false);
 }
 
 void
@@ -681,9 +705,16 @@ Bool_KnobGui::reflectAnimationLevel(int /*dimension*/,
 }
 
 void
+Bool_KnobGui::onLabelClicked(bool b)
+{
+    _checkBox->setChecked(b);
+    pushUndoCommand( new KnobUndoCommand<bool>(this,_knob->getValue(0,false),b, 0, false) );
+}
+
+void
 Bool_KnobGui::onCheckBoxStateChanged(bool b)
 {
-    pushUndoCommand( new KnobUndoCommand<bool>(this,_knob->getValue(0,false),b) );
+    pushUndoCommand( new KnobUndoCommand<bool>(this,_knob->getValue(0,false),b, 0, false) );
 }
 
 void
@@ -869,14 +900,14 @@ Double_KnobGui::createWidget(QHBoxLayout* layout)
         boxContainer->setLayout(boxContainerLayout);
         boxContainerLayout->setContentsMargins(0, 0, 0, 0);
         boxContainerLayout->setSpacing(3);
-        QLabel *subDesc = 0;
+        Natron::Label *subDesc = 0;
         if (dim != 1) {
             std::string dimLabel = getKnob()->getDimensionName(i);
             if (!dimLabel.empty()) {
                 dimLabel.append(":");
             }
-            subDesc = new QLabel(QString(dimLabel.c_str()), boxContainer);
-            subDesc->setFont( QFont(appFont,appFontSize) );
+            subDesc = new Natron::Label(QString(dimLabel.c_str()), boxContainer);
+            //subDesc->setFont( QFont(appFont,appFontSize) );
             boxContainerLayout->addWidget(subDesc);
         }
         SpinBox *box = new SpinBox(layout->parentWidget(), SpinBox::eSpinBoxTypeDouble);
@@ -1345,10 +1376,21 @@ Double_KnobGui::getKnob() const
 void
 Double_KnobGui::reflectExpressionState(int dimension,bool hasExpr)
 {
-    _spinBoxes[dimension].first->setAnimation(3);
-    _spinBoxes[dimension].first->setReadOnly(hasExpr);
-    if (_slider) {
-        _slider->setReadOnly(hasExpr);
+    if (!hasExpr) {
+        Natron::AnimationLevelEnum lvl = _knob->getAnimationLevel(dimension);
+        _spinBoxes[dimension].first->setAnimation((int)lvl);
+        bool isEnabled = _knob->isEnabled(dimension);
+        _spinBoxes[dimension].first->setReadOnly(!isEnabled);
+        if (_slider) {
+            bool isEnabled0 = _knob->isEnabled(0);
+            _slider->setReadOnly(!isEnabled0);
+        }
+    } else {
+        _spinBoxes[dimension].first->setAnimation(3);
+        _spinBoxes[dimension].first->setReadOnly(hasExpr);
+        if (_slider) {
+            _slider->setReadOnly(hasExpr);
+        }
     }
 }
 
@@ -1365,6 +1407,21 @@ Double_KnobGui::updateToolTip()
         }
     }
 }
+
+void
+Double_KnobGui::reflectModificationsState() {
+    bool hasModif = _knob->hasModifications();
+    for (U32 i = 0; i < _spinBoxes.size(); ++i) {
+        _spinBoxes[i].first->setAltered(!hasModif);
+        if (_spinBoxes[i].second) {
+            _spinBoxes[i].second->setAltered(!hasModif);
+        }
+    }
+    if (_slider) {
+        _slider->setAltered(!hasModif);
+    }
+}
+
 
 //=============================BUTTON_KNOB_GUI===================================
 
@@ -1495,7 +1552,7 @@ Choice_KnobGui::createWidget(QHBoxLayout* layout)
 void
 Choice_KnobGui::onCurrentIndexChanged(int i)
 {
-    pushUndoCommand( new KnobUndoCommand<int>(this,_knob->getValue(0,false),i) );
+    pushUndoCommand( new KnobUndoCommand<int>(this,_knob->getValue(0,false),i, false) );
 }
 
 void
@@ -1607,6 +1664,12 @@ boost::shared_ptr<KnobI> Choice_KnobGui::getKnob() const
     return _knob;
 }
 
+void
+Choice_KnobGui::reflectModificationsState()
+{
+    bool hasModif = _knob->hasModifications();
+    _comboBox->setAltered(!hasModif);
+}
 
 //=============================SEPARATOR_KNOB_GUI===================================
 
@@ -1757,14 +1820,14 @@ Color_KnobGui::createWidget(QHBoxLayout* layout)
         _rBox->setToolTip( toolTip() );
     }
     
-    QFont font(appFont,appFontSize);
+    //QFont font(appFont,appFontSize);
     
     std::string dimLabel = _knob->getDimensionName(0);
     if (!dimLabel.empty()) {
         dimLabel.append(":");
     }
-    _rLabel = new QLabel(QString(dimLabel.c_str()).toLower(), boxContainers);
-    _rLabel->setFont(font);
+    _rLabel = new Natron::Label(QString(dimLabel.c_str()).toLower(), boxContainers);
+    //_rLabel->setFont(font);
     if ( hasToolTip() ) {
         _rLabel->setToolTip( toolTip() );
     }
@@ -1793,8 +1856,8 @@ Color_KnobGui::createWidget(QHBoxLayout* layout)
             dimLabel.append(":");
         }
         
-        _gLabel = new QLabel(QString(dimLabel.c_str()).toLower(), boxContainers);
-        _gLabel->setFont(font);
+        _gLabel = new Natron::Label(QString(dimLabel.c_str()).toLower(), boxContainers);
+        //_gLabel->setFont(font);
         if ( hasToolTip() ) {
             _gLabel->setToolTip( toolTip() );
         }
@@ -1822,8 +1885,8 @@ Color_KnobGui::createWidget(QHBoxLayout* layout)
             dimLabel.append(":");
         }
         
-        _bLabel = new QLabel(QString(dimLabel.c_str()).toLower(), boxContainers);
-        _bLabel->setFont(font);
+        _bLabel = new Natron::Label(QString(dimLabel.c_str()).toLower(), boxContainers);
+        //_bLabel->setFont(font);
         if ( hasToolTip() ) {
             _bLabel->setToolTip( toolTip() );
         }
@@ -1853,8 +1916,8 @@ Color_KnobGui::createWidget(QHBoxLayout* layout)
             dimLabel.append(":");
         }
         
-        _aLabel = new QLabel(QString(dimLabel.c_str()).toLower(), boxContainers);
-        _aLabel->setFont(font);
+        _aLabel = new Natron::Label(QString(dimLabel.c_str()).toLower(), boxContainers);
+        //_aLabel->setFont(font);
         if ( hasToolTip() ) {
             _aLabel->setToolTip( toolTip() );
         }
@@ -2526,7 +2589,7 @@ Color_KnobGui::_show()
 }
 
 ColorPickerLabel::ColorPickerLabel(Color_KnobGui* knob,QWidget* parent)
-    : QLabel(parent)
+    : Natron::Label(parent)
       , _pickingEnabled(false)
     , _knob(knob)
 {
@@ -2666,6 +2729,36 @@ boost::shared_ptr<KnobI> Color_KnobGui::getKnob() const
     return _knob;
 }
 
+void
+Color_KnobGui::reflectModificationsState()
+{
+    bool hasModif = _knob->hasModifications();
+    
+    if (_rLabel) {
+        _rLabel->setAltered(!hasModif);
+    }
+    _rBox->setAltered(!hasModif);
+    if (_dimension > 1) {
+        if (_gLabel) {
+            _gLabel->setAltered(!hasModif);
+        }
+        _gBox->setAltered(!hasModif);
+        if (_bLabel) {
+            _bLabel->setAltered(!hasModif);
+        }
+        _bBox->setAltered(!hasModif);
+    }
+    if (_dimension > 3) {
+        if (_aLabel) {
+            _aLabel->setAltered(!hasModif);
+        }
+        _aBox->setAltered(!hasModif);
+    }
+    if (_slider) {
+        _slider->setAltered(!hasModif);
+    }
+}
+
 //=============================STRING_KNOB_GUI===================================
 
 void
@@ -2783,8 +2876,7 @@ String_KnobGui::createWidget(QHBoxLayout* layout)
             _richTextOptionsLayout->setSpacing(8);
 
             _fontCombo = new QFontComboBox(_richTextOptions);
-            QFont font("Verdana",NATRON_FONT_SIZE_12);
-            _fontCombo->setCurrentFont(font);
+            _fontCombo->setCurrentFont(QApplication::font());
             _fontCombo->setToolTip( tr("Font") );
             _richTextOptionsLayout->addWidget(_fontCombo);
 
@@ -2843,12 +2935,12 @@ String_KnobGui::createWidget(QHBoxLayout* layout)
 
         layout->addWidget(_container);
     } else if ( _knob->isLabel() ) {
-        _label = new QLabel( layout->parentWidget() );
+        _label = new Natron::Label( layout->parentWidget() );
 
         if ( hasToolTip() ) {
             _label->setToolTip( toolTip() );
         }
-        _label->setFont(QFont(appFont,appFontSize));
+        //_label->setFont(QFont(appFont,appFontSize));
         layout->addWidget(_label);
     } else {
         _lineEdit = new LineEdit( layout->parentWidget() );
@@ -2985,7 +3077,7 @@ String_KnobGui::restoreTextInfoFromString()
         EffectInstance* effect = dynamic_cast<EffectInstance*>( _knob->getHolder() );
         /// If the node has a sublabel, restore it in the label
         if ( effect && (_knob->getName() == kUserLabelKnobName) ) {
-            boost::shared_ptr<KnobI> knob = effect->getKnobByName(kOfxParamStringSublabelName);
+            boost::shared_ptr<KnobI> knob = effect->getKnobByName(kNatronOfxParamStringSublabelName);
             if (knob) {
                 String_Knob* strKnob = dynamic_cast<String_Knob*>( knob.get() );
                 if (strKnob) {
@@ -3093,8 +3185,8 @@ String_KnobGui::restoreTextInfoFromString()
 
 void
 String_KnobGui::parseFont(const QString & label,
-                          QFont & f,
-                          QColor& color)
+                          QFont *f,
+                          QColor *color)
 {
     QString toFind = QString(kFontSizeTag);
     int startFontTag = label.indexOf(toFind);
@@ -3119,14 +3211,14 @@ String_KnobGui::parseFont(const QString & label,
         ++j;
     }
 
-    f.setPointSize( sizeStr.toInt() );
-    f.setFamily(faceStr);
+    f->setPointSize( sizeStr.toInt() );
+    f->setFamily(faceStr);
     
     {
         toFind = QString(kBoldStartTag);
         int foundBold = label.indexOf(toFind);
         if (foundBold != -1) {
-            f.setBold(true);
+            f->setBold(true);
         }
     }
     
@@ -3134,7 +3226,7 @@ String_KnobGui::parseFont(const QString & label,
         toFind = QString(kItalicStartTag);
         int foundItalic = label.indexOf(toFind);
         if (foundItalic != -1) {
-            f.setItalic(true);
+            f->setItalic(true);
         }
     }
     {
@@ -3148,7 +3240,7 @@ String_KnobGui::parseFont(const QString & label,
                 currentColor.push_back( label.at(j) );
                 ++j;
             }
-            color = QColor(currentColor);
+            *color = QColor(currentColor);
         }
     }
 }
@@ -3644,9 +3736,18 @@ String_KnobGui::updateToolTip()
     }
 }
 
+void
+String_KnobGui::reflectModificationsState()
+{
+    bool hasModif = _knob->hasModifications();
+    if (_lineEdit) {
+        _lineEdit->setAltered(!hasModif);
+    }
+}
+
 //=============================GROUP_KNOB_GUI===================================
 GroupBoxLabel::GroupBoxLabel(QWidget *parent)
-: QLabel(parent)
+: Natron::Label(parent)
 , _checked(false)
 
 {

@@ -1275,25 +1275,27 @@ FileGathererThread::gatheringKernel(const boost::shared_ptr<FileSystemItem>& ite
     
     Qt::SortOrder viewOrder = _imp->model->sortIndicatorOrder();
     FileSystemModel::Sections sortSection = (FileSystemModel::Sections)_imp->model->sortIndicatorSection();
+    QDir::SortFlags sort;
     switch (sortSection) {
         case FileSystemModel::Name:
-            dir.setSorting(QDir::Name);
+            sort = QDir::Name;
             break;
         case FileSystemModel::Size:
-            dir.setSorting(QDir::Size);
+            sort = QDir::Size;
             break;
         case FileSystemModel::Type:
-            dir.setSorting(QDir::Type);
+            sort = QDir::Type;
             break;
         case FileSystemModel::DateModified:
-            dir.setSorting(QDir::Time);
+            sort = QDir::Time;
             break;
         default:
             break;
     }
+    sort |= QDir::IgnoreCase;
     
     ///All entries in the directory
-    QFileInfoList all = dir.entryInfoList(_imp->model->filter());
+    QFileInfoList all = dir.entryInfoList(_imp->model->filter(), sort);
     
     ///List of all possible file sequences in the directory or directories
     FileSequences sequences;
@@ -1318,7 +1320,7 @@ FileGathererThread::gatheringKernel(const boost::shared_ptr<FileSystemItem>& ite
         if ( _imp->checkForAbort() ) {
             return;
         }
-        
+                
         if ( all[i].isDir() ) {
             ///This is a directory
             sequences.push_back(std::make_pair(boost::shared_ptr<SequenceParsing::SequenceFromFiles>(), all[i]));
@@ -1361,7 +1363,6 @@ FileGathererThread::gatheringKernel(const boost::shared_ptr<FileSystemItem>& ite
             }
             
             if (!foundMatchingSequence) {
-                
                 boost::shared_ptr<SequenceParsing::SequenceFromFiles> newSequence( new SequenceParsing::SequenceFromFiles(fileContent,true) );
                 sequences.push_back(std::make_pair(newSequence, all[i]));
 

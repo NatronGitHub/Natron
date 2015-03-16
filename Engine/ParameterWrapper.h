@@ -143,6 +143,16 @@ public:
      **/
     bool copy(Param* other, int dimension = -1);
     
+    /**
+     * @brief Returns a pseudo-random number. This will always be the same for the same time on the timeline.
+     * The version with the seed can be used to retrieve the same value for 2 successive randoms
+     **/
+    double random(double min = 0., double max = 1.) const;
+    double random(unsigned int seed) const;
+    
+    int randomInt(int min, int max);
+    int randomInt(unsigned int seed) const;
+    
 protected:
     
     /**
@@ -518,6 +528,8 @@ public:
     Double2DTuple get(int frame) const;
     void set(double x, double y);
     void set(double x, double y, int frame);
+    
+    void setUsePointInteract(bool use);
 };
 
 class Double3DParam : public Double2DParam

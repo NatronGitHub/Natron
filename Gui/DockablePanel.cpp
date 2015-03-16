@@ -13,7 +13,7 @@
 #include <Python.h>
 
 #include "DockablePanel.h"
-
+#include <cfloat>
 #include <iostream>
 #include <fstream>
 #include <QLayout>
@@ -234,7 +234,7 @@ struct DockablePanelPrivate
     QFrame* _headerWidget;
     QHBoxLayout *_headerLayout;
     LineEdit* _nameLineEdit; /*!< if the name is editable*/
-    QLabel* _nameLabel; /*!< if the name is read-only*/
+    Natron::Label* _nameLabel; /*!< if the name is read-only*/
 
     QHBoxLayout* _horizLayout;
     QWidget* _horizContainer;
@@ -279,8 +279,13 @@ struct DockablePanelPrivate
     bool _isClosed; //< accessed by serialization thread too
     
     QString _helpToolTip;
+    QString _pluginID;
+    unsigned _pluginVersionMajor,_pluginVersionMinor;
+    
     
     bool _pagesEnabled;
+    
+    Natron::Label* _iconLabel;
     
     DockablePanelPrivate(DockablePanel* publicI,
                          Gui* gui,
@@ -330,12 +335,18 @@ struct DockablePanelPrivate
     ,_isClosedMutex()
     ,_isClosed(false)
     ,_helpToolTip(helpToolTip)
+    ,_pluginID()
+    ,_pluginVersionMajor(0)
+    ,_pluginVersionMinor(0)
     ,_pagesEnabled(true)
+    ,_iconLabel(0)
     {
     }
 
     /*inserts a new page to the dockable panel.*/
     PageMap::iterator addPage(Page_Knob* page,const QString & name);
+    
+    boost::shared_ptr<Page_Knob> ensureDefaultPageKnobCreated() ;
 
 
     void initializeKnobVector(const std::vector< boost::shared_ptr< KnobI> > & knobs,
@@ -410,19 +421,25 @@ DockablePanel::DockablePanel(Gui* gui ,
         
         if (iseffect) {
             
+            _imp->_iconLabel = new Natron::Label(getHeaderWidget());
+            _imp->_iconLabel->setContentsMargins(2, 2, 2, 2);
+            _imp->_iconLabel->setToolTip(pluginLabelVersioned);
+            _imp->_headerLayout->addWidget(_imp->_iconLabel);
+
 
             std::string iconFilePath = iseffect->getNode()->getPluginIconFilePath();
             if (!iconFilePath.empty()) {
+               
                 QPixmap ic;
                 if (ic.load(iconFilePath.c_str())) {
                     ic = ic.scaled(NATRON_MEDIUM_BUTTON_SIZE - 2,NATRON_MEDIUM_BUTTON_SIZE - 2,Qt::IgnoreAspectRatio,Qt::SmoothTransformation);
-                    QLabel* iconLabel = new QLabel(getHeaderWidget());
-                    iconLabel->setContentsMargins(2, 2, 2, 2);
-                    iconLabel->setPixmap(ic);
-                    iconLabel->setToolTip(pluginLabelVersioned);
-                    _imp->_headerLayout->addWidget(iconLabel);
+                    _imp->_iconLabel->setPixmap(ic);
+                } else {
+                    _imp->_iconLabel->hide();
                 }
                 
+            } else {
+                _imp->_iconLabel->hide();
             }
             
             QPixmap pixCenter;
@@ -433,15 +450,17 @@ DockablePanel::DockablePanel(Gui* gui ,
             _imp->_centerNodeButton->setFocusPolicy(Qt::NoFocus);
             QObject::connect( _imp->_centerNodeButton,SIGNAL( clicked() ),this,SLOT( onCenterButtonClicked() ) );
             _imp->_headerLayout->addWidget(_imp->_centerNodeButton);
-        }
-
-      
-        
-        if (!_imp->_holder->isProject()) {
             
             QPixmap pixHelp;
             appPTR->getIcon(NATRON_PIXMAP_HELP_WIDGET,&pixHelp);
             _imp->_helpButton = new Button(QIcon(pixHelp),"",_imp->_headerWidget);
+            
+            const Natron::Plugin* plugin = iseffect->getNode()->getPlugin();
+            assert(plugin);
+            _imp->_pluginID = plugin->getPluginID();
+            _imp->_pluginVersionMajor = plugin->getMajorVersion();
+            _imp->_pluginVersionMinor = plugin->getMinorVersion();
+            
             _imp->_helpButton->setToolTip(helpString());
             _imp->_helpButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
             _imp->_helpButton->setFocusPolicy(Qt::NoFocus);
@@ -610,8 +629,7 @@ DockablePanel::DockablePanel(Gui* gui ,
             QObject::connect( _imp->_nameLineEdit,SIGNAL( editingFinished() ),this,SLOT( onLineEditNameEditingFinished() ) );
             _imp->_headerLayout->addWidget(_imp->_nameLineEdit);
         } else {
-            _imp->_nameLabel = new QLabel(initialName,_imp->_headerWidget);
-            _imp->_nameLabel->setFont(QFont(appFont,appFontSize));
+            _imp->_nameLabel = new Natron::Label(initialName,_imp->_headerWidget);
             if (iseffect) {
                 onNodeScriptChanged(iseffect->getScriptName().c_str());
             }
@@ -698,7 +716,50 @@ DockablePanel::turnOffPages()
     _imp->addPage(userPage.get(), userPage->getDescription().c_str());
     
 }
-                                 
+
+void
+DockablePanel::setPluginIDAndVersion(const std::string& pluginLabel,const std::string& pluginID,unsigned int version)
+{
+    if (_imp->_iconLabel) {
+        QString pluginLabelVersioned(pluginLabel.c_str());
+        QString toAppend = QString(" version %1").arg(version);
+        pluginLabelVersioned.append(toAppend);
+        _imp->_iconLabel->setToolTip(pluginLabelVersioned);
+    }
+    if (_imp->_helpButton) {
+        
+        
+        
+        Natron::EffectInstance* iseffect = dynamic_cast<Natron::EffectInstance*>(_imp->_holder);
+        if (iseffect) {
+            _imp->_pluginID = pluginID.c_str();
+            _imp->_pluginVersionMajor = version;
+            _imp->_pluginVersionMinor = 0;
+            _imp->_helpButton->setToolTip(helpString());
+        }
+        
+    }
+}
+
+void
+DockablePanel::setPluginIcon(const QPixmap& pix)
+{
+    if (_imp->_iconLabel) {
+        _imp->_iconLabel->setPixmap(pix);
+        if (!_imp->_iconLabel->isVisible()) {
+            _imp->_iconLabel->show();
+        }
+    }
+}
+
+void
+DockablePanel::setPluginDescription(const std::string& description)
+{
+    _imp->_helpToolTip = description.c_str();
+    _imp->_helpButton->setToolTip(helpString());
+}
+
+
 void
 DockablePanel::onNodeScriptChanged(const QString& label)
 {
@@ -778,12 +839,12 @@ DockablePanelTabWidget::keyPressEvent(QKeyEvent* event)
     Qt::KeyboardModifiers modifiers = event->modifiers();
     
     if (isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevious, modifiers, key)) {
-        if ( _gui->getLastSelectedViewer() ) {
-            _gui->getLastSelectedViewer()->previousFrame();
+        if ( _gui->getNodeGraph()->getLastSelectedViewer() ) {
+            _gui->getNodeGraph()->getLastSelectedViewer()->previousFrame();
         }
     } else if (isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerNext, modifiers, key) ) {
-        if ( _gui->getLastSelectedViewer() ) {
-            _gui->getLastSelectedViewer()->nextFrame();
+        if ( _gui->getNodeGraph()->getLastSelectedViewer() ) {
+            _gui->getNodeGraph()->getLastSelectedViewer()->nextFrame();
         }
     } else {
         QTabWidget::keyPressEvent(event);
@@ -818,7 +879,7 @@ DockablePanel::onRestoreDefaultsButtonClicked()
                 Group_Knob* isGroup = dynamic_cast<Group_Knob*>( it2->get() );
                 Separator_Knob* isSeparator = dynamic_cast<Separator_Knob*>( it2->get() );
                 if ( !isBtn && !isPage && !isGroup && !isSeparator && ( (*it2)->getName() != kUserLabelKnobName ) &&
-                     ( (*it2)->getName() != kOfxParamStringSublabelName ) ) {
+                     ( (*it2)->getName() != kNatronOfxParamStringSublabelName ) ) {
                     knobsList.push_back(*it2);
                 }
             }
@@ -832,7 +893,7 @@ DockablePanel::onRestoreDefaultsButtonClicked()
             Group_Knob* isGroup = dynamic_cast<Group_Knob*>( it->get() );
             Separator_Knob* isSeparator = dynamic_cast<Separator_Knob*>( it->get() );
             if ( !isBtn && !isPage && !isGroup && !isSeparator && ( (*it)->getName() != kUserLabelKnobName ) &&
-                 ( (*it)->getName() != kOfxParamStringSublabelName ) ) {
+                 ( (*it)->getName() != kNatronOfxParamStringSublabelName ) ) {
                 knobsList.push_back(*it);
             }
         }
@@ -994,7 +1055,7 @@ DockablePanel::initializeKnobsInternal()
             ///find in all knobs a page param (that is not the extra one added by Natron) to set this param into
             for (U32 i = 0; i < knobs.size(); ++i) {
                 Page_Knob* p = dynamic_cast<Page_Knob*>( knobs[i].get() );
-                if ( p && (p->getDescription() != NATRON_EXTRA_PARAMETER_PAGE_NAME) ) {
+                if ( p && (p->getDescription() != NATRON_PARAMETER_PAGE_NAME_INFO) && (p->getDescription() != NATRON_PARAMETER_PAGE_NAME_EXTRA) ) {
                     parentTab = _imp->addPage(p, p->getDescription().c_str() );
                     break;
                 }
@@ -1060,6 +1121,32 @@ DockablePanelPrivate::createKnobGui(const boost::shared_ptr<KnobI> &knob)
     return ret;
 }
 
+boost::shared_ptr<Page_Knob>
+DockablePanelPrivate::ensureDefaultPageKnobCreated()
+{
+    const std::vector< boost::shared_ptr<KnobI> > & knobs = _holder->getKnobs();
+    ///find in all knobs a page param to set this param into
+    for (U32 i = 0; i < knobs.size(); ++i) {
+        boost::shared_ptr<Page_Knob> p = boost::dynamic_pointer_cast<Page_Knob>(knobs[i]);
+        if ( p && (p->getDescription() != NATRON_PARAMETER_PAGE_NAME_INFO) && (p->getDescription() != NATRON_PARAMETER_PAGE_NAME_EXTRA) ) {
+            addPage(p.get(),  p->getDescription().c_str() );
+            return p;
+        }
+    }
+
+    
+    boost::shared_ptr<KnobI> knob = _holder->getKnobByName(_defaultPageName.toStdString());
+    boost::shared_ptr<Page_Knob> pk;
+    if (!knob) {
+        pk = Natron::createKnob<Page_Knob>(_holder, _defaultPageName.toStdString());
+    } else {
+        pk = boost::dynamic_pointer_cast<Page_Knob>(knob);
+    }
+    assert(pk);
+    addPage(pk.get(), _defaultPageName);
+    return pk;
+}
+
 PageMap::iterator
 DockablePanelPrivate::getDefaultPage(const boost::shared_ptr<KnobI> &knob)
 {
@@ -1068,7 +1155,7 @@ DockablePanelPrivate::getDefaultPage(const boost::shared_ptr<KnobI> &knob)
     ///find in all knobs a page param to set this param into
     for (U32 i = 0; i < knobs.size(); ++i) {
         Page_Knob* p = dynamic_cast<Page_Knob*>( knobs[i].get() );
-        if ( p && (p->getDescription() != NATRON_EXTRA_PARAMETER_PAGE_NAME) ) {
+        if ( p && (p->getDescription() != NATRON_PARAMETER_PAGE_NAME_INFO) && (p->getDescription() != NATRON_PARAMETER_PAGE_NAME_EXTRA) ) {
             page = addPage(p,  p->getDescription().c_str() );
             p->addKnob(knob);
             break;
@@ -1139,6 +1226,12 @@ DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI> & knob,
             parentGui = dynamic_cast<Group_KnobGui*>( findKnobGuiOrCreate( parentKnob,true,ret->getFieldContainer() ) );
         }
 
+        ///So far the knob could have no parent, in which case we force it to be in the default page.
+        if (!parentKnob) {
+            boost::shared_ptr<Page_Knob> defPage = ensureDefaultPageKnobCreated();
+            defPage->addKnob(knob);
+            parentKnob = defPage;
+        }
 
         ///if widgets for the KnobGui have already been created, don't do the following
         ///For group only create the gui if it is not  a tab.
@@ -1152,7 +1245,9 @@ DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI> & knob,
                 } else {
                     page = addPage(parentIsPage, parentIsPage->getDescription().c_str() );
                 }
+                bool existed = true;
                 if (!page->second.groupAsTab) {
+                    existed = false;
                     page->second.groupAsTab = new TabGroup(_publicInterface);
                 }
                 page->second.groupAsTab->addTab(isGroup, isGroup->getDescription().c_str());
@@ -1166,8 +1261,9 @@ DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI> & knob,
                     layout = dynamic_cast<QGridLayout*>( page->second.tab->layout() );
                 }
                 assert(layout);
-                
-                layout->addWidget(page->second.groupAsTab, page->second.currentRow, 0, 1, 2);
+                if (!existed) {
+                    layout->addWidget(page->second.groupAsTab, page->second.currentRow, 0, 1, 2);
+                }
             } else {
                 assert(parentIsGroup);
                 assert(parentGui);
@@ -1232,29 +1328,9 @@ DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI> & knob,
 
             ////find in which page the knob should be
             Page_Knob* isTopLevelParentAPage = dynamic_cast<Page_Knob*>(parentKnobTmp);
-            PageMap::iterator page = _pages.end();
+            assert(isTopLevelParentAPage);
             
-            if (isTopLevelParentAPage) {
-                page = addPage(isTopLevelParentAPage, isTopLevelParentAPage->getDescription().c_str() );
-            } else {
-                
-                ///the parent cannot be a group and not have a page at this point since we ensured the parent group
-                ///is created so far.
-                assert(!dynamic_cast<Group_Knob*>(parentKnobTmp));
-                
-                ///the top level parent is not a page
-                if (knob->isUserKnob()) {
-                    ///Use the user page as default for user knobs
-                    boost::shared_ptr<Page_Knob> userPage = _holder->getOrCreateUserPageKnob();
-                    page = addPage(userPage.get(), userPage->getDescription().c_str());
-                    userPage->addKnob(knob);
-                
-                } else {
-                    page = getDefaultPage(knob);
-                }
-                
-            } // if (isTopLevelParentAPage) {
-
+            PageMap::iterator page = addPage(isTopLevelParentAPage, isTopLevelParentAPage->getDescription().c_str());
             assert( page != _pages.end() );
 
             ///retrieve the form layout
@@ -1303,11 +1379,36 @@ DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI> & knob,
                 QObject::connect( label, SIGNAL( clicked(bool) ), ret, SIGNAL( labelClicked(bool) ) );
             }
 
-
-            if ( parentIsGroup && parentIsGroup->isTab() ) {
-                assert(parentGui);
+            /*
+             * Find out in which layout the knob should be: either in the layout of the page or in the layout of
+             * the nearest parent group tab in the hierarchy
+             */
+            boost::shared_ptr<Group_Knob> closestParentGroupTab;
+            boost::shared_ptr<KnobI> parentTmp = parentKnob;
+            assert(parentKnobTmp);
+            while (!closestParentGroupTab) {
+                boost::shared_ptr<Group_Knob> parentGroup = boost::dynamic_pointer_cast<Group_Knob>(parentTmp);
+                if (parentGroup && parentGroup->isTab()) {
+                    closestParentGroupTab = parentGroup;
+                }
+                parentTmp = parentTmp->getParentKnob();
+                if (!parentTmp) {
+                    break;
+                }
                 
-                boost::shared_ptr<KnobI> parentParent = parentIsGroup->getParentKnob();
+            }
+            
+            if (closestParentGroupTab) {
+                
+                /*
+                 * At this point we know that the parent group (which is a tab in the TabWidget) will have at least 1 knob
+                 * so ensure it is added to the TabWidget.
+                 * There are 2 possibilities, either the parent of the group tab is another group, in which case we have to 
+                 * make sure the TabWidget is visible in the parent TabWidget of the group, otherwise we just add the TabWidget
+                 * to the on of the page.
+                 */
+                
+                boost::shared_ptr<KnobI> parentParent = closestParentGroupTab->getParentKnob();
                 Group_Knob* parentParentIsGroup = dynamic_cast<Group_Knob*>(parentParent.get());
                 Page_Knob* parentParentIsPage = dynamic_cast<Page_Knob*>(parentParent.get());
                 
@@ -1318,13 +1419,13 @@ DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI> & knob,
                     assert(parentParentGroupGui);
                     TabGroup* groupAsTab = parentParentGroupGui->getOrCreateTabWidget();
                     assert(groupAsTab);
-                    layout = groupAsTab->addTab(parentIsGroup, parentIsGroup->getDescription().c_str());
+                    layout = groupAsTab->addTab(closestParentGroupTab, closestParentGroupTab->getDescription().c_str());
                     
                 } else if (parentParentIsPage) {
                     PageMap::iterator page = addPage(parentParentIsPage, parentParentIsPage->getDescription().c_str());
                     assert(page != _pages.end());
                     assert(page->second.groupAsTab);
-                    layout = page->second.groupAsTab->addTab(parentIsGroup, parentIsGroup->getDescription().c_str());
+                    layout = page->second.groupAsTab->addTab(closestParentGroupTab, closestParentGroupTab->getDescription().c_str());
                 }
                 assert(layout);
                 
@@ -1339,7 +1440,7 @@ DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI> & knob,
             ///Must add the row to the layout before calling setSecret()
             if (makeNewLine) {
                 int rowIndex;
-                if (parentIsGroup && parentIsGroup->isTab()) {
+                if (closestParentGroupTab) {
                     rowIndex = layout->rowCount();
                 } else if (parentGui && knob->isDynamicallyCreated()) {
                     const std::list<KnobGui*>& children = parentGui->getChildren();
@@ -1354,15 +1455,52 @@ DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI> & knob,
                 }
                 
                 fieldContainer->layout()->setAlignment(Qt::AlignLeft);
+                
+                
                 if (!label || !ret->showDescriptionLabel() || label->text().isEmpty()) {
                     layout->addWidget(fieldContainer,rowIndex,0, 1, 2);
                 } else {
+                    
                     layout->addWidget(fieldContainer,rowIndex,1, 1, 1);
                     layout->addWidget(label, rowIndex, 0, 1, 1, Qt::AlignRight);
+        
+                }
+                
+                
+                if (closestParentGroupTab) {
+                    ///See http://stackoverflow.com/questions/14033902/qt-qgridlayout-automatically-centers-moves-items-to-the-middle for
+                    ///a bug of QGridLayout: basically all items are centered, but we would like to add stretch in the bottom of the layout.
+                    ///To do this we add an empty widget with an expanding vertical size policy.
+                    QWidget* foundSpacer = 0;
+                    for (int i = 0; i < layout->rowCount(); ++i) {
+                        QLayoutItem* item = layout->itemAtPosition(i, 0);
+                        if (!item) {
+                            continue;
+                        }
+                        QWidget* w = item->widget();
+                        if (!w) {
+                            continue;
+                        }
+                        if (w->objectName() == "emptyWidget") {
+                            foundSpacer = w;
+                            break;
+                        }
+                    }
+                    if (foundSpacer) {
+                        layout->removeWidget(foundSpacer);
+                    } else {
+                        foundSpacer = new QWidget(layout->parentWidget());
+                        foundSpacer->setObjectName("emptyWidget");
+                        foundSpacer->setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Expanding);
+
+                    }
+                    
+                    ///And add our stretch
+                    layout->addWidget(foundSpacer,layout->rowCount(), 0, 1, 2);
                 }
                 
             }
-            
+
             ret->setSecret();
             
             if (knob->isNewLineActivated() && ret->shouldAddStretch()) {
@@ -1439,7 +1577,7 @@ RightClickableWidget::enterEvent(QEvent* e)
 }
 
 PageMap::iterator
-DockablePanelPrivate::addPage(Page_Knob* /*page*/,const QString & name)
+DockablePanelPrivate::addPage(Page_Knob* page,const QString & name)
 {
     if (!_pagesEnabled && _pages.size() > 0) {
         return _pages.begin();
@@ -1486,16 +1624,15 @@ DockablePanelPrivate::addPage(Page_Knob* /*page*/,const QString & name)
     tabLayout->setSpacing(NATRON_FORM_LAYOUT_LINES_SPACING);
     
     if (_tabWidget) {
-        if (name == NATRON_USER_MANAGED_KNOBS_PAGE_LABEL) {
+        if (name == NATRON_USER_MANAGED_KNOBS_PAGE_LABEL || (page && page->isUserKnob())) {
             _tabWidget->insertTab(0,newTab,name);
             _tabWidget->setCurrentIndex(0);
         } else {
             _tabWidget->addTab(newTab,name);
         }
     } else {
-        if (name == NATRON_USER_MANAGED_KNOBS_PAGE_LABEL) {
+        if (name == NATRON_USER_MANAGED_KNOBS_PAGE_LABEL || (page && page->isUserKnob())) {
             _horizLayout->insertWidget(0, newTab);
-            _tabWidget->setCurrentIndex(0);
         } else {
             _horizLayout->addWidget(newTab);
         }
@@ -1555,11 +1692,9 @@ DockablePanel::helpString() const
     Natron::EffectInstance* iseffect = dynamic_cast<Natron::EffectInstance*>(_imp->_holder);
     if (iseffect) {
         //Prepend the plugin ID
-        const Natron::Plugin* plugin = iseffect->getNode()->getPlugin();
-        assert(plugin);
-        if (plugin) {
-            QString pluginLabelVersioned = plugin->getPluginID();
-            QString toAppend = QString(" version %1.%2").arg(plugin->getMajorVersion()).arg(plugin->getMinorVersion());
+        if (!_imp->_pluginID.isEmpty()) {
+            QString pluginLabelVersioned(_imp->_pluginID);
+            QString toAppend = QString(" version %1.%2").arg(_imp->_pluginVersionMajor).arg(_imp->_pluginVersionMinor);
             pluginLabelVersioned.append(toAppend);
 
             if (!pluginLabelVersioned.isEmpty()) {
@@ -2006,12 +2141,6 @@ DockablePanel::onOverlayButtonClicked()
             _imp->_overlayColor = c;
             _imp->_hasOverlayColor = true;
         }
-        std::list<boost::shared_ptr<Natron::Node> > overlayNodes;
-        getGui()->getNodesEntitledForOverlays(overlayNodes);
-        std::list<boost::shared_ptr<Natron::Node> >::iterator found = std::find(overlayNodes.begin(),overlayNodes.end(),node);
-        if (found != overlayNodes.end()) {
-            getGui()->getApp()->redrawAllViewers();
-        }
     } else {
         if (!hadOverlayColor) {
             {
@@ -2022,7 +2151,12 @@ DockablePanel::onOverlayButtonClicked()
             appPTR->getIcon(Natron::NATRON_PIXMAP_OVERLAY,&pixOverlay);
             _imp->_overlayButton->setIcon(QIcon(pixOverlay));
         }
-        onOverlayColorDialogColorChanged(oldColor);
+    }
+    std::list<boost::shared_ptr<Natron::Node> > overlayNodes;
+    getGui()->getNodesEntitledForOverlays(overlayNodes);
+    std::list<boost::shared_ptr<Natron::Node> >::iterator found = std::find(overlayNodes.begin(),overlayNodes.end(),node);
+    if (found != overlayNodes.end()) {
+        getGui()->getApp()->redrawAllViewers();
     }
 
 }
@@ -2122,7 +2256,7 @@ DockablePanel::onRightClickMenuRequested(const QPoint & pos)
         
         boost::shared_ptr<Natron::Node> master = isEffect->getNode()->getMasterNode();
         QMenu menu(this);
-        menu.setFont( QFont(appFont,appFontSize) );
+        //menu.setFont( QFont(appFont,appFontSize) );
 
         QAction* userParams = new QAction(tr("Manage user parameters..."),&menu);
         menu.addAction(userParams);
@@ -2413,7 +2547,7 @@ void
 NodeSettingsPanel::onSettingsButtonClicked()
 {
     QMenu menu(this);
-    menu.setFont(QFont(appFont,appFontSize));
+    //menu.setFont(QFont(appFont,appFontSize));
     
     boost::shared_ptr<NodeGui> node = getNode();
     boost::shared_ptr<Natron::Node> master = node->getNode()->getMasterNode();
@@ -3060,58 +3194,81 @@ struct AddKnobDialogPrivate
     QWidget* mainContainer;
     QFormLayout* mainLayout;
     
-    QLabel* typeLabel;
+    Natron::Label* typeLabel;
     ComboBox* typeChoice;
-    QLabel* nameLabel;
+    Natron::Label* nameLabel;
     LineEdit* nameLineEdit;
 
     
-    QLabel* labelLabel;
+    Natron::Label* labelLabel;
     LineEdit* labelLineEdit;
     
-    QLabel* hideLabel;
+    Natron::Label* hideLabel;
     QCheckBox* hideBox;
     
-    QLabel* startNewLineLabel;
+    Natron::Label* startNewLineLabel;
     QCheckBox* startNewLineBox;
     
-    QLabel* animatesLabel;
+    Natron::Label* animatesLabel;
     QCheckBox* animatesCheckbox;
     
-    QLabel* evaluatesLabel;
+    Natron::Label* evaluatesLabel;
     QCheckBox* evaluatesOnChange;
     
-    QLabel* tooltipLabel;
+    Natron::Label* tooltipLabel;
     QTextEdit* tooltipArea;
     
-    QLabel* minLabel;
+    Natron::Label* minLabel;
     SpinBox* minBox;
     
-    QLabel* maxLabel;
+    Natron::Label* maxLabel;
     SpinBox* maxBox;
     
-    QLabel* menuItemsLabel;
+    Natron::Label* dminLabel;
+    SpinBox* dminBox;
+    
+    Natron::Label* dmaxLabel;
+    SpinBox* dmaxBox;
+    
+    enum DefaultValueType
+    {
+        eDefaultValueTypeInt,
+        eDefaultValueTypeDouble,
+        eDefaultValueTypeBool,
+        eDefaultValueTypeString
+    };
+    
+    
+    Natron::Label* defaultValueLabel;
+    SpinBox* default0;
+    SpinBox* default1;
+    SpinBox* default2;
+    SpinBox* default3;
+    LineEdit* defaultStr;
+    QCheckBox* defaultBool;
+    
+    Natron::Label* menuItemsLabel;
     QTextEdit* menuItemsEdit;
     
-    QLabel* multiLineLabel;
+    Natron::Label* multiLineLabel;
     QCheckBox* multiLine;
     
-    QLabel* richTextLabel;
+    Natron::Label* richTextLabel;
     QCheckBox* richText;
     
-    QLabel* sequenceDialogLabel;
+    Natron::Label* sequenceDialogLabel;
     QCheckBox* sequenceDialog;
     
-    QLabel* multiPathLabel;
+    Natron::Label* multiPathLabel;
     QCheckBox* multiPath;
     
-    QLabel* groupAsTabLabel;
+    Natron::Label* groupAsTabLabel;
     QCheckBox* groupAsTab;
     
-    QLabel* parentGroupLabel;
+    Natron::Label* parentGroupLabel;
     ComboBox* parentGroup;
     
-    QLabel* parentPageLabel;
+    Natron::Label* parentPageLabel;
     ComboBox* parentPage;
     
     std::list<Group_Knob*> userGroups;
@@ -3144,6 +3301,17 @@ struct AddKnobDialogPrivate
     , minBox(0)
     , maxLabel(0)
     , maxBox(0)
+    , dminLabel(0)
+    , dminBox(0)
+    , dmaxLabel(0)
+    , dmaxBox(0)
+    , defaultValueLabel(0)
+    , default0(0)
+    , default1(0)
+    , default2(0)
+    , default3(0)
+    , defaultStr(0)
+    , defaultBool(0)
     , menuItemsLabel(0)
     , menuItemsEdit(0)
     , multiLineLabel(0)
@@ -3192,6 +3360,8 @@ struct AddKnobDialogPrivate
     
     void setVisiblePage(bool visible);
     
+    void setVisibleDefaultValues(bool visible,AddKnobDialogPrivate::DefaultValueType type,int dimensions);
+    
     void createKnobFromSelection(int type,int optionalGroupIndex = -1);
     
     Group_Knob* getSelectedGroup() const;
@@ -3213,6 +3383,7 @@ static int getChoiceIndexFromKnobType(KnobI* knob)
     Path_Knob* isPath = dynamic_cast<Path_Knob*>(knob);
     Group_Knob* isGrp = dynamic_cast<Group_Knob*>(knob);
     Page_Knob* isPage = dynamic_cast<Page_Knob*>(knob);
+    Button_Knob* isBtn = dynamic_cast<Button_Knob*>(knob);
     
     if (isInt) {
         if (dim == 1) {
@@ -3256,6 +3427,8 @@ static int getChoiceIndexFromKnobType(KnobI* knob)
         return 15;
     } else if (isPage) {
         return 16;
+    } else if (isBtn) {
+        return 17;
     }
     return -1;
 }
@@ -3268,7 +3441,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,const boost::shared_ptr<KnobI>
     _imp->knob = knob;
     assert(!knob || knob->isUserKnob());
     
-    QFont font(NATRON_FONT,NATRON_FONT_SIZE_11);
+    //QFont font(NATRON_FONT,NATRON_FONT_SIZE_11);
     
     _imp->vLayout = new QVBoxLayout(this);
     _imp->vLayout->setContentsMargins(0, 0, 15, 0);
@@ -3287,8 +3460,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,const boost::shared_ptr<KnobI>
         QHBoxLayout* firstRowLayout = new QHBoxLayout(firstRowContainer);
         firstRowLayout->setContentsMargins(0, 0, 0, 0);
         
-        _imp->nameLabel = new QLabel(tr("Script name:"),this);
-        _imp->nameLabel->setFont(font);
+        _imp->nameLabel = new Natron::Label(tr("Script name:"),this);
         _imp->nameLineEdit = new LineEdit(firstRowContainer);
         _imp->nameLineEdit->setToolTip(Qt::convertFromPlainText(tr("The name of the parameter as it will be used in Python scripts")));
         
@@ -3306,16 +3478,14 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,const boost::shared_ptr<KnobI>
         QWidget* secondRowContainer = new QWidget(this);
         QHBoxLayout* secondRowLayout = new QHBoxLayout(secondRowContainer);
         secondRowLayout->setContentsMargins(0, 0, 15, 0);
-        _imp->labelLabel = new QLabel(tr("Label:"),secondRowContainer);
-        _imp->labelLabel->setFont(font);
+        _imp->labelLabel = new Natron::Label(tr("Label:"),secondRowContainer);
         _imp->labelLineEdit = new LineEdit(secondRowContainer);
         _imp->labelLineEdit->setToolTip(Qt::convertFromPlainText(tr("The label of the parameter as displayed on the graphical user interface")));
         if (knob) {
             _imp->labelLineEdit->setText(knob->getDescription().c_str());
         }
         secondRowLayout->addWidget(_imp->labelLineEdit);
-        _imp->hideLabel = new QLabel(tr("Hide:"),secondRowContainer);
-        _imp->hideLabel->setFont(font);
+        _imp->hideLabel = new Natron::Label(tr("Hide:"),secondRowContainer);
         secondRowLayout->addWidget(_imp->hideLabel);
         _imp->hideBox = new QCheckBox(secondRowContainer);
         _imp->hideBox->setToolTip(Qt::convertFromPlainText(tr("If checked the parameter will not be visible on the user interface")));
@@ -3323,8 +3493,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,const boost::shared_ptr<KnobI>
             _imp->hideBox->setChecked(knob->getIsSecret());
         }
         secondRowLayout->addWidget(_imp->hideBox);
-        _imp->startNewLineLabel = new QLabel(tr("Start new line:"),secondRowContainer);
-        _imp->startNewLineLabel->setFont(font);
+        _imp->startNewLineLabel = new Natron::Label(tr("Start new line:"),secondRowContainer);
         secondRowLayout->addWidget(_imp->startNewLineLabel);
         _imp->startNewLineBox = new QCheckBox(secondRowContainer);
         _imp->startNewLineBox->setToolTip(tr("If checked the <b><i>next</i></b> parameter defined will be on the same line as this parameter"));
@@ -3343,8 +3512,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,const boost::shared_ptr<KnobI>
         thirdRowLayout->setContentsMargins(0, 0, 15, 0);
         
         if (!knob) {
-            _imp->typeLabel = new QLabel(tr("Type:"),thirdRowContainer);
-            _imp->typeLabel->setFont(font);
+            _imp->typeLabel = new Natron::Label(tr("Type:"),thirdRowContainer);
             _imp->typeChoice = new ComboBox(thirdRowContainer);
             _imp->typeChoice->setToolTip(Qt::convertFromPlainText(tr("The data type of the parameter")));
             _imp->typeChoice->addItem("Integer");
@@ -3364,13 +3532,13 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,const boost::shared_ptr<KnobI>
             _imp->typeChoice->addItem("Directory");
             _imp->typeChoice->addItem("Group");
             _imp->typeChoice->addItem("Page");
+            _imp->typeChoice->addItem("Button");
             QObject::connect(_imp->typeChoice, SIGNAL(currentIndexChanged(int)),this, SLOT(onTypeCurrentIndexChanged(int)));
             
             thirdRowLayout->addWidget(_imp->typeChoice);
         }
-        _imp->animatesLabel = new QLabel(Qt::convertFromPlainText(tr("Animates:")),thirdRowContainer);
-        _imp->animatesLabel->setFont(font);
-        
+        _imp->animatesLabel = new Natron::Label(Qt::convertFromPlainText(tr("Animates:")),thirdRowContainer);
+
         if (!knob) {
             thirdRowLayout->addWidget(_imp->animatesLabel);
         }
@@ -3380,8 +3548,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,const boost::shared_ptr<KnobI>
             _imp->animatesCheckbox->setChecked(knob->isAnimationEnabled());
         }
         thirdRowLayout->addWidget(_imp->animatesCheckbox);
-        _imp->evaluatesLabel = new QLabel(Qt::convertFromPlainText(tr("Render on change:")),thirdRowContainer);
-        _imp->evaluatesLabel->setFont(font);
+        _imp->evaluatesLabel = new Natron::Label(Qt::convertFromPlainText(tr("Render on change:")),thirdRowContainer);
         thirdRowLayout->addWidget(_imp->evaluatesLabel);
         _imp->evaluatesOnChange = new QCheckBox(thirdRowContainer);
         _imp->evaluatesOnChange->setToolTip(Qt::convertFromPlainText(tr("If checked, when the value of this parameter changes a new render will be triggered")));
@@ -3398,8 +3565,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,const boost::shared_ptr<KnobI>
         }
     }
     {
-        _imp->tooltipLabel = new QLabel(tr("Tooltip:"),this);
-        _imp->tooltipLabel->setFont(font);
+        _imp->tooltipLabel = new Natron::Label(tr("Tooltip:"),this);
         _imp->tooltipArea = new QTextEdit(this);
         _imp->tooltipArea->setToolTip(Qt::convertFromPlainText(tr("The help tooltip that will appear when hovering the parameter with the mouse")));
         _imp->mainLayout->addRow(_imp->tooltipLabel,_imp->tooltipArea);
@@ -3408,8 +3574,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,const boost::shared_ptr<KnobI>
         }
     }
     {
-        _imp->menuItemsLabel = new QLabel(tr("Menu items:"),this);
-        _imp->menuItemsLabel->setFont(font);
+        _imp->menuItemsLabel = new Natron::Label(tr("Menu items:"),this);
         _imp->menuItemsEdit = new QTextEdit(this);
         QString tt = Qt::convertFromPlainText(tr("The entries that will be available in the drop-down menu. \n"
                                                  "Each line defines a new menu entry. You can specify a specific help tooltip for each entry "
@@ -3441,8 +3606,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,const boost::shared_ptr<KnobI>
         QHBoxLayout* optLayout = new QHBoxLayout(optContainer);
         optLayout->setContentsMargins(0, 0, 15, 0);
         
-        _imp->multiLineLabel = new QLabel(tr("Multi-line:"),optContainer);
-        _imp->multiLineLabel->setFont(font);
+        _imp->multiLineLabel = new Natron::Label(tr("Multi-line:"),optContainer);
         _imp->multiLine = new QCheckBox(optContainer);
         _imp->multiLine->setToolTip(Qt::convertFromPlainText(tr("Should this text be multi-line or single-line ?")));
         optLayout->addWidget(_imp->multiLine);
@@ -3460,8 +3624,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,const boost::shared_ptr<KnobI>
         QHBoxLayout* optLayout = new QHBoxLayout(optContainer);
         optLayout->setContentsMargins(0, 0, 15, 0);
         
-        _imp->richTextLabel = new QLabel(tr("Rich text:"),optContainer);
-        _imp->richTextLabel->setFont(font);
+        _imp->richTextLabel = new Natron::Label(tr("Rich text:"),optContainer);
         _imp->richText = new QCheckBox(optContainer);
         QString tt = Qt::convertFromPlainText(tr("If checked, the text area will be able to use rich text encoding with a sub-set of html.\n "
                                                  "This property is only valid for multi-line input text only"),Qt::WhiteSpaceNormal);
@@ -3482,8 +3645,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,const boost::shared_ptr<KnobI>
         QHBoxLayout* optLayout = new QHBoxLayout(optContainer);
         optLayout->setContentsMargins(0, 0, 15, 0);
         
-        _imp->sequenceDialogLabel = new QLabel(tr("Use sequence dialog:"),optContainer);
-        _imp->sequenceDialogLabel->setFont(font);
+        _imp->sequenceDialogLabel = new Natron::Label(tr("Use sequence dialog:"),optContainer);
         _imp->sequenceDialog = new QCheckBox(optContainer);
         _imp->sequenceDialog->setToolTip(Qt::convertFromPlainText(tr("If checked the file dialog for this parameter will be able to decode image sequences")));
         optLayout->addWidget(_imp->sequenceDialog);
@@ -3506,8 +3668,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,const boost::shared_ptr<KnobI>
         QHBoxLayout* optLayout = new QHBoxLayout(optContainer);
         optLayout->setContentsMargins(0, 0, 15, 0);
         
-        _imp->multiPathLabel = new QLabel(Qt::convertFromPlainText(tr("Multiple paths:")),optContainer);
-        _imp->multiPathLabel->setFont(font);
+        _imp->multiPathLabel = new Natron::Label(Qt::convertFromPlainText(tr("Multiple paths:")),optContainer);
         _imp->multiPath = new QCheckBox(optContainer);
         _imp->multiPath->setToolTip(Qt::convertFromPlainText(tr("If checked the parameter will be a table where each entry points to a different path")));
         optLayout->addWidget(_imp->multiPath);
@@ -3525,8 +3686,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,const boost::shared_ptr<KnobI>
         QHBoxLayout* optLayout = new QHBoxLayout(optContainer);
         optLayout->setContentsMargins(0, 0, 15, 0);
         
-        _imp->groupAsTabLabel = new QLabel(tr("Group as tab:"),optContainer);
-        _imp->groupAsTabLabel->setFont(font);
+        _imp->groupAsTabLabel = new Natron::Label(tr("Group as tab:"),optContainer);
         _imp->groupAsTab = new QCheckBox(optContainer);
         _imp->groupAsTab->setToolTip(Qt::convertFromPlainText(tr("If checked the group will be a tab instead")));
         optLayout->addWidget(_imp->groupAsTab);
@@ -3542,22 +3702,42 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,const boost::shared_ptr<KnobI>
     }
     {
         QWidget* minMaxContainer = new QWidget(this);
+        QWidget* dminMaxContainer = new QWidget(this);
         QHBoxLayout* minMaxLayout = new QHBoxLayout(minMaxContainer);
+        QHBoxLayout* dminMaxLayout = new QHBoxLayout(dminMaxContainer);
         minMaxLayout->setContentsMargins(0, 0, 0, 0);
-        _imp->minLabel = new QLabel(tr("Minimum:"),minMaxContainer);
-        _imp->minLabel->setFont(font);
-        
+        dminMaxLayout->setContentsMargins(0, 0, 0, 0);
+        _imp->minLabel = new Natron::Label(tr("Minimum:"),minMaxContainer);
+
         _imp->minBox = new SpinBox(minMaxContainer,SpinBox::eSpinBoxTypeDouble);
-        _imp->minBox->setToolTip(Qt::convertFromPlainText(tr("Set the minimum value for the parameter")));
+        _imp->minBox->setToolTip(Qt::convertFromPlainText(tr("Set the minimum value for the parameter. Even though the user might input "
+                                                             "a value higher or lower than the specified min/max range, internally the "
+                                                             "real value will be clamped to this interval.")));
         minMaxLayout->addWidget(_imp->minBox);
         
-        _imp->maxLabel = new QLabel(tr("Maximum:"),minMaxContainer);
-        _imp->maxLabel->setFont(font);
+        _imp->maxLabel = new Natron::Label(tr("Maximum:"),minMaxContainer);
         _imp->maxBox = new SpinBox(minMaxContainer,SpinBox::eSpinBoxTypeDouble);
-        _imp->maxBox->setToolTip(Qt::convertFromPlainText(tr("Set the maximum value for the parameter")));
+        _imp->maxBox->setToolTip(Qt::convertFromPlainText(tr("Set the maximum value for the parameter. Even though the user might input "
+                                                             "a value higher or lower than the specified min/max range, internally the "
+                                                             "real value will be clamped to this interval.")));
         minMaxLayout->addWidget(_imp->maxLabel);
         minMaxLayout->addWidget(_imp->maxBox);
         minMaxLayout->addStretch();
+        
+        _imp->dminLabel = new Natron::Label(tr("Display Minimum:"),dminMaxContainer);
+        _imp->dminBox = new SpinBox(dminMaxContainer,SpinBox::eSpinBoxTypeDouble);
+        _imp->dminBox->setToolTip(Qt::convertFromPlainText(tr("Set the display minimum value for the parameter. This is a hint that is typically "
+                                                              "used to set the range of the slider.")));
+        dminMaxLayout->addWidget(_imp->dminBox);
+        
+        _imp->dmaxLabel = new Natron::Label(tr("Display Maximum:"),dminMaxContainer);
+        _imp->dmaxBox = new SpinBox(dminMaxContainer,SpinBox::eSpinBoxTypeDouble);
+        _imp->dmaxBox->setToolTip(Qt::convertFromPlainText(tr("Set the display maximum value for the parameter. This is a hint that is typically "
+                                                              "used to set the range of the slider.")));
+        dminMaxLayout->addWidget(_imp->dmaxLabel);
+        dminMaxLayout->addWidget(_imp->dmaxBox);
+       
+        dminMaxLayout->addStretch();
         
         Double_Knob* isDbl = dynamic_cast<Double_Knob*>(knob.get());
         Int_Knob* isInt = dynamic_cast<Int_Knob*>(knob.get());
@@ -3567,23 +3747,111 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,const boost::shared_ptr<KnobI>
         if (isDbl) {
             double min = isDbl->getMinimum(0);
             double max = isDbl->getMaximum(0);
+            double dmin = isDbl->getDisplayMinimum(0);
+            double dmax = isDbl->getDisplayMaximum(0);
             _imp->minBox->setValue(min);
             _imp->maxBox->setValue(max);
+            _imp->dminBox->setValue(dmin);
+            _imp->dmaxBox->setValue(dmax);
         } else if (isInt) {
             int min = isInt->getMinimum(0);
             int max = isInt->getMaximum(0);
+            int dmin = isInt->getDisplayMinimum(0);
+            int dmax = isInt->getDisplayMaximum(0);
             _imp->minBox->setValue(min);
             _imp->maxBox->setValue(max);
+            _imp->dminBox->setValue(dmin);
+            _imp->dmaxBox->setValue(dmax);
 
         } else if (isColor) {
             double min = isColor->getMinimum(0);
             double max = isColor->getMaximum(0);
+            double dmin = isColor->getDisplayMinimum(0);
+            double dmax = isColor->getDisplayMaximum(0);
             _imp->minBox->setValue(min);
             _imp->maxBox->setValue(max);
+            _imp->dminBox->setValue(dmin);
+            _imp->dmaxBox->setValue(dmax);
 
         }
         
         _imp->mainLayout->addRow(_imp->minLabel, minMaxContainer);
+        _imp->mainLayout->addRow(_imp->dminLabel, dminMaxContainer);
+    }
+    
+    {
+        QWidget* defValContainer = new QWidget(this);
+        QHBoxLayout* defValLayout = new QHBoxLayout(defValContainer);
+        defValLayout->setContentsMargins(0, 0, 0, 0);
+        _imp->defaultValueLabel = new Natron::Label(tr("Default value:"),defValContainer);
+
+        _imp->default0 = new SpinBox(defValContainer,SpinBox::eSpinBoxTypeDouble);
+        _imp->default0->setValue(0);
+        _imp->default0->setToolTip(Qt::convertFromPlainText(tr("Set the default value for the parameter (dimension 0)")));
+        defValLayout->addWidget(_imp->default0);
+        
+        _imp->default1 = new SpinBox(defValContainer,SpinBox::eSpinBoxTypeDouble);
+        _imp->default1->setValue(0);
+        _imp->default1->setToolTip(Qt::convertFromPlainText(tr("Set the default value for the parameter (dimension 1)")));
+        defValLayout->addWidget(_imp->default1);
+        
+        _imp->default2 = new SpinBox(defValContainer,SpinBox::eSpinBoxTypeDouble);
+        _imp->default2->setValue(0);
+        _imp->default2->setToolTip(Qt::convertFromPlainText(tr("Set the default value for the parameter (dimension 2)")));
+        defValLayout->addWidget(_imp->default2);
+        
+        _imp->default3 = new SpinBox(defValContainer,SpinBox::eSpinBoxTypeDouble);
+        _imp->default3->setValue(0);
+        _imp->default3->setToolTip(Qt::convertFromPlainText(tr("Set the default value for the parameter (dimension 3)")));
+        defValLayout->addWidget(_imp->default3);
+
+        
+        _imp->defaultStr = new LineEdit(defValContainer);
+        _imp->defaultStr->setToolTip(Qt::convertFromPlainText(tr("Set the default value for the parameter")));
+        defValLayout->addWidget(_imp->defaultStr);
+        
+        
+        _imp->defaultBool = new QCheckBox(defValContainer);
+        _imp->defaultBool->setToolTip(Qt::convertFromPlainText(tr("Set the default value for the parameter")));
+        _imp->defaultBool->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE,NATRON_MEDIUM_BUTTON_SIZE);
+        defValLayout->addWidget(_imp->defaultBool);
+
+        defValLayout->addStretch();
+        
+        _imp->mainLayout->addRow(_imp->defaultValueLabel, defValContainer);
+        
+        
+        Knob<double>* isDbl = dynamic_cast<Knob<double>*>(knob.get());
+        Knob<int>* isInt = dynamic_cast<Knob<int>*>(knob.get());
+        Bool_Knob* isBool = dynamic_cast<Bool_Knob*>(knob.get());
+        Knob<std::string>* isStr = dynamic_cast<Knob<std::string>*>(knob.get());
+        
+        if (isDbl) {
+            _imp->default0->setValue(isDbl->getDefaultValue(0));
+            if (isDbl->getDimension() >= 2) {
+                _imp->default1->setValue(isDbl->getDefaultValue(1));
+            }
+            if (isDbl->getDimension() >= 3) {
+                _imp->default2->setValue(isDbl->getDefaultValue(2));
+            }
+            if (isDbl->getDimension() >= 4) {
+                _imp->default3->setValue(isDbl->getDefaultValue(3));
+            }
+        } else if (isInt) {
+            _imp->default0->setValue(isInt->getDefaultValue(0));
+            if (isInt->getDimension() >= 2) {
+                _imp->default1->setValue(isInt->getDefaultValue(1));
+            }
+            if (isInt->getDimension() >= 3) {
+                _imp->default2->setValue(isInt->getDefaultValue(2));
+            }
+
+        } else if (isBool) {
+            _imp->defaultBool->setChecked(isBool->getDefaultValue(0));
+        } else if (isStr) {
+            _imp->defaultStr->setText(isStr->getDefaultValue(0).c_str());
+        }
+        
     }
     
     
@@ -3604,8 +3872,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,const boost::shared_ptr<KnobI>
         QHBoxLayout* optLayout = new QHBoxLayout(optContainer);
         optLayout->setContentsMargins(0, 0, 15, 0);
         
-        _imp->parentGroupLabel = new QLabel(tr("Group:"),optContainer);
-        _imp->parentGroupLabel->setFont(font);
+        _imp->parentGroupLabel = new Natron::Label(tr("Group:"),optContainer);
         _imp->parentGroup = new ComboBox(optContainer);
         
         _imp->parentGroup->setToolTip(Qt::convertFromPlainText(tr("The name of the group under which this parameter will appear")));
@@ -3618,8 +3885,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,const boost::shared_ptr<KnobI>
         QWidget* optContainer = new QWidget(this);
         QHBoxLayout* optLayout = new QHBoxLayout(optContainer);
         optLayout->setContentsMargins(0, 0, 15, 0);
-        _imp->parentPageLabel = new QLabel(tr("Page:"),optContainer);
-        _imp->parentPageLabel->setFont(font);
+        _imp->parentPageLabel = new Natron::Label(tr("Page:"),optContainer);
         _imp->parentPage = new ComboBox(optContainer);
         _imp->parentPage->addItem(NATRON_USER_MANAGED_KNOBS_PAGE);
         QObject::connect(_imp->parentPage,SIGNAL(currentIndexChanged(int)),this,SLOT(onPageCurrentIndexChanged(int)));
@@ -3702,7 +3968,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,const boost::shared_ptr<KnobI>
     _imp->panel->setUserPageActiveIndex();
     
     if (knob) {
-        _imp->originalKnobSerialization.reset(new KnobSerialization(knob, false));
+        _imp->originalKnobSerialization.reset(new KnobSerialization(knob));
     }
 }
 
@@ -3766,6 +4032,21 @@ AddKnobDialog::onTypeCurrentIndexChanged(int index)
             _imp->setVisibleSequence(false);
             _imp->setVisibleGrpAsTab(false);
             _imp->setVisibleParent(true);
+            if (index == 0 || index == 3) {
+                _imp->setVisibleDefaultValues(true,
+                                              index == 0 ? AddKnobDialogPrivate::eDefaultValueTypeInt : AddKnobDialogPrivate::eDefaultValueTypeDouble,
+                                              1);
+            } else if (index == 1 || index == 4) {
+                _imp->setVisibleDefaultValues(true,
+                                              index == 1 ? AddKnobDialogPrivate::eDefaultValueTypeInt : AddKnobDialogPrivate::eDefaultValueTypeDouble,
+                                              2);
+            } else if (index == 2 || index == 5 || index == 6) {
+                _imp->setVisibleDefaultValues(true,
+                                              index == 2 ? AddKnobDialogPrivate::eDefaultValueTypeInt : AddKnobDialogPrivate::eDefaultValueTypeDouble,
+                                              3);
+            } else if (index == 7) {
+                _imp->setVisibleDefaultValues(true,AddKnobDialogPrivate::eDefaultValueTypeDouble,4);
+            }
             break;
         case 8: // choice
             _imp->setVisibleAnimates(true);
@@ -3780,6 +4061,7 @@ AddKnobDialog::onTypeCurrentIndexChanged(int index)
             _imp->setVisibleSequence(false);
             _imp->setVisibleGrpAsTab(false);
             _imp->setVisibleParent(true);
+            _imp->setVisibleDefaultValues(true,AddKnobDialogPrivate::eDefaultValueTypeInt,1);
             break;
         case 9: // bool
             _imp->setVisibleAnimates(true);
@@ -3794,6 +4076,7 @@ AddKnobDialog::onTypeCurrentIndexChanged(int index)
             _imp->setVisibleSequence(false);
             _imp->setVisibleGrpAsTab(false);
             _imp->setVisibleParent(true);
+            _imp->setVisibleDefaultValues(true,AddKnobDialogPrivate::eDefaultValueTypeBool,1);
             break;
         case 10: // label
             _imp->setVisibleAnimates(false);
@@ -3808,6 +4091,7 @@ AddKnobDialog::onTypeCurrentIndexChanged(int index)
             _imp->setVisibleSequence(false);
             _imp->setVisibleGrpAsTab(false);
             _imp->setVisibleParent(true);
+            _imp->setVisibleDefaultValues(true,AddKnobDialogPrivate::eDefaultValueTypeString,1);
             break;
         case 11: // text input
             _imp->setVisibleAnimates(true);
@@ -3822,6 +4106,7 @@ AddKnobDialog::onTypeCurrentIndexChanged(int index)
             _imp->setVisibleSequence(false);
             _imp->setVisibleGrpAsTab(false);
             _imp->setVisibleParent(true);
+            _imp->setVisibleDefaultValues(true,AddKnobDialogPrivate::eDefaultValueTypeString,1);
             break;
         case 12: // input file
         case 13: // output file
@@ -3837,6 +4122,7 @@ AddKnobDialog::onTypeCurrentIndexChanged(int index)
             _imp->setVisibleSequence(true);
             _imp->setVisibleGrpAsTab(false);
             _imp->setVisibleParent(true);
+            _imp->setVisibleDefaultValues(true,AddKnobDialogPrivate::eDefaultValueTypeString,1);
             break;
         case 14: // path
             _imp->setVisibleAnimates(false);
@@ -3851,6 +4137,7 @@ AddKnobDialog::onTypeCurrentIndexChanged(int index)
             _imp->setVisibleSequence(false);
             _imp->setVisibleGrpAsTab(false);
             _imp->setVisibleParent(true);
+            _imp->setVisibleDefaultValues(true,AddKnobDialogPrivate::eDefaultValueTypeString,1);
             break;
         case 15: // grp
             _imp->setVisibleAnimates(false);
@@ -3865,6 +4152,7 @@ AddKnobDialog::onTypeCurrentIndexChanged(int index)
             _imp->setVisibleSequence(false);
             _imp->setVisibleGrpAsTab(true);
             _imp->setVisibleParent(false);
+            _imp->setVisibleDefaultValues(false,AddKnobDialogPrivate::eDefaultValueTypeInt,1);
             break;
         case 16: // page
             _imp->setVisibleAnimates(false);
@@ -3879,6 +4167,22 @@ AddKnobDialog::onTypeCurrentIndexChanged(int index)
             _imp->setVisibleSequence(false);
             _imp->setVisibleGrpAsTab(false);
             _imp->setVisibleParent(false);
+            _imp->setVisibleDefaultValues(false,AddKnobDialogPrivate::eDefaultValueTypeInt,1);
+            break;
+        case 17: // button
+            _imp->setVisibleAnimates(false);
+            _imp->setVisibleEvaluate(false);
+            _imp->setVisibleHide(false);
+            _imp->setVisibleMenuItems(false);
+            _imp->setVisibleMinMax(false);
+            _imp->setVisibleStartNewLine(true);
+            _imp->setVisibleMultiLine(false);
+            _imp->setVisibleMultiPath(false);
+            _imp->setVisibleRichText(false);
+            _imp->setVisibleSequence(false);
+            _imp->setVisibleGrpAsTab(false);
+            _imp->setVisibleParent(true);
+            _imp->setVisibleDefaultValues(false,AddKnobDialogPrivate::eDefaultValueTypeInt,1);
             break;
         default:
             break;
@@ -3909,13 +4213,30 @@ AddKnobDialogPrivate::createKnobFromSelection(int index,int optionalGroupIndex)
             //int
             int dim = index + 1;
             boost::shared_ptr<Int_Knob> k = Natron::createKnob<Int_Knob>(panel->getHolder(), label, dim, false);
-            std::vector<int> mins(dim);
-            std::vector<int> maxs(dim);
+            std::vector<int> mins(dim),dmins(dim);
+            std::vector<int> maxs(dim),dmaxs(dim);
+            
             for (int i = 0; i < dim; ++i) {
                 mins[i] = std::floor(minBox->value() + 0.5);
+                dmins[i] = std::floor(dminBox->value() + 0.5);
                 maxs[i] = std::floor(maxBox->value() + 0.5);
+                dmaxs[i] = std::floor(dmaxBox->value() + 0.5);
             }
             k->setMinimumsAndMaximums(mins, maxs);
+            k->setDisplayMinimumsAndMaximums(dmins, dmaxs);
+            std::vector<int> defValues;
+            if (dim >= 1) {
+                defValues.push_back(default0->value());
+            }
+            if (dim >= 2) {
+                defValues.push_back(default1->value());
+            }
+            if (dim >= 3) {
+                defValues.push_back(default2->value());
+            }
+            for (U32 i = 0; i < defValues.size(); ++i) {
+                k->setDefaultValue(defValues[i],i);
+            }
             knob = k;
         } break;
         case 3:
@@ -3924,13 +4245,31 @@ AddKnobDialogPrivate::createKnobFromSelection(int index,int optionalGroupIndex)
             //double
             int dim = index - 2;
             boost::shared_ptr<Double_Knob> k = Natron::createKnob<Double_Knob>(panel->getHolder(), label, dim, false);
-            std::vector<double> mins(dim);
-            std::vector<double> maxs(dim);
+            std::vector<double> mins(dim),dmins(dim);
+            std::vector<double> maxs(dim),dmaxs(dim);
             for (int i = 0; i < dim; ++i) {
                 mins[i] = minBox->value();
+                dmins[i] = dminBox->value();
                 maxs[i] = maxBox->value();
+                dmaxs[i] = dmaxBox->value();
             }
             k->setMinimumsAndMaximums(mins, maxs);
+            k->setDisplayMinimumsAndMaximums(dmins, dmaxs);
+            std::vector<double> defValues;
+            if (dim >= 1) {
+                defValues.push_back(default0->value());
+            }
+            if (dim >= 2) {
+                defValues.push_back(default1->value());
+            }
+            if (dim >= 3) {
+                defValues.push_back(default2->value());
+            }
+            for (U32 i = 0; i < defValues.size(); ++i) {
+                k->setDefaultValue(defValues[i],i);
+            }
+
+            
             knob = k;
         } break;
         case 6:
@@ -3938,16 +4277,37 @@ AddKnobDialogPrivate::createKnobFromSelection(int index,int optionalGroupIndex)
             // color
             int dim = index - 3;
             boost::shared_ptr<Color_Knob> k = Natron::createKnob<Color_Knob>(panel->getHolder(), label, dim, false);
-            std::vector<double> mins(dim);
-            std::vector<double> maxs(dim);
+            std::vector<double> mins(dim),dmins(dim);
+            std::vector<double> maxs(dim),dmaxs(dim);
             for (int i = 0; i < dim; ++i) {
                 mins[i] = minBox->value();
+                dmins[i] = dminBox->value();
                 maxs[i] = maxBox->value();
+                dmaxs[i] = dmaxBox->value();
             }
+            std::vector<double> defValues;
+            if (dim >= 1) {
+                defValues.push_back(default0->value());
+            }
+            if (dim >= 2) {
+                defValues.push_back(default1->value());
+            }
+            if (dim >= 3) {
+                defValues.push_back(default2->value());
+            }
+            if (dim >= 4) {
+                defValues.push_back(default3->value());
+            }
+            for (U32 i = 0; i < defValues.size(); ++i) {
+                k->setDefaultValue(defValues[i],i);
+            }
+
             k->setMinimumsAndMaximums(mins, maxs);
+            k->setDisplayMinimumsAndMaximums(dmins, dmaxs);
             knob = k;
         }  break;
         case 8: {
+
             boost::shared_ptr<Choice_Knob> k = Natron::createKnob<Choice_Knob>(panel->getHolder(), label, 1, false);
             QString entriesRaw = menuItemsEdit->toPlainText();
             QTextStream stream(&entriesRaw);
@@ -3956,21 +4316,34 @@ AddKnobDialogPrivate::createKnobFromSelection(int index,int optionalGroupIndex)
             while (!stream.atEnd()) {
                 QString line = stream.readLine();
                 int foundHelp = line.indexOf("<?>");
-                if (foundHelp) {
+                if (foundHelp != -1) {
                     QString entry = line.mid(0,foundHelp);
                     QString help = line.mid(foundHelp + 3,-1);
+                    for (int i = 0; i < (int)entries.size() - (int)helps.size(); ++i) {
+                        helps.push_back("");
+                    }
                     entries.push_back(entry.toStdString());
                     helps.push_back(help.toStdString());
                 } else {
                     entries.push_back(line.toStdString());
-                    helps.push_back("");
+                    if (!helps.empty()) {
+                        helps.push_back("");
+                    }
                 }
             }
             k->populateChoices(entries,helps);
+            
+            int defValue = default0->value();
+            if (defValue < (int)entries.size() && defValue >= 0) {
+                k->setDefaultValue(defValue);
+            }
+            
             knob = k;
         } break;
         case 9: {
             boost::shared_ptr<Bool_Knob> k = Natron::createKnob<Bool_Knob>(panel->getHolder(), label, 1, false);
+            bool defValue = defaultBool->isChecked();
+            k->setDefaultValue(defValue);
             knob = k;
         }   break;
         case 10:
@@ -3986,7 +4359,8 @@ AddKnobDialogPrivate::createKnobFromSelection(int index,int optionalGroupIndex)
                     k->setAsLabel();
                 }
             }
-            
+            std::string defValue = defaultStr->text().toStdString();
+            k->setDefaultValue(defValue);
             knob = k;
         }   break;
         case 12: {
@@ -3994,6 +4368,8 @@ AddKnobDialogPrivate::createKnobFromSelection(int index,int optionalGroupIndex)
             if (sequenceDialog->isChecked()) {
                 k->setAsInputImage();
             }
+            std::string defValue = defaultStr->text().toStdString();
+            k->setDefaultValue(defValue);
             knob = k;
         } break;
         case 13: {
@@ -4001,6 +4377,8 @@ AddKnobDialogPrivate::createKnobFromSelection(int index,int optionalGroupIndex)
             if (sequenceDialog->isChecked()) {
                 k->setAsOutputImageFile();
             }
+            std::string defValue = defaultStr->text().toStdString();
+            k->setDefaultValue(defValue);
             knob = k;
         } break;
         case 14: {
@@ -4008,6 +4386,8 @@ AddKnobDialogPrivate::createKnobFromSelection(int index,int optionalGroupIndex)
             if (multiPath->isChecked()) {
                 k->setMultiPath(true);
             }
+            std::string defValue = defaultStr->text().toStdString();
+            k->setDefaultValue(defValue);
             knob = k;
         } break;
         case 15: {
@@ -4020,6 +4400,10 @@ AddKnobDialogPrivate::createKnobFromSelection(int index,int optionalGroupIndex)
         } break;
         case 16: {
             boost::shared_ptr<Page_Knob> k = Natron::createKnob<Page_Knob>(panel->getHolder(), label, 1, false);
+            knob = k;
+        } break;
+        case 17: {
+            boost::shared_ptr<Button_Knob> k = Natron::createKnob<Button_Knob>(panel->getHolder(), label, 1, false);
             knob = k;
         } break;
         default:
@@ -4184,16 +4568,24 @@ AddKnobDialogPrivate::setVisibleMinMax(bool visible)
     minBox->setVisible(visible);
     maxLabel->setVisible(visible);
     maxBox->setVisible(visible);
+    dminLabel->setVisible(visible);
+    dminBox->setVisible(visible);
+    dmaxLabel->setVisible(visible);
+    dmaxBox->setVisible(visible);
     if (typeChoice) {
         int type = typeChoice->activeIndex();
         
         if (type == 6 || type == 7) {
             // color range to 0-1
-            minBox->setValue(0.);
-            maxBox->setValue(1.);
+            minBox->setValue(INT_MIN);
+            maxBox->setValue(INT_MAX);
+            dminBox->setValue(0.);
+            dmaxBox->setValue(1.);
         } else {
-            minBox->setValue(0);
-            maxBox->setValue(100);
+            minBox->setValue(INT_MIN);
+            maxBox->setValue(INT_MAX);
+            dminBox->setValue(0);
+            dmaxBox->setValue(100);
         }
     }
 }
@@ -4313,3 +4705,72 @@ AddKnobDialogPrivate::setVisiblePage(bool visible)
         parentPageLabel->setVisible(visible);
     }
 }
+
+void
+AddKnobDialogPrivate::setVisibleDefaultValues(bool visible,AddKnobDialogPrivate::DefaultValueType type,int dimensions)
+{
+    if (!visible) {
+        defaultStr->setVisible(false);
+        default0->setVisible(false);
+        default1->setVisible(false);
+        default2->setVisible(false);
+        default3->setVisible(false);
+        defaultValueLabel->setVisible(false);
+    } else {
+        defaultValueLabel->setVisible(true);
+
+        if (type == eDefaultValueTypeInt || type == eDefaultValueTypeDouble) {
+            defaultStr->setVisible(false);
+            defaultBool->setVisible(false);
+            if (dimensions == 1) {
+                default0->setVisible(true);
+                default1->setVisible(false);
+                default2->setVisible(false);
+                default3->setVisible(false);
+            } else if (dimensions == 2) {
+                default0->setVisible(true);
+                default1->setVisible(true);
+                default2->setVisible(false);
+                default3->setVisible(false);
+            } else if (dimensions == 3) {
+                default0->setVisible(true);
+                default1->setVisible(true);
+                default2->setVisible(true);
+                default3->setVisible(false);
+            } else if (dimensions == 4) {
+                default0->setVisible(true);
+                default1->setVisible(true);
+                default2->setVisible(true);
+                default3->setVisible(true);
+            } else {
+                assert(false);
+            }
+            if (type == eDefaultValueTypeDouble) {
+                default0->setType(SpinBox::eSpinBoxTypeDouble);
+                default1->setType(SpinBox::eSpinBoxTypeDouble);
+                default2->setType(SpinBox::eSpinBoxTypeDouble);
+                default3->setType(SpinBox::eSpinBoxTypeDouble);
+            } else {
+                default0->setType(SpinBox::eSpinBoxTypeInt);
+                default1->setType(SpinBox::eSpinBoxTypeInt);
+                default2->setType(SpinBox::eSpinBoxTypeInt);
+                default3->setType(SpinBox::eSpinBoxTypeInt);
+            }
+        } else if (type == eDefaultValueTypeString) {
+            defaultStr->setVisible(true);
+            default0->setVisible(false);
+            default1->setVisible(false);
+            default2->setVisible(false);
+            default3->setVisible(false);
+            defaultBool->setVisible(false);
+        } else {
+            defaultStr->setVisible(false);
+            default0->setVisible(false);
+            default1->setVisible(false);
+            default2->setVisible(false);
+            default3->setVisible(false);
+            defaultBool->setVisible(true);
+        }
+    }
+}
+

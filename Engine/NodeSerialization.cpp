@@ -55,7 +55,7 @@ NodeSerialization::NodeSerialization(const boost::shared_ptr<Natron::Node> & n,b
             Group_Knob* isGroup = dynamic_cast<Group_Knob*>( knobs[i].get() );
             Page_Knob* isPage = dynamic_cast<Page_Knob*>( knobs[i].get() );
             Button_Knob* isButton = dynamic_cast<Button_Knob*>( knobs[i].get() );
-            Choice_Knob* isChoice = dynamic_cast<Choice_Knob*>( knobs[i].get() );
+            //Choice_Knob* isChoice = dynamic_cast<Choice_Knob*>( knobs[i].get() );
             
             if (isPage && knobs[i]->isUserKnob()) {
                 userPages.push_back(knobs[i]);
@@ -65,9 +65,9 @@ NodeSerialization::NodeSerialization(const boost::shared_ptr<Natron::Node> & n,b
             if (!knobs[i]->isUserKnob() && knobs[i]->getIsPersistant() && !isGroup && !isPage && !isButton) {
                 
                 ///For choice do a deepclone because we need entries
-                bool doCopyKnobs = isChoice ? true : copyKnobs;
+                //bool doCopyKnobs = isChoice ? true : copyKnobs;
                 
-                boost::shared_ptr<KnobSerialization> newKnobSer( new KnobSerialization(knobs[i],doCopyKnobs) );
+                boost::shared_ptr<KnobSerialization> newKnobSer( new KnobSerialization(knobs[i]) );
                 _knobsValues.push_back(newKnobSer);
             }
         }
@@ -86,6 +86,8 @@ NodeSerialization::NodeSerialization(const boost::shared_ptr<Natron::Node> & n,b
         _nodeScriptName = n->getScriptName_mt_safe();
 
         _pluginID = n->getPluginID();
+        
+        _pythonModule = n->getPluginPythonModule();
 
         _pluginMajorVersion = n->getMajorVersion();
 
@@ -130,6 +132,7 @@ NodeSerialization::NodeSerialization(const boost::shared_ptr<Natron::Node> & n,b
         if (!childrenMultiInstance.empty()) {
             assert(!isGrp);
             for (NodeList::iterator it = childrenMultiInstance.begin(); it != childrenMultiInstance.end() ; ++it) {
+                assert((*it)->getParentMultiInstance());
                 if ((*it)->isActivated()) {
                     boost::shared_ptr<NodeSerialization> state(new NodeSerialization(*it));
                     _children.push_back(state);

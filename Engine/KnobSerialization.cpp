@@ -85,6 +85,8 @@ boost::shared_ptr<KnobI> KnobSerialization::createKnob(const std::string & typeN
         ret.reset( new File_Knob(NULL,"",dimension,false) );
     } else if ( typeName == OutputFile_Knob::typeNameStatic() ) {
         ret.reset( new OutputFile_Knob(NULL,"",dimension,false) );
+    } else if ( typeName == Button_Knob::typeNameStatic() ) {
+        ret.reset(new Button_Knob(NULL,"",dimension,false));
     }
     if (ret) {
         ret->populate();
@@ -147,9 +149,9 @@ KnobSerialization::restoreTracks(const boost::shared_ptr<KnobI> & knob,
 void
 KnobSerialization::restoreExpressions(const boost::shared_ptr<KnobI> & knob)
 {
-    assert((int)_expressions.size() == knob->getDimension());
+    int dims = std::min(knob->getDimension(), _knob->getDimension());
     try {
-        for (int i = 0; i < knob->getDimension(); ++i) {
+        for (int i = 0; i < dims; ++i) {
             (void)knob->restoreExpression(i, _expressions[i].first, _expressions[i].second);
         }
     } catch (const std::exception& e) {

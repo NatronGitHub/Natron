@@ -308,7 +308,7 @@ ViewerInstance::renderViewer(int view,
         
         if (args[i] && args[i]->params) {
             assert(args[i]->params->textureIndex == i);
-            ret[i] = renderViewer_internal(view, singleThreaded, isSequentialRender, viewerHash, canAbort,*args[i]);
+            ret[i] = renderViewer_internal(view, singleThreaded, isSequentialRender, viewerHash, canAbort, *args[i]);
             if (ret[i] == eStatusReplyDefault) {
                 args[i].reset();
             }
@@ -323,9 +323,16 @@ ViewerInstance::renderViewer(int view,
     return eStatusOK;
 }
 
-static void checkTreeCanRender_internal(Node* node,bool* ret)
+static void checkTreeCanRender_internal(Node* node,std::list<Node*>& marked,bool* ret)
 {
+    if (std::find(marked.begin(), marked.end(), node) != marked.end()) {
+        return;
+    }
+
+    marked.push_back(node);
+
     int maxInput = node->getMaxInputCount();
+    bool hasInputConnected = false;
     for (int i = 0; i < maxInput; ++i) {
         NodePtr input = node->getInput(i);
         if (!input) {
@@ -335,11 +342,17 @@ static void checkTreeCanRender_internal(Node* node,bool* ret)
             }
             
         } else {
-            checkTreeCanRender_internal(input.get(), ret);
+            hasInputConnected = true;
+            checkTreeCanRender_internal(input.get(), marked, ret);
             if (!ret) {
                 return;
             }
         }
+    }
+    if (!hasInputConnected && (!node->getLiveInstance()->isGenerator() &&
+            !node->getLiveInstance()->isReader() && !node->getRotoContext())) {
+        *ret = false;
+        return;
     }
 }
 
@@ -349,7 +362,8 @@ static void checkTreeCanRender_internal(Node* node,bool* ret)
 static bool checkTreeCanRender(Node* node)
 {
     bool ret = true;
-    checkTreeCanRender_internal(node,&ret);
+    std::list<Node*> marked;
+    checkTreeCanRender_internal(node,marked,&ret);
     return ret;
 }
 
@@ -375,13 +389,13 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
     }
     
     
-    outArgs->activeInputToRender = getInput(outArgs->activeInputIndex);
+    EffectInstance* upstreamInput = getInput(outArgs->activeInputIndex);
     
-    if (outArgs->activeInputToRender) {
-        outArgs->activeInputToRender = outArgs->activeInputToRender->getNearestNonDisabled();
+    if (upstreamInput) {
+        outArgs->activeInputToRender = upstreamInput->getNearestNonDisabled();
     }
     
-    if (!outArgs->activeInputToRender || !checkTreeCanRender(outArgs->activeInputToRender->getNode().get())) {
+    if (!upstreamInput || !outArgs->activeInputToRender || !checkTreeCanRender(outArgs->activeInputToRender->getNode().get())) {
         Q_EMIT disconnectTextureRequest(textureIndex);
         return eStatusFailed;
     }
@@ -438,23 +452,27 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
     
     const double par = outArgs->activeInputToRender->getPreferredAspectRatio();
     
+   
     
     ///need to set TLS for getROD()
-    ParallelRenderArgsSetter frameArgs(outArgs->activeInputToRender->getNode().get(),
-                                                   time,
-                                                   view,
-                                                   !isSequential,  // is this render due to user interaction ?
-                                                   isSequential, // is this sequential ?
-                                                   canAbort,
-                                                   outArgs->activeInputHash,
-                                                   false,
-                                                   getTimeline().get());
-
+    ParallelRenderArgsSetter frameArgs(getApp()->getProject().get(),
+                                 time,
+                                 view,
+                                 !isSequential,  // is this render due to user interaction ?
+                                 isSequential, // is this sequential ?
+                                 canAbort,
+                                 getTimeline().get());
+    
+    /**
+     * @brief Start flagging that we're rendering for as long as the viewer is active.
+     **/
+    outArgs->isRenderingFlag.reset(new RenderingFlagSetter(getNode().get()));
+    
     
     ///Get the RoD here to be able to figure out what is the RoI of the Viewer.
     StatusEnum stat = outArgs->activeInputToRender->getRegionOfDefinition_public(outArgs->activeInputHash,time,
-                                                                        supportsRS ==  eSupportsNo ? scaleOne : scale,
-                                                                        view, &rod, &isRodProjectFormat);
+                                                                                 supportsRS ==  eSupportsNo ? scaleOne : scale,
+                                                                                 view, &rod, &isRodProjectFormat);
     if (stat == eStatusFailed) {
         Q_EMIT disconnectTextureRequest(textureIndex);
         if (!isSequential) {
@@ -538,19 +556,24 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
         QMutexLocker locker(&_imp->viewerParamsMutex);
         outArgs->params->gain = _imp->viewerParamsGain;
         outArgs->params->lut = _imp->viewerParamsLut;
+        outArgs->params->layer = _imp->viewerParamsLayer;
+        outArgs->params->alphaLayer = _imp->viewerParamsAlphaLayer;
+        outArgs->params->alphaChannelName = _imp->viewerParamsAlphaChannelName;
     }
     std::string inputToRenderName = outArgs->activeInputToRender->getNode()->getScriptName_mt_safe();
     
     outArgs->key.reset(new FrameKey(time,
-                 viewerHash,
-                 outArgs->params->gain,
-                 outArgs->params->lut,
-                 (int)bitDepth,
-                 channels,
-                 view,
-                 outArgs->params->textureRect,
-                 scale,
-                 inputToRenderName));
+                                    viewerHash,
+                                    outArgs->params->gain,
+                                    outArgs->params->lut,
+                                    (int)bitDepth,
+                                    channels,
+                                    view,
+                                    outArgs->params->textureRect,
+                                    scale,
+                                    inputToRenderName,
+                                    outArgs->params->layer,
+                                    outArgs->params->alphaLayer.getLayerName() + outArgs->params->alphaChannelName));
     
     bool isCached = false;
     
@@ -568,7 +591,7 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
             isCached = false;
             outArgs->params->cachedFrame.reset();
         }
-        
+
         if (isCached) {
             assert(outArgs->params->cachedFrame);
             cachedFrameParams = outArgs->params->cachedFrame->getParams();
@@ -650,7 +673,7 @@ ViewerInstance::renderViewer_internal(int view,
                                       bool isSequentialRender,
                                       U64 viewerHash,
                                       bool canAbort,
-                                      const ViewerArgs& inArgs)
+                                      ViewerArgs& inArgs)
 {
     assert(!inArgs.params->ramBuffer);
     
@@ -703,7 +726,7 @@ ViewerInstance::renderViewer_internal(int view,
         
         boost::shared_ptr<Natron::FrameParams> cachedFrameParams =
         FrameEntry::makeParams(bounds,inArgs.key->getBitDepth(), inArgs.params->textureRect.w, inArgs.params->textureRect.h);
-        bool textureIsCached = Natron::getTextureFromCacheOrCreate(*(inArgs.key), cachedFrameParams, &entryLocker,
+        Natron::getTextureFromCacheOrCreate(*(inArgs.key), cachedFrameParams,
                                                                    &inArgs.params->cachedFrame);
         if (!inArgs.params->cachedFrame) {
             std::stringstream ss;
@@ -716,17 +739,16 @@ ViewerInstance::renderViewer_internal(int view,
             return eStatusFailed;
         }
         
-        if (textureIsCached) {
-            //entryLocker.lock(inArgs.params->cachedFrame);
-            if (!entryLocker.tryLock(inArgs.params->cachedFrame)) {
-                ///Another thread is rendering it, just return it is not useful to keep this thread waiting.
-                inArgs.params->cachedFrame.reset();
-                return eStatusOK;
-            }
-        } else {
-            ///The entry has already been locked by the cache
-            inArgs.params->cachedFrame->allocateMemory();
+        if (!entryLocker.tryLock(inArgs.params->cachedFrame)) {
+            ///Another thread is rendering it, just return it is not useful to keep this thread waiting.
+            inArgs.params.reset();
+            return eStatusReplyDefault;
         }
+        
+        ///The entry has already been locked by the cache
+        inArgs.params->cachedFrame->allocateMemory();
+        
+    
         
         assert(inArgs.params->cachedFrame);
         // how do you make sure cachedFrame->data() is not freed after this line?
@@ -745,25 +767,70 @@ ViewerInstance::renderViewer_internal(int view,
     assert(inArgs.params->ramBuffer);
     
     
-    ImageComponentsEnum components;
+    std::list<ImageComponents> components;
     ImageBitDepthEnum imageDepth;
     inArgs.activeInputToRender->getPreferredDepthAndComponents(-1, &components, &imageDepth);
+    assert(!components.empty());
+    
+
+    std::list<ImageComponents> requestedComponents;
+    
+    int alphaChannelIndex = -1;
+    if ((Natron::DisplayChannelsEnum)inArgs.key->getChannels() != Natron::eDisplayChannelsA) {
+        ///We fetch the Layer specified in the gui
+        if (inArgs.params->layer.getNumComponents() > 0) {
+            requestedComponents.push_back(inArgs.params->layer);
+        }
+    } else {
+        ///We fetch the alpha layer
+        if (!inArgs.params->alphaChannelName.empty()) {
+            requestedComponents.push_back(inArgs.params->alphaLayer);
+            const std::vector<std::string>& channels = inArgs.params->alphaLayer.getComponentsNames();
+            for (std::size_t i = 0; i < channels.size(); ++i) {
+                if (channels[i] == inArgs.params->alphaChannelName) {
+                    alphaChannelIndex = i;
+                    break;
+                }
+            }
+            assert(alphaChannelIndex != -1);
+        }
+    }
+    
+    if (requestedComponents.empty()) {
+        if (inArgs.params->cachedFrame) {
+            inArgs.params->cachedFrame->setAborted(true);
+            if (!isSequentialRender) {
+                _imp->checkAndUpdateRenderAge(inArgs.params->textureIndex,inArgs.params->renderAge);
+            }
+            appPTR->removeFromViewerCache(inArgs.params->cachedFrame);
+        }
+        return eStatusOK;
+    }
+    
+    
     
     {
         
         EffectInstance::NotifyInputNRenderingStarted_RAII inputNIsRendering_RAII(getNode().get(),inArgs.activeInputIndex);
         
-        ParallelRenderArgsSetter frameArgs(inArgs.activeInputToRender->getNode().get(),
+        EffectInstance* upstreamInput = getInput(inArgs.activeInputIndex);
+        NodePtr inputToSetRenderArgs;
+        if (upstreamInput) {
+            inputToSetRenderArgs = upstreamInput->getNode();
+        } else {
+            inputToSetRenderArgs = inArgs.activeInputToRender->getNode();
+        }
+        
+        ///Make sure the parallel render args are set on the thread and die when rendering is finished
+        ParallelRenderArgsSetter frameArgs(getApp()->getProject().get(),
                                            inArgs.params->time,
                                            view,
-                                           !isSequentialRender,  // is this render due to user interaction ?
-                                           isSequentialRender, // is this sequential ?
+                                           !isSequentialRender,
+                                           isSequentialRender,
                                            canAbort,
-                                           inArgs.activeInputHash,
-                                           false,
                                            getTimeline().get());
 
-        
+
         
         // If an exception occurs here it is probably fatal, since
         // it comes from Natron itself. All exceptions from plugins are already caught
@@ -771,16 +838,19 @@ ViewerInstance::renderViewer_internal(int view,
         // We catch it  and rethrow it just to notify the rendering is done.
         try {
             
-            inArgs.params->image = inArgs.activeInputToRender->renderRoI(EffectInstance::RenderRoIArgs(inArgs.params->time,
+            ImageList planes = inArgs.activeInputToRender->renderRoI(EffectInstance::RenderRoIArgs(inArgs.params->time,
                                                                                          inArgs.key->getScale(),
                                                                                          inArgs.params->mipMapLevel,
                                                                                          view,
                                                                                          inArgs.forceRender,
                                                                                          roi,
                                                                                          inArgs.params->rod,
-                                                                                         components,
+                                                                                         requestedComponents,
                                                                                          imageDepth) );
-            
+            assert(planes.size() == 0 || planes.size() == 1);
+            if (!planes.empty()) {
+                inArgs.params->image = planes.front();
+            }
             if (!inArgs.params->image) {
                 if (inArgs.params->cachedFrame) {
                     inArgs.params->cachedFrame->setAborted(true);
@@ -799,9 +869,7 @@ ViewerInstance::renderViewer_internal(int view,
             abortCheck(inArgs.activeInputToRender);
             throw;
         }
-        
-        
-        
+                
     } // EffectInstance::NotifyInputNRenderingStarted_RAII inputNIsRendering_RAII(_node.get(),activeInputIndex);
     
    
@@ -821,6 +889,7 @@ ViewerInstance::renderViewer_internal(int view,
     
     ViewerColorSpaceEnum srcColorSpace = getApp()->getDefaultColorSpaceForBitDepth( inArgs.params->image->getBitDepth() );
     
+    assert(alphaChannelIndex < (int)inArgs.params->image->getComponentsCount());
     
     if (singleThreaded) {
         if (autoContrast) {
@@ -838,16 +907,16 @@ ViewerInstance::renderViewer_internal(int view,
             inArgs.params->offset = -vmin / ( vmax - vmin);
         }
         
-        const RenderViewerArgs args( inArgs.params->image,
+        const RenderViewerArgs args(inArgs.params->image,
                                     inArgs.params->textureRect,
                                     channels,
                                     inArgs.params->srcPremult,
-                                    1,
                                     inArgs.key->getBitDepth(),
                                     inArgs.params->gain,
                                     inArgs.params->offset,
                                     lutFromColorspace(srcColorSpace),
-                                    lutFromColorspace(inArgs.params->lut) );
+                                    lutFromColorspace(inArgs.params->lut),
+                                    alphaChannelIndex);
         
         renderFunctor(std::make_pair(roi.y1,roi.y2),
                       args,
@@ -924,12 +993,12 @@ ViewerInstance::renderViewer_internal(int view,
                                     inArgs.params->textureRect,
                                     channels,
                                     inArgs.params->srcPremult,
-                                    1,
                                     inArgs.key->getBitDepth(),
                                     inArgs.params->gain,
                                     inArgs.params->offset,
                                     lutFromColorspace(srcColorSpace),
-                                    lutFromColorspace(inArgs.params->lut));
+                                    lutFromColorspace(inArgs.params->lut),
+                                    alphaChannelIndex);
         if (runInCurrentThread) {
             renderFunctor(std::make_pair(inArgs.params->textureRect.y1,inArgs.params->textureRect.y2),
                           args, this, inArgs.params->ramBuffer);
@@ -973,17 +1042,20 @@ renderFunctor(std::pair<int,int> yRange,
     }
 }
 
-template <int nComps>
+inline
 std::pair<double, double>
-findAutoContrastVminVmax_internal(boost::shared_ptr<const Natron::Image> inputImage,
-                         Natron::DisplayChannelsEnum channels,
-                         const RectI & rect)
+findAutoContrastVminVmax_generic(boost::shared_ptr<const Natron::Image> inputImage,
+                                 int nComps,
+                                 Natron::DisplayChannelsEnum channels,
+                                 const RectI & rect)
 {
     double localVmin = std::numeric_limits<double>::infinity();
     double localVmax = -std::numeric_limits<double>::infinity();
     
+    Natron::Image::ReadAccess acc = inputImage->getReadRights();
+    
     for (int y = rect.bottom(); y < rect.top(); ++y) {
-        const float* src_pixels = (const float*)inputImage->pixelAt(rect.left(),y);
+        const float* src_pixels = (const float*)acc.pixelAt(rect.left(),y);
         ///we fill the scan-line with all the pixels of the input image
         for (int x = rect.left(); x < rect.right(); ++x) {
             
@@ -1054,28 +1126,38 @@ findAutoContrastVminVmax_internal(boost::shared_ptr<const Natron::Image> inputIm
     return std::make_pair(localVmin, localVmax);
 }
 
+template <int nComps>
+std::pair<double, double>
+findAutoContrastVminVmax_internal(boost::shared_ptr<const Natron::Image> inputImage,
+                                  Natron::DisplayChannelsEnum channels,
+                                  const RectI & rect)
+{
+    return findAutoContrastVminVmax_generic(inputImage, nComps, channels, rect);
+}
 
 std::pair<double, double>
 findAutoContrastVminVmax(boost::shared_ptr<const Natron::Image> inputImage,
                          Natron::DisplayChannelsEnum channels,
                          const RectI & rect)
 {
-    switch (inputImage->getComponents()) {
-        case Natron::eImageComponentRGBA:
-            return findAutoContrastVminVmax_internal<4>(inputImage, channels, rect);
-        case Natron::eImageComponentRGB:
-            return findAutoContrastVminVmax_internal<3>(inputImage, channels, rect);
-        case Natron::eImageComponentAlpha:
-            return findAutoContrastVminVmax_internal<1>(inputImage, channels, rect);
-        default:
-            return std::make_pair(0,1);
+    int nComps = inputImage->getComponents().getNumComponents();
+    if (nComps == 4) {
+        return findAutoContrastVminVmax_internal<4>(inputImage, channels, rect);
+    } else if (nComps == 3) {
+        return findAutoContrastVminVmax_internal<3>(inputImage, channels, rect);
+    } else if (nComps == 1) {
+        return findAutoContrastVminVmax_internal<1>(inputImage, channels, rect);
+    } else {
+        return findAutoContrastVminVmax_generic(inputImage, nComps, channels, rect);
     }
+    
 } // findAutoContrastVminVmax
 
-template <typename PIX,int maxValue,int nComps,bool opaque,int rOffset,int gOffset,int bOffset>
+template <typename PIX,int maxValue,bool opaque,int rOffset,int gOffset,int bOffset>
 void
-scaleToTexture8bits_internal(const std::pair<int,int> & yRange,
+scaleToTexture8bits_generic(const std::pair<int,int> & yRange,
                              const RenderViewerArgs & args,
+                             int nComps,
                              ViewerInstance* /*viewer*/,
                              U32* output)
 {
@@ -1083,62 +1165,72 @@ scaleToTexture8bits_internal(const std::pair<int,int> & yRange,
     
     const bool luminance = (args.channels == Natron::eDisplayChannelsY);
     
+    Natron::Image::ReadAccess acc = Natron::Image::ReadAccess(args.inputImage.get());
+    
     ///offset the output buffer at the starting point
-    output += ( (yRange.first - args.texRect.y1) / args.closestPowerOf2 ) * args.texRect.w;
+    U32* dst_pixels = output + (yRange.first - args.texRect.y1) * args.texRect.w;
 
-    ///iterating over the scan-lines of the input image
-    int dstY = 0;
-    for (int y = yRange.first; y < yRange.second; y += args.closestPowerOf2) {
+    ///Cannot be an empty rect
+    assert(args.texRect.x2 > args.texRect.x1);
+    
+    const PIX* src_pixels = (const PIX*)acc.pixelAt(args.texRect.x1, yRange.first);
+    const int srcRowElements = (int)args.inputImage->getRowElements();
+    
+    for (int y = yRange.first; y < yRange.second;
+         ++y,
+         dst_pixels += args.texRect.w,
+         src_pixels += srcRowElements) {
         
-        int start = (int)( rand() % std::max( ( (args.texRect.x2 - args.texRect.x1) / args.closestPowerOf2 ),1 ) );
-        const PIX* src_pixels = (const PIX*)args.inputImage->pixelAt(args.texRect.x1, y);
-        U32* dst_pixels = output + dstY * args.texRect.w;
         
-        /* go fowards from starting point to end of line: */
+        // coverity[dont_call]
+        int start = (int)(rand() % (args.texRect.x2 - args.texRect.x1));
+        
+
         for (int backward = 0; backward < 2; ++backward) {
-            int dstIndex = backward ? start - 1 : start;
-            int srcIndex = dstIndex * args.closestPowerOf2; //< offset from src_pixels
-            assert( backward == 1 || ( srcIndex >= 0 && srcIndex < (args.texRect.x2 - args.texRect.x1) ) );
+            
+            int index = backward ? start - 1 : start;
+            
+            assert( backward == 1 || ( index >= 0 && index < (args.texRect.x2 - args.texRect.x1) ) );
 
             unsigned error_r = 0x80;
             unsigned error_g = 0x80;
             unsigned error_b = 0x80;
-
-            while (dstIndex < args.texRect.w && dstIndex >= 0) {
-                if ( srcIndex >= ( args.texRect.x2 - args.texRect.x1) ) {
-                    break;
+            
+            while (index < args.texRect.w && index >= 0) {
+                
+                double r,g,b;
+                int a;
+                
+                if (nComps >= 4) {
+                        r = (src_pixels ? src_pixels[index * nComps + rOffset] : 0.);
+                        g = (src_pixels ? src_pixels[index * nComps + gOffset] : 0.);
+                        b = (src_pixels ? src_pixels[index * nComps + bOffset] : 0.);
+                        if (opaque) {
+                            a = 255;
+                        } else {
+                            a = (src_pixels ? Color::floatToInt<256>(src_pixels[index * nComps + 3]) : 0);
+                        }
+                } else if (nComps == 3) {
+                        r = (src_pixels && rOffset < nComps) ? src_pixels[index * nComps + rOffset] : 0.;
+                        g = (src_pixels && gOffset < nComps) ? src_pixels[index * nComps + gOffset] : 0.;
+                        b = (src_pixels && bOffset < nComps) ? src_pixels[index * nComps + bOffset] : 0.;
+                        a = (src_pixels ? 255 : 0);
+                } else if (nComps == 2) {
+                    r = (src_pixels && rOffset < nComps) ? src_pixels[index * nComps + rOffset] : 0.;
+                    g = (src_pixels && gOffset < nComps) ? src_pixels[index * nComps + gOffset] : 0.;
+                    b = 0;
+                    a = (src_pixels ? 255 : 0);
+                } else if (nComps == 1) {
+                    r = src_pixels ? src_pixels[index] : 0.;
+                    g = b = r;
+                    a = src_pixels ? 255 : 0;
                 } else {
-                    double r,g,b;
-                    int a;
-                    switch (nComps) {
-                        case 4:
-                            r = (src_pixels ? src_pixels[srcIndex * nComps + rOffset] : 0.);
-                            g = (src_pixels ? src_pixels[srcIndex * nComps + gOffset] : 0.);
-                            b = (src_pixels ? src_pixels[srcIndex * nComps + bOffset] : 0.);
-                            if (opaque) {
-                                a = 255;
-                            } else {
-                                a = (src_pixels ? Color::floatToInt<256>(src_pixels[srcIndex * nComps + 3]) : 0);
-                            }
-                            break;
-                        case 3:
-                            r = (src_pixels && rOffset < nComps) ? src_pixels[srcIndex * nComps + rOffset] : 0.;
-                            g = (src_pixels && gOffset < nComps) ? src_pixels[srcIndex * nComps + gOffset] : 0.;
-                            b = (src_pixels && bOffset < nComps) ? src_pixels[srcIndex * nComps + bOffset] : 0.;
-                            a = (src_pixels ? 255 : 0);
-                            break;
-                        case 1:
-                            r = src_pixels ? src_pixels[srcIndex] : 0.;
-                            g = b = r;
-                            a = src_pixels ? 255 : 0;
-                            break;
-                        default:
-                            assert(false);
-                            break;
-                    }
-                    
-                    
-                    switch ( pixelSize ) {
+                    assert(false);
+                }
+                
+                
+                
+                switch ( pixelSize ) {
                     case sizeof(unsigned char): //byte
                         if (args.srcColorSpace) {
                             r = args.srcColorSpace->fromColorSpaceUint8ToLinearFloatFast( (unsigned char)r );
@@ -1170,97 +1262,136 @@ scaleToTexture8bits_internal(const std::pair<int,int> & yRange,
                         break;
                     default:
                         break;
-                    }
-
-                    r =  r * args.gain + args.offset;
-                    g =  g * args.gain + args.offset;
-                    b =  b * args.gain + args.offset;
-
-                    if (luminance) {
-                        r = 0.299 * r + 0.587 * g + 0.114 * b;
-                        g = r;
-                        b = r;
-                    }
-
-                    if (!args.colorSpace) {
-                        dst_pixels[dstIndex] = toBGRA(Color::floatToInt<256>(r),
-                                                      Color::floatToInt<256>(g),
-                                                      Color::floatToInt<256>(b),
-                                                      a);
-                    } else {
-                        error_r = (error_r & 0xff) + args.colorSpace->toColorSpaceUint8xxFromLinearFloatFast(r);
-                        error_g = (error_g & 0xff) + args.colorSpace->toColorSpaceUint8xxFromLinearFloatFast(g);
-                        error_b = (error_b & 0xff) + args.colorSpace->toColorSpaceUint8xxFromLinearFloatFast(b);
-                        assert(error_r < 0x10000 && error_g < 0x10000 && error_b < 0x10000);
-                        dst_pixels[dstIndex] = toBGRA( (U8)(error_r >> 8),
-                                                       (U8)(error_g >> 8),
-                                                       (U8)(error_b >> 8),
-                                                       a );
-                    }
                 }
-                if (backward) {
-                    --dstIndex;
-                    srcIndex -= args.closestPowerOf2;
+                
+                r =  r * args.gain + args.offset;
+                g =  g * args.gain + args.offset;
+                b =  b * args.gain + args.offset;
+                
+                if (luminance) {
+                    r = 0.299 * r + 0.587 * g + 0.114 * b;
+                    g = r;
+                    b = r;
+                }
+                
+                if (!args.colorSpace) {
+                    dst_pixels[index] = toBGRA(Color::floatToInt<256>(r),
+                                               Color::floatToInt<256>(g),
+                                               Color::floatToInt<256>(b),
+                                               a);
                 } else {
-                    ++dstIndex;
-                    srcIndex += args.closestPowerOf2;
+                    error_r = (error_r & 0xff) + args.colorSpace->toColorSpaceUint8xxFromLinearFloatFast(r);
+                    error_g = (error_g & 0xff) + args.colorSpace->toColorSpaceUint8xxFromLinearFloatFast(g);
+                    error_b = (error_b & 0xff) + args.colorSpace->toColorSpaceUint8xxFromLinearFloatFast(b);
+                    assert(error_r < 0x10000 && error_g < 0x10000 && error_b < 0x10000);
+                    dst_pixels[index] = toBGRA((U8)(error_r >> 8),
+                                               (U8)(error_g >> 8),
+                                               (U8)(error_b >> 8),
+                                               a);
                 }
-            }
-        }
-        ++dstY;
+                
+                if (backward) {
+                    --index;
+                } else {
+                    ++index;
+                }
+                
+            } // while (index < args.texRect.w && index >= 0) {
+            
+        } // for (int backward = 0; backward < 2; ++backward) {
+    } // for (int y = yRange.first; y < yRange.second;
+} // scaleToTexture8bits_generic
+
+
+template <typename PIX,int maxValue,int nComps,bool opaque,int rOffset,int gOffset,int bOffset>
+void
+scaleToTexture8bits_internal(const std::pair<int,int> & yRange,
+                             const RenderViewerArgs & args,
+                             ViewerInstance* viewer,
+                             U32* output)
+{
+    scaleToTexture8bits_generic<PIX, maxValue, opaque, rOffset, gOffset, bOffset>(yRange, args, nComps, viewer, output);
+}
+
+template <typename PIX,int maxValue, bool opaque, int rOffset, int gOffset, int bOffset>
+void
+scaleToTexture8bitsForDepthForComponents(const std::pair<int,int> & yRange,
+                                         const RenderViewerArgs & args,
+                                         ViewerInstance* viewer,
+                                         U32* output)
+{
+    int nComps = args.inputImage->getComponents().getNumComponents();
+    switch (nComps) {
+        case 4:
+            scaleToTexture8bits_internal<PIX,maxValue,4 , opaque, rOffset,gOffset,bOffset>(yRange,args,viewer,output);
+            break;
+        case 3:
+            scaleToTexture8bits_internal<PIX,maxValue,3, opaque, rOffset,gOffset,bOffset>(yRange,args,viewer,output);
+            break;
+        case 2:
+            scaleToTexture8bits_internal<PIX,maxValue,2, opaque, rOffset,gOffset,bOffset>(yRange,args,viewer,output);
+            break;
+        case 1:
+            scaleToTexture8bits_internal<PIX,maxValue,1, opaque, rOffset,gOffset,bOffset>(yRange,args,viewer,output);
+            break;
+        default:
+            scaleToTexture8bits_generic<PIX, maxValue, opaque, rOffset, gOffset, bOffset>(yRange, args, nComps, viewer, output);
+            break;
     }
-} // scaleToTexture8bits_internal
+}
 
-
-template <typename PIX,int maxValue,int nComps,int rOffset,int gOffset,int bOffset>
+template <typename PIX,int maxValue,bool opaque>
 void
 scaleToTexture8bitsForPremult(const std::pair<int,int> & yRange,
                              const RenderViewerArgs & args,
                              ViewerInstance* viewer,
                              U32* output)
 {
-    switch (args.srcPremult) {
-        case Natron::eImagePremultiplicationOpaque:
-            scaleToTexture8bits_internal<PIX, maxValue, nComps, true, rOffset, gOffset, bOffset>(yRange, args,viewer, output);
-            break;
-        case Natron::eImagePremultiplicationPremultiplied:
-        case Natron::eImagePremultiplicationUnPremultiplied:
-        default:
-            scaleToTexture8bits_internal<PIX, maxValue, nComps, false, rOffset, gOffset, bOffset>(yRange, args,viewer, output);
-            break;
-            
-    }
-}
-
-template <typename PIX,int maxValue,int nComps>
-void
-scaleToTexture8bitsForDepthForComponents(const std::pair<int,int> & yRange,
-                            const RenderViewerArgs & args,
-                            ViewerInstance* viewer,
-                            U32* output)
-{
+    
     switch (args.channels) {
         case Natron::eDisplayChannelsRGB:
         case Natron::eDisplayChannelsY:
-
-            scaleToTexture8bitsForPremult<PIX, maxValue, nComps, 0, 1, 2>(yRange, args,viewer, output);
+            
+            scaleToTexture8bitsForDepthForComponents<PIX, maxValue, opaque, 0, 1, 2>(yRange, args,viewer, output);
             break;
         case Natron::eDisplayChannelsG:
-            scaleToTexture8bitsForPremult<PIX, maxValue, nComps, 1, 1, 1>(yRange, args,viewer, output);
+            scaleToTexture8bitsForDepthForComponents<PIX, maxValue, opaque, 1, 1, 1>(yRange, args,viewer, output);
             break;
         case Natron::eDisplayChannelsB:
-            scaleToTexture8bitsForPremult<PIX, maxValue, nComps, 2, 2, 2>(yRange, args,viewer, output);
+            scaleToTexture8bitsForDepthForComponents<PIX, maxValue, opaque, 2, 2, 2>(yRange, args,viewer, output);
             break;
         case Natron::eDisplayChannelsA:
-            scaleToTexture8bitsForPremult<PIX, maxValue, nComps, 3, 3, 3>(yRange, args,viewer, output);
+            switch (args.alphaChannelIndex) {
+                case -1:
+                    scaleToTexture8bitsForDepthForComponents<PIX, maxValue, opaque, 3, 3, 3>(yRange, args,viewer, output);
+                    break;
+                case 0:
+                    scaleToTexture8bitsForDepthForComponents<PIX, maxValue, opaque, 0, 0, 0>(yRange, args,viewer, output);
+                    break;
+                case 1:
+                    scaleToTexture8bitsForDepthForComponents<PIX, maxValue, opaque, 1, 1, 1>(yRange, args,viewer, output);
+                    break;
+                case 2:
+                    scaleToTexture8bitsForDepthForComponents<PIX, maxValue, opaque, 2, 2, 2>(yRange, args,viewer, output);
+                    break;
+                case 3:
+                    scaleToTexture8bitsForDepthForComponents<PIX, maxValue, opaque, 3, 3, 3>(yRange, args,viewer, output);
+                    break;
+                default:
+                    scaleToTexture8bitsForDepthForComponents<PIX, maxValue, opaque, 3, 3, 3>(yRange, args,viewer, output);
+            }
+            
             break;
         case Natron::eDisplayChannelsR:
         default:
-            scaleToTexture8bitsForPremult<PIX, maxValue, nComps, 0, 0, 0>(yRange, args,viewer, output);
-
+            scaleToTexture8bitsForDepthForComponents<PIX, maxValue, opaque, 0, 0, 0>(yRange, args,viewer, output);
+            
             break;
     }
+    
+   
 }
+
 
 template <typename PIX,int maxValue>
 void
@@ -1269,19 +1400,16 @@ scaleToTexture8bitsForDepth(const std::pair<int,int> & yRange,
                             ViewerInstance* viewer,
                             U32* output)
 {
-    Natron::ImageComponentsEnum comps = args.inputImage->getComponents();
-    switch (comps) {
-        case Natron::eImageComponentRGBA:
-            scaleToTexture8bitsForDepthForComponents<PIX,maxValue,4>(yRange,args,viewer,output);
+    switch (args.srcPremult) {
+        case Natron::eImagePremultiplicationOpaque:
+            scaleToTexture8bitsForPremult<PIX, maxValue, true>(yRange, args,viewer, output);
             break;
-        case Natron::eImageComponentRGB:
-            scaleToTexture8bitsForDepthForComponents<PIX,maxValue,3>(yRange,args,viewer,output);
-            break;
-        case Natron::eImageComponentAlpha:
-            scaleToTexture8bitsForDepthForComponents<PIX,maxValue,1>(yRange,args,viewer,output);
-            break;
+        case Natron::eImagePremultiplicationPremultiplied:
+        case Natron::eImagePremultiplicationUnPremultiplied:
         default:
+            scaleToTexture8bitsForPremult<PIX, maxValue, false>(yRange, args,viewer, output);
             break;
+            
     }
 }
 
@@ -1308,12 +1436,13 @@ scaleToTexture8bits(std::pair<int,int> yRange,
     }
 } // scaleToTexture8bits
 
-template <typename PIX,int maxValue,int nComps,bool opaque,int rOffset,int gOffset,int bOffset>
+template <typename PIX,int maxValue,bool opaque,int rOffset,int gOffset,int bOffset>
 void
-scaleToTexture32bitsInternal(const std::pair<int,int> & yRange,
-                             const RenderViewerArgs & args,
-                             ViewerInstance* viewer,
-                             float *output)
+scaleToTexture32bitsGeneric(const std::pair<int,int> & yRange,
+                            const RenderViewerArgs & args,
+                            int nComps,
+                            ViewerInstance* viewer,
+                            float *output)
 {
     size_t pixelSize = sizeof(PIX);
     const bool luminance = (args.channels == Natron::eDisplayChannelsY);
@@ -1321,51 +1450,58 @@ scaleToTexture32bitsInternal(const std::pair<int,int> & yRange,
     ///the width of the output buffer multiplied by the channels count
     int dst_width = args.texRect.w * 4;
 
-    ///offset the output buffer at the starting point
-    output += ( (yRange.first - args.texRect.y1) / args.closestPowerOf2 ) * dst_width;
+    
+    Natron::Image::ReadAccess acc = Natron::Image::ReadAccess(args.inputImage.get());
 
-    ///iterating over the scan-lines of the input image
-    int dstY = 0;
-    for (int y = yRange.first; y < yRange.second; y += args.closestPowerOf2) {
+    float* dst_pixels =  output + (yRange.first - args.texRect.y1) * dst_width;
+    const float* src_pixels = (const float*)acc.pixelAt(args.texRect.x1, yRange.first);
+
+    assert(args.texRect.w == args.texRect.x2 - args.texRect.x1);
+    
+    const int srcRowElements = (const int)args.inputImage->getRowElements();
+    
+    for (int y = yRange.first; y < yRange.second;
+         ++y,
+         src_pixels += srcRowElements) {
         
         if (viewer->aborted()) {
             return;
         }
         
-        const float* src_pixels = (const float*)args.inputImage->pixelAt(args.texRect.x1, y);
-        float* dst_pixels = output + dstY * dst_width;
 
-        ///we fill the scan-line with all the pixels of the input image
-        for (int x = args.texRect.x1; x < args.texRect.x2; x += args.closestPowerOf2) {
+        for (int x = 0; x < args.texRect.w;
+             ++x,
+             dst_pixels += 4) {
+            
             double r,g,b,a;
             
-            switch (nComps) {
-                case 4:
-                    r = (double)(src_pixels[rOffset]);
-                    g = (double)src_pixels[gOffset];
-                    b = (double)src_pixels[bOffset];
-                    if (opaque) {
-                        a = 1.;
-                    } else {
-                        a = (nComps < 4) ? 1. : src_pixels[3];
-                    }
-                    break;
-                case 3:
-                    r = (double)(src_pixels[rOffset]);
-                    g = (double)src_pixels[gOffset];
-                    b = (double)src_pixels[bOffset];
+            if (nComps >= 4) {
+                r = (double)(src_pixels[x * nComps + rOffset]);
+                g = (double)src_pixels[x * nComps + gOffset];
+                b = (double)src_pixels[x * nComps + bOffset];
+                if (opaque) {
                     a = 1.;
-                    break;
-                case 1:
-                    a = (nComps < 4) ? 1. : *src_pixels;
-                    r = g = b = a;
-                    a = 1.;
-                    break;
-                default:
-                    assert(false);
-                    r = g = b = a = 0.;
-                    break;
+                } else {
+                    a = (nComps < 4) ? 1. : src_pixels[x * nComps + 3];
+                }
+            } else if (nComps == 3) {
+                r = (double)(src_pixels[x * nComps + rOffset]);
+                g = (double)src_pixels[x * nComps + gOffset];
+                b = (double)src_pixels[x * nComps + bOffset];
+                a = 1.;
+            } else if (nComps == 2) {
+                r = (double)(src_pixels[x * nComps + rOffset]);
+                g = (double)src_pixels[x * nComps + gOffset];
+                b = 0.;
+                a = 1.;
+            } else if (nComps == 1) {
+                a = (nComps < 4) ? 1. : src_pixels[x];
+                r = g = b = a;
+                a = 1.;
+            } else {
+                assert(false);
             }
+            
             
             switch ( pixelSize ) {
             case sizeof(unsigned char):
@@ -1407,102 +1543,98 @@ scaleToTexture32bitsInternal(const std::pair<int,int> & yRange,
                 g = r;
                 b = r;
             }
-            *dst_pixels++ = r;
-            *dst_pixels++ = g;
-            *dst_pixels++ = b;
-            *dst_pixels++ = a;
+            *dst_pixels = r;
+            *(dst_pixels + 1) = g;
+            *(dst_pixels + 2) = b;
+            *(dst_pixels + 3) = a;
 
-            src_pixels += args.closestPowerOf2 * nComps;
         }
-        ++dstY;
     }
-} // scaleToTexture32bitsInternal
+} // scaleToTexture32bitsGeneric
 
-
-template <typename PIX,int maxValue,int nComps,int rOffset,int gOffset,int bOffset>
+template <typename PIX,int maxValue,int nComps,bool opaque,int rOffset,int gOffset,int bOffset>
 void
-scaleToTexture32bitsForPremult(const std::pair<int,int> & yRange,
+scaleToTexture32bitsInternal(const std::pair<int,int> & yRange,
                              const RenderViewerArgs & args,
-                            ViewerInstance* viewer,
-                             float *output)
-{
-    switch (args.srcPremult) {
-        case Natron::eImagePremultiplicationOpaque:
-            scaleToTexture32bitsInternal<PIX, maxValue, nComps, true, rOffset, gOffset, bOffset>(yRange, args,viewer, output);
-            break;
-        case Natron::eImagePremultiplicationPremultiplied:
-        case Natron::eImagePremultiplicationUnPremultiplied:
-        default:
-            scaleToTexture32bitsInternal<PIX, maxValue, nComps, false, rOffset, gOffset, bOffset>(yRange, args,viewer, output);
-            break;
-        
-    }
+                             ViewerInstance* viewer,
+                             float *output) {
+    scaleToTexture32bitsGeneric<PIX, maxValue, opaque, rOffset, gOffset, bOffset>(yRange, args, nComps, viewer, output);
 }
 
-template <typename PIX,int maxValue,int nComps>
+template <typename PIX,int maxValue,bool opaque,int rOffset,int gOffset,int bOffset>
 void
 scaleToTexture32bitsForDepthForComponents(const std::pair<int,int> & yRange,
                              const RenderViewerArgs & args,
                             ViewerInstance* viewer,
                              float *output)
 {
+    int  nComps = args.inputImage->getComponents().getNumComponents();
+    switch (nComps) {
+        case 4:
+            scaleToTexture32bitsInternal<PIX,maxValue,4, opaque, rOffset,gOffset,bOffset>(yRange,args,viewer,output);
+            break;
+        case 3:
+            scaleToTexture32bitsInternal<PIX,maxValue,3, opaque, rOffset,gOffset,bOffset>(yRange,args,viewer,output);
+            break;
+        case 2:
+            scaleToTexture32bitsInternal<PIX,maxValue,2, opaque, rOffset,gOffset,bOffset>(yRange,args,viewer,output);
+            break;
+        case 1:
+            scaleToTexture32bitsInternal<PIX,maxValue,1, opaque, rOffset,gOffset,bOffset>(yRange,args,viewer,output);
+            break;
+        default:
+            scaleToTexture32bitsGeneric<PIX,maxValue, opaque, rOffset,gOffset,bOffset>(yRange,args,nComps,viewer,output);
+            break;
+    }
+}
+
+template <typename PIX,int maxValue,bool opaque>
+void
+scaleToTexture32bitsForPremultForComponents(const std::pair<int,int> & yRange,
+                             const RenderViewerArgs & args,
+                            ViewerInstance* viewer,
+                             float *output)
+{
+    
+ 
+    
     switch (args.channels) {
         case Natron::eDisplayChannelsRGB:
         case Natron::eDisplayChannelsY:
-            switch (nComps) {
-                case 1:
-                    scaleToTexture32bitsForPremult<PIX, maxValue, nComps, 0, 0, 0>(yRange, args,viewer, output);
-                    break;
-                case 3:
-                case 4:
-                    scaleToTexture32bitsForPremult<PIX, maxValue, nComps, 0, 1, 2>(yRange, args,viewer, output);
-                    break;
-                default:
-                    break;
-            }
+            scaleToTexture32bitsForDepthForComponents<PIX, maxValue, opaque, 0, 1, 2>(yRange, args,viewer, output);
             break;
         case Natron::eDisplayChannelsG:
-            switch (nComps) {
-                case 1:
-                    scaleToTexture32bitsForPremult<PIX, maxValue, nComps, 0, 0, 0>(yRange, args,viewer, output);
-                    break;
-                case 3:
-                case 4:
-                    scaleToTexture32bitsForPremult<PIX, maxValue, nComps, 1, 1, 1>(yRange, args,viewer, output);
-                    break;
-                default:
-                    break;
-            }
+            scaleToTexture32bitsForDepthForComponents<PIX, maxValue, opaque, 1, 1, 1>(yRange, args,viewer, output);
             break;
         case Natron::eDisplayChannelsB:
-            switch (nComps) {
-                case 1:
-                    scaleToTexture32bitsForPremult<PIX, maxValue, nComps, 0, 0, 0>(yRange, args,viewer, output);
-                    break;
-                case 3:
-                case 4:
-                    scaleToTexture32bitsForPremult<PIX, maxValue, nComps, 2, 2, 2>(yRange, args,viewer, output);
-                    break;
-                default:
-                    break;
-            }
+            scaleToTexture32bitsForDepthForComponents<PIX, maxValue, opaque, 2, 2, 2>(yRange, args,viewer, output);
             break;
         case Natron::eDisplayChannelsA:
-            switch (nComps) {
-                case 1:
-                case 3:
-                    scaleToTexture32bitsForPremult<PIX, maxValue, nComps, 0, 0, 0>(yRange, args,viewer, output);
+            switch (args.alphaChannelIndex) {
+                case -1:
+                    scaleToTexture32bitsForDepthForComponents<PIX, maxValue, opaque, 3, 3, 3>(yRange, args,viewer, output);
                     break;
-                case 4:
-                    scaleToTexture32bitsForPremult<PIX, maxValue, nComps, 3, 3, 3>(yRange, args,viewer, output);
+                case 0:
+                    scaleToTexture32bitsForDepthForComponents<PIX, maxValue, opaque, 0, 0, 0>(yRange, args,viewer, output);
+                    break;
+                case 1:
+                    scaleToTexture32bitsForDepthForComponents<PIX, maxValue, opaque, 1, 1, 1>(yRange, args,viewer, output);
+                    break;
+                case 2:
+                    scaleToTexture32bitsForDepthForComponents<PIX, maxValue, opaque, 2, 2, 2>(yRange, args,viewer, output);
+                    break;
+                case 3:
+                    scaleToTexture32bitsForDepthForComponents<PIX, maxValue, opaque, 3, 3, 3>(yRange, args,viewer, output);
                     break;
                 default:
+                    scaleToTexture32bitsForDepthForComponents<PIX, maxValue, opaque, 3, 3, 3>(yRange, args,viewer, output);
                     break;
             }
+            
             break;
         case Natron::eDisplayChannelsR:
         default:
-            scaleToTexture32bitsForPremult<PIX, maxValue, nComps, 0, 0, 0>(yRange, args,viewer, output);
+            scaleToTexture32bitsForDepthForComponents<PIX, maxValue, opaque, 0, 0, 0>(yRange, args,viewer, output);
             break;
     }
 
@@ -1510,25 +1642,24 @@ scaleToTexture32bitsForDepthForComponents(const std::pair<int,int> & yRange,
 
 template <typename PIX,int maxValue>
 void
-scaleToTexture32bitsForDepth(const std::pair<int,int> & yRange,
+scaleToTexture32bitsForPremult(const std::pair<int,int> & yRange,
                              const RenderViewerArgs & args,
                              ViewerInstance* viewer,
                              float *output)
 {
-    Natron::ImageComponentsEnum comps = args.inputImage->getComponents();
-    switch (comps) {
-        case Natron::eImageComponentRGBA:
-            scaleToTexture32bitsForDepthForComponents<PIX,maxValue,4>(yRange,args,viewer,output);
+    switch (args.srcPremult) {
+        case Natron::eImagePremultiplicationOpaque:
+            scaleToTexture32bitsForPremultForComponents<PIX, maxValue, true>(yRange, args,viewer, output);
             break;
-        case Natron::eImageComponentRGB:
-            scaleToTexture32bitsForDepthForComponents<PIX,maxValue,3>(yRange,args,viewer,output);
-            break;
-        case Natron::eImageComponentAlpha:
-            scaleToTexture32bitsForDepthForComponents<PIX,maxValue,1>(yRange,args,viewer,output);
-            break;
+        case Natron::eImagePremultiplicationPremultiplied:
+        case Natron::eImagePremultiplicationUnPremultiplied:
         default:
+            scaleToTexture32bitsForPremultForComponents<PIX, maxValue, false>(yRange, args,viewer, output);
             break;
+            
     }
+    
+    
 }
 
 void
@@ -1541,13 +1672,13 @@ scaleToTexture32bits(std::pair<int,int> yRange,
 
     switch ( args.inputImage->getBitDepth() ) {
         case Natron::eImageBitDepthFloat:
-            scaleToTexture32bitsForDepth<float, 1>(yRange, args,viewer, output);
+            scaleToTexture32bitsForPremult<float, 1>(yRange, args,viewer, output);
             break;
         case Natron::eImageBitDepthByte:
-            scaleToTexture32bitsForDepth<unsigned char, 255>(yRange, args,viewer, output);
+            scaleToTexture32bitsForPremult<unsigned char, 255>(yRange, args,viewer, output);
             break;
         case Natron::eImageBitDepthShort:
-            scaleToTexture32bitsForDepth<unsigned short, 65535>(yRange, args,viewer, output);
+            scaleToTexture32bitsForPremult<unsigned short, 65535>(yRange, args,viewer, output);
             break;
         case Natron::eImageBitDepthNone:
             break;
@@ -1715,6 +1846,35 @@ ViewerInstance::setDisplayChannels(DisplayChannelsEnum channels)
 }
 
 void
+ViewerInstance::setActiveLayer(const Natron::ImageComponents& layer, bool doRender)
+{
+    // always running in the main thread
+    assert( qApp && qApp->thread() == QThread::currentThread() );
+    {
+        QMutexLocker l(&_imp->viewerParamsMutex);
+        _imp->viewerParamsLayer = layer;
+    }
+    if ( doRender && !getApp()->getProject()->isLoadingProject() ) {
+        renderCurrentFrame(true);
+    }
+}
+
+void
+ViewerInstance::setAlphaChannel(const Natron::ImageComponents& layer, const std::string& channelName, bool doRender)
+{
+    // always running in the main thread
+    assert( qApp && qApp->thread() == QThread::currentThread() );
+    {
+        QMutexLocker l(&_imp->viewerParamsMutex);
+        _imp->viewerParamsAlphaLayer = layer;
+        _imp->viewerParamsAlphaChannelName = channelName;
+    }
+    if ( doRender && !getApp()->getProject()->isLoadingProject() ) {
+        renderCurrentFrame(true);
+    }
+}
+
+void
 ViewerInstance::disconnectViewer()
 {
     // always running in the render thread
@@ -1793,10 +1953,12 @@ ViewerInstance::getChannels() const
 
 void
 ViewerInstance::addAcceptedComponents(int /*inputNb*/,
-                                      std::list<Natron::ImageComponentsEnum>* comps)
+                                      std::list<Natron::ImageComponents>* comps)
 {
     ///Viewer only supports RGBA for now.
-    comps->push_back(Natron::eImageComponentRGBA);
+    comps->push_back(ImageComponents::getRGBAComponents());
+    comps->push_back(ImageComponents::getRGBComponents());
+    comps->push_back(ImageComponents::getAlphaComponents());
 }
 
 int

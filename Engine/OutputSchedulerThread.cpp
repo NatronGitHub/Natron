@@ -762,6 +762,7 @@ OutputSchedulerThread::startRender()
     ///They will be in the range determined by firstFrame-lastFrame
     int startingFrame;
     int firstFrame,lastFrame;
+    bool forward;
     {
         ///Copy the last requested run args
         
@@ -770,9 +771,13 @@ OutputSchedulerThread::startRender()
         firstFrame = _imp->livingRunArgs.firstFrame;
         lastFrame = _imp->livingRunArgs.lastFrame;
         startingFrame = timelineGetTime();
+        forward = _imp->livingRunArgs.timelineDirection == OutputSchedulerThread::eRenderDirectionForward;
     }
     
     aboutToStartRender();
+    
+    ///Notify everyone that the render is started
+    _imp->engine->s_renderStarted(forward);
     
     ///Flag that we're now doing work
     {
@@ -1881,23 +1886,23 @@ private:
                 
                 StatusEnum stat = activeInputToRender->getRegionOfDefinition_public(activeInputToRenderHash,time, scale, i, &rod, &isProjectFormat);
                 if (stat != eStatusFailed) {
-                    ImageComponentsEnum components;
+                    std::list<ImageComponents> components;
                     ImageBitDepthEnum imageDepth;
                     activeInputToRender->getPreferredDepthAndComponents(-1, &components, &imageDepth);
                     RectI renderWindow;
                     rod.toPixelEnclosing(scale, par, &renderWindow);
                     
-                    ParallelRenderArgsSetter frameRenderARgs(activeInputToRender->getNode().get(),
+                    ParallelRenderArgsSetter frameRenderArgs(activeInputToRender->getApp()->getProject().get(),
                                                                    time,
                                                                    i,
                                                                    false,  // is this render due to user interaction ?
                                                                    canOnlyHandleOneView, // is this sequential ?
                                                                    true,
-                                                                   activeInputToRenderHash,
-                                                                   false,
                                                                    _imp->output->getApp()->getTimeLine().get());
                     
-                    boost::shared_ptr<Natron::Image> img =
+                    RenderingFlagSetter flagIsRendering(activeInputToRender->getNode().get());
+
+                    ImageList planes =
                     activeInputToRender->renderRoI( EffectInstance::RenderRoIArgs(time, //< the time at which to render
                                                                                   scale, //< the scale at which to render
                                                                                   mipMapLevel, //< the mipmap level (redundant with the scale)
@@ -1910,7 +1915,9 @@ private:
                     
                     ///If we need sequential rendering, pass the image to the output scheduler that will ensure the sequential ordering
                     if (!renderDirectly) {
-                        _imp->scheduler->appendToBuffer(time, i, boost::dynamic_pointer_cast<BufferableObject>(img));
+                        for (ImageList::iterator it = planes.begin(); it != planes.end(); ++it) {
+                            _imp->scheduler->appendToBuffer(time, i, boost::dynamic_pointer_cast<BufferableObject>(*it));
+                        }
                     } else {
                         _imp->scheduler->notifyFrameRendered(time,i,viewsCount,eSchedulingPolicyFFA);
                     }
@@ -1958,7 +1965,7 @@ DefaultScheduler::processFrame(const BufferedFrames& frames)
     RectD rod;
     RectI roi;
     
-    Natron::ImageComponentsEnum components;
+    std::list<Natron::ImageComponents> components;
     Natron::ImageBitDepthEnum imageDepth;
     _effect->getPreferredDepthAndComponents(-1, &components, &imageDepth);
     
@@ -1971,15 +1978,15 @@ DefaultScheduler::processFrame(const BufferedFrames& frames)
         ignore_result(_effect->getRegionOfDefinition_public(hash,it->time, scale, it->view, &rod, &isProjectFormat));
         rod.toPixelEnclosing(0, par, &roi);
         
-        ParallelRenderArgsSetter frameRenderARgs(_effect->getNode().get(),
+        ParallelRenderArgsSetter frameRenderARgs(_effect->getApp()->getProject().get(),
                                                        it->time,
                                                        it->view,
                                                        false,  // is this render due to user interaction ?
                                                        canOnlyHandleOneView, // is this sequential ?
                                                        true,
-                                                       hash,
-                                                       false,
                                                        _effect->getApp()->getTimeLine().get());
+        
+        RenderingFlagSetter flagIsRendering(_effect->getNode().get());
         
         ImagePtr inputImage = boost::dynamic_pointer_cast<Natron::Image>(it->frame);
         assert(inputImage);
@@ -2582,10 +2589,10 @@ struct CurrentFrameFunctorArgs
 {
     int view;
     ViewerInstance* viewer;
-    bool canAbort;
     U64 viewerHash;
     RequestedFrame* request;
     ViewerCurrentFrameRequestSchedulerPrivate* scheduler;
+    bool canAbort;
     boost::shared_ptr<ViewerInstance::ViewerArgs> args[2];
 };
 
@@ -2832,7 +2839,7 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool canAbort)
     Natron::StatusEnum status[2] = {
         eStatusFailed, eStatusFailed
     };
-    if (!_imp->viewer->getUiContext()) {
+    if (!_imp->viewer->getUiContext() || _imp->viewer->getApp()->isCreatingNode()) {
         return;
     }
     boost::shared_ptr<ViewerInstance::ViewerArgs> args[2];
@@ -2866,10 +2873,10 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool canAbort)
         functorArgs.view = view;
         functorArgs.args[0] = args[0];
         functorArgs.args[1] = args[1];
-        functorArgs.canAbort = canAbort;
         functorArgs.viewerHash = viewerHash;
         functorArgs.scheduler = _imp.get();
         functorArgs.request = 0;
+        functorArgs.canAbort = canAbort;
         if (appPTR->getCurrentSettings()->getNumberOfThreads() == -1) {
             renderCurrentFrameFunctor(functorArgs);
         } else {

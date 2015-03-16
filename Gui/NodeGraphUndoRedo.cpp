@@ -201,7 +201,10 @@ AddMultipleNodesCommand::redo()
     }
     
     
-    _graph->setSelection(nodes);
+    if (nodes.size() != 1 || !dynamic_cast<NodeGroup*>(nodes.front()->getNode()->getLiveInstance())) {
+        _graph->setSelection(nodes);
+    }
+
 
     _graph->getGui()->getApp()->triggerAutoSave();
 
@@ -732,8 +735,10 @@ Tree::buildTreeInternal(const std::list<NodeGuiPtr>& selectedNodes,
                                            MINIMUM_VERTICAL_SPACE_BETWEEN_NODES +
                                            (firstNonMaskInput->getSize().height() / 2.) );
 
-            ///and add it to the tree
+            ///and add it to the tree, with parent relative coordinates
             addNode(firstNonMaskInput, firstNonMaskInputPos);
+            
+            firstNonMaskInputPos = firstNonMaskInput->mapToScene(firstNonMaskInput->mapFromParent(firstNonMaskInputPos));
         }
 
         ///Position all other non mask inputs
@@ -745,6 +750,9 @@ Tree::buildTreeInternal(const std::list<NodeGuiPtr>& selectedNodes,
 
             ///and add it to the tree
             addNode(*it, p);
+            
+            
+            p = (*it)->mapToScene((*it)->mapFromParent(p));
             otherNonMaskInputsPos.push_back(p);
         }
 
@@ -758,6 +766,8 @@ Tree::buildTreeInternal(const std::list<NodeGuiPtr>& selectedNodes,
 
             ///and add it to the tree
             addNode(*it, p);
+            
+            p = (*it)->mapToScene((*it)->mapFromParent(p));
             maskInputsPos.push_back(p);
         }
 

@@ -14,7 +14,6 @@
 
 #include "KnobGuiFile.h"
 
-#include <QLabel> // in QtGui on Qt4, in QtWidgets on Qt5
 #include <QFormLayout> // in QtGui on Qt4, in QtWidgets on Qt5
 #include <QHBoxLayout> // in QtGui on Qt4, in QtWidgets on Qt5
 #include <QDebug>
@@ -378,7 +377,7 @@ File_KnobGui::addRightClickMenuEntries(QMenu* menu)
 
     menu->addSeparator();
     QMenu* qtMenu = _lineEdit->createStandardContextMenu();
-    qtMenu->setFont(QFont(appFont,appFontSize));
+    //qtMenu->setFont(QFont(appFont,appFontSize));
     qtMenu->setTitle(tr("Edit"));
     menu->addMenu(qtMenu);
 }
@@ -620,7 +619,7 @@ OutputFile_KnobGui::addRightClickMenuEntries(QMenu* menu)
     
     menu->addSeparator();
     QMenu* qtMenu = _lineEdit->createStandardContextMenu();
-    qtMenu->setFont(QFont(appFont,appFontSize));
+    //qtMenu->setFont(QFont(appFont,appFontSize));
     qtMenu->setTitle(tr("Edit"));
     menu->addMenu(qtMenu);
 }
@@ -1220,7 +1219,7 @@ Path_KnobGui::addRightClickMenuEntries(QMenu* menu)
         
         menu->addSeparator();
         QMenu* qtMenu = _lineEdit->createStandardContextMenu();
-        qtMenu->setFont(QFont(appFont,appFontSize));
+        //qtMenu->setFont(QFont(appFont,appFontSize));
         qtMenu->setTitle(tr("Edit"));
         menu->addMenu(qtMenu);
     }

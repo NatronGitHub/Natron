@@ -50,7 +50,6 @@ class KnobI;
 class BezierCP;
 class Bezier;
 class LineEdit;
-class QLabel;
 class RotoItem;
 class RotoContext;
 class KeyFrame;

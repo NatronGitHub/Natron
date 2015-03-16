@@ -232,7 +232,13 @@ public:
      * @brief When called, all knobs will go into the same page which will appear as a plain Widget and not as a tab
      **/
     void turnOffPages();
-        
+    
+    void setPluginIcon(const QPixmap& pix) ;
+    
+    void setPluginDescription(const std::string& description) ;
+
+    void setPluginIDAndVersion(const std::string& pluginLabel,const std::string& pluginID,unsigned int version);
+    
 public Q_SLOTS:
 
     /*Internal slot, not meant to be called externally.*/

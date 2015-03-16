@@ -23,6 +23,9 @@
 
 #include "Engine/EffectInstance.h"
 
+#define kNatronGroupInputIsMaskParamName "isMask"
+#define kNatronGroupInputIsOptionalParamName "optional"
+
 typedef boost::shared_ptr<Natron::Node> NodePtr;
 typedef std::list<NodePtr> NodeList;
 
@@ -30,6 +33,7 @@ namespace Natron {
 class Node;
 class OutputEffectInstance;
 }
+class TimeLine;
 class NodeGraphI;
 class KnobI;
 class ViewerInstance;
@@ -56,6 +60,11 @@ public:
      * @brief Returns a copy of the nodes within the collection. MT-safe.
      **/
     NodeList getNodes() const;
+    
+    /**
+     * @brief Same as getNodes() except that this function recurse in sub-groups.
+     **/
+    void getNodes_recursive(NodeList& nodes) const;
     
     /**
      * @brief Adds a node to the collection. MT-safe.
@@ -204,6 +213,22 @@ public:
     void recomputeFrameRangeForAllReaders(int* firstFrame,int* lastFrame);
     
     /**
+     * @brief Recursively sets render preferences for the rendering of a frame for the current thread.
+     * This is thread local storage
+     **/
+    void setParallelRenderArgs(int time,
+                               int view,
+                               bool isRenderUserInteraction,
+                               bool isSequential,
+                               bool canAbort,
+                               const TimeLine* timeline);
+    void invalidateParallelRenderArgs();
+    
+    void getParallelRenderArgs(std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs >& argsMap) const;
+    
+    void forceGetClipPreferencesOnAllTrees();
+    
+    /**
      * @brief Callback called when a node of the collection is being deactivated
      **/
     virtual void notifyNodeDeactivated(const boost::shared_ptr<Natron::Node>& /*node*/) {}
@@ -229,17 +254,40 @@ public:
      **/
     virtual void notifyNodeNameChanged(const boost::shared_ptr<Natron::Node>& /*node*/) {}
     
-    void exportGroupToPython(const QString& pluginLabel,
+    void exportGroupToPython(const QString& pluginID,
+                             const QString& pluginLabel,
+                             const QString& pluginDescription,
                              const QString& pluginIconPath,
                              const QString& pluginGrouping,
                              QString& output);
-    
-    void checkSupportsRenderScaleOKForAllNodes();
+        
 
 private:
     
     boost::scoped_ptr<NodeCollectionPrivate> _imp;
 };
+
+struct ParallelRenderArgs;
+class ParallelRenderArgsSetter
+{
+    NodeCollection* collection;
+    std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs > argsMap;
+    
+public:
+    
+    ParallelRenderArgsSetter(NodeCollection* n,
+                             int time,
+                             int view,
+                             bool isRenderUserInteraction,
+                             bool isSequential,
+                             bool canAbort,
+                             const TimeLine* timeline);
+    
+    ParallelRenderArgsSetter(const std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs >& args);
+    
+    ~ParallelRenderArgsSetter();
+};
+
 
 struct NodeGroupPrivate;
 class NodeGroup : public Natron::OutputEffectInstance, public NodeCollection
@@ -303,7 +351,11 @@ public:
     
     virtual std::string getInputLabel(int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     
-    virtual void addAcceptedComponents(int inputNb,std::list<Natron::ImageComponentsEnum>* comps) OVERRIDE FINAL;
+    virtual SequenceTime getCurrentTime() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+
+    virtual int getCurrentView() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
+    virtual void addAcceptedComponents(int inputNb,std::list<Natron::ImageComponents>* comps) OVERRIDE FINAL;
     virtual void addSupportedBitDepth(std::list<Natron::ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
 
     virtual void notifyNodeDeactivated(const boost::shared_ptr<Natron::Node>& node) OVERRIDE FINAL;
@@ -314,6 +366,8 @@ public:
     
     boost::shared_ptr<Natron::Node> getOutputNode() const;
     
+    std::list<boost::shared_ptr<Natron::Node> > getAllOutputNodes() const;
+    
     boost::shared_ptr<Natron::Node> getOutputNodeInput() const;
     
     boost::shared_ptr<Natron::Node> getRealInputForInput(const boost::shared_ptr<Natron::Node>& input) const;
@@ -322,6 +376,11 @@ public:
     
     void getInputsOutputs(std::list<Natron::Node* >* nodes) const;
     
+    bool getIsDeactivatingGroup() const;
+    void setIsDeactivatingGroup(bool b);
+    
+    bool getIsActivatingGroup() const;
+    void setIsActivatingGroup(bool b);
     
 private:
     

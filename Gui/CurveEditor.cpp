@@ -17,11 +17,11 @@
 
 #include <utility>
 
+#include <QApplication>
 #include <QHBoxLayout>
 #include <QTreeWidget>
 #include <QTreeWidgetItem>
 #include <QSplitter>
-#include <QLabel>
 #include <QHeaderView>
 #include <QUndoStack> // in QtGui on Qt4, in QtWidgets on Qt5
 #include <QAction>
@@ -46,11 +46,12 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Gui/Gui.h"
 #include "Gui/DockablePanel.h"
 #include "Gui/GuiAppInstance.h"
+#include "Gui/Label.h"
 
 using std::make_pair;
 using std::cout;
 using std::endl;
-
+using Natron::Label;
 
 
 struct CurveEditorPrivate
@@ -67,7 +68,7 @@ struct CurveEditorPrivate
     QTreeWidget* tree;
     QWidget* filterContainer;
     QHBoxLayout* filterLayout;
-    QLabel* filterLabel;
+    Natron::Label* filterLabel;
     LineEdit* filterEdit;
     QWidget* leftPaneContainer;
     QVBoxLayout* leftPaneLayout;
@@ -131,8 +132,7 @@ CurveEditor::CurveEditor(Gui* gui,
     _imp->filterLayout->setContentsMargins(0, 0, 0, 0);
     
     QString filterTt = tr("Show in the curve editor only nodes containing the following filter");
-    _imp->filterLabel = new QLabel("Filter:",_imp->filterContainer);
-    _imp->filterLabel->setFont(QFont(appFont,appFontSize));
+    _imp->filterLabel = new Label("Filter:",_imp->filterContainer);
     _imp->filterLabel->setToolTip(filterTt);
     _imp->filterEdit = new LineEdit(_imp->filterContainer);
     _imp->filterEdit->setToolTip(filterTt);

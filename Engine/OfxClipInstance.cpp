@@ -36,7 +36,7 @@
 #include "Engine/Transform.h"
 
 #include <nuke/fnOfxExtensions.h>
-
+#include <ofxNatron.h>
 
 using namespace Natron;
 
@@ -52,6 +52,8 @@ OfxClipInstance::OfxClipInstance(OfxEffectInstance* nodeInstance
       , _effect(effect)
       , _aspectRatio(1.)
       , _lastActionData()
+      , _componentsPresent()
+      , _unmappedComponents()
 {
     assert(_nodeInstance);
     assert(_effect);
@@ -71,12 +73,9 @@ OfxClipInstance::getUnmappedBitDepth() const
     }
     if (inputNode) {
         ///Get the input node's output preferred bit depth and componentns
-        Natron::ImageComponentsEnum comp;
+        std::list<Natron::ImageComponents> comp;
         Natron::ImageBitDepthEnum depth;
         inputNode->getPreferredDepthAndComponents(-1, &comp, &depth);
-        
-        
-        
         
         switch (depth) {
             case Natron::eImageBitDepthByte:
@@ -123,24 +122,21 @@ OfxClipInstance::getUnmappedComponents() const
     }
     if (inputNode) {
         ///Get the input node's output preferred bit depth and componentns
-        Natron::ImageComponentsEnum comp;
+        std::list<Natron::ImageComponents> comps;
         Natron::ImageBitDepthEnum depth;
-        inputNode->getPreferredDepthAndComponents(-1, &comp, &depth);
+        inputNode->getPreferredDepthAndComponents(-1, &comps, &depth);
+        assert(!comps.empty());
         
-        switch (comp) {
-            case Natron::eImageComponentRGBA:
-                return rgbaStr;
-                break;
-            case Natron::eImageComponentRGB:
-                return rgbStr;
-                break;
-            case Natron::eImageComponentAlpha:
-                return alphaStr;
-                break;
-            default:
-                return rgbaStr;
-                break;
+        Natron::ImageComponents comp = comps.front();
+        std::string& tls = _unmappedComponents.localData();
+        
+        //default to RGBA
+        if (comp.getNumComponents() == 0) {
+            comp = Natron::ImageComponents::getRGBAComponents();
         }
+        tls = natronsComponentsToOfxComponents(comp);
+        return tls;
+        
     } else {
         ///The node is not connected but optional, return the closest supported components
         ///of the first connected non optional input.
@@ -180,19 +176,20 @@ OfxClipInstance::getPremult() const
     if (effect) {
         
         ///Get the input node's output preferred bit depth and componentns
-        Natron::ImageComponentsEnum comp;
+        std::list<Natron::ImageComponents> comps;
         Natron::ImageBitDepthEnum depth;
-        effect->getPreferredDepthAndComponents(-1, &comp, &depth);
+        effect->getPreferredDepthAndComponents(-1, &comps, &depth);
+        assert(!comps.empty());
         
-        switch (comp) {
-            case Natron::eImageComponentRGB:
-                return opaqueStr;
-            //case Natron::eImageComponentRGBA: // RGBA can be Opaque, PreMult or UnPreMult
-            case Natron::eImageComponentAlpha:
-                return premultStr;
-            default:
-                break;
+        const Natron::ImageComponents& comp = comps.front();
+        
+        if (comp == ImageComponents::getRGBComponents()) {
+            return opaqueStr;
+        } else if (comp == ImageComponents::getAlphaComponents()) {
+            return premultStr;
         }
+        
+        //case Natron::eImageComponentRGBA: // RGBA can be Opaque, PreMult or UnPreMult
         Natron::ImagePremultiplicationEnum premult = effect->getOutputPremultiplication();
         
         switch (premult) {
@@ -218,6 +215,48 @@ OfxClipInstance::getPremult() const
     return opaqueStr;
 }
 
+
+/*
+ * We have to use TLS here because the OpenFX API necessitate that strings
+ * live through the entire duration of the calling action. The is the only way
+ * to have it thread-safe and local to a current calling time.
+ */
+const std::vector<std::string>&
+OfxClipInstance::getComponentsPresent() const
+{
+    
+    ComponentsPresentMap& ret = _componentsPresent.localData();
+    ret.clear();
+    
+    Natron::EffectInstance* effect = getAssociatedNode();
+    if (!effect) {
+        return ret;
+    }
+    
+    
+    int time = effect->getCurrentTime();
+    
+    EffectInstance::ComponentsAvailableMap comps;
+    effect->getComponentsAvailable(time, &comps);
+    
+    for (EffectInstance::ComponentsAvailableMap::iterator it = comps.begin(); it != comps.end(); ++it) {
+        ret.push_back(natronsComponentsToOfxComponents(it->first));
+    }
+    
+    return ret;
+}
+
+int
+OfxClipInstance::getDimension(const std::string &name) const OFX_EXCEPTION_SPEC
+{
+    if (name == kFnOfxImageEffectPropComponentsPresent) {
+#pragma message WARN("Improve this")
+        return (int)getComponentsPresent().size();
+    }
+    return OFX::Host::ImageEffect::ClipInstance::getDimension(name);
+}
+
+
 // Pixel Aspect Ratio -
 //
 //  The pixel aspect ratio of a clip or image.
@@ -228,14 +267,16 @@ OfxClipInstance::getAspectRatio() const
     if (isOutput()) {
         return _aspectRatio;
     }
-    
+
     EffectInstance* input = getAssociatedNode();
-    if (input) {
-        return input->getPreferredAspectRatio();
-    } else if (_nodeInstance) {
+    if (!input || getName() == "Roto") {
         Format f;
-        _nodeInstance->getRenderFormat(&f);
+        if (_nodeInstance) {
+            _nodeInstance->getRenderFormat(&f);
+        }
         return f.getPixelAspectRatio();
+    } else if (_nodeInstance) {
+        return input->getPreferredAspectRatio();
     }
     return 0.; // invalid value
 }
@@ -356,21 +397,93 @@ OfxClipInstance::getContinuousSamples() const
     return false;
 }
 
+void
+OfxClipInstance::getRegionOfDefinitionInternal(OfxTime time,int view, unsigned int mipmapLevel,Natron::EffectInstance* associatedNode,
+                                               OfxRectD* ret) const
+{
+    
+    if ( (getName() == "Roto") && _nodeInstance->getNode()->isRotoNode() ) {
+        boost::shared_ptr<RotoContext> rotoCtx =  _nodeInstance->getNode()->getRotoContext();
+        assert(rotoCtx);
+        RectD rod;
+        rotoCtx->getMaskRegionOfDefinition(time, view, &rod);
+        ret->x1 = rod.x1;
+        ret->x2 = rod.x2;
+        ret->y1 = rod.y1;
+        ret->y2 = rod.y2;
+        return;
+    }
+    
+    
+    if (associatedNode) {
+        bool isProjectFormat;
+        
+        U64 nodeHash = associatedNode->getRenderHash();
+        RectD rod;
+        RenderScale scale;
+        scale.x = scale.y = Natron::Image::getScaleFromMipMapLevel(mipmapLevel);
+        Natron::StatusEnum st = associatedNode->getRegionOfDefinition_public(nodeHash,time, scale, view, &rod, &isProjectFormat);
+        if (st == eStatusFailed) {
+            ret->x1 = 0.;
+            ret->x2 = 0.;
+            ret->y1 = 0.;
+            ret->y2 = 0.;
+        } else {
+            ret->x1 = rod.left();
+            ret->x2 = rod.right();
+            ret->y1 = rod.bottom();
+            ret->y2 = rod.top();
+        }
+        
+    } else {
+        ret->x1 = 0.;
+        ret->x2 = 0.;
+        ret->y1 = 0.;
+        ret->y2 = 0.;
+    }
+
+}
+
 OfxRectD
 OfxClipInstance::getRegionOfDefinition(OfxTime time, int view) const
 {
-#pragma message WARN("TODO")
-    OfxRectD d;
-    d.x1 = d.x2 = d.y1 = d.y2 = 0.;
-    return d;
+    OfxRectD rod;
+    unsigned int mipmapLevel;
+    Natron::EffectInstance* associatedNode = getAssociatedNode();
+    
+    /// The node might be disabled, hence we navigate upstream to find the first non disabled node.
+    if (associatedNode) {
+        associatedNode = associatedNode->getNearestNonDisabled();
+    }
+    ///We don't have to do the same kind of navigation if the effect is identity because the effect is supposed to have
+    ///the same RoD as the input if it is identity.
+    
+    if (!associatedNode) {
+        ///Doesn't matter, input is not connected
+        mipmapLevel = 0;
+    } else {
+        if (_lastActionData.hasLocalData()) {
+            const ActionLocalData& args = _lastActionData.localData();
+            if (args.isMipmapLevelValid) {
+                mipmapLevel = args.mipMapLevel;
+            } else {
+                mipmapLevel = 0;
+            }
+        } else {
+            mipmapLevel = 0;
+        }
+        
+    }
+    getRegionOfDefinitionInternal(time, view, mipmapLevel, associatedNode, &rod);
+    return rod;
 }
+
 
 /// override this to return the rod on the clip canonical coords!
 OfxRectD
 OfxClipInstance::getRegionOfDefinition(OfxTime time) const
 {
     OfxRectD ret;
-    RectD rod; // rod is in canonical coordinates
     unsigned int mipmapLevel;
     int view;
     Natron::EffectInstance* associatedNode = getAssociatedNode();
@@ -405,49 +518,7 @@ OfxClipInstance::getRegionOfDefinition(OfxTime time) const
         }
         
     }
-
-
-    if ( (getName() == "Roto") && _nodeInstance->getNode()->isRotoNode() ) {
-        boost::shared_ptr<RotoContext> rotoCtx =  _nodeInstance->getNode()->getRotoContext();
-        assert(rotoCtx);
-        RectD rod;
-        rotoCtx->getMaskRegionOfDefinition(time, view, &rod);
-        ret.x1 = rod.x1;
-        ret.x2 = rod.x2;
-        ret.y1 = rod.y1;
-        ret.y2 = rod.y2;
-
-        return ret;
-    }
-
-
-    if (associatedNode) {
-        bool isProjectFormat;
-
-        U64 nodeHash = associatedNode->getRenderHash();
-        
-        RenderScale scale;
-        scale.x = scale.y = Natron::Image::getScaleFromMipMapLevel(mipmapLevel);
-        Natron::StatusEnum st = associatedNode->getRegionOfDefinition_public(nodeHash,time, scale, view, &rod, &isProjectFormat);
-        if (st == eStatusFailed) {
-            ret.x1 = 0.;
-            ret.x2 = 0.;
-            ret.y1 = 0.;
-            ret.y2 = 0.;
-        } else {
-            ret.x1 = rod.left();
-            ret.x2 = rod.right();
-            ret.y1 = rod.bottom();
-            ret.y2 = rod.top();
-        }
-        
-    } else {
-        ret.x1 = 0.;
-        ret.x2 = 0.;
-        ret.y1 = 0.;
-        ret.y2 = 0.;
-    }
-
+    getRegionOfDefinitionInternal(time, view, mipmapLevel, associatedNode, &ret);
     return ret;
 } // getRegionOfDefinition
 
@@ -464,21 +535,104 @@ OfxClipInstance::getImage(OfxTime time,
     return getStereoscopicImage(time, -1, optionalBounds);
 }
 
+static std::string natronCustomCompToOfxComp(const ImageComponents &comp) {
+    std::stringstream ss;
+    const std::vector<std::string>& channels = comp.getComponentsNames();
+    ss << kNatronOfxImageComponentsPlane << comp.getLayerName();
+    for (U32 i = 0; i < channels.size(); ++i) {
+        ss << kNatronOfxImageComponentsPlaneChannel << channels[i];
+    }
+    return ss.str();
+}
+
+static ImageComponents ofxCustomCompToNatronComp(const std::string& comp)
+{
+    std::string layerName;
+    std::string compsName;
+    std::vector<std::string> channelNames;
+    static std::string foundPlaneStr(kNatronOfxImageComponentsPlane);
+    static std::string foundChannelStr(kNatronOfxImageComponentsPlaneChannel);
+    
+    std::size_t foundPlane = comp.find(foundPlaneStr);
+    if (foundPlane == std::string::npos) {
+        throw std::runtime_error("Unsupported components type: " + comp);
+    }
+    
+    std::size_t foundChannel = comp.find(foundChannelStr,foundPlane + foundPlaneStr.size());
+    if (foundChannel == std::string::npos) {
+        throw std::runtime_error("Unsupported components type: " + comp);
+    }
+    
+    
+    for (std::size_t i = foundPlane + foundPlaneStr.size(); i < foundChannel; ++i) {
+        layerName.push_back(comp[i]);
+    }
+    
+    while (foundChannel != std::string::npos) {
+        
+        std::size_t nextChannel = comp.find(foundChannelStr,foundChannel + foundChannelStr.size());
+        
+        std::size_t end = nextChannel == std::string::npos ? comp.size() : nextChannel;
+        
+        std::string chan;
+        for (std::size_t i = foundChannel + foundChannelStr.size(); i < end; ++i) {
+            chan.push_back(comp[i]);
+        }
+        channelNames.push_back(chan);
+        compsName.append(chan);
+        
+        foundChannel = nextChannel;
+    }
+    
+    
+    
+    return ImageComponents(layerName,compsName,channelNames);
+}
+
+ImageComponents
+OfxClipInstance::ofxPlaneToNatronPlane(const std::string& plane)
+{
+    if (plane == kFnOfxImagePlaneColour) {
+        return ImageComponents::getRGBAComponents();
+    } else if (plane == kFnOfxImagePlaneForwardMotionVector) {
+        return ImageComponents::getForwardMotionComponents();
+    } else if (plane == kFnOfxImagePlaneBackwardMotionVector) {
+        return ImageComponents::getBackwardMotionComponents();
+    } else if (plane == kFnOfxImagePlaneStereoDisparityLeft) {
+        return ImageComponents::getDisparityLeftComponents();
+    } else if (plane == kFnOfxImagePlaneStereoDisparityRight) {
+        return ImageComponents::getDisparityRightComponents();
+    } else {
+        return ofxCustomCompToNatronComp(plane);
+    }
+
+}
+
+std::string
+OfxClipInstance::natronsPlaneToOfxPlane(const Natron::ImageComponents& plane)
+{
+    if (plane.getLayerName() == kNatronColorPlaneName) {
+        return kFnOfxImagePlaneColour;
+    } else if (plane.getLayerName() == kNatronForwardMotionVectorsPlaneName) {
+        return kFnOfxImagePlaneForwardMotionVector;
+    } else if (plane.getLayerName() == kNatronBackwardMotionVectorsPlaneName) {
+        return kFnOfxImagePlaneBackwardMotionVector;
+    } else if (plane.getLayerName() == kNatronDisparityLeftPlaneName) {
+        return kFnOfxImagePlaneStereoDisparityLeft;
+    } else if (plane.getLayerName() == kNatronDisparityRightPlaneName) {
+        return kFnOfxImagePlaneStereoDisparityRight;
+    } else {
+        return natronCustomCompToOfxComp(plane);
+    }
+}
+
 OFX::Host::ImageEffect::Image*
 OfxClipInstance::getImagePlane(OfxTime time, int view, const std::string& plane,const OfxRectD *optionalBounds)
 {
-#pragma message WARN("TODO")
-    return NULL;
-}
-
-
-OFX::Host::ImageEffect::Image*
-OfxClipInstance::getStereoscopicImage(OfxTime time,
-                                      int view,
-                                      const OfxRectD *optionalBounds)
-{
-    OfxPointD scale;
     
+    
+    
+    OfxPointD scale;
     scale.x = scale.y = 1.;
     
     bool hasLocalData = true;
@@ -495,14 +649,31 @@ OfxClipInstance::getStereoscopicImage(OfxTime time,
     }
     assert( _lastActionData.hasLocalData() );
     if ( isOutput() ) {
-        boost::shared_ptr<Natron::Image> outputImage;
+        std::map<ImageComponents,EffectInstance::PlaneToRender> outputPlanes;
         RectI renderWindow;
-        bool ok = _nodeInstance->getThreadLocalRenderedImage(&outputImage,&renderWindow);
+        bool ok = _nodeInstance->getThreadLocalRenderedPlanes(&outputPlanes,&renderWindow);
         if (!ok) {
             return NULL;
         }
+        ImageComponents natronPlane = ofxPlaneToNatronPlane(plane);
+        ImagePtr outputImage;
+        for (std::map<ImageComponents,EffectInstance::PlaneToRender>::iterator it = outputPlanes.begin(); it!=outputPlanes.end(); ++it) {
+            if (it->first.getLayerName() == natronPlane.getLayerName()) {
+                outputImage = it->second.tmpImage;
+                break;
+            }
+        }
+        
+        if (!outputImage) {
+            outputImage = _nodeInstance->allocateImagePlaneAndSetInThreadLocalStorage(natronPlane);
+        }
+        
+        assert(outputImage);
+        if (!outputImage) {
+            return 0;
+        }
         //The output clip doesn't have any transform matrix
-        return new OfxImage(outputImage,renderWindow,boost::shared_ptr<Transform::Matrix3x3>(),*this);
+        return new OfxImage(outputImage,false,renderWindow,boost::shared_ptr<Transform::Matrix3x3>(),*this);
     }
     
     
@@ -557,7 +728,15 @@ OfxClipInstance::getStereoscopicImage(OfxTime time,
     scale.x = Image::getScaleFromMipMapLevel(mipMapLevel);
     scale.y = scale.x;
     
-    return getImageInternal(time, scale, view, optionalBounds, usingReroute, rerouteInputNb, node, transform);
+    return getImageInternal(time, scale, view, optionalBounds, plane, usingReroute, rerouteInputNb, node, transform);
+}
+
+OFX::Host::ImageEffect::Image*
+OfxClipInstance::getStereoscopicImage(OfxTime time,
+                                      int view,
+                                      const OfxRectD *optionalBounds)
+{
+    return getImagePlane(time, view, kFnOfxImagePlaneColour, optionalBounds);
 } // getStereoscopicImage
 
 OFX::Host::ImageEffect::Image*
@@ -565,6 +744,7 @@ OfxClipInstance::getImageInternal(OfxTime time,
                                   const OfxPointD & renderScale,
                                   int view,
                                   const OfxRectD *optionalBounds,
+                                  const std::string& plane,
                                   bool usingReroute,
                                   int rerouteInputNb,
                                   Natron::EffectInstance* node,
@@ -579,8 +759,29 @@ OfxClipInstance::getImageInternal(OfxTime time,
         bounds.x2 = optionalBounds->x2;
         bounds.y2 = optionalBounds->y2;
     }
-
-    Natron::ImageComponentsEnum comps =  ofxComponentsToNatronComponents( getComponents() );
+    
+    Natron::ImageComponents comp;
+    if (plane == kFnOfxImagePlaneColour) {
+        std::list<ImageComponents> comps = ofxComponentsToNatronComponents(getComponents());
+        assert(comps.size() == 1);
+        comp = comps.front();
+    } else if (plane == kFnOfxImagePlaneBackwardMotionVector) {
+        comp = ImageComponents::getBackwardMotionComponents();
+    } else if (plane == kFnOfxImagePlaneForwardMotionVector) {
+        comp = ImageComponents::getForwardMotionComponents();
+    } else if (plane == kFnOfxImagePlaneStereoDisparityLeft) {
+        comp = ImageComponents::getDisparityLeftComponents();
+    } else if (plane == kFnOfxImagePlaneStereoDisparityRight) {
+        comp = ImageComponents::getDisparityRightComponents();
+    } else {
+        try {
+            comp = ofxCustomCompToNatronComp(plane);
+        } catch (...) {
+            return 0;
+        }
+    }
+    
+    
     Natron::ImageBitDepthEnum bitDepth = ofxDepthToNatronDepth( getPixelDepth() );
     double par = getAspectRatio();
     RectI renderWindow;
@@ -633,10 +834,17 @@ OfxClipInstance::getImageInternal(OfxTime time,
         ImageList inputImages;
         _nodeInstance->getThreadLocalInputImages(&inputImages);
         
+        std::list<ImageComponents> requestedComps;
+        requestedComps.push_back(comp);
         EffectInstance::RenderRoIArgs args((SequenceTime)time,renderScale,mipMapLevel,
-                                           view,false,pixelRoI,RectD(),comps,bitDepth,3,true,inputImages);
-        image = inputNode->renderRoI(args);
-
+                                           view,false,pixelRoI,RectD(),requestedComps,bitDepth,3,true,inputImages);
+        ImageList planes = inputNode->renderRoI(args);
+        assert(planes.size() == 1 || planes.empty());
+        if (planes.empty()) {
+            return 0;
+        }
+        
+        image = planes.front();
         _nodeInstance->addThreadLocalInputImageTempPointer(image);
 
         renderWindow = pixelRoI;
@@ -644,7 +852,7 @@ OfxClipInstance::getImageInternal(OfxTime time,
     } else {
         image = node->getImage(getInputNb(), time, renderScale, view,
                                optionalBounds ? &bounds : NULL,
-                               comps,
+                               comp,
                                bitDepth,
                                par,
                                false,&renderWindow);
@@ -655,51 +863,53 @@ OfxClipInstance::getImageInternal(OfxTime time,
         if (renderWindow.isNull()) {
             return NULL;
         } else {
-            return new OfxImage(image,renderWindow,transform,*this);
+            return new OfxImage(image,true,renderWindow,transform,*this);
         }
     }
 }
 
 std::string
-OfxClipInstance::natronsComponentsToOfxComponents(Natron::ImageComponentsEnum comp)
+OfxClipInstance::natronsComponentsToOfxComponents(const Natron::ImageComponents& comp)
 {
-    switch (comp) {
-    case Natron::eImageComponentNone:
-
+    if (comp == ImageComponents::getNoneComponents()) {
         return kOfxImageComponentNone;
-        break;
-    case Natron::eImageComponentAlpha:
-
+    } else if (comp == ImageComponents::getAlphaComponents()) {
         return kOfxImageComponentAlpha;
-        break;
-    case Natron::eImageComponentRGB:
-
+    } else if (comp == ImageComponents::getRGBComponents()) {
         return kOfxImageComponentRGB;
-        break;
-    case Natron::eImageComponentRGBA:
-
+    } else if (comp == ImageComponents::getRGBAComponents()) {
         return kOfxImageComponentRGBA;
-        break;
-    default:
-        assert(false);    //comp unsupported
-        break;
+    } else if (comp.getComponentsGlobalName() == kNatronMotionComponentsName) {
+        return kFnOfxImageComponentMotionVectors;
+    } else if (comp.getComponentsGlobalName() == kNatronDisparityComponentsName) {
+        return kFnOfxImageComponentStereoDisparity;
+    } else {
+        return natronCustomCompToOfxComp(comp);
     }
 }
 
-Natron::ImageComponentsEnum
+std::list<Natron::ImageComponents>
 OfxClipInstance::ofxComponentsToNatronComponents(const std::string & comp)
 {
+    std::list<Natron::ImageComponents> ret;
     if (comp ==  kOfxImageComponentRGBA) {
-        return Natron::eImageComponentRGBA;
+        ret.push_back(ImageComponents::getRGBAComponents());
     } else if (comp == kOfxImageComponentAlpha) {
-        return Natron::eImageComponentAlpha;
+        ret.push_back(ImageComponents::getAlphaComponents());
     } else if (comp == kOfxImageComponentRGB) {
-        return Natron::eImageComponentRGB;
+        ret.push_back(ImageComponents::getRGBComponents());
     } else if (comp == kOfxImageComponentNone) {
-        return Natron::eImageComponentNone;
+        ret.push_back(ImageComponents::getNoneComponents());
+    } else if (comp == kFnOfxImageComponentMotionVectors) {
+        ret.push_back(ImageComponents::getForwardMotionComponents());
+        ret.push_back(ImageComponents::getBackwardMotionComponents());
+    } else if (comp == kFnOfxImageComponentStereoDisparity) {
+        ret.push_back(ImageComponents::getDisparityLeftComponents());
+        ret.push_back(ImageComponents::getDisparityRightComponents());
     } else {
-        throw std::runtime_error(comp + ": unsupported component "); //< comp unsupported
+        ret.push_back(ofxCustomCompToNatronComp(comp));
     }
+    return ret;
 }
 
 Natron::ImageBitDepthEnum
@@ -743,13 +953,18 @@ OfxClipInstance::natronsDepthToOfxDepth(Natron::ImageBitDepthEnum depth)
 
 
 OfxImage::OfxImage(boost::shared_ptr<Natron::Image> internalImage,
+                   bool isSrcImage,
                    const RectI& renderWindow,
                    const boost::shared_ptr<Transform::Matrix3x3>& mat,
                    OfxClipInstance &clip)
-    : OFX::Host::ImageEffect::Image(clip)
-      , _bitDepth(OfxImage::eBitDepthFloat)
-      , _floatImage(internalImage)
+: OFX::Host::ImageEffect::Image(clip)
+, _floatImage(internalImage)
+, _imgAccess()
 {
+    
+    assert(internalImage);
+    
+    
     unsigned int mipMapLevel = internalImage->getMipMapLevel();
     RenderScale scale;
 
@@ -761,7 +976,7 @@ OfxImage::OfxImage(boost::shared_ptr<Natron::Image> internalImage,
    
     
     // data ptr
-    const RectI & bounds = internalImage->getBounds();
+    RectI bounds = internalImage->getBounds();
     
     ///Do not activate this assert! The render window passed to renderRoI can be bigger than the actual RoD of the effect
     ///in which case it is just clipped to the RoD.
@@ -770,8 +985,23 @@ OfxImage::OfxImage(boost::shared_ptr<Natron::Image> internalImage,
     renderWindow.intersect(bounds, &pluginsSeenBounds);
     
     const RectD & rod = internalImage->getRoD(); // Not the OFX RoD!!! Natron::Image::getRoD() is in *CANONICAL* coordinates
-    unsigned char* ptr = internalImage->pixelAt( pluginsSeenBounds.left(), pluginsSeenBounds.bottom() );
-    setPointerProperty( kOfxImagePropData, ptr);
+    
+    if (isSrcImage) {
+        boost::shared_ptr<Natron::Image::ReadAccess> access(new Natron::Image::ReadAccess(internalImage.get()));
+        const unsigned char* ptr = access->pixelAt( pluginsSeenBounds.left(), pluginsSeenBounds.bottom() );
+        assert(ptr);
+        setPointerProperty( kOfxImagePropData, const_cast<unsigned char*>(ptr));
+        _imgAccess = access;
+    } else {
+        boost::shared_ptr<Natron::Image::WriteAccess> access(new Natron::Image::WriteAccess(internalImage.get()));
+        unsigned char* ptr = access->pixelAt( pluginsSeenBounds.left(), pluginsSeenBounds.bottom() );
+        assert(ptr);
+        setPointerProperty( kOfxImagePropData, ptr);
+        _imgAccess = access;
+    }
+    
+    
+    
     
     ///We set the render window that was given to the render thread instead of the actual bounds of the image
     ///so we're sure the plug-in doesn't attempt to access outside pixels.
@@ -797,7 +1027,7 @@ OfxImage::OfxImage(boost::shared_ptr<Natron::Image> internalImage,
     
     // row bytes
     setIntProperty( kOfxImagePropRowBytes, bounds.width() *
-                    Natron::getElementsCountForComponents( internalImage->getComponents() ) *
+                    internalImage->getComponents().getNumComponents() *
                     getSizeOfForBitDepth( internalImage->getBitDepth() ) );
     setStringProperty( kOfxImageEffectPropComponents, OfxClipInstance::natronsComponentsToOfxComponents( internalImage->getComponents() ) );
     setStringProperty( kOfxImageEffectPropPixelDepth, OfxClipInstance::natronsDepthToOfxDepth( internalImage->getBitDepth() ) );
@@ -827,18 +1057,6 @@ OfxImage::OfxImage(boost::shared_ptr<Natron::Image> internalImage,
     
 }
 
-OfxRGBAColourF*
-OfxImage::pixelF(int x,
-                 int y) const
-{
-    assert(_bitDepth == eBitDepthFloat);
-    const RectI & bounds = _floatImage->getBounds();
-    if ( ( x >= bounds.left() ) && ( x < bounds.right() ) && ( y >= bounds.bottom() ) && ( y < bounds.top() ) ) {
-        return reinterpret_cast<OfxRGBAColourF*>( _floatImage->pixelAt(x, y) );
-    }
-
-    return 0;
-}
 
 int
 OfxClipInstance::getInputNb() const
@@ -855,7 +1073,7 @@ OfxClipInstance::getInputNb() const
         }
     }
 
-    return inputs.size() - 1 - index;
+    return index;
 }
 
 Natron::EffectInstance*
@@ -975,3 +1193,5 @@ OfxClipInstance::findSupportedComp(const std::string &s) const
     return none;
 
 }
+
+

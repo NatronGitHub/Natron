@@ -10,6 +10,7 @@
 #include "TableModelView.h"
 
 #include <set>
+#include <QApplication>
 #include <QHeaderView>
 #include <QMouseEvent>
 #include <QScrollBar>
@@ -741,6 +742,7 @@ TableView::TableView(QWidget* parent)
     setSortingEnabled(false);
 
     header()->setStretchLastSection(false);
+    header()->setFont(QApplication::font()); // necessary, or the header font will have the default size, not the application font size
     setTextElideMode(Qt::ElideMiddle);
     setEditTriggers(QAbstractItemView::EditKeyPressed | QAbstractItemView::SelectedClicked | QAbstractItemView::DoubleClicked);
     setContextMenuPolicy(Qt::CustomContextMenu);

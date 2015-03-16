@@ -23,6 +23,7 @@
 #include "Engine/EffectInstance.h"
 
 class ParallelRenderArgsSetter;
+class RenderingFlagSetter;
 namespace Natron {
 class Image;
 class FrameEntry;
@@ -67,7 +68,7 @@ public:
         U64 activeInputHash;
         boost::shared_ptr<Natron::FrameKey> key;
         boost::shared_ptr<UpdateViewerParams> params;
-        boost::shared_ptr<ParallelRenderArgsSetter> frameArgs;
+        boost::shared_ptr<RenderingFlagSetter> isRenderingFlag;
     };
     
     /**
@@ -92,7 +93,7 @@ public:
      **/
     Natron::StatusEnum renderViewer(int view,bool singleThreaded,bool isSequentialRender,
                                 U64 viewerHash,
-                                bool canAbort,
+                                    bool canAbort,
                                 boost::shared_ptr<ViewerInstance::ViewerArgs> args[2]) WARN_UNUSED_RETURN;
 
 
@@ -131,7 +132,10 @@ public:
 
 
     void setDisplayChannels(Natron::DisplayChannelsEnum channels);
-
+    
+    void setActiveLayer(const Natron::ImageComponents& layer, bool doRender);
+    
+    void setAlphaChannel(const Natron::ImageComponents& layer, const std::string& channelName, bool doRender);
 
     bool isAutoContrastEnabled() const WARN_UNUSED_RETURN;
 
@@ -174,7 +178,7 @@ public:
                                          bool forceGetClipPrefAction) OVERRIDE FINAL;
     
     void callRedrawOnMainThread() { Q_EMIT s_callRedrawOnMainThread(); }
-
+    
     struct ViewerInstancePrivate;
     
 public Q_SLOTS:
@@ -197,7 +201,7 @@ public Q_SLOTS:
 
 
 Q_SIGNALS:
-    
+        
     void s_callRedrawOnMainThread();
 
     void viewerDisconnected();
@@ -262,7 +266,7 @@ private:
         return Natron::EffectInstance::eRenderSafetyFullySafe;
     }
 
-    virtual void addAcceptedComponents(int inputNb,std::list<Natron::ImageComponentsEnum>* comps) OVERRIDE FINAL;
+    virtual void addAcceptedComponents(int inputNb,std::list<Natron::ImageComponents>* comps) OVERRIDE FINAL;
     virtual void addSupportedBitDepth(std::list<Natron::ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
     /*******************************************/
     
@@ -272,7 +276,7 @@ private:
                                              bool isSequentialRender,
                                              U64 viewerHash,
                                              bool canAbort,
-                                             const ViewerArgs& inArgs) WARN_UNUSED_RETURN;
+                                            ViewerArgs& inArgs) WARN_UNUSED_RETURN;
 
     virtual RenderEngine* createRenderEngine() OVERRIDE FINAL WARN_UNUSED_RETURN;
     

@@ -11,16 +11,11 @@
 #include <Python.h>
 
 #include "Global/Macros.h"
-CLANG_DIAG_OFF(deprecated)
-CLANG_DIAG_OFF(uninitialized)
-#include <QLabel> // in QtGui on Qt4, in QtWidgets on Qt5
-CLANG_DIAG_ON(deprecated)
-CLANG_DIAG_ON(uninitialized)
+#include "Gui/Label.h"
 
-#include "Global/Macros.h"
-
+namespace Natron {
 class GroupBoxLabel
-    : public QLabel
+    : public Label
 {
     Q_OBJECT
 
@@ -55,5 +50,5 @@ Q_SIGNALS:
 private:
     bool _checked;
 };
-
+} // namespace Natron
 #endif // ifndef NATRON_GUI_GROUPBOXLABEL_H_

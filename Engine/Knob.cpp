@@ -253,6 +253,9 @@ struct KnobHelperPrivate
     std::vector<bool> mustCloneGuiCurves;
     std::vector<bool> mustCloneInternalCurves;
     
+    ///Used by deQueueValuesSet to know whether we should clear expressions results or not
+    std::vector<bool> mustClearExprResults;
+    
     ///A blind handle to the ofx param, needed for custom overlay interacts
     void* ofxParamHandle;
     
@@ -264,6 +267,15 @@ struct KnobHelperPrivate
     
     mutable QMutex expressionMutex;
     std::vector<Expr> expressions;
+    
+    mutable QMutex lastRandomHashMutex;
+    mutable U32 lastRandomHash;
+    
+    ///Used to prevent recursive calls for expressions
+    mutable ThreadStorage<int> expressionRecursionLevel;
+    
+    mutable QMutex hasModificationsMutex;
+    std::vector<bool> hasModifications;
     
     KnobHelperPrivate(KnobHelper* publicInterface_,
                       KnobHolder*  holder_,
@@ -303,18 +315,28 @@ struct KnobHelperPrivate
     , gui(0)
     , mustCloneGuiCurvesMutex()
     , mustCloneGuiCurves()
+    , mustCloneInternalCurves()
+    , mustClearExprResults()
     , ofxParamHandle(0)
     , isInstanceSpecific(false)
     , dimensionNames(dimension_)
     , expressionMutex()
     , expressions()
+    , lastRandomHash(0)
+    , expressionRecursionLevel()
+    , hasModificationsMutex()
+    , hasModifications()
     {
         mustCloneGuiCurves.resize(dimension);
         mustCloneInternalCurves.resize(dimension);
+        mustClearExprResults.reserve(dimension);
         expressions.resize(dimension);
+        hasModifications.resize(dimension);
         for (int i = 0; i < dimension_; ++i) {
             mustCloneGuiCurves[i] = false;
             mustCloneInternalCurves[i] = false;
+            mustClearExprResults[i] = false;
+            hasModifications[i] = false;
         }
     }
     
@@ -328,8 +350,6 @@ KnobHelper::KnobHelper(KnobHolder* holder,
                        int dimension,
                        bool declaredByPlugin)
 : _signalSlotHandler()
-, _expressionsRecursionLevel(0)
-, _expressionRecursionLevelMutex(QMutex::Recursive)
 , _imp( new KnobHelperPrivate(this,holder,dimension,description,declaredByPlugin) )
 {
 }
@@ -337,6 +357,37 @@ KnobHelper::KnobHelper(KnobHolder* holder,
 KnobHelper::~KnobHelper()
 {
     
+}
+
+void
+KnobHelper::incrementExpressionRecursionLevel() const
+{
+    if (!_imp->expressionRecursionLevel.hasLocalData()) {
+        _imp->expressionRecursionLevel.localData() = 1;
+    } else {
+        int& tls = _imp->expressionRecursionLevel.localData();
+        ++tls;
+    }
+    
+}
+
+void
+KnobHelper::decrementExpressionRecursionLevel() const
+{
+    assert(_imp->expressionRecursionLevel.hasLocalData());
+    int& tls = _imp->expressionRecursionLevel.localData();
+    --tls;
+}
+
+int
+KnobHelper::getExpressionRecursionLevel() const
+{
+    if (!_imp->expressionRecursionLevel.hasLocalData()) {
+        return 0;
+    } else {
+        int& tls = _imp->expressionRecursionLevel.localData();
+        return tls;
+    }
 }
 
 void
@@ -375,6 +426,14 @@ KnobHelper::deleteKnob()
     }
     if (_imp->gui) {
         _imp->gui->onKnobDeletion();
+    }
+    
+    KnobHolder* holder = getHolder();
+    if (holder && useNativeOverlayHandle()) {
+        Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(holder);
+        if (effect) {
+            effect->getNode()->removeDefaultOverlay(this);
+        }
     }
 }
 
@@ -903,6 +962,19 @@ KnobHelper::removeAnimation(int dimension,
 }
 
 void
+KnobHelper::clearExpressionsResultsIfNeeded(std::map<int,Natron::ValueChangedReasonEnum>& modifiedDimensions)
+{
+    QMutexLocker k(&_imp->mustCloneGuiCurvesMutex);
+    for (int i = 0; i < getDimension(); ++i) {
+        if (_imp->mustClearExprResults[i]) {
+            clearExpressionsResults(i);
+            _imp->mustClearExprResults[i] = false;
+            modifiedDimensions.insert(std::make_pair(i, Natron::eValueChangedReasonNatronInternalEdited));
+        }
+    }
+}
+
+void
 KnobHelper::cloneInternalCurvesIfNeeded(std::map<int,Natron::ValueChangedReasonEnum>& modifiedDimensions)
 {
     QMutexLocker k(&_imp->mustCloneGuiCurvesMutex);
@@ -1056,13 +1128,7 @@ KnobHelper::evaluateValueChange(int dimension,
     /// For eValueChangedReasonTimeChanged we never call the instanceChangedAction and evaluate otherwise it would just throttle down
     /// the application responsiveness
     if (reason != Natron::eValueChangedReasonTimeChanged && _imp->holder) {
-        int time;
-        if (app) {
-            time = app->getTimeLine()->currentFrame();
-        } else {
-            time = 0;
-        }
-        if ( ( app && !app->getProject()->isLoadingProject() ) || !app ) {
+        if ( ( app && !app->getProject()->isLoadingProject() /*&& !app->isCreatingPythonGroup()*/) || !app ) {
             
             if (_imp->holder->isEvaluationBlocked()) {
                 _imp->holder->appendValueChange(this,reason);
@@ -1079,6 +1145,7 @@ KnobHelper::evaluateValueChange(int dimension,
     }
     
     if (!guiFrozen  && _signalSlotHandler) {
+        computeHasModifications();
         _signalSlotHandler->s_valueChanged(dimension,(int)reason);
         if (getHolder()) {
             _signalSlotHandler->s_updateDependencies(dimension);
@@ -1225,6 +1292,8 @@ KnobI::declareCurrentKnobVariable_Python(KnobI* knob,int dimension,std::string& 
         ss << thisNodeStr;
         ss << "thisParam = thisNode." << knob->getName() << "\n";
         ss << "frame = thisParam.getCurrentTime() \n";
+        ss << "random = thisParam.random\n";
+        ss << "randomInt = thisParam.randomInt\n";
         if (dimension != -1) {
             ss << "dimension = " << dimension << "\n";
         }
@@ -1238,6 +1307,7 @@ KnobI::declareCurrentKnobVariable_Python(KnobI* knob,int dimension,std::string& 
         script.insert(firstLineAfterImport, toInsert);
         script.append("\n");
         script.append("del thisParam\n");
+        script.append("del random\ndel randomInt\n");
         script.append("del frame\n");
         if (dimension != -1) {
             script.append("del dimension\n");
@@ -1449,12 +1519,9 @@ KnobHelper::validateExpression(const std::string& expression,int dimension,bool 
     std::string error;
     
     {
-        QMutexLocker k(&_expressionRecursionLevelMutex);
-        assert(_expressionsRecursionLevel == 0);
-        ++_expressionsRecursionLevel;
+        EXPR_RECURSION_LEVEL();
         
         if (!interpretPythonScript(exprCpy, &error, 0)) {
-            --_expressionsRecursionLevel;
             throw std::runtime_error(error);
         }
         PyObject *ret = PyObject_GetAttrString(Natron::getMainModule(),"ret"); //get our ret variable created above
@@ -1463,13 +1530,10 @@ KnobHelper::validateExpression(const std::string& expression,int dimension,bool 
 #ifdef DEBUG
             PyErr_Print();
 #endif
-            --_expressionsRecursionLevel;
             throw std::runtime_error("return value must be assigned to the \"ret\" variable");
         }
   
-        --_expressionsRecursionLevel;
 
-        /// execute
         Knob<double>* isDouble = dynamic_cast<Knob<double>*>(this);
         Knob<int>* isInt = dynamic_cast<Knob<int>*>(this);
         Knob<bool>* isBool = dynamic_cast<Knob<bool>*>(this);
@@ -1498,6 +1562,8 @@ KnobHelper::validateExpression(const std::string& expression,int dimension,bool 
 void
 KnobHelper::setExpressionInternal(int dimension,const std::string& expression,bool hasRetVariable,bool clearResults)
 {
+    assert(dimension >= 0 && dimension < getDimension());
+    
     Natron::PythonGILLocker pgl;
     
     ///Clear previous expr
@@ -1523,22 +1589,16 @@ KnobHelper::setExpressionInternal(int dimension,const std::string& expression,bo
     
     //Try to execute the expression at least once to check that it works.
     {
-        QMutexLocker k(&_expressionRecursionLevelMutex);
-        assert(_expressionsRecursionLevel == 0);
-        ++_expressionsRecursionLevel;
+        EXPR_RECURSION_LEVEL();
         
         try {
-            Natron::PythonGILLocker pgl;
             PyObject* ret = executeExpression(dimension);
             Py_DECREF(ret); //< new ref
 
         } catch (const std::runtime_error& e) {
-            --_expressionsRecursionLevel;
             clearExpression(dimension,clearResults);
             throw e;
         }
-        --_expressionsRecursionLevel;
-
     }
     
     
@@ -1553,13 +1613,9 @@ KnobHelper::setExpressionInternal(int dimension,const std::string& expression,bo
     }
     
     //Parse listeners of the expression, to keep track of dependencies to indicate them to the user.
-    {
-        QMutexLocker k(&_expressionRecursionLevelMutex);
-        assert(_expressionsRecursionLevel == 0);
-        ++_expressionsRecursionLevel;
-        _imp->parseListenersFromExpression(dimension);
-        --_expressionsRecursionLevel;
-        
+    if (getHolder()) {
+        EXPR_RECURSION_LEVEL();
+        _imp->parseListenersFromExpression(dimension);        
     }
     
     //Notify the expr. has changed
@@ -1666,6 +1722,26 @@ KnobHelper::executeExpression(int dimension) const
     if (PyErr_Occurred()) {
 #ifdef DEBUG
         PyErr_Print();
+        ///Gui session, do stdout, stderr redirection
+        if (PyObject_HasAttrString(mainModule, "catchErr")) {
+            std::string error;
+            PyObject* errCatcher = PyObject_GetAttrString(mainModule,"catchErr"); //get our catchOutErr created above, new ref
+            PyObject *errorObj = 0;
+            if (errCatcher) {
+                errorObj = PyObject_GetAttrString(errCatcher,"value"); //get the  stderr from our catchErr object, new ref
+                assert(errorObj);
+                error = std::string(PY3String_asString(errorObj));
+                PyObject* unicode = PyUnicode_FromString("");
+                PyObject_SetAttrString(errCatcher, "value", unicode);
+                Py_DECREF(errorObj);
+                Py_DECREF(errCatcher);
+                qDebug() << "Expression dump\n=========================================================";
+                qDebug() << exp.expression.c_str();
+                qDebug() << error.c_str();
+            }
+
+        }
+
 #endif
         throw std::runtime_error("Failed to execute compiled Python code");
     }
@@ -2063,7 +2139,9 @@ KnobHelper::setAnimationLevel(int dimension,
         _imp->animationLevel[dimension] = level;
     }
     if ( _signalSlotHandler && _imp->gui && !_imp->gui->isGuiFrozenForPlayback() ) {
-        _signalSlotHandler->s_animationLevelChanged( dimension,(int)level );
+        if (getExpression(dimension).empty()) {
+            _signalSlotHandler->s_animationLevelChanged( dimension,(int)level );
+        }
     }
 }
 
@@ -2252,11 +2330,13 @@ KnobHelper::onMasterChanged(KnobI* master,
     for (U32 i = 0; i < masters.size(); ++i) {
         if (masters[i].second.get() == master && masters[i].first == masterDimension) {
             
-            ///We still want to clone the master's dimension because otherwise we couldn't edit the curve e.g in the curve editor
-            ///For example we use it for roto knobs where selected beziers have their knobs slaved to the gui knobs
-            clone(master,i);
-            
-            evaluateValueChange(i, Natron::eValueChangedReasonSlaveRefresh);
+            if (getExpression(i).empty()) {
+                ///We still want to clone the master's dimension because otherwise we couldn't edit the curve e.g in the curve editor
+                ///For example we use it for roto knobs where selected beziers have their knobs slaved to the gui knobs
+                clone(master,i);
+                
+                evaluateValueChange(i, Natron::eValueChangedReasonSlaveRefresh);
+            }
             
             return;
         }
@@ -2279,9 +2359,15 @@ KnobHelper::onExprDependencyChanged(KnobI* knob,int /*dimension*/)
         }
     }
     
+    KnobHolder* holder = getHolder();
     for (std::set<int>::const_iterator it = dimensionsToEvaluate.begin();it != dimensionsToEvaluate.end(); ++it) {
-        clearExpressionsResults(*it);
-        evaluateValueChange(*it, Natron::eValueChangedReasonSlaveRefresh);
+        if (holder && !holder->canSetValue()) {
+            QMutexLocker k(&_imp->mustCloneGuiCurvesMutex);
+            _imp->mustClearExprResults[*it] = true;
+        } else {
+            clearExpressionsResults(*it);
+            evaluateValueChange(*it, Natron::eValueChangedReasonSlaveRefresh);
+        }
     }
 }
 
@@ -2378,6 +2464,95 @@ KnobHelper::getCurrentView() const
     return holder && holder->getApp() ? holder->getCurrentView() : 0;
 }
 
+
+
+double
+KnobHelper::random(unsigned int seed) const
+{
+    randomSeed(seed);
+    return random();
+}
+
+double
+KnobHelper::random(double min,double max) const
+{
+    QMutexLocker k(&_imp->lastRandomHashMutex);
+    _imp->lastRandomHash = hashFunction(_imp->lastRandomHash);
+    return ((double)_imp->lastRandomHash / (double)0x100000000LL) * (max - min)  + min;
+}
+
+int
+KnobHelper::randomInt(unsigned int seed) const
+{
+    randomSeed(seed);
+    return randomInt();
+}
+
+int
+KnobHelper::randomInt(int min,int max) const
+{
+    return (int)random(min,max);
+}
+
+void
+KnobHelper::randomSeed(unsigned int seed) const
+{
+    
+    U64 hash = 0;
+    KnobHolder* holder = getHolder();
+    if (holder) {
+        Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(holder);
+        if (effect) {
+            hash = effect->getHash();
+        }
+    }
+    U32 hash32 = (U32)hash;
+    hash32 += seed;
+    hash32 += getCurrentTime();
+    
+    QMutexLocker k(&_imp->lastRandomHashMutex);
+    _imp->lastRandomHash = hash32;
+}
+
+bool
+KnobHelper::hasModifications() const
+{
+    QMutexLocker k(&_imp->hasModificationsMutex);
+    for (int i = 0; i < _imp->dimension; ++i) {
+        if (_imp->hasModifications[i]) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool
+KnobHelper::hasModifications(int dimension) const
+{
+    if (dimension < 0 || dimension >= _imp->dimension) {
+        throw std::invalid_argument("KnobHelper::hasModifications: Dimension out of range");
+    }
+    QMutexLocker k(&_imp->hasModificationsMutex);
+    return _imp->hasModifications[dimension];
+}
+
+bool
+KnobHelper::setHasModifications(int dimension,bool value,bool lock)
+{
+    assert(dimension >= 0 && dimension < _imp->dimension);
+    bool ret;
+    if (lock) {
+        QMutexLocker k(&_imp->hasModificationsMutex);
+        ret = _imp->hasModifications[dimension] != value;
+        _imp->hasModifications[dimension] = value;
+    } else {
+        assert(!_imp->hasModificationsMutex.tryLock());
+        ret = _imp->hasModifications[dimension] != value;
+        _imp->hasModifications[dimension] = value;
+    }
+    return ret;
+}
+
 /***************************KNOB HOLDER******************************************/
 
 struct KnobHolder::KnobHolderPrivate
@@ -2430,7 +2605,7 @@ struct KnobHolder::KnobHolderPrivate
     
     mutable QMutex evaluationBlockedMutex;
     int evaluationBlocked;
-    ChangesMap knobChanged;
+    ChangesList knobChanged;
     
     bool changeSignificant;
 
@@ -2539,6 +2714,8 @@ KnobHolder::refreshKnobs()
         _imp->settingsPanel->scanForNewKnobs();
     }
 }
+
+
 
 void
 KnobHolder::removeDynamicKnob(KnobI* knob)
@@ -2871,46 +3048,60 @@ KnobHolder::endChanges(bool discardEverything)
     }
     
     bool evaluate = false;
-    ChangesMap knobChanged;
+    ChangesList knobChanged;
     bool significant = false;
+    {
+        QMutexLocker l(&_imp->evaluationBlockedMutex);
+        
+       // std::cout <<"DECR: " << _imp->evaluationBlocked << std::endl;
+        
+        evaluate = _imp->evaluationBlocked == 1;
+        knobChanged = _imp->knobChanged;
+        _imp->knobChanged.clear();
+        if (evaluate) {
+            significant = _imp->changeSignificant;
+            _imp->changeSignificant = false;
+        }
+    }
+    KnobI* knob = 0;
+    if (!knobChanged.empty()) {
+        if (discardEverything) {
+            {
+                QMutexLocker l(&_imp->evaluationBlockedMutex);
+                
+                if (_imp->evaluationBlocked > 0) {
+                    --_imp->evaluationBlocked;
+                }
+            }
+            return;
+        }
+        
+        for (ChangesList::iterator it = knobChanged.begin(); it!=knobChanged.end(); ++it) {
+            if (it->knob) {
+                onKnobValueChanged_public(it->knob, it->reason, getCurrentTime(), it->originatedFromMainThread);
+            }
+            if (!knob && it->knob) {
+                knob = it->knob;
+            }
+        }
+        
+    }
     {
         QMutexLocker l(&_imp->evaluationBlockedMutex);
         
         if (_imp->evaluationBlocked > 0) {
             --_imp->evaluationBlocked;
         }
-       // std::cout <<"DECR: " << _imp->evaluationBlocked << std::endl;
-        
-        evaluate = _imp->evaluationBlocked == 0;
-            
-        if (evaluate) {
-            knobChanged = _imp->knobChanged;
-            _imp->knobChanged.clear();
-            significant = _imp->changeSignificant;
-            _imp->changeSignificant = false;
-        }
     }
-    if (evaluate && !knobChanged.empty()) {
-        if (discardEverything) {
-            return;
-        }
-        
-        KnobI* knob = 0;
-        for (ChangesMap::iterator it = knobChanged.begin(); it!=knobChanged.end(); ++it) {
-            if (it->first) {
-                onKnobValueChanged_public(it->first, it->second.reason, getCurrentTime(), it->second.originatedFromMainThread);
-            }
-            if (!knob && it->first) {
-                knob = it->first;
-            }
-        }
-        if (significant) {
-            Natron::ValueChangedReasonEnum reason = knobChanged.begin()->second.reason;
-            if (!isMT) {
-                Q_EMIT doEvaluateOnMainThread(knob, significant, reason);
-            } else {
-                evaluate_public(knob, significant, reason);
-            }
+    
+    
+    
+    if (evaluate && significant) {
+        Natron::ValueChangedReasonEnum reason = knobChanged.begin()->reason;
+        if (!isMT) {
+            Q_EMIT doEvaluateOnMainThread(knob, significant, reason);
+        } else {
+            evaluate_public(knob, significant, reason);
         }
     }
 }
@@ -2921,14 +3112,17 @@ KnobHolder::appendValueChange(KnobI* knob,Natron::ValueChangedReasonEnum reason)
 {
     {
         QMutexLocker l(&_imp->evaluationBlockedMutex);
-        if (!_imp->evaluationBlocked) {
-            ++_imp->evaluationBlocked;
-           // std::cout <<"INCR: " << _imp->evaluationBlocked << std::endl;
-        }
+//        if (!_imp->evaluationBlocked) {
+//            ++_imp->evaluationBlocked;
+//           // std::cout <<"INCR: " << _imp->evaluationBlocked << std::endl;
+//        }
         KnobChange k;
         k.reason = reason;
         k.originatedFromMainThread = QThread::currentThread() == qApp->thread();
-        _imp->knobChanged.insert(std::make_pair(knob,k));
+        k.knob = knob;
+        
+        //Push it front so instanceChanged is called on the latest first (LIFO)
+        _imp->knobChanged.push_front(k);
         if (knob) {
             _imp->changeSignificant |= knob->getEvaluateOnChange();
         }

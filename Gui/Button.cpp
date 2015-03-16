@@ -8,6 +8,8 @@
 #include <Python.h>
 
 #include "Button.h"
+
+#include <QApplication>
 #include "Gui/GuiApplicationManager.h"
 
 Button::Button(QWidget* parent)
@@ -37,6 +39,7 @@ Button::Button(const QIcon & icon,
 void
 Button::initInternal()
 {
-    setFont( QFont(appFont,appFontSize) );
+    setFont(QApplication::font()); // necessary, or the buttons will get the default font size
+    //setFont( QFont(appFont,appFontSize) );
 }
 

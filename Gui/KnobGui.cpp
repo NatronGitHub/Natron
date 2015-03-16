@@ -38,7 +38,6 @@ CLANG_DIAG_ON(unused-private-field)
 #include <QGroupBox>
 #include <QtGui/QVector4D>
 #include <QStyleFactory>
-#include <QLabel>
 #include <QMenu>
 #include <QComboBox>
 #include <QDialogButtonBox>
@@ -79,6 +78,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Gui/CustomParamInteract.h"
 #include "Gui/NodeCreationDialog.h"
 #include "Gui/ScriptTextEdit.h"
+#include "Gui/Label.h"
 
 using namespace Natron;
 
@@ -98,7 +98,7 @@ struct KnobGui::KnobGuiPrivate
     std::vector< boost::shared_ptr< KnobI > > knobsOnSameLine;
     QGridLayout* containerLayout;
     QWidget* field;
-    QWidget* descriptionLabel;
+    Natron::Label* descriptionLabel;
     bool isOnNewLine;
     CustomParamInteract* customInteract;
 
@@ -124,7 +124,7 @@ struct KnobGui::KnobGuiPrivate
     , guiCurves()
     , guiRemoved(false)
     {
-        copyRightClickMenu->setFont( QFont(appFont,appFontSize) );
+        //copyRightClickMenu->setFont( QFont(appFont,appFontSize) );
     }
     
     void removeFromKnobsOnSameLineVector(const boost::shared_ptr<KnobI>& knob)
@@ -166,6 +166,7 @@ KnobGui::KnobGui(boost::shared_ptr<KnobI> knob,
         QObject::connect( handler,SIGNAL( frozenChanged(bool) ),this,SLOT( onFrozenChanged(bool) ) );
         QObject::connect( handler,SIGNAL( helpChanged() ),this,SLOT( onHelpChanged() ) );
         QObject::connect( handler,SIGNAL( expressionChanged(int) ),this,SLOT( onExprChanged(int) ) );
+        QObject::connect( handler,SIGNAL( hasModificationsChanged() ),this,SLOT( onHasModificationsChanged() ) );
     }
     _imp->guiCurves.resize(knob->getDimension());
     if (knob->canAnimate()) {
@@ -241,7 +242,7 @@ KnobGui::pushUndoCommand(QUndoCommand* cmd)
 void
 KnobGui::createGUI(QGridLayout* containerLayout,
                    QWidget* fieldContainer,
-                   QLabel* label,
+                   Natron::Label* label,
                    QHBoxLayout* layout,
                    bool isOnNewLine,
                    const std::vector< boost::shared_ptr< KnobI > > & knobsOnSameLine)
@@ -273,6 +274,7 @@ KnobGui::createGUI(QGridLayout* containerLayout,
         layout->addWidget(_imp->customInteract);
     } else {
         createWidget(layout);
+        onHasModificationsChanged();
         updateToolTip();
     }
     if ( knob->isAnimationEnabled() ) {
@@ -302,7 +304,7 @@ void
 KnobGui::createAnimationButton(QHBoxLayout* layout)
 {
     _imp->animationMenu = new QMenu( layout->parentWidget() );
-    _imp->animationMenu->setFont( QFont(appFont,appFontSize) );
+    //_imp->animationMenu->setFont( QFont(appFont,appFontSize) );
     QPixmap pix;
     appPTR->getIcon(Natron::NATRON_PIXMAP_CURVE, &pix);
     _imp->animationButton = new AnimationButton( this,QIcon(pix),"",layout->parentWidget() );
@@ -520,7 +522,7 @@ KnobGui::createAnimationMenu(QMenu* menu,int dimension)
             }
 
             QMenu* interpolationMenu = new QMenu(menu);
-            interpolationMenu->setFont( QFont(appFont,appFontSize) );
+            //interpolationMenu->setFont( QFont(appFont,appFontSize) );
             interpolationMenu->setTitle("Interpolation");
             menu->addAction( interpolationMenu->menuAction() );
             if (!isEnabled) {
@@ -593,27 +595,25 @@ KnobGui::createAnimationMenu(QMenu* menu,int dimension)
         setExprAction->setData(dimension);
         menu->addAction(setExprAction);
         
-        if (!hasExpr.empty()) {
-            QAction* clearExprAction = new QAction(tr("Clear expression"),menu);
-            QObject::connect(clearExprAction,SIGNAL(triggered() ),this,SLOT(onClearExprActionTriggered()));
-            clearExprAction->setData(dimension);
-            menu->addAction(clearExprAction);
-        }
+        QAction* clearExprAction = new QAction(tr("Clear expression"),menu);
+        QObject::connect(clearExprAction,SIGNAL(triggered() ),this,SLOT(onClearExprActionTriggered()));
+        clearExprAction->setData(dimension);
+        menu->addAction(clearExprAction);
+        
     }
     
     if (knob->getDimension() > 1 && isEnabled) {
-            QAction* setExprsAction = new QAction(!hasExpr.empty() ? tr("Edit expression (all dimensions)") :
-                                                  tr("Set expression (all dimensions)"),menu);
-            setExprsAction->setData(-1);
-            QObject::connect(setExprsAction,SIGNAL(triggered() ),this,SLOT(onSetExprActionTriggered()));
-            menu->addAction(setExprsAction);
-        if (!hasExpr.empty()) {
-            
-            QAction* clearExprAction = new QAction(tr("Clear expression (all dimensions)"),menu);
-            QObject::connect(clearExprAction,SIGNAL(triggered() ),this,SLOT(onClearExprActionTriggered()));
-            clearExprAction->setData(-1);
-            menu->addAction(clearExprAction);
-        }
+        QAction* setExprsAction = new QAction(!hasExpr.empty() ? tr("Edit expression (all dimensions)") :
+                                              tr("Set expression (all dimensions)"),menu);
+        setExprsAction->setData(-1);
+        QObject::connect(setExprsAction,SIGNAL(triggered() ),this,SLOT(onSetExprActionTriggered()));
+        menu->addAction(setExprsAction);
+        
+        QAction* clearExprAction = new QAction(tr("Clear expression (all dimensions)"),menu);
+        QObject::connect(clearExprAction,SIGNAL(triggered() ),this,SLOT(onClearExprActionTriggered()));
+        clearExprAction->setData(-1);
+        menu->addAction(clearExprAction);
+        
         
     }
 } // createAnimationMenu
@@ -1403,7 +1403,7 @@ struct LinkToKnobDialogPrivate
     QVBoxLayout* mainLayout;
     QHBoxLayout* firstLineLayout;
     QWidget* firstLine;
-    QLabel* selectNodeLabel;
+    Natron::Label* selectNodeLabel;
     CompleterLineEdit* nodeSelectionCombo;
     ComboBox* knobSelectionCombo;
     QDialogButtonBox* buttons;
@@ -1443,7 +1443,7 @@ LinkToKnobDialog::LinkToKnobDialog(KnobGui* from,
     QObject::connect( _imp->buttons, SIGNAL( rejected() ), this, SLOT( reject() ) );
     _imp->mainLayout->addWidget(_imp->buttons);
 
-    _imp->selectNodeLabel = new QLabel(tr("Parent:"),_imp->firstLine);
+    _imp->selectNodeLabel = new Natron::Label(tr("Parent:"),_imp->firstLine);
     _imp->firstLineLayout->addWidget(_imp->selectNodeLabel);
 
 
@@ -1895,11 +1895,11 @@ void
 KnobGui::onAnimationLevelChanged(int dim,int level)
 {
     if (!_imp->customInteract) {
-        std::string expr = getKnob()->getExpression(dim);
-        reflectExpressionState(dim,!expr.empty());
-        if (expr.empty()) {
+        //std::string expr = getKnob()->getExpression(dim);
+        //reflectExpressionState(dim,!expr.empty());
+        //if (expr.empty()) {
             reflectAnimationLevel(dim, (Natron::AnimationLevelEnum)level);
-        }
+        //}
         
     }
 }
@@ -1952,7 +1952,7 @@ struct EditScriptDialogPrivate
 {
     QVBoxLayout* mainLayout;
     
-    QLabel* expressionLabel;
+    Natron::Label* expressionLabel;
     ScriptTextEdit* expressionEdit;
     
     QWidget* midButtonsContainer;
@@ -1961,7 +1961,7 @@ struct EditScriptDialogPrivate
     Button* useRetButton;
     Button* helpButton;
     
-    QLabel* resultLabel;
+    Natron::Label* resultLabel;
     ScriptTextEdit* resultEdit;
     
     QDialogButtonBox* buttons;
@@ -2021,8 +2021,8 @@ EditScriptDialog::create(const QString& initialScript,bool makeUseRetButton)
         labelHtml.append("<p>" + tr("Note that parameters can be referenced by drag&dropping them from their animation button.") + "</p>");
     }
     
-    _imp->expressionLabel = new QLabel(labelHtml,this);
-    _imp->expressionLabel->setFont(font);
+    _imp->expressionLabel = new Natron::Label(labelHtml,this);
+    //_imp->expressionLabel->setFont(font);
     _imp->mainLayout->addWidget(_imp->expressionLabel);
     
     _imp->expressionEdit = new ScriptTextEdit(this);
@@ -2063,8 +2063,8 @@ EditScriptDialog::create(const QString& initialScript,bool makeUseRetButton)
     
     _imp->mainLayout->addWidget(_imp->midButtonsContainer);
     
-    _imp->resultLabel = new QLabel(tr("Result:"),this);
-    _imp->resultLabel->setFont(font);
+    _imp->resultLabel = new Natron::Label(tr("Result:"),this);
+    //_imp->resultLabel->setFont(font);
     _imp->mainLayout->addWidget(_imp->resultLabel);
     
     _imp->resultEdit = new ScriptTextEdit(this);
@@ -2321,5 +2321,17 @@ KnobGui::onKnobDeletion()
 {
     _imp->container->deleteKnobGui(getKnob());
 }
+
+
+void
+KnobGui::onHasModificationsChanged()
+{
+    if (_imp->descriptionLabel) {
+        bool hasModif = getKnob()->hasModifications();
+        _imp->descriptionLabel->setAltered(!hasModif);
+    }
+    reflectModificationsState();
+}
+
 
 

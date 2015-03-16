@@ -318,7 +318,9 @@ enum ImageComponentsEnum
     eImageComponentNone = 0,
     eImageComponentAlpha,
     eImageComponentRGB,
-    eImageComponentRGBA
+    eImageComponentRGBA,
+    eImageComponentsMotionVectors,
+    eImageComponentsStereoDisparity
 };
 
 enum ImagePremultiplicationEnum
@@ -393,6 +395,20 @@ enum DisplayChannelsEnum
     eDisplayChannelsB,
     eDisplayChannelsA,
     eDisplayChannelsY
+};
+    
+    /** @brief Enumerates the contexts a plugin can be used in */
+enum ContextEnum
+{
+    eContextNone,
+    eContextGenerator,
+    eContextFilter,
+    eContextTransition,
+    eContextPaint,
+    eContextGeneral,
+    eContextRetimer,
+    eContextReader,
+    eContextWriter,
 };
     
 }

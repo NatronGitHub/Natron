@@ -267,13 +267,10 @@ PythonPanelSerialization::initialize(PyPanel* tab,const std::string& func)
         Group_Knob* isGroup = dynamic_cast<Group_Knob*>( knob.get() );
         Page_Knob* isPage = dynamic_cast<Page_Knob*>( knob.get() );
         Button_Knob* isButton = dynamic_cast<Button_Knob*>( knob.get() );
-        Choice_Knob* isChoice = dynamic_cast<Choice_Knob*>( knob.get() );
+        //Choice_Knob* isChoice = dynamic_cast<Choice_Knob*>( knob.get() );
         
         if (!isGroup && !isPage && !isButton) {
-            ///For choice do a deepclone because we need entries
-            bool doCopyKnobs = isChoice != NULL;
-            
-            boost::shared_ptr<KnobSerialization> k(new KnobSerialization(knob,doCopyKnobs));
+            boost::shared_ptr<KnobSerialization> k(new KnobSerialization(knob));
             knobs.push_back(k);
         }
         delete *it;

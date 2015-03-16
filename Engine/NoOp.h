@@ -59,7 +59,7 @@ public:
         return false;
     }
 
-    virtual void addAcceptedComponents(int inputNb,std::list<Natron::ImageComponentsEnum>* comps) OVERRIDE FINAL;
+    virtual void addAcceptedComponents(int inputNb,std::list<Natron::ImageComponents>* comps) OVERRIDE FINAL;
     virtual void addSupportedBitDepth(std::list<Natron::ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
 
     ///Doesn't really matter here since it won't be used (this effect is always an identity)
@@ -73,6 +73,8 @@ public:
                                             int view,
                                             Natron::EffectInstance** inputToTransform,
                                             Transform::Matrix3x3* transform) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
+    virtual bool getInputsHoldingTransform(std::list<int>* inputs) const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     virtual bool isOutput() const OVERRIDE WARN_UNUSED_RETURN
     {

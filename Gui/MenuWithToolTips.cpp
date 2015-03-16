@@ -30,7 +30,7 @@ CLANG_DIAG_ON(uninitialized)
 MenuWithToolTips::MenuWithToolTips(QWidget* parent)
     : QMenu(parent)
 {
-    setFont( QFont(appFont,appFontSize) );
+    //setFont( QFont(appFont,appFontSize) );
 }
 
 bool

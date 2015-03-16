@@ -19,6 +19,7 @@ goto :EOF
 
 set CWD=%cd%
 
+
 :: Set here the path where the Qt_64bit libraries enclosing directory is located
 :: You can download our pre-compiled version here: 
 :: https://sourceforge.net/projects/natron/files/Natron_Windows_3rdParty.zip/download 
@@ -29,6 +30,12 @@ set GIT_NATRON=https://github.com/MrKepzie/Natron.git
 
 :: The branch to fetch from Natron
 set NATRON_BRANCH=%1%
+
+if "%NATRON_BRANCH%" == "workshop" (
+	set WITH_PYTHON=1
+) else (
+	set WITH_PYTHON=0
+)
 
 :: Either 32 or 64
 set BITS=%2%
@@ -134,8 +141,16 @@ if "%BITS%" == "64" (
 	::for /f "tokens=*" %a in ('echo %DEP_PATH%^| sed "s/\\/\\\\/g"') do set DEP_PATH_ESCAPED=%a
 	sed -e "/<AdditionalDependencies>/ s/c:\\Qt\\4.8.6_win32/c:\\Users\\Lex\\Documents\\Github\\Natron3rdParty\\Qt4.8.6_64bit/g" -i App\Natron.vcxproj Renderer\NatronRenderer.vcxproj Tests\Tests.vcxproj
 )
+set errorlevel=0
 devenv Project.sln /Build "%CONFIGURATION%|%MSVC_CONF%" /Project Natron
+if "%errorlevel%" == "1" (
+	goto fail
+)
+set errorlevel=0
 devenv Project.sln /Build "%CONFIGURATION%|%MSVC_CONF%" /Project NatronRenderer
+if "%errorlevel%" == "1" (
+	goto fail
+)
 :: Deploy Natron in Release mode
 if "%CONFIGURATION%" == "Release" (
 	if exist "%DEPLOY_DIR%" (
@@ -173,19 +188,22 @@ if "%CONFIGURATION%" == "Release" (
 	copy /Y %DEP_PATH%\cairo_1.12\lib\%BUILD_SUB_DIR%\cairo.dll %DEPLOY_DIR%\bin
 	copy /Y C:\glew\bin\Release\%BUILD_SUB_DIR%\glew32.dll %DEPLOY_DIR%\bin
 	copy /Y C:\boost\%BUILD_SUB_DIR%\boost_serialization-vc100-mt-1_57.dll %DEPLOY_DIR%\bin
-	copy /Y %PYTHON_DIR%\Lib\site-packages\PySide\shiboken-python3.4.dll %DEPLOY_DIR%\bin
-	copy /Y %PYTHON_DIR%\Lib\site-packages\PySide\pyside-python3.4.dll %DEPLOY_DIR%\bin
-	copy /Y %PYTHON_DLL_DIR%\python34.dll %DEPLOY_DIR%\bin	
-	mkdir %PYTHON_DIR%\DLLs %DEPLOY_DIR%\bin\DLLs
-	xcopy /Y /E %PYTHON_DIR%\DLLs %DEPLOY_DIR%\bin\DLLs
-	mkdir %PYTHON_DIR%\Lib %DEPLOY_DIR%\bin\Lib
-	xcopy /Y /E %PYTHON_DIR%\Lib %DEPLOY_DIR%\bin\Lib
-	for /d %%G in (%DEPLOY_DIR%\bin\Lib\__pycache__,%DEPLOY_DIR%\bin\Lib\*\__pycache__,%DEPLOY_DIR%\bin\Lib\site-packages) do rd /s /q "%%~G"
-	mkdir %DEPLOY_DIR%\bin\Lib\site-packages
-	mkdir %DEPLOY_DIR%\Plugins\PySide
-	copy /Y %PYTHON_DIR%\Lib\site-packages\PySide\__init__.py %DEPLOY_DIR%\Plugins\PySide
-	copy /Y %PYTHON_DIR%\Lib\site-packages\PySide\_utils.py %DEPLOY_DIR%\Plugins\PySide
-	copy /Y %PYTHON_DIR%\Lib\site-packages\PySide\*.pyd %DEPLOY_DIR%\Plugins\PySide
+	
+	if "%WITH_PYTHON%" == "1" (
+		copy /Y %PYTHON_DIR%\Lib\site-packages\PySide\shiboken-python3.4.dll %DEPLOY_DIR%\bin
+		copy /Y %PYTHON_DIR%\Lib\site-packages\PySide\pyside-python3.4.dll %DEPLOY_DIR%\bin
+		copy /Y %PYTHON_DLL_DIR%\python34.dll %DEPLOY_DIR%\bin	
+		mkdir %PYTHON_DIR%\DLLs %DEPLOY_DIR%\bin\DLLs
+		xcopy /Y /E %PYTHON_DIR%\DLLs %DEPLOY_DIR%\bin\DLLs
+		mkdir %PYTHON_DIR%\Lib %DEPLOY_DIR%\bin\Lib
+		xcopy /Y /E %PYTHON_DIR%\Lib %DEPLOY_DIR%\bin\Lib
+		for /d %%G in (%DEPLOY_DIR%\bin\Lib\__pycache__,%DEPLOY_DIR%\bin\Lib\*\__pycache__,%DEPLOY_DIR%\bin\Lib\site-packages) do rd /s /q "%%~G"
+		mkdir %DEPLOY_DIR%\bin\Lib\site-packages
+		mkdir %DEPLOY_DIR%\Plugins\PySide
+		copy /Y %PYTHON_DIR%\Lib\site-packages\PySide\__init__.py %DEPLOY_DIR%\Plugins\PySide
+		copy /Y %PYTHON_DIR%\Lib\site-packages\PySide\_utils.py %DEPLOY_DIR%\Plugins\PySide
+		copy /Y %PYTHON_DIR%\Lib\site-packages\PySide\*.pyd %DEPLOY_DIR%\Plugins\PySide
+	)
 	
 	if "%BITS%" == "32" (
 		copy /Y "C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\redist\x86\Microsoft.VC100.CRT\msvcp100.dll" %DEPLOY_DIR%\bin
@@ -201,6 +219,7 @@ if "%CONFIGURATION%" == "Release" (
 	echo Plugins = QtPlugins >> qt.conf
 
 ) 
+set errorlevel=0
 cd %CWD%
 
 goto success

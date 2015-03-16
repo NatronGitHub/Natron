@@ -71,6 +71,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Gui/CurveWidget.h"
 #include "Gui/Histogram.h"
 #include "Gui/NodeGui.h"
+#include "Gui/DockablePanel.h"
 
 // warning: 'gluErrorString' is deprecated: first deprecated in OS X 10.9 [-Wdeprecated-declarations]
 CLANG_DIAG_OFF(deprecated-declarations)
@@ -230,7 +231,7 @@ struct ViewerGL::Implementation
             lastRenderedImage[i].resize(MAX_MIP_MAP_LEVELS);
         }
         assert( qApp && qApp->thread() == QThread::currentThread() );
-        menu->setFont( QFont(appFont,appFontSize) );
+        //menu->setFont( QFont(appFont,appFontSize) );
         
 //        QDesktopWidget* desktop = QApplication::desktop();
 //        QRect r = desktop->screenGeometry();
@@ -1226,6 +1227,15 @@ ViewerGL::paintGL()
         glCheckError();
         if (_imp->overlay) {
             drawOverlay(getCurrentRenderScale());
+        } else {
+            const QFont& f = font();
+            QFontMetrics fm(f);
+            QPointF pos;
+            {
+                QMutexLocker k(&_imp->zoomCtxMutex);
+                pos = _imp->zoomCtx.toZoomCoordinates(10, height() - fm.height());
+            }
+            renderText(pos.x(), pos.y(), tr("Overlays off"), QColor(200,0,0), f);
         }
         
         if (_imp->ms == eMouseStateSelecting) {
@@ -2449,6 +2459,8 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
     } else {
         if (!_imp->lastRenderedImage[textureIndex][mipMapLevel]) {
             Q_EMIT imageChanged(textureIndex,false);
+        } else {
+            Q_EMIT imageChanged(textureIndex,true);
         }
     }
     setRegionOfDefinition(rod,region.par,textureIndex);
@@ -3306,9 +3318,13 @@ ViewerGL::fitImageToFormat()
 
     double old_zoomFactor;
     double zoomFactor;
+    unsigned int oldMipMapLevel,newMipMapLevel;
     {
         QMutexLocker(&_imp->zoomCtxMutex);
         old_zoomFactor = _imp->zoomCtx.factor();
+        oldMipMapLevel = std::log(old_zoomFactor >= 1 ? 1 :
+                                  std::pow( 2,-std::ceil(std::log(old_zoomFactor) / M_LN2) )) / M_LN2;
+
         // set the PAR first
         //_imp->zoomCtx.setZoom(0., 0., 1., 1.);
         // leave 4% of margin around
@@ -3316,6 +3332,9 @@ ViewerGL::fitImageToFormat()
         zoomFactor = _imp->zoomCtx.factor();
         _imp->zoomOrPannedSinceLastFit = false;
     }
+    newMipMapLevel = std::log(zoomFactor >= 1 ? 1 :
+                              std::pow( 2,-std::ceil(std::log(zoomFactor) / M_LN2) )) / M_LN2;
+    
     _imp->oldClick = QPoint(); // reset mouse posn
 
     if (old_zoomFactor != zoomFactor) {
@@ -3325,9 +3344,14 @@ ViewerGL::fitImageToFormat()
         }
         Q_EMIT zoomChanged(zoomFactorInt);
     }
-    ///Clear green cached line so the user doesn't expect to see things in the cache
-    ///since we're changing the zoom factor
-    _imp->viewerTab->clearTimelineCacheLine();
+    
+    if (newMipMapLevel != oldMipMapLevel) {
+        ///Clear green cached line so the user doesn't expect to see things in the cache
+        ///since we're changing the zoom factor
+        _imp->viewerTab->clearTimelineCacheLine();
+    }
+    
+    _imp->viewerTab->getInternalNode()->renderCurrentFrame(false);
 }
 
 /**
@@ -3716,7 +3740,7 @@ ViewerGL::populateMenu()
     _imp->menu->addAction(toggleWipe);
     
     QMenu* showHideMenu = new QMenu(tr("Show/Hide"),_imp->menu);
-    showHideMenu->setFont(QFont(appFont,appFontSize));
+    //showHideMenu->setFont(QFont(appFont,appFontSize));
     _imp->menu->addAction(showHideMenu->menuAction());
     
     
@@ -3811,28 +3835,38 @@ ViewerGL::updatePersistentMessageToWidth(int w)
         return;
     }
     
-    std::list<boost::shared_ptr<Natron::Node> >  nodes;
-    _imp->viewerTab->getGui()->getNodesEntitledForOverlays(nodes);
+    const std::list<DockablePanel*>& openedPanels = _imp->viewerTab->getGui()->getVisiblePanels();
     
     _imp->persistentMessages.clear();
     QStringList allMessages;
     
     int type = 0;
     ///Draw overlays in reverse order of appearance
-    std::list<boost::shared_ptr<Natron::Node> >::reverse_iterator next = nodes.rbegin();
-    if (!nodes.empty()) {
+    std::list<DockablePanel*>::const_iterator next = openedPanels.begin();
+    if (!openedPanels.empty()) {
         ++next;
     }
     int nbNonEmpty = 0;
-    for (std::list<boost::shared_ptr<Natron::Node> >::reverse_iterator it = nodes.rbegin(); it != nodes.rend(); ++it) {
+    for (std::list<DockablePanel*>::const_iterator it = openedPanels.begin(); it != openedPanels.end(); ++it) {
+        
+        const NodeSettingsPanel* isNodePanel = dynamic_cast<const NodeSettingsPanel*>(*it);
+        if (!isNodePanel) {
+            continue;
+        }
+        
+        NodePtr node = isNodePanel->getNode()->getNode();
+        if (!node) {
+            continue;
+        }
+        
         QString mess;
         int nType;
-        (*it)->getPersistentMessage(&mess, &nType);
+        node->getPersistentMessage(&mess, &nType);
         if (!mess.isEmpty()) {
              allMessages.append(mess);
             ++nbNonEmpty;
         }
-        if (next != nodes.rend()) {
+        if (next != openedPanels.end()) {
             ++next;
         }
         
@@ -4659,35 +4693,35 @@ getColorAtInternal(Natron::Image* image,
                    float* b,
                    float* a)
 {
-    const PIX* pix = (const PIX*)image->pixelAt(x, y);
+    Image::ReadAccess racc = image->getReadRights();
+    
+    const PIX* pix = (const PIX*)racc.pixelAt(x, y);
     
     if (!pix) {
         return false;
     }
     
-    Natron::ImageComponentsEnum comps = image->getComponents();
-    switch (comps) {
-        case Natron::eImageComponentRGBA:
-            *r = pix[0] / (float)maxValue;
-            *g = pix[1] / (float)maxValue;
-            *b = pix[2] / (float)maxValue;
-            *a = pix[3] / (float)maxValue;
-            break;
-        case Natron::eImageComponentRGB:
-            *r = pix[0] / (float)maxValue;
-            *g = pix[1] / (float)maxValue;
-            *b = pix[2] / (float)maxValue;
-            *a = 1.;
-            break;
-        case Natron::eImageComponentAlpha:
-            *r = 0.;
-            *g = 0.;
-            *b = 0.;
-            *a = pix[0] / (float)maxValue;
-            break;
-        default:
-            assert(false);
-            break;
+    int  nComps = image->getComponents().getNumComponents();
+    if (nComps >= 4) {
+        *r = pix[0] / (float)maxValue;
+        *g = pix[1] / (float)maxValue;
+        *b = pix[2] / (float)maxValue;
+        *a = pix[3] / (float)maxValue;
+    } else if (nComps == 3) {
+        *r = pix[0] / (float)maxValue;
+        *g = pix[1] / (float)maxValue;
+        *b = pix[2] / (float)maxValue;
+        *a = 1.;
+    } else if (nComps == 2) {
+        *r = pix[0] / (float)maxValue;
+        *g = pix[1] / (float)maxValue;
+        *b = 1.;
+        *a = 1.;
+    } else {
+        *r = 0.;
+        *g = 0.;
+        *b = 0.;
+        *a = pix[0] / (float)maxValue;
     }
     
     
@@ -4758,13 +4792,18 @@ ViewerGL::getColorAt(double x,
     ViewerColorSpaceEnum srcCS = _imp->viewerTab->getGui()->getApp()->getDefaultColorSpaceForBitDepth(depth);
     const Natron::Color::Lut* dstColorSpace;
     const Natron::Color::Lut* srcColorSpace;
-    if ( (srcCS == _imp->displayingImageLut) && ( (_imp->displayingImageLut == eViewerColorSpaceLinear) || !forceLinear ) ) {
+    if ( (srcCS == _imp->displayingImageLut)
+        && ( (_imp->displayingImageLut == eViewerColorSpaceLinear) || !forceLinear ) ) {
         // identity transform
         srcColorSpace = 0;
         dstColorSpace = 0;
     } else {
-        srcColorSpace = ViewerInstance::lutFromColorspace(srcCS);
-        dstColorSpace = ViewerInstance::lutFromColorspace(_imp->displayingImageLut);
+        if (img->getComponents().isColorPlane()) {
+            srcColorSpace = ViewerInstance::lutFromColorspace(srcCS);
+            dstColorSpace = ViewerInstance::lutFromColorspace(_imp->displayingImageLut);
+        } else {
+            srcColorSpace = dstColorSpace = 0;
+        }
     }
     
     const double par = img->getPixelAspectRatio();

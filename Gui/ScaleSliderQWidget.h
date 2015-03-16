@@ -73,6 +73,9 @@ public:
     // the size of a pixel increment (used to round the value)
     double increment();
     
+    void setAltered(bool b);
+    bool getAltered() const;
+    
 Q_SIGNALS:
     void editingFinished();
     void positionChanged(double);
