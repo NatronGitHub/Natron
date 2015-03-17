@@ -4458,6 +4458,10 @@ EffectInstance::isIdentity_public(U64 hash,
             int lastOptionalInput = -1;
             for (int i = getMaxInputCount() - 1; i >= 0; --i) {
                 bool optional = isInputOptional(i);
+                bool isRoto = isInputRotoBrush(i);
+                if (isRoto) {
+                    continue;
+                }
                 if ( !optional && getNode()->getInput(i) ) {
                     *inputNb = i;
                     break;
