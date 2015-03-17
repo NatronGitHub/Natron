@@ -25,6 +25,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include <QStyle> // in QtGui on Qt4, in QtWidgets on Qt5
 #include <QApplication>
 #include <QDebug>
+#include <QPainter>
 
 #include "Engine/Variant.h"
 #include "Engine/Settings.h"
@@ -51,6 +52,9 @@ struct SpinBoxPrivate
     double valueAfterLastValidation;
     bool valueInitialized; //< false when setValue has never been called yet.
     
+    bool useLineColor;
+    QColor lineColor;
+    
     SpinBoxPrivate(SpinBox::SpinBoxTypeEnum type)
     : type(type)
     , decimals(2)
@@ -64,6 +68,8 @@ struct SpinBoxPrivate
     , hasChangedSinceLastValidation(false)
     , valueAfterLastValidation(0)
     , valueInitialized(false)
+    , useLineColor(false)
+    , lineColor(Qt::black)
     {
     }
     
@@ -783,3 +789,23 @@ SpinBox::getRightClickMenu()
     return createStandardContextMenu();
 }
 
+void
+SpinBox::paintEvent(QPaintEvent* e)
+{
+    LineEdit::paintEvent(e);
+    
+    if (_imp->useLineColor) {
+        QPainter p(this);
+        p.setPen(_imp->lineColor);
+        int h = height() - 1;
+        p.drawLine(0, h - 1, width() - 1, h - 1);
+    }
+}
+
+void
+SpinBox::setUseLineColor(bool use, const QColor& color)
+{
+    _imp->useLineColor = use;
+    _imp->lineColor = color;
+    repaint();
+}

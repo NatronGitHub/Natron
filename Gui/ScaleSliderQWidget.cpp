@@ -59,6 +59,9 @@ struct ScaleSliderQWidgetPrivate
     ScaleSliderQWidget::DataTypeEnum dataType;
     bool altered;
     
+    bool useLineColor;
+    QColor lineColor;
+    
     ScaleSliderQWidgetPrivate(QWidget* parent,
                               double min,
                               double max,
@@ -82,6 +85,8 @@ struct ScaleSliderQWidgetPrivate
     , currentZoom(1.)
     , dataType(dataType)
     , altered(false)
+    , useLineColor(false)
+    , lineColor(Qt::black)
     {
         font.setPointSize((font.pointSize() * NATRON_FONT_SIZE_8) / NATRON_FONT_SIZE_12);
     }
@@ -353,7 +358,12 @@ ScaleSliderQWidget::paintEvent(QPaintEvent* /*e*/)
     scaleColor.setRgbF(textColor.redF() / 2., textColor.greenF() / 2., textColor.blueF() / 2.);
     
     QFontMetrics fontM(_imp->font);
-    p.setPen(scaleColor);
+    
+    if (!_imp->useLineColor) {
+        p.setPen(scaleColor);
+    } else {
+        p.setPen(_imp->lineColor);
+    }
 
     QPointF btmLeft = _imp->zoomCtx.toZoomCoordinates(0,height() - 1);
     QPointF topRight = _imp->zoomCtx.toZoomCoordinates(width() - 1, 0);
@@ -453,5 +463,13 @@ ScaleSliderQWidget::setReadOnly(bool ro)
 {
     _imp->readOnly = ro;
     update();
+}
+
+void
+ScaleSliderQWidget::setUseLineColor(bool use, const QColor& color)
+{
+    _imp->useLineColor = use;
+    _imp->lineColor = color;
+    repaint();
 }
 

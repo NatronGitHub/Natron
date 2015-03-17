@@ -72,9 +72,12 @@ public Q_SLOTS:
 
     void onEditingFinished();
 
-private:
-    virtual void paintEvent(QPaintEvent* e) OVERRIDE FINAL;
+protected:
+    
+    virtual void paintEvent(QPaintEvent* e) OVERRIDE;
 
+private:
+    
     virtual void dropEvent(QDropEvent* e) OVERRIDE FINAL;
 
     virtual void dragEnterEvent(QDragEnterEvent* e) OVERRIDE FINAL;

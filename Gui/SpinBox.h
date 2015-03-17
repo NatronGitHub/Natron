@@ -21,6 +21,7 @@
 #endif
 #include "Gui/LineEdit.h"
 
+class QColor;
 class QMenu;
 
 struct SpinBoxPrivate;
@@ -79,6 +80,8 @@ public:
         return dirty;
     }
 
+    void setUseLineColor(bool use, const QColor& color);
+    
 private:
 
     void increment(int delta, int shift);
@@ -89,6 +92,7 @@ private:
     //virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL;
     virtual void focusInEvent(QFocusEvent* e) OVERRIDE FINAL;
     virtual void focusOutEvent(QFocusEvent* e) OVERRIDE FINAL;
+    virtual void paintEvent(QPaintEvent* e) OVERRIDE FINAL;
 
     bool validateText();
 
@@ -106,6 +110,7 @@ public Q_SLOTS:
     void interpretReturn();
 
 private:
+
 
     void setValue_internal(double d, bool reformat);
 

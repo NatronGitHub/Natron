@@ -2044,13 +2044,17 @@ Color_KnobGui::expandAllDimensions()
     _slider->hide();
     if (_dimension > 1) {
         _rLabel->show();
+        _rBox->setUseLineColor(true, Qt::red);
         _gLabel->show();
         _gBox->show();
+        _gBox->setUseLineColor(true, Qt::green);
         _bLabel->show();
         _bBox->show();
+        _bBox->setUseLineColor(true, Qt::blue);
         if (_dimension > 3) {
             _aLabel->show();
             _aBox->show();
+            _aBox->setUseLineColor(true, Qt::white);
         }
     }
     Q_EMIT dimensionSwitchToggled(true);
@@ -2065,6 +2069,7 @@ Color_KnobGui::foldAllDimensions()
     _slider->show();
     if (_dimension > 1) {
         _rLabel->hide();
+        _rBox->setUseLineColor(false, Qt::red);
         _gLabel->hide();
         _gBox->hide();
         _bLabel->hide();

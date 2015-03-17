@@ -31,6 +31,7 @@ CLANG_DIAG_ON(uninitialized)
 using Natron::ScaleTypeEnum;
 
 struct ScaleSliderQWidgetPrivate;
+class QColor;
 class QFont;
 class ScaleSliderQWidget
     : public QWidget
@@ -75,6 +76,8 @@ public:
     
     void setAltered(bool b);
     bool getAltered() const;
+    
+    void setUseLineColor(bool use, const QColor& color);
     
 Q_SIGNALS:
     void editingFinished();
