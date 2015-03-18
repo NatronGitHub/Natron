@@ -63,6 +63,7 @@ struct CreateNodeArgs
     bool autoConnect;
     double xPosHint,yPosHint;
     bool pushUndoRedoCommand;
+    bool userEdited;
     bool addToProject;
     QString fixedName;
     
@@ -80,6 +81,7 @@ struct CreateNodeArgs
                             double yPosHint, //< yPosition in the nodegraph DEFAULT = INT_MIN
                             bool pushUndoRedoCommand , //< should we push a new undo/redo command on the GUI? DEFAULT = true
                             bool addToProject, //< should we add the node to the project ? DEFAULT = true
+                            bool userEdited, //< was it called from userAction ?
                             const QString & fixedName,  //< if non empty, this will be the name of the node DEFAULT = empty
                             const DefaultValuesList& paramValues,  //< parameters to set before creating the plugin
                             const boost::shared_ptr<NodeCollection>& group) //< the group into which to create this node
@@ -91,6 +93,7 @@ struct CreateNodeArgs
     , xPosHint(xPosHint)
     , yPosHint(yPosHint)
     , pushUndoRedoCommand(pushUndoRedoCommand)
+    , userEdited(userEdited)
     , addToProject(addToProject)
     , fixedName(fixedName)
     , paramValues(paramValues)
@@ -332,6 +335,7 @@ public:
     
     boost::shared_ptr<Natron::Node> createWriter(const std::string& filename,
                                                  const boost::shared_ptr<NodeCollection>& collection,
+                                                 bool userEdited,
                                                  int firstFrame = INT_MIN, int lastFrame = INT_MAX);
     virtual void queueRedrawForAllViewers() {}
     
@@ -397,7 +401,8 @@ private:
                                                        bool requestedByLoad,
                                                        const NodeSerialization & serialization,bool dontLoadName,
                                                        bool autoConnect,double xPosHint,double yPosHint,
-                                                       bool pushUndoRedoCommand,bool addToProject,const QString& fixedName,
+                                                       bool pushUndoRedoCommand,bool addToProject,bool userEdited,
+                                                       const QString& fixedName,
                                                        const CreateNodeArgs::DefaultValuesList& paramValues,
                                                        const boost::shared_ptr<NodeCollection>& group);
     

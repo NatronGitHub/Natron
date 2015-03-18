@@ -521,6 +521,7 @@ Effect::createChild()
                         INT_MIN,INT_MIN,
                         false,  //< never use the undo-stack of the nodegraph since we use the one of the dockablepanel
                         true,
+                        false,
                         QString(),
                         CreateNodeArgs::DefaultValuesList(),
                         _node->getGroup());

@@ -428,6 +428,7 @@ ProjectGui::load(boost::archive::xml_iarchive & archive)
                             y,
                             false,
                             true,
+                            true,
                             QString(),
                             CreateNodeArgs::DefaultValuesList(),
                             _project.lock());

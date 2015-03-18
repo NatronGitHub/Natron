@@ -2800,6 +2800,7 @@ SequenceFileDialog::createViewerPreviewNode()
                         INT_MIN,
                         false,
                         false,
+                        false,
                         NATRON_FILE_DIALOG_PREVIEW_VIEWER_NAME,
                         CreateNodeArgs::DefaultValuesList(),
                         _gui->getApp()->getProject());
@@ -2865,6 +2866,7 @@ SequenceFileDialog::findOrCreatePreviewReader(const std::string& filetype)
                                 false,
                                 INT_MIN,
                                 INT_MIN,
+                                false,
                                 false,
                                 false,
                                 QString(NATRON_FILE_DIALOG_PREVIEW_READER_NAME) +  QString(found->first.c_str()),

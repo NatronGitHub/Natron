@@ -163,6 +163,7 @@ Project::loadProject(const QString & path,
                                                   INT_MIN,INT_MIN,
                                                   true,
                                                   true,
+                                                  false,
                                                   QString(),
                                                   CreateNodeArgs::DefaultValuesList(),
                                                   shared_from_this()) );
@@ -183,6 +184,7 @@ Project::loadProject(const QString & path,
                                                   INT_MIN,INT_MIN,
                                                   true,
                                                   true,
+                                                  false,
                                                   QString(),
                                                   CreateNodeArgs::DefaultValuesList(),
                                                   shared_from_this()) );
@@ -721,6 +723,7 @@ Project::findAndTryLoadAutoSave()
                                                           INT_MIN,INT_MIN,
                                                           true,
                                                           true,
+                                                          false,
                                                           QString(),
                                                           CreateNodeArgs::DefaultValuesList(),
                                                           shared_from_this()) );
@@ -733,6 +736,7 @@ Project::findAndTryLoadAutoSave()
                                                           INT_MIN,INT_MIN,
                                                           true,
                                                           true,
+                                                          false,
                                                           QString(),
                                                           CreateNodeArgs::DefaultValuesList(),
                                                           shared_from_this()) );
@@ -2035,6 +2039,7 @@ Project::createViewer()
                                          INT_MIN,INT_MIN,
                                          true,
                                          true,
+                                         false,
                                          QString(),
                                          CreateNodeArgs::DefaultValuesList(),
                                          shared_from_this()) );

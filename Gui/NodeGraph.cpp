@@ -915,6 +915,7 @@ NodeGraph::moveNodesForIdealPosition(boost::shared_ptr<NodeGui> node,bool autoCo
                                     INT_MIN,
                                     true,
                                     true,
+                                    true,
                                     QString(),
                                     CreateNodeArgs::DefaultValuesList(),
                                     createdNodeInternal->getGroup());
@@ -1015,6 +1016,7 @@ NodeGraph::moveNodesForIdealPosition(boost::shared_ptr<NodeGui> node,bool autoCo
                                     false, //< don't autoconnect
                                     INT_MIN,
                                     INT_MIN,
+                                    true,
                                     true,
                                     true,
                                     QString(),
@@ -1172,6 +1174,7 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
                             INT_MIN,
                             INT_MIN,
                             false, //<< don't push an undo command
+                            true,
                             true,
                             QString(),
                             CreateNodeArgs::DefaultValuesList(),
@@ -1561,6 +1564,7 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
                                         -1,
                                         false,
                                         newNodePos.x(),newNodePos.y(),
+                                        true,
                                         true,
                                         true,
                                         QString(),
@@ -2113,6 +2117,7 @@ NodeGraph::onNodeCreationDialogFinished()
                                                                posHint.y(),
                                                                true,
                                                                true,
+                                                               true,
                                                                QString(),
                                                                CreateNodeArgs::DefaultValuesList(),
                                                                getGroup()) );
@@ -2301,6 +2306,7 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
                                                                        hint.x(),hint.y(),
                                                                        true,
                                                                        true,
+                                                                       true,
                                                                        QString(),
                                                                        CreateNodeArgs::DefaultValuesList(),
                                                                        getGroup()) );
@@ -2386,6 +2392,7 @@ NodeGraph::connectCurrentViewerToSelection(int inputNB)
                                                           -1,-1,
                                                           true,
                                                           INT_MIN,INT_MIN,
+                                                          true,
                                                           true,
                                                           true,
                                                           QString(),
@@ -3240,6 +3247,7 @@ NodeGraph::dropEvent(QDropEvent* e)
                                 INT_MIN,INT_MIN,
                                 true,
                                 true,
+                                false,
                                 QString(),
                                 defaultValues,
                                 getGroup());

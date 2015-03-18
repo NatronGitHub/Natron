@@ -586,6 +586,7 @@ boost::shared_ptr<Natron::Node> MultiInstancePanel::addInstanceInternal(bool use
                         INT_MIN,INT_MIN,
                         false,  //< never use the undo-stack of the nodegraph since we use the one of the dockablepanel
                         true,
+                        true,
                         QString(),
                         CreateNodeArgs::DefaultValuesList(),
                         mainInstance->getGroup());
@@ -2197,6 +2198,7 @@ TrackerPanelPrivate::createCornerPinFromSelection(const std::list<Node*> & selec
                                                                                 false, //< don't autoconnect
                                                                                 INT_MIN,
                                                                                 INT_MIN,
+                                                                                true,
                                                                                 true,
                                                                                 true,
                                                                                 QString(),

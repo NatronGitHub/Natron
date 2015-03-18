@@ -1377,6 +1377,7 @@ GroupFromSelectionCommand::GroupFromSelectionCommand(NodeGraph* graph,const Node
                              INT_MIN,INT_MIN,
                              false, //< push undo/redo command
                              true, // add to project
+                             true,
                              QString(),
                              CreateNodeArgs::DefaultValuesList(),
                              _graph->getGroup());

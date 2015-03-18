@@ -106,6 +106,7 @@ public:
     void load(const std::string & parentMultiInstanceName,
               const NodeSerialization & serialization,
               bool dontLoadName,
+              bool userEdited,
               const QString& fixedName,
               const std::list<boost::shared_ptr<KnobSerialization> >& paramValues);
 

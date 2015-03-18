@@ -546,15 +546,16 @@ TabWidget::addNewViewer()
     NodeGraph* graph = lastFocusedGraph ? lastFocusedGraph : _imp->gui->getNodeGraph();
     assert(graph);
     _imp->gui->getApp()->createNode(  CreateNodeArgs(PLUGINID_NATRON_VIEWER,
-                                                "",
-                                                -1,-1,
-                                                true,
-                                                INT_MIN,INT_MIN,
-                                                true,
-                                                true,
-                                                QString(),
-                                                CreateNodeArgs::DefaultValuesList(),
-                                                graph->getGroup()) );
+                                                     "",
+                                                     -1,-1,
+                                                     true,
+                                                     INT_MIN,INT_MIN,
+                                                     true,
+                                                     true,
+                                                     true,
+                                                     QString(),
+                                                     CreateNodeArgs::DefaultValuesList(),
+                                                     graph->getGroup()) );
 }
 
 void

@@ -368,6 +368,7 @@ AppInstance::getWritersWorkForCL(const CLArgs& cl,std::list<AppInstance::RenderR
 NodePtr
 AppInstance::createWriter(const std::string& filename,
                           const boost::shared_ptr<NodeCollection>& collection,
+                          bool userEdited,
                           int firstFrame, int lastFrame)
 {
     std::map<std::string,std::string> writersForFormat;
@@ -398,6 +399,7 @@ AppInstance::createWriter(const std::string& filename,
                         INT_MIN,INT_MIN,
                         true,
                         true,
+                        userEdited,
                         QString(),
                         defaultValues,
                         collection);
@@ -554,6 +556,7 @@ AppInstance::createNodeFromPythonModule(Natron::Plugin* plugin,
                                  INT_MIN,INT_MIN,
                                  true, //< push undo/redo command
                                  true, // add to project
+                                 true,
                                  QString(),
                                  CreateNodeArgs::DefaultValuesList(),
                                  group);
@@ -668,6 +671,7 @@ AppInstance::createNodeInternal(const QString & pluginID,
                                 double yPosHint,
                                 bool pushUndoRedoCommand,
                                 bool addToProject,
+                                bool userEdited,
                                 const QString& fixedName,
                                 const CreateNodeArgs::DefaultValuesList& paramValues,
                                 const boost::shared_ptr<NodeCollection>& group)
@@ -757,7 +761,7 @@ AppInstance::createNodeInternal(const QString & pluginID,
     }
     assert(node);
     try {
-        node->load(multiInstanceParentName, serialization,dontLoadName,fixedName,paramValues);
+        node->load(multiInstanceParentName, serialization,dontLoadName, userEdited,fixedName,paramValues);
     } catch (const std::exception & e) {
         group->removeNode(node);
         std::string title = std::string("Error while creating node");
@@ -818,6 +822,7 @@ AppInstance::createNodeInternal(const QString & pluginID,
                                     INT_MIN,
                                     false, //<< don't push an undo command
                                     true,
+                                    false,
                                     QString(),
                                     CreateNodeArgs::DefaultValuesList(),
                                     isGrp);
@@ -835,6 +840,7 @@ AppInstance::createNodeInternal(const QString & pluginID,
                                     INT_MIN,
                                     false, //<< don't push an undo command
                                     true,
+                                    false,
                                     QString(),
                                     CreateNodeArgs::DefaultValuesList(),
                                     isGrp);
@@ -863,6 +869,7 @@ AppInstance::createNode(const CreateNodeArgs & args)
                               args.xPosHint,args.yPosHint,
                               args.pushUndoRedoCommand,
                               args.addToProject,
+                              args.userEdited,
                               args.fixedName,
                               args.paramValues,
                               args.group);
@@ -880,6 +887,7 @@ AppInstance::loadNode(const LoadNodeArgs & args)
                               false,
                               INT_MIN,INT_MIN,
                               false,
+                              true,
                               true,
                               QString(),
                               CreateNodeArgs::DefaultValuesList(),
@@ -1222,7 +1230,7 @@ AppInstance::getAppIDString() const
 }
 
 void
-AppInstance::onGroupCreationFinished(const boost::shared_ptr<Natron::Node>& node)
+AppInstance::onGroupCreationFinished(const boost::shared_ptr<Natron::Node>& /*node*/)
 {
 //    assert(node);
 //    if (!_imp->_currentProject->isLoadingProject()) {

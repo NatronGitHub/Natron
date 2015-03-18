@@ -84,6 +84,7 @@ App::createNode(const std::string& pluginID,
                         INT_MIN,
                         false,
                         true,
+                        false,
                         QString(),
                         CreateNodeArgs::DefaultValuesList(),
                         collection);

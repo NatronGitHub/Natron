@@ -95,17 +95,18 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
                 ///Create the parent
                 if (!foundParent) {
                     boost::shared_ptr<Natron::Node> parent = group->getApplication()->createNode(CreateNodeArgs( pluginID.c_str(),
-                                                                                                        "",
-                                                                                                        (*it)->getPluginMajorVersion(),
-                                                                                                        (*it)->getPluginMinorVersion(),
-                                                                                                        true,
-                                                                                                        INT_MIN,
-                                                                                                        INT_MIN,
-                                                                                                        true,
-                                                                                                        true,
-                                                                                                        QString(),
-                                                                                                        CreateNodeArgs::DefaultValuesList(),
-                                                                                                        group));
+                                                                                                                "",
+                                                                                                                (*it)->getPluginMajorVersion(),
+                                                                                                                (*it)->getPluginMinorVersion(),
+                                                                                                                true,
+                                                                                                                INT_MIN,
+                                                                                                                INT_MIN,
+                                                                                                                false,
+                                                                                                                true,
+                                                                                                                false,
+                                                                                                                QString(),
+                                                                                                                CreateNodeArgs::DefaultValuesList(),
+                                                                                                                group));
                     parent->setScriptName( (*it)->getMultiInstanceParentName().c_str() );
                     parentsToReconnect.insert( std::make_pair(parent, it) );
                 }

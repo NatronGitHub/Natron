@@ -168,6 +168,7 @@ ToolButton::onTriggered()
                         INT_MIN,INT_MIN,
                         true,
                         true,
+                        true,
                         QString(),
                         CreateNodeArgs::DefaultValuesList(),
                         group);

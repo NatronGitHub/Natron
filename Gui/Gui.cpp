@@ -3042,6 +3042,7 @@ Gui::createNewViewer()
                                                                    INT_MIN, INT_MIN,
                                                                    true,
                                                                    true,
+                                                                   true,
                                                                    QString(),
                                                                    CreateNodeArgs::DefaultValuesList(),
                                                                    graph->getGroup() ) ) );
@@ -3084,6 +3085,7 @@ Gui::createReader()
                                 INT_MIN, INT_MIN,
                                 true,
                                 true,
+                                true,
                                 QString(),
                                 defaultValues,
                                 group);
@@ -3120,7 +3122,7 @@ Gui::createWriter()
         boost::shared_ptr<NodeCollection> group = graph->getGroup();
         assert(group);
 
-        ret =  getApp()->createWriter(file, group);
+        ret =  getApp()->createWriter(file, group, true);
     }
 
     return ret;
