@@ -483,25 +483,8 @@ Node::load(const std::string & parentMultiInstanceName,
         throw std::runtime_error("Plug-in does not support 8bits, 16bits or 32bits floating point image processing.");
     }
     
-    
-    ///Special case for trackers: set as multi instance
-    if ( isTrackerNode() ) {
+    if (isTrackerNode()) {
         _imp->isMultiInstance = true;
-        ///declare knob that are instance specific
-        boost::shared_ptr<KnobI> subLabelKnob = getKnobByName(kNatronOfxParamStringSublabelName);
-        if (subLabelKnob) {
-            subLabelKnob->setAsInstanceSpecific();
-        }
-        
-        boost::shared_ptr<KnobI> centerKnob = getKnobByName("center");
-        if (centerKnob) {
-            centerKnob->setAsInstanceSpecific();
-        }
-        
-        boost::shared_ptr<KnobI> offsetKnob = getKnobByName("offset");
-        if (offsetKnob) {
-            offsetKnob->setAsInstanceSpecific();
-        }
     }
     
     if (!nameSet) {
@@ -4667,6 +4650,12 @@ Node::hasSequentialOnlyNodeUpstream(std::string & nodeName) const
 
 bool
 Node::isTrackerNode() const
+{
+    return _imp->liveInstance->isTrackerNode();
+}
+
+bool
+Node::isPointTrackerNode() const
 {
     return getPluginID() == PLUGINID_OFX_TRACKERPM;
 }

@@ -2003,7 +2003,7 @@ static void exportRotoLayer(const std::list<boost::shared_ptr<RotoItem> >& items
                 boost::shared_ptr<Double_Knob> track = (*it2)->isSlaved();
                 if (track) {
                     Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(track->getHolder());
-                    assert(effect && effect->getNode()->isTrackerNode());
+                    assert(effect && effect->getNode()->isPointTrackerNode());
                     std::string trackerName = effect->getNode()->getScriptName_mt_safe();
                     int trackTime = (*it2)->getOffsetTime();
                     WRITE_INDENT(1); WRITE_STRING("tracker = group.getNode(\"" + QString(trackerName.c_str()) + "\")");

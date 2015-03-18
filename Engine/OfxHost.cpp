@@ -326,6 +326,15 @@ static std::string getContext_internal(const std::set<std::string> & contexts)
             return context;
         }
         
+        found = contexts.find(kNatronOfxImageEffectContextTracker);
+        bool tracker = found != contexts.end();
+        if (tracker) {
+            context = kNatronOfxImageEffectContextTracker;
+            
+            return context;
+        }
+        
+        
         
         found = contexts.find(kOfxImageEffectContextGeneral);
         bool general = found != contexts.end();

@@ -1696,7 +1696,7 @@ NodeGui::hideGui()
         if ( node->isRotoNode() ) {
             _graph->getGui()->removeRotoInterface(this, false);
         }
-        if ( node->isTrackerNode() && node->getParentMultiInstanceName().empty() ) {
+        if ( node->isPointTrackerNode() && node->getParentMultiInstanceName().empty() ) {
             _graph->getGui()->removeTrackerInterface(this, false);
         }
         

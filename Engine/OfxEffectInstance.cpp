@@ -34,6 +34,7 @@
 #include <ofxhHost.h>
 
 #include <tuttle/ofxReadWrite.h>
+#include "ofxNatron.h"
 
 
 #include "Engine/AppManager.h"
@@ -523,6 +524,13 @@ OfxEffectInstance::isWriter() const
 }
 
 bool
+OfxEffectInstance::isTrackerNode() const
+{
+    assert(_context != eContextNone);
+    return _context == eContextTracker;
+}
+
+bool
 OfxEffectInstance::isGeneratorAndFilter() const
 {
     assert(_context != eContextNone);
@@ -958,6 +966,9 @@ OfxEffectInstance::mapToContextEnum(const std::string &s)
     if (s == kOfxImageEffectContextWriter) {
         return eContextWriter;
     }
+    if (s == kNatronOfxImageEffectContextTracker) {
+        return eContextTracker;
+    }
     qDebug() << "OfxEffectInstance::mapToContextEnum: Unknown image effect context '" << s.c_str() << "'";
     throw std::invalid_argument(s);
 }
@@ -982,6 +993,8 @@ OfxEffectInstance::mapContextToString(Natron::ContextEnum ctx)
             return kOfxImageEffectContextReader;
         case Natron::eContextWriter:
             return kOfxImageEffectContextWriter;
+        case Natron::eContextTracker:
+            return kNatronOfxImageEffectContextTracker;
         case Natron::eContextNone:
         default:
             break;

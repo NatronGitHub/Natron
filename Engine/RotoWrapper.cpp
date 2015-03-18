@@ -245,7 +245,7 @@ BezierCurve::slavePointToTrack(int index, int trackTime, DoubleParam* trackCente
     if (!parent) {
         return;
     }
-    if (!parent->getNode()->isTrackerNode()) {
+    if (!parent->getNode()->isPointTrackerNode()) {
         return;
     }
     

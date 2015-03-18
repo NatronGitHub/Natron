@@ -3556,7 +3556,7 @@ RotoGui::linkPointTo(const std::list<std::pair<boost::shared_ptr<BezierCP>,boost
     NodeList activeNodes;
     _imp->node->getNode()->getGroup()->getActiveNodes(&activeNodes);
     for (NodeList::iterator it = activeNodes.begin(); it != activeNodes.end(); ++it) {
-        if ( (*it)->isTrackerNode() && (*it)->getParentMultiInstance()) {
+        if ( (*it)->isPointTrackerNode() && (*it)->getParentMultiInstance()) {
             boost::shared_ptr<KnobI> k = (*it)->getKnobByName("center");
             boost::shared_ptr<KnobI> name = (*it)->getKnobByName(kNatronOfxParamStringSublabelName);
             if (k && name) {

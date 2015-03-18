@@ -339,6 +339,14 @@ public:
     }
 
     /**
+    * @brief Returns true if this node is a tracker
+    **/
+    virtual bool isTrackerNode() const WARN_UNUSED_RETURN
+    {
+        return false;
+    }
+
+    /**
      * @brief Returns true if the node is capable of generating
      * data and process data on the input as well
      **/

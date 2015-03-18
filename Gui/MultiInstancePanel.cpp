@@ -59,10 +59,6 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/Label.h"
 
 
-#define kTrackBackwardButtonName "trackBackward"
-#define kTrackPreviousButtonName "trackPrevious"
-#define kTrackNextButtonName "trackNext"
-#define kTrackForwardButtonName "trackForward"
 #define kTrackCenterName "center"
 #define kTrackInvertName "invert"
 
@@ -1643,6 +1639,10 @@ TrackerPanel::~TrackerPanel()
 void
 TrackerPanel::appendExtraGui(QVBoxLayout* layout)
 {
+    if (!getMainInstance()->isPointTrackerNode()) {
+        return;
+    }
+    
     _imp->exportLabel = new Natron::Label( tr("Export data"),layout->parentWidget() );
     layout->addWidget(_imp->exportLabel);
     layout->addSpacing(10);
@@ -1719,6 +1719,9 @@ TrackerPanel::appendExtraGui(QVBoxLayout* layout)
 void
 TrackerPanel::appendButtons(QHBoxLayout* buttonLayout)
 {
+    if (!getMainInstance()->isPointTrackerNode()) {
+        return;
+    }
     _imp->averageTracksButton = new Button( tr("Average tracks"),buttonLayout->parentWidget() );
     _imp->averageTracksButton->setToolTip( tr("Make a new track which is the average of the selected tracks") );
     QObject::connect( _imp->averageTracksButton, SIGNAL( clicked(bool) ), this, SLOT( onAverageTracksButtonClicked() ) );
@@ -1728,6 +1731,9 @@ TrackerPanel::appendButtons(QHBoxLayout* buttonLayout)
 void
 TrackerPanel::initializeExtraKnobs()
 {
+    if (!getMainInstance()->isPointTrackerNode()) {
+        return;
+    }
     _imp->transformPage = Natron::createKnob<Page_Knob>(this, "Transform",1,false);
 
     _imp->referenceFrame = Natron::createKnob<Int_Knob>(this,"Reference frame",1,false);
@@ -1741,13 +1747,13 @@ TrackerPanel::setIconForButton(Button_Knob* knob)
 {
     const std::string name = knob->getName();
 
-    if (name == kTrackPreviousButtonName) {
+    if (name == kNatronParamTrackingPrevious) {
         knob->setIconFilePath(NATRON_IMAGES_PATH "back1.png");
-    } else if (name == kTrackNextButtonName) {
+    } else if (name == kNatronParamTrackingNext) {
         knob->setIconFilePath(NATRON_IMAGES_PATH "forward1.png");
-    } else if (name == kTrackBackwardButtonName) {
+    } else if (name == kNatronParamTrackingBackward) {
         knob->setIconFilePath(NATRON_IMAGES_PATH "rewind.png");
-    } else if (name == kTrackForwardButtonName) {
+    } else if (name == kNatronParamTrackingForward) {
         knob->setIconFilePath(NATRON_IMAGES_PATH "play.png");
     }
 }
@@ -1838,13 +1844,13 @@ TrackerPanel::onButtonTriggered(Button_Knob* button)
     std::string name = button->getName();
 
     ///hack the trackBackward and trackForward buttons behaviour so they appear to progress simultaneously
-    if (name == kTrackBackwardButtonName) {
+    if (name == kNatronParamTrackingBackward) {
         trackBackward();
-    } else if (name == kTrackForwardButtonName) {
+    } else if (name == kNatronParamTrackingForward) {
         trackForward();
-    } else if (name == kTrackPreviousButtonName) {
+    } else if (name == kNatronParamTrackingPrevious) {
         trackPrevious();
-    } else if (name == kTrackNextButtonName) {
+    } else if (name == kNatronParamTrackingNext) {
         trackNext();
     }
 }
@@ -1932,7 +1938,7 @@ TrackerPanel::trackBackward()
     
 
     std::list<Button_Knob*> instanceButtons;
-    if (!_imp->getTrackInstancesForButton(&instanceButtons, kTrackPreviousButtonName)) {
+    if (!_imp->getTrackInstancesForButton(&instanceButtons, kNatronParamTrackingPrevious)) {
         return false;
     }
     
@@ -1953,7 +1959,7 @@ TrackerPanel::trackForward()
     
     
     std::list<Button_Knob*> instanceButtons;
-    if (!_imp->getTrackInstancesForButton(&instanceButtons, kTrackNextButtonName)) {
+    if (!_imp->getTrackInstancesForButton(&instanceButtons, kNatronParamTrackingNext)) {
         return false;
     }
    
@@ -1987,7 +1993,7 @@ TrackerPanel::trackPrevious()
         return false;
     }
     std::list<Button_Knob*> instanceButtons;
-    if (!_imp->getTrackInstancesForButton(&instanceButtons, kTrackPreviousButtonName)) {
+    if (!_imp->getTrackInstancesForButton(&instanceButtons, kNatronParamTrackingPrevious)) {
         return false;
     }
 
@@ -2013,7 +2019,7 @@ TrackerPanel::trackNext()
         return false;
     }
     std::list<Button_Knob*> instanceButtons;
-    if (!_imp->getTrackInstancesForButton(&instanceButtons, kTrackNextButtonName)) {
+    if (!_imp->getTrackInstancesForButton(&instanceButtons, kNatronParamTrackingNext)) {
         return false;
     }
     
@@ -2271,6 +2277,9 @@ TrackerPanelPrivate::createCornerPinFromSelection(const std::list<Node*> & selec
 void
 TrackerPanel::showMenuForInstance(Natron::Node* instance)
 {
+    if (!getMainInstance()->isPointTrackerNode()) {
+        return;
+    }
     QMenu menu( getGui() );
 
     //menu.setFont( QFont(appFont,appFontSize) );

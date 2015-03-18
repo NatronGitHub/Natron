@@ -244,6 +244,8 @@ public:
      * @brief Returns true if this node is a tracker
      **/
     bool isTrackerNode() const;
+    
+    bool isPointTrackerNode() const;
 
     /**
      * @brief Returns true if this node is a backdrop

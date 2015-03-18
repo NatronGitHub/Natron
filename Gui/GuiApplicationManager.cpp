@@ -1397,7 +1397,7 @@ Application::event(QEvent* e)
 {
     switch ( e->type() ) {
     case QEvent::FileOpen: {
-        assert(_app);
+        assert(_app);   
         QFileOpenEvent* foe = dynamic_cast<QFileOpenEvent*>(e);
         assert(foe);
         if (foe) {

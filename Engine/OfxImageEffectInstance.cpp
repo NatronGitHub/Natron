@@ -27,6 +27,8 @@
 //for parametric params properties
 #include <ofxParametricParam.h>
 
+#include "ofxNatron.h"
+
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/OfxClipInstance.h"
 #include "Engine/OfxParamInstance.h"
@@ -552,7 +554,12 @@ OfxImageEffectInstance::newParam(const std::string &paramName,
         knob->setAddSeparator(true);
     }
     knob->setOfxParamHandle( (void*)instance->getHandle() );
-
+    
+    bool isInstanceSpecific = descriptor.getProperties().getIntProperty(kNatronOfxParamPropIsInstanceSpecific) != 0;
+    if (isInstanceSpecific) {
+        knob->setAsInstanceSpecific();
+    }
+    
     OfxPluginEntryPoint* interact =
         (OfxPluginEntryPoint*)descriptor.getProperties().getPointerProperty(kOfxParamPropInteractV1);
     if (interact) {

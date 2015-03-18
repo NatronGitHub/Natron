@@ -3768,7 +3768,7 @@ NodeGraph::deleteNodepluginsly(boost::shared_ptr<NodeGui> n)
             getGui()->removeRotoInterface(n.get(),true);
         }
         
-        if (internalNode->isTrackerNode()) {
+        if (internalNode->isPointTrackerNode()) {
             getGui()->removeTrackerInterface(n.get(), true);
         }
 

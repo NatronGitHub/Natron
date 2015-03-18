@@ -2114,7 +2114,7 @@ Gui::addNewViewerTab(ViewerInstance* viewer,
                 if (!currentRoto.first) {
                     currentRoto.first = it->get();
                 }
-            } else if ( (*it)->getNode()->isTrackerNode() ) {
+            } else if ( (*it)->getNode()->isPointTrackerNode() ) {
                 trackerNodesList.push_back( it->get() );
                 if (!currentTracker.first) {
                     currentTracker.first = it->get();
