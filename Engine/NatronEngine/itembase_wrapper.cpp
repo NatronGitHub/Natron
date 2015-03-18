@@ -1,4 +1,7 @@
 
+//workaround to access protected functions
+#define protected public
+
 // default includes
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(mismatched-tags)
@@ -19,10 +22,6 @@ GCC_DIAG_OFF(missing-field-initializers)
 
 
 // Native ---------------------------------------------------------
-
-void ItemBaseWrapper::pysideInitQtMetaTypes()
-{
-}
 
 ItemBaseWrapper::~ItemBaseWrapper()
 {
@@ -47,9 +46,7 @@ static PyObject* Sbk_ItemBaseFunc_getLabel(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // getLabel()const
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             std::string cppResult = const_cast<const ::ItemBase*>(cppSelf)->getLabel();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), &cppResult);
         }
     }
@@ -75,9 +72,7 @@ static PyObject* Sbk_ItemBaseFunc_getLocked(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // getLocked()const
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             bool cppResult = const_cast<const ::ItemBase*>(cppSelf)->getLocked();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), &cppResult);
         }
     }
@@ -103,9 +98,7 @@ static PyObject* Sbk_ItemBaseFunc_getLockedRecursive(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // getLockedRecursive()const
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             bool cppResult = const_cast<const ::ItemBase*>(cppSelf)->getLockedRecursive();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), &cppResult);
         }
     }
@@ -131,9 +124,7 @@ static PyObject* Sbk_ItemBaseFunc_getParentLayer(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // getParentLayer()const
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             Layer * cppResult = const_cast<const ::ItemBase*>(cppSelf)->getParentLayer();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_LAYER_IDX], cppResult);
 
             // Ownership transferences.
@@ -162,9 +153,7 @@ static PyObject* Sbk_ItemBaseFunc_getScriptName(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // getScriptName()const
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             std::string cppResult = const_cast<const ::ItemBase*>(cppSelf)->getScriptName();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), &cppResult);
         }
     }
@@ -190,9 +179,7 @@ static PyObject* Sbk_ItemBaseFunc_getVisible(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // getVisible()const
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             bool cppResult = const_cast<const ::ItemBase*>(cppSelf)->getVisible();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), &cppResult);
         }
     }
@@ -279,9 +266,7 @@ static PyObject* Sbk_ItemBaseFunc_setLocked(PyObject* self, PyObject* pyArg)
 
         if (!PyErr_Occurred()) {
             // setLocked(bool)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             cppSelf->setLocked(cppArg0);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
         }
     }
 
@@ -374,9 +359,7 @@ static PyObject* Sbk_ItemBaseFunc_setVisible(PyObject* self, PyObject* pyArg)
 
         if (!PyErr_Occurred()) {
             // setVisible(bool)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             cppSelf->setVisible(cppArg0);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
         }
     }
 
@@ -518,5 +501,4 @@ void init_ItemBase(PyObject* module)
 
 
 
-    ItemBaseWrapper::pysideInitQtMetaTypes();
 }

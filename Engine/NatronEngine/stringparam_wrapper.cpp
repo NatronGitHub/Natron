@@ -1,4 +1,7 @@
 
+//workaround to access protected functions
+#define protected public
+
 // default includes
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(mismatched-tags)
@@ -20,11 +23,6 @@ GCC_DIAG_OFF(missing-field-initializers)
 
 // Native ---------------------------------------------------------
 
-void StringParamWrapper::pysideInitQtMetaTypes()
-{
-    qRegisterMetaType< ::StringParam::TypeEnum >("StringParam::TypeEnum");
-}
-
 StringParamWrapper::~StringParamWrapper()
 {
     SbkObject* wrapper = Shiboken::BindingManager::instance().retrieveWrapper(this);
@@ -36,11 +34,11 @@ StringParamWrapper::~StringParamWrapper()
 extern "C" {
 static PyObject* Sbk_StringParamFunc_setType(PyObject* self, PyObject* pyArg)
 {
-    StringParamWrapper* cppSelf = 0;
+    ::StringParam* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = (StringParamWrapper*)((::StringParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_STRINGPARAM_IDX], (SbkObject*)self));
+    cppSelf = ((::StringParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_STRINGPARAM_IDX], (SbkObject*)self));
     int overloadId = -1;
     PythonToCppFunc pythonToCpp;
     SBK_UNUSED(pythonToCpp)
@@ -61,9 +59,7 @@ static PyObject* Sbk_StringParamFunc_setType(PyObject* self, PyObject* pyArg)
 
         if (!PyErr_Occurred()) {
             // setType(StringParam::TypeEnum)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             cppSelf->setType(cppArg0);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
         }
     }
 
@@ -260,5 +256,5 @@ void init_StringParam(PyObject* module)
     // End of 'TypeEnum' enum.
 
 
-    StringParamWrapper::pysideInitQtMetaTypes();
+    qRegisterMetaType< ::StringParam::TypeEnum >("StringParam::TypeEnum");
 }

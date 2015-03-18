@@ -1,6 +1,8 @@
 #ifndef SBK_BEZIERCURVEWRAPPER_H
 #define SBK_BEZIERCURVEWRAPPER_H
 
+#define protected public
+
 #include <shiboken.h>
 
 #include <RotoWrapper.h>

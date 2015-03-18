@@ -1,4 +1,7 @@
 
+//workaround to access protected functions
+#define protected public
+
 // default includes
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(mismatched-tags)
@@ -290,9 +293,7 @@ static PyObject* Sbk_RotoFunc_getBaseLayer(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // getBaseLayer()const
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             Layer * cppResult = const_cast<const ::Roto*>(cppSelf)->getBaseLayer();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_LAYER_IDX], cppResult);
 
             // Ownership transferences.
@@ -335,9 +336,7 @@ static PyObject* Sbk_RotoFunc_getItemByName(PyObject* self, PyObject* pyArg)
 
         if (!PyErr_Occurred()) {
             // getItemByName(std::string)const
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             ItemBase * cppResult = const_cast<const ::Roto*>(cppSelf)->getItemByName(cppArg0);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_ITEMBASE_IDX], cppResult);
 
             // Ownership transferences.

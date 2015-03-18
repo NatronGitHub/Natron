@@ -1,4 +1,7 @@
 
+//workaround to access protected functions
+#define protected public
+
 // default includes
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(mismatched-tags)
@@ -20,11 +23,6 @@ GCC_DIAG_OFF(missing-field-initializers)
 
 
 // Native ---------------------------------------------------------
-
-void BezierCurveWrapper::pysideInitQtMetaTypes()
-{
-    qRegisterMetaType< ::BezierCurve::CairoOperatorEnum >("BezierCurve::CairoOperatorEnum");
-}
 
 BezierCurveWrapper::~BezierCurveWrapper()
 {
@@ -75,9 +73,7 @@ static PyObject* Sbk_BezierCurveFunc_addControlPoint(PyObject* self, PyObject* a
 
         if (!PyErr_Occurred()) {
             // addControlPoint(double,double)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             cppSelf->addControlPoint(cppArg0, cppArg1);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
         }
     }
 
@@ -132,9 +128,7 @@ static PyObject* Sbk_BezierCurveFunc_addControlPointOnSegment(PyObject* self, Py
 
         if (!PyErr_Occurred()) {
             // addControlPointOnSegment(int,double)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             cppSelf->addControlPointOnSegment(cppArg0, cppArg1);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
         }
     }
 
@@ -163,9 +157,7 @@ static PyObject* Sbk_BezierCurveFunc_getActivatedParam(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // getActivatedParam()const
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             BooleanParam * cppResult = const_cast<const ::BezierCurve*>(cppSelf)->getActivatedParam();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_BOOLEANPARAM_IDX], cppResult);
 
             // Ownership transferences.
@@ -208,9 +200,7 @@ static PyObject* Sbk_BezierCurveFunc_getColor(PyObject* self, PyObject* pyArg)
 
         if (!PyErr_Occurred()) {
             // getColor(int)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             ColorTuple* cppResult = new ColorTuple(cppSelf->getColor(cppArg0));
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Object::newObject((SbkObjectType*)SbkNatronEngineTypes[SBK_COLORTUPLE_IDX], cppResult, true, true);
         }
     }
@@ -241,9 +231,7 @@ static PyObject* Sbk_BezierCurveFunc_getColorParam(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // getColorParam()const
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             ColorParam * cppResult = const_cast<const ::BezierCurve*>(cppSelf)->getColorParam();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_COLORPARAM_IDX], cppResult);
 
             // Ownership transferences.
@@ -272,9 +260,7 @@ static PyObject* Sbk_BezierCurveFunc_getCompositingOperator(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // getCompositingOperator()const
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            BezierCurve::CairoOperatorEnum cppResult = BezierCurve::CairoOperatorEnum(const_cast<const ::BezierCurve*>(cppSelf)->getCompositingOperator());
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            BezierCurve::CairoOperatorEnum cppResult = const_cast<const ::BezierCurve*>(cppSelf)->getCompositingOperator();
             pyResult = Shiboken::Conversions::copyToPython(SBK_CONVERTER(SbkNatronEngineTypes[SBK_BEZIERCURVE_CAIROOPERATORENUM_IDX]), &cppResult);
         }
     }
@@ -300,9 +286,7 @@ static PyObject* Sbk_BezierCurveFunc_getCompositingOperatorParam(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // getCompositingOperatorParam()const
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             ChoiceParam * cppResult = const_cast<const ::BezierCurve*>(cppSelf)->getCompositingOperatorParam();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_CHOICEPARAM_IDX], cppResult);
 
             // Ownership transferences.
@@ -345,9 +329,7 @@ static PyObject* Sbk_BezierCurveFunc_getFeatherDistance(PyObject* self, PyObject
 
         if (!PyErr_Occurred()) {
             // getFeatherDistance(int)const
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             double cppResult = const_cast<const ::BezierCurve*>(cppSelf)->getFeatherDistance(cppArg0);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &cppResult);
         }
     }
@@ -378,9 +360,7 @@ static PyObject* Sbk_BezierCurveFunc_getFeatherDistanceParam(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // getFeatherDistanceParam()const
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             DoubleParam * cppResult = const_cast<const ::BezierCurve*>(cppSelf)->getFeatherDistanceParam();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_DOUBLEPARAM_IDX], cppResult);
 
             // Ownership transferences.
@@ -423,9 +403,7 @@ static PyObject* Sbk_BezierCurveFunc_getFeatherFallOff(PyObject* self, PyObject*
 
         if (!PyErr_Occurred()) {
             // getFeatherFallOff(int)const
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             double cppResult = const_cast<const ::BezierCurve*>(cppSelf)->getFeatherFallOff(cppArg0);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &cppResult);
         }
     }
@@ -456,9 +434,7 @@ static PyObject* Sbk_BezierCurveFunc_getFeatherFallOffParam(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // getFeatherFallOffParam()const
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             DoubleParam * cppResult = const_cast<const ::BezierCurve*>(cppSelf)->getFeatherFallOffParam();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_DOUBLEPARAM_IDX], cppResult);
 
             // Ownership transferences.
@@ -501,9 +477,7 @@ static PyObject* Sbk_BezierCurveFunc_getIsActivated(PyObject* self, PyObject* py
 
         if (!PyErr_Occurred()) {
             // getIsActivated(int)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             bool cppResult = cppSelf->getIsActivated(cppArg0);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), &cppResult);
         }
     }
@@ -534,9 +508,7 @@ static PyObject* Sbk_BezierCurveFunc_getNumControlPoints(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // getNumControlPoints()const
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             int cppResult = const_cast<const ::BezierCurve*>(cppSelf)->getNumControlPoints();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<int>(), &cppResult);
         }
     }
@@ -576,9 +548,7 @@ static PyObject* Sbk_BezierCurveFunc_getOpacity(PyObject* self, PyObject* pyArg)
 
         if (!PyErr_Occurred()) {
             // getOpacity(int)const
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             double cppResult = const_cast<const ::BezierCurve*>(cppSelf)->getOpacity(cppArg0);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &cppResult);
         }
     }
@@ -609,9 +579,7 @@ static PyObject* Sbk_BezierCurveFunc_getOpacityParam(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // getOpacityParam()const
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             DoubleParam * cppResult = const_cast<const ::BezierCurve*>(cppSelf)->getOpacityParam();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_DOUBLEPARAM_IDX], cppResult);
 
             // Ownership transferences.
@@ -640,9 +608,7 @@ static PyObject* Sbk_BezierCurveFunc_getOverlayColor(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // getOverlayColor()const
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             ColorTuple* cppResult = new ColorTuple(const_cast<const ::BezierCurve*>(cppSelf)->getOverlayColor());
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Object::newObject((SbkObjectType*)SbkNatronEngineTypes[SBK_COLORTUPLE_IDX], cppResult, true, true);
         }
     }
@@ -682,9 +648,7 @@ static PyObject* Sbk_BezierCurveFunc_getPointMasterTrack(PyObject* self, PyObjec
 
         if (!PyErr_Occurred()) {
             // getPointMasterTrack(int)const
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             DoubleParam * cppResult = const_cast<const ::BezierCurve*>(cppSelf)->getPointMasterTrack(cppArg0);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_DOUBLEPARAM_IDX], cppResult);
 
             // Ownership transferences.
@@ -718,9 +682,7 @@ static PyObject* Sbk_BezierCurveFunc_isCurveFinished(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // isCurveFinished()const
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             bool cppResult = const_cast<const ::BezierCurve*>(cppSelf)->isCurveFinished();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), &cppResult);
         }
     }
@@ -778,9 +740,7 @@ static PyObject* Sbk_BezierCurveFunc_moveFeatherByIndex(PyObject* self, PyObject
 
         if (!PyErr_Occurred()) {
             // moveFeatherByIndex(int,int,double,double)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             cppSelf->moveFeatherByIndex(cppArg0, cppArg1, cppArg2, cppArg3);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
         }
     }
 
@@ -841,9 +801,7 @@ static PyObject* Sbk_BezierCurveFunc_moveLeftBezierPoint(PyObject* self, PyObjec
 
         if (!PyErr_Occurred()) {
             // moveLeftBezierPoint(int,int,double,double)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             cppSelf->moveLeftBezierPoint(cppArg0, cppArg1, cppArg2, cppArg3);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
         }
     }
 
@@ -904,9 +862,7 @@ static PyObject* Sbk_BezierCurveFunc_movePointByIndex(PyObject* self, PyObject* 
 
         if (!PyErr_Occurred()) {
             // movePointByIndex(int,int,double,double)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             cppSelf->movePointByIndex(cppArg0, cppArg1, cppArg2, cppArg3);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
         }
     }
 
@@ -967,9 +923,7 @@ static PyObject* Sbk_BezierCurveFunc_moveRightBezierPoint(PyObject* self, PyObje
 
         if (!PyErr_Occurred()) {
             // moveRightBezierPoint(int,int,double,double)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             cppSelf->moveRightBezierPoint(cppArg0, cppArg1, cppArg2, cppArg3);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
         }
     }
 
@@ -1011,9 +965,7 @@ static PyObject* Sbk_BezierCurveFunc_removeControlPointByIndex(PyObject* self, P
 
         if (!PyErr_Occurred()) {
             // removeControlPointByIndex(int)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             cppSelf->removeControlPointByIndex(cppArg0);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
         }
     }
 
@@ -1068,9 +1020,7 @@ static PyObject* Sbk_BezierCurveFunc_setActivated(PyObject* self, PyObject* args
 
         if (!PyErr_Occurred()) {
             // setActivated(int,bool)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             cppSelf->setActivated(cppArg0, cppArg1);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
         }
     }
 
@@ -1131,9 +1081,7 @@ static PyObject* Sbk_BezierCurveFunc_setColor(PyObject* self, PyObject* args)
 
         if (!PyErr_Occurred()) {
             // setColor(int,double,double,double)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             cppSelf->setColor(cppArg0, cppArg1, cppArg2, cppArg3);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
         }
     }
 
@@ -1175,9 +1123,7 @@ static PyObject* Sbk_BezierCurveFunc_setCompositingOperator(PyObject* self, PyOb
 
         if (!PyErr_Occurred()) {
             // setCompositingOperator(BezierCurve::CairoOperatorEnum)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             cppSelf->setCompositingOperator(cppArg0);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
         }
     }
 
@@ -1219,9 +1165,7 @@ static PyObject* Sbk_BezierCurveFunc_setCurveFinished(PyObject* self, PyObject* 
 
         if (!PyErr_Occurred()) {
             // setCurveFinished(bool)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             cppSelf->setCurveFinished(cppArg0);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
         }
     }
 
@@ -1276,9 +1220,7 @@ static PyObject* Sbk_BezierCurveFunc_setFeatherDistance(PyObject* self, PyObject
 
         if (!PyErr_Occurred()) {
             // setFeatherDistance(double,int)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             cppSelf->setFeatherDistance(cppArg0, cppArg1);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
         }
     }
 
@@ -1333,9 +1275,7 @@ static PyObject* Sbk_BezierCurveFunc_setFeatherFallOff(PyObject* self, PyObject*
 
         if (!PyErr_Occurred()) {
             // setFeatherFallOff(double,int)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             cppSelf->setFeatherFallOff(cppArg0, cppArg1);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
         }
     }
 
@@ -1408,9 +1348,7 @@ static PyObject* Sbk_BezierCurveFunc_setFeatherPointAtIndex(PyObject* self, PyOb
 
         if (!PyErr_Occurred()) {
             // setFeatherPointAtIndex(int,int,double,double,double,double,double,double)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             cppSelf->setFeatherPointAtIndex(cppArg0, cppArg1, cppArg2, cppArg3, cppArg4, cppArg5, cppArg6, cppArg7);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
         }
     }
 
@@ -1465,9 +1403,7 @@ static PyObject* Sbk_BezierCurveFunc_setOpacity(PyObject* self, PyObject* args)
 
         if (!PyErr_Occurred()) {
             // setOpacity(double,int)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             cppSelf->setOpacity(cppArg0, cppArg1);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
         }
     }
 
@@ -1525,9 +1461,7 @@ static PyObject* Sbk_BezierCurveFunc_setOverlayColor(PyObject* self, PyObject* a
 
         if (!PyErr_Occurred()) {
             // setOverlayColor(double,double,double)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             cppSelf->setOverlayColor(cppArg0, cppArg1, cppArg2);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
         }
     }
 
@@ -1600,9 +1534,7 @@ static PyObject* Sbk_BezierCurveFunc_setPointAtIndex(PyObject* self, PyObject* a
 
         if (!PyErr_Occurred()) {
             // setPointAtIndex(int,int,double,double,double,double,double,double)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             cppSelf->setPointAtIndex(cppArg0, cppArg1, cppArg2, cppArg3, cppArg4, cppArg5, cppArg6, cppArg7);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
         }
     }
 
@@ -1662,9 +1594,7 @@ static PyObject* Sbk_BezierCurveFunc_slavePointToTrack(PyObject* self, PyObject*
 
         if (!PyErr_Occurred()) {
             // slavePointToTrack(int,int,DoubleParam*)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             cppSelf->slavePointToTrack(cppArg0, cppArg1, cppArg2);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
         }
     }
 
@@ -1966,5 +1896,5 @@ void init_BezierCurve(PyObject* module)
     // End of 'CairoOperatorEnum' enum.
 
 
-    BezierCurveWrapper::pysideInitQtMetaTypes();
+    qRegisterMetaType< ::BezierCurve::CairoOperatorEnum >("BezierCurve::CairoOperatorEnum");
 }

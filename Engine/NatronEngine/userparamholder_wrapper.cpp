@@ -1,4 +1,7 @@
 
+//workaround to access protected functions
+#define protected public
+
 // default includes
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(mismatched-tags)
@@ -19,10 +22,6 @@ GCC_DIAG_OFF(missing-field-initializers)
 
 
 // Native ---------------------------------------------------------
-
-void UserParamHolderWrapper::pysideInitQtMetaTypes()
-{
-}
 
 UserParamHolderWrapper::UserParamHolderWrapper() : UserParamHolder() {
     // ... middle
@@ -51,9 +50,7 @@ Sbk_UserParamHolder_Init(PyObject* self, PyObject* args, PyObject* kwds)
 
         if (!PyErr_Occurred()) {
             // UserParamHolder()
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             cptr = new ::UserParamHolderWrapper();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
         }
     }
 
@@ -110,9 +107,7 @@ static PyObject* Sbk_UserParamHolderFunc_createBooleanParam(PyObject* self, PyOb
 
         if (!PyErr_Occurred()) {
             // createBooleanParam(std::string,std::string)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             BooleanParam * cppResult = cppSelf->createBooleanParam(cppArg0, cppArg1);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_BOOLEANPARAM_IDX], cppResult);
 
             // Ownership transferences.
@@ -173,9 +168,7 @@ static PyObject* Sbk_UserParamHolderFunc_createButtonParam(PyObject* self, PyObj
 
         if (!PyErr_Occurred()) {
             // createButtonParam(std::string,std::string)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             ButtonParam * cppResult = cppSelf->createButtonParam(cppArg0, cppArg1);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_BUTTONPARAM_IDX], cppResult);
 
             // Ownership transferences.
@@ -236,9 +229,7 @@ static PyObject* Sbk_UserParamHolderFunc_createChoiceParam(PyObject* self, PyObj
 
         if (!PyErr_Occurred()) {
             // createChoiceParam(std::string,std::string)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             ChoiceParam * cppResult = cppSelf->createChoiceParam(cppArg0, cppArg1);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_CHOICEPARAM_IDX], cppResult);
 
             // Ownership transferences.
@@ -302,9 +293,7 @@ static PyObject* Sbk_UserParamHolderFunc_createColorParam(PyObject* self, PyObje
 
         if (!PyErr_Occurred()) {
             // createColorParam(std::string,std::string,bool)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             ColorParam * cppResult = cppSelf->createColorParam(cppArg0, cppArg1, cppArg2);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_COLORPARAM_IDX], cppResult);
 
             // Ownership transferences.
@@ -365,9 +354,7 @@ static PyObject* Sbk_UserParamHolderFunc_createDouble2DParam(PyObject* self, PyO
 
         if (!PyErr_Occurred()) {
             // createDouble2DParam(std::string,std::string)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             Double2DParam * cppResult = cppSelf->createDouble2DParam(cppArg0, cppArg1);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_DOUBLE2DPARAM_IDX], cppResult);
 
             // Ownership transferences.
@@ -428,9 +415,7 @@ static PyObject* Sbk_UserParamHolderFunc_createDouble3DParam(PyObject* self, PyO
 
         if (!PyErr_Occurred()) {
             // createDouble3DParam(std::string,std::string)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             Double3DParam * cppResult = cppSelf->createDouble3DParam(cppArg0, cppArg1);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_DOUBLE3DPARAM_IDX], cppResult);
 
             // Ownership transferences.
@@ -491,9 +476,7 @@ static PyObject* Sbk_UserParamHolderFunc_createDoubleParam(PyObject* self, PyObj
 
         if (!PyErr_Occurred()) {
             // createDoubleParam(std::string,std::string)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             DoubleParam * cppResult = cppSelf->createDoubleParam(cppArg0, cppArg1);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_DOUBLEPARAM_IDX], cppResult);
 
             // Ownership transferences.
@@ -554,9 +537,7 @@ static PyObject* Sbk_UserParamHolderFunc_createFileParam(PyObject* self, PyObjec
 
         if (!PyErr_Occurred()) {
             // createFileParam(std::string,std::string)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             FileParam * cppResult = cppSelf->createFileParam(cppArg0, cppArg1);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_FILEPARAM_IDX], cppResult);
 
             // Ownership transferences.
@@ -617,9 +598,7 @@ static PyObject* Sbk_UserParamHolderFunc_createGroupParam(PyObject* self, PyObje
 
         if (!PyErr_Occurred()) {
             // createGroupParam(std::string,std::string)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             GroupParam * cppResult = cppSelf->createGroupParam(cppArg0, cppArg1);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_GROUPPARAM_IDX], cppResult);
 
             // Ownership transferences.
@@ -680,9 +659,7 @@ static PyObject* Sbk_UserParamHolderFunc_createInt2DParam(PyObject* self, PyObje
 
         if (!PyErr_Occurred()) {
             // createInt2DParam(std::string,std::string)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             Int2DParam * cppResult = cppSelf->createInt2DParam(cppArg0, cppArg1);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_INT2DPARAM_IDX], cppResult);
 
             // Ownership transferences.
@@ -743,9 +720,7 @@ static PyObject* Sbk_UserParamHolderFunc_createInt3DParam(PyObject* self, PyObje
 
         if (!PyErr_Occurred()) {
             // createInt3DParam(std::string,std::string)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             Int3DParam * cppResult = cppSelf->createInt3DParam(cppArg0, cppArg1);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_INT3DPARAM_IDX], cppResult);
 
             // Ownership transferences.
@@ -806,9 +781,7 @@ static PyObject* Sbk_UserParamHolderFunc_createIntParam(PyObject* self, PyObject
 
         if (!PyErr_Occurred()) {
             // createIntParam(std::string,std::string)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             IntParam * cppResult = cppSelf->createIntParam(cppArg0, cppArg1);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_INTPARAM_IDX], cppResult);
 
             // Ownership transferences.
@@ -869,9 +842,7 @@ static PyObject* Sbk_UserParamHolderFunc_createOutputFileParam(PyObject* self, P
 
         if (!PyErr_Occurred()) {
             // createOutputFileParam(std::string,std::string)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             OutputFileParam * cppResult = cppSelf->createOutputFileParam(cppArg0, cppArg1);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_OUTPUTFILEPARAM_IDX], cppResult);
 
             // Ownership transferences.
@@ -932,9 +903,7 @@ static PyObject* Sbk_UserParamHolderFunc_createPageParam(PyObject* self, PyObjec
 
         if (!PyErr_Occurred()) {
             // createPageParam(std::string,std::string)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             PageParam * cppResult = cppSelf->createPageParam(cppArg0, cppArg1);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_PAGEPARAM_IDX], cppResult);
 
             // Ownership transferences.
@@ -998,9 +967,7 @@ static PyObject* Sbk_UserParamHolderFunc_createParametricParam(PyObject* self, P
 
         if (!PyErr_Occurred()) {
             // createParametricParam(std::string,std::string,int)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             ParametricParam * cppResult = cppSelf->createParametricParam(cppArg0, cppArg1, cppArg2);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_PARAMETRICPARAM_IDX], cppResult);
 
             // Ownership transferences.
@@ -1061,9 +1028,7 @@ static PyObject* Sbk_UserParamHolderFunc_createPathParam(PyObject* self, PyObjec
 
         if (!PyErr_Occurred()) {
             // createPathParam(std::string,std::string)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             PathParam * cppResult = cppSelf->createPathParam(cppArg0, cppArg1);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_PATHPARAM_IDX], cppResult);
 
             // Ownership transferences.
@@ -1124,9 +1089,7 @@ static PyObject* Sbk_UserParamHolderFunc_createStringParam(PyObject* self, PyObj
 
         if (!PyErr_Occurred()) {
             // createStringParam(std::string,std::string)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             StringParam * cppResult = cppSelf->createStringParam(cppArg0, cppArg1);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_STRINGPARAM_IDX], cppResult);
 
             // Ownership transferences.
@@ -1205,9 +1168,7 @@ static PyObject* Sbk_UserParamHolderFunc_removeParam(PyObject* self, PyObject* p
 
         if (!PyErr_Occurred()) {
             // removeParam(Param*)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             bool cppResult = cppSelf->removeParam(cppArg0);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), &cppResult);
         }
     }
@@ -1360,5 +1321,4 @@ void init_UserParamHolder(PyObject* module)
 
 
 
-    UserParamHolderWrapper::pysideInitQtMetaTypes();
 }

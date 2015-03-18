@@ -1,4 +1,7 @@
 
+//workaround to access protected functions
+#define protected public
+
 // default includes
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(mismatched-tags)
@@ -20,10 +23,6 @@ GCC_DIAG_OFF(missing-field-initializers)
 
 
 // Native ---------------------------------------------------------
-
-void PyCoreApplicationWrapper::pysideInitQtMetaTypes()
-{
-}
 
 PyCoreApplicationWrapper::PyCoreApplicationWrapper() : PyCoreApplication() {
     // ... middle
@@ -52,9 +51,7 @@ Sbk_PyCoreApplication_Init(PyObject* self, PyObject* args, PyObject* kwds)
 
         if (!PyErr_Occurred()) {
             // PyCoreApplication()
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             cptr = new ::PyCoreApplicationWrapper();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
         }
     }
 
@@ -97,9 +94,7 @@ static PyObject* Sbk_PyCoreApplicationFunc_appendToNatronPath(PyObject* self, Py
 
         if (!PyErr_Occurred()) {
             // appendToNatronPath(std::string)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             cppSelf->appendToNatronPath(cppArg0);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
         }
     }
 
@@ -128,9 +123,7 @@ static PyObject* Sbk_PyCoreApplicationFunc_getBuildNumber(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // getBuildNumber()const
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             int cppResult = const_cast<const ::PyCoreApplication*>(cppSelf)->getBuildNumber();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<int>(), &cppResult);
         }
     }
@@ -170,9 +163,7 @@ static PyObject* Sbk_PyCoreApplicationFunc_getInstance(PyObject* self, PyObject*
 
         if (!PyErr_Occurred()) {
             // getInstance(int)const
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             App * cppResult = const_cast<const ::PyCoreApplication*>(cppSelf)->getInstance(cppArg0);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_APP_IDX], cppResult);
 
             // Ownership transferences.
@@ -206,9 +197,7 @@ static PyObject* Sbk_PyCoreApplicationFunc_getNatronDevelopmentStatus(PyObject* 
 
         if (!PyErr_Occurred()) {
             // getNatronDevelopmentStatus()const
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             std::string cppResult = const_cast<const ::PyCoreApplication*>(cppSelf)->getNatronDevelopmentStatus();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), &cppResult);
         }
     }
@@ -234,9 +223,7 @@ static PyObject* Sbk_PyCoreApplicationFunc_getNatronPath(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // getNatronPath()const
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             std::list<std::string > cppResult = const_cast<const ::PyCoreApplication*>(cppSelf)->getNatronPath();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_LIST_STD_STRING_IDX], &cppResult);
         }
     }
@@ -262,9 +249,7 @@ static PyObject* Sbk_PyCoreApplicationFunc_getNatronVersionEncoded(PyObject* sel
 
         if (!PyErr_Occurred()) {
             // getNatronVersionEncoded()const
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             int cppResult = const_cast<const ::PyCoreApplication*>(cppSelf)->getNatronVersionEncoded();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<int>(), &cppResult);
         }
     }
@@ -290,9 +275,7 @@ static PyObject* Sbk_PyCoreApplicationFunc_getNatronVersionMajor(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // getNatronVersionMajor()const
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             int cppResult = const_cast<const ::PyCoreApplication*>(cppSelf)->getNatronVersionMajor();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<int>(), &cppResult);
         }
     }
@@ -318,9 +301,7 @@ static PyObject* Sbk_PyCoreApplicationFunc_getNatronVersionMinor(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // getNatronVersionMinor()const
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             int cppResult = const_cast<const ::PyCoreApplication*>(cppSelf)->getNatronVersionMinor();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<int>(), &cppResult);
         }
     }
@@ -346,9 +327,7 @@ static PyObject* Sbk_PyCoreApplicationFunc_getNatronVersionRevision(PyObject* se
 
         if (!PyErr_Occurred()) {
             // getNatronVersionRevision()const
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             int cppResult = const_cast<const ::PyCoreApplication*>(cppSelf)->getNatronVersionRevision();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<int>(), &cppResult);
         }
     }
@@ -374,9 +353,7 @@ static PyObject* Sbk_PyCoreApplicationFunc_getNatronVersionString(PyObject* self
 
         if (!PyErr_Occurred()) {
             // getNatronVersionString()const
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             std::string cppResult = const_cast<const ::PyCoreApplication*>(cppSelf)->getNatronVersionString();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), &cppResult);
         }
     }
@@ -402,9 +379,7 @@ static PyObject* Sbk_PyCoreApplicationFunc_getNumCpus(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // getNumCpus()const
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             int cppResult = const_cast<const ::PyCoreApplication*>(cppSelf)->getNumCpus();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<int>(), &cppResult);
         }
     }
@@ -430,9 +405,7 @@ static PyObject* Sbk_PyCoreApplicationFunc_getNumInstances(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // getNumInstances()const
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             int cppResult = const_cast<const ::PyCoreApplication*>(cppSelf)->getNumInstances();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<int>(), &cppResult);
         }
     }
@@ -485,9 +458,7 @@ static PyObject* Sbk_PyCoreApplicationFunc_getPluginIDs(PyObject* self, PyObject
 
             if (!PyErr_Occurred()) {
                 // getPluginIDs()const
-                PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
                 std::list<std::string > cppResult = const_cast<const ::PyCoreApplication*>(cppSelf)->getPluginIDs();
-                PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
                 pyResult = Shiboken::Conversions::copyToPython(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_LIST_STD_STRING_IDX], &cppResult);
             }
             break;
@@ -499,9 +470,7 @@ static PyObject* Sbk_PyCoreApplicationFunc_getPluginIDs(PyObject* self, PyObject
 
             if (!PyErr_Occurred()) {
                 // getPluginIDs(std::string)const
-                PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
                 std::list<std::string > cppResult = const_cast<const ::PyCoreApplication*>(cppSelf)->getPluginIDs(cppArg0);
-                PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
                 pyResult = Shiboken::Conversions::copyToPython(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_LIST_STD_STRING_IDX], &cppResult);
             }
             break;
@@ -534,9 +503,7 @@ static PyObject* Sbk_PyCoreApplicationFunc_getSettings(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // getSettings()const
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             AppSettings * cppResult = const_cast<const ::PyCoreApplication*>(cppSelf)->getSettings();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_APPSETTINGS_IDX], cppResult);
 
             // Ownership transferences.
@@ -565,9 +532,7 @@ static PyObject* Sbk_PyCoreApplicationFunc_is64Bit(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // is64Bit()const
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             bool cppResult = const_cast<const ::PyCoreApplication*>(cppSelf)->is64Bit();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), &cppResult);
         }
     }
@@ -593,9 +558,7 @@ static PyObject* Sbk_PyCoreApplicationFunc_isBackground(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // isBackground()const
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             bool cppResult = const_cast<const ::PyCoreApplication*>(cppSelf)->isBackground();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), &cppResult);
         }
     }
@@ -621,9 +584,7 @@ static PyObject* Sbk_PyCoreApplicationFunc_isLinux(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // isLinux()const
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             bool cppResult = const_cast<const ::PyCoreApplication*>(cppSelf)->isLinux();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), &cppResult);
         }
     }
@@ -649,9 +610,7 @@ static PyObject* Sbk_PyCoreApplicationFunc_isMacOSX(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // isMacOSX()const
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             bool cppResult = const_cast<const ::PyCoreApplication*>(cppSelf)->isMacOSX();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), &cppResult);
         }
     }
@@ -677,9 +636,7 @@ static PyObject* Sbk_PyCoreApplicationFunc_isUnix(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // isUnix()const
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             bool cppResult = const_cast<const ::PyCoreApplication*>(cppSelf)->isUnix();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), &cppResult);
         }
     }
@@ -705,9 +662,7 @@ static PyObject* Sbk_PyCoreApplicationFunc_isWindows(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // isWindows()const
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             bool cppResult = const_cast<const ::PyCoreApplication*>(cppSelf)->isWindows();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), &cppResult);
         }
     }
@@ -856,5 +811,4 @@ void init_PyCoreApplication(PyObject* module)
 
 
 
-    PyCoreApplicationWrapper::pysideInitQtMetaTypes();
 }

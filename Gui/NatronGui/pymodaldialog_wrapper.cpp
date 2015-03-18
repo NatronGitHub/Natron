@@ -1350,9 +1350,7 @@ static PyObject* Sbk_PyModalDialogFunc_addWidget(PyObject* self, PyObject* pyArg
 
         if (!PyErr_Occurred()) {
             // addWidget(QWidget*)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             cppSelf->addWidget(cppArg0);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
         }
     }
 
@@ -1395,9 +1393,7 @@ static PyObject* Sbk_PyModalDialogFunc_getParam(PyObject* self, PyObject* pyArg)
 
         if (!PyErr_Occurred()) {
             // getParam(std::string)const
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             Param * cppResult = const_cast<const ::PyModalDialogWrapper*>(cppSelf)->getParam(cppArg0);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_PARAM_IDX], cppResult);
 
             // Ownership transferences.
@@ -1459,9 +1455,7 @@ static PyObject* Sbk_PyModalDialogFunc_insertWidget(PyObject* self, PyObject* ar
 
         if (!PyErr_Occurred()) {
             // insertWidget(int,QWidget*)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             cppSelf->insertWidget(cppArg0, cppArg1);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
         }
     }
 
@@ -1503,9 +1497,7 @@ static PyObject* Sbk_PyModalDialogFunc_setParamChangedCallback(PyObject* self, P
 
         if (!PyErr_Occurred()) {
             // setParamChangedCallback(std::string)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             cppSelf->setParamChangedCallback(cppArg0);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
         }
     }
 

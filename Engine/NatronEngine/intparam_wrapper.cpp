@@ -1,4 +1,7 @@
 
+//workaround to access protected functions
+#define protected public
+
 // default includes
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(mismatched-tags)
@@ -20,10 +23,6 @@ GCC_DIAG_OFF(missing-field-initializers)
 
 // Native ---------------------------------------------------------
 
-void IntParamWrapper::pysideInitQtMetaTypes()
-{
-}
-
 IntParamWrapper::~IntParamWrapper()
 {
     SbkObject* wrapper = Shiboken::BindingManager::instance().retrieveWrapper(this);
@@ -35,11 +34,11 @@ IntParamWrapper::~IntParamWrapper()
 extern "C" {
 static PyObject* Sbk_IntParamFunc_addAsDependencyOf(PyObject* self, PyObject* args)
 {
-    IntParamWrapper* cppSelf = 0;
+    ::IntParam* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = (IntParamWrapper*)((::IntParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_INTPARAM_IDX], (SbkObject*)self));
+    cppSelf = ((::IntParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_INTPARAM_IDX], (SbkObject*)self));
     PyObject* pyResult = 0;
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { 0, 0 };
@@ -76,9 +75,7 @@ static PyObject* Sbk_IntParamFunc_addAsDependencyOf(PyObject* self, PyObject* ar
 
         if (!PyErr_Occurred()) {
             // addAsDependencyOf(int,Param*)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             int cppResult = cppSelf->addAsDependencyOf(cppArg0, cppArg1);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<int>(), &cppResult);
         }
     }
@@ -97,11 +94,11 @@ static PyObject* Sbk_IntParamFunc_addAsDependencyOf(PyObject* self, PyObject* ar
 
 static PyObject* Sbk_IntParamFunc_get(PyObject* self, PyObject* args)
 {
-    IntParamWrapper* cppSelf = 0;
+    ::IntParam* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = (IntParamWrapper*)((::IntParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_INTPARAM_IDX], (SbkObject*)self));
+    cppSelf = ((::IntParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_INTPARAM_IDX], (SbkObject*)self));
     PyObject* pyResult = 0;
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { 0 };
@@ -136,9 +133,7 @@ static PyObject* Sbk_IntParamFunc_get(PyObject* self, PyObject* args)
 
             if (!PyErr_Occurred()) {
                 // get()const
-                PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-                int cppResult = const_cast<const ::IntParamWrapper*>(cppSelf)->get();
-                PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+                int cppResult = const_cast<const ::IntParam*>(cppSelf)->get();
                 pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<int>(), &cppResult);
             }
             break;
@@ -150,9 +145,7 @@ static PyObject* Sbk_IntParamFunc_get(PyObject* self, PyObject* args)
 
             if (!PyErr_Occurred()) {
                 // get(int)const
-                PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-                int cppResult = const_cast<const ::IntParamWrapper*>(cppSelf)->get(cppArg0);
-                PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+                int cppResult = const_cast<const ::IntParam*>(cppSelf)->get(cppArg0);
                 pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<int>(), &cppResult);
             }
             break;
@@ -173,11 +166,11 @@ static PyObject* Sbk_IntParamFunc_get(PyObject* self, PyObject* args)
 
 static PyObject* Sbk_IntParamFunc_getDefaultValue(PyObject* self, PyObject* args, PyObject* kwds)
 {
-    IntParamWrapper* cppSelf = 0;
+    ::IntParam* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = (IntParamWrapper*)((::IntParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_INTPARAM_IDX], (SbkObject*)self));
+    cppSelf = ((::IntParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_INTPARAM_IDX], (SbkObject*)self));
     PyObject* pyResult = 0;
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { 0 };
@@ -225,9 +218,7 @@ static PyObject* Sbk_IntParamFunc_getDefaultValue(PyObject* self, PyObject* args
 
         if (!PyErr_Occurred()) {
             // getDefaultValue(int)const
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            int cppResult = const_cast<const ::IntParamWrapper*>(cppSelf)->getDefaultValue(cppArg0);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            int cppResult = const_cast<const ::IntParam*>(cppSelf)->getDefaultValue(cppArg0);
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<int>(), &cppResult);
         }
     }
@@ -246,11 +237,11 @@ static PyObject* Sbk_IntParamFunc_getDefaultValue(PyObject* self, PyObject* args
 
 static PyObject* Sbk_IntParamFunc_getDisplayMaximum(PyObject* self, PyObject* pyArg)
 {
-    IntParamWrapper* cppSelf = 0;
+    ::IntParam* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = (IntParamWrapper*)((::IntParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_INTPARAM_IDX], (SbkObject*)self));
+    cppSelf = ((::IntParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_INTPARAM_IDX], (SbkObject*)self));
     PyObject* pyResult = 0;
     int overloadId = -1;
     PythonToCppFunc pythonToCpp;
@@ -272,9 +263,7 @@ static PyObject* Sbk_IntParamFunc_getDisplayMaximum(PyObject* self, PyObject* py
 
         if (!PyErr_Occurred()) {
             // getDisplayMaximum(int)const
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            int cppResult = const_cast<const ::IntParamWrapper*>(cppSelf)->getDisplayMaximum(cppArg0);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            int cppResult = const_cast<const ::IntParam*>(cppSelf)->getDisplayMaximum(cppArg0);
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<int>(), &cppResult);
         }
     }
@@ -293,11 +282,11 @@ static PyObject* Sbk_IntParamFunc_getDisplayMaximum(PyObject* self, PyObject* py
 
 static PyObject* Sbk_IntParamFunc_getDisplayMinimum(PyObject* self, PyObject* pyArg)
 {
-    IntParamWrapper* cppSelf = 0;
+    ::IntParam* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = (IntParamWrapper*)((::IntParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_INTPARAM_IDX], (SbkObject*)self));
+    cppSelf = ((::IntParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_INTPARAM_IDX], (SbkObject*)self));
     PyObject* pyResult = 0;
     int overloadId = -1;
     PythonToCppFunc pythonToCpp;
@@ -319,9 +308,7 @@ static PyObject* Sbk_IntParamFunc_getDisplayMinimum(PyObject* self, PyObject* py
 
         if (!PyErr_Occurred()) {
             // getDisplayMinimum(int)const
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            int cppResult = const_cast<const ::IntParamWrapper*>(cppSelf)->getDisplayMinimum(cppArg0);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            int cppResult = const_cast<const ::IntParam*>(cppSelf)->getDisplayMinimum(cppArg0);
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<int>(), &cppResult);
         }
     }
@@ -340,11 +327,11 @@ static PyObject* Sbk_IntParamFunc_getDisplayMinimum(PyObject* self, PyObject* py
 
 static PyObject* Sbk_IntParamFunc_getMaximum(PyObject* self, PyObject* args, PyObject* kwds)
 {
-    IntParamWrapper* cppSelf = 0;
+    ::IntParam* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = (IntParamWrapper*)((::IntParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_INTPARAM_IDX], (SbkObject*)self));
+    cppSelf = ((::IntParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_INTPARAM_IDX], (SbkObject*)self));
     PyObject* pyResult = 0;
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { 0 };
@@ -392,9 +379,7 @@ static PyObject* Sbk_IntParamFunc_getMaximum(PyObject* self, PyObject* args, PyO
 
         if (!PyErr_Occurred()) {
             // getMaximum(int)const
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            int cppResult = const_cast<const ::IntParamWrapper*>(cppSelf)->getMaximum(cppArg0);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            int cppResult = const_cast<const ::IntParam*>(cppSelf)->getMaximum(cppArg0);
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<int>(), &cppResult);
         }
     }
@@ -413,11 +398,11 @@ static PyObject* Sbk_IntParamFunc_getMaximum(PyObject* self, PyObject* args, PyO
 
 static PyObject* Sbk_IntParamFunc_getMinimum(PyObject* self, PyObject* args, PyObject* kwds)
 {
-    IntParamWrapper* cppSelf = 0;
+    ::IntParam* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = (IntParamWrapper*)((::IntParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_INTPARAM_IDX], (SbkObject*)self));
+    cppSelf = ((::IntParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_INTPARAM_IDX], (SbkObject*)self));
     PyObject* pyResult = 0;
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { 0 };
@@ -465,9 +450,7 @@ static PyObject* Sbk_IntParamFunc_getMinimum(PyObject* self, PyObject* args, PyO
 
         if (!PyErr_Occurred()) {
             // getMinimum(int)const
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            int cppResult = const_cast<const ::IntParamWrapper*>(cppSelf)->getMinimum(cppArg0);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            int cppResult = const_cast<const ::IntParam*>(cppSelf)->getMinimum(cppArg0);
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<int>(), &cppResult);
         }
     }
@@ -486,11 +469,11 @@ static PyObject* Sbk_IntParamFunc_getMinimum(PyObject* self, PyObject* args, PyO
 
 static PyObject* Sbk_IntParamFunc_getValue(PyObject* self, PyObject* args, PyObject* kwds)
 {
-    IntParamWrapper* cppSelf = 0;
+    ::IntParam* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = (IntParamWrapper*)((::IntParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_INTPARAM_IDX], (SbkObject*)self));
+    cppSelf = ((::IntParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_INTPARAM_IDX], (SbkObject*)self));
     PyObject* pyResult = 0;
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { 0 };
@@ -538,9 +521,7 @@ static PyObject* Sbk_IntParamFunc_getValue(PyObject* self, PyObject* args, PyObj
 
         if (!PyErr_Occurred()) {
             // getValue(int)const
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            int cppResult = const_cast<const ::IntParamWrapper*>(cppSelf)->getValue(cppArg0);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            int cppResult = const_cast<const ::IntParam*>(cppSelf)->getValue(cppArg0);
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<int>(), &cppResult);
         }
     }
@@ -559,11 +540,11 @@ static PyObject* Sbk_IntParamFunc_getValue(PyObject* self, PyObject* args, PyObj
 
 static PyObject* Sbk_IntParamFunc_getValueAtTime(PyObject* self, PyObject* args, PyObject* kwds)
 {
-    IntParamWrapper* cppSelf = 0;
+    ::IntParam* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = (IntParamWrapper*)((::IntParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_INTPARAM_IDX], (SbkObject*)self));
+    cppSelf = ((::IntParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_INTPARAM_IDX], (SbkObject*)self));
     PyObject* pyResult = 0;
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { 0, 0 };
@@ -618,9 +599,7 @@ static PyObject* Sbk_IntParamFunc_getValueAtTime(PyObject* self, PyObject* args,
 
         if (!PyErr_Occurred()) {
             // getValueAtTime(int,int)const
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            int cppResult = const_cast<const ::IntParamWrapper*>(cppSelf)->getValueAtTime(cppArg0, cppArg1);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            int cppResult = const_cast<const ::IntParam*>(cppSelf)->getValueAtTime(cppArg0, cppArg1);
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<int>(), &cppResult);
         }
     }
@@ -639,11 +618,11 @@ static PyObject* Sbk_IntParamFunc_getValueAtTime(PyObject* self, PyObject* args,
 
 static PyObject* Sbk_IntParamFunc_restoreDefaultValue(PyObject* self, PyObject* args, PyObject* kwds)
 {
-    IntParamWrapper* cppSelf = 0;
+    ::IntParam* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = (IntParamWrapper*)((::IntParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_INTPARAM_IDX], (SbkObject*)self));
+    cppSelf = ((::IntParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_INTPARAM_IDX], (SbkObject*)self));
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { 0 };
     SBK_UNUSED(pythonToCpp)
@@ -713,11 +692,11 @@ static PyObject* Sbk_IntParamFunc_restoreDefaultValue(PyObject* self, PyObject* 
 
 static PyObject* Sbk_IntParamFunc_set(PyObject* self, PyObject* args)
 {
-    IntParamWrapper* cppSelf = 0;
+    ::IntParam* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = (IntParamWrapper*)((::IntParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_INTPARAM_IDX], (SbkObject*)self));
+    cppSelf = ((::IntParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_INTPARAM_IDX], (SbkObject*)self));
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { 0, 0 };
     SBK_UNUSED(pythonToCpp)
@@ -799,11 +778,11 @@ static PyObject* Sbk_IntParamFunc_set(PyObject* self, PyObject* args)
 
 static PyObject* Sbk_IntParamFunc_setDefaultValue(PyObject* self, PyObject* args, PyObject* kwds)
 {
-    IntParamWrapper* cppSelf = 0;
+    ::IntParam* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = (IntParamWrapper*)((::IntParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_INTPARAM_IDX], (SbkObject*)self));
+    cppSelf = ((::IntParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_INTPARAM_IDX], (SbkObject*)self));
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { 0, 0 };
     SBK_UNUSED(pythonToCpp)
@@ -857,9 +836,7 @@ static PyObject* Sbk_IntParamFunc_setDefaultValue(PyObject* self, PyObject* args
 
         if (!PyErr_Occurred()) {
             // setDefaultValue(int,int)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             cppSelf->setDefaultValue(cppArg0, cppArg1);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
         }
     }
 
@@ -876,11 +853,11 @@ static PyObject* Sbk_IntParamFunc_setDefaultValue(PyObject* self, PyObject* args
 
 static PyObject* Sbk_IntParamFunc_setDisplayMaximum(PyObject* self, PyObject* args, PyObject* kwds)
 {
-    IntParamWrapper* cppSelf = 0;
+    ::IntParam* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = (IntParamWrapper*)((::IntParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_INTPARAM_IDX], (SbkObject*)self));
+    cppSelf = ((::IntParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_INTPARAM_IDX], (SbkObject*)self));
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { 0, 0 };
     SBK_UNUSED(pythonToCpp)
@@ -934,9 +911,7 @@ static PyObject* Sbk_IntParamFunc_setDisplayMaximum(PyObject* self, PyObject* ar
 
         if (!PyErr_Occurred()) {
             // setDisplayMaximum(int,int)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             cppSelf->setDisplayMaximum(cppArg0, cppArg1);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
         }
     }
 
@@ -953,11 +928,11 @@ static PyObject* Sbk_IntParamFunc_setDisplayMaximum(PyObject* self, PyObject* ar
 
 static PyObject* Sbk_IntParamFunc_setDisplayMinimum(PyObject* self, PyObject* args, PyObject* kwds)
 {
-    IntParamWrapper* cppSelf = 0;
+    ::IntParam* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = (IntParamWrapper*)((::IntParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_INTPARAM_IDX], (SbkObject*)self));
+    cppSelf = ((::IntParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_INTPARAM_IDX], (SbkObject*)self));
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { 0, 0 };
     SBK_UNUSED(pythonToCpp)
@@ -1011,9 +986,7 @@ static PyObject* Sbk_IntParamFunc_setDisplayMinimum(PyObject* self, PyObject* ar
 
         if (!PyErr_Occurred()) {
             // setDisplayMinimum(int,int)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             cppSelf->setDisplayMinimum(cppArg0, cppArg1);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
         }
     }
 
@@ -1030,11 +1003,11 @@ static PyObject* Sbk_IntParamFunc_setDisplayMinimum(PyObject* self, PyObject* ar
 
 static PyObject* Sbk_IntParamFunc_setMaximum(PyObject* self, PyObject* args, PyObject* kwds)
 {
-    IntParamWrapper* cppSelf = 0;
+    ::IntParam* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = (IntParamWrapper*)((::IntParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_INTPARAM_IDX], (SbkObject*)self));
+    cppSelf = ((::IntParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_INTPARAM_IDX], (SbkObject*)self));
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { 0, 0 };
     SBK_UNUSED(pythonToCpp)
@@ -1088,9 +1061,7 @@ static PyObject* Sbk_IntParamFunc_setMaximum(PyObject* self, PyObject* args, PyO
 
         if (!PyErr_Occurred()) {
             // setMaximum(int,int)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             cppSelf->setMaximum(cppArg0, cppArg1);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
         }
     }
 
@@ -1107,11 +1078,11 @@ static PyObject* Sbk_IntParamFunc_setMaximum(PyObject* self, PyObject* args, PyO
 
 static PyObject* Sbk_IntParamFunc_setMinimum(PyObject* self, PyObject* args, PyObject* kwds)
 {
-    IntParamWrapper* cppSelf = 0;
+    ::IntParam* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = (IntParamWrapper*)((::IntParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_INTPARAM_IDX], (SbkObject*)self));
+    cppSelf = ((::IntParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_INTPARAM_IDX], (SbkObject*)self));
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { 0, 0 };
     SBK_UNUSED(pythonToCpp)
@@ -1165,9 +1136,7 @@ static PyObject* Sbk_IntParamFunc_setMinimum(PyObject* self, PyObject* args, PyO
 
         if (!PyErr_Occurred()) {
             // setMinimum(int,int)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             cppSelf->setMinimum(cppArg0, cppArg1);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
         }
     }
 
@@ -1184,11 +1153,11 @@ static PyObject* Sbk_IntParamFunc_setMinimum(PyObject* self, PyObject* args, PyO
 
 static PyObject* Sbk_IntParamFunc_setValue(PyObject* self, PyObject* args, PyObject* kwds)
 {
-    IntParamWrapper* cppSelf = 0;
+    ::IntParam* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = (IntParamWrapper*)((::IntParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_INTPARAM_IDX], (SbkObject*)self));
+    cppSelf = ((::IntParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_INTPARAM_IDX], (SbkObject*)self));
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { 0, 0 };
     SBK_UNUSED(pythonToCpp)
@@ -1265,11 +1234,11 @@ static PyObject* Sbk_IntParamFunc_setValue(PyObject* self, PyObject* args, PyObj
 
 static PyObject* Sbk_IntParamFunc_setValueAtTime(PyObject* self, PyObject* args, PyObject* kwds)
 {
-    IntParamWrapper* cppSelf = 0;
+    ::IntParam* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = (IntParamWrapper*)((::IntParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_INTPARAM_IDX], (SbkObject*)self));
+    cppSelf = ((::IntParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_INTPARAM_IDX], (SbkObject*)self));
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { 0, 0, 0 };
     SBK_UNUSED(pythonToCpp)
@@ -1492,5 +1461,4 @@ void init_IntParam(PyObject* module)
     Shiboken::ObjectType::setTypeDiscoveryFunctionV2(&Sbk_IntParam_Type, &Sbk_IntParam_typeDiscovery);
 
 
-    IntParamWrapper::pysideInitQtMetaTypes();
 }

@@ -53,9 +53,7 @@ static PyObject* Sbk_GuiAppFunc_createModalDialog(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // createModalDialog()
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             PyModalDialog * cppResult = cppSelf->createModalDialog();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronGuiTypes[SBK_PYMODALDIALOG_IDX], cppResult);
         }
     }
@@ -121,9 +119,7 @@ static PyObject* Sbk_GuiAppFunc_getDirectoryDialog(PyObject* self, PyObject* arg
 
         if (!PyErr_Occurred()) {
             // getDirectoryDialog(std::string)const
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             std::string cppResult = const_cast<const ::GuiApp*>(cppSelf)->getDirectoryDialog(cppArg0);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), &cppResult);
         }
     }
@@ -201,9 +197,7 @@ static PyObject* Sbk_GuiAppFunc_getFilenameDialog(PyObject* self, PyObject* args
 
         if (!PyErr_Occurred()) {
             // getFilenameDialog(std::vector<std::string>,std::string)const
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             std::string cppResult = const_cast<const ::GuiApp*>(cppSelf)->getFilenameDialog(cppArg0, cppArg1);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), &cppResult);
         }
     }
@@ -234,9 +228,7 @@ static PyObject* Sbk_GuiAppFunc_getRGBColorDialog(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // getRGBColorDialog()const
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             ColorTuple* cppResult = new ColorTuple(const_cast<const ::GuiApp*>(cppSelf)->getRGBColorDialog());
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Object::newObject((SbkObjectType*)SbkNatronEngineTypes[SBK_COLORTUPLE_IDX], cppResult, true, true);
         }
     }
@@ -396,9 +388,7 @@ static PyObject* Sbk_GuiAppFunc_getSequenceDialog(PyObject* self, PyObject* args
 
         if (!PyErr_Occurred()) {
             // getSequenceDialog(std::vector<std::string>,std::string)const
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             std::string cppResult = const_cast<const ::GuiApp*>(cppSelf)->getSequenceDialog(cppArg0, cppArg1);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), &cppResult);
         }
     }
@@ -443,9 +433,7 @@ static PyObject* Sbk_GuiAppFunc_getTabWidget(PyObject* self, PyObject* pyArg)
 
         if (!PyErr_Occurred()) {
             // getTabWidget(std::string)const
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             PyTabWidget * cppResult = const_cast<const ::GuiApp*>(cppSelf)->getTabWidget(cppArg0);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronGuiTypes[SBK_PYTABWIDGET_IDX], cppResult);
 
             // Ownership transferences.
@@ -493,9 +481,7 @@ static PyObject* Sbk_GuiAppFunc_getUserPanel(PyObject* self, PyObject* pyArg)
 
         if (!PyErr_Occurred()) {
             // getUserPanel(std::string)const
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             PyPanel * cppResult = const_cast<const ::GuiApp*>(cppSelf)->getUserPanel(cppArg0);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronGuiTypes[SBK_PYPANEL_IDX], cppResult);
         }
     }
@@ -540,9 +526,7 @@ static PyObject* Sbk_GuiAppFunc_getViewer(PyObject* self, PyObject* pyArg)
 
         if (!PyErr_Occurred()) {
             // getViewer(std::string)const
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             PyViewer * cppResult = const_cast<const ::GuiApp*>(cppSelf)->getViewer(cppArg0);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronGuiTypes[SBK_PYVIEWER_IDX], cppResult);
 
             // Ownership transferences.
@@ -605,9 +589,7 @@ static PyObject* Sbk_GuiAppFunc_moveTab(PyObject* self, PyObject* args)
 
         if (!PyErr_Occurred()) {
             // moveTab(std::string,PyTabWidget*)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             bool cppResult = cppSelf->moveTab(cppArg0, cppArg1);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), &cppResult);
         }
     }
@@ -666,9 +648,7 @@ static PyObject* Sbk_GuiAppFunc_registerPythonPanel(PyObject* self, PyObject* ar
 
         if (!PyErr_Occurred()) {
             // registerPythonPanel(PyPanel*,std::string)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             cppSelf->registerPythonPanel(cppArg0, cppArg1);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
         }
     }
 
@@ -744,9 +724,7 @@ static PyObject* Sbk_GuiAppFunc_saveFilenameDialog(PyObject* self, PyObject* arg
 
         if (!PyErr_Occurred()) {
             // saveFilenameDialog(std::vector<std::string>,std::string)const
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             std::string cppResult = const_cast<const ::GuiApp*>(cppSelf)->saveFilenameDialog(cppArg0, cppArg1);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), &cppResult);
         }
     }
@@ -824,9 +802,7 @@ static PyObject* Sbk_GuiAppFunc_saveSequenceDialog(PyObject* self, PyObject* arg
 
         if (!PyErr_Occurred()) {
             // saveSequenceDialog(std::vector<std::string>,std::string)const
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             std::string cppResult = const_cast<const ::GuiApp*>(cppSelf)->saveSequenceDialog(cppArg0, cppArg1);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), &cppResult);
         }
     }
@@ -872,9 +848,7 @@ static PyObject* Sbk_GuiAppFunc_unregisterPythonPanel(PyObject* self, PyObject* 
 
         if (!PyErr_Occurred()) {
             // unregisterPythonPanel(PyPanel*)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             cppSelf->unregisterPythonPanel(cppArg0);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
         }
     }
 

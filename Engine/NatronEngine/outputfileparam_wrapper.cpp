@@ -1,4 +1,7 @@
 
+//workaround to access protected functions
+#define protected public
+
 // default includes
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(mismatched-tags)
@@ -20,10 +23,6 @@ GCC_DIAG_OFF(missing-field-initializers)
 
 // Native ---------------------------------------------------------
 
-void OutputFileParamWrapper::pysideInitQtMetaTypes()
-{
-}
-
 OutputFileParamWrapper::~OutputFileParamWrapper()
 {
     SbkObject* wrapper = Shiboken::BindingManager::instance().retrieveWrapper(this);
@@ -35,20 +34,18 @@ OutputFileParamWrapper::~OutputFileParamWrapper()
 extern "C" {
 static PyObject* Sbk_OutputFileParamFunc_openFile(PyObject* self)
 {
-    OutputFileParamWrapper* cppSelf = 0;
+    ::OutputFileParam* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = (OutputFileParamWrapper*)((::OutputFileParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_OUTPUTFILEPARAM_IDX], (SbkObject*)self));
+    cppSelf = ((::OutputFileParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_OUTPUTFILEPARAM_IDX], (SbkObject*)self));
 
     // Call function/method
     {
 
         if (!PyErr_Occurred()) {
             // openFile()
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             cppSelf->openFile();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
         }
     }
 
@@ -60,11 +57,11 @@ static PyObject* Sbk_OutputFileParamFunc_openFile(PyObject* self)
 
 static PyObject* Sbk_OutputFileParamFunc_setSequenceEnabled(PyObject* self, PyObject* pyArg)
 {
-    OutputFileParamWrapper* cppSelf = 0;
+    ::OutputFileParam* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = (OutputFileParamWrapper*)((::OutputFileParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_OUTPUTFILEPARAM_IDX], (SbkObject*)self));
+    cppSelf = ((::OutputFileParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_OUTPUTFILEPARAM_IDX], (SbkObject*)self));
     int overloadId = -1;
     PythonToCppFunc pythonToCpp;
     SBK_UNUSED(pythonToCpp)
@@ -85,9 +82,7 @@ static PyObject* Sbk_OutputFileParamFunc_setSequenceEnabled(PyObject* self, PyOb
 
         if (!PyErr_Occurred()) {
             // setSequenceEnabled(bool)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             cppSelf->setSequenceEnabled(cppArg0);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
         }
     }
 
@@ -230,5 +225,4 @@ void init_OutputFileParam(PyObject* module)
     Shiboken::ObjectType::setTypeDiscoveryFunctionV2(&Sbk_OutputFileParam_Type, &Sbk_OutputFileParam_typeDiscovery);
 
 
-    OutputFileParamWrapper::pysideInitQtMetaTypes();
 }

@@ -35,9 +35,7 @@ static PyObject* Sbk_PyViewerFunc_getAInput(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // getAInput()const
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             int cppResult = const_cast<const ::PyViewer*>(cppSelf)->getAInput();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<int>(), &cppResult);
         }
     }
@@ -63,9 +61,7 @@ static PyObject* Sbk_PyViewerFunc_getBInput(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // getBInput()const
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             int cppResult = const_cast<const ::PyViewer*>(cppSelf)->getBInput();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<int>(), &cppResult);
         }
     }
@@ -91,9 +87,7 @@ static PyObject* Sbk_PyViewerFunc_getChannels(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // getChannels()const
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             Natron::DisplayChannelsEnum cppResult = const_cast<const ::PyViewer*>(cppSelf)->getChannels();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(SBK_CONVERTER(SbkNatronEngineTypes[SBK_NATRON_DISPLAYCHANNELSENUM_IDX]), &cppResult);
         }
     }
@@ -119,9 +113,7 @@ static PyObject* Sbk_PyViewerFunc_getCompositingOperator(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // getCompositingOperator()const
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             Natron::ViewerCompositingOperatorEnum cppResult = const_cast<const ::PyViewer*>(cppSelf)->getCompositingOperator();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(SBK_CONVERTER(SbkNatronEngineTypes[SBK_NATRON_VIEWERCOMPOSITINGOPERATORENUM_IDX]), &cppResult);
         }
     }
@@ -147,9 +139,7 @@ static PyObject* Sbk_PyViewerFunc_getCurrentFrame(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // getCurrentFrame()
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             int cppResult = cppSelf->getCurrentFrame();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<int>(), &cppResult);
         }
     }
@@ -175,9 +165,7 @@ static PyObject* Sbk_PyViewerFunc_getCurrentView(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // getCurrentView()const
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             int cppResult = const_cast<const ::PyViewer*>(cppSelf)->getCurrentView();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<int>(), &cppResult);
         }
     }
@@ -239,9 +227,7 @@ static PyObject* Sbk_PyViewerFunc_getPlaybackMode(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // getPlaybackMode()const
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             Natron::PlaybackModeEnum cppResult = const_cast<const ::PyViewer*>(cppSelf)->getPlaybackMode();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(SBK_CONVERTER(SbkNatronEngineTypes[SBK_NATRON_PLAYBACKMODEENUM_IDX]), &cppResult);
         }
     }
@@ -267,9 +253,7 @@ static PyObject* Sbk_PyViewerFunc_getProxyIndex(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // getProxyIndex()const
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             int cppResult = const_cast<const ::PyViewer*>(cppSelf)->getProxyIndex();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<int>(), &cppResult);
         }
     }
@@ -295,9 +279,7 @@ static PyObject* Sbk_PyViewerFunc_isProxyModeEnabled(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // isProxyModeEnabled()const
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             bool cppResult = const_cast<const ::PyViewer*>(cppSelf)->isProxyModeEnabled();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), &cppResult);
         }
     }
@@ -322,9 +304,7 @@ static PyObject* Sbk_PyViewerFunc_pause(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // pause()
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             cppSelf->pause();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
         }
     }
 
@@ -347,9 +327,7 @@ static PyObject* Sbk_PyViewerFunc_redraw(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // redraw()
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             cppSelf->redraw();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
         }
     }
 
@@ -412,9 +390,7 @@ static PyObject* Sbk_PyViewerFunc_renderCurrentFrame(PyObject* self, PyObject* a
 
         if (!PyErr_Occurred()) {
             // renderCurrentFrame(bool)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             cppSelf->renderCurrentFrame(cppArg0);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
         }
     }
 
@@ -456,9 +432,7 @@ static PyObject* Sbk_PyViewerFunc_seek(PyObject* self, PyObject* pyArg)
 
         if (!PyErr_Occurred()) {
             // seek(int)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             cppSelf->seek(cppArg0);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
         }
     }
 
@@ -500,9 +474,7 @@ static PyObject* Sbk_PyViewerFunc_setAInput(PyObject* self, PyObject* pyArg)
 
         if (!PyErr_Occurred()) {
             // setAInput(int)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             cppSelf->setAInput(cppArg0);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
         }
     }
 
@@ -544,9 +516,7 @@ static PyObject* Sbk_PyViewerFunc_setBInput(PyObject* self, PyObject* pyArg)
 
         if (!PyErr_Occurred()) {
             // setBInput(int)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             cppSelf->setBInput(cppArg0);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
         }
     }
 
@@ -588,9 +558,7 @@ static PyObject* Sbk_PyViewerFunc_setChannels(PyObject* self, PyObject* pyArg)
 
         if (!PyErr_Occurred()) {
             // setChannels(Natron::DisplayChannelsEnum)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             cppSelf->setChannels(cppArg0);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
         }
     }
 
@@ -632,9 +600,7 @@ static PyObject* Sbk_PyViewerFunc_setCompositingOperator(PyObject* self, PyObjec
 
         if (!PyErr_Occurred()) {
             // setCompositingOperator(Natron::ViewerCompositingOperatorEnum)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             cppSelf->setCompositingOperator(cppArg0);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
         }
     }
 
@@ -676,9 +642,7 @@ static PyObject* Sbk_PyViewerFunc_setCurrentView(PyObject* self, PyObject* pyArg
 
         if (!PyErr_Occurred()) {
             // setCurrentView(int)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             cppSelf->setCurrentView(cppArg0);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
         }
     }
 
@@ -733,9 +697,7 @@ static PyObject* Sbk_PyViewerFunc_setFrameRange(PyObject* self, PyObject* args)
 
         if (!PyErr_Occurred()) {
             // setFrameRange(int,int)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             cppSelf->setFrameRange(cppArg0, cppArg1);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
         }
     }
 
@@ -777,9 +739,7 @@ static PyObject* Sbk_PyViewerFunc_setPlaybackMode(PyObject* self, PyObject* pyAr
 
         if (!PyErr_Occurred()) {
             // setPlaybackMode(Natron::PlaybackModeEnum)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             cppSelf->setPlaybackMode(cppArg0);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
         }
     }
 
@@ -821,9 +781,7 @@ static PyObject* Sbk_PyViewerFunc_setProxyIndex(PyObject* self, PyObject* pyArg)
 
         if (!PyErr_Occurred()) {
             // setProxyIndex(int)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             cppSelf->setProxyIndex(cppArg0);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
         }
     }
 
@@ -865,9 +823,7 @@ static PyObject* Sbk_PyViewerFunc_setProxyModeEnabled(PyObject* self, PyObject* 
 
         if (!PyErr_Occurred()) {
             // setProxyModeEnabled(bool)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             cppSelf->setProxyModeEnabled(cppArg0);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
         }
     }
 
@@ -895,9 +851,7 @@ static PyObject* Sbk_PyViewerFunc_startBackward(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // startBackward()
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             cppSelf->startBackward();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
         }
     }
 
@@ -920,9 +874,7 @@ static PyObject* Sbk_PyViewerFunc_startForward(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // startForward()
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             cppSelf->startForward();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
         }
     }
 

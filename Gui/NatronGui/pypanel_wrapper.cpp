@@ -1374,7 +1374,6 @@ Sbk_PyPanel_Init(PyObject* self, PyObject* args, PyObject* kwds)
         if (!PyErr_Occurred()) {
             // PyPanel(std::string,std::string,bool,GuiApp*)
             void* addr = PySide::nextQObjectMemoryAddr();
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             if (addr) {
                 cptr = new (addr) ::PyPanelWrapper(cppArg0, cppArg1, cppArg2, cppArg3);
                 PySide::setNextQObjectMemoryAddr(0);
@@ -1382,7 +1381,6 @@ Sbk_PyPanel_Init(PyObject* self, PyObject* args, PyObject* kwds)
                 cptr = new ::PyPanelWrapper(cppArg0, cppArg1, cppArg2, cppArg3);
             }
 
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
         }
     }
 
@@ -1440,9 +1438,7 @@ static PyObject* Sbk_PyPanelFunc_addWidget(PyObject* self, PyObject* pyArg)
 
         if (!PyErr_Occurred()) {
             // addWidget(QWidget*)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             cppSelf->addWidget(cppArg0);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
         }
     }
 
@@ -1471,9 +1467,7 @@ static PyObject* Sbk_PyPanelFunc_getPanelLabel(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // getPanelLabel()const
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             std::string cppResult = const_cast<const ::PyPanelWrapper*>(cppSelf)->getPanelLabel();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), &cppResult);
         }
     }
@@ -1499,9 +1493,7 @@ static PyObject* Sbk_PyPanelFunc_getPanelScriptName(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // getPanelScriptName()const
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             std::string cppResult = const_cast<const ::PyPanelWrapper*>(cppSelf)->getPanelScriptName();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), &cppResult);
         }
     }
@@ -1541,9 +1533,7 @@ static PyObject* Sbk_PyPanelFunc_getParam(PyObject* self, PyObject* pyArg)
 
         if (!PyErr_Occurred()) {
             // getParam(std::string)const
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             Param * cppResult = const_cast<const ::PyPanelWrapper*>(cppSelf)->getParam(cppArg0);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_PARAM_IDX], cppResult);
 
             // Ownership transferences.
@@ -1645,9 +1635,7 @@ static PyObject* Sbk_PyPanelFunc_insertWidget(PyObject* self, PyObject* args)
 
         if (!PyErr_Occurred()) {
             // insertWidget(int,QWidget*)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             cppSelf->insertWidget(cppArg0, cppArg1);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
         }
     }
 
@@ -1675,9 +1663,7 @@ static PyObject* Sbk_PyPanelFunc_onUserDataChanged(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // onUserDataChanged()
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             ((::PyPanelWrapper*) cppSelf)->PyPanelWrapper::onUserDataChanged_protected();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
         }
     }
 
@@ -1714,9 +1700,7 @@ static PyObject* Sbk_PyPanelFunc_restore(PyObject* self, PyObject* pyArg)
 
         if (!PyErr_Occurred()) {
             // restore(std::string)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             Shiboken::Object::hasCppWrapper(reinterpret_cast<SbkObject*>(self)) ? cppSelf->::PyPanel::restore(cppArg0) : cppSelf->restore(cppArg0);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
         }
     }
 
@@ -1745,9 +1729,7 @@ static PyObject* Sbk_PyPanelFunc_save(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // save()
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             std::string cppResult = ((::PyPanelWrapper*) cppSelf)->PyPanelWrapper::save_protected();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), &cppResult);
         }
     }
@@ -1786,9 +1768,7 @@ static PyObject* Sbk_PyPanelFunc_setPanelLabel(PyObject* self, PyObject* pyArg)
 
         if (!PyErr_Occurred()) {
             // setPanelLabel(std::string)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             cppSelf->setPanelLabel(cppArg0);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
         }
     }
 
@@ -1830,9 +1810,7 @@ static PyObject* Sbk_PyPanelFunc_setParamChangedCallback(PyObject* self, PyObjec
 
         if (!PyErr_Occurred()) {
             // setParamChangedCallback(std::string)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             cppSelf->setParamChangedCallback(cppArg0);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
         }
     }
 

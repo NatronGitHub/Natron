@@ -1,4 +1,7 @@
 
+//workaround to access protected functions
+#define protected public
+
 // default includes
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(mismatched-tags)
@@ -20,10 +23,6 @@ GCC_DIAG_OFF(missing-field-initializers)
 
 
 // Native ---------------------------------------------------------
-
-void LayerWrapper::pysideInitQtMetaTypes()
-{
-}
 
 LayerWrapper::~LayerWrapper()
 {
@@ -367,5 +366,4 @@ void init_Layer(PyObject* module)
     Shiboken::ObjectType::setTypeDiscoveryFunctionV2(&Sbk_Layer_Type, &Sbk_Layer_typeDiscovery);
 
 
-    LayerWrapper::pysideInitQtMetaTypes();
 }

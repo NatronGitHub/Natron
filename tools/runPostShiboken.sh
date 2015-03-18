@@ -12,6 +12,10 @@ sed -e '/SbkPySide_QtCoreTypeConverters;/d' -i .bak Gui/NatronGui/natrongui_modu
 sed -e '/SbkNatronEngineTypes;/d' -i .bak Gui/NatronGui/natrongui_module_wrapper.cpp
 sed -e '/SbkNatronEngineTypeConverters;/d' -i .bak Gui/NatronGui/natrongui_module_wrapper.cpp
 sed -e 's/cleanTypesAttributes/cleanGuiTypesAttributes/g' -i .bak Gui/NatronGui/natrongui_module_wrapper.cpp
+sed -e '/Py_BEGIN_ALLOW_THREADS/d' -i .bak Engine/NatronEngine/*.cpp
+sed -e '/Py_BEGIN_ALLOW_THREADS/d' -i .bak Gui/NatronGui/*.cpp
+sed -e '/Py_END_ALLOW_THREADS/d' -i .bak Engine/NatronEngine/*.cpp
+sed -e '/Py_END_ALLOW_THREADS/d' -i .bak Gui/NatronGui/*.cpp
 
 # fix warnings
 sed -e 's@^#include <shiboken.h>$@#include "Global/Macros.h"\

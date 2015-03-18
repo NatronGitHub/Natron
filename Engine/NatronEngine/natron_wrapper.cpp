@@ -591,6 +591,12 @@ void init_Natron(PyObject* module)
     if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_IMAGECOMPONENTSENUM_IDX],
         &Sbk_Natron_Type, "eImageComponentRGBA", (long) Natron::eImageComponentRGBA))
         return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_IMAGECOMPONENTSENUM_IDX],
+        &Sbk_Natron_Type, "eImageComponentsMotionVectors", (long) Natron::eImageComponentsMotionVectors))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_IMAGECOMPONENTSENUM_IDX],
+        &Sbk_Natron_Type, "eImageComponentsStereoDisparity", (long) Natron::eImageComponentsStereoDisparity))
+        return ;
     // Register converter for enum 'Natron::ImageComponentsEnum'.
     {
         SbkConverter* converter = Shiboken::Conversions::createConverter(SbkNatronEngineTypes[SBK_NATRON_IMAGECOMPONENTSENUM_IDX],

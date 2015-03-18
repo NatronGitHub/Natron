@@ -1,4 +1,7 @@
 
+//workaround to access protected functions
+#define protected public
+
 // default includes
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(mismatched-tags)
@@ -22,10 +25,6 @@ GCC_DIAG_OFF(missing-field-initializers)
 
 
 // Native ---------------------------------------------------------
-
-void AppWrapper::pysideInitQtMetaTypes()
-{
-}
 
 AppWrapper::~AppWrapper()
 {
@@ -154,9 +153,7 @@ static PyObject* Sbk_AppFunc_getAppID(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // getAppID()const
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             int cppResult = const_cast<const ::App*>(cppSelf)->getAppID();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<int>(), &cppResult);
         }
     }
@@ -196,9 +193,7 @@ static PyObject* Sbk_AppFunc_getProjectParam(PyObject* self, PyObject* pyArg)
 
         if (!PyErr_Occurred()) {
             // getProjectParam(std::string)const
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             Param * cppResult = const_cast<const ::App*>(cppSelf)->getProjectParam(cppArg0);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_PARAM_IDX], cppResult);
 
             // Ownership transferences.
@@ -270,9 +265,7 @@ static PyObject* Sbk_AppFunc_render(PyObject* self, PyObject* args)
 
             if (!PyErr_Occurred()) {
                 // render(Effect*,int,int)
-                PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
                 cppSelf->render(cppArg0, cppArg1, cppArg2);
-                PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             }
             break;
         }
@@ -350,9 +343,7 @@ static PyObject* Sbk_AppFunc_timelineGetLeftBound(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // timelineGetLeftBound()const
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             int cppResult = const_cast<const ::App*>(cppSelf)->timelineGetLeftBound();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<int>(), &cppResult);
         }
     }
@@ -378,9 +369,7 @@ static PyObject* Sbk_AppFunc_timelineGetRightBound(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // timelineGetRightBound()const
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             int cppResult = const_cast<const ::App*>(cppSelf)->timelineGetRightBound();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<int>(), &cppResult);
         }
     }
@@ -406,9 +395,7 @@ static PyObject* Sbk_AppFunc_timelineGetTime(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // timelineGetTime()const
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             int cppResult = const_cast<const ::App*>(cppSelf)->timelineGetTime();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<int>(), &cppResult);
         }
     }
@@ -553,5 +540,4 @@ void init_App(PyObject* module)
     Shiboken::ObjectType::setTypeDiscoveryFunctionV2(&Sbk_App_Type, &Sbk_App_typeDiscovery);
 
 
-    AppWrapper::pysideInitQtMetaTypes();
 }

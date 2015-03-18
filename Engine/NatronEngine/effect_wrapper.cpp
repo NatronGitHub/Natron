@@ -1,4 +1,7 @@
 
+//workaround to access protected functions
+#define protected public
+
 // default includes
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(mismatched-tags)
@@ -25,10 +28,6 @@ GCC_DIAG_OFF(missing-field-initializers)
 
 // Native ---------------------------------------------------------
 
-void EffectWrapper::pysideInitQtMetaTypes()
-{
-}
-
 EffectWrapper::~EffectWrapper()
 {
     SbkObject* wrapper = Shiboken::BindingManager::instance().retrieveWrapper(this);
@@ -51,9 +50,7 @@ static PyObject* Sbk_EffectFunc_beginChanges(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // beginChanges()
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             cppSelf->beginChanges();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
         }
     }
 
@@ -106,9 +103,7 @@ static PyObject* Sbk_EffectFunc_canConnectInput(PyObject* self, PyObject* args)
 
         if (!PyErr_Occurred()) {
             // canConnectInput(int,const Effect*)const
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             bool cppResult = const_cast<const ::Effect*>(cppSelf)->canConnectInput(cppArg0, cppArg1);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), &cppResult);
         }
     }
@@ -361,9 +356,7 @@ static PyObject* Sbk_EffectFunc_endChanges(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // endChanges()
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             cppSelf->endChanges();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
         }
     }
 
@@ -424,9 +417,7 @@ static PyObject* Sbk_EffectFunc_getCurrentTime(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // getCurrentTime()const
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             int cppResult = const_cast<const ::Effect*>(cppSelf)->getCurrentTime();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<int>(), &cppResult);
         }
     }
@@ -466,9 +457,7 @@ static PyObject* Sbk_EffectFunc_getInput(PyObject* self, PyObject* pyArg)
 
         if (!PyErr_Occurred()) {
             // getInput(int)const
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             Effect * cppResult = const_cast<const ::Effect*>(cppSelf)->getInput(cppArg0);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_EFFECT_IDX], cppResult);
 
             // Ownership transferences.
@@ -516,9 +505,7 @@ static PyObject* Sbk_EffectFunc_getInputLabel(PyObject* self, PyObject* pyArg)
 
         if (!PyErr_Occurred()) {
             // getInputLabel(int)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             std::string cppResult = cppSelf->getInputLabel(cppArg0);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), &cppResult);
         }
     }
@@ -549,9 +536,7 @@ static PyObject* Sbk_EffectFunc_getLabel(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // getLabel()const
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             std::string cppResult = const_cast<const ::Effect*>(cppSelf)->getLabel();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), &cppResult);
         }
     }
@@ -577,9 +562,7 @@ static PyObject* Sbk_EffectFunc_getMaxInputCount(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // getMaxInputCount()const
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             int cppResult = const_cast<const ::Effect*>(cppSelf)->getMaxInputCount();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<int>(), &cppResult);
         }
     }
@@ -619,9 +602,7 @@ static PyObject* Sbk_EffectFunc_getParam(PyObject* self, PyObject* pyArg)
 
         if (!PyErr_Occurred()) {
             // getParam(std::string)const
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             Param * cppResult = const_cast<const ::Effect*>(cppSelf)->getParam(cppArg0);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_PARAM_IDX], cppResult);
 
             // Ownership transferences.
@@ -695,9 +676,7 @@ static PyObject* Sbk_EffectFunc_getPluginID(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // getPluginID()const
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             std::string cppResult = const_cast<const ::Effect*>(cppSelf)->getPluginID();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), &cppResult);
         }
     }
@@ -827,9 +806,7 @@ static PyObject* Sbk_EffectFunc_getRotoContext(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // getRotoContext()const
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             Roto * cppResult = const_cast<const ::Effect*>(cppSelf)->getRotoContext();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_ROTO_IDX], cppResult);
 
             // Ownership transferences.
@@ -858,9 +835,7 @@ static PyObject* Sbk_EffectFunc_getScriptName(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // getScriptName()const
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             std::string cppResult = const_cast<const ::Effect*>(cppSelf)->getScriptName();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), &cppResult);
         }
     }
@@ -922,9 +897,7 @@ static PyObject* Sbk_EffectFunc_getUserPageParam(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // getUserPageParam()const
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             PageParam * cppResult = const_cast<const ::Effect*>(cppSelf)->getUserPageParam();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_PAGEPARAM_IDX], cppResult);
 
             // Ownership transferences.
@@ -982,9 +955,7 @@ static PyObject* Sbk_EffectFunc_setColor(PyObject* self, PyObject* args)
 
         if (!PyErr_Occurred()) {
             // setColor(double,double,double)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             cppSelf->setColor(cppArg0, cppArg1, cppArg2);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
         }
     }
 
@@ -1087,9 +1058,7 @@ static PyObject* Sbk_EffectFunc_setPosition(PyObject* self, PyObject* args)
 
         if (!PyErr_Occurred()) {
             // setPosition(double,double)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             cppSelf->setPosition(cppArg0, cppArg1);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
         }
     }
 
@@ -1195,9 +1164,7 @@ static PyObject* Sbk_EffectFunc_setSize(PyObject* self, PyObject* args)
 
         if (!PyErr_Occurred()) {
             // setSize(double,double)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             cppSelf->setSize(cppArg0, cppArg1);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
         }
     }
 
@@ -1409,5 +1376,4 @@ void init_Effect(PyObject* module)
     Shiboken::ObjectType::setTypeDiscoveryFunctionV2(&Sbk_Effect_Type, &Sbk_Effect_typeDiscovery);
 
 
-    EffectWrapper::pysideInitQtMetaTypes();
 }

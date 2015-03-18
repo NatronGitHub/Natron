@@ -89,9 +89,7 @@ static PyObject* Sbk_PyTabWidgetFunc_closeCurrentTab(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // closeCurrentTab()
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             cppSelf->closeCurrentTab();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
         }
     }
 
@@ -114,9 +112,7 @@ static PyObject* Sbk_PyTabWidgetFunc_closePane(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // closePane()
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             cppSelf->closePane();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
         }
     }
 
@@ -153,9 +149,7 @@ static PyObject* Sbk_PyTabWidgetFunc_closeTab(PyObject* self, PyObject* pyArg)
 
         if (!PyErr_Occurred()) {
             // closeTab(int)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             cppSelf->closeTab(cppArg0);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
         }
     }
 
@@ -184,9 +178,7 @@ static PyObject* Sbk_PyTabWidgetFunc_count(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // count()
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             int cppResult = cppSelf->count();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<int>(), &cppResult);
         }
     }
@@ -212,9 +204,7 @@ static PyObject* Sbk_PyTabWidgetFunc_currentWidget(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // currentWidget()
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             QWidget * cppResult = cppSelf->currentWidget();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkPySide_QtGuiTypes[SBK_QWIDGET_IDX], cppResult);
         }
     }
@@ -239,9 +229,7 @@ static PyObject* Sbk_PyTabWidgetFunc_floatCurrentTab(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // floatCurrentTab()
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             cppSelf->floatCurrentTab();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
         }
     }
 
@@ -264,9 +252,7 @@ static PyObject* Sbk_PyTabWidgetFunc_floatPane(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // floatPane()
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             cppSelf->floatPane();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
         }
     }
 
@@ -290,9 +276,7 @@ static PyObject* Sbk_PyTabWidgetFunc_getCurrentIndex(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // getCurrentIndex()const
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             int cppResult = const_cast<const ::PyTabWidget*>(cppSelf)->getCurrentIndex();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<int>(), &cppResult);
         }
     }
@@ -318,9 +302,7 @@ static PyObject* Sbk_PyTabWidgetFunc_getScriptName(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // getScriptName()const
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             std::string cppResult = const_cast<const ::PyTabWidget*>(cppSelf)->getScriptName();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), &cppResult);
         }
     }
@@ -360,9 +342,7 @@ static PyObject* Sbk_PyTabWidgetFunc_getTabLabel(PyObject* self, PyObject* pyArg
 
         if (!PyErr_Occurred()) {
             // getTabLabel(int)const
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             std::string cppResult = const_cast<const ::PyTabWidget*>(cppSelf)->getTabLabel(cppArg0);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), &cppResult);
         }
     }
@@ -476,9 +456,7 @@ static PyObject* Sbk_PyTabWidgetFunc_removeTab(PyObject* self, PyObject* pyArg)
 
             if (!PyErr_Occurred()) {
                 // removeTab(QWidget*)
-                PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
                 cppSelf->removeTab(cppArg0);
-                PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             }
             break;
         }
@@ -489,9 +467,7 @@ static PyObject* Sbk_PyTabWidgetFunc_removeTab(PyObject* self, PyObject* pyArg)
 
             if (!PyErr_Occurred()) {
                 // removeTab(int)
-                PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
                 cppSelf->removeTab(cppArg0);
-                PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             }
             break;
         }
@@ -535,9 +511,7 @@ static PyObject* Sbk_PyTabWidgetFunc_setCurrentIndex(PyObject* self, PyObject* p
 
         if (!PyErr_Occurred()) {
             // setCurrentIndex(int)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             cppSelf->setCurrentIndex(cppArg0);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
         }
     }
 
@@ -565,9 +539,7 @@ static PyObject* Sbk_PyTabWidgetFunc_setNextTabCurrent(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // setNextTabCurrent()
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             cppSelf->setNextTabCurrent();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
         }
     }
 
@@ -591,9 +563,7 @@ static PyObject* Sbk_PyTabWidgetFunc_splitHorizontally(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // splitHorizontally()
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             PyTabWidget * cppResult = cppSelf->splitHorizontally();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronGuiTypes[SBK_PYTABWIDGET_IDX], cppResult);
 
             // Ownership transferences.
@@ -622,9 +592,7 @@ static PyObject* Sbk_PyTabWidgetFunc_splitVertically(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // splitVertically()
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             PyTabWidget * cppResult = cppSelf->splitVertically();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronGuiTypes[SBK_PYTABWIDGET_IDX], cppResult);
 
             // Ownership transferences.

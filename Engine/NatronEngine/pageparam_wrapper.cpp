@@ -1,4 +1,7 @@
 
+//workaround to access protected functions
+#define protected public
+
 // default includes
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(mismatched-tags)
@@ -20,10 +23,6 @@ GCC_DIAG_OFF(missing-field-initializers)
 
 // Native ---------------------------------------------------------
 
-void PageParamWrapper::pysideInitQtMetaTypes()
-{
-}
-
 PageParamWrapper::~PageParamWrapper()
 {
     SbkObject* wrapper = Shiboken::BindingManager::instance().retrieveWrapper(this);
@@ -35,11 +34,11 @@ PageParamWrapper::~PageParamWrapper()
 extern "C" {
 static PyObject* Sbk_PageParamFunc_addParam(PyObject* self, PyObject* pyArg)
 {
-    PageParamWrapper* cppSelf = 0;
+    ::PageParam* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = (PageParamWrapper*)((::PageParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PAGEPARAM_IDX], (SbkObject*)self));
+    cppSelf = ((::PageParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PAGEPARAM_IDX], (SbkObject*)self));
     int overloadId = -1;
     PythonToCppFunc pythonToCpp;
     SBK_UNUSED(pythonToCpp)
@@ -62,9 +61,7 @@ static PyObject* Sbk_PageParamFunc_addParam(PyObject* self, PyObject* pyArg)
 
         if (!PyErr_Occurred()) {
             // addParam(const Param*)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             cppSelf->addParam(cppArg0);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
         }
     }
 
@@ -206,5 +203,4 @@ void init_PageParam(PyObject* module)
     Shiboken::ObjectType::setTypeDiscoveryFunctionV2(&Sbk_PageParam_Type, &Sbk_PageParam_typeDiscovery);
 
 
-    PageParamWrapper::pysideInitQtMetaTypes();
 }

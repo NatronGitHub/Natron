@@ -54,9 +54,7 @@ Sbk_PyGuiApplication_Init(PyObject* self, PyObject* args, PyObject* kwds)
 
         if (!PyErr_Occurred()) {
             // PyGuiApplication()
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             cptr = new ::PyGuiApplicationWrapper();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
         }
     }
 
@@ -122,9 +120,7 @@ static PyObject* Sbk_PyGuiApplicationFunc_addMenuCommand(PyObject* self, PyObjec
 
             if (!PyErr_Occurred()) {
                 // addMenuCommand(std::string,std::string)
-                PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
                 cppSelf->addMenuCommand(cppArg0, cppArg1);
-                PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             }
             break;
         }
@@ -141,9 +137,7 @@ static PyObject* Sbk_PyGuiApplicationFunc_addMenuCommand(PyObject* self, PyObjec
 
             if (!PyErr_Occurred()) {
                 // addMenuCommand(std::string,std::string,Qt::Key,QFlags<Qt::KeyboardModifier>)
-                PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
                 cppSelf->addMenuCommand(cppArg0, cppArg1, cppArg2, cppArg3);
-                PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             }
             break;
         }
@@ -200,9 +194,7 @@ static PyObject* Sbk_PyGuiApplicationFunc_errorDialog(PyObject* self, PyObject* 
 
         if (!PyErr_Occurred()) {
             // errorDialog(std::string,std::string)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             cppSelf->errorDialog(cppArg0, cppArg1);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
         }
     }
 
@@ -245,9 +237,7 @@ static PyObject* Sbk_PyGuiApplicationFunc_getGuiInstance(PyObject* self, PyObjec
 
         if (!PyErr_Occurred()) {
             // getGuiInstance(int)const
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             GuiApp * cppResult = const_cast<const ::PyGuiApplication*>(cppSelf)->getGuiInstance(cppArg0);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronGuiTypes[SBK_GUIAPP_IDX], cppResult);
 
             // Ownership transferences.
@@ -295,9 +285,7 @@ static PyObject* Sbk_PyGuiApplicationFunc_getIcon(PyObject* self, PyObject* pyAr
 
         if (!PyErr_Occurred()) {
             // getIcon(Natron::PixmapEnum)const
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             QPixmap cppResult = const_cast<const ::PyGuiApplication*>(cppSelf)->getIcon(cppArg0);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython((SbkObjectType*)SbkPySide_QtGuiTypes[SBK_QPIXMAP_IDX], &cppResult);
         }
     }
@@ -354,9 +342,7 @@ static PyObject* Sbk_PyGuiApplicationFunc_informationDialog(PyObject* self, PyOb
 
         if (!PyErr_Occurred()) {
             // informationDialog(std::string,std::string)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             cppSelf->informationDialog(cppArg0, cppArg1);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
         }
     }
 
@@ -412,9 +398,7 @@ static PyObject* Sbk_PyGuiApplicationFunc_questionDialog(PyObject* self, PyObjec
 
         if (!PyErr_Occurred()) {
             // questionDialog(std::string,std::string)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             Natron::StandardButtonEnum cppResult = cppSelf->questionDialog(cppArg0, cppArg1);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::copyToPython(SBK_CONVERTER(SbkNatronEngineTypes[SBK_NATRON_STANDARDBUTTONENUM_IDX]), &cppResult);
         }
     }
@@ -471,9 +455,7 @@ static PyObject* Sbk_PyGuiApplicationFunc_warningDialog(PyObject* self, PyObject
 
         if (!PyErr_Occurred()) {
             // warningDialog(std::string,std::string)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             cppSelf->warningDialog(cppArg0, cppArg1);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
         }
     }
 

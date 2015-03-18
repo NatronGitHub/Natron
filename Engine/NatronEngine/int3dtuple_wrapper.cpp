@@ -1,4 +1,7 @@
 
+//workaround to access protected functions
+#define protected public
+
 // default includes
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(mismatched-tags)
@@ -35,9 +38,7 @@ Sbk_Int3DTuple_Init(PyObject* self, PyObject* args, PyObject* kwds)
 
         if (!PyErr_Occurred()) {
             // Int3DTuple()
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             cptr = new ::Int3DTuple();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
         }
     }
 

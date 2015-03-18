@@ -1,4 +1,7 @@
 
+//workaround to access protected functions
+#define protected public
+
 // default includes
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(mismatched-tags)
@@ -20,10 +23,6 @@ GCC_DIAG_OFF(missing-field-initializers)
 
 // Native ---------------------------------------------------------
 
-void AnimatedParamWrapper::pysideInitQtMetaTypes()
-{
-}
-
 AnimatedParamWrapper::~AnimatedParamWrapper()
 {
     SbkObject* wrapper = Shiboken::BindingManager::instance().retrieveWrapper(this);
@@ -35,11 +34,11 @@ AnimatedParamWrapper::~AnimatedParamWrapper()
 extern "C" {
 static PyObject* Sbk_AnimatedParamFunc_deleteValueAtTime(PyObject* self, PyObject* args, PyObject* kwds)
 {
-    AnimatedParamWrapper* cppSelf = 0;
+    ::AnimatedParam* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = (AnimatedParamWrapper*)((::AnimatedParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_ANIMATEDPARAM_IDX], (SbkObject*)self));
+    cppSelf = ((::AnimatedParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_ANIMATEDPARAM_IDX], (SbkObject*)self));
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { 0, 0 };
     SBK_UNUSED(pythonToCpp)
@@ -93,9 +92,7 @@ static PyObject* Sbk_AnimatedParamFunc_deleteValueAtTime(PyObject* self, PyObjec
 
         if (!PyErr_Occurred()) {
             // deleteValueAtTime(int,int)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             cppSelf->deleteValueAtTime(cppArg0, cppArg1);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
         }
     }
 
@@ -112,11 +109,11 @@ static PyObject* Sbk_AnimatedParamFunc_deleteValueAtTime(PyObject* self, PyObjec
 
 static PyObject* Sbk_AnimatedParamFunc_getCurrentTime(PyObject* self)
 {
-    AnimatedParamWrapper* cppSelf = 0;
+    ::AnimatedParam* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = (AnimatedParamWrapper*)((::AnimatedParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_ANIMATEDPARAM_IDX], (SbkObject*)self));
+    cppSelf = ((::AnimatedParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_ANIMATEDPARAM_IDX], (SbkObject*)self));
     PyObject* pyResult = 0;
 
     // Call function/method
@@ -124,9 +121,7 @@ static PyObject* Sbk_AnimatedParamFunc_getCurrentTime(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // getCurrentTime()const
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            int cppResult = const_cast<const ::AnimatedParamWrapper*>(cppSelf)->getCurrentTime();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            int cppResult = const_cast<const ::AnimatedParam*>(cppSelf)->getCurrentTime();
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<int>(), &cppResult);
         }
     }
@@ -140,11 +135,11 @@ static PyObject* Sbk_AnimatedParamFunc_getCurrentTime(PyObject* self)
 
 static PyObject* Sbk_AnimatedParamFunc_getDerivativeAtTime(PyObject* self, PyObject* args, PyObject* kwds)
 {
-    AnimatedParamWrapper* cppSelf = 0;
+    ::AnimatedParam* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = (AnimatedParamWrapper*)((::AnimatedParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_ANIMATEDPARAM_IDX], (SbkObject*)self));
+    cppSelf = ((::AnimatedParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_ANIMATEDPARAM_IDX], (SbkObject*)self));
     PyObject* pyResult = 0;
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { 0, 0 };
@@ -199,9 +194,7 @@ static PyObject* Sbk_AnimatedParamFunc_getDerivativeAtTime(PyObject* self, PyObj
 
         if (!PyErr_Occurred()) {
             // getDerivativeAtTime(double,int)const
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            double cppResult = const_cast<const ::AnimatedParamWrapper*>(cppSelf)->getDerivativeAtTime(cppArg0, cppArg1);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            double cppResult = const_cast<const ::AnimatedParam*>(cppSelf)->getDerivativeAtTime(cppArg0, cppArg1);
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &cppResult);
         }
     }
@@ -220,11 +213,11 @@ static PyObject* Sbk_AnimatedParamFunc_getDerivativeAtTime(PyObject* self, PyObj
 
 static PyObject* Sbk_AnimatedParamFunc_getExpression(PyObject* self, PyObject* pyArg)
 {
-    AnimatedParamWrapper* cppSelf = 0;
+    ::AnimatedParam* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = (AnimatedParamWrapper*)((::AnimatedParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_ANIMATEDPARAM_IDX], (SbkObject*)self));
+    cppSelf = ((::AnimatedParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_ANIMATEDPARAM_IDX], (SbkObject*)self));
     PyObject* pyResult = 0;
     int overloadId = -1;
     PythonToCppFunc pythonToCpp;
@@ -275,11 +268,11 @@ static PyObject* Sbk_AnimatedParamFunc_getExpression(PyObject* self, PyObject* p
 
 static PyObject* Sbk_AnimatedParamFunc_getIntegrateFromTimeToTime(PyObject* self, PyObject* args, PyObject* kwds)
 {
-    AnimatedParamWrapper* cppSelf = 0;
+    ::AnimatedParam* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = (AnimatedParamWrapper*)((::AnimatedParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_ANIMATEDPARAM_IDX], (SbkObject*)self));
+    cppSelf = ((::AnimatedParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_ANIMATEDPARAM_IDX], (SbkObject*)self));
     PyObject* pyResult = 0;
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { 0, 0, 0 };
@@ -338,9 +331,7 @@ static PyObject* Sbk_AnimatedParamFunc_getIntegrateFromTimeToTime(PyObject* self
 
         if (!PyErr_Occurred()) {
             // getIntegrateFromTimeToTime(double,double,int)const
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            double cppResult = const_cast<const ::AnimatedParamWrapper*>(cppSelf)->getIntegrateFromTimeToTime(cppArg0, cppArg1, cppArg2);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            double cppResult = const_cast<const ::AnimatedParam*>(cppSelf)->getIntegrateFromTimeToTime(cppArg0, cppArg1, cppArg2);
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &cppResult);
         }
     }
@@ -359,11 +350,11 @@ static PyObject* Sbk_AnimatedParamFunc_getIntegrateFromTimeToTime(PyObject* self
 
 static PyObject* Sbk_AnimatedParamFunc_getIsAnimated(PyObject* self, PyObject* args, PyObject* kwds)
 {
-    AnimatedParamWrapper* cppSelf = 0;
+    ::AnimatedParam* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = (AnimatedParamWrapper*)((::AnimatedParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_ANIMATEDPARAM_IDX], (SbkObject*)self));
+    cppSelf = ((::AnimatedParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_ANIMATEDPARAM_IDX], (SbkObject*)self));
     PyObject* pyResult = 0;
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { 0 };
@@ -411,9 +402,7 @@ static PyObject* Sbk_AnimatedParamFunc_getIsAnimated(PyObject* self, PyObject* a
 
         if (!PyErr_Occurred()) {
             // getIsAnimated(int)const
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            bool cppResult = const_cast<const ::AnimatedParamWrapper*>(cppSelf)->getIsAnimated(cppArg0);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            bool cppResult = const_cast<const ::AnimatedParam*>(cppSelf)->getIsAnimated(cppArg0);
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), &cppResult);
         }
     }
@@ -432,11 +421,11 @@ static PyObject* Sbk_AnimatedParamFunc_getIsAnimated(PyObject* self, PyObject* a
 
 static PyObject* Sbk_AnimatedParamFunc_getKeyIndex(PyObject* self, PyObject* args, PyObject* kwds)
 {
-    AnimatedParamWrapper* cppSelf = 0;
+    ::AnimatedParam* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = (AnimatedParamWrapper*)((::AnimatedParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_ANIMATEDPARAM_IDX], (SbkObject*)self));
+    cppSelf = ((::AnimatedParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_ANIMATEDPARAM_IDX], (SbkObject*)self));
     PyObject* pyResult = 0;
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { 0, 0 };
@@ -491,9 +480,7 @@ static PyObject* Sbk_AnimatedParamFunc_getKeyIndex(PyObject* self, PyObject* arg
 
         if (!PyErr_Occurred()) {
             // getKeyIndex(int,int)const
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            int cppResult = const_cast<const ::AnimatedParamWrapper*>(cppSelf)->getKeyIndex(cppArg0, cppArg1);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            int cppResult = const_cast<const ::AnimatedParam*>(cppSelf)->getKeyIndex(cppArg0, cppArg1);
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<int>(), &cppResult);
         }
     }
@@ -512,11 +499,11 @@ static PyObject* Sbk_AnimatedParamFunc_getKeyIndex(PyObject* self, PyObject* arg
 
 static PyObject* Sbk_AnimatedParamFunc_getKeyTime(PyObject* self, PyObject* args)
 {
-    AnimatedParamWrapper* cppSelf = 0;
+    ::AnimatedParam* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = (AnimatedParamWrapper*)((::AnimatedParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_ANIMATEDPARAM_IDX], (SbkObject*)self));
+    cppSelf = ((::AnimatedParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_ANIMATEDPARAM_IDX], (SbkObject*)self));
     PyObject* pyResult = 0;
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { 0, 0 };
@@ -580,11 +567,11 @@ static PyObject* Sbk_AnimatedParamFunc_getKeyTime(PyObject* self, PyObject* args
 
 static PyObject* Sbk_AnimatedParamFunc_getNumKeys(PyObject* self, PyObject* args, PyObject* kwds)
 {
-    AnimatedParamWrapper* cppSelf = 0;
+    ::AnimatedParam* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = (AnimatedParamWrapper*)((::AnimatedParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_ANIMATEDPARAM_IDX], (SbkObject*)self));
+    cppSelf = ((::AnimatedParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_ANIMATEDPARAM_IDX], (SbkObject*)self));
     PyObject* pyResult = 0;
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { 0 };
@@ -632,9 +619,7 @@ static PyObject* Sbk_AnimatedParamFunc_getNumKeys(PyObject* self, PyObject* args
 
         if (!PyErr_Occurred()) {
             // getNumKeys(int)const
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
-            int cppResult = const_cast<const ::AnimatedParamWrapper*>(cppSelf)->getNumKeys(cppArg0);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
+            int cppResult = const_cast<const ::AnimatedParam*>(cppSelf)->getNumKeys(cppArg0);
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<int>(), &cppResult);
         }
     }
@@ -653,11 +638,11 @@ static PyObject* Sbk_AnimatedParamFunc_getNumKeys(PyObject* self, PyObject* args
 
 static PyObject* Sbk_AnimatedParamFunc_removeAnimation(PyObject* self, PyObject* args, PyObject* kwds)
 {
-    AnimatedParamWrapper* cppSelf = 0;
+    ::AnimatedParam* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = (AnimatedParamWrapper*)((::AnimatedParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_ANIMATEDPARAM_IDX], (SbkObject*)self));
+    cppSelf = ((::AnimatedParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_ANIMATEDPARAM_IDX], (SbkObject*)self));
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { 0 };
     SBK_UNUSED(pythonToCpp)
@@ -704,9 +689,7 @@ static PyObject* Sbk_AnimatedParamFunc_removeAnimation(PyObject* self, PyObject*
 
         if (!PyErr_Occurred()) {
             // removeAnimation(int)
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             cppSelf->removeAnimation(cppArg0);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
         }
     }
 
@@ -723,11 +706,11 @@ static PyObject* Sbk_AnimatedParamFunc_removeAnimation(PyObject* self, PyObject*
 
 static PyObject* Sbk_AnimatedParamFunc_setExpression(PyObject* self, PyObject* args, PyObject* kwds)
 {
-    AnimatedParamWrapper* cppSelf = 0;
+    ::AnimatedParam* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = (AnimatedParamWrapper*)((::AnimatedParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_ANIMATEDPARAM_IDX], (SbkObject*)self));
+    cppSelf = ((::AnimatedParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_ANIMATEDPARAM_IDX], (SbkObject*)self));
     PyObject* pyResult = 0;
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { 0, 0, 0 };
@@ -946,5 +929,4 @@ void init_AnimatedParam(PyObject* module)
     Shiboken::ObjectType::setTypeDiscoveryFunctionV2(&Sbk_AnimatedParam_Type, &Sbk_AnimatedParam_typeDiscovery);
 
 
-    AnimatedParamWrapper::pysideInitQtMetaTypes();
 }

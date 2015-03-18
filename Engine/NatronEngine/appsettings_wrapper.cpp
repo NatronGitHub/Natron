@@ -1,4 +1,7 @@
 
+//workaround to access protected functions
+#define protected public
+
 // default includes
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(mismatched-tags)
@@ -51,9 +54,7 @@ static PyObject* Sbk_AppSettingsFunc_getParam(PyObject* self, PyObject* pyArg)
 
         if (!PyErr_Occurred()) {
             // getParam(std::string)const
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             Param * cppResult = const_cast<const ::AppSettings*>(cppSelf)->getParam(cppArg0);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_PARAM_IDX], cppResult);
 
             // Ownership transferences.
@@ -126,9 +127,7 @@ static PyObject* Sbk_AppSettingsFunc_restoreDefaultSettings(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // restoreDefaultSettings()
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             cppSelf->restoreDefaultSettings();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
         }
     }
 
@@ -151,9 +150,7 @@ static PyObject* Sbk_AppSettingsFunc_saveSettings(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // saveSettings()
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             cppSelf->saveSettings();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
         }
     }
 

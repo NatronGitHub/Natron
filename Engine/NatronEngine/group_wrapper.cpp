@@ -1,4 +1,7 @@
 
+//workaround to access protected functions
+#define protected public
+
 // default includes
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(mismatched-tags)
@@ -20,10 +23,6 @@ GCC_DIAG_OFF(missing-field-initializers)
 
 
 // Native ---------------------------------------------------------
-
-void GroupWrapper::pysideInitQtMetaTypes()
-{
-}
 
 GroupWrapper::GroupWrapper() : Group() {
     // ... middle
@@ -52,9 +51,7 @@ Sbk_Group_Init(PyObject* self, PyObject* args, PyObject* kwds)
 
         if (!PyErr_Occurred()) {
             // Group()
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             cptr = new ::GroupWrapper();
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
         }
     }
 
@@ -138,9 +135,7 @@ static PyObject* Sbk_GroupFunc_getNode(PyObject* self, PyObject* pyArg)
 
         if (!PyErr_Occurred()) {
             // getNode(std::string)const
-            PyThreadState* _save = PyEval_SaveThread(); // Py_BEGIN_ALLOW_THREADS
             Effect * cppResult = const_cast<const ::Group*>(cppSelf)->getNode(cppArg0);
-            PyEval_RestoreThread(_save); // Py_END_ALLOW_THREADS
             pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_EFFECT_IDX], cppResult);
 
             // Ownership transferences.
@@ -279,5 +274,4 @@ void init_Group(PyObject* module)
 
 
 
-    GroupWrapper::pysideInitQtMetaTypes();
 }
