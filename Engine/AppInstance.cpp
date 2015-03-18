@@ -1156,7 +1156,7 @@ AppInstance::declareCurrentAppVariable_Python()
     assert(ok);
     (void)ok;
 
-    if (appPTR->getAppType() == AppManager::eAppTypeBackground) {
+    if (appPTR->isBackground()) {
         std::string err;
         ok = Natron::interpretPythonScript("app = app1\n", &err, 0);
         assert(ok);

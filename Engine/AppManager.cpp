@@ -828,7 +828,6 @@ AppManager::load(int &argc,
     _imp->idealThreadCount = QThread::idealThreadCount();
     QThreadPool::globalInstance()->setExpiryTimeout(-1); //< make threads never exit on their own
     //otherwise it might crash with thread local storage
-    _imp->diskCachesLocation = Natron::StandardPaths::writableLocation(Natron::StandardPaths::eStandardLocationCache) ;
 
 #if QT_VERSION < 0x050000
     QTextCodec::setCodecForCStrings(QTextCodec::codecForName("UTF-8"));
@@ -972,6 +971,8 @@ AppManager::loadInternal(const CLArgs& cl)
     qApp->setOrganizationDomain(NATRON_ORGANIZATION_DOMAIN);
     qApp->setApplicationName(NATRON_APPLICATION_NAME);
 
+    //Set it once setApplicationName is set since it relies on it
+    _imp->diskCachesLocation = Natron::StandardPaths::writableLocation(Natron::StandardPaths::eStandardLocationCache) ;
 
     // Natron is not yet internationalized, so it is better for now to use the "C" locale,
     // until it is tested for robustness against locale choice.
@@ -2159,12 +2160,15 @@ template <typename T>
 void saveCache(Natron::Cache<T>* cache)
 {
     std::ofstream ofile;
-    ofile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+    ofile.exceptions(std::ofstream::failbit | std::ofstream::badbit);
     std::string cacheRestoreFilePath = cache->getRestoreFilePath();
     try {
         ofile.open(cacheRestoreFilePath.c_str(),std::ofstream::out);
-    } catch (const std::ofstream::failure & e) {
-        qDebug() << "Exception occured when opening file " <<  cacheRestoreFilePath.c_str() << ": " << e.what();
+    } catch (const std::ios_base::failure & e) {
+        qDebug() << "Exception occured when opening file " <<  cacheRestoreFilePath.c_str() << ": "
+        << "Error code: " << e.code().value()
+        << " (" << e.code().message().c_str() << ")\n"
+        << "Error category: " << e.code().category().name();
         
         return;
     }
