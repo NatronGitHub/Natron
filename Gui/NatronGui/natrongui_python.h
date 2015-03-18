@@ -3,6 +3,9 @@
 #ifndef SBK_NATRONGUI_PYTHON_H
 #define SBK_NATRONGUI_PYTHON_H
 
+//workaround to access protected functions
+#define protected public
+
 #include <sbkpython.h>
 #include <conversions.h>
 #include <sbkenum.h>

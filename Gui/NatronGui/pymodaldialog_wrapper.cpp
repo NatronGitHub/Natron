@@ -1,4 +1,7 @@
 
+//workaround to access protected functions
+#define protected public
+
 // default includes
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(mismatched-tags)
@@ -53,10 +56,6 @@ CLANG_DIAG_OFF(header-guard)
 
 
 // Native ---------------------------------------------------------
-
-void PyModalDialogWrapper::pysideInitQtMetaTypes()
-{
-}
 
 void PyModalDialogWrapper::accept()
 {
@@ -1323,11 +1322,11 @@ PyModalDialogWrapper::~PyModalDialogWrapper()
 extern "C" {
 static PyObject* Sbk_PyModalDialogFunc_addWidget(PyObject* self, PyObject* pyArg)
 {
-    PyModalDialogWrapper* cppSelf = 0;
+    ::PyModalDialog* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = (PyModalDialogWrapper*)((::PyModalDialog*)Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYMODALDIALOG_IDX], (SbkObject*)self));
+    cppSelf = ((::PyModalDialog*)Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYMODALDIALOG_IDX], (SbkObject*)self));
     int overloadId = -1;
     PythonToCppFunc pythonToCpp;
     SBK_UNUSED(pythonToCpp)
@@ -1367,11 +1366,11 @@ static PyObject* Sbk_PyModalDialogFunc_addWidget(PyObject* self, PyObject* pyArg
 
 static PyObject* Sbk_PyModalDialogFunc_getParam(PyObject* self, PyObject* pyArg)
 {
-    PyModalDialogWrapper* cppSelf = 0;
+    ::PyModalDialog* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = (PyModalDialogWrapper*)((::PyModalDialog*)Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYMODALDIALOG_IDX], (SbkObject*)self));
+    cppSelf = ((::PyModalDialog*)Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYMODALDIALOG_IDX], (SbkObject*)self));
     PyObject* pyResult = 0;
     int overloadId = -1;
     PythonToCppFunc pythonToCpp;
@@ -1393,7 +1392,7 @@ static PyObject* Sbk_PyModalDialogFunc_getParam(PyObject* self, PyObject* pyArg)
 
         if (!PyErr_Occurred()) {
             // getParam(std::string)const
-            Param * cppResult = const_cast<const ::PyModalDialogWrapper*>(cppSelf)->getParam(cppArg0);
+            Param * cppResult = const_cast<const ::PyModalDialog*>(cppSelf)->getParam(cppArg0);
             pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_PARAM_IDX], cppResult);
 
             // Ownership transferences.
@@ -1415,11 +1414,11 @@ static PyObject* Sbk_PyModalDialogFunc_getParam(PyObject* self, PyObject* pyArg)
 
 static PyObject* Sbk_PyModalDialogFunc_insertWidget(PyObject* self, PyObject* args)
 {
-    PyModalDialogWrapper* cppSelf = 0;
+    ::PyModalDialog* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = (PyModalDialogWrapper*)((::PyModalDialog*)Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYMODALDIALOG_IDX], (SbkObject*)self));
+    cppSelf = ((::PyModalDialog*)Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYMODALDIALOG_IDX], (SbkObject*)self));
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { 0, 0 };
     SBK_UNUSED(pythonToCpp)
@@ -1472,11 +1471,11 @@ static PyObject* Sbk_PyModalDialogFunc_insertWidget(PyObject* self, PyObject* ar
 
 static PyObject* Sbk_PyModalDialogFunc_setParamChangedCallback(PyObject* self, PyObject* pyArg)
 {
-    PyModalDialogWrapper* cppSelf = 0;
+    ::PyModalDialog* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = (PyModalDialogWrapper*)((::PyModalDialog*)Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYMODALDIALOG_IDX], (SbkObject*)self));
+    cppSelf = ((::PyModalDialog*)Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYMODALDIALOG_IDX], (SbkObject*)self));
     int overloadId = -1;
     PythonToCppFunc pythonToCpp;
     SBK_UNUSED(pythonToCpp)
@@ -1695,7 +1694,6 @@ void init_PyModalDialog(PyObject* module)
     Shiboken::ObjectType::setTypeDiscoveryFunctionV2(&Sbk_PyModalDialog_Type, &Sbk_PyModalDialog_typeDiscovery);
 
 
-    PyModalDialogWrapper::pysideInitQtMetaTypes();
     Shiboken::ObjectType::setSubTypeInitHook(&Sbk_PyModalDialog_Type, &PySide::initQObjectSubType);
     PySide::initDynamicMetaObject(&Sbk_PyModalDialog_Type, &::PyModalDialog::staticMetaObject, sizeof(::PyModalDialog));
 }

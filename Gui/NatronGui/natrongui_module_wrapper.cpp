@@ -35,8 +35,8 @@ void init_GuiApp(PyObject* module);
 void init_PyGuiApplication(PyObject* module);
 void init_PyViewer(PyObject* module);
 void init_PyTabWidget(PyObject* module);
-void init_PyModalDialog(PyObject* module);
 void init_PyPanel(PyObject* module);
+void init_PyModalDialog(PyObject* module);
 
 // Required modules' type and converter arrays.
 PyTypeObject** SbkPySide_QtGuiTypes;
@@ -497,8 +497,8 @@ SBK_MODULE_INIT_FUNCTION_BEGIN(NatronGui)
     init_PyGuiApplication(module);
     init_PyViewer(module);
     init_PyTabWidget(module);
-    init_PyModalDialog(module);
     init_PyPanel(module);
+    init_PyModalDialog(module);
 
     // Register converter for type 'std::list<std::string>'.
     SbkNatronGuiTypeConverters[SBK_NATRONGUI_STD_LIST_STD_STRING_IDX] = Shiboken::Conversions::createConverter(&PyList_Type, _std_list_std_string__CppToPython__std_list_std_string_);

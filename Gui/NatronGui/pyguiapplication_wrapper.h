@@ -1,6 +1,8 @@
 #ifndef SBK_PYGUIAPPLICATIONWRAPPER_H
 #define SBK_PYGUIAPPLICATIONWRAPPER_H
 
+#define protected public
+
 #include <shiboken.h>
 
 #include <GlobalGuiWrapper.h>
