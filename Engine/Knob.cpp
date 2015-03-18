@@ -1279,15 +1279,17 @@ KnobI::declareCurrentKnobVariable_Python(KnobI* knob,int dimension,std::string& 
     if (effect) {
         
         NodePtr node = effect->getNode();
-        
-        //import the math module as expression often rely on it
-        Natron::ensureScriptHasModuleImport("math", script);
-        
+                
         std::size_t firstLineAfterImport = findNewLineStartAfterImports(script);
         
         std::string deleteThisNodeStr;
         std::string thisNodeStr = node->declareCurrentNodeVariable_Python(&deleteThisNodeStr);
         ///Now define the variables in the scope
+        std::string toInsert;
+        std::string deleteScript;
+        saveRestoreVariable("thisParam",&toInsert,&deleteScript);
+        saveRestoreVariable("frame",&toInsert,&deleteScript);
+        saveRestoreVariable("dimension",&toInsert,&deleteScript);
         std::stringstream ss;
         ss << thisNodeStr;
         ss << "thisParam = thisNode." << knob->getName() << "\n";
@@ -1303,17 +1305,13 @@ KnobI::declareCurrentKnobVariable_Python(KnobI* knob,int dimension,std::string& 
         std::string nodesInScope = node->declareAllNodesVariableInScope_Python(&deleteNodesInScope);
         ss << nodesInScope;
         
-        std::string toInsert = ss.str();
+        toInsert.append(ss.str());
         script.insert(firstLineAfterImport, toInsert);
         script.append("\n");
-        script.append("del thisParam\n");
         script.append("del random\ndel randomInt\n");
-        script.append("del frame\n");
-        if (dimension != -1) {
-            script.append("del dimension\n");
-        }
-        script.append(deleteThisNodeStr);
-        script.append(deleteNodesInScope);
+        script.append(deleteScript);
+        //script.append(deleteThisNodeStr);
+        //script.append(deleteNodesInScope);
         return firstLineAfterImport + toInsert.size();
     } else {
         return std::string::npos;

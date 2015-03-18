@@ -3012,7 +3012,7 @@ AppManager::initPython(int argc,char* argv[])
     //PyEval_ReleaseThread(_imp->mainThreadState);
     
     std::string err;
-    bool ok = interpretPythonScript("import sys\nimport " + std::string(NATRON_ENGINE_PYTHON_MODULE_NAME), &err, 0);
+    bool ok = interpretPythonScript("import sys\nimport math\nimport " + std::string(NATRON_ENGINE_PYTHON_MODULE_NAME), &err, 0);
     assert(ok);
     
     if (!isBackground()) {
@@ -3661,6 +3661,28 @@ getGroupInfos(const std::string& modulePath,
     }
 }
     
+void saveRestoreVariable(const std::string& variableBaseName,std::string* scriptToExec,std::string* restoreScript)
+{
+#pragma message WARN("fix it")
+    return;
+    PyObject* mainModule = getMainModule();
+    std::string attr = variableBaseName;
+    if (!scriptToExec->empty() && scriptToExec->at(scriptToExec->size() - 1) != '\n') {
+        scriptToExec->append("\n");
+    }
+    if (!restoreScript->empty() && restoreScript->at(restoreScript->size() - 1) != '\n') {
+        restoreScript->append("\n");
+    }
+    std::string toSave;
+    std::string toRestore;
+    while (PyObject_HasAttrString(mainModule,attr.c_str())) {
+        toSave.insert(0,attr + "_bak = " + attr + "\n");
+        toRestore.insert(0,attr + " = " + attr + "_bak\ndel " + attr + "_bak\n");
+        attr.append("_bak");
+    }
+    scriptToExec->append(toSave);
+    restoreScript->append(toRestore);
+}
 
     
 } //Namespace Natron

@@ -5047,20 +5047,20 @@ Node::declareCurrentNodeVariable_Python(std::string* deleteScript) const
     }
     
     NodeGroup* isParentGrp = dynamic_cast<NodeGroup*>(collection.get());
-    
     std::string appID = getApp()->getAppIDString();
     ///Now define the thisNode variable
+    std::string script;
     std::stringstream ss;
     ss << "app = " << appID << "\n";
+    saveRestoreVariable("thisGroup",&script,deleteScript);
+    saveRestoreVariable("thisNode",&script,deleteScript);
     if (isParentGrp) {
         ss << "thisGroup = " << appID << "." << isParentGrp->getNode()->getFullyQualifiedName() << "\n";
-        deleteScript->append("del thisGroup\n");
     } else {
         ss << "thisGroup = " << appID << "\n";
     }
-    ss << "thisNode = " << appID << "." << getFullyQualifiedName() <<  "\n";
-    deleteScript->append("del thisNode\n");
-    return ss.str();
+    ss << "thisNode\nthisNode = " << appID << "." << getFullyQualifiedName() <<  "\n";
+    return script + ss.str();
 }
 
 std::string
