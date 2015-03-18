@@ -1893,12 +1893,15 @@ private:
                     rod.toPixelEnclosing(scale, par, &renderWindow);
                     
                     ParallelRenderArgsSetter frameRenderArgs(activeInputToRender->getApp()->getProject().get(),
-                                                                   time,
-                                                                   i,
-                                                                   false,  // is this render due to user interaction ?
-                                                                   canOnlyHandleOneView, // is this sequential ?
-                                                                   true,
-                                                                   _imp->output->getApp()->getTimeLine().get());
+                                                             time,
+                                                             i,
+                                                             false,  // is this render due to user interaction ?
+                                                             canOnlyHandleOneView, // is this sequential ?
+                                                             true, // canAbort ?
+                                                             0, //renderAge
+                                                             0, // viewer requester
+                                                             0, //texture index
+                                                             _imp->output->getApp()->getTimeLine().get());
                     
                     RenderingFlagSetter flagIsRendering(activeInputToRender->getNode().get());
 
@@ -1978,13 +1981,16 @@ DefaultScheduler::processFrame(const BufferedFrames& frames)
         ignore_result(_effect->getRegionOfDefinition_public(hash,it->time, scale, it->view, &rod, &isProjectFormat));
         rod.toPixelEnclosing(0, par, &roi);
         
-        ParallelRenderArgsSetter frameRenderARgs(_effect->getApp()->getProject().get(),
-                                                       it->time,
-                                                       it->view,
-                                                       false,  // is this render due to user interaction ?
-                                                       canOnlyHandleOneView, // is this sequential ?
-                                                       true,
-                                                       _effect->getApp()->getTimeLine().get());
+        ParallelRenderArgsSetter frameRenderArgs(_effect->getApp()->getProject().get(),
+                                                 it->time,
+                                                 it->view,
+                                                 false,  // is this render due to user interaction ?
+                                                 canOnlyHandleOneView, // is this sequential ?
+                                                 true, //canAbort
+                                                 0, //renderAge
+                                                 0, //viewer
+                                                 0, //texture index
+                                                 _effect->getApp()->getTimeLine().get());
         
         RenderingFlagSetter flagIsRendering(_effect->getNode().get());
         

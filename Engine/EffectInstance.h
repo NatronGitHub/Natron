@@ -59,6 +59,7 @@ class OverlaySupport;
 class PluginMemory;
 class BlockingBackgroundRender;
 class NodeSerialization;
+class ViewerInstance;
 class RenderEngine;
 class BufferableObject;
 namespace Transform {
@@ -106,6 +107,16 @@ struct ParallelRenderArgs
     /// True if this frame can be aborted (false for preview and tracking)
     bool canAbort;
     
+    ///A number identifying the current frame render to determine if we can really abort for abortable renders
+    U64 renderAge;
+    
+    ///A pointer to the viewer that requested the current render. This is only used when rendering with a viewer
+    ///for abortable renders.
+    ViewerInstance* renderRequester;
+    
+    ///The texture index of the viewer being rendered, only useful for abortable renders
+    int textureIndex;
+    
     ParallelRenderArgs()
     : time(0)
     , timeline(0)
@@ -116,6 +127,9 @@ struct ParallelRenderArgs
     , isRenderResponseToUserInteraction(false)
     , isSequentialRender(false)
     , canAbort(false)
+    , renderAge(0)
+    , renderRequester(0)
+    , textureIndex(0)
     {
         
     }
@@ -538,13 +552,16 @@ public:
     * This is thread local storage. This is NOT local to a call to renderRoI
     **/
     void setParallelRenderArgsTLS(int time,
-                               int view,
-                               bool isRenderUserInteraction,
-                               bool isSequential,
-                               bool canAbort,
-                               U64 nodeHash,
-                               U64 rotoAge,
-                               const TimeLine* timeline);
+                                  int view,
+                                  bool isRenderUserInteraction,
+                                  bool isSequential,
+                                  bool canAbort,
+                                  U64 nodeHash,
+                                  U64 rotoAge,
+                                  U64 renderAge,
+                                  ViewerInstance* viewer,
+                                  int textureIndex,
+                                  const TimeLine* timeline);
 
     void setParallelRenderArgsTLS(const ParallelRenderArgs& args); 
 

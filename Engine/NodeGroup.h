@@ -221,6 +221,9 @@ public:
                                bool isRenderUserInteraction,
                                bool isSequential,
                                bool canAbort,
+                               U64 renderAge,
+                               ViewerInstance* viewer,
+                               int textureIndex,
                                const TimeLine* timeline);
     void invalidateParallelRenderArgs();
     
@@ -281,6 +284,9 @@ public:
                              bool isRenderUserInteraction,
                              bool isSequential,
                              bool canAbort,
+                             U64 renderAge,
+                             ViewerInstance* viewer,
+                             int textureIndex,
                              const TimeLine* timeline);
     
     ParallelRenderArgsSetter(const std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs >& args);

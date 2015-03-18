@@ -848,6 +848,9 @@ NodeCollection::setParallelRenderArgs(int time,
                                       bool isRenderUserInteraction,
                                       bool isSequential,
                                       bool canAbort,
+                                      U64 renderAge,
+                                      ViewerInstance* viewer,
+                                      int textureIndex,
                                       const TimeLine* timeline)
 {
     NodeList nodes = getNodes();
@@ -862,7 +865,7 @@ NodeCollection::setParallelRenderArgs(int time,
         }
         Natron::EffectInstance* liveInstance = (*it)->getLiveInstance();
         assert(liveInstance);
-        liveInstance->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, (*it)->getHashValue(), rotoAge, timeline);
+        liveInstance->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, (*it)->getHashValue(), rotoAge, renderAge,viewer,textureIndex, timeline);
         
         if ((*it)->isMultiInstance()) {
             
@@ -874,7 +877,7 @@ NodeCollection::setParallelRenderArgs(int time,
                 assert(*it2);
                 Natron::EffectInstance* childLiveInstance = (*it2)->getLiveInstance();
                 assert(childLiveInstance);
-                childLiveInstance->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, (*it2)->getHashValue(), rotoAge, timeline);
+                childLiveInstance->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, (*it2)->getHashValue(), rotoAge, renderAge,viewer, textureIndex, timeline);
                 
             }
         }
@@ -882,7 +885,7 @@ NodeCollection::setParallelRenderArgs(int time,
         
         NodeGroup* isGrp = dynamic_cast<NodeGroup*>((*it)->getLiveInstance());
         if (isGrp) {
-            isGrp->setParallelRenderArgs(time, view, isRenderUserInteraction, isSequential, canAbort, timeline);
+            isGrp->setParallelRenderArgs(time, view, isRenderUserInteraction, isSequential, canAbort,  renderAge, viewer, textureIndex, timeline);
         }
 
     }
@@ -953,16 +956,19 @@ NodeCollection::getParallelRenderArgs(std::map<boost::shared_ptr<Natron::Node>,P
 }
 
 ParallelRenderArgsSetter::ParallelRenderArgsSetter(NodeCollection* n,
-                         int time,
-                         int view,
-                         bool isRenderUserInteraction,
-                         bool isSequential,
-                         bool canAbort,
-                         const TimeLine* timeline)
+                                                   int time,
+                                                   int view,
+                                                   bool isRenderUserInteraction,
+                                                   bool isSequential,
+                                                   bool canAbort,
+                                                   U64 renderAge,
+                                                   ViewerInstance* viewer,
+                                                   int textureIndex,
+                                                   const TimeLine* timeline)
 : collection(n)
 , argsMap()
 {
-    collection->setParallelRenderArgs(time,view,isRenderUserInteraction,isSequential,canAbort,timeline);
+    collection->setParallelRenderArgs(time,view,isRenderUserInteraction,isSequential,canAbort,renderAge,viewer,textureIndex,timeline);
 }
 
 ParallelRenderArgsSetter::ParallelRenderArgsSetter(const std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs >& args)

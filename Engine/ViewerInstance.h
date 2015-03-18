@@ -129,6 +129,8 @@ public:
     {
         return true;
     }
+    
+    bool isRenderAbortable(int textureIndex, U64 renderAge) const;
 
 
     void setDisplayChannels(Natron::DisplayChannelsEnum channels);

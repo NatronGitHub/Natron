@@ -3287,9 +3287,12 @@ Node::makePreviewImage(SequenceTime time,
     ParallelRenderArgsSetter frameRenderArgs(getApp()->getProject().get(),
                                              time,
                                              0, //< preview only renders view 0 (left)
-                                             true,
-                                             false,
-                                             false,
+                                             true, //<isRenderUserInteraction
+                                             false, //isSequential
+                                             false, //can abort
+                                             0, //render Age
+                                             0, // viewer requester
+                                             0, //texture index
                                              getApp()->getTimeLine().get());
     
     std::list<ImageComponents> requestedComps;

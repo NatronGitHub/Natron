@@ -229,6 +229,10 @@ public:
         textureBeingRenderedCond.wakeAll();
     }
 
+    /**
+     * @brief Returns the current render age of the viewer (a simple counter incrementing at each request).
+     * The age is then incremented so the next call to getRenderAge will return the current value plus one.
+     **/
     U64 getRenderAge(int texIndex)
     {
         QMutexLocker k(&renderAgeMutex);
@@ -243,22 +247,71 @@ public:
         
     }
     
+    /**
+     * @brief We keep track of ongoing renders internally. This is used for abortable renders 
+     * (scrubbing the timeline, moving a slider...) to keep always at least 1 thread computing
+     * so that not all threads are always aborted.
+     **/
+    bool isRenderAbortable(int texIndex,U64 age) const
+    {
+        QMutexLocker k(&renderAgeMutex);
+        if (!currentRenderAges[texIndex].empty() && currentRenderAges[texIndex].front() == age) {
+            return false;
+        }
+        return true;
+    }
+    
+    /**
+     * @brief To be called to check if there we are the last requested render (true) or if there were
+     * more recent requests (false).
+     **/
     bool checkAgeNoUpdate(int texIndex,U64 age)
     {
         QMutexLocker k(&renderAgeMutex);
         assert(age <= renderAge[texIndex]);
-        return age >= lastRenderAge[texIndex];
+        if (age >= lastRenderAge[texIndex]) {
+            return true;
+        } else {
+            if (!currentRenderAges[texIndex].empty() && currentRenderAges[texIndex].front() == age) {
+                return true;
+            }
+            return false;
+        }
     }
     
+    /**
+     * @brief To be called when a render is about to end (either because of a failure or of success).
+     * If there was already a more recent render that had finished rendering, we return false meaning
+     * it should not continue further for the current render and not redraw the viewer.
+     * On the other hand, if we're the most recent render request, we return true and update the last
+     * render age, meaning we should redraw the viewer.
+     **/
     bool checkAndUpdateRenderAge(int texIndex,U64 age)
     {
         QMutexLocker k(&renderAgeMutex);
         assert(age <= renderAge[texIndex]);
         if (age < lastRenderAge[texIndex]) {
+            if (!currentRenderAges[texIndex].empty() && currentRenderAges[texIndex].front() == age) {
+                return true;
+            }
             return false;
         }
         lastRenderAge[texIndex] = age;
         return true;
+    }
+    
+    void addOngoingRender(int texIndex, U64 age) {
+        QMutexLocker k(&renderAgeMutex);
+        currentRenderAges[texIndex].push_back(age);
+
+    }
+    
+    void removeOngoingRender(int texIndex, U64 age) {
+        QMutexLocker k(&renderAgeMutex);
+        std::list<U64>::iterator found = std::find(currentRenderAges[texIndex].begin(),currentRenderAges[texIndex].end(), age);
+        if (found != currentRenderAges[texIndex].end()) {
+            currentRenderAges[texIndex].erase(found);
+        }
     }
 
 
@@ -313,9 +366,13 @@ public:
     
 private:
     
-    QMutex renderAgeMutex;
+    mutable QMutex renderAgeMutex; // protects renderAge lastRenderAge currentRenderAges
     U64 renderAge[2];
     U64 lastRenderAge[2];
+    
+    //A priority list recording the ongoing renders. This is used for abortable renders (i.e: when moving a slider or scrubbing the timeline)
+    //The purpose of this is to always at least keep 1 active render (non abortable) and abort more recent renders that do no longer make sense
+    std::list<U64> currentRenderAges[2];
 };
 
 

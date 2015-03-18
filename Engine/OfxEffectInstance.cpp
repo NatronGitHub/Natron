@@ -880,6 +880,9 @@ OfxEffectInstance::onInputChanged(int inputNo)
                                              true,
                                              false,
                                              false,
+                                             0,
+                                             0,
+                                             0, //texture index
                                              getApp()->getTimeLine().get());
     
     ///Don't do clip preferences while loading a project, they will be refreshed globally once the project is loaded.

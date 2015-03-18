@@ -397,6 +397,9 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
     
     if (!upstreamInput || !outArgs->activeInputToRender || !checkTreeCanRender(outArgs->activeInputToRender->getNode().get())) {
         Q_EMIT disconnectTextureRequest(textureIndex);
+        //if (!isSequential) {
+            _imp->checkAndUpdateRenderAge(textureIndex,renderAge);
+        //}
         return eStatusFailed;
     }
     
@@ -456,12 +459,15 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
     
     ///need to set TLS for getROD()
     ParallelRenderArgsSetter frameArgs(getApp()->getProject().get(),
-                                 time,
-                                 view,
-                                 !isSequential,  // is this render due to user interaction ?
-                                 isSequential, // is this sequential ?
-                                 canAbort,
-                                 getTimeline().get());
+                                       time,
+                                       view,
+                                       !isSequential,  // is this render due to user interaction ?
+                                       isSequential, // is this sequential ?
+                                       canAbort,
+                                       renderAge,
+                                       this,
+                                       textureIndex,
+                                       getTimeline().get());
     
     /**
      * @brief Start flagging that we're rendering for as long as the viewer is active.
@@ -475,9 +481,9 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
                                                                                  view, &rod, &isRodProjectFormat);
     if (stat == eStatusFailed) {
         Q_EMIT disconnectTextureRequest(textureIndex);
-        if (!isSequential) {
+        //if (!isSequential) {
             _imp->checkAndUpdateRenderAge(textureIndex,renderAge);
-        }
+        //}
 
         return stat;
     }
@@ -510,9 +516,9 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
     if ( (roi.width() == 0) || (roi.height() == 0) ) {
         Q_EMIT disconnectTextureRequest(textureIndex);
         outArgs->params.reset();
-        if (!isSequential) {
+        //if (!isSequential) {
             _imp->checkAndUpdateRenderAge(textureIndex,renderAge);
-        }
+        //}
         return eStatusReplyDefault;
     }
     
@@ -661,9 +667,10 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
                                     inArgs.params->cachedFrame->setAborted(true); \
                                     appPTR->removeFromViewerCache(inArgs.params->cachedFrame); \
                                 } \
-                                if (!isSequentialRender) { \
+                                /*if (!isSequentialRender) {*/ \
                                     _imp->checkAndUpdateRenderAge(inArgs.params->textureIndex,inArgs.params->renderAge); \
-                                } \
+                                /*}*/ \
+                                _imp->removeOngoingRender(inArgs.params->textureIndex, inArgs.params->renderAge); \
                                 return eStatusReplyDefault; \
                             }
 
@@ -676,6 +683,8 @@ ViewerInstance::renderViewer_internal(int view,
                                       ViewerArgs& inArgs)
 {
     assert(!inArgs.params->ramBuffer);
+    
+    _imp->addOngoingRender(inArgs.params->textureIndex, inArgs.params->renderAge);
     
     RectI roi;
     roi.x1 = inArgs.params->textureRect.x1;
@@ -697,6 +706,7 @@ ViewerInstance::renderViewer_internal(int view,
         if (!isSequentialRender) {
             _imp->checkAndUpdateRenderAge(inArgs.params->textureIndex,inArgs.params->renderAge);
         }
+        _imp->removeOngoingRender(inArgs.params->textureIndex, inArgs.params->renderAge);
         return eStatusReplyDefault;
     }
     
@@ -736,11 +746,13 @@ ViewerInstance::renderViewer_internal(int view,
             if (!isSequentialRender) {
                 _imp->checkAndUpdateRenderAge(inArgs.params->textureIndex,inArgs.params->renderAge);
             }
+            _imp->removeOngoingRender(inArgs.params->textureIndex, inArgs.params->renderAge);
             return eStatusFailed;
         }
         
         if (!entryLocker.tryLock(inArgs.params->cachedFrame)) {
             ///Another thread is rendering it, just return it is not useful to keep this thread waiting.
+            _imp->removeOngoingRender(inArgs.params->textureIndex, inArgs.params->renderAge);
             inArgs.params.reset();
             return eStatusReplyDefault;
         }
@@ -804,6 +816,7 @@ ViewerInstance::renderViewer_internal(int view,
             }
             appPTR->removeFromViewerCache(inArgs.params->cachedFrame);
         }
+        _imp->removeOngoingRender(inArgs.params->textureIndex, inArgs.params->renderAge);
         return eStatusOK;
     }
     
@@ -828,6 +841,9 @@ ViewerInstance::renderViewer_internal(int view,
                                            !isSequentialRender,
                                            isSequentialRender,
                                            canAbort,
+                                           inArgs.params->renderAge,
+                                           this,
+                                           inArgs.params->textureIndex,
                                            getTimeline().get());
 
 
@@ -839,14 +855,14 @@ ViewerInstance::renderViewer_internal(int view,
         try {
             
             ImageList planes = inArgs.activeInputToRender->renderRoI(EffectInstance::RenderRoIArgs(inArgs.params->time,
-                                                                                         inArgs.key->getScale(),
-                                                                                         inArgs.params->mipMapLevel,
-                                                                                         view,
-                                                                                         inArgs.forceRender,
-                                                                                         roi,
-                                                                                         inArgs.params->rod,
-                                                                                         requestedComponents,
-                                                                                         imageDepth) );
+                                                                                                   inArgs.key->getScale(),
+                                                                                                   inArgs.params->mipMapLevel,
+                                                                                                   view,
+                                                                                                   inArgs.forceRender,
+                                                                                                   roi,
+                                                                                                   inArgs.params->rod,
+                                                                                                   requestedComponents,
+                                                                                                   imageDepth) );
             assert(planes.size() == 0 || planes.size() == 1);
             if (!planes.empty()) {
                 inArgs.params->image = planes.front();
@@ -859,6 +875,7 @@ ViewerInstance::renderViewer_internal(int view,
                     }
                     appPTR->removeFromViewerCache(inArgs.params->cachedFrame);
                 }
+                _imp->removeOngoingRender(inArgs.params->textureIndex, inArgs.params->renderAge);
                 return eStatusReplyDefault;
             }
             
@@ -881,6 +898,7 @@ ViewerInstance::renderViewer_internal(int view,
             appPTR->removeFromViewerCache(inArgs.params->cachedFrame);
             inArgs.params->cachedFrame.reset();
         }
+        _imp->removeOngoingRender(inArgs.params->textureIndex, inArgs.params->renderAge);
         return eStatusReplyDefault;
     }
     
@@ -1709,6 +1727,7 @@ ViewerInstance::ViewerInstancePrivate::updateViewer(boost::shared_ptr<UpdateView
     if (!params->isSequential && !checkAndUpdateRenderAge(params->textureIndex,params->renderAge)) {
         doUpdate = false;
     }
+    removeOngoingRender(params->textureIndex, params->renderAge);
     if (doUpdate) {
         uiContext->transferBufferFromRAMtoGPU(params->ramBuffer,
                                               params->image,
@@ -2092,5 +2111,11 @@ int
 ViewerInstance::getCurrentView() const
 {
     return getFrameRenderArgsCurrentView();
+}
+
+bool
+ViewerInstance::isRenderAbortable(int textureIndex, U64 renderAge) const
+{
+    return _imp->isRenderAbortable(textureIndex, renderAge);
 }
 

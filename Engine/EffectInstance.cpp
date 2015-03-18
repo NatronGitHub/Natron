@@ -725,13 +725,16 @@ EffectInstance::clearPluginMemoryChunks()
 
 void
 EffectInstance::setParallelRenderArgsTLS(int time,
-                                      int view,
-                                      bool isRenderUserInteraction,
-                                      bool isSequential,
-                                      bool canAbort,
-                                      U64 nodeHash,
-                                      U64 rotoAge,
-                                      const TimeLine* timeline)
+                                         int view,
+                                         bool isRenderUserInteraction,
+                                         bool isSequential,
+                                         bool canAbort,
+                                         U64 nodeHash,
+                                         U64 rotoAge,
+                                         U64 renderAge,
+                                         ViewerInstance* viewer,
+                                         int textureIndex,
+                                         const TimeLine* timeline)
 {
     ParallelRenderArgs& args = _imp->frameRenderArgs.localData();
     args.time = time;
@@ -743,6 +746,9 @@ EffectInstance::setParallelRenderArgsTLS(int time,
     args.nodeHash = nodeHash;
     args.rotoAge = rotoAge;
     args.canAbort = canAbort;
+    args.renderAge = renderAge;
+    args.renderRequester = viewer;
+    args.textureIndex = textureIndex;
     
     ++args.validArgs;
     
@@ -837,6 +843,11 @@ EffectInstance::aborted() const
             if (args.isRenderResponseToUserInteraction) {
                 
                 if (args.canAbort) {
+                    
+                    if (args.renderRequester && !args.renderRequester->isRenderAbortable(args.textureIndex, args.renderAge)) {
+                        return false;
+                    }
+                    
                     ///Rendering issued by RenderEngine::renderCurrentFrame, if time or hash changed, abort
                     bool ret = args.nodeHash != getHash() ||
                     args.time != args.timeline->currentFrame() ||
@@ -5061,6 +5072,9 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
                                                  true,
                                                  false,
                                                  false,
+                                                 0,
+                                                 0,
+                                                 0, //texture index
                                                  getApp()->getTimeLine().get());
 
         RECURSIVE_ACTION();
