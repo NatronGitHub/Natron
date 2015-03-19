@@ -3531,14 +3531,6 @@ EffectInstance::tiledRenderingFunctor(RenderArgs & args,
     
     const PlaneToRender& firstPlane = planes.planes.begin()->second;
     
-#ifndef NDEBUG
-    if (renderFullScaleThenDownscale) {
-        assert( firstPlane.fullscaleImage->getBounds().contains(firstPlane.renderMappedImage->getBounds()));
-    } else {
-        assert( firstPlane.downscaleImage->getBounds().contains(firstPlane.renderMappedImage->getBounds()));
-    }
-#endif
-    
     const SequenceTime time = args._time;
     int mipMapLevel = firstPlane.downscaleImage->getMipMapLevel();
     const int view = args._view;
@@ -3546,10 +3538,10 @@ EffectInstance::tiledRenderingFunctor(RenderArgs & args,
     // at this point, it may be unnecessary to call render because it was done a long time ago => check the bitmap here!
 # ifndef NDEBUG
     RectI  renderBounds = firstPlane.renderMappedImage->getBounds();
-# endif
     assert(renderBounds.x1 <= downscaledRectToRender.x1 && downscaledRectToRender.x2 <= renderBounds.x2 &&
            renderBounds.y1 <= downscaledRectToRender.y1 && downscaledRectToRender.y2 <= renderBounds.y2);
-
+# endif
+    
    
     
     
