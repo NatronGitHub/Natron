@@ -867,17 +867,6 @@ public:
     
     
     virtual boost::shared_ptr<KnobSignalSlotHandler> getSignalSlotHandler() const = 0;
-
-    
-    /**
-     * @brief Inserts in the given script after the import lines the declaration of the variable "thisParam" which is in fact a pointer
-     * to this knob. This function also declares the variable "frame" which holds the current time and "value" which holds the current value
-     * at the current time.
-     * @param dimension If not -1 a variable named "dimension" will be declared with the current dimension of the parameter on which the 
-     * expression is applied to.
-     * @returns the index of the start of the next line after the  variable declaration
-     **/
-    static std::size_t declareCurrentKnobVariable_Python(KnobI* knob,int dimension,std::string& script);
     
     /**
      * @brief Adds a new listener to this knob. This is just a pure notification about the fact that the given knob

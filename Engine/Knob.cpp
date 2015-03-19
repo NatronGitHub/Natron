@@ -341,6 +341,8 @@ struct KnobHelperPrivate
     }
     
     void parseListenersFromExpression(int dimension);
+    
+    std::string declarePythonVariables(bool addTab, int dimension);
 };
 
 
@@ -1267,50 +1269,6 @@ KnobHelper::hasAnimation() const
     return false;
 }
 
-std::size_t
-KnobI::declareCurrentKnobVariable_Python(KnobI* knob,int dimension,std::string& script)
-{
-    KnobHolder* holder = knob->getHolder();
-    if (!holder) {
-        return std::string::npos;
-    }
-    
-    EffectInstance* effect = dynamic_cast<EffectInstance*>(holder);
-    if (effect) {
-        
-        NodePtr node = effect->getNode();
-                
-        std::size_t firstLineAfterImport = findNewLineStartAfterImports(script);
-        
-        std::string thisNodeStr = node->declareCurrentNodeVariable_Python();
-        ///Now define the variables in the scope
-        std::string toInsert;
-        std::stringstream ss;
-        ss << thisNodeStr;
-        ss << "thisParam = thisNode." << knob->getName() << "\n";
-        ss << "frame = thisParam.getCurrentTime() \n";
-        ss << "random = thisParam.random\n";
-        ss << "randomInt = thisParam.randomInt\n";
-        if (dimension != -1) {
-            ss << "dimension = " << dimension << "\n";
-        }
-        
-        std::string deleteNodesInScope;
-        ///define the nodes that are in the scope of this knob
-        std::string nodesInScope = node->declareAllNodesVariableInScope_Python(&deleteNodesInScope);
-        ss << nodesInScope;
-        
-        toInsert.append(ss.str());
-        script.insert(firstLineAfterImport, toInsert);
-        script.append("\n");
-        script.append("del random\ndel randomInt\n");
-        script.append(deleteNodesInScope);
-        return firstLineAfterImport + toInsert.size();
-    } else {
-        return std::string::npos;
-    }
-}
-
 static std::size_t getMatchingParenthesisPosition(std::size_t openingParenthesisPos,
                                                   char openingChar,
                                                   char closingChar,
@@ -1431,6 +1389,75 @@ static bool extractAllOcurrences(const std::string& str,const std::string& token
     return true;
 }
 
+std::string
+KnobHelperPrivate::declarePythonVariables(bool addTab, int dim)
+{
+    if (!holder) {
+        throw std::runtime_error("This parameter cannot have an expression");
+    }
+    
+    EffectInstance* effect = dynamic_cast<EffectInstance*>(holder);
+    if (!effect) {
+        throw std::runtime_error("This parameter cannot have an expression");
+    }
+    
+    NodePtr node = effect->getNode();
+    assert(node);
+    
+    boost::shared_ptr<NodeCollection> collection = node->getGroup();
+    if (!collection) {
+        throw std::runtime_error("This parameter cannot have an expression");
+    }
+    NodeGroup* isParentGrp = dynamic_cast<NodeGroup*>(collection.get());
+    std::string appID = node->getApp()->getAppIDString();
+
+    std::string tabStr = addTab ? "    " : "";
+    std::stringstream ss;
+    ss << tabStr << "app = " << appID << "\n";
+    if (isParentGrp) {
+        ss << tabStr << "thisGroup = " << appID << "." << isParentGrp->getNode()->getFullyQualifiedName() << "\n";
+    } else {
+        ss << tabStr << "thisGroup = " << appID << "\n";
+    }
+    ss << tabStr << "thisNode = " << appID << "." << node->getFullyQualifiedName() <<  "\n";
+    
+    ///Now define the variables in the scope
+    ss << tabStr << "thisParam = thisNode." << name << "\n";
+    ss << tabStr << "frame = thisParam.getCurrentTime()\n";
+    ss << tabStr << "random = thisParam.random\n";
+    ss << tabStr << "randomInt = thisParam.randomInt\n";
+    if (dimension != -1) {
+        ss << tabStr << "dimension = " << dim << "\n";
+    }
+    
+    //Define all nodes reachable through expressions in the scope
+    std::string mustDeleteContainer;
+    if (isParentGrp) {
+        std::string containerName = isParentGrp->getNode()->getFullyQualifiedName();
+        ss << tabStr << containerName  << " = " << appID << "." <<  containerName  << "\n";
+    }
+    
+    NodeList siblings = collection->getNodes();
+    for (NodeList::iterator it = siblings.begin(); it != siblings.end(); ++it) {
+        if ((*it)->isActivated() && !(*it)->getParentMultiInstance()) {
+            std::string fullName = (*it)->getFullyQualifiedName();
+            ss << tabStr << fullName << " = " << appID << "." << fullName << "\n";
+        }
+    }
+    
+    NodeGroup* isHolderGrp = dynamic_cast<NodeGroup*>(effect);
+    if (isHolderGrp) {
+        NodeList children = isHolderGrp->getNodes();
+        for (NodeList::iterator it = children.begin(); it != children.end(); ++it) {
+            if ((*it)->isActivated() && !(*it)->getParentMultiInstance()) {
+                std::string name = (*it)->getFullyQualifiedName();
+                ss << tabStr << name << " = " << appID << "." << name << "\n";
+            }
+        }
+    }
+    return ss.str();
+}
+
 void
 KnobHelperPrivate::parseListenersFromExpression(int dimension)
 {
@@ -1448,7 +1475,7 @@ KnobHelperPrivate::parseListenersFromExpression(int dimension)
     
     {
         QMutexLocker k(&expressionMutex);
-        expressionCopy = expressions[dimension].expression;
+        expressionCopy = expressions[dimension].originalExpression;
     }
     
     std::string script;
@@ -1472,7 +1499,8 @@ KnobHelperPrivate::parseListenersFromExpression(int dimension)
         return;
     }
     
-    
+    std::string declarations = declarePythonVariables(false, dimension);
+    script = declarations + "\n" + script;
     ///This will register the listeners
     std::string error;
     bool success = Natron::interpretPythonScript(script, &error,NULL);
@@ -1493,6 +1521,9 @@ KnobHelper::validateExpression(const std::string& expression,int dimension,bool 
     if (expression.empty()) {
         throw std::invalid_argument("empty expression");;
     }
+    
+    
+    
     std::string exprCpy = expression;
     
     //if !hasRetVariable the expression is expected to be single-line
@@ -1502,23 +1533,68 @@ KnobHelper::validateExpression(const std::string& expression,int dimension,bool 
             throw std::invalid_argument("unexpected new line character \'\\n\'");
         }
         //preprend the line with "ret = ..."
-        std::string toInsert("ret = ");
+        std::string toInsert("    ret = ");
         exprCpy.insert(0, toInsert);
+    } else {
+        exprCpy.insert(0, "    ");
+        std::size_t foundNewLine = expression.find("\n");
+        while (foundNewLine != std::string::npos) {
+            exprCpy.insert(foundNewLine + 1, "    ");
+            foundNewLine = expression.find("\n");
+        }
+        
     }
     
+    KnobHolder* holder = getHolder();
+    if (!holder) {
+        throw std::runtime_error("This parameter cannot have an expression");
+    }
     
-    declareCurrentKnobVariable_Python(this,dimension,exprCpy);
+    EffectInstance* effect = dynamic_cast<EffectInstance*>(holder);
+    if (!effect) {
+        throw std::runtime_error("This parameter cannot have an expression");
+    }
     
+    NodePtr node = effect->getNode();
+    assert(node);
+    std::string appID = getHolder()->getApp()->getAppIDString();
+    std::string exprFuncPrefix = appID + "." + node->getFullyQualifiedName() + "." + getName() + ".";
+    std::string exprFuncName;
+    {
+        std::stringstream tmpSs;
+        tmpSs << "expression" << dimension;
+        exprFuncName = tmpSs.str();
+    }
+    
+    exprCpy.append("\n    return ret\n");
+    
+    ///Now define the thisNode variable
+
+    std::stringstream ss;
+    ss << "def "  << exprFuncName << "():\n";
+    ss << _imp->declarePythonVariables(true, dimension);
+
+    
+    std::string script = ss.str();
+    script.append(exprCpy);
+    script.append(exprFuncPrefix + exprFuncName + " = " + exprFuncName);
+
     ///Try to compile the expression and evaluate it, if it doesn't have a good syntax, throw an exception
     ///with the error.
     std::string error;
-    
+    std::string funcExecScript = "ret = " + exprFuncPrefix + exprFuncName + "()\n";
+
     {
         EXPR_RECURSION_LEVEL();
         
-        if (!interpretPythonScript(exprCpy, &error, 0)) {
+        if (!interpretPythonScript(script, &error, 0)) {
             throw std::runtime_error(error);
         }
+        
+        if (!interpretPythonScript(funcExecScript, &error, 0)) {
+            throw std::runtime_error(error);
+        }
+        
         PyObject *ret = PyObject_GetAttrString(Natron::getMainModule(),"ret"); //get our ret variable created above
         
         if (!ret || PyErr_Occurred()) {
@@ -1551,7 +1627,7 @@ KnobHelper::validateExpression(const std::string& expression,int dimension,bool 
     }
  
     
-    return exprCpy;
+    return funcExecScript;
 }
 
 void
