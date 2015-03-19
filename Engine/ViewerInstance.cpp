@@ -667,10 +667,10 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
                                     inArgs.params->cachedFrame->setAborted(true); \
                                     appPTR->removeFromViewerCache(inArgs.params->cachedFrame); \
                                 } \
-                                /*if (!isSequentialRender) {*/ \
-                                    _imp->checkAndUpdateRenderAge(inArgs.params->textureIndex,inArgs.params->renderAge); \
-                                /*}*/ \
-                                _imp->removeOngoingRender(inArgs.params->textureIndex, inArgs.params->renderAge); \
+                                _imp->checkAndUpdateRenderAge(inArgs.params->textureIndex,inArgs.params->renderAge); \
+                                if (!isSequentialRender && canAbort) { \
+                                    _imp->removeOngoingRender(inArgs.params->textureIndex, inArgs.params->renderAge); \
+                                } \
                                 return eStatusReplyDefault; \
                             }
 
@@ -682,9 +682,27 @@ ViewerInstance::renderViewer_internal(int view,
                                       bool canAbort,
                                       ViewerArgs& inArgs)
 {
+    //Do not call this if the texture is already cached.
     assert(!inArgs.params->ramBuffer);
     
-    _imp->addOngoingRender(inArgs.params->textureIndex, inArgs.params->renderAge);
+    /*
+     * There are 3 types of renders: 
+     * 1) Playback: the canAbort flag is set to true and the isSequentialRender flag is set to true
+     * 2) Single frame abortable render: the canAbort flag is set to true and the isSequentialRender flag is set to false. Basically
+     * this kind of render is triggered by any parameter change, timeline scrubbing, curve positioning, etc... In this mode each image
+     * rendered concurrently by the viewer is probably different than another one (different hash key or time) hence we want to abort
+     * ongoing renders that are no longer corresponding to anything relevant to the actual state of the GUI. On the other hand, the user 
+     * still want a smooth feedback, e.g: If the user scrubs the timeline, we want to give him/her a continuous feedback, even with a
+     * latency so it looks like it is actually seeking, otherwise it would just refresh the image upon the mouseRelease event because all
+     * other renders would be aborted. To enable this behaviour, we ensure that at least 1 render is always running, even if it does not
+     * correspond to the GUI state anymore.
+     * 3) Single frame non-abortable render: the canAbort flag is set to false and the isSequentialRender flag is set to false. Basically
+     * only the viewer uses this when issuing renders due to a zoom or pan of the user. This is used to enable a trimap-caching technique
+     * to optimize threads repartitions across tiles processing of the image.
+     */
+    if (!isSequentialRender && canAbort) {
+        _imp->addOngoingRender(inArgs.params->textureIndex, inArgs.params->renderAge);
+    }
     
     RectI roi;
     roi.x1 = inArgs.params->textureRect.x1;
@@ -706,7 +724,9 @@ ViewerInstance::renderViewer_internal(int view,
         if (!isSequentialRender) {
             _imp->checkAndUpdateRenderAge(inArgs.params->textureIndex,inArgs.params->renderAge);
         }
-        _imp->removeOngoingRender(inArgs.params->textureIndex, inArgs.params->renderAge);
+        if (!isSequentialRender && canAbort) {
+            _imp->removeOngoingRender(inArgs.params->textureIndex, inArgs.params->renderAge);
+        }
         return eStatusReplyDefault;
     }
     
@@ -746,7 +766,9 @@ ViewerInstance::renderViewer_internal(int view,
             if (!isSequentialRender) {
                 _imp->checkAndUpdateRenderAge(inArgs.params->textureIndex,inArgs.params->renderAge);
             }
-            _imp->removeOngoingRender(inArgs.params->textureIndex, inArgs.params->renderAge);
+            if (!isSequentialRender && canAbort) {
+                _imp->removeOngoingRender(inArgs.params->textureIndex, inArgs.params->renderAge);
+            }
             return eStatusFailed;
         }
         
@@ -816,7 +838,9 @@ ViewerInstance::renderViewer_internal(int view,
             }
             appPTR->removeFromViewerCache(inArgs.params->cachedFrame);
         }
-        _imp->removeOngoingRender(inArgs.params->textureIndex, inArgs.params->renderAge);
+        if (!isSequentialRender && canAbort) {
+            _imp->removeOngoingRender(inArgs.params->textureIndex, inArgs.params->renderAge);
+        }
         return eStatusOK;
     }
     
@@ -875,7 +899,9 @@ ViewerInstance::renderViewer_internal(int view,
                     }
                     appPTR->removeFromViewerCache(inArgs.params->cachedFrame);
                 }
-                _imp->removeOngoingRender(inArgs.params->textureIndex, inArgs.params->renderAge);
+                if (!isSequentialRender && canAbort) {
+                    _imp->removeOngoingRender(inArgs.params->textureIndex, inArgs.params->renderAge);
+                }
                 return eStatusReplyDefault;
             }
             
@@ -892,13 +918,15 @@ ViewerInstance::renderViewer_internal(int view,
    
     ///We check that the render age is still OK and that no other renders were triggered, in which case we should not need to
     ///refresh the viewer.
-    if (!_imp->checkAgeNoUpdate(inArgs.params->textureIndex,inArgs.params->renderAge)) {
+    if (!isSequentialRender && !canAbort && !_imp->checkAgeNoUpdate(inArgs.params->textureIndex,inArgs.params->renderAge)) {
         if (inArgs.params->cachedFrame) {
             inArgs.params->cachedFrame->setAborted(true);
             appPTR->removeFromViewerCache(inArgs.params->cachedFrame);
             inArgs.params->cachedFrame.reset();
         }
-        _imp->removeOngoingRender(inArgs.params->textureIndex, inArgs.params->renderAge);
+        if (!isSequentialRender && canAbort) {
+            _imp->removeOngoingRender(inArgs.params->textureIndex, inArgs.params->renderAge);
+        }
         return eStatusReplyDefault;
     }
     

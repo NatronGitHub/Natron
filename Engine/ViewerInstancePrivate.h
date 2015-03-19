@@ -272,9 +272,6 @@ public:
         if (age >= lastRenderAge[texIndex]) {
             return true;
         } else {
-            if (!currentRenderAges[texIndex].empty() && currentRenderAges[texIndex].front() == age) {
-                return true;
-            }
             return false;
         }
     }
