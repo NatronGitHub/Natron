@@ -1,7 +1,4 @@
 
-//workaround to access protected functions
-#define protected public
-
 // default includes
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(mismatched-tags)
@@ -23,6 +20,11 @@ GCC_DIAG_OFF(missing-field-initializers)
 
 
 // Native ---------------------------------------------------------
+
+void BezierCurveWrapper::pysideInitQtMetaTypes()
+{
+    qRegisterMetaType< ::BezierCurve::CairoOperatorEnum >("BezierCurve::CairoOperatorEnum");
+}
 
 BezierCurveWrapper::~BezierCurveWrapper()
 {
@@ -260,7 +262,7 @@ static PyObject* Sbk_BezierCurveFunc_getCompositingOperator(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // getCompositingOperator()const
-            BezierCurve::CairoOperatorEnum cppResult = const_cast<const ::BezierCurve*>(cppSelf)->getCompositingOperator();
+            BezierCurve::CairoOperatorEnum cppResult = BezierCurve::CairoOperatorEnum(const_cast<const ::BezierCurve*>(cppSelf)->getCompositingOperator());
             pyResult = Shiboken::Conversions::copyToPython(SBK_CONVERTER(SbkNatronEngineTypes[SBK_BEZIERCURVE_CAIROOPERATORENUM_IDX]), &cppResult);
         }
     }
@@ -1896,5 +1898,5 @@ void init_BezierCurve(PyObject* module)
     // End of 'CairoOperatorEnum' enum.
 
 
-    qRegisterMetaType< ::BezierCurve::CairoOperatorEnum >("BezierCurve::CairoOperatorEnum");
+    BezierCurveWrapper::pysideInitQtMetaTypes();
 }

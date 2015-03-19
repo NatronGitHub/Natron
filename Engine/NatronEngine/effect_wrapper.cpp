@@ -1,7 +1,4 @@
 
-//workaround to access protected functions
-#define protected public
-
 // default includes
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(mismatched-tags)
@@ -27,6 +24,10 @@ GCC_DIAG_OFF(missing-field-initializers)
 
 
 // Native ---------------------------------------------------------
+
+void EffectWrapper::pysideInitQtMetaTypes()
+{
+}
 
 EffectWrapper::~EffectWrapper()
 {
@@ -1376,4 +1377,5 @@ void init_Effect(PyObject* module)
     Shiboken::ObjectType::setTypeDiscoveryFunctionV2(&Sbk_Effect_Type, &Sbk_Effect_typeDiscovery);
 
 
+    EffectWrapper::pysideInitQtMetaTypes();
 }

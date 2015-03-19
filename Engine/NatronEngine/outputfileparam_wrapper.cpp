@@ -1,7 +1,4 @@
 
-//workaround to access protected functions
-#define protected public
-
 // default includes
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(mismatched-tags)
@@ -23,6 +20,10 @@ GCC_DIAG_OFF(missing-field-initializers)
 
 // Native ---------------------------------------------------------
 
+void OutputFileParamWrapper::pysideInitQtMetaTypes()
+{
+}
+
 OutputFileParamWrapper::~OutputFileParamWrapper()
 {
     SbkObject* wrapper = Shiboken::BindingManager::instance().retrieveWrapper(this);
@@ -34,11 +35,11 @@ OutputFileParamWrapper::~OutputFileParamWrapper()
 extern "C" {
 static PyObject* Sbk_OutputFileParamFunc_openFile(PyObject* self)
 {
-    ::OutputFileParam* cppSelf = 0;
+    OutputFileParamWrapper* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = ((::OutputFileParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_OUTPUTFILEPARAM_IDX], (SbkObject*)self));
+    cppSelf = (OutputFileParamWrapper*)((::OutputFileParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_OUTPUTFILEPARAM_IDX], (SbkObject*)self));
 
     // Call function/method
     {
@@ -57,11 +58,11 @@ static PyObject* Sbk_OutputFileParamFunc_openFile(PyObject* self)
 
 static PyObject* Sbk_OutputFileParamFunc_setSequenceEnabled(PyObject* self, PyObject* pyArg)
 {
-    ::OutputFileParam* cppSelf = 0;
+    OutputFileParamWrapper* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = ((::OutputFileParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_OUTPUTFILEPARAM_IDX], (SbkObject*)self));
+    cppSelf = (OutputFileParamWrapper*)((::OutputFileParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_OUTPUTFILEPARAM_IDX], (SbkObject*)self));
     int overloadId = -1;
     PythonToCppFunc pythonToCpp;
     SBK_UNUSED(pythonToCpp)
@@ -225,4 +226,5 @@ void init_OutputFileParam(PyObject* module)
     Shiboken::ObjectType::setTypeDiscoveryFunctionV2(&Sbk_OutputFileParam_Type, &Sbk_OutputFileParam_typeDiscovery);
 
 
+    OutputFileParamWrapper::pysideInitQtMetaTypes();
 }

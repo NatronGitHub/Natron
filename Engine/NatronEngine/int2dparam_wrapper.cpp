@@ -1,7 +1,4 @@
 
-//workaround to access protected functions
-#define protected public
-
 // default includes
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(mismatched-tags)
@@ -23,6 +20,10 @@ GCC_DIAG_OFF(missing-field-initializers)
 
 // Native ---------------------------------------------------------
 
+void Int2DParamWrapper::pysideInitQtMetaTypes()
+{
+}
+
 Int2DParamWrapper::~Int2DParamWrapper()
 {
     SbkObject* wrapper = Shiboken::BindingManager::instance().retrieveWrapper(this);
@@ -34,11 +35,11 @@ Int2DParamWrapper::~Int2DParamWrapper()
 extern "C" {
 static PyObject* Sbk_Int2DParamFunc_get(PyObject* self, PyObject* args)
 {
-    ::Int2DParam* cppSelf = 0;
+    Int2DParamWrapper* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = ((::Int2DParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_INT2DPARAM_IDX], (SbkObject*)self));
+    cppSelf = (Int2DParamWrapper*)((::Int2DParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_INT2DPARAM_IDX], (SbkObject*)self));
     PyObject* pyResult = 0;
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { 0 };
@@ -73,7 +74,7 @@ static PyObject* Sbk_Int2DParamFunc_get(PyObject* self, PyObject* args)
 
             if (!PyErr_Occurred()) {
                 // get()const
-                Int2DTuple* cppResult = new Int2DTuple(const_cast<const ::Int2DParam*>(cppSelf)->get());
+                Int2DTuple* cppResult = new Int2DTuple(const_cast<const ::Int2DParamWrapper*>(cppSelf)->get());
                 pyResult = Shiboken::Object::newObject((SbkObjectType*)SbkNatronEngineTypes[SBK_INT2DTUPLE_IDX], cppResult, true, true);
             }
             break;
@@ -85,7 +86,7 @@ static PyObject* Sbk_Int2DParamFunc_get(PyObject* self, PyObject* args)
 
             if (!PyErr_Occurred()) {
                 // get(int)const
-                Int2DTuple* cppResult = new Int2DTuple(const_cast<const ::Int2DParam*>(cppSelf)->get(cppArg0));
+                Int2DTuple* cppResult = new Int2DTuple(const_cast<const ::Int2DParamWrapper*>(cppSelf)->get(cppArg0));
                 pyResult = Shiboken::Object::newObject((SbkObjectType*)SbkNatronEngineTypes[SBK_INT2DTUPLE_IDX], cppResult, true, true);
             }
             break;
@@ -106,11 +107,11 @@ static PyObject* Sbk_Int2DParamFunc_get(PyObject* self, PyObject* args)
 
 static PyObject* Sbk_Int2DParamFunc_set(PyObject* self, PyObject* args)
 {
-    ::Int2DParam* cppSelf = 0;
+    Int2DParamWrapper* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = ((::Int2DParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_INT2DPARAM_IDX], (SbkObject*)self));
+    cppSelf = (Int2DParamWrapper*)((::Int2DParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_INT2DPARAM_IDX], (SbkObject*)self));
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { 0, 0, 0 };
     SBK_UNUSED(pythonToCpp)
@@ -324,4 +325,5 @@ void init_Int2DParam(PyObject* module)
     Shiboken::ObjectType::setTypeDiscoveryFunctionV2(&Sbk_Int2DParam_Type, &Sbk_Int2DParam_typeDiscovery);
 
 
+    Int2DParamWrapper::pysideInitQtMetaTypes();
 }

@@ -1,7 +1,4 @@
 
-//workaround to access protected functions
-#define protected public
-
 // default includes
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(mismatched-tags)
@@ -23,6 +20,10 @@ GCC_DIAG_OFF(missing-field-initializers)
 
 // Native ---------------------------------------------------------
 
+void Double2DParamWrapper::pysideInitQtMetaTypes()
+{
+}
+
 Double2DParamWrapper::~Double2DParamWrapper()
 {
     SbkObject* wrapper = Shiboken::BindingManager::instance().retrieveWrapper(this);
@@ -34,11 +35,11 @@ Double2DParamWrapper::~Double2DParamWrapper()
 extern "C" {
 static PyObject* Sbk_Double2DParamFunc_get(PyObject* self, PyObject* args)
 {
-    ::Double2DParam* cppSelf = 0;
+    Double2DParamWrapper* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = ((::Double2DParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_DOUBLE2DPARAM_IDX], (SbkObject*)self));
+    cppSelf = (Double2DParamWrapper*)((::Double2DParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_DOUBLE2DPARAM_IDX], (SbkObject*)self));
     PyObject* pyResult = 0;
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { 0 };
@@ -73,7 +74,7 @@ static PyObject* Sbk_Double2DParamFunc_get(PyObject* self, PyObject* args)
 
             if (!PyErr_Occurred()) {
                 // get()const
-                Double2DTuple* cppResult = new Double2DTuple(const_cast<const ::Double2DParam*>(cppSelf)->get());
+                Double2DTuple* cppResult = new Double2DTuple(const_cast<const ::Double2DParamWrapper*>(cppSelf)->get());
                 pyResult = Shiboken::Object::newObject((SbkObjectType*)SbkNatronEngineTypes[SBK_DOUBLE2DTUPLE_IDX], cppResult, true, true);
             }
             break;
@@ -85,7 +86,7 @@ static PyObject* Sbk_Double2DParamFunc_get(PyObject* self, PyObject* args)
 
             if (!PyErr_Occurred()) {
                 // get(int)const
-                Double2DTuple* cppResult = new Double2DTuple(const_cast<const ::Double2DParam*>(cppSelf)->get(cppArg0));
+                Double2DTuple* cppResult = new Double2DTuple(const_cast<const ::Double2DParamWrapper*>(cppSelf)->get(cppArg0));
                 pyResult = Shiboken::Object::newObject((SbkObjectType*)SbkNatronEngineTypes[SBK_DOUBLE2DTUPLE_IDX], cppResult, true, true);
             }
             break;
@@ -106,11 +107,11 @@ static PyObject* Sbk_Double2DParamFunc_get(PyObject* self, PyObject* args)
 
 static PyObject* Sbk_Double2DParamFunc_set(PyObject* self, PyObject* args)
 {
-    ::Double2DParam* cppSelf = 0;
+    Double2DParamWrapper* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = ((::Double2DParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_DOUBLE2DPARAM_IDX], (SbkObject*)self));
+    cppSelf = (Double2DParamWrapper*)((::Double2DParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_DOUBLE2DPARAM_IDX], (SbkObject*)self));
     int overloadId = -1;
     PythonToCppFunc pythonToCpp[] = { 0, 0, 0 };
     SBK_UNUSED(pythonToCpp)
@@ -186,11 +187,11 @@ static PyObject* Sbk_Double2DParamFunc_set(PyObject* self, PyObject* args)
 
 static PyObject* Sbk_Double2DParamFunc_setUsePointInteract(PyObject* self, PyObject* pyArg)
 {
-    ::Double2DParam* cppSelf = 0;
+    Double2DParamWrapper* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = ((::Double2DParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_DOUBLE2DPARAM_IDX], (SbkObject*)self));
+    cppSelf = (Double2DParamWrapper*)((::Double2DParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_DOUBLE2DPARAM_IDX], (SbkObject*)self));
     int overloadId = -1;
     PythonToCppFunc pythonToCpp;
     SBK_UNUSED(pythonToCpp)
@@ -355,4 +356,5 @@ void init_Double2DParam(PyObject* module)
     Shiboken::ObjectType::setTypeDiscoveryFunctionV2(&Sbk_Double2DParam_Type, &Sbk_Double2DParam_typeDiscovery);
 
 
+    Double2DParamWrapper::pysideInitQtMetaTypes();
 }

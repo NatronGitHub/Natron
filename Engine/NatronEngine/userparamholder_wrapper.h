@@ -1,8 +1,6 @@
 #ifndef SBK_USERPARAMHOLDERWRAPPER_H
 #define SBK_USERPARAMHOLDERWRAPPER_H
 
-#define protected public
-
 #include <shiboken.h>
 
 #include <NodeWrapper.h>

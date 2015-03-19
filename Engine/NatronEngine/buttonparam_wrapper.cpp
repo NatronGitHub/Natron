@@ -1,7 +1,4 @@
 
-//workaround to access protected functions
-#define protected public
-
 // default includes
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(mismatched-tags)
@@ -23,6 +20,10 @@ GCC_DIAG_OFF(missing-field-initializers)
 
 // Native ---------------------------------------------------------
 
+void ButtonParamWrapper::pysideInitQtMetaTypes()
+{
+}
+
 ButtonParamWrapper::~ButtonParamWrapper()
 {
     SbkObject* wrapper = Shiboken::BindingManager::instance().retrieveWrapper(this);
@@ -34,11 +35,11 @@ ButtonParamWrapper::~ButtonParamWrapper()
 extern "C" {
 static PyObject* Sbk_ButtonParamFunc_setIconFilePath(PyObject* self, PyObject* pyArg)
 {
-    ::ButtonParam* cppSelf = 0;
+    ButtonParamWrapper* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
-    cppSelf = ((::ButtonParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_BUTTONPARAM_IDX], (SbkObject*)self));
+    cppSelf = (ButtonParamWrapper*)((::ButtonParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_BUTTONPARAM_IDX], (SbkObject*)self));
     int overloadId = -1;
     PythonToCppFunc pythonToCpp;
     SBK_UNUSED(pythonToCpp)
@@ -201,4 +202,5 @@ void init_ButtonParam(PyObject* module)
     Shiboken::ObjectType::setTypeDiscoveryFunctionV2(&Sbk_ButtonParam_Type, &Sbk_ButtonParam_typeDiscovery);
 
 
+    ButtonParamWrapper::pysideInitQtMetaTypes();
 }

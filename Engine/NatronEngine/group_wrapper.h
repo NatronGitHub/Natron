@@ -1,8 +1,6 @@
 #ifndef SBK_GROUPWRAPPER_H
 #define SBK_GROUPWRAPPER_H
 
-#define protected public
-
 #include <shiboken.h>
 
 #include <NodeGroupWrapper.h>
