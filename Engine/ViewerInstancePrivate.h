@@ -167,13 +167,13 @@ public:
     , lastRenderedHashValid(false)
     , renderAgeMutex()
     , renderAge()
-    , lastRenderAge()
+    , displayAge()
     {
 
         for (int i = 0;i < 2; ++i) {
             activeInputs[i] = -1;
-            renderAge[i] = 0;
-            lastRenderAge[i] = 0;
+            renderAge[i] = 1;
+            displayAge[i] = 0;
         }
     }
     
@@ -269,7 +269,7 @@ public:
     {
         QMutexLocker k(&renderAgeMutex);
         assert(age <= renderAge[texIndex]);
-        if (age >= lastRenderAge[texIndex]) {
+        if (age >= displayAge[texIndex]) {
             return true;
         } else {
             return false;
@@ -283,32 +283,40 @@ public:
      * On the other hand, if we're the most recent render request, we return true and update the last
      * render age, meaning we should redraw the viewer.
      **/
-    bool checkAndUpdateRenderAge(int texIndex,U64 age)
+    bool checkAndUpdateDisplayAge(int texIndex,U64 age)
     {
         QMutexLocker k(&renderAgeMutex);
         assert(age <= renderAge[texIndex]);
-        if (age < lastRenderAge[texIndex]) {
-            if (!currentRenderAges[texIndex].empty() && currentRenderAges[texIndex].front() == age) {
-                return true;
-            }
+        assert(age != displayAge[texIndex]);
+        if (age < displayAge[texIndex]) {
             return false;
         }
-        lastRenderAge[texIndex] = age;
+        displayAge[texIndex] = age;
         return true;
     }
     
-    void addOngoingRender(int texIndex, U64 age) {
+    bool addOngoingRender(int texIndex, U64 age) {
         QMutexLocker k(&renderAgeMutex);
+        if (!currentRenderAges[texIndex].empty() && currentRenderAges[texIndex].back() >= age) {
+            return false;
+        }
+        if (currentRenderAges[texIndex].size() > 1) {
+            currentRenderAges[texIndex].resize(1);
+        }
         currentRenderAges[texIndex].push_back(age);
-
+        return true;
     }
     
-    void removeOngoingRender(int texIndex, U64 age) {
+    bool removeOngoingRender(int texIndex, U64 age) {
         QMutexLocker k(&renderAgeMutex);
-        std::list<U64>::iterator found = std::find(currentRenderAges[texIndex].begin(),currentRenderAges[texIndex].end(), age);
-        if (found != currentRenderAges[texIndex].end()) {
-            currentRenderAges[texIndex].erase(found);
+        int i = 0;
+        for (std::list<U64>::iterator it = currentRenderAges[texIndex].begin(); it != currentRenderAges[texIndex].end(); ++it, ++i) {
+            if (*it == age) {
+                currentRenderAges[texIndex].erase(it);
+                return true;
+            }
         }
+        return false;
     }
 
 
@@ -365,7 +373,7 @@ private:
     
     mutable QMutex renderAgeMutex; // protects renderAge lastRenderAge currentRenderAges
     U64 renderAge[2];
-    U64 lastRenderAge[2];
+    U64 displayAge[2];
     
     //A priority list recording the ongoing renders. This is used for abortable renders (i.e: when moving a slider or scrubbing the timeline)
     //The purpose of this is to always at least keep 1 active render (non abortable) and abort more recent renders that do no longer make sense

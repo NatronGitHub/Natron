@@ -843,15 +843,14 @@ EffectInstance::aborted() const
             if (args.isRenderResponseToUserInteraction) {
                 
                 if (args.canAbort) {
-                    
                     if (args.renderRequester && !args.renderRequester->isRenderAbortable(args.textureIndex, args.renderAge)) {
                         return false;
                     }
                     
                     ///Rendering issued by RenderEngine::renderCurrentFrame, if time or hash changed, abort
-                    bool ret = args.nodeHash != getHash() ||
-                    args.time != args.timeline->currentFrame() ||
-                    !getNode()->isActivated();
+                    bool ret = (args.nodeHash != getHash() ||
+                                args.time != args.timeline->currentFrame() ||
+                                !getNode()->isActivated());
                     return ret;
                 } else {
                     bool ret = !getNode()->isActivated();
@@ -2819,9 +2818,9 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
     if ( renderAborted && renderRetCode != eRenderRoIStatusImageAlreadyRendered) {
         
         ///Return a NULL image if the render call was not issued by the result of a call of a plug-in to clipGetImage
-        if (!args.calledFromGetImage) {
+        //if (!args.calledFromGetImage) {
             return ImageList();
-        }
+        //}
         
     } else if (renderRetCode == eRenderRoIStatusRenderFailed) {
         throw std::runtime_error("Rendering Failed");
@@ -3442,7 +3441,11 @@ EffectInstance::renderRoIInternal(SequenceTime time,
                 else if ((*it2) == EffectInstance::eRenderingFunctorRetTakeImageLock) {
                     planesToRender.isBeingRenderedElsewhere = true;
                 }
-#endif
+#endif  
+                else if ((*it2) == EffectInstance::eRenderingFunctorRetAborted) {
+                    renderStatus = eStatusFailed;
+                    break;
+                }
             }
             break;
         }
@@ -3475,6 +3478,8 @@ EffectInstance::renderRoIInternal(SequenceTime time,
 #if NATRON_ENABLE_TRIMAP
                 planesToRender.isBeingRenderedElsewhere = true;
 #endif
+            } else if (functorRet == eRenderingFunctorRetAborted) {
+                renderStatus = eStatusFailed;
             }
             
             break;
@@ -3761,9 +3766,10 @@ EffectInstance::tiledRenderingFunctor(RenderArgs & args,
         
     }
     
-    if ( !renderAborted ) {
-        
-        
+    if (renderAborted) {
+        return eRenderingFunctorRetAborted;
+    } else {
+    
         //Check for NaNs
         for (std::map<ImageComponents,PlaneToRender>::const_iterator it = outputPlanes.begin(); it!=outputPlanes.end(); ++it) {
             if (it->second.tmpImage->checkForNaNs(renderRectToRender)) {

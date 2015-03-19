@@ -1529,7 +1529,8 @@ private:
     {
         eRenderingFunctorRetFailed, //< must stop rendering
         eRenderingFunctorRetOK, //< ok, move on
-        eRenderingFunctorRetTakeImageLock //< take the image lock because another thread is rendering part of something we need
+        eRenderingFunctorRetTakeImageLock, //< take the image lock because another thread is rendering part of something we need
+        eRenderingFunctorRetAborted // we were aborted
     };
 
     ///These are the image passed to the plug-in to render
