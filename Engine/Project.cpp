@@ -465,42 +465,9 @@ Project::saveProjectInternal(const QString & path,
         filePath = path + actualFileName;
     }
     
-    std::string onProjectSave = getOnProjectSaveCB();
-    if (!onProjectSave.empty()) {
-        std::stringstream ss;
-        ss << "autoSave = ";
-        if (autoSave) {
-            ss << "True\n";
-        } else {
-            ss << "False\n";
-        }
-        ss << "filename = " << filePath.toStdString() << "\n";
-        std::string appID = getApp()->getAppIDString();
-        ss << "app = " <<  appID << "\n";
-        ss << "ret = " << onProjectSave << "()\n";
-        ss << "del filename\ndel autoSave\n";
-        onProjectSave = ss.str();
-        std::string err;
-        std::string output;
-        if (!Natron::interpretPythonScript(onProjectSave, &err, &output)) {
-            getApp()->appendToScriptEditor("Failed to run onProjectSave callback: " + err);
-        } else {
-            PyObject* mainModule = getMainModule();
-            assert(mainModule);
-            PyObject* ret = PyObject_GetAttrString(mainModule, "ret");
-            assert(ret);
-            if (ret) {
-                filePath = QString(PY3String_asString(ret).c_str());
-                bool ok = Natron::interpretPythonScript("del ret\n", &err, 0);
-                assert(ok);
-                (void)ok;
-            }
-            if (!output.empty()) {
-                getApp()->appendToScriptEditor(output);
-            }
-        }
-    }
-
+    std::string newFilePath = _imp->runOnProjectSaveCallback(filePath.toStdString(), autoSave);
+    filePath = QString(newFilePath.c_str());
+    
     ///Use a temporary file to save, so if Natron crashes it doesn't corrupt the user save.
     QString tmpFilename = StandardPaths::writableLocation(StandardPaths::eStandardLocationTemp);
     tmpFilename.append( QDir::separator() );
@@ -1429,15 +1396,8 @@ Project::reset()
     assert(QThread::currentThread() == qApp->thread());
     
     _imp->projectClosing = true;
-    std::string onProjectClose = getOnProjectCloseCB();
-    if (!onProjectClose.empty()) {
-        std::string err;
-        if (!Natron::interpretPythonScript(onProjectClose + "()\n", &err, 0)) {
-            Natron::errorDialog(tr("Callback failure").toStdString(), tr("Error when running the onProjectClose callback: ").toStdString()
-                                + err);
-        }
-        
-    }
+
+    _imp->runOnProjectCloseCallback();
     
     {
         QMutexLocker l(&_imp->projectLock);

@@ -1208,13 +1208,37 @@ AppInstance::execOnProjectCreatedCallback()
     if (cb.empty()) {
         return;
     }
-    std::string script = "app = " + getAppIDString() + "\n" +  cb + "()\n" + "del app\n";
     
-    std::string err,output;
+    
+    std::vector<std::string> args;
+    std::string error;
+    Natron::getFunctionArguments(cb, &error, &args);
+    if (!error.empty()) {
+        appendToScriptEditor("Failed to run onProjectCreated callback: " + error);
+        return;
+    }
+    
+    std::string signatureError;
+    signatureError.append("The on project created callback supports the following signature(s):\n");
+    signatureError.append("- callback(app)");
+    if (args.size() != 1) {
+        appendToScriptEditor("Failed to run onProjectCreated callback: " + signatureError);
+        return;
+    }
+    if (args[0] != "app") {
+        appendToScriptEditor("Failed to run onProjectCreated callback: " + signatureError);
+        return;
+    }
+    std::string appID = getAppIDString();
+    std::string script = "app = " + appID + "\n" + cb + "(" + appID + ")\n";
+    std::string err;
+    std::string output;
     if (!Natron::interpretPythonScript(script, &err, &output)) {
-        appendToScriptEditor(err);
+        appendToScriptEditor("Failed to run onProjectCreated callback: " + err);
     } else {
-        appendToScriptEditor(output);
+        if (!output.empty()) {
+            appendToScriptEditor(output);
+        }
     }
 }
 

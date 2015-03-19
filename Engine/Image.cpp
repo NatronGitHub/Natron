@@ -1255,7 +1255,8 @@ Image::halve1DImage(const RectI & roi,
 
 // code proofread and fixed by @devernay on 8/8/2014
 void
-Image::downscaleMipMap(const RectI & roi,
+Image::downscaleMipMap(const RectD& dstRod,
+                       const RectI & roi,
                        unsigned int fromLevel,
                        unsigned int toLevel,
                        bool copyBitMap,
@@ -1268,7 +1269,7 @@ Image::downscaleMipMap(const RectI & roi,
            _bounds.y1 <= roi.y1 && roi.y2 <= _bounds.y2);
     double par = getPixelAspectRatio();
 //    RectD roiCanonical;
-//    roi.toCanonical(fromLevel, par , getRoD(), &roiCanonical);
+//    roi.toCanonical(fromLevel, par , dstRod, &roiCanonical);
 //    RectI dstRoI;
 //    roiCanonical.toPixelEnclosing(toLevel, par , &dstRoI);
     unsigned int downscaleLvls = toLevel - fromLevel;
@@ -1277,9 +1278,9 @@ Image::downscaleMipMap(const RectI & roi,
     
     RectI dstRoI  = roi.downscalePowerOfTwoSmallestEnclosing(downscaleLvls);
     
-    ImagePtr tmpImg( new Natron::Image( getComponents(), getRoD(), dstRoI, toLevel, par, getBitDepth() , true) );
+    ImagePtr tmpImg( new Natron::Image( getComponents(), dstRod, dstRoI, toLevel, par, getBitDepth() , true) );
 
-    buildMipMapLevel( roi, downscaleLvls, copyBitMap, tmpImg.get() );
+    buildMipMapLevel( dstRod, roi, downscaleLvls, copyBitMap, tmpImg.get() );
 
     // check that the downscaled mipmap is inside the output image (it may not be equal to it)
     assert(dstRoI.x1 >= output->_bounds.x1);
@@ -1678,7 +1679,8 @@ Image::scaleBox(const RectI & roi,
 
 // code proofread and fixed by @devernay on 8/8/2014
 void
-Image::buildMipMapLevel(const RectI & roi,
+Image::buildMipMapLevel(const RectD& dstRoD,
+                        const RectI & roi,
                         unsigned int level,
                         bool copyBitMap,
                         Natron::Image* output) const
@@ -1708,7 +1710,7 @@ Image::buildMipMapLevel(const RectI & roi,
         RectI halvedRoI = previousRoI.downscalePowerOfTwoSmallestEnclosing(1);
 
         ///Allocate an image with half the size of the source image
-        dstImg = new Natron::Image( getComponents(), getRoD(), halvedRoI, getMipMapLevel() + i, getPixelAspectRatio(),getBitDepth() , true);
+        dstImg = new Natron::Image( getComponents(), dstRoD, halvedRoI, getMipMapLevel() + i, getPixelAspectRatio(),getBitDepth() , true);
 
         ///Half the source image into dstImg.
         ///We pass the closestPo2 roi which might not be the entire size of the source image

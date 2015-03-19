@@ -1222,16 +1222,44 @@ OutputSchedulerThread::notifyFrameRendered(int frame,
         percentage = (double)frame / _imp->livingRunArgs.lastFrame - _imp->livingRunArgs.firstFrame + 1;
     }
     
-    if (_imp->outputEffect->isWriter()) {
-        std::string afterFrameRender = _imp->outputEffect->getNode()->getAfterFrameRenderCallback();
-        runCallbackWithVariables(afterFrameRender.c_str());
-    }
     
     if ( appPTR->isBackground() ) {
         QString frameStr = QString::number(frame);
         
         QString pStr = QString::number(percentage * 100);
         appPTR->writeToOutputPipe(kFrameRenderedStringLong + frameStr + " (" + pStr + "%)",kFrameRenderedStringShort + frameStr);
+    }
+    
+    if (_imp->outputEffect->isWriter()) {
+        std::string cb = _imp->outputEffect->getNode()->getAfterFrameRenderCallback();
+        if (!cb.empty()) {
+            std::vector<std::string> args;
+            std::string error;
+            Natron::getFunctionArguments(cb, &error, &args);
+            if (!error.empty()) {
+                _imp->outputEffect->getApp()->appendToScriptEditor("Failed to run after frame render callback: " + error);
+                return;
+            }
+            
+            std::string signatureError;
+            signatureError.append("The after frame render callback supports the following signature(s):\n");
+            signatureError.append("- callback(frame, thisNode, app)");
+            if (args.size() != 3) {
+                _imp->outputEffect->getApp()->appendToScriptEditor("Failed to run after frame render callback: " + signatureError);
+                return;
+            }
+            
+            if (args[0] != "frame" || args[1] != "thisNode" || args[2] != "app" ) {
+                _imp->outputEffect->getApp()->appendToScriptEditor("Failed to run after frame render callback: " + signatureError);
+                return;
+            }
+            
+            std::stringstream ss;
+            ss << cb << "(" << time << ",";
+            std::string script = ss.str();
+            runCallbackWithVariables(script.c_str());
+            
+        }
     }
 }
 
@@ -1635,7 +1663,7 @@ OutputSchedulerThread::onExecuteCallbackOnMainThread(QString callback)
     std::string err,output;
     if (!Natron::interpretPythonScript(callback.toStdString(), &err, &output)) {
         _imp->outputEffect->getApp()->appendToScriptEditor("Failed to run callback: " + err);
-    } else {
+    } else if (!output.empty()) {
         _imp->outputEffect->getApp()->appendToScriptEditor(output);
     }
     
@@ -1660,15 +1688,13 @@ void
 OutputSchedulerThread::runCallbackWithVariables(const QString& callback)
 {
     if (!callback.isEmpty()) {
-        std::string deleteScript;
-        std::string thisNode = _imp->outputEffect->getNode()->declareCurrentNodeVariable_Python(&deleteScript);
-        
-        QString script;
-        script.append(thisNode.c_str());
-        script.append(callback);
-        script.append("()\n");
-        script.append("del isBackground\n");
-        script.append(deleteScript.c_str());
+        QString script = callback;
+        std::string appID = _imp->outputEffect->getApp()->getAppIDString();
+        std::string thisNodeStr = appID + "." + _imp->outputEffect->getNode()->getFullyQualifiedName();
+        script.append(thisNodeStr.c_str());
+        script.append(",");
+        script.append(appID.c_str());
+        script.append(")\n");
         Q_EMIT s_executeCallbackOnMainThread(script);
     }
 }
@@ -1823,8 +1849,35 @@ private:
     virtual void
     renderFrame(int time) {
         
-        std::string beforeFrameRender = _imp->output->getNode()->getBeforeFrameRenderCallback();
-        _imp->scheduler->runCallbackWithVariables(beforeFrameRender.c_str());
+        std::string cb = _imp->output->getNode()->getBeforeFrameRenderCallback();
+        if (!cb.empty()) {
+            std::vector<std::string> args;
+            std::string error;
+            Natron::getFunctionArguments(cb, &error, &args);
+            if (!error.empty()) {
+                _imp->output->getApp()->appendToScriptEditor("Failed to run before frame render callback: " + error);
+                return;
+            }
+            
+            std::string signatureError;
+            signatureError.append("The before frame render callback supports the following signature(s):\n");
+            signatureError.append("- callback(frame, thisNode, app)");
+            if (args.size() != 3) {
+                _imp->output->getApp()->appendToScriptEditor("Failed to run before frame render callback: " + signatureError);
+                return;
+            }
+            
+            if (args[0] != "frame" || args[1] != "thisNode" || args[2] != "app" ) {
+                _imp->output->getApp()->appendToScriptEditor("Failed to run before frame render callback: " + signatureError);
+                return;
+            }
+
+            std::stringstream ss;
+            ss << cb << "(" << time << ",";
+            std::string script = ss.str();
+            _imp->scheduler->runCallbackWithVariables(script.c_str());
+
+        }
         
         try {
             ////Writers always render at scale 1.
@@ -2091,8 +2144,33 @@ DefaultScheduler::aboutToStartRender()
         appPTR->writeToOutputPipe(kRenderingStartedLong, kRenderingStartedShort);
     }
     
-    std::string beforeRender = _effect->getNode()->getBeforeRenderCallback();
-    runCallbackWithVariables(beforeRender.c_str());
+    std::string cb = _effect->getNode()->getBeforeRenderCallback();
+    if (!cb.empty()) {
+        std::vector<std::string> args;
+        std::string error;
+        Natron::getFunctionArguments(cb, &error, &args);
+        if (!error.empty()) {
+            _effect->getApp()->appendToScriptEditor("Failed to run beforeRender callback: " + error);
+            return;
+        }
+        
+        std::string signatureError;
+        signatureError.append("The after render callback supports the following signature(s):\n");
+        signatureError.append("- callback(thisNode, app)");
+        if (args.size() != 2) {
+            _effect->getApp()->appendToScriptEditor("Failed to run beforeRender callback: " + signatureError);
+            return;
+        }
+        
+        if (args[0] != "thisNode" || args[1] != "app" ) {
+            _effect->getApp()->appendToScriptEditor("Failed to run beforeRender callback: " + signatureError);
+            return;
+        }
+        
+        
+        std::string script(cb + "(");
+        runCallbackWithVariables(script.c_str());
+    }
 }
 
 void
@@ -2105,15 +2183,39 @@ DefaultScheduler::onRenderStopped(bool aborted)
         _effect->notifyRenderFinished();
     }
     
-    std::string afterRender = _effect->getNode()->getAfterRenderCallback();
-    std::string script("aborted = ");
-    if (aborted) {
-        script += "True\n";
-    } else {
-        script += "False\n";
+    std::string cb = _effect->getNode()->getAfterRenderCallback();
+    if (!cb.empty()) {
+        
+        std::vector<std::string> args;
+        std::string error;
+        Natron::getFunctionArguments(cb, &error, &args);
+        if (!error.empty()) {
+            _effect->getApp()->appendToScriptEditor("Failed to run afterRender callback: " + error);
+            return;
+        }
+        
+        std::string signatureError;
+        signatureError.append("The after render callback supports the following signature(s):\n");
+        signatureError.append("- callback(aborted, thisNode, app)");
+        if (args.size() != 3) {
+            _effect->getApp()->appendToScriptEditor("Failed to run afterRender callback: " + signatureError);
+            return;
+        }
+        
+        if (args[0] != "aborted" || args[1] != "thisNode" || args[2] != "app" ) {
+            _effect->getApp()->appendToScriptEditor("Failed to run afterRender callback: " + signatureError);
+            return;
+        }
+
+        
+        std::string script(cb + "(");
+        if (aborted) {
+            script += "True,";
+        } else {
+            script += "False,";
+        }
+        runCallbackWithVariables(script.c_str());
     }
-    script += afterRender;
-    runCallbackWithVariables(afterRender.c_str());
 
 }
 

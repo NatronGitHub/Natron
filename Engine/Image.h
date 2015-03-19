@@ -580,7 +580,10 @@ namespace Natron {
      * given mipmap level,
      * and then computes the mipmap of the given level of that rectangle.
      **/
-        void downscaleMipMap(const RectI & roi, unsigned int fromLevel, unsigned int toLevel, bool copyBitMap,
+        void downscaleMipMap(const RectD& rod,
+                             const RectI & roi,
+                             unsigned int fromLevel, unsigned int toLevel,
+                             bool copyBitMap,
                              Natron::Image* output) const;
 
         /**
@@ -661,7 +664,7 @@ namespace Natron {
      * function computes the mip map of this image in the given roi.
      * If roi is NOT a power of 2, then it will be rounded to the closest power of 2.
      **/
-        void buildMipMapLevel(const RectI & roiCanonical, unsigned int level, bool copyBitMap,
+        void buildMipMapLevel(const RectD& dstRoD,const RectI & roiCanonical, unsigned int level, bool copyBitMap,
                               Natron::Image* output) const;
 
 

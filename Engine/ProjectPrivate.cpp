@@ -273,6 +273,152 @@ ProjectPrivate::autoSetProjectDirectory(const QString& path)
     }
 }
     
+std::string
+ProjectPrivate::runOnProjectSaveCallback(const std::string& filename, bool autoSave)
+{
+    std::string onProjectSave = _publicInterface->getOnProjectSaveCB();
+    if (!onProjectSave.empty()) {
+        
+        std::vector<std::string> args;
+        std::string error;
+        Natron::getFunctionArguments(onProjectSave, &error, &args);
+        if (!error.empty()) {
+            _publicInterface->getApp()->appendToScriptEditor("Failed to run onProjectSave callback: " + error);
+            return filename;
+        } else {
+            
+            std::string signatureError;
+            signatureError.append("The on project save callback supports the following signature(s):\n");
+            signatureError.append("- callback(filename,app,autoSave)");
+            if (args.size() != 3) {
+                _publicInterface->getApp()->appendToScriptEditor("Failed to run onProjectSave callback: " + signatureError);
+                return filename;
+            }
+            if (args[0] != "filename" || args[1] != "app" || args[2] != "autoSave") {
+                _publicInterface->getApp()->appendToScriptEditor("Failed to run onProjectSave callback: " + signatureError);
+                return filename;
+            }
+            std::string appID = _publicInterface->getApp()->getAppIDString();
+            
+            std::stringstream ss;
+            ss << "app = " << appID << "\n";
+            ss << "ret = " << onProjectSave << "(" << filename << "," << appID << ",";
+            if (autoSave) {
+                ss << "True)\n";
+            } else {
+                ss << "False)\n";
+            }
+            
+            onProjectSave = ss.str();
+            std::string err;
+            std::string output;
+            if (!Natron::interpretPythonScript(onProjectSave, &err, &output)) {
+                _publicInterface->getApp()->appendToScriptEditor("Failed to run onProjectSave callback: " + err);
+                return filename;
+            } else {
+                PyObject* mainModule = getMainModule();
+                assert(mainModule);
+                PyObject* ret = PyObject_GetAttrString(mainModule, "ret");
+                assert(ret);
+                std::string filePath = filename;
+                if (ret) {
+                    filePath = PY3String_asString(ret);
+                    bool ok = Natron::interpretPythonScript("del ret\n", &err, 0);
+                    assert(ok);
+                    (void)ok;
+                }
+                if (!output.empty()) {
+                    _publicInterface->getApp()->appendToScriptEditor(output);
+                }
+                return filePath;
+            }
+            
+        }
+        
+    }
+    return filename;
+}
+    
+void
+ProjectPrivate::runOnProjectCloseCallback()
+{
+    std::string onProjectClose = _publicInterface->getOnProjectCloseCB();
+    if (!onProjectClose.empty()) {
+        
+        std::vector<std::string> args;
+        std::string error;
+        Natron::getFunctionArguments(onProjectClose, &error, &args);
+        if (!error.empty()) {
+            _publicInterface->getApp()->appendToScriptEditor("Failed to run onProjectClose callback: " + error);
+            return;
+        }
+        
+        std::string signatureError;
+        signatureError.append("The on project close callback supports the following signature(s):\n");
+        signatureError.append("- callback(app)");
+        if (args.size() != 1) {
+            _publicInterface->getApp()->appendToScriptEditor("Failed to run onProjectClose callback: " + signatureError);
+            return;
+        }
+        if (args[0] != "app") {
+            _publicInterface->getApp()->appendToScriptEditor("Failed to run onProjectClose callback: " + signatureError);
+            return;
+        }
+        std::string appID = _publicInterface->getApp()->getAppIDString();
+        std::string script = "app = " + appID + "\n" + onProjectClose + "(" + appID + ")\n";
+        std::string err;
+        std::string output;
+        if (!Natron::interpretPythonScript(script, &err, &output)) {
+            _publicInterface->getApp()->appendToScriptEditor("Failed to run onProjectClose callback: " + err);
+        } else {
+            if (!output.empty()) {
+                _publicInterface->getApp()->appendToScriptEditor(output);
+            }
+        }
+        
+    }
+}
+    
+void
+ProjectPrivate::runOnProjectLoadCallback()
+{
+    std::string cb = _publicInterface->getOnProjectLoadCB();
+    if (!cb.empty()) {
+        
+        std::vector<std::string> args;
+        std::string error;
+        Natron::getFunctionArguments(cb, &error, &args);
+        if (!error.empty()) {
+            _publicInterface->getApp()->appendToScriptEditor("Failed to run onProjectLoaded callback: " + error);
+            return;
+        }
+        
+        std::string signatureError;
+        signatureError.append("The on  project loaded callback supports the following signature(s):\n");
+        signatureError.append("- callback(app)");
+        if (args.size() != 1) {
+            _publicInterface->getApp()->appendToScriptEditor("Failed to run onProjectLoaded callback: " + signatureError);
+            return;
+        }
+        if (args[0] != "app") {
+            _publicInterface->getApp()->appendToScriptEditor("Failed to run onProjectLoaded callback: " + signatureError);
+            return;
+        }
+        
+        std::string appID = _publicInterface->getApp()->getAppIDString();
+        std::string script = "app = " + appID = "\n" + cb + "(" + appID + ")\n";
+        std::string err;
+        std::string output;
+        if (!Natron::interpretPythonScript(script, &err, &output)) {
+            _publicInterface->getApp()->appendToScriptEditor("Failed to run onProjectLoaded callback: " + err);
+        } else {
+            if (!output.empty()) {
+                _publicInterface->getApp()->appendToScriptEditor(output);
+            }
+        }
+        
+    }
 
+}
     
 } // namespace Natron

@@ -5256,12 +5256,15 @@ Gui::addMenuEntry(const QString & menuGrouping,
     QStringList grouping = menuGrouping.split('/');
 
     if ( grouping.isEmpty() ) {
-        getApp()->appendToScriptEditor( tr("Failed to add menu entry: incorrect menu grouping").toStdString() );
+        getApp()->appendToScriptEditor( tr("Failed to add menu entry for ").toStdString() +
+                                       menuGrouping.toStdString() +
+                                       tr(": incorrect menu grouping").toStdString() );
 
         return;
     }
 
-    std::string script = pythonFunction + "()\n";
+    std::string appID = getApp()->getAppIDString();
+    std::string script = "app = " + appID + "\n" + pythonFunction + "()\n";
     QAction* action = _imp->findActionRecursive(0, _imp->menubar, grouping);
     ActionWithShortcut* aws = dynamic_cast<ActionWithShortcut*>(action);
     if (aws) {

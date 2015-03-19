@@ -124,6 +124,12 @@ struct ProjectPrivate
      * @brief Auto fills the project directory parameter given the project file path
      **/
     void autoSetProjectDirectory(const QString& path);
+    
+    std::string runOnProjectSaveCallback(const std::string& filename,bool autoSave);
+    
+    void runOnProjectCloseCallback();
+    
+    void runOnProjectLoadCallback();
 };
 }
 

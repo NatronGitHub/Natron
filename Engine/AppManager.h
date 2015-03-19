@@ -701,8 +701,9 @@ bool getGroupInfos(const std::string& modulePath,
                    std::string* grouping,
                    std::string* description,
                    unsigned int* version);
-    
-void saveRestoreVariable(const std::string& variableBaseName,std::string* scriptToExec,std::string* restoreScript);
+
+// Does not work for functions with var args
+void getFunctionArguments(const std::string& pyFunc,std::string* error,std::vector<std::string>* args);
     
 /**
  * @brief Small helper class to use as RAII to hold the GIL (Global Interpreter Lock) before calling ANY Python code.

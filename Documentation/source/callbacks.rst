@@ -7,6 +7,10 @@ Using Callbacks
 They are Python-defined methods that you declare yourself and then register to Natron
 in a different manner for each callback.
 
+This document describes the signature that your different callbacks must have in order
+to work for each event. The parameters of your declaration must match exactly the same
+signature otherwise the function call will not work.
+
 .. warning::
 
 	Note that callbacks will be called in background and GUI modes, hence you should 
@@ -19,7 +23,8 @@ Callback persistence
 --------------------
 
 If you want your callback to persist 2 runs of Natron; it is necessary that you define it
-in your **init.py** script (or **initGui.py** if you want it only available in GUI mode). 
+in a script that is loaded by Natron, that is, either the **init.py** script (or **initGui.py** if you want it only available in GUI mode)
+or the script of a Python group plug-in.
 See :ref:`this section<startupScripts>` for more infos.
 
 Here is the list of the different callbacks:
@@ -35,33 +40,35 @@ This callback is available for all objects that can hold parameters,namely:
 	* :ref:`PyModalDialog<pyModalDialog>`
 
 
-When called, Natron will pre-define for you the boolean variable **userEdited** indicating
-whether or not the parameter change is due to user interaction (i.e: because the user changed
+The signature of the callback used on the :ref:`Effect<Effect>` is ::
+
+	callback(thisParam, thisNode, thisGroup, app, userEdited)
+
+
+- **thisParam** : This is a :ref:`Param<Param>` pointing to the parameter which just had its value changed.
+	
+- **thisNode** : This is a :ref:`Effect<Effect>` pointing to the effect holding **thisParam**
+	
+- **thisGroup** : This is a :ref:`Effect<Effect>` pointing to the group  holding **thisNode** or **app** otherwise if the node is in the main node-graph.
+	
+- **app** : This variable will be set so it points to the correct :ref:`application instance<App>`.
+	
+- **userEdited** : This indicates whether or not the parameter change is due to user interaction (i.e: because the user changed
 the value by herself/himself) or due to another parameter changing the value of the parameter
 via a derivative of the :func:`setValue(value)<>` function.
 
-
-
-For the param changed callback of the :ref:`Effect<Effect>` class **only** , some other variables
-will be declared by Natron: 
-
-	* The **thisParam** variable. This is a :ref:`Param<Param>` pointing to the parameter which just had its value changed.
 	
-	* The **thisNode** variable. This is a :ref:`Effect<Effect>` pointing to the effect holding **thisParam**
-	
-	* The **thisGroup** variable. This is a :ref:`Effect<Effect>` pointing to the group  holding **thisNode**. Note that it will be declared only if **thisNode** is part of a group.
-	
-	* The **app** variable will be set so it points to the correct :ref:`application instance<App>`.
-	
-	
-
 For the param changed callback of :ref:`PyPanel<pypanel>` and :ref:`PyModalDialog<pyModalDialog>`
 on the other hand, Natron will define a string variable **paramName** indicating the :ref:`script-name<autoVar>`
-of the parameter which just had its value changed.
+of the parameter which just had its value changed. The signature of the callback is then::
+
+	callback(paramName, app, userEdited)
+		
 
 .. note::
 	
-	The difference is due to technical reasons: mainly because the parameters of the 
+	The difference between the callbacks on  :ref:`PyPanel<pypanel>` and :ref:`PyModalDialog<pyModalDialog>` and
+	:ref:`Effect<Effect>` is due to technical reasons: mainly because the parameters of the 
 	:ref:`PyPanel<pypanel>` class and :ref:`PyModalDialog<pyModalDialog>` are not declared
 	as attributes of the object.
 	 
@@ -81,11 +88,17 @@ of the node, on which you can call :func:`setValue(value)<>` to set the name of 
 
 ::
 
-	def myBlurCallback():
+	def myBlurCallback(thisParam, thisNode, thisGroup, app, userEdited):
 		...
 
 	app.BlurCImg1.onParamChanged.set("myBlurCallback")
 	
+.. note::
+
+	If the callback is defined in a separate python file, such as the python script of a
+	python group plug-in, then do not forget the module prefix, e.g::
+		
+		app.MyPlugin1.BlurCImg1.onParamChanged.set("MyPlugin.myBlurCallback")
 	
 Example
 ^^^^^^^^
@@ -93,7 +106,7 @@ Example
 
 	# This simple callback just prints a string when the "size" parameter of the BlurCImg
 	# node changes
-	def myBlurCallback():
+	def myBlurCallback(thisParam, thisNode, thisGroup, app, userEdited):
 		if thisParam == thisNode.size:
 			print("The size of the blur just changed!")
 
@@ -116,7 +129,7 @@ Example
 
 	#Callback called when a parameter of the player changes
 	#The variable paramName is declared by Natron; indicating the name of the parameter which just had its value changed
-	def myPlayerParamChangedCallback():
+	def myPlayerParamChangedCallback(paramName, app, userEdited):
 
 		viewer = app.getViewer("Viewer1")
 		if viewer == None:
@@ -142,22 +155,22 @@ The After input changed callback
 ----------------------------------
 
 Similarly to the param changed callback, this function is called whenever an input connection of
-the node is changed. 
+the node is changed.  The signature is::
+
+	callback(inputIndex, thisNode, thisGroup, app)
 
 .. note::
 	
 	This function will be called even when loading a project 
 	
-The **inputIndex** variable will be defined and identifying the input which just got connected/disconnected.
+- **inputIndex** : This is the input which just got connected/disconnected.
 You can fetch the input at the given index with the :func:`getInput(index)<>` function of the :ref:`Effect<Effect>` class.
 	
-Natron will also declare for you the following variables:
+- **thisNode** : This is a :ref:`Effect<Effect>` holding the input which just changed
 	
-	* The **thisNode** variable. This is a :ref:`Effect<Effect>` holding the input which just changed
+- **thisGroup** : This is a :ref:`Effect<Effect>` pointing to the group  holding **thisNode**. Note that it will be declared only if **thisNode** is part of a group.
 	
-	* The **thisGroup** variable. This is a :ref:`Effect<Effect>` pointing to the group  holding **thisNode**. Note that it will be declared only if **thisNode** is part of a group.
-	
-	* The **app** variable will be set so it points to the correct :ref:`application instance<App>`.
+- **app** : points to the correct :ref:`application instance<App>`.
 
 Registering the input changed callback
 ----------------------------------------
@@ -174,7 +187,7 @@ of the node, on which you can call :func:`setValue(value)<>` to set the name of 
 
 ::
 
-	def inputChangedCallback():
+	def inputChangedCallback(inputIndex, thisNode, thisGroup, app):
 		...
 
 	app.Merge1.onInputChanged.set("inputChangedCallback")
@@ -186,7 +199,7 @@ Example
 
 	# This simple callback just prints the input node name if connected or "None" otherwise
 	# node changes
-	def inputChangedCallback():
+	def inputChangedCallback(inputIndex, thisNode, thisGroup, app):
 		inp = thisNode.getInput(inputIndex)
 		if not inp is None:
 			print("Input ",inputIndex," is ",inp.getScriptName())
@@ -237,10 +250,12 @@ The After project loaded callback
 
 This function is very similar to the After project created callback but is a per-project callback,
 called only when a project is loaded from an auto-save or from user interaction.
+The signature is::
+
+	callback(app)
 
 
-The **app** variable will be set so it points to the correct :ref:`application instance<App>`
-being loaded.
+- **app** : points to the correct :ref:`application instance<App>` being loaded.
 
 You can set this callback in the project settings:
 
@@ -252,7 +267,7 @@ This is a good place to do some checks to opened projects or to setup something:
 
 ::
 
-	def onProjectLoaded():
+	def onProjectLoaded(app):
 		
 		if not natron.isBackground():
 			if app.getUserPanel("fr.inria.iconviewer") is None:
@@ -268,17 +283,19 @@ The Before project save callback
 ----------------------------------
 
 This function will be called prior to saving a project either via an auto-save or from
-user interaction.
+user interaction. The signature is::
 
-The string variable **filename** will be declared prior to calling this function indicating the file-path
-where the project is initially going to be saved.
-This function should return the filename under which the project should really be saved.
+	callback(filename, app, autoSave)
 
-The boolean variable **autoSave** will be declared prior to calling this function, indicating whether
-the save was originated from an auto-save or from user interaction.
+- **filename** : This is the file-path where the project is initially going to be saved.
 
-The **app** variable will be set so it points to the correct :ref:`application instance<App>`
-being created.
+- **app** :  points to the correct :ref:`application instance<App>` being created.
+
+- **autoSave** : This indicates whether the save was originated from an auto-save or from user interaction.
+
+.. warning::
+	
+		This function should return the filename under which the project should really be saved.
 
 You can set the callback from the project settings:
 
@@ -289,7 +306,7 @@ You can set the callback from the project settings:
 
 :: 
 
-	def beforeProjectSave():
+	def beforeProjectSave(filename, app, autoSave):
 		print("Saving project under: ",filename)
 		return filename
 	
@@ -304,10 +321,11 @@ The Before project close callback
 ---------------------------------
 
 This function is called prior to closing a project either because the application is about
-to quit or because the user closed the project.
+to quit or because the user closed the project. The signature is::
 
-The **app** variable will be set so it points to the correct :ref:`application instance<App>`
-being closed.
+	callback(app)
+
+- **app** : points to the correct :ref:`application instance<App>` being closed.
 
 This function can be used to synchronize any other device or piece of software communicating
 with Natron.
@@ -320,7 +338,7 @@ You can set the callback from the project settings:
 	
 :: 
 
-	def beforeProjectClose():
+	def beforeProjectClose(app):
 		print("Closing project)
 	
 	app.beforeProjectClose.set("beforeProjectClose")
@@ -333,13 +351,16 @@ You can set the callback from the project settings:
 The After node created callback
 ---------------------------------
 
-This function is called after creating a node in Natron. 
+This function is called after creating a node in Natron. The signature is::
 
-The **app** variable will be set so it points to the correct :ref:`application instance<App>`.
+	callback(thisNode, app, userEdited)
+	
 
-The **thisNode** variable will be set to point to the :ref:`node<Effect>` that has been created.
+- **thisNode** points to the :ref:`node<Effect>` that has been created.
 
-The boolean **userEdited** variable will be declared and set to *True* if the node was created
+- **app** points to the correct :ref:`application instance<App>`.
+
+- **userEdited** will be *True* if the node was created
 by the user (or by a script using the :func:`createNode(pluginID,version,group)<>` function)
 or *False* if the node was created by actions such as pasting a node or when the project is
 loaded.
@@ -354,7 +375,7 @@ You can set the callback from the project settings:
 	
 :: 
 
-	def onNodeCreated():
+	def onNodeCreated(thisNode, app, userEdited):
 		print(thisNode.getScriptName()," was just created")
 		if userEdited:
 			print(" due to user interaction")
@@ -371,11 +392,14 @@ You can set the callback from the project settings:
 The Before node removal callback:
 ---------------------------------
 
-This function is called prior to deleting a node in Natron.
+This function is called prior to deleting a node in Natron. The signature is::
 
-The **app** variable will be set so it points to the correct :ref:`application instance<App>`.
+	callback(thisNode, app)
 
-The **thisNode** variable will be set to point to the :ref:`node<Effect>` about to be deleted.
+- **thisNode** : points to the :ref:`node<Effect>` about to be deleted.
+
+- **app** : points to the correct :ref:`application instance<App>`.
+
 
 .. warning::
 
@@ -389,7 +413,7 @@ You can set the callback from the project settings:
 	
 :: 
 
-	def beforeNodeDeleted():
+	def beforeNodeDeleted(thisNode, app):
 		print(thisNode.getScriptName()," is going to be destroyed")
 
 	
@@ -403,11 +427,14 @@ You can set the callback from the project settings:
 The Before frame render callback:
 ---------------------------------
 
-This function is called prior to rendering any frame with a Write node.
+This function is called prior to rendering any frame with a Write node. The signature is::
 
-The **app** variable will be set so it points to the correct :ref:`application instance<App>`.
+	callback(thisNode, app)
 
-The **thisNode** variable will be set to point to the :ref:`write node<Effect>`.
+- **thisNode** : points to the :ref:`write node<Effect>`.
+
+- **app** : points to the correct :ref:`application instance<App>`.
+
 
 To execute code specific when in background render mode or in GUI mode, use the following condition
 ::
@@ -426,11 +453,16 @@ This function can be used to communicate with external programs for example.
 The After frame rendered callback:
 -----------------------------------
 
-This function is called after each frame is finished rendering with a Write node. 
+This function is called after each frame is finished rendering with a Write node.
+ The signature is::
 
-The **app** variable will be set so it points to the correct :ref:`application instance<App>`.
+	callback(frame, thisNode, app)
 
-The **thisNode** variable will be set to point to the :ref:`write node<Effect>`.
+- **thisNode** : points to the :ref:`write node<Effect>`.
+
+- **app** : points to the correct :ref:`application instance<App>`. 
+
+- **frame**: The frame that is about to be rendered
 
 To execute code specific when in background render mode or in GUI mode, use the following condition
 ::
@@ -451,11 +483,15 @@ The Before render callback:
 ---------------------------
 
 This function is called once before starting rendering the first frame of a sequence with 
-the Write node.
+the Write node.  The signature is::
 
-The **app** variable will be set so it points to the correct :ref:`application instance<App>`.
+	callback(frame, thisNode, app)
 
-The **thisNode** variable will be set to point to the :ref:`write node<Effect>`.
+- **thisNode** : points to the :ref:`write node<Effect>`.
+
+- **app** : points to the correct :ref:`application instance<App>`.
+
+- **frame**: The frame that is about to be rendered
 
 To execute code specific when in background render mode or in GUI mode, use the following condition
 ::
@@ -477,14 +513,16 @@ The After render callback:
 ---------------------------
 
 This function is called once after the rendering of the last frame is finished with
-the Write node or if the render was aborted.
+the Write node or if the render was aborted.  The signature is::
 
+	callback(aborted, thisNode, app)
 
-The **app** variable will be set so it points to the correct :ref:`application instance<App>`.
+- **aborted** :  *True* if the rendering was aborted or *False* otherwise.
 
-The **thisNode** variable will be set to point to the :ref:`write node<Effect>`.
+- **thisNode** : points to the :ref:`write node<Effect>`.
 
-The **aborted** boolean variable will be set to *True* if the rendering was aborted or *False* otherwise.
+- **app** : points to the correct :ref:`application instance<App>`.
+
 
 To execute code specific when in background render mode or in GUI mode, use the following condition
 ::

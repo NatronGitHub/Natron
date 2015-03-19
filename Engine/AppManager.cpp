@@ -3661,10 +3661,9 @@ getGroupInfos(const std::string& modulePath,
     }
 }
     
+#if 0
 void saveRestoreVariable(const std::string& variableBaseName,std::string* scriptToExec,std::string* restoreScript)
 {
-#pragma message WARN("fix it")
-    return;
     PyObject* mainModule = getMainModule();
     std::string attr = variableBaseName;
     if (!scriptToExec->empty() && scriptToExec->at(scriptToExec->size() - 1) != '\n') {
@@ -3675,14 +3674,65 @@ void saveRestoreVariable(const std::string& variableBaseName,std::string* script
     }
     std::string toSave;
     std::string toRestore;
+    std::string attrBak;
     while (PyObject_HasAttrString(mainModule,attr.c_str())) {
-        toSave.insert(0,attr + "_bak = " + attr + "\n");
-        toRestore.insert(0,attr + " = " + attr + "_bak\ndel " + attr + "_bak\n");
+        attrBak = attr + "_bak";
+        toSave.insert(0,attrBak + " = " + attr + "\n");
+        toRestore.insert(0,attr + " = " + attrBak + "\n");
         attr.append("_bak");
+    }
+    if (!attrBak.empty()) {
+        toRestore.append("del " + attrBak + "\n");
     }
     scriptToExec->append(toSave);
     restoreScript->append(toRestore);
 }
+#endif
+    
+void getFunctionArguments(const std::string& pyFunc,std::string* error,std::vector<std::string>* args)
+{
+    std::stringstream ss;
+    ss << "import inspect\n";
+    ss << "args_spec = inspect.getargspec(" << pyFunc << ")\n";
+    std::string script = ss.str();
+    std::string output;
+    bool ok = interpretPythonScript(script, error, &output);
+    if (!ok) {
+        return;
+    }
+    PyObject* mainModule = getMainModule();
+    PyObject* args_specObj = 0;
+    if (PyObject_HasAttrString(mainModule, "args_spec")) {
+        args_specObj = PyObject_GetAttrString(mainModule,"args_spec");
+    }
+    assert(args_specObj);
+    PyObject* argListObj = 0;
 
+    if (args_specObj) {
+        argListObj = PyTuple_GetItem(args_specObj, 0);
+        assert(argListObj);
+        if (argListObj) {
+           // size = PyObject_Size(argListObj)
+            assert(PyList_Check(argListObj));
+            Py_ssize_t size = PyList_Size(argListObj);
+            for (Py_ssize_t i = 0; i < size; ++i) {
+                PyObject* itemObj = PyList_GetItem(argListObj, i);
+                assert(itemObj);
+                if (itemObj) {
+                    std::string itemName = PY3String_asString(itemObj);
+                    assert(!itemName.empty());
+                    if (!itemName.empty()) {
+                        args->push_back(itemName);
+                    }
+                }
+            }
+            if (PyTuple_GetItem(args_specObj, 1) != Py_None || PyTuple_GetItem(args_specObj, 2) != Py_None) {
+                error->append("Function contains variadic arguments which is unsupported.");
+                return;
+            }
+            
+        }
+    }
+}
     
 } //Namespace Natron

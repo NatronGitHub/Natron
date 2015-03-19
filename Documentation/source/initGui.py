@@ -9,7 +9,7 @@ from PySide.QtCore import *
 
 #Callback called when a parameter of the player changes
 #The variable paramName is declared by Natron; indicating the name of the parameter which just had its value changed
-def myPlayerParamChangedCallback():
+def myPlayerParamChangedCallback(paramName, app, userEdited):
 
     viewer = app.getViewer("Viewer1")
     if viewer == None:
@@ -185,8 +185,7 @@ def createIconViewer():
 
 #Callback set in the "After project created" parameter in the Preferences-->Python tab of Natron
 #This will automatically create our panels when a new project is created
-def onProjectCreatedCallback():
-    
+def onProjectCreatedCallback(app):
     #Always create our icon viewer on project creation, you must register this call-back in the
     #"After project created callback" parameter of the Preferences-->Python tab.
     createIconViewer()

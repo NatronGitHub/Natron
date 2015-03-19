@@ -5039,7 +5039,7 @@ Node::restoreClipPreferencesRecursive(std::list<Natron::Node*>& markedNodes)
 }
 
 std::string
-Node::declareCurrentNodeVariable_Python(std::string* deleteScript) const
+Node::declareCurrentNodeVariable_Python() const
 {
     boost::shared_ptr<NodeCollection> collection = getGroup();
     if (!collection) {
@@ -5052,14 +5052,12 @@ Node::declareCurrentNodeVariable_Python(std::string* deleteScript) const
     std::string script;
     std::stringstream ss;
     ss << "app = " << appID << "\n";
-    saveRestoreVariable("thisGroup",&script,deleteScript);
-    saveRestoreVariable("thisNode",&script,deleteScript);
     if (isParentGrp) {
         ss << "thisGroup = " << appID << "." << isParentGrp->getNode()->getFullyQualifiedName() << "\n";
     } else {
         ss << "thisGroup = " << appID << "\n";
     }
-    ss << "thisNode\nthisNode = " << appID << "." << getFullyQualifiedName() <<  "\n";
+    ss << "thisNode = " << appID << "." << getFullyQualifiedName() <<  "\n";
     return script + ss.str();
 }
 
@@ -5294,26 +5292,42 @@ Node::Implementation::runOnNodeCreatedCB(bool userEdited)
     if (cb.empty()) {
         return;
     }
-    std::string delScript;
-    std::string thisNode = _publicInterface->declareCurrentNodeVariable_Python(&delScript);
     
-    std::string appID = _publicInterface->getApp()->getAppIDString();
     
-    std::stringstream ss;
-    ss << thisNode;
-    if (userEdited) {
-        ss << "userEdited = True\n" ;
-    } else {
-        ss << "userEdited = False\n";
+    std::vector<std::string> args;
+    std::string error;
+    Natron::getFunctionArguments(cb, &error, &args);
+    if (!error.empty()) {
+        _publicInterface->getApp()->appendToScriptEditor("Failed to run onNodeCreated callback: " + error);
+        return;
     }
-    ss << "app = " << appID << "\n";
-    ss << cb << "()\n";
-    ss << delScript << "del userEdited\n";
     
-    std::string err;
+    std::string signatureError;
+    signatureError.append("The on node created callback supports the following signature(s):\n");
+    signatureError.append("- callback(thisNode,app,userEdited)");
+    if (args.size() != 3) {
+        _publicInterface->getApp()->appendToScriptEditor("Failed to run onNodeCreated callback: " + signatureError);
+        return;
+    }
+    
+    if (args[0] != "thisNode" || args[1] != "app" || args[2] != "userEdited") {
+        _publicInterface->getApp()->appendToScriptEditor("Failed to run onNodeCreated callback: " + signatureError);
+        return;
+    }
+
+    std::string appID = _publicInterface->getApp()->getAppIDString();
+    std::stringstream ss;
+    ss << cb << "(" << appID << "." << _publicInterface->getFullyQualifiedName() << "," << appID << ",";
+    if (userEdited) {
+        ss << "True";
+    } else {
+        ss << "False";
+    }
+    ss << ")\n";
     std::string output;
-    if (!Natron::interpretPythonScript(ss.str(), &err, &output)) {
-        _publicInterface->getApp()->appendToScriptEditor("Failed to run onNodeCreated callback: " + err);
+    std::string script = ss.str();
+    if (!Natron::interpretPythonScript(script, &error, &output)) {
+        _publicInterface->getApp()->appendToScriptEditor("Failed to run onNodeCreated callback: " + error);
     } else if (!output.empty()) {
         _publicInterface->getApp()->appendToScriptEditor(output);
     }
@@ -5326,20 +5340,35 @@ Node::Implementation::runOnNodeDeleteCB()
     if (cb.empty()) {
         return;
     }
-    std::string delScript;
-    std::string thisNode = _publicInterface->declareCurrentNodeVariable_Python(&delScript);
+    std::vector<std::string> args;
+    std::string error;
+    Natron::getFunctionArguments(cb, &error, &args);
+    if (!error.empty()) {
+        _publicInterface->getApp()->appendToScriptEditor("Failed to run onNodeDeletion callback: " + error);
+        return;
+    }
+    
+    std::string signatureError;
+    signatureError.append("The on node deletion callback supports the following signature(s):\n");
+    signatureError.append("- callback(thisNode,app)");
+    if (args.size() != 2) {
+        _publicInterface->getApp()->appendToScriptEditor("Failed to run onNodeDeletion callback: " + signatureError);
+        return;
+    }
+    
+    if (args[0] != "thisNode" || args[1] != "app") {
+        _publicInterface->getApp()->appendToScriptEditor("Failed to run onNodeDeletion callback: " + signatureError);
+        return;
+    }
     
     std::string appID = _publicInterface->getApp()->getAppIDString();
-    
     std::stringstream ss;
-    ss << thisNode;
-    ss << "app = " << appID << "\n";
-    ss << cb << "()\n" << delScript;
+    ss << cb << "(" << appID << "." << _publicInterface->getFullyQualifiedName() << "," << appID << ")\n";
     
     std::string err;
     std::string output;
     if (!Natron::interpretPythonScript(cb, &err, &output)) {
-        _publicInterface->getApp()->appendToScriptEditor("Failed to run onNodeDelete callback: " + err);
+        _publicInterface->getApp()->appendToScriptEditor("Failed to run onNodeDeletion callback: " + err);
     } else if (!output.empty()) {
         _publicInterface->getApp()->appendToScriptEditor(output);
     }
@@ -5379,23 +5408,56 @@ Node::runInputChangedCallback(int index)
 }
 
 void
-Node::Implementation::runInputChangedCallback(int index,const std::string& callback)
+Node::Implementation::runInputChangedCallback(int index,const std::string& cb)
 {
-    std::stringstream ss;
-    std::string script;
-    std::string deleteNodeScript;
-    std::string nodeScript = _publicInterface->declareCurrentNodeVariable_Python(&deleteNodeScript);
-    ss << nodeScript;
-    ss << "inputIndex = " << index << "\n";
-    ss << callback << "()\n";
-    ss << deleteNodeScript;
-    script = ss.str();
-    std::string err;
-    std::string output;
-    if (!Natron::interpretPythonScript(script, &err,&output)) {
-        _publicInterface->getApp()->appendToScriptEditor(QObject::tr("Failed to execute callback: ").toStdString() + err);
+    std::vector<std::string> args;
+    std::string error;
+    Natron::getFunctionArguments(cb, &error, &args);
+    if (!error.empty()) {
+        _publicInterface->getApp()->appendToScriptEditor("Failed to run onInputChanged callback: " + error);
+        return;
+    }
+    
+    std::string signatureError;
+    signatureError.append("The on input changed callback supports the following signature(s):\n");
+    signatureError.append("- callback(inputIndex,thisNode,thisGroup,app)");
+    if (args.size() != 4) {
+        _publicInterface->getApp()->appendToScriptEditor("Failed to run onInputChanged callback: " + signatureError);
+        return;
+    }
+    
+    if (args[0] != "inputIndex" || args[1] != "thisNode" || args[2] != "thisGroup" || args[3] != "app") {
+        _publicInterface->getApp()->appendToScriptEditor("Failed to run onInputChanged callback: " + signatureError);
+        return;
+    }
+    
+    std::string appID = _publicInterface->getApp()->getAppIDString();
+
+    boost::shared_ptr<NodeCollection> collection = _publicInterface->getGroup();
+    assert(collection);
+    if (!collection) {
+        return;
+    }
+    
+    std::string thisGroupVar;
+    NodeGroup* isParentGrp = dynamic_cast<NodeGroup*>(collection.get());
+    if (isParentGrp) {
+        thisGroupVar = appID + "." + isParentGrp->getNode()->getFullyQualifiedName();
     } else {
-        _publicInterface->getApp()->appendToScriptEditor(output);
+        thisGroupVar = appID;
+    }
+    
+    std::stringstream ss;
+    ss << cb << "(" << index << "," << appID << "." << _publicInterface->getFullyQualifiedName() << "," << thisGroupVar << "," << appID << ")\n";
+    
+    std::string script = ss.str();
+    std::string output;
+    if (!Natron::interpretPythonScript(script, &error,&output)) {
+        _publicInterface->getApp()->appendToScriptEditor(QObject::tr("Failed to execute callback: ").toStdString() + error);
+    } else {
+        if (!output.empty()) {
+            _publicInterface->getApp()->appendToScriptEditor(output);
+        }
     }
 
 }

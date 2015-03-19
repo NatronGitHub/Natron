@@ -1677,7 +1677,13 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool useCache,
                 assert(imageToConvert->getMipMapLevel() < mipMapLevel);
                 
                 RectI imgToConvertBounds = imageToConvert->getBounds();
-                RectI downscaledBounds = imgToConvertBounds.downscalePowerOfTwoSmallestEnclosing(mipMapLevel - imageToConvert->getMipMapLevel());
+                RectD imgToConvertCanonical;
+                imgToConvertBounds.toCanonical(imageToConvert->getMipMapLevel(), imageToConvert->getPixelAspectRatio(), rod, &imgToConvertCanonical);
+                RectI downscaledBounds;
+                
+                imgToConvertCanonical.toPixelEnclosing(imageToConvert->getMipMapLevel(), imageToConvert->getPixelAspectRatio(), &imgToConvertBounds);
+                imgToConvertCanonical.toPixelEnclosing(mipMapLevel, imageToConvert->getPixelAspectRatio(), &downscaledBounds);
+                
                 downscaledBounds.merge(bounds);
                 
                 RectI pixelRoD;
@@ -1704,7 +1710,8 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool useCache,
                     return;
                 }
                 
-                imageToConvert->downscaleMipMap(imgToConvertBounds,
+                imageToConvert->downscaleMipMap(rod,
+                                                imgToConvertBounds,
                                                 imageToConvert->getMipMapLevel(), img->getMipMapLevel() ,
                                                 useCache && imageToConvert->usesBitMap(),
                                                 img.get());
@@ -2711,7 +2718,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
                 RectI bounds;
                 rod.toPixelEnclosing(args.mipMapLevel, par, &bounds);
                 it->second.downscaleImage.reset( new Natron::Image(*components, rod, downscaledImageBounds, args.mipMapLevel, it->second.fullscaleImage->getPixelAspectRatio(), outputDepth, true) );
-                it->second.fullscaleImage->downscaleMipMap(it->second.fullscaleImage->getBounds(), 0, args.mipMapLevel, true, it->second.downscaleImage.get());
+                it->second.fullscaleImage->downscaleMipMap(rod,it->second.fullscaleImage->getBounds(), 0, args.mipMapLevel, true, it->second.downscaleImage.get());
             }
         }
         
@@ -2843,7 +2850,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
         if (renderRetCode != eRenderRoIStatusRenderFailed && renderFullScaleThenDownscale && renderScaleOneUpstreamIfRenderScaleSupportDisabled) {
             assert(it->second.fullscaleImage->getMipMapLevel() == 0);
             roi.intersect(it->second.fullscaleImage->getBounds(), &roi);
-            it->second.fullscaleImage->downscaleMipMap(roi, 0, args.mipMapLevel, false, it->second.downscaleImage.get());
+            it->second.fullscaleImage->downscaleMipMap(it->second.fullscaleImage->getRoD(),roi, 0, args.mipMapLevel, false, it->second.downscaleImage.get());
         }
 
         ///The image might need to be converted to fit the original requested format
@@ -3790,7 +3797,8 @@ EffectInstance::tiledRenderingFunctor(RenderArgs & args,
                     ///of the multi-threading.
                     if (mipMapLevel != 0 && !renderUseScaleOneInputs) {
                         assert(it->second.fullscaleImage != it->second.downscaleImage && it->second.renderMappedImage == it->second.fullscaleImage);
-                        it->second.tmpImage->downscaleMipMap( renderRectToRender, 0, mipMapLevel, false,it->second.downscaleImage.get() );
+                        it->second.tmpImage->downscaleMipMap(it->second.tmpImage->getRoD(),
+                                                             renderRectToRender, 0, mipMapLevel, false,it->second.downscaleImage.get() );
                         it->second.downscaleImage->markForRendered(downscaledRectToRender);
                     } else {
                         assert(it->second.renderMappedImage == it->second.fullscaleImage);
@@ -5028,21 +5036,67 @@ EffectInstance::updateThreadLocalRenderTime(int time)
 void
 EffectInstance::Implementation::runChangedParamCallback(KnobI* k,bool userEdited,const std::string& callback)
 {
-    std::string script = callback;
-    script.append("()\n");
-    KnobI::declareCurrentKnobVariable_Python(k, -1, script);
-    script.append("userEdited = ");
-    if (userEdited) {
-        script.append("True\n");
-    } else {
-        script.append("False\n");
+    std::vector<std::string> args;
+    std::string error;
+    Natron::getFunctionArguments(callback, &error, &args);
+    if (!error.empty()) {
+        _publicInterface->getApp()->appendToScriptEditor("Failed to run onParamChanged callback: " + error);
+        return;
     }
+    
+    std::string signatureError;
+    signatureError.append("The param changed callback supports the following signature(s):\n");
+    signatureError.append("- callback(thisParam,thisNode,thisGroup,app,userEdited)");
+    if (args.size() != 5) {
+        _publicInterface->getApp()->appendToScriptEditor("Failed to run onParamChanged callback: " + signatureError);
+        return;
+    }
+    
+    if ((args[0] != "thisParam" || args[1] != "thisNode" || args[2] != "thisGroup" || args[3] != "app" || args[4] != "userEdited")) {
+        _publicInterface->getApp()->appendToScriptEditor("Failed to run onParamChanged callback: " + signatureError);
+        return;
+    }
+    
+    std::string appID = _publicInterface->getApp()->getAppIDString();
+    
+    assert(k);
+    std::string thisNodeVar = appID + ".";
+    thisNodeVar.append(_publicInterface->getNode()->getFullyQualifiedName());
+    
+    boost::shared_ptr<NodeCollection> collection = _publicInterface->getNode()->getGroup();
+    assert(collection);
+    if (!collection) {
+        return;
+    }
+    
+    std::string thisGroupVar;
+    NodeGroup* isParentGrp = dynamic_cast<NodeGroup*>(collection.get());
+    if (isParentGrp) {
+        thisGroupVar = appID + "." + isParentGrp->getNode()->getFullyQualifiedName();
+    } else {
+        thisGroupVar = appID;
+    }
+
+    
+    std::stringstream ss;
+    ss << callback << "(" << thisNodeVar << "." << k->getName() << "," << thisNodeVar << "," << thisGroupVar << "," << appID
+    << ",";
+    if (userEdited) {
+        ss << "True";
+    } else {
+        ss << "False";
+    }
+    ss << ")\n";
+   
+    std::string script = ss.str();
     std::string err;
     std::string output;
     if (!Natron::interpretPythonScript(script, &err,&output)) {
         _publicInterface->getApp()->appendToScriptEditor(QObject::tr("Failed to execute callback: ").toStdString() + err);
     } else {
-        _publicInterface->getApp()->appendToScriptEditor(output);
+        if (!output.empty()) {
+            _publicInterface->getApp()->appendToScriptEditor(output);
+        }
     }
 }
 

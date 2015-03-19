@@ -86,24 +86,46 @@ DialogParamHolder::onKnobValueChanged(KnobI* k,
     if (!callback.empty()) {
         bool userEdited = reason == Natron::eValueChangedReasonNatronGuiEdited ||
         reason == Natron::eValueChangedReasonUserEdited;
+
         
-        std::stringstream ss;
-        ss << "app = " << getApp()->getAppIDString() << "\n";
-        ss << "userEdited = ";
-        if (userEdited) {
-            ss << "True\n";
-        } else {
-            ss << "False\n";
+        std::vector<std::string> args;
+        std::string error;
+        Natron::getFunctionArguments(callback, &error, &args);
+        if (!error.empty()) {
+            getApp()->appendToScriptEditor("Failed to run onParamChanged callback: " + error);
+            return;
         }
-        ss << "paramName = '" << k->getName() << "'\n";
-        ss << callback << "()\n";
-        ss << "del paramName" ;
         
+        std::string signatureError;
+        signatureError.append("The param changed callback supports the following signature(s):\n");
+        signatureError.append("- callback(paramName,app,userEdited)");
+        if (args.size() != 3) {
+            getApp()->appendToScriptEditor("Failed to run onParamChanged callback: " + signatureError);
+            return;
+        }
+        
+        if ((args[0] != "paramName" || args[1] != "app" || args[2] != "userEdited")) {
+            getApp()->appendToScriptEditor("Failed to run onParamChanged callback: " + signatureError);
+            return;
+        }
+
+        
+        std::string appID =  getApp()->getAppIDString();
+        std::stringstream ss;
+        ss << callback << "(\"" << k->getName() << "\"," << appID << ",";
+        if (userEdited) {
+            ss << "True";
+        } else {
+            ss << "False";
+        }
+        ss << ")\n";
+        
+        std::string script = ss.str();
         std::string err;
         std::string output;
-        if (!Natron::interpretPythonScript(ss.str(), &err,&output)) {
+        if (!Natron::interpretPythonScript(script, &err,&output)) {
             getApp()->appendToScriptEditor(QObject::tr("Failed to execute callback: ").toStdString() + err);
-        } else {
+        } else if (!output.empty()) {
             getApp()->appendToScriptEditor(output);
         }
 

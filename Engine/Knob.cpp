@@ -1282,14 +1282,9 @@ KnobI::declareCurrentKnobVariable_Python(KnobI* knob,int dimension,std::string& 
                 
         std::size_t firstLineAfterImport = findNewLineStartAfterImports(script);
         
-        std::string deleteThisNodeStr;
-        std::string thisNodeStr = node->declareCurrentNodeVariable_Python(&deleteThisNodeStr);
+        std::string thisNodeStr = node->declareCurrentNodeVariable_Python();
         ///Now define the variables in the scope
         std::string toInsert;
-        std::string deleteScript;
-        saveRestoreVariable("thisParam",&toInsert,&deleteScript);
-        saveRestoreVariable("frame",&toInsert,&deleteScript);
-        saveRestoreVariable("dimension",&toInsert,&deleteScript);
         std::stringstream ss;
         ss << thisNodeStr;
         ss << "thisParam = thisNode." << knob->getName() << "\n";
@@ -1309,9 +1304,7 @@ KnobI::declareCurrentKnobVariable_Python(KnobI* knob,int dimension,std::string& 
         script.insert(firstLineAfterImport, toInsert);
         script.append("\n");
         script.append("del random\ndel randomInt\n");
-        script.append(deleteScript);
-        //script.append(deleteThisNodeStr);
-        //script.append(deleteNodesInScope);
+        script.append(deleteNodesInScope);
         return firstLineAfterImport + toInsert.size();
     } else {
         return std::string::npos;
@@ -1345,9 +1338,16 @@ static std::size_t getMatchingParenthesisPosition(std::size_t openingParenthesis
     return i;
 }
 
-static bool parseTokenFrom(const std::string& str,const std::string& token,std::size_t inputPos,std::size_t* tokenStart,std::size_t* tokenSize)
+static bool parseTokenFrom(int fromDim,
+                           const std::string& str,
+                           const std::string& token,
+                           std::size_t inputPos,
+                            std::size_t *tokenStart,
+                           std::string* output)
 {
     std::size_t pos;
+
+//    std::size_t tokenSize;
     bool foundMatchingToken = false;
     while (!foundMatchingToken) {
         
@@ -1357,7 +1357,6 @@ static bool parseTokenFrom(const std::string& str,const std::string& token,std::
         }
         
         *tokenStart = pos;
-        
         pos += token.size();
         
         ///Find nearest opening parenthesis
@@ -1386,48 +1385,45 @@ static bool parseTokenFrom(const std::string& str,const std::string& token,std::
         throw std::invalid_argument("Invalid expr");
     }
     
-    *tokenSize = endingParenthesis - *tokenStart + 1;
-    assert(*tokenSize > 0);
+    std::stringstream ss;
+    ss << ".addAsDependencyOf(" << fromDim << ",thisParam)\n";
+    std::string toInsert = ss.str();
+    
+   // tokenSize = endingParenthesis - tokenStart + 1;
+    if (*tokenStart < 2 || str[*tokenStart - 1] != '.') {
+        throw std::invalid_argument("Invalid expr");
+    }
+    
+    std::locale loc;
+    //Find the start of the symbol
+    int i = (int)*tokenStart - 2;
+    while (i >= 0) {
+        if (!std::isalnum(str[i],loc) && str[i] != '.') {
+            break;
+        }
+        --i;
+    }
+    ++i;
+    std::string varName = str.substr(i, *tokenStart - 1 - i);
+    output->append(varName + toInsert);
+    //assert(*tokenSize > 0);
     return true;
 }
 
-static bool replaceAllOcurrencesOfToken(std::string& str,const std::string& token,bool findDotAfterParenthesis,int fromDim)
+static bool extractAllOcurrences(const std::string& str,const std::string& token,int fromDim,std::string *outputScript)
 {
     
-    std::size_t tokenStart,tokenSize;
+    std::size_t tokenStart;
     bool couldFindToken;
     try {
-        couldFindToken = parseTokenFrom(str, token, 0, &tokenStart, &tokenSize);
+        couldFindToken = parseTokenFrom(fromDim, str, token, 0, &tokenStart, outputScript);
     } catch (...) {
         return false;
     }
     
-    
-    std::stringstream ss;
-    ss << "addAsDependencyOf(" << fromDim << ",thisParam)";
-    std::string toInsert = ss.str();
-    
     while (couldFindToken) {
-        
-        if (findDotAfterParenthesis ) {
-            if (tokenStart + tokenSize < str.size()) {
-                if (str.at(tokenStart + tokenSize) == '.') {
-                    //remove the 2 characters, e.g: ".x" of the tuple
-                    str.erase(tokenStart + tokenSize, 2);
-                } else if (str.at(tokenStart + tokenSize) == '[') {
-                    std::size_t closingbracePos = getMatchingParenthesisPosition(tokenStart + tokenSize, '[', ']', str);
-                    if (closingbracePos == std::string::npos) {
-                        throw std::invalid_argument("Invalid expr");
-                    }
-                    str.erase(tokenStart + tokenSize, closingbracePos - (tokenStart + tokenSize) + 1);
-                }
-                
-            }
-        }
-
-        str.replace(tokenStart, tokenSize, toInsert);
         try {
-            couldFindToken = parseTokenFrom(str, token, tokenStart, &tokenStart, &tokenSize);
+            couldFindToken = parseTokenFrom(fromDim, str, token, tokenStart + 1, &tokenStart, outputScript);
         } catch (...) {
             return false;
         }
@@ -1447,7 +1443,7 @@ KnobHelperPrivate::parseListenersFromExpression(int dimension)
     // - getIntegrateFromTimeToTime
     // - get
     // And replace them by addAsDependencyOf(thisParam) which will register the parameters as a dependency of this parameter
-    
+
     std::string expressionCopy;
     
     {
@@ -1455,30 +1451,31 @@ KnobHelperPrivate::parseListenersFromExpression(int dimension)
         expressionCopy = expressions[dimension].expression;
     }
     
-    if  (!replaceAllOcurrencesOfToken(expressionCopy, "getValue", false,dimension)) {
+    std::string script;
+    if  (!extractAllOcurrences(expressionCopy, "getValue",dimension,&script)) {
         return ;
     }
     
-    if (!replaceAllOcurrencesOfToken(expressionCopy, "getValueAtTime", false, dimension)) {
+    if (!extractAllOcurrences(expressionCopy, "getValueAtTime", dimension,&script)) {
         return;
     }
     
-    if (!replaceAllOcurrencesOfToken(expressionCopy, "getDerivativeAtTime", false, dimension)) {
+    if (!extractAllOcurrences(expressionCopy, "getDerivativeAtTime", dimension,&script)) {
         return;
     }
     
-    if (!replaceAllOcurrencesOfToken(expressionCopy, "getIntegrateFromTimeToTime", false, dimension)) {
+    if (!extractAllOcurrences(expressionCopy, "getIntegrateFromTimeToTime", dimension,&script)) {
         return;
     }
     
-    if (!replaceAllOcurrencesOfToken(expressionCopy, "get", true, dimension)) {
+    if (!extractAllOcurrences(expressionCopy, "get", dimension,&script)) {
         return;
     }
     
     
     ///This will register the listeners
     std::string error;
-    bool success = Natron::interpretPythonScript(expressionCopy, &error,NULL);
+    bool success = Natron::interpretPythonScript(script, &error,NULL);
     if (!error.empty()) {
         qDebug() << error.c_str();
     }
