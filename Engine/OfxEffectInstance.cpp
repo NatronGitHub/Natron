@@ -255,32 +255,33 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
         // This is not always possible (e.g. if a param has a wrong value).
         if (supportsRenderScaleMaybe() == eSupportsMaybe) {
             // does the effect support renderscale?
-            OfxRangeD range;
-            range.min = 0;
-            OfxStatus tdstat = _effect->getTimeDomainAction(range);
-            if ( (tdstat == kOfxStatOK) || (tdstat == kOfxStatReplyDefault) ) {
-                ClipsThreadStorageSetter clipSetter(effectInstance(),
-                                                    false,
-                                                    true, //< setView ?
-                                                    0,
-                                                    true,
-                                                    0);
-                double time = range.min;
-                
-                OfxRectD rod;
-                OfxStatus rodstat = _effect->getRegionOfDefinitionAction(time, scaleOne, 0, rod);
+            SequenceTime first = INT_MIN,last = INT_MAX;
+            getFrameRange(&first, &last);
+            if (first == INT_MIN || last == INT_MAX) {
+                first = last = getApp()->getTimeLine()->currentFrame();
+            }
+            ClipsThreadStorageSetter clipSetter(effectInstance(),
+                                                false,
+                                                true, //< setView ?
+                                                0,
+                                                true,
+                                                0);
+            double time = first;
+            
+            OfxRectD rod;
+            OfxStatus rodstat = _effect->getRegionOfDefinitionAction(time, scaleOne, 0, rod);
+            if ( (rodstat == kOfxStatOK) || (rodstat == kOfxStatReplyDefault) ) {
+                OfxPointD scale;
+                scale.x = 0.5;
+                scale.y = 0.5;
+                rodstat = _effect->getRegionOfDefinitionAction(time, scale, 0, rod);
                 if ( (rodstat == kOfxStatOK) || (rodstat == kOfxStatReplyDefault) ) {
-                    OfxPointD scale;
-                    scale.x = 0.5;
-                    scale.y = 0.5;
-                    rodstat = _effect->getRegionOfDefinitionAction(time, scale, 0, rod);
-                    if ( (rodstat == kOfxStatOK) || (rodstat == kOfxStatReplyDefault) ) {
-                        setSupportsRenderScaleMaybe(eSupportsYes);
-                    } else {
-                        setSupportsRenderScaleMaybe(eSupportsNo);
-                    }
+                    setSupportsRenderScaleMaybe(eSupportsYes);
+                } else {
+                    setSupportsRenderScaleMaybe(eSupportsNo);
                 }
             }
+            
         }
         
         
