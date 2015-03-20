@@ -25,7 +25,7 @@
 #include <boost/shared_ptr.hpp>
 #endif
 
-#include <QRectF>
+#include "Engine/Rect.h"
 #include "Engine/NodeGroupWrapper.h"
 #include "Engine/ParameterWrapper.h"
 
@@ -319,7 +319,7 @@ public:
      **/
     Roto* getRotoContext() const;
     
-    bool getRegionOfDefinition(int time,int view,QRectF* rod) const;
+    RectD getRegionOfDefinition(int time,int view) const;
     
     static Param* createParamWrapperForKnob(const boost::shared_ptr<KnobI>& knob);
 };

@@ -36,5 +36,6 @@
 #include "RotoWrapper.h"
 #include "NodeWrapper.h"
 #include "ParameterWrapper.h"
+#include "Rect.h"
 
 #endif // PYSIDE_ENGINE_PYTHON_H
