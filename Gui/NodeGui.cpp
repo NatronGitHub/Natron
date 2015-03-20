@@ -1000,7 +1000,11 @@ NodeGui::refreshEdges()
             boost::shared_ptr<NodeGuiI> nodeInputGui_i = nodeInputs[i]->getNodeGui();
             assert(nodeInputGui_i);
             boost::shared_ptr<NodeGui> node = boost::dynamic_pointer_cast<NodeGui>(nodeInputGui_i);
-            _inputEdges[i]->setSource(node);
+            if (_inputEdges[i]->getSource() != node) {
+                _inputEdges[i]->setSource(node);
+            } else {
+                _inputEdges[i]->initLine();
+            }
         } else {
             _inputEdges[i]->initLine();
         }
@@ -1314,7 +1318,7 @@ NodeGui::setOptionalInputsVisible(bool visible)
     ///Don't do this for inspectors
     NodePtr node = getNode();
     
-    InspectorNode* isInspector = dynamic_cast<InspectorNode*>(node.get());
+    //InspectorNode* isInspector = dynamic_cast<InspectorNode*>(node.get());
    
   
     if (visible != _optionalInputsVisible) {
@@ -1322,15 +1326,16 @@ NodeGui::setOptionalInputsVisible(bool visible)
         
         for (U32 i = 0; i < _inputEdges.size() ; ++i) {
             if (node->getLiveInstance()->isInputOptional(i) &&
-                !node->getRealInput(i) &&
+                node->getLiveInstance()->isInputMask(i) &&
                 !_inputEdges[i]->isRotoEdge()) {
-                if (isInspector) {
-                    if (node->getLiveInstance()->isInputMask(i)) {
-                        _inputEdges[i]->setVisible(visible);
-                    }
-                } else {
-                    _inputEdges[i]->setVisible(visible);
+                
+                bool nodeVisible = visible;
+                if (!visible && node->getRealInput(i) ) {
+                    nodeVisible = true;
                 }
+                
+                _inputEdges[i]->setVisible(nodeVisible);
+                
             }
         }
     }

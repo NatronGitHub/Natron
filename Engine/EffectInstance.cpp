@@ -2299,12 +2299,6 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
             if (!roi.intersect(upscaledImageBounds, &roi)) {
                 return ImageList();
             }
-#ifndef NATRON_ALWAYS_ALLOCATE_FULL_IMAGE_BOUNDS
-            if (tilesSupported) {
-                ///just allocate the roi
-                upscaledImageBounds.intersect(roi, &upscaledImageBounds);
-            }
-#endif
             assert(roi.x1 >= upscaledImageBounds.x1 && roi.y1 >= upscaledImageBounds.y1 &&
                    roi.x2 <= upscaledImageBounds.x2 && roi.y2 <= upscaledImageBounds.y2);
             
@@ -2312,19 +2306,18 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
             if (!roi.intersect(downscaledImageBounds, &roi)) {
                 return ImageList();
             }
-#ifndef NATRON_ALWAYS_ALLOCATE_FULL_IMAGE_BOUNDS
-            if (tilesSupported) {
-                ///just allocate the roi
-                downscaledImageBounds.intersect(roi, &downscaledImageBounds);
-            }
-#endif
             assert(roi.x1 >= downscaledImageBounds.x1 && roi.y1 >= downscaledImageBounds.y1 &&
                    roi.x2 <= downscaledImageBounds.x2 && roi.y2 <= downscaledImageBounds.y2);
         }
+#ifndef NATRON_ALWAYS_ALLOCATE_FULL_IMAGE_BOUNDS
+        ///just allocate the roi
+        upscaledImageBounds.intersect(roi, &upscaledImageBounds);
+        downscaledImageBounds.intersect(args.roi, &downscaledImageBounds);
+#endif
     } else {
         roi = useImageAsOutput ? upscaledImageBounds : downscaledImageBounds;
     }
-    
+        
     RectD canonicalRoI;
     if (useImageAsOutput) {
         roi.toCanonical(0, par, rod, &canonicalRoI);

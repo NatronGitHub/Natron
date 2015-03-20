@@ -60,6 +60,7 @@ Edge::Edge(int inputNb_,
 , _bendPointHiddenAutomatically(false)
 , _enoughSpaceToShowLabel(true)
 , _isRotoMask(false)
+, _isMask(false)
 , _middlePoint()
 {
     setPen( QPen(Qt::black, 2, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin) );
@@ -75,10 +76,10 @@ Edge::Edge(int inputNb_,
     if (effect) {
         
         _isRotoMask = effect->isInputRotoBrush(_inputNb);
-        
+        _isMask = effect->isInputMask(_inputNb);
         bool autoHide = areOptionalInputsAutoHidden();
         bool isSelected = dest_->getIsSelected();
-        if (effect->isInputMask(_inputNb)) {
+        if (_isMask) {
             setDashed(true);
             setOptional(true);
             if (!isSelected && autoHide) {
@@ -113,6 +114,7 @@ Edge::Edge(const boost::shared_ptr<NodeGui> & src,
 , _bendPointHiddenAutomatically(false)
 , _enoughSpaceToShowLabel(true)
 , _isRotoMask(false)
+, _isMask(false)
 , _middlePoint()
 {
     assert(src);
@@ -148,7 +150,7 @@ Edge::setSource(const boost::shared_ptr<NodeGui> & src)
     }
     if (autoHide && _optional  && !_isRotoMask && !isViewer) {
 
-        if (src || isSelected) {
+        if (src || isSelected || !_isMask) {
             show();
         } else {
             hide();
