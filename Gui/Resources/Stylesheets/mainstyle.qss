@@ -554,6 +554,7 @@ AnimatingTextEdit[animation="2"] {
 }
 AnimatingTextEdit[animation="3"] {
     background-color: %9;
+    color: black;
 }
 AnimatingTextEdit[readOnlyNatron="true"]{
     background-color: %3;
