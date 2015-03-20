@@ -83,6 +83,7 @@ CLANG_DIAG_ON(unused-parameter)
 #include "Gui/NodeGraph.h"
 #include "Gui/CurveEditor.h"
 #include "Gui/CurveWidget.h"
+#include "Gui/DopeSheet.h"
 #include "Gui/PreferencesPanel.h"
 #include "Gui/AboutWindow.h"
 #include "Gui/ProjectGui.h"
@@ -303,6 +304,9 @@ struct GuiPrivate
     ///The curve editor.
     CurveEditor *_curveEditor;
 
+    // The dope sheet
+    DopeSheet *_dopeSheet;
+
     ///the left toolbar
     QToolBar* _toolBox;
 
@@ -510,6 +514,8 @@ struct GuiPrivate
     void createNodeGraphGui();
 
     void createCurveEditorGui();
+
+    void createDopeSheetGui();
 
     void createScriptEditorGui();
 
@@ -766,6 +772,12 @@ void
 Gui::addNodeGuiToCurveEditor(boost::shared_ptr<NodeGui> node)
 {
     _imp->_curveEditor->addNode(node);
+}
+
+void
+Gui::addNodeGuiToDopeSheet(boost::shared_ptr<NodeGui> node)
+{
+    _imp->_dopeSheet->addNode(node);
 }
 
 void
@@ -1103,6 +1115,7 @@ Gui::setupUi()
 
     _imp->createNodeGraphGui();
     _imp->createCurveEditorGui();
+    _imp->createDopeSheetGui();
     _imp->createScriptEditorGui();
     ///Must be absolutely called once _nodeGraphArea has been initialized.
     _imp->createPropertiesBinGui();
@@ -1370,6 +1383,15 @@ GuiPrivate::createCurveEditorGui()
 }
 
 void
+GuiPrivate::createDopeSheetGui()
+{
+    _dopeSheet = new DopeSheet(_gui, _gui);
+    _dopeSheet->setScriptName(kDopeSheetObjectName);
+    _dopeSheet->setLabel(QObject::tr("Dope Sheet").toStdString());
+    _gui->registerTab(_dopeSheet, _dopeSheet);
+}
+
+void
 GuiPrivate::createScriptEditorGui()
 {
     _scriptEditor = new ScriptEditor(_gui);
@@ -1460,6 +1482,7 @@ Gui::createDefaultLayout1()
 
     TabWidget::moveTab(_imp->_nodeGraphArea, _imp->_nodeGraphArea, workshopPane);
     TabWidget::moveTab(_imp->_curveEditor, _imp->_curveEditor, workshopPane);
+    TabWidget::moveTab(_imp->_dopeSheet, _imp->_dopeSheet, workshopPane);
     TabWidget::moveTab(_imp->_propertiesBin, _imp->_propertiesBin, propertiesPane);
 
     {
@@ -4265,6 +4288,11 @@ Gui::getCurveEditor() const
     return _imp->_curveEditor;
 }
 
+DopeSheet *Gui::getDopeSheet() const
+{
+    return _imp->_dopeSheet;
+}
+
 ScriptEditor*
 Gui::getScriptEditor() const
 {
@@ -5277,4 +5305,3 @@ Gui::addMenuEntry(const QString & menuGrouping,
         }
     }
 }
-

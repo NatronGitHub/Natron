@@ -89,6 +89,7 @@ typedef OfxRangeD RangeD;
 
 #define kNodeGraphObjectName "nodeGraph"
 #define kCurveEditorObjectName "curveEditor"
+#define kDopeSheetObjectName "dopeSheet"
 
 #define kCurveEditorMoveMultipleKeysCommandCompressionID 2
 #define kKnobUndoChangeCommandCompressionID 3
@@ -111,7 +112,7 @@ namespace Natron {
 inline std::wstring
 s2ws(const std::string & s)
 {
-    
+
 
 #ifdef __NATRON_WIN32__
     int len;
@@ -124,12 +125,12 @@ s2ws(const std::string & s)
     return r;
 #else
     std::wstring dest;
-    
+
     size_t max = s.size() * 4;
     mbtowc (NULL, NULL, max);  /* reset mbtowc */
-    
+
     const char* cstr = s.c_str();
-    
+
     while (max > 0) {
         wchar_t w;
         size_t length = mbtowc(&w,cstr,max);
@@ -142,7 +143,7 @@ s2ws(const std::string & s)
     }
     return dest;
 #endif
-   
+
 }
 }
 

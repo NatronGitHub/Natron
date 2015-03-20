@@ -69,6 +69,7 @@ class FloatingWidget;
 class BoundAction;
 class ScriptEditor;
 class PyPanel;
+class DopeSheet;
 
 //Natron engine
 class ViewerInstance;
@@ -90,12 +91,12 @@ typedef std::map<std::string,std::pair<QWidget*,ScriptObject*> > RegisteredTabs;
 class PropertiesBinWrapper : public QWidget, public ScriptObject
 {
 public:
-    
+
     PropertiesBinWrapper(QWidget* parent)
     : QWidget(parent)
     , ScriptObject()
     {
-        
+
     }
 };
 
@@ -124,24 +125,25 @@ public:
                                              bool autoConnect);
 
     void addNodeGuiToCurveEditor(boost::shared_ptr<NodeGui> node);
+    void addNodeGuiToDopeSheet(boost::shared_ptr<NodeGui> node);
 
     const std::list<boost::shared_ptr<NodeGui> > & getSelectedNodes() const;
 
     bool eventFilter(QObject *target, QEvent* e);
 
     void createViewerGui(boost::shared_ptr<Natron::Node> viewer);
-    
+
     void createGroupGui(const boost::shared_ptr<Natron::Node>& group, bool requestedByLoad);
-    
+
     void addGroupGui(NodeGraph* tab,TabWidget* where);
-    
+
     void removeGroupGui(NodeGraph* tab,bool deleteData);
 
-    
+
     void setLastSelectedGraph(NodeGraph* graph);
-    
+
     NodeGraph* getLastSelectedGraph() const;
-    
+
     boost::shared_ptr<NodeCollection> getLastSelectedNodeCollection() const;
 
     /**
@@ -167,7 +169,7 @@ public:
        that wants to close. The deleteData flag tells whether we actually want
        to destroy the tab/node or just hide them.*/
     void removeViewerTab(ViewerTab* tab,bool initiatedFromNode,bool deleteData);
-    
+
 
     Histogram* addNewHistogram();
 
@@ -194,23 +196,23 @@ public:
      * @brief An error dialog with title and text customizable
      **/
     void errorDialog(const std::string & title,const std::string & text,bool useHtml);
-    
+
     void errorDialog(const std::string & title,
                      const std::string & text,
                      bool* stopAsking,
                      bool useHtml);
-    
-    
+
+
 
     void warningDialog(const std::string & title,const std::string & text,bool useHtml);
-    
+
     void warningDialog(const std::string & title,
                        const std::string & text,
                        bool* stopAsking,
                        bool useHtml);
 
     void informationDialog(const std::string & title,const std::string & text,bool useHtml);
-    
+
     void informationDialog(const std::string & title,
                            const std::string & message,
                            bool* stopAsking,
@@ -221,17 +223,17 @@ public:
                                               bool useHtml,
                                               Natron::StandardButtons buttons = Natron::StandardButtons(Natron::eStandardButtonYes | Natron::eStandardButtonNo),
                                               Natron::StandardButtonEnum defaultButton = Natron::eStandardButtonNoButton);
-    
+
     Natron::StandardButtonEnum questionDialog(const std::string & title,
                                               const std::string & message,
                                               bool useHtml,
                                               Natron::StandardButtons buttons,
                                               Natron::StandardButtonEnum defaultButton,
                                               bool* stopAsking);
-    
-    
-    
-    
+
+
+
+
     /**
      * @brief Selects the given node on the node graph, wiping any previous selection.
      **/
@@ -278,10 +280,10 @@ public:
 
     void registerSplitter(Splitter* s);
     void unregisterSplitter(Splitter* s);
-    
+
     void registerPyPanel(PyPanel* panel,const std::string& pythonFunction);
     void unregisterPyPanel(PyPanel* panel);
-    
+
     std::map<PyPanel*,std::string> getPythonPanels() const;
 
 
@@ -289,7 +291,7 @@ public:
      * @brief MT-Safe
      **/
     std::list<FloatingWidget*> getFloatingWindows() const;
-    
+
 
 
     /*Returns a valid tab if a tab with a matching name has been
@@ -315,7 +317,7 @@ public:
 
     std::string openImageSequenceDialog();
     std::string saveImageSequenceDialog();
-    
+
     void setUserScrubbingTimeline(bool b);
 
     bool isUserScrubbingTimeline() const;
@@ -375,8 +377,9 @@ public:
 
     NodeGraph* getNodeGraph() const;
     CurveEditor* getCurveEditor() const;
+    DopeSheet *getDopeSheet() const;
     ScriptEditor* getScriptEditor() const;
-    
+
     QVBoxLayout* getPropertiesLayout() const;
     PropertiesBinWrapper* getPropertiesBin() const;
     const RegisteredTabs & getRegisteredTabs() const;
@@ -384,9 +387,9 @@ public:
     void updateLastSequenceOpenedPath(const QString & path);
 
     void updateLastSequenceSavedPath(const QString & path);
-    
+
     void updateLastSavedProjectPath(const QString& project);
-    
+
     void updateLastOpenedProjectPath(const QString& project);
 
     void setUndoRedoStackLimit(int limit);
@@ -404,7 +407,7 @@ public:
     QString getQtVersion() const;
 
     QString getCairoVersion() const;
-    
+
     /**
      * @brief Make a new rotoscoping/painting interface for the given node.
      * This will create new widgets and enrich the interface of the viewer tab.
@@ -443,9 +446,9 @@ public:
 
     void addVisibleDockablePanel(DockablePanel* panel);
     void removeVisibleDockablePanel(DockablePanel* panel);
-    
+
     const std::list<DockablePanel*>& getVisiblePanels() const;
-    
+
     std::list<ToolButton*> getToolButtonsOrdered() const;
 
     void setToolButtonMenuOpened(QToolButton* button);
@@ -461,64 +464,64 @@ public:
     void checkNumberOfNonFloatingPanes();
 
     void openProject(const std::string& filename);
-    
+
     bool isGUIFrozen() const;
-    
+
     /**
      * @brief If returns true then you must add shorcuts to the shortcut editor using the addShortcut function
      **/
     bool hasShortcutEditorAlreadyBeenBuilt() const;
-    
+
     void addShortcut(BoundAction* action);
-    
+
     const QString& getLastLoadProjectDirectory() const;
-    
+
     const QString& getLastSaveProjectDirectory() const;
-    
+
     const QString& getLastPluginDirectory() const;
-    
+
     void updateLastPluginDirectory(const QString& str);
-    
-    
+
+
     /**
      * @brief Returns in nodes all the nodes that can draw an overlay in their order of appearance in the properties bin.
      **/
     void getNodesEntitledForOverlays(std::list<boost::shared_ptr<Natron::Node> >& nodes) const;
-    
+
     bool isLeftToolBarDisplayedOnMouseHoverOnly() const;
-    
+
     void setLeftToolBarDisplayedOnMouseHoverOnly(bool b);
-    
+
     void refreshLeftToolBarVisibility(const QPoint& globalPos);
-    
+
     void setLeftToolBarVisible(bool visible);
-    
+
     void redrawAllViewers();
-    
+
     void renderAllViewers();
-    
+
     void toggleAutoHideGraphInputs();
-    
+
     void centerAllNodeGraphsWithTimer();
-    
+
     void setLastEnteredTabWidget(TabWidget* tab);
-    
+
     TabWidget* getLastEnteredTabWidget() const;
-    
+
     void appendToScriptEditor(const std::string& str);
-    
+
     void printAutoDeclaredVariable(const std::string& str);
-    
+
     void exportGroupAsPythonScript(NodeCollection* collection);
-    
+
     void addMenuEntry(const QString& menuGrouping,const std::string& pythonFunction, Qt::Key key,const Qt::KeyboardModifiers& modifiers);
-    
-    
+
+
 Q_SIGNALS:
 
 
     void doDialog(int type,const QString & title,const QString & content,bool useHtml,Natron::StandardButtons buttons,int defaultB);
-    
+
     void doDialogWithStopAskingCheckbox(int type,const QString & title,const QString & content,bool useHtml,Natron::StandardButtons buttons,int defaultB);
 
     ///emitted when a viewer changes its name or is deleted/added
@@ -527,7 +530,7 @@ Q_SIGNALS:
 public Q_SLOTS:
 
     void reloadStylesheet();
-    
+
     ///Close the project instance, asking questions to the user and leaving the main window intact
     void closeProject();
     void toggleFullScreen();
@@ -538,7 +541,7 @@ public Q_SLOTS:
     bool saveProjectAs();
     void exportProjectAsGroup();
     void saveAndIncrVersion();
-    
+
     void autoSave();
 
     void createNewViewer();
@@ -579,7 +582,7 @@ public Q_SLOTS:
     void setVisibleProjectSettingsPanel();
 
     void putSettingsPanelFirst(DockablePanel* panel);
-    
+
     void buildTabFocusOrderPropertiesBin();
 
     void addToolButttonsToToolBar();
@@ -593,7 +596,7 @@ public Q_SLOTS:
     void showShortcutEditor();
 
     void showOfxLog();
-    
+
     void openRecentFile();
 
     void onProjectNameChanged(const QString & name);
@@ -614,7 +617,7 @@ public Q_SLOTS:
     void onMaxVisibleDockablePanelChanged(int maxPanels);
 
     void clearAllVisiblePanels();
-    
+
     void minimizeMaximizeAllPanels(bool clicked);
 
     void onMaxPanelsSpinBoxValueChanged(double val);
@@ -627,14 +630,14 @@ public Q_SLOTS:
 
     void onFreezeUIButtonClicked(bool clicked);
 
-	void onPropertiesScrolled();
-    
+    void onPropertiesScrolled();
+
     void onNextTabTriggered();
-    
+
     void onCloseTabTriggered();
 
     void onUserCommandTriggered();
-    
+
 private:
 
     /**
@@ -656,7 +659,7 @@ private:
     virtual void moveEvent(QMoveEvent* e) OVERRIDE FINAL;
     virtual void resizeEvent(QResizeEvent* e) OVERRIDE FINAL;
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
-    
+
     boost::scoped_ptr<GuiPrivate> _imp;
 };
 
