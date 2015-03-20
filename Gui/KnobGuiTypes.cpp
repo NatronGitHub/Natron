@@ -220,7 +220,7 @@ Int_KnobGui::createWidget(QHBoxLayout* layout)
         _dimensionSwitchButton = new Button(QIcon(),QString::number(dim),_container);
         _dimensionSwitchButton->setToolTip(Qt::convertFromPlainText(tr("Switch between a single value for all dimensions and multiple values."), Qt::WhiteSpaceNormal));
         _dimensionSwitchButton->setFocusPolicy(Qt::NoFocus);
-        _dimensionSwitchButton->setFixedSize(17, 17);
+        _dimensionSwitchButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
         _dimensionSwitchButton->setCheckable(true);
         containerLayout->addWidget(_dimensionSwitchButton);
         
@@ -982,7 +982,7 @@ Double_KnobGui::createWidget(QHBoxLayout* layout)
     if (dim > 1 && !_knob->isSliderDisabled() && sliderVisible ) {
         _dimensionSwitchButton = new Button(QIcon(),QString::number(dim), _container);
         _dimensionSwitchButton->setToolTip(Qt::convertFromPlainText(tr("Switch between a single value for all dimensions and multiple values."), Qt::WhiteSpaceNormal));
-        _dimensionSwitchButton->setFixedSize(17, 17);
+        _dimensionSwitchButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
         _dimensionSwitchButton->setFocusPolicy(Qt::NoFocus);
         _dimensionSwitchButton->setCheckable(true);
         containerLayout->addWidget(_dimensionSwitchButton);
@@ -1948,6 +1948,7 @@ Color_KnobGui::createWidget(QHBoxLayout* layout)
     colorLayout->setSpacing(0);
     
     _colorLabel = new ColorPickerLabel(this,colorContainer);
+    _colorLabel->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     QObject::connect( _colorLabel,SIGNAL( pickingEnabled(bool) ),this,SLOT( onPickingEnabled(bool) ) );
     colorLayout->addWidget(_colorLabel);
     
@@ -1968,9 +1969,9 @@ Color_KnobGui::createWidget(QHBoxLayout* layout)
     bool enableAllDimensions = false;
     
     _dimensionSwitchButton = new Button(QIcon(),QString::number(_dimension),colorContainer);
+    _dimensionSwitchButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     _dimensionSwitchButton->setToolTip(Qt::convertFromPlainText(tr("Switch between a single value for all dimensions and multiple values."), Qt::WhiteSpaceNormal));
     _dimensionSwitchButton->setFocusPolicy(Qt::NoFocus);
-    _dimensionSwitchButton->setFixedSize(17, 17);
     _dimensionSwitchButton->setCheckable(true);
     
     double firstDimensionValue = _knob->getValue(0,false);
@@ -2665,14 +2666,26 @@ ColorPickerLabel::setColor(const QColor & color)
         QImage pickerImg = pickerIcon.toImage();
         QImage img(pickerIcon.width(), pickerIcon.height(), QImage::Format_ARGB32);
         img.fill( color.rgb() );
-
-
-        for (int i = 0; i < pickerIcon.height(); ++i) {
+        
+        
+        int h = pickerIcon.height();
+        int w = pickerIcon.width();
+        for (int i = 0; i < h; ++i) {
             const QRgb* data = (QRgb*)pickerImg.scanLine(i);
-            for (int j = 0; j < pickerImg.width(); ++j) {
-                int alpha = qAlpha(data[j]);
-                if (alpha > 0) {
-                    img.setPixel(j, i, data[j]);
+            if ((i == 0) || (i == h -1)) {
+                for (int j = 0; j < w; ++j) {
+                    img.setPixel(j, i, qRgb(0, 0, 0));
+                }
+            } else {
+                for (int j = 0; j < w; ++j) {
+                    if ((j == 0) || (j == w -1)) {
+                        img.setPixel(j, i, qRgb(0,0,0));
+                    } else {
+                        int alpha = qAlpha(data[j]);
+                        if (alpha > 0) {
+                            img.setPixel(j, i, data[j]);
+                        }
+                    }
                 }
             }
         }
@@ -2680,7 +2693,24 @@ ColorPickerLabel::setColor(const QColor & color)
         setPixmap(pix);
     } else {
         QImage img(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE, QImage::Format_ARGB32);
-        img.fill( color.rgb() );
+        int h = img.height();
+        int w = img.width();
+        QRgb c = color.rgb();
+        for (int i = 0; i < h; ++i) {
+            if ((i == 0) || (i == h -1)) {
+                for (int j = 0; j < w; ++j) {
+                    img.setPixel(j, i, qRgb(0, 0, 0));
+                }
+            } else {
+                for (int j = 0; j < w; ++j) {
+                    if ((j == 0) || (j == w -1)) {
+                        img.setPixel(j, i, qRgb(0,0,0));
+                    } else {
+                        img.setPixel(j, i, c);
+                    }
+                }
+            }
+        }
         QPixmap pix = QPixmap::fromImage(img);
         setPixmap(pix);
     }

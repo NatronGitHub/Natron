@@ -920,7 +920,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->turboButton->setCheckable(true);
     _imp->turboButton->setChecked(false);
     _imp->turboButton->setDown(false);
-    _imp->turboButton->setFixedSize(NATRON_SMALL_BUTTON_SIZE,NATRON_SMALL_BUTTON_SIZE);
+    _imp->turboButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     _imp->turboButton->setToolTip("<p><b>" + tr("Turbo mode:") + "</p></b><p>" +
                                   tr("When checked, everything besides the viewer will not be refreshed in the user interface "
                                                                                               "for maximum efficiency during playback.") + "</p>");
