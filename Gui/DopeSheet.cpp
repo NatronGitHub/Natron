@@ -52,7 +52,7 @@ bool nodeHasAnimation(const boost::shared_ptr<NodeGui> &node)
  * Returns true if all childs of 'item' are hidden, otherwise returns
  * false.
  */
-bool noChildIsVisible(QTreeWidgetItem *item)
+bool itemHasNoChildVisible(QTreeWidgetItem *item)
 {
     for (int i = 0; i < item->childCount(); ++i) {
         if (!item->child(i)->isHidden())
@@ -60,6 +60,24 @@ bool noChildIsVisible(QTreeWidgetItem *item)
     }
 
     return true;
+}
+
+/**
+ * @brief recursiveSelect
+ *
+ *
+ */
+void recursiveSelect(QTreeWidgetItem *item)
+{
+    if (item->childCount() > 0 && !itemHasNoChildVisible(item)) {
+        for (int i = 0; i < item->childCount(); ++i) {
+            QTreeWidgetItem *childItem = item->child(i);
+            childItem->setSelected(true);
+
+            // /!\ recursion
+            recursiveSelect(childItem);
+        }
+    }
 }
 
 } // anon namespace
@@ -157,7 +175,7 @@ void DopeSheetKeyframeSet::checkVisibleState()
     QTreeWidgetItem *parentInHierarchyView = _imp->hierarchyViewItem->parent();
 
     if (_imp->isMultiDimRoot()) {
-        if (noChildIsVisible(_imp->hierarchyViewItem)) {
+        if (itemHasNoChildVisible(_imp->hierarchyViewItem)) {
             _imp->hierarchyViewItem->setHidden(true);
         }
         else {
@@ -169,7 +187,7 @@ void DopeSheetKeyframeSet::checkVisibleState()
             _imp->hierarchyViewItem->setHidden(true);
 
             // Hide the multidim root if it's "empty"
-            if (noChildIsVisible(parentInHierarchyView))
+            if (itemHasNoChildVisible(parentInHierarchyView))
                 parentInHierarchyView->setHidden(true);
         }
         else {
@@ -380,6 +398,9 @@ DopeSheet::DopeSheet(Gui *gui, QWidget *parent) :
     _imp->splitter->setStretchFactor(0, 1);
 
     _imp->mainLayout->addWidget(_imp->splitter);
+
+    connect(_imp->hierarchyTree, SIGNAL(itemSelectionChanged()),
+            this, SLOT(onItemSelectionChanged()));
 }
 
 /**
@@ -449,5 +470,19 @@ void DopeSheet::removeNode(NodeGui *node)
 
             break;
         }
+    }
+}
+
+/**
+ * @brief DopeSheet::onItemSelectionChanged
+ *
+ *
+ */
+void DopeSheet::onItemSelectionChanged()
+{
+    QList<QTreeWidgetItem *> selectedItems = _imp->hierarchyTree->selectedItems();
+
+    Q_FOREACH (QTreeWidgetItem *item, selectedItems) {
+        recursiveSelect(item);
     }
 }

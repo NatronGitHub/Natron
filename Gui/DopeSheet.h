@@ -87,6 +87,9 @@ public:
     void addNode(boost::shared_ptr<NodeGui> node);
     void removeNode(NodeGui *node);
 
+public Q_SLOTS:
+    void onItemSelectionChanged();
+
 private:
     boost::scoped_ptr<DopeSheetPrivate> _imp;
 };
