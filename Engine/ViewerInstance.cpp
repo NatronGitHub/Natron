@@ -323,37 +323,28 @@ ViewerInstance::renderViewer(int view,
     return eStatusOK;
 }
 
-static void checkTreeCanRender_internal(Node* node,std::list<Node*>& marked,bool* ret)
+static bool checkTreeCanRender_internal(Node* node, std::list<Node*>& marked)
 {
     if (std::find(marked.begin(), marked.end(), node) != marked.end()) {
-        return;
+        return true;
     }
 
     marked.push_back(node);
 
+    // check that the nodes upstream have all their nonoptional inputs connected
     int maxInput = node->getMaxInputCount();
-    bool hasInputConnected = false;
     for (int i = 0; i < maxInput; ++i) {
         NodePtr input = node->getInput(i);
-        if (!input) {
-            if (!node->getLiveInstance()->isInputOptional(i)) {
-                *ret = false;
-                return;
-            }
-            
-        } else {
-            hasInputConnected = true;
-            checkTreeCanRender_internal(input.get(), marked, ret);
+        if (!input && !node->getLiveInstance()->isInputOptional(i)) {
+            return false;
+        } else if (input) {
+            bool ret = checkTreeCanRender_internal(input.get(), marked);
             if (!ret) {
-                return;
+                return false;
             }
         }
     }
-    if (!hasInputConnected && (!node->getLiveInstance()->isGenerator() &&
-            !node->getLiveInstance()->isReader() && !node->getRotoContext())) {
-        *ret = false;
-        return;
-    }
+    return true;
 }
 
 /**
@@ -361,9 +352,8 @@ static void checkTreeCanRender_internal(Node* node,std::list<Node*>& marked,bool
  **/
 static bool checkTreeCanRender(Node* node)
 {
-    bool ret = true;
     std::list<Node*> marked;
-    checkTreeCanRender_internal(node,marked,&ret);
+    bool ret = checkTreeCanRender_internal(node, marked);
     return ret;
 }
 
