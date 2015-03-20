@@ -1958,8 +1958,8 @@ private:
                     
                     RenderingFlagSetter flagIsRendering(activeInputToRender->getNode().get());
 
-                    ImageList planes =
-                    activeInputToRender->renderRoI( EffectInstance::RenderRoIArgs(time, //< the time at which to render
+                    ImageList planes;
+                    EffectInstance::RenderRoIRetCode retCode = activeInputToRender->renderRoI( EffectInstance::RenderRoIArgs(time, //< the time at which to render
                                                                                   scale, //< the scale at which to render
                                                                                   mipMapLevel, //< the mipmap level (redundant with the scale)
                                                                                   i, //< the view to render
@@ -1967,7 +1967,11 @@ private:
                                                                                   renderWindow, //< the region of interest (in pixel coordinates)
                                                                                   rod, // < any precomputed rod ? in canonical coordinates
                                                                                   components,
-                                                                                  imageDepth));
+                                                                                  imageDepth),&planes);
+                    if (retCode != EffectInstance::eRenderRoIRetCodeOk) {
+                         _imp->scheduler->notifyRenderFailure(std::string("Error caught while rendering"));
+                        return;
+                    }
                     
                     ///If we need sequential rendering, pass the image to the output scheduler that will ensure the sequential ordering
                     if (!renderDirectly) {
@@ -2064,7 +2068,11 @@ DefaultScheduler::processFrame(const BufferedFrames& frames)
                                                    false,
                                                    inputImages);
         try {
-            ignore_result(_effect->renderRoI(args));
+            ImageList planes;
+            EffectInstance::RenderRoIRetCode retCode = _effect->renderRoI(args,&planes);
+            if (retCode != EffectInstance::eRenderRoIRetCodeOk) {
+                notifyRenderFailure("");
+            }
         } catch (const std::exception& e) {
             notifyRenderFailure(e.what());
         }

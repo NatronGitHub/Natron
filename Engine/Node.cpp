@@ -3293,17 +3293,20 @@ Node::makePreviewImage(SequenceTime time,
     // but any exception in renderROI is probably fatal.
     ImageList planes;
     try {
-        planes = _imp->liveInstance->renderRoI( EffectInstance::RenderRoIArgs( time,
-                                                                              scale,
-                                                                              mipMapLevel,
-                                                                              0, //< preview only renders view 0 (left)
-                                                                              false,
-                                                                              renderWindow,
-                                                                              rod,
-                                                                              requestedComps, //< preview is always rgb...
-                                                                              getBitDepth() ) );
+        Natron::EffectInstance::RenderRoIRetCode retCode =
+        _imp->liveInstance->renderRoI( EffectInstance::RenderRoIArgs( time,
+                                                                     scale,
+                                                                     mipMapLevel,
+                                                                     0, //< preview only renders view 0 (left)
+                                                                     false,
+                                                                     renderWindow,
+                                                                     rod,
+                                                                     requestedComps, //< preview is always rgb...
+                                                                     getBitDepth() ) ,&planes);
+        if (retCode != Natron::EffectInstance::eRenderRoIRetCodeOk) {
+            return false;
+        }
     } catch (...) {
-        qDebug() << "Error: Cannot render preview";
         return false;
     }
     

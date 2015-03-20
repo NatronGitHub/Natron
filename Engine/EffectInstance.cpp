@@ -1219,20 +1219,21 @@ EffectInstance::getImage(int inputNb,
     
     std::list<ImageComponents> requestedComps;
     requestedComps.push_back(comp);
-    ImageList inputImages = n->renderRoI( RenderRoIArgs(time,
-                                                        scale,
-                                                        renderMappedMipMapLevel,
-                                                        view,
-                                                        byPassCache,
-                                                        pixelRoI,
-                                                        RectD(),
-                                                        requestedComps,
-                                                        depth,
-                                                        channelForAlpha,
-                                                        true,
-                                                        inputImagesThreadLocal) );
+    ImageList inputImages;
+    RenderRoIRetCode retCode = n->renderRoI( RenderRoIArgs(time,
+                                                           scale,
+                                                           renderMappedMipMapLevel,
+                                                           view,
+                                                           byPassCache,
+                                                           pixelRoI,
+                                                           RectD(),
+                                                           requestedComps,
+                                                           depth,
+                                                           channelForAlpha,
+                                                           true,
+                                                           inputImagesThreadLocal), &inputImages );
     
-    if (inputImages.empty()) {
+    if (inputImages.empty() || retCode != eRenderRoIRetCodeOk) {
         return ImagePtr();
     }
     assert(inputImages.size() == 1);
@@ -1981,13 +1982,13 @@ EffectInstance::allocateImagePlane(const ImageKey& key,
 }
 
 
-ImageList
-EffectInstance::renderRoI(const RenderRoIArgs & args)
+
+EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs & args,ImageList* outputPlanes)
 {
    
     //Do nothing if no components were requested
     if (args.components.empty()) {
-        return ImageList();
+        return eRenderRoIRetCodeFailed;
     }
     
     ParallelRenderArgs& frameRenderArgs = _imp->frameRenderArgs.localData();
@@ -2066,7 +2067,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
         ///The rod might be NULL for a roto that has no beziers and no input
         if ( (stat == eStatusFailed) || rod.isNull() ) {
             ///if getRoD fails, just return a NULL ptr
-            return ImageList();
+            return eRenderRoIRetCodeFailed;
         }
         if ( (supportsRS == eSupportsMaybe) && (renderMappedMipMapLevel != 0) ) {
             // supportsRenderScaleMaybe may have changed, update it
@@ -2092,7 +2093,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
         try {
             identity = isIdentity_public(nodeHash,args.time, renderMappedScale, rod, par, args.view, &inputTimeIdentity, &inputNbIdentity);
         } catch (...) {
-            return ImageList();
+            return eRenderRoIRetCodeFailed;
         }
         
         if ( (supportsRS == eSupportsMaybe) && (renderMappedMipMapLevel != 0) ) {
@@ -2108,7 +2109,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
         if (identity) {
             ///The effect is an identity but it has no inputs
             if (inputNbIdentity == -1) {
-                return ImageList();
+                return eRenderRoIRetCodeFailed;
             } else if (inputNbIdentity == -2) {
                 // there was at least one crash if you set the first frame to a negative value
                 assert(inputTimeIdentity != args.time);
@@ -2118,7 +2119,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
                     argCpy.time = inputTimeIdentity;
                     argCpy.preComputedRoD.clear(); //< clear as the RoD of the identity input might not be the same (reproducible with Blur)
                     
-                    return renderRoI(argCpy);
+                    return renderRoI(argCpy,outputPlanes);
                 }
             }
             
@@ -2147,25 +2148,21 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
                                                         lastFrame);
             Natron::EffectInstance* inputEffectIdentity = getInput(inputNbIdentity);
             
-            ImageList ret;
             if (inputEffectIdentity) {
                 ///we don't need to call getRegionOfDefinition and getFramesNeeded if the effect is an identity
                 RenderRoIArgs inputArgs = args;
                 inputArgs.time = inputTimeIdentity;
                 
-                ret = inputEffectIdentity->renderRoI(inputArgs);
+                return inputEffectIdentity->renderRoI(inputArgs, outputPlanes);
 
             }
             
-            return ret;
+            return eRenderRoIRetCodeFailed;
             
         } // if (identity)
     }
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////// End identity check ///////////////////////////////////////////////////////////////
-
-    //The output images
-    ImageList renderMappedImages;
     
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////// Handle pass-through for planes //////////////////////////////////////////////////////////
@@ -2221,18 +2218,19 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
             RenderRoIArgs inArgs = args;
             inArgs.components.clear();
             inArgs.components.push_back(it->first);
-            ImageList inputPlanes = node->getLiveInstance()->renderRoI(inArgs);
+            ImageList inputPlanes;
+            RenderRoIRetCode inputRetCode = node->getLiveInstance()->renderRoI(inArgs,&inputPlanes);
             assert(inputPlanes.size() == 1 || inputPlanes.empty());
-            if (inputPlanes.empty()) {
-                return ImageList();
+            if (inputRetCode == eRenderRoIRetCodeAborted || inputRetCode == eRenderRoIRetCodeFailed || inputPlanes.empty()) {
+                return inputRetCode;
             }
-            renderMappedImages.push_back(inputPlanes.front());
+            outputPlanes->push_back(inputPlanes.front());
         }
     }
     
     ///There might be only planes to render that were fetched from upstream
     if (requestedComponents.empty()) {
-        return renderMappedImages;
+        return eRenderRoIRetCodeFailed;
     }
     
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -2297,14 +2295,14 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
     if (tilesSupported) {
         if (useImageAsOutput) {
             if (!roi.intersect(upscaledImageBounds, &roi)) {
-                return ImageList();
+                return eRenderRoIRetCodeFailed;
             }
             assert(roi.x1 >= upscaledImageBounds.x1 && roi.y1 >= upscaledImageBounds.y1 &&
                    roi.x2 <= upscaledImageBounds.x2 && roi.y2 <= upscaledImageBounds.y2);
             
         } else {
             if (!roi.intersect(downscaledImageBounds, &roi)) {
-                return ImageList();
+                return eRenderRoIRetCodeFailed;
             }
             assert(roi.x1 >= downscaledImageBounds.x1 && roi.y1 >= downscaledImageBounds.y1 &&
                    roi.x2 <= downscaledImageBounds.x2 && roi.y2 <= downscaledImageBounds.y2);
@@ -2478,7 +2476,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
     
     if (!isPlaneCached && args.roi.isNull()) {
         ///Empty RoI and nothing in the cache with matching args, return empty planes.
-        return ImageList();
+        return eRenderRoIRetCodeFailed;
     }
     
     if (isPlaneCached) {
@@ -2556,26 +2554,27 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
 
         RoIMap roim;
         ImageList imgs;
-        if (!renderInputImagesForRoI(createInCache,
-                                     args.time,
-                                     args.view,
-                                     par,
-                                     nodeHash,
-                                     frameRenderArgs.rotoAge,
-                                     rod,
-                                     *it,
-                                     canonicalRoI,
-                                     inputsToTransform,
-                                     args.mipMapLevel,
-                                     args.scale,
-                                     renderMappedScale,
-                                     renderScaleOneUpstreamIfRenderScaleSupportDisabled,
-                                     byPassCache,
-                                     framesNeeded,
-                                     &imgs,
-                                     &roim)) {
-            //Render was aborted
-            return ImageList();
+        RenderRoIRetCode inputCode = renderInputImagesForRoI(createInCache,
+                                                             args.time,
+                                                             args.view,
+                                                             par,
+                                                             nodeHash,
+                                                             frameRenderArgs.rotoAge,
+                                                             rod,
+                                                             *it,
+                                                             canonicalRoI,
+                                                             inputsToTransform,
+                                                             args.mipMapLevel,
+                                                             args.scale,
+                                                             renderMappedScale,
+                                                             renderScaleOneUpstreamIfRenderScaleSupportDisabled,
+                                                             byPassCache,
+                                                             framesNeeded,
+                                                             &imgs,
+                                                             &roim);
+        //Render was aborted
+        if (inputCode != eRenderRoIRetCodeOk) {
+            return inputCode;
         }
         inputsRoi.push_back(roim);
         inputImages.push_back(imgs);
@@ -2650,26 +2649,27 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
                 
                 RoIMap roim;
                 ImageList imgs;
-                if (!renderInputImagesForRoI(createInCache,
-                                             args.time,
-                                             args.view,
-                                             par,
-                                             nodeHash,
-                                             frameRenderArgs.rotoAge,
-                                             rod,
-                                             *it,
-                                             canonicalRoI,
-                                             inputsToTransform,
-                                             args.mipMapLevel,
-                                             args.scale,
-                                             renderMappedScale,
-                                             renderScaleOneUpstreamIfRenderScaleSupportDisabled,
-                                             byPassCache,
-                                             framesNeeded,
-                                             &imgs,
-                                             &roim)) {
+                RenderRoIRetCode inputRetCode = renderInputImagesForRoI(createInCache,
+                                                                        args.time,
+                                                                        args.view,
+                                                                        par,
+                                                                        nodeHash,
+                                                                        frameRenderArgs.rotoAge,
+                                                                        rod,
+                                                                        *it,
+                                                                        canonicalRoI,
+                                                                        inputsToTransform,
+                                                                        args.mipMapLevel,
+                                                                        args.scale,
+                                                                        renderMappedScale,
+                                                                        renderScaleOneUpstreamIfRenderScaleSupportDisabled,
+                                                                        byPassCache,
+                                                                        framesNeeded,
+                                                                        &imgs,
+                                                                        &roim);
                     //Render was aborted
-                    return ImageList();
+                if (inputRetCode != eRenderRoIRetCodeOk) {
+                    return inputRetCode;
                 }
                 inputsRoi.push_back(roim);
                 inputImages.push_back(imgs);
@@ -2800,7 +2800,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
                 } else {
                     _imp->unmarkImageAsBeingRendered(useImageAsOutput ? it->second.fullscaleImage : it->second.downscaleImage,true);
                     appPTR->removeFromNodeCache(useImageAsOutput ? it->second.fullscaleImage : it->second.downscaleImage);
-                    return ImageList();
+                    return eRenderRoIRetCodeAborted;
                 }
             }
         }
@@ -2812,7 +2812,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
         
         ///Return a NULL image if the render call was not issued by the result of a call of a plug-in to clipGetImage
         //if (!args.calledFromGetImage) {
-            return ImageList();
+        return eRenderRoIRetCodeAborted;
         //}
         
     } else if (renderRetCode == eRenderRoIStatusRenderFailed) {
@@ -2869,7 +2869,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
         }
         
         assert(it->second.downscaleImage->getComponents() == it->first && it->second.downscaleImage->getBitDepth() == args.bitdepth);
-        renderMappedImages.push_back(it->second.downscaleImage);
+        outputPlanes->push_back(it->second.downscaleImage);
 
     }
     
@@ -2877,14 +2877,13 @@ EffectInstance::renderRoI(const RenderRoIArgs & args)
         ///flag that this is the last image we rendered
         QMutexLocker l(&_imp->lastRenderArgsMutex);
         _imp->lastRenderHash = nodeHash;
-        _imp->lastPlanesRendered = renderMappedImages;
+        _imp->lastPlanesRendered = *outputPlanes;
     }
-    return renderMappedImages;
+    return eRenderRoIRetCodeOk;
 } // renderRoI
 
 
-/// \returns false if rendering was aborted
-bool
+EffectInstance::RenderRoIRetCode
 EffectInstance::renderInputImagesForRoI(bool createImageInCache,
                                         SequenceTime time,
                                         int view,
@@ -3037,8 +3036,11 @@ EffectInstance::renderInputImagesForRoI(bool createImageInCache,
                             
                             
                            
-                            ImageList inputImgs =
-                            inputEffect->renderRoI(inArgs); //< requested bitdepth
+                            ImageList inputImgs;
+                            RenderRoIRetCode ret = inputEffect->renderRoI(inArgs, &inputImgs); //< requested bitdepth
+                            if (ret != eRenderRoIRetCodeOk) {
+                                return ret;
+                            }
                             
                             for (ImageList::iterator it3 = inputImgs.begin(); it3 != inputImgs.end(); ++it3) {
                                 if (*it3) {
@@ -3053,7 +3055,7 @@ EffectInstance::renderInputImagesForRoI(bool createImageInCache,
             } // NotifyInputNRenderingStarted_RAII inputNIsRendering_RAII(_node.get(),it2->first);
             
             if ( aborted() ) {
-                return false;
+                return eRenderRoIRetCodeAborted;
             }
         }
     }
@@ -3087,7 +3089,7 @@ EffectInstance::renderInputImagesForRoI(bool createImageInCache,
         inputImages->push_back(mask);
     }
     
-    return true;
+    return eRenderRoIRetCodeOk;
 }
 
 

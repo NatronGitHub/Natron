@@ -850,9 +850,10 @@ OfxClipInstance::getImageInternal(OfxTime time,
         requestedComps.push_back(comp);
         EffectInstance::RenderRoIArgs args((SequenceTime)time,renderScale,mipMapLevel,
                                            view,false,pixelRoI,RectD(),requestedComps,bitDepth,3,true,inputImages);
-        ImageList planes = inputNode->renderRoI(args);
+        ImageList planes;
+        EffectInstance::RenderRoIRetCode retCode =  inputNode->renderRoI(args,&planes);
         assert(planes.size() == 1 || planes.empty());
-        if (planes.empty()) {
+        if (planes.empty() || retCode != EffectInstance::eRenderRoIRetCodeOk) {
             return 0;
         }
         

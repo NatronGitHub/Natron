@@ -501,12 +501,19 @@ public:
         return Natron::eSequentialPreferenceNotSequential;
     }
 
+    enum RenderRoIRetCode {
+        eRenderRoIRetCodeOk = 0,
+        eRenderRoIRetCodeAborted,
+        eRenderRoIRetCodeFailed
+        
+    };
+
     /**
      * @brief Renders the image at the given time,scale and for the given view & render window.
      * This returns a list of all planes requested in the args.
      * @param args See the definition of the class for comments on each argument.
      **/
-    std::list<boost::shared_ptr<Image> > renderRoI(const RenderRoIArgs & args) WARN_UNUSED_RETURN;
+    RenderRoIRetCode renderRoI(const RenderRoIArgs & args,std::list<boost::shared_ptr<Image> >* outputPlanes) WARN_UNUSED_RETURN;
 
 
     void getImageFromCacheAndConvertIfNeeded(bool useCache,
@@ -1436,7 +1443,7 @@ private:
                                           std::list<std::list<boost::shared_ptr<Natron::Image> > >& inputImagesParam);
 
     /// \returns false if rendering was aborted
-    bool renderInputImagesForRoI(bool createImageInCache,
+    RenderRoIRetCode renderInputImagesForRoI(bool createImageInCache,
                                  SequenceTime time,
                                  int view,
                                  double par,

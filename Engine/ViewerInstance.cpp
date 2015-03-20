@@ -872,7 +872,8 @@ ViewerInstance::renderViewer_internal(int view,
         // We catch it  and rethrow it just to notify the rendering is done.
         try {
             
-            ImageList planes = inArgs.activeInputToRender->renderRoI(EffectInstance::RenderRoIArgs(inArgs.params->time,
+            ImageList planes;
+            EffectInstance::RenderRoIRetCode retCode = inArgs.activeInputToRender->renderRoI(EffectInstance::RenderRoIArgs(inArgs.params->time,
                                                                                                    inArgs.key->getScale(),
                                                                                                    inArgs.params->mipMapLevel,
                                                                                                    view,
@@ -880,9 +881,9 @@ ViewerInstance::renderViewer_internal(int view,
                                                                                                    roi,
                                                                                                    inArgs.params->rod,
                                                                                                    requestedComponents,
-                                                                                                   imageDepth) );
+                                                                                                   imageDepth),&planes);
             assert(planes.size() == 0 || planes.size() == 1);
-            if (!planes.empty()) {
+            if (!planes.empty() && retCode == EffectInstance::eRenderRoIRetCodeOk) {
                 inArgs.params->image = planes.front();
             }
             if (!inArgs.params->image) {
@@ -895,6 +896,11 @@ ViewerInstance::renderViewer_internal(int view,
                 }
                 if (!isSequentialRender && canAbort) {
                     _imp->removeOngoingRender(inArgs.params->textureIndex, inArgs.params->renderAge);
+                }
+                if (retCode == EffectInstance::eRenderRoIRetCodeFailed) {
+                    Q_EMIT disconnectTextureRequest(inArgs.params->textureIndex);
+                    inArgs.params.reset();
+                    return eStatusFailed;
                 }
                 return eStatusReplyDefault;
             }
