@@ -259,3 +259,28 @@ in your expression by the **thisGroup.** prefix. Without it, Natron thinks you'r
 a top-level node, i.e: a node which belongs to the main node-graph, however, since you're using 
 a group, all your nodes are no longer top-level and the expression will fail.
 
+Examples
+----------
+
+Setting the label of a Node so it displays the value of a parameter on the node-graph:
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+For instance, we may want to have on the shuffle node, the values of the output RGBA channels
+so we don't have to open the settings panel to understand what the node is doing.
+
+To do so, we set an expression on the "Label" parameter located in the "Node" tab of the 
+settings panel.
+
+.. figure:: shuffleSubLabel.png
+	:width: 300px
+	:align: center
+	
+.. figure:: shuffleLabelExpression.png
+	:width: 300px
+	:align: center
+
+
+Set the following expression on the parameter
+::
+
+	thisNode.outputR.getOption(thisNode.outputR.get()) + "\n" + thisNode.outputG.getOption(thisNode.outputG.get()) + "\n" + thisNode.outputB.getOption(thisNode.outputB.get()) + "\n" + thisNode.outputA.getOption(thisNode.outputA.get())
