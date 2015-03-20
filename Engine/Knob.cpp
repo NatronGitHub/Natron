@@ -1540,7 +1540,7 @@ KnobHelper::validateExpression(const std::string& expression,int dimension,bool 
         std::size_t foundNewLine = expression.find("\n");
         while (foundNewLine != std::string::npos) {
             exprCpy.insert(foundNewLine + 1, "    ");
-            foundNewLine = expression.find("\n");
+            foundNewLine = expression.find("\n", foundNewLine + 1);
         }
         
     }
