@@ -2165,16 +2165,17 @@ void saveCache(Natron::Cache<T>* cache)
     try {
         ofile.open(cacheRestoreFilePath.c_str(),std::ofstream::out);
     } catch (const std::ios_base::failure & e) {
-        qDebug() << "Exception occured when opening file " <<  cacheRestoreFilePath.c_str() << ": "
-        << "Error code: " << e.code().value()
-        << " (" << e.code().message().c_str() << ")\n"
-        << "Error category: " << e.code().category().name();
+        qDebug() << "Exception occured when opening file" <<  cacheRestoreFilePath.c_str() << ':' << e.what();
+        // The following is C++11 only:
+        //<< "Error code: " << e.code().value()
+        //<< " (" << e.code().message().c_str() << ")\n"
+        //<< "Error category: " << e.code().category().name();
         
         return;
     }
     
     if ( !ofile.good() ) {
-        qDebug() << "Failed to save cache to " << cacheRestoreFilePath.c_str();
+        qDebug() << "Failed to save cache to" << cacheRestoreFilePath.c_str();
         
         return;
     }
@@ -2187,7 +2188,7 @@ void saveCache(Natron::Cache<T>* cache)
         oArchive << version;
         oArchive << toc;
     } catch (const std::exception & e) {
-        qDebug() << "Failed to serialize the cache table of contents: " << e.what();
+        qDebug() << "Failed to serialize the cache table of contents:" << e.what();
     }
     
     ofile.close();
@@ -2232,13 +2233,13 @@ void restoreCache(AppManagerPrivate* p,Natron::Cache<T>* cache)
             ifile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
             ifile.open(settingsFilePath.c_str(),std::ifstream::in);
         } catch (const std::ifstream::failure & e) {
-            qDebug() << "Failed to open the cache restoration file: " << e.what();
+            qDebug() << "Failed to open the cache restoration file:" << e.what();
             
             return;
         }
         
         if ( !ifile.good() ) {
-            qDebug() << "Failed to cache file for restoration: " <<  settingsFilePath.c_str();
+            qDebug() << "Failed to cache file for restoration:" <<  settingsFilePath.c_str();
             ifile.close();
             
             return;
@@ -2258,7 +2259,7 @@ void restoreCache(AppManagerPrivate* p,Natron::Cache<T>* cache)
                 p->cleanUpCacheDiskStructure(cache->getCachePath());
             }
         } catch (const std::exception & e) {
-            qDebug() << e.what();
+            qDebug() << "Exception when reading disk cache TOC:" << e.what();
             ifile.close();
             
             return;
@@ -2284,13 +2285,13 @@ AppManagerPrivate::restoreCaches()
     //                ifile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
     //                ifile.open(settingsFilePath.c_str(),std::ifstream::in);
     //            } catch (const std::ifstream::failure & e) {
-    //                qDebug() << "Failed to open the cache restoration file: " << e.what();
+    //                qDebug() << "Failed to open the cache restoration file:" << e.what();
     //
     //                return;
     //            }
     //
     //            if ( !ifile.good() ) {
-    //                qDebug() << "Failed to cache file for restoration: " <<  settingsFilePath.c_str();
+    //                qDebug() << "Failed to cache file for restoration:" <<  settingsFilePath.c_str();
     //                ifile.close();
     //
     //                return;
@@ -2359,7 +2360,7 @@ AppManagerPrivate::checkForCacheDiskStructure(const QString & cachePath)
         }
     }
     if (subFolderCount < 256) {
-        qDebug() << cachePath << " doesn't contain sub-folders indexed from 00 to FF. Reseting.";
+        qDebug() << cachePath << "doesn't contain sub-folders indexed from 00 to FF. Reseting.";
         cleanUpCacheDiskStructure(cachePath);
 
         return false;
@@ -2508,11 +2509,11 @@ AppManager::increaseNCacheFilesOpened()
     ++_imp->currentCacheFilesCount;
 #ifdef DEBUG
     if (_imp->currentCacheFilesCount > _imp->maxCacheFiles) {
-        qDebug() << "Cache has more files opened than the limit allowed: " << _imp->currentCacheFilesCount << " / " << _imp->maxCacheFiles;
+        qDebug() << "Cache has more files opened than the limit allowed:" << _imp->currentCacheFilesCount << '/' << _imp->maxCacheFiles;
     }
 #endif
 #ifdef NATRON_DEBUG_CACHE
-    qDebug() << "N Cache Files Opened: " << _imp->currentCacheFilesCount;
+    qDebug() << "N Cache Files Opened:" << _imp->currentCacheFilesCount;
 #endif
 }
 
@@ -2523,7 +2524,7 @@ AppManager::decreaseNCacheFilesOpened()
 
     --_imp->currentCacheFilesCount;
 #ifdef NATRON_DEBUG_CACHE
-    qDebug() << "NFiles Opened: " << _imp->currentCacheFilesCount;
+    qDebug() << "NFiles Opened:" << _imp->currentCacheFilesCount;
 #endif
 }
 
@@ -2683,8 +2684,8 @@ AppManager::checkCacheFreeMemoryIsGoodEnough()
         ///If the viewer cache represents more memory than the node cache, clear some of the viewer cache
         if (nodeCacheSize == 0 || (viewerRamCacheSize / (double)nodeCacheSize) > playbackRAMPercent) {
 #ifdef NATRON_DEBUG_CACHE
-            qDebug() << "Total system free RAM is below the threshold: " << printAsRAM(totalFreeRAM)
-                     << ", clearing last recently used ViewerCache texture...";
+            qDebug() << "Total system free RAM is below the threshold:" << printAsRAM(totalFreeRAM)
+                     << ", clearing least recently used ViewerCache texture...";
 #endif
             
             if (!_imp->_viewerCache->evictLRUInMemoryEntry()) {
@@ -2694,8 +2695,8 @@ AppManager::checkCacheFreeMemoryIsGoodEnough()
             
         } else {
 #ifdef NATRON_DEBUG_CACHE
-            qDebug() << "Total system free RAM is below the threshold: " << printAsRAM(totalFreeRAM)
-                     << ", clearing last recently used NodeCache image...";
+            qDebug() << "Total system free RAM is below the threshold:" << printAsRAM(totalFreeRAM)
+                     << ", clearing least recently used NodeCache image...";
 #endif
             if (!_imp->_nodeCache->evictLRUInMemoryEntry()) {
                 break;
@@ -3569,7 +3570,7 @@ getGroupInfos(const std::string& modulePath,
     
     std::string err;
     if (!interpretPythonScript(toRun, &err, 0)) {
-        qDebug() << "Python group load failure: " << err.c_str();
+        qDebug() << "Python group load failure:" << err.c_str();
         return false;
     }
     

@@ -58,7 +58,7 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     if [ "$CC" = "$TEST_CC" ]; then sudo apt-get install libopenexr-dev libilmbase-dev; fi
     if [ "$CC" = "$TEST_CC" ]; then sudo apt-get install libopenjpeg-dev libtiff-dev libjpeg-dev libpng-dev libboost-filesystem-dev libboost-regex-dev libboost-thread-dev libboost-system-dev libwebp-dev libfreetype6-dev libssl-dev; wget https://github.com/OpenImageIO/oiio/archive/Release-1.4.16.tar.gz -O /tmp/OpenImageIO-1.4.16.tar.gz; tar zxf /tmp/OpenImageIO-1.4.16.tar.gz; cd oiio-Release-1.4.16; make $J USE_QT=0 USE_TBB=0 USE_PYTHON=0 USE_FIELD3D=0 USE_OPENJPEG=1 USE_OCIO=1 OIIO_BUILD_TESTS=0 OIIO_BUILD_TOOLS=0 OCIO_HOME=/opt/ocio INSTALLDIR=/opt/oiio dist_dir=. cmake; sudo make $J dist_dir=.; cd ..; fi
     if [ "$CC" = "$TEST_CC" ]; then sudo apt-get install libavcodec-dev libavformat-dev libswscale-dev libavutil-dev; fi
-    if [ "$CC" = "$TEST_CC" ]; then wget https://github.com/wdas/SeExpr/archive/rel-1.0.1.tar.gz -O /tmp/SeExpr-1.0.1.tar.gz; tar zxf /tmp/SeExpr-1.0.1.tar.gz; cd SeExpr-rel-1.0.1; mkdir _build; cd _build; cmake ..; make $J && sudo make install; cd ../..; fi
+    if [ "$CC" = "$TEST_CC" ]; then wget https://github.com/wdas/SeExpr/archive/rel-1.0.1.tar.gz -O /tmp/SeExpr-1.0.1.tar.gz; tar zxf /tmp/SeExpr-1.0.1.tar.gz; cd SeExpr-rel-1.0.1; mkdir _build; cd _build; cmake .. -DCMAKE_INSTALL_PREFIX=/opt/seexpr; make $J && sudo make install; cd ../..; fi
     # config.pri
     # Ubuntu 12.04 precise doesn't have a pkg-config file for expat (expat.pc)
     echo 'boost: LIBS += -lboost_serialization' > config.pri
@@ -79,7 +79,7 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
 
     # build OpenFX-IO
     if [ "$CC" = "$TEST_CC" ]; then (cd $TRAVIS_BUILD_DIR; git clone https://github.com/MrKepzie/openfx-io.git; (cd openfx-io; git submodule update --init --recursive)) ; fi
-    if [ "$CC" = "$TEST_CC" ]; then env PKG_CONFIG_PATH=/opt/ocio/lib/pkgconfig make -C openfx-io OIIO_HOME=/opt/oiio; fi
+    if [ "$CC" = "$TEST_CC" ]; then env PKG_CONFIG_PATH=/opt/ocio/lib/pkgconfig make -C openfx-io SEEXPR_HOME=/opt/seexpr OIIO_HOME=/opt/oiio; fi
     if [ "$CC" = "$TEST_CC" ]; then mv openfx-io/*/*-64-debug/*.ofx.bundle Tests/Plugins/IO;  fi
 
 elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
