@@ -1032,7 +1032,7 @@ DockablePanelPrivate::initializeKnobVector(const std::vector< boost::shared_ptr<
 void
 DockablePanel::initializeKnobsInternal()
 {
-    const std::vector< boost::shared_ptr<KnobI> > & knobs = _imp->_holder->getKnobs();
+    std::vector< boost::shared_ptr<KnobI> > knobs = _imp->_holder->getKnobs();
     _imp->initializeKnobVector(knobs, NULL);
 
     ///add all knobs left  to the default page
