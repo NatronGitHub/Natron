@@ -822,36 +822,6 @@ Color_Knob::typeName() const
 
 
 void
-Color_Knob::setValues(double r,
-                      double g,
-                      double b)
-{
-    assert(getDimension() == 3);
-    KeyFrame k;
-    beginChanges();
-    onValueChanged(r, 0, Natron::eValueChangedReasonNatronGuiEdited, &k);
-    onValueChanged(g, 1, Natron::eValueChangedReasonNatronGuiEdited, &k);
-    onValueChanged(b, 2, Natron::eValueChangedReasonNatronGuiEdited, &k);
-    endChanges();
-}
-
-void
-Color_Knob::setValues(double r,
-                      double g,
-                      double b,
-                      double a)
-{
-    assert(getDimension() == 4);
-    KeyFrame k;
-    beginChanges();
-    onValueChanged(r, 0, Natron::eValueChangedReasonNatronGuiEdited, &k);
-    onValueChanged(g, 1, Natron::eValueChangedReasonNatronGuiEdited, &k);
-    onValueChanged(b, 2, Natron::eValueChangedReasonNatronGuiEdited, &k);
-    onValueChanged(a, 3, Natron::eValueChangedReasonNatronGuiEdited, &k);
-    endChanges();
-}
-
-void
 Color_Knob::setSimplified(bool simp)
 {
     _simplifiedMode = simp;

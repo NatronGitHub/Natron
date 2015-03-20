@@ -583,9 +583,9 @@ ProjectGui::setPickersColor(const QColor & color)
             _colorPickersEnabled[i]->activateAllDimensions();
         }
         if (_colorPickersEnabled[i]->getDimension() == 3) {
-            _colorPickersEnabled[i]->setValues(r, g, b);
+            _colorPickersEnabled[i]->setValues(r, g, b, Natron::eValueChangedReasonNatronGuiEdited);
         } else {
-            _colorPickersEnabled[i]->setValues(r, g, b,a);
+            _colorPickersEnabled[i]->setValues(r, g, b, a, Natron::eValueChangedReasonNatronGuiEdited);
         }
     }
 }

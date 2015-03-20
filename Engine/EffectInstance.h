@@ -236,7 +236,7 @@ public:
      * the createInstanceAction
      **/
     virtual bool isEffectCreated() const { return true; }
-   
+    
     /**
      * @brief Returns a pointer to the node holding this effect.
      **/
@@ -1245,7 +1245,7 @@ public:
 
     bool onOverlayFocusLost_public(double scaleX,double scaleY) WARN_UNUSED_RETURN;
 
-    bool isDoingInteractAction() const WARN_UNUSED_RETURN;
+    virtual bool isDoingInteractAction() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     /* @brief Overlay support:
     * Just overload this function in your operator.

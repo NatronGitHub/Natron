@@ -811,7 +811,7 @@ public:
      * @brief Declares to Python all parameters as attribute of the variable representing this node.
      **/
     void declarePythonFields();
-    
+        
     /**
      * @brief Set the node name.
      * @returns True upon success, false otherwise. An error dialog will be displayed upon error.

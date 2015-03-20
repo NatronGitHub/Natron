@@ -277,6 +277,9 @@ struct KnobHelperPrivate
     mutable QMutex hasModificationsMutex;
     std::vector<bool> hasModifications;
     
+    mutable QMutex valueChangedBlockedMutex;
+    bool valueChangedBlocked;
+    
     KnobHelperPrivate(KnobHelper* publicInterface_,
                       KnobHolder*  holder_,
                       int dimension_,
@@ -326,6 +329,8 @@ struct KnobHelperPrivate
     , expressionRecursionLevel()
     , hasModificationsMutex()
     , hasModifications()
+    , valueChangedBlockedMutex()
+    , valueChangedBlocked(false)
     {
         mustCloneGuiCurves.resize(dimension);
         mustCloneInternalCurves.resize(dimension);
@@ -1114,6 +1119,27 @@ KnobHelper::endChanges()
 }
 
 void
+KnobHelper::blockValueChanges()
+{
+    QMutexLocker k(&_imp->valueChangedBlockedMutex);
+    _imp->valueChangedBlocked = true;
+}
+
+void
+KnobHelper::unblockValueChanges()
+{
+    QMutexLocker k(&_imp->valueChangedBlockedMutex);
+    _imp->valueChangedBlocked = false;
+}
+
+bool
+KnobHelper::isValueChangesBlocked() const
+{
+    QMutexLocker k(&_imp->valueChangedBlockedMutex);
+    return _imp->valueChangedBlocked;
+}
+
+void
 KnobHelper::evaluateValueChange(int dimension,
                                 Natron::ValueChangedReasonEnum reason)
 {
@@ -1125,7 +1151,9 @@ KnobHelper::evaluateValueChange(int dimension,
     }
     
     bool guiFrozen = app && _imp->gui && _imp->gui->isGuiFrozenForPlayback();
-    
+
+   
+
     
     /// For eValueChangedReasonTimeChanged we never call the instanceChangedAction and evaluate otherwise it would just throttle down
     /// the application responsiveness
@@ -2725,6 +2753,8 @@ KnobHolder::KnobHolder(AppInstance* appInstance)
     QObject::connect(this, SIGNAL(doEndChangesOnMainThread()), this, SLOT(onDoEndChangesOnMainThreadTriggered()));
     QObject::connect(this, SIGNAL(doEvaluateOnMainThread(KnobI*, bool, int)), this,
                      SLOT(onDoEvaluateOnMainThread(KnobI*, bool, int)));
+    QObject::connect(this, SIGNAL(doValueChangeOnMainThread(KnobI*,int,int,bool)), this,
+                     SLOT(onDoValueChangeOnMainThread(KnobI*,int,int,bool)));
 }
 
 KnobHolder::~KnobHolder()
@@ -3128,35 +3158,13 @@ KnobHolder::endChanges(bool discardEverything)
         
         evaluate = _imp->evaluationBlocked == 1;
         knobChanged = _imp->knobChanged;
-        _imp->knobChanged.clear();
         if (evaluate) {
+            _imp->knobChanged.clear();
             significant = _imp->changeSignificant;
             _imp->changeSignificant = false;
         }
     }
-    KnobI* knob = 0;
-    if (!knobChanged.empty()) {
-        if (discardEverything) {
-            {
-                QMutexLocker l(&_imp->evaluationBlockedMutex);
-                
-                if (_imp->evaluationBlocked > 0) {
-                    --_imp->evaluationBlocked;
-                }
-            }
-            return;
-        }
-        
-        for (ChangesList::iterator it = knobChanged.begin(); it!=knobChanged.end(); ++it) {
-            if (it->knob) {
-                onKnobValueChanged_public(it->knob, it->reason, getCurrentTime(), it->originatedFromMainThread);
-            }
-            if (!knob && it->knob) {
-                knob = it->knob;
-            }
-        }
-        
-    }
+
     {
         QMutexLocker l(&_imp->evaluationBlockedMutex);
         
@@ -3167,8 +3175,10 @@ KnobHolder::endChanges(bool discardEverything)
     
     
     
-    if (evaluate && significant) {
-        Natron::ValueChangedReasonEnum reason = knobChanged.begin()->reason;
+    if (!knobChanged.empty() && !discardEverything && evaluate && significant) {
+        ChangesList::iterator first = knobChanged.begin();
+        Natron::ValueChangedReasonEnum reason = first->reason;
+        KnobI* knob = first->knob;
         if (!isMT) {
             Q_EMIT doEvaluateOnMainThread(knob, significant, reason);
         } else {
@@ -3177,23 +3187,34 @@ KnobHolder::endChanges(bool discardEverything)
     }
 }
 
+void
+KnobHolder::onDoValueChangeOnMainThread(KnobI* knob, int reason, int time, bool originatedFromMT)
+{
+    assert(QThread::currentThread() == qApp->thread());
+    onKnobValueChanged_public(knob, (Natron::ValueChangedReasonEnum)reason, time, originatedFromMT);
+}
 
 void
 KnobHolder::appendValueChange(KnobI* knob,Natron::ValueChangedReasonEnum reason)
 {
     {
         QMutexLocker l(&_imp->evaluationBlockedMutex);
-//        if (!_imp->evaluationBlocked) {
-//            ++_imp->evaluationBlocked;
-//           // std::cout <<"INCR: " << _imp->evaluationBlocked << std::endl;
-//        }
+
         KnobChange k;
         k.reason = reason;
         k.originatedFromMainThread = QThread::currentThread() == qApp->thread();
         k.knob = knob;
         
+        if (!knob->isValueChangesBlocked()) {
+            if (!k.originatedFromMainThread && !canHandleEvaluateOnChangeInOtherThread()) {
+                Q_EMIT doValueChangeOnMainThread(knob, reason, getCurrentTime(), k.originatedFromMainThread);
+            } else {
+                onKnobValueChanged_public(knob, reason, getCurrentTime(), k.originatedFromMainThread);
+            }
+        }
+
         //Push it front so instanceChanged is called on the latest first (LIFO)
-        _imp->knobChanged.push_front(k);
+        _imp->knobChanged.push_back(k);
         if (knob) {
             _imp->changeSignificant |= knob->getEvaluateOnChange();
         }
@@ -3203,8 +3224,10 @@ KnobHolder::appendValueChange(KnobI* knob,Natron::ValueChangedReasonEnum reason)
 void
 KnobHolder::beginChanges()
 {
+    /*
+     * Start a begin/end block, actually blocking all evaluations (renders) but not value changed callback.
+     */
     QMutexLocker l(&_imp->evaluationBlockedMutex);
-    
     ++_imp->evaluationBlocked;
     //std::cout <<"INCR: " << _imp->evaluationBlocked << std::endl;
 }

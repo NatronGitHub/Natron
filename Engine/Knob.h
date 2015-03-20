@@ -376,7 +376,7 @@ public:
 
 
     /**
-     * @brief When set to true the instanceChanged action on the plugin and evaluate (render) will not be called
+     * @brief When set to true the evaluate (render) action will not be called
      * when issuing value changes. Internally it maintains a counter, when it reaches 0 the evaluation is unblocked.
      **/
     virtual void beginChanges() = 0;
@@ -385,6 +385,10 @@ public:
      * @brief To be called to reactivate evaluation. Internally it maintains a counter, when it reaches 0 the evaluation is unblocked.
      **/
     virtual void endChanges() = 0;
+    
+    virtual void blockValueChanges() = 0;
+    virtual void unblockValueChanges() = 0;
+    virtual bool isValueChangesBlocked() const = 0;
 
     /**
      * @brief Called by setValue to refresh the GUI, call the instanceChanged action on the plugin and
@@ -1039,6 +1043,9 @@ public:
     virtual void populate() OVERRIDE;
     virtual void beginChanges() OVERRIDE FINAL;
     virtual void endChanges() OVERRIDE FINAL;
+    virtual void blockValueChanges() OVERRIDE FINAL;
+    virtual void unblockValueChanges() OVERRIDE FINAL;
+    virtual bool isValueChangesBlocked() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void evaluateValueChange(int dimension,Natron::ValueChangedReasonEnum reason) OVERRIDE FINAL;
     
     virtual double random(unsigned int seed) const OVERRIDE FINAL WARN_UNUSED_RETURN;
@@ -1364,6 +1371,10 @@ public:
      * not set a new keyframe.
      **/
     ValueChangedReturnCodeEnum setValue(const T & value,int dimension,bool turnOffAutoKeying = false);
+    
+    void setValues(const T& value0, const T& value1, Natron::ValueChangedReasonEnum reason);
+    void setValues(const T& value0, const T& value1, const T& value2, Natron::ValueChangedReasonEnum reason);
+    void setValues(const T& value0, const T& value1, const T& value2, const T& value3, Natron::ValueChangedReasonEnum reason);
 
     /**
      * @brief Calls setValue 
@@ -1393,6 +1404,10 @@ public:
      * @brief Calls setValueAtTime with a reason of Natron::eValueChangedReasonPluginEdited.
      **/
     void setValueAtTimeFromPlugin(int time,const T & v,int dimension);
+    
+    void setValuesAtTime(int time,const T& value0, const T& value1, Natron::ValueChangedReasonEnum reason);
+    void setValuesAtTime(int time,const T& value0, const T& value1, const T& value2, Natron::ValueChangedReasonEnum reason);
+    void setValuesAtTime(int time,const T& value0, const T& value1, const T& value2, const T& value3, Natron::ValueChangedReasonEnum reason);
 
     /**
      * @brief Unlike getValueAtTime this function doesn't interpolate the values.
@@ -1799,6 +1814,8 @@ public:
      **/
     virtual bool canHandleEvaluateOnChangeInOtherThread() const { return false; }
     
+    virtual bool isDoingInteractAction() const { return false; }
+    
     bool isEvaluationBlocked() const;
 
     void appendValueChange(KnobI* knob,Natron::ValueChangedReasonEnum reason);
@@ -2025,11 +2042,15 @@ public Q_SLOTS:
 
     void onDoEvaluateOnMainThread(KnobI* knob,bool significant,int reason);
     
+    void onDoValueChangeOnMainThread(KnobI* knob, int reason, int time, bool originatedFromMT);
+    
 Q_SIGNALS:
     
     void doEndChangesOnMainThread();
     
     void doEvaluateOnMainThread(KnobI* knob,bool significant,int reason);
+    
+    void doValueChangeOnMainThread(KnobI* knob, int reason, int time, bool originatedFromMT);
     
 private:
 

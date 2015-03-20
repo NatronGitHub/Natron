@@ -177,6 +177,7 @@ struct Node::Implementation
     , nativePositionOverlays()
     , pluginPythonModuleMutex()
     , pluginPythonModule()
+    , nodeCreated(false)
     {        
         ///Initialize timers
         gettimeofday(&lastRenderStartedSlotCallTime, 0);
@@ -346,6 +347,8 @@ struct Node::Implementation
     
     mutable QMutex pluginPythonModuleMutex;
     std::string pluginPythonModule;
+    
+    bool nodeCreated;
 };
 
 /**
@@ -527,9 +530,12 @@ Node::load(const std::string & parentMultiInstanceName,
     
     computeHash();
     assert(_imp->liveInstance);
+    _imp->nodeCreated = true;
     
     _imp->runOnNodeCreatedCB(serialization.isNull());
+    
 } // load
+
 
 void
 Node::declareRotoPythonField()
@@ -4462,7 +4468,9 @@ void
 Node::replaceCustomDataInlabel(const QString & data)
 {
     assert( QThread::currentThread() == qApp->thread() );
-    
+    if (!_imp->nodeLabelKnob) {
+        return;
+    }
     QString label = _imp->nodeLabelKnob->getValue().c_str();
     ///Since the label is html encoded, find the text's start
     int foundFontTag = label.indexOf("<font");

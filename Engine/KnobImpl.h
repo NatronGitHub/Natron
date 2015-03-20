@@ -861,6 +861,99 @@ Knob<T>::setValue(const T & v,
     return ret;
 } // setValue
 
+
+template <typename T>
+void
+Knob<T>::setValues(const T& value0, const T& value1, Natron::ValueChangedReasonEnum reason)
+{
+    KnobHolder* holder = getHolder();
+    Natron::EffectInstance* effect = 0;
+    bool doEditEnd = false;
+    if (holder) {
+        effect = dynamic_cast<Natron::EffectInstance*>(holder);
+        if (effect) {
+            if (effect->isDoingInteractAction() && !effect->getApp()->isCreatingPythonGroup()) {
+                effect->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOnCreateNewCommand);
+                doEditEnd = true;
+            }
+        }
+    }
+    KeyFrame newKey;
+    assert(getDimension() == 2);
+    beginChanges();
+    blockValueChanges();
+    (void)setValue(value0, 0, reason, &newKey);
+    unblockValueChanges();
+    (void)setValue(value1, 1, reason, &newKey);
+    endChanges();
+    if (doEditEnd) {
+        effect->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOff);
+    }
+}
+
+template <typename T>
+void
+Knob<T>::setValues(const T& value0, const T& value1, const T& value2, Natron::ValueChangedReasonEnum reason)
+{
+    KnobHolder* holder = getHolder();
+    Natron::EffectInstance* effect = 0;
+    bool doEditEnd = false;
+    if (holder) {
+        effect = dynamic_cast<Natron::EffectInstance*>(holder);
+        if (effect) {
+            if (effect->isDoingInteractAction() && !effect->getApp()->isCreatingPythonGroup()) {
+                effect->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOnCreateNewCommand);
+                doEditEnd = true;
+            }
+        }
+    }
+
+    KeyFrame newKey;
+    assert(getDimension() == 3);
+    beginChanges();
+    blockValueChanges();
+    (void)setValue(value0, 0, reason, &newKey);
+    (void)setValue(value1, 1, reason, &newKey);
+    unblockValueChanges();
+    (void)setValue(value2, 2, reason, &newKey);
+    endChanges();
+    if (doEditEnd) {
+        effect->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOff);
+    }
+}
+
+template <typename T>
+void
+Knob<T>::setValues(const T& value0, const T& value1, const T& value2, const T& value3, Natron::ValueChangedReasonEnum reason)
+{
+    KnobHolder* holder = getHolder();
+    Natron::EffectInstance* effect = 0;
+    bool doEditEnd = false;
+    if (holder) {
+        effect = dynamic_cast<Natron::EffectInstance*>(holder);
+        if (effect) {
+            if (effect->isDoingInteractAction() && !effect->getApp()->isCreatingPythonGroup()) {
+                effect->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOnCreateNewCommand);
+                doEditEnd = true;
+            }
+        }
+    }
+
+    KeyFrame newKey;
+    assert(getDimension() == 4);
+    beginChanges();
+    blockValueChanges();
+    (void)setValue(value0, 0, reason, &newKey);
+    (void)setValue(value1, 1, reason, &newKey);
+    (void)setValue(value2, 2, reason, &newKey);
+    unblockValueChanges();
+    (void)setValue(value3, 3, reason, &newKey);
+    endChanges();
+    if (doEditEnd) {
+        effect->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOff);
+    }
+}
+
 template <typename T>
 void
 Knob<T>::makeKeyFrame(Curve* curve,double time,const T& v,KeyFrame* key)
@@ -902,8 +995,10 @@ Knob<T>::setValueAtTime(int time,
                         Natron::ValueChangedReasonEnum reason,
                         KeyFrame* newKey)
 {
-    if ( ( dimension > getDimension() ) || (dimension < 0) ) {
-        throw std::invalid_argument("Knob::setValueAtTime(): Dimension out of range");
+    assert(dimension >= 0 && dimension < getDimension());
+    if (!canAnimate() || !isAnimationEnabled()) {
+        qDebug() << "WARNING: Attempting to call setValueAtTime on " << getName().c_str() << " which does not have animation enabled.";
+        (void)setValue(v, dimension, reason, newKey);
     }
 
     Natron::EffectInstance* holder = dynamic_cast<Natron::EffectInstance*>( getHolder() );
@@ -1003,6 +1098,98 @@ Knob<T>::setValueAtTime(int time,
     return ret;
 } // setValueAtTime
 
+
+template<typename T>
+void
+Knob<T>::setValuesAtTime(int time,const T& value0, const T& value1, Natron::ValueChangedReasonEnum reason)
+{
+    
+    KnobHolder* holder = getHolder();
+    Natron::EffectInstance* effect = 0;
+    bool doEditEnd = false;
+    if (holder) {
+        effect = dynamic_cast<Natron::EffectInstance*>(holder);
+        if (effect) {
+            if (effect->isDoingInteractAction() && !effect->getApp()->isCreatingPythonGroup()) {
+                effect->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOnCreateNewCommand);
+                doEditEnd = true;
+            }
+        }
+    }
+    KeyFrame newKey;
+    assert(getDimension() == 2);
+    beginChanges();
+    blockValueChanges();
+    (void)setValueAtTime(time, value0, 0, reason, &newKey);
+    unblockValueChanges();
+    (void)setValueAtTime(time, value1, 1, reason, &newKey);
+    endChanges();
+    if (doEditEnd) {
+        effect->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOff);
+    }
+}
+
+template<typename T>
+void
+Knob<T>::setValuesAtTime(int time,const T& value0, const T& value1, const T& value2, Natron::ValueChangedReasonEnum reason)
+{
+    KnobHolder* holder = getHolder();
+    Natron::EffectInstance* effect = 0;
+    bool doEditEnd = false;
+    if (holder) {
+        effect = dynamic_cast<Natron::EffectInstance*>(holder);
+        if (effect) {
+            if (effect->isDoingInteractAction() && !effect->getApp()->isCreatingPythonGroup()) {
+                effect->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOnCreateNewCommand);
+                doEditEnd = true;
+            }
+        }
+    }
+    KeyFrame newKey;
+    assert(getDimension() == 3);
+    beginChanges();
+    blockValueChanges();
+    (void)setValueAtTime(time, value0, 0, reason, &newKey);
+    (void)setValueAtTime(time, value1, 1, reason, &newKey);
+    unblockValueChanges();
+    (void)setValueAtTime(time, value2, 2, reason, &newKey);
+    endChanges();
+    if (doEditEnd) {
+        effect->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOff);
+    }
+
+}
+
+template<typename T>
+void
+Knob<T>::setValuesAtTime(int time,const T& value0, const T& value1, const T& value2, const T& value3, Natron::ValueChangedReasonEnum reason)
+{
+    KnobHolder* holder = getHolder();
+    Natron::EffectInstance* effect = 0;
+    bool doEditEnd = false;
+    if (holder) {
+        effect = dynamic_cast<Natron::EffectInstance*>(holder);
+        if (effect) {
+            if (effect->isDoingInteractAction() && !effect->getApp()->isCreatingPythonGroup()) {
+                effect->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOnCreateNewCommand);
+                doEditEnd = true;
+            }
+        }
+    }
+    KeyFrame newKey;
+    assert(getDimension() == 4);
+    beginChanges();
+    blockValueChanges();
+    (void)setValueAtTime(time, value0, 0, reason, &newKey);
+    (void)setValueAtTime(time, value1, 1, reason, &newKey);
+    (void)setValueAtTime(time, value2, 2, reason, &newKey);
+    unblockValueChanges();
+    (void)setValueAtTime(time, value3, 3, reason, &newKey);
+    endChanges();
+    if (doEditEnd) {
+        effect->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOff);
+    }
+}
 
 template<typename T>
 void

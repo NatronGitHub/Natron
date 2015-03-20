@@ -520,16 +520,6 @@ public:
         Q_EMIT pickingEnabled(enabled);
     }
 
-    /**
-     * @brief Convenience function for RGB color params
-     **/
-    void setValues(double r,double g,double b);
-
-
-    /**
-     * @brief Convenience function for RGBA color params
-     **/
-    void setValues(double r,double g,double b,double a);
     
     /**
      * @brief When simplified, the GUI of the knob should not have any spinbox and sliders but just a label to click and openup a color dialog

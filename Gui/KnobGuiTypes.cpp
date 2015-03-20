@@ -2044,17 +2044,22 @@ Color_KnobGui::expandAllDimensions()
     _slider->hide();
     if (_dimension > 1) {
         _rLabel->show();
-        _rBox->setUseLineColor(true, Qt::red);
+        QColor rColor,gColor,bColor,aColor;
+        rColor.setRgbF(0.851643,0.196936,0.196936);
+        gColor.setRgbF(0,0.654707,0);
+        bColor.setRgbF(0.345293,0.345293,1);
+        aColor.setRgbF(0.398979,0.398979,0.398979);
+        _rBox->setUseLineColor(true, rColor);
         _gLabel->show();
         _gBox->show();
-        _gBox->setUseLineColor(true, Qt::green);
+        _gBox->setUseLineColor(true, gColor);
         _bLabel->show();
         _bBox->show();
-        _bBox->setUseLineColor(true, Qt::blue);
+        _bBox->setUseLineColor(true, bColor);
         if (_dimension > 3) {
             _aLabel->show();
             _aBox->show();
-            _aBox->setUseLineColor(true, Qt::white);
+            _aBox->setUseLineColor(true, aColor);
         }
     }
     Q_EMIT dimensionSwitchToggled(true);
@@ -2095,9 +2100,9 @@ Color_KnobGui::onDimensionSwitchClicked()
         if (_dimension > 1) {
             double value( _rBox->value() );
             if (_dimension == 3) {
-                _knob->setValues(value, value, value);
+                _knob->setValues(value, value, value, Natron::eValueChangedReasonNatronGuiEdited);
             } else {
-                _knob->setValues(value, value, value,value);
+                _knob->setValues(value, value, value,value, Natron::eValueChangedReasonNatronGuiEdited);
             }
         }
     }
