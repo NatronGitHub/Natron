@@ -33,12 +33,14 @@
 #include <QThreadPool>
 #include <QtCore/QAtomicInt>
 
+#ifdef NATRON_USE_BREAKPAD
 #if defined(Q_OS_MAC)
 #include "client/mac/handler/exception_handler.h"
 #elif defined(Q_OS_LINUX)
 #include "client/linux/handler/exception_handler.h"
 #elif defined(Q_OS_WIN32)
 #include "client/windows/handler/exception_handler.h"
+#endif
 #endif
 
 #include "Global/MemoryInfo.h"
@@ -742,12 +744,11 @@ CLArgsPrivate::parse()
         }
         
         writers.push_back(w);
-        QStringList::iterator end = nextNext;
         if (nextNext != args.end()) {
             ++nextNext;
         }
         args.erase(it,nextNext);
-
+        
     } // for (;;)
     
     bool atLeastOneOutput = false;
