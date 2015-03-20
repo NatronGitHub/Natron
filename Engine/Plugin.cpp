@@ -70,35 +70,47 @@ Plugin::getPluginLabel() const
 const QString
 Plugin::getLabelVersionMajorMinorEncoded() const
 {
-    return getLabelWithoutOFX() + ' ' + QString::number(_majorVersion) + '.' + QString::number(_minorVersion);
+    return getLabelWithoutSuffix() + ' ' + QString::number(_majorVersion) + '.' + QString::number(_minorVersion);
 }
 
-const QString
-Plugin::getLabelWithoutOFX() const
+QString
+Plugin::makeLabelWithoutSuffix(const QString& label)
 {
-    if (_label.endsWith("OIIOOFX")) {
-        return _label.mid(0,_label.size() - 7);
-    } else if (_label.endsWith("OFX")) {
-        return _label.mid(0,_label.size() - 3);
-    } else if (_label.endsWith("CImg")) {
-        return _label.mid(0,_label.size() - 4);
-    } else if (_label.endsWith("OIIO")) {
-        return _label.mid(0,_label.size() - 4);
+    if (label.endsWith("OIIOOFX")) {
+        return label.mid(0,label.size() - 7);
+    } else if (label.endsWith("OFX")) {
+        return label.mid(0,label.size() - 3);
+    } else if (label.endsWith("CImg")) {
+        return label.mid(0,label.size() - 4);
+    } else if (label.endsWith("OIIO")) {
+        return label.mid(0,label.size() - 4);
     }
-    return _label;
+    return label;
+}
+
+const QString&
+Plugin::getLabelWithoutSuffix() const
+{
+    return _labelWithoutSuffix;
+}
+
+void
+Plugin::setLabelWithoutSuffix(const QString& label)
+{
+    _labelWithoutSuffix = label;
 }
 
 const QString
 Plugin::getLabelVersionMajorEncoded() const
 {
-    return getLabelWithoutOFX() + ' ' + QString::number(_majorVersion);
+    return getLabelWithoutSuffix() + ' ' + QString::number(_majorVersion);
 }
 
 QString
 Plugin::generateUserFriendlyPluginID() const
 {
     QString grouping = _grouping.size() > 0 ? _grouping[0] : QString();
-    return getLabelWithoutOFX() + "  [" + grouping + "]";
+    return getLabelWithoutSuffix() + "  [" + grouping + "]";
 }
 
 QString
@@ -108,12 +120,6 @@ Plugin::generateUserFriendlyPluginIDMajorEncoded() const
     return getLabelVersionMajorEncoded() + "  [" + grouping + "]";
 }
 
-
-const QString&
-Plugin::getPluginOFXID() const
-{
-    return _ofxPluginID;
-}
 
 const QString&
 Plugin::getIconFilePath() const

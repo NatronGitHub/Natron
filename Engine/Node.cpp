@@ -493,7 +493,7 @@ Node::load(const std::string & parentMultiInstanceName,
     if (!nameSet) {
         if (fixedName.isEmpty()) {
             std::string name;
-            QString pluginLabel = _imp->plugin ? _imp->plugin->getLabelWithoutOFX() : QString();
+            QString pluginLabel = _imp->plugin ? _imp->plugin->getLabelWithoutSuffix() : QString();
             getGroup()->initNodeName(isMultiInstanceChild ? parentMultiInstanceName + '_' : pluginLabel.toStdString(),&name);
             setNameInternal(name.c_str());
             nameSet = true;

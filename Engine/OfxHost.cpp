@@ -579,7 +579,6 @@ Natron::OfxHost::loadOFXPlugins(std::map<std::string,std::vector< std::pair<std:
                                                               pluginLabel.c_str(),
                                                               iconFilename,
                                                               groupIconFilename,
-                                                              p->getIdentifier().c_str(),
                                                               foundReader != contexts.end(),
                                                               foundWriter != contexts.end(),
                                                               new Natron::LibraryBinary(Natron::LibraryBinary::eLibraryTypeBuiltin),

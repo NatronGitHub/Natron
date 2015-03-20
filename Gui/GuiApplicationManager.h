@@ -208,7 +208,7 @@ private:
 
     virtual void initBuiltinPythonModules() OVERRIDE FINAL;
 
-    virtual void onPluginLoaded(Natron::Plugin* plugin) OVERRIDE FINAL;
+    void onPluginLoaded(Natron::Plugin* plugin);
     virtual void ignorePlugin(Natron::Plugin* plugin) OVERRIDE FINAL;
     virtual void onAllPluginsLoaded() OVERRIDE FINAL;
     virtual void loadBuiltinNodePlugins(std::map<std::string,std::vector< std::pair<std::string,double> > >* readersMap,
