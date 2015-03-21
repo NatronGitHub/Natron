@@ -319,7 +319,9 @@ ProjectPrivate::runOnProjectSaveCallback(const std::string& filename, bool autoS
                 PyObject* mainModule = getMainModule();
                 assert(mainModule);
                 PyObject* ret = PyObject_GetAttrString(mainModule, "ret");
-                assert(ret);
+                if (!ret) {
+                    return filename;
+                }
                 std::string filePath = filename;
                 if (ret) {
                     filePath = PY3String_asString(ret);

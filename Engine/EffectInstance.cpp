@@ -2065,9 +2065,12 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
         StatusEnum stat = getRegionOfDefinition_public(nodeHash,args.time, renderMappedScale, args.view, &rod, &isProjectFormat);
 
         ///The rod might be NULL for a roto that has no beziers and no input
-        if ( (stat == eStatusFailed) || rod.isNull() ) {
-            ///if getRoD fails, just return a NULL ptr
-            return eRenderRoIRetCodeFailed;
+        if (stat == eStatusFailed) {
+            ///if getRoD fails, this might be because the RoD is null after all (e.g: an empty Roto node), we don't want the render to fail
+            return eRenderRoIRetCodeOk;
+        } else if (rod.isNull()) {
+            //Nothing to render
+            return eRenderRoIRetCodeOk;
         }
         if ( (supportsRS == eSupportsMaybe) && (renderMappedMipMapLevel != 0) ) {
             // supportsRenderScaleMaybe may have changed, update it

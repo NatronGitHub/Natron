@@ -922,9 +922,10 @@ Settings::initializeKnobs()
     
     _onProjectCreated = Natron::createKnob<String_Knob>(this, "After project created");
     _onProjectCreated->setName("afterProjectCreated");
-    _onProjectCreated->setHintToolTip("Callback called once a new project is created (this is never called when \"After project loaded\" is called.)\n"
-                                      "The variable \"app\" will be declared prior to calling the function, pointing to the current instance being "
-                                      "created.");
+    _onProjectCreated->setHintToolTip("Callback called once a new project is created (this is never called "
+                                      "when \"After project loaded\" is called.)\n"
+                                      "The signature of the callback is : callback(app) where:\n"
+                                      "- app: points to the current application instance\n");
     _onProjectCreated->setAnimationEnabled(false);
     _pythonPage->addKnob(_onProjectCreated);
     

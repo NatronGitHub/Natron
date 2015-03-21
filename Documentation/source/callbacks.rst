@@ -429,12 +429,13 @@ The Before frame render callback:
 
 This function is called prior to rendering any frame with a Write node. The signature is::
 
-	callback(thisNode, app)
+	callback(frame, thisNode, app)
 
 - **thisNode** : points to the :ref:`write node<Effect>`.
 
 - **app** : points to the correct :ref:`application instance<App>`.
 
+- **frame**: The frame that is about to be rendered
 
 To execute code specific when in background render mode or in GUI mode, use the following condition
 ::
@@ -490,8 +491,6 @@ the Write node.  The signature is::
 - **thisNode** : points to the :ref:`write node<Effect>`.
 
 - **app** : points to the correct :ref:`application instance<App>`.
-
-- **frame**: The frame that is about to be rendered
 
 To execute code specific when in background render mode or in GUI mode, use the following condition
 ::

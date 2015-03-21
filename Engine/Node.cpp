@@ -1807,12 +1807,13 @@ Node::initializeKnobs(int renderScaleSupportPref)
             _imp->knobChangedCallback = Natron::createKnob<String_Knob>(_imp->liveInstance.get(), tr("After param changed callback").toStdString());
             _imp->knobChangedCallback->setHintToolTip(tr("Set here the name of a function defined in Python which will be called for each  "
                                                          "parameter change. Either define this function in the Script Editor "
-                                                         "or in the init.py script or even in the script of a Python group plug-in. "
-                                                         "Several variables are declared for convenience when the callback is called, namely:\n"
+                                                         "or in the init.py script or even in the script of a Python group plug-in.\n"
+                                                         "The signature of the callback is: callback(thisParam, thisNode, thisGroup, app, userEdited) where:\n"
                                                          "- thisParam: The parameter which just had its value changed\n"
                                                          "- userEdited: A boolean informing whether the change was due to user interaction or "
                                                          "because something internally triggered the change.\n"
                                                          "- thisNode: The node holding the parameter\n"
+                                                         "- app: points to the current application instance\n"
                                                          "- thisGroup: The group holding thisNode (only if thisNode belongs to a group)").toStdString());
             _imp->knobChangedCallback->setAnimationEnabled(false);
             _imp->knobChangedCallback->setName("onParamChanged");
@@ -1822,12 +1823,12 @@ Node::initializeKnobs(int renderScaleSupportPref)
             _imp->inputChangedCallback->setHintToolTip(tr("Set here the name of a function defined in Python which will be called after "
                                                           "each connection is changed for the inputs of the node. "
                                                           "Either define this function in the Script Editor "
-                                                          "or in the init.py script or even in the script of a Python group plug-in. "
-                                                          "Several variables are declared for convenience when the callback is called, "
-                                                          "namely:\n"
+                                                          "or in the init.py script or even in the script of a Python group plug-in.\n"
+                                                          "The signature of the callback is: callback(inputIndex, thisNode, thisGroup, app):\n"
                                                           "- inputIndex: the index of the input which changed, you can query the node "
-                                                          "connected to the input by calling the getInput(...) function. "
+                                                          "connected to the input by calling the getInput(...) function.\n"
                                                           "- thisNode: The node holding the parameter\n"
+                                                          "- app: points to the current application instance\n"
                                                           "- thisGroup: The group holding thisNode (only if thisNode belongs to a group)").toStdString());
             
             _imp->inputChangedCallback->setAnimationEnabled(false);
@@ -1884,9 +1885,10 @@ Node::initializeKnobs(int renderScaleSupportPref)
                 _imp->beforeFrameRender->setAnimationEnabled(false);
                 _imp->beforeFrameRender->setHintToolTip(tr("Add here the name of a Python defined function that will be called before rendering "
                                                            "any frame.\n "
-                                                           "The variable \"app\" will be declared prior to calling the function, pointing to the current app instance.\n"
-                                                           "\nThe variable \"thisNode\" will be declared when calling the function, "
-                                                           "referencing the writer node.").toStdString());
+                                                           "The signature of the callback is: callback(frame, thisNode, app) where:\n"
+                                                           "- frame: the frame to be rendered\n"
+                                                           "- thisNode: points to the writer node\n"
+                                                           "- app: points to the current application instance").toStdString());
                 pythonPage->addKnob(_imp->beforeFrameRender);
                 
                 _imp->beforeRender =  Natron::createKnob<String_Knob>(_imp->liveInstance.get(), tr("Before render").toStdString());
@@ -1894,9 +1896,9 @@ Node::initializeKnobs(int renderScaleSupportPref)
                 _imp->beforeRender->setAnimationEnabled(false);
                 _imp->beforeRender->setHintToolTip(tr("Add here the name of a Python defined function that will be called once when "
                                                       "starting rendering.\n "
-                                                      "The variable \"app\" will be declared prior to calling the function, pointing to the current app instance.\n"
-                                                      "\nThe variable \"thisNode\" will be declared when calling the function, "
-                                                      "referencing the writer node.").toStdString());
+                                                      "The signature of the callback is: callback(thisNode, app) where:\n"
+                                                      "- thisNode: points to the writer node\n"
+                                                      "- app: points to the current application instance").toStdString());
                 pythonPage->addKnob(_imp->beforeRender);
                 
                 _imp->afterFrameRender =  Natron::createKnob<String_Knob>(_imp->liveInstance.get(), tr("After frame render").toStdString());
@@ -1904,9 +1906,10 @@ Node::initializeKnobs(int renderScaleSupportPref)
                 _imp->afterFrameRender->setAnimationEnabled(false);
                 _imp->afterFrameRender->setHintToolTip(tr("Add here the name of a Python defined function that will be called after rendering "
                                                           "any frame.\n "
-                                                          "The variable \"app\" will be declared prior to calling the function, pointing to the current app instance.\n"
-                                                          "\nThe variable \"thisNode\" will be declared when calling the function, "
-                                                          "referencing the writer node.").toStdString());
+                                                          "The signature of the callback is: callback(frame, thisNode, app) where:\n"
+                                                          "- frame: the frame that has been rendered\n"
+                                                          "- thisNode: points to the writer node\n"
+                                                          "- app: points to the current application instance").toStdString());
                 pythonPage->addKnob(_imp->afterFrameRender);
                 
                 _imp->afterRender =  Natron::createKnob<String_Knob>(_imp->liveInstance.get(), tr("After render").toStdString());
@@ -1914,10 +1917,10 @@ Node::initializeKnobs(int renderScaleSupportPref)
                 _imp->afterRender->setAnimationEnabled(false);
                 _imp->afterRender->setHintToolTip(tr("Add here the name of a Python defined function that will be called once when the rendering "
                                                      "is finished.\n "
-                                                     "The boolean variable \"aborted\" will be set to True if the render was aborted or False otherwise.\n"
-                                                     "The variable \"app\" will be declared prior to calling the function, pointing to the current app instance.\n"
-                                                     "\nThe variable \"thisNode\" will be declare, "
-                                                     "referencing the writer node.").toStdString());
+                                                     "The signature of the callback is: callback(aborted, thisNode, app) where:\n"
+                                                     "- aborted: True if the render ended because it was aborted, False upon completion\n"
+                                                     "- thisNode: points to the writer node\n"
+                                                     "- app: points to the current application instance").toStdString());
                 pythonPage->addKnob(_imp->afterRender);
             }
         }
