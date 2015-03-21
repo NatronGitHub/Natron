@@ -1553,7 +1553,7 @@ Choice_KnobGui::createWidget(QHBoxLayout* layout)
 void
 Choice_KnobGui::onCurrentIndexChanged(int i)
 {
-    pushUndoCommand( new KnobUndoCommand<int>(this,_knob->getValue(0,false),i, false) );
+    pushUndoCommand( new KnobUndoCommand<int>(this,_knob->getValue(0,false),i, 0, false, 0) );
 }
 
 void
