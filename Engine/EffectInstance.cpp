@@ -2295,14 +2295,14 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
     if (tilesSupported) {
         if (useImageAsOutput) {
             if (!roi.intersect(upscaledImageBounds, &roi)) {
-                return eRenderRoIRetCodeFailed;
+                return eRenderRoIRetCodeOk;
             }
             assert(roi.x1 >= upscaledImageBounds.x1 && roi.y1 >= upscaledImageBounds.y1 &&
                    roi.x2 <= upscaledImageBounds.x2 && roi.y2 <= upscaledImageBounds.y2);
             
         } else {
             if (!roi.intersect(downscaledImageBounds, &roi)) {
-                return eRenderRoIRetCodeFailed;
+                return eRenderRoIRetCodeOk;
             }
             assert(roi.x1 >= downscaledImageBounds.x1 && roi.y1 >= downscaledImageBounds.y1 &&
                    roi.x2 <= downscaledImageBounds.x2 && roi.y2 <= downscaledImageBounds.y2);
