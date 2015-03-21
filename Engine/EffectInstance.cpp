@@ -4465,28 +4465,12 @@ EffectInstance::isIdentity_public(U64 hash,
             *inputNb = 0;
             *inputTime = time;
         } else if ( getNode()->isNodeDisabled() ) {
+            
             ret = true;
             *inputTime = time;
             *inputNb = -1;
-            ///we forward this node to the last connected non-optional input
-            ///if there's only optional inputs connected, we return the last optional input
-            int lastOptionalInput = -1;
-            for (int i = getMaxInputCount() - 1; i >= 0; --i) {
-                bool optional = isInputOptional(i);
-                bool isRoto = isInputRotoBrush(i);
-                if (isRoto) {
-                    continue;
-                }
-                if ( !optional && getNode()->getInput(i) ) {
-                    *inputNb = i;
-                    break;
-                } else if ( optional && (lastOptionalInput == -1) ) {
-                    lastOptionalInput = i;
-                }
-            }
-            if (*inputNb == -1) {
-                *inputNb = lastOptionalInput;
-            }
+            *inputNb = getNode()->getPreferredInput();
+
         } else {
             /// Don't call isIdentity if plugin is sequential only.
             if (getSequentialPreference() != Natron::eSequentialPreferenceOnlySequential) {
