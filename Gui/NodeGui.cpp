@@ -2514,6 +2514,7 @@ NodeGui::setNameItemHtml(const QString & name,
             int endCustomData = labelCopy.indexOf(endCustomTag,startCustomData);
             assert(endCustomData != -1);
             labelCopy.remove( endCustomData, endCustomTag.size() );
+            labelCopy.insert(endCustomData, "<br>");
         }
         
         ///add the node name into the html encoded label
@@ -2575,6 +2576,7 @@ NodeGui::onNodeExtraLabelChanged(const QString & label)
     _nodeLabel = replaceLineBreaksWithHtmlParagraph(_nodeLabel); ///< maybe we should do this in the knob itself when the user writes ?
     setNameItemHtml(node->getLabel().c_str(),_nodeLabel);
     
+    //For the merge node, set its operator icon
     if (getNode()->getPlugin()->getPluginID() == QString(PLUGINID_OFX_MERGE)) {
         assert(_mergeIcon);
         QString op = String_KnobGui::getNatronHtmlTagContent(label);
