@@ -782,6 +782,13 @@ TimeLineGui::setBoundaries(SequenceTime first,
    
 }
 
+void
+TimeLineGui::recenterOnBounds()
+{
+    SequenceTime first,last;
+    getBounds(&first, &last);
+    centerOn(first,last);
+}
 
 void
 TimeLineGui::centerOn(SequenceTime left,

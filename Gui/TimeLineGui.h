@@ -109,6 +109,8 @@ public:
     void setFrameRangeEdited(bool edited);
 
 public Q_SLOTS:
+    
+    void recenterOnBounds();
 
     void centerOn(SequenceTime left,SequenceTime right);
 

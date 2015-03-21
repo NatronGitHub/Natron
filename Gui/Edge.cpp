@@ -82,12 +82,12 @@ Edge::Edge(int inputNb_,
         if (_isMask) {
             setDashed(true);
             setOptional(true);
-            if (!isSelected && autoHide) {
+            if (!isSelected && autoHide && _isMask) {
                 hide();
             }
         } else if (effect->isInputOptional(_inputNb)) {
             setOptional(true);
-            if (!isSelected && autoHide) {
+            if (!isSelected && autoHide  && _isMask) {
                 hide();
             }
         }
