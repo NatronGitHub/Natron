@@ -59,6 +59,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/DockablePanel.h"
 #include "Gui/ClickableLabel.h"
 #include "Gui/Label.h"
+#include "Gui/GuiMacros.h"
 
 #include "ofxNatron.h"
 
@@ -2842,7 +2843,7 @@ AnimatingTextEdit::focusOutEvent(QFocusEvent* e)
 void
 AnimatingTextEdit::keyPressEvent(QKeyEvent* e)
 {
-    if (e->key() == Qt::Key_Return) {
+    if (modCASIsControl(e) && e->key() == Qt::Key_Return) {
         if (_hasChanged) {
             _hasChanged = false;
             Q_EMIT editingFinished();
@@ -3767,6 +3768,8 @@ String_KnobGui::updateToolTip()
                 tt += tr(" This text area supports html encoding. "
                          "Please check <a href=http://qt-project.org/doc/qt-5/richtext-html-subset.html>Qt website</a> for more info. ");
             }
+            QKeySequence seq(Qt::CTRL + Qt::Key_Return);
+            tt += tr("Use ") + seq.toString(QKeySequence::NativeText) + tr(" to validate changes made to the text. ");
             _textEdit->setToolTip(tt);
         } else if (_lineEdit) {
             _lineEdit->setToolTip(tt);
