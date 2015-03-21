@@ -493,7 +493,16 @@ Node::load(const std::string & parentMultiInstanceName,
     if (!nameSet) {
         if (fixedName.isEmpty()) {
             std::string name;
-            QString pluginLabel = _imp->plugin ? _imp->plugin->getLabelWithoutSuffix() : QString();
+            QString pluginLabel;
+            AppManager::AppTypeEnum appType = appPTR->getAppType();
+            if (_imp->plugin &&
+                (appType == AppManager::eAppTypeBackground ||
+                 appType == AppManager::eAppTypeGui ||
+                 appType == AppManager::eAppTypeInterpreter)) {
+                pluginLabel = _imp->plugin->getLabelWithoutSuffix();
+            } else {
+                pluginLabel = _imp->plugin->getPluginLabel();
+            }
             getGroup()->initNodeName(isMultiInstanceChild ? parentMultiInstanceName + '_' : pluginLabel.toStdString(),&name);
             setNameInternal(name.c_str());
             nameSet = true;

@@ -1433,7 +1433,45 @@ AppManager::loadAllPlugins()
 void
 AppManager::onAllPluginsLoaded()
 {
+    //We try to make nicer plug-in labels, only do this if the user use Natron with some sort of interaction (either command line
+    //or GUI, otherwise don't bother doing this)
     
+    AppManager::AppTypeEnum appType = appPTR->getAppType();
+    if (appType != AppManager::eAppTypeBackground &&
+         appType != AppManager::eAppTypeGui &&
+        appType != AppManager::eAppTypeInterpreter) {
+        return;
+    }
+    
+    //Make sure there is no duplicates with the same label
+    const PluginsMap& plugins = getPluginsList();
+    for (PluginsMap::const_iterator it = plugins.begin(); it!=plugins.end(); ++it) {
+        assert(!it->second.empty());
+        PluginMajorsOrdered::iterator first = it->second.begin();
+        
+        QString labelWithoutSuffix = Plugin::makeLabelWithoutSuffix((*first)->getPluginLabel());
+        
+        //Find a duplicate
+        for (PluginsMap::const_iterator it2 = plugins.begin(); it2!=plugins.end(); ++it2) {
+            if (it->first == it2->first) {
+                continue;
+            }
+            PluginMajorsOrdered::iterator other = it2->second.begin();
+            QString otherLabelWithoutSuffix = Plugin::makeLabelWithoutSuffix((*other)->getPluginLabel());
+            if (otherLabelWithoutSuffix == labelWithoutSuffix) {
+                labelWithoutSuffix = (*first)->getPluginLabel();
+                break;
+            }
+        }
+        
+        
+        for (PluginMajorsOrdered::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
+            (*it2)->setLabelWithoutSuffix(labelWithoutSuffix);
+        }
+        
+        onPluginLoaded(*first);
+        
+    }
 }
 
 void

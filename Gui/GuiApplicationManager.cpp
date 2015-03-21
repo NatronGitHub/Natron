@@ -1449,37 +1449,7 @@ GuiApplicationManager::onAllPluginsLoaded()
 {
     ///Restore user shortcuts only when all plug-ins are populated.
     loadShortcuts();
-    
-    
-    //Make sure there is no duplicates with the same label
-    const PluginsMap& plugins = getPluginsList();
-    for (PluginsMap::const_iterator it = plugins.begin(); it!=plugins.end(); ++it) {
-        assert(!it->second.empty());
-        PluginMajorsOrdered::iterator first = it->second.begin();
-        
-        QString labelWithoutSuffix = Plugin::makeLabelWithoutSuffix((*first)->getPluginLabel());
-        
-        //Find a duplicate
-        for (PluginsMap::const_iterator it2 = plugins.begin(); it2!=plugins.end(); ++it2) {
-            if (it->first == it2->first) {
-                continue;
-            }
-            PluginMajorsOrdered::iterator other = it2->second.begin();
-            QString otherLabelWithoutSuffix = Plugin::makeLabelWithoutSuffix((*other)->getPluginLabel());
-            if (otherLabelWithoutSuffix == labelWithoutSuffix) {
-                labelWithoutSuffix = (*first)->getPluginLabel();
-                break;
-            }
-        }
-        
-        
-        for (PluginMajorsOrdered::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
-            (*it2)->setLabelWithoutSuffix(labelWithoutSuffix);
-        }
-        
-        onPluginLoaded(*first);
-
-    }
+    AppManager::onAllPluginsLoaded();
 }
 
 void

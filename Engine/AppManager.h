@@ -497,6 +497,8 @@ protected:
         
     }
     
+    virtual void onPluginLoaded(Natron::Plugin* /*plugin*/) {}
+    
     virtual void onAllPluginsLoaded();
     
     virtual void clearLastRenderedTextures() {}
