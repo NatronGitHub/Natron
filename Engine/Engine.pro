@@ -160,7 +160,9 @@ SOURCES += \
     NatronEngine/pageparam_wrapper.cpp \
     NatronEngine/appsettings_wrapper.cpp \
     NatronEngine/pycoreapplication_wrapper.cpp \
-    NatronEngine/userparamholder_wrapper.cpp
+    NatronEngine/userparamholder_wrapper.cpp \
+    NatronEngine/rectd_wrapper.cpp \
+    NatronEngine/recti_wrapper.cpp
 
 HEADERS += \
     AppInstance.h \
@@ -324,7 +326,9 @@ HEADERS += \
     NatronEngine/pageparam_wrapper.h \
     NatronEngine/appsettings_wrapper.h \
     NatronEngine/pycoreapplication_wrapper.h \
-    NatronEngine/userparamholder_wrapper.h
+    NatronEngine/userparamholder_wrapper.h \
+    NatronEngine/rectd_wrapper.h \
+    NatronEngine/recti_wrapper.h
 
 
 OTHER_FILES += \
