@@ -78,7 +78,9 @@ public:
     
     void resize(U64 size)
     {
-        assert(size > 0);
+        if (size == 0) {
+            return;
+        }
         count = size;
         if (data) {
             free(data);
