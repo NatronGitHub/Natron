@@ -131,6 +131,7 @@ OfxEffectInstance::OfxEffectInstance(boost::shared_ptr<Natron::Node> node)
 #ifdef DEBUG
       , _canSetValue()
 #endif
+     , _nbSourceClips(0)
 {
     QObject::connect( this, SIGNAL( syncPrivateDataRequested() ), this, SLOT( onSyncPrivateDataRequested() ) );
 }
@@ -158,6 +159,8 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
     assert(plugin && desc && context != eContextNone);
     
     _context = context;
+
+    
     if (disableRenderScaleSupport || context == eContextWriter) {
         setAsOutputNode();
         // Writers don't support render scale (full-resolution images are written to disk)
@@ -182,6 +185,9 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
         _effect->setOfxEffectInstance( dynamic_cast<OfxEffectInstance*>(this) );
 
         _natronPluginID = plugin->getIdentifier();
+        
+        OfxEffectInstance::MappedInputV clips = inputClipsCopyWithoutOutput();
+        _nbSourceClips = (int)clips.size();
 
         beginChanges();
         OfxStatus stat;
@@ -800,16 +806,8 @@ int
 OfxEffectInstance::getMaxInputCount() const
 {
     assert(_context != eContextNone);
-    const std::string & context = effectInstance()->getContext();
-    if ( (context == kOfxImageEffectContextReader) ||
-         ( context == kOfxImageEffectContextGenerator) ) {
-        return 1;
-    } else {
-        assert( effectInstance() );
-        int totalClips = effectInstance()->getDescriptor().getClips().size();
-
-        return totalClips > 0  ?  totalClips - 1 : 0;
-    }
+    //const std::string & context = effectInstance()->getContext();
+    return _nbSourceClips;
 }
 
 bool

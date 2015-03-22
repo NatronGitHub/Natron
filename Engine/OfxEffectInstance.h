@@ -400,6 +400,7 @@ private:
 #ifdef DEBUG
     Natron::ThreadStorage<bool> _canSetValue;
 #endif
+    int _nbSourceClips;
 };
 
 #endif // NATRON_ENGINE_OFXNODE_H_
