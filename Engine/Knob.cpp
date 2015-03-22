@@ -1859,6 +1859,9 @@ KnobHelper::executeExpression(int dimension) const
 std::string
 KnobHelper::getExpression(int dimension) const
 {
+    if (dimension == -1) {
+        dimension = 0;
+    }
     QMutexLocker k(&_imp->expressionMutex);
     return _imp->expressions[dimension].originalExpression;
 }
