@@ -1088,7 +1088,7 @@ Project::currentFrame() const
 int
 Project::tryAddProjectFormat(const Format & f)
 {
-    assert( !_imp->formatMutex.tryLock() );
+    //assert( !_imp->formatMutex.tryLock() );
     if ( ( f.left() >= f.right() ) || ( f.bottom() >= f.top() ) ) {
         return -1;
     }
@@ -1125,7 +1125,7 @@ Project::tryAddProjectFormat(const Format & f)
 void
 Project::setProjectDefaultFormat(const Format & f)
 {
-    assert( !_imp->formatMutex.tryLock() );
+    //assert( !_imp->formatMutex.tryLock() );
     int index = tryAddProjectFormat(f);
     _imp->formatKnob->setValue(index,0);
     ///if locked it will trigger a deadlock because some parameters

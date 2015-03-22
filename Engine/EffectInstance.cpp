@@ -3122,7 +3122,9 @@ EffectInstance::renderRoIInternal(SequenceTime time,
     ///Plus setOrAddProjectFormat will actually set the project format the first time we read an image in the project
     ///hence ask for a new render... which can be expensive!
     ///Any solution how to work around this ?
-    if ( isReader() ) {
+    ///Edit: do not do this if in the main-thread (=noRenderThread = -1) otherwise we will change the parallel render args TLS
+    ///which will lead to asserts down the stream
+    if ( isReader() && QThread::currentThread() != qApp->thread()) {
         Format frmt;
         RectI pixelRoD;
         rod.toPixelEnclosing(0, par, &pixelRoD);
