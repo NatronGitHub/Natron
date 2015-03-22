@@ -827,15 +827,18 @@ ViewerInstance::renderViewer_internal(int view,
     if (requestedComponents.empty()) {
         if (inArgs.params->cachedFrame) {
             inArgs.params->cachedFrame->setAborted(true);
+            appPTR->removeFromViewerCache(inArgs.params->cachedFrame);
             if (!isSequentialRender) {
                 _imp->checkAndUpdateDisplayAge(inArgs.params->textureIndex,inArgs.params->renderAge);
             }
-            appPTR->removeFromViewerCache(inArgs.params->cachedFrame);
         }
         if (!isSequentialRender && canAbort) {
             _imp->removeOngoingRender(inArgs.params->textureIndex, inArgs.params->renderAge);
         }
-        return eStatusOK;
+        Q_EMIT disconnectTextureRequest(inArgs.params->textureIndex);
+        inArgs.params.reset();
+
+        return eStatusReplyDefault;
     }
     
     

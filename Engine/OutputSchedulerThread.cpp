@@ -2860,22 +2860,22 @@ ViewerCurrentFrameRequestSchedulerPrivate::processProducedFrame(const Bufferable
 {
     assert(QThread::currentThread() == qApp->thread());
     
-    bool hasDoneSomething = false;
+    //bool hasDoneSomething = false;
     for (BufferableObjectList::const_iterator it2 = frames.begin(); it2 != frames.end(); ++it2) {
         assert(*it2);
         boost::shared_ptr<UpdateViewerParams> params = boost::dynamic_pointer_cast<UpdateViewerParams>(*it2);
         assert(params);
         if (params && params->ramBuffer) {
-            hasDoneSomething = true;
+            //hasDoneSomething = true;
             viewer->updateViewer(params);
         }
     }
     
     
     ///At least redraw the viewer, we might be here when the user removed a node upstream of the viewer.
-    if (hasDoneSomething) {
+    //if (hasDoneSomething) {
         viewer->redrawViewer();
-    }
+    //}
     
     
     {
@@ -2967,7 +2967,7 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool canAbort)
     if (status[0] == eStatusFailed && status[1] == eStatusFailed) {
         _imp->viewer->disconnectViewer();
         return;
-    } else if (status[0] == eStatusReplyDefault || status[1] == eStatusReplyDefault) {
+    } else if (status[0] == eStatusReplyDefault && status[1] == eStatusReplyDefault) {
         _imp->viewer->redrawViewer();
         return;
     }
