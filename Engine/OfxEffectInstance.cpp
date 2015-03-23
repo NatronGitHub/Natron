@@ -1996,6 +1996,15 @@ OfxEffectInstance::render(SequenceTime time,
                                      view,
                                      viewsCount,
                                      ofxPlanes);
+        
+        if (skipDiscarding) {
+            //Make sure that the images being rendered TLS is being cleared otherwise it will crash
+            OFX::Host::ImageEffect::ClipInstance* ofxClip  = _effect->getClip(kOfxImageEffectOutputClipName);
+            assert(ofxClip);
+            OfxClipInstance* clip = dynamic_cast<OfxClipInstance*>(ofxClip);
+            assert(clip);
+            clip->clearOfxImagesTLS();
+        }
     }
 
     if (stat != kOfxStatOK) {
