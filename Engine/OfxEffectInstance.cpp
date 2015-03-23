@@ -2055,7 +2055,7 @@ OfxEffectInstance::renderThreadSafety() const
 bool
 OfxEffectInstance::makePreviewByDefault() const
 {
-    return isGenerator();
+    return isReader();
 }
 
 const std::string &
