@@ -813,7 +813,7 @@ public:
 
     GLuint savedTexture;
     QSize sizeH;
-    bool hasResizedOnce;
+    bool zoomOrPannedSinceLastFit;
     
 private:
 
@@ -859,7 +859,7 @@ CurveWidgetPrivate::CurveWidgetPrivate(Gui* gui,
       , _gui(gui)
       , savedTexture(0)
       , sizeH()
-      , hasResizedOnce(false)
+      , zoomOrPannedSinceLastFit(false)
       , _timelineTopPoly()
       , _timelineBtmPoly()
       , _widget(widget)
@@ -2179,6 +2179,7 @@ CurveWidget::centerOn(double xmin,
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
     _imp->zoomCtx.fit(xmin, xmax, ymin, ymax);
+    _imp->zoomOrPannedSinceLastFit = false;
     refreshDisplayedTangents();
 
     update();
@@ -2310,8 +2311,7 @@ CurveWidget::resizeGL(int width,
         return;
     }
 
-    if (!_imp->hasResizedOnce) {
-        _imp->hasResizedOnce = true;
+    if (!_imp->zoomOrPannedSinceLastFit) {
         ///find out what are the selected curves and center on them
         std::vector<CurveGui*> curves;
         getVisibleCurves(&curves);
@@ -2809,6 +2809,7 @@ CurveWidget::mouseMoveEvent(QMouseEvent* e)
     double dy = ( oldClick_opengl.y() - newClick_opengl.y() );
     switch (_imp->_state) {
     case eEventStateDraggingView:
+        _imp->zoomOrPannedSinceLastFit = true;
         _imp->zoomCtx.translate(dx, dy);
         break;
 
@@ -2837,6 +2838,9 @@ CurveWidget::mouseMoveEvent(QMouseEvent* e)
             _imp->_timeline->seekFrame( (SequenceTime)newClick_opengl.x(), false, 0,  Natron::eTimelineChangeReasonCurveEditorSeek );
             break;
     case eEventStateZooming: {
+        
+        _imp->zoomOrPannedSinceLastFit = true;
+        
         int deltaX = 2 * (e->x() - _imp->_lastMousePos.x());
         int deltaY = - 2 * (e->y() - _imp->_lastMousePos.y());
         // Wheel: zoom values and time, keep point under mouse
@@ -2970,6 +2974,7 @@ CurveWidget::wheelEvent(QWheelEvent* e)
     QPointF zoomCenter = _imp->zoomCtx.toZoomCoordinates( e->x(), e->y() );
 
     if ( modCASIsControlShift(e) ) {
+        _imp->zoomOrPannedSinceLastFit = true;
         // Alt + Shift + Wheel: zoom values only, keep point under mouse
         zoomFactor = _imp->zoomCtx.factor() * scaleFactor;
         if (zoomFactor <= zoomFactor_min) {
@@ -2989,6 +2994,7 @@ CurveWidget::wheelEvent(QWheelEvent* e)
         }
         _imp->zoomCtx.zoomy(zoomCenter.x(), zoomCenter.y(), scaleFactor);
     } else if ( modCASIsControl(e) ) {
+        _imp->zoomOrPannedSinceLastFit = true;
         // Alt + Wheel: zoom time only, keep point under mouse
         par = _imp->zoomCtx.aspectRatio() * scaleFactor;
         if (par <= par_min) {
@@ -3000,6 +3006,7 @@ CurveWidget::wheelEvent(QWheelEvent* e)
         }
         _imp->zoomCtx.zoomx(zoomCenter.x(), zoomCenter.y(), scaleFactor);
     } else {
+        _imp->zoomOrPannedSinceLastFit = true;
         // Wheel: zoom values and time, keep point under mouse
         zoomFactor = _imp->zoomCtx.factor() * scaleFactor;
         if (zoomFactor <= zoomFactor_min) {

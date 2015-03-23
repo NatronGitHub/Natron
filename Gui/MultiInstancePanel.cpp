@@ -201,6 +201,8 @@ struct MultiInstancePanelPrivate
             ret = btn;
         } else if ( dynamic_cast<Page_Knob*>( ref.get() ) ) {
             ret = Natron::createKnob<Page_Knob>(publicInterface, ref->getDescription(),ref->getDimension(),declaredByPlugin);
+        } else {
+            return;
         }
         assert(ret);
         ret->clone(ref);
