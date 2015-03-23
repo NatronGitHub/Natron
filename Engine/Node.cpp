@@ -3200,7 +3200,7 @@ namespace {
                     // bilinear interpolation is pointless when downscaling a lot, and this is a preview anyway.
                     // just use nearest neighbor
                     double x = (j - *dstWidth / 2.) / zoomFactor + (srcBounds.x1 + srcBounds.x2) / 2.;
-                    int xi = std::floor(x + 0.5); // round to nearest
+                    int xi = std::floor(x + 0.5) - srcBounds.x1; // round to nearest
                     if ( (xi < 0) || ( xi >= (srcBounds.x2 - srcBounds.x1) ) ) {
 #ifndef __NATRON_WIN32__
                         dst_pixels[j] = toBGRA(0, 0, 0, 0);
