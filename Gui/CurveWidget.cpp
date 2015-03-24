@@ -2530,6 +2530,53 @@ CurveWidget::mousePressEvent(QMouseEvent* e)
         e->accept();
         return;
     }
+    
+    ////
+    // is the click near a curve?
+    double xCurve,yCurve;
+    Curves::const_iterator foundCurveNearby = _imp->isNearbyCurve( e->pos(),&xCurve, &yCurve );
+    if (foundCurveNearby != _imp->_curves.end()) {
+        
+        if (modCASIsControlAlt(e)) {
+            
+            _imp->selectCurve(*foundCurveNearby);
+
+            std::pair<double,double> yRange = (*foundCurveNearby)->getCurveYRange();
+            if (yCurve < yRange.first || yCurve > yRange.second) {
+                QString err =  tr(" Out of curve y range ") +
+                QString("[%1 - %2]").arg(yRange.first).arg(yRange.second) ;
+                Natron::warningDialog("", err.toStdString());
+                e->accept();
+                return;
+            }
+            std::vector<KeyFrame> keys(1);
+            keys[0] = KeyFrame(xCurve,yCurve);
+            pushUndoCommand(new AddKeysCommand(this,*foundCurveNearby,keys));
+            
+            _imp->_drawSelectedKeyFramesBbox = false;
+            _imp->_mustSetDragOrientation = true;
+            _imp->_state = eEventStateDraggingKeys;
+            setCursor( QCursor(Qt::CrossCursor) );
+            
+            _imp->_selectedKeyFrames.clear();
+            
+            KeyPtr selected(new SelectedKey(*foundCurveNearby,keys[0]));
+            
+            _imp->refreshKeyTangents(selected);
+            
+            //insert it into the _selectedKeyFrames
+            _imp->insertSelectedKeyFrameConditionnaly(selected);
+            
+            // _imp->updateSelectedKeysMaxMovement();
+            _imp->_keyDragLastMovement.rx() = 0.;
+            _imp->_keyDragLastMovement.ry() = 0.;
+            _imp->_dragStartPoint = e->pos();
+            _imp->_lastMousePos = e->pos();
+            
+            return;
+        }
+    }
+    
     ////
     // middle button: scroll view
     if ( buttonDownIsMiddle(e) ) {
@@ -2629,18 +2676,12 @@ CurveWidget::mousePressEvent(QMouseEvent* e)
         return;
     }
 
-    ////
-    // is the click near a curve?
-    Curves::const_iterator foundCurveNearby = _imp->isNearbyCurve( e->pos() );
-    if ( foundCurveNearby != _imp->_curves.end() ) {
-        // yes, select it and don't start any other action, the user can then do per-curve specific actions
-        // like centering on it on the viewport or pasting previously copied keyframes.
-        // This is kind of the last resort action before the default behaviour (which is to draw
-        // a selection rectangle), because we'd rather select a keyframe than the nearby curve
+    // yes, select it and don't start any other action, the user can then do per-curve specific actions
+    // like centering on it on the viewport or pasting previously copied keyframes.
+    // This is kind of the last resort action before the default behaviour (which is to draw
+    // a selection rectangle), because we'd rather select a keyframe than the nearby curve
+    if (foundCurveNearby != _imp->_curves.end()) {
         _imp->selectCurve(*foundCurveNearby);
-        update();
-
-        return;
     }
 
     ////
