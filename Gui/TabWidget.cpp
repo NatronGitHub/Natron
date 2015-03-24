@@ -816,9 +816,9 @@ TabWidget::appendTab(const QIcon & icon,
                 }
             }
         }
-        if (!widget->isVisible()) {
-            widget->setVisible(true);
-        }
+//        if (!widget->isVisible()) {
+//            widget->setVisible(true);
+//        }
         _imp->floatButton->setEnabled(true);
         
     }
