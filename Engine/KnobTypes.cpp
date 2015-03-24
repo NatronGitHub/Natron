@@ -594,6 +594,9 @@ Choice_Knob::populateChoices(const std::vector<std::string> &entries,
         _entriesHelp = entriesHelp;
         _entries = entries;
     }
+    if (_signalSlotHandler) {
+        _signalSlotHandler->s_helpChanged();
+    }
     Q_EMIT populated();
 }
 
