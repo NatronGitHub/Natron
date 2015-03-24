@@ -41,6 +41,7 @@
 
 //Right click emulated with Left + MetaModifier, which is the way its done everywhere else on the mac
 #define buttonDownIsRight(e)             ( ( (e)->buttons() == Qt::RightButton  && buttonControlAlt(e) == Qt::NoModifier ) || \
+                                           ( (e)->buttons() == Qt::LeftButton   && buttonControlAlt(e) == Qt::MetaModifier ) )
 
 #define triggerButtonisLeft(e) ( (e)->button() == Qt::LeftButton && buttonControlAlt(e) == Qt::NoModifier )
 #define triggerButtonisRight(e) ( (e)->button() == Qt::RightButton || \
