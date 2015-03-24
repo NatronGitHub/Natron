@@ -194,7 +194,9 @@ public:
     KnobGui* getKnobGui(const boost::shared_ptr<KnobI> & knob) const;
 
     ///MT-safe
-    QColor getCurrentColor() const;
+    virtual QColor getCurrentColor() const {
+        return Qt::black;
+    }
 
     ///MT-safe
     void setCurrentColor(const QColor & c);
@@ -387,6 +389,8 @@ public:
     {
         return _multiPanel;
     }
+    
+    virtual QColor getCurrentColor() const OVERRIDE FINAL;
 
 private:
 

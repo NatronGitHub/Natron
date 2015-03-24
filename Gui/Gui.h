@@ -123,7 +123,9 @@ public:
                                              bool pushUndoRedoCommand,
                                              bool autoConnect);
 
-    void addNodeGuiToCurveEditor(boost::shared_ptr<NodeGui> node);
+    void addNodeGuiToCurveEditor(const boost::shared_ptr<NodeGui> &node);
+    
+    void removeNodeGuiFromCurveEditor(const boost::shared_ptr<NodeGui>& node);
 
     const std::list<boost::shared_ptr<NodeGui> > & getSelectedNodes() const;
 

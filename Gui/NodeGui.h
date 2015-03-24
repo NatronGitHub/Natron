@@ -137,10 +137,11 @@ public:
     NodeGui(QGraphicsItem *parent = 0);
 
     void initialize(NodeGraph* dag,
-                    QVBoxLayout *dockContainer,
-                    const boost::shared_ptr<Natron::Node> & internalNode,
-                    bool requestedByLoad);
+                    const boost::shared_ptr<Natron::Node> & internalNode);
 
+    //Creates panel if needed, might be expensive
+    void ensurePanelCreated();
+    
     /**
      * @brief Called by NodeGraph::clearExceedingUndoRedoEvents when we want to delete a node.
      **/
@@ -337,9 +338,7 @@ public:
     virtual void refreshStateIndicator();
     
     virtual void exportGroupAsPythonScript() OVERRIDE FINAL;
-    
-    virtual void onChildInstanceCreated(const boost::shared_ptr<Natron::Node>& node) OVERRIDE FINAL;
-    
+        
     bool isNearbyNameFrame(const QPointF& pos) const;
     
     bool isNearbyResizeHandle(const QPointF& pos) const;
@@ -503,7 +502,7 @@ Q_SIGNALS:
 protected:
 
     virtual void createGui();
-    virtual NodeSettingsPanel* createPanel(QVBoxLayout* container,bool requestedByLoad,const boost::shared_ptr<NodeGui> & thisAsShared);
+    virtual NodeSettingsPanel* createPanel(QVBoxLayout* container,const boost::shared_ptr<NodeGui> & thisAsShared);
     virtual bool canMakePreview()
     {
         return true;
@@ -512,7 +511,7 @@ protected:
     virtual void applyBrush(const QBrush & brush);
 
 private:
-
+    
 
     void refreshPositionEnd(double x,double y);
 
@@ -580,7 +579,13 @@ private:
     ///The "real" panel showed on the gui will be the _settingsPanel, but we still need to create
     ///another panel for the main-instance (hidden) knobs to function properly
     NodeSettingsPanel* _mainInstancePanel;
-    QColor _defaultColor;
+    
+    //True when the settings panel has been  created
+    bool _panelCreated;
+    
+    mutable QMutex _currentColorMutex; //< protects _currentColor
+    QColor _currentColor; //< accessed by the serialization thread
+    
     QColor _clonedColor;
     bool _wasBeginEditCalled;
     mutable QMutex positionMutex;
@@ -632,8 +637,7 @@ private:
 
 
     virtual void createGui() OVERRIDE FINAL;
-    virtual NodeSettingsPanel* createPanel(QVBoxLayout* container,bool requestedByLoad,
-                                           const boost::shared_ptr<NodeGui> & thisAsShared) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual NodeSettingsPanel* createPanel(QVBoxLayout* container, const boost::shared_ptr<NodeGui> & thisAsShared) OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool canMakePreview() OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         return false;

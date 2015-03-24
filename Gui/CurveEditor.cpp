@@ -328,6 +328,7 @@ static void createElementsForKnob(QTreeWidgetItem* parent,KnobGui* kgui,boost::s
     }
     
     QTreeWidgetItem* knobItem = new QTreeWidgetItem(parent);
+    knobItem->setExpanded(true);
     knobItem->setText( 0,k->getDescription().c_str() );
     
     CurveGui* knobCurve = NULL;
@@ -353,6 +354,7 @@ static void createElementsForKnob(QTreeWidgetItem* parent,KnobGui* kgui,boost::s
     } else {
         for (int j = 0; j < k->getDimension(); ++j) {
             QTreeWidgetItem* dimItem = new QTreeWidgetItem(knobItem);
+            dimItem->setExpanded(true);
             dimItem->setText( 0,k->getDimensionName(j).c_str() );
             QString curveName = QString( k->getDescription().c_str() ) + "." + QString( k->getDimensionName(j).c_str() );
             
@@ -400,7 +402,7 @@ NodeCurveEditorContext::NodeCurveEditorContext(QTreeWidget* tree,
       , _nameItem(0)
 {
     QTreeWidgetItem* nameItem = new QTreeWidgetItem(tree);
-
+    nameItem->setExpanded(true);
     nameItem->setText( 0,_node->getNode()->getLabel().c_str() );
 
     QObject::connect( node->getNode().get(),SIGNAL( labelChanged(QString) ),this,SLOT( onNameChanged(QString) ) );
@@ -476,7 +478,7 @@ checkIfHiddenRecursivly(QTreeWidget* tree,
     }
     if (areAllChildrenHidden) {
         item->setHidden(true);
-        item->setExpanded(false);
+        //item->setExpanded(false);
     }
     bool isTopLvl = false;
     for (int i = 0; i < tree->topLevelItemCount(); ++i) {
@@ -761,6 +763,9 @@ CurveEditor::onItemDoubleClicked(QTreeWidgetItem* item,int)
     
     
     DockablePanel* panel = 0;
+    if (node) {
+        node->ensurePanelCreated();
+    }
     if (node && node->getParentMultiInstance()) {
         panel = node->getParentMultiInstance()->getSettingPanel();
     } else {
@@ -984,11 +989,13 @@ BezierEditorContext::BezierEditorContext(QTreeWidget* tree,
 {
     _imp->nameItem = new QTreeWidgetItem(_imp->context->getItem());
     QString name(_imp->curve->getLabel().c_str());
+    _imp->nameItem->setExpanded(true);
     _imp->nameItem->setText(0, name);
     QObject::connect(curve.get(), SIGNAL(keyframeSet(int)), this, SLOT(onKeyframeAdded()));
     QObject::connect(curve.get(), SIGNAL(keyframeRemoved(int)), this, SLOT(onKeyframeRemoved()));
     
     _imp->curveItem = new QTreeWidgetItem(_imp->nameItem);
+    _imp->curveItem->setExpanded(true);
     _imp->curveItem->setText(0, "Animation");
     
     boost::shared_ptr<RotoContext> roto = context->getNode()->getNode()->getRotoContext();
@@ -1158,6 +1165,7 @@ RotoCurveEditorContext::RotoCurveEditorContext(CurveWidget* widget,
     assert(rotoCtx);
     
     _imp->nameItem = new QTreeWidgetItem(tree);
+    _imp->nameItem->setExpanded(true);
     _imp->nameItem->setText( 0,_imp->node->getNode()->getLabel().c_str() );
     QObject::connect( node->getNode().get(),SIGNAL( labelChanged(QString) ),this,SLOT( onNameChanged(QString) ) );
 

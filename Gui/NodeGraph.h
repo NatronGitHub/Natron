@@ -69,7 +69,7 @@ public:
     boost::shared_ptr<NodeCollection> getGroup() const;
 
     const std::list< boost::shared_ptr<NodeGui> > & getSelectedNodes() const;
-    boost::shared_ptr<NodeGui> createNodeGUI(QVBoxLayout *dockContainer,const boost::shared_ptr<Natron::Node> & node,bool requestedByLoad,
+    boost::shared_ptr<NodeGui> createNodeGUI(const boost::shared_ptr<Natron::Node> & node,bool requestedByLoad,
                                              double xPosHint,double yPosHint,bool pushUndoRedoCommand,bool autoConnect);
 
     void selectNode(const boost::shared_ptr<NodeGui> & n,bool addToSelection);

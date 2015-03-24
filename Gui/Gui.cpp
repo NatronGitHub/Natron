@@ -754,7 +754,7 @@ Gui::createNodeGUI( boost::shared_ptr<Node> node,
     } else {
         graph = _imp->_nodeGraphArea;
     }
-    boost::shared_ptr<NodeGui> nodeGui = graph->createNodeGUI(_imp->_layoutPropertiesBin, node, requestedByLoad,
+    boost::shared_ptr<NodeGui> nodeGui = graph->createNodeGUI(node, requestedByLoad,
                                                               xPosHint, yPosHint, pushUndoRedoCommand, autoConnect);
     QObject::connect( node.get(), SIGNAL( labelChanged(QString) ), this, SLOT( onNodeNameChanged(QString) ) );
     assert(nodeGui);
@@ -763,9 +763,15 @@ Gui::createNodeGUI( boost::shared_ptr<Node> node,
 }
 
 void
-Gui::addNodeGuiToCurveEditor(boost::shared_ptr<NodeGui> node)
+Gui::addNodeGuiToCurveEditor(const boost::shared_ptr<NodeGui> &node)
 {
     _imp->_curveEditor->addNode(node);
+}
+
+void
+Gui::removeNodeGuiFromCurveEditor(const boost::shared_ptr<NodeGui>& node)
+{
+    _imp->_curveEditor->removeNode(node.get());
 }
 
 void

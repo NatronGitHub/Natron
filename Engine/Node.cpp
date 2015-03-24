@@ -528,15 +528,6 @@ Node::load(const std::string & parentMultiInstanceName,
         group->notifyNodeActivated(thisShared);
     }
     
-    if (isMultiInstanceChild) {
-        assert(_imp->multiInstanceParent.lock());
-        NodePtr parent = _imp->multiInstanceParent.lock();
-        boost::shared_ptr<NodeGuiI> gui_i = parent->getNodeGui();
-        if (gui_i) {
-            gui_i->onChildInstanceCreated(thisShared);
-        }
-    }
-    
     computeHash();
     assert(_imp->liveInstance);
     _imp->nodeCreated = true;

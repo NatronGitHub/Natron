@@ -640,8 +640,7 @@ NodeGraph::visibleWidgetRect() const
 }
 
 boost::shared_ptr<NodeGui>
-NodeGraph::createNodeGUI(QVBoxLayout *dockContainer,
-                         const boost::shared_ptr<Natron::Node> & node,
+NodeGraph::createNodeGUI(const boost::shared_ptr<Natron::Node> & node,
                          bool requestedByLoad,
                          double xPosHint,
                          double yPosHint,
@@ -665,7 +664,7 @@ NodeGraph::createNodeGUI(QVBoxLayout *dockContainer,
         node_ui.reset( new NodeGui(_imp->_nodeRoot) );
     }
     assert(node_ui);
-    node_ui->initialize(this, dockContainer, node, requestedByLoad);
+    node_ui->initialize(this, node);
 
     if (isBd) {
         BackDropGui* bd = dynamic_cast<BackDropGui*>(node_ui.get());
@@ -709,6 +708,10 @@ NodeGraph::createNodeGUI(QVBoxLayout *dockContainer,
                 moveNodesForIdealPosition(node_ui,autoConnect);
             }
         }
+    }
+    
+    if (!requestedByLoad) {
+        node_ui->ensurePanelCreated();
     }
     
     getGui()->getApp()->setCreatingNode(false);
@@ -2013,18 +2016,17 @@ NodeGraph::mouseDoubleClickEvent(QMouseEvent* e)
     std::map<double,NodeGuiPtr> matches;
     for (NodeGuiList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
         QPointF evpt = (*it)->mapFromScene(lastMousePosScene);
-        if ( (*it)->isVisible() && (*it)->isActive() && (*it)->contains(evpt) && (*it)->getSettingPanel() ) {
+        if ( (*it)->isVisible() && (*it)->isActive() && (*it)->contains(evpt) ) {
             matches.insert(std::make_pair((*it)->zValue(), *it));
         }
     }
     if (!matches.empty()) {
         const NodeGuiPtr& node = matches.rbegin()->second;
         if (modCASIsControl(e)) {
+            node->ensurePanelCreated();
             node->getSettingPanel()->floatPanel();
         } else {
-            if ( !node->isSettingsPanelVisible() ) {
-                node->setVisibleSettingsPanel(true);
-            }
+            node->setVisibleSettingsPanel(true);
             _imp->_gui->putSettingsPanelFirst( node->getSettingPanel() );
         }
         if ( !node->wasBeginEditCalled() ) {
