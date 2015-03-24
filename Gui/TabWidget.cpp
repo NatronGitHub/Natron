@@ -900,7 +900,7 @@ TabWidget::removeTab(int index,bool userAction)
                 l.relock();
             }
         }
-        tab->setParent(_imp->gui);
+        //tab->setParent(_imp->gui);
     }
     ViewerTab* isViewer = dynamic_cast<ViewerTab*>(tab);
     Histogram* isHisto = dynamic_cast<Histogram*>(tab);
@@ -1000,7 +1000,7 @@ TabWidget::makeCurrentTab(int index)
         _imp->currentWidget = tab;
     }
     tab->setVisible(true);
-    tab->setParent(this);
+    //tab->setParent(this);
     _imp->modifyingTabBar = true;
     _imp->tabBar->setCurrentIndex(index);
     _imp->modifyingTabBar = false;

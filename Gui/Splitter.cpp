@@ -109,7 +109,7 @@ Splitter::insertChild_mt_safe(int i,
     QMutexLocker l(&_lock);
 
     insertWidget(i, w);
-    w->setParent(this);
+    //w->setParent(this);
 }
 
 void
