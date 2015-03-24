@@ -1384,7 +1384,7 @@ static bool parseTokenFrom(int fromDim,
     //Find the start of the symbol
     int i = (int)*tokenStart - 2;
     while (i >= 0) {
-        if (!std::isalnum(str[i],loc) && str[i] != '.') {
+        if (!std::isalnum(str[i],loc) && str[i] != '.' && str[i] != '_') {
             break;
         }
         --i;

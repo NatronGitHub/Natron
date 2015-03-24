@@ -2200,7 +2200,7 @@ TrackerPanelPrivate::createCornerPinFromSelection(const std::list<Node*> & selec
         assert(centers[i]);
     }
     GuiAppInstance* app = publicInterface->getGui()->getApp();
-    boost::shared_ptr<Natron::Node> cornerPin = app->createNode( CreateNodeArgs("CornerPinOFX  [Transform]",
+    boost::shared_ptr<Natron::Node> cornerPin = app->createNode( CreateNodeArgs(PLUGINID_OFX_CORNERPIN,
                                                                                 "",
                                                                                 -1, -1,
                                                                                 false, //< don't autoconnect

@@ -41,6 +41,7 @@
 #define PLUGINID_OFX_GRADE        "net.sf.openfx.GradePlugin"
 #define PLUGINID_OFX_COLORCORRECT "net.sf.openfx.ColorCorrectPlugin"
 #define PLUGINID_OFX_BLURCIMG     "net.sf.cimg.CImgBlur"
+#define PLUGINID_OFX_CORNERPIN    "net.sf.openfx.CornerPinPlugin"
 
 #define PLUGINID_NATRON_VIEWER    (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.Viewer")
 #define PLUGINID_NATRON_DISKCACHE (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.DiskCache")
