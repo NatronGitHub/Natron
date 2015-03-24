@@ -591,30 +591,6 @@ KnobHelper::setSignalSlotHandler(const boost::shared_ptr<KnobSignalSlotHandler> 
     _signalSlotHandler = handler;
 }
 
-double
-KnobHelper::getDerivativeAtTime(double time,
-                                int dimension) const
-{
-    if ( dimension > (int)_imp->curves.size() ) {
-        throw std::invalid_argument("KnobHelper::getDerivativeAtTime(): Dimension out of range");
-    }
-    
-    ///if the knob is slaved to another knob, returns the other knob value
-    std::pair<int,boost::shared_ptr<KnobI> > master = getMaster(dimension);
-    if (master.second) {
-        return master.second->getDerivativeAtTime(time,master.first);
-    }
-    
-    boost::shared_ptr<Curve> curve  = _imp->curves[dimension];
-    if (curve->getKeyFramesCount() > 0) {
-        return curve->getDerivativeAt(time);
-    } else {
-        /*if the knob as no keys at this dimension, the derivative is 0.*/
-        return 0.;
-    }
-}
-
-
 void
 KnobHelper::deleteValueAtTime(int time,
                               int dimension,
