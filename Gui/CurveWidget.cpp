@@ -2636,10 +2636,7 @@ CurveWidget::mousePressEvent(QMouseEvent* e)
         return;
     }
     
-    KeyPtr nearbyKeyText = _imp->isNearbyKeyFrameText(e->pos());
-    if (nearbyKeyText) {
-        return;
-    }
+   
     
     
     ////
@@ -2655,6 +2652,11 @@ CurveWidget::mousePressEvent(QMouseEvent* e)
         //no need to set _imp->_dragStartPoint
         update();
 
+        return;
+    }
+    
+    KeyPtr nearbyKeyText = _imp->isNearbyKeyFrameText(e->pos());
+    if (nearbyKeyText) {
         return;
     }
     
