@@ -1301,16 +1301,7 @@ Project::onKnobValueChanged(KnobI* knob,
     } else if ( knob == _imp->previewMode.get() ) {
         Q_EMIT autoPreviewChanged( _imp->previewMode->getValue() );
     }  else if ( knob == _imp->frameRate.get() ) {
-        NodeList nodes = getNodes();
-        std::list <Natron::Node*> markedNodes;
-        for (NodeList::iterator it = nodes.begin();
-             it != nodes.end();++it)  {
-            if ((*it)->isOutputNode()) {
-                (*it)->restoreClipPreferencesRecursive(markedNodes);
-            }
-                
-        }
-
+        forceGetClipPreferencesOnAllTrees();
     } else if (knob == _imp->frameRange.get()) {
         int first = _imp->frameRange->getValue(0);
         int last = _imp->frameRange->getValue(1);

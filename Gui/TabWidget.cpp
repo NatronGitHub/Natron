@@ -438,7 +438,7 @@ TabWidget::closeSplitterAndMoveOtherSplitToParent(Splitter* container)
 
     /*Remove the container from everywhere*/
     _imp->gui->unregisterSplitter(container);
-    container->setParent(NULL);
+   // container->setParent(NULL);
     container->deleteLater();
 }
 
@@ -522,7 +522,7 @@ TabWidget::floatPane(QPoint* position)
     
     FloatingWidget* floatingW = new FloatingWidget(_imp->gui,_imp->gui);
     Splitter* parentSplitter = dynamic_cast<Splitter*>( parentWidget() );
-    setParent(0);
+    //setParent(0);
     if (parentSplitter) {
         closeSplitterAndMoveOtherSplitToParent(parentSplitter);
     }
@@ -1482,7 +1482,7 @@ TabWidget::moveTab(QWidget* what,
     }
     assert(where);
     where->appendTab(what,obj);
-    what->setParent(where);
+    //what->setParent(where);
     if ( !where->getGui()->getApp()->getProject()->isLoadingProject() ) {
         where->getGui()->getApp()->triggerAutoSave();
     }
