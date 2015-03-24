@@ -1615,6 +1615,58 @@ Knob<T>::onTimeChanged(SequenceTime /*time*/)
     }
 }
 
+template<typename T>
+double
+Knob<T>::getDerivativeAtTime(double time,
+                             int dimension) const
+{
+    if ( ( dimension > getDimension() ) || (dimension < 0) ) {
+        throw std::invalid_argument("Knob::getDerivativeAtTime(): Dimension out of range");
+    }
+    {
+        std::string expr = getExpression(dimension);
+        if (!expr.empty()) {
+            // Compute derivative by finite differences, using values at t-0.5 and t+0.5
+            return (getValueAtTime(time + 0.5, dimension) - getValueAtTime(time - 0.5, dimension))/2.;
+        }
+    }
+
+    ///if the knob is slaved to another knob, returns the other knob value
+    std::pair<int,boost::shared_ptr<KnobI> > master = getMaster(dimension);
+    if (master.second) {
+        return master.second->getDerivativeAtTime(time,master.first);
+    }
+
+    boost::shared_ptr<Curve> curve  = getCurve(dimension);
+    if (curve->getKeyFramesCount() > 0) {
+        return curve->getDerivativeAt(time);
+    } else {
+        /*if the knob as no keys at this dimension, the derivative is 0.*/
+        return 0.;
+    }
+}
+
+template<>
+double
+Knob<std::string>::getDerivativeAtTime(double /*time*/,
+                                       int /*dimension*/) const
+{
+    throw std::invalid_argument("Knob<string>::getDerivativeAtTime() not available");
+}
+
+// Compute integral using Simpsons rule:
+// \int_a^b f(x) dx = (b-a)/6 * (f(a) + 4f((a+b)/2) + f(b))
+template<typename T>
+double
+Knob<T>::getIntegrateFromTimeToTimeSimpson(double time1,
+                                           double time2,
+                                           int dimension) const
+{
+    double fa = getValueAtTime(time1, dimension);
+    double fm = getValueAtTime((time1+time2)/2, dimension);
+    double fb = getValueAtTime(time2, dimension);
+    return (time2-time1)/6 * (fa + 4*fm + fb);
+}
 
 template<typename T>
 double
@@ -1623,8 +1675,37 @@ Knob<T>::getIntegrateFromTimeToTime(double time1,
                                     int dimension) const
 {
     if ( ( dimension > getDimension() ) || (dimension < 0) ) {
-        throw std::invalid_argument("Knob::getDerivativeAtTime(): Dimension out of range");
+        throw std::invalid_argument("Knob::getIntegrateFromTimeToTime(): Dimension out of range");
     }
+    {
+        std::string expr = getExpression(dimension);
+        if (!expr.empty()) {
+            // Compute integral using Simpsons rule:
+            // \int_a^b f(x) dx = (b-a)/6 * (f(a) + 4f((a+b)/2) + f(b))
+            // The interval from time1 to time2 is split into intervals where bounds are at integer values
+            int i = std::ceil(time1);
+            int j = std::floor(time2);
+            if (i > j) { // no integer values in the interval
+                return getIntegrateFromTimeToTimeSimpson(time1, time2, dimension);
+            }
+            double val = 0.;
+            // start integrating over the interval
+            // first chunk
+            if (time1 < i) {
+                val += getIntegrateFromTimeToTimeSimpson(time1, i, dimension);
+            }
+            // integer chunks
+            for (int t = i; t < j; ++t) {
+                val += getIntegrateFromTimeToTimeSimpson(t, t+1, dimension);
+            }
+            // last chunk
+            if (j < time2) {
+                val += getIntegrateFromTimeToTimeSimpson(j, time2, dimension);
+            }
+            return val;
+        }
+    }
+
 
     ///if the knob is slaved to another knob, returns the other knob value
     std::pair<int,boost::shared_ptr<KnobI> > master = getMaster(dimension);
@@ -1648,30 +1729,20 @@ Knob<T>::getIntegrateFromTimeToTime(double time1,
 
 template<>
 double
-Knob<std::string>::getIntegrateFromTimeToTime(double time1,
-                                              double time2,
-                                              int dimension) const
+Knob<std::string>::getIntegrateFromTimeToTimeSimpson(double /*time1*/,
+                                                     double /*time2*/,
+                                                     int /*dimension*/) const
 {
-    if ( ( dimension > getDimension() ) || (dimension < 0) ) {
-        throw std::invalid_argument("Knob::getDerivativeAtTime(): Dimension out of range");
-    }
+    return 0; // dummy value
+}
 
-    ///if the knob is slaved to another knob, returns the other knob value
-    std::pair<int,boost::shared_ptr<KnobI> > master = getMaster(dimension);
-    if (master.second) {
-        Knob<std::string>* isString = dynamic_cast<Knob<std::string>* >( master.second.get() );
-        assert(isString); //< other data types aren't supported
-        if (isString) {
-            return isString->getIntegrateFromTimeToTime(time1, time2, master.first);
-        }
-    }
-
-    boost::shared_ptr<Curve> curve  = getCurve(dimension);
-    if (curve->getKeyFramesCount() > 0) {
-        return curve->getIntegrateFromTo(time1, time2);
-    } else {
-        return 0;
-    }
+template<>
+double
+Knob<std::string>::getIntegrateFromTimeToTime(double /*time1*/,
+                                              double /*time2*/,
+                                              int /*dimension*/) const
+{
+    throw std::invalid_argument("Knob<string>::getIntegrateFromTimeToTime() not available");
 }
 
 template<typename T>
