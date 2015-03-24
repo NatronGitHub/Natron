@@ -31,32 +31,16 @@
 #define modifierHasShift(e)           ( (e)->modifiers().testFlag(Qt::ShiftModifier) )
 
 // macros to test if a button is held down (pressed), or a single-button compatibility combination
-#if 0 //Right click emulated with Left + ControlModifier
-
-#define buttonControlAlt(e)          ( (e)->modifiers() & (Qt::ControlModifier | Qt::AltModifier) )
-
-#else //Right click emulated with Left + MetaModifier, which is the way its done everywhere else on the mac
-
+//Right click emulated with Left + MetaModifier, which is the way its done everywhere else on the mac
 #define buttonControlAlt(e)          ( (e)->modifiers() & (Qt::MetaModifier | Qt::AltModifier) )
-
-#endif
 
 /// THE GOOD VERSION
 // PLEASE DON'T BREAK THIS.
 // THANK YOU VERY VERY VERY MUCH.
 #define buttonDownIsLeft(e)              ( ( (e)->buttons() == Qt::LeftButton   && buttonControlAlt(e) == Qt::NoModifier ) )
 
-#if 0 //Right click emulated with Left + ControlModifier
-
+//Right click emulated with Left + MetaModifier, which is the way its done everywhere else on the mac
 #define buttonDownIsRight(e)             ( ( (e)->buttons() == Qt::RightButton  && buttonControlAlt(e) == Qt::NoModifier ) || \
-                                           ( (e)->buttons() == Qt::LeftButton   && buttonControlAlt(e) == Qt::ControlModifier ) )
-
-#else //Right click emulated with Left + MetaModifier, which is the way its done everywhere else on the mac
-
-#define buttonDownIsRight(e)             ( ( (e)->buttons() == Qt::RightButton  && buttonControlAlt(e) == Qt::NoModifier ) || \
-                                           ( (e)->buttons() == Qt::LeftButton   && buttonControlAlt(e) == Qt::MetaModifier ) )
-
-#endif
 
 #define triggerButtonisLeft(e) ( (e)->button() == Qt::LeftButton && buttonControlAlt(e) == Qt::NoModifier )
 #define triggerButtonisRight(e) ( (e)->button() == Qt::RightButton || \
@@ -73,8 +57,9 @@
 
 
 // macros to test
-#define buttonModifier(e)            ( (e)->modifiers() & ( Qt::KeyboardModifierMask & ~(Qt::ControlModifier | Qt::AltModifier) ) )
+#define buttonModifier(e)            ( (e)->modifiers() & ( Qt::KeyboardModifierMask & ~(Qt::MetaModifier | Qt::AltModifier) ) )
 #define buttonModifierIsNone(e)      (buttonModifier(e) == Qt::NoModifier)
 #define buttonModifierIsShift(e)     (buttonModifier(e) == Qt::ShiftModifier)
+#define buttonModifierIsControl(e)   (buttonModifier(e) == Qt::ControlModifier)
 
 #endif // ifndef Gui_GuiMacros_h
