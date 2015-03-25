@@ -80,6 +80,8 @@ using namespace Natron;
 
 #define DERIVATIVE_ROUND_PRECISION 3.
 
+#define BOUNDING_BOX_HANDLE_SIZE 4
+
 #define AXIS_MAX 100000.
 #define AXIS_MIN -100000.
 
@@ -92,6 +94,14 @@ enum EventStateEnum
     eEventStateDraggingTangent,
     eEventStateDraggingTimeline,
     eEventStateZooming,
+    eEventStateDraggingTopLeftBbox,
+    eEventStateDraggingMidLeftBbox,
+    eEventStateDraggingBtmLeftBbox,
+    eEventStateDraggingMidBtmBbox,
+    eEventStateDraggingBtmRightBbox,
+    eEventStateDraggingMidRightBbox,
+    eEventStateDraggingTopRightBbox,
+    eEventStateDraggingMidTopBbox,
     eEventStateNone
 };
 
@@ -609,7 +619,12 @@ KnobCurveGui::evaluate(bool useExpr,double x) const
     if (useExpr) {
         return knob->getValueAtWithExpression(x,_dimension);
     } else {
-        return knob->getRawCurveValueAt(x, _dimension);
+        Parametric_Knob* isParametric = dynamic_cast<Parametric_Knob*>(knob.get());
+        if (isParametric) {
+            return isParametric->getParametricCurve(_dimension)->getValueAt(x);
+        } else {
+            return knob->getRawCurveValueAt(x, _dimension);
+        }
     }
 }
 
@@ -1358,9 +1373,19 @@ CurveWidgetPrivate::drawSelectedKeyFramesBbox()
         glEnable(GL_LINE_SMOOTH);
         glHint(GL_LINE_SMOOTH_HINT,GL_DONT_CARE);
 
-
         QPointF topLeft = _selectedKeyFramesBbox.topLeft();
         QPointF btmRight = _selectedKeyFramesBbox.bottomRight();
+        QPointF topLeftWidget = zoomCtx.toWidgetCoordinates(topLeft.x(), topLeft.y());
+        QPointF btmRightWidget = zoomCtx.toWidgetCoordinates(btmRight.x(), btmRight.y());
+        double xMid = (topLeft.x() + btmRight.x()) / 2.;
+        double yMid = (topLeft.y() + btmRight.y()) / 2.;
+        double xMidWidget,yMidWidget;
+        {
+            
+            QPointF wid = zoomCtx.toWidgetCoordinates(xMid, yMid);
+            xMidWidget = wid.x();
+            yMidWidget = wid.y();
+        }
 
         glLineWidth(1.5);
 
@@ -1372,12 +1397,50 @@ CurveWidgetPrivate::drawSelectedKeyFramesBbox()
         glVertex2f( btmRight.x(),btmRight.y() );
         glEnd();
 
+        
 
         glBegin(GL_LINES);
         glVertex2f( std::max( _selectedKeyFramesCrossHorizLine.p1().x(),topLeft.x() ),_selectedKeyFramesCrossHorizLine.p1().y() );
         glVertex2f( std::min( _selectedKeyFramesCrossHorizLine.p2().x(),btmRight.x() ),_selectedKeyFramesCrossHorizLine.p2().y() );
         glVertex2f( _selectedKeyFramesCrossVertLine.p1().x(),std::max( _selectedKeyFramesCrossVertLine.p1().y(),btmRight.y() ) );
         glVertex2f( _selectedKeyFramesCrossVertLine.p2().x(),std::min( _selectedKeyFramesCrossVertLine.p2().y(),topLeft.y() ) );
+        
+        //top tick
+        {
+            double yBottom = zoomCtx.toZoomCoordinates(0, topLeftWidget.y() + BOUNDING_BOX_HANDLE_SIZE).y();
+            double yTop = zoomCtx.toZoomCoordinates(0, topLeftWidget.y() - BOUNDING_BOX_HANDLE_SIZE).y();
+            glVertex2f(xMid, yBottom);
+            glVertex2f(xMid, yTop);
+        }
+        //left tick
+        {
+            double xLeft = zoomCtx.toZoomCoordinates(topLeftWidget.x() - BOUNDING_BOX_HANDLE_SIZE, 0).x();
+            double xRight = zoomCtx.toZoomCoordinates(topLeftWidget.x() + BOUNDING_BOX_HANDLE_SIZE, 0).x();
+            glVertex2f(xLeft, yMid);
+            glVertex2f(xRight, yMid);
+        }
+        //bottom tick
+        {
+            double yBottom = zoomCtx.toZoomCoordinates(0, btmRightWidget.y() + BOUNDING_BOX_HANDLE_SIZE).y();
+            double yTop = zoomCtx.toZoomCoordinates(0, btmRightWidget.y() - BOUNDING_BOX_HANDLE_SIZE).y();
+            glVertex2f(xMid, yBottom);
+            glVertex2f(xMid, yTop);
+        }
+        //right tick
+        {
+            double xLeft = zoomCtx.toZoomCoordinates(btmRightWidget.x() - BOUNDING_BOX_HANDLE_SIZE, 0).x();
+            double xRight = zoomCtx.toZoomCoordinates(btmRightWidget.x() + BOUNDING_BOX_HANDLE_SIZE, 0).x();
+            glVertex2f(xLeft, yMid);
+            glVertex2f(xRight, yMid);
+        }
+        glEnd();
+        
+        glPointSize(BOUNDING_BOX_HANDLE_SIZE);
+        glBegin(GL_POINTS);
+        glVertex2f(topLeft.x(), topLeft.y());
+        glVertex2f(btmRight.x(), topLeft.y());
+        glVertex2f(btmRight.x(), btmRight.y());
+        glVertex2f(topLeft.x(), btmRight.y());
         glEnd();
         
         glCheckError();
