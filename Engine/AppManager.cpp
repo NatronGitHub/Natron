@@ -3057,7 +3057,7 @@ AppManager::initPython(int argc,char* argv[])
     //PyEval_ReleaseThread(_imp->mainThreadState);
     
     std::string err;
-    bool ok = interpretPythonScript("import sys\nimport math\nimport " + std::string(NATRON_ENGINE_PYTHON_MODULE_NAME), &err, 0);
+    bool ok = interpretPythonScript("import sys\nfrom math import *\nimport " + std::string(NATRON_ENGINE_PYTHON_MODULE_NAME), &err, 0);
     assert(ok);
     
     if (!isBackground()) {

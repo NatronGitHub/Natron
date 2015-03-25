@@ -201,6 +201,8 @@ public:
         return _knob;
     }
     
+    virtual double evaluate(double x) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
     boost::shared_ptr<RotoContext> getRotoContext() const { return _roto; }
     
     boost::shared_ptr<KnobI> getInternalKnob() const;

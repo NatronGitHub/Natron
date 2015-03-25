@@ -286,41 +286,63 @@ CurveGui::drawCurve(int curveIndex,
     double w = _curveWidget->width();
     KeyFrameSet keyframes;
     BezierCPCurveGui* isBezier = dynamic_cast<BezierCPCurveGui*>(this);
-    if (isBezier) {
-        std::set<int> keys;
-        isBezier->getBezier()->getKeyframeTimes(&keys);
-        int i = 0;
-        for (std::set<int>::iterator it = keys.begin(); it != keys.end(); ++it,++i) {
-            keyframes.insert(KeyFrame(*it,i));
+    KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>(this);
+    
+    bool hasDrawnExpr = false;
+    if (isKnobCurve) {
+        std::string expr;
+        boost::shared_ptr<KnobI> knob = isKnobCurve->getInternalKnob();
+        assert(knob);
+        expr = knob->getExpression(isKnobCurve->getDimension());
+        if (!expr.empty()) {
+            //we have no choice but to evaluate the expression at each time
+            for (int i = x1; i < w; ++i) {
+                double x = _curveWidget->toZoomCoordinates(i,0).x();;
+                double y = knob->getValueAtWithExpression(x, isKnobCurve->getDimension());
+                vertices.push_back(x);
+                vertices.push_back(y);
+            }
+            hasDrawnExpr = true;
         }
-    } else {
-        keyframes = getInternalCurve()->getKeyFrames_mt_safe();
-    }
-    if (keyframes.empty()) {
-        return;
     }
     
-    std::pair<KeyFrame,bool> isX1AKey;
-    while ( x1 < (w - 1) ) {
-        double x,y;
-        if (!isX1AKey.second) {
-            x = _curveWidget->toZoomCoordinates(x1,0).x();
-            y = evaluate(x);
+    if (!hasDrawnExpr) {
+        if (isBezier) {
+            std::set<int> keys;
+            isBezier->getBezier()->getKeyframeTimes(&keys);
+            int i = 0;
+            for (std::set<int>::iterator it = keys.begin(); it != keys.end(); ++it,++i) {
+                keyframes.insert(KeyFrame(*it,i));
+            }
         } else {
-            x = isX1AKey.first.getTime();
-            y = isX1AKey.first.getValue();
+            keyframes = getInternalCurve()->getKeyFrames_mt_safe();
         }
-        vertices.push_back( (float)x );
-        vertices.push_back( (float)y );
-        isX1AKey = nextPointForSegment(x1,&x2,keyframes);
-        x1 = x2;
-    }
-    //also add the last point
-    {
-        double x = _curveWidget->toZoomCoordinates(x1,0).x();
-        double y = evaluate(x);
-        vertices.push_back( (float)x );
-        vertices.push_back( (float)y );
+        if (keyframes.empty()) {
+            return;
+        }
+        
+        std::pair<KeyFrame,bool> isX1AKey;
+        while ( x1 < (w - 1) ) {
+            double x,y;
+            if (!isX1AKey.second) {
+                x = _curveWidget->toZoomCoordinates(x1,0).x();
+                y = evaluate(x);
+            } else {
+                x = isX1AKey.first.getTime();
+                y = isX1AKey.first.getValue();
+            }
+            vertices.push_back( (float)x );
+            vertices.push_back( (float)y );
+            isX1AKey = nextPointForSegment(x1,&x2,keyframes);
+            x1 = x2;
+        }
+        //also add the last point
+        {
+            double x = _curveWidget->toZoomCoordinates(x1,0).x();
+            double y = evaluate(x);
+            vertices.push_back( (float)x );
+            vertices.push_back( (float)y );
+        }
     }
     
     QPointF btmLeft = _curveWidget->toZoomCoordinates(0,_curveWidget->height() - 1);
@@ -382,91 +404,93 @@ CurveGui::drawCurve(int curveIndex,
         _curveWidget->renderText( textX,textY,_name,_color,_curveWidget->getFont() );
         glColor4f( curveColor.redF(), curveColor.greenF(), curveColor.blueF(), curveColor.alphaF() );
 
-
-        //draw keyframes
-        glPointSize(7.f);
-        glEnable(GL_POINT_SMOOTH);
-
-        const SelectedKeys & selectedKeyFrames = _curveWidget->getSelectedKeyFrames();
-        for (KeyFrameSet::const_iterator k = keyframes.begin(); k != keyframes.end(); ++k) {
-            glColor4f( _color.redF(), _color.greenF(), _color.blueF(), _color.alphaF() );
-            const KeyFrame & key = (*k);
-            //if the key is selected change its color to white
-            SelectedKeys::const_iterator isSelected = selectedKeyFrames.end();
-            for (SelectedKeys::const_iterator it2 = selectedKeyFrames.begin();
-                 it2 != selectedKeyFrames.end(); ++it2) {
-                if ( ( (*it2)->key.getTime() == key.getTime() ) && ( (*it2)->curve == this ) ) {
-                    isSelected = it2;
-                    glColor4f(1.f,1.f,1.f,1.f);
-                    break;
-                }
-            }
-            double x = key.getTime();
-            double y = key.getValue();
-            glBegin(GL_POINTS);
-            glVertex2f(x,y);
-            glEnd();
+        
+        if (!hasDrawnExpr) {
+            //draw keyframes
+            glPointSize(7.f);
+            glEnable(GL_POINT_SMOOTH);
             
-            if ( !isBezier && ( isSelected != selectedKeyFrames.end() ) && (key.getInterpolation() != eKeyframeTypeConstant) ) {
-                
-                QFontMetrics m( _curveWidget->getFont() );
-
-                
-                //draw the derivatives lines
-                if ( (key.getInterpolation() != eKeyframeTypeFree) && (key.getInterpolation() != eKeyframeTypeBroken) ) {
-                    glLineStipple(2, 0xAAAA);
-                    glEnable(GL_LINE_STIPPLE);
+            const SelectedKeys & selectedKeyFrames = _curveWidget->getSelectedKeyFrames();
+            for (KeyFrameSet::const_iterator k = keyframes.begin(); k != keyframes.end(); ++k) {
+                glColor4f( _color.redF(), _color.greenF(), _color.blueF(), _color.alphaF() );
+                const KeyFrame & key = (*k);
+                //if the key is selected change its color to white
+                SelectedKeys::const_iterator isSelected = selectedKeyFrames.end();
+                for (SelectedKeys::const_iterator it2 = selectedKeyFrames.begin();
+                     it2 != selectedKeyFrames.end(); ++it2) {
+                    if ( ( (*it2)->key.getTime() == key.getTime() ) && ( (*it2)->curve == this ) ) {
+                        isSelected = it2;
+                        glColor4f(1.f,1.f,1.f,1.f);
+                        break;
+                    }
                 }
-                glBegin(GL_LINES);
-                glColor4f(1., 0.35, 0.35, 1.);
-                glVertex2f( (*isSelected)->leftTan.first, (*isSelected)->leftTan.second );
-                glVertex2f(x, y);
-                glVertex2f(x, y);
-                glVertex2f( (*isSelected)->rightTan.first, (*isSelected)->rightTan.second );
-                glEnd();
-                if ( (key.getInterpolation() != eKeyframeTypeFree) && (key.getInterpolation() != eKeyframeTypeBroken) ) {
-                    glDisable(GL_LINE_STIPPLE);
-                    
-                }
-                
-                if (selectedKeyFrames.size() == 1) { //if one keyframe, also draw the coordinates
-                    
-                    double rounding = std::pow(10.,DERIVATIVE_ROUND_PRECISION);
-                    
-                    QString leftDerivStr = QString("l: %1").arg(std::floor((key.getLeftDerivative() * rounding) + 0.5) / rounding);
-                    QString rightDerivStr = QString("r: %1").arg(std::floor((key.getRightDerivative() * rounding) + 0.5) / rounding);
-                    
-                    double yLeftWidgetCoord = _curveWidget->toWidgetCoordinates(0,(*isSelected)->leftTan.second).y();
-                    yLeftWidgetCoord += (m.height() + 4);
-                    
-                    double yRightWidgetCoord = _curveWidget->toWidgetCoordinates(0,(*isSelected)->rightTan.second).y();
-                    yRightWidgetCoord += (m.height() + 4);
-                    
-                    glColor4f(1., 1., 1., 1.);
-                    glCheckFramebufferError();
-                    _curveWidget->renderText( (*isSelected)->leftTan.first, _curveWidget->toZoomCoordinates(0, yLeftWidgetCoord).y(),
-                                             leftDerivStr, QColor(240,240,240), _curveWidget->getFont() );
-                    _curveWidget->renderText( (*isSelected)->rightTan.first, _curveWidget->toZoomCoordinates(0, yRightWidgetCoord).y(),
-                                             rightDerivStr, QColor(240,240,240), _curveWidget->getFont() );
-                }
-                
-                
-                
-                if (selectedKeyFrames.size() == 1) { //if one keyframe, also draw the coordinates
-                    QString coordStr("x: %1, y: %2");
-                    coordStr = coordStr.arg(x).arg(y);
-                    double yWidgetCoord = _curveWidget->toWidgetCoordinates( 0,key.getValue() ).y();
-                    yWidgetCoord += (m.height() + 4);
-                    glColor4f(1., 1., 1., 1.);
-                    glCheckFramebufferError();
-                    _curveWidget->renderText( x, _curveWidget->toZoomCoordinates(0, yWidgetCoord).y(),
-                                             coordStr, QColor(240,240,240), _curveWidget->getFont() );
-                }
+                double x = key.getTime();
+                double y = key.getValue();
                 glBegin(GL_POINTS);
-                glVertex2f( (*isSelected)->leftTan.first, (*isSelected)->leftTan.second );
-                glVertex2f( (*isSelected)->rightTan.first, (*isSelected)->rightTan.second );
+                glVertex2f(x,y);
                 glEnd();
-            }
+                
+                if ( !isBezier && ( isSelected != selectedKeyFrames.end() ) && (key.getInterpolation() != eKeyframeTypeConstant) ) {
+                    
+                    QFontMetrics m( _curveWidget->getFont() );
+                    
+                    
+                    //draw the derivatives lines
+                    if ( (key.getInterpolation() != eKeyframeTypeFree) && (key.getInterpolation() != eKeyframeTypeBroken) ) {
+                        glLineStipple(2, 0xAAAA);
+                        glEnable(GL_LINE_STIPPLE);
+                    }
+                    glBegin(GL_LINES);
+                    glColor4f(1., 0.35, 0.35, 1.);
+                    glVertex2f( (*isSelected)->leftTan.first, (*isSelected)->leftTan.second );
+                    glVertex2f(x, y);
+                    glVertex2f(x, y);
+                    glVertex2f( (*isSelected)->rightTan.first, (*isSelected)->rightTan.second );
+                    glEnd();
+                    if ( (key.getInterpolation() != eKeyframeTypeFree) && (key.getInterpolation() != eKeyframeTypeBroken) ) {
+                        glDisable(GL_LINE_STIPPLE);
+                        
+                    }
+                    
+                    if (selectedKeyFrames.size() == 1) { //if one keyframe, also draw the coordinates
+                        
+                        double rounding = std::pow(10.,DERIVATIVE_ROUND_PRECISION);
+                        
+                        QString leftDerivStr = QString("l: %1").arg(std::floor((key.getLeftDerivative() * rounding) + 0.5) / rounding);
+                        QString rightDerivStr = QString("r: %1").arg(std::floor((key.getRightDerivative() * rounding) + 0.5) / rounding);
+                        
+                        double yLeftWidgetCoord = _curveWidget->toWidgetCoordinates(0,(*isSelected)->leftTan.second).y();
+                        yLeftWidgetCoord += (m.height() + 4);
+                        
+                        double yRightWidgetCoord = _curveWidget->toWidgetCoordinates(0,(*isSelected)->rightTan.second).y();
+                        yRightWidgetCoord += (m.height() + 4);
+                        
+                        glColor4f(1., 1., 1., 1.);
+                        glCheckFramebufferError();
+                        _curveWidget->renderText( (*isSelected)->leftTan.first, _curveWidget->toZoomCoordinates(0, yLeftWidgetCoord).y(),
+                                                 leftDerivStr, QColor(240,240,240), _curveWidget->getFont() );
+                        _curveWidget->renderText( (*isSelected)->rightTan.first, _curveWidget->toZoomCoordinates(0, yRightWidgetCoord).y(),
+                                                 rightDerivStr, QColor(240,240,240), _curveWidget->getFont() );
+                    }
+                    
+                    
+                    
+                    if (selectedKeyFrames.size() == 1) { //if one keyframe, also draw the coordinates
+                        QString coordStr("x: %1, y: %2");
+                        coordStr = coordStr.arg(x).arg(y);
+                        double yWidgetCoord = _curveWidget->toWidgetCoordinates( 0,key.getValue() ).y();
+                        yWidgetCoord += (m.height() + 4);
+                        glColor4f(1., 1., 1., 1.);
+                        glCheckFramebufferError();
+                        _curveWidget->renderText( x, _curveWidget->toZoomCoordinates(0, yWidgetCoord).y(),
+                                                 coordStr, QColor(240,240,240), _curveWidget->getFont() );
+                    }
+                    glBegin(GL_POINTS);
+                    glVertex2f( (*isSelected)->leftTan.first, (*isSelected)->leftTan.second );
+                    glVertex2f( (*isSelected)->rightTan.first, (*isSelected)->rightTan.second );
+                    glEnd();
+                } // if ( !isBezier && ( isSelected != selectedKeyFrames.end() ) && (key.getInterpolation() != eKeyframeTypeConstant) ) {
+            } // for (KeyFrameSet::const_iterator k = keyframes.begin(); k != keyframes.end(); ++k) {
         }
     } // GLProtectAttrib(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_COLOR_BUFFER_BIT | GL_POINT_BIT | GL_CURRENT_BIT);
 
@@ -576,6 +600,13 @@ KnobCurveGui::KnobCurveGui(const CurveWidget *curveWidget,
 KnobCurveGui::~KnobCurveGui()
 {
     
+}
+
+double
+KnobCurveGui::evaluate(double x) const
+{
+    boost::shared_ptr<KnobI> knob = getInternalKnob();
+    return knob->getValueAtWithExpression(x,_dimension);
 }
 
 boost::shared_ptr<Curve>

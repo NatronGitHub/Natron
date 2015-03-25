@@ -681,7 +681,7 @@ PyObject* getMainModule();
 **/
 bool interpretPythonScript(const std::string& script,std::string* error,std::string* output);
 
-    
+
 void compilePyScript(const std::string& script,PyObject** code);
 
 std::string PY3String_asString(PyObject* obj);

@@ -193,9 +193,9 @@ struct Expr
     bool hasRet;
     std::list<KnobI*> dependencies;
     
-    PyObject* code;
+    //PyObject* code;
     
-    Expr() : expression(), originalExpression(), hasRet(false),  code(0){}
+    Expr() : expression(), originalExpression(), hasRet(false) /*, code(0)*/{}
 };
 
 
@@ -1427,7 +1427,6 @@ KnobHelperPrivate::declarePythonVariables(bool addTab, int dim)
     
     ///Now define the variables in the scope
     ss << tabStr << "thisParam = thisNode." << name << "\n";
-    ss << tabStr << "frame = thisParam.getCurrentTime()\n";
     ss << tabStr << "random = thisParam.random\n";
     ss << tabStr << "randomInt = thisParam.randomInt\n";
     if (dimension != -1) {
@@ -1575,7 +1574,7 @@ KnobHelper::validateExpression(const std::string& expression,int dimension,bool 
     ///Now define the thisNode variable
 
     std::stringstream ss;
-    ss << "def "  << exprFuncName << "():\n";
+    ss << "def "  << exprFuncName << "(frame):\n";
     ss << _imp->declarePythonVariables(true, dimension);
 
     
@@ -1586,7 +1585,7 @@ KnobHelper::validateExpression(const std::string& expression,int dimension,bool 
     ///Try to compile the expression and evaluate it, if it doesn't have a good syntax, throw an exception
     ///with the error.
     std::string error;
-    std::string funcExecScript = "ret = " + exprFuncPrefix + exprFuncName + "()\n";
+    std::string funcExecScript = "ret = " + exprFuncPrefix + exprFuncName;
 
     {
         EXPR_RECURSION_LEVEL();
@@ -1595,7 +1594,9 @@ KnobHelper::validateExpression(const std::string& expression,int dimension,bool 
             throw std::runtime_error(error);
         }
         
-        if (!interpretPythonScript(funcExecScript, &error, 0)) {
+        std::stringstream ss;
+        ss << funcExecScript <<'('<<getCurrentTime()<<")\n";
+        if (!interpretPythonScript(ss.str(), &error, 0)) {
             throw std::runtime_error(error);
         }
         
@@ -1651,42 +1652,19 @@ KnobHelper::setExpressionInternal(int dimension,const std::string& expression,bo
     std::string exprResult;
     std::string exprCpy = validateExpression(expression, dimension, hasRetVariable,&exprResult);
     
-    
-    ///Compile the expression
+    //Set internal fields
+
     {
         QMutexLocker k(&_imp->expressionMutex);
         _imp->expressions[dimension].hasRet = hasRetVariable;
-        
-        ///This may throw an exception upon failure
-        compilePyScript(exprCpy, &_imp->expressions[dimension].code);
-    }
-    
-    
-    //Try to execute the expression at least once to check that it works.
-    {
-        EXPR_RECURSION_LEVEL();
-        
-        try {
-            PyObject* ret = executeExpression(dimension);
-            Py_DECREF(ret); //< new ref
-
-        } catch (const std::runtime_error& e) {
-            clearExpression(dimension,clearResults);
-            throw e;
-        }
-    }
-    
-    
-    //Set internal fields
-    {
-        QMutexLocker k(&_imp->expressionMutex);
-        
-        ///The expression is good so far, register it and add listeners (dependencies)
-        
         _imp->expressions[dimension].expression = exprCpy;
         _imp->expressions[dimension].originalExpression = expression;
+        
+        ///This may throw an exception upon failure
+        //compilePyScript(exprCpy, &_imp->expressions[dimension].code);
     }
-    
+  
+
     //Parse listeners of the expression, to keep track of dependencies to indicate them to the user.
     if (getHolder()) {
         EXPR_RECURSION_LEVEL();
@@ -1712,8 +1690,8 @@ KnobHelper::clearExpression(int dimension,bool clearResults)
         QMutexLocker k(&_imp->expressionMutex);
         _imp->expressions[dimension].expression.clear();
         _imp->expressions[dimension].originalExpression.clear();
-        Py_XDECREF(_imp->expressions[dimension].code); //< new ref
-        _imp->expressions[dimension].code = 0;
+        //Py_XDECREF(_imp->expressions[dimension].code); //< new ref
+        //_imp->expressions[dimension].code = 0;
     }
     {
         std::list<KnobI*> dependencies;
@@ -1773,13 +1751,13 @@ KnobHelper::expressionChanged(int dimension)
 }
 
 PyObject*
-KnobHelper::executeExpression(int dimension) const
+KnobHelper::executeExpression(double time, int dimension) const
 {
     
-    Expr exp;
+    std::string expr;
     {
         QMutexLocker k(&_imp->expressionMutex);
-        exp = _imp->expressions[dimension];
+        expr = _imp->expressions[dimension].expression;
     }
     
     //returns a new ref, this function's documentation is not clear onto what it returns...
@@ -1787,10 +1765,11 @@ KnobHelper::executeExpression(int dimension) const
     PyObject* mainModule = getMainModule();
     PyObject* globalDict = PyModule_GetDict(mainModule);
     
-
-    
-    PyObject* evalRet = PyEval_EvalCode(exp.code, globalDict, 0);
-    Py_XDECREF(evalRet);
+    std::stringstream ss;
+    ss << expr << '(' << time << ")\n";
+    std::string script = ss.str();
+    PyObject* v = PyRun_String(script.c_str(), Py_file_input, globalDict, 0);
+    Py_XDECREF(v);
     
     
     
@@ -1810,15 +1789,15 @@ KnobHelper::executeExpression(int dimension) const
                 PyObject_SetAttrString(errCatcher, "value", unicode);
                 Py_DECREF(errorObj);
                 Py_DECREF(errCatcher);
-                qDebug() << "Expression dump\n=========================================================";
-                qDebug() << exp.expression.c_str();
+                qDebug() << "Expression dump:\n=========================================================";
+                qDebug() << expr.c_str();
                 qDebug() << error.c_str();
             }
 
         }
 
 #endif
-        throw std::runtime_error("Failed to execute compiled Python code");
+        throw std::runtime_error("Failed to execute expression");
     }
     PyObject *ret = PyObject_GetAttrString(mainModule,"ret"); //get our ret variable created above
     
@@ -2545,9 +2524,9 @@ KnobHelper::getCurrentView() const
 
 
 double
-KnobHelper::random(unsigned int seed) const
+KnobHelper::random(double time, unsigned int seed) const
 {
-    randomSeed(seed);
+    randomSeed(time, seed);
     return random();
 }
 
@@ -2560,20 +2539,34 @@ KnobHelper::random(double min,double max) const
 }
 
 int
-KnobHelper::randomInt(unsigned int seed) const
+KnobHelper::randomInt(double time,unsigned int seed) const
 {
-    randomSeed(seed);
+    randomSeed(time, seed);
     return randomInt();
 }
 
 int
 KnobHelper::randomInt(int min,int max) const
 {
-    return (int)random(min,max);
+    return (int)random((double)min,(double)max);
 }
 
+struct alias_cast_float
+{
+    alias_cast_float()
+    : raw(0)
+    {
+    };                          // initialize to 0 in case sizeof(T) < 8
+    
+    union
+    {
+        U32 raw;
+        float data;
+    };
+};
+
 void
-KnobHelper::randomSeed(unsigned int seed) const
+KnobHelper::randomSeed(double time, unsigned int seed) const
 {
     
     U64 hash = 0;
@@ -2586,7 +2579,10 @@ KnobHelper::randomSeed(unsigned int seed) const
     }
     U32 hash32 = (U32)hash;
     hash32 += seed;
-    hash32 += getCurrentTime();
+    
+    alias_cast_float ac;
+    ac.data = (float)time;
+    hash32 += ac.raw;
     
     QMutexLocker k(&_imp->lastRandomHashMutex);
     _imp->lastRandomHash = hash32;

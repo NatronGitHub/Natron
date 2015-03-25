@@ -330,7 +330,26 @@ template <>
 std::string
 Knob<std::string>::pyObjectToType(PyObject* o) const
 {
-    return std::string(Natron::PY3String_asString(o));
+    if (PyUnicode_Check(o)) {
+        return std::string(Natron::PY3String_asString(o));
+    }
+    
+    int index = 0;
+    if (PyFloat_Check(o)) {
+        index = std::floor((double)PyFloat_AsDouble(o) + 0.5);
+    } else if (PyLong_Check(o)) {
+        index = (int)PyInt_AsLong(o);
+    } else if (PyObject_IsTrue(o) == 1) {
+        index = 1;
+    }
+    
+    const AnimatingString_KnobHelper* isStringAnimated = dynamic_cast<const AnimatingString_KnobHelper* >(this);
+    if (!isStringAnimated) {
+        return std::string();
+    }
+    std::string ret;
+    isStringAnimated->stringFromInterpolatedValue(index, &ret);
+    return ret;
 }
 
 
@@ -345,15 +364,15 @@ inline unsigned int hashFunction(unsigned int a)
 }
 
 template <typename T>
-T Knob<T>::evaluateExpression(int dimension) const
+T Knob<T>::evaluateExpression(double time, int dimension) const
 {
     Natron::PythonGILLocker pgl;
     PyObject *ret;
     
     ///Reset the random state to reproduce the sequence
-    randomSeed(hashFunction(dimension));
+    randomSeed(time, hashFunction(dimension));
     try {
-        ret = executeExpression(dimension);
+        ret = executeExpression(time, dimension);
     } catch (...) {
         return T();
     }
@@ -361,6 +380,34 @@ T Knob<T>::evaluateExpression(int dimension) const
     T val =  pyObjectToType(ret);
     Py_DECREF(ret); //< new ref
     return val;
+}
+
+template <typename T>
+double
+Knob<T>::evaluateExpression_pod(double time, int dimension) const
+{
+    Natron::PythonGILLocker pgl;
+    PyObject *ret;
+    
+    ///Reset the random state to reproduce the sequence
+    randomSeed(time, hashFunction(dimension));
+    try {
+        ret = executeExpression(time, dimension);
+    } catch (...) {
+        return 0.;
+    }
+    
+    if (PyFloat_Check(ret)) {
+        return (double)PyFloat_AsDouble(ret);
+    } else if (PyLong_Check(ret)) {
+        return (int)PyInt_AsLong(ret);
+    } else if (PyObject_IsTrue(ret) == 1) {
+        return 1;
+    } else {
+        //Strings should always fall here
+        return 0.;
+    }
+
 }
 
 template <typename T>
@@ -388,7 +435,63 @@ bool Knob<T>::getValueFromExpression(double time,int dimension,bool clamp,T* ret
     
     {
         EXPR_RECURSION_LEVEL();
-        *ret = evaluateExpression(dimension);
+        *ret = evaluateExpression(time, dimension);
+    }
+    
+    if (clamp) {
+        *ret =  clampToMinMax(*ret,dimension);
+    }
+    
+    //QWriteLocker k(&_valueMutex);
+    _exprRes[dimension].insert(std::make_pair(time,*ret));
+    return true;
+
+}
+
+template <>
+bool Knob<std::string>::getValueFromExpression_pod(double time,int dimension,bool /*clamp*/,double* ret) const
+{
+    ///Prevent recursive call of the expression
+    
+    
+    if (getExpressionRecursionLevel() > 0) {
+        return false;
+    }
+    
+    {
+        EXPR_RECURSION_LEVEL();
+        *ret = evaluateExpression_pod(time, dimension);
+    }
+    return true;
+    
+}
+
+
+template <typename T>
+bool Knob<T>::getValueFromExpression_pod(double time,int dimension,bool clamp,double* ret) const
+{
+    ///Prevent recursive call of the expression
+    
+    
+    if (getExpressionRecursionLevel() > 0) {
+        return false;
+    }
+    
+    
+    ///Check first if a value was already computed:
+    
+    
+    QWriteLocker k(&_valueMutex);
+    typename FrameValueMap::iterator found = _exprRes[dimension].find(time);
+    if (found != _exprRes[dimension].end()) {
+        *ret = found->second;
+        return true;
+    }
+    
+    
+    {
+        EXPR_RECURSION_LEVEL();
+        *ret = evaluateExpression_pod(time, dimension);
     }
     
     if (clamp) {
@@ -570,6 +673,43 @@ Knob<T>::getValueAtTime(double time, int dimension,bool clamp ,bool byPassMaster
         return _values[dimension];
     }
     
+}
+
+template <>
+double Knob<std::string>::getRawCurveValueAt(double time, int dimension) const
+{
+    boost::shared_ptr<Curve> curve  = getCurve(dimension,true);
+    if (curve && curve->getKeyFramesCount() > 0) {
+        //getValueAt already clamps to the range for us
+        return curve->getValueAt(time,false); //< no clamping to range!
+    }
+    return 0;
+}
+
+template <typename T>
+double Knob<T>::getRawCurveValueAt(double time, int dimension) const
+{
+    boost::shared_ptr<Curve> curve  = getCurve(dimension,true);
+    if (curve && curve->getKeyFramesCount() > 0) {
+        //getValueAt already clamps to the range for us
+        return curve->getValueAt(time,false);//< no clamping to range!
+    }
+    QReadLocker l(&_valueMutex);
+    T ret = _values[dimension];
+    return clampToMinMax(ret,dimension);
+}
+
+template <typename T>
+double Knob<T>::getValueAtWithExpression(double time, int dimension) const
+{
+    std::string expr = getExpression(dimension);
+    if (!expr.empty()) {
+        double ret;
+        if (getValueFromExpression_pod(time, dimension,false, &ret)) {
+            return ret;
+        }
+    }
+    return getRawCurveValueAt(time, dimension);
 }
 
 template <typename T>

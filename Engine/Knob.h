@@ -442,10 +442,21 @@ public:
      **/
     virtual boost::shared_ptr<Curve> getGuiCurve(int dimension) const = 0;
 
-    virtual double random(unsigned int seed) const = 0;
+    virtual double random(double time, unsigned int seed) const = 0;
     virtual double random(double min = 0.,double max = 1.) const = 0;
-    virtual int randomInt(unsigned int seed) const = 0;
+    virtual int randomInt(double time,unsigned int seed) const = 0;
     virtual int randomInt(int min = INT_MIN,int max = INT_MAX) const = 0;
+    
+    /**
+     * @brief Evaluates the curve at the given dimension and at the given time. This returns the value of the curve directly.
+     * If the knob is holding a string, it will return the index.
+     **/
+    virtual double getRawCurveValueAt(double time, int dimension) const = 0;
+    
+    /**
+     * @brief Same as getRawCurveValueAt, but first check if an expression is present. The expression should return a PoD.
+     **/
+    virtual double getValueAtWithExpression(double time, int dimension) const = 0;
     
 protected:
 
@@ -1048,13 +1059,13 @@ public:
     virtual bool isValueChangesBlocked() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void evaluateValueChange(int dimension,Natron::ValueChangedReasonEnum reason) OVERRIDE FINAL;
     
-    virtual double random(unsigned int seed) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual double random(double time,unsigned int seed) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual double random(double min = 0., double max = 1.) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual int randomInt(unsigned int seed) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual int randomInt(double time,unsigned int seed) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual int randomInt(int min = 0,int max = INT_MAX) const OVERRIDE FINAL WARN_UNUSED_RETURN;
 protected:
     
-    void randomSeed(unsigned int seed) const;
+    void randomSeed(double time, unsigned int seed) const;
     
 private:
 
@@ -1168,7 +1179,7 @@ protected:
     void resetMaster(int dimension);
     
     ///The return value must be Py_DECRREF
-    PyObject* executeExpression(int dimension) const;
+    PyObject* executeExpression(double time, int dimension) const;
 
 public:
 
@@ -1303,7 +1314,7 @@ public:
      that we're able to get the same value again for the same render.
      Of course, this saved in the project to retrieve the same values between 2 runs of the project.
      */
-    typedef std::map<SequenceTime,T> FrameValueMap;
+    typedef std::map<double,T> FrameValueMap;
     typedef std::vector<FrameValueMap> ExprResults;
 
     
@@ -1337,7 +1348,10 @@ public:
      * but this should be the only knob which should ever need to overload it.
      **/
     T getValueAtTime(double time, int dimension = 0,bool clampToMinMax = true,bool byPassMaster = false) const WARN_UNUSED_RETURN;
-
+    
+    virtual double getRawCurveValueAt(double time, int dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual double getValueAtWithExpression(double time, int dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
 private:
 
    
@@ -1546,9 +1560,17 @@ public:
     
 private:
     
-    T evaluateExpression(int dimension) const;
+    T evaluateExpression(double time, int dimension) const;
+    
+    /*
+     * @brief Same as evaluateExpression but expects it to return a PoD
+     */
+    double evaluateExpression_pod(double time, int dimension) const;
+
     
     bool getValueFromExpression(double time,int dimension,bool clamp,T* ret) const;
+    
+    bool getValueFromExpression_pod(double time,int dimension,bool clamp,double* ret) const;
 
     //////////////////////////////////////////////////////////////////////
     /////////////////////////////////// End implementation of KnobI
