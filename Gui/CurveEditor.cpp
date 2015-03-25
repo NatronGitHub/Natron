@@ -1454,14 +1454,15 @@ CurveEditor::refreshCurrentExpression()
 }
 
 void
-CurveEditor::onExprLineEditFinished()
+CurveEditor::setSelectedCurveExpression(const QString& expression)
 {
+    
     if (!_imp->selectedKnobCurve) {
         return;
     }
+    std::string expr = expression.toStdString();
     boost::shared_ptr<KnobI> knob = _imp->selectedKnobCurve->getKnobGui()->getKnob();
     int dim = _imp->selectedKnobCurve->getDimension();
-    std::string expr = _imp->knobLineEdit->text().toStdString();
     std::string exprResult;
     if (!expr.empty()) {
         try {
@@ -1472,4 +1473,11 @@ CurveEditor::onExprLineEditFinished()
         }
     }
     _imp->curveWidget->pushUndoCommand(new SetExpressionCommand(knob,false,dim,expr));
+
+}
+
+void
+CurveEditor::onExprLineEditFinished()
+{
+    setSelectedCurveExpression(_imp->knobLineEdit->text());
 }

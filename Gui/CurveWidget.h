@@ -370,6 +370,12 @@ public Q_SLOTS:
     void breakDerivativesForSelectedKeyFrames();
 
     void frameSelectedCurve();
+    
+    void loopSelectedCurve();
+    
+    void negateSelectedCurve();
+    
+    void reverseSelectedCurve();
 
     void refreshSelectedKeysBbox();
 

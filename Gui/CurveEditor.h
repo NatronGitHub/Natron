@@ -334,6 +334,8 @@ public:
 
     void refreshCurrentExpression();
     
+    void setSelectedCurveExpression(const QString& expression);
+    
 public Q_SLOTS:
 
     void onFilterTextChanged(const QString& filter);

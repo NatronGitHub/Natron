@@ -65,6 +65,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Gui/GuiAppInstance.h"
 #include "Gui/CurveSelection.h"
 #include "Gui/Label.h"
+#include "Gui/PythonPanels.h"
 
 // warning: 'gluErrorString' is deprecated: first deprecated in OS X 10.9 [-Wdeprecated-declarations]
 CLANG_DIAG_OFF(deprecated-declarations)
@@ -947,8 +948,25 @@ CurveWidgetPrivate::createMenu()
     //viewMenu->setFont( QFont(appFont,appFontSize) );
     viewMenu->setTitle( QObject::tr("View") );
     _rightClickMenu->addAction( viewMenu->menuAction() );
-
-
+    
+    CurveEditor* ce = 0;
+    if ( _widget->parentWidget() ) {
+        QWidget* parent  = _widget->parentWidget()->parentWidget();
+        if (parent) {
+            if (parent->objectName() == "CurveEditor") {
+                ce = dynamic_cast<CurveEditor*>(parent);
+            }
+        }
+    }
+    
+    QMenu* predefMenu  = 0;
+    if (ce) {
+        predefMenu = new QMenu(_rightClickMenu);
+        predefMenu->setTitle(QObject::tr("Predefined"));
+        _rightClickMenu->addAction(predefMenu->menuAction());
+    }
+    
+    
     QAction* exportCurveToAsciiAction = new QAction(QObject::tr("Export curve to Ascii"),fileMenu);
     QObject::connect( exportCurveToAsciiAction,SIGNAL( triggered() ),_widget,SLOT( exportCurveToAscii() ) );
     fileMenu->addAction(exportCurveToAsciiAction);
@@ -1033,6 +1051,22 @@ CurveWidgetPrivate::createMenu()
     frameCurve->setShortcut( QKeySequence(Qt::Key_F) );
     QObject::connect( frameCurve,SIGNAL( triggered() ),_widget,SLOT( frameSelectedCurve() ) );
     viewMenu->addAction(frameCurve);
+    
+    if (predefMenu) {
+        QAction* loop = new QAction(QObject::tr("Loop"),_rightClickMenu);
+        QObject::connect(loop, SIGNAL(triggered()), _widget, SLOT(loopSelectedCurve()));
+        predefMenu->addAction(loop);
+        
+        QAction* reverse = new QAction(QObject::tr("Reverse"),_rightClickMenu);
+        QObject::connect(reverse, SIGNAL(triggered()), _widget, SLOT(reverseSelectedCurve()));
+        predefMenu->addAction(reverse);
+
+        
+        QAction* negate = new QAction(QObject::tr("Negate"),_rightClickMenu);
+        QObject::connect(negate, SIGNAL(triggered()), _widget, SLOT(negateSelectedCurve()));
+        predefMenu->addAction(negate);
+
+    }
 
     QAction* updateOnPenUp = new QAction(QObject::tr("Update on mouse release only"),_rightClickMenu);
     updateOnPenUp->setCheckable(true);
@@ -3457,11 +3491,95 @@ CurveWidget::selectAllKeyFrames()
 }
 
 void
+CurveWidget::loopSelectedCurve()
+{
+    CurveEditor* ce = 0;
+    if ( parentWidget() ) {
+        QWidget* parent  = parentWidget()->parentWidget();
+        if (parent) {
+            if (parent->objectName() == "CurveEditor") {
+                ce = dynamic_cast<CurveEditor*>(parent);
+            }
+        }
+    }
+    if (!ce) {
+        return;
+    }
+    CurveGui* curve = ce->getSelectedCurve();
+    if (!curve) {
+        warningDialog( tr("Curve Editor").toStdString(),tr("You must select a curve first in the view.").toStdString() );
+        return;
+    }
+    
+    PyModalDialog dialog(_imp->_gui);
+    IntParam* firstFrame = dialog.createIntParam("firstFrame", "First frame");
+    firstFrame->setAnimationEnabled(false);
+    IntParam* lastFrame = dialog.createIntParam("lastFrame", "Last frame");
+    lastFrame->setAnimationEnabled(false);
+    dialog.refreshUserParamsGUI();
+    if (dialog.exec()) {
+        int first = firstFrame->getValue();
+        int last = lastFrame->getValue();
+        std::stringstream ss;
+        ss << "curve(((frame - " << first << ") % (" << last << " - " << first << " + 1)) + " << first << ")";
+        std::string script = ss.str();
+        ce->setSelectedCurveExpression(script.c_str());
+    }
+
+}
+
+void
+CurveWidget::negateSelectedCurve()
+{
+    CurveEditor* ce = 0;
+    if ( parentWidget() ) {
+        QWidget* parent  = parentWidget()->parentWidget();
+        if (parent) {
+            if (parent->objectName() == "CurveEditor") {
+                ce = dynamic_cast<CurveEditor*>(parent);
+            }
+        }
+    }
+    if (!ce) {
+        return;
+    }
+    CurveGui* curve = ce->getSelectedCurve();
+    if (!curve) {
+        warningDialog( tr("Curve Editor").toStdString(),tr("You must select a curve first in the view.").toStdString() );
+        return;
+    }
+    ce->setSelectedCurveExpression("-curve(frame)");
+}
+
+void
+CurveWidget::reverseSelectedCurve()
+{
+    CurveEditor* ce = 0;
+    if ( parentWidget() ) {
+        QWidget* parent  = parentWidget()->parentWidget();
+        if (parent) {
+            if (parent->objectName() == "CurveEditor") {
+                ce = dynamic_cast<CurveEditor*>(parent);
+            }
+        }
+    }
+    if (!ce) {
+        return;
+    }
+    CurveGui* curve = ce->getSelectedCurve();
+    if (!curve) {
+        warningDialog( tr("Curve Editor").toStdString(),tr("You must select a curve first in the view.").toStdString() );
+        return;
+    }
+    ce->setSelectedCurveExpression("curve(-frame)");
+}
+
+void
 CurveWidget::frameSelectedCurve()
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-
+    
     std::vector<CurveGui*> selection;
     _imp->_selectionModel->getSelectedCurves(&selection);
     centerOn(selection);
