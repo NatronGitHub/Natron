@@ -105,6 +105,7 @@ typedef OfxRangeD RangeD;
 #define kNodeGraphMoveNodeBackDropCommandCompressionID 14
 #define kNodeGraphResizeNodeBackDropCommandCompressionID 15
 #define kCurveEditorMoveTangentsCommandCompressionID 16
+#define kCurveEditorTransformKeysCommandCompressionID 17
 
 namespace Natron {
 /*Converts a std::string to wide string*/

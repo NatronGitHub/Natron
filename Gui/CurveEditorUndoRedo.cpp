@@ -28,6 +28,7 @@
 #include "Engine/Curve.h"
 #include "Engine/RotoContext.h"
 #include "Engine/KnobTypes.h"
+#include "Engine/Transform.h"
 
 
 //////////////////////////////ADD MULTIPLE KEYS COMMAND//////////////////////////////////////////////
@@ -310,14 +311,7 @@ moveKey(KeyPtr &k,
                 newY = std::floor(newY + 0.5);
             } else if ( curve->areKeyFramesValuesClampedToBooleans() ) {
                 newY = newY < 0.5 ? 0 : 1;
-            }
-            
-//            if (newY > curveYRange.second) {
-//                newY = k->key.getValue();
-//            } else if (newY < curveYRange.first) {
-//                newY = k->key.getValue();
-//            }
-//            
+            }        
             double oldTime = k->key.getTime();
             int keyframeIndex = curve->keyFrameIndex(oldTime);
             int newIndex;
@@ -732,3 +726,93 @@ MoveTangentCommand::mergeWith(const QUndoCommand * command)
         return false;
     }
 }
+
+
+
+TransformKeysCommand::TransformKeysCommand(CurveWidget* widget,
+                     const SelectedKeys & keys,
+                     double centerX,
+                     double centerY,
+                     double tx,
+                     double ty,
+                     double sx,
+                     double sy,
+                     bool updateOnFirstRedo,
+                     QUndoCommand *parent)
+: QUndoCommand(parent)
+, _firstRedoCalled(false)
+, _updateOnFirstRedo(updateOnFirstRedo)
+, _keys(keys)
+, _widget(widget)
+, _matrix(new Transform::Matrix3x3)
+{
+    *_matrix = Transform::matTransformCanonical(tx, ty, sx, sy, 0, 0, true, 0, centerX, centerY);
+}
+
+TransformKeysCommand::~TransformKeysCommand()
+{
+}
+
+
+void
+TransformKeysCommand::undo()
+{
+    
+}
+
+void
+TransformKeysCommand::redo()
+{
+    
+}
+
+int
+TransformKeysCommand::id() const
+{
+    return kCurveEditorTransformKeysCommandCompressionID;
+}
+
+bool
+TransformKeysCommand::mergeWith(const QUndoCommand * command)
+{
+    
+}
+
+void
+TransformKeysCommand::transform()
+{
+//    KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>(k->curve);
+//    BezierCPCurveGui* isBezierCurve = dynamic_cast<BezierCPCurveGui*>(k->curve);
+//    if (isKnobCurve) {
+//        boost::shared_ptr<KnobI> knob = isKnobCurve->getInternalKnob();
+//        Parametric_Knob* isParametric = dynamic_cast<Parametric_Knob*>(knob.get());
+//        
+//        if (isParametric) {
+//            // std::pair<double,double> curveYRange = k->curve->getInternalCurve()->getCurveYRange();
+//            double newX = k->key.getTime() + dt;
+//            double newY = k->key.getValue() + dv;
+//            boost::shared_ptr<Curve> curve = k->curve->getInternalCurve();
+//            
+//            if ( curve->areKeyFramesValuesClampedToIntegers() ) {
+//                newY = std::floor(newY + 0.5);
+//            } else if ( curve->areKeyFramesValuesClampedToBooleans() ) {
+//                newY = newY < 0.5 ? 0 : 1;
+//            }
+//            double oldTime = k->key.getTime();
+//            int keyframeIndex = curve->keyFrameIndex(oldTime);
+//            int newIndex;
+//            
+//            k->key = curve->setKeyFrameValueAndTime(newX,newY, keyframeIndex, &newIndex);
+//            isParametric->evaluateValueChange(isKnobCurve->getDimension(), Natron::eValueChangedReasonUserEdited);
+//        } else {
+//            knob->moveValueAtTime(k->key.getTime(), isKnobCurve->getDimension(), dt, dv,&k->key);
+//        }
+//    } else if (isBezierCurve) {
+//        int oldTime = k->key.getTime();
+//        k->key.setTime(k->key.getTime() + dt);
+//        k->key.setValue(k->key.getValue() + dv);
+//        isBezierCurve->getBezier()->moveKeyframe(oldTime, k->key.getTime());
+//        
+//    }
+}
+

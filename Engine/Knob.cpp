@@ -32,6 +32,7 @@
 #include "Engine/Project.h"
 #include "Engine/KnobSerialization.h"
 #include "Engine/ThreadStorage.h"
+#include "Engine/Transform.h"
 
 #include "Engine/AppManager.h"
 #include "Engine/LibraryBinary.h"
@@ -659,11 +660,8 @@ bool
 KnobHelper::moveValueAtTime(int time,int dimension,double dt,double dv,KeyFrame* newKey)
 {
     assert(QThread::currentThread() == qApp->thread());
-    
-    if ( dimension > (int)_imp->curves.size() || dimension < 0) {
-        throw std::invalid_argument("KnobHelper::moveValueAtTime(): Dimension out of range");
-    }
-    
+    assert(dimension >= 0 && dimension < (int)_imp->curves.size());
+
     if (!canAnimate() || !isAnimated(dimension)) {
         return false;
     }
@@ -731,6 +729,86 @@ KnobHelper::moveValueAtTime(int time,int dimension,double dt,double dv,KeyFrame*
     }
     return true;
     
+}
+
+bool
+KnobHelper::transformValueAtTime(int time,int dimension,const Transform::Matrix3x3& matrix,KeyFrame* newKey)
+{
+    assert(QThread::currentThread() == qApp->thread());
+    assert(dimension >= 0 && dimension < (int)_imp->curves.size());
+    
+    if (!canAnimate() || !isAnimated(dimension)) {
+        return false;
+    }
+    
+    KnobHolder* holder = getHolder();
+    
+    boost::shared_ptr<Curve> curve;
+    
+    bool useGuiCurve = (!holder || !holder->canSetValue()) && _imp->gui;
+    
+    if (!useGuiCurve) {
+        curve = _imp->curves[dimension];
+    } else {
+        curve = _imp->gui->getCurve(dimension);
+        setGuiCurveHasChanged(dimension,true);
+    }
+    assert(curve);
+    
+    KeyFrame k;
+    int keyindex = curve->keyFrameIndex(time);
+    if (keyindex == -1) {
+        return false;
+    }
+    
+    bool gotKey = curve->getKeyFrameWithIndex(keyindex, &k);
+    if (!gotKey) {
+        return false;
+    }
+    
+    Transform::Point3D p;
+    p.x = k.getTime();
+    p.y = k.getValue();
+    p.z = 1;
+    
+    p = Transform::matApply(matrix, p);
+    
+    
+    if ( curve->areKeyFramesValuesClampedToIntegers() ) {
+        p.y = std::floor(p.y + 0.5);
+    } else if ( curve->areKeyFramesValuesClampedToBooleans() ) {
+        p.y = p.y < 0.5 ? 0 : 1;
+    }
+    
+    ///Make sure string animation follows up
+    AnimatingString_KnobHelper* isString = dynamic_cast<AnimatingString_KnobHelper*>(this);
+    std::string v;
+    if (isString) {
+        isString->stringFromInterpolatedValue(k.getValue(), &v);
+    }
+    keyframeRemoved_virtual(dimension,time);
+    if (isString) {
+        double ret;
+        isString->stringToKeyFrameValue(p.x, v, &ret);
+    }
+    
+    
+    try {
+        *newKey = curve->setKeyFrameValueAndTime(p.x,p.y, keyindex, NULL);
+    } catch (...) {
+        return false;
+    }
+    
+    if (_signalSlotHandler) {
+        _signalSlotHandler->s_keyFrameMoved(dimension,time,p.x);
+    }
+    
+    if (!useGuiCurve) {
+        evaluateValueChange(dimension, Natron::eValueChangedReasonPluginEdited);
+        guiCurveCloneInternalCurve(dimension);
+    }
+    return true;
+
 }
 
 bool

@@ -38,7 +38,9 @@ class KnobHolder;
 class AppInstance;
 class KnobSerialization;
 class StringAnimationManager;
-
+namespace Transform {
+class Matrix3x3;
+}
 namespace Natron {
 class OfxParamOverlayInteract;
 }
@@ -482,6 +484,11 @@ public:
      * @brief Moves a keyframe by a given delta and emits the signal keyframeMoved
      **/
     virtual bool moveValueAtTime(int time,int dimension,double dt,double dv,KeyFrame* newKey) = 0;
+    
+    /**
+     * @brief Transforms a keyframe by a given matrix. The matrix must not contain any skew or rotation.
+     **/
+    virtual bool transformValueAtTime(int time,int dimension,const Transform::Matrix3x3& matrix,KeyFrame* newKey) = 0;
     
     /**
      * @brief Changes the interpolation type for the given keyframe
@@ -1078,6 +1085,7 @@ public:
 
     virtual void onKeyFrameRemoved(SequenceTime time,int dimension) OVERRIDE FINAL;
     virtual bool moveValueAtTime(int time,int dimension,double dt,double dv,KeyFrame* newKey) OVERRIDE FINAL;
+    virtual bool transformValueAtTime(int time,int dimension,const Transform::Matrix3x3& matrix,KeyFrame* newKey) OVERRIDE FINAL;
     virtual bool setInterpolationAtTime(int dimension,int time,Natron::KeyframeTypeEnum interpolation,KeyFrame* newKey) OVERRIDE FINAL;
     virtual bool moveDerivativesAtTime(int dimension,int time,double left,double right)  OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool moveDerivativeAtTime(int dimension,int time,double derivative,bool isLeft) OVERRIDE FINAL WARN_UNUSED_RETURN;

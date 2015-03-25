@@ -794,6 +794,15 @@ public:
     std::pair<MoveTangentCommand::SelectedTangentEnum, KeyPtr> isNearbySelectedTangentText(const QPoint & pt) const;
 
     bool isNearbySelectedKeyFramesCrossWidget(const QPoint & pt) const;
+    
+    bool isNearbyBboxTopLeft(const QPoint& pt) const;
+    bool isNearbyBboxMidLeft(const QPoint& pt) const;
+    bool isNearbyBboxBtmLeft(const QPoint& pt) const;
+    bool isNearbyBboxMidBtm(const QPoint& pt) const;
+    bool isNearbyBboxBtmRight(const QPoint& pt) const;
+    bool isNearbyBboxMidRight(const QPoint& pt) const;
+    bool isNearbyBboxTopRight(const QPoint& pt) const;
+    bool isNearbyBboxMidTop(const QPoint& pt) const;
 
     bool isNearbyTimelineTopPoly(const QPoint & pt) const;
 
@@ -1637,6 +1646,115 @@ CurveWidgetPrivate::isNearbySelectedKeyFramesCrossWidget(const QPoint & pt) cons
     } else {
         return false;
     }
+}
+
+bool
+CurveWidgetPrivate::isNearbyBboxTopLeft(const QPoint& pt) const
+{
+    QPointF other = zoomCtx.toWidgetCoordinates(_selectedKeyFramesBbox.x(), _selectedKeyFramesBbox.y());
+    if ( ( pt.x() >= (other.x() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) &&
+        ( pt.x() <= (other.x() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) &&
+        ( pt.y() <= (other.y() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) &&
+        ( pt.y() >= (other.y() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) ) {
+        return true;
+    }
+    return false;
+}
+
+bool
+CurveWidgetPrivate::isNearbyBboxMidLeft(const QPoint& pt) const
+{
+    QPointF other = zoomCtx.toWidgetCoordinates(_selectedKeyFramesBbox.x(),
+                                                _selectedKeyFramesBbox.y() + _selectedKeyFramesBbox.height() / 2.);
+    if ( ( pt.x() >= (other.x() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) &&
+        ( pt.x() <= (other.x() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) &&
+        ( pt.y() <= (other.y() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) &&
+        ( pt.y() >= (other.y() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) ) {
+        return true;
+    }
+    return false;
+}
+
+bool
+CurveWidgetPrivate::isNearbyBboxBtmLeft(const QPoint& pt) const
+{
+    QPointF other = zoomCtx.toWidgetCoordinates(_selectedKeyFramesBbox.x(), _selectedKeyFramesBbox.y() +
+                                                 _selectedKeyFramesBbox.height());
+    if ( ( pt.x() >= (other.x() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) &&
+        ( pt.x() <= (other.x() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) &&
+        ( pt.y() <= (other.y() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) &&
+        ( pt.y() >= (other.y() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) ) {
+        return true;
+    }
+    return false;
+}
+
+bool
+CurveWidgetPrivate::isNearbyBboxMidBtm(const QPoint& pt) const
+{
+    QPointF other = zoomCtx.toWidgetCoordinates(_selectedKeyFramesBbox.x() + _selectedKeyFramesBbox.width() / 2., _selectedKeyFramesBbox.y() +
+                                                _selectedKeyFramesBbox.height());
+    if ( ( pt.x() >= (other.x() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) &&
+        ( pt.x() <= (other.x() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) &&
+        ( pt.y() <= (other.y() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) &&
+        ( pt.y() >= (other.y() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) ) {
+        return true;
+    }
+    return false;
+}
+
+bool
+CurveWidgetPrivate::isNearbyBboxBtmRight(const QPoint& pt) const
+{
+    QPointF other = zoomCtx.toWidgetCoordinates(_selectedKeyFramesBbox.x() + _selectedKeyFramesBbox.width(), _selectedKeyFramesBbox.y() +
+                                                _selectedKeyFramesBbox.height());
+    if ( ( pt.x() >= (other.x() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) &&
+        ( pt.x() <= (other.x() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) &&
+        ( pt.y() <= (other.y() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) &&
+        ( pt.y() >= (other.y() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) ) {
+        return true;
+    }
+    return false;
+}
+
+bool
+CurveWidgetPrivate::isNearbyBboxMidRight(const QPoint& pt) const
+{
+    QPointF other = zoomCtx.toWidgetCoordinates(_selectedKeyFramesBbox.x() + _selectedKeyFramesBbox.width(), _selectedKeyFramesBbox.y() +
+                                                _selectedKeyFramesBbox.height() / 2.);
+    if ( ( pt.x() >= (other.x() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) &&
+        ( pt.x() <= (other.x() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) &&
+        ( pt.y() <= (other.y() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) &&
+        ( pt.y() >= (other.y() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) ) {
+        return true;
+    }
+    return false;
+}
+
+bool
+CurveWidgetPrivate::isNearbyBboxTopRight(const QPoint& pt) const
+{
+    QPointF other = zoomCtx.toWidgetCoordinates(_selectedKeyFramesBbox.x() + _selectedKeyFramesBbox.width(), _selectedKeyFramesBbox.y());
+    if ( ( pt.x() >= (other.x() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) &&
+        ( pt.x() <= (other.x() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) &&
+        ( pt.y() <= (other.y() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) &&
+        ( pt.y() >= (other.y() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) ) {
+        return true;
+    }
+    return false;
+}
+
+bool
+CurveWidgetPrivate::isNearbyBboxMidTop(const QPoint& pt) const
+{
+    QPointF other = zoomCtx.toWidgetCoordinates(_selectedKeyFramesBbox.x() + _selectedKeyFramesBbox.width() / 2., _selectedKeyFramesBbox.y() + _selectedKeyFramesBbox.height() / 2.);
+    if ( ( pt.x() >= (other.x() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) &&
+        ( pt.x() <= (other.x() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) &&
+        ( pt.y() <= (other.y() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) &&
+        ( pt.y() >= (other.y() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) ) {
+        return true;
+    }
+    return false;
 }
 
 bool
@@ -2756,19 +2874,41 @@ CurveWidget::mousePressEvent(QMouseEvent* e)
         _imp->_dragStartPoint = e->pos();
         return;
     }
-
+    
     // is the click near the multiple-keyframes selection box center?
-    if ( _imp->_drawSelectedKeyFramesBbox && _imp->isNearbySelectedKeyFramesCrossWidget( e->pos() ) ) {
-        // yes, start dragging
-        _imp->_mustSetDragOrientation = true;
-        _imp->_state = eEventStateDraggingKeys;
-        //_imp->updateSelectedKeysMaxMovement();
-        _imp->_keyDragLastMovement.rx() = 0.;
-        _imp->_keyDragLastMovement.ry() = 0.;
-        _imp->_dragStartPoint = e->pos();
-        _imp->_lastMousePos = e->pos();
-        // no need to updateGL()
-        return;
+    if (_imp->_drawSelectedKeyFramesBbox) {
+        
+        bool caughtBbox = true;
+        if (_imp->isNearbySelectedKeyFramesCrossWidget(e->pos())) {
+            _imp->_state = eEventStateDraggingKeys;
+        } else if (_imp->isNearbyBboxBtmLeft(e->pos())) {
+            _imp->_state = eEventStateDraggingBtmLeftBbox;
+        } else if (_imp->isNearbyBboxMidLeft(e->pos())) {
+            _imp->_state = eEventStateDraggingMidLeftBbox;
+        } else if (_imp->isNearbyBboxTopLeft(e->pos())) {
+            _imp->_state = eEventStateDraggingTopLeftBbox;
+        } else if (_imp->isNearbyBboxMidTop(e->pos())) {
+            _imp->_state = eEventStateDraggingMidTopBbox;
+        } else if (_imp->isNearbyBboxTopRight(e->pos())) {
+            _imp->_state = eEventStateDraggingTopRightBbox;
+        } else if (_imp->isNearbyBboxMidRight(e->pos())) {
+            _imp->_state = eEventStateDraggingMidRightBbox;
+        } else if (_imp->isNearbyBboxBtmRight(e->pos())) {
+            _imp->_state = eEventStateDraggingBtmRightBbox;
+        } else if (_imp->isNearbyBboxMidBtm(e->pos())) {
+            _imp->_state = eEventStateDraggingMidBtmBbox;
+        } else {
+            caughtBbox = false;
+        }
+        if (caughtBbox) {
+            _imp->_mustSetDragOrientation = true;
+            _imp->_keyDragLastMovement.rx() = 0.;
+            _imp->_keyDragLastMovement.ry() = 0.;
+            _imp->_dragStartPoint = e->pos();
+            _imp->_lastMousePos = e->pos();
+            //no need to updateGL()
+            return;
+        }
     }
     ////
     // is the click near a keyframe manipulator?
@@ -3021,10 +3161,6 @@ CurveWidget::mouseMoveEvent(QMouseEvent* e)
     case eEventStateDraggingKeys:
         if (!_imp->_mustSetDragOrientation) {
             if ( !_imp->_selectedKeyFrames.empty() ) {
-//                bool clampToIntegers = ( *_imp->_selectedKeyFrames.begin() )->curve->areKeyFramesTimeClampedToIntegers();
-//                if (!clampToIntegers) {
-//                    _imp->updateSelectedKeysMaxMovement();
-//                }
                 _imp->moveSelectedKeyFrames(oldClick_opengl,newClick_opengl);
             }
         }
