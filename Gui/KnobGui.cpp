@@ -2305,6 +2305,8 @@ KnobGui::onExprChanged(int dimension)
     onHelpChanged();
     
     updateGUI(dimension);
+    
+    Q_EMIT refreshCurveEditor();
 }
 
 void
