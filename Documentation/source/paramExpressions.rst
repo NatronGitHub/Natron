@@ -286,7 +286,7 @@ Set the following expression on the parameter
 	thisNode.outputR.getOption(thisNode.outputR.get()) + "\n" + thisNode.outputG.getOption(thisNode.outputG.get()) + "\n" + thisNode.outputB.getOption(thisNode.outputB.get()) + "\n" + thisNode.outputA.getOption(thisNode.outputA.get())
 	
 	
-Generating custom animation for motion design:
+Generating custom animation for motion editing:
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 In this example we will demonstrate how to perform Loop,Negate and Reverse effects 

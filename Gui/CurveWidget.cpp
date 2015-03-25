@@ -1577,6 +1577,18 @@ CurveWidgetPrivate::selectCurve(CurveGui* curve)
         (*it)->setSelected(false);
     }
     curve->setSelected(true);
+    
+    if ( _widget->parentWidget() ) {
+        QWidget* parent  = _widget->parentWidget()->parentWidget();
+        if (parent) {
+            if (parent->objectName() == "CurveEditor") {
+                CurveEditor* ce = dynamic_cast<CurveEditor*>(parent);
+                if (ce) {
+                    ce->setSelectedCurve(curve);
+                }
+            }
+        }
+    }
 }
 
 void
@@ -3482,7 +3494,7 @@ CurveWidget::isTabVisible() const
     if ( parentWidget() ) {
         QWidget* parent  = parentWidget()->parentWidget();
         if (parent) {
-            if (parent->objectName() == kCurveEditorObjectName) {
+            if (parent->objectName() == "CurveEditor") {
                 TabWidget* tab = dynamic_cast<TabWidget*>( parentWidget()->parentWidget()->parentWidget() );
                 if (tab) {
                     if ( tab->isFloatingWindowChild() ) {

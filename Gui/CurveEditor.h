@@ -41,6 +41,7 @@ class QTreeWidget;
 class QTreeWidgetItem;
 class QVBoxLayout;
 class CurveWidget;
+class CurveEditor;
 class Curve;
 class CurveGui;
 class QHBoxLayout;
@@ -73,14 +74,14 @@ class NodeCurveEditorElement
 public:
 
     NodeCurveEditorElement(QTreeWidget* tree,
-                           CurveWidget* curveWidget,
+                           CurveEditor* curveWidget,
                            KnobGui* knob,
                            int dimension,
                            QTreeWidgetItem* item,
                            CurveGui* curve);
     
     NodeCurveEditorElement(QTreeWidget* tree,
-                           CurveWidget* curveWidget,
+                           CurveEditor* curveWidget,
                            const boost::shared_ptr<KnobI>& internalKnob,
                            int dimension,
                            QTreeWidgetItem* item,
@@ -133,13 +134,15 @@ public Q_SLOTS:
      **/
     void checkVisibleState();
 
+    void onExpressionChanged();
+    
 private:
 
 
     QTreeWidgetItem* _treeItem;
     CurveGui* _curve;
     bool _curveDisplayed;
-    CurveWidget* _curveWidget;
+    CurveEditor* _curveWidget;
     QTreeWidget* _treeWidget;
     KnobGui* _knob;
     boost::shared_ptr<KnobI> _internalKnob;
@@ -156,7 +159,7 @@ public:
     typedef std::list< NodeCurveEditorElement* > Elements;
 
     NodeCurveEditorContext(QTreeWidget *tree,
-                           CurveWidget* curveWidget,
+                           CurveEditor* curveWidget,
                            const boost::shared_ptr<NodeGui> &node);
 
     virtual ~NodeCurveEditorContext() OVERRIDE;
@@ -206,7 +209,7 @@ class BezierEditorContext
 public:
     
     BezierEditorContext(QTreeWidget* tree,
-                        CurveWidget* widget,
+                        CurveEditor* widget,
                         const boost::shared_ptr<Bezier>& curve,
                         RotoCurveEditorContext* context);
     
@@ -250,7 +253,7 @@ class RotoCurveEditorContext
     
 public:
     
-    RotoCurveEditorContext(CurveWidget* widget,
+    RotoCurveEditorContext(CurveEditor* widget,
                            QTreeWidget *tree,
                            const boost::shared_ptr<NodeGui> &node);
     
@@ -324,7 +327,13 @@ public:
     CurveWidget* getCurveWidget() const WARN_UNUSED_RETURN;
 
     virtual void getSelectedCurves(std::vector<CurveGui*>* selection) OVERRIDE FINAL;
+    
+    void setSelectedCurve(CurveGui* curve);
+    
+    CurveGui* getSelectedCurve() const;
 
+    void refreshCurrentExpression();
+    
 public Q_SLOTS:
 
     void onFilterTextChanged(const QString& filter);
@@ -332,6 +341,8 @@ public Q_SLOTS:
     void onItemSelectionChanged();
         
     void onItemDoubleClicked(QTreeWidgetItem* item,int);
+    
+    void onExprLineEditFinished();
     
 private:
 
