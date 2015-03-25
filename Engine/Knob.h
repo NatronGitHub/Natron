@@ -1498,7 +1498,12 @@ public:
         QReadLocker k(&_valueMutex);
         map = _exprRes[dim];
     }
-
+    
+    T getValueFromMasterAt(double time, int dimension, KnobI* master) const;
+    T getValueFromMaster(int dimension, KnobI* master, bool clamp) const;
+    
+    bool getValueFromCurve(double time,int dimension, bool byPassMaster, bool clamp, T* ret) const;
+    
 protected:
     
     virtual void resetExtraToDefaultValue(int /*dimension*/) {}
@@ -1515,8 +1520,6 @@ private:
     void cloneValues(KnobI* other,int dimension);
     
     virtual void cloneExpressionsResults(KnobI* other,int dimension = -1) OVERRIDE FINAL;
-
-    T getValueFromMaster(int dimension);
 
     void valueToVariant(const T & v,Variant* vari);
 
@@ -1545,7 +1548,7 @@ private:
     
     T evaluateExpression(int dimension) const;
     
-    bool getValueFromExpression(int time,int dimension,bool clamp,T* ret) const;
+    bool getValueFromExpression(double time,int dimension,bool clamp,T* ret) const;
 
     //////////////////////////////////////////////////////////////////////
     /////////////////////////////////// End implementation of KnobI

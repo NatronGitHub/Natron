@@ -364,7 +364,7 @@ T Knob<T>::evaluateExpression(int dimension) const
 }
 
 template <typename T>
-bool Knob<T>::getValueFromExpression(int time,int dimension,bool clamp,T* ret) const
+bool Knob<T>::getValueFromExpression(double time,int dimension,bool clamp,T* ret) const
 {
     
     ///Prevent recursive call of the expression
@@ -401,62 +401,74 @@ bool Knob<T>::getValueFromExpression(int time,int dimension,bool clamp,T* ret) c
 
 }
 
-//Declare the specialization before defining it to avoid the following
-//error: explicit specialization of 'getValueAtTime' after instantiation
-template<>
-std::string Knob<std::string>::getValueAtTime(double time, int dimension,bool clamp,bool byPassMaster) const;
-
-template<>
+template <>
 std::string
-Knob<std::string>::getValue(int dimension,bool /*clampToMinMax*/) const
+Knob<std::string>::getValueFromMasterAt(double time, int dimension, KnobI* master) const
 {
-    std::string hasExpr = getExpression(dimension);
-    if (!hasExpr.empty()) {
-        std::string ret;
-        SequenceTime time = getCurrentTime();
-        if (getValueFromExpression(time,dimension,false,&ret)) {
-            return ret;
-        }
+    Knob<std::string>* isString = dynamic_cast<Knob<std::string>* >(master);
+    assert(isString); //< other data types aren't supported
+    if (isString) {
+        return isString->getValueAtTime(time,dimension,false);
     }
-    
-    if ( isAnimated(dimension) ) {
-        SequenceTime time;
-        if ( !getHolder() || !getHolder()->getApp() ) {
-            time = 0;
-        } else {
-            Natron::EffectInstance* isEffect = dynamic_cast<Natron::EffectInstance*>( getHolder() );
-            if (isEffect) {
-                time = isEffect->getThreadLocalRenderTime();
-            } else {
-                time = getHolder()->getApp()->getTimeLine()->currentFrame();
-            }
-        }
-
-        return getValueAtTime(time, dimension,false);
-    }
-
-    if ( ( dimension > (int)_values.size() ) || (dimension < 0) ) {
-        throw std::invalid_argument("Knob::getValue(): Dimension out of range");
-    }
-    ///if the knob is slaved to another knob, returns the other knob value
-    std::pair<int,boost::shared_ptr<KnobI> > master = getMaster(dimension);
-    if (master.second) {
-        Knob<std::string>* isString = dynamic_cast<Knob<std::string>* >( master.second.get() );
-        assert(isString); //< other data types aren't supported
-        if (isString) {
-            return isString->getValue(master.first,false);
-        }
-    }
-
-    QReadLocker l(&_valueMutex);
-
-    return _values[dimension];
+    return std::string();
 }
+
+template <>
+std::string
+Knob<std::string>::getValueFromMaster(int dimension, KnobI* master, bool /*clamp*/) const
+{
+    Knob<std::string>* isString = dynamic_cast<Knob<std::string>* >(master);
+    assert(isString); //< other data types aren't supported
+    if (isString) {
+        return isString->getValue(dimension,false);
+    }
+    return std::string();
+}
+
+template <typename T>
+T
+Knob<T>::getValueFromMasterAt(double time, int dimension, KnobI* master) const
+{
+    Knob<int>* isInt = dynamic_cast<Knob<int>* >(master);
+    Knob<bool>* isBool = dynamic_cast<Knob<bool>* >(master);
+    Knob<double>* isDouble = dynamic_cast<Knob<double>* >(master);
+    assert(master->isTypePOD() && (isInt || isBool || isDouble)); //< other data types aren't supported
+    if (isInt) {
+        return isInt->getValueAtTime(time,dimension);
+    } else if (isBool) {
+        return isBool->getValueAtTime(time,dimension);
+    } else if (isDouble) {
+        return isDouble->getValueAtTime(time,dimension);
+    }
+    return T();
+}
+
+template <typename T>
+T
+Knob<T>::getValueFromMaster(int dimension, KnobI* master,bool clamp) const
+{
+    Knob<int>* isInt = dynamic_cast<Knob<int>* >(master);
+    Knob<bool>* isBool = dynamic_cast<Knob<bool>* >(master);
+    Knob<double>* isDouble = dynamic_cast<Knob<double>* >(master);
+    assert(master->isTypePOD() && (isInt || isBool || isDouble)); //< other data types aren't supported
+    if (isInt) {
+        return (T)isInt->getValue(dimension,clamp);
+    } else if (isBool) {
+        return (T)isBool->getValue(dimension,clamp);
+    } else if (isDouble) {
+        return (T)isDouble->getValue(dimension,clamp);
+    }
+    return T();
+}
+
+
+
 
 template <typename T>
 T
 Knob<T>::getValue(int dimension,bool clamp) const
 {
+    assert(dimension < (int)_values.size() && dimension >= 0);
     std::string hasExpr = getExpression(dimension);
     if (!hasExpr.empty()) {
         T ret;
@@ -469,24 +481,11 @@ Knob<T>::getValue(int dimension,bool clamp) const
     if ( isAnimated(dimension) ) {
         return getValueAtTime(getCurrentTime(), dimension,clamp);
     }
-
-    if ( ( dimension > (int)_values.size() ) || (dimension < 0) ) {
-        throw std::invalid_argument("Knob::getValue(): Dimension out of range");
-    }
+    
     ///if the knob is slaved to another knob, returns the other knob value
     std::pair<int,boost::shared_ptr<KnobI> > master = getMaster(dimension);
     if (master.second) {
-        Knob<int>* isInt = dynamic_cast<Knob<int>* >( master.second.get() );
-        Knob<bool>* isBool = dynamic_cast<Knob<bool>* >( master.second.get() );
-        Knob<double>* isDouble = dynamic_cast<Knob<double>* >( master.second.get() );
-        assert(master.second->isTypePOD() && (isInt || isBool || isDouble)); //< other data types aren't supported
-        if (isInt) {
-            return (T)isInt->getValue(master.first,clamp);
-        } else if (isBool) {
-            return (T)isBool->getValue(master.first,clamp);
-        } else if (isDouble) {
-            return (T)isDouble->getValue(master.first,clamp);
-        }
+        return getValueFromMaster(master.first, master.second.get(), clamp);
     }
 
     QReadLocker l(&_valueMutex);
@@ -498,76 +497,46 @@ Knob<T>::getValue(int dimension,bool clamp) const
     }
 }
 
-template<>
-std::string
-Knob<std::string>::getValueAtTime(double time,
-                                  int dimension,bool /*clampToMinMax*/,bool byPassMaster) const
+template <typename T>
+bool Knob<T>::getValueFromCurve(double time, int dimension, bool byPassMaster, bool clamp, T* ret) const
+{
+    boost::shared_ptr<Curve> curve  = getCurve(dimension,byPassMaster);
+    if (curve && curve->getKeyFramesCount() > 0) {
+        //getValueAt already clamps to the range for us
+        *ret = (T)curve->getValueAt(time,clamp);
+        return true;
+    }
+    return false;
+}
+
+template <>
+bool Knob<std::string>::getValueFromCurve(double time, int dimension, bool byPassMaster, bool /*clamp*/, std::string* ret) const
 {
     
-    if ( ( dimension > getDimension() ) || (dimension < 0) ) {
-        throw std::invalid_argument("Knob::getValueAtTime(): Dimension out of range");
-    }
-
-    std::string hasExpr = getExpression(dimension);
-    if (!hasExpr.empty()) {
-        std::string ret;
-        if (getValueFromExpression(time,dimension,false,&ret)) {
-            return ret;
-        }
-    }
-    
-    ///if the knob is slaved to another knob, returns the other knob value
-    std::pair<int,boost::shared_ptr<KnobI> > master = getMaster(dimension);
-    if (!byPassMaster && master.second) {
-        Knob<std::string>* isString = dynamic_cast<Knob<std::string>* >( master.second.get() );
-        assert(isString); //< other data types aren't supported
-        if (isString) {
-            return isString->getValueAtTime(time,master.first,false);
-        }
-    }
-    std::string ret;
     const AnimatingString_KnobHelper* isStringAnimated = dynamic_cast<const AnimatingString_KnobHelper* >(this);
     if (isStringAnimated) {
-        ret = isStringAnimated->getStringAtTime(time,dimension);
+        *ret = isStringAnimated->getStringAtTime(time,dimension);
         ///ret is not empty if the animated string knob has a custom interpolation
-        if ( !ret.empty() ) {
-            return ret;
+        if ( !ret->empty() ) {
+            return true;
         }
     }
-    assert( ret.empty() );
-
+    assert(ret->empty());
     boost::shared_ptr<Curve> curve  = getCurve(dimension,byPassMaster);
     if (curve && curve->getKeyFramesCount() > 0) {
         assert(isStringAnimated);
-        isStringAnimated->stringFromInterpolatedValue(curve->getValueAt(time), &ret);
-
-        return ret;
-    } else {
-        /*if the knob as no keys at this dimension, return the value
-           at the requested dimension.*/
-        if (master.second) {
-            Knob<std::string>* isString = dynamic_cast<Knob<std::string>* >( master.second.get() );
-            assert(isString); //< other data types aren't supported
-            if (isString) {
-                return isString->getValue(master.first);
-            }
-        }
-        
-        QReadLocker l(&_valueMutex);
-        
-        return _values[dimension];
-
+        isStringAnimated->stringFromInterpolatedValue(curve->getValueAt(time), ret);
+        return true;
     }
+    return false;
 }
+
 
 template<typename T>
 T
-Knob<T>::getValueAtTime(double time,
-                        int dimension,bool clamp ,bool byPassMaster) const
+Knob<T>::getValueAtTime(double time, int dimension,bool clamp ,bool byPassMaster) const
 {
-    if ( ( dimension > getDimension() ) || (dimension < 0) ) {
-        throw std::invalid_argument("Knob::getValueAtTime(): Dimension out of range");
-    }
+    assert(dimension < (int)_values.size() && dimension >= 0);
     
     std::string hasExpr = getExpression(dimension);
     if (!hasExpr.empty()) {
@@ -580,46 +549,27 @@ Knob<T>::getValueAtTime(double time,
     ///if the knob is slaved to another knob, returns the other knob value
     std::pair<int,boost::shared_ptr<KnobI> > master = getMaster(dimension);
     if (!byPassMaster && master.second) {
-        Knob<int>* isInt = dynamic_cast<Knob<int>* >( master.second.get() );
-        Knob<bool>* isBool = dynamic_cast<Knob<bool>* >( master.second.get() );
-        Knob<double>* isDouble = dynamic_cast<Knob<double>* >( master.second.get() );
-        assert(master.second->isTypePOD() && (isInt || isBool || isDouble)); //< other data types aren't supported
-        if (isInt) {
-            return isInt->getValueAtTime(time,master.first);
-        } else if (isBool) {
-            return isBool->getValueAtTime(time,master.first);
-        } else if (isDouble) {
-            return isDouble->getValueAtTime(time,master.first);
-        }
+        return getValueFromMasterAt(time, master.first, master.second.get());
     }
-    boost::shared_ptr<Curve> curve  = getCurve(dimension,byPassMaster);
-    if (curve && curve->getKeyFramesCount() > 0) {
-        //getValueAt already clamps to the range for us
-        return (T)curve->getValueAt(time,clamp);
+    
+    T ret;
+    if (getValueFromCurve(time, dimension, byPassMaster, clamp, &ret)) {
+        return ret;
+    }
+    
+    /*if the knob as no keys at this dimension, return the value
+     at the requested dimension.*/
+    if (master.second) {
+        return getValueFromMaster(master.first, master.second.get(), clamp);
+    }
+    QReadLocker l(&_valueMutex);
+    if (clamp) {
+        ret = _values[dimension];
+        return clampToMinMax(ret,dimension);
     } else {
-        /*if the knob as no keys at this dimension, return the value
-           at the requested dimension.*/
-        if (master.second) {
-            Knob<int>* isInt = dynamic_cast<Knob<int>* >( master.second.get() );
-            Knob<bool>* isBool = dynamic_cast<Knob<bool>* >( master.second.get() );
-            Knob<double>* isDouble = dynamic_cast<Knob<double>* >( master.second.get() );
-            assert(master.second->isTypePOD() && (isInt || isBool || isDouble)); //< other data types aren't supported
-            if (isInt) {
-                return isInt->getValue(master.first);
-            } else if (isBool) {
-                return isBool->getValue(master.first);
-            } else if (isDouble) {
-                return isDouble->getValue(master.first);
-            }
-        }
-        QReadLocker l(&_valueMutex);
-        if (clamp) {
-            T ret = _values[dimension];
-            return clampToMinMax(ret,dimension);
-        } else {
-            return _values[dimension];
-        }
+        return _values[dimension];
     }
+    
 }
 
 template <typename T>
