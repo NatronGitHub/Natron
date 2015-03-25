@@ -215,9 +215,9 @@ CurveEditor::recursiveSelect(QTreeWidgetItem* cur,
     for (std::list<NodeCurveEditorContext*>::const_iterator it = _imp->nodes.begin();
          it != _imp->nodes.end(); ++it) {
         NodeCurveEditorElement* elem = (*it)->findElement(cur);
-        if (elem) {
+        if (elem && !elem->getTreeItem()->isHidden()) {
             CurveGui* curve = elem->getCurve();
-            if ( curve && curve->getInternalCurve()->isAnimated() ) {
+            if ( curve /*&& curve->getInternalCurve()->isAnimated()*/ ) {
                 curves->push_back(curve);
             }
             break;
@@ -370,7 +370,8 @@ static void createElementsForKnob(QTreeWidgetItem* parent,KnobGui* kgui,boost::s
             curveWidget->addCurveAndSetColor(dimCurve);
             
             elements.push_back(elem);
-            if ( !dimCurve->getInternalCurve()->isAnimated() ) {
+            std::string expr = k->getExpression(j);
+            if ( !dimCurve->getInternalCurve()->isAnimated() && expr.empty() ) {
                 dimItem->setHidden(true);
             } else {
                 *hasCurveVisible = true;
@@ -534,8 +535,9 @@ NodeCurveEditorElement::checkVisibleState(bool autoSelectOnShow)
     }
     
     boost::shared_ptr<Curve> curve =  _curve->getInternalCurve() ;
+    std::string expr = _knob->getKnob()->getExpression(_dimension);
     // even when there is only one keyframe, there may be tangents!
-    if (curve->getKeyFramesCount() > 0) {
+    if (curve->getKeyFramesCount() > 0 || !expr.empty()) {
         
         setVisible(true);
         
@@ -602,6 +604,7 @@ NodeCurveEditorElement::NodeCurveEditorElement(QTreeWidget *tree,
     if (knob) {
         QObject::connect( knob,SIGNAL( keyFrameSet() ),this,SLOT( checkVisibleState() ) );
         QObject::connect( knob,SIGNAL( keyFrameRemoved() ),this,SLOT( checkVisibleState() ) );
+        QObject::connect( knob,SIGNAL( expressionChanged() ),this,SLOT( checkVisibleState() ) );
     }
     if (curve) {
         // even when there is only one keyframe, there may be tangents!

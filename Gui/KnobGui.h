@@ -314,6 +314,8 @@ Q_SIGNALS:
 
     void refreshCurveEditor();
     
+    void expressionChanged();
+    
     /**
      *@brief Emitted whenever a keyframe is set by the user or by the plugin.
      **/

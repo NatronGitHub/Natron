@@ -43,6 +43,7 @@ struct CurvePrivate
     };
 
     KeyFrameSet keyFrames;
+    std::map<double,double> resultCache; //< a cache for interpolations
     KnobI* owner;
     int dimensionInOwner;
     bool isParametric;
@@ -54,17 +55,18 @@ struct CurvePrivate
 
 
     CurvePrivate()
-        : keyFrames()
-          , owner(NULL)
-          , dimensionInOwner(-1)
-          , isParametric(false)
-          , type(eCurveTypeDouble)
-          , xMin(INT_MIN)
-          , xMax(INT_MAX)
-          , yMin(INT_MIN)
-          , yMax(INT_MAX)
-          , hasYRange(false)
-          , _lock(QReadWriteLock::Recursive)
+    : keyFrames()
+    , resultCache()
+    , owner(NULL)
+    , dimensionInOwner(-1)
+    , isParametric(false)
+    , type(eCurveTypeDouble)
+    , xMin(INT_MIN)
+    , xMax(INT_MAX)
+    , yMin(INT_MIN)
+    , yMax(INT_MAX)
+    , hasYRange(false)
+    , _lock(QReadWriteLock::Recursive)
     {
     }
 
@@ -87,6 +89,7 @@ struct CurvePrivate
         yMax = other.yMax;
         hasYRange = other.hasYRange;
     }
+    
 };
 
 

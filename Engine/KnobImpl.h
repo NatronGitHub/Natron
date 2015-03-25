@@ -85,7 +85,7 @@ Knob<T>::Knob(KnobHolder*  holder,
               int dimension,
               bool declaredByPlugin )
     : KnobHelper(holder,description,dimension,declaredByPlugin)
-      , _valueMutex(QReadWriteLock::Recursive)
+      , _valueMutex(QMutex::Recursive)
       , _values(dimension)
       , _defaultValues(dimension)
       , _exprRes(dimension)
@@ -425,7 +425,7 @@ bool Knob<T>::getValueFromExpression(double time,int dimension,bool clamp,T* ret
     ///Check first if a value was already computed:
     
     
-    QWriteLocker k(&_valueMutex);
+    QMutexLocker k(&_valueMutex);
     typename FrameValueMap::iterator found = _exprRes[dimension].find(time);
     if (found != _exprRes[dimension].end()) {
         *ret = found->second;
@@ -481,7 +481,7 @@ bool Knob<T>::getValueFromExpression_pod(double time,int dimension,bool clamp,do
     ///Check first if a value was already computed:
     
     
-    QWriteLocker k(&_valueMutex);
+    QMutexLocker k(&_valueMutex);
     typename FrameValueMap::iterator found = _exprRes[dimension].find(time);
     if (found != _exprRes[dimension].end()) {
         *ret = found->second;
@@ -591,7 +591,7 @@ Knob<T>::getValue(int dimension,bool clamp) const
         return getValueFromMaster(master.first, master.second.get(), clamp);
     }
 
-    QReadLocker l(&_valueMutex);
+    QMutexLocker l(&_valueMutex);
     if (clamp ) {
         T ret = _values[dimension];
         return clampToMinMax(ret,dimension);
@@ -665,7 +665,7 @@ Knob<T>::getValueAtTime(double time, int dimension,bool clamp ,bool byPassMaster
     if (master.second) {
         return getValueFromMaster(master.first, master.second.get(), clamp);
     }
-    QReadLocker l(&_valueMutex);
+    QMutexLocker l(&_valueMutex);
     if (clamp) {
         ret = _values[dimension];
         return clampToMinMax(ret,dimension);
@@ -694,7 +694,7 @@ double Knob<T>::getRawCurveValueAt(double time, int dimension) const
         //getValueAt already clamps to the range for us
         return curve->getValueAt(time,false);//< no clamping to range!
     }
-    QReadLocker l(&_valueMutex);
+    QMutexLocker l(&_valueMutex);
     T ret = _values[dimension];
     return clampToMinMax(ret,dimension);
 }
@@ -909,7 +909,7 @@ Knob<T>::setValue(const T & v,
 
     bool hasChanged;
     {
-        QWriteLocker l(&_valueMutex);
+        QMutexLocker l(&_valueMutex);
         hasChanged = v != _values[dimension];
         _values[dimension] = v;
     }
@@ -1340,7 +1340,7 @@ Knob<std::string>::unSlave(int dimension,
             Knob<std::string>* isString = dynamic_cast<Knob<std::string>* >( master.second.get() );
             assert(isString); //< other data types aren't supported
             if (isString) {
-                QWriteLocker l1(&_valueMutex);
+                QMutexLocker l1(&_valueMutex);
                 _values[dimension] =  isString->getValue(master.first);
             }
         }
@@ -1529,7 +1529,7 @@ Knob<std::string>::getKeyFrameValueByIndex(int dimension,
 template<typename T>
 std::list<T> Knob<T>::getValueForEachDimension_mt_safe() const
 {
-    QReadLocker l(&_valueMutex);
+    QMutexLocker l(&_valueMutex);
     std::list<T> ret;
 
     for (U32 i = 0; i < _values.size(); ++i) {
@@ -1542,7 +1542,7 @@ std::list<T> Knob<T>::getValueForEachDimension_mt_safe() const
 template<typename T>
 std::vector<T> Knob<T>::getValueForEachDimension_mt_safe_vector() const
 {
-    QReadLocker l(&_valueMutex);
+    QMutexLocker l(&_valueMutex);
 
     return _values;
 }
@@ -1552,7 +1552,7 @@ std::vector<T>
 Knob<T>::getDefaultValues_mt_safe() const
 {
     
-    QReadLocker l(&_valueMutex);
+    QMutexLocker l(&_valueMutex);
     
     return _defaultValues;
 }
@@ -1561,7 +1561,7 @@ template<typename T>
 T
 Knob<T>::getDefaultValue(int dimension) const
 {
-    QReadLocker l(&_valueMutex);
+    QMutexLocker l(&_valueMutex);
     return _defaultValues[dimension];
 }
 
@@ -1572,7 +1572,7 @@ Knob<T>::setDefaultValue(const T & v,
 {
     assert( dimension < getDimension() );
     {
-        QWriteLocker l(&_valueMutex);
+        QMutexLocker l(&_valueMutex);
         _defaultValues[dimension] = v;
     }
     resetToDefaultValue(dimension);
@@ -1584,7 +1584,7 @@ Knob<T>::setDefaultValueWithoutApplying(const T& v,int dimension)
 {
     assert( dimension < getDimension() );
     {
-        QWriteLocker l(&_valueMutex);
+        QMutexLocker l(&_valueMutex);
         _defaultValues[dimension] = v;
     }
 }
@@ -1811,7 +1811,7 @@ Knob<T>::getIntegrateFromTimeToTime(double time1,
         return curve->getIntegrateFromTo(time1, time2);
     } else {
         // if the knob as no keys at this dimension, the integral is trivial
-        QReadLocker l(&_valueMutex);
+        QMutexLocker l(&_valueMutex);
 
         return (double)_values[dimension] * (time2 - time1);
     }
@@ -1842,7 +1842,7 @@ Knob<T>::resetToDefaultValue(int dimension)
     KnobI::removeAnimation(dimension);
     T defaultV;
     {
-        QReadLocker l(&_valueMutex);
+        QMutexLocker l(&_valueMutex);
         defaultV = _defaultValues[dimension];
     }
     ignore_result(setValue(defaultV, dimension,Natron::eValueChangedReasonRestoreDefault,NULL));
@@ -1882,7 +1882,7 @@ Knob<double>::resetToDefaultValue(int dimension)
     clearExpression(dimension,true);
     
     {
-        QReadLocker l(&_valueMutex);
+        QMutexLocker l(&_valueMutex);
         def = _defaultValues[dimension];
     }
 
@@ -1908,7 +1908,7 @@ Knob<int>::cloneValues(KnobI* other, int dimension)
     Knob<bool>* isBool = dynamic_cast<Knob<bool>* >(other);
     Knob<double>* isDouble = dynamic_cast<Knob<double>* >(other);
     assert(isInt || isBool || isDouble);
-    QWriteLocker k(&_valueMutex);
+    QMutexLocker k(&_valueMutex);
     if (isInt) {
         _values = isInt->getValueForEachDimension_mt_safe_vector();
     } else if (isBool) {
@@ -1940,7 +1940,7 @@ Knob<bool>::cloneValues(KnobI* other,int dimension)
     
     int dimMin = std::min( getDimension(), other->getDimension() );
     assert(other->isTypePOD() && (isInt || isBool || isDouble)); //< other data types aren't supported
-    QWriteLocker k(&_valueMutex);
+    QMutexLocker k(&_valueMutex);
     if (isInt) {
         std::vector<int> v = isInt->getValueForEachDimension_mt_safe_vector();
         
@@ -1973,7 +1973,7 @@ Knob<double>::cloneValues(KnobI* other, int dimension)
     int dimMin = std::min( getDimension(), other->getDimension() );
     ///can only clone pod
     assert(other->isTypePOD() && (isInt || isBool || isDouble)); //< other data types aren't supported
-    QWriteLocker k(&_valueMutex);
+    QMutexLocker k(&_valueMutex);
     if (isInt) {
         std::vector<int> v = isInt->getValueForEachDimension_mt_safe_vector();
 
@@ -2011,7 +2011,7 @@ Knob<std::string>::cloneValues(KnobI* other, int dimension)
     ///Can only clone strings
     assert(isString);
     if (isString) {
-        QWriteLocker k(&_valueMutex);
+        QMutexLocker k(&_valueMutex);
         std::vector<std::string> v = isString->getValueForEachDimension_mt_safe_vector();
         for (int i = 0; i < dimMin; ++i) {
             if (i == dimension || dimension == -1) {
@@ -2034,7 +2034,7 @@ Knob<T>::cloneExpressionsResults(KnobI* other,int dimension)
     
     FrameValueMap results;
     knob->getExpressionResults(dimension,results);
-    QWriteLocker k(&_valueMutex);
+    QMutexLocker k(&_valueMutex);
     _exprRes[dimension] = results;
 }
 
@@ -2197,7 +2197,7 @@ Knob<T>::dequeueValuesSet(bool disableEvaluation)
         QMutexLocker kql(&_setValuesQueueMutex);
    
         
-        QWriteLocker k(&_valueMutex);
+        QMutexLocker k(&_valueMutex);
         for (typename std::list<boost::shared_ptr<QueuedSetValue> >::iterator it = _setValuesQueue.begin(); it!=_setValuesQueue.end(); ++it) {
            
             QueuedSetValueAtTime* isAtTime = dynamic_cast<QueuedSetValueAtTime*>(it->get());
@@ -2276,7 +2276,7 @@ void Knob<T>::computeHasModifications()
         
         ///Check expressions too in the future
         if (!hasModif) {
-            QReadLocker k(&_valueMutex);
+            QMutexLocker k(&_valueMutex);
             if (_values[i] != _defaultValues[i]) {
                 hasModif = true;
             }

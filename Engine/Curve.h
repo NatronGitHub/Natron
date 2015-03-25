@@ -309,6 +309,11 @@ private:
     bool mustClamp() const;
 
     KeyFrameSet::iterator setKeyframeInterpolation_internal(KeyFrameSet::iterator it,Natron::KeyframeTypeEnum type);
+    
+    /**
+     * @brief Called when the curve has changed to invalidate any cache relying on the curve values.
+     **/
+    void onCurveChanged();
 
 private:
     boost::scoped_ptr<CurvePrivate> _imp;

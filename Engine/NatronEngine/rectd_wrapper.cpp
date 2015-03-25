@@ -453,13 +453,13 @@ static PyObject* Sbk_RectDFunc_intersects(PyObject* self, PyObject* args)
 
     // Overloaded function decisor
     // 0: intersects(RectD)const
-    // 1: intersects(int,int,int,int)const
+    // 1: intersects(double,double,double,double)const
     if (numArgs == 4
-        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[0])))
-        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[1])))
-        && (pythonToCpp[2] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[2])))
-        && (pythonToCpp[3] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[3])))) {
-        overloadId = 1; // intersects(int,int,int,int)const
+        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[0])))
+        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[1])))
+        && (pythonToCpp[2] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[2])))
+        && (pythonToCpp[3] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[3])))) {
+        overloadId = 1; // intersects(double,double,double,double)const
     } else if (numArgs == 1
         && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppReferenceConvertible((SbkObjectType*)SbkNatronEngineTypes[SBK_RECTD_IDX], (pyArgs[0])))) {
         overloadId = 0; // intersects(RectD)const
@@ -484,19 +484,19 @@ static PyObject* Sbk_RectDFunc_intersects(PyObject* self, PyObject* args)
             }
             break;
         }
-        case 1: // intersects(int l, int b, int r, int t) const
+        case 1: // intersects(double l, double b, double r, double t) const
         {
-            int cppArg0;
+            double cppArg0;
             pythonToCpp[0](pyArgs[0], &cppArg0);
-            int cppArg1;
+            double cppArg1;
             pythonToCpp[1](pyArgs[1], &cppArg1);
-            int cppArg2;
+            double cppArg2;
             pythonToCpp[2](pyArgs[2], &cppArg2);
-            int cppArg3;
+            double cppArg3;
             pythonToCpp[3](pyArgs[3], &cppArg3);
 
             if (!PyErr_Occurred()) {
-                // intersects(int,int,int,int)const
+                // intersects(double,double,double,double)const
                 bool cppResult = const_cast<const ::RectD*>(cppSelf)->intersects(cppArg0, cppArg1, cppArg2, cppArg3);
                 pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), &cppResult);
             }
@@ -511,7 +511,7 @@ static PyObject* Sbk_RectDFunc_intersects(PyObject* self, PyObject* args)
     return pyResult;
 
     Sbk_RectDFunc_intersects_TypeError:
-        const char* overloads[] = {"NatronEngine.RectD", "int, int, int, int", 0};
+        const char* overloads[] = {"NatronEngine.RectD", "float, float, float, float", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.RectD.intersects", overloads);
         return 0;
 }

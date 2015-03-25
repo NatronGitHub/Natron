@@ -16,6 +16,7 @@ Functions
 ^^^^^^^^^
 
 *    def :meth:`copy<NatronEngine.Param.copy>` (param[, dimension=-1])
+*    def :meth:`curve<NatronEngine.Param.curve>` (time[, dimension=-1])
 *    def :meth:`getAddNewLine<NatronEngine.Param.getAddNewLine>` ()
 *    def :meth:`getCanAnimate<NatronEngine.Param.getCanAnimate>` ()
 *    def :meth:`getEvaluateOnChange<NatronEngine.Param.getEvaluateOnChange>` ()
@@ -202,6 +203,20 @@ be copied.
 	
 
 This function returns **True** upon success and **False** otherwise.
+
+
+.. method:: NatronEngine.Param.curve(time [, dimension=-1])
+
+	:param time: :class:`float<PySide.QtCore.float>`
+	:param dimension: :class:`int`
+	:rtype: :class:`float<PySide.QtCore.float>`
+	
+	If this parameter has an animation curve on the given *dimension*, then the value of
+	that curve at the given *time* is returned. If the parameter has an expression on top
+	of the animation curve, the expression will be ignored, ie.g: the value of the animation
+	curve will still be returned. 
+	This is useful to write custom expressions for motion design such as looping, reversing, etc...
+	
 
 .. method:: NatronEngine.Param.getAddNewLine()
 

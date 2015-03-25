@@ -214,6 +214,15 @@ Param::randomInt(unsigned int seed) const
     return _knob->randomInt(seed);
 }
 
+double
+Param::curve(double time, int dimension) const
+{
+    if (!_knob) {
+        return 0.;
+    }
+    return _knob->getValueAtWithExpression(time, dimension);
+}
+
 AnimatedParam::AnimatedParam(const boost::shared_ptr<KnobI>& knob)
 : Param(knob)
 {

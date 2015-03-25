@@ -1509,7 +1509,7 @@ public:
     
     void getExpressionResults(int dim,FrameValueMap& map)
     {
-        QReadLocker k(&_valueMutex);
+        QMutexLocker k(&_valueMutex);
         map = _exprRes[dim];
     }
     
@@ -1550,7 +1550,7 @@ private:
     
     virtual void clearExpressionsResults(int dimension)
     {
-        QWriteLocker k(&_valueMutex);
+        QMutexLocker k(&_valueMutex);
         _exprRes[dimension].clear();
     }
     
@@ -1609,7 +1609,7 @@ private:
    
     ///Here is all the stuff we couldn't get rid of the template parameter
 
-    mutable QReadWriteLock _valueMutex; //< protects _values & _defaultValues & ExprResults
+    mutable QMutex _valueMutex; //< protects _values & _defaultValues & ExprResults
     std::vector<T> _values;
     std::vector<T> _defaultValues;
     mutable ExprResults _exprRes;

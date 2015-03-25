@@ -1429,6 +1429,7 @@ KnobHelperPrivate::declarePythonVariables(bool addTab, int dim)
     ss << tabStr << "thisParam = thisNode." << name << "\n";
     ss << tabStr << "random = thisParam.random\n";
     ss << tabStr << "randomInt = thisParam.randomInt\n";
+    ss << tabStr << "curve = thisParam.curve\n";
     if (dimension != -1) {
         ss << tabStr << "dimension = " << dim << "\n";
     }

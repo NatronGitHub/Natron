@@ -127,7 +127,7 @@ public:
      * @brief Evaluates the curve and returns the y position corresponding to the given x.
      * The coordinates are those of the curve, not of the widget.
      **/
-    virtual double evaluate(double x) const;
+    virtual double evaluate(bool useExpr, double x) const = 0;
     
     virtual boost::shared_ptr<Curve>  getInternalCurve() const;
 
@@ -201,7 +201,7 @@ public:
         return _knob;
     }
     
-    virtual double evaluate(double x) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual double evaluate(bool useExpr,double x) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     
     boost::shared_ptr<RotoContext> getRotoContext() const { return _roto; }
     
@@ -241,7 +241,7 @@ public:
     
     boost::shared_ptr<Bezier> getBezier() const ;
     
-    virtual double evaluate(double x) const;
+    virtual double evaluate(bool useExpr,double x) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual std::pair<double,double> getCurveYRange() const;
 
     virtual bool areKeyFramesTimeClampedToIntegers() const { return true; }

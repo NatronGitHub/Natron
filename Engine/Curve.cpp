@@ -307,6 +307,7 @@ Curve::clone(const Curve & other)
 
     _imp->keyFrames.clear();
     std::transform( otherKeys.begin(), otherKeys.end(), std::inserter( _imp->keyFrames, _imp->keyFrames.begin() ), KeyFrameCloner() );
+    onCurveChanged();
 }
 
 void
@@ -332,6 +333,7 @@ Curve::clone(const Curve & other,
         }
         _imp->keyFrames.insert(k);
     }
+    onCurveChanged();
 }
 
 double
@@ -439,6 +441,7 @@ Curve::removeKeyFrame(KeyFrameSet::const_iterator it)
     if (mustRefreshNext) {
         refreshDerivatives( eCurveChangedReasonDerivativesChanged,find( nextKey.getTime() ) );
     }
+    onCurveChanged();
 }
 
 void
@@ -482,6 +485,7 @@ Curve::removeKeyFramesBeforeTime(double time,std::list<int>* keyframeRemoved)
     if (!_imp->keyFrames.empty()) {
         refreshDerivatives(Curve::eCurveChangedReasonKeyframeChanged, _imp->keyFrames.begin());
     }
+    onCurveChanged();
 }
 
 void
@@ -502,7 +506,7 @@ Curve::removeKeyFramesAfterTime(double time,std::list<int>* keyframeRemoved)
         --last;
         refreshDerivatives(Curve::eCurveChangedReasonKeyframeChanged, last);
     }
-
+    onCurveChanged();
 }
 
 bool
@@ -720,38 +724,46 @@ Curve::getValueAt(double t,bool doClamp) const
     if ( _imp->keyFrames.empty() ) {
         throw std::runtime_error("Curve has no control points!");
     }
-
-    // even when there is only one keyframe, there may be tangents!
-    //if (_imp->keyFrames.size() == 1) {
-    //    //if there's only 1 keyframe, don't bother interpolating
-    //    return (*_imp->keyFrames.begin()).getValue();
-    //}
-    double tcur,tnext;
-    double vcurDerivRight,vnextDerivLeft,vcur,vnext;
-    Natron::KeyframeTypeEnum interp,interpNext;
-    KeyFrame k(t,0.);
-    // find the first keyframe with time greater than t
-    KeyFrameSet::const_iterator itup;
-    itup = _imp->keyFrames.upper_bound(k);
-    interParams(_imp->keyFrames,
-                t,
-                itup,
-                &tcur,
-                &vcur,
-                &vcurDerivRight,
-                &interp,
-                &tnext,
-                &vnext,
-                &vnextDerivLeft,
-                &interpNext);
-
-    double v = Natron::interpolate(tcur,vcur,
-                                   vcurDerivRight,
-                                   vnextDerivLeft,
-                                   tnext,vnext,
-                                   t,
-                                   interp,
-                                   interpNext);
+    
+    std::map<double,double>::const_iterator foundCached = _imp->resultCache.find(t);
+    double v;
+    if (foundCached != _imp->resultCache.end()) {
+        v = foundCached->second;
+    } else {
+        
+        // even when there is only one keyframe, there may be tangents!
+        //if (_imp->keyFrames.size() == 1) {
+        //    //if there's only 1 keyframe, don't bother interpolating
+        //    return (*_imp->keyFrames.begin()).getValue();
+        //}
+        double tcur,tnext;
+        double vcurDerivRight,vnextDerivLeft,vcur,vnext;
+        Natron::KeyframeTypeEnum interp,interpNext;
+        KeyFrame k(t,0.);
+        // find the first keyframe with time greater than t
+        KeyFrameSet::const_iterator itup;
+        itup = _imp->keyFrames.upper_bound(k);
+        interParams(_imp->keyFrames,
+                    t,
+                    itup,
+                    &tcur,
+                    &vcur,
+                    &vcurDerivRight,
+                    &interp,
+                    &tnext,
+                    &vnext,
+                    &vnextDerivLeft,
+                    &interpNext);
+        
+        v = Natron::interpolate(tcur,vcur,
+                                vcurDerivRight,
+                                vnextDerivLeft,
+                                tnext,vnext,
+                                t,
+                                interp,
+                                interpNext);
+        _imp->resultCache[t] = v;
+    }
 
     if ( doClamp && mustClamp() ) {
         v = clampValueToCurveYRange(v);
@@ -1334,7 +1346,7 @@ Curve::evaluateCurveChanged(CurveChangedReasonEnum reason,
             next = refreshDerivatives(eCurveChangedReasonDerivativesChanged,next);
         }
     }
-
+    onCurveChanged();
     return key;
 }
 
@@ -1451,4 +1463,12 @@ Curve::mustClamp() const
     return _imp->owner || hasYRange();
 }
 
-
+void
+Curve::onCurveChanged()
+{
+    // PRIVATE - should not lock
+    if (_imp->owner) {
+        _imp->owner->clearExpressionsResults(_imp->dimensionInOwner);
+    }
+    _imp->resultCache.clear();
+}

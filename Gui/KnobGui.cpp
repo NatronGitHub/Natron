@@ -286,7 +286,11 @@ KnobGui::createGUI(QGridLayout* containerLayout,
 
     for (int i = 0; i < knob->getDimension(); ++i) {
         updateGuiInternal(i);
-        onAnimationLevelChanged(i, knob->getAnimationLevel(i) );
+        std::string exp = knob->getExpression(i);
+        reflectExpressionState(i,!exp.empty());
+        if (exp.empty()) {
+            onAnimationLevelChanged(i, knob->getAnimationLevel(i) );
+        }
     }
 }
 
@@ -2306,7 +2310,7 @@ KnobGui::onExprChanged(int dimension)
     
     updateGUI(dimension);
     
-    Q_EMIT refreshCurveEditor();
+    Q_EMIT expressionChanged();
 }
 
 void
