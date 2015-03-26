@@ -141,7 +141,7 @@ Natron::OfxHost::setProperties()
     _properties.setIntProperty(kOfxPropVersion, NATRON_VERSION_MINOR, 1);
     _properties.setIntProperty(kOfxPropVersion, NATRON_VERSION_REVISION, 2);
     _properties.setStringProperty(kOfxPropVersionLabel, NATRON_VERSION_STRING);
-    _properties.setIntProperty(kOfxImageEffectHostPropIsBackground, 0);
+    _properties.setIntProperty(kOfxImageEffectHostPropIsBackground, (int)appPTR->isBackground());
     _properties.setIntProperty(kOfxImageEffectPropSupportsOverlays, 1);
     _properties.setIntProperty(kOfxImageEffectPropSupportsMultiResolution, 1);
     _properties.setIntProperty(kOfxImageEffectPropSupportsTiles, 1);
