@@ -2233,7 +2233,7 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
     
     ///There might be only planes to render that were fetched from upstream
     if (requestedComponents.empty()) {
-        return eRenderRoIRetCodeFailed;
+        return eRenderRoIRetCodeOk;
     }
     
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
