@@ -1700,6 +1700,7 @@ DockablePanel::setClosed(bool c)
     }
     if (_imp->_floating) {
         floatPanel();
+        return;
     }
     setVisible(!c);
     {
@@ -1779,6 +1780,7 @@ DockablePanel::closePanel()
 {
     if (_imp->_floating) {
         floatPanel();
+        return;
     }
     {
         QMutexLocker l(&_imp->_isClosedMutex);

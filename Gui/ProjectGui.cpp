@@ -115,7 +115,7 @@ ProjectGui::isVisible() const
 void
 ProjectGui::setVisible(bool visible)
 {
-    _panel->setVisible(visible);
+    _panel->setClosed(!visible);
 }
 
 void
