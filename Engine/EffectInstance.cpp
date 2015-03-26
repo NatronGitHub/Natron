@@ -5177,11 +5177,52 @@ EffectInstance::getNearestNonDisabled() const
         ///Test all inputs recursively, going from last to first, preferring non optional inputs.
         std::list<Natron::EffectInstance*> nonOptionalInputs;
         std::list<Natron::EffectInstance*> optionalInputs;
-        int maxInp = getMaxInputCount();
+        
+        bool useInputA = appPTR->getCurrentSettings()->isMergeAutoConnectingToAInput();
+        
+        ///Find an input named A
+        std::string inputNameToFind,otherName;
+        if (useInputA) {
+            inputNameToFind = "A";
+            otherName = "B";
+        } else {
+            inputNameToFind = "B";
+            otherName = "A";
+        }
+        int foundOther = -1;
+        int maxinputs = getMaxInputCount();
+        for (int i = 0; i < maxinputs ; ++i) {
+            std::string inputLabel = getInputLabel(i);
+            if (inputLabel == inputNameToFind ) {
+                EffectInstance* inp = getInput(i);
+                if (inp) {
+                    nonOptionalInputs.push_front(inp);
+                    break;
+                }
+            } else if (inputLabel == otherName) {
+                foundOther = i;
+            }
+        }
+        
+        if (foundOther != -1 && nonOptionalInputs.empty()) {
+            EffectInstance* inp = getInput(foundOther);
+            if (inp) {
+                nonOptionalInputs.push_front(inp);
+            }
+        }
+        
+        ///If we found A or B so far, cycle through them
+        for (std::list<Natron::EffectInstance*> ::iterator it = nonOptionalInputs.begin(); it != nonOptionalInputs.end(); ++it) {
+            Natron::EffectInstance* inputRet = (*it)->getNearestNonDisabled();
+            if (inputRet) {
+                return inputRet;
+            }
+        }
 
+        
         ///We cycle in reverse by default. It should be a setting of the application.
         ///In this case it will return input B instead of input A of a merge for example.
-        for (int i = 0; i < maxInp; ++i) {
+        for (int i = 0; i < maxinputs; ++i) {
             Natron::EffectInstance* inp = getInput(i);
             bool optional = isInputOptional(i);
             if (inp) {
@@ -5222,14 +5263,56 @@ EffectInstance::getNearestNonDisabledPrevious(int* inputNb)
     ///Test all inputs recursively, going from last to first, preferring non optional inputs.
     std::list<Natron::EffectInstance*> nonOptionalInputs;
     std::list<Natron::EffectInstance*> optionalInputs;
-    int maxInp = getMaxInputCount();
-    
-    
     int localPreferredInput = -1;
+
+    bool useInputA = appPTR->getCurrentSettings()->isMergeAutoConnectingToAInput();
+    ///Find an input named A
+    std::string inputNameToFind,otherName;
+    if (useInputA) {
+        inputNameToFind = "A";
+        otherName = "B";
+    } else {
+        inputNameToFind = "B";
+        otherName = "A";
+    }
+    int foundOther = -1;
+    int maxinputs = getMaxInputCount();
+    for (int i = 0; i < maxinputs ; ++i) {
+        std::string inputLabel = getInputLabel(i);
+        if (inputLabel == inputNameToFind ) {
+            EffectInstance* inp = getInput(i);
+            if (inp) {
+                nonOptionalInputs.push_front(inp);
+                localPreferredInput = i;
+                break;
+            }
+        } else if (inputLabel == otherName) {
+            foundOther = i;
+        }
+    }
+    
+    if (foundOther != -1 && nonOptionalInputs.empty()) {
+        EffectInstance* inp = getInput(foundOther);
+        if (inp) {
+            nonOptionalInputs.push_front(inp);
+            localPreferredInput = foundOther;
+        }
+    }
+    
+    ///If we found A or B so far, cycle through them
+    for (std::list<Natron::EffectInstance*> ::iterator it = nonOptionalInputs.begin(); it != nonOptionalInputs.end(); ++it) {
+        if ((*it)->getNode()->isNodeDisabled()) {
+            Natron::EffectInstance* inputRet = (*it)->getNearestNonDisabledPrevious(inputNb);
+            if (inputRet) {
+                return inputRet;
+            }
+        }
+    }
+    
     
     ///We cycle in reverse by default. It should be a setting of the application.
     ///In this case it will return input B instead of input A of a merge for example.
-    for (int i = 0; i < maxInp; ++i) {
+    for (int i = 0; i < maxinputs; ++i) {
         Natron::EffectInstance* inp = getInput(i);
         bool optional = isInputOptional(i);
         if (inp) {
