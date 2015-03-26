@@ -284,6 +284,19 @@ NodeGui::initialize(NodeGraph* dag,
 
     createGui();
     
+    NodePtr parent = internalNode->getParentMultiInstance();
+    if (parent) {
+        boost::shared_ptr<NodeGuiI> parentNodeGui_i = parent->getNodeGui();
+        NodeGui* parentGui = dynamic_cast<NodeGui*>(parentNodeGui_i.get());
+        assert(parentGui);
+        if (parentGui->isSettingsPanelOpened()) {
+            ensurePanelCreated();
+        }
+        boost::shared_ptr<MultiInstancePanel> panel = parentGui->getMultiInstancePanel();
+        assert(panel);
+        panel->onChildCreated(internalNode);
+    }
+    
     if (internalNode->getPluginID() == PLUGINID_OFX_MERGE) {
         boost::shared_ptr<KnobI> knob = internalNode->getKnobByName(kNatronOfxParamStringSublabelName);
         assert(knob);
