@@ -657,6 +657,8 @@ DockablePanel::~DockablePanel()
 //    if (_imp->_holder) {
 //        _imp->_holder->discardPanelPointer();
 //    }
+    getGui()->removeVisibleDockablePanel(this);
+
     delete _imp->_undoStack;
 
     ///Delete the knob gui if they weren't before
