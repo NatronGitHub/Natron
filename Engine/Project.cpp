@@ -37,7 +37,7 @@
 #include <QTemporaryFile>
 #include <QHostInfo>
 #include <QFileInfo>
-
+#include <QDebug>
 
 #include "Engine/AppManager.h"
 #include "Engine/AppInstance.h"
@@ -215,7 +215,7 @@ Project::loadProjectInternal(const QString & path,
                              const QString & name,bool isAutoSave,const QString& realFilePath)
 {
     QString filePath = path + name;
-
+    qDebug() << "Loading project" << filePath;
     if ( !QFile::exists(filePath) ) {
         throw std::invalid_argument( QString(filePath + " : no such file.").toStdString() );
     }
