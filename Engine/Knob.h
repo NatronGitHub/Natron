@@ -491,6 +491,11 @@ public:
     virtual bool transformValueAtTime(int time,int dimension,const Transform::Matrix3x3& matrix,KeyFrame* newKey) = 0;
     
     /**
+     * @brief Copies all the animation of *curve* into the animation curve at the given dimension.
+     **/
+    virtual void cloneCurve(int dimension,const Curve& curve) = 0;
+    
+    /**
      * @brief Changes the interpolation type for the given keyframe
      **/
     virtual bool setInterpolationAtTime(int dimension,int time,Natron::KeyframeTypeEnum interpolation,KeyFrame* newKey) = 0;
@@ -1086,6 +1091,7 @@ public:
     virtual void onKeyFrameRemoved(SequenceTime time,int dimension) OVERRIDE FINAL;
     virtual bool moveValueAtTime(int time,int dimension,double dt,double dv,KeyFrame* newKey) OVERRIDE FINAL;
     virtual bool transformValueAtTime(int time,int dimension,const Transform::Matrix3x3& matrix,KeyFrame* newKey) OVERRIDE FINAL;
+    virtual void cloneCurve(int dimension,const Curve& curve) OVERRIDE FINAL;
     virtual bool setInterpolationAtTime(int dimension,int time,Natron::KeyframeTypeEnum interpolation,KeyFrame* newKey) OVERRIDE FINAL;
     virtual bool moveDerivativesAtTime(int dimension,int time,double left,double right)  OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool moveDerivativeAtTime(int dimension,int time,double derivative,bool isLeft) OVERRIDE FINAL WARN_UNUSED_RETURN;

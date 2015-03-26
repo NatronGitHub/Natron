@@ -2169,7 +2169,9 @@ RotoGui::penMotion(double /*scaleX*/,
         break;
     }
     case eEventStateDraggingBBoxMidTop:
-    case eEventStateDraggingBBoxMidBtm: {
+    case eEventStateDraggingBBoxMidBtm:
+    case eEventStateDraggingBBoxMidLeft:
+    case eEventStateDraggingBBoxMidRight: {
         QPointF center = _imp->getSelectedCpsBBOXCenter();
         double rot = 0;
         double sx = 1.,sy = 1.;
@@ -2184,6 +2186,10 @@ RotoGui::penMotion(double /*scaleX*/,
                 type = TransformUndoCommand::eTransformMidTop;
             } else if (_imp->state == eEventStateDraggingBBoxMidBtm) {
                 type = TransformUndoCommand::eTransformMidBottom;
+            } else if (_imp->state == eEventStateDraggingBBoxMidLeft) {
+                type = TransformUndoCommand::eTransformMidLeft;
+            } else if (_imp->state == eEventStateDraggingBBoxMidRight) {
+                type = TransformUndoCommand::eTransformMidRight;
             }
         }
         
@@ -2209,10 +2215,17 @@ RotoGui::penMotion(double /*scaleX*/,
             default:
                 break;
         }
-
+        
+        bool processX = _imp->state == eEventStateDraggingBBoxMidRight || _imp->state == eEventStateDraggingBBoxMidLeft;
+        
         if (_imp->rotoData->transformMode == eSelectedCpsTransformModeRotateAndSkew) {
-            const double addSkew = ( pos.x() - _imp->lastMousePos.x() ) / ( pos.y() - center.y() );
-            skewX += addSkew;
+            if (!processX) {
+                const double addSkew = ( pos.x() - _imp->lastMousePos.x() ) / ( pos.y() - center.y() );
+                skewX += addSkew;
+            } else {
+                const double addSkew = ( pos.y() - _imp->lastMousePos.y() ) / ( pos.x() - center.x() );
+                skewY += addSkew;
+            }
         } else {
             // the scale ratio is the ratio of distances to the center
             double prevDist = ( _imp->lastMousePos.x() - center.x() ) * ( _imp->lastMousePos.x() - center.x() ) +
@@ -2220,77 +2233,17 @@ RotoGui::penMotion(double /*scaleX*/,
             if (prevDist != 0) {
                 double dist = ( pos.x() - center.x() ) * ( pos.x() - center.x() ) + ( pos.y() - center.y() ) * ( pos.y() - center.y() );
                 double ratio = std::sqrt(dist / prevDist);
-                sy *= ratio;
+                if (processX) {
+                    sx *= ratio;
+                } else {
+                    sy *= ratio;
+                }
             }
         }
     
 
         
         pushUndoCommand( new TransformUndoCommand(this,center.x(),center.y(),rot,skewX,skewY,tx,ty,sx,sy,time) );
-        _imp->evaluateOnPenUp = true;
-        didSomething = true;
-        break;
-    }
-    case eEventStateDraggingBBoxMidRight:
-    case eEventStateDraggingBBoxMidLeft: {
-        QPointF center = _imp->getSelectedCpsBBOXCenter();
-        double rot = 0;
-        double sx = 1.,sy = 1.;
-        double skewX = 0.,skewY = 0.;
-        double tx = 0., ty = 0.;
-        
-        
-        TransformUndoCommand::TransformPointsSelectionEnum type;
-        if (!modCASIsShift(e)) {
-            type = TransformUndoCommand::eTransformAllPoints;
-        } else {
-            if (_imp->state == eEventStateDraggingBBoxMidRight) {
-                type = TransformUndoCommand::eTransformMidRight;
-            } else if (_imp->state == eEventStateDraggingBBoxMidLeft) {
-                type = TransformUndoCommand::eTransformMidLeft;
-            }
-        }
-        
-        const QRectF& bbox = _imp->rotoData->selectedCpsBbox;
-        
-        switch (type) {
-            case TransformUndoCommand::eTransformMidBottom:
-                center.rx() = bbox.center().x();
-                center.ry() = bbox.top();
-                break;
-            case TransformUndoCommand::eTransformMidTop:
-                center.rx() = bbox.center().x();
-                center.ry() = bbox.bottom();
-                break;
-            case TransformUndoCommand::eTransformMidRight:
-                center.rx() = bbox.left();
-                center.ry() = bbox.center().y();
-                break;
-            case TransformUndoCommand::eTransformMidLeft:
-                center.rx() = bbox.right();
-                center.ry() = bbox.center().y();
-                break;
-            default:
-                break;
-        }
-
-
-        if (_imp->rotoData->transformMode == eSelectedCpsTransformModeRotateAndSkew) {
-            const double addSkew = ( pos.y() - _imp->lastMousePos.y() ) / ( pos.x() - center.x() );
-            skewY += addSkew;
-        } else {
-            // the scale ratio is the ratio of distances to the center
-            double prevDist = ( _imp->lastMousePos.x() - center.x() ) * ( _imp->lastMousePos.x() - center.x() ) +
-                              ( _imp->lastMousePos.y() - center.y() ) * ( _imp->lastMousePos.y() - center.y() );
-            if (prevDist != 0) {
-                double dist = ( pos.x() - center.x() ) * ( pos.x() - center.x() ) + ( pos.y() - center.y() ) * ( pos.y() - center.y() );
-                double ratio = std::sqrt(dist / prevDist);
-                sx *= ratio;
-            }
-        }
-        
-        pushUndoCommand( new TransformUndoCommand(this,center.x(),center.y(),rot,skewX,skewY,tx,ty,sx,sy,time) );
-
         _imp->evaluateOnPenUp = true;
         didSomething = true;
         break;

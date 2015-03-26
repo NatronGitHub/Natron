@@ -773,6 +773,8 @@ KnobHelper::transformValueAtTime(int time,int dimension,const Transform::Matrix3
     
     p = Transform::matApply(matrix, p);
     
+    //clamp p.x to integers for keyframe times
+    p.x = std::floor(p.x + 0.5);
     
     if ( curve->areKeyFramesValuesClampedToIntegers() ) {
         p.y = std::floor(p.y + 0.5);
@@ -811,14 +813,49 @@ KnobHelper::transformValueAtTime(int time,int dimension,const Transform::Matrix3
 
 }
 
+void
+KnobHelper::cloneCurve(int dimension,const Curve& curve)
+{
+    assert(dimension >= 0 && dimension < (int)_imp->curves.size());
+    KnobHolder* holder = getHolder();
+    boost::shared_ptr<Curve> thisCurve;
+    bool useGuiCurve = (!holder || !holder->canSetValue()) && _imp->gui;
+    if (!useGuiCurve) {
+        thisCurve = _imp->curves[dimension];
+    } else {
+        thisCurve = _imp->gui->getCurve(dimension);
+        setGuiCurveHasChanged(dimension,true);
+    }
+    assert(thisCurve);
+    
+    if (_signalSlotHandler) {
+        _signalSlotHandler->s_animationAboutToBeRemoved(dimension);
+        _signalSlotHandler->s_animationRemoved(dimension);
+    }
+    animationRemoved_virtual(dimension);
+    thisCurve->clone(curve);
+    if (!useGuiCurve) {
+        evaluateValueChange(dimension, Natron::eValueChangedReasonPluginEdited);
+        guiCurveCloneInternalCurve(dimension);
+    }
+    
+    int nKeys = thisCurve->getKeyFramesCount();
+    for (int k = 0; k < nKeys; ++k) {
+        KeyFrame key;
+        bool ok = thisCurve->getKeyFrameWithIndex(k, &key);
+        assert(ok);
+        if (ok) {
+            _signalSlotHandler->s_keyFrameSet(key.getTime(), dimension,(int)Natron::eValueChangedReasonNatronInternalEdited,true);
+        }
+    }
+}
+
 bool
 KnobHelper::setInterpolationAtTime(int dimension,int time,Natron::KeyframeTypeEnum interpolation,KeyFrame* newKey)
 {
     assert(QThread::currentThread() == qApp->thread());
-    if ( dimension > (int)_imp->curves.size() || dimension < 0) {
-        throw std::invalid_argument("KnobHelper::setInterpolationAtTime(): Dimension out of range");
-    }
-    
+    assert(dimension >= 0 && dimension < (int)_imp->curves.size());
+
     if (!canAnimate() || !isAnimated(dimension)) {
         return false;
     }
@@ -984,13 +1021,6 @@ KnobHelper::removeAnimation(int dimension,
         setGuiCurveHasChanged(dimension,true);
     }
     
-    if ( _signalSlotHandler && (reason != Natron::eValueChangedReasonUserEdited) ) {
-        _signalSlotHandler->s_animationAboutToBeRemoved(dimension);
-    }
-    
-    curve->clearKeyFrames();
-    assert(curve);
-
     if ( _signalSlotHandler && (reason != Natron::eValueChangedReasonUserEdited) ) {
         _signalSlotHandler->s_animationAboutToBeRemoved(dimension);
     }

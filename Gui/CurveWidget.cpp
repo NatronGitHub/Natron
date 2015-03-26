@@ -816,6 +816,8 @@ public:
     void selectCurve(CurveGui* curve);
 
     void moveSelectedKeyFrames(const QPointF & oldClick_opengl,const QPointF & newClick_opengl);
+    
+    void transformSelectedKeyFrames(const QPointF & oldClick_opengl,const QPointF & newClick_opengl, bool shiftHeld);
 
     void moveSelectedTangent(const QPointF & pos);
 
@@ -1747,7 +1749,7 @@ CurveWidgetPrivate::isNearbyBboxTopRight(const QPoint& pt) const
 bool
 CurveWidgetPrivate::isNearbyBboxMidTop(const QPoint& pt) const
 {
-    QPointF other = zoomCtx.toWidgetCoordinates(_selectedKeyFramesBbox.x() + _selectedKeyFramesBbox.width() / 2., _selectedKeyFramesBbox.y() + _selectedKeyFramesBbox.height() / 2.);
+    QPointF other = zoomCtx.toWidgetCoordinates(_selectedKeyFramesBbox.x() + _selectedKeyFramesBbox.width() / 2., _selectedKeyFramesBbox.y());
     if ( ( pt.x() >= (other.x() - CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) &&
         ( pt.x() <= (other.x() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) &&
         ( pt.y() <= (other.y() + CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE) ) &&
@@ -1858,12 +1860,9 @@ CurveWidgetPrivate::moveSelectedKeyFrames(const QPointF & oldClick_opengl,
    // totalMovement.ry() = std::min(std::max(totalMovement.y(),_keyDragMaxMovement.bottom),_keyDragMaxMovement.top);
 
     /// round to the nearest integer the keyframes total motion (in X only)
+    ///Only for the curve editor, parametric curves are not affected by the following
     if (clampToIntegers) {
         totalMovement.rx() = std::floor(totalMovement.x() + 0.5);
-    }
-
-    if (clampToIntegers) {
-        ///Only for the curve editor, parametric curves are not affected by the following
         for (SelectedKeys::const_iterator it = _selectedKeyFrames.begin(); it != _selectedKeyFrames.end(); ++it) {
             if ( (*it)->curve->areKeyFramesValuesClampedToBooleans() ) {
                 totalMovement.ry() = std::max( 0.,std::min(std::floor(totalMovement.y() + 0.5),1.) );
@@ -1873,6 +1872,7 @@ CurveWidgetPrivate::moveSelectedKeyFrames(const QPointF & oldClick_opengl,
             }
         }
     }
+
 
     double dt;
 
@@ -1921,6 +1921,103 @@ CurveWidgetPrivate::moveSelectedKeyFrames(const QPointF & oldClick_opengl,
         _keyDragLastMovement.ry() = totalMovement.y();
     }
 } // moveSelectedKeyFrames
+
+void
+CurveWidgetPrivate::transformSelectedKeyFrames(const QPointF & oldClick_opengl,const QPointF & newClick_opengl, bool shiftHeld)
+{
+    if (newClick_opengl == oldClick_opengl) {
+        return;
+    }
+    
+    QPointF dragStartPointOpenGL = zoomCtx.toZoomCoordinates( _dragStartPoint.x(),_dragStartPoint.y() );
+    bool clampToIntegers = ( *_selectedKeyFrames.begin() )->curve->areKeyFramesTimeClampedToIntegers();
+    bool updateOnPenUpOnly = appPTR->getCurrentSettings()->getRenderOnEditingFinishedOnly();
+    
+    QPointF totalMovement(newClick_opengl.x() - dragStartPointOpenGL.x(), newClick_opengl.y() - dragStartPointOpenGL.y());
+    /// round to the nearest integer the keyframes total motion (in X only)
+    ///Only for the curve editor, parametric curves are not affected by the following
+    if (clampToIntegers) {
+        totalMovement.rx() = std::floor(totalMovement.x() + 0.5);
+        for (SelectedKeys::const_iterator it = _selectedKeyFrames.begin(); it != _selectedKeyFrames.end(); ++it) {
+            if ( (*it)->curve->areKeyFramesValuesClampedToBooleans() ) {
+                totalMovement.ry() = std::max( 0.,std::min(std::floor(totalMovement.y() + 0.5),1.) );
+                break;
+            } else if ( (*it)->curve->areKeyFramesValuesClampedToIntegers() ) {
+                totalMovement.ry() = std::floor(totalMovement.y() + 0.5);
+            }
+        }
+    }
+    
+    double dt;
+    dt = totalMovement.x() - _keyDragLastMovement.x();
+    
+    double dv;
+    dv = totalMovement.y() - _keyDragLastMovement.y();
+    
+    
+    if (dt != 0 || dv != 0) {
+        QPointF center = _selectedKeyFramesBbox.center();
+        
+        if (shiftHeld &&
+            (_state == eEventStateDraggingMidRightBbox ||
+             _state == eEventStateDraggingMidBtmBbox ||
+             _state == eEventStateDraggingMidLeftBbox ||
+             _state == eEventStateDraggingMidTopBbox)) {
+            if (_state == eEventStateDraggingMidTopBbox) {
+                center.ry() = _selectedKeyFramesBbox.bottom();
+            } else if (_state == eEventStateDraggingMidBtmBbox) {
+                center.ry() = _selectedKeyFramesBbox.top();
+            } else if (_state == eEventStateDraggingMidLeftBbox) {
+                center.rx() = _selectedKeyFramesBbox.right();
+            } else if (_state == eEventStateDraggingMidRightBbox) {
+                center.rx() = _selectedKeyFramesBbox.left();
+            }
+        }
+        
+        double sx = 1.,sy = 1.;
+        double tx = 0., ty = 0.;
+        
+        double oldX = newClick_opengl.x() - dt;
+        double oldY = newClick_opengl.y() - dv;
+        // the scale ratio is the ratio of distances to the center
+        double prevDist = ( oldX - center.x() ) * ( oldX - center.x() ) + ( oldY - center.y() ) * ( oldY - center.y() );
+        
+        if (prevDist != 0) {
+            double dist = ( newClick_opengl.x() - center.x() ) * ( newClick_opengl.x() - center.x() ) + ( newClick_opengl.y() - center.y() ) * ( newClick_opengl.y() - center.y() );
+            double ratio = std::sqrt(dist / prevDist);
+            
+            if (_state == eEventStateDraggingBtmLeftBbox ||
+                _state == eEventStateDraggingBtmRightBbox ||
+                _state == eEventStateDraggingTopRightBbox ||
+                _state == eEventStateDraggingTopLeftBbox) {
+                sx *= ratio;
+                sy *= ratio;
+            } else {
+            
+                bool processX = _state == eEventStateDraggingMidLeftBbox || _state == eEventStateDraggingMidRightBbox;
+                if (processX) {
+                    sx *= ratio;
+                } else {
+                    sy *= ratio;
+                }
+                
+            }
+        }
+        _widget->pushUndoCommand( new TransformKeysCommand(_widget,_selectedKeyFrames,center.x(),center.y(),tx,ty,sx,sy,!updateOnPenUpOnly) );
+        _evaluateOnPenUp = true;
+    }
+    //update last drag movement
+    if (dt != 0) {
+        _keyDragLastMovement.rx() = totalMovement.x();
+    }
+    
+    if (dv != 0) {
+        _keyDragLastMovement.ry() = totalMovement.y();
+    }
+    
+
+}
+
 
 void
 CurveWidgetPrivate::moveSelectedTangent(const QPointF & pos)
@@ -3165,7 +3262,18 @@ CurveWidget::mouseMoveEvent(QMouseEvent* e)
             }
         }
         break;
-
+    case eEventStateDraggingBtmLeftBbox:
+    case eEventStateDraggingMidBtmBbox:
+    case eEventStateDraggingBtmRightBbox:
+    case eEventStateDraggingMidRightBbox:
+    case eEventStateDraggingTopRightBbox:
+    case eEventStateDraggingMidTopBbox:
+    case eEventStateDraggingTopLeftBbox:
+    case eEventStateDraggingMidLeftBbox:
+        if ( !_imp->_selectedKeyFrames.empty() ) {
+            _imp->transformSelectedKeyFrames(oldClick_opengl, newClick_opengl, modCASIsShift(e));
+        }
+        break;
     case eEventStateSelecting:
         _imp->refreshSelectionRectangle( (double)e->x(),(double)e->y() );
         break;

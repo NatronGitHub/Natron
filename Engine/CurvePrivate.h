@@ -18,7 +18,7 @@
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
 #endif
-#include <QReadWriteLock>
+#include <QMutex>
 
 #include "Engine/Rect.h"
 #include "Engine/Variant.h"
@@ -51,7 +51,7 @@ struct CurvePrivate
     double xMin, xMax;
     double yMin, yMax;
     bool hasYRange;
-    mutable QReadWriteLock _lock; //< the plug-ins can call getValueAt at any moment and we must make sure the user is not playing around
+    mutable QMutex _lock; //< the plug-ins can call getValueAt at any moment and we must make sure the user is not playing around
 
 
     CurvePrivate()
@@ -66,12 +66,12 @@ struct CurvePrivate
     , yMin(INT_MIN)
     , yMax(INT_MAX)
     , hasYRange(false)
-    , _lock(QReadWriteLock::Recursive)
+    , _lock(QMutex::Recursive)
     {
     }
 
     CurvePrivate(const CurvePrivate & other)
-        : _lock(QReadWriteLock::Recursive)
+        : _lock(QMutex::Recursive)
     {
         *this = other;
     }

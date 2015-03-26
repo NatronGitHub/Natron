@@ -295,13 +295,14 @@ private:
     virtual int id() const OVERRIDE FINAL;
     virtual bool mergeWith(const QUndoCommand * command) OVERRIDE FINAL;
     
-    void transform();
+    void transform(const KeyPtr& k);
     
 private:
     bool _firstRedoCalled;
     bool _updateOnFirstRedo;
     SelectedKeys _keys;
     CurveWidget* _widget;
+    std::list<std::pair<boost::shared_ptr<Curve>,boost::shared_ptr<Curve> > > _curves;
     boost::shared_ptr<Transform::Matrix3x3> _matrix;
 };
 
