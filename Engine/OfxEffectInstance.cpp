@@ -2834,10 +2834,18 @@ OfxEffectInstance::isMultiPlanar() const
     return effectInstance()->isMultiPlanar();
 }
 
-bool
+EffectInstance::PassThroughEnum
 OfxEffectInstance::isPassThroughForNonRenderedPlanes() const
 {
-    return effectInstance()->isPassThroughForNonRenderedPlanes();
+    OFX::Host::ImageEffect::Base::OfxPassThroughLevelEnum pt = effectInstance()->getPassThroughForNonRenderedPlanes();
+    switch (pt) {
+        case OFX::Host::ImageEffect::Base::ePassThroughLevelEnumBlockAllNonRenderedPlanes:
+            return EffectInstance::ePassThroughBlockNonRenderedPlanes;
+        case OFX::Host::ImageEffect::Base::ePassThroughLevelEnumPassThroughAllNonRenderedPlanes:
+            return EffectInstance::ePassThroughPassThroughNonRenderedPlanes;
+        case OFX::Host::ImageEffect::Base::ePassThroughLevelEnumRenderAllRequestedPlanes:
+            return EffectInstance::ePassThroughRenderAllRequestedPlanes;
+    }
 }
 
 bool

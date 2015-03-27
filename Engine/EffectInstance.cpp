@@ -268,22 +268,28 @@ struct EffectInstance::RenderArgs
     int _identityInputNb;
     std::map<Natron::ImageComponents,PlaneToRender> _outputPlanes;
     
+    //This is set only when the plug-in has set ePassThroughRenderAllRequestedPlanes
+    Natron::ImageComponents _outputPlaneBeingRendered;
+    bool _isRenderingAllRequestedPlanes; //< true if _outputPlaneBeingRendered is set
+    
     int _firstFrame,_lastFrame;
     
     RenderArgs()
-        : _rod()
-          , _regionOfInterestResults()
-          , _renderWindowPixel()
-          , _time(0)
-          , _view(0)
-          , _validArgs(false)
-          , _channelForAlpha(3)
-          , _isIdentity(false)
-          , _identityTime(0)
-          , _identityInputNb(-1)
-          , _outputPlanes()
-          , _firstFrame(0)
-          , _lastFrame(0)
+    : _rod()
+    , _regionOfInterestResults()
+    , _renderWindowPixel()
+    , _time(0)
+    , _view(0)
+    , _validArgs(false)
+    , _channelForAlpha(3)
+    , _isIdentity(false)
+    , _identityTime(0)
+    , _identityInputNb(-1)
+    , _outputPlanes()
+    , _outputPlaneBeingRendered()
+    , _isRenderingAllRequestedPlanes(false)
+    , _firstFrame(0)
+    , _lastFrame(0)
     {
     }
     
@@ -299,6 +305,8 @@ struct EffectInstance::RenderArgs
     , _identityTime(o._identityTime)
     , _identityInputNb(o._identityInputNb)
     , _outputPlanes(o._outputPlanes)
+    , _outputPlaneBeingRendered(o._outputPlaneBeingRendered)
+    , _isRenderingAllRequestedPlanes(o._isRenderingAllRequestedPlanes)
     , _firstFrame(o._firstFrame)
     , _lastFrame(o._lastFrame)
     {
@@ -3560,13 +3568,20 @@ EffectInstance::tiledRenderingFunctor(RenderArgs & args,
     ///Make the thread-storage live as long as the render action is called if we're in a newly launched thread in eRenderSafetyFullySafeFrame mode
     boost::shared_ptr<Implementation::ScopedRenderArgs> scopedArgs;
     boost::shared_ptr<ParallelRenderArgsSetter> scopedFrameArgs;
-    
     boost::shared_ptr<InputImagesHolder_RAII> scopedInputImages;
+    
+    //Points to this thread TLS
+    RenderArgs* currentArgsTLS = 0;
     
     ImageList tmpPlanes;
     
+    bool isRenderingAllPlanesInSingleRender = isPassThroughForNonRenderedPlanes() == ePassThroughRenderAllRequestedPlanes;
+
+    
     bool isBeingRenderedElseWhere = false;
     if (frameTLS.empty()) {
+        // Single threaded
+        currentArgsTLS = &args;
         renderRectToRender = args._renderWindowPixel;
         
         for (std::map<Natron::ImageComponents, PlaneToRender>::iterator it = planes.planes.begin(); it != planes.planes.end(); ++it) {
@@ -3589,6 +3604,9 @@ EffectInstance::tiledRenderingFunctor(RenderArgs & args,
             tmpPlanes.push_back(it->second.tmpImage);
         }
         args._outputPlanes = planes.planes;
+        if (isRenderingAllPlanesInSingleRender) {
+            args._isRenderingAllRequestedPlanes = true;
+        }
     } else {
         
         ///At this point if we're in eRenderSafetyFullySafeFrame mode, we are a thread that might have been launched way after
@@ -3681,6 +3699,7 @@ EffectInstance::tiledRenderingFunctor(RenderArgs & args,
         ///Update the renderWindow which might have changed
         argsCpy._renderWindowPixel = renderRectToRender;
         argsCpy._outputPlanes = planes.planes;
+        argsCpy._isRenderingAllRequestedPlanes = isRenderingAllPlanesInSingleRender;
         
         for (std::map<Natron::ImageComponents, PlaneToRender>::iterator it = argsCpy._outputPlanes.begin();
              it != argsCpy._outputPlanes.end(); ++it) {
@@ -3707,8 +3726,10 @@ EffectInstance::tiledRenderingFunctor(RenderArgs & args,
         scopedFrameArgs.reset( new ParallelRenderArgsSetter(frameTLS));
         
         scopedInputImages.reset(new InputImagesHolder_RAII(inputImages,&_imp->inputImages));
+        currentArgsTLS = &scopedArgs->getLocalData();
     }
     
+    assert(currentArgsTLS);
     
 #if NATRON_ENABLE_TRIMAP
     if (!frameArgs.canAbort && frameArgs.isRenderResponseToUserInteraction) {
@@ -3725,46 +3746,65 @@ EffectInstance::tiledRenderingFunctor(RenderArgs & args,
     RenderScale originalScale;
     originalScale.x = firstPlane.downscaleImage->getScale();
     originalScale.y = originalScale.x;
-
-    Natron::StatusEnum st = render_public(time,
-                                          originalScale,
-                                          renderMappedScale,
-                                          renderRectToRender, view,
-                                          isSequentialRender,
-                                          isRenderResponseToUserInteraction,
-                                          tmpPlanes);
     
-    bool renderAborted = aborted();
+    std::list<ImageList> planesLists;
+    if (isRenderingAllPlanesInSingleRender) {
+        for (ImageList::iterator it = tmpPlanes.begin(); it!=tmpPlanes.end(); ++it) {
+            ImageList tmp;
+            tmp.push_back(*it);
+            planesLists.push_back(tmp);
+        }
+    } else {
+        planesLists.push_back(tmpPlanes);
+    }
     
-    /*
-     * Since new planes can have been allocated on the fly by allocateImagePlaneAndSetInThreadLocalStorage(), refresh
-     * the planes map from the thread local storage.
-     */
-    assert(_imp->renderArgs.hasLocalData());
-    const RenderArgs& curRenderArgs = _imp->renderArgs.localData();
-    assert(curRenderArgs._validArgs);
-
-    std::map<Natron::ImageComponents,PlaneToRender> outputPlanes = curRenderArgs._outputPlanes;
-    assert(!outputPlanes.empty());
-    
-    if (st != eStatusOK) {
+    bool renderAborted = false;
+    std::map<Natron::ImageComponents,PlaneToRender> outputPlanes;
+    for (std::list<ImageList>::iterator it = planesLists.begin(); it!=planesLists.end(); ++it) {
+        if (isRenderingAllPlanesInSingleRender) {
+            assert(!it->empty());
+            currentArgsTLS->_outputPlaneBeingRendered = it->front()->getComponents();
+        }
+        Natron::StatusEnum st = render_public(time,
+                                              originalScale,
+                                              renderMappedScale,
+                                              renderRectToRender, view,
+                                              isSequentialRender,
+                                              isRenderResponseToUserInteraction,
+                                              *it);
+        
+        renderAborted = aborted();
+        
+        /*
+         * Since new planes can have been allocated on the fly by allocateImagePlaneAndSetInThreadLocalStorage(), refresh
+         * the planes map from the thread local storage.
+         */
+        outputPlanes = currentArgsTLS->_outputPlanes;
+        assert(!outputPlanes.empty());
+        
+        if (st != eStatusOK) {
 #if NATRON_ENABLE_TRIMAP
-        if (!frameArgs.canAbort && frameArgs.isRenderResponseToUserInteraction) {
-            assert(!renderAborted);
-            
-            for (std::map<ImageComponents,PlaneToRender>::const_iterator it = outputPlanes.begin(); it!=outputPlanes.end(); ++it) {
-                if (renderFullScaleThenDownscale && renderUseScaleOneInputs) {
-                    it->second.fullscaleImage->clearBitmap(renderRectToRender);
-                } else {
-                    it->second.downscaleImage->clearBitmap(downscaledRectToRender);
+            if (!frameArgs.canAbort && frameArgs.isRenderResponseToUserInteraction) {
+                assert(!renderAborted);
+                
+                for (std::map<ImageComponents,PlaneToRender>::const_iterator it = outputPlanes.begin(); it!=outputPlanes.end(); ++it) {
+                    if (renderFullScaleThenDownscale && renderUseScaleOneInputs) {
+                        it->second.fullscaleImage->clearBitmap(renderRectToRender);
+                    } else {
+                        it->second.downscaleImage->clearBitmap(downscaledRectToRender);
+                    }
                 }
+                
             }
+#endif
+            return eRenderingFunctorRetFailed;
             
         }
-#endif
-        return eRenderingFunctorRetFailed;
-        
+        if (renderAborted) {
+            break;
+        }
     }
+    
     
     if (renderAborted) {
         return eRenderingFunctorRetAborted;
@@ -4762,6 +4802,7 @@ EffectInstance::getComponentsAvailableRecursive(SequenceTime time, int view, Com
     if (std::find(markedNodes->begin(), markedNodes->end(), this) != markedNodes->end()) {
         return;
     }
+    NodePtr node  = getNode();
     
     ComponentsNeededMap neededComps;
     SequenceTime ptTime;
@@ -4803,7 +4844,7 @@ EffectInstance::getComponentsAvailableRecursive(SequenceTime time, int view, Com
             
             //If the component already exists from below in the tree, do not add it
             if (alreadyExisting == comps->end()) {
-                comps->insert(std::make_pair(*it, getNode()));
+                comps->insert(std::make_pair(*it, node));
             }
         }
     }
@@ -4812,7 +4853,8 @@ EffectInstance::getComponentsAvailableRecursive(SequenceTime time, int view, Com
     
     ///If the plug-in is not pass-through, only consider the components processed by the plug-in in output,
     ///so we do not need to recurse.
-    if (isPassThroughForNonRenderedPlanes()) {
+    PassThroughEnum passThrough = isPassThroughForNonRenderedPlanes();
+    if (passThrough == ePassThroughPassThroughNonRenderedPlanes || passThrough == ePassThroughRenderAllRequestedPlanes) {
         
         bool doHeuristicForPassThrough = false;
         if (isMultiPlanar()) {
@@ -4830,6 +4872,13 @@ EffectInstance::getComponentsAvailableRecursive(SequenceTime time, int view, Com
         
         if (ptInput) {
             ptInput->getLiveInstance()->getComponentsAvailableRecursive(time, view, comps, markedNodes);
+            
+            if (passThrough == ePassThroughRenderAllRequestedPlanes) {
+                //The node makes available everything available upstream
+                for (ComponentsAvailableMap::iterator it = comps->begin(); it!=comps->end(); ++it) {
+                    it->second = node;
+                }
+            }
         }
         
     }
@@ -4990,12 +5039,19 @@ EffectInstance::getThreadLocalRenderTime() const
 }
 
 bool
-EffectInstance::getThreadLocalRenderedPlanes(std::map<Natron::ImageComponents,PlaneToRender> *outputPlanes,RectI* renderWindow) const
+EffectInstance::getThreadLocalRenderedPlanes(std::map<Natron::ImageComponents,PlaneToRender> *outputPlanes,
+                                             Natron::ImageComponents* planeBeingRendered,
+                                             bool *isRenderingAllPlanesInSingleRender,
+                                             RectI* renderWindow) const
 {
     if (_imp->renderArgs.hasLocalData()) {
         const RenderArgs& args = _imp->renderArgs.localData();
         if (args._validArgs) {
             assert(!args._outputPlanes.empty());
+            *isRenderingAllPlanesInSingleRender = args._isRenderingAllRequestedPlanes;
+            if (*isRenderingAllPlanesInSingleRender) {
+                *planeBeingRendered = args._outputPlaneBeingRendered;
+            }
             *outputPlanes = args._outputPlanes;
             *renderWindow = args._renderWindowPixel;
             return true;
