@@ -319,8 +319,7 @@ enum ImageComponentsEnum
     eImageComponentAlpha,
     eImageComponentRGB,
     eImageComponentRGBA,
-    eImageComponentsMotionVectors,
-    eImageComponentsStereoDisparity
+    eImageComponentsXY
 };
 
 enum ImagePremultiplicationEnum

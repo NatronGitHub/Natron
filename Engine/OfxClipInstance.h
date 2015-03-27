@@ -174,6 +174,8 @@ public:
     /// given the colour component, find the nearest set of supported colour components
     /// override this for extra wierd custom component depths
     virtual const std::string &findSupportedComp(const std::string &s) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
+    virtual const std::string &getComponents() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     /// override this to set the view to be returned by getImage()
     /// This is called by Instance::renderAction() for each clip, before calling
@@ -196,6 +198,9 @@ public:
     void discardMipMapLevel();
     
     void clearOfxImagesTLS();
+    
+    void setClipComponentTLS(const std::string& components);
+    void clearClipComponentsTLS();
 
     //returns the index of this clip if it is an input clip, otherwise -1.
     int getInputNb() const WARN_UNUSED_RETURN;
@@ -251,6 +256,10 @@ private:
         
         std::list<OfxImage*> imagesBeingRendered;
         
+        //String indicating what a subsequent call to getComponents should return
+        bool clipComponentsValid;
+        std::string clipComponents;
+        
         ActionLocalData()
         : isViewValid(false)
         , view(0)
@@ -261,11 +270,13 @@ private:
         , rerouteNode(0)
         , rerouteInputNb(-1)
         , imagesBeingRendered()
+        , clipComponentsValid(false)
+        , clipComponents()
         {
         }
     };
 
-    Natron::ThreadStorage<ActionLocalData> _lastActionData; //< foreach  thread, the args
+    mutable Natron::ThreadStorage<ActionLocalData> _lastActionData; //< foreach  thread, the args
     
     
    /* struct CompPresent

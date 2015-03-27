@@ -1189,6 +1189,35 @@ OfxClipInstance::clearOfxImagesTLS()
     _lastActionData.localData().imagesBeingRendered.clear();
 }
 
+void
+OfxClipInstance::setClipComponentTLS(const std::string& components)
+{
+    ActionLocalData & args = _lastActionData.localData();
+    args.clipComponents = components;
+    args.clipComponentsValid = true;
+}
+
+void
+OfxClipInstance::clearClipComponentsTLS()
+{
+    assert(_lastActionData.hasLocalData());
+    ActionLocalData & args = _lastActionData.localData();
+    args.clipComponents.clear();
+    args.clipComponentsValid = false;
+}
+
+const std::string &
+OfxClipInstance::getComponents() const
+{
+    if (_lastActionData.hasLocalData()) {
+        ActionLocalData & args = _lastActionData.localData();
+        if (args.clipComponentsValid) {
+            return args.clipComponents;
+        }
+    }
+    return OFX::Host::ImageEffect::ClipInstance::getComponents();
+}
+
 const std::string &
 OfxClipInstance::findSupportedComp(const std::string &s) const
 {
@@ -1196,10 +1225,21 @@ OfxClipInstance::findSupportedComp(const std::string &s) const
     static const std::string rgba(kOfxImageComponentRGBA);
     static const std::string rgb(kOfxImageComponentRGB);
     static const std::string alpha(kOfxImageComponentAlpha);
+    static const std::string xy(kNatronOfxImageComponentXY);
     
     /// is it there
     if(isSupportedComponent(s))
         return s;
+    
+    if (s == xy) {
+        if (isSupportedComponent(rgb)) {
+            return rgb;
+        } else if (isSupportedComponent(rgba)) {
+            return rgba;
+        } else if (isSupportedComponent(alpha)) {
+            return alpha;
+        }
+    }
     
     /// were we fed some custom non chromatic component by getUnmappedComponents? Return it.
     /// we should never be here mind, so a bit weird

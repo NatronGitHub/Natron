@@ -3575,7 +3575,7 @@ EffectInstance::tiledRenderingFunctor(RenderArgs & args,
     
     ImageList tmpPlanes;
     
-    bool isRenderingAllPlanesInSingleRender = isPassThroughForNonRenderedPlanes() == ePassThroughRenderAllRequestedPlanes;
+    bool isRenderingAllPlanesInSingleRender = false/*isPassThroughForNonRenderedPlanes() == ePassThroughRenderAllRequestedPlanes*/;
 
     
     bool isBeingRenderedElseWhere = false;
