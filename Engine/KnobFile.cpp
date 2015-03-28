@@ -20,6 +20,7 @@
 #include <QtCore/QMutexLocker>
 #include <QDebug>
 
+#include "Engine/Transform.h"
 #include "Engine/StringAnimationManager.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/Project.h"
