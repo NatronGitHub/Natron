@@ -193,10 +193,10 @@ if "%CONFIGURATION%" == "Release" (
 		copy /Y %PYTHON_DIR%\Lib\site-packages\PySide\shiboken-python3.4.dll %DEPLOY_DIR%\bin
 		copy /Y %PYTHON_DIR%\Lib\site-packages\PySide\pyside-python3.4.dll %DEPLOY_DIR%\bin
 		copy /Y %PYTHON_DLL_DIR%\python34.dll %DEPLOY_DIR%\bin	
-		mkdir %PYTHON_DIR%\DLLs %DEPLOY_DIR%\bin\DLLs
-		xcopy /Y /E %PYTHON_DIR%\DLLs %DEPLOY_DIR%\bin\DLLs
-		mkdir %PYTHON_DIR%\Lib %DEPLOY_DIR%\bin\Lib
-		xcopy /Y /E %PYTHON_DIR%\Lib %DEPLOY_DIR%\bin\Lib
+		mkdir %DEPLOY_DIR%\bin\DLLs
+		xcopy /Y /E /Q %PYTHON_DIR%\DLLs %DEPLOY_DIR%\bin\DLLs
+		mkdir %DEPLOY_DIR%\bin\Lib
+		xcopy /Y /E /Q %PYTHON_DIR%\Lib %DEPLOY_DIR%\bin\Lib
 		for /d %%G in (%DEPLOY_DIR%\bin\Lib\__pycache__,%DEPLOY_DIR%\bin\Lib\*\__pycache__,%DEPLOY_DIR%\bin\Lib\site-packages) do rd /s /q "%%~G"
 		mkdir %DEPLOY_DIR%\bin\Lib\site-packages
 		mkdir %DEPLOY_DIR%\Plugins\PySide
