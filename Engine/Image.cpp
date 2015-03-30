@@ -2038,10 +2038,14 @@ Image::convertToFormatInternal(const RectI & renderWindow,
     if (channelForAlpha != -1) {
         switch (srcNComps) {
             case 3:
-                if (channelForAlpha > 3) {
+                if (channelForAlpha > 2) {
                     channelForAlpha = -1;
                 }
                 break;
+            case 2:
+                if (channelForAlpha > 1) {
+                    channelForAlpha = -1;
+                }
             default:
                 break;
         }
@@ -2118,6 +2122,10 @@ Image::convertToFormatInternal(const RectI & renderWindow,
                             // RGB is opaque but the channelForAlpha can be 0-2
                             pix = convertPixelDepth<SRCPIX, DSTPIX>(channelForAlpha == -1 ? 0. : srcPixels[channelForAlpha]);
                             break;
+                        case 2:
+                            // XY is opaque but the channelForAlpha can be 0-1
+                            pix = convertPixelDepth<SRCPIX, DSTPIX>(channelForAlpha == -1 ? 0. : srcPixels[channelForAlpha]);
+                            break;
                         case 1:
                             pix  = convertPixelDepth<SRCPIX, DSTPIX>(*srcPixels);
                             break;
@@ -2137,7 +2145,7 @@ Image::convertToFormatInternal(const RectI & renderWindow,
                             dstPixels[dstNComps - 1] = invert ? dstMaxValue - pix: pix;
                         }
                     } else {
-                        ///In this case we've RGB or RGBA input and outputs
+                        ///In this case we've XY, RGB or RGBA input and outputs
                         assert(srcNComps != dstNComps);
                         
                         bool unpremultChannel = (srcNComps == 4 &&
@@ -2257,6 +2265,13 @@ Image::convertToFormatInternalForDepth(const RectI & renderWindow,
     switch (srcNComp) {
         case 1:
             switch (dstNComp) {
+                case 2:
+                    convertToFormatInternal<SRCPIX, DSTPIX, srcMaxValue, dstMaxValue,1,2>(renderWindow,srcImg, dstImg,
+                                                                                          srcColorSpace,
+                                                                                          dstColorSpace,
+                                                                                          channelForAlpha,
+                                                                                          invert,copyBitmap,requiresUnpremult);
+                    break;
                 case 3:
                     convertToFormatInternal<SRCPIX, DSTPIX, srcMaxValue, dstMaxValue,1,3>(renderWindow,srcImg, dstImg,
                                                                                         srcColorSpace,
@@ -2276,6 +2291,34 @@ Image::convertToFormatInternalForDepth(const RectI & renderWindow,
                     break;
             }
             break;
+        case 2:
+            switch (dstNComp) {
+                case 1:
+                    convertToFormatInternal<SRCPIX, DSTPIX, srcMaxValue, dstMaxValue,2,1>(renderWindow,srcImg, dstImg,
+                                                                                          srcColorSpace,
+                                                                                          dstColorSpace,
+                                                                                          channelForAlpha,
+                                                                                          invert,copyBitmap,requiresUnpremult);
+                    break;
+                case 3:
+                    convertToFormatInternal<SRCPIX, DSTPIX, srcMaxValue, dstMaxValue,2,3>(renderWindow,srcImg, dstImg,
+                                                                                          srcColorSpace,
+                                                                                          dstColorSpace,
+                                                                                          channelForAlpha,
+                                                                                          invert,copyBitmap,requiresUnpremult);
+                    break;
+                case 4:
+                    convertToFormatInternal<SRCPIX, DSTPIX, srcMaxValue, dstMaxValue,2,4>(renderWindow,srcImg, dstImg,
+                                                                                          srcColorSpace,
+                                                                                          dstColorSpace,
+                                                                                          channelForAlpha,
+                                                                                          invert,copyBitmap,requiresUnpremult);
+                    break;
+                default:
+                    assert(false);
+                    break;
+            }
+            break;
         case 3:
             switch (dstNComp) {
                 case 1:
@@ -2284,6 +2327,13 @@ Image::convertToFormatInternalForDepth(const RectI & renderWindow,
                                                                                         dstColorSpace,
                                                                                         channelForAlpha,
                                                                                         invert,copyBitmap,requiresUnpremult);
+                    break;
+                case 2:
+                    convertToFormatInternal<SRCPIX, DSTPIX, srcMaxValue, dstMaxValue,3,2>(renderWindow,srcImg, dstImg,
+                                                                                          srcColorSpace,
+                                                                                          dstColorSpace,
+                                                                                          channelForAlpha,
+                                                                                          invert,copyBitmap,requiresUnpremult);
                     break;
                 case 4:
                     convertToFormatInternal<SRCPIX, DSTPIX, srcMaxValue, dstMaxValue,3,4>(renderWindow,srcImg, dstImg,
@@ -2305,6 +2355,13 @@ Image::convertToFormatInternalForDepth(const RectI & renderWindow,
                                                                                         dstColorSpace,
                                                                                         channelForAlpha,
                                                                                         invert,copyBitmap,requiresUnpremult);
+                    break;
+                case 2:
+                    convertToFormatInternal<SRCPIX, DSTPIX, srcMaxValue, dstMaxValue,4,2>(renderWindow,srcImg, dstImg,
+                                                                                          srcColorSpace,
+                                                                                          dstColorSpace,
+                                                                                          channelForAlpha,
+                                                                                          invert,copyBitmap,requiresUnpremult);
                     break;
                 case 3:
                     convertToFormatInternal<SRCPIX, DSTPIX, srcMaxValue, dstMaxValue,4,3>(renderWindow,srcImg, dstImg,
@@ -2339,11 +2396,9 @@ Image::convertToFormat(const RectI & renderWindow,
     QWriteLocker k(&dstImg->_entryLock);
     QReadLocker k2(&_entryLock);
     
-    assert( _bounds == dstImg->_bounds );
-    //Can only convert among the color plane
-    assert(dstImg->getComponents().isColorPlane() && getComponents().isColorPlane());
+    assert( _bounds.contains(renderWindow) &&  dstImg->_bounds.contains(renderWindow) );
 
-    if ( dstImg->getComponents() == getComponents() ) {
+    if ( dstImg->getComponents().getNumComponents() == getComponents().getNumComponents() ) {
         switch ( dstImg->getBitDepth() ) {
         case eImageBitDepthByte: {
             switch ( getBitDepth() ) {

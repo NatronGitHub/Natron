@@ -1354,6 +1354,15 @@ KnobHelper::getDescription() const
 }
 
 void
+KnobHelper::setDescription(const std::string& description)
+{
+    _imp->description = description;
+    if (_signalSlotHandler) {
+        _signalSlotHandler->s_descriptionChanged();
+    }
+}
+
+void
 KnobHelper::hideDescription()
 {
     _imp->descriptionVisible = false;

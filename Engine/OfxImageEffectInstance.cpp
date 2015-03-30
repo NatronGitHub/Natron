@@ -857,6 +857,32 @@ OfxImageEffectInstance::discardClipsMipMapLevel()
     }
 }
 
+void
+OfxImageEffectInstance::setClipsPlaneBeingRendered(const Natron::ImageComponents& comp)
+{
+    std::string ofxComp = OfxClipInstance::natronsComponentsToOfxComponents(comp);
+    for (std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>::iterator it = _clips.begin(); it != _clips.end(); ++it) {
+        OfxClipInstance* clip = dynamic_cast<OfxClipInstance*>(it->second);
+        assert(clip);
+        if (clip) {
+            clip->setClipComponentTLS(ofxComp);
+        }
+    }
+}
+
+void
+OfxImageEffectInstance::discardClipsPlaneBeingRendered()
+{
+    for (std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>::iterator it = _clips.begin(); it != _clips.end(); ++it) {
+        OfxClipInstance* clip = dynamic_cast<OfxClipInstance*>(it->second);
+        assert(clip);
+        if (clip) {
+            clip->clearClipComponentsTLS();
+        }
+    }
+}
+
+
 bool
 OfxImageEffectInstance::areAllNonOptionalClipsConnected() const
 {

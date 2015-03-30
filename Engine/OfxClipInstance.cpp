@@ -655,16 +655,14 @@ OfxClipInstance::getImagePlane(OfxTime time, int view, const std::string& plane,
         std::map<ImageComponents,EffectInstance::PlaneToRender> outputPlanes;
         RectI renderWindow;
         Natron::ImageComponents planeBeingRendered;
-        bool isRenderingAllPlanesInSingleRender;
-        bool ok = _nodeInstance->getThreadLocalRenderedPlanes(&outputPlanes,&planeBeingRendered, &isRenderingAllPlanesInSingleRender,&renderWindow);
+        bool ok = _nodeInstance->getThreadLocalRenderedPlanes(&outputPlanes,&planeBeingRendered,&renderWindow);
         if (!ok) {
             return NULL;
         }
         
         ImagePtr outputImage;
 
-        if (isRenderingAllPlanesInSingleRender) {
-            assert(_nodeInstance->isPassThroughForNonRenderedPlanes() == EffectInstance::ePassThroughRenderAllRequestedPlanes);
+        if (!_nodeInstance->isMultiPlanar()) {
             if (plane != kFnOfxImagePlaneColour) {
                 qDebug() << "WARNING: " << _nodeInstance->getScriptName_mt_safe().c_str() << " has set kFnOfxImageEffectPropPassThroughComponents "
                 <<"to 1 but called clipGetImagePlane. The plug-in is expected to use clipGetImage instead.";
@@ -706,7 +704,7 @@ OfxClipInstance::getImagePlane(OfxTime time, int view, const std::string& plane,
         }
         
         //The output clip doesn't have any transform matrix
-        OfxImage* ret =  new OfxImage(outputImage,false,renderWindow,boost::shared_ptr<Transform::Matrix3x3>(),*this);
+        OfxImage* ret =  new OfxImage(outputImage,false,renderWindow,boost::shared_ptr<Transform::Matrix3x3>(), _components, *this);
         args.imagesBeingRendered.push_back(ret);
         return ret;
     }
@@ -771,7 +769,11 @@ OfxClipInstance::getStereoscopicImage(OfxTime time,
                                       int view,
                                       const OfxRectD *optionalBounds)
 {
-    return getImagePlane(time, view, kFnOfxImagePlaneColour, optionalBounds);
+    const std::string& components = getComponents();
+    std::list<Natron::ImageComponents> comp = ofxComponentsToNatronComponents(components);
+    assert(!comp.empty());
+    std::string plane = natronsPlaneToOfxPlane(comp.front());
+    return getImagePlane(time, view, plane, optionalBounds);
 } // getStereoscopicImage
 
 OFX::Host::ImageEffect::Image*
@@ -899,7 +901,7 @@ OfxClipInstance::getImageInternal(OfxTime time,
         if (renderWindow.isNull()) {
             return NULL;
         } else {
-            return new OfxImage(image,true,renderWindow,transform,*this);
+            return new OfxImage(image,true,renderWindow,transform, _components, *this);
         }
     }
 }
@@ -992,6 +994,7 @@ OfxImage::OfxImage(boost::shared_ptr<Natron::Image> internalImage,
                    bool isSrcImage,
                    const RectI& renderWindow,
                    const boost::shared_ptr<Transform::Matrix3x3>& mat,
+                   const std::string& components,
                    OfxClipInstance &clip)
 : OFX::Host::ImageEffect::Image(clip)
 , _floatImage(internalImage)
@@ -1065,7 +1068,8 @@ OfxImage::OfxImage(boost::shared_ptr<Natron::Image> internalImage,
     setIntProperty( kOfxImagePropRowBytes, bounds.width() *
                     internalImage->getComponents().getNumComponents() *
                     getSizeOfForBitDepth( internalImage->getBitDepth() ) );
-    setStringProperty( kOfxImageEffectPropComponents, OfxClipInstance::natronsComponentsToOfxComponents( internalImage->getComponents() ) );
+    
+    setStringProperty( kOfxImageEffectPropComponents,components);
     setStringProperty( kOfxImageEffectPropPixelDepth, OfxClipInstance::natronsDepthToOfxDepth( internalImage->getBitDepth() ) );
     setStringProperty( kOfxImageEffectPropPreMultiplication, clip.getPremult() );
     setStringProperty(kOfxImagePropField, kOfxImageFieldNone);
@@ -1225,6 +1229,8 @@ OfxClipInstance::findSupportedComp(const std::string &s) const
     static const std::string rgba(kOfxImageComponentRGBA);
     static const std::string rgb(kOfxImageComponentRGB);
     static const std::string alpha(kOfxImageComponentAlpha);
+    static const std::string motion(kFnOfxImageComponentMotionVectors);
+    static const std::string disparity(kFnOfxImageComponentStereoDisparity);
     static const std::string xy(kNatronOfxImageComponentXY);
     
     /// is it there
@@ -1232,23 +1238,18 @@ OfxClipInstance::findSupportedComp(const std::string &s) const
         return s;
     
     if (s == xy) {
-        if (isSupportedComponent(rgb)) {
+        if (isSupportedComponent(motion)) {
+            return motion;
+        } else if (isSupportedComponent(disparity)) {
+            return disparity;
+        } else if (isSupportedComponent(rgb)) {
             return rgb;
         } else if (isSupportedComponent(rgba)) {
             return rgba;
         } else if (isSupportedComponent(alpha)) {
             return alpha;
         }
-    }
-    
-    /// were we fed some custom non chromatic component by getUnmappedComponents? Return it.
-    /// we should never be here mind, so a bit weird
-    if(!_effectInstance->isChromaticComponent(s))
-        return s;
-    
-    /// Means we have RGBA or Alpha being passed in and the clip
-    /// only supports the other one, so return that
-    if(s == rgba) {
+    } else if(s == rgba) {
         if (isSupportedComponent(rgb)) {
             return rgb;
         }
@@ -1267,6 +1268,31 @@ OfxClipInstance::findSupportedComp(const std::string &s) const
             return rgba;
         }
         if (isSupportedComponent(alpha)) {
+            return alpha;
+        }
+    } else if (s == motion) {
+        
+        if (isSupportedComponent(xy)) {
+            return motion;
+        } else if (isSupportedComponent(disparity)) {
+            return disparity;
+        } else if (isSupportedComponent(rgb)) {
+            return rgb;
+        } else if (isSupportedComponent(rgba)) {
+            return rgba;
+        } else if (isSupportedComponent(alpha)) {
+            return alpha;
+        }
+    } else if (s == disparity) {
+        if (isSupportedComponent(xy)) {
+            return motion;
+        } else if (isSupportedComponent(disparity)) {
+            return disparity;
+        } else if (isSupportedComponent(rgb)) {
+            return rgb;
+        } else if (isSupportedComponent(rgba)) {
+            return rgba;
+        } else if (isSupportedComponent(alpha)) {
             return alpha;
         }
     }

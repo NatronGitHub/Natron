@@ -198,17 +198,10 @@ DiskCacheNode::getPreferredAspectRatio() const
 }
 
 Natron::StatusEnum
-DiskCacheNode::render(SequenceTime time,
-                      const RenderScale& originalScale,
-                      const RenderScale & /*mappedScale*/,
-                      const RectI & roi, //!< renderWindow in pixel coordinates
-                      int view,
-                      bool /*isSequentialRender*/,
-                      bool /*isRenderResponseToUserInteraction*/,
-                      const ImageList& outputPlanes)
+DiskCacheNode::render(const RenderActionArgs& args)
 {
     
-    assert(outputPlanes.size() == 1);
+    assert(args.outputPlanes.size() == 1);
     
     EffectInstance* input = getInput(0);
     if (!input) {
@@ -220,23 +213,23 @@ DiskCacheNode::render(SequenceTime time,
     input->getPreferredDepthAndComponents(-1, &components, &bitdepth);
     double par = input->getPreferredAspectRatio();
     
-    const ImagePtr& output = outputPlanes.front();
+    const std::pair<ImageComponents,ImagePtr>& output = args.outputPlanes.front();
     
     for (std::list<ImageComponents> ::const_iterator it =components.begin(); it!=components.end(); ++it) {
         RectI roiPixel;
         
-        ImagePtr srcImg = getImage(0, time, originalScale, view, NULL, *it, bitdepth, par, false, &roiPixel);
+        ImagePtr srcImg = getImage(0, args.time, args.originalScale, args.view, NULL, *it, bitdepth, par, false, &roiPixel);
         
-        if (srcImg->getMipMapLevel() != output->getMipMapLevel()) {
+        if (srcImg->getMipMapLevel() != output.second->getMipMapLevel()) {
             throw std::runtime_error("Host gave image with wrong scale");
         }
-        if (srcImg->getComponents() != output->getComponents() || srcImg->getBitDepth() != output->getBitDepth()) {
+        if (srcImg->getComponents() != output.second->getComponents() || srcImg->getBitDepth() != output.second->getBitDepth()) {
             
             
-            srcImg->convertToFormat(roi, getApp()->getDefaultColorSpaceForBitDepth( srcImg->getBitDepth() ),
-                                    getApp()->getDefaultColorSpaceForBitDepth(output->getBitDepth()), 3, false, true, false, output.get());
+            srcImg->convertToFormat(args.roi, getApp()->getDefaultColorSpaceForBitDepth( srcImg->getBitDepth() ),
+                                    getApp()->getDefaultColorSpaceForBitDepth(output.second->getBitDepth()), 3, false, true, false, output.second.get());
         } else {
-            output->pasteFrom(*srcImg, roi, output->usesBitMap() && srcImg->usesBitMap());
+            output.second->pasteFrom(*srcImg, args.roi, output.second->usesBitMap() && srcImg->usesBitMap());
         }
 
     }

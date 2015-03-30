@@ -270,8 +270,7 @@ struct EffectInstance::RenderArgs
     
     //This is set only when the plug-in has set ePassThroughRenderAllRequestedPlanes
     Natron::ImageComponents _outputPlaneBeingRendered;
-    bool _isRenderingAllRequestedPlanes; //< true if _outputPlaneBeingRendered is set
-    
+
     int _firstFrame,_lastFrame;
     
     RenderArgs()
@@ -287,7 +286,6 @@ struct EffectInstance::RenderArgs
     , _identityInputNb(-1)
     , _outputPlanes()
     , _outputPlaneBeingRendered()
-    , _isRenderingAllRequestedPlanes(false)
     , _firstFrame(0)
     , _lastFrame(0)
     {
@@ -306,7 +304,6 @@ struct EffectInstance::RenderArgs
     , _identityInputNb(o._identityInputNb)
     , _outputPlanes(o._outputPlanes)
     , _outputPlaneBeingRendered(o._outputPlaneBeingRendered)
-    , _isRenderingAllRequestedPlanes(o._isRenderingAllRequestedPlanes)
     , _firstFrame(o._firstFrame)
     , _lastFrame(o._lastFrame)
     {
@@ -2182,6 +2179,25 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
     //Available planes/components is view agnostic
     getComponentsAvailable(args.time, &componentsAvailables);
     
+    ComponentsNeededMap neededComps;
+    bool processAllComponentsRequested;
+    {
+        SequenceTime ptTime;
+        int ptView;
+        boost::shared_ptr<Natron::Node> ptInput;
+        getComponentsNeededAndProduced_public(args.time, args.view, &neededComps, &processAllComponentsRequested, &ptTime, &ptView, &ptInput);
+        if (processAllComponentsRequested) {
+            std::vector<ImageComponents> compVec;
+            for (std::list<Natron::ImageComponents>::const_iterator it = args.components.begin(); it != args.components.end(); ++it) {
+                compVec.push_back(*it);
+            }
+            neededComps[-1] = compVec;
+        }
+    }
+    ComponentsNeededMap::iterator foundOutputNeededComps = neededComps.find(-1);
+    assert(foundOutputNeededComps != neededComps.end());
+    const std::vector<Natron::ImageComponents>& outputComponents = foundOutputNeededComps->second;
+    
     /*
      * For all requested planes, check which components can be produced in output by this node. 
      * If the components are from the color plane, if another set of components of the color plane is present
@@ -2370,11 +2386,16 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
     }
 
     
-    
+    /*
+     * Get the bitdepth and output components that the plug-in expects to render. The cached image does not necesserarily has the bitdepth
+     * that the plug-in expects.
+     */
     Natron::ImageBitDepthEnum outputDepth;
-    std::list<Natron::ImageComponents> outputComponents;
-    getPreferredDepthAndComponents(-1, &outputComponents, &outputDepth);
-    assert(!outputComponents.empty());
+    std::list<Natron::ImageComponents> outputClipPrefComps;
+    getPreferredDepthAndComponents(-1, &outputClipPrefComps, &outputDepth);
+    assert(!outputClipPrefComps.empty());
+    
+
     
     ImagePlanesToRender planesToRender;
     FramesNeededMap framesNeeded;
@@ -2400,7 +2421,7 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
             if (!it->isColorPlane()) {
                 components = &(*it);
             } else {
-                for (std::list<Natron::ImageComponents>::iterator it = outputComponents.begin(); it!=outputComponents.end(); ++it) {
+                for (std::vector<Natron::ImageComponents>::const_iterator it = outputComponents.begin(); it!=outputComponents.end(); ++it) {
                     if (it->isColorPlane()) {
                         components = &(*it);
                         break;
@@ -2550,6 +2571,7 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
     ///For each rect to render, the input images
     std::list<ImageList> inputImages;
 
+    
 
     ///Pre-render input images before allocating the image if we need to render
 
@@ -2581,6 +2603,7 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
                                                              renderScaleOneUpstreamIfRenderScaleSupportDisabled,
                                                              byPassCache,
                                                              framesNeeded,
+                                                             neededComps,
                                                              &imgs,
                                                              &roim);
         //Render was aborted
@@ -2604,7 +2627,7 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
             if (!it->first.isColorPlane()) {
                 components = &(it->first);
             } else {
-                for (std::list<Natron::ImageComponents>::iterator it = outputComponents.begin(); it!=outputComponents.end(); ++it) {
+                for (std::vector<Natron::ImageComponents>::const_iterator it = outputComponents.begin(); it!=outputComponents.end(); ++it) {
                     if (it->isColorPlane()) {
                         components = &(*it);
                         break;
@@ -2676,6 +2699,7 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
                                                                         renderScaleOneUpstreamIfRenderScaleSupportDisabled,
                                                                         byPassCache,
                                                                         framesNeeded,
+                                                                        neededComps,
                                                                         &imgs,
                                                                         &roim);
                     //Render was aborted
@@ -2696,23 +2720,25 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
     for (std::map<ImageComponents, PlaneToRender>::iterator it = planesToRender.planes.begin();
          it != planesToRender.planes.end(); ++it) {
         
+        const ImageComponents *components = 0;
         
-        const ImageComponents* components;
         if (!it->first.isColorPlane()) {
+            //This plane is not color, there can only be a single set of components
             components = &(it->first);
         } else {
-            for (std::list<Natron::ImageComponents>::iterator it = outputComponents.begin(); it!=outputComponents.end(); ++it) {
+            //Find color plane from clip preferences
+            for (std::vector<Natron::ImageComponents>::const_iterator it = outputComponents.begin(); it!=outputComponents.end(); ++it) {
                 if (it->isColorPlane()) {
                     components = &(*it);
                     break;
                 }
             }
         }
+        assert(components);
         
         if (!it->second.fullscaleImage) {
             ///The image is not cached
-            
-            allocateImagePlane(key, rod, downscaledImageBounds, upscaledImageBounds, isProjectFormat, framesNeeded, *components, outputDepth, par, args.mipMapLevel, renderFullScaleThenDownscale, renderScaleOneUpstreamIfRenderScaleSupportDisabled, useDiskCacheNode, createInCache, &it->second.fullscaleImage, &it->second.downscaleImage);
+            allocateImagePlane(key, rod, downscaledImageBounds, upscaledImageBounds, isProjectFormat, framesNeeded, *components, args.bitdepth, par, args.mipMapLevel, renderFullScaleThenDownscale, renderScaleOneUpstreamIfRenderScaleSupportDisabled, useDiskCacheNode, createInCache, &it->second.fullscaleImage, &it->second.downscaleImage);
 
         } else {
             if (renderFullScaleThenDownscale && it->second.fullscaleImage->getMipMapLevel() == 0) {
@@ -2788,6 +2814,8 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
                                               renderFullScaleThenDownscale,
                                               renderScaleOneUpstreamIfRenderScaleSupportDisabled,
                                               inputsRoi,
+                                              outputDepth,
+                                              outputClipPrefComps,
                                               inputImages);
         }
         
@@ -2855,7 +2883,6 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
             roi.intersect(it->second.fullscaleImage->getBounds(), &roi);
             it->second.fullscaleImage->downscaleMipMap(it->second.fullscaleImage->getRoD(),roi, 0, args.mipMapLevel, false, it->second.downscaleImage.get());
         }
-
         ///The image might need to be converted to fit the original requested format
         bool imageConversionNeeded = it->first != it->second.downscaleImage->getComponents() || args.bitdepth != it->second.downscaleImage->getBitDepth();
         
@@ -2911,6 +2938,7 @@ EffectInstance::renderInputImagesForRoI(bool createImageInCache,
                                         bool useScaleOneInputImages,
                                         bool byPassCache,
                                         const FramesNeededMap& framesNeeded,
+                                        const ComponentsNeededMap& neededComps,
                                         ImageList *inputImages,
                                         RoIMap* inputsRoi)
 {
@@ -2961,12 +2989,7 @@ EffectInstance::renderInputImagesForRoI(bool createImageInCache,
 
     }
 
-    ComponentsNeededMap neededComps;
-    SequenceTime ptTime;
-    int ptView;
-    boost::shared_ptr<Natron::Node> ptInput;
-    getComponentsNeededAndProduced_public(time, view, &neededComps, &ptTime, &ptView, &ptInput);
-
+    
     
     for (FramesNeededMap::const_iterator it = framesNeeded.begin(); it != framesNeeded.end(); ++it) {
         ///We have to do this here because the enabledness of a mask is a feature added by Natron.
@@ -2976,7 +2999,7 @@ EffectInstance::renderInputImagesForRoI(bool createImageInCache,
         }
         
         ///There cannot be frames needed without components needed.
-        ComponentsNeededMap::iterator foundCompsNeeded = neededComps.find(it->first);
+        ComponentsNeededMap::const_iterator foundCompsNeeded = neededComps.find(it->first);
         if (foundCompsNeeded == neededComps.end()) {
             continue;
         }
@@ -3119,6 +3142,8 @@ EffectInstance::renderRoIInternal(SequenceTime time,
                                   bool renderFullScaleThenDownscale,
                                   bool useScaleOneInputImages,
                                   const std::list<RoIMap>& inputsRoi,
+                                  Natron::ImageBitDepthEnum outputClipPrefDepth,
+                                  const std::list<Natron::ImageComponents>& outputClipPrefsComps,
                                   std::list<std::list<boost::shared_ptr<Natron::Image> > >& inputImages)
 {
     EffectInstance::RenderRoIStatusEnum retCode;
@@ -3402,6 +3427,8 @@ EffectInstance::renderRoIInternal(SequenceTime time,
             tiledArgs.planes = &planesToRender;
             tiledArgs.par = par;
             tiledArgs.renderFullScaleThenDownscale = renderFullScaleThenDownscale;
+            tiledArgs.outputClipPrefDepth = outputClipPrefDepth;
+            tiledArgs.outputClipPrefsComps = outputClipPrefsComps;
 //#define NATRON_HOSTFRAMETHREADING_SEQUENTIAL // sequential execution of host threading
 #ifdef NATRON_HOSTFRAMETHREADING_SEQUENTIAL
             std::vector<EffectInstance::RenderingFunctorRetEnum> ret(splitRects.size());
@@ -3473,6 +3500,8 @@ EffectInstance::renderRoIInternal(SequenceTime time,
                                                                        isRenderMadeInResponseToUserInteraction,
                                                                        downscaledRectToRender,
                                                                        par,
+                                                                       outputClipPrefDepth,
+                                                                       outputClipPrefsComps,
                                                                        planesToRender);
             
 
@@ -3525,6 +3554,8 @@ EffectInstance::tiledRenderingFunctor(const TiledRenderingFunctorArgs& args,
                                  args.isRenderResponseToUserInteraction,
                                  downscaledRectToRender,
                                  args.par,
+                                 args.outputClipPrefDepth,
+                                 args.outputClipPrefsComps,
                                  *args.planes);
 }
 
@@ -3539,8 +3570,12 @@ EffectInstance::tiledRenderingFunctor(RenderArgs & args,
                                       bool isRenderResponseToUserInteraction,
                                       const RectI & downscaledRectToRender,
                                       const double par,
+                                      Natron::ImageBitDepthEnum outputClipPrefDepth,
+                                      const std::list<Natron::ImageComponents>& outputClipPrefsComps,
                                       ImagePlanesToRender& planes)
 {
+    
+    
     
     const PlaneToRender& firstPlane = planes.planes.begin()->second;
     
@@ -3557,12 +3592,9 @@ EffectInstance::tiledRenderingFunctor(RenderArgs & args,
     
    
     
-    
-    RectI renderRectToRender; // rectangle to render, in renderMappedImage's pixel coordinates
-    
-    RenderScale renderMappedScale;
-    renderMappedScale.x = renderMappedScale.y = Image::getScaleFromMipMapLevel( firstPlane.renderMappedImage->getMipMapLevel() );
-    assert( !( (supportsRenderScaleMaybe() == eSupportsNo) && !(renderMappedScale.x == 1. && renderMappedScale.y == 1.) ) );
+    RenderActionArgs actionArgs;
+    actionArgs.mappedScale.x = actionArgs.mappedScale.y = Image::getScaleFromMipMapLevel( firstPlane.renderMappedImage->getMipMapLevel() );
+    assert( !( (supportsRenderScaleMaybe() == eSupportsNo) && !(actionArgs.mappedScale.x == 1. && actionArgs.mappedScale.y == 1.) ) );
     
     
     ///Make the thread-storage live as long as the render action is called if we're in a newly launched thread in eRenderSafetyFullySafeFrame mode
@@ -3573,40 +3605,40 @@ EffectInstance::tiledRenderingFunctor(RenderArgs & args,
     //Points to this thread TLS
     RenderArgs* currentArgsTLS = 0;
     
-    ImageList tmpPlanes;
-    
-    bool isRenderingAllPlanesInSingleRender = false/*isPassThroughForNonRenderedPlanes() == ePassThroughRenderAllRequestedPlanes*/;
-
-    
+    std::list<std::pair<ImageComponents,ImagePtr> > tmpPlanes;
+    bool multiPlanar = isMultiPlanar();
     bool isBeingRenderedElseWhere = false;
     if (frameTLS.empty()) {
         // Single threaded
         currentArgsTLS = &args;
-        renderRectToRender = args._renderWindowPixel;
+        actionArgs.roi = args._renderWindowPixel;
         
+        assert(!outputClipPrefsComps.empty());
         for (std::map<Natron::ImageComponents, PlaneToRender>::iterator it = planes.planes.begin(); it != planes.planes.end(); ++it) {
             /*
              * When using the cache, allocate a local temporary buffer onto which the plug-in will render, and then safely
              * copy this buffer to the shared (among threads) image.
+             * This is also needed if the plug-in does not support the number of components of the renderMappedImage
              */
-            if (it->second.renderMappedImage->usesBitMap()) {
-                it->second.tmpImage.reset(new Image(it->second.renderMappedImage->getComponents(),
+            Natron::ImageComponents prefComp = Node::findClosestInList(it->second.renderMappedImage->getComponents(), outputClipPrefsComps);
+            
+            if (it->second.renderMappedImage->usesBitMap() || prefComp != it->second.renderMappedImage->getComponents() ||
+                outputClipPrefDepth != it->second.renderMappedImage->getBitDepth()) {
+                it->second.tmpImage.reset(new Image(prefComp,
                                                     it->second.renderMappedImage->getRoD(),
-                                                    renderRectToRender,
+                                                    actionArgs.roi,
                                                     it->second.renderMappedImage->getMipMapLevel(),
                                                     it->second.renderMappedImage->getPixelAspectRatio(),
-                                                    it->second.renderMappedImage->getBitDepth(),
+                                                    outputClipPrefDepth,
                                                     false)); //< no bitmap
                 
             } else {
                 it->second.tmpImage = it->second.renderMappedImage;
             }
-            tmpPlanes.push_back(it->second.tmpImage);
+            tmpPlanes.push_back(std::make_pair(it->second.renderMappedImage->getComponents(),it->second.tmpImage));
         }
         args._outputPlanes = planes.planes;
-        if (isRenderingAllPlanesInSingleRender) {
-            args._isRenderingAllRequestedPlanes = true;
-        }
+
     } else {
         
         ///At this point if we're in eRenderSafetyFullySafeFrame mode, we are a thread that might have been launched way after
@@ -3620,29 +3652,29 @@ EffectInstance::tiledRenderingFunctor(RenderArgs & args,
             //The renderMappedImage is cached , read bitmap from it
             RectD canonicalrenderRectToRender;
             downscaledRectToRender.toCanonical(mipMapLevel, par, args._rod, &canonicalrenderRectToRender);
-            canonicalrenderRectToRender.toPixelEnclosing(0, par, &renderRectToRender);
-            renderRectToRender.intersect(firstPlane.renderMappedImage->getBounds(), &renderRectToRender);
+            canonicalrenderRectToRender.toPixelEnclosing(0, par, &actionArgs.roi);
+            actionArgs.roi.intersect(firstPlane.renderMappedImage->getBounds(), &actionArgs.roi);
             
-            RectI initialRenderRect = renderRectToRender;
+            RectI initialRenderRect = actionArgs.roi;
             
 #if NATRON_ENABLE_TRIMAP
             if (!frameArgs.canAbort && frameArgs.isRenderResponseToUserInteraction) {
-                renderRectToRender = firstPlane.renderMappedImage->getMinimalRect_trimap(renderRectToRender,&isBeingRenderedElseWhere);
+                actionArgs.roi = firstPlane.renderMappedImage->getMinimalRect_trimap(actionArgs.roi,&isBeingRenderedElseWhere);
             } else {
-                renderRectToRender = firstPlane.renderMappedImage->getMinimalRect(renderRectToRender);
+                actionArgs.roi = firstPlane.renderMappedImage->getMinimalRect(actionArgs.roi);
             }
 #else
-            renderRectToRender = renderMappedImage->getMinimalRect(renderRectToRender);
+            actionArgs.roi = renderMappedImage->getMinimalRect(renderRectToRender);
 #endif
             
             ///If the new rect after getMinimalRect is bigger (maybe because another thread as grown the image)
             ///we stick to what was requested
-            if (!initialRenderRect.contains(renderRectToRender)) {
-                renderRectToRender = initialRenderRect;
+            if (!initialRenderRect.contains(actionArgs.roi)) {
+                actionArgs.roi = initialRenderRect;
             }
             
-            assert(renderBounds.x1 <= renderRectToRender.x1 && renderRectToRender.x2 <= renderBounds.x2 &&
-                   renderBounds.y1 <= renderRectToRender.y1 && renderRectToRender.y2 <= renderBounds.y2);
+            assert(renderBounds.x1 <= actionArgs.roi.x1 && actionArgs.roi.x2 <= renderBounds.x2 &&
+                   renderBounds.y1 <= actionArgs.roi.y1 && actionArgs.roi.y2 <= renderBounds.y2);
         } else {
             //The downscaled image is cached, read bitmap from it
 #if NATRON_ENABLE_TRIMAP
@@ -3669,57 +3701,61 @@ EffectInstance::tiledRenderingFunctor(RenderArgs & args,
                 if (downscaledRectToRender.contains(downscaledRectToRenderMinimal)) {
                     RectD canonicalrenderRectToRender;
                     downscaledRectToRenderMinimal.toCanonical(mipMapLevel, par, args._rod, &canonicalrenderRectToRender);
-                    canonicalrenderRectToRender.toPixelEnclosing(0, par, &renderRectToRender);
-                    renderRectToRender.intersect(firstPlane.renderMappedImage->getBounds(), &renderRectToRender);
+                    canonicalrenderRectToRender.toPixelEnclosing(0, par, &actionArgs.roi);
+                    actionArgs.roi.intersect(firstPlane.renderMappedImage->getBounds(), &actionArgs.roi);
                 } else {
                     RectD canonicalrenderRectToRender;
                     downscaledRectToRender.toCanonical(mipMapLevel, par, args._rod, &canonicalrenderRectToRender);
-                    canonicalrenderRectToRender.toPixelEnclosing(0, par, &renderRectToRender);
-                    renderRectToRender.intersect(firstPlane.renderMappedImage->getBounds(), &renderRectToRender);
+                    canonicalrenderRectToRender.toPixelEnclosing(0, par, &actionArgs.roi);
+                    actionArgs.roi.intersect(firstPlane.renderMappedImage->getBounds(), &actionArgs.roi);
                 }
             } else {
                 
                 ///If the new rect after getMinimalRect is bigger (maybe because another thread as grown the image)
                 ///we stick to what was requested
                 if (downscaledRectToRender.contains(downscaledRectToRenderMinimal)) {
-                    renderRectToRender = downscaledRectToRenderMinimal;
+                    actionArgs.roi = downscaledRectToRenderMinimal;
                 } else {
-                    renderRectToRender = downscaledRectToRender;
+                    actionArgs.roi = downscaledRectToRender;
                 }
             }
             
         }
         
-        if ( renderRectToRender.isNull() ) {
+        if ( actionArgs.roi.isNull() ) {
             ///We've got nothing to do
             return isBeingRenderedElseWhere ? eRenderingFunctorRetTakeImageLock : eRenderingFunctorRetOK;
         }
         
         RenderArgs argsCpy(args);
         ///Update the renderWindow which might have changed
-        argsCpy._renderWindowPixel = renderRectToRender;
+        argsCpy._renderWindowPixel = actionArgs.roi;
         argsCpy._outputPlanes = planes.planes;
-        argsCpy._isRenderingAllRequestedPlanes = isRenderingAllPlanesInSingleRender;
         
         for (std::map<Natron::ImageComponents, PlaneToRender>::iterator it = argsCpy._outputPlanes.begin();
              it != argsCpy._outputPlanes.end(); ++it) {
             /*
              * When using the cache, allocate a local temporary buffer onto which the plug-in will render, and then safely
              * copy this buffer to the shared (among threads) image.
+             * This is also needed if the plug-in does not support the number of components of the renderMappedImage
              */
-            if (it->second.renderMappedImage->usesBitMap()) {
-                it->second.tmpImage.reset(new Image(it->second.renderMappedImage->getComponents(),
+            Natron::ImageComponents prefComp = Node::findClosestInList(it->second.renderMappedImage->getComponents(), outputClipPrefsComps);
+            
+            if (it->second.renderMappedImage->usesBitMap() || prefComp != it->second.renderMappedImage->getComponents() ||
+                outputClipPrefDepth != it->second.renderMappedImage->getBitDepth()) {
+                
+                it->second.tmpImage.reset(new Image(prefComp,
                                                     it->second.renderMappedImage->getRoD(),
-                                                    renderRectToRender,
+                                                    actionArgs.roi,
                                                     it->second.renderMappedImage->getMipMapLevel(),
                                                     it->second.renderMappedImage->getPixelAspectRatio(),
-                                                    it->second.renderMappedImage->getBitDepth(),
+                                                    outputClipPrefDepth,
                                                     false)); //< no bitmap
                 
             } else {
                 it->second.tmpImage = it->second.renderMappedImage;
             }
-            tmpPlanes.push_back(it->second.tmpImage);
+            tmpPlanes.push_back(std::make_pair(it->second.renderMappedImage->getComponents(),it->second.tmpImage));
         }
         
         scopedArgs.reset( new Implementation::ScopedRenderArgs(&_imp->renderArgs,argsCpy) );
@@ -3734,23 +3770,27 @@ EffectInstance::tiledRenderingFunctor(RenderArgs & args,
 #if NATRON_ENABLE_TRIMAP
     if (!frameArgs.canAbort && frameArgs.isRenderResponseToUserInteraction) {
         if (renderFullScaleThenDownscale && renderUseScaleOneInputs) {
-            firstPlane.fullscaleImage->markForRendering(renderRectToRender);
+            firstPlane.fullscaleImage->markForRendering(actionArgs.roi);
         } else {
             firstPlane.downscaleImage->markForRendering(downscaledRectToRender);
         }
     }
 #endif
     
+    
     /// Render in the temporary image
     
-    RenderScale originalScale;
-    originalScale.x = firstPlane.downscaleImage->getScale();
-    originalScale.y = originalScale.x;
+    actionArgs.originalScale.x = firstPlane.downscaleImage->getScale();
+    actionArgs.originalScale.y = actionArgs.originalScale.x;
+    actionArgs.time = time;
+    actionArgs.view = view;
+    actionArgs.isSequentialRender = isSequentialRender;
+    actionArgs.isRenderResponseToUserInteraction = isRenderResponseToUserInteraction;
     
-    std::list<ImageList> planesLists;
-    if (isRenderingAllPlanesInSingleRender) {
-        for (ImageList::iterator it = tmpPlanes.begin(); it!=tmpPlanes.end(); ++it) {
-            ImageList tmp;
+    std::list< std::list<std::pair<ImageComponents,ImagePtr> > > planesLists;
+    if (!multiPlanar) {
+        for (std::list<std::pair<ImageComponents,ImagePtr> >::iterator it = tmpPlanes.begin(); it!=tmpPlanes.end(); ++it) {
+            std::list<std::pair<ImageComponents,ImagePtr> > tmp;
             tmp.push_back(*it);
             planesLists.push_back(tmp);
         }
@@ -3760,18 +3800,13 @@ EffectInstance::tiledRenderingFunctor(RenderArgs & args,
     
     bool renderAborted = false;
     std::map<Natron::ImageComponents,PlaneToRender> outputPlanes;
-    for (std::list<ImageList>::iterator it = planesLists.begin(); it!=planesLists.end(); ++it) {
-        if (isRenderingAllPlanesInSingleRender) {
+    for (std::list<std::list<std::pair<ImageComponents,ImagePtr> > >::iterator it = planesLists.begin(); it!=planesLists.end(); ++it) {
+        if (!multiPlanar) {
             assert(!it->empty());
-            currentArgsTLS->_outputPlaneBeingRendered = it->front()->getComponents();
+            currentArgsTLS->_outputPlaneBeingRendered = it->front().first;
         }
-        Natron::StatusEnum st = render_public(time,
-                                              originalScale,
-                                              renderMappedScale,
-                                              renderRectToRender, view,
-                                              isSequentialRender,
-                                              isRenderResponseToUserInteraction,
-                                              *it);
+        actionArgs.outputPlanes = *it;
+        Natron::StatusEnum st = render_public(actionArgs);
         
         renderAborted = aborted();
         
@@ -3789,7 +3824,7 @@ EffectInstance::tiledRenderingFunctor(RenderArgs & args,
                 
                 for (std::map<ImageComponents,PlaneToRender>::const_iterator it = outputPlanes.begin(); it!=outputPlanes.end(); ++it) {
                     if (renderFullScaleThenDownscale && renderUseScaleOneInputs) {
-                        it->second.fullscaleImage->clearBitmap(renderRectToRender);
+                        it->second.fullscaleImage->clearBitmap(actionArgs.roi);
                     } else {
                         it->second.downscaleImage->clearBitmap(downscaledRectToRender);
                     }
@@ -3806,57 +3841,136 @@ EffectInstance::tiledRenderingFunctor(RenderArgs & args,
     }
     
     
+    bool unPremultIfNeeded = getOutputPremultiplication() == eImagePremultiplicationPremultiplied;
+    
     if (renderAborted) {
         return eRenderingFunctorRetAborted;
     } else {
     
         //Check for NaNs
         for (std::map<ImageComponents,PlaneToRender>::const_iterator it = outputPlanes.begin(); it!=outputPlanes.end(); ++it) {
-            if (it->second.tmpImage->checkForNaNs(renderRectToRender)) {
-                qDebug() << getNode()->getScriptName_mt_safe().c_str() << ": rendered rectangle (" << renderRectToRender.x1 << ',' << renderRectToRender.y1 << ")-(" << renderRectToRender.x2 << ',' << renderRectToRender.y2 << ") contains invalid values.";
+            if (it->second.tmpImage->checkForNaNs(actionArgs.roi)) {
+                qDebug() << getNode()->getScriptName_mt_safe().c_str() << ": rendered rectangle (" << actionArgs.roi.x1 << ',' << actionArgs.roi.y1 << ")-(" << actionArgs.roi.x2 << ',' << actionArgs.roi.y2 << ") contains invalid values.";
             }
             
             if (it->second.isAllocatedOnTheFly) {
                 ///Plane allocated on the fly only have a temp image if using the cache and it is defined over the render window only
                 if (it->second.tmpImage != it->second.renderMappedImage) {
-                    assert(it->second.tmpImage->getBounds() == renderRectToRender);
-                    it->second.renderMappedImage->pasteFrom(*(it->second.tmpImage), it->second.tmpImage->getBounds(), false);
+                    assert(it->second.tmpImage->getBounds() == actionArgs.roi);
+                    
+                    if (it->second.renderMappedImage->getComponents() != it->second.tmpImage->getComponents() ||
+                        it->second.renderMappedImage->getBitDepth() != it->second.tmpImage->getBitDepth()) {
+                        
+                        it->second.tmpImage->convertToFormat(it->second.tmpImage->getBounds(),
+                                                        getApp()->getDefaultColorSpaceForBitDepth(it->second.tmpImage->getBitDepth()),
+                                                        getApp()->getDefaultColorSpaceForBitDepth(it->second.renderMappedImage->getBitDepth()),
+                                                                   -1, false, false, unPremultIfNeeded, it->second.renderMappedImage.get());
+                    } else {
+                        it->second.renderMappedImage->pasteFrom(*(it->second.tmpImage), it->second.tmpImage->getBounds(), false);
+                    }
                 }
-                it->second.renderMappedImage->markForRendered(renderRectToRender);
+                it->second.renderMappedImage->markForRendered(actionArgs.roi);
                 
             } else {
                 
-                ///copy the rectangle rendered in the full scale image to the downscaled output
                 if (renderFullScaleThenDownscale) {
-                    
-                    ///If we're using renderUseScaleOneInputs, the full scale image is cached, hence we're not sure that the whole part of the image will be downscaled.
-                    ///Instead we do all the downscale at once at the end of renderRoI().
-                    ///If !renderUseScaleOneInputs the image is not cached and we know it will be rendered completly so it is safe to do this here and take advantage
-                    ///of the multi-threading.
+                    ///copy the rectangle rendered in the full scale image to the downscaled output
+
+                    /* If we're using renderUseScaleOneInputs, the full scale image is cached.
+                     We might have been asked to render only a portion.
+                     Hence we're not sure that the whole part of the image will be downscaled.
+                     Instead we do all the downscale at once at the end of renderRoI().
+                     If !renderUseScaleOneInputs the image is not cached.
+                     Hence we know it will be rendered completly so it is safe to do this here and take advantage of the multi-threading.*/
                     if (mipMapLevel != 0 && !renderUseScaleOneInputs) {
+                    
                         assert(it->second.fullscaleImage != it->second.downscaleImage && it->second.renderMappedImage == it->second.fullscaleImage);
-                        it->second.tmpImage->downscaleMipMap(it->second.tmpImage->getRoD(),
-                                                             renderRectToRender, 0, mipMapLevel, false,it->second.downscaleImage.get() );
+                        
+                        
+                        if (it->second.downscaleImage->getComponents() != it->second.tmpImage->getComponents() ||
+                            it->second.downscaleImage->getBitDepth() != it->second.tmpImage->getBitDepth()) {
+                            
+                            /*
+                             * BitDepth/Components conversion required as well as downscaling, do conversion to a tmp buffer
+                             */
+                            ImagePtr tmp(new Image(it->second.downscaleImage->getComponents(), it->second.tmpImage->getRoD(), it->second.tmpImage->getBounds(), mipMapLevel,it->second.tmpImage->getPixelAspectRatio(), it->second.downscaleImage->getBitDepth(), false) );
+                            
+                            it->second.tmpImage->convertToFormat(it->second.tmpImage->getBounds(),
+                                                                 getApp()->getDefaultColorSpaceForBitDepth(it->second.tmpImage->getBitDepth()),
+                                                                 getApp()->getDefaultColorSpaceForBitDepth(it->second.downscaleImage->getBitDepth()),
+                                                                 -1, false, false, unPremultIfNeeded, tmp.get());
+                            tmp->downscaleMipMap(it->second.tmpImage->getRoD(),
+                                                 actionArgs.roi, 0, mipMapLevel, false,it->second.downscaleImage.get() );
+                        } else {
+                            
+                            /*
+                             *  Downscaling required only
+                             */
+                            it->second.tmpImage->downscaleMipMap(it->second.tmpImage->getRoD(),
+                                                                 actionArgs.roi, 0, mipMapLevel, false,it->second.downscaleImage.get() );
+
+                        }
                         it->second.downscaleImage->markForRendered(downscaledRectToRender);
                     } else {
+                        
                         assert(it->second.renderMappedImage == it->second.fullscaleImage);
                         if (it->second.tmpImage != it->second.renderMappedImage) {
-                            it->second.fullscaleImage->pasteFrom(*it->second.tmpImage, renderRectToRender, false);
+                            
+                            if (it->second.fullscaleImage->getComponents() != it->second.tmpImage->getComponents() ||
+                                it->second.fullscaleImage->getBitDepth() != it->second.tmpImage->getBitDepth()) {
+                            
+                                /*
+                                 * BitDepth/Components conversion required
+                                 */
+                                it->second.tmpImage->convertToFormat(it->second.tmpImage->getBounds(),
+                                                                     getApp()->getDefaultColorSpaceForBitDepth(it->second.tmpImage->getBitDepth()),
+                                                                     getApp()->getDefaultColorSpaceForBitDepth(it->second.fullscaleImage->getBitDepth()),
+                                                                     -1, false, false, unPremultIfNeeded, it->second.fullscaleImage.get());
+                            } else {
+                                
+                                /*
+                                 * No conversion required, copy to output
+                                 */
+                                it->second.fullscaleImage->pasteFrom(*it->second.tmpImage, actionArgs.roi, false);
+                            }
+                            
+                            
                         }
-                        it->second.fullscaleImage->markForRendered(renderRectToRender);
-                    }
+                        it->second.fullscaleImage->markForRendered(actionArgs.roi);
+                    } // if (mipMapLevel != 0 && !renderUseScaleOneInputs) {
                 } else {
+                    ///Copy the rectangle rendered in the downscaled image
                     if (it->second.tmpImage != it->second.downscaleImage) {
-                        it->second.downscaleImage->pasteFrom(*it->second.tmpImage, downscaledRectToRender,false);
+                        
+
+                        if (it->second.downscaleImage->getComponents() != it->second.tmpImage->getComponents() ||
+                            it->second.downscaleImage->getBitDepth() != it->second.tmpImage->getBitDepth()) {
+                            
+                            /*
+                             * BitDepth/Components conversion required
+                             */
+                            
+                            
+                            it->second.tmpImage->convertToFormat(it->second.tmpImage->getBounds(),
+                                                                 getApp()->getDefaultColorSpaceForBitDepth(it->second.tmpImage->getBitDepth()),
+                                                                 getApp()->getDefaultColorSpaceForBitDepth(it->second.downscaleImage->getBitDepth()),
+                                                                 -1, false, false, unPremultIfNeeded, it->second.renderMappedImage.get());
+                        } else {
+                            
+                            /*
+                             * No conversion required, copy to output
+                             */
+                            
+                            it->second.downscaleImage->pasteFrom(*(it->second.tmpImage), it->second.downscaleImage->getBounds(), false);
+                        }
+
                     }
                     it->second.downscaleImage->markForRendered(downscaledRectToRender);
-                }
-            }
-        }
+                } // if (renderFullScaleThenDownscale) {
+            } // if (it->second.isAllocatedOnTheFly) {
+        } // for (std::map<ImageComponents,PlaneToRender>::const_iterator it = outputPlanes.begin(); it!=outputPlanes.end(); ++it) {
         
     }
-  
-    
     return isBeingRenderedElseWhere ? eRenderingFunctorRetTakeImageLock : eRenderingFunctorRetOK;
 } // tiledRenderingFunctor
 
@@ -4431,17 +4545,10 @@ EffectInstance::isDoingInteractAction() const
 }
 
 Natron::StatusEnum
-EffectInstance::render_public(SequenceTime time,
-                              const RenderScale& originalScale,
-                              const RenderScale & mappedScale,
-                              const RectI & roi,
-                              int view,
-                              bool isSequentialRender,
-                              bool isRenderResponseToUserInteraction,
-                              const std::list<boost::shared_ptr<Natron::Image> >& outputPlanes)
+EffectInstance::render_public(const RenderActionArgs& args)
 {
     NON_RECURSIVE_ACTION();
-    return render(time, originalScale, mappedScale, roi, view, isSequentialRender, isRenderResponseToUserInteraction, outputPlanes);
+    return render(args);
 
 }
 
@@ -4808,7 +4915,8 @@ EffectInstance::getComponentsAvailableRecursive(SequenceTime time, int view, Com
     SequenceTime ptTime;
     int ptView;
     boost::shared_ptr<Natron::Node> ptInput;
-    getComponentsNeededAndProduced_public(time, view, &neededComps, &ptTime, &ptView, &ptInput);
+    bool processAll;
+    getComponentsNeededAndProduced_public(time, view, &neededComps, &processAll, &ptTime, &ptView, &ptInput);
     
     ComponentsNeededMap::iterator foundOutput = neededComps.find(-1);
     if (foundOutput != neededComps.end()) {
@@ -4873,7 +4981,7 @@ EffectInstance::getComponentsAvailableRecursive(SequenceTime time, int view, Com
         if (ptInput) {
             ptInput->getLiveInstance()->getComponentsAvailableRecursive(time, view, comps, markedNodes);
             
-            if (passThrough == ePassThroughRenderAllRequestedPlanes) {
+            if (processAll) {
                 //The node makes available everything available upstream
                 for (ComponentsAvailableMap::iterator it = comps->begin(); it!=comps->end(); ++it) {
                     it->second = node;
@@ -4953,46 +5061,65 @@ EffectInstance::getComponentsNeededAndProduced(SequenceTime time, int view,
 
 void
 EffectInstance::getComponentsNeededAndProduced_public(SequenceTime time, int view,
-                                               ComponentsNeededMap* comps,
-                                               SequenceTime* passThroughTime,
-                                               int* passThroughView,
-                                               boost::shared_ptr<Natron::Node>* passThroughInput)
+                                                      ComponentsNeededMap* comps,
+                                                      bool* processAllRequested,
+                                                      SequenceTime* passThroughTime,
+                                                      int* passThroughView,
+                                                      boost::shared_ptr<Natron::Node>* passThroughInput)
 
 {
     RECURSIVE_ACTION();
     
     if (isMultiPlanar()) {
         getComponentsNeededAndProduced(time, view, comps, passThroughTime, passThroughView, passThroughInput);
+        *processAllRequested = false;
     } else {
         *passThroughTime = time;
         *passThroughView = view;
         int idx = getNode()->getPreferredInput();
         *passThroughInput = getNode()->getInput(idx);
+        
         {
+            bool processChannels[4];
+            ImageComponents layer;
             std::vector<ImageComponents> compVec;
-            std::list<ImageComponents> prefComps;
-            ImageBitDepthEnum prefDepth;
-            getPreferredDepthAndComponents(-1, &prefComps, &prefDepth);
-            for (std::list<ImageComponents>::iterator it = prefComps.begin(); it!=prefComps.end(); ++it) {
-                compVec.push_back(*it);
+            bool ok = getNode()->getUserComponents(-1, processChannels,processAllRequested, &layer);
+            if (ok && !*processAllRequested) {
+                compVec.push_back(layer);
+            } else {
+                //Use regular clip preferences
+                ImageBitDepthEnum depth;
+                std::list<ImageComponents> components;
+                getPreferredDepthAndComponents(-1, &components, &depth);
+                for (std::list<ImageComponents>::iterator it = components.begin(); it!=components.end(); ++it) {
+                    compVec.push_back(*it);
+                }
             }
             comps->insert(std::make_pair(-1, compVec));
+
         }
         
         int maxInput = getMaxInputCount();
         for (int i = 0; i < maxInput; ++i) {
             EffectInstance* input = getInput(i);
-            std::vector<ImageComponents> compVec;
-            
             if (input) {
-                std::list<ImageComponents> prefComps;
-                ImageBitDepthEnum prefDepth;
-                input->getPreferredDepthAndComponents(-1, &prefComps, &prefDepth);
-                for (std::list<ImageComponents>::iterator it = prefComps.begin(); it!=prefComps.end(); ++it) {
-                    compVec.push_back(*it);
+                std::vector<ImageComponents> compVec;
+                bool processChannels[4];
+                ImageComponents layer;
+                bool isAll;
+                if (getNode()->getUserComponents(i, processChannels, &isAll, &layer) && !isAll) {
+                    compVec.push_back(layer);
+                } else {
+                    //Use regular clip preferences
+                    ImageBitDepthEnum depth;
+                    std::list<ImageComponents> components;
+                    getPreferredDepthAndComponents(i, &components, &depth);
+                    for (std::list<ImageComponents>::iterator it = components.begin(); it!=components.end(); ++it) {
+                        compVec.push_back(*it);
+                    }
                 }
+                comps->insert(std::make_pair(i, compVec));
             }
-            comps->insert(std::make_pair(i, compVec));
 
         }
     }
@@ -5041,17 +5168,13 @@ EffectInstance::getThreadLocalRenderTime() const
 bool
 EffectInstance::getThreadLocalRenderedPlanes(std::map<Natron::ImageComponents,PlaneToRender> *outputPlanes,
                                              Natron::ImageComponents* planeBeingRendered,
-                                             bool *isRenderingAllPlanesInSingleRender,
                                              RectI* renderWindow) const
 {
     if (_imp->renderArgs.hasLocalData()) {
         const RenderArgs& args = _imp->renderArgs.localData();
         if (args._validArgs) {
             assert(!args._outputPlanes.empty());
-            *isRenderingAllPlanesInSingleRender = args._isRenderingAllRequestedPlanes;
-            if (*isRenderingAllPlanesInSingleRender) {
-                *planeBeingRendered = args._outputPlaneBeingRendered;
-            }
+            *planeBeingRendered = args._outputPlaneBeingRendered;
             *outputPlanes = args._outputPlanes;
             *renderWindow = args._renderWindowPixel;
             return true;
@@ -5768,6 +5891,7 @@ EffectInstance::checkOFXClipPreferences_public(double time,
     } else {
         checkOFXClipPreferences(time, scale, reason, forceGetClipPrefAction);
     }
+    getNode()->refreshChannelSelectors(false);
 }
 
 

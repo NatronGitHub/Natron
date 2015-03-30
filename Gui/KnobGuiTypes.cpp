@@ -46,7 +46,6 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Node.h"
 
 #include "Gui/GuiApplicationManager.h"
-#include "Gui/AnimatedCheckBox.h"
 #include "Gui/Button.h"
 #include "Gui/SpinBox.h"
 #include "Gui/ComboBox.h"
@@ -641,6 +640,20 @@ Int_KnobGui::reflectModificationsState()
 }
 //==========================BOOL_KNOB_GUI======================================
 
+void
+Bool_CheckBox::getBackgroundColor(double *r,double *g,double *b) const
+{
+    if (useCustomColor) {
+        *r = customColor.redF();
+        *g = customColor.greenF();
+        *b = customColor.blueF();
+    } else {
+        
+        AnimatedCheckBox::getBackgroundColor(r, g, b);
+    }
+}
+
+
 Bool_KnobGui::Bool_KnobGui(boost::shared_ptr<KnobI> knob,
                            DockablePanel *container)
     : KnobGui(knob, container)
@@ -652,8 +665,8 @@ Bool_KnobGui::Bool_KnobGui(boost::shared_ptr<KnobI> knob,
 void
 Bool_KnobGui::createWidget(QHBoxLayout* layout)
 {
-    _checkBox = new AnimatedCheckBox( layout->parentWidget() );
-
+    _checkBox = new Bool_CheckBox( layout->parentWidget() );
+    onLabelChanged();
     //_checkBox->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     QObject::connect( _checkBox, SIGNAL( clicked(bool) ), this, SLOT( onCheckBoxStateChanged(bool) ) );
     QObject::connect( this, SIGNAL( labelClicked(bool) ), this, SLOT( onLabelClicked(bool) ) );
@@ -702,6 +715,31 @@ Bool_KnobGui::reflectAnimationLevel(int /*dimension*/,
     }
     if (value != _checkBox->getAnimation()) {
         _checkBox->setAnimation(value);
+    }
+}
+
+void
+Bool_KnobGui::onLabelChanged()
+{
+    const std::string& label = _knob->getDescription();
+    if (label == "R" || label == "r" || label == "red") {
+        QColor color;
+        color.setRgbF(0.851643,0.196936,0.196936);
+        _checkBox->setCustomColor(color, true);
+    } else if (label == "G" || label == "g" || label == "green") {
+        QColor color;
+        color.setRgbF(0,0.654707,0);
+        _checkBox->setCustomColor(color, true);
+    } else if (label == "B" || label == "b" || label == "blue") {
+        QColor color;
+        color.setRgbF(0.345293,0.345293,1);
+        _checkBox->setCustomColor(color, true);
+    } else if (label == "A" || label == "a" || label == "alpha") {
+        QColor color;
+        color.setRgbF(0.398979,0.398979,0.398979);
+        _checkBox->setCustomColor(color, true);
+    } else {
+        _checkBox->setCustomColor(Qt::black, false);
     }
 }
 

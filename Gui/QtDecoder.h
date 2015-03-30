@@ -96,14 +96,7 @@ public:
         return false;
     }
 
-    virtual Natron::StatusEnum render(SequenceTime time,
-                                      const RenderScale& originalScale,
-                                      const RenderScale & mappedScale,
-                                      const RectI & roi
-                                      ,int view,
-                                      bool /*isSequentialRender*/,
-                                      bool /*isRenderResponseToUserInteraction*/,
-                                      const std::list<boost::shared_ptr<Natron::Image>  >& output) OVERRIDE;
+    virtual Natron::StatusEnum render(const RenderActionArgs& args) OVERRIDE;
     virtual void knobChanged(KnobI* k, Natron::ValueChangedReasonEnum reason, int view, SequenceTime time,
                              bool originatedFromMainThread) OVERRIDE FINAL;
     virtual Natron::EffectInstance::RenderSafetyEnum renderThreadSafety() const OVERRIDE

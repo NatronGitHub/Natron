@@ -35,7 +35,7 @@
 
 #include <tuttle/ofxReadWrite.h>
 #include "ofxNatron.h"
-
+#include <nuke/fnOfxExtensions.h>
 
 #include "Engine/AppManager.h"
 #include "Engine/OfxParamInstance.h"
@@ -90,7 +90,7 @@ public:
         }
     }
 
-    ~ClipsThreadStorageSetter()
+    virtual ~ClipsThreadStorageSetter()
     {
         if (!skipDiscarding) {
 
@@ -104,11 +104,48 @@ public:
         }
     }
 
-private:
+protected:
     OfxImageEffectInstance* effect;
     bool skipDiscarding;
     bool viewSet;
     bool mipMapLevelSet;
+};
+    
+class RenderThreadStorageSetter : public ClipsThreadStorageSetter {
+public:
+    
+    RenderThreadStorageSetter(OfxImageEffectInstance* effect,
+                              bool skipDiscarding,     //< this is in case a recursive action is called
+                              bool setView,
+                              int view,
+                              bool setMipmapLevel,
+                              unsigned int mipMapLevel,
+                              bool setPlane,
+                              const Natron::ImageComponents& currentPlane)
+    : ClipsThreadStorageSetter(effect,skipDiscarding,setView, view, setMipmapLevel, mipMapLevel)
+    , planeSet(setPlane)
+    {
+        if (setPlane) {
+            effect->setClipsPlaneBeingRendered(currentPlane);
+        }
+    }
+    
+    virtual ~RenderThreadStorageSetter() {
+        if (planeSet) {
+            effect->discardClipsPlaneBeingRendered();
+        }
+        if (skipDiscarding) {
+            //Make sure that the images being rendered TLS is being cleared otherwise it will crash
+            OFX::Host::ImageEffect::ClipInstance* ofxClip  = effect->getClip(kOfxImageEffectOutputClipName);
+            assert(ofxClip);
+            OfxClipInstance* clip = dynamic_cast<OfxClipInstance*>(ofxClip);
+            assert(clip);
+            clip->clearOfxImagesTLS();
+        }
+    }
+    
+private:
+    bool planeSet;
 };
 }
 
@@ -213,6 +250,7 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
             
             getNode()->initializeInputs();
             getNode()->initializeKnobs(disableRenderScaleSupport ? 1 : 0 );
+            getNode()->refreshChannelSelectors(serialization->isNull());
             
             ///before calling the createInstanceAction, load values
             if ( serialization && !serialization->isNull() ) {
@@ -1001,6 +1039,44 @@ OfxEffectInstance::mapContextToString(Natron::ContextEnum ctx)
     return std::string();
 }
 
+std::string
+OfxEffectInstance::getOfxComponentsFromUserChannels(OfxClipInstance* clip, int inputNb) const
+{
+    assert(!isMultiPlanar());
+    
+    bool processChannels[4];
+    Natron::ImageComponents layer;
+    bool isAll;
+    if (getNode()->getUserComponents(inputNb, processChannels,&isAll, &layer) && !isAll) {
+        if (layer.isColorPlane()) {
+            if (processChannels[3]) {
+                return clip->findSupportedComp(kOfxImageComponentRGBA);
+            } else if (processChannels[0] && !processChannels[1] && !processChannels[2] && !processChannels[3]) {
+                return clip->findSupportedComp(kOfxImageComponentAlpha);
+            } else {
+                return clip->findSupportedComp(kOfxImageComponentRGB);
+            }
+        } else if (layer == ImageComponents::getForwardMotionComponents() || layer == ImageComponents::getBackwardMotionComponents()) {
+            return clip->findSupportedComp(kFnOfxImageComponentMotionVectors);
+        } else if (layer == ImageComponents::getDisparityLeftComponents() || layer == ImageComponents::getDisparityRightComponents()) {
+            return clip->findSupportedComp(kFnOfxImageComponentStereoDisparity);
+        } else {
+            //Custom comp, pass-it for a color plane
+            int nComp = layer.getNumComponents();
+            if (nComp == 4 && processChannels[3]) {
+                return clip->findSupportedComp(kOfxImageComponentRGBA);
+            } else if (nComp == 3) {
+                return clip->findSupportedComp(kOfxImageComponentRGB);
+            } else if (nComp == 2) {
+                return clip->findSupportedComp(kNatronOfxImageComponentXY);
+            } else if (nComp == 1) {
+                return clip->findSupportedComp(kOfxImageComponentAlpha);
+            }
+        }
+    }
+    return std::string();
+}
+
 /**
  * @brief The purpose of this function is to allow Natron to modify slightly the values returned in the getClipPreferencesAction
  * by the plugin so that we can minimize the amount of Natron::Image::convertToFormat calls.
@@ -1046,6 +1122,22 @@ clipPrefsProxy(OfxEffectInstance* self,
         outputModified = true;
     }
     
+    /// Remap Disparity and Motion vectors to generic XY if possible
+    if ((foundOutputPrefs->second.components == kFnOfxImageComponentMotionVectors ||
+         foundOutputPrefs->second.components == kFnOfxImageComponentStereoDisparity) &&
+        outputClip->isSupportedComponent(kNatronOfxImageComponentXY)) {
+        foundOutputPrefs->second.components = kNatronOfxImageComponentXY;
+        outputModified = true;
+    }
+    
+    if (!self->isMultiPlanar()) {
+        std::string userComp = self->getOfxComponentsFromUserChannels(outputClip,-1);
+        if (!userComp.empty()) {
+            foundOutputPrefs->second.components = userComp;
+            outputModified = true;
+        }
+    }
+    
     ///Adjust output premultiplication if needed
     if (foundOutputPrefs->second.components == kOfxImageComponentRGB) {
         effectPrefs.premult = kOfxImageOpaque;
@@ -1074,12 +1166,20 @@ clipPrefsProxy(OfxEffectInstance* self,
             ///This is the output clip of the input node
             OFX::Host::ImageEffect::ClipInstance* inputOutputClip = instance->effectInstance()->getClip(kOfxImageEffectOutputClipName);
             
-            ///Set the clip to have the same components as the output components if it is supported
-            if ( clip->isSupportedComponent(foundOutputPrefs->second.components) ) {
-                ///we only take into account non mask clips for the most components
-                if ( !clip->isMask() && (foundClipPrefs->second.components != foundOutputPrefs->second.components) ) {
-                    foundClipPrefs->second.components = foundOutputPrefs->second.components;
+            if (!self->isMultiPlanar()) {
+                std::string userComp = self->getOfxComponentsFromUserChannels(clip, i);
+                if (!userComp.empty()) {
+                    foundClipPrefs->second.components = userComp;
                     hasChanged = true;
+                }
+            } else {
+                ///Set the clip to have the same components as the output components if it is supported
+                if ( clip->isSupportedComponent(foundOutputPrefs->second.components) ) {
+                    ///we only take into account non mask clips for the most components
+                    if ( !clip->isMask() && (foundClipPrefs->second.components != foundOutputPrefs->second.components) ) {
+                        foundClipPrefs->second.components = foundOutputPrefs->second.components;
+                        hasChanged = true;
+                    }
                 }
             }
             
@@ -1909,45 +2009,39 @@ OfxEffectInstance::endSequenceRender(SequenceTime first,
 }
 
 Natron::StatusEnum
-OfxEffectInstance::render(SequenceTime time,
-                          const RenderScale& originalScale,
-                          const RenderScale & mappedScale,
-                          const RectI & roi,
-                          int view,
-                          bool isSequentialRender,
-                          bool isRenderResponseToUserInteraction,
-                          const std::list<boost::shared_ptr<Natron::Image> >& outputPlanes)
+OfxEffectInstance::render(const RenderActionArgs& args)
 {
     if (!_initialized) {
         return Natron::eStatusFailed;
     }
 
-    assert(!outputPlanes.empty());
+    assert(!args.outputPlanes.empty());
     
-    const ImagePtr& firstPlane = outputPlanes.front();
+    const std::pair<ImageComponents,ImagePtr>& firstPlane = args.outputPlanes.front();
     
     OfxRectI ofxRoI;
-    ofxRoI.x1 = roi.left();
-    ofxRoI.x2 = roi.right();
-    ofxRoI.y1 = roi.bottom();
-    ofxRoI.y2 = roi.top();
+    ofxRoI.x1 = args.roi.left();
+    ofxRoI.x2 = args.roi.right();
+    ofxRoI.y1 = args.roi.bottom();
+    ofxRoI.y2 = args.roi.top();
     int viewsCount = getApp()->getProject()->getProjectViewsCount();
     OfxStatus stat;
     const std::string field = kOfxImageFieldNone; // TODO: support interlaced data
     
     std::list<std::string> ofxPlanes;
-    for (std::list<boost::shared_ptr<Natron::Image> >::const_iterator it = outputPlanes.begin(); it!=outputPlanes.end(); ++it) {
-        ofxPlanes.push_back(OfxClipInstance::natronsPlaneToOfxPlane((*it)->getComponents()));
+    for (std::list<std::pair<ImageComponents,boost::shared_ptr<Natron::Image> > >::const_iterator it = args.outputPlanes.begin();
+         it!=args.outputPlanes.end(); ++it) {
+        ofxPlanes.push_back(OfxClipInstance::natronsPlaneToOfxPlane(it->second->getComponents()));
     }
     
     ///before calling render, set the render scale thread storage for each clip
 # ifdef DEBUG
     {
         // check the dimensions of output images
-        const RectI & dstBounds = firstPlane->getBounds();
-        const RectD & dstRodCanonical = firstPlane->getRoD();
+        const RectI & dstBounds = firstPlane.second->getBounds();
+        const RectD & dstRodCanonical = firstPlane.second->getRoD();
         RectI dstRod;
-        dstRodCanonical.toPixelEnclosing(mappedScale, firstPlane->getPixelAspectRatio(), &dstRod);
+        dstRodCanonical.toPixelEnclosing(args.mappedScale, firstPlane.second->getPixelAspectRatio(), &dstRod);
 
         if ( !supportsTiles() ) {
             // http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxImageEffectPropSupportsTiles
@@ -1975,36 +2069,31 @@ OfxEffectInstance::render(SequenceTime time,
         }
         
         SET_CAN_SET_VALUE(false);
-
         
-        ClipsThreadStorageSetter clipSetter(effectInstance(),
-                                            skipDiscarding,
-                                            true, //< setView ?
-                                            view,
-                                            true,//< set mipmaplevel ?
-                                            Natron::Image::getLevelFromScale(originalScale.x));
+        
+        RenderThreadStorageSetter clipSetter(effectInstance(),
+                                             skipDiscarding,
+                                             true, //< setView ?
+                                             args.view,
+                                             true,//< set mipmaplevel ?
+                                             Natron::Image::getLevelFromScale(args.originalScale.x),
+                                             !isMultiPlanar(),
+                                             firstPlane.first);
 
         
         ///Take the preferences lock so that it cannot be modified throughout the action.
         QReadLocker preferencesLocker(_preferencesLock);
-        stat = _effect->renderAction( (OfxTime)time,
+        stat = _effect->renderAction( (OfxTime)args.time,
                                      field,
                                      ofxRoI,
-                                     mappedScale,
-                                     isSequentialRender,
-                                     isRenderResponseToUserInteraction,
-                                     view,
+                                     args.mappedScale,
+                                     args.isSequentialRender,
+                                     args.isRenderResponseToUserInteraction,
+                                     args.view,
                                      viewsCount,
                                      ofxPlanes);
         
-        if (skipDiscarding) {
-            //Make sure that the images being rendered TLS is being cleared otherwise it will crash
-            OFX::Host::ImageEffect::ClipInstance* ofxClip  = _effect->getClip(kOfxImageEffectOutputClipName);
-            assert(ofxClip);
-            OfxClipInstance* clip = dynamic_cast<OfxClipInstance*>(ofxClip);
-            assert(clip);
-            clip->clearOfxImagesTLS();
-        }
+        
     }
 
     if (stat != kOfxStatOK) {
@@ -2462,8 +2551,8 @@ OfxEffectInstance::hasOverlay() const
     return _overlayInteract != NULL;
 }
 
-static std::string
-natronValueChangedReasonToOfxValueChangedReason(Natron::ValueChangedReasonEnum reason)
+std::string
+OfxEffectInstance::natronValueChangedReasonToOfxValueChangedReason(Natron::ValueChangedReasonEnum reason)
 {
     switch (reason) {
         case Natron::eValueChangedReasonUserEdited:

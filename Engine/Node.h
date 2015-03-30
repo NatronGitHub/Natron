@@ -278,6 +278,7 @@ public:
      * If inputNb equals -1 then this function will check the output components.
      **/
     Natron::ImageComponents findClosestSupportedComponents(int inputNb,const Natron::ImageComponents& comp) const;
+    static Natron::ImageComponents findClosestInList(const Natron::ImageComponents& comp,const std::list<Natron::ImageComponents> &components);
 
     /**
      * @brief Returns the index of the channel to use to produce the mask.
@@ -893,6 +894,9 @@ public:
     
     std::string getPluginPythonModule() const;
   
+    void refreshChannelSelectors(bool setValues);
+    
+    bool getUserComponents(int inputNb,bool* processChannels,bool* isAll,Natron::ImageComponents *layer) const;
     
 private:
     

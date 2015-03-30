@@ -13,11 +13,11 @@
 
 using namespace Natron;
 
-static const char* rgbaComps[4] = {"r","g","b","a"};
-static const char* rgbComps[3] = {"r","g","b"};
-static const char* alphaComps[1] = {"alpha"};
-static const char* motionComps[2] = {"u","v"};
-static const char* disparityComps[2] = {"x","y"};
+static const char* rgbaComps[4] = {"R","G","B","A"};
+static const char* rgbComps[3] = {"R","G","B"};
+static const char* alphaComps[1] = {"Alpha"};
+static const char* motionComps[2] = {"U","V"};
+static const char* disparityComps[2] = {"X","Y"};
 
 ImageComponents::ImageComponents()
 : _layerName("none")
