@@ -1263,8 +1263,8 @@ CurveWidgetPrivate::drawScale()
     QPointF btmLeft = zoomCtx.toZoomCoordinates(0,_widget->height() - 1);
     QPointF topRight = zoomCtx.toZoomCoordinates(_widget->width() - 1, 0);
 
-    ///don't attempt to draw a scale on a widget with an invalid height
-    if (_widget->height() <= 1) {
+    ///don't attempt to draw a scale on a widget with an invalid height/width
+    if (_widget->height() <= 1 || _widget->width() <= 1) {
         return;
     }
 

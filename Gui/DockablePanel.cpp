@@ -1882,6 +1882,10 @@ void
 DockablePanel::floatPanel()
 {
     _imp->_floating = !_imp->_floating;
+    {
+        QMutexLocker k(&_imp->_isClosedMutex);
+        _imp->_isClosed = false;
+    }
     if (_imp->_floating) {
         assert(!_imp->_floatingWidget);
         _imp->_floatingWidget = new FloatingWidget(_imp->_gui,_imp->_gui);
