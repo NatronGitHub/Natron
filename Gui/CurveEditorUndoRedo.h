@@ -29,7 +29,7 @@ CLANG_DIAG_ON(uninitialized)
 
 namespace Transform
 {
-    class Matrix3x3;
+    struct Matrix3x3;
 }
 class CurveGui;
 class KnobGui;

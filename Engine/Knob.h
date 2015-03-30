@@ -39,7 +39,7 @@ class AppInstance;
 class KnobSerialization;
 class StringAnimationManager;
 namespace Transform {
-class Matrix3x3;
+struct Matrix3x3;
 }
 namespace Natron {
 class OfxParamOverlayInteract;
