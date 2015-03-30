@@ -30,7 +30,7 @@ inline int
     case eImageComponentRGBA:
 
         return 4;
-    case eImageComponentsXY:
+    case eImageComponentXY:
             return 2;
     }
     assert(false);
@@ -53,7 +53,7 @@ inline bool isColorComponents(Natron::ImageComponentsEnum comp)
         case eImageComponentRGBA:
             
             return true;
-        case eImageComponentsXY:
+        case eImageComponentXY:
             return false;
     }
     assert(false);

@@ -592,7 +592,7 @@ void init_Natron(PyObject* module)
         &Sbk_Natron_Type, "eImageComponentRGBA", (long) Natron::eImageComponentRGBA))
         return ;
     if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_IMAGECOMPONENTSENUM_IDX],
-        &Sbk_Natron_Type, "eImageComponentsXY", (long) Natron::eImageComponentsXY))
+        &Sbk_Natron_Type, "eImageComponentXY", (long) Natron::eImageComponentXY))
         return ;
     // Register converter for enum 'Natron::ImageComponentsEnum'.
     {

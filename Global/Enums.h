@@ -319,7 +319,7 @@ enum ImageComponentsEnum
     eImageComponentAlpha,
     eImageComponentRGB,
     eImageComponentRGBA,
-    eImageComponentsXY
+    eImageComponentXY
 };
 
 enum ImagePremultiplicationEnum
