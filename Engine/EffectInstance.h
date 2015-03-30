@@ -695,7 +695,13 @@ public:
 
     virtual bool isMultiPlanar() const { return false; }
 
-    virtual bool isPassThroughForNonRenderedPlanes() const { return true; }
+    enum PassThroughEnum {
+        ePassThroughBlockNonRenderedPlanes,
+        ePassThroughPassThroughNonRenderedPlanes,
+        ePassThroughRenderAllRequestedPlanes
+    };
+
+    virtual EffectInstance::PassThroughEnum isPassThroughForNonRenderedPlanes() const { return ePassThroughPassThroughNonRenderedPlanes; }
 
     virtual bool isViewAware() const { return false; }
 
@@ -1162,7 +1168,10 @@ public:
      *
      * WARNING: This call isexpensive and this function should not be called many times.
      **/
-    bool getThreadLocalRenderedPlanes(std::map<Natron::ImageComponents,PlaneToRender >*  planes,RectI* renderWindow) const;
+    bool getThreadLocalRenderedPlanes(std::map<Natron::ImageComponents,PlaneToRender >*  planes,
+                                      Natron::ImageComponents* planeBeingRendered,
+                                      bool *isRenderingAllPlanesInSingleRender,
+                                      RectI* renderWindow) const;
 
     /**
      * @brief Called when the associated node's hash has changed.

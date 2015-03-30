@@ -26,6 +26,7 @@
 
 #include "Engine/Curve.h"
 #include "Engine/KnobFile.h"
+#include "Engine/Transform.h"
 #include "Engine/AppInstance.h"
 #include "Engine/RotoContext.h"
 #include "Engine/Node.h"

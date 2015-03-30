@@ -649,20 +649,43 @@ OfxClipInstance::getImagePlane(OfxTime time, int view, const std::string& plane,
     }
     assert( _lastActionData.hasLocalData() );
     if ( isOutput() ) {
+        
+        ImageComponents natronPlane = ofxPlaneToNatronPlane(plane);
+
         std::map<ImageComponents,EffectInstance::PlaneToRender> outputPlanes;
         RectI renderWindow;
-        bool ok = _nodeInstance->getThreadLocalRenderedPlanes(&outputPlanes,&renderWindow);
+        Natron::ImageComponents planeBeingRendered;
+        bool isRenderingAllPlanesInSingleRender;
+        bool ok = _nodeInstance->getThreadLocalRenderedPlanes(&outputPlanes,&planeBeingRendered, &isRenderingAllPlanesInSingleRender,&renderWindow);
         if (!ok) {
             return NULL;
         }
-        ImageComponents natronPlane = ofxPlaneToNatronPlane(plane);
+        
         ImagePtr outputImage;
-        for (std::map<ImageComponents,EffectInstance::PlaneToRender>::iterator it = outputPlanes.begin(); it!=outputPlanes.end(); ++it) {
-            if (it->first.getLayerName() == natronPlane.getLayerName()) {
-                outputImage = it->second.tmpImage;
-                break;
+
+        if (isRenderingAllPlanesInSingleRender) {
+            assert(_nodeInstance->isPassThroughForNonRenderedPlanes() == EffectInstance::ePassThroughRenderAllRequestedPlanes);
+            if (plane != kFnOfxImagePlaneColour) {
+                qDebug() << "WARNING: " << _nodeInstance->getScriptName_mt_safe().c_str() << " has set kFnOfxImageEffectPropPassThroughComponents "
+                <<"to 1 but called clipGetImagePlane. The plug-in is expected to use clipGetImage instead.";
+            }
+            
+            for (std::map<ImageComponents,EffectInstance::PlaneToRender>::iterator it = outputPlanes.begin(); it!=outputPlanes.end(); ++it) {
+                if (it->first.getLayerName() == planeBeingRendered.getLayerName()) {
+                    outputImage = it->second.tmpImage;
+                    break;
+                }
+            }
+
+        } else {
+            for (std::map<ImageComponents,EffectInstance::PlaneToRender>::iterator it = outputPlanes.begin(); it!=outputPlanes.end(); ++it) {
+                if (it->first.getLayerName() == natronPlane.getLayerName()) {
+                    outputImage = it->second.tmpImage;
+                    break;
+                }
             }
         }
+        
         
         if (!outputImage) {
             outputImage = _nodeInstance->allocateImagePlaneAndSetInThreadLocalStorage(natronPlane);
@@ -1166,6 +1189,35 @@ OfxClipInstance::clearOfxImagesTLS()
     _lastActionData.localData().imagesBeingRendered.clear();
 }
 
+void
+OfxClipInstance::setClipComponentTLS(const std::string& components)
+{
+    ActionLocalData & args = _lastActionData.localData();
+    args.clipComponents = components;
+    args.clipComponentsValid = true;
+}
+
+void
+OfxClipInstance::clearClipComponentsTLS()
+{
+    assert(_lastActionData.hasLocalData());
+    ActionLocalData & args = _lastActionData.localData();
+    args.clipComponents.clear();
+    args.clipComponentsValid = false;
+}
+
+const std::string &
+OfxClipInstance::getComponents() const
+{
+    if (_lastActionData.hasLocalData()) {
+        ActionLocalData & args = _lastActionData.localData();
+        if (args.clipComponentsValid) {
+            return args.clipComponents;
+        }
+    }
+    return OFX::Host::ImageEffect::ClipInstance::getComponents();
+}
+
 const std::string &
 OfxClipInstance::findSupportedComp(const std::string &s) const
 {
@@ -1173,10 +1225,21 @@ OfxClipInstance::findSupportedComp(const std::string &s) const
     static const std::string rgba(kOfxImageComponentRGBA);
     static const std::string rgb(kOfxImageComponentRGB);
     static const std::string alpha(kOfxImageComponentAlpha);
+    static const std::string xy(kNatronOfxImageComponentXY);
     
     /// is it there
     if(isSupportedComponent(s))
         return s;
+    
+    if (s == xy) {
+        if (isSupportedComponent(rgb)) {
+            return rgb;
+        } else if (isSupportedComponent(rgba)) {
+            return rgba;
+        } else if (isSupportedComponent(alpha)) {
+            return alpha;
+        }
+    }
     
     /// were we fed some custom non chromatic component by getUnmappedComponents? Return it.
     /// we should never be here mind, so a bit weird

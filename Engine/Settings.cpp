@@ -613,7 +613,8 @@ Settings::initializeKnobs()
     _useInputAForMergeAutoConnect->setName("mergeConnectToA");
     _useInputAForMergeAutoConnect->setAnimationEnabled(false);
     _useInputAForMergeAutoConnect->setHintToolTip("If checked, upon creation of a new Merge node, the input A will be preferred "
-                                                  "for auto-connection with another node instead of the input B.");
+                                                  "for auto-connection and when disabling the node instead of the input B. "
+                                                  "This also applies to any other node with inputs named A and B.");
     _nodegraphTab->addKnob(_useInputAForMergeAutoConnect);
     
     _usePluginIconsInNodeGraph = Natron::createKnob<Bool_Knob>(this, "Display plug-in icon on node-graph");
@@ -1050,7 +1051,7 @@ Settings::setDefaultValues()
     _defaultBackdropColor->setDefaultValue(0.45,2);
     _disconnectedArrowLength->setDefaultValue(30);
     _hideOptionalInputsAutomatically->setDefaultValue(true);
-    _useInputAForMergeAutoConnect->setDefaultValue(true);
+    _useInputAForMergeAutoConnect->setDefaultValue(false);
 
     _defaultGeneratorColor->setDefaultValue(0.3,0);
     _defaultGeneratorColor->setDefaultValue(0.5,1);

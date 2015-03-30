@@ -57,6 +57,7 @@
 #include "Engine/ViewerInstance.h"
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/Image.h"
+#include "Engine/Transform.h"
 #include "Engine/FrameEntry.h"
 #include "Engine/StandardPaths.h"
 #include "Engine/Format.h"

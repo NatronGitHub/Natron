@@ -270,7 +270,7 @@ public:
 
 
     virtual bool isMultiPlanar() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool isPassThroughForNonRenderedPlanes() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual EffectInstance::PassThroughEnum isPassThroughForNonRenderedPlanes() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isViewAware() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isViewInvariant() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     
