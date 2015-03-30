@@ -1266,7 +1266,7 @@ MultiInstancePanel::onItemDataChanged(TableItem* item)
                     Color_Knob* isColor = dynamic_cast<Color_Knob*>( knobs[i].get() );
                     String_Knob* isString = dynamic_cast<String_Knob*>( knobs[i].get() );
                     
-                    if (knobs[i]->isAnimationEnabled()) {
+                    if (knobs[i]->isAnimationEnabled() && knobs[i]->isAnimated(j)) {
                         if (isInt) {
                             isInt->setValueAtTime(time, data.toInt(), j);
                         } else if (isBool) {

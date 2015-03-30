@@ -5057,6 +5057,7 @@ Gui::getNodesEntitledForOverlays(std::list<boost::shared_ptr<Natron::Node> > & n
                 } else {
                     if ( ( internalNode->hasOverlay() || internalNode->getRotoContext() ) &&
                          !internalNode->isNodeDisabled() &&
+                        !internalNode->getParentMultiInstance() && 
                          internalNode->isActivated() &&
                          node->isSettingsPanelVisible() &&
                          !node->isSettingsPanelMinimized() ) {
