@@ -1235,7 +1235,10 @@ OfxEffectInstance::checkOFXClipPreferences(double time,
                                            const std::string & reason,
                                            bool forceGetClipPrefAction)
 {
-        
+    
+    if (!_created) {
+        return;
+    }
     assert(_context != eContextNone);
     assert( QThread::currentThread() == qApp->thread() );
     
@@ -2028,10 +2031,16 @@ OfxEffectInstance::render(const RenderActionArgs& args)
     OfxStatus stat;
     const std::string field = kOfxImageFieldNone; // TODO: support interlaced data
     
+    bool multiPlanar = isMultiPlanar();
+    
     std::list<std::string> ofxPlanes;
     for (std::list<std::pair<ImageComponents,boost::shared_ptr<Natron::Image> > >::const_iterator it = args.outputPlanes.begin();
          it!=args.outputPlanes.end(); ++it) {
-        ofxPlanes.push_back(OfxClipInstance::natronsPlaneToOfxPlane(it->second->getComponents()));
+        if (!multiPlanar) {
+            ofxPlanes.push_back(OfxClipInstance::natronsPlaneToOfxPlane(it->second->getComponents()));
+        } else {
+            ofxPlanes.push_back(OfxClipInstance::natronsPlaneToOfxPlane(it->first));
+        }
     }
     
     ///before calling render, set the render scale thread storage for each clip

@@ -3620,7 +3620,13 @@ EffectInstance::tiledRenderingFunctor(RenderArgs & args,
              * copy this buffer to the shared (among threads) image.
              * This is also needed if the plug-in does not support the number of components of the renderMappedImage
              */
-            Natron::ImageComponents prefComp = Node::findClosestInList(it->second.renderMappedImage->getComponents(), outputClipPrefsComps);
+            Natron::ImageComponents prefComp;
+            if (multiPlanar) {
+                prefComp = getNode()->findClosestSupportedComponents(-1, it->second.renderMappedImage->getComponents());
+            } else {
+                prefComp = Node::findClosestInList(it->second.renderMappedImage->getComponents(), outputClipPrefsComps, multiPlanar);
+
+            }
             
             if (it->second.renderMappedImage->usesBitMap() || prefComp != it->second.renderMappedImage->getComponents() ||
                 outputClipPrefDepth != it->second.renderMappedImage->getBitDepth()) {
@@ -3739,7 +3745,13 @@ EffectInstance::tiledRenderingFunctor(RenderArgs & args,
              * copy this buffer to the shared (among threads) image.
              * This is also needed if the plug-in does not support the number of components of the renderMappedImage
              */
-            Natron::ImageComponents prefComp = Node::findClosestInList(it->second.renderMappedImage->getComponents(), outputClipPrefsComps);
+            Natron::ImageComponents prefComp;
+            if (multiPlanar) {
+                prefComp = getNode()->findClosestSupportedComponents(-1, it->second.renderMappedImage->getComponents());
+            } else {
+                prefComp = Node::findClosestInList(it->second.renderMappedImage->getComponents(), outputClipPrefsComps, multiPlanar);
+                
+            }
             
             if (it->second.renderMappedImage->usesBitMap() || prefComp != it->second.renderMappedImage->getComponents() ||
                 outputClipPrefDepth != it->second.renderMappedImage->getBitDepth()) {
@@ -3954,7 +3966,7 @@ EffectInstance::tiledRenderingFunctor(RenderArgs & args,
                             it->second.tmpImage->convertToFormat(it->second.tmpImage->getBounds(),
                                                                  getApp()->getDefaultColorSpaceForBitDepth(it->second.tmpImage->getBitDepth()),
                                                                  getApp()->getDefaultColorSpaceForBitDepth(it->second.downscaleImage->getBitDepth()),
-                                                                 -1, false, false, unPremultIfNeeded, it->second.renderMappedImage.get());
+                                                                 -1, false, false, unPremultIfNeeded, it->second.downscaleImage.get());
                         } else {
                             
                             /*

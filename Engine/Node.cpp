@@ -4066,7 +4066,9 @@ Node::isSupportedComponent(int inputNb,
 }
 
 Natron::ImageComponents
-Node::findClosestInList(const Natron::ImageComponents& comp,const std::list<Natron::ImageComponents> &components)
+Node::findClosestInList(const Natron::ImageComponents& comp,
+                        const std::list<Natron::ImageComponents> &components,
+                        bool multiPlanar)
 {
     if ( components.empty() ) {
         return ImageComponents::getNoneComponents();
@@ -4074,10 +4076,15 @@ Node::findClosestInList(const Natron::ImageComponents& comp,const std::list<Natr
     std::list<Natron::ImageComponents>::const_iterator closestComp = components.end();
     for (std::list<Natron::ImageComponents>::const_iterator it = components.begin(); it != components.end(); ++it) {
         if ( closestComp == components.end() ) {
+            if (multiPlanar && it->getNumComponents() == comp.getNumComponents()) {
+                return comp;
+            }
             closestComp = it;
-            break;
         } else {
             if (it->getNumComponents() == comp.getNumComponents()) {
+                if (multiPlanar) {
+                    return comp;
+                }
                 closestComp = it;
                 break;
             } else {
@@ -4113,7 +4120,7 @@ Node::findClosestSupportedComponents(int inputNb,
             comps = _imp->outputComponents;
         }
     }
-    return findClosestInList(comp, comps);
+    return findClosestInList(comp, comps, _imp->liveInstance->isMultiPlanar());
 }
 
 
@@ -5674,7 +5681,9 @@ Node::refreshChannelSelectors(bool setValues)
         
         if (!currentLayerEntries.empty()) {
             int curLayer_i = it->second.layer->getValue();
-            curLayerChoice = currentLayerEntries[curLayer_i];
+            if (curLayer_i >= 0 && curLayer_i < (int)currentLayerEntries.size()) {
+                curLayerChoice = currentLayerEntries[curLayer_i];
+            }
         }
         
         

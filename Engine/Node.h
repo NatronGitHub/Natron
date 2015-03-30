@@ -278,7 +278,9 @@ public:
      * If inputNb equals -1 then this function will check the output components.
      **/
     Natron::ImageComponents findClosestSupportedComponents(int inputNb,const Natron::ImageComponents& comp) const;
-    static Natron::ImageComponents findClosestInList(const Natron::ImageComponents& comp,const std::list<Natron::ImageComponents> &components);
+    static Natron::ImageComponents findClosestInList(const Natron::ImageComponents& comp,
+                                                     const std::list<Natron::ImageComponents> &components,
+                                                     bool multiPlanar);
 
     /**
      * @brief Returns the index of the channel to use to produce the mask.
