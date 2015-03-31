@@ -787,6 +787,8 @@ OfxClipInstance::getStereoscopicImage(OfxTime time,
     }
     if (components.empty()) {
         components = _components;
+    } else if (components == kOfxImageComponentNone) {
+        return 0;
     }
     std::list<Natron::ImageComponents> comp = ofxComponentsToNatronComponents(components);
     assert(!comp.empty());
@@ -815,7 +817,10 @@ OfxClipInstance::getImageInternal(OfxTime time,
         bounds.y2 = optionalBounds->y2;
     }
     
+    bool multiPlanar = _nodeInstance->isMultiPlanar();
+    
     Natron::ImageComponents comp;
+    
     if (plane == kFnOfxImagePlaneColour) {
         std::list<ImageComponents> comps = ofxComponentsToNatronComponents(getComponents());
         assert(comps.size() == 1);
@@ -886,7 +891,7 @@ OfxClipInstance::getImageInternal(OfxTime time,
         RectI pixelRoI;
         roi.toPixelEnclosing(mipMapLevel, par, &pixelRoI);
         
-        ImageList inputImages;
+        EffectInstance::InputImagesMap inputImages;
         _nodeInstance->getThreadLocalInputImages(&inputImages);
         
         std::list<ImageComponents> requestedComps;
@@ -901,7 +906,7 @@ OfxClipInstance::getImageInternal(OfxTime time,
         }
         
         image = planes.front();
-        _nodeInstance->addThreadLocalInputImageTempPointer(image);
+        _nodeInstance->addThreadLocalInputImageTempPointer(rerouteInputNb,image);
 
         renderWindow = pixelRoI;
         
@@ -921,7 +926,7 @@ OfxClipInstance::getImageInternal(OfxTime time,
         } else {
             std::string components;
             int nComps;
-            if (_nodeInstance->isMultiPlanar()) {
+            if (multiPlanar) {
                 components = OfxClipInstance::natronsComponentsToOfxComponents(image->getComponents());
                 nComps = image->getComponents().getNumComponents();
             } else {

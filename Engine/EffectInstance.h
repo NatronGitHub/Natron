@@ -158,6 +158,7 @@ public:
     typedef std::map<Natron::ImageComponents,boost::weak_ptr<Natron::Node> > ComponentsAvailableMap;
     typedef std::map<int,std::vector<Natron::ImageComponents> > ComponentsNeededMap;
     typedef std::map<int, std::map<int, std::vector<OfxRangeD> > > FramesNeededMap;
+    typedef std::map<int,std::list< boost::shared_ptr<Natron::Image> > > InputImagesMap;
 
     struct RenderRoIArgs
     {
@@ -175,7 +176,7 @@ public:
         
         ///When called from getImage() the calling node  will have already computed input images, hence the image of this node
         ///might already be in this list
-        std::list<boost::shared_ptr<Natron::Image> > inputImagesList;
+        EffectInstance::InputImagesMap inputImagesList;
         
         RenderRoIArgs()
         {
@@ -192,7 +193,7 @@ public:
                       Natron::ImageBitDepthEnum bitdepth_,
                       int channelForAlpha_ = 3,
                       bool calledFromGetImage = false,
-                      const std::list<boost::shared_ptr<Natron::Image> >& inputImages = std::list<boost::shared_ptr<Natron::Image> >())
+                      const EffectInstance::InputImagesMap& inputImages =  EffectInstance::InputImagesMap())
             : time(time_)
               , scale(scale_)
               , mipMapLevel(mipMapLevel_)
@@ -527,7 +528,7 @@ public:
                                              const Natron::ImageComponents& components,
                                              Natron::ImageBitDepthEnum nodeBitDepthPref,
                                              const Natron::ImageComponents& nodeComponentsPref,
-                                             const std::list<boost::shared_ptr<Natron::Image> >& inputImages,
+                                             const EffectInstance::InputImagesMap& inputImages,
                                              boost::shared_ptr<Natron::Image>* image);
 
 
@@ -677,9 +678,9 @@ public:
     bool getThreadLocalRegionsOfInterests(EffectInstance::RoIMap& roiMap) const;
 
 
-    void getThreadLocalInputImages(std::list<boost::shared_ptr<Natron::Image> >* images) const;
+    void getThreadLocalInputImages(EffectInstance::InputImagesMap* images) const;
 
-    void addThreadLocalInputImageTempPointer(const boost::shared_ptr<Natron::Image> & img);
+    void addThreadLocalInputImageTempPointer(int inputNb,const boost::shared_ptr<Natron::Image> & img);
 
     /**
      * @brief Returns whether the effect is frame-varying (i.e: a Reader with different images in the sequence)
@@ -717,6 +718,7 @@ public:
         bool isSequentialRender;
         bool isRenderResponseToUserInteraction;
         std::list<std::pair<Natron::ImageComponents,boost::shared_ptr<Natron::Image> > > outputPlanes;
+        InputImagesMap inputImages;
     };
 
 protected:
@@ -1304,7 +1306,9 @@ public:
                                                bool* processAllRequested,
                                                SequenceTime* passThroughTime,
                                                int* passThroughView,
+                                               bool* processChannels,
                                                boost::shared_ptr<Natron::Node>* passThroughInput) ;
+
 
 
 protected:
@@ -1409,6 +1413,7 @@ protected:
     
     boost::weak_ptr<Node> _node; //< the node holding this effect
 
+
 private:
 
     struct Implementation;
@@ -1420,6 +1425,7 @@ private:
         eRenderRoIStatusImageRendered, // we rendered what was missing
         eRenderRoIStatusRenderFailed // render failed
     };
+
 
 
 
@@ -1464,7 +1470,9 @@ private:
                                           const std::list<RoIMap>& inputRoisParam,
                                           Natron::ImageBitDepthEnum outputClipPrefDepth,
                                           const std::list<Natron::ImageComponents>& outputClipPrefsComps,
-                                          std::list<std::list<boost::shared_ptr<Natron::Image> > >& inputImagesParam);
+                                          bool* processChannels,
+                                          std::list<InputImagesMap>& inputImagesParam);
+
 
     /// \returns false if rendering was aborted
     RenderRoIRetCode renderInputImagesForRoI(bool createImageInCache,
@@ -1484,7 +1492,7 @@ private:
                                              bool byPassCache,
                                              const FramesNeededMap& framesNeeded,
                                              const ComponentsNeededMap& compsNeeded,
-                                             std::list< boost::shared_ptr<Natron::Image> > *inputImages,
+                                             InputImagesMap *inputImages,
                                              RoIMap* inputsRoI);
 
 
@@ -1548,7 +1556,7 @@ private:
     struct TiledRenderingFunctorArgs
     {
         RenderArgs* args;
-        std::list<boost::shared_ptr<Natron::Image> > inputImages;
+        InputImagesMap inputImages;
         bool renderFullScaleThenDownscale;
         bool renderUseScaleOneInputs;
         bool isSequentialRender;
@@ -1557,6 +1565,8 @@ private:
         Natron::ImageBitDepthEnum outputClipPrefDepth;
         ImagePlanesToRender* planes;
         std::list<Natron::ImageComponents> outputClipPrefsComps;
+        boost::shared_ptr<Natron::Image> originalInputImage;
+        bool *processChannels;
     };
 
     enum RenderingFunctorRetEnum
@@ -1595,7 +1605,7 @@ private:
 
     RenderingFunctorRetEnum tiledRenderingFunctor(RenderArgs & args,
                                                   const ParallelRenderArgs& frameArgs,
-                                                  const std::list<boost::shared_ptr<Natron::Image> >& inputImages,
+                                                  const InputImagesMap& inputImages,
                                                   const std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs >& frameTls,
                                                   bool renderFullScaleThenDownscale,
                                                   bool renderUseScaleOneInputs,
@@ -1605,6 +1615,8 @@ private:
                                                   const double par,
                                                   Natron::ImageBitDepthEnum outputClipPrefDepth,
                                                   const std::list<Natron::ImageComponents>& outputClipPrefsComps,
+                                                  bool* processChannels,
+                                                  const boost::shared_ptr<Natron::Image>& originalInputImage,
                                                   ImagePlanesToRender& planes);
 
     /**

@@ -269,6 +269,7 @@ public:
     void discardClipsMipMapLevel();
     void setClipsPlaneBeingRendered(const Natron::ImageComponents& comp);
     void discardClipsPlaneBeingRendered();
+    void setInputClipPlane(int inputNb,const Natron::ImageComponents& comp);
     ////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////
 

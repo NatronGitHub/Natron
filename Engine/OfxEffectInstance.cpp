@@ -121,12 +121,22 @@ public:
                               bool setMipmapLevel,
                               unsigned int mipMapLevel,
                               bool setPlane,
-                              const Natron::ImageComponents& currentPlane)
+                              const Natron::ImageComponents& currentPlane,
+                              const EffectInstance::InputImagesMap& inputImages)
     : ClipsThreadStorageSetter(effect,skipDiscarding,setView, view, setMipmapLevel, mipMapLevel)
     , planeSet(setPlane)
     {
         if (setPlane) {
             effect->setClipsPlaneBeingRendered(currentPlane);
+            for (EffectInstance::InputImagesMap::const_iterator it = inputImages.begin(); it!=inputImages.end(); ++it) {
+                if (!it->second.empty()) {
+                    const ImagePtr& img = it->second.front();
+                    assert(img);
+                    effect->setInputClipPlane(it->first, img->getComponents());
+                } else {
+                    effect->setInputClipPlane(it->first, ImageComponents::getNoneComponents());
+                }
+            }
         }
     }
     
@@ -1166,13 +1176,13 @@ clipPrefsProxy(OfxEffectInstance* self,
             ///This is the output clip of the input node
             OFX::Host::ImageEffect::ClipInstance* inputOutputClip = instance->effectInstance()->getClip(kOfxImageEffectOutputClipName);
             
-            if (!self->isMultiPlanar()) {
-                std::string userComp = self->getOfxComponentsFromUserChannels(clip, i);
-                if (!userComp.empty()) {
-                    foundClipPrefs->second.components = userComp;
-                    hasChanged = true;
-                }
-            } else {
+//            if (!self->isMultiPlanar()) {
+//                std::string userComp = self->getOfxComponentsFromUserChannels(clip, i);
+//                if (!userComp.empty()) {
+//                    foundClipPrefs->second.components = userComp;
+//                    hasChanged = true;
+//                }
+//            } else {
                 ///Set the clip to have the same components as the output components if it is supported
                 if ( clip->isSupportedComponent(foundOutputPrefs->second.components) ) {
                     ///we only take into account non mask clips for the most components
@@ -1181,7 +1191,7 @@ clipPrefsProxy(OfxEffectInstance* self,
                         hasChanged = true;
                     }
                 }
-            }
+         //   }
             
             ///Try to remap the clip's bitdepth to be the same as
             const std::string & input_outputDepth = inputOutputClip->getPixelDepth();
@@ -2087,7 +2097,8 @@ OfxEffectInstance::render(const RenderActionArgs& args)
                                              true,//< set mipmaplevel ?
                                              Natron::Image::getLevelFromScale(args.originalScale.x),
                                              !isMultiPlanar(),
-                                             firstPlane.first);
+                                             firstPlane.first,
+                                             args.inputImages);
 
         
         ///Take the preferences lock so that it cannot be modified throughout the action.

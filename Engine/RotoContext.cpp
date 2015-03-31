@@ -5362,7 +5362,7 @@ RotoContext::renderMask(bool useCache,
                         Natron::ImageBitDepthEnum depth,
                         int view,
                         unsigned int mipmapLevel,
-                        const std::list<boost::shared_ptr<Natron::Image> >& inputImages,
+                        const EffectInstance::InputImagesMap& inputImages,
                         bool byPassCache)
 {
     std::list< boost::shared_ptr<Bezier> > splines = getCurvesByRenderOrder();
