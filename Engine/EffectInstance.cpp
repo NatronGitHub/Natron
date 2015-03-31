@@ -1637,8 +1637,8 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool useCache,
                 continue;
             }
             
-
-            if (imgMMlevel == mipMapLevel && imgComps.isConvertibleTo(components) &&
+            bool convertible = imgComps.isConvertibleTo(components);
+            if (imgMMlevel == mipMapLevel && convertible &&
             getSizeOfForBitDepth(imgDepth) >= getSizeOfForBitDepth(bitdepth)/* && imgComps == components && imgDepth == bitdepth*/) {
                 
                 ///We found  a matching image
@@ -1648,7 +1648,7 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool useCache,
             } else {
                 
                 
-                if (imgMMlevel >= mipMapLevel || !imgComps.isConvertibleTo(components) ||
+                if (imgMMlevel >= mipMapLevel || !convertible ||
                     getSizeOfForBitDepth(imgDepth) < getSizeOfForBitDepth(bitdepth)) {
                     ///Either smaller resolution or not enough components or bit-depth is not as deep, don't use the image
                     continue;

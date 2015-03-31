@@ -70,10 +70,12 @@ ImageComponents::isColorPlane() const
 bool
 ImageComponents::isConvertibleTo(const ImageComponents& other) const
 {
+    if (*this == other) {
+        return true;
+    }
     if (_layerName != other._layerName) {
         return false;
     }
-    
     if (_layerName == kNatronColorPlaneName && other._layerName == kNatronColorPlaneName) {
         return true;
     }
