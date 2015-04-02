@@ -1166,12 +1166,24 @@ clipPrefsProxy(OfxEffectInstance* self,
         OfxEffectInstance* instance = dynamic_cast<OfxEffectInstance*>(inputEffect);
         OfxClipInstance* clip = self->getClipCorrespondingToInput(i);
         
+        bool hasChanged = false;
+
+        std::map<OfxClipInstance*,OfxImageEffectInstance::ClipPrefs>::iterator foundClipPrefs = clipPrefs.find(clip);
+        assert(foundClipPrefs != clipPrefs.end());
+        
+        ///Set the clip to have the same components as the output components if it is supported
+        if ( clip->isSupportedComponent(foundOutputPrefs->second.components) ) {
+            ///we only take into account non mask clips for the most components
+            if ( !clip->isMask() && (foundClipPrefs->second.components != foundOutputPrefs->second.components) ) {
+                foundClipPrefs->second.components = foundOutputPrefs->second.components;
+                hasChanged = true;
+            }
+        }
+        
         if (instance) {
             
-            std::map<OfxClipInstance*,OfxImageEffectInstance::ClipPrefs>::iterator foundClipPrefs = clipPrefs.find(clip);
-            assert(foundClipPrefs != clipPrefs.end());
+            
 
-            bool hasChanged = false;
             
             ///This is the output clip of the input node
             OFX::Host::ImageEffect::ClipInstance* inputOutputClip = instance->effectInstance()->getClip(kOfxImageEffectOutputClipName);
@@ -1183,14 +1195,7 @@ clipPrefsProxy(OfxEffectInstance* self,
 //                    hasChanged = true;
 //                }
 //            } else {
-                ///Set the clip to have the same components as the output components if it is supported
-                if ( clip->isSupportedComponent(foundOutputPrefs->second.components) ) {
-                    ///we only take into account non mask clips for the most components
-                    if ( !clip->isMask() && (foundClipPrefs->second.components != foundOutputPrefs->second.components) ) {
-                        foundClipPrefs->second.components = foundOutputPrefs->second.components;
-                        hasChanged = true;
-                    }
-                }
+            
          //   }
             
             ///Try to remap the clip's bitdepth to be the same as
@@ -1222,10 +1227,9 @@ clipPrefsProxy(OfxEffectInstance* self,
                 << ") different than the output clip (" << outputAspectRatio << ") but it doesn't support multiple clips PAR. "
                 << "This should have been handled earlier before connecting the nodes, @see Node::canConnectInput.";
             }
-            
-            if (hasChanged) {
-                changedClips.push_back(clip);
-            }
+        } // if(instance)
+        if (hasChanged) {
+            changedClips.push_back(clip);
         }
     }
     

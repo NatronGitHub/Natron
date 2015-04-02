@@ -147,7 +147,8 @@ public:
     
     void restoreUserKnobs(const NodeSerialization& serialization);
     
-
+    bool isNodeCreated() const;
+    
     /*@brief Quit all processing done by all render instances of this node
        This is called when the effect is about to be deleted pluginsly
      */

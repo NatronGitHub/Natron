@@ -584,6 +584,11 @@ Node::load(const std::string & parentMultiInstanceName,
     
 } // load
 
+bool
+Node::isNodeCreated() const
+{
+    return _imp->nodeCreated;
+}
 
 void
 Node::declareRotoPythonField()
@@ -5667,6 +5672,9 @@ Node::Implementation::runInputChangedCallback(int index,const std::string& cb)
 void
 Node::refreshChannelSelectors(bool setValues)
 {
+    if (!isNodeCreated()) {
+        return;
+    }
     for (std::map<int,ChannelSelector>::iterator it = _imp->channelsSelectors.begin(); it!= _imp->channelsSelectors.end(); ++it) {
         
         NodePtr node;
