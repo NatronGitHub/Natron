@@ -4714,9 +4714,6 @@ Node::getUserComponents(int inputNb,bool* processChannels, bool* isAll,Natron::I
     }
     
     *isAll = !_imp->getSelectedLayer(inputNb, foundSelector->second, layer);
-    if (*isAll) {
-        return true;
-    }
     if (foundSelector->second.useRGBASelectors) {
         processChannels[0] = foundSelector->second.enabledChan[0]->getValue() && !foundSelector->second.enabledChan[0]->getIsSecret();
         processChannels[1] = foundSelector->second.enabledChan[1]->getValue() && !foundSelector->second.enabledChan[1]->getIsSecret();
@@ -4735,7 +4732,9 @@ Node::getUserComponents(int inputNb,bool* processChannels, bool* isAll,Natron::I
             }
         }
     }
+ 
     return true;
+
 }
 
 void

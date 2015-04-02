@@ -291,10 +291,10 @@ NodeGui::initialize(NodeGraph* dag,
         assert(parentGui);
         if (parentGui->isSettingsPanelOpened()) {
             ensurePanelCreated();
+            boost::shared_ptr<MultiInstancePanel> panel = parentGui->getMultiInstancePanel();
+            assert(panel);
+            panel->onChildCreated(internalNode);
         }
-        boost::shared_ptr<MultiInstancePanel> panel = parentGui->getMultiInstancePanel();
-        assert(panel);
-        panel->onChildCreated(internalNode);
     }
     
     if (internalNode->getPluginID() == PLUGINID_OFX_MERGE) {

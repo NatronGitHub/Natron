@@ -236,6 +236,14 @@ class RotoItem
 : public QObject, public boost::enable_shared_from_this<RotoItem>
 {
 public:
+    
+    enum SelectionReasonEnum
+    {
+        eSelectionReasonOverlayInteract = 0, ///when the user presses an interact
+        eSelectionReasonSettingsPanel, ///when the user interacts with the settings panel
+        eSelectionReasonOther ///when the project loader restores the selection
+    };
+
 
     RotoItem(const boost::shared_ptr<RotoContext>& context,
              const std::string & name,
@@ -270,7 +278,7 @@ public:
 
     bool isDeactivatedRecursive() const;
 
-    void setLocked(bool l,bool lockChildren);
+    void setLocked(bool l,bool lockChildren,RotoItem::SelectionReasonEnum reason);
     bool getLocked() const;
 
     bool isLockedRecursive() const;
@@ -332,7 +340,7 @@ protected:
 private:
 
     void setGloballyActivated_recursive(bool a);
-    void setLocked_recursive(bool locked);
+    void setLocked_recursive(bool locked,RotoItem::SelectionReasonEnum reason);
 
     boost::scoped_ptr<RotoItemPrivate> _imp;
 };
@@ -907,13 +915,7 @@ class RotoContext
 
 public:
 
-    enum SelectionReasonEnum
-    {
-        eSelectionReasonOverlayInteract = 0, ///when the user presses an interact
-        eSelectionReasonSettingsPanel, ///when the user interacts with the settings panel
-        eSelectionReasonOther ///when the project loader restores the selection
-    };
-
+    
     RotoContext(const boost::shared_ptr<Natron::Node>& node);
 
     virtual ~RotoContext();
@@ -977,10 +979,10 @@ public:
      * @brief Removes the given item from the context. This also removes the item from the selection
      * if it was selected. If the item has children, this will also remove all the children.
      **/
-    void removeItem(const boost::shared_ptr<RotoItem>& item, SelectionReasonEnum reason = eSelectionReasonOther);
+    void removeItem(const boost::shared_ptr<RotoItem>& item, RotoItem::SelectionReasonEnum reason = RotoItem::eSelectionReasonOther);
 
     ///This is here for undo/redo purpose. Do not call this
-    void addItem(const boost::shared_ptr<RotoLayer>& layer, int indexInLayer, const boost::shared_ptr<RotoItem> & item,SelectionReasonEnum reason);
+    void addItem(const boost::shared_ptr<RotoLayer>& layer, int indexInLayer, const boost::shared_ptr<RotoItem> & item,RotoItem::SelectionReasonEnum reason);
     /**
      * @brief Returns a const ref to the layers list. This can only be called from
      * the main thread.
@@ -1039,22 +1041,22 @@ public:
     /**
      * @brief This must be called by the GUI whenever an item is selected. This is recursive for layers.
      **/
-    void select(const boost::shared_ptr<RotoItem> & b, RotoContext::SelectionReasonEnum reason);
+    void select(const boost::shared_ptr<RotoItem> & b, RotoItem::SelectionReasonEnum reason);
 
     ///for convenience
-    void select(const std::list<boost::shared_ptr<Bezier> > & beziers, RotoContext::SelectionReasonEnum reason);
-    void select(const std::list<boost::shared_ptr<RotoItem> > & items, RotoContext::SelectionReasonEnum reason);
+    void select(const std::list<boost::shared_ptr<Bezier> > & beziers, RotoItem::SelectionReasonEnum reason);
+    void select(const std::list<boost::shared_ptr<RotoItem> > & items, RotoItem::SelectionReasonEnum reason);
 
     /**
      * @brief This must be called by the GUI whenever an item is deselected. This is recursive for layers.
      **/
-    void deselect(const boost::shared_ptr<RotoItem> & b, RotoContext::SelectionReasonEnum reason);
+    void deselect(const boost::shared_ptr<RotoItem> & b, RotoItem::SelectionReasonEnum reason);
 
     ///for convenience
-    void deselect(const std::list<boost::shared_ptr<Bezier> > & beziers, RotoContext::SelectionReasonEnum reason);
-    void deselect(const std::list<boost::shared_ptr<RotoItem> > & items, RotoContext::SelectionReasonEnum reason);
+    void deselect(const std::list<boost::shared_ptr<Bezier> > & beziers, RotoItem::SelectionReasonEnum reason);
+    void deselect(const std::list<boost::shared_ptr<RotoItem> > & items, RotoItem::SelectionReasonEnum reason);
 
-    void clearSelection(RotoContext::SelectionReasonEnum reason);
+    void clearSelection(RotoItem::SelectionReasonEnum reason);
 
     ///only callable on main-thread
     void setKeyframeOnSelectedCurves();
@@ -1105,7 +1107,7 @@ public:
     boost::shared_ptr<RotoItem> getLastItemLocked() const;
     boost::shared_ptr<RotoLayer> getDeepestSelectedLayer() const;
 
-    void onItemLockedChanged(const boost::shared_ptr<RotoItem>& item);
+    void onItemLockedChanged(const boost::shared_ptr<RotoItem>& item,RotoItem::SelectionReasonEnum reason);
 
     void emitRefreshViewerOverlays();
 
@@ -1132,7 +1134,7 @@ Q_SIGNALS:
 
     /**
      * Emitted when the selection is changed. The integer corresponds to the
-     * RotoContext::SelectionReasonEnum enum.
+     * RotoItem::SelectionReasonEnum enum.
      **/
     void selectionChanged(int);
 
@@ -1144,7 +1146,7 @@ Q_SIGNALS:
 
     void refreshViewerOverlays();
 
-    void itemLockedChanged();
+    void itemLockedChanged(int reason);
     
     void itemScriptNameChanged(const boost::shared_ptr<RotoItem>&);
     void itemLabelChanged(const boost::shared_ptr<RotoItem>&);
@@ -1164,7 +1166,7 @@ private:
     void selectInternal(const boost::shared_ptr<RotoItem>& b);
     void deselectInternal(boost::shared_ptr<RotoItem> b);
 
-    void removeItemRecursively(const boost::shared_ptr<RotoItem>& item,SelectionReasonEnum reason);
+    void removeItemRecursively(const boost::shared_ptr<RotoItem>& item,RotoItem::SelectionReasonEnum reason);
 
     /**
      * @brief First searches through the selected layer which one is the deepest in the hierarchy.

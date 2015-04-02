@@ -157,6 +157,8 @@ public Q_SLOTS:
     
     void onItemLabelChanged(const boost::shared_ptr<RotoItem>& item);
     void onItemScriptNameChanged(const boost::shared_ptr<RotoItem>& item);
+    
+    void onItemLockChanged(int reason);
 
 private:
 

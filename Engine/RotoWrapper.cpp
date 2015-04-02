@@ -57,7 +57,7 @@ ItemBase::getScriptName() const
 void
 ItemBase::setLocked(bool locked)
 {
-    _item->setLocked(locked, true);
+    _item->setLocked(locked, true,RotoItem::eSelectionReasonOther);
 }
 
 bool

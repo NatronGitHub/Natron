@@ -2217,7 +2217,10 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
             for (std::list<Natron::ImageComponents>::const_iterator it = args.components.begin(); it != args.components.end(); ++it) {
                 compVec.push_back(*it);
             }
-            neededComps[-1] = compVec;
+            for (ComponentsNeededMap::iterator it = neededComps.begin(); it!=neededComps.end(); ++it) {
+                it->second = compVec;
+            }
+            //neededComps[-1] = compVec;
         }
     }
     ComponentsNeededMap::iterator foundOutputNeededComps = neededComps.find(-1);

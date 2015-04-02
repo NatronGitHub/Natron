@@ -255,7 +255,7 @@ public Q_SLOTS:
 
     void onRefreshAsked();
 
-    void onCurveLockedChanged();
+    void onCurveLockedChanged(int);
 
     void onSelectionChanged(int reason);
 
