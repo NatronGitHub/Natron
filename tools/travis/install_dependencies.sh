@@ -30,6 +30,9 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     #sudo add-apt-repository --yes ppa:fkrull/deadsnakes # python3.x
     # we get libyaml-cpp-dev from kubuntu backports (for OpenColorIO)
     if [ "$CC" = "$TEST_CC" ]; then sudo add-apt-repository -y ppa:kubuntu-ppa/backports; fi
+    # we also need a recent ffmpeg for the newest version of the plugin
+    #if [ "$CC" = "$TEST_CC" ]; then sudo add-apt-repository -y ppa:jon-severinsson/ffmpeg; fi #not available
+    if [ "$CC" = "$TEST_CC" ]; then sudo add-apt-repository -y ppa:archivematica/externals; fi
     sudo apt-get update
     sudo apt-get update -qq
 
