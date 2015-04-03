@@ -93,6 +93,7 @@ namespace { // protect local classes in anonymous namespace
     public:
         
         boost::shared_ptr<Choice_Knob> layer;
+        boost::shared_ptr<String_Knob> layerName;
         boost::shared_ptr<Bool_Knob> enabledChan[4];
         bool useRGBASelectors; //< if false, only the layer knob is created
         bool hasAllChoice; // if true, the layer has a "all" entry
@@ -104,6 +105,7 @@ namespace { // protect local classes in anonymous namespace
         
         ChannelSelector()
         : layer()
+        , layerName()
         , enabledChan()
         , useRGBASelectors(false)
         , hasAllChoice(false)
@@ -120,7 +122,7 @@ namespace { // protect local classes in anonymous namespace
             }
             useRGBASelectors = other.useRGBASelectors;
             hasAllChoice = other.hasAllChoice;
-            
+            layerName = other.layerName;
             QMutexLocker k(&compsMutex);
             compsAvailable = other.compsAvailable;
         }
@@ -249,7 +251,7 @@ struct Node::Implementation
     
     void runInputChangedCallback(int index,const std::string& script);
     
-    void createChannelSelector(int inputNb,const std::string & inputName, bool addAllChoice,const boost::shared_ptr<Page_Knob>& page);
+    void createChannelSelector(int inputNb,const std::string & inputName, bool isOutput,const boost::shared_ptr<Page_Knob>& page);
     
     void onLayerChanged(int inputNb,const ChannelSelector& selector);
     
@@ -1792,7 +1794,7 @@ Node::initializeKnobs(int renderScaleSupportPref)
                     maskChannelKnob->populateChoices(choices);
                     maskChannelKnob->setDefaultValue(4, 0);
                     maskChannelKnob->setAnimationEnabled(false);
-                    maskChannelKnob->setAddNewLine(false);
+                    //maskChannelKnob->setAddNewLine(false);
                     maskChannelKnob->setHintToolTip(tr("Use this channel from the original input to mix the output with the original input. "
                                                        "Setting this to None is the same as disabling the mask.").toStdString());
                     std::string channelMaskName(kMaskChannelKnobName + std::string("_") + maskName);
@@ -2019,26 +2021,31 @@ Node::initializeKnobs(int renderScaleSupportPref)
 } // initializeKnobs
 
 void
-Node::Implementation::createChannelSelector(int inputNb,const std::string & inputName,bool addAllChoice,
+Node::Implementation::createChannelSelector(int inputNb,const std::string & inputName,bool isOutput,
                                             const boost::shared_ptr<Page_Knob>& page)
 {
-    bool isOutput = inputNb == -1;
-
+    
     ChannelSelector sel;
     sel.useRGBASelectors = isOutput;
-    sel.hasAllChoice = addAllChoice;
-    sel.layer = Natron::createKnob<Choice_Knob>(liveInstance.get(), inputName + " Layer", 1, false);
-    sel.layer->setName(inputName + "_layer");
+    sel.hasAllChoice = isOutput;
+    sel.layer = Natron::createKnob<Choice_Knob>(liveInstance.get(), isOutput ? "Channels" : inputName + " Channels", 1, false);
+    sel.layer->setName(inputName + "_channels");
     if (isOutput) {
-        sel.layer->setHintToolTip("Select here the layer onto which the processing should occur.");
+        sel.layer->setHintToolTip("Select here the channels onto which the processing should occur.");
     } else {
-        sel.layer->setHintToolTip("Select here the layer that will be used by the input " + inputName);
+        sel.layer->setHintToolTip("Select here the channels that will be used by the input " + inputName);
     }
     sel.layer->setAnimationEnabled(false);
     if (sel.useRGBASelectors) {
         sel.layer->setAddNewLine(false);
     }
     page->addKnob(sel.layer);
+    
+    sel.layerName = Natron::createKnob<String_Knob>(liveInstance.get(), inputName + "_layer_name", 1, false);
+    sel.layerName->setSecret(true);
+    sel.layerName->setAnimationEnabled(false);
+    sel.layerName->setAddNewLine(!sel.useRGBASelectors);
+    page->addKnob(sel.layerName);
     
     if (sel.useRGBASelectors) {
         
@@ -4668,6 +4675,11 @@ Node::Implementation::getSelectedLayer(int inputNb,const ChannelSelector& select
 void
 Node::Implementation::onLayerChanged(int inputNb,const ChannelSelector& selector)
 {
+    
+    std::vector<std::string> entries = selector.layer->getEntries_mt_safe();
+    int curLayer_i = selector.layer->getValue();
+    assert(curLayer_i >= 0 && curLayer_i < (int)entries.size());
+    selector.layerName->setValue(entries[curLayer_i], 0);
     {
         ///Clip preferences have changed 
         RenderScale s;
@@ -5688,9 +5700,8 @@ Node::refreshChannelSelectors(bool setValues)
         
         std::vector<std::string> currentLayerEntries = it->second.layer->getEntries_mt_safe();
         
-        int curLayer_i = it->second.layer->getValue();
+        std::string curLayer = it->second.layerName->getValue();
 
-        
         
         std::vector<std::string> choices;
         if (it->second.hasAllChoice) {
@@ -5768,27 +5779,20 @@ Node::refreshChannelSelectors(bool setValues)
 
         
         it->second.layer->populateChoices(choices);
-        
-        std::string currentLayerChoice;
-        if (!choices.empty()) {
-            if (curLayer_i >= 0 && curLayer_i < (int)choices.size()) {
-                currentLayerChoice = choices[curLayer_i];
-            }
-        }
  
         if (setValues) {
-            assert(colorIndex != -1);
+            assert(colorIndex != -1 && colorIndex >= 0 && colorIndex < (int)choices.size());
             if (it->second.hasAllChoice && _imp->liveInstance->isPassThroughForNonRenderedPlanes() == EffectInstance::ePassThroughRenderAllRequestedPlanes) {
                 it->second.layer->setValue(0, 0);
-
+                it->second.layerName->setValue(choices[0], 0);
             } else {
                 it->second.layer->setValue(colorIndex,0);
-             
+                it->second.layerName->setValue(choices[colorIndex], 0);
             }
         } else {
-            if (!currentLayerChoice.empty()) {
+            if (!curLayer.empty()) {
                 for (std::size_t i = 0; i < choices.size(); ++i) {
-                    if (choices[i] == currentLayerChoice) {
+                    if (choices[i] == curLayer) {
                         it->second.layer->setValue(i, 0);
                         break;
                     }

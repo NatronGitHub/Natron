@@ -31,8 +31,8 @@ CLANG_DIAG_ON(unused-parameter)
 #define kNatronDisparityLeftPlaneName "DisparityLeft"
 #define kNatronDisparityRightPlaneName "DisparityRight"
 
-#define kNatronRGBAComponentsName "Rgba"
-#define kNatronRGBComponentsName "Rgb"
+#define kNatronRGBAComponentsName "RGBA"
+#define kNatronRGBComponentsName "RGB"
 #define kNatronAlphaComponentsName "Alpha"
 
 #define kNatronDisparityComponentsName "Disparity"
