@@ -445,6 +445,19 @@ ComboBox::addAction(QAction* action)
 }
 
 void
+ComboBox::addItemNew()
+{
+    QAction* action =  new QAction(this);
+    action->setText("New");
+    action->setData(QVariant(1));
+    QFont f = QFont(appFont,appFontSize);
+    f.setItalic(true);
+    action->setFont(f);
+    addAction(action);
+
+}
+
+void
 ComboBox::addItem(const QString & item,
                   QIcon icon,
                   QKeySequence key,
@@ -553,7 +566,10 @@ ComboBox::setCurrentIndex_internal(int index)
         text = _actions[index]->text();
     }
     str = text;
-
+    if (str == "New") {
+        Q_EMIT itemNewSelected();
+        return false;
+    }
     QFontMetrics m = fontMetrics();
     setMinimumWidth( m.width(str) + 2 * DROP_DOWN_ICON_SIZE);
 

@@ -558,11 +558,24 @@ Choice_Knob::Choice_Knob(KnobHolder* holder,
                          bool declaredByPlugin)
 : Knob<int>(holder, description, dimension,declaredByPlugin)
 , _entriesMutex()
+, _addNewChoice(false)
 {
 }
 
 Choice_Knob::~Choice_Knob()
 {
+}
+
+void
+Choice_Knob::setAddNewChoice(bool add)
+{
+    _addNewChoice = add;
+}
+
+bool
+Choice_Knob::isChoiceNewEnabled() const
+{
+    return _addNewChoice;
 }
 
 bool

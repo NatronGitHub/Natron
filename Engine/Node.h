@@ -901,6 +901,10 @@ public:
     
     bool getUserComponents(int inputNb,bool* processChannels,bool* isAll,Natron::ImageComponents *layer) const;
     
+    void addUserComponents(const Natron::ImageComponents& comps);
+    
+    void getUserComponents(std::list<Natron::ImageComponents>* comps);
+    
 private:
     
     void setNameInternal(const std::string& name);

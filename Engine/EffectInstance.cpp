@@ -5005,8 +5005,13 @@ EffectInstance::getComponentsAvailableRecursive(SequenceTime time, int view, Com
     bool processChannels[4];
     getComponentsNeededAndProduced_public(time, view, &neededComps, &processAll, &ptTime, &ptView, processChannels, &ptInput);
     
+    std::list<ImageComponents> userComps;
+    node->getUserComponents(&userComps);
+    
     ComponentsNeededMap::iterator foundOutput = neededComps.find(-1);
     if (foundOutput != neededComps.end()) {
+        
+        foundOutput->second.insert(foundOutput->second.end(), userComps.begin(), userComps.end());
         
         ///Foreach component produced by the node at the given (view,time),  try
         ///to add it to the components available. Since we are recursing upstream, it is probably
@@ -5964,8 +5969,11 @@ EffectInstance::checkOFXClipPreferences_recursive(double time,
         return;
     }
     
-    
+
     checkOFXClipPreferences(time, scale, reason, forceGetClipPrefAction);
+    
+    getNode()->refreshChannelSelectors(false);
+
     markedNodes.push_back(node.get());
     
     std::list<Natron::Node*>  outputs;
@@ -5990,7 +5998,6 @@ EffectInstance::checkOFXClipPreferences_public(double time,
     } else {
         checkOFXClipPreferences(time, scale, reason, forceGetClipPrefAction);
     }
-    getNode()->refreshChannelSelectors(false);
 }
 
 

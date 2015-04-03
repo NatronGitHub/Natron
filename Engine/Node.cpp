@@ -219,6 +219,8 @@ struct Node::Implementation
     , pluginPythonModuleMutex()
     , pluginPythonModule()
     , nodeCreated(false)
+    , createdComponentsMutex()
+    , createdComponents()
     {        
         ///Initialize timers
         gettimeofday(&lastRenderStartedSlotCallTime, 0);
@@ -398,6 +400,9 @@ struct Node::Implementation
     std::string pluginPythonModule;
     
     bool nodeCreated;
+    
+    mutable QMutex createdComponentsMutex;
+    std::list<Natron::ImageComponents> createdComponents; // comps created by the user
 };
 
 /**
@@ -808,6 +813,11 @@ Node::loadKnobs(const NodeSerialization & serialization,bool updateKnobGui)
     assert(_imp->knobsInitialized);
     if (serialization.isNull()) {
         return;
+    }
+    
+    {
+        QMutexLocker k(&_imp->createdComponentsMutex);
+        _imp->createdComponents = serialization.getUserComponents();
     }
     
     const std::vector< boost::shared_ptr<KnobI> > & nodeKnobs = getKnobs();
@@ -2029,6 +2039,7 @@ Node::Implementation::createChannelSelector(int inputNb,const std::string & inpu
     sel.useRGBASelectors = isOutput;
     sel.hasAllChoice = isOutput;
     sel.layer = Natron::createKnob<Choice_Knob>(liveInstance.get(), isOutput ? "Channels" : inputName + " Channels", 1, false);
+    sel.layer->setAddNewChoice(isOutput);
     sel.layer->setName(inputName + "_channels");
     if (isOutput) {
         sel.layer->setHintToolTip("Select here the channels onto which the processing should occur.");
@@ -5800,6 +5811,39 @@ Node::refreshChannelSelectors(bool setValues)
             }
         }
     }
+}
+
+void
+Node::addUserComponents(const Natron::ImageComponents& comps)
+{
+    {
+        QMutexLocker k(&_imp->createdComponentsMutex);
+        for (std::list<ImageComponents>::iterator it = _imp->createdComponents.begin(); it!=_imp->createdComponents.end(); ++it) {
+            if (it->getLayerName() == comps.getLayerName()) {
+                Natron::errorDialog(tr("Layer").toStdString(), tr("A Layer with the same name already exists").toStdString());
+                return;
+            }
+        }
+        
+        _imp->createdComponents.push_back(comps);
+    }
+    {
+        ///Clip preferences have changed
+        RenderScale s;
+        s.x = s.y = 1;
+        getLiveInstance()->checkOFXClipPreferences_public(getApp()->getTimeLine()->currentFrame(),
+                                                          s,
+                                                          OfxEffectInstance::natronValueChangedReasonToOfxValueChangedReason(Natron::eValueChangedReasonUserEdited),
+                                                          true, true);
+    }
+    
+}
+
+void
+Node::getUserComponents(std::list<Natron::ImageComponents>* comps)
+{
+    QMutexLocker k(&_imp->createdComponentsMutex);
+    *comps = _imp->createdComponents;
 }
 
 //////////////////////////////////

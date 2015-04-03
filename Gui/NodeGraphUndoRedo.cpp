@@ -1044,7 +1044,7 @@ LoadNodePresetsCommand::redo()
     if (!_firstRedoCalled) {
        
         ///Serialize the current state of the node
-        node->serializeInternal(_oldSerialization,true);
+        node->serializeInternal(_oldSerialization);
         
         if (panel) {
             const std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> >& children = panel->getInstances();

@@ -76,6 +76,8 @@ public:
     void addAction(QAction* action);
     
     void addItem( const QString &item,QIcon icon = QIcon(),QKeySequence = QKeySequence(),const QString & toolTip = QString() );
+    
+    void addItemNew();
 
     /*Appends a separator to the comboBox.*/
     void addSeparator();
@@ -143,6 +145,8 @@ Q_SIGNALS:
     void currentIndexChanged(int index);
 
     void currentIndexChanged(QString);
+    
+    void itemNewSelected();
 
 protected:
 

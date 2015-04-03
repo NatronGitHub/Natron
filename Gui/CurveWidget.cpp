@@ -3819,9 +3819,9 @@ CurveWidget::loopSelectedCurve()
     }
     
     PyModalDialog dialog(_imp->_gui);
-    IntParam* firstFrame = dialog.createIntParam("firstFrame", "First frame");
+    boost::shared_ptr<IntParam> firstFrame(dialog.createIntParam("firstFrame", "First frame"));
     firstFrame->setAnimationEnabled(false);
-    IntParam* lastFrame = dialog.createIntParam("lastFrame", "Last frame");
+    boost::shared_ptr<IntParam> lastFrame(dialog.createIntParam("lastFrame", "Last frame"));
     lastFrame->setAnimationEnabled(false);
     dialog.refreshUserParamsGUI();
     if (dialog.exec()) {

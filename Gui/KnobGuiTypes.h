@@ -32,6 +32,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/Singleton.h"
 #include "Engine/Knob.h"
+#include "Engine/ImageComponents.h"
 
 #include "Gui/CurveSelection.h"
 #include "Gui/KnobGui.h"
@@ -358,6 +359,32 @@ private:
 };
 
 //================================
+struct NewLayerDialogPrivate;
+class NewLayerDialog : public QDialog
+{
+    Q_OBJECT
+    
+public:
+    
+    
+    NewLayerDialog(QWidget* parent);
+    
+    virtual ~NewLayerDialog();
+    
+    Natron::ImageComponents getComponents() const;
+    
+public Q_SLOTS:
+    
+    void onNumCompsChanged(double value);
+    
+    void onRGBAButtonClicked();
+    
+private:
+    
+    boost::scoped_ptr<NewLayerDialogPrivate> _imp;
+    
+};
+
 class Choice_KnobGui
     : public KnobGui
 {
@@ -384,6 +411,8 @@ public Q_SLOTS:
     void onCurrentIndexChanged(int i);
 
     void onEntriesPopulated();
+    
+    void onItemNewSelected();
 
 private:
 
