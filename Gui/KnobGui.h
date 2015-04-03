@@ -306,6 +306,8 @@ public Q_SLOTS:
     
     void onHasModificationsChanged();
     
+    void onDescriptionChanged();
+    
 Q_SIGNALS:
 
     void knobUndoneChange();
@@ -360,6 +362,8 @@ private:
     virtual void setEnabled() = 0;
     virtual void setReadOnly(bool readOnly,int dimension) = 0;
     virtual void setDirty(bool dirty) = 0;
+    
+    virtual void onLabelChanged() {}
 
     /**
      * @brief Must fill the horizontal layout with all the widgets composing the knob.

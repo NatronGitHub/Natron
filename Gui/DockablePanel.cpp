@@ -2678,7 +2678,7 @@ NodeSettingsPanel::onExportPresetsActionTriggered()
 
     boost::shared_ptr<NodeGui> node = getNode();
     std::list<boost::shared_ptr<NodeSerialization> > nodeSerialization;
-    node->serializeInternal(nodeSerialization,true);
+    node->serializeInternal(nodeSerialization);
     try {
          
         int nNodes = nodeSerialization.size();

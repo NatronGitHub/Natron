@@ -294,6 +294,7 @@ RotoPanel::RotoPanel(const boost::shared_ptr<NodeGui>&  n,
 
     QObject::connect( _imp->context.get(),SIGNAL( itemScriptNameChanged(boost::shared_ptr<RotoItem>)),this,SLOT( onItemScriptNameChanged(boost::shared_ptr<RotoItem>) ) );
     QObject::connect( _imp->context.get(),SIGNAL( itemLabelChanged(boost::shared_ptr<RotoItem>)),this,SLOT( onItemLabelChanged(boost::shared_ptr<RotoItem>) ) );
+    QObject::connect( _imp->context.get(), SIGNAL(itemLockedChanged(int)), this, SLOT(onItemLockChanged(int)));
     
     _imp->mainLayout = new QVBoxLayout(this);
 
@@ -457,7 +458,7 @@ RotoPanel::RotoPanel(const boost::shared_ptr<NodeGui>&  n,
     _imp->buildTreeFromContext();
 
     ///refresh selection
-    onSelectionChanged(RotoContext::eSelectionReasonOther);
+    onSelectionChanged(RotoItem::eSelectionReasonOther);
 }
 
 RotoPanel::~RotoPanel()
@@ -615,7 +616,7 @@ RotoPanel::onSelectionChangedInternal()
 void
 RotoPanel::onSelectionChanged(int reason)
 {
-    if ( (RotoContext::SelectionReasonEnum)reason == RotoContext::eSelectionReasonSettingsPanel ) {
+    if ( (RotoItem::SelectionReasonEnum)reason == RotoItem::eSelectionReasonSettingsPanel ) {
         return;
     }
 
@@ -1007,7 +1008,7 @@ RotoPanelPrivate::insertItemInternal(int reason,
             keyframes.insert( std::make_pair(isBezier, keys) );
         }
     }
-    if ( (RotoContext::SelectionReasonEnum)reason == RotoContext::eSelectionReasonSettingsPanel ) {
+    if ( (RotoItem::SelectionReasonEnum)reason == RotoItem::eSelectionReasonSettingsPanel ) {
         boost::shared_ptr<RotoDrawableItem> drawable = boost::dynamic_pointer_cast<RotoDrawableItem>(item);
         if (drawable) {
             publicInterface->makeCustomWidgetsForItem(drawable);
@@ -1039,7 +1040,7 @@ RotoPanel::onItemRemoved(const boost::shared_ptr<RotoItem>& item,
             _imp->keyframes.erase(it);
         }
     }
-    if ( (RotoContext::SelectionReasonEnum)reason == RotoContext::eSelectionReasonSettingsPanel ) {
+    if ( (RotoItem::SelectionReasonEnum)reason == RotoItem::eSelectionReasonSettingsPanel ) {
         return;
     }
     _imp->removeItemRecursively(item);
@@ -1071,8 +1072,8 @@ RotoPanel::onCurrentItemCompOperatorChanged(int index)
             assert(drawable);
             boost::shared_ptr<Choice_Knob> op = drawable->getOperatorKnob();
             op->setValue(index, 0);
-            _imp->context->clearSelection(RotoContext::eSelectionReasonOther);
-            _imp->context->select(it->rotoItem, RotoContext::eSelectionReasonOther);
+            _imp->context->clearSelection(RotoItem::eSelectionReasonOther);
+            _imp->context->select(it->rotoItem, RotoItem::eSelectionReasonOther);
             _imp->context->evaluateChange();
             break;
         }
@@ -1170,7 +1171,7 @@ RotoPanel::onItemClicked(QTreeWidgetItem* item,
             for (int i = 0; i < selected.size(); ++i) {
                 TreeItems::iterator found = _imp->findItem(selected[i]);
                 assert( found != _imp->items.end() );
-                found->rotoItem->setLocked(locked,true);
+                found->rotoItem->setLocked(locked,true,RotoItem::eSelectionReasonSettingsPanel);
                 _imp->setChildrenLockedRecursively(locked, found->treeItem);
             }
             break;
@@ -1258,6 +1259,20 @@ RotoPanelPrivate::setChildrenActivatedRecursively(bool activated,
     item->setIcon(COL_ACTIVATED, activated ? iconVisible : iconUnvisible);
     for (int i = 0; i < item->childCount(); ++i) {
         setChildrenActivatedRecursively( activated,item->child(i) );
+    }
+}
+
+void
+RotoPanel::onItemLockChanged(int reason)
+{
+    
+    boost::shared_ptr<RotoItem> item = getContext()->getLastItemLocked();
+    if (!item || (RotoItem::SelectionReasonEnum)reason == RotoItem::eSelectionReasonSettingsPanel) {
+        return;
+    }
+    TreeItems::iterator found = _imp->findItem(item);
+    if (found != _imp->items.end()) {
+        found->treeItem->setIcon(COL_LOCKED, item->isLockedRecursive() ? _imp->iconLocked : _imp->iconUnlocked);
     }
 }
 
@@ -1452,7 +1467,7 @@ RotoPanelPrivate::insertSelectionRecursively(const boost::shared_ptr<RotoLayer> 
         boost::shared_ptr<RotoLayer> l = boost::dynamic_pointer_cast<RotoLayer>(*it);
         SelectedItems::iterator found = std::find(selectedItems.begin(), selectedItems.end(), *it);
         if ( found == selectedItems.end() ) {
-            context->select(*it, RotoContext::eSelectionReasonSettingsPanel);
+            context->select(*it, RotoItem::eSelectionReasonSettingsPanel);
             selectedItems.push_back(*it);
         }
         if (l) {
@@ -1501,7 +1516,7 @@ RotoPanel::onItemSelectionChanged()
     }
 
     
-    _imp->context->deselect(_imp->selectedItems, RotoContext::eSelectionReasonSettingsPanel);
+    _imp->context->deselect(_imp->selectedItems, RotoItem::eSelectionReasonSettingsPanel);
     _imp->selectedItems.clear();
 
     ///Don't allow any selection to be made if the roto is a clone of another roto  node.
@@ -1558,7 +1573,7 @@ RotoPanel::onItemSelectionChanged()
     }
 
     
-    _imp->context->select(_imp->selectedItems, RotoContext::eSelectionReasonSettingsPanel);
+    _imp->context->select(_imp->selectedItems, RotoItem::eSelectionReasonSettingsPanel);
 
     bool enabled = selectedBeziersCount > 0;
 
@@ -1855,7 +1870,7 @@ void
 RotoPanel::clearSelection()
 {
     _imp->selectedItems.clear();
-    _imp->context->clearSelection(RotoContext::eSelectionReasonSettingsPanel);
+    _imp->context->clearSelection(RotoItem::eSelectionReasonSettingsPanel);
 }
 
 void

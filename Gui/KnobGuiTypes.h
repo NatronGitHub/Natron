@@ -32,9 +32,11 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/Singleton.h"
 #include "Engine/Knob.h"
+#include "Engine/ImageComponents.h"
 
 #include "Gui/CurveSelection.h"
 #include "Gui/KnobGui.h"
+#include "Gui/AnimatedCheckBox.h"
 #include "Gui/Label.h"
 
 //Define this if you want the spinbox to clamp to the plugin defined range
@@ -160,6 +162,29 @@ private:
 
 
 //================================
+
+class Bool_CheckBox: public AnimatedCheckBox
+{
+    bool useCustomColor;
+    QColor customColor;
+    
+public:
+    
+    Bool_CheckBox(QWidget* parent = 0) : AnimatedCheckBox(parent), useCustomColor(false), customColor() {}
+    
+    virtual ~Bool_CheckBox() {}
+    
+    void setCustomColor(const QColor& color, bool useCustom)
+    {
+        useCustomColor = useCustom;
+        customColor = color;
+    }
+    
+    virtual void getBackgroundColor(double *r,double *g,double *b) const OVERRIDE FINAL;
+    
+    
+};
+
 class Bool_KnobGui
     : public KnobGui
 {
@@ -199,9 +224,10 @@ private:
     virtual void reflectAnimationLevel(int dimension,Natron::AnimationLevelEnum level) OVERRIDE FINAL;
     virtual void reflectExpressionState(int dimension,bool hasExpr) OVERRIDE FINAL;
     virtual void updateToolTip() OVERRIDE FINAL;
+    virtual void onLabelChanged() OVERRIDE FINAL;
 private:
 
-    AnimatedCheckBox *_checkBox;
+    Bool_CheckBox *_checkBox;
     boost::shared_ptr<Bool_Knob> _knob;
 };
 
@@ -333,6 +359,32 @@ private:
 };
 
 //================================
+struct NewLayerDialogPrivate;
+class NewLayerDialog : public QDialog
+{
+    Q_OBJECT
+    
+public:
+    
+    
+    NewLayerDialog(QWidget* parent);
+    
+    virtual ~NewLayerDialog();
+    
+    Natron::ImageComponents getComponents() const;
+    
+public Q_SLOTS:
+    
+    void onNumCompsChanged(double value);
+    
+    void onRGBAButtonClicked();
+    
+private:
+    
+    boost::scoped_ptr<NewLayerDialogPrivate> _imp;
+    
+};
+
 class Choice_KnobGui
     : public KnobGui
 {
@@ -359,6 +411,8 @@ public Q_SLOTS:
     void onCurrentIndexChanged(int i);
 
     void onEntriesPopulated();
+    
+    void onItemNewSelected();
 
 private:
 

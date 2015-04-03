@@ -193,6 +193,11 @@ public:
         Q_EMIT hasModificationsChanged();
     }
     
+    void s_descriptionChanged()
+    {
+        Q_EMIT descriptionChanged();
+    }
+    
 public Q_SLOTS:
 
     /**
@@ -288,6 +293,8 @@ Q_SIGNALS:
     void expressionChanged(int dimension);
     
     void hasModificationsChanged();
+    
+    void descriptionChanged();
 };
 
 struct KnobChange
@@ -679,9 +686,10 @@ public:
 
     /**
      * @brief Get the knob description, that is the label next to the knob on the user interface.
-     * This function is MT-safe as the description NEVER changes throughout the program.
+     * This function is MT-safe as it the description can only be changed by the main thread.
      **/
     virtual const std::string & getDescription() const = 0;
+    virtual void setDescription(const std::string& description) = 0;
     
     /**
      * @brief Hide the description label on the GUI on the left of the knob. This is not dynamic
@@ -1125,6 +1133,7 @@ public:
     virtual void setAnimationEnabled(bool val) OVERRIDE FINAL;
     virtual bool isAnimationEnabled() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual const std::string & getDescription() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    void setDescription(const std::string& description) OVERRIDE FINAL;
     virtual void hideDescription()  OVERRIDE FINAL;
     virtual bool isDescriptionVisible() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual KnobHolder* getHolder() const OVERRIDE FINAL WARN_UNUSED_RETURN;

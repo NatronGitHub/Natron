@@ -325,6 +325,8 @@ public:
                       bool isSrcImage,
                       const RectI& renderWindow,
                       const boost::shared_ptr<Transform::Matrix3x3>& mat,
+                      const std::string& components,
+                      int nComps,
                       OfxClipInstance &clip);
 
     virtual ~OfxImage()

@@ -147,7 +147,8 @@ public:
     
     void restoreUserKnobs(const NodeSerialization& serialization);
     
-
+    bool isNodeCreated() const;
+    
     /*@brief Quit all processing done by all render instances of this node
        This is called when the effect is about to be deleted pluginsly
      */
@@ -278,6 +279,9 @@ public:
      * If inputNb equals -1 then this function will check the output components.
      **/
     Natron::ImageComponents findClosestSupportedComponents(int inputNb,const Natron::ImageComponents& comp) const;
+    static Natron::ImageComponents findClosestInList(const Natron::ImageComponents& comp,
+                                                     const std::list<Natron::ImageComponents> &components,
+                                                     bool multiPlanar);
 
     /**
      * @brief Returns the index of the channel to use to produce the mask.
@@ -893,6 +897,13 @@ public:
     
     std::string getPluginPythonModule() const;
   
+    void refreshChannelSelectors(bool setValues);
+    
+    bool getUserComponents(int inputNb,bool* processChannels,bool* isAll,Natron::ImageComponents *layer) const;
+    
+    void addUserComponents(const Natron::ImageComponents& comps);
+    
+    void getUserComponents(std::list<Natron::ImageComponents>* comps);
     
 private:
     

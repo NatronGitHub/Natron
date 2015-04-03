@@ -291,10 +291,10 @@ NodeGui::initialize(NodeGraph* dag,
         assert(parentGui);
         if (parentGui->isSettingsPanelOpened()) {
             ensurePanelCreated();
+            boost::shared_ptr<MultiInstancePanel> panel = parentGui->getMultiInstancePanel();
+            assert(panel);
+            panel->onChildCreated(internalNode);
         }
-        boost::shared_ptr<MultiInstancePanel> panel = parentGui->getMultiInstancePanel();
-        assert(panel);
-        panel->onChildCreated(internalNode);
     }
     
     if (internalNode->getPluginID() == PLUGINID_OFX_MERGE) {
@@ -1941,10 +1941,10 @@ NodeGui::serialize(NodeGuiSerialization* serializationObject) const
 }
 
 void
-NodeGui::serializeInternal(std::list<boost::shared_ptr<NodeSerialization> >& internalSerialization,bool copyKnobs) const
+NodeGui::serializeInternal(std::list<boost::shared_ptr<NodeSerialization> >& internalSerialization) const
 {
     NodePtr node = getNode();
-    boost::shared_ptr<NodeSerialization> thisSerialization(new NodeSerialization(node,false,copyKnobs));
+    boost::shared_ptr<NodeSerialization> thisSerialization(new NodeSerialization(node,false));
     internalSerialization.push_back(thisSerialization);
     
     ///For multi-instancs, serialize children too
@@ -1956,7 +1956,7 @@ NodeGui::serializeInternal(std::list<boost::shared_ptr<NodeSerialization> >& int
         const std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> >& instances = panel->getInstances();
         for (std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> >::const_iterator it = instances.begin();
              it != instances.end(); ++it) {
-            boost::shared_ptr<NodeSerialization> childSerialization(new NodeSerialization(it->first.lock(),false,copyKnobs));
+            boost::shared_ptr<NodeSerialization> childSerialization(new NodeSerialization(it->first.lock(),false));
             internalSerialization.push_back(childSerialization);
         }
     }

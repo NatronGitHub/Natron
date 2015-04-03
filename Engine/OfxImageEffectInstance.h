@@ -39,7 +39,7 @@ namespace OFX {
 
 namespace Natron {
 class Image;
-
+class ImageComponents;
 class OfxImageEffectInstance
     : public OFX::Host::ImageEffect::Instance
 {
@@ -267,6 +267,9 @@ public:
     void discardClipsView();
     void setClipsMipMapLevel(unsigned int mipMapLevel);
     void discardClipsMipMapLevel();
+    void setClipsPlaneBeingRendered(const Natron::ImageComponents& comp);
+    void discardClipsPlaneBeingRendered();
+    void setInputClipPlane(int inputNb,const Natron::ImageComponents& comp);
     ////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////
 

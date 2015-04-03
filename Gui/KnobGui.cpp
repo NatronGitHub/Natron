@@ -167,6 +167,7 @@ KnobGui::KnobGui(boost::shared_ptr<KnobI> knob,
         QObject::connect( handler,SIGNAL( helpChanged() ),this,SLOT( onHelpChanged() ) );
         QObject::connect( handler,SIGNAL( expressionChanged(int) ),this,SLOT( onExprChanged(int) ) );
         QObject::connect( handler,SIGNAL( hasModificationsChanged() ),this,SLOT( onHasModificationsChanged() ) );
+        QObject::connect(handler,SIGNAL(descriptionChanged()), this, SLOT(onDescriptionChanged()));
     }
     _imp->guiCurves.resize(knob->getDimension());
     if (knob->canAnimate()) {
@@ -2339,5 +2340,11 @@ KnobGui::onHasModificationsChanged()
     reflectModificationsState();
 }
 
-
-
+void
+KnobGui::onDescriptionChanged()
+{
+    if (_imp->descriptionLabel) {
+        _imp->descriptionLabel->setText(getKnob()->getDescription().c_str());
+        onLabelChanged();
+    }
+}

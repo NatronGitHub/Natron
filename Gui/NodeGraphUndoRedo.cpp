@@ -140,7 +140,10 @@ AddMultipleNodesCommand::~AddMultipleNodesCommand()
 {
     if (_isUndone) {
         for (std::list<boost::weak_ptr<NodeGui> >::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
-            _graph->deleteNodepluginsly(it->lock());
+            boost::shared_ptr<NodeGui> node = it->lock();
+            if (node) {
+                _graph->deleteNodepluginsly(node);
+            }
         }
     }
 }
@@ -1041,7 +1044,7 @@ LoadNodePresetsCommand::redo()
     if (!_firstRedoCalled) {
        
         ///Serialize the current state of the node
-        node->serializeInternal(_oldSerialization,true);
+        node->serializeInternal(_oldSerialization);
         
         if (panel) {
             const std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> >& children = panel->getInstances();

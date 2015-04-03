@@ -605,7 +605,7 @@ RotoGui::RotoGui(NodeGui* node,
                       this, SLOT( onCurrentFrameChanged(SequenceTime,int) ) );
     QObject::connect( _imp->context.get(), SIGNAL( refreshViewerOverlays() ), this, SLOT( onRefreshAsked() ) );
     QObject::connect( _imp->context.get(), SIGNAL( selectionChanged(int) ), this, SLOT( onSelectionChanged(int) ) );
-    QObject::connect( _imp->context.get(), SIGNAL( itemLockedChanged() ), this, SLOT( onCurveLockedChanged() ) );
+    QObject::connect( _imp->context.get(), SIGNAL( itemLockedChanged(int) ), this, SLOT( onCurveLockedChanged(int) ) );
     restoreSelectionFromContext();
 }
 
@@ -1385,9 +1385,9 @@ RotoGui::updateSelectionFromSelectionRectangle(bool onRelease)
     }
 
     if (!_imp->rotoData->selectedBeziers.empty()) {
-        _imp->context->select(_imp->rotoData->selectedBeziers, RotoContext::eSelectionReasonOverlayInteract);
+        _imp->context->select(_imp->rotoData->selectedBeziers, RotoItem::eSelectionReasonOverlayInteract);
     } else if (!stickySel && !_imp->shiftDown) {
-        _imp->context->clearSelection(RotoContext::eSelectionReasonOverlayInteract);
+        _imp->context->clearSelection(RotoItem::eSelectionReasonOverlayInteract);
     }
     
 
@@ -1420,7 +1420,7 @@ RotoGui::RotoGuiPrivate::clearCPSSelection()
 void
 RotoGui::RotoGuiPrivate::clearBeziersSelection()
 {
-    context->clearSelection(RotoContext::eSelectionReasonOverlayInteract);
+    context->clearSelection(RotoItem::eSelectionReasonOverlayInteract);
     rotoData->selectedBeziers.clear();
 }
 
@@ -1429,7 +1429,7 @@ RotoGui::RotoGuiPrivate::removeBezierFromSelection(const boost::shared_ptr<Bezie
 {
     for (SelectedBeziers::iterator fb = rotoData->selectedBeziers.begin(); fb != rotoData->selectedBeziers.end(); ++fb) {
         if (*fb == b) {
-            context->deselect(*fb, RotoContext::eSelectionReasonOverlayInteract);
+            context->deselect(*fb, RotoItem::eSelectionReasonOverlayInteract);
             rotoData->selectedBeziers.erase(fb);
 
             return true;
@@ -1518,7 +1518,7 @@ RotoGui::RotoGuiPrivate::handleBezierSelection(const boost::shared_ptr<Bezier> &
             clearBeziersSelection();
         }
         rotoData->selectedBeziers.push_back(curve);
-        context->select(curve, RotoContext::eSelectionReasonOverlayInteract);
+        context->select(curve, RotoItem::eSelectionReasonOverlayInteract);
     }
 }
 
@@ -2391,7 +2391,7 @@ RotoGui::keyDown(double /*scaleX*/,
         if ( _imp->rotoData->selectedBeziers.empty() ) {
             std::list<boost::shared_ptr<Bezier> > bez = _imp->context->getCurvesByRenderOrder();
             for (std::list<boost::shared_ptr<Bezier> >::const_iterator it = bez.begin(); it != bez.end(); ++it) {
-                _imp->context->select(*it, RotoContext::eSelectionReasonOverlayInteract);
+                _imp->context->select(*it, RotoItem::eSelectionReasonOverlayInteract);
                 _imp->rotoData->selectedBeziers.push_back(*it);
             }
         } else {
@@ -3032,7 +3032,7 @@ RotoGui::RotoGuiPrivate::onCurveLockedChangedRecursive(const boost::shared_ptr<R
             SelectedBeziers::iterator found = std::find(rotoData->selectedBeziers.begin(),rotoData->selectedBeziers.end(),b);
             if ( found == rotoData->selectedBeziers.end() ) {
                 rotoData->selectedBeziers.push_back(b);
-                context->select(b, RotoContext::eSelectionReasonSettingsPanel);
+                context->select(b, RotoItem::eSelectionReasonSettingsPanel);
                 *ret  = true;
             }
         }
@@ -3045,10 +3045,10 @@ RotoGui::RotoGuiPrivate::onCurveLockedChangedRecursive(const boost::shared_ptr<R
 }
 
 void
-RotoGui::onCurveLockedChanged()
+RotoGui::onCurveLockedChanged(int reason)
 {
     boost::shared_ptr<RotoItem> item = _imp->context->getLastItemLocked();
-    if (item) {
+    if (item && (RotoItem::SelectionReasonEnum)reason != RotoItem::eSelectionReasonOverlayInteract) {
         assert(item);
         bool changed = false;
         if (item) {
@@ -3064,7 +3064,7 @@ RotoGui::onCurveLockedChanged()
 void
 RotoGui::onSelectionChanged(int reason)
 {
-    if ( (RotoContext::SelectionReasonEnum)reason != RotoContext::eSelectionReasonOverlayInteract ) {
+    if ( (RotoItem::SelectionReasonEnum)reason != RotoItem::eSelectionReasonOverlayInteract ) {
         _imp->rotoData->selectedBeziers = _imp->context->getSelectedCurves();
         _imp->viewer->redraw();
     }
@@ -3086,7 +3086,7 @@ RotoGui::setSelection(const std::list<boost::shared_ptr<Bezier> > & selectedBezi
             _imp->rotoData->selectedCps.push_back(*it);
         }
     }
-    _imp->context->select(_imp->rotoData->selectedBeziers, RotoContext::eSelectionReasonOverlayInteract);
+    _imp->context->select(_imp->rotoData->selectedBeziers, RotoItem::eSelectionReasonOverlayInteract);
     _imp->computeSelectedCpsBBOX();
 }
 
@@ -3103,7 +3103,7 @@ RotoGui::setSelection(const boost::shared_ptr<Bezier> & curve,
         _imp->rotoData->selectedCps.push_back(point);
     }
     if (curve) {
-        _imp->context->select(curve, RotoContext::eSelectionReasonOverlayInteract);
+        _imp->context->select(curve, RotoItem::eSelectionReasonOverlayInteract);
     }
     _imp->computeSelectedCpsBBOX();
 }
@@ -3361,7 +3361,7 @@ RotoGui::lockSelectedCurves()
     
     for (SelectedBeziers::const_iterator it = selection.begin(); it != selection.end(); ++it) {
 
-        (*it)->setLocked(true, false);
+        (*it)->setLocked(true, false,RotoItem::eSelectionReasonOverlayInteract);
     }
     _imp->clearSelection();
     _imp->viewer->redraw();

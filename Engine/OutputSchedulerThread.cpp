@@ -2054,8 +2054,8 @@ DefaultScheduler::processFrame(const BufferedFrames& frames)
         ImagePtr inputImage = boost::dynamic_pointer_cast<Natron::Image>(it->frame);
         assert(inputImage);
         
-        std::list<ImagePtr> inputImages;
-        inputImages.push_back(inputImage);
+        EffectInstance::InputImagesMap inputImages;
+        inputImages[0].push_back(inputImage);
         Natron::EffectInstance::RenderRoIArgs args(frame.time,
                                                    scale,0,
                                                    it->view,

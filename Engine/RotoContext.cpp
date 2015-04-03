@@ -917,19 +917,19 @@ RotoItem::isDeactivatedRecursive() const
 }
 
 void
-RotoItem::setLocked_recursive(bool locked)
+RotoItem::setLocked_recursive(bool locked,RotoItem::SelectionReasonEnum reason)
 {
     {
         {
             QMutexLocker m(&itemMutex);
             _imp->locked = locked;
         }
-        getContext()->onItemLockedChanged(shared_from_this());
+        getContext()->onItemLockedChanged(shared_from_this(),reason);
         RotoLayer* layer = dynamic_cast<RotoLayer*>(this);
         if (layer) {
             const RotoItems & children = layer->getItems();
             for (RotoItems::const_iterator it = children.begin(); it != children.end(); ++it) {
-                (*it)->setLocked_recursive(locked);
+                (*it)->setLocked_recursive(locked,reason);
             }
         }
     }
@@ -937,7 +937,8 @@ RotoItem::setLocked_recursive(bool locked)
 
 void
 RotoItem::setLocked(bool l,
-                    bool lockChildren)
+                    bool lockChildren,
+                    RotoItem::SelectionReasonEnum reason)
 {
     ///called on the main-thread only
     assert( QThread::currentThread() == qApp->thread() );
@@ -946,9 +947,9 @@ RotoItem::setLocked(bool l,
             QMutexLocker m(&itemMutex);
             _imp->locked = l;
         }
-        getContext()->onItemLockedChanged(shared_from_this());
+        getContext()->onItemLockedChanged(shared_from_this(),reason);
     } else {
-        setLocked_recursive(l);
+        setLocked_recursive(l,reason);
     }
 }
 
@@ -4004,7 +4005,7 @@ RotoContext::createBaseLayer()
     ////Add the base layer
     boost::shared_ptr<RotoLayer> base = addLayerInternal(false);
     
-    deselect(base, eSelectionReasonOther);
+    deselect(base, RotoItem::eSelectionReasonOther);
 }
 
 RotoContext::~RotoContext()
@@ -4057,11 +4058,11 @@ RotoContext::addLayerInternal(bool declarePython)
         _imp->lastInsertedItem = item;
     }
     
-    Q_EMIT itemInserted(eSelectionReasonOther);
+    Q_EMIT itemInserted(RotoItem::eSelectionReasonOther);
     
     
-    clearSelection(eSelectionReasonOther);
-    select(item, eSelectionReasonOther);
+    clearSelection(RotoItem::eSelectionReasonOther);
+    select(item, RotoItem::eSelectionReasonOther);
     
     return item;
 
@@ -4242,11 +4243,11 @@ RotoContext::makeBezier(double x,
     }
     _imp->lastInsertedItem = curve;
 
-    Q_EMIT itemInserted(eSelectionReasonOther);
+    Q_EMIT itemInserted(RotoItem::eSelectionReasonOther);
 
 
-    clearSelection(eSelectionReasonOther);
-    select(curve, eSelectionReasonOther);
+    clearSelection(RotoItem::eSelectionReasonOther);
+    select(curve, RotoItem::eSelectionReasonOther);
 
     if ( isAutoKeyingEnabled() ) {
         curve->setKeyframe( getTimelineCurrentTime() );
@@ -4313,7 +4314,7 @@ RotoContext::makeSquare(double x,double y,double initialSize,int time)
 
 void
 RotoContext::removeItemRecursively(const boost::shared_ptr<RotoItem>& item,
-                                   SelectionReasonEnum reason)
+                                   RotoItem::SelectionReasonEnum reason)
 {
     boost::shared_ptr<RotoLayer> isLayer = boost::dynamic_pointer_cast<RotoLayer>(item);
     boost::shared_ptr<RotoItem> foundSelected;
@@ -4345,7 +4346,7 @@ RotoContext::removeItemRecursively(const boost::shared_ptr<RotoItem>& item,
 
 void
 RotoContext::removeItem(const boost::shared_ptr<RotoItem>& item,
-                        SelectionReasonEnum reason)
+                        RotoItem::SelectionReasonEnum reason)
 {
     ///MT-safe: only called on the main-thread
     assert( QThread::currentThread() == qApp->thread() );
@@ -4364,7 +4365,7 @@ void
 RotoContext::addItem(const boost::shared_ptr<RotoLayer>& layer,
                      int indexInLayer,
                      const boost::shared_ptr<RotoItem> & item,
-                     SelectionReasonEnum reason)
+                     RotoItem::SelectionReasonEnum reason)
 {
     ///MT-safe: only called on the main-thread
     assert( QThread::currentThread() == qApp->thread() );
@@ -4528,7 +4529,7 @@ linkItemsKnobsRecursively(RotoContext* ctx,
         boost::shared_ptr<RotoLayer> isLayer = boost::dynamic_pointer_cast<RotoLayer>(*it);
 
         if (isBezier) {
-            ctx->select(isBezier, RotoContext::eSelectionReasonOther);
+            ctx->select(isBezier, RotoItem::eSelectionReasonOther);
         } else if (isLayer) {
             linkItemsKnobsRecursively(ctx, isLayer);
         }
@@ -4564,7 +4565,7 @@ RotoContext::load(const RotoContextSerialization & obj)
         boost::shared_ptr<Bezier> isBezier = boost::dynamic_pointer_cast<Bezier>(item);
         boost::shared_ptr<RotoLayer> isLayer = boost::dynamic_pointer_cast<RotoLayer>(item);
         if (isBezier) {
-            select(isBezier,eSelectionReasonOther);
+            select(isBezier,RotoItem::eSelectionReasonOther);
         } else if (isLayer) {
             linkItemsKnobsRecursively(this, isLayer);
         }
@@ -4573,7 +4574,7 @@ RotoContext::load(const RotoContextSerialization & obj)
 
 void
 RotoContext::select(const boost::shared_ptr<RotoItem> & b,
-                    RotoContext::SelectionReasonEnum reason)
+                    RotoItem::SelectionReasonEnum reason)
 {
     {
         QMutexLocker l(&_imp->rotoContextMutex);
@@ -4584,7 +4585,7 @@ RotoContext::select(const boost::shared_ptr<RotoItem> & b,
 
 void
 RotoContext::select(const std::list<boost::shared_ptr<Bezier> > & beziers,
-                    RotoContext::SelectionReasonEnum reason)
+                    RotoItem::SelectionReasonEnum reason)
 {
     {
         QMutexLocker l(&_imp->rotoContextMutex);
@@ -4597,7 +4598,7 @@ RotoContext::select(const std::list<boost::shared_ptr<Bezier> > & beziers,
 
 void
 RotoContext::select(const std::list<boost::shared_ptr<RotoItem> > & items,
-                    RotoContext::SelectionReasonEnum reason)
+                    RotoItem::SelectionReasonEnum reason)
 {
     {
         QMutexLocker l(&_imp->rotoContextMutex);
@@ -4610,7 +4611,7 @@ RotoContext::select(const std::list<boost::shared_ptr<RotoItem> > & items,
 
 void
 RotoContext::deselect(const boost::shared_ptr<RotoItem> & b,
-                      RotoContext::SelectionReasonEnum reason)
+                      RotoItem::SelectionReasonEnum reason)
 {
     {
         QMutexLocker l(&_imp->rotoContextMutex);
@@ -4621,7 +4622,7 @@ RotoContext::deselect(const boost::shared_ptr<RotoItem> & b,
 
 void
 RotoContext::deselect(const std::list<boost::shared_ptr<Bezier> > & beziers,
-                      RotoContext::SelectionReasonEnum reason)
+                      RotoItem::SelectionReasonEnum reason)
 {
     {
         QMutexLocker l(&_imp->rotoContextMutex);
@@ -4634,7 +4635,7 @@ RotoContext::deselect(const std::list<boost::shared_ptr<Bezier> > & beziers,
 
 void
 RotoContext::deselect(const std::list<boost::shared_ptr<RotoItem> > & items,
-                      RotoContext::SelectionReasonEnum reason)
+                      RotoItem::SelectionReasonEnum reason)
 {
     {
         QMutexLocker l(&_imp->rotoContextMutex);
@@ -4646,7 +4647,7 @@ RotoContext::deselect(const std::list<boost::shared_ptr<RotoItem> > & items,
 }
 
 void
-RotoContext::clearSelection(RotoContext::SelectionReasonEnum reason)
+RotoContext::clearSelection(RotoItem::SelectionReasonEnum reason)
 {
     {
         QMutexLocker l(&_imp->rotoContextMutex);
@@ -5223,7 +5224,7 @@ RotoContext::getAge()
 }
 
 void
-RotoContext::onItemLockedChanged(const boost::shared_ptr<RotoItem>& item)
+RotoContext::onItemLockedChanged(const boost::shared_ptr<RotoItem>& item, RotoItem::SelectionReasonEnum reason)
 {
     assert(item);
     ///refresh knobs
@@ -5258,7 +5259,7 @@ RotoContext::onItemLockedChanged(const boost::shared_ptr<RotoItem>& item)
     _imp->inverted->setAllDimensionsEnabled(enabled);
 #endif
     _imp->lastLockedItem = item;
-    Q_EMIT itemLockedChanged();
+    Q_EMIT itemLockedChanged((int)reason);
 }
 
 void
@@ -5362,7 +5363,7 @@ RotoContext::renderMask(bool useCache,
                         Natron::ImageBitDepthEnum depth,
                         int view,
                         unsigned int mipmapLevel,
-                        const std::list<boost::shared_ptr<Natron::Image> >& inputImages,
+                        const EffectInstance::InputImagesMap& inputImages,
                         bool byPassCache)
 {
     std::list< boost::shared_ptr<Bezier> > splines = getCurvesByRenderOrder();
