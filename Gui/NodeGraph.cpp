@@ -2024,10 +2024,14 @@ NodeGraph::mouseDoubleClickEvent(QMouseEvent* e)
         const NodeGuiPtr& node = matches.rbegin()->second;
         if (modCASIsControl(e)) {
             node->ensurePanelCreated();
-            node->getSettingPanel()->floatPanel();
+            if (node->getSettingPanel()) {
+                node->getSettingPanel()->floatPanel();
+            }
         } else {
             node->setVisibleSettingsPanel(true);
-            _imp->_gui->putSettingsPanelFirst( node->getSettingPanel() );
+            if (node->getSettingPanel()) {
+                _imp->_gui->putSettingsPanelFirst( node->getSettingPanel() );
+            }
         }
         if ( !node->wasBeginEditCalled() ) {
             node->beginEditKnobs();
