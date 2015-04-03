@@ -260,7 +260,7 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
             
             getNode()->initializeInputs();
             getNode()->initializeKnobs(disableRenderScaleSupport ? 1 : 0 );
-            getNode()->refreshChannelSelectors(serialization->isNull());
+            //getNode()->refreshChannelSelectors(serialization->isNull());
             
             ///before calling the createInstanceAction, load values
             if ( serialization && !serialization->isNull() ) {

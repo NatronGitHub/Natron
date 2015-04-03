@@ -497,7 +497,6 @@ Node::load(const std::string & parentMultiInstanceName,
         createRotoContextConditionnally();
         initializeInputs();
         initializeKnobs(renderScaleSupportPreference);
-        refreshChannelSelectors(serialization.isNull());
         
         if (!serialization.isNull()) {
             loadKnobs(serialization);
@@ -580,6 +579,8 @@ Node::load(const std::string & parentMultiInstanceName,
     assert(_imp->liveInstance);
     _imp->nodeCreated = true;
     
+    refreshChannelSelectors(serialization.isNull());
+
     _imp->runOnNodeCreatedCB(serialization.isNull());
     
 } // load
@@ -3595,7 +3596,9 @@ Node::togglePreview()
 {
     ///MT-safe from Knob
     assert(_imp->knobsInitialized);
-    assert(_imp->previewEnabledKnob);
+    if (!_imp->previewEnabledKnob) {
+        return;
+    }
     _imp->previewEnabledKnob->setValue(!_imp->previewEnabledKnob->getValue(),0);
 }
 
@@ -5683,15 +5686,10 @@ Node::refreshChannelSelectors(bool setValues)
             node = getInput(it->first);
         }
         
-        std::string curLayerChoice;
         std::vector<std::string> currentLayerEntries = it->second.layer->getEntries_mt_safe();
         
-        if (!currentLayerEntries.empty()) {
-            int curLayer_i = it->second.layer->getValue();
-            if (curLayer_i >= 0 && curLayer_i < (int)currentLayerEntries.size()) {
-                curLayerChoice = currentLayerEntries[curLayer_i];
-            }
-        }
+        int curLayer_i = it->second.layer->getValue();
+
         
         
         std::vector<std::string> choices;
@@ -5770,6 +5768,13 @@ Node::refreshChannelSelectors(bool setValues)
 
         
         it->second.layer->populateChoices(choices);
+        
+        std::string currentLayerChoice;
+        if (!choices.empty()) {
+            if (curLayer_i >= 0 && curLayer_i < (int)choices.size()) {
+                currentLayerChoice = choices[curLayer_i];
+            }
+        }
  
         if (setValues) {
             assert(colorIndex != -1);
@@ -5781,9 +5786,9 @@ Node::refreshChannelSelectors(bool setValues)
              
             }
         } else {
-            if (!curLayerChoice.empty()) {
+            if (!currentLayerChoice.empty()) {
                 for (std::size_t i = 0; i < choices.size(); ++i) {
-                    if (choices[i] == curLayerChoice) {
+                    if (choices[i] == currentLayerChoice) {
                         it->second.layer->setValue(i, 0);
                         break;
                     }
