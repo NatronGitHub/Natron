@@ -586,7 +586,7 @@ NodeCurveEditorElement::checkVisibleState(bool autoSelectOnShow)
     boost::shared_ptr<Curve> curve =  _curve->getInternalCurve() ;
     std::string expr = _knob->getKnob()->getExpression(_dimension);
     // even when there is only one keyframe, there may be tangents!
-    if (curve->getKeyFramesCount() > 0 || !expr.empty()) {
+    if (curve && (curve->getKeyFramesCount() > 0 || !expr.empty())) {
         
         setVisible(true);
         
