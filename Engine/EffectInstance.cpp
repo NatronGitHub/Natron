@@ -5011,8 +5011,6 @@ EffectInstance::getComponentsAvailableRecursive(SequenceTime time, int view, Com
     ComponentsNeededMap::iterator foundOutput = neededComps.find(-1);
     if (foundOutput != neededComps.end()) {
         
-        foundOutput->second.insert(foundOutput->second.end(), userComps.begin(), userComps.end());
-        
         ///Foreach component produced by the node at the given (view,time),  try
         ///to add it to the components available. Since we are recursing upstream, it is probably
         ///already in there, in which case we ignore it and keep the one from below.
@@ -5046,6 +5044,49 @@ EffectInstance::getComponentsAvailableRecursive(SequenceTime time, int view, Com
             if (alreadyExisting == comps->end()) {
                 comps->insert(std::make_pair(*it, node));
             }
+        }
+        
+        ///Foreach user component, add it as an available component, but use this node only if it is also
+        ///in the "needed components" list
+        for (std::list<ImageComponents>::iterator it = userComps.begin(); it!=userComps.end(); ++it) {
+            
+            bool found = false;
+            for (std::vector<Natron::ImageComponents>::iterator it2 = foundOutput->second.begin();
+                 it2 != foundOutput->second.end(); ++it2) {
+                if (*it2 == *it) {
+                    found = true;
+                    break;
+                }
+            }
+ 
+            
+            ComponentsAvailableMap::iterator alreadyExisting = comps->end();
+            
+            if (it->isColorPlane()) {
+                
+                ComponentsAvailableMap::iterator colorMatch = comps->end();
+                
+                for (ComponentsAvailableMap::iterator it2 = comps->begin(); it2 != comps->end(); ++it2) {
+                    if (it2->first == *it) {
+                        alreadyExisting = it2;
+                        break;
+                    } else if (it2->first.isColorPlane()) {
+                        colorMatch = it2;
+                    }
+                }
+                
+                if (alreadyExisting == comps->end() && colorMatch != comps->end()) {
+                    alreadyExisting = colorMatch;
+                }
+            } else {
+                alreadyExisting = comps->find(*it);
+            }
+            
+            //If the component already exists from below in the tree, do not add it
+            if (alreadyExisting == comps->end()) {
+                comps->insert(std::make_pair(*it, found ? node : NodePtr()));
+            }
+
         }
     }
     markedNodes->push_back(this);
@@ -5089,7 +5130,9 @@ EffectInstance::getComponentsAvailableRecursive(SequenceTime time, int view, Com
     if (processAll) {
         //The node makes available everything available upstream
         for (ComponentsAvailableMap::iterator it = comps->begin(); it!=comps->end(); ++it) {
-            it->second = node;
+            if (it->second.lock()) {
+                it->second = node;
+            }
         }
     }
 
@@ -5190,15 +5233,16 @@ EffectInstance::getComponentsNeededAndProduced_public(SequenceTime time, int vie
             bool ok = getNode()->getUserComponents(-1, processChannels,processAllRequested, &layer);
             if (ok && !*processAllRequested) {
                 compVec.push_back(layer);
-            } else {
-                //Use regular clip preferences
-                ImageBitDepthEnum depth;
-                std::list<ImageComponents> components;
-                getPreferredDepthAndComponents(-1, &components, &depth);
-                for (std::list<ImageComponents>::iterator it = components.begin(); it!=components.end(); ++it) {
-                    compVec.push_back(*it);
-                }
             }
+//            else {
+//                //Use regular clip preferences
+//                ImageBitDepthEnum depth;
+//                std::list<ImageComponents> components;
+//                getPreferredDepthAndComponents(-1, &components, &depth);
+//                for (std::list<ImageComponents>::iterator it = components.begin(); it!=components.end(); ++it) {
+//                    compVec.push_back(*it);
+//                }
+//            }
             comps->insert(std::make_pair(-1, compVec));
 
         }
@@ -5213,15 +5257,16 @@ EffectInstance::getComponentsNeededAndProduced_public(SequenceTime time, int vie
                 bool isAll;
                 if (getNode()->getUserComponents(i, inputProcChannels, &isAll, &layer) && !isAll) {
                     compVec.push_back(layer);
-                } else {
-                    //Use regular clip preferences
-                    ImageBitDepthEnum depth;
-                    std::list<ImageComponents> components;
-                    getPreferredDepthAndComponents(i, &components, &depth);
-                    for (std::list<ImageComponents>::iterator it = components.begin(); it!=components.end(); ++it) {
-                        compVec.push_back(*it);
-                    }
                 }
+//                else {
+//                    //Use regular clip preferences
+//                    ImageBitDepthEnum depth;
+//                    std::list<ImageComponents> components;
+//                    getPreferredDepthAndComponents(i, &components, &depth);
+//                    for (std::list<ImageComponents>::iterator it = components.begin(); it!=components.end(); ++it) {
+//                        compVec.push_back(*it);
+//                    }
+//                }
                 comps->insert(std::make_pair(i, compVec));
             }
 

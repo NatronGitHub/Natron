@@ -900,8 +900,11 @@ ViewerInstance::renderViewer_internal(int view,
                 if (!isSequentialRender && canAbort) {
                     _imp->removeOngoingRender(inArgs.params->textureIndex, inArgs.params->renderAge);
                 }
-                if (retCode == EffectInstance::eRenderRoIRetCodeFailed) {
+                if (retCode != EffectInstance::eRenderRoIRetCodeAborted) {
                     Q_EMIT disconnectTextureRequest(inArgs.params->textureIndex);
+                }
+
+                if (retCode == EffectInstance::eRenderRoIRetCodeFailed) {
                     inArgs.params.reset();
                     return eStatusFailed;
                 }
