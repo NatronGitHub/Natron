@@ -1816,7 +1816,12 @@ Node::initializeKnobs(int renderScaleSupportPref)
                 }
             }
             
-            if (!_imp->liveInstance->isMultiPlanar()) {
+            bool useChannels = !_imp->liveInstance->isMultiPlanar() &&
+            !_imp->liveInstance->isReader() &&
+            !_imp->liveInstance->isWriter() &&
+            !_imp->liveInstance->isTrackerNode();
+            
+            if (useChannels) {
                 const std::vector< boost::shared_ptr<KnobI> > & knobs = _imp->liveInstance->getKnobs();
                 ///find in all knobs a page param to set this param into
                 boost::shared_ptr<Page_Knob> mainPage;

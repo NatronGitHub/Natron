@@ -5195,6 +5195,14 @@ EffectInstance::getComponentsNeededAndProduced_public(SequenceTime time, int vie
             bool ok = getNode()->getUserComponents(-1, processChannels,processAllRequested, &layer);
             if (ok && !*processAllRequested) {
                 compVec.push_back(layer);
+            } else if (!ok) {
+                //Use regular clip preferences
+                ImageBitDepthEnum depth;
+                std::list<ImageComponents> components;
+                getPreferredDepthAndComponents(-1, &components, &depth);
+                for (std::list<ImageComponents>::iterator it = components.begin(); it!=components.end(); ++it) {
+                    compVec.push_back(*it);
+                }
             }
             comps->insert(std::make_pair(-1, compVec));
 
@@ -5208,8 +5216,17 @@ EffectInstance::getComponentsNeededAndProduced_public(SequenceTime time, int vie
                 bool inputProcChannels[4];
                 ImageComponents layer;
                 bool isAll;
-                if (getNode()->getUserComponents(i, inputProcChannels, &isAll, &layer) && !isAll) {
+                bool ok = getNode()->getUserComponents(i, inputProcChannels, &isAll, &layer);
+                if (ok && !isAll) {
                     compVec.push_back(layer);
+                } else {
+                    //Use regular clip preferences
+                    ImageBitDepthEnum depth;
+                    std::list<ImageComponents> components;
+                    getPreferredDepthAndComponents(i, &components, &depth);
+                    for (std::list<ImageComponents>::iterator it = components.begin(); it!=components.end(); ++it) {
+                        compVec.push_back(*it);
+                    }
                 }
                 comps->insert(std::make_pair(i, compVec));
             }
