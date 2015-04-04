@@ -599,6 +599,12 @@ ComboBox::setCurrentIndex(int index)
 void
 ComboBox::setCurrentIndex_no_emit(int index)
 {
+    //Forbid programmatic setting of the "New" choice, only user can select it
+    if (index >= 0 && index < (int)_actions.size()) {
+        if (_actions[index]->data().toInt() == 1) { // "New" choice
+            return;
+        }
+    }
     setCurrentIndex_internal(index);
 }
 

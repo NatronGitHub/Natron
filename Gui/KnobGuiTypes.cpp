@@ -1829,7 +1829,7 @@ Choice_KnobGui::onCurrentIndexChanged(int i)
 void
 Choice_KnobGui::onEntriesPopulated()
 {
-    int activeIndex = _comboBox->activeIndex();
+    int activeIndex = _knob->getValue();
 
     _comboBox->clear();
     _entries = _knob->getEntries_mt_safe();

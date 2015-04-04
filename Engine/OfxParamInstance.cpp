@@ -22,6 +22,7 @@
 //ofx extension
 #include <nuke/fnPublicOfxExtensions.h>
 #include <ofxParametricParam.h>
+#include "ofxNatron.h"
 
 #include <QDebug>
 
@@ -781,6 +782,11 @@ OfxChoiceInstance::OfxChoiceInstance(OfxEffectInstance* node,
 
     int def = properties.getIntProperty(kOfxParamPropDefault);
     _knob->setDefaultValue(def,0);
+    
+    bool canMakeNewPlane = (int)properties.getIntProperty(kNatronOfxParamPropCanMakeNewPlane);
+    if (canMakeNewPlane) {
+        _knob->setAddNewChoice(true);
+    }
 }
 
 OfxStatus
@@ -856,13 +862,17 @@ void
 OfxChoiceInstance::setOption(int /*num*/)
 {
     int dim = getProperties().getDimension(kOfxParamPropChoiceOption);
-
+    int labelOptionDim = getProperties().getDimension(kOfxParamPropChoiceLabelOption);
+    
     _entries.clear();
     std::vector<std::string> helpStrings;
     bool hashelp = false;
     for (int i = 0; i < dim; ++i) {
         std::string str = getProperties().getStringProperty(kOfxParamPropChoiceOption,i);
-        std::string help = getProperties().getStringProperty(kOfxParamPropChoiceLabelOption,i);
+        std::string help;
+        if (i < labelOptionDim) {
+            help = getProperties().getStringProperty(kOfxParamPropChoiceLabelOption,i);
+        }
         if ( !help.empty() ) {
             hashelp = true;
         }

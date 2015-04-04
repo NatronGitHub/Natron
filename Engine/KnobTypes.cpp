@@ -603,10 +603,27 @@ Choice_Knob::populateChoices(const std::vector<std::string> &entries,
                              const std::vector<std::string> &entriesHelp)
 {
     assert( entriesHelp.empty() || entriesHelp.size() == entries.size() );
+    std::vector<std::string> curEntries;
     {
         QMutexLocker l(&_entriesMutex);
+        curEntries = _entries;
         _entriesHelp = entriesHelp;
         _entries = entries;
+    }
+    int cur_i = getValue();
+    std::string curEntry;
+    if (cur_i >= 0 && cur_i < (int)curEntries.size()) {
+        curEntry = curEntries[cur_i];
+    }
+    if (!curEntry.empty()) {
+        for (std::size_t i = 0; i < entries.size(); ++i) {
+            if (entries[i] == curEntry) {
+                blockValueChanges();
+                setValue(cur_i, 0);
+                unblockValueChanges();
+                break;
+            }
+        }
     }
     if (_signalSlotHandler) {
         _signalSlotHandler->s_helpChanged();

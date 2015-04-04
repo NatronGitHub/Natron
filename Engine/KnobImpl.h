@@ -792,7 +792,7 @@ Knob<T>::setValue(const T & v,
     Natron::EffectInstance* holder = dynamic_cast<Natron::EffectInstance*>( getHolder() );
     
 #ifdef DEBUG
-    if (holder) {
+    if (holder && reason == Natron::eValueChangedReasonPluginEdited) {
         holder->checkCanSetValueAndWarn();
     }
 #endif
@@ -1094,7 +1094,7 @@ Knob<T>::setValueAtTime(int time,
     Natron::EffectInstance* holder = dynamic_cast<Natron::EffectInstance*>( getHolder() );
     
 #ifdef DEBUG
-    if (holder) {
+    if (holder && reason == Natron::eValueChangedReasonPluginEdited) {
         holder->checkCanSetValueAndWarn();
     }
 #endif

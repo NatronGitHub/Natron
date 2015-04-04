@@ -228,20 +228,76 @@ OfxClipInstance::getComponentsPresent() const
     ComponentsPresentMap& ret = _componentsPresent.localData();
     ret.clear();
     
-    Natron::EffectInstance* effect = getAssociatedNode();
-    if (!effect) {
-        return ret;
+    EffectInstance::ComponentsAvailableMap compsAvailable;
+    if (isOutput()) {
+        //If called on the output clip and by a multi-planar effect while in the getClipComponents action
+        //this might lead to infinite recursion, so make sure we do not issue a call to getClipComponents again
+        SequenceTime time = _nodeInstance->getCurrentTime();
+        int maxInputs = _nodeInstance->getMaxInputCount();
+        for (int i = 0; i < maxInputs; ++i) {
+            if (!_nodeInstance->isInputMask(i) && !_nodeInstance->isInputRotoBrush(i)) {
+                
+                EffectInstance::ComponentsAvailableMap comps;
+                EffectInstance* input = _nodeInstance->getInput(i);
+                if (input) {
+                    input->getComponentsAvailable(time,&comps);
+                }
+                compsAvailable.insert(comps.begin(), comps.end());
+            }
+        }
+        
+        std::list<ImageComponents> userComps;
+        _nodeInstance->getNode()->getUserComponents(&userComps);
+        
+        ///Foreach user component, add it as an available component, but use this node only if it is also
+        ///in the "needed components" list
+        for (std::list<ImageComponents>::iterator it = userComps.begin(); it!=userComps.end(); ++it) {
+            
+            EffectInstance::ComponentsAvailableMap::iterator alreadyExisting = compsAvailable.end();
+            
+            if (it->isColorPlane()) {
+                
+                EffectInstance::ComponentsAvailableMap::iterator colorMatch = compsAvailable.end();
+                
+                for (EffectInstance::ComponentsAvailableMap::iterator it2 = compsAvailable.begin(); it2 != compsAvailable.end(); ++it2) {
+                    if (it2->first == *it) {
+                        alreadyExisting = it2;
+                        break;
+                    } else if (it2->first.isColorPlane()) {
+                        colorMatch = it2;
+                    }
+                }
+                
+                if (alreadyExisting == compsAvailable.end() && colorMatch != compsAvailable.end()) {
+                    alreadyExisting = colorMatch;
+                }
+            } else {
+                alreadyExisting = compsAvailable.find(*it);
+            }
+            
+            //If the component already exists from below in the tree, do not add it
+            if (alreadyExisting == compsAvailable.end()) {
+                compsAvailable.insert(std::make_pair(*it, _nodeInstance->getNode()));
+            }
+            
+        }
+
+        
+    } else {
+        Natron::EffectInstance* effect = getAssociatedNode();
+        if (!effect) {
+            return ret;
+        }
+        int time = effect->getCurrentTime();
+        
+        effect->getComponentsAvailable(time, &compsAvailable);
     }
     
-    
-    int time = effect->getCurrentTime();
-    
-    EffectInstance::ComponentsAvailableMap comps;
-    effect->getComponentsAvailable(time, &comps);
-    
-    for (EffectInstance::ComponentsAvailableMap::iterator it = comps.begin(); it != comps.end(); ++it) {
+    for (EffectInstance::ComponentsAvailableMap::iterator it = compsAvailable.begin(); it != compsAvailable.end(); ++it) {
         ret.push_back(natronsComponentsToOfxComponents(it->first));
     }
+
+    
     
     return ret;
 }
