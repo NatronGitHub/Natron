@@ -95,6 +95,7 @@ public:
     static const ImageComponents& getForwardMotionComponents();
     static const ImageComponents& getDisparityLeftComponents();
     static const ImageComponents& getDisparityRightComponents();
+    static const ImageComponents& getXYComponents();
     
     friend class boost::serialization::access;
     

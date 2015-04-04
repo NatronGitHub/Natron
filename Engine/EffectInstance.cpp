@@ -1202,7 +1202,7 @@ EffectInstance::getImage(int inputNb,
         getPreferredDepthAndComponents(-1, &outputComps, &outputDepth);
         
         //the roto input can only output color plane
-        assert(outputComps.size() == 1 && outputComps.front().isColorPlane());
+        assert(outputComps.size() == 1);
         
         boost::shared_ptr<Natron::Image> mask =  roto->renderMask(true,pixelRoI, outputComps.front(), nodeHash,rotoAge,
                                                                   rod, time, depth, view, mipMapLevel, inputImagesThreadLocal, byPassCache);
@@ -3132,44 +3132,6 @@ EffectInstance::renderInputImagesForRoI(bool createImageInCache,
             }
         }
     }
-
-    
-    ///if the node has a roto context, pre-render the roto mask too
-    boost::shared_ptr<RotoContext> rotoCtx = getNode()->getRotoContext();
-    if (rotoCtx) {
-        std::list<Natron::ImageComponents> inputPrefComps;
-        Natron::ImageBitDepthEnum inputPrefDepth;
-        int rotoIndex = getRotoBrushInputIndex();
-        assert(rotoIndex != -1);
-        
-        InputImagesMap::iterator foundInputImages = inputImages->find(rotoIndex);
-        if (foundInputImages == inputImages->end()) {
-            std::pair<InputImagesMap::iterator,bool> ret = inputImages->insert(std::make_pair(rotoIndex, ImageList()));
-            foundInputImages = ret.first;
-            assert(ret.second);
-        }
-        
-        getPreferredDepthAndComponents(rotoIndex, &inputPrefComps, &inputPrefDepth);
-        
-        //Roto can only output color
-        assert(!inputPrefComps.empty() && inputPrefComps.front().isColorPlane());
-        
-        boost::shared_ptr<Natron::Image> mask = rotoCtx->renderMask(createImageInCache,
-                                                                    downscaledRenderWindow,
-                                                                    inputPrefComps.front(),
-                                                                    nodeHash,
-                                                                    rotoAge,
-                                                                    rod,
-                                                                    time,
-                                                                    inputPrefDepth,
-                                                                    view,
-                                                                    mipMapLevel,
-                                                                    InputImagesMap(),
-                                                                    byPassCache);
-        assert(mask);
-        foundInputImages->second.push_back(mask);
-    }
-    
     return eRenderRoIRetCodeOk;
 }
 
@@ -4699,7 +4661,7 @@ EffectInstance::isIdentity_public(U64 hash,
             ret = true;
             *inputNb = 0;
             *inputTime = time;
-        } else if ( getNode()->isNodeDisabled() ) {
+        } else if ( getNode()->isNodeDisabled() || !getNode()->hasAtLeastOneChannelToProcess()) {
             
             ret = true;
             *inputTime = time;

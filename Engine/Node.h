@@ -905,6 +905,8 @@ public:
     
     void getUserComponents(std::list<Natron::ImageComponents>* comps);
     
+    bool hasAtLeastOneChannelToProcess() const;
+    
 private:
     
     void setNameInternal(const std::string& name);

@@ -4767,6 +4767,26 @@ Node::getUserComponents(int inputNb,bool* processChannels, bool* isAll,Natron::I
 
 }
 
+bool
+Node::hasAtLeastOneChannelToProcess() const
+{
+    std::map<int,ChannelSelector>::const_iterator foundSelector = _imp->channelsSelectors.find(-1);
+    if (foundSelector == _imp->channelsSelectors.end()) {
+        return true;
+    }
+    if (foundSelector->second.useRGBASelectors) {
+        bool processChannels[4];
+        processChannels[0] = foundSelector->second.enabledChan[0]->getValue() && !foundSelector->second.enabledChan[0]->getIsSecret();
+        processChannels[1] = foundSelector->second.enabledChan[1]->getValue() && !foundSelector->second.enabledChan[1]->getIsSecret();
+        processChannels[2] = foundSelector->second.enabledChan[2]->getValue() && !foundSelector->second.enabledChan[2]->getIsSecret();
+        processChannels[3] = foundSelector->second.enabledChan[3]->getValue() && !foundSelector->second.enabledChan[3]->getIsSecret();
+        if (!processChannels[0] && !processChannels[1] && !processChannels[2] && !processChannels[3]) {
+            return false;
+        }
+    }
+    return true;
+}
+
 void
 Node::replaceCustomDataInlabel(const QString & data)
 {

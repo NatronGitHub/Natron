@@ -5010,6 +5010,7 @@ RotoContext::goToPreviousKeyframe()
     }
 
     if (minimum != INT_MIN) {
+        getNode()->getApp()->setLastViewerUsingTimeline(boost::shared_ptr<Natron::Node>());
         getNode()->getApp()->getTimeLine()->seekFrame(minimum, false,  NULL, Natron::eTimelineChangeReasonPlaybackSeek);
     }
 }
@@ -5042,7 +5043,9 @@ RotoContext::goToNextKeyframe()
         }
     }
     if (maximum != INT_MAX) {
+        getNode()->getApp()->setLastViewerUsingTimeline(boost::shared_ptr<Natron::Node>());
         getNode()->getApp()->getTimeLine()->seekFrame(maximum, false, NULL,Natron::eTimelineChangeReasonPlaybackSeek);
+        
     }
 }
 
@@ -5319,36 +5322,109 @@ adjustToPointToScale(unsigned int mipmapLevel,
     }
 }
 
-template <typename PIX,int maxValue>
+template <typename PIX,int maxValue,int srcNComps, int dstNComps>
 static void
-convertCairoImageToNatronImage(cairo_surface_t* cairoImg,
-                               Natron::Image* image,
-                               const RectI & pixelRod)
+convertCairoImageToNatronImageForDstComponents(cairo_surface_t* cairoImg,
+                                               Natron::Image* image,
+                                               const RectI & pixelRod)
 {
+    
     unsigned char* cdata = cairo_image_surface_get_data(cairoImg);
     unsigned char* srcPix = cdata;
     int stride = cairo_image_surface_get_stride(cairoImg);
-    int comps = (int)image->getComponentsCount();
-
+    int pixelSize = stride / pixelRod.width();
+    
     Natron::Image::WriteAccess acc = image->getWriteRights();
     
     for (int y = 0; y < pixelRod.height(); ++y, srcPix += stride) {
         PIX* dstPix = (PIX*)acc.pixelAt(pixelRod.x1, pixelRod.y1 + y);
         assert(dstPix);
-
+        
         for (int x = 0; x < pixelRod.width(); ++x) {
-            if (comps == 1) {
-                dstPix[x] = PIX( (float)srcPix[x] / 255.f ) * maxValue;;
-            } else {
-                if (comps == 4) {
+            switch (dstNComps) {
+                case 4:
+                    assert(srcNComps == dstNComps);
                     // cairo's format is ARGB (that is BGRA when interpreted as bytes)
-                    dstPix[x * 4 + 3] = PIX( (float)srcPix[x * 4 + 3] / 255.f ) * maxValue;
-                }
-                dstPix[x * comps + 0] = PIX( (float)srcPix[x * comps + 2] / 255.f ) * maxValue;
-                dstPix[x * comps + 1] = PIX( (float)srcPix[x * comps + 1] / 255.f ) * maxValue;
-                dstPix[x * comps + 2] = PIX( (float)srcPix[x * comps + 0] / 255.f ) * maxValue;
+                    dstPix[x * dstNComps + 3] = PIX( (float)srcPix[x * pixelSize + 3] / 255.f ) * maxValue;
+                    dstPix[x * dstNComps + 0] = PIX( (float)srcPix[x * pixelSize + 2] / 255.f ) * maxValue;
+                    dstPix[x * dstNComps + 1] = PIX( (float)srcPix[x * pixelSize + 1] / 255.f ) * maxValue;
+                    dstPix[x * dstNComps + 2] = PIX( (float)srcPix[x * pixelSize + 0] / 255.f ) * maxValue;
+                    break;
+                case 1:
+                    assert(srcNComps == dstNComps);
+                    dstPix[x] = PIX( (float)srcPix[x] / 255.f ) * maxValue;
+                    break;
+                case 3:
+                    assert(srcNComps == dstNComps);
+                    dstPix[x * dstNComps + 0] = PIX( (float)srcPix[x * pixelSize + 2] / 255.f ) * maxValue;
+                    dstPix[x * dstNComps + 1] = PIX( (float)srcPix[x * pixelSize + 1] / 255.f ) * maxValue;
+                    dstPix[x * dstNComps + 2] = PIX( (float)srcPix[x * pixelSize + 0] / 255.f ) * maxValue;
+                    break;
+                case 2:
+                    assert(srcNComps == 3);
+                    dstPix[x * dstNComps + 0] = PIX( (float)srcPix[x * pixelSize + 2] / 255.f ) * maxValue;
+                    dstPix[x * dstNComps + 1] = PIX( (float)srcPix[x * pixelSize + 1] / 255.f ) * maxValue;
+                    break;
+
+                default:
+                    break;
             }
+            
+            
         }
+    }
+
+}
+
+template <typename PIX,int maxValue,int srcNComps>
+static void
+convertCairoImageToNatronImageForSrcComponents(cairo_surface_t* cairoImg,
+                               Natron::Image* image,
+                               const RectI & pixelRod)
+{
+    int comps = (int)image->getComponentsCount();
+    switch (comps) {
+        case 1:
+            convertCairoImageToNatronImageForDstComponents<PIX,maxValue,srcNComps,1>(cairoImg,image,pixelRod);
+            break;
+        case 2:
+            convertCairoImageToNatronImageForDstComponents<PIX,maxValue,srcNComps,2>(cairoImg,image,pixelRod);
+            break;
+        case 3:
+            convertCairoImageToNatronImageForDstComponents<PIX,maxValue,srcNComps,3>(cairoImg,image,pixelRod);
+            break;
+        case 4:
+            convertCairoImageToNatronImageForDstComponents<PIX,maxValue,srcNComps,4>(cairoImg,image,pixelRod);
+            break;
+        default:
+            break;
+    }
+    
+}
+
+template <typename PIX,int maxValue>
+static void
+convertCairoImageToNatronImage(cairo_surface_t* cairoImg,
+                               Natron::Image* image,
+                               const RectI & pixelRod,
+                               int srcNComps)
+{
+    switch (srcNComps) {
+        case 1:
+            convertCairoImageToNatronImageForSrcComponents<PIX, maxValue, 1>(cairoImg, image, pixelRod);
+            break;
+        case 2:
+            convertCairoImageToNatronImageForSrcComponents<PIX, maxValue, 2>(cairoImg, image, pixelRod);
+            break;
+        case 3:
+            convertCairoImageToNatronImageForSrcComponents<PIX, maxValue, 3>(cairoImg, image, pixelRod);
+            break;
+        case 4:
+            convertCairoImageToNatronImageForSrcComponents<PIX, maxValue, 4>(cairoImg, image, pixelRod);
+            break;
+            
+        default:
+            break;
     }
 }
 
@@ -5461,14 +5537,22 @@ RotoContext::renderMask(bool useCache,
 
     cairo_format_t cairoImgFormat;
     
+    int srcNComps;
     if (components.getNumComponents() == 1) {
         cairoImgFormat = CAIRO_FORMAT_A8;
+        srcNComps = 1;
+    } else if (components.getNumComponents() == 2) {
+        cairoImgFormat = CAIRO_FORMAT_RGB24;
+        srcNComps = 3;
     } else if (components.getNumComponents() == 3) {
         cairoImgFormat = CAIRO_FORMAT_RGB24;
+        srcNComps = 3;
     } else if (components.getNumComponents() == 4) {
         cairoImgFormat = CAIRO_FORMAT_ARGB32;
+        srcNComps = 4;
     } else {
         cairoImgFormat = CAIRO_FORMAT_A8;
+        srcNComps = 1;
     }
 
     ////Allocate the cairo temporary buffer
@@ -5488,13 +5572,13 @@ RotoContext::renderMask(bool useCache,
 
     switch (depth) {
     case Natron::eImageBitDepthFloat:
-        convertCairoImageToNatronImage<float, 1>(cairoImg, image.get(), pixelRod);
+        convertCairoImageToNatronImage<float, 1>(cairoImg, image.get(), pixelRod,srcNComps);
         break;
     case Natron::eImageBitDepthByte:
-        convertCairoImageToNatronImage<unsigned char, 255>(cairoImg, image.get(), pixelRod);
+        convertCairoImageToNatronImage<unsigned char, 255>(cairoImg, image.get(), pixelRod,srcNComps);
         break;
     case Natron::eImageBitDepthShort:
-        convertCairoImageToNatronImage<unsigned short, 65535>(cairoImg, image.get(), pixelRod);
+        convertCairoImageToNatronImage<unsigned short, 65535>(cairoImg, image.get(), pixelRod,srcNComps);
         break;
     case Natron::eImageBitDepthNone:
         assert(false);

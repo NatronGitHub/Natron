@@ -1008,39 +1008,16 @@ DockablePanel::initializeKnobsInternal()
     
     
     if (roto) {
-        PageMap::iterator parentTab = _imp->_pages.find(_imp->_defaultPageName);
-        ///the top level parent is not a page, i.e the plug-in didn't specify any page
-        ///for this param, put it in the first page that is not the default page.
-        ///If there is still no page, put it in the default tab.
-        for (PageMap::iterator it = _imp->_pages.begin(); it != _imp->_pages.end(); ++it) {
-            if (it->first != _imp->_defaultPageName) {
-                parentTab = it;
-                break;
-            }
-        }
-        if ( parentTab == _imp->_pages.end() ) {
-            ///find in all knobs a page param (that is not the extra one added by Natron) to set this param into
-            for (U32 i = 0; i < knobs.size(); ++i) {
-                Page_Knob* p = dynamic_cast<Page_Knob*>( knobs[i].get() );
-                if ( p && (p->getDescription() != NATRON_PARAMETER_PAGE_NAME_INFO) && (p->getDescription() != NATRON_PARAMETER_PAGE_NAME_EXTRA) ) {
-                    parentTab = _imp->addPage(p, p->getDescription().c_str() );
-                    break;
-                }
-            }
-
-            ///Last resort: The plug-in didn't specify ANY page, just put it into the default page
-            if ( parentTab == _imp->_pages.end() ) {
-                parentTab = _imp->addPage(NULL, _imp->_defaultPageName);
-            }
-        }
-
-        assert( parentTab != _imp->_pages.end() );
+        boost::shared_ptr<Page_Knob> page = _imp->ensureDefaultPageKnobCreated();
+        assert(page);
+        PageMap::iterator foundPage = _imp->_pages.find(page->getDescription().c_str());
+        assert(foundPage != _imp->_pages.end());
         
         QGridLayout* layout = 0;
         if (_imp->_useScrollAreasForTabs) {
-            layout = dynamic_cast<QGridLayout*>( dynamic_cast<QScrollArea*>(parentTab->second.tab)->widget()->layout() );
+            layout = dynamic_cast<QGridLayout*>( dynamic_cast<QScrollArea*>(foundPage->second.tab)->widget()->layout() );
         } else {
-            layout = dynamic_cast<QGridLayout*>( parentTab->second.tab->layout() );
+            layout = dynamic_cast<QGridLayout*>( foundPage->second.tab->layout() );
         }
         assert(layout);
         layout->addWidget(roto, layout->rowCount(), 0 , 1, 2);

@@ -10,6 +10,7 @@
  */
 
 #include "ImageComponents.h"
+#include "ofxNatron.h"
 
 using namespace Natron;
 
@@ -18,6 +19,7 @@ static const char* rgbComps[3] = {"R","G","B"};
 static const char* alphaComps[1] = {"Alpha"};
 static const char* motionComps[2] = {"U","V"};
 static const char* disparityComps[2] = {"X","Y"};
+static const char* xyComps[2] = {"X","Y"};
 
 ImageComponents::ImageComponents()
 : _layerName("none")
@@ -200,6 +202,13 @@ const ImageComponents&
 ImageComponents::getDisparityRightComponents()
 {
     static const ImageComponents comp(kNatronDisparityRightPlaneName,kNatronDisparityComponentsName,disparityComps,2);
+    return comp;
+}
+
+const ImageComponents&
+ImageComponents::getXYComponents()
+{
+    static const ImageComponents comp("XY","xy",xyComps,2);
     return comp;
 }
 

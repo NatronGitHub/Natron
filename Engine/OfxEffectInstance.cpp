@@ -1058,9 +1058,9 @@ OfxEffectInstance::getOfxComponentsFromUserChannels(OfxClipInstance* clip, int i
     bool isAll;
     if (getNode()->getUserComponents(inputNb, processChannels,&isAll, &layer) && !isAll) {
         if (layer.isColorPlane()) {
-            if (processChannels[3]) {
+            if (layer.getComponentsGlobalName() == kNatronRGBAComponentsName) {
                 return clip->findSupportedComp(kOfxImageComponentRGBA);
-            } else if (processChannels[0] && !processChannels[1] && !processChannels[2] && !processChannels[3]) {
+            } else if (layer.getComponentsGlobalName() == kNatronAlphaComponentsName) {
                 return clip->findSupportedComp(kOfxImageComponentAlpha);
             } else {
                 return clip->findSupportedComp(kOfxImageComponentRGB);

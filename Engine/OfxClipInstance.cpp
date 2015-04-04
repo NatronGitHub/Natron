@@ -1034,6 +1034,8 @@ OfxClipInstance::ofxComponentsToNatronComponents(const std::string & comp)
     } else if (comp == kFnOfxImageComponentStereoDisparity) {
         ret.push_back(ImageComponents::getDisparityLeftComponents());
         ret.push_back(ImageComponents::getDisparityRightComponents());
+    } else if (comp == kNatronOfxImageComponentXY) {
+        ret.push_back(ImageComponents::getXYComponents());
     } else {
         ret.push_back(ofxCustomCompToNatronComp(comp));
     }
@@ -1356,7 +1358,7 @@ OfxClipInstance::findSupportedComp(const std::string &s) const
     } else if (s == motion) {
         
         if (isSupportedComponent(xy)) {
-            return motion;
+            return xy;
         } else if (isSupportedComponent(disparity)) {
             return disparity;
         } else if (isSupportedComponent(rgb)) {
@@ -1368,7 +1370,7 @@ OfxClipInstance::findSupportedComp(const std::string &s) const
         }
     } else if (s == disparity) {
         if (isSupportedComponent(xy)) {
-            return motion;
+            return xy;
         } else if (isSupportedComponent(disparity)) {
             return disparity;
         } else if (isSupportedComponent(rgb)) {
