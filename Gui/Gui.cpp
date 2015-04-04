@@ -41,7 +41,6 @@ CLANG_DIAG_OFF(unused-private-field)
 CLANG_DIAG_ON(unused-private-field)
 #include <QHBoxLayout>
 #include <QGraphicsScene>
-#include <QMenu>
 #include <QApplication>
 #include <QMenuBar>
 #include <QDesktopWidget>
@@ -107,6 +106,7 @@ CLANG_DIAG_ON(unused-parameter)
 #include "Gui/MultiInstancePanel.h"
 #include "Gui/ScriptEditor.h"
 #include "Gui/PythonPanels.h"
+#include "Gui/Menu.h"
 
 #define kPropertiesBinName "properties"
 
@@ -324,17 +324,17 @@ struct GuiPrivate
 
     ///The menu bar and all the menus
     QMenuBar *menubar;
-    QMenu *menuFile;
-    QMenu *menuRecentFiles;
-    QMenu *menuEdit;
-    QMenu *menuLayout;
-    QMenu *menuDisplay;
-    QMenu *menuOptions;
-    QMenu *menuRender;
-    QMenu *viewersMenu;
-    QMenu *viewerInputsMenu;
-    QMenu *viewersViewMenu;
-    QMenu *cacheMenu;
+    Menu *menuFile;
+    Menu *menuRecentFiles;
+    Menu *menuEdit;
+    Menu *menuLayout;
+    Menu *menuDisplay;
+    Menu *menuOptions;
+    Menu *menuRender;
+    Menu *viewersMenu;
+    Menu *viewerInputsMenu;
+    Menu *viewersViewMenu;
+    Menu *cacheMenu;
 
 
     ///all TabWidget's : used to know what to hide/show for fullscreen mode
@@ -845,17 +845,17 @@ Gui::createMenuActions()
     _imp->menubar = new QMenuBar(this);
     setMenuBar(_imp->menubar);
 
-    _imp->menuFile = new QMenu(QObject::tr("File"), _imp->menubar);
-    _imp->menuRecentFiles = new QMenu(QObject::tr("Open Recent"), _imp->menuFile);
-    _imp->menuEdit = new QMenu(QObject::tr("Edit"), _imp->menubar);
-    _imp->menuLayout = new QMenu(QObject::tr("Layout"), _imp->menubar);
-    _imp->menuDisplay = new QMenu(QObject::tr("Display"), _imp->menubar);
-    _imp->menuOptions = new QMenu(QObject::tr("Options"), _imp->menubar);
-    _imp->menuRender = new QMenu(QObject::tr("Render"), _imp->menubar);
-    _imp->viewersMenu = new QMenu(QObject::tr("Viewer(s)"), _imp->menuDisplay);
-    _imp->viewerInputsMenu = new QMenu(QObject::tr("Connect Current Viewer"), _imp->viewersMenu);
-    _imp->viewersViewMenu = new QMenu(QObject::tr("Display View Number"), _imp->viewersMenu);
-    _imp->cacheMenu = new QMenu(QObject::tr("Cache"), _imp->menubar);
+    _imp->menuFile = new Menu(QObject::tr("File"), _imp->menubar);
+    _imp->menuRecentFiles = new Menu(QObject::tr("Open Recent"), _imp->menuFile);
+    _imp->menuEdit = new Menu(QObject::tr("Edit"), _imp->menubar);
+    _imp->menuLayout = new Menu(QObject::tr("Layout"), _imp->menubar);
+    _imp->menuDisplay = new Menu(QObject::tr("Display"), _imp->menubar);
+    _imp->menuOptions = new Menu(QObject::tr("Options"), _imp->menubar);
+    _imp->menuRender = new Menu(QObject::tr("Render"), _imp->menubar);
+    _imp->viewersMenu = new Menu(QObject::tr("Viewer(s)"), _imp->menuDisplay);
+    _imp->viewerInputsMenu = new Menu(QObject::tr("Connect Current Viewer"), _imp->viewersMenu);
+    _imp->viewersViewMenu = new Menu(QObject::tr("Display View Number"), _imp->viewersMenu);
+    _imp->cacheMenu = new Menu(QObject::tr("Cache"), _imp->menubar);
 
 
     _imp->actionNew_project = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutIDActionNewProject, kShortcutDescActionNewProject, this);
@@ -2629,7 +2629,7 @@ Gui::findOrCreateToolButton(const boost::shared_ptr<PluginGroupNode> & plugin)
         QObject::connect( action, SIGNAL( triggered() ), pluginsToolButton, SLOT( onTriggered() ) );
         pluginsToolButton->setAction(action);
     } else {
-        QMenu* menu = new QMenu(this);
+        Menu* menu = new Menu(this);
         //menu->setFont( QFont(appFont,appFontSize) );
         menu->setTitle( pluginsToolButton->getLabel() );
         pluginsToolButton->setMenu(menu);
@@ -5205,7 +5205,7 @@ GuiPrivate::findActionRecursive(int i,
     }
     ///Create the entry
     if (i < grouping.size() - 1) {
-        QMenu* menu = new QMenu(widget);
+        Menu* menu = new Menu(widget);
         menu->setTitle(grouping[i]);
         QMenu* isMenu = dynamic_cast<QMenu*>(widget);
         QMenuBar* isMenuBar = dynamic_cast<QMenuBar*>(widget);

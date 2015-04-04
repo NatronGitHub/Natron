@@ -21,7 +21,6 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QHeaderView>
 #include <QColor>
 #include <QColorDialog>
-#include <QMenu>
 #include <QCursor>
 #include <QMouseEvent>
 #include <QApplication>
@@ -52,6 +51,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/RotoUndoCommand.h"
 #include "Gui/ComboBox.h"
 #include "Gui/GuiMacros.h"
+#include "Gui/Menu.h"
 
 #define COL_LABEL 0
 #define COL_SCRIPT_NAME 1
@@ -1886,7 +1886,7 @@ RotoPanel::showItemMenu(QTreeWidgetItem* item,
 
     _imp->lastRightClickedItem = item;
 
-    QMenu menu(this);
+    Natron::Menu menu(this);
     //menu.setFont( QFont(appFont,appFontSize) );
     menu.setShortcutEnabled(false);
     QAction* addLayerAct = menu.addAction( tr("Add layer") );

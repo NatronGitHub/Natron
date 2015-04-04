@@ -24,7 +24,6 @@
 #include <QApplication>
 #include <QStyledItemDelegate>
 #include <QAction>
-#include <QMenu>
 #include <QFileSystemWatcher>
 
 #include "Engine/Settings.h"
@@ -43,7 +42,7 @@
 #include "Gui/Gui.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/TableModelView.h"
-
+#include "Gui/Menu.h"
 using namespace Natron;
 
 
@@ -377,7 +376,7 @@ File_KnobGui::addRightClickMenuEntries(QMenu* menu)
 
     menu->addSeparator();
     QMenu* qtMenu = _lineEdit->createStandardContextMenu();
-    //qtMenu->setFont(QFont(appFont,appFontSize));
+    qtMenu->setFont(QApplication::font()); // necessary
     qtMenu->setTitle(tr("Edit"));
     menu->addMenu(qtMenu);
 }
@@ -619,7 +618,7 @@ OutputFile_KnobGui::addRightClickMenuEntries(QMenu* menu)
     
     menu->addSeparator();
     QMenu* qtMenu = _lineEdit->createStandardContextMenu();
-    //qtMenu->setFont(QFont(appFont,appFontSize));
+    qtMenu->setFont(QApplication::font()); // necessary
     qtMenu->setTitle(tr("Edit"));
     menu->addMenu(qtMenu);
 }
@@ -1219,7 +1218,7 @@ Path_KnobGui::addRightClickMenuEntries(QMenu* menu)
         
         menu->addSeparator();
         QMenu* qtMenu = _lineEdit->createStandardContextMenu();
-        //qtMenu->setFont(QFont(appFont,appFontSize));
+        qtMenu->setFont(QApplication::font()); // necessary
         qtMenu->setTitle(tr("Edit"));
         menu->addMenu(qtMenu);
     }

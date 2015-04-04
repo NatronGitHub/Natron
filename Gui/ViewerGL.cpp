@@ -28,7 +28,6 @@
 #include <QApplication>
 #include <QDesktopWidget>
 #include <QScreen>
-#include <QMenu> // in QtGui on Qt4, in QtWidgets on Qt5
 #include <QDockWidget> // in QtGui on Qt4, in QtWidgets on Qt5
 #include <QtGui/QPainter>
 CLANG_DIAG_OFF(unused-private-field)
@@ -52,6 +51,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Engine/Project.h"
 #include "Engine/Node.h"
 
+#include "Gui/Menu.h"
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/Gui.h"
@@ -181,7 +181,7 @@ struct ViewerGL::Implementation
           , supportsGLSL(true)
           , updatingTexture(false)
           , clearColor(0,0,0,255)
-          , menu( new QMenu(_this) )
+          , menu( new Natron::Menu(_this) )
           , persistentMessages()
           , persistentMessageType(0)
           , displayPersistentMessage(false)
@@ -3739,7 +3739,7 @@ ViewerGL::populateMenu()
     QObject::connect( toggleWipe,SIGNAL( triggered() ),this,SLOT( toggleWipe() ) );
     _imp->menu->addAction(toggleWipe);
     
-    QMenu* showHideMenu = new QMenu(tr("Show/Hide"),_imp->menu);
+    Natron::Menu* showHideMenu = new Natron::Menu(tr("Show/Hide"),_imp->menu);
     //showHideMenu->setFont(QFont(appFont,appFontSize));
     _imp->menu->addAction(showHideMenu->menuAction());
     

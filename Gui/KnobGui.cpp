@@ -38,7 +38,6 @@ CLANG_DIAG_ON(unused-private-field)
 #include <QGroupBox>
 #include <QtGui/QVector4D>
 #include <QStyleFactory>
-#include <QMenu>
 #include <QComboBox>
 #include <QDialogButtonBox>
 #include <QCompleter>
@@ -62,7 +61,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Gui/DockablePanel.h"
 #include "Gui/ViewerTab.h"
 #include "Gui/TimeLineGui.h"
-#include "Gui/MenuWithToolTips.h"
+#include "Gui/Menu.h"
 #include "Gui/Gui.h"
 #include "Gui/SequenceFileDialog.h"
 #include "Gui/TabWidget.h"
@@ -79,6 +78,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Gui/NodeCreationDialog.h"
 #include "Gui/ScriptTextEdit.h"
 #include "Gui/Label.h"
+#include "Gui/Menu.h"
 
 using namespace Natron;
 
@@ -89,7 +89,7 @@ struct KnobGui::KnobGuiPrivate
     int spacingBetweenItems;
     bool widgetCreated;
     DockablePanel*  container;
-    QMenu* animationMenu;
+    Natron::Menu* animationMenu;
     AnimationButton* animationButton;
     QMenu* copyRightClickMenu;
     QHBoxLayout* fieldLayout; //< the layout containing the widgets of the knob
@@ -308,7 +308,7 @@ KnobGui::updateGuiInternal(int dimension)
 void
 KnobGui::createAnimationButton(QHBoxLayout* layout)
 {
-    _imp->animationMenu = new QMenu( layout->parentWidget() );
+    _imp->animationMenu = new Natron::Menu( layout->parentWidget() );
     //_imp->animationMenu->setFont( QFont(appFont,appFontSize) );
     QPixmap pix;
     appPTR->getIcon(Natron::NATRON_PIXMAP_CURVE, &pix);
@@ -526,7 +526,7 @@ KnobGui::createAnimationMenu(QMenu* menu,int dimension)
                 showInCurveEditorAction->setEnabled(false);
             }
 
-            QMenu* interpolationMenu = new QMenu(menu);
+            Natron::Menu* interpolationMenu = new Natron::Menu(menu);
             //interpolationMenu->setFont( QFont(appFont,appFontSize) );
             interpolationMenu->setTitle("Interpolation");
             menu->addAction( interpolationMenu->menuAction() );

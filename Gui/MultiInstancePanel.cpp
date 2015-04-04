@@ -28,7 +28,6 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QCheckBox>
 #include <QWaitCondition>
 #include <QtConcurrentMap>
-#include <QMenu>
 #include <QApplication>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
@@ -58,7 +57,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/NodeGraph.h"
 #include "Gui/Gui.h"
 #include "Gui/Label.h"
-
+#include "Gui/Menu.h"
 
 #define kTrackCenterName "center"
 #define kTrackInvertName "invert"
@@ -2299,7 +2298,7 @@ TrackerPanel::showMenuForInstance(Natron::Node* instance)
     if (!getMainInstance()->isPointTrackerNode()) {
         return;
     }
-    QMenu menu( getGui() );
+    Natron::Menu menu( getGui() );
 
     //menu.setFont( QFont(appFont,appFontSize) );
 

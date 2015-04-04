@@ -34,7 +34,7 @@ CLANG_DIAG_ON(deprecated-register)
 #include "Engine/Image.h"
 
 #include "Gui/GuiApplicationManager.h"
-#include "Gui/MenuWithToolTips.h"
+#include "Gui/Menu.h"
 #include "Gui/ClickableLabel.h"
 #include "Gui/GuiMacros.h"
 

@@ -47,7 +47,7 @@ CLANG_DIAG_ON(deprecated)
 #include "Gui/Splitter.h"
 #include "Gui/GuiMacros.h"
 #include "Gui/ActionShortcuts.h"
-#include "Gui/MenuWithToolTips.h"
+#include "Gui/Menu.h"
 #include "Gui/ScriptEditor.h"
 #include "Gui/PythonPanels.h"
 
@@ -289,7 +289,7 @@ TabWidget::createMenu()
     
     std::map<PyPanel*,std::string> userPanels = _imp->gui->getPythonPanels();
     if (!userPanels.empty()) {
-        QMenu* userPanelsMenu = new QMenu(tr("User panels"),&menu);
+        Natron::Menu* userPanelsMenu = new Natron::Menu(tr("User panels"),&menu);
         //userPanelsMenu->setFont(f);
         menu.addAction(userPanelsMenu->menuAction());
         

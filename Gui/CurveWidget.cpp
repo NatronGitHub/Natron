@@ -16,7 +16,6 @@
 #include "CurveWidget.h"
 
 #include <cmath>
-#include <QMenu>
 CLANG_DIAG_OFF(unused-private-field)
 // /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
 #include <QMouseEvent>
@@ -44,6 +43,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Engine/Project.h"
 #include "Engine/Image.h"
 
+#include "Gui/Menu.h"
 #include "Gui/LineEdit.h"
 #include "Gui/SpinBox.h"
 #include "Gui/Button.h"
@@ -846,7 +846,7 @@ public:
     QPoint _lastMousePos; /// the last click pressed, in widget coordinates [ (0,0) == top left corner ]
     ZoomContext zoomCtx;
     EventStateEnum _state;
-    QMenu* _rightClickMenu;
+    Menu* _rightClickMenu;
     QColor _selectedCurveColor;
     QColor _nextCurveAddedColor;
     TextRenderer textRenderer;
@@ -894,7 +894,7 @@ CurveWidgetPrivate::CurveWidgetPrivate(Gui* gui,
     : _lastMousePos()
       , zoomCtx()
       , _state(eEventStateNone)
-      , _rightClickMenu( new QMenu(widget) )
+      , _rightClickMenu( new Menu(widget) )
       , _selectedCurveColor(255,255,89,255)
       , _nextCurveAddedColor()
       , textRenderer()
@@ -955,22 +955,22 @@ CurveWidgetPrivate::createMenu()
 
     _rightClickMenu->clear();
 
-    QMenu* fileMenu = new QMenu(_rightClickMenu);
+    Menu* fileMenu = new Menu(_rightClickMenu);
     //fileMenu->setFont( QFont(appFont,appFontSize) );
     fileMenu->setTitle( QObject::tr("File") );
     _rightClickMenu->addAction( fileMenu->menuAction() );
 
-    QMenu* editMenu = new QMenu(_rightClickMenu);
+    Menu* editMenu = new Menu(_rightClickMenu);
     //editMenu->setFont( QFont(appFont,appFontSize) );
     editMenu->setTitle( QObject::tr("Edit") );
     _rightClickMenu->addAction( editMenu->menuAction() );
 
-    QMenu* interpMenu = new QMenu(_rightClickMenu);
+    Menu* interpMenu = new Menu(_rightClickMenu);
     //interpMenu->setFont( QFont(appFont,appFontSize) );
     interpMenu->setTitle( QObject::tr("Interpolation") );
     _rightClickMenu->addAction( interpMenu->menuAction() );
 
-    QMenu* viewMenu = new QMenu(_rightClickMenu);
+    Menu* viewMenu = new Menu(_rightClickMenu);
     //viewMenu->setFont( QFont(appFont,appFontSize) );
     viewMenu->setTitle( QObject::tr("View") );
     _rightClickMenu->addAction( viewMenu->menuAction() );
@@ -985,9 +985,9 @@ CurveWidgetPrivate::createMenu()
         }
     }
     
-    QMenu* predefMenu  = 0;
+    Menu* predefMenu  = 0;
     if (ce) {
-        predefMenu = new QMenu(_rightClickMenu);
+        predefMenu = new Menu(_rightClickMenu);
         predefMenu->setTitle(QObject::tr("Predefined"));
         _rightClickMenu->addAction(predefMenu->menuAction());
     }

@@ -26,7 +26,6 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QKeyEvent>
 #include <QHBoxLayout>
 #include <QStyle>
-#include <QMenu>
 #include <QDialogButtonBox>
 #include <QTimer>
 CLANG_DIAG_ON(deprecated)
@@ -54,6 +53,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/NodeGraph.h"
 #include "Gui/GuiMacros.h"
 #include "Gui/ActionShortcuts.h"
+#include "Gui/Menu.h"
 
 #include "Global/GLIncludes.h"
 
@@ -3173,7 +3173,7 @@ void
 RotoGui::showMenuForCurve(const boost::shared_ptr<Bezier> & curve)
 {
     QPoint pos = QCursor::pos();
-    QMenu menu(_imp->viewer);
+    Natron::Menu menu(_imp->viewer);
 
     //menu.setFont( QFont(appFont,appFontSize) );
 
@@ -3376,7 +3376,7 @@ RotoGui::showMenuForControlPoint(const boost::shared_ptr<Bezier> & curve,
     _imp->viewer->getPixelScale(pixelScale.first, pixelScale.second);
     
     QPoint pos = QCursor::pos();
-    QMenu menu(_imp->viewer);
+    Natron::Menu menu(_imp->viewer);
 
     //menu.setFont( QFont(appFont,appFontSize) );
 

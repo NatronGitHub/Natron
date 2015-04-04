@@ -41,7 +41,6 @@ CLANG_DIAG_ON(unused-private-field)
 #include <QPainter>
 #include <QImage>
 #include <QToolButton>
-#include <QMenu>
 #include <QDialogButtonBox>
 
 #include <ofxNatron.h>
@@ -90,6 +89,7 @@ CLANG_DIAG_ON(unused-parameter)
 #include "Gui/GuiMacros.h"
 #include "Gui/KnobGuiTypes.h"
 #include "Gui/SpinBox.h"
+#include "Gui/Menu.h"
 
 #define NATRON_FORM_LAYOUT_LINES_SPACING 0
 #define NATRON_SETTINGS_VERTICAL_SPACING_PIXELS 3
@@ -2238,7 +2238,7 @@ DockablePanel::onRightClickMenuRequested(const QPoint & pos)
     if (isEffect) {
         
         boost::shared_ptr<Natron::Node> master = isEffect->getNode()->getMasterNode();
-        QMenu menu(this);
+        Natron::Menu menu(this);
         //menu.setFont( QFont(appFont,appFontSize) );
 
         QAction* userParams = new QAction(tr("Manage user parameters..."),&menu);
@@ -2535,7 +2535,7 @@ NodeSettingsPanel::initializeExtraGui(QVBoxLayout* layout)
 void
 NodeSettingsPanel::onSettingsButtonClicked()
 {
-    QMenu menu(this);
+    Natron::Menu menu(this);
     //menu.setFont(QFont(appFont,appFontSize));
     
     boost::shared_ptr<NodeGui> node = getNode();

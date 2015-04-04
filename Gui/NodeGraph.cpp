@@ -31,7 +31,6 @@ CLANG_DIAG_ON(unused-private-field)
 #include <QGraphicsPixmapItem>
 #include <QDialogButtonBox>
 #include <QUndoStack>
-#include <QMenu>
 #include <QToolButton>
 #include <QThread>
 #include <QDropEvent>
@@ -95,6 +94,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/Histogram.h"
 #include "Gui/Label.h"
+#include "Gui/Menu.h"
 
 #define NATRON_CACHE_SIZE_TEXT_REFRESH_INTERVAL_MS 1000
 
@@ -493,7 +493,7 @@ NodeGraph::NodeGraph(Gui* gui,
     setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 
-    _imp->_menu = new QMenu(this);
+    _imp->_menu = new Natron::Menu(this);
     //_imp->_menu->setFont( QFont(appFont,appFontSize) );
 
     QObject::connect( _imp->_gui->getApp()->getTimeLine().get(),SIGNAL( frameChanged(SequenceTime,int) ),
@@ -3049,7 +3049,7 @@ NodeGraph::showMenu(const QPoint & pos)
     _imp->_menu->addSeparator();
     
     //QFont font(appFont,appFontSize);
-    QMenu* editMenu = new QMenu(tr("Edit"),_imp->_menu);
+    Natron::Menu* editMenu = new Natron::Menu(tr("Edit"),_imp->_menu);
     //editMenu->setFont(font);
     _imp->_menu->addAction( editMenu->menuAction() );
     
