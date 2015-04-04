@@ -115,6 +115,10 @@ namespace { // protect local classes in anonymous namespace
             
         }
         
+        ChannelSelector(const ChannelSelector& other) {
+            *this = other;
+        }
+        
         void operator=(const ChannelSelector& other) {
             layer = other.layer;
             for (int i = 0; i< 4; ++i) {
