@@ -4460,11 +4460,14 @@ Gui::renderAllWriters()
 void
 Gui::renderSelectedNode()
 {
-    const std::list<boost::shared_ptr<NodeGui> > & selectedNodes = _imp->_nodeGraphArea->getSelectedNodes();
+    NodeGraph* graph = getLastSelectedGraph();
+    if (!graph) {
+        return;
+    }
+    
+    const std::list<boost::shared_ptr<NodeGui> > & selectedNodes = graph->getSelectedNodes();
 
-    if (selectedNodes.size() > 1) {
-        Natron::warningDialog( tr("Render").toStdString(), tr("Please select only a single node").toStdString() );
-    } else if ( selectedNodes.empty() ) {
+    if ( selectedNodes.empty() ) {
         Natron::warningDialog( tr("Render").toStdString(), tr("You must select a node to render first!").toStdString() );
     } else {
         std::list<AppInstance::RenderWork> workList;
