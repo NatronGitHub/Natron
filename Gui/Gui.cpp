@@ -1206,7 +1206,7 @@ GuiPrivate::createPropertiesBinGui()
 
     _maxPanelsOpenedSpinBox = new SpinBox(propertiesAreaButtonsContainer);
     _maxPanelsOpenedSpinBox->setMaximumSize(NATRON_SMALL_BUTTON_SIZE, NATRON_SMALL_BUTTON_SIZE);
-    _maxPanelsOpenedSpinBox->setMinimum(0);
+    _maxPanelsOpenedSpinBox->setMinimum(1);
     _maxPanelsOpenedSpinBox->setMaximum(100);
     _maxPanelsOpenedSpinBox->setToolTip( Qt::convertFromPlainText(_gui->tr("Set the maximum of panels that can be opened at the same time "
                                                                            "in the properties bin pane. The special value of 0 indicates "
@@ -4679,14 +4679,19 @@ Gui::progressUpdate(KnobHolder* effect,
 void
 Gui::addVisibleDockablePanel(DockablePanel* panel)
 {
-    putSettingsPanelFirst(panel);
-    assert(panel);
-    int maxPanels = appPTR->getCurrentSettings()->getMaxPanelsOpened();
-    if ( ( (int)_imp->openedPanels.size() == maxPanels ) && (maxPanels != 0) ) {
-        std::list<DockablePanel*>::iterator it = _imp->openedPanels.begin();
-        (*it)->closePanel();
+    
+    std::list<DockablePanel*>::iterator it = std::find(_imp->openedPanels.begin(), _imp->openedPanels.end(), panel);
+    
+    if ( it == _imp->openedPanels.end() ) {
+        putSettingsPanelFirst(panel);
+        assert(panel);
+        int maxPanels = appPTR->getCurrentSettings()->getMaxPanelsOpened();
+        if ( ( (int)_imp->openedPanels.size() == maxPanels ) && (maxPanels != 0) ) {
+            std::list<DockablePanel*>::iterator it = _imp->openedPanels.begin();
+            (*it)->closePanel();
+        }
+        _imp->openedPanels.push_back(panel);
     }
-    _imp->openedPanels.push_back(panel);
 }
 
 void

@@ -1761,6 +1761,10 @@ DockablePanel::closePanel()
         floatPanel();
         return;
     }
+    
+    _imp->_gui->removeVisibleDockablePanel(this);
+    _imp->_gui->buildTabFocusOrderPropertiesBin();
+
     {
         QMutexLocker l(&_imp->_isClosedMutex);
         if (_imp->_isClosed) {
@@ -1770,8 +1774,6 @@ DockablePanel::closePanel()
     }
     close();
 
-    _imp->_gui->removeVisibleDockablePanel(this);
-    _imp->_gui->buildTabFocusOrderPropertiesBin();
     
     
     NodeSettingsPanel* nodePanel = dynamic_cast<NodeSettingsPanel*>(this);
@@ -1876,6 +1878,7 @@ DockablePanel::floatPanel()
         _imp->_floatingWidget->removeEmbeddedWidget();
         setParent( _imp->_container->parentWidget() );
         _imp->_container->insertWidget(0, this);
+        _imp->_gui->addVisibleDockablePanel(this);
         _imp->_floatingWidget->deleteLater();
         _imp->_floatingWidget = 0;
     }

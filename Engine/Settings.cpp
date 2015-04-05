@@ -209,7 +209,7 @@ Settings::initializeKnobs()
                                      "The special value of 0 indicates there can be an unlimited number of panels opened.");
     _maxPanelsOpened->setAnimationEnabled(false);
     _maxPanelsOpened->disableSlider();
-    _maxPanelsOpened->setMinimum(0);
+    _maxPanelsOpened->setMinimum(1);
     _maxPanelsOpened->setMaximum(100);
     _generalTab->addKnob(_maxPanelsOpened);
 
