@@ -1858,7 +1858,8 @@ Node::initializeKnobs(int renderScaleSupportPref)
             bool useChannels = !_imp->liveInstance->isMultiPlanar() &&
             !_imp->liveInstance->isReader() &&
             !_imp->liveInstance->isWriter() &&
-            !_imp->liveInstance->isTrackerNode();
+            !_imp->liveInstance->isTrackerNode() &&
+            !dynamic_cast<NodeGroup*>(_imp->liveInstance.get());
             
             if (useChannels) {
                 const std::vector< boost::shared_ptr<KnobI> > & knobs = _imp->liveInstance->getKnobs();
