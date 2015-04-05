@@ -76,10 +76,10 @@ public:
                              int view,
                              bool setMipmapLevel,
                              unsigned int mipMapLevel)
-        : effect(effect)
-          , skipDiscarding(skipDiscarding)
-          , viewSet(setView)
-          , mipMapLevelSet(setMipmapLevel)
+    : effect(effect)
+    , skipDiscarding(skipDiscarding)
+    , viewSet(setView)
+    , mipMapLevelSet(setMipmapLevel)
     {
 
         if (setView) {
@@ -160,25 +160,26 @@ private:
 }
 
 OfxEffectInstance::OfxEffectInstance(boost::shared_ptr<Natron::Node> node)
-    : AbstractOfxEffectInstance(node)
-      , _effect()
-      , _natronPluginID()
-      , _isOutput(false)
-      , _penDown(false)
-      , _overlayInteract(0)
-      , _overlaySlaves()
-      , _created(false)
-      , _initialized(false)
-      , _renderButton()
-      , _renderSafety(EffectInstance::eRenderSafetyUnsafe)
-      , _wasRenderSafetySet(false)
-      , _renderSafetyLock(new QReadWriteLock)
-      , _context(eContextNone)
-      , _preferencesLock(new QReadWriteLock(QReadWriteLock::Recursive))
+: AbstractOfxEffectInstance(node)
+, _effect()
+, _natronPluginID()
+, _isOutput(false)
+, _penDown(false)
+, _overlayInteract(0)
+, _overlaySlaves()
+, _created(false)
+, _initialized(false)
+, _renderButton()
+, _renderSafety(EffectInstance::eRenderSafetyUnsafe)
+, _wasRenderSafetySet(false)
+, _renderSafetyLock(new QReadWriteLock)
+, _context(eContextNone)
+, _preferencesLock(new QReadWriteLock(QReadWriteLock::Recursive))
 #ifdef DEBUG
-      , _canSetValue()
+, _canSetValue()
 #endif
-     , _nbSourceClips(0)
+, _nbSourceClips(0)
+, _clipsInfos()
 {
     QObject::connect( this, SIGNAL( syncPrivateDataRequested() ), this, SLOT( onSyncPrivateDataRequested() ) );
 }
@@ -235,6 +236,15 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
         
         OfxEffectInstance::MappedInputV clips = inputClipsCopyWithoutOutput();
         _nbSourceClips = (int)clips.size();
+        
+        _clipsInfos.resize(clips.size());
+        for (int i = 0; i < (int)clips.size(); ++i) {
+            ClipsInfo info;
+            info.rotoBrush = clips[i]->getName() == "Roto" && getNode()->isRotoNode();
+            info.optional = clips[i]->isOptional() || info.rotoBrush;
+            info.mask = clips[i]->isMask();
+            _clipsInfos[i] = info;
+        }
 
         beginChanges();
         OfxStatus stat;
@@ -861,50 +871,33 @@ bool
 OfxEffectInstance::isInputOptional(int inputNb) const
 {
     assert(_context != eContextNone);
-    MappedInputV inputs = inputClipsCopyWithoutOutput();
-    assert( inputNb < (int)inputs.size() );
-    if ( inputs[inputNb]->isOptional() ) {
-        return true;
-    } else {
-        if ( isInputRotoBrush(inputNb) ) {
-            return true;
-        }
-    }
-
-    return false;
+    assert(inputNb >= 0 && inputNb < (int)_clipsInfos.size());
+    return _clipsInfos[inputNb].optional;
 }
 
 bool
 OfxEffectInstance::isInputMask(int inputNb) const
 {
     assert(_context != eContextNone);
-    MappedInputV inputs = inputClipsCopyWithoutOutput();
-    assert( inputNb < (int)inputs.size() );
-
-    return inputs[inputNb]->isMask();
+    assert(inputNb >= 0 && inputNb < (int)_clipsInfos.size());
+    return _clipsInfos[inputNb].mask;
 }
 
 bool
 OfxEffectInstance::isInputRotoBrush(int inputNb) const
 {
     assert(_context != eContextNone);
-    MappedInputV inputs = inputClipsCopyWithoutOutput();
-    if ( inputNb >= (int)inputs.size() ) {
-        return false;
-    }
-
-    ///Maybe too crude ? Not like many plug-ins use the paint context except Natron's roto node.
-    return inputs[inputNb]->getName() == "Roto" && getNode()->isRotoNode();
+    assert(inputNb >= 0 && inputNb < (int)_clipsInfos.size());
+    return _clipsInfos[inputNb].rotoBrush;
 }
 
 int
 OfxEffectInstance::getRotoBrushInputIndex() const
 {
     assert(_context != eContextNone);
-    MappedInputV inputs = inputClipsCopyWithoutOutput();
-    for (U32 i = 0; i < inputs.size(); ++i) {
-        if (inputs[i]->getName() == "Roto") {
-            return i;
+    for (std::size_t i = 0; i < _clipsInfos.size(); ++i) {
+        if (_clipsInfos[i].rotoBrush) {
+            return (int)i;
         }
     }
     return -1;

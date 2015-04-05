@@ -398,6 +398,13 @@ private:
     Natron::ThreadStorage<bool> _canSetValue;
 #endif
     int _nbSourceClips;
+    
+    struct ClipsInfo {
+        bool optional;
+        bool mask;
+        bool rotoBrush;
+    };
+    std::vector<ClipsInfo> _clipsInfos;
 };
 
 #endif // NATRON_ENGINE_OFXNODE_H_
