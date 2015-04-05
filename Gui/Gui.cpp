@@ -4684,9 +4684,8 @@ Gui::addVisibleDockablePanel(DockablePanel* panel)
 {
     
     std::list<DockablePanel*>::iterator it = std::find(_imp->openedPanels.begin(), _imp->openedPanels.end(), panel);
-    
+    putSettingsPanelFirst(panel);
     if ( it == _imp->openedPanels.end() ) {
-        putSettingsPanelFirst(panel);
         assert(panel);
         int maxPanels = appPTR->getCurrentSettings()->getMaxPanelsOpened();
         if ( ( (int)_imp->openedPanels.size() == maxPanels ) && (maxPanels != 0) ) {
