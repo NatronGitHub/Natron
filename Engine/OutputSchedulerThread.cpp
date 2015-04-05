@@ -1255,7 +1255,7 @@ OutputSchedulerThread::notifyFrameRendered(int frame,
             }
             
             std::stringstream ss;
-            ss << cb << "(" << time << ",";
+            ss << cb << "(" << frame << ",";
             std::string script = ss.str();
             runCallbackWithVariables(script.c_str());
             
