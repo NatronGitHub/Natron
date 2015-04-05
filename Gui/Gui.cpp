@@ -4166,8 +4166,20 @@ Gui::onProcessHandlerStarted(const QString & sequenceName,
 {
     ///make the dialog which will show the progress
     RenderingProgressDialog *dialog = new RenderingProgressDialog(this, sequenceName, firstFrame, lastFrame, process, this);
-
+    QObject::connect(dialog,SIGNAL(accepted()),this,SLOT(onRenderProgressDialogFinished()));
+    QObject::connect(dialog,SIGNAL(rejected()),this,SLOT(onRenderProgressDialogFinished()));
     dialog->show();
+}
+
+void
+Gui::onRenderProgressDialogFinished()
+{
+    RenderingProgressDialog* dialog = qobject_cast<RenderingProgressDialog*>(sender());
+    if (!dialog) {
+        return;
+    }
+    dialog->close();
+    dialog->deleteLater();
 }
 
 void
@@ -4390,6 +4402,8 @@ Gui::onWriterRenderStarted(const QString & sequenceName,
     QObject::connect( dialog, SIGNAL( canceled() ), engine, SLOT( abortRendering_Blocking() ) );
     QObject::connect( engine, SIGNAL( frameRendered(int) ), dialog, SLOT( onFrameRendered(int) ) );
     QObject::connect( engine, SIGNAL( renderFinished(int) ), dialog, SLOT( onVideoEngineStopped(int) ) );
+    QObject::connect(dialog,SIGNAL(accepted()),this,SLOT(onRenderProgressDialogFinished()));
+    QObject::connect(dialog,SIGNAL(rejected()),this,SLOT(onRenderProgressDialogFinished()));
     dialog->show();
 }
 
@@ -4474,14 +4488,19 @@ Gui::renderSelectedNode()
 
         for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = selectedNodes.begin();
              it != selectedNodes.end(); ++it) {
-            if ( (*it)->getNode()->getLiveInstance()->isWriter() ) {
-                ///if the node is a writer, just use it to render!
-                AppInstance::RenderWork w;
-                w.writer = dynamic_cast<Natron::OutputEffectInstance*>( (*it)->getNode()->getLiveInstance() );
-                assert(w.writer);
-                w.firstFrame = INT_MIN;
-                w.lastFrame = INT_MAX;
-                workList.push_back(w);
+            Natron::EffectInstance* effect = (*it)->getNode()->getLiveInstance();
+            assert(effect);
+            if (effect->isWriter()) {
+                if (!effect->areKnobsFrozen()) {
+                    //if ((*it)->getNode()->is)
+                    ///if the node is a writer, just use it to render!
+                    AppInstance::RenderWork w;
+                    w.writer = dynamic_cast<Natron::OutputEffectInstance*>(effect);
+                    assert(w.writer);
+                    w.firstFrame = INT_MIN;
+                    w.lastFrame = INT_MAX;
+                    workList.push_back(w);
+                }
             } else {
                 if (selectedNodes.size() == 1) {
                     ///create a node and connect it to the node and use it to render

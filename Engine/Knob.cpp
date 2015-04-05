@@ -3704,6 +3704,13 @@ KnobHolder::setKnobsFrozen(bool frozen)
     }
 }
 
+bool
+KnobHolder::areKnobsFrozen() const
+{
+    QMutexLocker l(&_imp->knobsFrozenMutex);
+    return _imp->knobsFrozen;
+}
+
 void
 KnobHolder::dequeueValuesSet()
 {

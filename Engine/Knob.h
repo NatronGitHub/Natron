@@ -1795,6 +1795,8 @@ public:
      * @brief When frozen is true all the knobs of this effect read-only so the user can't interact with it.
      **/
     void setKnobsFrozen(bool frozen);
+    
+    bool areKnobsFrozen() const;
 
     /**
      * @brief Can be overriden to prevent values to be set directly.

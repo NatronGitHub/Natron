@@ -637,6 +637,8 @@ public Q_SLOTS:
 
     void onUserCommandTriggered();
     
+    void onRenderProgressDialogFinished();
+    
 private:
 
     /**

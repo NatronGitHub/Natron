@@ -25,6 +25,7 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QTextBrowser>
 #include <QApplication>
 #include <QThread>
+#include <QKeyEvent>
 #include <QString>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
@@ -176,8 +177,19 @@ RenderingProgressDialog::onVideoEngineStopped(int retCode)
 }
 
 void
+RenderingProgressDialog::keyPressEvent(QKeyEvent* e)
+{
+    if (e->key() == Qt::Key_Escape) {
+        reject();
+    } else {
+        QDialog::keyPressEvent(e);
+    }
+}
+
+void
 RenderingProgressDialog::closeEvent(QCloseEvent* /*e*/)
 {
+    accept();
     Q_EMIT canceled();
 }
 
