@@ -4822,6 +4822,7 @@ Node::getUserComponents(int inputNb,bool* processChannels, bool* isAll,Natron::I
         foundSelector = _imp->channelsSelectors.find(-1);
     }
     if (foundSelector == _imp->channelsSelectors.end()) {
+        processChannels[0] = processChannels[1] = processChannels[2] = processChannels[3] = true;
         return false;
     }
     
