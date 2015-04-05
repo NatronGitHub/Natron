@@ -293,6 +293,8 @@ public Q_SLOTS:
     
     void onNodeScriptChanged(const QString& label);
     
+    void onEnterInGroupClicked();
+    
 Q_SIGNALS:
 
     /*emitted when the panel is clicked*/

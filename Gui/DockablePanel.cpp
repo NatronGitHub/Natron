@@ -33,6 +33,7 @@
 #include <QCheckBox>
 #include <QHeaderView>
 #include <QColorDialog>
+#include <QTimer>
 CLANG_DIAG_OFF(unused-private-field)
 // /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
 #include <QPaintEvent>
@@ -243,6 +244,7 @@ struct DockablePanelPrivate
     /*Tab related*/
     QTabWidget* _tabWidget;
     Button* _centerNodeButton;
+    Button* _enterInGroupButton;
     Button* _helpButton;
     Button* _minimize;
     Button* _hideUnmodifiedButton;
@@ -307,6 +309,7 @@ struct DockablePanelPrivate
     , _verticalColorBar(0)
     ,_tabWidget(NULL)
     , _centerNodeButton(NULL)
+    , _enterInGroupButton(NULL)
     ,_helpButton(NULL)
     ,_minimize(NULL)
     ,_hideUnmodifiedButton(NULL)
@@ -449,6 +452,15 @@ DockablePanel::DockablePanel(Gui* gui ,
             _imp->_centerNodeButton->setFocusPolicy(Qt::NoFocus);
             QObject::connect( _imp->_centerNodeButton,SIGNAL( clicked() ),this,SLOT( onCenterButtonClicked() ) );
             _imp->_headerLayout->addWidget(_imp->_centerNodeButton);
+            
+            NodeGroup* isGroup = dynamic_cast<NodeGroup*>(iseffect);
+            if (isGroup) {
+                _imp->_enterInGroupButton = new Button(QIcon(),"",_imp->_headerWidget);
+                QObject::connect(_imp->_enterInGroupButton,SIGNAL(clicked(bool)),this,SLOT(onEnterInGroupClicked()));
+                _imp->_enterInGroupButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
+                _imp->_enterInGroupButton->setFocusPolicy(Qt::NoFocus);
+                _imp->_enterInGroupButton->setToolTip(Qt::convertFromPlainText(tr("Pressing this button will show the underlying node graph used for the implementation of this node."),Qt::WhiteSpaceNormal));
+            }
             
             QPixmap pixHelp;
             appPTR->getIcon(NATRON_PIXMAP_HELP_WIDGET,&pixHelp);
@@ -614,6 +626,9 @@ DockablePanel::DockablePanel(Gui* gui ,
         _imp->_headerLayout->addWidget(_imp->_restoreDefaultsButton);
 
         _imp->_headerLayout->addStretch();
+        if (_imp->_enterInGroupButton) {
+            _imp->_headerLayout->addWidget(_imp->_enterInGroupButton);
+        }
         if (_imp->_helpButton) {
             _imp->_headerLayout->addWidget(_imp->_helpButton);
         }
@@ -2351,6 +2366,41 @@ void
 DockablePanel::onCenterButtonClicked()
 {
     centerOnItem();
+}
+
+void
+DockablePanel::onEnterInGroupClicked()
+{
+    NodeSettingsPanel* panel = dynamic_cast<NodeSettingsPanel*>(this);
+    assert(panel);
+    boost::shared_ptr<NodeGui> node = panel->getNode();
+    assert(node);
+    Natron::EffectInstance* effect = node->getNode()->getLiveInstance();
+    assert(effect);
+    NodeGroup* group = dynamic_cast<NodeGroup*>(effect);
+    assert(group);
+    NodeGraphI* graph_i = group->getNodeGraph();
+    assert(graph_i);
+    NodeGraph* graph = dynamic_cast<NodeGraph*>(graph_i);
+    assert(graph);
+    TabWidget* isParentTab = dynamic_cast<TabWidget*>(graph->parentWidget());
+    if (isParentTab) {
+        isParentTab->setCurrentWidget(graph);
+    } else {
+        NodeGraph* lastSelectedGraph = _imp->_gui->getLastSelectedGraph();
+        if (!lastSelectedGraph) {
+            const std::list<TabWidget*>& panes = _imp->_gui->getPanes();
+            assert(panes.size() >= 1);
+            isParentTab = panes.front();
+        } else {
+            isParentTab = dynamic_cast<TabWidget*>(lastSelectedGraph->parentWidget());
+        }
+        
+        assert(isParentTab);
+        isParentTab->appendTab(graph,graph);
+        
+    }
+    QTimer::singleShot(25, graph, SLOT(centerOnAllNodes()));
 }
 
 void

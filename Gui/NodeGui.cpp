@@ -23,7 +23,6 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QAction>
 #include <QtConcurrentRun>
 #include <QFontMetrics>
-#include <QMenu>
 #include <QTextDocument> // for Qt::convertFromPlainText
 #include <QTextBlockFormat>
 #include <QTextCursor>
