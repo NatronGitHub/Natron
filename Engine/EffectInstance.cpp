@@ -3491,18 +3491,6 @@ EffectInstance::renderRoIInternal(SequenceTime time,
                                                                                                 _1) );
             ret.waitForFinished();
 #endif
-            ///never call endsequence render here if the render is sequential
-
-            if (callBegin) {
-                assert( !( (supportsRenderScaleMaybe() == eSupportsNo) && !(renderMappedScale.x == 1. && renderMappedScale.y == 1.) ) );
-                if (endSequenceRender_public(time, time, time, false, renderMappedScale,
-                                             isSequentialRender,
-                                             isRenderMadeInResponseToUserInteraction,
-                                             view) == eStatusFailed) {
-                    renderStatus = eStatusFailed;
-                    break;
-                }
-            }
             
 #ifdef NATRON_HOSTFRAMETHREADING_SEQUENTIAL
             std::vector<EffectInstance::RenderingFunctorRetEnum>::const_iterator it2;
@@ -3567,7 +3555,19 @@ EffectInstance::renderRoIInternal(SequenceTime time,
         }
         } // switch
  
+        ///never call endsequence render here if the render is sequential
         
+        if (callBegin) {
+            assert( !( (supportsRenderScaleMaybe() == eSupportsNo) && !(renderMappedScale.x == 1. && renderMappedScale.y == 1.) ) );
+            if (endSequenceRender_public(time, time, time, false, renderMappedScale,
+                                         isSequentialRender,
+                                         isRenderMadeInResponseToUserInteraction,
+                                         view) == eStatusFailed) {
+                renderStatus = eStatusFailed;
+                break;
+            }
+        }
+
 
         if (renderStatus != eStatusOK) {
             break;

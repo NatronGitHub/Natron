@@ -1376,6 +1376,11 @@ OutputSchedulerThread::abortRendering(bool blocking)
                 }
                 
                 ///Flag the whole tree recursively that we aborted
+                ///Note that if multiple writers are rendering at the same time, calling abort on one will
+                ///most likely abort all writers because they will all check the abort flag.
+                ///The limitation is because of the underlying mutex-protected boolean. Using
+                ///Thread-local storage would not solve the issue either because we have no way to set
+                ///the flag from another thread.
                 _imp->outputEffect->getApp()->getProject()->setAllNodesAborted(true);
                 
                 ++_imp->abortRequested;

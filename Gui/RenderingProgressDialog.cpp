@@ -189,7 +189,7 @@ RenderingProgressDialog::keyPressEvent(QKeyEvent* e)
 void
 RenderingProgressDialog::closeEvent(QCloseEvent* /*e*/)
 {
-    accept();
+    reject();
     Q_EMIT canceled();
 }
 
