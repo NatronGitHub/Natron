@@ -1455,8 +1455,11 @@ LinkToKnobDialog::LinkToKnobDialog(KnobGui* from,
     EffectInstance* isEffect = dynamic_cast<EffectInstance*>(from->getKnob()->getHolder());
     assert(isEffect);
     boost::shared_ptr<NodeCollection> group = isEffect->getNode()->getGroup();
-    
     group->getActiveNodes(&_imp->allNodes);
+    NodeGroup* isGroup = dynamic_cast<NodeGroup*>(group.get());
+    if (isGroup) {
+        _imp->allNodes.push_back(isGroup->getNode());
+    }
     QStringList nodeNames;
     for (NodeList::iterator it = _imp->allNodes.begin(); it != _imp->allNodes.end(); ++it) {
         QString name( (*it)->getLabel().c_str() );
@@ -1605,9 +1608,16 @@ KnobGui::linkTo(int dimension)
             if (!otherEffect) {
                 return;
             }
+            
             std::stringstream expr;
-            expr << otherEffect->getNode()->getFullyQualifiedName() << "." << otherKnob->getName()
-            << ".get()";
+            boost::shared_ptr<NodeCollection> thisCollection = isEffect->getNode()->getGroup();
+            NodeGroup* otherIsGroup = dynamic_cast<NodeGroup*>(otherEffect);
+            if (otherIsGroup == thisCollection.get()) {
+                expr << "thisGroup"; // make expression generic if possible
+            } else {
+                expr << otherEffect->getNode()->getFullyQualifiedName();
+            }
+            expr << "." << otherKnob->getName() << ".get()";
             if (otherKnob->getDimension() > 1) {
                 expr << "[dimension]";
             }
@@ -1615,7 +1625,7 @@ KnobGui::linkTo(int dimension)
             thisKnob->beginChanges();
             for (int i = 0; i < thisKnob->getDimension(); ++i) {
                 if (i == dimension || dimension == -1) {
-                    thisKnob->setExpression(dimension, expr.str(), false);
+                    thisKnob->setExpression(i, expr.str(), false);
                 }
             }
             thisKnob->endChanges();
