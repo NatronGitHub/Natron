@@ -3988,8 +3988,13 @@ EffectInstance::tiledRenderingFunctor(RenderArgs & args,
                                 /*
                                  * No conversion required, copy to output
                                  */
-#pragma message WARN("Obtain full scale version of originalInputImage for copyUnProcessedChannels")
-                                it->second.fullscaleImage->copyUnProcessedChannels(actionArgs.roi, processChannels, originalInputImage);
+                                int prefInput = getNode()->getPreferredInput();
+                                assert(prefInput != -1);
+                                RectI roiPixel;
+                                ImagePtr originalInputImageFullScale = getImage(prefInput, time, actionArgs.mappedScale, view, NULL, originalInputImage->getComponents(), originalInputImage->getBitDepth(), originalInputImage->getPixelAspectRatio(), false, &roiPixel);
+                                if (originalInputImageFullScale) {
+                                    it->second.fullscaleImage->copyUnProcessedChannels(actionArgs.roi, processChannels, originalInputImageFullScale);
+                                }
                                 it->second.fullscaleImage->pasteFrom(*it->second.tmpImage, actionArgs.roi, false);
                             }
                             
