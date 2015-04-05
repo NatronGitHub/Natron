@@ -455,7 +455,9 @@ DockablePanel::DockablePanel(Gui* gui ,
             
             NodeGroup* isGroup = dynamic_cast<NodeGroup*>(iseffect);
             if (isGroup) {
-                _imp->_enterInGroupButton = new Button(QIcon(),"",_imp->_headerWidget);
+                QPixmap enterPix;
+                appPTR->getIcon(NATRON_PIXMAP_ENTER_GROUP,&enterPix);
+                _imp->_enterInGroupButton = new Button(QIcon(enterPix),"",_imp->_headerWidget);
                 QObject::connect(_imp->_enterInGroupButton,SIGNAL(clicked(bool)),this,SLOT(onEnterInGroupClicked()));
                 _imp->_enterInGroupButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
                 _imp->_enterInGroupButton->setFocusPolicy(Qt::NoFocus);

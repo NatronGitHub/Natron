@@ -872,6 +872,10 @@ GuiApplicationManager::getIcon(Natron::PixmapEnum e,
                 img.load(NATRON_IMAGES_PATH "merge_xor.png");
                 *pix = QPixmap::fromImage(img);
                 break;
+            case NATRON_PIXMAP_ENTER_GROUP:
+                img.load(NATRON_IMAGES_PATH "enter_group.png");
+                *pix = QPixmap::fromImage(img);
+                break;
             default:
                 assert(!"Missing image.");
         } // switch
