@@ -1724,6 +1724,7 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool useCache,
                 assert(imageToConvert->getMipMapLevel() < mipMapLevel);
                 
                 RectI imgToConvertBounds = imageToConvert->getBounds();
+                
                 RectD imgToConvertCanonical;
                 imgToConvertBounds.toCanonical(imageToConvert->getMipMapLevel(), imageToConvert->getPixelAspectRatio(), rod, &imgToConvertCanonical);
                 RectI downscaledBounds;
@@ -1757,14 +1758,19 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool useCache,
                     return;
                 }
                 
-                imageToConvert->downscaleMipMap(rod,
-                                                imgToConvertBounds,
-                                                imageToConvert->getMipMapLevel(), img->getMipMapLevel() ,
-                                                useCache && imageToConvert->usesBitMap(),
-                                                img.get());
+                if (imgToConvertBounds.area() > 1) {
+                    imageToConvert->downscaleMipMap(rod,
+                                                    imgToConvertBounds,
+                                                    imageToConvert->getMipMapLevel(), img->getMipMapLevel() ,
+                                                    useCache && imageToConvert->usesBitMap(),
+                                                    img.get());
+                } else {
+                    img->pasteFrom(*imageToConvert, imgToConvertBounds);
+                }
                 
                 imageToConvert = img;
-            
+                
+                
 
                 imageToConvert->ensureBounds(bounds);
                 
