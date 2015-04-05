@@ -262,7 +262,6 @@ struct EffectInstance::RenderArgs
     SequenceTime _time; //< the time to render
     int _view; //< the view to render
     bool _validArgs; //< are the args valid ?
-    int _channelForAlpha;
     bool _isIdentity;
     SequenceTime _identityTime;
     int _identityInputNb;
@@ -280,7 +279,6 @@ struct EffectInstance::RenderArgs
     , _time(0)
     , _view(0)
     , _validArgs(false)
-    , _channelForAlpha(3)
     , _isIdentity(false)
     , _identityTime(0)
     , _identityInputNb(-1)
@@ -298,7 +296,6 @@ struct EffectInstance::RenderArgs
     , _time(o._time)
     , _view(o._view)
     , _validArgs(o._validArgs)
-    , _channelForAlpha(o._channelForAlpha)
     , _isIdentity(o._isIdentity)
     , _identityTime(o._identityTime)
     , _identityInputNb(o._identityInputNb)
@@ -535,7 +532,6 @@ struct EffectInstance::Implementation
                          const RectI& renderWindow,
                          SequenceTime time,
                          int view,
-                         int channelForAlpha,
                          bool isIdentity,
                          SequenceTime identityTime,
                          int inputNbIdentity,
@@ -551,7 +547,6 @@ struct EffectInstance::Implementation
             localData->_renderWindowPixel = renderWindow;
             localData->_time = time;
             localData->_view = view;
-            localData->_channelForAlpha = channelForAlpha;
             localData->_isIdentity = isIdentity;
             localData->_identityTime = identityTime;
             localData->_identityInputNb = inputNbIdentity;
@@ -599,7 +594,6 @@ struct EffectInstance::Implementation
                                const RectI& renderWindow,
                                SequenceTime time,
                                int view,
-                               int channelForAlpha,
                                bool isIdentity,
                                SequenceTime identityTime,
                                int inputNbIdentity)
@@ -608,7 +602,6 @@ struct EffectInstance::Implementation
             localData->_renderWindowPixel = renderWindow;
             localData->_time = time;
             localData->_view = view;
-            localData->_channelForAlpha = channelForAlpha;
             localData->_isIdentity = isIdentity;
             localData->_identityTime = identityTime;
             localData->_identityInputNb = inputNbIdentity;
@@ -1057,7 +1050,7 @@ EffectInstance::getThreadLocalRegionsOfInterests(EffectInstance::RoIMap& roiMap)
 }
 
 
-boost::shared_ptr<Natron::Image>
+ImagePtr
 EffectInstance::getImage(int inputNb,
                          const SequenceTime time,
                          const RenderScale & scale,
@@ -1073,26 +1066,49 @@ EffectInstance::getImage(int inputNb,
     ///The input we want the image from
     EffectInstance* n = getInput(inputNb);
     
-    
+    ///Is this input a mask or not
     bool isMask = isInputMask(inputNb);
     
-    if ( isMask && !isMaskEnabled(inputNb) ) {
-        ///This is last resort, the plug-in should've checked getConnected() before, which would have returned false.
-        return boost::shared_ptr<Natron::Image>();
+    ///If the input is a mask, this is the channel index in the layer of the mask channel
+    int channelForMask = -1;
+    
+    ///This is the actual layer that we are fetching in input, note that it is different than "comp" which is pointing to Alpha
+    ImageComponents maskComps;
+    if (isMask) {
+        if (!isMaskEnabled(inputNb)) {
+            ///This is last resort, the plug-in should've checked getConnected() before, which would have returned false.
+            return ImagePtr();
+        }
+        channelForMask = getMaskChannel(inputNb,&maskComps);
+        
+        //Invalid mask
+        if (channelForMask == -1 || maskComps.getNumComponents() == 0) {
+            return ImagePtr();
+        }
     }
+    
+    
+    ///Is this node a roto node or not. If so, find out if this input is the roto-brush
     boost::shared_ptr<RotoContext> roto = getNode()->getRotoContext();
     bool useRotoInput = false;
     if (roto) {
         useRotoInput = isInputRotoBrush(inputNb);
     }
-    if ( ( !roto || (roto && !useRotoInput) ) && !n ) {
-        return boost::shared_ptr<Natron::Image>();
+    
+    if ((!roto || (roto && !useRotoInput)) && !n) {
+        //Disconnected input
+        return ImagePtr();
     }
     
+    ///If optionalBounds have been set, use this for the RoI instead of the data int the TLS
     RectD optionalBounds;
     if (optionalBoundsParam) {
         optionalBounds = *optionalBoundsParam;
     }
+    
+    /*
+     * These are the data fields stored in the TLS from the on-going render action or instance changed action
+     */
     unsigned int mipMapLevel = Image::getLevelFromScale(scale.x);
     RoIMap inputsRoI;
     RectD rod;
@@ -1114,10 +1130,10 @@ EffectInstance::getImage(int inputNb,
     //    in the kOfxImageEffectActionRender action
     //    in the kOfxActionInstanceChanged and kOfxActionEndInstanceChanged actions with a kOfxPropChangeReason of kOfxChangeUserEdited
     
-    if ( !_imp->renderArgs.hasLocalData() || !_imp->frameRenderArgs.hasLocalData() ) {
+    if (!_imp->renderArgs.hasLocalData() || !_imp->frameRenderArgs.hasLocalData()) {
         
         if ( !retrieveGetImageDataUponFailure(time, view, scale, optionalBoundsParam, &nodeHash, &rotoAge, &isIdentity, &inputIdentityTime, &inputNbIdentity, &rod, &inputsRoI, &optionalBounds) ) {
-            return boost::shared_ptr<Image>();
+            return ImagePtr();
         }
         
     } else {
@@ -1127,7 +1143,7 @@ EffectInstance::getImage(int inputNb,
         
         if (!renderArgs._validArgs || !frameRenderArgs.validArgs) {
             if ( !retrieveGetImageDataUponFailure(time, view, scale, optionalBoundsParam, &nodeHash, &rotoAge, &isIdentity, &inputIdentityTime, &inputNbIdentity, &rod, &inputsRoI, &optionalBounds) ) {
-                return boost::shared_ptr<Image>();
+                return ImagePtr();
             }
             
         } else {
@@ -1144,7 +1160,9 @@ EffectInstance::getImage(int inputNb,
     }
     
     RectD roi;
-    if (!optionalBoundsParam) {
+    if (optionalBoundsParam) {
+        roi = optionalBounds;
+    } else {
         RoIMap::iterator found = inputsRoI.find(useRotoInput ? this : n);
         if ( found != inputsRoI.end() ) {
             ///RoI is in canonical coordinates since the results of getRegionsOfInterest is in canonical coords.
@@ -1153,26 +1171,26 @@ EffectInstance::getImage(int inputNb,
             ///Oops, we didn't find the roi in the thread-storage... use  the RoD instead...
             roi = rod;
         }
-    } else {
-        roi = optionalBounds;
     }
     
     
-    
-    if ( isIdentity) {
+    if (isIdentity) {
         assert(inputNbIdentity != -2);
         ///If the effect is an identity but it didn't ask for the effect's image of which it is identity
         ///return a null image
         if (inputNbIdentity != inputNb) {
-            return boost::shared_ptr<Image>();
+            ImagePtr();
         }
         
     }
     
     
+    ///Does this node supports images at a scale different than 1
     bool renderFullScaleThenDownscale = (!supportsRenderScale() && mipMapLevel != 0);
+    
     ///Do we want to render the graph upstream at scale 1 or at the requested render scale ? (user setting)
     bool renderScaleOneUpstreamIfRenderScaleSupportDisabled = false;
+    
     unsigned int renderMappedMipMapLevel = mipMapLevel;
     if (renderFullScaleThenDownscale) {
         renderScaleOneUpstreamIfRenderScaleSupportDisabled = getNode()->useScaleOneImagesWhenRenderScaleSupportIsDisabled();
@@ -1186,15 +1204,14 @@ EffectInstance::getImage(int inputNb,
     RectI pixelRoI;
     roi.toPixelEnclosing(renderScaleOneUpstreamIfRenderScaleSupportDisabled ? 0 : mipMapLevel, par, &pixelRoI);
     
-    //Try to find in the input images thread local storage if we already pre-computed the image
+    ///Try to find in the input images thread local storage if we already pre-computed the image
     InputImagesMap inputImagesThreadLocal;
     if (_imp->inputImages.hasLocalData()) {
         inputImagesThreadLocal = _imp->inputImages.localData();
     }
     
     
-    int channelForAlpha = !isMask ? -1 : getMaskChannel(inputNb);
-    
+    ///For the roto brush, we do things separatly and render the mask with the RotoContext.
     if (useRotoInput) {
         
         std::list<Natron::ImageComponents> outputComps;
@@ -1216,17 +1233,19 @@ EffectInstance::getImage(int inputNb,
         return mask;
     }
     
+    /*
+     * From now on this is the generic part. We first call renderRoI and then convert to the appropriate scale/components if needed.
+     * Note that since the image has been pre-rendered before by the recursive nature of the algorithm, the call to renderRoI will be
+     * instantaneous thanks to the image cache.
+     */
     
-    //if the node is not connected, return a NULL pointer!
-    if (!n) {
-        return boost::shared_ptr<Natron::Image>();
-    }
-    
+    /// The node is connected.
+    assert(n);
     
     std::list<ImageComponents> requestedComps;
-    requestedComps.push_back(comp);
+    requestedComps.push_back(isMask ? maskComps : comp);
     ImageList inputImages;
-    RenderRoIRetCode retCode = n->renderRoI( RenderRoIArgs(time,
+    RenderRoIRetCode retCode = n->renderRoI(RenderRoIArgs(time,
                                                            scale,
                                                            renderMappedMipMapLevel,
                                                            view,
@@ -1235,9 +1254,7 @@ EffectInstance::getImage(int inputNb,
                                                            RectD(),
                                                            requestedComps,
                                                            depth,
-                                                           channelForAlpha,
-                                                           true,
-                                                           inputImagesThreadLocal), &inputImages );
+                                                           inputImagesThreadLocal), &inputImages);
     
     if (inputImages.empty() || retCode != eRenderRoIRetCodeOk) {
         return ImagePtr();
@@ -1247,7 +1264,7 @@ EffectInstance::getImage(int inputNb,
     ImagePtr inputImg = inputImages.front();
     
     ///Check that the rendered image contains what we requested.
-    assert(inputImg->getComponents() == comp);
+    assert((!isMask && inputImg->getComponents() == comp) || (isMask && inputImg->getComponents() == maskComps));
     
     if (roiPixel) {
         *roiPixel = pixelRoI;
@@ -1296,7 +1313,7 @@ EffectInstance::getImage(int inputNb,
         bool unPremultIfNeeded = getOutputPremultiplication() == eImagePremultiplicationPremultiplied;
         inputImg->convertToFormat(inputImg->getBounds(),
                                   colorspace, colorspace,
-                                  channelForAlpha, false, false, unPremultIfNeeded, remappedImg.get());
+                                  channelForMask, false, false, unPremultIfNeeded, remappedImg.get());
         inputImg = remappedImg;
     }
 
@@ -2172,7 +2189,6 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
                                                         args.roi,
                                                         args.time,
                                                         args.view,
-                                                        args.channelForAlpha,
                                                         identity,
                                                         inputTimeIdentity,
                                                         inputNbIdentity,
@@ -2616,14 +2632,10 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
 
         RoIMap roim;
         InputImagesMap imgs;
-        RenderRoIRetCode inputCode = renderInputImagesForRoI(createInCache,
-                                                             args.time,
+        RenderRoIRetCode inputCode = renderInputImagesForRoI(args.time,
                                                              args.view,
                                                              par,
-                                                             nodeHash,
-                                                             frameRenderArgs.rotoAge,
                                                              rod,
-                                                             *it,
                                                              canonicalRoI,
                                                              inputsToTransform,
                                                              args.mipMapLevel,
@@ -2712,14 +2724,10 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
                 
                 RoIMap roim;
                 InputImagesMap imgs;
-                RenderRoIRetCode inputRetCode = renderInputImagesForRoI(createInCache,
-                                                                        args.time,
+                RenderRoIRetCode inputRetCode = renderInputImagesForRoI(args.time,
                                                                         args.view,
                                                                         par,
-                                                                        nodeHash,
-                                                                        frameRenderArgs.rotoAge,
                                                                         rod,
-                                                                        *it,
                                                                         canonicalRoI,
                                                                         inputsToTransform,
                                                                         args.mipMapLevel,
@@ -2839,7 +2847,6 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
                                               frameRenderArgs.isSequentialRender,
                                               frameRenderArgs.isRenderResponseToUserInteraction,
                                               nodeHash,
-                                              args.channelForAlpha,
                                               renderFullScaleThenDownscale,
                                               renderScaleOneUpstreamIfRenderScaleSupportDisabled,
                                               inputsRoi,
@@ -2931,7 +2938,7 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
                 it->second.downscaleImage->convertToFormat(it->second.downscaleImage->getBounds(),
                                                            getApp()->getDefaultColorSpaceForBitDepth(it->second.downscaleImage->getBitDepth()),
                                                            getApp()->getDefaultColorSpaceForBitDepth(args.bitdepth),
-                                                           args.channelForAlpha, false, false, unPremultIfNeeded, tmp.get());
+                                                           -1, false, false, unPremultIfNeeded, tmp.get());
             }
             it->second.downscaleImage = tmp;
         }
@@ -2952,14 +2959,10 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
 
 
 EffectInstance::RenderRoIRetCode
-EffectInstance::renderInputImagesForRoI(bool createImageInCache,
-                                        SequenceTime time,
+EffectInstance::renderInputImagesForRoI(SequenceTime time,
                                         int view,
                                         double par,
-                                        U64 nodeHash,
-                                        U64 rotoAge,
                                         const RectD& rod,
-                                        const RectI& downscaledRenderWindow,
                                         const RectD& canonicalRenderWindow,
                                         const std::list<InputMatrix>& inputTransforms,
                                         unsigned int mipMapLevel,
@@ -3024,10 +3027,23 @@ EffectInstance::renderInputImagesForRoI(bool createImageInCache,
     for (FramesNeededMap::const_iterator it = framesNeeded.begin(); it != framesNeeded.end(); ++it) {
         ///We have to do this here because the enabledness of a mask is a feature added by Natron.
         bool inputIsMask = isInputMask(it->first);
-        if ( inputIsMask && !isMaskEnabled(it->first) ) {
-            continue;
+        
+        
+        Natron::ImageComponents maskComps;
+        int channelForAlphaInput;
+        if (inputIsMask) {
+            if (!isMaskEnabled(it->first)) {
+                continue;
+            }
+            channelForAlphaInput = getMaskChannel(it->first,&maskComps);
+        } else {
+            channelForAlphaInput = -1;
         }
         
+        if (inputIsMask && (channelForAlphaInput == -1 || maskComps.getNumComponents() == 0)) {
+            continue;
+        }
+
         ///There cannot be frames needed without components needed.
         ComponentsNeededMap::const_iterator foundCompsNeeded = neededComps.find(it->first);
         if (foundCompsNeeded == neededComps.end()) {
@@ -3081,7 +3097,6 @@ EffectInstance::renderInputImagesForRoI(bool createImageInCache,
                         for (int f = std::floor(it2->second[range].min + 0.5); f <= std::floor(it2->second[range].max + 0.5); ++f) {
                             
                             
-                            int channelForAlphaInput = inputIsMask ? getMaskChannel(it->first) : 3;
                             RenderScale scaleOne;
                             scaleOne.x = scaleOne.y = 1.;
                             
@@ -3104,8 +3119,7 @@ EffectInstance::renderInputImagesForRoI(bool createImageInCache,
                                                  inputRoIPixelCoords, //< roi in pixel coordinates
                                                  RectD(), // < did we precompute any RoD to speed-up the call ?
                                                  componentsToRender, //< requested comps
-                                                 inputPrefDepth,
-                                                 channelForAlphaInput);
+                                                 inputPrefDepth);
                             
                             
                            
@@ -3147,7 +3161,6 @@ EffectInstance::renderRoIInternal(SequenceTime time,
                                   bool isSequentialRender,
                                   bool isRenderMadeInResponseToUserInteraction,
                                   U64 nodeHash,
-                                  int channelForAlpha,
                                   bool renderFullScaleThenDownscale,
                                   bool useScaleOneInputImages,
                                   const std::list<RoIMap>& inputsRoi,
@@ -3294,7 +3307,6 @@ EffectInstance::renderRoIInternal(SequenceTime time,
                                      renderMappedRectToRender,
                                      time,
                                      view,
-                                     channelForAlpha,
                                      false, //< if we reached here the node is not an identity!
                                      0.,
                                      -1);
@@ -5219,6 +5231,15 @@ EffectInstance::getComponentsNeededAndProduced_public(SequenceTime time, int vie
                 bool ok = getNode()->getUserComponents(i, inputProcChannels, &isAll, &layer);
                 if (ok && !isAll) {
                     compVec.push_back(layer);
+                } else if (isInputMask(i) && !isInputRotoBrush(i)) {
+                    //Use mask channel selector
+                    ImageComponents maskComp;
+                    int channelMask = getNode()->getMaskChannel(i, &maskComp);
+                    if (channelMask != -1 && maskComp.getNumComponents() > 0) {
+                        std::vector<ImageComponents> compVec;
+                        compVec.push_back(maskComp);
+                        comps->insert(std::make_pair(i, compVec));
+                    }
                 } else {
                     //Use regular clip preferences
                     ImageBitDepthEnum depth;
@@ -5236,9 +5257,9 @@ EffectInstance::getComponentsNeededAndProduced_public(SequenceTime time, int vie
 }
 
 int
-EffectInstance::getMaskChannel(int inputNb) const
+EffectInstance::getMaskChannel(int inputNb,Natron::ImageComponents* comps) const
 {
-    return getNode()->getMaskChannel(inputNb);
+    return getNode()->getMaskChannel(inputNb,comps);
 }
 
 bool

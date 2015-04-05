@@ -171,8 +171,6 @@ public:
         RectD preComputedRoD; //<  pre-computed region of definition in canonical coordinates for this effect to speed-up the call to renderRoi
         std::list<Natron::ImageComponents> components; //< the requested image components (per plane)
         Natron::ImageBitDepthEnum bitdepth; //< the requested bit depth
-        int channelForAlpha; //< if this is a mask this is from this channel that we will fetch the mask
-        bool calledFromGetImage;
         
         ///When called from getImage() the calling node  will have already computed input images, hence the image of this node
         ///might already be in this list
@@ -191,8 +189,6 @@ public:
                       const RectD & preComputedRoD_,
                       const std::list<Natron::ImageComponents>& components_,
                       Natron::ImageBitDepthEnum bitdepth_,
-                      int channelForAlpha_ = 3,
-                      bool calledFromGetImage = false,
                       const EffectInstance::InputImagesMap& inputImages =  EffectInstance::InputImagesMap())
             : time(time_)
               , scale(scale_)
@@ -203,8 +199,6 @@ public:
               , preComputedRoD(preComputedRoD_)
               , components(components_)
               , bitdepth(bitdepth_)
-              , channelForAlpha(channelForAlpha_)
-              , calledFromGetImage(calledFromGetImage)
               , inputImagesList(inputImages)
         {
         }
@@ -398,14 +392,14 @@ public:
     }
     
     /**
-     * @brief Returns the index of the channel to use to produce the mask.
+     * @brief Returns the index of the channel to use to produce the mask and the components.
      * None = -1
      * R = 0
      * G = 1
      * B = 2
      * A = 3
      **/
-    int getMaskChannel(int inputNb) const;
+    int getMaskChannel(int inputNb, Natron::ImageComponents* comps) const;
 
     /**
      * @brief Returns whether masking is enabled or not
@@ -1464,7 +1458,6 @@ private:
                                           bool isSequentialRender,
                                           bool isRenderMadeInResponseToUserInteraction,
                                           U64 nodeHash,
-                                          int channelForAlpha,
                                           bool renderFullScaleThenDownscale,
                                           bool useScaleOneInputImages,
                                           const std::list<RoIMap>& inputRoisParam,
@@ -1475,14 +1468,10 @@ private:
 
 
     /// \returns false if rendering was aborted
-    RenderRoIRetCode renderInputImagesForRoI(bool createImageInCache,
-                                             SequenceTime time,
+    RenderRoIRetCode renderInputImagesForRoI(SequenceTime time,
                                              int view,
                                              double par,
-                                             U64 nodeHash,
-                                             U64 rotoAge,
                                              const RectD& rod,
-                                             const RectI& downscaledRenderWindow,
                                              const RectD& canonicalRenderWindow,
                                              const std::list<InputMatrix>& transformMatrix,
                                              unsigned int mipMapLevel,

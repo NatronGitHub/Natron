@@ -953,7 +953,7 @@ OfxClipInstance::getImageInternal(OfxTime time,
         std::list<ImageComponents> requestedComps;
         requestedComps.push_back(comp);
         EffectInstance::RenderRoIArgs args((SequenceTime)time,renderScale,mipMapLevel,
-                                           view,false,pixelRoI,RectD(),requestedComps,bitDepth,3,true,inputImages);
+                                           view,false,pixelRoI,RectD(),requestedComps,bitDepth,inputImages);
         ImageList planes;
         EffectInstance::RenderRoIRetCode retCode =  inputNode->renderRoI(args,&planes);
         assert(planes.size() == 1 || planes.empty());

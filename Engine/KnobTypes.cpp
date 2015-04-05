@@ -765,6 +765,7 @@ Choice_Knob::choiceRestoration(Choice_Knob* knob,const ChoiceExtraData* data)
         for (std::size_t i = 0; i < _entries.size(); ++i) {
             if (caseInsensitiveCompare(_entries[i], data->_choiceString)) {
                 setValue(i, 0);
+                return;
             }
         }
     }

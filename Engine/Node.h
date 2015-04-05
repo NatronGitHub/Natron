@@ -284,14 +284,14 @@ public:
                                                      bool multiPlanar);
 
     /**
-     * @brief Returns the index of the channel to use to produce the mask.
+     * @brief Returns the components and index of the channel to use to produce the mask.
      * None = -1
      * R = 0
      * G = 1
      * B = 2
      * A = 3
      **/
-    int getMaskChannel(int inputNb) const;
+    int getMaskChannel(int inputNb,Natron::ImageComponents* comps) const;
 
     /**
      * @brief Returns whether masking is enabled or not
