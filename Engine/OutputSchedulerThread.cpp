@@ -2064,8 +2064,6 @@ DefaultScheduler::processFrame(const BufferedFrames& frames)
                                                    rod,
                                                    components,
                                                    imageDepth,
-                                                   3,
-                                                   false,
                                                    inputImages);
         try {
             ImageList planes;
