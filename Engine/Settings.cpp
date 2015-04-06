@@ -1538,7 +1538,7 @@ Settings::onKnobValueChanged(KnobI* k,
         if (!_restoringSettings) {
             appPTR->setApplicationsCachesMaximumViewerDiskSpace( getMaximumViewerDiskCacheSize() );
         }
-    } else if ( k == _maxViewerDiskCacheGB.get() ) {
+    } else if ( k == _maxDiskCacheNodeGB.get() ) {
         if (!_restoringSettings) {
             appPTR->setApplicationsCachesMaximumDiskSpace(getMaximumDiskCacheNodeSize());
         }
