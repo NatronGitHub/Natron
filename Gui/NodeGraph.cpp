@@ -928,10 +928,14 @@ NodeGraph::moveNodesForIdealPosition(boost::shared_ptr<NodeGui> node,bool autoCo
                 assert(dotNode);
                 boost::shared_ptr<NodeGuiI> dotNodeGui_i = dotNode->getNodeGui();
                 assert(dotNodeGui_i);
+                NodeGui* dotGui = dynamic_cast<NodeGui*>(dotNodeGui_i.get());
+                assert(dotGui);
                 
                 double dotW,dotH;
-                dotNodeGui_i->getSize(&dotW,&dotH);
-                dotNodeGui_i->setPosition(x - dotW / 2., selectedCenter.y() - dotH / 2.);
+                dotGui->getSize(&dotW,&dotH);
+                QPointF dotPos(x - dotW / 2., selectedCenter.y() - dotH / 2.);
+                dotPos = dotGui->mapToParent(dotGui->mapFromScene(dotPos));
+                dotNodeGui_i->setPosition(dotPos.x(),dotPos.y());
                 
                 ///connect the nodes
                 
@@ -1031,10 +1035,15 @@ NodeGraph::moveNodesForIdealPosition(boost::shared_ptr<NodeGui> node,bool autoCo
                 assert(dotNode);
                 boost::shared_ptr<NodeGuiI> dotNodeGui_i = dotNode->getNodeGui();
                 assert(dotNodeGui_i);
+                NodeGui* dotGui = dynamic_cast<NodeGui*>(dotNodeGui_i.get());
+                assert(dotGui);
                 
                 double dotW,dotH;
-                dotNodeGui_i->getSize(&dotW,&dotH);
-                dotNodeGui_i->setPosition(x - dotW / 2., selectedCenter.y() - dotH / 2.);
+                dotGui->getSize(&dotW,&dotH);
+                QPointF dotPos(x - dotW / 2., selectedCenter.y() - dotH / 2.);
+                dotPos = dotGui->mapToParent(dotGui->mapFromScene(dotPos));
+                dotNodeGui_i->setPosition(dotPos.x(),dotPos.y());
+    
                 
                 ///connect the nodes
                 
