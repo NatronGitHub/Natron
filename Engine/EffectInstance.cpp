@@ -5217,7 +5217,20 @@ EffectInstance::getComponentsNeededAndProduced_public(SequenceTime time, int vie
             std::vector<ImageComponents> compVec;
             bool ok = getNode()->getUserComponents(-1, processChannels,processAllRequested, &layer);
             if (ok && !*processAllRequested) {
-                compVec.push_back(layer);
+                if (!layer.isColorPlane()) {
+                    compVec.push_back(layer);
+                } else {
+                    //Use regular clip preferences
+                    ImageBitDepthEnum depth;
+                    std::list<ImageComponents> components;
+                    getPreferredDepthAndComponents(-1, &components, &depth);
+                    for (std::list<ImageComponents>::iterator it = components.begin(); it!=components.end(); ++it) {
+                        if (it->isColorPlane()) {
+                            compVec.push_back(*it);
+                        }
+                    }
+
+                }
             } else if (!ok) {
                 //Use regular clip preferences
                 ImageBitDepthEnum depth;

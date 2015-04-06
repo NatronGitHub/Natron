@@ -1132,13 +1132,13 @@ clipPrefsProxy(OfxEffectInstance* self,
         outputModified = true;
     }
     
-    if (!self->isMultiPlanar()) {
-        std::string userComp = self->getOfxComponentsFromUserChannels(outputClip,-1);
-        if (!userComp.empty()) {
-            foundOutputPrefs->second.components = userComp;
-            outputModified = true;
-        }
-    }
+//    if (!self->isMultiPlanar()) {
+//        std::string userComp = self->getOfxComponentsFromUserChannels(outputClip,-1);
+//        if (!userComp.empty()) {
+//            foundOutputPrefs->second.components = userComp;
+//            outputModified = true;
+//        }
+//    }
     
     ///Adjust output premultiplication if needed
     if (foundOutputPrefs->second.components == kOfxImageComponentRGB) {
