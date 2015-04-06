@@ -385,5 +385,39 @@ private:
     bool _isRedone;
 };
 
+class InlineGroupCommand
+: public QUndoCommand
+{
+    
+public:
+    
+    InlineGroupCommand(NodeGraph* graph,const std::list<boost::shared_ptr<NodeGui> > & nodes);
+    
+    virtual ~InlineGroupCommand();
+    
+    virtual void undo();
+    virtual void redo();
+    
+private:
+    
+    struct NodeToConnect {
+        boost::weak_ptr<NodeGui> input;
+        std::map<boost::weak_ptr<NodeGui>,int> outputs;
+    };
+    
+    
+    struct InlinedGroup
+    {
+        boost::weak_ptr<NodeGui> group;
+        std::list<boost::weak_ptr<NodeGui> > inlinedNodes;
+        std::map<int,NodeToConnect> connections;
+    };
+    
+    NodeGraph* _graph;
+    
+    std::list<InlinedGroup> _groupNodes;
+    bool _firstRedoCalled;
+};
+
 
 #endif // NODEGRAPHUNDOREDO_H

@@ -438,6 +438,9 @@ CLANG_DIAG_ON(uninitialized)
 #define kShortcutIDActionGraphMakeGroup "makeGroup"
 #define kShortcutDescActionGraphMakeGroup "Group From Selection"
 
+#define kShortcutIDActionGraphExpandGroup "expandGroup"
+#define kShortcutDescActionGraphExpandGroup "Expand group"
+
 ///////////CURVEEDITOR SHORTCUTS
 #define kShortcutIDActionCurveEditorRemoveKeys "remove"
 #define kShortcutDescActionCurveEditorRemoveKeys "Delete Keyframes"
