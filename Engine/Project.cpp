@@ -1404,22 +1404,23 @@ Project::reset()
         _imp->additionalFormats.clear();
     }
     _imp->timeline->removeAllKeyframesIndicators();
+    
+    Q_EMIT projectNameChanged(NATRON_PROJECT_UNTITLED);
+    clearNodes(true);
     const std::vector<boost::shared_ptr<KnobI> > & knobs = getKnobs();
-
+    
     beginChanges();
     for (U32 i = 0; i < knobs.size(); ++i) {
         for (int j = 0; j < knobs[i]->getDimension(); ++j) {
             knobs[i]->resetToDefaultValue(j);
         }
     }
-
-
+    
+    
     onOCIOConfigPathChanged(appPTR->getOCIOConfigPath(),true);
     
     endChanges(true);
-    
-    Q_EMIT projectNameChanged(NATRON_PROJECT_UNTITLED);
-    clearNodes(true);
+
     _imp->projectClosing = false;
 }
 
