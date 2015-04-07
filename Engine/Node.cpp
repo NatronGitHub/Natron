@@ -4828,10 +4828,10 @@ Node::getUserComponents(int inputNb,bool* processChannels, bool* isAll,Natron::I
     
     *isAll = !_imp->getSelectedLayer(inputNb, foundSelector->second, layer);
     if (foundSelector->second.useRGBASelectors) {
-        processChannels[0] = foundSelector->second.enabledChan[0]->getValue() && !foundSelector->second.enabledChan[0]->getIsSecret();
-        processChannels[1] = foundSelector->second.enabledChan[1]->getValue() && !foundSelector->second.enabledChan[1]->getIsSecret();
-        processChannels[2] = foundSelector->second.enabledChan[2]->getValue() && !foundSelector->second.enabledChan[2]->getIsSecret();
-        processChannels[3] = foundSelector->second.enabledChan[3]->getValue() && !foundSelector->second.enabledChan[3]->getIsSecret();
+        processChannels[0] = foundSelector->second.enabledChan[0]->getValue();
+        processChannels[1] = foundSelector->second.enabledChan[1]->getValue();
+        processChannels[2] = foundSelector->second.enabledChan[2]->getValue();
+        processChannels[3] = foundSelector->second.enabledChan[3]->getValue();
     } else {
         int numChans = layer->getNumComponents();
         processChannels[0] = true;
@@ -4859,10 +4859,10 @@ Node::hasAtLeastOneChannelToProcess() const
     }
     if (foundSelector->second.useRGBASelectors) {
         bool processChannels[4];
-        processChannels[0] = foundSelector->second.enabledChan[0]->getValue() && !foundSelector->second.enabledChan[0]->getIsSecret();
-        processChannels[1] = foundSelector->second.enabledChan[1]->getValue() && !foundSelector->second.enabledChan[1]->getIsSecret();
-        processChannels[2] = foundSelector->second.enabledChan[2]->getValue() && !foundSelector->second.enabledChan[2]->getIsSecret();
-        processChannels[3] = foundSelector->second.enabledChan[3]->getValue() && !foundSelector->second.enabledChan[3]->getIsSecret();
+        processChannels[0] = foundSelector->second.enabledChan[0]->getValue();
+        processChannels[1] = foundSelector->second.enabledChan[1]->getValue();
+        processChannels[2] = foundSelector->second.enabledChan[2]->getValue();
+        processChannels[3] = foundSelector->second.enabledChan[3]->getValue();
         if (!processChannels[0] && !processChannels[1] && !processChannels[2] && !processChannels[3]) {
             return false;
         }

@@ -789,9 +789,13 @@ Gui::createViewerGui(boost::shared_ptr<Node> viewer)
     ViewerInstance* v = dynamic_cast<ViewerInstance*>( viewer->getLiveInstance() );
     assert(v);
 
+    ViewerTab* tab = addNewViewerTab(v, where);
+    
     NodeGraph* graph = 0;
     boost::shared_ptr<NodeCollection> collection = viewer->getGroup();
-    assert(collection);
+    if (!collection) {
+        return;
+    }
     NodeGroup* isGrp = dynamic_cast<NodeGroup*>( collection.get() );
     if (isGrp) {
         NodeGraphI* graph_i = isGrp->getNodeGraph();
@@ -801,7 +805,7 @@ Gui::createViewerGui(boost::shared_ptr<Node> viewer)
         graph = getNodeGraph();
     }
     assert(graph);
-    graph->setLastSelectedViewer( addNewViewerTab(v, where) );
+    graph->setLastSelectedViewer(tab);
 }
 
 const std::list<boost::shared_ptr<NodeGui> > &
