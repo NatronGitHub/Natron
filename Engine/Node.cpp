@@ -2100,6 +2100,19 @@ Node::Implementation::createChannelSelector(int inputNb,const std::string & inpu
         sel.layer->setAddNewLine(false);
     }
     page->addKnob(sel.layer);
+    std::vector<std::string> baseLayers;
+    if (isOutput) {
+        baseLayers.push_back("All");
+    } else {
+        baseLayers.push_back("None");
+    }
+    baseLayers.push_back(ImageComponents::getRGBAComponents().getComponentsGlobalName());
+    baseLayers.push_back(ImageComponents::getDisparityLeftComponents().getLayerName());
+    baseLayers.push_back(ImageComponents::getDisparityRightComponents().getLayerName());
+    baseLayers.push_back(ImageComponents::getForwardMotionComponents().getLayerName());
+    baseLayers.push_back(ImageComponents::getBackwardMotionComponents().getLayerName());
+    sel.layer->populateChoices(baseLayers);
+    sel.layer->setDefaultValue(1);
     
     sel.layerName = Natron::createKnob<String_Knob>(liveInstance.get(), inputName + "_layer_name", 1, false);
     sel.layerName->setSecret(true);
