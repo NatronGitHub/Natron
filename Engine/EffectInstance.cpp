@@ -312,8 +312,6 @@ struct EffectInstance::Implementation
 {
     Implementation(EffectInstance* publicInterface)
     : _publicInterface(publicInterface)
-    , renderAbortedMutex()
-    , renderAborted(false)
     , renderArgs()
     , frameRenderArgs()
     , beginEndRenderCount()
@@ -335,9 +333,6 @@ struct EffectInstance::Implementation
     }
 
     EffectInstance* _publicInterface;
-    
-    mutable QReadWriteLock renderAbortedMutex;
-    bool renderAborted; //< was rendering aborted ?
 
     ///Thread-local storage living through the render_public action and used by getImage to retrieve all parameters
     ThreadStorage<RenderArgs> renderArgs;
@@ -731,7 +726,7 @@ EffectInstance::setParallelRenderArgsTLS(int time,
                                          U64 nodeHash,
                                          U64 rotoAge,
                                          U64 renderAge,
-                                         ViewerInstance* viewer,
+                                         Natron::OutputEffectInstance* renderRequester,
                                          int textureIndex,
                                          const TimeLine* timeline)
 {
@@ -746,7 +741,7 @@ EffectInstance::setParallelRenderArgsTLS(int time,
     args.rotoAge = rotoAge;
     args.canAbort = canAbort;
     args.renderAge = renderAge;
-    args.renderRequester = viewer;
+    args.renderRequester = renderRequester;
     args.textureIndex = textureIndex;
     
     ++args.validArgs;
@@ -813,25 +808,13 @@ EffectInstance::getRenderHash() const
 }
 
 bool
-EffectInstance::isAbortedFromPlayback() const
-{
-    
-    ///This flag is set in OutputSchedulerThread::abortRendering
-    ///This will be used when playback or rendering on disk
-    QReadLocker l(&_imp->renderAbortedMutex);
-    return _imp->renderAborted;
-    
-}
-
-bool
 EffectInstance::aborted() const
 {
    
      if ( !_imp->frameRenderArgs.hasLocalData() ) {
         
-        ///No local data, we're either not rendering or calling this from a thread not controlled by Natron
-        return isAbortedFromPlayback();
-        
+         ///No local data, we're either not rendering or calling this from a thread not controlled by Natron
+         return false;
     } else {
         
         ParallelRenderArgs& args = _imp->frameRenderArgs.localData();
@@ -842,7 +825,8 @@ EffectInstance::aborted() const
             if (args.isRenderResponseToUserInteraction) {
                 
                 if (args.canAbort) {
-                    if (args.renderRequester && !args.renderRequester->isRenderAbortable(args.textureIndex, args.renderAge)) {
+                    ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>(args.renderRequester);
+                    if (isViewer && !isViewer->isRenderAbortable(args.textureIndex, args.renderAge)) {
                         return false;
                     }
                     
@@ -857,9 +841,12 @@ EffectInstance::aborted() const
                 }
                 
             } else {
-                ///Rendering is playback or render on disk, we rely on the _imp->renderAborted flag for this.
-
-                return isAbortedFromPlayback();
+                ///Rendering is playback or render on disk, we rely on the flag set on the node that requested the render
+                if (args.renderRequester) {
+                    return args.renderRequester->isSequentialRenderBeingAborted();
+                } else {
+                    return false;
+                }
           
             }
         }
@@ -874,14 +861,6 @@ EffectInstance::shouldCacheOutput() const
     return n->shouldCacheOutput();
 }
 
-void
-EffectInstance::setAborted(bool b)
-{
-    {
-        QWriteLocker l(&_imp->renderAbortedMutex);
-        _imp->renderAborted = b;
-    }
-}
 
 U64
 EffectInstance::getKnobsAge() const
@@ -5447,7 +5426,7 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
                                                  false,
                                                  false,
                                                  0,
-                                                 0,
+                                                 dynamic_cast<OutputEffectInstance*>(this),
                                                  0, //texture index
                                                  getApp()->getTimeLine().get());
 
@@ -5963,6 +5942,12 @@ OutputEffectInstance::getFirstFrame() const
     QMutexLocker l(_outputEffectDataLock);
 
     return _writerFirstFrame;
+}
+
+bool
+OutputEffectInstance::isSequentialRenderBeingAborted() const
+{
+    return _engine ? _engine->isSequentialRenderBeingAborted() : false;
 }
 
 void

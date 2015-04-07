@@ -170,7 +170,7 @@ public:
     /**
      * @brief Set the aborted flag on all nodes recursively on each subgroup.
      **/
-    void setAllNodesAborted(bool aborted);
+    void notifyRenderBeingAborted();
 
     /**
      * @brief For all active nodes, find all file-paths that uses the given projectPathName and if the location was valid,
@@ -222,7 +222,7 @@ public:
                                bool isSequential,
                                bool canAbort,
                                U64 renderAge,
-                               ViewerInstance* viewer,
+                               Natron::OutputEffectInstance* renderRequester,
                                int textureIndex,
                                const TimeLine* timeline);
     void invalidateParallelRenderArgs();
@@ -285,7 +285,7 @@ public:
                              bool isSequential,
                              bool canAbort,
                              U64 renderAge,
-                             ViewerInstance* viewer,
+                             Natron::OutputEffectInstance* renderRequester,
                              int textureIndex,
                              const TimeLine* timeline);
     

@@ -928,7 +928,7 @@ OfxEffectInstance::onInputChanged(int inputNo)
                                              false,
                                              false,
                                              0,
-                                             0,
+                                             dynamic_cast<OutputEffectInstance*>(this),
                                              0, //texture index
                                              getApp()->getTimeLine().get());
     

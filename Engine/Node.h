@@ -560,9 +560,8 @@ public:
     /**
      * @brief Called externally when the rendering is aborted. You should never
      * call this yourself.
-     * This function will also be called on all input nodes.
      **/
-    void setAborted(bool b);
+    void notifyRenderBeingAborted();
 
     bool makePreviewByDefault() const;
 

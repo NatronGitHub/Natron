@@ -3694,28 +3694,17 @@ Node::aborted() const
 }
 
 void
-Node::setAborted(bool b)
+Node::notifyRenderBeingAborted()
 {
-    ///MT-safe from EffectInstance
-    assert(_imp->liveInstance);
-    _imp->liveInstance->setAborted(b);
-    
-    if (QThread::currentThread() == qApp->thread()) {
+//
+//    if (QThread::currentThread() == qApp->thread()) {
         ///The render thread is waiting for the main-thread to dequeue actions
         ///but the main-thread is waiting for the render thread to abort
         ///cancel the dequeuing
         QMutexLocker k(&_imp->nodeIsDequeuingMutex);
         _imp->nodeIsDequeuing = false;
         _imp->nodeIsDequeuingCond.wakeAll();
-    }
-    //
-    //    QMutexLocker l(&_imp->inputsMutex);
-    //
-    //    for (U32 i = 0; i < _imp->inputs.size(); ++i) {
-    //        if (_imp->inputs[i]) {
-    //            _imp->inputs[i]->setAborted(b);
-    //        }
-    //    }
+//    }
     
 }
 

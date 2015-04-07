@@ -63,6 +63,9 @@ class NodeSerialization;
 class ViewerInstance;
 class RenderEngine;
 class BufferableObject;
+namespace Natron {
+class OutputEffectInstance;
+}
 namespace Transform {
 struct Matrix3x3;
 }
@@ -111,9 +114,8 @@ struct ParallelRenderArgs
     ///A number identifying the current frame render to determine if we can really abort for abortable renders
     U64 renderAge;
     
-    ///A pointer to the viewer that requested the current render. This is only used when rendering with a viewer
-    ///for abortable renders.
-    ViewerInstance* renderRequester;
+    ///A pointer to the node that requested the current render.
+    Natron::OutputEffectInstance* renderRequester;
     
     ///The texture index of the viewer being rendered, only useful for abortable renders
     int textureIndex;
@@ -570,7 +572,7 @@ public:
                                   U64 nodeHash,
                                   U64 rotoAge,
                                   U64 renderAge,
-                                  ViewerInstance* viewer,
+                                  Natron::OutputEffectInstance* renderRequested,
                                   int textureIndex,
                                   const TimeLine* timeline);
 
@@ -805,16 +807,6 @@ public:
        in the engine function.*/
     bool aborted() const WARN_UNUSED_RETURN;
 
-    /**
-     * @brief Used internally by aborted()
-     **/
-    bool isAbortedFromPlayback() const WARN_UNUSED_RETURN;
-
-    /**
-     * @brief Called externally when the rendering is aborted. You should never
-     * call this yourself.
-     **/
-    void setAborted(bool b);
 
     /** @brief Returns the image computed by the input 'inputNb' at the given time and scale for the given view.
      * @param dontUpscale If the image is retrieved is downscaled but the plug-in doesn't support the user of
@@ -1650,6 +1642,12 @@ public:
     {
         return _engine;
     }
+    
+    /**
+     * @brief Returns true if a sequential render is being aborted
+     **/
+    bool isSequentialRenderBeingAborted() const;
+
 
     /**
      * @brief Starts rendering of all the sequence available, from start to end.

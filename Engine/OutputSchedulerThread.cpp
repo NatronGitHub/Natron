@@ -152,6 +152,9 @@ struct OutputSchedulerThreadPrivate
     bool isAbortRequestBlocking;
     QWaitCondition abortedRequestedCondition;
     QMutex abortedRequestedMutex; // protects abortRequested
+    
+    bool abortFlag; // Same as abortRequested > 0 but held by a mutex on a smaller scope.
+    mutable QMutex abortFlagMutex; // protects abortFlag
 
     
     QMutex abortBeingProcessedMutex; //protects abortBeingProcessed
@@ -226,6 +229,8 @@ struct OutputSchedulerThreadPrivate
     , isAbortRequestBlocking(false)
     , abortedRequestedCondition()
     , abortedRequestedMutex()
+    , abortFlag(false)
+    , abortFlagMutex()
     , abortBeingProcessedMutex()
     , abortBeingProcessed(false)
     , processRunning(false)
@@ -750,6 +755,13 @@ OutputSchedulerThread::notifyThreadAboutToQuit(RenderThreadTask* thread)
     }
 }
 
+bool
+OutputSchedulerThread::isBeingAborted() const
+{
+    QMutexLocker k(&_imp->abortFlagMutex);
+    return _imp->abortFlag;
+}
+
 void
 OutputSchedulerThread::startRender()
 {
@@ -884,7 +896,12 @@ OutputSchedulerThread::stopRender()
             
             ///reset back the abort flag
             _imp->abortRequested = 0;
-            _imp->outputEffect->getApp()->getProject()->setAllNodesAborted(false);
+            
+            {
+                QMutexLocker k(&_imp->abortFlagMutex);
+                _imp->abortFlag = false;
+            }
+            //_imp->outputEffect->getApp()->getProject()->setAllNodesAborted(false);
             _imp->abortedRequestedCondition.wakeAll();
         }
         
@@ -1374,14 +1391,12 @@ OutputSchedulerThread::abortRendering(bool blocking)
                 if (!blocking && _imp->abortRequested > 0) {
                     return;
                 }
-                
-                ///Flag the whole tree recursively that we aborted
-                ///Note that if multiple writers are rendering at the same time, calling abort on one will
-                ///most likely abort all writers because they will all check the abort flag.
-                ///The limitation is because of the underlying mutex-protected boolean. Using
-                ///Thread-local storage would not solve the issue either because we have no way to set
-                ///the flag from another thread.
-                _imp->outputEffect->getApp()->getProject()->setAllNodesAborted(true);
+
+                {
+                    QMutexLocker k(&_imp->abortFlagMutex);
+                    _imp->abortFlag = true;
+                }
+                _imp->outputEffect->getApp()->getProject()->notifyRenderBeingAborted();
                 
                 ++_imp->abortRequested;
             }
@@ -1957,7 +1972,7 @@ private:
                                                              canOnlyHandleOneView, // is this sequential ?
                                                              true, // canAbort ?
                                                              0, //renderAge
-                                                             0, // viewer requester
+                                                             _imp->output, // viewer requester
                                                              0, //texture index
                                                              _imp->output->getApp()->getTimeLine().get());
                     
@@ -2050,7 +2065,7 @@ DefaultScheduler::processFrame(const BufferedFrames& frames)
                                                  canOnlyHandleOneView, // is this sequential ?
                                                  true, //canAbort
                                                  0, //renderAge
-                                                 0, //viewer
+                                                 _effect, //viewer
                                                  0, //texture index
                                                  _effect->getApp()->getTimeLine().get());
         
@@ -2535,6 +2550,15 @@ RenderEngine::quitEngine()
     if (_imp->currentFrameScheduler) {
         _imp->currentFrameScheduler->quitThread();
     }
+}
+
+bool
+RenderEngine::isSequentialRenderBeingAborted() const
+{
+    if (!_imp->scheduler) {
+        return false;
+    }
+    return _imp->scheduler->isBeingAborted();
 }
 
 bool

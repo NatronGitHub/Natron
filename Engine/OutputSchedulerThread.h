@@ -256,6 +256,11 @@ public:
     
     
     void runCallbackWithVariables(const QString& callback);
+    
+    /**
+     * @brief Returns true if a render is being aborted
+     **/
+    bool isBeingAborted() const;
 
 public Q_SLOTS:
     
@@ -603,6 +608,11 @@ public:
      * @brief Returns true if the scheduler is active and some render threads are doing work.
      **/
     bool hasThreadsWorking() const;
+    
+    /**
+     * @brief Returns true if a sequential render is being aborted
+     **/
+    bool isSequentialRenderBeingAborted() const;
     
 public Q_SLOTS:
 
