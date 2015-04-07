@@ -4961,6 +4961,9 @@ EffectInstance::getComponentsAvailableRecursive(SequenceTime time, int view, Com
     }
     NodePtr node  = getNode();
     
+    
+    
+    
     ComponentsNeededMap neededComps;
     SequenceTime ptTime;
     int ptView;
@@ -4968,92 +4971,6 @@ EffectInstance::getComponentsAvailableRecursive(SequenceTime time, int view, Com
     bool processAll;
     bool processChannels[4];
     getComponentsNeededAndProduced_public(time, view, &neededComps, &processAll, &ptTime, &ptView, processChannels, &ptInput);
-    
-    std::list<ImageComponents> userComps;
-    node->getUserComponents(&userComps);
-    
-    ComponentsNeededMap::iterator foundOutput = neededComps.find(-1);
-    if (foundOutput != neededComps.end()) {
-        
-        ///Foreach component produced by the node at the given (view,time),  try
-        ///to add it to the components available. Since we are recursing upstream, it is probably
-        ///already in there, in which case we ignore it and keep the one from below.
-        for (std::vector<Natron::ImageComponents>::iterator it = foundOutput->second.begin();
-             it != foundOutput->second.end(); ++it) {
-            
-            
-            ComponentsAvailableMap::iterator alreadyExisting = comps->end();
-            
-            if (it->isColorPlane()) {
-                
-                ComponentsAvailableMap::iterator colorMatch = comps->end();
-                
-                for (ComponentsAvailableMap::iterator it2 = comps->begin(); it2 != comps->end(); ++it2) {
-                    if (it2->first == *it) {
-                        alreadyExisting = it2;
-                        break;
-                    } else if (it2->first.isColorPlane()) {
-                        colorMatch = it2;
-                    }
-                }
-                
-                if (alreadyExisting == comps->end() && colorMatch != comps->end()) {
-                    alreadyExisting = colorMatch;
-                }
-            } else {
-                alreadyExisting = comps->find(*it);
-            }
-            
-            //If the component already exists from below in the tree, do not add it
-            if (alreadyExisting == comps->end()) {
-                comps->insert(std::make_pair(*it, node));
-            }
-        }
-        
-        ///Foreach user component, add it as an available component, but use this node only if it is also
-        ///in the "needed components" list
-        for (std::list<ImageComponents>::iterator it = userComps.begin(); it!=userComps.end(); ++it) {
-            
-            bool found = false;
-            for (std::vector<Natron::ImageComponents>::iterator it2 = foundOutput->second.begin();
-                 it2 != foundOutput->second.end(); ++it2) {
-                if (*it2 == *it) {
-                    found = true;
-                    break;
-                }
-            }
- 
-            
-            ComponentsAvailableMap::iterator alreadyExisting = comps->end();
-            
-            if (it->isColorPlane()) {
-                
-                ComponentsAvailableMap::iterator colorMatch = comps->end();
-                
-                for (ComponentsAvailableMap::iterator it2 = comps->begin(); it2 != comps->end(); ++it2) {
-                    if (it2->first == *it) {
-                        alreadyExisting = it2;
-                        break;
-                    } else if (it2->first.isColorPlane()) {
-                        colorMatch = it2;
-                    }
-                }
-                
-                if (alreadyExisting == comps->end() && colorMatch != comps->end()) {
-                    alreadyExisting = colorMatch;
-                }
-            } else {
-                alreadyExisting = comps->find(*it);
-            }
-            
-            //If the component already exists from below in the tree, do not add it
-            if (alreadyExisting == comps->end()) {
-                comps->insert(std::make_pair(*it, found ? node : NodePtr()));
-            }
-
-        }
-    }
-    markedNodes->push_back(this);
     
     
     ///If the plug-in is not pass-through, only consider the components processed by the plug-in in output,
@@ -5100,6 +5017,99 @@ EffectInstance::getComponentsAvailableRecursive(SequenceTime time, int view, Com
         }
     }
 
+    
+    std::list<ImageComponents> userComps;
+    node->getUserComponents(&userComps);
+    
+    ComponentsNeededMap::iterator foundOutput = neededComps.find(-1);
+    if (foundOutput != neededComps.end()) {
+        
+        ///Foreach component produced by the node at the given (view,time),  try
+        ///to add it to the components available. Since we are recursing upstream, it is probably
+        ///already in there, in which case we ignore it and keep the one from below.
+        for (std::vector<Natron::ImageComponents>::iterator it = foundOutput->second.begin();
+             it != foundOutput->second.end(); ++it) {
+            
+            
+            ComponentsAvailableMap::iterator alreadyExisting = comps->end();
+            
+            if (it->isColorPlane()) {
+                
+                ComponentsAvailableMap::iterator colorMatch = comps->end();
+                
+                for (ComponentsAvailableMap::iterator it2 = comps->begin(); it2 != comps->end(); ++it2) {
+                    if (it2->first == *it) {
+                        alreadyExisting = it2;
+                        break;
+                    } else if (it2->first.isColorPlane()) {
+                        colorMatch = it2;
+                    }
+                }
+                
+                if (alreadyExisting == comps->end() && colorMatch != comps->end()) {
+                    alreadyExisting = colorMatch;
+                }
+            } else {
+                alreadyExisting = comps->find(*it);
+            }
+            
+            //If the component already exists from below in the tree, do not add it
+            if (alreadyExisting == comps->end()) {
+                comps->insert(std::make_pair(*it, node));
+            } else {
+                alreadyExisting->second = node;
+            }
+        }
+        
+        ///Foreach user component, add it as an available component, but use this node only if it is also
+        ///in the "needed components" list
+        for (std::list<ImageComponents>::iterator it = userComps.begin(); it!=userComps.end(); ++it) {
+            
+            bool found = false;
+            for (std::vector<Natron::ImageComponents>::iterator it2 = foundOutput->second.begin();
+                 it2 != foundOutput->second.end(); ++it2) {
+                if (*it2 == *it) {
+                    found = true;
+                    break;
+                }
+            }
+ 
+            
+            ComponentsAvailableMap::iterator alreadyExisting = comps->end();
+            
+            if (it->isColorPlane()) {
+                
+                ComponentsAvailableMap::iterator colorMatch = comps->end();
+                
+                for (ComponentsAvailableMap::iterator it2 = comps->begin(); it2 != comps->end(); ++it2) {
+                    if (it2->first == *it) {
+                        alreadyExisting = it2;
+                        break;
+                    } else if (it2->first.isColorPlane()) {
+                        colorMatch = it2;
+                    }
+                }
+                
+                if (alreadyExisting == comps->end() && colorMatch != comps->end()) {
+                    alreadyExisting = colorMatch;
+                }
+            } else {
+                alreadyExisting = comps->find(*it);
+            }
+            
+            //If the component already exists from below in the tree, do not add it
+            if (alreadyExisting == comps->end()) {
+                comps->insert(std::make_pair(*it, found ? node : NodePtr()));
+            } else {
+                alreadyExisting->second = found ? node : NodePtr();
+            }
+
+        }
+    }
+    markedNodes->push_back(this);
+    
+    
+    
 }
 
 void
