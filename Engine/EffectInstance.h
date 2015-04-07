@@ -1280,6 +1280,8 @@ public:
     **/
     void getComponentsAvailable(SequenceTime time, ComponentsAvailableMap* comps) ;
 
+
+
 private:
 
     void getComponentsAvailableRecursive(SequenceTime time, int view,ComponentsAvailableMap* comps,
@@ -1294,6 +1296,8 @@ public:
                                                int* passThroughView,
                                                bool* processChannels,
                                                boost::shared_ptr<Natron::Node>* passThroughInput) ;
+
+    void setComponentsAvailableDirty(bool dirty);
 
 
 

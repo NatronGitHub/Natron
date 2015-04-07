@@ -329,6 +329,9 @@ struct EffectInstance::Implementation
     , imagesBeingRenderedMutex()
     , imagesBeingRendered()
 #endif
+    , componentsAvailableMutex()
+    , componentsAvailableDirty(true)
+    , outputComponentsAvailable()
     {
     }
 
@@ -383,6 +386,11 @@ struct EffectInstance::Implementation
     typedef std::map<ImagePtr,IBRPtr > IBRMap;
     IBRMap imagesBeingRendered;
 #endif
+    
+    ///A cache for components available
+    mutable QMutex componentsAvailableMutex;
+    bool componentsAvailableDirty; /// Set to true when getClipPreferences is called to indicate it must be set again
+    EffectInstance::ComponentsAvailableMap outputComponentsAvailable;
     
     void runChangedParamCallback(KnobI* k,bool userEdited,const std::string& callback);
     
@@ -4953,17 +4961,31 @@ EffectInstance::getPreferredDepthAndComponents(int inputNb,
 }
 
 void
+EffectInstance::setComponentsAvailableDirty(bool dirty)
+{
+    QMutexLocker k(&_imp->componentsAvailableMutex);
+    _imp->componentsAvailableDirty = dirty;
+}
+
+void
 EffectInstance::getComponentsAvailableRecursive(SequenceTime time, int view, ComponentsAvailableMap* comps,
                                                 std::list<Natron::EffectInstance*>* markedNodes)
 {
     if (std::find(markedNodes->begin(), markedNodes->end(), this) != markedNodes->end()) {
         return;
     }
+    
+    {
+        QMutexLocker k(&_imp->componentsAvailableMutex);
+        if (!_imp->componentsAvailableDirty) {
+            *comps = _imp->outputComponentsAvailable;
+            return;
+        }
+    }
+    
+    
     NodePtr node  = getNode();
-    
-    
-    
-    
+
     ComponentsNeededMap neededComps;
     SequenceTime ptTime;
     int ptView;
@@ -5109,20 +5131,30 @@ EffectInstance::getComponentsAvailableRecursive(SequenceTime time, int view, Com
     markedNodes->push_back(this);
     
     
+    {
+        QMutexLocker k(&_imp->componentsAvailableMutex);
+        _imp->componentsAvailableDirty = false;
+        _imp->outputComponentsAvailable = *comps;
+    }
+    
+    
     
 }
 
 void
 EffectInstance::getComponentsAvailable(SequenceTime time, ComponentsAvailableMap* comps)
 {
-    int nViews = getApp()->getProject()->getProjectViewsCount();
+   
+    //int nViews = getApp()->getProject()->getProjectViewsCount();
     
     ///Union components over all views
-    for (int view = 0; view < nViews; ++view) {
+    //for (int view = 0; view < nViews; ++view) {
+    ///Edit: Just call for 1 view, it should not matter as this should be view agnostic.
         std::list<Natron::EffectInstance*> marks;
-        getComponentsAvailableRecursive(time, view, comps, &marks);
+        getComponentsAvailableRecursive(time, 0, comps, &marks);
         
-    }
+    //}
+   
 }
 
 void

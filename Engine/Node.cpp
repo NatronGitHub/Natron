@@ -2112,7 +2112,11 @@ Node::Implementation::createChannelSelector(int inputNb,const std::string & inpu
     baseLayers.push_back(ImageComponents::getForwardMotionComponents().getLayerName());
     baseLayers.push_back(ImageComponents::getBackwardMotionComponents().getLayerName());
     sel.layer->populateChoices(baseLayers);
-    sel.layer->setDefaultValue(1);
+    if (isOutput && liveInstance->isPassThroughForNonRenderedPlanes() == EffectInstance::ePassThroughRenderAllRequestedPlanes) {
+        sel.layer->setDefaultValue(0);
+    } else {
+        sel.layer->setDefaultValue(1);
+    }
     
     sel.layerName = Natron::createKnob<String_Knob>(liveInstance.get(), inputName + "_layer_name", 1, false);
     sel.layerName->setSecret(true);
@@ -5810,6 +5814,8 @@ Node::refreshChannelSelectors(bool setValues)
     if (!isNodeCreated()) {
         return;
     }
+    _imp->liveInstance->setComponentsAvailableDirty(true);
+    
     for (std::map<int,ChannelSelector>::iterator it = _imp->channelsSelectors.begin(); it!= _imp->channelsSelectors.end(); ++it) {
         
         NodePtr node;
