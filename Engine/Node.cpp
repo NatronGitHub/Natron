@@ -5843,6 +5843,7 @@ Node::refreshChannelSelectors(bool setValues)
         bool gotMotionFw = false;
         
         int colorIndex = -1;
+        Natron::ImageComponents colorComp;
         
         if (node) {
             EffectInstance::ComponentsAvailableMap compsAvailable;
@@ -5855,6 +5856,7 @@ Node::refreshChannelSelectors(bool setValues)
                 if (it2->first.isColorPlane()) {
                     int numComp = it2->first.getNumComponents();
                     colorIndex = choices.size();
+                    colorComp = it2->first;
                     if (numComp == 1) {
                         choices.push_back(kNatronAlphaComponentsName);
                     } else if (numComp == 3) {
@@ -5888,6 +5890,7 @@ Node::refreshChannelSelectors(bool setValues)
             } else {
                 colorIndex = 0;
             }
+            colorComp = ImageComponents::getRGBAComponents();
             choices.insert(pos,kNatronRGBAComponentsName);
             
         }
@@ -5918,9 +5921,25 @@ Node::refreshChannelSelectors(bool setValues)
             }
         } else {
             if (!curLayer.empty()) {
+                bool isColor = curLayer == kNatronRGBAComponentsName ||
+                curLayer == kNatronRGBComponentsName ||
+                curLayer == kNatronAlphaComponentsName;
                 for (std::size_t i = 0; i < choices.size(); ++i) {
-                    if (choices[i] == curLayer) {
+                    if (choices[i] == curLayer || (isColor && (choices[i] == kNatronRGBAComponentsName || choices[i] ==
+                                                               kNatronRGBComponentsName || choices[i] == kNatronAlphaComponentsName))) {
                         it->second.layer->setValue(i, 0);
+                        if (isColor) {
+                            assert(colorIndex != -1);
+                            //Since color plane may have changed (RGB, or RGBA or Alpha), adjust the secretness of the checkboxes
+                            const std::vector<std::string>& channels = colorComp.getComponentsNames();
+                            for (int j = 0; j < 4; ++j) {
+                                if (j >= (int)(channels.size())) {
+                                    it->second.enabledChan[j]->setSecret(true);
+                                } else {
+                                    it->second.enabledChan[j]->setSecret(false);
+                                }
+                            }
+                        }
                         break;
                     }
                 }
