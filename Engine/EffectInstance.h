@@ -1129,9 +1129,7 @@ public:
          * This is set to true if this plane is allocated with allocateImagePlaneAndSetInThreadLocalStorage()
          **/
         bool isAllocatedOnTheFly;
-        
-        Natron::ImageComponents outputClipPrefMappedComponents;
-        
+                
         PlaneToRender()
         : fullscaleImage()
         , downscaleImage()

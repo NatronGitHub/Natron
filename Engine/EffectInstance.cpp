@@ -2551,15 +2551,24 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
     
     if (isPlaneCached) {
         ///We check what is left to render.
+        for (std::map<ImageComponents, PlaneToRender>::iterator it = planesToRender.planes.begin(); it != planesToRender.planes.end(); ++it) {
+            bool renderedElsewhere = false;
+            std::list<RectI> rects;
 #if NATRON_ENABLE_TRIMAP
-        if (!frameRenderArgs.canAbort && frameRenderArgs.isRenderResponseToUserInteraction) {
-            isPlaneCached->getRestToRender_trimap(roi, planesToRender.rectsToRender, &planesToRender.isBeingRenderedElsewhere);
-        } else {
-            isPlaneCached->getRestToRender(roi, planesToRender.rectsToRender);
-        }
+            if (!frameRenderArgs.canAbort && frameRenderArgs.isRenderResponseToUserInteraction) {
+                isPlaneCached->getRestToRender_trimap(roi, rects, &renderedElsewhere);
+                planesToRender.isBeingRenderedElsewhere |= renderedElsewhere;
+            } else {
+                isPlaneCached->getRestToRender(roi, rects);
+            }
 #else
-        isPlaneCached->getRestToRender(roi, planesToRender.rectsToRender);
+            isPlaneCached->getRestToRender(roi, rects);
 #endif
+            if (it == planesToRender.planes.begin()) {
+                planesToRender.rectsToRender = rects;
+            }
+        }
+
         
         if (!planesToRender.rectsToRender.empty() && cacheAlmostFull) {
             ///The node cache is almost full and we need to render  something in the image, if we hold a pointer to this image here
@@ -3900,7 +3909,7 @@ EffectInstance::tiledRenderingFunctor(RenderArgs & args,
             if (it->second.tmpImage->checkForNaNs(actionArgs.roi)) {
                 qDebug() << getNode()->getScriptName_mt_safe().c_str() << ": rendered rectangle (" << actionArgs.roi.x1 << ',' << actionArgs.roi.y1 << ")-(" << actionArgs.roi.x2 << ',' << actionArgs.roi.y2 << ") contains invalid values.";
             }
-            
+            qDebug() << it->first.getLayerName().c_str() << " rendered";
             if (it->second.isAllocatedOnTheFly) {
                 ///Plane allocated on the fly only have a temp image if using the cache and it is defined over the render window only
                 if (it->second.tmpImage != it->second.renderMappedImage) {
@@ -4024,6 +4033,7 @@ EffectInstance::tiledRenderingFunctor(RenderArgs & args,
                     }
                     it->second.downscaleImage->copyUnProcessedChannels(actionArgs.roi, processChannels, originalInputImage);
                     it->second.downscaleImage->markForRendered(downscaledRectToRender);
+                    qDebug() << it->first.getLayerName().c_str() << " bitmap successfully written";
                 } // if (renderFullScaleThenDownscale) {
             } // if (it->second.isAllocatedOnTheFly) {
         } // for (std::map<ImageComponents,PlaneToRender>::const_iterator it = outputPlanes.begin(); it!=outputPlanes.end(); ++it) {
