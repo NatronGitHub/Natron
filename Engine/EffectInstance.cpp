@@ -3822,14 +3822,17 @@ EffectInstance::tiledRenderingFunctor(RenderArgs & args,
     }
     
     assert(currentArgsTLS);
-    
+
 #if NATRON_ENABLE_TRIMAP
     if (!frameArgs.canAbort && frameArgs.isRenderResponseToUserInteraction) {
-        if (renderFullScaleThenDownscale && renderUseScaleOneInputs) {
-            firstPlane.fullscaleImage->markForRendering(actionArgs.roi);
-        } else {
-            firstPlane.downscaleImage->markForRendering(downscaledRectToRender);
+        for (std::map<Natron::ImageComponents,PlaneToRender>::iterator it = currentArgsTLS->_outputPlanes.begin(); it!=currentArgsTLS->_outputPlanes.end(); ++it) {
+            if (renderFullScaleThenDownscale && renderUseScaleOneInputs) {
+                it->second.fullscaleImage->markForRendering(actionArgs.roi);
+            } else {
+                it->second.downscaleImage->markForRendering(downscaledRectToRender);
+            }
         }
+        
     }
 #endif
     
@@ -3863,6 +3866,8 @@ EffectInstance::tiledRenderingFunctor(RenderArgs & args,
             currentArgsTLS->_outputPlaneBeingRendered = it->front().first;
         }
         actionArgs.outputPlanes = *it;
+        
+
         Natron::StatusEnum st = render_public(actionArgs);
         
         renderAborted = aborted();
@@ -3909,7 +3914,6 @@ EffectInstance::tiledRenderingFunctor(RenderArgs & args,
             if (it->second.tmpImage->checkForNaNs(actionArgs.roi)) {
                 qDebug() << getNode()->getScriptName_mt_safe().c_str() << ": rendered rectangle (" << actionArgs.roi.x1 << ',' << actionArgs.roi.y1 << ")-(" << actionArgs.roi.x2 << ',' << actionArgs.roi.y2 << ") contains invalid values.";
             }
-            qDebug() << it->first.getLayerName().c_str() << " rendered";
             if (it->second.isAllocatedOnTheFly) {
                 ///Plane allocated on the fly only have a temp image if using the cache and it is defined over the render window only
                 if (it->second.tmpImage != it->second.renderMappedImage) {
@@ -4033,7 +4037,6 @@ EffectInstance::tiledRenderingFunctor(RenderArgs & args,
                     }
                     it->second.downscaleImage->copyUnProcessedChannels(actionArgs.roi, processChannels, originalInputImage);
                     it->second.downscaleImage->markForRendered(downscaledRectToRender);
-                    qDebug() << it->first.getLayerName().c_str() << " bitmap successfully written";
                 } // if (renderFullScaleThenDownscale) {
             } // if (it->second.isAllocatedOnTheFly) {
         } // for (std::map<ImageComponents,PlaneToRender>::const_iterator it = outputPlanes.begin(); it!=outputPlanes.end(); ++it) {
