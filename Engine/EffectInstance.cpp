@@ -2551,23 +2551,24 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
     
     if (isPlaneCached) {
         ///We check what is left to render.
-        for (std::map<ImageComponents, PlaneToRender>::iterator it = planesToRender.planes.begin(); it != planesToRender.planes.end(); ++it) {
-            bool renderedElsewhere = false;
-            std::list<RectI> rects;
+//        for (std::map<ImageComponents, PlaneToRender>::iterator it = planesToRender.planes.begin(); it != planesToRender.planes.end(); ++it) {
+//            if (it->second.fullscaleImage) {
+//                bool renderedElsewhere = false;
+//                std::list<RectI> rects;
 #if NATRON_ENABLE_TRIMAP
-            if (!frameRenderArgs.canAbort && frameRenderArgs.isRenderResponseToUserInteraction) {
-                isPlaneCached->getRestToRender_trimap(roi, rects, &renderedElsewhere);
-                planesToRender.isBeingRenderedElsewhere |= renderedElsewhere;
-            } else {
-                isPlaneCached->getRestToRender(roi, rects);
-            }
+                if (!frameRenderArgs.canAbort && frameRenderArgs.isRenderResponseToUserInteraction) {
+                    isPlaneCached->getRestToRender_trimap(roi, planesToRender.rectsToRender, &planesToRender.isBeingRenderedElsewhere);
+                } else {
+                    isPlaneCached->getRestToRender(roi, planesToRender.rectsToRender);
+                }
 #else
-            isPlaneCached->getRestToRender(roi, rects);
+                isPlaneCached->getRestToRender(roi, rects);
 #endif
-            if (it == planesToRender.planes.begin()) {
-                planesToRender.rectsToRender = rects;
-            }
-        }
+//                if (it == planesToRender.planes.begin()) {
+//                    planesToRender.rectsToRender = rects;
+//                }
+//            }
+        //}
 
         
         if (!planesToRender.rectsToRender.empty() && cacheAlmostFull) {
@@ -2898,7 +2899,11 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
     }
     
     
-#ifdef DEBUG
+/*
+ * Since the images are allocated only to the size of the RoI, the image's size might have grown now from another concurrent render.
+ * Hence we may no longer check the bitmap because it might have changed.
+ */
+#if 0
     if (renderRetCode != eRenderRoIStatusRenderFailed && !renderAborted) {
         // Kindly check that everything we asked for is rendered!
         
@@ -3874,10 +3879,12 @@ EffectInstance::tiledRenderingFunctor(RenderArgs & args,
         
         /*
          * Since new planes can have been allocated on the fly by allocateImagePlaneAndSetInThreadLocalStorage(), refresh
-         * the planes map from the thread local storage.
+         * the planes map from the thread local storage once the render action is finished
          */
-        outputPlanes = currentArgsTLS->_outputPlanes;
-        assert(!outputPlanes.empty());
+        if (it == planesLists.begin()) {
+            outputPlanes = currentArgsTLS->_outputPlanes;
+            assert(!outputPlanes.empty());
+        }
         
         if (st != eStatusOK) {
 #if NATRON_ENABLE_TRIMAP
@@ -4037,6 +4044,8 @@ EffectInstance::tiledRenderingFunctor(RenderArgs & args,
                     }
                     it->second.downscaleImage->copyUnProcessedChannels(actionArgs.roi, processChannels, originalInputImage);
                     it->second.downscaleImage->markForRendered(downscaledRectToRender);
+                    /*qDebug() << QThread::currentThread() << " " << it->first.getLayerName().c_str() << " rendering finished: x1 = " << actionArgs.roi.x1
+                    << " y1 = " << actionArgs.roi.y1 << " x2 = " << actionArgs.roi.x2 << " y2 = " << actionArgs.roi.y2;*/
                 } // if (renderFullScaleThenDownscale) {
             } // if (it->second.isAllocatedOnTheFly) {
         } // for (std::map<ImageComponents,PlaneToRender>::const_iterator it = outputPlanes.begin(); it!=outputPlanes.end(); ++it) {
