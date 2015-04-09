@@ -1756,6 +1756,9 @@ KnobHelper::validateExpression(const std::string& expression,int dimension,bool 
 void
 KnobHelper::setExpressionInternal(int dimension,const std::string& expression,bool hasRetVariable,bool clearResults)
 {
+#ifdef NATRON_RUN_WITHOUT_PYTHON
+	return;
+#endif
     assert(dimension >= 0 && dimension < getDimension());
     
     Natron::PythonGILLocker pgl;

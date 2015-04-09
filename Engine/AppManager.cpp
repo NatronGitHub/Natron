@@ -72,6 +72,7 @@
 #include "Engine/BackDrop.h"
 
 
+
 BOOST_CLASS_EXPORT(Natron::FrameParams)
 BOOST_CLASS_EXPORT(Natron::ImageParams)
 
@@ -1662,6 +1663,9 @@ AppManager::getAllNonOFXPluginsPaths() const
 void
 AppManager::loadPythonGroups()
 {
+#ifdef NATRON_RUN_WITHOUT_PYTHON
+	return;
+#endif
     Natron::PythonGILLocker pgl;
     
     QStringList templatesSearchPath = getAllNonOFXPluginsPaths();
@@ -2990,6 +2994,9 @@ Natron::PY3String_asString(PyObject* obj)
 void
 AppManager::initPython(int argc,char* argv[])
 {
+#ifdef NATRON_RUN_WITHOUT_PYTHON
+	return;
+#endif
     QString pythonPath(qgetenv("PYTHONPATH"));
     //Add the Python distribution of Natron to the Python path
     QString binPath = QCoreApplication::applicationDirPath();
@@ -3098,6 +3105,9 @@ AppManager::initPython(int argc,char* argv[])
 void
 AppManager::tearDownPython()
 {
+#ifdef NATRON_RUN_WITHOUT_PYTHON
+	return;
+#endif
     ///See http://wiki.blender.org/index.php/Dev:2.4/Source/Python/API/Threads
     PyGILState_Ensure();
     
@@ -3420,6 +3430,9 @@ std::size_t ensureScriptHasModuleImport(const std::string& moduleName,std::strin
     
 bool interpretPythonScript(const std::string& script,std::string* error,std::string* output)
 {
+#ifdef NATRON_RUN_WITHOUT_PYTHON
+	return true;
+#endif
     Natron::PythonGILLocker pgl;
     
     PyObject* mainModule = getMainModule();
@@ -3583,6 +3596,9 @@ getGroupInfos(const std::string& modulePath,
               std::string* description,
               unsigned int* version)
 {
+#ifdef NATRON_RUN_WITHOUT_PYTHON
+	return false;
+#endif
     Natron::PythonGILLocker pgl;
     
     QString script("import sys\n"

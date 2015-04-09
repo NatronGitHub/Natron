@@ -5502,6 +5502,9 @@ static PyObject* getAttrRecursive(const std::string& fullyQualifiedName,PyObject
 void
 Node::declareNodeVariableToPython(const std::string& nodeName)
 {
+#ifdef NATRON_RUN_WITHOUT_PYTHON
+	return;
+#endif
     Natron::PythonGILLocker pgl;
     
     PyObject* mainModule = appPTR->getMainModule();
@@ -5570,6 +5573,9 @@ Node::deleteNodeVariableToPython(const std::string& nodeName)
 void
 Node::declarePythonFields()
 {
+#ifdef NATRON_RUN_WITHOUT_PYTHON
+	return;
+#endif
     Natron::PythonGILLocker pgl;
     
     if (!getGroup()) {
