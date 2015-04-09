@@ -111,10 +111,6 @@ RenderingProgressDialog::onCurrentFrameProgress(int progress)
 void
 RenderingProgressDialog::onProcessCanceled()
 {
-    if ( isVisible() ) {
-        hide();
-        Natron::informationDialog( tr("Render").toStdString(), tr("Render aborted.").toStdString() );
-    }
 	close();
 }
 
