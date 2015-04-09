@@ -305,7 +305,7 @@ struct GuiPrivate
     CurveEditor *_curveEditor;
 
     // The dope sheet
-    DopeSheet *_dopeSheet;
+    DopeSheetEditor *_dopeSheetEditor;
 
     ///the left toolbar
     QToolBar* _toolBox;
@@ -778,6 +778,16 @@ void
 Gui::removeNodeGuiFromCurveEditor(const boost::shared_ptr<NodeGui>& node)
 {
     _imp->_curveEditor->removeNode(node.get());
+}
+
+void Gui::addNodeGuiToDopeSheetEditor(const boost::shared_ptr<NodeGui> &node)
+{
+    _imp->_dopeSheetEditor->addNode(node);
+}
+
+void Gui::removeNodeGuiFromDopeSheetEditor(const boost::shared_ptr<NodeGui> &node)
+{
+    _imp->_dopeSheetEditor->removeNode(node.get());
 }
 
 void
@@ -1387,10 +1397,10 @@ GuiPrivate::createCurveEditorGui()
 void
 GuiPrivate::createDopeSheetGui()
 {
-    _dopeSheet = new DopeSheet(_gui, _gui);
-    _dopeSheet->setScriptName(kDopeSheetObjectName);
-    _dopeSheet->setLabel(QObject::tr("Dope Sheet").toStdString());
-    _gui->registerTab(_dopeSheet, _dopeSheet);
+    _dopeSheetEditor = new DopeSheetEditor(_gui,_appInstance->getTimeLine(), _gui);
+    _dopeSheetEditor->setScriptName(kDopeSheetObjectName);
+    _dopeSheetEditor->setLabel(QObject::tr("Dope Sheet").toStdString());
+    _gui->registerTab(_dopeSheetEditor, _dopeSheetEditor);
 }
 
 void
@@ -1484,7 +1494,7 @@ Gui::createDefaultLayout1()
 
     TabWidget::moveTab(_imp->_nodeGraphArea, _imp->_nodeGraphArea, workshopPane);
     TabWidget::moveTab(_imp->_curveEditor, _imp->_curveEditor, workshopPane);
-    TabWidget::moveTab(_imp->_dopeSheet, _imp->_dopeSheet, workshopPane);
+    TabWidget::moveTab(_imp->_dopeSheetEditor, _imp->_dopeSheetEditor, workshopPane);
     TabWidget::moveTab(_imp->_propertiesBin, _imp->_propertiesBin, propertiesPane);
 
     {
@@ -4305,9 +4315,9 @@ Gui::getCurveEditor() const
     return _imp->_curveEditor;
 }
 
-DopeSheet *Gui::getDopeSheet() const
+DopeSheetEditor *Gui::getDopeSheetEditor() const
 {
-    return _imp->_dopeSheet;
+    return _imp->_dopeSheetEditor;
 }
 
 ScriptEditor*

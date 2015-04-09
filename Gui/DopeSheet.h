@@ -12,7 +12,7 @@
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
-#include <QWidget>
+#include <QTreeWidget>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
@@ -21,77 +21,145 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/ScriptObject.h"
 
-class DopeSheetPrivate;
+class DopeSheetEditorPrivate;
+class DSKnobPrivate;
+class DopeSheetEditor;
+class DSNodePrivate;
 class Gui;
 class KnobI;
 class KnobGui;
-class DopeSheetKeyframeSetPrivate;
-class DopeSheetNodePrivate;
 class NodeGui;
-class QTreeWidget;
-class QTreeWidgetItem;
 class TimeLine;
 
-class DopeSheetKeyframeSet : public QObject
+
+//
+class DSNode;
+class DSKnob;
+
+typedef std::list<DSNode *> DSNodeList;
+typedef std::list<DSKnob *> DSKnobList;
+typedef std::list<QTreeWidgetItem *> QTreeWidgetItemList;
+// typedefs
+
+
+const int DSNODE_TYPE_USERROLE = Qt::UserRole + 1;
+
+
+class DSKnob : public QObject
 {
     Q_OBJECT
 
 public:
-    DopeSheetKeyframeSet(QTreeWidgetItem *parentItem,
-                         const boost::shared_ptr<KnobI> knob,
-                         KnobGui *knobGui,
-                         int dimension,
-                         bool isMultiDim);
-    ~DopeSheetKeyframeSet();
+    friend class DopeSheetEditor;
 
-    QTreeWidgetItem *getItem() const;
+    DSKnob(DopeSheetEditor *dopeSheetEditor,
+           QTreeWidgetItem *nameItem,
+           KnobGui *knobGui,
+           int dimension);
+    ~DSKnob();
+
+    QRectF getNameItemRect() const;
+    KnobGui *getKnobGui() const;
+
+    bool isMultiDimRoot() const;
+    bool isExpanded() const;
+    bool isHidden() const;
+
+    bool parentIsCollapsed() const;
+
+Q_SIGNALS:
+    void needNodesVisibleStateChecking();
 
 public Q_SLOTS:
     void checkVisibleState();
 
 private:
-    boost::shared_ptr<DopeSheetKeyframeSetPrivate> _imp;
+    QTreeWidgetItem *getNameItem() const;
+
+private:
+    boost::scoped_ptr<DSKnobPrivate> _imp;
 };
 
-class DopeSheetNode : public QObject
+class DSNode : public QObject
 {
     Q_OBJECT
 
 public:
-    DopeSheetNode(QTreeWidget *hierarchyView,
-                         const boost::shared_ptr<NodeGui> &node);
-    ~DopeSheetNode();
+    friend class DopeSheetEditor;
 
-    boost::shared_ptr<NodeGui> getNode() const;
+    enum DSNodeType
+    {
+        CommonNodeType = 1001,
+        ReaderNodeType,
+        GroupNodeType
+    };
 
-    void checkVisibleState();
+    DSNode(DopeSheetEditor *dopeSheetEditor,
+           const boost::shared_ptr<NodeGui> &nodeGui);
+    ~DSNode();
+
+    QRectF getNameItemRect() const;
+    boost::shared_ptr<NodeGui> getNodeGui() const;
+
+    DSKnobList getDSKnobs() const;
+
+    bool isExpanded() const;
+    bool isHidden() const;
+
+    bool isCommonNode() const;
+    bool isReaderNode() const;
+    bool isTimeNode() const;
+    bool isGroupNode() const;
 
 public Q_SLOTS:
     void onNodeNameChanged(const QString &name);
 
+    void checkVisibleState();
+
 private:
-    boost::scoped_ptr<DopeSheetNodePrivate> _imp;
+    QTreeWidgetItem *getNameItem() const;
+
+private:
+    boost::scoped_ptr<DSNodePrivate> _imp;
 };
 
-class DopeSheet : public QWidget, public ScriptObject
+class DopeSheetEditor : public QWidget, public ScriptObject
 {
     Q_OBJECT
 
 public:
-    DopeSheet(Gui *gui,
-              QWidget *parent = 0);
-    ~DopeSheet();
+    DopeSheetEditor(Gui *gui, boost::shared_ptr<TimeLine> timeline, QWidget *parent = 0);
+    ~DopeSheetEditor();
 
-    void frame();
+    QTreeWidget *getHierarchyView() const;
 
-    void addNode(boost::shared_ptr<NodeGui> node);
+    const DSNodeList &getDSNodeItems() const;
+
+    QRect getNameItemRect(const QTreeWidgetItem *item) const;
+    QRect getSectionRect(const QTreeWidgetItem *item) const;
+
+    boost::shared_ptr<TimeLine> getTimeline() const;
+
+    void addNode(boost::shared_ptr<NodeGui> nodeGui);
     void removeNode(NodeGui *node);
 
 public Q_SLOTS:
     void onItemSelectionChanged();
+    void onItemDoubleClicked(QTreeWidgetItem *item, int column);
+
+    void refreshDopeSheetView();
 
 private:
-    boost::scoped_ptr<DopeSheetPrivate> _imp;
+    boost::scoped_ptr<DopeSheetEditorPrivate> _imp;
 };
+
+class HierarchyView : public QTreeWidget
+{
+public:
+    friend class HierarchyViewItemDelegate;
+
+    explicit HierarchyView(QWidget *parent = 0);
+};
+
 
 #endif // DOPESHEET_H

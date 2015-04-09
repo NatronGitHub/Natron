@@ -423,6 +423,7 @@ NodeGui::ensurePanelCreated()
     initializeKnobs();
     beginEditKnobs();
     gui->addNodeGuiToCurveEditor(thisShared);
+    gui->addNodeGuiToDopeSheetEditor(thisShared);
     
     //Ensure panel for all children if multi-instance
     
@@ -1727,6 +1728,7 @@ NodeGui::activate(bool triggerRender)
     }
     _graph->restoreFromTrash(this);
     _graph->getGui()->getCurveEditor()->addNode(shared_from_this());
+    _graph->getGui()->getDopeSheetEditor()->addNode(shared_from_this());
 
     if (!isMultiInstanceChild && triggerRender) {
         std::list<ViewerInstance* > viewers;
@@ -1816,7 +1818,7 @@ NodeGui::deactivate(bool triggerRender)
         _graph->moveToTrash(this);
         if ( _graph->getGui() ) {
             _graph->getGui()->getCurveEditor()->removeNode(this);
-            _graph->getGui()->getDopeSheet()->removeNode(this);
+            _graph->getGui()->getDopeSheetEditor()->removeNode(this);
         }
     }
 

@@ -69,7 +69,7 @@ class FloatingWidget;
 class BoundAction;
 class ScriptEditor;
 class PyPanel;
-class DopeSheet;
+class DopeSheetEditor;
 
 //Natron engine
 class ViewerInstance;
@@ -127,6 +127,9 @@ public:
     void addNodeGuiToCurveEditor(const boost::shared_ptr<NodeGui> &node);
     
     void removeNodeGuiFromCurveEditor(const boost::shared_ptr<NodeGui>& node);
+
+    void addNodeGuiToDopeSheetEditor(const boost::shared_ptr<NodeGui> &node);
+    void removeNodeGuiFromDopeSheetEditor(const boost::shared_ptr<NodeGui>& node);
 
     const std::list<boost::shared_ptr<NodeGui> > & getSelectedNodes() const;
 
@@ -378,7 +381,7 @@ public:
 
     NodeGraph* getNodeGraph() const;
     CurveEditor* getCurveEditor() const;
-    DopeSheet *getDopeSheet() const;
+    DopeSheetEditor *getDopeSheetEditor() const;
     ScriptEditor* getScriptEditor() const;
 
     QVBoxLayout* getPropertiesLayout() const;

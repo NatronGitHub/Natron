@@ -129,7 +129,8 @@ SOURCES += \
     NatronGui/pypanel_wrapper.cpp \
     NatronGui/pytabwidget_wrapper.cpp \
     NatronGui/pyviewer_wrapper.cpp \
-    DopeSheet.cpp
+    DopeSheet.cpp \
+    DopeSheetView.cpp
 
 HEADERS += \
     AboutWindow.h \
@@ -235,7 +236,8 @@ HEADERS += \
     NatronGui/pypanel_wrapper.h \
     NatronGui/pytabwidget_wrapper.h \
     NatronGui/pyviewer_wrapper.h \
-    DopeSheet.h
+    DopeSheet.h \
+    DopeSheetView.h
 
 RESOURCES += \
     GuiResources.qrc
