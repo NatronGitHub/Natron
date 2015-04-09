@@ -1158,11 +1158,13 @@ OutputSchedulerThread::adjustNumberOfThreads(int* newNThreads)
     /////If we were analysing the CPU activity, now set the appropriate number of threads to render.
     int optimalNThreads;
     
+    ///How many parallel renders the user wants
     int userSettingParallelThreads = appPTR->getCurrentSettings()->getNumberOfParallelRenders();
     
+    ///How many threads are running in the application
     int runningThreads = appPTR->getNRunningThreads() + QThreadPool::globalInstance()->activeThreadCount();
     
-    
+    ///How many current threads are used by THIS renderer
     int currentParallelRenders = getNRenderThreads();
     
     if (userSettingParallelThreads == 0) {
@@ -1175,7 +1177,7 @@ OutputSchedulerThread::adjustNumberOfThreads(int* newNThreads)
     optimalNThreads = std::max(1,optimalNThreads);
 
 
-    if (runningThreads < optimalNThreads && currentParallelRenders < optimalNThreads) {
+    if ((runningThreads < optimalNThreads && currentParallelRenders < optimalNThreads) || currentParallelRenders == 0) {
      
         ////////
         ///Launch 1 thread

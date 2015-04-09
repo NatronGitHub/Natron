@@ -180,7 +180,7 @@ void
 RenderingProgressDialog::keyPressEvent(QKeyEvent* e)
 {
     if (e->key() == Qt::Key_Escape) {
-        reject();
+        onCancelButtonClicked();
     } else {
         QDialog::keyPressEvent(e);
     }
@@ -191,17 +191,19 @@ RenderingProgressDialog::closeEvent(QCloseEvent* /*e*/)
 {
     QDialog::DialogCode ret = (QDialog::DialogCode)result();
     if (ret != QDialog::Accepted) {
+        Q_EMIT canceled();
+        reject();
         Natron::informationDialog( tr("Render").toStdString(), tr("Render aborted.").toStdString() );
+        
     }
-    reject();
-    Q_EMIT canceled();
+    
 }
 
 void
 RenderingProgressDialog::onCancelButtonClicked()
 {
-    reject();
     Q_EMIT canceled();
+    close();
 }
 
 RenderingProgressDialog::RenderingProgressDialog(Gui* gui,
