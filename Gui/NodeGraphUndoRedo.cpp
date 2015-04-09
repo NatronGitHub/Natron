@@ -39,77 +39,46 @@ CLANG_DIAG_ON(uninitialized)
 
 
 
-MoveMultipleNodesCommand::MoveMultipleNodesCommand(const std::list<NodeToMove> & nodes,
+MoveMultipleNodesCommand::MoveMultipleNodesCommand(const std::list<NodeGuiPtr> & nodes,
                                                    double dx,
                                                    double dy,
-                                                   bool doMerge,
-                                                   const QPointF & mouseScenePos,
                                                    QUndoCommand *parent)
     : QUndoCommand(parent)
       , _firstRedoCalled(false)
       , _nodes(nodes)
-      , _mouseScenePos(mouseScenePos)
       , _dx(dx)
       , _dy(dy)
-      , _doMerge(doMerge)
 {
     assert( !nodes.empty() );
 }
 
 void
-MoveMultipleNodesCommand::move(bool skipMagnet,
-                               double dx,
+MoveMultipleNodesCommand::move(double dx,
                                double dy)
 {
-    for (std::list<NodeToMove>::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
-        NodeGuiPtr node = it->node.lock();
-        QPointF pos = node->getPos_mt_safe();
-        node->refreshPosition(pos.x() + dx, pos.y() + dy,it->isWithinBD || _nodes.size() > 1 || skipMagnet,_mouseScenePos);
+    for (std::list<NodeGuiPtr>::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
+        QPointF pos = (*it)->getPos_mt_safe();
+        (*it)->setPosition(pos.x() + dx, pos.y() + dy);
     }
 }
 
 void
 MoveMultipleNodesCommand::undo()
 {
-    move(true,-_dx, -_dy);
+    move(-_dx, -_dy);
     setText( QObject::tr("Move nodes") );
 }
 
 void
 MoveMultipleNodesCommand::redo()
 {
-    move(_firstRedoCalled,_dx, _dy);
+    if (_firstRedoCalled) {
+        move(_dx, _dy);
+    }
     _firstRedoCalled = true;
     setText( QObject::tr("Move nodes") );
 }
 
-bool
-MoveMultipleNodesCommand::mergeWith(const QUndoCommand *command)
-{
-    const MoveMultipleNodesCommand *mvCmd = dynamic_cast<const MoveMultipleNodesCommand *>(command);
-
-    if (!mvCmd) {
-        return false;
-    }
-    if (!mvCmd->_doMerge || !_doMerge) {
-        return false;
-    }
-    if (( mvCmd->_nodes.size() != _nodes.size() ) ) {
-        return false;
-    }
-    {
-        std::list<NodeToMove >::const_iterator itOther = mvCmd->_nodes.begin();
-        for (std::list<NodeToMove>::const_iterator it = _nodes.begin(); it != _nodes.end(); ++it,++itOther) {
-            if (it->node.lock() != itOther->node.lock()) {
-                return false;
-            }
-        }
-    }
-    _dx += mvCmd->_dx;
-    _dy += mvCmd->_dy;
-
-    return true;
-}
 
 AddMultipleNodesCommand::AddMultipleNodesCommand(NodeGraph* graph,
                                                  const std::list<boost::shared_ptr<NodeGui> > & nodes,

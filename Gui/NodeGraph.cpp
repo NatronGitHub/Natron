@@ -268,7 +268,6 @@ struct NodeGraphPrivate
     
     NodeGuiPtr _backdropResized; //< the backdrop being resized
     
-    bool _firstMove;
     NodeGuiList _selection;
     
     std::map<NodeGuiPtr,NodeGuiList> _nodesWithinBDAtPenDown;
@@ -278,7 +277,7 @@ struct NodeGraphPrivate
     bool _knobLinksVisible;
     double _accumDelta;
     bool _detailsVisible;
-    bool _mergeMoveCommands;
+    QPointF _deltaSinceMousePress; //< mouse delta since last press
     bool _hasMovedOnce;
     
     ViewerTab* lastSelectedViewer;
@@ -319,7 +318,6 @@ struct NodeGraphPrivate
     , _hintInputEdge(NULL)
     , _hintOutputEdge(NULL)
     , _backdropResized()
-    , _firstMove(true)
     , _selection()
     , _nodesWithinBDAtPenDown()
     , _selectionRect(NULL)
@@ -327,7 +325,7 @@ struct NodeGraphPrivate
     , _knobLinksVisible(true)
     , _accumDelta(0)
     , _detailsVisible(false)
-    , _mergeMoveCommands(false)
+    , _deltaSinceMousePress(0,0)
     , _hasMovedOnce(false)
     , lastSelectedViewer(0)
     {
@@ -1069,7 +1067,7 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
 {
     assert(e);
     _imp->_hasMovedOnce = false;
-    _imp->_mergeMoveCommands = false;
+    _imp->_deltaSinceMousePress = QPointF(0,0);
     if ( buttonDownIsMiddle(e) ) {
         _imp->_evtState = eEventStateMovingArea;
 
@@ -1357,12 +1355,8 @@ void
 NodeGraph::mouseReleaseEvent(QMouseEvent* e)
 {
     EventStateEnum state = _imp->_evtState;
-
-    _imp->_nodesWithinBDAtPenDown.clear();
-    _imp->_mergeMoveCommands = false;
-    _imp->_firstMove = true;
+    
     _imp->_evtState = eEventStateNone;
-    _imp->_nodesWithinBDAtPenDown.clear();
     
     bool hasMovedOnce = modCASIsControl(e) || _imp->_hasMovedOnce;
     if (state == eEventStateDraggingArrow && hasMovedOnce) {
@@ -1500,8 +1494,39 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
         scene()->update();
     } else if (state == eEventStateDraggingNode) {
         if ( !_imp->_selection.empty() ) {
-            ///now if there was a hint displayed, use it to actually make connections.
             
+            std::list<NodeGuiPtr> nodesToMove;
+            for (std::list<NodeGuiPtr>::iterator it = _imp->_selection.begin();
+                 it != _imp->_selection.end(); ++it) {
+                
+                const NodeGuiPtr& node = *it;
+                nodesToMove.push_back(node);
+                
+                std::map<NodeGuiPtr,NodeGuiList>::iterator foundBd = _imp->_nodesWithinBDAtPenDown.find(*it);
+                if (!modCASIsControl(e) && foundBd != _imp->_nodesWithinBDAtPenDown.end()) {
+                    for (NodeGuiList::iterator it2 = foundBd->second.begin();
+                         it2 != foundBd->second.end(); ++it2) {
+                        ///add it only if it's not already in the list
+                        bool found = false;
+                        for (std::list<NodeGuiPtr>::iterator it3 = nodesToMove.begin();
+                             it3 != nodesToMove.end(); ++it3) {
+                            if (*it3 == *it2) {
+                                found = true;
+                                break;
+                            }
+                        }
+                        if (!found) {
+                            nodesToMove.push_back(*it2);
+                        }
+                    }
+                    
+                }
+            }
+            if (_imp->_deltaSinceMousePress.x() != 0 || _imp->_deltaSinceMousePress.y() != 0) {
+                pushUndoCommand(new MoveMultipleNodesCommand(nodesToMove,_imp->_deltaSinceMousePress.x(),_imp->_deltaSinceMousePress.y()));
+            }
+            
+            ///now if there was a hint displayed, use it to actually make connections.
             if (_imp->_highLightedEdge) {
                 
                 _imp->_highLightedEdge->setUseHighlight(false);
@@ -1608,6 +1633,8 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
         _imp->_selectionRect->hide();
         _imp->editSelectionFromSelectionRectangle( modCASIsShift(e) );
     }
+    _imp->_nodesWithinBDAtPenDown.clear();
+
     unsetCursor();
 } // mouseReleaseEvent
 
@@ -1685,14 +1712,12 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
             
             bool controlDown = modCASIsControl(e);
 
-            std::list<MoveMultipleNodesCommand::NodeToMove> nodesToMove;
-            for (NodeGuiList::iterator it = _imp->_selection.begin();
+            std::list<std::pair<NodeGuiPtr,bool> > nodesToMove;
+            for (std::list<NodeGuiPtr>::iterator it = _imp->_selection.begin();
                  it != _imp->_selection.end(); ++it) {
             
-                MoveMultipleNodesCommand::NodeToMove n;
-                n.node = *it;
-                n.isWithinBD = false;
-                nodesToMove.push_back(n);
+                const NodeGuiPtr& node = *it;
+                nodesToMove.push_back(std::make_pair(node,false));
                 
                 std::map<NodeGuiPtr,NodeGuiList>::iterator foundBd = _imp->_nodesWithinBDAtPenDown.find(*it);
                 if (!controlDown && foundBd != _imp->_nodesWithinBDAtPenDown.end()) {
@@ -1700,34 +1725,48 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
                          it2 != foundBd->second.end(); ++it2) {
                         ///add it only if it's not already in the list
                         bool found = false;
-                        for (std::list<MoveMultipleNodesCommand::NodeToMove>::iterator it3 = nodesToMove.begin();
+                        for (std::list<std::pair<NodeGuiPtr,bool> >::iterator it3 = nodesToMove.begin();
                              it3 != nodesToMove.end(); ++it3) {
-                            if (it3->node.lock() == *it2) {
+                            if (it3->first == *it2) {
                                 found = true;
                                 break;
                             }
                         }
                         if (!found) {
-                            MoveMultipleNodesCommand::NodeToMove n;
-                            n.node = *it2;
-                            n.isWithinBD = true;
-                            nodesToMove.push_back(n);
+                            nodesToMove.push_back(std::make_pair(*it2,true));
                         }
                     }
 
                 }
             }
             //= _imp->_selection.nodes;
+            
+            double dxScene = newPos.x() - lastMousePosScene.x();
+            double dyScene = newPos.y() - lastMousePosScene.y();
+            
+            
+            bool deltaSet = false;
+            for (std::list<std::pair<NodeGuiPtr,bool> >::iterator it = nodesToMove.begin();
+                 it != nodesToMove.end(); ++it) {
+                QPointF pos = it->first->getPos_mt_safe();
+                bool ignoreMagnet = it->second || nodesToMove.size() > 1;
+                it->first->refreshPosition(pos.x() + dxScene, pos.y() + dyScene,ignoreMagnet,newPos);
+                if (!ignoreMagnet) {
+                    assert(nodesToMove.size() == 1);
+                    QPointF newNodePos = it->first->getPos_mt_safe();
+                    _imp->_deltaSinceMousePress.rx() += newNodePos.x() - pos.x();
+                    _imp->_deltaSinceMousePress.ry() += newNodePos.y() - pos.y();
+                    deltaSet = true;
+                }
+            }
+            if (!deltaSet) {
+                _imp->_deltaSinceMousePress.rx() += dxScene;
+                _imp->_deltaSinceMousePress.ry() += dyScene;
+            }
+
 
             mustUpdateNavigator = true;
-            pushUndoCommand( new MoveMultipleNodesCommand(nodesToMove,
-                                                          newPos.x() - lastMousePosScene.x(),
-                                                          newPos.y() - lastMousePosScene.y(),
-                                                          _imp->_mergeMoveCommands,
-                                                          newPos) );
-            if (!_imp->_mergeMoveCommands) {
-                _imp->_mergeMoveCommands = true;
-            }
+            
         }
         
         if (_imp->_selection.size() == 1) {
