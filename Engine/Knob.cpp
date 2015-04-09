@@ -335,7 +335,7 @@ struct KnobHelperPrivate
     {
         mustCloneGuiCurves.resize(dimension);
         mustCloneInternalCurves.resize(dimension);
-        mustClearExprResults.reserve(dimension);
+        mustClearExprResults.resize(dimension);
         expressions.resize(dimension);
         hasModifications.resize(dimension);
         for (int i = 0; i < dimension_; ++i) {
