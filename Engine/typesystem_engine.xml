@@ -219,6 +219,82 @@
     </namespace-type>
     
    
+   <object-type name="RectI">
+       <modify-function signature="operator=(RectI)" remove="all"/>
+       <modify-function signature="upscalePowerOfTwo(unsigned int)const" remove="all"/>
+       <modify-function signature="downscalePowerOfTwo(unsigned int)const" remove="all"/>
+       <modify-function signature="roundPowerOfTwoLargestEnclosed(unsigned int)const" remove="all"/>
+       <modify-function signature="roundPowerOfTwoSmallestEnclosing(unsigned int)const" remove="all"/>
+       <modify-function signature="downscalePowerOfTwoLargestEnclosed(unsigned int)const" remove="all"/>
+       <modify-function signature="downscalePowerOfTwoSmallestEnclosing(unsigned int)const" remove="all"/>
+       <modify-function signature="toCanonical(unsigned int,double,RectD,RectD*)const" remove="all"/>
+       <modify-function signature="toCanonical_noClipping(unsigned int,double,RectD*)const" remove="all"/>
+       <modify-function signature="debug()const" remove="all"/>
+       <modify-function signature="splitIntoSmallerRects(int)const" remove="all"/>
+       <modify-function signature="intersect(RectI,RectI*)const">
+           <modify-argument index="2">
+               <remove-argument/>
+           </modify-argument>
+           <modify-argument index="return">
+               <replace-type modified-type="RectI"/>
+           </modify-argument>
+           <inject-code class="target" position="beginning">
+               RectI t;
+               %CPPSELF.%FUNCTION_NAME(%1,&amp;t);
+               %PYARG_0 = %CONVERTTOPYTHON[RectI](t);
+               return %PYARG_0;
+           </inject-code>
+       </modify-function>
+       <modify-function signature="intersect(int,int,int,int,RectI*)const">
+           <modify-argument index="5">
+               <remove-argument/>
+           </modify-argument>
+           <modify-argument index="return">
+               <replace-type modified-type="RectI"/>
+           </modify-argument>
+           <inject-code class="target" position="beginning">
+               RectI t;
+               %CPPSELF.%FUNCTION_NAME(%1,%2,%3,%4,&amp;t);
+               %PYARG_0 = %CONVERTTOPYTHON[RectI](t);
+               return %PYARG_0;
+           </inject-code>
+       </modify-function>
+   </object-type>
+   
+   <object-type name="RectD">
+       <modify-function signature="operator=(RectD)" remove="all"/>
+       <modify-function signature="debug()const" remove="all"/>
+       <modify-function signature="toPixelEnclosing(unsigned int,double,RectI*)const" remove="all"/>
+       <modify-function signature="intersect(RectD,RectD*)const">
+           <modify-argument index="2">
+               <remove-argument/>
+           </modify-argument>
+           <modify-argument index="return">
+               <replace-type modified-type="RectD"/>
+           </modify-argument>
+           <inject-code class="target" position="beginning">
+               RectD t;
+               %CPPSELF.%FUNCTION_NAME(%1,&amp;t);
+               %PYARG_0 = %CONVERTTOPYTHON[RectD](t);
+               return %PYARG_0;
+           </inject-code>
+       </modify-function>
+       <modify-function signature="intersect(double,double,double,double,RectD*)const">
+           <modify-argument index="5">
+               <remove-argument/>
+           </modify-argument>
+           <modify-argument index="return">
+               <replace-type modified-type="RectD"/>
+           </modify-argument>
+           <inject-code class="target" position="beginning">
+               RectD t;
+               %CPPSELF.%FUNCTION_NAME(%1,%2,%3,%4,&amp;t);
+               %PYARG_0 = %CONVERTTOPYTHON[RectD](t);
+               return %PYARG_0;
+           </inject-code>
+       </modify-function>
+       
+   </object-type>
 
     <object-type name="Group" copyable="false">
         <inject-documentation format="target">
@@ -551,23 +627,6 @@
             <modify-argument index="return">
                 <define-ownership class="target" owner="target"/>
             </modify-argument>
-        </modify-function>
-        <modify-function signature="getRegionOfDefinition(int,int,QRectF*)const">
-            <modify-argument index="3">
-                <remove-argument/>
-            </modify-argument>
-            <modify-argument index="return">
-                <replace-type modified-type="PyTuple"/>
-            </modify-argument>
-            <inject-code class="target" position="beginning">
-                QRectF rect;
-                %RETURN_TYPE %0 = %CPPSELF.%FUNCTION_NAME(%1,%2,&amp;rect);
-                %PYARG_0 = PyTuple_New(2);
-                PyTuple_SET_ITEM(%PYARG_0, 0, %CONVERTTOPYTHON[%RETURN_TYPE](%0));
-                PyTuple_SET_ITEM(%PYARG_0, 1, %CONVERTTOPYTHON[QRectF](rect));
-                return %PYARG_0;
-            </inject-code>
-            
         </modify-function>
     </object-type>
 
@@ -1050,6 +1109,8 @@
             </modify-argument>
         </modify-function>
     </object-type>
+    
+    
 
 </typesystem>
 

@@ -23,7 +23,6 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QAction>
 #include <QtConcurrentRun>
 #include <QFontMetrics>
-#include <QMenu>
 #include <QTextDocument> // for Qt::convertFromPlainText
 #include <QTextBlockFormat>
 #include <QTextCursor>
@@ -203,7 +202,9 @@ NodeGui::NodeGui(QGraphicsItem *parent)
 , _outputEdge(NULL)
 , _settingsPanel(NULL)
 , _mainInstancePanel(NULL)
-, _defaultColor()
+, _panelCreated(false)
+, _currentColorMutex()
+, _currentColor()
 , _clonedColor()
 , _wasBeginEditCalled(false)
 , positionMutex()
@@ -237,9 +238,7 @@ NodeGui::~NodeGui()
 
 void
 NodeGui::initialize(NodeGraph* dag,
-                    QVBoxLayout *dockContainer,
-                    const boost::shared_ptr<Natron::Node> & internalNode,
-                    bool requestedByLoad)
+                    const boost::shared_ptr<Natron::Node> & internalNode)
 {
     _internalNode = internalNode;
     assert(internalNode);
@@ -285,20 +284,19 @@ NodeGui::initialize(NodeGraph* dag,
 
     createGui();
 
-
-    /*building settings panel*/
-    _settingsPanel = createPanel(dockContainer,requestedByLoad,thisAsShared);
-    if (_settingsPanel) {
-        QObject::connect( _settingsPanel,SIGNAL( nameChanged(QString) ),this,SLOT( setName(QString) ) );
-        QObject::connect( _settingsPanel,SIGNAL( closeChanged(bool) ), this, SLOT( onSettingsPanelClosed(bool) ) );
-        QObject::connect( _settingsPanel,SIGNAL( colorChanged(QColor) ),this,SLOT( onSettingsPanelColorChanged(QColor) ) );
+    NodePtr parent = internalNode->getParentMultiInstance();
+    if (parent) {
+        boost::shared_ptr<NodeGuiI> parentNodeGui_i = parent->getNodeGui();
+        NodeGui* parentGui = dynamic_cast<NodeGui*>(parentNodeGui_i.get());
+        assert(parentGui);
+        if (parentGui->isSettingsPanelOpened()) {
+            ensurePanelCreated();
+            boost::shared_ptr<MultiInstancePanel> panel = parentGui->getMultiInstancePanel();
+            assert(panel);
+            panel->onChildCreated(internalNode);
+        }
     }
-    OfxEffectInstance* ofxNode = dynamic_cast<OfxEffectInstance*>( internalNode->getLiveInstance() );
-    if (ofxNode) {
-        ofxNode->effectInstance()->beginInstanceEditAction();
-    }
-
-
+    
     if (internalNode->getPluginID() == PLUGINID_OFX_MERGE) {
         boost::shared_ptr<KnobI> knob = internalNode->getKnobByName(kNatronOfxParamStringSublabelName);
         assert(knob);
@@ -318,11 +316,53 @@ NodeGui::initialize(NodeGraph* dag,
         resize(w,h);
     }
 
-    QColor defaultColor = getCurrentColor();
+    
     _clonedColor.setRgb(200,70,100);
 
-
-    setCurrentColor(defaultColor);
+    //QColor defaultColor = getCurrentColor();
+    Natron::EffectInstance* iseffect = internalNode->getLiveInstance();
+    boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
+    float r,g,b;
+    BackDrop* isBd = dynamic_cast<BackDrop*>(iseffect);
+    
+    std::list<std::string> grouping;
+    iseffect->getPluginGrouping(&grouping);
+    std::string majGroup = grouping.empty() ? "" : grouping.front();
+    
+    if ( iseffect->isReader() ) {
+        settings->getReaderColor(&r, &g, &b);
+    } else if (isBd) {
+        settings->getDefaultBackDropColor(&r, &g, &b);
+    } else if ( iseffect->isWriter() ) {
+        settings->getWriterColor(&r, &g, &b);
+    } else if ( iseffect->isGenerator() ) {
+        settings->getGeneratorColor(&r, &g, &b);
+    } else if (majGroup == PLUGIN_GROUP_COLOR) {
+        settings->getColorGroupColor(&r, &g, &b);
+    } else if (majGroup == PLUGIN_GROUP_FILTER) {
+        settings->getFilterGroupColor(&r, &g, &b);
+    } else if (majGroup == PLUGIN_GROUP_CHANNEL) {
+        settings->getChannelGroupColor(&r, &g, &b);
+    } else if (majGroup == PLUGIN_GROUP_KEYER) {
+        settings->getKeyerGroupColor(&r, &g, &b);
+    } else if (majGroup == PLUGIN_GROUP_MERGE) {
+        settings->getMergeGroupColor(&r, &g, &b);
+    } else if (majGroup == PLUGIN_GROUP_PAINT) {
+        settings->getDrawGroupColor(&r, &g, &b);
+    } else if (majGroup == PLUGIN_GROUP_TIME) {
+        settings->getTimeGroupColor(&r, &g, &b);
+    } else if (majGroup == PLUGIN_GROUP_TRANSFORM) {
+        settings->getTransformGroupColor(&r, &g, &b);
+    } else if (majGroup == PLUGIN_GROUP_MULTIVIEW) {
+        settings->getViewsGroupColor(&r, &g, &b);
+    } else if (majGroup == PLUGIN_GROUP_DEEP) {
+        settings->getDeepGroupColor(&r, &g, &b);
+    } else {
+        settings->getDefaultNodeColor(&r, &g, &b);
+    }
+    QColor color;
+    color.setRgbF( Natron::clamp(r), Natron::clamp(g), Natron::clamp(b) );
+    setCurrentColor(color);
 
     if ( !internalNode->isMultiInstance() ) {
         _nodeLabel = internalNode->getNodeExtraLabel().c_str();
@@ -334,7 +374,6 @@ NodeGui::initialize(NodeGraph* dag,
     onInternalNameChanged( internalNode->getLabel().c_str() );
 
     ///Make the output edge
-    BackDrop* isBd = dynamic_cast<BackDrop*>(internalNode->getLiveInstance());
     if ( !isBd && !internalNode->isOutputNode() ) {
         _outputEdge = new Edge( thisAsShared,parentItem() );
     }
@@ -362,6 +401,48 @@ NodeGui::initialize(NodeGraph* dag,
 } // initialize
 
 void
+NodeGui::ensurePanelCreated()
+{
+    if (_panelCreated) {
+        return;
+    }
+    _panelCreated = true;
+    Gui* gui = getDagGui()->getGui();
+    QVBoxLayout* propsLayout = gui->getPropertiesLayout();
+    assert(propsLayout);
+    boost::shared_ptr<NodeGui> thisShared = shared_from_this();
+    _settingsPanel = createPanel(propsLayout,thisShared);
+    if (_settingsPanel) {
+        QObject::connect( _settingsPanel,SIGNAL( nameChanged(QString) ),this,SLOT( setName(QString) ) );
+        QObject::connect( _settingsPanel,SIGNAL( closeChanged(bool) ), this, SLOT( onSettingsPanelClosed(bool) ) );
+        QObject::connect( _settingsPanel,SIGNAL( colorChanged(QColor) ),this,SLOT( onSettingsPanelColorChanged(QColor) ) );
+        if (getNode()->isRotoNode()) {
+            _graph->getGui()->setRotoInterface(this);
+        }
+    }
+    initializeKnobs();
+    beginEditKnobs();
+    gui->addNodeGuiToCurveEditor(thisShared);
+    
+    //Ensure panel for all children if multi-instance
+    
+    boost::shared_ptr<MultiInstancePanel> panel = getMultiInstancePanel();
+    if (_mainInstancePanel && panel) {
+        NodeList children;
+        getNode()->getChildrenMultiInstance(&children);
+        for (NodeList::iterator it = children.begin() ; it != children.end(); ++it) {
+            boost::shared_ptr<NodeGuiI> gui_i = (*it)->getNodeGui();
+            assert(gui_i);
+            NodeGui* gui = dynamic_cast<NodeGui*>(gui_i.get());
+            assert(gui);
+            gui->ensurePanelCreated();
+            
+            panel->onChildCreated(*it);
+        }
+    }
+}
+
+void
 NodeGui::onSettingsPanelClosed(bool closed)
 {
     QString message;
@@ -379,7 +460,6 @@ NodeGui::onSettingsPanelClosed(bool closed)
 
 NodeSettingsPanel*
 NodeGui::createPanel(QVBoxLayout* container,
-                     bool requestedByLoad,
                      const boost::shared_ptr<NodeGui>& thisAsShared)
 {
     NodeSettingsPanel* panel = 0;
@@ -406,19 +486,15 @@ NodeGui::createPanel(QVBoxLayout* container,
         panel = new NodeSettingsPanel( multiPanel,_graph->getGui(),thisAsShared,container,container->parentWidget() );
 
         if (panel) {
-            if (!requestedByLoad) {
-                bool isCreatingPythonGroup = getDagGui()->getGui()->getApp()->isCreatingPythonGroup();
-
-                std::string pluginID = node->getPluginID();
-                if (pluginID == PLUGINID_NATRON_OUTPUT ||
-                    (isCreatingPythonGroup && pluginID != PLUGINID_NATRON_GROUP) ||
-                    !node->getParentMultiInstanceName().empty()) {
-                    panel->setClosed(true);
-                } else {
-                    _graph->getGui()->addVisibleDockablePanel(panel);
-                }
-            } else {
+            bool isCreatingPythonGroup = getDagGui()->getGui()->getApp()->isCreatingPythonGroup();
+            
+            std::string pluginID = node->getPluginID();
+            if (pluginID == PLUGINID_NATRON_OUTPUT ||
+                (isCreatingPythonGroup && pluginID != PLUGINID_NATRON_GROUP) ||
+                !node->getParentMultiInstanceName().empty()) {
                 panel->setClosed(true);
+            } else {
+                _graph->getGui()->addVisibleDockablePanel(panel);
             }
         }
     }
@@ -534,7 +610,10 @@ NodeGui::createGui()
 void
 NodeGui::onSettingsPanelColorChanged(const QColor & color)
 {
-    _defaultColor = color;
+    {
+        QMutexLocker k(&_currentColorMutex);
+        _currentColor = color;
+    }
     refreshCurrentBrush();
 }
 
@@ -1001,7 +1080,11 @@ NodeGui::refreshEdges()
             boost::shared_ptr<NodeGuiI> nodeInputGui_i = nodeInputs[i]->getNodeGui();
             assert(nodeInputGui_i);
             boost::shared_ptr<NodeGui> node = boost::dynamic_pointer_cast<NodeGui>(nodeInputGui_i);
-            _inputEdges[i]->setSource(node);
+            if (_inputEdges[i]->getSource() != node) {
+                _inputEdges[i]->setSource(node);
+            } else {
+                _inputEdges[i]->initLine();
+            }
         } else {
             _inputEdges[i]->initLine();
         }
@@ -1315,23 +1398,24 @@ NodeGui::setOptionalInputsVisible(bool visible)
     ///Don't do this for inspectors
     NodePtr node = getNode();
 
-    InspectorNode* isInspector = dynamic_cast<InspectorNode*>(node.get());
-
+    //InspectorNode* isInspector = dynamic_cast<InspectorNode*>(node.get());
+   
 
     if (visible != _optionalInputsVisible) {
         _optionalInputsVisible = visible;
 
         for (U32 i = 0; i < _inputEdges.size() ; ++i) {
             if (node->getLiveInstance()->isInputOptional(i) &&
-                !node->getRealInput(i) &&
+                node->getLiveInstance()->isInputMask(i) &&
                 !_inputEdges[i]->isRotoEdge()) {
-                if (isInspector) {
-                    if (node->getLiveInstance()->isInputMask(i)) {
-                        _inputEdges[i]->setVisible(visible);
-                    }
-                } else {
-                    _inputEdges[i]->setVisible(visible);
+                
+                bool nodeVisible = visible;
+                if (!visible && node->getRealInput(i) ) {
+                    nodeVisible = true;
                 }
+                
+                _inputEdges[i]->setVisible(nodeVisible);
+                
             }
         }
     }
@@ -1401,7 +1485,7 @@ NodeGui::refreshCurrentBrush()
     if (_slaveMasterLink) {
         applyBrush(_clonedColor);
     } else {
-        applyBrush(_defaultColor);
+        applyBrush(_currentColor);
     }
 
 }
@@ -1756,6 +1840,9 @@ NodeGui::initializeKnobs()
 void
 NodeGui::setVisibleSettingsPanel(bool b)
 {
+    if (!_panelCreated) {
+        ensurePanelCreated();
+    }
     if (_settingsPanel) {
         _settingsPanel->setClosed(!b);
     }
@@ -1858,10 +1945,10 @@ NodeGui::serialize(NodeGuiSerialization* serializationObject) const
 }
 
 void
-NodeGui::serializeInternal(std::list<boost::shared_ptr<NodeSerialization> >& internalSerialization,bool copyKnobs) const
+NodeGui::serializeInternal(std::list<boost::shared_ptr<NodeSerialization> >& internalSerialization) const
 {
     NodePtr node = getNode();
-    boost::shared_ptr<NodeSerialization> thisSerialization(new NodeSerialization(node,false,copyKnobs));
+    boost::shared_ptr<NodeSerialization> thisSerialization(new NodeSerialization(node,false));
     internalSerialization.push_back(thisSerialization);
 
     ///For multi-instancs, serialize children too
@@ -1873,7 +1960,7 @@ NodeGui::serializeInternal(std::list<boost::shared_ptr<NodeSerialization> >& int
         const std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> >& instances = panel->getInstances();
         for (std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> >::const_iterator it = instances.begin();
              it != instances.end(); ++it) {
-            boost::shared_ptr<NodeSerialization> childSerialization(new NodeSerialization(it->first.lock(),false,copyKnobs));
+            boost::shared_ptr<NodeSerialization> childSerialization(new NodeSerialization(it->first.lock(),false));
             internalSerialization.push_back(childSerialization);
         }
     }
@@ -2116,7 +2203,7 @@ NodeGui::onAllKnobsSlaved(bool b)
         _masterNodeGui.reset();
         if ( !node->isNodeDisabled() ) {
             if ( !isSelected() ) {
-                applyBrush(_defaultColor);
+                applyBrush(_currentColor);
             }
         }
     }
@@ -2511,6 +2598,7 @@ NodeGui::setNameItemHtml(const QString & name,
             int endCustomData = labelCopy.indexOf(endCustomTag,startCustomData);
             assert(endCustomData != -1);
             labelCopy.remove( endCustomData, endCustomTag.size() );
+            labelCopy.insert(endCustomData, "<br>");
         }
 
         ///add the node name into the html encoded label
@@ -2571,7 +2659,8 @@ NodeGui::onNodeExtraLabelChanged(const QString & label)
     }
     _nodeLabel = replaceLineBreaksWithHtmlParagraph(_nodeLabel); ///< maybe we should do this in the knob itself when the user writes ?
     setNameItemHtml(node->getLabel().c_str(),_nodeLabel);
-
+    
+    //For the merge node, set its operator icon
     if (getNode()->getPlugin()->getPluginID() == QString(PLUGINID_OFX_MERGE)) {
         assert(_mergeIcon);
         QString op = String_KnobGui::getNatronHtmlTagContent(label);
@@ -2598,15 +2687,8 @@ NodeGui::onNodeExtraLabelChanged(const QString & label)
 QColor
 NodeGui::getCurrentColor() const
 {
-    if (_settingsPanel) {
-        return _settingsPanel->getCurrentColor();
-    } else {
-        QColor ret;
-        float r,g,b;
-        appPTR->getCurrentSettings()->getDefaultNodeColor(&r, &g, &b);
-        ret.setRgbF(r,g,b);
-        return ret;
-    }
+    QMutexLocker k(&_currentColorMutex);
+    return _currentColor;
 }
 
 void
@@ -2840,7 +2922,6 @@ DotGui::applyBrush(const QBrush & brush)
 
 NodeSettingsPanel*
 DotGui::createPanel(QVBoxLayout* container,
-                    bool /*requestedByLoad*/,
                     const boost::shared_ptr<NodeGui> & thisAsShared)
 {
     NodeSettingsPanel* panel = new NodeSettingsPanel( boost::shared_ptr<MultiInstancePanel>(),
@@ -2902,7 +2983,7 @@ NodeGui::setName(const QString & newName)
 bool
 NodeGui::isSettingsPanelOpened() const
 {
-    return _settingsPanel ? !_settingsPanel->isClosed() : false;
+    return isSettingsPanelVisible();
 }
 
 bool
@@ -3247,14 +3328,6 @@ NodeGui::exportGroupAsPythonScript()
     getDagGui()->getGui()->exportGroupAsPythonScript(isGroup);
 }
 
-void
-NodeGui::onChildInstanceCreated(const boost::shared_ptr<Natron::Node>& node)
-{
-    assert(getNode()->isMultiInstance());
-    boost::shared_ptr<MultiInstancePanel> panel = getMultiInstancePanel();
-    assert(panel);
-    panel->onChildCreated(node);
-}
 
 void
 NodeGui::getColor(double* r,double *g, double* b) const

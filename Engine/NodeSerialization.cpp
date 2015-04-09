@@ -23,7 +23,7 @@
 #include "Engine/NodeGroupSerialization.h"
 #include "Engine/RotoContext.h"
 
-NodeSerialization::NodeSerialization(const boost::shared_ptr<Natron::Node> & n,bool serializeInputs,bool copyKnobs)
+NodeSerialization::NodeSerialization(const boost::shared_ptr<Natron::Node> & n,bool serializeInputs)
     : _isNull(true)
     , _nbKnobs(0)
     , _knobsValues()
@@ -139,6 +139,8 @@ NodeSerialization::NodeSerialization(const boost::shared_ptr<Natron::Node> & n,b
                 }
             }
         }
+        
+        n->getUserComponents(&_userComponents);
         
         _isNull = false;
     }

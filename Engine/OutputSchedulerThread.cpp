@@ -152,6 +152,9 @@ struct OutputSchedulerThreadPrivate
     bool isAbortRequestBlocking;
     QWaitCondition abortedRequestedCondition;
     QMutex abortedRequestedMutex; // protects abortRequested
+    
+    bool abortFlag; // Same as abortRequested > 0 but held by a mutex on a smaller scope.
+    mutable QMutex abortFlagMutex; // protects abortFlag
 
     
     QMutex abortBeingProcessedMutex; //protects abortBeingProcessed
@@ -226,6 +229,8 @@ struct OutputSchedulerThreadPrivate
     , isAbortRequestBlocking(false)
     , abortedRequestedCondition()
     , abortedRequestedMutex()
+    , abortFlag(false)
+    , abortFlagMutex()
     , abortBeingProcessedMutex()
     , abortBeingProcessed(false)
     , processRunning(false)
@@ -750,6 +755,13 @@ OutputSchedulerThread::notifyThreadAboutToQuit(RenderThreadTask* thread)
     }
 }
 
+bool
+OutputSchedulerThread::isBeingAborted() const
+{
+    QMutexLocker k(&_imp->abortFlagMutex);
+    return _imp->abortFlag;
+}
+
 void
 OutputSchedulerThread::startRender()
 {
@@ -884,7 +896,12 @@ OutputSchedulerThread::stopRender()
             
             ///reset back the abort flag
             _imp->abortRequested = 0;
-            _imp->outputEffect->getApp()->getProject()->setAllNodesAborted(false);
+            
+            {
+                QMutexLocker k(&_imp->abortFlagMutex);
+                _imp->abortFlag = false;
+            }
+            //_imp->outputEffect->getApp()->getProject()->setAllNodesAborted(false);
             _imp->abortedRequestedCondition.wakeAll();
         }
         
@@ -1141,11 +1158,13 @@ OutputSchedulerThread::adjustNumberOfThreads(int* newNThreads)
     /////If we were analysing the CPU activity, now set the appropriate number of threads to render.
     int optimalNThreads;
     
+    ///How many parallel renders the user wants
     int userSettingParallelThreads = appPTR->getCurrentSettings()->getNumberOfParallelRenders();
     
+    ///How many threads are running in the application
     int runningThreads = appPTR->getNRunningThreads() + QThreadPool::globalInstance()->activeThreadCount();
     
-    
+    ///How many current threads are used by THIS renderer
     int currentParallelRenders = getNRenderThreads();
     
     if (userSettingParallelThreads == 0) {
@@ -1158,7 +1177,7 @@ OutputSchedulerThread::adjustNumberOfThreads(int* newNThreads)
     optimalNThreads = std::max(1,optimalNThreads);
 
 
-    if (runningThreads < optimalNThreads && currentParallelRenders < optimalNThreads) {
+    if ((runningThreads < optimalNThreads && currentParallelRenders < optimalNThreads) || currentParallelRenders == 0) {
      
         ////////
         ///Launch 1 thread
@@ -1255,7 +1274,7 @@ OutputSchedulerThread::notifyFrameRendered(int frame,
             }
             
             std::stringstream ss;
-            ss << cb << "(" << time << ",";
+            ss << cb << "(" << frame << ",";
             std::string script = ss.str();
             runCallbackWithVariables(script.c_str());
             
@@ -1374,9 +1393,12 @@ OutputSchedulerThread::abortRendering(bool blocking)
                 if (!blocking && _imp->abortRequested > 0) {
                     return;
                 }
-                
-                ///Flag the whole tree recursively that we aborted
-                _imp->outputEffect->getApp()->getProject()->setAllNodesAborted(true);
+
+                {
+                    QMutexLocker k(&_imp->abortFlagMutex);
+                    _imp->abortFlag = true;
+                }
+                _imp->outputEffect->getApp()->getProject()->notifyRenderBeingAborted();
                 
                 ++_imp->abortRequested;
             }
@@ -1952,14 +1974,14 @@ private:
                                                              canOnlyHandleOneView, // is this sequential ?
                                                              true, // canAbort ?
                                                              0, //renderAge
-                                                             0, // viewer requester
+                                                             _imp->output, // viewer requester
                                                              0, //texture index
                                                              _imp->output->getApp()->getTimeLine().get());
                     
                     RenderingFlagSetter flagIsRendering(activeInputToRender->getNode().get());
 
-                    ImageList planes =
-                    activeInputToRender->renderRoI( EffectInstance::RenderRoIArgs(time, //< the time at which to render
+                    ImageList planes;
+                    EffectInstance::RenderRoIRetCode retCode = activeInputToRender->renderRoI( EffectInstance::RenderRoIArgs(time, //< the time at which to render
                                                                                   scale, //< the scale at which to render
                                                                                   mipMapLevel, //< the mipmap level (redundant with the scale)
                                                                                   i, //< the view to render
@@ -1967,7 +1989,11 @@ private:
                                                                                   renderWindow, //< the region of interest (in pixel coordinates)
                                                                                   rod, // < any precomputed rod ? in canonical coordinates
                                                                                   components,
-                                                                                  imageDepth));
+                                                                                  imageDepth),&planes);
+                    if (retCode != EffectInstance::eRenderRoIRetCodeOk) {
+                         _imp->scheduler->notifyRenderFailure(std::string("Error caught while rendering"));
+                        return;
+                    }
                     
                     ///If we need sequential rendering, pass the image to the output scheduler that will ensure the sequential ordering
                     if (!renderDirectly) {
@@ -2041,7 +2067,7 @@ DefaultScheduler::processFrame(const BufferedFrames& frames)
                                                  canOnlyHandleOneView, // is this sequential ?
                                                  true, //canAbort
                                                  0, //renderAge
-                                                 0, //viewer
+                                                 _effect, //viewer
                                                  0, //texture index
                                                  _effect->getApp()->getTimeLine().get());
         
@@ -2050,8 +2076,8 @@ DefaultScheduler::processFrame(const BufferedFrames& frames)
         ImagePtr inputImage = boost::dynamic_pointer_cast<Natron::Image>(it->frame);
         assert(inputImage);
         
-        std::list<ImagePtr> inputImages;
-        inputImages.push_back(inputImage);
+        EffectInstance::InputImagesMap inputImages;
+        inputImages[0].push_back(inputImage);
         Natron::EffectInstance::RenderRoIArgs args(frame.time,
                                                    scale,0,
                                                    it->view,
@@ -2060,11 +2086,13 @@ DefaultScheduler::processFrame(const BufferedFrames& frames)
                                                    rod,
                                                    components,
                                                    imageDepth,
-                                                   3,
-                                                   false,
                                                    inputImages);
         try {
-            ignore_result(_effect->renderRoI(args));
+            ImageList planes;
+            EffectInstance::RenderRoIRetCode retCode = _effect->renderRoI(args,&planes);
+            if (retCode != EffectInstance::eRenderRoIRetCodeOk) {
+                notifyRenderFailure("");
+            }
         } catch (const std::exception& e) {
             notifyRenderFailure(e.what());
         }
@@ -2527,6 +2555,15 @@ RenderEngine::quitEngine()
 }
 
 bool
+RenderEngine::isSequentialRenderBeingAborted() const
+{
+    if (!_imp->scheduler) {
+        return false;
+    }
+    return _imp->scheduler->isBeingAborted();
+}
+
+bool
 RenderEngine::hasThreadsAlive() const
 {
 
@@ -2852,22 +2889,22 @@ ViewerCurrentFrameRequestSchedulerPrivate::processProducedFrame(const Bufferable
 {
     assert(QThread::currentThread() == qApp->thread());
     
-    bool hasDoneSomething = false;
+    //bool hasDoneSomething = false;
     for (BufferableObjectList::const_iterator it2 = frames.begin(); it2 != frames.end(); ++it2) {
         assert(*it2);
         boost::shared_ptr<UpdateViewerParams> params = boost::dynamic_pointer_cast<UpdateViewerParams>(*it2);
         assert(params);
         if (params && params->ramBuffer) {
-            hasDoneSomething = true;
+            //hasDoneSomething = true;
             viewer->updateViewer(params);
         }
     }
     
     
     ///At least redraw the viewer, we might be here when the user removed a node upstream of the viewer.
-    if (hasDoneSomething) {
+    //if (hasDoneSomething) {
         viewer->redrawViewer();
-    }
+    //}
     
     
     {
@@ -2959,7 +2996,7 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool canAbort)
     if (status[0] == eStatusFailed && status[1] == eStatusFailed) {
         _imp->viewer->disconnectViewer();
         return;
-    } else if (status[0] == eStatusReplyDefault || status[1] == eStatusReplyDefault) {
+    } else if (status[0] == eStatusReplyDefault && status[1] == eStatusReplyDefault) {
         _imp->viewer->redrawViewer();
         return;
     }

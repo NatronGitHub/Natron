@@ -429,6 +429,13 @@ public:
     std::string getHintToolTipFull() const;
     
     void choiceRestoration(Choice_Knob* knob,const ChoiceExtraData* data);
+    
+    /**
+     * @brief When set the menu will have a "New" entry which the user can select to create a new entry on its own.
+     **/
+    void setHostCanAddOptions(bool add);
+    
+    bool getHostCanAddOptions() const;
 
 Q_SIGNALS:
 
@@ -444,6 +451,7 @@ private:
     mutable QMutex _entriesMutex;
     std::vector<std::string> _entries;
     std::vector<std::string> _entriesHelp;
+    bool _addNewChoice;
     static const std::string _typeNameStr;
 };
 

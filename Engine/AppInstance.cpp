@@ -565,7 +565,7 @@ AppInstance::createNodeFromPythonModule(Natron::Plugin* plugin,
             return containerNode;
         }
         std::string containerName;
-        group->initNodeName(plugin->getLabelWithoutOFX().toStdString(),&containerName);
+        group->initNodeName(plugin->getLabelWithoutSuffix().toStdString(),&containerName);
         containerNode->setScriptName(containerName);
         
         

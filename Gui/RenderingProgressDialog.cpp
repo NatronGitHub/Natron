@@ -25,6 +25,7 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QTextBrowser>
 #include <QApplication>
 #include <QThread>
+#include <QKeyEvent>
 #include <QString>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
@@ -110,10 +111,6 @@ RenderingProgressDialog::onCurrentFrameProgress(int progress)
 void
 RenderingProgressDialog::onProcessCanceled()
 {
-    if ( isVisible() ) {
-        hide();
-        Natron::informationDialog( tr("Render").toStdString(), tr("Render aborted.").toStdString() );
-    }
 	close();
 }
 
@@ -162,7 +159,7 @@ RenderingProgressDialog::onProcessFinished(int retCode)
             ignore_result(log.exec());
         }
     }
-	close();
+    accept();
 }
 
 void
@@ -176,9 +173,33 @@ RenderingProgressDialog::onVideoEngineStopped(int retCode)
 }
 
 void
+RenderingProgressDialog::keyPressEvent(QKeyEvent* e)
+{
+    if (e->key() == Qt::Key_Escape) {
+        onCancelButtonClicked();
+    } else {
+        QDialog::keyPressEvent(e);
+    }
+}
+
+void
 RenderingProgressDialog::closeEvent(QCloseEvent* /*e*/)
 {
+    QDialog::DialogCode ret = (QDialog::DialogCode)result();
+    if (ret != QDialog::Accepted) {
+        Q_EMIT canceled();
+        reject();
+        Natron::informationDialog( tr("Render").toStdString(), tr("Render aborted.").toStdString() );
+        
+    }
+    
+}
+
+void
+RenderingProgressDialog::onCancelButtonClicked()
+{
     Q_EMIT canceled();
+    close();
 }
 
 RenderingProgressDialog::RenderingProgressDialog(Gui* gui,
@@ -232,7 +253,7 @@ RenderingProgressDialog::RenderingProgressDialog(Gui* gui,
     _imp->_cancelButton->setMaximumWidth(50);
     _imp->_mainLayout->addWidget(_imp->_cancelButton);
 
-    QObject::connect( _imp->_cancelButton, SIGNAL( clicked() ), this, SIGNAL( canceled() ) );
+    QObject::connect( _imp->_cancelButton, SIGNAL( clicked() ), this, SLOT( onCancelButtonClicked() ) );
 
 
     if (process) {

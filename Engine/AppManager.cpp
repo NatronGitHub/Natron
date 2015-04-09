@@ -33,12 +33,14 @@
 #include <QThreadPool>
 #include <QtCore/QAtomicInt>
 
+#ifdef NATRON_USE_BREAKPAD
 #if defined(Q_OS_MAC)
 #include "client/mac/handler/exception_handler.h"
 #elif defined(Q_OS_LINUX)
 #include "client/linux/handler/exception_handler.h"
 #elif defined(Q_OS_WIN32)
 #include "client/windows/handler/exception_handler.h"
+#endif
 #endif
 
 #include "Global/MemoryInfo.h"
@@ -55,6 +57,7 @@
 #include "Engine/ViewerInstance.h"
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/Image.h"
+#include "Engine/Transform.h"
 #include "Engine/FrameEntry.h"
 #include "Engine/StandardPaths.h"
 #include "Engine/Format.h"
@@ -67,6 +70,7 @@
 #include "Engine/NoOp.h"
 #include "Engine/Project.h"
 #include "Engine/BackDrop.h"
+
 
 
 BOOST_CLASS_EXPORT(Natron::FrameParams)
@@ -742,12 +746,11 @@ CLArgsPrivate::parse()
         }
         
         writers.push_back(w);
-        QStringList::iterator end = nextNext;
         if (nextNext != args.end()) {
             ++nextNext;
         }
         args.erase(it,nextNext);
-
+        
     } // for (;;)
     
     bool atLeastOneOutput = false;
@@ -1430,6 +1433,50 @@ AppManager::loadAllPlugins()
 }
 
 void
+AppManager::onAllPluginsLoaded()
+{
+    //We try to make nicer plug-in labels, only do this if the user use Natron with some sort of interaction (either command line
+    //or GUI, otherwise don't bother doing this)
+    
+    AppManager::AppTypeEnum appType = appPTR->getAppType();
+    if (appType != AppManager::eAppTypeBackground &&
+         appType != AppManager::eAppTypeGui &&
+        appType != AppManager::eAppTypeInterpreter) {
+        return;
+    }
+    
+    //Make sure there is no duplicates with the same label
+    const PluginsMap& plugins = getPluginsList();
+    for (PluginsMap::const_iterator it = plugins.begin(); it!=plugins.end(); ++it) {
+        assert(!it->second.empty());
+        PluginMajorsOrdered::iterator first = it->second.begin();
+        
+        QString labelWithoutSuffix = Plugin::makeLabelWithoutSuffix((*first)->getPluginLabel());
+        
+        //Find a duplicate
+        for (PluginsMap::const_iterator it2 = plugins.begin(); it2!=plugins.end(); ++it2) {
+            if (it->first == it2->first) {
+                continue;
+            }
+            PluginMajorsOrdered::iterator other = it2->second.begin();
+            QString otherLabelWithoutSuffix = Plugin::makeLabelWithoutSuffix((*other)->getPluginLabel());
+            if (otherLabelWithoutSuffix == labelWithoutSuffix) {
+                labelWithoutSuffix = (*first)->getPluginLabel();
+                break;
+            }
+        }
+        
+        
+        for (PluginMajorsOrdered::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
+            (*it2)->setLabelWithoutSuffix(labelWithoutSuffix);
+        }
+        
+        onPluginLoaded(*first);
+        
+    }
+}
+
+void
 AppManager::loadBuiltinNodePlugins(std::map<std::string,std::vector< std::pair<std::string,double> > >* /*readersMap*/,
                                    std::map<std::string,std::vector< std::pair<std::string,double> > >* /*writersMap*/)
 {
@@ -1447,7 +1494,7 @@ AppManager::loadBuiltinNodePlugins(std::map<std::string,std::vector< std::pair<s
         for (std::list<std::string>::iterator it = grouping.begin(); it != grouping.end(); ++it) {
             qgrouping.push_back( it->c_str() );
         }
-        registerPlugin(qgrouping, node->getPluginID().c_str(), node->getPluginLabel().c_str(), NATRON_IMAGES_PATH "backdrop_icon.png", "", "", false, false, binary, false, node->getMajorVersion(), node->getMinorVersion());
+        registerPlugin(qgrouping, node->getPluginID().c_str(), node->getPluginLabel().c_str(), NATRON_IMAGES_PATH "backdrop_icon.png", "", false, false, binary, false, node->getMajorVersion(), node->getMinorVersion());
     }
     {
         boost::shared_ptr<EffectInstance> node( GroupOutput::BuildEffect( boost::shared_ptr<Natron::Node>() ) );
@@ -1463,7 +1510,7 @@ AppManager::loadBuiltinNodePlugins(std::map<std::string,std::vector< std::pair<s
         for (std::list<std::string>::iterator it = grouping.begin(); it != grouping.end(); ++it) {
             qgrouping.push_back( it->c_str() );
         }
-        registerPlugin(qgrouping, node->getPluginID().c_str(), node->getPluginLabel().c_str(), NATRON_IMAGES_PATH "output_icon.png", "", "", false, false, binary, false, node->getMajorVersion(), node->getMinorVersion());
+        registerPlugin(qgrouping, node->getPluginID().c_str(), node->getPluginLabel().c_str(), NATRON_IMAGES_PATH "output_icon.png", "", false, false, binary, false, node->getMajorVersion(), node->getMinorVersion());
     }
     {
         boost::shared_ptr<EffectInstance> node( GroupInput::BuildEffect( boost::shared_ptr<Natron::Node>() ) );
@@ -1479,7 +1526,7 @@ AppManager::loadBuiltinNodePlugins(std::map<std::string,std::vector< std::pair<s
         for (std::list<std::string>::iterator it = grouping.begin(); it != grouping.end(); ++it) {
             qgrouping.push_back( it->c_str() );
         }
-        registerPlugin(qgrouping, node->getPluginID().c_str(), node->getPluginLabel().c_str(), NATRON_IMAGES_PATH "input_icon.png", "", "", false, false, binary, false, node->getMajorVersion(), node->getMinorVersion());
+        registerPlugin(qgrouping, node->getPluginID().c_str(), node->getPluginLabel().c_str(), NATRON_IMAGES_PATH "input_icon.png", "", false, false, binary, false, node->getMajorVersion(), node->getMinorVersion());
     }
     {
         boost::shared_ptr<EffectInstance> groupNode( NodeGroup::BuildEffect( boost::shared_ptr<Natron::Node>() ) );
@@ -1495,7 +1542,7 @@ AppManager::loadBuiltinNodePlugins(std::map<std::string,std::vector< std::pair<s
         for (std::list<std::string>::iterator it = grouping.begin(); it != grouping.end(); ++it) {
             qgrouping.push_back( it->c_str() );
         }
-        registerPlugin(qgrouping, groupNode->getPluginID().c_str(), groupNode->getPluginLabel().c_str(), NATRON_IMAGES_PATH "group_icon.png", "", "", false, false, binary, false, groupNode->getMajorVersion(), groupNode->getMinorVersion());
+        registerPlugin(qgrouping, groupNode->getPluginID().c_str(), groupNode->getPluginLabel().c_str(), NATRON_IMAGES_PATH "group_icon.png", "", false, false, binary, false, groupNode->getMajorVersion(), groupNode->getMinorVersion());
     }
     {
         boost::shared_ptr<EffectInstance> dotNode( Dot::BuildEffect( boost::shared_ptr<Natron::Node>() ) );
@@ -1511,7 +1558,7 @@ AppManager::loadBuiltinNodePlugins(std::map<std::string,std::vector< std::pair<s
         for (std::list<std::string>::iterator it = grouping.begin(); it != grouping.end(); ++it) {
             qgrouping.push_back( it->c_str() );
         }
-        registerPlugin(qgrouping, dotNode->getPluginID().c_str(), dotNode->getPluginLabel().c_str(), NATRON_IMAGES_PATH "dot_icon.png", "", "", false, false, binary, false, dotNode->getMajorVersion(), dotNode->getMinorVersion());
+        registerPlugin(qgrouping, dotNode->getPluginID().c_str(), dotNode->getPluginLabel().c_str(), NATRON_IMAGES_PATH "dot_icon.png", "", false, false, binary, false, dotNode->getMajorVersion(), dotNode->getMinorVersion());
     }
     {
         boost::shared_ptr<EffectInstance> node( DiskCacheNode::BuildEffect( boost::shared_ptr<Natron::Node>() ) );
@@ -1527,7 +1574,7 @@ AppManager::loadBuiltinNodePlugins(std::map<std::string,std::vector< std::pair<s
         for (std::list<std::string>::iterator it = grouping.begin(); it != grouping.end(); ++it) {
             qgrouping.push_back( it->c_str() );
         }
-        registerPlugin(qgrouping, node->getPluginID().c_str(), node->getPluginLabel().c_str(), NATRON_IMAGES_PATH "diskcache_icon.png", "", "", false, false, binary, false, node->getMajorVersion(), node->getMinorVersion());
+        registerPlugin(qgrouping, node->getPluginID().c_str(), node->getPluginLabel().c_str(), NATRON_IMAGES_PATH "diskcache_icon.png", "", false, false, binary, false, node->getMajorVersion(), node->getMinorVersion());
     }
 
 }
@@ -1616,6 +1663,9 @@ AppManager::getAllNonOFXPluginsPaths() const
 void
 AppManager::loadPythonGroups()
 {
+#ifdef NATRON_RUN_WITHOUT_PYTHON
+	return;
+#endif
     Natron::PythonGILLocker pgl;
     
     QStringList templatesSearchPath = getAllNonOFXPluginsPaths();
@@ -1695,7 +1745,7 @@ AppManager::loadPythonGroups()
         if (getGroupInfos(modulePath.toStdString(),moduleName.toStdString(), &pluginID, &pluginLabel, &iconFilePath, &pluginGrouping, &pluginDescription, &version)) {
             
             QStringList grouping = QString(pluginGrouping.c_str()).split(QChar('/'));
-            Natron::Plugin* p = registerPlugin(grouping, pluginID.c_str(), pluginLabel.c_str(), iconFilePath.c_str(), QString(), QString(), false, false, 0, false, version, 0);
+            Natron::Plugin* p = registerPlugin(grouping, pluginID.c_str(), pluginLabel.c_str(), iconFilePath.c_str(), QString(), false, false, 0, false, version, 0);
             
             p->setPythonModule(modulePath + moduleName);
             
@@ -1710,7 +1760,6 @@ AppManager::registerPlugin(const QStringList & groups,
                            const QString & pluginLabel,
                            const QString & pluginIconPath,
                            const QString & groupIconPath,
-                           const QString & ofxPluginID,
                            bool isReader,
                            bool isWriter,
                            Natron::LibraryBinary* binary,
@@ -1723,7 +1772,7 @@ AppManager::registerPlugin(const QStringList & groups,
     if (mustCreateMutex) {
         pluginMutex = new QMutex(QMutex::Recursive);
     }
-    Natron::Plugin* plugin = new Natron::Plugin(binary,pluginID,pluginLabel,pluginIconPath,groupIconPath,groups,ofxPluginID,pluginMutex,major,minor,
+    Natron::Plugin* plugin = new Natron::Plugin(binary,pluginID,pluginLabel,pluginIconPath,groupIconPath,groups,pluginMutex,major,minor,
                                                 isReader,isWriter);
     std::string stdID = pluginID.toStdString();
     PluginsMap::iterator found = _imp->_plugins.find(stdID);
@@ -1734,7 +1783,7 @@ AppManager::registerPlugin(const QStringList & groups,
         set.insert(plugin);
         _imp->_plugins.insert(std::make_pair(stdID, set));
     }
-    onPluginLoaded(plugin);
+    
     return plugin;
 }
 
@@ -2945,6 +2994,9 @@ Natron::PY3String_asString(PyObject* obj)
 void
 AppManager::initPython(int argc,char* argv[])
 {
+#ifdef NATRON_RUN_WITHOUT_PYTHON
+	return;
+#endif
     QString pythonPath(qgetenv("PYTHONPATH"));
     //Add the Python distribution of Natron to the Python path
     QString binPath = QCoreApplication::applicationDirPath();
@@ -3013,7 +3065,7 @@ AppManager::initPython(int argc,char* argv[])
     //PyEval_ReleaseThread(_imp->mainThreadState);
     
     std::string err;
-    bool ok = interpretPythonScript("import sys\nimport math\nimport " + std::string(NATRON_ENGINE_PYTHON_MODULE_NAME), &err, 0);
+    bool ok = interpretPythonScript("import sys\nfrom math import *\nimport " + std::string(NATRON_ENGINE_PYTHON_MODULE_NAME), &err, 0);
     assert(ok);
     
     if (!isBackground()) {
@@ -3053,6 +3105,9 @@ AppManager::initPython(int argc,char* argv[])
 void
 AppManager::tearDownPython()
 {
+#ifdef NATRON_RUN_WITHOUT_PYTHON
+	return;
+#endif
     ///See http://wiki.blender.org/index.php/Dev:2.4/Source/Python/API/Threads
     PyGILState_Ensure();
     
@@ -3375,6 +3430,9 @@ std::size_t ensureScriptHasModuleImport(const std::string& moduleName,std::strin
     
 bool interpretPythonScript(const std::string& script,std::string* error,std::string* output)
 {
+#ifdef NATRON_RUN_WITHOUT_PYTHON
+	return true;
+#endif
     Natron::PythonGILLocker pgl;
     
     PyObject* mainModule = getMainModule();
@@ -3538,6 +3596,9 @@ getGroupInfos(const std::string& modulePath,
               std::string* description,
               unsigned int* version)
 {
+#ifdef NATRON_RUN_WITHOUT_PYTHON
+	return false;
+#endif
     Natron::PythonGILLocker pgl;
     
     QString script("import sys\n"

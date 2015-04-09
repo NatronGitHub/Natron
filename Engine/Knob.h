@@ -38,7 +38,9 @@ class KnobHolder;
 class AppInstance;
 class KnobSerialization;
 class StringAnimationManager;
-
+namespace Transform {
+struct Matrix3x3;
+}
 namespace Natron {
 class OfxParamOverlayInteract;
 }
@@ -191,6 +193,11 @@ public:
         Q_EMIT hasModificationsChanged();
     }
     
+    void s_descriptionChanged()
+    {
+        Q_EMIT descriptionChanged();
+    }
+    
 public Q_SLOTS:
 
     /**
@@ -286,6 +293,8 @@ Q_SIGNALS:
     void expressionChanged(int dimension);
     
     void hasModificationsChanged();
+    
+    void descriptionChanged();
 };
 
 struct KnobChange
@@ -442,10 +451,21 @@ public:
      **/
     virtual boost::shared_ptr<Curve> getGuiCurve(int dimension) const = 0;
 
-    virtual double random(unsigned int seed) const = 0;
+    virtual double random(double time, unsigned int seed) const = 0;
     virtual double random(double min = 0.,double max = 1.) const = 0;
-    virtual int randomInt(unsigned int seed) const = 0;
+    virtual int randomInt(double time,unsigned int seed) const = 0;
     virtual int randomInt(int min = INT_MIN,int max = INT_MAX) const = 0;
+    
+    /**
+     * @brief Evaluates the curve at the given dimension and at the given time. This returns the value of the curve directly.
+     * If the knob is holding a string, it will return the index.
+     **/
+    virtual double getRawCurveValueAt(double time, int dimension) const = 0;
+    
+    /**
+     * @brief Same as getRawCurveValueAt, but first check if an expression is present. The expression should return a PoD.
+     **/
+    virtual double getValueAtWithExpression(double time, int dimension) const = 0;
     
 protected:
 
@@ -471,6 +491,16 @@ public:
      * @brief Moves a keyframe by a given delta and emits the signal keyframeMoved
      **/
     virtual bool moveValueAtTime(int time,int dimension,double dt,double dv,KeyFrame* newKey) = 0;
+    
+    /**
+     * @brief Transforms a keyframe by a given matrix. The matrix must not contain any skew or rotation.
+     **/
+    virtual bool transformValueAtTime(int time,int dimension,const Transform::Matrix3x3& matrix,KeyFrame* newKey) = 0;
+    
+    /**
+     * @brief Copies all the animation of *curve* into the animation curve at the given dimension.
+     **/
+    virtual void cloneCurve(int dimension,const Curve& curve) = 0;
     
     /**
      * @brief Changes the interpolation type for the given keyframe
@@ -656,9 +686,10 @@ public:
 
     /**
      * @brief Get the knob description, that is the label next to the knob on the user interface.
-     * This function is MT-safe as the description NEVER changes throughout the program.
+     * This function is MT-safe as it the description can only be changed by the main thread.
      **/
     virtual const std::string & getDescription() const = 0;
+    virtual void setDescription(const std::string& description) = 0;
     
     /**
      * @brief Hide the description label on the GUI on the left of the knob. This is not dynamic
@@ -1048,13 +1079,13 @@ public:
     virtual bool isValueChangesBlocked() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void evaluateValueChange(int dimension,Natron::ValueChangedReasonEnum reason) OVERRIDE FINAL;
     
-    virtual double random(unsigned int seed) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual double random(double time,unsigned int seed) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual double random(double min = 0., double max = 1.) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual int randomInt(unsigned int seed) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual int randomInt(double time,unsigned int seed) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual int randomInt(int min = 0,int max = INT_MAX) const OVERRIDE FINAL WARN_UNUSED_RETURN;
 protected:
     
-    void randomSeed(unsigned int seed) const;
+    void randomSeed(double time, unsigned int seed) const;
     
 private:
 
@@ -1067,6 +1098,8 @@ public:
 
     virtual void onKeyFrameRemoved(SequenceTime time,int dimension) OVERRIDE FINAL;
     virtual bool moveValueAtTime(int time,int dimension,double dt,double dv,KeyFrame* newKey) OVERRIDE FINAL;
+    virtual bool transformValueAtTime(int time,int dimension,const Transform::Matrix3x3& matrix,KeyFrame* newKey) OVERRIDE FINAL;
+    virtual void cloneCurve(int dimension,const Curve& curve) OVERRIDE FINAL;
     virtual bool setInterpolationAtTime(int dimension,int time,Natron::KeyframeTypeEnum interpolation,KeyFrame* newKey) OVERRIDE FINAL;
     virtual bool moveDerivativesAtTime(int dimension,int time,double left,double right)  OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool moveDerivativeAtTime(int dimension,int time,double derivative,bool isLeft) OVERRIDE FINAL WARN_UNUSED_RETURN;
@@ -1080,7 +1113,6 @@ private:
 public:
     
     
-    virtual double getDerivativeAtTime(double time, int dimension = 0) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool getKeyFrameTime(int index,int dimension,double* time) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool getLastKeyFrameTime(int dimension,double* time) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool getFirstKeyFrameTime(int dimension,double* time) const OVERRIDE FINAL WARN_UNUSED_RETURN;
@@ -1101,6 +1133,7 @@ public:
     virtual void setAnimationEnabled(bool val) OVERRIDE FINAL;
     virtual bool isAnimationEnabled() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual const std::string & getDescription() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    void setDescription(const std::string& description) OVERRIDE FINAL;
     virtual void hideDescription()  OVERRIDE FINAL;
     virtual bool isDescriptionVisible() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual KnobHolder* getHolder() const OVERRIDE FINAL WARN_UNUSED_RETURN;
@@ -1169,7 +1202,7 @@ protected:
     void resetMaster(int dimension);
     
     ///The return value must be Py_DECRREF
-    PyObject* executeExpression(int dimension) const;
+    PyObject* executeExpression(double time, int dimension) const;
 
 public:
 
@@ -1304,7 +1337,7 @@ public:
      that we're able to get the same value again for the same render.
      Of course, this saved in the project to retrieve the same values between 2 runs of the project.
      */
-    typedef std::map<SequenceTime,T> FrameValueMap;
+    typedef std::map<double,T> FrameValueMap;
     typedef std::vector<FrameValueMap> ExprResults;
 
     
@@ -1338,7 +1371,10 @@ public:
      * but this should be the only knob which should ever need to overload it.
      **/
     T getValueAtTime(double time, int dimension = 0,bool clampToMinMax = true,bool byPassMaster = false) const WARN_UNUSED_RETURN;
-
+    
+    virtual double getRawCurveValueAt(double time, int dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual double getValueAtWithExpression(double time, int dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
 private:
 
    
@@ -1460,7 +1496,9 @@ public:
     virtual void onTimeChanged(SequenceTime time) OVERRIDE FINAL;
 
     ///Cannot be overloaded by KnobHelper as it requires the value member
+    virtual double getDerivativeAtTime(double time, int dimension = 0) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual double getIntegrateFromTimeToTime(double time1, double time2, int dimension = 0) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    double getIntegrateFromTimeToTimeSimpson(double time1, double time2, int dimension = 0) const;
 
     ///Cannot be overloaded by KnobHelper as it requires setValue
     virtual void resetToDefaultValue(int dimension) OVERRIDE FINAL;
@@ -1494,10 +1532,15 @@ public:
     
     void getExpressionResults(int dim,FrameValueMap& map)
     {
-        QReadLocker k(&_valueMutex);
+        QMutexLocker k(&_valueMutex);
         map = _exprRes[dim];
     }
-
+    
+    T getValueFromMasterAt(double time, int dimension, KnobI* master) const;
+    T getValueFromMaster(int dimension, KnobI* master, bool clamp) const;
+    
+    bool getValueFromCurve(double time,int dimension, bool byPassMaster, bool clamp, T* ret) const;
+    
 protected:
     
     virtual void resetExtraToDefaultValue(int /*dimension*/) {}
@@ -1515,8 +1558,6 @@ private:
     
     virtual void cloneExpressionsResults(KnobI* other,int dimension = -1) OVERRIDE FINAL;
 
-    T getValueFromMaster(int dimension);
-
     void valueToVariant(const T & v,Variant* vari);
 
     int get_SetValueRecursionLevel() const
@@ -1532,7 +1573,7 @@ private:
     
     virtual void clearExpressionsResults(int dimension)
     {
-        QWriteLocker k(&_valueMutex);
+        QMutexLocker k(&_valueMutex);
         _exprRes[dimension].clear();
     }
     
@@ -1542,9 +1583,17 @@ public:
     
 private:
     
-    T evaluateExpression(int dimension) const;
+    T evaluateExpression(double time, int dimension) const;
     
-    bool getValueFromExpression(int time,int dimension,bool clamp,T* ret) const;
+    /*
+     * @brief Same as evaluateExpression but expects it to return a PoD
+     */
+    double evaluateExpression_pod(double time, int dimension) const;
+
+    
+    bool getValueFromExpression(double time,int dimension,bool clamp,T* ret) const;
+    
+    bool getValueFromExpression_pod(double time,int dimension,bool clamp,double* ret) const;
 
     //////////////////////////////////////////////////////////////////////
     /////////////////////////////////// End implementation of KnobI
@@ -1583,7 +1632,7 @@ private:
    
     ///Here is all the stuff we couldn't get rid of the template parameter
 
-    mutable QReadWriteLock _valueMutex; //< protects _values & _defaultValues & ExprResults
+    mutable QMutex _valueMutex; //< protects _values & _defaultValues & ExprResults
     std::vector<T> _values;
     std::vector<T> _defaultValues;
     mutable ExprResults _exprRes;
@@ -1746,6 +1795,8 @@ public:
      * @brief When frozen is true all the knobs of this effect read-only so the user can't interact with it.
      **/
     void setKnobsFrozen(bool frozen);
+    
+    bool areKnobsFrozen() const;
 
     /**
      * @brief Can be overriden to prevent values to be set directly.

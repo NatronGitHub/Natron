@@ -323,37 +323,28 @@ ViewerInstance::renderViewer(int view,
     return eStatusOK;
 }
 
-static void checkTreeCanRender_internal(Node* node,std::list<Node*>& marked,bool* ret)
+static bool checkTreeCanRender_internal(Node* node, std::list<Node*>& marked)
 {
     if (std::find(marked.begin(), marked.end(), node) != marked.end()) {
-        return;
+        return true;
     }
 
     marked.push_back(node);
 
+    // check that the nodes upstream have all their nonoptional inputs connected
     int maxInput = node->getMaxInputCount();
-    bool hasInputConnected = false;
     for (int i = 0; i < maxInput; ++i) {
         NodePtr input = node->getInput(i);
-        if (!input) {
-            if (!node->getLiveInstance()->isInputOptional(i)) {
-                *ret = false;
-                return;
-            }
-            
-        } else {
-            hasInputConnected = true;
-            checkTreeCanRender_internal(input.get(), marked, ret);
+        if (!input && !node->getLiveInstance()->isInputOptional(i)) {
+            return false;
+        } else if (input) {
+            bool ret = checkTreeCanRender_internal(input.get(), marked);
             if (!ret) {
-                return;
+                return false;
             }
         }
     }
-    if (!hasInputConnected && (!node->getLiveInstance()->isGenerator() &&
-            !node->getLiveInstance()->isReader() && !node->getRotoContext())) {
-        *ret = false;
-        return;
-    }
+    return true;
 }
 
 /**
@@ -361,9 +352,8 @@ static void checkTreeCanRender_internal(Node* node,std::list<Node*>& marked,bool
  **/
 static bool checkTreeCanRender(Node* node)
 {
-    bool ret = true;
     std::list<Node*> marked;
-    checkTreeCanRender_internal(node,marked,&ret);
+    bool ret = checkTreeCanRender_internal(node, marked);
     return ret;
 }
 
@@ -837,15 +827,18 @@ ViewerInstance::renderViewer_internal(int view,
     if (requestedComponents.empty()) {
         if (inArgs.params->cachedFrame) {
             inArgs.params->cachedFrame->setAborted(true);
+            appPTR->removeFromViewerCache(inArgs.params->cachedFrame);
             if (!isSequentialRender) {
                 _imp->checkAndUpdateDisplayAge(inArgs.params->textureIndex,inArgs.params->renderAge);
             }
-            appPTR->removeFromViewerCache(inArgs.params->cachedFrame);
         }
         if (!isSequentialRender && canAbort) {
             _imp->removeOngoingRender(inArgs.params->textureIndex, inArgs.params->renderAge);
         }
-        return eStatusOK;
+        Q_EMIT disconnectTextureRequest(inArgs.params->textureIndex);
+        inArgs.params.reset();
+
+        return eStatusReplyDefault;
     }
     
     
@@ -882,7 +875,8 @@ ViewerInstance::renderViewer_internal(int view,
         // We catch it  and rethrow it just to notify the rendering is done.
         try {
             
-            ImageList planes = inArgs.activeInputToRender->renderRoI(EffectInstance::RenderRoIArgs(inArgs.params->time,
+            ImageList planes;
+            EffectInstance::RenderRoIRetCode retCode = inArgs.activeInputToRender->renderRoI(EffectInstance::RenderRoIArgs(inArgs.params->time,
                                                                                                    inArgs.key->getScale(),
                                                                                                    inArgs.params->mipMapLevel,
                                                                                                    view,
@@ -890,9 +884,9 @@ ViewerInstance::renderViewer_internal(int view,
                                                                                                    roi,
                                                                                                    inArgs.params->rod,
                                                                                                    requestedComponents,
-                                                                                                   imageDepth) );
+                                                                                                   imageDepth),&planes);
             assert(planes.size() == 0 || planes.size() == 1);
-            if (!planes.empty()) {
+            if (!planes.empty() && retCode == EffectInstance::eRenderRoIRetCodeOk) {
                 inArgs.params->image = planes.front();
             }
             if (!inArgs.params->image) {
@@ -905,6 +899,14 @@ ViewerInstance::renderViewer_internal(int view,
                 }
                 if (!isSequentialRender && canAbort) {
                     _imp->removeOngoingRender(inArgs.params->textureIndex, inArgs.params->renderAge);
+                }
+                if (retCode != EffectInstance::eRenderRoIRetCodeAborted) {
+                    Q_EMIT disconnectTextureRequest(inArgs.params->textureIndex);
+                }
+
+                if (retCode == EffectInstance::eRenderRoIRetCodeFailed) {
+                    inArgs.params.reset();
+                    return eStatusFailed;
                 }
                 return eStatusReplyDefault;
             }

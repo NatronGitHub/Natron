@@ -284,3 +284,49 @@ Set the following expression on the parameter
 ::
 
 	thisNode.outputR.getOption(thisNode.outputR.get()) + "\n" + thisNode.outputG.getOption(thisNode.outputG.get()) + "\n" + thisNode.outputB.getOption(thisNode.outputB.get()) + "\n" + thisNode.outputA.getOption(thisNode.outputA.get())
+	
+	
+Generating custom animation for motion editing:
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+In this example we will demonstrate how to perform Loop,Negate and Reverse effects 
+on an animation even though this is already available as a preset in Natron. 
+
+To do be able to do this we make use of the :ref:`curve(frame,dimension)<NatronEngine.Param.curve>`
+function of the :ref:`Param<Param>` class. This function returns the value of the animation
+curve (of the given dimension) at the given time. 
+
+If we were to write the following expression::
+
+	curve(frame)
+
+The result would be exactly the animation curve of the parameter.
+
+On the other hand if we write::
+
+	curve(-frame)
+	
+.. figure:: CE_reverse.png
+	:width: 300px
+	:align: center
+	
+We have just reversed the curve, meaning that the actual result at the frame F will be in fact
+the value of the curve at the frame -F. 
+
+In the same way we can apply a negate effect::
+
+	-curve(frame)
+
+.. figure:: CE_negate.png
+	:width: 300px
+	:align: center	
+
+The loop effect is a bit more complicated and needs to have a frame-range in parameter::
+
+	firstFrame = 0
+	lastFrame = 10
+	curve(((frame - firstFrame) % (lastFrame - firstFrame + 1)) + firstFrame)
+	
+.. figure:: CE_loop.png
+	:width: 300px
+	:align: center	

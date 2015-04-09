@@ -38,7 +38,6 @@ CLANG_DIAG_ON(unused-private-field)
 #include <QGroupBox>
 #include <QtGui/QVector4D>
 #include <QStyleFactory>
-#include <QMenu>
 #include <QComboBox>
 #include <QDialogButtonBox>
 #include <QCompleter>
@@ -62,7 +61,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Gui/DockablePanel.h"
 #include "Gui/ViewerTab.h"
 #include "Gui/TimeLineGui.h"
-#include "Gui/MenuWithToolTips.h"
+#include "Gui/Menu.h"
 #include "Gui/Gui.h"
 #include "Gui/SequenceFileDialog.h"
 #include "Gui/TabWidget.h"
@@ -79,6 +78,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Gui/NodeCreationDialog.h"
 #include "Gui/ScriptTextEdit.h"
 #include "Gui/Label.h"
+#include "Gui/Menu.h"
 
 using namespace Natron;
 
@@ -89,7 +89,7 @@ struct KnobGui::KnobGuiPrivate
     int spacingBetweenItems;
     bool widgetCreated;
     DockablePanel*  container;
-    QMenu* animationMenu;
+    Natron::Menu* animationMenu;
     AnimationButton* animationButton;
     QMenu* copyRightClickMenu;
     QHBoxLayout* fieldLayout; //< the layout containing the widgets of the knob
@@ -167,6 +167,7 @@ KnobGui::KnobGui(boost::shared_ptr<KnobI> knob,
         QObject::connect( handler,SIGNAL( helpChanged() ),this,SLOT( onHelpChanged() ) );
         QObject::connect( handler,SIGNAL( expressionChanged(int) ),this,SLOT( onExprChanged(int) ) );
         QObject::connect( handler,SIGNAL( hasModificationsChanged() ),this,SLOT( onHasModificationsChanged() ) );
+        QObject::connect(handler,SIGNAL(descriptionChanged()), this, SLOT(onDescriptionChanged()));
     }
     _imp->guiCurves.resize(knob->getDimension());
     if (knob->canAnimate()) {
@@ -286,7 +287,11 @@ KnobGui::createGUI(QGridLayout* containerLayout,
 
     for (int i = 0; i < knob->getDimension(); ++i) {
         updateGuiInternal(i);
-        onAnimationLevelChanged(i, knob->getAnimationLevel(i) );
+        std::string exp = knob->getExpression(i);
+        reflectExpressionState(i,!exp.empty());
+        if (exp.empty()) {
+            onAnimationLevelChanged(i, knob->getAnimationLevel(i) );
+        }
     }
 }
 
@@ -303,7 +308,7 @@ KnobGui::updateGuiInternal(int dimension)
 void
 KnobGui::createAnimationButton(QHBoxLayout* layout)
 {
-    _imp->animationMenu = new QMenu( layout->parentWidget() );
+    _imp->animationMenu = new Natron::Menu( layout->parentWidget() );
     //_imp->animationMenu->setFont( QFont(appFont,appFontSize) );
     QPixmap pix;
     appPTR->getIcon(Natron::NATRON_PIXMAP_CURVE, &pix);
@@ -521,7 +526,7 @@ KnobGui::createAnimationMenu(QMenu* menu,int dimension)
                 showInCurveEditorAction->setEnabled(false);
             }
 
-            QMenu* interpolationMenu = new QMenu(menu);
+            Natron::Menu* interpolationMenu = new Natron::Menu(menu);
             //interpolationMenu->setFont( QFont(appFont,appFontSize) );
             interpolationMenu->setTitle("Interpolation");
             menu->addAction( interpolationMenu->menuAction() );
@@ -1450,8 +1455,11 @@ LinkToKnobDialog::LinkToKnobDialog(KnobGui* from,
     EffectInstance* isEffect = dynamic_cast<EffectInstance*>(from->getKnob()->getHolder());
     assert(isEffect);
     boost::shared_ptr<NodeCollection> group = isEffect->getNode()->getGroup();
-    
     group->getActiveNodes(&_imp->allNodes);
+    NodeGroup* isGroup = dynamic_cast<NodeGroup*>(group.get());
+    if (isGroup) {
+        _imp->allNodes.push_back(isGroup->getNode());
+    }
     QStringList nodeNames;
     for (NodeList::iterator it = _imp->allNodes.begin(); it != _imp->allNodes.end(); ++it) {
         QString name( (*it)->getLabel().c_str() );
@@ -1600,9 +1608,16 @@ KnobGui::linkTo(int dimension)
             if (!otherEffect) {
                 return;
             }
+            
             std::stringstream expr;
-            expr << otherEffect->getNode()->getFullyQualifiedName() << "." << otherKnob->getName()
-            << ".get()";
+            boost::shared_ptr<NodeCollection> thisCollection = isEffect->getNode()->getGroup();
+            NodeGroup* otherIsGroup = dynamic_cast<NodeGroup*>(otherEffect);
+            if (otherIsGroup == thisCollection.get()) {
+                expr << "thisGroup"; // make expression generic if possible
+            } else {
+                expr << otherEffect->getNode()->getFullyQualifiedName();
+            }
+            expr << "." << otherKnob->getName() << ".get()";
             if (otherKnob->getDimension() > 1) {
                 expr << "[dimension]";
             }
@@ -1610,7 +1625,7 @@ KnobGui::linkTo(int dimension)
             thisKnob->beginChanges();
             for (int i = 0; i < thisKnob->getDimension(); ++i) {
                 if (i == dimension || dimension == -1) {
-                    thisKnob->setExpression(dimension, expr.str(), false);
+                    thisKnob->setExpression(i, expr.str(), false);
                 }
             }
             thisKnob->endChanges();
@@ -2305,6 +2320,8 @@ KnobGui::onExprChanged(int dimension)
     onHelpChanged();
     
     updateGUI(dimension);
+    
+    Q_EMIT expressionChanged();
 }
 
 void
@@ -2333,5 +2350,11 @@ KnobGui::onHasModificationsChanged()
     reflectModificationsState();
 }
 
-
-
+void
+KnobGui::onDescriptionChanged()
+{
+    if (_imp->descriptionLabel) {
+        _imp->descriptionLabel->setText(getKnob()->getDescription().c_str());
+        onLabelChanged();
+    }
+}

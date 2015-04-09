@@ -30,6 +30,9 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     #sudo add-apt-repository --yes ppa:fkrull/deadsnakes # python3.x
     # we get libyaml-cpp-dev from kubuntu backports (for OpenColorIO)
     if [ "$CC" = "$TEST_CC" ]; then sudo add-apt-repository -y ppa:kubuntu-ppa/backports; fi
+    # we also need a recent ffmpeg for the newest version of the plugin
+    #if [ "$CC" = "$TEST_CC" ]; then sudo add-apt-repository -y ppa:jon-severinsson/ffmpeg; fi #not available
+    if [ "$CC" = "$TEST_CC" ]; then sudo add-apt-repository -y ppa:archivematica/externals; fi
     sudo apt-get update
     sudo apt-get update -qq
 
@@ -56,7 +59,7 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     # OpenFX-IO
     if [ "$CC" = "$TEST_CC" ]; then sudo apt-get install cmake libtinyxml-dev liblcms2-dev libyaml-cpp-dev libboost-dev; wget https://github.com/imageworks/OpenColorIO/archive/v1.0.9.tar.gz -O /tmp/ocio-1.0.9.tar.gz; tar zxf /tmp/ocio-1.0.9.tar.gz; cd OpenColorIO-1.0.9; mkdir _build; cd _build; cmake .. -DCMAKE_INSTALL_PREFIX=/opt/ocio -DCMAKE_BUILD_TYPE=Release -DOCIO_BUILD_JNIGLUE=OFF -DOCIO_BUILD_NUKE=OFF -DOCIO_BUILD_SHARED=ON -DOCIO_BUILD_STATIC=OFF -DOCIO_STATIC_JNIGLUE=OFF -DOCIO_BUILD_TRUELIGHT=OFF -DUSE_EXTERNAL_LCMS=ON -DUSE_EXTERNAL_TINYXML=ON -DUSE_EXTERNAL_YAML=ON -DOCIO_BUILD_APPS=OFF -DOCIO_USE_BOOST_PTR=ON -DOCIO_BUILD_TESTS=OFF -DOCIO_BUILD_PYGLUE=OFF; make $J && sudo make install; cd ../..; fi
     if [ "$CC" = "$TEST_CC" ]; then sudo apt-get install libopenexr-dev libilmbase-dev; fi
-    if [ "$CC" = "$TEST_CC" ]; then sudo apt-get install libopenjpeg-dev libtiff-dev libjpeg-dev libpng-dev libboost-filesystem-dev libboost-regex-dev libboost-thread-dev libboost-system-dev libwebp-dev libfreetype6-dev libssl-dev; wget https://github.com/OpenImageIO/oiio/archive/Release-1.4.16.tar.gz -O /tmp/OpenImageIO-1.4.16.tar.gz; tar zxf /tmp/OpenImageIO-1.4.16.tar.gz; cd oiio-Release-1.4.16; make $J USE_QT=0 USE_TBB=0 USE_PYTHON=0 USE_FIELD3D=0 USE_OPENJPEG=1 USE_OCIO=1 OIIO_BUILD_TESTS=0 OIIO_BUILD_TOOLS=0 OCIO_HOME=/opt/ocio INSTALLDIR=/opt/oiio dist_dir=. cmake; sudo make $J dist_dir=.; cd ..; fi
+    if [ "$CC" = "$TEST_CC" ]; then sudo apt-get install libopenjpeg-dev libtiff-dev libjpeg-dev libpng-dev libboost-filesystem-dev libboost-regex-dev libboost-thread-dev libboost-system-dev libwebp-dev libfreetype6-dev libssl-dev; wget https://github.com/OpenImageIO/oiio/archive/Release-1.5.13.tar.gz -O /tmp/OpenImageIO-1.5.13.tar.gz; tar zxf /tmp/OpenImageIO-1.5.13.tar.gz; cd oiio-Release-1.5.13; make $J USE_QT=0 USE_TBB=0 USE_PYTHON=0 USE_FIELD3D=0 USE_OPENJPEG=1 USE_OCIO=1 OIIO_BUILD_TESTS=0 OIIO_BUILD_TOOLS=0 OCIO_HOME=/opt/ocio INSTALLDIR=/opt/oiio dist_dir=. cmake; sudo make $J dist_dir=.; cd ..; fi
     if [ "$CC" = "$TEST_CC" ]; then sudo apt-get install libavcodec-dev libavformat-dev libswscale-dev libavutil-dev; fi
     if [ "$CC" = "$TEST_CC" ]; then wget https://github.com/wdas/SeExpr/archive/rel-1.0.1.tar.gz -O /tmp/SeExpr-1.0.1.tar.gz; tar zxf /tmp/SeExpr-1.0.1.tar.gz; cd SeExpr-rel-1.0.1; mkdir _build; cd _build; cmake .. -DCMAKE_INSTALL_PREFIX=/opt/seexpr; make $J && sudo make install; cd ../..; fi
     # config.pri

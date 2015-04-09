@@ -296,7 +296,7 @@ should NOT be used.
 
 	:param time: :class:`int`
 	:param view: :class:`view`
-	:rtype: :class:`PySide.QtCore.QRectF`
+	:rtype: :class:`RectD<NatronEngine.RectD>`
 	
 Returns the bounding box of the image produced by this effect in canonical coordinates. 
 This is exactly the value displayed in the "Info" tab of the settings panel of the node

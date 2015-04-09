@@ -33,6 +33,7 @@ CLANG_DIAG_OFF(unused-private-field)
 CLANG_DIAG_ON(unused-private-field)
 #include <QDebug>
 #include <QFontComboBox>
+#include <QDialogButtonBox>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
@@ -46,7 +47,6 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Node.h"
 
 #include "Gui/GuiApplicationManager.h"
-#include "Gui/AnimatedCheckBox.h"
 #include "Gui/Button.h"
 #include "Gui/SpinBox.h"
 #include "Gui/ComboBox.h"
@@ -59,6 +59,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/DockablePanel.h"
 #include "Gui/ClickableLabel.h"
 #include "Gui/Label.h"
+#include "Gui/GuiMacros.h"
 
 #include "ofxNatron.h"
 
@@ -640,6 +641,20 @@ Int_KnobGui::reflectModificationsState()
 }
 //==========================BOOL_KNOB_GUI======================================
 
+void
+Bool_CheckBox::getBackgroundColor(double *r,double *g,double *b) const
+{
+    if (useCustomColor) {
+        *r = customColor.redF();
+        *g = customColor.greenF();
+        *b = customColor.blueF();
+    } else {
+        
+        AnimatedCheckBox::getBackgroundColor(r, g, b);
+    }
+}
+
+
 Bool_KnobGui::Bool_KnobGui(boost::shared_ptr<KnobI> knob,
                            DockablePanel *container)
     : KnobGui(knob, container)
@@ -651,8 +666,8 @@ Bool_KnobGui::Bool_KnobGui(boost::shared_ptr<KnobI> knob,
 void
 Bool_KnobGui::createWidget(QHBoxLayout* layout)
 {
-    _checkBox = new AnimatedCheckBox( layout->parentWidget() );
-
+    _checkBox = new Bool_CheckBox( layout->parentWidget() );
+    onLabelChanged();
     //_checkBox->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     QObject::connect( _checkBox, SIGNAL( clicked(bool) ), this, SLOT( onCheckBoxStateChanged(bool) ) );
     QObject::connect( this, SIGNAL( labelClicked(bool) ), this, SLOT( onLabelClicked(bool) ) );
@@ -701,6 +716,31 @@ Bool_KnobGui::reflectAnimationLevel(int /*dimension*/,
     }
     if (value != _checkBox->getAnimation()) {
         _checkBox->setAnimation(value);
+    }
+}
+
+void
+Bool_KnobGui::onLabelChanged()
+{
+    const std::string& label = _knob->getDescription();
+    if (label == "R" || label == "r" || label == "red") {
+        QColor color;
+        color.setRgbF(0.851643,0.196936,0.196936);
+        _checkBox->setCustomColor(color, true);
+    } else if (label == "G" || label == "g" || label == "green") {
+        QColor color;
+        color.setRgbF(0,0.654707,0);
+        _checkBox->setCustomColor(color, true);
+    } else if (label == "B" || label == "b" || label == "blue") {
+        QColor color;
+        color.setRgbF(0.345293,0.345293,1);
+        _checkBox->setCustomColor(color, true);
+    } else if (label == "A" || label == "a" || label == "alpha") {
+        QColor color;
+        color.setRgbF(0.398979,0.398979,0.398979);
+        _checkBox->setCustomColor(color, true);
+    } else {
+        _checkBox->setCustomColor(Qt::black, false);
     }
 }
 
@@ -1515,6 +1555,237 @@ boost::shared_ptr<KnobI> Button_KnobGui::getKnob() const
 }
 
 //=============================CHOICE_KNOB_GUI===================================
+
+struct NewLayerDialogPrivate
+{
+    QGridLayout* mainLayout;
+    Natron::Label* layerLabel;
+    LineEdit* layerEdit;
+    Natron::Label* numCompsLabel;
+    SpinBox* numCompsBox;
+    Natron::Label* rLabel;
+    LineEdit* rEdit;
+    Natron::Label* gLabel;
+    LineEdit* gEdit;
+    Natron::Label* bLabel;
+    LineEdit* bEdit;
+    Natron::Label* aLabel;
+    LineEdit* aEdit;
+    
+    Button* setRgbaButton;
+    QDialogButtonBox* buttons;
+    
+    NewLayerDialogPrivate()
+    : mainLayout(0)
+    , layerLabel(0)
+    , layerEdit(0)
+    , numCompsLabel(0)
+    , numCompsBox(0)
+    , rLabel(0)
+    , rEdit(0)
+    , gLabel(0)
+    , gEdit(0)
+    , bLabel(0)
+    , bEdit(0)
+    , aLabel(0)
+    , aEdit(0)
+    {
+        
+    }
+};
+
+NewLayerDialog::NewLayerDialog(QWidget* parent)
+: QDialog(parent)
+, _imp(new NewLayerDialogPrivate())
+{
+    _imp->mainLayout = new QGridLayout(this);
+    _imp->layerLabel = new Natron::Label(tr("Layer Name"),this);
+    _imp->layerEdit = new LineEdit(this);
+    
+    _imp->numCompsLabel = new Natron::Label(tr("No. Channels"),this);
+    _imp->numCompsBox = new SpinBox(this,SpinBox::eSpinBoxTypeInt);
+    QObject::connect(_imp->numCompsBox, SIGNAL(valueChanged(double)), this, SLOT(onNumCompsChanged(double)));
+    _imp->numCompsBox->setMinimum(1);
+    _imp->numCompsBox->setMaximum(4);
+    _imp->numCompsBox->setValue(4);
+    
+    _imp->rLabel = new Natron::Label(tr("1st Channel"),this);
+    _imp->rEdit = new LineEdit(this);
+    _imp->gLabel = new Natron::Label(tr("2nd Channel"),this);
+    _imp->gEdit = new LineEdit(this);
+    _imp->bLabel = new Natron::Label(tr("3rd Channel"),this);
+    _imp->bEdit = new LineEdit(this);
+    _imp->aLabel = new Natron::Label(tr("4th Channel"),this);
+    _imp->aEdit = new LineEdit(this);
+    
+    _imp->setRgbaButton = new Button(this);
+    _imp->setRgbaButton->setText(tr("Set RGBA"));
+    QObject::connect(_imp->setRgbaButton, SIGNAL(clicked(bool)), this, SLOT(onRGBAButtonClicked()));
+    
+    _imp->buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel,Qt::Horizontal,this);
+    QObject::connect(_imp->buttons, SIGNAL(accepted()), this, SLOT(accept()));
+    QObject::connect(_imp->buttons, SIGNAL(rejected()), this, SLOT(reject()));
+    
+    _imp->mainLayout->addWidget(_imp->layerLabel, 0, 0, 1, 1);
+    _imp->mainLayout->addWidget(_imp->layerEdit, 0, 1, 1, 1);
+    
+    _imp->mainLayout->addWidget(_imp->numCompsLabel, 1, 0, 1, 1);
+    _imp->mainLayout->addWidget(_imp->numCompsBox, 1, 1, 1, 1);
+    
+    _imp->mainLayout->addWidget(_imp->rLabel, 2, 0, 1, 1);
+    _imp->mainLayout->addWidget(_imp->rEdit, 2, 1, 1, 1);
+    
+    _imp->mainLayout->addWidget(_imp->gLabel, 3, 0, 1, 1);
+    _imp->mainLayout->addWidget(_imp->gEdit, 3, 1, 1, 1);
+
+    
+    _imp->mainLayout->addWidget(_imp->bLabel, 4, 0, 1, 1);
+    _imp->mainLayout->addWidget(_imp->bEdit, 4, 1, 1, 1);
+
+    
+    _imp->mainLayout->addWidget(_imp->aLabel, 5, 0, 1, 1);
+    _imp->mainLayout->addWidget(_imp->aEdit, 5, 1, 1, 1);
+    
+    _imp->mainLayout->addWidget(_imp->setRgbaButton, 6, 0, 1, 2);
+    
+    _imp->mainLayout->addWidget(_imp->buttons, 7, 0, 1, 2);
+
+
+    
+}
+
+NewLayerDialog::~NewLayerDialog()
+{
+    
+}
+
+void
+NewLayerDialog::onNumCompsChanged(double value)
+{
+    if (value == 1) {
+        _imp->rLabel->setVisible(false);
+        _imp->rEdit->setVisible(false);
+        _imp->gLabel->setVisible(false);
+        _imp->gEdit->setVisible(false);
+        _imp->bLabel->setVisible(false);
+        _imp->bEdit->setVisible(false);
+        _imp->aLabel->setVisible(true);
+        _imp->aEdit->setVisible(true);
+    } else if (value == 2) {
+        _imp->rLabel->setVisible(true);
+        _imp->rEdit->setVisible(true);
+        _imp->gLabel->setVisible(true);
+        _imp->gEdit->setVisible(true);
+        _imp->bLabel->setVisible(false);
+        _imp->bEdit->setVisible(false);
+        _imp->aLabel->setVisible(false);
+        _imp->aEdit->setVisible(false);
+    } else if (value == 3) {
+        _imp->rLabel->setVisible(true);
+        _imp->rEdit->setVisible(true);
+        _imp->gLabel->setVisible(true);
+        _imp->gEdit->setVisible(true);
+        _imp->bLabel->setVisible(true);
+        _imp->bEdit->setVisible(true);
+        _imp->aLabel->setVisible(false);
+        _imp->aEdit->setVisible(false);
+    } else if (value == 3) {
+        _imp->rLabel->setVisible(true);
+        _imp->rEdit->setVisible(true);
+        _imp->gLabel->setVisible(true);
+        _imp->gEdit->setVisible(true);
+        _imp->bLabel->setVisible(true);
+        _imp->bEdit->setVisible(true);
+        _imp->aLabel->setVisible(true);
+        _imp->aEdit->setVisible(true);
+    }
+}
+
+Natron::ImageComponents
+NewLayerDialog::getComponents() const
+{
+    QString layer = _imp->layerEdit->text();
+    int nComps = (int)_imp->numCompsBox->value();
+    QString r = _imp->rEdit->text();
+    QString g = _imp->gEdit->text();
+    QString b = _imp->bEdit->text();
+    QString a = _imp->aEdit->text();
+    std::string layerFixed = Natron::makeNameScriptFriendly(layer.toStdString());
+    if (layerFixed.empty()) {
+        return Natron::ImageComponents::getNoneComponents();
+    }
+    
+    if (nComps == 1) {
+        if (a.isEmpty()) {
+            return Natron::ImageComponents::getNoneComponents();
+        }
+        std::vector<std::string> comps;
+        std::string compsGlobal;
+        comps.push_back(a.toStdString());
+        compsGlobal.append(a.toStdString());
+        return Natron::ImageComponents(layerFixed,compsGlobal,comps);
+    } else if (nComps == 2) {
+        if (r.isEmpty() || g.isEmpty()) {
+            return Natron::ImageComponents::getNoneComponents();
+        }
+        std::vector<std::string> comps;
+        std::string compsGlobal;
+        comps.push_back(r.toStdString());
+        compsGlobal.append(r.toStdString());
+        comps.push_back(g.toStdString());
+        compsGlobal.append(g.toStdString());
+        return Natron::ImageComponents(layerFixed,compsGlobal,comps);
+    } else if (nComps == 3) {
+        if (r.isEmpty() || g.isEmpty() || b.isEmpty()) {
+            return Natron::ImageComponents::getNoneComponents();
+        }
+        std::vector<std::string> comps;
+        std::string compsGlobal;
+        comps.push_back(r.toStdString());
+        compsGlobal.append(r.toStdString());
+        comps.push_back(g.toStdString());
+        compsGlobal.append(g.toStdString());
+        comps.push_back(b.toStdString());
+        compsGlobal.append(b.toStdString());
+        return Natron::ImageComponents(layerFixed,compsGlobal,comps);
+    } else if (nComps == 4) {
+        if (r.isEmpty() || g.isEmpty() || b.isEmpty() | a.isEmpty())  {
+            return Natron::ImageComponents::getNoneComponents();
+        }
+        std::vector<std::string> comps;
+        std::string compsGlobal;
+        comps.push_back(r.toStdString());
+        compsGlobal.append(r.toStdString());
+        comps.push_back(g.toStdString());
+        compsGlobal.append(g.toStdString());
+        comps.push_back(b.toStdString());
+        compsGlobal.append(b.toStdString());
+        comps.push_back(a.toStdString());
+        compsGlobal.append(a.toStdString());
+        return Natron::ImageComponents(layerFixed,compsGlobal,comps);
+    }
+    return Natron::ImageComponents::getNoneComponents();
+}
+
+void
+NewLayerDialog::onRGBAButtonClicked()
+{
+    _imp->rEdit->setText("R");
+    _imp->gEdit->setText("G");
+    _imp->bEdit->setText("B");
+    _imp->aEdit->setText("A");
+    
+    _imp->rLabel->setVisible(true);
+    _imp->rEdit->setVisible(true);
+    _imp->gLabel->setVisible(true);
+    _imp->gEdit->setVisible(true);
+    _imp->bLabel->setVisible(true);
+    _imp->bEdit->setVisible(true);
+    _imp->aLabel->setVisible(true);
+    _imp->aEdit->setVisible(true);
+
+}
+
 Choice_KnobGui::Choice_KnobGui(boost::shared_ptr<KnobI> knob,
                                DockablePanel *container)
     : KnobGui(knob, container)
@@ -1542,7 +1813,7 @@ Choice_KnobGui::createWidget(QHBoxLayout* layout)
     onEntriesPopulated();
 
     QObject::connect( _comboBox, SIGNAL( currentIndexChanged(int) ), this, SLOT( onCurrentIndexChanged(int) ) );
-
+    QObject::connect( _comboBox, SIGNAL(itemNewSelected()), this, SLOT(onItemNewSelected()));
     ///set the copy/link actions in the right click menu
     enableRightClickMenu(_comboBox,0);
 
@@ -1552,13 +1823,13 @@ Choice_KnobGui::createWidget(QHBoxLayout* layout)
 void
 Choice_KnobGui::onCurrentIndexChanged(int i)
 {
-    pushUndoCommand( new KnobUndoCommand<int>(this,_knob->getValue(0,false),i, false) );
+    pushUndoCommand( new KnobUndoCommand<int>(this,_knob->getValue(0,false),i, 0, false, 0) );
 }
 
 void
 Choice_KnobGui::onEntriesPopulated()
 {
-    int activeIndex = _comboBox->activeIndex();
+    int activeIndex = _knob->getValue();
 
     _comboBox->clear();
     _entries = _knob->getEntries_mt_safe();
@@ -1570,11 +1841,35 @@ Choice_KnobGui::onEntriesPopulated()
         }
         _comboBox->addItem( _entries[i].c_str(), QIcon(), QKeySequence(), QString( helpStr.c_str() ) );
     }
+    // the "New" menu is only added to known parameters (e.g. the choice of output channels)
+    if (_knob->getHostCanAddOptions() &&
+        (_knob->getName() == kNatronOfxParamOutputChannels)) {
+        _comboBox->addItemNew();
+    }
     ///we don't use setCurrentIndex because the signal emitted by combobox will call onCurrentIndexChanged and
     ///we don't want that to happen because the index actually didn't change.
     _comboBox->setCurrentIndex_no_emit(activeIndex);
 
     updateToolTip();
+}
+
+void
+Choice_KnobGui::onItemNewSelected()
+{
+    NewLayerDialog dialog(getGui());
+    if (dialog.exec()) {
+        Natron::ImageComponents comps = dialog.getComponents();
+        if (comps == Natron::ImageComponents::getNoneComponents()) {
+            Natron::errorDialog(tr("Layer").toStdString(), tr("Invalid layer").toStdString());
+            return;
+        }
+        KnobHolder* holder = _knob->getHolder();
+        assert(holder);
+        Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(holder);
+        assert(effect);
+        assert(effect->getNode());
+        effect->getNode()->addUserComponents(comps);
+    }
 }
 
 void
@@ -2842,7 +3137,7 @@ AnimatingTextEdit::focusOutEvent(QFocusEvent* e)
 void
 AnimatingTextEdit::keyPressEvent(QKeyEvent* e)
 {
-    if (e->key() == Qt::Key_Return) {
+    if (modCASIsControl(e) && e->key() == Qt::Key_Return) {
         if (_hasChanged) {
             _hasChanged = false;
             Q_EMIT editingFinished();
@@ -3767,6 +4062,8 @@ String_KnobGui::updateToolTip()
                 tt += tr(" This text area supports html encoding. "
                          "Please check <a href=http://qt-project.org/doc/qt-5/richtext-html-subset.html>Qt website</a> for more info. ");
             }
+            QKeySequence seq(Qt::CTRL + Qt::Key_Return);
+            tt += tr("Use ") + seq.toString(QKeySequence::NativeText) + tr(" to validate changes made to the text. ");
             _textEdit->setToolTip(tt);
         } else if (_lineEdit) {
             _lineEdit->setToolTip(tt);

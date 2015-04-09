@@ -36,6 +36,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Engine/KnobFile.h"
 #include "Engine/RotoContext.h"
 #include "Engine/EffectInstance.h"
+#include "Engine/TimeLine.h"
 
 #include "Gui/CurveWidget.h"
 #include "Gui/NodeGui.h"
@@ -46,6 +47,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Gui/Gui.h"
 #include "Gui/DockablePanel.h"
 #include "Gui/GuiAppInstance.h"
+#include "Gui/KnobUndoCommand.h"
 #include "Gui/Label.h"
 
 using std::make_pair;
@@ -61,7 +63,7 @@ struct CurveEditorPrivate
     
     std::list<NodeCurveEditorContext*> nodes;
     std::list<RotoCurveEditorContext*> rotos;
-    QHBoxLayout* mainLayout;
+    QVBoxLayout* mainLayout;
     QSplitter* splitter;
     CurveWidget* curveWidget;
     
@@ -75,6 +77,14 @@ struct CurveEditorPrivate
     
     boost::scoped_ptr<QUndoStack> undoStack;
     QAction* undoAction,*redoAction;
+    
+    QWidget* expressionContainer;
+    QHBoxLayout* expressionLayout;
+    Natron::Label* knobLabel;
+    LineEdit* knobLineEdit;
+    Natron::Label* resultLabel;
+    
+    KnobCurveGui* selectedKnobCurve;
     
     CurveEditorPrivate(Gui* gui)
     : gui(gui)
@@ -93,6 +103,12 @@ struct CurveEditorPrivate
     , undoStack(new QUndoStack)
     , undoAction(0)
     , redoAction(0)
+    , expressionContainer(0)
+    , expressionLayout(0)
+    , knobLabel(0)
+    , knobLineEdit(0)
+    , resultLabel(0)
+    , selectedKnobCurve(0)
     {
         
     }
@@ -112,8 +128,7 @@ CurveEditor::CurveEditor(Gui* gui,
     _imp->redoAction = _imp->undoStack->createRedoAction( this,tr("&Redo") );
     _imp->redoAction->setShortcuts(QKeySequence::Redo);
 
-    _imp->mainLayout = new QHBoxLayout(this);
-    setLayout(_imp->mainLayout);
+    _imp->mainLayout = new QVBoxLayout(this);
     _imp->mainLayout->setContentsMargins(0,0,0,0);
     _imp->mainLayout->setSpacing(0);
 
@@ -157,7 +172,27 @@ CurveEditor::CurveEditor(Gui* gui,
 
 
     _imp->mainLayout->addWidget(_imp->splitter);
-
+    
+    _imp->expressionContainer = new QWidget(this);
+    _imp->expressionLayout = new QHBoxLayout(_imp->expressionContainer);
+    _imp->expressionLayout->setContentsMargins(0, 0, 0, 0);
+    
+    _imp->knobLabel = new Natron::Label(_imp->expressionContainer);
+    _imp->knobLabel->setAltered(true);
+    _imp->knobLabel->setText(tr("No curve selected"));
+    _imp->knobLineEdit = new LineEdit(_imp->expressionContainer);
+    QObject::connect(_imp->knobLineEdit, SIGNAL(editingFinished()), this, SLOT(onExprLineEditFinished()));
+    _imp->resultLabel = new Natron::Label(_imp->expressionContainer);
+    _imp->resultLabel->setAltered(true);
+    _imp->resultLabel->setText("= ");
+    _imp->knobLineEdit->setReadOnly(true);
+    
+    _imp->expressionLayout->addWidget(_imp->knobLabel);
+    _imp->expressionLayout->addWidget(_imp->knobLineEdit);
+    _imp->expressionLayout->addWidget(_imp->resultLabel);
+    
+    _imp->mainLayout->addWidget(_imp->expressionContainer);
+    
     QObject::connect( _imp->tree, SIGNAL( itemSelectionChanged() ),
                       this, SLOT( onItemSelectionChanged() ) );
     QObject::connect( _imp->tree, SIGNAL( itemDoubleClicked(QTreeWidgetItem*,int) ),
@@ -215,9 +250,9 @@ CurveEditor::recursiveSelect(QTreeWidgetItem* cur,
     for (std::list<NodeCurveEditorContext*>::const_iterator it = _imp->nodes.begin();
          it != _imp->nodes.end(); ++it) {
         NodeCurveEditorElement* elem = (*it)->findElement(cur);
-        if (elem) {
+        if (elem && !elem->getTreeItem()->isHidden()) {
             CurveGui* curve = elem->getCurve();
-            if ( curve && curve->getInternalCurve()->isAnimated() ) {
+            if ( curve /*&& curve->getInternalCurve()->isAnimated()*/ ) {
                 curves->push_back(curve);
             }
             break;
@@ -264,10 +299,10 @@ CurveEditor::addNode(boost::shared_ptr<NodeGui> node)
     
     boost::shared_ptr<RotoContext> roto = node->getNode()->getRotoContext();
     if (!roto) {
-        NodeCurveEditorContext* nodeContext = new NodeCurveEditorContext(_imp->tree,_imp->curveWidget,node);
+        NodeCurveEditorContext* nodeContext = new NodeCurveEditorContext(_imp->tree,this,node);
         _imp->nodes.push_back(nodeContext);
     } else {
-        RotoCurveEditorContext* rotoEditorCtx = new RotoCurveEditorContext(_imp->curveWidget,_imp->tree,node);
+        RotoCurveEditorContext* rotoEditorCtx = new RotoCurveEditorContext(this,_imp->tree,node);
         _imp->rotos.push_back(rotoEditorCtx);
     }
 }
@@ -279,6 +314,14 @@ CurveEditor::removeNode(NodeGui* node)
     if (!roto) {
         for (std::list<NodeCurveEditorContext*>::iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
             if ( (*it)->getNode().get() == node ) {
+
+                const NodeCurveEditorContext::Elements& elems = (*it)->getElements();
+                for (NodeCurveEditorContext::Elements::const_iterator it2 = elems.begin(); it2 != elems.end(); ++it2) {
+                    if ((*it2)->getCurve() == _imp->selectedKnobCurve) {
+                        _imp->selectedKnobCurve = 0;
+                        break;
+                    }
+                }
                 delete (*it);
                 _imp->nodes.erase(it);
                 break;
@@ -297,7 +340,7 @@ CurveEditor::removeNode(NodeGui* node)
 }
 
 static void createElementsForKnob(QTreeWidgetItem* parent,KnobGui* kgui,boost::shared_ptr<KnobI> k,
-                                  CurveWidget* curveWidget,QTreeWidget* tree,const boost::shared_ptr<RotoContext>& rotoctx,
+                                  CurveEditor* curveEditor,QTreeWidget* tree,const boost::shared_ptr<RotoContext>& rotoctx,
                                   std::list<NodeCurveEditorElement*>& elements,bool* hasCurveVisible)
 {
     if (k) {
@@ -310,6 +353,8 @@ static void createElementsForKnob(QTreeWidgetItem* parent,KnobGui* kgui,boost::s
     if ( !k->canAnimate() || !k->isAnimationEnabled() ) {
         return;
     }
+    
+    CurveWidget* curveWidget = curveEditor->getCurveWidget();
 
     KnobHelper* helper = dynamic_cast<KnobHelper*>( k.get() );
     assert(helper);
@@ -328,6 +373,7 @@ static void createElementsForKnob(QTreeWidgetItem* parent,KnobGui* kgui,boost::s
     }
     
     QTreeWidgetItem* knobItem = new QTreeWidgetItem(parent);
+    knobItem->setExpanded(true);
     knobItem->setText( 0,k->getDescription().c_str() );
     
     CurveGui* knobCurve = NULL;
@@ -353,6 +399,7 @@ static void createElementsForKnob(QTreeWidgetItem* parent,KnobGui* kgui,boost::s
     } else {
         for (int j = 0; j < k->getDimension(); ++j) {
             QTreeWidgetItem* dimItem = new QTreeWidgetItem(knobItem);
+            dimItem->setExpanded(true);
             dimItem->setText( 0,k->getDimensionName(j).c_str() );
             QString curveName = QString( k->getDescription().c_str() ) + "." + QString( k->getDimensionName(j).c_str() );
             
@@ -360,15 +407,16 @@ static void createElementsForKnob(QTreeWidgetItem* parent,KnobGui* kgui,boost::s
             KnobCurveGui* dimCurve;
             if (kgui) {
                 dimCurve = new KnobCurveGui(curveWidget,kgui->getCurve(j),kgui,j,curveName,QColor(255,255,255),1.);
-                elem = new NodeCurveEditorElement(tree,curveWidget,kgui,j,dimItem,dimCurve);
+                elem = new NodeCurveEditorElement(tree,curveEditor,kgui,j,dimItem,dimCurve);
             } else {
                 dimCurve = new KnobCurveGui(curveWidget,k->getCurve(j,true),k,rotoctx,j,curveName,QColor(255,255,255),1.);
-                elem = new NodeCurveEditorElement(tree,curveWidget,k,j,dimItem,dimCurve);
+                elem = new NodeCurveEditorElement(tree,curveEditor,k,j,dimItem,dimCurve);
             }
             curveWidget->addCurveAndSetColor(dimCurve);
             
             elements.push_back(elem);
-            if ( !dimCurve->getInternalCurve()->isAnimated() ) {
+            std::string expr = k->getExpression(j);
+            if ( !dimCurve->getInternalCurve()->isAnimated() && expr.empty() ) {
                 dimItem->setHidden(true);
             } else {
                 *hasCurveVisible = true;
@@ -384,23 +432,23 @@ static void createElementsForKnob(QTreeWidgetItem* parent,KnobGui* kgui,boost::s
     }
     NodeCurveEditorElement* elem ;
     if (kgui) {
-        elem = new NodeCurveEditorElement(tree,curveWidget,kgui,0,knobItem,knobCurve);
+        elem = new NodeCurveEditorElement(tree,curveEditor,kgui,0,knobItem,knobCurve);
     } else {
-        elem = new NodeCurveEditorElement(tree,curveWidget,k,0,knobItem,knobCurve);
+        elem = new NodeCurveEditorElement(tree,curveEditor,k,0,knobItem,knobCurve);
     }
     elements.push_back(elem);
     
 }
 
 NodeCurveEditorContext::NodeCurveEditorContext(QTreeWidget* tree,
-                                               CurveWidget* curveWidget,
+                                               CurveEditor* curveWidget,
                                                const boost::shared_ptr<NodeGui> &node)
     : _node(node)
       , _nodeElements()
       , _nameItem(0)
 {
     QTreeWidgetItem* nameItem = new QTreeWidgetItem(tree);
-
+    nameItem->setExpanded(true);
     nameItem->setText( 0,_node->getNode()->getLabel().c_str() );
 
     QObject::connect( node->getNode().get(),SIGNAL( labelChanged(QString) ),this,SLOT( onNameChanged(QString) ) );
@@ -476,7 +524,7 @@ checkIfHiddenRecursivly(QTreeWidget* tree,
     }
     if (areAllChildrenHidden) {
         item->setHidden(true);
-        item->setExpanded(false);
+        //item->setExpanded(false);
     }
     bool isTopLvl = false;
     for (int i = 0; i < tree->topLevelItemCount(); ++i) {
@@ -512,6 +560,10 @@ NodeCurveEditorElement::setVisible(bool visible)
             }
         }
     } else {
+
+        if (_curveWidget->getSelectedCurve() == _curve) {
+            _curveWidget->setSelectedCurve(NULL);
+        }
         //hide the item
         //hiding is a bit more complex because we do not always hide the parent too,it also
         // depends on the item's siblings visibility
@@ -532,8 +584,9 @@ NodeCurveEditorElement::checkVisibleState(bool autoSelectOnShow)
     }
     
     boost::shared_ptr<Curve> curve =  _curve->getInternalCurve() ;
+    std::string expr = _knob->getKnob()->getExpression(_dimension);
     // even when there is only one keyframe, there may be tangents!
-    if (curve->getKeyFramesCount() > 0) {
+    if (curve && (curve->getKeyFramesCount() > 0 || !expr.empty())) {
         
         setVisible(true);
         
@@ -561,12 +614,14 @@ NodeCurveEditorElement::checkVisibleState(bool autoSelectOnShow)
             }
             
             if ( _treeItem->isSelected() ) {
+                
+                CurveWidget* cw = _curveWidget->getCurveWidget();
                 std::vector<CurveGui*> curves;
-                _curveWidget->getVisibleCurves(&curves);
+                cw->getVisibleCurves(&curves);
                 curves.push_back(_curve);
-                _curveWidget->showCurvesAndHideOthers(curves);
+                cw->showCurvesAndHideOthers(curves);
                 if (wasEmpty) {
-                    _curveWidget->centerOn(curves);
+                    cw->centerOn(curves);
                 }
             }
         }
@@ -582,8 +637,17 @@ NodeCurveEditorElement::checkVisibleState()
     checkVisibleState(true);
 } // checkVisibleState
 
+void
+NodeCurveEditorElement::onExpressionChanged()
+{
+    if (_curveWidget->getSelectedCurve() == _curve) {
+        _curveWidget->refreshCurrentExpression();
+    }
+    checkVisibleState();
+}
+
 NodeCurveEditorElement::NodeCurveEditorElement(QTreeWidget *tree,
-                                               CurveWidget* curveWidget,
+                                               CurveEditor* curveWidget,
                                                KnobGui *knob,
                                                int dimension,
                                                QTreeWidgetItem* item,
@@ -600,6 +664,7 @@ NodeCurveEditorElement::NodeCurveEditorElement(QTreeWidget *tree,
     if (knob) {
         QObject::connect( knob,SIGNAL( keyFrameSet() ),this,SLOT( checkVisibleState() ) );
         QObject::connect( knob,SIGNAL( keyFrameRemoved() ),this,SLOT( checkVisibleState() ) );
+        QObject::connect( knob,SIGNAL( expressionChanged() ),this,SLOT( onExpressionChanged() ) );
     }
     if (curve) {
         // even when there is only one keyframe, there may be tangents!
@@ -612,7 +677,7 @@ NodeCurveEditorElement::NodeCurveEditorElement(QTreeWidget *tree,
 }
 
 NodeCurveEditorElement::NodeCurveEditorElement(QTreeWidget *tree,
-                                               CurveWidget* curveWidget,
+                                               CurveEditor* curveWidget,
                                                const boost::shared_ptr<KnobI>& internalKnob,
                                                int dimension,
                                                QTreeWidgetItem* item,
@@ -644,7 +709,7 @@ NodeCurveEditorElement::NodeCurveEditorElement(QTreeWidget *tree,
 
 NodeCurveEditorElement::~NodeCurveEditorElement()
 {
-    _curveWidget->removeCurve(_curve);
+    _curveWidget->getCurveWidget()->removeCurve(_curve);
 }
 
 void
@@ -761,6 +826,9 @@ CurveEditor::onItemDoubleClicked(QTreeWidgetItem* item,int)
     
     
     DockablePanel* panel = 0;
+    if (node) {
+        node->ensurePanelCreated();
+    }
     if (node && node->getParentMultiInstance()) {
         panel = node->getParentMultiInstance()->getSettingPanel();
     } else {
@@ -951,7 +1019,7 @@ CurveEditor::getCurveWidget() const
 
 struct BezierEditorContextPrivate {
     
-    CurveWidget* widget;
+    CurveEditor* widget;
     RotoCurveEditorContext* context;
     boost::shared_ptr<Bezier> curve;
     QTreeWidgetItem* nameItem;
@@ -960,7 +1028,7 @@ struct BezierEditorContextPrivate {
     std::list<NodeCurveEditorElement*> knobs;
     bool doDeleteItem;
     
-    BezierEditorContextPrivate(CurveWidget* widget,
+    BezierEditorContextPrivate(CurveEditor* widget,
                                const boost::shared_ptr<Bezier>& curve,
                                RotoCurveEditorContext* context)
     : widget(widget)
@@ -977,24 +1045,28 @@ struct BezierEditorContextPrivate {
 };
 
 BezierEditorContext::BezierEditorContext(QTreeWidget* tree,
-                                         CurveWidget* widget,
+                                         CurveEditor* widget,
                                          const boost::shared_ptr<Bezier>& curve,
                     RotoCurveEditorContext* context)
 : _imp(new BezierEditorContextPrivate(widget,curve,context))
 {
     _imp->nameItem = new QTreeWidgetItem(_imp->context->getItem());
     QString name(_imp->curve->getLabel().c_str());
+    _imp->nameItem->setExpanded(true);
     _imp->nameItem->setText(0, name);
     QObject::connect(curve.get(), SIGNAL(keyframeSet(int)), this, SLOT(onKeyframeAdded()));
     QObject::connect(curve.get(), SIGNAL(keyframeRemoved(int)), this, SLOT(onKeyframeRemoved()));
     
     _imp->curveItem = new QTreeWidgetItem(_imp->nameItem);
+    _imp->curveItem->setExpanded(true);
     _imp->curveItem->setText(0, "Animation");
     
+    CurveWidget* cw = widget->getCurveWidget();
+    
     boost::shared_ptr<RotoContext> roto = context->getNode()->getNode()->getRotoContext();
-    _imp->animCurve = new BezierCPCurveGui(widget, curve, roto, name, QColor(255,255,255), 1.);
+    _imp->animCurve = new BezierCPCurveGui(cw, curve, roto, name, QColor(255,255,255), 1.);
     _imp->animCurve->setVisible(false);
-    widget->addCurveAndSetColor(_imp->animCurve);
+    cw->addCurveAndSetColor(_imp->animCurve);
     
     const std::list<boost::shared_ptr<KnobI> >& knobs = curve->getKnobs();
     
@@ -1012,7 +1084,7 @@ BezierEditorContext::~BezierEditorContext()
     if (_imp->doDeleteItem) {
         delete _imp->nameItem;
     }
-    _imp->widget->removeCurve(_imp->animCurve);
+    _imp->widget->getCurveWidget()->removeCurve(_imp->animCurve);
     for (std::list<NodeCurveEditorElement*>::iterator it = _imp->knobs.begin() ; it != _imp->knobs.end();++it) {
         delete *it;
     }
@@ -1132,13 +1204,13 @@ BezierEditorContext::findElement(KnobGui* knob,int dimension) const
 
 struct RotoCurveEditorContextPrivate
 {
-    CurveWidget* widget;
+    CurveEditor* widget;
     QTreeWidget* tree;
     boost::shared_ptr<NodeGui> node;
     QTreeWidgetItem* nameItem;
     std::list< BezierEditorContext* > curves;
     
-    RotoCurveEditorContextPrivate(CurveWidget* widget,QTreeWidget *tree,const boost::shared_ptr<NodeGui>& node)
+    RotoCurveEditorContextPrivate(CurveEditor* widget,QTreeWidget *tree,const boost::shared_ptr<NodeGui>& node)
     : widget(widget)
     , tree(tree)
     , node(node)
@@ -1149,7 +1221,7 @@ struct RotoCurveEditorContextPrivate
     }
 };
 
-RotoCurveEditorContext::RotoCurveEditorContext(CurveWidget* widget,
+RotoCurveEditorContext::RotoCurveEditorContext(CurveEditor* widget,
                                                QTreeWidget *tree,
                        const boost::shared_ptr<NodeGui>& node)
 : _imp(new RotoCurveEditorContextPrivate(widget,tree,node))
@@ -1158,6 +1230,7 @@ RotoCurveEditorContext::RotoCurveEditorContext(CurveWidget* widget,
     assert(rotoCtx);
     
     _imp->nameItem = new QTreeWidgetItem(tree);
+    _imp->nameItem->setExpanded(true);
     _imp->nameItem->setText( 0,_imp->node->getNode()->getLabel().c_str() );
     QObject::connect( node->getNode().get(),SIGNAL( labelChanged(QString) ),this,SLOT( onNameChanged(QString) ) );
 
@@ -1311,4 +1384,100 @@ CurveEditor::keyPressEvent(QKeyEvent* e)
     if (e->key() == Qt::Key_F && modCASIsControl(e)) {
         _imp->filterEdit->setFocus();
     }
+}
+
+CurveGui*
+CurveEditor::getSelectedCurve() const
+{
+    return _imp->selectedKnobCurve;
+}
+
+void
+CurveEditor::setSelectedCurve(CurveGui* curve)
+{
+    KnobCurveGui* knobCurve = dynamic_cast<KnobCurveGui*>(curve);
+    if (curve && !knobCurve) {
+        return;
+    }
+    
+    _imp->selectedKnobCurve = knobCurve;
+    
+    if (knobCurve) {
+        std::stringstream ss;
+        boost::shared_ptr<KnobI> knob = knobCurve->getInternalKnob();
+        assert(knob);
+        KnobHolder* holder = knob->getHolder();
+        assert(holder);
+        Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(holder);
+        assert(effect);
+        ss << effect->getNode()->getFullyQualifiedName();
+        ss << '.';
+        ss << knob->getName();
+        if (knob->getDimension() > 1) {
+            ss << '.';
+            ss << knob->getDimensionName(knobCurve->getDimension());
+        }
+        _imp->knobLabel->setText(ss.str().c_str());
+        _imp->knobLabel->setAltered(false);
+        std::string expr = knob->getExpression(knobCurve->getDimension());
+        if (!expr.empty()) {
+            _imp->knobLineEdit->setText(expr.c_str());
+            double v = knob->getValueAtWithExpression(_imp->gui->getApp()->getTimeLine()->currentFrame(), knobCurve->getDimension());
+            _imp->resultLabel->setText("= " + QString::number(v));
+        } else {
+            _imp->knobLineEdit->clear();
+            _imp->resultLabel->setText("= ");
+        }
+        _imp->knobLineEdit->setReadOnly(false);
+                _imp->resultLabel->setAltered(false);
+    } else {
+        _imp->knobLabel->setText(tr("No curve selected"));
+        _imp->knobLabel->setAltered(true);
+        _imp->knobLineEdit->clear();
+        _imp->knobLineEdit->setReadOnly(true);
+        _imp->resultLabel->setText("= ");
+        _imp->resultLabel->setAltered(true);
+    }
+}
+
+void
+CurveEditor::refreshCurrentExpression()
+{
+    if (!_imp->selectedKnobCurve) {
+        return;
+    }
+    boost::shared_ptr<KnobI> knob = _imp->selectedKnobCurve->getInternalKnob();
+    std::string expr = knob->getExpression(_imp->selectedKnobCurve->getDimension());
+    double v = knob->getValueAtWithExpression(_imp->gui->getApp()->getTimeLine()->currentFrame(), _imp->selectedKnobCurve->getDimension());
+    _imp->knobLineEdit->setText(expr.c_str());
+    _imp->resultLabel->setText("= " + QString::number(v));
+}
+
+void
+CurveEditor::setSelectedCurveExpression(const QString& expression)
+{
+    
+    if (!_imp->selectedKnobCurve) {
+        return;
+    }
+    std::string expr = expression.toStdString();
+    boost::shared_ptr<KnobI> knob = _imp->selectedKnobCurve->getKnobGui()->getKnob();
+    int dim = _imp->selectedKnobCurve->getDimension();
+    std::string exprResult;
+    if (!expr.empty()) {
+        try {
+            knob->validateExpression(expr,dim, false, &exprResult);
+        } catch (...) {
+            _imp->resultLabel->setText(tr("Error"));
+            return;
+        }
+    }
+    _imp->curveWidget->pushUndoCommand(new SetExpressionCommand(knob,false,dim,expr));
+
+}
+
+void
+CurveEditor::onExprLineEditFinished()
+{
+    setSelectedCurveExpression(_imp->knobLineEdit->text());
 }

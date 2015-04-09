@@ -18,9 +18,9 @@ GCC_DIAG_OFF(missing-field-initializers)
 // Extra includes
 #include <NodeWrapper.h>
 #include <ParameterWrapper.h>
+#include <Rect.h>
 #include <RotoWrapper.h>
 #include <list>
-#include <qrect.h>
 
 
 // Native ---------------------------------------------------------
@@ -747,11 +747,11 @@ static PyObject* Sbk_EffectFunc_getRegionOfDefinition(PyObject* self, PyObject* 
 
 
     // Overloaded function decisor
-    // 0: getRegionOfDefinition(int,int,QRectF*)const
+    // 0: getRegionOfDefinition(int,int)const
     if (numArgs == 2
         && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[0])))
         && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[1])))) {
-        overloadId = 0; // getRegionOfDefinition(int,int,QRectF*)const
+        overloadId = 0; // getRegionOfDefinition(int,int)const
     }
 
     // Function signature not found.
@@ -765,19 +765,9 @@ static PyObject* Sbk_EffectFunc_getRegionOfDefinition(PyObject* self, PyObject* 
         pythonToCpp[1](pyArgs[1], &cppArg1);
 
         if (!PyErr_Occurred()) {
-            // getRegionOfDefinition(int,int,QRectF*)const
-            // Begin code injection
-
-            QRectF rect;
-            bool cppResult = cppSelf->getRegionOfDefinition(cppArg0,cppArg1,&rect);
-            pyResult = PyTuple_New(2);
-            PyTuple_SET_ITEM(pyResult, 0, Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), &cppResult));
-            PyTuple_SET_ITEM(pyResult, 1, Shiboken::Conversions::copyToPython((SbkObjectType*)SbkPySide_QtCoreTypes[SBK_QRECTF_IDX], &rect));
-            return pyResult;
-
-            // End of code injection
-
-
+            // getRegionOfDefinition(int,int)const
+            RectD* cppResult = new RectD(const_cast<const ::Effect*>(cppSelf)->getRegionOfDefinition(cppArg0, cppArg1));
+            pyResult = Shiboken::Object::newObject((SbkObjectType*)SbkNatronEngineTypes[SBK_RECTD_IDX], cppResult, true, true);
         }
     }
 
@@ -788,7 +778,7 @@ static PyObject* Sbk_EffectFunc_getRegionOfDefinition(PyObject* self, PyObject* 
     return pyResult;
 
     Sbk_EffectFunc_getRegionOfDefinition_TypeError:
-        const char* overloads[] = {"int, int, PySide.QtCore.QRectF", 0};
+        const char* overloads[] = {"int, int", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.Effect.getRegionOfDefinition", overloads);
         return 0;
 }

@@ -13,13 +13,14 @@
 // "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
 #include <Python.h>
 
-#include "MenuWithToolTips.h"
+#include "Menu.h"
 
 #include "Global/Macros.h"
 #include "Gui/GuiApplicationManager.h"
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QToolTip>
+#include <QApplication>
 CLANG_DIAG_OFF(unused-private-field)
 // /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
 #include <QHelpEvent>
@@ -27,10 +28,25 @@ CLANG_DIAG_ON(unused-private-field)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
-MenuWithToolTips::MenuWithToolTips(QWidget* parent)
-    : QMenu(parent)
+using namespace Natron;
+
+Menu::Menu(const QString &title, QWidget *parent)
+: QMenu(title,parent)
 {
-    //setFont( QFont(appFont,appFontSize) );
+    setFont(QApplication::font()); // necessary, or the labels will get the default font size
+}
+
+Menu::Menu(QWidget* parent)
+: QMenu(parent)
+{
+    setFont(QApplication::font()); // necessary, or the labels will get the default font size
+}
+
+
+MenuWithToolTips::MenuWithToolTips(QWidget* parent)
+    : Menu(parent)
+{
+    
 }
 
 bool

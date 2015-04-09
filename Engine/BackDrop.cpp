@@ -13,6 +13,7 @@
 #include <Python.h>
 
 #include "BackDrop.h"
+#include "Engine/Transform.h"
 #include "Engine/KnobTypes.h"
 
 struct BackDropPrivate

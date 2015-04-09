@@ -146,7 +146,7 @@ public:
         y1 = b;
         x2 = r;
         y2 = t;
-        assert( (x2 >= x1) && (y2 >= y1) );
+        /*assert( (x2 >= x1) && (y2 >= y1) );*/
     }
 
     void set(const RectI & b)
@@ -662,10 +662,10 @@ public:
         return true;
     }
 
-    bool intersect(int l,
-                   int b,
-                   int r,
-                   int t,
+    bool intersect(double l,
+                   double b,
+                   double r,
+                   double t,
                    RectD* intersection) const
     {
         return intersect(RectD(l,b,r,t),intersection);
@@ -684,10 +684,10 @@ public:
         return true;
     }
 
-    bool intersects(int l,
-                    int b,
-                    int r,
-                    int t) const
+    bool intersects(double l,
+                    double b,
+                    double r,
+                    double t) const
     {
         return intersects( RectD(l,b,r,t) );
     }

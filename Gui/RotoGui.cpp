@@ -26,7 +26,6 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QKeyEvent>
 #include <QHBoxLayout>
 #include <QStyle>
-#include <QMenu>
 #include <QDialogButtonBox>
 #include <QTimer>
 CLANG_DIAG_ON(deprecated)
@@ -54,6 +53,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/NodeGraph.h"
 #include "Gui/GuiMacros.h"
 #include "Gui/ActionShortcuts.h"
+#include "Gui/Menu.h"
 
 #include "Global/GLIncludes.h"
 
@@ -605,7 +605,7 @@ RotoGui::RotoGui(NodeGui* node,
                       this, SLOT( onCurrentFrameChanged(SequenceTime,int) ) );
     QObject::connect( _imp->context.get(), SIGNAL( refreshViewerOverlays() ), this, SLOT( onRefreshAsked() ) );
     QObject::connect( _imp->context.get(), SIGNAL( selectionChanged(int) ), this, SLOT( onSelectionChanged(int) ) );
-    QObject::connect( _imp->context.get(), SIGNAL( itemLockedChanged() ), this, SLOT( onCurveLockedChanged() ) );
+    QObject::connect( _imp->context.get(), SIGNAL( itemLockedChanged(int) ), this, SLOT( onCurveLockedChanged(int) ) );
     restoreSelectionFromContext();
 }
 
@@ -1385,9 +1385,9 @@ RotoGui::updateSelectionFromSelectionRectangle(bool onRelease)
     }
 
     if (!_imp->rotoData->selectedBeziers.empty()) {
-        _imp->context->select(_imp->rotoData->selectedBeziers, RotoContext::eSelectionReasonOverlayInteract);
+        _imp->context->select(_imp->rotoData->selectedBeziers, RotoItem::eSelectionReasonOverlayInteract);
     } else if (!stickySel && !_imp->shiftDown) {
-        _imp->context->clearSelection(RotoContext::eSelectionReasonOverlayInteract);
+        _imp->context->clearSelection(RotoItem::eSelectionReasonOverlayInteract);
     }
     
 
@@ -1420,7 +1420,7 @@ RotoGui::RotoGuiPrivate::clearCPSSelection()
 void
 RotoGui::RotoGuiPrivate::clearBeziersSelection()
 {
-    context->clearSelection(RotoContext::eSelectionReasonOverlayInteract);
+    context->clearSelection(RotoItem::eSelectionReasonOverlayInteract);
     rotoData->selectedBeziers.clear();
 }
 
@@ -1429,7 +1429,7 @@ RotoGui::RotoGuiPrivate::removeBezierFromSelection(const boost::shared_ptr<Bezie
 {
     for (SelectedBeziers::iterator fb = rotoData->selectedBeziers.begin(); fb != rotoData->selectedBeziers.end(); ++fb) {
         if (*fb == b) {
-            context->deselect(*fb, RotoContext::eSelectionReasonOverlayInteract);
+            context->deselect(*fb, RotoItem::eSelectionReasonOverlayInteract);
             rotoData->selectedBeziers.erase(fb);
 
             return true;
@@ -1518,7 +1518,7 @@ RotoGui::RotoGuiPrivate::handleBezierSelection(const boost::shared_ptr<Bezier> &
             clearBeziersSelection();
         }
         rotoData->selectedBeziers.push_back(curve);
-        context->select(curve, RotoContext::eSelectionReasonOverlayInteract);
+        context->select(curve, RotoItem::eSelectionReasonOverlayInteract);
     }
 }
 
@@ -2169,7 +2169,9 @@ RotoGui::penMotion(double /*scaleX*/,
         break;
     }
     case eEventStateDraggingBBoxMidTop:
-    case eEventStateDraggingBBoxMidBtm: {
+    case eEventStateDraggingBBoxMidBtm:
+    case eEventStateDraggingBBoxMidLeft:
+    case eEventStateDraggingBBoxMidRight: {
         QPointF center = _imp->getSelectedCpsBBOXCenter();
         double rot = 0;
         double sx = 1.,sy = 1.;
@@ -2184,6 +2186,10 @@ RotoGui::penMotion(double /*scaleX*/,
                 type = TransformUndoCommand::eTransformMidTop;
             } else if (_imp->state == eEventStateDraggingBBoxMidBtm) {
                 type = TransformUndoCommand::eTransformMidBottom;
+            } else if (_imp->state == eEventStateDraggingBBoxMidLeft) {
+                type = TransformUndoCommand::eTransformMidLeft;
+            } else if (_imp->state == eEventStateDraggingBBoxMidRight) {
+                type = TransformUndoCommand::eTransformMidRight;
             }
         }
         
@@ -2209,10 +2215,17 @@ RotoGui::penMotion(double /*scaleX*/,
             default:
                 break;
         }
-
+        
+        bool processX = _imp->state == eEventStateDraggingBBoxMidRight || _imp->state == eEventStateDraggingBBoxMidLeft;
+        
         if (_imp->rotoData->transformMode == eSelectedCpsTransformModeRotateAndSkew) {
-            const double addSkew = ( pos.x() - _imp->lastMousePos.x() ) / ( pos.y() - center.y() );
-            skewX += addSkew;
+            if (!processX) {
+                const double addSkew = ( pos.x() - _imp->lastMousePos.x() ) / ( pos.y() - center.y() );
+                skewX += addSkew;
+            } else {
+                const double addSkew = ( pos.y() - _imp->lastMousePos.y() ) / ( pos.x() - center.x() );
+                skewY += addSkew;
+            }
         } else {
             // the scale ratio is the ratio of distances to the center
             double prevDist = ( _imp->lastMousePos.x() - center.x() ) * ( _imp->lastMousePos.x() - center.x() ) +
@@ -2220,77 +2233,17 @@ RotoGui::penMotion(double /*scaleX*/,
             if (prevDist != 0) {
                 double dist = ( pos.x() - center.x() ) * ( pos.x() - center.x() ) + ( pos.y() - center.y() ) * ( pos.y() - center.y() );
                 double ratio = std::sqrt(dist / prevDist);
-                sy *= ratio;
+                if (processX) {
+                    sx *= ratio;
+                } else {
+                    sy *= ratio;
+                }
             }
         }
     
 
         
         pushUndoCommand( new TransformUndoCommand(this,center.x(),center.y(),rot,skewX,skewY,tx,ty,sx,sy,time) );
-        _imp->evaluateOnPenUp = true;
-        didSomething = true;
-        break;
-    }
-    case eEventStateDraggingBBoxMidRight:
-    case eEventStateDraggingBBoxMidLeft: {
-        QPointF center = _imp->getSelectedCpsBBOXCenter();
-        double rot = 0;
-        double sx = 1.,sy = 1.;
-        double skewX = 0.,skewY = 0.;
-        double tx = 0., ty = 0.;
-        
-        
-        TransformUndoCommand::TransformPointsSelectionEnum type;
-        if (!modCASIsShift(e)) {
-            type = TransformUndoCommand::eTransformAllPoints;
-        } else {
-            if (_imp->state == eEventStateDraggingBBoxMidRight) {
-                type = TransformUndoCommand::eTransformMidRight;
-            } else if (_imp->state == eEventStateDraggingBBoxMidLeft) {
-                type = TransformUndoCommand::eTransformMidLeft;
-            }
-        }
-        
-        const QRectF& bbox = _imp->rotoData->selectedCpsBbox;
-        
-        switch (type) {
-            case TransformUndoCommand::eTransformMidBottom:
-                center.rx() = bbox.center().x();
-                center.ry() = bbox.top();
-                break;
-            case TransformUndoCommand::eTransformMidTop:
-                center.rx() = bbox.center().x();
-                center.ry() = bbox.bottom();
-                break;
-            case TransformUndoCommand::eTransformMidRight:
-                center.rx() = bbox.left();
-                center.ry() = bbox.center().y();
-                break;
-            case TransformUndoCommand::eTransformMidLeft:
-                center.rx() = bbox.right();
-                center.ry() = bbox.center().y();
-                break;
-            default:
-                break;
-        }
-
-
-        if (_imp->rotoData->transformMode == eSelectedCpsTransformModeRotateAndSkew) {
-            const double addSkew = ( pos.y() - _imp->lastMousePos.y() ) / ( pos.x() - center.x() );
-            skewY += addSkew;
-        } else {
-            // the scale ratio is the ratio of distances to the center
-            double prevDist = ( _imp->lastMousePos.x() - center.x() ) * ( _imp->lastMousePos.x() - center.x() ) +
-                              ( _imp->lastMousePos.y() - center.y() ) * ( _imp->lastMousePos.y() - center.y() );
-            if (prevDist != 0) {
-                double dist = ( pos.x() - center.x() ) * ( pos.x() - center.x() ) + ( pos.y() - center.y() ) * ( pos.y() - center.y() );
-                double ratio = std::sqrt(dist / prevDist);
-                sx *= ratio;
-            }
-        }
-        
-        pushUndoCommand( new TransformUndoCommand(this,center.x(),center.y(),rot,skewX,skewY,tx,ty,sx,sy,time) );
-
         _imp->evaluateOnPenUp = true;
         didSomething = true;
         break;
@@ -2438,7 +2391,7 @@ RotoGui::keyDown(double /*scaleX*/,
         if ( _imp->rotoData->selectedBeziers.empty() ) {
             std::list<boost::shared_ptr<Bezier> > bez = _imp->context->getCurvesByRenderOrder();
             for (std::list<boost::shared_ptr<Bezier> >::const_iterator it = bez.begin(); it != bez.end(); ++it) {
-                _imp->context->select(*it, RotoContext::eSelectionReasonOverlayInteract);
+                _imp->context->select(*it, RotoItem::eSelectionReasonOverlayInteract);
                 _imp->rotoData->selectedBeziers.push_back(*it);
             }
         } else {
@@ -3079,7 +3032,7 @@ RotoGui::RotoGuiPrivate::onCurveLockedChangedRecursive(const boost::shared_ptr<R
             SelectedBeziers::iterator found = std::find(rotoData->selectedBeziers.begin(),rotoData->selectedBeziers.end(),b);
             if ( found == rotoData->selectedBeziers.end() ) {
                 rotoData->selectedBeziers.push_back(b);
-                context->select(b, RotoContext::eSelectionReasonSettingsPanel);
+                context->select(b, RotoItem::eSelectionReasonSettingsPanel);
                 *ret  = true;
             }
         }
@@ -3092,10 +3045,10 @@ RotoGui::RotoGuiPrivate::onCurveLockedChangedRecursive(const boost::shared_ptr<R
 }
 
 void
-RotoGui::onCurveLockedChanged()
+RotoGui::onCurveLockedChanged(int reason)
 {
     boost::shared_ptr<RotoItem> item = _imp->context->getLastItemLocked();
-    if (item) {
+    if (item && (RotoItem::SelectionReasonEnum)reason != RotoItem::eSelectionReasonOverlayInteract) {
         assert(item);
         bool changed = false;
         if (item) {
@@ -3111,7 +3064,7 @@ RotoGui::onCurveLockedChanged()
 void
 RotoGui::onSelectionChanged(int reason)
 {
-    if ( (RotoContext::SelectionReasonEnum)reason != RotoContext::eSelectionReasonOverlayInteract ) {
+    if ( (RotoItem::SelectionReasonEnum)reason != RotoItem::eSelectionReasonOverlayInteract ) {
         _imp->rotoData->selectedBeziers = _imp->context->getSelectedCurves();
         _imp->viewer->redraw();
     }
@@ -3133,7 +3086,7 @@ RotoGui::setSelection(const std::list<boost::shared_ptr<Bezier> > & selectedBezi
             _imp->rotoData->selectedCps.push_back(*it);
         }
     }
-    _imp->context->select(_imp->rotoData->selectedBeziers, RotoContext::eSelectionReasonOverlayInteract);
+    _imp->context->select(_imp->rotoData->selectedBeziers, RotoItem::eSelectionReasonOverlayInteract);
     _imp->computeSelectedCpsBBOX();
 }
 
@@ -3150,7 +3103,7 @@ RotoGui::setSelection(const boost::shared_ptr<Bezier> & curve,
         _imp->rotoData->selectedCps.push_back(point);
     }
     if (curve) {
-        _imp->context->select(curve, RotoContext::eSelectionReasonOverlayInteract);
+        _imp->context->select(curve, RotoItem::eSelectionReasonOverlayInteract);
     }
     _imp->computeSelectedCpsBBOX();
 }
@@ -3220,7 +3173,7 @@ void
 RotoGui::showMenuForCurve(const boost::shared_ptr<Bezier> & curve)
 {
     QPoint pos = QCursor::pos();
-    QMenu menu(_imp->viewer);
+    Natron::Menu menu(_imp->viewer);
 
     //menu.setFont( QFont(appFont,appFontSize) );
 
@@ -3408,7 +3361,7 @@ RotoGui::lockSelectedCurves()
     
     for (SelectedBeziers::const_iterator it = selection.begin(); it != selection.end(); ++it) {
 
-        (*it)->setLocked(true, false);
+        (*it)->setLocked(true, false,RotoItem::eSelectionReasonOverlayInteract);
     }
     _imp->clearSelection();
     _imp->viewer->redraw();
@@ -3423,7 +3376,7 @@ RotoGui::showMenuForControlPoint(const boost::shared_ptr<Bezier> & curve,
     _imp->viewer->getPixelScale(pixelScale.first, pixelScale.second);
     
     QPoint pos = QCursor::pos();
-    QMenu menu(_imp->viewer);
+    Natron::Menu menu(_imp->viewer);
 
     //menu.setFont( QFont(appFont,appFontSize) );
 

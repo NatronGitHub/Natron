@@ -115,7 +115,7 @@ ProjectGui::isVisible() const
 void
 ProjectGui::setVisible(bool visible)
 {
-    _panel->setVisible(visible);
+    _panel->setClosed(!visible);
 }
 
 void
@@ -468,10 +468,7 @@ ProjectGui::load(boost::archive::xml_iarchive & archive)
                 assert(nodeGui_i);
                 NodeGui* nodeGui = dynamic_cast<NodeGui*>(nodeGui_i.get());
                 assert(nodeGui);
-                NodeSettingsPanel* panel = nodeGui->getSettingPanel();
-                if (panel) {
-                    nodeGui->setVisibleSettingsPanel(true);
-                }
+                nodeGui->setVisibleSettingsPanel(true);
             }
         }
     }

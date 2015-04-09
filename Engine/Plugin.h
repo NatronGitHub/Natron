@@ -153,7 +153,7 @@ class Plugin
     QString _iconFilePath;
     QString _groupIconFilePath;
     QStringList _grouping;
-    QString _ofxPluginID;
+    QString _labelWithoutSuffix;
     QMutex* _lock;
     int _majorVersion;
     int _minorVersion;
@@ -173,7 +173,7 @@ public:
     , _iconFilePath()
     , _groupIconFilePath()
     , _grouping()
-    , _ofxPluginID()
+    , _labelWithoutSuffix()
     , _lock()
     , _majorVersion(0)
     , _minorVersion(0)
@@ -193,7 +193,6 @@ public:
            const QString & iconFilePath,
            const QString & groupIconFilePath,
            const QStringList & grouping,
-           const QString & ofxPluginID,
            QMutex* lock,
            int majorVersion,
            int minorVersion,
@@ -205,7 +204,7 @@ public:
           , _iconFilePath(iconFilePath)
           , _groupIconFilePath(groupIconFilePath)
           , _grouping(grouping)
-          , _ofxPluginID(ofxPluginID)
+          , _labelWithoutSuffix()
           , _lock(lock)
           , _majorVersion(majorVersion)
           , _minorVersion(minorVersion)
@@ -235,15 +234,16 @@ public:
     
     const QString getLabelVersionMajorMinorEncoded() const;
     
-    const QString getLabelWithoutOFX() const;
+    static QString makeLabelWithoutSuffix(const QString& label);
+    
+    const QString& getLabelWithoutSuffix() const;
+    void setLabelWithoutSuffix(const QString& label);
     
     const QString getLabelVersionMajorEncoded() const;
     
     QString generateUserFriendlyPluginID() const;
     
     QString generateUserFriendlyPluginIDMajorEncoded() const;
-
-    const QString & getPluginOFXID() const;
 
     const QString & getIconFilePath() const;
     

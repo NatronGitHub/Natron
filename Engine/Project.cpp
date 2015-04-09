@@ -37,7 +37,7 @@
 #include <QTemporaryFile>
 #include <QHostInfo>
 #include <QFileInfo>
-
+#include <QDebug>
 
 #include "Engine/AppManager.h"
 #include "Engine/AppInstance.h"
@@ -215,7 +215,7 @@ Project::loadProjectInternal(const QString & path,
                              const QString & name,bool isAutoSave,const QString& realFilePath)
 {
     QString filePath = path + name;
-
+    qDebug() << "Loading project" << filePath;
     if ( !QFile::exists(filePath) ) {
         throw std::invalid_argument( QString(filePath + " : no such file.").toStdString() );
     }
@@ -963,8 +963,9 @@ Project::initializeKnobs()
     _imp->onProjectLoadCB->setName("afterProjectLoad");
     _imp->onProjectLoadCB->setHintToolTip("Add here the name of a Python-defined function that will be called each time this project "
                                           "is loaded either from an auto-save or by a user action. It will be called immediately after all "
-                                          "nodes are re-created. This callback will not be called when creating new projects. "
-                                          "The variable \"app\" will be declared prior to calling the function, pointing to the project being loaded.");
+                                          "nodes are re-created. This callback will not be called when creating new projects.\n "
+                                          "The signature of the callback is: callback(app) where:\n"
+                                          "- app: points to the current application instance\n");
     _imp->onProjectLoadCB->setAnimationEnabled(false);
     std::string onProjectLoad = appPTR->getCurrentSettings()->getDefaultOnProjectLoadedCB();
     _imp->onProjectLoadCB->setValue(onProjectLoad, 0);
@@ -976,11 +977,11 @@ Project::initializeKnobs()
     _imp->onProjectSaveCB->setHintToolTip("Add here the name of a Python-defined function that will be called each time this project "
                                           "is saved by the user. This will be called prior to actually saving the project and can be used "
                                           "to change the filename of the file.\n"
-                                          "The global variable \"filename\" will be declared. This function should then "
-                                          "return the filename under which the file should be saved.\n"
-                                          "The global boolean variable \"autoSave\" will be declared. If True it means that the callback "
-                                          "was triggered from an auto-save, otherwise from a regular user save. "
-                                          "The variable \"app\" will be declared prior to calling the function, pointing to the current app instance.");
+                                          "The signature of the callback is: callback(filename,app,autoSave) where:\n"
+                                          "- filename: points to the filename under which the project will be saved"
+                                          "- app: points to the current application instance\n"
+                                          "- autoSave: True if the save was called due to an auto-save, False otherwise\n"
+                                          "You should return the new filename under which the project should be saved.");
     _imp->onProjectSaveCB->setAnimationEnabled(false);
     std::string onProjectSave = appPTR->getCurrentSettings()->getDefaultOnProjectSaveCB();
     _imp->onProjectSaveCB->setValue(onProjectSave, 0);
@@ -990,8 +991,9 @@ Project::initializeKnobs()
     _imp->onProjectCloseCB->setName("beforeProjectClose");
     _imp->onProjectCloseCB->setHintToolTip("Add here the name of a Python-defined function that will be called each time this project "
                                           "is closed or if the user closes the application while this project is opened. This is called "
-                                           "prior to removing anything from the project. "
-                                           "The variable \"app\" will be declared prior to calling the function, pointing to the project being closed.");
+                                           "prior to removing anything from the project.\n"
+                                           "The signature of the callback is: callback(app) where:\n"
+                                           "- app: points to the current application instance\n");
     _imp->onProjectCloseCB->setAnimationEnabled(false);
     std::string onProjectClose = appPTR->getCurrentSettings()->getDefaultOnProjectCloseCB();
     _imp->onProjectCloseCB->setValue(onProjectClose, 0);
@@ -1002,9 +1004,11 @@ Project::initializeKnobs()
     _imp->onNodeCreated->setHintToolTip("Add here the name of a Python-defined function that will be called each time a node "
                                            "is created. The boolean variable userEdited will be set to True if the node was created "
                                         "by the user or False otherwise (such as when loading a project, or pasting a node).\n"
-                                        "The global variable \"thisNode\" will be declared beforhand, referencing the node that has "
-                                        "created. "
-                                        "The variable \"app\" will be declared prior to calling the function, pointing to the current app instance.");
+                                        "The signature of the callback is: callback(thisNode, app, userEdited) where:\n"
+                                        "- thisNode: the node which has just been created\n"
+                                        "- userEdited: a boolean indicating whether the node was created by user interaction or from "
+                                        "a script/project load/copy-paste\n"
+                                        "- app: points to the current application instance\n");
     _imp->onNodeCreated->setAnimationEnabled(false);
     std::string onNodeCreated = appPTR->getCurrentSettings()->getDefaultOnNodeCreatedCB();
     _imp->onNodeCreated->setValue(onNodeCreated, 0);
@@ -1013,11 +1017,10 @@ Project::initializeKnobs()
     _imp->onNodeDeleted = Natron::createKnob<String_Knob>(this, "Before Node Removal");
     _imp->onNodeDeleted->setName("beforeNodeRemoval");
     _imp->onNodeDeleted->setHintToolTip("Add here the name of a Python-defined function that will be called each time a node "
-                                        "is about to be deleted. \n"
-                                        "The global variable \"thisNode\" will be declared, referencing the node that is to be "
-                                        "deleted. \n"
-                                        "Note that this function will not be called when the project is closing. "
-                                        "The variable \"app\" will be declared prior to calling the function, pointing to the current app instance.");
+                                        "is about to be deleted. This function will not be called when the project is closing.\n"
+                                        "The signature of the callback is: callback(thisNode, app) where:\n"
+                                        "- thisNode: the node about to be deleted\n"
+                                        "- app: points to the current application instance\n");
     _imp->onNodeDeleted->setAnimationEnabled(false);
     std::string onNodeDelete = appPTR->getCurrentSettings()->getDefaultOnNodeDeleteCB();
     _imp->onNodeDeleted->setValue(onNodeDelete, 0);
@@ -1085,7 +1088,7 @@ Project::currentFrame() const
 int
 Project::tryAddProjectFormat(const Format & f)
 {
-    assert( !_imp->formatMutex.tryLock() );
+    //assert( !_imp->formatMutex.tryLock() );
     if ( ( f.left() >= f.right() ) || ( f.bottom() >= f.top() ) ) {
         return -1;
     }
@@ -1122,7 +1125,7 @@ Project::tryAddProjectFormat(const Format & f)
 void
 Project::setProjectDefaultFormat(const Format & f)
 {
-    assert( !_imp->formatMutex.tryLock() );
+    //assert( !_imp->formatMutex.tryLock() );
     int index = tryAddProjectFormat(f);
     _imp->formatKnob->setValue(index,0);
     ///if locked it will trigger a deadlock because some parameters
@@ -1298,16 +1301,7 @@ Project::onKnobValueChanged(KnobI* knob,
     } else if ( knob == _imp->previewMode.get() ) {
         Q_EMIT autoPreviewChanged( _imp->previewMode->getValue() );
     }  else if ( knob == _imp->frameRate.get() ) {
-        NodeList nodes = getNodes();
-        std::list <Natron::Node*> markedNodes;
-        for (NodeList::iterator it = nodes.begin();
-             it != nodes.end();++it)  {
-            if ((*it)->isOutputNode()) {
-                (*it)->restoreClipPreferencesRecursive(markedNodes);
-            }
-                
-        }
-
+        forceGetClipPreferencesOnAllTrees();
     } else if (knob == _imp->frameRange.get()) {
         int first = _imp->frameRange->getValue(0);
         int last = _imp->frameRange->getValue(1);
@@ -1410,22 +1404,23 @@ Project::reset()
         _imp->additionalFormats.clear();
     }
     _imp->timeline->removeAllKeyframesIndicators();
+    
+    Q_EMIT projectNameChanged(NATRON_PROJECT_UNTITLED);
+    clearNodes(true);
     const std::vector<boost::shared_ptr<KnobI> > & knobs = getKnobs();
-
+    
     beginChanges();
     for (U32 i = 0; i < knobs.size(); ++i) {
         for (int j = 0; j < knobs[i]->getDimension(); ++j) {
             knobs[i]->resetToDefaultValue(j);
         }
     }
-
-
+    
+    
     onOCIOConfigPathChanged(appPTR->getOCIOConfigPath(),true);
     
     endChanges(true);
-    
-    Q_EMIT projectNameChanged(NATRON_PROJECT_UNTITLED);
-    clearNodes(true);
+
     _imp->projectClosing = false;
 }
 

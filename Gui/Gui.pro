@@ -84,7 +84,7 @@ SOURCES += \
     Label.cpp \
     LineEdit.cpp \
     MessageBox.cpp \
-    MenuWithToolTips.cpp \
+    Menu.cpp \
     MultiInstancePanel.cpp \
     NodeBackDropSerialization.cpp \
     NodeCreationDialog.cpp \
@@ -166,7 +166,7 @@ HEADERS += \
     Label.h \
     LineEdit.h \
     MessageBox.h \
-    MenuWithToolTips.h \
+    Menu.h \
     MultiInstancePanel.h \
     NodeBackDropSerialization.h \
     NodeCreationDialog.h \

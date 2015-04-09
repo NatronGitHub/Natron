@@ -34,7 +34,7 @@ CLANG_DIAG_ON(deprecated-register)
 #include "Engine/Image.h"
 
 #include "Gui/GuiApplicationManager.h"
-#include "Gui/MenuWithToolTips.h"
+#include "Gui/Menu.h"
 #include "Gui/ClickableLabel.h"
 #include "Gui/GuiMacros.h"
 
@@ -445,6 +445,19 @@ ComboBox::addAction(QAction* action)
 }
 
 void
+ComboBox::addItemNew()
+{
+    QAction* action =  new QAction(this);
+    action->setText("New");
+    action->setData(QVariant(1));
+    QFont f = QFont(appFont,appFontSize);
+    f.setItalic(true);
+    action->setFont(f);
+    addAction(action);
+
+}
+
+void
 ComboBox::addItem(const QString & item,
                   QIcon icon,
                   QKeySequence key,
@@ -553,7 +566,10 @@ ComboBox::setCurrentIndex_internal(int index)
         text = _actions[index]->text();
     }
     str = text;
-
+    if (str == "New") {
+        Q_EMIT itemNewSelected();
+        return false;
+    }
     QFontMetrics m = fontMetrics();
     setMinimumWidth( m.width(str) + 2 * DROP_DOWN_ICON_SIZE);
 
@@ -583,6 +599,12 @@ ComboBox::setCurrentIndex(int index)
 void
 ComboBox::setCurrentIndex_no_emit(int index)
 {
+    //Forbid programmatic setting of the "New" choice, only user can select it
+    if (index >= 0 && index < (int)_actions.size()) {
+        if (_actions[index]->data().toInt() == 1) { // "New" choice
+            return;
+        }
+    }
     setCurrentIndex_internal(index);
 }
 

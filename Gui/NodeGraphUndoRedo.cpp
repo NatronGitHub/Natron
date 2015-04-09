@@ -25,13 +25,16 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/TimeLine.h"
 #include "Engine/ViewerInstance.h"
 #include "Engine/NodeSerialization.h"
+#include "Engine/NoOp.h"
 
 #include "Gui/NodeGui.h"
 #include "Gui/NodeGraph.h"
 #include "Gui/Gui.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/Edge.h"
+#include "Gui/GuiApplicationManager.h"
 #include "Gui/MultiInstancePanel.h"
+
 #define MINIMUM_VERTICAL_SPACE_BETWEEN_NODES 10
 
 
@@ -140,7 +143,10 @@ AddMultipleNodesCommand::~AddMultipleNodesCommand()
 {
     if (_isUndone) {
         for (std::list<boost::weak_ptr<NodeGui> >::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
-            _graph->deleteNodepluginsly(it->lock());
+            boost::shared_ptr<NodeGui> node = it->lock();
+            if (node) {
+                _graph->deleteNodepluginsly(node);
+            }
         }
     }
 }
@@ -1041,7 +1047,7 @@ LoadNodePresetsCommand::redo()
     if (!_firstRedoCalled) {
        
         ///Serialize the current state of the node
-        node->serializeInternal(_oldSerialization,true);
+        node->serializeInternal(_oldSerialization);
         
         if (panel) {
             const std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> >& children = panel->getInstances();
@@ -1449,4 +1455,271 @@ GroupFromSelectionCommand::redo()
     _firstRedoCalled = true;
     _isRedone = true;
     setText(QObject::tr("Group from selection"));
+}
+
+
+
+InlineGroupCommand::InlineGroupCommand(NodeGraph* graph,const std::list<boost::shared_ptr<NodeGui> > & groupNodes)
+: QUndoCommand()
+, _graph(graph)
+, _groupNodes()
+, _firstRedoCalled(false)
+{
+    for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = groupNodes.begin(); it!=groupNodes.end(); ++it) {
+        NodeGroup* group = dynamic_cast<NodeGroup*>((*it)->getNode()->getLiveInstance());
+        assert(group);
+        
+        InlinedGroup expandedGroup;
+        
+        NodeClipBoard cb;
+        NodeList nodes = group->getNodes();
+        std::vector<NodePtr> groupInputs;
+        
+        NodePtr groupOutput = group->getOutputNode();
+        group->getInputs(&groupInputs);
+        
+        std::list<boost::shared_ptr<NodeGui> > nodesToCopy;
+        for (NodeList::iterator it2 = nodes.begin(); it2!=nodes.end(); ++it2) {
+            GroupInput* inp = dynamic_cast<GroupInput*>((*it2)->getLiveInstance());
+            GroupOutput* output = dynamic_cast<GroupOutput*>((*it2)->getLiveInstance());
+            if (!inp && !output && !(*it2)->getParentMultiInstance()) {
+                boost::shared_ptr<NodeGuiI> gui_i = (*it2)->getNodeGui();
+                assert(gui_i);
+                boost::shared_ptr<NodeGui> nodeGui = boost::dynamic_pointer_cast<NodeGui>(gui_i);
+                assert(nodeGui);
+                nodesToCopy.push_back(nodeGui);
+            }
+        }
+        
+        boost::shared_ptr<NodeGuiI> groupGui_i = group->getNode()->getNodeGui();
+        assert(groupGui_i);
+        boost::shared_ptr<NodeGui> groupGui = boost::dynamic_pointer_cast<NodeGui>(groupGui_i);
+        assert(groupGui);
+        
+        NodeGraphI *graph_i = group->getNodeGraph();
+        assert(graph_i);
+        NodeGraph* thisGroupGraph = dynamic_cast<NodeGraph*>(graph_i);
+        assert(thisGroupGraph);
+        thisGroupGraph->copyNodes(nodesToCopy, cb);
+        
+        std::list<std::pair<std::string,boost::shared_ptr<NodeGui> > > newNodes;
+        _graph->pasteCliboard(cb,&newNodes);
+        
+        expandedGroup.group = groupGui;
+        
+        //This is the BBox of the new inlined nodes
+        double b = INT_MAX, l = INT_MAX, r = INT_MIN, t = INT_MIN;
+        for (std::list<std::pair<std::string,boost::shared_ptr<NodeGui> > >::iterator it2 = newNodes.begin();
+             it2 != newNodes.end(); ++it2) {
+            
+            QPointF p = it2->second->mapToScene(it2->second->mapFromParent(it2->second->getPos_mt_safe()));
+            l = std::min(l,p.x());
+            r = std::max(r,p.x());
+            
+            //Qt coord system is top down
+            b = std::min(b,p.y());
+            t = std::max(t,p.y());
+            expandedGroup.inlinedNodes.push_back(it2->second);
+        }
+        
+        double inputY = INT_MIN;
+        
+        int maxInputs = group->getNode()->getMaxInputCount();
+        assert(maxInputs = (int)groupInputs.size());
+        for (int i = 0; i < maxInputs; ++i) {
+            NodePtr input = group->getNode()->getInput(i);
+            if (input) {
+                
+                NodeToConnect ntc;
+                
+                assert(groupInputs[i]);
+                std::map<Natron::Node*,int> outputConnected;
+                groupInputs[i]->getOutputsConnectedToThisNode(&outputConnected);
+                
+                boost::shared_ptr<NodeGuiI> inputGui_i = input->getNodeGui();
+                assert(inputGui_i);
+                boost::shared_ptr<NodeGui> inputGui = boost::dynamic_pointer_cast<NodeGui>(inputGui_i);
+                assert(inputGui);
+                ntc.input = inputGui;
+                
+                QPointF p = inputGui->mapToScene(inputGui->mapFromParent(inputGui->getPos_mt_safe()));
+                if (p.y() > inputY) {
+                    inputY = p.y();
+                }
+                
+                for (std::map<Natron::Node*,int>::iterator it2 = outputConnected.begin(); it2 != outputConnected.end(); ++it2) {
+                    
+                    boost::shared_ptr<NodeGui> outputGui;
+                    ///Find the new node that was inlined, based on the script name of the old node in the group
+                    for (std::list<std::pair<std::string,boost::shared_ptr<NodeGui> > >::iterator it3 = newNodes.begin(); it3!=newNodes.end(); ++it3) {
+                        if (it3->first == it2->first->getScriptName()) {
+                            outputGui = it3->second;
+                            break;
+                        }
+                    }
+                    assert(outputGui);
+                    ntc.outputs.insert(std::make_pair(outputGui, it2->second));
+                }
+                
+                expandedGroup.connections[i] = ntc;
+            }
+        }
+        
+        std::list<boost::shared_ptr<NodeGui> > outputsConnectedToGroup;
+        QPointF firstInputPos;
+        double outputY = INT_MIN;
+        if (groupOutput) {
+            NodePtr groupOutputInput = groupOutput->getInput(0);
+            if (groupOutputInput) {
+
+                NodeToConnect outputConnection;
+
+                boost::shared_ptr<NodeGui> inputGui;
+                ///Find the new node that was inlined, based on the script name of the old node in the group
+                for (std::list<std::pair<std::string,boost::shared_ptr<NodeGui> > >::iterator it3 = newNodes.begin(); it3!=newNodes.end(); ++it3) {
+                    if (it3->first == groupOutputInput->getScriptName()) {
+                        inputGui = it3->second;
+                        break;
+                    }
+                }
+              
+                assert(inputGui);
+                firstInputPos = inputGui->mapToScene(inputGui->mapFromParent(inputGui->getPos_mt_safe()));
+                outputConnection.input = inputGui;
+                
+                std::map<Natron::Node*,int> outputConnected;
+                group->getNode()->getOutputsConnectedToThisNode(&outputConnected);
+                for (std::map<Natron::Node*,int>::iterator it2 = outputConnected.begin(); it2 != outputConnected.end(); ++it2) {
+                    boost::shared_ptr<NodeGuiI> outputGui_i = it2->first->getNodeGui();
+                    assert(outputGui_i);
+                    boost::shared_ptr<NodeGui> outputGui = boost::dynamic_pointer_cast<NodeGui>(outputGui_i);
+                    assert(outputGui);
+                    outputsConnectedToGroup.push_back(outputGui);
+                    
+                    QPointF p = outputGui->mapToScene(outputGui->mapFromParent(outputGui->getPos_mt_safe()));
+                    if (p.y() > outputY) {
+                        outputY = p.y();
+                    }
+                    outputConnection.outputs.insert(std::make_pair(outputGui, it2->second));
+                }
+                expandedGroup.connections[-1] = outputConnection;
+            }
+        }
+        
+        //If there is no output to the group, the output is considered to be infinite (so we don't move any node)
+        if (outputY == INT_MIN) {
+            outputY = INT_MAX;
+        }
+        
+        double ySpaceAvailable = outputY  - inputY;
+        double ySpaceNeeded = t - b + 100;
+        
+        //We are going to move recursively the outputs of the group nodes so that it does not overlap the inlining of the group
+        QRectF rectToClear(l,b,r - l,ySpaceNeeded - ySpaceAvailable);
+        
+        QPointF avgOutputPos;
+        for (std::list<boost::shared_ptr<NodeGui> >::iterator it2 = outputsConnectedToGroup.begin();
+             it2!=outputsConnectedToGroup.end(); ++it2) {
+            (*it2)->moveBelowPositionRecursively(rectToClear);
+            QPointF p = (*it2)->mapToScene((*it2)->mapFromParent((*it2)->getPos_mt_safe()));
+            avgOutputPos += p;
+        }
+        avgOutputPos /= (int)outputsConnectedToGroup.size();
+        avgOutputPos.ry() -= 100;
+        
+        ///Move all created nodes by this delta to fit in the space we've just made
+        QPointF delta = avgOutputPos - firstInputPos;
+        for (std::list<std::pair<std::string,boost::shared_ptr<NodeGui> > >::iterator it2 = newNodes.begin();
+             it2 != newNodes.end(); ++it2) {
+            QPointF p = it2->second->mapToScene(it2->second->mapFromParent(it2->second->getPos_mt_safe()));
+            p += delta;
+            p = it2->second->mapToParent(it2->second->mapFromScene(p));
+            it2->second->setPosition(p.x(), p.y());
+        }
+        
+        
+        _groupNodes.push_back(expandedGroup);
+    } // for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = groupNodes.begin(); it!=groupNodes.end(); ++it) {
+}
+
+InlineGroupCommand::~InlineGroupCommand()
+{
+    
+}
+
+void
+InlineGroupCommand::undo()
+{
+    std::set<ViewerInstance*> viewers;
+    for (std::list<InlinedGroup>::iterator it = _groupNodes.begin(); it!= _groupNodes.end(); ++it) {
+        NodeGuiPtr groupNode = it->group.lock();
+        if (groupNode) {
+            groupNode->getNode()->activate(std::list< Natron::Node* >(),true,false);
+            std::list<ViewerInstance*> connectedViewers;
+            groupNode->getNode()->hasViewersConnected(&connectedViewers);
+            for (std::list<ViewerInstance*>::iterator it2 = connectedViewers.begin(); it2!=connectedViewers.end(); ++it2) {
+                viewers.insert(*it2);
+            }
+            for (std::list<boost::weak_ptr<NodeGui> >::iterator it2 = it->inlinedNodes.begin();
+                 it2 != it->inlinedNodes.end(); ++it2) {
+                NodeGuiPtr node = (*it2).lock();
+                if (node) {
+                    node->getNode()->deactivate(std::list< Natron::Node* >(),false,false,true,false);
+                }
+            }
+            
+        }
+    }
+    for (std::set<ViewerInstance*>::iterator it = viewers.begin(); it != viewers.end(); ++it) {
+        (*it)->renderCurrentFrame(false);
+    }
+
+    _graph->getGui()->getApp()->triggerAutoSave();
+    setText(QObject::tr("Inline group(s)"));
+}
+
+void
+InlineGroupCommand::redo()
+{
+    std::set<ViewerInstance*> viewers;
+    for (std::list<InlinedGroup>::iterator it = _groupNodes.begin(); it!= _groupNodes.end(); ++it) {
+        NodeGuiPtr groupNode = it->group.lock();
+        if (groupNode) {
+            std::list<ViewerInstance*> connectedViewers;
+            groupNode->getNode()->hasViewersConnected(&connectedViewers);
+            for (std::list<ViewerInstance*>::iterator it2 = connectedViewers.begin(); it2!=connectedViewers.end(); ++it2) {
+                viewers.insert(*it2);
+            }
+            groupNode->getNode()->deactivate(std::list< Natron::Node* >(),true,false,true,false);
+            if  (_firstRedoCalled) {
+                for (std::list<boost::weak_ptr<NodeGui> >::iterator it2 = it->inlinedNodes.begin();
+                     it2 != it->inlinedNodes.end(); ++it2) {
+                    NodeGuiPtr node = (*it2).lock();
+                    if (node) {
+                        node->getNode()->activate(std::list< Natron::Node* >(),false,false);
+                    }
+                }
+            }
+            for (std::map<int,NodeToConnect>::iterator it2 = it->connections.begin(); it2 != it->connections.end(); ++it2) {
+                NodeGuiPtr input = it2->second.input.lock();
+                if (!input) {
+                    continue;
+                }
+                for (std::map<boost::weak_ptr<NodeGui>,int>::iterator it3 = it2->second.outputs.begin();
+                     it3!=it2->second.outputs.end();++it3) {
+                    NodeGuiPtr node = it3->first.lock();
+                    if (node) {
+                        node->getNode()->disconnectInput(it3->second);
+                        NodeCollection::connectNodes(it3->second, input->getNode(), node->getNode().get(), false);
+                    }
+                }
+            }
+        }
+    }
+    for (std::set<ViewerInstance*>::iterator it = viewers.begin(); it != viewers.end(); ++it) {
+        (*it)->renderCurrentFrame(false);
+    }
+    _graph->getGui()->getApp()->triggerAutoSave();
+    setText(QObject::tr("Inline group(s)"));
+    _firstRedoCalled = true;
 }

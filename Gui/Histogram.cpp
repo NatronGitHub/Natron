@@ -21,7 +21,6 @@ CLANG_DIAG_OFF(unused-private-field)
 CLANG_DIAG_ON(unused-private-field)
 #include <QDebug>
 #include <QApplication>
-#include <QMenu>
 #include <QToolButton>
 #include <QActionGroup>
 
@@ -30,6 +29,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Engine/HistogramCPU.h"
 #include "Engine/Node.h"
 
+#include "Gui/Menu.h"
 #include "Gui/ticks.h"
 #include "Gui/Shaders.h"
 #include "Gui/Gui.h"
@@ -56,6 +56,7 @@ enum EventStateEnum
     eEventStateNone
 };
 }
+
 
 struct HistogramPrivate
 {
@@ -148,16 +149,16 @@ struct HistogramPrivate
     QVBoxLayout* mainLayout;
 
     ///////// OPTIONS
-    QMenu* rightClickMenu;
+    Natron::Menu* rightClickMenu;
     QMenu* histogramSelectionMenu;
     QActionGroup* histogramSelectionGroup;
-    QMenu* viewerCurrentInputMenu;
+    Natron::Menu* viewerCurrentInputMenu;
     QActionGroup* viewerCurrentInputGroup;
     QActionGroup* modeActions;
-    QMenu* modeMenu;
+    Natron::Menu* modeMenu;
     QAction* fullImage;
     QActionGroup* filterActions;
-    QMenu* filterMenu;
+    Natron::Menu* filterMenu;
     Histogram* widget;
     Histogram::DisplayModeEnum mode;
     QPoint oldClick; /// the last click pressed, in widget coordinates [ (0,0) == top left corner ]
@@ -268,16 +269,16 @@ Histogram::Histogram(Gui* gui,
 //    _imp->sizeH = desktop->screenGeometry().size();
     _imp->sizeH = QSize(10000,10000);
     
-    _imp->rightClickMenu = new QMenu(this);
+    _imp->rightClickMenu = new Natron::Menu(this);
     //_imp->rightClickMenu->setFont( QFont(appFont,appFontSize) );
 
-    _imp->histogramSelectionMenu = new QMenu(tr("Viewer target"),_imp->rightClickMenu);
+    _imp->histogramSelectionMenu = new Natron::Menu(tr("Viewer target"),_imp->rightClickMenu);
     //_imp->histogramSelectionMenu->setFont( QFont(appFont,appFontSize) );
     _imp->rightClickMenu->addAction( _imp->histogramSelectionMenu->menuAction() );
 
     _imp->histogramSelectionGroup = new QActionGroup(_imp->histogramSelectionMenu);
 
-    _imp->viewerCurrentInputMenu = new QMenu(tr("Viewer input"),_imp->rightClickMenu);
+    _imp->viewerCurrentInputMenu = new Natron::Menu(tr("Viewer input"),_imp->rightClickMenu);
     //_imp->viewerCurrentInputMenu->setFont( QFont(appFont,appFontSize) );
     _imp->rightClickMenu->addAction( _imp->viewerCurrentInputMenu->menuAction() );
 
@@ -301,7 +302,7 @@ Histogram::Histogram(Gui* gui,
     _imp->viewerCurrentInputGroup->addAction(inputBAction);
     _imp->viewerCurrentInputMenu->addAction(inputBAction);
 
-    _imp->modeMenu = new QMenu(tr("Display mode"),_imp->rightClickMenu);
+    _imp->modeMenu = new Natron::Menu(tr("Display mode"),_imp->rightClickMenu);
     //_imp->modeMenu->setFont( QFont(appFont,appFontSize) );
     _imp->rightClickMenu->addAction( _imp->modeMenu->menuAction() );
 
@@ -312,7 +313,7 @@ Histogram::Histogram(Gui* gui,
     QObject::connect( _imp->fullImage, SIGNAL( triggered() ), this, SLOT( computeHistogramAndRefresh() ) );
     _imp->rightClickMenu->addAction(_imp->fullImage);
 
-    _imp->filterMenu = new QMenu(tr("Smoothing"),_imp->rightClickMenu);
+    _imp->filterMenu = new Natron::Menu(tr("Smoothing"),_imp->rightClickMenu);
     //_imp->filterMenu->setFont( QFont(appFont,appFontSize) );
     _imp->rightClickMenu->addAction( _imp->filterMenu->menuAction() );
 

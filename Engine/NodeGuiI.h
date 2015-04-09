@@ -78,11 +78,6 @@ public :
      * @brief Set the colour of the node as it appears on the nodegraph.
      **/
     virtual void setColor(double r, double g, double b) = 0;
-
-    /**
-     * @brief Called when a child is created for multi-instance, like a new Track
-     **/
-    virtual void onChildInstanceCreated(const boost::shared_ptr<Natron::Node>& node) = 0;
     
     /**
      * @brief Get the suggested overlay colour

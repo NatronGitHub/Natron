@@ -48,6 +48,7 @@ class NodeGuiSerialization;
 class NodeBackDropSerialization;
 class NodeCollection;
 class ViewerTab;
+struct NodeClipBoard;
 struct NodeGraphPrivate;
 namespace Natron {
 class Node;
@@ -69,7 +70,7 @@ public:
     boost::shared_ptr<NodeCollection> getGroup() const;
 
     const std::list< boost::shared_ptr<NodeGui> > & getSelectedNodes() const;
-    boost::shared_ptr<NodeGui> createNodeGUI(QVBoxLayout *dockContainer,const boost::shared_ptr<Natron::Node> & node,bool requestedByLoad,
+    boost::shared_ptr<NodeGui> createNodeGUI(const boost::shared_ptr<Natron::Node> & node,bool requestedByLoad,
                                              double xPosHint,double yPosHint,bool pushUndoRedoCommand,bool autoConnect);
 
     void selectNode(const boost::shared_ptr<NodeGui> & n,bool addToSelection);
@@ -154,6 +155,10 @@ public:
      **/
     void moveNodesForIdealPosition(boost::shared_ptr<NodeGui> n,bool autoConnect);
     
+    void copyNodes(const std::list<boost::shared_ptr<NodeGui> >& nodes,NodeClipBoard& clipboard);
+    
+    void pasteCliboard(const NodeClipBoard& clipboard,std::list<std::pair<std::string,boost::shared_ptr<NodeGui> > >* newNodes);
+    
 public Q_SLOTS:
 
     void deleteSelection();
@@ -181,6 +186,8 @@ public Q_SLOTS:
     void extractSelectedNode();
     
     void createGroupFromSelection();
+    
+    void expandSelectedGroups();
 
     ///All these actions also work for backdrops
     /////////////////////////////////////////////

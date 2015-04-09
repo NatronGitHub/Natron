@@ -20,7 +20,6 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QVBoxLayout>
 #include <QPixmap>
 #include <QDebug>
-#include <QCoreApplication>
 #include <QThread>
 #include <QHeaderView>
 #include <QStyledItemDelegate>
@@ -29,7 +28,7 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QCheckBox>
 #include <QWaitCondition>
 #include <QtConcurrentMap>
-#include <QMenu>
+#include <QApplication>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
@@ -41,6 +40,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/KnobFile.h"
 #include "Engine/EffectInstance.h"
 #include "Engine/Curve.h"
+#include "Engine/Settings.h"
 #include "Engine/TimeLine.h"
 
 #include <ofxNatron.h>
@@ -57,7 +57,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/NodeGraph.h"
 #include "Gui/Gui.h"
 #include "Gui/Label.h"
-
+#include "Gui/Menu.h"
 
 #define kTrackCenterName "center"
 #define kTrackInvertName "invert"
@@ -201,6 +201,8 @@ struct MultiInstancePanelPrivate
             ret = btn;
         } else if ( dynamic_cast<Page_Knob*>( ref.get() ) ) {
             ret = Natron::createKnob<Page_Knob>(publicInterface, ref->getDescription(),ref->getDimension(),declaredByPlugin);
+        } else {
+            return;
         }
         assert(ret);
         ret->clone(ref);
@@ -295,24 +297,9 @@ TableItemDelegate::paint(QPainter * painter,
                          const QStyleOptionViewItem & option,
                          const QModelIndex & index) const
 {
-
-    if (!index.isValid() || option.state & QStyle::State_Selected) {
+    assert(index.isValid());
+    if (!index.isValid()) {
         QStyledItemDelegate::paint(painter,option,index);
-        return;
-    }
-   
-    
-    if (index.column() < COL_FIRST_KNOB) {
-        QPen pen = painter->pen();
-        if (index.column() == COL_SCRIPT_NAME) {
-            pen.setColor(Qt::black);
-        } else {
-            pen.setColor(QColor(200,200,200));
-        }
-        painter->setPen(pen);
-
-        QStyledItemDelegate::paint(painter,option,index);
-
         return;
     }
     
@@ -320,41 +307,78 @@ TableItemDelegate::paint(QPainter * painter,
     assert(model);
     if (!model) {
         // coverity[dead_error_line]
+        QStyledItemDelegate::paint(painter,option,index);
         return;
     }
     TableItem* item = model->item(index);
     assert(item);
     if (!item) {
         // coverity[dead_error_line]
+        QStyledItemDelegate::paint(painter,option,index);
         return;
     }
+    
+    // get the proper subrect from the style
+    QStyle *style = QApplication::style();
+    QRect geom = style->subElementRect(QStyle::SE_ItemViewItemText, &option);
+
     int dim;
     Natron::AnimationLevelEnum level = eAnimationLevelNone;
     boost::shared_ptr<KnobI> knob = _panel->getKnobForItem(item, &dim);
     if (knob) {
         level = knob->getAnimationLevel(dim);
-        if (level == eAnimationLevelNone) {
-            QStyledItemDelegate::paint(painter,option,index);
-            
-            return;
-        }
     }
     
-    QStyleOptionViewItem opt = option;
-    initStyleOption(&opt, index);
-
-    const QWidget* widget = _view->cellWidget( index.row(), index.column() );
-    if (!widget) {
-        QStyledItemDelegate::paint(painter,option,index);
-
-        return;
-    }
-    QColor bgColor;
-    if (level == eAnimationLevelOnKeyframe) {
-        bgColor.setRgb(21,97,248);
+    bool fillRect = true;
+    QBrush brush;
+    if (option.state & QStyle::State_Selected) {
+        brush = option.palette.highlight();
     } else if (level == eAnimationLevelInterpolatedValue) {
-        bgColor.setRgb(86,117,156);
+        double r,g,b;
+        appPTR->getCurrentSettings()->getInterpolatedColor(&r, &g, &b);
+        QColor col;
+        col.setRgbF(r, g, b);
+        brush = col;
+    } else if (level == eAnimationLevelOnKeyframe) {
+        double r,g,b;
+        appPTR->getCurrentSettings()->getKeyframeColor(&r, &g, &b);
+        QColor col;
+        col.setRgbF(r, g, b);
+        brush = col;
+    } else {
+        fillRect = false;
     }
+    if (fillRect) {
+        painter->fillRect( geom, brush);
+    }
+    
+    QPen pen = painter->pen();
+    if (!item->flags().testFlag(Qt::ItemIsEditable)) {
+        pen.setColor(Qt::black);
+    } else {
+        double r,g,b;
+        appPTR->getCurrentSettings()->getTextColor(&r, &g, &b);
+        QColor col;
+        col.setRgbF(r, g, b);
+        pen.setColor(col);
+    }
+    painter->setPen(pen);
+  
+    QRect textRect( geom.x() + 5,geom.y(),geom.width() - 5,geom.height() );
+    QRect r;
+    QString data;
+    QVariant var = item->data(Qt::DisplayRole);
+    if (var.canConvert(QVariant::String)) {
+        data = var.toString();
+    } else if (var.canConvert(QVariant::Double)) {
+        double d = var.toDouble();
+        data = QString::number(d);
+    } else if (var.canConvert(QVariant::Int)) {
+        int i = var.toInt();
+        data = QString::number(i);
+    }
+    
+    painter->drawText(textRect,Qt::TextSingleLine,data,&r);
 
 
     //   widget->render(painter);
@@ -674,7 +698,7 @@ MultiInstancePanelPrivate::addTableRow(const boost::shared_ptr<Natron::Node> & n
         view->setItem(newRowIndex, COL_SCRIPT_NAME, newItem);
         newItem->setToolTip(QObject::tr("The script-name of the item as exposed to Python scripts"));
         newItem->setText(node->getScriptName().c_str());
-        newItem->setFlags(Qt::ItemIsSelectable);
+        newItem->setFlags(newItem->flags() & ~Qt::ItemIsEditable);
         view->resizeColumnToContents(COL_ENABLED);
     }
     
@@ -1006,12 +1030,6 @@ MultiInstancePanel::onSelectionChanged(const QItemSelection & newSelection,
     /// new selection
     std::list<std::pair<Node*,bool> > newlySelectedInstances;
     QModelIndexList newIndexes = newSelection.indexes();
-    for (int i = 0; i < newIndexes.size(); ++i) {
-        TableItem* item = _imp->model->item(newIndexes[i]);
-        if (item) {
-            item->setFlags(item->flags() | Qt::ItemIsEditable);
-        }
-    }
     _imp->getNodesFromSelection(newIndexes, &newlySelectedInstances);
 
     ///Don't consider items that are in both previouslySelectedInstances && newlySelectedInstances
@@ -1247,7 +1265,7 @@ MultiInstancePanel::onItemDataChanged(TableItem* item)
                     Color_Knob* isColor = dynamic_cast<Color_Knob*>( knobs[i].get() );
                     String_Knob* isString = dynamic_cast<String_Knob*>( knobs[i].get() );
                     
-                    if (knobs[i]->isAnimationEnabled()) {
+                    if (knobs[i]->isAnimationEnabled() && knobs[i]->isAnimated(j)) {
                         if (isInt) {
                             isInt->setValueAtTime(time, data.toInt(), j);
                         } else if (isBool) {
@@ -2198,7 +2216,7 @@ TrackerPanelPrivate::createCornerPinFromSelection(const std::list<Node*> & selec
         assert(centers[i]);
     }
     GuiAppInstance* app = publicInterface->getGui()->getApp();
-    boost::shared_ptr<Natron::Node> cornerPin = app->createNode( CreateNodeArgs("CornerPinOFX  [Transform]",
+    boost::shared_ptr<Natron::Node> cornerPin = app->createNode( CreateNodeArgs(PLUGINID_OFX_CORNERPIN,
                                                                                 "",
                                                                                 -1, -1,
                                                                                 false, //< don't autoconnect
@@ -2280,7 +2298,7 @@ TrackerPanel::showMenuForInstance(Natron::Node* instance)
     if (!getMainInstance()->isPointTrackerNode()) {
         return;
     }
-    QMenu menu( getGui() );
+    Natron::Menu menu( getGui() );
 
     //menu.setFont( QFont(appFont,appFontSize) );
 

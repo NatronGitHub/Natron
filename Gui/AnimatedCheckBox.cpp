@@ -88,6 +88,12 @@ AnimatedCheckBox::mousePressEvent(QMouseEvent* e)
 }
 
 void
+AnimatedCheckBox::getBackgroundColor(double *r,double *g,double *b) const
+{
+    appPTR->getCurrentSettings()->getRaisedColor(r,g,b);
+}
+
+void
 AnimatedCheckBox::paintEvent(QPaintEvent* e)
 {
     QFrame::paintEvent(e);
@@ -110,7 +116,7 @@ AnimatedCheckBox::paintEvent(QPaintEvent* e)
     
     double bgR = 0.,bgG = 0.,bgB = 0.;
     if (animation == 0) {
-        appPTR->getCurrentSettings()->getRaisedColor(&bgR, &bgG, &bgB);
+        getBackgroundColor(&bgR,&bgG,&bgB);
     } else if (animation == 1) {
         appPTR->getCurrentSettings()->getInterpolatedColor(&bgR, &bgG, &bgB);
     } else if (animation == 2) {

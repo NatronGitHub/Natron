@@ -223,6 +223,8 @@ enum PixmapEnum
     NATRON_PIXMAP_UPDATE_VIEWER_DISABLED,
     NATRON_PIXMAP_ADD_TRACK,
     
+    NATRON_PIXMAP_ENTER_GROUP,
+    
     NATRON_PIXMAP_SETTINGS,
     NATRON_PIXMAP_FREEZE_ENABLED,
     NATRON_PIXMAP_FREEZE_DISABLED,
@@ -319,8 +321,7 @@ enum ImageComponentsEnum
     eImageComponentAlpha,
     eImageComponentRGB,
     eImageComponentRGBA,
-    eImageComponentsMotionVectors,
-    eImageComponentsStereoDisparity
+    eImageComponentXY
 };
 
 enum ImagePremultiplicationEnum

@@ -45,6 +45,8 @@ without importing anything.
 	ParametricParam
 	PathParam
 	PyCoreApplication
+	RectD
+	RectI
 	Roto
 	StringParam
 	StringParamBase

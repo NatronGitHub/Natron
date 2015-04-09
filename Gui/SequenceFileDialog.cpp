@@ -58,7 +58,6 @@ CLANG_DIAG_ON(unused-private-field)
 #include <QtWidgets/QStyleOptionViewItem>
 #include <QStandardPaths>
 #endif
-#include <QMenu>
 
 #include <QtCore/QEvent>
 #include <QtCore/QMimeData>
@@ -88,7 +87,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Gui/ViewerGL.h"
 #include "Gui/TabWidget.h"
 #include "Gui/Label.h"
-
+#include "Gui/Menu.h"
 
 #define FILE_DIALOG_DISABLE_ICONS
 
@@ -794,7 +793,7 @@ SequenceFileDialog::sequenceComboBoxSlot(int index)
 void
 SequenceFileDialog::showContextMenu(const QPoint & position)
 {
-    QMenu menu(_view);
+    Natron::Menu menu(_view);
 
     menu.addAction(_showHiddenAction);
     if ( _createDirButton->isVisible() ) {
@@ -1904,7 +1903,7 @@ SequenceFileDialog::showFilterMenu()
 
 
     if (actions.count() > 0) {
-        QMenu menu(_filterLineEdit);
+        Natron::Menu menu(_filterLineEdit);
         //menu.setFont(font);
         menu.addActions(actions);
       //  menu.setFixedSize( _filterLineEdit->width(),menu.sizeHint().height() );
@@ -2469,7 +2468,7 @@ FavoriteView::showMenu(const QPoint &position)
         actions.append(editAction);
     }
     if (actions.count() > 0) {
-        QMenu menu(this);
+        Natron::Menu menu(this);
         //menu.setFont(QFont(appFont,appFontSize));
         menu.addActions(actions);
         menu.exec( mapToGlobal(position) );

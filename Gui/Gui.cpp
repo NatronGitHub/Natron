@@ -41,7 +41,6 @@ CLANG_DIAG_OFF(unused-private-field)
 CLANG_DIAG_ON(unused-private-field)
 #include <QHBoxLayout>
 #include <QGraphicsScene>
-#include <QMenu>
 #include <QApplication>
 #include <QMenuBar>
 #include <QDesktopWidget>
@@ -108,6 +107,7 @@ CLANG_DIAG_ON(unused-parameter)
 #include "Gui/MultiInstancePanel.h"
 #include "Gui/ScriptEditor.h"
 #include "Gui/PythonPanels.h"
+#include "Gui/Menu.h"
 
 #define kPropertiesBinName "properties"
 
@@ -328,17 +328,17 @@ struct GuiPrivate
 
     ///The menu bar and all the menus
     QMenuBar *menubar;
-    QMenu *menuFile;
-    QMenu *menuRecentFiles;
-    QMenu *menuEdit;
-    QMenu *menuLayout;
-    QMenu *menuDisplay;
-    QMenu *menuOptions;
-    QMenu *menuRender;
-    QMenu *viewersMenu;
-    QMenu *viewerInputsMenu;
-    QMenu *viewersViewMenu;
-    QMenu *cacheMenu;
+    Menu *menuFile;
+    Menu *menuRecentFiles;
+    Menu *menuEdit;
+    Menu *menuLayout;
+    Menu *menuDisplay;
+    Menu *menuOptions;
+    Menu *menuRender;
+    Menu *viewersMenu;
+    Menu *viewerInputsMenu;
+    Menu *viewersViewMenu;
+    Menu *cacheMenu;
 
 
     ///all TabWidget's : used to know what to hide/show for fullscreen mode
@@ -760,7 +760,7 @@ Gui::createNodeGUI( boost::shared_ptr<Node> node,
     } else {
         graph = _imp->_nodeGraphArea;
     }
-    boost::shared_ptr<NodeGui> nodeGui = graph->createNodeGUI(_imp->_layoutPropertiesBin, node, requestedByLoad,
+    boost::shared_ptr<NodeGui> nodeGui = graph->createNodeGUI(node, requestedByLoad,
                                                               xPosHint, yPosHint, pushUndoRedoCommand, autoConnect);
     QObject::connect( node.get(), SIGNAL( labelChanged(QString) ), this, SLOT( onNodeNameChanged(QString) ) );
     assert(nodeGui);
@@ -769,15 +769,15 @@ Gui::createNodeGUI( boost::shared_ptr<Node> node,
 }
 
 void
-Gui::addNodeGuiToCurveEditor(boost::shared_ptr<NodeGui> node)
+Gui::addNodeGuiToCurveEditor(const boost::shared_ptr<NodeGui> &node)
 {
     _imp->_curveEditor->addNode(node);
 }
 
 void
-Gui::addNodeGuiToDopeSheet(boost::shared_ptr<NodeGui> node)
+Gui::removeNodeGuiFromCurveEditor(const boost::shared_ptr<NodeGui>& node)
 {
-    _imp->_dopeSheet->addNode(node);
+    _imp->_curveEditor->removeNode(node.get());
 }
 
 void
@@ -795,9 +795,13 @@ Gui::createViewerGui(boost::shared_ptr<Node> viewer)
     ViewerInstance* v = dynamic_cast<ViewerInstance*>( viewer->getLiveInstance() );
     assert(v);
 
+    ViewerTab* tab = addNewViewerTab(v, where);
+    
     NodeGraph* graph = 0;
     boost::shared_ptr<NodeCollection> collection = viewer->getGroup();
-    assert(collection);
+    if (!collection) {
+        return;
+    }
     NodeGroup* isGrp = dynamic_cast<NodeGroup*>( collection.get() );
     if (isGrp) {
         NodeGraphI* graph_i = isGrp->getNodeGraph();
@@ -807,7 +811,7 @@ Gui::createViewerGui(boost::shared_ptr<Node> viewer)
         graph = getNodeGraph();
     }
     assert(graph);
-    graph->setLastSelectedViewer( addNewViewerTab(v, where) );
+    graph->setLastSelectedViewer(tab);
 }
 
 const std::list<boost::shared_ptr<NodeGui> > &
@@ -851,17 +855,17 @@ Gui::createMenuActions()
     _imp->menubar = new QMenuBar(this);
     setMenuBar(_imp->menubar);
 
-    _imp->menuFile = new QMenu(QObject::tr("File"), _imp->menubar);
-    _imp->menuRecentFiles = new QMenu(QObject::tr("Open Recent"), _imp->menuFile);
-    _imp->menuEdit = new QMenu(QObject::tr("Edit"), _imp->menubar);
-    _imp->menuLayout = new QMenu(QObject::tr("Layout"), _imp->menubar);
-    _imp->menuDisplay = new QMenu(QObject::tr("Display"), _imp->menubar);
-    _imp->menuOptions = new QMenu(QObject::tr("Options"), _imp->menubar);
-    _imp->menuRender = new QMenu(QObject::tr("Render"), _imp->menubar);
-    _imp->viewersMenu = new QMenu(QObject::tr("Viewer(s)"), _imp->menuDisplay);
-    _imp->viewerInputsMenu = new QMenu(QObject::tr("Connect Current Viewer"), _imp->viewersMenu);
-    _imp->viewersViewMenu = new QMenu(QObject::tr("Display View Number"), _imp->viewersMenu);
-    _imp->cacheMenu = new QMenu(QObject::tr("Cache"), _imp->menubar);
+    _imp->menuFile = new Menu(QObject::tr("File"), _imp->menubar);
+    _imp->menuRecentFiles = new Menu(QObject::tr("Open Recent"), _imp->menuFile);
+    _imp->menuEdit = new Menu(QObject::tr("Edit"), _imp->menubar);
+    _imp->menuLayout = new Menu(QObject::tr("Layout"), _imp->menubar);
+    _imp->menuDisplay = new Menu(QObject::tr("Display"), _imp->menubar);
+    _imp->menuOptions = new Menu(QObject::tr("Options"), _imp->menubar);
+    _imp->menuRender = new Menu(QObject::tr("Render"), _imp->menubar);
+    _imp->viewersMenu = new Menu(QObject::tr("Viewer(s)"), _imp->menuDisplay);
+    _imp->viewerInputsMenu = new Menu(QObject::tr("Connect Current Viewer"), _imp->viewersMenu);
+    _imp->viewersViewMenu = new Menu(QObject::tr("Display View Number"), _imp->viewersMenu);
+    _imp->cacheMenu = new Menu(QObject::tr("Cache"), _imp->menubar);
 
 
     _imp->actionNew_project = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutIDActionNewProject, kShortcutDescActionNewProject, this);
@@ -1129,8 +1133,6 @@ Gui::setupUi()
 
     initProjectGuiKnobs();
 
-    _imp->_settingsGui = new PreferencesPanel(appPTR->getCurrentSettings(), this);
-    _imp->_settingsGui->hide();
 
     setVisibleProjectSettingsPanel();
 
@@ -1213,7 +1215,7 @@ GuiPrivate::createPropertiesBinGui()
 
     _maxPanelsOpenedSpinBox = new SpinBox(propertiesAreaButtonsContainer);
     _maxPanelsOpenedSpinBox->setMaximumSize(NATRON_SMALL_BUTTON_SIZE, NATRON_SMALL_BUTTON_SIZE);
-    _maxPanelsOpenedSpinBox->setMinimum(0);
+    _maxPanelsOpenedSpinBox->setMinimum(1);
     _maxPanelsOpenedSpinBox->setMaximum(100);
     _maxPanelsOpenedSpinBox->setToolTip( Qt::convertFromPlainText(_gui->tr("Set the maximum of panels that can be opened at the same time "
                                                                            "in the properties bin pane. The special value of 0 indicates "
@@ -2646,7 +2648,7 @@ Gui::findOrCreateToolButton(const boost::shared_ptr<PluginGroupNode> & plugin)
         QObject::connect( action, SIGNAL( triggered() ), pluginsToolButton, SLOT( onTriggered() ) );
         pluginsToolButton->setAction(action);
     } else {
-        QMenu* menu = new QMenu(this);
+        Menu* menu = new Menu(this);
         //menu->setFont( QFont(appFont,appFontSize) );
         menu->setTitle( pluginsToolButton->getLabel() );
         pluginsToolButton->setMenu(menu);
@@ -3874,6 +3876,9 @@ Gui::setCurveEditorOnTop()
 void
 Gui::showSettings()
 {
+    if (!_imp->_settingsGui) {
+        _imp->_settingsGui = new PreferencesPanel(appPTR->getCurrentSettings(), this);
+    }
     _imp->_settingsGui->show();
     _imp->_settingsGui->raise();
     _imp->_settingsGui->activateWindow();
@@ -4183,8 +4188,20 @@ Gui::onProcessHandlerStarted(const QString & sequenceName,
 {
     ///make the dialog which will show the progress
     RenderingProgressDialog *dialog = new RenderingProgressDialog(this, sequenceName, firstFrame, lastFrame, process, this);
-
+    QObject::connect(dialog,SIGNAL(accepted()),this,SLOT(onRenderProgressDialogFinished()));
+    QObject::connect(dialog,SIGNAL(rejected()),this,SLOT(onRenderProgressDialogFinished()));
     dialog->show();
+}
+
+void
+Gui::onRenderProgressDialogFinished()
+{
+    RenderingProgressDialog* dialog = qobject_cast<RenderingProgressDialog*>(sender());
+    if (!dialog) {
+        return;
+    }
+    dialog->close();
+    dialog->deleteLater();
 }
 
 void
@@ -4412,6 +4429,8 @@ Gui::onWriterRenderStarted(const QString & sequenceName,
     QObject::connect( dialog, SIGNAL( canceled() ), engine, SLOT( abortRendering_Blocking() ) );
     QObject::connect( engine, SIGNAL( frameRendered(int) ), dialog, SLOT( onFrameRendered(int) ) );
     QObject::connect( engine, SIGNAL( renderFinished(int) ), dialog, SLOT( onVideoEngineStopped(int) ) );
+    QObject::connect(dialog,SIGNAL(accepted()),this,SLOT(onRenderProgressDialogFinished()));
+    QObject::connect(dialog,SIGNAL(rejected()),this,SLOT(onRenderProgressDialogFinished()));
     dialog->show();
 }
 
@@ -4482,25 +4501,33 @@ Gui::renderAllWriters()
 void
 Gui::renderSelectedNode()
 {
-    const std::list<boost::shared_ptr<NodeGui> > & selectedNodes = _imp->_nodeGraphArea->getSelectedNodes();
+    NodeGraph* graph = getLastSelectedGraph();
+    if (!graph) {
+        return;
+    }
+    
+    const std::list<boost::shared_ptr<NodeGui> > & selectedNodes = graph->getSelectedNodes();
 
-    if (selectedNodes.size() > 1) {
-        Natron::warningDialog( tr("Render").toStdString(), tr("Please select only a single node").toStdString() );
-    } else if ( selectedNodes.empty() ) {
+    if ( selectedNodes.empty() ) {
         Natron::warningDialog( tr("Render").toStdString(), tr("You must select a node to render first!").toStdString() );
     } else {
         std::list<AppInstance::RenderWork> workList;
 
         for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = selectedNodes.begin();
              it != selectedNodes.end(); ++it) {
-            if ( (*it)->getNode()->getLiveInstance()->isWriter() ) {
-                ///if the node is a writer, just use it to render!
-                AppInstance::RenderWork w;
-                w.writer = dynamic_cast<Natron::OutputEffectInstance*>( (*it)->getNode()->getLiveInstance() );
-                assert(w.writer);
-                w.firstFrame = INT_MIN;
-                w.lastFrame = INT_MAX;
-                workList.push_back(w);
+            Natron::EffectInstance* effect = (*it)->getNode()->getLiveInstance();
+            assert(effect);
+            if (effect->isWriter()) {
+                if (!effect->areKnobsFrozen()) {
+                    //if ((*it)->getNode()->is)
+                    ///if the node is a writer, just use it to render!
+                    AppInstance::RenderWork w;
+                    w.writer = dynamic_cast<Natron::OutputEffectInstance*>(effect);
+                    assert(w.writer);
+                    w.firstFrame = INT_MIN;
+                    w.lastFrame = INT_MAX;
+                    workList.push_back(w);
+                }
             } else {
                 if (selectedNodes.size() == 1) {
                     ///create a node and connect it to the node and use it to render
@@ -4701,14 +4728,18 @@ Gui::progressUpdate(KnobHolder* effect,
 void
 Gui::addVisibleDockablePanel(DockablePanel* panel)
 {
+    
+    std::list<DockablePanel*>::iterator it = std::find(_imp->openedPanels.begin(), _imp->openedPanels.end(), panel);
     putSettingsPanelFirst(panel);
-    assert(panel);
-    int maxPanels = appPTR->getCurrentSettings()->getMaxPanelsOpened();
-    if ( ( (int)_imp->openedPanels.size() == maxPanels ) && (maxPanels != 0) ) {
-        std::list<DockablePanel*>::iterator it = _imp->openedPanels.begin();
-        (*it)->closePanel();
+    if ( it == _imp->openedPanels.end() ) {
+        assert(panel);
+        int maxPanels = appPTR->getCurrentSettings()->getMaxPanelsOpened();
+        if ( ( (int)_imp->openedPanels.size() == maxPanels ) && (maxPanels != 0) ) {
+            std::list<DockablePanel*>::iterator it = _imp->openedPanels.begin();
+            (*it)->closePanel();
+        }
+        _imp->openedPanels.push_back(panel);
     }
-    _imp->openedPanels.push_back(panel);
 }
 
 void
@@ -5079,6 +5110,7 @@ Gui::getNodesEntitledForOverlays(std::list<boost::shared_ptr<Natron::Node> > & n
                 } else {
                     if ( ( internalNode->hasOverlay() || internalNode->getRotoContext() ) &&
                          !internalNode->isNodeDisabled() &&
+                        !internalNode->getParentMultiInstance() && 
                          internalNode->isActivated() &&
                          node->isSettingsPanelVisible() &&
                          !node->isSettingsPanelMinimized() ) {
@@ -5226,7 +5258,7 @@ GuiPrivate::findActionRecursive(int i,
     }
     ///Create the entry
     if (i < grouping.size() - 1) {
-        QMenu* menu = new QMenu(widget);
+        Menu* menu = new Menu(widget);
         menu->setTitle(grouping[i]);
         QMenu* isMenu = dynamic_cast<QMenu*>(widget);
         QMenuBar* isMenuBar = dynamic_cast<QMenuBar*>(widget);

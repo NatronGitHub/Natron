@@ -872,6 +872,10 @@ GuiApplicationManager::getIcon(Natron::PixmapEnum e,
                 img.load(NATRON_IMAGES_PATH "merge_xor.png");
                 *pix = QPixmap::fromImage(img);
                 break;
+            case NATRON_PIXMAP_ENTER_GROUP:
+                img.load(NATRON_IMAGES_PATH "enter_group.png");
+                *pix = QPixmap::fromImage(img);
+                break;
             default:
                 assert(!"Missing image.");
         } // switch
@@ -978,7 +982,7 @@ GuiApplicationManager::onPluginLoaded(Natron::Plugin* plugin)
     QString shortcutGrouping(kShortcutGroupNodes);
     const QStringList & groups = plugin->getGrouping();
     const QString & pluginID = plugin->getPluginID();
-    const QString  pluginLabel = plugin->getLabelWithoutOFX();
+    const QString  pluginLabel = plugin->getLabelWithoutSuffix();
     const QString & pluginIconPath = plugin->getIconFilePath();
     const QString & groupIconPath = plugin->getGroupIconFilePath();
 
@@ -1289,7 +1293,7 @@ GuiApplicationManager::loadBuiltinNodePlugins(std::map<std::string,std::vector< 
         LibraryBinary *readerPlugin = new LibraryBinary(readerFunctions);
         assert(readerPlugin);
         
-        registerPlugin(grouping, reader->getPluginID().c_str(), reader->getPluginLabel().c_str(), "", "", "", false, false, readerPlugin, false, reader->getMajorVersion(), reader->getMinorVersion());
+        registerPlugin(grouping, reader->getPluginID().c_str(), reader->getPluginLabel().c_str(), "", "", false, false, readerPlugin, false, reader->getMajorVersion(), reader->getMinorVersion());
  
         std::vector<std::string> extensions = reader->supportedFileFormats();
         for (U32 k = 0; k < extensions.size(); ++k) {
@@ -1314,7 +1318,7 @@ GuiApplicationManager::loadBuiltinNodePlugins(std::map<std::string,std::vector< 
         LibraryBinary *writerPlugin = new LibraryBinary(writerFunctions);
         assert(writerPlugin);
         
-        registerPlugin(grouping, writer->getPluginID().c_str(), writer->getPluginLabel().c_str(),"", "", "", false, false, writerPlugin, false, writer->getMajorVersion(), writer->getMinorVersion());
+        registerPlugin(grouping, writer->getPluginID().c_str(), writer->getPluginLabel().c_str(),"", "", false, false, writerPlugin, false, writer->getMajorVersion(), writer->getMinorVersion());
         
 
 
@@ -1345,7 +1349,7 @@ GuiApplicationManager::loadBuiltinNodePlugins(std::map<std::string,std::vector< 
         LibraryBinary *viewerPlugin = new LibraryBinary(viewerFunctions);
         assert(viewerPlugin);
         
-        registerPlugin(grouping, viewer->getPluginID().c_str(), viewer->getPluginLabel().c_str(),NATRON_IMAGES_PATH "viewer_icon.png", "", "", false, false, viewerPlugin, false, viewer->getMajorVersion(), viewer->getMinorVersion());
+        registerPlugin(grouping, viewer->getPluginID().c_str(), viewer->getPluginLabel().c_str(),NATRON_IMAGES_PATH "viewer_icon.png", "", false, false, viewerPlugin, false, viewer->getMajorVersion(), viewer->getMinorVersion());
 
     }
 
@@ -1449,6 +1453,7 @@ GuiApplicationManager::onAllPluginsLoaded()
 {
     ///Restore user shortcuts only when all plug-ins are populated.
     loadShortcuts();
+    AppManager::onAllPluginsLoaded();
 }
 
 void
@@ -1914,6 +1919,8 @@ GuiApplicationManager::populateShortcuts()
                     Qt::Key_X);
     registerKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphMakeGroup, kShortcutDescActionGraphMakeGroup, Qt::ControlModifier | Qt::ShiftModifier,
                     Qt::Key_G);
+    registerKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphExpandGroup, kShortcutDescActionGraphExpandGroup, Qt::ControlModifier | Qt::ShiftModifier,
+                    Qt::Key_E);
     
     ///CurveEditor
     registerKeybind(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorRemoveKeys, kShortcutDescActionCurveEditorRemoveKeys, Qt::NoModifier,Qt::Key_Backspace);

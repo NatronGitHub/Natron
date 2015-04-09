@@ -321,7 +321,6 @@ public:
                         const QString & pluginLabel,
                         const QString & pluginIconPath,
                         const QString & groupIconPath,
-                        const QString & ofxPluginID,
                         bool isReader,
                         bool isWriter,
                         Natron::LibraryBinary* binary,
@@ -493,18 +492,14 @@ protected:
     {
     }
 
-    virtual void onPluginLoaded(Natron::Plugin* /*plugin*/)
-    {
-    }
-
     virtual void ignorePlugin(Natron::Plugin* /*plugin*/)
     {
         
     }
     
-    virtual void onAllPluginsLoaded()
-    {
-    }
+    virtual void onPluginLoaded(Natron::Plugin* /*plugin*/) {}
+    
+    virtual void onAllPluginsLoaded();
     
     virtual void clearLastRenderedTextures() {}
     
@@ -686,7 +681,7 @@ PyObject* getMainModule();
 **/
 bool interpretPythonScript(const std::string& script,std::string* error,std::string* output);
 
-    
+
 void compilePyScript(const std::string& script,PyObject** code);
 
 std::string PY3String_asString(PyObject* obj);

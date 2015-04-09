@@ -162,6 +162,7 @@ private:
     bool _bendPointHiddenAutomatically;
     bool _enoughSpaceToShowLabel;
     bool _isRotoMask;
+    bool _isMask;
     QPointF _middlePoint; //updated only when dest && source are valid
 };
 

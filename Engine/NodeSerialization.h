@@ -31,6 +31,7 @@ CLANG_DIAG_ON(unused-parameter)
 #endif
 #include "Engine/KnobSerialization.h"
 #include "Engine/RotoSerialization.h"
+#include "Engine/ImageParamsSerialization.h"
 #include "Engine/AppManager.h"
 
 
@@ -42,7 +43,8 @@ CLANG_DIAG_ON(unused-parameter)
 #define NODE_SERIALIZATION_INTRODUCES_SCRIPT_NAME 7
 #define NODE_SERIALIZATION_INTRODUCES_PYTHON_MODULE 8
 #define NODE_SERIALIZATION_CHANGE_INPUTS_SERIALIZATION 9
-#define NODE_SERIALIZATION_CURRENT_VERSION NODE_SERIALIZATION_CHANGE_INPUTS_SERIALIZATION
+#define NODE_SERIALIZATION_INTRODUCES_USER_COMPONENTS 10
+#define NODE_SERIALIZATION_CURRENT_VERSION NODE_SERIALIZATION_INTRODUCES_USER_COMPONENTS
 
 namespace Natron {
 class Node;
@@ -55,7 +57,7 @@ public:
     typedef std::list< boost::shared_ptr<KnobSerialization> > KnobValues;
 
     ///Used to serialize
-    NodeSerialization(const boost::shared_ptr<Natron::Node> & n,bool serializeInputs = true,bool copyKnobs = false);
+    NodeSerialization(const boost::shared_ptr<Natron::Node> & n,bool serializeInputs = true);
 
     ////Used to deserialize
     NodeSerialization()
@@ -176,6 +178,11 @@ public:
         return _children;
     }
     
+    const std::list<Natron::ImageComponents>& getUserComponents() const
+    {
+        return _userComponents;
+    }
+    
 private:
 
     bool _isNull;
@@ -199,6 +206,8 @@ private:
     std::list< boost::shared_ptr<NodeSerialization> > _children;
     
     std::string _pythonModule;
+    
+    std::list<Natron::ImageComponents> _userComponents;
     
     friend class boost::serialization::access;
     template<class Archive>
@@ -242,6 +251,8 @@ private:
              ++it) {
             ar & boost::serialization::make_nvp("item",**it);
         }
+        
+        ar & boost::serialization::make_nvp("UserComponents",_userComponents);
         
     }
     
@@ -327,6 +338,9 @@ private:
                 ar & boost::serialization::make_nvp("item",*s);
                 _children.push_back(s);
             }
+        }
+        if (version >= NODE_SERIALIZATION_INTRODUCES_USER_COMPONENTS)  {
+            ar & boost::serialization::make_nvp("UserComponents",_userComponents);
         }
 
     }

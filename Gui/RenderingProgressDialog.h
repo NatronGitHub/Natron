@@ -62,12 +62,16 @@ public Q_SLOTS:
     void onProcessFinished(int);
 
     void onVideoEngineStopped(int);
+    
+    void onCancelButtonClicked();
 
 Q_SIGNALS:
 
     void canceled();
 
 private:
+    
+    virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
     
     virtual void closeEvent(QCloseEvent* e) OVERRIDE FINAL;
 

@@ -153,6 +153,13 @@ public:
     int randomInt(int min, int max);
     int randomInt(unsigned int seed) const;
     
+    /**
+     * @brief Returns the raw value of the curve at the given dimension at the given time. Note that
+     * if there's an expression this will not return the value of the expression but the value of the animation curve
+     * if there is any.
+     **/
+    double curve(double time, int dimension = 0) const;
+    
 protected:
     
     /**

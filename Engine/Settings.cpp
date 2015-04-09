@@ -209,7 +209,7 @@ Settings::initializeKnobs()
                                      "The special value of 0 indicates there can be an unlimited number of panels opened.");
     _maxPanelsOpened->setAnimationEnabled(false);
     _maxPanelsOpened->disableSlider();
-    _maxPanelsOpened->setMinimum(0);
+    _maxPanelsOpened->setMinimum(1);
     _maxPanelsOpened->setMaximum(100);
     _generalTab->addKnob(_maxPanelsOpened);
 
@@ -613,7 +613,8 @@ Settings::initializeKnobs()
     _useInputAForMergeAutoConnect->setName("mergeConnectToA");
     _useInputAForMergeAutoConnect->setAnimationEnabled(false);
     _useInputAForMergeAutoConnect->setHintToolTip("If checked, upon creation of a new Merge node, the input A will be preferred "
-                                                  "for auto-connection with another node instead of the input B.");
+                                                  "for auto-connection and when disabling the node instead of the input B. "
+                                                  "This also applies to any other node with inputs named A and B.");
     _nodegraphTab->addKnob(_useInputAForMergeAutoConnect);
     
     _usePluginIconsInNodeGraph = Natron::createKnob<Bool_Knob>(this, "Display plug-in icon on node-graph");
@@ -922,9 +923,10 @@ Settings::initializeKnobs()
     
     _onProjectCreated = Natron::createKnob<String_Knob>(this, "After project created");
     _onProjectCreated->setName("afterProjectCreated");
-    _onProjectCreated->setHintToolTip("Callback called once a new project is created (this is never called when \"After project loaded\" is called.)\n"
-                                      "The variable \"app\" will be declared prior to calling the function, pointing to the current instance being "
-                                      "created.");
+    _onProjectCreated->setHintToolTip("Callback called once a new project is created (this is never called "
+                                      "when \"After project loaded\" is called.)\n"
+                                      "The signature of the callback is : callback(app) where:\n"
+                                      "- app: points to the current application instance\n");
     _onProjectCreated->setAnimationEnabled(false);
     _pythonPage->addKnob(_onProjectCreated);
     
@@ -1049,7 +1051,7 @@ Settings::setDefaultValues()
     _defaultBackdropColor->setDefaultValue(0.45,2);
     _disconnectedArrowLength->setDefaultValue(30);
     _hideOptionalInputsAutomatically->setDefaultValue(true);
-    _useInputAForMergeAutoConnect->setDefaultValue(true);
+    _useInputAForMergeAutoConnect->setDefaultValue(false);
 
     _defaultGeneratorColor->setDefaultValue(0.3,0);
     _defaultGeneratorColor->setDefaultValue(0.5,1);
@@ -1536,7 +1538,7 @@ Settings::onKnobValueChanged(KnobI* k,
         if (!_restoringSettings) {
             appPTR->setApplicationsCachesMaximumViewerDiskSpace( getMaximumViewerDiskCacheSize() );
         }
-    } else if ( k == _maxViewerDiskCacheGB.get() ) {
+    } else if ( k == _maxDiskCacheNodeGB.get() ) {
         if (!_restoringSettings) {
             appPTR->setApplicationsCachesMaximumDiskSpace(getMaximumDiskCacheNodeSize());
         }

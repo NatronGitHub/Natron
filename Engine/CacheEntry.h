@@ -78,7 +78,9 @@ public:
     
     void resize(U64 size)
     {
-        assert(size > 0);
+        if (size == 0) {
+            return;
+        }
         count = size;
         if (data) {
             free(data);
@@ -211,7 +213,7 @@ public:
                 memcpy(dst,src,other._backingFile->size());
             }
         } else if (_storageMode == eStorageModeDisk) {
-            if (_storageMode == eStorageModeDisk) {
+            if (other._storageMode == eStorageModeDisk) {
                 assert(_backingFile);
                 _backingFile.swap(other._backingFile);
                 _path = other._path;

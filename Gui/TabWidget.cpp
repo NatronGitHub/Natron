@@ -47,7 +47,7 @@ CLANG_DIAG_ON(deprecated)
 #include "Gui/Splitter.h"
 #include "Gui/GuiMacros.h"
 #include "Gui/ActionShortcuts.h"
-#include "Gui/MenuWithToolTips.h"
+#include "Gui/Menu.h"
 #include "Gui/ScriptEditor.h"
 #include "Gui/PythonPanels.h"
 
@@ -289,7 +289,7 @@ TabWidget::createMenu()
     
     std::map<PyPanel*,std::string> userPanels = _imp->gui->getPythonPanels();
     if (!userPanels.empty()) {
-        QMenu* userPanelsMenu = new QMenu(tr("User panels"),&menu);
+        Natron::Menu* userPanelsMenu = new Natron::Menu(tr("User panels"),&menu);
         //userPanelsMenu->setFont(f);
         menu.addAction(userPanelsMenu->menuAction());
         
@@ -438,7 +438,7 @@ TabWidget::closeSplitterAndMoveOtherSplitToParent(Splitter* container)
 
     /*Remove the container from everywhere*/
     _imp->gui->unregisterSplitter(container);
-    container->setParent(NULL);
+   // container->setParent(NULL);
     container->deleteLater();
 }
 
@@ -522,7 +522,7 @@ TabWidget::floatPane(QPoint* position)
     
     FloatingWidget* floatingW = new FloatingWidget(_imp->gui,_imp->gui);
     Splitter* parentSplitter = dynamic_cast<Splitter*>( parentWidget() );
-    setParent(0);
+    //setParent(0);
     if (parentSplitter) {
         closeSplitterAndMoveOtherSplitToParent(parentSplitter);
     }
@@ -816,9 +816,9 @@ TabWidget::appendTab(const QIcon & icon,
                 }
             }
         }
-        if (!widget->isVisible()) {
-            widget->setVisible(true);
-        }
+//        if (!widget->isVisible()) {
+//            widget->setVisible(true);
+//        }
         _imp->floatButton->setEnabled(true);
         
     }
@@ -900,7 +900,7 @@ TabWidget::removeTab(int index,bool userAction)
                 l.relock();
             }
         }
-        tab->setParent(_imp->gui);
+        //tab->setParent(_imp->gui);
     }
     ViewerTab* isViewer = dynamic_cast<ViewerTab*>(tab);
     Histogram* isHisto = dynamic_cast<Histogram*>(tab);
@@ -1000,7 +1000,7 @@ TabWidget::makeCurrentTab(int index)
         _imp->currentWidget = tab;
     }
     tab->setVisible(true);
-    tab->setParent(this);
+    //tab->setParent(this);
     _imp->modifyingTabBar = true;
     _imp->tabBar->setCurrentIndex(index);
     _imp->modifyingTabBar = false;
@@ -1482,7 +1482,7 @@ TabWidget::moveTab(QWidget* what,
     }
     assert(where);
     where->appendTab(what,obj);
-    what->setParent(where);
+    //what->setParent(where);
     if ( !where->getGui()->getApp()->getProject()->isLoadingProject() ) {
         where->getGui()->getApp()->triggerAutoSave();
     }

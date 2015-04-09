@@ -25,18 +25,18 @@ CLANG_DIAG_ON(unused-parameter)
 #include <boost/archive/binary_oarchive.hpp>
 #endif
 
-#define kNatronColorPlaneName "color"
-#define kNatronBackwardMotionVectorsPlaneName "backward"
-#define kNatronForwardMotionVectorsPlaneName "forward"
-#define kNatronDisparityLeftPlaneName "disparityL"
-#define kNatronDisparityRightPlaneName "disparityR"
+#define kNatronColorPlaneName "Color"
+#define kNatronBackwardMotionVectorsPlaneName "Backward"
+#define kNatronForwardMotionVectorsPlaneName "Forward"
+#define kNatronDisparityLeftPlaneName "DisparityLeft"
+#define kNatronDisparityRightPlaneName "DisparityRight"
 
-#define kNatronRGBAComponentsName "rgba"
-#define kNatronRGBComponentsName "rgb"
-#define kNatronAlphaComponentsName "alpha"
+#define kNatronRGBAComponentsName "RGBA"
+#define kNatronRGBComponentsName "RGB"
+#define kNatronAlphaComponentsName "Alpha"
 
-#define kNatronDisparityComponentsName "disparity"
-#define kNatronMotionComponentsName "motion"
+#define kNatronDisparityComponentsName "Disparity"
+#define kNatronMotionComponentsName "Motion"
 
 
 namespace Natron {
@@ -95,6 +95,7 @@ public:
     static const ImageComponents& getForwardMotionComponents();
     static const ImageComponents& getDisparityLeftComponents();
     static const ImageComponents& getDisparityRightComponents();
+    static const ImageComponents& getXYComponents();
     
     friend class boost::serialization::access;
     

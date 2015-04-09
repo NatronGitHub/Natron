@@ -26,6 +26,7 @@
 #include <QVBoxLayout>
 #include <QAbstractItemView>
 #include <QCheckBox>
+#include <QTimer>
 #include <QCoreApplication>
 #include <QToolBar>
 CLANG_DIAG_OFF(unused-private-field)
@@ -1122,6 +1123,8 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->viewerNode->setUiContext(getViewer());
     
     refreshLayerAndAlphaChannelComboBox();
+    
+    QTimer::singleShot(25, _imp->timeLineGui, SLOT(recenterOnBounds()));
 
 }
 
@@ -3910,6 +3913,7 @@ ViewerTab::setFrameRange(int left,int right)
 {
     setTimelineBounds(left, right);
     onTimelineBoundariesChanged(left, right);
+    _imp->timeLineGui->recenterOnBounds();
 }
 
 void
@@ -4043,7 +4047,9 @@ ViewerTabPrivate::getComponentsAvailabel(std::set<ImageComponents>* comps) const
             EffectInstance::ComponentsAvailableMap compsAvailable;
             activeInput[i]->getComponentsAvailable(gui->getApp()->getTimeLine()->currentFrame(), &compsAvailable);
             for (EffectInstance::ComponentsAvailableMap::iterator it = compsAvailable.begin(); it != compsAvailable.end(); ++it) {
-                comps->insert(it->first);
+                if (it->second.lock()) {
+                    comps->insert(it->first);
+                }
             }
         }
     }

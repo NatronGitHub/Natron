@@ -27,6 +27,10 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/Curve.h"
 
+namespace Transform
+{
+    struct Matrix3x3;
+}
 class CurveGui;
 class KnobGui;
 class CurveWidget;
@@ -267,5 +271,40 @@ private:
     bool _updateOnFirstRedo;
     bool _firstRedoCalled;
 };
+
+class TransformKeysCommand
+: public QUndoCommand
+{
+public:
+    
+    TransformKeysCommand(CurveWidget* widget,
+                         const SelectedKeys & keys,
+                         double centerX,
+                         double centerY,
+                         double tx,
+                         double ty,
+                         double sx,
+                         double sy,
+                         bool updateOnFirstRedo,
+                         QUndoCommand *parent = 0);
+    virtual ~TransformKeysCommand();
+    
+private:
+    virtual void undo() OVERRIDE FINAL;
+    virtual void redo() OVERRIDE FINAL;
+    virtual int id() const OVERRIDE FINAL;
+    virtual bool mergeWith(const QUndoCommand * command) OVERRIDE FINAL;
+    
+    void transform(const KeyPtr& k);
+    
+private:
+    bool _firstRedoCalled;
+    bool _updateOnFirstRedo;
+    SelectedKeys _keys;
+    CurveWidget* _widget;
+    std::list<std::pair<boost::shared_ptr<Curve>,boost::shared_ptr<Curve> > > _curves;
+    boost::shared_ptr<Transform::Matrix3x3> _matrix;
+};
+
 
 #endif // CURVEEDITORUNDOREDO_H

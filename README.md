@@ -27,6 +27,7 @@ Features
  * [OpenFX samples](https://github.com/devernay/openfx) (in the Support and Examples directories)
 
 - Support for commercial OpenFX plugins:
+ * [All OFX products from RevisionFX](http://www.revisionfx.com)
  * [Furnace by The Foundry](http://www.thefoundry.co.uk/products/furnace/)
  * [KeyLight by The Foundry](http://www.thefoundry.co.uk/products/plugins/keylight/)
  * [GenArts Sapphire](http://www.genarts.com/software/sapphire/overview)
@@ -74,8 +75,7 @@ with a very accurate and intuitive curve editor.
 - Rotoscoping & Tracking support
   
 - Multi-view workflow: Natron saves time by keeping all the views in the same stream. You can separate
-the views at any time with the SplitViews node. Note that currently Natron does not allow to split the 
-nodes settings for each view, this will be implemented in the future.
+the views at any time with the OneView node.
 
 - Python 3 scripting integration:
     * Parameters expressions
@@ -84,6 +84,9 @@ nodes settings for each view, this will be implemented in the future.
     * Script editor to control the application overall
     * User-defined python callbacks to respond to particular checkpoints of the internals of the software (change of a parameter, before rendering a frame, etc…)
     * Integration of Pyside to the GUI so that the interface is extensible with new menus and windows
+
+- Multi-plane: Natron is able to deal with multi-layered EXR files thanks to OpenImageIO. It is deeply integrated into the workflow and the user can choose
+to work with any layer (or plane) on any node. New custom layers can also be created. 
 
 Requirements
 ------------

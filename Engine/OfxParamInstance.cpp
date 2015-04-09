@@ -22,6 +22,7 @@
 //ofx extension
 #include <nuke/fnPublicOfxExtensions.h>
 #include <ofxParametricParam.h>
+#include "ofxNatron.h"
 
 #include <QDebug>
 
@@ -233,6 +234,12 @@ OfxPushButtonInstance::setSecret()
 }
 
 void
+OfxPushButtonInstance::setLabel()
+{
+    _knob->setDescription(getParamLabel(this));
+}
+
+void
 OfxPushButtonInstance::setEvaluateOnChange()
 {
     _knob->setEvaluateOnChange( getEvaluateOnChange() );
@@ -316,6 +323,12 @@ void
 OfxIntegerInstance::setSecret()
 {
     _knob->setSecret( getSecret() );
+}
+
+void
+OfxIntegerInstance::setLabel()
+{
+    _knob->setDescription(getParamLabel(this));
 }
 
 void
@@ -524,6 +537,12 @@ OfxDoubleInstance::setSecret()
 }
 
 void
+OfxDoubleInstance::setLabel()
+{
+    _knob->setDescription(getParamLabel(this));
+}
+
+void
 OfxDoubleInstance::setEvaluateOnChange()
 {
     _knob->setEvaluateOnChange( getEvaluateOnChange() );
@@ -679,6 +698,12 @@ OfxBooleanInstance::setSecret()
 }
 
 void
+OfxBooleanInstance::setLabel()
+{
+    _knob->setDescription(getParamLabel(this));
+}
+
+void
 OfxBooleanInstance::setEvaluateOnChange()
 {
     _knob->setEvaluateOnChange( getEvaluateOnChange() );
@@ -757,6 +782,11 @@ OfxChoiceInstance::OfxChoiceInstance(OfxEffectInstance* node,
 
     int def = properties.getIntProperty(kOfxParamPropDefault);
     _knob->setDefaultValue(def,0);
+    
+    bool canAddOptions = (int)properties.getIntProperty(kNatronOfxParamPropChoiceHostCanAddOptions);
+    if (canAddOptions) {
+        _knob->setHostCanAddOptions(true);
+    }
 }
 
 OfxStatus
@@ -817,6 +847,12 @@ OfxChoiceInstance::setSecret()
 }
 
 void
+OfxChoiceInstance::setLabel()
+{
+    _knob->setDescription(getParamLabel(this));
+}
+
+void
 OfxChoiceInstance::setEvaluateOnChange()
 {
     _knob->setEvaluateOnChange( getEvaluateOnChange() );
@@ -826,13 +862,17 @@ void
 OfxChoiceInstance::setOption(int /*num*/)
 {
     int dim = getProperties().getDimension(kOfxParamPropChoiceOption);
-
+    int labelOptionDim = getProperties().getDimension(kOfxParamPropChoiceLabelOption);
+    
     _entries.clear();
     std::vector<std::string> helpStrings;
     bool hashelp = false;
     for (int i = 0; i < dim; ++i) {
         std::string str = getProperties().getStringProperty(kOfxParamPropChoiceOption,i);
-        std::string help = getProperties().getStringProperty(kOfxParamPropChoiceLabelOption,i);
+        std::string help;
+        if (i < labelOptionDim) {
+            help = getProperties().getStringProperty(kOfxParamPropChoiceLabelOption,i);
+        }
         if ( !help.empty() ) {
             hashelp = true;
         }
@@ -1041,6 +1081,13 @@ OfxRGBAInstance::setSecret()
 }
 
 void
+OfxRGBAInstance::setLabel()
+{
+    _knob->setDescription(getParamLabel(this));
+}
+
+
+void
 OfxRGBAInstance::setEvaluateOnChange()
 {
     _knob->setEvaluateOnChange( getEvaluateOnChange() );
@@ -1238,6 +1285,12 @@ void
 OfxRGBInstance::setSecret()
 {
     _knob->setSecret( getSecret() );
+}
+
+void
+OfxRGBInstance::setLabel()
+{
+    _knob->setDescription(getParamLabel(this));
 }
 
 void
@@ -1462,6 +1515,13 @@ OfxDouble2DInstance::setSecret()
 }
 
 void
+OfxDouble2DInstance::setLabel()
+{
+    _knob->setDescription(getParamLabel(this));
+}
+
+
+void
 OfxDouble2DInstance::setEvaluateOnChange()
 {
     _knob->setEvaluateOnChange( getEvaluateOnChange() );
@@ -1655,6 +1715,13 @@ OfxInteger2DInstance::setSecret()
 {
     _knob->setSecret( getSecret() );
 }
+
+void
+OfxInteger2DInstance::setLabel()
+{
+    _knob->setDescription(getParamLabel(this));
+}
+
 
 void
 OfxInteger2DInstance::setDisplayRange()
@@ -1883,6 +1950,13 @@ OfxDouble3DInstance::setSecret()
 }
 
 void
+OfxDouble3DInstance::setLabel()
+{
+    _knob->setDescription(getParamLabel(this));
+}
+
+
+void
 OfxDouble3DInstance::setDisplayRange()
 {
     std::vector<double> displayMins(3);
@@ -2092,6 +2166,13 @@ OfxInteger3DInstance::setSecret()
 }
 
 void
+OfxInteger3DInstance::setLabel()
+{
+    _knob->setDescription(getParamLabel(this));
+}
+
+
+void
 OfxInteger3DInstance::setDisplayRange()
 {
     std::vector<int> displayMins(3);
@@ -2230,6 +2311,12 @@ OfxGroupInstance::setSecret()
     _groupKnob->setSecret( getSecret() );
 }
 
+void
+OfxGroupInstance::setLabel()
+{
+    _groupKnob->setDescription(getParamLabel(this));
+}
+
 ////////////////////////// OfxPageInstance /////////////////////////////////////////////////
 
 
@@ -2253,6 +2340,12 @@ void
 OfxPageInstance::setSecret()
 {
     _pageKnob->setAllDimensionsEnabled( getSecret() );
+}
+
+void
+OfxPageInstance::setLabel()
+{
+    _pageKnob->setDescription(getParamLabel(this));
 }
 
 boost::shared_ptr<KnobI> OfxPageInstance::getKnob() const
@@ -2509,6 +2602,23 @@ OfxStringInstance::setEnabled()
     }
     if (_pathKnob) {
         _pathKnob->setAllDimensionsEnabled( getEnabled() );
+    }
+}
+
+void
+OfxStringInstance::setLabel()
+{
+    if (_fileKnob) {
+        _fileKnob->setDescription(getParamLabel(this));
+    }
+    if (_outputFileKnob) {
+        _outputFileKnob->setDescription(getParamLabel(this));
+    }
+    if (_stringKnob) {
+        _stringKnob->setDescription(getParamLabel(this));
+    }
+    if (_pathKnob) {
+        _pathKnob->setDescription(getParamLabel(this));
     }
 }
 
@@ -2776,6 +2886,12 @@ OfxCustomInstance::setSecret()
 }
 
 void
+OfxCustomInstance::setLabel()
+{
+    _knob->setDescription(getParamLabel(this));
+}
+
+void
 OfxCustomInstance::setEvaluateOnChange()
 {
     _knob->setEvaluateOnChange( getEvaluateOnChange() );
@@ -2923,7 +3039,7 @@ OfxParametricInstance::setEvaluateOnChange()
 void
 OfxParametricInstance::setLabel()
 {
-    _knob->setName( getParamLabel(this) );
+    _knob->setDescription( getParamLabel(this) );
     for (int i = 0; i < _knob->getDimension(); ++i) {
         const std::string & curveName = getProperties().getStringProperty(kOfxParamPropDimensionLabel,i);
         _knob->setDimensionName(i, curveName);

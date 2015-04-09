@@ -18,8 +18,21 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
-class MenuWithToolTips
-    : public QMenu
+namespace Natron
+{
+    class Menu : public QMenu
+    {
+    public:
+        
+        explicit Menu(const QString &title, QWidget *parent = 0);
+        explicit Menu(QWidget* parent);
+        
+        virtual ~Menu() {}
+    };
+}
+
+class MenuWithToolTips: public Natron::Menu
+
 {
 public:
     MenuWithToolTips(QWidget* parent);

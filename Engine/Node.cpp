@@ -88,6 +88,86 @@ namespace { // protect local classes in anonymous namespace
         }
     };
     
+    class ChannelSelector {
+        
+    public:
+        
+        boost::shared_ptr<Choice_Knob> layer;
+        boost::shared_ptr<String_Knob> layerName;
+        boost::shared_ptr<Bool_Knob> enabledChan[4];
+        bool useRGBASelectors; //< if false, only the layer knob is created
+        bool hasAllChoice; // if true, the layer has a "all" entry
+        
+        mutable QMutex compsMutex;
+        
+        //Stores the components available at build time of the choice menu
+        EffectInstance::ComponentsAvailableMap compsAvailable;
+        
+        ChannelSelector()
+        : layer()
+        , layerName()
+        , enabledChan()
+        , useRGBASelectors(false)
+        , hasAllChoice(false)
+        , compsMutex()
+        , compsAvailable()
+        {
+            
+        }
+        
+        ChannelSelector(const ChannelSelector& other) {
+            *this = other;
+        }
+        
+        void operator=(const ChannelSelector& other) {
+            layer = other.layer;
+            for (int i = 0; i< 4; ++i) {
+                enabledChan[i] = other.enabledChan[i];
+            }
+            useRGBASelectors = other.useRGBASelectors;
+            hasAllChoice = other.hasAllChoice;
+            layerName = other.layerName;
+            QMutexLocker k(&compsMutex);
+            compsAvailable = other.compsAvailable;
+        }
+    };
+    
+    class MaskSelector {
+        
+    public:
+        
+        boost::shared_ptr<Bool_Knob> enabled;
+        boost::shared_ptr<Choice_Knob> channel;
+        boost::shared_ptr<String_Knob> channelName;
+        
+        mutable QMutex compsMutex;
+        //Stores the components available at build time of the choice menu
+        std::vector<ImageComponents> compsAvailable;
+        
+        MaskSelector()
+        : enabled()
+        , channel()
+        , channelName()
+        , compsMutex()
+        , compsAvailable()
+        {
+            
+        }
+        
+        MaskSelector(const MaskSelector& other) {
+            *this = other;
+        }
+        
+        void operator=(const MaskSelector& other) {
+            enabled = other.enabled;
+            channel = other.channel;
+            channelName = other.channelName;
+            QMutexLocker k(&compsMutex);
+            compsAvailable = other.compsAvailable;
+        }
+
+    };
+    
 }
 
 
@@ -129,8 +209,6 @@ struct Node::Implementation
     , masterNodeMutex()
     , masterNode()
     , nodeLinks()
-    , enableMaskKnob()
-    , maskChannelKnob()
     , nodeSettingsPage()
     , nodeLabelKnob()
     , previewEnabledKnob()
@@ -146,6 +224,8 @@ struct Node::Implementation
     , beforeRender()
     , afterFrameRender()
     , afterRender()
+    , channelsSelectors()
+    , maskSelectors()
     , rotoContext()
     , imagesBeingRenderedMutex()
     , imageBeingRenderedCond()
@@ -178,6 +258,8 @@ struct Node::Implementation
     , pluginPythonModuleMutex()
     , pluginPythonModule()
     , nodeCreated(false)
+    , createdComponentsMutex()
+    , createdComponents()
     {        
         ///Initialize timers
         gettimeofday(&lastRenderStartedSlotCallTime, 0);
@@ -209,6 +291,14 @@ struct Node::Implementation
     void appendChild(const boost::shared_ptr<Natron::Node>& child);
     
     void runInputChangedCallback(int index,const std::string& script);
+    
+    void createChannelSelector(int inputNb,const std::string & inputName, bool isOutput,const boost::shared_ptr<Page_Knob>& page);
+    
+    void onLayerChanged(int inputNb,const ChannelSelector& selector);
+    
+    void onMaskSelectorChanged(int inputNb,const MaskSelector& selector);
+    
+    bool getSelectedLayer(int inputNb,const ChannelSelector& selector, ImageComponents* comp) const;
     
     Node* _publicInterface;
     
@@ -273,9 +363,6 @@ struct Node::Implementation
     boost::weak_ptr<Node> masterNode; //< this points to the master when the node is a clone
     KnobLinkList nodeLinks; //< these point to the parents of the params links
     
-    ///For each mask, the input number and the knob
-    std::map<int,boost::shared_ptr<Bool_Knob> > enableMaskKnob;
-    std::map<int,boost::shared_ptr<Choice_Knob> > maskChannelKnob;
     boost::shared_ptr<Page_Knob> nodeSettingsPage;
     boost::shared_ptr<String_Knob> nodeLabelKnob;
     boost::shared_ptr<Bool_Knob> previewEnabledKnob;
@@ -296,6 +383,9 @@ struct Node::Implementation
     boost::shared_ptr<String_Knob> beforeRender;
     boost::shared_ptr<String_Knob> afterFrameRender;
     boost::shared_ptr<String_Knob> afterRender;
+    
+    std::map<int,ChannelSelector> channelsSelectors;
+    std::map<int,MaskSelector> maskSelectors;
     
     boost::shared_ptr<RotoContext> rotoContext; //< valid when the node has a rotoscoping context (i.e: paint context)
     
@@ -349,6 +439,9 @@ struct Node::Implementation
     std::string pluginPythonModule;
     
     bool nodeCreated;
+    
+    mutable QMutex createdComponentsMutex;
+    std::list<Natron::ImageComponents> createdComponents; // comps created by the user
 };
 
 /**
@@ -493,7 +586,16 @@ Node::load(const std::string & parentMultiInstanceName,
     if (!nameSet) {
         if (fixedName.isEmpty()) {
             std::string name;
-            QString pluginLabel = _imp->plugin ? _imp->plugin->getLabelWithoutOFX() : QString();
+            QString pluginLabel;
+            AppManager::AppTypeEnum appType = appPTR->getAppType();
+            if (_imp->plugin &&
+                (appType == AppManager::eAppTypeBackground ||
+                 appType == AppManager::eAppTypeGui ||
+                 appType == AppManager::eAppTypeInterpreter)) {
+                pluginLabel = _imp->plugin->getLabelWithoutSuffix();
+            } else {
+                pluginLabel = _imp->plugin->getPluginLabel();
+            }
             getGroup()->initNodeName(isMultiInstanceChild ? parentMultiInstanceName + '_' : pluginLabel.toStdString(),&name);
             setNameInternal(name.c_str());
             nameSet = true;
@@ -519,30 +621,28 @@ Node::load(const std::string & parentMultiInstanceName,
         group->notifyNodeActivated(thisShared);
     }
     
-    if (isMultiInstanceChild) {
-        assert(_imp->multiInstanceParent.lock());
-        NodePtr parent = _imp->multiInstanceParent.lock();
-        boost::shared_ptr<NodeGuiI> gui_i = parent->getNodeGui();
-        if (gui_i) {
-            gui_i->onChildInstanceCreated(thisShared);
-        }
-    }
-    
     computeHash();
     assert(_imp->liveInstance);
     _imp->nodeCreated = true;
     
+    refreshChannelSelectors(serialization.isNull());
+
     _imp->runOnNodeCreatedCB(serialization.isNull());
     
 } // load
 
+bool
+Node::isNodeCreated() const
+{
+    return _imp->nodeCreated;
+}
 
 void
 Node::declareRotoPythonField()
 {
     assert(_imp->rotoContext);
     std::string appID = getApp()->getAppIDString();
-    std::string fullyQualifiedName = appID + "." +getFullyQualifiedName();
+    std::string fullyQualifiedName = appID + "." + getFullyQualifiedName();
     std::string err;
     std::string script = fullyQualifiedName + ".roto = " + fullyQualifiedName + ".getRotoContext()\n";
     if (!appPTR->isBackground()) {
@@ -752,6 +852,11 @@ Node::loadKnobs(const NodeSerialization & serialization,bool updateKnobGui)
     assert(_imp->knobsInitialized);
     if (serialization.isNull()) {
         return;
+    }
+    
+    {
+        QMutexLocker k(&_imp->createdComponentsMutex);
+        _imp->createdComponents = serialization.getUserComponents();
     }
     
     const std::vector< boost::shared_ptr<KnobI> > & nodeKnobs = getKnobs();
@@ -1703,37 +1808,83 @@ Node::initializeKnobs(int renderScaleSupportPref)
         _imp->nodeSettingsPage = Natron::createKnob<Page_Knob>(_imp->liveInstance.get(), NATRON_PARAMETER_PAGE_NAME_EXTRA,1,false);
         
         if (!isBd) {
+            
+            int foundA = -1;
+            int foundB = -1;
             for (int i = 0; i < inputsCount; ++i) {
+                
+                std::string maskName = _imp->liveInstance->getInputLabel(i);
+                if (maskName == "A") {
+                    foundA = i;
+                } else if (maskName == "B") {
+                    foundB = i;
+                }
+
                 if ( _imp->liveInstance->isInputMask(i) && !_imp->liveInstance->isInputRotoBrush(i) ) {
-                    std::string maskName = _imp->liveInstance->getInputLabel(i);
-                    boost::shared_ptr<Bool_Knob> enableMaskKnob = Natron::createKnob<Bool_Knob>(_imp->liveInstance.get(), maskName,1,false);
-                    _imp->enableMaskKnob.insert( std::make_pair(i,enableMaskKnob) );
-                    enableMaskKnob->setDefaultValue(false, 0);
-                    enableMaskKnob->setAddNewLine(false);
+                    
+                    MaskSelector sel;
+                    sel.enabled = Natron::createKnob<Bool_Knob>(_imp->liveInstance.get(), maskName,1,false);
+
+                    sel.enabled->setDefaultValue(false, 0);
+                    sel.enabled->setAddNewLine(false);
                     std::string enableMaskName(std::string(kEnableMaskKnobName) + std::string("_") + maskName);
-                    enableMaskKnob->setName(enableMaskName);
-                    enableMaskKnob->setAnimationEnabled(false);
-                    enableMaskKnob->setHintToolTip(tr("Enable the mask to come from the channel named by the choice parameter on the right. "
+                    sel.enabled->setName(enableMaskName);
+                    sel.enabled->setAnimationEnabled(false);
+                    sel.enabled->setHintToolTip(tr("Enable the mask to come from the channel named by the choice parameter on the right. "
                                                       "Turning this off will act as though the mask was disconnected.").toStdString());
                     
                     
-                    boost::shared_ptr<Choice_Knob> maskChannelKnob = Natron::createKnob<Choice_Knob>(_imp->liveInstance.get(), "",1,false);
-                    _imp->maskChannelKnob.insert( std::make_pair(i,maskChannelKnob) );
+                    sel.channel = Natron::createKnob<Choice_Knob>(_imp->liveInstance.get(), "",1,false);
+                    
                     std::vector<std::string> choices;
                     choices.push_back("None");
-                    choices.push_back("Red");
-                    choices.push_back("Green");
-                    choices.push_back("Blue");
-                    choices.push_back("Alpha");
-                    maskChannelKnob->populateChoices(choices);
-                    maskChannelKnob->setDefaultValue(4, 0);
-                    maskChannelKnob->setAnimationEnabled(false);
-                    maskChannelKnob->setAddNewLine(false);
-                    maskChannelKnob->setHintToolTip(tr("Use this channel from the original input to mix the output with the original input. "
+                    sel.channel->populateChoices(choices);
+                    sel.channel->setDefaultValue(0, 0);
+                    sel.channel->setAnimationEnabled(false);
+                    sel.channel->setHintToolTip(tr("Use this channel from the original input to mix the output with the original input. "
                                                        "Setting this to None is the same as disabling the mask.").toStdString());
                     std::string channelMaskName(kMaskChannelKnobName + std::string("_") + maskName);
-                    maskChannelKnob->setName(channelMaskName);
+                    sel.channel->setName(channelMaskName);
+                    
+                    sel.channelName = Natron::createKnob<String_Knob>(_imp->liveInstance.get(), "",1,false);
+                    sel.channelName->setSecret(true);
+                    sel.channelName->setEvaluateOnChange(false);
+                    
+                    _imp->maskSelectors[i] = sel;
+
                 }
+            }
+            
+            bool useChannels = !_imp->liveInstance->isMultiPlanar() &&
+            !_imp->liveInstance->isReader() &&
+            !_imp->liveInstance->isWriter() &&
+            !_imp->liveInstance->isTrackerNode() &&
+            !dynamic_cast<NodeGroup*>(_imp->liveInstance.get());
+            
+            if (useChannels) {
+                const std::vector< boost::shared_ptr<KnobI> > & knobs = _imp->liveInstance->getKnobs();
+                ///find in all knobs a page param to set this param into
+                boost::shared_ptr<Page_Knob> mainPage;
+                for (U32 i = 0; i < knobs.size(); ++i) {
+                    boost::shared_ptr<Page_Knob> p = boost::dynamic_pointer_cast<Page_Knob>(knobs[i]);
+                    if ( p && (p->getDescription() != NATRON_PARAMETER_PAGE_NAME_INFO) &&
+                        (p->getDescription() != NATRON_PARAMETER_PAGE_NAME_EXTRA) ) {
+                        mainPage = p;
+                        break;
+                    }
+                }
+                if (!mainPage) {
+                    mainPage = Natron::createKnob<Page_Knob>(_imp->liveInstance.get(), "Settings");
+                }
+                assert(mainPage);
+                
+                //There are a A and B inputs and the plug-in is not multi-planar, propose 2 layer selectors for the inputs.
+                if (foundA != -1 && foundB != -1) {
+                    _imp->createChannelSelector(foundA,"A", false, mainPage);
+                    _imp->createChannelSelector(foundB,"B", false, mainPage);
+                    
+                }
+                _imp->createChannelSelector(-1, "Output", true, mainPage);
             }
         }
         _imp->nodeLabelKnob = Natron::createKnob<String_Knob>(_imp->liveInstance.get(),
@@ -1798,12 +1949,13 @@ Node::initializeKnobs(int renderScaleSupportPref)
             _imp->knobChangedCallback = Natron::createKnob<String_Knob>(_imp->liveInstance.get(), tr("After param changed callback").toStdString());
             _imp->knobChangedCallback->setHintToolTip(tr("Set here the name of a function defined in Python which will be called for each  "
                                                          "parameter change. Either define this function in the Script Editor "
-                                                         "or in the init.py script or even in the script of a Python group plug-in. "
-                                                         "Several variables are declared for convenience when the callback is called, namely:\n"
+                                                         "or in the init.py script or even in the script of a Python group plug-in.\n"
+                                                         "The signature of the callback is: callback(thisParam, thisNode, thisGroup, app, userEdited) where:\n"
                                                          "- thisParam: The parameter which just had its value changed\n"
                                                          "- userEdited: A boolean informing whether the change was due to user interaction or "
                                                          "because something internally triggered the change.\n"
                                                          "- thisNode: The node holding the parameter\n"
+                                                         "- app: points to the current application instance\n"
                                                          "- thisGroup: The group holding thisNode (only if thisNode belongs to a group)").toStdString());
             _imp->knobChangedCallback->setAnimationEnabled(false);
             _imp->knobChangedCallback->setName("onParamChanged");
@@ -1813,12 +1965,12 @@ Node::initializeKnobs(int renderScaleSupportPref)
             _imp->inputChangedCallback->setHintToolTip(tr("Set here the name of a function defined in Python which will be called after "
                                                           "each connection is changed for the inputs of the node. "
                                                           "Either define this function in the Script Editor "
-                                                          "or in the init.py script or even in the script of a Python group plug-in. "
-                                                          "Several variables are declared for convenience when the callback is called, "
-                                                          "namely:\n"
+                                                          "or in the init.py script or even in the script of a Python group plug-in.\n"
+                                                          "The signature of the callback is: callback(inputIndex, thisNode, thisGroup, app):\n"
                                                           "- inputIndex: the index of the input which changed, you can query the node "
-                                                          "connected to the input by calling the getInput(...) function. "
+                                                          "connected to the input by calling the getInput(...) function.\n"
                                                           "- thisNode: The node holding the parameter\n"
+                                                          "- app: points to the current application instance\n"
                                                           "- thisGroup: The group holding thisNode (only if thisNode belongs to a group)").toStdString());
             
             _imp->inputChangedCallback->setAnimationEnabled(false);
@@ -1862,53 +2014,55 @@ Node::initializeKnobs(int renderScaleSupportPref)
             _imp->outputFormat->setAsLabel();
             _imp->infoPage->addKnob(_imp->outputFormat);
             
-            _imp->refreshInfoButton = Natron::createKnob<Button_Knob>(_imp->liveInstance.get(), tr("Refresh Info").toStdString());
+            _imp->refreshInfoButton = Natron::createKnob<Button_Knob>(_imp->liveInstance.get(), tr("Refresh Info").toStdString(),1,false);
             _imp->refreshInfoButton->setName("refreshButton");
             _imp->refreshInfoButton->setEvaluateOnChange(false);
             _imp->infoPage->addKnob(_imp->refreshInfoButton);
             
             if (_imp->liveInstance->isWriter()) {
-                boost::shared_ptr<Page_Knob> pythonPage = Natron::createKnob<Page_Knob>(_imp->liveInstance.get(), tr("Python").toStdString());
+                boost::shared_ptr<Page_Knob> pythonPage = Natron::createKnob<Page_Knob>(_imp->liveInstance.get(), tr("Python").toStdString(),1,false);
                 
-                _imp->beforeFrameRender =  Natron::createKnob<String_Knob>(_imp->liveInstance.get(), tr("Before frame render").toStdString());
+                _imp->beforeFrameRender =  Natron::createKnob<String_Knob>(_imp->liveInstance.get(), tr("Before frame render").toStdString(), 1 ,false);
                 _imp->beforeFrameRender->setName("beforeFrameRender");
                 _imp->beforeFrameRender->setAnimationEnabled(false);
                 _imp->beforeFrameRender->setHintToolTip(tr("Add here the name of a Python defined function that will be called before rendering "
                                                            "any frame.\n "
-                                                           "The variable \"app\" will be declared prior to calling the function, pointing to the current app instance.\n"
-                                                           "\nThe variable \"thisNode\" will be declared when calling the function, "
-                                                           "referencing the writer node.").toStdString());
+                                                           "The signature of the callback is: callback(frame, thisNode, app) where:\n"
+                                                           "- frame: the frame to be rendered\n"
+                                                           "- thisNode: points to the writer node\n"
+                                                           "- app: points to the current application instance").toStdString());
                 pythonPage->addKnob(_imp->beforeFrameRender);
                 
-                _imp->beforeRender =  Natron::createKnob<String_Knob>(_imp->liveInstance.get(), tr("Before render").toStdString());
+                _imp->beforeRender =  Natron::createKnob<String_Knob>(_imp->liveInstance.get(), tr("Before render").toStdString(),1,false);
                 _imp->beforeRender->setName("beforeRender");
                 _imp->beforeRender->setAnimationEnabled(false);
                 _imp->beforeRender->setHintToolTip(tr("Add here the name of a Python defined function that will be called once when "
                                                       "starting rendering.\n "
-                                                      "The variable \"app\" will be declared prior to calling the function, pointing to the current app instance.\n"
-                                                      "\nThe variable \"thisNode\" will be declared when calling the function, "
-                                                      "referencing the writer node.").toStdString());
+                                                      "The signature of the callback is: callback(thisNode, app) where:\n"
+                                                      "- thisNode: points to the writer node\n"
+                                                      "- app: points to the current application instance").toStdString());
                 pythonPage->addKnob(_imp->beforeRender);
                 
-                _imp->afterFrameRender =  Natron::createKnob<String_Knob>(_imp->liveInstance.get(), tr("After frame render").toStdString());
+                _imp->afterFrameRender =  Natron::createKnob<String_Knob>(_imp->liveInstance.get(), tr("After frame render").toStdString(),1,false);
                 _imp->afterFrameRender->setName("afterFrameRender");
                 _imp->afterFrameRender->setAnimationEnabled(false);
                 _imp->afterFrameRender->setHintToolTip(tr("Add here the name of a Python defined function that will be called after rendering "
                                                           "any frame.\n "
-                                                          "The variable \"app\" will be declared prior to calling the function, pointing to the current app instance.\n"
-                                                          "\nThe variable \"thisNode\" will be declared when calling the function, "
-                                                          "referencing the writer node.").toStdString());
+                                                          "The signature of the callback is: callback(frame, thisNode, app) where:\n"
+                                                          "- frame: the frame that has been rendered\n"
+                                                          "- thisNode: points to the writer node\n"
+                                                          "- app: points to the current application instance").toStdString());
                 pythonPage->addKnob(_imp->afterFrameRender);
                 
-                _imp->afterRender =  Natron::createKnob<String_Knob>(_imp->liveInstance.get(), tr("After render").toStdString());
+                _imp->afterRender =  Natron::createKnob<String_Knob>(_imp->liveInstance.get(), tr("After render").toStdString(),1,false);
                 _imp->afterRender->setName("afterRender");
                 _imp->afterRender->setAnimationEnabled(false);
                 _imp->afterRender->setHintToolTip(tr("Add here the name of a Python defined function that will be called once when the rendering "
                                                      "is finished.\n "
-                                                     "The boolean variable \"aborted\" will be set to True if the render was aborted or False otherwise.\n"
-                                                     "The variable \"app\" will be declared prior to calling the function, pointing to the current app instance.\n"
-                                                     "\nThe variable \"thisNode\" will be declare, "
-                                                     "referencing the writer node.").toStdString());
+                                                     "The signature of the callback is: callback(aborted, thisNode, app) where:\n"
+                                                     "- aborted: True if the render ended because it was aborted, False upon completion\n"
+                                                     "- thisNode: points to the writer node\n"
+                                                     "- app: points to the current application instance").toStdString());
                 pythonPage->addKnob(_imp->afterRender);
             }
         }
@@ -1924,6 +2078,70 @@ Node::initializeKnobs(int renderScaleSupportPref)
     _imp->liveInstance->endChanges();
     Q_EMIT knobsInitialized();
 } // initializeKnobs
+
+void
+Node::Implementation::createChannelSelector(int inputNb,const std::string & inputName,bool isOutput,
+                                            const boost::shared_ptr<Page_Knob>& page)
+{
+    
+    ChannelSelector sel;
+    sel.useRGBASelectors = isOutput;
+    sel.hasAllChoice = isOutput;
+    sel.layer = Natron::createKnob<Choice_Knob>(liveInstance.get(), isOutput ? "Channels" : inputName + " Channels", 1, false);
+    sel.layer->setHostCanAddOptions(isOutput);
+    sel.layer->setName(inputName + "_channels");
+    if (isOutput) {
+        sel.layer->setHintToolTip("Select here the channels onto which the processing should occur.");
+    } else {
+        sel.layer->setHintToolTip("Select here the channels that will be used by the input " + inputName);
+    }
+    sel.layer->setAnimationEnabled(false);
+    if (sel.useRGBASelectors) {
+        sel.layer->setAddNewLine(false);
+    }
+    page->addKnob(sel.layer);
+    std::vector<std::string> baseLayers;
+    if (isOutput) {
+        baseLayers.push_back("All");
+    } else {
+        baseLayers.push_back("None");
+    }
+    baseLayers.push_back(ImageComponents::getRGBAComponents().getComponentsGlobalName());
+    baseLayers.push_back(ImageComponents::getDisparityLeftComponents().getLayerName());
+    baseLayers.push_back(ImageComponents::getDisparityRightComponents().getLayerName());
+    baseLayers.push_back(ImageComponents::getForwardMotionComponents().getLayerName());
+    baseLayers.push_back(ImageComponents::getBackwardMotionComponents().getLayerName());
+    sel.layer->populateChoices(baseLayers);
+    if (isOutput && liveInstance->isPassThroughForNonRenderedPlanes() == EffectInstance::ePassThroughRenderAllRequestedPlanes) {
+        sel.layer->setDefaultValue(0);
+    } else {
+        sel.layer->setDefaultValue(1);
+    }
+    
+    sel.layerName = Natron::createKnob<String_Knob>(liveInstance.get(), inputName + "_layer_name", 1, false);
+    sel.layerName->setSecret(true);
+    sel.layerName->setAnimationEnabled(false);
+    sel.layerName->setEvaluateOnChange(false);
+    sel.layerName->setAddNewLine(!sel.useRGBASelectors);
+    page->addKnob(sel.layerName);
+    
+    if (sel.useRGBASelectors) {
+        
+        std::string channelNames[4] = {"R", "G", "B", "A"};
+        for (int i = 0; i < 4; ++i) {
+            sel.enabledChan[i] = Natron::createKnob<Bool_Knob>(liveInstance.get(), channelNames[i], 1, false);
+            sel.enabledChan[i]->setName(inputName + "_enable_" + channelNames[i]);
+            sel.enabledChan[i]->setAnimationEnabled(false);
+            sel.enabledChan[i]->setAddNewLine(i == 3);
+            sel.enabledChan[i]->setDefaultValue(true);
+            sel.enabledChan[i]->setHintToolTip("When checked the corresponding channel of the layer will be used, "
+                                               "otherwise it will be considered to be 0 everywhere.");
+            page->addKnob(sel.enabledChan[i]);
+        }
+    }
+    channelsSelectors[inputNb] = sel;
+    
+}
 
 bool
 Node::isForceCachingEnabled() const
@@ -2265,6 +2483,20 @@ Node::hasMandatoryInputDisconnected() const
         }
     }
     return false;
+}
+
+bool
+Node::hasAllInputsConnected() const
+{
+    QMutexLocker l(&_imp->inputsMutex);
+    
+    for (U32 i = 0; i < _imp->inputs.size(); ++i) {
+        if (!_imp->inputs[i]) {
+            return false;
+        }
+    }
+    return true;
+
 }
 
 bool
@@ -3188,7 +3420,7 @@ namespace {
                     // bilinear interpolation is pointless when downscaling a lot, and this is a preview anyway.
                     // just use nearest neighbor
                     double x = (j - *dstWidth / 2.) / zoomFactor + (srcBounds.x1 + srcBounds.x2) / 2.;
-                    int xi = std::floor(x + 0.5); // round to nearest
+                    int xi = std::floor(x + 0.5) - srcBounds.x1; // round to nearest
                     if ( (xi < 0) || ( xi >= (srcBounds.x2 - srcBounds.x1) ) ) {
 #ifndef __NATRON_WIN32__
                         dst_pixels[j] = toBGRA(0, 0, 0, 0);
@@ -3293,17 +3525,20 @@ Node::makePreviewImage(SequenceTime time,
     // but any exception in renderROI is probably fatal.
     ImageList planes;
     try {
-        planes = _imp->liveInstance->renderRoI( EffectInstance::RenderRoIArgs( time,
-                                                                              scale,
-                                                                              mipMapLevel,
-                                                                              0, //< preview only renders view 0 (left)
-                                                                              false,
-                                                                              renderWindow,
-                                                                              rod,
-                                                                              requestedComps, //< preview is always rgb...
-                                                                              getBitDepth() ) );
+        Natron::EffectInstance::RenderRoIRetCode retCode =
+        _imp->liveInstance->renderRoI( EffectInstance::RenderRoIArgs( time,
+                                                                     scale,
+                                                                     mipMapLevel,
+                                                                     0, //< preview only renders view 0 (left)
+                                                                     false,
+                                                                     renderWindow,
+                                                                     rod,
+                                                                     requestedComps, //< preview is always rgb...
+                                                                     getBitDepth() ) ,&planes);
+        if (retCode != Natron::EffectInstance::eRenderRoIRetCodeOk) {
+            return false;
+        }
     } catch (...) {
-        qDebug() << "Error: Cannot render preview";
         return false;
     }
     
@@ -3460,7 +3695,9 @@ Node::togglePreview()
 {
     ///MT-safe from Knob
     assert(_imp->knobsInitialized);
-    assert(_imp->previewEnabledKnob);
+    if (!_imp->previewEnabledKnob) {
+        return;
+    }
     _imp->previewEnabledKnob->setValue(!_imp->previewEnabledKnob->getValue(),0);
 }
 
@@ -3488,28 +3725,17 @@ Node::aborted() const
 }
 
 void
-Node::setAborted(bool b)
+Node::notifyRenderBeingAborted()
 {
-    ///MT-safe from EffectInstance
-    assert(_imp->liveInstance);
-    _imp->liveInstance->setAborted(b);
-    
-    if (QThread::currentThread() == qApp->thread()) {
+//
+//    if (QThread::currentThread() == qApp->thread()) {
         ///The render thread is waiting for the main-thread to dequeue actions
         ///but the main-thread is waiting for the render thread to abort
         ///cancel the dequeuing
         QMutexLocker k(&_imp->nodeIsDequeuingMutex);
         _imp->nodeIsDequeuing = false;
         _imp->nodeIsDequeuingCond.wakeAll();
-    }
-    //
-    //    QMutexLocker l(&_imp->inputsMutex);
-    //
-    //    for (U32 i = 0; i < _imp->inputs.size(); ++i) {
-    //        if (_imp->inputs[i]) {
-    //            _imp->inputs[i]->setAborted(b);
-    //        }
-    //    }
+//    }
     
 }
 
@@ -3936,91 +4162,100 @@ Node::isSupportedComponent(int inputNb,
 }
 
 Natron::ImageComponents
+Node::findClosestInList(const Natron::ImageComponents& comp,
+                        const std::list<Natron::ImageComponents> &components,
+                        bool multiPlanar)
+{
+    if ( components.empty() ) {
+        return ImageComponents::getNoneComponents();
+    }
+    std::list<Natron::ImageComponents>::const_iterator closestComp = components.end();
+    for (std::list<Natron::ImageComponents>::const_iterator it = components.begin(); it != components.end(); ++it) {
+        if ( closestComp == components.end() ) {
+            if (multiPlanar && it->getNumComponents() == comp.getNumComponents()) {
+                return comp;
+            }
+            closestComp = it;
+        } else {
+            if (it->getNumComponents() == comp.getNumComponents()) {
+                if (multiPlanar) {
+                    return comp;
+                }
+                closestComp = it;
+                break;
+            } else {
+                int diff = it->getNumComponents() - comp.getNumComponents();
+                int diffSoFar = closestComp->getNumComponents() - comp.getNumComponents();
+                if (diff > diffSoFar) {
+                    closestComp = it;
+                }
+            }
+            
+        }
+    }
+    if (closestComp == components.end()) {
+        return ImageComponents::getNoneComponents();
+    }
+    return *closestComp;
+
+}
+
+Natron::ImageComponents
 Node::findClosestSupportedComponents(int inputNb,
                                      const Natron::ImageComponents& comp) const
 {
-    QMutexLocker l(&_imp->inputsMutex);
-    
-    if (inputNb >= 0) {
-        assert( inputNb < (int)_imp->inputsComponents.size() );
+    std::list<Natron::ImageComponents> comps;
+    {
+        QMutexLocker l(&_imp->inputsMutex);
         
-        
-        const std::list<Natron::ImageComponents> & comps = _imp->inputsComponents[inputNb];
-        if ( comps.empty() ) {
-            return ImageComponents::getNoneComponents();
+        if (inputNb >= 0) {
+            assert( inputNb < (int)_imp->inputsComponents.size() );
+            comps = _imp->inputsComponents[inputNb];
+        } else {
+            assert(inputNb == -1);
+            comps = _imp->outputComponents;
         }
-        std::list<Natron::ImageComponents>::const_iterator closestComp = comps.end();
-        for (std::list<Natron::ImageComponents>::const_iterator it = comps.begin(); it != comps.end(); ++it) {
-            
-            if (!comp.isColorPlane()) {
-                if (*it == comp) {
-                    return comp;
-                }
-            } else {
-                if ( closestComp == comps.end() ) {
-                    closestComp = it;
-                } else {
-                    if ( std::abs(it->getNumComponents() - comp.getNumComponents()) <
-                        std::abs(closestComp->getNumComponents() - comp.getNumComponents()) ) {
-                        closestComp = it;
-                    }
-                }
-            }
-        }
-        assert( closestComp != comps.end() );
-        
-        return *closestComp;
-    } else {
-        assert(inputNb == -1);
-        const std::list<Natron::ImageComponents> & comps = _imp->outputComponents;
-        if ( comps.empty() ) {
-            return ImageComponents::getNoneComponents();
-        }
-        std::list<Natron::ImageComponents>::const_iterator closestComp = comps.end();
-        for (std::list<Natron::ImageComponents>::const_iterator it = comps.begin(); it != comps.end(); ++it) {
-            
-            if (!comp.isColorPlane()) {
-                if (*it == comp) {
-                    return comp;
-                }
-            } else {
-                if ( closestComp == comps.end() ) {
-                    closestComp = it;
-                } else {
-                    if ( std::abs(it->getNumComponents() - comp.getNumComponents()) <
-                        std::abs(closestComp->getNumComponents() - comp.getNumComponents()) ) {
-                        closestComp = it;
-                    }
-                }
-            }
-        }
-        if (closestComp == comps.end()) {
-            return ImageComponents::getNoneComponents();
-        }
-        
-        return *closestComp;
     }
+    return findClosestInList(comp, comps, _imp->liveInstance->isMultiPlanar());
 }
 
+
+
 int
-Node::getMaskChannel(int inputNb) const
+Node::getMaskChannel(int inputNb,Natron::ImageComponents* comps) const
 {
-    std::map<int, boost::shared_ptr<Choice_Knob> >::const_iterator it = _imp->maskChannelKnob.find(inputNb);
-    
-    if ( it != _imp->maskChannelKnob.end() ) {
-        return it->second->getValue() - 1;
-    } else {
-        return 3;
+    std::map<int, MaskSelector >::const_iterator it = _imp->maskSelectors.find(inputNb);
+    if ( it != _imp->maskSelectors.end() ) {
+        int index =  it->second.channel->getValue();
+        if (index == 0) {
+            *comps = ImageComponents::getNoneComponents();
+            return -1;
+        } else {
+            index -= 1; // None choice
+            QMutexLocker locker(&it->second.compsMutex);
+            int k = 0;
+            for (std::size_t i = 0; i < it->second.compsAvailable.size(); ++i) {
+                if (index >= k && index < (it->second.compsAvailable[i].getNumComponents() + k)) {
+                    int compIndex = index - k;
+                    assert(compIndex >= 0 && compIndex <= 3);
+                    *comps = it->second.compsAvailable[i];
+                    return compIndex;
+                }
+                k += it->second.compsAvailable[i].getNumComponents();
+            }
+            
+        }
     }
+    return -1;
+    
 }
 
 bool
 Node::isMaskEnabled(int inputNb) const
 {
-    std::map<int, boost::shared_ptr<Bool_Knob> >::const_iterator it = _imp->enableMaskKnob.find(inputNb);
-    
-    if ( it != _imp->enableMaskKnob.end() ) {
-        return it->second->getValue();
+    std::map<int, MaskSelector >::const_iterator it = _imp->maskSelectors.find(inputNb);
+    if ( it != _imp->maskSelectors.end() ) {
+        return it->second.enabled->getValue();
     } else {
         return true;
     }
@@ -4094,12 +4329,12 @@ Node::onInputChanged(int inputNb)
 {
     assert( QThread::currentThread() == qApp->thread() );
     _imp->duringInputChangedAction = true;
-    std::map<int, boost::shared_ptr<Bool_Knob> >::iterator it = _imp->enableMaskKnob.find(inputNb);
-    if ( it != _imp->enableMaskKnob.end() ) {
+    std::map<int,MaskSelector>::iterator found = _imp->maskSelectors.find(inputNb);
+    if ( found != _imp->maskSelectors.end() ) {
         boost::shared_ptr<Node> inp = getInput(inputNb);
-        it->second->setEvaluateOnChange(false);
-        it->second->setValue(inp ? true : false, 0);
-        it->second->setEvaluateOnChange(true);
+        found->second.enabled->blockValueChanges();
+        found->second.enabled->setValue(inp ? true : false, 0);
+        found->second.enabled->unblockValueChanges();
     }
     _imp->liveInstance->onInputChanged(inputNb);
     _imp->duringInputChangedAction = false;
@@ -4387,19 +4622,9 @@ Node::onEffectKnobValueChanged(KnobI* what,
     if (!what) {
         return;
     }
-    for (std::map<int, boost::shared_ptr<Choice_Knob> >::iterator it = _imp->maskChannelKnob.begin(); it != _imp->maskChannelKnob.end(); ++it) {
-        if (it->second.get() == what) {
-            int index = it->second->getValue();
-            std::map<int, boost::shared_ptr<Bool_Knob> >::iterator found = _imp->enableMaskKnob.find(it->first);
-            if ( (index == 0) && found->second->isEnabled(0) ) {
-                found->second->setValue(false, 0);
-                found->second->setEnabled(0, false);
-            } else if ( !found->second->isEnabled(0) ) {
-                found->second->setEnabled(0, true);
-                if ( getInput(it->first) ) {
-                    found->second->setValue(true, 0);
-                }
-            }
+    for (std::map<int, MaskSelector >::iterator it = _imp->maskSelectors.begin(); it != _imp->maskSelectors.end(); ++it) {
+        if (it->second.channel.get() == what) {
+            _imp->onMaskSelectorChanged(it->first, it->second);
             break;
         }
     }
@@ -4449,6 +4674,12 @@ Node::onEffectKnobValueChanged(KnobI* what,
  
     }
     
+    for (std::map<int,ChannelSelector>::iterator it = _imp->channelsSelectors.begin(); it != _imp->channelsSelectors.end(); ++it) {
+        if (it->second.layer.get() == what) {
+            _imp->onLayerChanged(it->first, it->second);
+        }
+    }
+    
     GroupInput* isInput = dynamic_cast<GroupInput*>(_imp->liveInstance.get());
     if (isInput) {
         if (what->getName() == kNatronGroupInputIsOptionalParamName
@@ -4462,6 +4693,201 @@ Node::onEffectKnobValueChanged(KnobI* what,
             isGrp->getNode()->initializeInputs();
         }
     }
+}
+
+bool
+Node::Implementation::getSelectedLayer(int inputNb,const ChannelSelector& selector, ImageComponents* comp) const
+{
+    Node* node = 0;
+    if (inputNb == -1) {
+        node = _publicInterface;
+    } else {
+        node = _publicInterface->getInput(inputNb).get();
+    }
+    
+
+    int index = selector.layer->getValue();
+    std::vector<std::string> entries = selector.layer->getEntries_mt_safe();
+    if (entries.empty()) {
+        return false;
+    }
+    if (index < 0 || index >= (int)entries.size()) {
+        return false;
+    }
+    const std::string& layer = entries[index];
+    if (layer == "All") {
+        return false;
+    } else {
+        
+        EffectInstance::ComponentsAvailableMap compsAvailable;
+        {
+            QMutexLocker k(&selector.compsMutex);
+            compsAvailable = selector.compsAvailable;
+        }
+        if (node) {
+            for (EffectInstance::ComponentsAvailableMap::iterator it2 = compsAvailable.begin(); it2!= compsAvailable.end(); ++it2) {
+                if (it2->first.isColorPlane()) {
+                    if (it2->first.getComponentsGlobalName() == layer) {
+                        *comp = it2->first;
+                        break;
+                        
+                    }
+                } else {
+                    if (it2->first.getLayerName() == layer) {
+                        *comp = it2->first;
+                        break;
+                        
+                    }
+                }
+            }
+        }
+        if (comp->getNumComponents() == 0) {
+            if (layer == kNatronRGBAComponentsName) {
+                *comp = ImageComponents::getRGBAComponents();
+            } else if (layer == kNatronDisparityLeftPlaneName) {
+                *comp = ImageComponents::getDisparityLeftComponents();
+            } else if (layer == kNatronDisparityRightPlaneName) {
+                *comp = ImageComponents::getDisparityRightComponents();
+            } else if (layer == kNatronBackwardMotionVectorsPlaneName) {
+                *comp = ImageComponents::getBackwardMotionComponents();
+            } else if (layer == kNatronForwardMotionVectorsPlaneName) {
+                *comp = ImageComponents::getForwardMotionComponents();
+            }
+        }
+        return true;
+    }
+    
+}
+
+void
+Node::Implementation::onLayerChanged(int inputNb,const ChannelSelector& selector)
+{
+    
+    std::vector<std::string> entries = selector.layer->getEntries_mt_safe();
+    int curLayer_i = selector.layer->getValue();
+    assert(curLayer_i >= 0 && curLayer_i < (int)entries.size());
+    selector.layerName->setValue(entries[curLayer_i], 0);
+    {
+        ///Clip preferences have changed 
+        RenderScale s;
+        s.x = s.y = 1;
+        liveInstance->checkOFXClipPreferences_public(_publicInterface->getApp()->getTimeLine()->currentFrame(),
+                                                     s,
+                                                     OfxEffectInstance::natronValueChangedReasonToOfxValueChangedReason(Natron::eValueChangedReasonUserEdited),
+                                                     true, true);
+    }
+    if (!selector.useRGBASelectors) {
+        return;
+    }
+    
+    Natron::ImageComponents comp ;
+    if (!getSelectedLayer(inputNb, selector, &comp)) {
+        for (int i = 0; i < 4; ++i) {
+            selector.enabledChan[i]->setSecret(true);
+        }
+
+    } else {
+        const std::vector<std::string>& channels = comp.getComponentsNames();
+        for (int i = 0; i < 4; ++i) {
+            if (i >= (int)(channels.size())) {
+                selector.enabledChan[i]->setSecret(true);
+            } else {
+                selector.enabledChan[i]->setSecret(false);
+                selector.enabledChan[i]->setDescription(channels[i]);
+            }
+            selector.enabledChan[i]->setValue(true, 0);
+        }
+    }
+}
+
+void
+Node::Implementation::onMaskSelectorChanged(int inputNb,const MaskSelector& selector)
+{
+    
+    int index = selector.channel->getValue();
+    if ( (index == 0) && selector.enabled->isEnabled(0) ) {
+        selector.enabled->setValue(false, 0);
+        selector.enabled->setEnabled(0, false);
+    } else if ( !selector.enabled->isEnabled(0) ) {
+        selector.enabled->setEnabled(0, true);
+        if ( _publicInterface->getInput(inputNb) ) {
+            selector.enabled->setValue(true, 0);
+        }
+    }
+    
+    std::vector<std::string> entries = selector.channel->getEntries_mt_safe();
+    int curChan_i = selector.channel->getValue();
+    assert(curChan_i >= 0 && curChan_i < (int)entries.size());
+    selector.channelName->setValue(entries[curChan_i], 0);
+    {
+        ///Clip preferences have changed
+        RenderScale s;
+        s.x = s.y = 1;
+        liveInstance->checkOFXClipPreferences_public(_publicInterface->getApp()->getTimeLine()->currentFrame(),
+                                                     s,
+                                                     OfxEffectInstance::natronValueChangedReasonToOfxValueChangedReason(Natron::eValueChangedReasonUserEdited),
+                                                     true, true);
+    }
+}
+
+bool
+Node::getUserComponents(int inputNb,bool* processChannels, bool* isAll,Natron::ImageComponents* layer) const
+{
+    //If the effect is multi-planar, it is expected to handle itself all the planes
+    assert(!_imp->liveInstance->isMultiPlanar());
+    
+    std::map<int,ChannelSelector>::const_iterator foundSelector = _imp->channelsSelectors.find(inputNb);
+    if (foundSelector == _imp->channelsSelectors.end()) {
+        //Fetch in input what the user has set for the output
+        foundSelector = _imp->channelsSelectors.find(-1);
+    }
+    if (foundSelector == _imp->channelsSelectors.end()) {
+        processChannels[0] = processChannels[1] = processChannels[2] = processChannels[3] = true;
+        return false;
+    }
+    
+    *isAll = !_imp->getSelectedLayer(inputNb, foundSelector->second, layer);
+    if (foundSelector->second.useRGBASelectors) {
+        processChannels[0] = foundSelector->second.enabledChan[0]->getValue();
+        processChannels[1] = foundSelector->second.enabledChan[1]->getValue();
+        processChannels[2] = foundSelector->second.enabledChan[2]->getValue();
+        processChannels[3] = foundSelector->second.enabledChan[3]->getValue();
+    } else {
+        int numChans = layer->getNumComponents();
+        processChannels[0] = true;
+        if (numChans > 1) {
+            processChannels[1] = true;
+            if (numChans > 2) {
+                processChannels[2] = true;
+                if (numChans > 3) {
+                    processChannels[3] = true;
+                }
+            }
+        }
+    }
+ 
+    return true;
+
+}
+
+bool
+Node::hasAtLeastOneChannelToProcess() const
+{
+    std::map<int,ChannelSelector>::const_iterator foundSelector = _imp->channelsSelectors.find(-1);
+    if (foundSelector == _imp->channelsSelectors.end()) {
+        return true;
+    }
+    if (foundSelector->second.useRGBASelectors) {
+        bool processChannels[4];
+        processChannels[0] = foundSelector->second.enabledChan[0]->getValue();
+        processChannels[1] = foundSelector->second.enabledChan[1]->getValue();
+        processChannels[2] = foundSelector->second.enabledChan[2]->getValue();
+        processChannels[3] = foundSelector->second.enabledChan[3]->getValue();
+        if (!processChannels[0] && !processChannels[1] && !processChannels[2] && !processChannels[3]) {
+            return false;
+        }
+    }
+    return true;
 }
 
 void
@@ -5041,6 +5467,7 @@ Node::restoreClipPreferencesRecursive(std::list<Natron::Node*>& markedNodes)
      */
     
     _imp->liveInstance->restoreClipPreferences();
+    refreshChannelSelectors(false);
     
     markedNodes.push_back(this);
     
@@ -5089,6 +5516,9 @@ static PyObject* getAttrRecursive(const std::string& fullyQualifiedName,PyObject
 void
 Node::declareNodeVariableToPython(const std::string& nodeName)
 {
+#ifdef NATRON_RUN_WITHOUT_PYTHON
+	return;
+#endif
     Natron::PythonGILLocker pgl;
     
     PyObject* mainModule = appPTR->getMainModule();
@@ -5157,6 +5587,9 @@ Node::deleteNodeVariableToPython(const std::string& nodeName)
 void
 Node::declarePythonFields()
 {
+#ifdef NATRON_RUN_WITHOUT_PYTHON
+	return;
+#endif
     Natron::PythonGILLocker pgl;
     
     if (!getGroup()) {
@@ -5393,6 +5826,259 @@ Node::Implementation::runInputChangedCallback(int index,const std::string& cb)
         }
     }
 
+}
+
+void
+Node::refreshChannelSelectors(bool setValues)
+{
+    if (!isNodeCreated()) {
+        return;
+    }
+    _imp->liveInstance->setComponentsAvailableDirty(true);
+    
+    for (std::map<int,ChannelSelector>::iterator it = _imp->channelsSelectors.begin(); it!= _imp->channelsSelectors.end(); ++it) {
+        
+        NodePtr node;
+        if (it->first == -1) {
+            node = shared_from_this();
+        } else {
+            node = getInput(it->first);
+        }
+        
+        std::vector<std::string> currentLayerEntries = it->second.layer->getEntries_mt_safe();
+        
+        std::string curLayer = it->second.layerName->getValue();
+
+        
+        std::vector<std::string> choices;
+        if (it->second.hasAllChoice) {
+            choices.push_back("All");
+        } else {
+            choices.push_back("None");
+        }
+        bool gotColor = false;
+        bool gotDisparityLeft = false;
+        bool gotDisparityRight = false;
+        bool gotMotionBw = false;
+        bool gotMotionFw = false;
+        
+        int colorIndex = -1;
+        Natron::ImageComponents colorComp;
+        
+        if (node) {
+            EffectInstance::ComponentsAvailableMap compsAvailable;
+            node->getLiveInstance()->getComponentsAvailable(getApp()->getTimeLine()->currentFrame(), &compsAvailable);
+            {
+                QMutexLocker k(&it->second.compsMutex);
+                it->second.compsAvailable = compsAvailable;
+            }
+            for (EffectInstance::ComponentsAvailableMap::iterator it2 = compsAvailable.begin(); it2!= compsAvailable.end(); ++it2) {
+                if (it2->first.isColorPlane()) {
+                    int numComp = it2->first.getNumComponents();
+                    colorIndex = choices.size();
+                    colorComp = it2->first;
+                    if (numComp == 1) {
+                        choices.push_back(kNatronAlphaComponentsName);
+                    } else if (numComp == 3) {
+                        choices.push_back(kNatronRGBComponentsName);
+                    } else if (numComp == 4) {
+                        choices.push_back(kNatronRGBAComponentsName);
+                    } else {
+                        assert(false);
+                    }
+                    gotColor = true;
+                } else {
+                    choices.push_back(it2->first.getLayerName());
+                    if (it2->first.getLayerName() == kNatronBackwardMotionVectorsPlaneName) {
+                        gotMotionBw = true;
+                    } else if (it2->first.getLayerName() == kNatronForwardMotionVectorsPlaneName) {
+                        gotMotionFw = true;
+                    } else if (it2->first.getLayerName() == kNatronDisparityLeftPlaneName) {
+                        gotDisparityLeft = true;
+                    } else if (it2->first.getLayerName() == kNatronForwardMotionVectorsPlaneName) {
+                        gotDisparityRight = true;
+                    }
+                }
+            }
+        }
+        
+        if (!gotColor) {
+            std::vector<std::string>::iterator pos = choices.begin();
+            if (choices.size() > 0) {
+                ++pos;
+                colorIndex = 1;
+            } else {
+                colorIndex = 0;
+            }
+            colorComp = ImageComponents::getRGBAComponents();
+            choices.insert(pos,kNatronRGBAComponentsName);
+            
+        }
+        if (!gotDisparityLeft) {
+            choices.push_back(kNatronDisparityLeftPlaneName);
+        }
+        if (!gotDisparityRight) {
+            choices.push_back(kNatronDisparityRightPlaneName);
+        }
+        if (!gotMotionFw) {
+            choices.push_back(kNatronForwardMotionVectorsPlaneName);
+        }
+        if (!gotMotionBw) {
+            choices.push_back(kNatronBackwardMotionVectorsPlaneName);
+        }
+
+        
+        it->second.layer->populateChoices(choices);
+ 
+        if (setValues) {
+            assert(colorIndex != -1 && colorIndex >= 0 && colorIndex < (int)choices.size());
+            if (it->second.hasAllChoice && _imp->liveInstance->isPassThroughForNonRenderedPlanes() == EffectInstance::ePassThroughRenderAllRequestedPlanes) {
+                it->second.layer->setValue(0, 0);
+                it->second.layerName->setValue(choices[0], 0);
+            } else {
+                it->second.layer->setValue(colorIndex,0);
+                it->second.layerName->setValue(choices[colorIndex], 0);
+            }
+        } else {
+            if (!curLayer.empty()) {
+                bool isColor = curLayer == kNatronRGBAComponentsName ||
+                curLayer == kNatronRGBComponentsName ||
+                curLayer == kNatronAlphaComponentsName;
+                for (std::size_t i = 0; i < choices.size(); ++i) {
+                    if (choices[i] == curLayer || (isColor && (choices[i] == kNatronRGBAComponentsName || choices[i] ==
+                                                               kNatronRGBComponentsName || choices[i] == kNatronAlphaComponentsName))) {
+                        it->second.layer->setValue(i, 0);
+                        if (isColor) {
+                            assert(colorIndex != -1);
+                            //Since color plane may have changed (RGB, or RGBA or Alpha), adjust the secretness of the checkboxes
+                            const std::vector<std::string>& channels = colorComp.getComponentsNames();
+                            for (int j = 0; j < 4; ++j) {
+                                if (j >= (int)(channels.size())) {
+                                    it->second.enabledChan[j]->setSecret(true);
+                                } else {
+                                    it->second.enabledChan[j]->setSecret(false);
+                                }
+                            }
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+    }
+    
+    for (std::map<int,MaskSelector>::iterator it = _imp->maskSelectors.begin(); it!=_imp->maskSelectors.end(); ++it) {
+        NodePtr node;
+        if (it->first == -1) {
+            node = shared_from_this();
+        } else {
+            node = getInput(it->first);
+        }
+        
+        std::vector<std::string> currentLayerEntries = it->second.channel->getEntries_mt_safe();
+        
+        std::string curLayer = it->second.channelName->getValue();
+        
+        
+        std::vector<std::string> choices;
+        choices.push_back("None");
+        bool gotColor = false;
+        int alphaIndex = -1;
+        if (node) {
+            EffectInstance::ComponentsAvailableMap compsAvailable;
+            node->getLiveInstance()->getComponentsAvailable(getApp()->getTimeLine()->currentFrame(), &compsAvailable);
+            
+            std::vector<ImageComponents> compsOrdered;
+            for (EffectInstance::ComponentsAvailableMap::iterator it = compsAvailable.begin(); it!=compsAvailable.end(); ++it) {
+                if (it->first.isColorPlane()) {
+                    compsOrdered.insert(compsOrdered.begin(), it->first);
+                } else {
+                    compsOrdered.push_back(it->first);
+                }
+            }
+            {
+                
+                QMutexLocker k(&it->second.compsMutex);
+                it->second.compsAvailable = compsOrdered;
+            }
+            for (std::vector<ImageComponents>::iterator it2 = compsOrdered.begin(); it2!= compsOrdered.end(); ++it2) {
+                
+                const std::vector<std::string>& channels = it2->getComponentsNames();
+                const std::string& layerName = it2->isColorPlane() ? it2->getComponentsGlobalName() : it2->getLayerName();
+                for (std::size_t i = 0; i < channels.size(); ++i) {
+                    choices.push_back(layerName + "." + channels[i]);
+                }
+                if (it2->isColorPlane()) {
+                    if (channels.size() == 1 || channels.size() == 4) {
+                        alphaIndex = choices.size() - 1;
+                    }
+                    gotColor = true;
+                }
+            }
+        }
+        
+        if (!gotColor) {
+            std::vector<std::string>::iterator pos = choices.begin();
+            assert(choices.size() > 0);
+            ++pos;
+            const ImageComponents& rgba = ImageComponents::getRGBAComponents();
+            const std::vector<std::string>& channels = rgba.getComponentsNames();
+            const std::string& layerName = rgba.getComponentsGlobalName();
+            for (std::size_t i = 0; i < channels.size(); ++i) {
+                choices.push_back(layerName + "." + channels[i]);
+            }
+            alphaIndex = choices.size() - 1;
+        }
+        it->second.channel->populateChoices(choices);
+        
+        if (setValues) {
+            assert(alphaIndex != -1 && alphaIndex >= 0 && alphaIndex < (int)choices.size());
+            it->second.channel->setValue(alphaIndex,0);
+            it->second.channelName->setValue(choices[alphaIndex], 0);
+        } else {
+            if (!curLayer.empty()) {
+                for (std::size_t i = 0; i < choices.size(); ++i) {
+                    if (choices[i] == curLayer) {
+                        it->second.channel->setValue(i, 0);
+                        break;
+                    }
+                }
+            }
+        }
+    }
+}
+
+void
+Node::addUserComponents(const Natron::ImageComponents& comps)
+{
+    {
+        QMutexLocker k(&_imp->createdComponentsMutex);
+        for (std::list<ImageComponents>::iterator it = _imp->createdComponents.begin(); it!=_imp->createdComponents.end(); ++it) {
+            if (it->getLayerName() == comps.getLayerName()) {
+                Natron::errorDialog(tr("Layer").toStdString(), tr("A Layer with the same name already exists").toStdString());
+                return;
+            }
+        }
+        
+        _imp->createdComponents.push_back(comps);
+    }
+    {
+        ///Clip preferences have changed
+        RenderScale s;
+        s.x = s.y = 1;
+        getLiveInstance()->checkOFXClipPreferences_public(getApp()->getTimeLine()->currentFrame(),
+                                                          s,
+                                                          OfxEffectInstance::natronValueChangedReasonToOfxValueChangedReason(Natron::eValueChangedReasonUserEdited),
+                                                          true, true);
+    }
+    
+}
+
+void
+Node::getUserComponents(std::list<Natron::ImageComponents>* comps)
+{
+    QMutexLocker k(&_imp->createdComponentsMutex);
+    *comps = _imp->createdComponents;
 }
 
 //////////////////////////////////
