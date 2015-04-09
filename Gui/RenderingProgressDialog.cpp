@@ -163,7 +163,7 @@ RenderingProgressDialog::onProcessFinished(int retCode)
             ignore_result(log.exec());
         }
     }
-	close();
+    accept();
 }
 
 void
@@ -188,6 +188,17 @@ RenderingProgressDialog::keyPressEvent(QKeyEvent* e)
 
 void
 RenderingProgressDialog::closeEvent(QCloseEvent* /*e*/)
+{
+    QDialog::DialogCode ret = (QDialog::DialogCode)result();
+    if (ret != QDialog::Accepted) {
+        Natron::informationDialog( tr("Render").toStdString(), tr("Render aborted.").toStdString() );
+    }
+    reject();
+    Q_EMIT canceled();
+}
+
+void
+RenderingProgressDialog::onCancelButtonClicked()
 {
     reject();
     Q_EMIT canceled();
@@ -244,7 +255,7 @@ RenderingProgressDialog::RenderingProgressDialog(Gui* gui,
     _imp->_cancelButton->setMaximumWidth(50);
     _imp->_mainLayout->addWidget(_imp->_cancelButton);
 
-    QObject::connect( _imp->_cancelButton, SIGNAL( clicked() ), this, SIGNAL( canceled() ) );
+    QObject::connect( _imp->_cancelButton, SIGNAL( clicked() ), this, SLOT( onCancelButtonClicked() ) );
 
 
     if (process) {

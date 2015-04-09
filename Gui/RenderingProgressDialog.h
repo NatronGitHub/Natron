@@ -62,6 +62,8 @@ public Q_SLOTS:
     void onProcessFinished(int);
 
     void onVideoEngineStopped(int);
+    
+    void onCancelButtonClicked();
 
 Q_SIGNALS:
 
