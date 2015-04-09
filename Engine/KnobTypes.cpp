@@ -567,13 +567,13 @@ Choice_Knob::~Choice_Knob()
 }
 
 void
-Choice_Knob::setAddNewChoice(bool add)
+Choice_Knob::setHostCanAddOptions(bool add)
 {
     _addNewChoice = add;
 }
 
 bool
-Choice_Knob::isChoiceNewEnabled() const
+Choice_Knob::getHostCanAddOptions() const
 {
     return _addNewChoice;
 }

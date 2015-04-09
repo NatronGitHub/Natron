@@ -433,9 +433,9 @@ public:
     /**
      * @brief When set the menu will have a "New" entry which the user can select to create a new entry on its own.
      **/
-    void setAddNewChoice(bool add);
+    void setHostCanAddOptions(bool add);
     
-    bool isChoiceNewEnabled() const;
+    bool getHostCanAddOptions() const;
 
 Q_SIGNALS:
 

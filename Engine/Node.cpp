@@ -2088,7 +2088,7 @@ Node::Implementation::createChannelSelector(int inputNb,const std::string & inpu
     sel.useRGBASelectors = isOutput;
     sel.hasAllChoice = isOutput;
     sel.layer = Natron::createKnob<Choice_Knob>(liveInstance.get(), isOutput ? "Channels" : inputName + " Channels", 1, false);
-    sel.layer->setAddNewChoice(isOutput);
+    sel.layer->setHostCanAddOptions(isOutput);
     sel.layer->setName(inputName + "_channels");
     if (isOutput) {
         sel.layer->setHintToolTip("Select here the channels onto which the processing should occur.");

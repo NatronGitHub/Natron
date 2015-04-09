@@ -1841,7 +1841,9 @@ Choice_KnobGui::onEntriesPopulated()
         }
         _comboBox->addItem( _entries[i].c_str(), QIcon(), QKeySequence(), QString( helpStr.c_str() ) );
     }
-    if (_knob->isChoiceNewEnabled()) {
+    // the "New" menu is only added to known parameters (e.g. the choice of output channels)
+    if (_knob->getHostCanAddOptions() &&
+        (_knob->getName() == kNatronOfxParamOutputChannels)) {
         _comboBox->addItemNew();
     }
     ///we don't use setCurrentIndex because the signal emitted by combobox will call onCurrentIndexChanged and

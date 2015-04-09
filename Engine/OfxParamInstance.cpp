@@ -783,9 +783,9 @@ OfxChoiceInstance::OfxChoiceInstance(OfxEffectInstance* node,
     int def = properties.getIntProperty(kOfxParamPropDefault);
     _knob->setDefaultValue(def,0);
     
-    bool canMakeNewPlane = (int)properties.getIntProperty(kNatronOfxParamPropCanMakeNewPlane);
-    if (canMakeNewPlane) {
-        _knob->setAddNewChoice(true);
+    bool canAddOptions = (int)properties.getIntProperty(kNatronOfxParamPropChoiceHostCanAddOptions);
+    if (canAddOptions) {
+        _knob->setHostCanAddOptions(true);
     }
 }
 
