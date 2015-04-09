@@ -1657,8 +1657,8 @@ InlineGroupCommand::undo()
             groupNode->getNode()->activate(std::list< Natron::Node* >(),true,false);
             std::list<ViewerInstance*> connectedViewers;
             groupNode->getNode()->hasViewersConnected(&connectedViewers);
-            for (std::list<ViewerInstance*>::iterator it = connectedViewers.begin(); it!=connectedViewers.end(); ++it) {
-                viewers.insert(*it);
+            for (std::list<ViewerInstance*>::iterator it2 = connectedViewers.begin(); it2!=connectedViewers.end(); ++it2) {
+                viewers.insert(*it2);
             }
             for (std::list<boost::weak_ptr<NodeGui> >::iterator it2 = it->inlinedNodes.begin();
                  it2 != it->inlinedNodes.end(); ++it2) {
@@ -1687,8 +1687,8 @@ InlineGroupCommand::redo()
         if (groupNode) {
             std::list<ViewerInstance*> connectedViewers;
             groupNode->getNode()->hasViewersConnected(&connectedViewers);
-            for (std::list<ViewerInstance*>::iterator it = connectedViewers.begin(); it!=connectedViewers.end(); ++it) {
-                viewers.insert(*it);
+            for (std::list<ViewerInstance*>::iterator it2 = connectedViewers.begin(); it2!=connectedViewers.end(); ++it2) {
+                viewers.insert(*it2);
             }
             groupNode->getNode()->deactivate(std::list< Natron::Node* >(),true,false,true,false);
             if  (_firstRedoCalled) {

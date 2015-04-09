@@ -1126,8 +1126,6 @@ Gui::setupUi()
 
     initProjectGuiKnobs();
 
-    _imp->_settingsGui = new PreferencesPanel(appPTR->getCurrentSettings(), this);
-    _imp->_settingsGui->hide();
 
     setVisibleProjectSettingsPanel();
 
@@ -3861,6 +3859,9 @@ Gui::setCurveEditorOnTop()
 void
 Gui::showSettings()
 {
+    if (!_imp->_settingsGui) {
+        _imp->_settingsGui = new PreferencesPanel(appPTR->getCurrentSettings(), this);
+    }
     _imp->_settingsGui->show();
     _imp->_settingsGui->raise();
     _imp->_settingsGui->activateWindow();
