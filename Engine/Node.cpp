@@ -2486,6 +2486,20 @@ Node::hasMandatoryInputDisconnected() const
 }
 
 bool
+Node::hasAllInputsConnected() const
+{
+    QMutexLocker l(&_imp->inputsMutex);
+    
+    for (U32 i = 0; i < _imp->inputs.size(); ++i) {
+        if (!_imp->inputs[i]) {
+            return false;
+        }
+    }
+    return true;
+
+}
+
+bool
 Node::hasOutputConnected() const
 {
     ////Only called by the main-thread

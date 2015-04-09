@@ -354,6 +354,8 @@ public:
     
     bool hasMandatoryInputDisconnected() const;
     
+    bool hasAllInputsConnected() const;
+    
     /**
      * @brief This is used by the auto-connection algorithm.
      * When connecting nodes together this function helps determine

@@ -1733,13 +1733,14 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
         if (_imp->_selection.size() == 1) {
             ///try to find a nearby edge
             boost::shared_ptr<NodeGui> selectedNode = _imp->_selection.front();
+            
             boost::shared_ptr<Natron::Node> internalNode = selectedNode->getNode();
             
             bool doMergeHints = e->modifiers().testFlag(Qt::ControlModifier) && e->modifiers().testFlag(Qt::ShiftModifier);
             bool doHints = appPTR->getCurrentSettings()->isConnectionHintEnabled();
             
             BackDropGui* isBd = dynamic_cast<BackDropGui*>(selectedNode.get());
-            if (isBd) {
+            if (isBd || selectedNode->getNode()->hasAllInputsConnected()) {
                 doMergeHints = false;
                 doHints = false;
             }
@@ -1755,7 +1756,7 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
             
             if (doHints) {
                 QRectF rect = selectedNode->mapToParent( selectedNode->boundingRect() ).boundingRect();
-                double tolerance = 20;
+                double tolerance = 10;
                 rect.adjust(-tolerance, -tolerance, tolerance, tolerance);
                 
                 boost::shared_ptr<NodeGui> nodeToShowMergeRect;
@@ -1767,6 +1768,17 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
                     QMutexLocker l(&_imp->_nodesMutex);
                     for (NodeGuiList::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
                         
+                        bool isAlreadyAnOutput = false;
+                        const std::list<Natron::Node*>& outputs = internalNode->getOutputs();
+                        for (std::list<Natron::Node*>::const_iterator it2 = outputs.begin(); it2 != outputs.end(); ++it2) {
+                            if (*it2 == (*it)->getNode().get()) {
+                                isAlreadyAnOutput = true;
+                                break;
+                            }
+                        }
+                        if (isAlreadyAnOutput) {
+                            continue;
+                        }
                         QRectF nodeBbox = (*it)->mapToScene((*it)->boundingRect()).boundingRect();
                         if ( (*it) != selectedNode && (*it)->isVisible() && nodeBbox.intersects(sceneR)) {
                             
