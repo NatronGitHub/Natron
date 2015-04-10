@@ -5952,7 +5952,7 @@ Node::refreshChannelSelectors(bool setValues)
                     if (choices[i] == curLayer || (isColor && (choices[i] == kNatronRGBAComponentsName || choices[i] ==
                                                                kNatronRGBComponentsName || choices[i] == kNatronAlphaComponentsName))) {
                         it->second.layer->setValue(i, 0);
-                        if (isColor) {
+                        if (isColor && it->second.useRGBASelectors) {
                             assert(colorIndex != -1);
                             //Since color plane may have changed (RGB, or RGBA or Alpha), adjust the secretness of the checkboxes
                             const std::vector<std::string>& channels = colorComp.getComponentsNames();
