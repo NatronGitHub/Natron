@@ -1115,6 +1115,7 @@ AppManager::loadInternal(const CLArgs& cl)
         if ( (_imp->_appType == eAppTypeBackgroundAutoRun ||
               _imp->_appType == eAppTypeBackgroundAutoRunLaunchedFromGui ||
               _imp->_appType == eAppTypeInterpreter) && mainInstance ) {
+            mainInstance->getProject()->closeProject();
             mainInstance->quit();
         }
 
