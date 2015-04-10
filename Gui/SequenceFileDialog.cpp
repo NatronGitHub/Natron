@@ -608,6 +608,7 @@ SequenceFileDialog::saveState() const
     stream << currentDirectory().path();
     stream << _view->header()->saveState();
     stream << _relativeChoice->itemText(_relativeChoice->activeIndex());
+    stream << _sequenceButton->activeIndex();
     return data;
 }
 
@@ -628,12 +629,14 @@ SequenceFileDialog::restoreState(const QByteArray & state)
     QStringList history;
     QString currentDirectory;
     QString relativeChoice;
+    int sequenceMode_i;
     stream >> splitterState
     >> bookmarks
     >> history
     >> currentDirectory
     >> headerData
-    >> relativeChoice;
+    >> relativeChoice
+    >> sequenceMode_i;
     if ( !_centerSplitter->restoreState(splitterState) ) {
         return false;
     }
@@ -652,6 +655,8 @@ SequenceFileDialog::restoreState(const QByteArray & state)
             break;
         }
     }
+    
+    _sequenceButton->setCurrentIndex(sequenceMode_i);
     
     std::map<std::string,std::string> envVar;
     _gui->getApp()->getProject()->getEnvironmentVariables(envVar);
