@@ -1494,7 +1494,7 @@ InlineGroupCommand::InlineGroupCommand(NodeGraph* graph,const std::list<boost::s
         double inputY = INT_MIN;
         
         int maxInputs = group->getNode()->getMaxInputCount();
-        assert(maxInputs = (int)groupInputs.size());
+        assert(maxInputs == (int)groupInputs.size());
         for (int i = 0; i < maxInputs; ++i) {
             NodePtr input = group->getNode()->getInput(i);
             if (input) {
@@ -1586,14 +1586,16 @@ InlineGroupCommand::InlineGroupCommand(NodeGraph* graph,const std::list<boost::s
         //We are going to move recursively the outputs of the group nodes so that it does not overlap the inlining of the group
         QRectF rectToClear(l,b,r - l,ySpaceNeeded - ySpaceAvailable);
         
-        QPointF avgOutputPos;
+        QPointF avgOutputPos =  {0., 0.};
         for (std::list<boost::shared_ptr<NodeGui> >::iterator it2 = outputsConnectedToGroup.begin();
              it2!=outputsConnectedToGroup.end(); ++it2) {
             (*it2)->moveBelowPositionRecursively(rectToClear);
             QPointF p = (*it2)->mapToScene((*it2)->mapFromParent((*it2)->getPos_mt_safe()));
             avgOutputPos += p;
         }
-        avgOutputPos /= (int)outputsConnectedToGroup.size();
+        if (outputsConnectedToGroup.size()) {
+            avgOutputPos /= (int)outputsConnectedToGroup.size();
+        }
         avgOutputPos.ry() -= 100;
         
         ///Move all created nodes by this delta to fit in the space we've just made
