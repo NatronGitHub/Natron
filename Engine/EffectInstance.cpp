@@ -2459,19 +2459,22 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
             if (!it->isColorPlane()) {
                 components = &(*it);
             } else {
-                for (std::vector<Natron::ImageComponents>::const_iterator it = outputComponents.begin(); it!=outputComponents.end(); ++it) {
+                for (std::vector<Natron::ImageComponents>::const_iterator it = outputComponents.begin(); it != outputComponents.end(); ++it) {
                     if (it->isColorPlane()) {
                         components = &(*it);
                         break;
                     }
                 }
             }
-            
+            assert(components);
             getImageFromCacheAndConvertIfNeeded(createInCache, useDiskCacheNode, key, renderMappedMipMapLevel,
                                                 useImageAsOutput ? upscaledImageBounds : downscaledImageBounds,
                                                 rod,
                                                 args.bitdepth, *it,
-                                                outputDepth, *components,args.inputImagesList, &plane.fullscaleImage);
+                                                outputDepth,
+                                                *components,
+                                                args.inputImagesList,
+                                                &plane.fullscaleImage);
             
             
             if (byPassCache) {

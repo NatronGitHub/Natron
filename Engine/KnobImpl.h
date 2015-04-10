@@ -513,6 +513,7 @@ Knob<std::string>::getValueFromMasterAt(double time, int dimension, KnobI* maste
     if (isString) {
         return isString->getValueAtTime(time,dimension,false);
     }
+    // coverity[dead_error_line]
     return std::string();
 }
 
@@ -525,6 +526,7 @@ Knob<std::string>::getValueFromMaster(int dimension, KnobI* master, bool /*clamp
     if (isString) {
         return isString->getValue(dimension,false);
     }
+    // coverity[dead_error_line]
     return std::string();
 }
 

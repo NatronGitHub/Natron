@@ -1138,7 +1138,7 @@ findAutoContrastVminVmax_generic(boost::shared_ptr<const Natron::Image> inputIma
                     r = g = b = 0.;
                     break;
                 default:
-                    r = g = b = 0.;
+                    r = g = b = a = 0.;
             }
             
             double mini, maxi;
@@ -1260,35 +1260,41 @@ scaleToTexture8bits_generic(const std::pair<int,int> & yRange,
                 
                 double r,g,b;
                 int a;
-                
+
                 if (nComps >= 4) {
-                        r = (src_pixels ? src_pixels[index * nComps + rOffset] : 0.);
-                        g = (src_pixels ? src_pixels[index * nComps + gOffset] : 0.);
-                        b = (src_pixels ? src_pixels[index * nComps + bOffset] : 0.);
-                        if (opaque) {
-                            a = 255;
-                        } else {
-                            a = (src_pixels ? Color::floatToInt<256>(src_pixels[index * nComps + 3]) : 0);
-                        }
+                    r = (src_pixels ? src_pixels[index * nComps + rOffset] : 0.);
+                    g = (src_pixels ? src_pixels[index * nComps + gOffset] : 0.);
+                    b = (src_pixels ? src_pixels[index * nComps + bOffset] : 0.);
+                    if (opaque) {
+                        a = 255;
+                    } else {
+                        a = (src_pixels ? Color::floatToInt<256>(src_pixels[index * nComps + 3]) : 0);
+                    }
                 } else if (nComps == 3) {
-                        r = (src_pixels && rOffset < nComps) ? src_pixels[index * nComps + rOffset] : 0.;
-                        g = (src_pixels && gOffset < nComps) ? src_pixels[index * nComps + gOffset] : 0.;
-                        b = (src_pixels && bOffset < nComps) ? src_pixels[index * nComps + bOffset] : 0.;
-                        a = (src_pixels ? 255 : 0);
-                } else if (nComps == 2) {
+                    // coverity[dead_error_line]
                     r = (src_pixels && rOffset < nComps) ? src_pixels[index * nComps + rOffset] : 0.;
+                    // coverity[dead_error_line]
+                    g = (src_pixels && gOffset < nComps) ? src_pixels[index * nComps + gOffset] : 0.;
+                    // coverity[dead_error_line]
+                    b = (src_pixels && bOffset < nComps) ? src_pixels[index * nComps + bOffset] : 0.;
+                    a = (src_pixels ? 255 : 0);
+                } else if (nComps == 2) {
+                    // coverity[dead_error_line]
+                    r = (src_pixels && rOffset < nComps) ? src_pixels[index * nComps + rOffset] : 0.;
+                    // coverity[dead_error_line]
                     g = (src_pixels && gOffset < nComps) ? src_pixels[index * nComps + gOffset] : 0.;
                     b = 0;
                     a = (src_pixels ? 255 : 0);
                 } else if (nComps == 1) {
-                    r = src_pixels ? src_pixels[index] : 0.;
+                    // coverity[dead_error_line]
+                    r = (src_pixels && rOffset < nComps) ? src_pixels[index * nComps + rOffset] : 0.;
                     g = b = r;
                     a = src_pixels ? 255 : 0;
                 } else {
                     assert(false);
                 }
-                
-                
+
+
                 
                 switch ( pixelSize ) {
                     case sizeof(unsigned char): //byte
@@ -1536,27 +1542,33 @@ scaleToTexture32bitsGeneric(const std::pair<int,int> & yRange,
             double r,g,b,a;
             
             if (nComps >= 4) {
-                r = (double)(src_pixels[x * nComps + rOffset]);
-                g = (double)src_pixels[x * nComps + gOffset];
-                b = (double)src_pixels[x * nComps + bOffset];
+                r = (src_pixels && rOffset < nComps) ? src_pixels[x * nComps + rOffset] : 0.;
+                g = (src_pixels && gOffset < nComps) ? src_pixels[x * nComps + gOffset] : 0.;
+                b = (src_pixels && bOffset < nComps) ? src_pixels[x * nComps + bOffset] : 0.;
                 if (opaque) {
                     a = 1.;
                 } else {
-                    a = (nComps < 4) ? 1. : src_pixels[x * nComps + 3];
+                    a = src_pixels[x * nComps + 3];
                 }
             } else if (nComps == 3) {
-                r = (double)(src_pixels[x * nComps + rOffset]);
-                g = (double)src_pixels[x * nComps + gOffset];
-                b = (double)src_pixels[x * nComps + bOffset];
+                // coverity[dead_error_line]
+                r = (src_pixels && rOffset < nComps) ? src_pixels[x * nComps + rOffset] : 0.;
+                // coverity[dead_error_line]
+                g = (src_pixels && gOffset < nComps) ? src_pixels[x * nComps + gOffset] : 0.;
+                // coverity[dead_error_line]
+                b = (src_pixels && bOffset < nComps) ? src_pixels[x * nComps + bOffset] : 0.;
                 a = 1.;
             } else if (nComps == 2) {
-                r = (double)(src_pixels[x * nComps + rOffset]);
-                g = (double)src_pixels[x * nComps + gOffset];
+                // coverity[dead_error_line]
+                r = (src_pixels && rOffset < nComps) ? src_pixels[x * nComps + rOffset] : 0.;
+                // coverity[dead_error_line]
+                g = (src_pixels && gOffset < nComps) ? src_pixels[x * nComps + gOffset] : 0.;
                 b = 0.;
                 a = 1.;
             } else if (nComps == 1) {
-                a = (nComps < 4) ? 1. : src_pixels[x];
-                r = g = b = a;
+                // coverity[dead_error_line]
+                r = (src_pixels && rOffset < nComps) ? src_pixels[x * nComps + rOffset] : 0.;
+                g = b = r;
                 a = 1.;
             } else {
                 assert(false);

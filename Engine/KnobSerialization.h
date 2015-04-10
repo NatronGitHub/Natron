@@ -133,9 +133,20 @@ public:
 
 class ValueExtraData: public TypeExtraData
 {
-    public:
-    ValueExtraData() : TypeExtraData() , min(0.), max(0.) {}
-    double min,max,dmin,dmax;
+public:
+    ValueExtraData()
+    : TypeExtraData()
+    , min(0.)
+    , max(0.)
+    , dmin(0.)
+    , dmax(0.)
+    {
+    }
+
+    double min;
+    double max;
+    double dmin;
+    double dmax;
 };
 
 struct ValueSerialization

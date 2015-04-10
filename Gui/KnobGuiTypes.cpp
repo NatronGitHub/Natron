@@ -1589,6 +1589,8 @@ struct NewLayerDialogPrivate
     , bEdit(0)
     , aLabel(0)
     , aEdit(0)
+    , setRgbaButton(0)
+    , buttons(0)
     {
         
     }

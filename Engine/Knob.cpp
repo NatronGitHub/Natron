@@ -3301,7 +3301,7 @@ KnobHolder::appendValueChange(KnobI* knob,Natron::ValueChangedReasonEnum reason)
         k.originatedFromMainThread = QThread::currentThread() == qApp->thread();
         k.knob = knob;
         
-        if (!knob->isValueChangesBlocked()) {
+        if (knob && !knob->isValueChangesBlocked()) {
             if (!k.originatedFromMainThread && !canHandleEvaluateOnChangeInOtherThread()) {
                 Q_EMIT doValueChangeOnMainThread(knob, reason, getCurrentTime(), k.originatedFromMainThread);
             } else {
