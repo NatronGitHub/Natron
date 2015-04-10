@@ -179,11 +179,11 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
                 appPTR->writeToOfxLog_mt_safe(QString("Cannot restore the link between " + QString((*it)->getNodeScriptName().c_str()) + " and " + masterNodeName.c_str()));
                 mustShowErrorsLog = true;
             } else {
-                thisNode->getLiveInstance()->slaveAllKnobs( masterNode->getLiveInstance() );
+                thisNode->getLiveInstance()->slaveAllKnobs( masterNode->getLiveInstance(), true );
             }
-        } else {
-            thisNode->restoreKnobsLinks(**it,nodes);
         }
+        thisNode->restoreKnobsLinks(**it,nodes);
+        
         
         const std::vector<std::string> & oldInputs = (*it)->getOldInputs();
         if (!oldInputs.empty()) {

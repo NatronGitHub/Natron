@@ -2006,7 +2006,7 @@ public:
     bool isSlave() const;
 
     ///Slave all the knobs of this holder to the other holder.
-    void slaveAllKnobs(KnobHolder* other);
+    void slaveAllKnobs(KnobHolder* other,bool restore);
 
     void unslaveAllKnobs();
     

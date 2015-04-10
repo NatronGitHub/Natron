@@ -209,6 +209,8 @@ public:
     bool isSecretRecursive() const;
     
 public Q_SLOTS:
+    
+    void onUnlinkActionTriggered();
 
     void onRefreshGuiCurve(int dimension);
     

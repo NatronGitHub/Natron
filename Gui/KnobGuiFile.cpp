@@ -424,9 +424,10 @@ File_KnobGui::reflectAnimationLevel(int /*dimension*/,Natron::AnimationLevelEnum
 void
 File_KnobGui::reflectExpressionState(int /*dimension*/,bool hasExpr)
 {
+    bool isSlaved = _knob->isSlave(0);
     _lineEdit->setAnimation(3);
-    _lineEdit->setReadOnly(hasExpr);
-    _openFileButton->setEnabled(!hasExpr);
+    _lineEdit->setReadOnly(hasExpr || isSlaved);
+    _openFileButton->setEnabled(!hasExpr && !isSlaved);
 }
 
 void
@@ -660,9 +661,10 @@ OutputFile_KnobGui::onSimplifyTriggered()
 void
 OutputFile_KnobGui::reflectExpressionState(int /*dimension*/,bool hasExpr)
 {
+    bool isSlaved = _knob->isSlave(0);
     _lineEdit->setAnimation(3);
-    _lineEdit->setReadOnly(hasExpr);
-    _openFileButton->setEnabled(!hasExpr);
+    _lineEdit->setReadOnly(hasExpr || isSlaved);
+    _openFileButton->setEnabled(!hasExpr && !isSlaved);
 }
 
 
@@ -1271,9 +1273,10 @@ void
 Path_KnobGui::reflectExpressionState(int /*dimension*/,bool hasExpr)
 {
     if (!_knob->isMultiPath()) {
+        bool isSlaved = _knob->isSlave(0);
         _lineEdit->setAnimation(3);
-        _lineEdit->setReadOnly(hasExpr);
-        _openFileButton->setEnabled(!hasExpr);
+        _lineEdit->setReadOnly(hasExpr || isSlaved);
+        _openFileButton->setEnabled(!hasExpr && !isSlaved);
     }
 }
 

@@ -2219,7 +2219,7 @@ KnobHelper::slaveTo(int dimension,
 
     if (helper && helper->_signalSlotHandler && _signalSlotHandler) {
 
-        QObject::connect( helper->_signalSlotHandler.get(), SIGNAL( updateSlaves(int) ), _signalSlotHandler.get(), SLOT( onMasterChanged(int) ) );
+        //QObject::connect( helper->_signalSlotHandler.get(), SIGNAL( updateSlaves(int) ), _signalSlotHandler.get(), SLOT( onMasterChanged(int) ) );
         QObject::connect( helper->_signalSlotHandler.get(), SIGNAL( keyFrameSet(SequenceTime,int,int,bool) ),
                          _signalSlotHandler.get(), SLOT( onMasterKeyFrameSet(SequenceTime,int,int,bool) ) );
         QObject::connect( helper->_signalSlotHandler.get(), SIGNAL( keyFrameRemoved(SequenceTime,int,int) ),
@@ -3444,7 +3444,7 @@ KnobHolder::getKnobs_mt_safe() const
 }
 
 void
-KnobHolder::slaveAllKnobs(KnobHolder* other)
+KnobHolder::slaveAllKnobs(KnobHolder* other,bool restore)
 {
     assert(QThread::currentThread() == qApp->thread());
     if (_imp->isSlave) {
@@ -3453,29 +3453,32 @@ KnobHolder::slaveAllKnobs(KnobHolder* other)
     ///Call it prior to slaveTo: it will set the master pointer as pointing to other
     onAllKnobsSlaved(true,other);
 
-
-    beginChanges();
-
-    const std::vector<boost::shared_ptr<KnobI> > & otherKnobs = other->getKnobs();
-    const std::vector<boost::shared_ptr<KnobI> > & thisKnobs = getKnobs();
-    for (U32 i = 0; i < otherKnobs.size(); ++i) {
+    ///When loading a project, we don't need to slave all knobs here because the serialization of each knob separatly
+    ///will reslave it correctly if needed
+    if (!restore) {
+        beginChanges();
         
-        if (otherKnobs[i]->isDeclaredByPlugin() || otherKnobs[i]->isUserKnob()) {
-            boost::shared_ptr<KnobI> foundKnob;
-            for (U32 j = 0; j < thisKnobs.size(); ++j) {
-                if ( thisKnobs[j]->getName() == otherKnobs[i]->getName() ) {
-                    foundKnob = thisKnobs[j];
-                    break;
+        const std::vector<boost::shared_ptr<KnobI> > & otherKnobs = other->getKnobs();
+        const std::vector<boost::shared_ptr<KnobI> > & thisKnobs = getKnobs();
+        for (U32 i = 0; i < otherKnobs.size(); ++i) {
+            
+            if (otherKnobs[i]->isDeclaredByPlugin() || otherKnobs[i]->isUserKnob()) {
+                boost::shared_ptr<KnobI> foundKnob;
+                for (U32 j = 0; j < thisKnobs.size(); ++j) {
+                    if ( thisKnobs[j]->getName() == otherKnobs[i]->getName() ) {
+                        foundKnob = thisKnobs[j];
+                        break;
+                    }
+                }
+                assert(foundKnob);
+                int dims = foundKnob->getDimension();
+                for (int j = 0; j < dims; ++j) {
+                    foundKnob->slaveTo(j, otherKnobs[i], j);
                 }
             }
-            assert(foundKnob);
-            int dims = foundKnob->getDimension();
-            for (int j = 0; j < dims; ++j) {
-                foundKnob->slaveTo(j, otherKnobs[i], j);
-            }
         }
+        endChanges();
     }
-    endChanges();
     _imp->isSlave = true;
 }
 

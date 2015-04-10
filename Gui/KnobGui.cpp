@@ -292,6 +292,9 @@ KnobGui::createGUI(QGridLayout* containerLayout,
         if (exp.empty()) {
             onAnimationLevelChanged(i, knob->getAnimationLevel(i) );
         }
+        if (knob->isSlave(i)) {
+            setReadOnly_(true, i);
+        }
     }
 }
 
@@ -435,25 +438,32 @@ KnobGui::createAnimationMenu(QMenu* menu,int dimension)
         }
     }
 
-    bool isSlave = false;
+    bool hasDimensionSlaved = false;
     bool hasAnimation = false;
     bool isEnabled = true;
+    bool isSlaved0 = false;
+
     for (int i = 0; i < knob->getDimension(); ++i) {
         if ( knob->isSlave(i) ) {
-            isSlave = true;
+            hasDimensionSlaved = true;
+            if (i == 0) {
+                isSlaved0 = true;
+            }
         }
         if (knob->getKeyFramesCount(i) > 0) {
             hasAnimation = true;
         }
-        if (isSlave && hasAnimation) {
+        if (hasDimensionSlaved && hasAnimation) {
             break;
         }
         if ( !knob->isEnabled(i) ) {
             isEnabled = false;
         }
     }
+    bool isSlaved = (dimension == -1 || dimension == 0) ? isSlaved0 : knob->isSlave(dimension);
+
     if ( knob->isAnimationEnabled() ) {
-        if (!isSlave) {
+        if (!hasDimensionSlaved) {
             if (knob->getDimension() > 1) {
                 ///Multi-dim actions
                 if (!isOnKeyFrame) {
@@ -518,7 +528,7 @@ KnobGui::createAnimationMenu(QMenu* menu,int dimension)
         } // if (!isSlave)
         
 
-        if (!isSlave) {
+        if (!hasDimensionSlaved) {
             QAction* showInCurveEditorAction = new QAction(tr("Show in curve editor"),menu);
             QObject::connect( showInCurveEditorAction,SIGNAL( triggered() ),this,SLOT( onShowInCurveEditorActionTriggered() ) );
             menu->addAction(showInCurveEditorAction);
@@ -566,7 +576,7 @@ KnobGui::createAnimationMenu(QMenu* menu,int dimension)
             copyAnimationAction->setEnabled(false);
         }
 
-        if (!isSlave) {
+        if (!hasDimensionSlaved) {
             ///If the clipboard is either empty or has no animation, disable the Paste animation action.
             bool isClipBoardEmpty = appPTR->isClipBoardEmpty();
             std::list<Variant> values;
@@ -603,6 +613,7 @@ KnobGui::createAnimationMenu(QMenu* menu,int dimension)
         QAction* clearExprAction = new QAction(tr("Clear expression"),menu);
         QObject::connect(clearExprAction,SIGNAL(triggered() ),this,SLOT(onClearExprActionTriggered()));
         clearExprAction->setData(dimension);
+        clearExprAction->setEnabled(!hasExpr.empty());
         menu->addAction(clearExprAction);
         
     }
@@ -621,7 +632,87 @@ KnobGui::createAnimationMenu(QMenu* menu,int dimension)
         
         
     }
+    
+    
+    
+    if (isSlaved) {
+        menu->addSeparator();
+        
+        std::string knobName;
+        if (dimension != -1 || knob->getDimension() == 1) {
+            std::pair<int,boost::shared_ptr<KnobI> > master = knob->getMaster(dimension);
+            assert(master.second);
+            
+            ///find-out to which node that master knob belongs to
+            assert( getKnob()->getHolder()->getApp() );
+            KnobHolder* holder = knob->getHolder();
+            EffectInstance* isEffect = dynamic_cast<EffectInstance*>(holder);
+            assert(isEffect);
+            boost::shared_ptr<NodeCollection> collec = isEffect->getNode()->getGroup();
+            NodeGroup* isCollecGroup = dynamic_cast<NodeGroup*>(collec.get());
+            NodeList nodes = collec->getNodes();
+            if (isCollecGroup) {
+                nodes.push_back(isCollecGroup->getNode());
+            }
+            for (NodeList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+                const std::vector< boost::shared_ptr<KnobI> > & knobs = (*it)->getKnobs();
+                bool shouldStop = false;
+                for (U32 j = 0; j < knobs.size(); ++j) {
+                    if ( knobs[j].get() == master.second.get() ) {
+                        knobName.append((*it)->getScriptName() );
+                        shouldStop = true;
+                        break;
+                    }
+                }
+                if (shouldStop) {
+                    break;
+                }
+            }
+            knobName.append(".");
+            knobName.append( master.second->getName() );
+            if (master.second->getDimension() > 1) {
+                knobName.append(".");
+                knobName.append( master.second->getDimensionName(master.first) );
+            }
+            
+        }
+        QString actionText = tr("Unlink");
+        if (!knobName.empty()) {
+            actionText.append(" from ");
+            actionText.append(knobName.c_str());
+        }
+        QAction* unlinkAction = new QAction(actionText,menu);
+        unlinkAction->setData( QVariant(dimension) );
+        QObject::connect( unlinkAction,SIGNAL( triggered() ),this,SLOT( onUnlinkActionTriggered() ) );
+        menu->addAction(unlinkAction);
+        
+        
+        
+    }
 } // createAnimationMenu
+
+void
+KnobGui::onUnlinkActionTriggered()
+{
+    QAction* action = qobject_cast<QAction*>(sender());
+    if (!action) {
+        return;
+    }
+    int dim = action->data().toInt();
+    boost::shared_ptr<KnobI> thisKnob = getKnob();
+    int dims = thisKnob->getDimension();
+    
+    thisKnob->beginChanges();
+    for (int i = 0; i < dims; ++i) {
+        if (dim == -1 || i == dim) {
+            std::pair<int,boost::shared_ptr<KnobI> > other = thisKnob->getMaster(i);
+            thisKnob->onKnobUnSlaved(i);
+            onKnobSlavedChanged(i, false);
+        }
+    }
+    thisKnob->endChanges();
+    getKnob()->getHolder()->getApp()->triggerAutoSave();
+}
 
 void
 KnobGui::onSetExprActionTriggered()

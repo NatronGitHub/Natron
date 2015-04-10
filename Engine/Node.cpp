@@ -3112,6 +3112,7 @@ Node::deactivate(const std::list< Node* > & outputsToDisconnect,
                 continue;
             }
             
+            isEffect->beginChanges();
             for (int dim = 0; dim < (*it)->getDimension(); ++dim) {
                 std::pair<int, boost::shared_ptr<KnobI> > master = (*it)->getMaster(dim);
                 if (master.second == knobs[i]) {
@@ -3123,6 +3124,7 @@ Node::deactivate(const std::list< Node* > & outputsToDisconnect,
                     (*it)->clearExpression(dim,true);
                 }
             }
+            isEffect->endChanges(true);
         }
     }
     

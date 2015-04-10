@@ -3568,18 +3568,18 @@ NodeGraphPrivate::pasteNode(const NodeSerialization & internalSerialization,
     }
 
     const std::string & masterNodeName = internalSerialization.getMasterNodeName();
-    if ( masterNodeName.empty() ) {
-        std::list<boost::shared_ptr<Natron::Node> > allNodes;
-        _gui->getApp()->getProject()->getActiveNodes(&allNodes);
-        n->restoreKnobsLinks(internalSerialization,allNodes);
-    } else {
+    if ( !masterNodeName.empty() ) {
+        
         boost::shared_ptr<Natron::Node> masterNode = _gui->getApp()->getProject()->getNodeByName(masterNodeName);
 
         ///the node could not exist any longer if the user deleted it in the meantime
         if ( masterNode && masterNode->isActivated() ) {
-            n->getLiveInstance()->slaveAllKnobs( masterNode->getLiveInstance() );
+            n->getLiveInstance()->slaveAllKnobs( masterNode->getLiveInstance(), true );
         }
     }
+    std::list<boost::shared_ptr<Natron::Node> > allNodes;
+    _gui->getApp()->getProject()->getActiveNodes(&allNodes);
+    n->restoreKnobsLinks(internalSerialization,allNodes);
 
     //We don't want the clone to have the same hash as the original
     n->incrementKnobsAge();
@@ -3593,7 +3593,7 @@ NodeGraphPrivate::pasteNode(const NodeSerialization & internalSerialization,
         DotGui* isDot = dynamic_cast<DotGui*>( gui.get() );
         ///Dots cannot be cloned, just copy them
         if (!isDot) {
-            n->getLiveInstance()->slaveAllKnobs( internalSerialization.getNode()->getLiveInstance() );
+            n->getLiveInstance()->slaveAllKnobs( internalSerialization.getNode()->getLiveInstance(), false );
         }
     }
     

@@ -553,7 +553,7 @@ void
 DecloneMultipleNodesCommand::undo()
 {
     for (std::list<NodeToDeclone>::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
-        it->node.lock()->getNode()->getLiveInstance()->slaveAllKnobs( it->master.lock()->getLiveInstance() );
+        it->node.lock()->getNode()->getLiveInstance()->slaveAllKnobs( it->master.lock()->getLiveInstance(), false );
     }
 
     _graph->getGui()->getApp()->triggerAutoSave();
