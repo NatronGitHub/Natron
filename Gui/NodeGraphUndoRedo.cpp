@@ -1586,7 +1586,7 @@ InlineGroupCommand::InlineGroupCommand(NodeGraph* graph,const std::list<boost::s
         //We are going to move recursively the outputs of the group nodes so that it does not overlap the inlining of the group
         QRectF rectToClear(l,b,r - l,ySpaceNeeded - ySpaceAvailable);
         
-        QPointF avgOutputPos =  {0., 0.};
+        QPointF avgOutputPos(0., 0.);
         for (std::list<boost::shared_ptr<NodeGui> >::iterator it2 = outputsConnectedToGroup.begin();
              it2!=outputsConnectedToGroup.end(); ++it2) {
             (*it2)->moveBelowPositionRecursively(rectToClear);
