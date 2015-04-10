@@ -64,25 +64,20 @@ public:
     void drawScale() const;
 
     // Helpers
+    QRectF nameItemRectToSectionRect(const QRectF &rect) const;
     bool curveHasKeyframeAtTime(const boost::shared_ptr<Curve> &curve, double time) const;
 
-    // Section drawing
+    // Drawing
     void drawSections() const;
+
     void drawNodeSection(const DSNode *dsNode) const;
     void drawKnobSection(const DSKnob *dsKnob) const;
 
-    void drawKeyframesFor(DSNode *dsNode) const;
-
-    QRectF nameItemRectToSectionRect(const QRectF &rect) const;
-
-    void drawClips() const;
     void drawReader(const DSNode *dsNode) const;
-    void drawGroups() const;
     void drawGroup(const DSNode *dsNode) const;
-    void drawTimeNode(const DSNode *dsNode) const;
+    void drawKeyframes(DSNode *dsNode) const;
 
     void drawProjectBounds() const;
-
     void drawCurrentFrameIndicator() const;
 
     void drawSelectionRect() const;
@@ -280,6 +275,8 @@ QRectF DopeSheetViewPrivate::nameItemRectToSectionRect(const QRectF &rect) const
  */
 void DopeSheetViewPrivate::drawKnobSection(const DSKnob *dsKnob) const
 {
+    GLProtectAttrib a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT);
+
     QColor sectionColor(Qt::darkGray);
 
     if (dsKnob->isMultiDim()) {
@@ -310,6 +307,8 @@ void DopeSheetViewPrivate::drawKnobSection(const DSKnob *dsKnob) const
  */
 void DopeSheetViewPrivate::drawNodeSection(const DSNode *dsNode) const
 {
+    GLProtectAttrib a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT);
+
     QColor sectionColor(Qt::darkGray);
     sectionColor.setAlphaF(0.1f);
 
@@ -333,7 +332,7 @@ void DopeSheetViewPrivate::drawNodeSection(const DSNode *dsNode) const
  *
  *
  */
-void DopeSheetViewPrivate::drawKeyframesFor(DSNode *dsNode) const
+void DopeSheetViewPrivate::drawKeyframes(DSNode *dsNode) const
 {
     RUNNING_IN_MAIN_THREAD_AND_CONTEXT(parent);
 
@@ -453,35 +452,14 @@ void DopeSheetViewPrivate::drawSections() const
                 drawKnobSection(*it2);
             }
 
-            drawKeyframesFor(dsNode);
-        }
-    }
-}
-
-
-/**
- * @brief DopeSheetViewPrivate::drawClips
- *
- *
- */
-void DopeSheetViewPrivate::drawClips() const
-{
-    RUNNING_IN_MAIN_THREAD_AND_CONTEXT(parent);
-
-    const DSNodeList &dsNodeItems = dopeSheetEditor->getDSNodeItems();
-
-    // Perform drawing
-    {
-        GLProtectAttrib a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT | GL_TEXTURE_BIT);
-
-        for (DSNodeList::const_iterator it = dsNodeItems.begin();
-             it != dsNodeItems.end();
-             ++it) {
-
-            DSNode *dsNode = (*it);
-
             if (dsNode->isReaderNode()) {
                 drawReader(dsNode);
+            }
+            else if (dsNode->isGroupNode()) {
+                drawGroup(dsNode);
+            }
+            else {
+                drawKeyframes(dsNode);
             }
         }
     }
@@ -574,29 +552,6 @@ void DopeSheetViewPrivate::drawReader(const DSNode *dsNode) const
     }
 }
 
-void DopeSheetViewPrivate::drawGroups() const
-{
-    RUNNING_IN_MAIN_THREAD_AND_CONTEXT(parent);
-
-    const DSNodeList &dsNodeItems = dopeSheetEditor->getDSNodeItems();
-
-    // Perform drawing
-    {
-        GLProtectAttrib a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT | GL_TEXTURE_BIT);
-
-        for (DSNodeList::const_iterator it = dsNodeItems.begin();
-             it != dsNodeItems.end();
-             ++it) {
-
-            DSNode *dsNode = (*it);
-
-            if (dsNode->isGroupNode()) {
-                drawGroup(dsNode);
-            }
-        }
-    }
-}
-
 void DopeSheetViewPrivate::drawGroup(const DSNode *dsNode) const
 {
     // Get the frame range of all child nodes
@@ -676,11 +631,6 @@ void DopeSheetViewPrivate::drawGroup(const DSNode *dsNode) const
         glVertex2f(convertedReaderRect.topRight().x(), convertedReaderRect.topRight().y());
         glEnd();
     }
-}
-
-void DopeSheetViewPrivate::drawTimeNode(const DSNode *dsNode) const
-{
-
 }
 
 void DopeSheetViewPrivate::drawProjectBounds() const
@@ -1024,8 +974,6 @@ void DopeSheetView::paintGL()
 
         _imp->drawScale();
         _imp->drawSections();
-        _imp->drawClips();
-        _imp->drawGroups();
         _imp->drawProjectBounds();
         _imp->drawCurrentFrameIndicator();
     }
