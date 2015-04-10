@@ -41,6 +41,7 @@
     RUNNING_IN_MAIN_THREAD();\
     RUNNING_IN_MAIN_CONTEXT(glContextOwner)
 
+typedef std::set<double> TimeSet;
 
 ////////////////////////// Helpers //////////////////////////
 
@@ -62,10 +63,16 @@ public:
 
     void drawScale() const;
 
+    // Helpers
+    bool curveHasKeyframeAtTime(const boost::shared_ptr<Curve> &curve, double time) const;
+
     // Section drawing
     void drawSections() const;
     void drawNodeSection(const DSNode *dsNode) const;
     void drawKnobSection(const DSKnob *dsKnob) const;
+
+    void drawKeyframesFor(DSNode *dsNode) const;
+
     QRectF nameItemRectToSectionRect(const QRectF &rect) const;
 
     void drawClips() const;
@@ -75,8 +82,6 @@ public:
     void drawTimeNode(const DSNode *dsNode) const;
 
     void drawProjectBounds() const;
-
-    void drawKeyframes() const;
 
     void drawCurrentFrameIndicator() const;
 
@@ -250,6 +255,13 @@ void DopeSheetViewPrivate::drawScale() const
     }
 }
 
+bool DopeSheetViewPrivate::curveHasKeyframeAtTime(const boost::shared_ptr<Curve> &curve, double time) const
+{
+    KeyFrame k;
+
+    return curve->getKeyFrameWithTime(time, &k);
+}
+
 QRectF DopeSheetViewPrivate::nameItemRectToSectionRect(const QRectF &rect) const
 {
     QRectF r = rectToZoomCoordinates(rect);
@@ -270,7 +282,7 @@ void DopeSheetViewPrivate::drawKnobSection(const DSKnob *dsKnob) const
 {
     QColor sectionColor(Qt::darkGray);
 
-    if (dsKnob->isMultiDimRoot()) {
+    if (dsKnob->isMultiDim()) {
         sectionColor.setAlphaF(0.2f);
     }
     else {
@@ -317,6 +329,95 @@ void DopeSheetViewPrivate::drawNodeSection(const DSNode *dsNode) const
 }
 
 /**
+ * @brief DopeSheetViewPrivate::drawKeyFramesFor
+ *
+ *
+ */
+void DopeSheetViewPrivate::drawKeyframesFor(DSNode *dsNode) const
+{
+    RUNNING_IN_MAIN_THREAD_AND_CONTEXT(parent);
+
+    // Perform drawing
+    {
+        GLProtectAttrib a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT);
+
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+        glPointSize(7.f);
+        glEnable(GL_POINT_SMOOTH);
+        glColor3f(1.f, 0.f, 0.f);
+
+        DSKnobList knobItems = dsNode->getDSKnobs();
+        TimeSet nodeKeyframes;
+
+        for (DSKnobList::const_iterator it = knobItems.begin();
+             it != knobItems.end();
+             ++it) {
+
+            DSKnob *dsKnob = (*it);
+
+            if (!(dsNode->isExpanded()) || dsKnob->isHidden() ||
+                    dsKnob->nodeItemIsCollapsed()) {
+                continue;
+            }
+
+            KnobGui *knobGui = dsKnob->getKnobGui();
+            TimeSet multiDimKnobKeyframes;
+
+            // Draw keyframes for each dimension of the knob
+            for (int dim = 0; dim < knobGui->getKnob()->getDimension(); ++dim) {
+                KeyFrameSet keyframes = knobGui->getCurve(dim)->getKeyFrames_mt_safe();
+
+                for (KeyFrameSet::const_iterator kIt = keyframes.begin();
+                     kIt != keyframes.end();
+                     ++kIt) {
+                    double keyTime = (*kIt).getTime();
+
+                    double y = (dsKnob->isMultiDim()) ? dsKnob->getNameItemRectForDim(dim).center().y()
+                                                      : dsKnob->getNameItemRect().center().y();
+                    QPointF p = zoomContext.toZoomCoordinates(keyTime, y);
+
+                    glBegin(GL_POINTS);
+                    glVertex2f(p.x(), p.y());
+                    glEnd();
+
+                    if (dsKnob->isMultiDim()) {
+                        // Draw keyframe in multidim root knob section too
+                        TimeSet::iterator multiDimKnobKeysIt = multiDimKnobKeyframes.find(keyTime);
+
+                        if (multiDimKnobKeysIt == multiDimKnobKeyframes.end()) {
+                            p = zoomContext.toZoomCoordinates(keyTime,
+                                                              dsKnob->getNameItemRect().center().y());
+
+                            glBegin(GL_POINTS);
+                            glVertex2f(p.x(), p.y());
+                            glEnd();
+
+                            multiDimKnobKeyframes.insert(keyTime);
+                        }
+                    }
+
+                    // Draw keyframe in node section
+                    TimeSet::iterator nodeKeysIt = nodeKeyframes.find(keyTime);
+
+                    if (nodeKeysIt == nodeKeyframes.end()) {
+                        p = zoomContext.toZoomCoordinates(keyTime,
+                                                          dsNode->getNameItemRect().center().y());
+
+                        glBegin(GL_POINTS);
+                        glVertex2f(p.x(), p.y());
+                        glEnd();
+
+                        nodeKeyframes.insert(keyTime);
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
  * @brief DopeSheetViewPrivate::drawSections
  *
  *
@@ -342,10 +443,6 @@ void DopeSheetViewPrivate::drawSections() const
 
             DSNode *dsNode = (*it);
 
-            //            if (dsNode->isGroupNode()) {
-            //                DSNodeList l = dsNode->getDSNodes();
-            //            }
-
             drawNodeSection(dsNode);
 
             DSKnobList knobItems = (*it)->getDSKnobs();
@@ -355,71 +452,12 @@ void DopeSheetViewPrivate::drawSections() const
 
                 drawKnobSection(*it2);
             }
+
+            drawKeyframesFor(dsNode);
         }
     }
 }
 
-/**
- * @brief DopeSheetViewPrivate::drawKeyFrames
- *
- *
- */
-void DopeSheetViewPrivate::drawKeyframes() const
-{
-    RUNNING_IN_MAIN_THREAD_AND_CONTEXT(parent);
-
-    const DSNodeList &dsNodeItems = dopeSheetEditor->getDSNodeItems();
-
-    // Perform drawing
-    {
-        GLProtectAttrib a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT);
-
-        for (DSNodeList::const_iterator it = dsNodeItems.begin();
-             it != dsNodeItems.end();
-             ++it) {
-
-            glEnable(GL_BLEND);
-            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-            glPointSize(7.f);
-            glEnable(GL_POINT_SMOOTH);
-            glColor3f(1.f, 0.f, 0.f);
-
-            DSNode *dsNode = (*it);
-
-            DSKnobList knobItems = dsNode->getDSKnobs();
-            for (DSKnobList::const_iterator it2 = knobItems.begin();
-                 it2 != knobItems.end();
-                 ++it2) {
-
-                DSKnob *dsKnob = (*it2);
-
-                if (dsKnob->isMultiDimRoot() || dsKnob->isHidden() ||
-                        dsKnob->parentIsCollapsed() || !(dsNode->isExpanded())) {
-                    continue;
-                }
-
-                KnobGui *knobGui = dsKnob->getKnobGui();
-
-                for (int dim = 0; dim < knobGui->getKnob()->getDimension(); ++dim) {
-
-                    boost::shared_ptr<Curve> curve = knobGui->getCurve(dim);
-                    KeyFrameSet keyframes = curve->getKeyFrames_mt_safe();
-
-                    for (KeyFrameSet::const_iterator kIt = keyframes.begin(); kIt != keyframes.end(); ++kIt) {
-                        KeyFrame key = (*kIt);
-                        QPointF p = zoomContext.toZoomCoordinates(key.getTime(),
-                                                                  dsKnob->getNameItemRect().center().y());
-
-                        glBegin(GL_POINTS);
-                        glVertex2f(p.x(), p.y());
-                        glEnd();
-                    }
-                }
-            }
-        }
-    }
-}
 
 /**
  * @brief DopeSheetViewPrivate::drawClips
@@ -989,7 +1027,6 @@ void DopeSheetView::paintGL()
         _imp->drawClips();
         _imp->drawGroups();
         _imp->drawProjectBounds();
-        _imp->drawKeyframes();
         _imp->drawCurrentFrameIndicator();
     }
 }

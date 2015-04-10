@@ -54,18 +54,19 @@ public:
 
     DSKnob(DopeSheetEditor *dopeSheetEditor,
            QTreeWidgetItem *nameItem,
-           KnobGui *knobGui,
-           int dimension);
+           KnobGui *knobGui);
     ~DSKnob();
 
     QRectF getNameItemRect() const;
+    QRectF getNameItemRectForDim(int dim) const;
+
     KnobGui *getKnobGui() const;
 
-    bool isMultiDimRoot() const;
+    bool isMultiDim() const;
     bool isExpanded() const;
     bool isHidden() const;
 
-    bool parentIsCollapsed() const;
+    bool nodeItemIsCollapsed() const;
 
 Q_SIGNALS:
     void needNodesVisibleStateChecking();

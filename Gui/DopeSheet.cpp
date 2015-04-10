@@ -107,6 +107,7 @@ void recursiveSelect(QTreeWidgetItem *item)
 
 } // anon namespace
 
+
 ////////////////////////// DSKnob //////////////////////////
 
 class DSKnobPrivate
@@ -123,14 +124,12 @@ public:
     QTreeWidgetItem *nameItem;
     boost::shared_ptr<KnobI> knob;
     KnobGui *knobGui;
-    int dimension;
 };
 
 DSKnobPrivate::DSKnobPrivate() :
     nameItem(0),
     knob(),
-    knobGui(0),
-    dimension()
+    knobGui(0)
 {}
 
 DSKnobPrivate::~DSKnobPrivate()
@@ -159,15 +158,14 @@ DSKnobPrivate::~DSKnobPrivate()
  */
 DSKnob::DSKnob(DopeSheetEditor *dopeSheetEditor,
                QTreeWidgetItem *nameItem,
-               KnobGui *knobGui,
-               int dimension) :
+               KnobGui *knobGui) :
     QObject(),
     _imp(new DSKnobPrivate)
 {
     _imp->dopeSheetEditor = dopeSheetEditor;
     _imp->nameItem = nameItem;
     _imp->knobGui = knobGui;
-    _imp->dimension = dimension;
+    _imp->knob = knobGui->getKnob();
 
     connect(knobGui, SIGNAL(keyFrameSet()),
             this, SLOT(checkVisibleState()));
@@ -186,6 +184,11 @@ QRectF DSKnob::getNameItemRect() const
     return _imp->dopeSheetEditor->getNameItemRect(_imp->nameItem);
 }
 
+QRectF DSKnob::getNameItemRectForDim(int dim) const
+{
+    return _imp->dopeSheetEditor->getNameItemRect(_imp->nameItem->child(dim));
+}
+
 /**
  * @brief DSKnob::getKnobGui
  *
@@ -201,7 +204,7 @@ KnobGui *DSKnob::getKnobGui() const
  *
  *
  */
-bool DSKnob::isMultiDimRoot() const
+bool DSKnob::isMultiDim() const
 {
     return (_imp->nameItem->childCount() > 0);
 }
@@ -216,7 +219,7 @@ bool DSKnob::isHidden() const
     return (_imp->nameItem->isHidden());
 }
 
-bool DSKnob::parentIsCollapsed() const
+bool DSKnob::nodeItemIsCollapsed() const
 {
     assert(_imp->nameItem->parent());
 
@@ -233,9 +236,18 @@ bool DSKnob::parentIsCollapsed() const
  */
 void DSKnob::checkVisibleState()
 {
-    QTreeWidgetItem *parentInHierarchyView = _imp->nameItem->parent();
+    QTreeWidgetItem *nodeItem = _imp->nameItem->parent();
 
-    if (isMultiDimRoot()) {
+    if (isMultiDim()) {
+        for (int i = 0; i < _imp->knob->getDimension(); ++i) {
+            if (_imp->knob->isAnimated(i)) {
+                _imp->nameItem->child(i)->setHidden(false);
+            }
+            else {
+                _imp->nameItem->child(i)->setHidden(true);
+            }
+        }
+
         if (itemHasNoChildVisible(_imp->nameItem)) {
             _imp->nameItem->setHidden(true);
         }
@@ -244,22 +256,19 @@ void DSKnob::checkVisibleState()
         }
     }
     else {
-        if (!_imp->knobGui->getKnob()->isAnimated(_imp->dimension)) {
-            _imp->nameItem->setHidden(true);
-
-            // Hide the multidim root if it's "empty"
-            if (itemHasNoChildVisible(parentInHierarchyView))
-                parentInHierarchyView->setHidden(true);
+        if (_imp->knob->isAnimated(0)) {
+            _imp->nameItem->setHidden(false);
         }
         else {
-            _imp->nameItem->setHidden(false);
-            parentInHierarchyView->setHidden(false);
-
-            // Show the node item if necessary
-            if (parentInHierarchyView->parent()) {
-                parentInHierarchyView->parent()->setHidden(false);
-            }
+            _imp->nameItem->setHidden(true);
         }
+    }
+
+    if (itemHasNoChildVisible(nodeItem)) {
+        nodeItem->setHidden(true);
+    }
+    else if (nodeItem->isHidden()) {
+        nodeItem->setHidden(false);
     }
 
     Q_EMIT needNodesVisibleStateChecking();
@@ -289,7 +298,6 @@ public:
     DSNode::DSNodeType nodeType;
 
     DSKnobList dsKnobs;
-    DSNodeList dsNodes;
 };
 
 DSNodePrivate::DSNodePrivate() :
@@ -331,7 +339,6 @@ DSNode::DSNode(DopeSheetEditor *dopeSheetEditor,
     _imp(new DSNodePrivate)
 {
     _imp->dopeSheetEditor = dopeSheetEditor;
-
     _imp->nodeGui = nodeGui;
 
     connect(nodeGui->getNode().get(), SIGNAL(labelChanged(QString)),
@@ -369,7 +376,7 @@ DSNode::DSNode(DopeSheetEditor *dopeSheetEditor,
                 dopeSheetEditor, SLOT(refreshDopeSheetView()));
     }
 
-    //     If it's a Group node
+    // If it's a Group node
     NodeGroup *isGroup = dynamic_cast<NodeGroup *>(nodeGui->getNode()->getLiveInstance());
     if (isGroup) {
         _imp->nodeType = DSNode::GroupNodeType;
@@ -397,37 +404,38 @@ DSNode::DSNode(DopeSheetEditor *dopeSheetEditor,
                 continue;
             }
 
-            QTreeWidgetItem *childItem = new QTreeWidgetItem(_imp->nameItem);
-            childItem->setExpanded(true);
-            childItem->setText(0, knob->getDescription().c_str());
+            if (knob->getDimension() <= 1) {
+                QTreeWidgetItem *knobItem = new QTreeWidgetItem(_imp->nameItem);
+                knobItem->setExpanded(true);
+                knobItem->setText(0, knob->getDescription().c_str());
 
-            DSKnob *multiDimRootItem = new DSKnob(dopeSheetEditor, childItem,
-                                                  knobGui, 0);
+                DSKnob *dsKnob = new DSKnob(dopeSheetEditor, knobItem, knobGui);
 
-            connect(multiDimRootItem, SIGNAL(needNodesVisibleStateChecking()),
-                    this, SLOT(checkVisibleState()));
+                connect(dsKnob, SIGNAL(needNodesVisibleStateChecking()),
+                        this, SLOT(checkVisibleState()));
 
-            _imp->dsKnobs.push_back(multiDimRootItem);
+                _imp->dsKnobs.push_back(dsKnob);
+            }
+            else {
+                QTreeWidgetItem *multiDimRootItem = new QTreeWidgetItem(_imp->nameItem);
+                multiDimRootItem->setExpanded(true);
+                multiDimRootItem->setText(0, knob->getDescription().c_str());
 
-            if (knob->getDimension() > 1) {
+                DSKnob *dsMultiDimKnob = new DSKnob(dopeSheetEditor, multiDimRootItem, knobGui);
+
+                connect(dsMultiDimKnob, SIGNAL(needNodesVisibleStateChecking()),
+                        this, SLOT(checkVisibleState()));
+
+                _imp->dsKnobs.push_back(dsMultiDimKnob);
+
                 for (int i = 0; i < knob->getDimension(); ++i) {
-                    QTreeWidgetItem *knobItem = new QTreeWidgetItem(childItem);
+                    QTreeWidgetItem *knobItem = new QTreeWidgetItem(multiDimRootItem);
                     knobItem->setExpanded(true);
                     knobItem->setText(0, knob->getDimensionName(i).c_str());
-
-                    DSKnob *dsKnob = new DSKnob(dopeSheetEditor, knobItem,
-                                                knobGui, i);
-
-                    connect(dsKnob, SIGNAL(needNodesVisibleStateChecking()),
-                            this, SLOT(checkVisibleState()));
-
-                    _imp->dsKnobs.push_back(dsKnob);
                 }
             }
         }
     }
-
-    //    checkVisibleState();
 }
 
 /**
@@ -854,7 +862,7 @@ void DopeSheetEditor::onItemSelectionChanged()
  * @brief DopeSheetEditor::onItemDoubleClicked
  *
  * Ensures that the node panel associated with 'item' is the top-most displayed
- * Sin the Properties panel.
+ * in the Properties panel.
  *
  * This slot is automatically called when an item is double clicked in the
  * hierarchy view.
@@ -869,18 +877,47 @@ void DopeSheetEditor::onItemDoubleClicked(QTreeWidgetItem *item, int column)
          it != _imp->dsNodes.end();
          ++it) {
 
-        if ((*it)->getNameItem() == item) {
-            node = (*it)->getNodeGui();
+        DSNode *dsNode = (*it);
+
+        if (dsNode->getNameItem()->isHidden()) {
+            continue;
+        }
+
+        if (dsNode->getNameItem() == item) {
+            node = dsNode->getNodeGui();
             break;
         }
 
-        DSKnobList dsknobItems = (*it)->getDSKnobs();
+        DSKnobList dsknobItems = dsNode->getDSKnobs();
 
         for (DSKnobList::const_iterator it2 = dsknobItems.begin();
              it2 != dsknobItems.end();
              ++it2) {
-            if ((*it2)->getNameItem() == item)
-                node = (*it)->getNodeGui();
+            DSKnob *dsKnob = (*it2);
+
+            if (dsKnob->getNameItem()->isHidden()) {
+                continue;
+            }
+
+            if (dsKnob->getNameItem() == item) {
+                node = dsNode->getNodeGui();
+                break;
+            }
+
+            if (dsKnob->isMultiDim()) {
+                for (int i = 0; i < dsKnob->getKnobGui()->getKnob()->getDimension(); ++i) {
+                    QTreeWidgetItem *childItem = dsKnob->getNameItem()->child(i);
+
+                    if (childItem->isHidden()) {
+                        continue;
+                    }
+
+                    if (childItem == item) {
+                        node = dsNode->getNodeGui();
+                        break;
+                    }
+                }
+            }
         }
 
         if (node) {
