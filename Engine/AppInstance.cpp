@@ -47,40 +47,33 @@
 
 using namespace Natron;
 
-class FlagSetter {
-    
-    bool* p;
-    QMutex* lock;
-    
-public:
-    
-    FlagSetter(bool initialValue,bool* p)
-    : p(p)
-    , lock(0)
-    {
-        *p = initialValue;
-    }
-    
-    FlagSetter(bool initialValue,bool* p, QMutex* mutex)
-    : p(p)
-    , lock(mutex)
-    {
+FlagSetter::FlagSetter(bool initialValue,bool* p)
+: p(p)
+, lock(0)
+{
+    *p = initialValue;
+}
+
+FlagSetter::FlagSetter(bool initialValue,bool* p, QMutex* mutex)
+: p(p)
+, lock(mutex)
+{
+    lock->lock();
+    *p = initialValue;
+    lock->unlock();
+}
+
+FlagSetter::~FlagSetter()
+{
+    if (lock) {
         lock->lock();
-        *p = initialValue;
+    }
+    *p = !*p;
+    if (lock) {
         lock->unlock();
     }
-    
-    ~FlagSetter()
-    {
-        if (lock) {
-            lock->lock();
-        }
-        *p = !*p;
-        if (lock) {
-            lock->unlock();
-        }
-    }
-};
+}
+
 
 
 struct AppInstancePrivate

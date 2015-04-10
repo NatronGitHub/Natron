@@ -248,7 +248,7 @@ GuiAppInstance::load(const CLArgs& cl)
     
     /// If this is the first instance of the software, try to load an autosave
     if ( (getAppID() == 0) && cl.getFilename().isEmpty() ) {
-        if ( getProject()->findAndTryLoadAutoSave() ) {
+        if (findAndTryLoadUntitledAutoSave()) {
             ///if we successfully loaded an autosave ignore the specified project in the launch args.
             return;
         }
@@ -290,6 +290,65 @@ GuiAppInstance::load(const CLArgs& cl)
         }
     }
 } // load
+
+
+bool
+GuiAppInstance::findAndTryLoadUntitledAutoSave()
+{
+    QDir savesDir(Project::autoSavesDir());
+    QStringList entries = savesDir.entryList(QDir::Files | QDir::NoDotAndDotDot);
+    
+    QStringList foundAutosaves;
+    for (int i = 0; i < entries.size(); ++i) {
+        const QString & entry = entries.at(i);
+        QString searchStr('.');
+        searchStr.append(NATRON_PROJECT_FILE_EXT);
+        searchStr.append(".autosave");
+        int suffixPos = entry.indexOf(searchStr);
+        if (suffixPos == -1 || entry.contains("RENDER_SAVE")) {
+            continue;
+        }
+        
+        foundAutosaves << entry;
+    }
+    if (foundAutosaves.empty()) {
+        return false;
+    }
+    
+    QString text = tr("An auto-save was restored successfully. It didn't belong to any project\n"
+                      "Would you like to restore it ? Clicking No will remove this auto-save.");
+    
+    
+    appPTR->hideSplashScreen();
+    
+    Natron::StandardButtonEnum ret = Natron::questionDialog(tr("Auto-save").toStdString(),
+                                                            text.toStdString(),false, Natron::StandardButtons(Natron::eStandardButtonYes | Natron::eStandardButtonNo),
+                                                            Natron::eStandardButtonYes);
+    if ( (ret == Natron::eStandardButtonNo) || (ret == Natron::eStandardButtonEscape) ) {
+        Project::clearAutoSavesDir();
+        return false;
+    }
+    
+    for (int i = 0; i < foundAutosaves.size(); ++i) {
+        const QString& autoSaveFileName = foundAutosaves[i];
+        if (i == 0) {
+            //Load the first one into the current instance of Natron, then open-up new instances
+            if (!getProject()->loadProject(savesDir.path() + '/', autoSaveFileName, true)) {
+                return false;
+            }
+        } else {
+            CLArgs cl;
+            AppInstance* newApp = appPTR->newAppInstance(cl);
+            if (!newApp->getProject()->loadProject(savesDir.path() + '/', autoSaveFileName, true)) {
+                return false;
+            }
+        }
+    }
+    
+    return true;
+  
+} // findAndTryLoadAutoSave
+
 
 void
 GuiAppInstance::createNodeGui(const boost::shared_ptr<Natron::Node> &node,

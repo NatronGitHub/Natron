@@ -62,7 +62,7 @@ public:
     /**
      * @brief Loads the project with the given path and name corresponding to a file on disk.
      **/
-    bool loadProject(const QString & path,const QString & name);
+    bool loadProject(const QString & path,const QString & name, bool isUntitledAutosave = false);
 
     /**
      * @brief Saves the project with the given path and name corresponding to a file on disk.
@@ -88,12 +88,8 @@ public:
     static QString autoSavesDir() WARN_UNUSED_RETURN;
 
 
-    /** @brief Attemps to find an autosave. If found one,prompts the user
-     * whether he/she wants to load it. If something was loaded this function
-     * returns true,otherwise false.
-     * DO NOT CALL THIS: This is called by AppInstance when the application is launching.
-     **/
-    bool findAndTryLoadAutoSave() WARN_UNUSED_RETURN;
+    
+    bool findAutoSaveForProject(const QString& projectPath,const QString& projectName,QString* autoSaveFileName);
 
     /**
      * @brief Returns true if the project is currently loading.
@@ -165,7 +161,8 @@ public:
     /**
      * @brief Remove all the autosave files from the disk.
      **/
-    static void removeAutoSaves();
+    static void clearAutoSavesDir();
+    void removeLastAutosave();
     virtual bool isProject() const
     {
         return true;
@@ -310,7 +307,8 @@ private:
 
     void setProjectDefaultFormat(const Format & f);
 
-    bool loadProjectInternal(const QString & path,const QString & name,bool isAutoSave,const QString& realFilePath);
+    bool loadProjectInternal(const QString & path,const QString & name,bool isAutoSave,
+                             bool isUntitledAutosave);
 
     QString saveProjectInternal(const QString & path,const QString & name,bool autosave = false);
 
@@ -360,7 +358,7 @@ private:
 
     void save(ProjectSerialization* serializationObject) const;
 
-    bool load(const ProjectSerialization & obj,const QString& name,const QString& path,bool isAutoSave,const QString& realFilePath);
+    bool load(const ProjectSerialization & obj,const QString& name,const QString& path);
 
 
     boost::scoped_ptr<ProjectPrivate> _imp;

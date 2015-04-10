@@ -81,9 +81,7 @@ ProjectPrivate::ProjectPrivate(Natron::Project* project)
 bool
 ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
                                          const QString& name,
-                                         const QString& path,
-                                         bool isAutoSave,
-                                         const QString& realFilePath)
+                                         const QString& path)
 {
     
     /*1st OFF RESTORE THE PROJECT KNOBS*/
@@ -144,7 +142,7 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
             ///For eAppTypeBackgroundAutoRunLaunchedFromGui don't change the project path since it is controlled
             ///by the main GUI process
             if (appPTR->getAppType() != AppManager::eAppTypeBackgroundAutoRunLaunchedFromGui) {
-                autoSetProjectDirectory(isAutoSave ? realFilePath : path);
+                autoSetProjectDirectory(path);
             }
             _publicInterface->onOCIOConfigPathChanged(appPTR->getOCIOConfigPath(),false);
         } else if (projectKnobs[i] == natronVersion) {
@@ -184,7 +182,7 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
     autoSetProjectFormat = false;
     hasProjectBeenSavedByUser = true;
     projectName = name;
-    projectPath = isAutoSave ? realFilePath : path;
+    projectPath = path;
     ageSinceLastSave = time;
     lastAutoSave = time;
     _publicInterface->getApp()->setProjectWasCreatedWithLowerCaseIDs(false);

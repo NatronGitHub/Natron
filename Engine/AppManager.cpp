@@ -1126,6 +1126,7 @@ AppInstance*
 AppManager::newAppInstance(const CLArgs& cl)
 {
     AppInstance* instance = makeNewInstance(_imp->_availableID);
+    ++_imp->_availableID;
 
     try {
         instance->load(cl);
@@ -1133,17 +1134,16 @@ AppManager::newAppInstance(const CLArgs& cl)
         Natron::errorDialog( NATRON_APPLICATION_NAME,e.what(), false );
         removeInstance(_imp->_availableID);
         delete instance;
-
+        --_imp->_availableID;
         return NULL;
     } catch (...) {
         Natron::errorDialog( NATRON_APPLICATION_NAME, tr("Cannot load project").toStdString(), false );
         removeInstance(_imp->_availableID);
         delete instance;
-
+        --_imp->_availableID;
         return NULL;
     }
 
-    ++_imp->_availableID;
 
     ///flag that we finished loading the Appmanager even if it was already true
     _imp->_loaded = true;
@@ -1236,6 +1236,8 @@ AppManager::clearAllCaches()
     for (std::map<int,AppInstanceRef>::iterator it = _imp->_appInstances.begin(); it != _imp->_appInstances.end(); ++it) {
         it->second.app->renderAllViewers();
     }
+    
+    Project::clearAutoSavesDir();
 }
 
 
@@ -1725,6 +1727,8 @@ AppManager::loadPythonGroups()
         }
     }
     
+    appPTR->setLoadingStatus(QString(QObject::tr("Loading PyPlugs...")));
+
     for (int i = 0; i < allPlugins.size(); ++i) {
         
         QString moduleName = allPlugins[i];
@@ -3714,7 +3718,6 @@ getGroupInfos(const std::string& modulePath,
             *grouping = PLUGIN_GROUP_OTHER;
         }
         
-        appPTR->setLoadingStatus(QString(QObject::tr("Python: Loading ")) + QString(pluginLabel->c_str()));
         
         bool ok = interpretPythonScript(deleteScript, &err, NULL);
         assert(ok);
