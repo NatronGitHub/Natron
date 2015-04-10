@@ -1717,10 +1717,10 @@ Node::makeInfoForInput(int inputNumber) const
     std::list<Natron::ImageComponents> comps;
     Natron::ImageBitDepthEnum depth;
     Natron::ImagePremultiplicationEnum premult;
-    
-    double par = inputNode->getLiveInstance()->getPreferredAspectRatio();
-    premult = inputNode->getLiveInstance()->getOutputPremultiplication();
-    
+
+    Natron::EffectInstance* input = inputNode->getLiveInstance();
+    double par = input->getPreferredAspectRatio();
+    premult = input->getOutputPremultiplication();
     std::string premultStr;
     switch (premult) {
         case Natron::eImagePremultiplicationOpaque:
@@ -1733,25 +1733,28 @@ Node::makeInfoForInput(int inputNumber) const
             premultStr= "unpremultiplied";
             break;
     }
-    
+
     _imp->liveInstance->getPreferredDepthAndComponents(inputNumber, &comps, &depth);
     assert(!comps.empty());
-    
+
+    double time = getApp()->getTimeLine()->currentFrame();
+
     EffectInstance::ComponentsAvailableMap availableComps;
-    _imp->liveInstance->getComponentsAvailable(getApp()->getTimeLine()->currentFrame(), &availableComps);
+    input->getComponentsAvailable(time, &availableComps);
     
     RenderScale scale;
     scale.x = scale.y = 1.;
     RectD rod;
     bool isProjectFormat;
-    StatusEnum stat = inputNode->getLiveInstance()->getRegionOfDefinition_public(getHashValue(),
-                                                                                 inputNode->getLiveInstance()->getCurrentTime(),
-                                                                                 scale, 0, &rod, &isProjectFormat);
+    StatusEnum stat = input->getRegionOfDefinition_public(getHashValue(),
+                                                          time,
+                                                          scale, 0, &rod, &isProjectFormat);
     
-    
+    double fps = input->getPreferredFrameRate();
+
     std::stringstream ss;
-    ss << "<b><font color=\"orange\">"<< inputName << ":\n" << "</font></b>"
-    << "<b>Image Format:</b>\n";
+    ss << "<b><font color=\"orange\">"<< inputName << ":\n" << "</font></b>";
+    ss << "<b>Image Format:</b>\n";
     
     EffectInstance::ComponentsAvailableMap::iterator next = availableComps.begin();
     if (!comps.empty()) {
@@ -1773,8 +1776,9 @@ Node::makeInfoForInput(int inputNumber) const
         }
     }
     
-    ss << "\n<b>Alpha premultiplication:</b> " << premultStr
-    << "\n<b>Pixel aspect ratio:</b> " << par;
+    ss << "\n<b>Alpha premultiplication:</b> " << premultStr;
+    ss << "\n<b>Pixel aspect ratio:</b> " << par;
+    ss << "\n<b>Framerate:</b> " << fps;
     if (stat != Natron::eStatusFailed) {
         ss << "\n<b>Region of Definition:</b> ";
         ss << "left = " << rod.x1 << " bottom = " << rod.y1 << " right = " << rod.x2 << " top = " << rod.y2 << '\n';
