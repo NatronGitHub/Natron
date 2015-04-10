@@ -519,6 +519,9 @@ struct GuiPrivate
     void refreshLeftToolBarVisibility(const QPoint & p);
 
     QAction* findActionRecursive(int i, QWidget* widget, const QStringList & grouping);
+    
+    ///True= yes overwrite
+    bool checkProjectLockAndWarn(const QString& projectPath,const QString& projectName);
 };
 
 // Helper function: Get the icon with the given name from the icon theme.
@@ -2927,15 +2930,49 @@ updateRecentFiles(const QString & filename)
 }
 
 bool
+GuiPrivate::checkProjectLockAndWarn(const QString& projectPath,const QString& projectName)
+{
+    boost::shared_ptr<Natron::Project> project= _appInstance->getProject();
+    QString author,lockCreationDate;
+    qint64 lockPID;
+    if (project->getLockFileInfos(projectPath,projectName,&author, &lockCreationDate, &lockPID)) {
+        if (lockPID != QCoreApplication::applicationPid()) {
+            Natron::StandardButtonEnum rep = Natron::questionDialog(QObject::tr("Project").toStdString(),
+                                                                    QObject::tr("This project is already opened in another instance of Natron by ").toStdString() +
+                                                                    author.toStdString() + QObject::tr(" and was opened on ").toStdString() + lockCreationDate.toStdString()
+                                                                    + QObject::tr(" by a Natron process ID of ").toStdString() + QString::number(lockPID).toStdString() + QObject::tr(".\nContinue anyway?").toStdString(), false, Natron::StandardButtons(Natron::eStandardButtonYes | Natron::eStandardButtonNo));
+            if (rep == Natron::eStandardButtonYes) {
+                return true;
+            } else {
+                return false;
+            }
+        }
+    }
+    return true;
+    
+}
+
+bool
 Gui::saveProject()
 {
-    if ( _imp->_appInstance->getProject()->hasProjectBeenSavedByUser() ) {
-        _imp->_appInstance->getProject()->saveProject(_imp->_appInstance->getProject()->getProjectPath(),
-                                                      _imp->_appInstance->getProject()->getProjectName(), false);
+    boost::shared_ptr<Natron::Project> project= _imp->_appInstance->getProject();
+    if (project->hasProjectBeenSavedByUser()) {
+        
+        
+        QString projectName = project->getProjectName();
+        QString projectPath = project->getProjectPath();
+        
+        if (!_imp->checkProjectLockAndWarn(projectPath,projectName)) {
+            return false;
+        }
 
+        project->saveProject(projectPath, projectName, false);
 
         ///update the open recents
-        QString file = _imp->_appInstance->getProject()->getProjectPath() + _imp->_appInstance->getProject()->getProjectName();
+        if (!projectPath.endsWith('/')) {
+            projectPath.append('/');
+        }
+        QString file = projectPath + projectName;
         updateRecentFiles(file);
 
         return true;
@@ -2956,6 +2993,10 @@ Gui::saveProjectAs()
             outFile.append("." NATRON_PROJECT_FILE_EXT);
         }
         std::string path = SequenceParsing::removePath(outFile);
+        
+        if (!_imp->checkProjectLockAndWarn(path.c_str(),outFile.c_str())) {
+            return false;
+        }
         _imp->_appInstance->getProject()->saveProject(path.c_str(), outFile.c_str(), false);
 
         QString filePath = QString( path.c_str() ) + QString( outFile.c_str() );

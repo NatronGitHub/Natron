@@ -329,6 +329,14 @@ Project::loadProjectInternal(const QString & path,
         Q_EMIT projectNameChanged(name);
     }
     
+    ///Try to take the project lock by creating a lock file
+    if (!isAutoSave) {
+        QString lockFilePath = getLockAbsoluteFilePath();
+        if (!QFile::exists(lockFilePath)) {
+            createLockFile();
+        }
+    }
+    
     std::string onProjectLoad = getOnProjectLoadCB();
     if (!onProjectLoad.empty()) {
         std::string err,output;
@@ -533,11 +541,23 @@ Project::saveProjectInternal(const QString & path,
     QFile::remove(tmpFilename);
     
     if (!autoSave) {
-        _imp->projectName = name;
+        
+        QString lockFilePath = getLockAbsoluteFilePath();
+        if (QFile::exists(lockFilePath)) {
+            ///Remove the previous lock file if there was any
+            removeLockFile();
+        }
+        {
+            QMutexLocker l(&_imp->projectLock);
+            _imp->projectName = name;
+            _imp->projectPath = path;
+            _imp->hasProjectBeenSavedByUser = true;
+            _imp->ageSinceLastSave = time;
+        }
         Q_EMIT projectNameChanged(name); //< notify the gui so it can update the title
-        _imp->projectPath = path;
-        _imp->hasProjectBeenSavedByUser = true;
-        _imp->ageSinceLastSave = time;
+
+        //Create the lock file corresponding to the project
+        createLockFile();
     } else {
         if (!isRenderSave) {
             Q_EMIT projectNameChanged(_imp->projectName + " (*)");
@@ -1228,6 +1248,86 @@ Project::isGraphWorthLess() const
     return (!hasEverAutoSaved() && !hasProjectBeenSavedByUser()) || !hasNodes();
 }
     
+QString
+Project::getLockAbsoluteFilePath() const
+{
+    QString projectPath,projectName;
+    {
+        QMutexLocker k(&_imp->projectLock);
+        projectPath = _imp->projectPath;
+        projectName = _imp->projectName;
+    }
+    if (projectPath.isEmpty()) {
+        return QString();
+    }
+    if (!projectPath.endsWith('/')) {
+        projectPath.append('/');
+    }
+    QString lockFilePath = projectPath + projectName + ".lock";
+    return lockFilePath;
+}
+    
+void
+Project::createLockFile()
+{
+    QString lastAuthor(_imp->lastAuthorName->getValue().c_str());
+    QDateTime now = QDateTime::currentDateTime();
+    QString lockFilePath = getLockAbsoluteFilePath();
+    if (lockFilePath.isEmpty()) {
+        return;
+    }
+    QFile f(lockFilePath);
+    if (!f.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate)) {
+        return;
+    }
+    QTextStream ts(&f);
+    QString curDateStr = now.toString();
+    ts << curDateStr << '\n'
+    << lastAuthor << '\n'
+    << QCoreApplication::applicationPid();
+}
+    
+void
+Project::removeLockFile()
+{
+    QString lockFilePath = getLockAbsoluteFilePath();
+    if (QFile::exists(lockFilePath)) {
+        QFile::remove(lockFilePath);
+    }
+}
+    
+bool
+Project::getLockFileInfos(const QString& projectPath,const QString& projectName,QString* authorName,QString* lastSaveDate,qint64* appPID) const
+{
+    QString realPath = projectPath;
+    if (!realPath.endsWith('/')) {
+        realPath.append('/');
+    }
+    QString lockFilePath = realPath + projectName + ".lock";
+    QFile f(lockFilePath);
+    if (!f.open(QIODevice::ReadOnly)) {
+        return false;
+    }
+    QTextStream ts(&f);
+    if (!ts.atEnd()) {
+        *lastSaveDate = ts.readLine();
+    } else {
+        return false;
+    }
+    if (!ts.atEnd()) {
+        *authorName = ts.readLine();
+    } else {
+        return false;
+    }
+    if (!ts.atEnd()) {
+        QString pidstr = ts.readLine();
+        *appPID = pidstr.toLongLong();
+    } else {
+        return false;
+    }
+    return true;
+}
+    
 void
 Project::removeLastAutosave()
 {
@@ -1310,6 +1410,24 @@ Project::reset()
     _imp->projectClosing = true;
 
     _imp->runOnProjectCloseCallback();
+    
+    QString lockFilePath = getLockAbsoluteFilePath();
+    QString projectPath,projectName;
+    {
+        QMutexLocker k(&_imp->projectLock);
+        projectPath = _imp->projectPath;
+        projectName = _imp->projectName;
+    }
+    ///Remove the lock file if we own it
+    if (QFile::exists(lockFilePath)) {
+        QString author,lastsave;
+        qint64 pid;
+        if (getLockFileInfos(projectPath, projectName, &author, &lastsave, &pid)) {
+            if (pid == QCoreApplication::applicationPid()) {
+                QFile::remove(lockFilePath);
+            }
+        }
+    }
     
     {
         QMutexLocker l(&_imp->projectLock);

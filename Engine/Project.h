@@ -163,6 +163,12 @@ public:
      **/
     static void clearAutoSavesDir();
     void removeLastAutosave();
+    
+    QString getLockAbsoluteFilePath() const;
+    void createLockFile();
+    void removeLockFile();
+    bool getLockFileInfos(const QString& projectPath,const QString& projectName,QString* authorName,QString* lastSaveDate,qint64* appPID) const;
+    
     virtual bool isProject() const
     {
         return true;
