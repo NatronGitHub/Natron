@@ -159,6 +159,10 @@ public:
     
     void pasteCliboard(const NodeClipBoard& clipboard,std::list<std::pair<std::string,boost::shared_ptr<NodeGui> > >* newNodes);
     
+    void duplicateSelectedNodes(const QPointF& pos);
+    void pasteNodeClipBoards(const QPointF& pos);
+    void cloneSelectedNodes(const QPointF& pos);
+    
 public Q_SLOTS:
 
     void deleteSelection();

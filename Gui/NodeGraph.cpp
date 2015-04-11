@@ -3131,7 +3131,6 @@ NodeGraph::showMenu(const QPoint & pos)
     QAction* pasteAction = new ActionWithShortcut(kShortcutGroupNodegraph,kShortcutIDActionGraphPaste,
                                                   kShortcutDescActionGraphPaste,editMenu);
     pasteAction->setEnabled( !appPTR->isNodeClipBoardEmpty() );
-    QObject::connect( pasteAction,SIGNAL( triggered() ),this,SLOT( pasteNodeClipBoards() ) );
     editMenu->addAction(pasteAction);
     
     QAction* deleteAction = new ActionWithShortcut(kShortcutGroupNodegraph,kShortcutIDActionGraphRemoveNodes,
@@ -3141,12 +3140,10 @@ NodeGraph::showMenu(const QPoint & pos)
     
     QAction* duplicateAction = new ActionWithShortcut(kShortcutGroupNodegraph,kShortcutIDActionGraphDuplicate,
                                                       kShortcutDescActionGraphDuplicate,editMenu);
-    QObject::connect( duplicateAction,SIGNAL( triggered() ),this,SLOT( duplicateSelectedNodes() ) );
     editMenu->addAction(duplicateAction);
     
     QAction* cloneAction = new ActionWithShortcut(kShortcutGroupNodegraph,kShortcutIDActionGraphClone,
                                                   kShortcutDescActionGraphClone,editMenu);
-    QObject::connect( cloneAction,SIGNAL( triggered() ),this,SLOT( cloneSelectedNodes() ) );
     editMenu->addAction(cloneAction);
     
     QAction* decloneAction = new ActionWithShortcut(kShortcutGroupNodegraph,kShortcutIDActionGraphDeclone,
@@ -3251,6 +3248,15 @@ NodeGraph::showMenu(const QPoint & pos)
     QAction* ret = _imp->_menu->exec(pos);
     if (ret == findAction) {
         popFindDialog();
+    } else if (ret == duplicateAction) {
+        QRectF rect = visibleSceneRect();
+        duplicateSelectedNodes(rect.center());
+    } else if (ret == cloneAction) {
+        QRectF rect = visibleSceneRect();
+        cloneSelectedNodes(rect.center());
+    } else if (ret == pasteAction) {
+        QRectF rect = visibleSceneRect();
+        pasteNodeClipBoards(rect.center());
     }
 }
 
@@ -3424,11 +3430,17 @@ NodeGraph::pasteCliboard(const NodeClipBoard& clipboard,std::list<std::pair<std:
 }
 
 void
+NodeGraph::pasteNodeClipBoards(const QPointF& pos)
+{
+    std::list<std::pair<std::string,boost::shared_ptr<NodeGui> > > newNodes;
+    _imp->pasteNodesInternal(appPTR->getNodeClipBoard(),pos, true, &newNodes);
+}
+
+void
 NodeGraph::pasteNodeClipBoards()
 {
     QPointF position = _imp->_root->mapFromScene(mapToScene(mapFromGlobal(QCursor::pos())));
-    std::list<std::pair<std::string,boost::shared_ptr<NodeGui> > > newNodes;
-    _imp->pasteNodesInternal(appPTR->getNodeClipBoard(),position, true, &newNodes);
+    pasteNodeClipBoards(position);
 }
 
 void
@@ -3674,34 +3686,39 @@ NodeGraphPrivate::restoreConnections(const std::list<boost::shared_ptr<NodeSeria
     }
 }
 
+void
+NodeGraph::duplicateSelectedNodes(const QPointF& pos)
+{
+    if ( _imp->_selection.empty() && _imp->_selection.empty() ) {
+        Natron::warningDialog( tr("Duplicate").toStdString(), tr("You must select at least a node to duplicate first.").toStdString() );
+        
+        return;
+    }
+    
+    ///Don't use the member clipboard as the user might have something copied
+    NodeClipBoard tmpClipboard;
+    _imp->copyNodesInternal(_imp->_selection,tmpClipboard);
+    std::list<std::pair<std::string,boost::shared_ptr<NodeGui> > > newNodes;
+    _imp->pasteNodesInternal(tmpClipboard,pos,true,&newNodes);
+
+}
+
 
 void
 NodeGraph::duplicateSelectedNodes()
 {
-    if ( _imp->_selection.empty() && _imp->_selection.empty() ) {
-        Natron::warningDialog( tr("Duplicate").toStdString(), tr("You must select at least a node to duplicate first.").toStdString() );
-
-        return;
-    }
-
-    ///Don't use the member clipboard as the user might have something copied
-    NodeClipBoard tmpClipboard;
-    _imp->copyNodesInternal(_imp->_selection,tmpClipboard);
     QPointF scenePos = _imp->_root->mapFromScene(mapToScene(mapFromGlobal(QCursor::pos())));
-    std::list<std::pair<std::string,boost::shared_ptr<NodeGui> > > newNodes;
-    _imp->pasteNodesInternal(tmpClipboard,scenePos,true,&newNodes);
+    duplicateSelectedNodes(scenePos);
 }
 
 void
-NodeGraph::cloneSelectedNodes()
+NodeGraph::cloneSelectedNodes(const QPointF& scenePos)
 {
-    QPointF scenePos = _imp->_root->mapFromScene(mapToScene(mapFromGlobal(QCursor::pos())));
-    
     if (_imp->_selection.empty()) {
         Natron::warningDialog( tr("Clone").toStdString(), tr("You must select at least a node to clone first.").toStdString() );
         return;
     }
-
+    
     double xmax = INT_MIN;
     double xmin = INT_MAX;
     double ymin = INT_MAX;
@@ -3739,28 +3756,28 @@ NodeGraph::cloneSelectedNodes()
             }
         }
     }
-
+    
     for (NodeGuiList::iterator it = nodesToCopy.begin(); it != nodesToCopy.end(); ++it) {
         if ( (*it)->getNode()->getLiveInstance()->isSlave() ) {
             Natron::errorDialog( tr("Clone").toStdString(), tr("You cannot clone a node which is already a clone.").toStdString() );
-
+            
             return;
         }
         ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>((*it)->getNode()->getLiveInstance());
         if (isViewer) {
             Natron::errorDialog( tr("Clone").toStdString(), tr("Cloning a viewer is not a valid operation.").toStdString() );
-
+            
             return;
         }
         if ( (*it)->getNode()->isMultiInstance() ) {
             QString err = QString("%1 cannot be cloned.").arg( (*it)->getNode()->getLabel().c_str() );
             Natron::errorDialog( tr("Clone").toStdString(),
-                                 tr( err.toStdString().c_str() ).toStdString() );
-
+                                tr( err.toStdString().c_str() ).toStdString() );
+            
             return;
         }
     }
-
+    
     QPointF offset(scenePos.x() - ((xmax + xmin) / 2.), scenePos.y() -  ((ymax + ymin) / 2.));
     std::list<std::pair<std::string,boost::shared_ptr<NodeGui> > > newNodes;
     std::list <boost::shared_ptr<NodeSerialization> > serializations;
@@ -3773,7 +3790,7 @@ NodeGraph::cloneSelectedNodes()
         (*it)->serialize(&guiSerialization);
         boost::shared_ptr<NodeGui> clone = _imp->pasteNode( *internalSerialization, guiSerialization, offset,
                                                            _imp->group.lock(),std::string(),true );
-      
+        
         newNodes.push_back(std::make_pair(internalSerialization->getNodeScriptName(),clone));
         newNodesList.push_back(clone);
         serializations.push_back(internalSerialization);
@@ -3782,17 +3799,25 @@ NodeGraph::cloneSelectedNodes()
         for (std::list<boost::shared_ptr<NodeSerialization> >::iterator it2 = serializations.begin(); it2!=serializations.end(); ++it2) {
             (*it2)->switchInput(internalSerialization->getNodeScriptName(), clone->getNode()->getScriptName());
         }
-
+        
         
     }
-
-
+    
+    
     assert( serializations.size() == newNodes.size() );
     ///restore connections
     _imp->restoreConnections(serializations, newNodes);
-
-
+    
+    
     pushUndoCommand( new AddMultipleNodesCommand(this,newNodesList) );
+}
+
+void
+NodeGraph::cloneSelectedNodes()
+{
+    QPointF scenePos = _imp->_root->mapFromScene(mapToScene(mapFromGlobal(QCursor::pos())));
+    cloneSelectedNodes(scenePos);
+    
 } // cloneSelectedNodes
 
 void
