@@ -4067,10 +4067,10 @@ Gui::onProjectNameChanged(const QString & name)
 }
 
 void
-Gui::setColorPickersColor(const QColor & c)
+Gui::setColorPickersColor(double r,double g, double b,double a)
 {
     assert(_imp->_projectGui);
-    _imp->_projectGui->setPickersColor(c);
+    _imp->_projectGui->setPickersColor(r,g,b,a);
 }
 
 void

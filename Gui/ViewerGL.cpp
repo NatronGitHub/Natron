@@ -4176,12 +4176,7 @@ ViewerGL::pickColor(double x,
         bool picked = getColorAt(imgPos.x(), imgPos.y(), linear, i, &r, &g, &b, &a,&mmLevel);
         if (picked) {
             if (i == 0) {
-                QColor pickerColor;
-                pickerColor.setRedF( Natron::clamp(r) );
-                pickerColor.setGreenF( Natron::clamp(g) );
-                pickerColor.setBlueF( Natron::clamp(b) );
-                pickerColor.setAlphaF( Natron::clamp(a) );
-                _imp->viewerTab->getGui()->setColorPickersColor(pickerColor);
+                _imp->viewerTab->getGui()->setColorPickersColor(r,g,b,a);
             }
             _imp->infoViewer[i]->setColorApproximated(mmLevel > 0);
             _imp->infoViewer[i]->setColorValid(true);
@@ -4271,12 +4266,7 @@ ViewerGL::updateRectangleColorPicker()
         bool picked = getColorAtRect(rect, linear, i, &r, &g, &b, &a,&mm);
         if (picked) {
             if (i == 0) {
-                QColor pickerColor;
-                pickerColor.setRedF( clamp(r) );
-                pickerColor.setGreenF( clamp(g) );
-                pickerColor.setBlueF( clamp(b) );
-                pickerColor.setAlphaF( clamp(a) );
-                _imp->viewerTab->getGui()->setColorPickersColor(pickerColor);
+                _imp->viewerTab->getGui()->setColorPickersColor(r,g,b,a);
             }
             _imp->infoViewer[i]->setColorValid(true);
             if ( !_imp->infoViewer[i]->colorAndMouseVisible() ) {

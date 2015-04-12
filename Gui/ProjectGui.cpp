@@ -563,7 +563,7 @@ ProjectGui::removeColorPicker(boost::shared_ptr<Color_Knob> knob)
 }
 
 void
-ProjectGui::setPickersColor(const QColor & color)
+ProjectGui::setPickersColor(double r,double g, double b,double a)
 {
     if ( _colorPickersEnabled.empty() ) {
         return;
@@ -571,11 +571,6 @@ ProjectGui::setPickersColor(const QColor & color)
     boost::shared_ptr<Color_Knob> first = _colorPickersEnabled.front();
 
     for (U32 i = 0; i < _colorPickersEnabled.size(); ++i) {
-        double r,g,b,a;
-        r = color.redF();
-        g = color.greenF();
-        b = color.blueF();
-        a = color.alphaF();
         if ( !_colorPickersEnabled[i]->areAllDimensionsEnabled() ) {
             _colorPickersEnabled[i]->activateAllDimensions();
         }
