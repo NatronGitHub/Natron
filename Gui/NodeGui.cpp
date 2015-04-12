@@ -418,6 +418,9 @@ NodeGui::ensurePanelCreated()
         if (getNode()->isRotoNode()) {
             _graph->getGui()->setRotoInterface(this);
         }
+        if (getNode()->isTrackerNode()) {
+            _graph->getGui()->createNewTrackerInterface(this);
+        }
     }
     initializeKnobs();
     beginEditKnobs();

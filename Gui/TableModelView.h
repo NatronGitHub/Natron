@@ -272,7 +272,7 @@ public:
     void setCellWidget(int row, int column, QWidget *widget);
     inline void removeCellWidget(int row, int column);
     TableItem * itemAt(const QPoint &p) const;
-    inline TableItem * itemAt(int x, int y) const;
+    TableItem * itemAt(int x, int y) const;
     QRect visualItemRect(const TableItem *item) const;
 
 Q_SIGNALS:

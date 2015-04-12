@@ -979,7 +979,27 @@ MultiInstancePanel::removeInstancesInternal()
 void
 MultiInstancePanel::onSelectAllButtonClicked()
 {
-    _imp->view->selectAll();
+    QItemSelectionModel* selectModel = _imp->view->selectionModel();
+    QItemSelection sel;
+    assert(selectModel);
+    int rc = _imp->model->rowCount();
+    int cc = _imp->model->columnCount();
+    
+    for (int i = 0; i < rc; ++i) {
+        
+        assert( i < (int)_imp->instances.size() );
+        Nodes::iterator it = _imp->instances.begin();
+        std::advance(it, i);
+        
+        bool disabled = it->first.lock()->isNodeDisabled();
+        if (disabled) {
+            continue;
+        }
+
+        QItemSelectionRange r(_imp->model->index(i , 0), _imp->model->index(i, cc - 1));
+        sel.append(r);
+    }
+    selectModel->select(sel, QItemSelectionModel::ClearAndSelect);
 }
 
 bool
@@ -1314,16 +1334,21 @@ MultiInstancePanel::onItemRightClicked(TableItem* item)
 void
 MultiInstancePanel::onCheckBoxChecked(bool checked)
 {
-    AnimatedCheckBox* checkbox = qobject_cast<AnimatedCheckBox*>( sender() );
+    QCheckBox* checkbox = qobject_cast<QCheckBox*>( sender() );
 
     if (!checkbox) {
         return;
     }
+    
 
     ///find the row which owns this checkbox
-    for (int i = 0; i < _imp->model->rowCount(); ++i) {
+    int rc = _imp->model->rowCount();
+    int cc = _imp->model->columnCount();
+    for (int i = 0; i < rc; ++i) {
+        TableItem* item = _imp->view->itemAt(i, COL_ENABLED);
         QWidget* w = _imp->view->cellWidget(i, COL_ENABLED);
         if (w == checkbox) {
+            assert(item);
             assert( i < (int)_imp->instances.size() );
             Nodes::iterator it = _imp->instances.begin();
             std::advance(it, i);
@@ -1332,6 +1357,12 @@ MultiInstancePanel::onCheckBoxChecked(bool checked)
             Bool_Knob* bKnob = dynamic_cast<Bool_Knob*>( enabledKnob.get() );
             assert(bKnob);
             bKnob->setValue(!checked, 0);
+            if (!checked) {
+                QItemSelection sel;
+                QItemSelectionRange r(_imp->model->index(i, 0),_imp->model->index(i ,cc - 1 ));
+                sel.append(r);
+                _imp->view->selectionModel()->select(sel, QItemSelectionModel::Clear);
+            }
             break;
         }
     }
