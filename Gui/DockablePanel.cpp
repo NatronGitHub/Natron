@@ -682,7 +682,10 @@ DockablePanel::~DockablePanel()
     ///normally the onKnobDeletion() function should have cleared them
     for (std::map<boost::weak_ptr<KnobI>,KnobGui*>::const_iterator it = _imp->_knobs.begin(); it != _imp->_knobs.end(); ++it) {
         if (it->second) {
-            it->first.lock()->setKnobGuiPointer(0);
+            boost::shared_ptr<KnobI> knob = it->first.lock();
+            if (knob) {
+                knob->setKnobGuiPointer(0);
+            }
             it->second->callDeleteLater();
         }
     }

@@ -892,9 +892,9 @@ ViewerInstance::renderViewer_internal(int view,
             if (!inArgs.params->image) {
                 if (inArgs.params->cachedFrame) {
                     inArgs.params->cachedFrame->setAborted(true);
-                    if (!isSequentialRender) {
-                        _imp->checkAndUpdateDisplayAge(inArgs.params->textureIndex,inArgs.params->renderAge);
-                    }
+//                    if (!isSequentialRender) {
+//                        _imp->checkAndUpdateDisplayAge(inArgs.params->textureIndex,inArgs.params->renderAge);
+//                    }
                     appPTR->removeFromViewerCache(inArgs.params->cachedFrame);
                 }
                 if (!isSequentialRender && canAbort) {
