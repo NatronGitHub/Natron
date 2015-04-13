@@ -3030,7 +3030,7 @@ ManageUserParamsDialog::onEditClicked()
             for (std::list<TreeItem>::iterator it = _imp->items.begin(); it != _imp->items.end();++it) {
                 if (it->item == selection[i]) {
                     
-                    std::list<KnobI*> listeners;
+                    std::list<boost::shared_ptr<KnobI> > listeners;
                     it->knob->getListeners(listeners);
                     if (!listeners.empty()) {
                         Natron::StandardButtonEnum rep = Natron::questionDialog(tr("Edit parameter").toStdString(),

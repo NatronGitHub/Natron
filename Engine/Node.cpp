@@ -1629,11 +1629,11 @@ Node::setNameInternal(const std::string& name)
                 const std::vector<boost::shared_ptr<KnobI> > & knobs = getKnobs();
                 
                 for (U32 i = 0; i < knobs.size(); ++i) {
-                    std::list<KnobI*> listeners;
+                    std::list<boost::shared_ptr<KnobI> > listeners;
                     knobs[i]->getListeners(listeners);
                     ///For all listeners make sure they belong to a node
                     bool foundEffect = false;
-                    for (std::list<KnobI*>::iterator it2 = listeners.begin(); it2 != listeners.end(); ++it2) {
+                    for (std::list<boost::shared_ptr<KnobI> >::iterator it2 = listeners.begin(); it2 != listeners.end(); ++it2) {
                         EffectInstance* isEffect = dynamic_cast<EffectInstance*>( (*it2)->getHolder() );
                         if ( isEffect && ( isEffect != _imp->liveInstance.get() ) ) {
                             foundEffect = true;
@@ -3110,9 +3110,9 @@ Node::deactivate(const std::list< Node* > & outputsToDisconnect,
     ///For all knobs that have listeners, kill expressions
     const std::vector<boost::shared_ptr<KnobI> > & knobs = getKnobs();
     for (U32 i = 0; i < knobs.size(); ++i) {
-        std::list<KnobI*> listeners;
+        std::list<boost::shared_ptr<KnobI> > listeners;
         knobs[i]->getListeners(listeners);
-        for (std::list<KnobI*>::iterator it = listeners.begin(); it != listeners.end(); ++it) {
+        for (std::list<boost::shared_ptr<KnobI> >::iterator it = listeners.begin(); it != listeners.end(); ++it) {
             KnobHolder* holder = (*it)->getHolder();
             if (!holder) {
                 continue;
@@ -4356,6 +4356,9 @@ Node::getImageBeingRendered(int time,
 void
 Node::onInputChanged(int inputNb)
 {
+    if (getApp()->getProject()->isProjectClosing()) {
+        return;
+    }
     assert( QThread::currentThread() == qApp->thread() );
     _imp->duringInputChangedAction = true;
     std::map<int,MaskSelector>::iterator found = _imp->maskSelectors.find(inputNb);

@@ -234,7 +234,7 @@ struct KnobHelperPrivate
     
     ///This is a list of all the knobs that have expressions/links to this knob. It could be named "slaves" but
     ///in the future we will also add expressions.
-    std::list<KnobI*> listeners;
+    std::list<boost::weak_ptr<KnobI> > listeners;
     
     mutable QMutex animationLevelMutex;
     std::vector<Natron::AnimationLevelEnum> animationLevel; //< indicates for each dimension whether it is static/interpolated/onkeyframe
@@ -401,10 +401,14 @@ KnobHelper::getExpressionRecursionLevel() const
 void
 KnobHelper::deleteKnob()
 {
-    std::list<KnobI*> listenersCpy = _imp->listeners;
-    for (std::list<KnobI*>::iterator it = listenersCpy.begin(); it != listenersCpy.end(); ++it) {
-        for (int i = 0; i < (*it)->getDimension(); ++i) {
-            (*it)->clearExpression(i,true);
+    std::list<boost::weak_ptr<KnobI> > listenersCpy = _imp->listeners;
+    for (std::list<boost::weak_ptr<KnobI> >::iterator it = listenersCpy.begin(); it != listenersCpy.end(); ++it) {
+        boost::shared_ptr<KnobI> knob = it->lock();
+        if (!knob) {
+            continue;
+        }
+        for (int i = 0; i < knob->getDimension(); ++i) {
+            knob->clearExpression(i,true);
         }
     }
     
@@ -1835,21 +1839,24 @@ KnobHelper::clearExpression(int dimension,bool clearResults)
             KnobHelper* other = dynamic_cast<KnobHelper*>(*it);
             assert(other);
             
-            std::list<KnobI*> otherListeners;
+            std::list<boost::weak_ptr<KnobI> > otherListeners;
             {
                 QReadLocker otherMastersLocker(&other->_imp->mastersMutex);
                 otherListeners = other->_imp->listeners;
             }
-            std::list<KnobI*>::iterator  found = std::find(otherListeners.begin(), otherListeners.end(), this);
-            if (found != otherListeners.end()) {
-                
-                if ( (*found)->getHolder() && (*found)->getSignalSlotHandler() ) {
-                    getHolder()->onKnobSlaved(this, other,dimension,false );
+            
+            for (std::list<boost::weak_ptr<KnobI> >::iterator it = otherListeners.begin(); it != otherListeners.end(); ++it) {
+                boost::shared_ptr<KnobI> knob = it->lock();
+                if (knob.get() == this) {
+                    if (knob) {
+                        if (knob->getHolder() && knob->getSignalSlotHandler() ) {
+                            getHolder()->onKnobSlaved(this, other,dimension,false );
+                        }
+                        QObject::disconnect(other->getSignalSlotHandler().get(), SIGNAL(updateDependencies(int)), _signalSlotHandler.get(),
+                                            SLOT(onExprDependencyChanged(int)));
+                    }
+                    otherListeners.erase(it);
                 }
-                QObject::disconnect(other->getSignalSlotHandler().get(), SIGNAL(updateDependencies(int)), _signalSlotHandler.get(),
-                                    SLOT(onExprDependencyChanged(int)));
-                otherListeners.erase(found);
-                
             }
             
             {
@@ -2251,7 +2258,7 @@ KnobHelper::slaveTo(int dimension,
 
     ///Register this as a listener of the master
     if (helper) {
-        helper->addListener(false,dimension,this);
+        helper->addListener(false,dimension,shared_from_this());
     }
     
     return true;
@@ -2578,10 +2585,10 @@ KnobHelper::cloneExpressions(KnobI* other,int dimension)
 }
 
 void
-KnobHelper::addListener(bool isExpression,int fromExprDimension,KnobI* knob)
+KnobHelper::addListener(bool isExpression,int fromExprDimension,const boost::shared_ptr<KnobI>& knob)
 {
     assert(fromExprDimension != -1);
-    KnobHelper* slave = dynamic_cast<KnobHelper*>(knob);
+    KnobHelper* slave = dynamic_cast<KnobHelper*>(knob.get());
     assert(slave);
 
     if ( slave && slave->getHolder() && slave->getSignalSlotHandler() && getSignalSlotHandler() ) {
@@ -2598,7 +2605,7 @@ KnobHelper::addListener(bool isExpression,int fromExprDimension,KnobI* knob)
             slave->_imp->expressions[fromExprDimension].dependencies.push_back(this);
         }
     }
-    if (knob != this) {
+    if (knob.get() != this) {
         QWriteLocker l(&_imp->mastersMutex);
         
         _imp->listeners.push_back(knob);
@@ -2618,20 +2625,25 @@ KnobHelper::removeListener(KnobI* knob)
     }
     
     QWriteLocker l(&_imp->mastersMutex);
-    std::list<KnobI*>::iterator found = std::find(_imp->listeners.begin(), _imp->listeners.end(), knob);
-    
-    if ( found != _imp->listeners.end() ) {
-        _imp->listeners.erase(found);
+    for (std::list<boost::weak_ptr<KnobI> >::iterator it = _imp->listeners.begin(); it!=_imp->listeners.end(); ++it) {
+        if (it->lock().get() == knob) {
+            _imp->listeners.erase(it);
+            break;
+        }
     }
 }
 
 
 void
-KnobHelper::getListeners(std::list<KnobI*> & listeners) const
+KnobHelper::getListeners(std::list<boost::shared_ptr<KnobI> > & listeners) const
 {
     QReadLocker l(&_imp->mastersMutex);
-    
-    listeners = _imp->listeners;
+    for (std::list<boost::weak_ptr<KnobI> >::const_iterator it = _imp->listeners.begin(); it!=_imp->listeners.end(); ++it) {
+        boost::shared_ptr<KnobI> knob = it->lock();
+        if (knob) {
+            listeners.push_back(knob);
+        }
+    }
 }
 
 SequenceTime

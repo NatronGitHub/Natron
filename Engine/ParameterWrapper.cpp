@@ -299,7 +299,7 @@ Param::_addAsDependencyOf(int fromExprDimension,Param* param)
     if (otherKnob == thisKnob) {
         return;
     }
-    thisKnob->addListener(true,fromExprDimension, otherKnob.get());
+    thisKnob->addListener(true,fromExprDimension, otherKnob);
 }
 
 bool
