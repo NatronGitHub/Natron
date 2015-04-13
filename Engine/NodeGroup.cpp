@@ -1450,6 +1450,9 @@ static bool exportKnobValues(const boost::shared_ptr<KnobI> knob,
         isStringKnob->getExpression(0).empty()) {
         return false;
     }
+    
+    int innerIdent = mustDefineParam ? 2 : 1;
+    
     for (int i = 0; i < knob->getDimension(); ++i) {
         
         if (isParametric) {
@@ -1458,18 +1461,19 @@ static bool exportKnobValues(const boost::shared_ptr<KnobI> knob,
                 hasExportedValue = true;
                 if (mustDefineParam) {
                     WRITE_INDENT(1); WRITE_STRING("param = " + paramFullName);
+                    WRITE_INDENT(1); WRITE_STRING("if param is not None:");
                 }
             }
             boost::shared_ptr<Curve> curve = isParametric->getParametricCurve(i);
             double r,g,b;
             isParametric->getCurveColor(i, &r, &g, &b);
-            WRITE_INDENT(1); WRITE_STRING("param.setCurveColor(" + NUM(i) + ", " +
+            WRITE_INDENT(innerIdent); WRITE_STRING("param.setCurveColor(" + NUM(i) + ", " +
                                           NUM(r) + ", " + NUM(g) + ", " + NUM(b) + ")");
             if (curve) {
                 KeyFrameSet keys = curve->getKeyFrames_mt_safe();
                 int c = 0;
                 for (KeyFrameSet::iterator it3 = keys.begin(); it3 != keys.end(); ++it3, ++c) {
-                    WRITE_INDENT(1); WRITE_STRING("param.setNthControlPoint(" + NUM(i) + ", " +
+                    WRITE_INDENT(innerIdent); WRITE_STRING("param.setNthControlPoint(" + NUM(i) + ", " +
                                                   NUM(c) + ", " + NUM(it3->getTime()) + ", " +
                                                   NUM(it3->getValue()) + ", " + NUM(it3->getLeftDerivative())
                                                   + ", " + NUM(it3->getRightDerivative()) + ")");
@@ -1486,6 +1490,7 @@ static bool exportKnobValues(const boost::shared_ptr<KnobI> knob,
                         hasExportedValue = true;
                         if (mustDefineParam) {
                             WRITE_INDENT(1); WRITE_STRING("param = " + paramFullName);
+                            WRITE_INDENT(1); WRITE_STRING("if param is not None:");
                         }
                     }
                 }
@@ -1493,19 +1498,19 @@ static bool exportKnobValues(const boost::shared_ptr<KnobI> knob,
                 for (KeyFrameSet::iterator it3 = keys.begin(); it3 != keys.end(); ++it3) {
                     if (isAnimatedStr) {
                         std::string value = isAnimatedStr->getValueAtTime(it3->getTime(),i, true);
-                        WRITE_INDENT(1); WRITE_STRING("param.setValueAtTime(" + ESC(value) + ", "
+                        WRITE_INDENT(innerIdent); WRITE_STRING("param.setValueAtTime(" + ESC(value) + ", "
                                                       + NUM(it3->getTime())+ ")");
                         
                     } else if (isBool) {
                         int v = std::min(1., std::max(0.,std::floor(it3->getValue() + 0.5)));
                         QString vStr = v ? "True" : "False";
-                        WRITE_INDENT(1); WRITE_STRING("param.setValueAtTime(" + vStr + ", "
+                        WRITE_INDENT(innerIdent); WRITE_STRING("param.setValueAtTime(" + vStr + ", "
                                                       + NUM(it3->getTime())  + ")");
                     } else if (isChoice) {
-                        WRITE_INDENT(1); WRITE_STRING("param.setValueAtTime(" + NUM(it3->getValue()) + ", "
+                        WRITE_INDENT(innerIdent); WRITE_STRING("param.setValueAtTime(" + NUM(it3->getValue()) + ", "
                                                       + NUM(it3->getTime()) + ")");
                     } else {
-                        WRITE_INDENT(1); WRITE_STRING("param.setValueAtTime(" + NUM(it3->getValue()) + ", "
+                        WRITE_INDENT(innerIdent); WRITE_STRING("param.setValueAtTime(" + NUM(it3->getValue()) + ", "
                                                       + NUM(it3->getTime()) + ", " + NUM(i) + ")");
 
                     }
@@ -1517,29 +1522,30 @@ static bool exportKnobValues(const boost::shared_ptr<KnobI> knob,
                     hasExportedValue = true;
                     if (mustDefineParam) {
                         WRITE_INDENT(1); WRITE_STRING("param = " + paramFullName);
+                        WRITE_INDENT(1); WRITE_STRING("if param is not None:");
                     }
                 }
                 
                 if (isGrp) {
                     int v = std::min(1., std::max(0.,std::floor(isGrp->getValue(i, true) + 0.5)));
                     QString vStr = v ? "True" : "False";
-                    WRITE_INDENT(1); WRITE_STRING("param.setOpened(" + vStr + ")");
+                    WRITE_INDENT(innerIdent); WRITE_STRING("param.setOpened(" + vStr + ")");
                 } else if (isStr) {
                     std::string v = isStr->getValue(i, true);
-                    WRITE_INDENT(1); WRITE_STRING("param.setValue(" + ESC(v)  + ")");
+                    WRITE_INDENT(innerIdent); WRITE_STRING("param.setValue(" + ESC(v)  + ")");
                 } else if (isDouble) {
                     double v = isDouble->getValue(i, true);
-                    WRITE_INDENT(1); WRITE_STRING("param.setValue(" + NUM(v) + ", " + NUM(i) + ")");
+                    WRITE_INDENT(innerIdent); WRITE_STRING("param.setValue(" + NUM(v) + ", " + NUM(i) + ")");
                 } else if (isChoice) {
                     int v = isInt->getValue(i, true);
-                    WRITE_INDENT(1); WRITE_STRING("param.setValue(" + NUM(v) + ")");
+                    WRITE_INDENT(innerIdent); WRITE_STRING("param.setValue(" + NUM(v) + ")");
                 } else if (isInt) {
                     int v = isInt->getValue(i, true);
-                    WRITE_INDENT(1); WRITE_STRING("param.setValue(" + NUM(v) + ", " + NUM(i) + ")");
+                    WRITE_INDENT(innerIdent); WRITE_STRING("param.setValue(" + NUM(v) + ", " + NUM(i) + ")");
                 } else if (isBool) {
                     int v = std::min(1., std::max(0.,std::floor(isBool->getValue(i, true) + 0.5)));
                     QString vStr = v ? "True" : "False";
-                    WRITE_INDENT(1); WRITE_STRING("param.setValue(" + vStr + ")");
+                    WRITE_INDENT(innerIdent); WRITE_STRING("param.setValue(" + vStr + ")");
                 }
             } // if ((!curve || curve->getKeyFramesCount() == 0) && knob->hasModifications(i)) {
             
@@ -1552,10 +1558,11 @@ static bool exportKnobValues(const boost::shared_ptr<KnobI> knob,
             hasExportedValue = true;
             if (mustDefineParam) {
                 WRITE_INDENT(1); WRITE_STRING("param = " + paramFullName);
+                WRITE_INDENT(1); WRITE_STRING("if param is not None:");
             }
         }
 
-        WRITE_INDENT(1); WRITE_STRING("param.setVisible(False)");
+        WRITE_INDENT(innerIdent); WRITE_STRING("param.setVisible(False)");
     }
     
     for (int i = 0; i < knob->getDimension(); ++i) {
@@ -1564,15 +1571,16 @@ static bool exportKnobValues(const boost::shared_ptr<KnobI> knob,
                 hasExportedValue = true;
                 if (mustDefineParam) {
                     WRITE_INDENT(1); WRITE_STRING("param = " + paramFullName);
+                    WRITE_INDENT(1); WRITE_STRING("if param is not None:");
                 }
             }
 
-            WRITE_INDENT(1); WRITE_STRING("param.setEnabled(False, " +  NUM(i) + ")");
+            WRITE_INDENT(innerIdent); WRITE_STRING("param.setEnabled(False, " +  NUM(i) + ")");
         }
     }
     
     if (mustDefineParam && hasExportedValue) {
-        WRITE_INDENT(1); WRITE_STRING("del param");
+        WRITE_INDENT(innerIdent); WRITE_STRING("del param");
     }
     
     return hasExportedValue;
