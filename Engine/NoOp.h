@@ -132,8 +132,8 @@ public:
 class GroupInput
 : public NoOpBase
 {
-    boost::shared_ptr<Bool_Knob> optional;
-    boost::shared_ptr<Bool_Knob> mask;
+    boost::weak_ptr<Bool_Knob> optional;
+    boost::weak_ptr<Bool_Knob> mask;
     
 public:
     

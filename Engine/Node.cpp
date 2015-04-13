@@ -92,9 +92,9 @@ namespace { // protect local classes in anonymous namespace
         
     public:
         
-        boost::shared_ptr<Choice_Knob> layer;
-        boost::shared_ptr<String_Knob> layerName;
-        boost::shared_ptr<Bool_Knob> enabledChan[4];
+        boost::weak_ptr<Choice_Knob> layer;
+        boost::weak_ptr<String_Knob> layerName;
+        boost::weak_ptr<Bool_Knob> enabledChan[4];
         bool useRGBASelectors; //< if false, only the layer knob is created
         bool hasAllChoice; // if true, the layer has a "all" entry
         
@@ -136,9 +136,9 @@ namespace { // protect local classes in anonymous namespace
         
     public:
         
-        boost::shared_ptr<Bool_Knob> enabled;
-        boost::shared_ptr<Choice_Knob> channel;
-        boost::shared_ptr<String_Knob> channelName;
+        boost::weak_ptr<Bool_Knob> enabled;
+        boost::weak_ptr<Choice_Knob> channel;
+        boost::weak_ptr<String_Knob> channelName;
         
         mutable QMutex compsMutex;
         //Stores the components available at build time of the choice menu
@@ -363,26 +363,26 @@ struct Node::Implementation
     boost::weak_ptr<Node> masterNode; //< this points to the master when the node is a clone
     KnobLinkList nodeLinks; //< these point to the parents of the params links
     
-    boost::shared_ptr<Page_Knob> nodeSettingsPage;
-    boost::shared_ptr<String_Knob> nodeLabelKnob;
-    boost::shared_ptr<Bool_Knob> previewEnabledKnob;
-    boost::shared_ptr<Bool_Knob> disableNodeKnob;
-    boost::shared_ptr<String_Knob> knobChangedCallback;
-    boost::shared_ptr<String_Knob> inputChangedCallback;
+    boost::weak_ptr<Page_Knob> nodeSettingsPage;
+    boost::weak_ptr<String_Knob> nodeLabelKnob;
+    boost::weak_ptr<Bool_Knob> previewEnabledKnob;
+    boost::weak_ptr<Bool_Knob> disableNodeKnob;
+    boost::weak_ptr<String_Knob> knobChangedCallback;
+    boost::weak_ptr<String_Knob> inputChangedCallback;
     
-    boost::shared_ptr<Page_Knob> infoPage;
-    boost::shared_ptr<String_Knob> infoDisclaimer;
-    std::vector< boost::shared_ptr<String_Knob> > inputFormats;
-    boost::shared_ptr<String_Knob> outputFormat;
-    boost::shared_ptr<Button_Knob> refreshInfoButton;
+    boost::weak_ptr<Page_Knob> infoPage;
+    boost::weak_ptr<String_Knob> infoDisclaimer;
+    std::vector< boost::weak_ptr<String_Knob> > inputFormats;
+    boost::weak_ptr<String_Knob> outputFormat;
+    boost::weak_ptr<Button_Knob> refreshInfoButton;
     
-    boost::shared_ptr<Bool_Knob> useFullScaleImagesWhenRenderScaleUnsupported;
-    boost::shared_ptr<Bool_Knob> forceCaching;
+    boost::weak_ptr<Bool_Knob> useFullScaleImagesWhenRenderScaleUnsupported;
+    boost::weak_ptr<Bool_Knob> forceCaching;
     
-    boost::shared_ptr<String_Knob> beforeFrameRender;
-    boost::shared_ptr<String_Knob> beforeRender;
-    boost::shared_ptr<String_Knob> afterFrameRender;
-    boost::shared_ptr<String_Knob> afterRender;
+    boost::weak_ptr<String_Knob> beforeFrameRender;
+    boost::weak_ptr<String_Knob> beforeRender;
+    boost::weak_ptr<String_Knob> afterFrameRender;
+    boost::weak_ptr<String_Knob> afterRender;
     
     std::map<int,ChannelSelector> channelsSelectors;
     std::map<int,MaskSelector> maskSelectors;
@@ -1827,33 +1827,35 @@ Node::initializeKnobs(int renderScaleSupportPref)
                 if ( _imp->liveInstance->isInputMask(i) && !_imp->liveInstance->isInputRotoBrush(i) ) {
                     
                     MaskSelector sel;
-                    sel.enabled = Natron::createKnob<Bool_Knob>(_imp->liveInstance.get(), maskName,1,false);
+                    boost::shared_ptr<Bool_Knob> enabled = Natron::createKnob<Bool_Knob>(_imp->liveInstance.get(), maskName,1,false);
 
-                    sel.enabled->setDefaultValue(false, 0);
-                    sel.enabled->setAddNewLine(false);
+                    enabled->setDefaultValue(false, 0);
+                    enabled->setAddNewLine(false);
                     std::string enableMaskName(std::string(kEnableMaskKnobName) + std::string("_") + maskName);
-                    sel.enabled->setName(enableMaskName);
-                    sel.enabled->setAnimationEnabled(false);
-                    sel.enabled->setHintToolTip(tr("Enable the mask to come from the channel named by the choice parameter on the right. "
+                    enabled->setName(enableMaskName);
+                    enabled->setAnimationEnabled(false);
+                    enabled->setHintToolTip(tr("Enable the mask to come from the channel named by the choice parameter on the right. "
                                                       "Turning this off will act as though the mask was disconnected.").toStdString());
                     
+                    sel.enabled = enabled;
                     
-                    sel.channel = Natron::createKnob<Choice_Knob>(_imp->liveInstance.get(), "",1,false);
+                    boost::shared_ptr<Choice_Knob> channel = Natron::createKnob<Choice_Knob>(_imp->liveInstance.get(), "",1,false);
                     
                     std::vector<std::string> choices;
                     choices.push_back("None");
-                    sel.channel->populateChoices(choices);
-                    sel.channel->setDefaultValue(0, 0);
-                    sel.channel->setAnimationEnabled(false);
-                    sel.channel->setHintToolTip(tr("Use this channel from the original input to mix the output with the original input. "
+                    channel->populateChoices(choices);
+                    channel->setDefaultValue(0, 0);
+                    channel->setAnimationEnabled(false);
+                    channel->setHintToolTip(tr("Use this channel from the original input to mix the output with the original input. "
                                                        "Setting this to None is the same as disabling the mask.").toStdString());
                     std::string channelMaskName(kMaskChannelKnobName + std::string("_") + maskName);
-                    sel.channel->setName(channelMaskName);
+                    channel->setName(channelMaskName);
+                    sel.channel = channel;
                     
-                    sel.channelName = Natron::createKnob<String_Knob>(_imp->liveInstance.get(), "",1,false);
-                    sel.channelName->setSecret(true);
-                    sel.channelName->setEvaluateOnChange(false);
-                    
+                    boost::shared_ptr<String_Knob> channelName = Natron::createKnob<String_Knob>(_imp->liveInstance.get(), "",1,false);
+                    channelName->setSecret(true);
+                    channelName->setEvaluateOnChange(false);
+                    sel.channelName = channelName;
                     _imp->maskSelectors[i] = sel;
 
                 }
@@ -1891,54 +1893,58 @@ Node::initializeKnobs(int renderScaleSupportPref)
                 _imp->createChannelSelector(-1, "Output", true, mainPage);
             }
         }
-        _imp->nodeLabelKnob = Natron::createKnob<String_Knob>(_imp->liveInstance.get(),
+        boost::shared_ptr<String_Knob> nodeLabel = Natron::createKnob<String_Knob>(_imp->liveInstance.get(),
                                                               isBd ? tr("Name label").toStdString() : tr("Label").toStdString(),1,false);
-        assert(_imp->nodeLabelKnob);
-        _imp->nodeLabelKnob->setName(kUserLabelKnobName);
-        _imp->nodeLabelKnob->setAnimationEnabled(false);
-        _imp->nodeLabelKnob->setEvaluateOnChange(false);
-        _imp->nodeLabelKnob->setAsMultiLine();
-        _imp->nodeLabelKnob->setUsesRichText(true);
-        _imp->nodeLabelKnob->setHintToolTip(tr("This label gets appended to the node name on the node graph.").toStdString());
-        _imp->nodeSettingsPage->addKnob(_imp->nodeLabelKnob);
+        assert(nodeLabel);
+        nodeLabel->setName(kUserLabelKnobName);
+        nodeLabel->setAnimationEnabled(false);
+        nodeLabel->setEvaluateOnChange(false);
+        nodeLabel->setAsMultiLine();
+        nodeLabel->setUsesRichText(true);
+        nodeLabel->setHintToolTip(tr("This label gets appended to the node name on the node graph.").toStdString());
+        _imp->nodeSettingsPage.lock()->addKnob(nodeLabel);
+        _imp->nodeLabelKnob = nodeLabel;
         
         if (!isBd) {
-            _imp->forceCaching = Natron::createKnob<Bool_Knob>(_imp->liveInstance.get(), "Force caching", 1, false);
-            _imp->forceCaching->setName("forceCaching");
-            _imp->forceCaching->setDefaultValue(false);
-            _imp->forceCaching->setAnimationEnabled(false);
-            _imp->forceCaching->setAddNewLine(false);
-            _imp->forceCaching->setIsPersistant(true);
-            _imp->forceCaching->setEvaluateOnChange(false);
-            _imp->forceCaching->setHintToolTip(tr("When checked, the output of this node will always be kept in the RAM cache for fast access of already computed "
+            boost::shared_ptr<Bool_Knob> fCaching = Natron::createKnob<Bool_Knob>(_imp->liveInstance.get(), "Force caching", 1, false);
+            fCaching->setName("forceCaching");
+            fCaching->setDefaultValue(false);
+            fCaching->setAnimationEnabled(false);
+            fCaching->setAddNewLine(false);
+            fCaching->setIsPersistant(true);
+            fCaching->setEvaluateOnChange(false);
+            fCaching->setHintToolTip(tr("When checked, the output of this node will always be kept in the RAM cache for fast access of already computed "
                                                   "images.").toStdString());
-            _imp->nodeSettingsPage->addKnob(_imp->forceCaching);
+            _imp->forceCaching = fCaching;
+            _imp->nodeSettingsPage.lock()->addKnob(fCaching);
             
-            _imp->previewEnabledKnob = Natron::createKnob<Bool_Knob>(_imp->liveInstance.get(), tr("Preview enabled").toStdString(),1,false);
-            assert(_imp->previewEnabledKnob);
-            _imp->previewEnabledKnob->setDefaultValue( makePreviewByDefault() );
-            _imp->previewEnabledKnob->setName(kEnablePreviewKnobName);
-            _imp->previewEnabledKnob->setAnimationEnabled(false);
-            _imp->previewEnabledKnob->setAddNewLine(false);
-            _imp->previewEnabledKnob->setIsPersistant(false);
-            _imp->previewEnabledKnob->setEvaluateOnChange(false);
-            _imp->previewEnabledKnob->setHintToolTip(tr("Whether to show a preview on the node box in the node-graph.").toStdString());
-            _imp->nodeSettingsPage->addKnob(_imp->previewEnabledKnob);
+            boost::shared_ptr<Bool_Knob> previewEnabled = Natron::createKnob<Bool_Knob>(_imp->liveInstance.get(), tr("Preview enabled").toStdString(),1,false);
+            assert(previewEnabled);
+            previewEnabled->setDefaultValue( makePreviewByDefault() );
+            previewEnabled->setName(kEnablePreviewKnobName);
+            previewEnabled->setAnimationEnabled(false);
+            previewEnabled->setAddNewLine(false);
+            previewEnabled->setIsPersistant(false);
+            previewEnabled->setEvaluateOnChange(false);
+            previewEnabled->setHintToolTip(tr("Whether to show a preview on the node box in the node-graph.").toStdString());
+            _imp->nodeSettingsPage.lock()->addKnob(previewEnabled);
+            _imp->previewEnabledKnob = previewEnabled;
             
-            _imp->disableNodeKnob = Natron::createKnob<Bool_Knob>(_imp->liveInstance.get(), "Disable",1,false);
-            assert(_imp->disableNodeKnob);
-            _imp->disableNodeKnob->setAnimationEnabled(false);
-            _imp->disableNodeKnob->setDefaultValue(false);
-            _imp->disableNodeKnob->setName(kDisableNodeKnobName);
-            _imp->disableNodeKnob->setAddNewLine(false);
-            _imp->disableNodeKnob->setHintToolTip("When disabled, this node acts as a pass through.");
-            _imp->nodeSettingsPage->addKnob(_imp->disableNodeKnob);
+            boost::shared_ptr<Bool_Knob> disableNodeKnob = Natron::createKnob<Bool_Knob>(_imp->liveInstance.get(), "Disable",1,false);
+            assert(disableNodeKnob);
+            disableNodeKnob->setAnimationEnabled(false);
+            disableNodeKnob->setDefaultValue(false);
+            disableNodeKnob->setName(kDisableNodeKnobName);
+            disableNodeKnob->setAddNewLine(false);
+            disableNodeKnob->setHintToolTip("When disabled, this node acts as a pass through.");
+            _imp->nodeSettingsPage.lock()->addKnob(disableNodeKnob);
+            _imp->disableNodeKnob = disableNodeKnob;
             
-            _imp->useFullScaleImagesWhenRenderScaleUnsupported = Natron::createKnob<Bool_Knob>(_imp->liveInstance.get(), tr("Render high def. upstream").toStdString(),1,false);
-            _imp->useFullScaleImagesWhenRenderScaleUnsupported->setAnimationEnabled(false);
-            _imp->useFullScaleImagesWhenRenderScaleUnsupported->setDefaultValue(false);
-            _imp->useFullScaleImagesWhenRenderScaleUnsupported->setName("highDefUpstream");
-            _imp->useFullScaleImagesWhenRenderScaleUnsupported->setHintToolTip(tr("This node doesn't support rendering images at a scale lower than 1, it "
+            boost::shared_ptr<Bool_Knob> useFullScaleImagesWhenRenderScaleUnsupported = Natron::createKnob<Bool_Knob>(_imp->liveInstance.get(), tr("Render high def. upstream").toStdString(),1,false);
+            useFullScaleImagesWhenRenderScaleUnsupported->setAnimationEnabled(false);
+            useFullScaleImagesWhenRenderScaleUnsupported->setDefaultValue(false);
+            useFullScaleImagesWhenRenderScaleUnsupported->setName("highDefUpstream");
+            useFullScaleImagesWhenRenderScaleUnsupported->setHintToolTip(tr("This node doesn't support rendering images at a scale lower than 1, it "
                                                                                   "can only render high definition images. When checked this parameter controls "
                                                                                   "whether the rest of the graph upstream should be rendered with a high quality too or at "
                                                                                   "the most optimal resolution for the current viewer's viewport. Typically checking this "
@@ -1946,12 +1952,13 @@ Node::initializeKnobs(int renderScaleSupportPref)
                                                                                   "whichever zoom level you're using on the Viewer, whereas when unchecked it will be much "
                                                                                   "faster to render but will have to be recomputed when zooming in/out in the Viewer.").toStdString());
             if (renderScaleSupportPref == 0 && getLiveInstance()->supportsRenderScaleMaybe() == EffectInstance::eSupportsYes) {
-                _imp->useFullScaleImagesWhenRenderScaleUnsupported->setSecret(true);
+                useFullScaleImagesWhenRenderScaleUnsupported->setSecret(true);
             }
-            _imp->nodeSettingsPage->addKnob(_imp->useFullScaleImagesWhenRenderScaleUnsupported);
+            _imp->nodeSettingsPage.lock()->addKnob(useFullScaleImagesWhenRenderScaleUnsupported);
+            _imp->useFullScaleImagesWhenRenderScaleUnsupported = useFullScaleImagesWhenRenderScaleUnsupported;
             
-            _imp->knobChangedCallback = Natron::createKnob<String_Knob>(_imp->liveInstance.get(), tr("After param changed callback").toStdString());
-            _imp->knobChangedCallback->setHintToolTip(tr("Set here the name of a function defined in Python which will be called for each  "
+            boost::shared_ptr<String_Knob> knobChangedCallback = Natron::createKnob<String_Knob>(_imp->liveInstance.get(), tr("After param changed callback").toStdString());
+            knobChangedCallback->setHintToolTip(tr("Set here the name of a function defined in Python which will be called for each  "
                                                          "parameter change. Either define this function in the Script Editor "
                                                          "or in the init.py script or even in the script of a Python group plug-in.\n"
                                                          "The signature of the callback is: callback(thisParam, thisNode, thisGroup, app, userEdited) where:\n"
@@ -1961,12 +1968,13 @@ Node::initializeKnobs(int renderScaleSupportPref)
                                                          "- thisNode: The node holding the parameter\n"
                                                          "- app: points to the current application instance\n"
                                                          "- thisGroup: The group holding thisNode (only if thisNode belongs to a group)").toStdString());
-            _imp->knobChangedCallback->setAnimationEnabled(false);
-            _imp->knobChangedCallback->setName("onParamChanged");
-            _imp->nodeSettingsPage->addKnob(_imp->knobChangedCallback);
+            knobChangedCallback->setAnimationEnabled(false);
+            knobChangedCallback->setName("onParamChanged");
+            _imp->nodeSettingsPage.lock()->addKnob(knobChangedCallback);
+            _imp->knobChangedCallback = knobChangedCallback;
             
-            _imp->inputChangedCallback = Natron::createKnob<String_Knob>(_imp->liveInstance.get(), tr("After input changed callback").toStdString());
-            _imp->inputChangedCallback->setHintToolTip(tr("Set here the name of a function defined in Python which will be called after "
+            boost::shared_ptr<String_Knob> inputChangedCallback = Natron::createKnob<String_Knob>(_imp->liveInstance.get(), tr("After input changed callback").toStdString());
+            inputChangedCallback->setHintToolTip(tr("Set here the name of a function defined in Python which will be called after "
                                                           "each connection is changed for the inputs of the node. "
                                                           "Either define this function in the Script Editor "
                                                           "or in the init.py script or even in the script of a Python group plug-in.\n"
@@ -1977,23 +1985,26 @@ Node::initializeKnobs(int renderScaleSupportPref)
                                                           "- app: points to the current application instance\n"
                                                           "- thisGroup: The group holding thisNode (only if thisNode belongs to a group)").toStdString());
             
-            _imp->inputChangedCallback->setAnimationEnabled(false);
-            _imp->inputChangedCallback->setName("onInputChanged");
-            _imp->nodeSettingsPage->addKnob(_imp->inputChangedCallback);
+            inputChangedCallback->setAnimationEnabled(false);
+            inputChangedCallback->setName("onInputChanged");
+            _imp->nodeSettingsPage.lock()->addKnob(inputChangedCallback);
+            _imp->inputChangedCallback = inputChangedCallback;
             
             
-            _imp->infoPage = Natron::createKnob<Page_Knob>(_imp->liveInstance.get(), tr("Info").toStdString(), 1, false);
-            _imp->infoPage->setName(NATRON_PARAMETER_PAGE_NAME_INFO);
+            boost::shared_ptr<Page_Knob> infoPage = Natron::createKnob<Page_Knob>(_imp->liveInstance.get(), tr("Info").toStdString(), 1, false);
+            infoPage->setName(NATRON_PARAMETER_PAGE_NAME_INFO);
+            _imp->infoPage = infoPage;
             
-            _imp->infoDisclaimer = Natron::createKnob<String_Knob>(_imp->liveInstance.get(), tr("Input and output informations").toStdString(), 1, false);
-            _imp->infoDisclaimer->setName("infoDisclaimer");
-            _imp->infoDisclaimer->setAnimationEnabled(false);
-            _imp->infoDisclaimer->setIsPersistant(false);
-            _imp->infoDisclaimer->setAsLabel();
-            _imp->infoDisclaimer->hideDescription();
-            _imp->infoDisclaimer->setEvaluateOnChange(false);
-            _imp->infoDisclaimer->setDefaultValue(tr("Input and output informations, press Refresh to update them with current values").toStdString());
-            _imp->infoPage->addKnob(_imp->infoDisclaimer);
+            boost::shared_ptr<String_Knob> infoDisclaimer = Natron::createKnob<String_Knob>(_imp->liveInstance.get(), tr("Input and output informations").toStdString(), 1, false);
+            infoDisclaimer->setName("infoDisclaimer");
+            infoDisclaimer->setAnimationEnabled(false);
+            infoDisclaimer->setIsPersistant(false);
+            infoDisclaimer->setAsLabel();
+            infoDisclaimer->hideDescription();
+            infoDisclaimer->setEvaluateOnChange(false);
+            infoDisclaimer->setDefaultValue(tr("Input and output informations, press Refresh to update them with current values").toStdString());
+            infoPage->addKnob(infoDisclaimer);
+            _imp->infoDisclaimer = infoDisclaimer;
             
             for (int i = 0; i < inputsCount; ++i) {
                 std::string inputLabel = getInputLabel(i);
@@ -2005,69 +2016,75 @@ Node::initializeKnobs(int renderScaleSupportPref)
                 inputInfo->hideDescription();
                 inputInfo->setAsLabel();
                 _imp->inputFormats.push_back(inputInfo);
-                _imp->infoPage->addKnob(inputInfo);
+                infoPage->addKnob(inputInfo);
             }
             
             std::string outputLabel("Output");
-            _imp->outputFormat = Natron::createKnob<String_Knob>(_imp->liveInstance.get(), std::string(outputLabel + " Info"), 1, false);
-            _imp->outputFormat->setName(outputLabel + "Info");
-            _imp->outputFormat->setAnimationEnabled(false);
-            _imp->outputFormat->setIsPersistant(false);
-            _imp->outputFormat->setEvaluateOnChange(false);
-            _imp->outputFormat->hideDescription();
-            _imp->outputFormat->setAsLabel();
-            _imp->infoPage->addKnob(_imp->outputFormat);
+            boost::shared_ptr<String_Knob> outputFormat = Natron::createKnob<String_Knob>(_imp->liveInstance.get(), std::string(outputLabel + " Info"), 1, false);
+            outputFormat->setName(outputLabel + "Info");
+            outputFormat->setAnimationEnabled(false);
+            outputFormat->setIsPersistant(false);
+            outputFormat->setEvaluateOnChange(false);
+            outputFormat->hideDescription();
+            outputFormat->setAsLabel();
+            infoPage->addKnob(outputFormat);
+            _imp->outputFormat = outputFormat;
             
-            _imp->refreshInfoButton = Natron::createKnob<Button_Knob>(_imp->liveInstance.get(), tr("Refresh Info").toStdString(),1,false);
-            _imp->refreshInfoButton->setName("refreshButton");
-            _imp->refreshInfoButton->setEvaluateOnChange(false);
-            _imp->infoPage->addKnob(_imp->refreshInfoButton);
+            boost::shared_ptr<Button_Knob> refreshInfoButton = Natron::createKnob<Button_Knob>(_imp->liveInstance.get(), tr("Refresh Info").toStdString(),1,false);
+            refreshInfoButton->setName("refreshButton");
+            refreshInfoButton->setEvaluateOnChange(false);
+            infoPage->addKnob(refreshInfoButton);
+            _imp->refreshInfoButton = refreshInfoButton;
             
             if (_imp->liveInstance->isWriter()) {
                 boost::shared_ptr<Page_Knob> pythonPage = Natron::createKnob<Page_Knob>(_imp->liveInstance.get(), tr("Python").toStdString(),1,false);
                 
-                _imp->beforeFrameRender =  Natron::createKnob<String_Knob>(_imp->liveInstance.get(), tr("Before frame render").toStdString(), 1 ,false);
-                _imp->beforeFrameRender->setName("beforeFrameRender");
-                _imp->beforeFrameRender->setAnimationEnabled(false);
-                _imp->beforeFrameRender->setHintToolTip(tr("Add here the name of a Python defined function that will be called before rendering "
+                boost::shared_ptr<String_Knob> beforeFrameRender =  Natron::createKnob<String_Knob>(_imp->liveInstance.get(), tr("Before frame render").toStdString(), 1 ,false);
+                beforeFrameRender->setName("beforeFrameRender");
+                beforeFrameRender->setAnimationEnabled(false);
+                beforeFrameRender->setHintToolTip(tr("Add here the name of a Python defined function that will be called before rendering "
                                                            "any frame.\n "
                                                            "The signature of the callback is: callback(frame, thisNode, app) where:\n"
                                                            "- frame: the frame to be rendered\n"
                                                            "- thisNode: points to the writer node\n"
                                                            "- app: points to the current application instance").toStdString());
-                pythonPage->addKnob(_imp->beforeFrameRender);
+                pythonPage->addKnob(beforeFrameRender);
+                _imp->beforeFrameRender = beforeFrameRender;
                 
-                _imp->beforeRender =  Natron::createKnob<String_Knob>(_imp->liveInstance.get(), tr("Before render").toStdString(),1,false);
-                _imp->beforeRender->setName("beforeRender");
-                _imp->beforeRender->setAnimationEnabled(false);
-                _imp->beforeRender->setHintToolTip(tr("Add here the name of a Python defined function that will be called once when "
+                boost::shared_ptr<String_Knob> beforeRender =  Natron::createKnob<String_Knob>(_imp->liveInstance.get(), tr("Before render").toStdString(),1,false);
+                beforeRender->setName("beforeRender");
+                beforeRender->setAnimationEnabled(false);
+                beforeRender->setHintToolTip(tr("Add here the name of a Python defined function that will be called once when "
                                                       "starting rendering.\n "
                                                       "The signature of the callback is: callback(thisNode, app) where:\n"
                                                       "- thisNode: points to the writer node\n"
                                                       "- app: points to the current application instance").toStdString());
-                pythonPage->addKnob(_imp->beforeRender);
+                pythonPage->addKnob(beforeRender);
+                _imp->beforeRender = beforeRender;
                 
-                _imp->afterFrameRender =  Natron::createKnob<String_Knob>(_imp->liveInstance.get(), tr("After frame render").toStdString(),1,false);
-                _imp->afterFrameRender->setName("afterFrameRender");
-                _imp->afterFrameRender->setAnimationEnabled(false);
-                _imp->afterFrameRender->setHintToolTip(tr("Add here the name of a Python defined function that will be called after rendering "
+                boost::shared_ptr<String_Knob> afterFrameRender =  Natron::createKnob<String_Knob>(_imp->liveInstance.get(), tr("After frame render").toStdString(),1,false);
+                afterFrameRender->setName("afterFrameRender");
+                afterFrameRender->setAnimationEnabled(false);
+                afterFrameRender->setHintToolTip(tr("Add here the name of a Python defined function that will be called after rendering "
                                                           "any frame.\n "
                                                           "The signature of the callback is: callback(frame, thisNode, app) where:\n"
                                                           "- frame: the frame that has been rendered\n"
                                                           "- thisNode: points to the writer node\n"
                                                           "- app: points to the current application instance").toStdString());
-                pythonPage->addKnob(_imp->afterFrameRender);
+                pythonPage->addKnob(afterFrameRender);
+                _imp->afterFrameRender = afterFrameRender;
                 
-                _imp->afterRender =  Natron::createKnob<String_Knob>(_imp->liveInstance.get(), tr("After render").toStdString(),1,false);
-                _imp->afterRender->setName("afterRender");
-                _imp->afterRender->setAnimationEnabled(false);
-                _imp->afterRender->setHintToolTip(tr("Add here the name of a Python defined function that will be called once when the rendering "
+                boost::shared_ptr<String_Knob> afterRender =  Natron::createKnob<String_Knob>(_imp->liveInstance.get(), tr("After render").toStdString(),1,false);
+                afterRender->setName("afterRender");
+                afterRender->setAnimationEnabled(false);
+                afterRender->setHintToolTip(tr("Add here the name of a Python defined function that will be called once when the rendering "
                                                      "is finished.\n "
                                                      "The signature of the callback is: callback(aborted, thisNode, app) where:\n"
                                                      "- aborted: True if the render ended because it was aborted, False upon completion\n"
                                                      "- thisNode: points to the writer node\n"
                                                      "- app: points to the current application instance").toStdString());
-                pythonPage->addKnob(_imp->afterRender);
+                pythonPage->addKnob(afterRender);
+                _imp->afterRender = afterRender;
             }
         }
     }
@@ -2091,19 +2108,20 @@ Node::Implementation::createChannelSelector(int inputNb,const std::string & inpu
     ChannelSelector sel;
     sel.useRGBASelectors = isOutput;
     sel.hasAllChoice = isOutput;
-    sel.layer = Natron::createKnob<Choice_Knob>(liveInstance.get(), isOutput ? "Channels" : inputName + " Channels", 1, false);
-    sel.layer->setHostCanAddOptions(isOutput);
-    sel.layer->setName(inputName + "_channels");
+    boost::shared_ptr<Choice_Knob> layer = Natron::createKnob<Choice_Knob>(liveInstance.get(), isOutput ? "Channels" : inputName + " Channels", 1, false);
+    layer->setHostCanAddOptions(isOutput);
+    layer->setName(inputName + "_channels");
     if (isOutput) {
-        sel.layer->setHintToolTip("Select here the channels onto which the processing should occur.");
+        layer->setHintToolTip("Select here the channels onto which the processing should occur.");
     } else {
-        sel.layer->setHintToolTip("Select here the channels that will be used by the input " + inputName);
+        layer->setHintToolTip("Select here the channels that will be used by the input " + inputName);
     }
-    sel.layer->setAnimationEnabled(false);
+    layer->setAnimationEnabled(false);
     if (sel.useRGBASelectors) {
-        sel.layer->setAddNewLine(false);
+        layer->setAddNewLine(false);
     }
-    page->addKnob(sel.layer);
+    page->addKnob(layer);
+    sel.layer = layer;
     std::vector<std::string> baseLayers;
     if (isOutput) {
         baseLayers.push_back("All");
@@ -2115,32 +2133,34 @@ Node::Implementation::createChannelSelector(int inputNb,const std::string & inpu
     baseLayers.push_back(ImageComponents::getDisparityRightComponents().getLayerName());
     baseLayers.push_back(ImageComponents::getForwardMotionComponents().getLayerName());
     baseLayers.push_back(ImageComponents::getBackwardMotionComponents().getLayerName());
-    sel.layer->populateChoices(baseLayers);
+    layer->populateChoices(baseLayers);
     if (isOutput && liveInstance->isPassThroughForNonRenderedPlanes() == EffectInstance::ePassThroughRenderAllRequestedPlanes) {
-        sel.layer->setDefaultValue(0);
+        layer->setDefaultValue(0);
     } else {
-        sel.layer->setDefaultValue(1);
+        layer->setDefaultValue(1);
     }
     
-    sel.layerName = Natron::createKnob<String_Knob>(liveInstance.get(), inputName + "_layer_name", 1, false);
-    sel.layerName->setSecret(true);
-    sel.layerName->setAnimationEnabled(false);
-    sel.layerName->setEvaluateOnChange(false);
-    sel.layerName->setAddNewLine(!sel.useRGBASelectors);
-    page->addKnob(sel.layerName);
+    boost::shared_ptr<String_Knob> layerName = Natron::createKnob<String_Knob>(liveInstance.get(), inputName + "_layer_name", 1, false);
+    layerName->setSecret(true);
+    layerName->setAnimationEnabled(false);
+    layerName->setEvaluateOnChange(false);
+    layerName->setAddNewLine(!sel.useRGBASelectors);
+    page->addKnob(layerName);
+    sel.layerName = layerName;
     
     if (sel.useRGBASelectors) {
         
         std::string channelNames[4] = {"R", "G", "B", "A"};
         for (int i = 0; i < 4; ++i) {
-            sel.enabledChan[i] = Natron::createKnob<Bool_Knob>(liveInstance.get(), channelNames[i], 1, false);
-            sel.enabledChan[i]->setName(inputName + "_enable_" + channelNames[i]);
-            sel.enabledChan[i]->setAnimationEnabled(false);
-            sel.enabledChan[i]->setAddNewLine(i == 3);
-            sel.enabledChan[i]->setDefaultValue(true);
-            sel.enabledChan[i]->setHintToolTip("When checked the corresponding channel of the layer will be used, "
+            boost::shared_ptr<Bool_Knob> enabled = Natron::createKnob<Bool_Knob>(liveInstance.get(), channelNames[i], 1, false);
+            enabled->setName(inputName + "_enable_" + channelNames[i]);
+            enabled->setAnimationEnabled(false);
+            enabled->setAddNewLine(i == 3);
+            enabled->setDefaultValue(true);
+            enabled->setHintToolTip("When checked the corresponding channel of the layer will be used, "
                                                "otherwise it will be considered to be 0 everywhere.");
-            page->addKnob(sel.enabledChan[i]);
+            sel.enabledChan[i] = enabled;
+            page->addKnob(enabled);
         }
     }
     channelsSelectors[inputNb] = sel;
@@ -2150,15 +2170,16 @@ Node::Implementation::createChannelSelector(int inputNb,const std::string & inpu
 bool
 Node::isForceCachingEnabled() const
 {
-    return _imp->forceCaching->getValue();
+    return _imp->forceCaching.lock()->getValue();
 }
 
 void
 Node::onSetSupportRenderScaleMaybeSet(int support)
 {
     if ((EffectInstance::SupportsEnum)support == EffectInstance::eSupportsYes) {
-        if (_imp->useFullScaleImagesWhenRenderScaleUnsupported) {
-            _imp->useFullScaleImagesWhenRenderScaleUnsupported->setSecret(true);
+        boost::shared_ptr<Bool_Knob> b = _imp->useFullScaleImagesWhenRenderScaleUnsupported.lock();
+        if (b) {
+            b->setSecret(true);
         }
     }
 }
@@ -2166,7 +2187,7 @@ Node::onSetSupportRenderScaleMaybeSet(int support)
 bool
 Node::useScaleOneImagesWhenRenderScaleSupportIsDisabled() const
 {
-    return _imp->useFullScaleImagesWhenRenderScaleUnsupported->getValue();
+    return _imp->useFullScaleImagesWhenRenderScaleUnsupported.lock()->getValue();
 }
 
 void
@@ -3701,10 +3722,11 @@ Node::togglePreview()
 {
     ///MT-safe from Knob
     assert(_imp->knobsInitialized);
-    if (!_imp->previewEnabledKnob) {
+    boost::shared_ptr<Bool_Knob> b = _imp->previewEnabledKnob.lock();
+    if (!b) {
         return;
     }
-    _imp->previewEnabledKnob->setValue(!_imp->previewEnabledKnob->getValue(),0);
+    b->setValue(!b->getValue(),0);
 }
 
 bool
@@ -3714,11 +3736,12 @@ Node::isPreviewEnabled() const
     if (!_imp->knobsInitialized) {
         qDebug() << "Node::isPreviewEnabled(): knobs not initialized (including previewEnabledKnob)";
     }
-    if (_imp->previewEnabledKnob) {
-        return _imp->previewEnabledKnob->getValue();
+    boost::shared_ptr<Bool_Knob> b = _imp->previewEnabledKnob.lock();
+    if (!b) {
+        return false;
     }
+    return b->getValue();
     
-    return false;
 }
 
 bool
@@ -4232,7 +4255,7 @@ Node::getMaskChannel(int inputNb,Natron::ImageComponents* comps) const
 {
     std::map<int, MaskSelector >::const_iterator it = _imp->maskSelectors.find(inputNb);
     if ( it != _imp->maskSelectors.end() ) {
-        int index =  it->second.channel->getValue();
+        int index =  it->second.channel.lock()->getValue();
         if (index == 0) {
             *comps = ImageComponents::getNoneComponents();
             return -1;
@@ -4261,7 +4284,7 @@ Node::isMaskEnabled(int inputNb) const
 {
     std::map<int, MaskSelector >::const_iterator it = _imp->maskSelectors.find(inputNb);
     if ( it != _imp->maskSelectors.end() ) {
-        return it->second.enabled->getValue();
+        return it->second.enabled.lock()->getValue();
     } else {
         return true;
     }
@@ -4338,9 +4361,11 @@ Node::onInputChanged(int inputNb)
     std::map<int,MaskSelector>::iterator found = _imp->maskSelectors.find(inputNb);
     if ( found != _imp->maskSelectors.end() ) {
         boost::shared_ptr<Node> inp = getInput(inputNb);
-        found->second.enabled->blockValueChanges();
-        found->second.enabled->setValue(inp ? true : false, 0);
-        found->second.enabled->unblockValueChanges();
+        boost::shared_ptr<Bool_Knob> enabled = found->second.enabled.lock();
+        assert(enabled);
+        enabled->blockValueChanges();
+        enabled->setValue(inp ? true : false, 0);
+        enabled->unblockValueChanges();
     }
     _imp->liveInstance->onInputChanged(inputNb);
     _imp->duringInputChangedAction = false;
@@ -4629,21 +4654,21 @@ Node::onEffectKnobValueChanged(KnobI* what,
         return;
     }
     for (std::map<int, MaskSelector >::iterator it = _imp->maskSelectors.begin(); it != _imp->maskSelectors.end(); ++it) {
-        if (it->second.channel.get() == what) {
+        if (it->second.channel.lock().get() == what) {
             _imp->onMaskSelectorChanged(it->first, it->second);
             break;
         }
     }
     
-    if ( what == _imp->previewEnabledKnob.get() ) {
+    if ( what == _imp->previewEnabledKnob.lock().get() ) {
         if ( (reason == Natron::eValueChangedReasonUserEdited) || (reason == Natron::eValueChangedReasonSlaveRefresh) ) {
             Q_EMIT previewKnobToggled();
         }
-    } else if ( ( what == _imp->disableNodeKnob.get() ) && !_imp->isMultiInstance && !_imp->multiInstanceParent.lock() ) {
-        Q_EMIT disabledKnobToggled( _imp->disableNodeKnob->getValue() );
+    } else if ( ( what == _imp->disableNodeKnob.lock().get() ) && !_imp->isMultiInstance && !_imp->multiInstanceParent.lock() ) {
+        Q_EMIT disabledKnobToggled( _imp->disableNodeKnob.lock()->getValue() );
         getApp()->redrawAllViewers();
-    } else if ( what == _imp->nodeLabelKnob.get() ) {
-        Q_EMIT nodeExtraLabelChanged( _imp->nodeLabelKnob->getValue().c_str() );
+    } else if ( what == _imp->nodeLabelKnob.lock().get() ) {
+        Q_EMIT nodeExtraLabelChanged( _imp->nodeLabelKnob.lock()->getValue().c_str() );
     } else if (what->getName() == kNatronOfxParamStringSublabelName) {
         //special hack for the merge node and others so we can retrieve the sublabel and display it in the node's label
         String_Knob* strKnob = dynamic_cast<String_Knob*>(what);
@@ -4667,21 +4692,21 @@ Node::onEffectKnobValueChanged(KnobI* what,
             }
         }
         
-    } else if ( what == _imp->refreshInfoButton.get() ) {
+    } else if ( what == _imp->refreshInfoButton.lock().get() ) {
         int maxinputs = getMaxInputCount();
         for (int i = 0; i < maxinputs; ++i) {
             std::string inputInfo = makeInfoForInput(i);
-            if (i < (int)_imp->inputFormats.size() && _imp->inputFormats[i]) {
-                _imp->inputFormats[i]->setValue(inputInfo, 0);
+            if (i < (int)_imp->inputFormats.size() && _imp->inputFormats[i].lock()) {
+                _imp->inputFormats[i].lock()->setValue(inputInfo, 0);
             }
         }
         std::string outputInfo = makeInfoForInput(-1);
-        _imp->outputFormat->setValue(outputInfo, 0);
+        _imp->outputFormat.lock()->setValue(outputInfo, 0);
  
     }
     
     for (std::map<int,ChannelSelector>::iterator it = _imp->channelsSelectors.begin(); it != _imp->channelsSelectors.end(); ++it) {
-        if (it->second.layer.get() == what) {
+        if (it->second.layer.lock().get() == what) {
             _imp->onLayerChanged(it->first, it->second);
         }
     }
@@ -4711,9 +4736,10 @@ Node::Implementation::getSelectedLayer(int inputNb,const ChannelSelector& select
         node = _publicInterface->getInput(inputNb).get();
     }
     
-
-    int index = selector.layer->getValue();
-    std::vector<std::string> entries = selector.layer->getEntries_mt_safe();
+    boost::shared_ptr<Choice_Knob> layerKnob = selector.layer.lock();
+    assert(layerKnob);
+    int index = layerKnob->getValue();
+    std::vector<std::string> entries = layerKnob->getEntries_mt_safe();
     if (entries.empty()) {
         return false;
     }
@@ -4769,10 +4795,11 @@ void
 Node::Implementation::onLayerChanged(int inputNb,const ChannelSelector& selector)
 {
     
-    std::vector<std::string> entries = selector.layer->getEntries_mt_safe();
-    int curLayer_i = selector.layer->getValue();
+    boost::shared_ptr<Choice_Knob> layerKnob = selector.layer.lock();
+    std::vector<std::string> entries = layerKnob->getEntries_mt_safe();
+    int curLayer_i = layerKnob->getValue();
     assert(curLayer_i >= 0 && curLayer_i < (int)entries.size());
-    selector.layerName->setValue(entries[curLayer_i], 0);
+    selector.layerName.lock()->setValue(entries[curLayer_i], 0);
     {
         ///Clip preferences have changed 
         RenderScale s;
@@ -4789,19 +4816,20 @@ Node::Implementation::onLayerChanged(int inputNb,const ChannelSelector& selector
     Natron::ImageComponents comp ;
     if (!getSelectedLayer(inputNb, selector, &comp)) {
         for (int i = 0; i < 4; ++i) {
-            selector.enabledChan[i]->setSecret(true);
+            selector.enabledChan[i].lock()->setSecret(true);
         }
 
     } else {
         const std::vector<std::string>& channels = comp.getComponentsNames();
         for (int i = 0; i < 4; ++i) {
+            boost::shared_ptr<Bool_Knob> enabled = selector.enabledChan[i].lock();
             if (i >= (int)(channels.size())) {
-                selector.enabledChan[i]->setSecret(true);
+                enabled->setSecret(true);
             } else {
-                selector.enabledChan[i]->setSecret(false);
-                selector.enabledChan[i]->setDescription(channels[i]);
+                enabled->setSecret(false);
+                enabled->setDescription(channels[i]);
             }
-            selector.enabledChan[i]->setValue(true, 0);
+            enabled->setValue(true, 0);
         }
     }
 }
@@ -4810,21 +4838,23 @@ void
 Node::Implementation::onMaskSelectorChanged(int inputNb,const MaskSelector& selector)
 {
     
-    int index = selector.channel->getValue();
-    if ( (index == 0) && selector.enabled->isEnabled(0) ) {
-        selector.enabled->setValue(false, 0);
-        selector.enabled->setEnabled(0, false);
-    } else if ( !selector.enabled->isEnabled(0) ) {
-        selector.enabled->setEnabled(0, true);
+    boost::shared_ptr<Choice_Knob> channel = selector.channel.lock();
+    int index = channel->getValue();
+    boost::shared_ptr<Bool_Knob> enabled = selector.enabled.lock();
+    if ( (index == 0) && enabled->isEnabled(0) ) {
+        enabled->setValue(false, 0);
+        enabled->setEnabled(0, false);
+    } else if ( !enabled->isEnabled(0) ) {
+        enabled->setEnabled(0, true);
         if ( _publicInterface->getInput(inputNb) ) {
-            selector.enabled->setValue(true, 0);
+            enabled->setValue(true, 0);
         }
     }
     
-    std::vector<std::string> entries = selector.channel->getEntries_mt_safe();
-    int curChan_i = selector.channel->getValue();
+    std::vector<std::string> entries = channel->getEntries_mt_safe();
+    int curChan_i = channel->getValue();
     assert(curChan_i >= 0 && curChan_i < (int)entries.size());
-    selector.channelName->setValue(entries[curChan_i], 0);
+    selector.channelName.lock()->setValue(entries[curChan_i], 0);
     {
         ///Clip preferences have changed
         RenderScale s;
@@ -4854,10 +4884,10 @@ Node::getUserComponents(int inputNb,bool* processChannels, bool* isAll,Natron::I
     
     *isAll = !_imp->getSelectedLayer(inputNb, foundSelector->second, layer);
     if (foundSelector->second.useRGBASelectors) {
-        processChannels[0] = foundSelector->second.enabledChan[0]->getValue();
-        processChannels[1] = foundSelector->second.enabledChan[1]->getValue();
-        processChannels[2] = foundSelector->second.enabledChan[2]->getValue();
-        processChannels[3] = foundSelector->second.enabledChan[3]->getValue();
+        processChannels[0] = foundSelector->second.enabledChan[0].lock()->getValue();
+        processChannels[1] = foundSelector->second.enabledChan[1].lock()->getValue();
+        processChannels[2] = foundSelector->second.enabledChan[2].lock()->getValue();
+        processChannels[3] = foundSelector->second.enabledChan[3].lock()->getValue();
     } else {
         int numChans = layer->getNumComponents();
         processChannels[0] = true;
@@ -4885,10 +4915,10 @@ Node::hasAtLeastOneChannelToProcess() const
     }
     if (foundSelector->second.useRGBASelectors) {
         bool processChannels[4];
-        processChannels[0] = foundSelector->second.enabledChan[0]->getValue();
-        processChannels[1] = foundSelector->second.enabledChan[1]->getValue();
-        processChannels[2] = foundSelector->second.enabledChan[2]->getValue();
-        processChannels[3] = foundSelector->second.enabledChan[3]->getValue();
+        processChannels[0] = foundSelector->second.enabledChan[0].lock()->getValue();
+        processChannels[1] = foundSelector->second.enabledChan[1].lock()->getValue();
+        processChannels[2] = foundSelector->second.enabledChan[2].lock()->getValue();
+        processChannels[3] = foundSelector->second.enabledChan[3].lock()->getValue();
         if (!processChannels[0] && !processChannels[1] && !processChannels[2] && !processChannels[3]) {
             return false;
         }
@@ -4900,10 +4930,11 @@ void
 Node::replaceCustomDataInlabel(const QString & data)
 {
     assert( QThread::currentThread() == qApp->thread() );
-    if (!_imp->nodeLabelKnob) {
+    boost::shared_ptr<String_Knob> labelKnob = _imp->nodeLabelKnob.lock();
+    if (!labelKnob) {
         return;
     }
-    QString label = _imp->nodeLabelKnob->getValue().c_str();
+    QString label = labelKnob->getValue().c_str();
     ///Since the label is html encoded, find the text's start
     int foundFontTag = label.indexOf("<font");
     bool htmlPresent =  (foundFontTag != -1);
@@ -4926,13 +4957,14 @@ Node::replaceCustomDataInlabel(const QString & data)
     label.insert(i, customTagStart);
     label.insert(i + customTagStart.size(), data);
     label.insert(i + customTagStart.size() + data.size(), customTagEnd);
-    _imp->nodeLabelKnob->setValue(label.toStdString(), 0);
+    labelKnob->setValue(label.toStdString(), 0);
 }
 
 bool
 Node::isNodeDisabled() const
 {
-    bool thisDisabled = _imp->disableNodeKnob ? _imp->disableNodeKnob->getValue() : false;
+    boost::shared_ptr<Bool_Knob> b = _imp->disableNodeKnob.lock();
+    bool thisDisabled = b ? b->getValue() : false;
     NodeGroup* isContainerGrp = dynamic_cast<NodeGroup*>(getGroup().get());
     if (isContainerGrp) {
         return thisDisabled || isContainerGrp->getNode()->isNodeDisabled();
@@ -4943,8 +4975,9 @@ Node::isNodeDisabled() const
 void
 Node::setNodeDisabled(bool disabled)
 {
-    if (_imp->disableNodeKnob) {
-        _imp->disableNodeKnob->setValue(disabled, 0);
+    boost::shared_ptr<Bool_Knob> b = _imp->disableNodeKnob.lock();
+    if (b) {
+        b->setValue(disabled, 0);
     }
 }
 
@@ -5056,8 +5089,9 @@ Node::isSupportedBitDepth(Natron::ImageBitDepthEnum depth) const
 std::string
 Node::getNodeExtraLabel() const
 {
-    if (_imp->nodeLabelKnob) {
-        return _imp->nodeLabelKnob->getValue();
+    boost::shared_ptr<String_Knob> s = _imp->nodeLabelKnob.lock();
+    if (s) {
+        return s->getValue();
     } else {
         return std::string();
     }
@@ -5625,6 +5659,36 @@ Node::declarePythonFields()
     }
 }
 
+void
+Node::removeParameterFromPython(const std::string& parameterName)
+{
+#ifdef NATRON_RUN_WITHOUT_PYTHON
+    return;
+#endif
+    Natron::PythonGILLocker pgl;
+    std::string appID = getApp()->getAppIDString();
+    std::string fullName = getFullyQualifiedName();
+    std::string nodeFullName = appID + "." + fullName;
+    bool alreadyDefined = false;
+    
+    PyObject* nodeObj = getAttrRecursive(nodeFullName, getMainModule(), &alreadyDefined);
+    assert(nodeObj);
+    (void)nodeObj;
+    if (!alreadyDefined) {
+        qDebug() << QString("declarePythonFields(): attribute ") + nodeFullName.c_str() + " is not defined";
+        throw std::logic_error(std::string("declarePythonFields(): attribute ") + nodeFullName + " is not defined");
+    }
+    assert(PyObject_HasAttrString(nodeObj, parameterName.c_str()));
+    std::string script = "del " + nodeFullName + "." + parameterName;
+    if (!appPTR->isBackground()) {
+        getApp()->printAutoDeclaredVariable(script);
+    }
+    std::string err;
+    if (!interpretPythonScript(script, &err, 0)) {
+        qDebug() << err.c_str();
+    }
+}
+
 
 void
 Node::declareParameterAsNodeField(const std::string& nodeName,PyObject* nodeObj,const std::string& parameterName)
@@ -5648,13 +5712,15 @@ Node::declareParameterAsNodeField(const std::string& nodeName,PyObject* nodeObj,
 std::string
 Node::getKnobChangedCallback() const
 {
-    return _imp->knobChangedCallback ? _imp->knobChangedCallback->getValue() : std::string();
+    boost::shared_ptr<String_Knob> s = _imp->knobChangedCallback.lock();
+    return s ? s->getValue() : std::string();
 }
 
 std::string
 Node::getInputChangedCallback() const
 {
-    return _imp->inputChangedCallback ? _imp->inputChangedCallback->getValue() : std::string();
+    boost::shared_ptr<String_Knob> s = _imp->inputChangedCallback.lock();
+    return s ? s->getValue() : std::string();
 }
 
 void
@@ -5749,25 +5815,29 @@ Node::Implementation::runOnNodeDeleteCB()
 std::string
 Node::getBeforeRenderCallback() const
 {
-    return _imp->beforeRender ? _imp->beforeRender->getValue() : std::string();
+    boost::shared_ptr<String_Knob> s = _imp->beforeRender.lock();
+    return s ? s->getValue() : std::string();
 }
 
 std::string
 Node::getBeforeFrameRenderCallback() const
 {
-    return _imp->beforeFrameRender ? _imp->beforeFrameRender->getValue() : std::string();
+    boost::shared_ptr<String_Knob> s = _imp->beforeFrameRender.lock();
+    return s ? s->getValue() : std::string();
 }
 
 std::string
 Node::getAfterRenderCallback() const
 {
-    return _imp->afterRender ? _imp->afterRender->getValue() : std::string();
+    boost::shared_ptr<String_Knob> s = _imp->afterRender.lock();
+    return s ? s->getValue() : std::string();
 }
 
 std::string
 Node::getAfterFrameRenderCallback() const
 {
-    return _imp->afterFrameRender ? _imp->afterFrameRender->getValue() : std::string();
+    boost::shared_ptr<String_Knob> s = _imp->afterFrameRender.lock();
+    return s ? s->getValue() : std::string();
 }
 
 void
@@ -5851,9 +5921,10 @@ Node::refreshChannelSelectors(bool setValues)
             node = getInput(it->first);
         }
         
-        std::vector<std::string> currentLayerEntries = it->second.layer->getEntries_mt_safe();
+        boost::shared_ptr<Choice_Knob> layerKnob = it->second.layer.lock();
+        std::vector<std::string> currentLayerEntries = layerKnob->getEntries_mt_safe();
         
-        std::string curLayer = it->second.layerName->getValue();
+        std::string curLayer = it->second.layerName.lock()->getValue();
 
         
         std::vector<std::string> choices;
@@ -5934,16 +6005,16 @@ Node::refreshChannelSelectors(bool setValues)
         }
 
         
-        it->second.layer->populateChoices(choices);
+        layerKnob->populateChoices(choices);
  
         if (setValues) {
             assert(colorIndex != -1 && colorIndex >= 0 && colorIndex < (int)choices.size());
             if (it->second.hasAllChoice && _imp->liveInstance->isPassThroughForNonRenderedPlanes() == EffectInstance::ePassThroughRenderAllRequestedPlanes) {
-                it->second.layer->setValue(0, 0);
-                it->second.layerName->setValue(choices[0], 0);
+                layerKnob->setValue(0, 0);
+                it->second.layerName.lock()->setValue(choices[0], 0);
             } else {
-                it->second.layer->setValue(colorIndex,0);
-                it->second.layerName->setValue(choices[colorIndex], 0);
+                layerKnob->setValue(colorIndex,0);
+                it->second.layerName.lock()->setValue(choices[colorIndex], 0);
             }
         } else {
             if (!curLayer.empty()) {
@@ -5953,16 +6024,16 @@ Node::refreshChannelSelectors(bool setValues)
                 for (std::size_t i = 0; i < choices.size(); ++i) {
                     if (choices[i] == curLayer || (isColor && (choices[i] == kNatronRGBAComponentsName || choices[i] ==
                                                                kNatronRGBComponentsName || choices[i] == kNatronAlphaComponentsName))) {
-                        it->second.layer->setValue(i, 0);
+                        layerKnob->setValue(i, 0);
                         if (isColor && it->second.useRGBASelectors) {
                             assert(colorIndex != -1);
                             //Since color plane may have changed (RGB, or RGBA or Alpha), adjust the secretness of the checkboxes
                             const std::vector<std::string>& channels = colorComp.getComponentsNames();
                             for (int j = 0; j < 4; ++j) {
                                 if (j >= (int)(channels.size())) {
-                                    it->second.enabledChan[j]->setSecret(true);
+                                    it->second.enabledChan[j].lock()->setSecret(true);
                                 } else {
-                                    it->second.enabledChan[j]->setSecret(false);
+                                    it->second.enabledChan[j].lock()->setSecret(false);
                                 }
                             }
                         }
@@ -5981,9 +6052,9 @@ Node::refreshChannelSelectors(bool setValues)
             node = getInput(it->first);
         }
         
-        std::vector<std::string> currentLayerEntries = it->second.channel->getEntries_mt_safe();
+        std::vector<std::string> currentLayerEntries = it->second.channel.lock()->getEntries_mt_safe();
         
-        std::string curLayer = it->second.channelName->getValue();
+        std::string curLayer = it->second.channelName.lock()->getValue();
         
         
         std::vector<std::string> choices;
@@ -6035,17 +6106,17 @@ Node::refreshChannelSelectors(bool setValues)
             }
             alphaIndex = choices.size() - 1;
         }
-        it->second.channel->populateChoices(choices);
+        it->second.channel.lock()->populateChoices(choices);
         
         if (setValues) {
             assert(alphaIndex != -1 && alphaIndex >= 0 && alphaIndex < (int)choices.size());
-            it->second.channel->setValue(alphaIndex,0);
-            it->second.channelName->setValue(choices[alphaIndex], 0);
+            it->second.channel.lock()->setValue(alphaIndex,0);
+            it->second.channelName.lock()->setValue(choices[alphaIndex], 0);
         } else {
             if (!curLayer.empty()) {
                 for (std::size_t i = 0; i < choices.size(); ++i) {
                     if (choices[i] == curLayer) {
-                        it->second.channel->setValue(i, 0);
+                        it->second.channel.lock()->setValue(i, 0);
                         break;
                     }
                 }

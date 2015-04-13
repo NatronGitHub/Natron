@@ -566,16 +566,16 @@ struct RotoContextPrivate
 
     ///These are knobs that take the value of the selected splines info.
     ///Their value changes when selection changes.
-    boost::shared_ptr<Double_Knob> opacity;
-    boost::shared_ptr<Double_Knob> feather;
-    boost::shared_ptr<Double_Knob> featherFallOff;
-    boost::shared_ptr<Bool_Knob> activated; //<allows to disable a shape on a specific frame range
+    boost::weak_ptr<Double_Knob> opacity;
+    boost::weak_ptr<Double_Knob> feather;
+    boost::weak_ptr<Double_Knob> featherFallOff;
+    boost::weak_ptr<Bool_Knob> activated; //<allows to disable a shape on a specific frame range
 #ifdef NATRON_ROTO_INVERTIBLE
-    boost::shared_ptr<Bool_Knob> inverted;
+    boost::weak_ptr<Bool_Knob> inverted;
 #endif
-    boost::shared_ptr<Color_Knob> colorKnob;
+    boost::weak_ptr<Color_Knob> colorKnob;
 
-    std::list<boost::shared_ptr<KnobI> > knobs; //< list for easy access to all knobs
+    std::list<boost::weak_ptr<KnobI> > knobs; //< list for easy access to all knobs
 
 
     ///This keeps track  of the items linked to the context knobs
@@ -598,70 +598,76 @@ struct RotoContextPrivate
     {
         assert( n && n->getLiveInstance() );
         Natron::EffectInstance* effect = n->getLiveInstance();
-        opacity = Natron::createKnob<Double_Knob>(effect, kRotoOpacityParamLabel, 1, false);
-        opacity->setHintToolTip(kRotoOpacityHint);
-        opacity->setName(kRotoOpacityParam);
-        opacity->setMinimum(0.);
-        opacity->setMaximum(1.);
-        opacity->setDisplayMinimum(0.);
-        opacity->setDisplayMaximum(1.);
-        opacity->setDefaultValue(ROTO_DEFAULT_OPACITY);
-        opacity->setAllDimensionsEnabled(false);
-        opacity->setIsPersistant(false);
-        knobs.push_back(opacity);
+        boost::shared_ptr<Double_Knob> opacityKnob = Natron::createKnob<Double_Knob>(effect, kRotoOpacityParamLabel, 1, false);
+        opacityKnob->setHintToolTip(kRotoOpacityHint);
+        opacityKnob->setName(kRotoOpacityParam);
+        opacityKnob->setMinimum(0.);
+        opacityKnob->setMaximum(1.);
+        opacityKnob->setDisplayMinimum(0.);
+        opacityKnob->setDisplayMaximum(1.);
+        opacityKnob->setDefaultValue(ROTO_DEFAULT_OPACITY);
+        opacityKnob->setAllDimensionsEnabled(false);
+        opacityKnob->setIsPersistant(false);
+        knobs.push_back(opacityKnob);
+        opacity = opacityKnob;
         
-        feather = Natron::createKnob<Double_Knob>(effect, kRotoFeatherParamLabel, 1, false);
-        feather->setHintToolTip(kRotoFeatherHint);
-        feather->setName(kRotoFeatherParam);
-        feather->setMinimum(-100);
-        feather->setMaximum(100);
-        feather->setDisplayMinimum(-100);
-        feather->setDisplayMaximum(100);
-        feather->setDefaultValue(ROTO_DEFAULT_FEATHER);
-        feather->setAllDimensionsEnabled(false);
-        feather->setIsPersistant(false);
-        knobs.push_back(feather);
+        boost::shared_ptr<Double_Knob> featherKnob = Natron::createKnob<Double_Knob>(effect, kRotoFeatherParamLabel, 1, false);
+        featherKnob->setHintToolTip(kRotoFeatherHint);
+        featherKnob->setName(kRotoFeatherParam);
+        featherKnob->setMinimum(-100);
+        featherKnob->setMaximum(100);
+        featherKnob->setDisplayMinimum(-100);
+        featherKnob->setDisplayMaximum(100);
+        featherKnob->setDefaultValue(ROTO_DEFAULT_FEATHER);
+        featherKnob->setAllDimensionsEnabled(false);
+        featherKnob->setIsPersistant(false);
+        knobs.push_back(featherKnob);
+        feather = featherKnob;
         
-        featherFallOff = Natron::createKnob<Double_Knob>(effect, kRotoFeatherFallOffParamLabel, 1, false);
-        featherFallOff->setHintToolTip(kRotoFeatherFallOffHint);
-        featherFallOff->setName(kRotoFeatherFallOffParam);
-        featherFallOff->setMinimum(0.001);
-        featherFallOff->setMaximum(5.);
-        featherFallOff->setDisplayMinimum(0.2);
-        featherFallOff->setDisplayMaximum(5.);
-        featherFallOff->setDefaultValue(ROTO_DEFAULT_FEATHERFALLOFF);
-        featherFallOff->setAllDimensionsEnabled(false);
-        featherFallOff->setIsPersistant(false);
-        knobs.push_back(featherFallOff);
+        boost::shared_ptr<Double_Knob> featherFallOffKnob = Natron::createKnob<Double_Knob>(effect, kRotoFeatherFallOffParamLabel, 1, false);
+        featherFallOffKnob->setHintToolTip(kRotoFeatherFallOffHint);
+        featherFallOffKnob->setName(kRotoFeatherFallOffParam);
+        featherFallOffKnob->setMinimum(0.001);
+        featherFallOffKnob->setMaximum(5.);
+        featherFallOffKnob->setDisplayMinimum(0.2);
+        featherFallOffKnob->setDisplayMaximum(5.);
+        featherFallOffKnob->setDefaultValue(ROTO_DEFAULT_FEATHERFALLOFF);
+        featherFallOffKnob->setAllDimensionsEnabled(false);
+        featherFallOffKnob->setIsPersistant(false);
+        knobs.push_back(featherFallOffKnob);
+        featherFallOff = featherFallOffKnob;
         
-        activated = Natron::createKnob<Bool_Knob>(effect, kRotoActivatedParamLabel, 1, false);
-        activated->setHintToolTip(kRotoActivatedHint);
-        activated->setName(kRotoActivatedParam);
-        activated->setAddNewLine(false);
-        activated->setDefaultValue(true);
-        activated->setAllDimensionsEnabled(false);
-        activated->setIsPersistant(false);
-        knobs.push_back(activated);
+        boost::shared_ptr<Bool_Knob> activatedKnob = Natron::createKnob<Bool_Knob>(effect, kRotoActivatedParamLabel, 1, false);
+        activatedKnob->setHintToolTip(kRotoActivatedHint);
+        activatedKnob->setName(kRotoActivatedParam);
+        activatedKnob->setAddNewLine(false);
+        activatedKnob->setDefaultValue(true);
+        activatedKnob->setAllDimensionsEnabled(false);
+        activatedKnob->setIsPersistant(false);
+        knobs.push_back(activatedKnob);
+        activated = activatedKnob;
         
 #ifdef NATRON_ROTO_INVERTIBLE
-        inverted = Natron::createKnob<Bool_Knob>(effect, kRotoInvertedParamLabel, 1, false);
-        inverted->setHintToolTip(kRotoInvertedHint);
-        inverted->setName(kRotoInvertedParam);
-        inverted->setDefaultValue(false);
-        inverted->setAllDimensionsEnabled(false);
-        inverted->setIsPersistant(false);
-        knobs.push_back(inverted);
+        boost::shared_ptr<Bool_Knob> invertedKnob = Natron::createKnob<Bool_Knob>(effect, kRotoInvertedParamLabel, 1, false);
+        invertedKnob->setHintToolTip(kRotoInvertedHint);
+        invertedKnob->setName(kRotoInvertedParam);
+        invertedKnob->setDefaultValue(false);
+        invertedKnob->setAllDimensionsEnabled(false);
+        invertedKnob->setIsPersistant(false);
+        knobs.push_back(invertedKnob);
+        inverted = invertedKnob;
 #endif
 
-        colorKnob = Natron::createKnob<Color_Knob>(effect, kRotoColorParamLabel, 3, false);
-        colorKnob->setHintToolTip(kRotoColorHint);
-        colorKnob->setName(kRotoColorParam);
-        colorKnob->setDefaultValue(ROTO_DEFAULT_COLOR_R, 0);
-        colorKnob->setDefaultValue(ROTO_DEFAULT_COLOR_G, 1);
-        colorKnob->setDefaultValue(ROTO_DEFAULT_COLOR_B, 2);
-        colorKnob->setAllDimensionsEnabled(false);
-        colorKnob->setIsPersistant(false);
-        knobs.push_back(colorKnob);
+        boost::shared_ptr<Color_Knob> ck = Natron::createKnob<Color_Knob>(effect, kRotoColorParamLabel, 3, false);
+        ck->setHintToolTip(kRotoColorHint);
+        ck->setName(kRotoColorParam);
+        ck->setDefaultValue(ROTO_DEFAULT_COLOR_R, 0);
+        ck->setDefaultValue(ROTO_DEFAULT_COLOR_G, 1);
+        ck->setDefaultValue(ROTO_DEFAULT_COLOR_B, 2);
+        ck->setAllDimensionsEnabled(false);
+        ck->setIsPersistant(false);
+        knobs.push_back(ck);
+        colorKnob = ck;
     }
 
     /**

@@ -4097,7 +4097,7 @@ RotoContext::getLastInsertedItem() const
 boost::shared_ptr<Bool_Knob>
 RotoContext::getInvertedKnob() const
 {
-    return _imp->inverted;
+    return _imp->inverted.lock();
 }
 
 #endif
@@ -4105,7 +4105,7 @@ RotoContext::getInvertedKnob() const
 boost::shared_ptr<Color_Knob>
 RotoContext::getColorKnob() const
 {
-    return _imp->colorKnob;
+    return _imp->colorKnob.lock();
 }
 
 void
@@ -4546,12 +4546,12 @@ RotoContext::load(const RotoContextSerialization & obj)
     _imp->featherLink = obj._featherLink;
     _imp->rippleEdit = obj._rippleEdit;
 
-    _imp->activated->setAllDimensionsEnabled(false);
-    _imp->opacity->setAllDimensionsEnabled(false);
-    _imp->feather->setAllDimensionsEnabled(false);
-    _imp->featherFallOff->setAllDimensionsEnabled(false);
+    _imp->activated.lock()->setAllDimensionsEnabled(false);
+    _imp->opacity.lock()->setAllDimensionsEnabled(false);
+    _imp->feather.lock()->setAllDimensionsEnabled(false);
+    _imp->featherFallOff.lock()->setAllDimensionsEnabled(false);
 #ifdef NATRON_ROTO_INVERTIBLE
-    _imp->inverted->setAllDimensionsEnabled(false);
+    _imp->inverted.lock()->setAllDimensionsEnabled(false);
 #endif
 
     assert(_imp->layers.size() == 1);
@@ -4695,16 +4695,17 @@ RotoContext::selectInternal(const boost::shared_ptr<RotoItem> & item)
         const std::list<boost::shared_ptr<KnobI> >& bezierKnobs = isBezier->getKnobs();
         for (std::list<boost::shared_ptr<KnobI> >::const_iterator it = bezierKnobs.begin(); it != bezierKnobs.end(); ++it) {
             
-            for (std::list<boost::shared_ptr<KnobI> >::iterator it2 = _imp->knobs.begin(); it2 != _imp->knobs.end(); ++it2) {
-                if ((*it2)->getName() == (*it)->getName()) {
+            for (std::list<boost::weak_ptr<KnobI> >::iterator it2 = _imp->knobs.begin(); it2 != _imp->knobs.end(); ++it2) {
+                boost::shared_ptr<KnobI> thisKnob = it2->lock();
+                if (thisKnob->getName() == (*it)->getName()) {
                     
                     //Clone current state
-                    (*it2)->cloneAndUpdateGui(it->get());
+                    thisKnob->cloneAndUpdateGui(it->get());
                     
                     //Slave internal knobs of the bezier
-                    assert((*it)->getDimension() == (*it2)->getDimension());
+                    assert((*it)->getDimension() == thisKnob->getDimension());
                     for (int i = 0; i < (*it)->getDimension(); ++i) {
-                        (*it)->slaveTo(i, (*it2), i);
+                        (*it)->slaveTo(i, thisKnob, i);
                     }
                     
                     QObject::connect((*it)->getSignalSlotHandler().get(), SIGNAL(keyFrameSet(SequenceTime,int,int,bool)),
@@ -4736,15 +4737,16 @@ RotoContext::selectInternal(const boost::shared_ptr<RotoItem> & item)
 
         ///enable the knobs
         
-        for (std::list<boost::shared_ptr<KnobI> >::iterator it2 = _imp->knobs.begin(); it2 != _imp->knobs.end(); ++it2) {
+        for (std::list<boost::weak_ptr<KnobI> >::iterator it2 = _imp->knobs.begin(); it2 != _imp->knobs.end(); ++it2) {
+            boost::shared_ptr<KnobI> thisKnob = it2->lock();
             if (nbUnlockedBeziers > 0) {
-                (*it2)->setAllDimensionsEnabled(true);
+                thisKnob->setAllDimensionsEnabled(true);
                 
                 ///if there are multiple selected beziers, notify the gui knobs so they appear like not displaying an accurate value
                 ///(maybe black or something)
                 
                 if (nbUnlockedBeziers >= 2) {
-                    (*it2)->setDirty(true);
+                    thisKnob->setDirty(true);
                 }
             }
         }
@@ -4758,9 +4760,10 @@ RotoContext::onSelectedKnobCurveChanged()
     KnobSignalSlotHandler* handler = qobject_cast<KnobSignalSlotHandler*>(sender());
     if (handler) {
         boost::shared_ptr<KnobI> knob = handler->getKnob();
-        for (std::list<boost::shared_ptr<KnobI> >::const_iterator it = _imp->knobs.begin(); it!=_imp->knobs.end(); ++it) {
-            if ((*it)->getName() == knob->getName()) {
-                (*it)->clone(knob.get());
+        for (std::list<boost::weak_ptr<KnobI> >::const_iterator it = _imp->knobs.begin(); it!=_imp->knobs.end(); ++it) {
+            boost::shared_ptr<KnobI> k = it->lock();
+            if (k->getName() == knob->getName()) {
+                k->clone(knob.get());
                 break;
             }
         }
@@ -4800,14 +4803,15 @@ RotoContext::deselectInternal(boost::shared_ptr<RotoItem> b)
         const std::list<boost::shared_ptr<KnobI> >& bezierKnobs = isBezier->getKnobs();
         for (std::list<boost::shared_ptr<KnobI> >::const_iterator it = bezierKnobs.begin(); it != bezierKnobs.end(); ++it) {
             
-            for (std::list<boost::shared_ptr<KnobI> >::iterator it2 = _imp->knobs.begin(); it2 != _imp->knobs.end(); ++it2) {
-                if ((*it2)->getName() == (*it)->getName()) {
+            for (std::list<boost::weak_ptr<KnobI> >::iterator it2 = _imp->knobs.begin(); it2 != _imp->knobs.end(); ++it2) {
+                boost::shared_ptr<KnobI> knob = it2->lock();
+                if (knob->getName() == (*it)->getName()) {
                     
                     //Clone current state
-                    (*it2)->cloneAndUpdateGui(it->get());
+                    knob->cloneAndUpdateGui(it->get());
                     
                     //Slave internal knobs of the bezier
-                    assert((*it)->getDimension() == (*it2)->getDimension());
+                    assert((*it)->getDimension() == knob->getDimension());
                     for (int i = 0; i < (*it)->getDimension(); ++i) {
                         (*it)->unSlave(i,notDirty);
                     }
@@ -4841,15 +4845,16 @@ RotoContext::deselectInternal(boost::shared_ptr<RotoItem> b)
     
     
     
-    for (std::list<boost::shared_ptr<KnobI> >::iterator it2 = _imp->knobs.begin(); it2 != _imp->knobs.end(); ++it2) {
+    for (std::list<boost::weak_ptr<KnobI> >::iterator it2 = _imp->knobs.begin(); it2 != _imp->knobs.end(); ++it2) {
+        boost::shared_ptr<KnobI> knob = it2->lock();
         if (notDirty) {
-            (*it2)->setDirty(false);
+            knob->setDirty(false);
         }
         
         ///if the selected beziers count reaches 0 notify the gui knobs so they appear not enabled
         
         if (nbBeziersUnLockedBezier == 0) {
-            (*it2)->setAllDimensionsEnabled(false);
+            knob->setAllDimensionsEnabled(false);
         }
     }
     
@@ -5246,20 +5251,20 @@ RotoContext::onItemLockedChanged(const boost::shared_ptr<RotoItem>& item, RotoIt
     bool dirty = nbBeziersUnLockedBezier > 1;
     bool enabled = nbBeziersUnLockedBezier > 0;
 
-    _imp->activated->setDirty(dirty);
-    _imp->opacity->setDirty(dirty);
-    _imp->feather->setDirty(dirty);
-    _imp->featherFallOff->setDirty(dirty);
+    _imp->activated.lock()->setDirty(dirty);
+    _imp->opacity.lock()->setDirty(dirty);
+    _imp->feather.lock()->setDirty(dirty);
+    _imp->featherFallOff.lock()->setDirty(dirty);
 #ifdef NATRON_ROTO_INVERTIBLE
-    _imp->inverted->setDirty(dirty);
+    _imp->inverted.lock()->setDirty(dirty);
 #endif
 
-    _imp->activated->setAllDimensionsEnabled(enabled);
-    _imp->opacity->setAllDimensionsEnabled(enabled);
-    _imp->featherFallOff->setAllDimensionsEnabled(enabled);
-    _imp->feather->setAllDimensionsEnabled(enabled);
+    _imp->activated.lock()->setAllDimensionsEnabled(enabled);
+    _imp->opacity.lock()->setAllDimensionsEnabled(enabled);
+    _imp->featherFallOff.lock()->setAllDimensionsEnabled(enabled);
+    _imp->feather.lock()->setAllDimensionsEnabled(enabled);
 #ifdef NATRON_ROTO_INVERTIBLE
-    _imp->inverted->setAllDimensionsEnabled(enabled);
+    _imp->inverted.lock()->setAllDimensionsEnabled(enabled);
 #endif
     _imp->lastLockedItem = item;
     Q_EMIT itemLockedChanged((int)reason);

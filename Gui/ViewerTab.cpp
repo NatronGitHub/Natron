@@ -2693,6 +2693,11 @@ ViewerTab::createTrackerInterface(NodeGui* n)
     if (!multiPanel) {
         return;
     }
+    std::map<NodeGui*,TrackerGui*>::iterator found = _imp->trackerNodes.find(n);
+    if (found != _imp->trackerNodes.end()) {
+        return;
+    }
+    
     boost::shared_ptr<TrackerPanel> trackPanel = boost::dynamic_pointer_cast<TrackerPanel>(multiPanel);
 
     assert(trackPanel);

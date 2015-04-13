@@ -453,11 +453,11 @@ NodeCurveEditorContext::NodeCurveEditorContext(QTreeWidget* tree,
 
     QObject::connect( node->getNode().get(),SIGNAL( labelChanged(QString) ),this,SLOT( onNameChanged(QString) ) );
 
-    const std::map<boost::shared_ptr<KnobI>,KnobGui*> & knobs = node->getKnobs();
+    const std::map<boost::weak_ptr<KnobI>,KnobGui*> & knobs = node->getKnobs();
 
     bool hasAtLeast1KnobWithACurveShown = false;
 
-    for (std::map<boost::shared_ptr<KnobI>,KnobGui*>::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+    for (std::map<boost::weak_ptr<KnobI>,KnobGui*>::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
         createElementsForKnob(nameItem, it->second,boost::shared_ptr<KnobI>() ,
                               curveWidget, tree,boost::shared_ptr<RotoContext>(), _nodeElements, &hasAtLeast1KnobWithACurveShown);
         

@@ -2396,32 +2396,6 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
 
     bool useDiskCacheNode = dynamic_cast<DiskCacheNode*>(this) != NULL;
 
-    {
-        ///If the last rendered image had a different hash key (i.e a parameter changed or an input changed)
-        ///just remove the old image from the cache to recycle memory.
-        ///We also do this if the mipmap level is different (e.g: the user is zooming in/out) because
-        ///anyway the ViewerCache will have the texture cached and it would be redundant to keep this image
-        ///in the cache since the ViewerCache already has it ready.
-        ImageList lastRenderedPlanes;
-        U64 lastRenderHash;
-        {
-            QMutexLocker l(&_imp->lastRenderArgsMutex);
-            lastRenderedPlanes = _imp->lastPlanesRendered;
-            lastRenderHash = _imp->lastRenderHash;
-        }
-        if ( !lastRenderedPlanes.empty() && lastRenderHash != nodeHash ) {
-            ///once we got it remove it from the cache
-            if (!useDiskCacheNode) {
-                appPTR->removeAllImagesFromCacheWithMatchingKey(lastRenderHash);
-            } else {
-                appPTR->removeAllImagesFromDiskCacheWithMatchingKey(lastRenderHash);
-            }
-            {
-                QMutexLocker l(&_imp->lastRenderArgsMutex);
-                _imp->lastPlanesRendered.clear();
-            }
-        }
-    }
 
     
     /*
@@ -2832,12 +2806,39 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
 
         if (hasSomethingToRender) {
             
+            {
+                ///If the last rendered image had a different hash key (i.e a parameter changed or an input changed)
+                ///just remove the old image from the cache to recycle memory.
+                ///We also do this if the mipmap level is different (e.g: the user is zooming in/out) because
+                ///anyway the ViewerCache will have the texture cached and it would be redundant to keep this image
+                ///in the cache since the ViewerCache already has it ready.
+                ImageList lastRenderedPlanes;
+                U64 lastRenderHash;
+                {
+                    QMutexLocker l(&_imp->lastRenderArgsMutex);
+                    lastRenderedPlanes = _imp->lastPlanesRendered;
+                    lastRenderHash = _imp->lastRenderHash;
+                }
+                if ( !lastRenderedPlanes.empty() && lastRenderHash != nodeHash ) {
+                    ///once we got it remove it from the cache
+                    if (!useDiskCacheNode) {
+                        appPTR->removeAllImagesFromCacheWithMatchingKey(lastRenderHash);
+                    } else {
+                        appPTR->removeAllImagesFromDiskCacheWithMatchingKey(lastRenderHash);
+                    }
+                    {
+                        QMutexLocker l(&_imp->lastRenderArgsMutex);
+                        _imp->lastPlanesRendered.clear();
+                    }
+                }
+            }
+            
 # ifdef DEBUG
 
             {
                 const std::list<RectI>& rectsToRender = planesToRender.rectsToRender;
                 
-                qDebug() <<'('<<QThread::currentThread()->objectName()<<")--> "<< getNode()->getScriptName_mt_safe().c_str() << ": render view " << args.view << " " << rectsToRender.size() << " rectangles";
+                qDebug() <<'('<<QThread::currentThread()->objectName()<<")--> "<< getNode()->getScriptName_mt_safe().c_str() << ": render view " << args.view << "time: " << args.time <<  " No. tiles: " << rectsToRender.size() << " rectangles";
                 for (std::list<RectI>::const_iterator it = rectsToRender.begin(); it != rectsToRender.end(); ++it) {
                     qDebug() << "rect: " << "x1= " <<  it->x1 << " , y1= " << it->y1 << " , x2= " << it->x2 << " , y2= " << it->y2;
                 }
@@ -5094,7 +5095,7 @@ EffectInstance::getComponentsAvailableRecursive(SequenceTime time, int view, Com
                 }
                 
                 if (alreadyExisting == comps->end() && colorMatch != comps->end()) {
-                    alreadyExisting = colorMatch;
+                    comps->erase(colorMatch);
                 }
             } else {
                 alreadyExisting = comps->find(*it);
@@ -5138,7 +5139,7 @@ EffectInstance::getComponentsAvailableRecursive(SequenceTime time, int view, Com
                 }
                 
                 if (alreadyExisting == comps->end() && colorMatch != comps->end()) {
-                    alreadyExisting = colorMatch;
+                    comps->erase(colorMatch);
                 }
             } else {
                 alreadyExisting = comps->find(*it);
@@ -5300,7 +5301,20 @@ EffectInstance::getComponentsNeededAndProduced_public(SequenceTime time, int vie
                 bool isAll;
                 bool ok = getNode()->getUserComponents(i, inputProcChannels, &isAll, &layer);
                 if (ok && !isAll) {
-                    compVec.push_back(layer);
+                    if (!layer.isColorPlane()) {
+                        compVec.push_back(layer);
+                    } else {
+                        //Use regular clip preferences
+                        ImageBitDepthEnum depth;
+                        std::list<ImageComponents> components;
+                        getPreferredDepthAndComponents(i, &components, &depth);
+                        for (std::list<ImageComponents>::iterator it = components.begin(); it!=components.end(); ++it) {
+                            if (it->isColorPlane()) {
+                                compVec.push_back(*it);
+                            }
+                        }
+                        
+                    }
                 } else if (isInputMask(i) && !isInputRotoBrush(i)) {
                     //Use mask channel selector
                     ImageComponents maskComp;

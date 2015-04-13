@@ -165,7 +165,7 @@ public:
 
     bool isMinimized() const;
 
-    const std::map<boost::shared_ptr<KnobI>,KnobGui*> & getKnobs() const;
+    const std::map<boost::weak_ptr<KnobI>,KnobGui*> & getKnobs() const;
     QVBoxLayout* getContainer() const;
     QUndoStack* getUndoStack() const;
 

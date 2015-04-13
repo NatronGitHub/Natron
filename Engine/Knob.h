@@ -21,6 +21,10 @@
 #include <set>
 #include <map>
 
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#include <boost/enable_shared_from_this.hpp>
+#endif
+
 #include <QtCore/QReadWriteLock>
 #include <QtCore/QMutex>
 
@@ -53,15 +57,15 @@ class KnobSignalSlotHandler
 {
     Q_OBJECT
     
-    boost::shared_ptr<KnobI> k;
+    boost::weak_ptr<KnobI> k;
     
 public:
     
-    KnobSignalSlotHandler(boost::shared_ptr<KnobI> knob);
+    KnobSignalSlotHandler(const boost::shared_ptr<KnobI> &knob);
     
     boost::shared_ptr<KnobI> getKnob() const
     {
-        return k;
+        return k.lock();
     }
     
     void s_animationLevelChanged(int dim,int level)
@@ -308,6 +312,7 @@ typedef std::list<KnobChange> ChangesList;
 
 class KnobI
     : public OverlaySupport
+    , public boost::enable_shared_from_this<KnobI>
 {
     
     friend class KnobHolder;

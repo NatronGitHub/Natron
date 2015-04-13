@@ -117,7 +117,7 @@ private:
     QDateTime _lastModified;
     QFileSystemWatcher* _watcher;
     std::string _fileBeingWatched;
-    boost::shared_ptr<File_Knob> _knob;
+    boost::weak_ptr<File_Knob> _knob;
 };
 
 
@@ -178,7 +178,7 @@ private:
     LineEdit *_lineEdit;
     Button *_openFileButton;
     QString _lastOpened;
-    boost::shared_ptr<OutputFile_Knob> _knob;
+    boost::weak_ptr<OutputFile_Knob> _knob;
 };
 
 
@@ -274,7 +274,7 @@ private:
     Button* _removePathButton;
     Button* _editPathButton;
     QString _lastOpened;
-    boost::shared_ptr<Path_Knob> _knob;
+    boost::weak_ptr<Path_Knob> _knob;
     bool _isInsertingItem;
     Variables _items;
 };

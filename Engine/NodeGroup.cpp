@@ -1905,7 +1905,7 @@ static void exportUserKnob(const boost::shared_ptr<KnobI>& knob,const QString& f
     WRITE_STATIC_LINE("");
     
     if (isGrp) {
-        const std::vector<boost::shared_ptr<KnobI> >& children =  isGrp->getChildren();
+        std::vector<boost::shared_ptr<KnobI> > children =  isGrp->getChildren();
         for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it3 = children.begin(); it3 != children.end(); ++it3) {
             exportUserKnob(*it3, fullyQualifiedNodeName, isGrp, page, ts);
         }
@@ -2080,7 +2080,7 @@ static void exportAllNodeKnobs(const boost::shared_ptr<Natron::Node>& node,QText
         WRITE_INDENT(1); WRITE_STRING("lastNode." + QString((*it2)->getName().c_str()) +
                                       " = lastNode.createPageParam(" + ESC((*it2)->getName()) + ", " +
                                       ESC((*it2)->getDescription()) + ")");
-        const std::vector<boost::shared_ptr<KnobI> >& children =  (*it2)->getChildren();
+        std::vector<boost::shared_ptr<KnobI> > children =  (*it2)->getChildren();
         for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it3 = children.begin(); it3 != children.end(); ++it3) {
             exportUserKnob(*it3, "lastNode", 0, *it2, ts);
         }

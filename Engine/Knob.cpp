@@ -45,7 +45,7 @@
 using namespace Natron;
 using std::make_pair; using std::pair;
 
-KnobSignalSlotHandler::KnobSignalSlotHandler(boost::shared_ptr<KnobI> knob)
+KnobSignalSlotHandler::KnobSignalSlotHandler(const boost::shared_ptr<KnobI>& knob)
 : QObject()
 , k(knob)
 {
@@ -55,7 +55,7 @@ KnobSignalSlotHandler::KnobSignalSlotHandler(boost::shared_ptr<KnobI> knob)
 void
 KnobSignalSlotHandler::onAnimationRemoved(int dimension)
 {
-    k->onAnimationRemoved(dimension);
+    getKnob()->onAnimationRemoved(dimension);
 }
 
 void
@@ -64,7 +64,7 @@ KnobSignalSlotHandler::onMasterChanged(int dimension)
     KnobSignalSlotHandler* handler = qobject_cast<KnobSignalSlotHandler*>( sender() );
     
     assert(handler);
-    k->onMasterChanged(handler->getKnob().get(), dimension);
+    getKnob()->onMasterChanged(handler->getKnob().get(), dimension);
 }
 
 void
@@ -73,7 +73,7 @@ KnobSignalSlotHandler::onExprDependencyChanged(int dimension)
     KnobSignalSlotHandler* handler = qobject_cast<KnobSignalSlotHandler*>( sender() );
     
     assert(handler);
-    k->onExprDependencyChanged(handler->getKnob().get(), dimension);
+    getKnob()->onExprDependencyChanged(handler->getKnob().get(), dimension);
     
 }
 
@@ -84,7 +84,7 @@ KnobSignalSlotHandler::onMasterKeyFrameSet(SequenceTime time,int dimension,int r
     assert(handler);
     boost::shared_ptr<KnobI> master = handler->getKnob();
     
-    k->clone(master.get(), dimension);
+    getKnob()->clone(master.get(), dimension);
     Q_EMIT keyFrameSet(time, dimension, reason, added);
 }
 
@@ -95,7 +95,7 @@ KnobSignalSlotHandler::onMasterKeyFrameRemoved(SequenceTime time,int dimension,i
     assert(handler);
     boost::shared_ptr<KnobI> master = handler->getKnob();
     
-    k->clone(master.get(), dimension);
+    getKnob()->clone(master.get(), dimension);
     Q_EMIT keyFrameRemoved(time, dimension, reason);
 }
 
@@ -106,7 +106,7 @@ KnobSignalSlotHandler::onMasterKeyFrameMoved(int dimension,int oldTime,int newTi
     assert(handler);
     boost::shared_ptr<KnobI> master = handler->getKnob();
     
-    k->clone(master.get(), dimension);
+    getKnob()->clone(master.get(), dimension);
     Q_EMIT keyFrameMoved(dimension, oldTime, newTime);
 }
 
@@ -117,7 +117,7 @@ KnobSignalSlotHandler::onMasterAnimationRemoved(int dimension)
     assert(handler);
     boost::shared_ptr<KnobI> master = handler->getKnob();
     
-    k->clone(master.get(), dimension);
+    getKnob()->clone(master.get(), dimension);
     Q_EMIT animationRemoved(dimension);
 }
 
@@ -408,6 +408,10 @@ KnobHelper::deleteKnob()
         }
     }
     
+    for (int i = 0; i < getDimension(); ++i) {
+        clearExpression(i, true);
+    }
+    
     if (_imp->parentKnob) {
         Group_Knob* isGrp =  dynamic_cast<Group_Knob*>(_imp->parentKnob.get());
         Page_Knob* isPage = dynamic_cast<Page_Knob*>(_imp->parentKnob.get());
@@ -437,12 +441,16 @@ KnobHelper::deleteKnob()
     }
     
     KnobHolder* holder = getHolder();
-    if (holder && useNativeOverlayHandle()) {
+    if (holder) {
         Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(holder);
         if (effect) {
-            effect->getNode()->removeDefaultOverlay(this);
+            if (useNativeOverlayHandle()) {
+                effect->getNode()->removeDefaultOverlay(this);
+            }
+            effect->getNode()->removeParameterFromPython(getName());
         }
     }
+    _signalSlotHandler.reset();
 }
 
 void
@@ -1836,7 +1844,6 @@ KnobHelper::clearExpression(int dimension,bool clearResults)
             if (found != otherListeners.end()) {
                 
                 if ( (*found)->getHolder() && (*found)->getSignalSlotHandler() ) {
-                    ///hackish way to get a shared ptr to this knob
                     getHolder()->onKnobSlaved(this, other,dimension,false );
                 }
                 QObject::disconnect(other->getSignalSlotHandler().get(), SIGNAL(updateDependencies(int)), _signalSlotHandler.get(),
@@ -2578,7 +2585,6 @@ KnobHelper::addListener(bool isExpression,int fromExprDimension,KnobI* knob)
     assert(slave);
 
     if ( slave && slave->getHolder() && slave->getSignalSlotHandler() && getSignalSlotHandler() ) {
-        ///hackish way to get a shared ptr to this knob
         slave->getHolder()->onKnobSlaved(slave, this,fromExprDimension,true );
     }
     

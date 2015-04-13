@@ -22,6 +22,7 @@
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
+#include <boost/weak_ptr.hpp>
 #endif
 
 #include "Engine/KnobTypes.h"
@@ -31,7 +32,7 @@ class Param
 {
     
 protected:
-    boost::shared_ptr<KnobI> _knob;
+    boost::weak_ptr<KnobI> _knob;
     
 public:
     
@@ -39,7 +40,7 @@ public:
     
     virtual ~Param();
     
-    boost::shared_ptr<KnobI> getInternalKnob() const { return _knob; }
+    boost::shared_ptr<KnobI> getInternalKnob() const { return _knob.lock(); }
     
     /**
      * @brief Returns the parent of this parameter if any. If the parameter has no parent it is assumed to be a top-level
@@ -267,7 +268,7 @@ class IntParam : public AnimatedParam
 {
     
 protected:
-    boost::shared_ptr<Int_Knob> _intKnob;
+    boost::weak_ptr<Int_Knob> _intKnob;
 public:
     
     IntParam(const boost::shared_ptr<Int_Knob>& knob);
@@ -412,7 +413,7 @@ class DoubleParam : public AnimatedParam
 {
     
 protected:
-    boost::shared_ptr<Double_Knob> _doubleKnob;
+    boost::weak_ptr<Double_Knob> _doubleKnob;
 public:
     
     DoubleParam(const boost::shared_ptr<Double_Knob>& knob);
@@ -558,7 +559,7 @@ class ColorParam : public AnimatedParam
 {
     
 protected:
-    boost::shared_ptr<Color_Knob> _colorKnob;
+    boost::weak_ptr<Color_Knob> _colorKnob;
 public:
     
     ColorParam(const boost::shared_ptr<Color_Knob>& knob);
@@ -676,7 +677,7 @@ class ChoiceParam : public AnimatedParam
 {
     
 protected:
-    boost::shared_ptr<Choice_Knob> _choiceKnob;
+    boost::weak_ptr<Choice_Knob> _choiceKnob;
 public:
     
     ChoiceParam(const boost::shared_ptr<Choice_Knob>& knob);
@@ -772,7 +773,7 @@ class BooleanParam : public AnimatedParam
 {
     
 protected:
-    boost::shared_ptr<Bool_Knob> _boolKnob;
+    boost::weak_ptr<Bool_Knob> _boolKnob;
 public:
     
     BooleanParam(const boost::shared_ptr<Bool_Knob>& knob);
@@ -845,7 +846,7 @@ class StringParamBase : public AnimatedParam
 {
     
 protected:
-    boost::shared_ptr<Knob<std::string> > _stringKnob;
+    boost::weak_ptr<Knob<std::string> > _stringKnob;
 public:
     
     StringParamBase(const boost::shared_ptr<Knob<std::string> >& knob);
@@ -916,7 +917,7 @@ public:
 
 class StringParam : public StringParamBase
 {
-    boost::shared_ptr<String_Knob> _sKnob;
+    boost::weak_ptr<String_Knob> _sKnob;
 public:
     
     enum TypeEnum {
@@ -963,7 +964,7 @@ public:
 
 class OutputFileParam : public StringParamBase
 {
-    boost::shared_ptr<OutputFile_Knob> _sKnob;
+    boost::weak_ptr<OutputFile_Knob> _sKnob;
 public:
     
     
@@ -985,7 +986,7 @@ public:
 
 class PathParam : public StringParamBase
 {
-    boost::shared_ptr<Path_Knob> _sKnob;
+    boost::weak_ptr<Path_Knob> _sKnob;
 public:
     
     
@@ -1006,7 +1007,7 @@ class ButtonParam : public Param
 {
     
 protected:
-    boost::shared_ptr<Button_Knob> _buttonKnob;
+    boost::weak_ptr<Button_Knob> _buttonKnob;
 public:
     
     ButtonParam(const boost::shared_ptr<Button_Knob>& knob);
@@ -1024,7 +1025,7 @@ class GroupParam : public Param
 {
     
 protected:
-    boost::shared_ptr<Group_Knob> _groupKnob;
+    boost::weak_ptr<Group_Knob> _groupKnob;
 public:
     
     GroupParam(const boost::shared_ptr<Group_Knob>& knob);
@@ -1052,7 +1053,7 @@ class PageParam : public Param
 {
     
 protected:
-    boost::shared_ptr<Page_Knob> _pageKnob;
+    boost::weak_ptr<Page_Knob> _pageKnob;
 public:
     
     PageParam(const boost::shared_ptr<Page_Knob>& knob);
@@ -1070,7 +1071,7 @@ class ParametricParam : public Param
 {
     
 protected:
-    boost::shared_ptr<Parametric_Knob> _parametricKnob;
+    boost::weak_ptr<Parametric_Knob> _parametricKnob;
 public:
     
     ParametricParam(const boost::shared_ptr<Parametric_Knob>& knob);

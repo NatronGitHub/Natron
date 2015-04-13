@@ -21,6 +21,9 @@
 #include <cfloat>
 #include <stdexcept>
 
+#include <boost/weak_ptr.hpp>
+
+
 #include <QtCore/QString>
 #include <QHBoxLayout>
 #include <QPushButton>
@@ -95,7 +98,7 @@ struct KnobGui::KnobGuiPrivate
     QHBoxLayout* fieldLayout; //< the layout containing the widgets of the knob
 
     ////A vector of all other knobs on the same line.
-    std::vector< boost::shared_ptr< KnobI > > knobsOnSameLine;
+    std::vector< boost::weak_ptr< KnobI > > knobsOnSameLine;
     QGridLayout* containerLayout;
     QWidget* field;
     Natron::Label* descriptionLabel;
@@ -129,8 +132,8 @@ struct KnobGui::KnobGuiPrivate
     
     void removeFromKnobsOnSameLineVector(const boost::shared_ptr<KnobI>& knob)
     {
-        for (std::vector< boost::shared_ptr< KnobI > >::iterator it = knobsOnSameLine.begin(); it != knobsOnSameLine.end(); ++it) {
-            if (*it == knob) {
+        for (std::vector< boost::weak_ptr< KnobI > >::iterator it = knobsOnSameLine.begin(); it != knobsOnSameLine.end(); ++it) {
+            if (it->lock() == knob) {
                 knobsOnSameLine.erase(it);
                 break;
             }
@@ -191,8 +194,8 @@ KnobGui::getContainer()
 void
 KnobGui::removeGui()
 {
-    for (std::vector< boost::shared_ptr< KnobI > >::iterator it = _imp->knobsOnSameLine.begin(); it!=_imp->knobsOnSameLine.end(); ++it) {
-        KnobGui* kg = _imp->container->getKnobGui(*it);
+    for (std::vector< boost::weak_ptr< KnobI > >::iterator it = _imp->knobsOnSameLine.begin(); it!=_imp->knobsOnSameLine.end(); ++it) {
+        KnobGui* kg = _imp->container->getKnobGui(it->lock());
         assert(kg);
         kg->_imp->removeFromKnobsOnSameLineVector(getKnob());
     }
@@ -252,7 +255,9 @@ KnobGui::createGUI(QGridLayout* containerLayout,
 
     _imp->containerLayout = containerLayout;
     _imp->fieldLayout = layout;
-    _imp->knobsOnSameLine = knobsOnSameLine;
+    for (std::vector< boost::shared_ptr< KnobI > >::const_iterator it = knobsOnSameLine.begin(); it!=knobsOnSameLine.end(); ++it) {
+        _imp->knobsOnSameLine.push_back(*it);
+    }
     _imp->field = fieldContainer;
     _imp->descriptionLabel = label;
     _imp->isOnNewLine = isOnNewLine;
@@ -1188,7 +1193,7 @@ KnobGui::hide()
     ////are hidden.
     bool shouldRemoveWidget = true;
     for (U32 i = 0; i < _imp->knobsOnSameLine.size(); ++i) {
-        KnobGui* sibling = _imp->container->getKnobGui(_imp->knobsOnSameLine[i]);
+        KnobGui* sibling = _imp->container->getKnobGui(_imp->knobsOnSameLine[i].lock());
         if ( sibling && !sibling->isSecretRecursive() ) {
             shouldRemoveWidget = false;
         }

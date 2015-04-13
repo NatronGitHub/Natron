@@ -426,7 +426,7 @@ MultiInstancePanel::initializeKnobs()
             assert(other);
             Page_Knob* otherPage = dynamic_cast<Page_Knob*>( other.get() );
             assert(otherPage);
-            const std::vector<boost::shared_ptr<KnobI> > & otherChildren = otherPage->getChildren();
+            std::vector<boost::shared_ptr<KnobI> >  otherChildren = otherPage->getChildren();
             bool isNodePage = otherPage->getName() == "Node";
             for (U32 j = 0; j < otherChildren.size(); ++j) {
                 if ( !otherChildren[j]->isInstanceSpecific() ) {

@@ -247,7 +247,7 @@ public:
 
     void markInputNull(Edge* e);
 
-    const std::map<boost::shared_ptr<KnobI>,KnobGui*> & getKnobs() const;
+    const std::map<boost::weak_ptr<KnobI>,KnobGui*> & getKnobs() const;
     static const int DEFAULT_OFFSET_BETWEEN_NODES = 30;
 
 

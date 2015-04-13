@@ -1928,7 +1928,7 @@ NodeGui::paint(QPainter* /*painter*/,
     //nothing special
 }
 
-const std::map<boost::shared_ptr<KnobI>,KnobGui*> &
+const std::map<boost::weak_ptr<KnobI>,KnobGui*> &
 NodeGui::getKnobs() const
 {
     assert(_settingsPanel);

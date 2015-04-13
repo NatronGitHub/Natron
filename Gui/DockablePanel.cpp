@@ -264,7 +264,7 @@ struct DockablePanelPrivate
     FloatingWidget* _floatingWidget;
 
     /*a map storing for each knob a pointer to their GUI.*/
-    std::map<boost::shared_ptr<KnobI>,KnobGui*> _knobs;
+    std::map<boost::weak_ptr<KnobI>,KnobGui*> _knobs;
     
     ///THe visibility of the knobs before the hide/show unmodified button is clicked
     ///to show only the knobs that need to afterwards
@@ -680,9 +680,9 @@ DockablePanel::~DockablePanel()
 
     ///Delete the knob gui if they weren't before
     ///normally the onKnobDeletion() function should have cleared them
-    for (std::map<boost::shared_ptr<KnobI>,KnobGui*>::const_iterator it = _imp->_knobs.begin(); it != _imp->_knobs.end(); ++it) {
+    for (std::map<boost::weak_ptr<KnobI>,KnobGui*>::const_iterator it = _imp->_knobs.begin(); it != _imp->_knobs.end(); ++it) {
         if (it->second) {
-            it->first->setKnobGuiPointer(0);
+            it->first.lock()->setKnobGuiPointer(0);
             it->second->callDeleteLater();
         }
     }
@@ -993,10 +993,10 @@ DockablePanelPrivate::initializeKnobVector(const std::vector< boost::shared_ptr<
             
             Page_Knob* isParentPage = dynamic_cast<Page_Knob*>(parentKnob.get());
             if (isParentPage) {
-                const std::vector<boost::shared_ptr<KnobI> > & children = isParentPage->getChildren();
+                std::vector<boost::shared_ptr<KnobI> >  children = isParentPage->getChildren();
                 findKnobsOnSameLine(children, knobs[i], knobsOnSameLine);
             } else if (isParentGroup) {
-                const std::vector<boost::shared_ptr<KnobI> > & children = isParentGroup->getChildren();
+                std::vector<boost::shared_ptr<KnobI> >  children = isParentGroup->getChildren();
                 findKnobsOnSameLine(children, knobs[i], knobsOnSameLine);
             } else {
                 findKnobsOnSameLine(knobs, knobs[i], knobsOnSameLine);
@@ -1053,8 +1053,8 @@ DockablePanel::initializeKnobs()
 KnobGui*
 DockablePanel::getKnobGui(const boost::shared_ptr<KnobI> & knob) const
 {
-    for (std::map<boost::shared_ptr<KnobI>,KnobGui*>::const_iterator it = _imp->_knobs.begin(); it != _imp->_knobs.end(); ++it) {
-        if (it->first == knob) {
+    for (std::map<boost::weak_ptr<KnobI>,KnobGui*>::const_iterator it = _imp->_knobs.begin(); it != _imp->_knobs.end(); ++it) {
+        if (it->first.lock() == knob) {
             return it->second;
         }
     }
@@ -1065,7 +1065,8 @@ DockablePanel::getKnobGui(const boost::shared_ptr<KnobI> & knob) const
 KnobGui*
 DockablePanelPrivate::createKnobGui(const boost::shared_ptr<KnobI> &knob)
 {
-    std::map<boost::shared_ptr<KnobI>,KnobGui*>::iterator found = _knobs.find(knob);
+    boost::weak_ptr<KnobI> k = knob;
+    std::map<boost::weak_ptr<KnobI>,KnobGui*>::iterator found = _knobs.find(k);
 
     if ( found != _knobs.end() ) {
         return found->second;
@@ -1152,8 +1153,8 @@ DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI> & knob,
     boost::shared_ptr<Group_Knob> isGroup = boost::dynamic_pointer_cast<Group_Knob>(knob);
     boost::shared_ptr<Page_Knob> isPage = boost::dynamic_pointer_cast<Page_Knob>(knob);
     KnobGui* ret = 0;
-    for (std::map<boost::shared_ptr<KnobI>,KnobGui*>::const_iterator it = _knobs.begin(); it != _knobs.end(); ++it) {
-        if ( (it->first == knob) && it->second ) {
+    for (std::map<boost::weak_ptr<KnobI>,KnobGui*>::const_iterator it = _knobs.begin(); it != _knobs.end(); ++it) {
+        if ( (it->first.lock() == knob) && it->second ) {
             if (isPage) {
                 return it->second;
             } else if ( isGroup && ( ( !isGroup->isTab() && it->second->hasWidgetBeenCreated() ) || isGroup->isTab() ) ) {
@@ -1246,7 +1247,7 @@ DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI> & knob,
                         assert(page != _pages.end());
                         parentTabGroup = page->second.groupAsTab;
                     } else {
-                        std::map<boost::shared_ptr<KnobI>,KnobGui*>::iterator it = _knobs.find(parentParent);
+                        std::map<boost::weak_ptr<KnobI>,KnobGui*>::iterator it = _knobs.find(parentParent);
                         assert(it != _knobs.end());
                         Group_KnobGui* parentParentGroupGui = dynamic_cast<Group_KnobGui*>(it->second);
                         assert(parentParentGroupGui);
@@ -1484,9 +1485,11 @@ DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI> & knob,
 
     ///if the knob is a group, create all the children
     if (isGroup) {
-        initializeKnobVector(isGroup->getChildren(), lastRowWidget);
+        std::vector<boost::shared_ptr<KnobI> > children = isGroup->getChildren();
+        initializeKnobVector(children, lastRowWidget);
     } else if (isPage) {
-        initializeKnobVector(isPage->getChildren(), lastRowWidget);
+        std::vector<boost::shared_ptr<KnobI> > children = isPage->getChildren();
+        initializeKnobVector(children, lastRowWidget);
     }
 
     return ret;
@@ -1940,7 +1943,7 @@ DockablePanel::deleteKnobGui(const boost::shared_ptr<KnobI>& knob)
             found->second.currentRow = 0;
             _imp->_pages.erase(found);
             
-            const std::vector<boost::shared_ptr<KnobI> >& children = isPage->getChildren();
+            std::vector<boost::shared_ptr<KnobI> > children = isPage->getChildren();
             for (U32 i = 0; i < children.size(); ++i) {
                 deleteKnobGui(children[i]);
             }
@@ -1950,7 +1953,7 @@ DockablePanel::deleteKnobGui(const boost::shared_ptr<KnobI>& knob)
         
         Group_Knob* isGrp = dynamic_cast<Group_Knob*>(knob.get());
         if (isGrp) {
-            const std::vector<boost::shared_ptr<KnobI> >& children = isGrp->getChildren();
+            std::vector<boost::shared_ptr<KnobI> > children = isGrp->getChildren();
             for (U32 i = 0; i < children.size(); ++i) {
                 deleteKnobGui(children[i]);
             }
@@ -1970,7 +1973,7 @@ DockablePanel::deleteKnobGui(const boost::shared_ptr<KnobI>& knob)
                 groupAsTab = page->second.groupAsTab;
                 
             } else {
-                std::map<boost::shared_ptr<KnobI>,KnobGui*>::iterator found  = _imp->_knobs.find(knob);
+                std::map<boost::weak_ptr<KnobI>,KnobGui*>::iterator found  = _imp->_knobs.find(knob);
                 assert(found != _imp->_knobs.end());
                 Group_KnobGui* parentGroupGui = dynamic_cast<Group_KnobGui*>(found->second);
                 assert(parentGroupGui);
@@ -1979,19 +1982,19 @@ DockablePanel::deleteKnobGui(const boost::shared_ptr<KnobI>& knob)
             assert(groupAsTab);
             groupAsTab->removeTab(isGrp);
             
-            std::map<boost::shared_ptr<KnobI>,KnobGui*>::iterator it = _imp->_knobs.find(knob);
+            std::map<boost::weak_ptr<KnobI>,KnobGui*>::iterator it = _imp->_knobs.find(knob);
             if (it != _imp->_knobs.end()) {
-                it->first->setKnobGuiPointer(0);
+                it->first.lock()->setKnobGuiPointer(0);
                 delete it->second;
                 _imp->_knobs.erase(it);
             }
         
         } else {
             
-            std::map<boost::shared_ptr<KnobI>,KnobGui*>::iterator it = _imp->_knobs.find(knob);
+            std::map<boost::weak_ptr<KnobI>,KnobGui*>::iterator it = _imp->_knobs.find(knob);
             if (it != _imp->_knobs.end()) {
                 it->second->removeGui();
-                it->first->setKnobGuiPointer(0);
+                it->first.lock()->setKnobGuiPointer(0);
                 delete it->second;
                 _imp->_knobs.erase(it);
             }
@@ -2034,7 +2037,7 @@ DockablePanel::isMinimized() const
     return _imp->_minimized;
 }
 
-const std::map<boost::shared_ptr<KnobI>,KnobGui*> &
+const std::map<boost::weak_ptr<KnobI>,KnobGui*> &
 DockablePanel::getKnobs() const
 {
     return _imp->_knobs;
@@ -2300,9 +2303,10 @@ DockablePanel::setKeyOnAllParameters()
     int time = getGui()->getApp()->getTimeLine()->currentFrame();
 
     AddKeysCommand::KeysToAddList keys;
-    for (std::map<boost::shared_ptr<KnobI>,KnobGui*>::iterator it = _imp->_knobs.begin(); it != _imp->_knobs.end(); ++it) {
-        if (it->first->isAnimationEnabled()) {
-            for (int i = 0; i < it->first->getDimension(); ++i) {
+    for (std::map<boost::weak_ptr<KnobI>,KnobGui*>::iterator it = _imp->_knobs.begin(); it != _imp->_knobs.end(); ++it) {
+        boost::shared_ptr<KnobI> knob = it->first.lock();
+        if (knob->isAnimationEnabled()) {
+            for (int i = 0; i < knob->getDimension(); ++i) {
                 std::list<CurveGui*> curves = getGui()->getCurveEditor()->findCurve(it->second,i);
                 for (std::list<CurveGui*>::iterator it2 = curves.begin(); it2 != curves.end(); ++it2) {
                     boost::shared_ptr<AddKeysCommand::KeysForCurve> curveKeys(new AddKeysCommand::KeysForCurve);
@@ -2311,10 +2315,10 @@ DockablePanel::setKeyOnAllParameters()
                     std::vector<KeyFrame> kVec;
                     KeyFrame kf;
                     kf.setTime(time);
-                    Knob<int>* isInt = dynamic_cast<Knob<int>*>( it->first.get() );
-                    Knob<bool>* isBool = dynamic_cast<Knob<bool>*>( it->first.get() );
-                    AnimatingString_KnobHelper* isString = dynamic_cast<AnimatingString_KnobHelper*>( it->first.get() );
-                    Knob<double>* isDouble = dynamic_cast<Knob<double>*>( it->first.get() );
+                    Knob<int>* isInt = dynamic_cast<Knob<int>*>( knob.get() );
+                    Knob<bool>* isBool = dynamic_cast<Knob<bool>*>( knob.get() );
+                    AnimatingString_KnobHelper* isString = dynamic_cast<AnimatingString_KnobHelper*>( knob.get() );
+                    Knob<double>* isDouble = dynamic_cast<Knob<double>*>( knob.get() );
                     
                     if (isInt) {
                         kf.setValue( isInt->getValueAtTime(time,i) );
@@ -2346,9 +2350,10 @@ void
 DockablePanel::removeAnimationOnAllParameters()
 {
     std::vector< std::pair<CurveGui*,KeyFrame > > keysToRemove;
-    for (std::map<boost::shared_ptr<KnobI>,KnobGui*>::iterator it = _imp->_knobs.begin(); it != _imp->_knobs.end(); ++it) {
-        if (it->first->isAnimationEnabled()) {
-            for (int i = 0; i < it->first->getDimension(); ++i) {
+    for (std::map<boost::weak_ptr<KnobI>,KnobGui*>::iterator it = _imp->_knobs.begin(); it != _imp->_knobs.end(); ++it) {
+        boost::shared_ptr<KnobI> knob = it->first.lock();
+        if (knob->isAnimationEnabled()) {
+            for (int i = 0; i < knob->getDimension(); ++i) {
                 std::list<CurveGui*> curves = getGui()->getCurveEditor()->findCurve(it->second,i);
                 
                 for (std::list<CurveGui*>::iterator it2 = curves.begin(); it2 != curves.end(); ++it2) {
@@ -2410,12 +2415,13 @@ DockablePanel::onHideUnmodifiedButtonClicked(bool checked)
 {
     if (checked) {
         _imp->_knobsVisibilityBeforeHideModif.clear();
-        for (std::map<boost::shared_ptr<KnobI>,KnobGui*>::iterator it = _imp->_knobs.begin(); it != _imp->_knobs.end(); ++it) {
-            Group_Knob* isGroup = dynamic_cast<Group_Knob*>(it->first.get());
-            Parametric_Knob* isParametric = dynamic_cast<Parametric_Knob*>(it->first.get());
+        for (std::map<boost::weak_ptr<KnobI>,KnobGui*>::iterator it = _imp->_knobs.begin(); it != _imp->_knobs.end(); ++it) {
+            boost::shared_ptr<KnobI> knob = it->first.lock();
+            Group_Knob* isGroup = dynamic_cast<Group_Knob*>(knob.get());
+            Parametric_Knob* isParametric = dynamic_cast<Parametric_Knob*>(knob.get());
             if (!isGroup && !isParametric) {
                 _imp->_knobsVisibilityBeforeHideModif.insert(std::make_pair(it->second,it->second->isSecretRecursive()));
-                if (!it->first->hasModifications()) {
+                if (!knob->hasModifications()) {
                     it->second->hide();
                 }
             }
@@ -2825,7 +2831,7 @@ ManageUserParamsDialog::ManageUserParamsDialog(DockablePanel* panel,QWidget* par
                 }
                 _imp->items.push_back(pageItem);
                 
-                const std::vector<boost::shared_ptr<KnobI> >& children = page->getChildren();
+                std::vector<boost::shared_ptr<KnobI> > children = page->getChildren();
                 _imp->initializeKnobs(children, pageItem.item, markedKnobs);
                 
             }
@@ -2900,7 +2906,8 @@ ManageUserParamsDialogPrivate::initializeKnobs(const std::vector<boost::shared_p
         
         Group_Knob* isGrp = dynamic_cast<Group_Knob*>(it2->get());
         if (isGrp) {
-            initializeKnobs(isGrp->getChildren(), i.item, markedKnobs);
+            std::vector<boost::shared_ptr<KnobI> > children = isGrp->getChildren();
+            initializeKnobs(children, i.item, markedKnobs);
         }
     }
 }
@@ -3027,8 +3034,9 @@ ManageUserParamsDialog::onEditClicked()
                                                                                 tr("This parameter has one or several "
                                                                                    "parameters from which other parameters "
                                                                                    "of the project rely on through expressions "
-                                                                                   "or links. Editing this parameter will "
-                                                                                   "remove these expressions. Do you wish to continue ?").toStdString(), false);
+                                                                                   "or links. Editing this parameter may "
+                                                                                   "remove these expressions if the script-name is changed.\n"
+                                                                                   "Do you want to continue?").toStdString(), false);
                         if (rep == Natron::eStandardButtonNo) {
                             return;
                         }
@@ -3899,10 +3907,11 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,const boost::shared_ptr<KnobI>
     }
     
     
-    const std::map<boost::shared_ptr<KnobI>,KnobGui*>& knobs = _imp->panel->getKnobs();
-    for (std::map<boost::shared_ptr<KnobI>,KnobGui*>::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
-        if (it->first->isUserKnob()) {
-            Group_Knob* isGrp = dynamic_cast<Group_Knob*>(it->first.get());
+    const std::map<boost::weak_ptr<KnobI>,KnobGui*>& knobs = _imp->panel->getKnobs();
+    for (std::map<boost::weak_ptr<KnobI>,KnobGui*>::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+        boost::shared_ptr<KnobI> knob = it->first.lock();
+        if (knob->isUserKnob()) {
+            Group_Knob* isGrp = dynamic_cast<Group_Knob*>(knob.get());
             if (isGrp) {
                 _imp->userGroups.push_back(isGrp);
             }
@@ -4453,6 +4462,8 @@ AddKnobDialogPrivate::createKnobFromSelection(int index,int optionalGroupIndex)
         default:
             break;
     }
+    
+    
     assert(knob);
     knob->setAsUserKnob();
     if (knob->canAnimate()) {
@@ -4491,6 +4502,11 @@ AddKnobDialogPrivate::createKnobFromSelection(int index,int optionalGroupIndex)
 
         }
     }
+    KnobHolder* holder = panel->getHolder();
+    assert(holder);
+    EffectInstance* isEffect = dynamic_cast<EffectInstance*>(holder);
+    assert(isEffect);
+    isEffect->getNode()->declarePythonFields();
 }
 
 Group_Knob*
@@ -4559,6 +4575,7 @@ AddKnobDialog::onOkClicked()
         ///If the knob was in a group, we need to place it at the same index
         int oldIndexInGroup = -1;
         
+        std::vector<std::pair<std::string,bool> > expressions;
         if (_imp->knob) {
             
             oldParentPage = getTopLevelPageForKnob(_imp->knob.get());
@@ -4566,7 +4583,7 @@ AddKnobDialog::onOkClicked()
             boost::shared_ptr<KnobI> parent = _imp->knob->getParentKnob();
             Group_Knob* isParentGrp = dynamic_cast<Group_Knob*>(parent.get());
             if (isParentGrp && isParentGrp == _imp->getSelectedGroup()) {
-                const std::vector<boost::shared_ptr<KnobI> >& children = isParentGrp->getChildren();
+                std::vector<boost::shared_ptr<KnobI> > children = isParentGrp->getChildren();
                 for (U32 i = 0; i < children.size(); ++i) {
                     if (children[i] == _imp->knob) {
                         oldIndexInGroup = i;
@@ -4574,7 +4591,7 @@ AddKnobDialog::onOkClicked()
                     }
                 }
             } else {
-                const std::vector<boost::shared_ptr<KnobI> >& children = oldParentPage->getChildren();
+                std::vector<boost::shared_ptr<KnobI> > children = oldParentPage->getChildren();
                 for (U32 i = 0; i < children.size(); ++i) {
                     if (children[i] == _imp->knob) {
                         oldIndexInGroup = i;
@@ -4582,7 +4599,14 @@ AddKnobDialog::onOkClicked()
                     }
                 }
             }
+            expressions.resize(_imp->knob->getDimension());
+            for (std::size_t i = 0 ; i < expressions.size(); ++i) {
+                std::string expr = _imp->knob->getExpression(i);
+                bool useRetVar = _imp->knob->isExpressionUsingRetVariable(i);
+                expressions[i] = std::make_pair(expr,useRetVar);
+            }
             _imp->panel->getHolder()->removeDynamicKnob(_imp->knob.get());
+            
             _imp->knob.reset();
         } else {
             assert(_imp->typeChoice);
@@ -4590,6 +4614,7 @@ AddKnobDialog::onOkClicked()
         }
         _imp->createKnobFromSelection(index, oldIndexInGroup);
         assert(_imp->knob);
+        
         if (oldParentPage && !_imp->knob->getParentKnob()) {
             if (oldIndexInGroup == -1) {
                 oldParentPage->addKnob(_imp->knob);
@@ -4599,6 +4624,17 @@ AddKnobDialog::onOkClicked()
         }
         if (_imp->originalKnobSerialization) {
             _imp->knob->clone(_imp->originalKnobSerialization->getKnob().get());
+        }
+        if (!expressions.empty()) {
+            try {
+                for (std::size_t i = 0 ; i < expressions.size(); ++i) {
+                    if (!expressions[i].first.empty()) {
+                        _imp->knob->setExpression(i, expressions[i].first, expressions[i].second);
+                    }
+                }
+            } catch (...) {
+                
+            }
         }
     }
     

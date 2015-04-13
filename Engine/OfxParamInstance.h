@@ -21,6 +21,7 @@
 #include <vector>
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
+#include <boost/weak_ptr.hpp>
 #endif
 CLANG_DIAG_OFF(deprecated)
 #include <QStringList>
@@ -102,7 +103,7 @@ public:
     virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
 
 private:
-    boost::shared_ptr<Button_Knob> _knob;
+    boost::weak_ptr<Button_Knob> _knob;
 };
 
 
@@ -147,7 +148,7 @@ public Q_SLOTS:
     void onKnobAnimationLevelChanged(int dim,int lvl);
 
 private:
-    boost::shared_ptr<Int_Knob> _knob;
+    boost::weak_ptr<Int_Knob> _knob;
 };
 
 class OfxDoubleInstance
@@ -195,7 +196,7 @@ public Q_SLOTS:
     void onKnobAnimationLevelChanged(int,int lvl);
 
 private:
-    boost::shared_ptr<Double_Knob> _knob;
+    boost::weak_ptr<Double_Knob> _knob;
     OfxEffectInstance* _node;
 };
 
@@ -238,7 +239,7 @@ public Q_SLOTS:
     void onKnobAnimationLevelChanged(int,int lvl);
 
 private:
-    boost::shared_ptr<Bool_Knob> _knob;
+    boost::weak_ptr<Bool_Knob> _knob;
 };
 
 class OfxChoiceInstance
@@ -283,7 +284,7 @@ public Q_SLOTS:
 
 private:
     std::vector<std::string> _entries;
-    boost::shared_ptr<Choice_Knob> _knob;
+    boost::weak_ptr<Choice_Knob> _knob;
 };
 
 class OfxRGBAInstance
@@ -329,7 +330,7 @@ public Q_SLOTS:
     void onKnobAnimationLevelChanged(int,int lvl);
 
 private:
-    boost::shared_ptr<Color_Knob> _knob;
+    boost::weak_ptr<Color_Knob> _knob;
 };
 
 
@@ -376,7 +377,7 @@ public Q_SLOTS:
     void onKnobAnimationLevelChanged(int,int lvl);
 
 private:
-    boost::shared_ptr<Color_Knob> _knob;
+    boost::weak_ptr<Color_Knob> _knob;
 };
 
 class OfxDouble2DInstance
@@ -425,7 +426,7 @@ public Q_SLOTS:
 
 private:
     OfxEffectInstance* _node;
-    boost::shared_ptr<Double_Knob> _knob;
+    boost::weak_ptr<Double_Knob> _knob;
 };
 
 
@@ -471,7 +472,7 @@ public Q_SLOTS:
 
 private:
     OfxEffectInstance* _node;
-    boost::shared_ptr<Int_Knob> _knob;
+    boost::weak_ptr<Int_Knob> _knob;
 };
 
 class OfxDouble3DInstance
@@ -521,7 +522,7 @@ public Q_SLOTS:
 
 private:
     OfxEffectInstance* _node;
-    boost::shared_ptr<Double_Knob> _knob;
+    boost::weak_ptr<Double_Knob> _knob;
 };
 
 class OfxInteger3DInstance
@@ -566,7 +567,7 @@ public Q_SLOTS:
 
 private:
     OfxEffectInstance* _node;
-    boost::shared_ptr<Int_Knob> _knob;
+    boost::weak_ptr<Int_Knob> _knob;
 };
 
 class OfxGroupInstance
@@ -594,7 +595,7 @@ public:
     virtual void setSecret() OVERRIDE FINAL;
 
 private:
-    boost::shared_ptr<Group_Knob> _groupKnob;
+    boost::weak_ptr<Group_Knob> _groupKnob;
 };
 
 class OfxPageInstance
@@ -616,7 +617,7 @@ public:
     virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
 
 private:
-    boost::shared_ptr<Page_Knob> _pageKnob;
+    boost::weak_ptr<Page_Knob> _pageKnob;
 };
 
 
@@ -686,10 +687,10 @@ private:
     void projectEnvVar_setProxy(std::string& str) const;
     
     OfxEffectInstance* _node;
-    boost::shared_ptr<File_Knob> _fileKnob;
-    boost::shared_ptr<OutputFile_Knob> _outputFileKnob;
-    boost::shared_ptr<String_Knob> _stringKnob;
-    boost::shared_ptr<Path_Knob> _pathKnob;
+    boost::weak_ptr<File_Knob> _fileKnob;
+    boost::weak_ptr<OutputFile_Knob> _outputFileKnob;
+    boost::weak_ptr<String_Knob> _stringKnob;
+    boost::weak_ptr<Path_Knob> _pathKnob;
     Natron::ThreadStorage<std::string> _localString;
 };
 
@@ -756,7 +757,7 @@ private:
                                                            OfxPropertySetHandle outArgsRaw);
 
     OfxEffectInstance* _node;
-    boost::shared_ptr<String_Knob> _knob;
+    boost::weak_ptr<String_Knob> _knob;
     customParamInterpolationV1Entry_t _customParamInterpolationV1Entry;
     Natron::ThreadStorage<std::string> _localString;
 };
@@ -828,7 +829,7 @@ private:
     OFX::Host::Param::Descriptor & _descriptor;
     Natron::OfxOverlayInteract* _overlayInteract;
     OfxEffectInstance* _effect;
-    boost::shared_ptr<Parametric_Knob> _knob;
+    boost::weak_ptr<Parametric_Knob> _knob;
 };
 
 #endif // NATRON_ENGINE_OFXPARAMINSTANCE_H_

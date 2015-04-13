@@ -908,6 +908,9 @@ public:
     
     bool hasAtLeastOneChannelToProcess() const;
     
+    void removeParameterFromPython(const std::string& parameterName);
+
+    
 private:
     
     void setNameInternal(const std::string& name);
