@@ -1254,6 +1254,19 @@ FileGathererThread::run()
 }
 
 
+static bool isVideoFileExtension(const std::string& ext)
+{
+    if (ext == "mov" ||
+        ext == "avi" ||
+        ext == "mp4" ||
+        ext == "mpeg" ||
+        ext == "flv" ||
+        ext == "mkv") {
+        return true;
+    }
+    return false;
+}
+
 typedef std::list< std::pair< boost::shared_ptr<SequenceParsing::SequenceFromFiles> ,QFileInfo > > FileSequences;
 
 #define KERNEL_INCR() \
@@ -1351,15 +1364,17 @@ FileGathererThread::gatheringKernel(const boost::shared_ptr<FileSystemItem>& ite
             /// to create a new one
             SequenceParsing::FileNameContent fileContent(absoluteFilePath);
             
-            ///Note that we use a reverse iterator because we have more chance to find a match in the last recently added entries
-            for (FileSequences::reverse_iterator it = sequences.rbegin(); it != sequences.rend(); ++it) {
-                
-                if ( it->first && it->first->tryInsertFile(fileContent,false) ) {
+            if (!isVideoFileExtension(fileContent.getExtension())) {
+                ///Note that we use a reverse iterator because we have more chance to find a match in the last recently added entries
+                for (FileSequences::reverse_iterator it = sequences.rbegin(); it != sequences.rend(); ++it) {
                     
-                    foundMatchingSequence = true;
-                    break;
+                    if ( it->first && it->first->tryInsertFile(fileContent,false) ) {
+                        
+                        foundMatchingSequence = true;
+                        break;
+                    }
+                    
                 }
-                
             }
             
             if (!foundMatchingSequence) {
