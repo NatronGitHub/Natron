@@ -106,23 +106,26 @@ struct MultiInstancePanelPrivate
 
     ///same as above but when we're dealing with unslave/slaving parameters
     int knobValueRecursion;
+    
+    bool redrawOnSelectionChanged;
 
     MultiInstancePanelPrivate(MultiInstancePanel* publicI,
                               const boost::shared_ptr<NodeGui> & node)
-        : publicInterface(publicI)
-          , guiCreated(false)
-          , mainInstance(node)
-          , instances()
-          , view(0)
-          , model(0)
-          , buttonsContainer(0)
-          , buttonsLayout(0)
-          , addButton(0)
-          , removeButton(0)
-          , selectAll(0)
-          , resetTracksButton(0)
-          , executingKnobValueChanged(false)
-          , knobValueRecursion(0)
+    : publicInterface(publicI)
+    , guiCreated(false)
+    , mainInstance(node)
+    , instances()
+    , view(0)
+    , model(0)
+    , buttonsContainer(0)
+    , buttonsLayout(0)
+    , addButton(0)
+    , removeButton(0)
+    , selectAll(0)
+    , resetTracksButton(0)
+    , executingKnobValueChanged(false)
+    , knobValueRecursion(0)
+    , redrawOnSelectionChanged(true)
     {
     }
 
@@ -264,6 +267,13 @@ MultiInstancePanel::MultiInstancePanel(const boost::shared_ptr<NodeGui> & node)
 
 MultiInstancePanel::~MultiInstancePanel()
 {
+}
+
+void
+MultiInstancePanel::setRedrawOnSelectionChanged(bool redraw)
+{
+    assert(QThread::currentThread() == qApp->thread());
+    _imp->redrawOnSelectionChanged = redraw;
 }
 
 ////////////// TableView delegate
@@ -578,8 +588,8 @@ public:
         if (_firstRedoCalled) {
             _node->activate();
             _panel->addRow(_node);
+            _panel->getMainInstance()->getApp()->redrawAllViewers();
         }
-        _panel->getMainInstance()->getApp()->redrawAllViewers();
         _firstRedoCalled = true;
         setText( QObject::tr("Add %1").arg( _node->getLabel().c_str() ) );
     }
@@ -682,8 +692,8 @@ MultiInstancePanelPrivate::addTableRow(const boost::shared_ptr<Natron::Node> & n
     ///first add the enabled column
     {
         QCheckBox* checkbox = new QCheckBox();
-        QObject::connect( checkbox,SIGNAL( toggled(bool) ),publicInterface,SLOT( onCheckBoxChecked(bool) ) );
         checkbox->setChecked( !node->isNodeDisabled() );
+        QObject::connect( checkbox,SIGNAL( toggled(bool) ),publicInterface,SLOT( onCheckBoxChecked(bool) ) );
         view->setCellWidget(newRowIndex, COL_ENABLED, checkbox);
         TableItem* newItem = new TableItem;
         newItem->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsEditable | Qt::ItemIsUserCheckable);
@@ -746,7 +756,7 @@ MultiInstancePanelPrivate::addTableRow(const boost::shared_ptr<Natron::Node> & n
     }
 
     ///clear current selection
-    view->selectionModel()->clear();
+    //view->selectionModel()->clear();
 
     ///select the new item
     QModelIndex newIndex = model->index(newRowIndex, COL_ENABLED);
@@ -1086,7 +1096,9 @@ MultiInstancePanel::onSelectionChanged(const QItemSelection & newSelection,
             if ( knobs[i]->isDeclaredByPlugin() && !knobs[i]->isInstanceSpecific() && !knobs[i]->getIsSecret() ) {
                 for (int j = 0; j < knobs[i]->getDimension(); ++j) {
                     if ( knobs[i]->isSlave(j) ) {
+                        knobs[i]->blockValueChanges();
                         knobs[i]->unSlave(j, copyOnUnSlave);
+                        knobs[i]->unblockValueChanges();
                     }
                 }
             }
@@ -1180,7 +1192,9 @@ MultiInstancePanel::onSelectionChanged(const QItemSelection & newSelection,
         }
     }
     
-    getGui()->redrawAllViewers();
+    if (_imp->redrawOnSelectionChanged) {
+        getGui()->redrawAllViewers();
+    }
 } // onSelectionChanged
 
 void
@@ -1357,11 +1371,14 @@ MultiInstancePanel::onCheckBoxChecked(bool checked)
             Bool_Knob* bKnob = dynamic_cast<Bool_Knob*>( enabledKnob.get() );
             assert(bKnob);
             bKnob->setValue(!checked, 0);
+            QItemSelection sel;
+            QItemSelectionRange r(_imp->model->index(i, 0),_imp->model->index(i ,cc - 1 ));
+            sel.append(r);
+
             if (!checked) {
-                QItemSelection sel;
-                QItemSelectionRange r(_imp->model->index(i, 0),_imp->model->index(i ,cc - 1 ));
-                sel.append(r);
                 _imp->view->selectionModel()->select(sel, QItemSelectionModel::Clear);
+            } else {
+                _imp->view->selectionModel()->select(sel, QItemSelectionModel::Select);
             }
             break;
         }

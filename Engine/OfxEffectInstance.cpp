@@ -486,7 +486,10 @@ OfxEffectInstance::tryInitializeOverlayInteracts()
             }
         }
         
-        getApp()->redrawAllViewers();
+        //For multi-instances, redraw is already taken care of by the GUI
+        if (!getNode()->getParentMultiInstance()) {
+            getApp()->redrawAllViewers();
+        }
     }
     
     

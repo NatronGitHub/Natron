@@ -393,8 +393,10 @@ TrackerGui::penDown(double scaleX,
         Double_Knob* dblKnob = dynamic_cast<Double_Knob*>( newInstanceKnob.get() );
         assert(dblKnob);
         dblKnob->beginChanges();
+        dblKnob->blockValueChanges();
         dblKnob->setValue(pos.x(), 0);
         dblKnob->setValue(pos.y(), 1);
+        dblKnob->unblockValueChanges();
         dblKnob->endChanges();
         didSomething = true;
     }

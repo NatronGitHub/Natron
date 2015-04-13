@@ -430,6 +430,13 @@ NodeGui::ensurePanelCreated()
     
     boost::shared_ptr<MultiInstancePanel> panel = getMultiInstancePanel();
     if (_mainInstancePanel && panel) {
+        panel->setRedrawOnSelectionChanged(false);
+        
+        /*
+         * If there are many children, each children may request for a redraw of the viewer which may 
+         * very well freeze the UI.
+         * We just do one redraw when all children are created
+         */
         NodeList children;
         getNode()->getChildrenMultiInstance(&children);
         for (NodeList::iterator it = children.begin() ; it != children.end(); ++it) {
@@ -440,6 +447,10 @@ NodeGui::ensurePanelCreated()
             gui->ensurePanelCreated();
             
             panel->onChildCreated(*it);
+        }
+        panel->setRedrawOnSelectionChanged(true);
+        if (!children.empty()) {
+            getDagGui()->getGui()->redrawAllViewers();
         }
     }
 }
