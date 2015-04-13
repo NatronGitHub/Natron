@@ -1856,6 +1856,7 @@ KnobHelper::clearExpression(int dimension,bool clearResults)
                                             SLOT(onExprDependencyChanged(int)));
                     }
                     otherListeners.erase(it);
+                    break;
                 }
             }
             
