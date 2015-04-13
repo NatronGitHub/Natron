@@ -21,7 +21,8 @@ FrameKey::FrameKey()
 : KeyHelper<U64>()
 , _time(0)
 , _treeVersion(0)
-, _gain(0)
+, _gain(1)
+, _gamma(1)
 , _lut(0)
 , _bitDepth(0)
 , _channels(0)
@@ -37,6 +38,7 @@ FrameKey::FrameKey()
 FrameKey::FrameKey(SequenceTime time,
                    U64 treeVersion,
                    double gain,
+                   double gamma,
                    int lut,
                    int bitDepth,
                    int channels,
@@ -50,6 +52,7 @@ FrameKey::FrameKey(SequenceTime time,
 , _time(time)
 , _treeVersion(treeVersion)
 , _gain(gain)
+, _gamma(gamma)
 , _lut(lut)
 , _bitDepth(bitDepth)
 , _channels(channels)
@@ -68,6 +71,7 @@ FrameKey::fillHash(Hash64* hash) const
     hash->append(_time);
     hash->append(_treeVersion);
     hash->append(_gain);
+    hash->append(_gamma);
     hash->append(_lut);
     hash->append(_bitDepth);
     hash->append(_channels);
@@ -100,6 +104,7 @@ FrameKey::operator==(const FrameKey & other) const
     return _time == other._time &&
     _treeVersion == other._treeVersion &&
     _gain == other._gain &&
+    _gamma == other._gamma && 
     _lut == other._lut &&
     _bitDepth == other._bitDepth &&
     _channels == other._channels &&

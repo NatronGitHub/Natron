@@ -152,69 +152,70 @@ struct ViewerGL::Implementation
 {
     Implementation(ViewerTab* parent,
                    ViewerGL* _this)
-        : pboIds()
-          , vboVerticesId(0)
-          , vboTexturesId(0)
-          , iboTriangleStripId(0)
-          , activeTextures()
-          , displayTextures()
-          , shaderRGB(0)
-          , shaderBlack(0)
-          , shaderLoaded(false)
-          , infoViewer()
-          , viewerTab(parent)
-          , zoomOrPannedSinceLastFit(false)
-          , oldClick()
-          , blankViewerInfo()
-          , displayingImageGain()
-          , displayingImageOffset()
-          , displayingImageMipMapLevel()
-          , displayingImagePremult()
-          , displayingImageLut(Natron::eViewerColorSpaceSRGB)
-          , ms(eMouseStateUndefined)
-          , hs(eHoverStateNothing)
-          , textRenderingColor(200,200,200,255)
-          , displayWindowOverlayColor(125,125,125,255)
-          , rodOverlayColor(100,100,100,255)
-          , textFont( new QFont(appFont,appFontSize) )
-          , overlay(true)
-          , supportsGLSL(true)
-          , updatingTexture(false)
-          , clearColor(0,0,0,255)
-          , menu( new Natron::Menu(_this) )
-          , persistentMessages()
-          , persistentMessageType(0)
-          , displayPersistentMessage(false)
-          , textRenderer()
-          , isUserRoISet(false)
-          , lastMousePosition()
-          , lastDragStartPos()
-          , hasMovedSincePress(false)
-          , currentViewerInfo()
-          , projectFormatMutex()
-          , projectFormat()
-          , currentViewerInfo_btmLeftBBOXoverlay()
-          , currentViewerInfo_topRightBBOXoverlay()
-          , currentViewerInfo_resolutionOverlay()
-          , pickerState(ePickerStateInactive)
-          , lastPickerPos()
-          , userRoIEnabled(false) // protected by mutex
-          , userRoI() // protected by mutex
-          , zoomCtx() // protected by mutex
-          , clipToDisplayWindow(true) // protected by mutex
-          , wipeControlsMutex()
-          , mixAmount(1.) // protected by mutex
-          , wipeAngle(M_PI / 2.) // protected by mutex
-          , wipeCenter()
-          , selectionRectangle()
-          , checkerboardTextureID(0)
-          , checkerboardTileSize(0)
-          , savedTexture(0)
-          , prevBoundTexture(0)
-          , lastRenderedImageMutex()
-          , lastRenderedImage()
-          , memoryHeldByLastRenderedImages()
-          , sizeH()
+    : pboIds()
+    , vboVerticesId(0)
+    , vboTexturesId(0)
+    , iboTriangleStripId(0)
+    , activeTextures()
+    , displayTextures()
+    , shaderRGB(0)
+    , shaderBlack(0)
+    , shaderLoaded(false)
+    , infoViewer()
+    , viewerTab(parent)
+    , zoomOrPannedSinceLastFit(false)
+    , oldClick()
+    , blankViewerInfo()
+    , displayingImageGain()
+    , displayingImageGamma()
+    , displayingImageOffset()
+    , displayingImageMipMapLevel()
+    , displayingImagePremult()
+    , displayingImageLut(Natron::eViewerColorSpaceSRGB)
+    , ms(eMouseStateUndefined)
+    , hs(eHoverStateNothing)
+    , textRenderingColor(200,200,200,255)
+    , displayWindowOverlayColor(125,125,125,255)
+    , rodOverlayColor(100,100,100,255)
+    , textFont( new QFont(appFont,appFontSize) )
+    , overlay(true)
+    , supportsGLSL(true)
+    , updatingTexture(false)
+    , clearColor(0,0,0,255)
+    , menu( new Natron::Menu(_this) )
+    , persistentMessages()
+    , persistentMessageType(0)
+    , displayPersistentMessage(false)
+    , textRenderer()
+    , isUserRoISet(false)
+    , lastMousePosition()
+    , lastDragStartPos()
+    , hasMovedSincePress(false)
+    , currentViewerInfo()
+    , projectFormatMutex()
+    , projectFormat()
+    , currentViewerInfo_btmLeftBBOXoverlay()
+    , currentViewerInfo_topRightBBOXoverlay()
+    , currentViewerInfo_resolutionOverlay()
+    , pickerState(ePickerStateInactive)
+    , lastPickerPos()
+    , userRoIEnabled(false) // protected by mutex
+    , userRoI() // protected by mutex
+    , zoomCtx() // protected by mutex
+    , clipToDisplayWindow(true) // protected by mutex
+    , wipeControlsMutex()
+    , mixAmount(1.) // protected by mutex
+    , wipeAngle(M_PI / 2.) // protected by mutex
+    , wipeCenter()
+    , selectionRectangle()
+    , checkerboardTextureID(0)
+    , checkerboardTileSize(0)
+    , savedTexture(0)
+    , prevBoundTexture(0)
+    , lastRenderedImageMutex()
+    , lastRenderedImage()
+    , memoryHeldByLastRenderedImages()
+    , sizeH()
     {
         infoViewer[0] = 0;
         infoViewer[1] = 0;
@@ -224,6 +225,7 @@ struct ViewerGL::Implementation
         activeTextures[1] = 0;
         memoryHeldByLastRenderedImages[0] = memoryHeldByLastRenderedImages[1] = 0;
         displayingImageGain[0] = displayingImageGain[1] = 1.;
+        displayingImageGamma[0] = displayingImageGamma[1] = 1.;
         displayingImageOffset[0] = displayingImageOffset[1] = 0.;
         for (int i = 0; i < 2 ; ++i) {
             displayingImageTime[i] = 0;
@@ -233,13 +235,13 @@ struct ViewerGL::Implementation
         assert( qApp && qApp->thread() == QThread::currentThread() );
         //menu->setFont( QFont(appFont,appFontSize) );
         
-//        QDesktopWidget* desktop = QApplication::desktop();
-//        QRect r = desktop->screenGeometry();
-//        sizeH = r.size();
+        //        QDesktopWidget* desktop = QApplication::desktop();
+        //        QRect r = desktop->screenGeometry();
+        //        sizeH = r.size();
         sizeH.setWidth(10000);
         sizeH.setHeight(10000);
     }
-
+    
     /////////////////////////////////////////////////////////
     // The following are only accessed from the main thread:
 
@@ -259,6 +261,7 @@ struct ViewerGL::Implementation
     QPoint oldClick;
     ImageInfo blankViewerInfo; /*!< Pointer to the info used when the viewer is disconnected.*/
     double displayingImageGain[2];
+    double displayingImageGamma[2];
     double displayingImageOffset[2];
     unsigned int displayingImageMipMapLevel[2];
     Natron::ImagePremultiplicationEnum displayingImagePremult[2];
@@ -2339,6 +2342,8 @@ ViewerGL::Implementation::activateShaderRGB(int texIndex)
     shaderRGB->setUniformValue("gain", (float)displayingImageGain[texIndex]);
     shaderRGB->setUniformValue("offset", (float)displayingImageOffset[texIndex]);
     shaderRGB->setUniformValue("lut", (GLint)displayingImageLut);
+    float gamma = (displayingImageGamma[texIndex] == 0.) ? 0.f : 1.f / (float)displayingImageGamma[texIndex];
+    shaderRGB->setUniformValue("gamma", gamma);
 }
 
 void
@@ -2385,6 +2390,7 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
                                      size_t bytesCount,
                                      const TextureRect & region,
                                      double gain,
+                                     double gamma, 
                                      double offset,
                                      int lut,
                                      int pboIndex,
@@ -2427,6 +2433,7 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
     glCheckError();
     _imp->activeTextures[textureIndex] = _imp->displayTextures[textureIndex];
     _imp->displayingImageGain[textureIndex] = gain;
+    _imp->displayingImageGamma[textureIndex] = gamma;
     _imp->displayingImageOffset[textureIndex] = offset;
     _imp->displayingImageMipMapLevel[textureIndex] = mipMapLevel;
     _imp->displayingImageLut = (Natron::ViewerColorSpaceEnum)lut;
@@ -2505,6 +2512,15 @@ ViewerGL::setGain(double d)
     assert( qApp && qApp->thread() == QThread::currentThread() );
     _imp->displayingImageGain[0] = d;
     _imp->displayingImageGain[1] = d;
+}
+
+void
+ViewerGL::setGamma(double g)
+{
+    // always running in the main thread
+    assert( qApp && qApp->thread() == QThread::currentThread() );
+    _imp->displayingImageGamma[0] = g;
+    _imp->displayingImageGamma[1] = g;
 }
 
 void

@@ -551,6 +551,7 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
     {
         QMutexLocker locker(&_imp->viewerParamsMutex);
         outArgs->params->gain = _imp->viewerParamsGain;
+        outArgs->params->gamma = _imp->viewerParamsGamma;
         outArgs->params->lut = _imp->viewerParamsLut;
         outArgs->params->layer = _imp->viewerParamsLayer;
         outArgs->params->alphaLayer = _imp->viewerParamsAlphaLayer;
@@ -561,6 +562,7 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
     outArgs->key.reset(new FrameKey(time,
                                     viewerHash,
                                     outArgs->params->gain,
+                                    outArgs->params->gamma,
                                     outArgs->params->lut,
                                     (int)bitDepth,
                                     channels,
@@ -974,6 +976,7 @@ ViewerInstance::renderViewer_internal(int view,
                                     inArgs.params->srcPremult,
                                     inArgs.key->getBitDepth(),
                                     inArgs.params->gain,
+                                    inArgs.params->gamma == 0. ? 0. : 1. / inArgs.params->gamma,
                                     inArgs.params->offset,
                                     lutFromColorspace(srcColorSpace),
                                     lutFromColorspace(inArgs.params->lut),
@@ -1056,6 +1059,7 @@ ViewerInstance::renderViewer_internal(int view,
                                     inArgs.params->srcPremult,
                                     inArgs.key->getBitDepth(),
                                     inArgs.params->gain,
+                                    inArgs.params->gamma == 0. ? 0. : 1. / inArgs.params->gamma,
                                     inArgs.params->offset,
                                     lutFromColorspace(srcColorSpace),
                                     lutFromColorspace(inArgs.params->lut),
@@ -1330,9 +1334,10 @@ scaleToTexture8bits_generic(const std::pair<int,int> & yRange,
                         break;
                 }
                 
-                r =  r * args.gain + args.offset;
-                g =  g * args.gain + args.offset;
-                b =  b * args.gain + args.offset;
+                //args.gamma is in fact 1. / gamma at this point
+                r =  args.gamma == 0.? 0. : std::pow(r * args.gain + args.offset, args.gamma);
+                g =  args.gamma == 0.? 0. : std::pow(g * args.gain + args.offset, args.gamma);
+                b =  args.gamma == 0.? 0. : std::pow(b * args.gain + args.offset, args.gamma);
                 
                 if (luminance) {
                     r = 0.299 * r + 0.587 * g + 0.114 * b;
@@ -1789,6 +1794,7 @@ ViewerInstance::ViewerInstancePrivate::updateViewer(boost::shared_ptr<UpdateView
                                               params->bytesCount,
                                               params->textureRect,
                                               params->gain,
+                                              params->gamma,
                                               params->offset,
                                               params->lut,
                                               updateViewerPboIndex,
@@ -1819,6 +1825,31 @@ ViewerInstance::isInputOptional(int n) const
     }
 
     return n != activeInputs[0] && n != activeInputs[1];
+}
+
+void
+ViewerInstance::onGammaChanged(double value)
+{
+    // always running in the main thread
+    assert( qApp && qApp->thread() == QThread::currentThread() );
+    {
+        QMutexLocker l(&_imp->viewerParamsMutex);
+        _imp->viewerParamsGamma = value;
+    }
+    assert(_imp->uiContext);
+    if ( ( (_imp->uiContext->getBitDepth() == OpenGLViewerI::eBitDepthByte) || !_imp->uiContext->supportsGLSL() )
+        && !getApp()->getProject()->isLoadingProject() ) {
+        renderCurrentFrame(true);
+    } else {
+        _imp->uiContext->redraw();
+    }
+}
+
+double
+ViewerInstance::getGamma() const
+{
+    QMutexLocker l(&_imp->viewerParamsMutex);
+    return _imp->viewerParamsGamma;
 }
 
 void
