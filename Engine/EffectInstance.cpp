@@ -2092,6 +2092,28 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
         }
     }
     
+    
+    
+    // eRenderSafetyInstanceSafe means that there is at most one render per instance
+    // NOTE: the per-instance lock should probably be shared between
+    // all clones of the same instance, because an InstanceSafe plugin may assume it is the sole owner of the output image,
+    // and read-write on it.
+    // It is probably safer to assume that several clones may write to the same output image only in the eRenderSafetyFullySafe case.
+    
+    // eRenderSafetyFullySafe means that there is only one render per FRAME : the lock is by image and handled in Node.cpp
+    ///locks belongs to an instance)
+    
+    boost::shared_ptr<QMutexLocker> locker;
+    EffectInstance::RenderSafetyEnum safety = renderThreadSafety();
+    if (safety == eRenderSafetyInstanceSafe) {
+        locker.reset(new QMutexLocker( &getNode()->getRenderInstancesSharedMutex()));
+    } else if (safety == eRenderSafetyUnsafe) {
+        const Natron::Plugin* p = getNode()->getPlugin();
+        assert(p);
+        locker.reset(new QMutexLocker(p->getPluginLock()));
+    }
+    ///For eRenderSafetyFullySafe, don't take any lock, the image already has a lock on itself so we're sure it can't be written to by 2 different threads.
+    
  
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////// Get the RoD ///////////////////////////////////////////////////////////////
@@ -2845,6 +2867,7 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
             }
 # endif
             renderRetCode = renderRoIInternal(args.time,
+                                              safety,
                                               args.mipMapLevel,
                                               args.view,
                                               rod,
@@ -3163,6 +3186,7 @@ EffectInstance::renderInputImagesForRoI(SequenceTime time,
 
 EffectInstance::RenderRoIStatusEnum
 EffectInstance::renderRoIInternal(SequenceTime time,
+                                  EffectInstance::RenderSafetyEnum safety,
                                   unsigned int mipMapLevel,
                                   int view,
                                   const RectD & rod, //!< effect rod in canonical coords
@@ -3230,11 +3254,9 @@ EffectInstance::renderRoIInternal(SequenceTime time,
         renderingNotifier.reset(new NotifyRenderingStarted_RAII(getNode().get()));
     }
 
-    /*depending on the thread-safety of the plug-in we render with a different
-     amount of threads*/
-    EffectInstance::RenderSafetyEnum safety = renderThreadSafety();
-    
-    ///if the project lock is already locked at this point, don't start any other thread
+    ///depending on the thread-safety of the plug-in we render with a different
+    ///amount of threads.
+    ///If the project lock is already locked at this point, don't start any other thread
     ///as it would lead to a deadlock when the project is loading.
     ///Just fall back to Fully_safe
     int nbThreads = appPTR->getCurrentSettings()->getNumberOfThreads();
@@ -3421,26 +3443,6 @@ EffectInstance::renderRoIInternal(SequenceTime time,
             callBegin = true;
         }
         
-        
-        // eRenderSafetyInstanceSafe means that there is at most one render per instance
-        // NOTE: the per-instance lock should probably be shared between
-        // all clones of the same instance, because an InstanceSafe plugin may assume it is the sole owner of the output image,
-        // and read-write on it.
-        // It is probably safer to assume that several clones may write to the same output image only in the eRenderSafetyFullySafe case.
-        
-        // eRenderSafetyFullySafe means that there is only one render per FRAME : the lock is by image and handled in Node.cpp
-        ///locks belongs to an instance)
-        
-        boost::shared_ptr<QMutexLocker> locker;
-        
-        if (safety == eRenderSafetyInstanceSafe) {
-            locker.reset(new QMutexLocker( &getNode()->getRenderInstancesSharedMutex()));
-        } else if (safety == eRenderSafetyUnsafe) {
-            const Natron::Plugin* p = getNode()->getPlugin();
-            assert(p);
-            locker.reset(new QMutexLocker(p->getPluginLock()));
-        }
-        ///For eRenderSafetyFullySafe, don't take any lock, the image already has a lock on itself so we're sure it can't be written to by 2 different threads.
 
 
         if (callBegin) {
