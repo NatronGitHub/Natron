@@ -865,8 +865,9 @@ public:
 
     virtual void undo() OVERRIDE FINAL
     {
-        
+        _panel->setRedrawOnSelectionChanged(false);
         _panel->addInstances(_nodes);
+        _panel->setRedrawOnSelectionChanged(true);
         _panel->getMainInstance()->getApp()->triggerAutoSave();
         _panel->getMainInstance()->getApp()->redrawAllViewers();
         setText( QObject::tr("Remove instance(s)") );
@@ -874,7 +875,9 @@ public:
 
     virtual void redo() OVERRIDE FINAL
     {
+        _panel->setRedrawOnSelectionChanged(false);
         _panel->removeInstances(_nodes);
+        _panel->setRedrawOnSelectionChanged(true);
         _panel->getMainInstance()->getApp()->triggerAutoSave();
         _panel->getMainInstance()->getApp()->redrawAllViewers();
         setText( QObject::tr("Remove instance(s)") );
