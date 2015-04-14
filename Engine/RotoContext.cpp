@@ -19,6 +19,8 @@
 #include <sstream>
 #include <locale>
 
+#include <QLineF>
+
 #include <boost/bind.hpp>
 #include <boost/shared_ptr.hpp>
 
@@ -1750,8 +1752,7 @@ bezierPoint(const Point & p0,
             Point *dest)
 {
     Point p0p1, p1p2, p2p3, p0p1_p1p2, p1p2_p2p3;
-
-    return bezierFullPoint(p0, p1, p2, p3, t, &p0p1, &p1p2, &p2p3, &p0p1_p1p2, &p1p2_p2p3, dest);
+    bezierFullPoint(p0, p1, p2, p3, t, &p0p1, &p1p2, &p2p3, &p0p1_p1p2, &p1p2_p2p3, dest);
 }
 
 #if 0 //UNUSED CODE
@@ -3770,24 +3771,11 @@ point_line_intersection(const Point &p1,
     }
 }
 
-#if 0
-/*
-   The pointInPolygon function should not be used.
-   The algorithm to know which side is the outside of a polygon consists in computing the global polygon orientation.
-   To compute the orientation, compute its surface. If positive the polygon is clockwise, if negative it's counterclockwise.
-   to compute the surface, take the starting point of the polygon, and imagine a fan made of all the triangles
-   pointing at this point. The surface of a tringle is half the cross-product of two of its sides issued from
-   the same point (the starting point of the polygon, in this case.
-   The orientation of a polygon has to be computed only once for each modification of the polygon (whenever it's edited), and
-   should be stored with the polygon.
-   Of course an 8-shaped polygon doesn't have an outside, but it still has an orientation. The feather direction
-   should follow this orientation.
- */
-bool
-Bezier::pointInPolygon(const Point & p,
-                       const std::list<Point> & polygon,
-                       const RectD & featherPolyBBox,
-                       FillRuleEnum rule)
+static bool
+pointInPolygon(const Point & p,
+               const std::list<Point> & polygon,
+               const RectD & featherPolyBBox,
+               Bezier::FillRuleEnum rule)
 {
     ///first check if the point lies inside the bounding box
     if ( (p.x < featherPolyBBox.x1) || (p.x >= featherPolyBBox.x2) || (p.y < featherPolyBBox.y1) || (p.y >= featherPolyBBox.y2)
@@ -3809,11 +3797,10 @@ Bezier::pointInPolygon(const Point & p,
         point_line_intersection(*last_pt, *last_start, p, &winding_number);
     }
 
-    return rule == eFillRuleWinding
+    return rule == Bezier::eFillRuleWinding
            ? (winding_number != 0)
            : ( (winding_number % 2) != 0 );
 }
-#endif
 
 bool
 Bezier::isFeatherPolygonClockwiseOriented(int time) const
@@ -5935,6 +5922,144 @@ RotoContextPrivate::renderInternalShape(int time,
 //    } else {
     cairo_fill(cr);
 //    }
+}
+
+
+//From http://www.math.ualberta.ca/~bowman/publications/cad10.pdf
+void
+RotoContextPrivate::bezulate(int time, const BezierCPs& cps,std::list<BezierCPs>* patches)
+{
+    BezierCPs simpleClosedCurve = cps;
+    
+    while (simpleClosedCurve.size() > 4) {
+        
+        bool found = false;
+        for (int n = 3; n >= 2; --n) {
+            
+            assert((int)simpleClosedCurve.size() > n);
+            
+            //next points at point i + n
+            BezierCPs::iterator next = simpleClosedCurve.begin();
+            std::advance(next, n);
+            
+            std::list<Point> polygon;
+            RectD bbox;
+            bbox.x1 = std::numeric_limits<double>::infinity();
+            bbox.x2 = -std::numeric_limits<double>::infinity();
+            bbox.y1 = std::numeric_limits<double>::infinity();
+            bbox.y2 = -std::numeric_limits<double>::infinity();
+            for (BezierCPs::iterator it = simpleClosedCurve.begin();it!=simpleClosedCurve.end();++it) {
+                Point p;
+                (*it)->getPositionAtTime(time, &p.x, &p.y);
+                polygon.push_back(p);
+                if (p.x < bbox.x1) {
+                    bbox.x1 = p.x;
+                }
+                if (p.x > bbox.x2) {
+                    bbox.x2 = p.x;
+                }
+                if (p.y < bbox.y1) {
+                    bbox.y1 = p.y;
+                }
+                if (p.y > bbox.y2) {
+                    bbox.y2 = p.y;
+                }
+            }
+            
+            
+            
+            for (BezierCPs::iterator it = simpleClosedCurve.begin();it!=simpleClosedCurve.end();++it,++next) {
+                
+                //mid-point of the line segment between points i and i + n
+                Point nextPoint,curPoint;
+                (*it)->getPositionAtTime(time, &curPoint.x, &curPoint.y);
+                (*next)->getPositionAtTime(time, &nextPoint.x, &nextPoint.y);
+                
+                /*
+                 * Compute the number of intersections between the current line segment [it,next] and all other line segments
+                 * If the number of intersections is different of 2, ignore this segment.
+                 */
+                QLineF line(QPointF(curPoint.x,curPoint.y),QPointF(nextPoint.x,nextPoint.y));
+                int noIntersections = 0;
+                std::list<Point>::const_iterator last_pt = polygon.begin();
+                std::list<Point>::const_iterator cur = last_pt;
+                ++cur;
+                QPointF intersectionPoint;
+                for (; cur != polygon.end(); ++cur,++last_pt) {
+                    QLineF polygonSegment(QPointF(last_pt->x,last_pt->y),QPointF(cur->x,cur->y));
+                    if (line.intersect(polygonSegment, &intersectionPoint) == QLineF::BoundedIntersection) {
+                        ++noIntersections;
+                    }
+                    if (noIntersections > 2) {
+                        break;
+                    }
+                }
+                
+                if (noIntersections != 2) {
+                    continue;
+                }
+                
+                /*
+                 * Check if the midpoint of the line segment [it,next] lies inside the simple closed curve (polygon), otherwise
+                 * ignore it.
+                 */
+                Point midPoint;
+                midPoint.x = (nextPoint.x + curPoint.x) / 2.;
+                midPoint.y = (nextPoint.y + curPoint.y) / 2.;
+                bool isInside = pointInPolygon(midPoint,polygon,bbox,Bezier::eFillRuleWinding);
+
+                if (isInside) {
+                    
+                    //Make the sub closed curve composed of the path from points i to i + n
+                    BezierCPs subCurve;
+                    BezierCPs::iterator endNewCurve = next;
+                    ++endNewCurve;
+                    for (BezierCPs::iterator it2 = it; it2 != endNewCurve; ++it2) {
+                        subCurve.push_back(*it2);
+                    }
+                    patches->push_back(subCurve);
+                    
+                    //Remove i + 1 to i + n
+                    BezierCPs::iterator eraseStart = it;
+                    ++eraseStart;
+                    //"it" is  invalidated after this instruction but we leave the loop anyway
+                    simpleClosedCurve.erase(eraseStart,next);
+                    found = true;
+                    break;
+                }
+            }
+            if (found) {
+                break;
+            }
+        }
+        
+        if (!found) {
+            BezierCPs subdivisedCurve;
+            //Subdivise the curve at the midpoint of each segment
+            BezierCPs::iterator next = simpleClosedCurve.begin();
+            ++next;
+            for (BezierCPs::iterator it = simpleClosedCurve.begin();it!=simpleClosedCurve.end();++it,++next) {
+                
+                if (next == simpleClosedCurve.end()) {
+                    next = simpleClosedCurve.begin();
+                }
+                Point p0,p1,p2,p3,p0p1, p1p2, p2p3, p0p1_p1p2, p1p2_p2p3,dest;
+                (*it)->getPositionAtTime(time, &p0.x, &p0.y);
+                (*it)->getRightBezierPointAtTime(time, &p1.x, &p1.y);
+                (*next)->getLeftBezierPointAtTime(time, &p2.x, &p2.y);
+                (*next)->getPositionAtTime(time, &p3.x, &p3.y);
+                bezierFullPoint(p0, p1, p2, p3, 0.5, &p0p1, &p1p2, &p2p3, &p0p1_p1p2, &p1p2_p2p3, &dest);
+                boost::shared_ptr<BezierCP> controlPoint(new BezierCP);
+                controlPoint->setStaticPosition(dest.x, dest.y);
+                controlPoint->setLeftBezierStaticPosition(p0p1_p1p2.x, p0p1_p1p2.y);
+                controlPoint->setRightBezierStaticPosition(p1p2_p2p3.x, p1p2_p2p3.y);
+                subdivisedCurve.push_back(*it);
+                subdivisedCurve.push_back(controlPoint);
+            }
+            simpleClosedCurve = subdivisedCurve;
+        }
+    }
+    patches->push_back(simpleClosedCurve);
 }
 
 void

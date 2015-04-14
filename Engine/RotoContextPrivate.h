@@ -697,6 +697,8 @@ struct RotoContextPrivate
                         unsigned int mipmapLevel,int time);
 
     void renderInternalShape(int time,unsigned int mipmapLevel,cairo_t* cr,const BezierCPs & cps);
+    
+    static void bezulate(int time,const BezierCPs& cps,std::list<BezierCPs>* patches);
 
     void applyAndDestroyMask(cairo_t* cr,cairo_pattern_t* mesh);
 };
