@@ -5826,7 +5826,7 @@ RotoContextPrivate::renderInternal(cairo_t* cr,
 
         if (!inverted) {
             // strangely, the above-mentioned cairo bug doesn't affect this function
-            renderInternalShape(time, mipmapLevel, shapeColor, opacity, mesh, cps);
+            renderInternalShape(time, mipmapLevel, shapeColor, opacity, cr, mesh, cps);
 #ifdef NATRON_ROTO_INVERTIBLE
         } else {
 #pragma message WARN("doesn't work! the image should be infinite for this to work!")
@@ -5869,10 +5869,11 @@ RotoContextPrivate::renderInternalShape(int time,
                                         unsigned int mipmapLevel,
                                         double shapeColor[3],
                                         double opacity,
+                                        cairo_t* cr,
                                         cairo_pattern_t* mesh,
                                         const BezierCPs & cps)
 {
-    
+#if 0
     std::list<BezierCPs> coonPatches;
     bezulate(time, cps, &coonPatches);
     
@@ -5965,7 +5966,7 @@ RotoContextPrivate::renderInternalShape(int time,
         cairo_mesh_pattern_end_patch(mesh);
 
     }
-#if 0
+#else
     BezierCPs::const_iterator point = cps.begin();
     BezierCPs::const_iterator nextPoint = point;
 

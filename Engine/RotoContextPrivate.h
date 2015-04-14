@@ -696,7 +696,7 @@ struct RotoContextPrivate
     void renderInternal(cairo_t* cr,cairo_surface_t* cairoImg,const std::list< boost::shared_ptr<Bezier> > & splines,
                         unsigned int mipmapLevel,int time);
 
-    void renderInternalShape(int time,unsigned int mipmapLevel,double shapeColor[3], double opacity, cairo_pattern_t* mesh, const BezierCPs & cps);
+    void renderInternalShape(int time,unsigned int mipmapLevel,double shapeColor[3], double opacity,cairo_t* cr, cairo_pattern_t* mesh, const BezierCPs & cps);
     
     static void bezulate(int time,const BezierCPs& cps,std::list<BezierCPs>* patches);
 
