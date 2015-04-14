@@ -2512,39 +2512,38 @@ Bezier::removeControlPointByIndex(int index)
     Q_EMIT controlPointRemoved();
 }
 
-#pragma message WARN("Roto: refactor the following!!! too much copy/paste between these move* functions!!!")
 void
-Bezier::movePointByIndex(int index,
-                         int time,
-                         double dx,
-                         double dy)
+Bezier::movePointByIndexInternal(int index,int time,double dx,double dy,bool onlyFeather)
 {
     ///only called on the main-thread
     assert( QThread::currentThread() == qApp->thread() );
-
+    
     bool autoKeying = getContext()->isAutoKeyingEnabled();
     bool keySet = false;
     {
         QMutexLocker l(&itemMutex);
-        BezierCPs::iterator it = _imp->atIndex(index);
         double x,y,leftX,leftY,rightX,rightY;
-        bool isOnKeyframe = (*it)->getPositionAtTime(time, &x, &y,true);
-        (*it)->getLeftBezierPointAtTime(time, &leftX, &leftY,true);
-        (*it)->getRightBezierPointAtTime(time, &rightX, &rightY,true);
-
-
+        BezierCPs::iterator it;
+        if (!onlyFeather) {
+            it = _imp->atIndex(index);
+            (*it)->getPositionAtTime(time, &x, &y,true);
+            (*it)->getLeftBezierPointAtTime(time, &leftX, &leftY,true);
+            (*it)->getRightBezierPointAtTime(time, &rightX, &rightY,true);
+        }
+        
+        
         BezierCPs::iterator itF = _imp->featherPoints.begin();
         std::advance(itF, index);
         double xF,yF,leftXF,leftYF,rightXF,rightYF;
-        (*itF)->getPositionAtTime(time, &xF, &yF,true);
+         bool isOnKeyframe = (*itF)->getPositionAtTime(time, &xF, &yF,true);
         (*itF)->getLeftBezierPointAtTime(time, &leftXF, &leftYF,true);
         (*itF)->getRightBezierPointAtTime(time, &rightXF, &rightYF,true);
-
-        bool fLinkEnabled = getContext()->isFeatherLinkEnabled();
-        bool moveFeather = ( fLinkEnabled || ( !fLinkEnabled && (*it)->equalsAtTime(time, **itF) ) );
-
-
-        if (autoKeying || isOnKeyframe) {
+        
+        bool fLinkEnabled = onlyFeather ? true : getContext()->isFeatherLinkEnabled();
+        bool moveFeather = (fLinkEnabled || (!fLinkEnabled && (*it)->equalsAtTime(time, **itF)));
+        
+        
+        if (!onlyFeather && (autoKeying || isOnKeyframe)) {
             (*it)->setPositionAtTime(time, x + dx, y + dy);
             (*it)->setLeftBezierPointAtTime(time, leftX + dx, leftY + dy);
             (*it)->setRightBezierPointAtTime(time, rightX + dx, rightY + dy);
@@ -2552,7 +2551,7 @@ Bezier::movePointByIndex(int index,
                 keySet = true;
             }
         }
-
+        
         if (moveFeather) {
             if (autoKeying || isOnKeyframe) {
                 (*itF)->setPositionAtTime(time, xF + dx, yF + dy);
@@ -2560,7 +2559,7 @@ Bezier::movePointByIndex(int index,
                 (*itF)->setRightBezierPointAtTime(time, rightXF + dx, rightYF + dy);
             }
         }
-
+        
         if ( getContext()->isRippleEditEnabled() ) {
             std::set<int> keyframes;
             _imp->getKeyframeTimes(&keyframes);
@@ -2568,18 +2567,20 @@ Bezier::movePointByIndex(int index,
                 if (*it2 == time) {
                     continue;
                 }
-                (*it)->getPositionAtTime(*it2, &x, &y,true);
-                (*it)->getLeftBezierPointAtTime(*it2, &leftX, &leftY,true);
-                (*it)->getRightBezierPointAtTime(*it2, &rightX, &rightY,true);
-
-                (*it)->setPositionAtTime(*it2, x + dx, y + dy);
-                (*it)->setLeftBezierPointAtTime(*it2, leftX + dx, leftY + dy);
-                (*it)->setRightBezierPointAtTime(*it2, rightX + dx, rightY + dy);
+                if (!onlyFeather) {
+                    (*it)->getPositionAtTime(*it2, &x, &y,true);
+                    (*it)->getLeftBezierPointAtTime(*it2, &leftX, &leftY,true);
+                    (*it)->getRightBezierPointAtTime(*it2, &rightX, &rightY,true);
+                    
+                    (*it)->setPositionAtTime(*it2, x + dx, y + dy);
+                    (*it)->setLeftBezierPointAtTime(*it2, leftX + dx, leftY + dy);
+                    (*it)->setRightBezierPointAtTime(*it2, rightX + dx, rightY + dy);
+                }
                 if (moveFeather) {
                     (*itF)->getPositionAtTime(*it2, &xF, &yF,true);
                     (*itF)->getLeftBezierPointAtTime(*it2, &leftXF, &leftYF,true);
                     (*itF)->getRightBezierPointAtTime(*it2, &rightXF, &rightYF,true);
-
+                    
                     (*itF)->setPositionAtTime(*it2, xF + dx, yF + dy);
                     (*itF)->setLeftBezierPointAtTime(*it2, leftXF + dx, leftYF + dy);
                     (*itF)->setRightBezierPointAtTime(*it2, rightXF + dx, rightYF + dy);
@@ -2593,6 +2594,16 @@ Bezier::movePointByIndex(int index,
     if (keySet) {
         Q_EMIT keyframeSet(time);
     }
+
+} // movePointByIndexInternal
+
+void
+Bezier::movePointByIndex(int index,
+                         int time,
+                         double dx,
+                         double dy)
+{
+    movePointByIndexInternal(index, time, dx, dy, false);
 } // movePointByIndex
 
 void
@@ -2601,48 +2612,117 @@ Bezier::moveFeatherByIndex(int index,
                            double dx,
                            double dy)
 {
+    movePointByIndexInternal(index, time, dx, dy, true);
+} // moveFeatherByIndex
+
+void
+Bezier::moveBezierPointInternal(BezierCP* cpParam,int index,int time, double lx, double ly, double rx, double ry, bool isLeft, bool moveBoth)
+{
     ///only called on the main-thread
     assert( QThread::currentThread() == qApp->thread() );
-
+    
     bool autoKeying = getContext()->isAutoKeyingEnabled();
+    bool featherLink = getContext()->isFeatherLinkEnabled();
+    bool rippleEdit = getContext()->isRippleEditEnabled();
     bool keySet = false;
     {
         QMutexLocker l(&itemMutex);
-        BezierCPs::iterator itF = _imp->featherPoints.begin();
-        std::advance(itF, index);
-        double xF,yF,leftXF,leftYF,rightXF,rightYF;
-        bool isOnkeyframe = (*itF)->getPositionAtTime(time, &xF, &yF,true);
-
-        if (isOnkeyframe || autoKeying) {
-            (*itF)->setPositionAtTime(time, xF + dx, yF + dy);
+        BezierCP* cp = 0;
+        BezierCP* fp = 0;
+        
+        if (!cpParam) {
+            BezierCPs::iterator cpIt = _imp->atIndex(index);
+            assert( cpIt != _imp->points.end() );
+            cp = cpIt->get();
+            assert(cp);
+        
+            BezierCPs::iterator fpIt = _imp->featherPoints.begin();
+            std::advance(fpIt, index);
+            assert(fpIt != _imp->featherPoints.end());
+            fp = fpIt->get();
+            assert(fp);
+        } else {
+            cp = cpParam;
         }
-
-        (*itF)->getLeftBezierPointAtTime(time, &leftXF, &leftYF,true);
-        (*itF)->getRightBezierPointAtTime(time, &rightXF, &rightYF,true);
-
-        if (isOnkeyframe || autoKeying) {
-            (*itF)->setLeftBezierPointAtTime(time, leftXF + dx, leftYF + dy);
-            (*itF)->setRightBezierPointAtTime(time, rightXF + dx, rightYF + dy);
-            if (!isOnkeyframe) {
+        double x,y,xF,yF;
+        if (isLeft || moveBoth) {
+            (cp)->getLeftBezierPointAtTime(time, &x, &y,true);
+        }
+        if (!isLeft || moveBoth) {
+            (cp)->getRightBezierPointAtTime(time, &x, &y,true);
+        }
+        bool isOnKeyframe;
+        
+        if (isLeft || moveBoth) {
+            isOnKeyframe = (fp)->getLeftBezierPointAtTime(time, &xF, &yF,true);
+        }
+        if (!isLeft || moveBoth) {
+            (fp)->getRightBezierPointAtTime(time, &xF, &yF,true);
+        }
+        bool moveFeather = cpParam ? false : (featherLink || (x == xF && y == yF));
+        
+        if (autoKeying || isOnKeyframe) {
+            if (isLeft || moveBoth) {
+                (cp)->setLeftBezierPointAtTime(time,x + lx, y + ly);
+            }
+            if (!isLeft || moveBoth) {
+                (cp)->setRightBezierPointAtTime(time,x + rx, y + ry);
+            }
+            if (moveFeather) {
+                if (isLeft || moveBoth) {
+                    (fp)->setLeftBezierPointAtTime(time, xF + lx, yF + ly);
+                }
+                if (!isLeft || moveBoth) {
+                    (fp)->setRightBezierPointAtTime(time, xF + rx, yF + ry);
+                }
+            }
+            if (!isOnKeyframe) {
                 keySet = true;
             }
+        } else {
+            ///this function is called when building a new bezier we must
+            ///move the static position if there is no keyframe, otherwise the
+            ///curve would never be built
+            if (isLeft || moveBoth) {
+                (cp)->setLeftBezierStaticPosition(x + lx, y + ly);
+            }
+            if (!isLeft || moveBoth) {
+                (fp)->setRightBezierStaticPosition(x + rx, y + ry);
+            }
+            if (moveFeather) {
+                if (isLeft || moveBoth) {
+                    (fp)->setLeftBezierStaticPosition(xF + lx, yF + ly);
+                }
+                if (!isLeft || moveBoth) {
+                    (fp)->setRightBezierStaticPosition(xF + rx, yF + ry);
+                }
+                    
+            }
         }
-
-        if ( getContext()->isRippleEditEnabled() ) {
+        
+        if (rippleEdit) {
             std::set<int> keyframes;
             _imp->getKeyframeTimes(&keyframes);
             for (std::set<int>::iterator it2 = keyframes.begin(); it2 != keyframes.end(); ++it2) {
                 if (*it2 == time) {
                     continue;
                 }
-
-                (*itF)->getPositionAtTime(*it2, &xF, &yF,true);
-                (*itF)->getLeftBezierPointAtTime(*it2, &leftXF, &leftYF,true);
-                (*itF)->getRightBezierPointAtTime(*it2, &rightXF, &rightYF,true);
-
-                (*itF)->setPositionAtTime(*it2, xF + dx, yF + dy);
-                (*itF)->setLeftBezierPointAtTime(*it2, leftXF + dx, leftYF + dy);
-                (*itF)->setRightBezierPointAtTime(*it2, rightXF + dx, rightYF + dy);
+                
+                if (isLeft || moveBoth) {
+                    (cp)->getLeftBezierPointAtTime(*it2, &x, &y,true);
+                    (cp)->setLeftBezierPointAtTime(*it2, x + lx, y + ly);
+                    if (moveFeather) {
+                        (fp)->getLeftBezierPointAtTime(*it2, &xF, &yF,true);
+                        (fp)->setLeftBezierPointAtTime(*it2, xF + lx, yF + ly);
+                    }
+                } else {
+                    (cp)->getRightBezierPointAtTime(*it2, &x, &y,true);
+                    (cp)->setRightBezierPointAtTime(*it2, x + rx, y + ry);
+                    if (moveFeather) {
+                        (fp)->getRightBezierPointAtTime(*it2, &xF, &yF,true);
+                        (fp)->setRightBezierPointAtTime(*it2, xF + rx, yF + ry);
+                    }
+                }
             }
         }
     }
@@ -2652,7 +2732,158 @@ Bezier::moveFeatherByIndex(int index,
     if (keySet) {
         Q_EMIT keyframeSet(time);
     }
-} // moveFeatherByIndex
+
+} // moveBezierPointInternal
+
+void
+Bezier::moveLeftBezierPoint(int index,
+                            int time,
+                            double dx,
+                            double dy)
+{
+    moveBezierPointInternal(NULL, index, time, dx, dy, 0, 0, true, false);
+} // moveLeftBezierPoint
+
+void
+Bezier::moveRightBezierPoint(int index,
+                             int time,
+                             double dx,
+                             double dy)
+{
+    moveBezierPointInternal(NULL, index, time, 0, 0, dx, dy, false, false);
+} // moveRightBezierPoint
+
+void
+Bezier::movePointLeftAndRightIndex(BezierCP & p,
+                                   int time,
+                                   double lx,
+                                   double ly,
+                                   double rx,
+                                   double ry)
+{
+    moveBezierPointInternal(&p, -1, time, lx, ly, rx, ry, false, true);
+}
+
+
+void
+Bezier::setPointAtIndexInternal(bool setLeft,bool setRight,bool setPoint,bool feather,bool featherAndCp,int index,int time,double x,double y,double lx,double ly,double rx,double ry)
+{
+    ///only called on the main-thread
+    assert( QThread::currentThread() == qApp->thread() );
+    
+    bool autoKeying = getContext()->isAutoKeyingEnabled();
+    bool rippleEdit = getContext()->isRippleEditEnabled();
+    bool keySet = false;
+    
+    {
+        QMutexLocker l(&itemMutex);
+        bool isOnKeyframe = _imp->hasKeyframeAtTime(time);
+        
+        if ( index >= (int)_imp->featherPoints.size() ) {
+            throw std::invalid_argument("Bezier::setPointAtIndex: Index out of range.");
+        }
+        
+        BezierCPs::iterator fp = _imp->featherPoints.begin();
+        BezierCPs::iterator cp = _imp->points.begin();
+        if (!feather && !featherAndCp) {
+            fp = cp;
+        }
+        std::advance(fp, index);
+        if (featherAndCp) {
+            std::advance(cp, index);
+        }
+        
+        if (autoKeying || isOnKeyframe) {
+            if (setPoint) {
+                (*fp)->setPositionAtTime(time, x, y);
+                if (featherAndCp) {
+                    (*cp)->setPositionAtTime(time, x, y);
+                }
+            }
+            if (setLeft) {
+                (*fp)->setLeftBezierPointAtTime(time, lx, ly);
+                if (featherAndCp) {
+                    (*cp)->setLeftBezierPointAtTime(time, lx, ly);
+                }
+            }
+            if (setRight) {
+                (*fp)->setRightBezierPointAtTime(time, rx, ry);
+                if (featherAndCp) {
+                    (*cp)->setRightBezierPointAtTime(time, rx, ry);
+                }
+            }
+            if (!isOnKeyframe) {
+                keySet = true;
+            }
+        }
+        
+        if (rippleEdit) {
+            std::set<int> keyframes;
+            _imp->getKeyframeTimes(&keyframes);
+            for (std::set<int>::iterator it2 = keyframes.begin(); it2 != keyframes.end(); ++it2) {
+                if (setPoint) {
+                    (*fp)->setPositionAtTime(*it2, x, y);
+                    if (featherAndCp) {
+                        (*cp)->setPositionAtTime(*it2, x, y);
+                    }
+                }
+                if (setLeft) {
+                    (*fp)->setLeftBezierPointAtTime(*it2, lx, ly);
+                    if (featherAndCp) {
+                        (*cp)->setLeftBezierPointAtTime(*it2, lx, ly);
+                    }
+                }
+                if (setRight) {
+                    (*fp)->setRightBezierPointAtTime(*it2, rx, ry);
+                    if (featherAndCp) {
+                        (*cp)->setRightBezierPointAtTime(*it2, rx, ry);
+                    }
+                }
+            }
+        }
+    }
+    if (autoKeying) {
+        setKeyframe(time);
+    }
+    if (keySet) {
+        Q_EMIT keyframeSet(time);
+    }
+
+} // setPointAtIndexInternal
+
+void
+Bezier::setLeftBezierPoint(int index,
+                           int time,
+                           double x,
+                           double y)
+{
+    setPointAtIndexInternal(true, false, false, false, true, index, time, 0, 0, x, y, 0, 0);
+}
+
+void
+Bezier::setRightBezierPoint(int index,
+                            int time,
+                            double x,
+                            double y)
+{
+    setPointAtIndexInternal(false, true, false, false, true, index, time, 0, 0, 0, 0, x, y);
+}
+
+void
+Bezier::setPointAtIndex(bool feather,
+                        int index,
+                        int time,
+                        double x,
+                        double y,
+                        double lx,
+                        double ly,
+                        double rx,
+                        double ry)
+{
+    setPointAtIndexInternal(true, true, true, feather, false, index, time, x, y, lx, ly, rx, ry);
+}
+
+
 
 void
 Bezier::transformPoint(const boost::shared_ptr<BezierCP> & point,
@@ -2667,20 +2898,20 @@ Bezier::transformPoint(const boost::shared_ptr<BezierCP> & point,
         point->getPositionAtTime(time, &cp.x, &cp.y,true);
         point->getLeftBezierPointAtTime(time, &leftCp.x, &leftCp.y,true);
         bool isonKeyframe = point->getRightBezierPointAtTime(time, &rightCp.x, &rightCp.y,true);
-
-
+        
+        
         cp.z = 1.;
         leftCp.z = 1.;
         rightCp.z = 1.;
-
+        
         cp = matApply(*matrix, cp);
         leftCp = matApply(*matrix, leftCp);
         rightCp = matApply(*matrix, rightCp);
-
+        
         cp.x /= cp.z; cp.y /= cp.z;
         leftCp.x /= leftCp.z; leftCp.y /= leftCp.z;
         rightCp.x /= rightCp.z; rightCp.y /= rightCp.z;
-
+        
         if (autoKeying || isonKeyframe) {
             point->setPositionAtTime(time, cp.x, cp.y);
             point->setLeftBezierPointAtTime(time, leftCp.x, leftCp.y);
@@ -2690,354 +2921,12 @@ Bezier::transformPoint(const boost::shared_ptr<BezierCP> & point,
             }
         }
     }
-
+    
     if (keySet) {
         Q_EMIT keyframeSet(time);
     }
 }
 
-void
-Bezier::moveLeftBezierPoint(int index,
-                            int time,
-                            double dx,
-                            double dy)
-{
-    ///only called on the main-thread
-    assert( QThread::currentThread() == qApp->thread() );
-
-    bool autoKeying = getContext()->isAutoKeyingEnabled();
-    bool featherLink = getContext()->isFeatherLinkEnabled();
-    bool rippleEdit = getContext()->isRippleEditEnabled();
-    bool keySet = false;
-    {
-        QMutexLocker l(&itemMutex);
-        BezierCPs::iterator cp = _imp->atIndex(index);
-        assert( cp != _imp->points.end() );
-
-        BezierCPs::iterator fp = _imp->featherPoints.begin();
-        std::advance(fp, index);
-        double x,y,xF,yF;
-        (*cp)->getLeftBezierPointAtTime(time, &x, &y,true);
-        bool isOnKeyframe = (*fp)->getLeftBezierPointAtTime(time, &xF, &yF,true);
-        bool moveFeather = featherLink || (x == xF && y == yF);
-
-        if (autoKeying || isOnKeyframe) {
-            (*cp)->setLeftBezierPointAtTime(time,x + dx, y + dy);
-            if (moveFeather) {
-                (*fp)->setLeftBezierPointAtTime(time, xF + dx, yF + dy);
-            }
-            if (!isOnKeyframe) {
-                keySet = true;
-            }
-        } else {
-            ///this function is called when building a new bezier we must
-            ///move the static position if there is no keyframe, otherwise the
-            ///curve would never be built
-            (*cp)->setLeftBezierStaticPosition(x + dx, y + dy);
-            if (moveFeather) {
-                (*fp)->setLeftBezierStaticPosition(xF + dx, yF + dy);
-            }
-        }
-
-        if (rippleEdit) {
-            std::set<int> keyframes;
-            _imp->getKeyframeTimes(&keyframes);
-            for (std::set<int>::iterator it2 = keyframes.begin(); it2 != keyframes.end(); ++it2) {
-                if (*it2 == time) {
-                    continue;
-                }
-
-                (*cp)->getLeftBezierPointAtTime(*it2, &x, &y,true);
-                (*cp)->setLeftBezierPointAtTime(*it2, x + dx, y + dy);
-                if (moveFeather) {
-                    (*fp)->getLeftBezierPointAtTime(*it2, &xF, &yF,true);
-                    (*fp)->setLeftBezierPointAtTime(*it2, xF + dx, yF + dy);
-                }
-            }
-        }
-    }
-    if (autoKeying) {
-        setKeyframe(time);
-    }
-    if (keySet) {
-        Q_EMIT keyframeSet(time);
-    }
-} // moveLeftBezierPoint
-
-void
-Bezier::moveRightBezierPoint(int index,
-                             int time,
-                             double dx,
-                             double dy)
-{
-    ///only called on the main-thread
-    assert( QThread::currentThread() == qApp->thread() );
-
-    bool autoKeying = getContext()->isAutoKeyingEnabled();
-    bool featherLink = getContext()->isFeatherLinkEnabled();
-    bool rippleEdit = getContext()->isRippleEditEnabled();
-    bool keySet = false;
-    {
-        QMutexLocker l(&itemMutex);
-        BezierCPs::iterator cp = _imp->atIndex(index);
-        assert( cp != _imp->points.end() );
-
-        BezierCPs::iterator fp = _imp->featherPoints.begin();
-        std::advance(fp, index);
-        double x,y,xF,yF;
-        (*cp)->getRightBezierPointAtTime(time, &x, &y,true);
-        bool isOnKeyframe = (*fp)->getRightBezierPointAtTime(time, &xF, &yF,true);
-        bool moveFeather = featherLink || (x == xF && y == yF);
-
-        if (autoKeying || isOnKeyframe) {
-            (*cp)->setRightBezierPointAtTime(time,x + dx, y + dy);
-            if (moveFeather) {
-                (*fp)->setRightBezierPointAtTime(time, xF + dx, yF + dy);
-            }
-            if (!isOnKeyframe) {
-                keySet = true;
-            }
-        } else {
-            ///this function is called when building a new bezier we must
-            ///move the static position if there is no keyframe, otherwise the
-            ///curve would never be built
-            (*cp)->setRightBezierStaticPosition(x + dx, y + dy);
-            if (moveFeather) {
-                (*fp)->setRightBezierStaticPosition(xF + dx, yF + dy);
-            }
-        }
-
-        if (rippleEdit) {
-            std::set<int> keyframes;
-            _imp->getKeyframeTimes(&keyframes);
-            for (std::set<int>::iterator it2 = keyframes.begin(); it2 != keyframes.end(); ++it2) {
-                if (*it2 == time) {
-                    continue;
-                }
-
-
-                (*cp)->getRightBezierPointAtTime(*it2, &x, &y,true);
-                (*cp)->setRightBezierPointAtTime(*it2, x + dx, y + dy);
-                if (moveFeather) {
-                    (*fp)->getRightBezierPointAtTime(*it2, &xF, &yF,true);
-                    (*fp)->setRightBezierPointAtTime(*it2, xF + dx, yF + dy);
-                }
-            }
-        }
-    }
-    if (autoKeying) {
-        setKeyframe(time);
-    }
-    if (keySet) {
-        Q_EMIT keyframeSet(time);
-    }
-} // moveRightBezierPoint
-
-#pragma message WARN("Roto: refactor the following!!! too much copy/paste between these set* functions!!!")
-void
-Bezier::setLeftBezierPoint(int index,
-                           int time,
-                           double x,
-                           double y)
-{
-    ///only called on the main-thread
-    assert( QThread::currentThread() == qApp->thread() );
-
-    bool autoKeying = getContext()->isAutoKeyingEnabled();
-    bool keySet = false;
-    bool rippleEditEnabled = getContext()->isRippleEditEnabled();
-    {
-        QMutexLocker l(&itemMutex);
-        BezierCPs::iterator cp = _imp->atIndex(index);
-        assert( cp != _imp->points.end() );
-
-        BezierCPs::iterator fp = _imp->featherPoints.begin();
-        std::advance(fp, index);
-        bool isOnKeyframe = _imp->hasKeyframeAtTime(time);
-
-        if (autoKeying || isOnKeyframe) {
-            (*cp)->setLeftBezierPointAtTime(time, x, y);
-            (*fp)->setLeftBezierPointAtTime(time, x, y);
-            if (!isOnKeyframe) {
-                keySet = true;
-            }
-        } else {
-            (*cp)->setLeftBezierStaticPosition(x, y);
-            (*fp)->setLeftBezierStaticPosition(x, y);
-        }
-
-        if (rippleEditEnabled) {
-            std::set<int> keyframes;
-            _imp->getKeyframeTimes(&keyframes);
-            for (std::set<int>::iterator it2 = keyframes.begin(); it2 != keyframes.end(); ++it2) {
-                (*cp)->setLeftBezierPointAtTime(*it2, x,y);
-                (*fp)->setLeftBezierPointAtTime(*it2,x,y);
-            }
-        }
-    }
-    if (autoKeying) {
-        setKeyframe(time);
-    }
-    if (keySet) {
-        Q_EMIT keyframeSet(time);
-    }
-}
-
-void
-Bezier::setRightBezierPoint(int index,
-                            int time,
-                            double x,
-                            double y)
-{
-    ///only called on the main-thread
-    assert( QThread::currentThread() == qApp->thread() );
-
-    bool autoKeying = getContext()->isAutoKeyingEnabled();
-    bool keySet = false;
-    bool rippleEditEnabled = getContext()->isRippleEditEnabled();
-    {
-        QMutexLocker l(&itemMutex);
-        BezierCPs::iterator cp = _imp->atIndex(index);
-        assert( cp != _imp->points.end() );
-
-        BezierCPs::iterator fp = _imp->featherPoints.begin();
-        std::advance(fp, index);
-        bool isOnKeyframe = _imp->hasKeyframeAtTime(time);
-
-        if (autoKeying || isOnKeyframe) {
-            (*cp)->setRightBezierPointAtTime(time, x, y);
-            (*fp)->setRightBezierPointAtTime(time, x, y);
-            if (!isOnKeyframe) {
-                keySet = true;
-            }
-        } else {
-            (*cp)->setRightBezierStaticPosition(x, y);
-            (*fp)->setRightBezierStaticPosition(x, y);
-        }
-
-        if (rippleEditEnabled) {
-            std::set<int> keyframes;
-            _imp->getKeyframeTimes(&keyframes);
-            for (std::set<int>::iterator it2 = keyframes.begin(); it2 != keyframes.end(); ++it2) {
-                (*cp)->setRightBezierPointAtTime(*it2, x,y);
-                (*fp)->setRightBezierPointAtTime(*it2,x,y);
-            }
-        }
-    }
-    if (autoKeying) {
-        setKeyframe(time);
-    }
-    if (keySet) {
-        Q_EMIT keyframeSet(time);
-    }
-}
-
-void
-Bezier::setPointAtIndex(bool feather,
-                        int index,
-                        int time,
-                        double x,
-                        double y,
-                        double lx,
-                        double ly,
-                        double rx,
-                        double ry)
-{
-    ///only called on the main-thread
-    assert( QThread::currentThread() == qApp->thread() );
-
-    bool autoKeying = getContext()->isAutoKeyingEnabled();
-    bool rippleEdit = getContext()->isRippleEditEnabled();
-    bool keySet = false;
-
-    {
-        QMutexLocker l(&itemMutex);
-        bool isOnKeyframe = _imp->hasKeyframeAtTime(time);
-
-        if ( index >= (int)_imp->featherPoints.size() ) {
-            throw std::invalid_argument("Bezier::setPointAtIndex: Index out of range.");
-        }
-
-        BezierCPs::iterator fp = feather ?  _imp->featherPoints.begin() : _imp->points.begin();
-        std::advance(fp, index);
-
-        if (autoKeying || isOnKeyframe) {
-            (*fp)->setPositionAtTime(time, x, y);
-            (*fp)->setLeftBezierPointAtTime(time, lx, ly);
-            (*fp)->setRightBezierPointAtTime(time, rx, ry);
-            if (!isOnKeyframe) {
-                keySet = true;
-            }
-        }
-
-        if (rippleEdit) {
-            std::set<int> keyframes;
-            _imp->getKeyframeTimes(&keyframes);
-            for (std::set<int>::iterator it2 = keyframes.begin(); it2 != keyframes.end(); ++it2) {
-                (*fp)->setPositionAtTime(*it2, x, y);
-                (*fp)->setLeftBezierPointAtTime(*it2, lx, ly);
-                (*fp)->setRightBezierPointAtTime(*it2, rx, ry);
-            }
-        }
-    }
-    if (autoKeying) {
-        setKeyframe(time);
-    }
-    if (keySet) {
-        Q_EMIT keyframeSet(time);
-    }
-}
-
-void
-Bezier::movePointLeftAndRightIndex(BezierCP & p,
-                                   int time,
-                                   double lx,
-                                   double ly,
-                                   double rx,
-                                   double ry)
-{
-    ///only called on the main-thread
-    assert( QThread::currentThread() == qApp->thread() );
-
-    bool autoKeying = getContext()->isAutoKeyingEnabled();
-    bool rippleEdit = getContext()->isRippleEditEnabled();
-    bool keySet = false;
-    {
-        QMutexLocker l(&itemMutex);
-        bool isOnKeyframe = _imp->hasKeyframeAtTime(time);
-        double leftX,leftY,rightX,rightY;
-        p.getLeftBezierPointAtTime(time, &leftX, &leftY,true);
-        p.getRightBezierPointAtTime(time, &rightX, &rightY,true);
-
-        if (autoKeying || isOnKeyframe) {
-            p.setLeftBezierPointAtTime(time, leftX + lx,leftY +  ly);
-            p.setRightBezierPointAtTime(time, rightX + rx, rightY + ry);
-            if (!isOnKeyframe) {
-                keySet = true;
-            }
-        }
-
-        if (rippleEdit) {
-            std::set<int> keyframes;
-            _imp->getKeyframeTimes(&keyframes);
-            for (std::set<int>::iterator it2 = keyframes.begin(); it2 != keyframes.end(); ++it2) {
-                if (*it2 == time) {
-                    continue;
-                }
-                p.getLeftBezierPointAtTime(*it2, &leftX, &leftY,true);
-                p.getRightBezierPointAtTime(*it2, &rightX, &rightY,true);
-                p.setLeftBezierPointAtTime(*it2, leftX + lx,leftY +  ly);
-                p.setRightBezierPointAtTime(*it2, rightX + rx, rightY + ry);
-            }
-        }
-    }
-    if (autoKeying) {
-        setKeyframe(time);
-    }
-    if (keySet) {
-        Q_EMIT keyframeSet(time);
-    }
-}
 
 void
 Bezier::removeFeatherAtIndex(int index)

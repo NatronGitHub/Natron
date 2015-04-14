@@ -606,6 +606,13 @@ public:
      * If ripple edit is enabled, the point will be moved at the same location at all keyframes.
      **/
     void moveFeatherByIndex(int index,int time,double dx,double dy);
+    
+private:
+    
+    void movePointByIndexInternal(int index,int time,double dx,double dy,bool onlyFeather);
+    
+public:
+    
 
     /**
      * @brief Moves the left bezier point of the control point at the given index by the given deltas
@@ -622,6 +629,12 @@ public:
      * If ripple edit is enabled, the point will be moved at the same location at all keyframes.
      **/
     void moveRightBezierPoint(int index,int time,double dx,double dy);
+    
+private:
+    
+    void moveBezierPointInternal(BezierCP* cpParam,int index,int time, double lx, double ly, double rx, double ry, bool isLeft, bool moveBoth);
+    
+public:
 
     /**
      * @brief Transforms the given point at the given time by the given matrix.
@@ -651,6 +664,13 @@ public:
      * @brief This function is a combinaison of setPosition + setLeftBezierPoint / setRightBeziePoint
      **/
     void setPointAtIndex(bool feather,int index,int time,double x,double y,double lx,double ly,double rx,double ry);
+    
+private:
+    
+    void setPointAtIndexInternal(bool setLeft,bool setRight,bool setPoint,bool feather,bool featherAndCp,int index,int time,double x,double y,double lx,double ly,double rx,double ry);
+    
+public:
+    
 
     /**
      * @brief Set the left and right bezier point of the control point.
