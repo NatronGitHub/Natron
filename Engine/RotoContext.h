@@ -850,7 +850,7 @@ public:
     };
 
     
-    bool isFeatherPolygonClockwiseOriented(int time) const;
+    bool isFeatherPolygonClockwiseOriented(int time);
     
     /**
      * @brief Refresh the polygon orientation for a specific keyframe or for all keyframes. Auto polygon orientation must be set to true

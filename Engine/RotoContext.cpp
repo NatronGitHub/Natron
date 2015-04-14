@@ -2466,8 +2466,11 @@ Bezier::setCurveFinished(bool finished)
 {
     ///only called on the main-thread
     assert( QThread::currentThread() == qApp->thread() );
-    QMutexLocker l(&itemMutex);
-    _imp->finished = finished;
+    {
+        QMutexLocker l(&itemMutex);
+        _imp->finished = finished;
+    }
+    refreshPolygonOrientation();
 }
 
 bool
@@ -3796,15 +3799,30 @@ pointInPolygon(const Point & p,
            : ( (winding_number % 2) != 0 );
 }
 
+
 bool
-Bezier::isFeatherPolygonClockwiseOriented(int time) const
+Bezier::isFeatherPolygonClockwiseOriented(int time)
 {
     QMutexLocker k(&itemMutex);
     std::map<int,bool>::iterator it = _imp->isClockwiseOriented.find(time);
     if (it != _imp->isClockwiseOriented.end()) {
         return it->second;
     } else {
-        return _imp->isClockwiseOrientedStatic;
+        
+        int kfCount;
+        if ( _imp->points.empty() ) {
+            kfCount = 0;
+        } else {
+            kfCount = _imp->points.front()->getKeyframesCount();
+        }
+        if (kfCount > 0) {
+            computePolygonOrientation(time, false);
+            it = _imp->isClockwiseOriented.find(time);
+            assert(it != _imp->isClockwiseOriented.end());
+            return it->second;
+        } else {
+            return _imp->isClockwiseOrientedStatic;
+        }
     }
 }
 
@@ -6018,18 +6036,18 @@ RotoContextPrivate::renderInternalShape(int time,
 
 struct qpointf_compare_less
 {
-    bool operator()(const QPointF& lhs,const QPointF& rhs) const
+    bool operator() (const QPointF& lhs,const QPointF& rhs) const
     {
-        if (lhs.x() < rhs.x()) {
-            return true;
-        } else if (lhs.x() == rhs.x()) {
-            if (lhs.y() < rhs.y()) {
-                return true;
-            } else if (lhs.y() == rhs.y()) {
+        if (std::abs(lhs.x() - rhs.x()) < 1e-6) {
+            if (std::abs(lhs.y() - rhs.y()) < 1e-6) {
                 return false;
+            } else if (lhs.y() < rhs.y()) {
+                return true;
             } else {
                 return false;
             }
+        } else if (lhs.x() < rhs.x()) {
+            return true;
         } else {
             return false;
         }
@@ -6132,8 +6150,8 @@ RotoContextPrivate::bezulate(int time, const BezierCPs& cps,std::list<BezierCPs>
                     //Make the sub closed curve composed of the path from points i to i + n
                     BezierCPs subCurve;
                     subCurve.push_back(*it);
+                    BezierCPs::iterator pointIt = it;
                     for (int i = 0; i < n - 1; ++i) {
-                        BezierCPs::iterator pointIt = it;
                         ++pointIt;
                         if (pointIt == simpleClosedCurve.end()) {
                             pointIt = simpleClosedCurve.begin();
