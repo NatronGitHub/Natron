@@ -892,6 +892,9 @@ RotoGui::drawOverlays(double /*scaleX*/,
                               -std::numeric_limits<double>::infinity(),
                               -std::numeric_limits<double>::infinity() );
             
+            bool clockWise = (*it)->isFeatherPolygonClockwiseOriented(time);
+
+            
             if ( isFeatherVisible() ) {
                 ///Draw feather only if visible (button is toggled in the user interface)
 #pragma message WARN("Roto drawing: please update this algorithm")
@@ -1071,7 +1074,8 @@ RotoGui::drawOverlays(double /*scaleX*/,
                                 featherPoint.x = xF;
                                 featherPoint.y = yF;
                                 
-                                Bezier::expandToFeatherDistance(controlPoint, &featherPoint, distFeatherX, featherPoints, featherBBox, time, prevCp, it2, nextCp);
+                                
+                                Bezier::expandToFeatherDistance(controlPoint, &featherPoint, distFeatherX, time, clockWise, prevCp, it2, nextCp);
                                 
                                 if ( ( (_imp->state == eEventStateDraggingFeatherBar) &&
                                       ( ( *itF == _imp->rotoData->featherBarBeingDragged.first) ||
@@ -2839,19 +2843,7 @@ RotoGui::RotoGuiPrivate::isNearbyFeatherBar(int time,
             The pointInPolygon function needs the polygon of the bezier to test whether the point is inside or outside the polygon
             hence in this loop we compute the polygon for each bezier.
          */
-#pragma message WARN("pointInPolygon should not be used, see comment")
-        /*
-           The pointInPolygon function should not be used.
-           The algorithm to know which side is the outside of a polygon consists in computing the global polygon orientation.
-           To compute the orientation, compute its surface. If positive the polygon is clockwise, if negative it's counterclockwise.
-           to compute the surface, take the starting point of the polygon, and imagine a fan made of all the triangles
-           pointing at this point. The surface of a tringle is half the cross-product of two of its sides issued from
-           the same point (the starting point of the polygon, in this case.
-           The orientation of a polygon has to be computed only once for each modification of the polygon (whenever it's edited), and
-           should be stored with the polygon.
-           Of course an 8-shaped polygon doesn't have an outside, but it still has an orientation. The feather direction
-           should follow this orientation.
-         */
+
 
         const std::list<boost::shared_ptr<BezierCP> > & fps = (*it)->getFeatherPoints();
         const std::list<boost::shared_ptr<BezierCP> > & cps = (*it)->getControlPoints();
@@ -2859,12 +2851,12 @@ RotoGui::RotoGuiPrivate::isNearbyFeatherBar(int time,
         if (cpCount <= 1) {
             continue;
         }
-        std::list<Point> polygon;
-        RectD polygonBBox( std::numeric_limits<double>::infinity(),
-                           std::numeric_limits<double>::infinity(),
-                           -std::numeric_limits<double>::infinity(),
-                           -std::numeric_limits<double>::infinity() );
-        (*it)->evaluateFeatherPointsAtTime_DeCasteljau(time, 0, 50, true, &polygon, &polygonBBox);
+//        std::list<Point> polygon;
+//        RectD polygonBBox( std::numeric_limits<double>::infinity(),
+//                           std::numeric_limits<double>::infinity(),
+//                           -std::numeric_limits<double>::infinity(),
+//                           -std::numeric_limits<double>::infinity() );
+//        (*it)->evaluateFeatherPointsAtTime_DeCasteljau(time, 0, 50, true, &polygon, &polygonBBox);
 
         std::list<boost::shared_ptr<BezierCP> >::const_iterator itF = fps.begin();
         std::list<boost::shared_ptr<BezierCP> >::const_iterator nextF = itF;
@@ -2873,6 +2865,8 @@ RotoGui::RotoGuiPrivate::isNearbyFeatherBar(int time,
         --prevF;
         std::list<boost::shared_ptr<BezierCP> >::const_iterator itCp = cps.begin();
 
+        bool isClockWiseOriented = (*it)->isFeatherPolygonClockwiseOriented(time);
+        
         for (; itCp != cps.end(); ++itF,++nextF,++prevF,++itCp) {
             if ( prevF == fps.end() ) {
                 prevF = fps.begin();
@@ -2885,8 +2879,7 @@ RotoGui::RotoGuiPrivate::isNearbyFeatherBar(int time,
             (*itCp)->getPositionAtTime(time, &controlPoint.x, &controlPoint.y);
             (*itF)->getPositionAtTime(time, &featherPoint.x, &featherPoint.y);
 
-            Bezier::expandToFeatherDistance(controlPoint, &featherPoint, distFeatherX, polygon,
-                                            polygonBBox, time, prevF, itF, nextF);
+            Bezier::expandToFeatherDistance(controlPoint, &featherPoint, distFeatherX, time, isClockWiseOriented, prevF, itF, nextF);
             assert(featherPoint.x != controlPoint.x || featherPoint.y != controlPoint.y);
 
             ///Now test if the user mouse click is on the line using bounding box and cross product.

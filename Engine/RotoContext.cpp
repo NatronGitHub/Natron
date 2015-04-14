@@ -2509,6 +2509,7 @@ Bezier::removeControlPointByIndex(int index)
         std::advance(itF, index);
         _imp->featherPoints.erase(itF);
     }
+    refreshPolygonOrientation();
     Q_EMIT controlPointRemoved();
 }
 
@@ -2588,6 +2589,7 @@ Bezier::movePointByIndexInternal(int index,int time,double dx,double dy,bool onl
             }
         }
     }
+    refreshPolygonOrientation(time);
     if (autoKeying) {
         setKeyframe(time);
     }
@@ -2644,36 +2646,40 @@ Bezier::moveBezierPointInternal(BezierCP* cpParam,int index,int time, double lx,
         } else {
             cp = cpParam;
         }
-        double x,y,xF,yF;
-        if (isLeft || moveBoth) {
-            (cp)->getLeftBezierPointAtTime(time, &x, &y,true);
-        }
-        if (!isLeft || moveBoth) {
-            (cp)->getRightBezierPointAtTime(time, &x, &y,true);
-        }
-        bool isOnKeyframe;
         
+        bool isOnKeyframe;
+        double leftX,leftY,rightX,rightY,leftXF,leftYF,rightXF,rightYF;
         if (isLeft || moveBoth) {
-            isOnKeyframe = (fp)->getLeftBezierPointAtTime(time, &xF, &yF,true);
+            isOnKeyframe = (cp)->getLeftBezierPointAtTime(time, &leftX, &leftY,true);
         }
         if (!isLeft || moveBoth) {
-            (fp)->getRightBezierPointAtTime(time, &xF, &yF,true);
+            isOnKeyframe = (cp)->getRightBezierPointAtTime(time, &rightX, &rightY,true);
         }
-        bool moveFeather = cpParam ? false : (featherLink || (x == xF && y == yF));
+        
+        
+        if (!cpParam) {
+            if (isLeft || moveBoth) {
+                (fp)->getLeftBezierPointAtTime(time, &leftXF, &leftYF,true);
+            }
+            if (!isLeft || moveBoth) {
+                (fp)->getRightBezierPointAtTime(time, &rightXF, &rightYF,true);
+            }
+        }
+        bool moveFeather = cpParam ? false : (featherLink || (leftX == leftXF && leftY == leftYF && rightX == rightXF && rightY == rightYF));
         
         if (autoKeying || isOnKeyframe) {
             if (isLeft || moveBoth) {
-                (cp)->setLeftBezierPointAtTime(time,x + lx, y + ly);
+                (cp)->setLeftBezierPointAtTime(time,leftX + lx, leftY + ly);
             }
             if (!isLeft || moveBoth) {
-                (cp)->setRightBezierPointAtTime(time,x + rx, y + ry);
+                (cp)->setRightBezierPointAtTime(time,rightX + rx, rightY + ry);
             }
             if (moveFeather) {
                 if (isLeft || moveBoth) {
-                    (fp)->setLeftBezierPointAtTime(time, xF + lx, yF + ly);
+                    (fp)->setLeftBezierPointAtTime(time, leftXF + lx, leftYF + ly);
                 }
                 if (!isLeft || moveBoth) {
-                    (fp)->setRightBezierPointAtTime(time, xF + rx, yF + ry);
+                    (fp)->setRightBezierPointAtTime(time, rightXF + rx, rightYF + ry);
                 }
             }
             if (!isOnKeyframe) {
@@ -2684,17 +2690,17 @@ Bezier::moveBezierPointInternal(BezierCP* cpParam,int index,int time, double lx,
             ///move the static position if there is no keyframe, otherwise the
             ///curve would never be built
             if (isLeft || moveBoth) {
-                (cp)->setLeftBezierStaticPosition(x + lx, y + ly);
+                (cp)->setLeftBezierStaticPosition(leftX + lx, leftY + ly);
             }
             if (!isLeft || moveBoth) {
-                (fp)->setRightBezierStaticPosition(x + rx, y + ry);
+                (fp)->setRightBezierStaticPosition(rightX + rx, rightY + ry);
             }
             if (moveFeather) {
                 if (isLeft || moveBoth) {
-                    (fp)->setLeftBezierStaticPosition(xF + lx, yF + ly);
+                    (fp)->setLeftBezierStaticPosition(leftXF + lx, leftYF + ly);
                 }
                 if (!isLeft || moveBoth) {
-                    (fp)->setRightBezierStaticPosition(xF + rx, yF + ry);
+                    (fp)->setRightBezierStaticPosition(rightXF + rx, rightYF + ry);
                 }
                     
             }
@@ -2709,23 +2715,24 @@ Bezier::moveBezierPointInternal(BezierCP* cpParam,int index,int time, double lx,
                 }
                 
                 if (isLeft || moveBoth) {
-                    (cp)->getLeftBezierPointAtTime(*it2, &x, &y,true);
-                    (cp)->setLeftBezierPointAtTime(*it2, x + lx, y + ly);
+                    (cp)->getLeftBezierPointAtTime(*it2, &leftX, &leftY,true);
+                    (cp)->setLeftBezierPointAtTime(*it2, leftX + lx, leftY + ly);
                     if (moveFeather) {
-                        (fp)->getLeftBezierPointAtTime(*it2, &xF, &yF,true);
-                        (fp)->setLeftBezierPointAtTime(*it2, xF + lx, yF + ly);
+                        (fp)->getLeftBezierPointAtTime(*it2, &leftXF, &leftYF,true);
+                        (fp)->setLeftBezierPointAtTime(*it2, leftXF + lx, leftYF + ly);
                     }
                 } else {
-                    (cp)->getRightBezierPointAtTime(*it2, &x, &y,true);
-                    (cp)->setRightBezierPointAtTime(*it2, x + rx, y + ry);
+                    (cp)->getRightBezierPointAtTime(*it2, &rightX, &rightY,true);
+                    (cp)->setRightBezierPointAtTime(*it2, rightX + rx, rightY + ry);
                     if (moveFeather) {
-                        (fp)->getRightBezierPointAtTime(*it2, &xF, &yF,true);
-                        (fp)->setRightBezierPointAtTime(*it2, xF + rx, yF + ry);
+                        (fp)->getRightBezierPointAtTime(*it2, &rightXF, &rightYF,true);
+                        (fp)->setRightBezierPointAtTime(*it2, rightXF + rx, rightYF + ry);
                     }
                 }
             }
         }
     }
+    refreshPolygonOrientation(time);
     if (autoKeying) {
         setKeyframe(time);
     }
@@ -2842,6 +2849,7 @@ Bezier::setPointAtIndexInternal(bool setLeft,bool setRight,bool setPoint,bool fe
             }
         }
     }
+    refreshPolygonOrientation(time);
     if (autoKeying) {
         setKeyframe(time);
     }
@@ -2922,6 +2930,7 @@ Bezier::transformPoint(const boost::shared_ptr<BezierCP> & point,
         }
     }
     
+    refreshPolygonOrientation(time);
     if (keySet) {
         Q_EMIT keyframeSet(time);
     }
@@ -2973,6 +2982,7 @@ Bezier::smoothPointAtIndex(int index,
         (*cp)->smoothPoint(time,autoKeying,rippleEdit,pixelScale);
         keySet = (*fp)->smoothPoint(time,autoKeying,rippleEdit,pixelScale);
     }
+    refreshPolygonOrientation(time);
     if (autoKeying) {
         setKeyframe(time);
     }
@@ -3006,6 +3016,7 @@ Bezier::cuspPointAtIndex(int index,
         (*cp)->cuspPoint(time,autoKeying,rippleEdit, pixelScale);
         keySet = (*fp)->cuspPoint(time,autoKeying,rippleEdit,pixelScale);
     }
+    refreshPolygonOrientation(time);
     if (autoKeying) {
         setKeyframe(time);
     }
@@ -3077,6 +3088,10 @@ Bezier::removeKeyframe(int time)
             (*it)->removeKeyframe(time);
             (*fp)->removeKeyframe(time);
         }
+        std::map<int,bool>::iterator found = _imp->isClockwiseOriented.find(time);
+        if (found != _imp->isClockwiseOriented.end()) {
+            _imp->isClockwiseOriented.erase(found);
+        }
     }
     Q_EMIT keyframeRemoved(time);
 }
@@ -3098,6 +3113,7 @@ Bezier::removeAnimation()
             (*it)->removeAnimation(time);
             (*fp)->removeAnimation(time);
         }
+        _imp->isClockwiseOriented.clear();
     }
     Q_EMIT animationRemoved();
 }
@@ -3105,6 +3121,7 @@ Bezier::removeAnimation()
 void
 Bezier::moveKeyframe(int oldTime,int newTime)
 {
+    assert(QThread::currentThread() == qApp->thread());
     
     BezierCPs::iterator fp = _imp->featherPoints.begin();
     for (BezierCPs::iterator it = _imp->points.begin(); it != _imp->points.end(); ++it,++fp) {
@@ -3129,7 +3146,23 @@ Bezier::moveKeyframe(int oldTime,int newTime)
         (*fp)->setLeftBezierPointAtTime(newTime, lx, ly);
         (*fp)->setRightBezierPointAtTime(newTime, rx, ry);
         
+        
     }
+    
+    {
+        QMutexLocker k(&itemMutex);
+        bool foundOld;
+        bool oldValue;
+        std::map<int,bool>::iterator foundOldIt = _imp->isClockwiseOriented.find(oldTime);
+        foundOld = foundOldIt != _imp->isClockwiseOriented.end();
+        if (foundOld) {
+            oldValue = foundOldIt->first;
+        } else {
+            oldValue = 0;
+        }
+        _imp->isClockwiseOriented[newTime] = oldValue;
+    }
+    
     Q_EMIT keyframeRemoved(oldTime);
     Q_EMIT keyframeSet(newTime);
 }
@@ -3629,6 +3662,7 @@ Bezier::load(const RotoItemSerialization & obj)
             _imp->featherPoints.push_back(fp);
         }
     }
+    refreshPolygonOrientation();
     RotoDrawableItem::load(obj);
 }
 
@@ -3780,6 +3814,112 @@ Bezier::pointInPolygon(const Point & p,
            : ( (winding_number % 2) != 0 );
 }
 
+bool
+Bezier::isFeatherPolygonClockwiseOriented(int time) const
+{
+    QMutexLocker k(&itemMutex);
+    std::map<int,bool>::iterator it = _imp->isClockwiseOriented.find(time);
+    if (it != _imp->isClockwiseOriented.end()) {
+        return it->second;
+    } else {
+        return _imp->isClockwiseOrientedStatic;
+    }
+}
+
+void
+Bezier::setAutoOrientationComputation(bool autoCompute)
+{
+    assert(QThread::currentThread() == qApp->thread());
+    _imp->autoRecomputeOrientation = autoCompute;
+}
+
+void
+Bezier::refreshPolygonOrientation(int time)
+{
+    QMutexLocker k(&itemMutex);
+    if (!_imp->autoRecomputeOrientation) {
+        return;
+    }
+    computePolygonOrientation(time,false);
+}
+
+
+void
+Bezier::refreshPolygonOrientation()
+{
+    {
+        QMutexLocker k(&itemMutex);
+        if (!_imp->autoRecomputeOrientation) {
+            return;
+        }
+    }
+    std::set<int> kfs;
+    getKeyframeTimes(&kfs);
+    
+    QMutexLocker k(&itemMutex);
+    if (kfs.empty()) {
+        computePolygonOrientation(0,true);
+    } else {
+        for (std::set<int>::iterator it = kfs.begin(); it!=kfs.end(); ++it) {
+            computePolygonOrientation(*it,false);
+        }
+    }
+}
+
+/*
+ The algorithm to know which side is the outside of a polygon consists in computing the global polygon orientation.
+ To compute the orientation, compute its surface. If positive the polygon is clockwise, if negative it's counterclockwise.
+ to compute the surface, take the starting point of the polygon, and imagine a fan made of all the triangles
+ pointing at this point. The surface of a tringle is half the cross-product of two of its sides issued from
+ the same point (the starting point of the polygon, in this case.
+ The orientation of a polygon has to be computed only once for each modification of the polygon (whenever it's edited), and
+ should be stored with the polygon.
+ Of course an 8-shaped polygon doesn't have an outside, but it still has an orientation. The feather direction
+ should follow this orientation.
+ */
+void
+Bezier::computePolygonOrientation(int time,bool isStatic)
+{
+    //Private - should already be locked
+    assert(!itemMutex.tryLock());
+    
+    if (_imp->points.size() <= 1) {
+        return;
+    }
+    
+    Point originalPoint;
+    BezierCPs::iterator it = _imp->featherPoints.begin();
+    (*it)->getPositionAtTime(time, &originalPoint.x, &originalPoint.y);
+    ++it;
+    BezierCPs::iterator next = it;
+    ++next;
+    
+    double polygonSurface = 0.;
+    for (;next!=_imp->featherPoints.end(); ++it,++next) {
+        double x,y;
+        (*it)->getPositionAtTime(time, &x, &y);
+        double xN,yN;
+        (*next)->getPositionAtTime(time, &xN, &yN);
+        Point u;
+        u.x = x - originalPoint.x;
+        u.y = y - originalPoint.y;
+        
+        Point v;
+        v.x = xN - originalPoint.x;
+        v.y = yN - originalPoint.y;
+        
+        //This is the area of the parallelogram defined by the U and V sides
+        //Since a triangle is half a parallelogram, just half the cross-product
+        double crossProduct = v.y * u.x - v.x * u.y;
+        polygonSurface += (crossProduct / 2.);
+    }
+    if (isStatic) {
+        _imp->isClockwiseOrientedStatic = polygonSurface < 0;
+    } else {
+        _imp->isClockwiseOriented[time] = polygonSurface < 0;
+    }
+}
+
 /**
  * @brief Computes the location of the feather extent relative to the current feather point position and
  * the given feather distance.
@@ -3795,9 +3935,8 @@ Point
 Bezier::expandToFeatherDistance(const Point & cp, //< the point
                                 Point* fp, //< the feather point
                                 double featherDistance, //< feather distance
-                                const std::list<Point> & featherPolygon, //< the polygon of the bezier
-                                const RectD & featherPolyBBox, //< helper to speed-up pointInPolygon computations
                                 int time, //< time
+                                bool clockWise, //< is the bezier  clockwise oriented or not
                                 BezierCPs::const_iterator prevFp, //< iterator pointing to the feather before curFp
                                 BezierCPs::const_iterator curFp, //< iterator pointing to fp
                                 BezierCPs::const_iterator nextFp) //< iterator pointing after curFp
@@ -3847,22 +3986,9 @@ Bezier::expandToFeatherDistance(const Point & cp, //< the point
             extent.x = cp.x + ret.x;
             extent.y = cp.y + ret.y;
 
-#pragma message WARN("pointInPolygon should not be used, see comment")
-            /*
-               The pointInPolygon function should not be used.
-               The algorithm to know which side is the outside of a polygon consists in computing the global polygon orientation.
-               To compute the orientation, compute its surface. If positive the polygon is clockwise, if negative it's counterclockwise.
-               to compute the surface, take the starting point of the polygon, and imagine a fan made of all the triangles
-               pointing at this point. The surface of a tringle is half the cross-product of two of its sides issued from
-               the same point (the starting point of the polygon, in this case.
-               The orientation of a polygon has to be computed only once for each modification of the polygon (whenever it's edited), and
-               should be stored with the polygon.
-               Of course an 8-shaped polygon doesn't have an outside, but it still has an orientation. The feather direction
-               should follow this orientation.
-             */
-            bool inside = pointInPolygon(extent, featherPolygon,featherPolyBBox,Bezier::eFillRuleOddEven);
-            if ( ( !inside && (featherDistance > 0) ) || ( inside && (featherDistance < 0) ) ) {
-                //*fp = extent;
+            //bool inside = pointInPolygon(extent, featherPolygon,featherPolyBBox,Bezier::eFillRuleOddEven);
+            //if ( ( !inside && (featherDistance > 0) ) || ( inside && (featherDistance < 0) ) ) {
+            if (clockWise) {
                 fp->x = cp.x + ret.x * featherDistance;
                 fp->y = cp.y + ret.y * featherDistance;
             } else {

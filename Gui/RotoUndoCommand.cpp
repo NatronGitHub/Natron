@@ -459,6 +459,7 @@ RemovePointUndoCommand::redo()
     std::list<boost::shared_ptr<Bezier> > toRemove;
     for (std::list< CurveDesc >::iterator it = _curves.begin(); it != _curves.end(); ++it) {
         ///Remove in decreasing order so indexes don't get messed up
+        it->curve->setAutoOrientationComputation(false);
         for (std::list<int>::reverse_iterator it2 = it->points.rbegin(); it2 != it->points.rend(); ++it2) {
             it->curve->removeControlPointByIndex(*it2);
             int cpCount = it->curve->getControlPointsCount();
@@ -472,6 +473,8 @@ RemovePointUndoCommand::redo()
                 }
             }
         }
+        it->curve->setAutoOrientationComputation(true);
+        it->curve->refreshPolygonOrientation();
     }
 
     for (std::list<boost::shared_ptr<Bezier> >::iterator it = toRemove.begin(); it != toRemove.end(); ++it) {

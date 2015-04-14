@@ -158,15 +158,26 @@ struct BezierPrivate
     BezierCPs pointsAtDistance; //< same as points, but empty beziers at cusp points with angle <180 are added
     BezierCPs featherPointsAtDistance; //< the precomputed feather points at featherDistance. may
     double featherPointsAtDistanceVal; //< the distance value used to compute featherPointsAtDistance. if == 0., use featherPoints. if Bezier::getFeatherDistance() returns a different value, featherPointsAtDistance must be updated.
+    
+    //updated whenever the Bezier is edited, this is used to determine if a point lies inside the bezier or not
+    //it has a value for each keyframe
+    std::map<int,bool> isClockwiseOriented;
+    bool isClockwiseOrientedStatic; //< used when the bezier has no keyframes
+    
+    bool autoRecomputeOrientation; // when true, orientation will be computed automatically on editing
+    
     bool finished; //< when finished is true, the last point of the list is connected to the first point of the list.
 
     BezierPrivate()
-        : points()
-          , featherPoints()
-          , pointsAtDistance()
-          , featherPointsAtDistance()
-          , featherPointsAtDistanceVal(0.)
-          , finished(false)
+    : points()
+    , featherPoints()
+    , pointsAtDistance()
+    , featherPointsAtDistance()
+    , featherPointsAtDistanceVal(0.)
+    , isClockwiseOriented()
+    , isClockwiseOrientedStatic(false)
+    , autoRecomputeOrientation(true)
+    , finished(false)
     {
     }
 

@@ -836,9 +836,10 @@ public:
     static Natron::Point expandToFeatherDistance(const Natron::Point & cp, //< the point
                                                  Natron::Point* fp, //< the feather point
                                                  double featherDistance, //< feather distance
-                                                 const std::list<Natron::Point> & featherPolygon, //< the polygon of the bezier
-                                                 const RectD & featherPolyBBox, //< helper to speed-up pointInPolygon computations
+                                                 //const std::list<Natron::Point> & featherPolygon, //< the polygon of the bezier
+                                                 //const RectD & featherPolyBBox, //< helper to speed-up pointInPolygon computations
                                                  int time, //< time
+                                                 bool clockWise, //< is the bezier  clockwise oriented or not
                                                  std::list<boost::shared_ptr<BezierCP> >::const_iterator prevFp, //< iterator pointing to the feather before curFp
                                                  std::list<boost::shared_ptr<BezierCP> >::const_iterator curFp, //< iterator pointing to fp
                                                  std::list<boost::shared_ptr<BezierCP> >::const_iterator nextFp); //< iterator pointing after curFp
@@ -863,6 +864,25 @@ public:
      */
     static bool pointInPolygon(const Natron::Point & p, const std::list<Natron::Point> & polygon,
                                const RectD & featherPolyBBox, FillRuleEnum rule);
+    
+    bool isFeatherPolygonClockwiseOriented(int time) const;
+    
+    /**
+     * @brief Refresh the polygon orientation for a specific keyframe or for all keyframes. Auto polygon orientation must be set to true
+     * so make sure setAutoOrientationComputation(true) has been called before.
+     **/
+    void refreshPolygonOrientation(int time);
+    void refreshPolygonOrientation();
+
+    void setAutoOrientationComputation(bool autoCompute);
+private:
+    
+    
+    void computePolygonOrientation(int time,bool isStatic);
+    
+public:
+    
+    
 
     /**
      * @brief Must be implemented by the derived class to save the state into
