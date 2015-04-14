@@ -695,6 +695,14 @@ GuiApplicationManager::getIcon(Natron::PixmapEnum e,
                 img.load(NATRON_IMAGES_PATH "zebra_off.png");
                 *pix = QPixmap::fromImage(img);
                 break;
+            case NATRON_PIXMAP_VIEWER_GAMMA_ENABLED:
+                img.load(NATRON_IMAGES_PATH "gammaON.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_VIEWER_GAMMA_DISABLED:
+                img.load(NATRON_IMAGES_PATH "gammaOFF.png");
+                *pix = QPixmap::fromImage(img);
+                break;
             case NATRON_PIXMAP_ADD_TRACK:
                 img.load(NATRON_IMAGES_PATH "addTrack.png");
                 *pix = QPixmap::fromImage(img);

@@ -28,7 +28,7 @@
         <file>Resources/Images/GroupingIcons/Set2/paint_grouping_2.png</file>
         <file>Resources/Images/GroupingIcons/Set2/time_grouping_2.png</file>
         <file>Resources/Images/GroupingIcons/Set2/toolsets_grouping_2.png</file>
-        <file>Resources/Images/GroupingIcons/Set2/transform_grouping_2.png</file>
+        <file>Resources/Images/GroupingIcons/Set2/transform_grouping_2.png</file> 
         <file>Resources/Images/GroupingIcons/Set3/3D_grouping_3.png</file>
         <file>Resources/Images/GroupingIcons/Set3/channel_grouping_3.png</file>
         <file>Resources/Images/GroupingIcons/Set3/color_grouping_3.png</file>
@@ -213,5 +213,7 @@
         <file>Resources/Images/input_icon.png</file>
         <file>Resources/Images/output_icon.png</file>
         <file>Resources/Images/enter_group.png</file>
+        <file>Resources/Images/gammaOFF.png</file>
+        <file>Resources/Images/gammaON.png</file>
     </qresource>
 </RCC>

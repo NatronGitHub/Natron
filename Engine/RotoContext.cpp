@@ -137,8 +137,6 @@ void
 BezierCP::setStaticPosition(double x,
                             double y)
 {
-    ///only called on the main-thread
-    assert( QThread::currentThread() == qApp->thread() );
     QMutexLocker l(&_imp->staticPositionMutex);
     _imp->x = x;
     _imp->y = y;
@@ -148,8 +146,6 @@ void
 BezierCP::setLeftBezierStaticPosition(double x,
                                       double y)
 {
-    ///only called on the main-thread
-    assert( QThread::currentThread() == qApp->thread() );
     QMutexLocker l(&_imp->staticPositionMutex);
     _imp->leftX = x;
     _imp->leftY = y;
@@ -159,8 +155,6 @@ void
 BezierCP::setRightBezierStaticPosition(double x,
                                        double y)
 {
-    ///only called on the main-thread
-    assert( QThread::currentThread() == qApp->thread() );
     QMutexLocker l(&_imp->staticPositionMutex);
     _imp->rightX = x;
     _imp->rightY = y;
@@ -5911,7 +5905,6 @@ RotoContextPrivate::renderInternalShape(int time,
         
         p0ptr->getPositionAtTime(time, &p0.x, &p0.y);
         p0ptr->getRightBezierPointAtTime(time, &p0p1.x, &p0p1.y);
-        p0ptr->getLeftBezierPointAtTime(time, &p0p3.x, &p0p3.y);
         p1ptr->getLeftBezierPointAtTime(time, &p1p0.x, &p1p0.y);
         p1ptr->getPositionAtTime(time, &p1.x, &p1.y);
         p1ptr->getRightBezierPointAtTime(time, &p1p2.x, &p1p2.y);
@@ -5921,6 +5914,10 @@ RotoContextPrivate::renderInternalShape(int time,
         p3ptr->getLeftBezierPointAtTime(time, &p3p2.x, &p3p2.y);
         p3ptr->getPositionAtTime(time, &p3.x, &p3.y);
         p3ptr->getRightBezierPointAtTime(time, &p3p0.x, &p3p0.y);
+        //p3p0 = p3;
+        //p0p3 = p0;
+        p0ptr->getLeftBezierPointAtTime(time, &p0p3.x, &p0p3.y);
+
         
         adjustToPointToScale(mipmapLevel, p0.x, p0.y);
         adjustToPointToScale(mipmapLevel, p0p1.x, p0p1.y);
@@ -6018,6 +6015,27 @@ RotoContextPrivate::renderInternalShape(int time,
 #endif
 }
 
+struct qpointf_compare_less
+{
+    bool operator()(const QPointF& lhs,const QPointF& rhs) const
+    {
+        if (lhs.x() < rhs.x()) {
+            return true;
+        } else if (lhs.x() == rhs.x()) {
+            if (lhs.y() < rhs.y()) {
+                return true;
+            } else if (lhs.y() == rhs.y()) {
+                return false;
+            } else {
+                return false;
+            }
+        } else {
+            return false;
+        }
+    }
+};
+
+
 
 //From http://www.math.ualberta.ca/~bowman/publications/cad10.pdf
 void
@@ -6064,6 +6082,12 @@ RotoContextPrivate::bezulate(int time, const BezierCPs& cps,std::list<BezierCPs>
             
             for (BezierCPs::iterator it = simpleClosedCurve.begin();it!=simpleClosedCurve.end();++it,++next) {
                 
+                bool nextIsPassedEnd = false;
+                if (next == simpleClosedCurve.end()) {
+                    next = simpleClosedCurve.begin();
+                    nextIsPassedEnd = true;
+                }
+                
                 //mid-point of the line segment between points i and i + n
                 Point nextPoint,curPoint;
                 (*it)->getPositionAtTime(time, &curPoint.x, &curPoint.y);
@@ -6074,7 +6098,7 @@ RotoContextPrivate::bezulate(int time, const BezierCPs& cps,std::list<BezierCPs>
                  * If the number of intersections is different of 2, ignore this segment.
                  */
                 QLineF line(QPointF(curPoint.x,curPoint.y),QPointF(nextPoint.x,nextPoint.y));
-                int noIntersections = 0;
+                std::set<QPointF,qpointf_compare_less> intersections;
                 std::list<Point>::const_iterator last_pt = polygon.begin();
                 std::list<Point>::const_iterator cur = last_pt;
                 ++cur;
@@ -6082,14 +6106,14 @@ RotoContextPrivate::bezulate(int time, const BezierCPs& cps,std::list<BezierCPs>
                 for (; cur != polygon.end(); ++cur,++last_pt) {
                     QLineF polygonSegment(QPointF(last_pt->x,last_pt->y),QPointF(cur->x,cur->y));
                     if (line.intersect(polygonSegment, &intersectionPoint) == QLineF::BoundedIntersection) {
-                        ++noIntersections;
+                        intersections.insert(intersectionPoint);
                     }
-                    if (noIntersections > 2) {
+                    if (intersections.size() > 2) {
                         break;
                     }
                 }
                 
-                if (noIntersections != 2) {
+                if (intersections.size() != 2) {
                     continue;
                 }
                 
@@ -6106,18 +6130,36 @@ RotoContextPrivate::bezulate(int time, const BezierCPs& cps,std::list<BezierCPs>
                     
                     //Make the sub closed curve composed of the path from points i to i + n
                     BezierCPs subCurve;
-                    BezierCPs::iterator endNewCurve = next;
-                    ++endNewCurve;
-                    for (BezierCPs::iterator it2 = it; it2 != endNewCurve; ++it2) {
-                        subCurve.push_back(*it2);
+                    subCurve.push_back(*it);
+                    for (int i = 0; i < n - 1; ++i) {
+                        BezierCPs::iterator pointIt = it;
+                        ++pointIt;
+                        if (pointIt == simpleClosedCurve.end()) {
+                            pointIt = simpleClosedCurve.begin();
+                        }
+                        subCurve.push_back(*pointIt);
                     }
+                    subCurve.push_back(*next);
                     patches->push_back(subCurve);
                     
                     //Remove i + 1 to i + n
                     BezierCPs::iterator eraseStart = it;
                     ++eraseStart;
+                    bool eraseStartIsPassedEnd = false;
+                    if (eraseStart == simpleClosedCurve.end()) {
+                        eraseStart = simpleClosedCurve.begin();
+                        eraseStartIsPassedEnd = true;
+                    }
                     //"it" is  invalidated after this instruction but we leave the loop anyway
-                    simpleClosedCurve.erase(eraseStart,next);
+                    assert(!simpleClosedCurve.empty());
+                    if ((!nextIsPassedEnd && !eraseStartIsPassedEnd) || (nextIsPassedEnd && eraseStartIsPassedEnd)) {
+                        simpleClosedCurve.erase(eraseStart,next);
+                    } else {
+                        simpleClosedCurve.erase(eraseStart,simpleClosedCurve.end());
+                        if (!simpleClosedCurve.empty()) {
+                            simpleClosedCurve.erase(simpleClosedCurve.begin(),next);
+                        }
+                    }
                     found = true;
                     break;
                 }
@@ -6153,7 +6195,10 @@ RotoContextPrivate::bezulate(int time, const BezierCPs& cps,std::list<BezierCPs>
             simpleClosedCurve = subdivisedCurve;
         }
     }
-    patches->push_back(simpleClosedCurve);
+    if (!simpleClosedCurve.empty()) {
+        assert(simpleClosedCurve.size() >= 2);
+        patches->push_back(simpleClosedCurve);
+    }
 }
 
 void

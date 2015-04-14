@@ -616,12 +616,19 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->autoContrast->setToolTip(autoContrastToolTip);
     _imp->secondRowLayout->addWidget(_imp->autoContrast);
     
-    
-    _imp->toggleGammaButton = new Button(QIcon(),"G",_imp->secondSettingsRow);
+    QPixmap gammaEnabled,gammaDisabled;
+    appPTR->getIcon(NATRON_PIXMAP_VIEWER_GAMMA_ENABLED,&gammaEnabled);
+    appPTR->getIcon(NATRON_PIXMAP_VIEWER_GAMMA_DISABLED,&gammaDisabled);
+    QIcon gammaIc;
+    gammaIc.addPixmap(gammaEnabled,QIcon::Normal,QIcon::On);
+    gammaIc.addPixmap(gammaDisabled,QIcon::Normal,QIcon::Off);
+    _imp->toggleGammaButton = new Button(gammaIc,"",_imp->secondSettingsRow);
     QObject::connect(_imp->toggleGammaButton, SIGNAL(clicked(bool)), this,SLOT(onGammaToggled(bool)));
     _imp->toggleGammaButton->setCheckable(true);
     _imp->toggleGammaButton->setChecked(false);
     _imp->toggleGammaButton->setDown(false);
+    _imp->toggleGammaButton->setFocusPolicy(Qt::NoFocus);
+    _imp->toggleGammaButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     _imp->toggleGammaButton->setToolTip(Qt::convertFromPlainText(tr("Switch between gamma at 1.0 and the previous setting")));
     _imp->secondRowLayout->addWidget(_imp->toggleGammaButton);
     
