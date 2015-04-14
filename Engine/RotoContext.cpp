@@ -3770,7 +3770,7 @@ point_line_intersection(const Point &p1,
     }
 }
 
-#pragma message WARN("pointInPolygon should not be used, see comment")
+#if 0
 /*
    The pointInPolygon function should not be used.
    The algorithm to know which side is the outside of a polygon consists in computing the global polygon orientation.
@@ -3813,6 +3813,7 @@ Bezier::pointInPolygon(const Point & p,
            ? (winding_number != 0)
            : ( (winding_number % 2) != 0 );
 }
+#endif
 
 bool
 Bezier::isFeatherPolygonClockwiseOriented(int time) const
@@ -3986,8 +3987,6 @@ Bezier::expandToFeatherDistance(const Point & cp, //< the point
             extent.x = cp.x + ret.x;
             extent.y = cp.y + ret.y;
 
-            //bool inside = pointInPolygon(extent, featherPolygon,featherPolyBBox,Bezier::eFillRuleOddEven);
-            //if ( ( !inside && (featherDistance > 0) ) || ( inside && (featherDistance < 0) ) ) {
             if (clockWise) {
                 fp->x = cp.x + ret.x * featherDistance;
                 fp->y = cp.y + ret.y * featherDistance;
@@ -5674,6 +5673,9 @@ RotoContextPrivate::renderInternal(cairo_t* cr,
             continue;
         }
 
+        
+        bool clockWise = (*it2)->isFeatherPolygonClockwiseOriented(time);
+        
         cairo_new_path(cr);
 
         ////Define the feather edge pattern
@@ -5725,22 +5727,7 @@ RotoContextPrivate::renderInternal(cairo_t* cr,
         p1.x = cur->x + dx;
         p1.y = cur->y + dy;
 
-
-#pragma message WARN("pointInPolygon should not be used, see comment")
-        /*
-           The pointInPolygon function should not be used.
-           The algorithm to know which side is the outside of a polygon consists in computing the global polygon orientation.
-           To compute the orientation, compute its surface. If positive the polygon is clockwise, if negative it's counterclockwise.
-           to compute the surface, take the starting point of the polygon, and imagine a fan made of all the triangles
-           pointing at this point. The surface of a tringle is half the cross-product of two of its sides issued from
-           the same point (the starting point of the polygon, in this case.
-           The orientation of a polygon has to be computed only once for each modification of the polygon (whenever it's edited), and
-           should be stored with the polygon.
-           Of course an 8-shaped polygon doesn't have an outside, but it still has an orientation. The feather direction
-           should follow this orientation.
-         */
-        bool inside = Bezier::pointInPolygon(p1, featherPolygon,featherPolyBBox,Bezier::eFillRuleOddEven);
-        if ( ( !inside && (featherDist < 0) ) || ( inside && (featherDist > 0) ) ) {
+        if (!clockWise) {
             p1.x = cur->x - dx * absFeatherDist;
             p1.y = cur->y - dy * absFeatherDist;
         } else {
@@ -5791,21 +5778,7 @@ RotoContextPrivate::renderInternal(cairo_t* cr,
                 p2.x = cur->x + dx;
                 p2.y = cur->y + dy;
 
-#pragma message WARN("pointInPolygon should not be used, see comment")
-                /*
-                   The pointInPolygon function should not be used.
-                   The algorithm to know which side is the outside of a polygon consists in computing the global polygon orientation.
-                   To compute the orientation, compute its surface. If positive the polygon is clockwise, if negative it's counterclockwise.
-                   to compute the surface, take the starting point of the polygon, and imagine a fan made of all the triangles
-                   pointing at this point. The surface of a tringle is half the cross-product of two of its sides issued from
-                   the same point (the starting point of the polygon, in this case.
-                   The orientation of a polygon has to be computed only once for each modification of the polygon (whenever it's edited), and
-                   should be stored with the polygon.
-                   Of course an 8-shaped polygon doesn't have an outside, but it still has an orientation. The feather direction
-                   should follow this orientation.
-                 */
-                inside = Bezier::pointInPolygon(p2, featherPolygon, featherPolyBBox,Bezier::eFillRuleOddEven);
-                if ( ( !inside && (featherDist < 0) ) || ( inside && (featherDist > 0) ) ) {
+                if (!clockWise) {
                     p2.x = cur->x - dx * absFeatherDist;
                     p2.y = cur->y - dy * absFeatherDist;
                 } else {

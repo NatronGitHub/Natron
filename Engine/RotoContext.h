@@ -849,7 +849,7 @@ public:
         eFillRuleWinding
     };
 
-#pragma message WARN("pointInPolygon should not be used, see comment")
+#if 0
     /*
        The pointInPolygon function should not be used.
        The algorithm to know which side is the outside of a polygon consists in computing the global polygon orientation.
@@ -864,6 +864,7 @@ public:
      */
     static bool pointInPolygon(const Natron::Point & p, const std::list<Natron::Point> & polygon,
                                const RectD & featherPolyBBox, FillRuleEnum rule);
+#endif
     
     bool isFeatherPolygonClockwiseOriented(int time) const;
     
