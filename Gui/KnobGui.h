@@ -311,6 +311,8 @@ public Q_SLOTS:
     
     void onDescriptionChanged();
     
+    void onCreateMasterOnGroupActionTriggered();
+    
 Q_SIGNALS:
 
     void knobUndoneChange();
