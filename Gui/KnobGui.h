@@ -40,6 +40,7 @@ class QGridLayout;
 class QMenu;
 namespace Natron {
 class Label;
+class EffectInstance;
 }
 class QString;
 
@@ -208,6 +209,8 @@ public:
      * @brief Check if the knob is secret by also checking the parent group visibility
      **/
     bool isSecretRecursive() const;
+    
+    void createDuplicateOnNode(Natron::EffectInstance* effect,bool linkExpression);
     
 public Q_SLOTS:
     

@@ -428,6 +428,8 @@ public Q_SLOTS:
     
     void onAddClicked();
     
+    void onPickClicked();
+    
     void onDeleteClicked();
     
     void onEditClicked();
@@ -443,6 +445,28 @@ public Q_SLOTS:
 private:
     
     boost::scoped_ptr<ManageUserParamsDialogPrivate> _imp;
+};
+
+struct PickKnobDialogPrivate;
+class PickKnobDialog : public QDialog
+{
+    Q_OBJECT
+    
+public:
+    
+    PickKnobDialog(DockablePanel* panel, QWidget* parent);
+    
+    virtual ~PickKnobDialog();
+    
+    KnobGui* getSelectedKnob(bool* useExpressionLink) const;
+    
+public Q_SLOTS:
+    
+    void onNodeComboEditingFinished();
+    
+private:
+    
+    boost::scoped_ptr<PickKnobDialogPrivate> _imp;
 };
 
 struct AddKnobDialogPrivate;
