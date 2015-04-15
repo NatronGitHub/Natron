@@ -2248,7 +2248,9 @@ Bezier::addControlPoint(double x,
             fp->setRightBezierStaticPosition(x, y);
         }
         _imp->featherPoints.insert(_imp->featherPoints.end(),fp);
+        invalidateFeatherPointsAtDistance();
     }
+    
     Q_EMIT controlPointAdded();
     return p;
 }
@@ -2388,6 +2390,7 @@ Bezier::addControlPointAfterIndex(int index,
             l.unlock();
             setKeyframe(currentTime);
         }
+        invalidateFeatherPointsAtDistance();
     }
     Q_EMIT controlPointAdded();
     return p;
@@ -3277,9 +3280,10 @@ Bezier::getBoundingBox(int time) const
 
     QMutexLocker l(&itemMutex);
     bezierSegmentListBboxUpdate(_imp->points, _imp->finished, time, 0, &bbox);
-    bezierSegmentListBboxUpdate(_imp->featherPointsAtDistance, _imp->finished, time, 0, &bbox);
+    
     
 #ifndef ROTO_USE_MESH_PATTERN_ONLY
+    bezierSegmentListBboxUpdate(_imp->featherPoints, _imp->finished, time, 0, &bbox);
     // EDIT: Partial fix, just pad the BBOX by the feather distance. This might not be accurate but gives at least something
     // enclosing the real bbox and close enough
     double featherDistance = getFeatherDistance(time);
@@ -3287,6 +3291,8 @@ Bezier::getBoundingBox(int time) const
     bbox.x2 += featherDistance;
     bbox.y1 -= featherDistance;
     bbox.y2 += featherDistance;
+#else 
+    bezierSegmentListBboxUpdate(_imp->featherPointsAtDistance, _imp->finished, time, 0, &bbox);
 #endif
     return bbox;
 }
@@ -3923,31 +3929,37 @@ Bezier::computePolygonOrientation(int time,bool isStatic) const
         return;
     }
     
-    Point originalPoint;
-    BezierCPs::const_iterator it = _imp->featherPoints.begin();
-    (*it)->getPositionAtTime(time, &originalPoint.x, &originalPoint.y);
-    ++it;
-    BezierCPs::const_iterator next = it;
-    ++next;
+    
     
     double polygonSurface = 0.;
-    for (;next!=_imp->featherPoints.end(); ++it,++next) {
-        double x,y;
-        (*it)->getPositionAtTime(time, &x, &y);
-        double xN,yN;
-        (*next)->getPositionAtTime(time, &xN, &yN);
-        Point u;
-        u.x = x - originalPoint.x;
-        u.y = y - originalPoint.y;
-        
-        Point v;
-        v.x = xN - originalPoint.x;
-        v.y = yN - originalPoint.y;
-        
-        //This is the area of the parallelogram defined by the U and V sides
-        //Since a triangle is half a parallelogram, just half the cross-product
-        double crossProduct = v.y * u.x - v.x * u.y;
-        polygonSurface += (crossProduct / 2.);
+    if (_imp->points.size() == 2) {
+        //It does not matter since there are only 2 points
+        polygonSurface = -1;
+    } else {
+        Point originalPoint;
+        BezierCPs::const_iterator it = _imp->featherPoints.begin();
+        (*it)->getPositionAtTime(time, &originalPoint.x, &originalPoint.y);
+        ++it;
+        BezierCPs::const_iterator next = it;
+        ++next;
+        for (;next!=_imp->featherPoints.end(); ++it,++next) {
+            double x,y;
+            (*it)->getPositionAtTime(time, &x, &y);
+            double xN,yN;
+            (*next)->getPositionAtTime(time, &xN, &yN);
+            Point u;
+            u.x = x - originalPoint.x;
+            u.y = y - originalPoint.y;
+            
+            Point v;
+            v.x = xN - originalPoint.x;
+            v.y = yN - originalPoint.y;
+            
+            //This is the area of the parallelogram defined by the U and V sides
+            //Since a triangle is half a parallelogram, just half the cross-product
+            double crossProduct = v.y * u.x - v.x * u.y;
+            polygonSurface += (crossProduct / 2.);
+        }
     }
     if (isStatic) {
         _imp->isClockwiseOrientedStatic = polygonSurface < 0;
@@ -4012,16 +4024,6 @@ Bezier::expandToFeatherDistance(const Point & cp, //< the point
                 }
             }
 
-
-            ///retrieve the position of the extent of the feather
-            ///To retrieve the extent which is in not inside the polygon we test the 2 points
-
-            ///Note that we're testing with a normalized vector because the polygon could be 1 pixel thin
-            ///and the test would yield wrong results. We multiply by the distance once we've done the test.
-            Point extent;
-            extent.x = cp.x + ret.x;
-            extent.y = cp.y + ret.y;
-
             if (clockWise) {
                 fp->x = cp.x + ret.x * featherDistance;
                 fp->y = cp.y + ret.y * featherDistance;
@@ -4057,13 +4059,14 @@ Bezier::updateFeatherPointsAtDistanceIfNeeded(int time) const
 #ifndef ROTO_USE_MESH_PATTERN_ONLY
     return;
 #endif
+    
     QMutexLocker k(&itemMutex);
     if (!_imp->featherPointsAtDistanceValid) {
         double fDist = getFeatherDistance(time);
+        fDist = fDist < 0 ? 0 : fDist;
+
         bool clockwise = isFeatherPolygonClockwiseOrientedInternal(time);
-        if (getNumKeyframesFeatherDistance() == 0 && fDist == 0.) {
-            return;
-        }
+
         if (_imp->featherPoints.size() < 2) {
             return;
         }
@@ -4089,7 +4092,7 @@ Bezier::updateFeatherPointsAtDistanceIfNeeded(int time) const
             }
             boost::shared_ptr<BezierCP> fpAtDistance;
             if (_imp->featherPointsAtDistance.size() != _imp->featherPoints.size()) {
-                boost::shared_ptr<BezierCP> cpy(new BezierCP(**it));
+                boost::shared_ptr<BezierCP> cpy(new FeatherPoint(**it));
                 fpAtDistance = cpy;
                 _imp->featherPointsAtDistance.push_back(fpAtDistance);
             } else {
@@ -4097,31 +4100,25 @@ Bezier::updateFeatherPointsAtDistanceIfNeeded(int time) const
                 ++fpDistIt;
             }
             assert(fpAtDistance);
-            Point fp,nextFp,prevFp,left,right;
+            Point fp,nextFp,prevFp,left,right,cp;
             (*it)->getPositionAtTime(time, &fp.x, &fp.y);
             (*it)->getLeftBezierPointAtTime(time, &left.x, &left.y);
             (*it)->getRightBezierPointAtTime(time, &right.x, &right.y);
             (*prev)->getPositionAtTime(time, &prevFp.x, &prevFp.y);
             (*next)->getPositionAtTime(time, &nextFp.x, &nextFp.y);
+            (*curCp)->getPositionAtTime(time, &cp.x, &cp.y);
             
-            //double absFeatherDist = std::abs(fDist);
-            double norm = sqrt( (nextFp.x - prevFp.x) * (nextFp.x - prevFp.x) + (nextFp.y - prevFp.y) * (nextFp.y - prevFp.y) );
-            assert(norm != 0);
-            double dx = -( (nextFp.y - prevFp.y) / norm );
-            double dy = ( (nextFp.x - prevFp.x) / norm );
-
+            Point originalFp = fp;
+            Bezier::expandToFeatherDistance(cp, &fp, fDist, time, clockwise, prev, it, next);
             Point delta;
-            if (!clockwise) {
-                delta.x = - dx * fDist;
-                delta.y = - dy * fDist;
-            } else {
-                delta.x = dx * fDist;
-                delta.y = dy * fDist;
-            }
-            fpAtDistance->setPositionAtTime(time, fp.x + delta.x, fp.y + delta.y);
+            delta.x = fp.x - originalFp.x;
+            delta.y = fp.y - originalFp.y;
+
+            fpAtDistance->setPositionAtTime(time, fp.x, fp.y);
             fpAtDistance->setLeftBezierPointAtTime(time, left.x + delta.x, left.y + delta.y);
             fpAtDistance->setRightBezierPointAtTime(time, right.x + delta.x, right.y + delta.y);
         }
+        assert(_imp->featherPointsAtDistance.size() == _imp->featherPoints.size());
         _imp->featherPointsAtDistanceValid = true;
     }
 }
@@ -5816,8 +5813,7 @@ RotoContextPrivate::renderInternal(cairo_t* cr,
 
         
         renderFeather(*it2, time, mipmapLevel, inverted, shapeColor, opacity, featherDist, fallOff, mesh, cps, fps);
-        
-        cairo_set_source_rgba(cr, shapeColor[0], shapeColor[1], shapeColor[2], opacity);
+    
         
         if (!inverted) {
             // strangely, the above-mentioned cairo bug doesn't affect this function
@@ -6022,9 +6018,9 @@ RotoContextPrivate::renderFeather(const boost::shared_ptr<Bezier>& bezier,int ti
 #else
     
     Point p0, p0p1, p1p0,p1,p1p2,p2p1, p2, p2p3, p3p2, p3, p3p0,p0p3;
-    double featherOpacity = featherDist < 0 ? -opacity : opacity;
-    double featherOpaque = featherDist < 0 ? 1 : 0;
-    double featherTransparant = featherDist < 0 ? 0 : 1;
+    double featherOpacity = opacity;
+    double featherOpaque = 0;
+    double featherTransparant = 1;
     BezierCPs::const_iterator curFp = fps.begin();
     BezierCPs::const_iterator nextFp = curFp;
     ++nextFp;
@@ -6119,22 +6115,24 @@ RotoContextPrivate::renderInternalShape(int time,
     bezulate(time, cps, &coonPatches);
     
     for (std::list<BezierCPs>::iterator it = coonPatches.begin(); it!=coonPatches.end(); ++it) {
-        assert(it->size() <= 4 && it->size() >= 2);
+        
+        std::size_t size = it->size();
+        assert(size <= 4 && size >= 2);
         
         BezierCPs::iterator patchIT = it->begin();
         boost::shared_ptr<BezierCP> p0ptr,p1ptr,p2ptr,p3ptr;
         p0ptr = *patchIT;
         ++patchIT;
-        if (it->size() == 2) {
+        if (size == 2) {
             p1ptr = p0ptr;
             p2ptr = *patchIT;
             p3ptr = p2ptr;
-        } else if (it->size() == 3) {
+        } else if (size == 3) {
             p1ptr = *patchIT;
             p2ptr = *patchIT;
             ++patchIT;
             p3ptr = *patchIT;
-        } else if (it->size() == 4) {
+        } else if (size == 4) {
             p1ptr = *patchIT;
             ++patchIT;
             p2ptr = *patchIT;
@@ -6145,18 +6143,21 @@ RotoContextPrivate::renderInternalShape(int time,
     
         Point p0,p0p1,p1p0,p1,p1p2,p2p1,p2p3,p3p2,p2,p3,p3p0,p0p3;
         
+        p0ptr->getLeftBezierPointAtTime(time, &p0p3.x, &p0p3.y);
         p0ptr->getPositionAtTime(time, &p0.x, &p0.y);
         p0ptr->getRightBezierPointAtTime(time, &p0p1.x, &p0p1.y);
+        
         p1ptr->getLeftBezierPointAtTime(time, &p1p0.x, &p1p0.y);
         p1ptr->getPositionAtTime(time, &p1.x, &p1.y);
         p1ptr->getRightBezierPointAtTime(time, &p1p2.x, &p1p2.y);
+        
         p2ptr->getLeftBezierPointAtTime(time, &p2p1.x, &p2p1.y);
         p2ptr->getPositionAtTime(time, &p2.x, &p2.y);
         p2ptr->getRightBezierPointAtTime(time, &p2p3.x, &p2p3.y);
+        
         p3ptr->getLeftBezierPointAtTime(time, &p3p2.x, &p3p2.y);
         p3ptr->getPositionAtTime(time, &p3.x, &p3.y);
         p3ptr->getRightBezierPointAtTime(time, &p3p0.x, &p3p0.y);
-        p0ptr->getLeftBezierPointAtTime(time, &p0p3.x, &p0p3.y);
 
         
         adjustToPointToScale(mipmapLevel, p0.x, p0.y);
@@ -6195,10 +6196,23 @@ RotoContextPrivate::renderInternalShape(int time,
         ///move to C0
         cairo_mesh_pattern_begin_patch(mesh);
         cairo_mesh_pattern_move_to(mesh, p0.x, p0.y);
-        cairo_mesh_pattern_curve_to(mesh, p0p1.x, p0p1.y, p1p0.x, p1p0.y, p1.x, p1.y);
-        cairo_mesh_pattern_curve_to(mesh, p1p2.x, p1p2.y, p2p1.x, p2p1.y, p2.x, p2.y);
-        cairo_mesh_pattern_curve_to(mesh, p2p3.x, p2p3.y, p3p2.x, p3p2.y, p3.x, p3.y);
-        cairo_mesh_pattern_curve_to(mesh, p3p0.x, p3p0.y, p0p3.x, p0p3.y, p0.x, p0.y);
+        if (size == 4) {
+            cairo_mesh_pattern_curve_to(mesh, p0p1.x, p0p1.y, p1p0.x, p1p0.y, p1.x, p1.y);
+            cairo_mesh_pattern_curve_to(mesh, p1p2.x, p1p2.y, p2p1.x, p2p1.y, p2.x, p2.y);
+            cairo_mesh_pattern_curve_to(mesh, p2p3.x, p2p3.y, p3p2.x, p3p2.y, p3.x, p3.y);
+            cairo_mesh_pattern_curve_to(mesh, p3p0.x, p3p0.y, p0p3.x, p0p3.y, p0.x, p0.y);
+        } else if (size == 3) {
+            cairo_mesh_pattern_curve_to(mesh, p0p1.x, p0p1.y, p1p0.x, p1p0.y, p1.x, p1.y);
+            cairo_mesh_pattern_line_to(mesh, p2.x, p2.y);
+            cairo_mesh_pattern_curve_to(mesh, p2p3.x, p2p3.y, p3p2.x, p3p2.y, p3.x, p3.y);
+            cairo_mesh_pattern_curve_to(mesh, p3p0.x, p3p0.y, p0p3.x, p0p3.y, p0.x, p0.y);
+        } else {
+            assert(size == 2);
+            cairo_mesh_pattern_line_to(mesh, p1.x, p1.y);
+            cairo_mesh_pattern_curve_to(mesh, p1p2.x, p1p2.y, p2p1.x, p2p1.y, p2.x, p2.y);
+            cairo_mesh_pattern_line_to(mesh, p3.x, p3.y);
+            cairo_mesh_pattern_curve_to(mesh, p3p0.x, p3p0.y, p0p3.x, p0p3.y, p0.x, p0.y);
+        }
         ///Set the 4 corners color
         
         // IMPORTANT NOTE:
@@ -6215,14 +6229,17 @@ RotoContextPrivate::renderInternalShape(int time,
                                                  opacity);
         cairo_mesh_pattern_set_corner_color_rgba(mesh, 2, shapeColor[0], shapeColor[1], shapeColor[2],
                                                  opacity);
-        cairo_mesh_pattern_set_corner_color_rgba( mesh, 3, shapeColor[0], shapeColor[1], shapeColor[2],
-                                                 std::sqrt(opacity) );
+        cairo_mesh_pattern_set_corner_color_rgba(mesh, 3, shapeColor[0], shapeColor[1], shapeColor[2],
+                                                 std::sqrt(opacity));
         assert(cairo_pattern_status(mesh) == CAIRO_STATUS_SUCCESS);
         
         cairo_mesh_pattern_end_patch(mesh);
 
     }
 #else
+    
+    cairo_set_source_rgba(cr, shapeColor[0], shapeColor[1], shapeColor[2], opacity);
+    
     BezierCPs::const_iterator point = cps.begin();
     BezierCPs::const_iterator nextPoint = point;
 
