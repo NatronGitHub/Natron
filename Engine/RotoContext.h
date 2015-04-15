@@ -401,6 +401,7 @@ public:
      **/
     double getFeatherDistance(int time) const;
     void setFeatherDistance(double d,int time);
+    int getNumKeyframesFeatherDistance() const;
 
     /**
      * @brief The fall-off rate: 0.5 means half color is faded at half distance.
@@ -436,6 +437,11 @@ public:
 
     const std::list<boost::shared_ptr<KnobI> >& getKnobs() const;
     
+
+public Q_SLOTS:
+    
+    void onFeatherDistanceChanged(int,int);
+    
 Q_SIGNALS:
 
 #ifdef NATRON_ROTO_INVERTIBLE
@@ -448,7 +454,10 @@ Q_SIGNALS:
 
     void compositingOperatorChanged(int,int);
 
+
+protected:
     
+    virtual void invalidateFeatherPointsAtDistance() {}
 
 private:
 
@@ -704,6 +713,13 @@ public:
      **/
     void cuspPointAtIndex(int index,int time,const std::pair<double,double>& pixelScale);
 
+private:
+    
+    void smoothOrCuspPointAtIndex(bool isSmooth,int index,int time,const std::pair<double,double>& pixelScale);
+    
+public:
+    
+    
     /**
      * @brief Set a new keyframe at the given time. If a keyframe already exists this function does nothing.
      **/
@@ -768,6 +784,9 @@ public:
      **/
     const std::list< boost::shared_ptr<BezierCP> > & getFeatherPoints() const;
     std::list< boost::shared_ptr<BezierCP> > getFeatherPoints_mt_safe() const;
+    
+    std::list< boost::shared_ptr<BezierCP> > getFeatherPointsAtDistance_mt_safe() const;
+    
     enum ControlPointSelectionPrefEnum
     {
         eControlPointSelectionPrefFeatherFirst = 0,
@@ -850,7 +869,7 @@ public:
     };
 
     
-    bool isFeatherPolygonClockwiseOriented(int time);
+    bool isFeatherPolygonClockwiseOriented(int time) const;
     
     /**
      * @brief Refresh the polygon orientation for a specific keyframe or for all keyframes. Auto polygon orientation must be set to true
@@ -862,12 +881,17 @@ public:
     void setAutoOrientationComputation(bool autoCompute);
 private:
     
+    bool isFeatherPolygonClockwiseOrientedInternal(int time) const;
     
-    void computePolygonOrientation(int time,bool isStatic);
+    void computePolygonOrientation(int time,bool isStatic) const;
+    
+    virtual void invalidateFeatherPointsAtDistance() OVERRIDE FINAL;
+    
     
 public:
     
-    
+    void updateFeatherPointsAtDistanceIfNeeded(int time) const;
+
 
     /**
      * @brief Must be implemented by the derived class to save the state into
