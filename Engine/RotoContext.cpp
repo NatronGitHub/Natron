@@ -3815,7 +3815,7 @@ Bezier::isFeatherPolygonClockwiseOriented(int time)
         } else {
             kfCount = _imp->points.front()->getKeyframesCount();
         }
-        if (kfCount > 0) {
+        if (kfCount > 0 && _imp->finished) {
             computePolygonOrientation(time, false);
             it = _imp->isClockwiseOriented.find(time);
             assert(it != _imp->isClockwiseOriented.end());
@@ -5959,7 +5959,6 @@ RotoContextPrivate::renderInternalShape(int time,
         cairo_mesh_pattern_curve_to(mesh, p2p3.x, p2p3.y, p3p2.x, p3p2.y, p3.x, p3.y);
         cairo_mesh_pattern_curve_to(mesh, p3p0.x, p3p0.y, p0p3.x, p0p3.y, p0.x, p0.y);
         ///Set the 4 corners color
-        ///inner is full color
         
         // IMPORTANT NOTE:
         // The two sqrt below are due to a probable cairo bug.
@@ -5971,12 +5970,10 @@ RotoContextPrivate::renderInternalShape(int time,
         // older Cairo versions.
         cairo_mesh_pattern_set_corner_color_rgba( mesh, 0, shapeColor[0], shapeColor[1], shapeColor[2],
                                                  std::sqrt(opacity) );
-        ///outter is faded
         cairo_mesh_pattern_set_corner_color_rgba(mesh, 1, shapeColor[0], shapeColor[1], shapeColor[2],
                                                  opacity);
         cairo_mesh_pattern_set_corner_color_rgba(mesh, 2, shapeColor[0], shapeColor[1], shapeColor[2],
                                                  opacity);
-        ///inner is full color
         cairo_mesh_pattern_set_corner_color_rgba( mesh, 3, shapeColor[0], shapeColor[1], shapeColor[2],
                                                  std::sqrt(opacity) );
         assert(cairo_pattern_status(mesh) == CAIRO_STATUS_SUCCESS);
@@ -6169,7 +6166,7 @@ RotoContextPrivate::bezulate(int time, const BezierCPs& cps,std::list<BezierCPs>
                         eraseStart = simpleClosedCurve.begin();
                         eraseStartIsPassedEnd = true;
                     }
-                    //"it" is  invalidated after this instruction but we leave the loop anyway
+                    //"it" is  invalidated after the next instructions but we leave the loop anyway
                     assert(!simpleClosedCurve.empty());
                     if ((!nextIsPassedEnd && !eraseStartIsPassedEnd) || (nextIsPassedEnd && eraseStartIsPassedEnd)) {
                         simpleClosedCurve.erase(eraseStart,next);
