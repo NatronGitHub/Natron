@@ -180,6 +180,7 @@ private:
                     
                     assert(!_entriesQueue.empty());
                     front = _entriesQueue.front();
+                    front->scheduleForDestruction();
                     _entriesQueue.pop_front();
                 }
             } // front. After this scope, the image is guarenteed to be freed
@@ -1105,62 +1106,86 @@ public:
         if (!entry) {
             return;
         }
-
-        QMutexLocker l(&_lock);
-        CacheIterator existingEntry = _memoryCache( entry->getHashKey() );
-        if ( existingEntry != _memoryCache.end() ) {
-            std::list<EntryTypePtr> & ret = getValueFromIterator(existingEntry);
-            for (typename std::list<EntryTypePtr>::iterator it = ret.begin(); it != ret.end(); ++it) {
-                if ( (*it)->getKey() == entry->getKey() ) {
-                    (*it)->scheduleForDestruction();
-                    ret.erase(it);
-                    break;
-                }
-            }
-            if ( ret.empty() ) {
-                _memoryCache.erase(existingEntry);
-            }
-        } else {
-            existingEntry = _diskCache( entry->getHashKey() );
-            if ( existingEntry != _diskCache.end() ) {
+        std::list<EntryTypePtr> toRemove;
+        
+        {
+            QMutexLocker l(&_lock);
+            CacheIterator existingEntry = _memoryCache( entry->getHashKey() );
+            if ( existingEntry != _memoryCache.end() ) {
                 std::list<EntryTypePtr> & ret = getValueFromIterator(existingEntry);
                 for (typename std::list<EntryTypePtr>::iterator it = ret.begin(); it != ret.end(); ++it) {
                     if ( (*it)->getKey() == entry->getKey() ) {
-                        (*it)->scheduleForDestruction();
+                        toRemove.push_back(*it);
+                        //(*it)->scheduleForDestruction();
                         ret.erase(it);
                         break;
                     }
                 }
                 if ( ret.empty() ) {
-                    _diskCache.erase(existingEntry);
+                    _memoryCache.erase(existingEntry);
+                }
+            } else {
+                existingEntry = _diskCache( entry->getHashKey() );
+                if ( existingEntry != _diskCache.end() ) {
+                    std::list<EntryTypePtr> & ret = getValueFromIterator(existingEntry);
+                    for (typename std::list<EntryTypePtr>::iterator it = ret.begin(); it != ret.end(); ++it) {
+                        if ( (*it)->getKey() == entry->getKey() ) {
+                            //(*it)->scheduleForDestruction();
+                            toRemove.push_back(*it);
+                            ret.erase(it);
+                            break;
+                        }
+                    }
+                    if ( ret.empty() ) {
+                        _diskCache.erase(existingEntry);
+                    }
                 }
             }
+        } // QMutexLocker l(&_lock);
+        if (!toRemove.empty()) {
+            _deleterThread.appendToQueue(toRemove);
+            
+            ///Clearing the list here will not delete the objects pointing to by the shared_ptr's because we made a copy
+            ///that the separate thread will delete
+            toRemove.clear();
         }
     }
     
     void removeEntry(U64 hash)
     {
-        QMutexLocker l(&_lock);
-        CacheIterator existingEntry = _memoryCache( hash);
-        if ( existingEntry != _memoryCache.end() ) {
-            std::list<EntryTypePtr> & ret = getValueFromIterator(existingEntry);
-            for (typename std::list<EntryTypePtr>::iterator it = ret.begin(); it != ret.end(); ++it) {
-                (*it)->scheduleForDestruction();
-            }
-            _memoryCache.erase(existingEntry);
-            
-        } else {
-            existingEntry = _diskCache( hash );
-            if ( existingEntry != _diskCache.end() ) {
+        
+        std::list<EntryTypePtr> toRemove;
+        {
+            QMutexLocker l(&_lock);
+            CacheIterator existingEntry = _memoryCache( hash);
+            if ( existingEntry != _memoryCache.end() ) {
                 std::list<EntryTypePtr> & ret = getValueFromIterator(existingEntry);
                 for (typename std::list<EntryTypePtr>::iterator it = ret.begin(); it != ret.end(); ++it) {
-                    (*it)->scheduleForDestruction();
+                    //(*it)->scheduleForDestruction();
+                    toRemove.push_back(*it);
                 }
-                _diskCache.erase(existingEntry);
-            
+                _memoryCache.erase(existingEntry);
+                
+            } else {
+                existingEntry = _diskCache( hash );
+                if ( existingEntry != _diskCache.end() ) {
+                    std::list<EntryTypePtr> & ret = getValueFromIterator(existingEntry);
+                    for (typename std::list<EntryTypePtr>::iterator it = ret.begin(); it != ret.end(); ++it) {
+                        //(*it)->scheduleForDestruction();
+                        toRemove.push_back(*it);
+                    }
+                    _diskCache.erase(existingEntry);
+                    
+                }
             }
+        } // QMutexLocker l(&_lock);
+        if (!toRemove.empty()) {
+            _deleterThread.appendToQueue(toRemove);
+            
+            ///Clearing the list here will not delete the objects pointing to by the shared_ptr's because we made a copy
+            ///that the separate thread will delete
+            toRemove.clear();
         }
-
     }
     
     void removeAllImagesFromCacheWithMatchingKey(U64 treeVersion)
@@ -1180,7 +1205,7 @@ public:
                     if (front->getKey().getTreeVersion() == treeVersion) {
                         
                         for (typename std::list<EntryTypePtr>::iterator it = entries.begin(); it != entries.end(); ++it) {
-                            (*it)->scheduleForDestruction();
+                            //(*it)->scheduleForDestruction();
                             toDelete.push_back(*it);
                         }
                         
@@ -1201,7 +1226,7 @@ public:
                     if (front->getKey().getTreeVersion() == treeVersion) {
                         
                         for (typename std::list<EntryTypePtr>::iterator it = entries.begin(); it != entries.end(); ++it) {
-                            (*it)->scheduleForDestruction();
+                            //(*it)->scheduleForDestruction();
                             toDelete.push_back(*it);
                         }
                         
@@ -1216,7 +1241,8 @@ public:
             _diskCache = newDiskCache;
             
             
-        }
+        } // QMutexLocker locker(&_lock);
+        
         if (!toDelete.empty()) {
             _deleterThread.appendToQueue(toDelete);
             
@@ -1490,7 +1516,7 @@ private:
                     }
                     
                     ///Erase the file from the disk if we reach the limit.
-                    evictedFromDisk.second->scheduleForDestruction();
+                    //evictedFromDisk.second->scheduleForDestruction();
                     
                     
                     entriesToBeDeleted.push_back(evictedFromDisk.second);

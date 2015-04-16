@@ -1456,22 +1456,27 @@ OfxEffectInstance::getRegionOfDefinition(U64 hash,
                     // if both actions failed, we can't say anything
                     return eStatusFailed;
                 }
-                if (stat == kOfxStatReplyDefault) {
-                    calcDefaultRegionOfDefinition(hash,time,view,scaleOne, rod);
-
-                    return eStatusReplyDefault;
-                }
+                
+                /// This code is not needed since getRegionOfDefinitionAction in HostSupport does it for us
+                /// plus it is horribly slow (don't know why)
+//                if (stat == kOfxStatReplyDefault) {
+//                    calcDefaultRegionOfDefinition(hash,time,view,scaleOne, rod);
+//
+//                    return eStatusReplyDefault;
+//                }
             }
         }
         if ( (stat != kOfxStatOK) && (stat != kOfxStatReplyDefault) ) {
             return eStatusFailed;
         }
 
-        if (stat == kOfxStatReplyDefault) {
-            calcDefaultRegionOfDefinition(hash,time,view, scale, rod);
-
-            return eStatusReplyDefault;
-        }
+        /// This code is not needed since getRegionOfDefinitionAction in HostSupport does it for us
+        /// plus it is horribly slow (don't know why)
+//        if (stat == kOfxStatReplyDefault) {
+//            calcDefaultRegionOfDefinition(hash,time,view, scale, rod);
+//
+//            return eStatusReplyDefault;
+//        }
     }
 
 

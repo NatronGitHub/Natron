@@ -6027,7 +6027,11 @@ Node::refreshChannelSelectors(bool setValues)
                 for (std::size_t i = 0; i < choices.size(); ++i) {
                     if (choices[i] == curLayer || (isColor && (choices[i] == kNatronRGBAComponentsName || choices[i] ==
                                                                kNatronRGBComponentsName || choices[i] == kNatronAlphaComponentsName))) {
+                        layerKnob->blockValueChanges();
+                        _imp->liveInstance->beginChanges();
                         layerKnob->setValue(i, 0);
+                        _imp->liveInstance->endChanges(true);
+                        layerKnob->unblockValueChanges();
                         if (isColor && it->second.useRGBASelectors) {
                             assert(colorIndex != -1);
                             //Since color plane may have changed (RGB, or RGBA or Alpha), adjust the secretness of the checkboxes
@@ -6119,7 +6123,11 @@ Node::refreshChannelSelectors(bool setValues)
             if (!curLayer.empty()) {
                 for (std::size_t i = 0; i < choices.size(); ++i) {
                     if (choices[i] == curLayer) {
+                        it->second.channel.lock()->blockValueChanges();
+                        _imp->liveInstance->beginChanges();
                         it->second.channel.lock()->setValue(i, 0);
+                        it->second.channel.lock()->unblockValueChanges();
+                        _imp->liveInstance->endChanges();
                         break;
                     }
                 }

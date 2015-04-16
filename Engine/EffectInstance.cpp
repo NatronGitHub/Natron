@@ -5069,9 +5069,7 @@ EffectInstance::getComponentsAvailableRecursive(SequenceTime time, int view, Com
         }
     }
 
-    
-    std::list<ImageComponents> userComps;
-    node->getUserComponents(&userComps);
+
     
     ComponentsNeededMap::iterator foundOutput = neededComps.find(-1);
     if (foundOutput != neededComps.end()) {
@@ -5113,6 +5111,9 @@ EffectInstance::getComponentsAvailableRecursive(SequenceTime time, int view, Com
             }
         }
         
+        
+        std::list<ImageComponents> userComps;
+        node->getUserComponents(&userComps);
         ///Foreach user component, add it as an available component, but use this node only if it is also
         ///in the "needed components" list
         for (std::list<ImageComponents>::iterator it = userComps.begin(); it!=userComps.end(); ++it) {
@@ -5126,6 +5127,9 @@ EffectInstance::getComponentsAvailableRecursive(SequenceTime time, int view, Com
                 }
             }
  
+            if (!found) {
+                continue;
+            }
             
             ComponentsAvailableMap::iterator alreadyExisting = comps->end();
             
@@ -5149,11 +5153,11 @@ EffectInstance::getComponentsAvailableRecursive(SequenceTime time, int view, Com
                 alreadyExisting = comps->find(*it);
             }
             
-            //If the component already exists from below in the tree, do not add it
+            //If the component already exists from above in the tree, do not add it
             if (alreadyExisting == comps->end()) {
-                comps->insert(std::make_pair(*it, found ? node : NodePtr()));
+                comps->insert(std::make_pair(*it, node ));
             } else {
-                alreadyExisting->second = found ? node : NodePtr();
+                alreadyExisting->second = node ;
             }
 
         }
