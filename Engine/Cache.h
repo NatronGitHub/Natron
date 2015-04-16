@@ -180,7 +180,9 @@ private:
                     
                     assert(!_entriesQueue.empty());
                     front = _entriesQueue.front();
-                    front->scheduleForDestruction();
+                    if (front) {
+                        front->scheduleForDestruction();
+                    }
                     _entriesQueue.pop_front();
                 }
             } // front. After this scope, the image is guarenteed to be freed
