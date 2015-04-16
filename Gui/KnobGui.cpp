@@ -745,7 +745,7 @@ KnobGui::createDuplicateOnNode(Natron::EffectInstance* effect,bool linkExpressio
     Parametric_Knob* isParametric = dynamic_cast<Parametric_Knob*>(knob.get());
     
     const std::string& nodeScriptName = isEffect->getNode()->getScriptName();
-    std::string newKnobName = nodeScriptName + "_" + knob->getName();
+    std::string newKnobName = nodeScriptName +  knob->getName();
     
     //Ensure the group user page is created
     boost::shared_ptr<NodeGuiI> groupNodeGuiI = effect->getNode()->getNodeGui();

@@ -2457,9 +2457,9 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
             if (!it->isColorPlane()) {
                 components = &(*it);
             } else {
-                for (std::vector<Natron::ImageComponents>::const_iterator it = outputComponents.begin(); it != outputComponents.end(); ++it) {
-                    if (it->isColorPlane()) {
-                        components = &(*it);
+                for (std::vector<Natron::ImageComponents>::const_iterator it2 = outputComponents.begin(); it2 != outputComponents.end(); ++it2) {
+                    if (it2->isColorPlane()) {
+                        components = &(*it2);
                         break;
                     }
                 }

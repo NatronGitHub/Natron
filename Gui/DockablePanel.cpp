@@ -4797,6 +4797,8 @@ AddKnobDialog::onOkClicked()
         int oldIndexInGroup = -1;
         
         std::vector<std::pair<std::string,bool> > expressions;
+        std::map<boost::shared_ptr<KnobI>,std::vector<std::pair<std::string,bool> > > listenersExpressions;
+        
         if (_imp->knob) {
             
             oldParentPage = getTopLevelPageForKnob(_imp->knob.get());
@@ -4826,6 +4828,22 @@ AddKnobDialog::onOkClicked()
                 bool useRetVar = _imp->knob->isExpressionUsingRetVariable(i);
                 expressions[i] = std::make_pair(expr,useRetVar);
             }
+            
+            //Since removing this knob will also remove all expressions from listeners, conserve them and try
+            //to recover them afterwards
+            std::list<boost::shared_ptr<KnobI> > listeners;
+            _imp->knob->getListeners(listeners);
+            for (std::list<boost::shared_ptr<KnobI> >::iterator it = listeners.begin(); it!=listeners.end(); ++it) {
+                std::vector<std::pair<std::string,bool> > exprs;
+                for (int i = 0; i < (*it)->getDimension(); ++i) {
+                    std::pair<std::string,bool> e;
+                    e.first = (*it)->getExpression(i);
+                    e.second = (*it)->isExpressionUsingRetVariable(i);
+                    exprs.push_back(e);
+                }
+                listenersExpressions[*it] = exprs;
+            }
+            
             _imp->panel->getHolder()->removeDynamicKnob(_imp->knob.get());
             
             _imp->knob.reset();
@@ -4846,6 +4864,7 @@ AddKnobDialog::onOkClicked()
         if (_imp->originalKnobSerialization) {
             _imp->knob->clone(_imp->originalKnobSerialization->getKnob().get());
         }
+        //Recover expressions
         if (!expressions.empty()) {
             try {
                 for (std::size_t i = 0 ; i < expressions.size(); ++i) {
@@ -4856,6 +4875,23 @@ AddKnobDialog::onOkClicked()
             } catch (...) {
                 
             }
+        }
+        
+        //Recover listeners expressions
+        if (!listenersExpressions.empty()) {
+            
+            for (std::map<boost::shared_ptr<KnobI>,std::vector<std::pair<std::string,bool> > >::iterator it = listenersExpressions.begin();
+                 it != listenersExpressions.end();++it) {
+                assert(it->first->getDimension() == (int)it->second.size());
+                for (int i = 0; i < it->first->getDimension(); ++i) {
+                    try {
+                        it->first->setExpression(i, it->second[i].first, it->second[i].second);
+                    } catch (...) {
+                        
+                    }
+                }
+            }
+            
         }
     }
     
