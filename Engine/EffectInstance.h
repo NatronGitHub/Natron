@@ -831,7 +831,7 @@ public:
 
     virtual void aboutToRestoreDefaultValues() OVERRIDE FINAL;
 
-    virtual bool shouldCacheOutput() const;
+    virtual bool shouldCacheOutput(bool isFrameVaryingOrAnimated) const;
 
 protected:
 

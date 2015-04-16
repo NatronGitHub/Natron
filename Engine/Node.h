@@ -446,7 +446,7 @@ public:
     
     bool isSettingsPanelOpened() const;
     
-    bool shouldCacheOutput() const;
+    bool shouldCacheOutput(bool isFrameVaryingOrAnimated) const;
 
     /**
      * @brief If the session is a GUI session, then this function sets the position of the node on the nodegraph.

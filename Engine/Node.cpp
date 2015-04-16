@@ -5336,48 +5336,78 @@ Node::dequeueActions()
 }
 
 bool
-Node::shouldCacheOutput() const
+Node::shouldCacheOutput(bool isFrameVaryingOrAnimated) const
 {
+    /*
+     * Here is a list of reasons when caching is enabled for a node:
+     * - It is references multiple times below in the graph
+     * - Its single output has its settings panel opened,  meaning the user is actively editing the output
+     * - The force caching parameter in the "Node" tab is checked
+     * - The aggressive caching preference of Natron is checked
+     * - We are in a recursive action (such as an analysis)
+     * - The plug-in does temporal clip access 
+     * - Preview image is enabled (and Natron is not running in background)
+     * - The node is a direct input of a viewer, this is to overcome linear graphs where all nodes would not be cached 
+     * - The node is not frame varying, meaning it will always produce the same image at any time
+     */
+    
+    std::list<Node*> outputs;
     {
-
-
-        //If true then we're in analysis, so we cache the input of the analysis effect
-
-        
         QMutexLocker k(&_imp->outputsMutex);
-        std::size_t sz = _imp->outputs.size();
-        if (sz > 1) {
-            ///The node is referenced multiple times below, cache it
-            return true;
-        } else {
-            if (sz == 1) {
-                //The output has its settings panel opened, meaning the user is actively editing the output, we want this node to be cached then.
-                //If force caching or aggressive caching are enabled, we by-pass and cache it anyway.
-                Node* output = _imp->outputs.front();
-                
-                ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>(output->getLiveInstance());
-                if (isViewer) {
-                    int activeInputs[2];
-                    isViewer->getActiveInputs(activeInputs[0], activeInputs[1]);
-                    if (output->getInput(activeInputs[0]).get() == this ||
-                        output->getInput(activeInputs[1]).get() == this) {
-                        return true;
-                    }
+        outputs = _imp->outputs;
+    }
+    std::list<Node*> outputsToAdd;
+    for (std::list<Node*>::iterator it = outputs.begin(); it!=outputs.end(); ++it) {
+        GroupOutput* isOutputNode = dynamic_cast<GroupOutput*>((*it)->getLiveInstance());
+        //If the node is an output node, add all the outputs of the group node instead
+        if (isOutputNode) {
+            boost::shared_ptr<NodeCollection> collection = (*it)->getGroup();
+            assert(collection);
+            NodeGroup* isGrp = dynamic_cast<NodeGroup*>(collection.get());
+            if (isGrp) {
+                std::list<Node*> groupOutputs;
+                isGrp->getNode()->getOutputs_mt_safe(groupOutputs);
+                for (std::list<Node*>::iterator it2 = groupOutputs.begin(); it2 != groupOutputs.end(); ++it2) {
+                    outputsToAdd.push_back(*it2);
                 }
-            
-                
-                return output->isSettingsPanelOpened() ||
-                _imp->liveInstance->doesTemporalClipAccess() ||
-                _imp->liveInstance->getRecursionLevel() > 0 ||
-                isForceCachingEnabled() ||
-                appPTR->isAggressiveCachingEnabled() ||
-                (isPreviewEnabled() && !appPTR->isBackground());
-            } else {
-                // outputs == 0, never cache, unless explicitly set
-                return isForceCachingEnabled() || appPTR->isAggressiveCachingEnabled();
             }
         }
     }
+    outputs.insert(outputs.end(), outputsToAdd.begin(),outputsToAdd.end());
+    
+    std::size_t sz = outputs.size();
+    if (sz > 1) {
+        ///The node is referenced multiple times below, cache it
+        return true;
+    } else {
+        if (sz == 1) {
+          
+            Node* output = outputs.front();
+            
+            ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>(output->getLiveInstance());
+            if (isViewer) {
+                int activeInputs[2];
+                isViewer->getActiveInputs(activeInputs[0], activeInputs[1]);
+                if (output->getInput(activeInputs[0]).get() == this ||
+                    output->getInput(activeInputs[1]).get() == this) {
+                    return true;
+                }
+            }
+            
+            
+            return !isFrameVaryingOrAnimated ||
+            output->isSettingsPanelOpened() ||
+            _imp->liveInstance->doesTemporalClipAccess() ||
+            _imp->liveInstance->getRecursionLevel() > 0 ||
+            isForceCachingEnabled() ||
+            appPTR->isAggressiveCachingEnabled() ||
+            (isPreviewEnabled() && !appPTR->isBackground());
+        } else {
+            // outputs == 0, never cache, unless explicitly set
+            return isForceCachingEnabled() || appPTR->isAggressiveCachingEnabled();
+        }
+    }
+    
     
 }
 

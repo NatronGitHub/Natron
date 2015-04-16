@@ -863,10 +863,10 @@ EffectInstance::aborted() const
 }
 
 bool
-EffectInstance::shouldCacheOutput() const
+EffectInstance::shouldCacheOutput(bool isFrameVaryingOrAnimated) const
 {
     boost::shared_ptr<Node> n = _node.lock();
-    return n->shouldCacheOutput();
+    return n->shouldCacheOutput(isFrameVaryingOrAnimated);
 }
 
 
@@ -2413,9 +2413,9 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
     ///For eRenderSafetyFullySafe, don't take any lock, the image already has a lock on itself so we're sure it can't be written to by 2 different threads.
    
     
-    bool createInCache = shouldCacheOutput();
-
     bool isFrameVaryingOrAnimated = isFrameVaryingOrAnimated_Recursive();
+    bool createInCache = shouldCacheOutput(isFrameVaryingOrAnimated);
+
     Natron::ImageKey key = Natron::Image::makeKey(nodeHash, isFrameVaryingOrAnimated, args.time, args.view);
 
     bool useDiskCacheNode = dynamic_cast<DiskCacheNode*>(this) != NULL;
@@ -2861,11 +2861,14 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
 
             {
                 const std::list<RectI>& rectsToRender = planesToRender.rectsToRender;
-                
-                qDebug() <<'('<<QThread::currentThread()->objectName()<<")--> "<< getNode()->getScriptName_mt_safe().c_str() << ": render view " << args.view << "time: " << args.time <<  " No. tiles: " << rectsToRender.size() << " rectangles";
+                qDebug() <<'('<<QThread::currentThread()<<")--> "<< getNode()->getScriptName_mt_safe().c_str() << ": render view: " << args.view << ", time: " << args.time << " No. tiles: " << rectsToRender.size() << " rectangles";
                 for (std::list<RectI>::const_iterator it = rectsToRender.begin(); it != rectsToRender.end(); ++it) {
                     qDebug() << "rect: " << "x1= " <<  it->x1 << " , y1= " << it->y1 << " , x2= " << it->x2 << " , y2= " << it->y2;
                 }
+                for (std::map<Natron::ImageComponents, PlaneToRender> ::iterator it = planesToRender.planes.begin(); it!= planesToRender.planes.end(); ++it) {
+                    qDebug() << "plane: " << it->first.getLayerName().c_str();
+                }
+                
             }
 # endif
             renderRetCode = renderRoIInternal(args.time,

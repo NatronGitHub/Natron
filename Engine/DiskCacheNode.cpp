@@ -57,7 +57,7 @@ DiskCacheNode::addSupportedBitDepth(std::list<Natron::ImageBitDepthEnum>* depths
 }
 
 bool
-DiskCacheNode::shouldCacheOutput() const
+DiskCacheNode::shouldCacheOutput(bool /*isFrameVaryingOrAnimated*/) const
 {
     return true;
 }
