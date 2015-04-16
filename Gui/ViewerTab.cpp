@@ -4232,7 +4232,7 @@ ViewerTab::refreshLayerAndAlphaChannelComboBox()
         
     }
     
-    alphaIdx = _imp->layerChoice->itemIndex(alphaCurChoice);
+    alphaIdx = _imp->alphaChannelChoice->itemIndex(alphaCurChoice);
     if (alphaIdx == -1) {
         alphaIdx = 0;
     }
