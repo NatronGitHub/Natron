@@ -258,10 +258,10 @@ TransformUndoCommand::redo()
         _roto->setSelection(_selectedCurves, _selectedPoints);
         _roto->evaluate(true);
     } else {
-       // _roto->refreshSelectionBBox();
+        _roto->refreshSelectionBBox();
         _roto->onRefreshAsked();
     }
-
+    
     _firstRedoCalled = true;
     setText( QObject::tr("Transform points of %1").arg( _roto->getNodeName() ) );
 }
