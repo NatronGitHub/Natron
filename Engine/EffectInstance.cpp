@@ -2453,9 +2453,9 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
     ////////////////////////////// Look-up the cache ///////////////////////////////////////////////////////////////
     
     {
-        //If one plane is missing from the cache, remove all other planes from the cache
-        
-        bool attemptToLookupCache = true;
+        //If one plane is missing from cache, we will have to render it all. For all other planes, either they have nothing
+        //left to render, otherwise we render them for all the roi again.
+        bool missingPlane = false;
         
         for (std::list<ImageComponents>::iterator it = requestedComponents.begin(); it != requestedComponents.end(); ++it) {
             
@@ -2500,9 +2500,16 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
             }
             if (plane.fullscaleImage) {
                 
-                if (!attemptToLookupCache) {
-                    appPTR->removeFromNodeCache(plane.fullscaleImage);
-                    plane.fullscaleImage.reset();
+                if (missingPlane) {
+                    std::list<RectI> restToRender;
+                    plane.fullscaleImage->getRestToRender(roi, restToRender);
+                    if (!restToRender.empty()) {
+                        appPTR->removeFromNodeCache(plane.fullscaleImage);
+                        plane.fullscaleImage.reset();
+                    } else {
+                        outputPlanes->push_back(plane.fullscaleImage);
+                        continue;
+                    }
                 } else {
                     
                     //Overwrite the RoD with the RoD contained in the image.
@@ -2515,17 +2522,29 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
                     framesNeeded = plane.fullscaleImage->getParams()->getFramesNeeded();
                 }
             } else {
-                if (attemptToLookupCache) {
-                    attemptToLookupCache = false;
-                    //Clear all previous planes
+                if (!missingPlane) {
+                    missingPlane = true;
+                    //Ensure that previous planes are either already rendered or otherwise render them  again
+                    std::map<ImageComponents, PlaneToRender> newPlanes;
                     for (std::map<ImageComponents, PlaneToRender>::iterator it2 = planesToRender.planes.begin();
                          it2 != planesToRender.planes.end(); ++it2) {
                         if (it2->second.fullscaleImage) {
-                            appPTR->removeFromNodeCache(it2->second.fullscaleImage);
+                            std::list<RectI> restToRender;
+                            it2->second.fullscaleImage->getRestToRender(roi, restToRender);
+                            if (!restToRender.empty()) {
+                                appPTR->removeFromNodeCache(it2->second.fullscaleImage);
+                                it2->second.fullscaleImage.reset();
+                                it2->second.downscaleImage.reset();
+                                newPlanes.insert(*it2);
+                            } else {
+                                outputPlanes->push_back(it2->second.fullscaleImage);
+                            }
+                        } else {
+                            newPlanes.insert(*it2);
                         }
-                        it2->second.fullscaleImage.reset();
-                        it2->second.downscaleImage.reset();
+                        
                     }
+                    planesToRender.planes = newPlanes;
                 }
             }
             
