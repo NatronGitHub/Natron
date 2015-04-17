@@ -3769,9 +3769,34 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,const boost::shared_ptr<KnobI>
         _imp->startNewLineLabel = new Natron::Label(tr("Start new line:"),secondRowContainer);
         secondRowLayout->addWidget(_imp->startNewLineLabel);
         _imp->startNewLineBox = new QCheckBox(secondRowContainer);
-        _imp->startNewLineBox->setToolTip(tr("If checked the <b><i>next</i></b> parameter defined will be on the same line as this parameter"));
+        _imp->startNewLineBox->setToolTip(tr("If unchecked the parameter will be on the same line as the previous parameter"));
         if (knob) {
-            _imp->startNewLineBox->setChecked(knob->isNewLineActivated());
+            
+            // get the flag on the previous knob
+            bool startNewLine = true;
+            boost::shared_ptr<KnobI> parentKnob = _imp->knob->getParentKnob();
+            if (parentKnob) {
+                Group_Knob* parentIsGrp = dynamic_cast<Group_Knob*>(parentKnob.get());
+                Page_Knob* parentIsPage = dynamic_cast<Page_Knob*>(parentKnob.get());
+                assert(parentIsGrp || parentIsPage);
+                std::vector<boost::shared_ptr<KnobI> > children;
+                if (parentIsGrp) {
+                    children = parentIsGrp->getChildren();
+                } else if (parentIsPage) {
+                    children = parentIsPage->getChildren();
+                }
+                for (U32 i = 0; i < children.size(); ++i) {
+                    if (children[i] == _imp->knob) {
+                        if (i > 0) {
+                            startNewLine = children[i - 1]->isNewLineActivated();
+                        }
+                        break;
+                    }
+                }
+            }
+
+            
+            _imp->startNewLineBox->setChecked(startNewLine);
         }
         secondRowLayout->addWidget(_imp->startNewLineBox);
         secondRowLayout->addStretch();
@@ -4691,7 +4716,9 @@ AddKnobDialogPrivate::createKnobFromSelection(int index,int optionalGroupIndex)
         knob->setAnimationEnabled(animatesCheckbox->isChecked());
     }
     knob->setEvaluateOnChange(evaluatesOnChange->isChecked());
-    knob->setAddNewLine(startNewLineBox->isChecked());
+    
+    
+    
     knob->setSecret(hideBox->isChecked());
     knob->setName(nameLineEdit->text().toStdString());
     knob->setHintToolTip(tooltipArea->toPlainText().toStdString());
@@ -4723,6 +4750,8 @@ AddKnobDialogPrivate::createKnobFromSelection(int index,int optionalGroupIndex)
 
         }
     }
+    
+    
     KnobHolder* holder = panel->getHolder();
     assert(holder);
     EffectInstance* isEffect = dynamic_cast<EffectInstance*>(holder);
@@ -4861,6 +4890,31 @@ AddKnobDialog::onOkClicked()
                 oldParentPage->insertKnob(oldIndexInGroup, _imp->knob);
             }
         }
+        
+        //If startsNewLine is false, set the flag on the previous knob
+        bool startNewLine = _imp->startNewLineBox->isChecked();
+        boost::shared_ptr<KnobI> parentKnob = _imp->knob->getParentKnob();
+        if (parentKnob) {
+            Group_Knob* parentIsGrp = dynamic_cast<Group_Knob*>(parentKnob.get());
+            Page_Knob* parentIsPage = dynamic_cast<Page_Knob*>(parentKnob.get());
+            assert(parentIsGrp || parentIsPage);
+            std::vector<boost::shared_ptr<KnobI> > children;
+            if (parentIsGrp) {
+                children = parentIsGrp->getChildren();
+            } else if (parentIsPage) {
+                children = parentIsPage->getChildren();
+            }
+            for (U32 i = 0; i < children.size(); ++i) {
+                if (children[i] == _imp->knob) {
+                    if (i > 0) {
+                        children[i - 1]->setAddNewLine(startNewLine);
+                    }
+                    break;
+                }
+            }
+        }
+        
+        
         if (_imp->originalKnobSerialization) {
             _imp->knob->clone(_imp->originalKnobSerialization->getKnob().get());
         }

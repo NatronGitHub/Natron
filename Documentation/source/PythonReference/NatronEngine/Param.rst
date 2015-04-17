@@ -223,7 +223,7 @@ This function returns **True** upon success and **False** otherwise.
 
     :rtype: :class:`bool<PySide.QtCore.bool>`
 
-Returns whether the *next* parameter defined after this one should be on the same line or not.
+Returns whether the parameter is on a new line or not.
 
 
 
@@ -419,7 +419,7 @@ Same as :func:`random(seed)<NatronEngine.Param.random>` but returns an integer i
 
     :param a: :class:`bool<PySide.QtCore.bool>`
 
-Set whether the parameter should trigger a new line after its declaration or not.
+Set whether the parameter should be on a new line or not. 
 See :func:`getAddNewLine()<NatronEngine.Param.getAddNewLine>`
 
 

@@ -162,10 +162,31 @@ Param::getAddNewLine()
 void
 Param::setAddNewLine(bool a)
 {
-    if (!getInternalKnob()->isUserKnob()) {
+    boost::shared_ptr<KnobI> knob = getInternalKnob();
+    if (!knob || !knob->isUserKnob()) {
         return;
     }
-    getInternalKnob()->setAddNewLine(a);
+    
+    boost::shared_ptr<KnobI> parentKnob = knob->getParentKnob();
+    if (parentKnob) {
+        Group_Knob* parentIsGrp = dynamic_cast<Group_Knob*>(parentKnob.get());
+        Page_Knob* parentIsPage = dynamic_cast<Page_Knob*>(parentKnob.get());
+        assert(parentIsGrp || parentIsPage);
+        std::vector<boost::shared_ptr<KnobI> > children;
+        if (parentIsGrp) {
+            children = parentIsGrp->getChildren();
+        } else if (parentIsPage) {
+            children = parentIsPage->getChildren();
+        }
+        for (U32 i = 0; i < children.size(); ++i) {
+            if (children[i] == knob) {
+                if (i > 0) {
+                    children[i - 1]->setAddNewLine(a);
+                }
+                break;
+            }
+        }
+    }
 }
 
 bool

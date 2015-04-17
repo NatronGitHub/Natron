@@ -506,7 +506,6 @@ Node::load(const std::string & parentMultiInstanceName,
     ///cannot load twice
     assert(!_imp->liveInstance);
     
-    bool nameSet = false;
     bool isMultiInstanceChild = false;
     if ( !parentMultiInstanceName.empty() ) {
         _imp->multiInstanceParentName = parentMultiInstanceName;
@@ -518,11 +517,6 @@ Node::load(const std::string & parentMultiInstanceName,
         fetchParentMultiInstancePointer();
     }
     
-    if (!serialization.isNull() && !dontLoadName && !nameSet && fixedName.isEmpty()) {
-        setScriptName_no_error_check(serialization.getNodeScriptName());
-        setLabel(serialization.getNodeLabel());
-        nameSet = true;
-    }
     
    
     boost::shared_ptr<Node> thisShared = shared_from_this();
@@ -581,6 +575,14 @@ Node::load(const std::string & parentMultiInstanceName,
     
     if (isTrackerNode()) {
         _imp->isMultiInstance = true;
+    }
+    
+    
+    bool nameSet = false;
+    if (!serialization.isNull() && !dontLoadName && !nameSet && fixedName.isEmpty()) {
+        setScriptName_no_error_check(serialization.getNodeScriptName());
+        setLabel(serialization.getNodeLabel());
+        nameSet = true;
     }
     
     if (!nameSet) {
