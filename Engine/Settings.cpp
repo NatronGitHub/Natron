@@ -600,11 +600,10 @@ Settings::initializeKnobs()
 
     _nodegraphTab->addKnob(_disconnectedArrowLength);
     
-    _hideOptionalInputsAutomatically = Natron::createKnob<Bool_Knob>(this, "Auto hide optional inputs");
+    _hideOptionalInputsAutomatically = Natron::createKnob<Bool_Knob>(this, "Auto hide masks inputs");
     _hideOptionalInputsAutomatically->setName("autoHideInputs");
     _hideOptionalInputsAutomatically->setAnimationEnabled(false);
-    _hideOptionalInputsAutomatically->setHintToolTip("When checked, any diconnected optional input of a node in the nodegraph "
-                                                     " (such as mask input) "
+    _hideOptionalInputsAutomatically->setHintToolTip("When checked, any diconnected mask input of a node in the nodegraph "
                                                      "will be visible only when the mouse is hovering the node or when it is "
                                                      "selected.");
     _nodegraphTab->addKnob(_hideOptionalInputsAutomatically);
