@@ -1976,7 +1976,8 @@ private:
                                                              0, //renderAge
                                                              _imp->output, // viewer requester
                                                              0, //texture index
-                                                             _imp->output->getApp()->getTimeLine().get());
+                                                             _imp->output->getApp()->getTimeLine().get(),
+                                                             false);
                     
                     RenderingFlagSetter flagIsRendering(activeInputToRender->getNode().get());
 
@@ -2069,7 +2070,8 @@ DefaultScheduler::processFrame(const BufferedFrames& frames)
                                                  0, //renderAge
                                                  _effect, //viewer
                                                  0, //texture index
-                                                 _effect->getApp()->getTimeLine().get());
+                                                 _effect->getApp()->getTimeLine().get(),
+                                                 false);
         
         RenderingFlagSetter flagIsRendering(_effect->getNode().get());
         

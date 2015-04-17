@@ -933,7 +933,8 @@ OfxEffectInstance::onInputChanged(int inputNo)
                                              0,
                                              dynamic_cast<OutputEffectInstance*>(this),
                                              0, //texture index
-                                             getApp()->getTimeLine().get());
+                                             getApp()->getTimeLine().get(),
+                                             false);
     
     ///Don't do clip preferences while loading a project, they will be refreshed globally once the project is loaded.
     

@@ -224,7 +224,8 @@ public:
                                U64 renderAge,
                                Natron::OutputEffectInstance* renderRequester,
                                int textureIndex,
-                               const TimeLine* timeline);
+                               const TimeLine* timeline,
+                               bool isAnalysis);
     void invalidateParallelRenderArgs();
     
     void getParallelRenderArgs(std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs >& argsMap) const;
@@ -287,7 +288,8 @@ public:
                              U64 renderAge,
                              Natron::OutputEffectInstance* renderRequester,
                              int textureIndex,
-                             const TimeLine* timeline);
+                             const TimeLine* timeline,
+                             bool isAnalysis);
     
     ParallelRenderArgsSetter(const std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs >& args);
     

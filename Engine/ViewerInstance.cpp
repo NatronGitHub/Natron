@@ -457,7 +457,8 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
                                        renderAge,
                                        this,
                                        textureIndex,
-                                       getTimeline().get());
+                                       getTimeline().get(),
+                                       false);
     
     /**
      * @brief Start flagging that we're rendering for as long as the viewer is active.
@@ -867,7 +868,8 @@ ViewerInstance::renderViewer_internal(int view,
                                            inArgs.params->renderAge,
                                            this,
                                            inArgs.params->textureIndex,
-                                           getTimeline().get());
+                                           getTimeline().get(),
+                                           false);
 
 
         

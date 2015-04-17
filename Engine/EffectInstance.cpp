@@ -736,7 +736,8 @@ EffectInstance::setParallelRenderArgsTLS(int time,
                                          U64 renderAge,
                                          Natron::OutputEffectInstance* renderRequester,
                                          int textureIndex,
-                                         const TimeLine* timeline)
+                                         const TimeLine* timeline,
+                                         bool isAnalysis)
 {
     ParallelRenderArgs& args = _imp->frameRenderArgs.localData();
     args.time = time;
@@ -751,6 +752,7 @@ EffectInstance::setParallelRenderArgsTLS(int time,
     args.renderAge = renderAge;
     args.renderRequester = renderRequester;
     args.textureIndex = textureIndex;
+    args.isAnalysis = isAnalysis;
     
     ++args.validArgs;
     
@@ -790,6 +792,17 @@ EffectInstance::getParallelRenderArgsTLS() const
         qDebug() << "Frame render args thread storage not set, this is probably because the graph changed while rendering.";
         return ParallelRenderArgs();
     }
+}
+
+bool
+EffectInstance::isCurrentRenderInAnalysis() const
+{
+    if (_imp->frameRenderArgs.hasLocalData()) {
+        const ParallelRenderArgs& args = _imp->frameRenderArgs.localData();
+        return args.validArgs && args.isAnalysis;
+    }
+    return false;
+    
 }
 
 U64
@@ -5520,7 +5533,8 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
                                                  0,
                                                  dynamic_cast<OutputEffectInstance*>(this),
                                                  0, //texture index
-                                                 getApp()->getTimeLine().get());
+                                                 getApp()->getTimeLine().get(),
+                                                 true);
 
         RECURSIVE_ACTION();
         knobChanged(k, reason, /*view*/ 0, time, originatedFromMainThread);

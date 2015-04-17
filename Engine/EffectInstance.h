@@ -120,6 +120,9 @@ struct ParallelRenderArgs
     ///The texture index of the viewer being rendered, only useful for abortable renders
     int textureIndex;
     
+    ///Was the render started in the instanceChangedAction (knobChanged)
+    bool isAnalysis;
+    
     ParallelRenderArgs()
     : time(0)
     , timeline(0)
@@ -133,6 +136,7 @@ struct ParallelRenderArgs
     , renderAge(0)
     , renderRequester(0)
     , textureIndex(0)
+    , isAnalysis(false)
     {
         
     }
@@ -574,7 +578,8 @@ public:
                                   U64 renderAge,
                                   Natron::OutputEffectInstance* renderRequested,
                                   int textureIndex,
-                                  const TimeLine* timeline);
+                                  const TimeLine* timeline,
+                                  bool isAnalysis);
 
     void setParallelRenderArgsTLS(const ParallelRenderArgs& args); 
 
@@ -584,6 +589,12 @@ public:
     void invalidateParallelRenderArgsTLS();
 
     ParallelRenderArgs getParallelRenderArgsTLS() const;
+
+    /**
+     * @brief If the current thread is rendering and this was started by the knobChanged (instanceChangedAction) function
+     * then this will return true
+     **/
+    bool isCurrentRenderInAnalysis() const;
 
     /**
      * @breif Don't override this one, override onKnobValueChanged instead.
