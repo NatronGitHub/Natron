@@ -1239,11 +1239,14 @@ RotoCurveEditorContext::RotoCurveEditorContext(CurveEditor* widget,
     QObject::connect( rotoCtx.get(),SIGNAL( itemInserted(int) ),this,SLOT( itemInserted(int) ) );
     QObject::connect( rotoCtx.get(),SIGNAL( itemLabelChanged(boost::shared_ptr<RotoItem>) ),this,SLOT( onItemNameChanged(boost::shared_ptr<RotoItem>) ) );
     
-    std::list<boost::shared_ptr<Bezier> > curves = rotoCtx->getCurvesByRenderOrder();
+    std::list<boost::shared_ptr<RotoDrawableItem> > curves = rotoCtx->getCurvesByRenderOrder();
     
-    for (std::list<boost::shared_ptr<Bezier> >::iterator it = curves.begin(); it!=curves.end(); ++it) {
-        BezierEditorContext* c = new BezierEditorContext(tree, widget, *it, this);
-        _imp->curves.push_back(c);
+    for (std::list<boost::shared_ptr<RotoDrawableItem> >::iterator it = curves.begin(); it!=curves.end(); ++it) {
+        boost::shared_ptr<Bezier> isBezier = boost::dynamic_pointer_cast<Bezier>(*it);
+        if (isBezier) {
+            BezierEditorContext* c = new BezierEditorContext(tree, widget, isBezier, this);
+            _imp->curves.push_back(c);
+        }
     }
 }
 
@@ -1360,11 +1363,11 @@ RotoCurveEditorContext::findElement(KnobGui* knob,int dimension) const
         return ret;
     }
     
-    std::list<boost::shared_ptr<Bezier> > selectedBeziers = roto->getSelectedCurves();
+    std::list<boost::shared_ptr<RotoDrawableItem> > selectedBeziers = roto->getSelectedCurves();
     
     for (std::list<BezierEditorContext*>::const_iterator it = _imp->curves.begin(); it != _imp->curves.end(); ++it) {
         
-        for (std::list<boost::shared_ptr<Bezier> >::iterator it2 = selectedBeziers.begin(); it2 != selectedBeziers.end(); ++it2) {
+        for (std::list<boost::shared_ptr<RotoDrawableItem> >::iterator it2 = selectedBeziers.begin(); it2 != selectedBeziers.end(); ++it2) {
             if (*it2 == (*it)->getBezier()) {
                 NodeCurveEditorElement* found = (*it)->findElement(knob, dimension);
                 if (found) {

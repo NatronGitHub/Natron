@@ -417,6 +417,19 @@ enum ContextEnum
     eContextTracker
 };
     
+enum RotoStrokeType
+{
+    eRotoStrokeTypeSolid,
+    eRotoStrokeTypeEraser,
+    eRotoStrokeTypeClone,
+    eRotoStrokeTypeReveal,
+    eRotoStrokeTypeBlur,
+    eRotoStrokeTypeSharpen,
+    eRotoStrokeTypeSmear,
+    eRotoStrokeTypeDodge,
+    eRotoStrokeTypeBurn,
+};
+    
 }
 Q_DECLARE_METATYPE(Natron::StandardButtons)
 

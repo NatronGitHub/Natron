@@ -44,6 +44,9 @@
 #define ROTO_CTX_REMOVE_COUNTERS 2
 #define ROTO_CTX_VERSION ROTO_CTX_REMOVE_COUNTERS
 
+#define ROTO_LAYER_SERIALIZATION_REMOVES_IS_BEZIER 2
+#define ROTO_LAYER_SERIALIZATION_VERSION ROTO_LAYER_SERIALIZATION_REMOVES_IS_BEZIER
+
 template<class Archive>
 void
 BezierCP::save(Archive & ar,
@@ -309,6 +312,104 @@ BOOST_CLASS_VERSION(RotoDrawableItemSerialization,ROTO_DRAWABLE_ITEM_VERSION)
 
 BOOST_SERIALIZATION_ASSUME_ABSTRACT(RotoDrawableItemSerialization);
 
+
+struct StrokePoint {
+    
+    double x,y,pressure;
+    
+    template<class Archive>
+    void serialize(Archive & ar,
+              const unsigned int /*version*/)
+    {
+        ar & boost::serialization::make_nvp("X",x);
+        ar & boost::serialization::make_nvp("Y",y);
+        ar & boost::serialization::make_nvp("Press",pressure);
+    }
+};
+
+class RotoStrokeSerialization : public RotoDrawableItemSerialization
+{
+    friend class boost::serialization::access;
+    friend class RotoStrokeItem;
+    
+public:
+    
+    
+    RotoStrokeSerialization()
+    : RotoDrawableItemSerialization()
+    , _points()
+    , _brushType()
+    , _brushSize()
+    , _brushHardness()
+    , _brushSpacing()
+    , _brushVisiblePortion()
+    , _brushEffectStrength()
+    {
+        
+    }
+    
+    virtual ~RotoStrokeSerialization()
+    {
+        
+    }
+    
+    int getType() const
+    {
+        return _brushType;
+    }
+    
+private:
+    
+    
+    template<class Archive>
+    void save(Archive & ar,
+              const unsigned int version) const
+    {
+        (void)version;
+        boost::serialization::void_cast_register<RotoStrokeSerialization,RotoDrawableItemSerialization>(
+                                                                                                        static_cast<RotoStrokeSerialization *>(NULL),
+                                                                                                        static_cast<RotoDrawableItemSerialization *>(NULL)
+                                                                                                        );
+        ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(RotoDrawableItemSerialization);
+        ar & boost::serialization::make_nvp("Points",_points);
+        ar & boost::serialization::make_nvp("BrushType",_brushType);
+        ar & boost::serialization::make_nvp("BrushSize",_brushSize);
+        ar & boost::serialization::make_nvp("BrushSpacing",_brushSpacing);
+        ar & boost::serialization::make_nvp("BrushHardness",_brushHardness);
+        ar & boost::serialization::make_nvp("BrushEffectStrength",_brushEffectStrength);
+        ar & boost::serialization::make_nvp("BrushVisiblePortion",_brushVisiblePortion);
+    }
+    
+    template<class Archive>
+    void load(Archive & ar,
+              const unsigned int version)
+    {
+        (void)version;
+        boost::serialization::void_cast_register<RotoStrokeSerialization,RotoDrawableItemSerialization>(
+                                                                                                        static_cast<RotoStrokeSerialization *>(NULL),
+                                                                                                        static_cast<RotoDrawableItemSerialization *>(NULL)
+                                                                                                        );
+        ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(RotoDrawableItemSerialization);
+        ar & boost::serialization::make_nvp("Points",_points);
+        ar & boost::serialization::make_nvp("BrushType",_brushType);
+        ar & boost::serialization::make_nvp("BrushSize",_brushSize);
+        ar & boost::serialization::make_nvp("BrushSpacing",_brushSpacing);
+        ar & boost::serialization::make_nvp("BrushHardness",_brushHardness);
+        ar & boost::serialization::make_nvp("BrushEffectStrength",_brushEffectStrength);
+        ar & boost::serialization::make_nvp("BrushVisiblePortion",_brushVisiblePortion);
+    }
+    
+    BOOST_SERIALIZATION_SPLIT_MEMBER()
+    
+    std::list<StrokePoint> _points;
+    int _brushType;
+    KnobSerialization _brushSize;
+    KnobSerialization _brushHardness;
+    KnobSerialization _brushSpacing;
+    KnobSerialization _brushVisiblePortion;
+    KnobSerialization _brushEffectStrength;
+};
+
 class BezierSerialization
     : public RotoDrawableItemSerialization
 {
@@ -417,11 +518,21 @@ private:
         ar & boost::serialization::make_nvp("NumChildren",numChildren);
         for (std::list < boost::shared_ptr<RotoItemSerialization> >::const_iterator it = children.begin(); it != children.end(); ++it) {
             BezierSerialization* isBezier = dynamic_cast<BezierSerialization*>( it->get() );
+            RotoStrokeSerialization* isStroke = dynamic_cast<RotoStrokeSerialization*>( it->get() );
             RotoLayerSerialization* isLayer = dynamic_cast<RotoLayerSerialization*>( it->get() );
-            bool bezier = isBezier != NULL;
-            ar & boost::serialization::make_nvp("IsBezier",bezier);
+            int type;
+            if (isBezier) {
+                type = 0;
+            } else if (isStroke) {
+                type = 1;
+            } else if (isLayer) {
+                type = 2;
+            }
+            ar & boost::serialization::make_nvp("Type",type);
             if (isBezier) {
                 ar & boost::serialization::make_nvp("Item",*isBezier);
+            } else if (isStroke) {
+                ar & boost::serialization::make_nvp("Item",*isStroke);
             } else {
                 assert(isLayer);
                 ar & boost::serialization::make_nvp("Item",*isLayer);
@@ -442,10 +553,21 @@ private:
         int numChildren;
         ar & boost::serialization::make_nvp("NumChildren",numChildren);
         for (int i = 0; i < numChildren; ++i) {
-            bool bezier;
-            ar & boost::serialization::make_nvp("IsBezier",bezier);
-            if (bezier) {
+            
+            int type;
+            if (version < ROTO_LAYER_SERIALIZATION_REMOVES_IS_BEZIER) {
+                bool bezier;
+                ar & boost::serialization::make_nvp("IsBezier",bezier);
+                type = 0;
+            } else {
+                ar & boost::serialization::make_nvp("Type",type);
+            }
+            if (type == 0) {
                 boost::shared_ptr<BezierSerialization> b(new BezierSerialization);
+                ar & boost::serialization::make_nvp("Item",*b);
+                children.push_back(b);
+            } else if (type == 1) {
+                boost::shared_ptr<RotoStrokeSerialization> b(new RotoStrokeSerialization);
                 ar & boost::serialization::make_nvp("Item",*b);
                 children.push_back(b);
             } else {
@@ -461,6 +583,7 @@ private:
     std::list < boost::shared_ptr<RotoItemSerialization> > children;
 };
 
+BOOST_CLASS_VERSION(RotoLayerSerialization,ROTO_LAYER_SERIALIZATION_VERSION)
 
 class RotoContextSerialization
 {

@@ -42,6 +42,15 @@ CLANG_DIAG_ON(deprecated-declarations)
 #define kRotoBSplineBaseName "BSpline"
 #define kRotoEllipseBaseName "Ellipse"
 #define kRotoRectangleBaseName "Rectangle"
+#define kRotoPaintBrushBaseName "Brush"
+#define kRotoPaintEraserBaseName "Eraser"
+#define kRotoPaintBlurBaseName "Blur"
+#define kRotoPaintSmearBaseName "Smear"
+#define kRotoPaintSharpenBaseName "Sharpen"
+#define kRotoPaintCloneBaseName "Clone"
+#define kRotoPaintRevealBaseName "Reveal"
+#define kRotoPaintDodgeBaseName "Dodge"
+#define kRotoPaintBurnBaseName "Burn"
 
 namespace Natron {
 class Image;
@@ -464,6 +473,8 @@ Q_SIGNALS:
 protected:
     
     virtual void invalidateFeatherPointsAtDistance() {}
+    
+    void addKnob(const boost::shared_ptr<KnobI>& knob);
 
 private:
 
@@ -480,11 +491,26 @@ class RotoStrokeItem : public RotoDrawableItem
     
 public:
     
-    RotoStrokeItem(const boost::shared_ptr<RotoContext>& context,
-                     const std::string & name,
-                     const boost::shared_ptr<RotoLayer>& parent);
+    typedef std::list<std::pair<Natron::Point,double> > Points;
+    
+    RotoStrokeItem(Natron::RotoStrokeType type,
+                   const boost::shared_ptr<RotoContext>& context,
+                   const std::string & name,
+                   const boost::shared_ptr<RotoLayer>& parent);
     
     virtual ~RotoStrokeItem();
+    
+    Natron::RotoStrokeType getBrushType() const;
+    
+    void addPoint(double x, double y, double pressure);
+    
+    const RotoStrokeItem::Points& getPoints() const;
+    
+    RectD getStrokeRoD() const;
+    
+    RotoStrokeItem::Points getPoints_mt_safe() const;
+    
+    void transformStroke(const Transform::Matrix3x3& matrix);
     
     virtual void clone(const RotoItem* other);
     
@@ -502,7 +528,15 @@ public:
      **/
     virtual void load(const RotoItemSerialization & obj) OVERRIDE;
 
+    boost::shared_ptr<Double_Knob> getBrushSizeKnob() const;
+    boost::shared_ptr<Double_Knob> getBrushHardnessKnob() const;
+    boost::shared_ptr<Double_Knob> getBrushSpacingKnob() const;
+    boost::shared_ptr<Double_Knob> getBrushEffectKnob() const;
+    boost::shared_ptr<Double_Knob> getBrushVisiblePortionKnob() const;
+    
 private:
+    
+    void computeRoD();
     
     boost::scoped_ptr<RotoStrokeItemPrivate> _imp;
 };
@@ -1065,6 +1099,9 @@ public:
     boost::shared_ptr<Bezier> makeEllipse(double x,double y,double diameter,bool fromCenter,int time);
     boost::shared_ptr<Bezier> makeSquare(double x,double y,double initialSize,int time);
     
+    
+    boost::shared_ptr<RotoStrokeItem> makeStroke(Natron::RotoStrokeType type,const std::string& baseName);
+    
     std::string generateUniqueName(const std::string& baseName);
     
     /**
@@ -1136,7 +1173,7 @@ public:
     void select(const boost::shared_ptr<RotoItem> & b, RotoItem::SelectionReasonEnum reason);
 
     ///for convenience
-    void select(const std::list<boost::shared_ptr<Bezier> > & beziers, RotoItem::SelectionReasonEnum reason);
+    void select(const std::list<boost::shared_ptr<RotoDrawableItem> > & beziers, RotoItem::SelectionReasonEnum reason);
     void select(const std::list<boost::shared_ptr<RotoItem> > & items, RotoItem::SelectionReasonEnum reason);
 
     /**
@@ -1167,7 +1204,7 @@ public:
     /**
      * @brief Returns a list of the currently selected curves. Can only be called on the main-thread.
      **/
-    std::list< boost::shared_ptr<Bezier> > getSelectedCurves() const;
+    std::list< boost::shared_ptr<RotoDrawableItem> > getSelectedCurves() const;
 
 
     /**
@@ -1180,7 +1217,7 @@ public:
      * Non-active curves will not be inserted into the list.
      * MT-safe
      **/
-    std::list< boost::shared_ptr<Bezier> > getCurvesByRenderOrder() const;
+    std::list< boost::shared_ptr<RotoDrawableItem> > getCurvesByRenderOrder() const;
     
     int getNCurves() const;
     

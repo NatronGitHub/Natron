@@ -44,6 +44,7 @@ class RotoItem;
 class QUndoCommand;
 class NodeGui;
 class Bezier;
+class RotoDrawableItem;
 class BezierCP;
 class GuiAppInstance;
 struct RotoGuiSharedData;
@@ -92,7 +93,11 @@ public:
     {
         eRotoRoleSelection = 0,
         eRotoRolePointsEdition,
-        eRotoRoleBezierEdition
+        eRotoRoleBezierEdition,
+        eRotoRolePaintBrush,
+        eRotoRoleCloneBrush,
+        eRotoRoleEffectBrush,
+        eRotoRoleMergeBrush
     };
 
     enum RotoToolEnum
@@ -113,6 +118,20 @@ public:
         eRotoToolDrawBSpline,
         eRotoToolDrawEllipse,
         eRotoToolDrawRectangle,
+        
+        eRotoToolSolidBrush,
+        eRotoToolEraserBrush,
+        
+        eRotoToolClone,
+        eRotoToolReveal,
+        
+        eRotoToolBlur,
+        eRotoToolSharpen,
+        eRotoToolSmear,
+        
+        eRotoToolDodge,
+        eRotoToolBurn
+        
     };
 
     RotoGui(NodeGui* node,
@@ -172,12 +191,12 @@ public:
      * @brief Set the selection to be the given beziers and the given control points.
      * This can only be called on the main-thread.
      **/
-    void setSelection(const std::list<boost::shared_ptr<Bezier> > & selectedBeziers,
+    void setSelection(const std::list<boost::shared_ptr<RotoDrawableItem> > & selectedBeziers,
                       const std::list<std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> > > & selectedCps);
     void setSelection(const boost::shared_ptr<Bezier> & curve,
                       const std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> > & point);
 
-    void getSelection(std::list<boost::shared_ptr<Bezier> >* selectedBeziers,
+    void getSelection(std::list<boost::shared_ptr<RotoDrawableItem> >* selectedBeziers,
                       std::list<std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> > >* selectedCps);
 
     void refreshSelectionBBox();
@@ -210,7 +229,7 @@ public:
      * @brief Calls RotoContext::removeItem but also clears some pointers if they point to
      * this curve. For undo/redo purpose.
      **/
-    void removeCurve(const boost::shared_ptr<Bezier>& curve);
+    void removeCurve(const boost::shared_ptr<RotoDrawableItem>& curve);
 
     bool isFeatherVisible() const;
 

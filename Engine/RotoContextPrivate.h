@@ -18,6 +18,7 @@
 #include <list>
 #include <map>
 #include <string>
+#include <limits>
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
@@ -37,8 +38,10 @@
 #include "Engine/Node.h"
 #include "Engine/EffectInstance.h"
 #include "Engine/AppManager.h"
-
+#include "Engine/Rect.h"
 #include "Global/GlobalDefines.h"
+
+//#define ROTO_ENABLE_PAINT
 
 #define ROTO_DEFAULT_OPACITY 1.
 #define ROTO_DEFAULT_FEATHER 1.5
@@ -104,13 +107,6 @@
     "Finally, the mask is composed with the source image, if connected, using the 'over' operator.\n" \
     "See http://cairographics.org/operators/ for a full description of available operators."
 
-#define kRotoBrushTypeParam "brushType"
-#define kRotoBrushTypeParamLabel "Brush Type"
-#define kRotoBrushTypeParamHint "Select here the brush type:\n" \
-"- paint: Paint a solid color\n" \
-"- blur: Blur the area under the paint stroke\n" \
-"- smear: Move and blend pixels in the direction of the paint brush\n" \
-"- sharpen: Sharpen the area under the pain stroke"
 
 #define kRotoBrushSizeParam "brushSize"
 #define kRotoBrushSizeParamLabel "Brush Size"
@@ -566,30 +562,31 @@ struct RotoDrawableItemPrivate
 
 struct RotoStrokeItemPrivate
 {
-    boost::shared_ptr<Choice_Knob> brushType;
+    Natron::RotoStrokeType type;
     boost::shared_ptr<Double_Knob> brushSize;
     boost::shared_ptr<Double_Knob> brushSpacing;
     boost::shared_ptr<Double_Knob> brushHardness;
     boost::shared_ptr<Double_Knob> effectStrength;
     boost::shared_ptr<Double_Knob> visiblePortion; // [0,1] by default
     
-    RotoStrokeItemPrivate()
-    : brushType(new Choice_Knob(NULL, kRotoBrushTypeParamLabel, 1, false))
+    //list<pair<Point, pressure> >
+    std::list<std::pair<Natron::Point,double> > points;
+    RectD regionOfDefinition;
+    
+    RotoStrokeItemPrivate(Natron::RotoStrokeType type)
+    : type(type)
     , brushSize(new Double_Knob(NULL, kRotoBrushSizeParamLabel, 1, false))
     , brushSpacing(new Double_Knob(NULL, kRotoBrushSpacingParamLabel, 1, false))
     , brushHardness(new Double_Knob(NULL, kRotoBrushHardnessParamLabel, 1, false))
     , effectStrength(new Double_Knob(NULL, kRotoBrushEffectParamLabel, 1, false))
     , visiblePortion(new Double_Knob(NULL, kRotoBrushVisiblePortionParamLabel, 2, false))
+    , points()
+    , regionOfDefinition()
     {
-        brushType->setName(kRotoBrushTypeParam);
-        brushType->setHintToolTip(kRotoBrushTypeParamHint);
-        brushType->populate();
-        std::vector<std::string> types;
-        types.push_back("Solid color");
-        types.push_back("Blur");
-        types.push_back("Sharpen");
-        types.push_back("Smear");
-        brushType->populateChoices(types);
+        regionOfDefinition.x1 = std::numeric_limits<double>::infinity();
+        regionOfDefinition.x2 = -std::numeric_limits<double>::infinity();
+        regionOfDefinition.y1 = std::numeric_limits<double>::infinity();
+        regionOfDefinition.y2 = -std::numeric_limits<double>::infinity();
         
         brushSize->setName(kRotoBrushSizeParam);
         brushSize->setHintToolTip(kRotoBrushSizeParamHint);
@@ -647,6 +644,14 @@ struct RotoContextPrivate
     boost::weak_ptr<Bool_Knob> inverted;
 #endif
     boost::weak_ptr<Color_Knob> colorKnob;
+    
+    boost::weak_ptr<Page_Knob> strokePage;
+    boost::weak_ptr<Double_Knob> brushSizeKnob;
+    boost::weak_ptr<Double_Knob> brushSpacingKnob;
+    boost::weak_ptr<Double_Knob> brushHardnessKnob;
+    boost::weak_ptr<Double_Knob> brushEffectKnob;
+    boost::weak_ptr<Double_Knob> brushVisiblePortionKnob;
+    
 
     std::list<boost::weak_ptr<KnobI> > knobs; //< list for easy access to all knobs
 
@@ -671,6 +676,10 @@ struct RotoContextPrivate
     {
         assert( n && n->getLiveInstance() );
         Natron::EffectInstance* effect = n->getLiveInstance();
+    
+    
+        boost::shared_ptr<Page_Knob> shapePage = Natron::createKnob<Page_Knob>(effect, "Controls", 1, false);
+
         boost::shared_ptr<Double_Knob> opacityKnob = Natron::createKnob<Double_Knob>(effect, kRotoOpacityParamLabel, 1, false);
         opacityKnob->setHintToolTip(kRotoOpacityHint);
         opacityKnob->setName(kRotoOpacityParam);
@@ -681,6 +690,7 @@ struct RotoContextPrivate
         opacityKnob->setDefaultValue(ROTO_DEFAULT_OPACITY);
         opacityKnob->setAllDimensionsEnabled(false);
         opacityKnob->setIsPersistant(false);
+        shapePage->addKnob(opacityKnob);
         knobs.push_back(opacityKnob);
         opacity = opacityKnob;
         
@@ -694,6 +704,7 @@ struct RotoContextPrivate
         featherKnob->setDefaultValue(ROTO_DEFAULT_FEATHER);
         featherKnob->setAllDimensionsEnabled(false);
         featherKnob->setIsPersistant(false);
+        shapePage->addKnob(featherKnob);
         knobs.push_back(featherKnob);
         feather = featherKnob;
         
@@ -707,6 +718,7 @@ struct RotoContextPrivate
         featherFallOffKnob->setDefaultValue(ROTO_DEFAULT_FEATHERFALLOFF);
         featherFallOffKnob->setAllDimensionsEnabled(false);
         featherFallOffKnob->setIsPersistant(false);
+        shapePage->addKnob(featherFallOffKnob);
         knobs.push_back(featherFallOffKnob);
         featherFallOff = featherFallOffKnob;
         
@@ -716,6 +728,7 @@ struct RotoContextPrivate
         activatedKnob->setAddNewLine(false);
         activatedKnob->setDefaultValue(true);
         activatedKnob->setAllDimensionsEnabled(false);
+        shapePage->addKnob(activatedKnob);
         activatedKnob->setIsPersistant(false);
         knobs.push_back(activatedKnob);
         activated = activatedKnob;
@@ -727,6 +740,7 @@ struct RotoContextPrivate
         invertedKnob->setDefaultValue(false);
         invertedKnob->setAllDimensionsEnabled(false);
         invertedKnob->setIsPersistant(false);
+        shapePage->addKnob(invertedKnob);
         knobs.push_back(invertedKnob);
         inverted = invertedKnob;
 #endif
@@ -738,9 +752,81 @@ struct RotoContextPrivate
         ck->setDefaultValue(ROTO_DEFAULT_COLOR_G, 1);
         ck->setDefaultValue(ROTO_DEFAULT_COLOR_B, 2);
         ck->setAllDimensionsEnabled(false);
+        shapePage->addKnob(ck);
         ck->setIsPersistant(false);
         knobs.push_back(ck);
         colorKnob = ck;
+        
+#ifdef ROTO_ENABLE_PAINT
+        
+        boost::shared_ptr<Page_Knob> strokePageKnob = Natron::createKnob<Page_Knob>(effect, "Stroke", 1, false);
+        strokePage = strokePageKnob;
+        
+        boost::shared_ptr<Double_Knob> brushSize = Natron::createKnob<Double_Knob>(effect, kRotoBrushSizeParamLabel, 1, false);
+        brushSize->setName(kRotoBrushSizeParam);
+        brushSize->setHintToolTip(kRotoBrushSizeParamHint);
+        brushSize->setDefaultValue(25);
+        brushSize->setMinimum(1.);
+        brushSize->setMaximum(1000);
+        brushSize->setAllDimensionsEnabled(false);
+        brushSize->setIsPersistant(false);
+        strokePageKnob->addKnob(brushSize);
+        knobs.push_back(brushSize);
+        brushSizeKnob = brushSize;
+        
+        boost::shared_ptr<Double_Knob> brushSpacing = Natron::createKnob<Double_Knob>(effect, kRotoBrushSpacingParamLabel, 1, false);
+        brushSpacing->setName(kRotoBrushSpacingParam);
+        brushSpacing->setHintToolTip(kRotoBrushSpacingParamHint);
+        brushSpacing->setDefaultValue(0.05);
+        brushSpacing->setMinimum(0.);
+        brushSpacing->setMaximum(1.);
+        brushSpacing->setAllDimensionsEnabled(false);
+        brushSpacing->setIsPersistant(false);
+        strokePageKnob->addKnob(brushSpacing);
+        knobs.push_back(brushSpacing);
+        brushSpacingKnob = brushSpacing;
+        
+        boost::shared_ptr<Double_Knob> brushHardness = Natron::createKnob<Double_Knob>(effect, kRotoBrushHardnessParamLabel, 1, false);
+        brushHardness->setName(kRotoBrushHardnessParam);
+        brushHardness->setHintToolTip(kRotoBrushHardnessParamHint);
+        brushHardness->setDefaultValue(0.2);
+        brushHardness->setMinimum(0.);
+        brushHardness->setMaximum(1.);
+        brushHardness->setAllDimensionsEnabled(false);
+        brushHardness->setIsPersistant(false);
+        strokePageKnob->addKnob(brushHardness);
+        knobs.push_back(brushHardness);
+        brushHardnessKnob = brushHardness;
+        
+        boost::shared_ptr<Double_Knob> effectStrength = Natron::createKnob<Double_Knob>(effect, kRotoBrushEffectParamLabel, 1, false);
+        effectStrength->setName(kRotoBrushEffectParam);
+        effectStrength->setHintToolTip(kRotoBrushEffectParamHint);
+        effectStrength->setDefaultValue(15);
+        effectStrength->setMinimum(0.);
+        effectStrength->setMaximum(100.);
+        effectStrength->setAllDimensionsEnabled(false);
+        effectStrength->setIsPersistant(false);
+        strokePageKnob->addKnob(effectStrength);
+        knobs.push_back(effectStrength);
+        brushEffectKnob = effectStrength;
+
+        boost::shared_ptr<Double_Knob> visiblePortion = Natron::createKnob<Double_Knob>(effect, kRotoBrushVisiblePortionParamLabel, 2, false);
+        visiblePortion->setName(kRotoBrushVisiblePortionParam);
+        visiblePortion->setHintToolTip(kRotoBrushVisiblePortionParamHint);
+        visiblePortion->setDefaultValue(0, 0);
+        visiblePortion->setDefaultValue(1, 1);
+        std::vector<double> mins,maxs;
+        mins.push_back(0);
+        mins.push_back(0);
+        maxs.push_back(1);
+        maxs.push_back(1);
+        visiblePortion->setAllDimensionsEnabled(false);
+        visiblePortion->setIsPersistant(false);
+        strokePageKnob->addKnob(visiblePortion);
+        knobs.push_back(visiblePortion);
+        brushVisiblePortionKnob = visiblePortion;
+#endif
+        
     }
 
     /**
@@ -755,10 +841,14 @@ struct RotoContextPrivate
         ++age;
     }
 
-    void renderInternal(cairo_t* cr,cairo_surface_t* cairoImg,const std::list< boost::shared_ptr<Bezier> > & splines,
+    void renderInternal(cairo_t* cr,cairo_surface_t* cairoImg,const std::list< boost::shared_ptr<RotoDrawableItem> > & splines,
                         unsigned int mipmapLevel,int time);
     
-    void renderFeather(const boost::shared_ptr<Bezier>& bezier,int time, unsigned int mipmapLevel, bool inverted, double shapeColor[3], double opacity, double featherDist, double fallOff, cairo_pattern_t* mesh, const BezierCPs& cps,const BezierCPs& fps);
+    void renderStroke(cairo_t* cr,const RotoStrokeItem* stroke, int time, unsigned int mipmapLevel);
+    
+    void renderBezier(cairo_t* cr,const Bezier* bezier,int time, unsigned int mipmapLevel);
+    
+    void renderFeather(const Bezier* bezier,int time, unsigned int mipmapLevel, bool inverted, double shapeColor[3], double opacity, double featherDist, double fallOff, cairo_pattern_t* mesh, const BezierCPs& cps,const BezierCPs& fps);
 
     void renderInternalShape(int time,unsigned int mipmapLevel,double shapeColor[3], double opacity,cairo_t* cr, cairo_pattern_t* mesh, const BezierCPs & cps);
     

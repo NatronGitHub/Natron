@@ -430,7 +430,7 @@ RemovePointUndoCommand::~RemovePointUndoCommand()
 void
 RemovePointUndoCommand::undo()
 {
-    BezierList selection;
+    std::list<boost::shared_ptr<RotoDrawableItem> > selection;
     SelectedCpList cpSelection;
 
     for (std::list< CurveDesc >::iterator it = _curves.begin(); it != _curves.end(); ++it) {
@@ -492,13 +492,13 @@ RemovePointUndoCommand::redo()
 //////////////////////////
 
 RemoveCurveUndoCommand::RemoveCurveUndoCommand(RotoGui* roto,
-                                               const std::list<boost::shared_ptr<Bezier> > & curves)
+                                               const std::list<boost::shared_ptr<RotoDrawableItem> > & curves)
     : QUndoCommand()
       , _roto(roto)
       , _firstRedoCalled(false)
       , _curves()
 {
-    for (BezierList::const_iterator it = curves.begin(); it != curves.end(); ++it) {
+    for (std::list<boost::shared_ptr<RotoDrawableItem> >::const_iterator it = curves.begin(); it != curves.end(); ++it) {
         RemovedCurve r;
         r.curve = *it;
         r.layer = boost::dynamic_pointer_cast<RotoLayer>( _roto->getContext()->getItemByName( (*it)->getParentLayer()->getScriptName() ) );
@@ -516,15 +516,20 @@ RemoveCurveUndoCommand::~RemoveCurveUndoCommand()
 void
 RemoveCurveUndoCommand::undo()
 {
-    BezierList selection;
+    std::list<boost::shared_ptr<RotoDrawableItem> > selection;
 
     for (std::list<RemovedCurve>::iterator it = _curves.begin(); it != _curves.end(); ++it) {
         _roto->getContext()->addItem(it->layer, it->indexInLayer, it->curve, RotoItem::eSelectionReasonOverlayInteract);
-        selection.push_back(it->curve);
+        boost::shared_ptr<Bezier> isBezier = boost::dynamic_pointer_cast<Bezier>(it->curve);
+        if (isBezier) {
+            selection.push_back(isBezier);
+        }
     }
 
     SelectedCpList cpList;
-    _roto->setSelection(selection, cpList);
+    if (!selection.empty()) {
+        _roto->setSelection(selection, cpList);
+    }
     _roto->evaluate(true);
 
     setText( QObject::tr("Remove curves to %1").arg( _roto->getNodeName() ) );
@@ -543,6 +548,42 @@ RemoveCurveUndoCommand::redo()
 }
 
 ////////////////////////////////
+
+
+AddStrokeUndoCommand::AddStrokeUndoCommand(RotoGui* roto,const boost::shared_ptr<RotoStrokeItem>& item)
+: QUndoCommand()
+, _roto(roto)
+, _firstRedoCalled(false)
+, _item(item)
+, _layer(item->getParentLayer())
+, _indexInLayer(_layer ? _layer->getChildIndex(_item) : -1)
+{
+    assert(_indexInLayer != -1);
+}
+
+AddStrokeUndoCommand::~AddStrokeUndoCommand()
+{
+    
+}
+
+void
+AddStrokeUndoCommand::undo()
+{
+    _roto->removeCurve(_item);
+    _roto->evaluate(true);
+    setText(QObject::tr("Paint Stroke"));
+}
+
+void
+AddStrokeUndoCommand::redo()
+{
+    if (_firstRedoCalled) {
+        _roto->getContext()->addItem(_layer, _indexInLayer, _item, RotoItem::eSelectionReasonOverlayInteract);
+    }
+    _roto->evaluate(_firstRedoCalled);
+    _firstRedoCalled = true;
+    setText(QObject::tr("Paint Stroke"));
+}
 
 MoveTangentUndoCommand::MoveTangentUndoCommand(RotoGui* roto,
                                                double dx,
