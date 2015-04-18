@@ -516,6 +516,11 @@ KnobHelper::isUserKnob() const
 void
 KnobHelper::populate()
 {
+    
+    boost::shared_ptr<KnobI> thisKnob = shared_from_this();
+    boost::shared_ptr<KnobSignalSlotHandler> handler( new KnobSignalSlotHandler(thisKnob) );
+    setSignalSlotHandler(handler);
+
     Color_Knob* isColor = dynamic_cast<Color_Knob*>(this);
     Separator_Knob* isSep = dynamic_cast<Separator_Knob*>(this);
     if (isSep) {

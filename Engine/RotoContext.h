@@ -470,6 +470,43 @@ private:
     boost::scoped_ptr<RotoDrawableItemPrivate> _imp;
 };
 
+
+/**
+ * @class Base class for all strokes
+ **/
+struct RotoStrokeItemPrivate;
+class RotoStrokeItem : public RotoDrawableItem
+{
+    
+public:
+    
+    RotoStrokeItem(const boost::shared_ptr<RotoContext>& context,
+                     const std::string & name,
+                     const boost::shared_ptr<RotoLayer>& parent);
+    
+    virtual ~RotoStrokeItem();
+    
+    virtual void clone(const RotoItem* other);
+    
+    /**
+     * @brief Must be implemented by the derived class to save the state into
+     * the serialization object.
+     * Derived implementations must call the parent class implementation.
+     **/
+    virtual void save(RotoItemSerialization* obj) const OVERRIDE;
+    
+    /**
+     * @brief Must be implemented by the derived class to load the state from
+     * the serialization object.
+     * Derived implementations must call the parent class implementation.
+     **/
+    virtual void load(const RotoItemSerialization & obj) OVERRIDE;
+
+private:
+    
+    boost::scoped_ptr<RotoStrokeItemPrivate> _imp;
+};
+
 /**
  * @class A RotoLayer is a group of RotoItem. This allows the context to sort
  * and build hierarchies of layers.

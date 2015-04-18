@@ -104,6 +104,34 @@
     "Finally, the mask is composed with the source image, if connected, using the 'over' operator.\n" \
     "See http://cairographics.org/operators/ for a full description of available operators."
 
+#define kRotoBrushTypeParam "brushType"
+#define kRotoBrushTypeParamLabel "Brush Type"
+#define kRotoBrushTypeParamHint "Select here the brush type:\n" \
+"- paint: Paint a solid color\n" \
+"- blur: Blur the area under the paint stroke\n" \
+"- smear: Move and blend pixels in the direction of the paint brush\n" \
+"- sharpen: Sharpen the area under the pain stroke"
+
+#define kRotoBrushSizeParam "brushSize"
+#define kRotoBrushSizeParamLabel "Brush Size"
+#define kRotoBrushSizeParamHint "This is the diameter of the brush in pixels. Shift + drag on the viewer to modify this value"
+
+#define kRotoBrushSpacingParam "brushSpacing"
+#define kRotoBrushSpacingParamLabel "brushSpacing"
+#define kRotoBrushSpacingParamHint "Spacing between stamps of the paint brush"
+
+#define kRotoBrushHardnessParam "brushHardness"
+#define kRotoBrushHardnessParamLabel "Brush Hardness"
+#define kRotoBrushHardnessParamHint "Fall off of the brush effect from the center to the edge"
+
+#define kRotoBrushEffectParam "brushEffect"
+#define kRotoBrushEffectParamLabel "Brush effect"
+#define kRotoBrushEffectParamHint "The strength of the effect"
+
+#define kRotoBrushVisiblePortionParam "strokeVisiblePortion"
+#define kRotoBrushVisiblePortionParamLabel "Visible portion"
+#define kRotoBrushVisiblePortionParamHint "Defines the range of the stroke that should be visible: 0 is the start of the stroke and 1 the end."
+
 class Bezier;
 
 struct BezierCPPrivate
@@ -478,41 +506,24 @@ struct RotoDrawableItemPrivate
         opacity->setName(kRotoOpacityParam);
         opacity->populate();
         opacity->setDefaultValue(ROTO_DEFAULT_OPACITY);
-        {
-            boost::shared_ptr<KnobSignalSlotHandler> handler( new KnobSignalSlotHandler(opacity) );
-            opacity->setSignalSlotHandler(handler);
-        }
         knobs.push_back(opacity);
 
         feather->setHintToolTip(kRotoFeatherHint);
         feather->setName(kRotoFeatherParam);
         feather->populate();
         feather->setDefaultValue(ROTO_DEFAULT_FEATHER);
-        {
-            boost::shared_ptr<KnobSignalSlotHandler> handler( new KnobSignalSlotHandler(feather) );
-            feather->setSignalSlotHandler(handler);
-        }
         knobs.push_back(feather);
 
         featherFallOff->setHintToolTip(kRotoFeatherFallOffHint);
         featherFallOff->setName(kRotoFeatherFallOffParam);
         featherFallOff->populate();
         featherFallOff->setDefaultValue(ROTO_DEFAULT_FEATHERFALLOFF);
-        {
-            boost::shared_ptr<KnobSignalSlotHandler> handler( new KnobSignalSlotHandler(featherFallOff) );
-            featherFallOff->setSignalSlotHandler(handler);
-        }
-        
         knobs.push_back(featherFallOff);
 
         activated->setHintToolTip(kRotoActivatedHint);
         activated->setName(kRotoActivatedParam);
         activated->populate();
         activated->setDefaultValue(true);
-        {
-            boost::shared_ptr<KnobSignalSlotHandler> handler( new KnobSignalSlotHandler(activated) );
-            activated->setSignalSlotHandler(handler);
-        }
         knobs.push_back(activated);
 
 #ifdef NATRON_ROTO_INVERTIBLE
@@ -520,10 +531,6 @@ struct RotoDrawableItemPrivate
         inverted->setName(kRotoInvertedParam);
         inverted->populate();
         inverted->setDefaultValue(false);
-        {
-            boost::shared_ptr<KnobSignalSlotHandler> handler( new KnobSignalSlotHandler(inverted) );
-            inverted->setSignalSlotHandler(handler);
-        }
         knobs.push_back(inverted);
 #endif
         
@@ -534,10 +541,6 @@ struct RotoDrawableItemPrivate
         color->setDefaultValue(ROTO_DEFAULT_COLOR_R, 0);
         color->setDefaultValue(ROTO_DEFAULT_COLOR_G, 1);
         color->setDefaultValue(ROTO_DEFAULT_COLOR_B, 2);
-        {
-            boost::shared_ptr<KnobSignalSlotHandler> handler( new KnobSignalSlotHandler(color) );
-            color->setSignalSlotHandler(handler);
-        }
         knobs.push_back(color);
 
         compOperator->setHintToolTip(kRotoCompOperatorHint);
@@ -548,10 +551,6 @@ struct RotoDrawableItemPrivate
         getCompositingOperators(&operators, &tooltips);
         compOperator->populateChoices(operators,tooltips);
         compOperator->setDefaultValue( (int)CAIRO_OPERATOR_OVER );
-        {
-            boost::shared_ptr<KnobSignalSlotHandler> handler( new KnobSignalSlotHandler(compOperator) );
-            compOperator->setSignalSlotHandler(handler);
-        }
         knobs.push_back(compOperator);
 
         overlayColor[0] = 0.85164;
@@ -562,6 +561,69 @@ struct RotoDrawableItemPrivate
 
     ~RotoDrawableItemPrivate()
     {
+    }
+};
+
+struct RotoStrokeItemPrivate
+{
+    boost::shared_ptr<Choice_Knob> brushType;
+    boost::shared_ptr<Double_Knob> brushSize;
+    boost::shared_ptr<Double_Knob> brushSpacing;
+    boost::shared_ptr<Double_Knob> brushHardness;
+    boost::shared_ptr<Double_Knob> effectStrength;
+    boost::shared_ptr<Double_Knob> visiblePortion; // [0,1] by default
+    
+    RotoStrokeItemPrivate()
+    : brushType(new Choice_Knob(NULL, kRotoBrushTypeParamLabel, 1, false))
+    , brushSize(new Double_Knob(NULL, kRotoBrushSizeParamLabel, 1, false))
+    , brushSpacing(new Double_Knob(NULL, kRotoBrushSpacingParamLabel, 1, false))
+    , brushHardness(new Double_Knob(NULL, kRotoBrushHardnessParamLabel, 1, false))
+    , effectStrength(new Double_Knob(NULL, kRotoBrushEffectParamLabel, 1, false))
+    , visiblePortion(new Double_Knob(NULL, kRotoBrushVisiblePortionParamLabel, 2, false))
+    {
+        brushType->setName(kRotoBrushTypeParam);
+        brushType->setHintToolTip(kRotoBrushTypeParamHint);
+        brushType->populate();
+        std::vector<std::string> types;
+        types.push_back("Solid color");
+        types.push_back("Blur");
+        types.push_back("Sharpen");
+        types.push_back("Smear");
+        brushType->populateChoices(types);
+        
+        brushSize->setName(kRotoBrushSizeParam);
+        brushSize->setHintToolTip(kRotoBrushSizeParamHint);
+        brushSize->populate();
+        brushSize->setMinimum(1);
+        brushSize->setMaximum(1000);
+        
+        brushSpacing->setName(kRotoBrushSpacingParam);
+        brushSpacing->setHintToolTip(kRotoBrushSpacingParamHint);
+        brushSpacing->populate();
+        brushSpacing->setMinimum(0);
+        brushSpacing->setMaximum(1);
+        
+        brushHardness->setName(kRotoBrushHardnessParam);
+        brushHardness->setHintToolTip(kRotoBrushHardnessParamHint);
+        brushHardness->populate();
+        brushHardness->setMinimum(0);
+        brushHardness->setMaximum(1);
+
+        effectStrength->setName(kRotoBrushEffectParam);
+        effectStrength->setHintToolTip(kRotoBrushEffectParamHint);
+        effectStrength->populate();
+        effectStrength->setMinimum(0);
+        effectStrength->setMaximum(100);
+        
+        visiblePortion->setName(kRotoBrushVisiblePortionParam);
+        visiblePortion->setHintToolTip(kRotoBrushVisiblePortionParamHint);
+        visiblePortion->populate();
+        std::vector<double> mins,maxs;
+        mins.push_back(0);
+        mins.push_back(0);
+        maxs.push_back(1);
+        maxs.push_back(1);
+        visiblePortion->setMinimumsAndMaximums(mins, maxs);
     }
 };
 

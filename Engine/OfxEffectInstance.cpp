@@ -1377,7 +1377,7 @@ OfxEffectInstance::supportedFileFormats() const
 }
 
 Natron::StatusEnum
-OfxEffectInstance::getRegionOfDefinition(U64 hash,
+OfxEffectInstance::getRegionOfDefinition(U64 /*hash*/,
                                          SequenceTime time,
                                          const RenderScale & scale,
                                          int view,
