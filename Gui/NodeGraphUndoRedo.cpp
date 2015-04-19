@@ -255,10 +255,10 @@ RemoveMultipleNodesCommand::undo()
     std::list<SequenceTime> allKeysToAdd;
     std::list<NodeToRemove>::iterator next = _nodes.begin();
 
-    if ( !_nodes.empty() ) {
+    if (next != _nodes.end() ) {
         ++next;
     }
-    for (std::list<NodeToRemove>::iterator it = _nodes.begin(); it != _nodes.end(); ++it,++next) {
+    for (std::list<NodeToRemove>::iterator it = _nodes.begin(); it != _nodes.end(); ++it, ++next) {
         
         NodeGuiPtr node = it->node.lock();
         node->getNode()->activate(it->outputsToRestore,false,false);
@@ -298,10 +298,10 @@ RemoveMultipleNodesCommand::redo()
 
     std::list<ViewerInstance*> viewersToRefresh;
     std::list<NodeToRemove>::iterator next = _nodes.begin();
-    if ( !_nodes.empty() ) {
+    if ( next != _nodes.end() ) {
         ++next;
     }
-    for (std::list<NodeToRemove>::iterator it = _nodes.begin(); it != _nodes.end(); ++it,++next) {
+    for (std::list<NodeToRemove>::iterator it = _nodes.begin(); it != _nodes.end(); ++it, ++next) {
         
         NodeGuiPtr node = it->node.lock();
         ///Make a copy before calling deactivate which will modify the list

@@ -148,7 +148,9 @@ getKeyIndex(boost::shared_ptr<KnobI> knob,
                     }
                 } else {
                     KeyFrameSet::const_iterator next = it;
-                    ++next;
+                    if (next != set.end()) {
+                        ++next;
+                    }
                     if ( next != set.end() ) {
                         index = c + 1;
                     } else {

@@ -3859,7 +3859,7 @@ ViewerGL::updatePersistentMessageToWidth(int w)
     int type = 0;
     ///Draw overlays in reverse order of appearance
     std::list<DockablePanel*>::const_iterator next = openedPanels.begin();
-    if (!openedPanels.empty()) {
+    if (next != openedPanels.end()) {
         ++next;
     }
     int nbNonEmpty = 0;

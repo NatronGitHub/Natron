@@ -116,7 +116,7 @@ MoveControlPointsUndoCommand::redo()
     assert( _pointsToDrag.size() == _indexesToMove.size() );
 
     try {
-        for (std::list<int>::iterator it = _indexesToMove.begin(); it != _indexesToMove.end(); ++it,++itPoints) {
+        for (std::list<int>::iterator it = _indexesToMove.begin(); it != _indexesToMove.end(); ++it, ++itPoints) {
             if ( itPoints->first->isFeatherPoint() ) {
                 if ( ( (RotoGui::RotoToolEnum)_selectedTool == RotoGui::eRotoToolSelectFeatherPoints ) ||
                      ( (RotoGui::RotoToolEnum)_selectedTool == RotoGui::eRotoToolSelectAll ) ||
@@ -821,11 +821,15 @@ MoveFeatherBarUndoCommand::redo()
         assert(cps.size() > 1);
 
         std::list<boost::shared_ptr<BezierCP> >::const_iterator prev = cps.end();
-        --prev;
+        if (prev != cps.begin()) {
+            --prev;
+        }
         std::list<boost::shared_ptr<BezierCP> >::const_iterator next = cps.begin();
-        ++next;
+        if (next != cps.end()) {
+            ++next;
+        }
         std::list<boost::shared_ptr<BezierCP> >::const_iterator cur = cps.begin();
-        for (; cur != cps.end(); ++cur,++prev,++next) {
+        for (; cur != cps.end(); ++cur, ++prev, ++next) {
             if ( prev == cps.end() ) {
                 prev = cps.begin();
             }
@@ -927,7 +931,7 @@ RemoveFeatherUndoCommand::undo()
     for (std::list<RemoveFeatherData>::iterator it = _datas.begin(); it != _datas.end(); ++it) {
         std::list<boost::shared_ptr<BezierCP> >::const_iterator itOld = it->oldPoints.begin();
         for (std::list<boost::shared_ptr<BezierCP> >::const_iterator itNew = it->newPoints.begin();
-             itNew != it->newPoints.end(); ++itNew,++itOld) {
+             itNew != it->newPoints.end(); ++itNew, ++itOld) {
             (*itNew)->clone(**itOld);
         }
     }
@@ -942,7 +946,7 @@ RemoveFeatherUndoCommand::redo()
     for (std::list<RemoveFeatherData>::iterator it = _datas.begin(); it != _datas.end(); ++it) {
         std::list<boost::shared_ptr<BezierCP> >::const_iterator itOld = it->oldPoints.begin();
         for (std::list<boost::shared_ptr<BezierCP> >::const_iterator itNew = it->newPoints.begin();
-             itNew != it->newPoints.end(); ++itNew,++itOld) {
+             itNew != it->newPoints.end(); ++itNew, ++itOld) {
             (*itOld)->clone(**itNew);
             try {
                 it->curve->removeFeatherAtIndex( it->curve->getFeatherPointIndex(*itNew) );
@@ -1042,7 +1046,7 @@ SmoothCuspUndoCommand::undo()
     for (std::list<SmoothCuspCurveData>::iterator it = curves.begin(); it != curves.end(); ++it) {
         SelectedPointList::const_iterator itOld = it->oldPoints.begin();
         for (SelectedPointList::const_iterator itNew = it->newPoints.begin();
-             itNew != it->newPoints.end(); ++itNew,++itOld) {
+             itNew != it->newPoints.end(); ++itNew, ++itOld) {
             itNew->first->clone(*itOld->first);
             itNew->second->clone(*itOld->second);
         }
@@ -1062,7 +1066,7 @@ SmoothCuspUndoCommand::redo()
     for (std::list<SmoothCuspCurveData>::iterator it = curves.begin(); it != curves.end(); ++it) {
         SelectedPointList::const_iterator itOld = it->oldPoints.begin();
         for (SelectedPointList::const_iterator itNew = it->newPoints.begin();
-             itNew != it->newPoints.end(); ++itNew,++itOld) {
+             itNew != it->newPoints.end(); ++itNew, ++itOld) {
             itOld->first->clone(*itNew->first);
             itOld->second->clone(*itNew->second);
 
@@ -1108,13 +1112,13 @@ SmoothCuspUndoCommand::mergeWith(const QUndoCommand *other)
         return false;
     }
     std::list<SmoothCuspCurveData>::const_iterator itOther = sCmd->curves.begin();
-    for (std::list<SmoothCuspCurveData>::const_iterator it = curves.begin(); it != curves.end(); ++it,++itOther) {
+    for (std::list<SmoothCuspCurveData>::const_iterator it = curves.begin(); it != curves.end(); ++it, ++itOther) {
         if (it->curve != itOther->curve) {
             return false;
         }
         SelectedPointList::const_iterator itNewOther = itOther->newPoints.begin();
         for (SelectedPointList::const_iterator itNew = it->newPoints.begin();
-             itNew != it->newPoints.end(); ++itNew,++itNewOther) {
+             itNew != it->newPoints.end(); ++itNew, ++itNewOther) {
             if ( (itNewOther->first != itNew->first) || (itNewOther->second != itNew->second) ) {
                 return false;
             }

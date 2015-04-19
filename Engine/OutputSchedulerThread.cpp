@@ -1323,7 +1323,9 @@ OutputSchedulerThread::appendToBuffer(double time,int view,const BufferableObjec
         return;
     }
     BufferableObjectList::const_iterator next = frames.begin();
-    ++next;
+    if (next != frames.end()) {
+        ++next;
+    }
     for (BufferableObjectList::const_iterator it = frames.begin(); it != frames.end(); ++it) {
         if (next != frames.end()) {
             appendToBuffer_internal(time, view, *it, false);

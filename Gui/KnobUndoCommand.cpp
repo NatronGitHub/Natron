@@ -459,7 +459,7 @@ RestoreDefaultsCommand::undo()
     const boost::shared_ptr<KnobI> & first = _knobs.front();
     boost::shared_ptr<TimeLine> timeline = first->getHolder()->getApp()->getTimeLine();
     std::list<boost::shared_ptr<KnobI> >::const_iterator itClone = _clones.begin();
-    for (std::list<boost::shared_ptr<KnobI> >::const_iterator it = _knobs.begin(); it != _knobs.end(); ++it,++itClone) {
+    for (std::list<boost::shared_ptr<KnobI> >::const_iterator it = _knobs.begin(); it != _knobs.end(); ++it, ++itClone) {
         (*it)->cloneAndUpdateGui( itClone->get() );
 
         if ( (*it)->getHolder()->getApp() ) {

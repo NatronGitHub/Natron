@@ -1751,11 +1751,11 @@ DockablePanel::setClosed(bool c)
             ///show all selected instances
             const std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> > & childrenInstances = panel->getInstances();
             std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> >::const_iterator next = childrenInstances.begin();
-			if (!childrenInstances.empty()) {
+			if (next != childrenInstances.end()) {
 				++next;
 			}
             for (std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> >::const_iterator it = childrenInstances.begin();
-                 it != childrenInstances.end(); ++it,++next) {
+                 it != childrenInstances.end(); ++it, ++next) {
                 if (c) {
                     it->first.lock()->hideKeyframesFromTimeline( next == childrenInstances.end() );
                 } else if (!c && it->second) {
@@ -1823,11 +1823,11 @@ DockablePanel::closePanel()
         if (panel) {
             const std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> > & childrenInstances = panel->getInstances();
             std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> >::const_iterator next = childrenInstances.begin();
-            if (!childrenInstances.empty()) {
+            if (next != childrenInstances.end()) {
                 ++next;
             }
             for (std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> >::const_iterator it = childrenInstances.begin();
-                 it != childrenInstances.end(); ++it,++next) {
+                 it != childrenInstances.end(); ++it, ++next) {
                 
                 NodePtr node = it->first.lock();
                 if ( it->second && (node != internalNode) ) {

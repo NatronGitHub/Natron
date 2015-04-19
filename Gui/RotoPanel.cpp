@@ -806,7 +806,9 @@ RotoPanelPrivate::updateSplinesInfoGUI(int time)
                 currentKeyframe->setValue(1.);
             } else {
                 std::set<int>::iterator prev = lowerBound;
-                --prev;
+                if (prev != keyframes.begin()) {
+                    --prev;
+                }
                 currentKeyframe->setValue( (double)(time - *prev) / (double)(*lowerBound - *prev) + dist );
             }
 

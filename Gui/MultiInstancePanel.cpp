@@ -889,11 +889,11 @@ MultiInstancePanel::removeInstances(const std::list<boost::shared_ptr<Natron::No
 {
     boost::shared_ptr<Node> mainInstance = getMainInstance();
     std::list<boost::shared_ptr<Natron::Node> >::const_iterator next = instances.begin();
-    if (!instances.empty()) {
+    if (next != instances.end()) {
 	   ++next;
 	}
    
-    for (std::list<boost::shared_ptr<Natron::Node> >::const_iterator it = instances.begin(); it != instances.end(); ++it,++next) {
+    for (std::list<boost::shared_ptr<Natron::Node> >::const_iterator it = instances.begin(); it != instances.end(); ++it, ++next) {
         int index = getNodeIndex(*it);
         assert(index != -1);
         removeRow(index);
@@ -911,10 +911,10 @@ void
 MultiInstancePanel::addInstances(const std::list<boost::shared_ptr<Natron::Node> >& instances)
 {
     std::list<boost::shared_ptr<Natron::Node> >::const_iterator next = instances.begin();
-    if (!instances.empty()) {
+    if (next != instances.end()) {
 		++next;
 	}
-    for (std::list<boost::shared_ptr<Natron::Node> >::const_iterator it = instances.begin(); it != instances.end(); ++it,++next) {
+    for (std::list<boost::shared_ptr<Natron::Node> >::const_iterator it = instances.begin(); it != instances.end(); ++it, ++next) {
         addRow(*it);
         (*it)->activate( std::list<Natron::Node* >(),false,next == instances.end() );
 		if (next == instances.end()) {
@@ -1034,10 +1034,10 @@ MultiInstancePanel::onSettingsPanelClosed(bool closed)
     getSelectedInstances(&selection);
 
     std::list<Node*>::iterator next = selection.begin();
-	if (!selection.empty()) {
+    if (next != selection.end()) {
 		++next;
 	}
-    for (std::list<Node*>::iterator it = selection.begin(); it != selection.end(); ++it,++next) {
+    for (std::list<Node*>::iterator it = selection.begin(); it != selection.end(); ++it, ++next) {
         if (closed) {
             (*it)->hideKeyframesFromTimeline( next == selection.end() );
         } else {
@@ -1070,13 +1070,13 @@ MultiInstancePanel::onSelectionChanged(const QItemSelection & newSelection,
     QModelIndexList rows = _imp->view->selectionModel()->selectedRows();
     bool setDirty = rows.count() > 1;
     std::list<std::pair<Node*,bool> >::iterator nextPreviouslySelected = previouslySelectedInstances.begin();
-	if (!previouslySelectedInstances.empty()) {
+	if (nextPreviouslySelected != previouslySelectedInstances.end()) {
 		++nextPreviouslySelected;
 	}
     
     
     for (std::list<std::pair<Node*,bool> >::iterator it = previouslySelectedInstances.begin();
-         it != previouslySelectedInstances.end(); ++it,++nextPreviouslySelected) {
+         it != previouslySelectedInstances.end(); ++it, ++nextPreviouslySelected) {
         ///if the item is in the new selection, don't consider it
         bool skip = false;
         for (std::list<std::pair<Node*,bool> >::iterator it2 = newlySelectedInstances.begin();
@@ -1121,11 +1121,11 @@ MultiInstancePanel::onSelectionChanged(const QItemSelection & newSelection,
     
     std::list<SequenceTime> allKeysToAdd;
     std::list<std::pair<Node*,bool> >::iterator nextNewlySelected = newlySelectedInstances.begin();
-	if (!newlySelectedInstances.empty()) {
+	if (nextNewlySelected != newlySelectedInstances.end()) {
 		++nextNewlySelected;
 	}
     for (std::list<std::pair<Node*,bool> >::iterator it = newlySelectedInstances.begin();
-         it != newlySelectedInstances.end(); ++it,++nextNewlySelected) {
+         it != newlySelectedInstances.end(); ++it, ++nextNewlySelected) {
         ///if the item is in the old selection, don't consider it
         bool skip = false;
         for (std::list<std::pair<Node*,bool> >::iterator it2 = previouslySelectedInstances.begin();
@@ -1539,8 +1539,10 @@ MultiInstancePanel::resetInstances(const std::list<Natron::Node*> & instances)
     }
 
     std::list<Natron::Node*>::const_iterator next = instances.begin();
-    ++next;
-    for (std::list<Natron::Node*>::const_iterator it = instances.begin(); it != instances.end(); ++it,++next) {
+    if (next != instances.end()) {
+        ++next;
+    }
+    for (std::list<Natron::Node*>::const_iterator it = instances.begin(); it != instances.end(); ++it, ++next) {
         //invalidate the cache by incrementing the age
         (*it)->incrementKnobsAge();
         if ( (*it)->areKeyframesVisibleOnTimeline() ) {

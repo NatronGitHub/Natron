@@ -711,8 +711,9 @@ CLArgsPrivate::parse()
         }
         
         QStringList::iterator next = it;
-        ++next;
-        
+        if (next != args.end()) {
+            ++next;
+        }
         if (next == args.end()) {
             std::cout << QObject::tr("You must specify the name of a Write node when using the -w option").toStdString() << std::endl;
             error = 1;
@@ -733,8 +734,9 @@ CLArgsPrivate::parse()
         w.name = *next;
         
         QStringList::iterator nextNext = next;
-        ++nextNext;
-        
+        if (nextNext != args.end()) {
+            ++nextNext;
+        }
         if (nextNext != args.end()) {
             //Check for an optional filename
             if (!nextNext->startsWith("-") && !nextNext->startsWith("--")) {
@@ -778,7 +780,9 @@ CLArgsPrivate::parse()
         
         //Check for a mandatory file name
         QStringList::iterator next = it;
-        ++next;
+        if (next != args.end()) {
+            ++next;
+        }
         if (next == args.end()) {
             std::cout << QObject::tr("Filename is not optional with the -o option").toStdString() << std::endl;
             error = 1;

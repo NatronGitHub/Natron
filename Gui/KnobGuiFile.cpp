@@ -1195,10 +1195,10 @@ Path_KnobGui::rebuildPath() const
     std::string path;
     
     Variables::const_iterator next = _items.begin();
-    if (!_items.empty()) {
+    if (next != _items.end()) {
         ++next;
     }
-    for (Variables::const_iterator it = _items.begin(); it!= _items.end(); ++it,++next) {
+    for (Variables::const_iterator it = _items.begin(); it!= _items.end(); ++it, ++next) {
         // In order to use XML tags, the text inside the tags has to be escaped.
         path += NATRON_ENV_VAR_NAME_START_TAG;
         path += Project::escapeXML(it->second.varName->text().toStdString());

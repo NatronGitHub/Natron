@@ -706,7 +706,9 @@ BezierCPCurveGui::evaluate(bool /*useExpr*/,double x) const
         return 0;
     } else {
         std::list<std::pair<int,Natron::KeyframeTypeEnum> >::iterator prev = upb;
-        --prev;
+        if (prev != keys.begin()) {
+            --prev;
+        }
         if (prev->second == Natron::eKeyframeTypeConstant) {
             return dist - 1;
         } else {
@@ -2071,7 +2073,9 @@ CurveWidgetPrivate::refreshKeyTangents(KeyPtr & key)
         prev = keyframes.end();
     }
     KeyFrameSet::const_iterator next = k;
-    ++next;
+    if (next != keyframes.end()) {
+        ++next;
+    }
     double leftTanX, leftTanY;
     {
         double prevTime = ( prev == keyframes.end() ) ? (x - 1.) : prev->getTime();
@@ -2256,7 +2260,9 @@ CurveWidgetPrivate::updateSelectedKeysMaxMovement()
                     curveMaxMovement.left = INT_MIN;//curveXRange.first - leftMost->getTime();
                 } else {
                     KeyFrameSet::const_iterator prev = leftMost;
-                    --prev;
+                    if (prev != ks.begin()) {
+                        --prev;
+                    }
                     double leftMaxMovement = std::min( std::min(-NATRON_CURVE_X_SPACING_EPSILON + minimumTimeSpanBetween2Keys,0.),
                                                        prev->getTime() + minimumTimeSpanBetween2Keys - leftMost->getTime() );
                     curveMaxMovement.left = leftMaxMovement;
@@ -2267,7 +2273,9 @@ CurveWidgetPrivate::updateSelectedKeysMaxMovement()
             //now get rightMostSelected's next key to determine the max right movement for this curve
             {
                 KeyFrameSet::const_iterator next = rightMost;
-                ++next;
+                if (next != ks.end()) {
+                    ++next;
+                }
                 if ( next == ks.end() ) {
                     curveMaxMovement.right = INT_MAX;///curveXRange.second - rightMost->getTime();
                 } else {

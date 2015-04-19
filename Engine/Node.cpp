@@ -1759,7 +1759,7 @@ Node::makeInfoForInput(int inputNumber) const
     ss << "<b>Image Format:</b>\n";
     
     EffectInstance::ComponentsAvailableMap::iterator next = availableComps.begin();
-    if (!availableComps.empty()) {
+    if (next != availableComps.end()) {
         ++next;
     }
     for (EffectInstance::ComponentsAvailableMap::iterator it = availableComps.begin(); it!=availableComps.end(); ++it) {

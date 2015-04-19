@@ -182,8 +182,10 @@ TimeLine::addNodesKeyframesToTimeline(const std::list<Natron::Node*> & nodes)
     assert( QThread::currentThread() == qApp->thread() );
 
     std::list<Natron::Node*>::const_iterator next = nodes.begin();
-    ++next;
-    for (std::list<Natron::Node*>::const_iterator it = nodes.begin(); it != nodes.end(); ++it,++next) {
+    if (next != nodes.end()) {
+        ++next;
+    }
+    for (std::list<Natron::Node*>::const_iterator it = nodes.begin(); it != nodes.end(); ++it, ++next) {
         (*it)->showKeyframesOnTimeline( next == nodes.end() );
     }
 }
@@ -204,8 +206,10 @@ TimeLine::removeNodesKeyframesFromTimeline(const std::list<Natron::Node*> & node
     assert( QThread::currentThread() == qApp->thread() );
 
     std::list<Natron::Node*>::const_iterator next = nodes.begin();
-    ++next;
-    for (std::list<Natron::Node*>::const_iterator it = nodes.begin(); it != nodes.end(); ++it,++next) {
+    if (next != nodes.end()) {
+        ++next;
+    }
+    for (std::list<Natron::Node*>::const_iterator it = nodes.begin(); it != nodes.end(); ++it, ++next) {
         (*it)->hideKeyframesFromTimeline( next == nodes.end() );
     }
 }

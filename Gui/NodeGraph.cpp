@@ -3514,7 +3514,7 @@ NodeGraphPrivate::pasteNodesInternal(const NodeClipBoard & clipboard,const QPoin
         std::list<boost::shared_ptr<NodeSerialization> > internalNodesClipBoard = clipboard.nodes;
         std::list<boost::shared_ptr<NodeSerialization> >::iterator itOther = internalNodesClipBoard.begin();
         for (std::list<boost::shared_ptr<NodeGuiSerialization> >::const_iterator it = clipboard.nodesUI.begin();
-             it != clipboard.nodesUI.end(); ++it,++itOther) {
+             it != clipboard.nodesUI.end(); ++it, ++itOther) {
             boost::shared_ptr<NodeGui> node = pasteNode( **itOther,**it,offset,group.lock(),std::string(), false);
             newNodes->push_back(std::make_pair((*itOther)->getNodeScriptName(),node));
             newNodeList.push_back(node);
@@ -3657,7 +3657,7 @@ NodeGraphPrivate::restoreConnections(const std::list<boost::shared_ptr<NodeSeria
     std::list<boost::shared_ptr<NodeSerialization> >::const_iterator itSer = serializations.begin();
     assert(serializations.size() == newNodes.size());
     for (std::list<std::pair<std::string,boost::shared_ptr<NodeGui> > >::const_iterator it = newNodes.begin();
-         it != newNodes.end(); ++it,++itSer) {
+         it != newNodes.end(); ++it, ++itSer) {
         const std::map<std::string,std::string> & inputNames = (*itSer)->getInputs();
 
         ///Restore each input
@@ -4651,7 +4651,7 @@ NodeGraph::copyNodesAndCreateInGroup(const std::list<boost::shared_ptr<NodeGui> 
     std::list<std::pair<std::string,boost::shared_ptr<NodeGui> > > newNodes;
     std::list<boost::shared_ptr<NodeSerialization> >::const_iterator itOther = clipboard.nodes.begin();
     for (std::list<boost::shared_ptr<NodeGuiSerialization> >::const_iterator it = clipboard.nodesUI.begin();
-         it != clipboard.nodesUI.end(); ++it,++itOther) {
+         it != clipboard.nodesUI.end(); ++it, ++itOther) {
         boost::shared_ptr<NodeGui> node = _imp->pasteNode( **itOther,**it,QPointF(0,0),group,std::string(), false);
         newNodes.push_back(std::make_pair((*itOther)->getNodeScriptName(),node));
     }

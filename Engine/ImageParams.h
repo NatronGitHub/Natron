@@ -216,7 +216,7 @@ public:
             }
             
             std::map<int,std::vector<RangeD> > ::const_iterator it2Other = itOther->second.begin();
-            for (std::map<int,std::vector<RangeD> > ::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2,++it2Other) {
+            for (std::map<int,std::vector<RangeD> > ::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2, ++it2Other) {
                 for (U32 i = 0; i < it2->second.size(); ++i) {
                     if ( (it2->second[i].min != it2Other->second[i].min) || (it2->second[i].max != it2Other->second[i].max) ) {
                         return false;
