@@ -1101,7 +1101,7 @@ RotoGui::drawOverlays(double /*scaleX*/,
                 
                 ///draw the control points if the bezier is selected
                 bool selected = false;
-                for (SelectedItems::const_iterator it2 = _imp->rotoData->selectedItems.begin(); it2!=_imp->rotoData->selectedItems.end();++it2) {
+                for (SelectedItems::const_iterator it2 = _imp->rotoData->selectedItems.begin(); it2!=_imp->rotoData->selectedItems.end(); ++it2) {
                     if (it2->get() == isBezier) {
                         selected = true;
                         break;
@@ -1126,11 +1126,15 @@ RotoGui::drawOverlays(double /*scaleX*/,
                     std::list< boost::shared_ptr<BezierCP> >::const_iterator itF = featherPts.begin();
                     int index = 0;
                     std::list< boost::shared_ptr<BezierCP> >::const_iterator prevCp = cps.end();
-                    --prevCp;
+                    if (prevCp != cps.begin()) {
+                        --prevCp;
+                    }
                     std::list< boost::shared_ptr<BezierCP> >::const_iterator nextCp = cps.begin();
-                    ++nextCp;
+                    if (nextCp != cps.end()) {
+                        ++nextCp;
+                    }
                     for (std::list< boost::shared_ptr<BezierCP> >::const_iterator it2 = cps.begin(); it2 != cps.end();
-                         ++it2,++itF,++index,++nextCp,++prevCp) {
+                         ++it2, ++itF, ++index, ++nextCp, ++prevCp) {
                         if ( nextCp == cps.end() ) {
                             nextCp = cps.begin();
                         }
@@ -1715,7 +1719,7 @@ RotoGui::RotoGuiPrivate::handleBezierSelection(const boost::shared_ptr<Bezier> &
 {
     ///find out if the bezier is already selected.
     bool found = false;
-    for (SelectedItems::iterator it = rotoData->selectedItems.begin(); it!=rotoData->selectedItems.end(); ++it) {
+    for (SelectedItems::iterator it = rotoData->selectedItems.begin(); it != rotoData->selectedItems.end(); ++it) {
         if (it->get() == curve.get()) {
             found = true;
             break;
@@ -1903,7 +1907,7 @@ RotoGui::penDown(double /*scaleX*/,
                 } else {
                     
                     bool found = false;
-                    for (SelectedItems::iterator it = _imp->rotoData->selectedItems.begin(); it!=_imp->rotoData->selectedItems.end(); ++it) {
+                    for (SelectedItems::iterator it = _imp->rotoData->selectedItems.begin(); it != _imp->rotoData->selectedItems.end(); ++it) {
                         if (it->get() == nearbyBezier.get()) {
                             found = true;
                             break;
@@ -1945,7 +1949,7 @@ RotoGui::penDown(double /*scaleX*/,
             if (nearbyBezier) {
                 ///If the bezier is already selected and we re-click on it, change the transform mode
                 bool found = false;
-                for (SelectedItems::iterator it = _imp->rotoData->selectedItems.begin(); it!=_imp->rotoData->selectedItems.end(); ++it) {
+                for (SelectedItems::iterator it = _imp->rotoData->selectedItems.begin(); it != _imp->rotoData->selectedItems.end(); ++it) {
                     if (it->get() == nearbyBezier.get()) {
                         found = true;
                         break;
@@ -1972,7 +1976,7 @@ RotoGui::penDown(double /*scaleX*/,
             ///splitting up the targeted segment
             if (nearbyBezier) {
                 bool found = false;
-                for (SelectedItems::iterator it = _imp->rotoData->selectedItems.begin(); it!=_imp->rotoData->selectedItems.end(); ++it) {
+                for (SelectedItems::iterator it = _imp->rotoData->selectedItems.begin(); it != _imp->rotoData->selectedItems.end(); ++it) {
                     if (it->get() == nearbyBezier.get()) {
                         found = true;
                         break;
@@ -2055,7 +2059,7 @@ RotoGui::penDown(double /*scaleX*/,
                 ///if that point is the starting point of the curve, close the curve
                 const std::list<boost::shared_ptr<BezierCP> > & cps = _imp->rotoData->builtBezier->getControlPoints();
                 int i = 0;
-                for (std::list<boost::shared_ptr<BezierCP> >::const_iterator it = cps.begin(); it != cps.end(); ++it,++i) {
+                for (std::list<boost::shared_ptr<BezierCP> >::const_iterator it = cps.begin(); it != cps.end(); ++it, ++i) {
                     double x,y;
                     (*it)->getPositionAtTime(time, &x, &y);
                     if ( ( x >= (pos.x() - cpSelectionTolerance) ) && ( x <= (pos.x() + cpSelectionTolerance) ) &&
@@ -2178,7 +2182,7 @@ RotoGui::penDoubleClicked(double /*scaleX*/,
             assert( cps.size() == fps.size() );
             std::list<boost::shared_ptr<BezierCP> >::const_iterator itCp = cps.begin();
             std::list<boost::shared_ptr<BezierCP> >::const_iterator itFp = fps.begin();
-            for (; itCp != cps.end(); ++itCp,++itFp) {
+            for (; itCp != cps.end(); ++itCp, ++itFp) {
                 _imp->rotoData->selectedCps.push_back( std::make_pair(*itCp, *itFp) );
             }
             if (_imp->rotoData->selectedCps.size() > 1) {
@@ -2331,7 +2335,7 @@ RotoGui::penMotion(double /*scaleX*/,
             const std::list<boost::shared_ptr<BezierCP> >& f = _imp->rotoData->bezierBeingDragged->getFeatherPoints();
             assert(c.size() == f.size());
             std::list<boost::shared_ptr<BezierCP> >::const_iterator itFp = f.begin();
-            for (std::list<boost::shared_ptr<BezierCP> >::const_iterator itCp = c.begin(); itCp != c.end(); ++itCp,++itFp) {
+            for (std::list<boost::shared_ptr<BezierCP> >::const_iterator itCp = c.begin(); itCp != c.end(); ++itCp, ++itFp) {
                 cps.push_back(std::make_pair(*itCp,*itFp));
             }
             pushUndoCommand( new MoveControlPointsUndoCommand(this,cps,dx,dy,time) );
@@ -3141,14 +3145,18 @@ RotoGui::RotoGuiPrivate::isNearbyFeatherBar(int time,
 
         std::list<boost::shared_ptr<BezierCP> >::const_iterator itF = fps.begin();
         std::list<boost::shared_ptr<BezierCP> >::const_iterator nextF = itF;
-        ++nextF;
+        if (nextF != fps.end()) {
+            ++nextF;
+        }
         std::list<boost::shared_ptr<BezierCP> >::const_iterator prevF = fps.end();
-        --prevF;
+        if (prevF != fps.begin()) {
+            --prevF;
+        }
         std::list<boost::shared_ptr<BezierCP> >::const_iterator itCp = cps.begin();
 
         bool isClockWiseOriented = isBezier->isFeatherPolygonClockwiseOriented(time);
         
-        for (; itCp != cps.end(); ++itF,++nextF,++prevF,++itCp) {
+        for (; itCp != cps.end(); ++itF, ++nextF, ++prevF, ++itCp) {
             if ( prevF == fps.end() ) {
                 prevF = fps.begin();
             }
@@ -3591,7 +3599,7 @@ RotoGui::smoothSelectedCurve()
             const std::list<boost::shared_ptr<BezierCP> > & cps = bezier->getControlPoints();
             const std::list<boost::shared_ptr<BezierCP> > & fps = bezier->getFeatherPoints();
             std::list<boost::shared_ptr<BezierCP> >::const_iterator itFp = fps.begin();
-            for (std::list<boost::shared_ptr<BezierCP> >::const_iterator it = cps.begin(); it != cps.end(); ++it,++itFp) {
+            for (std::list<boost::shared_ptr<BezierCP> >::const_iterator it = cps.begin(); it != cps.end(); ++it, ++itFp) {
                 data.newPoints.push_back( std::make_pair(*it, *itFp) );
             }
             datas.push_back(data);
@@ -3619,7 +3627,7 @@ RotoGui::cuspSelectedCurve()
             const std::list<boost::shared_ptr<BezierCP> > & cps = bezier->getControlPoints();
             const std::list<boost::shared_ptr<BezierCP> > & fps = bezier->getFeatherPoints();
             std::list<boost::shared_ptr<BezierCP> >::const_iterator itFp = fps.begin();
-            for (std::list<boost::shared_ptr<BezierCP> >::const_iterator it = cps.begin(); it != cps.end(); ++it,++itFp) {
+            for (std::list<boost::shared_ptr<BezierCP> >::const_iterator it = cps.begin(); it != cps.end(); ++it, ++itFp) {
                 data.newPoints.push_back( std::make_pair(*it, *itFp) );
             }
             datas.push_back(data);

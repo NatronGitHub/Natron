@@ -176,7 +176,7 @@ public:
     , displayAge()
     {
 
-        for (int i = 0;i < 2; ++i) {
+        for (int i = 0; i < 2; ++i) {
             activeInputs[i] = -1;
             renderAge[i] = 1;
             displayAge[i] = 0;

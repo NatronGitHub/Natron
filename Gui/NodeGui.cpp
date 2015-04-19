@@ -1675,7 +1675,7 @@ NodeGui::showGui()
     show();
     setActive(true);
     NodePtr node = getNode();
-    for (U32 i = 0; i < _inputEdges.size() ;++i) {
+    for (U32 i = 0; i < _inputEdges.size() ; ++i) {
         _graph->scene()->addItem(_inputEdges[i]);
         _inputEdges[i]->setParentItem( parentItem() );
         if ( !node->getLiveInstance()->isInputRotoBrush(i) ) {
@@ -2094,7 +2094,7 @@ NodeGui::setVisibleDetails(bool visible)
     if (_nameItem) {
         _nameItem->setVisible(visible);
     }
-    for (InputEdges::iterator it = _inputEdges.begin(); it!=_inputEdges.end(); ++it) {
+    for (InputEdges::iterator it = _inputEdges.begin(); it != _inputEdges.end(); ++it) {
         (*it)->setVisibleDetails(visible);
     }
 }

@@ -1656,7 +1656,7 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool useCache,
         ///A ptr to a higher resolution of the image or an image with different comps/bitdepth
         ImagePtr imageToConvert;
         
-        for (ImageList::iterator it = cachedImages.begin(); it!=cachedImages.end(); ++it) {
+        for (ImageList::iterator it = cachedImages.begin(); it != cachedImages.end(); ++it) {
             unsigned int imgMMlevel = (*it)->getMipMapLevel();
             const Natron::ImageComponents& imgComps = (*it)->getComponents();
             ImageBitDepthEnum imgDepth = (*it)->getBitDepth();
@@ -1834,7 +1834,7 @@ EffectInstance::tryConcatenateTransforms(const RenderRoIArgs& args,
         
         assert(!inputHoldingTransforms.empty());
       
-        for (std::list<int>::iterator it = inputHoldingTransforms.begin(); it!=inputHoldingTransforms.end(); ++it) {
+        for (std::list<int>::iterator it = inputHoldingTransforms.begin(); it != inputHoldingTransforms.end(); ++it) {
             
             EffectInstance* input = getInput(*it);
             if (!input) {
@@ -1918,7 +1918,7 @@ EffectInstance::tryConcatenateTransforms(const RenderRoIArgs& args,
                 inputTransforms->push_back(im);
             }
             
-        } //  for (std::list<int>::iterator it = inputHoldingTransforms.begin(); it!=inputHoldingTransforms.end(); ++it)
+        } //  for (std::list<int>::iterator it = inputHoldingTransforms.begin(); it != inputHoldingTransforms.end(); ++it)
 
     } // if ((canTransform && getTransformSucceeded) || (canApplyTransform && !inputHoldingTransforms.empty()))
 
@@ -1939,7 +1939,7 @@ public:
     
     ~TransformReroute_RAII()
     {
-        for (std::list<EffectInstance::InputMatrix>::iterator it = transforms.begin(); it!=transforms.end(); ++it) {
+        for (std::list<EffectInstance::InputMatrix>::iterator it = transforms.begin(); it != transforms.end(); ++it) {
             self->clearTransform(it->inputNb);
         }
         
@@ -2243,7 +2243,7 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
             for (std::list<Natron::ImageComponents>::const_iterator it = args.components.begin(); it != args.components.end(); ++it) {
                 compVec.push_back(*it);
             }
-            for (ComponentsNeededMap::iterator it = neededComps.begin(); it!=neededComps.end(); ++it) {
+            for (ComponentsNeededMap::iterator it = neededComps.begin(); it != neededComps.end(); ++it) {
                 it->second = compVec;
             }
             //neededComps[-1] = compVec;
@@ -2704,7 +2704,7 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
             if (!it->first.isColorPlane()) {
                 components = &(it->first);
             } else {
-                for (std::vector<Natron::ImageComponents>::const_iterator it = outputComponents.begin(); it!=outputComponents.end(); ++it) {
+                for (std::vector<Natron::ImageComponents>::const_iterator it = outputComponents.begin(); it != outputComponents.end(); ++it) {
                     if (it->isColorPlane()) {
                         components = &(*it);
                         break;
@@ -2800,7 +2800,7 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
             components = &(it->first);
         } else {
             //Find color plane from clip preferences
-            for (std::vector<Natron::ImageComponents>::const_iterator it = outputComponents.begin(); it!=outputComponents.end(); ++it) {
+            for (std::vector<Natron::ImageComponents>::const_iterator it = outputComponents.begin(); it != outputComponents.end(); ++it) {
                 if (it->isColorPlane()) {
                     components = &(*it);
                     break;
@@ -2897,7 +2897,7 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
                 for (std::list<RectI>::const_iterator it = rectsToRender.begin(); it != rectsToRender.end(); ++it) {
                     qDebug() << "rect: " << "x1= " <<  it->x1 << " , y1= " << it->y1 << " , x2= " << it->x2 << " , y2= " << it->y2;
                 }
-                for (std::map<Natron::ImageComponents, PlaneToRender> ::iterator it = planesToRender.planes.begin(); it!= planesToRender.planes.end(); ++it) {
+                for (std::map<Natron::ImageComponents, PlaneToRender> ::iterator it = planesToRender.planes.begin(); it != planesToRender.planes.end(); ++it) {
                     qDebug() << "plane: " << it->first.getLayerName().c_str();
                 }
                 
@@ -2931,7 +2931,7 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
             ///If we were aborted after all (because the node got deleted) then return a NULL image and empty the cache
             ///of this image
             
-            for (std::map<ImageComponents, PlaneToRender>::iterator it = planesToRender.planes.begin(); it!=planesToRender.planes.end(); ++it) {
+            for (std::map<ImageComponents, PlaneToRender>::iterator it = planesToRender.planes.begin(); it != planesToRender.planes.end(); ++it) {
                 if (!renderAborted) {
                     if (renderRetCode == eRenderRoIStatusRenderFailed || !planesToRender.isBeingRenderedElsewhere) {
                         _imp->unmarkImageAsBeingRendered(useImageAsOutput ? it->second.fullscaleImage : it->second.downscaleImage,
@@ -2971,7 +2971,7 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
     if (renderRetCode != eRenderRoIStatusRenderFailed && !renderAborted) {
         // Kindly check that everything we asked for is rendered!
         
-        for (std::map<ImageComponents, PlaneToRender>::iterator it = planesToRender.planes.begin(); it!=planesToRender.planes.end(); ++it) {
+        for (std::map<ImageComponents, PlaneToRender>::iterator it = planesToRender.planes.begin(); it != planesToRender.planes.end(); ++it) {
             std::list<RectI> restToRender;
             if (useImageAsOutput) {
                 it->second.fullscaleImage->getRestToRender(roi,restToRender);
@@ -3264,7 +3264,7 @@ EffectInstance::renderRoIInternal(SequenceTime time,
     RenderScale renderMappedScale;
     
 
-    for (std::map<ImageComponents,PlaneToRender>::iterator it = planesToRender.planes.begin(); it!=planesToRender.planes.end(); ++it) {
+    for (std::map<ImageComponents,PlaneToRender>::iterator it = planesToRender.planes.begin(); it != planesToRender.planes.end(); ++it) {
         it->second.renderMappedImage = renderFullScaleThenDownscale ? it->second.fullscaleImage : it->second.downscaleImage;
         if (it == planesToRender.planes.begin()) {
             renderMappedScale.x = Image::getScaleFromMipMapLevel(it->second.renderMappedImage->getMipMapLevel());
@@ -3333,7 +3333,7 @@ EffectInstance::renderRoIInternal(SequenceTime time,
     
     std::list<RoIMap>::const_iterator roiIT = inputsRoi.begin();
     std::list<InputImagesMap>::const_iterator inputImgIt = inputImages.begin();
-    for (std::list<RectI>::const_iterator it = planesToRender.rectsToRender.begin(); it != planesToRender.rectsToRender.end(); ++it,++roiIT,++inputImgIt) {
+    for (std::list<RectI>::const_iterator it = planesToRender.rectsToRender.begin(); it != planesToRender.rectsToRender.end(); ++it, ++roiIT, ++inputImgIt) {
         
         
         assert(!it->isNull());
@@ -3873,7 +3873,7 @@ EffectInstance::tiledRenderingFunctor(RenderArgs & args,
 
 #if NATRON_ENABLE_TRIMAP
     if (!frameArgs.canAbort && frameArgs.isRenderResponseToUserInteraction) {
-        for (std::map<Natron::ImageComponents,PlaneToRender>::iterator it = currentArgsTLS->_outputPlanes.begin(); it!=currentArgsTLS->_outputPlanes.end(); ++it) {
+        for (std::map<Natron::ImageComponents,PlaneToRender>::iterator it = currentArgsTLS->_outputPlanes.begin(); it != currentArgsTLS->_outputPlanes.end(); ++it) {
             if (renderFullScaleThenDownscale && renderUseScaleOneInputs) {
                 it->second.fullscaleImage->markForRendering(actionArgs.roi);
             } else {
@@ -3897,7 +3897,7 @@ EffectInstance::tiledRenderingFunctor(RenderArgs & args,
     
     std::list< std::list<std::pair<ImageComponents,ImagePtr> > > planesLists;
     if (!multiPlanar) {
-        for (std::list<std::pair<ImageComponents,ImagePtr> >::iterator it = tmpPlanes.begin(); it!=tmpPlanes.end(); ++it) {
+        for (std::list<std::pair<ImageComponents,ImagePtr> >::iterator it = tmpPlanes.begin(); it != tmpPlanes.end(); ++it) {
             std::list<std::pair<ImageComponents,ImagePtr> > tmp;
             tmp.push_back(*it);
             planesLists.push_back(tmp);
@@ -3908,7 +3908,7 @@ EffectInstance::tiledRenderingFunctor(RenderArgs & args,
     
     bool renderAborted = false;
     std::map<Natron::ImageComponents,PlaneToRender> outputPlanes;
-    for (std::list<std::list<std::pair<ImageComponents,ImagePtr> > >::iterator it = planesLists.begin(); it!=planesLists.end(); ++it) {
+    for (std::list<std::list<std::pair<ImageComponents,ImagePtr> > >::iterator it = planesLists.begin(); it != planesLists.end(); ++it) {
         if (!multiPlanar) {
             assert(!it->empty());
             currentArgsTLS->_outputPlaneBeingRendered = it->front().first;
@@ -3934,7 +3934,7 @@ EffectInstance::tiledRenderingFunctor(RenderArgs & args,
             if (!frameArgs.canAbort && frameArgs.isRenderResponseToUserInteraction) {
                 assert(!renderAborted);
                 
-                for (std::map<ImageComponents,PlaneToRender>::const_iterator it = outputPlanes.begin(); it!=outputPlanes.end(); ++it) {
+                for (std::map<ImageComponents,PlaneToRender>::const_iterator it = outputPlanes.begin(); it != outputPlanes.end(); ++it) {
                     if (renderFullScaleThenDownscale && renderUseScaleOneInputs) {
                         it->second.fullscaleImage->clearBitmap(actionArgs.roi);
                     } else {
@@ -3960,7 +3960,7 @@ EffectInstance::tiledRenderingFunctor(RenderArgs & args,
     } else {
     
         //Check for NaNs
-        for (std::map<ImageComponents,PlaneToRender>::const_iterator it = outputPlanes.begin(); it!=outputPlanes.end(); ++it) {
+        for (std::map<ImageComponents,PlaneToRender>::const_iterator it = outputPlanes.begin(); it != outputPlanes.end(); ++it) {
             if (it->second.tmpImage->checkForNaNs(actionArgs.roi)) {
                 qDebug() << getNode()->getScriptName_mt_safe().c_str() << ": rendered rectangle (" << actionArgs.roi.x1 << ',' << actionArgs.roi.y1 << ")-(" << actionArgs.roi.x2 << ',' << actionArgs.roi.y2 << ") contains invalid values.";
             }
@@ -4091,7 +4091,7 @@ EffectInstance::tiledRenderingFunctor(RenderArgs & args,
                     << " y1 = " << actionArgs.roi.y1 << " x2 = " << actionArgs.roi.x2 << " y2 = " << actionArgs.roi.y2;*/
                 } // if (renderFullScaleThenDownscale) {
             } // if (it->second.isAllocatedOnTheFly) {
-        } // for (std::map<ImageComponents,PlaneToRender>::const_iterator it = outputPlanes.begin(); it!=outputPlanes.end(); ++it) {
+        } // for (std::map<ImageComponents,PlaneToRender>::const_iterator it = outputPlanes.begin(); it != outputPlanes.end(); ++it) {
         
     }
     return isBeingRenderedElseWhere ? eRenderingFunctorRetTakeImageLock : eRenderingFunctorRetOK;
@@ -5016,7 +5016,7 @@ EffectInstance::getPreferredDepthAndComponents(int inputNb,
     if (inputComps.empty()) {
         inputComps.push_back(ImageComponents::getNoneComponents());
     }
-    for (std::list<Natron::ImageComponents>::iterator it = inputComps.begin(); it!=inputComps.end(); ++it) {
+    for (std::list<Natron::ImageComponents>::iterator it = inputComps.begin(); it != inputComps.end(); ++it) {
         comp->push_back(findClosestSupportedComponents(inputNb, *it));
     }
     
@@ -5097,7 +5097,7 @@ EffectInstance::getComponentsAvailableRecursive(SequenceTime time, int view, Com
     }
     if (processAll) {
         //The node makes available everything available upstream
-        for (ComponentsAvailableMap::iterator it = comps->begin(); it!=comps->end(); ++it) {
+        for (ComponentsAvailableMap::iterator it = comps->begin(); it != comps->end(); ++it) {
             if (it->second.lock()) {
                 it->second = node;
             }
@@ -5151,7 +5151,7 @@ EffectInstance::getComponentsAvailableRecursive(SequenceTime time, int view, Com
         node->getUserComponents(&userComps);
         ///Foreach user component, add it as an available component, but use this node only if it is also
         ///in the "needed components" list
-        for (std::list<ImageComponents>::iterator it = userComps.begin(); it!=userComps.end(); ++it) {
+        for (std::list<ImageComponents>::iterator it = userComps.begin(); it != userComps.end(); ++it) {
             
             bool found = false;
             for (std::vector<Natron::ImageComponents>::iterator it2 = foundOutput->second.begin();
@@ -5241,7 +5241,7 @@ EffectInstance::getComponentsNeededAndProduced(SequenceTime time, int view,
     getPreferredDepthAndComponents(-1, &outputComp , &outputDepth);
     
     std::vector<Natron::ImageComponents> outputCompVec;
-    for (std::list<Natron::ImageComponents>::iterator it = outputComp.begin(); it!=outputComp.end(); ++it) {
+    for (std::list<Natron::ImageComponents>::iterator it = outputComp.begin(); it != outputComp.end(); ++it) {
         outputCompVec.push_back(*it);
     }
     
@@ -5263,7 +5263,7 @@ EffectInstance::getComponentsNeededAndProduced(SequenceTime time, int view,
         getPreferredDepthAndComponents(-1, &comp, &depth);
         
         std::vector<Natron::ImageComponents> compVect;
-        for (std::list<Natron::ImageComponents>::iterator it = comp.begin(); it!=comp.end(); ++it) {
+        for (std::list<Natron::ImageComponents>::iterator it = comp.begin(); it != comp.end(); ++it) {
             compVect.push_back(*it);
         }
         comps->insert(std::make_pair(i, compVect));
@@ -5314,7 +5314,7 @@ EffectInstance::getComponentsNeededAndProduced_public(SequenceTime time, int vie
                     ImageBitDepthEnum depth;
                     std::list<ImageComponents> components;
                     getPreferredDepthAndComponents(-1, &components, &depth);
-                    for (std::list<ImageComponents>::iterator it = components.begin(); it!=components.end(); ++it) {
+                    for (std::list<ImageComponents>::iterator it = components.begin(); it != components.end(); ++it) {
                         if (it->isColorPlane()) {
                             compVec.push_back(*it);
                         }
@@ -5326,7 +5326,7 @@ EffectInstance::getComponentsNeededAndProduced_public(SequenceTime time, int vie
                 ImageBitDepthEnum depth;
                 std::list<ImageComponents> components;
                 getPreferredDepthAndComponents(-1, &components, &depth);
-                for (std::list<ImageComponents>::iterator it = components.begin(); it!=components.end(); ++it) {
+                for (std::list<ImageComponents>::iterator it = components.begin(); it != components.end(); ++it) {
                     compVec.push_back(*it);
                 }
             }
@@ -5351,7 +5351,7 @@ EffectInstance::getComponentsNeededAndProduced_public(SequenceTime time, int vie
                         ImageBitDepthEnum depth;
                         std::list<ImageComponents> components;
                         getPreferredDepthAndComponents(i, &components, &depth);
-                        for (std::list<ImageComponents>::iterator it = components.begin(); it!=components.end(); ++it) {
+                        for (std::list<ImageComponents>::iterator it = components.begin(); it != components.end(); ++it) {
                             if (it->isColorPlane()) {
                                 compVec.push_back(*it);
                             }
@@ -5372,7 +5372,7 @@ EffectInstance::getComponentsNeededAndProduced_public(SequenceTime time, int vie
                     ImageBitDepthEnum depth;
                     std::list<ImageComponents> components;
                     getPreferredDepthAndComponents(i, &components, &depth);
-                    for (std::list<ImageComponents>::iterator it = components.begin(); it!=components.end(); ++it) {
+                    for (std::list<ImageComponents>::iterator it = components.begin(); it != components.end(); ++it) {
                         compVec.push_back(*it);
                     }
                 }

@@ -105,7 +105,7 @@ KnobSerialization::restoreKnobLinks(const boost::shared_ptr<KnobI> & knob,
         if (it->masterDimension != -1) {
             ///we need to cycle through all the nodes of the project to find the real master
             boost::shared_ptr<Natron::Node> masterNode;
-            for (std::list<boost::shared_ptr<Natron::Node> >::const_iterator it2 = allNodes.begin(); it2 != allNodes.end() ;++it2) {
+            for (std::list<boost::shared_ptr<Natron::Node> >::const_iterator it2 = allNodes.begin(); it2 != allNodes.end(); ++it2) {
                 if ((*it2)->getScriptName() == it->masterNodeName) {
                     masterNode = *it2;
                     break;

@@ -631,7 +631,7 @@ Int_KnobGui::updateToolTip()
         QString tt = toolTip();
         boost::shared_ptr<Int_Knob> knob = _knob.lock();
 
-        for (int i = 0; i < knob->getDimension();++i) {
+        for (int i = 0; i < knob->getDimension(); ++i) {
             _spinBoxes[i].first->setToolTip( tt );
         }
         if (_slider) {
@@ -826,7 +826,7 @@ Bool_KnobGui::updateToolTip()
 {
     if ( hasToolTip() ) {
         QString tt = toolTip();
-        for (int i = 0; i < _knob.lock()->getDimension();++i) {
+        for (int i = 0; i < _knob.lock()->getDimension(); ++i) {
             _checkBox->setToolTip( tt );
         }
     }
@@ -1466,7 +1466,7 @@ Double_KnobGui::updateToolTip()
 {
     if ( hasToolTip() ) {
         QString tt = toolTip();
-        for (int i = 0; i < _knob.lock()->getDimension();++i) {
+        for (int i = 0; i < _knob.lock()->getDimension(); ++i) {
             _spinBoxes[i].first->setToolTip( tt );
         }
         if (_slider) {
@@ -4195,7 +4195,7 @@ Group_KnobGui::getOrCreateTabWidget()
 void Group_KnobGui::removeSpecificGui()
 {
     delete _button;
-//    for (std::list<KnobGui*>::iterator it = _children.begin() ;it!= _children.end();++it) {
+//    for (std::list<KnobGui*>::iterator it = _children.begin() ; it != _children.end(); ++it) {
 //        (*it)->removeSpecificGui();
 //        delete *it;
 //    }

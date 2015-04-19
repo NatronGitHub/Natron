@@ -194,7 +194,7 @@ KnobGui::getContainer()
 void
 KnobGui::removeGui()
 {
-    for (std::vector< boost::weak_ptr< KnobI > >::iterator it = _imp->knobsOnSameLine.begin(); it!=_imp->knobsOnSameLine.end(); ++it) {
+    for (std::vector< boost::weak_ptr< KnobI > >::iterator it = _imp->knobsOnSameLine.begin(); it != _imp->knobsOnSameLine.end(); ++it) {
         KnobGui* kg = _imp->container->getKnobGui(it->lock());
         assert(kg);
         kg->_imp->removeFromKnobsOnSameLineVector(getKnob());
@@ -255,7 +255,7 @@ KnobGui::createGUI(QGridLayout* containerLayout,
 
     _imp->containerLayout = containerLayout;
     _imp->fieldLayout = layout;
-    for (std::vector< boost::shared_ptr< KnobI > >::const_iterator it = knobsOnSameLine.begin(); it!=knobsOnSameLine.end(); ++it) {
+    for (std::vector< boost::shared_ptr< KnobI > >::const_iterator it = knobsOnSameLine.begin(); it != knobsOnSameLine.end(); ++it) {
         _imp->knobsOnSameLine.push_back(*it);
     }
     _imp->field = fieldContainer;
@@ -712,7 +712,7 @@ KnobGui::createDuplicateOnNode(Natron::EffectInstance* effect,bool linkExpressio
     boost::shared_ptr<KnobI> knob = getKnob();
     
     if (linkExpression) {
-        for (int i = 0; i < knob->getDimension();++i) {
+        for (int i = 0; i < knob->getDimension(); ++i) {
             std::string expr = knob->getExpression(i);
             if (!expr.empty()) {
                 Natron::StandardButtonEnum rep = Natron::questionDialog(tr("Expression").toStdString(), tr("This operation will create "
@@ -862,7 +862,7 @@ KnobGui::createDuplicateOnNode(Natron::EffectInstance* effect,bool linkExpressio
         
         try {
             std::string script = ss.str();
-            for (int i = 0; i < knob->getDimension();++i) {
+            for (int i = 0; i < knob->getDimension(); ++i) {
                 knob->clearExpression(i, true);
                 knob->setExpression(i, script, false);
             }
@@ -1852,7 +1852,7 @@ KnobGui::linkTo(int dimension)
     }
     
     
-    for (int i = 0;i < thisKnob->getDimension(); ++i) {
+    for (int i = 0; i < thisKnob->getDimension(); ++i) {
         
         if (i == dimension || dimension == -1) {
             std::string expr = thisKnob->getExpression(dimension);

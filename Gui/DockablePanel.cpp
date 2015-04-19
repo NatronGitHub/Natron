@@ -182,7 +182,7 @@ void
 TabGroup::removeTab(Group_Knob* group)
 {
     int i = 0;
-    for (std::vector<boost::weak_ptr<Group_Knob> >::iterator it = _tabs.begin(); it != _tabs.end(); ++it,++i) {
+    for (std::vector<boost::weak_ptr<Group_Knob> >::iterator it = _tabs.begin(); it != _tabs.end(); ++it, ++i) {
         if (it->lock().get() == group) {
             _tabWidget->removeTab(i);
             _tabs.erase(it);
@@ -1751,11 +1751,11 @@ DockablePanel::setClosed(bool c)
             ///show all selected instances
             const std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> > & childrenInstances = panel->getInstances();
             std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> >::const_iterator next = childrenInstances.begin();
-			if (!childrenInstances.empty()) {
+			if (next != childrenInstances.end()) {
 				++next;
 			}
             for (std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> >::const_iterator it = childrenInstances.begin();
-                 it != childrenInstances.end(); ++it,++next) {
+                 it != childrenInstances.end(); ++it, ++next) {
                 if (c) {
                     it->first.lock()->hideKeyframesFromTimeline( next == childrenInstances.end() );
                 } else if (!c && it->second) {
@@ -1823,11 +1823,11 @@ DockablePanel::closePanel()
         if (panel) {
             const std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> > & childrenInstances = panel->getInstances();
             std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> >::const_iterator next = childrenInstances.begin();
-            if (!childrenInstances.empty()) {
+            if (next != childrenInstances.end()) {
                 ++next;
             }
             for (std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> >::const_iterator it = childrenInstances.begin();
-                 it != childrenInstances.end(); ++it,++next) {
+                 it != childrenInstances.end(); ++it, ++next) {
                 
                 NodePtr node = it->first.lock();
                 if ( it->second && (node != internalNode) ) {
@@ -1849,7 +1849,7 @@ DockablePanel::closePanel()
     }
     
     const std::list<ViewerTab*>& viewers = getGui()->getViewersList();
-    for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it!=viewers.end(); ++it) {
+    for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {
         (*it)->getViewer()->redraw();
     }
     Q_EMIT closeChanged(true);
@@ -2664,7 +2664,7 @@ NodeSettingsPanel::onImportPresetsActionTriggered()
         int nNodes;
         boost::archive::xml_iarchive iArchive(ifile);
         iArchive >> boost::serialization::make_nvp("NodesCount",nNodes);
-        for (int i = 0; i < nNodes ;++i) {
+        for (int i = 0; i < nNodes ; ++i) {
             boost::shared_ptr<NodeSerialization> node(new NodeSerialization());
             iArchive >> boost::serialization::make_nvp("Node",*node);
             nodeSerialization.push_back(node);
@@ -2892,7 +2892,7 @@ ManageUserParamsDialog::ManageUserParamsDialog(DockablePanel* panel,QWidget* par
 
 ManageUserParamsDialog::~ManageUserParamsDialog()
 {
-//    for (std::list<TreeItem>::iterator it = _imp->items.begin() ;it != _imp->items.end(); ++it) {
+//    for (std::list<TreeItem>::iterator it = _imp->items.begin() ; it != _imp->items.end(); ++it) {
 //        delete it->item;
 //    }
 }
@@ -3031,7 +3031,7 @@ ManageUserParamsDialog::onDeleteClicked()
     QList<QTreeWidgetItem*> selection = _imp->tree->selectedItems();
     if (!selection.isEmpty()) {
         for (int i = 0; i < selection.size(); ++i) {
-            for (std::list<TreeItem>::iterator it = _imp->items.begin(); it != _imp->items.end();++it) {
+            for (std::list<TreeItem>::iterator it = _imp->items.begin(); it != _imp->items.end(); ++it) {
                 if (it->item == selection[i]) {
                     it->knob->getHolder()->removeDynamicKnob(it->knob.get());
                     delete it->item;
@@ -3056,7 +3056,7 @@ ManageUserParamsDialog::onEditClicked()
     QList<QTreeWidgetItem*> selection = _imp->tree->selectedItems();
     if (!selection.isEmpty()) {
         for (int i = 0; i < selection.size(); ++i) {
-            for (std::list<TreeItem>::iterator it = _imp->items.begin(); it != _imp->items.end();++it) {
+            for (std::list<TreeItem>::iterator it = _imp->items.begin(); it != _imp->items.end(); ++it) {
                 if (it->item == selection[i]) {
                     
                     std::list<boost::shared_ptr<KnobI> > listeners;
@@ -3096,7 +3096,7 @@ ManageUserParamsDialog::onUpClicked()
     QList<QTreeWidgetItem*> selection = _imp->tree->selectedItems();
     if (!selection.isEmpty()) {
         for (int i = 0; i < selection.size(); ++i) {
-            for (std::list<TreeItem>::iterator it = _imp->items.begin(); it != _imp->items.end();++it) {
+            for (std::list<TreeItem>::iterator it = _imp->items.begin(); it != _imp->items.end(); ++it) {
                 if (it->item == selection[i]) {
                     
                     if (dynamic_cast<Page_Knob*>(it->knob.get())) {
@@ -3161,7 +3161,7 @@ ManageUserParamsDialog::onDownClicked()
     QList<QTreeWidgetItem*> selection = _imp->tree->selectedItems();
     if (!selection.isEmpty()) {
         for (int i = 0; i < selection.size(); ++i) {
-            for (std::list<TreeItem>::iterator it = _imp->items.begin(); it != _imp->items.end();++it) {
+            for (std::list<TreeItem>::iterator it = _imp->items.begin(); it != _imp->items.end(); ++it) {
                 if (it->item == selection[i]) {
                     if (dynamic_cast<Page_Knob*>(it->knob.get())) {
                         break;
@@ -3245,7 +3245,7 @@ ManageUserParamsDialog::onSelectionChanged()
             canDelete = false;
             canMove = false;
         }
-        for (std::list<TreeItem>::iterator it = _imp->items.begin(); it!=_imp->items.end(); ++it) {
+        for (std::list<TreeItem>::iterator it = _imp->items.begin(); it != _imp->items.end(); ++it) {
             if (it->item == item) {
                 Page_Knob* isPage = dynamic_cast<Page_Knob*>(it->knob.get());
                 Group_Knob* isGroup = dynamic_cast<Group_Knob*>(it->knob.get());
@@ -3305,7 +3305,7 @@ PickKnobDialog::PickKnobDialog(DockablePanel* panel, QWidget* parent)
     boost::shared_ptr<NodeCollection> collec = node->getGroup();
     NodeGroup* isCollecGroup = dynamic_cast<NodeGroup*>(collec.get());
     NodeList collectNodes = collec->getNodes();
-    for (NodeList::iterator it = collectNodes.begin(); it!=collectNodes.end(); ++it) {
+    for (NodeList::iterator it = collectNodes.begin(); it != collectNodes.end(); ++it) {
         if (!(*it)->getParentMultiInstance() && (*it)->isActivated() && (*it)->getKnobs().size() > 0) {
             _imp->allNodes.push_back(*it);
         }
@@ -3315,7 +3315,7 @@ PickKnobDialog::PickKnobDialog(DockablePanel* panel, QWidget* parent)
     }
     if (isGroup) {
         NodeList groupnodes = isGroup->getNodes();
-        for (NodeList::iterator it = groupnodes.begin(); it!=groupnodes.end(); ++it) {
+        for (NodeList::iterator it = groupnodes.begin(); it != groupnodes.end(); ++it) {
             if (!(*it)->getParentMultiInstance() && (*it)->isActivated() && (*it)->getKnobs().size() > 0) {
                 _imp->allNodes.push_back(*it);
             }
@@ -4189,7 +4189,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,const boost::shared_ptr<KnobI>
         _imp->parentPage->addItem(NATRON_USER_MANAGED_KNOBS_PAGE);
         QObject::connect(_imp->parentPage,SIGNAL(currentIndexChanged(int)),this,SLOT(onPageCurrentIndexChanged(int)));
         const std::vector<boost::shared_ptr<KnobI> >& knobs = _imp->panel->getHolder()->getKnobs();
-        for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it = knobs.begin() ;it != knobs.end(); ++it) {
+        for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it = knobs.begin() ; it != knobs.end(); ++it) {
             if ((*it)->isUserKnob()) {
                 Page_Knob* isPage = dynamic_cast<Page_Knob*>(it->get());
                 if (isPage && isPage->getName() != std::string(NATRON_USER_MANAGED_KNOBS_PAGE)) {
@@ -4800,7 +4800,7 @@ AddKnobDialog::onOkClicked()
     //check if another knob has the same script name
     std::string stdName = name.toStdString();
     const std::vector<boost::shared_ptr<KnobI> >& knobs = _imp->panel->getHolder()->getKnobs();
-    for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it = knobs.begin() ;it != knobs.end(); ++it) {
+    for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it = knobs.begin() ; it != knobs.end(); ++it) {
         if ((*it)->getName() == stdName && (*it) != _imp->knob) {
             badFormat = true;
             break;
@@ -4862,7 +4862,7 @@ AddKnobDialog::onOkClicked()
             //to recover them afterwards
             std::list<boost::shared_ptr<KnobI> > listeners;
             _imp->knob->getListeners(listeners);
-            for (std::list<boost::shared_ptr<KnobI> >::iterator it = listeners.begin(); it!=listeners.end(); ++it) {
+            for (std::list<boost::shared_ptr<KnobI> >::iterator it = listeners.begin(); it != listeners.end(); ++it) {
                 std::vector<std::pair<std::string,bool> > exprs;
                 for (int i = 0; i < (*it)->getDimension(); ++i) {
                     std::pair<std::string,bool> e;
@@ -4935,7 +4935,7 @@ AddKnobDialog::onOkClicked()
         if (!listenersExpressions.empty()) {
             
             for (std::map<boost::shared_ptr<KnobI>,std::vector<std::pair<std::string,bool> > >::iterator it = listenersExpressions.begin();
-                 it != listenersExpressions.end();++it) {
+                 it != listenersExpressions.end(); ++it) {
                 assert(it->first->getDimension() == (int)it->second.size());
                 for (int i = 0; i < it->first->getDimension(); ++i) {
                     try {

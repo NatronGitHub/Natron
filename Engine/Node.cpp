@@ -121,7 +121,7 @@ namespace { // protect local classes in anonymous namespace
         
         void operator=(const ChannelSelector& other) {
             layer = other.layer;
-            for (int i = 0; i< 4; ++i) {
+            for (int i = 0; i < 4; ++i) {
                 enabledChan[i] = other.enabledChan[i];
             }
             useRGBASelectors = other.useRGBASelectors;
@@ -666,7 +666,7 @@ void
 Node::Implementation::appendChild(const boost::shared_ptr<Natron::Node>& child)
 {
     QMutexLocker k(&childrenMutex);
-    for (std::list<boost::weak_ptr<Natron::Node> >::iterator it = children.begin(); it!=children.end(); ++it) {
+    for (std::list<boost::weak_ptr<Natron::Node> >::iterator it = children.begin(); it != children.end(); ++it) {
         if (it->lock() == child) {
             return;
         }
@@ -1363,7 +1363,7 @@ Node::getInputNames(std::map<std::string,std::string> & inputNames) const
     
     QMutexLocker l(&_imp->inputsMutex);
     assert(_imp->inputs.size() == _imp->inputLabels.size());
-    for (U32 i = 0;i < _imp->inputs.size(); ++i) {
+    for (U32 i = 0; i < _imp->inputs.size(); ++i) {
         if (_imp->inputs[i]) {
             inputNames.insert(std::make_pair(_imp->inputLabels[i], _imp->inputs[i]->getScriptName_mt_safe()) );
         } else {
@@ -1759,10 +1759,10 @@ Node::makeInfoForInput(int inputNumber) const
     ss << "<b>Image Format:</b>\n";
     
     EffectInstance::ComponentsAvailableMap::iterator next = availableComps.begin();
-    if (!comps.empty()) {
+    if (next != availableComps.end()) {
         ++next;
     }
-    for (EffectInstance::ComponentsAvailableMap::iterator it = availableComps.begin(); it!=availableComps.end(); ++it) {
+    for (EffectInstance::ComponentsAvailableMap::iterator it = availableComps.begin(); it != availableComps.end(); ++it) {
         NodePtr origin = it->second.lock();
         if (origin.get() != this || inputNumber == -1) {
             ss << Natron::Image::getFormatString(it->first, depth);
@@ -4569,7 +4569,7 @@ Node::initializeDefaultOverlays()
     if (!nodeGui) {
         return;
     }
-    for (std::list<boost::shared_ptr<Double_Knob> > ::iterator it = _imp->nativePositionOverlays.begin(); it!=_imp->nativePositionOverlays.end(); ++it)
+    for (std::list<boost::shared_ptr<Double_Knob> > ::iterator it = _imp->nativePositionOverlays.begin(); it != _imp->nativePositionOverlays.end(); ++it)
     {
         nodeGui->addDefaultPositionInteract(*it);
     }
@@ -5317,7 +5317,7 @@ Node::dequeueActions()
     }
     
     
-    for (std::list<ConnectInputAction>::iterator it = queue.begin(); it!= queue.end(); ++it) {
+    for (std::list<ConnectInputAction>::iterator it = queue.begin(); it != queue.end(); ++it) {
         
         switch (it->type) {
             case eInputActionConnect:
@@ -5360,7 +5360,7 @@ Node::shouldCacheOutput(bool isFrameVaryingOrAnimated) const
         outputs = _imp->outputs;
     }
     std::list<Node*> outputsToAdd;
-    for (std::list<Node*>::iterator it = outputs.begin(); it!=outputs.end(); ++it) {
+    for (std::list<Node*>::iterator it = outputs.begin(); it != outputs.end(); ++it) {
         GroupOutput* isOutputNode = dynamic_cast<GroupOutput*>((*it)->getLiveInstance());
         //If the node is an output node, add all the outputs of the group node instead
         if (isOutputNode) {
@@ -5948,7 +5948,7 @@ Node::refreshChannelSelectors(bool setValues)
     }
     _imp->liveInstance->setComponentsAvailableDirty(true);
     
-    for (std::map<int,ChannelSelector>::iterator it = _imp->channelsSelectors.begin(); it!= _imp->channelsSelectors.end(); ++it) {
+    for (std::map<int,ChannelSelector>::iterator it = _imp->channelsSelectors.begin(); it != _imp->channelsSelectors.end(); ++it) {
         
         NodePtr node;
         if (it->first == -1) {
@@ -6084,7 +6084,7 @@ Node::refreshChannelSelectors(bool setValues)
         }
     }
     
-    for (std::map<int,MaskSelector>::iterator it = _imp->maskSelectors.begin(); it!=_imp->maskSelectors.end(); ++it) {
+    for (std::map<int,MaskSelector>::iterator it = _imp->maskSelectors.begin(); it != _imp->maskSelectors.end(); ++it) {
         NodePtr node;
         if (it->first == -1) {
             node = shared_from_this();
@@ -6106,7 +6106,7 @@ Node::refreshChannelSelectors(bool setValues)
             node->getLiveInstance()->getComponentsAvailable(getApp()->getTimeLine()->currentFrame(), &compsAvailable);
             
             std::vector<ImageComponents> compsOrdered;
-            for (EffectInstance::ComponentsAvailableMap::iterator it = compsAvailable.begin(); it!=compsAvailable.end(); ++it) {
+            for (EffectInstance::ComponentsAvailableMap::iterator it = compsAvailable.begin(); it != compsAvailable.end(); ++it) {
                 if (it->first.isColorPlane()) {
                     compsOrdered.insert(compsOrdered.begin(), it->first);
                 } else {
@@ -6174,7 +6174,7 @@ Node::addUserComponents(const Natron::ImageComponents& comps)
 {
     {
         QMutexLocker k(&_imp->createdComponentsMutex);
-        for (std::list<ImageComponents>::iterator it = _imp->createdComponents.begin(); it!=_imp->createdComponents.end(); ++it) {
+        for (std::list<ImageComponents>::iterator it = _imp->createdComponents.begin(); it != _imp->createdComponents.end(); ++it) {
             if (it->getLayerName() == comps.getLayerName()) {
                 Natron::errorDialog(tr("Layer").toStdString(), tr("A Layer with the same name already exists").toStdString());
                 return;

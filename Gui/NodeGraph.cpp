@@ -2256,7 +2256,7 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
         if ( !_imp->_selection.empty() ) {
             boost::shared_ptr<NodeGui> lastSelected = ( *_imp->_selection.rbegin() );
             const std::vector<Edge*> & inputs = lastSelected->getInputsArrows();
-            for (U32 i = 0; i < inputs.size() ;++i) {
+            for (U32 i = 0; i < inputs.size() ; ++i) {
                 if ( inputs[i]->hasSource() ) {
                     boost::shared_ptr<NodeGui> input = inputs[i]->getSource();
                     if ( input->getIsSelected() && modCASIsShift(e) ) {
@@ -2355,7 +2355,7 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
         if (!intercepted) {
             /// Search for a node which has a shortcut bound
             const Natron::PluginsMap & allPlugins = appPTR->getPluginsList();
-            for (Natron::PluginsMap::const_iterator it = allPlugins.begin() ;it != allPlugins.end() ;++it) {
+            for (Natron::PluginsMap::const_iterator it = allPlugins.begin() ; it != allPlugins.end() ; ++it) {
                 
                 assert(!it->second.empty());
                 Natron::Plugin* plugin = *it->second.rbegin();
@@ -2554,7 +2554,7 @@ NodeGraph::setVisibleNodeDetails(bool visible)
     }
     _imp->_detailsVisible = visible;
     QMutexLocker k(&_imp->_nodesMutex);
-    for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = _imp->_nodes.begin(); it!= _imp->_nodes.end(); ++it) {
+    for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
         (*it)->setVisibleDetails(visible);
     }
 }
@@ -2808,7 +2808,7 @@ void
 NodeGraph::setSelection(const std::list<boost::shared_ptr<NodeGui> >& nodes)
 {
     clearSelection();
-    for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = nodes.begin(); it!=nodes.end(); ++it) {
+    for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         selectNode(*it, true);
     }
 }
@@ -2929,7 +2929,7 @@ NodeGraph::getFullSceneScreenShot()
     int yOffset = ( img.height() - renderImage.height() ) / 2;
 
     int yDest = yOffset;
-    for (int y = 0; y < renderImage.height(); ++y,++yDest) {
+    for (int y = 0; y < renderImage.height(); ++y, ++yDest) {
        
         if (yDest >= img.height()) {
             break;
@@ -2937,7 +2937,7 @@ NodeGraph::getFullSceneScreenShot()
         QRgb* dst_pixels = (QRgb*)img.scanLine(yDest);
         const QRgb* src_pixels = (const QRgb*)renderImage.scanLine(y);
         int xDest = xOffset;
-        for (int x = 0; x < renderImage.width(); ++x,++xDest) {
+        for (int x = 0; x < renderImage.width(); ++x, ++xDest) {
             if (xDest >= img.width()) {
                 dst_pixels[xDest] = qRgba(0, 0, 0, 0);
             } else {
@@ -3514,7 +3514,7 @@ NodeGraphPrivate::pasteNodesInternal(const NodeClipBoard & clipboard,const QPoin
         std::list<boost::shared_ptr<NodeSerialization> > internalNodesClipBoard = clipboard.nodes;
         std::list<boost::shared_ptr<NodeSerialization> >::iterator itOther = internalNodesClipBoard.begin();
         for (std::list<boost::shared_ptr<NodeGuiSerialization> >::const_iterator it = clipboard.nodesUI.begin();
-             it != clipboard.nodesUI.end(); ++it,++itOther) {
+             it != clipboard.nodesUI.end(); ++it, ++itOther) {
             boost::shared_ptr<NodeGui> node = pasteNode( **itOther,**it,offset,group.lock(),std::string(), false);
             newNodes->push_back(std::make_pair((*itOther)->getNodeScriptName(),node));
             newNodeList.push_back(node);
@@ -3657,7 +3657,7 @@ NodeGraphPrivate::restoreConnections(const std::list<boost::shared_ptr<NodeSeria
     std::list<boost::shared_ptr<NodeSerialization> >::const_iterator itSer = serializations.begin();
     assert(serializations.size() == newNodes.size());
     for (std::list<std::pair<std::string,boost::shared_ptr<NodeGui> > >::const_iterator it = newNodes.begin();
-         it != newNodes.end(); ++it,++itSer) {
+         it != newNodes.end(); ++it, ++itSer) {
         const std::map<std::string,std::string> & inputNames = (*itSer)->getInputs();
 
         ///Restore each input
@@ -4038,16 +4038,16 @@ NodeGraph::toggleAutoHideInputs(bool setSettings)
         autoHide = appPTR->getCurrentSettings()->areOptionalInputsAutoHidden();
     }
     if (!autoHide) {
-        for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodes.begin(); it!=_imp->_nodes.end(); ++it) {
+        for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
             (*it)->setOptionalInputsVisible(true);
         }
-        for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodesTrash.begin(); it!=_imp->_nodesTrash.end(); ++it) {
+        for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodesTrash.begin(); it != _imp->_nodesTrash.end(); ++it) {
             (*it)->setOptionalInputsVisible(true);
         }
     } else {
         
         QPointF evpt = mapFromScene(mapToScene(mapFromGlobal(QCursor::pos())));
-        for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodes.begin(); it!=_imp->_nodes.end(); ++it) {
+        for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
             
             QRectF bbox = (*it)->mapToScene((*it)->boundingRect()).boundingRect();
             if (!(*it)->getIsSelected() && !bbox.contains(evpt)) {
@@ -4055,7 +4055,7 @@ NodeGraph::toggleAutoHideInputs(bool setSettings)
             }
             
         }
-        for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodesTrash.begin(); it!=_imp->_nodesTrash.end(); ++it) {
+        for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodesTrash.begin(); it != _imp->_nodesTrash.end(); ++it) {
             (*it)->setOptionalInputsVisible(false);
         }
     }
@@ -4386,13 +4386,13 @@ FindNodeDialog::updateFindResults(const QString& filter)
         
         
         
-        for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = activeNodes.begin(); it!=activeNodes.end(); ++it) {
+        for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = activeNodes.begin(); it != activeNodes.end(); ++it) {
             if ((*it)->isVisible() && exp.exactMatch((*it)->getNode()->getLabel().c_str())) {
                 _imp->nodeResults.push_back(*it);
             }
         }
     } else {
-        for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = activeNodes.begin(); it!=activeNodes.end(); ++it) {
+        for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = activeNodes.begin(); it != activeNodes.end(); ++it) {
             if ((*it)->isVisible() && QString((*it)->getNode()->getLabel().c_str()).contains(filter,sensitivity)) {
                 _imp->nodeResults.push_back(*it);
             }
@@ -4582,7 +4582,7 @@ void
 NodeGraph::expandSelectedGroups()
 {
     NodeGuiList nodes;
-    for (NodeGuiList::iterator it = _imp->_selection.begin(); it!=_imp->_selection.end(); ++it) {
+    for (NodeGuiList::iterator it = _imp->_selection.begin(); it != _imp->_selection.end(); ++it) {
         NodeGroup* isGroup = dynamic_cast<NodeGroup*>((*it)->getNode()->getLiveInstance());
         if (isGroup) {
             nodes.push_back(*it);
@@ -4651,7 +4651,7 @@ NodeGraph::copyNodesAndCreateInGroup(const std::list<boost::shared_ptr<NodeGui> 
     std::list<std::pair<std::string,boost::shared_ptr<NodeGui> > > newNodes;
     std::list<boost::shared_ptr<NodeSerialization> >::const_iterator itOther = clipboard.nodes.begin();
     for (std::list<boost::shared_ptr<NodeGuiSerialization> >::const_iterator it = clipboard.nodesUI.begin();
-         it != clipboard.nodesUI.end(); ++it,++itOther) {
+         it != clipboard.nodesUI.end(); ++it, ++itOther) {
         boost::shared_ptr<NodeGui> node = _imp->pasteNode( **itOther,**it,QPointF(0,0),group,std::string(), false);
         newNodes.push_back(std::make_pair((*itOther)->getNodeScriptName(),node));
     }

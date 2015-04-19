@@ -90,7 +90,7 @@ PasteUndoCommand::undo()
         bool hasKeyframes = false;
         _knob->removeAllKeyframeMarkersOnTimeline(-1);
         std::list<boost::shared_ptr<Curve> >::iterator it = oldCurves.begin();
-        for (int i = 0;i < targetDimension; ++it, ++i) {
+        for (int i = 0; i < targetDimension; ++it, ++i) {
             internalKnob->getCurve(i)->clone( *(*it) );
             if (internalKnob->getKeyFramesCount(i) > 0) {
                 hasKeyframes = true;
@@ -108,7 +108,7 @@ PasteUndoCommand::undo()
     std::list<Variant>::iterator it = oldValues.begin();
     internalKnob->beginChanges();
 
-    for (int i = 0; i < targetDimension; ++it,++i) {
+    for (int i = 0; i < targetDimension; ++it, ++i) {
    
         if (isInt) {
             isInt->setValue(it->toInt(), i,true);
@@ -163,7 +163,7 @@ PasteUndoCommand::redo()
         _knob->removeAllKeyframeMarkersOnTimeline(-1);
         
         std::list<boost::shared_ptr<Curve> >::iterator it = newCurves.begin();
-        for (U32 i = 0; i  < newCurves.size(); ++it,++i) {
+        for (U32 i = 0; i  < newCurves.size(); ++it, ++i) {
             boost::shared_ptr<Curve> c = internalKnob->getCurve(i);
             if (c) {
                 c->clone( *(*it) );
@@ -177,7 +177,7 @@ PasteUndoCommand::redo()
 
     std::list<Variant>::iterator it = newValues.begin();
     internalKnob->beginChanges();
-    for (U32 i = 0; i < newValues.size(); ++it,++i) {
+    for (U32 i = 0; i < newValues.size(); ++it, ++i) {
         
         if (isInt) {
             isInt->setValue(it->toInt(), i, true);
@@ -420,7 +420,7 @@ MultipleKnobEditsUndoCommand::mergeWith(const QUndoCommand *command)
         ParamsMap::const_iterator thisIt = knobs.begin();
         ParamsMap::const_iterator otherIt = knobCommand->knobs.begin();
         bool oneDifferent = false;
-        for (; thisIt != knobs.end(); ++thisIt,++otherIt) {
+        for (; thisIt != knobs.end(); ++thisIt, ++otherIt) {
             if (thisIt->first != otherIt->first) {
                 oneDifferent = true;
                 break;
@@ -459,7 +459,7 @@ RestoreDefaultsCommand::undo()
     const boost::shared_ptr<KnobI> & first = _knobs.front();
     boost::shared_ptr<TimeLine> timeline = first->getHolder()->getApp()->getTimeLine();
     std::list<boost::shared_ptr<KnobI> >::const_iterator itClone = _clones.begin();
-    for (std::list<boost::shared_ptr<KnobI> >::const_iterator it = _knobs.begin(); it != _knobs.end(); ++it,++itClone) {
+    for (std::list<boost::shared_ptr<KnobI> >::const_iterator it = _knobs.begin(); it != _knobs.end(); ++it, ++itClone) {
         (*it)->cloneAndUpdateGui( itClone->get() );
 
         if ( (*it)->getHolder()->getApp() ) {

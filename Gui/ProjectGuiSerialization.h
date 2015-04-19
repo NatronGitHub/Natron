@@ -209,7 +209,7 @@ struct PythonPanelSerialization
         
         int nKnobs = knobs.size();
         ar & boost::serialization::make_nvp("NumParams",nKnobs);
-        for (std::list<boost::shared_ptr<KnobSerialization> >::const_iterator it = knobs.begin() ;it != knobs.end() ;++it) {
+        for (std::list<boost::shared_ptr<KnobSerialization> >::const_iterator it = knobs.begin() ; it != knobs.end() ; ++it) {
             ar & boost::serialization::make_nvp("item",**it);
         }
         
@@ -225,7 +225,7 @@ struct PythonPanelSerialization
         
         int nKnobs;
         ar & boost::serialization::make_nvp("NumParams",nKnobs);
-        for (int i = 0;i < nKnobs; ++i) {
+        for (int i = 0; i < nKnobs; ++i) {
             boost::shared_ptr<KnobSerialization> k(new KnobSerialization);
             ar & boost::serialization::make_nvp("item",*k);
             knobs.push_back(k);
@@ -334,7 +334,7 @@ struct PaneLayout
         }
         if (version < PANE_SERIALIZATION_INTRODUCE_SCRIPT_NAME) {
             
-            for (std::list<std::string>::iterator it = tabs.begin() ; it!= tabs.end() ; ++it) {
+            for (std::list<std::string>::iterator it = tabs.begin() ; it != tabs.end() ; ++it) {
                 //Try to map the tab name to an old name
                 if (*it == "CurveEditor") {
                     *it = kCurveEditorObjectName;

@@ -480,7 +480,7 @@ NodeCurveEditorContext::NodeCurveEditorContext(QTreeWidget* tree,
 NodeCurveEditorContext::~NodeCurveEditorContext()
 {
     delete _nameItem;
-    for (Elements::iterator it = _nodeElements.begin(); it!=_nodeElements.end();++it) {
+    for (Elements::iterator it = _nodeElements.begin(); it != _nodeElements.end(); ++it) {
         delete *it;
     }
     _nodeElements.clear();
@@ -1085,7 +1085,7 @@ BezierEditorContext::~BezierEditorContext()
         delete _imp->nameItem;
     }
     _imp->widget->getCurveWidget()->removeCurve(_imp->animCurve);
-    for (std::list<NodeCurveEditorElement*>::iterator it = _imp->knobs.begin() ; it != _imp->knobs.end();++it) {
+    for (std::list<NodeCurveEditorElement*>::iterator it = _imp->knobs.begin() ; it != _imp->knobs.end(); ++it) {
         delete *it;
     }
 }
@@ -1241,7 +1241,7 @@ RotoCurveEditorContext::RotoCurveEditorContext(CurveEditor* widget,
     
     std::list<boost::shared_ptr<RotoDrawableItem> > curves = rotoCtx->getCurvesByRenderOrder();
     
-    for (std::list<boost::shared_ptr<RotoDrawableItem> >::iterator it = curves.begin(); it!=curves.end(); ++it) {
+    for (std::list<boost::shared_ptr<RotoDrawableItem> >::iterator it = curves.begin(); it != curves.end(); ++it) {
         boost::shared_ptr<Bezier> isBezier = boost::dynamic_pointer_cast<Bezier>(*it);
         if (isBezier) {
             BezierEditorContext* c = new BezierEditorContext(tree, widget, isBezier, this);
@@ -1253,7 +1253,7 @@ RotoCurveEditorContext::RotoCurveEditorContext(CurveEditor* widget,
 RotoCurveEditorContext::~RotoCurveEditorContext()
 {
     delete _imp->nameItem;
-    for (std::list< BezierEditorContext*>::iterator it = _imp->curves.begin(); it!=_imp->curves.end(); ++it) {
+    for (std::list< BezierEditorContext*>::iterator it = _imp->curves.begin(); it != _imp->curves.end(); ++it) {
         (*it)->preventItemDeletion();
         delete *it;
     }
@@ -1262,7 +1262,7 @@ RotoCurveEditorContext::~RotoCurveEditorContext()
 void
 RotoCurveEditorContext::setVisible(bool visible)
 {
-    for (std::list< BezierEditorContext*>::iterator it = _imp->curves.begin(); it!=_imp->curves.end(); ++it) {
+    for (std::list< BezierEditorContext*>::iterator it = _imp->curves.begin(); it != _imp->curves.end(); ++it) {
         (*it)->getItem()->setHidden(!visible);
     }
 }

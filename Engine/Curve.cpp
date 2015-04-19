@@ -418,14 +418,18 @@ Curve::removeKeyFrame(KeyFrameSet::const_iterator it)
 
     if ( it != _imp->keyFrames.begin() ) {
         KeyFrameSet::iterator prev = it;
-        --prev;
+        if (prev != _imp->keyFrames.begin()) {
+            --prev;
+        }
         prevKey = *prev;
         mustRefreshPrev = prevKey.getInterpolation() != Natron::eKeyframeTypeBroken &&
                           prevKey.getInterpolation() != Natron::eKeyframeTypeFree &&
                           prevKey.getInterpolation() != Natron::eKeyframeTypeNone;
     }
     KeyFrameSet::iterator next = it;
-    ++next;
+    if (next != _imp->keyFrames.end()) {
+        ++next;
+    }
     if ( next != _imp->keyFrames.end() ) {
         nextKey = *next;
         mustRefreshNext = nextKey.getInterpolation() != Natron::eKeyframeTypeBroken &&
@@ -1247,7 +1251,9 @@ Curve::refreshDerivatives(Curve::CurveChangedReasonEnum reason,
         prevType = Natron::eKeyframeTypeNone;
     } else {
         KeyFrameSet::const_iterator prev = key;
-        --prev;
+        if (prev != _imp->keyFrames.begin()) {
+            --prev;
+        }
         tprev = prev->getTime();
         vprev = prev->getValue();
         vprevDerivRight = prev->getRightDerivative();
@@ -1261,7 +1267,9 @@ Curve::refreshDerivatives(Curve::CurveChangedReasonEnum reason,
     }
 
     KeyFrameSet::const_iterator next = key;
-    ++next;
+    if (next != _imp->keyFrames.end()) {
+        ++next;
+    }
     if ( next == _imp->keyFrames.end() ) {
         tnext = tcur;
         vnext = vcur;
@@ -1274,7 +1282,9 @@ Curve::refreshDerivatives(Curve::CurveChangedReasonEnum reason,
         nextType = next->getInterpolation();
 
         KeyFrameSet::const_iterator nextnext = next;
-        ++nextnext;
+        if (nextnext != _imp->keyFrames.end()) {
+            ++nextnext;
+        }
         //if next is thelast keyframe, and not edited by the user then interpolate linearly
         if ( ( nextnext == _imp->keyFrames.end() ) && (nextType != Natron::eKeyframeTypeFree) &&
              ( nextType != Natron::eKeyframeTypeBroken) ) {
@@ -1329,8 +1339,10 @@ Curve::evaluateCurveChanged(CurveChangedReasonEnum reason,
         key = refreshDerivatives(eCurveChangedReasonDerivativesChanged,key);
     }
     KeyFrameSet::iterator prev = key;
-    if ( key != _imp->keyFrames.begin() ) {
+    if (prev != _imp->keyFrames.begin()) {
         --prev;
+    }
+    if ( key != _imp->keyFrames.begin() ) {
         if ( (prev->getInterpolation() != Natron::eKeyframeTypeBroken) &&
              ( prev->getInterpolation() != Natron::eKeyframeTypeFree) &&
              ( prev->getInterpolation() != Natron::eKeyframeTypeNone) ) {
@@ -1338,7 +1350,9 @@ Curve::evaluateCurveChanged(CurveChangedReasonEnum reason,
         }
     }
     KeyFrameSet::iterator next = key;
-    ++next;
+    if (next != _imp->keyFrames.end()) {
+        ++next;
+    }
     if ( next != _imp->keyFrames.end() ) {
         if ( (next->getInterpolation() != Natron::eKeyframeTypeBroken) &&
              ( next->getInterpolation() != Natron::eKeyframeTypeFree) &&

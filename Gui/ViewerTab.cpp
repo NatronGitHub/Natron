@@ -4126,7 +4126,7 @@ ViewerTab::refreshLayerAndAlphaChannelComboBox()
     std::set<ImageComponents>::iterator foundCurAlphaIt = components.end();
     std::string foundAlphaChannel;
     
-    for (std::set<ImageComponents>::iterator it = components.begin(); it!=components.end(); ++it) {
+    for (std::set<ImageComponents>::iterator it = components.begin(); it != components.end(); ++it) {
         QString layerName(it->getLayerName().c_str());
         QString itemName = layerName + '.' + QString(it->getComponentsGlobalName().c_str());
         _imp->layerChoice->addItem(itemName);
@@ -4257,7 +4257,7 @@ ViewerTab::onAlphaChannelComboChanged(int index)
         if (index >= ((int)channels.size() + i)) {
             i += channels.size();
         } else {
-            for (U32 j = 0; j < channels.size(); ++j,++i) {
+            for (U32 j = 0; j < channels.size(); ++j, ++i) {
                 if (i == index) {
                     _imp->viewerNode->setAlphaChannel(*it, channels[j], true);
                     return;
@@ -4280,7 +4280,7 @@ ViewerTab::onLayerComboChanged(int index)
     }
     int i = 1; // because of the "-" choice
     int chanCount = 1; // because of the "-" choice
-    for (std::set<ImageComponents>::iterator it = components.begin(); it != components.end(); ++it,++i) {
+    for (std::set<ImageComponents>::iterator it = components.begin(); it != components.end(); ++it, ++i) {
         
         chanCount += it->getComponentsNames().size();
         if (i == index) {

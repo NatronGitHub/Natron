@@ -222,7 +222,7 @@ Plugin::setOfxDesc(OFX::Host::ImageEffect::Descriptor* desc,ContextEnum ctx)
 void
 PluginGroupNode::tryAddChild(const boost::shared_ptr<PluginGroupNode>& plugin)
 {
-    for (std::list<boost::shared_ptr<PluginGroupNode> >::iterator it = _children.begin() ;it!=_children.end();++it) {
+    for (std::list<boost::shared_ptr<PluginGroupNode> >::iterator it = _children.begin(); it != _children.end(); ++it) {
         if (*it == plugin) {
             return;
         }

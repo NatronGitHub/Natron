@@ -116,7 +116,7 @@ public:
     }
 
     void switchInput(const std::string& oldInputName,const std::string& newInputName) {
-        for (std::map<std::string,std::string>::iterator it = _inputs.begin(); it!=_inputs.end(); ++it) {
+        for (std::map<std::string,std::string>::iterator it = _inputs.begin(); it != _inputs.end(); ++it) {
             if (it->second == oldInputName) {
                 it->second = newInputName;
             }
@@ -239,7 +239,7 @@ private:
         
         int userPagesCount = (int)_userPages.size();
         ar & boost::serialization::make_nvp("UserPagesCount",userPagesCount);
-        for (std::list<boost::shared_ptr<GroupKnobSerialization> >::const_iterator it = _userPages.begin() ; it != _userPages.end() ;++it ) {
+        for (std::list<boost::shared_ptr<GroupKnobSerialization> >::const_iterator it = _userPages.begin(); it != _userPages.end() ; ++it ) {
             ar & boost::serialization::make_nvp("item",**it);
         }
        

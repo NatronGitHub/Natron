@@ -219,7 +219,7 @@ DiskCacheNode::render(const RenderActionArgs& args)
     
     const std::pair<ImageComponents,ImagePtr>& output = args.outputPlanes.front();
     
-    for (std::list<ImageComponents> ::const_iterator it =components.begin(); it!=components.end(); ++it) {
+    for (std::list<ImageComponents> ::const_iterator it =components.begin(); it != components.end(); ++it) {
         RectI roiPixel;
         
         ImagePtr srcImg = getImage(0, args.time, args.originalScale, args.view, NULL, *it, bitdepth, par, false, &roiPixel);

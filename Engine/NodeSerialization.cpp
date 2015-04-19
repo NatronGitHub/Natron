@@ -74,7 +74,7 @@ NodeSerialization::NodeSerialization(const boost::shared_ptr<Natron::Node> & n,b
         
         _nbKnobs = (int)_knobsValues.size();
         
-        for (std::list<boost::shared_ptr<KnobI> >::const_iterator it = userPages.begin(); it!=userPages.end(); ++it) {
+        for (std::list<boost::shared_ptr<KnobI> >::const_iterator it = userPages.begin(); it != userPages.end(); ++it) {
             boost::shared_ptr<GroupKnobSerialization> s(new GroupKnobSerialization(*it));
             _userPages.push_back(s);
         }

@@ -2200,7 +2200,7 @@ Knob<T>::dequeueValuesSet(bool disableEvaluation)
    
         
         QMutexLocker k(&_valueMutex);
-        for (typename std::list<boost::shared_ptr<QueuedSetValue> >::iterator it = _setValuesQueue.begin(); it!=_setValuesQueue.end(); ++it) {
+        for (typename std::list<boost::shared_ptr<QueuedSetValue> >::iterator it = _setValuesQueue.begin(); it != _setValuesQueue.end(); ++it) {
            
             QueuedSetValueAtTime* isAtTime = dynamic_cast<QueuedSetValueAtTime*>(it->get());
            
@@ -2249,7 +2249,7 @@ Knob<T>::dequeueValuesSet(bool disableEvaluation)
     if (!disableEvaluation && !dimensionChanged.empty()) {
         
         beginChanges();
-        for (std::map<int,Natron::ValueChangedReasonEnum>::iterator it = dimensionChanged.begin();it!=dimensionChanged.end();++it) {
+        for (std::map<int,Natron::ValueChangedReasonEnum>::iterator it = dimensionChanged.begin(); it != dimensionChanged.end(); ++it) {
             evaluateValueChange(it->first, it->second);
         }
         endChanges();

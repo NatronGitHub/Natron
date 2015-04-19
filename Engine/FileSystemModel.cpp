@@ -288,7 +288,7 @@ FileSystemItem::matchPath(const QStringList& path, int startIndex) const
 {
     const QString& pathBit = path.at(startIndex);
 
-    for (U32 i = 0; i < _imp->children.size();++i) {
+    for (U32 i = 0; i < _imp->children.size(); ++i) {
         
         const boost::shared_ptr<FileSystemItem>& child = _imp->children[i];
         

@@ -211,7 +211,7 @@ DefaultOverlay::penMotion(double time,
     OfxPointD pscale;
     n_getPixelScale(pscale.x, pscale.y);
     
-    for (PositionInteracts::iterator it = _imp->positions.begin(); it!= _imp->positions.end(); ++it) {
+    for (PositionInteracts::iterator it = _imp->positions.begin(); it != _imp->positions.end(); ++it) {
         QPointF pos;
         if (it->state == ePositionInteractStatePicked) {
             pos = _imp->lastPenPos;

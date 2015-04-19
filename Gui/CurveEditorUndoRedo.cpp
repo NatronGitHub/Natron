@@ -60,9 +60,10 @@ void
 AddKeysCommand::addOrRemoveKeyframe(bool add)
 {
     KeysToAddList::iterator next = _keys.begin();
-
-    ++next;
-    for (KeysToAddList::iterator it = _keys.begin(); it != _keys.end(); ++it,++next) {
+    if (next != _keys.end()) {
+        ++next;
+    }
+    for (KeysToAddList::iterator it = _keys.begin(); it != _keys.end(); ++it, ++next) {
         
         KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>((*it)->curve);
         BezierCPCurveGui* isBezierCurve = dynamic_cast<BezierCPCurveGui*>((*it)->curve);
@@ -376,7 +377,7 @@ MoveKeysCommand::move(double dt,
         }
     }
     
-    for (std::list<boost::shared_ptr<RotoContext> >::iterator it = rotoToEvaluate.begin(); it!=rotoToEvaluate.end();++it) {
+    for (std::list<boost::shared_ptr<RotoContext> >::iterator it = rotoToEvaluate.begin(); it != rotoToEvaluate.end(); ++it) {
         (*it)->evaluateChange();
     }
 
@@ -409,7 +410,7 @@ MoveKeysCommand::mergeWith(const QUndoCommand * command)
         }
 
         SelectedKeys::const_iterator itother = cmd->_keys.begin();
-        for (SelectedKeys::const_iterator it = _keys.begin(); it != _keys.end(); ++it,++itother) {
+        for (SelectedKeys::const_iterator it = _keys.begin(); it != _keys.end(); ++it, ++itother) {
             if (*itother != *it) {
                 return false;
             }
@@ -505,7 +506,7 @@ SetKeysInterpolationCommand::setNewInterpolation(bool undo)
     for (std::list<KnobI*>::iterator it = differentKnobs.begin(); it != differentKnobs.end(); ++it) {
         (*it)->endChanges();
     }
-    for (std::list<boost::shared_ptr<RotoContext> >::iterator it = rotoToEvaluate.begin(); it!=rotoToEvaluate.end();++it) {
+    for (std::list<boost::shared_ptr<RotoContext> >::iterator it = rotoToEvaluate.begin(); it != rotoToEvaluate.end(); ++it) {
         (*it)->evaluateChange();
     }
 
@@ -550,14 +551,16 @@ MoveTangentCommand::MoveTangentCommand(CurveWidget* widget,
 
     //find next and previous keyframes
     KeyFrameSet::const_iterator prev = cur;
-    if ( cur != keys.begin() ) {
+    if ( prev != keys.begin() ) {
         --prev;
     } else {
         prev = keys.end();
     }
     KeyFrameSet::const_iterator next = cur;
-    ++next;
-    
+    if (next != keys.end()) {
+        ++next;
+    }
+
     // handle first and last keyframe correctly:
     // - if their interpolation was eKeyframeTypeCatmullRom or eKeyframeTypeCubic, then it becomes eKeyframeTypeFree
     // - in all other cases it becomes eKeyframeTypeBroken
@@ -802,7 +805,7 @@ TransformKeysCommand::undo()
         (*it)->endChanges();
     }
     
-    for (std::list<boost::shared_ptr<RotoContext> >::iterator it = rotoToEvaluate.begin(); it!=rotoToEvaluate.end();++it) {
+    for (std::list<boost::shared_ptr<RotoContext> >::iterator it = rotoToEvaluate.begin(); it != rotoToEvaluate.end(); ++it) {
         (*it)->evaluateChange();
     }
     
@@ -881,7 +884,7 @@ TransformKeysCommand::redo()
         }
     }
     
-    for (std::list<boost::shared_ptr<RotoContext> >::iterator it = rotoToEvaluate.begin(); it!=rotoToEvaluate.end();++it) {
+    for (std::list<boost::shared_ptr<RotoContext> >::iterator it = rotoToEvaluate.begin(); it != rotoToEvaluate.end(); ++it) {
         (*it)->evaluateChange();
     }
     
@@ -907,7 +910,7 @@ TransformKeysCommand::mergeWith(const QUndoCommand * command)
         }
         
         SelectedKeys::const_iterator itother = cmd->_keys.begin();
-        for (SelectedKeys::const_iterator it = _keys.begin(); it != _keys.end(); ++it,++itother) {
+        for (SelectedKeys::const_iterator it = _keys.begin(); it != _keys.end(); ++it, ++itother) {
             if (*itother != *it) {
                 return false;
             }

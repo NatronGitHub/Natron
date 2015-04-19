@@ -447,7 +447,7 @@ private:
         int numPoints = (int)_controlPoints.size();
         ar & boost::serialization::make_nvp("NumPoints",numPoints);
         std::list< BezierCP >::const_iterator itF = _featherPoints.begin();
-        for (std::list< BezierCP >::const_iterator it = _controlPoints.begin(); it != _controlPoints.end(); ++it,++itF) {
+        for (std::list< BezierCP >::const_iterator it = _controlPoints.begin(); it != _controlPoints.end(); ++it, ++itF) {
             ar & boost::serialization::make_nvp("CP",*it);
             ar & boost::serialization::make_nvp("FP",*itF);
         }

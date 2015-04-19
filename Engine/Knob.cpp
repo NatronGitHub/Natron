@@ -2558,7 +2558,7 @@ KnobHelper::onExprDependencyChanged(KnobI* knob,int /*dimension*/)
     }
     
     KnobHolder* holder = getHolder();
-    for (std::set<int>::const_iterator it = dimensionsToEvaluate.begin();it != dimensionsToEvaluate.end(); ++it) {
+    for (std::set<int>::const_iterator it = dimensionsToEvaluate.begin(); it != dimensionsToEvaluate.end(); ++it) {
         if (holder && !holder->canSetValue()) {
             QMutexLocker k(&_imp->mustCloneGuiCurvesMutex);
             _imp->mustClearExprResults[*it] = true;
@@ -2631,7 +2631,7 @@ KnobHelper::removeListener(KnobI* knob)
     }
     
     QWriteLocker l(&_imp->mastersMutex);
-    for (std::list<boost::weak_ptr<KnobI> >::iterator it = _imp->listeners.begin(); it!=_imp->listeners.end(); ++it) {
+    for (std::list<boost::weak_ptr<KnobI> >::iterator it = _imp->listeners.begin(); it != _imp->listeners.end(); ++it) {
         if (it->lock().get() == knob) {
             _imp->listeners.erase(it);
             break;
@@ -2644,7 +2644,7 @@ void
 KnobHelper::getListeners(std::list<boost::shared_ptr<KnobI> > & listeners) const
 {
     QReadLocker l(&_imp->mastersMutex);
-    for (std::list<boost::weak_ptr<KnobI> >::const_iterator it = _imp->listeners.begin(); it!=_imp->listeners.end(); ++it) {
+    for (std::list<boost::weak_ptr<KnobI> >::const_iterator it = _imp->listeners.begin(); it != _imp->listeners.end(); ++it) {
         boost::shared_ptr<KnobI> knob = it->lock();
         if (knob) {
             listeners.push_back(knob);
