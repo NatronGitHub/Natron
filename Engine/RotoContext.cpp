@@ -2879,7 +2879,13 @@ Bezier::moveFeatherByIndex(int index,
 } // moveFeatherByIndex
 
 void
-Bezier::moveBezierPointInternal(BezierCP* cpParam,int index,int time, double lx, double ly, double rx, double ry, bool isLeft, bool moveBoth)
+Bezier::moveBezierPointInternal(BezierCP* cpParam,
+                                int index,
+                                int time,
+                                double lx, double ly,
+                                double rx, double ry,
+                                bool isLeft,
+                                bool moveBoth)
 {
     ///only called on the main-thread
     assert( QThread::currentThread() == qApp->thread() );
@@ -2909,31 +2915,38 @@ Bezier::moveBezierPointInternal(BezierCP* cpParam,int index,int time, double lx,
         }
         
         bool isOnKeyframe;
-        double leftX,leftY,rightX,rightY,leftXF,leftYF,rightXF,rightYF;
+        double leftX, leftY;
         if (isLeft || moveBoth) {
             isOnKeyframe = (cp)->getLeftBezierPointAtTime(time, &leftX, &leftY,true);
         }
+        double rightX, rightY;
         if (!isLeft || moveBoth) {
             isOnKeyframe = (cp)->getRightBezierPointAtTime(time, &rightX, &rightY,true);
         }
         
-        
-        if (!cpParam) {
+        bool moveFeather;
+        double leftXF, leftYF, rightXF, rightYF;
+        if (cpParam) {
+            moveFeather = false;
+        } else {
+            moveFeather = true;
             if (isLeft || moveBoth) {
                 (fp)->getLeftBezierPointAtTime(time, &leftXF, &leftYF,true);
+                moveFeather = moveFeather && leftX == leftXF && leftY == leftYF;
             }
             if (!isLeft || moveBoth) {
                 (fp)->getRightBezierPointAtTime(time, &rightXF, &rightYF,true);
+                moveFeather = moveFeather && rightX == rightXF && rightY == rightYF;
             }
+            moveFeather = moveFeather || featherLink;
         }
-        bool moveFeather = cpParam ? false : (featherLink || (leftX == leftXF && leftY == leftYF && rightX == rightXF && rightY == rightYF));
-        
+
         if (autoKeying || isOnKeyframe) {
             if (isLeft || moveBoth) {
-                (cp)->setLeftBezierPointAtTime(time,leftX + lx, leftY + ly);
+                (cp)->setLeftBezierPointAtTime(time, leftX + lx, leftY + ly);
             }
             if (!isLeft || moveBoth) {
-                (cp)->setRightBezierPointAtTime(time,rightX + rx, rightY + ry);
+                (cp)->setRightBezierPointAtTime(time, rightX + rx, rightY + ry);
             }
             if (moveFeather) {
                 if (isLeft || moveBoth) {
