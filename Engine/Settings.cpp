@@ -1567,7 +1567,7 @@ Settings::onKnobValueChanged(KnobI* k,
     } else if ( k == _nThreadsPerEffect.get() ) {
         appPTR->setNThreadsPerEffect( getNumberOfThreadsPerEffect() );
     } else if ( k == _ocioConfigKnob.get() ) {
-        if ( _ocioConfigKnob->getActiveEntryText_mt_safe() == std::string(NATRON_CUSTOM_OCIO_CONFIG_NAME) ) {
+        if (_ocioConfigKnob->getActiveEntryText_mt_safe() == NATRON_CUSTOM_OCIO_CONFIG_NAME) {
             _customOcioConfigFile->setAllDimensionsEnabled(true);
         } else {
             _customOcioConfigFile->setAllDimensionsEnabled(false);
@@ -2462,7 +2462,7 @@ Settings::doOCIOStartupCheckIfNeeded()
         std::string warnText;
         if (entry_i < 0 || entry_i >= (int)entries.size()) {
             warnText = "The current OCIO config selected in the preferences is invalid, would you like to set it to the default config (" NATRON_DEFAULT_OCIO_CONFIG_NAME ") ?";
-        } else if (entries[entry_i] != std::string(NATRON_DEFAULT_OCIO_CONFIG_NAME)) {
+        } else if (entries[entry_i] != NATRON_DEFAULT_OCIO_CONFIG_NAME) {
             warnText = "The current OCIO config selected in the preferences is not the default one (" NATRON_DEFAULT_OCIO_CONFIG_NAME "),"
             " would you like to set it to the default config ?";
         } else {

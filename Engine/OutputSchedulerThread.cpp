@@ -1994,7 +1994,7 @@ private:
                                                                                   components,
                                                                                   imageDepth),&planes);
                     if (retCode != EffectInstance::eRenderRoIRetCodeOk) {
-                         _imp->scheduler->notifyRenderFailure(std::string("Error caught while rendering"));
+                         _imp->scheduler->notifyRenderFailure("Error caught while rendering");
                         return;
                     }
                     

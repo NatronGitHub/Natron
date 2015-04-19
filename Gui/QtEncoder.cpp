@@ -82,7 +82,7 @@ QtWriter::supportedFileFormats_static(std::vector<std::string>* formats)
     // Qt 4 supports: BMP, JPG, JPEG, PNG, PBM, PGM, PPM, TIFF, XBM, XPM
     // Qt 5 doesn't support TIFF
     for (int i = 0; i < supported.count(); ++i) {
-        formats->push_back( std::string( supported.at(i).toLower().data() ) );
+        formats->push_back( supported.at(i).toLower().data() );
     }
 }
 

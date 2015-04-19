@@ -1925,7 +1925,7 @@ KnobHelper::executeExpression(double time, int dimension) const
             if (errCatcher) {
                 errorObj = PyObject_GetAttrString(errCatcher,"value"); //get the  stderr from our catchErr object, new ref
                 assert(errorObj);
-                error = std::string(PY3String_asString(errorObj));
+                error = PY3String_asString(errorObj);
                 PyObject* unicode = PyUnicode_FromString("");
                 PyObject_SetAttrString(errCatcher, "value", unicode);
                 Py_DECREF(errorObj);
@@ -3045,7 +3045,7 @@ KnobHolder::getOrCreateUserPageKnob()
     {
         QMutexLocker k(&_imp->knobsMutex);
         for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it = _imp->knobs.begin(); it != _imp->knobs.end(); ++it) {
-            if ((*it)->getName() == std::string(NATRON_USER_MANAGED_KNOBS_PAGE)) {
+            if ((*it)->getName() == NATRON_USER_MANAGED_KNOBS_PAGE) {
                 return boost::dynamic_pointer_cast<Page_Knob>(*it);
             }
         }

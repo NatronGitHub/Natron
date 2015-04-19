@@ -4192,7 +4192,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,const boost::shared_ptr<KnobI>
         for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it = knobs.begin() ; it != knobs.end(); ++it) {
             if ((*it)->isUserKnob()) {
                 Page_Knob* isPage = dynamic_cast<Page_Knob*>(it->get());
-                if (isPage && isPage->getName() != std::string(NATRON_USER_MANAGED_KNOBS_PAGE)) {
+                if (isPage && isPage->getName() != NATRON_USER_MANAGED_KNOBS_PAGE) {
                     _imp->userPages.push_back(isPage);
                 }
             }
@@ -4207,7 +4207,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,const boost::shared_ptr<KnobI>
             ////find in which page the knob should be
             Page_Knob* isTopLevelParentAPage = getTopLevelPageForKnob(knob.get());
             assert(isTopLevelParentAPage);
-            if (isTopLevelParentAPage->getName() != std::string(NATRON_USER_MANAGED_KNOBS_PAGE)) {
+            if (isTopLevelParentAPage->getName() != NATRON_USER_MANAGED_KNOBS_PAGE) {
                 int index = 1; // 1 because of the "User" item
                 bool found = false;
                 for (std::list<Page_Knob*>::iterator it = _imp->userPages.begin(); it != _imp->userPages.end(); ++it, ++index) {
@@ -4736,7 +4736,7 @@ AddKnobDialogPrivate::createKnobFromSelection(int index,int optionalGroupIndex)
     
     if (index != 16 && parentPage && !addedInGrp) {
         std::string selectedItem = parentPage->getCurrentIndexText().toStdString();
-        if (selectedItem == std::string(NATRON_USER_MANAGED_KNOBS_PAGE)) {
+        if (selectedItem == NATRON_USER_MANAGED_KNOBS_PAGE) {
             boost::shared_ptr<Page_Knob> userPage = panel->getUserPageKnob();
             userPage->addKnob(knob);
             panel->setUserPageActiveIndex();

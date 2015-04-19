@@ -3472,7 +3472,7 @@ bool interpretPythonScript(const std::string& script,std::string* error,std::str
         if (errCatcher && error) {
             errorObj = PyObject_GetAttrString(errCatcher,"value"); //get the  stderr from our catchErr object, new ref
             assert(errorObj);
-            *error = std::string(PY3String_asString(errorObj));
+            *error = PY3String_asString(errorObj);
             PyObject* unicode = PyUnicode_FromString("");
             PyObject_SetAttrString(errCatcher, "value", unicode);
             Py_DECREF(errorObj);
@@ -3482,7 +3482,7 @@ bool interpretPythonScript(const std::string& script,std::string* error,std::str
         if (outCatcher && output) {
             outObj = PyObject_GetAttrString(outCatcher,"value"); //get the stdout from our catchOut object, new ref
             assert(outObj);
-            *output = std::string(PY3String_asString(outObj));
+            *output = PY3String_asString(outObj);
             PyObject* unicode = PyUnicode_FromString("");
             PyObject_SetAttrString(outCatcher, "value", unicode);
             Py_DECREF(outObj);

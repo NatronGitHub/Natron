@@ -100,7 +100,7 @@ public:
     
     inline std::string getNatronVersionString() const
     {
-        return std::string(NATRON_VERSION_STRING);
+        return NATRON_VERSION_STRING;
     }
     
     inline int getNatronVersionMajor() const

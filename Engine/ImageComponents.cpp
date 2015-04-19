@@ -54,7 +54,7 @@ ImageComponents::ImageComponents(const std::string& layerName,
 {
     _componentNames.resize(count);
     for (int i = 0; i < count; ++i) {
-        _componentNames[i] = std::string(componentsName[i]);
+        _componentNames[i] = componentsName[i];
     }
 }
 

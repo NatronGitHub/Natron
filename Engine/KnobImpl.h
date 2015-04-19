@@ -331,7 +331,7 @@ std::string
 Knob<std::string>::pyObjectToType(PyObject* o) const
 {
     if (PyUnicode_Check(o)) {
-        return std::string(Natron::PY3String_asString(o));
+        return Natron::PY3String_asString(o);
     }
     
     int index = 0;

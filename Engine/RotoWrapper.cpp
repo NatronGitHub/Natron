@@ -249,7 +249,7 @@ BezierCurve::slavePointToTrack(int index, int trackTime, DoubleParam* trackCente
         return;
     }
     
-    if (isDouble->getName() != std::string("center") || isDouble->getDimension() != 2) {
+    if (isDouble->getName() != "center" || isDouble->getDimension() != 2) {
         return;
     }
     

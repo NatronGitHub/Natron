@@ -1833,7 +1833,7 @@ Node::initializeKnobs(int renderScaleSupportPref)
 
                     enabled->setDefaultValue(false, 0);
                     enabled->setAddNewLine(false);
-                    std::string enableMaskName(std::string(kEnableMaskKnobName) + std::string("_") + maskName);
+                    std::string enableMaskName(std::string(kEnableMaskKnobName) + "_" + maskName);
                     enabled->setName(enableMaskName);
                     enabled->setAnimationEnabled(false);
                     enabled->setHintToolTip(tr("Enable the mask to come from the channel named by the choice parameter on the right. "
@@ -1850,7 +1850,7 @@ Node::initializeKnobs(int renderScaleSupportPref)
                     channel->setAnimationEnabled(false);
                     channel->setHintToolTip(tr("Use this channel from the original input to mix the output with the original input. "
                                                        "Setting this to None is the same as disabling the mask.").toStdString());
-                    std::string channelMaskName(kMaskChannelKnobName + std::string("_") + maskName);
+                    std::string channelMaskName(std::string(kMaskChannelKnobName) + "_" + maskName);
                     channel->setName(channelMaskName);
                     sel.channel = channel;
                     
@@ -2022,7 +2022,7 @@ Node::initializeKnobs(int renderScaleSupportPref)
             }
             
             std::string outputLabel("Output");
-            boost::shared_ptr<String_Knob> outputFormat = Natron::createKnob<String_Knob>(_imp->liveInstance.get(), std::string(outputLabel + " Info"), 1, false);
+            boost::shared_ptr<String_Knob> outputFormat = Natron::createKnob<String_Knob>(_imp->liveInstance.get(), outputLabel + " Info", 1, false);
             outputFormat->setName(outputLabel + "Info");
             outputFormat->setAnimationEnabled(false);
             outputFormat->setIsPersistant(false);

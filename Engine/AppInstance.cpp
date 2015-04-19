@@ -757,7 +757,7 @@ AppInstance::createNodeInternal(const QString & pluginID,
         node->load(multiInstanceParentName, serialization,dontLoadName, userEdited,fixedName,paramValues);
     } catch (const std::exception & e) {
         group->removeNode(node);
-        std::string title = std::string("Error while creating node");
+        std::string title("Error while creating node");
         std::string message = title + " " + foundPluginID + ": " + e.what();
         qDebug() << message.c_str();
         errorDialog(title, message, false);
@@ -765,7 +765,7 @@ AppInstance::createNodeInternal(const QString & pluginID,
         return boost::shared_ptr<Natron::Node>();
     } catch (...) {
         group->removeNode(node);
-        std::string title = std::string("Error while creating node");
+        std::string title("Error while creating node");
         std::string message = title + " " + foundPluginID;
         qDebug() << message.c_str();
         errorDialog(title, message, false);
@@ -1239,7 +1239,7 @@ std::string
 AppInstance::getAppIDString() const
 {
     if (appPTR->isBackground()) {
-        return std::string("app");
+        return "app";
     } else {
         QString appID =  QString("app%1").arg(getAppID() + 1);
         return appID.toStdString();
