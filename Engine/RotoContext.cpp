@@ -6233,7 +6233,10 @@ RotoContextPrivate::renderInternal(cairo_t* cr,
  **/
 static void renderDotPatch(cairo_pattern_t* mesh, int patchNum, const Point &center, double brushHardness, double halfSize, double shapeColor[3], double opacity)
 {
-    Point p0,p1,p0p1,p1p0,p2,p1p2,p2p1,p3,p2p3,p3p2;
+    Point p0;
+    Point p1, p0p1, p1p0;
+    Point p2, p1p2, p2p1;
+    Point p3, p2p3, p3p2;
     p0 = p3 = center; //< degenerated patch with only 3 sides
     if (patchNum == 0) {
         p1.x = center.x + halfSize;
@@ -6262,7 +6265,8 @@ static void renderDotPatch(cairo_pattern_t* mesh, int patchNum, const Point &cen
         p1p2.y = (p1.y + p2.y) / 2.;
         p2p1.x = (p1.x + p2.x) / 2.;
         p2p1.y = p2.y;
-    } else if (patchNum == 3) {
+    } else {
+        assert(patchNum == 3);
         p1.x = center.x;
         p1.y = center.y - halfSize;
         p2.x = center.x + halfSize;
