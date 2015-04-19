@@ -1755,16 +1755,19 @@ DockablePanel::setClosed(bool c)
 				++next;
 			}
             for (std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> >::const_iterator it = childrenInstances.begin();
-                 it != childrenInstances.end(); ++it, ++next) {
+                 it != childrenInstances.end();
+                 ++it) {
                 if (c) {
                     it->first.lock()->hideKeyframesFromTimeline( next == childrenInstances.end() );
                 } else if (!c && it->second) {
                     it->first.lock()->showKeyframesOnTimeline( next == childrenInstances.end() );
                 }
-				if (next == childrenInstances.end()) {
-					--next;
-				}
-            }
+
+                // increment for next iteration
+                if (next != childrenInstances.end()) {
+                    ++next;
+                }
+            } // for(it)
         } else {
             ///Regular show/hide
             if (c) {
@@ -1827,16 +1830,19 @@ DockablePanel::closePanel()
                 ++next;
             }
             for (std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> >::const_iterator it = childrenInstances.begin();
-                 it != childrenInstances.end(); ++it, ++next) {
+                 it != childrenInstances.end();
+                 ++it) {
                 
                 NodePtr node = it->first.lock();
                 if ( it->second && (node != internalNode) ) {
                     node->hideKeyframesFromTimeline( next == childrenInstances.end() );
                 }
-				if (next == childrenInstances.end()) {
-					--next;
-				}
-            }
+
+                // increment for next iteration
+                if (next != childrenInstances.end()) {
+                    ++next;
+                }
+            } // for(it)
         } else {
             internalNode->showKeyframesOnTimeline(false);
         }

@@ -1973,8 +1973,7 @@ Gui::buildTabFocusOrderPropertiesBin()
     for (int i = 0; i < _imp->_layoutPropertiesBin->count(); ++i, ++next) {
         QLayoutItem* item = _imp->_layoutPropertiesBin->itemAt(i);
         QWidget* w = item->widget();
-        QWidget* nextWidget = next >= _imp->_layoutPropertiesBin->count() ? _imp->_layoutPropertiesBin->itemAt(0)->widget()
-                              : _imp->_layoutPropertiesBin->itemAt(next)->widget();
+        QWidget* nextWidget = _imp->_layoutPropertiesBin->itemAt(next < _imp->_layoutPropertiesBin->count() ? next : 0)->widget();
 
         if (w && nextWidget) {
             setTabOrder(w, nextWidget);

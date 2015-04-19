@@ -1134,7 +1134,7 @@ RotoGui::drawOverlays(double /*scaleX*/,
                         ++nextCp;
                     }
                     for (std::list< boost::shared_ptr<BezierCP> >::const_iterator it2 = cps.begin(); it2 != cps.end();
-                         ++it2, ++itF, ++index, ++nextCp, ++prevCp) {
+                         ++it2) {
                         if ( nextCp == cps.end() ) {
                             nextCp = cps.begin();
                         }
@@ -1166,7 +1166,8 @@ RotoGui::drawOverlays(double /*scaleX*/,
                         }
                         
                         for (SelectedCPs::const_iterator cpIt = _imp->rotoData->selectedCps.begin();
-                             cpIt != _imp->rotoData->selectedCps.end(); ++cpIt) {
+                             cpIt != _imp->rotoData->selectedCps.end();
+                             ++cpIt) {
                             ///if the control point is selected, draw its tangent handles
                             if (cpIt->first == *it2) {
                                 _imp->drawSelectedCp(time, cpIt->first, x, y);
@@ -1185,7 +1186,7 @@ RotoGui::drawOverlays(double /*scaleX*/,
                                 colorChanged = true;
                                 break;
                             }
-                        }
+                        } // for(cpIt)
                         
                         glBegin(GL_POLYGON);
                         glVertex2f(x - cpHalfWidth, y - cpHalfHeight);
@@ -1293,11 +1294,21 @@ RotoGui::drawOverlays(double /*scaleX*/,
                         if (colorChanged) {
                             glColor3d(0.85, 0.67, 0.);
                         }
-                        
-                    } // if ( ( selected != _imp->rotoData->selectedBeziers.end() ) && !locked ) {
-                } // if (!isBezier) {
-                
-            }
+
+                        // increment for next iteration
+                        if (itF != featherPts.end()) {
+                            ++itF;
+                        }
+                        if (nextCp != cps.end()) {
+                            ++nextCp;
+                        }
+                        if (prevCp != cps.end()) {
+                            ++prevCp;
+                        }
+                        ++index;
+                    } // for(it2)
+                } // if ( ( selected != _imp->rotoData->selectedBeziers.end() ) && !locked ) {
+            } // if (isBezier)
             glCheckError();
         }
     } // GLProtectAttrib a(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_COLOR_BUFFER_BIT | GL_POINT_BIT | GL_CURRENT_BIT);
@@ -3152,11 +3163,11 @@ RotoGui::RotoGuiPrivate::isNearbyFeatherBar(int time,
         if (prevF != fps.begin()) {
             --prevF;
         }
-        std::list<boost::shared_ptr<BezierCP> >::const_iterator itCp = cps.begin();
-
         bool isClockWiseOriented = isBezier->isFeatherPolygonClockwiseOriented(time);
         
-        for (; itCp != cps.end(); ++itF, ++nextF, ++prevF, ++itCp) {
+        for (std::list<boost::shared_ptr<BezierCP> >::const_iterator itCp = cps.begin();
+             itCp != cps.end();
+             ++itCp) {
             if ( prevF == fps.end() ) {
                 prevF = fps.begin();
             }
@@ -3204,7 +3215,19 @@ RotoGui::RotoGuiPrivate::isNearbyFeatherBar(int time,
                     }
                 }
             }
-        }
+
+            // increment for next iteration
+            // ++itF, ++nextF, ++prevF
+            if (itF != fps.end()) {
+                ++itF;
+            }
+            if (nextF != fps.end()) {
+                ++nextF;
+            }
+            if (prevF != fps.end()) {
+                ++prevF;
+            }
+        } // for(itCp)
     }
 
     return std::make_pair( boost::shared_ptr<BezierCP>(), boost::shared_ptr<BezierCP>() );

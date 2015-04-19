@@ -63,7 +63,7 @@ AddKeysCommand::addOrRemoveKeyframe(bool add)
     if (next != _keys.end()) {
         ++next;
     }
-    for (KeysToAddList::iterator it = _keys.begin(); it != _keys.end(); ++it, ++next) {
+    for (KeysToAddList::iterator it = _keys.begin(); it != _keys.end(); ++it) {
         
         KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>((*it)->curve);
         BezierCPCurveGui* isBezierCurve = dynamic_cast<BezierCPCurveGui*>((*it)->curve);
@@ -136,7 +136,12 @@ AddKeysCommand::addOrRemoveKeyframe(bool add)
                 }
             }
         }
-    }
+
+        // increment for next iteration
+        if (next != _keys.end()) {
+            ++next;
+        }
+    } // for(it)
 
     _curveWidget->update();
 

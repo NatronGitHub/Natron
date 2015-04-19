@@ -506,7 +506,9 @@ smoothTangent(int time,
 
         int index = 0;
         int cpCount = (int)cps.size();
-        for (std::list < boost::shared_ptr<BezierCP> >::const_iterator it = cps.begin(); it != cps.end(); ++it, ++prev, ++next, ++index) {
+        for (std::list < boost::shared_ptr<BezierCP> >::const_iterator it = cps.begin();
+             it != cps.end();
+             ++it) {
             if ( prev == cps.end() ) {
                 prev = cps.begin();
             }
@@ -516,7 +518,16 @@ smoothTangent(int time,
             if (it->get() == p) {
                 break;
             }
-        }
+
+            // increment for next iteration
+            if (prev != cps.end()) {
+                ++prev;
+            }
+            if (next != cps.end()) {
+                ++next;
+            }
+            ++index;
+        } // for(it)
 
         assert(index < cpCount);
         (void)cpCount;
@@ -2197,7 +2208,7 @@ bezierSegmentListBboxUpdate(const BezierCPs & points,
     if (next != points.end()) {
         ++next;
     }
-    for (BezierCPs::const_iterator it = points.begin(); it != points.end(); ++it, ++next) {
+    for (BezierCPs::const_iterator it = points.begin(); it != points.end(); ++it) {
         if ( next == points.end() ) {
             if (!finished) {
                 break;
@@ -2205,7 +2216,12 @@ bezierSegmentListBboxUpdate(const BezierCPs & points,
             next = points.begin();
         }
         bezierSegmentBboxUpdate(*(*it), *(*next), time, mipMapLevel, bbox);
-    }
+
+        // increment for next iteration
+        if (next != points.end()) {
+            ++next;
+        }
+    } // for()
 }
 
 // compute nbPointsperSegment points and update the bbox bounding box for the Bezier
@@ -3476,7 +3492,7 @@ Bezier::evaluateAtTime_DeCasteljau(int time,
     if (next != _imp->points.end()) {
         ++next;
     }
-    for (BezierCPs::const_iterator it = _imp->points.begin(); it != _imp->points.end(); ++it, ++next) {
+    for (BezierCPs::const_iterator it = _imp->points.begin(); it != _imp->points.end(); ++it) {
         if ( next == _imp->points.end() ) {
             if (!_imp->finished) {
                 break;
@@ -3484,7 +3500,12 @@ Bezier::evaluateAtTime_DeCasteljau(int time,
             next = _imp->points.begin();
         }
         bezierSegmentEval(*(*it),*(*next), time,mipMapLevel, nbPointsPerSegment, points,bbox);
-    }
+
+        // increment for next iteration
+        if (next != _imp->points.end()) {
+            ++next;
+        }
+    } // for()
 }
 
 void
@@ -3509,7 +3530,8 @@ Bezier::evaluateFeatherPointsAtTime_DeCasteljau(int time,
     if (nextCp != _imp->points.end()) {
         ++nextCp;
     }
-    for (BezierCPs::const_iterator it = _imp->featherPoints.begin(); it != _imp->featherPoints.end(); ++it, ++itCp, ++next, ++nextCp) {
+    for (BezierCPs::const_iterator it = _imp->featherPoints.begin(); it != _imp->featherPoints.end();
+         ++it) {
         if ( next == _imp->featherPoints.end() ) {
             next = _imp->featherPoints.begin();
         }
@@ -3524,7 +3546,18 @@ Bezier::evaluateFeatherPointsAtTime_DeCasteljau(int time,
         }
 
         bezierSegmentEval(*(*it),*(*next), time, mipMapLevel, nbPointsPerSegment, points, bbox);
-    }
+
+        // increment for next iteration
+        if (itCp != _imp->featherPoints.end()) {
+            ++itCp;
+        }
+        if (next != _imp->featherPoints.end()) {
+            ++next;
+        }
+        if (nextCp != _imp->featherPoints.end()) {
+            ++nextCp;
+        }
+    } // for(it)
 }
 
 RectD
@@ -4206,7 +4239,8 @@ Bezier::computePolygonOrientation(int time,bool isStatic) const
         if (next != _imp->featherPoints.end()) {
             ++next;
         }
-        for (;next!=_imp->featherPoints.end(); ++it, ++next) {
+        for (;next != _imp->featherPoints.end(); ++it, ++next) {
+            assert(it != _imp->featherPoints.end());
             double x,y;
             (*it)->getPositionAtTime(time, &x, &y);
             double xN,yN;
@@ -4224,7 +4258,7 @@ Bezier::computePolygonOrientation(int time,bool isStatic) const
             double crossProduct = v.y * u.x - v.x * u.y;
             polygonSurface += (crossProduct / 2.);
         }
-    }
+    } // for()
     if (isStatic) {
         _imp->isClockwiseOrientedStatic = polygonSurface < 0;
     } else {
@@ -4350,8 +4384,9 @@ Bezier::updateFeatherPointsAtDistanceIfNeeded(int time) const
         }
         BezierCPs::iterator curCp = _imp->points.begin();
         
-        for (BezierCPs::iterator it = _imp->featherPoints.begin(); it != _imp->featherPoints.end(); ++it, ++curCp, ++prev, ++next) {
-            
+        for (BezierCPs::iterator it = _imp->featherPoints.begin();
+             it != _imp->featherPoints.end();
+             ++it) {
             if (prev == _imp->featherPoints.end()) {
                 prev = _imp->featherPoints.begin();
             }
@@ -4385,7 +4420,18 @@ Bezier::updateFeatherPointsAtDistanceIfNeeded(int time) const
             fpAtDistance->setPositionAtTime(time, fp.x, fp.y);
             fpAtDistance->setLeftBezierPointAtTime(time, left.x + delta.x, left.y + delta.y);
             fpAtDistance->setRightBezierPointAtTime(time, right.x + delta.x, right.y + delta.y);
-        }
+
+            // increment for next iteration
+            if (curCp != _imp->featherPoints.end()) {
+                ++curCp;
+            }
+            if (prev != _imp->featherPoints.end()) {
+                ++prev;
+            }
+            if (next != _imp->featherPoints.end()) {
+                ++next;
+            }
+        } // for(it)
         assert(_imp->featherPointsAtDistance.size() == _imp->featherPoints.size());
         _imp->featherPointsAtDistanceValid = true;
     }
@@ -6637,12 +6683,12 @@ RotoContextPrivate::renderFeather(const Bezier* bezier,int time, unsigned int mi
     if (nextFp != fps.end()) {
         ++nextFp;
     }
-    BezierCPs::const_iterator curCp = cps.begin();
-    BezierCPs::const_iterator nextCp = curCp;
-    if (nextFp != cps.end()) {
-        ++nextFp;
+
+    BezierCPs::const_iterator nextCp = cps.begin();
+    if (nextCp != cps.end()) {
+        ++nextCp;
     }
-    for (; curCp != cps.end(); ++curCp, ++curFp, ++nextCp, ++nextFp) {
+    for (BezierCPs::const_iterator curCp = cps.begin(); curCp != cps.end(); ++curCp) {
         if (nextCp == cps.end()) {
             nextCp = cps.begin();
             nextFp = fps.begin();
@@ -6709,9 +6755,18 @@ RotoContextPrivate::renderFeather(const Bezier* bezier,int time, unsigned int mi
         assert(cairo_pattern_status(mesh) == CAIRO_STATUS_SUCCESS);
         
         cairo_mesh_pattern_end_patch(mesh);
-        
-        
-    }
+
+        // increment for next iteration
+        if (nextCp != cps.end()) {
+            ++nextCp;
+        }
+        if (curFp != fps.end()) {
+            ++curFp;
+        }
+        if (nextFp != fps.end()) {
+            ++nextFp;
+        }
+    } // for(it)
 #endif
 
 }
@@ -6972,7 +7027,7 @@ RotoContextPrivate::bezulate(int time, const BezierCPs& cps,std::list<BezierCPs>
             
             
             
-            for (BezierCPs::iterator it = simpleClosedCurve.begin(); it != simpleClosedCurve.end(); ++it, ++next) {
+            for (BezierCPs::iterator it = simpleClosedCurve.begin(); it != simpleClosedCurve.end(); ++it) {
                 
                 bool nextIsPassedEnd = false;
                 if (next == simpleClosedCurve.end()) {
@@ -7055,11 +7110,16 @@ RotoContextPrivate::bezulate(int time, const BezierCPs& cps,std::list<BezierCPs>
                     found = true;
                     break;
                 }
-            }
+
+                // increment for next iteration
+                if (next != simpleClosedCurve.end()) {
+                    ++next;
+                }
+            } // for(it)
             if (found) {
                 break;
             }
-        }
+        } // for(n)
         
         if (!found) {
             BezierCPs subdivisedCurve;
@@ -7068,7 +7128,7 @@ RotoContextPrivate::bezulate(int time, const BezierCPs& cps,std::list<BezierCPs>
             if (next != simpleClosedCurve.end()) {
                 ++next;
             }
-            for (BezierCPs::iterator it = simpleClosedCurve.begin(); it != simpleClosedCurve.end(); ++it, ++next) {
+            for (BezierCPs::iterator it = simpleClosedCurve.begin(); it != simpleClosedCurve.end(); ++it) {
                 
                 if (next == simpleClosedCurve.end()) {
                     next = simpleClosedCurve.begin();
@@ -7085,7 +7145,12 @@ RotoContextPrivate::bezulate(int time, const BezierCPs& cps,std::list<BezierCPs>
                 controlPoint->setRightBezierStaticPosition(p1p2_p2p3.x, p1p2_p2p3.y);
                 subdivisedCurve.push_back(*it);
                 subdivisedCurve.push_back(controlPoint);
-            }
+
+                // increment for next iteration
+                if (next != simpleClosedCurve.end()) {
+                    ++next;
+                }
+            } // for()
             simpleClosedCurve = subdivisedCurve;
         }
     }

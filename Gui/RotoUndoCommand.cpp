@@ -820,28 +820,19 @@ MoveFeatherBarUndoCommand::redo()
         const std::list<boost::shared_ptr<BezierCP> > & cps = p->getBezier()->getFeatherPoints();
         assert(cps.size() > 1);
 
-        std::list<boost::shared_ptr<BezierCP> >::const_iterator prev = cps.end();
-        if (prev != cps.begin()) {
-            --prev;
-        }
-        std::list<boost::shared_ptr<BezierCP> >::const_iterator next = cps.begin();
-        if (next != cps.end()) {
-            ++next;
-        }
-        std::list<boost::shared_ptr<BezierCP> >::const_iterator cur = cps.begin();
-        for (; cur != cps.end(); ++cur, ++prev, ++next) {
-            if ( prev == cps.end() ) {
-                prev = cps.begin();
-            }
-            if ( next == cps.end() ) {
-                next = cps.begin();
-            }
-
-            if (*cur == fp) {
-                break;
-            }
-        }
+        std::list<boost::shared_ptr<BezierCP> >::const_iterator cur = std::find(cps.begin(), cps.end(), fp);
         assert( cur != cps.end() );
+        // compute previous and next element in the cyclic list
+        std::list<boost::shared_ptr<BezierCP> >::const_iterator prev = cur;
+        if (prev == cps.begin()) {
+            prev = cps.end();
+        }
+        --prev; // the list has at least one element
+        std::list<boost::shared_ptr<BezierCP> >::const_iterator next = cur;
+        ++next; // the list has at least one element
+        if (next == cps.end()) {
+            next = cps.begin();
+        }
 
         double leftX,leftY,rightX,rightY,norm;
         Bezier::leftDerivativeAtPoint(_time, **cur, **prev, &leftX, &leftY);

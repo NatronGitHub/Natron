@@ -258,8 +258,9 @@ RemoveMultipleNodesCommand::undo()
     if (next != _nodes.end() ) {
         ++next;
     }
-    for (std::list<NodeToRemove>::iterator it = _nodes.begin(); it != _nodes.end(); ++it, ++next) {
-        
+    for (std::list<NodeToRemove>::iterator it = _nodes.begin();
+         it != _nodes.end();
+         ++it) {
         NodeGuiPtr node = it->node.lock();
         node->getNode()->activate(it->outputsToRestore,false,false);
         if ( node->isSettingsPanelVisible() ) {
@@ -274,11 +275,11 @@ RemoveMultipleNodesCommand::undo()
             }
         }
 
-        ///On Windows going pass .end() will crash...
-        if ( next == _nodes.end() ) {
-            --next;
+        // increment for next iteration
+        if (next != _nodes.end()) {
+            ++next;
         }
-    }
+    } // for(it)
     for (std::list<ViewerInstance* >::iterator it = viewersToRefresh.begin(); it != viewersToRefresh.end(); ++it) {
         (*it)->renderCurrentFrame(true);
     }
@@ -301,7 +302,9 @@ RemoveMultipleNodesCommand::redo()
     if ( next != _nodes.end() ) {
         ++next;
     }
-    for (std::list<NodeToRemove>::iterator it = _nodes.begin(); it != _nodes.end(); ++it, ++next) {
+    for (std::list<NodeToRemove>::iterator it = _nodes.begin();
+         it != _nodes.end();
+         ++it) {
         
         NodeGuiPtr node = it->node.lock();
         ///Make a copy before calling deactivate which will modify the list
@@ -355,11 +358,11 @@ RemoveMultipleNodesCommand::redo()
             node->getNode()->hideKeyframesFromTimeline( next == _nodes.end() );
         }
 
-        ///On Windows going pass .end() will crash...
-        if ( next == _nodes.end() ) {
-            --next;
+        // increment for next iteration
+        if (next != _nodes.end()) {
+            ++next;
         }
-    }
+    } // for(it)
 
     for (std::list<ViewerInstance* >::iterator it = viewersToRefresh.begin(); it != viewersToRefresh.end(); ++it) {
         (*it)->renderCurrentFrame(true);

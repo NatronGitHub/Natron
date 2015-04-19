@@ -185,9 +185,14 @@ TimeLine::addNodesKeyframesToTimeline(const std::list<Natron::Node*> & nodes)
     if (next != nodes.end()) {
         ++next;
     }
-    for (std::list<Natron::Node*>::const_iterator it = nodes.begin(); it != nodes.end(); ++it, ++next) {
+    for (std::list<Natron::Node*>::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         (*it)->showKeyframesOnTimeline( next == nodes.end() );
-    }
+
+        // increment for next iteration
+        if (next != nodes.end()) {
+            ++next;
+        }
+    } // for()
 }
 
 void
@@ -209,9 +214,14 @@ TimeLine::removeNodesKeyframesFromTimeline(const std::list<Natron::Node*> & node
     if (next != nodes.end()) {
         ++next;
     }
-    for (std::list<Natron::Node*>::const_iterator it = nodes.begin(); it != nodes.end(); ++it, ++next) {
+    for (std::list<Natron::Node*>::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         (*it)->hideKeyframesFromTimeline( next == nodes.end() );
-    }
+
+        // increment for next iteration
+        if (next != nodes.end()) {
+            ++next;
+        }
+    } // for(it)
 }
 
 void
