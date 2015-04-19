@@ -1555,7 +1555,7 @@ scaleToTexture32bitsGeneric(const std::pair<int,int> & yRange,
                 if (opaque) {
                     a = 1.;
                 } else {
-                    a = src_pixels[x * nComps + 3];
+                    a = src_pixels ? src_pixels[x * nComps + 3] : 0.;
                 }
             } else if (nComps == 3) {
                 // coverity[dead_error_line]
