@@ -3292,6 +3292,7 @@ struct PickKnobDialogPrivate
     , knobSelectionCombo(0)
     , useExpressionLabel(0)
     , useExpressionCheckBox(0)
+    , buttons(0)
     , allNodes()
     , allKnobs()
     {
