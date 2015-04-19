@@ -49,13 +49,13 @@ using namespace Natron;
 static std::string
 getParamLabel(OFX::Host::Param::Instance* param)
 {
-    std::string label = param->getProperties().getStringProperty(kOfxPropLabel);
+    std::string label = param->getLabel();
 
     if ( label.empty() ) {
-        label = param->getProperties().getStringProperty(kOfxPropShortLabel);
+        label = param->getShortLabel();
     }
     if ( label.empty() ) {
-        label = param->getProperties().getStringProperty(kOfxPropLongLabel);
+        label = param->getLongLabel();
     }
     if ( label.empty() ) {
         label = param->getName();
@@ -428,12 +428,12 @@ OfxDoubleInstance::OfxDoubleInstance(OfxEffectInstance* node,
       , _node(node)
 {
     const OFX::Host::Property::Set &properties = getProperties();
-    const std::string & coordSystem = properties.getStringProperty(kOfxParamPropDefaultCoordinateSystem);
+    const std::string & coordSystem = getDefaultCoordinateSystem();
 
     boost::shared_ptr<Double_Knob> dblKnob = Natron::createKnob<Double_Knob>( node, getParamLabel(this) );
     _knob = dblKnob;
 
-    const std::string & doubleType = properties.getStringProperty(kOfxParamPropDoubleType);
+    const std::string & doubleType = getDoubleType();
     if ( (doubleType == kOfxParamDoubleTypeNormalisedX) ||
          ( doubleType == kOfxParamDoubleTypeNormalisedXAbsolute) ) {
         dblKnob->setNormalizedState(0, Double_Knob::eNormalizedStateX);
@@ -1397,13 +1397,13 @@ OfxDouble2DInstance::OfxDouble2DInstance(OfxEffectInstance* node,
       , _node(node)
 {
     const OFX::Host::Property::Set &properties = getProperties();
-    const std::string & coordSystem = properties.getStringProperty(kOfxParamPropDefaultCoordinateSystem);
+    const std::string & coordSystem = getDefaultCoordinateSystem();
     const int dims = 2;
 
     boost::shared_ptr<Double_Knob> dblKnob = Natron::createKnob<Double_Knob>(node, getParamLabel(this),dims);
     _knob = dblKnob;
 
-    const std::string & doubleType = properties.getStringProperty(kOfxParamPropDoubleType);
+    const std::string & doubleType = getDoubleType();
     if ( (doubleType == kOfxParamDoubleTypeNormalisedXY) ||
          ( doubleType == kOfxParamDoubleTypeNormalisedXYAbsolute) ) {
         dblKnob->setNormalizedState(0, Double_Knob::eNormalizedStateX);

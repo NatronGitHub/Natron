@@ -527,7 +527,7 @@ OfxImageEffectInstance::newParam(const std::string &paramName,
         throw std::runtime_error( std::string("Parameter ") + paramName + std::string(" has unknown OFX type ") + descriptor.getType() );
     }
 
-    std::string parent = instance->getProperties().getStringProperty(kOfxParamPropParent);
+    std::string parent = instance->getParentName();
     if ( !parent.empty() ) {
         _parentingMap.insert( make_pair(instance,parent) );
     }
@@ -1130,7 +1130,7 @@ OfxImageEffectDescriptor::paramDefine(const char *paramType,
     
     if (strcmp(paramType, kOfxParamTypeDouble2D) == 0) {
         
-        const std::string& type = props.getStringProperty(kOfxParamPropDoubleType) ;
+        const std::string& type = ret->getDoubleType() ;
         if (type == std::string(kOfxParamDoubleTypePlain) ||
             type == std::string(kOfxParamDoubleTypeNormalisedXYAbsolute) ||
             type == std::string(kOfxParamDoubleTypeNormalisedXY) ||
