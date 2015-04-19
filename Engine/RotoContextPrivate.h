@@ -591,30 +591,36 @@ struct RotoStrokeItemPrivate
         brushSize->setName(kRotoBrushSizeParam);
         brushSize->setHintToolTip(kRotoBrushSizeParamHint);
         brushSize->populate();
+        brushSize->setDefaultValue(25);
         brushSize->setMinimum(1);
         brushSize->setMaximum(1000);
         
         brushSpacing->setName(kRotoBrushSpacingParam);
         brushSpacing->setHintToolTip(kRotoBrushSpacingParamHint);
         brushSpacing->populate();
+        brushSpacing->setDefaultValue(0.05);
         brushSpacing->setMinimum(0);
         brushSpacing->setMaximum(1);
         
         brushHardness->setName(kRotoBrushHardnessParam);
         brushHardness->setHintToolTip(kRotoBrushHardnessParamHint);
         brushHardness->populate();
+        brushHardness->setDefaultValue(0.2);
         brushHardness->setMinimum(0);
         brushHardness->setMaximum(1);
 
         effectStrength->setName(kRotoBrushEffectParam);
         effectStrength->setHintToolTip(kRotoBrushEffectParamHint);
         effectStrength->populate();
+        effectStrength->setDefaultValue(15);
         effectStrength->setMinimum(0);
         effectStrength->setMaximum(100);
         
         visiblePortion->setName(kRotoBrushVisiblePortionParam);
         visiblePortion->setHintToolTip(kRotoBrushVisiblePortionParamHint);
         visiblePortion->populate();
+        visiblePortion->setDefaultValue(0,0);
+        visiblePortion->setDefaultValue(1,1);
         std::vector<double> mins,maxs;
         mins.push_back(0);
         mins.push_back(0);

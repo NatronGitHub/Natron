@@ -1533,12 +1533,18 @@ RotoPanel::onItemSelectionChanged()
         TreeItems::iterator it = _imp->findItem(selectedItems[i]);
         assert( it != _imp->items.end() );
         boost::shared_ptr<Bezier> bezier = boost::dynamic_pointer_cast<Bezier>(it->rotoItem);
+        boost::shared_ptr<RotoStrokeItem> stroke = boost::dynamic_pointer_cast<RotoStrokeItem>(it->rotoItem);
         boost::shared_ptr<RotoLayer> layer = boost::dynamic_pointer_cast<RotoLayer>(it->rotoItem);
         if (bezier) {
             SelectedItems::iterator found = std::find(_imp->selectedItems.begin(), _imp->selectedItems.end(), bezier);
             if ( found == _imp->selectedItems.end() ) {
                 _imp->selectedItems.push_back(bezier);
                 ++selectedBeziersCount;
+            }
+        } else if (stroke) {
+            SelectedItems::iterator found = std::find(_imp->selectedItems.begin(), _imp->selectedItems.end(), stroke);
+            if ( found == _imp->selectedItems.end() ) {
+                _imp->selectedItems.push_back(stroke);
             }
         } else if (layer) {
             if ( !layer->getItems().empty() ) {
