@@ -251,7 +251,7 @@ OfxClipInstance::getComponentsPresent() const
         
         ///Foreach user component, add it as an available component, but use this node only if it is also
         ///in the "needed components" list
-        for (std::list<ImageComponents>::iterator it = userComps.begin(); it!=userComps.end(); ++it) {
+        for (std::list<ImageComponents>::iterator it = userComps.begin(); it != userComps.end(); ++it) {
             
             EffectInstance::ComponentsAvailableMap::iterator alreadyExisting = compsAvailable.end();
             
@@ -720,7 +720,7 @@ OfxClipInstance::getImagePlane(OfxTime time, int view, const std::string& plane,
         bool multiPlanar = _nodeInstance->isMultiPlanar();
 
         if (!multiPlanar) {
-            for (std::map<ImageComponents,EffectInstance::PlaneToRender>::iterator it = outputPlanes.begin(); it!=outputPlanes.end(); ++it) {
+            for (std::map<ImageComponents,EffectInstance::PlaneToRender>::iterator it = outputPlanes.begin(); it != outputPlanes.end(); ++it) {
                 if (it->first.getLayerName() == planeBeingRendered.getLayerName()) {
                     outputImage = it->second.tmpImage;
                     break;
@@ -728,7 +728,7 @@ OfxClipInstance::getImagePlane(OfxTime time, int view, const std::string& plane,
             }
 
         } else {
-            for (std::map<ImageComponents,EffectInstance::PlaneToRender>::iterator it = outputPlanes.begin(); it!=outputPlanes.end(); ++it) {
+            for (std::map<ImageComponents,EffectInstance::PlaneToRender>::iterator it = outputPlanes.begin(); it != outputPlanes.end(); ++it) {
                 if (it->first.getLayerName() == natronPlane.getLayerName()) {
                     outputImage = it->second.tmpImage;
                     break;
@@ -748,7 +748,7 @@ OfxClipInstance::getImagePlane(OfxTime time, int view, const std::string& plane,
         
         
         ActionLocalData& args = _lastActionData.localData();
-        for (std::list<OfxImage*>::const_iterator it = args.imagesBeingRendered.begin(); it!=args.imagesBeingRendered.end(); ++it) {
+        for (std::list<OfxImage*>::const_iterator it = args.imagesBeingRendered.begin(); it != args.imagesBeingRendered.end(); ++it) {
             if ((*it)->getInternalImage() == outputImage) {
                 (*it)->addReference();
                 return *it;

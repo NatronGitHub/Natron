@@ -506,7 +506,7 @@ smoothTangent(int time,
 
         int index = 0;
         int cpCount = (int)cps.size();
-        for (std::list < boost::shared_ptr<BezierCP> >::const_iterator it = cps.begin(); it != cps.end(); ++it, ++prev, ++next,++index) {
+        for (std::list < boost::shared_ptr<BezierCP> >::const_iterator it = cps.begin(); it != cps.end(); ++it, ++prev, ++next, ++index) {
             if ( prev == cps.end() ) {
                 prev = cps.begin();
             }
@@ -1219,7 +1219,7 @@ RotoDrawableItem::clone(const RotoItem* other)
     }
     std::list<boost::shared_ptr<KnobI> >::iterator it = _imp->knobs.begin();
     std::list<boost::shared_ptr<KnobI> >::const_iterator otherIt = otherKnobs.begin();
-    for (; it != _imp->knobs.end(); ++it,++otherIt) {
+    for (; it != _imp->knobs.end(); ++it, ++otherIt) {
         (*it)->clone(*otherIt);
     }
     {
@@ -1561,7 +1561,7 @@ RotoStrokeItem::computeRoD()
     _imp->regionOfDefinition.y1 = std::numeric_limits<double>::infinity();
     _imp->regionOfDefinition.y2 = -std::numeric_limits<double>::infinity();
     
-    for (Points::iterator it = _imp->points.begin(); it!=_imp->points.end(); ++it) {
+    for (Points::iterator it = _imp->points.begin(); it != _imp->points.end(); ++it) {
         if (it->first.x < _imp->regionOfDefinition.x1) {
             _imp->regionOfDefinition.x1 = it->first.x;
         }
@@ -1615,7 +1615,7 @@ RotoStrokeItem::save(RotoItemSerialization* obj) const
     {
         QMutexLocker k(&itemMutex);
         s->_brushType = (int)_imp->type;
-        for (Points::const_iterator it = _imp->points.begin(); it!=_imp->points.end(); ++it) {
+        for (Points::const_iterator it = _imp->points.begin(); it != _imp->points.end(); ++it) {
             StrokePoint p;
             p.x = it->first.x;
             p.y = it->first.y;
@@ -1640,7 +1640,7 @@ RotoStrokeItem::load(const RotoItemSerialization & obj)
     assert(s);
     {
         QMutexLocker k(&itemMutex);
-        for (std::list<StrokePoint>::const_iterator it = s->_points.begin(); it!=s->_points.end(); ++it) {
+        for (std::list<StrokePoint>::const_iterator it = s->_points.begin(); it != s->_points.end(); ++it) {
             Point p;
             p.x = it->x;
             p.y = it->y;
@@ -1886,7 +1886,7 @@ RotoLayer::getChildIndex(const boost::shared_ptr<RotoItem> & item) const
     QMutexLocker l(&itemMutex);
     int i = 0;
 
-    for (RotoItems::iterator it = _imp->items.begin(); it != _imp->items.end(); ++it,++i) {
+    for (RotoItems::iterator it = _imp->items.begin(); it != _imp->items.end(); ++it, ++i) {
         if (*it == item) {
             return i;
         }
@@ -2686,7 +2686,7 @@ Bezier::isPointOnCurve(double x,
     assert( _imp->featherPoints.size() == _imp->points.size() );
 
     BezierCPs::const_iterator fp = _imp->featherPoints.begin();
-    for (BezierCPs::const_iterator it = _imp->points.begin(); it != _imp->points.end(); ++it, ++index,++fp) {
+    for (BezierCPs::const_iterator it = _imp->points.begin(); it != _imp->points.end(); ++it, ++index, ++fp) {
         BezierCPs::const_iterator next = it;
         BezierCPs::const_iterator nextFp = fp;
         if (nextFp != _imp->featherPoints.end()) {
@@ -3336,11 +3336,11 @@ Bezier::removeKeyframe(int time)
         assert( _imp->featherPoints.size() == _imp->points.size() );
 
         BezierCPs::iterator fp = _imp->featherPoints.begin();
-        for (BezierCPs::iterator it = _imp->points.begin(); it != _imp->points.end(); ++it,++fp) {
+        for (BezierCPs::iterator it = _imp->points.begin(); it != _imp->points.end(); ++it, ++fp) {
             (*it)->removeKeyframe(time);
             (*fp)->removeKeyframe(time);
         }
-        for (BezierCPs::iterator it = _imp->featherPointsAtDistance.begin(); it!=_imp->featherPointsAtDistance.end(); ++it) {
+        for (BezierCPs::iterator it = _imp->featherPointsAtDistance.begin(); it != _imp->featherPointsAtDistance.end(); ++it) {
             (*it)->removeKeyframe(time);
         }
         std::map<int,bool>::iterator found = _imp->isClockwiseOriented.find(time);
@@ -3364,11 +3364,11 @@ Bezier::removeAnimation()
         assert( _imp->featherPoints.size() == _imp->points.size() );
         
         BezierCPs::iterator fp = _imp->featherPoints.begin();
-        for (BezierCPs::iterator it = _imp->points.begin(); it != _imp->points.end(); ++it,++fp) {
+        for (BezierCPs::iterator it = _imp->points.begin(); it != _imp->points.end(); ++it, ++fp) {
             (*it)->removeAnimation(time);
             (*fp)->removeAnimation(time);
         }
-        for (BezierCPs::iterator it = _imp->featherPointsAtDistance.begin(); it!=_imp->featherPointsAtDistance.end(); ++it) {
+        for (BezierCPs::iterator it = _imp->featherPointsAtDistance.begin(); it != _imp->featherPointsAtDistance.end(); ++it) {
             (*it)->removeAnimation(time);
         }
         _imp->isClockwiseOriented.clear();
@@ -3382,7 +3382,7 @@ Bezier::moveKeyframe(int oldTime,int newTime)
     assert(QThread::currentThread() == qApp->thread());
     
     BezierCPs::iterator fp = _imp->featherPoints.begin();
-    for (BezierCPs::iterator it = _imp->points.begin(); it != _imp->points.end(); ++it,++fp) {
+    for (BezierCPs::iterator it = _imp->points.begin(); it != _imp->points.end(); ++it, ++fp) {
         double x,y,lx,ly,rx,ry;
         (*it)->getPositionAtTime(oldTime, &x, &y);
         (*it)->getLeftBezierPointAtTime(oldTime, &lx, &ly);
@@ -3407,7 +3407,7 @@ Bezier::moveKeyframe(int oldTime,int newTime)
         
     }
     
-    for (BezierCPs::iterator it = _imp->featherPointsAtDistance.begin(); it!=_imp->featherPointsAtDistance.end(); ++it) {
+    for (BezierCPs::iterator it = _imp->featherPointsAtDistance.begin(); it != _imp->featherPointsAtDistance.end(); ++it) {
         double x,y,lx,ly,rx,ry;
         (*it)->getPositionAtTime(oldTime, &x, &y);
         (*it)->getLeftBezierPointAtTime(oldTime, &lx, &ly);
@@ -3667,7 +3667,7 @@ Bezier::getControlPointIndex(const BezierCP* cp) const
     assert(cp);
     QMutexLocker l(&itemMutex);
     int i = 0;
-    for (BezierCPs::const_iterator it = _imp->points.begin(); it != _imp->points.end(); ++it,++i) {
+    for (BezierCPs::const_iterator it = _imp->points.begin(); it != _imp->points.end(); ++it, ++i) {
         if (it->get() == cp) {
             return i;
         }
@@ -3683,7 +3683,7 @@ Bezier::getFeatherPointIndex(const boost::shared_ptr<BezierCP> & fp) const
     QMutexLocker l(&itemMutex);
     int i = 0;
 
-    for (BezierCPs::const_iterator it = _imp->featherPoints.begin(); it != _imp->featherPoints.end(); ++it,++i) {
+    for (BezierCPs::const_iterator it = _imp->featherPoints.begin(); it != _imp->featherPoints.end(); ++it, ++i) {
         if (*it == fp) {
             return i;
         }
@@ -3738,7 +3738,7 @@ Bezier::controlPointsWithinRect(double l,
     int time = getContext()->getTimelineCurrentTime();
     int i = 0;
     if ( (mode == 0) || (mode == 1) ) {
-        for (BezierCPs::const_iterator it = _imp->points.begin(); it != _imp->points.end(); ++it,++i) {
+        for (BezierCPs::const_iterator it = _imp->points.begin(); it != _imp->points.end(); ++it, ++i) {
             double x,y;
             (*it)->getPositionAtTime(time, &x, &y);
             if ( ( x >= (l - acceptance) ) && ( x <= (r + acceptance) ) && ( y >= (b - acceptance) ) && ( y <= (t - acceptance) ) ) {
@@ -3753,7 +3753,7 @@ Bezier::controlPointsWithinRect(double l,
     }
     i = 0;
     if ( (mode == 0) || (mode == 2) ) {
-        for (BezierCPs::const_iterator it = _imp->featherPoints.begin(); it != _imp->featherPoints.end(); ++it,++i) {
+        for (BezierCPs::const_iterator it = _imp->featherPoints.begin(); it != _imp->featherPoints.end(); ++it, ++i) {
             double x,y;
             (*it)->getPositionAtTime(time, &x, &y);
             if ( ( x >= (l - acceptance) ) && ( x <= (r + acceptance) ) && ( y >= (b - acceptance) ) && ( y <= (t - acceptance) ) ) {
@@ -3907,7 +3907,7 @@ Bezier::save(RotoItemSerialization* obj) const
 
 
         BezierCPs::const_iterator fp = _imp->featherPoints.begin();
-        for (BezierCPs::const_iterator it = _imp->points.begin(); it != _imp->points.end(); ++it,++fp) {
+        for (BezierCPs::const_iterator it = _imp->points.begin(); it != _imp->points.end(); ++it, ++fp) {
             BezierCP c,f;
             c.clone(**it);
             f.clone(**fp);
@@ -4015,7 +4015,7 @@ Bezier::setKeyFrameInterpolation(Natron::KeyframeTypeEnum interp,int index)
 {
     QMutexLocker l(&itemMutex);
     BezierCPs::iterator fp = _imp->featherPoints.begin();
-    for (BezierCPs::iterator it = _imp->points.begin(); it != _imp->points.end(); ++it,++fp) {
+    for (BezierCPs::iterator it = _imp->points.begin(); it != _imp->points.end(); ++it, ++fp) {
         (*it)->setKeyFrameInterpolation(interp, index);
         (*fp)->setKeyFrameInterpolation(interp, index);
     }
@@ -4071,7 +4071,7 @@ pointInPolygon(const Point & p,
     std::list<Point>::const_iterator last_start = last_pt;
     std::list<Point>::const_iterator cur = last_pt;
     ++cur;
-    for (; cur != polygon.end(); ++cur,++last_pt) {
+    for (; cur != polygon.end(); ++cur, ++last_pt) {
         point_line_intersection(*last_pt, *cur, p, &winding_number);
     }
 
@@ -4151,7 +4151,7 @@ Bezier::refreshPolygonOrientation()
     if (kfs.empty()) {
         computePolygonOrientation(0,true);
     } else {
-        for (std::set<int>::iterator it = kfs.begin(); it!=kfs.end(); ++it) {
+        for (std::set<int>::iterator it = kfs.begin(); it != kfs.end(); ++it) {
             computePolygonOrientation(*it,false);
         }
     }
@@ -4337,7 +4337,7 @@ Bezier::updateFeatherPointsAtDistanceIfNeeded(int time) const
         }
         BezierCPs::iterator curCp = _imp->points.begin();
         
-        for (BezierCPs::iterator it = _imp->featherPoints.begin(); it!=_imp->featherPoints.end(); ++it, ++curCp, ++prev, ++next) {
+        for (BezierCPs::iterator it = _imp->featherPoints.begin(); it != _imp->featherPoints.end(); ++it, ++curCp, ++prev, ++next) {
             
             if (prev == _imp->featherPoints.end()) {
                 prev = _imp->featherPoints.begin();
@@ -4991,7 +4991,7 @@ RotoContext::load(const RotoContextSerialization & obj)
     _imp->featherLink = obj._featherLink;
     _imp->rippleEdit = obj._rippleEdit;
 
-    for (std::list<boost::weak_ptr<KnobI> >::iterator it = _imp->knobs.begin(); it!=_imp->knobs.end(); ++it) {
+    for (std::list<boost::weak_ptr<KnobI> >::iterator it = _imp->knobs.begin(); it != _imp->knobs.end(); ++it) {
         it->lock()->setAllDimensionsEnabled(false);
     }
 
@@ -5233,7 +5233,7 @@ RotoContext::onSelectedKnobCurveChanged()
     KnobSignalSlotHandler* handler = qobject_cast<KnobSignalSlotHandler*>(sender());
     if (handler) {
         boost::shared_ptr<KnobI> knob = handler->getKnob();
-        for (std::list<boost::weak_ptr<KnobI> >::const_iterator it = _imp->knobs.begin(); it!=_imp->knobs.end(); ++it) {
+        for (std::list<boost::weak_ptr<KnobI> >::const_iterator it = _imp->knobs.begin(); it != _imp->knobs.end(); ++it) {
             boost::shared_ptr<KnobI> k = it->lock();
             if (k->getName() == knob->getName()) {
                 k->clone(knob.get());
@@ -6324,7 +6324,7 @@ RotoContextPrivate::renderFeather(const Bezier* bezier,int time, unsigned int mi
     
     ++prev; ++next; ++cur; ++bezIT; ++prevBez;
     
-    for (;; ++prev,++cur, ++next,++bezIT, ++prevBez) { // for each point in polygon
+    for (;; ++prev, ++cur, ++next, ++bezIT, ++prevBez) { // for each point in polygon
         if ( next == featherPolygon.end() ) {
             next = featherPolygon.begin();
         }
@@ -6527,7 +6527,7 @@ RotoContextPrivate::renderInternalShape(int time,
     std::list<BezierCPs> coonPatches;
     bezulate(time, cps, &coonPatches);
     
-    for (std::list<BezierCPs>::iterator it = coonPatches.begin(); it!=coonPatches.end(); ++it) {
+    for (std::list<BezierCPs>::iterator it = coonPatches.begin(); it != coonPatches.end(); ++it) {
         
         std::size_t size = it->size();
         assert(size <= 4 && size >= 2);
@@ -6750,7 +6750,7 @@ RotoContextPrivate::bezulate(int time, const BezierCPs& cps,std::list<BezierCPs>
             bbox.x2 = -std::numeric_limits<double>::infinity();
             bbox.y1 = std::numeric_limits<double>::infinity();
             bbox.y2 = -std::numeric_limits<double>::infinity();
-            for (BezierCPs::iterator it = simpleClosedCurve.begin();it!=simpleClosedCurve.end();++it) {
+            for (BezierCPs::iterator it = simpleClosedCurve.begin(); it != simpleClosedCurve.end(); ++it) {
                 Point p;
                 (*it)->getPositionAtTime(time, &p.x, &p.y);
                 polygon.push_back(p);
@@ -6770,7 +6770,7 @@ RotoContextPrivate::bezulate(int time, const BezierCPs& cps,std::list<BezierCPs>
             
             
             
-            for (BezierCPs::iterator it = simpleClosedCurve.begin();it!=simpleClosedCurve.end();++it, ++next) {
+            for (BezierCPs::iterator it = simpleClosedCurve.begin(); it != simpleClosedCurve.end(); ++it, ++next) {
                 
                 bool nextIsPassedEnd = false;
                 if (next == simpleClosedCurve.end()) {
@@ -6793,7 +6793,7 @@ RotoContextPrivate::bezulate(int time, const BezierCPs& cps,std::list<BezierCPs>
                 std::list<Point>::const_iterator cur = last_pt;
                 ++cur;
                 QPointF intersectionPoint;
-                for (; cur != polygon.end(); ++cur,++last_pt) {
+                for (; cur != polygon.end(); ++cur, ++last_pt) {
                     QLineF polygonSegment(QPointF(last_pt->x,last_pt->y),QPointF(cur->x,cur->y));
                     if (line.intersect(polygonSegment, &intersectionPoint) == QLineF::BoundedIntersection) {
                         intersections.insert(intersectionPoint);
@@ -6866,7 +6866,7 @@ RotoContextPrivate::bezulate(int time, const BezierCPs& cps,std::list<BezierCPs>
             if (next != simpleClosedCurve.end()) {
                 ++next;
             }
-            for (BezierCPs::iterator it = simpleClosedCurve.begin();it!=simpleClosedCurve.end();++it, ++next) {
+            for (BezierCPs::iterator it = simpleClosedCurve.begin(); it != simpleClosedCurve.end(); ++it, ++next) {
                 
                 if (next == simpleClosedCurve.end()) {
                     next = simpleClosedCurve.begin();

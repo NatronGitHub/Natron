@@ -2149,7 +2149,7 @@ RotoPanel::onSettingsPanelClosed(bool closed)
                 assert(ret.second);
                 
                 ///If the item is selected, make its keyframes visible
-                for (SelectedItems::iterator it2 = _imp->selectedItems.begin() ; it2 != _imp->selectedItems.end();++it2) {
+                for (SelectedItems::iterator it2 = _imp->selectedItems.begin() ; it2 != _imp->selectedItems.end(); ++it2) {
                     if (it2->get() == isBezier.get()) {
                         toAdd.insert(keys.keys);
                         ret.first->second.visible = true;

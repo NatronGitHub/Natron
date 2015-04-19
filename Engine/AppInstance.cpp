@@ -1052,7 +1052,7 @@ AppInstance::startWritersRendering(const std::list<RenderWork>& writers)
         bool renderInSeparateProcess = appPTR->getCurrentSettings()->isRenderInSeparatedProcessEnabled();
         QString savePath = getProject()->saveProject("","RENDER_SAVE.ntp",true);
 
-        for (std::list<RenderWork>::const_iterator it = writers.begin();it!=writers.end();++it) {
+        for (std::list<RenderWork>::const_iterator it = writers.begin(); it != writers.end(); ++it) {
             ///Use the frame range defined by the writer GUI because we're in an interactive session
             startRenderingFullSequence(*it,renderInSeparateProcess,savePath);
         }

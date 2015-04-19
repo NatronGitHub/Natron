@@ -265,7 +265,7 @@ struct BezierPrivate
         // PRIVATE - should not lock
         int i = 0;
 
-        for (BezierCPs::const_iterator it = points.begin(); it != points.end(); ++it,++i) {
+        for (BezierCPs::const_iterator it = points.begin(); it != points.end(); ++it, ++i) {
             double pX,pY;
             (*it)->getPositionAtTime(time, &pX, &pY);
             if ( ( pX >= (x - acceptance) ) && ( pX <= (x + acceptance) ) && ( pY >= (y - acceptance) ) && ( pY <= (y + acceptance) ) ) {
@@ -287,7 +287,7 @@ struct BezierPrivate
         // PRIVATE - should not lock
         int i = 0;
 
-        for (BezierCPs::const_iterator it = featherPoints.begin(); it != featherPoints.end(); ++it,++i) {
+        for (BezierCPs::const_iterator it = featherPoints.begin(); it != featherPoints.end(); ++it, ++i) {
             double pX,pY;
             (*it)->getPositionAtTime(time, &pX, &pY);
             if ( ( pX >= (x - acceptance) ) && ( pX <= (x + acceptance) ) && ( pY >= (y - acceptance) ) && ( pY <= (y + acceptance) ) ) {

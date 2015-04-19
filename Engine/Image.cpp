@@ -1514,7 +1514,7 @@ Image::scaleBoxForDepth(const RectI & roi,
                 const PIX* temp = src + xindex + lowy_int * rowSize;
                 const PIX* temp_index;
                 int k;
-                for (k = 0,temp_index = temp; k < components; ++k,++temp_index) {
+                for (k = 0,temp_index = temp; k < components; ++k, ++temp_index) {
                     totals[k] += *temp_index * percent;
                 }
                 const PIX* left = temp;

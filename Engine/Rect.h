@@ -202,7 +202,7 @@ public:
        int pot = 3;
        int scale = 1 << pot;
        int scalem1 = scale - 1;
-       for(i=-100; i<100; ++i)
+       for(i=-100; i < 100; ++i)
        {
          printf("%d => %d,%d %d,%d\n", i, i & ~scalem1, i+scalem1 & ~scalem1, (i >> pot) << pot, ((i+scalem1)>>pot) << pot);
        }

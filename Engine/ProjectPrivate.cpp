@@ -254,7 +254,7 @@ ProjectPrivate::autoSetProjectDirectory(const QString& path)
     }
     
     std::string newEnv;
-    for (std::map<std::string, std::string>::iterator it = envMap.begin(); it!=envMap.end();++it) {
+    for (std::map<std::string, std::string>::iterator it = envMap.begin(); it != envMap.end(); ++it) {
         newEnv += NATRON_ENV_VAR_NAME_START_TAG;
         // In order to use XML tags, the text inside the tags has to be escaped.
         newEnv += Project::escapeXML(it->first);

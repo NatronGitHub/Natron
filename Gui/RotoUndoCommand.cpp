@@ -97,7 +97,7 @@ MoveControlPointsUndoCommand::undo()
 {
     SelectedCpList::iterator cpIt = _originalPoints.begin();
 
-    for (SelectedCpList::iterator it = _pointsToDrag.begin(); it != _pointsToDrag.end(); ++it,++cpIt) {
+    for (SelectedCpList::iterator it = _pointsToDrag.begin(); it != _pointsToDrag.end(); ++it, ++cpIt) {
         it->first->clone(*cpIt->first);
         it->second->clone(*cpIt->second);
     }
@@ -166,7 +166,7 @@ MoveControlPointsUndoCommand::mergeWith(const QUndoCommand *other)
 
     SelectedCpList::const_iterator it = _selectedPoints.begin();
     SelectedCpList::const_iterator oIt = mvCmd->_selectedPoints.begin();
-    for (; it != _selectedPoints.end(); ++it,++oIt) {
+    for (; it != _selectedPoints.end(); ++it, ++oIt) {
         if ( (it->first != oIt->first) || (it->second != oIt->second) ) {
             return false;
         }
@@ -229,7 +229,7 @@ TransformUndoCommand::undo()
 {
     SelectedCpList::iterator cpIt = _originalPoints.begin();
 
-    for (SelectedCpList::iterator it = _selectedPoints.begin(); it != _selectedPoints.end(); ++it,++cpIt) {
+    for (SelectedCpList::iterator it = _selectedPoints.begin(); it != _selectedPoints.end(); ++it, ++cpIt) {
         it->first->clone(*cpIt->first);
         it->second->clone(*cpIt->second);
     }
@@ -288,7 +288,7 @@ TransformUndoCommand::mergeWith(const QUndoCommand *other)
 
     SelectedCpList::const_iterator it = _selectedPoints.begin();
     SelectedCpList::const_iterator oIt = cmd->_selectedPoints.begin();
-    for (; it != _selectedPoints.end(); ++it,++oIt) {
+    for (; it != _selectedPoints.end(); ++it, ++oIt) {
         if ( (it->first != oIt->first) || (it->second != oIt->second) ) {
             return false;
         }

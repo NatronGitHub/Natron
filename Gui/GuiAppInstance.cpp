@@ -855,7 +855,7 @@ void
 GuiAppInstance::clearViewersLastRenderedTexture()
 {
     std::list<ViewerTab*> tabs = _imp->_gui->getViewersList_mt_safe();
-    for (std::list<ViewerTab*>::const_iterator it = tabs.begin(); it!=tabs.end(); ++it) {
+    for (std::list<ViewerTab*>::const_iterator it = tabs.begin(); it != tabs.end(); ++it) {
         (*it)->getViewer()->clearLastRenderedTexture();
     }
 }

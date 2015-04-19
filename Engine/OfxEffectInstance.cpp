@@ -128,7 +128,7 @@ public:
     {
         if (setPlane) {
             effect->setClipsPlaneBeingRendered(currentPlane);
-            for (EffectInstance::InputImagesMap::const_iterator it = inputImages.begin(); it!=inputImages.end(); ++it) {
+            for (EffectInstance::InputImagesMap::const_iterator it = inputImages.begin(); it != inputImages.end(); ++it) {
                 if (!it->second.empty()) {
                     const ImagePtr& img = it->second.front();
                     assert(img);
@@ -378,7 +378,7 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
     
     ///Now that the instance is created, make sure instanceChangedActino is called for all extra default values
     ///that we set
-    for (std::list<boost::shared_ptr<KnobSerialization> >::const_iterator it = paramValues.begin(); it != paramValues.end();++it) {
+    for (std::list<boost::shared_ptr<KnobSerialization> >::const_iterator it = paramValues.begin(); it != paramValues.end(); ++it) {
         boost::shared_ptr<KnobI> knob = getKnobByName((*it)->getName());
         if (knob) {
             for (int i = 0; i < knob->getDimension(); ++i) {
@@ -1313,7 +1313,7 @@ OfxEffectInstance::checkOFXClipPreferences(double time,
         if (!modifiedClips.empty()) {
             effectInstance()->beginInstanceChangedAction(reason);
         }
-        for (std::list<OfxClipInstance*>::iterator it = modifiedClips.begin(); it!=modifiedClips.end();++it) {
+        for (std::list<OfxClipInstance*>::iterator it = modifiedClips.begin(); it != modifiedClips.end(); ++it) {
             effectInstance()->clipInstanceChangedAction((*it)->getName(), reason, time, scale);
         }
         if (!modifiedClips.empty()) {
@@ -1645,7 +1645,7 @@ OfxEffectInstance::getRegionsOfInterest(SequenceTime time,
     } else if (stat == kOfxStatReplyDefault) {
         
         const std::map<std::string,OFX::Host::ImageEffect::ClipInstance*>& clips = effectInstance()->getClips();
-        for (std::map<std::string,OFX::Host::ImageEffect::ClipInstance*>::const_iterator it = clips.begin(); it!=clips.end(); ++it) {
+        for (std::map<std::string,OFX::Host::ImageEffect::ClipInstance*>::const_iterator it = clips.begin(); it != clips.end(); ++it) {
             if (!it->second->isOutput()) {
                 OfxClipInstance* natronClip = dynamic_cast<OfxClipInstance*>(it->second);
                 EffectInstance* inputNode = natronClip ? natronClip->getAssociatedNode() : 0;
@@ -3147,7 +3147,7 @@ OfxEffectInstance::getTransform(SequenceTime time,
 void
 OfxEffectInstance::rerouteInputAndSetTransform(const std::list<InputMatrix>& inputTransforms)
 {
-    for (std::list<InputMatrix>::const_iterator it = inputTransforms.begin(); it!=inputTransforms.end(); ++it) {
+    for (std::list<InputMatrix>::const_iterator it = inputTransforms.begin(); it != inputTransforms.end(); ++it) {
         OfxClipInstance* clip = getClipCorrespondingToInput(it->inputNb);
         assert(clip);
         clip->setTransformAndReRouteInput(*it->cat, it->newInputEffect, it->newInputNbToFetchFrom);

@@ -652,7 +652,7 @@ MultiInstancePanel::addRow(const boost::shared_ptr<Natron::Node> & node)
 void
 MultiInstancePanelPrivate::addTableRow(const boost::shared_ptr<Natron::Node> & node)
 {
-    for (Nodes::iterator it = instances.begin(); it!=instances.end(); ++it) {
+    for (Nodes::iterator it = instances.begin(); it != instances.end(); ++it) {
         if (it->first.lock() == node) {
             return;
         }
@@ -774,7 +774,7 @@ MultiInstancePanel::selectNode(const boost::shared_ptr<Natron::Node> & node,
 
     int index = -1;
     int i = 0;
-    for (std::list< std::pair<boost::weak_ptr<Node>,bool > >::iterator it = _imp->instances.begin(); it != _imp->instances.end(); ++it,++i) {
+    for (std::list< std::pair<boost::weak_ptr<Node>,bool > >::iterator it = _imp->instances.begin(); it != _imp->instances.end(); ++it, ++i) {
         if (it->first.lock() == node) {
             index = i;
             break;
@@ -792,7 +792,7 @@ MultiInstancePanel::removeNodeFromSelection(const boost::shared_ptr<Natron::Node
     int index = -1;
     int i = 0;
 
-    for (std::list< std::pair<boost::weak_ptr<Node>,bool > >::iterator it = _imp->instances.begin(); it != _imp->instances.end(); ++it,++i) {
+    for (std::list< std::pair<boost::weak_ptr<Node>,bool > >::iterator it = _imp->instances.begin(); it != _imp->instances.end(); ++it, ++i) {
         if (it->first.lock() == node) {
             index = i;
             break;
@@ -831,7 +831,7 @@ MultiInstancePanel::selectNodes(const std::list<Natron::Node*> & nodes,
     for (std::list<Natron::Node*>::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         int i = 0;
         for (std::list< std::pair<boost::weak_ptr<Node>,bool > >::iterator it2 = _imp->instances.begin();
-             it2 != _imp->instances.end(); ++it2,++i) {
+             it2 != _imp->instances.end(); ++it2, ++i) {
             if (it2->first.lock().get() == *it) {
                 QItemSelection sel( _imp->model->index(i, 0),_imp->model->index(i,_imp->view->columnCount() - 1) );
                 newSelection.merge(sel, QItemSelectionModel::Select);
@@ -947,7 +947,7 @@ MultiInstancePanel::getNodeIndex(const boost::shared_ptr<Natron::Node> & node) c
     int i = 0;
     Nodes::iterator it = _imp->instances.begin();
 
-    for (; it != _imp->instances.end(); ++it,++i) {
+    for (; it != _imp->instances.end(); ++it, ++i) {
         if (it->first.lock() == node) {
             return i;
         }
@@ -1226,7 +1226,7 @@ MultiInstancePanelPrivate::getInstanceFromItem(TableItem* item) const
 {
     assert( item->row() >= 0 && item->row() < (int)instances.size() );
     int i = 0;
-    for (std::list< std::pair<boost::weak_ptr<Node>,bool > >::const_iterator it = instances.begin(); it != instances.end(); ++it,++i) {
+    for (std::list< std::pair<boost::weak_ptr<Node>,bool > >::const_iterator it = instances.begin(); it != instances.end(); ++it, ++i) {
         if ( i == item->row() ) {
             return it->first.lock();
         }
@@ -1409,7 +1409,7 @@ MultiInstancePanel::onInstanceKnobValueChanged(int dim,
     assert(holder);
     int rowIndex = 0;
     int colIndex = COL_FIRST_KNOB;
-    for (Nodes::iterator it = _imp->instances.begin(); it != _imp->instances.end(); ++it,++rowIndex) {
+    for (Nodes::iterator it = _imp->instances.begin(); it != _imp->instances.end(); ++it, ++rowIndex) {
         boost::shared_ptr<Node> node = it->first.lock();
         if ( holder == node->getLiveInstance() ) {
             const std::vector<boost::shared_ptr<KnobI> > & knobs = node->getKnobs();
@@ -2264,7 +2264,7 @@ TrackerPanelPrivate::createCornerPinFromSelection(const std::list<Node*> & selec
 
     boost::shared_ptr<Double_Knob> centers[4];
     int i = 0;
-    for (std::list<Node*>::const_iterator it = selection.begin(); it != selection.end(); ++it,++i) {
+    for (std::list<Node*>::const_iterator it = selection.begin(); it != selection.end(); ++it, ++i) {
         centers[i] = getCenterKnobForTracker(*it);
         assert(centers[i]);
     }

@@ -1047,7 +1047,7 @@ Path_KnobGui::updateGUI(int /*dimension*/)
         _model->clear();
         _items.clear();
         int i = 0;
-        for (std::map<std::string,std::string> ::const_iterator it = variables.begin();it!=variables.end();++it,++i) {
+        for (std::map<std::string,std::string> ::const_iterator it = variables.begin(); it != variables.end(); ++it, ++i) {
             createItem(i, it->second.c_str(), it->first.c_str());
         }
     } else {
@@ -1198,7 +1198,7 @@ Path_KnobGui::rebuildPath() const
     if (next != _items.end()) {
         ++next;
     }
-    for (Variables::const_iterator it = _items.begin(); it!= _items.end(); ++it, ++next) {
+    for (Variables::const_iterator it = _items.begin(); it != _items.end(); ++it, ++next) {
         // In order to use XML tags, the text inside the tags has to be escaped.
         path += NATRON_ENV_VAR_NAME_START_TAG;
         path += Project::escapeXML(it->second.varName->text().toStdString());

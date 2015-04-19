@@ -2003,7 +2003,7 @@ Settings::populatePluginsTab(std::vector<Natron::Plugin*>& pluginsToIgnore)
 
     }
     
-    for (std::map<Natron::Plugin*,PerPluginKnobs>::iterator it = pluginsMap.begin() ;it != pluginsMap.end() ; ++it) {
+    for (std::map<Natron::Plugin*,PerPluginKnobs>::iterator it = pluginsMap.begin(); it != pluginsMap.end(); ++it) {
         if (!it->second.enabled->getValue()) {
             pluginsToIgnore.push_back(it->first);
         } else {

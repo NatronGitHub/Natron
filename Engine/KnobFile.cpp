@@ -255,7 +255,7 @@ Path_Knob::setPaths(const std::list<std::pair<std::string,std::string> >& paths)
     std::string path;
     
 
-    for (std::list<std::pair<std::string,std::string> >::const_iterator it = paths.begin(); it!= paths.end(); ++it) {
+    for (std::list<std::pair<std::string,std::string> >::const_iterator it = paths.begin(); it != paths.end(); ++it) {
         // In order to use XML tags, the text inside the tags has to be escaped.
         path += NATRON_ENV_VAR_NAME_START_TAG;
         path += Project::escapeXML(it->first);

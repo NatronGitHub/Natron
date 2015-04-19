@@ -1101,7 +1101,7 @@ RotoGui::drawOverlays(double /*scaleX*/,
                 
                 ///draw the control points if the bezier is selected
                 bool selected = false;
-                for (SelectedItems::const_iterator it2 = _imp->rotoData->selectedItems.begin(); it2!=_imp->rotoData->selectedItems.end();++it2) {
+                for (SelectedItems::const_iterator it2 = _imp->rotoData->selectedItems.begin(); it2!=_imp->rotoData->selectedItems.end(); ++it2) {
                     if (it2->get() == isBezier) {
                         selected = true;
                         break;
@@ -1134,7 +1134,7 @@ RotoGui::drawOverlays(double /*scaleX*/,
                         ++nextCp;
                     }
                     for (std::list< boost::shared_ptr<BezierCP> >::const_iterator it2 = cps.begin(); it2 != cps.end();
-                         ++it2, ++itF,++index, ++nextCp, ++prevCp) {
+                         ++it2, ++itF, ++index, ++nextCp, ++prevCp) {
                         if ( nextCp == cps.end() ) {
                             nextCp = cps.begin();
                         }
@@ -1719,7 +1719,7 @@ RotoGui::RotoGuiPrivate::handleBezierSelection(const boost::shared_ptr<Bezier> &
 {
     ///find out if the bezier is already selected.
     bool found = false;
-    for (SelectedItems::iterator it = rotoData->selectedItems.begin(); it!=rotoData->selectedItems.end(); ++it) {
+    for (SelectedItems::iterator it = rotoData->selectedItems.begin(); it != rotoData->selectedItems.end(); ++it) {
         if (it->get() == curve.get()) {
             found = true;
             break;
@@ -1907,7 +1907,7 @@ RotoGui::penDown(double /*scaleX*/,
                 } else {
                     
                     bool found = false;
-                    for (SelectedItems::iterator it = _imp->rotoData->selectedItems.begin(); it!=_imp->rotoData->selectedItems.end(); ++it) {
+                    for (SelectedItems::iterator it = _imp->rotoData->selectedItems.begin(); it != _imp->rotoData->selectedItems.end(); ++it) {
                         if (it->get() == nearbyBezier.get()) {
                             found = true;
                             break;
@@ -1949,7 +1949,7 @@ RotoGui::penDown(double /*scaleX*/,
             if (nearbyBezier) {
                 ///If the bezier is already selected and we re-click on it, change the transform mode
                 bool found = false;
-                for (SelectedItems::iterator it = _imp->rotoData->selectedItems.begin(); it!=_imp->rotoData->selectedItems.end(); ++it) {
+                for (SelectedItems::iterator it = _imp->rotoData->selectedItems.begin(); it != _imp->rotoData->selectedItems.end(); ++it) {
                     if (it->get() == nearbyBezier.get()) {
                         found = true;
                         break;
@@ -1976,7 +1976,7 @@ RotoGui::penDown(double /*scaleX*/,
             ///splitting up the targeted segment
             if (nearbyBezier) {
                 bool found = false;
-                for (SelectedItems::iterator it = _imp->rotoData->selectedItems.begin(); it!=_imp->rotoData->selectedItems.end(); ++it) {
+                for (SelectedItems::iterator it = _imp->rotoData->selectedItems.begin(); it != _imp->rotoData->selectedItems.end(); ++it) {
                     if (it->get() == nearbyBezier.get()) {
                         found = true;
                         break;
@@ -2059,7 +2059,7 @@ RotoGui::penDown(double /*scaleX*/,
                 ///if that point is the starting point of the curve, close the curve
                 const std::list<boost::shared_ptr<BezierCP> > & cps = _imp->rotoData->builtBezier->getControlPoints();
                 int i = 0;
-                for (std::list<boost::shared_ptr<BezierCP> >::const_iterator it = cps.begin(); it != cps.end(); ++it,++i) {
+                for (std::list<boost::shared_ptr<BezierCP> >::const_iterator it = cps.begin(); it != cps.end(); ++it, ++i) {
                     double x,y;
                     (*it)->getPositionAtTime(time, &x, &y);
                     if ( ( x >= (pos.x() - cpSelectionTolerance) ) && ( x <= (pos.x() + cpSelectionTolerance) ) &&

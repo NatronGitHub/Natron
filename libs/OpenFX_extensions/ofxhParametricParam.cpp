@@ -119,7 +119,7 @@ OfxStatus ParametricInstance::defaultInitializeFromDescriptor(int curveIndex,con
     
 OfxStatus ParametricInstance::defaultInitializeAllCurves(const Param::Descriptor& descriptor){
     int curveCount = descriptor.getProperties().getIntProperty(kOfxParamPropParametricDimension);
-    for(int i = 0; i < curveCount;++i){
+    for(int i = 0; i < curveCount; ++i){
         OfxStatus stat = defaultInitializeFromDescriptor(i, descriptor);
         if(stat == kOfxStatFailed){
             return stat;

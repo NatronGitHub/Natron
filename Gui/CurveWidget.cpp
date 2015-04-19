@@ -321,7 +321,7 @@ CurveGui::drawCurve(int curveIndex,
         std::set<int> keys;
         isBezier->getBezier()->getKeyframeTimes(&keys);
         int i = 0;
-        for (std::set<int>::iterator it = keys.begin(); it != keys.end(); ++it,++i) {
+        for (std::set<int>::iterator it = keys.begin(); it != keys.end(); ++it, ++i) {
             keyframes.insert(KeyFrame(*it,i));
         }
     } else {
@@ -693,7 +693,7 @@ BezierCPCurveGui::evaluate(bool /*useExpr*/,double x) const
     
     std::list<std::pair<int,Natron::KeyframeTypeEnum> >::iterator upb = keys.end();
     int dist = 0;
-    for (std::list<std::pair<int,Natron::KeyframeTypeEnum> >::iterator it = keys.begin(); it != keys.end(); ++it,++dist) {
+    for (std::list<std::pair<int,Natron::KeyframeTypeEnum> >::iterator it = keys.begin(); it != keys.end(); ++it, ++dist) {
         if (it->first > x) {
             upb = it;
             break;
@@ -733,7 +733,7 @@ BezierCPCurveGui::getKeyFrames() const
     std::set<int> keys;
     _bezier->getKeyframeTimes(&keys);
     int i = 0;
-    for (std::set<int>::iterator it = keys.begin(); it != keys.end(); ++it,++i) {
+    for (std::set<int>::iterator it = keys.begin(); it != keys.end(); ++it, ++i) {
         ret.insert(KeyFrame(*it,i));
     }
     return ret;
@@ -3147,7 +3147,7 @@ CurveWidget::mouseReleaseEvent(QMouseEvent*)
             for (std::map<KnobHolder*,bool>::iterator it = toEvaluate.begin(); it != toEvaluate.end(); ++it) {
                 it->first->evaluate_public(NULL, it->second,Natron::eValueChangedReasonUserEdited);
             }
-            for (std::list<boost::shared_ptr<RotoContext> >::iterator it = rotoToEvaluate.begin(); it!=rotoToEvaluate.end(); ++it) {
+            for (std::list<boost::shared_ptr<RotoContext> >::iterator it = rotoToEvaluate.begin(); it != rotoToEvaluate.end(); ++it) {
                 (*it)->evaluateChange();
             }
         } else if (_imp->_state == eEventStateDraggingTangent) {
@@ -4588,7 +4588,7 @@ EditKeyFrameDialog::moveKeyTo(double newX,double newY)
         
         int curEqualKeys = 0;
         KeyFrameSet set = _imp->key->curve->getKeyFrames();
-        for (KeyFrameSet::iterator it = set.begin(); it!=set.end(); ++it) {
+        for (KeyFrameSet::iterator it = set.begin(); it != set.end(); ++it) {
             
             if (std::abs(it->getTime() - newX) <= NATRON_CURVE_X_SPACING_EPSILON) {
                 _imp->xSpinbox->setValue(curX);

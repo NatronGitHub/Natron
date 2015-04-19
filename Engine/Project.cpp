@@ -1192,7 +1192,7 @@ Project::onKnobValueChanged(KnobI* knob,
                 ///Increase all nodes age in the project so all cache is invalidated: some effects images might rely on the project format
                 NodeList nodes;
                 getNodes_recursive(nodes);
-                for (NodeList::iterator it = nodes.begin(); it != nodes.end();++it) {
+                for (NodeList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
                     (*it)->incrementKnobsAge();
                 }
                 
@@ -1730,7 +1730,7 @@ Project::findReplaceVariable(const std::map<std::string,std::string>& env,std::s
 {
     std::string longestName;
     std::string longestVar;
-    for (std::map<std::string,std::string>::const_iterator it = env.begin(); it!=env.end(); ++it) {
+    for (std::map<std::string,std::string>::const_iterator it = env.begin(); it != env.end(); ++it) {
         if (str.size() >= it->second.size() &&
             it->second.size() > longestVar.size() &&
             str.substr(0,it->second.size()) == it->second) {
@@ -1903,7 +1903,7 @@ Project::onOCIOConfigPathChanged(const std::string& path,bool block)
         }
 
         std::string newEnv;
-        for (std::map<std::string, std::string>::iterator it = envMap.begin(); it!=envMap.end();++it) {
+        for (std::map<std::string, std::string>::iterator it = envMap.begin(); it != envMap.end(); ++it) {
             // In order to use XML tags, the text inside the tags has to be escaped.
             newEnv += NATRON_ENV_VAR_NAME_START_TAG;
             newEnv += Project::escapeXML(it->first);
@@ -2041,7 +2041,7 @@ static bool hasNodeOutputsInList(const std::list<boost::shared_ptr<Natron::Node>
     const std::list<Natron::Node*>& outputs = node->getOutputs();
     
     bool foundOutput = false;
-    for (std::list<boost::shared_ptr<Natron::Node> >::const_iterator it = nodes.begin(); it!=nodes.end(); ++it) {
+    for (std::list<boost::shared_ptr<Natron::Node> >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         if (*it != node) {
             std::list<Natron::Node*>::const_iterator found = std::find(outputs.begin(),outputs.end(),it->get());
             if (found != outputs.end()) {
@@ -2058,7 +2058,7 @@ static bool hasNodeInputsInList(const std::list<boost::shared_ptr<Natron::Node> 
     const std::vector<boost::shared_ptr<Natron::Node> >& inputs = node->getInputs_mt_safe();
     
     bool foundInput = false;
-    for (std::list<boost::shared_ptr<Natron::Node> >::const_iterator it = nodes.begin(); it!=nodes.end(); ++it) {
+    for (std::list<boost::shared_ptr<Natron::Node> >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         if (*it != node) {
             std::vector<boost::shared_ptr<Natron::Node> >::const_iterator found = std::find(inputs.begin(),inputs.end(),*it);
             if (found != inputs.end()) {
@@ -2104,14 +2104,14 @@ void Project::extractTreesFromNodes(const std::list<boost::shared_ptr<Natron::No
 {
     std::list<boost::shared_ptr<Natron::Node> > markedNodes;
     
-    for (std::list<boost::shared_ptr<Natron::Node> >::const_iterator it = nodes.begin(); it!=nodes.end(); ++it) {
+    for (std::list<boost::shared_ptr<Natron::Node> >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         bool isOutput = !hasNodeOutputsInList(nodes, *it);
         if (isOutput) {
             NodesTree tree;
             tree.output.node = *it;
 
             const std::list<Natron::Node* >& outputs = (*it)->getOutputs();
-            for (std::list<Natron::Node*>::const_iterator it2 = outputs.begin();it2!=outputs.end();++it2) {
+            for (std::list<Natron::Node*>::const_iterator it2 = outputs.begin(); it2!=outputs.end(); ++it2) {
                 int idx = (*it2)->inputIndex(it->get());
                 tree.output.outputs.push_back(std::make_pair(idx,*it2));
             }

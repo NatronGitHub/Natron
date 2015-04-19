@@ -1454,7 +1454,7 @@ AppManager::onAllPluginsLoaded()
     
     //Make sure there is no duplicates with the same label
     const PluginsMap& plugins = getPluginsList();
-    for (PluginsMap::const_iterator it = plugins.begin(); it!=plugins.end(); ++it) {
+    for (PluginsMap::const_iterator it = plugins.begin(); it != plugins.end(); ++it) {
         assert(!it->second.empty());
         PluginMajorsOrdered::iterator first = it->second.begin();
         
@@ -1654,7 +1654,7 @@ AppManager::getAllNonOFXPluginsPaths() const
     }
     
     ///look-in extra search path set in the preferences
-    for (std::list<std::string>::iterator it = userSearchPaths.begin(); it!=userSearchPaths.end(); ++it) {
+    for (std::list<std::string>::iterator it = userSearchPaths.begin(); it != userSearchPaths.end(); ++it) {
         if (!it->empty()) {
             templatesSearchPath.push_back(QString(it->c_str()));
         }
@@ -1918,7 +1918,7 @@ QMutex*
 AppManager::getMutexForPlugin(const QString & pluginId,int major,int /*minor*/) const
 {
     for (PluginsMap::iterator it = _imp->_plugins.begin(); it != _imp->_plugins.end(); ++it) {
-        for (PluginMajorsOrdered::iterator it2 = it->second.begin(); it2 != it->second.end() ;++it2) {
+        for (PluginMajorsOrdered::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
             if ((*it2)->getPluginID() == pluginId && (*it2)->getMajorVersion() == major) {
                 return (*it2)->getPluginLock();
             }
@@ -1946,7 +1946,7 @@ Natron::Plugin*
 AppManagerPrivate::findPluginById(const QString& newId,int major, int minor) const
 {
     for (PluginsMap::const_iterator it = _plugins.begin(); it != _plugins.end(); ++it) {
-        for (PluginMajorsOrdered::const_iterator it2 = it->second.begin(); it2 != it->second.end() ;++it2) {
+        for (PluginMajorsOrdered::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
             if ((*it2)->getPluginID() == newId && (*it2)->getMajorVersion() == major && (*it2)->getMinorVersion() == minor) {
                 return (*it2);
             }
@@ -1973,7 +1973,7 @@ AppManager::getPluginBinaryFromOldID(const QString & pluginId,int majorVersion,i
     
     ///Try remapping these ids to old ids we had in Natron < 1.0 for backward-compat
     for (PluginsMap::const_iterator it = _imp->_plugins.begin(); it != _imp->_plugins.end(); ++it) {
-        for (PluginMajorsOrdered::const_iterator it2 = it->second.begin(); it2 != it->second.end() ;++it2) {
+        for (PluginMajorsOrdered::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
             if ((*it2)->generateUserFriendlyPluginID() == pluginId &&
                 ((*it2)->getMajorVersion() == majorVersion || majorVersion == -1) &&
                 ((*it2)->getMinorVersion() == minorVersion || minorVersion == -1)) {
@@ -2533,7 +2533,7 @@ AppManagerPrivate::setMaxCacheFiles()
             }
         }
         std::cout << "Total opened files: " << files.size() << std::endl;
-        for (std::list<HANDLE>::iterator it = files.begin(); it!= files.end();++it) {
+        for (std::list<HANDLE>::iterator it = files.begin(); it != files.end(); ++it) {
             CloseHandle(*it);
         }
        }
@@ -2842,7 +2842,7 @@ std::list<std::string>
 AppManager::getPluginIDs() const
 {
     std::list<std::string> ret;
-    for (PluginsMap::const_iterator it = _imp->_plugins.begin() ; it!=_imp->_plugins.end(); ++it) {
+    for (PluginsMap::const_iterator it = _imp->_plugins.begin() ; it != _imp->_plugins.end(); ++it) {
         assert(!it->second.empty());
         ret.push_back(it->first);
     }
@@ -2854,7 +2854,7 @@ AppManager::getPluginIDs(const std::string& filter)
 {
     QString qFilter(filter.c_str());
     std::list<std::string> ret;
-    for (PluginsMap::const_iterator it = _imp->_plugins.begin() ; it!=_imp->_plugins.end(); ++it) {
+    for (PluginsMap::const_iterator it = _imp->_plugins.begin() ; it != _imp->_plugins.end(); ++it) {
         assert(!it->second.empty());
         
         QString pluginID(it->first.c_str());

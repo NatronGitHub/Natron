@@ -1013,7 +1013,7 @@ private:
         int nbChildren = (int)_children.size();
         ar & boost::serialization::make_nvp("NbChildren",nbChildren);
         for (std::list <boost::shared_ptr<KnobSerializationBase> >::const_iterator it = _children.begin();
-             it != _children.end() ;++it) {
+             it != _children.end(); ++it) {
             GroupKnobSerialization* isGrp = dynamic_cast<GroupKnobSerialization*>(it->get());
             KnobSerialization* isRegularKnob = dynamic_cast<KnobSerialization*>(it->get());
             assert(isGrp || isRegularKnob);

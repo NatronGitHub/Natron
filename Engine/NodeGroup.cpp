@@ -838,7 +838,7 @@ NodeCollection::forceGetClipPreferencesOnAllTrees()
     Project::extractTreesFromNodes(nodes, trees);
     
     std::list<Natron::Node*> markedNodes;
-    for (std::list<Project::NodesTree>::iterator it = trees.begin(); it!=trees.end(); ++it) {
+    for (std::list<Project::NodesTree>::iterator it = trees.begin(); it != trees.end(); ++it) {
         it->output.node->restoreClipPreferencesRecursive(markedNodes);
     }
 }
@@ -857,7 +857,7 @@ NodeCollection::setParallelRenderArgs(int time,
                                       bool isAnalysis)
 {
     NodeList nodes = getNodes();
-    for (NodeList::iterator it = nodes.begin(); it!=nodes.end(); ++it) {
+    for (NodeList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
         assert(*it);
         U64 rotoAge;
         boost::shared_ptr<RotoContext> roto = (*it)->getRotoContext();
@@ -900,7 +900,7 @@ NodeCollection::invalidateParallelRenderArgs()
 {
     
     NodeList nodes = getNodes();
-    for (NodeList::iterator it = nodes.begin(); it!=nodes.end(); ++it) {
+    for (NodeList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
         (*it)->getLiveInstance()->invalidateParallelRenderArgsTLS();
         
         if ((*it)->isMultiInstance()) {
@@ -929,7 +929,7 @@ void
 NodeCollection::getParallelRenderArgs(std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs >& argsMap) const
 {
     NodeList nodes = getNodes();
-    for (NodeList::iterator it = nodes.begin(); it!=nodes.end(); ++it) {
+    for (NodeList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
         ParallelRenderArgs args = (*it)->getLiveInstance()->getParallelRenderArgsTLS();
         if (args.validArgs) {
             argsMap.insert(std::make_pair(*it, args));
@@ -979,7 +979,7 @@ ParallelRenderArgsSetter::ParallelRenderArgsSetter(const std::map<boost::shared_
 : collection(0)
 , argsMap(args)
 {
-    for (std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs >::iterator it = argsMap.begin(); it!=argsMap.end(); ++it) {
+    for (std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs >::iterator it = argsMap.begin(); it != argsMap.end(); ++it) {
         it->first->getLiveInstance()->setParallelRenderArgsTLS(it->second);
     }
 }
@@ -989,7 +989,7 @@ ParallelRenderArgsSetter::~ParallelRenderArgsSetter()
     if (collection) {
         collection->invalidateParallelRenderArgs();
     } else {
-        for (std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs >::iterator it = argsMap.begin(); it!=argsMap.end(); ++it) {
+        for (std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs >::iterator it = argsMap.begin(); it != argsMap.end(); ++it) {
             it->first->getLiveInstance()->invalidateParallelRenderArgsTLS();
         }
     }
@@ -1307,7 +1307,7 @@ NodeGroup::getAllOutputNodes() const
 {
     NodeList ret;
     QMutexLocker k(&_imp->nodesLock);
-    for (std::list<boost::weak_ptr<Natron::Node> >::const_iterator it = _imp->outputs.begin(); it!=_imp->outputs.end(); ++it) {
+    for (std::list<boost::weak_ptr<Natron::Node> >::const_iterator it = _imp->outputs.begin(); it != _imp->outputs.end(); ++it) {
         NodePtr node = it->lock();
         if (node) {
             ret.push_back(node);
@@ -2003,7 +2003,7 @@ static void exportRotoLayer(const std::list<boost::shared_ptr<RotoItem> >& items
             ///Now that all points are created position them
             int idx = 0;
             std::list<boost::shared_ptr<BezierCP> >::const_iterator fpIt = fps.begin();
-            for (std::list<boost::shared_ptr<BezierCP> >::const_iterator it2 = cps.begin(); it2 != cps.end(); ++it2,++fpIt,++idx) {
+            for (std::list<boost::shared_ptr<BezierCP> >::const_iterator it2 = cps.begin(); it2 != cps.end(); ++it2, ++fpIt, ++idx) {
                 for (std::set<int>::iterator it3 = kf.begin(); it3 != kf.end(); ++it3) {
                     exportBezierPointAtTime(*it2, false, *it3, idx, ts);
                     exportBezierPointAtTime(*fpIt, true, *it3, idx, ts);

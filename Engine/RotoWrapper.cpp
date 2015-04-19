@@ -131,7 +131,7 @@ Layer::getChildren() const
 {
     std::list<ItemBase*> ret;
     std::list<boost::shared_ptr<RotoItem> > items = _layer->getItems_mt_safe();
-    for (std::list<boost::shared_ptr<RotoItem> >::iterator it = items.begin(); it!=items.end(); ++it) {
+    for (std::list<boost::shared_ptr<RotoItem> >::iterator it = items.begin(); it != items.end(); ++it) {
         ret.push_back(new ItemBase(*it));
     }
     return ret;
