@@ -5623,6 +5623,7 @@ RotoContext::getSelectedCurves() const
     {
         QMutexLocker l(&_imp->rotoContextMutex);
         for (std::list<boost::shared_ptr<RotoItem> >::iterator it = _imp->selectedItems.begin(); it != _imp->selectedItems.end(); ++it) {
+            assert(*it);
             boost::shared_ptr<RotoLayer> isLayer = boost::dynamic_pointer_cast<RotoLayer>(*it);
             boost::shared_ptr<RotoDrawableItem> isDrawable = boost::dynamic_pointer_cast<RotoDrawableItem>(*it);
             if (isDrawable) {
@@ -6176,10 +6177,197 @@ RotoContextPrivate::renderInternal(cairo_t* cr,
     cairo_surface_flush(cairoImg);
 } // renderInternal
 
+/**
+ * @brief Renders 1 patch of a paint stroke's dot. Each dot is separated in 4 patches (tOp left, top right, bottom left, bottom right).
+ * Think of a circle divided in 4 equal parts.
+ * patchNum = 0 = topRight
+ *          = 1 = topLeft
+ *          = 2 = bottomLeft
+ *          = 3 = bottomRight
+ **/
+static void renderDotPatch(cairo_pattern_t* mesh, int patchNum, const Point &center, double brushHardness, double halfSize, double shapeColor[3], double opacity)
+{
+    Point p0,p1,p0p1,p1p0,p2,p1p2,p2p1,p3,p2p3,p3p2;
+    p0 = p3 = center; //< degenerated patch with only 3 sides
+    if (patchNum == 0) {
+        p1.x = center.x + halfSize;
+        p1.y = center.y;
+        p2.x = center.x;
+        p2.y = center.y + halfSize;
+        p1p2.x = p1.x;
+        p1p2.y = (p1.y + p2.y) / 2.;
+        p2p1.x = (p1.x + p2.x) / 2.;
+        p2p1.y = p2.y;
+    } else if (patchNum == 1) {
+        p1.x = center.x;
+        p1.y = center.y + halfSize;
+        p2.x = center.x - halfSize;
+        p2.y = center.y;
+        p1p2.x = (p1.x + p2.x) / 2.;
+        p1p2.y = p1.y;
+        p2p1.x = p2.x;
+        p2p1.y = (p1.y + p2.y) / 2;
+    } else if (patchNum == 2) {
+        p1.x = center.x - halfSize;
+        p1.y = center.y;
+        p2.x = center.x;
+        p2.y = center.y - halfSize;
+        p1p2.x = p1.x;
+        p1p2.y = (p1.y + p2.y) / 2.;
+        p2p1.x = (p1.x + p2.x) / 2.;
+        p2p1.y = p2.y;
+    } else if (patchNum == 3) {
+        p1.x = center.x;
+        p1.y = center.y - halfSize;
+        p2.x = center.x + halfSize;
+        p2.y = center.y;
+        p1p2.x = (p1.x + p2.x) / 2.;
+        p1p2.y = p1.y;
+        p2p1.x = p2.x;
+        p2p1.y = (p1.y + p2.y) / 2;
+
+    }
+    
+    
+    
+    ///linear interpolation
+    p0p1.x = (p0.x * (1. - brushHardness) +  brushHardness * p1.x);
+    p0p1.y = (p0.y * (1. - brushHardness) +  brushHardness * p1.y);
+    p1p0.x = (p1.x * (1. - brushHardness) +  brushHardness * p0.x);
+    p1p0.y = (p1.y * (1. - brushHardness) +  brushHardness * p0.y);
+    
+    p2p3.x = (p3.x * (1. - brushHardness) +  brushHardness * p2.x);
+    p2p3.y = (p3.y * (1. - brushHardness) +  brushHardness * p2.y);
+    p3p2.x = (p2.x * (1. - brushHardness) +  brushHardness * p3.x);
+    p3p2.y = (p2.y * (1. - brushHardness) +  brushHardness * p3.y);
+    
+    
+    ///move to the initial point
+    cairo_mesh_pattern_begin_patch(mesh);
+    cairo_mesh_pattern_move_to(mesh, p0.x, p0.y);
+    cairo_mesh_pattern_curve_to(mesh, p0p1.x, p0p1.y, p1p0.x, p1p0.y, p1.x, p1.y);
+    cairo_mesh_pattern_curve_to(mesh, p1p2.x, p1p2.y, p2p1.x, p2p1.y, p2.x, p2.y);
+    cairo_mesh_pattern_curve_to(mesh, p2p3.x, p2p3.y, p3p2.x, p3p2.y, p3.x, p3.y);
+    cairo_mesh_pattern_line_to(mesh, p0.x, p0.y);
+    
+    // IMPORTANT NOTE:
+    // The two sqrt below are due to a probable cairo bug.
+    // To check wether the bug is present is a given cairo version,
+    // make any shape with a very large feather and set
+    // opacity to 0.5. Then, zoom on the polygon border to check if the intensity is continuous
+    // and approximately equal to 0.5.
+    // If the bug if ixed in cairo, please use #if CAIRO_VERSION>xxx to keep compatibility with
+    // older Cairo versions.
+    cairo_mesh_pattern_set_corner_color_rgba( mesh, 0, shapeColor[0], shapeColor[1], shapeColor[2],std::sqrt(opacity) );
+    ///outter is faded
+    cairo_mesh_pattern_set_corner_color_rgba(mesh, 1, shapeColor[0], shapeColor[1], shapeColor[2],0.);
+    cairo_mesh_pattern_set_corner_color_rgba(mesh, 2, shapeColor[0], shapeColor[1], shapeColor[2],0.);
+    ///inner is full color
+    cairo_mesh_pattern_set_corner_color_rgba(mesh, 3, shapeColor[0], shapeColor[1], shapeColor[2],std::sqrt(opacity));
+    
+    assert(cairo_pattern_status(mesh) == CAIRO_STATUS_SUCCESS);
+    
+    cairo_mesh_pattern_end_patch(mesh);
+}
+
+
 void
 RotoContextPrivate::renderStroke(cairo_t* cr,const RotoStrokeItem* stroke, int time, unsigned int mipmapLevel)
 {
-    //todo
+    RotoStrokeItem::Points points = stroke->getPoints_mt_safe();
+    if (!stroke->isActivated(time) || points.empty()) {
+        return;
+    }
+    double opacity = stroke->getOpacity(time);
+    int operatorIndex = stroke->getCompositingOperator();
+    double shapeColor[3];
+    stroke->getColor(time, shapeColor);
+    boost::shared_ptr<Double_Knob> brushSizeKnob = stroke->getBrushSizeKnob();
+    double brushSize = brushSizeKnob->getValueAtTime(time);
+    boost::shared_ptr<Double_Knob> brushSpacingKnob = stroke->getBrushSpacingKnob();
+    double brushSpacing = brushSpacingKnob->getValueAtTime(time);
+    if (brushSpacing == 0.) {
+        return;
+    }
+    
+    boost::shared_ptr<Double_Knob> brushHardnessKnob = stroke->getBrushHardnessKnob();
+    double brushHardness = brushHardnessKnob->getValueAtTime(time);
+    boost::shared_ptr<Double_Knob> brushEffectStrengthKnob = stroke->getBrushEffectKnob();
+    double effectStrength = brushEffectStrengthKnob->getValueAtTime(time);
+    boost::shared_ptr<Double_Knob> visiblePortionKnob = stroke->getBrushVisiblePortionKnob();
+    double writeOnStart = visiblePortionKnob->getValueAtTime(time, 0);
+    double writeOnEnd = visiblePortionKnob->getValueAtTime(time, 1);
+    if ((writeOnEnd - writeOnStart) <= 0.) {
+        return;
+    }
+    
+    int firstPoint = (int)std::floor((points.size() * writeOnStart));
+    int endPoint = (int)std::ceil((points.size() * writeOnEnd));
+    assert(firstPoint >= 0 && firstPoint < (int)points.size() && endPoint > firstPoint && endPoint <= (int)points.size());
+    
+    ///The visible portion of the paint's stroke with points adjusted to pixel coordinates
+    RotoStrokeItem::Points visiblePortion;
+    RotoStrokeItem::Points::iterator startingIt = points.begin();
+    RotoStrokeItem::Points::iterator endingIt = points.begin();
+    std::advance(startingIt, firstPoint);
+    std::advance(endingIt, endPoint);
+    for (RotoStrokeItem::Points::iterator it = startingIt; it!=endingIt; ++it) {
+        std::pair<Point,double> p;
+        p.first.x = it->first.x;
+        p.first.y = it->first.y;
+        p.second = it->second;
+        adjustToPointToScale(mipmapLevel, p.first.x, p.first.y);
+        visiblePortion.push_back(p);
+    }
+    
+    double brushSizePixel = brushSize;
+    if (mipmapLevel != 0) {
+        brushSizePixel /= (1 << mipmapLevel);
+    }
+    double halfSize = brushSizePixel / 2.;
+    double spacingPixel = brushSizePixel * brushSpacing;
+
+    
+    cairo_set_operator(cr, (cairo_operator_t)operatorIndex);
+    ////Define the feather edge pattern
+    cairo_pattern_t* mesh = cairo_pattern_create_mesh();
+    if (cairo_pattern_status(mesh) != CAIRO_STATUS_SUCCESS) {
+        cairo_pattern_destroy(mesh);
+        return;
+    }
+
+    for (RotoStrokeItem::Points::iterator it = visiblePortion.begin(); it!=visiblePortion.end(); ++it) {
+        //Render for each point a dot. Spacing is a percentage of brushSize:
+        //Spacing at 1 means no dot is overlapping another (so the spacing is in fact brushSize)
+        //Spacing at 0 we do not render the stroke
+        //A dot is a combination of 4 mesh patterns: an upper semi circle divided in 2 and lower semi circle divided in 2
+        //the brush hardness is the strength of the feather relative to the radius of the dot: 1 means there is no feather
+        //0 means the feather expands to the center of the dot
+        
+        Point center;
+        center.x = it->first.x;
+        center.y = it->first.y;
+        for (int i = 0; i < 4; ++i) {
+            renderDotPatch(mesh, i, center, brushHardness, halfSize, shapeColor, opacity);
+        }
+        
+        //Find the next point that we should draw a dot on according to the spacing in pixel coordinates
+        RotoStrokeItem::Points::iterator it2 = it;
+        ++it2;
+        for (; it2!=visiblePortion.end(); ++it2) {
+            double dist =  sqrt((it2->first.x - it->first.x) * (it2->first.x - it->first.x) + (it2->first.y - it->first.y) *
+                                (it2->first.y - it->first.y));
+            if (dist >= spacingPixel) {
+                break;
+            }
+        }
+        if (it2 != visiblePortion.end()) {
+            it = it2;
+        }
+       
+    }
+    
+    applyAndDestroyMask(cr, mesh);
 }
 
 void
@@ -6392,6 +6580,7 @@ RotoContextPrivate::renderFeather(const Bezier* bezier,int time, unsigned int mi
         p0p1.y = (p0.y * fallOff * 2. + fallOffInverse * p1.y) / (fallOff * 2. + fallOffInverse);
         p1p0.x = (p0.x * fallOff + 2. * fallOffInverse * p1.x) / (fallOff + 2. * fallOffInverse);
         p1p0.y = (p0.y * fallOff + 2. * fallOffInverse * p1.y) / (fallOff + 2. * fallOffInverse);
+
         
         p2p3.x = (p3.x * fallOff + 2. * fallOffInverse * p2.x) / (fallOff + 2. * fallOffInverse);
         p2p3.y = (p3.y * fallOff + 2. * fallOffInverse * p2.y) / (fallOff + 2. * fallOffInverse);
