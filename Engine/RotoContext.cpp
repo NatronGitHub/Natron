@@ -2954,7 +2954,7 @@ Bezier::moveBezierPointInternal(BezierCP* cpParam,int index,int time, double lx,
                 (cp)->setLeftBezierStaticPosition(leftX + lx, leftY + ly);
             }
             if (!isLeft || moveBoth) {
-                (fp)->setRightBezierStaticPosition(rightX + rx, rightY + ry);
+                (cp)->setRightBezierStaticPosition(rightX + rx, rightY + ry);
             }
             if (moveFeather) {
                 if (isLeft || moveBoth) {
