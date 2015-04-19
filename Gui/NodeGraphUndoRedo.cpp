@@ -1596,8 +1596,9 @@ InlineGroupCommand::InlineGroupCommand(NodeGraph* graph,const std::list<boost::s
             QPointF p = (*it2)->mapToScene((*it2)->mapFromParent((*it2)->getPos_mt_safe()));
             avgOutputPos += p;
         }
-        if (outputsConnectedToGroup.size()) {
-            avgOutputPos /= (int)outputsConnectedToGroup.size();
+        int n = (int)outputsConnectedToGroup.size();
+        if (n) {
+            avgOutputPos /= n;
         }
         avgOutputPos.ry() -= 100;
         
