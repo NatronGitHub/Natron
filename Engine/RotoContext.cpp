@@ -3586,9 +3586,9 @@ Bezier::getBoundingBox(int time) const
     bbox.x2 += featherDistance;
     bbox.y1 -= featherDistance;
     bbox.y2 += featherDistance;
-#else 
+#else // ROTO_USE_MESH_PATTERN_ONLY
     bezierSegmentListBboxUpdate(_imp->featherPointsAtDistance, _imp->finished, time, 0, &bbox);
-#endif
+#endif // ROTO_USE_MESH_PATTERN_ONLY
     return bbox;
 }
 
@@ -4341,23 +4341,18 @@ Bezier::expandToFeatherDistance(const Point & cp, //< the point
 void
 Bezier::invalidateFeatherPointsAtDistance()
 {
-#ifndef ROTO_USE_MESH_PATTERN_ONLY
-    return;
-#endif
+#ifdef ROTO_USE_MESH_PATTERN_ONLY
     //Private - should not lock
     assert(!itemMutex.tryLock());
     _imp->featherPointsAtDistanceValid = false;
+#endif // ROTO_USE_MESH_PATTERN_ONLY
 }
 
 
 void
 Bezier::updateFeatherPointsAtDistanceIfNeeded(int time) const
 {
-    
-#ifndef ROTO_USE_MESH_PATTERN_ONLY
-    return;
-#endif
-    
+#ifdef ROTO_USE_MESH_PATTERN_ONLY
     QMutexLocker k(&itemMutex);
     if (!_imp->featherPointsAtDistanceValid) {
         double fDist = getFeatherDistance(time);
@@ -4435,6 +4430,7 @@ Bezier::updateFeatherPointsAtDistanceIfNeeded(int time) const
         assert(_imp->featherPointsAtDistance.size() == _imp->featherPoints.size());
         _imp->featherPointsAtDistanceValid = true;
     }
+#endif // ROTO_USE_MESH_PATTERN_ONLY
 }
 
 ////////////////////////////////////RotoContext////////////////////////////////////
@@ -6720,7 +6716,7 @@ RotoContextPrivate::renderFeather(const Bezier* bezier,int time, unsigned int mi
         }
 
     }  // for each point in polygon
-#else
+#else // ROTO_USE_MESH_PATTERN_ONLY
     
     Point p0, p0p1, p1p0,p1,p1p2,p2p1, p2, p2p3, p3p2, p3, p3p0,p0p3;
     double featherOpacity = opacity;
@@ -6815,7 +6811,7 @@ RotoContextPrivate::renderFeather(const Bezier* bezier,int time, unsigned int mi
             ++nextFp;
         }
     } // for(it)
-#endif
+#endif // ROTO_USE_MESH_PATTERN_ONLY
 
 }
 
