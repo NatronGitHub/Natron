@@ -1244,6 +1244,7 @@ Curve::refreshDerivatives(Curve::CurveChangedReasonEnum reason,
     double tprev, vprev, tnext, vnext, vprevDerivRight, vnextDerivLeft;
     Natron::KeyframeTypeEnum prevType, nextType;
 
+    assert(key != _imp->keyFrames.end());
     if ( key == _imp->keyFrames.begin() ) {
         tprev = tcur;
         vprev = vcur;
@@ -1294,7 +1295,8 @@ Curve::refreshDerivatives(Curve::CurveChangedReasonEnum reason,
 
     double vcurDerivLeft,vcurDerivRight;
 
-    assert(key->getInterpolation() != Natron::eKeyframeTypeNone &&
+    assert(key != _imp->keyFrames.end() &&
+           key->getInterpolation() != Natron::eKeyframeTypeNone &&
            key->getInterpolation() != Natron::eKeyframeTypeBroken &&
            key->getInterpolation() != Natron::eKeyframeTypeFree);
     Natron::autoComputeDerivatives(prevType,

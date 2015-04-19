@@ -6532,46 +6532,75 @@ RotoContextPrivate::renderFeather(const Bezier* bezier,int time, unsigned int mi
     
     bool clockWise = bezier->isFeatherPolygonClockwiseOriented(time);
     
-    assert( !featherPolygon.empty() );
-    
+    assert( !featherPolygon.empty() && !bezierPolygon.empty());
+
+
     std::list<Point> featherContour;
-    std::list<Point>::iterator cur = featherPolygon.begin();
-    std::list<Point>::iterator next = cur;
-    if (next != featherPolygon.end()) {
-        ++next;
+
+    // prepare iterators
+    std::list<Point>::iterator next = featherPolygon.begin();
+    if ( next == featherPolygon.end() ) {
+        next = featherPolygon.begin();
     }
-    std::list<Point>::iterator prev = featherPolygon.end();
-    if (prev != featherPolygon.begin()) {
-        --prev;
+    ++next;
+    std::list<Point>::iterator prev = featherPolygon.begin();
+    if ( prev == featherPolygon.begin() ) {
+        prev = featherPolygon.end();
     }
+    --prev;
     std::list<Point>::iterator bezIT = bezierPolygon.begin();
-    std::list<Point>::iterator prevBez = bezierPolygon.end();
-    if (prevBez != bezierPolygon.begin()) {
-        --prevBez;
+    std::list<Point>::iterator prevBez = bezierPolygon.begin();
+    if ( prevBez == bezierPolygon.end() ) {
+        prevBez = bezierPolygon.begin();
     }
+    --prevBez;
+
+    // prepare p1
     double absFeatherDist = std::abs(featherDist);
-    Point p1 = *cur;
+    Point p1 = *featherPolygon.begin();
     double norm = sqrt( (next->x - prev->x) * (next->x - prev->x) + (next->y - prev->y) * (next->y - prev->y) );
     assert(norm != 0);
     double dx = -( (next->y - prev->y) / norm );
     double dy = ( (next->x - prev->x) / norm );
-    p1.x = cur->x + dx;
-    p1.y = cur->y + dy;
-    
+
     if (!clockWise) {
-        p1.x = cur->x - dx * absFeatherDist;
-        p1.y = cur->y - dy * absFeatherDist;
+        p1.x -= dx * absFeatherDist;
+        p1.y -= dy * absFeatherDist;
     } else {
-        p1.x = cur->x + dx * absFeatherDist;
-        p1.y = cur->y + dy * absFeatherDist;
+        p1.x += dx * absFeatherDist;
+        p1.y += dy * absFeatherDist;
     }
     
     Point origin = p1;
     featherContour.push_back(p1);
-    
-    ++prev; ++next; ++cur; ++bezIT; ++prevBez;
-    
-    for (;; ++prev, ++cur, ++next, ++bezIT, ++prevBez) { // for each point in polygon
+
+
+    // increment for first iteration
+    std::list<Point>::iterator cur = featherPolygon.begin();
+    // ++cur, ++prev, ++next, ++bezIT, ++prevBez
+    // all should be valid, actually
+    assert(cur != featherPolygon.end() &&
+           prev != featherPolygon.end() &&
+           next != featherPolygon.end() &&
+           bezIT != bezierPolygon.end() &&
+           prevBez != bezierPolygon.end());
+    if (cur != featherPolygon.end()) {
+        ++cur;
+    }
+    if (prev != featherPolygon.end()) {
+        ++prev;
+    }
+    if (next != featherPolygon.end()) {
+        ++next;
+    }
+    if (bezIT != bezierPolygon.end()) {
+        ++bezIT;
+    }
+    if (prevBez != bezierPolygon.end()) {
+        ++prevBez;
+    }
+
+    for (; cur != featherPolygon.end(); ++cur) { // for each point in polygon
         if ( next == featherPolygon.end() ) {
             next = featherPolygon.begin();
         }
@@ -6606,15 +6635,14 @@ RotoContextPrivate::renderFeather(const Bezier* bezier,int time, unsigned int mi
             assert(norm != 0);
             dx = -( (next->y - prev->y) / norm );
             dy = ( (next->x - prev->x) / norm );
-            p2.x = cur->x + dx;
-            p2.y = cur->y + dy;
-            
+            p2 = *cur;
+
             if (!clockWise) {
-                p2.x = cur->x - dx * absFeatherDist;
-                p2.y = cur->y - dy * absFeatherDist;
+                p2.x -= dx * absFeatherDist;
+                p2.y -= dy * absFeatherDist;
             } else {
-                p2.x = cur->x + dx * absFeatherDist;
-                p2.y = cur->y + dy * absFeatherDist;
+                p2.x += dx * absFeatherDist;
+                p2.y += dy * absFeatherDist;
             }
         } else {
             p2 = origin;
@@ -6671,6 +6699,22 @@ RotoContextPrivate::renderFeather(const Bezier* bezier,int time, unsigned int mi
         }
         
         p1 = p2;
+
+        // increment for next iteration
+        // ++prev, ++next, ++bezIT, ++prevBez
+        if (prev != featherPolygon.end()) {
+            ++prev;
+        }
+        if (next != featherPolygon.end()) {
+            ++next;
+        }
+        if (bezIT != bezierPolygon.end()) {
+            ++bezIT;
+        }
+        if (prevBez != bezierPolygon.end()) {
+            ++prevBez;
+        }
+
     }  // for each point in polygon
 #else
     
@@ -6780,6 +6824,7 @@ RotoContextPrivate::renderInternalShape(int time,
                                         cairo_pattern_t* mesh,
                                         const BezierCPs & cps)
 {
+    assert(!cps.empty());
 #ifdef ROTO_USE_MESH_PATTERN_ONLY
     std::list<BezierCPs> coonPatches;
     bezulate(time, cps, &coonPatches);
@@ -6911,6 +6956,7 @@ RotoContextPrivate::renderInternalShape(int time,
     cairo_set_source_rgba(cr, shapeColor[0], shapeColor[1], shapeColor[2], opacity);
     
     BezierCPs::const_iterator point = cps.begin();
+    assert(point != cps.end());
     BezierCPs::const_iterator nextPoint = point;
     if (nextPoint != cps.end()) {
         ++nextPoint;
@@ -6937,11 +6983,12 @@ RotoContextPrivate::renderInternalShape(int time,
         adjustToPointToScale(mipmapLevel,nextLeftX,nextLeftY);
         cairo_curve_to(cr, rightX, rightY, nextLeftX, nextLeftY, nextX, nextY);
 
+        // increment for next iteration
         ++point;
         if (nextPoint != cps.end()) {
             ++nextPoint;
         }
-    }
+    } // while()
 //    if (cairo_get_antialias(cr) != CAIRO_ANTIALIAS_NONE ) {
 //        cairo_fill_preserve(cr);
 //        // These line properties make for a nicer looking polygon mesh
