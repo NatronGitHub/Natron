@@ -1125,7 +1125,7 @@ MultiInstancePanel::onSelectionChanged(const QItemSelection & newSelection,
 		++nextNewlySelected;
 	}
     for (std::list<std::pair<Node*,bool> >::iterator it = newlySelectedInstances.begin();
-         it != newlySelectedInstances.end(); ++it, ++nextNewlySelected) {
+         it != newlySelectedInstances.end(); ++it) {
         ///if the item is in the old selection, don't consider it
         bool skip = false;
         for (std::list<std::pair<Node*,bool> >::iterator it2 = previouslySelectedInstances.begin();
@@ -1178,9 +1178,9 @@ MultiInstancePanel::onSelectionChanged(const QItemSelection & newSelection,
             }
         }
 
-		if (nextNewlySelected == newlySelectedInstances.end()) {
-			--nextNewlySelected;
-		}
+        if (nextNewlySelected != newlySelectedInstances.end()) {
+            ++nextNewlySelected;
+        }
     }
 
 
