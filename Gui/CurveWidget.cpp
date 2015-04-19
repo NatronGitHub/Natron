@@ -1392,13 +1392,6 @@ CurveWidgetPrivate::drawSelectedKeyFramesBbox()
         QPointF btmRightWidget = zoomCtx.toWidgetCoordinates(btmRight.x(), btmRight.y());
         double xMid = (topLeft.x() + btmRight.x()) / 2.;
         double yMid = (topLeft.y() + btmRight.y()) / 2.;
-        double xMidWidget,yMidWidget;
-        {
-            
-            QPointF wid = zoomCtx.toWidgetCoordinates(xMid, yMid);
-            xMidWidget = wid.x();
-            yMidWidget = wid.y();
-        }
 
         glLineWidth(1.5);
 
