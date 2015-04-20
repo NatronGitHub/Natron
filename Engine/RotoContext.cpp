@@ -1710,7 +1710,6 @@ RotoDrawableItem::save(RotoItemSerialization *obj) const
     assert(s);
 
     {
-        QMutexLocker l(&itemMutex);
         serializeRotoKnob(_imp->activated, &s->_activated);
         serializeRotoKnob(_imp->feather, &s->_feather);
         serializeRotoKnob(_imp->opacity, &s->_opacity);
@@ -1720,6 +1719,8 @@ RotoDrawableItem::save(RotoItemSerialization *obj) const
 #endif
         serializeRotoKnob(_imp->color, &s->_color);
         serializeRotoKnob(_imp->compOperator, &s->_compOp);
+        
+        QMutexLocker l(&itemMutex);
         memcpy(s->_overlayColor, _imp->overlayColor, sizeof(double) * 4);
     }
     RotoItem::save(obj);
@@ -6626,21 +6627,15 @@ RotoContextPrivate::renderFeather(const Bezier* bezier,int time, unsigned int mi
 
     // prepare iterators
     std::list<Point>::iterator next = featherPolygon.begin();
-    if ( next == featherPolygon.end() ) {
+    ++next;  // can only be valid since we assert the list is not empty
+    if (next == featherPolygon.end()) {
         next = featherPolygon.begin();
     }
-    ++next;
-    std::list<Point>::iterator prev = featherPolygon.begin();
-    if ( prev == featherPolygon.begin() ) {
-        prev = featherPolygon.end();
-    }
-    --prev;
+    std::list<Point>::iterator prev = featherPolygon.end();
+    --prev; // can only be valid since we assert the list is not empty
     std::list<Point>::iterator bezIT = bezierPolygon.begin();
-    std::list<Point>::iterator prevBez = bezierPolygon.begin();
-    if ( prevBez == bezierPolygon.end() ) {
-        prevBez = bezierPolygon.begin();
-    }
-    --prevBez;
+    std::list<Point>::iterator prevBez = bezierPolygon.end();
+    --prevBez; // can only be valid since we assert the list is not empty
 
     // prepare p1
     double absFeatherDist = std::abs(featherDist);
