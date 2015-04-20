@@ -1845,8 +1845,15 @@ Node::initializeKnobs(int renderScaleSupportPref)
                     
                     std::vector<std::string> choices;
                     choices.push_back("None");
+                    const ImageComponents& rgba = ImageComponents::getRGBAComponents();
+                    const std::vector<std::string>& channels = rgba.getComponentsNames();
+                    const std::string& layerName = rgba.getComponentsGlobalName();
+                    for (std::size_t i = 0; i < channels.size(); ++i) {
+                        choices.push_back(layerName + "." + channels[i]);
+                    }
+
                     channel->populateChoices(choices);
-                    channel->setDefaultValue(0, 0);
+                    channel->setDefaultValue(choices.size() - 1, 0);
                     channel->setAnimationEnabled(false);
                     channel->setHintToolTip(tr("Use this channel from the original input to mix the output with the original input. "
                                                        "Setting this to None is the same as disabling the mask.").toStdString());
@@ -5990,12 +5997,18 @@ Node::refreshChannelSelectors(bool setValues)
                     int numComp = it2->first.getNumComponents();
                     colorIndex = choices.size();
                     colorComp = it2->first;
+                    
+                    assert(choices.size() > 0);
+                    std::vector<std::string>::iterator pos = choices.begin();
+                    ++pos;
+                    colorIndex = 1;
+
                     if (numComp == 1) {
-                        choices.push_back(kNatronAlphaComponentsName);
+                        choices.insert(pos,kNatronAlphaComponentsName);
                     } else if (numComp == 3) {
-                        choices.push_back(kNatronRGBComponentsName);
+                        choices.insert(pos,kNatronRGBComponentsName);
                     } else if (numComp == 4) {
-                        choices.push_back(kNatronRGBAComponentsName);
+                        choices.insert(pos,kNatronRGBAComponentsName);
                     } else {
                         assert(false);
                     }
@@ -6016,14 +6029,10 @@ Node::refreshChannelSelectors(bool setValues)
         }
         
         if (!gotColor) {
+            assert(choices.size() > 0);
             std::vector<std::string>::iterator pos = choices.begin();
-            if (choices.size() > 0) {
-                ++pos;
-                colorIndex = 1;
-            } else {
-                colorIndex = 0;
-            }
-            colorComp = ImageComponents::getRGBAComponents();
+            ++pos;
+            colorIndex = 1;
             choices.insert(pos,kNatronRGBAComponentsName);
             
         }
