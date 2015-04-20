@@ -5135,7 +5135,12 @@ EffectInstance::getComponentsAvailableRecursive(SequenceTime time, int view, Com
                     comps->erase(colorMatch);
                 }
             } else {
-                alreadyExisting = comps->find(*it);
+                for (ComponentsAvailableMap::iterator it2 = comps->begin(); it2 != comps->end(); ++it2) {
+                    if (it2->first == *it) {
+                        alreadyExisting = it2;
+                        break;
+                    }
+                }
             }
             
             //If the component already exists from below in the tree, do not add it
