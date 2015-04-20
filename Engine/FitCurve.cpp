@@ -384,7 +384,7 @@ static void fit_cubic_internal(const std::vector<Point>& points, const Point&  t
             generateBezier(points, u, tHat1, tHat2, generatedBezier);
             maxError = computeMaxError(points, *generatedBezier, u, &splitPoint);
             if (maxError < error) {
-                break;
+                return;
             }
         }
     }
@@ -397,13 +397,18 @@ static void fit_cubic_internal(const std::vector<Point>& points, const Point&  t
     for (std::size_t i = 0; i <= (std::size_t)splitPoint; ++i) {
         firstSplit.push_back(points[i]);
     }
-    for (std::size_t i = (std::size_t)splitPoint; i <= points.size(); ++i) {
+    for (std::size_t i = (std::size_t)splitPoint; i < points.size(); ++i) {
         secondSplit.push_back(points[i]);
     }
-    fit_cubic_internal(firstSplit, tHat1, tHatCenter, error, generatedBezier);
+    
+    std::vector<SimpleBezierCP> first,second;
+    fit_cubic_internal(firstSplit, tHat1, tHatCenter, error, &first);
     tHatCenter.x = -tHatCenter.x;
     tHatCenter.y = -tHatCenter.y;
-    fit_cubic_internal(secondSplit, tHatCenter, tHat2, error, generatedBezier);
+    fit_cubic_internal(secondSplit, tHatCenter, tHat2, error, &second);
+    generatedBezier->clear();
+    generatedBezier->insert(generatedBezier->end(), first.begin(), first.end());
+    generatedBezier->insert(generatedBezier->end(), second.begin(), second.end());
 
 }
     
@@ -416,7 +421,7 @@ static void fit_cubic_for_sub_set(const std::vector<Point>& points,double error,
     
 } // anon namespace
 
-void fit_cubic(const std::vector<Point>& points, double error,std::vector<SimpleBezierCP>* generatedBezier)
+void FitCurve::fit_cubic(const std::vector<Point>& points, double error,std::vector<SimpleBezierCP>* generatedBezier)
 {
     if (points.size() < 2) {
         return;
@@ -443,10 +448,13 @@ void fit_cubic(const std::vector<Point>& points, double error,std::vector<Simple
     std::list<std::vector<Point> > pointSets;
     
     
-    bool foundCorner = false;
+    bool foundCorner;
     
     do {
-        
+        foundCorner = false;
+        if (newPoints.size() <= 2) {
+            break;
+        }
         std::list<Point>::iterator prev = newPoints.begin();
         std::list<Point>::iterator it = newPoints.begin();
         ++it;
@@ -459,7 +467,8 @@ void fit_cubic(const std::vector<Point>& points, double error,std::vector<Simple
                 it = newPoints.begin();
             }
             if (next == newPoints.end()) {
-                next = newPoints.begin();
+                break;
+                //next = newPoints.begin();
             }
             
             Point u,v;
@@ -475,11 +484,18 @@ void fit_cubic(const std::vector<Point>& points, double error,std::vector<Simple
             double alpha = std::acos(distU / distV);
             if (alpha > M_PI / 16.) {
                 std::vector<Point> subset;
+                
                 for (std::list<Point>::iterator it2 = newPoints.begin(); it2!=next; ++it2) {
                     subset.push_back(*it2);
                 }
-                pointSets.push_back(subset);
                 newPoints.erase(newPoints.begin(), next);
+                
+                //If only a single point remains, just add it to this bezier curve
+                if (newPoints.size() == 1) {
+                    subset.push_back(newPoints.front());
+                    newPoints.clear();
+                }
+                pointSets.push_back(subset);
                 foundCorner = true;
                 break;
             }

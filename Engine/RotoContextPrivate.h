@@ -18,6 +18,7 @@
 #include <list>
 #include <map>
 #include <string>
+#include <vector>
 #include <limits>
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
@@ -39,6 +40,7 @@
 #include "Engine/EffectInstance.h"
 #include "Engine/AppManager.h"
 #include "Engine/Rect.h"
+#include "Engine/FitCurve.h"
 #include "Global/GlobalDefines.h"
 
 //#define ROTO_ENABLE_PAINT
@@ -571,6 +573,7 @@ struct RotoStrokeItemPrivate
     
     //list<pair<Point, pressure> >
     std::list<std::pair<Natron::Point,double> > points;
+    std::vector<FitCurve::SimpleBezierCP> fitBezier;
     RectD regionOfDefinition;
     
     RotoStrokeItemPrivate(Natron::RotoStrokeType type)
@@ -581,6 +584,7 @@ struct RotoStrokeItemPrivate
     , effectStrength(new Double_Knob(NULL, kRotoBrushEffectParamLabel, 1, false))
     , visiblePortion(new Double_Knob(NULL, kRotoBrushVisiblePortionParamLabel, 2, false))
     , points()
+    , fitBezier()
     , regionOfDefinition()
     {
         regionOfDefinition.x1 = std::numeric_limits<double>::infinity();

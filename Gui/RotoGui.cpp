@@ -1027,7 +1027,9 @@ RotoGui::drawOverlays(double /*scaleX*/,
             Bezier* isBezier = dynamic_cast<Bezier*>(it->get());
             RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>(it->get());
             if (isStroke) {
-                const RotoStrokeItem::Points& points = isStroke->getPoints();
+                //const RotoStrokeItem::Points& points = isStroke->getPoints();
+                std::list<Point> points;
+                isStroke->fitCurve_DeCastelJau(0, 30, &points, NULL);
                 
                 bool locked = (*it)->isLockedRecursive();
                 double curveColor[4];
@@ -1038,8 +1040,8 @@ RotoGui::drawOverlays(double /*scaleX*/,
                 }
                 glColor4dv(curveColor);
                 glBegin(GL_LINE_STRIP);
-                for (RotoStrokeItem::Points::const_iterator it2 = points.begin(); it2 != points.end(); ++it2) {
-                     glVertex2f(it2->first.x, it2->first.y);
+                for (std::list<Point>::const_iterator it2 = points.begin(); it2 != points.end(); ++it2) {
+                     glVertex2f(it2->x, it2->y);
                 }
                 glEnd();
             } else if (isBezier) {
@@ -2610,6 +2612,8 @@ RotoGui::penUp(double /*scaleX*/,
     }
     
     if (_imp->state == eEventStateBuildingStroke) {
+        assert(_imp->rotoData->strokeBeingPaint);
+        _imp->rotoData->strokeBeingPaint->fitBezierCurve();
         pushUndoCommand(new AddStrokeUndoCommand(this,_imp->rotoData->strokeBeingPaint));
         _imp->rotoData->strokeBeingPaint.reset();
     }

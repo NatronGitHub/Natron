@@ -504,6 +504,18 @@ public:
     
     void addPoint(double x, double y, double pressure);
     
+    void fitBezierCurve();
+    
+    /**
+    * @brief Descretize the curve as a polygon of small segments
+    * @param nbPointsPerSegment controls how many points are used to draw one Bezier segment
+    **/
+    void fitCurve_DeCastelJau(unsigned int mipMapLevel,
+                              int nbPointsPerSegment,
+                              std::list<Natron::Point>* points,
+                              RectD* bbox) const;
+    
+    
     const RotoStrokeItem::Points& getPoints() const;
     
     RectD getStrokeRoD() const;
