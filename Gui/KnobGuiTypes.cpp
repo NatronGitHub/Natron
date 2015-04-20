@@ -1876,7 +1876,7 @@ Choice_KnobGui::onEntriesPopulated()
     }
     // the "New" menu is only added to known parameters (e.g. the choice of output channels)
     if (knob->getHostCanAddOptions() &&
-        (knob->getName() == kNatronOfxParamOutputChannels)) {
+        (knob->getName() == kNatronOfxParamOutputChannels || knob->getName() == "Output_channels")) {
         _comboBox->addItemNew();
     }
     ///we don't use setCurrentIndex because the signal emitted by combobox will call onCurrentIndexChanged and
