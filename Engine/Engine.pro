@@ -67,6 +67,7 @@ SOURCES += \
     EffectInstance.cpp \
     FileDownloader.cpp \
     FileSystemModel.cpp \
+    FitCurve.cpp \
     FrameEntry.cpp \
     FrameKey.cpp \
     FrameParamsSerialization.cpp \
@@ -180,6 +181,7 @@ HEADERS += \
     EffectInstance.h \
     FileDownloader.h \
     FileSystemModel.h \
+    FitCurve.h \
     Format.h \
     FrameEntry.h \
     FrameKey.h \
