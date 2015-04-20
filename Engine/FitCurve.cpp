@@ -447,10 +447,10 @@ void fit_cubic(const std::vector<Point>& points, double error,std::vector<Simple
     
     do {
         
-        std::list<Point>::const_iterator prev = newPoints.begin();
-        std::list<Point>::const_iterator it = newPoints.begin();
+        std::list<Point>::iterator prev = newPoints.begin();
+        std::list<Point>::iterator it = newPoints.begin();
         ++it;
-        std::list<Point>::const_iterator next = it;
+        std::list<Point>::iterator next = it;
         if (next != newPoints.end()) {
             ++next;
         }
