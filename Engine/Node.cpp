@@ -2541,6 +2541,9 @@ Node::hasOutputConnected() const
     if (parent) {
         return parent->hasOutputConnected();
     }
+    if (isOutputNode()) {
+        return true;
+    }
     if ( QThread::currentThread() == qApp->thread() ) {
         if (_imp->outputs.size() == 1) {
 

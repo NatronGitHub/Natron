@@ -1779,13 +1779,13 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
             bool doHints = appPTR->getCurrentSettings()->isConnectionHintEnabled();
             
             BackDropGui* isBd = dynamic_cast<BackDropGui*>(selectedNode.get());
-            if (isBd || selectedNode->getNode()->hasAllInputsConnected()) {
+            if (isBd) {
                 doMergeHints = false;
                 doHints = false;
             }
             
             if (!doMergeHints) {
-                ///for readers already connected don't show hint
+                ///for nodes already connected don't show hint
                 if ( ( internalNode->getMaxInputCount() == 0) && internalNode->hasOutputConnected() ) {
                     doHints = false;
                 } else if ( ( internalNode->getMaxInputCount() > 0) && internalNode->hasInputConnected() && internalNode->hasOutputConnected() ) {
@@ -1794,9 +1794,9 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
             }
             
             if (doHints) {
-                QRectF rect = selectedNode->mapToParent( selectedNode->boundingRect() ).boundingRect();
+                QRectF selectedNodeBbox = selectedNode->boundingRectWithEdges();//selectedNode->mapToParent( selectedNode->boundingRect() ).boundingRect();
                 double tolerance = 10;
-                rect.adjust(-tolerance, -tolerance, tolerance, tolerance);
+                selectedNodeBbox.adjust(-tolerance, -tolerance, tolerance, tolerance);
                 
                 boost::shared_ptr<NodeGui> nodeToShowMergeRect;
                 
@@ -1818,17 +1818,17 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
                         if (isAlreadyAnOutput) {
                             continue;
                         }
-                        QRectF nodeBbox = (*it)->mapToScene((*it)->boundingRect()).boundingRect();
+                        QRectF nodeBbox = (*it)->boundingRectWithEdges();
                         if ( (*it) != selectedNode && (*it)->isVisible() && nodeBbox.intersects(sceneR)) {
                             
                             if (doMergeHints) {
                                 
-                                QRectF nodeRect = (*it)->mapToParent((*it)->boundingRect()).boundingRect();
+                                //QRectF nodeRect = (*it)->mapToParent((*it)->boundingRect()).boundingRect();
                                 
                                 boost::shared_ptr<Natron::Node> internalNode = (*it)->getNode();
                                 
                                 
-                                if (!internalNode->isOutputNode() && nodeRect.intersects(rect)) {
+                                if (!internalNode->isOutputNode() && nodeBbox.intersects(selectedNodeBbox)) {
                                     
                                     bool nHasInput = internalNode->hasInputConnected();
                                     int nMaxInput = internalNode->getMaxInputCount();
@@ -1857,7 +1857,7 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
                                 
                             } else {
                                 
-                                edge = (*it)->hasEdgeNearbyRect(rect);
+                                edge = (*it)->hasEdgeNearbyRect(selectedNodeBbox);
                                 
                                 ///if the edge input is the selected node don't continue
                                 if ( edge && ( edge->getSource() == selectedNode) ) {
