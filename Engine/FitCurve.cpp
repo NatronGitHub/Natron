@@ -233,7 +233,6 @@ static double Bezier3(double u)
         return (u * u * u);
 }
     
-//static void compute
     
 static void generateBezier(const std::vector<Point>& points, const std::vector<double>& u, const Point& tHat1, const Point& tHat2,
                            std::vector<SimpleBezierCP>* generatedBezier)
@@ -293,9 +292,9 @@ static void generateBezier(const std::vector<Point>& points, const std::vector<d
     }
     
     //Compute the determinants of C and X
-    double det_c0_c1 =  c[0][0] * c[1][1] - c[1][0] * c[0][1];
-    double det_c0_x = c[0][0] * x[1] - c[1][0] * x[0];
-    double det_x_C1  = x[0] * c[1][1] - x[1] * c[0][1];
+    double det_c0_c1 = c[0][0] * c[1][1] - c[1][0] * c[0][1];
+    double det_c0_x  = c[0][0] * x[1] -    c[1][0] * x[0];
+    double det_x_C1  = x[0] *    c[1][1] - x[1] *    c[0][1];
     
     // Finally, derive alpha values
     double alpha_l = (det_c0_c1 == 0) ? 0.0 : det_x_C1 / det_c0_c1;
@@ -309,35 +308,24 @@ static void generateBezier(const std::vector<Point>& points, const std::vector<d
     if (alpha_l < epsilon || alpha_r < epsilon) {
         // fall back on standard (probably inaccurate) formula, and subdivide further if needed.
         double dist = segLength / 3.0;
-        SimpleBezierCP firstCp,lastCp;
-        firstCp.p = points[0];
-        firstCp.leftTan = firstCp.p;
-        firstCp.rightTan.x = firstCp.p.x + tHat1.x * dist;
-        firstCp.rightTan.y = firstCp.p.y + tHat1.y * dist;
-        lastCp.p = points[points.size() - 1];
-        lastCp.rightTan = lastCp.p;
-        lastCp.leftTan.x = lastCp.p.x + tHat2.x * dist;
-        lastCp.leftTan.y = lastCp.p.y + tHat2.y * dist;
-        generatedBezier->push_back(firstCp);
-        generatedBezier->push_back(lastCp);
-    } else {
-        
-        // First and last control points of the Bezier curve are
-        //  positioned exactly at the first and last data points
-        //  Control points 1 and 2 are positioned an alpha distance out
-        //  on the tangent vectors, left and right, respectively
-        SimpleBezierCP firstCp,lastCp;
-        firstCp.p = points[0];
-        firstCp.leftTan = firstCp.p;
-        lastCp.p = points[points.size() - 1];
-        lastCp.rightTan = lastCp.p;
-        firstCp.rightTan.x = firstCp.p.x + tHat1.x * alpha_l;
-        firstCp.rightTan.y = firstCp.p.y + tHat1.y * alpha_l;
-        lastCp.leftTan.x = lastCp.p.x + tHat2.x * alpha_r;
-        lastCp.leftTan.y = lastCp.p.y + tHat2.y * alpha_r;
-        generatedBezier->push_back(firstCp);
-        generatedBezier->push_back(lastCp);
+        alpha_l = alpha_r = dist;
     }
+    
+    // First and last control points of the Bezier curve are
+    //  positioned exactly at the first and last data points
+    //  Control points 1 and 2 are positioned an alpha distance out
+    //  on the tangent vectors, left and right, respectively
+    SimpleBezierCP firstCp,lastCp;
+    firstCp.p = points[0];
+    firstCp.leftTan = firstCp.p;
+    lastCp.p = points[points.size() - 1];
+    lastCp.rightTan = lastCp.p;
+    firstCp.rightTan.x = firstCp.p.x + tHat1.x * alpha_l;
+    firstCp.rightTan.y = firstCp.p.y + tHat1.y * alpha_l;
+    lastCp.leftTan.x = lastCp.p.x + tHat2.x * alpha_r;
+    lastCp.leftTan.y = lastCp.p.y + tHat2.y * alpha_r;
+    generatedBezier->push_back(firstCp);
+    generatedBezier->push_back(lastCp);
     
 }
     
@@ -388,8 +376,8 @@ static void fit_cubic_internal(const std::vector<Point>& points, const Point&  t
             }
         }
     }
-    
-    assert(splitPoint >= 0 && splitPoint < (int)points.size() - 1);
+
+    assert(splitPoint >= 1 && splitPoint < (int)points.size() - 1);
     // Fitting failed -- split at max error point and fit recursively
     Point tHatCenter = computeCenterTangent(points[splitPoint - 1], points[splitPoint], points[splitPoint + 1]);
     
@@ -407,13 +395,37 @@ static void fit_cubic_internal(const std::vector<Point>& points, const Point&  t
     tHatCenter.y = -tHatCenter.y;
     fit_cubic_internal(secondSplit, tHatCenter, tHat2, error, &second);
     generatedBezier->clear();
-    generatedBezier->insert(generatedBezier->end(), first.begin(), first.end());
-    generatedBezier->insert(generatedBezier->end(), second.begin(), second.end());
+    if (!first.empty()) {
+        generatedBezier->insert(generatedBezier->end(), first.begin(), first.end());
+    }
+    
+    for (std::vector<SimpleBezierCP>::iterator it = second.begin(); it!= second.end();++it) {
+        
+        /*
+         * We already inserted the last control point of the "first" segment which should be equal to the first control
+         * point of our segment, so give it the left tangent computed in the "first" segment and the right tangent
+         * computed in the "second" segment
+         */
+        if (it == second.begin()) {
+            if (!generatedBezier->empty()) {
+                generatedBezier->back().rightTan = it->rightTan;
+            }
+        } else {
+            generatedBezier->push_back(*it);
+        }
+    }
 
 }
     
 static void fit_cubic_for_sub_set(const std::vector<Point>& points,double error,std::vector<SimpleBezierCP>* generatedBezier)
 {
+    if (points.size() == 1) {
+        SimpleBezierCP cp;
+        cp.p = points.front();
+        cp.leftTan = cp.rightTan = cp.p;
+        generatedBezier->push_back(cp);
+        return;
+    }
     Point tHat1 = computeEndTangent(points[0], points[1]);
     Point tHat2 = computeEndTangent(points[points.size() - 1], points[points.size() - 2]);
     fit_cubic_internal(points, tHat1, tHat2, error, generatedBezier);
@@ -482,7 +494,7 @@ void FitCurve::fit_cubic(const std::vector<Point>& points, double error,std::vec
             double distV = std::sqrt(v.x * v.x + v.y * v.y);
             assert(distV != 0);
             double alpha = std::acos(distU / distV);
-            if (alpha > M_PI / 16.) {
+            if (alpha > M_PI / 2.) {
                 std::vector<Point> subset;
                 
                 for (std::list<Point>::iterator it2 = newPoints.begin(); it2!=next; ++it2) {

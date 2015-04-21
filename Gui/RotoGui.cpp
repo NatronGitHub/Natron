@@ -67,6 +67,9 @@ CLANG_DIAG_ON(uninitialized)
 #define kTransformArrowLenght 10
 #define kTransformArrowWidth 3
 #define kTransformArrowOffsetFromPoint 15
+
+#define DRAW_STROKE_FITTED_CURVE
+
 using namespace Natron;
 
 namespace {
@@ -1029,7 +1032,7 @@ RotoGui::drawOverlays(double /*scaleX*/,
             if (isStroke) {
                 //const RotoStrokeItem::Points& points = isStroke->getPoints();
                 std::list<Point> points;
-                isStroke->fitCurve_DeCastelJau(0, 30, &points, NULL);
+                isStroke->fitCurve_DeCastelJau(0, 50, &points, NULL);
                 
                 bool locked = (*it)->isLockedRecursive();
                 double curveColor[4];
@@ -1044,6 +1047,30 @@ RotoGui::drawOverlays(double /*scaleX*/,
                      glVertex2f(it2->x, it2->y);
                 }
                 glEnd();
+                
+#ifdef DRAW_STROKE_FITTED_CURVE
+                ///DEBUG, just so FitCurve gets called
+                isStroke->fitBezierCurve();
+                
+                const std::vector<FitCurve::SimpleBezierCP>& cps = isStroke->getFittedBezier();
+                for (std::size_t i = 0; i < cps.size() ;++i) {
+                    glColor3f(0., 1., 1.);
+                    glBegin(GL_POINTS);
+                    glVertex2d(cps[i].leftTan.x, cps[i].leftTan.y);
+                    glVertex2d(cps[i].rightTan.x, cps[i].rightTan.y);
+                    glEnd();
+                    glColor3f(1., 0., 0.);
+                    glBegin(GL_POINTS);
+                    glVertex2d(cps[i].p.x, cps[i].p.y);
+                    glEnd();
+                    glColor3f(0., 1., 0.);
+                    glBegin(GL_LINES);
+                    glVertex2d(cps[i].leftTan.x, cps[i].leftTan.y);
+                    glVertex2d(cps[i].rightTan.x, cps[i].rightTan.y);
+                    glEnd();
+                }
+#endif
+                
             } else if (isBezier) {
                 ///draw the bezier
 #pragma message WARN("Roto drawing: please update this algorithm")

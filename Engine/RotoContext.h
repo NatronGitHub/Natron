@@ -28,6 +28,8 @@
 #endif
 
 #include "Global/GlobalDefines.h"
+#include "Engine/FitCurve.h"
+
 CLANG_DIAG_OFF(deprecated-declarations)
 #include <QObject>
 #include <QMutex>
@@ -505,6 +507,8 @@ public:
     void addPoint(double x, double y, double pressure);
     
     void fitBezierCurve();
+    
+    const std::vector<FitCurve::SimpleBezierCP>& getFittedBezier() const;
     
     /**
     * @brief Descretize the curve as a polygon of small segments

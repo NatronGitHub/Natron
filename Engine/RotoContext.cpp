@@ -1995,7 +1995,15 @@ RotoStrokeItem::fitBezierCurve()
     for (Points::iterator it = _imp->points.begin(); it!=_imp->points.end(); ++it) {
         pointsVec.push_back(it->first);
     }
+    _imp->fitBezier.clear();
     FitCurve::fit_cubic(pointsVec, 4, &_imp->fitBezier);
+}
+
+const std::vector<FitCurve::SimpleBezierCP>&
+RotoStrokeItem::getFittedBezier() const
+{
+    assert(QThread::currentThread() == qApp->thread());
+    return _imp->fitBezier;
 }
 
 // compute nbPointsperSegment points and update the bbox bounding box for the Bezier
