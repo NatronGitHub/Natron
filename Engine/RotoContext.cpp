@@ -930,6 +930,7 @@ smoothTangent(int time,
               const std::pair<double,double>& pixelScale)
 {
     if ( (x == *tx) && (y == *ty) ) {
+        
         const std::list < boost::shared_ptr<BezierCP> > & cps = ( p->isFeatherPoint() ?
                                                                   p->getBezier()->getFeatherPoints() :
                                                                   p->getBezier()->getControlPoints() );
@@ -1937,302 +1938,7 @@ RotoDrawableItem::getKnobs() const
 }
 
 
-////////////////////////////////////Stroke//////////////////////////////////
 
-RotoStrokeItem::RotoStrokeItem(Natron::RotoStrokeType type,
-                               const boost::shared_ptr<RotoContext>& context,
-                               const std::string & name,
-                               const boost::shared_ptr<RotoLayer>& parent)
-: RotoDrawableItem(context,name,parent)
-, _imp(new RotoStrokeItemPrivate(type))
-{
-    addKnob(_imp->brushSpacing);
-    addKnob(_imp->brushSize);
-    addKnob(_imp->brushHardness);
-    addKnob(_imp->effectStrength);
-    addKnob(_imp->visiblePortion);
-}
-
-RotoStrokeItem::~RotoStrokeItem()
-{
-    
-}
-
-Natron::RotoStrokeType
-RotoStrokeItem::getBrushType() const
-{
-    return _imp->type;
-}
-
-void
-RotoStrokeItem::addPoint(double x, double y, double pressure)
-{
-    assert(QThread::currentThread() == qApp->thread());
-    Point p;
-    p.x = x;
-    p.y = y;
-    QMutexLocker k(&itemMutex);
-    _imp->points.push_back(std::make_pair(p, pressure));
-    if (x < _imp->regionOfDefinition.x1) {
-        _imp->regionOfDefinition.x1 = x;
-    }
-    if (x >= _imp->regionOfDefinition.x2) {
-        _imp->regionOfDefinition.x2 = x + 1;
-    }
-    if (y < _imp->regionOfDefinition.y1) {
-        _imp->regionOfDefinition.y1 = y;
-    }
-    if (y >= _imp->regionOfDefinition.y2) {
-        _imp->regionOfDefinition.y2 = y + 1;
-    }
-}
-
-void
-RotoStrokeItem::fitBezierCurve()
-{
-    QMutexLocker k(&itemMutex);
-    std::vector<Point> pointsVec;
-    for (Points::iterator it = _imp->points.begin(); it!=_imp->points.end(); ++it) {
-        pointsVec.push_back(it->first);
-    }
-    _imp->fitBezier.clear();
-    FitCurve::fit_cubic(pointsVec, 4, &_imp->fitBezier);
-}
-
-const std::vector<FitCurve::SimpleBezierCP>&
-RotoStrokeItem::getFittedBezier() const
-{
-    assert(QThread::currentThread() == qApp->thread());
-    return _imp->fitBezier;
-}
-
-// compute nbPointsperSegment points and update the bbox bounding box for the Bezier
-// segment from 'first' to 'last' evaluated at 'time'
-static void
-fitCubicBezierSegmentEval(const FitCurve::SimpleBezierCP & first,
-                          const FitCurve::SimpleBezierCP & last,
-                          unsigned int mipMapLevel,
-                          int nbPointsPerSegment,
-                          std::list< Point >* points, ///< output
-                          RectD* bbox = NULL) ///< input/output (optional)
-{
-    Point p0,p1,p2,p3;
-    p0 = first.p;
-    p1 = first.rightTan;
-    p2 = last.leftTan;
-    p3 = last.p;
-    
-    if (mipMapLevel > 0) {
-        int pot = 1 << mipMapLevel;
-        p0.x /= pot;
-        p0.y /= pot;
-        
-        p1.x /= pot;
-        p1.y /= pot;
-        
-        p2.x /= pot;
-        p2.y /= pot;
-        
-        p3.x /= pot;
-        p3.y /= pot;
-    }
-    
-    double incr = 1. / (double)(nbPointsPerSegment - 1);
-    Point cur;
-    for (double t = 0.; t <= 1.; t += incr) {
-        bezierPoint(p0, p1, p2, p3, t, &cur);
-        points->push_back(cur);
-    }
-    if (bbox) {
-        bezierPointBboxUpdate(p0,  p1,  p2,  p3, bbox);
-    }
-}
-
-void
-RotoStrokeItem::fitCurve_DeCastelJau(unsigned int mipMapLevel,
-                          int nbPointsPerSegment,
-                          std::list<Natron::Point>* points,
-                          RectD* bbox) const
-{
-    QMutexLocker l(&itemMutex);
-    std::vector<FitCurve::SimpleBezierCP>::const_iterator next = _imp->fitBezier.begin();
-    
-    if (next != _imp->fitBezier.end()) {
-        ++next;
-    }
-    for (std::vector<FitCurve::SimpleBezierCP>::const_iterator it = _imp->fitBezier.begin(); it != _imp->fitBezier.end(); ++it) {
-        if ( next == _imp->fitBezier.end() ) {
-            break;
-        }
-        fitCubicBezierSegmentEval(*it,*next,mipMapLevel, nbPointsPerSegment, points,bbox);
-        
-        // increment for next iteration
-        if (next != _imp->fitBezier.end()) {
-            ++next;
-        }
-    } // for()
-}
-
-const RotoStrokeItem::Points&
-RotoStrokeItem::getPoints() const
-{
-    assert(QThread::currentThread() == qApp->thread());
-    return _imp->points;
-}
-
-RectD
-RotoStrokeItem::getStrokeRoD() const
-{
-    QMutexLocker k(&itemMutex);
-    return _imp->regionOfDefinition;
-}
-
-RotoStrokeItem::Points
-RotoStrokeItem::getPoints_mt_safe() const
-{
-    QMutexLocker k(&itemMutex);
-    return _imp->points;
-}
-
-void
-RotoStrokeItem::computeRoD()
-{
-    _imp->regionOfDefinition.x1 = std::numeric_limits<double>::infinity();
-    _imp->regionOfDefinition.x2 = -std::numeric_limits<double>::infinity();
-    _imp->regionOfDefinition.y1 = std::numeric_limits<double>::infinity();
-    _imp->regionOfDefinition.y2 = -std::numeric_limits<double>::infinity();
-    
-    for (Points::iterator it = _imp->points.begin(); it != _imp->points.end(); ++it) {
-        if (it->first.x < _imp->regionOfDefinition.x1) {
-            _imp->regionOfDefinition.x1 = it->first.x;
-        }
-        if (it->first.x >= _imp->regionOfDefinition.x2) {
-            _imp->regionOfDefinition.x2 = it->first.x + 1;
-        }
-        if (it->first.y < _imp->regionOfDefinition.y1) {
-            _imp->regionOfDefinition.y1 = it->first.y;
-        }
-        if (it->first.y >= _imp->regionOfDefinition.y2) {
-            _imp->regionOfDefinition.y2 = it->first.y + 1;
-        }
-    }
-    
-}
-
-void
-RotoStrokeItem::transformStroke(const Transform::Matrix3x3& matrix)
-{
-    {
-        QMutexLocker l(&itemMutex);
-        for (std::list<std::pair<Natron::Point,double> >::iterator it = _imp->points.begin()
-             ; it != _imp->points.end(); ++it) {
-            Transform::Point3D p;
-            p.x = it->first.x;
-            p.y = it->first.y;
-            p.z = 1.;
-            p = matApply(matrix, p);
-            p.x /= p.z; p.y /= p.z;
-            it->first.x = p.x;
-            it->first.y = p.y;
-        }
-        computeRoD();
-    }
-    fitBezierCurve();
-}
-
-void
-RotoStrokeItem::clone(const RotoItem* other)
-{
-    
-    RotoDrawableItem::clone(other);
-    {
-        QMutexLocker l(&itemMutex);
-        computeRoD();
-    }
-    fitBezierCurve();
-}
-
-void
-RotoStrokeItem::save(RotoItemSerialization* obj) const
-{
-    RotoDrawableItem::save(obj);
-    RotoStrokeSerialization* s = dynamic_cast<RotoStrokeSerialization*>(obj);
-    assert(s);
-    {
-        QMutexLocker k(&itemMutex);
-        s->_brushType = (int)_imp->type;
-        for (Points::const_iterator it = _imp->points.begin(); it != _imp->points.end(); ++it) {
-            StrokePoint p;
-            p.x = it->first.x;
-            p.y = it->first.y;
-            p.pressure = it->second;
-            s->_points.push_back(p);
-        }
-    }
-    
-    serializeRotoKnob(_imp->brushSize, &s->_brushSize);
-    serializeRotoKnob(_imp->brushSpacing, &s->_brushSpacing);
-    serializeRotoKnob(_imp->brushHardness, &s->_brushHardness);
-    serializeRotoKnob(_imp->effectStrength, &s->_brushEffectStrength);
-    serializeRotoKnob(_imp->visiblePortion, &s->_brushVisiblePortion);
-    
-}
-
-void
-RotoStrokeItem::load(const RotoItemSerialization & obj)
-{
-    RotoDrawableItem::load(obj);
-    const RotoStrokeSerialization* s = dynamic_cast<const RotoStrokeSerialization*>(&obj);
-    assert(s);
-    {
-        QMutexLocker k(&itemMutex);
-        for (std::list<StrokePoint>::const_iterator it = s->_points.begin(); it != s->_points.end(); ++it) {
-            Point p;
-            p.x = it->x;
-            p.y = it->y;
-            _imp->points.push_back(std::make_pair(p, it->pressure));
-        }
-        computeRoD();
-        _imp->type = (Natron::RotoStrokeType)s->_brushType;
-
-    }
-    fitBezierCurve();
-    _imp->brushSize->clone(s->_brushSize.getKnob().get());
-    _imp->brushSpacing->clone(s->_brushSpacing.getKnob().get());
-    _imp->brushHardness->clone(s->_brushHardness.getKnob().get());
-    _imp->effectStrength->clone(s->_brushEffectStrength.getKnob().get());
-    _imp->visiblePortion->clone(s->_brushVisiblePortion.getKnob().get());
-}
-
-boost::shared_ptr<Double_Knob>
-RotoStrokeItem::getBrushSizeKnob() const
-{
-    return _imp->brushSize;
-}
-
-boost::shared_ptr<Double_Knob>
-RotoStrokeItem::getBrushHardnessKnob() const
-{
-    return _imp->brushHardness;
-}
-
-boost::shared_ptr<Double_Knob>
-RotoStrokeItem::getBrushSpacingKnob() const
-{
-    return _imp->brushSpacing;
-}
-
-boost::shared_ptr<Double_Knob>
-RotoStrokeItem::getBrushEffectKnob() const
-{
-    return _imp->effectStrength;
-}
-
-boost::shared_ptr<Double_Knob>
-RotoStrokeItem::getBrushVisiblePortionKnob() const
-{
-    return _imp->visiblePortion;
-}
 
 ////////////////////////////////////Layer////////////////////////////////////
 
@@ -2300,7 +2006,7 @@ RotoLayer::save(RotoItemSerialization *obj) const
         boost::shared_ptr<RotoStrokeItem> isStroke = boost::dynamic_pointer_cast<RotoStrokeItem>(*it);
         boost::shared_ptr<RotoLayer> layer = boost::dynamic_pointer_cast<RotoLayer>(*it);
         boost::shared_ptr<RotoItemSerialization> childSerialization;
-        if (isBezier) {
+        if (isBezier && !isStroke) {
             childSerialization.reset(new BezierSerialization);
             isBezier->save( childSerialization.get() );
         } else if (isStroke) {
@@ -2489,6 +2195,18 @@ Bezier::Bezier(const Bezier & other,
 }
 
 void
+Bezier::clearAllPoints()
+{
+    removeAnimation();
+    QMutexLocker k(&itemMutex);
+    _imp->points.clear();
+    _imp->featherPoints.clear();
+    _imp->featherPointsAtDistance.clear();
+    _imp->isClockwiseOriented.clear();
+    _imp->finished = false;
+}
+
+void
 Bezier::clone(const RotoItem* other)
 {
     boost::shared_ptr<Bezier> this_shared = boost::dynamic_pointer_cast<Bezier>(shared_from_this());
@@ -2501,19 +2219,23 @@ Bezier::clone(const RotoItem* other)
     
     Q_EMIT aboutToClone();
     {
+        bool useFeather = useFeatherPoints();
         QMutexLocker l(&itemMutex);
-        assert( otherBezier->_imp->featherPoints.size() == otherBezier->_imp->points.size() );
+        assert(otherBezier->_imp->featherPoints.size() == otherBezier->_imp->points.size() || !useFeather);
 
         _imp->featherPoints.clear();
         _imp->points.clear();
         BezierCPs::const_iterator itF = otherBezier->_imp->featherPoints.begin();
-        for (BezierCPs::const_iterator it = otherBezier->_imp->points.begin(); it != otherBezier->_imp->points.end(); ++it, ++itF) {
+        for (BezierCPs::const_iterator it = otherBezier->_imp->points.begin(); it != otherBezier->_imp->points.end(); ++it) {
             boost::shared_ptr<BezierCP> cp( new BezierCP(this_shared) );
-            boost::shared_ptr<BezierCP> fp( new BezierCP(this_shared) );
             cp->clone(**it);
-            fp->clone(**itF);
-            _imp->featherPoints.push_back(fp);
             _imp->points.push_back(cp);
+            if (useFeather) {
+                boost::shared_ptr<BezierCP> fp( new BezierCP(this_shared) );
+                fp->clone(**itF);
+                _imp->featherPoints.push_back(fp);
+                ++itF;
+            }
         }
         _imp->finished = otherBezier->_imp->finished;
     }
@@ -2525,7 +2247,7 @@ Bezier::~Bezier()
 {
     BezierCPs::iterator itFp = _imp->featherPoints.begin();
 
-    for (BezierCPs::iterator itCp = _imp->points.begin(); itCp != _imp->points.end(); ++itCp, ++itFp) {
+    for (BezierCPs::iterator itCp = _imp->points.begin(); itCp != _imp->points.end(); ++itCp) {
         boost::shared_ptr<Double_Knob> masterCp = (*itCp)->isSlaved();
         boost::shared_ptr<Double_Knob> masterFp = (*itFp)->isSlaved();
         if (masterCp) {
@@ -2533,6 +2255,9 @@ Bezier::~Bezier()
         }
         if (masterFp) {
             masterFp->removeSlavedTrack(*itFp);
+        }
+        if (useFeatherPoints()) {
+            ++itFp;
         }
     }
 }
@@ -2582,22 +2307,23 @@ Bezier::addControlPoint(double x,
             p->setRightBezierStaticPosition(x, y);
         }
         _imp->points.insert(_imp->points.end(),p);
-
-        boost::shared_ptr<BezierCP> fp( new FeatherPoint(this_shared) );
-        if (autoKeying) {
-            fp->setPositionAtTime(keyframeTime, x, y);
-            fp->setLeftBezierPointAtTime(keyframeTime, x, y);
-            fp->setRightBezierPointAtTime(keyframeTime, x, y);
-        } else {
-            fp->setStaticPosition(x, y);
-            fp->setLeftBezierStaticPosition(x, y);
-            fp->setRightBezierStaticPosition(x, y);
+        
+        if (useFeatherPoints()) {
+            boost::shared_ptr<BezierCP> fp( new FeatherPoint(this_shared) );
+            if (autoKeying) {
+                fp->setPositionAtTime(keyframeTime, x, y);
+                fp->setLeftBezierPointAtTime(keyframeTime, x, y);
+                fp->setRightBezierPointAtTime(keyframeTime, x, y);
+            } else {
+                fp->setStaticPosition(x, y);
+                fp->setLeftBezierStaticPosition(x, y);
+                fp->setRightBezierStaticPosition(x, y);
+            }
+            _imp->featherPoints.insert(_imp->featherPoints.end(),fp);
+            invalidateFeatherPointsAtDistance();
         }
-        _imp->featherPoints.insert(_imp->featherPoints.end(),fp);
-        invalidateFeatherPointsAtDistance();
     }
     
-    Q_EMIT controlPointAdded();
     return p;
 }
 
@@ -2612,7 +2338,11 @@ Bezier::addControlPointAfterIndex(int index,
     assert(this_shared);
 
     boost::shared_ptr<BezierCP> p( new BezierCP(this_shared) );
-    boost::shared_ptr<BezierCP> fp( new FeatherPoint(this_shared) );
+    boost::shared_ptr<BezierCP> fp;
+    
+    if (useFeatherPoints()) {
+        fp.reset( new FeatherPoint(this_shared) );
+    }
     {
         QMutexLocker l(&itemMutex);
         
@@ -2633,11 +2363,13 @@ Bezier::addControlPointAfterIndex(int index,
             }
             next = _imp->points.begin();
             
-            prevF = _imp->featherPoints.end();
-            if (prevF != _imp->featherPoints.begin()) {
-                --prevF;
+            if (useFeatherPoints()) {
+                prevF = _imp->featherPoints.end();
+                if (prevF != _imp->featherPoints.begin()) {
+                    --prevF;
+                }
+                nextF = _imp->featherPoints.begin();
             }
-            nextF = _imp->featherPoints.begin();
         } else {
             prev = _imp->atIndex(index);
             next = prev;
@@ -2648,14 +2380,17 @@ Bezier::addControlPointAfterIndex(int index,
                 next = _imp->points.begin();
             }
             assert( next != _imp->points.end() );
-            prevF = _imp->featherPoints.begin();
-            std::advance(prevF, index);
-            nextF = prevF;
-            if (nextF != _imp->featherPoints.end()) {
-                ++nextF;
-            }
-            if ( _imp->finished && ( nextF == _imp->featherPoints.end() ) ) {
-                nextF = _imp->featherPoints.begin();
+            
+            if (useFeatherPoints()) {
+                prevF = _imp->featherPoints.begin();
+                std::advance(prevF, index);
+                nextF = prevF;
+                if (nextF != _imp->featherPoints.end()) {
+                    ++nextF;
+                }
+                if ( _imp->finished && ( nextF == _imp->featherPoints.end() ) ) {
+                    nextF = _imp->featherPoints.begin();
+                }
             }
         }
         
@@ -2674,19 +2409,24 @@ Bezier::addControlPointAfterIndex(int index,
             
             //update prev and next inner control points
             (*prev)->setRightBezierPointAtTime(*it, p0p1.x, p0p1.y);
-            (*prevF)->setRightBezierPointAtTime(*it, p0p1.x, p0p1.y);
-            
             (*next)->setLeftBezierPointAtTime(*it, p2p3.x, p2p3.y);
-            (*nextF)->setLeftBezierPointAtTime(*it, p2p3.x, p2p3.y);
+            
+            if (useFeatherPoints()) {
+                (*prevF)->setRightBezierPointAtTime(*it, p0p1.x, p0p1.y);
+                (*nextF)->setLeftBezierPointAtTime(*it, p2p3.x, p2p3.y);
+            }
+            
             
             p->setPositionAtTime(*it, dest.x, dest.y);
             ///The left control point of p is p0p1_p1p2 and the right control point is p1p2_p2p3
             p->setLeftBezierPointAtTime(*it, p0p1_p1p2.x, p0p1_p1p2.y);
             p->setRightBezierPointAtTime(*it, p1p2_p2p3.x, p1p2_p2p3.y);
             
-            fp->setPositionAtTime(*it, dest.x, dest.y);
-            fp->setLeftBezierPointAtTime(*it, p0p1_p1p2.x, p0p1_p1p2.y);
-            fp->setRightBezierPointAtTime(*it, p1p2_p2p3.x, p1p2_p2p3.y);
+            if (useFeatherPoints()) {
+                fp->setPositionAtTime(*it, dest.x, dest.y);
+                fp->setLeftBezierPointAtTime(*it, p0p1_p1p2.x, p0p1_p1p2.y);
+                fp->setRightBezierPointAtTime(*it, p1p2_p2p3.x, p1p2_p2p3.y);
+            }
         }
         
         ///if there's no keyframes
@@ -2705,19 +2445,23 @@ Bezier::addControlPointAfterIndex(int index,
             
             //update prev and next inner control points
             (*prev)->setRightBezierStaticPosition(p0p1.x, p0p1.y);
-            (*prevF)->setRightBezierStaticPosition(p0p1.x, p0p1.y);
-            
             (*next)->setLeftBezierStaticPosition(p2p3.x, p2p3.y);
-            (*nextF)->setLeftBezierStaticPosition(p2p3.x, p2p3.y);
+            
+             if (useFeatherPoints()) {
+                 (*prevF)->setRightBezierStaticPosition(p0p1.x, p0p1.y);
+                 (*nextF)->setLeftBezierStaticPosition(p2p3.x, p2p3.y);
+             }
             
             p->setStaticPosition(dest.x, dest.y);
             ///The left control point of p is p0p1_p1p2 and the right control point is p1p2_p2p3
             p->setLeftBezierStaticPosition(p0p1_p1p2.x, p0p1_p1p2.y);
             p->setRightBezierStaticPosition(p1p2_p2p3.x, p1p2_p2p3.y);
             
-            fp->setStaticPosition(dest.x, dest.y);
-            fp->setLeftBezierStaticPosition(p0p1_p1p2.x, p0p1_p1p2.y);
-            fp->setRightBezierStaticPosition(p1p2_p2p3.x, p1p2_p2p3.y);
+            if (useFeatherPoints()) {
+                fp->setStaticPosition(dest.x, dest.y);
+                fp->setLeftBezierStaticPosition(p0p1_p1p2.x, p0p1_p1p2.y);
+                fp->setRightBezierStaticPosition(p1p2_p2p3.x, p1p2_p2p3.y);
+            }
         }
         
         
@@ -2728,13 +2472,17 @@ Bezier::addControlPointAfterIndex(int index,
             std::advance(it, index + 1);
             _imp->points.insert(it,p);
             
-            ///insert the feather point
-            BezierCPs::iterator itF = _imp->featherPoints.begin();
-            std::advance(itF, index + 1);
-            _imp->featherPoints.insert(itF, fp);
+            if (useFeatherPoints()) {
+                ///insert the feather point
+                BezierCPs::iterator itF = _imp->featherPoints.begin();
+                std::advance(itF, index + 1);
+                _imp->featherPoints.insert(itF, fp);
+            }
         } else {
             _imp->points.push_front(p);
-            _imp->featherPoints.push_front(fp);
+             if (useFeatherPoints()) {
+                 _imp->featherPoints.push_front(fp);
+             }
         }
         
         
@@ -2744,9 +2492,11 @@ Bezier::addControlPointAfterIndex(int index,
             l.unlock();
             setKeyframe(currentTime);
         }
-        invalidateFeatherPointsAtDistance();
+        
+         if (useFeatherPoints()) {
+             invalidateFeatherPointsAtDistance();
+         }
     }
-    Q_EMIT controlPointAdded();
     return p;
 } // addControlPointAfterIndex
 
@@ -2777,31 +2527,37 @@ Bezier::isPointOnCurve(double x,
         const boost::shared_ptr<BezierCP> & cp = _imp->points.front();
         if ( isPointCloseTo(time, *cp, x, y, distance) ) {
             *feather = false;
-
+            
             return 0;
         } else {
-            ///do the same with the feather points
-            const boost::shared_ptr<BezierCP> & fp = _imp->featherPoints.front();
-            if ( isPointCloseTo(time, *fp, x, y, distance) ) {
-                *feather = true;
-
-                return 0;
+            
+            if (useFeatherPoints()) {
+                ///do the same with the feather points
+                const boost::shared_ptr<BezierCP> & fp = _imp->featherPoints.front();
+                if ( isPointCloseTo(time, *fp, x, y, distance) ) {
+                    *feather = true;
+                    
+                    return 0;
+                }
             }
         }
-
+        
         return -1;
     }
 
     ///For each segment find out if the point lies on the bezier
     int index = 0;
 
+    bool useFeather = useFeatherPoints();
+    
     assert( _imp->featherPoints.size() == _imp->points.size() );
 
     BezierCPs::const_iterator fp = _imp->featherPoints.begin();
-    for (BezierCPs::const_iterator it = _imp->points.begin(); it != _imp->points.end(); ++it, ++index, ++fp) {
+    for (BezierCPs::const_iterator it = _imp->points.begin(); it != _imp->points.end(); ++it, ++index) {
         BezierCPs::const_iterator next = it;
         BezierCPs::const_iterator nextFp = fp;
-        if (nextFp != _imp->featherPoints.end()) {
+        
+        if (useFeather && nextFp != _imp->featherPoints.end()) {
             ++nextFp;
         }
         if (next != _imp->points.end()) {
@@ -2812,7 +2568,9 @@ Bezier::isPointOnCurve(double x,
                 return -1;
             } else {
                 next = _imp->points.begin();
-                nextFp = _imp->featherPoints.begin();
+                if (useFeather) {
+                    nextFp = _imp->featherPoints.begin();
+                }
             }
         }
         if ( bezierSegmentMeetsPoint(*(*it), *(*next), time, x, y, distance, t) ) {
@@ -2820,10 +2578,14 @@ Bezier::isPointOnCurve(double x,
 
             return index;
         }
-        if ( bezierSegmentMeetsPoint(**fp, **nextFp, time, x, y, distance, t) ) {
+        
+        if (useFeather && bezierSegmentMeetsPoint(**fp, **nextFp, time, x, y, distance, t) ) {
             *feather = true;
 
             return index;
+        }
+        if (useFeather) {
+            ++fp;
         }
     }
 
@@ -2875,11 +2637,13 @@ Bezier::removeControlPointByIndex(int index)
         }
         _imp->points.erase(it);
         
-        BezierCPs::iterator itF = _imp->featherPoints.begin();
-        std::advance(itF, index);
-        _imp->featherPoints.erase(itF);
-        
-        invalidateFeatherPointsAtDistance();
+        if (useFeatherPoints()) {
+            BezierCPs::iterator itF = _imp->featherPoints.begin();
+            std::advance(itF, index);
+            _imp->featherPoints.erase(itF);
+            
+            invalidateFeatherPointsAtDistance();
+        }
     }
     refreshPolygonOrientation();
     Q_EMIT controlPointRemoved();
@@ -2897,20 +2661,24 @@ Bezier::movePointByIndexInternal(int index,int time,double dx,double dy,bool onl
         QMutexLocker l(&itemMutex);
         double x,y,leftX,leftY,rightX,rightY;
         BezierCPs::iterator it;
+        bool isOnKeyframe;
         if (!onlyFeather) {
             it = _imp->atIndex(index);
             (*it)->getPositionAtTime(time, &x, &y,true);
-            (*it)->getLeftBezierPointAtTime(time, &leftX, &leftY,true);
+            isOnKeyframe = (*it)->getLeftBezierPointAtTime(time, &leftX, &leftY,true);
             (*it)->getRightBezierPointAtTime(time, &rightX, &rightY,true);
         }
         
-        
-        BezierCPs::iterator itF = _imp->featherPoints.begin();
-        std::advance(itF, index);
+        bool useFeather = useFeatherPoints();
+        BezierCPs::iterator itF;
         double xF,yF,leftXF,leftYF,rightXF,rightYF;
-         bool isOnKeyframe = (*itF)->getPositionAtTime(time, &xF, &yF,true);
-        (*itF)->getLeftBezierPointAtTime(time, &leftXF, &leftYF,true);
-        (*itF)->getRightBezierPointAtTime(time, &rightXF, &rightYF,true);
+        if (useFeather) {
+            itF = _imp->featherPoints.begin();
+            std::advance(itF, index);
+            (*itF)->getPositionAtTime(time, &xF, &yF,true);
+            (*itF)->getLeftBezierPointAtTime(time, &leftXF, &leftYF,true);
+            (*itF)->getRightBezierPointAtTime(time, &rightXF, &rightYF,true);
+        }
         
         bool fLinkEnabled = onlyFeather ? true : getContext()->isFeatherLinkEnabled();
         bool moveFeather = (fLinkEnabled || (!fLinkEnabled && (*it)->equalsAtTime(time, **itF)));
@@ -2925,7 +2693,7 @@ Bezier::movePointByIndexInternal(int index,int time,double dx,double dy,bool onl
             }
         }
         
-        if (moveFeather) {
+        if (moveFeather && useFeather) {
             if (autoKeying || isOnKeyframe) {
                 (*itF)->setPositionAtTime(time, xF + dx, yF + dy);
                 (*itF)->setLeftBezierPointAtTime(time, leftXF + dx, leftYF + dy);
@@ -3016,12 +2784,14 @@ Bezier::moveBezierPointInternal(BezierCP* cpParam,
             assert( cpIt != _imp->points.end() );
             cp = cpIt->get();
             assert(cp);
-        
-            BezierCPs::iterator fpIt = _imp->featherPoints.begin();
-            std::advance(fpIt, index);
-            assert(fpIt != _imp->featherPoints.end());
-            fp = fpIt->get();
-            assert(fp);
+            
+            if (useFeatherPoints()) {
+                BezierCPs::iterator fpIt = _imp->featherPoints.begin();
+                std::advance(fpIt, index);
+                assert(fpIt != _imp->featherPoints.end());
+                fp = fpIt->get();
+                assert(fp);
+            }
         } else {
             cp = cpParam;
         }
@@ -3041,16 +2811,18 @@ Bezier::moveBezierPointInternal(BezierCP* cpParam,
         if (cpParam) {
             moveFeather = false;
         } else {
-            moveFeather = true;
-            if (isLeft || moveBoth) {
-                (fp)->getLeftBezierPointAtTime(time, &leftXF, &leftYF,true);
-                moveFeather = moveFeather && leftX == leftXF && leftY == leftYF;
+            if (useFeatherPoints()) {
+                moveFeather = true;
+                if (isLeft || moveBoth) {
+                    (fp)->getLeftBezierPointAtTime(time, &leftXF, &leftYF,true);
+                    moveFeather = moveFeather && leftX == leftXF && leftY == leftYF;
+                }
+                if (!isLeft || moveBoth) {
+                    (fp)->getRightBezierPointAtTime(time, &rightXF, &rightYF,true);
+                    moveFeather = moveFeather && rightX == rightXF && rightY == rightYF;
+                }
+                moveFeather = moveFeather || featherLink;
             }
-            if (!isLeft || moveBoth) {
-                (fp)->getRightBezierPointAtTime(time, &rightXF, &rightYF,true);
-                moveFeather = moveFeather && rightX == rightXF && rightY == rightYF;
-            }
-            moveFeather = moveFeather || featherLink;
         }
 
         if (autoKeying || isOnKeyframe) {
@@ -3060,7 +2832,7 @@ Bezier::moveBezierPointInternal(BezierCP* cpParam,
             if (!isLeft || moveBoth) {
                 (cp)->setRightBezierPointAtTime(time, rightX + rx, rightY + ry);
             }
-            if (moveFeather) {
+            if (moveFeather && useFeatherPoints()) {
                 if (isLeft || moveBoth) {
                     (fp)->setLeftBezierPointAtTime(time, leftXF + lx, leftYF + ly);
                 }
@@ -3081,7 +2853,7 @@ Bezier::moveBezierPointInternal(BezierCP* cpParam,
             if (!isLeft || moveBoth) {
                 (cp)->setRightBezierStaticPosition(rightX + rx, rightY + ry);
             }
-            if (moveFeather) {
+            if (moveFeather && useFeatherPoints()) {
                 if (isLeft || moveBoth) {
                     (fp)->setLeftBezierStaticPosition(leftXF + lx, leftYF + ly);
                 }
@@ -3103,14 +2875,14 @@ Bezier::moveBezierPointInternal(BezierCP* cpParam,
                 if (isLeft || moveBoth) {
                     (cp)->getLeftBezierPointAtTime(*it2, &leftX, &leftY,true);
                     (cp)->setLeftBezierPointAtTime(*it2, leftX + lx, leftY + ly);
-                    if (moveFeather) {
+                    if (moveFeather && useFeatherPoints()) {
                         (fp)->getLeftBezierPointAtTime(*it2, &leftXF, &leftYF,true);
                         (fp)->setLeftBezierPointAtTime(*it2, leftXF + lx, leftYF + ly);
                     }
                 } else {
                     (cp)->getRightBezierPointAtTime(*it2, &rightX, &rightY,true);
                     (cp)->setRightBezierPointAtTime(*it2, rightX + rx, rightY + ry);
-                    if (moveFeather) {
+                    if (moveFeather && useFeatherPoints()) {
                         (fp)->getRightBezierPointAtTime(*it2, &rightXF, &rightYF,true);
                         (fp)->setRightBezierPointAtTime(*it2, rightXF + rx, rightYF + ry);
                     }
@@ -3164,7 +2936,7 @@ Bezier::setPointAtIndexInternal(bool setLeft,bool setRight,bool setPoint,bool fe
 {
     ///only called on the main-thread
     assert( QThread::currentThread() == qApp->thread() );
-    
+    assert((feather && useFeatherPoints()) || feather);
     bool autoKeying = getContext()->isAutoKeyingEnabled();
     bool rippleEdit = getContext()->isRippleEditEnabled();
     bool keySet = false;
@@ -3173,7 +2945,7 @@ Bezier::setPointAtIndexInternal(bool setLeft,bool setRight,bool setPoint,bool fe
         QMutexLocker l(&itemMutex);
         bool isOnKeyframe = _imp->hasKeyframeAtTime(time);
         
-        if ( index >= (int)_imp->featherPoints.size() ) {
+        if ( index >= (int)_imp->points.size() ) {
             throw std::invalid_argument("Bezier::setPointAtIndex: Index out of range.");
         }
         
@@ -3331,6 +3103,7 @@ Bezier::removeFeatherAtIndex(int index)
 {
     ///only called on the main-thread
     assert( QThread::currentThread() == qApp->thread() );
+    assert(useFeatherPoints());
     QMutexLocker l(&itemMutex);
 
     if ( index >= (int)_imp->points.size() ) {
@@ -3364,16 +3137,25 @@ Bezier::smoothOrCuspPointAtIndex(bool isSmooth,int index,int time,const std::pai
         }
         
         BezierCPs::iterator cp = _imp->atIndex(index);
-        BezierCPs::iterator fp = _imp->featherPoints.begin();
-        std::advance(fp, index);
+        BezierCPs::iterator fp;
         
+        bool useFeather = useFeatherPoints();
+        
+        if (useFeather) {
+            fp = _imp->featherPoints.begin();
+            std::advance(fp, index);
+        }
         assert( cp != _imp->points.end() && fp != _imp->featherPoints.end() );
         if (isSmooth) {
-            (*cp)->smoothPoint(time,autoKeying,rippleEdit,pixelScale);
-            keySet = (*fp)->smoothPoint(time,autoKeying,rippleEdit,pixelScale);
+            keySet = (*cp)->smoothPoint(time,autoKeying,rippleEdit,pixelScale);
+            if (useFeather) {
+                (*fp)->smoothPoint(time,autoKeying,rippleEdit,pixelScale);
+            }
         } else {
-            (*cp)->cuspPoint(time,autoKeying,rippleEdit, pixelScale);
-            keySet = (*fp)->cuspPoint(time,autoKeying,rippleEdit,pixelScale);
+            keySet = (*cp)->cuspPoint(time,autoKeying,rippleEdit, pixelScale);
+            if (useFeather) {
+                (*fp)->cuspPoint(time,autoKeying,rippleEdit,pixelScale);
+            }
         }
         invalidateFeatherPointsAtDistance();
     }
@@ -3415,10 +3197,11 @@ Bezier::setKeyframe(int time)
         }
 
 
-        assert( _imp->points.size() == _imp->featherPoints.size() );
-
+        assert( _imp->points.size() == _imp->featherPoints.size() || !useFeatherPoints() );
+        bool useFeather = useFeatherPoints();
+        
         BezierCPs::iterator itF = _imp->featherPoints.begin();
-        for (BezierCPs::iterator it = _imp->points.begin(); it != _imp->points.end(); ++it, ++itF) {
+        for (BezierCPs::iterator it = _imp->points.begin(); it != _imp->points.end(); ++it) {
             double x,y;
             double leftDerivX,rightDerivX,leftDerivY,rightDerivY;
 
@@ -3432,7 +3215,7 @@ Bezier::setKeyframe(int time)
                 (*it)->setRightBezierPointAtTime(time, rightDerivX, rightDerivY);
             }
 
-            {
+            if (useFeather) {
                 (*itF)->getPositionAtTime(time, &x, &y,true);
                 (*itF)->setPositionAtTime(time, x, y);
 
@@ -3440,6 +3223,7 @@ Bezier::setKeyframe(int time)
                 (*itF)->getRightBezierPointAtTime(time, &rightDerivX, &rightDerivY,true);
                 (*itF)->setLeftBezierPointAtTime(time, leftDerivX, leftDerivY);
                 (*itF)->setRightBezierPointAtTime(time, rightDerivX, rightDerivY);
+                ++itF;
             }
         }
     }
@@ -3458,15 +3242,23 @@ Bezier::removeKeyframe(int time)
         if ( !_imp->hasKeyframeAtTime(time) ) {
             return;
         }
-        assert( _imp->featherPoints.size() == _imp->points.size() );
+        assert( _imp->featherPoints.size() == _imp->points.size() || !useFeatherPoints());
 
+        bool useFeather = useFeatherPoints();
+        
         BezierCPs::iterator fp = _imp->featherPoints.begin();
-        for (BezierCPs::iterator it = _imp->points.begin(); it != _imp->points.end(); ++it, ++fp) {
+        for (BezierCPs::iterator it = _imp->points.begin(); it != _imp->points.end(); ++it) {
             (*it)->removeKeyframe(time);
-            (*fp)->removeKeyframe(time);
+            if (useFeather) {
+                (*fp)->removeKeyframe(time);
+                ++fp;
+            }
         }
-        for (BezierCPs::iterator it = _imp->featherPointsAtDistance.begin(); it != _imp->featherPointsAtDistance.end(); ++it) {
-            (*it)->removeKeyframe(time);
+        
+        if (useFeather) {
+            for (BezierCPs::iterator it = _imp->featherPointsAtDistance.begin(); it != _imp->featherPointsAtDistance.end(); ++it) {
+                (*it)->removeKeyframe(time);
+            }
         }
         std::map<int,bool>::iterator found = _imp->isClockwiseOriented.find(time);
         if (found != _imp->isClockwiseOriented.end()) {
@@ -3486,15 +3278,21 @@ Bezier::removeAnimation()
     {
         QMutexLocker l(&itemMutex);
         
-        assert( _imp->featherPoints.size() == _imp->points.size() );
+        assert( _imp->featherPoints.size() == _imp->points.size() || !useFeatherPoints() );
         
+        bool useFeather = useFeatherPoints();
         BezierCPs::iterator fp = _imp->featherPoints.begin();
-        for (BezierCPs::iterator it = _imp->points.begin(); it != _imp->points.end(); ++it, ++fp) {
+        for (BezierCPs::iterator it = _imp->points.begin(); it != _imp->points.end(); ++it) {
             (*it)->removeAnimation(time);
-            (*fp)->removeAnimation(time);
+            if (useFeather) {
+                (*fp)->removeAnimation(time);
+                ++fp;
+            }
         }
-        for (BezierCPs::iterator it = _imp->featherPointsAtDistance.begin(); it != _imp->featherPointsAtDistance.end(); ++it) {
-            (*it)->removeAnimation(time);
+        if (useFeather) {
+            for (BezierCPs::iterator it = _imp->featherPointsAtDistance.begin(); it != _imp->featherPointsAtDistance.end(); ++it) {
+                (*it)->removeAnimation(time);
+            }
         }
         _imp->isClockwiseOriented.clear();
     }
@@ -3506,8 +3304,9 @@ Bezier::moveKeyframe(int oldTime,int newTime)
 {
     assert(QThread::currentThread() == qApp->thread());
     
+    bool useFeather = useFeatherPoints();
     BezierCPs::iterator fp = _imp->featherPoints.begin();
-    for (BezierCPs::iterator it = _imp->points.begin(); it != _imp->points.end(); ++it, ++fp) {
+    for (BezierCPs::iterator it = _imp->points.begin(); it != _imp->points.end(); ++it) {
         double x,y,lx,ly,rx,ry;
         (*it)->getPositionAtTime(oldTime, &x, &y);
         (*it)->getLeftBezierPointAtTime(oldTime, &lx, &ly);
@@ -3519,30 +3318,32 @@ Bezier::moveKeyframe(int oldTime,int newTime)
         (*it)->setLeftBezierPointAtTime(newTime, lx, ly);
         (*it)->setRightBezierPointAtTime(newTime, rx, ry);
         
-        (*fp)->getPositionAtTime(oldTime, &x, &y);
-        (*fp)->getLeftBezierPointAtTime(oldTime, &lx, &ly);
-        (*fp)->getRightBezierPointAtTime(oldTime, &rx, &ry);
-        
-        (*fp)->removeKeyframe(oldTime);
-        
-        (*fp)->setPositionAtTime(newTime, x, y);
-        (*fp)->setLeftBezierPointAtTime(newTime, lx, ly);
-        (*fp)->setRightBezierPointAtTime(newTime, rx, ry);
-        
-        
+        if (useFeather) {
+            (*fp)->getPositionAtTime(oldTime, &x, &y);
+            (*fp)->getLeftBezierPointAtTime(oldTime, &lx, &ly);
+            (*fp)->getRightBezierPointAtTime(oldTime, &rx, &ry);
+            
+            (*fp)->removeKeyframe(oldTime);
+            
+            (*fp)->setPositionAtTime(newTime, x, y);
+            (*fp)->setLeftBezierPointAtTime(newTime, lx, ly);
+            (*fp)->setRightBezierPointAtTime(newTime, rx, ry);
+            ++fp;
+        }
     }
-    
-    for (BezierCPs::iterator it = _imp->featherPointsAtDistance.begin(); it != _imp->featherPointsAtDistance.end(); ++it) {
-        double x,y,lx,ly,rx,ry;
-        (*it)->getPositionAtTime(oldTime, &x, &y);
-        (*it)->getLeftBezierPointAtTime(oldTime, &lx, &ly);
-        (*it)->getRightBezierPointAtTime(oldTime, &rx, &ry);
-        
-        (*it)->removeKeyframe(oldTime);
-        
-        (*it)->setPositionAtTime(newTime, x, y);
-        (*it)->setLeftBezierPointAtTime(newTime, lx, ly);
-        (*it)->setRightBezierPointAtTime(newTime, rx, ry);
+    if (useFeather) {
+        for (BezierCPs::iterator it = _imp->featherPointsAtDistance.begin(); it != _imp->featherPointsAtDistance.end(); ++it) {
+            double x,y,lx,ly,rx,ry;
+            (*it)->getPositionAtTime(oldTime, &x, &y);
+            (*it)->getLeftBezierPointAtTime(oldTime, &lx, &ly);
+            (*it)->getRightBezierPointAtTime(oldTime, &rx, &ry);
+            
+            (*it)->removeKeyframe(oldTime);
+            
+            (*it)->setPositionAtTime(newTime, x, y);
+            (*it)->setLeftBezierPointAtTime(newTime, lx, ly);
+            (*it)->setRightBezierPointAtTime(newTime, rx, ry);
+        }
     }
     
     {
@@ -3612,6 +3413,7 @@ Bezier::evaluateFeatherPointsAtTime_DeCasteljau(int time,
                                                 std::list< Natron::Point >* points, ///< output
                                                 RectD* bbox) const ///< output
 {
+    assert(useFeatherPoints());
     QMutexLocker l(&itemMutex);
 
     if ( _imp->points.empty() ) {
@@ -3668,23 +3470,25 @@ Bezier::getBoundingBox(int time) const
     bbox.x2 = -std::numeric_limits<double>::infinity();
     bbox.y1 = std::numeric_limits<double>::infinity();
     bbox.y2 = -std::numeric_limits<double>::infinity();
-
+    
     QMutexLocker l(&itemMutex);
     bezierSegmentListBboxUpdate(_imp->points, _imp->finished, time, 0, &bbox);
     
     
+    if (useFeatherPoints()) {
 #ifndef ROTO_USE_MESH_PATTERN_ONLY
-    bezierSegmentListBboxUpdate(_imp->featherPoints, _imp->finished, time, 0, &bbox);
-    // EDIT: Partial fix, just pad the BBOX by the feather distance. This might not be accurate but gives at least something
-    // enclosing the real bbox and close enough
-    double featherDistance = getFeatherDistance(time);
-    bbox.x1 -= featherDistance;
-    bbox.x2 += featherDistance;
-    bbox.y1 -= featherDistance;
-    bbox.y2 += featherDistance;
+        bezierSegmentListBboxUpdate(_imp->featherPoints, _imp->finished, time, 0, &bbox);
+        // EDIT: Partial fix, just pad the BBOX by the feather distance. This might not be accurate but gives at least something
+        // enclosing the real bbox and close enough
+        double featherDistance = getFeatherDistance(time);
+        bbox.x1 -= featherDistance;
+        bbox.x2 += featherDistance;
+        bbox.y1 -= featherDistance;
+        bbox.y2 += featherDistance;
 #else // ROTO_USE_MESH_PATTERN_ONLY
-    bezierSegmentListBboxUpdate(_imp->featherPointsAtDistance, _imp->finished, time, 0, &bbox);
+        bezierSegmentListBboxUpdate(_imp->featherPointsAtDistance, _imp->finished, time, 0, &bbox);
 #endif // ROTO_USE_MESH_PATTERN_ONLY
+    }
     return bbox;
 }
 
@@ -3694,6 +3498,13 @@ Bezier::getControlPoints() const
     ///only called on the main-thread
     assert( QThread::currentThread() == qApp->thread() );
 
+    return _imp->points;
+}
+
+//protected only
+std::list< boost::shared_ptr<BezierCP> > &
+Bezier::getControlPoints_internal()
+{
     return _imp->points;
 }
 
@@ -4156,10 +3967,15 @@ void
 Bezier::setKeyFrameInterpolation(Natron::KeyframeTypeEnum interp,int index)
 {
     QMutexLocker l(&itemMutex);
+    bool useFeather = useFeatherPoints();
     BezierCPs::iterator fp = _imp->featherPoints.begin();
-    for (BezierCPs::iterator it = _imp->points.begin(); it != _imp->points.end(); ++it, ++fp) {
+    for (BezierCPs::iterator it = _imp->points.begin(); it != _imp->points.end(); ++it) {
         (*it)->setKeyFrameInterpolation(interp, index);
-        (*fp)->setKeyFrameInterpolation(interp, index);
+        
+        if (useFeather) {
+            (*fp)->setKeyFrameInterpolation(interp, index);
+            ++fp;
+        }
     }
 }
 
@@ -4320,6 +4136,8 @@ Bezier::computePolygonOrientation(int time,bool isStatic) const
         return;
     }
     
+    bool useFeather = useFeatherPoints();
+    const BezierCPs& cps = useFeather ? _imp->featherPoints : _imp->points;
     
     
     double polygonSurface = 0.;
@@ -4328,15 +4146,15 @@ Bezier::computePolygonOrientation(int time,bool isStatic) const
         polygonSurface = -1;
     } else {
         Point originalPoint;
-        BezierCPs::const_iterator it = _imp->featherPoints.begin();
+        BezierCPs::const_iterator it = cps.begin();
         (*it)->getPositionAtTime(time, &originalPoint.x, &originalPoint.y);
         ++it;
         BezierCPs::const_iterator next = it;
-        if (next != _imp->featherPoints.end()) {
+        if (next != cps.end()) {
             ++next;
         }
-        for (;next != _imp->featherPoints.end(); ++it, ++next) {
-            assert(it != _imp->featherPoints.end());
+        for (;next != cps.end(); ++it, ++next) {
+            assert(it != cps.end());
             double x,y;
             (*it)->getPositionAtTime(time, &x, &y);
             double xN,yN;
@@ -4527,6 +4345,147 @@ Bezier::updateFeatherPointsAtDistanceIfNeeded(int time) const
         _imp->featherPointsAtDistanceValid = true;
     }
 #endif // ROTO_USE_MESH_PATTERN_ONLY
+}
+
+
+////////////////////////////////////Stroke//////////////////////////////////
+
+RotoStrokeItem::RotoStrokeItem(Natron::RotoStrokeType type,
+                               const boost::shared_ptr<RotoContext>& context,
+                               const std::string & name,
+                               const boost::shared_ptr<RotoLayer>& parent)
+: Bezier(context,name,parent)
+, _imp(new RotoStrokeItemPrivate(type))
+{
+    addKnob(_imp->brushSpacing);
+    addKnob(_imp->brushSize);
+    addKnob(_imp->brushHardness);
+    addKnob(_imp->effectStrength);
+    addKnob(_imp->visiblePortion);
+}
+
+RotoStrokeItem::~RotoStrokeItem()
+{
+    
+}
+
+Natron::RotoStrokeType
+RotoStrokeItem::getBrushType() const
+{
+    return _imp->type;
+}
+
+void
+RotoStrokeItem::initialize(const std::list<std::pair<Natron::Point,double> >& rawPoints)
+{
+    assert(QThread::currentThread() == qApp->thread());
+    clearAllPoints();
+    
+    std::vector<FitCurve::SimpleBezierCP> fitBezier;
+    std::vector<Point> pointsVec;
+    for (std::list<std::pair<Natron::Point,double> >::const_iterator it = rawPoints.begin(); it!=rawPoints.end(); ++it) {
+        pointsVec.push_back(it->first);
+    }
+    
+    //Fit the raw points to a cubic bezier
+    FitCurve::fit_cubic(pointsVec, 4, &fitBezier);
+    
+    int keyframeTime = getContext()->getTimelineCurrentTime();
+    bool autoKeying = getContext()->isAutoKeyingEnabled();
+    
+    boost::shared_ptr<Bezier> this_shared = boost::dynamic_pointer_cast<Bezier>(shared_from_this());
+    assert(this_shared);
+    
+    BezierCPs& cps = getControlPoints_internal();
+    
+    //Fill the animating control points with the simple bezier curve
+    for (std::vector<FitCurve::SimpleBezierCP>::iterator it = fitBezier.begin(); it!=fitBezier.end(); ++it) {
+        boost::shared_ptr<BezierCP> p( new BezierCP(this_shared));
+        if (autoKeying) {
+            p->setPositionAtTime(keyframeTime, it->p.x, it->p.y);
+            p->setLeftBezierPointAtTime(keyframeTime, it->leftTan.x, it->leftTan.y);
+            p->setRightBezierPointAtTime(keyframeTime, it->rightTan.x, it->rightTan.y);
+        } else {
+            p->setStaticPosition(it->p.x, it->p.y);
+            p->setLeftBezierStaticPosition(it->leftTan.x, it->leftTan.y);
+            p->setRightBezierStaticPosition(it->rightTan.x, it->rightTan.y);
+        }
+        cps.insert(cps.end(),p);
+    }
+}
+
+
+void
+RotoStrokeItem::clone(const RotoItem* other)
+{
+    
+    Bezier::clone(other);
+}
+
+void
+RotoStrokeItem::save(RotoItemSerialization* obj) const
+{
+    Bezier::save(obj);
+    RotoStrokeSerialization* s = dynamic_cast<RotoStrokeSerialization*>(obj);
+    assert(s);
+    {
+        QMutexLocker k(&itemMutex);
+        s->_brushType = (int)_imp->type;
+    }
+    serializeRotoKnob(_imp->brushSize, &s->_brushSize);
+    serializeRotoKnob(_imp->brushSpacing, &s->_brushSpacing);
+    serializeRotoKnob(_imp->brushHardness, &s->_brushHardness);
+    serializeRotoKnob(_imp->effectStrength, &s->_brushEffectStrength);
+    serializeRotoKnob(_imp->visiblePortion, &s->_brushVisiblePortion);
+    
+}
+
+void
+RotoStrokeItem::load(const RotoItemSerialization & obj)
+{
+    RotoDrawableItem::load(obj);
+    const RotoStrokeSerialization* s = dynamic_cast<const RotoStrokeSerialization*>(&obj);
+    assert(s);
+    {
+        QMutexLocker k(&itemMutex);
+        _imp->type = (Natron::RotoStrokeType)s->_brushType;
+        
+    }
+    _imp->brushSize->clone(s->_brushSize.getKnob().get());
+    _imp->brushSpacing->clone(s->_brushSpacing.getKnob().get());
+    _imp->brushHardness->clone(s->_brushHardness.getKnob().get());
+    _imp->effectStrength->clone(s->_brushEffectStrength.getKnob().get());
+    _imp->visiblePortion->clone(s->_brushVisiblePortion.getKnob().get());
+}
+
+boost::shared_ptr<Double_Knob>
+RotoStrokeItem::getBrushSizeKnob() const
+{
+    return _imp->brushSize;
+}
+
+boost::shared_ptr<Double_Knob>
+RotoStrokeItem::getBrushHardnessKnob() const
+{
+    return _imp->brushHardness;
+}
+
+boost::shared_ptr<Double_Knob>
+RotoStrokeItem::getBrushSpacingKnob() const
+{
+    return _imp->brushSpacing;
+}
+
+boost::shared_ptr<Double_Knob>
+RotoStrokeItem::getBrushEffectKnob() const
+{
+    return _imp->effectStrength;
+}
+
+boost::shared_ptr<Double_Knob>
+RotoStrokeItem::getBrushVisiblePortionKnob() const
+{
+    return _imp->visiblePortion;
 }
 
 ////////////////////////////////////RotoContext////////////////////////////////////
@@ -5056,7 +5015,7 @@ const
         for (RotoItems::iterator it2 = items.begin(); it2 != items.end(); ++it2) {
             Bezier* isBezier = dynamic_cast<Bezier*>(it2->get());
             RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>(it2->get());
-            if (isBezier) {
+            if (isBezier && !isStroke) {
                 if (isBezier->isActivated(time) && isBezier->isCurveFinished() && isBezier->getControlPointsCount() > 1) {
                     RectD splineRoD = isBezier->getBoundingBox(time);
                     if ( splineRoD.isNull() ) {
@@ -5071,7 +5030,7 @@ const
                     }
                 }
             } else if (isStroke) {
-                RectD strokeRod = isStroke->getStrokeRoD();
+                RectD strokeRod = isStroke->getBoundingBox(time);
                 if (first) {
                     first = false;
                     *rod = strokeRod;
@@ -5264,7 +5223,7 @@ RotoContext::selectInternal(const boost::shared_ptr<RotoItem> & item)
     for (std::list<boost::shared_ptr<RotoItem> >::iterator it = _imp->selectedItems.begin(); it != _imp->selectedItems.end(); ++it) {
         Bezier* isBezier = dynamic_cast<Bezier*>(it->get());
         RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>(it->get());
-        if (isBezier && !isBezier->isLockedRecursive()) {
+        if (!isStroke && isBezier && !isBezier->isLockedRecursive()) {
             ++nbUnlockedBeziers;
         } else if (isStroke) {
             ++nbUnlockedStrokes;
@@ -5416,7 +5375,7 @@ RotoContext::deselectInternal(boost::shared_ptr<RotoItem> b)
     for (std::list<boost::shared_ptr<RotoItem> >::iterator it = _imp->selectedItems.begin(); it != _imp->selectedItems.end(); ++it) {
         Bezier* isBezier = dynamic_cast<Bezier*>(it->get());
         RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>(it->get());
-        if (isBezier && !isBezier->isLockedRecursive()) {
+        if (!isStroke && isBezier && !isBezier->isLockedRecursive()) {
             ++nbBeziersUnLockedBezier;
         } else if (isStroke) {
             ++nbStrokesUnlocked;
@@ -6300,7 +6259,7 @@ RotoContextPrivate::renderInternal(cairo_t* cr,
         
         Bezier* isBezier = dynamic_cast<Bezier*>(it2->get());
         RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>(it2->get());
-        if (isBezier) {
+        if (isBezier && !isStroke) {
             renderBezier(cr, isBezier, time, mipmapLevel);
         } else if (isStroke) {
             renderStroke(cr, isStroke, time, mipmapLevel);
@@ -6416,10 +6375,14 @@ static void renderDotPatch(cairo_pattern_t* mesh, int patchNum, const Point &cen
 void
 RotoContextPrivate::renderStroke(cairo_t* cr,const RotoStrokeItem* stroke, int time, unsigned int mipmapLevel)
 {
-    RotoStrokeItem::Points points = stroke->getPoints_mt_safe();
-    if (!stroke->isActivated(time) || points.empty()) {
+    const BezierCPs& cps = stroke->getControlPoints_mt_safe();
+    if (!stroke->isActivated(time) || cps.empty()) {
         return;
     }
+    
+    std::list<Point> points;
+    stroke->evaluateAtTime_DeCasteljau(time, mipmapLevel, 50, &points, 0);
+    
     double opacity = stroke->getOpacity(time);
     int operatorIndex = stroke->getCompositingOperator();
     double shapeColor[3];
@@ -6447,18 +6410,19 @@ RotoContextPrivate::renderStroke(cairo_t* cr,const RotoStrokeItem* stroke, int t
     int endPoint = (int)std::ceil((points.size() * writeOnEnd));
     assert(firstPoint >= 0 && firstPoint < (int)points.size() && endPoint > firstPoint && endPoint <= (int)points.size());
     
+    
+    
     ///The visible portion of the paint's stroke with points adjusted to pixel coordinates
-    RotoStrokeItem::Points visiblePortion;
-    RotoStrokeItem::Points::iterator startingIt = points.begin();
-    RotoStrokeItem::Points::iterator endingIt = points.begin();
+    std::list<Point> visiblePortion;
+    std::list<Point>::iterator startingIt = points.begin();
+    std::list<Point>::iterator endingIt = points.begin();
     std::advance(startingIt, firstPoint);
     std::advance(endingIt, endPoint);
-    for (RotoStrokeItem::Points::iterator it = startingIt; it!=endingIt; ++it) {
-        std::pair<Point,double> p;
-        p.first.x = it->first.x;
-        p.first.y = it->first.y;
-        p.second = it->second;
-        adjustToPointToScale(mipmapLevel, p.first.x, p.first.y);
+    for (std::list<Point>::iterator it = startingIt; it!=endingIt; ++it) {
+        Point p;
+        p.x = it->x;
+        p.y = it->y;
+        adjustToPointToScale(mipmapLevel, p.x, p.y);
         visiblePortion.push_back(p);
     }
     
@@ -6478,7 +6442,7 @@ RotoContextPrivate::renderStroke(cairo_t* cr,const RotoStrokeItem* stroke, int t
         return;
     }
 
-    for (RotoStrokeItem::Points::iterator it = visiblePortion.begin(); it!=visiblePortion.end(); ++it) {
+    for (std::list<Point>::iterator it = visiblePortion.begin(); it!=visiblePortion.end(); ++it) {
         //Render for each point a dot. Spacing is a percentage of brushSize:
         //Spacing at 1 means no dot is overlapping another (so the spacing is in fact brushSize)
         //Spacing at 0 we do not render the stroke
@@ -6487,18 +6451,18 @@ RotoContextPrivate::renderStroke(cairo_t* cr,const RotoStrokeItem* stroke, int t
         //0 means the feather expands to the center of the dot
         
         Point center;
-        center.x = it->first.x;
-        center.y = it->first.y;
+        center.x = it->x;
+        center.y = it->y;
         for (int i = 0; i < 4; ++i) {
             renderDotPatch(mesh, i, center, brushHardness, halfSize, shapeColor, opacity);
         }
         
         //Find the next point that we should draw a dot on according to the spacing in pixel coordinates
-        RotoStrokeItem::Points::iterator it2 = it;
+        std::list<Point>::iterator it2 = it;
         ++it2;
         for (; it2!=visiblePortion.end(); ++it2) {
-            double dist =  sqrt((it2->first.x - it->first.x) * (it2->first.x - it->first.x) + (it2->first.y - it->first.y) *
-                                (it2->first.y - it->first.y));
+            double dist =  sqrt((it2->x - it->x) * (it2->x - it->x) + (it2->y - it->y) *
+                                (it2->y - it->y));
             if (dist >= spacingPixel) {
                 break;
             }
@@ -6690,7 +6654,7 @@ RotoContextPrivate::renderFeather(const Bezier* bezier,int time, unsigned int mi
         ++prevBez;
     }
 
-    for (; cur != featherPolygon.end(); ++cur) { // for each point in polygon
+    for (;; ++cur) { // for each point in polygon
         if ( next == featherPolygon.end() ) {
             next = featherPolygon.begin();
         }

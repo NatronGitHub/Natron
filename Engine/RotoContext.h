@@ -79,7 +79,6 @@ class Bezier;
 class RotoItemSerialization;
 class BezierSerialization;
 
-
 /**
  * @class A Bezier is an animated control point of a Bezier. It is the starting point
  * and/or the ending point of a bezier segment. (It would correspond to P0/P3).
@@ -454,7 +453,6 @@ public:
 
     const std::list<boost::shared_ptr<KnobI> >& getKnobs() const;
     
-
 public Q_SLOTS:
     
     void onFeatherDistanceChanged(int,int);
@@ -483,79 +481,6 @@ private:
     boost::scoped_ptr<RotoDrawableItemPrivate> _imp;
 };
 
-
-/**
- * @class Base class for all strokes
- **/
-struct RotoStrokeItemPrivate;
-class RotoStrokeItem : public RotoDrawableItem
-{
-    
-public:
-    
-    typedef std::list<std::pair<Natron::Point,double> > Points;
-    
-    RotoStrokeItem(Natron::RotoStrokeType type,
-                   const boost::shared_ptr<RotoContext>& context,
-                   const std::string & name,
-                   const boost::shared_ptr<RotoLayer>& parent);
-    
-    virtual ~RotoStrokeItem();
-    
-    Natron::RotoStrokeType getBrushType() const;
-    
-    void addPoint(double x, double y, double pressure);
-    
-    void fitBezierCurve();
-    
-    const std::vector<FitCurve::SimpleBezierCP>& getFittedBezier() const;
-    
-    /**
-    * @brief Descretize the curve as a polygon of small segments
-    * @param nbPointsPerSegment controls how many points are used to draw one Bezier segment
-    **/
-    void fitCurve_DeCastelJau(unsigned int mipMapLevel,
-                              int nbPointsPerSegment,
-                              std::list<Natron::Point>* points,
-                              RectD* bbox) const;
-    
-    
-    const RotoStrokeItem::Points& getPoints() const;
-    
-    RectD getStrokeRoD() const;
-    
-    RotoStrokeItem::Points getPoints_mt_safe() const;
-    
-    void transformStroke(const Transform::Matrix3x3& matrix);
-    
-    virtual void clone(const RotoItem* other);
-    
-    /**
-     * @brief Must be implemented by the derived class to save the state into
-     * the serialization object.
-     * Derived implementations must call the parent class implementation.
-     **/
-    virtual void save(RotoItemSerialization* obj) const OVERRIDE;
-    
-    /**
-     * @brief Must be implemented by the derived class to load the state from
-     * the serialization object.
-     * Derived implementations must call the parent class implementation.
-     **/
-    virtual void load(const RotoItemSerialization & obj) OVERRIDE;
-
-    boost::shared_ptr<Double_Knob> getBrushSizeKnob() const;
-    boost::shared_ptr<Double_Knob> getBrushHardnessKnob() const;
-    boost::shared_ptr<Double_Knob> getBrushSpacingKnob() const;
-    boost::shared_ptr<Double_Knob> getBrushEffectKnob() const;
-    boost::shared_ptr<Double_Knob> getBrushVisiblePortionKnob() const;
-    
-private:
-    
-    void computeRoD();
-    
-    boost::scoped_ptr<RotoStrokeItemPrivate> _imp;
-};
 
 /**
  * @class A RotoLayer is a group of RotoItem. This allows the context to sort
@@ -643,8 +568,23 @@ public:
            const boost::shared_ptr<RotoLayer>& parent);
 
     virtual ~Bezier();
+    
+protected:
+    
+    /**
+     * @brief Used to differentiate real shapes with feather of paint strokes which does not have a feather
+     **/
+    virtual bool useFeatherPoints() const { return true; }
+    
+public:
+    
+    
+    
+    virtual void clone(const RotoItem* other) OVERRIDE;
 
-    virtual void clone(const RotoItem* other);
+    
+    void clearAllPoints();
+    
     /**
      * @brief Adds a new control point to the curve. A feather point will be added, at the same position.
      * If auto keying is enabled and this is the first point and there's no keyframe a new keyframe will be set at the current time.
@@ -671,7 +611,7 @@ public:
      * @brief Returns the number of control points of the bezier
      **/
     int getControlPointsCount() const;
-
+    
     /**
      * @brief Given the (x,y) coordinates of a point, this function returns whether a point lies on
      * the cubic bezier curve of the feather points or of the control points or not.
@@ -870,6 +810,14 @@ public:
      * @brief Returns a const ref to the control points of the bezier curve. This can only ever be called on the main thread.
      **/
     const std::list< boost::shared_ptr<BezierCP> > & getControlPoints() const;
+    
+protected:
+    
+    std::list< boost::shared_ptr<BezierCP> > & getControlPoints_internal();
+    
+public:
+    
+    
     std::list< boost::shared_ptr<BezierCP> > getControlPoints_mt_safe() const;
 
     /**
@@ -899,8 +847,8 @@ public:
      * @brief Given the control point in parameter, return its index in the curve's control points list.
      * If no such control point could be found, -1 is returned.
      **/
-    int getControlPointIndex(const boost::shared_ptr<BezierCP> & cp) const;
-    int getControlPointIndex(const BezierCP* cp) const;
+    virtual int getControlPointIndex(const boost::shared_ptr<BezierCP> & cp) const;
+    virtual int getControlPointIndex(const BezierCP* cp) const;
 
     /**
      * @brief Given the feather point in parameter, return its index in the curve's feather points list.
@@ -1032,14 +980,74 @@ Q_SIGNALS:
     void keyframeRemoved(int time);
     
     void animationRemoved();
-    
-    void controlPointAdded();
-    
+        
     void controlPointRemoved();
 
 private:
 
     boost::scoped_ptr<BezierPrivate> _imp;
+};
+
+
+
+/**
+ * @class Base class for all strokes
+ **/
+struct RotoStrokeItemPrivate;
+class RotoStrokeItem : public Bezier
+{
+    
+public:
+    
+    RotoStrokeItem(Natron::RotoStrokeType type,
+                   const boost::shared_ptr<RotoContext>& context,
+                   const std::string & name,
+                   const boost::shared_ptr<RotoLayer>& parent);
+    
+    virtual ~RotoStrokeItem();
+    
+private:
+    
+    virtual bool useFeatherPoints() const OVERRIDE FINAL { return false; }
+    
+public:
+    
+    
+    Natron::RotoStrokeType getBrushType() const;
+    
+    /**
+     * @brief Initializes the paint stroke with the raw points list.
+     * It will be converted to a cubic bezier curve that fit the initial point list
+     **/
+    void initialize(const std::list<std::pair<Natron::Point,double> >& rawPoints);
+    
+       
+    virtual void clone(const RotoItem* other) OVERRIDE FINAL;
+    
+    /**
+     * @brief Must be implemented by the derived class to save the state into
+     * the serialization object.
+     * Derived implementations must call the parent class implementation.
+     **/
+    virtual void save(RotoItemSerialization* obj) const OVERRIDE FINAL;
+    
+    /**
+     * @brief Must be implemented by the derived class to load the state from
+     * the serialization object.
+     * Derived implementations must call the parent class implementation.
+     **/
+    virtual void load(const RotoItemSerialization & obj) OVERRIDE FINAL;
+    
+    boost::shared_ptr<Double_Knob> getBrushSizeKnob() const;
+    boost::shared_ptr<Double_Knob> getBrushHardnessKnob() const;
+    boost::shared_ptr<Double_Knob> getBrushSpacingKnob() const;
+    boost::shared_ptr<Double_Knob> getBrushEffectKnob() const;
+    boost::shared_ptr<Double_Knob> getBrushVisiblePortionKnob() const;
+    
+    
+private:
+    
+    boost::scoped_ptr<RotoStrokeItemPrivate> _imp;
 };
 
 

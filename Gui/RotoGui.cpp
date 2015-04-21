@@ -143,6 +143,7 @@ struct RotoGuiSharedData
     SelectedCP featherBarBeingDragged,featherBarBeingHovered;
     bool displayFeather;
     boost::shared_ptr<RotoStrokeItem> strokeBeingPaint;
+    std::list<std::pair<Natron::Point,double> > strokeBeingPaintPoints;
     
     RotoGuiSharedData()
     : selectedItems()
@@ -1032,7 +1033,7 @@ RotoGui::drawOverlays(double /*scaleX*/,
             if (isStroke) {
                 //const RotoStrokeItem::Points& points = isStroke->getPoints();
                 std::list<Point> points;
-                isStroke->fitCurve_DeCastelJau(0, 50, &points, NULL);
+                isStroke->evaluateAtTime_DeCasteljau(time, 0, 50, &points, NULL);
                 
                 bool locked = (*it)->isLockedRecursive();
                 double curveColor[4];
@@ -1049,24 +1050,27 @@ RotoGui::drawOverlays(double /*scaleX*/,
                 glEnd();
                 
 #ifdef DRAW_STROKE_FITTED_CURVE
-                ///DEBUG, just so FitCurve gets called
-                isStroke->fitBezierCurve();
                 
-                const std::vector<FitCurve::SimpleBezierCP>& cps = isStroke->getFittedBezier();
-                for (std::size_t i = 0; i < cps.size() ;++i) {
+                const BezierCPs& cps = isStroke->getControlPoints();
+                for (BezierCPs::const_iterator it2 = cps.begin(); it2 !=cps.end(); ++it2) {
+                    
+                    double x,y,lx,ly,rx,ry;
+                    (*it2)->getPositionAtTime(time, &x, &y);
+                    (*it2)->getLeftBezierPointAtTime(time, &lx, &ly);
+                    (*it2)->getRightBezierPointAtTime(time, &rx, &ry);
                     glColor3f(0., 1., 1.);
                     glBegin(GL_POINTS);
-                    glVertex2d(cps[i].leftTan.x, cps[i].leftTan.y);
-                    glVertex2d(cps[i].rightTan.x, cps[i].rightTan.y);
+                    glVertex2d(lx, ly);
+                    glVertex2d(rx, ry);
                     glEnd();
                     glColor3f(1., 0., 0.);
                     glBegin(GL_POINTS);
-                    glVertex2d(cps[i].p.x, cps[i].p.y);
+                    glVertex2d(x, y);
                     glEnd();
                     glColor3f(0., 1., 0.);
                     glBegin(GL_LINES);
-                    glVertex2d(cps[i].leftTan.x, cps[i].leftTan.y);
-                    glVertex2d(cps[i].rightTan.x, cps[i].rightTan.y);
+                    glVertex2d(lx, ly);
+                    glVertex2d(rx, ry);
                     glEnd();
                 }
 #endif
@@ -1591,7 +1595,6 @@ RotoGui::updateSelectionFromSelectionRectangle(bool onRelease)
     for (std::list<boost::shared_ptr<RotoDrawableItem> >::const_iterator it = curves.begin(); it != curves.end(); ++it) {
         
         boost::shared_ptr<Bezier> isBezier = boost::dynamic_pointer_cast<Bezier>(*it);
-        boost::shared_ptr<RotoStrokeItem> isStroke = boost::dynamic_pointer_cast<RotoStrokeItem>(*it);
         if ((*it)->isLockedRecursive()) {
             continue;
         }
@@ -1617,18 +1620,6 @@ RotoGui::updateSelectionFromSelectionRectangle(bool onRelease)
             }
             if ( !points.empty()) {
                 _imp->rotoData->selectedItems.push_back(isBezier);
-            }
-        } else if (isStroke) {
-            const RotoStrokeItem::Points& points = isStroke->getPoints();
-            bool allInside = true;
-            for (RotoStrokeItem::Points::const_iterator it2 = points.begin(); it2!=points.end(); ++it2) {
-                if (it2->first.x < l || it2->first.x >= r || it2->first.y < b || it2->first.y > t) {
-                    allInside = false;
-                    break;
-                }
-            }
-            if (allInside) {
-                _imp->rotoData->selectedItems.push_back(isStroke);
             }
         }
     }
@@ -2152,7 +2143,10 @@ RotoGui::penDown(double /*scaleX*/,
         }
         case eRotoToolSolidBrush: {
             _imp->rotoData->strokeBeingPaint = _imp->context->makeStroke(Natron::eRotoStrokeTypeSolid, kRotoPaintBrushBaseName);
-            _imp->rotoData->strokeBeingPaint->addPoint(pos.x(), pos.y(), 1.);
+            Natron::Point p;
+            p.x = pos.x();
+            p.y = pos.y();
+            _imp->rotoData->strokeBeingPaintPoints.push_back(std::make_pair(p,1.));
             _imp->context->evaluateChange();
             _imp->state = eEventStateBuildingStroke;
             didSomething = true;
@@ -2555,7 +2549,11 @@ RotoGui::penMotion(double /*scaleX*/,
     }
     case eEventStateBuildingStroke: {
         if (_imp->rotoData->strokeBeingPaint) {
-            _imp->rotoData->strokeBeingPaint->addPoint(pos.x(), pos.y(), 1.);
+            Natron::Point p;
+            p.x = pos.x();
+            p.y = pos.y();
+            _imp->rotoData->strokeBeingPaintPoints.push_back(std::make_pair(p,1.));
+            _imp->rotoData->strokeBeingPaint->initialize(_imp->rotoData->strokeBeingPaintPoints);
             _imp->context->evaluateChange();
             didSomething = true;
         }
@@ -2640,7 +2638,8 @@ RotoGui::penUp(double /*scaleX*/,
     
     if (_imp->state == eEventStateBuildingStroke) {
         assert(_imp->rotoData->strokeBeingPaint);
-        _imp->rotoData->strokeBeingPaint->fitBezierCurve();
+        _imp->rotoData->strokeBeingPaint->initialize(_imp->rotoData->strokeBeingPaintPoints);
+        _imp->rotoData->strokeBeingPaintPoints.clear();
         pushUndoCommand(new AddStrokeUndoCommand(this,_imp->rotoData->strokeBeingPaint));
         _imp->rotoData->strokeBeingPaint.reset();
     }

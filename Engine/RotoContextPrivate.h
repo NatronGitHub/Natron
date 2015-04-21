@@ -150,23 +150,23 @@ struct BezierCPPrivate
     SequenceTime offsetTime; //< the time at which the offset must be computed
 
     BezierCPPrivate(const boost::shared_ptr<Bezier>& curve)
-        : holder(curve)
-          , curveX(new Curve)
-          , curveY(new Curve)
-          , x(0)
-          , y(0)
-          , curveLeftBezierX(new Curve)
-          , curveRightBezierX(new Curve)
-          , curveLeftBezierY(new Curve)
-          , curveRightBezierY(new Curve)
-          , staticPositionMutex()
-          , leftX(0)
-          , rightX(0)
-          , leftY(0)
-          , rightY(0)
-          , masterMutex()
-          , masterTrack()
-          , offsetTime(0)
+    : holder(curve)
+    , curveX(new Curve)
+    , curveY(new Curve)
+    , x(0)
+    , y(0)
+    , curveLeftBezierX(new Curve)
+    , curveRightBezierX(new Curve)
+    , curveLeftBezierY(new Curve)
+    , curveRightBezierY(new Curve)
+    , staticPositionMutex()
+    , leftX(0)
+    , rightX(0)
+    , leftY(0)
+    , rightY(0)
+    , masterMutex()
+    , masterTrack()
+    , offsetTime(0)
     {
     }
 };
@@ -571,11 +571,6 @@ struct RotoStrokeItemPrivate
     boost::shared_ptr<Double_Knob> effectStrength;
     boost::shared_ptr<Double_Knob> visiblePortion; // [0,1] by default
     
-    //list<pair<Point, pressure> >
-    std::list<std::pair<Natron::Point,double> > points;
-    std::vector<FitCurve::SimpleBezierCP> fitBezier;
-    RectD regionOfDefinition;
-    
     RotoStrokeItemPrivate(Natron::RotoStrokeType type)
     : type(type)
     , brushSize(new Double_Knob(NULL, kRotoBrushSizeParamLabel, 1, false))
@@ -583,15 +578,8 @@ struct RotoStrokeItemPrivate
     , brushHardness(new Double_Knob(NULL, kRotoBrushHardnessParamLabel, 1, false))
     , effectStrength(new Double_Knob(NULL, kRotoBrushEffectParamLabel, 1, false))
     , visiblePortion(new Double_Knob(NULL, kRotoBrushVisiblePortionParamLabel, 2, false))
-    , points()
-    , fitBezier()
-    , regionOfDefinition()
     {
-        regionOfDefinition.x1 = std::numeric_limits<double>::infinity();
-        regionOfDefinition.x2 = -std::numeric_limits<double>::infinity();
-        regionOfDefinition.y1 = std::numeric_limits<double>::infinity();
-        regionOfDefinition.y2 = -std::numeric_limits<double>::infinity();
-        
+                
         brushSize->setName(kRotoBrushSizeParam);
         brushSize->setHintToolTip(kRotoBrushSizeParamHint);
         brushSize->populate();
