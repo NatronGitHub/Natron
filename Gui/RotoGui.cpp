@@ -3158,9 +3158,11 @@ RotoGui::RotoGuiPrivate::isNearbyFeatherBar(int time,
     for (SelectedItems::const_iterator it = rotoData->selectedItems.begin(); it != rotoData->selectedItems.end(); ++it) {
         
         Bezier* isBezier = dynamic_cast<Bezier*>(it->get());
-        if (!isBezier) {
+        RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>(it->get());
+        if (isStroke) {
             continue;
         }
+        
         /*
             For each selected bezier, we compute the extent of the feather bars and check if the mouse would be nearby one of these bars.
             The feather bar of a control point is only displayed is the feather point is equal to the bezier control point.

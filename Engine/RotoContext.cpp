@@ -2039,7 +2039,7 @@ RotoLayer::load(const RotoItemSerialization &obj)
             boost::shared_ptr<BezierSerialization> b = boost::dynamic_pointer_cast<BezierSerialization>(*it);
             boost::shared_ptr<RotoStrokeSerialization> s = boost::dynamic_pointer_cast<RotoStrokeSerialization>(*it);
             boost::shared_ptr<RotoLayerSerialization> l = boost::dynamic_pointer_cast<RotoLayerSerialization>(*it);
-            if (b) {
+            if (b && !s) {
                 boost::shared_ptr<Bezier> bezier( new Bezier(getContext(), kRotoBezierBaseName, this_layer) );
                 bezier->load(*b);
 
@@ -2246,17 +2246,19 @@ Bezier::clone(const RotoItem* other)
 Bezier::~Bezier()
 {
     BezierCPs::iterator itFp = _imp->featherPoints.begin();
-
+    bool useFeather = useFeatherPoints();
     for (BezierCPs::iterator itCp = _imp->points.begin(); itCp != _imp->points.end(); ++itCp) {
         boost::shared_ptr<Double_Knob> masterCp = (*itCp)->isSlaved();
-        boost::shared_ptr<Double_Knob> masterFp = (*itFp)->isSlaved();
+        
         if (masterCp) {
             masterCp->removeSlavedTrack(*itCp);
         }
-        if (masterFp) {
-            masterFp->removeSlavedTrack(*itFp);
-        }
-        if (useFeatherPoints()) {
+        
+        if (useFeather) {
+            boost::shared_ptr<Double_Knob> masterFp = (*itFp)->isSlaved();
+            if (masterFp) {
+                masterFp->removeSlavedTrack(*itFp);
+            }
             ++itFp;
         }
     }
@@ -2550,7 +2552,7 @@ Bezier::isPointOnCurve(double x,
 
     bool useFeather = useFeatherPoints();
     
-    assert( _imp->featherPoints.size() == _imp->points.size() );
+    assert( _imp->featherPoints.size() == _imp->points.size() || !useFeather);
 
     BezierCPs::const_iterator fp = _imp->featherPoints.begin();
     for (BezierCPs::const_iterator it = _imp->points.begin(); it != _imp->points.end(); ++it, ++index) {
@@ -3856,18 +3858,26 @@ Bezier::save(RotoItemSerialization* obj) const
 
         s->_closed = _imp->finished;
 
-        assert( _imp->featherPoints.size() == _imp->points.size() );
+        assert( _imp->featherPoints.size() == _imp->points.size() || !useFeatherPoints());
 
 
+        bool useFeather = useFeatherPoints();
         BezierCPs::const_iterator fp = _imp->featherPoints.begin();
-        for (BezierCPs::const_iterator it = _imp->points.begin(); it != _imp->points.end(); ++it, ++fp) {
-            BezierCP c,f;
+        for (BezierCPs::const_iterator it = _imp->points.begin(); it != _imp->points.end(); ++it) {
+            BezierCP c;
             c.clone(**it);
-            f.clone(**fp);
             s->_controlPoints.push_back(c);
-            s->_featherPoints.push_back(f);
+            if (useFeather) {
+                BezierCP f;
+                f.clone(**fp);
+                s->_featherPoints.push_back(f);
+                ++fp;
+            }
+            
         }
+        s->_isStroke = dynamic_cast<const RotoStrokeItem*>(this) != 0;
     }
+    
     RotoDrawableItem::save(obj);
 }
 
@@ -3881,22 +3891,20 @@ Bezier::load(const RotoItemSerialization & obj)
     {
         QMutexLocker l(&itemMutex);
         _imp->finished = s._closed;
-
-
-        if ( s._controlPoints.size() != s._featherPoints.size() ) {
-            ///do not load broken serialization objects
-            return;
-        }
-
+        
+        bool useFeather = useFeatherPoints();
         std::list<BezierCP>::const_iterator itF = s._featherPoints.begin();
-        for (std::list<BezierCP>::const_iterator it = s._controlPoints.begin(); it != s._controlPoints.end(); ++it, ++itF) {
+        for (std::list<BezierCP>::const_iterator it = s._controlPoints.begin(); it != s._controlPoints.end(); ++it) {
             boost::shared_ptr<BezierCP> cp( new BezierCP(this_shared) );
             cp->clone(*it);
             _imp->points.push_back(cp);
-
-            boost::shared_ptr<BezierCP> fp( new FeatherPoint(this_shared) );
-            fp->clone(*itF);
-            _imp->featherPoints.push_back(fp);
+            
+            if (useFeather) {
+                boost::shared_ptr<BezierCP> fp( new FeatherPoint(this_shared) );
+                fp->clone(*itF);
+                _imp->featherPoints.push_back(fp);
+                ++itF;
+            }
         }
     }
     refreshPolygonOrientation();
@@ -4443,7 +4451,7 @@ RotoStrokeItem::save(RotoItemSerialization* obj) const
 void
 RotoStrokeItem::load(const RotoItemSerialization & obj)
 {
-    RotoDrawableItem::load(obj);
+    Bezier::load(obj);
     const RotoStrokeSerialization* s = dynamic_cast<const RotoStrokeSerialization*>(&obj);
     assert(s);
     {
@@ -6419,11 +6427,7 @@ RotoContextPrivate::renderStroke(cairo_t* cr,const RotoStrokeItem* stroke, int t
     std::advance(startingIt, firstPoint);
     std::advance(endingIt, endPoint);
     for (std::list<Point>::iterator it = startingIt; it!=endingIt; ++it) {
-        Point p;
-        p.x = it->x;
-        p.y = it->y;
-        adjustToPointToScale(mipmapLevel, p.x, p.y);
-        visiblePortion.push_back(p);
+        visiblePortion.push_back(*it);
     }
     
     double brushSizePixel = brushSize;

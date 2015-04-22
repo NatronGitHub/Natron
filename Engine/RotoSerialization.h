@@ -47,6 +47,9 @@
 #define ROTO_LAYER_SERIALIZATION_REMOVES_IS_BEZIER 2
 #define ROTO_LAYER_SERIALIZATION_VERSION ROTO_LAYER_SERIALIZATION_REMOVES_IS_BEZIER
 
+#define BEZIER_SERIALIZATION_INTRODUCES_ROTO_STROKE 2
+#define BEZIER_SERIALIZATION_VERSION BEZIER_SERIALIZATION_INTRODUCES_ROTO_STROKE
+
 template<class Archive>
 void
 BezierCP::save(Archive & ar,
@@ -333,14 +336,15 @@ class BezierSerialization
 {
     friend class boost::serialization::access;
     friend class Bezier;
-
+    
 public:
-
+    
     BezierSerialization()
-        : RotoDrawableItemSerialization()
-        , _controlPoints()
-        , _featherPoints()
-        , _closed(false)
+    : RotoDrawableItemSerialization()
+    , _controlPoints()
+    , _featherPoints()
+    , _isStroke(false)
+    , _closed(false)
     {
     }
 
@@ -361,13 +365,17 @@ private:
             static_cast<RotoDrawableItemSerialization *>(NULL)
             );
         ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(RotoDrawableItemSerialization);
-        assert( _controlPoints.size() == _featherPoints.size() );
+        assert( _controlPoints.size() == _featherPoints.size() || _featherPoints.empty());
         int numPoints = (int)_controlPoints.size();
         ar & boost::serialization::make_nvp("NumPoints",numPoints);
+        ar & boost::serialization::make_nvp("IsStroke",_isStroke);
         std::list< BezierCP >::const_iterator itF = _featherPoints.begin();
-        for (std::list< BezierCP >::const_iterator it = _controlPoints.begin(); it != _controlPoints.end(); ++it, ++itF) {
+        for (std::list< BezierCP >::const_iterator it = _controlPoints.begin(); it != _controlPoints.end(); ++it) {
             ar & boost::serialization::make_nvp("CP",*it);
-            ar & boost::serialization::make_nvp("FP",*itF);
+            if (!_isStroke) {
+                ar & boost::serialization::make_nvp("FP",*itF);
+                ++itF;
+            }
         }
         ar & boost::serialization::make_nvp("Closed",_closed);
     }
@@ -384,12 +392,21 @@ private:
         ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(RotoDrawableItemSerialization);
         int numPoints;
         ar & boost::serialization::make_nvp("NumPoints",numPoints);
+        if (version >= BEZIER_SERIALIZATION_INTRODUCES_ROTO_STROKE) {
+            ar & boost::serialization::make_nvp("IsStroke",_isStroke);
+        } else {
+            _isStroke = false;
+        }
         for (int i = 0; i < numPoints; ++i) {
-            BezierCP cp,fp;
+            BezierCP cp;
             ar & boost::serialization::make_nvp("CP",cp);
-            ar & boost::serialization::make_nvp("FP",fp);
             _controlPoints.push_back(cp);
-            _featherPoints.push_back(fp);
+            
+            if (!_isStroke) {
+                BezierCP fp;
+                ar & boost::serialization::make_nvp("FP",fp);
+                _featherPoints.push_back(fp);
+            }
         }
         ar & boost::serialization::make_nvp("Closed",_closed);
     }
@@ -397,9 +414,11 @@ private:
     BOOST_SERIALIZATION_SPLIT_MEMBER()
 
     std::list< BezierCP > _controlPoints,_featherPoints;
+    bool _isStroke;
     bool _closed;
 };
 
+BOOST_CLASS_VERSION(BezierSerialization,BEZIER_SERIALIZATION_VERSION)
 
 class RotoStrokeSerialization : public BezierSerialization
 {
