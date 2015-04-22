@@ -5253,7 +5253,7 @@ RotoContext::selectInternal(const boost::shared_ptr<RotoItem> & item)
     boost::shared_ptr<RotoLayer> isLayer = boost::dynamic_pointer_cast<RotoLayer>(item);
 
     if (isDrawable) {
-        if (isBezier && !isBezier->isLockedRecursive()) {
+        if (!isStroke && isBezier && !isBezier->isLockedRecursive()) {
             ++nbUnlockedBeziers;
         } else if (isStroke) {
             ++nbUnlockedStrokes;
@@ -6290,73 +6290,130 @@ RotoContextPrivate::renderInternal(cairo_t* cr,
  *          = 2 = bottomLeft
  *          = 3 = bottomRight
  **/
-static void renderDotPatch(cairo_pattern_t* mesh, int patchNum, const Point &center, double brushHardness, double halfSize, double shapeColor[3], double opacity)
+static void renderDotPatch(cairo_pattern_t* mesh,
+                           int patchNum,
+                           const Point &center,
+                           double brushHardness,
+                           double internalDotRadius,
+                           double externalDotRadius,
+                           double shapeColor[3],
+                           double opacity)
 {
-    Point p0;
-    Point p1, p0p1, p1p0;
-    Point p2, p1p2, p2p1;
-    Point p3, p2p3, p3p2;
+    //inner circle
+    Point p0,p1,p2,p3,p1p2,p2p1;
+    
+    //feather
+    Point p0f,p0p1f,p1p0f,p1f,p1p2f,p2p1f,p2f,p2p3f,p3p2f,p3f,p3p0f,p0p3f;
     p0 = p3 = center; //< degenerated patch with only 3 sides
+    
+    
     if (patchNum == 0) {
-        p1.x = center.x + halfSize;
+        p1.x = center.x + internalDotRadius;
         p1.y = center.y;
         p2.x = center.x;
-        p2.y = center.y + halfSize;
+        p2.y = center.y + internalDotRadius;
         p1p2.x = p1.x;
         p1p2.y = (p1.y + p2.y) / 2.;
         p2p1.x = (p1.x + p2.x) / 2.;
         p2p1.y = p2.y;
+        
+        p1f.x = center.x + externalDotRadius;
+        p1f.y = center.y;
+        p2f.x = center.x;
+        p2f.y = center.y + externalDotRadius;
+        p1p2f.x = p1f.x;
+        p1p2f.y = (p1f.y + p2f.y) / 2.;
+        p2p1f.x = (p1f.x + p2f.x) / 2.;
+        p2p1f.y = p2f.y;
+
+        
     } else if (patchNum == 1) {
         p1.x = center.x;
-        p1.y = center.y + halfSize;
-        p2.x = center.x - halfSize;
+        p1.y = center.y + internalDotRadius;
+        p2.x = center.x - internalDotRadius;
         p2.y = center.y;
         p1p2.x = (p1.x + p2.x) / 2.;
         p1p2.y = p1.y;
         p2p1.x = p2.x;
         p2p1.y = (p1.y + p2.y) / 2;
+        
+        p1f.x = center.x;
+        p1f.y = center.y + externalDotRadius;
+        p2f.x = center.x - externalDotRadius;
+        p2f.y = center.y;
+        p1p2f.x = (p1f.x + p2f.x) / 2.;
+        p1p2f.y = p1f.y;
+        p2p1f.x = p2f.x;
+        p2p1f.y = (p1f.y + p2f.y) / 2;
+
     } else if (patchNum == 2) {
-        p1.x = center.x - halfSize;
+        p1.x = center.x - internalDotRadius;
         p1.y = center.y;
         p2.x = center.x;
-        p2.y = center.y - halfSize;
+        p2.y = center.y - internalDotRadius;
         p1p2.x = p1.x;
         p1p2.y = (p1.y + p2.y) / 2.;
         p2p1.x = (p1.x + p2.x) / 2.;
         p2p1.y = p2.y;
+        
+        p1f.x = center.x - externalDotRadius;
+        p1f.y = center.y;
+        p2f.x = center.x;
+        p2f.y = center.y - externalDotRadius;
+        p1p2f.x = p1f.x;
+        p1p2f.y = (p1f.y + p2f.y) / 2.;
+        p2p1f.x = (p1f.x + p2f.x) / 2.;
+        p2p1f.y = p2f.y;
     } else {
         assert(patchNum == 3);
         p1.x = center.x;
-        p1.y = center.y - halfSize;
-        p2.x = center.x + halfSize;
+        p1.y = center.y - internalDotRadius;
+        p2.x = center.x + internalDotRadius;
         p2.y = center.y;
         p1p2.x = (p1.x + p2.x) / 2.;
         p1p2.y = p1.y;
         p2p1.x = p2.x;
         p2p1.y = (p1.y + p2.y) / 2;
+        
+        p1f.x = center.x;
+        p1f.y = center.y - externalDotRadius;
+        p2f.x = center.x + externalDotRadius;
+        p2f.y = center.y;
+        p1p2f.x = (p1f.x + p2f.x) / 2.;
+        p1p2f.y = p1f.y;
+        p2p1f.x = p2f.x;
+        p2p1f.y = (p1f.y + p2f.y) / 2;
+
 
     }
     
-    
+    p0f = p1;
+    p3f = p2;
+    p3p0f = p2p1;
+    p0p3f = p1p2;
     
     ///linear interpolation
-    p0p1.x = (p0.x * (1. - brushHardness) +  brushHardness * p1.x);
-    p0p1.y = (p0.y * (1. - brushHardness) +  brushHardness * p1.y);
-    p1p0.x = (p1.x * (1. - brushHardness) +  brushHardness * p0.x);
-    p1p0.y = (p1.y * (1. - brushHardness) +  brushHardness * p0.y);
     
-    p2p3.x = (p3.x * (1. - brushHardness) +  brushHardness * p2.x);
-    p2p3.y = (p3.y * (1. - brushHardness) +  brushHardness * p2.y);
-    p3p2.x = (p2.x * (1. - brushHardness) +  brushHardness * p3.x);
-    p3p2.y = (p2.y * (1. - brushHardness) +  brushHardness * p3.y);
+    p0p1f.x = (p0.x * brushHardness * 2. + 1. / brushHardness * p1.x) / (brushHardness * 2. + 1. / brushHardness);
+    p0p1f.y = (p0.y * brushHardness * 2. + 1. / brushHardness * p1.y) / (brushHardness * 2. + 1. / brushHardness);
+    p1p0f.x = (p0.x * brushHardness + 2. * 1. / brushHardness * p1.x) / (brushHardness + 2. * 1. / brushHardness);
+    p1p0f.y = (p0.y * brushHardness + 2. * 1. / brushHardness * p1.y) / (brushHardness + 2. * 1. / brushHardness);
+    
+    
+    p2p3f.x = (p3.x * brushHardness + 2. * 1. / brushHardness * p2.x) / (brushHardness + 2. * 1. / brushHardness);
+    p2p3f.y = (p3.y * brushHardness + 2. * 1. / brushHardness * p2.y) / (brushHardness + 2. * 1. / brushHardness);
+    p3p2f.x = (p3.x * brushHardness * 2. + 1. / brushHardness * p2.x) / (brushHardness * 2. + 1. / brushHardness);
+    p3p2f.y = (p3.y * brushHardness * 2. + 1. / brushHardness * p2.y) / (brushHardness * 2. + 1. / brushHardness);
     
     
     ///move to the initial point
     cairo_mesh_pattern_begin_patch(mesh);
     cairo_mesh_pattern_move_to(mesh, p0.x, p0.y);
-    cairo_mesh_pattern_curve_to(mesh, p0p1.x, p0p1.y, p1p0.x, p1p0.y, p1.x, p1.y);
+    //cairo_mesh_pattern_curve_to(mesh, p0p1.x, p0p1.y, p1p0.x, p1p0.y, p1.x, p1.y);
+    cairo_mesh_pattern_line_to(mesh, p2.x, p2.y);
     cairo_mesh_pattern_curve_to(mesh, p1p2.x, p1p2.y, p2p1.x, p2p1.y, p2.x, p2.y);
-    cairo_mesh_pattern_curve_to(mesh, p2p3.x, p2p3.y, p3p2.x, p3p2.y, p3.x, p3.y);
+    //cairo_mesh_pattern_curve_to(mesh, p2p3.x, p2p3.y, p3p2.x, p3p2.y, p3.x, p3.y);
+    cairo_mesh_pattern_line_to(mesh, p3.x, p3.y);
     cairo_mesh_pattern_line_to(mesh, p0.x, p0.y);
     
     // IMPORTANT NOTE:
@@ -6369,14 +6426,43 @@ static void renderDotPatch(cairo_pattern_t* mesh, int patchNum, const Point &cen
     // older Cairo versions.
     cairo_mesh_pattern_set_corner_color_rgba( mesh, 0, shapeColor[0], shapeColor[1], shapeColor[2],std::sqrt(opacity) );
     ///outter is faded
-    cairo_mesh_pattern_set_corner_color_rgba(mesh, 1, shapeColor[0], shapeColor[1], shapeColor[2],0.);
-    cairo_mesh_pattern_set_corner_color_rgba(mesh, 2, shapeColor[0], shapeColor[1], shapeColor[2],0.);
+    cairo_mesh_pattern_set_corner_color_rgba(mesh, 1, shapeColor[0], shapeColor[1], shapeColor[2],opacity);
+    cairo_mesh_pattern_set_corner_color_rgba(mesh, 2, shapeColor[0], shapeColor[1], shapeColor[2],opacity);
     ///inner is full color
     cairo_mesh_pattern_set_corner_color_rgba(mesh, 3, shapeColor[0], shapeColor[1], shapeColor[2],std::sqrt(opacity));
     
     assert(cairo_pattern_status(mesh) == CAIRO_STATUS_SUCCESS);
     
     cairo_mesh_pattern_end_patch(mesh);
+    
+    
+    ///move to the initial point
+    cairo_mesh_pattern_begin_patch(mesh);
+    cairo_mesh_pattern_move_to(mesh, p0f.x, p0f.y);
+    cairo_mesh_pattern_curve_to(mesh, p0p1f.x, p0p1f.y, p1p0f.x, p1p0f.y, p1f.x, p1f.y);
+    cairo_mesh_pattern_curve_to(mesh, p1p2f.x, p1p2f.y, p2p1f.x, p2p1f.y, p2f.x, p2f.y);
+    cairo_mesh_pattern_curve_to(mesh, p2p3f.x, p2p3f.y, p3p2f.x, p3p2f.y, p3f.x, p3f.y);
+    cairo_mesh_pattern_curve_to(mesh, p3p0f.x, p3p0f.y, p0p3f.x, p0p3f.y, p0.x, p0.y);
+    
+    // IMPORTANT NOTE:
+    // The two sqrt below are due to a probable cairo bug.
+    // To check wether the bug is present is a given cairo version,
+    // make any shape with a very large feather and set
+    // opacity to 0.5. Then, zoom on the polygon border to check if the intensity is continuous
+    // and approximately equal to 0.5.
+    // If the bug if ixed in cairo, please use #if CAIRO_VERSION>xxx to keep compatibility with
+    // older Cairo versions.
+    cairo_mesh_pattern_set_corner_color_rgba( mesh, 0, shapeColor[0], shapeColor[1], shapeColor[2],std::sqrt(opacity) );
+    ///outter is faded
+    cairo_mesh_pattern_set_corner_color_rgba(mesh, 1, shapeColor[0], shapeColor[1], shapeColor[2],0);
+    cairo_mesh_pattern_set_corner_color_rgba(mesh, 2, shapeColor[0], shapeColor[1], shapeColor[2],0);
+    ///inner is full color
+    cairo_mesh_pattern_set_corner_color_rgba(mesh, 3, shapeColor[0], shapeColor[1], shapeColor[2],std::sqrt(opacity));
+    
+    assert(cairo_pattern_status(mesh) == CAIRO_STATUS_SUCCESS);
+    
+    cairo_mesh_pattern_end_patch(mesh);
+
 }
 
 
@@ -6420,6 +6506,9 @@ RotoContextPrivate::renderStroke(cairo_t* cr,const RotoStrokeItem* stroke, int t
     
     
     
+    cairo_set_operator(cr, (cairo_operator_t)operatorIndex);
+
+    
     ///The visible portion of the paint's stroke with points adjusted to pixel coordinates
     std::list<Point> visiblePortion;
     std::list<Point>::iterator startingIt = points.begin();
@@ -6437,14 +6526,8 @@ RotoContextPrivate::renderStroke(cairo_t* cr,const RotoStrokeItem* stroke, int t
     double halfSize = brushSizePixel / 2.;
     double spacingPixel = brushSizePixel * brushSpacing;
 
-    
-    cairo_set_operator(cr, (cairo_operator_t)operatorIndex);
-    ////Define the feather edge pattern
-    cairo_pattern_t* mesh = cairo_pattern_create_mesh();
-    if (cairo_pattern_status(mesh) != CAIRO_STATUS_SUCCESS) {
-        cairo_pattern_destroy(mesh);
-        return;
-    }
+    double internalDotRadius = std::max(std::min(brushSizePixel * brushHardness, brushSizePixel),1.) / 2.;
+    double externalDotRadius = std::max(std::min(halfSize * brushHardness + halfSize,brushSizePixel), 1.) / 2.;
 
     for (std::list<Point>::iterator it = visiblePortion.begin(); it!=visiblePortion.end(); ++it) {
         //Render for each point a dot. Spacing is a percentage of brushSize:
@@ -6454,11 +6537,18 @@ RotoContextPrivate::renderStroke(cairo_t* cr,const RotoStrokeItem* stroke, int t
         //the brush hardness is the strength of the feather relative to the radius of the dot: 1 means there is no feather
         //0 means the feather expands to the center of the dot
         
+        ////Define the feather edge pattern
+        cairo_pattern_t* mesh = cairo_pattern_create_mesh();
+        if (cairo_pattern_status(mesh) != CAIRO_STATUS_SUCCESS) {
+            cairo_pattern_destroy(mesh);
+            return;
+        }
+        
         Point center;
         center.x = it->x;
         center.y = it->y;
         for (int i = 0; i < 4; ++i) {
-            renderDotPatch(mesh, i, center, brushHardness, halfSize, shapeColor, opacity);
+            renderDotPatch(mesh, i, center, brushHardness, internalDotRadius, externalDotRadius, shapeColor, opacity);
         }
         
         //Find the next point that we should draw a dot on according to the spacing in pixel coordinates
@@ -6474,10 +6564,11 @@ RotoContextPrivate::renderStroke(cairo_t* cr,const RotoStrokeItem* stroke, int t
         if (it2 != visiblePortion.end()) {
             it = it2;
         }
+        applyAndDestroyMask(cr, mesh);
+
        
     }
     
-    applyAndDestroyMask(cr, mesh);
 }
 
 void
