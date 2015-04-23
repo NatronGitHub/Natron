@@ -1863,11 +1863,12 @@ EffectInstance::tryConcatenateTransforms(const RenderRoIArgs& args,
                 if (inputIsDisabled) {
                     
                     int prefInput;
-                    input = input->getNearestNonDisabledPrevious(&prefInput);
+                    input = input->getNearestNonDisabled();
+                    prefInput = input->getNode()->getPreferredInput();
                     if (prefInput == -1) {
                         break;
                     }
-                    
+                                        
                     if (input) {
                         im.newInputNbToFetchFrom = prefInput;
                         im.newInputEffect = input;
