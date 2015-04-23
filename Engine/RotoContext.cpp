@@ -3285,6 +3285,7 @@ Bezier::removeKeyframe(int time)
             _imp->isClockwiseOriented.erase(found);
         }
     }
+    getContext()->evaluateChange();
     Q_EMIT keyframeRemoved(time);
 }
 
@@ -3316,6 +3317,7 @@ Bezier::removeAnimation()
         }
         _imp->isClockwiseOriented.clear();
     }
+    getContext()->evaluateChange();
     Q_EMIT animationRemoved();
 }
 
@@ -5591,7 +5593,6 @@ RotoContext::removeAnimationOnSelectedCurves()
     assert( QThread::currentThread() == qApp->thread() );
     
     int time = getTimelineCurrentTime();
-    QMutexLocker l(&_imp->rotoContextMutex);
     for (std::list<boost::shared_ptr<RotoItem> >::iterator it = _imp->selectedItems.begin(); it != _imp->selectedItems.end(); ++it) {
         boost::shared_ptr<RotoLayer> isLayer = boost::dynamic_pointer_cast<RotoLayer>(*it);
         boost::shared_ptr<Bezier> isBezier = boost::dynamic_pointer_cast<Bezier>(*it);
@@ -5611,7 +5612,6 @@ RotoContext::removeKeyframeOnSelectedCurves()
     assert( QThread::currentThread() == qApp->thread() );
 
     int time = getTimelineCurrentTime();
-    QMutexLocker l(&_imp->rotoContextMutex);
     for (std::list<boost::shared_ptr<RotoItem> >::iterator it = _imp->selectedItems.begin(); it != _imp->selectedItems.end(); ++it) {
         boost::shared_ptr<RotoLayer> isLayer = boost::dynamic_pointer_cast<RotoLayer>(*it);
         boost::shared_ptr<Bezier> isBezier = boost::dynamic_pointer_cast<Bezier>(*it);
