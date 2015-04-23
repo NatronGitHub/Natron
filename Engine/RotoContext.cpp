@@ -2237,7 +2237,7 @@ Bezier::clone(const RotoItem* other)
     
     Q_EMIT aboutToClone();
     {
-        bool useFeather = useFeatherPoints();
+        bool useFeather = otherBezier->useFeatherPoints();
         QMutexLocker l(&itemMutex);
         assert(otherBezier->_imp->featherPoints.size() == otherBezier->_imp->points.size() || !useFeather);
 
@@ -2264,7 +2264,7 @@ Bezier::clone(const RotoItem* other)
 Bezier::~Bezier()
 {
     BezierCPs::iterator itFp = _imp->featherPoints.begin();
-    bool useFeather = useFeatherPoints();
+    bool useFeather = !_imp->featherPoints.empty();
     for (BezierCPs::iterator itCp = _imp->points.begin(); itCp != _imp->points.end(); ++itCp) {
         boost::shared_ptr<Double_Knob> masterCp = (*itCp)->isSlaved();
         
@@ -6445,6 +6445,7 @@ static void renderDotPatch(cairo_pattern_t* mesh,
     p2p3f.y = (p3f.y * brushHardness + 2. * 1. / brushHardness * p2f.y) / (brushHardness + 2. * 1. / brushHardness);
     p3p2f.x = (p3f.x * brushHardness * 2. + 1. / brushHardness * p2f.x) / (brushHardness * 2. + 1. / brushHardness);
     p3p2f.y = (p3f.y * brushHardness * 2. + 1. / brushHardness * p2f.y) / (brushHardness * 2. + 1. / brushHardness);
+
     
     
     ///move to the initial point
