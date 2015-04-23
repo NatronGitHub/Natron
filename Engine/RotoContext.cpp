@@ -338,6 +338,7 @@ bezierSegmentListBboxUpdate(const BezierCPs & points,
 
 // compute nbPointsperSegment points and update the bbox bounding box for the Bezier
 // segment from 'first' to 'last' evaluated at 'time'
+// If nbPointsPerSegment is -1 then it will be automatically computed
 static void
 bezierSegmentEval(const BezierCP & first,
                   const BezierCP & last,
@@ -371,6 +372,23 @@ bezierSegmentEval(const BezierCP & first,
         
         p3.x /= pot;
         p3.y /= pot;
+    }
+    
+    if (nbPointsPerSegment == -1) {
+        /*
+         * Approximate the necessary number of line segments, using http://antigrain.com/research/adaptive_bezier/
+         */
+        double dx1,dy1,dx2,dy2,dx3,dy3;
+        dx1 = p1.x - p0.x;
+        dy1 = p1.y - p0.y;
+        dx2 = p2.x - p1.x;
+        dy2 = p2.y - p1.y;
+        dx3 = p3.x - p2.x;
+        dy3 = p3.y - p2.y;
+        double length = std::sqrt(dx1 * dx1 + dy1 * dy1) +
+        std::sqrt(dx2 * dx2 + dy2 * dy2) +
+        std::sqrt(dx3 * dx3 + dy3 * dy3);
+        nbPointsPerSegment = (int)std::max(length * 0.25, 2.);
     }
     
     double incr = 1. / (double)(nbPointsPerSegment - 1);
@@ -3408,6 +3426,15 @@ Bezier::evaluateAtTime_DeCasteljau(int time,
 }
 
 void
+Bezier::evaluateAtTime_DeCasteljau_autoNbPoints(int time,
+                                             unsigned int mipMapLevel,
+                                             std::list<Natron::Point>* points,
+                                             RectD* bbox) const
+{
+    evaluateAtTime_DeCasteljau(time, mipMapLevel, -1, points, bbox);
+}
+
+void
 Bezier::evaluateFeatherPointsAtTime_DeCasteljau(int time,
                                                 unsigned int mipMapLevel,
                                                 int nbPointsPerSegment,
@@ -4464,6 +4491,20 @@ RotoStrokeItem::load(const RotoItemSerialization & obj)
     _imp->brushHardness->clone(s->_brushHardness.getKnob().get());
     _imp->effectStrength->clone(s->_brushEffectStrength.getKnob().get());
     _imp->visiblePortion->clone(s->_brushVisiblePortion.getKnob().get());
+}
+
+RectD
+RotoStrokeItem::getBoundingBox(int time) const
+{
+    RectD ret = Bezier::getBoundingBox(time);
+    double brushSize = _imp->brushSize->getValue();
+    double hardness = _imp->brushHardness->getValue();
+    double externalDotRadius = std::max(std::min(brushSize / 2. * hardness + brushSize / 2.,brushSize), 1.) / 2.;
+    ret.x1 -= externalDotRadius;
+    ret.y1 -= externalDotRadius;
+    ret.y2 += externalDotRadius;
+    ret.x2 += externalDotRadius;
+    return ret;
 }
 
 boost::shared_ptr<Double_Knob>
@@ -6394,25 +6435,23 @@ static void renderDotPatch(cairo_pattern_t* mesh,
     
     ///linear interpolation
     
-    p0p1f.x = (p0.x * brushHardness * 2. + 1. / brushHardness * p1.x) / (brushHardness * 2. + 1. / brushHardness);
-    p0p1f.y = (p0.y * brushHardness * 2. + 1. / brushHardness * p1.y) / (brushHardness * 2. + 1. / brushHardness);
-    p1p0f.x = (p0.x * brushHardness + 2. * 1. / brushHardness * p1.x) / (brushHardness + 2. * 1. / brushHardness);
-    p1p0f.y = (p0.y * brushHardness + 2. * 1. / brushHardness * p1.y) / (brushHardness + 2. * 1. / brushHardness);
+    p0p1f.x = (p0f.x * brushHardness * 2. + 1. / brushHardness * p1f.x) / (brushHardness * 2. + 1. / brushHardness);
+    p0p1f.y = (p0f.y * brushHardness * 2. + 1. / brushHardness * p1f.y) / (brushHardness * 2. + 1. / brushHardness);
+    p1p0f.x = (p0f.x * brushHardness + 2. * 1. / brushHardness * p1f.x) / (brushHardness + 2. * 1. / brushHardness);
+    p1p0f.y = (p0f.y * brushHardness + 2. * 1. / brushHardness * p1f.y) / (brushHardness + 2. * 1. / brushHardness);
     
     
-    p2p3f.x = (p3.x * brushHardness + 2. * 1. / brushHardness * p2.x) / (brushHardness + 2. * 1. / brushHardness);
-    p2p3f.y = (p3.y * brushHardness + 2. * 1. / brushHardness * p2.y) / (brushHardness + 2. * 1. / brushHardness);
-    p3p2f.x = (p3.x * brushHardness * 2. + 1. / brushHardness * p2.x) / (brushHardness * 2. + 1. / brushHardness);
-    p3p2f.y = (p3.y * brushHardness * 2. + 1. / brushHardness * p2.y) / (brushHardness * 2. + 1. / brushHardness);
+    p2p3f.x = (p3f.x * brushHardness + 2. * 1. / brushHardness * p2f.x) / (brushHardness + 2. * 1. / brushHardness);
+    p2p3f.y = (p3f.y * brushHardness + 2. * 1. / brushHardness * p2f.y) / (brushHardness + 2. * 1. / brushHardness);
+    p3p2f.x = (p3f.x * brushHardness * 2. + 1. / brushHardness * p2f.x) / (brushHardness * 2. + 1. / brushHardness);
+    p3p2f.y = (p3f.y * brushHardness * 2. + 1. / brushHardness * p2f.y) / (brushHardness * 2. + 1. / brushHardness);
     
     
     ///move to the initial point
     cairo_mesh_pattern_begin_patch(mesh);
     cairo_mesh_pattern_move_to(mesh, p0.x, p0.y);
-    //cairo_mesh_pattern_curve_to(mesh, p0p1.x, p0p1.y, p1p0.x, p1p0.y, p1.x, p1.y);
-    cairo_mesh_pattern_line_to(mesh, p2.x, p2.y);
+    cairo_mesh_pattern_line_to(mesh, p1.x, p1.y);
     cairo_mesh_pattern_curve_to(mesh, p1p2.x, p1p2.y, p2p1.x, p2p1.y, p2.x, p2.y);
-    //cairo_mesh_pattern_curve_to(mesh, p2p3.x, p2p3.y, p3p2.x, p3p2.y, p3.x, p3.y);
     cairo_mesh_pattern_line_to(mesh, p3.x, p3.y);
     cairo_mesh_pattern_line_to(mesh, p0.x, p0.y);
     
@@ -6442,7 +6481,7 @@ static void renderDotPatch(cairo_pattern_t* mesh,
     cairo_mesh_pattern_curve_to(mesh, p0p1f.x, p0p1f.y, p1p0f.x, p1p0f.y, p1f.x, p1f.y);
     cairo_mesh_pattern_curve_to(mesh, p1p2f.x, p1p2f.y, p2p1f.x, p2p1f.y, p2f.x, p2f.y);
     cairo_mesh_pattern_curve_to(mesh, p2p3f.x, p2p3f.y, p3p2f.x, p3p2f.y, p3f.x, p3f.y);
-    cairo_mesh_pattern_curve_to(mesh, p3p0f.x, p3p0f.y, p0p3f.x, p0p3f.y, p0.x, p0.y);
+    cairo_mesh_pattern_curve_to(mesh, p3p0f.x, p3p0f.y, p0p3f.x, p0p3f.y, p0f.x, p0f.y);
     
     // IMPORTANT NOTE:
     // The two sqrt below are due to a probable cairo bug.
@@ -6475,7 +6514,18 @@ RotoContextPrivate::renderStroke(cairo_t* cr,const RotoStrokeItem* stroke, int t
     }
     
     std::list<Point> points;
-    stroke->evaluateAtTime_DeCasteljau(time, mipmapLevel, 50, &points, 0);
+    
+    
+    /**
+     To determine the number of line segments the curve should have once subdivided, we approximate the length of the bezier.
+     From http://antigrain.com/research/adaptive_bezier/ 
+     
+     Apparently, we need to calculate the step on the basis of the length of the curve.
+     To do that we need to calculate the actual length of the curve, but to calculate the length we need to calculate the curve itself.
+     It's a classical “catch 22” situation. A rather good estimation is the sum of the distances:
+     (p1,p2)+(p2,p3)+(p3,p4);
+     **/
+    stroke->evaluateAtTime_DeCasteljau_autoNbPoints(time, mipmapLevel, &points, 0);
     
     double opacity = stroke->getOpacity(time);
     int operatorIndex = stroke->getCompositingOperator();
@@ -6524,12 +6574,14 @@ RotoContextPrivate::renderStroke(cairo_t* cr,const RotoStrokeItem* stroke, int t
         brushSizePixel /= (1 << mipmapLevel);
     }
     double halfSize = brushSizePixel / 2.;
-    double spacingPixel = brushSizePixel * brushSpacing;
+    
 
     double internalDotRadius = std::max(std::min(brushSizePixel * brushHardness, brushSizePixel),1.) / 2.;
     double externalDotRadius = std::max(std::min(halfSize * brushHardness + halfSize,brushSizePixel), 1.) / 2.;
+    double spacingPixel = externalDotRadius * 2. * brushSpacing;
+    
 
-    for (std::list<Point>::iterator it = visiblePortion.begin(); it!=visiblePortion.end(); ++it) {
+    for (std::list<Point>::iterator it = visiblePortion.begin(); it!=visiblePortion.end();) {
         //Render for each point a dot. Spacing is a percentage of brushSize:
         //Spacing at 1 means no dot is overlapping another (so the spacing is in fact brushSize)
         //Spacing at 0 we do not render the stroke
@@ -6554,16 +6606,19 @@ RotoContextPrivate::renderStroke(cairo_t* cr,const RotoStrokeItem* stroke, int t
         //Find the next point that we should draw a dot on according to the spacing in pixel coordinates
         std::list<Point>::iterator it2 = it;
         ++it2;
+        double segmentDis = -1;
         for (; it2!=visiblePortion.end(); ++it2) {
-            double dist =  sqrt((it2->x - it->x) * (it2->x - it->x) + (it2->y - it->y) *
+            double dist = std::sqrt((it2->x - it->x) * (it2->x - it->x) + (it2->y - it->y) *
                                 (it2->y - it->y));
-            if (dist >= spacingPixel) {
+            if (segmentDis == -1) {
+                segmentDis = dist;
+            }
+            if (dist > (spacingPixel - segmentDis - 1)) {
                 break;
             }
         }
-        if (it2 != visiblePortion.end()) {
-            it = it2;
-        }
+        it = it2;
+        
         applyAndDestroyMask(cr, mesh);
 
        

@@ -1728,7 +1728,9 @@ RotoGui::RotoGuiPrivate::computeSelectedCpsBBOX()
     double l = INT_MAX,r = INT_MIN,b = INT_MAX,t = INT_MIN;
     for (SelectedCPs::iterator it = rotoData->selectedCps.begin(); it != rotoData->selectedCps.end(); ++it) {
         handleControlPointMaximum(time,*(it->first),&l,&b,&r,&t);
-        handleControlPointMaximum(time,*(it->second),&l,&b,&r,&t);
+        if (it->second) {
+            handleControlPointMaximum(time,*(it->second),&l,&b,&r,&t);
+        }
     }
     rotoData->selectedCpsBbox.setCoords(l, t, r, b);
     if (rotoData->selectedCps.size() > 1) {
@@ -1833,7 +1835,9 @@ RotoGui::penDown(double /*scaleX*/,
                     didSomething = true;
                 } else {
                     ///try with the counter part point
-                    ret = it->second->isNearbyTangent(time, pos.x(), pos.y(), tangentSelectionTol);
+                    if (it->second) {
+                        ret = it->second->isNearbyTangent(time, pos.x(), pos.y(), tangentSelectionTol);
+                    }
                     if (ret >= 0) {
                         _imp->rotoData->tangentBeingDragged = it->second;
                         _imp->state = ret == 0 ? eEventStateDraggingLeftTangent : eEventStateDraggingRightTangent;
@@ -2367,10 +2371,16 @@ RotoGui::penMotion(double /*scaleX*/,
             SelectedCPs cps;
             const std::list<boost::shared_ptr<BezierCP> >& c = _imp->rotoData->bezierBeingDragged->getControlPoints();
             const std::list<boost::shared_ptr<BezierCP> >& f = _imp->rotoData->bezierBeingDragged->getFeatherPoints();
-            assert(c.size() == f.size());
+            assert(c.size() == f.size() || !_imp->rotoData->bezierBeingDragged->useFeatherPoints());
+            bool useFeather = _imp->rotoData->bezierBeingDragged->useFeatherPoints();
             std::list<boost::shared_ptr<BezierCP> >::const_iterator itFp = f.begin();
-            for (std::list<boost::shared_ptr<BezierCP> >::const_iterator itCp = c.begin(); itCp != c.end(); ++itCp, ++itFp) {
-                cps.push_back(std::make_pair(*itCp,*itFp));
+            for (std::list<boost::shared_ptr<BezierCP> >::const_iterator itCp = c.begin(); itCp != c.end(); ++itCp) {
+                if (useFeather) {
+                    cps.push_back(std::make_pair(*itCp,*itFp));
+                    ++itFp;
+                } else {
+                    cps.push_back(std::make_pair(*itCp,boost::shared_ptr<BezierCP>()));
+                }
             }
             pushUndoCommand( new MoveControlPointsUndoCommand(this,cps,dx,dy,time) );
         } else {
@@ -2382,7 +2392,7 @@ RotoGui::penMotion(double /*scaleX*/,
         break;
     }
     case eEventStateDraggingControlPoint: {
-        assert(_imp->rotoData->cpBeingDragged.first && _imp->rotoData->cpBeingDragged.second);
+        assert(_imp->rotoData->cpBeingDragged.first);
         std::list<SelectedCP> toDrag;
         toDrag.push_back(_imp->rotoData->cpBeingDragged);
         pushUndoCommand( new MoveControlPointsUndoCommand(this,toDrag,dx,dy,time) );

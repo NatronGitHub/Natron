@@ -70,11 +70,13 @@ MoveControlPointsUndoCommand::MoveControlPointsUndoCommand(RotoGui* roto,
             first.reset( new BezierCP( *(it->first) ) );
         }
         
-        if (it->second->isFeatherPoint()) {
-            second.reset( new FeatherPoint(it->second->getBezier()));
-            second->clone(*(it->second));
-        } else {
-            second.reset( new BezierCP( *(it->second) ) );
+        if (it->second) {
+            if (it->second->isFeatherPoint()) {
+                second.reset( new FeatherPoint(it->second->getBezier()));
+                second->clone(*(it->second));
+            } else {
+                second.reset( new BezierCP( *(it->second) ) );
+            }
         }
         _originalPoints.push_back( std::make_pair(first, second) );
     }
@@ -99,7 +101,9 @@ MoveControlPointsUndoCommand::undo()
 
     for (SelectedCpList::iterator it = _pointsToDrag.begin(); it != _pointsToDrag.end(); ++it, ++cpIt) {
         it->first->clone(*cpIt->first);
-        it->second->clone(*cpIt->second);
+        if (it->second) {
+            it->second->clone(*cpIt->second);
+        }
     }
 
     _roto->evaluate(true);

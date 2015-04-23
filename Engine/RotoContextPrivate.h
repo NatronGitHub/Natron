@@ -818,6 +818,7 @@ struct RotoContextPrivate
         mins.push_back(0);
         maxs.push_back(1);
         maxs.push_back(1);
+        visiblePortion->setMinimumsAndMaximums(mins, maxs);
         visiblePortion->setAllDimensionsEnabled(false);
         visiblePortion->setIsPersistant(false);
         strokePageKnob->addKnob(visiblePortion);

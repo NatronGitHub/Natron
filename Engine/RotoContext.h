@@ -569,14 +569,10 @@ public:
 
     virtual ~Bezier();
     
-protected:
-    
     /**
      * @brief Used to differentiate real shapes with feather of paint strokes which does not have a feather
      **/
     virtual bool useFeatherPoints() const { return true; }
-    
-public:
     
     
     
@@ -788,6 +784,14 @@ public:
                                     int nbPointsPerSegment,
                                     std::list<Natron::Point>* points,
                                     RectD* bbox) const;
+    
+    /**
+     * @brief Same as evaluateAtTime_DeCasteljau but nbPointsPerSegment is approximated automatically
+     **/
+    void evaluateAtTime_DeCasteljau_autoNbPoints(int time,
+                                                 unsigned int mipMapLevel,
+                                                 std::list<Natron::Point>* points,
+                                                 RectD* bbox) const;
 
     /**
      * @brief Evaluates the bezier formed by the feather points. Segments which are equal to the control points of the bezier
@@ -804,7 +808,7 @@ public:
      * @brief Returns the bounding box of the bezier. The last value computed by evaluateAtTime_DeCasteljau will be returned,
      * otherwise if it has never been called, evaluateAtTime_DeCasteljau will be called to compute the bounding box.
      **/
-    RectD getBoundingBox(int time) const;
+    virtual RectD getBoundingBox(int time) const;
 
     /**
      * @brief Returns a const ref to the control points of the bezier curve. This can only ever be called on the main thread.
@@ -1006,12 +1010,8 @@ public:
     
     virtual ~RotoStrokeItem();
     
-private:
-    
     virtual bool useFeatherPoints() const OVERRIDE FINAL { return false; }
-    
-public:
-    
+        
     
     Natron::RotoStrokeType getBrushType() const;
     
@@ -1037,6 +1037,8 @@ public:
      * Derived implementations must call the parent class implementation.
      **/
     virtual void load(const RotoItemSerialization & obj) OVERRIDE FINAL;
+    
+    virtual RectD getBoundingBox(int time) const OVERRIDE FINAL;
     
     boost::shared_ptr<Double_Knob> getBrushSizeKnob() const;
     boost::shared_ptr<Double_Knob> getBrushHardnessKnob() const;
