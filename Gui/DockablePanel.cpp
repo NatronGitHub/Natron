@@ -1029,19 +1029,20 @@ DockablePanel::initializeKnobsInternal()
     
     
     if (roto) {
-        boost::shared_ptr<Page_Knob> page = _imp->ensureDefaultPageKnobCreated();
-        assert(page);
-        PageMap::iterator foundPage = _imp->_pages.find(page->getDescription().c_str());
-        assert(foundPage != _imp->_pages.end());
-        
-        QGridLayout* layout = 0;
-        if (_imp->_useScrollAreasForTabs) {
-            layout = dynamic_cast<QGridLayout*>( dynamic_cast<QScrollArea*>(foundPage->second.tab)->widget()->layout() );
-        } else {
-            layout = dynamic_cast<QGridLayout*>( foundPage->second.tab->layout() );
-        }
-        assert(layout);
-        layout->addWidget(roto, layout->rowCount(), 0 , 1, 2);
+//        boost::shared_ptr<Page_Knob> page = _imp->ensureDefaultPageKnobCreated();
+//        assert(page);
+//        PageMap::iterator foundPage = _imp->_pages.find(page->getDescription().c_str());
+//        assert(foundPage != _imp->_pages.end());
+//        
+//        QGridLayout* layout = 0;
+//        if (_imp->_useScrollAreasForTabs) {
+//            layout = dynamic_cast<QGridLayout*>( dynamic_cast<QScrollArea*>(foundPage->second.tab)->widget()->layout() );
+//        } else {
+//            layout = dynamic_cast<QGridLayout*>( foundPage->second.tab->layout() );
+//        }
+//        assert(layout);
+//        layout->addWidget(roto, layout->rowCount(), 0 , 1, 2);
+        _imp->_mainLayout->addWidget(roto);
     }
 
     initializeExtraGui(_imp->_mainLayout);

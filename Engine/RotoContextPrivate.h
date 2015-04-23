@@ -590,7 +590,7 @@ struct RotoStrokeItemPrivate
         brushSpacing->setName(kRotoBrushSpacingParam);
         brushSpacing->setHintToolTip(kRotoBrushSpacingParamHint);
         brushSpacing->populate();
-        brushSpacing->setDefaultValue(0.05);
+        brushSpacing->setDefaultValue(0.1);
         brushSpacing->setMinimum(0);
         brushSpacing->setMaximum(1);
         
@@ -775,7 +775,7 @@ struct RotoContextPrivate
         boost::shared_ptr<Double_Knob> brushSpacing = Natron::createKnob<Double_Knob>(effect, kRotoBrushSpacingParamLabel, 1, false);
         brushSpacing->setName(kRotoBrushSpacingParam);
         brushSpacing->setHintToolTip(kRotoBrushSpacingParamHint);
-        brushSpacing->setDefaultValue(0.05);
+        brushSpacing->setDefaultValue(0.1);
         brushSpacing->setMinimum(0.);
         brushSpacing->setMaximum(1.);
         brushSpacing->setAllDimensionsEnabled(false);

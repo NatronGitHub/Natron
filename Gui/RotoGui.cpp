@@ -1957,6 +1957,7 @@ RotoGui::penDown(double /*scaleX*/,
                         _imp->rotoData->bezierBeingDragged = nearbyBezier;
                     } else if ( buttonDownIsRight(e) ) {
                         showMenuForCurve(nearbyBezier);
+                        
                     }
                     didSomething = true;
                 }
@@ -3529,6 +3530,9 @@ RotoGui::showMenuForCurve(const boost::shared_ptr<Bezier> & curve)
 {
     QPoint pos = QCursor::pos();
     Natron::Menu menu(_imp->viewer);
+    
+    RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>(curve.get());
+
 
     //menu.setFont( QFont(appFont,appFontSize) );
 
@@ -3546,24 +3550,28 @@ RotoGui::showMenuForCurve(const boost::shared_ptr<Bezier> & curve)
                                                                 kShortcutIDActionRotoCloseBezier,
                                                                 kShortcutDescActionRotoCloseBezier
                                                                 ,&menu);
+    openCloseCurve->setEnabled(!isStroke);
     menu.addAction(openCloseCurve);
 
     ActionWithShortcut* smoothAction = new ActionWithShortcut(kShortcutGroupRoto,
                                                               kShortcutIDActionRotoSmooth,
                                                               kShortcutDescActionRotoSmooth
                                                               ,&menu);
+    smoothAction->setEnabled(!isStroke);
     menu.addAction(smoothAction);
 
     ActionWithShortcut* cuspAction = new ActionWithShortcut(kShortcutGroupRoto,
                                                             kShortcutIDActionRotoCuspBezier,
                                                             kShortcutDescActionRotoCuspBezier
                                                             ,&menu);
+    cuspAction->setEnabled(!isStroke);
     menu.addAction(cuspAction);
 
     ActionWithShortcut* removeFeather = new ActionWithShortcut(kShortcutGroupRoto,
                                                                kShortcutIDActionRotoRemoveFeather,
                                                                kShortcutDescActionRotoRemoveFeather
                                                                ,&menu);
+    removeFeather->setEnabled(!isStroke);
     menu.addAction(removeFeather);
     
     ActionWithShortcut* lockShape = new ActionWithShortcut(kShortcutGroupRoto,
@@ -3577,11 +3585,13 @@ RotoGui::showMenuForCurve(const boost::shared_ptr<Bezier> & curve)
                                                         kShortcutIDActionRotoLinkToTrack,
                                                         kShortcutDescActionRotoLinkToTrack
                                                         ,&menu);
+    linkTo->setEnabled(!isStroke);
     menu.addAction(linkTo);
     ActionWithShortcut* unLinkFrom = new ActionWithShortcut(kShortcutGroupRoto,
                                                             kShortcutIDActionRotoUnlinkToTrack,
                                                             kShortcutDescActionRotoUnlinkToTrack
                                                  ,&menu);
+    unLinkFrom->setEnabled(!isStroke);
     menu.addAction(unLinkFrom);
 
 

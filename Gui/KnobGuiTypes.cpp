@@ -150,10 +150,8 @@ Int_KnobGui::createWidget(QHBoxLayout* layout)
     const std::vector<int> &displayMins = knob->getDisplayMinimums();
     const std::vector<int> &displayMaxs = knob->getDisplayMaximums();
     
-#ifdef SPINBOX_TAKE_PLUGIN_RANGE_INTO_ACCOUNT
     const std::vector<int > &mins = knob->getMinimums();
     const std::vector<int > &maxs = knob->getMaximums();
-#endif
     
     for (int i = 0; i < dim; ++i) {
 
@@ -197,13 +195,12 @@ Int_KnobGui::createWidget(QHBoxLayout* layout)
     if (!knob->isSliderDisabled()) {
         int dispmin = displayMins[0];
         int dispmax = displayMaxs[0];
-        
-//        if (dispmin < -SLIDER_MAX_RANGE) {
-//            dispmin = -SLIDER_MAX_RANGE;
-//        }
-//        if (dispmax > SLIDER_MAX_RANGE) {
-//            dispmax = SLIDER_MAX_RANGE;
-//        }
+        if (dispmin == -DBL_MAX) {
+            dispmin = mins[0];
+        }
+        if (dispmax == DBL_MAX) {
+            dispmax = maxs[0];
+        }
         
         _slider = new ScaleSliderQWidget( dispmin, dispmax,knob->getValue(0,false),
                                          ScaleSliderQWidget::eDataTypeInt,Natron::eScaleTypeLinear, layout->parentWidget() );
@@ -947,10 +944,8 @@ Double_KnobGui::createWidget(QHBoxLayout* layout)
     const std::vector<double> &increments = knob->getIncrements();
     const std::vector<double> &displayMins = knob->getDisplayMinimums();
     const std::vector<double> &displayMaxs = knob->getDisplayMaximums();
-#ifdef SPINBOX_TAKE_PLUGIN_RANGE_INTO_ACCOUNT
     const std::vector<double > & mins = knob->getMinimums();
     const std::vector<double > & maxs = knob->getMaximums();
-#endif
     const std::vector<int> &decimals = knob->getDecimals();
     for (int i = 0; i < dim; ++i) {
 
@@ -1001,6 +996,12 @@ Double_KnobGui::createWidget(QHBoxLayout* layout)
     if ( !knob->isSliderDisabled()) {
         double dispmin = displayMins[0];
         double dispmax = displayMaxs[0];
+        if (dispmin == -DBL_MAX) {
+            dispmin = mins[0];
+        }
+        if (dispmax == DBL_MAX) {
+            dispmax = maxs[0];
+        }
         valueAccordingToType(false, 0, &dispmin);
         valueAccordingToType(false, 0, &dispmax);
         
