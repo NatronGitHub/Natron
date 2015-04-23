@@ -2874,8 +2874,12 @@ Gui::openProject(const std::string & filename)
 void
 Gui::openProjectInternal(const std::string & absoluteFileName)
 {
-    std::string fileUnPathed = absoluteFileName;
-    std::string path = SequenceParsing::removePath(fileUnPathed);
+    QFileInfo file(absoluteFileName.c_str());
+    if (!file.exists()) {
+        return;
+    }
+    QString fileUnPathed = file.fileName();
+    QString path = file.path() + "/";
     int openedProject = appPTR->isProjectAlreadyOpened(absoluteFileName);
 
     if (openedProject != -1) {
@@ -2893,11 +2897,11 @@ Gui::openProjectInternal(const std::string & absoluteFileName)
 
     ///if the current graph has no value, just load the project in the same window
     if ( _imp->_appInstance->getProject()->isGraphWorthLess() ) {
-        _imp->_appInstance->getProject()->loadProject( path.c_str(), fileUnPathed.c_str() );
+        _imp->_appInstance->getProject()->loadProject( path, fileUnPathed);
     } else {
         CLArgs cl;
         AppInstance* newApp = appPTR->newAppInstance(cl);
-        newApp->getProject()->loadProject( path.c_str(), fileUnPathed.c_str() );
+        newApp->getProject()->loadProject( path, fileUnPathed);
     }
 
     QSettings settings;
