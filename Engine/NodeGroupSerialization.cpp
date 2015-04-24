@@ -15,6 +15,10 @@
 
 #include "NodeGroupSerialization.h"
 
+#include <QFileInfo>
+
+#include "Engine/AppManager.h"
+#include "Engine/Settings.h"
 #include "Engine/AppInstance.h"
 #include "Engine/NodeGroup.h"
 #include "Engine/ViewerInstance.h"
@@ -38,6 +42,7 @@ NodeCollectionSerialization::initialize(const NodeCollection& group)
 bool
 NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::shared_ptr<NodeSerialization> > & serializedNodes,
                                                       const boost::shared_ptr<NodeCollection>& group,
+                                                      bool createNodes,
                                                       bool* hasProjectAWriter)
 {
     
@@ -58,10 +63,7 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
     ///This map contains all the parents that must be reconnected and an iterator to the child serialization
     std::map<boost::shared_ptr<Natron::Node>, std::list<boost::shared_ptr<NodeSerialization> >::const_iterator > parentsToReconnect;
     
-    int nodesRestored = 0;
     for (std::list< boost::shared_ptr<NodeSerialization> >::const_iterator it = serializedNodes.begin(); it != serializedNodes.end(); ++it) {
-       
-        ++nodesRestored;
         
         std::string pluginID = (*it)->getPluginID();
         
@@ -112,11 +114,50 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
                 }
             }
         }
+
+        const std::string& pythonModuleAbsolutePath = (*it)->getPythonModule();
         
-        boost::shared_ptr<Natron::Node> n = group->getApplication()->loadNode( LoadNodeArgs(pluginID.c_str()
-                                                                                               ,(*it)->getMultiInstanceParentName()
-                                                                                               ,(*it)->getPluginMajorVersion()
-                                                                                               ,(*it)->getPluginMinorVersion(),it->get(),false,group) );
+        boost::shared_ptr<Natron::Node> n;
+        
+        bool usingPythonModule = false;
+        if (!pythonModuleAbsolutePath.empty()) {
+            
+            QString qPyModulePath(pythonModuleAbsolutePath.c_str());
+            //Workaround a bug introduced in Natron where we were not saving the .py extension
+            if (!qPyModulePath.endsWith(".py")) {
+                qPyModulePath.append(".py");
+            }
+            //This is a python group plug-in, try to find the corresponding .py file, maybe a more recent version of the plug-in exists.
+            QFileInfo pythonModuleInfo(qPyModulePath);
+            if (pythonModuleInfo.exists() && appPTR->getCurrentSettings()->isLoadFromPyPlugsEnabled()) {
+                
+                std::string pythonPluginID,pythonPluginLabel,pythonIcFilePath,pythonGrouping,pythonDesc;
+                unsigned int pyVersion;
+                QString pythonModuleName = pythonModuleInfo.fileName();
+                if (pythonModuleName.endsWith(".py")) {
+                    pythonModuleName = pythonModuleName.remove(pythonModuleName.size() - 3, 3);
+                }
+                if (getGroupInfos(pythonModuleInfo.path().toStdString() + '/', pythonModuleName.toStdString(), &pythonPluginID, &pythonPluginLabel, &pythonIcFilePath, &pythonGrouping, &pythonDesc, &pyVersion)) {
+                    pluginID = pythonPluginID;
+                    usingPythonModule = true;
+                }
+            }
+        }
+        
+        if (!createNodes) {
+            ///We are in the case where we loaded a PyPlug: it probably created all the nodes in the group already but didn't
+            ///load their serialization
+            n = group->getNodeByName((*it)->getNodeScriptName());
+            if (n) {
+                n->loadKnobs(**it);
+            }
+        }
+        if (!n) {
+            n = group->getApplication()->loadNode( LoadNodeArgs(pluginID.c_str()
+                                                                ,(*it)->getMultiInstanceParentName()
+                                                                ,(*it)->getPluginMajorVersion()
+                                                                ,(*it)->getPluginMinorVersion(),it->get(),false,group) );
+        }
         if (!n) {
             QString text( QObject::tr("The node ") );
             text.append( pluginID.c_str() );
@@ -136,10 +177,10 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
             if (isGrp) {
                 boost::shared_ptr<Natron::EffectInstance> sharedEffect = isGrp->shared_from_this();
                 boost::shared_ptr<NodeGroup> sharedGrp = boost::dynamic_pointer_cast<NodeGroup>(sharedEffect);
-                NodeCollectionSerialization::restoreFromSerialization(children, sharedGrp , hasProjectAWriter);
+                NodeCollectionSerialization::restoreFromSerialization(children, sharedGrp ,!usingPythonModule, hasProjectAWriter);
             } else {
                 assert(n->isMultiInstance());
-                NodeCollectionSerialization::restoreFromSerialization(children, group, hasProjectAWriter);
+                NodeCollectionSerialization::restoreFromSerialization(children, group, true, hasProjectAWriter);
             }
         }
     }

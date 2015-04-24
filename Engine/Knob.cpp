@@ -212,7 +212,7 @@ struct KnobHelperPrivate
     bool newLine;
     bool addSeparator;
     int itemSpacing;
-    boost::shared_ptr<KnobI> parentKnob;
+    boost::weak_ptr<KnobI> parentKnob;
     bool IsSecret;
     std::vector<bool> enabled;
     bool CanUndo;
@@ -416,9 +416,10 @@ KnobHelper::deleteKnob()
         clearExpression(i, true);
     }
     
-    if (_imp->parentKnob) {
-        Group_Knob* isGrp =  dynamic_cast<Group_Knob*>(_imp->parentKnob.get());
-        Page_Knob* isPage = dynamic_cast<Page_Knob*>(_imp->parentKnob.get());
+    boost::shared_ptr<KnobI> parent = _imp->parentKnob.lock();
+    if (parent) {
+        Group_Knob* isGrp =  dynamic_cast<Group_Knob*>(parent.get());
+        Page_Knob* isPage = dynamic_cast<Page_Knob*>(parent.get());
         if (isGrp) {
             isGrp->removeKnob(this);
         } else if (isPage) {
@@ -2010,7 +2011,7 @@ KnobHelper::setParentKnob(boost::shared_ptr<KnobI> knob)
 
 boost::shared_ptr<KnobI> KnobHelper::getParentKnob() const
 {
-    return _imp->parentKnob;
+    return _imp->parentKnob.lock();
 }
 
 bool

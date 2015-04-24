@@ -562,25 +562,25 @@ AppInstance::createNodeFromPythonModule(Natron::Plugin* plugin,
         containerNode->setScriptName(containerName);
         
         
-        if (!requestedByLoad) {
-            std::string containerFullySpecifiedName = containerNode->getFullyQualifiedName();
-            
-            int appID = getAppID() + 1;
-            
-            std::stringstream ss;
-            ss << moduleName.toStdString();
-            ss << ".createInstance(app" << appID;
-            ss << ", app" << appID << "." << containerFullySpecifiedName;
-            ss << ")\n";
-            std::string err;
-            if (!Natron::interpretPythonScript(ss.str(), &err, NULL)) {
-                Natron::errorDialog(tr("Group plugin creation error").toStdString(), err);
-                containerNode->destroyNode(false);
-                return node;
-            } else {
-                node = containerNode;
-            }
+        
+        std::string containerFullySpecifiedName = containerNode->getFullyQualifiedName();
+        
+        int appID = getAppID() + 1;
+        
+        std::stringstream ss;
+        ss << moduleName.toStdString();
+        ss << ".createInstance(app" << appID;
+        ss << ", app" << appID << "." << containerFullySpecifiedName;
+        ss << ")\n";
+        std::string err;
+        if (!Natron::interpretPythonScript(ss.str(), &err, NULL)) {
+            Natron::errorDialog(tr("Group plugin creation error").toStdString(), err);
+            containerNode->destroyNode(false);
+            return node;
         } else {
+            node = containerNode;
+        }
+        if (requestedByLoad) {
             containerNode->loadKnobs(serialization);
             if (!serialization.isNull() && !serialization.getUserPages().empty()) {
                 containerNode->getLiveInstance()->refreshKnobs();
@@ -612,7 +612,7 @@ AppInstance::setGroupLabelIDAndVersion(const boost::shared_ptr<Natron::Node>& no
         node->setPluginIconFilePath(iconFilePath);
         node->setPluginDescription(description);
         node->setPluginIDAndVersionForGui(pluginLabel, pluginID, version);
-        node->setPluginPythonModule(QString(pythonModulePath + pythonModule).toStdString());
+        node->setPluginPythonModule(QString(pythonModulePath + pythonModule + ".py").toStdString());
     }
     
 }

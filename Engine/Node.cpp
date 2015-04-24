@@ -981,10 +981,19 @@ Node::restoreUserKnobs(const NodeSerialization& serialization)
 {
     const std::list<boost::shared_ptr<GroupKnobSerialization> >& userPages = serialization.getUserPages();
     for (std::list<boost::shared_ptr<GroupKnobSerialization> >::const_iterator it = userPages.begin() ; it != userPages.end(); ++it) {
-        boost::shared_ptr<Page_Knob> page = Natron::createKnob<Page_Knob>(_imp->liveInstance.get(), (*it)->getLabel() , 1, false);
-        page->setAsUserKnob();
-        page->setName((*it)->getName());
-        _imp->restoreUserKnobsRecursive((*it)->getChildren(), boost::shared_ptr<Group_Knob>(), page);
+        boost::shared_ptr<KnobI> found = getKnobByName((*it)->getName());
+        boost::shared_ptr<Page_Knob> page;
+        if (!found) {
+            page = Natron::createKnob<Page_Knob>(_imp->liveInstance.get(), (*it)->getLabel() , 1, false);
+            page->setAsUserKnob();
+            page->setName((*it)->getName());
+        } else {
+            page = boost::dynamic_pointer_cast<Page_Knob>(found);
+        }
+        if (page) {
+            _imp->restoreUserKnobsRecursive((*it)->getChildren(), boost::shared_ptr<Group_Knob>(), page);
+        }
+        
     }
 }
 
@@ -998,8 +1007,18 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
         KnobSerialization* isRegular = dynamic_cast<KnobSerialization*>(it->get());
         assert(isGrp || isRegular);
         
+        boost::shared_ptr<KnobI> found = _publicInterface->getKnobByName((*it)->getName());
+        
         if (isGrp) {
-            boost::shared_ptr<Group_Knob> grp = Natron::createKnob<Group_Knob>(liveInstance.get(), isGrp->getLabel() , 1, false);
+            boost::shared_ptr<Group_Knob> grp;
+            if (!found) {
+                grp = Natron::createKnob<Group_Knob>(liveInstance.get(), isGrp->getLabel() , 1, false);
+            } else {
+                grp = boost::dynamic_pointer_cast<Group_Knob>(found);
+                if (!grp) {
+                    continue;
+                }
+            }
             grp->setAsUserKnob();
             grp->setName((*it)->getName());
             if (isGrp && isGrp->isSetAsTab()) {
@@ -1029,8 +1048,17 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
             assert(isInt || isDbl || isBool || isChoice || isColor || isStr || isFile || isOutFile || isPath || isBtn);
             
             if (isInt) {
-                boost::shared_ptr<Int_Knob> k = Natron::createKnob<Int_Knob>(liveInstance.get(), isRegular->getLabel() ,
+                boost::shared_ptr<Int_Knob> k;
+                
+                if (!found) {
+                    k = Natron::createKnob<Int_Knob>(liveInstance.get(), isRegular->getLabel() ,
                                                                              sKnob->getDimension(), false);
+                } else {
+                    k = boost::dynamic_pointer_cast<Int_Knob>(found);
+                    if (!k) {
+                        continue;
+                    }
+                }
                 const ValueExtraData* data = dynamic_cast<const ValueExtraData*>(isRegular->getExtraData());
                 assert(data);
                 std::vector<int> minimums,maximums,dminimums,dmaximums;
@@ -1044,8 +1072,16 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
                 k->setDisplayMinimumsAndMaximums(dminimums, dmaximums);
                 knob = k;
             } else if (isDbl) {
-                boost::shared_ptr<Double_Knob> k = Natron::createKnob<Double_Knob>(liveInstance.get(), isRegular->getLabel() ,
-                                                                             sKnob->getDimension(), false);
+                boost::shared_ptr<Double_Knob> k;
+                if (!found) {
+                    k = Natron::createKnob<Double_Knob>(liveInstance.get(), isRegular->getLabel() ,
+                                                        sKnob->getDimension(), false);
+                } else {
+                    k = boost::dynamic_pointer_cast<Double_Knob>(found);
+                    if (!k) {
+                        continue;
+                    }
+                }
                 const ValueExtraData* data = dynamic_cast<const ValueExtraData*>(isRegular->getExtraData());
                 assert(data);
                 std::vector<double> minimums,maximums,dminimums,dmaximums;
@@ -1067,19 +1103,43 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
                 }
                 
             } else if (isBool) {
-                boost::shared_ptr<Bool_Knob> k = Natron::createKnob<Bool_Knob>(liveInstance.get(), isRegular->getLabel() ,
-                                                                             sKnob->getDimension(), false);
+                boost::shared_ptr<Bool_Knob> k;
+                if (!found) {
+                    k = Natron::createKnob<Bool_Knob>(liveInstance.get(), isRegular->getLabel() ,
+                                                      sKnob->getDimension(), false);
+                } else {
+                    k = boost::dynamic_pointer_cast<Bool_Knob>(found);
+                    if (!k) {
+                        continue;
+                    }
+                }
                 knob = k;
             } else if (isChoice) {
-                boost::shared_ptr<Choice_Knob> k = Natron::createKnob<Choice_Knob>(liveInstance.get(), isRegular->getLabel() ,
+                boost::shared_ptr<Choice_Knob> k;
+                if (!found) {
+                    k = Natron::createKnob<Choice_Knob>(liveInstance.get(), isRegular->getLabel() ,
                                                                                sKnob->getDimension(), false);
+                } else {
+                    k = boost::dynamic_pointer_cast<Choice_Knob>(found);
+                    if (!k) {
+                        continue;
+                    }
+                }
                 const ChoiceExtraData* data = dynamic_cast<const ChoiceExtraData*>(isRegular->getExtraData());
                 assert(data);
                 k->populateChoices(data->_entries,data->_helpStrings);
                 knob = k;
             } else if (isColor) {
-                boost::shared_ptr<Color_Knob> k = Natron::createKnob<Color_Knob>(liveInstance.get(), isRegular->getLabel() ,
-                                                                               sKnob->getDimension(), false);
+                boost::shared_ptr<Color_Knob> k;
+                if (!found) {
+                    k = Natron::createKnob<Color_Knob>(liveInstance.get(), isRegular->getLabel() ,
+                                                       sKnob->getDimension(), false);
+                } else {
+                    k = boost::dynamic_pointer_cast<Color_Knob>(found);
+                    if (!k) {
+                        continue;
+                    }
+                }
                 const ValueExtraData* data = dynamic_cast<const ValueExtraData*>(isRegular->getExtraData());
                 assert(data);
                 std::vector<double> minimums,maximums,dminimums,dmaximums;
@@ -1094,8 +1154,16 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
                 knob = k;
 
             } else if (isStr) {
-                boost::shared_ptr<String_Knob> k = Natron::createKnob<String_Knob>(liveInstance.get(), isRegular->getLabel() ,
-                                                                                 sKnob->getDimension(), false);
+                boost::shared_ptr<String_Knob> k;
+                if (!found) {
+                    k = Natron::createKnob<String_Knob>(liveInstance.get(), isRegular->getLabel() ,
+                                                        sKnob->getDimension(), false);
+                } else {
+                    k = boost::dynamic_pointer_cast<String_Knob>(found);
+                    if (!k) {
+                        continue;
+                    }
+                }
                 const TextExtraData* data = dynamic_cast<const TextExtraData*>(isRegular->getExtraData());
                 assert(data);
                 if (data->label) {
@@ -1111,18 +1179,34 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
                 knob = k;
 
             } else if (isFile) {
-                boost::shared_ptr<File_Knob> k = Natron::createKnob<File_Knob>(liveInstance.get(), isRegular->getLabel() ,
-                                                                                   sKnob->getDimension(), false);
+                boost::shared_ptr<File_Knob> k;
+                if (!found) {
+                    k = Natron::createKnob<File_Knob>(liveInstance.get(), isRegular->getLabel() ,
+                                                      sKnob->getDimension(), false);
+                } else {
+                    k = boost::dynamic_pointer_cast<File_Knob>(found);
+                    if (!k) {
+                        continue;
+                    }
+                }
                 const FileExtraData* data = dynamic_cast<const FileExtraData*>(isRegular->getExtraData());
                 assert(data);
                 if (data->useSequences) {
                     k->setAsInputImage();
                 }
                 knob = k;
-
+                
             } else if (isOutFile) {
-                boost::shared_ptr<OutputFile_Knob> k = Natron::createKnob<OutputFile_Knob>(liveInstance.get(), isRegular->getLabel() ,
-                                                                               sKnob->getDimension(), false);
+                boost::shared_ptr<OutputFile_Knob> k;
+                if (!found) {
+                    k = Natron::createKnob<OutputFile_Knob>(liveInstance.get(), isRegular->getLabel() ,
+                                                            sKnob->getDimension(), false);
+                } else {
+                    k = boost::dynamic_pointer_cast<OutputFile_Knob>(found);
+                    if (!k) {
+                        continue;
+                    }
+                }
                 const FileExtraData* data = dynamic_cast<const FileExtraData*>(isRegular->getExtraData());
                 assert(data);
                 if (data->useSequences) {
@@ -1130,8 +1214,16 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
                 }
                 knob = k;
             } else if (isPath) {
-                boost::shared_ptr<Path_Knob> k = Natron::createKnob<Path_Knob>(liveInstance.get(), isRegular->getLabel() ,
+                boost::shared_ptr<Path_Knob> k;
+                if (!found) {
+                    k = Natron::createKnob<Path_Knob>(liveInstance.get(), isRegular->getLabel() ,
                                                                                            sKnob->getDimension(), false);
+                } else {
+                    k = boost::dynamic_pointer_cast<Path_Knob>(found);
+                    if (!k) {
+                        continue;
+                    }
+                }
                 const PathExtraData* data = dynamic_cast<const PathExtraData*>(isRegular->getExtraData());
                 assert(data);
                 if (data->multiPath) {
@@ -1139,8 +1231,16 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
                 }
                 knob = k;
             } else if (isBtn) {
-                boost::shared_ptr<Button_Knob> k = Natron::createKnob<Button_Knob>(liveInstance.get(), isRegular->getLabel() ,
+                boost::shared_ptr<Button_Knob> k;
+                if (!found) {
+                    k = Natron::createKnob<Button_Knob>(liveInstance.get(), isRegular->getLabel() ,
                                                                                sKnob->getDimension(), false);
+                } else {
+                    k = boost::dynamic_pointer_cast<Button_Knob>(found);
+                    if (!k) {
+                        continue;
+                    }
+                }
                 knob = k;
             }
             

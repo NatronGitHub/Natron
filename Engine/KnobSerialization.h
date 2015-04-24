@@ -359,7 +359,7 @@ public:
     virtual ~KnobSerializationBase() {}
     
     
-    virtual std::string getName() const = 0;
+    virtual const std::string& getName() const = 0;
     
     virtual boost::shared_ptr<KnobI> getKnob() const = 0;
     
@@ -817,7 +817,7 @@ public:
         return _knob;
     }
 
-    virtual std::string getName() const OVERRIDE FINAL
+    virtual const std::string& getName() const OVERRIDE FINAL
     {
         return _knob->getName();
     }
@@ -974,11 +974,11 @@ public:
     }
 
     
-    virtual std::string getName() const  OVERRIDE FINAL {
+    virtual const std::string& getName() const  OVERRIDE FINAL {
         return _name;
     }
     
-    std::string getLabel() const {
+    const std::string& getLabel() const {
         return _label;
     }
     

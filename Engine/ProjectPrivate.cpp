@@ -163,7 +163,7 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
     bool hasProjectAWriter = false;
     
     bool ok = NodeCollectionSerialization::restoreFromSerialization(obj.getNodesSerialization().getNodesSerialization(),
-                                                                    _publicInterface->shared_from_this(), &hasProjectAWriter);
+                                                                    _publicInterface->shared_from_this(),true, &hasProjectAWriter);
 
 
     if ( !hasProjectAWriter && appPTR->isBackground() ) {

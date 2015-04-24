@@ -1003,9 +1003,7 @@ Group_Knob::addKnob(boost::shared_ptr<KnobI> k)
     
     
     _children.push_back(k);
-    boost::shared_ptr<KnobI> thisSharedPtr = getHolder()->getKnobByName( getName() );
-    assert(thisSharedPtr);
-    k->setParentKnob(thisSharedPtr);
+    k->setParentKnob(shared_from_this());
     
 }
 
@@ -1080,9 +1078,7 @@ Group_Knob::insertKnob(int index, const boost::shared_ptr<KnobI>& k)
         std::advance(it, index);
         _children.insert(it, k);
     }
-    boost::shared_ptr<KnobI> thisSharedPtr = getHolder()->getKnobByName( getName() );
-    assert(thisSharedPtr);
-    k->setParentKnob(thisSharedPtr);
+    k->setParentKnob(shared_from_this());
 }
 
 std::vector< boost::shared_ptr<KnobI> >
@@ -1163,7 +1159,7 @@ Page_Knob::addKnob(const boost::shared_ptr<KnobI> &k)
         k->setParentKnob(boost::shared_ptr<KnobI>());
     }
     _children.push_back(k);
-    k->setParentKnob( getHolder()->getKnobByName( getName() ) );
+    k->setParentKnob(shared_from_this());
     
 }
 
@@ -1196,9 +1192,7 @@ Page_Knob::insertKnob(int index, const boost::shared_ptr<KnobI>& k)
         std::advance(it, index);
         _children.insert(it, k);
     }
-    boost::shared_ptr<KnobI> thisSharedPtr = getHolder()->getKnobByName( getName() );
-    assert(thisSharedPtr);
-    k->setParentKnob(thisSharedPtr);
+    k->setParentKnob(shared_from_this());
     
 }
 
