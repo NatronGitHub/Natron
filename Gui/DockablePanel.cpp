@@ -4798,6 +4798,9 @@ AddKnobDialog::onOkClicked()
     if (!badFormat) {
         //make sure everything is alphaNumeric without spaces
         for (int i = 0; i < name.size(); ++i) {
+            if (name[i] == QChar('_')) {
+                continue;
+            }
             if (name[i] == QChar(' ') || !name[i].isLetterOrNumber()) {
                 badFormat = true;
                 break;
