@@ -2681,11 +2681,11 @@ Bezier::movePointByIndexInternal(int index,int time,double dx,double dy,bool onl
         QMutexLocker l(&itemMutex);
         double x,y,leftX,leftY,rightX,rightY;
         BezierCPs::iterator it;
-        bool isOnKeyframe;
+        bool isOnKeyframe = false;
         if (!onlyFeather) {
             it = _imp->atIndex(index);
             (*it)->getPositionAtTime(time, &x, &y,true);
-            isOnKeyframe = (*it)->getLeftBezierPointAtTime(time, &leftX, &leftY,true);
+            isOnKeyframe |= (*it)->getLeftBezierPointAtTime(time, &leftX, &leftY,true);
             (*it)->getRightBezierPointAtTime(time, &rightX, &rightY,true);
         }
         
@@ -2696,7 +2696,7 @@ Bezier::movePointByIndexInternal(int index,int time,double dx,double dy,bool onl
             itF = _imp->featherPoints.begin();
             std::advance(itF, index);
             (*itF)->getPositionAtTime(time, &xF, &yF,true);
-            (*itF)->getLeftBezierPointAtTime(time, &leftXF, &leftYF,true);
+            isOnKeyframe |= (*itF)->getLeftBezierPointAtTime(time, &leftXF, &leftYF,true);
             (*itF)->getRightBezierPointAtTime(time, &rightXF, &rightYF,true);
         }
         
