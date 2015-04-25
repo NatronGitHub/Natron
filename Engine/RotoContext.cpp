@@ -2956,7 +2956,6 @@ Bezier::setPointAtIndexInternal(bool setLeft,bool setRight,bool setPoint,bool fe
 {
     ///only called on the main-thread
     assert( QThread::currentThread() == qApp->thread() );
-    assert((feather && useFeatherPoints()) || feather);
     bool autoKeying = getContext()->isAutoKeyingEnabled();
     bool rippleEdit = getContext()->isRippleEditEnabled();
     bool keySet = false;
@@ -3317,7 +3316,6 @@ Bezier::removeAnimation()
         }
         _imp->isClockwiseOriented.clear();
     }
-    getContext()->evaluateChange();
     Q_EMIT animationRemoved();
 }
 
@@ -5602,7 +5600,9 @@ RotoContext::removeAnimationOnSelectedCurves()
             addOrRemoveKeyRecursively(isLayer,time, false, true);
         }
     }
-
+    if (!_imp->selectedItems.empty()) {
+        evaluateChange();
+    }
 }
 
 void
@@ -6112,8 +6112,7 @@ convertCairoImageToNatronImage(cairo_surface_t* cairoImg,
 }
 
 boost::shared_ptr<Natron::Image>
-RotoContext::renderMask(bool useCache,
-                        const RectI & roi,
+RotoContext::renderMask(const RectI & roi,
                         const Natron::ImageComponents& components,
                         U64 nodeHash,
                         U64 ageToRender,
@@ -6121,9 +6120,7 @@ RotoContext::renderMask(bool useCache,
                         SequenceTime time,
                         Natron::ImageBitDepthEnum depth,
                         int view,
-                        unsigned int mipmapLevel,
-                        const EffectInstance::InputImagesMap& inputImages,
-                        bool byPassCache)
+                        unsigned int mipmapLevel)
 {
     std::list< boost::shared_ptr<RotoDrawableItem> > splines = getCurvesByRenderOrder();
 
@@ -6163,17 +6160,17 @@ RotoContext::renderMask(bool useCache,
     boost::shared_ptr<Natron::ImageParams> params;
     ImagePtr image;
     
-    if (!byPassCache) {
-
-        getNode()->getLiveInstance()->getImageFromCacheAndConvertIfNeeded(useCache, false,  key, mipmapLevel,
-                                                                          roi,
-                                                                          nodeRoD,
-                                                                          depth, components,
-                                                                           depth, components,inputImages,&image);
-        if (image) {
-            params = image->getParams();
-        }
-    }
+//    if (!byPassCache) {
+//
+//        getNode()->getLiveInstance()->getImageFromCacheAndConvertIfNeeded(useCache, false,  key, mipmapLevel,
+//                                                                          roi,
+//                                                                          nodeRoD,
+//                                                                          depth, components,
+//                                                                           depth, components,inputImages,&image);
+//        if (image) {
+//            params = image->getParams();
+//        }
+//    }
     
     ///If there's only 1 shape to render and this shape is inverted, initialize the image
     ///with the invert instead of the default fill value to speed up rendering
@@ -7235,6 +7232,109 @@ struct qpointf_compare_less
 };
 
 
+#if 0
+/**
+ * @brief Given the original coon's patch, check if all interior angles are inferior to 180°. If not then we split
+ * along the bysector angle and separate the patch.
+ **/
+static std::list<BezierCPs> checkAnglesAndSplitIfNeeded(const BezierCPs &cps, int time)
+{
+    assert(cps.size() == 4);
+    std::list<BezierCPs> ret;
+    BezierCPs::const_iterator prev = cps.end();
+    --prev;
+    BezierCPs::const_iterator cur = cps.begin();
+    BezierCPs::const_iterator next = cur;
+    ++next;
+    
+    while (cur != cps.end()) {
+        if (next == cps.end()) {
+            next = cps.begin();
+        }
+        if (prev == cps.end()) {
+            prev = cps.begin();
+        }
+        
+        Point p1,p2,p3;
+        (*prev)->getPositionAtTime(time, &p1.x, &p1.y);
+        (*cur)->getPositionAtTime(time, &p2.x, &p2.y);
+        (*next)->getPositionAtTime(time, &p3.x, &p3.y);
+        
+        //use inner product: alpha = acos(u.v / |u||v| ) to find out the angle
+        Point u,v;
+        u.x = p1.x - p2.x;
+        u.y = p1.y - p2.y;
+        v.x = p3.x - p2.x;
+        v.y = p3.y - p2.y;
+        double normU = std::sqrt(u.x * u.x + u.y * u.y);
+        double normV = std::sqrt(v.x * v.x + v.y * v.y);
+        assert(normU != 0 && normV != 0);
+        double alpha = std::acos((u.x * v.x + u.y * v.y) / normU * normV);
+        
+        if (alpha > M_PI_2) {
+            double derivativeNorm = std::sqrt((v.x - u.x) * (v.x - u.x) + (v.y - u.y) * (v.y - u.y));
+            assert(derivativeNorm != 0);
+            //normalize u,v by the norm and compute the unit vector in the direction of the bysector angle
+            Point bysec;
+            bysec.x = -((v.y - u.y) / derivativeNorm);
+            bysec.y = (v.x - u.x) / derivativeNorm;
+            
+            //project p2 far away in the direction of bysec and find an intersection with all other segments
+            Point proj;
+            proj.x = p2.x + 10000. * bysec.x;
+            proj.y = p2.y + 10000. * bysec.y;
+            
+            std::vector<std::pair<QPointF,std::pair<BezierCPs::const_iterator,BezierCPs::const_iterator> > > intersections;
+            QLineF line1(QPointF(p2.x,p2.y),QPointF(proj.x,proj.y));
+            
+            BezierCPs::const_iterator s1 = cps.begin();
+            BezierCPs::const_iterator s2 = cps.begin();
+            ++s2;
+            for (; s1 != cps.end(); ++s1,++s2) {
+                if (s2 == cps.end()) {
+                    s2 = cps.begin();
+                }
+                
+                //Do not check intersections on the segments we are using for the angle
+                if (s1 == prev || s1 == cur || s2 == cur || s2 == next) {
+                    continue;
+                }
+                double x1,x2,y1,y2;
+                (*s1)->getPositionAtTime(time, &x1, &y1);
+                (*s2)->getPositionAtTime(time, &x2, &y2);
+                QLineF line2(QPointF(x1,y1),QPointF(y1,y2));
+                QPointF intersection;
+                QLineF::IntersectType type = line1.intersect(line1, &intersection);
+                if (type == QLineF::BoundedIntersection) {
+                    intersections.push_back(std::make_pair(intersection,std::make_pair(s1,s2)));
+                }
+            }
+            
+           
+            
+            assert(intersections.size() == 1 || intersections.size() == 2);
+            const std::pair<QPointF,std::pair<BezierCPs::const_iterator,BezierCPs::const_iterator> > & inter = intersections.front();
+            
+            boost::shared_ptr<BezierCP> newPoint(new BezierCP);
+            newPoint->setStaticPosition(inter.first.x(), inter.first.y());
+            
+            //Separate the original patch in 2 parts and call regularize again on each of them
+            BezierCPs firstPart,secondPart;
+            BezierCPs::const_iterator it = cur;
+            for (; it != inter.second.second; ++it) {
+                
+            }
+        }
+        
+        ++cur;
+        ++prev;
+        ++next;
+    }
+
+    
+    
+}
+#endif
 
 //From http://www.math.ualberta.ca/~bowman/publications/cad10.pdf
 void
@@ -7339,6 +7439,11 @@ RotoContextPrivate::bezulate(int time, const BezierCPs& cps,std::list<BezierCPs>
                         subCurve.push_back(*pointIt);
                     }
                     subCurve.push_back(*next);
+                    
+                    // Ensure that all interior angles are less than 180 degrees.
+                    
+                    
+                    
                     patches->push_back(subCurve);
                     
                     //Remove i + 1 to i + n

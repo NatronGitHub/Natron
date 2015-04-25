@@ -137,6 +137,7 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
                 if (pythonModuleName.endsWith(".py")) {
                     pythonModuleName = pythonModuleName.remove(pythonModuleName.size() - 3, 3);
                 }
+#pragma message WARN("Check pyplug version and ask the user if he/she wants to integrate modifs")
                 if (getGroupInfos(pythonModuleInfo.path().toStdString() + '/', pythonModuleName.toStdString(), &pythonPluginID, &pythonPluginLabel, &pythonIcFilePath, &pythonGrouping, &pythonDesc, &pyVersion)) {
                     pluginID = pythonPluginID;
                     usingPythonModule = true;

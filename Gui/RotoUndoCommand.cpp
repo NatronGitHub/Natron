@@ -595,7 +595,9 @@ AddStrokeUndoCommand::redo()
     if (_firstRedoCalled) {
         _roto->getContext()->addItem(_layer, _indexInLayer, _item, RotoItem::eSelectionReasonOverlayInteract);
     }
-    _roto->evaluate(_firstRedoCalled);
+    if (_firstRedoCalled) {
+        _roto->evaluate(true);
+    }
     _firstRedoCalled = true;
     setText(QObject::tr("Paint Stroke"));
 }

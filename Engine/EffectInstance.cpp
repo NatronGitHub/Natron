@@ -1221,8 +1221,8 @@ EffectInstance::getImage(int inputNb,
         //the roto input can only output color plane
         assert(outputComps.size() == 1);
         
-        boost::shared_ptr<Natron::Image> mask =  roto->renderMask(true,pixelRoI, outputComps.front(), nodeHash,rotoAge,
-                                                                  rod, time, depth, view, mipMapLevel, inputImagesThreadLocal, byPassCache);
+        boost::shared_ptr<Natron::Image> mask =  roto->renderMask(pixelRoI, outputComps.front(), nodeHash,rotoAge,
+                                                                  rod, time, depth, view, mipMapLevel);
         if (inputImagesThreadLocal.empty()) {
             ///If the effect is analysis (e.g: Tracker) there's no input images in the tread local storage, hence add it
             _imp->addInputImageTempPointer(inputNb,mask);
