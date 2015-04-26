@@ -710,7 +710,7 @@ NodeGraph::createNodeGUI(const boost::shared_ptr<Natron::Node> & node,
         }
     }
     
-    if (!requestedByLoad && !getGui()->getApp()->isCreatingPythonGroup()) {
+    if (!requestedByLoad && (!getGui()->getApp()->isCreatingPythonGroup() || dynamic_cast<NodeGroup*>(node->getLiveInstance()))) {
         node_ui->ensurePanelCreated();
     }
     
