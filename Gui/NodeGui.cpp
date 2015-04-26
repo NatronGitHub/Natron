@@ -1633,6 +1633,8 @@ NodeGui::hasEdgeNearbyRect(const QRectF & rect)
 
     for (InputEdges::const_iterator it = _inputEdges.begin(); it != _inputEdges.end(); ++it) {
         QLineF edgeLine = (*it)->line();
+        edgeLine.setP1((*it)->mapToScene(edgeLine.p1()));
+        edgeLine.setP2((*it)->mapToScene(edgeLine.p2()));
         for (int j = 0; j < 4; ++j) {
             if (edgeLine.intersect(rectEdges[j], &intersection) == QLineF::BoundedIntersection) {
                 if (!closest) {
@@ -1658,6 +1660,8 @@ NodeGui::hasEdgeNearbyRect(const QRectF & rect)
     if (_outputEdge) {
         if (_outputEdge->isVisible()) {
             QLineF edgeLine = _outputEdge->line();
+            edgeLine.setP1((_outputEdge)->mapToScene(edgeLine.p1()));
+            edgeLine.setP2((_outputEdge)->mapToScene(edgeLine.p2()));
             for (int j = 0; j < 4; ++j) {
                 if (edgeLine.intersect(rectEdges[j], &intersection) == QLineF::BoundedIntersection) {
                     return _outputEdge;
