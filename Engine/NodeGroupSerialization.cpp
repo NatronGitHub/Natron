@@ -43,6 +43,7 @@ bool
 NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::shared_ptr<NodeSerialization> > & serializedNodes,
                                                       const boost::shared_ptr<NodeCollection>& group,
                                                       bool createNodes,
+                                                      std::map<std::string,bool>* moduleUpdatesProcessed,
                                                       bool* hasProjectAWriter)
 {
     
@@ -122,6 +123,8 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
         bool usingPythonModule = false;
         if (!pythonModuleAbsolutePath.empty()) {
             
+            unsigned int savedPythonModuleVersion = (*it)->getPythonModuleVersion();
+            
             QString qPyModulePath(pythonModuleAbsolutePath.c_str());
             //Workaround a bug introduced in Natron where we were not saving the .py extension
             if (!qPyModulePath.endsWith(".py")) {
@@ -137,10 +140,43 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
                 if (pythonModuleName.endsWith(".py")) {
                     pythonModuleName = pythonModuleName.remove(pythonModuleName.size() - 3, 3);
                 }
-#pragma message WARN("Check pyplug version and ask the user if he/she wants to integrate modifs")
-                if (getGroupInfos(pythonModuleInfo.path().toStdString() + '/', pythonModuleName.toStdString(), &pythonPluginID, &pythonPluginLabel, &pythonIcFilePath, &pythonGrouping, &pythonDesc, &pyVersion)) {
-                    pluginID = pythonPluginID;
-                    usingPythonModule = true;
+                
+                std::string stdModuleName = pythonModuleName.toStdString();
+                if (getGroupInfos(pythonModuleInfo.path().toStdString() + '/', stdModuleName, &pythonPluginID, &pythonPluginLabel, &pythonIcFilePath, &pythonGrouping, &pythonDesc, &pyVersion)) {
+                    
+                    if (pyVersion != savedPythonModuleVersion) {
+            
+                        std::map<std::string,bool>::iterator found = moduleUpdatesProcessed->find(stdModuleName);
+                        if (found != moduleUpdatesProcessed->end()) {
+                            if (found->second) {
+                                pluginID = pythonPluginID;
+                                usingPythonModule = true;
+                            }
+                        } else {
+                            
+                            Natron::StandardButtonEnum rep = Natron::questionDialog(QObject::tr("New PyPlug version").toStdString()
+                                                                                    , QObject::tr("A different version of ").toStdString() +
+                                                                                    stdModuleName + " (" +
+                                                                                    QString::number(pyVersion).toStdString() + ") " +
+                                                                                    QObject::tr("was found.\n").toStdString() +
+                                                                                    QObject::tr("You are currently using version ").toStdString() +
+                                                                                    QString::number(savedPythonModuleVersion).toStdString() + ".\n" +
+                                                                                    QObject::tr("Would you like to update your script?").toStdString()
+                                                                                    , false ,
+                                                                                    Natron::StandardButtons(Natron::eStandardButtonYes | Natron::eStandardButtonNo));
+                            if (rep == Natron::eStandardButtonYes) {
+                                pluginID = pythonPluginID;
+                                usingPythonModule = true;
+                            }
+                            moduleUpdatesProcessed->insert(std::make_pair(stdModuleName, rep == Natron::eStandardButtonYes));
+                        }
+                    } else {
+                        pluginID = pythonPluginID;
+                        usingPythonModule = true;
+                    }
+                    
+                    
+                    
                 }
             }
         }
@@ -153,11 +189,22 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
                 n->loadKnobs(**it);
             }
         }
+        
+        unsigned int majorVersion,minorVersion;
+        if (usingPythonModule) {
+            //We already asked the user whether he/she wanted to load a newer version of the PyPlug, let the loadNode function accept it
+            majorVersion = -1;
+            minorVersion = -1;
+        } else {
+            majorVersion = (*it)->getPluginMajorVersion();
+            minorVersion = (*it)->getPluginMinorVersion();
+        }
+        
         if (!n) {
             n = group->getApplication()->loadNode( LoadNodeArgs(pluginID.c_str()
                                                                 ,(*it)->getMultiInstanceParentName()
-                                                                ,(*it)->getPluginMajorVersion()
-                                                                ,(*it)->getPluginMinorVersion(),it->get(),false,group) );
+                                                                ,majorVersion
+                                                                ,minorVersion,it->get(),false,group) );
         }
         if (!n) {
             QString text( QObject::tr("The node ") );
@@ -178,10 +225,10 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
             if (isGrp) {
                 boost::shared_ptr<Natron::EffectInstance> sharedEffect = isGrp->shared_from_this();
                 boost::shared_ptr<NodeGroup> sharedGrp = boost::dynamic_pointer_cast<NodeGroup>(sharedEffect);
-                NodeCollectionSerialization::restoreFromSerialization(children, sharedGrp ,!usingPythonModule, hasProjectAWriter);
+                NodeCollectionSerialization::restoreFromSerialization(children, sharedGrp ,!usingPythonModule, moduleUpdatesProcessed, hasProjectAWriter);
             } else {
                 assert(n->isMultiInstance());
-                NodeCollectionSerialization::restoreFromSerialization(children, group, true, hasProjectAWriter);
+                NodeCollectionSerialization::restoreFromSerialization(children, group, true, moduleUpdatesProcessed,  hasProjectAWriter);
             }
         }
     }

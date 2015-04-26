@@ -314,7 +314,7 @@ private:
     void setProjectDefaultFormat(const Format & f);
 
     bool loadProjectInternal(const QString & path,const QString & name,bool isAutoSave,
-                             bool isUntitledAutosave);
+                             bool isUntitledAutosave, bool* mustSave);
 
     QString saveProjectInternal(const QString & path,const QString & name,bool autosave = false);
 
@@ -364,7 +364,7 @@ private:
 
     void save(ProjectSerialization* serializationObject) const;
 
-    bool load(const ProjectSerialization & obj,const QString& name,const QString& path);
+    bool load(const ProjectSerialization & obj,const QString& name,const QString& path, bool* mustSave);
 
 
     boost::scoped_ptr<ProjectPrivate> _imp;

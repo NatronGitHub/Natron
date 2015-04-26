@@ -35,6 +35,7 @@ NodeSerialization::NodeSerialization(const boost::shared_ptr<Natron::Node> & n,b
     , _pluginMinorVersion(-1)
     , _hasRotoContext(false)
     , _node()
+    , _pythonModuleVersion(0)
 {
     if (n) {
         _node = n;
@@ -88,6 +89,8 @@ NodeSerialization::NodeSerialization(const boost::shared_ptr<Natron::Node> & n,b
         _pluginID = n->getPluginID();
         
         _pythonModule = n->getPluginPythonModule();
+        
+        _pythonModuleVersion = n->getPluginPythonModuleVersion();
 
         _pluginMajorVersion = n->getMajorVersion();
 

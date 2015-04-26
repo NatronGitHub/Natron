@@ -68,6 +68,7 @@ public:
     static bool restoreFromSerialization(const std::list< boost::shared_ptr<NodeSerialization> > & serializedNodes,
                                          const boost::shared_ptr<NodeCollection>& group,
                                          bool createNodes,
+                                         std::map<std::string,bool>* moduleUpdatesProcessed,
                                          bool* hasProjectAWriter);
     
 private:

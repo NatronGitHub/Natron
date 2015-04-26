@@ -257,6 +257,7 @@ struct Node::Implementation
     , nativePositionOverlays()
     , pluginPythonModuleMutex()
     , pluginPythonModule()
+    , pluginPythonModuleVersion(0)
     , nodeCreated(false)
     , createdComponentsMutex()
     , createdComponents()
@@ -437,6 +438,7 @@ struct Node::Implementation
     
     mutable QMutex pluginPythonModuleMutex;
     std::string pluginPythonModule;
+    unsigned int pluginPythonModuleVersion;
     
     bool nodeCreated;
     
@@ -4725,10 +4727,11 @@ Node::setPluginIDAndVersionForGui(const std::string& pluginLabel,const std::stri
 }
 
 void
-Node::setPluginPythonModule(const std::string& pythonModule)
+Node::setPluginPythonModule(const std::string& pythonModule, unsigned int version)
 {
     QMutexLocker k(&_imp->pluginPythonModuleMutex);
     _imp->pluginPythonModule = pythonModule;
+    _imp->pluginPythonModuleVersion = version;
 }
 
 std::string
@@ -4736,6 +4739,13 @@ Node::getPluginPythonModule() const
 {
     QMutexLocker k(&_imp->pluginPythonModuleMutex);
     return _imp->pluginPythonModule;
+}
+
+unsigned int
+Node::getPluginPythonModuleVersion() const
+{
+    QMutexLocker k(&_imp->pluginPythonModuleMutex);
+    return _imp->pluginPythonModuleVersion;
 }
 
 bool

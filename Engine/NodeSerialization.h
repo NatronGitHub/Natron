@@ -44,7 +44,8 @@ CLANG_DIAG_ON(unused-parameter)
 #define NODE_SERIALIZATION_INTRODUCES_PYTHON_MODULE 8
 #define NODE_SERIALIZATION_CHANGE_INPUTS_SERIALIZATION 9
 #define NODE_SERIALIZATION_INTRODUCES_USER_COMPONENTS 10
-#define NODE_SERIALIZATION_CURRENT_VERSION NODE_SERIALIZATION_INTRODUCES_USER_COMPONENTS
+#define NODE_SERIALIZATION_INTRODUCES_PYTHON_MODULE_VERSION 11
+#define NODE_SERIALIZATION_CURRENT_VERSION NODE_SERIALIZATION_INTRODUCES_PYTHON_MODULE_VERSION
 
 namespace Natron {
 class Node;
@@ -58,23 +59,24 @@ public:
 
     ///Used to serialize
     NodeSerialization(const boost::shared_ptr<Natron::Node> & n,bool serializeInputs = true);
-
+    
     ////Used to deserialize
     NodeSerialization()
-        : _isNull(true)
-        , _nbKnobs(0)
-        , _knobsValues()
-        , _knobsAge(0)
-        , _nodeLabel()
-        , _nodeScriptName()
-        , _pluginID()
-        , _pluginMajorVersion(-1)
-        , _pluginMinorVersion(-1)
-        , _hasRotoContext(false)
-        , _node()
+    : _isNull(true)
+    , _nbKnobs(0)
+    , _knobsValues()
+    , _knobsAge(0)
+    , _nodeLabel()
+    , _nodeScriptName()
+    , _pluginID()
+    , _pluginMajorVersion(-1)
+    , _pluginMinorVersion(-1)
+    , _hasRotoContext(false)
+    , _node()
+    , _pythonModuleVersion(0)
     {
     }
-
+    
     ~NodeSerialization()
     {
         _knobsValues.clear(); _inputs.clear();
@@ -103,6 +105,11 @@ public:
     const std::string& getPythonModule() const
     {
         return _pythonModule;
+    }
+    
+    unsigned int getPythonModuleVersion() const
+    {
+        return _pythonModuleVersion;
     }
 
     const std::vector<std::string> & getOldInputs() const
@@ -206,6 +213,7 @@ private:
     std::list< boost::shared_ptr<NodeSerialization> > _children;
     
     std::string _pythonModule;
+    unsigned int _pythonModuleVersion;
     
     std::list<Natron::ImageComponents> _userComponents;
     
@@ -219,6 +227,7 @@ private:
         ar & boost::serialization::make_nvp("Plugin_id",_pluginID);
         if (_pluginID == PLUGINID_NATRON_GROUP) {
             ar & boost::serialization::make_nvp("PythonModule",_pythonModule);
+            ar & boost::serialization::make_nvp("PythonModuleVersion",_pythonModuleVersion);
         }
         ar & boost::serialization::make_nvp("Plugin_major_version",_pluginMajorVersion);
         ar & boost::serialization::make_nvp("Plugin_minor_version",_pluginMinorVersion);
@@ -276,6 +285,11 @@ private:
         if (version >= NODE_SERIALIZATION_INTRODUCES_PYTHON_MODULE) {
             if (_pluginID == PLUGINID_NATRON_GROUP) {
                 ar & boost::serialization::make_nvp("PythonModule",_pythonModule);
+                if (version >= NODE_SERIALIZATION_INTRODUCES_PYTHON_MODULE_VERSION) {
+                    ar & boost::serialization::make_nvp("PythonModuleVersion",_pythonModuleVersion);
+                } else {
+                    _pythonModuleVersion = 1;
+                }
             }
         }
         

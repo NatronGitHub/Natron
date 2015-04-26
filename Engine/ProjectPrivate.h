@@ -116,7 +116,7 @@ struct ProjectPrivate
     
     ProjectPrivate(Natron::Project* project);
 
-    bool restoreFromSerialization(const ProjectSerialization & obj,const QString& name,const QString& path);
+    bool restoreFromSerialization(const ProjectSerialization & obj,const QString& name,const QString& path, bool* mustSave);
 
     bool findFormat(int index,Format* format) const;
     

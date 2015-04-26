@@ -894,9 +894,11 @@ public:
     
     void setPluginIDAndVersionForGui(const std::string& pluginLabel,const std::string& pluginID,unsigned int version);
     
-    void setPluginPythonModule(const std::string& pythonModule);
+    void setPluginPythonModule(const std::string& pythonModule, unsigned int version);
     
     std::string getPluginPythonModule() const;
+    
+    unsigned int getPluginPythonModuleVersion() const;
   
     void refreshChannelSelectors(bool setValues);
     

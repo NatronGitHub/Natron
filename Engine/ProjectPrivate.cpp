@@ -81,7 +81,8 @@ ProjectPrivate::ProjectPrivate(Natron::Project* project)
 bool
 ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
                                          const QString& name,
-                                         const QString& path)
+                                         const QString& path,
+                                         bool* mustSave)
 {
     
     /*1st OFF RESTORE THE PROJECT KNOBS*/
@@ -162,9 +163,15 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
     
     bool hasProjectAWriter = false;
     
+    std::map<std::string,bool> processedModules;
     bool ok = NodeCollectionSerialization::restoreFromSerialization(obj.getNodesSerialization().getNodesSerialization(),
-                                                                    _publicInterface->shared_from_this(),true, &hasProjectAWriter);
-
+                                                                    _publicInterface->shared_from_this(),true, &processedModules, &hasProjectAWriter);
+    for (std::map<std::string,bool>::iterator it = processedModules.begin(); it!=processedModules.end(); ++it) {
+        if (it->second) {
+            *mustSave = true;
+            break;
+        }
+    }
 
     if ( !hasProjectAWriter && appPTR->isBackground() ) {
         _publicInterface->clearNodes(true);

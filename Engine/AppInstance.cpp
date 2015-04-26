@@ -612,7 +612,7 @@ AppInstance::setGroupLabelIDAndVersion(const boost::shared_ptr<Natron::Node>& no
         node->setPluginIconFilePath(iconFilePath);
         node->setPluginDescription(description);
         node->setPluginIDAndVersionForGui(pluginLabel, pluginID, version);
-        node->setPluginPythonModule(QString(pythonModulePath + pythonModule + ".py").toStdString());
+        node->setPluginPythonModule(QString(pythonModulePath + pythonModule + ".py").toStdString(), version);
     }
     
 }

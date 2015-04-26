@@ -171,8 +171,11 @@ Project::loadProject(const QString & path,
             }
         }
         
-        if (!loadProjectInternal(realPath,realName,isAutoSave,isUntitledAutosave)) {
+        bool mustSave = false;
+        if (!loadProjectInternal(realPath,realName,isAutoSave,isUntitledAutosave,&mustSave)) {
             appPTR->showOfxLog();
+        } else if (mustSave) {
+            saveProject(realPath, realName, false);
         }
     } catch (const std::exception & e) {
         Natron::errorDialog( QObject::tr("Project loader").toStdString(), QObject::tr("Error while loading project").toStdString() + ": " + e.what() );
@@ -223,7 +226,7 @@ Project::loadProject(const QString & path,
 
 bool
 Project::loadProjectInternal(const QString & path,
-                             const QString & name,bool isAutoSave,bool isUntitledAutosave)
+                             const QString & name,bool isAutoSave,bool isUntitledAutosave, bool* mustSave)
 {
     Natron::FlagSetter loadingProjectRAII(true,&_imp->isLoadingProject,&_imp->isLoadingProjectMutex);
     
@@ -277,7 +280,7 @@ Project::loadProjectInternal(const QString & path,
             ProjectSerialization projectSerializationObj( getApp() );
             iArchive >> boost::serialization::make_nvp("Project", projectSerializationObj);
             
-            ret = load(projectSerializationObj,name,path);
+            ret = load(projectSerializationObj,name,path, mustSave);
         } // __raii_loadingProjectInternal__
         
         if (!bgProject) {
@@ -1151,9 +1154,9 @@ Project::save(ProjectSerialization* serializationObject) const
 }
 
 bool
-Project::load(const ProjectSerialization & obj,const QString& name,const QString& path)
+Project::load(const ProjectSerialization & obj,const QString& name,const QString& path, bool* mustSave)
 {
-    return _imp->restoreFromSerialization(obj,name,path);
+    return _imp->restoreFromSerialization(obj,name,path, mustSave);
 }
 
 void
