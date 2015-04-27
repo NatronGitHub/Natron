@@ -1174,10 +1174,11 @@ RotoGui::drawOverlays(double /*scaleX*/,
                         if ( prevCp == cps.end() ) {
                             prevCp = cps.begin();
                         }
-                        
+                        assert(itF != featherPts.end()); // because cps.size() == featherPts.size()
+
                         double x,y;
                         (*it2)->getPositionAtTime(time, &x, &y);
-                        
+
                         double xF,yF;
                         (*itF)->getPositionAtTime(time, &xF, &yF);
                         ///draw the feather point only if it is distinct from the associated point
@@ -3186,6 +3187,8 @@ RotoGui::RotoGuiPrivate::isNearbyFeatherBar(int time,
 
         const std::list<boost::shared_ptr<BezierCP> > & fps = isBezier->getFeatherPoints();
         const std::list<boost::shared_ptr<BezierCP> > & cps = isBezier->getControlPoints();
+        assert( cps.size() == fps.size() );
+
         int cpCount = (int)cps.size();
         if (cpCount <= 1) {
             continue;
@@ -3217,6 +3220,7 @@ RotoGui::RotoGuiPrivate::isNearbyFeatherBar(int time,
             if ( nextF == fps.end() ) {
                 nextF = fps.begin();
             }
+            assert(itF != fps.end()); // because cps.size() == fps.size()
 
             Point controlPoint,featherPoint;
             (*itCp)->getPositionAtTime(time, &controlPoint.x, &controlPoint.y);
