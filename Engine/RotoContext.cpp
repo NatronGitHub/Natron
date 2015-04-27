@@ -2737,7 +2737,7 @@ Bezier::movePointByIndexInternal(int index,int time,double dx,double dy,bool onl
                     (*it)->setLeftBezierPointAtTime(*it2, leftX + dx, leftY + dy);
                     (*it)->setRightBezierPointAtTime(*it2, rightX + dx, rightY + dy);
                 }
-                if (moveFeather) {
+                if (moveFeather && useFeather) {
                     (*itF)->getPositionAtTime(*it2, &xF, &yF,true);
                     (*itF)->getLeftBezierPointAtTime(*it2, &leftXF, &leftYF,true);
                     (*itF)->getRightBezierPointAtTime(*it2, &rightXF, &rightYF,true);
@@ -2826,23 +2826,19 @@ Bezier::moveBezierPointInternal(BezierCP* cpParam,
             isOnKeyframe = (cp)->getRightBezierPointAtTime(time, &rightX, &rightY,true);
         }
         
-        bool moveFeather;
+        bool moveFeather = false;
         double leftXF, leftYF, rightXF, rightYF;
-        if (cpParam) {
-            moveFeather = false;
-        } else {
-            if (useFeatherPoints()) {
-                moveFeather = true;
-                if (isLeft || moveBoth) {
-                    (fp)->getLeftBezierPointAtTime(time, &leftXF, &leftYF,true);
-                    moveFeather = moveFeather && leftX == leftXF && leftY == leftYF;
-                }
-                if (!isLeft || moveBoth) {
-                    (fp)->getRightBezierPointAtTime(time, &rightXF, &rightYF,true);
-                    moveFeather = moveFeather && rightX == rightXF && rightY == rightYF;
-                }
-                moveFeather = moveFeather || featherLink;
+        if (!cpParam && useFeatherPoints()) {
+            moveFeather = true;
+            if (isLeft || moveBoth) {
+                (fp)->getLeftBezierPointAtTime(time, &leftXF, &leftYF,true);
+                moveFeather = moveFeather && leftX == leftXF && leftY == leftYF;
             }
+            if (!isLeft || moveBoth) {
+                (fp)->getRightBezierPointAtTime(time, &rightXF, &rightYF,true);
+                moveFeather = moveFeather && rightX == rightXF && rightY == rightYF;
+            }
+            moveFeather = moveFeather || featherLink;
         }
 
         if (autoKeying || isOnKeyframe) {
