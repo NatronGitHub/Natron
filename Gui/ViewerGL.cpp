@@ -2597,15 +2597,25 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
     bool hasPickers = _imp->viewerTab->getGui()->hasPickers();
 
     
-    if ( (buttonDownIsMiddle(e) || ( (e)->buttons() == Qt::RightButton   && buttonControlAlt(e) == Qt::AltModifier )) && !modifierHasControl(e) ) {
+    if (!overlaysCaught &&
+        (buttonDownIsMiddle(e) ||
+         ( (e)->buttons() == Qt::RightButton && buttonControlAlt(e) == Qt::AltModifier )) &&
+        !modifierHasControl(e) ) {
         // middle (or Alt + left) or Alt + right = pan
         _imp->ms = eMouseStateDraggingImage;
         overlaysCaught = true;
-    } else if ((e->buttons() & Qt::MiddleButton) && (buttonControlAlt(e) == Qt::AltModifier || (e->buttons() & Qt::LeftButton)) ) {
+    }
+    if (!overlaysCaught &&
+        (e->buttons() & Qt::MiddleButton) &&
+        (buttonControlAlt(e) == Qt::AltModifier || (e->buttons() & Qt::LeftButton)) ) {
         // Alt + middle = zoom or Left + middle = zoom
         _imp->ms = eMouseStateZoomingImage;
         overlaysCaught = true;
-    } else if ( hasPickers && isMouseShortcut(kShortcutGroupViewer, kShortcutIDMousePickColor, modifiers, button) && displayingImage() ) {
+    }
+    if (!overlaysCaught &&
+        hasPickers &&
+        isMouseShortcut(kShortcutGroupViewer, kShortcutIDMousePickColor, modifiers, button) &&
+        displayingImage() ) {
         // picker with single-point selection
         _imp->pickerState = ePickerStatePoint;
         if ( pickColor( e->x(),e->y() ) ) {
@@ -2613,7 +2623,38 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
             mustRedraw = true;
             overlaysCaught = true;
         }
-    } else if ( (_imp->ms == eMouseStateUndefined) && _imp->overlay ) {
+    }
+
+    // process the wipe tool events before the plugin overlays
+    if (!overlaysCaught &&
+        _imp->overlay &&
+        isWipeHandleVisible() &&
+        buttonDownIsLeft(e) &&
+        _imp->isNearbyWipeCenter(zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight) ) {
+        _imp->ms = eMouseStateDraggingWipeCenter;
+        overlaysCaught = true;
+    }
+    if (!overlaysCaught &&
+        _imp->overlay &&
+        isWipeHandleVisible() &&
+        buttonDownIsLeft(e) &&
+        _imp->isNearbyWipeMixHandle(zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight) ) {
+        _imp->ms = eMouseStateDraggingWipeMixHandle;
+        overlaysCaught = true;
+    }
+    if (!overlaysCaught &&
+        _imp->overlay &&
+        isWipeHandleVisible() &&
+        buttonDownIsLeft(e) &&
+        _imp->isNearbyWipeRotateBar(zoomPos, zoomScreenPixelWidth ,zoomScreenPixelHeight) ) {
+        _imp->ms = eMouseStateRotatingWipeHandle;
+        overlaysCaught = true;
+    }
+
+    // process plugin overlays
+    if (!overlaysCaught &&
+        (_imp->ms == eMouseStateUndefined) &&
+        _imp->overlay ) {
         unsigned int mipMapLevel = getCurrentRenderScale();
         double scale = 1. / (1 << mipMapLevel);
         overlaysCaught = _imp->viewerTab->notifyOverlaysPenDown(scale,scale, QMouseEventLocalPos(e), zoomPos, e);
@@ -2623,96 +2664,117 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
     }
 
 
-    if (!overlaysCaught) {
-
-          if ( hasPickers && isMouseShortcut(kShortcutGroupViewer, kShortcutIDMouseRectanglePick, modifiers, button) && displayingImage() ) {
-            // start picker with rectangle selection (picked color is the average over the rectangle)
-            _imp->pickerState = ePickerStateRectangle;
-            _imp->pickerRect.setTopLeft(zoomPos);
-            _imp->pickerRect.setBottomRight(zoomPos);
-            _imp->ms = eMouseStateBuildingPickerRectangle;
-            mustRedraw = true;
-            overlaysCaught = true;
-        } else if ( (_imp->pickerState != ePickerStateInactive) && buttonDownIsLeft(e) && displayingImage() ) {
-            // disable picker if picker is set when clicking
-            _imp->pickerState = ePickerStateInactive;
-            mustRedraw = true;
-            overlaysCaught = true;
-        } else if ( buttonDownIsLeft(e) &&
-                    userRoIEnabled && isNearByUserRoIBottomEdge(userRoI,zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight) ) {
-            // start dragging the bottom edge of the user ROI
-            _imp->ms = eMouseStateDraggingRoiBottomEdge;
-            overlaysCaught = true;
-        } else if ( buttonDownIsLeft(e) &&
-                    userRoIEnabled && isNearByUserRoILeftEdge(userRoI,zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight) ) {
-            // start dragging the left edge of the user ROI
-            _imp->ms = eMouseStateDraggingRoiLeftEdge;
-            overlaysCaught = true;
-        } else if ( buttonDownIsLeft(e) &&
-                    userRoIEnabled && isNearByUserRoIRightEdge(userRoI,zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight) ) {
-            // start dragging the right edge of the user ROI
-            _imp->ms = eMouseStateDraggingRoiRightEdge;
-            overlaysCaught = true;
-        } else if ( buttonDownIsLeft(e) &&
-                    userRoIEnabled && isNearByUserRoITopEdge(userRoI,zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight) ) {
-            // start dragging the top edge of the user ROI
-            _imp->ms = eMouseStateDraggingRoiTopEdge;
-            overlaysCaught = true;
-        } else if ( buttonDownIsLeft(e) &&
-                    userRoIEnabled && isNearByUserRoI( (userRoI.x1 + userRoI.x2) / 2., (userRoI.y1 + userRoI.y2) / 2.,
-                                     zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight ) ) {
+    if (!overlaysCaught &&
+        hasPickers &&
+        isMouseShortcut(kShortcutGroupViewer, kShortcutIDMouseRectanglePick, modifiers, button) &&
+        displayingImage() ) {
+        // start picker with rectangle selection (picked color is the average over the rectangle)
+        _imp->pickerState = ePickerStateRectangle;
+        _imp->pickerRect.setTopLeft(zoomPos);
+        _imp->pickerRect.setBottomRight(zoomPos);
+        _imp->ms = eMouseStateBuildingPickerRectangle;
+        mustRedraw = true;
+        overlaysCaught = true;
+    }
+    if (!overlaysCaught &&
+        (_imp->pickerState != ePickerStateInactive) &&
+        buttonDownIsLeft(e) &&
+        displayingImage() ) {
+        // disable picker if picker is set when clicking
+        _imp->pickerState = ePickerStateInactive;
+        mustRedraw = true;
+        overlaysCaught = true;
+    }
+    if (!overlaysCaught &&
+        buttonDownIsLeft(e) &&
+        userRoIEnabled &&
+        isNearByUserRoIBottomEdge(userRoI,zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight) ) {
+        // start dragging the bottom edge of the user ROI
+        _imp->ms = eMouseStateDraggingRoiBottomEdge;
+        overlaysCaught = true;
+    }
+    if (!overlaysCaught &&
+        buttonDownIsLeft(e) &&
+        userRoIEnabled &&
+        isNearByUserRoILeftEdge(userRoI,zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight) ) {
+        // start dragging the left edge of the user ROI
+        _imp->ms = eMouseStateDraggingRoiLeftEdge;
+        overlaysCaught = true;
+    }
+    if (!overlaysCaught &&
+        buttonDownIsLeft(e) &&
+        userRoIEnabled && isNearByUserRoIRightEdge(userRoI,zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight) ) {
+        // start dragging the right edge of the user ROI
+        _imp->ms = eMouseStateDraggingRoiRightEdge;
+        overlaysCaught = true;
+    }
+    if (!overlaysCaught &&
+        buttonDownIsLeft(e) &&
+        userRoIEnabled &&
+        isNearByUserRoITopEdge(userRoI,zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight) ) {
+        // start dragging the top edge of the user ROI
+        _imp->ms = eMouseStateDraggingRoiTopEdge;
+        overlaysCaught = true;
+    }
+    if (!overlaysCaught &&
+        buttonDownIsLeft(e) &&
+        userRoIEnabled &&
+        isNearByUserRoI( (userRoI.x1 + userRoI.x2) / 2., (userRoI.y1 + userRoI.y2) / 2.,
+                        zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight ) ) {
             // start dragging the midpoint of the user ROI
             _imp->ms = eMouseStateDraggingRoiCross;
             overlaysCaught = true;
-        } else if ( buttonDownIsLeft(e) &&
-                    userRoIEnabled && isNearByUserRoI(userRoI.x1, userRoI.y2, zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight) ) {
-            // start dragging the topleft corner of the user ROI
-            _imp->ms = eMouseStateDraggingRoiTopLeft;
-            overlaysCaught = true;
-        } else if ( buttonDownIsLeft(e) &&
-                    userRoIEnabled && isNearByUserRoI(userRoI.x2, userRoI.y2, zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight) ) {
-            // start dragging the topright corner of the user ROI
-            _imp->ms = eMouseStateDraggingRoiTopRight;
-            overlaysCaught = true;
-        }  else if ( buttonDownIsLeft(e) &&
-                     userRoIEnabled && isNearByUserRoI(userRoI.x1, userRoI.y1, zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight) ) {
-            // start dragging the bottomleft corner of the user ROI
-            _imp->ms = eMouseStateDraggingRoiBottomLeft;
-            overlaysCaught = true;
-        }  else if ( buttonDownIsLeft(e) &&
-                     userRoIEnabled && isNearByUserRoI(userRoI.x2, userRoI.y1, zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight) ) {
-            // start dragging the bottomright corner of the user ROI
-            _imp->ms = eMouseStateDraggingRoiBottomRight;
-            overlaysCaught = true;
-        } else if ( _imp->overlay && isWipeHandleVisible() &&
-                    buttonDownIsLeft(e) && _imp->isNearbyWipeCenter(zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight) ) {
-            _imp->ms = eMouseStateDraggingWipeCenter;
-            overlaysCaught = true;
-        } else if ( _imp->overlay &&  isWipeHandleVisible() &&
-                    buttonDownIsLeft(e) && _imp->isNearbyWipeMixHandle(zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight) ) {
-            _imp->ms = eMouseStateDraggingWipeMixHandle;
-            overlaysCaught = true;
-        } else if ( _imp->overlay &&  isWipeHandleVisible() &&
-                    buttonDownIsLeft(e) && _imp->isNearbyWipeRotateBar(zoomPos, zoomScreenPixelWidth ,zoomScreenPixelHeight) ) {
-            _imp->ms = eMouseStateRotatingWipeHandle;
-            overlaysCaught = true;
         }
+    if (!overlaysCaught &&
+        buttonDownIsLeft(e) &&
+        userRoIEnabled &&
+        isNearByUserRoI(userRoI.x1, userRoI.y2, zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight) ) {
+        // start dragging the topleft corner of the user ROI
+        _imp->ms = eMouseStateDraggingRoiTopLeft;
+        overlaysCaught = true;
+    }
+    if (!overlaysCaught &&
+        buttonDownIsLeft(e) &&
+        userRoIEnabled &&
+        isNearByUserRoI(userRoI.x2, userRoI.y2, zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight) ) {
+        // start dragging the topright corner of the user ROI
+        _imp->ms = eMouseStateDraggingRoiTopRight;
+        overlaysCaught = true;
+    }
+    if (!overlaysCaught &&
+        buttonDownIsLeft(e) &&
+        userRoIEnabled &&
+        isNearByUserRoI(userRoI.x1, userRoI.y1, zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight) ) {
+        // start dragging the bottomleft corner of the user ROI
+        _imp->ms = eMouseStateDraggingRoiBottomLeft;
+        overlaysCaught = true;
+    }
+    if (!overlaysCaught &&
+        buttonDownIsLeft(e) &&
+        userRoIEnabled &&
+        isNearByUserRoI(userRoI.x2, userRoI.y1, zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight) ) {
+        // start dragging the bottomright corner of the user ROI
+        _imp->ms = eMouseStateDraggingRoiBottomRight;
+        overlaysCaught = true;
     }
 
-    if (!overlaysCaught) {
-        if ( buttonDownIsRight(e) ) {
-            _imp->menu->exec( mapToGlobal( e->pos() ) );
-        } else if ( buttonDownIsLeft(e) ) {
-            ///build selection rectangle
-            _imp->selectionRectangle.setTopLeft(zoomPos);
-            _imp->selectionRectangle.setBottomRight(zoomPos);
-            _imp->lastDragStartPos = zoomPos;
-            _imp->ms = eMouseStateSelecting;
-            if ( !modCASIsControl(e) ) {
-                Q_EMIT selectionCleared();
-                mustRedraw = true;
-            }
+    if (!overlaysCaught &&
+        buttonDownIsRight(e) ) {
+        _imp->menu->exec( mapToGlobal( e->pos() ) );
+        overlaysCaught = true;
+    }
+    if (!overlaysCaught &&
+        buttonDownIsLeft(e) ) {
+        ///build selection rectangle
+        _imp->selectionRectangle.setTopLeft(zoomPos);
+        _imp->selectionRectangle.setBottomRight(zoomPos);
+        _imp->lastDragStartPos = zoomPos;
+        _imp->ms = eMouseStateSelecting;
+        if ( !modCASIsControl(e) ) {
+            Q_EMIT selectionCleared();
+            mustRedraw = true;
         }
+        overlaysCaught = true;
     }
 
     if (mustRedraw) {
