@@ -948,6 +948,10 @@ SequenceFileDialog::enterDirectory(const QModelIndex & index)
 void
 SequenceFileDialog::setDirectory(const QString &directory)
 {
+    QDir dir(directory);
+    if (!dir.exists()) {
+        return;
+    }
    
     QString newDirectory = directory;
     _view->selectionModel()->clear();
