@@ -243,7 +243,7 @@ Param::curve(double time, int dimension) const
     if (!getInternalKnob()) {
         return 0.;
     }
-    return getInternalKnob()->getValueAtWithExpression(time, dimension);
+    return getInternalKnob()->getRawCurveValueAt(time, dimension);
 }
 
 AnimatedParam::AnimatedParam(const boost::shared_ptr<KnobI>& knob)

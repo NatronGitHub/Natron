@@ -3813,12 +3813,14 @@ CurveWidget::loopSelectedCurve()
     if (!ce) {
         return;
     }
+    
     CurveGui* curve = ce->getSelectedCurve();
     if (!curve) {
         warningDialog( tr("Curve Editor").toStdString(),tr("You must select a curve first in the view.").toStdString() );
         return;
     }
-    
+    KnobCurveGui* knobCurve = dynamic_cast<KnobCurveGui*>(curve);
+    assert(knobCurve);
     PyModalDialog dialog(_imp->_gui);
     boost::shared_ptr<IntParam> firstFrame(dialog.createIntParam("firstFrame", "First frame"));
     firstFrame->setAnimationEnabled(false);
@@ -3829,7 +3831,7 @@ CurveWidget::loopSelectedCurve()
         int first = firstFrame->getValue();
         int last = lastFrame->getValue();
         std::stringstream ss;
-        ss << "curve(((frame - " << first << ") % (" << last << " - " << first << " + 1)) + " << first << ")";
+        ss << "curve(((frame - " << first << ") % (" << last << " - " << first << " + 1)) + " << first << ", "<< knobCurve->getDimension() << ")";
         std::string script = ss.str();
         ce->setSelectedCurveExpression(script.c_str());
     }
@@ -3856,7 +3858,12 @@ CurveWidget::negateSelectedCurve()
         warningDialog( tr("Curve Editor").toStdString(),tr("You must select a curve first in the view.").toStdString() );
         return;
     }
-    ce->setSelectedCurveExpression("-curve(frame)");
+    KnobCurveGui* knobCurve = dynamic_cast<KnobCurveGui*>(curve);
+    assert(knobCurve);
+    std::stringstream ss;
+    ss << "-curve(frame, " << knobCurve->getDimension() << ")";
+    std::string script = ss.str();
+    ce->setSelectedCurveExpression(script.c_str());
 }
 
 void
@@ -3879,7 +3886,12 @@ CurveWidget::reverseSelectedCurve()
         warningDialog( tr("Curve Editor").toStdString(),tr("You must select a curve first in the view.").toStdString() );
         return;
     }
-    ce->setSelectedCurveExpression("curve(-frame)");
+    KnobCurveGui* knobCurve = dynamic_cast<KnobCurveGui*>(curve);
+    assert(knobCurve);
+    std::stringstream ss;
+    ss << "curve(-frame, " << knobCurve->getDimension() << ")";
+    std::string script = ss.str();
+    ce->setSelectedCurveExpression(script.c_str());
 }
 
 void
