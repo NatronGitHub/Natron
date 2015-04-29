@@ -598,12 +598,19 @@ boost::shared_ptr<KnobI> Int_KnobGui::getKnob() const
 }
 
 void
-Int_KnobGui::reflectExpressionState(int dimension,bool hasExpr)
+Int_KnobGui::reflectExpressionState(int dimension,
+                                    bool hasExpr)
 {
     boost::shared_ptr<Int_Knob> knob = _knob.lock();
 
     bool isSlaved = knob->isSlave(dimension);
-    if (!hasExpr) {
+    if (hasExpr) {
+        _spinBoxes[dimension].first->setAnimation(3);
+        _spinBoxes[dimension].first->setReadOnly(true);
+        if (_slider) {
+            _slider->setReadOnly(true);
+        }
+    } else {
         Natron::AnimationLevelEnum lvl = knob->getAnimationLevel(dimension);
         _spinBoxes[dimension].first->setAnimation((int)lvl);
         bool isEnabled = knob->isEnabled(dimension);
@@ -611,12 +618,6 @@ Int_KnobGui::reflectExpressionState(int dimension,bool hasExpr)
         if (_slider) {
             bool isEnabled0 = knob->isEnabled(0);
             _slider->setReadOnly(!isEnabled0 || isSlaved);
-        }
-    } else {
-        _spinBoxes[dimension].first->setAnimation(3);
-        _spinBoxes[dimension].first->setReadOnly(hasExpr || isSlaved);
-        if (_slider) {
-            _slider->setReadOnly(hasExpr || isSlaved);
         }
     }
 }
@@ -811,7 +812,8 @@ Bool_KnobGui::getKnob() const
 }
 
 void
-Bool_KnobGui::reflectExpressionState(int /*dimension*/,bool hasExpr)
+Bool_KnobGui::reflectExpressionState(int /*dimension*/,
+                                     bool hasExpr)
 {
     bool isSlaved = _knob.lock()->isSlave(0);
     _checkBox->setAnimation(3);
@@ -1440,11 +1442,18 @@ Double_KnobGui::getKnob() const
 }
 
 void
-Double_KnobGui::reflectExpressionState(int dimension,bool hasExpr)
+Double_KnobGui::reflectExpressionState(int dimension,
+                                       bool hasExpr)
 {
     boost::shared_ptr<Double_Knob> knob = _knob.lock();
     bool isSlaved = knob->isSlave(dimension);
-    if (!hasExpr) {
+    if (hasExpr) {
+        _spinBoxes[dimension].first->setAnimation(3);
+        _spinBoxes[dimension].first->setReadOnly(true);
+        if (_slider) {
+            _slider->setReadOnly(true);
+        }
+    } else {
         Natron::AnimationLevelEnum lvl = knob->getAnimationLevel(dimension);
         _spinBoxes[dimension].first->setAnimation((int)lvl);
         bool isEnabled = knob->isEnabled(dimension);
@@ -1452,12 +1461,6 @@ Double_KnobGui::reflectExpressionState(int dimension,bool hasExpr)
         if (_slider) {
             bool isEnabled0 = knob->isEnabled(0);
             _slider->setReadOnly(!isEnabled0 || isSlaved);
-        }
-    } else {
-        _spinBoxes[dimension].first->setAnimation(3);
-        _spinBoxes[dimension].first->setReadOnly(hasExpr || isSlaved);
-        if (_slider) {
-            _slider->setReadOnly(hasExpr || isSlaved);
         }
     }
 }
@@ -1907,7 +1910,8 @@ Choice_KnobGui::onItemNewSelected()
 }
 
 void
-Choice_KnobGui::reflectExpressionState(int /*dimension*/,bool hasExpr)
+Choice_KnobGui::reflectExpressionState(int /*dimension*/,
+                                       bool hasExpr)
 {
     _comboBox->setAnimation(3);
     bool isSlaved = _knob.lock()->isSlave(0);
@@ -2677,7 +2681,8 @@ Color_KnobGui::reflectAnimationLevel(int dimension,
 } // reflectAnimationLevel
 
 void
-Color_KnobGui::reflectExpressionState(int dimension,bool hasExpr)
+Color_KnobGui::reflectExpressionState(int dimension,
+                                      bool hasExpr)
 {
     bool isSlaved = _knob.lock()->isSlave(dimension);
     switch (dimension) {
@@ -4099,7 +4104,8 @@ String_KnobGui::getKnob() const
 }
 
 void
-String_KnobGui::reflectExpressionState(int /*dimension*/,bool hasExpr)
+String_KnobGui::reflectExpressionState(int /*dimension*/,
+                                       bool hasExpr)
 {
     bool isSlaved = _knob.lock()->isSlave(0);
     if (_textEdit) {

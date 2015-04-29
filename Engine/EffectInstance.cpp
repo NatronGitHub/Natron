@@ -1864,7 +1864,7 @@ EffectInstance::tryConcatenateTransforms(const RenderRoIArgs& args,
                     
                     int prefInput;
                     input = input->getNearestNonDisabled();
-                    prefInput = input->getNode()->getPreferredInput();
+                    prefInput = input ? input->getNode()->getPreferredInput() : -1;
                     if (prefInput == -1) {
                         break;
                     }
@@ -1888,10 +1888,9 @@ EffectInstance::tryConcatenateTransforms(const RenderRoIArgs& args,
                     } else {
                         break;
                     }
-                } else  {
+                } else {
                     assert(false);
                 }
-                
                 
                 if (input) {
                     inputIsDisabled = input->getNode()->isNodeDisabled();
@@ -1901,9 +1900,7 @@ EffectInstance::tryConcatenateTransforms(const RenderRoIArgs& args,
                 }
             }
             
-            
             if (input && !matricesByOrder.empty()) {
-                
                 assert(im.newInputEffect);
                 
                 ///Now actually concatenate matrices together

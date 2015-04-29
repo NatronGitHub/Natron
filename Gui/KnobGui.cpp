@@ -797,7 +797,7 @@ KnobGui::createDuplicateOnNode(Natron::EffectInstance* effect,bool linkExpressio
     } else if (isFile) {
         boost::shared_ptr<File_Knob> newKnob = effect->createFileKnob(newKnobName, knob->getDescription());
         if (isFile->isInputImageFile()) {
-            newKnob->isInputImageFile();
+            newKnob->setAsInputImage();
         }
         output = newKnob;
     } else if (isOutputFile) {
