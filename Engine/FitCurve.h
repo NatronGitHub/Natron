@@ -4,8 +4,12 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 
-#ifndef FITCURVE_H
-#define FITCURVE_H
+#ifndef Natron_Engine_FitCurve_h_
+#define Natron_Engine_FitCurve_h_
+
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
 
 #include <vector>
 #include "Global/GlobalDefines.h"
@@ -30,4 +34,4 @@ namespace FitCurve {
     void fit_cubic(const std::vector<Natron::Point>& points, double error,std::vector<SimpleBezierCP>* generatedBezier);
 }
 
-#endif // FITCURVE_H
+#endif // Natron_Engine_FitCurve_h_
