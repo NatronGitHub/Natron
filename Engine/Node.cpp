@@ -1956,8 +1956,8 @@ Node::initializeKnobs(int renderScaleSupportPref)
                     const ImageComponents& rgba = ImageComponents::getRGBAComponents();
                     const std::vector<std::string>& channels = rgba.getComponentsNames();
                     const std::string& layerName = rgba.getComponentsGlobalName();
-                    for (std::size_t i = 0; i < channels.size(); ++i) {
-                        choices.push_back(layerName + "." + channels[i]);
+                    for (std::size_t c = 0; c < channels.size(); ++c) {
+                        choices.push_back(layerName + "." + channels[c]);
                     }
 
                     channel->populateChoices(choices);
@@ -6234,11 +6234,11 @@ Node::refreshChannelSelectors(bool setValues)
             node->getLiveInstance()->getComponentsAvailable(getApp()->getTimeLine()->currentFrame(), &compsAvailable);
             
             std::vector<ImageComponents> compsOrdered;
-            for (EffectInstance::ComponentsAvailableMap::iterator it = compsAvailable.begin(); it != compsAvailable.end(); ++it) {
-                if (it->first.isColorPlane()) {
-                    compsOrdered.insert(compsOrdered.begin(), it->first);
+            for (EffectInstance::ComponentsAvailableMap::iterator comp = compsAvailable.begin(); comp != compsAvailable.end(); ++comp) {
+                if (comp->first.isColorPlane()) {
+                    compsOrdered.insert(compsOrdered.begin(), comp->first);
                 } else {
-                    compsOrdered.push_back(it->first);
+                    compsOrdered.push_back(comp->first);
                 }
             }
             {

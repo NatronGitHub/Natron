@@ -2960,6 +2960,7 @@ OfxEffectInstance::isPassThroughForNonRenderedPlanes() const
         case OFX::Host::ImageEffect::Base::ePassThroughLevelEnumRenderAllRequestedPlanes:
             return EffectInstance::ePassThroughRenderAllRequestedPlanes;
     }
+    return EffectInstance::ePassThroughBlockNonRenderedPlanes;
 }
 
 bool

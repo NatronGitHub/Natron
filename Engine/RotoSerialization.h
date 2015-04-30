@@ -536,7 +536,7 @@ private:
             BezierSerialization* isBezier = dynamic_cast<BezierSerialization*>( it->get() );
             RotoStrokeSerialization* isStroke = dynamic_cast<RotoStrokeSerialization*>( it->get() );
             RotoLayerSerialization* isLayer = dynamic_cast<RotoLayerSerialization*>( it->get() );
-            int type;
+            int type = 0;
             if (isBezier && !isStroke) {
                 type = 0;
             } else if (isStroke) {
