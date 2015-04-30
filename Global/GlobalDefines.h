@@ -89,7 +89,7 @@ typedef OfxRangeD RangeD;
 
 #define kNodeGraphObjectName "nodeGraph"
 #define kCurveEditorObjectName "curveEditor"
-#define kDopeSheetObjectName "dopeSheet"
+#define kDopeSheetEditorObjectName "dopeSheetEditor"
 
 #define kCurveEditorMoveMultipleKeysCommandCompressionID 2
 #define kKnobUndoChangeCommandCompressionID 3
@@ -107,6 +107,10 @@ typedef OfxRangeD RangeD;
 #define kNodeGraphResizeNodeBackDropCommandCompressionID 15
 #define kCurveEditorMoveTangentsCommandCompressionID 16
 #define kCurveEditorTransformKeysCommandCompressionID 17
+#define kDopeSheetEditorMoveKeysCommandCompressionID 18
+#define kDopeSheetEditorLeftTrimCommandCompressionID 19
+#define kDopeSheetEditorRightTrimCommandCompressionID 20
+#define kDopeSheetEditorMoveClipCommandCompressionID 21
 
 namespace Natron {
 /*Converts a std::string to wide string*/

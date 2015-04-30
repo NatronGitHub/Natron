@@ -21,28 +21,31 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/ScriptObject.h"
 
+#include "Gui/DopeSheetView.h"
+
 class DopeSheetEditorPrivate;
 class DSKnobPrivate;
 class DopeSheetEditor;
 class DSNodePrivate;
 class Gui;
+class HierarchyView;
 class KnobI;
 class KnobGui;
 class NodeGui;
 class TimeLine;
+
+namespace Natron {
+class Node;
+}
 
 
 //
 class DSNode;
 class DSKnob;
 
-typedef std::list<DSNode *> DSNodeList;
-typedef std::list<DSKnob *> DSKnobList;
-typedef std::list<QTreeWidgetItem *> QTreeWidgetItemList;
+typedef std::map<QTreeWidgetItem *, DSNode *> TreeItemsAndDSNodes;
+typedef std::map<QTreeWidgetItem *, DSKnob *> TreeItemsAndDSKnobs;
 // typedefs
-
-
-const int DSNODE_TYPE_USERROLE = Qt::UserRole + 1;
 
 
 class DSKnob : public QObject
@@ -50,32 +53,23 @@ class DSKnob : public QObject
     Q_OBJECT
 
 public:
-    friend class DopeSheetEditor;
-
-    DSKnob(DopeSheetEditor *dopeSheetEditor,
-           QTreeWidgetItem *nameItem,
+    DSKnob(QTreeWidgetItem *nameItem,
            KnobGui *knobGui);
     ~DSKnob();
 
+    QTreeWidgetItem *getNameItem() const;
     QRectF getNameItemRect() const;
     QRectF getNameItemRectForDim(int dim) const;
 
     KnobGui *getKnobGui() const;
 
     bool isMultiDim() const;
-    bool isExpanded() const;
-    bool isHidden() const;
-
-    bool nodeItemIsCollapsed() const;
 
 Q_SIGNALS:
     void needNodesVisibleStateChecking();
 
 public Q_SLOTS:
     void checkVisibleState();
-
-private:
-    QTreeWidgetItem *getNameItem() const;
 
 private:
     boost::scoped_ptr<DSKnobPrivate> _imp;
@@ -95,30 +89,48 @@ public:
         GroupNodeType
     };
 
+    enum ClipColor
+    {
+        ClipFill,
+        ClipOutline,
+    };
+
     DSNode(DopeSheetEditor *dopeSheetEditor,
+           QTreeWidgetItem *nameItem,
            const boost::shared_ptr<NodeGui> &nodeGui);
     ~DSNode();
 
+    QTreeWidgetItem *getNameItem() const;
     QRectF getNameItemRect() const;
+
     boost::shared_ptr<NodeGui> getNodeGui() const;
 
-    DSKnobList getDSKnobs() const;
+    TreeItemsAndDSKnobs getTreeItemsAndDSKnobs() const;
 
-    bool isExpanded() const;
-    bool isHidden() const;
+    DSNode::DSNodeType getDSNodeType() const;
+
+    DSKnob *findDSKnob(QTreeWidgetItem *item) const;
 
     bool isCommonNode() const;
     bool isReaderNode() const;
-    bool isTimeNode() const;
     bool isGroupNode() const;
+
+    QRectF getClipRect() const;
+
+    bool isSelected() const;
+    void setSelected(bool selected);
+
+    QColor getClipColor(ClipColor clipColor) const;
+
+Q_SIGNALS:
+    void clipRectChanged();
 
 public Q_SLOTS:
     void onNodeNameChanged(const QString &name);
-
     void checkVisibleState();
 
-private:
-    QTreeWidgetItem *getNameItem() const;
+private Q_SLOTS:
+    void computeClipRect();
 
 private:
     boost::scoped_ptr<DSNodePrivate> _imp;
@@ -129,17 +141,18 @@ class DopeSheetEditor : public QWidget, public ScriptObject
     Q_OBJECT
 
 public:
+    friend class DSNode;
+    friend class DopeSheetView;
+
     DopeSheetEditor(Gui *gui, boost::shared_ptr<TimeLine> timeline, QWidget *parent = 0);
     ~DopeSheetEditor();
 
-    QTreeWidget *getHierarchyView() const;
+    HierarchyView *getHierarchyView() const;
 
-    const DSNodeList &getDSNodeItems() const;
+    TreeItemsAndDSNodes getTreeItemsAndDSNodes() const;
 
-    QRect getNameItemRect(const QTreeWidgetItem *item) const;
-    QRect getSectionRect(const QTreeWidgetItem *item) const;
-
-    boost::shared_ptr<TimeLine> getTimeline() const;
+    DSNode *findDSNode(const boost::shared_ptr<Natron::Node> &node) const;
+    DSNode *findDSNode(QTreeWidgetItem *item) const;
 
     void addNode(boost::shared_ptr<NodeGui> nodeGui);
     void removeNode(NodeGui *node);
@@ -150,6 +163,13 @@ public Q_SLOTS:
 
     void refreshDopeSheetView();
 
+private: /* functions */
+    DSNode *createDSNode(const boost::shared_ptr<NodeGui> &nodeGui);
+    DSKnob *createDSKnob(KnobGui *knobGui, DSNode *dsNode);
+
+private Q_SLOTS:
+    void refreshClipRects();
+
 private:
     boost::scoped_ptr<DopeSheetEditorPrivate> _imp;
 };
@@ -159,8 +179,13 @@ class HierarchyView : public QTreeWidget
 public:
     friend class HierarchyViewItemDelegate;
 
-    explicit HierarchyView(QWidget *parent = 0);
-};
+    explicit HierarchyView(DopeSheetEditor *editor, QWidget *parent = 0);
 
+protected:
+    void drawRow(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const OVERRIDE FINAL;
+
+private:
+    DopeSheetEditor *m_editor;
+};
 
 #endif // DOPESHEET_H

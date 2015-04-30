@@ -30,6 +30,7 @@ CLANG_DIAG_ON(uninitialized)
 #define kShortcutGroupGlobal "Global"
 #define kShortcutGroupNodegraph "NodeGraph"
 #define kShortcutGroupCurveEditor "CurveEditor"
+#define kShortcutGroupDopeSheetEditor "DopeSheetEditor"
 #define kShortcutGroupViewer "Viewer"
 #define kShortcutGroupRoto "Roto"
 #define kShortcutGroupTracking "Tracking"
@@ -477,6 +478,13 @@ CLANG_DIAG_ON(uninitialized)
 
 #define kShortcutIDActionCurveEditorPaste "paste"
 #define kShortcutDescActionCurveEditorPaste "Paste Keyframes"
+
+// Dope Sheet Editor shortcuts
+#define kShortcutIDActionDopeSheetEditorDeleteKey "deleteKeys"
+#define kShortcutDescActionDopeSheetEditorDeleteKey "Delete selected keyframes"
+
+#define kShortcutIDActionDopeSheetEditorFrameSelection "frameonselction"
+#define kShortcutDescActionDopeSheetEditorFrameSelection "Frame on selection"
 
 inline
 QKeySequence

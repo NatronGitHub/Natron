@@ -1398,7 +1398,7 @@ void
 GuiPrivate::createDopeSheetGui()
 {
     _dopeSheetEditor = new DopeSheetEditor(_gui,_appInstance->getTimeLine(), _gui);
-    _dopeSheetEditor->setScriptName(kDopeSheetObjectName);
+    _dopeSheetEditor->setScriptName(kDopeSheetEditorObjectName);
     _dopeSheetEditor->setLabel(QObject::tr("Dope Sheet").toStdString());
     _gui->registerTab(_dopeSheetEditor, _dopeSheetEditor);
 }

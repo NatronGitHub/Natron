@@ -33,6 +33,20 @@ class DopeSheetView : public QGLWidget, public OverlaySupport
 public:
     friend class DopeSheetViewPrivate;
 
+    enum EventStateEnum
+    {
+        esNoEditingState,
+        esClipRepos,
+        esReaderLeftTrim,
+        esReaderRightTrim,
+        esReaderSlip,
+        esSelectionByRect,
+        esMoveSingleKeyframe,
+        esMoveKeyframeSelection,
+        esMoveCurrentFrameIndicator,
+        esDraggingView
+    };
+
     explicit DopeSheetView(DopeSheetEditor *dopeSheetEditor, Gui *gui, boost::shared_ptr<TimeLine> timeline, QWidget *parent = 0);
     ~DopeSheetView();
 
@@ -45,10 +59,29 @@ public:
     void restoreOpenGLContext() OVERRIDE FINAL;
     unsigned int getCurrentRenderScale() const OVERRIDE FINAL;
 
+public Q_SLOTS:
+    void computeSelectedKeysBRect();
+
+    void onTimeLineFrameChanged(SequenceTime sTime, int reason);
+    void onTimeLineBoundariesChanged(int, int);
+
 protected:
     void initializeGL() OVERRIDE FINAL;
     void resizeGL(int w, int h) OVERRIDE FINAL;
     void paintGL() OVERRIDE FINAL;
+
+    void mousePressEvent(QMouseEvent *e) OVERRIDE FINAL;
+    void mouseMoveEvent(QMouseEvent *e) OVERRIDE FINAL;
+    void mouseReleaseEvent(QMouseEvent *e) OVERRIDE FINAL;
+
+    void mouseDragEvent(QMouseEvent *e);
+
+    void wheelEvent(QWheelEvent *e) OVERRIDE FINAL;
+
+    void enterEvent(QEvent *e) OVERRIDE FINAL;
+    void focusInEvent(QFocusEvent *e) OVERRIDE FINAL;
+
+    void keyPressEvent(QKeyEvent *e) OVERRIDE FINAL;
 
 private: /* functions */
     void renderText(double x, double y,

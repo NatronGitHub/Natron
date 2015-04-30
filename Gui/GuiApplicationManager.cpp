@@ -1936,6 +1936,11 @@ GuiApplicationManager::populateShortcuts()
                     , Qt::NoModifier, Qt::Key_F);
     registerKeybind(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorCopy, kShortcutDescActionCurveEditorCopy, Qt::ControlModifier, Qt::Key_C);
     registerKeybind(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorPaste, kShortcutDescActionCurveEditorPaste, Qt::ControlModifier, Qt::Key_V);
+
+    // Dope Sheet Editor
+    registerKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionDopeSheetEditorDeleteKey, kShortcutDescActionDopeSheetEditorDeleteKey, Qt::NoModifier,Qt::Key_Backspace);
+    registerKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionDopeSheetEditorFrameSelection, kShortcutDescActionDopeSheetEditorFrameSelection, Qt::NoModifier,Qt::Key_F);
+
 } // populateShortcuts
 
 void

@@ -130,7 +130,8 @@ SOURCES += \
     NatronGui/pytabwidget_wrapper.cpp \
     NatronGui/pyviewer_wrapper.cpp \
     DopeSheet.cpp \
-    DopeSheetView.cpp
+    DopeSheetView.cpp \
+    DopeSheetEditorUndoRedo.cpp
 
 HEADERS += \
     AboutWindow.h \
@@ -237,7 +238,8 @@ HEADERS += \
     NatronGui/pytabwidget_wrapper.h \
     NatronGui/pyviewer_wrapper.h \
     DopeSheet.h \
-    DopeSheetView.h
+    DopeSheetView.h \
+    DopeSheetEditorUndoRedo.h
 
 RESOURCES += \
     GuiResources.qrc
