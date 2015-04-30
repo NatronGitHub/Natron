@@ -183,6 +183,10 @@ struct ViewerTabPrivate
     ScaleSliderQWidget* gainSlider;
     ClickableLabel* autoConstrastLabel;
     QCheckBox* autoContrast;
+    SpinBox* gammaBox;
+    double lastGammaValue;
+    Button* toggleGammaButton;
+    ScaleSliderQWidget* gammaSlider;
     ComboBox* viewerColorSpace;
     Button* checkerboardButton;
     ComboBox* viewsComboBox;
@@ -257,95 +261,99 @@ struct ViewerTabPrivate
     
     ViewerTabPrivate(Gui* gui,
                      ViewerInstance* node)
-        : viewer(NULL)
-        , app( gui->getApp() )
-        , viewerContainer(NULL)
-        , viewerLayout(NULL)
-        , viewerSubContainer(NULL)
-        , viewerSubContainerLayout(NULL)
-        , mainLayout(NULL)
-        , firstSettingsRow(NULL)
-        , secondSettingsRow(NULL)
-        , firstRowLayout(NULL)
-        , secondRowLayout(NULL)
-        , layerChoice(NULL)
-        , alphaChannelChoice(NULL)
-        , viewerChannels(NULL)
-        , zoomCombobox(NULL)
-        , centerViewerButton(NULL)
-        , clipToProjectFormatButton(NULL)
-        , enableViewerRoI(NULL)
-        , refreshButton(NULL)
-        , iconRefreshOff()
-        , iconRefreshOn()
-        , ongoingRenderCount(0)
-        , activateRenderScale(NULL)
-        , renderScaleActive(false)
-        , renderScaleCombo(NULL)
-        , firstInputLabel(NULL)
-        , firstInputImage(NULL)
-        , compositingOperator(NULL)
-        , secondInputLabel(NULL)
-        , secondInputImage(NULL)
-        , gainBox(NULL)
-        , gainSlider(NULL)
-        , autoConstrastLabel(NULL)
-        , autoContrast(NULL)
-        , viewerColorSpace(NULL)
-        , checkerboardButton(NULL)
-        , viewsComboBox(NULL)
-        , currentViewIndex(0)
-        , currentViewMutex()
-        , infoWidget()
-        , playerButtonsContainer(0)
-        , playerLayout(NULL)
-        , currentFrameBox(NULL)
-        , firstFrame_Button(NULL)
-        , previousKeyFrame_Button(NULL)
-        , play_Backward_Button(NULL)
-        , previousFrame_Button(NULL)
-        , stop_Button(NULL)
-        , nextFrame_Button(NULL)
-        , play_Forward_Button(NULL)
-        , nextKeyFrame_Button(NULL)
-        , lastFrame_Button(NULL)
-        , previousIncrement_Button(NULL)
-        , incrementSpinBox(NULL)
-        , nextIncrement_Button(NULL)
-        , playbackMode_Button(NULL)
-        , playbackModeMutex()
-        , playbackMode(Natron::ePlaybackModeLoop)
-        , frameRangeEdit(NULL)
-        , canEditFrameRangeLabel(NULL)
-        , canEditFpsBox(NULL)
-        , canEditFpsLabel(NULL)
-        , fpsLockedMutex()
-        , fpsLocked(true)
-        , fpsBox(NULL)
-        , turboButton(NULL)
-        , timeLineGui(NULL)
-        , rotoNodes()
-        , currentRoto()
-        , trackerNodes()
-        , currentTracker()
-        , inputNamesMap()
-        , compOperatorMutex()
-        , compOperator(eViewerCompositingOperatorNone)
-        , gui(gui)
-        , viewerNode(node)
-        , visibleToolbarsMutex()
-        , infobarVisible(true)
-        , playerVisible(true)
-        , timelineVisible(true)
-        , leftToolbarVisible(true)
-        , rightToolbarVisible(true)
-        , topToolbarVisible(true)
-        , isFileDialogViewer(false)
-        , checkerboardMutex()
-        , checkerboardEnabled(false)
-        , fpsMutex()
-        , fps(24.)
-        , lastOverlayNode()
+    : viewer(NULL)
+    , app( gui->getApp() )
+    , viewerContainer(NULL)
+    , viewerLayout(NULL)
+    , viewerSubContainer(NULL)
+    , viewerSubContainerLayout(NULL)
+    , mainLayout(NULL)
+    , firstSettingsRow(NULL)
+    , secondSettingsRow(NULL)
+    , firstRowLayout(NULL)
+    , secondRowLayout(NULL)
+    , layerChoice(NULL)
+    , alphaChannelChoice(NULL)
+    , viewerChannels(NULL)
+    , zoomCombobox(NULL)
+    , centerViewerButton(NULL)
+    , clipToProjectFormatButton(NULL)
+    , enableViewerRoI(NULL)
+    , refreshButton(NULL)
+    , iconRefreshOff()
+    , iconRefreshOn()
+    , ongoingRenderCount(0)
+    , activateRenderScale(NULL)
+    , renderScaleActive(false)
+    , renderScaleCombo(NULL)
+    , firstInputLabel(NULL)
+    , firstInputImage(NULL)
+    , compositingOperator(NULL)
+    , secondInputLabel(NULL)
+    , secondInputImage(NULL)
+    , gainBox(NULL)
+    , gainSlider(NULL)
+    , autoConstrastLabel(NULL)
+    , autoContrast(NULL)
+    , gammaBox(NULL)
+    , lastGammaValue(1.)
+    , toggleGammaButton(NULL)
+    , gammaSlider(NULL)
+    , viewerColorSpace(NULL)
+    , checkerboardButton(NULL)
+    , viewsComboBox(NULL)
+    , currentViewIndex(0)
+    , currentViewMutex()
+    , infoWidget()
+    , playerButtonsContainer(0)
+    , playerLayout(NULL)
+    , currentFrameBox(NULL)
+    , firstFrame_Button(NULL)
+    , previousKeyFrame_Button(NULL)
+    , play_Backward_Button(NULL)
+    , previousFrame_Button(NULL)
+    , stop_Button(NULL)
+    , nextFrame_Button(NULL)
+    , play_Forward_Button(NULL)
+    , nextKeyFrame_Button(NULL)
+    , lastFrame_Button(NULL)
+    , previousIncrement_Button(NULL)
+    , incrementSpinBox(NULL)
+    , nextIncrement_Button(NULL)
+    , playbackMode_Button(NULL)
+    , playbackModeMutex()
+    , playbackMode(Natron::ePlaybackModeLoop)
+    , frameRangeEdit(NULL)
+    , canEditFrameRangeLabel(NULL)
+    , canEditFpsBox(NULL)
+    , canEditFpsLabel(NULL)
+    , fpsLockedMutex()
+    , fpsLocked(true)
+    , fpsBox(NULL)
+    , turboButton(NULL)
+    , timeLineGui(NULL)
+    , rotoNodes()
+    , currentRoto()
+    , trackerNodes()
+    , currentTracker()
+    , inputNamesMap()
+    , compOperatorMutex()
+    , compOperator(eViewerCompositingOperatorNone)
+    , gui(gui)
+    , viewerNode(node)
+    , visibleToolbarsMutex()
+    , infobarVisible(true)
+    , playerVisible(true)
+    , timelineVisible(true)
+    , leftToolbarVisible(true)
+    , rightToolbarVisible(true)
+    , topToolbarVisible(true)
+    , isFileDialogViewer(false)
+    , checkerboardMutex()
+    , checkerboardEnabled(false)
+    , fpsMutex()
+    , fps(24.)
+    , lastOverlayNode()
     {
         infoWidget[0] = infoWidget[1] = NULL;
         currentRoto.first = NULL;
@@ -607,6 +615,34 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->autoContrast->setAttribute(Qt::WA_LayoutUsesWidgetRect);
     _imp->autoContrast->setToolTip(autoContrastToolTip);
     _imp->secondRowLayout->addWidget(_imp->autoContrast);
+    
+    QPixmap gammaEnabled,gammaDisabled;
+    appPTR->getIcon(NATRON_PIXMAP_VIEWER_GAMMA_ENABLED,&gammaEnabled);
+    appPTR->getIcon(NATRON_PIXMAP_VIEWER_GAMMA_DISABLED,&gammaDisabled);
+    QIcon gammaIc;
+    gammaIc.addPixmap(gammaEnabled,QIcon::Normal,QIcon::On);
+    gammaIc.addPixmap(gammaDisabled,QIcon::Normal,QIcon::Off);
+    _imp->toggleGammaButton = new Button(gammaIc,"",_imp->secondSettingsRow);
+    QObject::connect(_imp->toggleGammaButton, SIGNAL(clicked(bool)), this,SLOT(onGammaToggled(bool)));
+    _imp->toggleGammaButton->setCheckable(true);
+    _imp->toggleGammaButton->setChecked(false);
+    _imp->toggleGammaButton->setDown(false);
+    _imp->toggleGammaButton->setFocusPolicy(Qt::NoFocus);
+    _imp->toggleGammaButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
+    _imp->toggleGammaButton->setToolTip(Qt::convertFromPlainText(tr("Switch between gamma at 1.0 and the previous setting")));
+    _imp->secondRowLayout->addWidget(_imp->toggleGammaButton);
+    
+    _imp->gammaBox = new SpinBox(_imp->secondSettingsRow, SpinBox::eSpinBoxTypeDouble);
+    QString gammaTt = Qt::convertFromPlainText(tr("Gamma correction. It is applied after gain and before colorspace correction"));
+    _imp->gammaBox->setToolTip(gammaTt);
+    QObject::connect(_imp->gammaBox,SIGNAL(valueChanged(double)), this, SLOT(onGammaSpinBoxValueChanged(double)));
+    _imp->gammaBox->setValue(1.0);
+    _imp->secondRowLayout->addWidget(_imp->gammaBox);
+    
+    _imp->gammaSlider = new ScaleSliderQWidget(0,4,1.0,ScaleSliderQWidget::eDataTypeDouble,Natron::eScaleTypeLinear,_imp->secondSettingsRow);
+    _imp->gammaSlider->setToolTip(gammaTt);
+    QObject::connect(_imp->gammaSlider,SIGNAL(positionChanged(double)), this, SLOT(onGammaSliderValueChanged(double)));
+    _imp->secondRowLayout->addWidget(_imp->gammaSlider);
 
     _imp->viewerColorSpace = new ComboBox(_imp->secondSettingsRow);
     _imp->viewerColorSpace->setToolTip( "<p><b>" + tr("Viewer color process") + ": \n</b></p>" + tr(
@@ -2650,8 +2686,12 @@ ViewerTab::onAutoContrastChanged(bool b)
     _imp->gainSlider->setEnabled(!b);
     _imp->gainBox->setEnabled(!b);
     _imp->viewerNode->onAutoContrastChanged(b,b);
+    _imp->gammaBox->setEnabled(!b);
+    _imp->gammaSlider->setEnabled(!b);
+    _imp->toggleGammaButton->setEnabled(!b);
     if (!b) {
         _imp->viewerNode->onGainChanged( _imp->gainBox->value() );
+        _imp->viewerNode->onGammaChanged(_imp->gammaBox->value());
     }
 }
 
@@ -2693,6 +2733,11 @@ ViewerTab::createTrackerInterface(NodeGui* n)
     if (!multiPanel) {
         return;
     }
+    std::map<NodeGui*,TrackerGui*>::iterator found = _imp->trackerNodes.find(n);
+    if (found != _imp->trackerNodes.end()) {
+        return;
+    }
+    
     boost::shared_ptr<TrackerPanel> trackPanel = boost::dynamic_pointer_cast<TrackerPanel>(multiPanel);
 
     assert(trackPanel);
@@ -4081,7 +4126,7 @@ ViewerTab::refreshLayerAndAlphaChannelComboBox()
     std::set<ImageComponents>::iterator foundCurAlphaIt = components.end();
     std::string foundAlphaChannel;
     
-    for (std::set<ImageComponents>::iterator it = components.begin(); it!=components.end(); ++it) {
+    for (std::set<ImageComponents>::iterator it = components.begin(); it != components.end(); ++it) {
         QString layerName(it->getLayerName().c_str());
         QString itemName = layerName + '.' + QString(it->getComponentsGlobalName().c_str());
         _imp->layerChoice->addItem(itemName);
@@ -4187,7 +4232,7 @@ ViewerTab::refreshLayerAndAlphaChannelComboBox()
         
     }
     
-    alphaIdx = _imp->layerChoice->itemIndex(alphaCurChoice);
+    alphaIdx = _imp->alphaChannelChoice->itemIndex(alphaCurChoice);
     if (alphaIdx == -1) {
         alphaIdx = 0;
     }
@@ -4212,7 +4257,7 @@ ViewerTab::onAlphaChannelComboChanged(int index)
         if (index >= ((int)channels.size() + i)) {
             i += channels.size();
         } else {
-            for (U32 j = 0; j < channels.size(); ++j,++i) {
+            for (U32 j = 0; j < channels.size(); ++j, ++i) {
                 if (i == index) {
                     _imp->viewerNode->setAlphaChannel(*it, channels[j], true);
                     return;
@@ -4235,7 +4280,7 @@ ViewerTab::onLayerComboChanged(int index)
     }
     int i = 1; // because of the "-" choice
     int chanCount = 1; // because of the "-" choice
-    for (std::set<ImageComponents>::iterator it = components.begin(); it != components.end(); ++it,++i) {
+    for (std::set<ImageComponents>::iterator it = components.begin(); it != components.end(); ++it, ++i) {
         
         chanCount += it->getComponentsNames().size();
         if (i == index) {
@@ -4254,4 +4299,46 @@ ViewerTab::onLayerComboChanged(int index)
     _imp->viewerNode->setAlphaChannel(ImageComponents::getNoneComponents(), std::string(), false);
     _imp->viewerNode->setActiveLayer(ImageComponents::getNoneComponents(), true);
     
+}
+
+void
+ViewerTab::onGammaToggled(bool clicked)
+{
+    double value;
+    if (clicked) {
+        value = _imp->lastGammaValue;
+    } else {
+        value = 1.;
+    }
+    _imp->toggleGammaButton->setDown(clicked);
+    _imp->gammaBox->setValue(value);
+    _imp->gammaSlider->seekScalePosition(value);
+    _imp->viewer->setGamma(value);
+    _imp->viewerNode->onGammaChanged(value);
+}
+
+void
+ViewerTab::onGammaSliderValueChanged(double value)
+{
+    if (!_imp->toggleGammaButton->isChecked()) {
+        _imp->toggleGammaButton->setChecked(true);
+        _imp->toggleGammaButton->setDown(true);
+    }
+    _imp->gammaBox->setValue(value);
+    _imp->viewer->setGamma(value);
+    _imp->viewerNode->onGammaChanged(value);
+    _imp->lastGammaValue = value;
+}
+
+void
+ViewerTab::onGammaSpinBoxValueChanged(double value)
+{
+    if (!_imp->toggleGammaButton->isChecked()) {
+        _imp->toggleGammaButton->setChecked(true);
+        _imp->toggleGammaButton->setDown(true);
+    }
+    _imp->gammaSlider->seekScalePosition(value);
+    _imp->viewer->setGamma(value);
+    _imp->viewerNode->onGammaChanged(value);
+    _imp->lastGammaValue = value;
 }

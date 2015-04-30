@@ -331,7 +331,7 @@ std::string
 Knob<std::string>::pyObjectToType(PyObject* o) const
 {
     if (PyUnicode_Check(o)) {
-        return std::string(Natron::PY3String_asString(o));
+        return Natron::PY3String_asString(o);
     }
     
     int index = 0;
@@ -513,6 +513,7 @@ Knob<std::string>::getValueFromMasterAt(double time, int dimension, KnobI* maste
     if (isString) {
         return isString->getValueAtTime(time,dimension,false);
     }
+    // coverity[dead_error_line]
     return std::string();
 }
 
@@ -525,6 +526,7 @@ Knob<std::string>::getValueFromMaster(int dimension, KnobI* master, bool /*clamp
     if (isString) {
         return isString->getValue(dimension,false);
     }
+    // coverity[dead_error_line]
     return std::string();
 }
 
@@ -2198,7 +2200,7 @@ Knob<T>::dequeueValuesSet(bool disableEvaluation)
    
         
         QMutexLocker k(&_valueMutex);
-        for (typename std::list<boost::shared_ptr<QueuedSetValue> >::iterator it = _setValuesQueue.begin(); it!=_setValuesQueue.end(); ++it) {
+        for (typename std::list<boost::shared_ptr<QueuedSetValue> >::iterator it = _setValuesQueue.begin(); it != _setValuesQueue.end(); ++it) {
            
             QueuedSetValueAtTime* isAtTime = dynamic_cast<QueuedSetValueAtTime*>(it->get());
            
@@ -2247,7 +2249,7 @@ Knob<T>::dequeueValuesSet(bool disableEvaluation)
     if (!disableEvaluation && !dimensionChanged.empty()) {
         
         beginChanges();
-        for (std::map<int,Natron::ValueChangedReasonEnum>::iterator it = dimensionChanged.begin();it!=dimensionChanged.end();++it) {
+        for (std::map<int,Natron::ValueChangedReasonEnum>::iterator it = dimensionChanged.begin(); it != dimensionChanged.end(); ++it) {
             evaluateValueChange(it->first, it->second);
         }
         endChanges();

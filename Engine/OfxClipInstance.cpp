@@ -251,7 +251,7 @@ OfxClipInstance::getComponentsPresent() const
         
         ///Foreach user component, add it as an available component, but use this node only if it is also
         ///in the "needed components" list
-        for (std::list<ImageComponents>::iterator it = userComps.begin(); it!=userComps.end(); ++it) {
+        for (std::list<ImageComponents>::iterator it = userComps.begin(); it != userComps.end(); ++it) {
             
             EffectInstance::ComponentsAvailableMap::iterator alreadyExisting = compsAvailable.end();
             
@@ -720,7 +720,7 @@ OfxClipInstance::getImagePlane(OfxTime time, int view, const std::string& plane,
         bool multiPlanar = _nodeInstance->isMultiPlanar();
 
         if (!multiPlanar) {
-            for (std::map<ImageComponents,EffectInstance::PlaneToRender>::iterator it = outputPlanes.begin(); it!=outputPlanes.end(); ++it) {
+            for (std::map<ImageComponents,EffectInstance::PlaneToRender>::iterator it = outputPlanes.begin(); it != outputPlanes.end(); ++it) {
                 if (it->first.getLayerName() == planeBeingRendered.getLayerName()) {
                     outputImage = it->second.tmpImage;
                     break;
@@ -728,7 +728,7 @@ OfxClipInstance::getImagePlane(OfxTime time, int view, const std::string& plane,
             }
 
         } else {
-            for (std::map<ImageComponents,EffectInstance::PlaneToRender>::iterator it = outputPlanes.begin(); it!=outputPlanes.end(); ++it) {
+            for (std::map<ImageComponents,EffectInstance::PlaneToRender>::iterator it = outputPlanes.begin(); it != outputPlanes.end(); ++it) {
                 if (it->first.getLayerName() == natronPlane.getLayerName()) {
                     outputImage = it->second.tmpImage;
                     break;
@@ -748,7 +748,7 @@ OfxClipInstance::getImagePlane(OfxTime time, int view, const std::string& plane,
         
         
         ActionLocalData& args = _lastActionData.localData();
-        for (std::list<OfxImage*>::const_iterator it = args.imagesBeingRendered.begin(); it!=args.imagesBeingRendered.end(); ++it) {
+        for (std::list<OfxImage*>::const_iterator it = args.imagesBeingRendered.begin(); it != args.imagesBeingRendered.end(); ++it) {
             if ((*it)->getInternalImage() == outputImage) {
                 (*it)->addReference();
                 return *it;
@@ -768,7 +768,7 @@ OfxClipInstance::getImagePlane(OfxTime time, int view, const std::string& plane,
         }
         
         //The output clip doesn't have any transform matrix
-        OfxImage* ret =  new OfxImage(outputImage,false,renderWindow,boost::shared_ptr<Transform::Matrix3x3>(), components, nComps, *this);
+        OfxImage* ret =  new OfxImage(outputImage,false,renderWindow,boost::shared_ptr<Transform::Matrix3x3>(), components, nComps, true, *this);
         args.imagesBeingRendered.push_back(ret);
         return ret;
     }
@@ -990,7 +990,22 @@ OfxClipInstance::getImageInternal(OfxTime time,
                 components = _components;
                 nComps = natronComps.front().getNumComponents();
             }
-            return new OfxImage(image,true,renderWindow,transform, components, nComps, *this);
+            /*
+             * When reaching here, the plug-in asked for a source image on an input clip. If the plug-in is in the render action,
+             * the image should have been pre-computed hence the call to getImage does not involve writing the image, so no 
+             * write lock is taken. In this situation, we lock the OfxImage for reading to ensure another thread is not trying to 
+             * write the pixels at the same time.
+             * When calling fetchImage from an instanceChangedAction, the image has NOT been pre-computed, hence the getImage call
+             * will take the write lock on the image. There is an issue if the effect is an analysis (e.g: tracker) and asks twice
+             * the same input image but with 2 different bounds. This happens for example when the tracker reaches the last frame of 
+             * the sequence and the next frame is the very same image because the reader returned -2 for isIdentityAction. 
+             * In that case if we take the lock when returning the image first,
+             * the thread will have the read lock, and when re-asking the image but with greater bounds it will deadlock because
+             * we will be attempting to lock for writing an image already locked for reading. To overcome this situation, we just
+             * don't take the lock for reading, which should not cause any problem since the effect is in analysis anyway.
+             */
+            bool takeLock = !_nodeInstance->isCurrentRenderInAnalysis();
+            return new OfxImage(image,true,renderWindow,transform, components, nComps, takeLock, *this);
         }
     }
 }
@@ -1087,6 +1102,7 @@ OfxImage::OfxImage(boost::shared_ptr<Natron::Image> internalImage,
                    const boost::shared_ptr<Transform::Matrix3x3>& mat,
                    const std::string& components,
                    int nComps,
+                   bool takeLock,
                    OfxClipInstance &clip)
 : OFX::Host::ImageEffect::Image(clip)
 , _floatImage(internalImage)
@@ -1116,7 +1132,7 @@ OfxImage::OfxImage(boost::shared_ptr<Natron::Image> internalImage,
     renderWindow.intersect(bounds, &pluginsSeenBounds);
     
     const RectD & rod = internalImage->getRoD(); // Not the OFX RoD!!! Natron::Image::getRoD() is in *CANONICAL* coordinates
-    
+
     if (isSrcImage) {
         boost::shared_ptr<Natron::Image::ReadAccess> access(new Natron::Image::ReadAccess(internalImage.get()));
         const unsigned char* ptr = access->pixelAt( pluginsSeenBounds.left(), pluginsSeenBounds.bottom() );
@@ -1131,6 +1147,9 @@ OfxImage::OfxImage(boost::shared_ptr<Natron::Image> internalImage,
         _imgAccess = access;
     }
     
+    if (!takeLock) {
+        _imgAccess.reset();
+    }
     
     
     

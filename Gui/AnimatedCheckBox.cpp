@@ -76,9 +76,10 @@ AnimatedCheckBox::keyPressEvent(QKeyEvent* e)
 void
 AnimatedCheckBox::mousePressEvent(QMouseEvent* e)
 {
-    if ( readOnly && buttonDownIsLeft(e) ) {
-        return;
-    } else {
+    if (buttonDownIsLeft(e)) {
+        if (readOnly) {
+            return;
+        }
         checked = !checked;
         repaint();
         Q_EMIT clicked(checked);

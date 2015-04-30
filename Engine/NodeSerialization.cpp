@@ -35,6 +35,7 @@ NodeSerialization::NodeSerialization(const boost::shared_ptr<Natron::Node> & n,b
     , _pluginMinorVersion(-1)
     , _hasRotoContext(false)
     , _node()
+    , _pythonModuleVersion(0)
 {
     if (n) {
         _node = n;
@@ -74,7 +75,7 @@ NodeSerialization::NodeSerialization(const boost::shared_ptr<Natron::Node> & n,b
         
         _nbKnobs = (int)_knobsValues.size();
         
-        for (std::list<boost::shared_ptr<KnobI> >::const_iterator it = userPages.begin(); it!=userPages.end(); ++it) {
+        for (std::list<boost::shared_ptr<KnobI> >::const_iterator it = userPages.begin(); it != userPages.end(); ++it) {
             boost::shared_ptr<GroupKnobSerialization> s(new GroupKnobSerialization(*it));
             _userPages.push_back(s);
         }
@@ -88,6 +89,8 @@ NodeSerialization::NodeSerialization(const boost::shared_ptr<Natron::Node> & n,b
         _pluginID = n->getPluginID();
         
         _pythonModule = n->getPluginPythonModule();
+        
+        _pythonModuleVersion = n->getPluginPythonModuleVersion();
 
         _pluginMajorVersion = n->getMajorVersion();
 

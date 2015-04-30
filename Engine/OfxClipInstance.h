@@ -327,6 +327,7 @@ public:
                       const boost::shared_ptr<Transform::Matrix3x3>& mat,
                       const std::string& components,
                       int nComps,
+                      bool takeLock,
                       OfxClipInstance &clip);
 
     virtual ~OfxImage()

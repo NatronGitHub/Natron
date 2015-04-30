@@ -170,7 +170,7 @@ public:
                                             int time,
                                             const RectD& rod,
                                             size_t bytesCount, const TextureRect & region,
-                                            double gain, double offset, int lut, int pboIndex,
+                                            double gain, double gamma, double offset, int lut, int pboIndex,
                                             unsigned int mipMapLevel,Natron::ImagePremultiplicationEnum premult,
                                             int textureIndex) OVERRIDE FINAL;
     
@@ -304,6 +304,8 @@ public:
      * @brief can only be called on the main-thread
      **/
     void setGain(double d);
+    
+    void setGamma(double g);
 
     void setLut(int lut);
 
@@ -388,7 +390,7 @@ private:
      *@brief The paint function. That's where all the drawing is done.
      **/
     virtual void paintGL() OVERRIDE FINAL;
-    virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL;
+    virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL;    
     virtual void mouseDoubleClickEvent(QMouseEvent* e) OVERRIDE FINAL;
     virtual void mouseReleaseEvent(QMouseEvent* e) OVERRIDE FINAL;
     virtual void mouseMoveEvent(QMouseEvent* e) OVERRIDE FINAL;

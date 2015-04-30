@@ -346,7 +346,7 @@ public:
 
     void saveProjectGui(boost::archive::xml_oarchive & archive);
 
-    void setColorPickersColor(const QColor & c);
+    void setColorPickersColor(double r,double g, double b,double a);
 
     void registerNewColorPicker(boost::shared_ptr<Color_Knob> knob);
 

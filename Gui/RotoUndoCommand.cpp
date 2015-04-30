@@ -70,11 +70,13 @@ MoveControlPointsUndoCommand::MoveControlPointsUndoCommand(RotoGui* roto,
             first.reset( new BezierCP( *(it->first) ) );
         }
         
-        if (it->second->isFeatherPoint()) {
-            second.reset( new FeatherPoint(it->second->getBezier()));
-            second->clone(*(it->second));
-        } else {
-            second.reset( new BezierCP( *(it->second) ) );
+        if (it->second) {
+            if (it->second->isFeatherPoint()) {
+                second.reset( new FeatherPoint(it->second->getBezier()));
+                second->clone(*(it->second));
+            } else {
+                second.reset( new BezierCP( *(it->second) ) );
+            }
         }
         _originalPoints.push_back( std::make_pair(first, second) );
     }
@@ -97,9 +99,11 @@ MoveControlPointsUndoCommand::undo()
 {
     SelectedCpList::iterator cpIt = _originalPoints.begin();
 
-    for (SelectedCpList::iterator it = _pointsToDrag.begin(); it != _pointsToDrag.end(); ++it,++cpIt) {
+    for (SelectedCpList::iterator it = _pointsToDrag.begin(); it != _pointsToDrag.end(); ++it, ++cpIt) {
         it->first->clone(*cpIt->first);
-        it->second->clone(*cpIt->second);
+        if (it->second) {
+            it->second->clone(*cpIt->second);
+        }
     }
 
     _roto->evaluate(true);
@@ -116,7 +120,7 @@ MoveControlPointsUndoCommand::redo()
     assert( _pointsToDrag.size() == _indexesToMove.size() );
 
     try {
-        for (std::list<int>::iterator it = _indexesToMove.begin(); it != _indexesToMove.end(); ++it,++itPoints) {
+        for (std::list<int>::iterator it = _indexesToMove.begin(); it != _indexesToMove.end(); ++it, ++itPoints) {
             if ( itPoints->first->isFeatherPoint() ) {
                 if ( ( (RotoGui::RotoToolEnum)_selectedTool == RotoGui::eRotoToolSelectFeatherPoints ) ||
                      ( (RotoGui::RotoToolEnum)_selectedTool == RotoGui::eRotoToolSelectAll ) ||
@@ -166,7 +170,7 @@ MoveControlPointsUndoCommand::mergeWith(const QUndoCommand *other)
 
     SelectedCpList::const_iterator it = _selectedPoints.begin();
     SelectedCpList::const_iterator oIt = mvCmd->_selectedPoints.begin();
-    for (; it != _selectedPoints.end(); ++it,++oIt) {
+    for (; it != _selectedPoints.end(); ++it, ++oIt) {
         if ( (it->first != oIt->first) || (it->second != oIt->second) ) {
             return false;
         }
@@ -215,7 +219,11 @@ TransformUndoCommand::TransformUndoCommand(RotoGui* roto,
     ///we make a copy of the points
     for (SelectedCpList::iterator it = _selectedPoints.begin(); it != _selectedPoints.end(); ++it) {
         CpPtr first( new BezierCP( *(it->first) ) );
-        CpPtr second( new BezierCP( *(it->second) ) );
+        
+        CpPtr second;
+        if (it->second) {
+            second.reset( new BezierCP( *(it->second) ) );
+        }
         _originalPoints.push_back( std::make_pair(first, second) );
     }
 }
@@ -229,9 +237,11 @@ TransformUndoCommand::undo()
 {
     SelectedCpList::iterator cpIt = _originalPoints.begin();
 
-    for (SelectedCpList::iterator it = _selectedPoints.begin(); it != _selectedPoints.end(); ++it,++cpIt) {
+    for (SelectedCpList::iterator it = _selectedPoints.begin(); it != _selectedPoints.end(); ++it, ++cpIt) {
         it->first->clone(*cpIt->first);
-        it->second->clone(*cpIt->second);
+        if (it->second) {
+            it->second->clone(*cpIt->second);
+        }
     }
 
     _roto->evaluate(true);
@@ -251,17 +261,19 @@ TransformUndoCommand::redo()
 {
     for (SelectedCpList::iterator it = _selectedPoints.begin(); it != _selectedPoints.end(); ++it) {
         transformPoint(it->first);
-        transformPoint(it->second);
+        if (it->second) {
+            transformPoint(it->second);
+        }
     }
 
     if (_firstRedoCalled) {
         _roto->setSelection(_selectedCurves, _selectedPoints);
         _roto->evaluate(true);
     } else {
-       // _roto->refreshSelectionBBox();
+        _roto->refreshSelectionBBox();
         _roto->onRefreshAsked();
     }
-
+    
     _firstRedoCalled = true;
     setText( QObject::tr("Transform points of %1").arg( _roto->getNodeName() ) );
 }
@@ -288,7 +300,7 @@ TransformUndoCommand::mergeWith(const QUndoCommand *other)
 
     SelectedCpList::const_iterator it = _selectedPoints.begin();
     SelectedCpList::const_iterator oIt = cmd->_selectedPoints.begin();
-    for (; it != _selectedPoints.end(); ++it,++oIt) {
+    for (; it != _selectedPoints.end(); ++it, ++oIt) {
         if ( (it->first != oIt->first) || (it->second != oIt->second) ) {
             return false;
         }
@@ -381,17 +393,16 @@ RemovePointUndoCommand::RemovePointUndoCommand(RotoGui* roto,
       , _curves()
 {
     for (SelectedCpList::const_iterator it = points.begin(); it != points.end(); ++it) {
-        boost::shared_ptr<BezierCP> cp,fp;
+        boost::shared_ptr<BezierCP> cp;
         if ( it->first->isFeatherPoint() ) {
             cp = it->second;
-            fp = it->first;
         } else {
             cp = it->first;
-            fp = it->second;
         }
-        assert( cp && fp && cp->getBezier() && _roto && _roto->getContext() );
+        assert(cp && cp->getBezier() && _roto && _roto->getContext() );
         BezierPtr curve = boost::dynamic_pointer_cast<Bezier>( _roto->getContext()->getItemByName( cp->getBezier()->getScriptName() ) );
         assert(curve);
+        RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>(curve.get());
 
         std::list< CurveDesc >::iterator foundCurve = _curves.end();
         for (std::list< CurveDesc >::iterator it2 = _curves.begin(); it2 != _curves.end(); ++it2) {
@@ -411,7 +422,11 @@ RemovePointUndoCommand::RemovePointUndoCommand(RotoGui* roto,
             assert(curveDesc.parentLayer);
             curveDesc.points.push_back(indexToRemove);
             curveDesc.curve = curve;
-            curveDesc.oldCurve.reset( new Bezier(curve->getContext(),curve->getScriptName(),curve->getParentLayer()) );
+            if (!isStroke) {
+                curveDesc.oldCurve.reset( new Bezier(curve->getContext(),curve->getScriptName(),curve->getParentLayer()) );
+            } else {
+                curveDesc.oldCurve.reset( new RotoStrokeItem(isStroke->getBrushType(),curve->getContext(),curve->getScriptName(),curve->getParentLayer()) );
+            }
             curveDesc.oldCurve->clone(curve.get());
             _curves.push_back(curveDesc);
         } else {
@@ -430,7 +445,7 @@ RemovePointUndoCommand::~RemovePointUndoCommand()
 void
 RemovePointUndoCommand::undo()
 {
-    BezierList selection;
+    std::list<boost::shared_ptr<RotoDrawableItem> > selection;
     SelectedCpList cpSelection;
 
     for (std::list< CurveDesc >::iterator it = _curves.begin(); it != _curves.end(); ++it) {
@@ -459,6 +474,7 @@ RemovePointUndoCommand::redo()
     std::list<boost::shared_ptr<Bezier> > toRemove;
     for (std::list< CurveDesc >::iterator it = _curves.begin(); it != _curves.end(); ++it) {
         ///Remove in decreasing order so indexes don't get messed up
+        it->curve->setAutoOrientationComputation(false);
         for (std::list<int>::reverse_iterator it2 = it->points.rbegin(); it2 != it->points.rend(); ++it2) {
             it->curve->removeControlPointByIndex(*it2);
             int cpCount = it->curve->getControlPointsCount();
@@ -472,6 +488,8 @@ RemovePointUndoCommand::redo()
                 }
             }
         }
+        it->curve->setAutoOrientationComputation(true);
+        it->curve->refreshPolygonOrientation();
     }
 
     for (std::list<boost::shared_ptr<Bezier> >::iterator it = toRemove.begin(); it != toRemove.end(); ++it) {
@@ -489,13 +507,13 @@ RemovePointUndoCommand::redo()
 //////////////////////////
 
 RemoveCurveUndoCommand::RemoveCurveUndoCommand(RotoGui* roto,
-                                               const std::list<boost::shared_ptr<Bezier> > & curves)
+                                               const std::list<boost::shared_ptr<RotoDrawableItem> > & curves)
     : QUndoCommand()
       , _roto(roto)
       , _firstRedoCalled(false)
       , _curves()
 {
-    for (BezierList::const_iterator it = curves.begin(); it != curves.end(); ++it) {
+    for (std::list<boost::shared_ptr<RotoDrawableItem> >::const_iterator it = curves.begin(); it != curves.end(); ++it) {
         RemovedCurve r;
         r.curve = *it;
         r.layer = boost::dynamic_pointer_cast<RotoLayer>( _roto->getContext()->getItemByName( (*it)->getParentLayer()->getScriptName() ) );
@@ -513,15 +531,20 @@ RemoveCurveUndoCommand::~RemoveCurveUndoCommand()
 void
 RemoveCurveUndoCommand::undo()
 {
-    BezierList selection;
+    std::list<boost::shared_ptr<RotoDrawableItem> > selection;
 
     for (std::list<RemovedCurve>::iterator it = _curves.begin(); it != _curves.end(); ++it) {
         _roto->getContext()->addItem(it->layer, it->indexInLayer, it->curve, RotoItem::eSelectionReasonOverlayInteract);
-        selection.push_back(it->curve);
+        boost::shared_ptr<Bezier> isBezier = boost::dynamic_pointer_cast<Bezier>(it->curve);
+        if (isBezier) {
+            selection.push_back(isBezier);
+        }
     }
 
     SelectedCpList cpList;
-    _roto->setSelection(selection, cpList);
+    if (!selection.empty()) {
+        _roto->setSelection(selection, cpList);
+    }
     _roto->evaluate(true);
 
     setText( QObject::tr("Remove curves to %1").arg( _roto->getNodeName() ) );
@@ -540,6 +563,44 @@ RemoveCurveUndoCommand::redo()
 }
 
 ////////////////////////////////
+
+
+AddStrokeUndoCommand::AddStrokeUndoCommand(RotoGui* roto,const boost::shared_ptr<RotoStrokeItem>& item)
+: QUndoCommand()
+, _roto(roto)
+, _firstRedoCalled(false)
+, _item(item)
+, _layer(item->getParentLayer())
+, _indexInLayer(_layer ? _layer->getChildIndex(_item) : -1)
+{
+    assert(_indexInLayer != -1);
+}
+
+AddStrokeUndoCommand::~AddStrokeUndoCommand()
+{
+    
+}
+
+void
+AddStrokeUndoCommand::undo()
+{
+    _roto->removeCurve(_item);
+    _roto->evaluate(true);
+    setText(QObject::tr("Paint Stroke"));
+}
+
+void
+AddStrokeUndoCommand::redo()
+{
+    if (_firstRedoCalled) {
+        _roto->getContext()->addItem(_layer, _indexInLayer, _item, RotoItem::eSelectionReasonOverlayInteract);
+    }
+    if (_firstRedoCalled) {
+        _roto->evaluate(true);
+    }
+    _firstRedoCalled = true;
+    setText(QObject::tr("Paint Stroke"));
+}
 
 MoveTangentUndoCommand::MoveTangentUndoCommand(RotoGui* roto,
                                                double dx,
@@ -571,7 +632,9 @@ MoveTangentUndoCommand::MoveTangentUndoCommand(RotoGui* roto,
     } else {
         counterPart = _tangentBeingDragged->getBezier()->getFeatherPointForControlPoint(_tangentBeingDragged);
         _oldCp.reset( new BezierCP(*_tangentBeingDragged) );
-        _oldFp.reset( new BezierCP(*counterPart) );
+        if (counterPart) {
+            _oldFp.reset( new BezierCP(*counterPart) );
+        }
     }
 }
 
@@ -634,7 +697,9 @@ MoveTangentUndoCommand::undo()
         _tangentBeingDragged->clone(*_oldFp);
     } else {
         counterPart = _tangentBeingDragged->getBezier()->getFeatherPointForControlPoint(_tangentBeingDragged);
-        counterPart->clone(*_oldFp);
+        if (counterPart) {
+            counterPart->clone(*_oldFp);
+        }
         _tangentBeingDragged->clone(*_oldCp);
     }
 
@@ -658,13 +723,15 @@ MoveTangentUndoCommand::redo()
         _oldFp->clone(*_tangentBeingDragged);
     } else {
         counterPart = _tangentBeingDragged->getBezier()->getFeatherPointForControlPoint(_tangentBeingDragged);
+        if (counterPart) {
+            _oldFp->clone(*counterPart);
+        }
         _oldCp->clone(*_tangentBeingDragged);
-        _oldFp->clone(*counterPart);
     }
 
     bool autoKeying = _roto->getContext()->isAutoKeyingEnabled();
     dragTangent(_time, *_tangentBeingDragged, _dx, _dy, _left,autoKeying,_breakTangents);
-    if (_featherLinkEnabled) {
+    if (_featherLinkEnabled && counterPart) {
         dragTangent(_time, *counterPart, _dx, _dy, _left,autoKeying,_breakTangents);
     }
 
@@ -776,24 +843,19 @@ MoveFeatherBarUndoCommand::redo()
         const std::list<boost::shared_ptr<BezierCP> > & cps = p->getBezier()->getFeatherPoints();
         assert(cps.size() > 1);
 
-        std::list<boost::shared_ptr<BezierCP> >::const_iterator prev = cps.end();
-        --prev;
-        std::list<boost::shared_ptr<BezierCP> >::const_iterator next = cps.begin();
-        ++next;
-        std::list<boost::shared_ptr<BezierCP> >::const_iterator cur = cps.begin();
-        for (; cur != cps.end(); ++cur,++prev,++next) {
-            if ( prev == cps.end() ) {
-                prev = cps.begin();
-            }
-            if ( next == cps.end() ) {
-                next = cps.begin();
-            }
-
-            if (*cur == fp) {
-                break;
-            }
-        }
+        std::list<boost::shared_ptr<BezierCP> >::const_iterator cur = std::find(cps.begin(), cps.end(), fp);
         assert( cur != cps.end() );
+        // compute previous and next element in the cyclic list
+        std::list<boost::shared_ptr<BezierCP> >::const_iterator prev = cur;
+        if (prev == cps.begin()) {
+            prev = cps.end();
+        }
+        --prev; // the list has at least one element
+        std::list<boost::shared_ptr<BezierCP> >::const_iterator next = cur;
+        ++next; // the list has at least one element
+        if (next == cps.end()) {
+            next = cps.begin();
+        }
 
         double leftX,leftY,rightX,rightY,norm;
         Bezier::leftDerivativeAtPoint(_time, **cur, **prev, &leftX, &leftY);
@@ -883,7 +945,7 @@ RemoveFeatherUndoCommand::undo()
     for (std::list<RemoveFeatherData>::iterator it = _datas.begin(); it != _datas.end(); ++it) {
         std::list<boost::shared_ptr<BezierCP> >::const_iterator itOld = it->oldPoints.begin();
         for (std::list<boost::shared_ptr<BezierCP> >::const_iterator itNew = it->newPoints.begin();
-             itNew != it->newPoints.end(); ++itNew,++itOld) {
+             itNew != it->newPoints.end(); ++itNew, ++itOld) {
             (*itNew)->clone(**itOld);
         }
     }
@@ -898,7 +960,7 @@ RemoveFeatherUndoCommand::redo()
     for (std::list<RemoveFeatherData>::iterator it = _datas.begin(); it != _datas.end(); ++it) {
         std::list<boost::shared_ptr<BezierCP> >::const_iterator itOld = it->oldPoints.begin();
         for (std::list<boost::shared_ptr<BezierCP> >::const_iterator itNew = it->newPoints.begin();
-             itNew != it->newPoints.end(); ++itNew,++itOld) {
+             itNew != it->newPoints.end(); ++itNew, ++itOld) {
             (*itOld)->clone(**itNew);
             try {
                 it->curve->removeFeatherAtIndex( it->curve->getFeatherPointIndex(*itNew) );
@@ -998,7 +1060,7 @@ SmoothCuspUndoCommand::undo()
     for (std::list<SmoothCuspCurveData>::iterator it = curves.begin(); it != curves.end(); ++it) {
         SelectedPointList::const_iterator itOld = it->oldPoints.begin();
         for (SelectedPointList::const_iterator itNew = it->newPoints.begin();
-             itNew != it->newPoints.end(); ++itNew,++itOld) {
+             itNew != it->newPoints.end(); ++itNew, ++itOld) {
             itNew->first->clone(*itOld->first);
             itNew->second->clone(*itOld->second);
         }
@@ -1018,7 +1080,7 @@ SmoothCuspUndoCommand::redo()
     for (std::list<SmoothCuspCurveData>::iterator it = curves.begin(); it != curves.end(); ++it) {
         SelectedPointList::const_iterator itOld = it->oldPoints.begin();
         for (SelectedPointList::const_iterator itNew = it->newPoints.begin();
-             itNew != it->newPoints.end(); ++itNew,++itOld) {
+             itNew != it->newPoints.end(); ++itNew, ++itOld) {
             itOld->first->clone(*itNew->first);
             itOld->second->clone(*itNew->second);
 
@@ -1064,13 +1126,13 @@ SmoothCuspUndoCommand::mergeWith(const QUndoCommand *other)
         return false;
     }
     std::list<SmoothCuspCurveData>::const_iterator itOther = sCmd->curves.begin();
-    for (std::list<SmoothCuspCurveData>::const_iterator it = curves.begin(); it != curves.end(); ++it,++itOther) {
+    for (std::list<SmoothCuspCurveData>::const_iterator it = curves.begin(); it != curves.end(); ++it, ++itOther) {
         if (it->curve != itOther->curve) {
             return false;
         }
         SelectedPointList::const_iterator itNewOther = itOther->newPoints.begin();
         for (SelectedPointList::const_iterator itNew = it->newPoints.begin();
-             itNew != it->newPoints.end(); ++itNew,++itNewOther) {
+             itNew != it->newPoints.end(); ++itNew, ++itNewOther) {
             if ( (itNewOther->first != itNew->first) || (itNewOther->second != itNew->second) ) {
                 return false;
             }

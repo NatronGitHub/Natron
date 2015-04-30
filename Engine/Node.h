@@ -446,7 +446,7 @@ public:
     
     bool isSettingsPanelOpened() const;
     
-    bool shouldCacheOutput() const;
+    bool shouldCacheOutput(bool isFrameVaryingOrAnimated) const;
 
     /**
      * @brief If the session is a GUI session, then this function sets the position of the node on the nodegraph.
@@ -894,9 +894,11 @@ public:
     
     void setPluginIDAndVersionForGui(const std::string& pluginLabel,const std::string& pluginID,unsigned int version);
     
-    void setPluginPythonModule(const std::string& pythonModule);
+    void setPluginPythonModule(const std::string& pythonModule, unsigned int version);
     
     std::string getPluginPythonModule() const;
+    
+    unsigned int getPluginPythonModuleVersion() const;
   
     void refreshChannelSelectors(bool setValues);
     
@@ -907,6 +909,9 @@ public:
     void getUserComponents(std::list<Natron::ImageComponents>* comps);
     
     bool hasAtLeastOneChannelToProcess() const;
+    
+    void removeParameterFromPython(const std::string& parameterName);
+
     
 private:
     

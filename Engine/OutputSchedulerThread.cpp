@@ -315,7 +315,7 @@ struct OutputSchedulerThreadPrivate
     {
         ///Private shouldn't lock
         assert(!renderThreadsMutex.tryLock());
-        for (RenderThreads::iterator it = renderThreads.begin() ; it!=renderThreads.end();++it) {
+        for (RenderThreads::iterator it = renderThreads.begin(); it != renderThreads.end(); ++it) {
             if (it->thread == runnable) {
                 return it;
             }
@@ -370,7 +370,7 @@ struct OutputSchedulerThreadPrivate
         ///Private shouldn't lock
         assert( !renderThreadsMutex.tryLock() );
         int ret = 0;
-        for (RenderThreads::const_iterator it = renderThreads.begin() ; it!=renderThreads.end();++it) {
+        for (RenderThreads::const_iterator it = renderThreads.begin(); it != renderThreads.end(); ++it) {
             if (it->active) {
                 ++ret;
             }
@@ -382,7 +382,7 @@ struct OutputSchedulerThreadPrivate
     {
         for (;;) {
             bool hasRemoved = false;
-            for (RenderThreads::iterator it = renderThreads.begin() ; it!=renderThreads.end();++it) {
+            for (RenderThreads::iterator it = renderThreads.begin(); it != renderThreads.end(); ++it) {
                 if (it->thread->hasQuit()) {
                     it->thread->deleteLater();
                     renderThreads.erase(it);
@@ -415,7 +415,7 @@ struct OutputSchedulerThreadPrivate
             threads = renderThreads;
         }
         
-        for (RenderThreads::iterator it = threads.begin(); it != threads.end();++it) {
+        for (RenderThreads::iterator it = threads.begin(); it != threads.end(); ++it) {
             it->thread->wait();
         }
         {
@@ -1323,7 +1323,9 @@ OutputSchedulerThread::appendToBuffer(double time,int view,const BufferableObjec
         return;
     }
     BufferableObjectList::const_iterator next = frames.begin();
-    ++next;
+    if (next != frames.end()) {
+        ++next;
+    }
     for (BufferableObjectList::const_iterator it = frames.begin(); it != frames.end(); ++it) {
         if (next != frames.end()) {
             appendToBuffer_internal(time, view, *it, false);
@@ -1976,7 +1978,8 @@ private:
                                                              0, //renderAge
                                                              _imp->output, // viewer requester
                                                              0, //texture index
-                                                             _imp->output->getApp()->getTimeLine().get());
+                                                             _imp->output->getApp()->getTimeLine().get(),
+                                                             false);
                     
                     RenderingFlagSetter flagIsRendering(activeInputToRender->getNode().get());
 
@@ -1991,7 +1994,7 @@ private:
                                                                                   components,
                                                                                   imageDepth),&planes);
                     if (retCode != EffectInstance::eRenderRoIRetCodeOk) {
-                         _imp->scheduler->notifyRenderFailure(std::string("Error caught while rendering"));
+                         _imp->scheduler->notifyRenderFailure("Error caught while rendering");
                         return;
                     }
                     
@@ -2069,7 +2072,8 @@ DefaultScheduler::processFrame(const BufferedFrames& frames)
                                                  0, //renderAge
                                                  _effect, //viewer
                                                  0, //texture index
-                                                 _effect->getApp()->getTimeLine().get());
+                                                 _effect->getApp()->getTimeLine().get(),
+                                                 false);
         
         RenderingFlagSetter flagIsRendering(_effect->getNode().get());
         
@@ -2820,7 +2824,7 @@ ViewerCurrentFrameRequestScheduler::run()
                 QMutexLocker k(&_imp->producedQueueMutex);
                 
                 std::list<ProducedFrame>::iterator found = _imp->producedQueue.end();
-                for (std::list<ProducedFrame>::iterator it = _imp->producedQueue.begin(); it!= _imp->producedQueue.end(); ++it) {
+                for (std::list<ProducedFrame>::iterator it = _imp->producedQueue.begin(); it != _imp->producedQueue.end(); ++it) {
                     if (it->request == firstRequest) {
                         found = it;
                         break;
@@ -2833,7 +2837,7 @@ ViewerCurrentFrameRequestScheduler::run()
 					}
                     _imp->producedQueueNotEmpty.wait(&_imp->producedQueueMutex);
                     
-                    for (std::list<ProducedFrame>::iterator it = _imp->producedQueue.begin(); it!= _imp->producedQueue.end(); ++it) {
+                    for (std::list<ProducedFrame>::iterator it = _imp->producedQueue.begin(); it != _imp->producedQueue.end(); ++it) {
                         if (it->request == firstRequest) {
                             found = it;
                             break;

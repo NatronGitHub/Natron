@@ -806,7 +806,9 @@ RotoPanelPrivate::updateSplinesInfoGUI(int time)
                 currentKeyframe->setValue(1.);
             } else {
                 std::set<int>::iterator prev = lowerBound;
-                --prev;
+                if (prev != keyframes.begin()) {
+                    --prev;
+                }
                 currentKeyframe->setValue( (double)(time - *prev) / (double)(*lowerBound - *prev) + dist );
             }
 
@@ -1533,12 +1535,18 @@ RotoPanel::onItemSelectionChanged()
         TreeItems::iterator it = _imp->findItem(selectedItems[i]);
         assert( it != _imp->items.end() );
         boost::shared_ptr<Bezier> bezier = boost::dynamic_pointer_cast<Bezier>(it->rotoItem);
+        boost::shared_ptr<RotoStrokeItem> stroke = boost::dynamic_pointer_cast<RotoStrokeItem>(it->rotoItem);
         boost::shared_ptr<RotoLayer> layer = boost::dynamic_pointer_cast<RotoLayer>(it->rotoItem);
         if (bezier) {
             SelectedItems::iterator found = std::find(_imp->selectedItems.begin(), _imp->selectedItems.end(), bezier);
             if ( found == _imp->selectedItems.end() ) {
                 _imp->selectedItems.push_back(bezier);
                 ++selectedBeziersCount;
+            }
+        } else if (stroke) {
+            SelectedItems::iterator found = std::find(_imp->selectedItems.begin(), _imp->selectedItems.end(), stroke);
+            if ( found == _imp->selectedItems.end() ) {
+                _imp->selectedItems.push_back(stroke);
             }
         } else if (layer) {
             if ( !layer->getItems().empty() ) {
@@ -2147,7 +2155,7 @@ RotoPanel::onSettingsPanelClosed(bool closed)
                 assert(ret.second);
                 
                 ///If the item is selected, make its keyframes visible
-                for (SelectedItems::iterator it2 = _imp->selectedItems.begin() ; it2 != _imp->selectedItems.end();++it2) {
+                for (SelectedItems::iterator it2 = _imp->selectedItems.begin() ; it2 != _imp->selectedItems.end(); ++it2) {
                     if (it2->get() == isBezier.get()) {
                         toAdd.insert(keys.keys);
                         ret.first->second.visible = true;

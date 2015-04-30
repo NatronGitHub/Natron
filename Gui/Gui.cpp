@@ -525,6 +525,9 @@ struct GuiPrivate
     void refreshLeftToolBarVisibility(const QPoint & p);
 
     QAction* findActionRecursive(int i, QWidget* widget, const QStringList & grouping);
+    
+    ///True= yes overwrite
+    bool checkProjectLockAndWarn(const QString& projectPath,const QString& projectName);
 };
 
 // Helper function: Get the icon with the given name from the icon theme.
@@ -1997,8 +2000,7 @@ Gui::buildTabFocusOrderPropertiesBin()
     for (int i = 0; i < _imp->_layoutPropertiesBin->count(); ++i, ++next) {
         QLayoutItem* item = _imp->_layoutPropertiesBin->itemAt(i);
         QWidget* w = item->widget();
-        QWidget* nextWidget = next >= _imp->_layoutPropertiesBin->count() ? _imp->_layoutPropertiesBin->itemAt(0)->widget()
-                              : _imp->_layoutPropertiesBin->itemAt(next)->widget();
+        QWidget* nextWidget = _imp->_layoutPropertiesBin->itemAt(next < _imp->_layoutPropertiesBin->count() ? next : 0)->widget();
 
         if (w && nextWidget) {
             setTabOrder(w, nextWidget);
@@ -2899,8 +2901,12 @@ Gui::openProject(const std::string & filename)
 void
 Gui::openProjectInternal(const std::string & absoluteFileName)
 {
-    std::string fileUnPathed = absoluteFileName;
-    std::string path = SequenceParsing::removePath(fileUnPathed);
+    QFileInfo file(absoluteFileName.c_str());
+    if (!file.exists()) {
+        return;
+    }
+    QString fileUnPathed = file.fileName();
+    QString path = file.path() + "/";
     int openedProject = appPTR->isProjectAlreadyOpened(absoluteFileName);
 
     if (openedProject != -1) {
@@ -2918,13 +2924,11 @@ Gui::openProjectInternal(const std::string & absoluteFileName)
 
     ///if the current graph has no value, just load the project in the same window
     if ( _imp->_appInstance->getProject()->isGraphWorthLess() ) {
-        _imp->_appInstance->getProject()->loadProject( path.c_str(), fileUnPathed.c_str() );
+        _imp->_appInstance->getProject()->loadProject( path, fileUnPathed);
     } else {
-        ///remove autosaves otherwise the new instance might try to load an autosave
-        Project::removeAutoSaves();
         CLArgs cl;
         AppInstance* newApp = appPTR->newAppInstance(cl);
-        newApp->getProject()->loadProject( path.c_str(), fileUnPathed.c_str() );
+        newApp->getProject()->loadProject( path, fileUnPathed);
     }
 
     QSettings settings;
@@ -2956,15 +2960,49 @@ updateRecentFiles(const QString & filename)
 }
 
 bool
+GuiPrivate::checkProjectLockAndWarn(const QString& projectPath,const QString& projectName)
+{
+    boost::shared_ptr<Natron::Project> project= _appInstance->getProject();
+    QString author,lockCreationDate;
+    qint64 lockPID;
+    if (project->getLockFileInfos(projectPath,projectName,&author, &lockCreationDate, &lockPID)) {
+        if (lockPID != QCoreApplication::applicationPid()) {
+            Natron::StandardButtonEnum rep = Natron::questionDialog(QObject::tr("Project").toStdString(),
+                                                                    QObject::tr("This project is already opened in another instance of Natron by ").toStdString() +
+                                                                    author.toStdString() + QObject::tr(" and was opened on ").toStdString() + lockCreationDate.toStdString()
+                                                                    + QObject::tr(" by a Natron process ID of ").toStdString() + QString::number(lockPID).toStdString() + QObject::tr(".\nContinue anyway?").toStdString(), false, Natron::StandardButtons(Natron::eStandardButtonYes | Natron::eStandardButtonNo));
+            if (rep == Natron::eStandardButtonYes) {
+                return true;
+            } else {
+                return false;
+            }
+        }
+    }
+    return true;
+    
+}
+
+bool
 Gui::saveProject()
 {
-    if ( _imp->_appInstance->getProject()->hasProjectBeenSavedByUser() ) {
-        _imp->_appInstance->getProject()->saveProject(_imp->_appInstance->getProject()->getProjectPath(),
-                                                      _imp->_appInstance->getProject()->getProjectName(), false);
+    boost::shared_ptr<Natron::Project> project= _imp->_appInstance->getProject();
+    if (project->hasProjectBeenSavedByUser()) {
+        
+        
+        QString projectName = project->getProjectName();
+        QString projectPath = project->getProjectPath();
+        
+        if (!_imp->checkProjectLockAndWarn(projectPath,projectName)) {
+            return false;
+        }
 
+        project->saveProject(projectPath, projectName, false);
 
         ///update the open recents
-        QString file = _imp->_appInstance->getProject()->getProjectPath() + _imp->_appInstance->getProject()->getProjectName();
+        if (!projectPath.endsWith('/')) {
+            projectPath.append('/');
+        }
+        QString file = projectPath + projectName;
         updateRecentFiles(file);
 
         return true;
@@ -2985,6 +3023,10 @@ Gui::saveProjectAs()
             outFile.append("." NATRON_PROJECT_FILE_EXT);
         }
         std::string path = SequenceParsing::removePath(outFile);
+        
+        if (!_imp->checkProjectLockAndWarn(path.c_str(),outFile.c_str())) {
+            return false;
+        }
         _imp->_appInstance->getProject()->saveProject(path.c_str(), outFile.c_str(), false);
 
         QString filePath = QString( path.c_str() ) + QString( outFile.c_str() );
@@ -4005,8 +4047,6 @@ Gui::openRecentFile()
         if ( _imp->_appInstance->getProject()->isGraphWorthLess() ) {
             _imp->_appInstance->getProject()->loadProject( path, f.fileName() );
         } else {
-            ///remove autosaves otherwise the new instance might try to load an autosave
-            Project::removeAutoSaves();
             CLArgs cl;
             AppInstance* newApp = appPTR->newAppInstance(cl);
             newApp->getProject()->loadProject( path, f.fileName() );
@@ -4057,10 +4097,10 @@ Gui::onProjectNameChanged(const QString & name)
 }
 
 void
-Gui::setColorPickersColor(const QColor & c)
+Gui::setColorPickersColor(double r,double g, double b,double a)
 {
     assert(_imp->_projectGui);
-    _imp->_projectGui->setPickersColor(c);
+    _imp->_projectGui->setPickersColor(r,g,b,a);
 }
 
 void

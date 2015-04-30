@@ -47,40 +47,33 @@
 
 using namespace Natron;
 
-class FlagSetter {
-    
-    bool* p;
-    QMutex* lock;
-    
-public:
-    
-    FlagSetter(bool initialValue,bool* p)
-    : p(p)
-    , lock(0)
-    {
-        *p = initialValue;
-    }
-    
-    FlagSetter(bool initialValue,bool* p, QMutex* mutex)
-    : p(p)
-    , lock(mutex)
-    {
+FlagSetter::FlagSetter(bool initialValue,bool* p)
+: p(p)
+, lock(0)
+{
+    *p = initialValue;
+}
+
+FlagSetter::FlagSetter(bool initialValue,bool* p, QMutex* mutex)
+: p(p)
+, lock(mutex)
+{
+    lock->lock();
+    *p = initialValue;
+    lock->unlock();
+}
+
+FlagSetter::~FlagSetter()
+{
+    if (lock) {
         lock->lock();
-        *p = initialValue;
+    }
+    *p = !*p;
+    if (lock) {
         lock->unlock();
     }
-    
-    ~FlagSetter()
-    {
-        if (lock) {
-            lock->lock();
-        }
-        *p = !*p;
-        if (lock) {
-            lock->unlock();
-        }
-    }
-};
+}
+
 
 
 struct AppInstancePrivate
@@ -569,25 +562,25 @@ AppInstance::createNodeFromPythonModule(Natron::Plugin* plugin,
         containerNode->setScriptName(containerName);
         
         
-        if (!requestedByLoad) {
-            std::string containerFullySpecifiedName = containerNode->getFullyQualifiedName();
-            
-            int appID = getAppID() + 1;
-            
-            std::stringstream ss;
-            ss << moduleName.toStdString();
-            ss << ".createInstance(app" << appID;
-            ss << ", app" << appID << "." << containerFullySpecifiedName;
-            ss << ")\n";
-            std::string err;
-            if (!Natron::interpretPythonScript(ss.str(), &err, NULL)) {
-                Natron::errorDialog(tr("Group plugin creation error").toStdString(), err);
-                containerNode->destroyNode(false);
-                return node;
-            } else {
-                node = containerNode;
-            }
+        
+        std::string containerFullySpecifiedName = containerNode->getFullyQualifiedName();
+        
+        int appID = getAppID() + 1;
+        
+        std::stringstream ss;
+        ss << moduleName.toStdString();
+        ss << ".createInstance(app" << appID;
+        ss << ", app" << appID << "." << containerFullySpecifiedName;
+        ss << ")\n";
+        std::string err;
+        if (!Natron::interpretPythonScript(ss.str(), &err, NULL)) {
+            Natron::errorDialog(tr("Group plugin creation error").toStdString(), err);
+            containerNode->destroyNode(false);
+            return node;
         } else {
+            node = containerNode;
+        }
+        if (requestedByLoad) {
             containerNode->loadKnobs(serialization);
             if (!serialization.isNull() && !serialization.getUserPages().empty()) {
                 containerNode->getLiveInstance()->refreshKnobs();
@@ -619,7 +612,7 @@ AppInstance::setGroupLabelIDAndVersion(const boost::shared_ptr<Natron::Node>& no
         node->setPluginIconFilePath(iconFilePath);
         node->setPluginDescription(description);
         node->setPluginIDAndVersionForGui(pluginLabel, pluginID, version);
-        node->setPluginPythonModule(QString(pythonModulePath + pythonModule).toStdString());
+        node->setPluginPythonModule(QString(pythonModulePath + pythonModule + ".py").toStdString(), version);
     }
     
 }
@@ -764,7 +757,7 @@ AppInstance::createNodeInternal(const QString & pluginID,
         node->load(multiInstanceParentName, serialization,dontLoadName, userEdited,fixedName,paramValues);
     } catch (const std::exception & e) {
         group->removeNode(node);
-        std::string title = std::string("Error while creating node");
+        std::string title("Error while creating node");
         std::string message = title + " " + foundPluginID + ": " + e.what();
         qDebug() << message.c_str();
         errorDialog(title, message, false);
@@ -772,7 +765,7 @@ AppInstance::createNodeInternal(const QString & pluginID,
         return boost::shared_ptr<Natron::Node>();
     } catch (...) {
         group->removeNode(node);
-        std::string title = std::string("Error while creating node");
+        std::string title("Error while creating node");
         std::string message = title + " " + foundPluginID;
         qDebug() << message.c_str();
         errorDialog(title, message, false);
@@ -1059,7 +1052,7 @@ AppInstance::startWritersRendering(const std::list<RenderWork>& writers)
         bool renderInSeparateProcess = appPTR->getCurrentSettings()->isRenderInSeparatedProcessEnabled();
         QString savePath = getProject()->saveProject("","RENDER_SAVE.ntp",true);
 
-        for (std::list<RenderWork>::const_iterator it = writers.begin();it!=writers.end();++it) {
+        for (std::list<RenderWork>::const_iterator it = writers.begin(); it != writers.end(); ++it) {
             ///Use the frame range defined by the writer GUI because we're in an interactive session
             startRenderingFullSequence(*it,renderInSeparateProcess,savePath);
         }
@@ -1246,7 +1239,7 @@ std::string
 AppInstance::getAppIDString() const
 {
     if (appPTR->isBackground()) {
-        return std::string("app");
+        return "app";
     } else {
         QString appID =  QString("app%1").arg(getAppID() + 1);
         return appID.toStdString();

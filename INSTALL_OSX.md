@@ -1,4 +1,4 @@
-Developer installation on mac osx
+Developer installation on OS X
 =================================
 
 This file is supposed to guide you step by step to have working (compiling) version of Natron on mac osx ( >= 10.6 ). 
@@ -119,9 +119,10 @@ EOF
 
 ## Build with Makefile
 
-You can generate a makefile by typing
+You can generate a makefile by opening a Terminal, setting the current
+directory to the toplevel source directory, and typing
 
-	qmake -r Project.pro
+	qmake -r
 
 then type
 
@@ -131,7 +132,7 @@ This will create all binaries in all the subprojects folders.
 
 If you want to build in DEBUG mode change the qmake call to this line:
 
-	qmake -r CONFIG+=debug Project.pro
+	qmake -r CONFIG+=debug
 
 * You can also enable logging by adding CONFIG+=log
 
@@ -142,16 +143,24 @@ If you want to build in DEBUG mode change the qmake call to this line:
 Follow the instruction of build but 
 add -spec macx-xcode to the qmake call command:
 
-	qmake -r -spec macx-xcode Project.pro
+	qmake -r -spec macx-xcode
 	
 Then open the already provided Project-xcode.xcodeproj and compile the target "all"
 
-* If using Xcode to compile, and it doesn't find the necessary
-binaries (qmake, moc, pkg-config, just execute this line from a
-terminal and log in/out of your session (see
-<http://www.emacswiki.org/emacs/EmacsApp> for other options):
+### Xcode caveats
 
-launchctl setenv PATH /opt/local/bin:/opt/local/sbin:/usr/bin:/bin:/usr/sbin:/sbin
+henever the .pro files change, Xcode will try to launch qmake and
+probably fail because it doesn't find the necessary binaries (qmake,
+moc, pkg-config, python3-config, etc.). In this case, just open a
+Terminal and relaunch the above command. This will rebuild the Xcode projects.
+
+Alternatively, you can globally add the necessary directories
+(`/usr/local/bin`on Homebrew, `/opt/local/bin` on MacPorts) to you
+PATH (see <http://www.emacswiki.org/emacs/EmacsApp> for instructions).
+
+On MacPorts, this would look like:
+
+    launchctl setenv PATH /opt/local/bin:/opt/local/sbin:/usr/bin:/bin:/usr/sbin:/sbin
 
 ## Testing
 

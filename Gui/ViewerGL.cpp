@@ -152,69 +152,70 @@ struct ViewerGL::Implementation
 {
     Implementation(ViewerTab* parent,
                    ViewerGL* _this)
-        : pboIds()
-          , vboVerticesId(0)
-          , vboTexturesId(0)
-          , iboTriangleStripId(0)
-          , activeTextures()
-          , displayTextures()
-          , shaderRGB(0)
-          , shaderBlack(0)
-          , shaderLoaded(false)
-          , infoViewer()
-          , viewerTab(parent)
-          , zoomOrPannedSinceLastFit(false)
-          , oldClick()
-          , blankViewerInfo()
-          , displayingImageGain()
-          , displayingImageOffset()
-          , displayingImageMipMapLevel()
-          , displayingImagePremult()
-          , displayingImageLut(Natron::eViewerColorSpaceSRGB)
-          , ms(eMouseStateUndefined)
-          , hs(eHoverStateNothing)
-          , textRenderingColor(200,200,200,255)
-          , displayWindowOverlayColor(125,125,125,255)
-          , rodOverlayColor(100,100,100,255)
-          , textFont( new QFont(appFont,appFontSize) )
-          , overlay(true)
-          , supportsGLSL(true)
-          , updatingTexture(false)
-          , clearColor(0,0,0,255)
-          , menu( new Natron::Menu(_this) )
-          , persistentMessages()
-          , persistentMessageType(0)
-          , displayPersistentMessage(false)
-          , textRenderer()
-          , isUserRoISet(false)
-          , lastMousePosition()
-          , lastDragStartPos()
-          , hasMovedSincePress(false)
-          , currentViewerInfo()
-          , projectFormatMutex()
-          , projectFormat()
-          , currentViewerInfo_btmLeftBBOXoverlay()
-          , currentViewerInfo_topRightBBOXoverlay()
-          , currentViewerInfo_resolutionOverlay()
-          , pickerState(ePickerStateInactive)
-          , lastPickerPos()
-          , userRoIEnabled(false) // protected by mutex
-          , userRoI() // protected by mutex
-          , zoomCtx() // protected by mutex
-          , clipToDisplayWindow(true) // protected by mutex
-          , wipeControlsMutex()
-          , mixAmount(1.) // protected by mutex
-          , wipeAngle(M_PI / 2.) // protected by mutex
-          , wipeCenter()
-          , selectionRectangle()
-          , checkerboardTextureID(0)
-          , checkerboardTileSize(0)
-          , savedTexture(0)
-          , prevBoundTexture(0)
-          , lastRenderedImageMutex()
-          , lastRenderedImage()
-          , memoryHeldByLastRenderedImages()
-          , sizeH()
+    : pboIds()
+    , vboVerticesId(0)
+    , vboTexturesId(0)
+    , iboTriangleStripId(0)
+    , activeTextures()
+    , displayTextures()
+    , shaderRGB(0)
+    , shaderBlack(0)
+    , shaderLoaded(false)
+    , infoViewer()
+    , viewerTab(parent)
+    , zoomOrPannedSinceLastFit(false)
+    , oldClick()
+    , blankViewerInfo()
+    , displayingImageGain()
+    , displayingImageGamma()
+    , displayingImageOffset()
+    , displayingImageMipMapLevel()
+    , displayingImagePremult()
+    , displayingImageLut(Natron::eViewerColorSpaceSRGB)
+    , ms(eMouseStateUndefined)
+    , hs(eHoverStateNothing)
+    , textRenderingColor(200,200,200,255)
+    , displayWindowOverlayColor(125,125,125,255)
+    , rodOverlayColor(100,100,100,255)
+    , textFont( new QFont(appFont,appFontSize) )
+    , overlay(true)
+    , supportsGLSL(true)
+    , updatingTexture(false)
+    , clearColor(0,0,0,255)
+    , menu( new Natron::Menu(_this) )
+    , persistentMessages()
+    , persistentMessageType(0)
+    , displayPersistentMessage(false)
+    , textRenderer()
+    , isUserRoISet(false)
+    , lastMousePosition()
+    , lastDragStartPos()
+    , hasMovedSincePress(false)
+    , currentViewerInfo()
+    , projectFormatMutex()
+    , projectFormat()
+    , currentViewerInfo_btmLeftBBOXoverlay()
+    , currentViewerInfo_topRightBBOXoverlay()
+    , currentViewerInfo_resolutionOverlay()
+    , pickerState(ePickerStateInactive)
+    , lastPickerPos()
+    , userRoIEnabled(false) // protected by mutex
+    , userRoI() // protected by mutex
+    , zoomCtx() // protected by mutex
+    , clipToDisplayWindow(true) // protected by mutex
+    , wipeControlsMutex()
+    , mixAmount(1.) // protected by mutex
+    , wipeAngle(M_PI / 2.) // protected by mutex
+    , wipeCenter()
+    , selectionRectangle()
+    , checkerboardTextureID(0)
+    , checkerboardTileSize(0)
+    , savedTexture(0)
+    , prevBoundTexture(0)
+    , lastRenderedImageMutex()
+    , lastRenderedImage()
+    , memoryHeldByLastRenderedImages()
+    , sizeH()
     {
         infoViewer[0] = 0;
         infoViewer[1] = 0;
@@ -224,6 +225,7 @@ struct ViewerGL::Implementation
         activeTextures[1] = 0;
         memoryHeldByLastRenderedImages[0] = memoryHeldByLastRenderedImages[1] = 0;
         displayingImageGain[0] = displayingImageGain[1] = 1.;
+        displayingImageGamma[0] = displayingImageGamma[1] = 1.;
         displayingImageOffset[0] = displayingImageOffset[1] = 0.;
         for (int i = 0; i < 2 ; ++i) {
             displayingImageTime[i] = 0;
@@ -233,13 +235,13 @@ struct ViewerGL::Implementation
         assert( qApp && qApp->thread() == QThread::currentThread() );
         //menu->setFont( QFont(appFont,appFontSize) );
         
-//        QDesktopWidget* desktop = QApplication::desktop();
-//        QRect r = desktop->screenGeometry();
-//        sizeH = r.size();
+        //        QDesktopWidget* desktop = QApplication::desktop();
+        //        QRect r = desktop->screenGeometry();
+        //        sizeH = r.size();
         sizeH.setWidth(10000);
         sizeH.setHeight(10000);
     }
-
+    
     /////////////////////////////////////////////////////////
     // The following are only accessed from the main thread:
 
@@ -259,6 +261,7 @@ struct ViewerGL::Implementation
     QPoint oldClick;
     ImageInfo blankViewerInfo; /*!< Pointer to the info used when the viewer is disconnected.*/
     double displayingImageGain[2];
+    double displayingImageGamma[2];
     double displayingImageOffset[2];
     unsigned int displayingImageMipMapLevel[2];
     Natron::ImagePremultiplicationEnum displayingImagePremult[2];
@@ -2339,6 +2342,8 @@ ViewerGL::Implementation::activateShaderRGB(int texIndex)
     shaderRGB->setUniformValue("gain", (float)displayingImageGain[texIndex]);
     shaderRGB->setUniformValue("offset", (float)displayingImageOffset[texIndex]);
     shaderRGB->setUniformValue("lut", (GLint)displayingImageLut);
+    float gamma = (displayingImageGamma[texIndex] == 0.) ? 0.f : 1.f / (float)displayingImageGamma[texIndex];
+    shaderRGB->setUniformValue("gamma", gamma);
 }
 
 void
@@ -2385,6 +2390,7 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
                                      size_t bytesCount,
                                      const TextureRect & region,
                                      double gain,
+                                     double gamma, 
                                      double offset,
                                      int lut,
                                      int pboIndex,
@@ -2427,6 +2433,7 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
     glCheckError();
     _imp->activeTextures[textureIndex] = _imp->displayTextures[textureIndex];
     _imp->displayingImageGain[textureIndex] = gain;
+    _imp->displayingImageGamma[textureIndex] = gamma;
     _imp->displayingImageOffset[textureIndex] = offset;
     _imp->displayingImageMipMapLevel[textureIndex] = mipMapLevel;
     _imp->displayingImageLut = (Natron::ViewerColorSpaceEnum)lut;
@@ -2508,6 +2515,15 @@ ViewerGL::setGain(double d)
 }
 
 void
+ViewerGL::setGamma(double g)
+{
+    // always running in the main thread
+    assert( qApp && qApp->thread() == QThread::currentThread() );
+    _imp->displayingImageGamma[0] = g;
+    _imp->displayingImageGamma[1] = g;
+}
+
+void
 ViewerGL::setLut(int lut)
 {
     // always running in the main thread
@@ -2581,15 +2597,25 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
     bool hasPickers = _imp->viewerTab->getGui()->hasPickers();
 
     
-    if ( (buttonDownIsMiddle(e) || ( (e)->buttons() == Qt::RightButton   && buttonControlAlt(e) == Qt::AltModifier )) && !modifierHasControl(e) ) {
+    if (!overlaysCaught &&
+        (buttonDownIsMiddle(e) ||
+         ( (e)->buttons() == Qt::RightButton && buttonControlAlt(e) == Qt::AltModifier )) &&
+        !modifierHasControl(e) ) {
         // middle (or Alt + left) or Alt + right = pan
         _imp->ms = eMouseStateDraggingImage;
         overlaysCaught = true;
-    } else if ((e->buttons() & Qt::MiddleButton) && (buttonControlAlt(e) == Qt::AltModifier || (e->buttons() & Qt::LeftButton)) ) {
+    }
+    if (!overlaysCaught &&
+        (e->buttons() & Qt::MiddleButton) &&
+        (buttonControlAlt(e) == Qt::AltModifier || (e->buttons() & Qt::LeftButton)) ) {
         // Alt + middle = zoom or Left + middle = zoom
         _imp->ms = eMouseStateZoomingImage;
         overlaysCaught = true;
-    } else if ( hasPickers && isMouseShortcut(kShortcutGroupViewer, kShortcutIDMousePickColor, modifiers, button) && displayingImage() ) {
+    }
+    if (!overlaysCaught &&
+        hasPickers &&
+        isMouseShortcut(kShortcutGroupViewer, kShortcutIDMousePickColor, modifiers, button) &&
+        displayingImage() ) {
         // picker with single-point selection
         _imp->pickerState = ePickerStatePoint;
         if ( pickColor( e->x(),e->y() ) ) {
@@ -2597,7 +2623,38 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
             mustRedraw = true;
             overlaysCaught = true;
         }
-    } else if ( (_imp->ms == eMouseStateUndefined) && _imp->overlay ) {
+    }
+
+    // process the wipe tool events before the plugin overlays
+    if (!overlaysCaught &&
+        _imp->overlay &&
+        isWipeHandleVisible() &&
+        buttonDownIsLeft(e) &&
+        _imp->isNearbyWipeCenter(zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight) ) {
+        _imp->ms = eMouseStateDraggingWipeCenter;
+        overlaysCaught = true;
+    }
+    if (!overlaysCaught &&
+        _imp->overlay &&
+        isWipeHandleVisible() &&
+        buttonDownIsLeft(e) &&
+        _imp->isNearbyWipeMixHandle(zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight) ) {
+        _imp->ms = eMouseStateDraggingWipeMixHandle;
+        overlaysCaught = true;
+    }
+    if (!overlaysCaught &&
+        _imp->overlay &&
+        isWipeHandleVisible() &&
+        buttonDownIsLeft(e) &&
+        _imp->isNearbyWipeRotateBar(zoomPos, zoomScreenPixelWidth ,zoomScreenPixelHeight) ) {
+        _imp->ms = eMouseStateRotatingWipeHandle;
+        overlaysCaught = true;
+    }
+
+    // process plugin overlays
+    if (!overlaysCaught &&
+        (_imp->ms == eMouseStateUndefined) &&
+        _imp->overlay ) {
         unsigned int mipMapLevel = getCurrentRenderScale();
         double scale = 1. / (1 << mipMapLevel);
         overlaysCaught = _imp->viewerTab->notifyOverlaysPenDown(scale,scale, QMouseEventLocalPos(e), zoomPos, e);
@@ -2607,96 +2664,117 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
     }
 
 
-    if (!overlaysCaught) {
-
-          if ( hasPickers && isMouseShortcut(kShortcutGroupViewer, kShortcutIDMouseRectanglePick, modifiers, button) && displayingImage() ) {
-            // start picker with rectangle selection (picked color is the average over the rectangle)
-            _imp->pickerState = ePickerStateRectangle;
-            _imp->pickerRect.setTopLeft(zoomPos);
-            _imp->pickerRect.setBottomRight(zoomPos);
-            _imp->ms = eMouseStateBuildingPickerRectangle;
-            mustRedraw = true;
-            overlaysCaught = true;
-        } else if ( (_imp->pickerState != ePickerStateInactive) && buttonDownIsLeft(e) && displayingImage() ) {
-            // disable picker if picker is set when clicking
-            _imp->pickerState = ePickerStateInactive;
-            mustRedraw = true;
-            overlaysCaught = true;
-        } else if ( buttonDownIsLeft(e) &&
-                    userRoIEnabled && isNearByUserRoIBottomEdge(userRoI,zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight) ) {
-            // start dragging the bottom edge of the user ROI
-            _imp->ms = eMouseStateDraggingRoiBottomEdge;
-            overlaysCaught = true;
-        } else if ( buttonDownIsLeft(e) &&
-                    userRoIEnabled && isNearByUserRoILeftEdge(userRoI,zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight) ) {
-            // start dragging the left edge of the user ROI
-            _imp->ms = eMouseStateDraggingRoiLeftEdge;
-            overlaysCaught = true;
-        } else if ( buttonDownIsLeft(e) &&
-                    userRoIEnabled && isNearByUserRoIRightEdge(userRoI,zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight) ) {
-            // start dragging the right edge of the user ROI
-            _imp->ms = eMouseStateDraggingRoiRightEdge;
-            overlaysCaught = true;
-        } else if ( buttonDownIsLeft(e) &&
-                    userRoIEnabled && isNearByUserRoITopEdge(userRoI,zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight) ) {
-            // start dragging the top edge of the user ROI
-            _imp->ms = eMouseStateDraggingRoiTopEdge;
-            overlaysCaught = true;
-        } else if ( buttonDownIsLeft(e) &&
-                    userRoIEnabled && isNearByUserRoI( (userRoI.x1 + userRoI.x2) / 2., (userRoI.y1 + userRoI.y2) / 2.,
-                                     zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight ) ) {
+    if (!overlaysCaught &&
+        hasPickers &&
+        isMouseShortcut(kShortcutGroupViewer, kShortcutIDMouseRectanglePick, modifiers, button) &&
+        displayingImage() ) {
+        // start picker with rectangle selection (picked color is the average over the rectangle)
+        _imp->pickerState = ePickerStateRectangle;
+        _imp->pickerRect.setTopLeft(zoomPos);
+        _imp->pickerRect.setBottomRight(zoomPos);
+        _imp->ms = eMouseStateBuildingPickerRectangle;
+        mustRedraw = true;
+        overlaysCaught = true;
+    }
+    if (!overlaysCaught &&
+        (_imp->pickerState != ePickerStateInactive) &&
+        buttonDownIsLeft(e) &&
+        displayingImage() ) {
+        // disable picker if picker is set when clicking
+        _imp->pickerState = ePickerStateInactive;
+        mustRedraw = true;
+        overlaysCaught = true;
+    }
+    if (!overlaysCaught &&
+        buttonDownIsLeft(e) &&
+        userRoIEnabled &&
+        isNearByUserRoIBottomEdge(userRoI,zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight) ) {
+        // start dragging the bottom edge of the user ROI
+        _imp->ms = eMouseStateDraggingRoiBottomEdge;
+        overlaysCaught = true;
+    }
+    if (!overlaysCaught &&
+        buttonDownIsLeft(e) &&
+        userRoIEnabled &&
+        isNearByUserRoILeftEdge(userRoI,zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight) ) {
+        // start dragging the left edge of the user ROI
+        _imp->ms = eMouseStateDraggingRoiLeftEdge;
+        overlaysCaught = true;
+    }
+    if (!overlaysCaught &&
+        buttonDownIsLeft(e) &&
+        userRoIEnabled && isNearByUserRoIRightEdge(userRoI,zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight) ) {
+        // start dragging the right edge of the user ROI
+        _imp->ms = eMouseStateDraggingRoiRightEdge;
+        overlaysCaught = true;
+    }
+    if (!overlaysCaught &&
+        buttonDownIsLeft(e) &&
+        userRoIEnabled &&
+        isNearByUserRoITopEdge(userRoI,zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight) ) {
+        // start dragging the top edge of the user ROI
+        _imp->ms = eMouseStateDraggingRoiTopEdge;
+        overlaysCaught = true;
+    }
+    if (!overlaysCaught &&
+        buttonDownIsLeft(e) &&
+        userRoIEnabled &&
+        isNearByUserRoI( (userRoI.x1 + userRoI.x2) / 2., (userRoI.y1 + userRoI.y2) / 2.,
+                        zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight ) ) {
             // start dragging the midpoint of the user ROI
             _imp->ms = eMouseStateDraggingRoiCross;
             overlaysCaught = true;
-        } else if ( buttonDownIsLeft(e) &&
-                    userRoIEnabled && isNearByUserRoI(userRoI.x1, userRoI.y2, zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight) ) {
-            // start dragging the topleft corner of the user ROI
-            _imp->ms = eMouseStateDraggingRoiTopLeft;
-            overlaysCaught = true;
-        } else if ( buttonDownIsLeft(e) &&
-                    userRoIEnabled && isNearByUserRoI(userRoI.x2, userRoI.y2, zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight) ) {
-            // start dragging the topright corner of the user ROI
-            _imp->ms = eMouseStateDraggingRoiTopRight;
-            overlaysCaught = true;
-        }  else if ( buttonDownIsLeft(e) &&
-                     userRoIEnabled && isNearByUserRoI(userRoI.x1, userRoI.y1, zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight) ) {
-            // start dragging the bottomleft corner of the user ROI
-            _imp->ms = eMouseStateDraggingRoiBottomLeft;
-            overlaysCaught = true;
-        }  else if ( buttonDownIsLeft(e) &&
-                     userRoIEnabled && isNearByUserRoI(userRoI.x2, userRoI.y1, zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight) ) {
-            // start dragging the bottomright corner of the user ROI
-            _imp->ms = eMouseStateDraggingRoiBottomRight;
-            overlaysCaught = true;
-        } else if ( _imp->overlay && isWipeHandleVisible() &&
-                    buttonDownIsLeft(e) && _imp->isNearbyWipeCenter(zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight) ) {
-            _imp->ms = eMouseStateDraggingWipeCenter;
-            overlaysCaught = true;
-        } else if ( _imp->overlay &&  isWipeHandleVisible() &&
-                    buttonDownIsLeft(e) && _imp->isNearbyWipeMixHandle(zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight) ) {
-            _imp->ms = eMouseStateDraggingWipeMixHandle;
-            overlaysCaught = true;
-        } else if ( _imp->overlay &&  isWipeHandleVisible() &&
-                    buttonDownIsLeft(e) && _imp->isNearbyWipeRotateBar(zoomPos, zoomScreenPixelWidth ,zoomScreenPixelHeight) ) {
-            _imp->ms = eMouseStateRotatingWipeHandle;
-            overlaysCaught = true;
         }
+    if (!overlaysCaught &&
+        buttonDownIsLeft(e) &&
+        userRoIEnabled &&
+        isNearByUserRoI(userRoI.x1, userRoI.y2, zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight) ) {
+        // start dragging the topleft corner of the user ROI
+        _imp->ms = eMouseStateDraggingRoiTopLeft;
+        overlaysCaught = true;
+    }
+    if (!overlaysCaught &&
+        buttonDownIsLeft(e) &&
+        userRoIEnabled &&
+        isNearByUserRoI(userRoI.x2, userRoI.y2, zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight) ) {
+        // start dragging the topright corner of the user ROI
+        _imp->ms = eMouseStateDraggingRoiTopRight;
+        overlaysCaught = true;
+    }
+    if (!overlaysCaught &&
+        buttonDownIsLeft(e) &&
+        userRoIEnabled &&
+        isNearByUserRoI(userRoI.x1, userRoI.y1, zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight) ) {
+        // start dragging the bottomleft corner of the user ROI
+        _imp->ms = eMouseStateDraggingRoiBottomLeft;
+        overlaysCaught = true;
+    }
+    if (!overlaysCaught &&
+        buttonDownIsLeft(e) &&
+        userRoIEnabled &&
+        isNearByUserRoI(userRoI.x2, userRoI.y1, zoomPos, zoomScreenPixelWidth, zoomScreenPixelHeight) ) {
+        // start dragging the bottomright corner of the user ROI
+        _imp->ms = eMouseStateDraggingRoiBottomRight;
+        overlaysCaught = true;
     }
 
-    if (!overlaysCaught) {
-        if ( buttonDownIsRight(e) ) {
-            _imp->menu->exec( mapToGlobal( e->pos() ) );
-        } else if ( buttonDownIsLeft(e) ) {
-            ///build selection rectangle
-            _imp->selectionRectangle.setTopLeft(zoomPos);
-            _imp->selectionRectangle.setBottomRight(zoomPos);
-            _imp->lastDragStartPos = zoomPos;
-            _imp->ms = eMouseStateSelecting;
-            if ( !modCASIsControl(e) ) {
-                Q_EMIT selectionCleared();
-                mustRedraw = true;
-            }
+    if (!overlaysCaught &&
+        buttonDownIsRight(e) ) {
+        _imp->menu->exec( mapToGlobal( e->pos() ) );
+        overlaysCaught = true;
+    }
+    if (!overlaysCaught &&
+        buttonDownIsLeft(e) ) {
+        ///build selection rectangle
+        _imp->selectionRectangle.setTopLeft(zoomPos);
+        _imp->selectionRectangle.setBottomRight(zoomPos);
+        _imp->lastDragStartPos = zoomPos;
+        _imp->ms = eMouseStateSelecting;
+        if ( !modCASIsControl(e) ) {
+            Q_EMIT selectionCleared();
+            mustRedraw = true;
         }
+        overlaysCaught = true;
     }
 
     if (mustRedraw) {
@@ -3843,7 +3921,7 @@ ViewerGL::updatePersistentMessageToWidth(int w)
     int type = 0;
     ///Draw overlays in reverse order of appearance
     std::list<DockablePanel*>::const_iterator next = openedPanels.begin();
-    if (!openedPanels.empty()) {
+    if (next != openedPanels.end()) {
         ++next;
     }
     int nbNonEmpty = 0;
@@ -4176,12 +4254,7 @@ ViewerGL::pickColor(double x,
         bool picked = getColorAt(imgPos.x(), imgPos.y(), linear, i, &r, &g, &b, &a,&mmLevel);
         if (picked) {
             if (i == 0) {
-                QColor pickerColor;
-                pickerColor.setRedF( Natron::clamp(r) );
-                pickerColor.setGreenF( Natron::clamp(g) );
-                pickerColor.setBlueF( Natron::clamp(b) );
-                pickerColor.setAlphaF( Natron::clamp(a) );
-                _imp->viewerTab->getGui()->setColorPickersColor(pickerColor);
+                _imp->viewerTab->getGui()->setColorPickersColor(r,g,b,a);
             }
             _imp->infoViewer[i]->setColorApproximated(mmLevel > 0);
             _imp->infoViewer[i]->setColorValid(true);
@@ -4271,12 +4344,7 @@ ViewerGL::updateRectangleColorPicker()
         bool picked = getColorAtRect(rect, linear, i, &r, &g, &b, &a,&mm);
         if (picked) {
             if (i == 0) {
-                QColor pickerColor;
-                pickerColor.setRedF( clamp(r) );
-                pickerColor.setGreenF( clamp(g) );
-                pickerColor.setBlueF( clamp(b) );
-                pickerColor.setAlphaF( clamp(a) );
-                _imp->viewerTab->getGui()->setColorPickersColor(pickerColor);
+                _imp->viewerTab->getGui()->setColorPickersColor(r,g,b,a);
             }
             _imp->infoViewer[i]->setColorValid(true);
             if ( !_imp->infoViewer[i]->colorAndMouseVisible() ) {

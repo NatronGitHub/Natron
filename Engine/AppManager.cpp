@@ -711,8 +711,9 @@ CLArgsPrivate::parse()
         }
         
         QStringList::iterator next = it;
-        ++next;
-        
+        if (next != args.end()) {
+            ++next;
+        }
         if (next == args.end()) {
             std::cout << QObject::tr("You must specify the name of a Write node when using the -w option").toStdString() << std::endl;
             error = 1;
@@ -733,8 +734,9 @@ CLArgsPrivate::parse()
         w.name = *next;
         
         QStringList::iterator nextNext = next;
-        ++nextNext;
-        
+        if (nextNext != args.end()) {
+            ++nextNext;
+        }
         if (nextNext != args.end()) {
             //Check for an optional filename
             if (!nextNext->startsWith("-") && !nextNext->startsWith("--")) {
@@ -778,7 +780,9 @@ CLArgsPrivate::parse()
         
         //Check for a mandatory file name
         QStringList::iterator next = it;
-        ++next;
+        if (next != args.end()) {
+            ++next;
+        }
         if (next == args.end()) {
             std::cout << QObject::tr("Filename is not optional with the -o option").toStdString() << std::endl;
             error = 1;
@@ -1115,7 +1119,16 @@ AppManager::loadInternal(const CLArgs& cl)
         if ( (_imp->_appType == eAppTypeBackgroundAutoRun ||
               _imp->_appType == eAppTypeBackgroundAutoRunLaunchedFromGui ||
               _imp->_appType == eAppTypeInterpreter) && mainInstance ) {
-            mainInstance->quit();
+            try {
+                mainInstance->getProject()->closeProject();
+            } catch (std::logic_error) {
+                // ignore
+            }
+            try {
+                mainInstance->quit();
+            } catch (std::logic_error) {
+                // ignore
+            }
         }
 
         return true;
@@ -1126,6 +1139,7 @@ AppInstance*
 AppManager::newAppInstance(const CLArgs& cl)
 {
     AppInstance* instance = makeNewInstance(_imp->_availableID);
+    ++_imp->_availableID;
 
     try {
         instance->load(cl);
@@ -1133,17 +1147,16 @@ AppManager::newAppInstance(const CLArgs& cl)
         Natron::errorDialog( NATRON_APPLICATION_NAME,e.what(), false );
         removeInstance(_imp->_availableID);
         delete instance;
-
+        --_imp->_availableID;
         return NULL;
     } catch (...) {
         Natron::errorDialog( NATRON_APPLICATION_NAME, tr("Cannot load project").toStdString(), false );
         removeInstance(_imp->_availableID);
         delete instance;
-
+        --_imp->_availableID;
         return NULL;
     }
 
-    ++_imp->_availableID;
 
     ///flag that we finished loading the Appmanager even if it was already true
     _imp->_loaded = true;
@@ -1236,6 +1249,8 @@ AppManager::clearAllCaches()
     for (std::map<int,AppInstanceRef>::iterator it = _imp->_appInstances.begin(); it != _imp->_appInstances.end(); ++it) {
         it->second.app->renderAllViewers();
     }
+    
+    Project::clearAutoSavesDir();
 }
 
 
@@ -1447,7 +1462,7 @@ AppManager::onAllPluginsLoaded()
     
     //Make sure there is no duplicates with the same label
     const PluginsMap& plugins = getPluginsList();
-    for (PluginsMap::const_iterator it = plugins.begin(); it!=plugins.end(); ++it) {
+    for (PluginsMap::const_iterator it = plugins.begin(); it != plugins.end(); ++it) {
         assert(!it->second.empty());
         PluginMajorsOrdered::iterator first = it->second.begin();
         
@@ -1647,7 +1662,7 @@ AppManager::getAllNonOFXPluginsPaths() const
     }
     
     ///look-in extra search path set in the preferences
-    for (std::list<std::string>::iterator it = userSearchPaths.begin(); it!=userSearchPaths.end(); ++it) {
+    for (std::list<std::string>::iterator it = userSearchPaths.begin(); it != userSearchPaths.end(); ++it) {
         if (!it->empty()) {
             templatesSearchPath.push_back(QString(it->c_str()));
         }
@@ -1725,6 +1740,8 @@ AppManager::loadPythonGroups()
         }
     }
     
+    appPTR->setLoadingStatus(QString(QObject::tr("Loading PyPlugs...")));
+
     for (int i = 0; i < allPlugins.size(); ++i) {
         
         QString moduleName = allPlugins[i];
@@ -1909,7 +1926,7 @@ QMutex*
 AppManager::getMutexForPlugin(const QString & pluginId,int major,int /*minor*/) const
 {
     for (PluginsMap::iterator it = _imp->_plugins.begin(); it != _imp->_plugins.end(); ++it) {
-        for (PluginMajorsOrdered::iterator it2 = it->second.begin(); it2 != it->second.end() ;++it2) {
+        for (PluginMajorsOrdered::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
             if ((*it2)->getPluginID() == pluginId && (*it2)->getMajorVersion() == major) {
                 return (*it2)->getPluginLock();
             }
@@ -1937,7 +1954,7 @@ Natron::Plugin*
 AppManagerPrivate::findPluginById(const QString& newId,int major, int minor) const
 {
     for (PluginsMap::const_iterator it = _plugins.begin(); it != _plugins.end(); ++it) {
-        for (PluginMajorsOrdered::const_iterator it2 = it->second.begin(); it2 != it->second.end() ;++it2) {
+        for (PluginMajorsOrdered::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
             if ((*it2)->getPluginID() == newId && (*it2)->getMajorVersion() == major && (*it2)->getMinorVersion() == minor) {
                 return (*it2);
             }
@@ -1964,7 +1981,7 @@ AppManager::getPluginBinaryFromOldID(const QString & pluginId,int majorVersion,i
     
     ///Try remapping these ids to old ids we had in Natron < 1.0 for backward-compat
     for (PluginsMap::const_iterator it = _imp->_plugins.begin(); it != _imp->_plugins.end(); ++it) {
-        for (PluginMajorsOrdered::const_iterator it2 = it->second.begin(); it2 != it->second.end() ;++it2) {
+        for (PluginMajorsOrdered::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
             if ((*it2)->generateUserFriendlyPluginID() == pluginId &&
                 ((*it2)->getMajorVersion() == majorVersion || majorVersion == -1) &&
                 ((*it2)->getMinorVersion() == minorVersion || minorVersion == -1)) {
@@ -2524,7 +2541,7 @@ AppManagerPrivate::setMaxCacheFiles()
             }
         }
         std::cout << "Total opened files: " << files.size() << std::endl;
-        for (std::list<HANDLE>::iterator it = files.begin(); it!= files.end();++it) {
+        for (std::list<HANDLE>::iterator it = files.begin(); it != files.end(); ++it) {
             CloseHandle(*it);
         }
        }
@@ -2833,7 +2850,7 @@ std::list<std::string>
 AppManager::getPluginIDs() const
 {
     std::list<std::string> ret;
-    for (PluginsMap::const_iterator it = _imp->_plugins.begin() ; it!=_imp->_plugins.end(); ++it) {
+    for (PluginsMap::const_iterator it = _imp->_plugins.begin() ; it != _imp->_plugins.end(); ++it) {
         assert(!it->second.empty());
         ret.push_back(it->first);
     }
@@ -2845,7 +2862,7 @@ AppManager::getPluginIDs(const std::string& filter)
 {
     QString qFilter(filter.c_str());
     std::list<std::string> ret;
-    for (PluginsMap::const_iterator it = _imp->_plugins.begin() ; it!=_imp->_plugins.end(); ++it) {
+    for (PluginsMap::const_iterator it = _imp->_plugins.begin() ; it != _imp->_plugins.end(); ++it) {
         assert(!it->second.empty());
         
         QString pluginID(it->first.c_str());
@@ -3463,7 +3480,7 @@ bool interpretPythonScript(const std::string& script,std::string* error,std::str
         if (errCatcher && error) {
             errorObj = PyObject_GetAttrString(errCatcher,"value"); //get the  stderr from our catchErr object, new ref
             assert(errorObj);
-            *error = std::string(PY3String_asString(errorObj));
+            *error = PY3String_asString(errorObj);
             PyObject* unicode = PyUnicode_FromString("");
             PyObject_SetAttrString(errCatcher, "value", unicode);
             Py_DECREF(errorObj);
@@ -3473,7 +3490,7 @@ bool interpretPythonScript(const std::string& script,std::string* error,std::str
         if (outCatcher && output) {
             outObj = PyObject_GetAttrString(outCatcher,"value"); //get the stdout from our catchOut object, new ref
             assert(outObj);
-            *output = std::string(PY3String_asString(outObj));
+            *output = PY3String_asString(outObj);
             PyObject* unicode = PyUnicode_FromString("");
             PyObject_SetAttrString(outCatcher, "value", unicode);
             Py_DECREF(outObj);
@@ -3714,7 +3731,6 @@ getGroupInfos(const std::string& modulePath,
             *grouping = PLUGIN_GROUP_OTHER;
         }
         
-        appPTR->setLoadingStatus(QString(QObject::tr("Python: Loading ")) + QString(pluginLabel->c_str()));
         
         bool ok = interpretPythonScript(deleteScript, &err, NULL);
         assert(ok);

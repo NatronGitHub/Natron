@@ -64,9 +64,9 @@ struct ProjectPrivate
 {
     Natron::Project* _publicInterface;
     mutable QMutex projectLock; //< protects the whole project
-    QString projectName; //< name of the project, e.g: "Untitled.EXT"
+    QString projectName; //< name of the project, e.g: "Untitled.ntp"
     QString projectPath; //< path of the project, e.g: /Users/Lala/Projects/
-    QString lastAutoSaveFilePath; //< path + name of the last auto-save file
+    QString lastAutoSaveFilePath; //< absolute file path of the last auto-save file
     bool hasProjectBeenSavedByUser; //< has this project ever been saved by the user?
     QDateTime ageSinceLastSave; //< the last time the user saved
     QDateTime lastAutoSave; //< the last time since autosave
@@ -116,7 +116,7 @@ struct ProjectPrivate
     
     ProjectPrivate(Natron::Project* project);
 
-    bool restoreFromSerialization(const ProjectSerialization & obj,const QString& name,const QString& path,bool isAutoSave,const QString& realFilePath);
+    bool restoreFromSerialization(const ProjectSerialization & obj,const QString& name,const QString& path, bool* mustSave);
 
     bool findFormat(int index,Format* format) const;
     

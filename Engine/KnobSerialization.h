@@ -133,9 +133,20 @@ public:
 
 class ValueExtraData: public TypeExtraData
 {
-    public:
-    ValueExtraData() : TypeExtraData() , min(0.), max(0.) {}
-    double min,max,dmin,dmax;
+public:
+    ValueExtraData()
+    : TypeExtraData()
+    , min(0.)
+    , max(0.)
+    , dmin(0.)
+    , dmax(0.)
+    {
+    }
+
+    double min;
+    double max;
+    double dmin;
+    double dmax;
 };
 
 struct ValueSerialization
@@ -348,7 +359,7 @@ public:
     virtual ~KnobSerializationBase() {}
     
     
-    virtual std::string getName() const = 0;
+    virtual const std::string& getName() const = 0;
     
     virtual boost::shared_ptr<KnobI> getKnob() const = 0;
     
@@ -806,7 +817,7 @@ public:
         return _knob;
     }
 
-    virtual std::string getName() const OVERRIDE FINAL
+    virtual const std::string& getName() const OVERRIDE FINAL
     {
         return _knob->getName();
     }
@@ -963,11 +974,11 @@ public:
     }
 
     
-    virtual std::string getName() const  OVERRIDE FINAL {
+    virtual const std::string& getName() const  OVERRIDE FINAL {
         return _name;
     }
     
-    std::string getLabel() const {
+    const std::string& getLabel() const {
         return _label;
     }
     
@@ -1002,7 +1013,7 @@ private:
         int nbChildren = (int)_children.size();
         ar & boost::serialization::make_nvp("NbChildren",nbChildren);
         for (std::list <boost::shared_ptr<KnobSerializationBase> >::const_iterator it = _children.begin();
-             it != _children.end() ;++it) {
+             it != _children.end(); ++it) {
             GroupKnobSerialization* isGrp = dynamic_cast<GroupKnobSerialization*>(it->get());
             KnobSerialization* isRegularKnob = dynamic_cast<KnobSerialization*>(it->get());
             assert(isGrp || isRegularKnob);

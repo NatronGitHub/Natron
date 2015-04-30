@@ -48,36 +48,21 @@ class MoveMultipleNodesCommand
 {
 public:
 
-    struct NodeToMove
-    {
-        boost::weak_ptr<NodeGui> node;
-        bool isWithinBD;
-    };
-
-    MoveMultipleNodesCommand(const std::list<NodeToMove> & nodes,
+    MoveMultipleNodesCommand(const NodeGuiList & nodes,
                              double dx,
                              double dy,
-                             bool doMerge,
-                             const QPointF & mouseScenePos,
                              QUndoCommand *parent = 0);
     virtual void undo();
     virtual void redo();
-    virtual int id() const
-    {
-        return kNodeGraphMoveNodeCommandCompressionID;
-    }
 
-    virtual bool mergeWith(const QUndoCommand *command);
 
 private:
 
-    void move(bool skipMagnet,double dx,double dy);
+    void move(double dx,double dy);
 
     bool _firstRedoCalled;
-    std::list<NodeToMove> _nodes;
-    QPointF _mouseScenePos;
+    NodeGuiList _nodes;
     double _dx,_dy;
-    bool _doMerge;
 };
 
 

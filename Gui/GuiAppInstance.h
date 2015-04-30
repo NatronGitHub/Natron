@@ -65,10 +65,18 @@ private:
     
     void deletePreviewProvider();
     
+    
+    /** @brief Attemps to find an untitled autosave. If found one, prompts the user
+     * whether he/she wants to load it. If something was loaded this function
+     * returns true,otherwise false.
+     **/
+    bool findAndTryLoadUntitledAutoSave() WARN_UNUSED_RETURN;
+    
 public:
     
     virtual void aboutToQuit() OVERRIDE FINAL;
     virtual void load(const CLArgs& cl) OVERRIDE FINAL;
+    
     Gui* getGui() const WARN_UNUSED_RETURN;
 
     /**

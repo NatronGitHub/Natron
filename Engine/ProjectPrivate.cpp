@@ -82,8 +82,7 @@ bool
 ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
                                          const QString& name,
                                          const QString& path,
-                                         bool isAutoSave,
-                                         const QString& realFilePath)
+                                         bool* mustSave)
 {
     
     /*1st OFF RESTORE THE PROJECT KNOBS*/
@@ -144,7 +143,7 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
             ///For eAppTypeBackgroundAutoRunLaunchedFromGui don't change the project path since it is controlled
             ///by the main GUI process
             if (appPTR->getAppType() != AppManager::eAppTypeBackgroundAutoRunLaunchedFromGui) {
-                autoSetProjectDirectory(isAutoSave ? realFilePath : path);
+                autoSetProjectDirectory(path);
             }
             _publicInterface->onOCIOConfigPathChanged(appPTR->getOCIOConfigPath(),false);
         } else if (projectKnobs[i] == natronVersion) {
@@ -164,9 +163,15 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
     
     bool hasProjectAWriter = false;
     
+    std::map<std::string,bool> processedModules;
     bool ok = NodeCollectionSerialization::restoreFromSerialization(obj.getNodesSerialization().getNodesSerialization(),
-                                                                    _publicInterface->shared_from_this(), &hasProjectAWriter);
-
+                                                                    _publicInterface->shared_from_this(),true, &processedModules, &hasProjectAWriter);
+    for (std::map<std::string,bool>::iterator it = processedModules.begin(); it!=processedModules.end(); ++it) {
+        if (it->second) {
+            *mustSave = true;
+            break;
+        }
+    }
 
     if ( !hasProjectAWriter && appPTR->isBackground() ) {
         _publicInterface->clearNodes(true);
@@ -184,7 +189,7 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
     autoSetProjectFormat = false;
     hasProjectBeenSavedByUser = true;
     projectName = name;
-    projectPath = isAutoSave ? realFilePath : path;
+    projectPath = path;
     ageSinceLastSave = time;
     lastAutoSave = time;
     _publicInterface->getApp()->setProjectWasCreatedWithLowerCaseIDs(false);
@@ -256,7 +261,7 @@ ProjectPrivate::autoSetProjectDirectory(const QString& path)
     }
     
     std::string newEnv;
-    for (std::map<std::string, std::string>::iterator it = envMap.begin(); it!=envMap.end();++it) {
+    for (std::map<std::string, std::string>::iterator it = envMap.begin(); it != envMap.end(); ++it) {
         newEnv += NATRON_ENV_VAR_NAME_START_TAG;
         // In order to use XML tags, the text inside the tags has to be escaped.
         newEnv += Project::escapeXML(it->first);

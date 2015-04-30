@@ -45,7 +45,7 @@
 using namespace Natron;
 using std::make_pair; using std::pair;
 
-KnobSignalSlotHandler::KnobSignalSlotHandler(boost::shared_ptr<KnobI> knob)
+KnobSignalSlotHandler::KnobSignalSlotHandler(const boost::shared_ptr<KnobI>& knob)
 : QObject()
 , k(knob)
 {
@@ -55,7 +55,7 @@ KnobSignalSlotHandler::KnobSignalSlotHandler(boost::shared_ptr<KnobI> knob)
 void
 KnobSignalSlotHandler::onAnimationRemoved(int dimension)
 {
-    k->onAnimationRemoved(dimension);
+    getKnob()->onAnimationRemoved(dimension);
 }
 
 void
@@ -64,7 +64,7 @@ KnobSignalSlotHandler::onMasterChanged(int dimension)
     KnobSignalSlotHandler* handler = qobject_cast<KnobSignalSlotHandler*>( sender() );
     
     assert(handler);
-    k->onMasterChanged(handler->getKnob().get(), dimension);
+    getKnob()->onMasterChanged(handler->getKnob().get(), dimension);
 }
 
 void
@@ -73,7 +73,7 @@ KnobSignalSlotHandler::onExprDependencyChanged(int dimension)
     KnobSignalSlotHandler* handler = qobject_cast<KnobSignalSlotHandler*>( sender() );
     
     assert(handler);
-    k->onExprDependencyChanged(handler->getKnob().get(), dimension);
+    getKnob()->onExprDependencyChanged(handler->getKnob().get(), dimension);
     
 }
 
@@ -84,7 +84,7 @@ KnobSignalSlotHandler::onMasterKeyFrameSet(SequenceTime time,int dimension,int r
     assert(handler);
     boost::shared_ptr<KnobI> master = handler->getKnob();
     
-    k->clone(master.get(), dimension);
+    getKnob()->clone(master.get(), dimension);
     Q_EMIT keyFrameSet(time, dimension, reason, added);
 }
 
@@ -95,7 +95,7 @@ KnobSignalSlotHandler::onMasterKeyFrameRemoved(SequenceTime time,int dimension,i
     assert(handler);
     boost::shared_ptr<KnobI> master = handler->getKnob();
     
-    k->clone(master.get(), dimension);
+    getKnob()->clone(master.get(), dimension);
     Q_EMIT keyFrameRemoved(time, dimension, reason);
 }
 
@@ -106,7 +106,7 @@ KnobSignalSlotHandler::onMasterKeyFrameMoved(int dimension,int oldTime,int newTi
     assert(handler);
     boost::shared_ptr<KnobI> master = handler->getKnob();
     
-    k->clone(master.get(), dimension);
+    getKnob()->clone(master.get(), dimension);
     Q_EMIT keyFrameMoved(dimension, oldTime, newTime);
 }
 
@@ -117,7 +117,7 @@ KnobSignalSlotHandler::onMasterAnimationRemoved(int dimension)
     assert(handler);
     boost::shared_ptr<KnobI> master = handler->getKnob();
     
-    k->clone(master.get(), dimension);
+    getKnob()->clone(master.get(), dimension);
     Q_EMIT animationRemoved(dimension);
 }
 
@@ -212,7 +212,7 @@ struct KnobHelperPrivate
     bool newLine;
     bool addSeparator;
     int itemSpacing;
-    boost::shared_ptr<KnobI> parentKnob;
+    boost::weak_ptr<KnobI> parentKnob;
     bool IsSecret;
     std::vector<bool> enabled;
     bool CanUndo;
@@ -234,7 +234,7 @@ struct KnobHelperPrivate
     
     ///This is a list of all the knobs that have expressions/links to this knob. It could be named "slaves" but
     ///in the future we will also add expressions.
-    std::list<KnobI*> listeners;
+    std::list<boost::weak_ptr<KnobI> > listeners;
     
     mutable QMutex animationLevelMutex;
     std::vector<Natron::AnimationLevelEnum> animationLevel; //< indicates for each dimension whether it is static/interpolated/onkeyframe
@@ -401,16 +401,25 @@ KnobHelper::getExpressionRecursionLevel() const
 void
 KnobHelper::deleteKnob()
 {
-    std::list<KnobI*> listenersCpy = _imp->listeners;
-    for (std::list<KnobI*>::iterator it = listenersCpy.begin(); it != listenersCpy.end(); ++it) {
-        for (int i = 0; i < (*it)->getDimension(); ++i) {
-            (*it)->clearExpression(i,true);
+    std::list<boost::weak_ptr<KnobI> > listenersCpy = _imp->listeners;
+    for (std::list<boost::weak_ptr<KnobI> >::iterator it = listenersCpy.begin(); it != listenersCpy.end(); ++it) {
+        boost::shared_ptr<KnobI> knob = it->lock();
+        if (!knob) {
+            continue;
+        }
+        for (int i = 0; i < knob->getDimension(); ++i) {
+            knob->clearExpression(i,true);
         }
     }
     
-    if (_imp->parentKnob) {
-        Group_Knob* isGrp =  dynamic_cast<Group_Knob*>(_imp->parentKnob.get());
-        Page_Knob* isPage = dynamic_cast<Page_Knob*>(_imp->parentKnob.get());
+    for (int i = 0; i < getDimension(); ++i) {
+        clearExpression(i, true);
+    }
+    
+    boost::shared_ptr<KnobI> parent = _imp->parentKnob.lock();
+    if (parent) {
+        Group_Knob* isGrp =  dynamic_cast<Group_Knob*>(parent.get());
+        Page_Knob* isPage = dynamic_cast<Page_Knob*>(parent.get());
         if (isGrp) {
             isGrp->removeKnob(this);
         } else if (isPage) {
@@ -437,12 +446,16 @@ KnobHelper::deleteKnob()
     }
     
     KnobHolder* holder = getHolder();
-    if (holder && useNativeOverlayHandle()) {
+    if (holder) {
         Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(holder);
         if (effect) {
-            effect->getNode()->removeDefaultOverlay(this);
+            if (useNativeOverlayHandle()) {
+                effect->getNode()->removeDefaultOverlay(this);
+            }
+            effect->getNode()->removeParameterFromPython(getName());
         }
     }
+    _signalSlotHandler.reset();
 }
 
 void
@@ -504,6 +517,11 @@ KnobHelper::isUserKnob() const
 void
 KnobHelper::populate()
 {
+    
+    boost::shared_ptr<KnobI> thisKnob = shared_from_this();
+    boost::shared_ptr<KnobSignalSlotHandler> handler( new KnobSignalSlotHandler(thisKnob) );
+    setSignalSlotHandler(handler);
+
     Color_Knob* isColor = dynamic_cast<Color_Knob*>(this);
     Separator_Knob* isSep = dynamic_cast<Separator_Knob*>(this);
     if (isSep) {
@@ -1827,22 +1845,25 @@ KnobHelper::clearExpression(int dimension,bool clearResults)
             KnobHelper* other = dynamic_cast<KnobHelper*>(*it);
             assert(other);
             
-            std::list<KnobI*> otherListeners;
+            std::list<boost::weak_ptr<KnobI> > otherListeners;
             {
                 QReadLocker otherMastersLocker(&other->_imp->mastersMutex);
                 otherListeners = other->_imp->listeners;
             }
-            std::list<KnobI*>::iterator  found = std::find(otherListeners.begin(), otherListeners.end(), this);
-            if (found != otherListeners.end()) {
-                
-                if ( (*found)->getHolder() && (*found)->getSignalSlotHandler() ) {
-                    ///hackish way to get a shared ptr to this knob
-                    getHolder()->onKnobSlaved(this, other,dimension,false );
+            
+            for (std::list<boost::weak_ptr<KnobI> >::iterator it = otherListeners.begin(); it != otherListeners.end(); ++it) {
+                boost::shared_ptr<KnobI> knob = it->lock();
+                if (knob.get() == this) {
+                    if (knob) {
+                        if (knob->getHolder() && knob->getSignalSlotHandler() ) {
+                            getHolder()->onKnobSlaved(this, other,dimension,false );
+                        }
+                        QObject::disconnect(other->getSignalSlotHandler().get(), SIGNAL(updateDependencies(int)), _signalSlotHandler.get(),
+                                            SLOT(onExprDependencyChanged(int)));
+                    }
+                    otherListeners.erase(it);
+                    break;
                 }
-                QObject::disconnect(other->getSignalSlotHandler().get(), SIGNAL(updateDependencies(int)), _signalSlotHandler.get(),
-                                    SLOT(onExprDependencyChanged(int)));
-                otherListeners.erase(found);
-                
             }
             
             {
@@ -1905,7 +1926,7 @@ KnobHelper::executeExpression(double time, int dimension) const
             if (errCatcher) {
                 errorObj = PyObject_GetAttrString(errCatcher,"value"); //get the  stderr from our catchErr object, new ref
                 assert(errorObj);
-                error = std::string(PY3String_asString(errorObj));
+                error = PY3String_asString(errorObj);
                 PyObject* unicode = PyUnicode_FromString("");
                 PyObject_SetAttrString(errCatcher, "value", unicode);
                 Py_DECREF(errorObj);
@@ -1990,7 +2011,7 @@ KnobHelper::setParentKnob(boost::shared_ptr<KnobI> knob)
 
 boost::shared_ptr<KnobI> KnobHelper::getParentKnob() const
 {
-    return _imp->parentKnob;
+    return _imp->parentKnob.lock();
 }
 
 bool
@@ -2219,7 +2240,7 @@ KnobHelper::slaveTo(int dimension,
 
     if (helper && helper->_signalSlotHandler && _signalSlotHandler) {
 
-        QObject::connect( helper->_signalSlotHandler.get(), SIGNAL( updateSlaves(int) ), _signalSlotHandler.get(), SLOT( onMasterChanged(int) ) );
+        //QObject::connect( helper->_signalSlotHandler.get(), SIGNAL( updateSlaves(int) ), _signalSlotHandler.get(), SLOT( onMasterChanged(int) ) );
         QObject::connect( helper->_signalSlotHandler.get(), SIGNAL( keyFrameSet(SequenceTime,int,int,bool) ),
                          _signalSlotHandler.get(), SLOT( onMasterKeyFrameSet(SequenceTime,int,int,bool) ) );
         QObject::connect( helper->_signalSlotHandler.get(), SIGNAL( keyFrameRemoved(SequenceTime,int,int) ),
@@ -2244,7 +2265,7 @@ KnobHelper::slaveTo(int dimension,
 
     ///Register this as a listener of the master
     if (helper) {
-        helper->addListener(false,dimension,this);
+        helper->addListener(false,dimension,shared_from_this());
     }
     
     return true;
@@ -2538,7 +2559,7 @@ KnobHelper::onExprDependencyChanged(KnobI* knob,int /*dimension*/)
     }
     
     KnobHolder* holder = getHolder();
-    for (std::set<int>::const_iterator it = dimensionsToEvaluate.begin();it != dimensionsToEvaluate.end(); ++it) {
+    for (std::set<int>::const_iterator it = dimensionsToEvaluate.begin(); it != dimensionsToEvaluate.end(); ++it) {
         if (holder && !holder->canSetValue()) {
             QMutexLocker k(&_imp->mustCloneGuiCurvesMutex);
             _imp->mustClearExprResults[*it] = true;
@@ -2571,14 +2592,13 @@ KnobHelper::cloneExpressions(KnobI* other,int dimension)
 }
 
 void
-KnobHelper::addListener(bool isExpression,int fromExprDimension,KnobI* knob)
+KnobHelper::addListener(bool isExpression,int fromExprDimension,const boost::shared_ptr<KnobI>& knob)
 {
     assert(fromExprDimension != -1);
-    KnobHelper* slave = dynamic_cast<KnobHelper*>(knob);
+    KnobHelper* slave = dynamic_cast<KnobHelper*>(knob.get());
     assert(slave);
 
     if ( slave && slave->getHolder() && slave->getSignalSlotHandler() && getSignalSlotHandler() ) {
-        ///hackish way to get a shared ptr to this knob
         slave->getHolder()->onKnobSlaved(slave, this,fromExprDimension,true );
     }
     
@@ -2592,7 +2612,7 @@ KnobHelper::addListener(bool isExpression,int fromExprDimension,KnobI* knob)
             slave->_imp->expressions[fromExprDimension].dependencies.push_back(this);
         }
     }
-    if (knob != this) {
+    if (knob.get() != this) {
         QWriteLocker l(&_imp->mastersMutex);
         
         _imp->listeners.push_back(knob);
@@ -2612,20 +2632,25 @@ KnobHelper::removeListener(KnobI* knob)
     }
     
     QWriteLocker l(&_imp->mastersMutex);
-    std::list<KnobI*>::iterator found = std::find(_imp->listeners.begin(), _imp->listeners.end(), knob);
-    
-    if ( found != _imp->listeners.end() ) {
-        _imp->listeners.erase(found);
+    for (std::list<boost::weak_ptr<KnobI> >::iterator it = _imp->listeners.begin(); it != _imp->listeners.end(); ++it) {
+        if (it->lock().get() == knob) {
+            _imp->listeners.erase(it);
+            break;
+        }
     }
 }
 
 
 void
-KnobHelper::getListeners(std::list<KnobI*> & listeners) const
+KnobHelper::getListeners(std::list<boost::shared_ptr<KnobI> > & listeners) const
 {
     QReadLocker l(&_imp->mastersMutex);
-    
-    listeners = _imp->listeners;
+    for (std::list<boost::weak_ptr<KnobI> >::const_iterator it = _imp->listeners.begin(); it != _imp->listeners.end(); ++it) {
+        boost::shared_ptr<KnobI> knob = it->lock();
+        if (knob) {
+            listeners.push_back(knob);
+        }
+    }
 }
 
 SequenceTime
@@ -3021,7 +3046,7 @@ KnobHolder::getOrCreateUserPageKnob()
     {
         QMutexLocker k(&_imp->knobsMutex);
         for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it = _imp->knobs.begin(); it != _imp->knobs.end(); ++it) {
-            if ((*it)->getName() == std::string(NATRON_USER_MANAGED_KNOBS_PAGE)) {
+            if ((*it)->getName() == NATRON_USER_MANAGED_KNOBS_PAGE) {
                 return boost::dynamic_pointer_cast<Page_Knob>(*it);
             }
         }
@@ -3301,7 +3326,7 @@ KnobHolder::appendValueChange(KnobI* knob,Natron::ValueChangedReasonEnum reason)
         k.originatedFromMainThread = QThread::currentThread() == qApp->thread();
         k.knob = knob;
         
-        if (!knob->isValueChangesBlocked()) {
+        if (knob && !knob->isValueChangesBlocked()) {
             if (!k.originatedFromMainThread && !canHandleEvaluateOnChangeInOtherThread()) {
                 Q_EMIT doValueChangeOnMainThread(knob, reason, getCurrentTime(), k.originatedFromMainThread);
             } else {
@@ -3444,7 +3469,7 @@ KnobHolder::getKnobs_mt_safe() const
 }
 
 void
-KnobHolder::slaveAllKnobs(KnobHolder* other)
+KnobHolder::slaveAllKnobs(KnobHolder* other,bool restore)
 {
     assert(QThread::currentThread() == qApp->thread());
     if (_imp->isSlave) {
@@ -3453,29 +3478,32 @@ KnobHolder::slaveAllKnobs(KnobHolder* other)
     ///Call it prior to slaveTo: it will set the master pointer as pointing to other
     onAllKnobsSlaved(true,other);
 
-
-    beginChanges();
-
-    const std::vector<boost::shared_ptr<KnobI> > & otherKnobs = other->getKnobs();
-    const std::vector<boost::shared_ptr<KnobI> > & thisKnobs = getKnobs();
-    for (U32 i = 0; i < otherKnobs.size(); ++i) {
+    ///When loading a project, we don't need to slave all knobs here because the serialization of each knob separatly
+    ///will reslave it correctly if needed
+    if (!restore) {
+        beginChanges();
         
-        if (otherKnobs[i]->isDeclaredByPlugin() || otherKnobs[i]->isUserKnob()) {
-            boost::shared_ptr<KnobI> foundKnob;
-            for (U32 j = 0; j < thisKnobs.size(); ++j) {
-                if ( thisKnobs[j]->getName() == otherKnobs[i]->getName() ) {
-                    foundKnob = thisKnobs[j];
-                    break;
+        const std::vector<boost::shared_ptr<KnobI> > & otherKnobs = other->getKnobs();
+        const std::vector<boost::shared_ptr<KnobI> > & thisKnobs = getKnobs();
+        for (U32 i = 0; i < otherKnobs.size(); ++i) {
+            
+            if (otherKnobs[i]->isDeclaredByPlugin() || otherKnobs[i]->isUserKnob()) {
+                boost::shared_ptr<KnobI> foundKnob;
+                for (U32 j = 0; j < thisKnobs.size(); ++j) {
+                    if ( thisKnobs[j]->getName() == otherKnobs[i]->getName() ) {
+                        foundKnob = thisKnobs[j];
+                        break;
+                    }
+                }
+                assert(foundKnob);
+                int dims = foundKnob->getDimension();
+                for (int j = 0; j < dims; ++j) {
+                    foundKnob->slaveTo(j, otherKnobs[i], j);
                 }
             }
-            assert(foundKnob);
-            int dims = foundKnob->getDimension();
-            for (int j = 0; j < dims; ++j) {
-                foundKnob->slaveTo(j, otherKnobs[i], j);
-            }
         }
+        endChanges();
     }
-    endChanges();
     _imp->isSlave = true;
 }
 

@@ -357,6 +357,11 @@ public Q_SLOTS:
     void onAlphaChannelComboChanged(int index);
     void onLayerComboChanged(int index);
     
+    void onGammaToggled(bool clicked);
+    
+    void onGammaSliderValueChanged(double value);
+    
+    void onGammaSpinBoxValueChanged(double value);
 private:
     
     void onCompositingOperatorChangedInternal(Natron::ViewerCompositingOperatorEnum oldOp,Natron::ViewerCompositingOperatorEnum newOp);

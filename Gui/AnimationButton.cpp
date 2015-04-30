@@ -33,7 +33,7 @@ CLANG_DIAG_ON(deprecated)
 #include "Gui/KnobGui.h"
 #include "Gui/KnobUndoCommand.h"
 #include "Gui/GuiMacros.h"
-
+#include "Gui/GuiApplicationManager.h"
 void
 AnimationButton::mousePressEvent(QMouseEvent* e)
 {
@@ -151,7 +151,10 @@ void
 AnimationButton::enterEvent(QEvent* /*e*/)
 {
     if (cursor().shape() != Qt::OpenHandCursor) {
-        setCursor(Qt::OpenHandCursor);
+        QPixmap p;
+        appPTR->getIcon(Natron::NATRON_PIXMAP_LINK_CURSOR, &p);
+        QCursor c(p);
+        setCursor(c);
     }
 }
 

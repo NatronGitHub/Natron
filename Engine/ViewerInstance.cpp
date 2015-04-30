@@ -457,7 +457,8 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
                                        renderAge,
                                        this,
                                        textureIndex,
-                                       getTimeline().get());
+                                       getTimeline().get(),
+                                       false);
     
     /**
      * @brief Start flagging that we're rendering for as long as the viewer is active.
@@ -551,6 +552,7 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
     {
         QMutexLocker locker(&_imp->viewerParamsMutex);
         outArgs->params->gain = _imp->viewerParamsGain;
+        outArgs->params->gamma = _imp->viewerParamsGamma;
         outArgs->params->lut = _imp->viewerParamsLut;
         outArgs->params->layer = _imp->viewerParamsLayer;
         outArgs->params->alphaLayer = _imp->viewerParamsAlphaLayer;
@@ -561,6 +563,7 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
     outArgs->key.reset(new FrameKey(time,
                                     viewerHash,
                                     outArgs->params->gain,
+                                    outArgs->params->gamma,
                                     outArgs->params->lut,
                                     (int)bitDepth,
                                     channels,
@@ -865,7 +868,8 @@ ViewerInstance::renderViewer_internal(int view,
                                            inArgs.params->renderAge,
                                            this,
                                            inArgs.params->textureIndex,
-                                           getTimeline().get());
+                                           getTimeline().get(),
+                                           false);
 
 
         
@@ -892,9 +896,9 @@ ViewerInstance::renderViewer_internal(int view,
             if (!inArgs.params->image) {
                 if (inArgs.params->cachedFrame) {
                     inArgs.params->cachedFrame->setAborted(true);
-                    if (!isSequentialRender) {
-                        _imp->checkAndUpdateDisplayAge(inArgs.params->textureIndex,inArgs.params->renderAge);
-                    }
+//                    if (!isSequentialRender) {
+//                        _imp->checkAndUpdateDisplayAge(inArgs.params->textureIndex,inArgs.params->renderAge);
+//                    }
                     appPTR->removeFromViewerCache(inArgs.params->cachedFrame);
                 }
                 if (!isSequentialRender && canAbort) {
@@ -974,6 +978,7 @@ ViewerInstance::renderViewer_internal(int view,
                                     inArgs.params->srcPremult,
                                     inArgs.key->getBitDepth(),
                                     inArgs.params->gain,
+                                    inArgs.params->gamma == 0. ? 0. : 1. / inArgs.params->gamma,
                                     inArgs.params->offset,
                                     lutFromColorspace(srcColorSpace),
                                     lutFromColorspace(inArgs.params->lut),
@@ -1056,6 +1061,7 @@ ViewerInstance::renderViewer_internal(int view,
                                     inArgs.params->srcPremult,
                                     inArgs.key->getBitDepth(),
                                     inArgs.params->gain,
+                                    inArgs.params->gamma == 0. ? 0. : 1. / inArgs.params->gamma,
                                     inArgs.params->offset,
                                     lutFromColorspace(srcColorSpace),
                                     lutFromColorspace(inArgs.params->lut),
@@ -1138,7 +1144,7 @@ findAutoContrastVminVmax_generic(boost::shared_ptr<const Natron::Image> inputIma
                     r = g = b = 0.;
                     break;
                 default:
-                    r = g = b = 0.;
+                    r = g = b = a = 0.;
             }
             
             double mini, maxi;
@@ -1260,35 +1266,41 @@ scaleToTexture8bits_generic(const std::pair<int,int> & yRange,
                 
                 double r,g,b;
                 int a;
-                
+
                 if (nComps >= 4) {
-                        r = (src_pixels ? src_pixels[index * nComps + rOffset] : 0.);
-                        g = (src_pixels ? src_pixels[index * nComps + gOffset] : 0.);
-                        b = (src_pixels ? src_pixels[index * nComps + bOffset] : 0.);
-                        if (opaque) {
-                            a = 255;
-                        } else {
-                            a = (src_pixels ? Color::floatToInt<256>(src_pixels[index * nComps + 3]) : 0);
-                        }
+                    r = (src_pixels ? src_pixels[index * nComps + rOffset] : 0.);
+                    g = (src_pixels ? src_pixels[index * nComps + gOffset] : 0.);
+                    b = (src_pixels ? src_pixels[index * nComps + bOffset] : 0.);
+                    if (opaque) {
+                        a = 255;
+                    } else {
+                        a = (src_pixels ? Color::floatToInt<256>(src_pixels[index * nComps + 3]) : 0);
+                    }
                 } else if (nComps == 3) {
-                        r = (src_pixels && rOffset < nComps) ? src_pixels[index * nComps + rOffset] : 0.;
-                        g = (src_pixels && gOffset < nComps) ? src_pixels[index * nComps + gOffset] : 0.;
-                        b = (src_pixels && bOffset < nComps) ? src_pixels[index * nComps + bOffset] : 0.;
-                        a = (src_pixels ? 255 : 0);
-                } else if (nComps == 2) {
+                    // coverity[dead_error_line]
                     r = (src_pixels && rOffset < nComps) ? src_pixels[index * nComps + rOffset] : 0.;
+                    // coverity[dead_error_line]
+                    g = (src_pixels && gOffset < nComps) ? src_pixels[index * nComps + gOffset] : 0.;
+                    // coverity[dead_error_line]
+                    b = (src_pixels && bOffset < nComps) ? src_pixels[index * nComps + bOffset] : 0.;
+                    a = (src_pixels ? 255 : 0);
+                } else if (nComps == 2) {
+                    // coverity[dead_error_line]
+                    r = (src_pixels && rOffset < nComps) ? src_pixels[index * nComps + rOffset] : 0.;
+                    // coverity[dead_error_line]
                     g = (src_pixels && gOffset < nComps) ? src_pixels[index * nComps + gOffset] : 0.;
                     b = 0;
                     a = (src_pixels ? 255 : 0);
                 } else if (nComps == 1) {
-                    r = src_pixels ? src_pixels[index] : 0.;
+                    // coverity[dead_error_line]
+                    r = (src_pixels && rOffset < nComps) ? src_pixels[index * nComps + rOffset] : 0.;
                     g = b = r;
                     a = src_pixels ? 255 : 0;
                 } else {
                     assert(false);
                 }
-                
-                
+
+
                 
                 switch ( pixelSize ) {
                     case sizeof(unsigned char): //byte
@@ -1324,9 +1336,10 @@ scaleToTexture8bits_generic(const std::pair<int,int> & yRange,
                         break;
                 }
                 
-                r =  r * args.gain + args.offset;
-                g =  g * args.gain + args.offset;
-                b =  b * args.gain + args.offset;
+                //args.gamma is in fact 1. / gamma at this point
+                r =  args.gamma == 0.? 0. : std::pow(r * args.gain + args.offset, args.gamma);
+                g =  args.gamma == 0.? 0. : std::pow(g * args.gain + args.offset, args.gamma);
+                b =  args.gamma == 0.? 0. : std::pow(b * args.gain + args.offset, args.gamma);
                 
                 if (luminance) {
                     r = 0.299 * r + 0.587 * g + 0.114 * b;
@@ -1536,27 +1549,33 @@ scaleToTexture32bitsGeneric(const std::pair<int,int> & yRange,
             double r,g,b,a;
             
             if (nComps >= 4) {
-                r = (double)(src_pixels[x * nComps + rOffset]);
-                g = (double)src_pixels[x * nComps + gOffset];
-                b = (double)src_pixels[x * nComps + bOffset];
+                r = (src_pixels && rOffset < nComps) ? src_pixels[x * nComps + rOffset] : 0.;
+                g = (src_pixels && gOffset < nComps) ? src_pixels[x * nComps + gOffset] : 0.;
+                b = (src_pixels && bOffset < nComps) ? src_pixels[x * nComps + bOffset] : 0.;
                 if (opaque) {
                     a = 1.;
                 } else {
-                    a = (nComps < 4) ? 1. : src_pixels[x * nComps + 3];
+                    a = src_pixels ? src_pixels[x * nComps + 3] : 0.;
                 }
             } else if (nComps == 3) {
-                r = (double)(src_pixels[x * nComps + rOffset]);
-                g = (double)src_pixels[x * nComps + gOffset];
-                b = (double)src_pixels[x * nComps + bOffset];
+                // coverity[dead_error_line]
+                r = (src_pixels && rOffset < nComps) ? src_pixels[x * nComps + rOffset] : 0.;
+                // coverity[dead_error_line]
+                g = (src_pixels && gOffset < nComps) ? src_pixels[x * nComps + gOffset] : 0.;
+                // coverity[dead_error_line]
+                b = (src_pixels && bOffset < nComps) ? src_pixels[x * nComps + bOffset] : 0.;
                 a = 1.;
             } else if (nComps == 2) {
-                r = (double)(src_pixels[x * nComps + rOffset]);
-                g = (double)src_pixels[x * nComps + gOffset];
+                // coverity[dead_error_line]
+                r = (src_pixels && rOffset < nComps) ? src_pixels[x * nComps + rOffset] : 0.;
+                // coverity[dead_error_line]
+                g = (src_pixels && gOffset < nComps) ? src_pixels[x * nComps + gOffset] : 0.;
                 b = 0.;
                 a = 1.;
             } else if (nComps == 1) {
-                a = (nComps < 4) ? 1. : src_pixels[x];
-                r = g = b = a;
+                // coverity[dead_error_line]
+                r = (src_pixels && rOffset < nComps) ? src_pixels[x * nComps + rOffset] : 0.;
+                g = b = r;
                 a = 1.;
             } else {
                 assert(false);
@@ -1777,6 +1796,7 @@ ViewerInstance::ViewerInstancePrivate::updateViewer(boost::shared_ptr<UpdateView
                                               params->bytesCount,
                                               params->textureRect,
                                               params->gain,
+                                              params->gamma,
                                               params->offset,
                                               params->lut,
                                               updateViewerPboIndex,
@@ -1807,6 +1827,31 @@ ViewerInstance::isInputOptional(int n) const
     }
 
     return n != activeInputs[0] && n != activeInputs[1];
+}
+
+void
+ViewerInstance::onGammaChanged(double value)
+{
+    // always running in the main thread
+    assert( qApp && qApp->thread() == QThread::currentThread() );
+    {
+        QMutexLocker l(&_imp->viewerParamsMutex);
+        _imp->viewerParamsGamma = value;
+    }
+    assert(_imp->uiContext);
+    if ( ( (_imp->uiContext->getBitDepth() == OpenGLViewerI::eBitDepthByte) || !_imp->uiContext->supportsGLSL() )
+        && !getApp()->getProject()->isLoadingProject() ) {
+        renderCurrentFrame(true);
+    } else {
+        _imp->uiContext->redraw();
+    }
+}
+
+double
+ViewerInstance::getGamma() const
+{
+    QMutexLocker l(&_imp->viewerParamsMutex);
+    return _imp->viewerParamsGamma;
 }
 
 void

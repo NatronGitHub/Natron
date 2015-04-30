@@ -321,7 +321,7 @@ CurveGui::drawCurve(int curveIndex,
         std::set<int> keys;
         isBezier->getBezier()->getKeyframeTimes(&keys);
         int i = 0;
-        for (std::set<int>::iterator it = keys.begin(); it != keys.end(); ++it,++i) {
+        for (std::set<int>::iterator it = keys.begin(); it != keys.end(); ++it, ++i) {
             keyframes.insert(KeyFrame(*it,i));
         }
     } else {
@@ -693,7 +693,7 @@ BezierCPCurveGui::evaluate(bool /*useExpr*/,double x) const
     
     std::list<std::pair<int,Natron::KeyframeTypeEnum> >::iterator upb = keys.end();
     int dist = 0;
-    for (std::list<std::pair<int,Natron::KeyframeTypeEnum> >::iterator it = keys.begin(); it != keys.end(); ++it,++dist) {
+    for (std::list<std::pair<int,Natron::KeyframeTypeEnum> >::iterator it = keys.begin(); it != keys.end(); ++it, ++dist) {
         if (it->first > x) {
             upb = it;
             break;
@@ -706,7 +706,9 @@ BezierCPCurveGui::evaluate(bool /*useExpr*/,double x) const
         return 0;
     } else {
         std::list<std::pair<int,Natron::KeyframeTypeEnum> >::iterator prev = upb;
-        --prev;
+        if (prev != keys.begin()) {
+            --prev;
+        }
         if (prev->second == Natron::eKeyframeTypeConstant) {
             return dist - 1;
         } else {
@@ -731,7 +733,7 @@ BezierCPCurveGui::getKeyFrames() const
     std::set<int> keys;
     _bezier->getKeyframeTimes(&keys);
     int i = 0;
-    for (std::set<int>::iterator it = keys.begin(); it != keys.end(); ++it,++i) {
+    for (std::set<int>::iterator it = keys.begin(); it != keys.end(); ++it, ++i) {
         ret.insert(KeyFrame(*it,i));
     }
     return ret;
@@ -1390,13 +1392,6 @@ CurveWidgetPrivate::drawSelectedKeyFramesBbox()
         QPointF btmRightWidget = zoomCtx.toWidgetCoordinates(btmRight.x(), btmRight.y());
         double xMid = (topLeft.x() + btmRight.x()) / 2.;
         double yMid = (topLeft.y() + btmRight.y()) / 2.;
-        double xMidWidget,yMidWidget;
-        {
-            
-            QPointF wid = zoomCtx.toWidgetCoordinates(xMid, yMid);
-            xMidWidget = wid.x();
-            yMidWidget = wid.y();
-        }
 
         glLineWidth(1.5);
 
@@ -2071,7 +2066,9 @@ CurveWidgetPrivate::refreshKeyTangents(KeyPtr & key)
         prev = keyframes.end();
     }
     KeyFrameSet::const_iterator next = k;
-    ++next;
+    if (next != keyframes.end()) {
+        ++next;
+    }
     double leftTanX, leftTanY;
     {
         double prevTime = ( prev == keyframes.end() ) ? (x - 1.) : prev->getTime();
@@ -2256,7 +2253,9 @@ CurveWidgetPrivate::updateSelectedKeysMaxMovement()
                     curveMaxMovement.left = INT_MIN;//curveXRange.first - leftMost->getTime();
                 } else {
                     KeyFrameSet::const_iterator prev = leftMost;
-                    --prev;
+                    if (prev != ks.begin()) {
+                        --prev;
+                    }
                     double leftMaxMovement = std::min( std::min(-NATRON_CURVE_X_SPACING_EPSILON + minimumTimeSpanBetween2Keys,0.),
                                                        prev->getTime() + minimumTimeSpanBetween2Keys - leftMost->getTime() );
                     curveMaxMovement.left = leftMaxMovement;
@@ -2267,7 +2266,9 @@ CurveWidgetPrivate::updateSelectedKeysMaxMovement()
             //now get rightMostSelected's next key to determine the max right movement for this curve
             {
                 KeyFrameSet::const_iterator next = rightMost;
-                ++next;
+                if (next != ks.end()) {
+                    ++next;
+                }
                 if ( next == ks.end() ) {
                     curveMaxMovement.right = INT_MAX;///curveXRange.second - rightMost->getTime();
                 } else {
@@ -3139,7 +3140,7 @@ CurveWidget::mouseReleaseEvent(QMouseEvent*)
             for (std::map<KnobHolder*,bool>::iterator it = toEvaluate.begin(); it != toEvaluate.end(); ++it) {
                 it->first->evaluate_public(NULL, it->second,Natron::eValueChangedReasonUserEdited);
             }
-            for (std::list<boost::shared_ptr<RotoContext> >::iterator it = rotoToEvaluate.begin(); it!=rotoToEvaluate.end(); ++it) {
+            for (std::list<boost::shared_ptr<RotoContext> >::iterator it = rotoToEvaluate.begin(); it != rotoToEvaluate.end(); ++it) {
                 (*it)->evaluateChange();
             }
         } else if (_imp->_state == eEventStateDraggingTangent) {
@@ -3812,12 +3813,14 @@ CurveWidget::loopSelectedCurve()
     if (!ce) {
         return;
     }
+    
     CurveGui* curve = ce->getSelectedCurve();
     if (!curve) {
         warningDialog( tr("Curve Editor").toStdString(),tr("You must select a curve first in the view.").toStdString() );
         return;
     }
-    
+    KnobCurveGui* knobCurve = dynamic_cast<KnobCurveGui*>(curve);
+    assert(knobCurve);
     PyModalDialog dialog(_imp->_gui);
     boost::shared_ptr<IntParam> firstFrame(dialog.createIntParam("firstFrame", "First frame"));
     firstFrame->setAnimationEnabled(false);
@@ -3828,7 +3831,7 @@ CurveWidget::loopSelectedCurve()
         int first = firstFrame->getValue();
         int last = lastFrame->getValue();
         std::stringstream ss;
-        ss << "curve(((frame - " << first << ") % (" << last << " - " << first << " + 1)) + " << first << ")";
+        ss << "curve(((frame - " << first << ") % (" << last << " - " << first << " + 1)) + " << first << ", "<< knobCurve->getDimension() << ")";
         std::string script = ss.str();
         ce->setSelectedCurveExpression(script.c_str());
     }
@@ -3855,7 +3858,12 @@ CurveWidget::negateSelectedCurve()
         warningDialog( tr("Curve Editor").toStdString(),tr("You must select a curve first in the view.").toStdString() );
         return;
     }
-    ce->setSelectedCurveExpression("-curve(frame)");
+    KnobCurveGui* knobCurve = dynamic_cast<KnobCurveGui*>(curve);
+    assert(knobCurve);
+    std::stringstream ss;
+    ss << "-curve(frame, " << knobCurve->getDimension() << ")";
+    std::string script = ss.str();
+    ce->setSelectedCurveExpression(script.c_str());
 }
 
 void
@@ -3878,7 +3886,12 @@ CurveWidget::reverseSelectedCurve()
         warningDialog( tr("Curve Editor").toStdString(),tr("You must select a curve first in the view.").toStdString() );
         return;
     }
-    ce->setSelectedCurveExpression("curve(-frame)");
+    KnobCurveGui* knobCurve = dynamic_cast<KnobCurveGui*>(curve);
+    assert(knobCurve);
+    std::stringstream ss;
+    ss << "curve(-frame, " << knobCurve->getDimension() << ")";
+    std::string script = ss.str();
+    ce->setSelectedCurveExpression(script.c_str());
 }
 
 void
@@ -4580,7 +4593,7 @@ EditKeyFrameDialog::moveKeyTo(double newX,double newY)
         
         int curEqualKeys = 0;
         KeyFrameSet set = _imp->key->curve->getKeyFrames();
-        for (KeyFrameSet::iterator it = set.begin(); it!=set.end(); ++it) {
+        for (KeyFrameSet::iterator it = set.begin(); it != set.end(); ++it) {
             
             if (std::abs(it->getTime() - newX) <= NATRON_CURVE_X_SPACING_EPSILON) {
                 _imp->xSpinbox->setValue(curX);

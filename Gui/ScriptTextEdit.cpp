@@ -100,7 +100,7 @@ ScriptTextEdit::dropEvent(QDropEvent* e)
         
         appPTR->getKnobClipBoard(&copyAnimation,&values,&curves,&stringAnimation,&parametricCurves,&appID,&nodeFullyQualifiedName,&paramName);
         
-        QString toAppend("app.");
+        QString toAppend;
         toAppend.append(nodeFullyQualifiedName.c_str());
         toAppend.append('.');
         toAppend.append(paramName.c_str());

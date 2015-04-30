@@ -91,7 +91,7 @@ public:
         return !_colorPickersEnabled.empty();
     }
 
-    void setPickersColor(const QColor & color);
+    void setPickersColor(double r,double g, double b,double a);
 
     /**
      * @brief Retur

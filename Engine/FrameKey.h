@@ -33,6 +33,7 @@ public:
     FrameKey(SequenceTime time,
              U64 treeVersion,
              double gain,
+             double gamma,
              int lut,
              int bitDepth,
              int channels,
@@ -67,6 +68,11 @@ public:
         return _gain;
     }
 
+    double getGamma() const WARN_UNUSED_RETURN
+    {
+        return _gamma;
+    }
+
     int getLut() const WARN_UNUSED_RETURN
     {
         return _lut;
@@ -98,6 +104,7 @@ private:
     SequenceTime _time;
     U64 _treeVersion;
     double _gain;
+    double _gamma;
     int _lut;
     int _bitDepth;
     int _channels;

@@ -392,7 +392,7 @@ InfoViewerWidget::setResolution(const Format & f)
     format = f;
     
     const QFont& font = resolution->font();
-    if ( format.getName() == std::string("") ) {
+    if ( format.getName().empty() ) {
         
         QString w,h;
         w.setNum(format.width());

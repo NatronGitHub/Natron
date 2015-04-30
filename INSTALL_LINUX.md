@@ -2,7 +2,18 @@ Developer installation for GNU/Linux
 ====================================
 
 This file is supposed to guide you step by step to have working (compiling) version of
-Natron on GNU/Linux. 
+Natron on GNU/Linux.
+
+Note that that installing dependencies using `apt-get` should work on
+any Debian-based distribution (e.g. Ubuntu).
+
+The scripts `tools/travis/install_dependencies.sh` and
+`tools/travis/build.sh` respectively install the correct dependencies
+and build Natron and the standard set of plugins on Ubuntu
+12.04. These scripts should always be up-to-date.
+
+The end of this document gives instructions for a other Linux
+distributions.
 
 ## Install libraries
 
@@ -126,3 +137,11 @@ Note that if you want Natron to find the OpenColorIO config files you will need 
 place them in the appropriate location. In the repository they are located under
 `Gui/Resources/OpenColorIO-Configs`.
 You must copy them to a directory named `../share/OpenColorIO-Configs` relative to Natron's binary.
+
+# Installing and building on other Linux distributions
+
+## ArchLinux
+
+    pacman -S qt4 cairo glew python expat boost pixman ffmpeg opencolorio openimageio wget git cmake gcc make libxslt pkg-config
+    wget https://raw.githubusercontent.com/olear/natron-linux/master/installer/misc/build-natron-on-archlinux.sh
+    sudo sh build-natron-on-archlinux.sh

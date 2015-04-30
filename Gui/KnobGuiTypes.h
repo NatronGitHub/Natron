@@ -157,7 +157,7 @@ private:
     QWidget *_container;
     ScaleSliderQWidget *_slider;
     Button *_dimensionSwitchButton;
-    boost::shared_ptr<Int_Knob> _knob;
+    boost::weak_ptr<Int_Knob> _knob;
 };
 
 
@@ -228,7 +228,7 @@ private:
 private:
 
     Bool_CheckBox *_checkBox;
-    boost::shared_ptr<Bool_Knob> _knob;
+    boost::weak_ptr<Bool_Knob> _knob;
 };
 
 
@@ -303,7 +303,7 @@ private:
     QWidget *_container;
     ScaleSliderQWidget *_slider;
     Button *_dimensionSwitchButton;
-    boost::shared_ptr<Double_Knob> _knob;
+    boost::weak_ptr<Double_Knob> _knob;
 };
 
 //================================
@@ -355,7 +355,7 @@ private:
 
 private:
     Button *_button;
-    boost::shared_ptr<Button_Knob> _knob;
+    boost::weak_ptr<Button_Knob> _knob;
 };
 
 //================================
@@ -430,7 +430,7 @@ private:
     
     std::vector<std::string> _entries;
     ComboBox *_comboBox;
-    boost::shared_ptr<Choice_Knob> _knob;
+    boost::weak_ptr<Choice_Knob> _knob;
 };
 
 //=========================
@@ -483,7 +483,7 @@ private:
 
 private:
     QFrame *_line;
-    boost::shared_ptr<Separator_Knob> _knob;
+    boost::weak_ptr<Separator_Knob> _knob;
 };
 
 /******************************/
@@ -617,7 +617,7 @@ private:
     Button *_dimensionSwitchButton;
     ScaleSliderQWidget* _slider;
     int _dimension;
-    boost::shared_ptr<Color_Knob> _knob;
+    boost::weak_ptr<Color_Knob> _knob;
     std::vector<double> _lastColor;
 };
 
@@ -784,7 +784,7 @@ private:
     QString _fontFamily;
     QColor _fontColor;
     Natron::Label *_label; //< if label
-    boost::shared_ptr<String_Knob> _knob;
+    boost::weak_ptr<String_Knob> _knob;
 };
 
 /*****************************/
@@ -845,7 +845,7 @@ private:
     std::vector< std::pair<KnobGui*,std::vector<int> > > _childrenToEnable; //< when re-enabling a group, what are the children that we should set
     TabGroup* _tabGroup;
     //enabled too
-    boost::shared_ptr<Group_Knob> _knob;
+    boost::weak_ptr<Group_Knob> _knob;
 };
 
 /*****************************/
@@ -919,7 +919,7 @@ private:
 
     typedef std::map<int,CurveDescriptor> CurveGuis;
     CurveGuis _curves;
-    boost::shared_ptr<Parametric_Knob> _knob;
+    boost::weak_ptr<Parametric_Knob> _knob;
 };
 
 

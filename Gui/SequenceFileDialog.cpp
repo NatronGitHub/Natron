@@ -608,6 +608,7 @@ SequenceFileDialog::saveState() const
     stream << currentDirectory().path();
     stream << _view->header()->saveState();
     stream << _relativeChoice->itemText(_relativeChoice->activeIndex());
+    stream << _sequenceButton->activeIndex();
     return data;
 }
 
@@ -628,12 +629,14 @@ SequenceFileDialog::restoreState(const QByteArray & state)
     QStringList history;
     QString currentDirectory;
     QString relativeChoice;
+    int sequenceMode_i;
     stream >> splitterState
     >> bookmarks
     >> history
     >> currentDirectory
     >> headerData
-    >> relativeChoice;
+    >> relativeChoice
+    >> sequenceMode_i;
     if ( !_centerSplitter->restoreState(splitterState) ) {
         return false;
     }
@@ -653,6 +656,8 @@ SequenceFileDialog::restoreState(const QByteArray & state)
         }
     }
     
+    _sequenceButton->setCurrentIndex(sequenceMode_i);
+    
     std::map<std::string,std::string> envVar;
     _gui->getApp()->getProject()->getEnvironmentVariables(envVar);
     
@@ -660,7 +665,7 @@ SequenceFileDialog::restoreState(const QByteArray & state)
     
     
     QStringList expandedVars;
-    for (std::map<std::string,std::string>::iterator it = envVar.begin(); it!=envVar.end(); ++it) {
+    for (std::map<std::string,std::string>::iterator it = envVar.begin(); it != envVar.end(); ++it) {
         QString var(it->second.c_str());
         if (it->first != NATRON_OCIO_ENV_VAR_NAME && !var.isEmpty()) {
             ///The variable may be nested
@@ -690,7 +695,7 @@ SequenceFileDialog::restoreState(const QByteArray & state)
             }
             bool alreadyFound = false;
             
-            for (U32 j = 0;j < stdBookMarks.size();++j) {
+            for (U32 j = 0; j < stdBookMarks.size(); ++j) {
                 QString otherUrl = stdBookMarks[j].path();
                 // On windows url.path() will return something starting with a /
 #ifdef __NATRON_WIN32__
@@ -943,6 +948,10 @@ SequenceFileDialog::enterDirectory(const QModelIndex & index)
 void
 SequenceFileDialog::setDirectory(const QString &directory)
 {
+    QDir dir(directory);
+    if (!dir.exists()) {
+        return;
+    }
    
     QString newDirectory = directory;
     _view->selectionModel()->clear();
@@ -2077,7 +2086,7 @@ UrlModel::addUrls(const std::vector<QUrl> &list,
                     }
                     removeRow(j);
                     ///remove it from wacthing too
-                    for (U32 k = 0; k < watching.size();++k) {
+                    for (U32 k = 0; k < watching.size(); ++k) {
                         if (watching[k].second == cleanUrl) {
                             watching.erase(watching.begin() + k);
                             break;
@@ -2245,7 +2254,7 @@ FavoriteItemDelegate::paint(QPainter * painter,
         }
         
         std::map<std::string,std::string>::const_iterator isEnvVar = envVars.end();
-        for (std::map<std::string,std::string>::const_iterator it = envVars.begin(); it!=envVars.end(); ++it) {
+        for (std::map<std::string,std::string>::const_iterator it = envVars.begin(); it != envVars.end(); ++it) {
             ///if it->second ends with '/' remove it
             std::string stdVar = it->second;
             Natron::Project::expandVariable(envVars, stdVar);

@@ -21,6 +21,10 @@
 #include <set>
 #include <map>
 
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#include <boost/enable_shared_from_this.hpp>
+#endif
+
 #include <QtCore/QReadWriteLock>
 #include <QtCore/QMutex>
 
@@ -53,15 +57,15 @@ class KnobSignalSlotHandler
 {
     Q_OBJECT
     
-    boost::shared_ptr<KnobI> k;
+    boost::weak_ptr<KnobI> k;
     
 public:
     
-    KnobSignalSlotHandler(boost::shared_ptr<KnobI> knob);
+    KnobSignalSlotHandler(const boost::shared_ptr<KnobI> &knob);
     
     boost::shared_ptr<KnobI> getKnob() const
     {
-        return k;
+        return k.lock();
     }
     
     void s_animationLevelChanged(int dim,int level)
@@ -308,6 +312,7 @@ typedef std::list<KnobChange> ChangesList;
 
 class KnobI
     : public OverlaySupport
+    , public boost::enable_shared_from_this<KnobI>
 {
     
     friend class KnobHolder;
@@ -907,7 +912,7 @@ public:
      * @brief Adds a new listener to this knob. This is just a pure notification about the fact that the given knob
      * is listening to the values/keyframes of "this". It could be call addSlave but it will also be use for expressions.
      **/
-    virtual void addListener(bool isExpression,int fromExprDimension,KnobI* knob) = 0;
+    virtual void addListener(bool isExpression,int fromExprDimension,const boost::shared_ptr<KnobI>& knob) = 0;
     virtual void removeListener(KnobI* knob) = 0;
 
     virtual bool useNativeOverlayHandle() const { return false; }
@@ -954,7 +959,7 @@ public:
     /**
      * @brief Returns a list of all the knobs whose value depends upon this knob.
      **/
-    virtual void getListeners(std::list<KnobI*> & listeners) const = 0;
+    virtual void getListeners(std::list<boost::shared_ptr<KnobI> > & listeners) const = 0;
 
     /**
      * @brief Calls unSlave with a value changed reason of Natron::eValueChangedReasonUserEdited.
@@ -1218,10 +1223,10 @@ public:
      * @brief Adds a new listener to this knob. This is just a pure notification about the fact that the given knob
      * is listening to the values/keyframes of "this". It could be call addSlave but it will also be use for expressions.
      **/
-    virtual void addListener(bool isFromExpr,int fromExprDimension,KnobI* knob) OVERRIDE FINAL;
+    virtual void addListener(bool isFromExpr,int fromExprDimension,const boost::shared_ptr<KnobI>& knob) OVERRIDE FINAL;
     virtual void removeListener(KnobI* knob) OVERRIDE FINAL;
 
-    virtual void getListeners(std::list<KnobI*> & listeners) const OVERRIDE FINAL;
+    virtual void getListeners(std::list<boost::shared_ptr<KnobI> >& listeners) const OVERRIDE FINAL;
     
     virtual void clearExpressionsResults(int /*dimension*/) {}
     
@@ -2006,7 +2011,7 @@ public:
     bool isSlave() const;
 
     ///Slave all the knobs of this holder to the other holder.
-    void slaveAllKnobs(KnobHolder* other);
+    void slaveAllKnobs(KnobHolder* other,bool restore);
 
     void unslaveAllKnobs();
     

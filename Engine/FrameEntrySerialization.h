@@ -25,7 +25,8 @@
 #endif
 #define FRAME_KEY_INTRODUCES_INPUT_NAME 2
 #define FRAME_KEY_INTRODUCES_LAYERS 3
-#define FRAME_KEY_VERSION FRAME_KEY_INTRODUCES_LAYERS
+#define FRAME_KEY_INTRODUCES_GAMMA 4
+#define FRAME_KEY_VERSION FRAME_KEY_INTRODUCES_GAMMA
 template<class Archive>
 void
 Natron::FrameKey::serialize(Archive & ar,
@@ -34,6 +35,9 @@ Natron::FrameKey::serialize(Archive & ar,
     ar & boost::serialization::make_nvp("Time", _time);
     ar & boost::serialization::make_nvp("TreeVersion", _treeVersion);
     ar & boost::serialization::make_nvp("Gain", _gain);
+    if (version >= FRAME_KEY_INTRODUCES_GAMMA) {
+        ar & boost::serialization::make_nvp("Gamma", _gamma);
+    }
     ar & boost::serialization::make_nvp("Lut", _lut);
     ar & boost::serialization::make_nvp("BitDepth", _bitDepth);
     ar & boost::serialization::make_nvp("Channels", _channels);

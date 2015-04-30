@@ -43,6 +43,7 @@ class QFileInfo;
 class ViewerInstance;
 class ProcessHandler;
 class NodeCollection;
+class QMutex;
 class CLArgs;
 namespace Natron {
 class Node;
@@ -131,6 +132,24 @@ struct LoadNodeArgs
     {
     }
 };
+
+namespace Natron {
+    
+class FlagSetter {
+    
+    bool* p;
+    QMutex* lock;
+    
+public:
+    
+    FlagSetter(bool initialValue,bool* p);
+    
+    FlagSetter(bool initialValue,bool* p, QMutex* mutex);
+    
+    ~FlagSetter();
+};
+    
+}
 
 class AppInstance
     : public QObject, public boost::noncopyable

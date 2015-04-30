@@ -90,6 +90,8 @@ public:
 
     void onChildCreated(const boost::shared_ptr<Natron::Node>& node);
     
+    void setRedrawOnSelectionChanged(bool redraw);
+    
 public Q_SLOTS:
 
     void onAddButtonClicked();
