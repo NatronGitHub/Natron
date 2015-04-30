@@ -2670,7 +2670,11 @@ Bezier::removeControlPointByIndex(int index)
 }
 
 void
-Bezier::movePointByIndexInternal(int index,int time,double dx,double dy,bool onlyFeather)
+Bezier::movePointByIndexInternal(int index,
+                                 int time,
+                                 double dx,
+                                 double dy,
+                                 bool onlyFeather)
 {
     ///only called on the main-thread
     assert( QThread::currentThread() == qApp->thread() );
@@ -2680,34 +2684,39 @@ Bezier::movePointByIndexInternal(int index,int time,double dx,double dy,bool onl
     {
         QMutexLocker l(&itemMutex);
         double x,y,leftX,leftY,rightX,rightY;
-        BezierCPs::iterator it;
+        boost::shared_ptr<BezierCP> cp;
         bool isOnKeyframe = false;
         if (!onlyFeather) {
-            it = _imp->atIndex(index);
-            (*it)->getPositionAtTime(time, &x, &y,true);
-            isOnKeyframe |= (*it)->getLeftBezierPointAtTime(time, &leftX, &leftY,true);
-            (*it)->getRightBezierPointAtTime(time, &rightX, &rightY,true);
+            BezierCPs::iterator it = _imp->atIndex(index);
+            assert(it != _imp->points.end());
+            cp = *it;
+            cp->getPositionAtTime(time, &x, &y,true);
+            isOnKeyframe |= cp->getLeftBezierPointAtTime(time, &leftX, &leftY,true);
+            cp->getRightBezierPointAtTime(time, &rightX, &rightY,true);
         }
         
         bool useFeather = useFeatherPoints();
-        BezierCPs::iterator itF;
-        double xF,yF,leftXF,leftYF,rightXF,rightYF;
+        double xF, yF, leftXF, leftYF, rightXF, rightYF;
+        boost::shared_ptr<BezierCP> fp;
         if (useFeather) {
-            itF = _imp->featherPoints.begin();
+            BezierCPs::iterator itF = _imp->featherPoints.begin();
             std::advance(itF, index);
-            (*itF)->getPositionAtTime(time, &xF, &yF,true);
-            isOnKeyframe |= (*itF)->getLeftBezierPointAtTime(time, &leftXF, &leftYF,true);
-            (*itF)->getRightBezierPointAtTime(time, &rightXF, &rightYF,true);
+            assert(itF != _imp->featherPoints.end());
+            fp = *itF;
+            fp->getPositionAtTime(time, &xF, &yF,true);
+            isOnKeyframe |= fp->getLeftBezierPointAtTime(time, &leftXF, &leftYF,true);
+            fp->getRightBezierPointAtTime(time, &rightXF, &rightYF,true);
         }
         
-        bool fLinkEnabled = onlyFeather ? true : getContext()->isFeatherLinkEnabled();
-        bool moveFeather = (fLinkEnabled || (!fLinkEnabled && (*it)->equalsAtTime(time, **itF)));
+        bool fLinkEnabled = (onlyFeather ? true : getContext()->isFeatherLinkEnabled());
+        bool moveFeather = (fLinkEnabled || (useFeather && fp && cp->equalsAtTime(time, *fp)));
         
         
         if (!onlyFeather && (autoKeying || isOnKeyframe)) {
-            (*it)->setPositionAtTime(time, x + dx, y + dy);
-            (*it)->setLeftBezierPointAtTime(time, leftX + dx, leftY + dy);
-            (*it)->setRightBezierPointAtTime(time, rightX + dx, rightY + dy);
+            assert(cp);
+            cp->setPositionAtTime(time, x + dx, y + dy);
+            cp->setLeftBezierPointAtTime(time, leftX + dx, leftY + dy);
+            cp->setRightBezierPointAtTime(time, rightX + dx, rightY + dy);
             if (!isOnKeyframe) {
                 keySet = true;
             }
@@ -2715,9 +2724,10 @@ Bezier::movePointByIndexInternal(int index,int time,double dx,double dy,bool onl
         
         if (moveFeather && useFeather) {
             if (autoKeying || isOnKeyframe) {
-                (*itF)->setPositionAtTime(time, xF + dx, yF + dy);
-                (*itF)->setLeftBezierPointAtTime(time, leftXF + dx, leftYF + dy);
-                (*itF)->setRightBezierPointAtTime(time, rightXF + dx, rightYF + dy);
+                assert(fp);
+                fp->setPositionAtTime(time, xF + dx, yF + dy);
+                fp->setLeftBezierPointAtTime(time, leftXF + dx, leftYF + dy);
+                fp->setRightBezierPointAtTime(time, rightXF + dx, rightYF + dy);
             }
         }
         
@@ -2729,22 +2739,24 @@ Bezier::movePointByIndexInternal(int index,int time,double dx,double dy,bool onl
                     continue;
                 }
                 if (!onlyFeather) {
-                    (*it)->getPositionAtTime(*it2, &x, &y,true);
-                    (*it)->getLeftBezierPointAtTime(*it2, &leftX, &leftY,true);
-                    (*it)->getRightBezierPointAtTime(*it2, &rightX, &rightY,true);
+                    assert(cp);
+                    cp->getPositionAtTime(*it2, &x, &y,true);
+                    cp->getLeftBezierPointAtTime(*it2, &leftX, &leftY,true);
+                    cp->getRightBezierPointAtTime(*it2, &rightX, &rightY,true);
                     
-                    (*it)->setPositionAtTime(*it2, x + dx, y + dy);
-                    (*it)->setLeftBezierPointAtTime(*it2, leftX + dx, leftY + dy);
-                    (*it)->setRightBezierPointAtTime(*it2, rightX + dx, rightY + dy);
+                    cp->setPositionAtTime(*it2, x + dx, y + dy);
+                    cp->setLeftBezierPointAtTime(*it2, leftX + dx, leftY + dy);
+                    cp->setRightBezierPointAtTime(*it2, rightX + dx, rightY + dy);
                 }
                 if (moveFeather && useFeather) {
-                    (*itF)->getPositionAtTime(*it2, &xF, &yF,true);
-                    (*itF)->getLeftBezierPointAtTime(*it2, &leftXF, &leftYF,true);
-                    (*itF)->getRightBezierPointAtTime(*it2, &rightXF, &rightYF,true);
+                    assert(fp);
+                    fp->getPositionAtTime(*it2, &xF, &yF,true);
+                    fp->getLeftBezierPointAtTime(*it2, &leftXF, &leftYF,true);
+                    fp->getRightBezierPointAtTime(*it2, &rightXF, &rightYF,true);
                     
-                    (*itF)->setPositionAtTime(*it2, xF + dx, yF + dy);
-                    (*itF)->setLeftBezierPointAtTime(*it2, leftXF + dx, leftYF + dy);
-                    (*itF)->setRightBezierPointAtTime(*it2, rightXF + dx, rightYF + dy);
+                    fp->setPositionAtTime(*it2, xF + dx, yF + dy);
+                    fp->setLeftBezierPointAtTime(*it2, leftXF + dx, leftYF + dy);
+                    fp->setRightBezierPointAtTime(*it2, rightXF + dx, rightYF + dy);
                 }
             }
         }
@@ -3212,15 +3224,27 @@ Bezier::setKeyframe(int time)
         }
 
 
-        assert( _imp->points.size() == _imp->featherPoints.size() || !useFeatherPoints() );
         bool useFeather = useFeatherPoints();
-        
-        BezierCPs::iterator itF = _imp->featherPoints.begin();
-        for (BezierCPs::iterator it = _imp->points.begin(); it != _imp->points.end(); ++it) {
-            double x,y;
-            double leftDerivX,rightDerivX,leftDerivY,rightDerivY;
+        assert(_imp->points.size() == _imp->featherPoints.size() || !useFeather);
 
-            {
+        for (BezierCPs::iterator it = _imp->points.begin(); it != _imp->points.end(); ++it) {
+            double x, y;
+            double leftDerivX, rightDerivX, leftDerivY, rightDerivY;
+
+            (*it)->getPositionAtTime(time, &x, &y,true);
+            (*it)->setPositionAtTime(time, x, y);
+
+            (*it)->getLeftBezierPointAtTime(time, &leftDerivX, &leftDerivY,true);
+            (*it)->getRightBezierPointAtTime(time, &rightDerivX, &rightDerivY,true);
+            (*it)->setLeftBezierPointAtTime(time, leftDerivX, leftDerivY);
+            (*it)->setRightBezierPointAtTime(time, rightDerivX, rightDerivY);
+        }
+
+        if (useFeather) {
+            for (BezierCPs::iterator it = _imp->featherPoints.begin(); it != _imp->featherPoints.end(); ++it) {
+                double x, y;
+                double leftDerivX, rightDerivX, leftDerivY, rightDerivY;
+
                 (*it)->getPositionAtTime(time, &x, &y,true);
                 (*it)->setPositionAtTime(time, x, y);
 
@@ -3228,17 +3252,6 @@ Bezier::setKeyframe(int time)
                 (*it)->getRightBezierPointAtTime(time, &rightDerivX, &rightDerivY,true);
                 (*it)->setLeftBezierPointAtTime(time, leftDerivX, leftDerivY);
                 (*it)->setRightBezierPointAtTime(time, rightDerivX, rightDerivY);
-            }
-
-            if (useFeather) {
-                (*itF)->getPositionAtTime(time, &x, &y,true);
-                (*itF)->setPositionAtTime(time, x, y);
-
-                (*itF)->getLeftBezierPointAtTime(time, &leftDerivX, &leftDerivY,true);
-                (*itF)->getRightBezierPointAtTime(time, &rightDerivX, &rightDerivY,true);
-                (*itF)->setLeftBezierPointAtTime(time, leftDerivX, leftDerivY);
-                (*itF)->setRightBezierPointAtTime(time, rightDerivX, rightDerivY);
-                ++itF;
             }
         }
     }
