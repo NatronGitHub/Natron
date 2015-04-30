@@ -19,7 +19,7 @@
 #include "Engine/NodeGroup.h"
 #include "Engine/NoOp.h"
 
-typedef std::map<boost::shared_ptr<KnobI>, KnobGui *> KnobsAndGuis;
+typedef std::map<boost::weak_ptr<KnobI>, KnobGui *> KnobsAndGuis;
 typedef std::pair<QTreeWidgetItem *, DSNode *> TreeItemAndDSNode;
 typedef std::pair<QTreeWidgetItem *, DSKnob *> TreeItemAndDSKnob;
 
@@ -358,7 +358,7 @@ DSNode::DSNode(DopeSheetEditor *dopeSheetEditor,
 
         for (KnobsAndGuis::const_iterator it = knobs.begin();
              it != knobs.end(); ++it) {
-            boost::shared_ptr<KnobI> knob = it->first;
+            boost::shared_ptr<KnobI> knob = it->first.lock();
             KnobGui *knobGui = it->second;
 
             NodePtr parentGroupNode = dynamic_cast<NodeGroup *>(node->getGroup().get())->getNode();
