@@ -61,6 +61,7 @@ SOURCES += \
     AppManager.cpp \
     BackDrop.cpp \
     BlockingBackgroundRender.cpp \
+    CoonsRegularization.cpp \
     Curve.cpp \
     CurveSerialization.cpp \
     DiskCacheNode.cpp \
@@ -173,6 +174,7 @@ HEADERS += \
     BlockingBackgroundRender.h \
     Cache.h \
     CacheEntry.h \
+    CoonsRegularization.h \
     Curve.h \
     CurveSerialization.h \
     CurvePrivate.h \

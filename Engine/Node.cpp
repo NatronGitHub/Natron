@@ -2331,12 +2331,6 @@ Node::getLiveInstance() const
     return _imp->liveInstance.get();
 }
 
-bool
-Node::hasEffect() const
-{
-    return _imp->liveInstance != NULL;
-}
-
 void
 Node::hasViewersConnected(std::list<ViewerInstance* >* viewers) const
 {

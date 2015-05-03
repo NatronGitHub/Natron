@@ -166,8 +166,6 @@ public:
 
     Natron::EffectInstance* getLiveInstance() const;
 
-    bool hasEffect() const;
-
     /**
      * @brief Returns true if the node is a multi-instance node, that is, holding several other nodes.
      * e.g: the Tracker node.

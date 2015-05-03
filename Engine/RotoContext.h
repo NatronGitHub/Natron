@@ -569,6 +569,15 @@ public:
 
     virtual ~Bezier();
     
+    static void
+    bezierPoint(const Natron::Point & p0,
+                const Natron::Point & p1,
+                const Natron::Point & p2,
+                const Natron::Point & p3,
+                double t,
+                Natron::Point *dest);
+
+    
     /**
      * @brief Used to differentiate real shapes with feather of paint strokes which does not have a feather
      **/
