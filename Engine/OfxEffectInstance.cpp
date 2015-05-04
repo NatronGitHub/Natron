@@ -1149,6 +1149,8 @@ clipPrefsProxy(OfxEffectInstance* self,
         effectPrefs.premult = kOfxImageOpaque;
     } else if (foundOutputPrefs->second.components == kOfxImageComponentAlpha) {
         effectPrefs.premult = kOfxImagePreMultiplied;
+    } else if (foundOutputPrefs->second.components == kOfxImageComponentRGBA && effectPrefs.premult == kOfxImageOpaque) {
+        effectPrefs.premult = kOfxImageUnPreMultiplied;
     }
     
     
