@@ -58,10 +58,19 @@ RectI minimalNonMarkedBbox_internal(const RectI& roi, const RectI& _bounds,const
                 *isBeingRenderedElsewhere = true; //< only flag if the whole row is not 0
             }
         } else {
-            if ( !memchr( buf, 0, _bounds.width() ) ) {
-                bbox.set_bottom(bbox.bottom() + 1);
-            } else {
+            
+            const char* lineEnd = buf + _bounds.width();
+            while (buf < lineEnd) {
+                if (!*buf || *buf == PIXEL_UNAVAILABLE) {
+                    buf = 0;
+                    break;
+                }
+                ++buf;
+            }
+            if (!buf) {
                 break;
+            } else {
+                bbox.set_bottom(bbox.bottom() + 1);
             }
         }
     }
@@ -90,10 +99,19 @@ RectI minimalNonMarkedBbox_internal(const RectI& roi, const RectI& _bounds,const
             }
             
         } else {
-            if ( !memchr( buf, 0, _bounds.width() ) ) {
-                bbox.set_top(bbox.top() - 1);
-            } else {
+            
+            const char* lineEnd = buf + _bounds.width();
+            while (buf < lineEnd) {
+                if (!*buf || *buf == PIXEL_UNAVAILABLE) {
+                    buf = 0;
+                    break;
+                }
+                ++buf;
+            }
+            if (!buf) {
                 break;
+            } else {
+                bbox.set_top(bbox.top() - 1);
             }
         }
     }
@@ -115,8 +133,13 @@ RectI minimalNonMarkedBbox_internal(const RectI& roi, const RectI& _bounds,const
                 break;
             }
             
-            else if (trimap && *pix == PIXEL_UNAVAILABLE) {
-                metUnavailablePixel = true;
+            else if (*pix == PIXEL_UNAVAILABLE) {
+                if (trimap) {
+                    metUnavailablePixel = true;
+                } else {
+                    pix = 0;
+                    break;
+                }
             }
             
         }
@@ -142,8 +165,13 @@ RectI minimalNonMarkedBbox_internal(const RectI& roi, const RectI& _bounds,const
                 break;
             }
 
-            else if (trimap && *pix == PIXEL_UNAVAILABLE) {
-                metUnavailablePixel = true;
+            else if (*pix == PIXEL_UNAVAILABLE) {
+                if (trimap) {
+                    metUnavailablePixel = true;
+                } else {
+                    pix = 0;
+                    break;
+                }
             }
 
         }
