@@ -67,7 +67,12 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Gui/ActionShortcuts.h"
 #include "Gui/Label.h"
 
+#ifndef M_LN2
+#define M_LN2       0.693147180559945309417232121458176568  /* loge(2)        */
+#endif
+
 #define NATRON_TRANSFORM_AFFECTS_OVERLAYS
+
 
 using namespace Natron;
 
@@ -2564,10 +2569,11 @@ ViewerTab::setColorSpace(const std::string & colorSpaceName)
     }
 }
 
+
 void
 ViewerTab::setGain(double d)
 {
-    double fstop = std::log2(d);
+    double fstop = std::log(d) / M_LN2;
     _imp->gainBox->setValue(fstop);
     _imp->gainSlider->seekScalePosition(fstop);
     _imp->viewer->setGain(d);
