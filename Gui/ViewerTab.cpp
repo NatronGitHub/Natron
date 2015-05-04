@@ -2535,6 +2535,10 @@ ViewerTab::setAutoContrastEnabled(bool b)
     _imp->autoContrast->setChecked(b);
     _imp->gainSlider->setEnabled(!b);
     _imp->gainBox->setEnabled(!b);
+    _imp->toggleGainButton->setEnabled(!b);
+    _imp->gammaSlider->setEnabled(!b);
+    _imp->gammaBox->setEnabled(!b);
+    _imp->toggleGammaButton->setEnabled(!b);
     _imp->viewerNode->onAutoContrastChanged(b,true);
 }
 
@@ -2719,6 +2723,7 @@ ViewerTab::onAutoContrastChanged(bool b)
 {
     _imp->gainSlider->setEnabled(!b);
     _imp->gainBox->setEnabled(!b);
+    _imp->toggleGainButton->setEnabled(!b);
     _imp->viewerNode->onAutoContrastChanged(b,b);
     _imp->gammaBox->setEnabled(!b);
     _imp->gammaSlider->setEnabled(!b);
