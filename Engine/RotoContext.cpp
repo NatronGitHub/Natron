@@ -3407,6 +3407,32 @@ Bezier::getKeyframesCount() const
 }
 
 void
+Bezier::deCastelJau(const std::list<boost::shared_ptr<BezierCP> >& cps, int time,unsigned int mipMapLevel,
+                    bool finished,
+                 int nBPointsPerSegment, std::list<Natron::Point>* points, RectD* bbox)
+{
+    BezierCPs::const_iterator next = cps.begin();
+    
+    if (next != cps.end()) {
+        ++next;
+    }
+    for (BezierCPs::const_iterator it = cps.begin(); it != cps.end(); ++it) {
+        if ( next == cps.end() ) {
+            if (!finished) {
+                break;
+            }
+            next = cps.begin();
+        }
+        bezierSegmentEval(*(*it),*(*next), time,mipMapLevel, nBPointsPerSegment, points,bbox);
+        
+        // increment for next iteration
+        if (next != cps.end()) {
+            ++next;
+        }
+    } // for()
+}
+
+void
 Bezier::evaluateAtTime_DeCasteljau(int time,
                                    unsigned int mipMapLevel,
                                    int nbPointsPerSegment,
@@ -3414,25 +3440,7 @@ Bezier::evaluateAtTime_DeCasteljau(int time,
                                    RectD* bbox) const
 {
     QMutexLocker l(&itemMutex);
-    BezierCPs::const_iterator next = _imp->points.begin();
-
-    if (next != _imp->points.end()) {
-        ++next;
-    }
-    for (BezierCPs::const_iterator it = _imp->points.begin(); it != _imp->points.end(); ++it) {
-        if ( next == _imp->points.end() ) {
-            if (!_imp->finished) {
-                break;
-            }
-            next = _imp->points.begin();
-        }
-        bezierSegmentEval(*(*it),*(*next), time,mipMapLevel, nbPointsPerSegment, points,bbox);
-
-        // increment for next iteration
-        if (next != _imp->points.end()) {
-            ++next;
-        }
-    } // for()
+    deCastelJau(_imp->points, time, mipMapLevel, _imp->finished, nbPointsPerSegment, points, bbox);
 }
 
 void
@@ -4024,9 +4032,9 @@ Bezier::setKeyFrameInterpolation(Natron::KeyframeTypeEnum interp,int index)
     }
 }
 
-static
+
 void
-point_line_intersection(const Point &p1,
+Bezier::point_line_intersection(const Point &p1,
                         const Point &p2,
                         const Point &pos,
                         int *winding)
@@ -4075,12 +4083,12 @@ pointInPolygon(const Point & p,
     std::list<Point>::const_iterator cur = last_pt;
     ++cur;
     for (; cur != polygon.end(); ++cur, ++last_pt) {
-        point_line_intersection(*last_pt, *cur, p, &winding_number);
+        Bezier::point_line_intersection(*last_pt, *cur, p, &winding_number);
     }
 
     // implicitly close last subpath
     if (last_pt != last_start) {
-        point_line_intersection(*last_pt, *last_start, p, &winding_number);
+        Bezier::point_line_intersection(*last_pt, *last_start, p, &winding_number);
     }
 
     return rule == Bezier::eFillRuleWinding

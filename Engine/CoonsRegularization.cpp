@@ -590,12 +590,133 @@ static void coonsPatch(const BezierCPs& p, int time, Point ret[4][4])
     return tensor(p, time, internal, ret);
 }
 
+
+
+Point bezier(const Point& a, const Point& b, const Point& c, const Point& d, double t)
+{
+    double onemt = 1. - t;
+    double onemt2 = onemt * onemt;
+    Point ret;
+    ret.x = onemt2 * onemt * a.x + t * (3.0 * (onemt2 * b.x + t * onemt * c.x) + t * t * d.x);
+    ret.y = onemt2 * onemt * a.y + t * (3.0 * (onemt2 * b.y + t * onemt * c.y) + t * t * d.y);
+    return ret;
+}
+
+Point bezierP(const Point& a, const Point& b, const Point& c, const Point& d, double t)
+{
+    Point ret;
+    ret.x =  3.0 * (t * t * (d.x - a.x + 3.0 * (b.x - c.x)) + t * (2.0 * (a.x + c.x) - 4.0 * b.x) + b.x - a.x);
+    ret.y =  3.0 * (t * t * (d.y - a.y + 3.0 * (b.y - c.y)) + t * (2.0 * (a.y + c.y) - 4.0 * b.y) + b.y - a.y);
+    return ret;
+}
+
+Point bezierPP(const Point& a, const Point& b, const Point& c, const Point& d, double t)
+{
+    Point ret;
+    ret.x = 6.0 * (t * (d.x - a.x + 3.0 * (b.x - c.x)) + a.x + c.x - 2.0 * b.x);
+    ret.y = 6.0 * (t * (d.y - a.y + 3.0 * (b.y - c.y)) + a.y + c.y - 2.0 * b.y);
+    return ret;
+}
+
+Point bezierPPP(const Point& a, const Point& b, const Point& c, const Point& d)
+{
+    Point ret;
+    ret.x =  6.0 * (d.x - a.x + 3.0 * (b.x - c.x));
+    ret.y =  6.0 * (d.y - a.y + 3.0 * (b.y - c.y));
+    return ret;
+}
+
+Point BuP(const Point P[4][4], int j, double u) {
+    return bezierP(P[0][j],P[1][j],P[2][j],P[3][j],u);
+}
+
+Point BvP(const Point P[4][4], int i, double v) {
+    return bezierP(P[i][0],P[i][1],P[i][2],P[i][3],v);
+}
+
+double normal(const Point P[4][4], double u, double v) {
+    Point a = bezier(BuP(P,0,u),BuP(P,1,u),BuP(P,2,u),BuP(P,3,u),v);
+    Point b = bezier(BvP(P,0,v),BvP(P,1,v),BvP(P,2,v),BvP(P,3,v),u);
+    return a.x * b.y - a.y * b.x;
+}
+
+Point findPointInside(const BezierCPs& cps, int time)
+{
+    /*
+     Given a simple polygon, find some point inside it. Here is a method based on the proof that
+     there exists an internal diagonal, in [O'Rourke, 13-14]. The idea is that the midpoint of
+     a diagonal is interior to the polygon.
+     */
+    assert(!cps.empty());
+    int i = 0;
+    for (BezierCPs::const_iterator it = cps.begin(); it != cps.end(); ++it, ++i) {
+        Point dir = dirVect(cps, time, i);
+        if (dir.x == 0. && dir.y == 0.) {
+            continue;
+        }
+        Point p;
+        (*it)->getPositionAtTime(time, &p.x, &p.y);
+        Point q;
+        q.x = p.x;
+        q.y = p.y + dir.y;
+        boost::shared_ptr<BezierCP> newPoint;
+        int beforeIndex = -1;
+        findIntersection(cps, time, p, q, &newPoint, &beforeIndex);
+        if (newPoint && beforeIndex != -1) {
+            Point np;
+            newPoint->getPositionAtTime(time, &np.x, &np.y);
+            if (np.x != p.x || np.y != p.y) {
+                Point m;
+                m.x = 0.5 * (p.x + np.x);
+                m.y = 0.5 * (p.y + np.y);
+                return m;
+            }
+        }
+    }
+    Point ret;
+    cps.front()->getPositionAtTime(time, &ret.x, &ret.y);
+    return ret;
+}
+
 void Natron::regularize(const BezierCPs &patch, int time, std::list<BezierCPs> *fixedPatch)
 {
     if (patch.size() < 4) {
         fixedPatch->push_back(patch);
         return;
     }
+    
+    std::list<Point> discretizedPolygon;
+    RectD bbox;
+    Bezier::deCastelJau(patch, time, 0, true, -1, &discretizedPolygon, &bbox);
+    Point pointInside = findPointInside(patch, time);
+    int sign;
+    {
+        int winding_number = 0;
+        if ( (pointInside.x < bbox.x1) || (pointInside.x >= bbox.x2) || (pointInside.y < bbox.y1) || (pointInside.y >= bbox.y2) ) {
+            winding_number = 0;
+        } else {
+            std::list<Point>::const_iterator last_pt = discretizedPolygon.begin();
+            std::list<Point>::const_iterator last_start = last_pt;
+            std::list<Point>::const_iterator cur = last_pt;
+            ++cur;
+            for (; cur != discretizedPolygon.end(); ++cur, ++last_pt) {
+                Bezier::point_line_intersection(*last_pt, *cur, pointInside, &winding_number);
+            }
+            
+            // implicitly close last subpath
+            if (last_pt != last_start) {
+                Bezier::point_line_intersection(*last_pt, *last_start, pointInside, &winding_number);
+            }
+        }
+        if (winding_number == 0) {
+            sign = 0;
+        } else if (winding_number < 0) {
+            sign = -1;
+        } else if (winding_number > 0) {
+            sign = 1;
+        }
+    }
+    
     std::list<BezierCPs> splits;
     if (checkAnglesAndSplitIfNeeded(patch, time, &splits)) {
         *fixedPatch = splits;
@@ -726,8 +847,22 @@ void Natron::regularize(const BezierCPs &patch, int time, std::list<BezierCPs> *
                     double U[4] = {sol[k], 1, sol[k], 0};
                     double V[4] = {0, sol[k], 1, sol[k]};
                     double T[4] = {sol[k], sol[k], 1 - sol[k], 1 - sol[k]};
+                    double N = sign * normal(P, U[i], V[i]);
+                    if (N < M) {
+                        M = N;
+                        cut = i + T[i];
+                    }
                 }
             }
         }
     }
+    
+    // Split at the worst boundary degeneracy.
+    if (M < 0 && splitAt(patch, time, cut, fixedPatch)) {
+        return;
+    }
+    
+    
+    // Split arbitrarily to resolve any remaining (internal) degeneracy.
+    splitAt(patch, time, 0.5, fixedPatch);
 }

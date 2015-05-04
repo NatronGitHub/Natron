@@ -784,6 +784,15 @@ public:
      **/
     int getKeyframesCount() const;
 
+    static void deCastelJau(const std::list<boost::shared_ptr<BezierCP> >& cps, int time, unsigned int mipMapLevel,
+                            bool finished,
+                            int nBPointsPerSegment, std::list<Natron::Point>* points, RectD* bbox);
+    
+    static void point_line_intersection(const Natron::Point &p1,
+                            const Natron::Point &p2,
+                            const Natron::Point &pos,
+                            int *winding);
+    
     /**
      * @brief Evaluates the spline at the given time and returns the list of all the points on the curve.
      * @param nbPointsPerSegment controls how many points are used to draw one Bezier segment
