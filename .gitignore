@@ -13,6 +13,7 @@ DerivedData
 Natron.xcodeproj
 NatronRenderer.xcodeproj
 NatronCrashReporter.xcodeproj
+CrashReporter/NatronCrashReporter
 Tests.xcodeproj
 HostSupport.xcodeproj
 Gui.xcodeproj
