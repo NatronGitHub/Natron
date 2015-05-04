@@ -198,6 +198,7 @@ minimalNonMarkedRects_internal(const RectI & roi,const RectI& _bounds, const std
                                std::list<RectI>& ret,bool* isBeingRenderedElsewhere)
 {
     RectI bboxM = minimalNonMarkedBbox_internal<trimap>(roi, _bounds, _map, isBeingRenderedElsewhere);
+    assert(trimap && isBeingRenderedElsewhere || !trimap && !isBeingRenderedElsewhere);
     
     //#define NATRON_BITMAP_DISABLE_OPTIMIZATION
 #ifdef NATRON_BITMAP_DISABLE_OPTIMIZATION
@@ -246,7 +247,9 @@ minimalNonMarkedRects_internal(const RectI & roi,const RectI& _bounds, const std
                     break;
                 } else if (*buf == PIXEL_UNAVAILABLE) {
                     buf = 0;
-                    metUnavailablePixel = true;
+                    if (trimap) {
+                        metUnavailablePixel = true;
+                    }
                     break;
                 }
                 ++buf;
@@ -289,7 +292,9 @@ minimalNonMarkedRects_internal(const RectI & roi,const RectI& _bounds, const std
                     break;
                 } else if (*buf == PIXEL_UNAVAILABLE) {
                     buf = 0;
-                    metUnavailablePixel = true;
+                    if (trimap) {
+                        metUnavailablePixel = true;
+                    }
                     break;
                 }
                 ++buf;

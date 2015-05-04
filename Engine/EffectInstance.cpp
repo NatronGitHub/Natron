@@ -448,7 +448,7 @@ struct EffectInstance::Implementation
         }
         
         ///Everything should be rendered now.
-        assert(ab || restToRender.empty() || ibr->renderFailed);
+        assert(ab || !isBeingRenderedElseWhere || ibr->renderFailed);
 
         {
             QMutexLocker k(&imagesBeingRenderedMutex);
