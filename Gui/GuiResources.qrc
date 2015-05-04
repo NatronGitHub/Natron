@@ -17,7 +17,7 @@
         <file>Resources/Images/GroupingIcons/Set2/3D_grouping_2.png</file>
         <file>Resources/Images/GroupingIcons/Set2/channel_grouping_2.png</file>
         <file>Resources/Images/GroupingIcons/Set2/color_grouping_2.png</file>
-        <file>Resources/Images/GroupingIcons/Set2/deep_grouping_2.png</file>  
+        <file>Resources/Images/GroupingIcons/Set2/deep_grouping_2.png</file>
         <file>Resources/Images/GroupingIcons/Set2/filter_grouping_2.png</file>
         <file>Resources/Images/GroupingIcons/Set2/image_grouping_2.png</file>
         <file>Resources/Images/GroupingIcons/Set2/keyer_grouping_2.png</file>
@@ -216,5 +216,7 @@
         <file>Resources/Images/gammaOFF.png</file>
         <file>Resources/Images/gammaON.png</file>
         <file>Resources/Images/linkCursor.png</file>
+        <file>Resources/Images/expoOFF.png</file>
+        <file>Resources/Images/expoON.png</file>
     </qresource>
 </RCC>

@@ -75,6 +75,7 @@ ProjectGuiSerialization::initialize(const ProjectGui* projectGui)
                 viewerData.isClippedToProject = tab->isClippedToProject();
                 viewerData.autoContrastEnabled = tab->isAutoContrastEnabled();
                 viewerData.gain = tab->getGain();
+                viewerData.gamma = tab->getGamma();
                 viewerData.colorSpace = tab->getColorSpace();
                 viewerData.channels = tab->getChannelsString();
                 viewerData.renderScaleActivated = tab->getRenderScaleActivated();
