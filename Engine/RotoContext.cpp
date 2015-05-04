@@ -18,6 +18,7 @@
 #include <algorithm>
 #include <sstream>
 #include <locale>
+#include <limits>
 
 #include <QLineF>
 
@@ -104,8 +105,8 @@ bezierFullPoint(const Point & p0,
     lerpPoint(*p0p1_p1p2, *p1p2_p2p3, t, dest);
 }
 
-static inline void
-bezierPoint(const Point & p0,
+void
+Bezier::bezierPoint(const Point & p0,
             const Point & p1,
             const Point & p2,
             const Point & p3,
@@ -394,7 +395,7 @@ bezierSegmentEval(const BezierCP & first,
     double incr = 1. / (double)(nbPointsPerSegment - 1);
     Point cur;
     for (double t = 0.; t <= 1.; t += incr) {
-        bezierPoint(p0, p1, p2, p3, t, &cur);
+        Bezier::bezierPoint(p0, p1, p2, p3, t, &cur);
         points->push_back(cur);
     }
     if (bbox) {
@@ -438,7 +439,7 @@ bezierSegmentMeetsPoint(const BezierCP & first,
     double tForMin = -1.;
     for (double t = 0.; t <= 1.; t += incr) {
         Point p;
-        bezierPoint(p0, p1, p2, p3, t, &p);
+        Bezier::bezierPoint(p0, p1, p2, p3, t, &p);
         double sqdist = (p.x - x) * (p.x - x) + (p.y - y) * (p.y - y);
         if ( (sqdist <= sqDistance) && (sqdist < minSqDistance) ) {
             minSqDistance = sqdist;
@@ -3406,6 +3407,32 @@ Bezier::getKeyframesCount() const
 }
 
 void
+Bezier::deCastelJau(const std::list<boost::shared_ptr<BezierCP> >& cps, int time,unsigned int mipMapLevel,
+                    bool finished,
+                 int nBPointsPerSegment, std::list<Natron::Point>* points, RectD* bbox)
+{
+    BezierCPs::const_iterator next = cps.begin();
+    
+    if (next != cps.end()) {
+        ++next;
+    }
+    for (BezierCPs::const_iterator it = cps.begin(); it != cps.end(); ++it) {
+        if ( next == cps.end() ) {
+            if (!finished) {
+                break;
+            }
+            next = cps.begin();
+        }
+        bezierSegmentEval(*(*it),*(*next), time,mipMapLevel, nBPointsPerSegment, points,bbox);
+        
+        // increment for next iteration
+        if (next != cps.end()) {
+            ++next;
+        }
+    } // for()
+}
+
+void
 Bezier::evaluateAtTime_DeCasteljau(int time,
                                    unsigned int mipMapLevel,
                                    int nbPointsPerSegment,
@@ -3413,25 +3440,7 @@ Bezier::evaluateAtTime_DeCasteljau(int time,
                                    RectD* bbox) const
 {
     QMutexLocker l(&itemMutex);
-    BezierCPs::const_iterator next = _imp->points.begin();
-
-    if (next != _imp->points.end()) {
-        ++next;
-    }
-    for (BezierCPs::const_iterator it = _imp->points.begin(); it != _imp->points.end(); ++it) {
-        if ( next == _imp->points.end() ) {
-            if (!_imp->finished) {
-                break;
-            }
-            next = _imp->points.begin();
-        }
-        bezierSegmentEval(*(*it),*(*next), time,mipMapLevel, nbPointsPerSegment, points,bbox);
-
-        // increment for next iteration
-        if (next != _imp->points.end()) {
-            ++next;
-        }
-    } // for()
+    deCastelJau(_imp->points, time, mipMapLevel, _imp->finished, nbPointsPerSegment, points, bbox);
 }
 
 void
@@ -4023,9 +4032,9 @@ Bezier::setKeyFrameInterpolation(Natron::KeyframeTypeEnum interp,int index)
     }
 }
 
-static
+
 void
-point_line_intersection(const Point &p1,
+Bezier::point_line_intersection(const Point &p1,
                         const Point &p2,
                         const Point &pos,
                         int *winding)
@@ -4074,12 +4083,12 @@ pointInPolygon(const Point & p,
     std::list<Point>::const_iterator cur = last_pt;
     ++cur;
     for (; cur != polygon.end(); ++cur, ++last_pt) {
-        point_line_intersection(*last_pt, *cur, p, &winding_number);
+        Bezier::point_line_intersection(*last_pt, *cur, p, &winding_number);
     }
 
     // implicitly close last subpath
     if (last_pt != last_start) {
-        point_line_intersection(*last_pt, *last_start, p, &winding_number);
+        Bezier::point_line_intersection(*last_pt, *last_start, p, &winding_number);
     }
 
     return rule == Bezier::eFillRuleWinding
@@ -7241,109 +7250,6 @@ struct qpointf_compare_less
 };
 
 
-#if 0
-/**
- * @brief Given the original coon's patch, check if all interior angles are inferior to 180°. If not then we split
- * along the bysector angle and separate the patch.
- **/
-static std::list<BezierCPs> checkAnglesAndSplitIfNeeded(const BezierCPs &cps, int time)
-{
-    assert(cps.size() == 4);
-    std::list<BezierCPs> ret;
-    BezierCPs::const_iterator prev = cps.end();
-    --prev;
-    BezierCPs::const_iterator cur = cps.begin();
-    BezierCPs::const_iterator next = cur;
-    ++next;
-    
-    while (cur != cps.end()) {
-        if (next == cps.end()) {
-            next = cps.begin();
-        }
-        if (prev == cps.end()) {
-            prev = cps.begin();
-        }
-        
-        Point p1,p2,p3;
-        (*prev)->getPositionAtTime(time, &p1.x, &p1.y);
-        (*cur)->getPositionAtTime(time, &p2.x, &p2.y);
-        (*next)->getPositionAtTime(time, &p3.x, &p3.y);
-        
-        //use inner product: alpha = acos(u.v / |u||v| ) to find out the angle
-        Point u,v;
-        u.x = p1.x - p2.x;
-        u.y = p1.y - p2.y;
-        v.x = p3.x - p2.x;
-        v.y = p3.y - p2.y;
-        double normU = std::sqrt(u.x * u.x + u.y * u.y);
-        double normV = std::sqrt(v.x * v.x + v.y * v.y);
-        assert(normU != 0 && normV != 0);
-        double alpha = std::acos((u.x * v.x + u.y * v.y) / normU * normV);
-        
-        if (alpha > M_PI_2) {
-            double derivativeNorm = std::sqrt((v.x - u.x) * (v.x - u.x) + (v.y - u.y) * (v.y - u.y));
-            assert(derivativeNorm != 0);
-            //normalize u,v by the norm and compute the unit vector in the direction of the bysector angle
-            Point bysec;
-            bysec.x = -((v.y - u.y) / derivativeNorm);
-            bysec.y = (v.x - u.x) / derivativeNorm;
-            
-            //project p2 far away in the direction of bysec and find an intersection with all other segments
-            Point proj;
-            proj.x = p2.x + 10000. * bysec.x;
-            proj.y = p2.y + 10000. * bysec.y;
-            
-            std::vector<std::pair<QPointF,std::pair<BezierCPs::const_iterator,BezierCPs::const_iterator> > > intersections;
-            QLineF line1(QPointF(p2.x,p2.y),QPointF(proj.x,proj.y));
-            
-            BezierCPs::const_iterator s1 = cps.begin();
-            BezierCPs::const_iterator s2 = cps.begin();
-            ++s2;
-            for (; s1 != cps.end(); ++s1,++s2) {
-                if (s2 == cps.end()) {
-                    s2 = cps.begin();
-                }
-                
-                //Do not check intersections on the segments we are using for the angle
-                if (s1 == prev || s1 == cur || s2 == cur || s2 == next) {
-                    continue;
-                }
-                double x1,x2,y1,y2;
-                (*s1)->getPositionAtTime(time, &x1, &y1);
-                (*s2)->getPositionAtTime(time, &x2, &y2);
-                QLineF line2(QPointF(x1,y1),QPointF(y1,y2));
-                QPointF intersection;
-                QLineF::IntersectType type = line1.intersect(line1, &intersection);
-                if (type == QLineF::BoundedIntersection) {
-                    intersections.push_back(std::make_pair(intersection,std::make_pair(s1,s2)));
-                }
-            }
-            
-           
-            
-            assert(intersections.size() == 1 || intersections.size() == 2);
-            const std::pair<QPointF,std::pair<BezierCPs::const_iterator,BezierCPs::const_iterator> > & inter = intersections.front();
-            
-            boost::shared_ptr<BezierCP> newPoint(new BezierCP);
-            newPoint->setStaticPosition(inter.first.x(), inter.first.y());
-            
-            //Separate the original patch in 2 parts and call regularize again on each of them
-            BezierCPs firstPart,secondPart;
-            BezierCPs::const_iterator it = cur;
-            for (; it != inter.second.second; ++it) {
-                
-            }
-        }
-        
-        ++cur;
-        ++prev;
-        ++next;
-    }
-
-    
-    
-}
-#endif
 
 //From http://www.math.ualberta.ca/~bowman/publications/cad10.pdf
 void

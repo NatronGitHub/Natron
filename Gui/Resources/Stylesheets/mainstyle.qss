@@ -480,6 +480,7 @@ QMenu {
     border: 0px;
     margin: 0px;
     color : %5;
+    menu-scrollable: 1;
 }
 QMenu::item:selected { /* when user selects item using mouse or keyboard */
     background-color: %1;
