@@ -2729,7 +2729,7 @@ ViewerTab::onAutoContrastChanged(bool b)
     _imp->gammaSlider->setEnabled(!b);
     _imp->toggleGammaButton->setEnabled(!b);
     if (!b) {
-        _imp->viewerNode->onGainChanged( _imp->gainBox->value() );
+        _imp->viewerNode->onGainChanged( std::pow(2,_imp->gainBox->value()) );
         _imp->viewerNode->onGammaChanged(_imp->gammaBox->value());
     }
 }
