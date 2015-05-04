@@ -492,7 +492,7 @@ static bool splitAt(const BezierCPs &cps, int time, double t, std::list<BezierCP
  **/
 static bool checkAnglesAndSplitIfNeeded(const BezierCPs &cps, int time,std::list<BezierCPs>* ret)
 {
-    assert(cps.size() == 4);
+    assert(cps.size() >= 3);
     
     
     
@@ -571,18 +571,54 @@ static void tensor(const BezierCPs& p, int time, const Point* internal, Point re
 
 static void coonsPatch(const BezierCPs& p, int time, Point ret[4][4])
 {
-    assert(p.size() == 4);
+    assert(p.size() >= 3);
     Point internal[4];
-    for (int j = 0; j < 4; ++j) {
-        Point p1 = getPointAt(p, time, j);
-        Point p1left = getLeftPointAt(p, time, j);
-        Point p1right = getRightPointAt(p, time, j);
+    BezierCPs::const_iterator cur = p.begin();
+    BezierCPs::const_iterator prev = p.end();
+    --prev;
+    BezierCPs::const_iterator next = cur;
+    ++next;
+    BezierCPs::const_iterator nextNext = next;
+    ++nextNext;
+    
+    for (int j = 0; j < 4; ++j,
+         ++prev,++cur,++next,++nextNext) {
+        if (cur == p.end()) {
+            cur = p.begin();
+        }
+        if (prev == p.end()) {
+            prev = p.begin();
+        }
+        if (next == p.end()) {
+            next = p.begin();
+        }
+        if (nextNext == p.end()) {
+            nextNext = p.begin();
+        }
         
-        Point p0 = getPointAt(p, time, j - 1);
-        Point p2 = getPointAt(p, time, j + 1);
-        Point p0left = getLeftPointAt(p, time, j - 1);
+        Point p1;
+        (*cur)->getPositionAtTime(time, &p1.x, &p1.y);
+        
+        Point p1left;
+        (*cur)->getLeftBezierPointAtTime(time, &p1left.x, &p1left.y);
+        
+        Point p1right;
+        (*cur)->getRightBezierPointAtTime(time, &p1right.x, &p1right.y);
+        
+        Point p0;
+        (*prev)->getPositionAtTime(time, &p0.x, &p0.y);
+        
+        Point p2;
+        (*next)->getPositionAtTime(time, &p2.x, &p2.y);
+        
+        Point p0left;
+        (*prev)->getLeftBezierPointAtTime(time, &p0left.x, &p0left.y);
+        
         Point p2right = getRightPointAt(p, time, j + 1);
-        Point p3 = getPointAt(p, time, j + 2);
+        (*next)->getRightBezierPointAtTime(time, &p2right.x, &p2right.y);
+        
+        Point p3;
+        (*nextNext)->getPositionAtTime(time, &p3.x, &p3.y);
         
         internal[j].x = 1. / 9. * (-4. * p1.x + 6. * (p1left.x + p1right.x) - 2. * (p0.x + p2.x) + 3. * (p0left.x + p2right.x) - p3.x);
         internal[j].y = 1. / 9. * (-4. * p1.y + 6. * (p1left.y + p1right.y) - 2. * (p0.y + p2.y) + 3. * (p0left.y + p2right.y) - p3.y);
@@ -680,7 +716,7 @@ Point findPointInside(const BezierCPs& cps, int time)
 
 void Natron::regularize(const BezierCPs &patch, int time, std::list<BezierCPs> *fixedPatch)
 {
-    if (patch.size() < 4) {
+    if (patch.size() < 3) {
         fixedPatch->push_back(patch);
         return;
     }
@@ -816,7 +852,9 @@ void Natron::regularize(const BezierCPs &patch, int time, std::list<BezierCPs> *
     // Compute one-ninth of the derivative of the Jacobian along the boundary.
     
     double c[4][5];
+    
     for (int i = 0; i < 4; ++i) {
+        memset(c[i], 0, 5 * sizeof(double));
         for (int j = 0; j < 4; ++j) {
             const double* w = fpv0[i][j];
             for (int k = 0; k < 5 ;++k) {

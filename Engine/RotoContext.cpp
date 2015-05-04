@@ -38,6 +38,7 @@
 #include "Engine/Format.h"
 #include "Engine/RotoSerialization.h"
 #include "Engine/Transform.h"
+#include "Engine/CoonsRegularization.h"
 
 //This will enable correct evaluation of beziers
 //#define ROTO_USE_MESH_PATTERN_ONLY
@@ -7051,125 +7052,132 @@ RotoContextPrivate::renderInternalShape(int time,
     
     for (std::list<BezierCPs>::iterator it = coonPatches.begin(); it != coonPatches.end(); ++it) {
         
-        std::size_t size = it->size();
-        assert(size <= 4 && size >= 2);
-        
-        BezierCPs::iterator patchIT = it->begin();
-        boost::shared_ptr<BezierCP> p0ptr,p1ptr,p2ptr,p3ptr;
-        p0ptr = *patchIT;
-        ++patchIT;
-        if (size == 2) {
-            p1ptr = p0ptr;
-            p2ptr = *patchIT;
-            p3ptr = p2ptr;
-        } else if (size == 3) {
-            p1ptr = *patchIT;
-            p2ptr = *patchIT;
+        std::list<BezierCPs> fixedPatch;
+        Natron::regularize(*it, time, &fixedPatch);
+        for (std::list<BezierCPs>::iterator it2 = fixedPatch.begin(); it2 != fixedPatch.end(); ++it2) {
+            
+            
+            
+            std::size_t size = it2->size();
+            assert(size <= 4 && size >= 2);
+            
+            BezierCPs::iterator patchIT = it2->begin();
+            boost::shared_ptr<BezierCP> p0ptr,p1ptr,p2ptr,p3ptr;
+            p0ptr = *patchIT;
             ++patchIT;
-            p3ptr = *patchIT;
-        } else if (size == 4) {
-            p1ptr = *patchIT;
-            ++patchIT;
-            p2ptr = *patchIT;
-            ++patchIT;
-            p3ptr = *patchIT;
+            if (size == 2) {
+                p1ptr = p0ptr;
+                p2ptr = *patchIT;
+                p3ptr = p2ptr;
+            } else if (size == 3) {
+                p1ptr = *patchIT;
+                p2ptr = *patchIT;
+                ++patchIT;
+                p3ptr = *patchIT;
+            } else if (size == 4) {
+                p1ptr = *patchIT;
+                ++patchIT;
+                p2ptr = *patchIT;
+                ++patchIT;
+                p3ptr = *patchIT;
+            }
+            assert(p0ptr && p1ptr && p2ptr && p3ptr);
+            
+            Point p0,p0p1,p1p0,p1,p1p2,p2p1,p2p3,p3p2,p2,p3,p3p0,p0p3;
+            
+            p0ptr->getLeftBezierPointAtTime(time, &p0p3.x, &p0p3.y);
+            p0ptr->getPositionAtTime(time, &p0.x, &p0.y);
+            p0ptr->getRightBezierPointAtTime(time, &p0p1.x, &p0p1.y);
+            
+            p1ptr->getLeftBezierPointAtTime(time, &p1p0.x, &p1p0.y);
+            p1ptr->getPositionAtTime(time, &p1.x, &p1.y);
+            p1ptr->getRightBezierPointAtTime(time, &p1p2.x, &p1p2.y);
+            
+            p2ptr->getLeftBezierPointAtTime(time, &p2p1.x, &p2p1.y);
+            p2ptr->getPositionAtTime(time, &p2.x, &p2.y);
+            p2ptr->getRightBezierPointAtTime(time, &p2p3.x, &p2p3.y);
+            
+            p3ptr->getLeftBezierPointAtTime(time, &p3p2.x, &p3p2.y);
+            p3ptr->getPositionAtTime(time, &p3.x, &p3.y);
+            p3ptr->getRightBezierPointAtTime(time, &p3p0.x, &p3p0.y);
+            
+            
+            adjustToPointToScale(mipmapLevel, p0.x, p0.y);
+            adjustToPointToScale(mipmapLevel, p0p1.x, p0p1.y);
+            adjustToPointToScale(mipmapLevel, p1p0.x, p1p0.y);
+            adjustToPointToScale(mipmapLevel, p1.x, p1.y);
+            adjustToPointToScale(mipmapLevel, p1p2.x, p1p2.y);
+            adjustToPointToScale(mipmapLevel, p2p1.x, p2p1.y);
+            adjustToPointToScale(mipmapLevel, p2.x, p2.y);
+            adjustToPointToScale(mipmapLevel, p2p3.x, p2p3.y);
+            adjustToPointToScale(mipmapLevel, p3p2.x, p3p2.y);
+            adjustToPointToScale(mipmapLevel, p3.x, p3.y);
+            adjustToPointToScale(mipmapLevel, p3p0.x, p3p0.y);
+            adjustToPointToScale(mipmapLevel, p0p3.x, p0p3.y);
+            
+            
+            /*
+             Add a Coons patch such as:
+             
+             C1  Side 1   C2
+             +---------------+
+             |               |
+             |  P1       P2  |
+             |               |
+             Side 0 |               | Side 2
+             |               |
+             |               |
+             |  P0       P3  |
+             |               |
+             +---------------+
+             C0     Side 3   C3
+             
+             In the above drawing, C0 is p0, P0 is p0p1, P1 is p1p0, C1 is p1 and so on...
+             */
+            
+            ///move to C0
+            cairo_mesh_pattern_begin_patch(mesh);
+            cairo_mesh_pattern_move_to(mesh, p0.x, p0.y);
+            if (size == 4) {
+                cairo_mesh_pattern_curve_to(mesh, p0p1.x, p0p1.y, p1p0.x, p1p0.y, p1.x, p1.y);
+                cairo_mesh_pattern_curve_to(mesh, p1p2.x, p1p2.y, p2p1.x, p2p1.y, p2.x, p2.y);
+                cairo_mesh_pattern_curve_to(mesh, p2p3.x, p2p3.y, p3p2.x, p3p2.y, p3.x, p3.y);
+                cairo_mesh_pattern_curve_to(mesh, p3p0.x, p3p0.y, p0p3.x, p0p3.y, p0.x, p0.y);
+            } else if (size == 3) {
+                cairo_mesh_pattern_curve_to(mesh, p0p1.x, p0p1.y, p1p0.x, p1p0.y, p1.x, p1.y);
+                cairo_mesh_pattern_line_to(mesh, p2.x, p2.y);
+                cairo_mesh_pattern_curve_to(mesh, p2p3.x, p2p3.y, p3p2.x, p3p2.y, p3.x, p3.y);
+                cairo_mesh_pattern_curve_to(mesh, p3p0.x, p3p0.y, p0p3.x, p0p3.y, p0.x, p0.y);
+            } else {
+                assert(size == 2);
+                cairo_mesh_pattern_line_to(mesh, p1.x, p1.y);
+                cairo_mesh_pattern_curve_to(mesh, p1p2.x, p1p2.y, p2p1.x, p2p1.y, p2.x, p2.y);
+                cairo_mesh_pattern_line_to(mesh, p3.x, p3.y);
+                cairo_mesh_pattern_curve_to(mesh, p3p0.x, p3p0.y, p0p3.x, p0p3.y, p0.x, p0.y);
+            }
+            ///Set the 4 corners color
+            
+            // IMPORTANT NOTE:
+            // The two sqrt below are due to a probable cairo bug.
+            // To check wether the bug is present is a given cairo version,
+            // make any shape with a very large feather and set
+            // opacity to 0.5. Then, zoom on the polygon border to check if the intensity is continuous
+            // and approximately equal to 0.5.
+            // If the bug if ixed in cairo, please use #if CAIRO_VERSION>xxx to keep compatibility with
+            // older Cairo versions.
+            cairo_mesh_pattern_set_corner_color_rgba( mesh, 0, shapeColor[0], shapeColor[1], shapeColor[2],
+                                                     std::sqrt(opacity) );
+            cairo_mesh_pattern_set_corner_color_rgba(mesh, 1, shapeColor[0], shapeColor[1], shapeColor[2],
+                                                     opacity);
+            cairo_mesh_pattern_set_corner_color_rgba(mesh, 2, shapeColor[0], shapeColor[1], shapeColor[2],
+                                                     opacity);
+            cairo_mesh_pattern_set_corner_color_rgba(mesh, 3, shapeColor[0], shapeColor[1], shapeColor[2],
+                                                     std::sqrt(opacity));
+            assert(cairo_pattern_status(mesh) == CAIRO_STATUS_SUCCESS);
+            
+            cairo_mesh_pattern_end_patch(mesh);
+            
         }
-        assert(p0ptr && p1ptr && p2ptr && p3ptr);
-    
-        Point p0,p0p1,p1p0,p1,p1p2,p2p1,p2p3,p3p2,p2,p3,p3p0,p0p3;
-        
-        p0ptr->getLeftBezierPointAtTime(time, &p0p3.x, &p0p3.y);
-        p0ptr->getPositionAtTime(time, &p0.x, &p0.y);
-        p0ptr->getRightBezierPointAtTime(time, &p0p1.x, &p0p1.y);
-        
-        p1ptr->getLeftBezierPointAtTime(time, &p1p0.x, &p1p0.y);
-        p1ptr->getPositionAtTime(time, &p1.x, &p1.y);
-        p1ptr->getRightBezierPointAtTime(time, &p1p2.x, &p1p2.y);
-        
-        p2ptr->getLeftBezierPointAtTime(time, &p2p1.x, &p2p1.y);
-        p2ptr->getPositionAtTime(time, &p2.x, &p2.y);
-        p2ptr->getRightBezierPointAtTime(time, &p2p3.x, &p2p3.y);
-        
-        p3ptr->getLeftBezierPointAtTime(time, &p3p2.x, &p3p2.y);
-        p3ptr->getPositionAtTime(time, &p3.x, &p3.y);
-        p3ptr->getRightBezierPointAtTime(time, &p3p0.x, &p3p0.y);
-
-        
-        adjustToPointToScale(mipmapLevel, p0.x, p0.y);
-        adjustToPointToScale(mipmapLevel, p0p1.x, p0p1.y);
-        adjustToPointToScale(mipmapLevel, p1p0.x, p1p0.y);
-        adjustToPointToScale(mipmapLevel, p1.x, p1.y);
-        adjustToPointToScale(mipmapLevel, p1p2.x, p1p2.y);
-        adjustToPointToScale(mipmapLevel, p2p1.x, p2p1.y);
-        adjustToPointToScale(mipmapLevel, p2.x, p2.y);
-        adjustToPointToScale(mipmapLevel, p2p3.x, p2p3.y);
-        adjustToPointToScale(mipmapLevel, p3p2.x, p3p2.y);
-        adjustToPointToScale(mipmapLevel, p3.x, p3.y);
-        adjustToPointToScale(mipmapLevel, p3p0.x, p3p0.y);
-        adjustToPointToScale(mipmapLevel, p0p3.x, p0p3.y);
-        
-        
-        /*
-         Add a Coons patch such as:
-         
-         C1  Side 1   C2
-        +---------------+
-        |               |
-        |  P1       P2  |
-        |               |
- Side 0 |               | Side 2
-        |               |
-        |               |
-        |  P0       P3  |
-        |               |
-        +---------------+
-        C0     Side 3   C3
-        
-         In the above drawing, C0 is p0, P0 is p0p1, P1 is p1p0, C1 is p1 and so on...
-         */
-        
-        ///move to C0
-        cairo_mesh_pattern_begin_patch(mesh);
-        cairo_mesh_pattern_move_to(mesh, p0.x, p0.y);
-        if (size == 4) {
-            cairo_mesh_pattern_curve_to(mesh, p0p1.x, p0p1.y, p1p0.x, p1p0.y, p1.x, p1.y);
-            cairo_mesh_pattern_curve_to(mesh, p1p2.x, p1p2.y, p2p1.x, p2p1.y, p2.x, p2.y);
-            cairo_mesh_pattern_curve_to(mesh, p2p3.x, p2p3.y, p3p2.x, p3p2.y, p3.x, p3.y);
-            cairo_mesh_pattern_curve_to(mesh, p3p0.x, p3p0.y, p0p3.x, p0p3.y, p0.x, p0.y);
-        } else if (size == 3) {
-            cairo_mesh_pattern_curve_to(mesh, p0p1.x, p0p1.y, p1p0.x, p1p0.y, p1.x, p1.y);
-            cairo_mesh_pattern_line_to(mesh, p2.x, p2.y);
-            cairo_mesh_pattern_curve_to(mesh, p2p3.x, p2p3.y, p3p2.x, p3p2.y, p3.x, p3.y);
-            cairo_mesh_pattern_curve_to(mesh, p3p0.x, p3p0.y, p0p3.x, p0p3.y, p0.x, p0.y);
-        } else {
-            assert(size == 2);
-            cairo_mesh_pattern_line_to(mesh, p1.x, p1.y);
-            cairo_mesh_pattern_curve_to(mesh, p1p2.x, p1p2.y, p2p1.x, p2p1.y, p2.x, p2.y);
-            cairo_mesh_pattern_line_to(mesh, p3.x, p3.y);
-            cairo_mesh_pattern_curve_to(mesh, p3p0.x, p3p0.y, p0p3.x, p0p3.y, p0.x, p0.y);
-        }
-        ///Set the 4 corners color
-        
-        // IMPORTANT NOTE:
-        // The two sqrt below are due to a probable cairo bug.
-        // To check wether the bug is present is a given cairo version,
-        // make any shape with a very large feather and set
-        // opacity to 0.5. Then, zoom on the polygon border to check if the intensity is continuous
-        // and approximately equal to 0.5.
-        // If the bug if ixed in cairo, please use #if CAIRO_VERSION>xxx to keep compatibility with
-        // older Cairo versions.
-        cairo_mesh_pattern_set_corner_color_rgba( mesh, 0, shapeColor[0], shapeColor[1], shapeColor[2],
-                                                 std::sqrt(opacity) );
-        cairo_mesh_pattern_set_corner_color_rgba(mesh, 1, shapeColor[0], shapeColor[1], shapeColor[2],
-                                                 opacity);
-        cairo_mesh_pattern_set_corner_color_rgba(mesh, 2, shapeColor[0], shapeColor[1], shapeColor[2],
-                                                 opacity);
-        cairo_mesh_pattern_set_corner_color_rgba(mesh, 3, shapeColor[0], shapeColor[1], shapeColor[2],
-                                                 std::sqrt(opacity));
-        assert(cairo_pattern_status(mesh) == CAIRO_STATUS_SUCCESS);
-        
-        cairo_mesh_pattern_end_patch(mesh);
-
     }
 #else
     
