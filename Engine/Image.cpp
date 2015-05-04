@@ -2029,7 +2029,7 @@ convertToFormatInternal(const RectI & renderWindow,
                         for (int k = 0; k < dstNComps; ++k) {
                             if (k == 3) {
                                 ///For alpha channel, fill with 1, we reach here only if converting RGB-->RGBA
-                                DSTPIX pix = convertPixelDepth<float, DSTPIX>(1.f);
+                                DSTPIX pix = convertPixelDepth<float, DSTPIX>(0.f);
                                 dstPixels[k] = invert ? dstMaxValue - pix : pix;
 
                             } else if (!srcLut && !dstLut) {
