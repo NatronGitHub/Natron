@@ -2195,7 +2195,12 @@ Image::convertToFormatInternal(const RectI & renderWindow,
                         
                         for (int k = 0; k < dstNComps; ++k) {
                             if (k == 3) {
-                                ///For alpha channel, fill with 0, we reach here only if converting RGB-->RGBA
+                                // For alpha channel, fill with 0, we reach here only if converting RGB-->RGBA
+                                // Alpha is set to 0 and premult is set to Opaque.
+                                // That way, the Roto node can be conveniently used to draw a mask. This shouldn't
+                                // disturb anything else in the process, since Opaque premult means that alpha should
+                                // be considered as being 1 everywhere, whatever the actual alpha value is.
+                                // see GenericWriterPlugin::render, if (userPremult == OFX::eImageOpaque...
                                 DSTPIX pix = convertPixelDepth<float, DSTPIX>(0.f);
                                 dstPixels[k] = invert ? dstMaxValue - pix : pix;
 
