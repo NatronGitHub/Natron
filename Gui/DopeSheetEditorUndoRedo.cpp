@@ -291,6 +291,9 @@ bool DSMoveReaderCommand::mergeWith(const QUndoCommand *other)
     return true;
 }
 
+
+////////////////////////// DSRemoveKeysCommand //////////////////////////
+
 DSRemoveKeysCommand::DSRemoveKeysCommand(const std::vector<DSSelectedKey> &keys,
                                          DopeSheetView *view,
                                          QUndoCommand *parent) :
