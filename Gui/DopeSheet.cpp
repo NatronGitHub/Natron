@@ -51,6 +51,23 @@ bool nodeHasAnimation(const boost::shared_ptr<NodeGui> &node)
     return false;
 }
 
+bool nodeCanAnimate(const boost::shared_ptr<NodeGui> &node)
+{
+    const std::vector<boost::shared_ptr<KnobI> > &knobs = node->getNode()->getKnobs();
+
+    for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it = knobs.begin();
+         it != knobs.end();
+         ++it) {
+        boost::shared_ptr<KnobI> knob = *it;
+
+        if (knob->canAnimate()) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 /**
  * @brief groupHasAnimation
  *
@@ -354,6 +371,8 @@ DSNode::DSNode(DopeSheetEditor *dopeSheetEditor,
 
     // If it's another node
     if (nodeType == DSNode::CommonNodeType) {
+        boost::shared_ptr<NodeGroup> parentGroup = boost::dynamic_pointer_cast<NodeGroup>(node->getGroup());
+
         const KnobsAndGuis &knobs = nodeGui->getKnobs();
 
         for (KnobsAndGuis::const_iterator it = knobs.begin();
@@ -361,9 +380,13 @@ DSNode::DSNode(DopeSheetEditor *dopeSheetEditor,
             boost::shared_ptr<KnobI> knob = it->first.lock();
             KnobGui *knobGui = it->second;
 
-            NodePtr parentGroupNode = dynamic_cast<NodeGroup *>(node->getGroup().get())->getNode();
-            if (parentGroupNode) {
-                assert(parentGroupNode->isNodeCreated() && parentGroupNode->isSettingsPanelOpened());
+            if (parentGroup) {
+                NodePtr parentGroupNode = parentGroup->getNode();
+                boost::dynamic_pointer_cast<NodeGui>(parentGroupNode->getNodeGui())->ensurePanelCreated();
+
+                assert(parentGroupNode->isNodeCreated());
+                assert(parentGroupNode->isSettingsPanelOpened());
+
                 DSNode *parentGroupDSNode = dopeSheetEditor->findDSNode(parentGroupNode);
 
                 connect(knob->getSignalSlotHandler().get(), SIGNAL(keyFrameMoved(int,int,int)),
@@ -481,6 +504,17 @@ bool DSNode::isReaderNode() const
 bool DSNode::isGroupNode() const
 {
     return (getDSNodeType() == DSNode::GroupNodeType);
+}
+
+bool DSNode::isWithinGroupNode() const
+{
+    boost::shared_ptr<NodeGroup> parentGroup = boost::dynamic_pointer_cast<NodeGroup>(_imp->nodeGui->getNode()->getGroup());
+
+    if (parentGroup) {
+        return (parentGroup->getNode());
+    }
+
+    return false;
 }
 
 QRectF DSNode::getClipRect() const
@@ -932,11 +966,14 @@ void DopeSheetEditor::addNode(boost::shared_ptr<NodeGui> nodeGui)
         return;
     }
 
+    if (!nodeCanAnimate(nodeGui)) {
+        return;
+    }
+
     // Create the name item
     DSNode *dsNode = createDSNode(nodeGui);
 
     _imp->treeItemsAndDSNodes.insert(TreeItemAndDSNode(dsNode->getNameItem(), dsNode));
-
 }
 
 /**
@@ -1058,8 +1095,13 @@ DSNode *DopeSheetEditor::createDSNode(const boost::shared_ptr<NodeGui> &nodeGui)
 
     DSNode *dsNode = new DSNode(this, nameItem, nodeGui);
 
+    connect(nodeGui.get(), SIGNAL(settingsPanelClosed(bool)),
+            dsNode, SLOT(checkVisibleState()));
+
     connect(dsNode, SIGNAL(clipRectChanged()),
             this, SLOT(refreshDopeSheetView()));
+
+    dsNode->checkVisibleState();
 
     return dsNode;
 }

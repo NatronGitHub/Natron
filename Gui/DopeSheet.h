@@ -115,6 +115,8 @@ public:
     bool isReaderNode() const;
     bool isGroupNode() const;
 
+    bool isWithinGroupNode() const;
+
     QRectF getClipRect() const;
 
     bool isSelected() const;
