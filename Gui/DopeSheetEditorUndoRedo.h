@@ -157,7 +157,7 @@ class DSMoveReaderCommand : public QUndoCommand
 {
 public:
     DSMoveReaderCommand(DSNode *dsNodeReader,
-                        double old, double time,
+                        double oldTime, double newTime,
                         DopeSheetView *view,
                         QUndoCommand *parent = 0);
 

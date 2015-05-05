@@ -234,14 +234,14 @@ bool DSRightTrimReaderCommand::mergeWith(const QUndoCommand *other)
 ////////////////////////// DSMoveReaderCommand //////////////////////////
 
 DSMoveReaderCommand::DSMoveReaderCommand(DSNode *dsNodeReader,
-                                         double old,
-                                         double time,
+                                         double oldTime,
+                                         double newTime,
                                          DopeSheetView *view,
                                          QUndoCommand *parent) :
     QUndoCommand(parent),
     _dsNodeReader(dsNodeReader),
-    _oldTime(old),
-    _newTime(time),
+    _oldTime(oldTime),
+    _newTime(newTime),
     _view(view)
 {
     setText(QObject::tr("Move reader"));
