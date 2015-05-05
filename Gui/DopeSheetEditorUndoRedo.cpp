@@ -4,13 +4,18 @@
 
 #include "Engine/Knob.h"
 #include "Engine/Node.h"
+#include "Engine/NodeGroup.h"
+#include "Engine/NoOp.h"
 
 #include "Global/GlobalDefines.h"
 
-#include "Gui/KnobGui.h"
-#include "Gui/NodeGui.h"
 #include "Gui/DopeSheet.h"
 #include "Gui/DopeSheetView.h"
+#include "Gui/KnobGui.h"
+#include "Gui/NodeGui.h"
+
+
+typedef std::map<boost::weak_ptr<KnobI>, KnobGui *> KnobsAndGuis;
 
 
 ////////////////////////// Helpers //////////////////////////
@@ -67,12 +72,12 @@ void DSMoveKeysCommand::moveKey(DSKeyPtr selectedKey, double dt)
     boost::shared_ptr<KnobI> knob = selectedKey->dsKnob->getKnobGui()->getKnob();
 
     knob->beginChanges();
-
     knob->moveValueAtTime(selectedKey->key.getTime(),
                           selectedKey->dimension,
                           dt, 0, &selectedKey->key);
-
     knob->endChanges();
+
+    _view->update();
 }
 
 int DSMoveKeysCommand::id() const
@@ -139,6 +144,8 @@ void DSLeftTrimReaderCommand::trimLeft(double time)
     firstFrameKnob->beginChanges();
     firstFrameKnob->setValue(time, 0, Natron::eValueChangedReasonNatronGuiEdited, 0);
     firstFrameKnob->endChanges();
+
+    _view->update();
 }
 
 int DSLeftTrimReaderCommand::id() const
@@ -197,6 +204,8 @@ void DSRightTrimReaderCommand::trimRight(double time)
     lastFrameKnob->beginChanges();
     lastFrameKnob->setValue(time, 0, Natron::eValueChangedReasonNatronGuiEdited, 0);
     lastFrameKnob->endChanges();
+
+    _view->update();
 }
 
 int DSRightTrimReaderCommand::id() const
@@ -256,6 +265,8 @@ void DSMoveReaderCommand::moveClip(double time)
     timeOffsetKnob->beginChanges();
     timeOffsetKnob->setValue(time, 0, Natron::eValueChangedReasonNatronGuiEdited, 0);
     timeOffsetKnob->endChanges();
+
+    _view->update();
 }
 
 int DSMoveReaderCommand::id() const
@@ -279,7 +290,6 @@ bool DSMoveReaderCommand::mergeWith(const QUndoCommand *other)
 
     return true;
 }
-
 
 DSRemoveKeysCommand::DSRemoveKeysCommand(const std::vector<DSSelectedKey> &keys,
                                          DopeSheetView *view,
@@ -314,4 +324,100 @@ void DSRemoveKeysCommand::addOrRemoveKeyframe(bool add)
             knobGui->removeKeyFrame(selected.key.getTime(), selected.dimension);
         }
     }
+
+    _view->update();
+}
+
+
+////////////////////////// DSMoveGroupCommand //////////////////////////
+
+DSMoveGroupCommand::DSMoveGroupCommand(DSNode *dsNodeGroup, double dt, DopeSheetView *view, QUndoCommand *parent) :
+    QUndoCommand(parent),
+    _dsNodeGroup(dsNodeGroup),
+    _dt(dt),
+    _view(view)
+{
+    setText(QObject::tr("Move Group Keyframes"));
+}
+
+void DSMoveGroupCommand::undo()
+{
+    moveGroupKeyframes(-_dt);
+}
+
+void DSMoveGroupCommand::redo()
+{
+    moveGroupKeyframes(_dt);
+}
+
+int DSMoveGroupCommand::id() const
+{
+    return kDopeSheetEditorMoveGroupCommandCompressionID;
+}
+
+bool DSMoveGroupCommand::mergeWith(const QUndoCommand *other)
+{
+    const DSMoveGroupCommand *cmd = dynamic_cast<const DSMoveGroupCommand *>(other);
+
+    if (cmd->id() != id()) {
+        return false;
+    }
+
+    if (cmd->_dsNodeGroup != _dsNodeGroup) {
+        return false;
+    }
+
+    _dt += cmd->_dt;
+
+    return true;
+}
+
+void DSMoveGroupCommand::moveGroupKeyframes(double dt)
+{
+    NodeGroup *group = dynamic_cast<NodeGroup *>(_dsNodeGroup->getNodeGui()->getNode()->getLiveInstance());
+    NodeList nodes = group->getNodes();
+
+    for (NodeList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        boost::shared_ptr<NodeGui> nodeGui = boost::dynamic_pointer_cast<NodeGui>((*it)->getNodeGui());
+
+        if (dynamic_cast<GroupInput *>(nodeGui->getNode()->getLiveInstance()) ||
+                dynamic_cast<GroupOutput *>(nodeGui->getNode()->getLiveInstance())) {
+            continue;
+        }
+
+        const KnobsAndGuis &knobs = nodeGui->getKnobs();
+
+        for (KnobsAndGuis::const_iterator knobIt = knobs.begin(); knobIt != knobs.end(); ++knobIt) {
+            KnobGui *knobGui = (*knobIt).second;
+            boost::shared_ptr<KnobI> knob = knobGui->getKnob();
+
+            if (!knob->hasAnimation()) {
+                continue;
+            }
+
+            for (int dim = 0; dim < knobGui->getKnob()->getDimension(); ++dim) {
+                if (!knob->isAnimated(dim)) {
+                    continue;
+                }
+
+                KeyFrameSet keyframes = knobGui->getCurve(dim)->getKeyFrames_mt_safe();
+
+                for (KeyFrameSet::iterator kfIt = keyframes.begin(); kfIt != keyframes.end(); ++kfIt) {
+                    KeyFrame kf = (*kfIt);
+
+                    KeyFrame fake;
+
+                    knob->beginChanges();
+                    knob->moveValueAtTime(kf.getTime(), dim, dt, 0, &fake);
+                    knob->endChanges();
+                }
+            }
+        }
+    }
+
+    _dsNodeGroup->computeClipRect();
+
+    _view->clearKeyframeSelection();
+
+    _view->update();
 }

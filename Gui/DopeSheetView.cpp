@@ -375,7 +375,12 @@ Qt::CursorShape DopeSheetViewPrivate::getCursorDuringHover(const QPointF &widget
             DSNode *dsNode = (*dsNodeIt).second;
             QRectF nodeClipRect = rectToZoomCoordinates(dsNode->getClipRect());
 
-            if (dsNode->isReaderNode()) {
+            if (dsNode->isGroupNode()) {
+                if (nodeClipRect.contains(zoomCoords.x(), zoomCoords.y())) {
+                    ret = getCursorForEventState(DopeSheetView::esGroupRepos);
+                }
+            }
+            else if (dsNode->isReaderNode()) {
                 if (nodeClipRect.contains(zoomCoords.x(), zoomCoords.y())) {
                     if (isNearByClipRectLeft(zoomCoords.x(), nodeClipRect)) {
                         ret = getCursorForEventState(DopeSheetView::esReaderLeftTrim);
@@ -420,6 +425,7 @@ Qt::CursorShape DopeSheetViewPrivate::getCursorForEventState(DopeSheetView::Even
 
     switch (es) {
     case DopeSheetView::esClipRepos:
+    case DopeSheetView::esGroupRepos:
     case DopeSheetView::esMoveKeyframeSelection:
         cursorShape = Qt::OpenHandCursor;
         break;
@@ -1596,6 +1602,13 @@ void DopeSheetView::computeSelectedKeysBRect()
     }
 }
 
+void DopeSheetView::clearKeyframeSelection()
+{
+    _imp->keyframesSelected.clear();
+
+    computeSelectedKeysBRect();
+}
+
 void DopeSheetView::onTimeLineFrameChanged(SequenceTime sTime, int reason)
 {
     Q_UNUSED(sTime);
@@ -1749,7 +1762,14 @@ void DopeSheetView::mousePressEvent(QMouseEvent *e)
                 DSNode *dsNode = (*dsNodeIt).second;
                 QRectF nodeClipRect = _imp->rectToZoomCoordinates(dsNode->getClipRect());
 
-                if (dsNode->isReaderNode()) {
+                if (dsNode->isGroupNode()) {
+                    if (nodeClipRect.contains(clickZoomCoords.x(), clickZoomCoords.y())) {
+                        _imp->currentEditedGroup = dsNode;
+
+                        _imp->eventState = DopeSheetView::esGroupRepos;
+                    }
+                }
+                else if (dsNode->isReaderNode()) {
                     if (nodeClipRect.contains(clickZoomCoords.x(), clickZoomCoords.y())) {
                             _imp->currentEditedReader = dsNode;
 
@@ -1803,9 +1823,7 @@ void DopeSheetView::mousePressEvent(QMouseEvent *e)
         // So the user left clicked on background
         if (_imp->eventState == DopeSheetView::esNoEditingState) {
             if (!modCASIsControl(e)) {
-                _imp->keyframesSelected.clear();
-
-                _imp->selectedKeysBRect = QRectF();
+                clearKeyframeSelection();
             }
 
             _imp->eventState = DopeSheetView::esSelectionByRect;
@@ -1843,8 +1861,6 @@ void DopeSheetView::mouseMoveEvent(QMouseEvent *e)
     _imp->lastPosOnMouseMove = e->pos();
 
     update();
-
-    qDebug() << _imp->keyframesSelected.size();
 }
 
 void DopeSheetView::mouseReleaseEvent(QMouseEvent *e)
@@ -1948,9 +1964,26 @@ void DopeSheetView::mouseDragEvent(QMouseEvent *e)
 
         break;
     }
+    case DopeSheetView::esGroupRepos:
+    {
+        double totalMovement = currentTime - lastZoomCoordsOnMousePress.x();
+        // Clamp the motion to the nearet integer
+        totalMovement = std::floor(totalMovement + 0.5);
+
+        double dt = totalMovement - _imp->keyDragLastMovement;
+
+        _imp->pushUndoCommand(new DSMoveGroupCommand(_imp->currentEditedGroup, dt, this));
+
+        // Update the last drag movement
+        _imp->keyDragLastMovement = totalMovement;
+
+        break;
+    }
     default:
         break;
     }
+
+    qDebug() << _imp->keyframesSelected.size();
 }
 
 void DopeSheetView::wheelEvent(QWheelEvent *e)
@@ -1995,22 +2028,7 @@ void DopeSheetView::enterEvent(QEvent *e)
 {
     RUNNING_IN_MAIN_THREAD();
 
-    QWidget *currentFocus = qApp->focusWidget();
-
-    bool canSetFocus = !currentFocus ||
-            dynamic_cast<ViewerGL *>(currentFocus) ||
-            dynamic_cast<DopeSheetView *>(currentFocus) ||
-            dynamic_cast<Histogram *>(currentFocus) ||
-            dynamic_cast<NodeGraph *>(currentFocus) ||
-            dynamic_cast<QToolButton *>(currentFocus) ||
-            currentFocus->objectName() == "Properties" ||
-            currentFocus->objectName() == "tree" ||
-            currentFocus->objectName() == "SettingsPanel" ||
-            currentFocus->objectName() == "qt_tabwidget_tabbar";
-
-    if (canSetFocus) {
-        setFocus();
-    }
+    setFocus();
 
     QGLWidget::enterEvent(e);
 }

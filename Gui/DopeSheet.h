@@ -128,8 +128,6 @@ Q_SIGNALS:
 public Q_SLOTS:
     void onNodeNameChanged(const QString &name);
     void checkVisibleState();
-
-private Q_SLOTS:
     void computeClipRect();
 
 private:

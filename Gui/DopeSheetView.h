@@ -40,6 +40,7 @@ public:
         esReaderLeftTrim,
         esReaderRightTrim,
         esReaderSlip,
+        esGroupRepos,
         esSelectionByRect,
         esMoveKeyframeSelection,
         esMoveCurrentFrameIndicator,
@@ -61,14 +62,14 @@ public:
 public Q_SLOTS:
     void computeSelectedKeysBRect();
 
-    void onTimeLineFrameChanged(SequenceTime sTime, int reason);
-    void onTimeLineBoundariesChanged(int, int);
+    void clearKeyframeSelection();
 
 protected:
     void initializeGL() OVERRIDE FINAL;
     void resizeGL(int w, int h) OVERRIDE FINAL;
     void paintGL() OVERRIDE FINAL;
 
+    /* events */
     void mousePressEvent(QMouseEvent *e) OVERRIDE FINAL;
     void mouseMoveEvent(QMouseEvent *e) OVERRIDE FINAL;
     void mouseReleaseEvent(QMouseEvent *e) OVERRIDE FINAL;
@@ -81,6 +82,10 @@ protected:
     void focusInEvent(QFocusEvent *e) OVERRIDE FINAL;
 
     void keyPressEvent(QKeyEvent *e) OVERRIDE FINAL;
+
+private Q_SLOTS:
+    void onTimeLineFrameChanged(SequenceTime sTime, int reason);
+    void onTimeLineBoundariesChanged(int, int);
 
 private: /* functions */
     void renderText(double x, double y,

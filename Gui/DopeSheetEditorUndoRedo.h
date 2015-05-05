@@ -200,5 +200,34 @@ private:
     DopeSheetView *_view;
 };
 
+/**
+ * @brief The DSMoveGroupCommand class
+ *
+ *
+ */
+class DSMoveGroupCommand : public QUndoCommand
+{
+public:
+    DSMoveGroupCommand(DSNode *dsNodeGroup,
+                       double dt,
+                       DopeSheetView *view,
+                       QUndoCommand *parent = 0);
+
+    void undo() OVERRIDE FINAL;
+    void redo() OVERRIDE FINAL;
+
+    int id() const;
+    bool mergeWith(const QUndoCommand *other);
+
+private:
+    void moveGroupKeyframes(double dt);
+
+private:
+    DSNode *_dsNodeGroup;
+    double _dt;
+    DopeSheetView *_view;
+};
+
+
 
 #endif // DOPESHEETEDITORUNDOREDO_H

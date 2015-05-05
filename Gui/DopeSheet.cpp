@@ -366,6 +366,9 @@ DSNode::DSNode(DopeSheetEditor *dopeSheetEditor,
                 assert(parentGroupNode->isNodeCreated() && parentGroupNode->isSettingsPanelOpened());
                 DSNode *parentGroupDSNode = dopeSheetEditor->findDSNode(parentGroupNode);
 
+                connect(knob->getSignalSlotHandler().get(), SIGNAL(keyFrameMoved(int,int,int)),
+                        parentGroupDSNode, SLOT(computeClipRect()));
+
                 connect(knobGui, SIGNAL(keyFrameSet()),
                         parentGroupDSNode, SLOT(computeClipRect()));
 
@@ -420,7 +423,7 @@ boost::shared_ptr<NodeGui> DSNode::getNodeGui() const
 }
 
 /**
- * @brief DSNode::getKeyframeSets
+ * @brief DSNode::getTreeItemsAndDSKnobs
  *
  *
  */
