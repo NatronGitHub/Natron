@@ -41,7 +41,6 @@ public:
         esReaderRightTrim,
         esReaderSlip,
         esSelectionByRect,
-        esMoveSingleKeyframe,
         esMoveKeyframeSelection,
         esMoveCurrentFrameIndicator,
         esDraggingView
