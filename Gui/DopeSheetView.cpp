@@ -1750,6 +1750,9 @@ void DopeSheetView::mousePressEvent(QMouseEvent *e)
     QPointF clickZoomCoords = _imp->zoomContext.toZoomCoordinates(e->x(), e->y());
 
     if (buttonDownIsLeft(e)) {
+        if (_imp->isNearByCurrentFrameIndicatorBottom(clickZoomCoords)) {
+            _imp->eventState = DopeSheetView::esMoveCurrentFrameIndicator;
+        }
         if (_imp->rectToZoomCoordinates(_imp->selectedKeysBRect).contains(clickZoomCoords)) {
             _imp->eventState = DopeSheetView::esMoveKeyframeSelection;
         }
