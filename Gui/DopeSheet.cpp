@@ -177,12 +177,6 @@ DSKnob::DSKnob(QTreeWidgetItem *nameItem,
     _imp->nameItem = nameItem;
     _imp->knobGui = knobGui;
 
-    connect(knobGui, SIGNAL(keyFrameSet()),
-            this, SLOT(checkVisibleState()));
-
-    connect(knobGui, SIGNAL(keyFrameRemoved()),
-            this, SLOT(checkVisibleState()));
-
     checkVisibleState();
 }
 
@@ -1131,6 +1125,18 @@ DSKnob *DopeSheetEditor::createDSKnob(KnobGui *knobGui, DSNode *dsNode)
 
         dsKnob = new DSKnob(multiDimRootNameItem, knobGui);
     }
+
+    connect(knobGui, SIGNAL(keyFrameSet()),
+            dsKnob, SLOT(checkVisibleState()));
+
+    connect(knobGui, SIGNAL(keyFrameRemoved()),
+            dsKnob, SLOT(checkVisibleState()));
+
+    connect(knobGui, SIGNAL(keyFrameSet()),
+            this, SLOT(refreshDopeSheetView()));
+
+    connect(knobGui, SIGNAL(keyFrameRemoved()),
+            this, SLOT(refreshDopeSheetView()));
 
     connect(dsKnob, SIGNAL(needNodesVisibleStateChecking()),
             dsNode, SLOT(checkVisibleState()));
