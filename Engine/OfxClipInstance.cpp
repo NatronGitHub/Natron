@@ -318,22 +318,7 @@ OfxClipInstance::getDimension(const std::string &name) const OFX_EXCEPTION_SPEC
 double
 OfxClipInstance::getAspectRatio() const
 {
-    assert(_nodeInstance);
-    if (isOutput()) {
-        return _aspectRatio;
-    }
-
-    EffectInstance* input = getAssociatedNode();
-    if (!input || getName() == "Roto") {
-        Format f;
-        if (_nodeInstance) {
-            _nodeInstance->getRenderFormat(&f);
-        }
-        return f.getPixelAspectRatio();
-    } else if (_nodeInstance) {
-        return input->getPreferredAspectRatio();
-    }
-    return 0.; // invalid value
+    return _aspectRatio;
 }
 
 void
