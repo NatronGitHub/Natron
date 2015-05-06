@@ -318,6 +318,10 @@ OfxClipInstance::getDimension(const std::string &name) const OFX_EXCEPTION_SPEC
 double
 OfxClipInstance::getAspectRatio() const
 {
+    EffectInstance* input = getAssociatedNode();
+    if (input && input != _nodeInstance) {
+        return input->getPreferredAspectRatio();
+    }
     return _aspectRatio;
 }
 

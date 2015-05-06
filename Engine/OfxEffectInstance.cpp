@@ -1103,6 +1103,11 @@ clipPrefsProxy(OfxEffectInstance* self,
     
     
     std::string outputClipDepth = foundOutputPrefs->second.bitdepth;
+    
+    //Might be needed for bugged plugins
+    if (outputClipDepth.empty()) {
+        outputClipDepth = self->effectInstance()->bestSupportedDepth(kOfxBitDepthFloat);
+    }
     Natron::ImageBitDepthEnum outputClipDepthNatron = OfxClipInstance::ofxDepthToNatronDepth(outputClipDepth);
     
     ///Set a warning on the node if the bitdepth conversion from one of the input clip to the output clip is lossy
