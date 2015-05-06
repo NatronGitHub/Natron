@@ -149,6 +149,7 @@ public:
     TreeItemsAndDSNodes getTreeItemsAndDSNodes() const;
 
     DSNode *findDSNode(QTreeWidgetItem *item) const;
+    DSNode *findParentDSNode(QTreeWidgetItem *item) const;
     DSNode *findDSNode(const boost::shared_ptr<Natron::Node> &node) const;
 
     DSKnob *findDSKnob(QTreeWidgetItem *item, int *dimension) const;

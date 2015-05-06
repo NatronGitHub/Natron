@@ -727,7 +727,7 @@ HierarchyView::HierarchyView(DopeSheetEditor *editor, QWidget *parent) :
 void HierarchyView::drawRow(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const
 {
     QTreeWidgetItem *item = itemFromIndex(index);
-    DSNode *itemDSNode = m_editor->findDSNode(item);
+    DSNode *itemDSNode = m_editor->findParentDSNode(item);
 
     double r, g, b;
     itemDSNode->getNodeGui()->getColor(&r, &g, &b);
@@ -894,6 +894,18 @@ DSNode *DopeSheetEditor::findDSNode(const boost::shared_ptr<Natron::Node> &node)
 
 DSNode *DopeSheetEditor::findDSNode(QTreeWidgetItem *item) const
 {
+    TreeItemsAndDSNodes::const_iterator dsNodeIt = _imp->treeItemsAndDSNodes.find(item);
+
+    // Okay, the user not clicked on a top level item (which is associated with a DSNode)
+    if (dsNodeIt != _imp->treeItemsAndDSNodes.end()) {
+        return (*dsNodeIt).second;
+    }
+
+    return NULL;
+}
+
+DSNode *DopeSheetEditor::findParentDSNode(QTreeWidgetItem *item) const
+{
     TreeItemsAndDSNodes::const_iterator clickedDSNode = _imp->treeItemsAndDSNodes.find(item);
 
     // Okay, the user not clicked on a top level item (which is associated with a DSNode)
@@ -916,7 +928,7 @@ DSKnob *DopeSheetEditor::findDSKnob(QTreeWidgetItem *item, int *dimension) const
 {
     DSKnob *ret = 0;
 
-    DSNode *dsNode = findDSNode(item);
+    DSNode *dsNode = findParentDSNode(item);
 
     TreeItemsAndDSKnobs treeItemsAndKnobs = dsNode->getTreeItemsAndDSKnobs();
     TreeItemsAndDSKnobs::const_iterator knobIt = treeItemsAndKnobs.find(item);
@@ -1060,7 +1072,7 @@ void DopeSheetEditor::onItemDoubleClicked(QTreeWidgetItem *item, int column)
 {
     Q_UNUSED(column);
 
-    DSNode *itemDSNode = findDSNode(item);
+    DSNode *itemDSNode = findParentDSNode(item);
 
     boost::shared_ptr<NodeGui> nodeGui = itemDSNode->getNodeGui();
 
