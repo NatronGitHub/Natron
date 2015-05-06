@@ -300,41 +300,7 @@ DSNode *DopeSheetViewPrivate::getNodeUnderMouse(const QPointF &pos) const
 
 DSKnob *DopeSheetViewPrivate::getKnobUnderMouse(const QPointF &pos, int *dimension) const
 {
-    DSKnob *dsKnob = 0;
-
-    QTreeWidgetItem *clickedTreeItem = dopeSheetEditor->getHierarchyView()->itemAt(0, pos.y());
-
-    DSNode *dsNode = dopeSheetEditor->findDSNode(clickedTreeItem);
-
-    TreeItemsAndDSKnobs treeItemsAndKnobs = dsNode->getTreeItemsAndDSKnobs();
-    TreeItemsAndDSKnobs::const_iterator knobIt = treeItemsAndKnobs.find(clickedTreeItem);
-
-    if (knobIt == treeItemsAndKnobs.end()) {
-        QTreeWidgetItem *knobTreeItem = clickedTreeItem->parent();
-        knobIt = treeItemsAndKnobs.find(knobTreeItem);
-
-        if (knobIt != treeItemsAndKnobs.end()) {
-            dsKnob = knobIt->second;
-        }
-
-        if (dimension) {
-            if (dsKnob->isMultiDim()) {
-                *dimension = knobTreeItem->indexOfChild(clickedTreeItem);
-            }
-        }
-    }
-    else {
-        dsKnob = knobIt->second;
-
-        if (dsKnob->getKnobGui()->getKnob()->getDimension() > 1) {
-            *dimension = -1;
-        }
-        else {
-            *dimension = 0;
-        }
-    }
-
-    return dsKnob;
+    return dopeSheetEditor->findDSKnob(QPoint(pos.x(), pos.y()), dimension);
 }
 
 DSKeyPtrList::iterator DopeSheetViewPrivate::keyframeIsAlreadyInSelected(const DSSelectedKey &key)

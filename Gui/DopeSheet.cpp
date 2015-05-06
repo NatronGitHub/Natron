@@ -454,26 +454,6 @@ DSNode::DSNodeType DSNode::getDSNodeType() const
     return DSNodeType(_imp->nameItem->type());
 }
 
-DSKnob *DSNode::findDSKnob(QTreeWidgetItem *item) const
-{
-    TreeItemsAndDSKnobs::const_iterator clickedDSKnob = _imp->treeItemsAndDSKnobs.find(item);
-
-    // Okay, the user not clicked on a multidim root item (which is associated with a DSKnob)
-    if (clickedDSKnob == _imp->treeItemsAndDSKnobs.end()) {
-        // So we find this root item
-        QTreeWidgetItem *itemRoot = item;
-
-        if (itemRoot->parent()) {
-            itemRoot = itemRoot->parent();
-        }
-
-        // And we find the node
-        clickedDSKnob = _imp->treeItemsAndDSKnobs.find(itemRoot);
-    }
-
-    return (*clickedDSKnob).second;
-}
-
 /**
  * @brief DSNode::isParentNode
  *
@@ -938,6 +918,50 @@ DSNode *DopeSheetEditor::findDSNode(QTreeWidgetItem *item) const
     return (*clickedDSNode).second;
 }
 
+DSKnob *DopeSheetEditor::findDSKnob(QTreeWidgetItem *item, int *dimension) const
+{
+    DSKnob *ret = 0;
+
+    DSNode *dsNode = findDSNode(item);
+
+    TreeItemsAndDSKnobs treeItemsAndKnobs = dsNode->getTreeItemsAndDSKnobs();
+    TreeItemsAndDSKnobs::const_iterator knobIt = treeItemsAndKnobs.find(item);
+
+    if (knobIt == treeItemsAndKnobs.end()) {
+        QTreeWidgetItem *knobTreeItem = item->parent();
+        knobIt = treeItemsAndKnobs.find(knobTreeItem);
+
+        if (knobIt != treeItemsAndKnobs.end()) {
+            ret = knobIt->second;
+        }
+
+        if (dimension) {
+            if (ret->isMultiDim()) {
+                *dimension = knobTreeItem->indexOfChild(item);
+            }
+        }
+    }
+    else {
+        ret = knobIt->second;
+
+        if (ret->getKnobGui()->getKnob()->getDimension() > 1) {
+            *dimension = -1;
+        }
+        else {
+            *dimension = 0;
+        }
+    }
+
+    return ret;
+}
+
+DSKnob *DopeSheetEditor::findDSKnob(const QPoint &point, int *dimension) const
+{
+    QTreeWidgetItem *treeItemAt = _imp->hierarchyView->itemAt(0, point.y());
+
+    return findDSKnob(treeItemAt, dimension);
+}
+
 /**
  * @brief DopeSheetEditor::addNode
  *
@@ -1148,9 +1172,8 @@ void DopeSheetEditor::refreshClipRects()
 {
     for (TreeItemsAndDSNodes::const_iterator it = _imp->treeItemsAndDSNodes.begin();
          it != _imp->treeItemsAndDSNodes.end();
-         ++it){
+         ++it) {
         DSNode *dsNode = (*it).second;
         dsNode->computeClipRect();
     }
 }
-

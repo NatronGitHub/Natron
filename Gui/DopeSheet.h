@@ -47,7 +47,6 @@ typedef std::map<QTreeWidgetItem *, DSNode *> TreeItemsAndDSNodes;
 typedef std::map<QTreeWidgetItem *, DSKnob *> TreeItemsAndDSKnobs;
 // typedefs
 
-
 class DSKnob : public QObject
 {
     Q_OBJECT
@@ -109,8 +108,6 @@ public:
 
     DSNode::DSNodeType getDSNodeType() const;
 
-    DSKnob *findDSKnob(QTreeWidgetItem *item) const;
-
     bool isCommonNode() const;
     bool isReaderNode() const;
     bool isGroupNode() const;
@@ -151,8 +148,10 @@ public:
 
     TreeItemsAndDSNodes getTreeItemsAndDSNodes() const;
 
-    DSNode *findDSNode(const boost::shared_ptr<Natron::Node> &node) const;
     DSNode *findDSNode(QTreeWidgetItem *item) const;
+
+    DSKnob *findDSKnob(QTreeWidgetItem *item, int *dimension) const;
+    DSKnob *findDSKnob(const QPoint &point, int *dimension) const;
 
     void addNode(boost::shared_ptr<NodeGui> nodeGui);
     void removeNode(NodeGui *node);
@@ -166,6 +165,8 @@ public Q_SLOTS:
 private: /* functions */
     DSNode *createDSNode(const boost::shared_ptr<NodeGui> &nodeGui);
     DSKnob *createDSKnob(KnobGui *knobGui, DSNode *dsNode);
+
+    DSNode *findDSNode(const boost::shared_ptr<Natron::Node> &node) const;
 
 private Q_SLOTS:
     void refreshClipRects();
