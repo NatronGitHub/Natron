@@ -149,9 +149,12 @@ public:
     TreeItemsAndDSNodes getTreeItemsAndDSNodes() const;
 
     DSNode *findDSNode(QTreeWidgetItem *item) const;
+    DSNode *findDSNode(const boost::shared_ptr<Natron::Node> &node) const;
 
     DSKnob *findDSKnob(QTreeWidgetItem *item, int *dimension) const;
     DSKnob *findDSKnob(const QPoint &point, int *dimension) const;
+
+    DSNode *getParentGroupDSNode(DSNode *dsNode) const;
 
     void addNode(boost::shared_ptr<NodeGui> nodeGui);
     void removeNode(NodeGui *node);
@@ -166,7 +169,6 @@ private: /* functions */
     DSNode *createDSNode(const boost::shared_ptr<NodeGui> &nodeGui);
     DSKnob *createDSKnob(KnobGui *knobGui, DSNode *dsNode);
 
-    DSNode *findDSNode(const boost::shared_ptr<Natron::Node> &node) const;
 
 private Q_SLOTS:
     void refreshClipRects();
