@@ -31,6 +31,7 @@ class Gui;
 class HierarchyView;
 class KnobI;
 class KnobGui;
+class NodeGroup;
 class NodeGui;
 class TimeLine;
 
@@ -156,6 +157,8 @@ public:
     DSKnob *findDSKnob(const QPoint &point, int *dimension) const;
 
     DSNode *getParentGroupDSNode(DSNode *dsNode) const;
+
+    bool groupSubNodesAreHidden(NodeGroup *group) const;
 
     void addNode(boost::shared_ptr<NodeGui> nodeGui);
     void removeNode(NodeGui *node);

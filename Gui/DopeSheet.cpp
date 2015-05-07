@@ -280,6 +280,8 @@ public:
     ~DSNodePrivate();
 
     /* attributes */
+    DopeSheetEditor *dopeSheetEditor;
+
     boost::shared_ptr<NodeGui> nodeGui;
 
     QTreeWidgetItem *nameItem;
@@ -292,6 +294,7 @@ public:
 };
 
 DSNodePrivate::DSNodePrivate() :
+    dopeSheetEditor(0),
     nodeGui(),
     nameItem(0),
     treeItemsAndDSKnobs(),
@@ -330,6 +333,7 @@ DSNode::DSNode(DopeSheetEditor *dopeSheetEditor,
     QObject(),
     _imp(new DSNodePrivate)
 {
+    _imp->dopeSheetEditor = dopeSheetEditor;
     _imp->nameItem = nameItem;
     _imp->nodeGui = nodeGui;
 
@@ -341,6 +345,9 @@ DSNode::DSNode(DopeSheetEditor *dopeSheetEditor,
     connect(nodeGui->getSettingPanel(), SIGNAL(closeChanged(bool)),
             dopeSheetEditor, SLOT(refreshDopeSheetView()));
 
+    connect(nodeGui->getSettingPanel(), SIGNAL(closeChanged(bool)),
+            this, SLOT(checkVisibleState()));
+
     DSNode::DSNodeType nodeType = getDSNodeType();
 
     // Create the hierarchy
@@ -348,7 +355,6 @@ DSNode::DSNode(DopeSheetEditor *dopeSheetEditor,
     if (nodeType == DSNode::ReaderNodeType) {
         // The dopesheet view must refresh if the user set some values in the settings panel
         // so we connect some signals/slots
-        // TODO disconnect them
         boost::shared_ptr<KnobSignalSlotHandler> firstFrameKnob = node->getKnobByName("firstFrame")->getSignalSlotHandler();
         boost::shared_ptr<KnobSignalSlotHandler> lastFrameKnob =  node->getKnobByName("lastFrame")->getSignalSlotHandler();
         boost::shared_ptr<KnobSignalSlotHandler> startingTimeKnob = node->getKnobByName("startingTime")->getSignalSlotHandler();
@@ -367,24 +373,32 @@ DSNode::DSNode(DopeSheetEditor *dopeSheetEditor,
     if (nodeType == DSNode::CommonNodeType) {
         const KnobsAndGuis &knobs = nodeGui->getKnobs();
 
+        if (DSNode *parentGroupDSNode = dopeSheetEditor->getParentGroupDSNode(this)) {
+            connect(nodeGui->getSettingPanel(), SIGNAL(closeChanged(bool)),
+                    parentGroupDSNode, SLOT(checkVisibleState()));
+
+            connect(nodeGui->getSettingPanel(), SIGNAL(closeChanged(bool)),
+                    parentGroupDSNode, SLOT(computeClipRect()));
+        }
+
         for (KnobsAndGuis::const_iterator it = knobs.begin();
              it != knobs.end(); ++it) {
             boost::shared_ptr<KnobI> knob = it->first.lock();
             KnobGui *knobGui = it->second;
 
-            if (DSNode *parentGroupDSNode = dopeSheetEditor->getParentGroupDSNode(this)) {
-                    connect(knob->getSignalSlotHandler().get(), SIGNAL(keyFrameMoved(int,int,int)),
-                            parentGroupDSNode, SLOT(computeClipRect()));
-
-                    connect(knobGui, SIGNAL(keyFrameSet()),
-                            parentGroupDSNode, SLOT(computeClipRect()));
-
-                    connect(knobGui, SIGNAL(keyFrameRemoved()),
-                            parentGroupDSNode, SLOT(computeClipRect()));
+            if (!knob->canAnimate() || !knob->isAnimationEnabled()) {
+                continue;
             }
 
-            if ( !knob->canAnimate() || !knob->isAnimationEnabled() ) {
-                continue;
+            if (DSNode *parentGroupDSNode = dopeSheetEditor->getParentGroupDSNode(this)) {
+                connect(knob->getSignalSlotHandler().get(), SIGNAL(keyFrameMoved(int,int,int)),
+                        parentGroupDSNode, SLOT(computeClipRect()));
+
+                connect(knobGui, SIGNAL(keyFrameSet()),
+                        parentGroupDSNode, SLOT(computeClipRect()));
+
+                connect(knobGui, SIGNAL(keyFrameRemoved()),
+                        parentGroupDSNode, SLOT(computeClipRect()));
             }
 
             DSKnob *dsKnob = dopeSheetEditor->createDSKnob(knobGui, this);
@@ -393,7 +407,45 @@ DSNode::DSNode(DopeSheetEditor *dopeSheetEditor,
         }
     }
 
-    computeClipRect();
+    // If some subnodes are already in the dope sheet, the connections must be set to update
+    // the group's clip rect
+    if (nodeType == DSNode::GroupNodeType) {
+        NodeList subNodes = dynamic_cast<NodeGroup *>(nodeGui->getNode()->getLiveInstance())->getNodes();
+
+        for (NodeList::const_iterator it = subNodes.begin(); it != subNodes.end(); ++it) {
+            NodePtr subNode = (*it);
+            boost::shared_ptr<NodeGui> subNodeGui = boost::dynamic_pointer_cast<NodeGui>(subNode->getNodeGui());
+
+            if (!subNodeGui->getSettingPanel() || !subNodeGui->getSettingPanel()->isVisible()) {
+                continue;
+            }
+
+            connect(subNodeGui->getSettingPanel(), SIGNAL(closeChanged(bool)),
+                    this, SLOT(checkVisibleState()));
+
+            connect(subNodeGui->getSettingPanel(), SIGNAL(closeChanged(bool)),
+                    this, SLOT(computeClipRect()));
+
+            const KnobsAndGuis &knobs = subNodeGui->getKnobs();
+
+            for (KnobsAndGuis::const_iterator knobIt = knobs.begin();
+                 knobIt != knobs.end(); ++knobIt) {
+                boost::shared_ptr<KnobI> knob = knobIt->first.lock();
+                KnobGui *knobGui = knobIt->second;
+
+                connect(knob->getSignalSlotHandler().get(), SIGNAL(keyFrameMoved(int,int,int)),
+                        this, SLOT(computeClipRect()));
+
+                connect(knobGui, SIGNAL(keyFrameSet()),
+                        this, SLOT(computeClipRect()));
+
+                connect(knobGui, SIGNAL(keyFrameRemoved()),
+                        this, SLOT(computeClipRect()));
+            }
+        }
+
+        computeClipRect();
+    }
 }
 
 /**
@@ -549,10 +601,17 @@ void DSNode::checkVisibleState()
         showItem = nodeHasAnimation(_imp->nodeGui);
     }
     else if (nodeType == DSNode::GroupNodeType) {
-        showItem = showItem && groupHasAnimation(dynamic_cast<NodeGroup *>(_imp->nodeGui->getNode()->getLiveInstance()));
+        NodeGroup *group = dynamic_cast<NodeGroup *>(_imp->nodeGui->getNode()->getLiveInstance());
+
+        showItem = showItem && !_imp->dopeSheetEditor->groupSubNodesAreHidden(group);
     }
 
     _imp->nameItem->setHidden(!showItem);
+
+    // Hide the parent group item if there's no subnodes displayed
+    if (DSNode *parentGroupDSNode = _imp->dopeSheetEditor->getParentGroupDSNode(this)) {
+        parentGroupDSNode->checkVisibleState();
+    }
 }
 
 /**
@@ -981,6 +1040,31 @@ DSNode *DopeSheetEditor::getParentGroupDSNode(DSNode *dsNode) const
     return parentGroupDSNode;
 }
 
+bool DopeSheetEditor::groupSubNodesAreHidden(NodeGroup *group) const
+{
+    bool ret = true;
+
+    NodeList subNodes = group->getNodes();
+
+    for (NodeList::const_iterator it = subNodes.begin(); it != subNodes.end(); ++it) {
+        NodePtr node = (*it);
+
+        DSNode *dsNode = findDSNode(node);
+
+        if (!dsNode) {
+            continue;
+        }
+
+        if (!dsNode->getNameItem()->isHidden()) {
+            ret = false;
+
+            break;
+        }
+    }
+
+    return ret;
+}
+
 /**
  * @brief DopeSheetEditor::addNode
  *
@@ -1138,11 +1222,12 @@ DSNode *DopeSheetEditor::createDSNode(const boost::shared_ptr<NodeGui> &nodeGui)
 
     DSNode *dsNode = new DSNode(this, nameItem, nodeGui);
 
-    connect(nodeGui.get(), SIGNAL(settingsPanelClosed(bool)),
-            dsNode, SLOT(checkVisibleState()));
-
     connect(dsNode, SIGNAL(clipRectChanged()),
             this, SLOT(refreshDopeSheetView()));
+
+    if (DSNode *parentGroupDSNode = getParentGroupDSNode(dsNode)) {
+        parentGroupDSNode->computeClipRect();
+    }
 
     return dsNode;
 }
