@@ -36,7 +36,6 @@ namespace Natron {
 ProjectPrivate::ProjectPrivate(Natron::Project* project)
     : _publicInterface(project)
     , projectLock()
-    , projectName("Untitled." NATRON_PROJECT_FILE_EXT)
     , hasProjectBeenSavedByUser(false)
     , ageSinceLastSave( QDateTime::currentDateTime() )
     , lastAutoSave()
@@ -45,6 +44,8 @@ ProjectPrivate::ProjectPrivate(Natron::Project* project)
     , additionalFormats()
     , formatMutex(QMutex::Recursive)
     , envVars()
+    , projectName()
+    , projectPath()
     , formatKnob()
     , addFormatKnob()
     , viewsCount()
@@ -188,8 +189,8 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
     QDateTime time = QDateTime::currentDateTime();
     autoSetProjectFormat = false;
     hasProjectBeenSavedByUser = true;
-    projectName = name;
-    projectPath = path;
+    projectName->setValue(name.toStdString(), 0);
+    projectPath->setValue(path.toStdString(), 0);
     ageSinceLastSave = time;
     lastAutoSave = time;
     _publicInterface->getApp()->setProjectWasCreatedWithLowerCaseIDs(false);
@@ -426,6 +427,30 @@ ProjectPrivate::runOnProjectLoadCallback()
         
     }
 
+}
+    
+void
+ProjectPrivate::setProjectFilename(const std::string& filename)
+{
+    projectName->setValue(filename, 0);
+}
+    
+std::string
+ProjectPrivate::getProjectFilename() const
+{
+    return projectName->getValue();
+}
+    
+void
+ProjectPrivate::setProjectPath(const std::string& path)
+{
+    projectPath->setValue(path, 0);
+}
+    
+std::string
+ProjectPrivate::getProjectPath() const
+{
+    return projectPath->getValue();
 }
     
 } // namespace Natron

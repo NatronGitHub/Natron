@@ -312,21 +312,23 @@ Project::loadProjectInternal(const QString & path,
     if (isAutoSave) {
         _imp->autoSetProjectFormat = false;
         if (!isUntitledAutosave) {
-            int found = _imp->projectName.lastIndexOf(".autosave");
+            QString projectName(_imp->getProjectFilename().c_str());
+            int found = projectName.lastIndexOf(".autosave");
             if (found != -1) {
-                _imp->projectName = _imp->projectName.left(found);
+                _imp->setProjectFilename(projectName.left(found).toStdString());
             }
             _imp->hasProjectBeenSavedByUser = true;
         } else {
             _imp->hasProjectBeenSavedByUser = false;
-            _imp->projectName = NATRON_PROJECT_UNTITLED;
-            _imp->projectPath.clear();
+            _imp->setProjectFilename(NATRON_PROJECT_UNTITLED);
+            _imp->setProjectPath("");
         }
         _imp->lastAutoSave = QDateTime::currentDateTime();
         _imp->ageSinceLastSave = QDateTime();
         _imp->lastAutoSaveFilePath = filePath;
         
-        Q_EMIT projectNameChanged(_imp->projectName + " (*)");
+        QString projectName(_imp->getProjectFilename().c_str());
+        Q_EMIT projectNameChanged(projectName + " (*)");
 
     } else {
         Q_EMIT projectNameChanged(name);
@@ -500,12 +502,8 @@ Project::saveProjectInternal(const QString & path,
     }
 
     ///Fix file paths before saving.
-    QString oldProjectPath;
-    {
-        QMutexLocker l(&_imp->projectLock);
-        oldProjectPath = _imp->projectPath;
-    }
-    
+    QString oldProjectPath(_imp->getProjectPath().c_str());
+   
     if (!autoSave) {
         _imp->autoSetProjectDirectory(path);
         _imp->saveDate->setValue(timeStr.toStdString(), 0);
@@ -551,9 +549,9 @@ Project::saveProjectInternal(const QString & path,
             removeLockFile();
         }
         {
+            _imp->setProjectFilename(name.toStdString());
+            _imp->setProjectPath(path.toStdString());
             QMutexLocker l(&_imp->projectLock);
-            _imp->projectName = name;
-            _imp->projectPath = path;
             _imp->hasProjectBeenSavedByUser = true;
             _imp->ageSinceLastSave = time;
         }
@@ -563,7 +561,8 @@ Project::saveProjectInternal(const QString & path,
         createLockFile();
     } else {
         if (!isRenderSave) {
-            Q_EMIT projectNameChanged(_imp->projectName + " (*)");
+            QString projectName(_imp->getProjectFilename().c_str());
+            Q_EMIT projectNameChanged(projectName + " (*)");
         }
     }
     _imp->lastAutoSave = time;
@@ -578,8 +577,10 @@ Project::autoSave()
     if ( appPTR->isBackground() ) {
         return;
     }
-
-    saveProject(_imp->projectPath, _imp->projectName, true);
+    
+    QString path(_imp->getProjectPath().c_str());
+    QString name(_imp->getProjectFilename().c_str());
+    saveProject(path, name, true);
 }
 
 void
@@ -690,6 +691,8 @@ Project::initializeKnobs()
                                   " The [" NATRON_OCIO_ENV_VAR_NAME "] path will also be set automatically for better sharing of projects with reader nodes.");
     _imp->envVars->setSecret(false);
     _imp->envVars->setMultiPath(true);
+    
+    
     
     ///Initialize the OCIO Config
     onOCIOConfigPathChanged(appPTR->getOCIOConfigPath(),false);
@@ -814,6 +817,23 @@ Project::initializeKnobs()
     page->addKnob(_imp->frameRate);
     
     boost::shared_ptr<Page_Knob> infoPage = Natron::createKnob<Page_Knob>(this, tr("Info").toStdString());
+    
+    _imp->projectName = Natron::createKnob<String_Knob>(this, "Project Name");
+    _imp->projectName->setName("projectName");
+    _imp->projectName->setIsPersistant(false);
+    _imp->projectName->setAsLabel();
+    _imp->projectName->setAnimationEnabled(false);
+    _imp->projectName->setEnabled(0, false);
+    _imp->projectName->setDefaultValue(NATRON_PROJECT_UNTITLED);
+    infoPage->addKnob(_imp->projectName);
+    
+    _imp->projectPath = Natron::createKnob<String_Knob>(this, "Project path");
+    _imp->projectPath->setName("projectPath");
+    _imp->projectPath->setIsPersistant(false);
+    _imp->projectPath->setEnabled(0, false);
+    _imp->projectPath->setAnimationEnabled(false);
+    _imp->projectPath->setAsLabel();
+    infoPage->addKnob(_imp->projectPath);
     
     _imp->natronVersion = Natron::createKnob<String_Knob>(this, "Saved With");
     _imp->natronVersion->setName("softwareVersion");
@@ -1059,9 +1079,7 @@ Project::getProjectMainView() const
 QString
 Project::getProjectName() const
 {
-    QMutexLocker l(&_imp->projectLock);
-
-    return _imp->projectName;
+    return _imp->getProjectFilename().c_str();
 }
 
 QString
@@ -1081,9 +1099,7 @@ Project::hasEverAutoSaved() const
 QString
 Project::getProjectPath() const
 {
-    QMutexLocker l(&_imp->projectLock);
-
-    return _imp->projectPath;
+    return _imp->getProjectPath().c_str();
 }
 
 bool
@@ -1094,24 +1110,6 @@ Project::hasProjectBeenSavedByUser() const
     return _imp->hasProjectBeenSavedByUser;
 }
 
-#if 0 // dead code
-QDateTime
-Project::getProjectAgeSinceLastSave() const
-{
-    QMutexLocker l(&_imp->projectLock);
-
-    return _imp->ageSinceLastSave;
-}
-
-QDateTime
-Project::getProjectAgeSinceLastAutosave() const
-{
-    QMutexLocker l(&_imp->projectLock);
-
-    return _imp->lastAutoSave;
-}
-
-#endif
 
 bool
 Project::isAutoPreviewEnabled() const
@@ -1254,12 +1252,9 @@ Project::isGraphWorthLess() const
 QString
 Project::getLockAbsoluteFilePath() const
 {
-    QString projectPath,projectName;
-    {
-        QMutexLocker k(&_imp->projectLock);
-        projectPath = _imp->projectPath;
-        projectName = _imp->projectName;
-    }
+    QString projectPath(_imp->getProjectPath().c_str());
+    QString projectName(_imp->getProjectFilename().c_str());
+  
     if (projectPath.isEmpty()) {
         return QString();
     }
@@ -1347,12 +1342,8 @@ Project::removeLastAutosave()
      * Since we may have saved the project to an old project, overwritting the existing file, there might be 
      * a oldProject.ntp.autosave file next to it that belonged to the old project, make sure it gets removed too
      */
-    QString projectPath,projectName;
-    {
-        QMutexLocker k(&_imp->projectLock);
-        projectPath = _imp->projectPath;
-        projectName = _imp->projectName;
-    }
+    QString projectPath(_imp->getProjectPath().c_str());
+    QString projectName(_imp->getProjectFilename().c_str());
     
     if (!projectPath.endsWith('/')) {
         projectPath.append('/');
@@ -1415,12 +1406,8 @@ Project::reset()
     _imp->runOnProjectCloseCallback();
     
     QString lockFilePath = getLockAbsoluteFilePath();
-    QString projectPath,projectName;
-    {
-        QMutexLocker k(&_imp->projectLock);
-        projectPath = _imp->projectPath;
-        projectName = _imp->projectName;
-    }
+    QString projectPath(_imp->getProjectPath().c_str());
+    QString projectName(_imp->getProjectFilename().c_str());
     ///Remove the lock file if we own it
     if (QFile::exists(lockFilePath)) {
         QString author,lastsave;
@@ -1437,8 +1424,8 @@ Project::reset()
         _imp->autoSetProjectFormat = appPTR->getCurrentSettings()->isAutoProjectFormatEnabled();
         _imp->hasProjectBeenSavedByUser = false;
         _imp->projectCreationTime = QDateTime::currentDateTime();
-        _imp->projectName = NATRON_PROJECT_UNTITLED;
-        _imp->projectPath.clear();
+        _imp->setProjectFilename(NATRON_PROJECT_UNTITLED);
+        _imp->setProjectPath("");
         _imp->autoSaveTimer->stop();
         _imp->additionalFormats.clear();
     }

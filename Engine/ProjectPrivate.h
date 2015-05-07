@@ -64,8 +64,6 @@ struct ProjectPrivate
 {
     Natron::Project* _publicInterface;
     mutable QMutex projectLock; //< protects the whole project
-    QString projectName; //< name of the project, e.g: "Untitled.ntp"
-    QString projectPath; //< path of the project, e.g: /Users/Lala/Projects/
     QString lastAutoSaveFilePath; //< absolute file path of the last auto-save file
     bool hasProjectBeenSavedByUser; //< has this project ever been saved by the user?
     QDateTime ageSinceLastSave; //< the last time the user saved
@@ -79,6 +77,8 @@ struct ProjectPrivate
 
     ///Project parameters (settings)
     boost::shared_ptr<Path_Knob> envVars;
+    boost::shared_ptr<String_Knob> projectName; //< name of the project, e.g: "Untitled.ntp"
+    boost::shared_ptr<String_Knob> projectPath;  //< path of the project, e.g: /Users/Lala/Projects/
     boost::shared_ptr<Choice_Knob> formatKnob; //< built from builtinFormats & additionalFormats
     boost::shared_ptr<Button_Knob> addFormatKnob;
     boost::shared_ptr<Int_Knob> viewsCount;
@@ -130,6 +130,12 @@ struct ProjectPrivate
     void runOnProjectCloseCallback();
     
     void runOnProjectLoadCallback();
+    
+    void setProjectFilename(const std::string& filename);
+    std::string getProjectFilename() const;
+    
+    void setProjectPath(const std::string& path);
+    std::string getProjectPath() const;
 };
 }
 
