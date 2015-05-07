@@ -9,6 +9,7 @@
 
 #include "Global/GlobalDefines.h"
 
+#include "Gui/DockablePanel.h"
 #include "Gui/DopeSheet.h"
 #include "Gui/DopeSheetView.h"
 #include "Gui/KnobGui.h"
@@ -385,6 +386,10 @@ void DSMoveGroupCommand::moveGroupKeyframes(double dt)
 
         if (dynamic_cast<GroupInput *>(nodeGui->getNode()->getLiveInstance()) ||
                 dynamic_cast<GroupOutput *>(nodeGui->getNode()->getLiveInstance())) {
+            continue;
+        }
+
+        if (!nodeGui->getSettingPanel() || !nodeGui->getSettingPanel()->isVisible()) {
             continue;
         }
 
