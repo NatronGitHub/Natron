@@ -247,8 +247,7 @@ QRectF DopeSheetViewPrivate::nameItemRectToSectionRect(const QRectF &rect) const
 
 void DopeSheetViewPrivate::findKeyframeBounds(int *minTime, int *maxTime)
 {
-    int min = 0;
-    int max = 0;
+    std::vector<double> times;
 
     TreeItemsAndDSNodes dsNodeItems = dopeSheetEditor->getTreeItemsAndDSNodes();
 
@@ -271,17 +270,21 @@ void DopeSheetViewPrivate::findKeyframeBounds(int *minTime, int *maxTime)
             for (int i = 0; i < dsKnob->getKnobGui()->getKnob()->getDimension(); ++i) {
                 KeyFrameSet keyframes = dsKnob->getKnobGui()->getCurve(i)->getKeyFrames_mt_safe();
 
-                int firstTime = keyframes.begin()->getTime();
-                int lastTime = keyframes.rbegin()->getTime();
+                if (keyframes.empty()) {
+                    continue;
+                }
 
-                min = std::min(min, firstTime);
-                max = std::max(max, lastTime);
+                for (KeyFrameSet::const_iterator it = keyframes.begin(); it != keyframes.end(); ++it) {
+                    KeyFrame kf = *it;
+
+                    times.push_back(kf.getTime());
+                }
             }
         }
     }
 
-    *minTime = min;
-    *maxTime = max;
+    *minTime = *std::min_element(times.begin(), times.end());
+    *maxTime = *std::max_element(times.begin(), times.end());
 }
 
 DSNode *DopeSheetViewPrivate::getNodeUnderMouse(const QPointF &pos) const

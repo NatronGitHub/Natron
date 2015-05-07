@@ -405,6 +405,10 @@ DSNode::DSNode(DopeSheetEditor *dopeSheetEditor,
 
             _imp->treeItemsAndDSKnobs.insert(TreeItemAndDSKnob(dsKnob->getNameItem(), dsKnob));
         }
+
+        if (DSNode *parentGroupDSNode = dopeSheetEditor->getParentGroupDSNode(this)) {
+            parentGroupDSNode->computeClipRect();
+        }
     }
 
     // If some subnodes are already in the dope sheet, the connections must be set to update
@@ -522,17 +526,6 @@ bool DSNode::isGroupNode() const
     return (getDSNodeType() == DSNode::GroupNodeType);
 }
 
-bool DSNode::isWithinGroupNode() const
-{
-    boost::shared_ptr<NodeGroup> parentGroup = boost::dynamic_pointer_cast<NodeGroup>(_imp->nodeGui->getNode()->getGroup());
-
-    if (parentGroup) {
-        return (parentGroup->getNode());
-    }
-
-    return false;
-}
-
 QRectF DSNode::getClipRect() const
 {
     return _imp->clipRect;
@@ -644,16 +637,15 @@ void DSNode::computeClipRect()
     }
     else if (nodeType == DSNode::GroupNodeType) {
         // Get the frame range of all child nodes
-        std::vector<double> dimFirstKeyframes;
-        std::vector<double> dimLastKeyframes;
+        std::vector<double> times;
 
         NodeList nodes = dynamic_cast<NodeGroup *>(_imp->nodeGui->getNode()->getLiveInstance())->getNodes();
 
-        for (NodeList::const_iterator it = nodes.begin();
-             it != nodes.end();
-             ++it) {
+        for (NodeList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
             NodePtr node = (*it);
+
             boost::shared_ptr<NodeGui> nodeGui = boost::dynamic_pointer_cast<NodeGui>(node->getNodeGui());
+
 
             if (!nodeGui->getSettingPanel() || !nodeGui->getSettingPanel()->isVisible()) {
                 continue;
@@ -671,37 +663,36 @@ void DSNode::computeClipRect()
                 }
                 else {
                     for (int i = 0; i < knob->getDimension(); ++i) {
-                        double time = -1;
-                        knob->getFirstKeyFrameTime(i, &time);
+                        boost::shared_ptr<Curve> curve = knob->getCurve(i);
 
-                        if (time != -1) {
-                            dimFirstKeyframes.push_back(time);
+                        KeyFrameSet keyframes = curve->getKeyFrames_mt_safe();
+
+                        for (KeyFrameSet::const_iterator it = keyframes.begin(); it != keyframes.end(); ++it) {
+                            KeyFrame kf = (*it);
+
+                            double time = kf.getTime();
+
+                            times.push_back(time);
                         }
-
-                        knob->getLastKeyFrameTime(i, &time);
-
-                        if (time != -1) {
-                            dimLastKeyframes.push_back(time);
-                        }
-
                     }
                 }
             }
         }
 
-        if (!dimFirstKeyframes.size() || !dimLastKeyframes.size()) {
-            return;
+        if (times.empty()) {
+            _imp->clipRect = QRectF();
         }
+        else {
+            double groupFirstKeyframe = *std::min_element(times.begin(), times.end());
+            double groupLastKeyframe = *std::max_element(times.begin(), times.end());
 
-        double groupFirstKeyframe = *std::min_element(dimFirstKeyframes.begin(), dimFirstKeyframes.end());
-        double groupLastKeyframe = *std::max_element(dimLastKeyframes.begin(), dimLastKeyframes.end());
+            QRectF nameItemRect = getNameItemRect();
 
-        QRectF nameItemRect = getNameItemRect();
-
-        _imp->clipRect.setLeft(groupFirstKeyframe);
-        _imp->clipRect.setRight(groupLastKeyframe);
-        _imp->clipRect.setTop(nameItemRect.top() + 1);
-        _imp->clipRect.setBottom(nameItemRect.bottom() + 1);
+            _imp->clipRect.setLeft(groupFirstKeyframe);
+            _imp->clipRect.setRight(groupLastKeyframe);
+            _imp->clipRect.setTop(nameItemRect.top() + 1);
+            _imp->clipRect.setBottom(nameItemRect.bottom() + 1);
+        }
     }
 
     Q_EMIT clipRectChanged();
@@ -1097,6 +1088,10 @@ void DopeSheetEditor::addNode(boost::shared_ptr<NodeGui> nodeGui)
     _imp->treeItemsAndDSNodes.insert(TreeItemAndDSNode(dsNode->getNameItem(), dsNode));
 
     dsNode->checkVisibleState();
+
+    if (DSNode *parentGroupDSNode = getParentGroupDSNode(dsNode)) {
+        parentGroupDSNode->computeClipRect();
+    }
 }
 
 /**
@@ -1224,10 +1219,6 @@ DSNode *DopeSheetEditor::createDSNode(const boost::shared_ptr<NodeGui> &nodeGui)
 
     connect(dsNode, SIGNAL(clipRectChanged()),
             this, SLOT(refreshDopeSheetView()));
-
-    if (DSNode *parentGroupDSNode = getParentGroupDSNode(dsNode)) {
-        parentGroupDSNode->computeClipRect();
-    }
 
     return dsNode;
 }
