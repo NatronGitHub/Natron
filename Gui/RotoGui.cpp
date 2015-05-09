@@ -69,6 +69,7 @@ CLANG_DIAG_ON(uninitialized)
 #define kTransformArrowOffsetFromPoint 15
 
 #define DRAW_STROKE_FITTED_CURVE
+//#define DEBUG_STOKE
 
 using namespace Natron;
 
@@ -144,6 +145,9 @@ struct RotoGuiSharedData
     bool displayFeather;
     boost::shared_ptr<RotoStrokeItem> strokeBeingPaint;
     std::list<std::pair<Natron::Point,double> > strokeBeingPaintPoints;
+#ifdef DEBUG_STOKE
+    std::list<std::pair<Natron::Point,double> > strokeCopy;
+#endif
     
     RotoGuiSharedData()
     : selectedItems()
@@ -1050,7 +1054,9 @@ RotoGui::drawOverlays(double /*scaleX*/,
                 glEnd();
                 
 #ifdef DRAW_STROKE_FITTED_CURVE
-                
+#ifdef DEBUG_STOKE
+                isStroke->initialize(_imp->rotoData->strokeCopy);
+#endif
                 const BezierCPs& cps = isStroke->getControlPoints();
                 for (BezierCPs::const_iterator it2 = cps.begin(); it2 !=cps.end(); ++it2) {
                     
@@ -2651,6 +2657,9 @@ RotoGui::penUp(double /*scaleX*/,
     if (_imp->state == eEventStateBuildingStroke) {
         assert(_imp->rotoData->strokeBeingPaint);
         _imp->rotoData->strokeBeingPaint->initialize(_imp->rotoData->strokeBeingPaintPoints);
+#ifdef DEBUG_STOKE
+        _imp->rotoData->strokeCopy = _imp->rotoData->strokeBeingPaintPoints;
+#endif
         _imp->rotoData->strokeBeingPaintPoints.clear();
         pushUndoCommand(new AddStrokeUndoCommand(this,_imp->rotoData->strokeBeingPaint));
         _imp->rotoData->strokeBeingPaint.reset();

@@ -168,9 +168,9 @@ static double computeMaxError(const std::vector<Point>& points,const std::vector
         Point v;
         v.x = p.x - points[i].x;
         v.y = p.y - points[i].y;
-        double dist = std::sqrt(v.x * v.x + v.y * v.y);
-        if (dist >= maxDist) {
-            maxDist = dist;
+        double distSq = v.x * v.x + v.y * v.y;
+        if (distSq >= maxDist) {
+            maxDist = distSq;
             *splitPoint = i;
         }
     }

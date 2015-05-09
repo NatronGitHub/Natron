@@ -167,9 +167,9 @@ static Point getRightPointAt(const BezierCPs& cps, int time, double t)
 static double norm(const Point& z0, const Point& c0, const Point& c1, const Point& z1)
 {
     double fuzz2 = 1000. * std::numeric_limits<double>::epsilon() * 1000. * std::numeric_limits<double>::epsilon();
-    double p1_p1p2Norm = std::sqrt((c0.x - z0.x) * (c0.x - z0.x) + (c0.y - z0.y) * (c0.y - z0.y));
-    double p1_p2p1Norm = std::sqrt((c1.x - z0.x) * (c1.x - z0.x) + (c1.y - z0.y) * (c1.y - z0.y));
-    double p1_p2Norm = std::sqrt((z1.x - z0.x) * (z1.x - z0.x) + (z1.y - z0.y) * (z1.y - z0.y));
+    double p1_p1p2Norm = (c0.x - z0.x) * (c0.x - z0.x) + (c0.y - z0.y) * (c0.y - z0.y);
+    double p1_p2p1Norm = (c1.x - z0.x) * (c1.x - z0.x) + (c1.y - z0.y) * (c1.y - z0.y);
+    double p1_p2Norm = (z1.x - z0.x) * (z1.x - z0.x) + (z1.y - z0.y) * (z1.y - z0.y);
     return fuzz2 * std::max(p1_p1p2Norm,std::max(p1_p2p1Norm,p1_p2Norm));
 }
 
@@ -181,16 +181,16 @@ static Point predir(const BezierCPs& cps, int time, double t)
     p2 = getPointAt(cps, time, t);
     p2p1 = getLeftPointAt(cps, time, t);
     p1p2 = getRightPointAt(cps, time, t - 1);
-    p1 = getPointAt(cps, time, t);
+    p1 = getPointAt(cps, time, t - 1);
     dir.x =  3. * (p2.x - p2p1.x);
     dir.y =  3. * (p2.y - p2p1.y);
     
     double epsilon = norm(p1, p1p2, p2p1, p2);
     
     double predirNormSquared = dir.x * dir.x + dir.y * dir.y;
-    double normDir = std::sqrt(predirNormSquared);
-    assert(normDir != 0);
     if (predirNormSquared > epsilon) {
+        double normDir = std::sqrt(predirNormSquared);
+        assert(normDir != 0);
         Point ret;
         ret.x = dir.x / normDir;
         ret.y = dir.y / normDir;
@@ -199,9 +199,10 @@ static Point predir(const BezierCPs& cps, int time, double t)
     dir.x = 2. * p2p1.x - p1p2.x - p2.x;
     dir.y = 2. * p2p1.y - p1p2.y - p2.y;
     predirNormSquared = dir.x * dir.x + dir.y * dir.y;
-    normDir = std::sqrt(predirNormSquared);
-    assert(normDir != 0);
+
     if (predirNormSquared > epsilon) {
+        double normDir = std::sqrt(predirNormSquared);
+        assert(normDir != 0);
         Point ret;
         ret.x = dir.x / normDir;
         ret.y = dir.y / normDir;
@@ -210,7 +211,7 @@ static Point predir(const BezierCPs& cps, int time, double t)
     dir.x = p2.x - p1.x + 3. * (p1p2.x - p2p1.x);
     dir.y = p2.y - p1.y + 3. * (p1p2.y - p2p1.y);
     predirNormSquared = dir.x * dir.x + dir.y * dir.y;
-    normDir = std::sqrt(predirNormSquared);
+    double normDir = std::sqrt(predirNormSquared);
     assert(normDir != 0);
     Point ret;
     ret.x = dir.x / normDir;
@@ -230,9 +231,10 @@ static Point postdir(const BezierCPs& cps, int time, double t)
     dir.y = 3. * (p2p3.y - p2.y);
     double epsilon = norm(p2, p2p3, p3p2, p3);
     double predirNormSquared = dir.x * dir.x + dir.y * dir.y;
-    double normDir = std::sqrt(predirNormSquared);
-    assert(normDir != 0);
+    
     if (predirNormSquared > epsilon) {
+        double normDir = std::sqrt(predirNormSquared);
+        assert(normDir != 0);
         Point ret;
         ret.x = dir.x / normDir;
         ret.y = dir.y / normDir;
@@ -241,9 +243,10 @@ static Point postdir(const BezierCPs& cps, int time, double t)
     dir.x = p2.x - 2 * p2p3.x + p3p2.x;
     dir.y = p2.y - 2 * p2p3.y + p3p2.y;
     predirNormSquared = dir.x * dir.x + dir.y * dir.y;
-    normDir = std::sqrt(predirNormSquared);
-    assert(normDir != 0);
     if (predirNormSquared > epsilon) {
+        double normDir = std::sqrt(predirNormSquared);
+        assert(normDir != 0);
+
         Point ret;
         ret.x = dir.x / normDir;
         ret.y = dir.y / normDir;
@@ -252,7 +255,7 @@ static Point postdir(const BezierCPs& cps, int time, double t)
     dir.x = p3.x - p2.x + 3. * (p2p3.x - p3p2.x);
     dir.y = p3.y - p2.y + 3. * (p2p3.y - p3p2.y);
     predirNormSquared = dir.x * dir.x + dir.y * dir.y;
-    normDir = std::sqrt(predirNormSquared);
+    double normDir = std::sqrt(predirNormSquared);
     assert(normDir != 0);
     Point ret;
     ret.x = dir.x / normDir;
@@ -272,7 +275,10 @@ static Point dirVect(const BezierCPs& cps, int time, double t)
         ret.x = pre.x + post.x;
         ret.y = pre.y + post.y;
         double norm = std::sqrt(ret.x * ret.x + ret.y * ret.y);
-        assert(norm != 0);
+        if (norm == 0) {
+            ret.x = ret.y = 0;
+            return ret;
+        }
         ret.x /= norm;
         ret.y /= norm;
         return ret;
@@ -321,10 +327,12 @@ static Point dirVect(const BezierCPs& cps, int time, double t)
 }
 
 
-static boost::shared_ptr<BezierCP> makeBezierCPFromPoint(const Point& p)
+static boost::shared_ptr<BezierCP> makeBezierCPFromPoint(const Point& p, const Point& left, const Point& right)
 {
     boost::shared_ptr<BezierCP> ret(new BezierCP);
     ret->setStaticPosition(p.x, p.y);
+    ret->setLeftBezierStaticPosition(left.x, left.y);
+    ret->setRightBezierStaticPosition(right.x, right.y);
     return ret;
 }
 
@@ -342,12 +350,13 @@ static void findIntersection(const BezierCPs& cps,
     double dx = q.x - p.x;
     double dy = q.y - p.y;
     double det = p.y * q.x - p.x * q.y;
-    std::vector<std::pair<Point,std::pair<BezierCPs::const_iterator,BezierCPs::const_iterator> > > intersections;
+    std::vector<std::pair<boost::shared_ptr<BezierCP>,std::pair<BezierCPs::const_iterator,BezierCPs::const_iterator> > > intersections;
     
     BezierCPs::const_iterator s1 = cps.begin();
     BezierCPs::const_iterator s2 = cps.begin();
     ++s2;
-    for (; s1 != cps.end(); ++s1,++s2) {
+    int index = 0;
+    for (; s1 != cps.end(); ++s1,++s2, ++index) {
         if (s2 == cps.end()) {
             s2 = cps.begin();
         }
@@ -356,7 +365,7 @@ static void findIntersection(const BezierCPs& cps,
         (*s1)->getPositionAtTime(time, &z0.x, &z0.y);
         (*s1)->getRightBezierPointAtTime(time, &c0.x, &c0.y);
         (*s2)->getPositionAtTime(time, &z1.x, &z1.y);
-        (*s2)->getLeftBezierPointAtTime(time, &c1.x, &c0.y);
+        (*s2)->getLeftBezierPointAtTime(time, &c1.x, &c1.y);
         
         
         Point t3,t2,t1;
@@ -381,10 +390,12 @@ static void findIntersection(const BezierCPs& cps,
                              c1.x * c1.x + c1.y * c1.y)) {
                 double r[3];
                 int order[3];
-                int nsols = Natron::solveCubic(a, b, c, d, r, order);
+                int nsols = Natron::solveCubic(d, c, b, a, r, order);
                 for (int i = 0; i < nsols; ++i) {
                     roots.push_back(r[i]);
                 }
+            } else {
+                roots.push_back(0);
             }
         
         for (std::size_t i = 0; i < roots.size(); ++i) {
@@ -392,18 +403,21 @@ static void findIntersection(const BezierCPs& cps,
                 if (i + roots[i] >= roots.size() - fuzz) {
                     roots[i] = 0;
                 }
-                Point intersection;
-                Bezier::bezierPoint(z0,c0,c1,z1,roots[i],&intersection);
-                
-                double distToP = std::sqrt((p.x - intersection.x) * (p.x - intersection.x) + (p.y - intersection.y) * (p.y - intersection.y));
+                Point interP = getPointAt(cps, time, roots[i] + index);
+                Point interLeft = getLeftPointAt(cps, time, roots[i] + index);
+                Point interRight = getRightPointAt(cps, time, roots[i] + index);
+                boost::shared_ptr<BezierCP> intersection = makeBezierCPFromPoint(interP,interLeft,interRight);
+            
+                double distToP = std::sqrt((p.x - interP.x) * (p.x - interP.x) + (p.y - interP.y) * (p.y - interP.y));
                 if (std::abs(distToP) < 1e-4) {
                     continue;
                 }
                 
                 bool found = false;
-                for (std::vector<std::pair<Point,std::pair<BezierCPs::const_iterator,BezierCPs::const_iterator> > >::iterator it = intersections.begin(); it!=intersections.end(); ++it) {
-                    
-                    double distSquared = (intersection.x - it->first.x) * (intersection.x - it->first.x) + (intersection.y - it->first.y) * (intersection.y - it->first.y);
+                for (std::vector<std::pair<boost::shared_ptr<BezierCP>,std::pair<BezierCPs::const_iterator,BezierCPs::const_iterator> > >::iterator it = intersections.begin(); it!=intersections.end(); ++it) {
+                    Point other;
+                    it->first->getPositionAtTime(time, &other.x, &other.y);
+                    double distSquared = (interP.x - other.x) * (interP.x - other.x) + (interP.y - other.y) * (interP.y - other.y);
                     if (distSquared <= fuzz2) {
                         found = true;
                         break;
@@ -419,11 +433,9 @@ static void findIntersection(const BezierCPs& cps,
     
     
     
-    assert(intersections.size() == 1 || intersections.size() == 2);
-    const std::pair<Point,std::pair<BezierCPs::const_iterator,BezierCPs::const_iterator> > & inter = intersections.front();
-    
-    newPoint->reset(new BezierCP);
-    (*newPoint)->setStaticPosition(inter.first.x, inter.first.y);
+    assert(intersections.size() >= 1);
+    const std::pair<boost::shared_ptr<BezierCP>,std::pair<BezierCPs::const_iterator,BezierCPs::const_iterator> > & inter = intersections.front();
+    *newPoint = inter.first;
     *before = std::distance(cps.begin(), inter.second.first);
 }
 
@@ -432,6 +444,8 @@ static bool splitAt(const BezierCPs &cps, int time, double t, std::list<BezierCP
     Point dir = dirVect(cps, time, t);
     if (dir.x != 0. || dir.y != 0.) {
         Point z = getPointAt(cps, time, t);
+        Point zLeft = getLeftPointAt(cps, time, t);
+        Point zRight = getRightPointAt(cps, time, t);
         Point q;
         q.x = z.x;
         q.y = z.y + dir.y;
@@ -445,34 +459,58 @@ static bool splitAt(const BezierCPs &cps, int time, double t, std::list<BezierCP
         
         BezierCPs::const_iterator it = cps.begin();
         std::advance(it, std::ceil(t));
+        /*
+         "it" is now pointing to the next control point after the split point
+         */
+        
         BezierCPs::const_iterator start = it;
         
         BezierCPs::const_iterator end = cps.begin();
-        std::advance(end, pointIdx);
+        /*
+         "end" is the control point before the intersection point
+         */
+        if (pointIdx > 0) {
+            std::advance(end, pointIdx);
+        }
         
-        boost::shared_ptr<BezierCP> startingPoint = makeBezierCPFromPoint(z);
+        
+        boost::shared_ptr<BezierCP> startingPoint = makeBezierCPFromPoint(z, zLeft, zRight);
+        
+        //Start by adding the split point
         firstPart.push_back(startingPoint);
-        for (; it!=end; ++it) {
+        
+        //Add all control points until we reach the point before the intersection point
+        for (;it!=end;) {
+            
+            firstPart.push_back(*it);
+            
+            ++it;
             if (it == cps.end()) {
                 it = cps.begin();
             }
-            firstPart.push_back(*it);
         }
         firstPart.push_back(*end);
+        //Add the intersection point
         firstPart.push_back(newPoint);
         
+        //Make it go after the intersection point to start the second split
         ++it;
         if (it == cps.end()) {
             it = cps.begin();
         }
         
+        //Add the intersection point as a starting point of the second split
         secondPart.push_back(newPoint);
-        for (; it != start; ++it) {
+        
+        //Add control points until we find the starting point (i.e:  the control point after the original split point)
+        for (;it != start;) {
+            secondPart.push_back(*it);
+            ++it;
             if (it == cps.end()) {
                 it = cps.begin();
             }
-            secondPart.push_back(*it);
         }
+        //Finally add the split point to finish the second split
         secondPart.push_back(startingPoint);
         
         std::list<BezierCPs> regularizedFirst;
@@ -527,13 +565,15 @@ static bool checkAnglesAndSplitIfNeeded(const BezierCPs &cps, int time,std::list
         v.y = p3.y - p2.y;
         double normU = std::sqrt(u.x * u.x + u.y * u.y);
         double normV = std::sqrt(v.x * v.x + v.y * v.y);
-        assert(normU != 0 && normV != 0);
-        double alpha = std::acos((u.x * v.x + u.y * v.y) / normU * normV);
-        
-        if (alpha > M_PI_2) {
-            splitAt(cps, time, t, ret);
-            return true;
+        if (normU != 0 && normV != 0) {
+            double alpha = std::acos((u.x * v.x + u.y * v.y) / normU * normV);
+            
+            if (alpha > M_PI_2) {
+                splitAt(cps, time, t, ret);
+                return true;
+            }
         }
+        
         
         ++cur;
         ++prev;
@@ -551,7 +591,7 @@ static void tensor(const BezierCPs& p, int time, const Point* internal, Point re
     ret[0][0] = getPointAt(p, time, 0);
     ret[0][1] = getLeftPointAt(p, time, 0);
     ret[0][2] = getRightPointAt(p, time, 3);
-    ret[0][3] = getPointAt(p, time, 0);
+    ret[0][3] = getPointAt(p, time, 3);
     
     ret[1][0] = getRightPointAt(p, time, 0);
     ret[1][1] = internal[0];
@@ -614,7 +654,7 @@ static void coonsPatch(const BezierCPs& p, int time, Point ret[4][4])
         Point p0left;
         (*prev)->getLeftBezierPointAtTime(time, &p0left.x, &p0left.y);
         
-        Point p2right = getRightPointAt(p, time, j + 1);
+        Point p2right;
         (*next)->getRightBezierPointAtTime(time, &p2right.x, &p2right.y);
         
         Point p3;
@@ -786,7 +826,6 @@ void Natron::regularize(const BezierCPs &patch, int time, std::list<BezierCPs> *
     for (int p = 0; p < 6; ++p) {
         int kstart = std::max(p - 2,0);
         int kstop = std::min(p,3);
-        double *Tp = T[p];
         for (int q = 0; q < 6; ++q) {
             double Tpq = 0.;
             int jstop = std::min(q,3);
@@ -798,7 +837,7 @@ void Natron::regularize(const BezierCPs &patch, int time, std::list<BezierCPs> *
                     Tpq += (U[i][j].x * V[k][l].y - U[i][j].y * V[k][l].x) * choose2[i] * choose3[k] * choose3[j] * choose2[l];
                 }
             }
-            Tp[q] = Tpq;
+            T[p][q] = Tpq;
         }
     }
     
@@ -825,6 +864,10 @@ void Natron::regularize(const BezierCPs &patch, int time, std::list<BezierCPs> *
         }
     }
     if (!degenerate) {
+        if ((sign >= 0 && aligned == 1) || (sign < 0 && aligned == 2)) {
+            fixedPatch->push_back(patch);
+            return;
+        }
         fixedPatch->push_back(patch);
         return;
     }

@@ -6525,7 +6525,7 @@ static void renderDotPatch(cairo_pattern_t* mesh,
 void
 RotoContextPrivate::renderStroke(cairo_t* cr,const RotoStrokeItem* stroke, int time, unsigned int mipmapLevel)
 {
-    const BezierCPs& cps = stroke->getControlPoints_mt_safe();
+    BezierCPs cps = stroke->getControlPoints_mt_safe();
     if (!stroke->isActivated(time) || cps.empty()) {
         return;
     }
