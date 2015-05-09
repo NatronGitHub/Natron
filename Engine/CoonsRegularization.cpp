@@ -17,6 +17,9 @@
 
 using namespace Natron;
 
+#ifndef M_PI_2
+#define M_PI_2 1.57079632679489661923
+#endif
 
 
 static Point getPointAt(const BezierCPs& cps, int time, double t)
