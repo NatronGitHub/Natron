@@ -1666,8 +1666,6 @@ RotoDrawableItem::RotoDrawableItem(const boost::shared_ptr<RotoContext>& context
     QObject::connect( _imp->color->getSignalSlotHandler().get(), SIGNAL( valueChanged(int,int) ), this, SIGNAL( shapeColorChanged() ) );
     QObject::connect( _imp->compOperator->getSignalSlotHandler().get(), SIGNAL( valueChanged(int,int) ), this,
                       SIGNAL( compositingOperatorChanged(int,int) ) );
-    QObject::connect( _imp->feather->getSignalSlotHandler().get(), SIGNAL( valueChanged(int,int) ), this,
-                     SLOT( onFeatherDistanceChanged(int,int) ) );
 }
 
 RotoDrawableItem::~RotoDrawableItem()
@@ -1814,19 +1812,9 @@ void
 RotoDrawableItem::setFeatherDistance(double d,int time)
 {
     _imp->feather->setValueAtTime(time, d, 0);
-    {
-        QMutexLocker k(&itemMutex);
-        invalidateFeatherPointsAtDistance();
-    }
     getContext()->onItemKnobChanged();
 }
 
-void
-RotoDrawableItem::onFeatherDistanceChanged(int,int)
-{
-    QMutexLocker k(&itemMutex);
-    invalidateFeatherPointsAtDistance();
-}
 
 int
 RotoDrawableItem::getNumKeyframesFeatherDistance() const
@@ -2221,7 +2209,6 @@ Bezier::clearAllPoints()
     QMutexLocker k(&itemMutex);
     _imp->points.clear();
     _imp->featherPoints.clear();
-    _imp->featherPointsAtDistance.clear();
     _imp->isClockwiseOriented.clear();
     _imp->finished = false;
 }
@@ -2342,7 +2329,6 @@ Bezier::addControlPoint(double x,
                 fp->setRightBezierStaticPosition(x, y);
             }
             _imp->featherPoints.insert(_imp->featherPoints.end(),fp);
-            invalidateFeatherPointsAtDistance();
         }
     }
     
@@ -2514,10 +2500,7 @@ Bezier::addControlPointAfterIndex(int index,
             l.unlock();
             setKeyframe(currentTime);
         }
-        
-         if (useFeatherPoints()) {
-             invalidateFeatherPointsAtDistance();
-         }
+  
     }
     return p;
 } // addControlPointAfterIndex
@@ -2664,7 +2647,6 @@ Bezier::removeControlPointByIndex(int index)
             std::advance(itF, index);
             _imp->featherPoints.erase(itF);
             
-            invalidateFeatherPointsAtDistance();
         }
     }
     refreshPolygonOrientation();
@@ -2762,7 +2744,6 @@ Bezier::movePointByIndexInternal(int index,
                 }
             }
         }
-        invalidateFeatherPointsAtDistance();
     }
     refreshPolygonOrientation(time);
     if (autoKeying) {
@@ -2919,7 +2900,6 @@ Bezier::moveBezierPointInternal(BezierCP* cpParam,
                 }
             }
         }
-        invalidateFeatherPointsAtDistance();
     }
     refreshPolygonOrientation(time);
     if (autoKeying) {
@@ -3036,7 +3016,6 @@ Bezier::setPointAtIndexInternal(bool setLeft,bool setRight,bool setPoint,bool fe
                 }
             }
         }
-        invalidateFeatherPointsAtDistance();
     }
     refreshPolygonOrientation(time);
     if (autoKeying) {
@@ -3117,7 +3096,6 @@ Bezier::transformPoint(const boost::shared_ptr<BezierCP> & point,
                 keySet = true;
             }
         }
-        invalidateFeatherPointsAtDistance();
     }
     
     refreshPolygonOrientation(time);
@@ -3147,7 +3125,6 @@ Bezier::removeFeatherAtIndex(int index)
 
     (*fp)->clone(**cp);
     
-    invalidateFeatherPointsAtDistance();
 }
 
 void
@@ -3186,7 +3163,6 @@ Bezier::smoothOrCuspPointAtIndex(bool isSmooth,int index,int time,const std::pai
                 (*fp)->cuspPoint(time,autoKeying,rippleEdit,pixelScale);
             }
         }
-        invalidateFeatherPointsAtDistance();
     }
     refreshPolygonOrientation(time);
     if (autoKeying) {
@@ -3285,11 +3261,6 @@ Bezier::removeKeyframe(int time)
             }
         }
         
-        if (useFeather) {
-            for (BezierCPs::iterator it = _imp->featherPointsAtDistance.begin(); it != _imp->featherPointsAtDistance.end(); ++it) {
-                (*it)->removeKeyframe(time);
-            }
-        }
         std::map<int,bool>::iterator found = _imp->isClockwiseOriented.find(time);
         if (found != _imp->isClockwiseOriented.end()) {
             _imp->isClockwiseOriented.erase(found);
@@ -3320,11 +3291,7 @@ Bezier::removeAnimation()
                 ++fp;
             }
         }
-        if (useFeather) {
-            for (BezierCPs::iterator it = _imp->featherPointsAtDistance.begin(); it != _imp->featherPointsAtDistance.end(); ++it) {
-                (*it)->removeAnimation(time);
-            }
-        }
+     
         _imp->isClockwiseOriented.clear();
     }
     Q_EMIT animationRemoved();
@@ -3360,20 +3327,6 @@ Bezier::moveKeyframe(int oldTime,int newTime)
             (*fp)->setLeftBezierPointAtTime(newTime, lx, ly);
             (*fp)->setRightBezierPointAtTime(newTime, rx, ry);
             ++fp;
-        }
-    }
-    if (useFeather) {
-        for (BezierCPs::iterator it = _imp->featherPointsAtDistance.begin(); it != _imp->featherPointsAtDistance.end(); ++it) {
-            double x,y,lx,ly,rx,ry;
-            (*it)->getPositionAtTime(oldTime, &x, &y);
-            (*it)->getLeftBezierPointAtTime(oldTime, &lx, &ly);
-            (*it)->getRightBezierPointAtTime(oldTime, &rx, &ry);
-            
-            (*it)->removeKeyframe(oldTime);
-            
-            (*it)->setPositionAtTime(newTime, x, y);
-            (*it)->setLeftBezierPointAtTime(newTime, lx, ly);
-            (*it)->setRightBezierPointAtTime(newTime, rx, ry);
         }
     }
     
@@ -3509,7 +3462,6 @@ Bezier::evaluateFeatherPointsAtTime_DeCasteljau(int time,
 RectD
 Bezier::getBoundingBox(int time) const
 {
-    updateFeatherPointsAtDistanceIfNeeded(time);
     
     std::list<Point> pts;
     RectD bbox; // a very empty bbox
@@ -3524,7 +3476,6 @@ Bezier::getBoundingBox(int time) const
     
     
     if (useFeatherPoints()) {
-#ifndef ROTO_USE_MESH_PATTERN_ONLY
         bezierSegmentListBboxUpdate(_imp->featherPoints, _imp->finished, time, 0, &bbox);
         // EDIT: Partial fix, just pad the BBOX by the feather distance. This might not be accurate but gives at least something
         // enclosing the real bbox and close enough
@@ -3533,9 +3484,6 @@ Bezier::getBoundingBox(int time) const
         bbox.x2 += featherDistance;
         bbox.y1 -= featherDistance;
         bbox.y2 += featherDistance;
-#else // ROTO_USE_MESH_PATTERN_ONLY
-        bezierSegmentListBboxUpdate(_imp->featherPointsAtDistance, _imp->finished, time, 0, &bbox);
-#endif // ROTO_USE_MESH_PATTERN_ONLY
     }
     return bbox;
 }
@@ -3580,12 +3528,6 @@ Bezier::getFeatherPoints_mt_safe() const
     return _imp->featherPoints;
 }
 
-std::list< boost::shared_ptr<BezierCP> >
-Bezier::getFeatherPointsAtDistance_mt_safe() const
-{
-    QMutexLocker l(&itemMutex);
-    return _imp->featherPointsAtDistance;
-}
 
 std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> >
 Bezier::isNearbyControlPoint(double x,
@@ -4306,102 +4248,6 @@ Bezier::expandToFeatherDistance(const Point & cp, //< the point
 } // expandToFeatherDistance
 
 
-void
-Bezier::invalidateFeatherPointsAtDistance()
-{
-#ifdef ROTO_USE_MESH_PATTERN_ONLY
-    //Private - should not lock
-    assert(!itemMutex.tryLock());
-    _imp->featherPointsAtDistanceValid = false;
-#endif // ROTO_USE_MESH_PATTERN_ONLY
-}
-
-
-void
-Bezier::updateFeatherPointsAtDistanceIfNeeded(int time) const
-{
-#ifdef ROTO_USE_MESH_PATTERN_ONLY
-    QMutexLocker k(&itemMutex);
-    if (!_imp->featherPointsAtDistanceValid) {
-        double fDist = getFeatherDistance(time);
-        fDist = fDist < 0 ? 0 : fDist;
-
-        bool clockwise = isFeatherPolygonClockwiseOrientedInternal(time);
-
-        if (_imp->featherPoints.size() < 2) {
-            return;
-        }
-        if (_imp->featherPointsAtDistance.size() != _imp->featherPoints.size()) {
-            _imp->featherPointsAtDistance.clear();
-        }
-        BezierCPs::iterator fpDistIt = _imp->featherPointsAtDistance.begin();
-        
-        
-        BezierCPs::iterator prev = _imp->featherPoints.end();
-        if (prev != _imp->featherPoints.begin()) {
-            --prev;
-        }
-        BezierCPs::iterator next = _imp->featherPoints.begin();
-        if (next != _imp->featherPoints.end()) {
-            ++next;
-        }
-        BezierCPs::iterator curCp = _imp->points.begin();
-        
-        for (BezierCPs::iterator it = _imp->featherPoints.begin();
-             it != _imp->featherPoints.end();
-             ++it) {
-            if (prev == _imp->featherPoints.end()) {
-                prev = _imp->featherPoints.begin();
-            }
-            if (next == _imp->featherPoints.end()) {
-                next = _imp->featherPoints.begin();
-            }
-            boost::shared_ptr<BezierCP> fpAtDistance;
-            if (_imp->featherPointsAtDistance.size() != _imp->featherPoints.size()) {
-                boost::shared_ptr<BezierCP> cpy(new FeatherPoint(**it));
-                fpAtDistance = cpy;
-                _imp->featherPointsAtDistance.push_back(fpAtDistance);
-            } else {
-                fpAtDistance = *fpDistIt;
-                ++fpDistIt;
-            }
-            assert(fpAtDistance);
-            Point fp,nextFp,prevFp,left,right,cp;
-            (*it)->getPositionAtTime(time, &fp.x, &fp.y);
-            (*it)->getLeftBezierPointAtTime(time, &left.x, &left.y);
-            (*it)->getRightBezierPointAtTime(time, &right.x, &right.y);
-            (*prev)->getPositionAtTime(time, &prevFp.x, &prevFp.y);
-            (*next)->getPositionAtTime(time, &nextFp.x, &nextFp.y);
-            (*curCp)->getPositionAtTime(time, &cp.x, &cp.y);
-            
-            Point originalFp = fp;
-            Bezier::expandToFeatherDistance(cp, &fp, fDist, time, clockwise, prev, it, next);
-            Point delta;
-            delta.x = fp.x - originalFp.x;
-            delta.y = fp.y - originalFp.y;
-
-            fpAtDistance->setPositionAtTime(time, fp.x, fp.y);
-            fpAtDistance->setLeftBezierPointAtTime(time, left.x + delta.x, left.y + delta.y);
-            fpAtDistance->setRightBezierPointAtTime(time, right.x + delta.x, right.y + delta.y);
-
-            // increment for next iteration
-            if (curCp != _imp->featherPoints.end()) {
-                ++curCp;
-            }
-            if (prev != _imp->featherPoints.end()) {
-                ++prev;
-            }
-            if (next != _imp->featherPoints.end()) {
-                ++next;
-            }
-        } // for(it)
-        assert(_imp->featherPointsAtDistance.size() == _imp->featherPoints.size());
-        _imp->featherPointsAtDistanceValid = true;
-    }
-#endif // ROTO_USE_MESH_PATTERN_ONLY
-}
-
-
 ////////////////////////////////////Stroke//////////////////////////////////
 
 RotoStrokeItem::RotoStrokeItem(Natron::RotoStrokeType type,
@@ -4442,7 +4288,7 @@ RotoStrokeItem::initialize(const std::list<std::pair<Natron::Point,double> >& ra
     }
     
     //Fit the raw points to a cubic bezier
-    FitCurve::fit_cubic(pointsVec, 4, &fitBezier);
+    FitCurve::fit_cubic(pointsVec, 0.5, &fitBezier);
     
     int keyframeTime = getContext()->getTimelineCurrentTime();
     bool autoKeying = getContext()->isAutoKeyingEnabled();
@@ -6350,7 +6196,6 @@ RotoContextPrivate::renderInternal(cairo_t* cr,
 static void renderDotPatch(cairo_pattern_t* mesh,
                            int patchNum,
                            const Point &center,
-                           double brushHardness,
                            double internalDotRadius,
                            double externalDotRadius,
                            double shapeColor[3],
@@ -6363,6 +6208,9 @@ static void renderDotPatch(cairo_pattern_t* mesh,
     Point p0f,p0p1f,p1p0f,p1f,p1p2f,p2p1f,p2f,p2p3f,p3p2f,p3f,p3p0f,p0p3f;
     p0 = p3 = center; //< degenerated patch with only 3 sides
     
+    //http://itc.ktu.lt/itc354/Riskus354.pdf
+    //c = (4/3)*(sqrt(2)-1)
+    const double c = 0.5522847498;
     
     if (patchNum == 0) {
         p1.x = center.x + internalDotRadius;
@@ -6370,8 +6218,8 @@ static void renderDotPatch(cairo_pattern_t* mesh,
         p2.x = center.x;
         p2.y = center.y + internalDotRadius;
         p1p2.x = p1.x;
-        p1p2.y = (p1.y + p2.y) / 2.;
-        p2p1.x = (p1.x + p2.x) / 2.;
+        p1p2.y = center.y + c * internalDotRadius;
+        p2p1.x = center.x + c * internalDotRadius;
         p2p1.y = p2.y;
         
         p1f.x = center.x + externalDotRadius;
@@ -6379,8 +6227,8 @@ static void renderDotPatch(cairo_pattern_t* mesh,
         p2f.x = center.x;
         p2f.y = center.y + externalDotRadius;
         p1p2f.x = p1f.x;
-        p1p2f.y = (p1f.y + p2f.y) / 2.;
-        p2p1f.x = (p1f.x + p2f.x) / 2.;
+        p1p2f.y = center.y + c * externalDotRadius;
+        p2p1f.x = center.x + c * externalDotRadius;
         p2p1f.y = p2f.y;
 
         
@@ -6389,19 +6237,19 @@ static void renderDotPatch(cairo_pattern_t* mesh,
         p1.y = center.y + internalDotRadius;
         p2.x = center.x - internalDotRadius;
         p2.y = center.y;
-        p1p2.x = (p1.x + p2.x) / 2.;
+        p1p2.x = center.x - c * internalDotRadius;
         p1p2.y = p1.y;
         p2p1.x = p2.x;
-        p2p1.y = (p1.y + p2.y) / 2;
+        p2p1.y = center.y + c * internalDotRadius;
         
         p1f.x = center.x;
         p1f.y = center.y + externalDotRadius;
         p2f.x = center.x - externalDotRadius;
         p2f.y = center.y;
-        p1p2f.x = (p1f.x + p2f.x) / 2.;
+        p1p2f.x = center.x - c * externalDotRadius;
         p1p2f.y = p1f.y;
         p2p1f.x = p2f.x;
-        p2p1f.y = (p1f.y + p2f.y) / 2;
+        p2p1f.y = center.y + c * externalDotRadius;
 
     } else if (patchNum == 2) {
         p1.x = center.x - internalDotRadius;
@@ -6409,8 +6257,8 @@ static void renderDotPatch(cairo_pattern_t* mesh,
         p2.x = center.x;
         p2.y = center.y - internalDotRadius;
         p1p2.x = p1.x;
-        p1p2.y = (p1.y + p2.y) / 2.;
-        p2p1.x = (p1.x + p2.x) / 2.;
+        p1p2.y = center.y - c * internalDotRadius;
+        p2p1.x = center.x - c * internalDotRadius;
         p2p1.y = p2.y;
         
         p1f.x = center.x - externalDotRadius;
@@ -6418,8 +6266,8 @@ static void renderDotPatch(cairo_pattern_t* mesh,
         p2f.x = center.x;
         p2f.y = center.y - externalDotRadius;
         p1p2f.x = p1f.x;
-        p1p2f.y = (p1f.y + p2f.y) / 2.;
-        p2p1f.x = (p1f.x + p2f.x) / 2.;
+        p1p2f.y = center.y - c * externalDotRadius;
+        p2p1f.x = center.x - c * externalDotRadius;
         p2p1f.y = p2f.y;
     } else {
         assert(patchNum == 3);
@@ -6427,19 +6275,19 @@ static void renderDotPatch(cairo_pattern_t* mesh,
         p1.y = center.y - internalDotRadius;
         p2.x = center.x + internalDotRadius;
         p2.y = center.y;
-        p1p2.x = (p1.x + p2.x) / 2.;
+        p1p2.x = center.x + c * internalDotRadius;
         p1p2.y = p1.y;
         p2p1.x = p2.x;
-        p2p1.y = (p1.y + p2.y) / 2;
+        p2p1.y = center.y - c * internalDotRadius;
         
         p1f.x = center.x;
         p1f.y = center.y - externalDotRadius;
         p2f.x = center.x + externalDotRadius;
         p2f.y = center.y;
-        p1p2f.x = (p1f.x + p2f.x) / 2.;
+        p1p2f.x = center.x + c * externalDotRadius;
         p1p2f.y = p1f.y;
         p2p1f.x = p2f.x;
-        p2p1f.y = (p1f.y + p2f.y) / 2;
+        p2p1f.y = center.y - c * externalDotRadius;
 
 
     }
@@ -6451,16 +6299,16 @@ static void renderDotPatch(cairo_pattern_t* mesh,
     
     ///linear interpolation
     
-    p0p1f.x = (p0f.x * brushHardness * 2. + 1. / brushHardness * p1f.x) / (brushHardness * 2. + 1. / brushHardness);
-    p0p1f.y = (p0f.y * brushHardness * 2. + 1. / brushHardness * p1f.y) / (brushHardness * 2. + 1. / brushHardness);
-    p1p0f.x = (p0f.x * brushHardness + 2. * 1. / brushHardness * p1f.x) / (brushHardness + 2. * 1. / brushHardness);
-    p1p0f.y = (p0f.y * brushHardness + 2. * 1. / brushHardness * p1f.y) / (brushHardness + 2. * 1. / brushHardness);
+    p0p1f.x = (2. * p0f.x + p1f.x)  / 3.;
+    p0p1f.y = (2. * p0f.y + p1f.y)  / 3.;
+    p1p0f.x = (2. * p0f.x + p1f.x)  / 3.;
+    p1p0f.y = (2. * p0f.y + p1f.y)  / 3.;
     
     
-    p2p3f.x = (p3f.x * brushHardness + 2. * 1. / brushHardness * p2f.x) / (brushHardness + 2. * 1. / brushHardness);
-    p2p3f.y = (p3f.y * brushHardness + 2. * 1. / brushHardness * p2f.y) / (brushHardness + 2. * 1. / brushHardness);
-    p3p2f.x = (p3f.x * brushHardness * 2. + 1. / brushHardness * p2f.x) / (brushHardness * 2. + 1. / brushHardness);
-    p3p2f.y = (p3f.y * brushHardness * 2. + 1. / brushHardness * p2f.y) / (brushHardness * 2. + 1. / brushHardness);
+    p2p3f.x = (2. * p3f.x + p2f.x) / 3.;
+    p2p3f.y = (2. * p3f.y + p2f.y) / 3.;
+    p3p2f.x = (2. * p3f.x + p2f.x) / 3.;
+    p3p2f.y = (2. * p3f.y + p2f.y) / 3.;
 
     
     
@@ -6543,6 +6391,9 @@ RotoContextPrivate::renderStroke(cairo_t* cr,const RotoStrokeItem* stroke, int t
      (p1,p2)+(p2,p3)+(p3,p4);
      **/
     stroke->evaluateAtTime_DeCasteljau_autoNbPoints(time, mipmapLevel, &points, 0);
+    if (points.empty()) {
+        return;
+    }
     
     double opacity = stroke->getOpacity(time);
     int operatorIndex = stroke->getCompositingOperator();
@@ -6590,11 +6441,9 @@ RotoContextPrivate::renderStroke(cairo_t* cr,const RotoStrokeItem* stroke, int t
     if (mipmapLevel != 0) {
         brushSizePixel /= (1 << mipmapLevel);
     }
-    double halfSize = brushSizePixel / 2.;
-    
 
-    double internalDotRadius = std::max(std::min(brushSizePixel * brushHardness, brushSizePixel),1.) / 2.;
-    double externalDotRadius = std::max(std::min(halfSize * brushHardness + halfSize,brushSizePixel), 1.) / 2.;
+    double internalDotRadius = std::max(brushSizePixel * brushHardness,1.) / 2.;
+    double externalDotRadius = std::max(brushSizePixel, 1.) / 2.;
     double spacingPixel = externalDotRadius * 2. * brushSpacing;
     
 
@@ -6617,7 +6466,7 @@ RotoContextPrivate::renderStroke(cairo_t* cr,const RotoStrokeItem* stroke, int t
         center.x = it->x;
         center.y = it->y;
         for (int i = 0; i < 4; ++i) {
-            renderDotPatch(mesh, i, center, brushHardness, internalDotRadius, externalDotRadius, shapeColor, opacity);
+            renderDotPatch(mesh, i, center, internalDotRadius, externalDotRadius, shapeColor, opacity);
         }
         
         //Find the next point that we should draw a dot on according to the spacing in pixel coordinates
@@ -6667,13 +6516,8 @@ RotoContextPrivate::renderBezier(cairo_t* cr,const Bezier* bezier,int time, unsi
     cairo_set_operator(cr, (cairo_operator_t)operatorIndex);
     
     BezierCPs cps = bezier->getControlPoints_mt_safe();
-    bezier->updateFeatherPointsAtDistanceIfNeeded(time);
     
-#ifdef ROTO_USE_MESH_PATTERN_ONLY
-    BezierCPs fps = bezier->getFeatherPointsAtDistance_mt_safe();
-#else
     BezierCPs fps = bezier->getFeatherPoints_mt_safe();
-#endif
     
     assert( cps.size() == fps.size() );
     
@@ -6696,7 +6540,7 @@ RotoContextPrivate::renderBezier(cairo_t* cr,const Bezier* bezier,int time, unsi
     }
     
     
-    renderFeather(bezier, time, mipmapLevel, inverted, shapeColor, opacity, featherDist, fallOff, mesh, cps, fps);
+    renderFeather(bezier, time, mipmapLevel, inverted, shapeColor, opacity, featherDist, fallOff, mesh);
     
     
     if (!inverted) {
@@ -6736,14 +6580,15 @@ RotoContextPrivate::renderBezier(cairo_t* cr,const Bezier* bezier,int time, unsi
 }
 
 void
-RotoContextPrivate::renderFeather(const Bezier* bezier,int time, unsigned int mipmapLevel, bool inverted, double shapeColor[3], double opacity, double featherDist, double fallOff, cairo_pattern_t* mesh, const BezierCPs& cps, const BezierCPs& fps)
+RotoContextPrivate::renderFeather(const Bezier* bezier,int time, unsigned int mipmapLevel, bool inverted, double shapeColor[3], double opacity, double featherDist, double fallOff, cairo_pattern_t* mesh)
 {
     
     double fallOffInverse = 1. / fallOff;
-#ifndef ROTO_USE_MESH_PATTERN_ONLY
-#pragma message WARN("the following code very stange. Why evaluate 49 Bezier points when you only need to consider the end points?")
-    // PLEASE EXPLAIN THAT ``ALGORITHM''
-    
+    /*
+     * We descretize the feather control points to obtain a polygon so that the feather distance will be of the same thickness around all the shape.
+     * If we were to extend only the end points, the resulting bezier interpolation would create a feather with different thickness around the shape,
+     * yielding an unwanted behaviour for the end user.
+     */
     ///here is the polygon of the feather bezier
     ///This is used only if the feather distance is different of 0 and the feather points equal
     ///the control points in order to still be able to apply the feather distance.
@@ -6937,102 +6782,6 @@ RotoContextPrivate::renderFeather(const Bezier* bezier,int time, unsigned int mi
         }
 
     }  // for each point in polygon
-#else // ROTO_USE_MESH_PATTERN_ONLY
-    
-    Point p0, p0p1, p1p0,p1,p1p2,p2p1, p2, p2p3, p3p2, p3, p3p0,p0p3;
-    double featherOpacity = opacity;
-    double featherOpaque = 0;
-    double featherTransparant = 1;
-    BezierCPs::const_iterator curFp = fps.begin();
-    BezierCPs::const_iterator nextFp = curFp;
-    if (nextFp != fps.end()) {
-        ++nextFp;
-    }
-
-    BezierCPs::const_iterator nextCp = cps.begin();
-    if (nextCp != cps.end()) {
-        ++nextCp;
-    }
-    for (BezierCPs::const_iterator curCp = cps.begin(); curCp != cps.end(); ++curCp) {
-        if (nextCp == cps.end()) {
-            nextCp = cps.begin();
-            nextFp = fps.begin();
-        }
-        (*curCp)->getPositionAtTime(time, &p0.x, &p0.y);
-        (*nextCp)->getPositionAtTime(time, &p3.x, &p3.y);
-        (*curFp)->getPositionAtTime(time, &p1.x, &p1.y);
-        (*nextFp)->getPositionAtTime(time, &p2.x, &p2.y);
-        
-        adjustToPointToScale(mipmapLevel, p0.x, p0.y);
-        adjustToPointToScale(mipmapLevel, p1.x, p1.y);
-        adjustToPointToScale(mipmapLevel, p2.x, p2.y);
-        adjustToPointToScale(mipmapLevel, p3.x, p3.y);
-        
-        ///linear interpolation
-        p0p1.x = (p0.x * fallOff * 2. + fallOffInverse * p1.x) / (fallOff * 2. + fallOffInverse);
-        p0p1.y = (p0.y * fallOff * 2. + fallOffInverse * p1.y) / (fallOff * 2. + fallOffInverse);
-        p1p0.x = (p0.x * fallOff + 2. * fallOffInverse * p1.x) / (fallOff + 2. * fallOffInverse);
-        p1p0.y = (p0.y * fallOff + 2. * fallOffInverse * p1.y) / (fallOff + 2. * fallOffInverse);
-        
-        p2p3.x = (p3.x * fallOff + 2. * fallOffInverse * p2.x) / (fallOff + 2. * fallOffInverse);
-        p2p3.y = (p3.y * fallOff + 2. * fallOffInverse * p2.y) / (fallOff + 2. * fallOffInverse);
-        p3p2.x = (p3.x * fallOff * 2. + fallOffInverse * p2.x) / (fallOff * 2. + fallOffInverse);
-        p3p2.y = (p3.y * fallOff * 2. + fallOffInverse * p2.y) / (fallOff * 2. + fallOffInverse);
-        
-        (*curFp)->getRightBezierPointAtTime(time, &p1p2.x, &p1p2.y);
-        (*nextFp)->getLeftBezierPointAtTime(time, &p2p1.x, &p2p1.y);
-        (*curCp)->getRightBezierPointAtTime(time, &p0p3.x, &p0p3.y);
-        (*nextCp)->getLeftBezierPointAtTime(time, &p3p0.x, &p3p0.y);
-        
-        adjustToPointToScale(mipmapLevel, p1p2.x, p1p2.y);
-        adjustToPointToScale(mipmapLevel, p2p1.x, p2p1.y);
-        adjustToPointToScale(mipmapLevel, p0p3.x, p0p3.y);
-        adjustToPointToScale(mipmapLevel, p3p0.x, p3p0.y);
-        
-        ///move to the initial point
-        cairo_mesh_pattern_begin_patch(mesh);
-        cairo_mesh_pattern_move_to(mesh, p0.x, p0.y);
-        cairo_mesh_pattern_curve_to(mesh, p0p1.x, p0p1.y, p1p0.x, p1p0.y, p1.x, p1.y);
-        cairo_mesh_pattern_curve_to(mesh, p1p2.x, p1p2.y, p2p1.x, p2p1.y, p2.x, p2.y);
-        cairo_mesh_pattern_curve_to(mesh, p2p3.x, p2p3.y, p3p2.x, p3p2.y, p3.x, p3.y);
-        cairo_mesh_pattern_curve_to(mesh, p3p0.x, p3p0.y, p0p3.x, p0p3.y, p0.x, p0.y);
-        ///Set the 4 corners color
-        ///inner is full color
-        
-        // IMPORTANT NOTE:
-        // The two sqrt below are due to a probable cairo bug.
-        // To check wether the bug is present is a given cairo version,
-        // make any shape with a very large feather and set
-        // opacity to 0.5. Then, zoom on the polygon border to check if the intensity is continuous
-        // and approximately equal to 0.5.
-        // If the bug if ixed in cairo, please use #if CAIRO_VERSION>xxx to keep compatibility with
-        // older Cairo versions.
-        cairo_mesh_pattern_set_corner_color_rgba(mesh, 0, shapeColor[0], shapeColor[1], shapeColor[2],
-                                                 std::sqrt(inverted ? 1. - featherOpacity : featherOpacity));
-        ///outter is faded
-        cairo_mesh_pattern_set_corner_color_rgba(mesh, 1, shapeColor[0], shapeColor[1], shapeColor[2],
-                                                 inverted ? featherTransparant : featherOpaque);
-        cairo_mesh_pattern_set_corner_color_rgba(mesh, 2, shapeColor[0], shapeColor[1], shapeColor[2],
-                                                 inverted ? featherTransparant : featherOpaque);
-        ///inner is full color
-        cairo_mesh_pattern_set_corner_color_rgba(mesh, 3, shapeColor[0], shapeColor[1], shapeColor[2],
-                                                 std::sqrt(inverted ? 1. - featherOpacity : featherOpacity));
-        assert(cairo_pattern_status(mesh) == CAIRO_STATUS_SUCCESS);
-        
-        cairo_mesh_pattern_end_patch(mesh);
-
-        // increment for next iteration
-        if (nextCp != cps.end()) {
-            ++nextCp;
-        }
-        if (curFp != fps.end()) {
-            ++curFp;
-        }
-        if (nextFp != fps.end()) {
-            ++nextFp;
-        }
-    } // for(it)
-#endif // ROTO_USE_MESH_PATTERN_ONLY
 
 }
 

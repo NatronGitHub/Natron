@@ -266,6 +266,27 @@ static Point postdir(const BezierCPs& cps, int time, double t)
     return ret;
 }
 
+static Point dirVect(const BezierCPs& cps, int time, double t, int sign)
+{
+    Point ret;
+    if (sign == 0) {
+        Point pre = predir(cps, time, t);
+        Point post = postdir(cps, time, t);
+        ret.x = pre.x + post.x;
+        ret.y = pre.y + post.y;
+    } else if (sign < 0) {
+        ret = predir(cps, time, t);
+    } else if (sign > 0) {
+        ret = postdir(cps, time, t);
+    }
+    
+    double norm = std::sqrt(ret.x * ret.x + ret.y * ret.y);
+    assert(norm != 0);
+    ret.x /= norm;
+    ret.y /= norm;
+
+    return ret;
+}
 
 static Point dirVect(const BezierCPs& cps, int time, double t)
 {
@@ -273,7 +294,9 @@ static Point dirVect(const BezierCPs& cps, int time, double t)
     t -= t_i;
     if (t == 0) {
         Point pre = predir(cps,time ,t);
+        
         Point post = postdir(cps, time ,t);
+        
         Point ret;
         ret.x = pre.x + post.x;
         ret.y = pre.y + post.y;
@@ -479,8 +502,11 @@ static bool splitAt(const BezierCPs &cps, int time, double t, std::list<BezierCP
         
         boost::shared_ptr<BezierCP> startingPoint = makeBezierCPFromPoint(z, zLeft, zRight);
         
-        //Start by adding the split point
-        firstPart.push_back(startingPoint);
+        //Start by adding the split point (if it is not a control point)
+        if (std::ceil(t) != t) {
+            firstPart.push_back(startingPoint);
+        }
+        
         
         //Add all control points until we reach the point before the intersection point
         for (;it!=end;) {
@@ -531,60 +557,24 @@ static bool splitAt(const BezierCPs &cps, int time, double t, std::list<BezierCP
  * @brief Given the original coon's patch, check if all interior angles are inferior to 180°. If not then we split
  * along the bysector angle and separate the patch.
  **/
-static bool checkAnglesAndSplitIfNeeded(const BezierCPs &cps, int time,std::list<BezierCPs>* ret)
+static bool checkAnglesAndSplitIfNeeded(const BezierCPs &cps, int time, int sign, std::list<BezierCPs>* ret)
 {
     assert(cps.size() >= 3);
     
     
-    
-    BezierCPs::const_iterator prev = cps.end();
-    --prev;
-    BezierCPs::const_iterator cur = cps.begin();
-    BezierCPs::const_iterator next = cur;
-    ++next;
-    int t = 0;
-    while (cur != cps.end()) {
-        if (next == cps.end()) {
-            next = cps.begin();
-        }
-        if (prev == cps.end()) {
-            prev = cps.begin();
-        }
+    for (std::size_t i = 0; i < cps.size(); ++i) {
+        Point negativeDir = dirVect(cps, time, i, -1);
+        negativeDir.y = -negativeDir.y;
+        Point positiveDir = dirVect(cps, time, i, 1);
         
-        Point p1,p2,p3,p2p1,p2p3,p1p2,p3p2;
-        (*prev)->getPositionAtTime(time, &p1.x, &p1.y);
-        (*prev)->getRightBezierPointAtTime(time, &p1p2.x, &p1p2.y);
-        (*cur)->getPositionAtTime(time, &p2.x, &p2.y);
-        (*cur)->getLeftBezierPointAtTime(time, &p2p1.x, &p2p1.y);
-        (*cur)->getRightBezierPointAtTime(time, &p2p3.x, &p2p3.y);
-        (*next)->getPositionAtTime(time, &p3.x, &p3.y);
-        (*next)->getLeftBezierPointAtTime(time, &p3p2.x, &p3p2.y);
-        
-        //use inner product: alpha = acos(u.v / |u||v| ) to find out the angle
-        Point u,v;
-        u.x = p1.x - p2.x;
-        u.y = p1.y - p2.y;
-        v.x = p3.x - p2.x;
-        v.y = p3.y - p2.y;
-        double normU = std::sqrt(u.x * u.x + u.y * u.y);
-        double normV = std::sqrt(v.x * v.x + v.y * v.y);
-        if (normU != 0 && normV != 0) {
-            double alpha = std::acos((u.x * v.x + u.y * v.y) / normU * normV);
-            
-            if (alpha > M_PI_2) {
-                splitAt(cps, time, t, ret);
+        double py = negativeDir.x * positiveDir.y + negativeDir.y * positiveDir.x;
+        if (py * sign < -1e-4) {
+            if (splitAt(cps, time, i, ret)) {
                 return true;
             }
+            return false;
         }
-        
-        
-        ++cur;
-        ++prev;
-        ++next;
-        ++t;
     }
-    
-    ret->push_back(cps);
     return false;
     
 }
@@ -793,11 +783,13 @@ void Natron::regularize(const BezierCPs &patch, int time, std::list<BezierCPs> *
             sign = -1;
         } else if (winding_number > 0) {
             sign = 1;
+        } else {
+            sign = 0;
         }
     }
     
     std::list<BezierCPs> splits;
-    if (checkAnglesAndSplitIfNeeded(patch, time, &splits)) {
+    if (checkAnglesAndSplitIfNeeded(patch, time, sign, &splits)) {
         *fixedPatch = splits;
         return;
     }
@@ -837,7 +829,7 @@ void Natron::regularize(const BezierCPs &patch, int time, std::list<BezierCPs> *
                 for (int j = jstart; j <= jstop; ++j) {
                     int i = p - k;
                     int l = q - j;
-                    Tpq += (U[i][j].x * V[k][l].y - U[i][j].y * V[k][l].x) * choose2[i] * choose3[k] * choose3[j] * choose2[l];
+                    Tpq += (-U[i][j].x * V[k][l].y - U[i][j].y * V[k][l].x) * choose2[i] * choose3[k] * choose3[j] * choose2[l];
                 }
             }
             T[p][q] = Tpq;
@@ -898,22 +890,25 @@ void Natron::regularize(const BezierCPs &patch, int time, std::list<BezierCPs> *
     // Compute one-ninth of the derivative of the Jacobian along the boundary.
     
     double c[4][5];
-    
     for (int i = 0; i < 4; ++i) {
-        memset(c[i], 0, 5 * sizeof(double));
+        for (int j = 0; j < 5; ++j) {
+            c[i][j] = 0;
+        }
+    }
+    for (int i = 0; i < 4; ++i) {
         for (int j = 0; j < 4; ++j) {
             const double* w = fpv0[i][j];
             for (int k = 0; k < 5 ;++k) {
-                c[0][k] += w[k] * (P[i][0].x * (P[j][1].y - P[j][0].y) - P[i][0].y * (P[j][1].x - P[j][0].x));
+                c[0][k] += w[k] * (-P[i][0].x * (P[j][1].y - P[j][0].y) - P[i][0].y * (P[j][1].x - P[j][0].x));
             }
             for (int k = 0; k < 5 ;++k) {
-                c[1][k] += w[k] * ((P[3][j].x - P[2][j].x) * P[3][i].y - (P[3][j].y - P[2][j].y) * P[3][i].x);
+                c[1][k] += w[k] * (-(P[3][j].x - P[2][j].x) * P[3][i].y - (P[3][j].y - P[2][j].y) * P[3][i].x);
             }
             for (int k = 0; k < 5 ;++k) {
-                c[2][k] += w[k] * (P[i][3].x * (P[j][3].y - P[j][2].y) - P[i][3].y * (P[j][3].x - P[j][2].x));
+                c[2][k] += w[k] * (-P[i][3].x * (P[j][3].y - P[j][2].y) - P[i][3].y * (P[j][3].x - P[j][2].x));
             }
             for (int k = 0; k < 5 ;++k) {
-                c[3][k] += w[k] * ((P[0][j].x - P[1][j].x) * P[0][i].y - (P[0][j].y - P[1][j].y) * P[0][i].x);
+                c[3][k] += w[k] * (-(P[0][j].x - P[1][j].x) * P[0][i].y - (P[0][j].y - P[1][j].y) * P[0][i].x);
             }
         }
     }

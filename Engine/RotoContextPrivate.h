@@ -179,11 +179,6 @@ struct BezierPrivate
 {
     BezierCPs points; //< the control points of the curve
     BezierCPs featherPoints; //< the feather points, the number of feather points must equal the number of cp.
-
-#pragma message WARN("Roto: use these new fields, update them where you need them (getBoundingBox, render)")
-    //BezierCPs pointsAtDistance; //< same as points, but empty beziers at cusp points with angle <180 are added
-    mutable BezierCPs featherPointsAtDistance; //< the precomputed feather points at featherDistance. if !featherPointsAtDistanceValid, featherPointsAtDistance must be updated.
-    mutable bool featherPointsAtDistanceValid;
     
     //updated whenever the Bezier is edited, this is used to determine if a point lies inside the bezier or not
     //it has a value for each keyframe
@@ -197,9 +192,6 @@ struct BezierPrivate
     BezierPrivate()
     : points()
     , featherPoints()
-    //, pointsAtDistance()
-    , featherPointsAtDistance()
-    , featherPointsAtDistanceValid(false)
     , isClockwiseOriented()
     , isClockwiseOrientedStatic(false)
     , autoRecomputeOrientation(true)
@@ -822,6 +814,8 @@ struct RotoContextPrivate
         visiblePortion->setAllDimensionsEnabled(false);
         visiblePortion->setIsPersistant(false);
         strokePageKnob->addKnob(visiblePortion);
+        visiblePortion->setDimensionName(0, "start");
+        visiblePortion->setDimensionName(0, "end");
         knobs.push_back(visiblePortion);
         brushVisiblePortionKnob = visiblePortion;
 #endif
@@ -847,7 +841,7 @@ struct RotoContextPrivate
     
     void renderBezier(cairo_t* cr,const Bezier* bezier,int time, unsigned int mipmapLevel);
     
-    void renderFeather(const Bezier* bezier,int time, unsigned int mipmapLevel, bool inverted, double shapeColor[3], double opacity, double featherDist, double fallOff, cairo_pattern_t* mesh, const BezierCPs& cps,const BezierCPs& fps);
+    void renderFeather(const Bezier* bezier,int time, unsigned int mipmapLevel, bool inverted, double shapeColor[3], double opacity, double featherDist, double fallOff, cairo_pattern_t* mesh);
 
     void renderInternalShape(int time,unsigned int mipmapLevel,double shapeColor[3], double opacity,cairo_t* cr, cairo_pattern_t* mesh, const BezierCPs & cps);
     

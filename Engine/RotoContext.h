@@ -453,9 +453,6 @@ public:
 
     const std::list<boost::shared_ptr<KnobI> >& getKnobs() const;
     
-public Q_SLOTS:
-    
-    void onFeatherDistanceChanged(int,int);
     
 Q_SIGNALS:
 
@@ -472,7 +469,6 @@ Q_SIGNALS:
 
 protected:
     
-    virtual void invalidateFeatherPointsAtDistance() {}
     
     void addKnob(const boost::shared_ptr<KnobI>& knob);
 
@@ -848,7 +844,6 @@ public:
     const std::list< boost::shared_ptr<BezierCP> > & getFeatherPoints() const;
     std::list< boost::shared_ptr<BezierCP> > getFeatherPoints_mt_safe() const;
     
-    std::list< boost::shared_ptr<BezierCP> > getFeatherPointsAtDistance_mt_safe() const;
     
     enum ControlPointSelectionPrefEnum
     {
@@ -947,14 +942,10 @@ private:
     bool isFeatherPolygonClockwiseOrientedInternal(int time) const;
     
     void computePolygonOrientation(int time,bool isStatic) const;
-    
-    virtual void invalidateFeatherPointsAtDistance() OVERRIDE FINAL;
-    
+        
     
 public:
     
-    void updateFeatherPointsAtDistanceIfNeeded(int time) const;
-
 
     /**
      * @brief Must be implemented by the derived class to save the state into

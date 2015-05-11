@@ -345,12 +345,12 @@ static void fit_cubic_internal(const std::vector<Point>& points, const Point&  t
         SimpleBezierCP firstCp,lastCp;
         firstCp.p = first;
         firstCp.leftTan = first;
-        firstCp.rightTan.x = firstCp.p.x + tHat1.x * dist;
-        firstCp.rightTan.y = firstCp.p.y + tHat1.y * dist;
+        firstCp.rightTan.x = firstCp.p.x + tHat1.x * dist / 3.;
+        firstCp.rightTan.y = firstCp.p.y + tHat1.y * dist / 3.;
         lastCp.p = last;
         lastCp.rightTan = last;
-        lastCp.leftTan.x = lastCp.p.x + tHat2.x * dist;
-        lastCp.leftTan.y = lastCp.p.y + tHat2.y * dist;
+        lastCp.leftTan.x = lastCp.p.x + tHat2.x * dist / 3.;
+        lastCp.leftTan.y = lastCp.p.y + tHat2.y * dist / 3.;
         generatedBezier->push_back(firstCp);
         generatedBezier->push_back(lastCp);
         return;
