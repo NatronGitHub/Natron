@@ -1524,6 +1524,7 @@ void DopeSheetView::computeSelectedKeysBRect()
     const int SELECTED_KF_BBOX_BOUNDS_OFFSET = 4;
 
     QRectF rect;
+    QTreeWidgetItem *topMostItem = 0;
 
     for (DSKeyPtrList::const_iterator it = _imp->keyframesSelected.begin();
          it != _imp->keyframesSelected.end();
@@ -1531,8 +1532,17 @@ void DopeSheetView::computeSelectedKeysBRect()
         DSKeyPtr selected = (*it);
 
         double x = selected->key.getTime();
-        double y = (selected->dsKnob->isMultiDim()) ? selected->dsKnob->getNameItemRectForDim(selected->dimension).center().y()
-                                                    : selected->dsKnob->getNameItemRect().center().y();
+        double y = 0;
+
+        if (!selected->dsKnob->getNameItem()->isExpanded() || !selected->dsKnob->getNameItem()->parent()->isExpanded()) {
+            y = selected->dsKnob->getNameItem()->treeWidget()->visualItemRect(selected->dsKnob->getNameItem()->parent()).center().y();
+        }
+        else {
+            y = (selected->dsKnob->isMultiDim()) ? selected->dsKnob->getNameItemRectForDim(selected->dimension).center().y()
+                                                 : selected->dsKnob->getNameItemRect().center().y();
+        }
+
+        QTreeWidgetItem *selectedNodeTreeItem = selected->dsKnob->getNameItem()->parent();
 
         if (it != _imp->keyframesSelected.begin()) {
             if (x < rect.left()) {
@@ -1547,8 +1557,9 @@ void DopeSheetView::computeSelectedKeysBRect()
                 rect.setTop(y);
             }
 
-            if (y < rect.bottom()) {
-                rect.setBottom(y);
+            if (selectedNodeTreeItem->treeWidget()->visualItemRect(selectedNodeTreeItem).center().y()
+                     < topMostItem->treeWidget()->visualItemRect(topMostItem).center().y()) {
+                topMostItem = selectedNodeTreeItem;
             }
         }
         else {
@@ -1556,6 +1567,8 @@ void DopeSheetView::computeSelectedKeysBRect()
             rect.setRight(x);
             rect.setTop(y);
             rect.setBottom(y);
+
+            topMostItem = selectedNodeTreeItem;
         }
     }
 
@@ -1566,6 +1579,10 @@ void DopeSheetView::computeSelectedKeysBRect()
     _imp->selectedKeysBRect.setBottomRight(bottomRight);
 
     if (!_imp->selectedKeysBRect.isNull()) {
+        double bottom = topMostItem->treeWidget()->visualItemRect(topMostItem).center().y();
+
+        _imp->selectedKeysBRect.setBottom(bottom);
+
         _imp->selectedKeysBRect.adjust(-SELECTED_KF_BBOX_BOUNDS_OFFSET, SELECTED_KF_BBOX_BOUNDS_OFFSET,
                                        SELECTED_KF_BBOX_BOUNDS_OFFSET, -SELECTED_KF_BBOX_BOUNDS_OFFSET);
     }
@@ -1743,22 +1760,22 @@ void DopeSheetView::mousePressEvent(QMouseEvent *e)
                 }
                 else if (dsNode->isReaderNode()) {
                     if (nodeClipRect.contains(clickZoomCoords.x(), clickZoomCoords.y())) {
-                            _imp->currentEditedReader = dsNode;
+                        _imp->currentEditedReader = dsNode;
 
-                            if (_imp->isNearByClipRectLeft(clickZoomCoords.x(), nodeClipRect)) {
-                                _imp->eventState = DopeSheetView::esReaderLeftTrim;
-                            }
-                            else if (_imp->isNearByClipRectRight(clickZoomCoords.x(), nodeClipRect)) {
-                                _imp->eventState = DopeSheetView::esReaderRightTrim;
-                            }
-                            else {
-                                _imp->eventState = DopeSheetView::esClipRepos;
-                            }
+                        if (_imp->isNearByClipRectLeft(clickZoomCoords.x(), nodeClipRect)) {
+                            _imp->eventState = DopeSheetView::esReaderLeftTrim;
+                        }
+                        else if (_imp->isNearByClipRectRight(clickZoomCoords.x(), nodeClipRect)) {
+                            _imp->eventState = DopeSheetView::esReaderRightTrim;
+                        }
+                        else {
+                            _imp->eventState = DopeSheetView::esClipRepos;
+                        }
 
-                            KnobIntPtr timeOffsetKnob = dynamic_cast<KnobIntPtr>
-                                    (_imp->currentEditedReader->getNodeGui()->getNode()->getKnobByName("timeOffset").get());
+                        KnobIntPtr timeOffsetKnob = dynamic_cast<KnobIntPtr>
+                                (_imp->currentEditedReader->getNodeGui()->getNode()->getKnobByName("timeOffset").get());
 
-                            _imp->lastTimeOffsetOnMousePress = timeOffsetKnob->getValue();
+                        _imp->lastTimeOffsetOnMousePress = timeOffsetKnob->getValue();
                     }
                 }
                 else if (dsNode->isCommonNode()) {
@@ -1954,8 +1971,6 @@ void DopeSheetView::mouseDragEvent(QMouseEvent *e)
     default:
         break;
     }
-
-    qDebug() << _imp->keyframesSelected.size();
 }
 
 void DopeSheetView::wheelEvent(QWheelEvent *e)
