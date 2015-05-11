@@ -1782,7 +1782,7 @@ void DopeSheetView::mousePressEvent(QMouseEvent *e)
                     DSSelectedKeys keysUnderMouse = _imp->createSelectionFromCursor(dsNode, e->pos());
 
                     if (!keysUnderMouse.empty()) {
-                        _imp->makeSelection(keysUnderMouse, modCASIsControl(e));
+                        _imp->makeSelection(keysUnderMouse, modCASIsShift(e));
 
                         computeSelectedKeysBRect();
 
@@ -1799,7 +1799,7 @@ void DopeSheetView::mousePressEvent(QMouseEvent *e)
                     DSSelectedKeys keysUnderMouse = _imp->createSelectionFromCursor(dsKnob, e->pos(), knobDim);
 
                     if (!keysUnderMouse.empty()) {
-                        _imp->makeSelection(keysUnderMouse, modCASIsControl(e));
+                        _imp->makeSelection(keysUnderMouse, modCASIsShift(e));
 
                         computeSelectedKeysBRect();
 
@@ -1811,7 +1811,7 @@ void DopeSheetView::mousePressEvent(QMouseEvent *e)
 
         // So the user left clicked on background
         if (_imp->eventState == DopeSheetView::esNoEditingState) {
-            if (!modCASIsControl(e)) {
+            if (!modCASIsShift(e)) {
                 clearKeyframeSelection();
             }
 
@@ -1911,7 +1911,7 @@ void DopeSheetView::mouseDragEvent(QMouseEvent *e)
         _imp->computeSelectionRect(lastZoomCoordsOnMousePress, mouseZoomCoords);
         DSSelectedKeys tempSelection = _imp->createSelectionFromRect(_imp->rectToZoomCoordinates(_imp->selectionRect));
 
-        _imp->makeSelection(tempSelection, modCASIsControl(e));
+        _imp->makeSelection(tempSelection, modCASIsShift(e));
 
         break;
     }
