@@ -483,7 +483,7 @@ CLANG_DIAG_ON(uninitialized)
 #define kShortcutIDActionDopeSheetEditorDeleteKey "deleteKeys"
 #define kShortcutDescActionDopeSheetEditorDeleteKey "Delete selected keyframes"
 
-#define kShortcutIDActionDopeSheetEditorFrameSelection "frameonselction"
+#define kShortcutIDActionDopeSheetEditorFrameSelection "frameonselection"
 #define kShortcutDescActionDopeSheetEditorFrameSelection "Frame on selection"
 
 inline
