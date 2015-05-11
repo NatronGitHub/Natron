@@ -473,23 +473,28 @@ RemovePointUndoCommand::redo()
 
     std::list<boost::shared_ptr<Bezier> > toRemove;
     for (std::list< CurveDesc >::iterator it = _curves.begin(); it != _curves.end(); ++it) {
+        
+        boost::shared_ptr<Bezier> isBezier = boost::dynamic_pointer_cast<Bezier>(it->curve);
+        if (!isBezier) {
+            continue;
+        }
         ///Remove in decreasing order so indexes don't get messed up
-        it->curve->setAutoOrientationComputation(false);
+        isBezier->setAutoOrientationComputation(false);
         for (std::list<int>::reverse_iterator it2 = it->points.rbegin(); it2 != it->points.rend(); ++it2) {
-            it->curve->removeControlPointByIndex(*it2);
-            int cpCount = it->curve->getControlPointsCount();
+            isBezier->removeControlPointByIndex(*it2);
+            int cpCount = isBezier->getControlPointsCount();
             if (cpCount == 1) {
-                it->curve->setCurveFinished(false);
+                isBezier->setCurveFinished(false);
             } else if (cpCount == 0) {
                 it->curveRemoved = true;
                 std::list<boost::shared_ptr<Bezier> >::iterator found = std::find( toRemove.begin(), toRemove.end(), it->curve );
                 if ( found == toRemove.end() ) {
-                    toRemove.push_back(it->curve);
+                    toRemove.push_back(isBezier);
                 }
             }
         }
-        it->curve->setAutoOrientationComputation(true);
-        it->curve->refreshPolygonOrientation();
+        isBezier->setAutoOrientationComputation(true);
+        isBezier->refreshPolygonOrientation();
     }
 
     for (std::list<boost::shared_ptr<Bezier> >::iterator it = toRemove.begin(); it != toRemove.end(); ++it) {

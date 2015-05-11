@@ -68,7 +68,9 @@ CLANG_DIAG_ON(uninitialized)
 #define kTransformArrowWidth 3
 #define kTransformArrowOffsetFromPoint 15
 
+#ifdef ROTO_STROKE_USE_FIT_CURVE
 #define DRAW_STROKE_FITTED_CURVE
+#endif
 //#define DEBUG_STOKE
 
 using namespace Natron;
@@ -1035,10 +1037,14 @@ RotoGui::drawOverlays(double /*scaleX*/,
             Bezier* isBezier = dynamic_cast<Bezier*>(it->get());
             RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>(it->get());
             if (isStroke) {
-                //const RotoStrokeItem::Points& points = isStroke->getPoints();
+
+#ifdef ROTO_STROKE_USE_FIT_CURVE
                 std::list<Point> points;
                 isStroke->evaluateAtTime_DeCasteljau(time, 0, 50, &points, NULL);
-                
+#else
+                std::list<std::pair<Point,double> > points;
+                isStroke->evaluateStroke(0,&points);
+#endif
                 bool locked = (*it)->isLockedRecursive();
                 double curveColor[4];
                 if (!locked) {
@@ -1048,9 +1054,15 @@ RotoGui::drawOverlays(double /*scaleX*/,
                 }
                 glColor4dv(curveColor);
                 glBegin(GL_LINE_STRIP);
+#ifdef ROTO_STROKE_USE_FIT_CURVE
                 for (std::list<Point>::const_iterator it2 = points.begin(); it2 != points.end(); ++it2) {
                      glVertex2f(it2->x, it2->y);
                 }
+#else
+                for (std::list<std::pair<Point,double> >::const_iterator it2 = points.begin(); it2 != points.end(); ++it2) {
+                    glVertex2f(it2->first.x, it2->first.y);
+                }
+#endif
                 glEnd();
                 
 #ifdef DRAW_STROKE_FITTED_CURVE

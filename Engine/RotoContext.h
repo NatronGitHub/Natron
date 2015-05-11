@@ -54,6 +54,9 @@ CLANG_DIAG_ON(deprecated-declarations)
 #define kRotoPaintDodgeBaseName "Dodge"
 #define kRotoPaintBurnBaseName "Burn"
 
+//#define ROTO_ENABLE_PAINT
+//#define ROTO_STROKE_USE_FIT_CURVE
+
 namespace Natron {
 class Image;
 class ImageComponents;
@@ -453,6 +456,8 @@ public:
 
     const std::list<boost::shared_ptr<KnobI> >& getKnobs() const;
     
+    virtual RectD getBoundingBox(int time) const = 0;
+
     
 Q_SIGNALS:
 
@@ -533,6 +538,7 @@ public:
     ///MT-safe
     std::list< boost::shared_ptr<RotoItem> > getItems_mt_safe() const;
 
+    
 private:
 
     boost::scoped_ptr<RotoLayerPrivate> _imp;
@@ -822,7 +828,7 @@ public:
      * @brief Returns the bounding box of the bezier. The last value computed by evaluateAtTime_DeCasteljau will be returned,
      * otherwise if it has never been called, evaluateAtTime_DeCasteljau will be called to compute the bounding box.
      **/
-    virtual RectD getBoundingBox(int time) const;
+    virtual RectD getBoundingBox(int time) const OVERRIDE;
 
     /**
      * @brief Returns a const ref to the control points of the bezier curve. This can only ever be called on the main thread.
@@ -1007,7 +1013,12 @@ private:
  * @class Base class for all strokes
  **/
 struct RotoStrokeItemPrivate;
-class RotoStrokeItem : public Bezier
+class RotoStrokeItem :
+#ifdef ROTO_STROKE_USE_FIT_CURVE
+public Bezier
+#else
+public RotoDrawableItem
+#endif
 {
     
 public:
@@ -1019,8 +1030,10 @@ public:
     
     virtual ~RotoStrokeItem();
     
+#ifdef ROTO_STROKE_USE_FIT_CURVE
     virtual bool useFeatherPoints() const OVERRIDE FINAL { return false; }
-        
+#endif
+    
     
     Natron::RotoStrokeType getBrushType() const;
     
@@ -1055,6 +1068,11 @@ public:
     boost::shared_ptr<Double_Knob> getBrushEffectKnob() const;
     boost::shared_ptr<Double_Knob> getBrushVisiblePortionKnob() const;
     
+#ifndef ROTO_STROKE_USE_FIT_CURVE
+    
+    void evaluateStroke(unsigned int mipMapLevel, std::list<std::pair<Natron::Point,double> >* points) const;
+    
+#endif
     
 private:
     

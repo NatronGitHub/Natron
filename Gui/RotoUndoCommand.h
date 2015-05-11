@@ -153,7 +153,7 @@ class RemovePointUndoCommand
 {
     struct CurveDesc
     {
-        boost::shared_ptr<Bezier> oldCurve,curve;
+        boost::shared_ptr<RotoDrawableItem> oldCurve,curve;
         std::list<int> points;
         boost::shared_ptr<RotoLayer> parentLayer;
         bool curveRemoved;

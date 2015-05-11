@@ -41,9 +41,9 @@
 #include "Engine/AppManager.h"
 #include "Engine/Rect.h"
 #include "Engine/FitCurve.h"
+#include "Engine/RotoContext.h"
 #include "Global/GlobalDefines.h"
 
-//#define ROTO_ENABLE_PAINT
 
 #define ROTO_DEFAULT_OPACITY 1.
 #define ROTO_DEFAULT_FEATHER 1.5
@@ -562,6 +562,10 @@ struct RotoStrokeItemPrivate
     boost::shared_ptr<Double_Knob> brushHardness;
     boost::shared_ptr<Double_Knob> effectStrength;
     boost::shared_ptr<Double_Knob> visiblePortion; // [0,1] by default
+    
+#ifndef ROTO_STROKE_USE_FIT_CURVE
+    Curve xCurve,yCurve,pressureCurve;
+#endif
     
     RotoStrokeItemPrivate(Natron::RotoStrokeType type)
     : type(type)

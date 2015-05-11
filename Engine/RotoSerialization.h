@@ -28,6 +28,7 @@
 #endif
 
 #include "Engine/AppManager.h"
+#include "Engine/CurveSerialization.h"
 #include "Engine/KnobSerialization.h"
 
 #define ROTO_DRAWABLE_ITEM_INTRODUCES_COMPOSITING 2
@@ -469,6 +470,11 @@ private:
         ar & boost::serialization::make_nvp("BrushHardness",_brushHardness);
         ar & boost::serialization::make_nvp("BrushEffectStrength",_brushEffectStrength);
         ar & boost::serialization::make_nvp("BrushVisiblePortion",_brushVisiblePortion);
+#ifndef ROTO_STROKE_USE_FIT_CURVE
+        ar & boost::serialization::make_nvp("CurveX",_xCurve);
+        ar & boost::serialization::make_nvp("CurveY",_yCurve);
+        ar & boost::serialization::make_nvp("CurveP",_pressureCurve);
+#endif
     }
     
     template<class Archive>
@@ -487,6 +493,11 @@ private:
         ar & boost::serialization::make_nvp("BrushHardness",_brushHardness);
         ar & boost::serialization::make_nvp("BrushEffectStrength",_brushEffectStrength);
         ar & boost::serialization::make_nvp("BrushVisiblePortion",_brushVisiblePortion);
+#ifndef ROTO_STROKE_USE_FIT_CURVE
+        ar & boost::serialization::make_nvp("CurveX",_xCurve);
+        ar & boost::serialization::make_nvp("CurveY",_yCurve);
+        ar & boost::serialization::make_nvp("CurveP",_pressureCurve);
+#endif
     }
     
     BOOST_SERIALIZATION_SPLIT_MEMBER()
@@ -497,6 +508,9 @@ private:
     KnobSerialization _brushSpacing;
     KnobSerialization _brushVisiblePortion;
     KnobSerialization _brushEffectStrength;
+#ifndef ROTO_STROKE_USE_FIT_CURVE
+    Curve _xCurve,_yCurve,_pressureCurve;
+#endif
 };
 
 class RotoLayerSerialization

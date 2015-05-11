@@ -4254,7 +4254,11 @@ RotoStrokeItem::RotoStrokeItem(Natron::RotoStrokeType type,
                                const boost::shared_ptr<RotoContext>& context,
                                const std::string & name,
                                const boost::shared_ptr<RotoLayer>& parent)
+#ifdef ROTO_STROKE_USE_FIT_CURVE
 : Bezier(context,name,parent)
+#else
+: RotoDrawableItem(context,name,parent)
+#endif
 , _imp(new RotoStrokeItemPrivate(type))
 {
     addKnob(_imp->brushSpacing);
@@ -4279,6 +4283,8 @@ void
 RotoStrokeItem::initialize(const std::list<std::pair<Natron::Point,double> >& rawPoints)
 {
     assert(QThread::currentThread() == qApp->thread());
+#ifdef ROTO_STROKE_USE_FIT_CURVE
+
     clearAllPoints();
     
     std::vector<FitCurve::SimpleBezierCP> fitBezier;
@@ -4312,25 +4318,77 @@ RotoStrokeItem::initialize(const std::list<std::pair<Natron::Point,double> >& ra
         }
         cps.insert(cps.end(),p);
     }
+#else
+    QMutexLocker k(&itemMutex);
+    
+    _imp->xCurve.clearKeyFrames();
+    _imp->yCurve.clearKeyFrames();
+    _imp->pressureCurve.clearKeyFrames();
+    int i = 0;
+    for (std::list<std::pair<Natron::Point,double> >::const_iterator it = rawPoints.begin();it!=rawPoints.end();++it,++i) {
+        {
+            KeyFrame k;
+            k.setTime(i);
+            k.setValue(it->first.x);
+            _imp->xCurve.addKeyFrame(k);
+        }
+        {
+            KeyFrame k;
+            k.setTime(i);
+            k.setValue(it->first.y);
+            _imp->yCurve.addKeyFrame(k);
+        }
+
+        {
+            KeyFrame k;
+            k.setTime(i);
+            k.setValue(it->second);
+            _imp->pressureCurve.addKeyFrame(k);
+        }
+
+        
+    }
+#endif
 }
 
 
 void
 RotoStrokeItem::clone(const RotoItem* other)
 {
-    
+#ifdef ROTO_STROKE_USE_FIT_CURVE
     Bezier::clone(other);
+#else
+    const RotoStrokeItem* otherStroke = dynamic_cast<const RotoStrokeItem*>(other);
+    assert(otherStroke);
+    {
+        QMutexLocker k(&itemMutex);
+        _imp->xCurve.clone(otherStroke->_imp->xCurve);
+        _imp->yCurve.clone(otherStroke->_imp->yCurve);
+        _imp->pressureCurve.clone(otherStroke->_imp->pressureCurve);
+        _imp->type = otherStroke->_imp->type;
+    }
+    RotoDrawableItem::clone(other);
+#endif
 }
 
 void
 RotoStrokeItem::save(RotoItemSerialization* obj) const
 {
+#ifdef ROTO_STROKE_USE_FIT_CURVE
     Bezier::save(obj);
+#else
+    RotoDrawableItem::save(obj);
+#endif
     RotoStrokeSerialization* s = dynamic_cast<RotoStrokeSerialization*>(obj);
     assert(s);
     {
         QMutexLocker k(&itemMutex);
         s->_brushType = (int)_imp->type;
+#ifndef ROTO_STROKE_USE_FIT_CURVE
+        s->_xCurve = _imp->xCurve;
+        s->_yCurve = _imp->yCurve;
+        s->_pressureCurve = _imp->pressureCurve;
+#endif
     }
     serializeRotoKnob(_imp->brushSize, &s->_brushSize);
     serializeRotoKnob(_imp->brushSpacing, &s->_brushSpacing);
@@ -4343,13 +4401,21 @@ RotoStrokeItem::save(RotoItemSerialization* obj) const
 void
 RotoStrokeItem::load(const RotoItemSerialization & obj)
 {
+#ifdef ROTO_STROKE_USE_FIT_CURVE
     Bezier::load(obj);
+#else
+    RotoDrawableItem::load(obj);
+#endif
     const RotoStrokeSerialization* s = dynamic_cast<const RotoStrokeSerialization*>(&obj);
     assert(s);
     {
         QMutexLocker k(&itemMutex);
         _imp->type = (Natron::RotoStrokeType)s->_brushType;
-        
+#ifndef ROTO_STROKE_USE_FIT_CURVE
+        _imp->xCurve.clone(s->_xCurve);
+        _imp->yCurve.clone(s->_yCurve);
+        _imp->pressureCurve.clone(s->_pressureCurve);
+#endif
     }
     _imp->brushSize->clone(s->_brushSize.getKnob().get());
     _imp->brushSpacing->clone(s->_brushSpacing.getKnob().get());
@@ -4361,6 +4427,7 @@ RotoStrokeItem::load(const RotoItemSerialization & obj)
 RectD
 RotoStrokeItem::getBoundingBox(int time) const
 {
+#ifdef ROTO_STROKE_USE_FIT_CURVE
     RectD ret = Bezier::getBoundingBox(time);
     double brushSize = _imp->brushSize->getValue();
     double hardness = _imp->brushHardness->getValue();
@@ -4370,7 +4437,113 @@ RotoStrokeItem::getBoundingBox(int time) const
     ret.y2 += externalDotRadius;
     ret.x2 += externalDotRadius;
     return ret;
+#else
+    QMutexLocker k(&itemMutex);
+    
+    (void)time;
+    RectD bbox;
+    bbox.x1 = std::numeric_limits<double>::infinity();
+    bbox.x2 = -std::numeric_limits<double>::infinity();
+    bbox.y1 = std::numeric_limits<double>::infinity();
+    bbox.y2 = -std::numeric_limits<double>::infinity();
+    
+    assert(_imp->xCurve.getKeyFramesCount() == _imp->yCurve.getKeyFramesCount());
+    int nKfs = _imp->xCurve.getKeyFramesCount();
+    for (int i = 0; i < nKfs; ++i) {
+        KeyFrame xK,yK;
+        bool ok = _imp->xCurve.getKeyFrameWithIndex(i, &xK);
+        assert(ok);
+        ok = _imp->yCurve.getKeyFrameWithIndex(i, &yK);
+        assert(ok);
+        bbox.x1 = std::min(bbox.x1, xK.getValue());
+        bbox.x2 = std::max(bbox.x2, xK.getValue());
+        bbox.y1 = std::min(bbox.y1, yK.getValue());
+        bbox.y2 = std::max(bbox.y2, yK.getValue());
+    }
+    double brushSize = _imp->brushSize->getValue() / 2.;
+    
+    bbox.x1 -= brushSize;
+    bbox.x2 += brushSize;
+    bbox.y1 -= brushSize;
+    bbox.y2 += brushSize;
+    return bbox;
+#endif
 }
+
+#ifndef ROTO_STROKE_USE_FIT_CURVE
+void
+RotoStrokeItem::evaluateStroke(unsigned int mipMapLevel, std::list<std::pair<Natron::Point,double> >* points) const
+{
+    QMutexLocker k(&itemMutex);
+    int nKfs = _imp->xCurve.getKeyFramesCount();
+    for (int i = 0; i < nKfs - 1; ++i) {
+        KeyFrame xK,yK,pK;
+        bool ok = _imp->xCurve.getKeyFrameWithIndex(i, &xK);
+        assert(ok);
+        ok = _imp->yCurve.getKeyFrameWithIndex(i, &yK);
+        assert(ok);
+        ok = _imp->pressureCurve.getKeyFrameWithIndex(i, &pK);
+        assert(ok);
+        
+        int nextIdx = (i + 1);
+        assert(nextIdx < nKfs);
+        
+        KeyFrame xNext,yNext,pNext;
+        ok = _imp->xCurve.getKeyFrameWithIndex(nextIdx, &xNext);
+        assert(ok);
+        ok = _imp->yCurve.getKeyFrameWithIndex(nextIdx, &yNext);
+        assert(ok);
+        ok = _imp->pressureCurve.getKeyFrameWithIndex(nextIdx, &pNext);
+        assert(ok);
+        
+        double x1,y1,press1,x2,y2,press2;
+        double x1pr,y1pr,x2pl,y2pl,press1pr,press2pl;
+        x1 = xK.getValue();
+        y1 = yK.getValue();
+        press1 = pK.getValue();
+        x2 = xNext.getValue();
+        y2 = yNext.getValue();
+        press2 = pNext.getValue();
+        
+        x1pr = x1 + xK.getRightDerivative() / 3.;
+        y1pr = y1 + yK.getRightDerivative() / 3.;
+        press1pr = press1 + pK.getRightDerivative() / 3.;
+        x2pl = x2 - xNext.getLeftDerivative() / 3.;
+        y2pl = y2 - yNext.getLeftDerivative() / 3.;
+        press2pl = press2 - pNext.getLeftDerivative() / 3.;
+        
+        /*
+         * Approximate the necessary number of line segments, using http://antigrain.com/research/adaptive_bezier/
+         */
+        double dx1,dy1,dx2,dy2,dx3,dy3;
+        dx1 = x1pr - x1;
+        dy1 = y1pr - y1;
+        dx2 = x2pl - x1pr;
+        dy2 = y2pl - y1pr;
+        dx3 = x2 - x2pl;
+        dy3 = y2 - y2pl;
+        double length = std::sqrt(dx1 * dx1 + dy1 * dy1) +
+        std::sqrt(dx2 * dx2 + dy2 * dy2) +
+        std::sqrt(dx3 * dx3 + dy3 * dy3);
+        double nbPointsPerSegment = (int)std::max(length * 0.25, 2.);
+        
+        double incr = 1. / (double)(nbPointsPerSegment - 1);
+        
+        int pot = 1 << mipMapLevel;
+        for (double t = 0.; t <= 1.; t += incr) {
+            
+            Point p;
+            p.x = bezier(x1, x1pr, x2pl, x2, t);
+            p.y = bezier(y1, y1pr, y2pl, y2, t);
+            double pi = bezier(press1, press1pr, press2pl, press2, t);
+            p.x /= pot;
+            p.y /= pot;
+            points->push_back(std::make_pair(p, pi));
+        }
+    }
+    
+}
+#endif
 
 boost::shared_ptr<Double_Knob>
 RotoStrokeItem::getBrushSizeKnob() const
@@ -6373,12 +6546,14 @@ static void renderDotPatch(cairo_pattern_t* mesh,
 void
 RotoContextPrivate::renderStroke(cairo_t* cr,const RotoStrokeItem* stroke, int time, unsigned int mipmapLevel)
 {
+    std::list<std::pair<Point,double> > points;
+
+#ifdef ROTO_STROKE_USE_FIT_CURVE
     BezierCPs cps = stroke->getControlPoints_mt_safe();
     if (!stroke->isActivated(time) || cps.empty()) {
         return;
     }
     
-    std::list<Point> points;
     
     
     /**
@@ -6391,6 +6566,10 @@ RotoContextPrivate::renderStroke(cairo_t* cr,const RotoStrokeItem* stroke, int t
      (p1,p2)+(p2,p3)+(p3,p4);
      **/
     stroke->evaluateAtTime_DeCasteljau_autoNbPoints(time, mipmapLevel, &points, 0);
+#else
+    stroke->evaluateStroke(mipmapLevel, &points);
+#endif
+    
     if (points.empty()) {
         return;
     }
@@ -6428,12 +6607,12 @@ RotoContextPrivate::renderStroke(cairo_t* cr,const RotoStrokeItem* stroke, int t
 
     
     ///The visible portion of the paint's stroke with points adjusted to pixel coordinates
-    std::list<Point> visiblePortion;
-    std::list<Point>::iterator startingIt = points.begin();
-    std::list<Point>::iterator endingIt = points.begin();
+    std::list<std::pair<Point,double> > visiblePortion;
+    std::list<std::pair<Point,double> >::iterator startingIt = points.begin();
+    std::list<std::pair<Point,double> >::iterator endingIt = points.begin();
     std::advance(startingIt, firstPoint);
     std::advance(endingIt, endPoint);
-    for (std::list<Point>::iterator it = startingIt; it!=endingIt; ++it) {
+    for (std::list<std::pair<Point,double> >::iterator it = startingIt; it!=endingIt; ++it) {
         visiblePortion.push_back(*it);
     }
     
@@ -6447,7 +6626,7 @@ RotoContextPrivate::renderStroke(cairo_t* cr,const RotoStrokeItem* stroke, int t
     double spacingPixel = externalDotRadius * 2. * brushSpacing;
     
 
-    for (std::list<Point>::iterator it = visiblePortion.begin(); it!=visiblePortion.end();) {
+    for (std::list<std::pair<Point,double> >::iterator it = visiblePortion.begin(); it!=visiblePortion.end();) {
         //Render for each point a dot. Spacing is a percentage of brushSize:
         //Spacing at 1 means no dot is overlapping another (so the spacing is in fact brushSize)
         //Spacing at 0 we do not render the stroke
@@ -6463,19 +6642,20 @@ RotoContextPrivate::renderStroke(cairo_t* cr,const RotoStrokeItem* stroke, int t
         }
         
         Point center;
-        center.x = it->x;
-        center.y = it->y;
+        center.x = it->first.x;
+        center.y = it->first.y;
+        double pressure = it->second;
         for (int i = 0; i < 4; ++i) {
             renderDotPatch(mesh, i, center, internalDotRadius, externalDotRadius, shapeColor, opacity);
         }
         
         //Find the next point that we should draw a dot on according to the spacing in pixel coordinates
-        std::list<Point>::iterator it2 = it;
+        std::list<std::pair<Point,double> >::iterator it2 = it;
         ++it2;
         double segmentDis = -1;
         for (; it2!=visiblePortion.end(); ++it2) {
-            double dist = std::sqrt((it2->x - it->x) * (it2->x - it->x) + (it2->y - it->y) *
-                                (it2->y - it->y));
+            double dist = std::sqrt((it2->first.x - it->first.x) * (it2->first.x - it->first.x) + (it2->first.y - it->first.y) *
+                                (it2->first.y - it->first.y));
             if (segmentDis == -1) {
                 segmentDis = dist;
             }
