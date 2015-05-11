@@ -665,6 +665,7 @@ AppInstance::createNodeInternal(const QString & pluginID,
                                 bool pushUndoRedoCommand,
                                 bool addToProject,
                                 bool userEdited,
+                                bool createGui,
                                 const QString& fixedName,
                                 const CreateNodeArgs::DefaultValuesList& paramValues,
                                 const boost::shared_ptr<NodeCollection>& group)
@@ -774,15 +775,17 @@ AppInstance::createNodeInternal(const QString & pluginID,
     }
 
     boost::shared_ptr<Natron::Node> multiInstanceParent = node->getParentMultiInstance();
-
-    // createNodeGui also sets the filename parameter for reader or writers
-    createNodeGui(node,
-                  multiInstanceParent,
-                  requestedByLoad,
-                  autoConnect,
-                  xPosHint,
-                  yPosHint,
-                  pushUndoRedoCommand);
+    
+    if (createGui) {
+        // createNodeGui also sets the filename parameter for reader or writers
+        createNodeGui(node,
+                      multiInstanceParent,
+                      requestedByLoad,
+                      autoConnect,
+                      xPosHint,
+                      yPosHint,
+                      pushUndoRedoCommand);
+    }
     
     boost::shared_ptr<NodeGroup> isGrp = boost::dynamic_pointer_cast<NodeGroup>(node->getLiveInstance()->shared_from_this());
 
@@ -863,6 +866,7 @@ AppInstance::createNode(const CreateNodeArgs & args)
                               args.pushUndoRedoCommand,
                               args.addToProject,
                               args.userEdited,
+                              args.createGui,
                               args.fixedName,
                               args.paramValues,
                               args.group);
@@ -880,6 +884,7 @@ AppInstance::loadNode(const LoadNodeArgs & args)
                               false,
                               INT_MIN,INT_MIN,
                               false,
+                              true,
                               true,
                               true,
                               QString(),

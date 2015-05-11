@@ -476,7 +476,7 @@ Node::createRotoContextConditionnally()
     assert(!_imp->rotoContext);
     assert(_imp->liveInstance);
     ///Initialize the roto context if any
-    if ( isRotoNode() ) {
+    if ( isRotoNode() || isRotoPaintingNode() ) {
         _imp->rotoContext.reset( new RotoContext(shared_from_this()) );
         _imp->rotoContext->createBaseLayer();
     }
@@ -3751,10 +3751,7 @@ Node::isRotoNode() const
 bool
 Node::isRotoPaintingNode() const
 {
-    ///Runs only in the main thread (checked by getName())
-    QString name = getPluginID().c_str();
-    
-    return name.contains("rotopaint",Qt::CaseInsensitive);
+    return _imp->liveInstance ? _imp->liveInstance->isRotoPaintNode() : false;
 }
 
 boost::shared_ptr<RotoContext>

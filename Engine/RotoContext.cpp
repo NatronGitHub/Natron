@@ -5382,45 +5382,18 @@ RotoContext::selectInternal(const boost::shared_ptr<RotoItem> & item)
     }
     
     ///enable the knobs
-    if (nbUnlockedBeziers > 0) {
-        _imp->opacity.lock()->setAllDimensionsEnabled(true);
-        _imp->feather.lock()->setAllDimensionsEnabled(true);
-        _imp->featherFallOff.lock()->setAllDimensionsEnabled(true);
-        _imp->activated.lock()->setAllDimensionsEnabled(true);
-#ifdef NATRON_ROTO_INVERTIBLE
-        _imp->inverted.lock()->setAllDimensionsEnabled(true);
-#endif
-        _imp->colorKnob.lock()->setAllDimensionsEnabled(true);
-        
-        ///if there are multiple selected beziers, notify the gui knobs so they appear like not displaying an accurate value
-        ///(maybe black or something)
-        if (nbUnlockedBeziers >= 2) {
-            _imp->opacity.lock()->setDirty(true);
-            _imp->feather.lock()->setDirty(true);
-            _imp->featherFallOff.lock()->setDirty(true);
-            _imp->activated.lock()->setDirty(true);
-#ifdef NATRON_ROTO_INVERTIBLE
-            _imp->inverted.lock()->setDirty(true);
-#endif
-            _imp->colorKnob.lock()->setDirty(true);
+    if (nbUnlockedBeziers > 0 || nbUnlockedStrokes > 0) {
+        for (std::list<boost::weak_ptr<KnobI> >::iterator it = _imp->knobs.begin(); it != _imp->knobs.end(); ++it) {
+            boost::shared_ptr<KnobI> k = it->lock();
+            if (!k) {
+                continue;
+            }
+            k->setAllDimensionsEnabled(true);
+            if (nbUnlockedBeziers >= 2 || nbUnlockedStrokes >= 2) {
+                k->setDirty(true);
+            }
         }
     }
-#ifdef ROTO_ENABLE_PAINT
-    if (nbUnlockedStrokes > 0) {
-        _imp->brushSizeKnob.lock()->setAllDimensionsEnabled(true);
-        _imp->brushSpacingKnob.lock()->setAllDimensionsEnabled(true);
-        _imp->brushHardnessKnob.lock()->setAllDimensionsEnabled(true);
-        _imp->brushEffectKnob.lock()->setAllDimensionsEnabled(true);
-        _imp->brushVisiblePortionKnob.lock()->setAllDimensionsEnabled(true);
-        if (nbUnlockedStrokes >= 2) {
-            _imp->brushSizeKnob.lock()->setDirty(true);
-            _imp->brushSpacingKnob.lock()->setDirty(true);
-            _imp->brushHardnessKnob.lock()->setDirty(true);
-            _imp->brushEffectKnob.lock()->setDirty(true);
-            _imp->brushVisiblePortionKnob.lock()->setDirty(true);
-        }
-    }
-#endif
     _imp->selectedItems.push_back(item);
 } // selectInternal
 
@@ -5524,46 +5497,18 @@ RotoContext::deselectInternal(boost::shared_ptr<RotoItem> b)
     
     ///if the selected beziers count reaches 0 notify the gui knobs so they appear not enabled
     
-    if (nbBeziersUnLockedBezier == 0) {
-        _imp->opacity.lock()->setAllDimensionsEnabled(false);
-        _imp->feather.lock()->setAllDimensionsEnabled(false);
-        _imp->featherFallOff.lock()->setAllDimensionsEnabled(false);
-        _imp->activated.lock()->setAllDimensionsEnabled(false);
-#ifdef NATRON_ROTO_INVERTIBLE
-        _imp->inverted.lock()->setAllDimensionsEnabled(false);
-#endif
-        _imp->colorKnob.lock()->setAllDimensionsEnabled(false);
-
+    if (nbBeziersUnLockedBezier == 0 || nbStrokesUnlocked == 0) {
+        for (std::list<boost::weak_ptr<KnobI> >::iterator it = _imp->knobs.begin(); it != _imp->knobs.end(); ++it) {
+            boost::shared_ptr<KnobI> k = it->lock();
+            if (!k) {
+                continue;
+            }
+            k->setAllDimensionsEnabled(false);
+            if (!bezierDirty || !strokeDirty) {
+                k->setDirty(false);
+            }
+        }
     }
-    if (!bezierDirty) {
-        _imp->opacity.lock()->setDirty(false);
-        _imp->feather.lock()->setDirty(false);
-        _imp->featherFallOff.lock()->setDirty(false);
-        _imp->activated.lock()->setDirty(false);
-#ifdef NATRON_ROTO_INVERTIBLE
-        _imp->inverted.lock()->setDirty(false);
-#endif
-        _imp->colorKnob.lock()->setDirty(false);
-    }
-    
-#ifdef ROTO_ENABLE_PAINT
-    if (nbStrokesUnlocked == 0) {
-        _imp->brushSizeKnob.lock()->setAllDimensionsEnabled(false);
-        _imp->brushSpacingKnob.lock()->setAllDimensionsEnabled(false);
-        _imp->brushHardnessKnob.lock()->setAllDimensionsEnabled(false);
-        _imp->brushEffectKnob.lock()->setAllDimensionsEnabled(false);
-        _imp->brushVisiblePortionKnob.lock()->setAllDimensionsEnabled(false);
-
-    }
-    if (!strokeDirty) {
-        _imp->brushSizeKnob.lock()->setDirty(false);
-        _imp->brushSpacingKnob.lock()->setDirty(false);
-        _imp->brushHardnessKnob.lock()->setDirty(false);
-        _imp->brushEffectKnob.lock()->setDirty(false);
-        _imp->brushVisiblePortionKnob.lock()->setDirty(false);
-
-    }
-#endif 
     
 } // deselectInternal
 

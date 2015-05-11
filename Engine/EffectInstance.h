@@ -52,6 +52,7 @@
 #define PLUGINID_NATRON_INPUT     (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.Input")
 #define PLUGINID_NATRON_OUTPUT    (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.Output")
 #define PLUGINID_NATRON_BACKDROP  (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.BackDrop")
+#define PLUGINID_NATRON_ROTOPAINT (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.RotoPaint")
 
 class Hash64;
 class Format;
@@ -344,6 +345,14 @@ public:
     * @brief Returns true if this node is a tracker
     **/
     virtual bool isTrackerNode() const WARN_UNUSED_RETURN
+    {
+        return false;
+    }
+
+    /**
+    * @brief Returns true if this node is a tracker
+    **/
+    virtual bool isRotoPaintNode() const WARN_UNUSED_RETURN
     {
         return false;
     }

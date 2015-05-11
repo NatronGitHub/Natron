@@ -115,6 +115,7 @@ SOURCES += \
     PySideCompat.cpp \
     Rect.cpp \
     RotoContext.cpp \
+    RotoPaint.cpp \
     RotoSerialization.cpp  \
     RotoWrapper.cpp \
     ScriptObject.cpp \
@@ -247,6 +248,7 @@ HEADERS += \
     Rect.h \
     RotoContext.h \
     RotoContextPrivate.h \
+    RotoPaint.h \
     RotoSerialization.h \
     RotoWrapper.h \
     ScriptObject.h \
