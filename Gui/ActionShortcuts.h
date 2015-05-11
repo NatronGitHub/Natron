@@ -486,6 +486,9 @@ CLANG_DIAG_ON(uninitialized)
 #define kShortcutIDActionDopeSheetEditorFrameSelection "frameonselection"
 #define kShortcutDescActionDopeSheetEditorFrameSelection "Frame on selection"
 
+#define kShortcutIDActionDopeSheetEditorSelectAllKeyframes "selectallkeyframes"
+#define kShortcutDescActionDopeSheetEditorSelectAllKeyframes "Select all keyframes"
+
 inline
 QKeySequence
 makeKeySequence(const Qt::KeyboardModifiers & modifiers,
