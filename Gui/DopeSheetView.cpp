@@ -61,6 +61,38 @@ const int KF_X_OFFSET = 3;
 const int CLICK_DISTANCE_ACCEPTANCE = 5;
 
 
+////////////////////////// Helpers //////////////////////////
+
+namespace {
+
+/**
+ * @brief ClipColors
+ *
+ * A convenience typedef for storing useful colors for drawing:
+ * - the first element defines the fill color of the clip ;
+ * - the second element defines the outline color.
+ */
+typedef std::pair<QColor, QColor> ClipColors;
+
+ClipColors getClipColors(DSNode::DSNodeType nodeType)
+{
+    ClipColors ret;
+
+    if (nodeType == DSNode::ReaderNodeType) {
+        ret.first = Qt::black;
+        ret.second = QColor::fromRgbF(0.224f, 0.553f, 0.929f);
+    }
+    else if (nodeType == DSNode::GroupNodeType) {
+        ret.first = Qt::black;
+        ret.second = QColor::fromRgbF(0.224f, 0.553f, 0.929f);
+    }
+
+    return ret;
+}
+
+} // anon namespace
+
+
 ////////////////////////// DopeSheetView //////////////////////////
 
 class DopeSheetViewPrivate
@@ -101,7 +133,7 @@ public:
     void drawNodeSection(const DSNode *dsNode) const;
     void drawKnobSection(const DSKnob *dsKnob) const;
 
-    void drawClip(const DSNode *dsNode) const;
+    void drawClip(DSNode *dsNode) const;
     void drawKeyframes(DSNode *dsNode) const;
 
     void drawProjectBounds() const;
@@ -111,10 +143,11 @@ public:
 
     void drawSelectedKeysBRect() const;
 
-
     // After or during an user interaction
     void computeTimelinePositions();
     void computeSelectionRect(const QPointF &origin, const QPointF &current);
+    void computeReaderRect(DSNode *dsNode);
+    void computeGroupRect(DSNode *dsNode);
 
     // User interaction
     DSSelectedKeys createSelectionFromCursor(DSKnob *dsKnob, const QPointF &widgetCoords, int dimension);
@@ -757,21 +790,20 @@ void DopeSheetViewPrivate::drawKnobSection(const DSKnob *dsKnob) const
     }
 }
 
-void DopeSheetViewPrivate::drawClip(const DSNode *dsNode) const
+void DopeSheetViewPrivate::drawClip(DSNode *dsNode) const
 {
     // Draw the clip
     {
-        QColor readerFillColor = dsNode->getClipColor(DSNode::ClipFill);
-        QColor readerOutlineColor = dsNode->getClipColor(DSNode::ClipOutline);
+        ClipColors colors = getClipColors(dsNode->getDSNodeType());
 
         QRectF clipRect = dsNode->getClipRect();
-        QRectF clipRectZoomCoords = rectToZoomCoordinates(dsNode->getClipRect());
+        QRectF clipRectZoomCoords = rectToZoomCoordinates(clipRect);
 
         GLProtectAttrib a(GL_CURRENT_BIT);
 
         // Fill the reader rect
-        glColor4f(readerFillColor.redF(), readerFillColor.greenF(),
-                  readerFillColor.blueF(), readerFillColor.alphaF());
+        glColor4f(colors.first.redF(), colors.first.greenF(),
+                  colors.first.blueF(), colors.first.alphaF());
 
         glBegin(GL_QUADS);
         glVertex2f(clipRect.topLeft().x(), clipRectZoomCoords.topLeft().y());
@@ -783,8 +815,8 @@ void DopeSheetViewPrivate::drawClip(const DSNode *dsNode) const
         glLineWidth(2);
 
         // Draw the outline
-        glColor4f(readerOutlineColor.redF(), readerOutlineColor.greenF(),
-                  readerOutlineColor.blueF(), readerOutlineColor.alphaF());
+        glColor4f(colors.second.redF(), colors.second.greenF(),
+                  colors.second.blueF(), colors.second.alphaF());
 
         glBegin(GL_LINE_LOOP);
         glVertex2f(clipRect.topLeft().x(), clipRectZoomCoords.topLeft().y());
@@ -809,8 +841,8 @@ void DopeSheetViewPrivate::drawClip(const DSNode *dsNode) const
 
             glLineWidth(1);
 
-            glColor4f(readerOutlineColor.redF(), readerOutlineColor.greenF(),
-                      readerOutlineColor.blueF(), readerOutlineColor.alphaF());
+            glColor4f(colors.second.redF(), colors.second.greenF(),
+                      colors.second.blueF(), colors.second.alphaF());
 
             glBegin(GL_LINES);
             glVertex2f(clipRect.left() - firstFrameKnob->getValue(), clipRectCenterY);
@@ -1229,7 +1261,6 @@ void DopeSheetViewPrivate::computeSelectionRect(const QPointF &origin, const QPo
     selectionRect.setBottomRight(QPointF(xmax, ymax));
 }
 
-
 DSSelectedKeys DopeSheetViewPrivate::createSelectionFromCursor(DSKnob *dsKnob, const QPointF &widgetCoords, int dimension)
 {
     return isNearByKeyframe(dsKnob, widgetCoords, dimension);
@@ -1329,7 +1360,7 @@ void DopeSheetViewPrivate::deleteSelectedKeyframes()
 
     selectedKeyframes.clear();
 
-    parent->update();
+    parent->redraw();
 }
 
 void DopeSheetViewPrivate::frame()
@@ -1361,7 +1392,7 @@ void DopeSheetViewPrivate::frame()
         parent->computeSelectedKeysBRect();
     }
 
-    parent->update();
+    parent->redraw();
 }
 
 void DopeSheetViewPrivate::selectAllKeyframes()
@@ -1400,7 +1431,7 @@ void DopeSheetViewPrivate::selectAllKeyframes()
         parent->computeSelectedKeysBRect();
     }
 
-    parent->update();
+    parent->redraw();
 }
 
 void DopeSheetViewPrivate::pushUndoCommand(QUndoCommand *cmd)
@@ -1599,7 +1630,7 @@ void DopeSheetView::computeSelectedKeysBRect()
             }
 
             if (selectedNodeTreeItem->treeWidget()->visualItemRect(selectedNodeTreeItem).center().y()
-                     < topMostItem->treeWidget()->visualItemRect(topMostItem).center().y()) {
+                    < topMostItem->treeWidget()->visualItemRect(topMostItem).center().y()) {
                 topMostItem = selectedNodeTreeItem;
             }
         }
@@ -1649,14 +1680,14 @@ void DopeSheetView::onTimeLineFrameChanged(SequenceTime sTime, int reason)
 
     _imp->computeTimelinePositions();
 
-    update();
+    redraw();
 }
 
 void DopeSheetView::onTimeLineBoundariesChanged(int, int)
 {
     RUNNING_IN_MAIN_THREAD();
 
-    update();
+    redraw();
 }
 
 /**
@@ -1798,6 +1829,8 @@ void DopeSheetView::mousePressEvent(QMouseEvent *e)
 
                         _imp->eventState = DopeSheetView::esGroupRepos;
                     }
+
+                    redraw();
                 }
                 else if (dsNode->isReaderNode()) {
                     if (nodeClipRect.contains(clickZoomCoords.x(), clickZoomCoords.y())) {
@@ -1818,6 +1851,8 @@ void DopeSheetView::mousePressEvent(QMouseEvent *e)
 
                         _imp->lastTimeOffsetOnMousePress = timeOffsetKnob->getValue();
                     }
+
+                    redraw();
                 }
                 else if (dsNode->isCommonNode()) {
                     DSSelectedKeys keysUnderMouse = _imp->createSelectionFromCursor(dsNode, e->pos());
@@ -1828,6 +1863,8 @@ void DopeSheetView::mousePressEvent(QMouseEvent *e)
                         computeSelectedKeysBRect();
 
                         _imp->eventState = DopeSheetView::esMoveKeyframeSelection;
+
+                        redraw();
                     }
                 }
             }
@@ -1845,6 +1882,8 @@ void DopeSheetView::mousePressEvent(QMouseEvent *e)
                         computeSelectedKeysBRect();
 
                         _imp->eventState = DopeSheetView::esMoveKeyframeSelection;
+
+                        redraw();
                     }
                 }
             }
@@ -1854,6 +1893,8 @@ void DopeSheetView::mousePressEvent(QMouseEvent *e)
         if (_imp->eventState == DopeSheetView::esNoEditingState) {
             if (!modCASIsShift(e)) {
                 clearKeyframeSelection();
+
+                redraw();
             }
 
             _imp->eventState = DopeSheetView::esSelectionByRect;
@@ -1865,8 +1906,6 @@ void DopeSheetView::mousePressEvent(QMouseEvent *e)
         _imp->lastPosOnMousePress = e->pos();
         _imp->keyDragLastMovement = 0.;
     }
-
-    update();
 }
 
 void DopeSheetView::mouseMoveEvent(QMouseEvent *e)
@@ -1877,7 +1916,6 @@ void DopeSheetView::mouseMoveEvent(QMouseEvent *e)
 
     if (e->buttons() == Qt::NoButton) {
         setCursor(_imp->getCursorDuringHover(e->pos()));
-
     }
     else if (buttonDownIsLeft(e)) {
         mouseDragEvent(e);
@@ -1886,11 +1924,11 @@ void DopeSheetView::mouseMoveEvent(QMouseEvent *e)
         double dx = _imp->zoomContext.toZoomCoordinates(_imp->lastPosOnMouseMove.x(),
                                                         _imp->lastPosOnMouseMove.y()).x() - mouseZoomCoords.x();
         _imp->zoomContext.translate(dx, 0);
+
+        redraw();
     }
 
     _imp->lastPosOnMouseMove = e->pos();
-
-    update();
 }
 
 void DopeSheetView::mouseReleaseEvent(QMouseEvent *e)
@@ -1903,6 +1941,8 @@ void DopeSheetView::mouseReleaseEvent(QMouseEvent *e)
         }
 
         _imp->selectionRect = QRectF();
+
+        redraw();
     }
 
     if (_imp->eventState != esNoEditingState) {
@@ -1915,9 +1955,9 @@ void DopeSheetView::mouseReleaseEvent(QMouseEvent *e)
         if (_imp->currentEditedGroup) {
             _imp->currentEditedGroup = 0;
         }
-    }
 
-    update();
+        redraw();
+    }
 }
 
 void DopeSheetView::mouseDragEvent(QMouseEvent *e)
@@ -1936,7 +1976,9 @@ void DopeSheetView::mouseDragEvent(QMouseEvent *e)
 
         double dt = totalMovement - _imp->keyDragLastMovement;
 
-        _imp->pushUndoCommand(new DSMoveKeysCommand(_imp->selectedKeyframes, dt, this));
+        if (dt >= 1.0f || dt <= -1.0f) {
+            _imp->pushUndoCommand(new DSMoveKeysCommand(_imp->selectedKeyframes, dt, this));
+        }
 
         // Update the last drag movement
         _imp->keyDragLastMovement = totalMovement;
@@ -1953,6 +1995,8 @@ void DopeSheetView::mouseDragEvent(QMouseEvent *e)
         DSSelectedKeys tempSelection = _imp->createSelectionFromRect(_imp->rectToZoomCoordinates(_imp->selectionRect));
 
         _imp->makeSelection(tempSelection, modCASIsShift(e));
+
+        redraw();
 
         break;
     }
@@ -2049,7 +2093,7 @@ void DopeSheetView::wheelEvent(QWheelEvent *e)
 
     _imp->zoomContext.zoomx(zoomCenter.x(), zoomCenter.y(), scaleFactor);
 
-    update();
+    redraw();
 }
 
 void DopeSheetView::enterEvent(QEvent *e)

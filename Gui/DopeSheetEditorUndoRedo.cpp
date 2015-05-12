@@ -65,7 +65,8 @@ void DSMoveKeysCommand::moveSelectedKeyframes(double dt)
     }
 
     _view->computeSelectedKeysBRect();
-    _view->update();
+
+    _view->redraw();
 }
 
 void DSMoveKeysCommand::moveKey(DSKeyPtr selectedKey, double dt)
@@ -77,8 +78,6 @@ void DSMoveKeysCommand::moveKey(DSKeyPtr selectedKey, double dt)
                           selectedKey->dimension,
                           dt, 0, &selectedKey->key);
     knob->endChanges();
-
-    _view->update();
 }
 
 int DSMoveKeysCommand::id() const
@@ -146,7 +145,7 @@ void DSLeftTrimReaderCommand::trimLeft(double time)
     firstFrameKnob->setValue(time, 0, Natron::eValueChangedReasonNatronGuiEdited, 0);
     firstFrameKnob->endChanges();
 
-    _view->update();
+    _view->redraw();
 }
 
 int DSLeftTrimReaderCommand::id() const
@@ -206,7 +205,7 @@ void DSRightTrimReaderCommand::trimRight(double time)
     lastFrameKnob->setValue(time, 0, Natron::eValueChangedReasonNatronGuiEdited, 0);
     lastFrameKnob->endChanges();
 
-    _view->update();
+    _view->redraw();
 }
 
 int DSRightTrimReaderCommand::id() const
@@ -267,7 +266,7 @@ void DSMoveReaderCommand::moveClip(double time)
     timeOffsetKnob->setValue(time, 0, Natron::eValueChangedReasonNatronGuiEdited, 0);
     timeOffsetKnob->endChanges();
 
-    _view->update();
+    _view->redraw();
 }
 
 int DSMoveReaderCommand::id() const
@@ -329,7 +328,7 @@ void DSRemoveKeysCommand::addOrRemoveKeyframe(bool add)
         }
     }
 
-    _view->update();
+    _view->redraw();
 }
 
 
@@ -427,5 +426,5 @@ void DSMoveGroupCommand::moveGroupKeyframes(double dt)
 
     _view->clearKeyframeSelection();
 
-    _view->update();
+    _view->redraw();
 }

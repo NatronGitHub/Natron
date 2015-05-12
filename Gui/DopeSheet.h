@@ -89,12 +89,6 @@ public:
         GroupNodeType
     };
 
-    enum ClipColor
-    {
-        ClipFill,
-        ClipOutline,
-    };
-
     DSNode(DopeSheetEditor *dopeSheetEditor,
            QTreeWidgetItem *nameItem,
            const boost::shared_ptr<NodeGui> &nodeGui);
@@ -117,8 +111,6 @@ public:
 
     bool isSelected() const;
     void setSelected(bool selected);
-
-    QColor getClipColor(ClipColor clipColor) const;
 
 Q_SIGNALS:
     void clipRectChanged();

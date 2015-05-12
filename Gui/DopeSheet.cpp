@@ -345,9 +345,6 @@ DSNode::DSNode(DopeSheetEditor *dopeSheetEditor,
     connect(nodeGui->getSettingPanel(), SIGNAL(closeChanged(bool)),
             dopeSheetEditor, SLOT(refreshDopeSheetView()));
 
-    connect(nodeGui->getSettingPanel(), SIGNAL(closeChanged(bool)),
-            this, SLOT(checkVisibleState()));
-
     DSNode::DSNodeType nodeType = getDSNodeType();
 
     // Create the hierarchy
@@ -543,24 +540,6 @@ void DSNode::setSelected(bool selected)
     }
 }
 
-QColor DSNode::getClipColor(DSNode::ClipColor clipColor) const
-{
-    if (clipColor == ClipFill) {
-        return QColor(0, 0, 0, 255);
-    }
-
-    if (clipColor == ClipOutline) {
-        if (_imp->isSelected) {
-            return Qt::blue;
-        }
-        else {
-            return QColor::fromRgbF(0.224f, 0.553f, 0.929f);
-        }
-    }
-
-    return QColor::Invalid;
-}
-
 /**
 * @brief DSNode::onNodeNameChanged
 *
@@ -694,6 +673,8 @@ void DSNode::computeClipRect()
             _imp->clipRect.setBottom(nameItemRect.bottom() + 1);
         }
     }
+
+    qDebug() << "compute clip rect";
 
     Q_EMIT clipRectChanged();
 }

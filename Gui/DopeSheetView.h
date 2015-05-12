@@ -23,9 +23,9 @@ CLANG_DIAG_ON(uninitialized)
 
 class DopeSheetEditor;
 class DopeSheetViewPrivate;
+class DSNode;
 class Gui;
 class TimeLine;
-
 class DopeSheetView : public QGLWidget, public OverlaySupport
 {
     Q_OBJECT
@@ -61,7 +61,6 @@ public:
 
 public Q_SLOTS:
     void computeSelectedKeysBRect();
-
     void clearKeyframeSelection();
 
 protected:
