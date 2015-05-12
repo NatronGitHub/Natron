@@ -60,6 +60,8 @@ typedef std::pair<double, double> FrameRange;
 const int KF_HEIGHT = 10;
 const int KF_X_OFFSET = 3;
 const int CLICK_DISTANCE_ACCEPTANCE = 5;
+const QColor KF_COLOR = QColor::fromRgbF(1.f, 0.f, 0.f);
+const QColor SELECTED_KF_COLOR = QColor::fromRgbF(0.961f, 0.961f, 0.047f);
 
 
 ////////////////////////// Helpers //////////////////////////
@@ -932,7 +934,7 @@ void DopeSheetViewPrivate::drawKeyframes(DSNode *dsNode) const
             KnobGui *knobGui = dsKnob->getKnobGui();
             TimeSet multiDimKnobKeyframes;
 
-            glColor3f(1.f, 0.f, 0.f);
+            glColor3f(KF_COLOR.redF(), KF_COLOR.greenF(), KF_COLOR.blackF());
 
             // Draw keyframes for each dimension of the knob
             for (int dim = 0; dim < knobGui->getKnob()->getDimension(); ++dim) {
@@ -957,9 +959,11 @@ void DopeSheetViewPrivate::drawKeyframes(DSNode *dsNode) const
 
                     QRectF zoomKfRect = rectToZoomCoordinates(kfRect);
 
+                    DSKeyPtrList::const_iterator isSelected;
+
                     // Draw keyframe in the knob dim section only if it's visible
                     if (dsNode->getTreeItem()->isExpanded() && dsKnob->getTreeItem()->isExpanded()) {
-                        DSKeyPtrList::const_iterator isSelected = selectedKeyframes.end();
+                        isSelected = selectedKeyframes.end();
 
                         for (DSKeyPtrList::const_iterator it2 = selectedKeyframes.begin();
                              it2 != selectedKeyframes.end(); it2++) {
@@ -969,12 +973,10 @@ void DopeSheetViewPrivate::drawKeyframes(DSNode *dsNode) const
                                 continue;
                             }
 
-                            if (selectedKey->key.getTime() == keyTime && selectedKey->dsKnob == dsKnob) {
-                                if (selectedKey->key == kf) {
-                                    isSelected = it2;
-                                    glColor3f(0.961f, 0.961f, 0.047f);
-                                    break;
-                                }
+                            if (selectedKey->dsKnob == dsKnob && selectedKey->key == kf) {
+                                isSelected = it2;
+                                glColor3f(SELECTED_KF_COLOR.redF(), SELECTED_KF_COLOR.greenF(), SELECTED_KF_COLOR.blueF());
+                                break;
                             }
                         }
 
@@ -986,7 +988,7 @@ void DopeSheetViewPrivate::drawKeyframes(DSNode *dsNode) const
                         glEnd();
 
                         if (isSelected != selectedKeyframes.end()) {
-                            glColor3f(1.f, 0.f, 0.f);
+                            glColor3f(KF_COLOR.redF(), KF_COLOR.greenF(), KF_COLOR.blackF());
                         }
                     }
 
@@ -1003,12 +1005,20 @@ void DopeSheetViewPrivate::drawKeyframes(DSNode *dsNode) const
 
                             // Draw only if the section is visible
                             if (dsNode->getTreeItem()->isExpanded()) {
+                                if (isSelected != selectedKeyframes.end()) {
+                                    glColor3f(SELECTED_KF_COLOR.redF(), SELECTED_KF_COLOR.greenF(), SELECTED_KF_COLOR.blueF());
+                                }
+
                                 glBegin(GL_QUADS);
                                 glVertex2f(zoomKfRect.left(), zoomKfRect.top());
                                 glVertex2f(zoomKfRect.left(), zoomKfRect.bottom());
                                 glVertex2f(zoomKfRect.right(), zoomKfRect.bottom());
                                 glVertex2f(zoomKfRect.right(), zoomKfRect.top());
                                 glEnd();
+
+                                if (isSelected != selectedKeyframes.end()) {
+                                    glColor3f(KF_COLOR.redF(), KF_COLOR.greenF(), KF_COLOR.blackF());
+                                }
                             }
 
                             multiDimKnobKeyframes.insert(keyTime);
@@ -1025,12 +1035,20 @@ void DopeSheetViewPrivate::drawKeyframes(DSNode *dsNode) const
                         kfRect.moveCenter(zoomContext.toWidgetCoordinates(p.x(), p.y()));
                         zoomKfRect = rectToZoomCoordinates(kfRect);
 
+                        if (isSelected != selectedKeyframes.end()) {
+                            glColor3f(SELECTED_KF_COLOR.redF(), SELECTED_KF_COLOR.greenF(), SELECTED_KF_COLOR.blueF());
+                        }
+
                         glBegin(GL_QUADS);
                         glVertex2f(zoomKfRect.left(), zoomKfRect.top());
                         glVertex2f(zoomKfRect.left(), zoomKfRect.bottom());
                         glVertex2f(zoomKfRect.right(), zoomKfRect.bottom());
                         glVertex2f(zoomKfRect.right(), zoomKfRect.top());
                         glEnd();
+
+                        if (isSelected != selectedKeyframes.end()) {
+                            glColor3f(KF_COLOR.redF(), KF_COLOR.greenF(), KF_COLOR.blackF());
+                        }
 
                         nodeKeyframes.insert(keyTime);
                     }
