@@ -118,5 +118,5 @@ RotoPaint::getFrameRange(SequenceTime *first,SequenceTime *last)
 Natron::StatusEnum
 RotoPaint::render(const RenderActionArgs& args)
 {
-    
+    return Natron::eStatusFailed;
 }
