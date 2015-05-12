@@ -1713,7 +1713,9 @@ DragItemsUndoCommand::undo()
             it->dropped->droppedRotoItem->setParentLayer(boost::shared_ptr<RotoLayer>());
         }
     }
+    _roto->getContext()->refreshRotoPaintTree();
     _roto->getContext()->evaluateChange();
+    
     setText( QObject::tr("Re-organize items of %2").arg( _roto->getNodeName().c_str() ) );
 }
 
@@ -1733,6 +1735,7 @@ DragItemsUndoCommand::redo()
         it->dropped->newParentItem->setExpanded(true);
         it->dropped->newParentLayer->insertItem(it->dropped->droppedRotoItem, it->dropped->insertIndex);
     }
+    _roto->getContext()->refreshRotoPaintTree();
     _roto->getContext()->evaluateChange();
     setText( QObject::tr("Re-organize items of %2").arg( _roto->getNodeName().c_str() ) );
 }

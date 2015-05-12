@@ -41,7 +41,7 @@ public:
     
     virtual int getMaxInputCount() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
-        return 2;
+        return 4;
     }
     
     virtual bool getCanTransform() const OVERRIDE FINAL WARN_UNUSED_RETURN { return false; }

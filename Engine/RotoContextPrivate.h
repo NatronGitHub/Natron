@@ -569,10 +569,26 @@ struct RotoStrokeItemPrivate
     boost::shared_ptr<Double_Knob> brushHardness;
     boost::shared_ptr<Double_Knob> effectStrength;
     boost::shared_ptr<Double_Knob> visiblePortion; // [0,1] by default
-    
+    boost::shared_ptr<Choice_Knob> sourceColor;
 #ifndef ROTO_STROKE_USE_FIT_CURVE
     Curve xCurve,yCurve,pressureCurve;
 #endif
+    
+    /*
+     * The effect node corresponds to the following given the selected tool:
+     * Stroke= RotoOFX
+     * Blur = BlurCImg
+     * Clone = TransformOFX
+     * Sharpen = SharpenCImg
+     * Smear = hand made tool
+     * Reveal = Merge(over) with A being color type and B the tree upstream
+     * Dodge/Burn = Merge(color-dodge/color-burn) with A being the tree upstream and B the color type
+     *
+     * Each effect is followed by a merge (except for the ones that use a merge) with the user given operator
+     * onto the previous tree upstream of the effectNode.
+     */
+    boost::shared_ptr<Natron::Node> effectNode;
+    boost::shared_ptr<Natron::Node> mergeNode;
     
     RotoStrokeItemPrivate(Natron::RotoStrokeType type)
     : type(type)
@@ -581,6 +597,9 @@ struct RotoStrokeItemPrivate
     , brushHardness(new Double_Knob(NULL, kRotoBrushHardnessParamLabel, 1, false))
     , effectStrength(new Double_Knob(NULL, kRotoBrushEffectParamLabel, 1, false))
     , visiblePortion(new Double_Knob(NULL, kRotoBrushVisiblePortionParamLabel, 2, false))
+    , sourceColor(new Choice_Knob(NULL, kRotoBrushSourceColorLabel, 1, false))
+    , effectNode()
+    , mergeNode()
     {
                 
         brushSize->setName(kRotoBrushSizeParam);
@@ -622,6 +641,21 @@ struct RotoStrokeItemPrivate
         maxs.push_back(1);
         maxs.push_back(1);
         visiblePortion->setMinimumsAndMaximums(mins, maxs);
+        
+        sourceColor->setName(kRotoBrushSourceColor);
+        sourceColor->setHintToolTip(kRotoBrushSizeParamHint);
+        sourceColor->populate();
+        sourceColor->setDefaultValue(1);
+        {
+            std::vector<std::string> choices;
+            choices.push_back("foreground");
+            choices.push_back("background");
+            choices.push_back("background 1");
+            choices.push_back("background 2");
+            choices.push_back("background 3");
+            sourceColor->populateChoices(choices);
+        }
+        
     }
 };
 
@@ -774,13 +808,14 @@ struct RotoContextPrivate
             boost::shared_ptr<Choice_Knob> sourceType = Natron::createKnob<Choice_Knob>(effect,kRotoBrushSourceColorLabel,1,false);
             sourceType->setName(kRotoBrushSourceColor);
             sourceType->setHintToolTip(kRotoBrushSizeParamHint);
-            sourceType->setDefaultValue(0.);
+            sourceType->setDefaultValue(1);
             {
                 std::vector<std::string> choices;
-                choices.push_back("color");
                 choices.push_back("foreground");
                 choices.push_back("background");
                 choices.push_back("background 1");
+                choices.push_back("background 2");
+                choices.push_back("background 3");
                 sourceType->populateChoices(choices);
             }
             sourceType->setAllDimensionsEnabled(false);

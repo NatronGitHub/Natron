@@ -1020,6 +1020,7 @@ public Bezier
 public RotoDrawableItem
 #endif
 {
+    Q_OBJECT
     
 public:
     
@@ -1074,7 +1075,17 @@ public:
     
 #endif
     
+    boost::shared_ptr<Natron::Node> getEffectNode() const;
+    boost::shared_ptr<Natron::Node> getMergeNode() const;
+    
+    void refreshNodesConnections();
+    
+public Q_SLOTS:
+    
+    void onSourceColorTypeChanged(int,int);
+    
 private:
+    RotoStrokeItem* findPreviousStrokeInHierarchy();
     
     boost::scoped_ptr<RotoStrokeItemPrivate> _imp;
 };
@@ -1308,6 +1319,12 @@ public:
     
     void declareItemAsPythonField(const boost::shared_ptr<RotoItem>& item);
     void removeItemAsPythonField(const boost::shared_ptr<RotoItem>& item);
+    
+    /**
+     * @brief Rebuilds the connection between nodes used internally by the rotopaint tree
+     * To be called whenever changes position in the hierarchy or when one gets removed/inserted
+     **/
+    void refreshRotoPaintTree();
     
 Q_SIGNALS:
 

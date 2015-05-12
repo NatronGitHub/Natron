@@ -431,6 +431,45 @@ enum RotoStrokeType
     eRotoStrokeTypeDodge,
     eRotoStrokeTypeBurn,
 };
+
+///Keep this in sync with @openfx-supportext/ofxsMerging.h
+enum MergingFunctionEnum
+{
+    eMergeATop = 0,
+    eMergeAverage,
+    eMergeColorBurn,
+    eMergeColorDodge,
+    eMergeConjointOver,
+    eMergeCopy,
+    eMergeDifference,
+    eMergeDisjointOver,
+    eMergeDivide,
+    eMergeExclusion,
+    eMergeFreeze,
+    eMergeFrom,
+    eMergeGeometric,
+    eMergeHardLight,
+    eMergeHypot,
+    eMergeIn,
+    eMergeInterpolated,
+    eMergeMask,
+    eMergeMatte,
+    eMergeLighten,
+    eMergeDarken,
+    eMergeMinus,
+    eMergeMultiply,
+    eMergeOut,
+    eMergeOver,
+    eMergeOverlay,
+    eMergePinLight,
+    eMergePlus,
+    eMergeReflect,
+    eMergeScreen,
+    eMergeSoftLight,
+    eMergeStencil,
+    eMergeUnder,
+    eMergeXOR
+};
     
 }
 Q_DECLARE_METATYPE(Natron::StandardButtons)

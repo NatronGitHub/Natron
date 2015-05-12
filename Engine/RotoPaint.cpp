@@ -44,6 +44,10 @@ RotoPaint::getInputLabel (int inputNb) const
         return "Bg";
     } else if (inputNb == 1) {
         return "Bg1";
+    } else if (inputNb == 2) {
+        return "Bg2";
+    } else if (inputNb == 3) {
+        return "Bg3";
     }
     assert(false);
     return "";

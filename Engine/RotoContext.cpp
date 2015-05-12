@@ -40,12 +40,127 @@
 #include "Engine/Transform.h"
 #include "Engine/CoonsRegularization.h"
 
+#define kMergeOFXParamOperation "operation"
+
 //This will enable correct evaluation of beziers
 //#define ROTO_USE_MESH_PATTERN_ONLY
 
 using namespace Natron;
 
-
+/**
+ * @brief Returns the name of the merge oeprator as described in @openfx-supportext/ofxsMerging.h
+ * Keep this in sync with the Merge node's operators otherwise everything will fall apart.
+ **/
+inline std::string
+getOperationString(MergingFunctionEnum operation)
+{
+    switch (operation) {
+        case eMergeATop:
+            
+            return "atop";
+        case eMergeAverage:
+            
+            return "average";
+        case eMergeColorBurn:
+            
+            return "color-burn";
+        case eMergeColorDodge:
+            
+            return "color-dodge";
+        case eMergeConjointOver:
+            
+            return "conjoint-over";
+        case eMergeCopy:
+            
+            return "copy";
+        case eMergeDifference:
+            
+            return "difference";
+        case eMergeDisjointOver:
+            
+            return "disjoint-over";
+        case eMergeDivide:
+            
+            return "divide";
+        case eMergeExclusion:
+            
+            return "exclusion";
+        case eMergeFreeze:
+            
+            return "freeze";
+        case eMergeFrom:
+            
+            return "from";
+        case eMergeGeometric:
+            
+            return "geometric";
+        case eMergeHardLight:
+            
+            return "hard-light";
+        case eMergeHypot:
+            
+            return "hypot";
+        case eMergeIn:
+            
+            return "in";
+        case eMergeInterpolated:
+            
+            return "interpolated";
+        case eMergeMask:
+            
+            return "mask";
+        case eMergeMatte:
+            
+            return "matte";
+        case eMergeLighten:
+            
+            return "max";
+        case eMergeDarken:
+            
+            return "min";
+        case eMergeMinus:
+            
+            return "minus";
+        case eMergeMultiply:
+            
+            return "multiply";
+        case eMergeOut:
+            
+            return "out";
+        case eMergeOver:
+            
+            return "over";
+        case eMergeOverlay:
+            
+            return "overlay";
+        case eMergePinLight:
+            
+            return "pinlight";
+        case eMergePlus:
+            
+            return "plus";
+        case eMergeReflect:
+            
+            return "reflect";
+        case eMergeScreen:
+            
+            return "screen";
+        case eMergeSoftLight:
+            
+            return "soft-light";
+        case eMergeStencil:
+            
+            return "stencil";
+        case eMergeUnder:
+            
+            return "under";
+        case eMergeXOR:
+            
+            return "xor";
+    } // switch
+    
+    return "unknown";
+} // getOperationString
 
 static inline double
 lerp(double a,
@@ -4266,11 +4381,257 @@ RotoStrokeItem::RotoStrokeItem(Natron::RotoStrokeType type,
     addKnob(_imp->brushHardness);
     addKnob(_imp->effectStrength);
     addKnob(_imp->visiblePortion);
+    addKnob(_imp->sourceColor);
+    
+    QObject::connect(_imp->sourceColor->getSignalSlotHandler().get(), SIGNAL(valueChanged(int,int)), this, SLOT(onSourceColorTypeChanged(int, int)));
+    
+    AppInstance* app = context->getNode()->getApp();
+    QString fixedNamePrefix(context->getNode()->getScriptName_mt_safe().c_str());
+    fixedNamePrefix.append('_');
+    fixedNamePrefix.append(name.c_str());
+    fixedNamePrefix.append('_');
+    
+    QString pluginId;
+    switch (type) {
+        case Natron::eRotoStrokeTypeBlur:
+            pluginId = PLUGINID_OFX_BLURCIMG;
+            break;
+        case Natron::eRotoStrokeTypeEraser:
+            //uses merge
+            break;
+        case Natron::eRotoStrokeTypeSolid:
+            pluginId = PLUGINID_OFX_ROTO;
+            break;
+        case Natron::eRotoStrokeTypeClone:
+            pluginId = PLUGINID_OFX_TRANSFORM;
+            break;
+        case Natron::eRotoStrokeTypeReveal:
+        case Natron::eRotoStrokeTypeBurn:
+        case Natron::eRotoStrokeTypeDodge:
+            //uses merge
+            break;
+        case Natron::eRotoStrokeTypeSharpen:
+            //todo
+            break;
+        case Natron::eRotoStrokeTypeSmear:
+            //hand-made
+            break;
+    }
+    
+    if (!pluginId.isEmpty()) {
+        fixedNamePrefix.append(pluginId);
+        
+        CreateNodeArgs args(pluginId, "",
+                            -1,-1,
+                            false,
+                            INT_MIN,
+                            INT_MIN,
+                            false,
+                            false,
+                            false,
+                            fixedNamePrefix,
+                            CreateNodeArgs::DefaultValuesList(),
+                            boost::shared_ptr<NodeCollection>());
+        args.createGui = false;
+        _imp->effectNode = app->createNode(args);
+    }
+    
+    
+    CreateNodeArgs args(PLUGINID_OFX_MERGE, "",
+                        -1,-1,
+                        false,
+                        INT_MIN,
+                        INT_MIN,
+                        false,
+                        false,
+                        false,
+                        fixedNamePrefix + "_merge",
+                        CreateNodeArgs::DefaultValuesList(),
+                        boost::shared_ptr<NodeCollection>());
+    args.createGui = false;
+    
+    bool ok = _imp->mergeNode = app->createNode(args);
+    assert(ok);
+    
+    assert(_imp->mergeNode);
+    
+    int maxInp = _imp->mergeNode->getMaxInputCount();
+    for (int i = 0; i < maxInp; ++i) {
+        if (_imp->mergeNode->getLiveInstance()->isInputMask(i)) {
+            
+            //Connect this rotopaint node as a mask
+            ok = _imp->mergeNode->connectInput(context->getNode(), i);
+            assert(ok);
+            break;
+        }
+    }
+
+    if (_imp->effectNode) {
+        ok = _imp->mergeNode->connectInput(_imp->effectNode, 1);
+        assert(ok);
+    }
+    
 }
 
 RotoStrokeItem::~RotoStrokeItem()
 {
     
+}
+
+void
+RotoStrokeItem::onSourceColorTypeChanged(int,int)
+{
+    refreshNodesConnections();
+}
+
+static RotoStrokeItem* findPreviousOfItemInLayer(RotoLayer* layer, RotoItem* item)
+{
+    RotoItems layerItems = layer->getItems_mt_safe();
+    if (layerItems.empty()) {
+        return 0;
+    }
+    RotoItems::iterator found = layerItems.end();
+    if (item) {
+        for (RotoItems::iterator it = layerItems.begin(); it != layerItems.end(); ++it) {
+            if (it->get() == item) {
+                found = it;
+                break;
+            }
+        }
+        assert(found != layerItems.end());
+    } else {
+        found = layerItems.end();
+    }
+    
+    if (found != layerItems.begin()) {
+        --found;
+        for (; found != layerItems.begin(); --found) {
+            
+            //We found another stroke below at the same level
+            RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>(found->get());
+            if (isStroke) {
+                return isStroke;
+            }
+            
+            //Cycle through a layer that is at the same level
+            RotoLayer* isLayer = dynamic_cast<RotoLayer*>(found->get());
+            if (isLayer) {
+                RotoStrokeItem* si = findPreviousOfItemInLayer(isLayer, 0);
+                if (si) {
+                    return si;
+                }
+            }
+        }
+    }
+    
+    //Item was still not found, find in great parent layer
+    boost::shared_ptr<RotoLayer> parentLayer = layer->getParentLayer();
+    if (!parentLayer) {
+        return 0;
+    }
+    RotoItems greatParentItems = parentLayer->getItems_mt_safe();
+    
+    found = greatParentItems.end();
+    for (RotoItems::iterator it = greatParentItems.begin(); it != greatParentItems.end(); ++it) {
+        if (it->get() == layer) {
+            found = it;
+            break;
+        }
+    }
+    assert(found != greatParentItems.end());
+    return findPreviousOfItemInLayer(parentLayer.get(), layer);
+}
+
+RotoStrokeItem*
+RotoStrokeItem::findPreviousStrokeInHierarchy() 
+{
+    boost::shared_ptr<RotoLayer> layer = getParentLayer();
+    assert(layer);
+    return findPreviousOfItemInLayer(layer.get(), this);
+}
+
+boost::shared_ptr<Natron::Node>
+RotoStrokeItem::getEffectNode() const
+{
+    return _imp->effectNode;
+}
+
+
+boost::shared_ptr<Natron::Node>
+RotoStrokeItem::getMergeNode() const
+{
+    return _imp->mergeNode;
+}
+
+void
+RotoStrokeItem::refreshNodesConnections()
+{
+    RotoStrokeItem* previous = findPreviousStrokeInHierarchy();
+    boost::shared_ptr<Node> rotoPaintInput =  getContext()->getNode()->getInput(0);
+    boost::shared_ptr<Node> upstreamNode = previous ? previous->getMergeNode() : rotoPaintInput;
+    
+    boost::shared_ptr<KnobI> mergeOperatorKnob = _imp->mergeNode->getKnobByName(kMergeOFXParamOperation);
+    assert(mergeOperatorKnob);
+    Choice_Knob* mergeOp = dynamic_cast<Choice_Knob*>(mergeOperatorKnob.get());
+    assert(mergeOp);
+    
+    if (_imp->effectNode) {
+        
+        /*
+         * This case handles: Stroke, Blur, Sharpen, Smear, Clone
+         */
+        
+        _imp->mergeNode->connectInput(_imp->effectNode, 1); // A
+        if (upstreamNode) {
+            _imp->mergeNode->connectInput(upstreamNode, 0); // B
+        }
+        
+        int reveal_i = _imp->sourceColor->getValue();
+        boost::shared_ptr<Node> revealInput;
+        if (reveal_i > 0) {
+            revealInput = getContext()->getNode()->getInput(reveal_i - 1);
+        } else {
+            revealInput = upstreamNode;
+        }
+        if (revealInput) {
+            _imp->effectNode->connectInput(revealInput, 0);
+        }
+        mergeOp->setValue((int)eMergeOver, 0);
+    } else {
+        
+        if (_imp->type == eRotoStrokeTypeEraser) {
+            if (rotoPaintInput) {
+                _imp->mergeNode->connectInput(rotoPaintInput, 1); // A
+            }
+            if (upstreamNode) {
+                _imp->mergeNode->connectInput(upstreamNode, 0); // B
+            }
+            mergeOp->setValue((int)eMergeOver, 0);
+        } else if (_imp->type == eRotoStrokeTypeReveal) {
+            
+            int reveal_i = _imp->sourceColor->getValue();
+            
+            boost::shared_ptr<Node> revealInput = getContext()->getNode()->getInput(reveal_i - 1);
+            if (revealInput) {
+                _imp->mergeNode->connectInput(revealInput, 1); // A
+            }
+            if (upstreamNode) {
+                _imp->mergeNode->connectInput(upstreamNode, 0); // B
+            }
+            mergeOp->setValue((int)eMergeOver, 0);
+        } else if (_imp->type == eRotoStrokeTypeDodge || _imp->type == eRotoStrokeTypeBurn) {
+            if (upstreamNode) {
+                _imp->mergeNode->connectInput(upstreamNode, 1); // A
+            }
+            if (upstreamNode) {
+                _imp->mergeNode->connectInput(upstreamNode, 0); // B
+            }
+            mergeOp->setValue(_imp->type == eRotoStrokeTypeDodge ? (int)eMergeColorDodge : (int)eMergeColorBurn, 0);
+        } else {
+            //unhandled case
+            assert(false);
+        }
+    }
 }
 
 Natron::RotoStrokeType
@@ -7361,6 +7722,30 @@ RotoContext::removeItemAsPythonField(const boost::shared_ptr<RotoItem>& item)
     
 }
 
+static void refreshLayerRotoPaintTree(RotoLayer* layer)
+{
+    const RotoItems& items = layer->getItems();
+    for (RotoItems::const_iterator it = items.begin(); it!=items.end(); ++it) {
+        RotoLayer* isLayer = dynamic_cast<RotoLayer*>(it->get());
+        RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>(it->get());
+        if (isLayer) {
+            refreshLayerRotoPaintTree(layer);
+        } else if (isStroke) {
+            isStroke->refreshNodesConnections();
+        }
+    }
+}
+
+void
+RotoContext::refreshRotoPaintTree()
+{
+    if (!_imp->isPaintNode) {
+        return;
+    }
+    QMutexLocker k(&_imp->rotoContextMutex);
+    assert(!_imp->layers.empty());
+    refreshLayerRotoPaintTree(_imp->layers.front().get());
+}
 
 void
 RotoContext::declareItemAsPythonField(const boost::shared_ptr<RotoItem>& item)
