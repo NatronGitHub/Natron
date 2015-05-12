@@ -12,9 +12,11 @@ set BITS=%1%
 if "%3" == "1" (
 	set BUILD_DIR=%CWD%\autobuild\build%BITS%
 	set DEPLOY_DIR=%CWD%\autobuild\deploy%BITS%
+	set LOGS_DIR=%CWD%\autobuild\Logs%BITS%
 ) else (
 	set BUILD_DIR=%CWD%\build%BITS%
 	set DEPLOY_DIR=%CWD%\build%BITS%\deploy%BITS%
+	set LOGS_DIR=%CWD%\build%BITS%\Logs%BITS%
 )
 
 set IO_BRANCH=master
@@ -73,19 +75,12 @@ echo "Building openfx-misc at commit " %GITV_MISC% %BITS%bit %CONFIGURATION%
 cd Misc
 set errorlevel=0
 devenv Misc.sln /Build "%CONFIGURATION%|%MSVC_CONF%" /Project Support
-if "%errorlevel%" == "1" (
-	goto fail
-)
+
 set errorlevel=0
 devenv Misc.sln /Build "%CONFIGURATION%|%MSVC_CONF%" /Project Misc
-if "%errorlevel%" == "1" (
-	goto fail
-)
+
 set errorlevel=0
 devenv Misc.sln /Build "%CONFIGURATION%|%MSVC_CONF%" /Project CImg
-if "%errorlevel%" == "1" (
-	goto fail
-)
 
 if exist "%DEPLOY_DIR%\Plugins\Misc.ofx.bundle" (
 	rmdir /S /Q %DEPLOY_DIR%\Plugins\Misc.ofx.bundle
@@ -98,6 +93,13 @@ if exist "%DEPLOY_DIR%\Plugins\CImg.ofx.bundle" (
 mkdir %DEPLOY_DIR%\Plugins\CImg.ofx.bundle
 xcopy /Y /E %PROJECT_OBJ_DIR%\CImg.ofx.bundle %DEPLOY_DIR%\Plugins\CImg.ofx.bundle
 
+::Copy build logs
+copy /Y %PROJECT_OBJ_DIR%\CImg.log %LOGS_DIR%
+copy /Y %PROJECT_OBJ_DIR%\Misc.log %LOGS_DIR%
+
+if "%errorlevel%" == "1" (
+	goto fail
+)
 
 cd %BUILD_DIR%
 git clone %GIT_IO%
@@ -111,10 +113,13 @@ echo "Building openfx-io at commit " %GITV_IO% %BITS%bit %CONFIGURATION%
 
 set errorlevel=0
 devenv IO.sln /Build "%CONFIGURATION%|%MSVC_CONF%"
+
+::Copy build logs
+copy /Y IO\%PROJECT_OBJ_DIR%\IO.log %LOGS_DIR%
+
 if "%errorlevel%" == "1" (
 	goto fail
 )
-
 
 if exist "%DEPLOY_DIR%\Plugins\IO.ofx.bundle" (
 	rmdir /S /Q %DEPLOY_DIR%\Plugins\IO.ofx.bundle
