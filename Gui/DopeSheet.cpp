@@ -615,6 +615,9 @@ void DSNode::computeGroupRange()
 {
     assert(isGroupNode());
 
+    std::vector<double> dimFirstKeys;
+    std::vector<double> dimLastKeys;
+
     NodeList nodes = dynamic_cast<NodeGroup *>(_imp->nodeGui->getNode()->getLiveInstance())->getNodes();
 
     for (NodeList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
@@ -645,12 +648,15 @@ void DSNode::computeGroupRange()
                         continue;
                     }
 
-                    _imp->clipRange.first = keyframes.begin()->getTime();
-                    _imp->clipRange.second = keyframes.rbegin()->getTime();
+                    dimFirstKeys.push_back(keyframes.begin()->getTime());
+                    dimLastKeys.push_back(keyframes.rbegin()->getTime());
                 }
             }
         }
     }
+
+    _imp->clipRange.first = *std::min_element(dimFirstKeys.begin(), dimFirstKeys.end());
+    _imp->clipRange.second = *std::max_element(dimLastKeys.begin(), dimLastKeys.end());
 
     Q_EMIT clipRangeChanged();
 }

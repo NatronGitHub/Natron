@@ -111,7 +111,7 @@ public:
     QRectF rectToWidgetCoordinates(const QRectF &rect) const;
     QRectF nameItemRectToSectionRect(const QRectF &rect) const;
 
-    void findKeyframeBounds(int *minTime, int *maxTime);
+    FrameRange projectKeyframeRange();
 
     DSNode *getNodeUnderMouse(const QPointF &pos) const;
     DSKnob *getKnobUnderMouse(const QPointF &pos, int *dimension = NULL) const;
@@ -283,9 +283,12 @@ QRectF DopeSheetViewPrivate::nameItemRectToSectionRect(const QRectF &rect) const
                   QPointF(zoomContext.right(), sectionBottom));
 }
 
-void DopeSheetViewPrivate::findKeyframeBounds(int *minTime, int *maxTime)
+FrameRange DopeSheetViewPrivate::projectKeyframeRange()
 {
-    std::vector<double> times;
+    FrameRange ret;
+
+    std::vector<double> dimFirstKeys;
+    std::vector<double> dimLastKeys;
 
     TreeItemsAndDSNodes dsNodeItems = dopeSheetEditor->getTreeItemsAndDSNodes();
 
@@ -312,17 +315,16 @@ void DopeSheetViewPrivate::findKeyframeBounds(int *minTime, int *maxTime)
                     continue;
                 }
 
-                for (KeyFrameSet::const_iterator it = keyframes.begin(); it != keyframes.end(); ++it) {
-                    KeyFrame kf = *it;
-
-                    times.push_back(kf.getTime());
-                }
+                dimFirstKeys.push_back(keyframes.begin()->getTime());
+                dimLastKeys.push_back(keyframes.rbegin()->getTime());
             }
         }
     }
 
-    *minTime = *std::min_element(times.begin(), times.end());
-    *maxTime = *std::max_element(times.begin(), times.end());
+    ret.first = *std::min_element(dimFirstKeys.begin(), dimFirstKeys.end());
+    ret.second = *std::max_element(dimLastKeys.begin(), dimLastKeys.end());
+
+    return ret;
 }
 
 DSNode *DopeSheetViewPrivate::getNodeUnderMouse(const QPointF &pos) const
@@ -1396,19 +1398,19 @@ void DopeSheetViewPrivate::frame()
         return;
     }
 
-    int left, right;
+    FrameRange range;
 
     // frame on project bounds
     if (selectedKeyframes.empty()) {
-        findKeyframeBounds(&left, &right);
+        range = projectKeyframeRange();
     }
     // or frame on current selection
     else {
-        left = selectedKeysBRect.left();
-        right = selectedKeysBRect.right();
+        range.first = selectedKeysBRect.left();
+        range.second = selectedKeysBRect.right();
     }
 
-    zoomContext.fill(left, right,
+    zoomContext.fill(range.first, range.second,
                      zoomContext.bottom(), zoomContext.top());
 
     computeTimelinePositions();
