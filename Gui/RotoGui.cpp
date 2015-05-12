@@ -1034,9 +1034,24 @@ RotoGui::drawOverlays(double /*scaleX*/,
                 continue;
             }
             
+            if (_imp->selectedTool != eRotoToolSelectAll) {
+                continue;
+            }
+            
             Bezier* isBezier = dynamic_cast<Bezier*>(it->get());
             RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>(it->get());
             if (isStroke) {
+                
+                bool selected = false;
+                for (SelectedItems::const_iterator it2 = _imp->rotoData->selectedItems.begin(); it2!=_imp->rotoData->selectedItems.end(); ++it2) {
+                    if (it2->get() == isStroke) {
+                        selected = true;
+                        break;
+                    }
+                }
+                if (!selected) {
+                    continue;
+                }
 
 #ifdef ROTO_STROKE_USE_FIT_CURVE
                 std::list<Point> points;
