@@ -89,8 +89,7 @@ private:
      **/
     virtual bool isIdentity(SequenceTime time,
                             const RenderScale & scale,
-                            const RectD & rod, //!< image rod in canonical coordinates
-                            const double par,
+                            const RectI & renderWindow,
                             int view,
                             SequenceTime* inputTime,
                             int* inputNb) OVERRIDE FINAL WARN_UNUSED_RETURN;
