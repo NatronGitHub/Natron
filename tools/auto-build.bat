@@ -97,7 +97,7 @@ for /l %%i in (1, 1, 2) do (
 	)
 	cd %CWD%
 	set errorlevel=0
-	call build-natron.bat %NATRON_BRANCH% !BIT! 1 Release 1
+	call build-natron.bat %NATRON_BRANCH% !BIT! 0 Release 1
 	if "%errorlevel%" == "1" (
 		echo BUILD FAILED
 		goto main_loop
@@ -118,10 +118,12 @@ for /l %%i in (1, 1, 2) do (
 	)
 	mkdir %TMP%\repo\Windows!BIT!
 	mkdir %TMP%\repo\Windows!BIT!\Natron-%GITV_NATRON%
+	mkdir %TMP%\repo\Windows!BIT!\BuildLogs
 	echo R | xcopy /Y /E %TMP%\deploy!BIT! %TMP%\repo\Windows!BIT!\Natron-%GITV_NATRON%
 	cd %TMP%\repo\Windows!BIT!
 	zip -q -r Natron-%GITV_NATRON%.zip Natron-%GITV_NATRON%
 	rmdir /S /Q Natron-%GITV_NATRON%
+	echo R | xcopy /Y /E %TMP%\Logs!BIT! %TMP%\repo\Windows!BIT!\BuildLogs
 	cd ..
 	rsync -avz -e ssh --progress --delete Windows!BIT! kepzlol@frs.sourceforge.net:/home/frs/project/natron/snapshots
 )
