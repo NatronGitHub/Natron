@@ -6,7 +6,10 @@
 
 #include "Rect.h"
 
-#define MINAREA 4096 // minimum rectangle area = 4096 pixels (=64*64)
+#define MINAREA64 4096  // = 4096 pixels (=64*64)
+#define MINAREA128 16384
+#define MINAREA256 65536
+#define MINAREA MINAREA128 // minimum rectangle area
 
 std::vector<RectI> RectI::splitIntoSmallerRects(int splitsCount) const
 {
@@ -45,7 +48,7 @@ std::vector<RectI> RectI::splitIntoSmallerRects(int splitsCount) const
         int numCols = std::max(1, (int)(width() / std::sqrt(avgArea)));
         int numRows = std::max(1, std::min(splitsCount / numCols, (int)(area()/(MINAREA*numCols)))); // integer division
         numCols = std::max(1, std::min(splitsCount / numRows, (int)(area()/(MINAREA*numRows))));
-        assert(splitsCount >= numRows * numCols);
+        assert((splitsCount >= numRows * numCols) || !splitsCount);
         for (int i = 0; i < numRows; ++i) {
             int y1 = bottom() + i     * height() / numRows;
             int y2 = bottom() + (i+1) * height() / numRows;

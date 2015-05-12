@@ -199,8 +199,7 @@ public:
     virtual Natron::StatusEnum render(const RenderActionArgs& args) OVERRIDE WARN_UNUSED_RETURN;
     virtual bool isIdentity(SequenceTime time,
                             const RenderScale & scale,
-                            const RectD & rod, //!< image rod in canonical coordinates
-                            const double par,
+                            const RectI & renderWindow, //!< render window in pixel coords
                             int view,
                             SequenceTime* inputTime,
                             int* inputNb) OVERRIDE;

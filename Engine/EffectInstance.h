@@ -788,8 +788,7 @@ protected:
      **/
     virtual bool isIdentity(SequenceTime /*time*/,
                             const RenderScale & /*scale*/,
-                            const RectD & /*rod*/,
-                            const double /*par*/,
+                            const RectI & /*roi*/,
                             int /*view*/,
                             SequenceTime* /*inputTime*/,
                             int* /*inputNb*/) WARN_UNUSED_RETURN
@@ -799,11 +798,9 @@ protected:
 
 public:
 
-    bool isIdentity_public(U64 hash,
-                           SequenceTime time,
+    bool isIdentity_public(SequenceTime time,
                            const RenderScale & scale,
-                           const RectD & rod, //!< image rod in canonical coordinates
-                           const double par,
+                           const RectI & renderWindow,
                            int view,SequenceTime* inputTime,
                            int* inputNb) WARN_UNUSED_RETURN;
     enum RenderSafetyEnum
@@ -1469,7 +1466,6 @@ private:
                                           const RectD & rod, //!< rod in canonical coordinates
                                           const double par,
                                           ImagePlanesToRender& planes,
-                                          bool outputUseImage,
                                           bool isSequentialRender,
                                           bool isRenderMadeInResponseToUserInteraction,
                                           U64 nodeHash,
@@ -1479,7 +1475,7 @@ private:
                                           Natron::ImageBitDepthEnum outputClipPrefDepth,
                                           const std::list<Natron::ImageComponents>& outputClipPrefsComps,
                                           bool* processChannels,
-                                          std::list<InputImagesMap>& inputImagesParam);
+                                          const std::list<InputImagesMap>& inputImagesParam);
 
 
     /// \returns false if rendering was aborted
@@ -1557,21 +1553,6 @@ private:
                               bool isSlave) OVERRIDE FINAL;
 
 
-    struct TiledRenderingFunctorArgs
-    {
-        RenderArgs* args;
-        InputImagesMap inputImages;
-        bool renderFullScaleThenDownscale;
-        bool renderUseScaleOneInputs;
-        bool isSequentialRender;
-        bool isRenderResponseToUserInteraction;
-        double par;
-        Natron::ImageBitDepthEnum outputClipPrefDepth;
-        ImagePlanesToRender* planes;
-        std::list<Natron::ImageComponents> outputClipPrefsComps;
-        boost::shared_ptr<Natron::Image> originalInputImage;
-        bool *processChannels;
-    };
 
     enum RenderingFunctorRetEnum
     {
@@ -1580,6 +1561,61 @@ private:
         eRenderingFunctorRetTakeImageLock, //< take the image lock because another thread is rendering part of something we need
         eRenderingFunctorRetAborted // we were aborted
     };
+
+    struct TiledThreadSpecificData
+    {
+        RoIMap inputRois;
+        InputImagesMap inputImages;
+        RectI downscaledRectToRender;
+    };
+
+    struct TiledRenderingFunctorArgs
+    {
+        ParallelRenderArgs frameArgs;
+        std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs > frameTLS;
+        bool renderFullScaleThenDownscale;
+        bool renderUseScaleOneInputs;
+        bool isSequentialRender;
+        bool isRenderResponseToUserInteraction;
+        int firstFrame;
+        int lastFrame;
+        int preferredInput;
+        unsigned int mipMapLevel;
+        unsigned int renderMappedMipMapLevel;
+        RectD rod;
+        int time;
+        int view;
+        double par;
+        Natron::ImageBitDepthEnum outputClipPrefDepth;
+        std::list<Natron::ImageComponents> outputClipPrefsComps;
+        bool* processChannels;
+        ImagePlanesToRender planes;
+    };
+
+    RenderingFunctorRetEnum tiledRenderingFunctor(TiledRenderingFunctorArgs& args,  const TiledThreadSpecificData& specificData);
+
+    RenderingFunctorRetEnum tiledRenderingFunctor(const ParallelRenderArgs& frameArgs,
+                                                  const InputImagesMap& inputImages,
+                                                  const RoIMap& inputRois,
+                                                  const std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs >& frameTls,
+                                                  bool renderFullScaleThenDownscale,
+                                                  bool renderUseScaleOneInputs,
+                                                  bool isSequentialRender,
+                                                  bool isRenderResponseToUserInteraction,
+                                                  int firstFrame,int lastFrame,
+                                                  int preferredInput,
+                                                  unsigned int mipMapLevel,
+                                                  unsigned int renderMappedMipMapLevel,
+                                                  const RectD& rod,
+                                                  int time,
+                                                  int view,
+                                                  const RectI & downscaledRectToRender,
+                                                  const double par,
+                                                  Natron::ImageBitDepthEnum outputClipPrefDepth,
+                                                  const std::list<Natron::ImageComponents>& outputClipPrefsComps,
+                                                  bool* processChannels,
+                                                  ImagePlanesToRender& planes);
+
 
     ///These are the image passed to the plug-in to render
     /// - fullscaleMappedImage is the fullscale image remapped to what the plugin can support (components/bitdepth)
@@ -1602,26 +1638,19 @@ private:
     /// - 4) Plugin needs remapping and downscaling
     ///    * renderMappedImage points to fullScaleMappedImage
     ///    * We render in fullScaledMappedImage, then convert into "image" and then downscale into downscaledImage.
-    RenderingFunctorRetEnum tiledRenderingFunctor(const TiledRenderingFunctorArgs& args,
-                                              const ParallelRenderArgs& frameArgs,
-                                              const std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs >& frameTls,
-                                              const RectI & downscaledRectToRender );
-
-    RenderingFunctorRetEnum tiledRenderingFunctor(RenderArgs & args,
-                                                  const ParallelRenderArgs& frameArgs,
-                                                  const InputImagesMap& inputImages,
-                                                  const std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs >& frameTls,
-                                                  bool renderFullScaleThenDownscale,
-                                                  bool renderUseScaleOneInputs,
-                                                  bool isSequentialRender,
-                                                  bool isRenderResponseToUserInteraction,
-                                                  const RectI & downscaledRectToRender,
-                                                  const double par,
-                                                  Natron::ImageBitDepthEnum outputClipPrefDepth,
-                                                  const std::list<Natron::ImageComponents>& outputClipPrefsComps,
-                                                  bool* processChannels,
-                                                  const boost::shared_ptr<Natron::Image>& originalInputImage,
-                                                  ImagePlanesToRender& planes);
+    RenderingFunctorRetEnum renderHandler(RenderArgs & args,
+                                          const ParallelRenderArgs& frameArgs,
+                                          const InputImagesMap& inputImages,
+                                          bool renderFullScaleThenDownscale,
+                                          bool renderUseScaleOneInputs,
+                                          bool isSequentialRender,
+                                          bool isRenderResponseToUserInteraction,
+                                          const RectI & downscaledRectToRender,
+                                          Natron::ImageBitDepthEnum outputClipPrefDepth,
+                                          const std::list<Natron::ImageComponents>& outputClipPrefsComps,
+                                          bool* processChannels,
+                                          const boost::shared_ptr<Natron::Image>& originalInputImage,
+                                          ImagePlanesToRender& planes);
 
     /**
      * @brief Returns the index of the input if inputEffect is a valid input connected to this effect, otherwise returns -1.
