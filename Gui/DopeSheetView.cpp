@@ -55,6 +55,7 @@
 typedef std::set<double> TimeSet;
 typedef Knob<int> * KnobIntPtr;
 typedef std::vector<DSSelectedKey> DSSelectedKeys;
+typedef std::pair<double, double> FrameRange;
 
 const int KF_HEIGHT = 10;
 const int KF_X_OFFSET = 3;
@@ -377,7 +378,11 @@ Qt::CursorShape DopeSheetViewPrivate::getCursorDuringHover(const QPointF &widget
 
         if (dsNodeIt != dsNodeItems.end()) {
             DSNode *dsNode = (*dsNodeIt).second;
-            QRectF nodeClipRect = rectToZoomCoordinates(dsNode->getClipRect());
+
+            FrameRange range = dsNode->getClipRange();
+            QRectF treeItemRect = dsNode->getTreeItemRect();
+            QRectF nodeClipRect = rectToZoomCoordinates(QRectF(QPointF(range.first, treeItemRect.top() + 1),
+                                                               QPointF(range.second, treeItemRect.bottom() + 1)));
 
             if (dsNode->isGroupNode()) {
                 if (nodeClipRect.contains(zoomCoords.x(), zoomCoords.y())) {
@@ -668,7 +673,7 @@ void DopeSheetViewPrivate::drawSections() const
              ++it) {
             DSNode *dsNode = (*it).second;
 
-            if(dsNode->getNameItem()->isHidden()) {
+            if(dsNode->getTreeItem()->isHidden()) {
                 continue;
             }
 
@@ -706,7 +711,7 @@ void DopeSheetViewPrivate::drawNodeSection(const DSNode *dsNode) const
 {
     GLProtectAttrib a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT);
 
-    QRectF nameItemRect = dsNode->getNameItemRect();
+    QRectF nameItemRect = dsNode->getTreeItemRect();
 
     QRectF sectionRect = nameItemRectToSectionRect(nameItemRect);
 
@@ -737,7 +742,7 @@ void DopeSheetViewPrivate::drawKnobSection(const DSKnob *dsKnob) const
 
     if (dsKnob->isMultiDim()) {
         // Draw root section
-        QRectF nameItemRect = dsKnob->getNameItemRect();
+        QRectF nameItemRect = dsKnob->getTreeItemRect();
         QRectF sectionRect = nameItemRectToSectionRect(nameItemRect);
 
         double rootR, rootG, rootB, rootA;
@@ -759,7 +764,7 @@ void DopeSheetViewPrivate::drawKnobSection(const DSKnob *dsKnob) const
         glColor4f(knobR, knobG, knobB, knobA);
 
         for (int i = 0; i < dsKnob->getKnobGui()->getKnob()->getDimension(); ++i) {
-            QRectF nameChildItemRect = dsKnob->getNameItemRectForDim(i);
+            QRectF nameChildItemRect = dsKnob->getTreeItemRectForDim(i);
             QRectF childSectionRect = nameItemRectToSectionRect(nameChildItemRect);
 
             // Draw child section
@@ -772,7 +777,7 @@ void DopeSheetViewPrivate::drawKnobSection(const DSKnob *dsKnob) const
         }
     }
     else {
-        QRectF nameItemRect = dsKnob->getNameItemRect();
+        QRectF nameItemRect = dsKnob->getTreeItemRect();
         QRectF sectionRect = nameItemRectToSectionRect(nameItemRect);
 
         double knobR, knobG, knobB, knobA;
@@ -796,8 +801,10 @@ void DopeSheetViewPrivate::drawClip(DSNode *dsNode) const
     {
         ClipColors colors = getClipColors(dsNode->getDSNodeType());
 
-        QRectF clipRect = dsNode->getClipRect();
-        QRectF clipRectZoomCoords = rectToZoomCoordinates(clipRect);
+        FrameRange range = dsNode->getClipRange();
+        QRectF treeItemRect = dsNode->getTreeItemRect();
+        QRectF clipRectZoomCoords = rectToZoomCoordinates(QRectF(QPointF(range.first, treeItemRect.top() + 1),
+                                                                 QPointF(range.second, treeItemRect.bottom() + 1)));
 
         GLProtectAttrib a(GL_CURRENT_BIT);
 
@@ -806,10 +813,10 @@ void DopeSheetViewPrivate::drawClip(DSNode *dsNode) const
                   colors.first.blueF(), colors.first.alphaF());
 
         glBegin(GL_QUADS);
-        glVertex2f(clipRect.topLeft().x(), clipRectZoomCoords.topLeft().y());
-        glVertex2f(clipRect.bottomLeft().x(), clipRectZoomCoords.bottomLeft().y() + 2);
-        glVertex2f(clipRect.bottomRight().x(), clipRectZoomCoords.bottomRight().y() + 2);
-        glVertex2f(clipRect.topRight().x(), clipRectZoomCoords.topRight().y());
+        glVertex2f(clipRectZoomCoords.topLeft().x(), clipRectZoomCoords.topLeft().y());
+        glVertex2f(clipRectZoomCoords.bottomLeft().x(), clipRectZoomCoords.bottomLeft().y() + 2);
+        glVertex2f(clipRectZoomCoords.bottomRight().x(), clipRectZoomCoords.bottomRight().y() + 2);
+        glVertex2f(clipRectZoomCoords.topRight().x(), clipRectZoomCoords.topRight().y());
         glEnd();
 
         glLineWidth(2);
@@ -819,10 +826,10 @@ void DopeSheetViewPrivate::drawClip(DSNode *dsNode) const
                   colors.second.blueF(), colors.second.alphaF());
 
         glBegin(GL_LINE_LOOP);
-        glVertex2f(clipRect.topLeft().x(), clipRectZoomCoords.topLeft().y());
-        glVertex2f(clipRect.bottomLeft().x(), clipRectZoomCoords.bottomLeft().y() + 2);
-        glVertex2f(clipRect.bottomRight().x(), clipRectZoomCoords.bottomRight().y() + 2);
-        glVertex2f(clipRect.topRight().x(), clipRectZoomCoords.topRight().y());
+        glVertex2f(clipRectZoomCoords.topLeft().x(), clipRectZoomCoords.topLeft().y());
+        glVertex2f(clipRectZoomCoords.bottomLeft().x(), clipRectZoomCoords.bottomLeft().y() + 2);
+        glVertex2f(clipRectZoomCoords.bottomRight().x(), clipRectZoomCoords.bottomRight().y() + 2);
+        glVertex2f(clipRectZoomCoords.topRight().x(), clipRectZoomCoords.topRight().y());
         glEnd();
 
         // If necessary, draw the original frame range line
@@ -845,11 +852,11 @@ void DopeSheetViewPrivate::drawClip(DSNode *dsNode) const
                       colors.second.blueF(), colors.second.alphaF());
 
             glBegin(GL_LINES);
-            glVertex2f(clipRect.left() - firstFrameKnob->getValue(), clipRectCenterY);
-            glVertex2f(clipRect.left(), clipRectCenterY);
+            glVertex2f(clipRectZoomCoords.left() - firstFrameKnob->getValue(), clipRectCenterY);
+            glVertex2f(clipRectZoomCoords.left(), clipRectCenterY);
 
-            glVertex2f(clipRect.right(), clipRectCenterY);
-            glVertex2f(clipRect.right() + framesFromEndToTotal, clipRectCenterY);
+            glVertex2f(clipRectZoomCoords.right(), clipRectCenterY);
+            glVertex2f(clipRectZoomCoords.right() + framesFromEndToTotal, clipRectCenterY);
             glEnd();
         }
     }
@@ -918,7 +925,7 @@ void DopeSheetViewPrivate::drawKeyframes(DSNode *dsNode) const
             DSKnob *dsKnob = (*it).second;
 
             // The knob is no longer animated
-            if (dsKnob->getNameItem()->isHidden()) {
+            if (dsKnob->getTreeItem()->isHidden()) {
                 continue;
             }
 
@@ -938,8 +945,8 @@ void DopeSheetViewPrivate::drawKeyframes(DSNode *dsNode) const
 
                     double keyTime = kf.getTime();
 
-                    double y = (dsKnob->isMultiDim()) ? dsKnob->getNameItemRectForDim(dim).center().y()
-                                                      : dsKnob->getNameItemRect().center().y();
+                    double y = (dsKnob->isMultiDim()) ? dsKnob->getTreeItemRectForDim(dim).center().y()
+                                                      : dsKnob->getTreeItemRect().center().y();
                     QPointF p = zoomContext.toZoomCoordinates(keyTime, y);
 
                     QRectF kfRect;
@@ -951,7 +958,7 @@ void DopeSheetViewPrivate::drawKeyframes(DSNode *dsNode) const
                     QRectF zoomKfRect = rectToZoomCoordinates(kfRect);
 
                     // Draw keyframe in the knob dim section only if it's visible
-                    if (dsNode->getNameItem()->isExpanded() && dsKnob->getNameItem()->isExpanded()) {
+                    if (dsNode->getTreeItem()->isExpanded() && dsKnob->getTreeItem()->isExpanded()) {
                         DSKeyPtrList::const_iterator isSelected = selectedKeyframes.end();
 
                         for (DSKeyPtrList::const_iterator it2 = selectedKeyframes.begin();
@@ -989,13 +996,13 @@ void DopeSheetViewPrivate::drawKeyframes(DSNode *dsNode) const
 
                         if (multiDimKnobKeysIt == multiDimKnobKeyframes.end()) {
                             p = zoomContext.toZoomCoordinates(keyTime,
-                                                              dsKnob->getNameItemRect().center().y());
+                                                              dsKnob->getTreeItemRect().center().y());
 
                             kfRect.moveCenter(zoomContext.toWidgetCoordinates(p.x(), p.y()));
                             zoomKfRect = rectToZoomCoordinates(kfRect);
 
                             // Draw only if the section is visible
-                            if (dsNode->getNameItem()->isExpanded()) {
+                            if (dsNode->getTreeItem()->isExpanded()) {
                                 glBegin(GL_QUADS);
                                 glVertex2f(zoomKfRect.left(), zoomKfRect.top());
                                 glVertex2f(zoomKfRect.left(), zoomKfRect.bottom());
@@ -1013,7 +1020,7 @@ void DopeSheetViewPrivate::drawKeyframes(DSNode *dsNode) const
 
                     if (nodeKeysIt == nodeKeyframes.end()) {
                         p = zoomContext.toZoomCoordinates(keyTime,
-                                                          dsNode->getNameItemRect().center().y());
+                                                          dsNode->getTreeItemRect().center().y());
 
                         kfRect.moveCenter(zoomContext.toWidgetCoordinates(p.x(), p.y()));
                         zoomKfRect = rectToZoomCoordinates(kfRect);
@@ -1294,8 +1301,8 @@ DSSelectedKeys DopeSheetViewPrivate::createSelectionFromRect(const QRectF& rect)
                      ++kIt) {
                     KeyFrame kf = (*kIt);
 
-                    double sectionCenterY = (dsKnob->isMultiDim()) ? dsKnob->getNameItemRectForDim(i).center().y()
-                                                                   : dsKnob->getNameItemRect().center().y();
+                    double sectionCenterY = (dsKnob->isMultiDim()) ? dsKnob->getTreeItemRectForDim(i).center().y()
+                                                                   : dsKnob->getTreeItemRect().center().y();
 
                     double x = kf.getTime();
 
@@ -1606,15 +1613,15 @@ void DopeSheetView::computeSelectedKeysBRect()
         double x = selected->key.getTime();
         double y = 0;
 
-        if (!selected->dsKnob->getNameItem()->isExpanded() || !selected->dsKnob->getNameItem()->parent()->isExpanded()) {
-            y = selected->dsKnob->getNameItem()->treeWidget()->visualItemRect(selected->dsKnob->getNameItem()->parent()).center().y();
+        if (!selected->dsKnob->getTreeItem()->isExpanded() || !selected->dsKnob->getTreeItem()->parent()->isExpanded()) {
+            y = selected->dsKnob->getTreeItem()->treeWidget()->visualItemRect(selected->dsKnob->getTreeItem()->parent()).center().y();
         }
         else {
-            y = (selected->dsKnob->isMultiDim()) ? selected->dsKnob->getNameItemRectForDim(selected->dimension).center().y()
-                                                 : selected->dsKnob->getNameItemRect().center().y();
+            y = (selected->dsKnob->isMultiDim()) ? selected->dsKnob->getTreeItemRectForDim(selected->dimension).center().y()
+                                                 : selected->dsKnob->getTreeItemRect().center().y();
         }
 
-        QTreeWidgetItem *selectedNodeTreeItem = selected->dsKnob->getNameItem()->parent();
+        QTreeWidgetItem *selectedNodeTreeItem = selected->dsKnob->getTreeItem()->parent();
 
         if (it != _imp->selectedKeyframes.begin()) {
             if (x < rect.left()) {
@@ -1821,7 +1828,11 @@ void DopeSheetView::mousePressEvent(QMouseEvent *e)
             // The user clicked on a reader
             if (dsNodeIt != dsNodeItems.end()) {
                 DSNode *dsNode = (*dsNodeIt).second;
-                QRectF nodeClipRect = _imp->rectToZoomCoordinates(dsNode->getClipRect());
+
+                FrameRange range = dsNode->getClipRange();
+                QRectF treeItemRect = dsNode->getTreeItemRect();
+                QRectF nodeClipRect = _imp->rectToZoomCoordinates(QRectF(QPointF(range.first, treeItemRect.top() + 1),
+                                                                         QPointF(range.second, treeItemRect.bottom() + 1)));
 
                 if (dsNode->isGroupNode()) {
                     if (nodeClipRect.contains(clickZoomCoords.x(), clickZoomCoords.y())) {

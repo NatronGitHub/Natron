@@ -422,7 +422,7 @@ void DSMoveGroupCommand::moveGroupKeyframes(double dt)
         }
     }
 
-    _dsNodeGroup->computeClipRect();
+    _dsNodeGroup->computeGroupRange();
 
     _view->clearKeyframeSelection();
 

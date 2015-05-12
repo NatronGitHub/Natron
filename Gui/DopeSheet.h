@@ -57,9 +57,9 @@ public:
            KnobGui *knobGui);
     ~DSKnob();
 
-    QTreeWidgetItem *getNameItem() const;
-    QRectF getNameItemRect() const;
-    QRectF getNameItemRectForDim(int dim) const;
+    QTreeWidgetItem *getTreeItem() const;
+    QRectF getTreeItemRect() const;
+    QRectF getTreeItemRectForDim(int dim) const;
 
     KnobGui *getKnobGui() const;
 
@@ -94,8 +94,8 @@ public:
            const boost::shared_ptr<NodeGui> &nodeGui);
     ~DSNode();
 
-    QTreeWidgetItem *getNameItem() const;
-    QRectF getNameItemRect() const;
+    QTreeWidgetItem *getTreeItem() const;
+    QRectF getTreeItemRect() const;
 
     boost::shared_ptr<NodeGui> getNodeGui() const;
 
@@ -107,18 +107,19 @@ public:
     bool isReaderNode() const;
     bool isGroupNode() const;
 
-    QRectF getClipRect() const;
+    std::pair<double, double> getClipRange() const;
 
     bool isSelected() const;
     void setSelected(bool selected);
 
 Q_SIGNALS:
-    void clipRectChanged();
+    void clipRangeChanged();
 
 public Q_SLOTS:
     void onNodeNameChanged(const QString &name);
     void checkVisibleState();
-    void computeClipRect();
+    void computeReaderRange();
+    void computeGroupRange();
 
 private:
     boost::scoped_ptr<DSNodePrivate> _imp;
