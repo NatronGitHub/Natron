@@ -7,7 +7,7 @@
 #include "Rect.h"
 
 #define MINAREA 4096 // minimum rectangle area = 4096 pixels (=64*64)
-
+/// if splitCount is zero, this function returns a set of less than area()/MINAREA rects which are no smaller than MINAREA
 std::vector<RectI> RectI::splitIntoSmallerRects(int splitsCount) const
 {
     std::vector<RectI> ret;
@@ -41,7 +41,7 @@ std::vector<RectI> RectI::splitIntoSmallerRects(int splitsCount) const
         ret.push_back(*this);
     } else {
         // the average rect area
-        double avgArea = std::max((double)MINAREA, area() / (double)splitsCount);
+        double avgArea = splitsCount ? std::max((double)MINAREA, area() / (double)splitsCount) : MINAREA;
         int numCols = std::max(1, (int)(width() / std::sqrt(avgArea)));
         int numRows = std::max(1, std::min(splitsCount / numCols, (int)(area()/(MINAREA*numCols)))); // integer division
         numCols = std::max(1, std::min(splitsCount / numRows, (int)(area()/(MINAREA*numRows))));
