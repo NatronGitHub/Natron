@@ -41,7 +41,6 @@ CLANG_DIAG_OFF(unused-private-field)
 CLANG_DIAG_ON(unused-private-field)
 #include <QHBoxLayout>
 #include <QGraphicsScene>
-#include <QMenu>
 #include <QApplication>
 #include <QMenuBar>
 #include <QDesktopWidget>
@@ -107,6 +106,7 @@ CLANG_DIAG_ON(unused-parameter)
 #include "Gui/MultiInstancePanel.h"
 #include "Gui/ScriptEditor.h"
 #include "Gui/PythonPanels.h"
+#include "Gui/Menu.h"
 
 #define kPropertiesBinName "properties"
 
@@ -324,17 +324,17 @@ struct GuiPrivate
 
     ///The menu bar and all the menus
     QMenuBar *menubar;
-    QMenu *menuFile;
-    QMenu *menuRecentFiles;
-    QMenu *menuEdit;
-    QMenu *menuLayout;
-    QMenu *menuDisplay;
-    QMenu *menuOptions;
-    QMenu *menuRender;
-    QMenu *viewersMenu;
-    QMenu *viewerInputsMenu;
-    QMenu *viewersViewMenu;
-    QMenu *cacheMenu;
+    Menu *menuFile;
+    Menu *menuRecentFiles;
+    Menu *menuEdit;
+    Menu *menuLayout;
+    Menu *menuDisplay;
+    Menu *menuOptions;
+    Menu *menuRender;
+    Menu *viewersMenu;
+    Menu *viewerInputsMenu;
+    Menu *viewersViewMenu;
+    Menu *cacheMenu;
 
 
     ///all TabWidget's : used to know what to hide/show for fullscreen mode
@@ -519,6 +519,9 @@ struct GuiPrivate
     void refreshLeftToolBarVisibility(const QPoint & p);
 
     QAction* findActionRecursive(int i, QWidget* widget, const QStringList & grouping);
+    
+    ///True= yes overwrite
+    bool checkProjectLockAndWarn(const QString& projectPath,const QString& projectName);
 };
 
 // Helper function: Get the icon with the given name from the icon theme.
@@ -789,9 +792,13 @@ Gui::createViewerGui(boost::shared_ptr<Node> viewer)
     ViewerInstance* v = dynamic_cast<ViewerInstance*>( viewer->getLiveInstance() );
     assert(v);
 
+    ViewerTab* tab = addNewViewerTab(v, where);
+    
     NodeGraph* graph = 0;
     boost::shared_ptr<NodeCollection> collection = viewer->getGroup();
-    assert(collection);
+    if (!collection) {
+        return;
+    }
     NodeGroup* isGrp = dynamic_cast<NodeGroup*>( collection.get() );
     if (isGrp) {
         NodeGraphI* graph_i = isGrp->getNodeGraph();
@@ -801,7 +808,7 @@ Gui::createViewerGui(boost::shared_ptr<Node> viewer)
         graph = getNodeGraph();
     }
     assert(graph);
-    graph->setLastSelectedViewer( addNewViewerTab(v, where) );
+    graph->setLastSelectedViewer(tab);
 }
 
 const std::list<boost::shared_ptr<NodeGui> > &
@@ -845,17 +852,17 @@ Gui::createMenuActions()
     _imp->menubar = new QMenuBar(this);
     setMenuBar(_imp->menubar);
 
-    _imp->menuFile = new QMenu(QObject::tr("File"), _imp->menubar);
-    _imp->menuRecentFiles = new QMenu(QObject::tr("Open Recent"), _imp->menuFile);
-    _imp->menuEdit = new QMenu(QObject::tr("Edit"), _imp->menubar);
-    _imp->menuLayout = new QMenu(QObject::tr("Layout"), _imp->menubar);
-    _imp->menuDisplay = new QMenu(QObject::tr("Display"), _imp->menubar);
-    _imp->menuOptions = new QMenu(QObject::tr("Options"), _imp->menubar);
-    _imp->menuRender = new QMenu(QObject::tr("Render"), _imp->menubar);
-    _imp->viewersMenu = new QMenu(QObject::tr("Viewer(s)"), _imp->menuDisplay);
-    _imp->viewerInputsMenu = new QMenu(QObject::tr("Connect Current Viewer"), _imp->viewersMenu);
-    _imp->viewersViewMenu = new QMenu(QObject::tr("Display View Number"), _imp->viewersMenu);
-    _imp->cacheMenu = new QMenu(QObject::tr("Cache"), _imp->menubar);
+    _imp->menuFile = new Menu(QObject::tr("File"), _imp->menubar);
+    _imp->menuRecentFiles = new Menu(QObject::tr("Open Recent"), _imp->menuFile);
+    _imp->menuEdit = new Menu(QObject::tr("Edit"), _imp->menubar);
+    _imp->menuLayout = new Menu(QObject::tr("Layout"), _imp->menubar);
+    _imp->menuDisplay = new Menu(QObject::tr("Display"), _imp->menubar);
+    _imp->menuOptions = new Menu(QObject::tr("Options"), _imp->menubar);
+    _imp->menuRender = new Menu(QObject::tr("Render"), _imp->menubar);
+    _imp->viewersMenu = new Menu(QObject::tr("Viewer(s)"), _imp->menuDisplay);
+    _imp->viewerInputsMenu = new Menu(QObject::tr("Connect Current Viewer"), _imp->viewersMenu);
+    _imp->viewersViewMenu = new Menu(QObject::tr("Display View Number"), _imp->viewersMenu);
+    _imp->cacheMenu = new Menu(QObject::tr("Cache"), _imp->menubar);
 
 
     _imp->actionNew_project = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutIDActionNewProject, kShortcutDescActionNewProject, this);
@@ -1122,8 +1129,6 @@ Gui::setupUi()
 
     initProjectGuiKnobs();
 
-    _imp->_settingsGui = new PreferencesPanel(appPTR->getCurrentSettings(), this);
-    _imp->_settingsGui->hide();
 
     setVisibleProjectSettingsPanel();
 
@@ -1206,7 +1211,7 @@ GuiPrivate::createPropertiesBinGui()
 
     _maxPanelsOpenedSpinBox = new SpinBox(propertiesAreaButtonsContainer);
     _maxPanelsOpenedSpinBox->setMaximumSize(NATRON_SMALL_BUTTON_SIZE, NATRON_SMALL_BUTTON_SIZE);
-    _maxPanelsOpenedSpinBox->setMinimum(0);
+    _maxPanelsOpenedSpinBox->setMinimum(1);
     _maxPanelsOpenedSpinBox->setMaximum(100);
     _maxPanelsOpenedSpinBox->setToolTip( Qt::convertFromPlainText(_gui->tr("Set the maximum of panels that can be opened at the same time "
                                                                            "in the properties bin pane. The special value of 0 indicates "
@@ -1968,8 +1973,7 @@ Gui::buildTabFocusOrderPropertiesBin()
     for (int i = 0; i < _imp->_layoutPropertiesBin->count(); ++i, ++next) {
         QLayoutItem* item = _imp->_layoutPropertiesBin->itemAt(i);
         QWidget* w = item->widget();
-        QWidget* nextWidget = next >= _imp->_layoutPropertiesBin->count() ? _imp->_layoutPropertiesBin->itemAt(0)->widget()
-                              : _imp->_layoutPropertiesBin->itemAt(next)->widget();
+        QWidget* nextWidget = _imp->_layoutPropertiesBin->itemAt(next < _imp->_layoutPropertiesBin->count() ? next : 0)->widget();
 
         if (w && nextWidget) {
             setTabOrder(w, nextWidget);
@@ -2629,7 +2633,7 @@ Gui::findOrCreateToolButton(const boost::shared_ptr<PluginGroupNode> & plugin)
         QObject::connect( action, SIGNAL( triggered() ), pluginsToolButton, SLOT( onTriggered() ) );
         pluginsToolButton->setAction(action);
     } else {
-        QMenu* menu = new QMenu(this);
+        Menu* menu = new Menu(this);
         //menu->setFont( QFont(appFont,appFontSize) );
         menu->setTitle( pluginsToolButton->getLabel() );
         pluginsToolButton->setMenu(menu);
@@ -2870,8 +2874,12 @@ Gui::openProject(const std::string & filename)
 void
 Gui::openProjectInternal(const std::string & absoluteFileName)
 {
-    std::string fileUnPathed = absoluteFileName;
-    std::string path = SequenceParsing::removePath(fileUnPathed);
+    QFileInfo file(absoluteFileName.c_str());
+    if (!file.exists()) {
+        return;
+    }
+    QString fileUnPathed = file.fileName();
+    QString path = file.path() + "/";
     int openedProject = appPTR->isProjectAlreadyOpened(absoluteFileName);
 
     if (openedProject != -1) {
@@ -2889,13 +2897,11 @@ Gui::openProjectInternal(const std::string & absoluteFileName)
 
     ///if the current graph has no value, just load the project in the same window
     if ( _imp->_appInstance->getProject()->isGraphWorthLess() ) {
-        _imp->_appInstance->getProject()->loadProject( path.c_str(), fileUnPathed.c_str() );
+        _imp->_appInstance->getProject()->loadProject( path, fileUnPathed);
     } else {
-        ///remove autosaves otherwise the new instance might try to load an autosave
-        Project::removeAutoSaves();
         CLArgs cl;
         AppInstance* newApp = appPTR->newAppInstance(cl);
-        newApp->getProject()->loadProject( path.c_str(), fileUnPathed.c_str() );
+        newApp->getProject()->loadProject( path, fileUnPathed);
     }
 
     QSettings settings;
@@ -2927,15 +2933,49 @@ updateRecentFiles(const QString & filename)
 }
 
 bool
+GuiPrivate::checkProjectLockAndWarn(const QString& projectPath,const QString& projectName)
+{
+    boost::shared_ptr<Natron::Project> project= _appInstance->getProject();
+    QString author,lockCreationDate;
+    qint64 lockPID;
+    if (project->getLockFileInfos(projectPath,projectName,&author, &lockCreationDate, &lockPID)) {
+        if (lockPID != QCoreApplication::applicationPid()) {
+            Natron::StandardButtonEnum rep = Natron::questionDialog(QObject::tr("Project").toStdString(),
+                                                                    QObject::tr("This project is already opened in another instance of Natron by ").toStdString() +
+                                                                    author.toStdString() + QObject::tr(" and was opened on ").toStdString() + lockCreationDate.toStdString()
+                                                                    + QObject::tr(" by a Natron process ID of ").toStdString() + QString::number(lockPID).toStdString() + QObject::tr(".\nContinue anyway?").toStdString(), false, Natron::StandardButtons(Natron::eStandardButtonYes | Natron::eStandardButtonNo));
+            if (rep == Natron::eStandardButtonYes) {
+                return true;
+            } else {
+                return false;
+            }
+        }
+    }
+    return true;
+    
+}
+
+bool
 Gui::saveProject()
 {
-    if ( _imp->_appInstance->getProject()->hasProjectBeenSavedByUser() ) {
-        _imp->_appInstance->getProject()->saveProject(_imp->_appInstance->getProject()->getProjectPath(),
-                                                      _imp->_appInstance->getProject()->getProjectName(), false);
+    boost::shared_ptr<Natron::Project> project= _imp->_appInstance->getProject();
+    if (project->hasProjectBeenSavedByUser()) {
+        
+        
+        QString projectName = project->getProjectName();
+        QString projectPath = project->getProjectPath();
+        
+        if (!_imp->checkProjectLockAndWarn(projectPath,projectName)) {
+            return false;
+        }
 
+        project->saveProject(projectPath, projectName, false);
 
         ///update the open recents
-        QString file = _imp->_appInstance->getProject()->getProjectPath() + _imp->_appInstance->getProject()->getProjectName();
+        if (!projectPath.endsWith('/')) {
+            projectPath.append('/');
+        }
+        QString file = projectPath + projectName;
         updateRecentFiles(file);
 
         return true;
@@ -2956,6 +2996,10 @@ Gui::saveProjectAs()
             outFile.append("." NATRON_PROJECT_FILE_EXT);
         }
         std::string path = SequenceParsing::removePath(outFile);
+        
+        if (!_imp->checkProjectLockAndWarn(path.c_str(),outFile.c_str())) {
+            return false;
+        }
         _imp->_appInstance->getProject()->saveProject(path.c_str(), outFile.c_str(), false);
 
         QString filePath = QString( path.c_str() ) + QString( outFile.c_str() );
@@ -3857,6 +3901,9 @@ Gui::setCurveEditorOnTop()
 void
 Gui::showSettings()
 {
+    if (!_imp->_settingsGui) {
+        _imp->_settingsGui = new PreferencesPanel(appPTR->getCurrentSettings(), this);
+    }
     _imp->_settingsGui->show();
     _imp->_settingsGui->raise();
     _imp->_settingsGui->activateWindow();
@@ -3973,8 +4020,6 @@ Gui::openRecentFile()
         if ( _imp->_appInstance->getProject()->isGraphWorthLess() ) {
             _imp->_appInstance->getProject()->loadProject( path, f.fileName() );
         } else {
-            ///remove autosaves otherwise the new instance might try to load an autosave
-            Project::removeAutoSaves();
             CLArgs cl;
             AppInstance* newApp = appPTR->newAppInstance(cl);
             newApp->getProject()->loadProject( path, f.fileName() );
@@ -4025,10 +4070,10 @@ Gui::onProjectNameChanged(const QString & name)
 }
 
 void
-Gui::setColorPickersColor(const QColor & c)
+Gui::setColorPickersColor(double r,double g, double b,double a)
 {
     assert(_imp->_projectGui);
-    _imp->_projectGui->setPickersColor(c);
+    _imp->_projectGui->setPickersColor(r,g,b,a);
 }
 
 void
@@ -4166,8 +4211,20 @@ Gui::onProcessHandlerStarted(const QString & sequenceName,
 {
     ///make the dialog which will show the progress
     RenderingProgressDialog *dialog = new RenderingProgressDialog(this, sequenceName, firstFrame, lastFrame, process, this);
-
+    QObject::connect(dialog,SIGNAL(accepted()),this,SLOT(onRenderProgressDialogFinished()));
+    QObject::connect(dialog,SIGNAL(rejected()),this,SLOT(onRenderProgressDialogFinished()));
     dialog->show();
+}
+
+void
+Gui::onRenderProgressDialogFinished()
+{
+    RenderingProgressDialog* dialog = qobject_cast<RenderingProgressDialog*>(sender());
+    if (!dialog) {
+        return;
+    }
+    dialog->close();
+    dialog->deleteLater();
 }
 
 void
@@ -4390,6 +4447,8 @@ Gui::onWriterRenderStarted(const QString & sequenceName,
     QObject::connect( dialog, SIGNAL( canceled() ), engine, SLOT( abortRendering_Blocking() ) );
     QObject::connect( engine, SIGNAL( frameRendered(int) ), dialog, SLOT( onFrameRendered(int) ) );
     QObject::connect( engine, SIGNAL( renderFinished(int) ), dialog, SLOT( onVideoEngineStopped(int) ) );
+    QObject::connect(dialog,SIGNAL(accepted()),this,SLOT(onRenderProgressDialogFinished()));
+    QObject::connect(dialog,SIGNAL(rejected()),this,SLOT(onRenderProgressDialogFinished()));
     dialog->show();
 }
 
@@ -4460,25 +4519,33 @@ Gui::renderAllWriters()
 void
 Gui::renderSelectedNode()
 {
-    const std::list<boost::shared_ptr<NodeGui> > & selectedNodes = _imp->_nodeGraphArea->getSelectedNodes();
+    NodeGraph* graph = getLastSelectedGraph();
+    if (!graph) {
+        return;
+    }
+    
+    const std::list<boost::shared_ptr<NodeGui> > & selectedNodes = graph->getSelectedNodes();
 
-    if (selectedNodes.size() > 1) {
-        Natron::warningDialog( tr("Render").toStdString(), tr("Please select only a single node").toStdString() );
-    } else if ( selectedNodes.empty() ) {
+    if ( selectedNodes.empty() ) {
         Natron::warningDialog( tr("Render").toStdString(), tr("You must select a node to render first!").toStdString() );
     } else {
         std::list<AppInstance::RenderWork> workList;
 
         for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = selectedNodes.begin();
              it != selectedNodes.end(); ++it) {
-            if ( (*it)->getNode()->getLiveInstance()->isWriter() ) {
-                ///if the node is a writer, just use it to render!
-                AppInstance::RenderWork w;
-                w.writer = dynamic_cast<Natron::OutputEffectInstance*>( (*it)->getNode()->getLiveInstance() );
-                assert(w.writer);
-                w.firstFrame = INT_MIN;
-                w.lastFrame = INT_MAX;
-                workList.push_back(w);
+            Natron::EffectInstance* effect = (*it)->getNode()->getLiveInstance();
+            assert(effect);
+            if (effect->isWriter()) {
+                if (!effect->areKnobsFrozen()) {
+                    //if ((*it)->getNode()->is)
+                    ///if the node is a writer, just use it to render!
+                    AppInstance::RenderWork w;
+                    w.writer = dynamic_cast<Natron::OutputEffectInstance*>(effect);
+                    assert(w.writer);
+                    w.firstFrame = INT_MIN;
+                    w.lastFrame = INT_MAX;
+                    workList.push_back(w);
+                }
             } else {
                 if (selectedNodes.size() == 1) {
                     ///create a node and connect it to the node and use it to render
@@ -4679,14 +4746,18 @@ Gui::progressUpdate(KnobHolder* effect,
 void
 Gui::addVisibleDockablePanel(DockablePanel* panel)
 {
+    
+    std::list<DockablePanel*>::iterator it = std::find(_imp->openedPanels.begin(), _imp->openedPanels.end(), panel);
     putSettingsPanelFirst(panel);
-    assert(panel);
-    int maxPanels = appPTR->getCurrentSettings()->getMaxPanelsOpened();
-    if ( ( (int)_imp->openedPanels.size() == maxPanels ) && (maxPanels != 0) ) {
-        std::list<DockablePanel*>::iterator it = _imp->openedPanels.begin();
-        (*it)->closePanel();
+    if ( it == _imp->openedPanels.end() ) {
+        assert(panel);
+        int maxPanels = appPTR->getCurrentSettings()->getMaxPanelsOpened();
+        if ( ( (int)_imp->openedPanels.size() == maxPanels ) && (maxPanels != 0) ) {
+            std::list<DockablePanel*>::iterator it = _imp->openedPanels.begin();
+            (*it)->closePanel();
+        }
+        _imp->openedPanels.push_back(panel);
     }
-    _imp->openedPanels.push_back(panel);
 }
 
 void
@@ -5057,6 +5128,7 @@ Gui::getNodesEntitledForOverlays(std::list<boost::shared_ptr<Natron::Node> > & n
                 } else {
                     if ( ( internalNode->hasOverlay() || internalNode->getRotoContext() ) &&
                          !internalNode->isNodeDisabled() &&
+                        !internalNode->getParentMultiInstance() && 
                          internalNode->isActivated() &&
                          node->isSettingsPanelVisible() &&
                          !node->isSettingsPanelMinimized() ) {
@@ -5204,7 +5276,7 @@ GuiPrivate::findActionRecursive(int i,
     }
     ///Create the entry
     if (i < grouping.size() - 1) {
-        QMenu* menu = new QMenu(widget);
+        Menu* menu = new Menu(widget);
         menu->setTitle(grouping[i]);
         QMenu* isMenu = dynamic_cast<QMenu*>(widget);
         QMenuBar* isMenuBar = dynamic_cast<QMenuBar*>(widget);

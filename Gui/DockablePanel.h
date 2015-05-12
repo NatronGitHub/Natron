@@ -165,7 +165,7 @@ public:
 
     bool isMinimized() const;
 
-    const std::map<boost::shared_ptr<KnobI>,KnobGui*> & getKnobs() const;
+    const std::map<boost::weak_ptr<KnobI>,KnobGui*> & getKnobs() const;
     QVBoxLayout* getContainer() const;
     QUndoStack* getUndoStack() const;
 
@@ -292,6 +292,8 @@ public Q_SLOTS:
     void onManageUserParametersActionTriggered();
     
     void onNodeScriptChanged(const QString& label);
+    
+    void onEnterInGroupClicked();
     
 Q_SIGNALS:
 
@@ -426,6 +428,8 @@ public Q_SLOTS:
     
     void onAddClicked();
     
+    void onPickClicked();
+    
     void onDeleteClicked();
     
     void onEditClicked();
@@ -441,6 +445,28 @@ public Q_SLOTS:
 private:
     
     boost::scoped_ptr<ManageUserParamsDialogPrivate> _imp;
+};
+
+struct PickKnobDialogPrivate;
+class PickKnobDialog : public QDialog
+{
+    Q_OBJECT
+    
+public:
+    
+    PickKnobDialog(DockablePanel* panel, QWidget* parent);
+    
+    virtual ~PickKnobDialog();
+    
+    KnobGui* getSelectedKnob(bool* useExpressionLink) const;
+    
+public Q_SLOTS:
+    
+    void onNodeComboEditingFinished();
+    
+private:
+    
+    boost::scoped_ptr<PickKnobDialogPrivate> _imp;
 };
 
 struct AddKnobDialogPrivate;

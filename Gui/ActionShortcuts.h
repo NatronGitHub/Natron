@@ -381,7 +381,7 @@ CLANG_DIAG_ON(uninitialized)
 #define kShortcutDescActionGraphEnableHints "Enable Connection Hints"
 
 #define kShortcutIDActionGraphAutoHideInputs "autoHideInputs"
-#define kShortcutDescActionGraphAutoHideInputs "Auto-Hide Optional Inputs"
+#define kShortcutDescActionGraphAutoHideInputs "Auto-Hide Masks Inputs"
 
 #define kShortcutIDActionGraphSwitchInputs "switchInputs"
 #define kShortcutDescActionGraphSwitchInputs "Switch Inputs 1 and 2"
@@ -437,6 +437,9 @@ CLANG_DIAG_ON(uninitialized)
 
 #define kShortcutIDActionGraphMakeGroup "makeGroup"
 #define kShortcutDescActionGraphMakeGroup "Group From Selection"
+
+#define kShortcutIDActionGraphExpandGroup "expandGroup"
+#define kShortcutDescActionGraphExpandGroup "Expand group"
 
 ///////////CURVEEDITOR SHORTCUTS
 #define kShortcutIDActionCurveEditorRemoveKeys "remove"

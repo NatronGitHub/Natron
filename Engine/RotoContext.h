@@ -28,6 +28,8 @@
 #endif
 
 #include "Global/GlobalDefines.h"
+#include "Engine/FitCurve.h"
+
 CLANG_DIAG_OFF(deprecated-declarations)
 #include <QObject>
 #include <QMutex>
@@ -42,6 +44,18 @@ CLANG_DIAG_ON(deprecated-declarations)
 #define kRotoBSplineBaseName "BSpline"
 #define kRotoEllipseBaseName "Ellipse"
 #define kRotoRectangleBaseName "Rectangle"
+#define kRotoPaintBrushBaseName "Brush"
+#define kRotoPaintEraserBaseName "Eraser"
+#define kRotoPaintBlurBaseName "Blur"
+#define kRotoPaintSmearBaseName "Smear"
+#define kRotoPaintSharpenBaseName "Sharpen"
+#define kRotoPaintCloneBaseName "Clone"
+#define kRotoPaintRevealBaseName "Reveal"
+#define kRotoPaintDodgeBaseName "Dodge"
+#define kRotoPaintBurnBaseName "Burn"
+
+//#define ROTO_ENABLE_PAINT
+//#define ROTO_STROKE_USE_FIT_CURVE
 
 namespace Natron {
 class Image;
@@ -67,7 +81,6 @@ class Curve;
 class Bezier;
 class RotoItemSerialization;
 class BezierSerialization;
-
 
 /**
  * @class A Bezier is an animated control point of a Bezier. It is the starting point
@@ -208,6 +221,12 @@ class FeatherPoint
     : public BezierCP
 {
 public:
+    
+    FeatherPoint(const BezierCP& other)
+    : BezierCP(other)
+    {
+    }
+
 
     FeatherPoint(const boost::shared_ptr<Bezier>& curve)
         : BezierCP(curve)
@@ -236,6 +255,14 @@ class RotoItem
 : public QObject, public boost::enable_shared_from_this<RotoItem>
 {
 public:
+    
+    enum SelectionReasonEnum
+    {
+        eSelectionReasonOverlayInteract = 0, ///when the user presses an interact
+        eSelectionReasonSettingsPanel, ///when the user interacts with the settings panel
+        eSelectionReasonOther ///when the project loader restores the selection
+    };
+
 
     RotoItem(const boost::shared_ptr<RotoContext>& context,
              const std::string & name,
@@ -270,7 +297,7 @@ public:
 
     bool isDeactivatedRecursive() const;
 
-    void setLocked(bool l,bool lockChildren);
+    void setLocked(bool l,bool lockChildren,RotoItem::SelectionReasonEnum reason);
     bool getLocked() const;
 
     bool isLockedRecursive() const;
@@ -332,7 +359,7 @@ protected:
 private:
 
     void setGloballyActivated_recursive(bool a);
-    void setLocked_recursive(bool locked);
+    void setLocked_recursive(bool locked,RotoItem::SelectionReasonEnum reason);
 
     boost::scoped_ptr<RotoItemPrivate> _imp;
 };
@@ -393,6 +420,7 @@ public:
      **/
     double getFeatherDistance(int time) const;
     void setFeatherDistance(double d,int time);
+    int getNumKeyframesFeatherDistance() const;
 
     /**
      * @brief The fall-off rate: 0.5 means half color is faded at half distance.
@@ -428,6 +456,9 @@ public:
 
     const std::list<boost::shared_ptr<KnobI> >& getKnobs() const;
     
+    virtual RectD getBoundingBox(int time) const = 0;
+
+    
 Q_SIGNALS:
 
 #ifdef NATRON_ROTO_INVERTIBLE
@@ -440,12 +471,17 @@ Q_SIGNALS:
 
     void compositingOperatorChanged(int,int);
 
+
+protected:
     
+    
+    void addKnob(const boost::shared_ptr<KnobI>& knob);
 
 private:
 
     boost::scoped_ptr<RotoDrawableItemPrivate> _imp;
 };
+
 
 /**
  * @class A RotoLayer is a group of RotoItem. This allows the context to sort
@@ -502,6 +538,7 @@ public:
     ///MT-safe
     std::list< boost::shared_ptr<RotoItem> > getItems_mt_safe() const;
 
+    
 private:
 
     boost::scoped_ptr<RotoLayerPrivate> _imp;
@@ -533,8 +570,28 @@ public:
            const boost::shared_ptr<RotoLayer>& parent);
 
     virtual ~Bezier();
+    
+    static void
+    bezierPoint(const Natron::Point & p0,
+                const Natron::Point & p1,
+                const Natron::Point & p2,
+                const Natron::Point & p3,
+                double t,
+                Natron::Point *dest);
 
-    virtual void clone(const RotoItem* other);
+    
+    /**
+     * @brief Used to differentiate real shapes with feather of paint strokes which does not have a feather
+     **/
+    virtual bool useFeatherPoints() const { return true; }
+    
+    
+    
+    virtual void clone(const RotoItem* other) OVERRIDE;
+
+    
+    void clearAllPoints();
+    
     /**
      * @brief Adds a new control point to the curve. A feather point will be added, at the same position.
      * If auto keying is enabled and this is the first point and there's no keyframe a new keyframe will be set at the current time.
@@ -561,7 +618,7 @@ public:
      * @brief Returns the number of control points of the bezier
      **/
     int getControlPointsCount() const;
-
+    
     /**
      * @brief Given the (x,y) coordinates of a point, this function returns whether a point lies on
      * the cubic bezier curve of the feather points or of the control points or not.
@@ -598,6 +655,13 @@ public:
      * If ripple edit is enabled, the point will be moved at the same location at all keyframes.
      **/
     void moveFeatherByIndex(int index,int time,double dx,double dy);
+    
+private:
+    
+    void movePointByIndexInternal(int index,int time,double dx,double dy,bool onlyFeather);
+    
+public:
+    
 
     /**
      * @brief Moves the left bezier point of the control point at the given index by the given deltas
@@ -614,6 +678,12 @@ public:
      * If ripple edit is enabled, the point will be moved at the same location at all keyframes.
      **/
     void moveRightBezierPoint(int index,int time,double dx,double dy);
+    
+private:
+    
+    void moveBezierPointInternal(BezierCP* cpParam,int index,int time, double lx, double ly, double rx, double ry, bool isLeft, bool moveBoth);
+    
+public:
 
     /**
      * @brief Transforms the given point at the given time by the given matrix.
@@ -643,6 +713,13 @@ public:
      * @brief This function is a combinaison of setPosition + setLeftBezierPoint / setRightBeziePoint
      **/
     void setPointAtIndex(bool feather,int index,int time,double x,double y,double lx,double ly,double rx,double ry);
+    
+private:
+    
+    void setPointAtIndexInternal(bool setLeft,bool setRight,bool setPoint,bool feather,bool featherAndCp,int index,int time,double x,double y,double lx,double ly,double rx,double ry);
+    
+public:
+    
 
     /**
      * @brief Set the left and right bezier point of the control point.
@@ -676,6 +753,13 @@ public:
      **/
     void cuspPointAtIndex(int index,int time,const std::pair<double,double>& pixelScale);
 
+private:
+    
+    void smoothOrCuspPointAtIndex(bool isSmooth,int index,int time,const std::pair<double,double>& pixelScale);
+    
+public:
+    
+    
     /**
      * @brief Set a new keyframe at the given time. If a keyframe already exists this function does nothing.
      **/
@@ -702,6 +786,15 @@ public:
      **/
     int getKeyframesCount() const;
 
+    static void deCastelJau(const std::list<boost::shared_ptr<BezierCP> >& cps, int time, unsigned int mipMapLevel,
+                            bool finished,
+                            int nBPointsPerSegment, std::list<Natron::Point>* points, RectD* bbox);
+    
+    static void point_line_intersection(const Natron::Point &p1,
+                            const Natron::Point &p2,
+                            const Natron::Point &pos,
+                            int *winding);
+    
     /**
      * @brief Evaluates the spline at the given time and returns the list of all the points on the curve.
      * @param nbPointsPerSegment controls how many points are used to draw one Bezier segment
@@ -711,6 +804,14 @@ public:
                                     int nbPointsPerSegment,
                                     std::list<Natron::Point>* points,
                                     RectD* bbox) const;
+    
+    /**
+     * @brief Same as evaluateAtTime_DeCasteljau but nbPointsPerSegment is approximated automatically
+     **/
+    void evaluateAtTime_DeCasteljau_autoNbPoints(int time,
+                                                 unsigned int mipMapLevel,
+                                                 std::list<Natron::Point>* points,
+                                                 RectD* bbox) const;
 
     /**
      * @brief Evaluates the bezier formed by the feather points. Segments which are equal to the control points of the bezier
@@ -727,12 +828,20 @@ public:
      * @brief Returns the bounding box of the bezier. The last value computed by evaluateAtTime_DeCasteljau will be returned,
      * otherwise if it has never been called, evaluateAtTime_DeCasteljau will be called to compute the bounding box.
      **/
-    RectD getBoundingBox(int time) const;
+    virtual RectD getBoundingBox(int time) const OVERRIDE;
 
     /**
      * @brief Returns a const ref to the control points of the bezier curve. This can only ever be called on the main thread.
      **/
     const std::list< boost::shared_ptr<BezierCP> > & getControlPoints() const;
+    
+protected:
+    
+    std::list< boost::shared_ptr<BezierCP> > & getControlPoints_internal();
+    
+public:
+    
+    
     std::list< boost::shared_ptr<BezierCP> > getControlPoints_mt_safe() const;
 
     /**
@@ -740,6 +849,8 @@ public:
      **/
     const std::list< boost::shared_ptr<BezierCP> > & getFeatherPoints() const;
     std::list< boost::shared_ptr<BezierCP> > getFeatherPoints_mt_safe() const;
+    
+    
     enum ControlPointSelectionPrefEnum
     {
         eControlPointSelectionPrefFeatherFirst = 0,
@@ -759,8 +870,8 @@ public:
      * @brief Given the control point in parameter, return its index in the curve's control points list.
      * If no such control point could be found, -1 is returned.
      **/
-    int getControlPointIndex(const boost::shared_ptr<BezierCP> & cp) const;
-    int getControlPointIndex(const BezierCP* cp) const;
+    virtual int getControlPointIndex(const boost::shared_ptr<BezierCP> & cp) const;
+    virtual int getControlPointIndex(const BezierCP* cp) const;
 
     /**
      * @brief Given the feather point in parameter, return its index in the curve's feather points list.
@@ -808,9 +919,10 @@ public:
     static Natron::Point expandToFeatherDistance(const Natron::Point & cp, //< the point
                                                  Natron::Point* fp, //< the feather point
                                                  double featherDistance, //< feather distance
-                                                 const std::list<Natron::Point> & featherPolygon, //< the polygon of the bezier
-                                                 const RectD & featherPolyBBox, //< helper to speed-up pointInPolygon computations
+                                                 //const std::list<Natron::Point> & featherPolygon, //< the polygon of the bezier
+                                                 //const RectD & featherPolyBBox, //< helper to speed-up pointInPolygon computations
                                                  int time, //< time
+                                                 bool clockWise, //< is the bezier  clockwise oriented or not
                                                  std::list<boost::shared_ptr<BezierCP> >::const_iterator prevFp, //< iterator pointing to the feather before curFp
                                                  std::list<boost::shared_ptr<BezierCP> >::const_iterator curFp, //< iterator pointing to fp
                                                  std::list<boost::shared_ptr<BezierCP> >::const_iterator nextFp); //< iterator pointing after curFp
@@ -820,21 +932,26 @@ public:
         eFillRuleWinding
     };
 
-#pragma message WARN("pointInPolygon should not be used, see comment")
-    /*
-       The pointInPolygon function should not be used.
-       The algorithm to know which side is the outside of a polygon consists in computing the global polygon orientation.
-       To compute the orientation, compute its surface. If positive the polygon is clockwise, if negative it's counterclockwise.
-       to compute the surface, take the starting point of the polygon, and imagine a fan made of all the triangles
-       pointing at this point. The surface of a tringle is half the cross-product of two of its sides issued from
-       the same point (the starting point of the polygon, in this case.
-       The orientation of a polygon has to be computed only once for each modification of the polygon (whenever it's edited), and
-       should be stored with the polygon.
-       Of course an 8-shaped polygon doesn't have an outside, but it still has an orientation. The feather direction
-       should follow this orientation.
-     */
-    static bool pointInPolygon(const Natron::Point & p, const std::list<Natron::Point> & polygon,
-                               const RectD & featherPolyBBox, FillRuleEnum rule);
+    
+    bool isFeatherPolygonClockwiseOriented(int time) const;
+    
+    /**
+     * @brief Refresh the polygon orientation for a specific keyframe or for all keyframes. Auto polygon orientation must be set to true
+     * so make sure setAutoOrientationComputation(true) has been called before.
+     **/
+    void refreshPolygonOrientation(int time);
+    void refreshPolygonOrientation();
+
+    void setAutoOrientationComputation(bool autoCompute);
+private:
+    
+    bool isFeatherPolygonClockwiseOrientedInternal(int time) const;
+    
+    void computePolygonOrientation(int time,bool isStatic) const;
+        
+    
+public:
+    
 
     /**
      * @brief Must be implemented by the derived class to save the state into
@@ -882,14 +999,84 @@ Q_SIGNALS:
     void keyframeRemoved(int time);
     
     void animationRemoved();
-    
-    void controlPointAdded();
-    
+        
     void controlPointRemoved();
 
 private:
 
     boost::scoped_ptr<BezierPrivate> _imp;
+};
+
+
+
+/**
+ * @class Base class for all strokes
+ **/
+struct RotoStrokeItemPrivate;
+class RotoStrokeItem :
+#ifdef ROTO_STROKE_USE_FIT_CURVE
+public Bezier
+#else
+public RotoDrawableItem
+#endif
+{
+    
+public:
+    
+    RotoStrokeItem(Natron::RotoStrokeType type,
+                   const boost::shared_ptr<RotoContext>& context,
+                   const std::string & name,
+                   const boost::shared_ptr<RotoLayer>& parent);
+    
+    virtual ~RotoStrokeItem();
+    
+#ifdef ROTO_STROKE_USE_FIT_CURVE
+    virtual bool useFeatherPoints() const OVERRIDE FINAL { return false; }
+#endif
+    
+    
+    Natron::RotoStrokeType getBrushType() const;
+    
+    /**
+     * @brief Initializes the paint stroke with the raw points list.
+     * It will be converted to a cubic bezier curve that fit the initial point list
+     **/
+    void initialize(const std::list<std::pair<Natron::Point,double> >& rawPoints);
+    
+       
+    virtual void clone(const RotoItem* other) OVERRIDE FINAL;
+    
+    /**
+     * @brief Must be implemented by the derived class to save the state into
+     * the serialization object.
+     * Derived implementations must call the parent class implementation.
+     **/
+    virtual void save(RotoItemSerialization* obj) const OVERRIDE FINAL;
+    
+    /**
+     * @brief Must be implemented by the derived class to load the state from
+     * the serialization object.
+     * Derived implementations must call the parent class implementation.
+     **/
+    virtual void load(const RotoItemSerialization & obj) OVERRIDE FINAL;
+    
+    virtual RectD getBoundingBox(int time) const OVERRIDE FINAL;
+    
+    boost::shared_ptr<Double_Knob> getBrushSizeKnob() const;
+    boost::shared_ptr<Double_Knob> getBrushHardnessKnob() const;
+    boost::shared_ptr<Double_Knob> getBrushSpacingKnob() const;
+    boost::shared_ptr<Double_Knob> getBrushEffectKnob() const;
+    boost::shared_ptr<Double_Knob> getBrushVisiblePortionKnob() const;
+    
+#ifndef ROTO_STROKE_USE_FIT_CURVE
+    
+    void evaluateStroke(unsigned int mipMapLevel, std::list<std::pair<Natron::Point,double> >* points) const;
+    
+#endif
+    
+private:
+    
+    boost::scoped_ptr<RotoStrokeItemPrivate> _imp;
 };
 
 
@@ -907,13 +1094,7 @@ class RotoContext
 
 public:
 
-    enum SelectionReasonEnum
-    {
-        eSelectionReasonOverlayInteract = 0, ///when the user presses an interact
-        eSelectionReasonSettingsPanel, ///when the user interacts with the settings panel
-        eSelectionReasonOther ///when the project loader restores the selection
-    };
-
+    
     RotoContext(const boost::shared_ptr<Natron::Node>& node);
 
     virtual ~RotoContext();
@@ -971,16 +1152,19 @@ public:
     boost::shared_ptr<Bezier> makeEllipse(double x,double y,double diameter,bool fromCenter,int time);
     boost::shared_ptr<Bezier> makeSquare(double x,double y,double initialSize,int time);
     
+    
+    boost::shared_ptr<RotoStrokeItem> makeStroke(Natron::RotoStrokeType type,const std::string& baseName);
+    
     std::string generateUniqueName(const std::string& baseName);
     
     /**
      * @brief Removes the given item from the context. This also removes the item from the selection
      * if it was selected. If the item has children, this will also remove all the children.
      **/
-    void removeItem(const boost::shared_ptr<RotoItem>& item, SelectionReasonEnum reason = eSelectionReasonOther);
+    void removeItem(const boost::shared_ptr<RotoItem>& item, RotoItem::SelectionReasonEnum reason = RotoItem::eSelectionReasonOther);
 
     ///This is here for undo/redo purpose. Do not call this
-    void addItem(const boost::shared_ptr<RotoLayer>& layer, int indexInLayer, const boost::shared_ptr<RotoItem> & item,SelectionReasonEnum reason);
+    void addItem(const boost::shared_ptr<RotoLayer>& layer, int indexInLayer, const boost::shared_ptr<RotoItem> & item,RotoItem::SelectionReasonEnum reason);
     /**
      * @brief Returns a const ref to the layers list. This can only be called from
      * the main thread.
@@ -1006,8 +1190,7 @@ public:
      * @brief Render the mask formed by all the shapes contained in the context within the roi.
      * The image will use the cache if byPassCache is set to true.
      **/
-    boost::shared_ptr<Natron::Image> renderMask(bool useCache,
-                                                const RectI & roi,
+    boost::shared_ptr<Natron::Image> renderMask(const RectI & roi,
                                                 const Natron::ImageComponents& components,
                                                 U64 nodeHash,
                                                 U64 ageToRender,
@@ -1015,9 +1198,7 @@ public:
                                                 SequenceTime time,
                                                 Natron::ImageBitDepthEnum depth,
                                                 int view,
-                                                unsigned int mipmapLevel,
-                                                const std::list<boost::shared_ptr<Natron::Image> >& inputImages,
-                                                bool byPassCache);
+                                                unsigned int mipmapLevel);
 
     /**
      * @brief To be called when a change was made to trigger a new render.
@@ -1039,22 +1220,22 @@ public:
     /**
      * @brief This must be called by the GUI whenever an item is selected. This is recursive for layers.
      **/
-    void select(const boost::shared_ptr<RotoItem> & b, RotoContext::SelectionReasonEnum reason);
+    void select(const boost::shared_ptr<RotoItem> & b, RotoItem::SelectionReasonEnum reason);
 
     ///for convenience
-    void select(const std::list<boost::shared_ptr<Bezier> > & beziers, RotoContext::SelectionReasonEnum reason);
-    void select(const std::list<boost::shared_ptr<RotoItem> > & items, RotoContext::SelectionReasonEnum reason);
+    void select(const std::list<boost::shared_ptr<RotoDrawableItem> > & beziers, RotoItem::SelectionReasonEnum reason);
+    void select(const std::list<boost::shared_ptr<RotoItem> > & items, RotoItem::SelectionReasonEnum reason);
 
     /**
      * @brief This must be called by the GUI whenever an item is deselected. This is recursive for layers.
      **/
-    void deselect(const boost::shared_ptr<RotoItem> & b, RotoContext::SelectionReasonEnum reason);
+    void deselect(const boost::shared_ptr<RotoItem> & b, RotoItem::SelectionReasonEnum reason);
 
     ///for convenience
-    void deselect(const std::list<boost::shared_ptr<Bezier> > & beziers, RotoContext::SelectionReasonEnum reason);
-    void deselect(const std::list<boost::shared_ptr<RotoItem> > & items, RotoContext::SelectionReasonEnum reason);
+    void deselect(const std::list<boost::shared_ptr<Bezier> > & beziers, RotoItem::SelectionReasonEnum reason);
+    void deselect(const std::list<boost::shared_ptr<RotoItem> > & items, RotoItem::SelectionReasonEnum reason);
 
-    void clearSelection(RotoContext::SelectionReasonEnum reason);
+    void clearSelection(RotoItem::SelectionReasonEnum reason);
 
     ///only callable on main-thread
     void setKeyframeOnSelectedCurves();
@@ -1073,7 +1254,7 @@ public:
     /**
      * @brief Returns a list of the currently selected curves. Can only be called on the main-thread.
      **/
-    std::list< boost::shared_ptr<Bezier> > getSelectedCurves() const;
+    std::list< boost::shared_ptr<RotoDrawableItem> > getSelectedCurves() const;
 
 
     /**
@@ -1086,7 +1267,7 @@ public:
      * Non-active curves will not be inserted into the list.
      * MT-safe
      **/
-    std::list< boost::shared_ptr<Bezier> > getCurvesByRenderOrder() const;
+    std::list< boost::shared_ptr<RotoDrawableItem> > getCurvesByRenderOrder() const;
     
     int getNCurves() const;
     
@@ -1105,7 +1286,7 @@ public:
     boost::shared_ptr<RotoItem> getLastItemLocked() const;
     boost::shared_ptr<RotoLayer> getDeepestSelectedLayer() const;
 
-    void onItemLockedChanged(const boost::shared_ptr<RotoItem>& item);
+    void onItemLockedChanged(const boost::shared_ptr<RotoItem>& item,RotoItem::SelectionReasonEnum reason);
 
     void emitRefreshViewerOverlays();
 
@@ -1132,7 +1313,7 @@ Q_SIGNALS:
 
     /**
      * Emitted when the selection is changed. The integer corresponds to the
-     * RotoContext::SelectionReasonEnum enum.
+     * RotoItem::SelectionReasonEnum enum.
      **/
     void selectionChanged(int);
 
@@ -1144,7 +1325,7 @@ Q_SIGNALS:
 
     void refreshViewerOverlays();
 
-    void itemLockedChanged();
+    void itemLockedChanged(int reason);
     
     void itemScriptNameChanged(const boost::shared_ptr<RotoItem>&);
     void itemLabelChanged(const boost::shared_ptr<RotoItem>&);
@@ -1164,7 +1345,7 @@ private:
     void selectInternal(const boost::shared_ptr<RotoItem>& b);
     void deselectInternal(boost::shared_ptr<RotoItem> b);
 
-    void removeItemRecursively(const boost::shared_ptr<RotoItem>& item,SelectionReasonEnum reason);
+    void removeItemRecursively(const boost::shared_ptr<RotoItem>& item,RotoItem::SelectionReasonEnum reason);
 
     /**
      * @brief First searches through the selected layer which one is the deepest in the hierarchy.

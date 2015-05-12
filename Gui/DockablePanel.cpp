@@ -33,6 +33,7 @@
 #include <QCheckBox>
 #include <QHeaderView>
 #include <QColorDialog>
+#include <QTimer>
 CLANG_DIAG_OFF(unused-private-field)
 // /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
 #include <QPaintEvent>
@@ -41,7 +42,6 @@ CLANG_DIAG_ON(unused-private-field)
 #include <QPainter>
 #include <QImage>
 #include <QToolButton>
-#include <QMenu>
 #include <QDialogButtonBox>
 
 #include <ofxNatron.h>
@@ -80,6 +80,7 @@ CLANG_DIAG_ON(unused-parameter)
 #include "Gui/ViewerGL.h"
 #include "Gui/ViewerTab.h"
 #include "Gui/ClickableLabel.h"
+#include "Gui/NodeCreationDialog.h"
 #include "Gui/Gui.h"
 #include "Gui/TabWidget.h"
 #include "Gui/RotoPanel.h"
@@ -90,6 +91,7 @@ CLANG_DIAG_ON(unused-parameter)
 #include "Gui/GuiMacros.h"
 #include "Gui/KnobGuiTypes.h"
 #include "Gui/SpinBox.h"
+#include "Gui/Menu.h"
 
 #define NATRON_FORM_LAYOUT_LINES_SPACING 0
 #define NATRON_SETTINGS_VERTICAL_SPACING_PIXELS 3
@@ -180,7 +182,7 @@ void
 TabGroup::removeTab(Group_Knob* group)
 {
     int i = 0;
-    for (std::vector<boost::weak_ptr<Group_Knob> >::iterator it = _tabs.begin(); it != _tabs.end(); ++it,++i) {
+    for (std::vector<boost::weak_ptr<Group_Knob> >::iterator it = _tabs.begin(); it != _tabs.end(); ++it, ++i) {
         if (it->lock().get() == group) {
             _tabWidget->removeTab(i);
             _tabs.erase(it);
@@ -243,6 +245,7 @@ struct DockablePanelPrivate
     /*Tab related*/
     QTabWidget* _tabWidget;
     Button* _centerNodeButton;
+    Button* _enterInGroupButton;
     Button* _helpButton;
     Button* _minimize;
     Button* _hideUnmodifiedButton;
@@ -262,7 +265,7 @@ struct DockablePanelPrivate
     FloatingWidget* _floatingWidget;
 
     /*a map storing for each knob a pointer to their GUI.*/
-    std::map<boost::shared_ptr<KnobI>,KnobGui*> _knobs;
+    std::map<boost::weak_ptr<KnobI>,KnobGui*> _knobs;
     
     ///THe visibility of the knobs before the hide/show unmodified button is clicked
     ///to show only the knobs that need to afterwards
@@ -307,6 +310,7 @@ struct DockablePanelPrivate
     , _verticalColorBar(0)
     ,_tabWidget(NULL)
     , _centerNodeButton(NULL)
+    , _enterInGroupButton(NULL)
     ,_helpButton(NULL)
     ,_minimize(NULL)
     ,_hideUnmodifiedButton(NULL)
@@ -449,6 +453,17 @@ DockablePanel::DockablePanel(Gui* gui ,
             _imp->_centerNodeButton->setFocusPolicy(Qt::NoFocus);
             QObject::connect( _imp->_centerNodeButton,SIGNAL( clicked() ),this,SLOT( onCenterButtonClicked() ) );
             _imp->_headerLayout->addWidget(_imp->_centerNodeButton);
+            
+            NodeGroup* isGroup = dynamic_cast<NodeGroup*>(iseffect);
+            if (isGroup) {
+                QPixmap enterPix;
+                appPTR->getIcon(NATRON_PIXMAP_ENTER_GROUP,&enterPix);
+                _imp->_enterInGroupButton = new Button(QIcon(enterPix),"",_imp->_headerWidget);
+                QObject::connect(_imp->_enterInGroupButton,SIGNAL(clicked(bool)),this,SLOT(onEnterInGroupClicked()));
+                _imp->_enterInGroupButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
+                _imp->_enterInGroupButton->setFocusPolicy(Qt::NoFocus);
+                _imp->_enterInGroupButton->setToolTip(Qt::convertFromPlainText(tr("Pressing this button will show the underlying node graph used for the implementation of this node."),Qt::WhiteSpaceNormal));
+            }
             
             QPixmap pixHelp;
             appPTR->getIcon(NATRON_PIXMAP_HELP_WIDGET,&pixHelp);
@@ -614,6 +629,9 @@ DockablePanel::DockablePanel(Gui* gui ,
         _imp->_headerLayout->addWidget(_imp->_restoreDefaultsButton);
 
         _imp->_headerLayout->addStretch();
+        if (_imp->_enterInGroupButton) {
+            _imp->_headerLayout->addWidget(_imp->_enterInGroupButton);
+        }
         if (_imp->_helpButton) {
             _imp->_headerLayout->addWidget(_imp->_helpButton);
         }
@@ -663,9 +681,12 @@ DockablePanel::~DockablePanel()
 
     ///Delete the knob gui if they weren't before
     ///normally the onKnobDeletion() function should have cleared them
-    for (std::map<boost::shared_ptr<KnobI>,KnobGui*>::const_iterator it = _imp->_knobs.begin(); it != _imp->_knobs.end(); ++it) {
+    for (std::map<boost::weak_ptr<KnobI>,KnobGui*>::const_iterator it = _imp->_knobs.begin(); it != _imp->_knobs.end(); ++it) {
         if (it->second) {
-            it->first->setKnobGuiPointer(0);
+            boost::shared_ptr<KnobI> knob = it->first.lock();
+            if (knob) {
+                knob->setKnobGuiPointer(0);
+            }
             it->second->callDeleteLater();
         }
     }
@@ -976,10 +997,10 @@ DockablePanelPrivate::initializeKnobVector(const std::vector< boost::shared_ptr<
             
             Page_Knob* isParentPage = dynamic_cast<Page_Knob*>(parentKnob.get());
             if (isParentPage) {
-                const std::vector<boost::shared_ptr<KnobI> > & children = isParentPage->getChildren();
+                std::vector<boost::shared_ptr<KnobI> >  children = isParentPage->getChildren();
                 findKnobsOnSameLine(children, knobs[i], knobsOnSameLine);
             } else if (isParentGroup) {
-                const std::vector<boost::shared_ptr<KnobI> > & children = isParentGroup->getChildren();
+                std::vector<boost::shared_ptr<KnobI> >  children = isParentGroup->getChildren();
                 findKnobsOnSameLine(children, knobs[i], knobsOnSameLine);
             } else {
                 findKnobsOnSameLine(knobs, knobs[i], knobsOnSameLine);
@@ -1008,42 +1029,20 @@ DockablePanel::initializeKnobsInternal()
     
     
     if (roto) {
-        PageMap::iterator parentTab = _imp->_pages.find(_imp->_defaultPageName);
-        ///the top level parent is not a page, i.e the plug-in didn't specify any page
-        ///for this param, put it in the first page that is not the default page.
-        ///If there is still no page, put it in the default tab.
-        for (PageMap::iterator it = _imp->_pages.begin(); it != _imp->_pages.end(); ++it) {
-            if (it->first != _imp->_defaultPageName) {
-                parentTab = it;
-                break;
-            }
-        }
-        if ( parentTab == _imp->_pages.end() ) {
-            ///find in all knobs a page param (that is not the extra one added by Natron) to set this param into
-            for (U32 i = 0; i < knobs.size(); ++i) {
-                Page_Knob* p = dynamic_cast<Page_Knob*>( knobs[i].get() );
-                if ( p && (p->getDescription() != NATRON_PARAMETER_PAGE_NAME_INFO) && (p->getDescription() != NATRON_PARAMETER_PAGE_NAME_EXTRA) ) {
-                    parentTab = _imp->addPage(p, p->getDescription().c_str() );
-                    break;
-                }
-            }
-
-            ///Last resort: The plug-in didn't specify ANY page, just put it into the default page
-            if ( parentTab == _imp->_pages.end() ) {
-                parentTab = _imp->addPage(NULL, _imp->_defaultPageName);
-            }
-        }
-
-        assert( parentTab != _imp->_pages.end() );
-        
-        QGridLayout* layout = 0;
-        if (_imp->_useScrollAreasForTabs) {
-            layout = dynamic_cast<QGridLayout*>( dynamic_cast<QScrollArea*>(parentTab->second.tab)->widget()->layout() );
-        } else {
-            layout = dynamic_cast<QGridLayout*>( parentTab->second.tab->layout() );
-        }
-        assert(layout);
-        layout->addWidget(roto, layout->rowCount(), 0 , 1, 2);
+//        boost::shared_ptr<Page_Knob> page = _imp->ensureDefaultPageKnobCreated();
+//        assert(page);
+//        PageMap::iterator foundPage = _imp->_pages.find(page->getDescription().c_str());
+//        assert(foundPage != _imp->_pages.end());
+//        
+//        QGridLayout* layout = 0;
+//        if (_imp->_useScrollAreasForTabs) {
+//            layout = dynamic_cast<QGridLayout*>( dynamic_cast<QScrollArea*>(foundPage->second.tab)->widget()->layout() );
+//        } else {
+//            layout = dynamic_cast<QGridLayout*>( foundPage->second.tab->layout() );
+//        }
+//        assert(layout);
+//        layout->addWidget(roto, layout->rowCount(), 0 , 1, 2);
+        _imp->_mainLayout->addWidget(roto);
     }
 
     initializeExtraGui(_imp->_mainLayout);
@@ -1059,8 +1058,8 @@ DockablePanel::initializeKnobs()
 KnobGui*
 DockablePanel::getKnobGui(const boost::shared_ptr<KnobI> & knob) const
 {
-    for (std::map<boost::shared_ptr<KnobI>,KnobGui*>::const_iterator it = _imp->_knobs.begin(); it != _imp->_knobs.end(); ++it) {
-        if (it->first == knob) {
+    for (std::map<boost::weak_ptr<KnobI>,KnobGui*>::const_iterator it = _imp->_knobs.begin(); it != _imp->_knobs.end(); ++it) {
+        if (it->first.lock() == knob) {
             return it->second;
         }
     }
@@ -1071,7 +1070,8 @@ DockablePanel::getKnobGui(const boost::shared_ptr<KnobI> & knob) const
 KnobGui*
 DockablePanelPrivate::createKnobGui(const boost::shared_ptr<KnobI> &knob)
 {
-    std::map<boost::shared_ptr<KnobI>,KnobGui*>::iterator found = _knobs.find(knob);
+    boost::weak_ptr<KnobI> k = knob;
+    std::map<boost::weak_ptr<KnobI>,KnobGui*>::iterator found = _knobs.find(k);
 
     if ( found != _knobs.end() ) {
         return found->second;
@@ -1158,8 +1158,8 @@ DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI> & knob,
     boost::shared_ptr<Group_Knob> isGroup = boost::dynamic_pointer_cast<Group_Knob>(knob);
     boost::shared_ptr<Page_Knob> isPage = boost::dynamic_pointer_cast<Page_Knob>(knob);
     KnobGui* ret = 0;
-    for (std::map<boost::shared_ptr<KnobI>,KnobGui*>::const_iterator it = _knobs.begin(); it != _knobs.end(); ++it) {
-        if ( (it->first == knob) && it->second ) {
+    for (std::map<boost::weak_ptr<KnobI>,KnobGui*>::const_iterator it = _knobs.begin(); it != _knobs.end(); ++it) {
+        if ( (it->first.lock() == knob) && it->second ) {
             if (isPage) {
                 return it->second;
             } else if ( isGroup && ( ( !isGroup->isTab() && it->second->hasWidgetBeenCreated() ) || isGroup->isTab() ) ) {
@@ -1252,7 +1252,7 @@ DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI> & knob,
                         assert(page != _pages.end());
                         parentTabGroup = page->second.groupAsTab;
                     } else {
-                        std::map<boost::shared_ptr<KnobI>,KnobGui*>::iterator it = _knobs.find(parentParent);
+                        std::map<boost::weak_ptr<KnobI>,KnobGui*>::iterator it = _knobs.find(parentParent);
                         assert(it != _knobs.end());
                         Group_KnobGui* parentParentGroupGui = dynamic_cast<Group_KnobGui*>(it->second);
                         assert(parentParentGroupGui);
@@ -1490,9 +1490,11 @@ DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI> & knob,
 
     ///if the knob is a group, create all the children
     if (isGroup) {
-        initializeKnobVector(isGroup->getChildren(), lastRowWidget);
+        std::vector<boost::shared_ptr<KnobI> > children = isGroup->getChildren();
+        initializeKnobVector(children, lastRowWidget);
     } else if (isPage) {
-        initializeKnobVector(isPage->getChildren(), lastRowWidget);
+        std::vector<boost::shared_ptr<KnobI> > children = isPage->getChildren();
+        initializeKnobVector(children, lastRowWidget);
     }
 
     return ret;
@@ -1750,20 +1752,23 @@ DockablePanel::setClosed(bool c)
             ///show all selected instances
             const std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> > & childrenInstances = panel->getInstances();
             std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> >::const_iterator next = childrenInstances.begin();
-			if (!childrenInstances.empty()) {
+			if (next != childrenInstances.end()) {
 				++next;
 			}
             for (std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> >::const_iterator it = childrenInstances.begin();
-                 it != childrenInstances.end(); ++it,++next) {
+                 it != childrenInstances.end();
+                 ++it) {
                 if (c) {
                     it->first.lock()->hideKeyframesFromTimeline( next == childrenInstances.end() );
                 } else if (!c && it->second) {
                     it->first.lock()->showKeyframesOnTimeline( next == childrenInstances.end() );
                 }
-				if (next == childrenInstances.end()) {
-					--next;
-				}
-            }
+
+                // increment for next iteration
+                if (next != childrenInstances.end()) {
+                    ++next;
+                }
+            } // for(it)
         } else {
             ///Regular show/hide
             if (c) {
@@ -1784,6 +1789,10 @@ DockablePanel::closePanel()
         floatPanel();
         return;
     }
+    
+    _imp->_gui->removeVisibleDockablePanel(this);
+    _imp->_gui->buildTabFocusOrderPropertiesBin();
+
     {
         QMutexLocker l(&_imp->_isClosedMutex);
         if (_imp->_isClosed) {
@@ -1793,8 +1802,6 @@ DockablePanel::closePanel()
     }
     close();
 
-    _imp->_gui->removeVisibleDockablePanel(this);
-    _imp->_gui->buildTabFocusOrderPropertiesBin();
     
     
     NodeSettingsPanel* nodePanel = dynamic_cast<NodeSettingsPanel*>(this);
@@ -1820,20 +1827,23 @@ DockablePanel::closePanel()
         if (panel) {
             const std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> > & childrenInstances = panel->getInstances();
             std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> >::const_iterator next = childrenInstances.begin();
-            if (!childrenInstances.empty()) {
+            if (next != childrenInstances.end()) {
                 ++next;
             }
             for (std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> >::const_iterator it = childrenInstances.begin();
-                 it != childrenInstances.end(); ++it,++next) {
+                 it != childrenInstances.end();
+                 ++it) {
                 
                 NodePtr node = it->first.lock();
                 if ( it->second && (node != internalNode) ) {
                     node->hideKeyframesFromTimeline( next == childrenInstances.end() );
                 }
-				if (next == childrenInstances.end()) {
-					--next;
-				}
-            }
+
+                // increment for next iteration
+                if (next != childrenInstances.end()) {
+                    ++next;
+                }
+            } // for(it)
         } else {
             internalNode->showKeyframesOnTimeline(false);
         }
@@ -1846,7 +1856,7 @@ DockablePanel::closePanel()
     }
     
     const std::list<ViewerTab*>& viewers = getGui()->getViewersList();
-    for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it!=viewers.end(); ++it) {
+    for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {
         (*it)->getViewer()->redraw();
     }
     Q_EMIT closeChanged(true);
@@ -1882,6 +1892,10 @@ void
 DockablePanel::floatPanel()
 {
     _imp->_floating = !_imp->_floating;
+    {
+        QMutexLocker k(&_imp->_isClosedMutex);
+        _imp->_isClosed = false;
+    }
     if (_imp->_floating) {
         assert(!_imp->_floatingWidget);
         _imp->_floatingWidget = new FloatingWidget(_imp->_gui,_imp->_gui);
@@ -1895,6 +1909,7 @@ DockablePanel::floatPanel()
         _imp->_floatingWidget->removeEmbeddedWidget();
         setParent( _imp->_container->parentWidget() );
         _imp->_container->insertWidget(0, this);
+        _imp->_gui->addVisibleDockablePanel(this);
         _imp->_floatingWidget->deleteLater();
         _imp->_floatingWidget = 0;
     }
@@ -1939,7 +1954,7 @@ DockablePanel::deleteKnobGui(const boost::shared_ptr<KnobI>& knob)
             found->second.currentRow = 0;
             _imp->_pages.erase(found);
             
-            const std::vector<boost::shared_ptr<KnobI> >& children = isPage->getChildren();
+            std::vector<boost::shared_ptr<KnobI> > children = isPage->getChildren();
             for (U32 i = 0; i < children.size(); ++i) {
                 deleteKnobGui(children[i]);
             }
@@ -1949,7 +1964,7 @@ DockablePanel::deleteKnobGui(const boost::shared_ptr<KnobI>& knob)
         
         Group_Knob* isGrp = dynamic_cast<Group_Knob*>(knob.get());
         if (isGrp) {
-            const std::vector<boost::shared_ptr<KnobI> >& children = isGrp->getChildren();
+            std::vector<boost::shared_ptr<KnobI> > children = isGrp->getChildren();
             for (U32 i = 0; i < children.size(); ++i) {
                 deleteKnobGui(children[i]);
             }
@@ -1969,7 +1984,7 @@ DockablePanel::deleteKnobGui(const boost::shared_ptr<KnobI>& knob)
                 groupAsTab = page->second.groupAsTab;
                 
             } else {
-                std::map<boost::shared_ptr<KnobI>,KnobGui*>::iterator found  = _imp->_knobs.find(knob);
+                std::map<boost::weak_ptr<KnobI>,KnobGui*>::iterator found  = _imp->_knobs.find(knob);
                 assert(found != _imp->_knobs.end());
                 Group_KnobGui* parentGroupGui = dynamic_cast<Group_KnobGui*>(found->second);
                 assert(parentGroupGui);
@@ -1978,19 +1993,19 @@ DockablePanel::deleteKnobGui(const boost::shared_ptr<KnobI>& knob)
             assert(groupAsTab);
             groupAsTab->removeTab(isGrp);
             
-            std::map<boost::shared_ptr<KnobI>,KnobGui*>::iterator it = _imp->_knobs.find(knob);
+            std::map<boost::weak_ptr<KnobI>,KnobGui*>::iterator it = _imp->_knobs.find(knob);
             if (it != _imp->_knobs.end()) {
-                it->first->setKnobGuiPointer(0);
+                it->first.lock()->setKnobGuiPointer(0);
                 delete it->second;
                 _imp->_knobs.erase(it);
             }
         
         } else {
             
-            std::map<boost::shared_ptr<KnobI>,KnobGui*>::iterator it = _imp->_knobs.find(knob);
+            std::map<boost::weak_ptr<KnobI>,KnobGui*>::iterator it = _imp->_knobs.find(knob);
             if (it != _imp->_knobs.end()) {
                 it->second->removeGui();
-                it->first->setKnobGuiPointer(0);
+                it->first.lock()->setKnobGuiPointer(0);
                 delete it->second;
                 _imp->_knobs.erase(it);
             }
@@ -2033,7 +2048,7 @@ DockablePanel::isMinimized() const
     return _imp->_minimized;
 }
 
-const std::map<boost::shared_ptr<KnobI>,KnobGui*> &
+const std::map<boost::weak_ptr<KnobI>,KnobGui*> &
 DockablePanel::getKnobs() const
 {
     return _imp->_knobs;
@@ -2257,7 +2272,7 @@ DockablePanel::onRightClickMenuRequested(const QPoint & pos)
     if (isEffect) {
         
         boost::shared_ptr<Natron::Node> master = isEffect->getNode()->getMasterNode();
-        QMenu menu(this);
+        Natron::Menu menu(this);
         //menu.setFont( QFont(appFont,appFontSize) );
 
         QAction* userParams = new QAction(tr("Manage user parameters..."),&menu);
@@ -2299,9 +2314,10 @@ DockablePanel::setKeyOnAllParameters()
     int time = getGui()->getApp()->getTimeLine()->currentFrame();
 
     AddKeysCommand::KeysToAddList keys;
-    for (std::map<boost::shared_ptr<KnobI>,KnobGui*>::iterator it = _imp->_knobs.begin(); it != _imp->_knobs.end(); ++it) {
-        if (it->first->isAnimationEnabled()) {
-            for (int i = 0; i < it->first->getDimension(); ++i) {
+    for (std::map<boost::weak_ptr<KnobI>,KnobGui*>::iterator it = _imp->_knobs.begin(); it != _imp->_knobs.end(); ++it) {
+        boost::shared_ptr<KnobI> knob = it->first.lock();
+        if (knob->isAnimationEnabled()) {
+            for (int i = 0; i < knob->getDimension(); ++i) {
                 std::list<CurveGui*> curves = getGui()->getCurveEditor()->findCurve(it->second,i);
                 for (std::list<CurveGui*>::iterator it2 = curves.begin(); it2 != curves.end(); ++it2) {
                     boost::shared_ptr<AddKeysCommand::KeysForCurve> curveKeys(new AddKeysCommand::KeysForCurve);
@@ -2310,10 +2326,10 @@ DockablePanel::setKeyOnAllParameters()
                     std::vector<KeyFrame> kVec;
                     KeyFrame kf;
                     kf.setTime(time);
-                    Knob<int>* isInt = dynamic_cast<Knob<int>*>( it->first.get() );
-                    Knob<bool>* isBool = dynamic_cast<Knob<bool>*>( it->first.get() );
-                    AnimatingString_KnobHelper* isString = dynamic_cast<AnimatingString_KnobHelper*>( it->first.get() );
-                    Knob<double>* isDouble = dynamic_cast<Knob<double>*>( it->first.get() );
+                    Knob<int>* isInt = dynamic_cast<Knob<int>*>( knob.get() );
+                    Knob<bool>* isBool = dynamic_cast<Knob<bool>*>( knob.get() );
+                    AnimatingString_KnobHelper* isString = dynamic_cast<AnimatingString_KnobHelper*>( knob.get() );
+                    Knob<double>* isDouble = dynamic_cast<Knob<double>*>( knob.get() );
                     
                     if (isInt) {
                         kf.setValue( isInt->getValueAtTime(time,i) );
@@ -2345,9 +2361,10 @@ void
 DockablePanel::removeAnimationOnAllParameters()
 {
     std::vector< std::pair<CurveGui*,KeyFrame > > keysToRemove;
-    for (std::map<boost::shared_ptr<KnobI>,KnobGui*>::iterator it = _imp->_knobs.begin(); it != _imp->_knobs.end(); ++it) {
-        if (it->first->isAnimationEnabled()) {
-            for (int i = 0; i < it->first->getDimension(); ++i) {
+    for (std::map<boost::weak_ptr<KnobI>,KnobGui*>::iterator it = _imp->_knobs.begin(); it != _imp->_knobs.end(); ++it) {
+        boost::shared_ptr<KnobI> knob = it->first.lock();
+        if (knob->isAnimationEnabled()) {
+            for (int i = 0; i < knob->getDimension(); ++i) {
                 std::list<CurveGui*> curves = getGui()->getCurveEditor()->findCurve(it->second,i);
                 
                 for (std::list<CurveGui*>::iterator it2 = curves.begin(); it2 != curves.end(); ++it2) {
@@ -2370,16 +2387,52 @@ DockablePanel::onCenterButtonClicked()
 }
 
 void
+DockablePanel::onEnterInGroupClicked()
+{
+    NodeSettingsPanel* panel = dynamic_cast<NodeSettingsPanel*>(this);
+    assert(panel);
+    boost::shared_ptr<NodeGui> node = panel->getNode();
+    assert(node);
+    Natron::EffectInstance* effect = node->getNode()->getLiveInstance();
+    assert(effect);
+    NodeGroup* group = dynamic_cast<NodeGroup*>(effect);
+    assert(group);
+    NodeGraphI* graph_i = group->getNodeGraph();
+    assert(graph_i);
+    NodeGraph* graph = dynamic_cast<NodeGraph*>(graph_i);
+    assert(graph);
+    TabWidget* isParentTab = dynamic_cast<TabWidget*>(graph->parentWidget());
+    if (isParentTab) {
+        isParentTab->setCurrentWidget(graph);
+    } else {
+        NodeGraph* lastSelectedGraph = _imp->_gui->getLastSelectedGraph();
+        if (!lastSelectedGraph) {
+            const std::list<TabWidget*>& panes = _imp->_gui->getPanes();
+            assert(panes.size() >= 1);
+            isParentTab = panes.front();
+        } else {
+            isParentTab = dynamic_cast<TabWidget*>(lastSelectedGraph->parentWidget());
+        }
+        
+        assert(isParentTab);
+        isParentTab->appendTab(graph,graph);
+        
+    }
+    QTimer::singleShot(25, graph, SLOT(centerOnAllNodes()));
+}
+
+void
 DockablePanel::onHideUnmodifiedButtonClicked(bool checked)
 {
     if (checked) {
         _imp->_knobsVisibilityBeforeHideModif.clear();
-        for (std::map<boost::shared_ptr<KnobI>,KnobGui*>::iterator it = _imp->_knobs.begin(); it != _imp->_knobs.end(); ++it) {
-            Group_Knob* isGroup = dynamic_cast<Group_Knob*>(it->first.get());
-            Parametric_Knob* isParametric = dynamic_cast<Parametric_Knob*>(it->first.get());
+        for (std::map<boost::weak_ptr<KnobI>,KnobGui*>::iterator it = _imp->_knobs.begin(); it != _imp->_knobs.end(); ++it) {
+            boost::shared_ptr<KnobI> knob = it->first.lock();
+            Group_Knob* isGroup = dynamic_cast<Group_Knob*>(knob.get());
+            Parametric_Knob* isParametric = dynamic_cast<Parametric_Knob*>(knob.get());
             if (!isGroup && !isParametric) {
                 _imp->_knobsVisibilityBeforeHideModif.insert(std::make_pair(it->second,it->second->isSecretRecursive()));
-                if (!it->first->hasModifications()) {
+                if (!knob->hasModifications()) {
                     it->second->hide();
                 }
             }
@@ -2554,7 +2607,7 @@ NodeSettingsPanel::initializeExtraGui(QVBoxLayout* layout)
 void
 NodeSettingsPanel::onSettingsButtonClicked()
 {
-    QMenu menu(this);
+    Natron::Menu menu(this);
     //menu.setFont(QFont(appFont,appFontSize));
     
     boost::shared_ptr<NodeGui> node = getNode();
@@ -2618,7 +2671,7 @@ NodeSettingsPanel::onImportPresetsActionTriggered()
         int nNodes;
         boost::archive::xml_iarchive iArchive(ifile);
         iArchive >> boost::serialization::make_nvp("NodesCount",nNodes);
-        for (int i = 0; i < nNodes ;++i) {
+        for (int i = 0; i < nNodes ; ++i) {
             boost::shared_ptr<NodeSerialization> node(new NodeSerialization());
             iArchive >> boost::serialization::make_nvp("Node",*node);
             nodeSerialization.push_back(node);
@@ -2674,7 +2727,7 @@ NodeSettingsPanel::onExportPresetsActionTriggered()
 
     boost::shared_ptr<NodeGui> node = getNode();
     std::list<boost::shared_ptr<NodeSerialization> > nodeSerialization;
-    node->serializeInternal(nodeSerialization,true);
+    node->serializeInternal(nodeSerialization);
     try {
          
         int nNodes = nodeSerialization.size();
@@ -2714,6 +2767,7 @@ struct ManageUserParamsDialogPrivate
     QVBoxLayout* buttonsLayout;
     
     Button* addButton;
+    Button* pickButton;
     Button* editButton;
     Button* removeButton;
     Button* upButton;
@@ -2729,6 +2783,7 @@ struct ManageUserParamsDialogPrivate
     , buttonsContainer(0)
     , buttonsLayout(0)
     , addButton(0)
+    , pickButton(0)
     , editButton(0)
     , removeButton(0)
     , upButton(0)
@@ -2789,7 +2844,7 @@ ManageUserParamsDialog::ManageUserParamsDialog(DockablePanel* panel,QWidget* par
                 }
                 _imp->items.push_back(pageItem);
                 
-                const std::vector<boost::shared_ptr<KnobI> >& children = page->getChildren();
+                std::vector<boost::shared_ptr<KnobI> > children = page->getChildren();
                 _imp->initializeKnobs(children, pageItem.item, markedKnobs);
                 
             }
@@ -2805,6 +2860,11 @@ ManageUserParamsDialog::ManageUserParamsDialog(DockablePanel* panel,QWidget* par
     _imp->addButton->setToolTip(Qt::convertFromPlainText(tr("Add a new parameter, group or page")));
     QObject::connect(_imp->addButton,SIGNAL(clicked(bool)),this,SLOT(onAddClicked()));
     _imp->buttonsLayout->addWidget(_imp->addButton);
+    
+    _imp->pickButton = new Button(tr("Pick"),_imp->buttonsContainer);
+    _imp->pickButton->setToolTip(Qt::convertFromPlainText(tr("Add a new parameter that is directly copied from/linked to another parameter")));
+    QObject::connect(_imp->pickButton,SIGNAL(clicked(bool)),this,SLOT(onPickClicked()));
+    _imp->buttonsLayout->addWidget(_imp->pickButton);
     
     _imp->editButton = new Button(tr("Edit"),_imp->buttonsContainer);
     _imp->editButton->setToolTip(Qt::convertFromPlainText(tr("Edit the selected parameter")));
@@ -2839,7 +2899,7 @@ ManageUserParamsDialog::ManageUserParamsDialog(DockablePanel* panel,QWidget* par
 
 ManageUserParamsDialog::~ManageUserParamsDialog()
 {
-//    for (std::list<TreeItem>::iterator it = _imp->items.begin() ;it != _imp->items.end(); ++it) {
+//    for (std::list<TreeItem>::iterator it = _imp->items.begin() ; it != _imp->items.end(); ++it) {
 //        delete it->item;
 //    }
 }
@@ -2864,7 +2924,8 @@ ManageUserParamsDialogPrivate::initializeKnobs(const std::vector<boost::shared_p
         
         Group_Knob* isGrp = dynamic_cast<Group_Knob*>(it2->get());
         if (isGrp) {
-            initializeKnobs(isGrp->getChildren(), i.item, markedKnobs);
+            std::vector<boost::shared_ptr<KnobI> > children = isGrp->getChildren();
+            initializeKnobs(children, i.item, markedKnobs);
         }
     }
 }
@@ -2899,6 +2960,27 @@ void
 ManageUserParamsDialogPrivate::rebuildUserPages()
 {
     panel->scanForNewKnobs();
+}
+
+void
+ManageUserParamsDialog::onPickClicked()
+{
+    PickKnobDialog dialog(_imp->panel,this);
+    if (dialog.exec()) {
+        bool useExpr;
+        KnobGui* selectedKnob = dialog.getSelectedKnob(&useExpr);
+        if (!selectedKnob) {
+            return;
+        }
+        
+        NodeSettingsPanel* nodePanel = dynamic_cast<NodeSettingsPanel*>(_imp->panel);
+        assert(nodePanel);
+        boost::shared_ptr<NodeGui> nodeGui = nodePanel->getNode();
+        assert(nodeGui);
+        NodePtr node = nodeGui->getNode();
+        assert(node);
+        selectedKnob->createDuplicateOnNode(node->getLiveInstance(), useExpr);
+    }
 }
 
 void
@@ -2956,7 +3038,7 @@ ManageUserParamsDialog::onDeleteClicked()
     QList<QTreeWidgetItem*> selection = _imp->tree->selectedItems();
     if (!selection.isEmpty()) {
         for (int i = 0; i < selection.size(); ++i) {
-            for (std::list<TreeItem>::iterator it = _imp->items.begin(); it != _imp->items.end();++it) {
+            for (std::list<TreeItem>::iterator it = _imp->items.begin(); it != _imp->items.end(); ++it) {
                 if (it->item == selection[i]) {
                     it->knob->getHolder()->removeDynamicKnob(it->knob.get());
                     delete it->item;
@@ -2981,18 +3063,19 @@ ManageUserParamsDialog::onEditClicked()
     QList<QTreeWidgetItem*> selection = _imp->tree->selectedItems();
     if (!selection.isEmpty()) {
         for (int i = 0; i < selection.size(); ++i) {
-            for (std::list<TreeItem>::iterator it = _imp->items.begin(); it != _imp->items.end();++it) {
+            for (std::list<TreeItem>::iterator it = _imp->items.begin(); it != _imp->items.end(); ++it) {
                 if (it->item == selection[i]) {
                     
-                    std::list<KnobI*> listeners;
+                    std::list<boost::shared_ptr<KnobI> > listeners;
                     it->knob->getListeners(listeners);
                     if (!listeners.empty()) {
                         Natron::StandardButtonEnum rep = Natron::questionDialog(tr("Edit parameter").toStdString(),
                                                                                 tr("This parameter has one or several "
                                                                                    "parameters from which other parameters "
                                                                                    "of the project rely on through expressions "
-                                                                                   "or links. Editing this parameter will "
-                                                                                   "remove these expressions. Do you wish to continue ?").toStdString(), false);
+                                                                                   "or links. Editing this parameter may "
+                                                                                   "remove these expressions if the script-name is changed.\n"
+                                                                                   "Do you want to continue?").toStdString(), false);
                         if (rep == Natron::eStandardButtonNo) {
                             return;
                         }
@@ -3020,7 +3103,7 @@ ManageUserParamsDialog::onUpClicked()
     QList<QTreeWidgetItem*> selection = _imp->tree->selectedItems();
     if (!selection.isEmpty()) {
         for (int i = 0; i < selection.size(); ++i) {
-            for (std::list<TreeItem>::iterator it = _imp->items.begin(); it != _imp->items.end();++it) {
+            for (std::list<TreeItem>::iterator it = _imp->items.begin(); it != _imp->items.end(); ++it) {
                 if (it->item == selection[i]) {
                     
                     if (dynamic_cast<Page_Knob*>(it->knob.get())) {
@@ -3085,7 +3168,7 @@ ManageUserParamsDialog::onDownClicked()
     QList<QTreeWidgetItem*> selection = _imp->tree->selectedItems();
     if (!selection.isEmpty()) {
         for (int i = 0; i < selection.size(); ++i) {
-            for (std::list<TreeItem>::iterator it = _imp->items.begin(); it != _imp->items.end();++it) {
+            for (std::list<TreeItem>::iterator it = _imp->items.begin(); it != _imp->items.end(); ++it) {
                 if (it->item == selection[i]) {
                     if (dynamic_cast<Page_Knob*>(it->knob.get())) {
                         break;
@@ -3169,7 +3252,7 @@ ManageUserParamsDialog::onSelectionChanged()
             canDelete = false;
             canMove = false;
         }
-        for (std::list<TreeItem>::iterator it = _imp->items.begin(); it!=_imp->items.end(); ++it) {
+        for (std::list<TreeItem>::iterator it = _imp->items.begin(); it != _imp->items.end(); ++it) {
             if (it->item == item) {
                 Page_Knob* isPage = dynamic_cast<Page_Knob*>(it->knob.get());
                 Group_Knob* isGroup = dynamic_cast<Group_Knob*>(it->knob.get());
@@ -3188,6 +3271,196 @@ ManageUserParamsDialog::onSelectionChanged()
     _imp->editButton->setEnabled(selection.size() == 1 && canEdit);
     _imp->upButton->setEnabled(selection.size() == 1 && canMove);
     _imp->downButton->setEnabled(selection.size() == 1 && canMove);
+}
+
+struct PickKnobDialogPrivate
+{
+    
+    QGridLayout* mainLayout;
+    Natron::Label* selectNodeLabel;
+    CompleterLineEdit* nodeSelectionCombo;
+    ComboBox* knobSelectionCombo;
+    Natron::Label* useExpressionLabel;
+    QCheckBox* useExpressionCheckBox;
+    QDialogButtonBox* buttons;
+    NodeList allNodes;
+    std::map<QString,boost::shared_ptr<KnobI > > allKnobs;
+    
+    PickKnobDialogPrivate()
+    : mainLayout(0)
+    , selectNodeLabel(0)
+    , nodeSelectionCombo(0)
+    , knobSelectionCombo(0)
+    , useExpressionLabel(0)
+    , useExpressionCheckBox(0)
+    , buttons(0)
+    , allNodes()
+    , allKnobs()
+    {
+        
+    }
+};
+
+PickKnobDialog::PickKnobDialog(DockablePanel* panel, QWidget* parent)
+: QDialog(parent)
+, _imp(new PickKnobDialogPrivate())
+{
+    NodeSettingsPanel* nodePanel = dynamic_cast<NodeSettingsPanel*>(panel);
+    assert(nodePanel);
+    boost::shared_ptr<NodeGui> nodeGui = nodePanel->getNode();
+    NodePtr node = nodeGui->getNode();
+    NodeGroup* isGroup = dynamic_cast<NodeGroup*>(node.get());
+    boost::shared_ptr<NodeCollection> collec = node->getGroup();
+    NodeGroup* isCollecGroup = dynamic_cast<NodeGroup*>(collec.get());
+    NodeList collectNodes = collec->getNodes();
+    for (NodeList::iterator it = collectNodes.begin(); it != collectNodes.end(); ++it) {
+        if (!(*it)->getParentMultiInstance() && (*it)->isActivated() && (*it)->getKnobs().size() > 0) {
+            _imp->allNodes.push_back(*it);
+        }
+    }
+    if (isCollecGroup) {
+        _imp->allNodes.push_back(isCollecGroup->getNode());
+    }
+    if (isGroup) {
+        NodeList groupnodes = isGroup->getNodes();
+        for (NodeList::iterator it = groupnodes.begin(); it != groupnodes.end(); ++it) {
+            if (!(*it)->getParentMultiInstance() && (*it)->isActivated() && (*it)->getKnobs().size() > 0) {
+                _imp->allNodes.push_back(*it);
+            }
+        }
+    }
+    QStringList nodeNames;
+    for (NodeList::iterator it = _imp->allNodes.begin(); it != _imp->allNodes.end(); ++it) {
+        QString name( (*it)->getLabel().c_str() );
+        nodeNames.push_back(name);
+    }
+    nodeNames.sort();
+
+    _imp->mainLayout = new QGridLayout(this);
+    _imp->selectNodeLabel = new Natron::Label(tr("Node:"));
+    _imp->nodeSelectionCombo = new CompleterLineEdit(nodeNames,nodeNames,false,this);
+    _imp->nodeSelectionCombo->setToolTip( tr("Input the name of a node in the current project.") );
+    _imp->nodeSelectionCombo->setFocus(Qt::PopupFocusReason);
+    
+    _imp->knobSelectionCombo = new ComboBox(this);
+    
+    _imp->useExpressionLabel = new Natron::Label(tr("Link parameter with expression:"),this);
+    _imp->useExpressionCheckBox = new QCheckBox(this);
+    _imp->useExpressionCheckBox->setChecked(true);
+    
+    QObject::connect( _imp->nodeSelectionCombo,SIGNAL( itemCompletionChosen() ),this,SLOT( onNodeComboEditingFinished() ) );
+    
+    _imp->buttons = new QDialogButtonBox(QDialogButtonBox::StandardButtons(QDialogButtonBox::Ok | QDialogButtonBox::Cancel),
+                                         Qt::Horizontal,this);
+    QObject::connect( _imp->buttons, SIGNAL( accepted() ), this, SLOT( accept() ) );
+    QObject::connect( _imp->buttons, SIGNAL( rejected() ), this, SLOT( reject() ) );
+    
+    _imp->mainLayout->addWidget(_imp->selectNodeLabel, 0, 0, 1, 1);
+    _imp->mainLayout->addWidget(_imp->nodeSelectionCombo, 0, 1, 1, 1);
+    _imp->mainLayout->addWidget(_imp->knobSelectionCombo, 0, 2, 1, 1);
+    _imp->mainLayout->addWidget(_imp->useExpressionLabel, 1, 0, 1, 1);
+    _imp->mainLayout->addWidget(_imp->useExpressionCheckBox, 1, 1, 1, 1);
+    _imp->mainLayout->addWidget(_imp->buttons, 2, 0, 1, 3);
+    
+    QTimer::singleShot( 25, _imp->nodeSelectionCombo, SLOT( showCompleter() ) );
+
+}
+
+PickKnobDialog::~PickKnobDialog()
+{
+    
+}
+
+void
+PickKnobDialog::onNodeComboEditingFinished()
+{
+    QString index = _imp->nodeSelectionCombo->text();
+    _imp->knobSelectionCombo->clear();
+    _imp->allKnobs.clear();
+    boost::shared_ptr<Natron::Node> selectedNode;
+    std::string currentNodeName = index.toStdString();
+    for (NodeList::iterator it = _imp->allNodes.begin(); it != _imp->allNodes.end(); ++it) {
+        if ((*it)->getLabel() == currentNodeName) {
+            selectedNode = *it;
+            break;
+        }
+    }
+    if (!selectedNode) {
+        return;
+    }
+    const std::vector< boost::shared_ptr<KnobI> > & knobs = selectedNode->getKnobs();
+    for (U32 j = 0; j < knobs.size(); ++j) {
+        if (!knobs[j]->getIsSecret()) {
+            Button_Knob* isButton = dynamic_cast<Button_Knob*>( knobs[j].get() );
+            Page_Knob* isPage = dynamic_cast<Page_Knob*>( knobs[j].get() );
+            Group_Knob* isGroup = dynamic_cast<Group_Knob*>( knobs[j].get() );
+            if (!isButton && !isPage && !isGroup) {
+                QString name( knobs[j]->getDescription().c_str() );
+                
+                bool canInsertKnob = true;
+                for (int k = 0; k < knobs[j]->getDimension(); ++k) {
+                    if ( knobs[j]->isSlave(k) || !knobs[j]->isEnabled(k) || name.isEmpty() ) {
+                        canInsertKnob = false;
+                    }
+                }
+                if (canInsertKnob) {
+                    _imp->allKnobs.insert(std::make_pair( name, knobs[j]));
+                    _imp->knobSelectionCombo->addItem(name);
+                }
+            }
+            
+        }
+    }
+}
+
+KnobGui*
+PickKnobDialog::getSelectedKnob(bool* useExpressionLink) const
+{
+    QString index = _imp->nodeSelectionCombo->text();
+    boost::shared_ptr<Natron::Node> selectedNode;
+    std::string currentNodeName = index.toStdString();
+    for (NodeList::iterator it = _imp->allNodes.begin(); it != _imp->allNodes.end(); ++it) {
+        if ((*it)->getLabel() == currentNodeName) {
+            selectedNode = *it;
+            break;
+        }
+    }
+    if (!selectedNode) {
+        return 0;
+    }
+    
+    QString str = _imp->knobSelectionCombo->itemText( _imp->knobSelectionCombo->activeIndex() );
+    std::map<QString,boost::shared_ptr<KnobI> >::const_iterator it = _imp->allKnobs.find(str);
+    
+    boost::shared_ptr<KnobI> selectedKnob;
+    if ( it != _imp->allKnobs.end() ) {
+        selectedKnob = it->second;
+    } else {
+        return 0;
+    }
+    
+    boost::shared_ptr<NodeGuiI> selectedNodeGuiI = selectedNode->getNodeGui();
+    assert(selectedNodeGuiI);
+    NodeGui* selectedNodeGui = dynamic_cast<NodeGui*>(selectedNodeGuiI.get());
+    assert(selectedNodeGui);
+    NodeSettingsPanel* selectedPanel = selectedNodeGui->getSettingPanel();
+    bool hadPanelVisible = selectedPanel && !selectedPanel->isClosed();
+    if (!selectedPanel) {
+        selectedNodeGui->ensurePanelCreated();
+    }
+    if (!selectedPanel) {
+        return 0;
+    }
+    if (!hadPanelVisible && selectedPanel) {
+        selectedPanel->setClosed(true);
+    }
+    const std::map<boost::weak_ptr<KnobI>,KnobGui*>& knobsMap = selectedPanel->getKnobs();
+    std::map<boost::weak_ptr<KnobI>,KnobGui*>::const_iterator found = knobsMap.find(selectedKnob);
+    if (found != knobsMap.end()) {
+        *useExpressionLink = _imp->useExpressionCheckBox->isChecked();
+        return found->second;
+    }
+    return 0;
 }
 
 struct AddKnobDialogPrivate
@@ -3504,9 +3777,34 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,const boost::shared_ptr<KnobI>
         _imp->startNewLineLabel = new Natron::Label(tr("Start new line:"),secondRowContainer);
         secondRowLayout->addWidget(_imp->startNewLineLabel);
         _imp->startNewLineBox = new QCheckBox(secondRowContainer);
-        _imp->startNewLineBox->setToolTip(tr("If checked the <b><i>next</i></b> parameter defined will be on the same line as this parameter"));
+        _imp->startNewLineBox->setToolTip(tr("If unchecked the parameter will be on the same line as the previous parameter"));
         if (knob) {
-            _imp->startNewLineBox->setChecked(knob->isNewLineActivated());
+            
+            // get the flag on the previous knob
+            bool startNewLine = true;
+            boost::shared_ptr<KnobI> parentKnob = _imp->knob->getParentKnob();
+            if (parentKnob) {
+                Group_Knob* parentIsGrp = dynamic_cast<Group_Knob*>(parentKnob.get());
+                Page_Knob* parentIsPage = dynamic_cast<Page_Knob*>(parentKnob.get());
+                assert(parentIsGrp || parentIsPage);
+                std::vector<boost::shared_ptr<KnobI> > children;
+                if (parentIsGrp) {
+                    children = parentIsGrp->getChildren();
+                } else if (parentIsPage) {
+                    children = parentIsPage->getChildren();
+                }
+                for (U32 i = 0; i < children.size(); ++i) {
+                    if (children[i] == _imp->knob) {
+                        if (i > 0) {
+                            startNewLine = children[i - 1]->isNewLineActivated();
+                        }
+                        break;
+                    }
+                }
+            }
+
+            
+            _imp->startNewLineBox->setChecked(startNewLine);
         }
         secondRowLayout->addWidget(_imp->startNewLineBox);
         secondRowLayout->addStretch();
@@ -3863,10 +4161,11 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,const boost::shared_ptr<KnobI>
     }
     
     
-    const std::map<boost::shared_ptr<KnobI>,KnobGui*>& knobs = _imp->panel->getKnobs();
-    for (std::map<boost::shared_ptr<KnobI>,KnobGui*>::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
-        if (it->first->isUserKnob()) {
-            Group_Knob* isGrp = dynamic_cast<Group_Knob*>(it->first.get());
+    const std::map<boost::weak_ptr<KnobI>,KnobGui*>& knobs = _imp->panel->getKnobs();
+    for (std::map<boost::weak_ptr<KnobI>,KnobGui*>::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+        boost::shared_ptr<KnobI> knob = it->first.lock();
+        if (knob->isUserKnob()) {
+            Group_Knob* isGrp = dynamic_cast<Group_Knob*>(knob.get());
             if (isGrp) {
                 _imp->userGroups.push_back(isGrp);
             }
@@ -3898,10 +4197,10 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,const boost::shared_ptr<KnobI>
         _imp->parentPage->addItem(NATRON_USER_MANAGED_KNOBS_PAGE);
         QObject::connect(_imp->parentPage,SIGNAL(currentIndexChanged(int)),this,SLOT(onPageCurrentIndexChanged(int)));
         const std::vector<boost::shared_ptr<KnobI> >& knobs = _imp->panel->getHolder()->getKnobs();
-        for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it = knobs.begin() ;it != knobs.end(); ++it) {
+        for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it = knobs.begin() ; it != knobs.end(); ++it) {
             if ((*it)->isUserKnob()) {
                 Page_Knob* isPage = dynamic_cast<Page_Knob*>(it->get());
-                if (isPage && isPage->getName() != std::string(NATRON_USER_MANAGED_KNOBS_PAGE)) {
+                if (isPage && isPage->getName() != NATRON_USER_MANAGED_KNOBS_PAGE) {
                     _imp->userPages.push_back(isPage);
                 }
             }
@@ -3916,7 +4215,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,const boost::shared_ptr<KnobI>
             ////find in which page the knob should be
             Page_Knob* isTopLevelParentAPage = getTopLevelPageForKnob(knob.get());
             assert(isTopLevelParentAPage);
-            if (isTopLevelParentAPage->getName() != std::string(NATRON_USER_MANAGED_KNOBS_PAGE)) {
+            if (isTopLevelParentAPage->getName() != NATRON_USER_MANAGED_KNOBS_PAGE) {
                 int index = 1; // 1 because of the "User" item
                 bool found = false;
                 for (std::list<Page_Knob*>::iterator it = _imp->userPages.begin(); it != _imp->userPages.end(); ++it, ++index) {
@@ -4417,13 +4716,17 @@ AddKnobDialogPrivate::createKnobFromSelection(int index,int optionalGroupIndex)
         default:
             break;
     }
+    
+    
     assert(knob);
     knob->setAsUserKnob();
     if (knob->canAnimate()) {
         knob->setAnimationEnabled(animatesCheckbox->isChecked());
     }
     knob->setEvaluateOnChange(evaluatesOnChange->isChecked());
-    knob->setAddNewLine(startNewLineBox->isChecked());
+    
+    
+    
     knob->setSecret(hideBox->isChecked());
     knob->setName(nameLineEdit->text().toStdString());
     knob->setHintToolTip(tooltipArea->toPlainText().toStdString());
@@ -4441,7 +4744,7 @@ AddKnobDialogPrivate::createKnobFromSelection(int index,int optionalGroupIndex)
     
     if (index != 16 && parentPage && !addedInGrp) {
         std::string selectedItem = parentPage->getCurrentIndexText().toStdString();
-        if (selectedItem == std::string(NATRON_USER_MANAGED_KNOBS_PAGE)) {
+        if (selectedItem == NATRON_USER_MANAGED_KNOBS_PAGE) {
             boost::shared_ptr<Page_Knob> userPage = panel->getUserPageKnob();
             userPage->addKnob(knob);
             panel->setUserPageActiveIndex();
@@ -4455,6 +4758,13 @@ AddKnobDialogPrivate::createKnobFromSelection(int index,int optionalGroupIndex)
 
         }
     }
+    
+    
+    KnobHolder* holder = panel->getHolder();
+    assert(holder);
+    EffectInstance* isEffect = dynamic_cast<EffectInstance*>(holder);
+    assert(isEffect);
+    isEffect->getNode()->declarePythonFields();
 }
 
 Group_Knob*
@@ -4488,6 +4798,9 @@ AddKnobDialog::onOkClicked()
     if (!badFormat) {
         //make sure everything is alphaNumeric without spaces
         for (int i = 0; i < name.size(); ++i) {
+            if (name[i] == QChar('_')) {
+                continue;
+            }
             if (name[i] == QChar(' ') || !name[i].isLetterOrNumber()) {
                 badFormat = true;
                 break;
@@ -4498,7 +4811,7 @@ AddKnobDialog::onOkClicked()
     //check if another knob has the same script name
     std::string stdName = name.toStdString();
     const std::vector<boost::shared_ptr<KnobI> >& knobs = _imp->panel->getHolder()->getKnobs();
-    for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it = knobs.begin() ;it != knobs.end(); ++it) {
+    for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it = knobs.begin() ; it != knobs.end(); ++it) {
         if ((*it)->getName() == stdName && (*it) != _imp->knob) {
             badFormat = true;
             break;
@@ -4523,6 +4836,9 @@ AddKnobDialog::onOkClicked()
         ///If the knob was in a group, we need to place it at the same index
         int oldIndexInGroup = -1;
         
+        std::vector<std::pair<std::string,bool> > expressions;
+        std::map<boost::shared_ptr<KnobI>,std::vector<std::pair<std::string,bool> > > listenersExpressions;
+        
         if (_imp->knob) {
             
             oldParentPage = getTopLevelPageForKnob(_imp->knob.get());
@@ -4530,7 +4846,7 @@ AddKnobDialog::onOkClicked()
             boost::shared_ptr<KnobI> parent = _imp->knob->getParentKnob();
             Group_Knob* isParentGrp = dynamic_cast<Group_Knob*>(parent.get());
             if (isParentGrp && isParentGrp == _imp->getSelectedGroup()) {
-                const std::vector<boost::shared_ptr<KnobI> >& children = isParentGrp->getChildren();
+                std::vector<boost::shared_ptr<KnobI> > children = isParentGrp->getChildren();
                 for (U32 i = 0; i < children.size(); ++i) {
                     if (children[i] == _imp->knob) {
                         oldIndexInGroup = i;
@@ -4538,7 +4854,7 @@ AddKnobDialog::onOkClicked()
                     }
                 }
             } else {
-                const std::vector<boost::shared_ptr<KnobI> >& children = oldParentPage->getChildren();
+                std::vector<boost::shared_ptr<KnobI> > children = oldParentPage->getChildren();
                 for (U32 i = 0; i < children.size(); ++i) {
                     if (children[i] == _imp->knob) {
                         oldIndexInGroup = i;
@@ -4546,7 +4862,30 @@ AddKnobDialog::onOkClicked()
                     }
                 }
             }
+            expressions.resize(_imp->knob->getDimension());
+            for (std::size_t i = 0 ; i < expressions.size(); ++i) {
+                std::string expr = _imp->knob->getExpression(i);
+                bool useRetVar = _imp->knob->isExpressionUsingRetVariable(i);
+                expressions[i] = std::make_pair(expr,useRetVar);
+            }
+            
+            //Since removing this knob will also remove all expressions from listeners, conserve them and try
+            //to recover them afterwards
+            std::list<boost::shared_ptr<KnobI> > listeners;
+            _imp->knob->getListeners(listeners);
+            for (std::list<boost::shared_ptr<KnobI> >::iterator it = listeners.begin(); it != listeners.end(); ++it) {
+                std::vector<std::pair<std::string,bool> > exprs;
+                for (int i = 0; i < (*it)->getDimension(); ++i) {
+                    std::pair<std::string,bool> e;
+                    e.first = (*it)->getExpression(i);
+                    e.second = (*it)->isExpressionUsingRetVariable(i);
+                    exprs.push_back(e);
+                }
+                listenersExpressions[*it] = exprs;
+            }
+            
             _imp->panel->getHolder()->removeDynamicKnob(_imp->knob.get());
+            
             _imp->knob.reset();
         } else {
             assert(_imp->typeChoice);
@@ -4554,6 +4893,7 @@ AddKnobDialog::onOkClicked()
         }
         _imp->createKnobFromSelection(index, oldIndexInGroup);
         assert(_imp->knob);
+        
         if (oldParentPage && !_imp->knob->getParentKnob()) {
             if (oldIndexInGroup == -1) {
                 oldParentPage->addKnob(_imp->knob);
@@ -4561,8 +4901,62 @@ AddKnobDialog::onOkClicked()
                 oldParentPage->insertKnob(oldIndexInGroup, _imp->knob);
             }
         }
+        
+        //If startsNewLine is false, set the flag on the previous knob
+        bool startNewLine = _imp->startNewLineBox->isChecked();
+        boost::shared_ptr<KnobI> parentKnob = _imp->knob->getParentKnob();
+        if (parentKnob) {
+            Group_Knob* parentIsGrp = dynamic_cast<Group_Knob*>(parentKnob.get());
+            Page_Knob* parentIsPage = dynamic_cast<Page_Knob*>(parentKnob.get());
+            assert(parentIsGrp || parentIsPage);
+            std::vector<boost::shared_ptr<KnobI> > children;
+            if (parentIsGrp) {
+                children = parentIsGrp->getChildren();
+            } else if (parentIsPage) {
+                children = parentIsPage->getChildren();
+            }
+            for (U32 i = 0; i < children.size(); ++i) {
+                if (children[i] == _imp->knob) {
+                    if (i > 0) {
+                        children[i - 1]->setAddNewLine(startNewLine);
+                    }
+                    break;
+                }
+            }
+        }
+        
+        
         if (_imp->originalKnobSerialization) {
             _imp->knob->clone(_imp->originalKnobSerialization->getKnob().get());
+        }
+        //Recover expressions
+        if (!expressions.empty()) {
+            try {
+                for (std::size_t i = 0 ; i < expressions.size(); ++i) {
+                    if (!expressions[i].first.empty()) {
+                        _imp->knob->setExpression(i, expressions[i].first, expressions[i].second);
+                    }
+                }
+            } catch (...) {
+                
+            }
+        }
+        
+        //Recover listeners expressions
+        if (!listenersExpressions.empty()) {
+            
+            for (std::map<boost::shared_ptr<KnobI>,std::vector<std::pair<std::string,bool> > >::iterator it = listenersExpressions.begin();
+                 it != listenersExpressions.end(); ++it) {
+                assert(it->first->getDimension() == (int)it->second.size());
+                for (int i = 0; i < it->first->getDimension(); ++i) {
+                    try {
+                        it->first->setExpression(i, it->second[i].first, it->second[i].second);
+                    } catch (...) {
+                        
+                    }
+                }
+            }
+            
         }
     }
     

@@ -24,10 +24,10 @@ using namespace Natron;
 
 struct DiskCacheNodePrivate
 {
-    boost::shared_ptr<Choice_Knob> frameRange;
-    boost::shared_ptr<Int_Knob> firstFrame;
-    boost::shared_ptr<Int_Knob> lastFrame;
-    boost::shared_ptr<Button_Knob> preRender;
+    boost::weak_ptr<Choice_Knob> frameRange;
+    boost::weak_ptr<Int_Knob> firstFrame;
+    boost::weak_ptr<Int_Knob> lastFrame;
+    boost::weak_ptr<Button_Knob> preRender;
     
     DiskCacheNodePrivate()
     {
@@ -57,7 +57,7 @@ DiskCacheNode::addSupportedBitDepth(std::list<Natron::ImageBitDepthEnum>* depths
 }
 
 bool
-DiskCacheNode::shouldCacheOutput() const
+DiskCacheNode::shouldCacheOutput(bool /*isFrameVaryingOrAnimated*/) const
 {
     return true;
 }
@@ -67,42 +67,46 @@ DiskCacheNode::initializeKnobs()
 {
     boost::shared_ptr<Page_Knob> page = Natron::createKnob<Page_Knob>(this, "Controls");
     
-    _imp->frameRange = Natron::createKnob<Choice_Knob>(this, "Frame range");
-    _imp->frameRange->setName("frameRange");
-    _imp->frameRange->setAnimationEnabled(false);
+    boost::shared_ptr<Choice_Knob> frameRange = Natron::createKnob<Choice_Knob>(this, "Frame range");
+    frameRange->setName("frameRange");
+    frameRange->setAnimationEnabled(false);
     std::vector<std::string> choices;
     choices.push_back("Input frame range");
     choices.push_back("Project frame range");
     choices.push_back("Manual");
-    _imp->frameRange->populateChoices(choices);
-    _imp->frameRange->setEvaluateOnChange(false);
-    _imp->frameRange->setDefaultValue(0);
-    page->addKnob(_imp->frameRange);
+    frameRange->populateChoices(choices);
+    frameRange->setEvaluateOnChange(false);
+    frameRange->setDefaultValue(0);
+    page->addKnob(frameRange);
+    _imp->frameRange = frameRange;
     
-    _imp->firstFrame = Natron::createKnob<Int_Knob>(this, "First frame");
-    _imp->firstFrame->setAnimationEnabled(false);
-    _imp->firstFrame->setName("firstFrame");
-    _imp->firstFrame->disableSlider();
-    _imp->firstFrame->setEvaluateOnChange(false);
-    _imp->firstFrame->setAddNewLine(false);
-    _imp->firstFrame->setDefaultValue(1);
-    _imp->firstFrame->setSecret(true);
-    page->addKnob(_imp->firstFrame);
+    boost::shared_ptr<Int_Knob> firstFrame = Natron::createKnob<Int_Knob>(this, "First frame");
+    firstFrame->setAnimationEnabled(false);
+    firstFrame->setName("firstFrame");
+    firstFrame->disableSlider();
+    firstFrame->setEvaluateOnChange(false);
+    firstFrame->setAddNewLine(false);
+    firstFrame->setDefaultValue(1);
+    firstFrame->setSecret(true);
+    page->addKnob(firstFrame);
+    _imp->firstFrame = firstFrame;
     
-    _imp->lastFrame = Natron::createKnob<Int_Knob>(this, "Last frame");
-    _imp->lastFrame->setAnimationEnabled(false);
-    _imp->lastFrame->setName("LastFrame");
-    _imp->lastFrame->disableSlider();
-    _imp->lastFrame->setEvaluateOnChange(false);
-    _imp->lastFrame->setDefaultValue(100);
-    _imp->lastFrame->setSecret(true);
-    page->addKnob(_imp->lastFrame);
+    boost::shared_ptr<Int_Knob> lastFrame = Natron::createKnob<Int_Knob>(this, "Last frame");
+    lastFrame->setAnimationEnabled(false);
+    lastFrame->setName("LastFrame");
+    lastFrame->disableSlider();
+    lastFrame->setEvaluateOnChange(false);
+    lastFrame->setDefaultValue(100);
+    lastFrame->setSecret(true);
+    page->addKnob(lastFrame);
+    _imp->lastFrame = lastFrame;
     
-    _imp->preRender = Natron::createKnob<Button_Knob>(this, "Pre-cache");
-    _imp->preRender->setName("preRender");
-    _imp->preRender->setEvaluateOnChange(false);
-    _imp->preRender->setHintToolTip("Cache the frame range specified by rendering images at zoom-level 100% only.");
-    page->addKnob(_imp->preRender);
+    boost::shared_ptr<Button_Knob> preRender = Natron::createKnob<Button_Knob>(this, "Pre-cache");
+    preRender->setName("preRender");
+    preRender->setEvaluateOnChange(false);
+    preRender->setHintToolTip("Cache the frame range specified by rendering images at zoom-level 100% only.");
+    page->addKnob(preRender);
+    _imp->preRender = preRender;
     
     
 }
@@ -111,22 +115,22 @@ void
 DiskCacheNode::knobChanged(KnobI* k, Natron::ValueChangedReasonEnum /*reason*/, int /*view*/, SequenceTime /*time*/,
                            bool /*originatedFromMainThread*/)
 {
-    if (_imp->frameRange.get() == k) {
-        int idx = _imp->frameRange->getValue();
+    if (_imp->frameRange.lock().get() == k) {
+        int idx = _imp->frameRange.lock()->getValue();
         switch (idx) {
             case 0:
             case 1:
-                _imp->firstFrame->setSecret(true);
-                _imp->lastFrame->setSecret(true);
+                _imp->firstFrame.lock()->setSecret(true);
+                _imp->lastFrame.lock()->setSecret(true);
                 break;
             case 2:
-                _imp->firstFrame->setSecret(false);
-                _imp->lastFrame->setSecret(false);
+                _imp->firstFrame.lock()->setSecret(false);
+                _imp->lastFrame.lock()->setSecret(false);
                 break;
             default:
                 break;
         }
-    } else if (_imp->preRender.get() == k) {
+    } else if (_imp->preRender.lock().get() == k) {
         AppInstance::RenderWork w;
         w.writer = this;
         w.firstFrame = INT_MIN;
@@ -140,7 +144,7 @@ DiskCacheNode::knobChanged(KnobI* k, Natron::ValueChangedReasonEnum /*reason*/, 
 void
 DiskCacheNode::getFrameRange(SequenceTime *first,SequenceTime *last)
 {
-    int idx = _imp->frameRange->getValue();
+    int idx = _imp->frameRange.lock()->getValue();
     switch (idx) {
         case 0: {
             EffectInstance* input = getInput(0);
@@ -152,8 +156,8 @@ DiskCacheNode::getFrameRange(SequenceTime *first,SequenceTime *last)
             getApp()->getFrameRange(first, last);
         } break;
         case 2: {
-            *first = _imp->firstFrame->getValue();
-            *last = _imp->lastFrame->getValue();
+            *first = _imp->firstFrame.lock()->getValue();
+            *last = _imp->lastFrame.lock()->getValue();
         };
         default:
             break;
@@ -198,17 +202,10 @@ DiskCacheNode::getPreferredAspectRatio() const
 }
 
 Natron::StatusEnum
-DiskCacheNode::render(SequenceTime time,
-                      const RenderScale& originalScale,
-                      const RenderScale & /*mappedScale*/,
-                      const RectI & roi, //!< renderWindow in pixel coordinates
-                      int view,
-                      bool /*isSequentialRender*/,
-                      bool /*isRenderResponseToUserInteraction*/,
-                      const ImageList& outputPlanes)
+DiskCacheNode::render(const RenderActionArgs& args)
 {
     
-    assert(outputPlanes.size() == 1);
+    assert(args.outputPlanes.size() == 1);
     
     EffectInstance* input = getInput(0);
     if (!input) {
@@ -220,23 +217,23 @@ DiskCacheNode::render(SequenceTime time,
     input->getPreferredDepthAndComponents(-1, &components, &bitdepth);
     double par = input->getPreferredAspectRatio();
     
-    const ImagePtr& output = outputPlanes.front();
+    const std::pair<ImageComponents,ImagePtr>& output = args.outputPlanes.front();
     
-    for (std::list<ImageComponents> ::const_iterator it =components.begin(); it!=components.end(); ++it) {
+    for (std::list<ImageComponents> ::const_iterator it =components.begin(); it != components.end(); ++it) {
         RectI roiPixel;
         
-        ImagePtr srcImg = getImage(0, time, originalScale, view, NULL, *it, bitdepth, par, false, &roiPixel);
+        ImagePtr srcImg = getImage(0, args.time, args.originalScale, args.view, NULL, *it, bitdepth, par, false, &roiPixel);
         
-        if (srcImg->getMipMapLevel() != output->getMipMapLevel()) {
+        if (srcImg->getMipMapLevel() != output.second->getMipMapLevel()) {
             throw std::runtime_error("Host gave image with wrong scale");
         }
-        if (srcImg->getComponents() != output->getComponents() || srcImg->getBitDepth() != output->getBitDepth()) {
+        if (srcImg->getComponents() != output.second->getComponents() || srcImg->getBitDepth() != output.second->getBitDepth()) {
             
             
-            srcImg->convertToFormat(roi, getApp()->getDefaultColorSpaceForBitDepth( srcImg->getBitDepth() ),
-                                    getApp()->getDefaultColorSpaceForBitDepth(output->getBitDepth()), 3, false, true, false, output.get());
+            srcImg->convertToFormat(args.roi, getApp()->getDefaultColorSpaceForBitDepth( srcImg->getBitDepth() ),
+                                    getApp()->getDefaultColorSpaceForBitDepth(output.second->getBitDepth()), 3, false, true, false, output.second.get());
         } else {
-            output->pasteFrom(*srcImg, roi, output->usesBitMap() && srcImg->usesBitMap());
+            output.second->pasteFrom(*srcImg, args.roi, output.second->usesBitMap() && srcImg->usesBitMap());
         }
 
     }

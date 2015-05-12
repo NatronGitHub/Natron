@@ -103,7 +103,7 @@ public:
                                             const RectD& rod,
                                             size_t bytesCount,
                                             const TextureRect & region,
-                                            double gain, double offset, int lut,
+                                            double gain, double gamma, double offset, int lut,
                                             int pboIndex,
                                             unsigned int mipMapLevel,
                                             Natron::ImagePremultiplicationEnum premult,

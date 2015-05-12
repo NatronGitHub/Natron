@@ -82,7 +82,7 @@ QtWriter::supportedFileFormats_static(std::vector<std::string>* formats)
     // Qt 4 supports: BMP, JPG, JPEG, PNG, PBM, PGM, PPM, TIFF, XBM, XPM
     // Qt 5 doesn't support TIFF
     for (int i = 0; i < supported.count(); ++i) {
-        formats->push_back( std::string( supported.at(i).toLower().data() ) );
+        formats->push_back( supported.at(i).toLower().data() );
     }
 }
 
@@ -235,26 +235,19 @@ filenameFromPattern(const std::string & pattern,
 }
 
 Natron::StatusEnum
-QtWriter::render(SequenceTime time,
-                 const RenderScale& /*originalScale*/,
-                 const RenderScale & mappedScale,
-                 const RectI & roi,
-                 int view,
-                 bool /*isSequentialRender*/,
-                 bool /*isRenderResponseToUserInteraction*/,
-                 const std::list<boost::shared_ptr<Natron::Image> >& outputPlanes)
+QtWriter::render(const RenderActionArgs& args)
 {
-    assert(outputPlanes.size() == 1);
-    const ImagePtr& output = outputPlanes.front();
+    assert(args.outputPlanes.size() == 1);
+    const std::pair<Natron::ImageComponents,ImagePtr>& output = args.outputPlanes.front();
     
-    boost::shared_ptr<Natron::Image> src = getImage(0, time, mappedScale, view, NULL, output->getComponents(), output->getBitDepth(),1, false,NULL);
+    boost::shared_ptr<Natron::Image> src = getImage(0, args.time, args.mappedScale, args.view, NULL, output.second->getComponents(), output.second->getBitDepth(),1, false,NULL);
 
     if ( hasOutputConnected() ) {
-        output->pasteFrom( *src, src->getBounds() );
+        output.second->pasteFrom( *src, src->getBounds() );
     }
 
     ////initializes to black
-    unsigned char* buf = (unsigned char*)calloc(roi.area() * 4,1);
+    unsigned char* buf = (unsigned char*)calloc(args.roi.area() * 4,1);
     QImage::Format type;
     bool premult = _premultKnob->getValue();
     if (premult) {
@@ -263,14 +256,14 @@ QtWriter::render(SequenceTime time,
         type = QImage::Format_ARGB32;
     }
     
-    Natron::Image::WriteAccess acc = output->getWriteRights();
+    Natron::Image::WriteAccess acc = output.second->getWriteRights();
 
-    _lut->to_byte_packed(buf, (const float*)acc.pixelAt(0, 0), roi, src->getBounds(), roi,
+    _lut->to_byte_packed(buf, (const float*)acc.pixelAt(0, 0), args.roi, src->getBounds(), args.roi,
                          Natron::Color::ePixelPackingRGBA, Natron::Color::ePixelPackingBGRA, true, premult);
 
-    QImage img(buf,roi.width(),roi.height(),type);
+    QImage img(buf,args.roi.width(),args.roi.height(),type);
     std::string filename = _fileKnob->getValue();
-    filename = filenameFromPattern( filename,std::floor(time + 0.5) );
+    filename = filenameFromPattern( filename,std::floor(args.time + 0.5) );
 
     img.save( filename.c_str() );
     free(buf);

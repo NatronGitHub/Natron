@@ -25,6 +25,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include <QStyle> // in QtGui on Qt4, in QtWidgets on Qt5
 #include <QApplication>
 #include <QDebug>
+#include <QMenu>
 #include <QPainter>
 
 #include "Engine/Variant.h"
@@ -786,7 +787,9 @@ SpinBox::setDirty(bool d)
 QMenu*
 SpinBox::getRightClickMenu()
 {
-    return createStandardContextMenu();
+    QMenu* menu =  createStandardContextMenu();
+    menu->setFont(QApplication::font()); // necessary
+    return menu;
 }
 
 void

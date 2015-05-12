@@ -251,6 +251,8 @@ public:
     std::string getDefaultOnNodeCreatedCB();
     std::string getDefaultOnNodeDeleteCB();
     
+    bool isLoadFromPyPlugsEnabled() const;
+    
     bool isAutoDeclaredVariablePrintActivated() const;
     
     bool isPluginIconActivatedOnNodeGraph() const;
@@ -391,6 +393,7 @@ private:
     boost::shared_ptr<String_Knob> _defaultOnProjectClose;
     boost::shared_ptr<String_Knob> _defaultOnNodeCreated;
     boost::shared_ptr<String_Knob> _defaultOnNodeDelete;
+    boost::shared_ptr<Bool_Knob> _loadPyPlugsFromPythonScript;
     
     boost::shared_ptr<Bool_Knob> _echoVariableDeclarationToPython;
     boost::shared_ptr<Page_Knob> _appearanceTab;

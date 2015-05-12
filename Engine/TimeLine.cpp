@@ -182,10 +182,17 @@ TimeLine::addNodesKeyframesToTimeline(const std::list<Natron::Node*> & nodes)
     assert( QThread::currentThread() == qApp->thread() );
 
     std::list<Natron::Node*>::const_iterator next = nodes.begin();
-    ++next;
-    for (std::list<Natron::Node*>::const_iterator it = nodes.begin(); it != nodes.end(); ++it,++next) {
-        (*it)->showKeyframesOnTimeline( next == nodes.end() );
+    if (next != nodes.end()) {
+        ++next;
     }
+    for (std::list<Natron::Node*>::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        (*it)->showKeyframesOnTimeline( next == nodes.end() );
+
+        // increment for next iteration
+        if (next != nodes.end()) {
+            ++next;
+        }
+    } // for()
 }
 
 void
@@ -204,10 +211,17 @@ TimeLine::removeNodesKeyframesFromTimeline(const std::list<Natron::Node*> & node
     assert( QThread::currentThread() == qApp->thread() );
 
     std::list<Natron::Node*>::const_iterator next = nodes.begin();
-    ++next;
-    for (std::list<Natron::Node*>::const_iterator it = nodes.begin(); it != nodes.end(); ++it,++next) {
-        (*it)->hideKeyframesFromTimeline( next == nodes.end() );
+    if (next != nodes.end()) {
+        ++next;
     }
+    for (std::list<Natron::Node*>::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        (*it)->hideKeyframesFromTimeline( next == nodes.end() );
+
+        // increment for next iteration
+        if (next != nodes.end()) {
+            ++next;
+        }
+    } // for(it)
 }
 
 void

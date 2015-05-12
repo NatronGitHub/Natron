@@ -74,6 +74,8 @@ public:
         return QSize(15,15);
     }
     
+    virtual void getBackgroundColor(double *r,double *g,double *b) const;
+    
 Q_SIGNALS:
     
     void toggled(bool);

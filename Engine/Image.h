@@ -306,7 +306,9 @@ namespace Natron {
             : GenericAccess()
             , img(img)
             {
-                img->lockForRead();
+                if (img) {
+                    img->lockForRead();
+                }
             }
             
             ReadAccess(const ReadAccess& other)
@@ -314,12 +316,16 @@ namespace Natron {
             , img(other.img)
             {
                 //This is a recursive lock so it doesn't matter if we take it twice
-                img->lockForRead();
+                if (img) {
+                    img->lockForRead();
+                }
             }
             
             virtual ~ReadAccess()
             {
-                img->unlock();
+                if (img) {
+                    img->unlock();
+                }
             }
             
             /**
@@ -327,6 +333,7 @@ namespace Natron {
              **/
             const unsigned char* pixelAt(int x,int y) const
             {
+                assert(img);
                 return img->pixelAt(x, y);
             }
         };
@@ -606,38 +613,38 @@ namespace Natron {
         static unsigned int getLevelFromScale(double s);
 
         /**
-     * @brief This function can be used to do the following conversion:
-     * 1) RGBA to RGB
-     * 2) RGBA to alpha
-     * 3) RGB to RGBA
-     * 4) RGB to alpha
-     *
-     * Also this function converts to the output bit depth.
-     *
-     * This function only works for images with the same region of definition and mipmaplevel.
-     *
-     *
-     * @param renderWindow The rectangle to convert
-     *
-     * @param srcColorSpace Input data will be taken to be in this color-space
-     *
-     * @param dstColorSpace Output data will be converted to this color-space.
-     *
-     * @param channelForAlpha is used in cases 2) and 4) to determine from which channel we should
-     * fill the alpha. If it is -1 it indicates you want to clear the mask.
-     *
-     * @param invert If true the channels will be inverted when converting.
-     *
-     * @param copyBitMap The bitmap will also be copied.
-     *
-     * @param requiresUnpremult If true, if a component conversion from RGBA to RGB happens
-     * the RGB channels will be divided by the alpha channel when copied to the output image.
-     *
-     * Note that this function is mainly used for the following conversion:
-     * RGBA --> Alpha
-     * or bit depth conversion
-     * Implementation should tend to optimize these cases.
-     **/
+         * @brief This function can be used to do the following conversion:
+         * 1) RGBA to RGB
+         * 2) RGBA to alpha
+         * 3) RGB to RGBA
+         * 4) RGB to alpha
+         *
+         * Also this function converts to the output bit depth.
+         *
+         * This function only works for images with the same region of definition and mipmaplevel.
+         *
+         *
+         * @param renderWindow The rectangle to convert
+         *
+         * @param srcColorSpace Input data will be taken to be in this color-space
+         *
+         * @param dstColorSpace Output data will be converted to this color-space.
+         *
+         * @param channelForAlpha is used in cases 2) and 4) to determine from which channel we should
+         * fill the alpha. If it is -1 it indicates you want to clear the mask.
+         *
+         * @param invert If true the channels will be inverted when converting.
+         *
+         * @param copyBitMap The bitmap will also be copied.
+         *
+         * @param requiresUnpremult If true, if a component conversion from RGBA to RGB happens
+         * the RGB channels will be divided by the alpha channel when copied to the output image.
+         *
+         * Note that this function is mainly used for the following conversion:
+         * RGBA --> Alpha
+         * or bit depth conversion
+         * Implementation should tend to optimize these cases.
+         **/
         void convertToFormat(const RectI & renderWindow,
                              Natron::ViewerColorSpaceEnum srcColorSpace,
                              Natron::ViewerColorSpaceEnum dstColorSpace,
@@ -646,6 +653,8 @@ namespace Natron {
                              bool copyBitMap,
                              bool requiresUnpremult,
                              Natron::Image* dstImg) const;
+        
+        void copyUnProcessedChannels(const RectI& roi,const bool* processChannels,const boost::shared_ptr<Image>& originalImage);
 
         /**
          * @brief returns true if image contains NaNs or infinite values, and fix them.
@@ -657,6 +666,18 @@ namespace Natron {
         void copyBitmapPortion(const RectI& roi, const Image& other);
         
     private:
+        
+        template <typename PIX,int srcNComps, int dstNComps, bool doR, bool doG, bool doB, bool doA>
+        void copyUnProcessedChannelsForChannels(const RectI& roi,const boost::shared_ptr<Image>& originalImage);
+        
+
+        
+        template <typename PIX,int srcNComps, int dstNComps>
+        void copyUnProcessedChannelsForComponents(const RectI& roi,const bool* processChannels,const boost::shared_ptr<Image>& originalImage);
+        
+        template <typename PIX>
+        void copyUnProcessedChannelsForDepth(const RectI& roi,const bool* processChannels,const boost::shared_ptr<Image>& originalImage);
+
 
         
         /**

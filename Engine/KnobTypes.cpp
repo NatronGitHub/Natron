@@ -380,7 +380,7 @@ Double_Knob::restoreTracks(const std::list <SerializedTrack> & tracks,
         if (it->rotoNodeName == lastNodeName || scriptFriendlyRoto == lastNodeName) {
             roto = lastRoto;
         } else {
-            for (std::list<boost::shared_ptr<Node> >::const_iterator it2 = activeNodes.begin(); it2 != activeNodes.end() ;++it2) {
+            for (std::list<boost::shared_ptr<Node> >::const_iterator it2 = activeNodes.begin(); it2 != activeNodes.end(); ++it2) {
                 if ((*it2)->getScriptName() == it->rotoNodeName || (*it2)->getScriptName() == scriptFriendlyRoto) {
                     lastNodeName = (*it2)->getScriptName();
                     boost::shared_ptr<RotoContext> rotoCtx = (*it2)->getRotoContext();
@@ -558,11 +558,24 @@ Choice_Knob::Choice_Knob(KnobHolder* holder,
                          bool declaredByPlugin)
 : Knob<int>(holder, description, dimension,declaredByPlugin)
 , _entriesMutex()
+, _addNewChoice(false)
 {
 }
 
 Choice_Knob::~Choice_Knob()
 {
+}
+
+void
+Choice_Knob::setHostCanAddOptions(bool add)
+{
+    _addNewChoice = add;
+}
+
+bool
+Choice_Knob::getHostCanAddOptions() const
+{
+    return _addNewChoice;
 }
 
 bool
@@ -590,10 +603,27 @@ Choice_Knob::populateChoices(const std::vector<std::string> &entries,
                              const std::vector<std::string> &entriesHelp)
 {
     assert( entriesHelp.empty() || entriesHelp.size() == entries.size() );
+    std::vector<std::string> curEntries;
     {
         QMutexLocker l(&_entriesMutex);
+        curEntries = _entries;
         _entriesHelp = entriesHelp;
         _entries = entries;
+    }
+    int cur_i = getValue();
+    std::string curEntry;
+    if (cur_i >= 0 && cur_i < (int)curEntries.size()) {
+        curEntry = curEntries[cur_i];
+    }
+    if (!curEntry.empty()) {
+        for (std::size_t i = 0; i < entries.size(); ++i) {
+            if (entries[i] == curEntry) {
+                blockValueChanges();
+                setValue(cur_i, 0);
+                unblockValueChanges();
+                break;
+            }
+        }
     }
     if (_signalSlotHandler) {
         _signalSlotHandler->s_helpChanged();
@@ -735,6 +765,7 @@ Choice_Knob::choiceRestoration(Choice_Knob* knob,const ChoiceExtraData* data)
         for (std::size_t i = 0; i < _entries.size(); ++i) {
             if (caseInsensitiveCompare(_entries[i], data->_choiceString)) {
                 setValue(i, 0);
+                return;
             }
         }
     }
@@ -951,35 +982,36 @@ Group_Knob::typeName() const
 void
 Group_Knob::addKnob(boost::shared_ptr<KnobI> k)
 {
-    std::vector<boost::shared_ptr<KnobI> >::iterator found = std::find(_children.begin(), _children.end(), k);
-    
-    if ( found == _children.end() ) {
-        
-        boost::shared_ptr<KnobI> parent= k->getParentKnob();
-        if (parent) {
-            Group_Knob* isParentGrp = dynamic_cast<Group_Knob*>(parent.get());
-            Page_Knob* isParentPage = dynamic_cast<Page_Knob*>(parent.get());
-            if (isParentGrp) {
-                isParentGrp->removeKnob(k.get());
-            } else if (isParentPage) {
-                isParentPage->removeKnob(k.get());
-            }
-            k->setParentKnob(boost::shared_ptr<KnobI>());
+    for (std::size_t i = 0; i < _children.size(); ++i) {
+        if (_children[i].lock() == k) {
+            return;
         }
-
-        
-        _children.push_back(k);
-        boost::shared_ptr<KnobI> thisSharedPtr = getHolder()->getKnobByName( getName() );
-        assert(thisSharedPtr);
-        k->setParentKnob(thisSharedPtr);
     }
+    
+    
+    boost::shared_ptr<KnobI> parent= k->getParentKnob();
+    if (parent) {
+        Group_Knob* isParentGrp = dynamic_cast<Group_Knob*>(parent.get());
+        Page_Knob* isParentPage = dynamic_cast<Page_Knob*>(parent.get());
+        if (isParentGrp) {
+            isParentGrp->removeKnob(k.get());
+        } else if (isParentPage) {
+            isParentPage->removeKnob(k.get());
+        }
+        k->setParentKnob(boost::shared_ptr<KnobI>());
+    }
+    
+    
+    _children.push_back(k);
+    k->setParentKnob(shared_from_this());
+    
 }
 
 void
 Group_Knob::removeKnob(KnobI* k)
 {
-    for (std::vector<boost::shared_ptr<KnobI> >::iterator it = _children.begin(); it != _children.end(); ++it) {
-        if (it->get() == k) {
+    for (std::vector<boost::weak_ptr<KnobI> >::iterator it = _children.begin(); it != _children.end(); ++it) {
+        if (it->lock().get() == k) {
             _children.erase(it);
             return;
         }
@@ -990,11 +1022,11 @@ void
 Group_Knob::moveOneStepUp(KnobI* k)
 {
     for (U32 i = 0; i < _children.size(); ++i) {
-        if (_children[i].get() == k) {
+        if (_children[i].lock().get() == k) {
             if (i == 0) {
                 break;
             }
-            boost::shared_ptr<KnobI> tmp = _children[i - 1];
+            boost::weak_ptr<KnobI> tmp = _children[i - 1];
             _children[i - 1] = _children[i];
             _children[i] = tmp;
             break;
@@ -1006,11 +1038,11 @@ void
 Group_Knob::moveOneStepDown(KnobI* k)
 {
     for (U32 i = 0; i < _children.size(); ++i) {
-        if (_children[i].get() == k) {
+        if (_children[i].lock().get() == k) {
             if (i == _children.size() - 1) {
                 break;
             }
-            boost::shared_ptr<KnobI> tmp = _children[i + 1];
+            boost::weak_ptr<KnobI> tmp = _children[i + 1];
             _children[i + 1] = _children[i];
             _children[i] = tmp;
             break;
@@ -1021,10 +1053,10 @@ Group_Knob::moveOneStepDown(KnobI* k)
 void
 Group_Knob::insertKnob(int index, const boost::shared_ptr<KnobI>& k)
 {
-    std::vector<boost::shared_ptr<KnobI> >::iterator found = std::find(_children.begin(), _children.end(), k);
-    
-    if ( found != _children.end() || index < 0) {
-        return;
+    for (std::size_t i = 0; i < _children.size(); ++i) {
+        if (_children[i].lock() == k) {
+            return;
+        }
     }
     
     boost::shared_ptr<KnobI> parent= k->getParentKnob();
@@ -1042,19 +1074,24 @@ Group_Knob::insertKnob(int index, const boost::shared_ptr<KnobI>& k)
     if (index >= (int)_children.size()) {
         _children.push_back(k);
     } else {
-        std::vector<boost::shared_ptr<KnobI> >::iterator it = _children.begin();
+        std::vector<boost::weak_ptr<KnobI> >::iterator it = _children.begin();
         std::advance(it, index);
         _children.insert(it, k);
     }
-    boost::shared_ptr<KnobI> thisSharedPtr = getHolder()->getKnobByName( getName() );
-    assert(thisSharedPtr);
-    k->setParentKnob(thisSharedPtr);
+    k->setParentKnob(shared_from_this());
 }
 
-const std::vector< boost::shared_ptr<KnobI> > &
+std::vector< boost::shared_ptr<KnobI> >
 Group_Knob::getChildren() const
 {
-    return _children;
+    std::vector< boost::shared_ptr<KnobI> > ret;
+    for (std::size_t i = 0; i < _children.size(); ++i) {
+        boost::shared_ptr<KnobI> k = _children[i].lock();
+        if (k) {
+            ret.push_back(k);
+        }
+    }
+    return ret;
 }
 
 /******************************PAGE_KNOB**************************************/
@@ -1086,36 +1123,53 @@ Page_Knob::typeName() const
     return typeNameStatic();
 }
 
+
+std::vector< boost::shared_ptr<KnobI> >
+Page_Knob::getChildren() const
+{
+    std::vector< boost::shared_ptr<KnobI> > ret;
+    for (std::size_t i = 0; i < _children.size(); ++i) {
+        boost::shared_ptr<KnobI> k = _children[i].lock();
+        if (k) {
+            ret.push_back(k);
+        }
+    }
+    return ret;
+}
+
 void
 Page_Knob::addKnob(const boost::shared_ptr<KnobI> &k)
 {
-    std::vector<boost::shared_ptr<KnobI> >::iterator found = std::find(_children.begin(), _children.end(), k);
-    
-    if ( found == _children.end() ) {
-        
-        boost::shared_ptr<KnobI> parent= k->getParentKnob();
-        if (parent) {
-            Group_Knob* isParentGrp = dynamic_cast<Group_Knob*>(parent.get());
-            Page_Knob* isParentPage = dynamic_cast<Page_Knob*>(parent.get());
-            if (isParentGrp) {
-                isParentGrp->removeKnob(k.get());
-            } else if (isParentPage) {
-                isParentPage->removeKnob(k.get());
-            }
-            k->setParentKnob(boost::shared_ptr<KnobI>());
+    for (std::size_t i = 0; i < _children.size(); ++i) {
+        if (_children[i].lock() == k) {
+            return;
         }
-        _children.push_back(k);
-        k->setParentKnob( getHolder()->getKnobByName( getName() ) );
     }
+    
+    
+    boost::shared_ptr<KnobI> parent= k->getParentKnob();
+    if (parent) {
+        Group_Knob* isParentGrp = dynamic_cast<Group_Knob*>(parent.get());
+        Page_Knob* isParentPage = dynamic_cast<Page_Knob*>(parent.get());
+        if (isParentGrp) {
+            isParentGrp->removeKnob(k.get());
+        } else if (isParentPage) {
+            isParentPage->removeKnob(k.get());
+        }
+        k->setParentKnob(boost::shared_ptr<KnobI>());
+    }
+    _children.push_back(k);
+    k->setParentKnob(shared_from_this());
+    
 }
 
 void
 Page_Knob::insertKnob(int index, const boost::shared_ptr<KnobI>& k)
 {
-    std::vector<boost::shared_ptr<KnobI> >::iterator found = std::find(_children.begin(), _children.end(), k);
-    
-    if ( found != _children.end() || index < 0) {
-        return;
+    for (std::size_t i = 0; i < _children.size(); ++i) {
+        if (_children[i].lock() == k) {
+            return;
+        }
     }
     
     boost::shared_ptr<KnobI> parent= k->getParentKnob();
@@ -1134,21 +1188,19 @@ Page_Knob::insertKnob(int index, const boost::shared_ptr<KnobI>& k)
     if (index >= (int)_children.size()) {
         _children.push_back(k);
     } else {
-        std::vector<boost::shared_ptr<KnobI> >::iterator it = _children.begin();
+        std::vector<boost::weak_ptr<KnobI> >::iterator it = _children.begin();
         std::advance(it, index);
         _children.insert(it, k);
     }
-    boost::shared_ptr<KnobI> thisSharedPtr = getHolder()->getKnobByName( getName() );
-    assert(thisSharedPtr);
-    k->setParentKnob(thisSharedPtr);
+    k->setParentKnob(shared_from_this());
     
 }
 
 void
 Page_Knob::removeKnob(KnobI* k)
 {
-    for (std::vector<boost::shared_ptr<KnobI> >::iterator it = _children.begin(); it != _children.end(); ++it) {
-        if (it->get() == k) {
+    for (std::vector<boost::weak_ptr<KnobI> >::iterator it = _children.begin(); it != _children.end(); ++it) {
+        if (it->lock().get() == k) {
             _children.erase(it);
             return;
         }
@@ -1159,11 +1211,11 @@ void
 Page_Knob::moveOneStepUp(KnobI* k)
 {
     for (U32 i = 0; i < _children.size(); ++i) {
-        if (_children[i].get() == k) {
+        if (_children[i].lock().get() == k) {
             if (i == 0) {
                 break;
             }
-            boost::shared_ptr<KnobI> tmp = _children[i - 1];
+            boost::weak_ptr<KnobI> tmp = _children[i - 1];
             _children[i - 1] = _children[i];
             _children[i] = tmp;
             break;
@@ -1175,11 +1227,11 @@ void
 Page_Knob::moveOneStepDown(KnobI* k)
 {
     for (U32 i = 0; i < _children.size(); ++i) {
-        if (_children[i].get() == k) {
+        if (_children[i].lock().get() == k) {
             if (i == _children.size() - 1) {
                 break;
             }
-            boost::shared_ptr<KnobI> tmp = _children[i + 1];
+            boost::weak_ptr<KnobI> tmp = _children[i + 1];
             _children[i + 1] = _children[i];
             _children[i] = tmp;
             break;

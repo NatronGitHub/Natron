@@ -154,7 +154,7 @@ public:
             std::size_t foundV = natronVersion.find(toFind);
             if (foundV != std::string::npos) {
                 foundV += toFind.size();
-                toFind = std::string(" from git branch");
+                toFind = " from git branch";
                 std::size_t foundFrom = natronVersion.find(toFind);
                 if (foundFrom != std::string::npos) {
                     std::string vStr;

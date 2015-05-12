@@ -136,6 +136,10 @@ public:
 
     double getGain() const;
     
+    void setGamma(double gamma);
+    
+    double getGamma() const;
+    
     static std::string getChannelsString(Natron::DisplayChannelsEnum c);
 
     std::string getChannelsString() const;
@@ -288,8 +292,6 @@ public Q_SLOTS:
 
     void onTrackerNodeGuiSettingsPanelClosed(bool closed);
 
-    void onGainSliderChanged(double v);
-
     void onColorSpaceComboBoxChanged(int v);
 
     void onCompositingOperatorIndexChanged(int index);
@@ -357,6 +359,17 @@ public Q_SLOTS:
     void onAlphaChannelComboChanged(int index);
     void onLayerComboChanged(int index);
     
+    void onGammaToggled(bool clicked);
+    
+    void onGammaSliderValueChanged(double value);
+    
+    void onGammaSpinBoxValueChanged(double value);
+    
+    void onGainToggled(bool clicked);
+    
+    void onGainSliderChanged(double v);
+
+    void onGainSpinBoxValueChanged(double value);
 private:
     
     void onCompositingOperatorChangedInternal(Natron::ViewerCompositingOperatorEnum oldOp,Natron::ViewerCompositingOperatorEnum newOp);

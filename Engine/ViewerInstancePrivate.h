@@ -44,6 +44,7 @@ struct RenderViewerArgs
                      Natron::ImagePremultiplicationEnum srcPremult_,
                      int bitDepth_,
                      double gain_,
+                     double gamma_,
                      double offset_,
                      const Natron::Color::Lut* srcColorSpace_,
                      const Natron::Color::Lut* colorSpace_,
@@ -54,6 +55,7 @@ struct RenderViewerArgs
     , srcPremult(srcPremult_)
     , bitDepth(bitDepth_)
     , gain(gain_)
+    , gamma(gamma_)
     , offset(offset_)
     , srcColorSpace(srcColorSpace_)
     , colorSpace(colorSpace_)
@@ -67,6 +69,7 @@ struct RenderViewerArgs
     Natron::ImagePremultiplicationEnum srcPremult;
     int bitDepth;
     double gain;
+    double gamma;
     double offset;
     const Natron::Color::Lut* srcColorSpace;
     const Natron::Color::Lut* colorSpace;
@@ -88,6 +91,7 @@ public:
     , srcPremult(Natron::eImagePremultiplicationOpaque)
     , bytesCount(0)
     , gain(1.)
+    , gamma(1.)
     , offset(0.)
     , mipMapLevel(0)
     , premult(Natron::eImagePremultiplicationOpaque)
@@ -122,6 +126,7 @@ public:
     Natron::ImagePremultiplicationEnum srcPremult;
     size_t bytesCount;
     double gain;
+    double gamma;
     double offset;
     unsigned int mipMapLevel;
     Natron::ImagePremultiplicationEnum premult;
@@ -153,6 +158,7 @@ public:
     , updateViewerPboIndex(0)
     , viewerParamsMutex()
     , viewerParamsGain(1.)
+    , viewerParamsGamma(1.)
     , viewerParamsLut(Natron::eViewerColorSpaceSRGB)
     , viewerParamsAutoContrast(false)
     , viewerParamsChannels(Natron::eDisplayChannelsRGB)
@@ -170,7 +176,7 @@ public:
     , displayAge()
     {
 
-        for (int i = 0;i < 2; ++i) {
+        for (int i = 0; i < 2; ++i) {
             activeInputs[i] = -1;
             renderAge[i] = 1;
             displayAge[i] = 0;
@@ -349,6 +355,7 @@ public:
     // viewerParams: The viewer parameters that may be accessed from the GUI
     mutable QMutex viewerParamsMutex;   //< protects viewerParamsGain, viewerParamsLut, viewerParamsAutoContrast, viewerParamsChannels
     double viewerParamsGain;           /*!< Current gain setting in the GUI. Not affected by autoContrast. */
+    double viewerParamsGamma;          /*!< Current gamma setting in the GUI. Not affected by autoContrast. */
     Natron::ViewerColorSpaceEnum viewerParamsLut; /*!< a value coding the current color-space used to render.
                                                  0 = sRGB ,  1 = linear , 2 = Rec 709*/
     bool viewerParamsAutoContrast;

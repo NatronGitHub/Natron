@@ -102,8 +102,6 @@ boost::shared_ptr<KnobHelper> KnobFactory::createKnob(const std::string &id,
         if (!knob) {
             boost::shared_ptr<KnobHelper>();
         }
-        boost::shared_ptr<KnobSignalSlotHandler> handler( new KnobSignalSlotHandler(knob) );
-        knob->setSignalSlotHandler(handler);
         knob->populate();
         if (holder) {
             holder->addKnob(knob);

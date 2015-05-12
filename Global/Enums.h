@@ -223,6 +223,8 @@ enum PixmapEnum
     NATRON_PIXMAP_UPDATE_VIEWER_DISABLED,
     NATRON_PIXMAP_ADD_TRACK,
     
+    NATRON_PIXMAP_ENTER_GROUP,
+    
     NATRON_PIXMAP_SETTINGS,
     NATRON_PIXMAP_FREEZE_ENABLED,
     NATRON_PIXMAP_FREEZE_DISABLED,
@@ -232,6 +234,10 @@ enum PixmapEnum
     NATRON_PIXMAP_VIEWER_CHECKERBOARD_DISABLED,
     NATRON_PIXMAP_VIEWER_ZEBRA_ENABLED,
     NATRON_PIXMAP_VIEWER_ZEBRA_DISABLED,
+    NATRON_PIXMAP_VIEWER_GAMMA_ENABLED,
+    NATRON_PIXMAP_VIEWER_GAMMA_DISABLED,
+    NATRON_PIXMAP_VIEWER_GAIN_ENABLED,
+    NATRON_PIXMAP_VIEWER_GAIN_DISABLED,
     
     NATRON_PIXMAP_SCRIPT_CLEAR_OUTPUT,
     NATRON_PIXMAP_SCRIPT_EXEC_SCRIPT,
@@ -277,6 +283,8 @@ enum PixmapEnum
     NATRON_PIXMAP_MERGE_STENCIL,
     NATRON_PIXMAP_MERGE_UNDER,
     NATRON_PIXMAP_MERGE_XOR,
+    
+    NATRON_PIXMAP_LINK_CURSOR,
     
     NATRON_PIXMAP_APP_ICON
 };
@@ -409,6 +417,19 @@ enum ContextEnum
     eContextReader,
     eContextWriter,
     eContextTracker
+};
+    
+enum RotoStrokeType
+{
+    eRotoStrokeTypeSolid,
+    eRotoStrokeTypeEraser,
+    eRotoStrokeTypeClone,
+    eRotoStrokeTypeReveal,
+    eRotoStrokeTypeBlur,
+    eRotoStrokeTypeSharpen,
+    eRotoStrokeTypeSmear,
+    eRotoStrokeTypeDodge,
+    eRotoStrokeTypeBurn,
 };
     
 }

@@ -196,14 +196,7 @@ public:
     virtual void knobChanged(KnobI* k, Natron::ValueChangedReasonEnum reason, int view, SequenceTime time,
                              bool originatedFromMainThread) OVERRIDE;
     virtual void beginEditKnobs() OVERRIDE;
-    virtual Natron::StatusEnum render(SequenceTime time,
-                                      const RenderScale& originalScale,
-                                      const RenderScale & mappedScale,
-                                      const RectI & roi, //!< renderWindow in pixel coordinates
-                                      int view,
-                                      bool isSequentialRender,
-                                      bool isRenderResponseToUserInteraction,
-                                      const std::list<boost::shared_ptr<Natron::Image> >& output) OVERRIDE WARN_UNUSED_RETURN;
+    virtual Natron::StatusEnum render(const RenderActionArgs& args) OVERRIDE WARN_UNUSED_RETURN;
     virtual bool isIdentity(SequenceTime time,
                             const RenderScale & scale,
                             const RectD & rod, //!< image rod in canonical coordinates
@@ -297,6 +290,10 @@ public:
     
     static Natron::ContextEnum mapToContextEnum(const std::string &s);
     static std::string mapContextToString(Natron::ContextEnum ctx);
+    
+    std::string getOfxComponentsFromUserChannels(OfxClipInstance* clip, int inputNb) const;
+
+    static std::string natronValueChangedReasonToOfxValueChangedReason(Natron::ValueChangedReasonEnum reason);
 
 public Q_SLOTS:
 
@@ -380,7 +377,7 @@ private:
 
 #endif
 
-
+    
 private:
     Natron::OfxImageEffectInstance* _effect;
     std::string _natronPluginID; //< small cache to avoid calls to generateImageEffectClassName
@@ -401,6 +398,13 @@ private:
     Natron::ThreadStorage<bool> _canSetValue;
 #endif
     int _nbSourceClips;
+    
+    struct ClipsInfo {
+        bool optional;
+        bool mask;
+        bool rotoBrush;
+    };
+    std::vector<ClipsInfo> _clipsInfos;
 };
 
 #endif // NATRON_ENGINE_OFXNODE_H_

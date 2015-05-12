@@ -32,9 +32,11 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/Singleton.h"
 #include "Engine/Knob.h"
+#include "Engine/ImageComponents.h"
 
 #include "Gui/CurveSelection.h"
 #include "Gui/KnobGui.h"
+#include "Gui/AnimatedCheckBox.h"
 #include "Gui/Label.h"
 
 //Define this if you want the spinbox to clamp to the plugin defined range
@@ -155,11 +157,34 @@ private:
     QWidget *_container;
     ScaleSliderQWidget *_slider;
     Button *_dimensionSwitchButton;
-    boost::shared_ptr<Int_Knob> _knob;
+    boost::weak_ptr<Int_Knob> _knob;
 };
 
 
 //================================
+
+class Bool_CheckBox: public AnimatedCheckBox
+{
+    bool useCustomColor;
+    QColor customColor;
+    
+public:
+    
+    Bool_CheckBox(QWidget* parent = 0) : AnimatedCheckBox(parent), useCustomColor(false), customColor() {}
+    
+    virtual ~Bool_CheckBox() {}
+    
+    void setCustomColor(const QColor& color, bool useCustom)
+    {
+        useCustomColor = useCustom;
+        customColor = color;
+    }
+    
+    virtual void getBackgroundColor(double *r,double *g,double *b) const OVERRIDE FINAL;
+    
+    
+};
+
 class Bool_KnobGui
     : public KnobGui
 {
@@ -199,10 +224,11 @@ private:
     virtual void reflectAnimationLevel(int dimension,Natron::AnimationLevelEnum level) OVERRIDE FINAL;
     virtual void reflectExpressionState(int dimension,bool hasExpr) OVERRIDE FINAL;
     virtual void updateToolTip() OVERRIDE FINAL;
+    virtual void onLabelChanged() OVERRIDE FINAL;
 private:
 
-    AnimatedCheckBox *_checkBox;
-    boost::shared_ptr<Bool_Knob> _knob;
+    Bool_CheckBox *_checkBox;
+    boost::weak_ptr<Bool_Knob> _knob;
 };
 
 
@@ -277,7 +303,7 @@ private:
     QWidget *_container;
     ScaleSliderQWidget *_slider;
     Button *_dimensionSwitchButton;
-    boost::shared_ptr<Double_Knob> _knob;
+    boost::weak_ptr<Double_Knob> _knob;
 };
 
 //================================
@@ -329,10 +355,36 @@ private:
 
 private:
     Button *_button;
-    boost::shared_ptr<Button_Knob> _knob;
+    boost::weak_ptr<Button_Knob> _knob;
 };
 
 //================================
+struct NewLayerDialogPrivate;
+class NewLayerDialog : public QDialog
+{
+    Q_OBJECT
+    
+public:
+    
+    
+    NewLayerDialog(QWidget* parent);
+    
+    virtual ~NewLayerDialog();
+    
+    Natron::ImageComponents getComponents() const;
+    
+public Q_SLOTS:
+    
+    void onNumCompsChanged(double value);
+    
+    void onRGBAButtonClicked();
+    
+private:
+    
+    boost::scoped_ptr<NewLayerDialogPrivate> _imp;
+    
+};
+
 class Choice_KnobGui
     : public KnobGui
 {
@@ -359,6 +411,8 @@ public Q_SLOTS:
     void onCurrentIndexChanged(int i);
 
     void onEntriesPopulated();
+    
+    void onItemNewSelected();
 
 private:
 
@@ -376,7 +430,7 @@ private:
     
     std::vector<std::string> _entries;
     ComboBox *_comboBox;
-    boost::shared_ptr<Choice_Knob> _knob;
+    boost::weak_ptr<Choice_Knob> _knob;
 };
 
 //=========================
@@ -429,7 +483,7 @@ private:
 
 private:
     QFrame *_line;
-    boost::shared_ptr<Separator_Knob> _knob;
+    boost::weak_ptr<Separator_Knob> _knob;
 };
 
 /******************************/
@@ -563,7 +617,7 @@ private:
     Button *_dimensionSwitchButton;
     ScaleSliderQWidget* _slider;
     int _dimension;
-    boost::shared_ptr<Color_Knob> _knob;
+    boost::weak_ptr<Color_Knob> _knob;
     std::vector<double> _lastColor;
 };
 
@@ -730,7 +784,7 @@ private:
     QString _fontFamily;
     QColor _fontColor;
     Natron::Label *_label; //< if label
-    boost::shared_ptr<String_Knob> _knob;
+    boost::weak_ptr<String_Knob> _knob;
 };
 
 /*****************************/
@@ -791,7 +845,7 @@ private:
     std::vector< std::pair<KnobGui*,std::vector<int> > > _childrenToEnable; //< when re-enabling a group, what are the children that we should set
     TabGroup* _tabGroup;
     //enabled too
-    boost::shared_ptr<Group_Knob> _knob;
+    boost::weak_ptr<Group_Knob> _knob;
 };
 
 /*****************************/
@@ -865,7 +919,7 @@ private:
 
     typedef std::map<int,CurveDescriptor> CurveGuis;
     CurveGuis _curves;
-    boost::shared_ptr<Parametric_Knob> _knob;
+    boost::weak_ptr<Parametric_Knob> _knob;
 };
 
 

@@ -76,15 +76,22 @@ AnimatedCheckBox::keyPressEvent(QKeyEvent* e)
 void
 AnimatedCheckBox::mousePressEvent(QMouseEvent* e)
 {
-    if ( readOnly && buttonDownIsLeft(e) ) {
-        return;
-    } else {
+    if (buttonDownIsLeft(e)) {
+        if (readOnly) {
+            return;
+        }
         checked = !checked;
         repaint();
         Q_EMIT clicked(checked);
         Q_EMIT toggled(checked);
         
     }
+}
+
+void
+AnimatedCheckBox::getBackgroundColor(double *r,double *g,double *b) const
+{
+    appPTR->getCurrentSettings()->getRaisedColor(r,g,b);
 }
 
 void
@@ -110,7 +117,7 @@ AnimatedCheckBox::paintEvent(QPaintEvent* e)
     
     double bgR = 0.,bgG = 0.,bgB = 0.;
     if (animation == 0) {
-        appPTR->getCurrentSettings()->getRaisedColor(&bgR, &bgG, &bgB);
+        getBackgroundColor(&bgR,&bgG,&bgB);
     } else if (animation == 1) {
         appPTR->getCurrentSettings()->getInterpolatedColor(&bgR, &bgG, &bgB);
     } else if (animation == 2) {

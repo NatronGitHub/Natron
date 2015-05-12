@@ -109,7 +109,7 @@ public:
      * of the node 'output'. If 'force' is true, then it will disconnect any previous connection
      * existing on 'inputNumber' and connect the previous input as input of the new 'input' node.
      **/
-    bool connectNodes(int inputNumber,const NodePtr& input,Natron::Node* output,bool force = false);
+    static bool connectNodes(int inputNumber,const NodePtr& input,Natron::Node* output,bool force = false);
     
     /**
      * @brief Same as above where inputName is the name of the node input.
@@ -121,7 +121,7 @@ public:
      * If autoReconnect is true, after disconnecting 'input' and 'output', if the 'input' had only
      * 1 input, and it was connected, it will connect output to the input of  'input'.
      **/
-    bool disconnectNodes(Natron::Node* input,Natron::Node* output,bool autoReconnect = false);
+    static bool disconnectNodes(Natron::Node* input,Natron::Node* output,bool autoReconnect = false);
 
     
     /**
@@ -170,7 +170,7 @@ public:
     /**
      * @brief Set the aborted flag on all nodes recursively on each subgroup.
      **/
-    void setAllNodesAborted(bool aborted);
+    void notifyRenderBeingAborted();
 
     /**
      * @brief For all active nodes, find all file-paths that uses the given projectPathName and if the location was valid,
@@ -222,9 +222,10 @@ public:
                                bool isSequential,
                                bool canAbort,
                                U64 renderAge,
-                               ViewerInstance* viewer,
+                               Natron::OutputEffectInstance* renderRequester,
                                int textureIndex,
-                               const TimeLine* timeline);
+                               const TimeLine* timeline,
+                               bool isAnalysis);
     void invalidateParallelRenderArgs();
     
     void getParallelRenderArgs(std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs >& argsMap) const;
@@ -285,9 +286,10 @@ public:
                              bool isSequential,
                              bool canAbort,
                              U64 renderAge,
-                             ViewerInstance* viewer,
+                             Natron::OutputEffectInstance* renderRequester,
                              int textureIndex,
-                             const TimeLine* timeline);
+                             const TimeLine* timeline,
+                             bool isAnalysis);
     
     ParallelRenderArgsSetter(const std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs >& args);
     

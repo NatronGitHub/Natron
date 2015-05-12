@@ -480,7 +480,7 @@ OfxImageEffectInstance::newParam(const std::string &paramName,
 
            Custom parameters are mandatory, as they are simply ASCII C strings. However, animation of custom parameters an support for an in editor interact is optional.
          */
-        //throw std::runtime_error(std::string("Parameter ") + paramName + std::string(" has unsupported OFX type ") + descriptor.getType());
+        //throw std::runtime_error(std::string("Parameter ") + paramName + " has unsupported OFX type " + descriptor.getType());
         OfxCustomInstance *ret = new OfxCustomInstance(getOfxEffectInstance(), descriptor);
         knob = ret->getKnob();
         assert(knob);
@@ -524,10 +524,10 @@ OfxImageEffectInstance::newParam(const std::string &paramName,
 
 
     if (!instance) {
-        throw std::runtime_error( std::string("Parameter ") + paramName + std::string(" has unknown OFX type ") + descriptor.getType() );
+        throw std::runtime_error( std::string("Parameter ") + paramName + " has unknown OFX type " + descriptor.getType() );
     }
 
-    std::string parent = instance->getProperties().getStringProperty(kOfxParamPropParent);
+    std::string parent = instance->getParentName();
     if ( !parent.empty() ) {
         _parentingMap.insert( make_pair(instance,parent) );
     }
@@ -622,7 +622,7 @@ OfxImageEffectInstance::addParamsToTheirParents()
             if (layoutHint == 1) {
                 
                 boost::shared_ptr<Separator_Knob> sep = Natron::createKnob<Separator_Knob>( getOfxEffectInstance(),"");
-                sep->setName((*it)->getName() + std::string("_separator"));
+                sep->setName((*it)->getName() + "_separator");
                 if (grp) {
                     grp->addKnob(sep);
                 }
@@ -662,7 +662,7 @@ OfxImageEffectInstance::addParamsToTheirParents()
                             if (child->isSeparatorActivated()) {
                     
                                 boost::shared_ptr<Separator_Knob> sep = Natron::createKnob<Separator_Knob>( getOfxEffectInstance(),"");
-                                sep->setName(child->getName() + std::string("_separator"));
+                                sep->setName(child->getName() + "_separator");
                                 pageKnob->addKnob(sep);
                             }
                         }
@@ -856,6 +856,41 @@ OfxImageEffectInstance::discardClipsMipMapLevel()
         }
     }
 }
+
+void
+OfxImageEffectInstance::setInputClipPlane(int inputNb,const Natron::ImageComponents& comp)
+{
+    std::string ofxComp = OfxClipInstance::natronsComponentsToOfxComponents(comp);
+    OfxClipInstance* clip = getOfxEffectInstance()->getClipCorrespondingToInput(inputNb);
+    assert(clip);
+    clip->setClipComponentTLS(ofxComp);
+}
+
+void
+OfxImageEffectInstance::setClipsPlaneBeingRendered(const Natron::ImageComponents& comp)
+{
+    std::string ofxComp = OfxClipInstance::natronsComponentsToOfxComponents(comp);
+    OFX::Host::ImageEffect::ClipInstance* ofxClip = getClip(kOfxImageEffectOutputClipName);
+    assert(ofxClip);
+    OfxClipInstance* clip = dynamic_cast<OfxClipInstance*>(ofxClip);
+    assert(clip);
+    if (clip) {
+        clip->setClipComponentTLS(ofxComp);
+    }
+}
+
+void
+OfxImageEffectInstance::discardClipsPlaneBeingRendered()
+{
+    for (std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>::iterator it = _clips.begin(); it != _clips.end(); ++it) {
+        OfxClipInstance* clip = dynamic_cast<OfxClipInstance*>(it->second);
+        assert(clip);
+        if (clip) {
+            clip->clearClipComponentsTLS();
+        }
+    }
+}
+
 
 bool
 OfxImageEffectInstance::areAllNonOptionalClipsConnected() const
@@ -1095,12 +1130,12 @@ OfxImageEffectDescriptor::paramDefine(const char *paramType,
     
     if (strcmp(paramType, kOfxParamTypeDouble2D) == 0) {
         
-        const std::string& type = props.getStringProperty(kOfxParamPropDoubleType) ;
-        if (type == std::string(kOfxParamDoubleTypePlain) ||
-            type == std::string(kOfxParamDoubleTypeNormalisedXYAbsolute) ||
-            type == std::string(kOfxParamDoubleTypeNormalisedXY) ||
-            type == std::string(kOfxParamDoubleTypeXY) ||
-            type == std::string(kOfxParamDoubleTypeXYAbsolute)) {
+        const std::string& type = ret->getDoubleType() ;
+        if (type == kOfxParamDoubleTypePlain ||
+            type == kOfxParamDoubleTypeNormalisedXYAbsolute ||
+            type == kOfxParamDoubleTypeNormalisedXY ||
+            type == kOfxParamDoubleTypeXY ||
+            type == kOfxParamDoubleTypeXYAbsolute) {
             props.setIntProperty(kOfxParamPropHasHostOverlayHandle, 1);
         }
     }

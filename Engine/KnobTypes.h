@@ -429,6 +429,13 @@ public:
     std::string getHintToolTipFull() const;
     
     void choiceRestoration(Choice_Knob* knob,const ChoiceExtraData* data);
+    
+    /**
+     * @brief When set the menu will have a "New" entry which the user can select to create a new entry on its own.
+     **/
+    void setHostCanAddOptions(bool add);
+    
+    bool getHostCanAddOptions() const;
 
 Q_SIGNALS:
 
@@ -444,6 +451,7 @@ private:
     mutable QMutex _entriesMutex;
     std::vector<std::string> _entries;
     std::vector<std::string> _entriesHelp;
+    bool _addNewChoice;
     static const std::string _typeNameStr;
 };
 
@@ -655,7 +663,7 @@ class Group_Knob
 {
     Q_OBJECT
 
-    std::vector< boost::shared_ptr<KnobI> > _children;
+    std::vector< boost::weak_ptr<KnobI> > _children;
     bool _isTab;
 
 public:
@@ -681,7 +689,7 @@ public:
     
     void insertKnob(int index, const boost::shared_ptr<KnobI>& k);
 
-    const std::vector< boost::shared_ptr<KnobI> > &getChildren() const;
+    std::vector< boost::shared_ptr<KnobI> > getChildren() const;
 
     void setAsTab();
 
@@ -731,10 +739,7 @@ public:
     
     void insertKnob(int index, const boost::shared_ptr<KnobI>& k);
 
-    const std::vector< boost::shared_ptr<KnobI> > & getChildren() const
-    {
-        return _children;
-    }
+    std::vector< boost::shared_ptr<KnobI> >  getChildren() const;
 
     static const std::string & typeNameStatic();
 
@@ -744,7 +749,7 @@ private:
 
 private:
 
-    std::vector< boost::shared_ptr<KnobI> > _children;
+    std::vector< boost::weak_ptr<KnobI> > _children;
     static const std::string _typeNameStr;
 };
 

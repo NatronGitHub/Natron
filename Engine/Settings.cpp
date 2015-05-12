@@ -209,7 +209,7 @@ Settings::initializeKnobs()
                                      "The special value of 0 indicates there can be an unlimited number of panels opened.");
     _maxPanelsOpened->setAnimationEnabled(false);
     _maxPanelsOpened->disableSlider();
-    _maxPanelsOpened->setMinimum(0);
+    _maxPanelsOpened->setMinimum(1);
     _maxPanelsOpened->setMaximum(100);
     _generalTab->addKnob(_maxPanelsOpened);
 
@@ -600,11 +600,10 @@ Settings::initializeKnobs()
 
     _nodegraphTab->addKnob(_disconnectedArrowLength);
     
-    _hideOptionalInputsAutomatically = Natron::createKnob<Bool_Knob>(this, "Auto hide optional inputs");
+    _hideOptionalInputsAutomatically = Natron::createKnob<Bool_Knob>(this, "Auto hide masks inputs");
     _hideOptionalInputsAutomatically->setName("autoHideInputs");
     _hideOptionalInputsAutomatically->setAnimationEnabled(false);
-    _hideOptionalInputsAutomatically->setHintToolTip("When checked, any diconnected optional input of a node in the nodegraph "
-                                                     " (such as mask input) "
+    _hideOptionalInputsAutomatically->setHintToolTip("When checked, any diconnected mask input of a node in the nodegraph "
                                                      "will be visible only when the mouse is hovering the node or when it is "
                                                      "selected.");
     _nodegraphTab->addKnob(_hideOptionalInputsAutomatically);
@@ -963,6 +962,18 @@ Settings::initializeKnobs()
     _defaultOnNodeDelete->setHintToolTip("The default beforeNodeRemoval callback that will be set for new projects.");
     _defaultOnNodeDelete->setAnimationEnabled(false);
     _pythonPage->addKnob(_defaultOnNodeDelete);
+    
+    _loadPyPlugsFromPythonScript = Natron::createKnob<Bool_Knob>(this, "Load PyPlugs in projects from .py if possible");
+    _loadPyPlugsFromPythonScript->setName("loadFromPyFile");
+    _loadPyPlugsFromPythonScript->setHintToolTip("When checked, if a project contains a PyPlug, it will try to first load the PyPlug "
+                                                 "from the .py file. If the version of the PyPlug has changed Natron will ask you "
+                                                 "whether you want to upgrade to the new version of the PyPlug in your project. "
+                                                 "If the .py file is not found, it will fallback to the same behavior "
+                                                 "as when this option is unchecked. When unchecked the PyPlug will load as a regular group "
+                                                 "with the informations embedded in the project file.");
+    _loadPyPlugsFromPythonScript->setDefaultValue(true);
+    _loadPyPlugsFromPythonScript->setAnimationEnabled(false);
+    _pythonPage->addKnob(_loadPyPlugsFromPythonScript);
 
     _echoVariableDeclarationToPython = Natron::createKnob<Bool_Knob>(this, "Print auto-declared variables in the Script Editor");
     _echoVariableDeclarationToPython->setHintToolTip("When checked, Natron will print in the Script Editor all variables that are "
@@ -1538,7 +1549,7 @@ Settings::onKnobValueChanged(KnobI* k,
         if (!_restoringSettings) {
             appPTR->setApplicationsCachesMaximumViewerDiskSpace( getMaximumViewerDiskCacheSize() );
         }
-    } else if ( k == _maxViewerDiskCacheGB.get() ) {
+    } else if ( k == _maxDiskCacheNodeGB.get() ) {
         if (!_restoringSettings) {
             appPTR->setApplicationsCachesMaximumDiskSpace(getMaximumDiskCacheNodeSize());
         }
@@ -1568,7 +1579,7 @@ Settings::onKnobValueChanged(KnobI* k,
     } else if ( k == _nThreadsPerEffect.get() ) {
         appPTR->setNThreadsPerEffect( getNumberOfThreadsPerEffect() );
     } else if ( k == _ocioConfigKnob.get() ) {
-        if ( _ocioConfigKnob->getActiveEntryText_mt_safe() == std::string(NATRON_CUSTOM_OCIO_CONFIG_NAME) ) {
+        if (_ocioConfigKnob->getActiveEntryText_mt_safe() == NATRON_CUSTOM_OCIO_CONFIG_NAME) {
             _customOcioConfigFile->setAllDimensionsEnabled(true);
         } else {
             _customOcioConfigFile->setAllDimensionsEnabled(false);
@@ -2004,7 +2015,7 @@ Settings::populatePluginsTab(std::vector<Natron::Plugin*>& pluginsToIgnore)
 
     }
     
-    for (std::map<Natron::Plugin*,PerPluginKnobs>::iterator it = pluginsMap.begin() ;it != pluginsMap.end() ; ++it) {
+    for (std::map<Natron::Plugin*,PerPluginKnobs>::iterator it = pluginsMap.begin(); it != pluginsMap.end(); ++it) {
         if (!it->second.enabled->getValue()) {
             pluginsToIgnore.push_back(it->first);
         } else {
@@ -2463,7 +2474,7 @@ Settings::doOCIOStartupCheckIfNeeded()
         std::string warnText;
         if (entry_i < 0 || entry_i >= (int)entries.size()) {
             warnText = "The current OCIO config selected in the preferences is invalid, would you like to set it to the default config (" NATRON_DEFAULT_OCIO_CONFIG_NAME ") ?";
-        } else if (entries[entry_i] != std::string(NATRON_DEFAULT_OCIO_CONFIG_NAME)) {
+        } else if (entries[entry_i] != NATRON_DEFAULT_OCIO_CONFIG_NAME) {
             warnText = "The current OCIO config selected in the preferences is not the default one (" NATRON_DEFAULT_OCIO_CONFIG_NAME "),"
             " would you like to set it to the default config ?";
         } else {
@@ -2608,6 +2619,12 @@ std::string
 Settings::getOnProjectCreatedCB()
 {
     return _onProjectCreated->getValue();
+}
+
+bool
+Settings::isLoadFromPyPlugsEnabled() const
+{
+    return _loadPyPlugsFromPythonScript->getValue();
 }
 
 bool

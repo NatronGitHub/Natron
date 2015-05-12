@@ -48,36 +48,21 @@ class MoveMultipleNodesCommand
 {
 public:
 
-    struct NodeToMove
-    {
-        boost::weak_ptr<NodeGui> node;
-        bool isWithinBD;
-    };
-
-    MoveMultipleNodesCommand(const std::list<NodeToMove> & nodes,
+    MoveMultipleNodesCommand(const NodeGuiList & nodes,
                              double dx,
                              double dy,
-                             bool doMerge,
-                             const QPointF & mouseScenePos,
                              QUndoCommand *parent = 0);
     virtual void undo();
     virtual void redo();
-    virtual int id() const
-    {
-        return kNodeGraphMoveNodeCommandCompressionID;
-    }
 
-    virtual bool mergeWith(const QUndoCommand *command);
 
 private:
 
-    void move(bool skipMagnet,double dx,double dy);
+    void move(double dx,double dy);
 
     bool _firstRedoCalled;
-    std::list<NodeToMove> _nodes;
-    QPointF _mouseScenePos;
+    NodeGuiList _nodes;
     double _dx,_dy;
-    bool _doMerge;
 };
 
 
@@ -383,6 +368,40 @@ private:
     boost::weak_ptr<NodeGui> _group;
     bool _firstRedoCalled;
     bool _isRedone;
+};
+
+class InlineGroupCommand
+: public QUndoCommand
+{
+    
+public:
+    
+    InlineGroupCommand(NodeGraph* graph,const std::list<boost::shared_ptr<NodeGui> > & nodes);
+    
+    virtual ~InlineGroupCommand();
+    
+    virtual void undo();
+    virtual void redo();
+    
+private:
+    
+    struct NodeToConnect {
+        boost::weak_ptr<NodeGui> input;
+        std::map<boost::weak_ptr<NodeGui>,int> outputs;
+    };
+    
+    
+    struct InlinedGroup
+    {
+        boost::weak_ptr<NodeGui> group;
+        std::list<boost::weak_ptr<NodeGui> > inlinedNodes;
+        std::map<int,NodeToConnect> connections;
+    };
+    
+    NodeGraph* _graph;
+    
+    std::list<InlinedGroup> _groupNodes;
+    bool _firstRedoCalled;
 };
 
 

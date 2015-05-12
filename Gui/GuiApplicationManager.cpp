@@ -695,6 +695,22 @@ GuiApplicationManager::getIcon(Natron::PixmapEnum e,
                 img.load(NATRON_IMAGES_PATH "zebra_off.png");
                 *pix = QPixmap::fromImage(img);
                 break;
+            case NATRON_PIXMAP_VIEWER_GAMMA_ENABLED:
+                img.load(NATRON_IMAGES_PATH "gammaON.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_VIEWER_GAMMA_DISABLED:
+                img.load(NATRON_IMAGES_PATH "gammaOFF.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_VIEWER_GAIN_ENABLED:
+                img.load(NATRON_IMAGES_PATH "expoON.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_VIEWER_GAIN_DISABLED:
+                img.load(NATRON_IMAGES_PATH "expoOFF.png");
+                *pix = QPixmap::fromImage(img);
+                break;
             case NATRON_PIXMAP_ADD_TRACK:
                 img.load(NATRON_IMAGES_PATH "addTrack.png");
                 *pix = QPixmap::fromImage(img);
@@ -870,6 +886,14 @@ GuiApplicationManager::getIcon(Natron::PixmapEnum e,
                 break;
             case NATRON_PIXMAP_MERGE_XOR:
                 img.load(NATRON_IMAGES_PATH "merge_xor.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_LINK_CURSOR:
+                img.load(NATRON_IMAGES_PATH "linkCursor.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_ENTER_GROUP:
+                img.load(NATRON_IMAGES_PATH "enter_group.png");
                 *pix = QPixmap::fromImage(img);
                 break;
             default:
@@ -1915,6 +1939,8 @@ GuiApplicationManager::populateShortcuts()
                     Qt::Key_X);
     registerKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphMakeGroup, kShortcutDescActionGraphMakeGroup, Qt::ControlModifier | Qt::ShiftModifier,
                     Qt::Key_G);
+    registerKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphExpandGroup, kShortcutDescActionGraphExpandGroup, Qt::ControlModifier | Qt::ShiftModifier,
+                    Qt::Key_E);
     
     ///CurveEditor
     registerKeybind(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorRemoveKeys, kShortcutDescActionCurveEditorRemoveKeys, Qt::NoModifier,Qt::Key_Backspace);

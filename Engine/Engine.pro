@@ -61,12 +61,14 @@ SOURCES += \
     AppManager.cpp \
     BackDrop.cpp \
     BlockingBackgroundRender.cpp \
+    CoonsRegularization.cpp \
     Curve.cpp \
     CurveSerialization.cpp \
     DiskCacheNode.cpp \
     EffectInstance.cpp \
     FileDownloader.cpp \
     FileSystemModel.cpp \
+    FitCurve.cpp \
     FrameEntry.cpp \
     FrameKey.cpp \
     FrameParamsSerialization.cpp \
@@ -113,6 +115,7 @@ SOURCES += \
     PySideCompat.cpp \
     Rect.cpp \
     RotoContext.cpp \
+    RotoPaint.cpp \
     RotoSerialization.cpp  \
     RotoWrapper.cpp \
     ScriptObject.cpp \
@@ -172,6 +175,7 @@ HEADERS += \
     BlockingBackgroundRender.h \
     Cache.h \
     CacheEntry.h \
+    CoonsRegularization.h \
     Curve.h \
     CurveSerialization.h \
     CurvePrivate.h \
@@ -180,6 +184,7 @@ HEADERS += \
     EffectInstance.h \
     FileDownloader.h \
     FileSystemModel.h \
+    FitCurve.h \
     Format.h \
     FrameEntry.h \
     FrameKey.h \
@@ -243,6 +248,7 @@ HEADERS += \
     Rect.h \
     RotoContext.h \
     RotoContextPrivate.h \
+    RotoPaint.h \
     RotoSerialization.h \
     RotoWrapper.h \
     ScriptObject.h \

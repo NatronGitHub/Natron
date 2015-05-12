@@ -19,12 +19,10 @@
 struct BackDropPrivate
 {
     
-    boost::shared_ptr<String_Knob> knobLabel;
-    boost::shared_ptr<Int_Knob> headerFontSize;
+    boost::weak_ptr<String_Knob> knobLabel;
     
     BackDropPrivate()
     : knobLabel()
-    , headerFontSize()
     {
     }
     
@@ -53,13 +51,14 @@ BackDrop::initializeKnobs()
 {
     boost::shared_ptr<Page_Knob> page = Natron::createKnob<Page_Knob>(this, "Controls");
     
-    _imp->knobLabel = Natron::createKnob<String_Knob>( this, "Label");
-    _imp->knobLabel->setAnimationEnabled(false);
-    _imp->knobLabel->setAsMultiLine();
-    _imp->knobLabel->setUsesRichText(true);
-    _imp->knobLabel->setHintToolTip( QObject::tr("Text to display on the backdrop.").toStdString() );
-    _imp->knobLabel->setEvaluateOnChange(false);
-    page->addKnob(_imp->knobLabel);
+    boost::shared_ptr<String_Knob> knobLabel = Natron::createKnob<String_Knob>( this, "Label");
+    knobLabel->setAnimationEnabled(false);
+    knobLabel->setAsMultiLine();
+    knobLabel->setUsesRichText(true);
+    knobLabel->setHintToolTip( QObject::tr("Text to display on the backdrop.").toStdString() );
+    knobLabel->setEvaluateOnChange(false);
+    page->addKnob(knobLabel);
+    _imp->knobLabel = knobLabel;
  
 
 }
@@ -72,8 +71,8 @@ BackDrop::knobChanged(KnobI* k,
                       SequenceTime /*time*/,
                       bool /*originatedFromMainThread*/)
 {
-    if ( k == _imp->knobLabel.get() ) {
-        QString text( _imp->knobLabel->getValue().c_str() );
+    if ( k == _imp->knobLabel.lock().get() ) {
+        QString text( _imp->knobLabel.lock()->getValue().c_str() );
         Q_EMIT labelChanged(text);
     } 
 }

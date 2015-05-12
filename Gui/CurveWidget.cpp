@@ -16,7 +16,6 @@
 #include "CurveWidget.h"
 
 #include <cmath>
-#include <QMenu>
 CLANG_DIAG_OFF(unused-private-field)
 // /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
 #include <QMouseEvent>
@@ -44,6 +43,7 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Engine/Project.h"
 #include "Engine/Image.h"
 
+#include "Gui/Menu.h"
 #include "Gui/LineEdit.h"
 #include "Gui/SpinBox.h"
 #include "Gui/Button.h"
@@ -321,7 +321,7 @@ CurveGui::drawCurve(int curveIndex,
         std::set<int> keys;
         isBezier->getBezier()->getKeyframeTimes(&keys);
         int i = 0;
-        for (std::set<int>::iterator it = keys.begin(); it != keys.end(); ++it,++i) {
+        for (std::set<int>::iterator it = keys.begin(); it != keys.end(); ++it, ++i) {
             keyframes.insert(KeyFrame(*it,i));
         }
     } else {
@@ -693,7 +693,7 @@ BezierCPCurveGui::evaluate(bool /*useExpr*/,double x) const
     
     std::list<std::pair<int,Natron::KeyframeTypeEnum> >::iterator upb = keys.end();
     int dist = 0;
-    for (std::list<std::pair<int,Natron::KeyframeTypeEnum> >::iterator it = keys.begin(); it != keys.end(); ++it,++dist) {
+    for (std::list<std::pair<int,Natron::KeyframeTypeEnum> >::iterator it = keys.begin(); it != keys.end(); ++it, ++dist) {
         if (it->first > x) {
             upb = it;
             break;
@@ -706,7 +706,9 @@ BezierCPCurveGui::evaluate(bool /*useExpr*/,double x) const
         return 0;
     } else {
         std::list<std::pair<int,Natron::KeyframeTypeEnum> >::iterator prev = upb;
-        --prev;
+        if (prev != keys.begin()) {
+            --prev;
+        }
         if (prev->second == Natron::eKeyframeTypeConstant) {
             return dist - 1;
         } else {
@@ -731,7 +733,7 @@ BezierCPCurveGui::getKeyFrames() const
     std::set<int> keys;
     _bezier->getKeyframeTimes(&keys);
     int i = 0;
-    for (std::set<int>::iterator it = keys.begin(); it != keys.end(); ++it,++i) {
+    for (std::set<int>::iterator it = keys.begin(); it != keys.end(); ++it, ++i) {
         ret.insert(KeyFrame(*it,i));
     }
     return ret;
@@ -846,7 +848,7 @@ public:
     QPoint _lastMousePos; /// the last click pressed, in widget coordinates [ (0,0) == top left corner ]
     ZoomContext zoomCtx;
     EventStateEnum _state;
-    QMenu* _rightClickMenu;
+    Menu* _rightClickMenu;
     QColor _selectedCurveColor;
     QColor _nextCurveAddedColor;
     TextRenderer textRenderer;
@@ -894,7 +896,7 @@ CurveWidgetPrivate::CurveWidgetPrivate(Gui* gui,
     : _lastMousePos()
       , zoomCtx()
       , _state(eEventStateNone)
-      , _rightClickMenu( new QMenu(widget) )
+      , _rightClickMenu( new Menu(widget) )
       , _selectedCurveColor(255,255,89,255)
       , _nextCurveAddedColor()
       , textRenderer()
@@ -955,22 +957,22 @@ CurveWidgetPrivate::createMenu()
 
     _rightClickMenu->clear();
 
-    QMenu* fileMenu = new QMenu(_rightClickMenu);
+    Menu* fileMenu = new Menu(_rightClickMenu);
     //fileMenu->setFont( QFont(appFont,appFontSize) );
     fileMenu->setTitle( QObject::tr("File") );
     _rightClickMenu->addAction( fileMenu->menuAction() );
 
-    QMenu* editMenu = new QMenu(_rightClickMenu);
+    Menu* editMenu = new Menu(_rightClickMenu);
     //editMenu->setFont( QFont(appFont,appFontSize) );
     editMenu->setTitle( QObject::tr("Edit") );
     _rightClickMenu->addAction( editMenu->menuAction() );
 
-    QMenu* interpMenu = new QMenu(_rightClickMenu);
+    Menu* interpMenu = new Menu(_rightClickMenu);
     //interpMenu->setFont( QFont(appFont,appFontSize) );
     interpMenu->setTitle( QObject::tr("Interpolation") );
     _rightClickMenu->addAction( interpMenu->menuAction() );
 
-    QMenu* viewMenu = new QMenu(_rightClickMenu);
+    Menu* viewMenu = new Menu(_rightClickMenu);
     //viewMenu->setFont( QFont(appFont,appFontSize) );
     viewMenu->setTitle( QObject::tr("View") );
     _rightClickMenu->addAction( viewMenu->menuAction() );
@@ -985,9 +987,9 @@ CurveWidgetPrivate::createMenu()
         }
     }
     
-    QMenu* predefMenu  = 0;
+    Menu* predefMenu  = 0;
     if (ce) {
-        predefMenu = new QMenu(_rightClickMenu);
+        predefMenu = new Menu(_rightClickMenu);
         predefMenu->setTitle(QObject::tr("Predefined"));
         _rightClickMenu->addAction(predefMenu->menuAction());
     }
@@ -1263,8 +1265,8 @@ CurveWidgetPrivate::drawScale()
     QPointF btmLeft = zoomCtx.toZoomCoordinates(0,_widget->height() - 1);
     QPointF topRight = zoomCtx.toZoomCoordinates(_widget->width() - 1, 0);
 
-    ///don't attempt to draw a scale on a widget with an invalid height
-    if (_widget->height() <= 1) {
+    ///don't attempt to draw a scale on a widget with an invalid height/width
+    if (_widget->height() <= 1 || _widget->width() <= 1) {
         return;
     }
 
@@ -1390,13 +1392,6 @@ CurveWidgetPrivate::drawSelectedKeyFramesBbox()
         QPointF btmRightWidget = zoomCtx.toWidgetCoordinates(btmRight.x(), btmRight.y());
         double xMid = (topLeft.x() + btmRight.x()) / 2.;
         double yMid = (topLeft.y() + btmRight.y()) / 2.;
-        double xMidWidget,yMidWidget;
-        {
-            
-            QPointF wid = zoomCtx.toWidgetCoordinates(xMid, yMid);
-            xMidWidget = wid.x();
-            yMidWidget = wid.y();
-        }
 
         glLineWidth(1.5);
 
@@ -2071,7 +2066,9 @@ CurveWidgetPrivate::refreshKeyTangents(KeyPtr & key)
         prev = keyframes.end();
     }
     KeyFrameSet::const_iterator next = k;
-    ++next;
+    if (next != keyframes.end()) {
+        ++next;
+    }
     double leftTanX, leftTanY;
     {
         double prevTime = ( prev == keyframes.end() ) ? (x - 1.) : prev->getTime();
@@ -2256,7 +2253,9 @@ CurveWidgetPrivate::updateSelectedKeysMaxMovement()
                     curveMaxMovement.left = INT_MIN;//curveXRange.first - leftMost->getTime();
                 } else {
                     KeyFrameSet::const_iterator prev = leftMost;
-                    --prev;
+                    if (prev != ks.begin()) {
+                        --prev;
+                    }
                     double leftMaxMovement = std::min( std::min(-NATRON_CURVE_X_SPACING_EPSILON + minimumTimeSpanBetween2Keys,0.),
                                                        prev->getTime() + minimumTimeSpanBetween2Keys - leftMost->getTime() );
                     curveMaxMovement.left = leftMaxMovement;
@@ -2267,7 +2266,9 @@ CurveWidgetPrivate::updateSelectedKeysMaxMovement()
             //now get rightMostSelected's next key to determine the max right movement for this curve
             {
                 KeyFrameSet::const_iterator next = rightMost;
-                ++next;
+                if (next != ks.end()) {
+                    ++next;
+                }
                 if ( next == ks.end() ) {
                     curveMaxMovement.right = INT_MAX;///curveXRange.second - rightMost->getTime();
                 } else {
@@ -3139,7 +3140,7 @@ CurveWidget::mouseReleaseEvent(QMouseEvent*)
             for (std::map<KnobHolder*,bool>::iterator it = toEvaluate.begin(); it != toEvaluate.end(); ++it) {
                 it->first->evaluate_public(NULL, it->second,Natron::eValueChangedReasonUserEdited);
             }
-            for (std::list<boost::shared_ptr<RotoContext> >::iterator it = rotoToEvaluate.begin(); it!=rotoToEvaluate.end(); ++it) {
+            for (std::list<boost::shared_ptr<RotoContext> >::iterator it = rotoToEvaluate.begin(); it != rotoToEvaluate.end(); ++it) {
                 (*it)->evaluateChange();
             }
         } else if (_imp->_state == eEventStateDraggingTangent) {
@@ -3812,23 +3813,25 @@ CurveWidget::loopSelectedCurve()
     if (!ce) {
         return;
     }
+    
     CurveGui* curve = ce->getSelectedCurve();
     if (!curve) {
         warningDialog( tr("Curve Editor").toStdString(),tr("You must select a curve first in the view.").toStdString() );
         return;
     }
-    
+    KnobCurveGui* knobCurve = dynamic_cast<KnobCurveGui*>(curve);
+    assert(knobCurve);
     PyModalDialog dialog(_imp->_gui);
-    IntParam* firstFrame = dialog.createIntParam("firstFrame", "First frame");
+    boost::shared_ptr<IntParam> firstFrame(dialog.createIntParam("firstFrame", "First frame"));
     firstFrame->setAnimationEnabled(false);
-    IntParam* lastFrame = dialog.createIntParam("lastFrame", "Last frame");
+    boost::shared_ptr<IntParam> lastFrame(dialog.createIntParam("lastFrame", "Last frame"));
     lastFrame->setAnimationEnabled(false);
     dialog.refreshUserParamsGUI();
     if (dialog.exec()) {
         int first = firstFrame->getValue();
         int last = lastFrame->getValue();
         std::stringstream ss;
-        ss << "curve(((frame - " << first << ") % (" << last << " - " << first << " + 1)) + " << first << ")";
+        ss << "curve(((frame - " << first << ") % (" << last << " - " << first << " + 1)) + " << first << ", "<< knobCurve->getDimension() << ")";
         std::string script = ss.str();
         ce->setSelectedCurveExpression(script.c_str());
     }
@@ -3855,7 +3858,12 @@ CurveWidget::negateSelectedCurve()
         warningDialog( tr("Curve Editor").toStdString(),tr("You must select a curve first in the view.").toStdString() );
         return;
     }
-    ce->setSelectedCurveExpression("-curve(frame)");
+    KnobCurveGui* knobCurve = dynamic_cast<KnobCurveGui*>(curve);
+    assert(knobCurve);
+    std::stringstream ss;
+    ss << "-curve(frame, " << knobCurve->getDimension() << ")";
+    std::string script = ss.str();
+    ce->setSelectedCurveExpression(script.c_str());
 }
 
 void
@@ -3878,7 +3886,12 @@ CurveWidget::reverseSelectedCurve()
         warningDialog( tr("Curve Editor").toStdString(),tr("You must select a curve first in the view.").toStdString() );
         return;
     }
-    ce->setSelectedCurveExpression("curve(-frame)");
+    KnobCurveGui* knobCurve = dynamic_cast<KnobCurveGui*>(curve);
+    assert(knobCurve);
+    std::stringstream ss;
+    ss << "curve(-frame, " << knobCurve->getDimension() << ")";
+    std::string script = ss.str();
+    ce->setSelectedCurveExpression(script.c_str());
 }
 
 void
@@ -4580,7 +4593,7 @@ EditKeyFrameDialog::moveKeyTo(double newX,double newY)
         
         int curEqualKeys = 0;
         KeyFrameSet set = _imp->key->curve->getKeyFrames();
-        for (KeyFrameSet::iterator it = set.begin(); it!=set.end(); ++it) {
+        for (KeyFrameSet::iterator it = set.begin(); it != set.end(); ++it) {
             
             if (std::abs(it->getTime() - newX) <= NATRON_CURVE_X_SPACING_EPSILON) {
                 _imp->xSpinbox->setValue(curX);

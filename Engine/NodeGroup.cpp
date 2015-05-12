@@ -37,6 +37,8 @@
 #include "Engine/NodeGraphI.h"
 #include "Engine/RotoContext.h"
 
+#define NATRON_PYPLUG_EXPORTER_VERSION 1
+
 using namespace Natron;
 
 struct NodeCollectionPrivate
@@ -697,14 +699,14 @@ NodeCollection::getNodeByFullySpecifiedName(const std::string& fullySpecifiedNam
 
 
 void
-NodeCollection::setAllNodesAborted(bool aborted)
+NodeCollection::notifyRenderBeingAborted()
 {
     QMutexLocker k(&_imp->nodesMutex);
     for (NodeList::iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
-        (*it)->setAborted(aborted);
+        (*it)->notifyRenderBeingAborted();
         NodeGroup* isGrp = dynamic_cast<NodeGroup*>((*it)->getLiveInstance());
         if (isGrp) {
-            isGrp->setAllNodesAborted(aborted);
+            isGrp->notifyRenderBeingAborted();
         }
     }
 }
@@ -836,7 +838,7 @@ NodeCollection::forceGetClipPreferencesOnAllTrees()
     Project::extractTreesFromNodes(nodes, trees);
     
     std::list<Natron::Node*> markedNodes;
-    for (std::list<Project::NodesTree>::iterator it = trees.begin(); it!=trees.end(); ++it) {
+    for (std::list<Project::NodesTree>::iterator it = trees.begin(); it != trees.end(); ++it) {
         it->output.node->restoreClipPreferencesRecursive(markedNodes);
     }
 }
@@ -849,12 +851,13 @@ NodeCollection::setParallelRenderArgs(int time,
                                       bool isSequential,
                                       bool canAbort,
                                       U64 renderAge,
-                                      ViewerInstance* viewer,
+                                      Natron::OutputEffectInstance* renderRequester,
                                       int textureIndex,
-                                      const TimeLine* timeline)
+                                      const TimeLine* timeline,
+                                      bool isAnalysis)
 {
     NodeList nodes = getNodes();
-    for (NodeList::iterator it = nodes.begin(); it!=nodes.end(); ++it) {
+    for (NodeList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
         assert(*it);
         U64 rotoAge;
         boost::shared_ptr<RotoContext> roto = (*it)->getRotoContext();
@@ -865,7 +868,7 @@ NodeCollection::setParallelRenderArgs(int time,
         }
         Natron::EffectInstance* liveInstance = (*it)->getLiveInstance();
         assert(liveInstance);
-        liveInstance->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, (*it)->getHashValue(), rotoAge, renderAge,viewer,textureIndex, timeline);
+        liveInstance->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, (*it)->getHashValue(), rotoAge, renderAge,renderRequester,textureIndex, timeline, isAnalysis);
         
         if ((*it)->isMultiInstance()) {
             
@@ -877,7 +880,7 @@ NodeCollection::setParallelRenderArgs(int time,
                 assert(*it2);
                 Natron::EffectInstance* childLiveInstance = (*it2)->getLiveInstance();
                 assert(childLiveInstance);
-                childLiveInstance->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, (*it2)->getHashValue(), rotoAge, renderAge,viewer, textureIndex, timeline);
+                childLiveInstance->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, (*it2)->getHashValue(), rotoAge, renderAge,renderRequester, textureIndex, timeline, isAnalysis);
                 
             }
         }
@@ -885,7 +888,7 @@ NodeCollection::setParallelRenderArgs(int time,
         
         NodeGroup* isGrp = dynamic_cast<NodeGroup*>((*it)->getLiveInstance());
         if (isGrp) {
-            isGrp->setParallelRenderArgs(time, view, isRenderUserInteraction, isSequential, canAbort,  renderAge, viewer, textureIndex, timeline);
+            isGrp->setParallelRenderArgs(time, view, isRenderUserInteraction, isSequential, canAbort,  renderAge, renderRequester, textureIndex, timeline, isAnalysis);
         }
 
     }
@@ -897,7 +900,7 @@ NodeCollection::invalidateParallelRenderArgs()
 {
     
     NodeList nodes = getNodes();
-    for (NodeList::iterator it = nodes.begin(); it!=nodes.end(); ++it) {
+    for (NodeList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
         (*it)->getLiveInstance()->invalidateParallelRenderArgsTLS();
         
         if ((*it)->isMultiInstance()) {
@@ -926,7 +929,7 @@ void
 NodeCollection::getParallelRenderArgs(std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs >& argsMap) const
 {
     NodeList nodes = getNodes();
-    for (NodeList::iterator it = nodes.begin(); it!=nodes.end(); ++it) {
+    for (NodeList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
         ParallelRenderArgs args = (*it)->getLiveInstance()->getParallelRenderArgsTLS();
         if (args.validArgs) {
             argsMap.insert(std::make_pair(*it, args));
@@ -962,20 +965,21 @@ ParallelRenderArgsSetter::ParallelRenderArgsSetter(NodeCollection* n,
                                                    bool isSequential,
                                                    bool canAbort,
                                                    U64 renderAge,
-                                                   ViewerInstance* viewer,
+                                                   Natron::OutputEffectInstance* renderRequester,
                                                    int textureIndex,
-                                                   const TimeLine* timeline)
+                                                   const TimeLine* timeline,
+                                                   bool isAnalysis)
 : collection(n)
 , argsMap()
 {
-    collection->setParallelRenderArgs(time,view,isRenderUserInteraction,isSequential,canAbort,renderAge,viewer,textureIndex,timeline);
+    collection->setParallelRenderArgs(time,view,isRenderUserInteraction,isSequential,canAbort,renderAge,renderRequester,textureIndex,timeline,isAnalysis);
 }
 
 ParallelRenderArgsSetter::ParallelRenderArgsSetter(const std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs >& args)
 : collection(0)
 , argsMap(args)
 {
-    for (std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs >::iterator it = argsMap.begin(); it!=argsMap.end(); ++it) {
+    for (std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs >::iterator it = argsMap.begin(); it != argsMap.end(); ++it) {
         it->first->getLiveInstance()->setParallelRenderArgsTLS(it->second);
     }
 }
@@ -985,7 +989,7 @@ ParallelRenderArgsSetter::~ParallelRenderArgsSetter()
     if (collection) {
         collection->invalidateParallelRenderArgs();
     } else {
-        for (std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs >::iterator it = argsMap.begin(); it!=argsMap.end(); ++it) {
+        for (std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs >::iterator it = argsMap.begin(); it != argsMap.end(); ++it) {
             it->first->getLiveInstance()->invalidateParallelRenderArgsTLS();
         }
     }
@@ -1303,7 +1307,7 @@ NodeGroup::getAllOutputNodes() const
 {
     NodeList ret;
     QMutexLocker k(&_imp->nodesLock);
-    for (std::list<boost::weak_ptr<Natron::Node> >::const_iterator it = _imp->outputs.begin(); it!=_imp->outputs.end(); ++it) {
+    for (std::list<boost::weak_ptr<Natron::Node> >::const_iterator it = _imp->outputs.begin(); it != _imp->outputs.end(); ++it) {
         NodePtr node = it->lock();
         if (node) {
             ret.push_back(node);
@@ -1450,6 +1454,9 @@ static bool exportKnobValues(const boost::shared_ptr<KnobI> knob,
         isStringKnob->getExpression(0).empty()) {
         return false;
     }
+    
+    int innerIdent = mustDefineParam ? 2 : 1;
+    
     for (int i = 0; i < knob->getDimension(); ++i) {
         
         if (isParametric) {
@@ -1458,18 +1465,19 @@ static bool exportKnobValues(const boost::shared_ptr<KnobI> knob,
                 hasExportedValue = true;
                 if (mustDefineParam) {
                     WRITE_INDENT(1); WRITE_STRING("param = " + paramFullName);
+                    WRITE_INDENT(1); WRITE_STRING("if param is not None:");
                 }
             }
             boost::shared_ptr<Curve> curve = isParametric->getParametricCurve(i);
             double r,g,b;
             isParametric->getCurveColor(i, &r, &g, &b);
-            WRITE_INDENT(1); WRITE_STRING("param.setCurveColor(" + NUM(i) + ", " +
+            WRITE_INDENT(innerIdent); WRITE_STRING("param.setCurveColor(" + NUM(i) + ", " +
                                           NUM(r) + ", " + NUM(g) + ", " + NUM(b) + ")");
             if (curve) {
                 KeyFrameSet keys = curve->getKeyFrames_mt_safe();
                 int c = 0;
                 for (KeyFrameSet::iterator it3 = keys.begin(); it3 != keys.end(); ++it3, ++c) {
-                    WRITE_INDENT(1); WRITE_STRING("param.setNthControlPoint(" + NUM(i) + ", " +
+                    WRITE_INDENT(innerIdent); WRITE_STRING("param.setNthControlPoint(" + NUM(i) + ", " +
                                                   NUM(c) + ", " + NUM(it3->getTime()) + ", " +
                                                   NUM(it3->getValue()) + ", " + NUM(it3->getLeftDerivative())
                                                   + ", " + NUM(it3->getRightDerivative()) + ")");
@@ -1486,6 +1494,7 @@ static bool exportKnobValues(const boost::shared_ptr<KnobI> knob,
                         hasExportedValue = true;
                         if (mustDefineParam) {
                             WRITE_INDENT(1); WRITE_STRING("param = " + paramFullName);
+                            WRITE_INDENT(1); WRITE_STRING("if param is not None:");
                         }
                     }
                 }
@@ -1493,19 +1502,19 @@ static bool exportKnobValues(const boost::shared_ptr<KnobI> knob,
                 for (KeyFrameSet::iterator it3 = keys.begin(); it3 != keys.end(); ++it3) {
                     if (isAnimatedStr) {
                         std::string value = isAnimatedStr->getValueAtTime(it3->getTime(),i, true);
-                        WRITE_INDENT(1); WRITE_STRING("param.setValueAtTime(" + ESC(value) + ", "
+                        WRITE_INDENT(innerIdent); WRITE_STRING("param.setValueAtTime(" + ESC(value) + ", "
                                                       + NUM(it3->getTime())+ ")");
                         
                     } else if (isBool) {
                         int v = std::min(1., std::max(0.,std::floor(it3->getValue() + 0.5)));
                         QString vStr = v ? "True" : "False";
-                        WRITE_INDENT(1); WRITE_STRING("param.setValueAtTime(" + vStr + ", "
+                        WRITE_INDENT(innerIdent); WRITE_STRING("param.setValueAtTime(" + vStr + ", "
                                                       + NUM(it3->getTime())  + ")");
                     } else if (isChoice) {
-                        WRITE_INDENT(1); WRITE_STRING("param.setValueAtTime(" + NUM(it3->getValue()) + ", "
+                        WRITE_INDENT(innerIdent); WRITE_STRING("param.setValueAtTime(" + NUM(it3->getValue()) + ", "
                                                       + NUM(it3->getTime()) + ")");
                     } else {
-                        WRITE_INDENT(1); WRITE_STRING("param.setValueAtTime(" + NUM(it3->getValue()) + ", "
+                        WRITE_INDENT(innerIdent); WRITE_STRING("param.setValueAtTime(" + NUM(it3->getValue()) + ", "
                                                       + NUM(it3->getTime()) + ", " + NUM(i) + ")");
 
                     }
@@ -1517,29 +1526,30 @@ static bool exportKnobValues(const boost::shared_ptr<KnobI> knob,
                     hasExportedValue = true;
                     if (mustDefineParam) {
                         WRITE_INDENT(1); WRITE_STRING("param = " + paramFullName);
+                        WRITE_INDENT(1); WRITE_STRING("if param is not None:");
                     }
                 }
                 
                 if (isGrp) {
                     int v = std::min(1., std::max(0.,std::floor(isGrp->getValue(i, true) + 0.5)));
                     QString vStr = v ? "True" : "False";
-                    WRITE_INDENT(1); WRITE_STRING("param.setOpened(" + vStr + ")");
+                    WRITE_INDENT(innerIdent); WRITE_STRING("param.setOpened(" + vStr + ")");
                 } else if (isStr) {
                     std::string v = isStr->getValue(i, true);
-                    WRITE_INDENT(1); WRITE_STRING("param.setValue(" + ESC(v)  + ")");
+                    WRITE_INDENT(innerIdent); WRITE_STRING("param.setValue(" + ESC(v)  + ")");
                 } else if (isDouble) {
                     double v = isDouble->getValue(i, true);
-                    WRITE_INDENT(1); WRITE_STRING("param.setValue(" + NUM(v) + ", " + NUM(i) + ")");
+                    WRITE_INDENT(innerIdent); WRITE_STRING("param.setValue(" + NUM(v) + ", " + NUM(i) + ")");
                 } else if (isChoice) {
                     int v = isInt->getValue(i, true);
-                    WRITE_INDENT(1); WRITE_STRING("param.setValue(" + NUM(v) + ")");
+                    WRITE_INDENT(innerIdent); WRITE_STRING("param.setValue(" + NUM(v) + ")");
                 } else if (isInt) {
                     int v = isInt->getValue(i, true);
-                    WRITE_INDENT(1); WRITE_STRING("param.setValue(" + NUM(v) + ", " + NUM(i) + ")");
+                    WRITE_INDENT(innerIdent); WRITE_STRING("param.setValue(" + NUM(v) + ", " + NUM(i) + ")");
                 } else if (isBool) {
                     int v = std::min(1., std::max(0.,std::floor(isBool->getValue(i, true) + 0.5)));
                     QString vStr = v ? "True" : "False";
-                    WRITE_INDENT(1); WRITE_STRING("param.setValue(" + vStr + ")");
+                    WRITE_INDENT(innerIdent); WRITE_STRING("param.setValue(" + vStr + ")");
                 }
             } // if ((!curve || curve->getKeyFramesCount() == 0) && knob->hasModifications(i)) {
             
@@ -1552,10 +1562,11 @@ static bool exportKnobValues(const boost::shared_ptr<KnobI> knob,
             hasExportedValue = true;
             if (mustDefineParam) {
                 WRITE_INDENT(1); WRITE_STRING("param = " + paramFullName);
+                WRITE_INDENT(1); WRITE_STRING("if param is not None:");
             }
         }
 
-        WRITE_INDENT(1); WRITE_STRING("param.setVisible(False)");
+        WRITE_INDENT(innerIdent); WRITE_STRING("param.setVisible(False)");
     }
     
     for (int i = 0; i < knob->getDimension(); ++i) {
@@ -1564,15 +1575,16 @@ static bool exportKnobValues(const boost::shared_ptr<KnobI> knob,
                 hasExportedValue = true;
                 if (mustDefineParam) {
                     WRITE_INDENT(1); WRITE_STRING("param = " + paramFullName);
+                    WRITE_INDENT(1); WRITE_STRING("if param is not None:");
                 }
             }
 
-            WRITE_INDENT(1); WRITE_STRING("param.setEnabled(False, " +  NUM(i) + ")");
+            WRITE_INDENT(innerIdent); WRITE_STRING("param.setEnabled(False, " +  NUM(i) + ")");
         }
     }
     
     if (mustDefineParam && hasExportedValue) {
-        WRITE_INDENT(1); WRITE_STRING("del param");
+        WRITE_INDENT(innerIdent); WRITE_STRING("del param");
     }
     
     return hasExportedValue;
@@ -1868,7 +1880,7 @@ static void exportUserKnob(const boost::shared_ptr<KnobI>& knob,const QString& f
     WRITE_INDENT(1); WRITE_STATIC_LINE("#Set param properties");
 
     QString help(knob->getHintToolTip().c_str());
-    WRITE_INDENT(1); WRITE_STRING("param.setHelp(\"" + help + "\")");
+    WRITE_INDENT(1); WRITE_STRING("param.setHelp(\"" + ESC(help) + "\")");
     if (knob->isNewLineActivated()) {
         WRITE_INDENT(1); WRITE_STRING("param.setAddNewLine(True)");
     } else {
@@ -1897,7 +1909,7 @@ static void exportUserKnob(const boost::shared_ptr<KnobI>& knob,const QString& f
     WRITE_STATIC_LINE("");
     
     if (isGrp) {
-        const std::vector<boost::shared_ptr<KnobI> >& children =  isGrp->getChildren();
+        std::vector<boost::shared_ptr<KnobI> > children =  isGrp->getChildren();
         for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it3 = children.begin(); it3 != children.end(); ++it3) {
             exportUserKnob(*it3, fullyQualifiedNodeName, isGrp, page, ts);
         }
@@ -1991,7 +2003,7 @@ static void exportRotoLayer(const std::list<boost::shared_ptr<RotoItem> >& items
             ///Now that all points are created position them
             int idx = 0;
             std::list<boost::shared_ptr<BezierCP> >::const_iterator fpIt = fps.begin();
-            for (std::list<boost::shared_ptr<BezierCP> >::const_iterator it2 = cps.begin(); it2 != cps.end(); ++it2,++fpIt,++idx) {
+            for (std::list<boost::shared_ptr<BezierCP> >::const_iterator it2 = cps.begin(); it2 != cps.end(); ++it2, ++fpIt, ++idx) {
                 for (std::set<int>::iterator it3 = kf.begin(); it3 != kf.end(); ++it3) {
                     exportBezierPointAtTime(*it2, false, *it3, idx, ts);
                     exportBezierPointAtTime(*fpIt, true, *it3, idx, ts);
@@ -2072,7 +2084,7 @@ static void exportAllNodeKnobs(const boost::shared_ptr<Natron::Node>& node,QText
         WRITE_INDENT(1); WRITE_STRING("lastNode." + QString((*it2)->getName().c_str()) +
                                       " = lastNode.createPageParam(" + ESC((*it2)->getName()) + ", " +
                                       ESC((*it2)->getDescription()) + ")");
-        const std::vector<boost::shared_ptr<KnobI> >& children =  (*it2)->getChildren();
+        std::vector<boost::shared_ptr<KnobI> > children =  (*it2)->getChildren();
         for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it3 = children.begin(); it3 != children.end(); ++it3) {
             exportUserKnob(*it3, "lastNode", 0, *it2, ts);
         }
@@ -2277,9 +2289,12 @@ NodeCollection::exportGroupToPython(const QString& pluginID,
     QTextStream ts(&output);
     // coding must be set in first or second line, see https://www.python.org/dev/peps/pep-0263/
     WRITE_STATIC_LINE("# -*- coding: utf-8 -*-");
-    WRITE_STATIC_LINE("#This file was automatically generated by " NATRON_APPLICATION_NAME ".");
+    QString descline("#This file was automatically generated by " NATRON_APPLICATION_NAME " PyPlug exporter version ");
+    descline.append(QString::number(NATRON_PYPLUG_EXPORTER_VERSION));
+    descline.append(".");
+    WRITE_STATIC_LINE();
     WRITE_STATIC_LINE("#Note that Viewers are never exported");
-    WRITE_STATIC_LINE("");
+    WRITE_STRING(descline);
     WRITE_STATIC_LINE("import " NATRON_ENGINE_PYTHON_MODULE_NAME);
     WRITE_STATIC_LINE("");
    

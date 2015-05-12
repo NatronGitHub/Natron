@@ -18,6 +18,7 @@ const char* fragRGB =
     "uniform float gain;\n"
     "uniform float offset;\n"
     "uniform int lut;\n"
+    "uniform float gamma;\n"
     "\n"
     "float linear_to_srgb(float c) {\n"
     "    return (c<=0.0031308) ? (12.92*c) : (((1.0+0.055)*pow(c,1.0/2.4))-0.055);\n"
@@ -40,6 +41,9 @@ const char* fragRGB =
     "       color_tmp.g = linear_to_rec709(color_tmp.g);"
     "       color_tmp.b = linear_to_rec709(color_tmp.b);"
     "   }\n" // << END TO REC 709
+    "   color_tmp.r = gamma == 0. ? 0. : pow(color_tmp.r,gamma);" // gamma is in fact 1. / gamma at this point
+    "   color_tmp.g = gamma == 0. ? 0. : pow(color_tmp.g,gamma);"
+    "   color_tmp.b = gamma == 0. ? 0. : pow(color_tmp.b,gamma);"
     "	gl_FragColor = color_tmp;\n"
     "}\n"
 ;

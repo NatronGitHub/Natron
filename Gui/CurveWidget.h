@@ -261,7 +261,6 @@ private:
 };
 
 
-class QMenu;
 class CurveWidgetPrivate;
 
 class CurveWidget

@@ -122,16 +122,9 @@ private:
     virtual void knobChanged(KnobI* k, Natron::ValueChangedReasonEnum reason, int view, SequenceTime time,
                              bool originatedFromMainThread) OVERRIDE FINAL;
 
-    virtual Natron::StatusEnum render(SequenceTime time,
-                                      const RenderScale& originalScale,
-                                      const RenderScale & mappedScale,
-                                      const RectI & roi, //!< renderWindow in pixel coordinates
-                                      int view,
-                                      bool isSequentialRender,
-                                      bool isRenderResponseToUserInteraction,
-                                      const std::list<boost::shared_ptr<Natron::Image> >& outputPlanes) OVERRIDE WARN_UNUSED_RETURN;
+    virtual Natron::StatusEnum render(const RenderActionArgs& args) OVERRIDE WARN_UNUSED_RETURN;
 
-    virtual bool shouldCacheOutput() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool shouldCacheOutput(bool isFrameVaryingOrAnimated) const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     boost::scoped_ptr<DiskCacheNodePrivate> _imp;
 };

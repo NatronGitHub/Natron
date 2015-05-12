@@ -58,10 +58,19 @@ RectI minimalNonMarkedBbox_internal(const RectI& roi, const RectI& _bounds,const
                 *isBeingRenderedElsewhere = true; //< only flag if the whole row is not 0
             }
         } else {
-            if ( !memchr( buf, 0, _bounds.width() ) ) {
-                bbox.set_bottom(bbox.bottom() + 1);
-            } else {
+            
+            const char* lineEnd = buf + _bounds.width();
+            while (buf < lineEnd) {
+                if (!*buf || *buf == PIXEL_UNAVAILABLE) {
+                    buf = 0;
+                    break;
+                }
+                ++buf;
+            }
+            if (!buf) {
                 break;
+            } else {
+                bbox.set_bottom(bbox.bottom() + 1);
             }
         }
     }
@@ -90,10 +99,19 @@ RectI minimalNonMarkedBbox_internal(const RectI& roi, const RectI& _bounds,const
             }
             
         } else {
-            if ( !memchr( buf, 0, _bounds.width() ) ) {
-                bbox.set_top(bbox.top() - 1);
-            } else {
+            
+            const char* lineEnd = buf + _bounds.width();
+            while (buf < lineEnd) {
+                if (!*buf || *buf == PIXEL_UNAVAILABLE) {
+                    buf = 0;
+                    break;
+                }
+                ++buf;
+            }
+            if (!buf) {
                 break;
+            } else {
+                bbox.set_top(bbox.top() - 1);
             }
         }
     }
@@ -115,8 +133,13 @@ RectI minimalNonMarkedBbox_internal(const RectI& roi, const RectI& _bounds,const
                 break;
             }
             
-            else if (trimap && *pix == PIXEL_UNAVAILABLE) {
-                metUnavailablePixel = true;
+            else if (*pix == PIXEL_UNAVAILABLE) {
+                if (trimap) {
+                    metUnavailablePixel = true;
+                } else {
+                    pix = 0;
+                    break;
+                }
             }
             
         }
@@ -142,8 +165,13 @@ RectI minimalNonMarkedBbox_internal(const RectI& roi, const RectI& _bounds,const
                 break;
             }
 
-            else if (trimap && *pix == PIXEL_UNAVAILABLE) {
-                metUnavailablePixel = true;
+            else if (*pix == PIXEL_UNAVAILABLE) {
+                if (trimap) {
+                    metUnavailablePixel = true;
+                } else {
+                    pix = 0;
+                    break;
+                }
             }
 
         }
@@ -170,6 +198,7 @@ minimalNonMarkedRects_internal(const RectI & roi,const RectI& _bounds, const std
                                std::list<RectI>& ret,bool* isBeingRenderedElsewhere)
 {
     RectI bboxM = minimalNonMarkedBbox_internal<trimap>(roi, _bounds, _map, isBeingRenderedElsewhere);
+    assert(trimap && isBeingRenderedElsewhere || !trimap && !isBeingRenderedElsewhere);
     
     //#define NATRON_BITMAP_DISABLE_OPTIMIZATION
 #ifdef NATRON_BITMAP_DISABLE_OPTIMIZATION
@@ -218,7 +247,9 @@ minimalNonMarkedRects_internal(const RectI & roi,const RectI& _bounds, const std
                     break;
                 } else if (*buf == PIXEL_UNAVAILABLE) {
                     buf = 0;
-                    metUnavailablePixel = true;
+                    if (trimap) {
+                        metUnavailablePixel = true;
+                    }
                     break;
                 }
                 ++buf;
@@ -261,7 +292,9 @@ minimalNonMarkedRects_internal(const RectI & roi,const RectI& _bounds, const std
                     break;
                 } else if (*buf == PIXEL_UNAVAILABLE) {
                     buf = 0;
-                    metUnavailablePixel = true;
+                    if (trimap) {
+                        metUnavailablePixel = true;
+                    }
                     break;
                 }
                 ++buf;
@@ -1514,7 +1547,7 @@ Image::scaleBoxForDepth(const RectI & roi,
                 const PIX* temp = src + xindex + lowy_int * rowSize;
                 const PIX* temp_index;
                 int k;
-                for (k = 0,temp_index = temp; k < components; ++k,++temp_index) {
+                for (k = 0,temp_index = temp; k < components; ++k, ++temp_index) {
                     totals[k] += *temp_index * percent;
                 }
                 const PIX* left = temp;
@@ -2038,10 +2071,14 @@ Image::convertToFormatInternal(const RectI & renderWindow,
     if (channelForAlpha != -1) {
         switch (srcNComps) {
             case 3:
-                if (channelForAlpha > 3) {
+                if (channelForAlpha > 2) {
                     channelForAlpha = -1;
                 }
                 break;
+            case 2:
+                if (channelForAlpha > 1) {
+                    channelForAlpha = -1;
+                }
             default:
                 break;
         }
@@ -2118,6 +2155,10 @@ Image::convertToFormatInternal(const RectI & renderWindow,
                             // RGB is opaque but the channelForAlpha can be 0-2
                             pix = convertPixelDepth<SRCPIX, DSTPIX>(channelForAlpha == -1 ? 0. : srcPixels[channelForAlpha]);
                             break;
+                        case 2:
+                            // XY is opaque but the channelForAlpha can be 0-1
+                            pix = convertPixelDepth<SRCPIX, DSTPIX>(channelForAlpha == -1 ? 0. : srcPixels[channelForAlpha]);
+                            break;
                         case 1:
                             pix  = convertPixelDepth<SRCPIX, DSTPIX>(*srcPixels);
                             break;
@@ -2137,7 +2178,7 @@ Image::convertToFormatInternal(const RectI & renderWindow,
                             dstPixels[dstNComps - 1] = invert ? dstMaxValue - pix: pix;
                         }
                     } else {
-                        ///In this case we've RGB or RGBA input and outputs
+                        ///In this case we've XY, RGB or RGBA input and outputs
                         assert(srcNComps != dstNComps);
                         
                         bool unpremultChannel = (srcNComps == 4 &&
@@ -2154,7 +2195,12 @@ Image::convertToFormatInternal(const RectI & renderWindow,
                         
                         for (int k = 0; k < dstNComps; ++k) {
                             if (k == 3) {
-                                ///For alpha channel, fill with 1, we reach here only if converting RGB-->RGBA
+                                // For alpha channel, fill with 0, we reach here only if converting RGB-->RGBA
+                                // Alpha is set to 0 and premult is set to Opaque.
+                                // That way, the Roto node can be conveniently used to draw a mask. This shouldn't
+                                // disturb anything else in the process, since Opaque premult means that alpha should
+                                // be considered as being 1 everywhere, whatever the actual alpha value is.
+                                // see GenericWriterPlugin::render, if (userPremult == OFX::eImageOpaque...
                                 DSTPIX pix = convertPixelDepth<float, DSTPIX>(0.f);
                                 dstPixels[k] = invert ? dstMaxValue - pix : pix;
 
@@ -2257,6 +2303,13 @@ Image::convertToFormatInternalForDepth(const RectI & renderWindow,
     switch (srcNComp) {
         case 1:
             switch (dstNComp) {
+                case 2:
+                    convertToFormatInternal<SRCPIX, DSTPIX, srcMaxValue, dstMaxValue,1,2>(renderWindow,srcImg, dstImg,
+                                                                                          srcColorSpace,
+                                                                                          dstColorSpace,
+                                                                                          channelForAlpha,
+                                                                                          invert,copyBitmap,requiresUnpremult);
+                    break;
                 case 3:
                     convertToFormatInternal<SRCPIX, DSTPIX, srcMaxValue, dstMaxValue,1,3>(renderWindow,srcImg, dstImg,
                                                                                         srcColorSpace,
@@ -2276,6 +2329,34 @@ Image::convertToFormatInternalForDepth(const RectI & renderWindow,
                     break;
             }
             break;
+        case 2:
+            switch (dstNComp) {
+                case 1:
+                    convertToFormatInternal<SRCPIX, DSTPIX, srcMaxValue, dstMaxValue,2,1>(renderWindow,srcImg, dstImg,
+                                                                                          srcColorSpace,
+                                                                                          dstColorSpace,
+                                                                                          channelForAlpha,
+                                                                                          invert,copyBitmap,requiresUnpremult);
+                    break;
+                case 3:
+                    convertToFormatInternal<SRCPIX, DSTPIX, srcMaxValue, dstMaxValue,2,3>(renderWindow,srcImg, dstImg,
+                                                                                          srcColorSpace,
+                                                                                          dstColorSpace,
+                                                                                          channelForAlpha,
+                                                                                          invert,copyBitmap,requiresUnpremult);
+                    break;
+                case 4:
+                    convertToFormatInternal<SRCPIX, DSTPIX, srcMaxValue, dstMaxValue,2,4>(renderWindow,srcImg, dstImg,
+                                                                                          srcColorSpace,
+                                                                                          dstColorSpace,
+                                                                                          channelForAlpha,
+                                                                                          invert,copyBitmap,requiresUnpremult);
+                    break;
+                default:
+                    assert(false);
+                    break;
+            }
+            break;
         case 3:
             switch (dstNComp) {
                 case 1:
@@ -2284,6 +2365,13 @@ Image::convertToFormatInternalForDepth(const RectI & renderWindow,
                                                                                         dstColorSpace,
                                                                                         channelForAlpha,
                                                                                         invert,copyBitmap,requiresUnpremult);
+                    break;
+                case 2:
+                    convertToFormatInternal<SRCPIX, DSTPIX, srcMaxValue, dstMaxValue,3,2>(renderWindow,srcImg, dstImg,
+                                                                                          srcColorSpace,
+                                                                                          dstColorSpace,
+                                                                                          channelForAlpha,
+                                                                                          invert,copyBitmap,requiresUnpremult);
                     break;
                 case 4:
                     convertToFormatInternal<SRCPIX, DSTPIX, srcMaxValue, dstMaxValue,3,4>(renderWindow,srcImg, dstImg,
@@ -2305,6 +2393,13 @@ Image::convertToFormatInternalForDepth(const RectI & renderWindow,
                                                                                         dstColorSpace,
                                                                                         channelForAlpha,
                                                                                         invert,copyBitmap,requiresUnpremult);
+                    break;
+                case 2:
+                    convertToFormatInternal<SRCPIX, DSTPIX, srcMaxValue, dstMaxValue,4,2>(renderWindow,srcImg, dstImg,
+                                                                                          srcColorSpace,
+                                                                                          dstColorSpace,
+                                                                                          channelForAlpha,
+                                                                                          invert,copyBitmap,requiresUnpremult);
                     break;
                 case 3:
                     convertToFormatInternal<SRCPIX, DSTPIX, srcMaxValue, dstMaxValue,4,3>(renderWindow,srcImg, dstImg,
@@ -2339,11 +2434,9 @@ Image::convertToFormat(const RectI & renderWindow,
     QWriteLocker k(&dstImg->_entryLock);
     QReadLocker k2(&_entryLock);
     
-    assert( _bounds == dstImg->_bounds );
-    //Can only convert among the color plane
-    assert(dstImg->getComponents().isColorPlane() && getComponents().isColorPlane());
+    assert( _bounds.contains(renderWindow) &&  dstImg->_bounds.contains(renderWindow) );
 
-    if ( dstImg->getComponents() == getComponents() ) {
+    if ( dstImg->getComponents().getNumComponents() == getComponents().getNumComponents() ) {
         switch ( dstImg->getBitDepth() ) {
         case eImageBitDepthByte: {
             switch ( getBitDepth() ) {
@@ -2518,3 +2611,401 @@ Image::convertToFormat(const RectI & renderWindow,
     }
 } // convertToFormat
 
+template <typename PIX,int srcNComps, int dstNComps, bool doR, bool doG, bool doB, bool doA>
+void
+Image::copyUnProcessedChannelsForChannels(const RectI& roi,const boost::shared_ptr<Image>& originalImage)
+{
+    ReadAccess acc(originalImage.get());
+
+    int dstRowElements = dstNComps * _bounds.width();
+    
+    PIX* dst_pixels = (PIX*)pixelAt(roi.x1, roi.y1);
+    assert(dst_pixels);
+    for (int y = roi.y1; y < roi.y2; ++y, dst_pixels += (dstRowElements - (roi.x2 - roi.x1) * dstNComps)) {
+        for (int x = roi.x1; x < roi.x2; ++x, dst_pixels += dstNComps) {
+            const PIX* src_pixels = originalImage ? (const PIX*)acc.pixelAt(x, y) : 0;
+            if (dstNComps == 1) {
+                PIX srcA;
+                switch (srcNComps) {
+                    case 0:
+                        srcA = 0;
+                        break;
+                    case 1:
+                        srcA = src_pixels ? src_pixels[0] : 0;
+                        break;
+                    case 2:
+                        srcA = 0;
+                        break;
+                    case 3:
+                        srcA = 0;
+                        break;
+                    case 4:
+                        srcA = src_pixels ? src_pixels[3] : 0;
+                        break;
+                    default:
+                        assert(false);
+                        break;
+                }
+                if (doA) {
+                    *dst_pixels = srcA ;
+                }
+            } else if (dstNComps == 2) {
+                
+                PIX srcR,srcG;
+                switch (srcNComps) {
+                    case 0:
+                        srcR = srcG = 0;
+                        break;
+                    case 1:
+                        srcR = srcG = 0;
+                        break;
+                    case 2:
+                        srcR = src_pixels ? src_pixels[0] : 0;
+                        srcG = src_pixels ? src_pixels[1] : 0;
+                        break;
+                    case 3:
+                        srcR = src_pixels ? src_pixels[0] : 0;
+                        srcG = src_pixels ? src_pixels[1] : 0;
+                        break;
+                    case 4:
+                        srcR = src_pixels ? src_pixels[0] : 0;
+                        srcG = src_pixels ? src_pixels[1] : 0;
+                        break;
+                    default:
+                        assert(false);
+                        break;
+                }
+                if (doR) {
+                    dst_pixels[0] = srcR;
+                }
+                if (doG) {
+                    dst_pixels[1] = srcG;
+                }
+            } else if (dstNComps == 3) {
+                
+                PIX srcR,srcG,srcB;
+                switch (srcNComps) {
+                    case 0:
+                        srcR = srcG = srcB = 0;
+                        break;
+                    case 1:
+                        srcR = srcG = srcB = 0;
+                        break;
+                    case 2:
+                        srcR = src_pixels ? src_pixels[0] : 0;
+                        srcG = src_pixels ? src_pixels[1] : 0;
+                        srcB = 0;
+                        break;
+                    case 3:
+                        srcR = src_pixels ? src_pixels[0] : 0;
+                        srcG = src_pixels ? src_pixels[1] : 0;
+                        srcB = src_pixels ? src_pixels[2] : 0;
+                        break;
+                    case 4:
+                        srcR = src_pixels ? src_pixels[0] : 0;
+                        srcG = src_pixels ? src_pixels[1] : 0;
+                        srcB = src_pixels ? src_pixels[2] : 0;
+                        break;
+                    default:
+                        assert(false);
+                        break;
+                }
+                
+
+                if (doR) {
+                    dst_pixels[0] = srcR;
+                }
+                if (doG) {
+                    dst_pixels[1] = srcG;
+                }
+                if (doB) {
+                    dst_pixels[2] = srcB;
+                }
+            } else if (dstNComps == 4) {
+                
+                PIX srcR,srcG,srcB, srcA;
+                switch (srcNComps) {
+                    case 0:
+                        srcR = srcG = srcB = srcA = 0;
+                        break;
+                    case 1:
+                        srcR = srcG = srcB = 0;
+                        srcA = src_pixels ? *src_pixels : 0;
+                        break;
+                    case 2:
+                        srcB = srcA = 0;
+                        srcR = src_pixels ? src_pixels[0] : 0;
+                        srcG = src_pixels ? src_pixels[1] : 0;
+                        break;
+                    case 3:
+                        srcA = 0;
+                        srcR = src_pixels ? src_pixels[0] : 0;
+                        srcG = src_pixels ? src_pixels[1] : 0;
+                        srcB = src_pixels ? src_pixels[2] : 0;
+                        break;
+                    case 4:
+                        srcR = src_pixels ? src_pixels[0] : 0;
+                        srcG = src_pixels ? src_pixels[1] : 0;
+                        srcB = src_pixels ? src_pixels[2] : 0;
+                        srcA = src_pixels ? src_pixels[3] : 0;
+                        break;
+                    default:
+                        assert(false);
+                        break;
+                }
+
+                
+                if (doR) {
+                    dst_pixels[0] = srcR;
+                }
+                if (doG) {
+                    dst_pixels[1] = srcG;
+                }
+                if (doB) {
+                    dst_pixels[2] = srcB;
+                }
+                if (doA) {
+                    dst_pixels[3] = srcA;
+                }
+            }
+
+        }
+    }
+    
+
+}
+
+template <typename PIX,int srcNComps, int dstNComps>
+void
+Image::copyUnProcessedChannelsForComponents(const RectI& roi,const bool* processChannels,const ImagePtr& originalImage)
+{
+    switch (dstNComps) {
+        case 1:
+            if (processChannels[0]) {
+                copyUnProcessedChannelsForChannels<PIX, srcNComps, dstNComps, false, false, false, true>(roi, originalImage);
+            } else {
+                copyUnProcessedChannelsForChannels<PIX, srcNComps, dstNComps, false, false, false, false>(roi, originalImage);
+            }
+            break;
+        case 2:
+            if (processChannels[0] && processChannels[1]) {
+                copyUnProcessedChannelsForChannels<PIX, srcNComps, dstNComps, true, true, false, false>(roi, originalImage);
+            } else if (!processChannels[0] && processChannels[1]) {
+                copyUnProcessedChannelsForChannels<PIX, srcNComps, dstNComps, false, true, false, false>(roi, originalImage);
+            } else if (!processChannels[0] && !processChannels[1]) {
+                copyUnProcessedChannelsForChannels<PIX, srcNComps, dstNComps, false, false, false, false>(roi, originalImage);
+            } else if (processChannels[0] && !processChannels[1]) {
+                copyUnProcessedChannelsForChannels<PIX, srcNComps, dstNComps, true, false, false, false>(roi, originalImage);
+            }
+            break;
+        case 3:
+            if (processChannels[0] && processChannels[1] && processChannels[2]) {
+                copyUnProcessedChannelsForChannels<PIX, srcNComps, dstNComps, true, true, true, false>(roi, originalImage);
+            } else if (processChannels[0] && processChannels[1] && !processChannels[2]) {
+                copyUnProcessedChannelsForChannels<PIX, srcNComps, dstNComps, true, true, false, false>(roi, originalImage);
+            } else if (processChannels[0] && !processChannels[1] && processChannels[2]) {
+                copyUnProcessedChannelsForChannels<PIX, srcNComps, dstNComps, true, false, true, false>(roi, originalImage);
+            } else if (processChannels[0] && !processChannels[1] && !processChannels[2]) {
+                copyUnProcessedChannelsForChannels<PIX, srcNComps, dstNComps, true, false, false, false>(roi, originalImage);
+            } else if (!processChannels[0] && processChannels[1] && !processChannels[2]) {
+                copyUnProcessedChannelsForChannels<PIX, srcNComps, dstNComps, false, true, false, false>(roi, originalImage);
+            } else if (!processChannels[0] && processChannels[1] && processChannels[2]) {
+                copyUnProcessedChannelsForChannels<PIX, srcNComps, dstNComps, false, true, true, false>(roi, originalImage);
+            } else if (!processChannels[0] && !processChannels[1] && !processChannels[2]) {
+                copyUnProcessedChannelsForChannels<PIX, srcNComps, dstNComps, false, false, false, false>(roi, originalImage);
+            } else if (!processChannels[0] && !processChannels[1] && processChannels[2]) {
+                copyUnProcessedChannelsForChannels<PIX, srcNComps, dstNComps, false, false, true, false>(roi, originalImage);
+            }
+            break;
+        case 4:
+        case 0:
+            if (processChannels[0] && processChannels[1] && processChannels[2] && processChannels[3]) {
+                copyUnProcessedChannelsForChannels<PIX, srcNComps, dstNComps, true, true, true, true>(roi, originalImage);
+            } else if (processChannels[0] && processChannels[1] && processChannels[2] && !processChannels[3]) {
+                copyUnProcessedChannelsForChannels<PIX, srcNComps, dstNComps, true, true, true, false>(roi, originalImage);
+            } else if (processChannels[0] && processChannels[1] && !processChannels[2] && processChannels[3]) {
+                copyUnProcessedChannelsForChannels<PIX, srcNComps, dstNComps, true, true, false, true>(roi, originalImage);
+            } else if (processChannels[0] && processChannels[1] && !processChannels[2] && !processChannels[3]) {
+                copyUnProcessedChannelsForChannels<PIX, srcNComps, dstNComps, true, true, false, false>(roi, originalImage);
+            } else if (processChannels[0] && !processChannels[1] && processChannels[2] && processChannels[3]) {
+                copyUnProcessedChannelsForChannels<PIX, srcNComps, dstNComps, true, false, true, true>(roi, originalImage);
+            } else if (processChannels[0] && !processChannels[1] && processChannels[2] && !processChannels[3]) {
+                copyUnProcessedChannelsForChannels<PIX, srcNComps, dstNComps, true, false, true, false>(roi, originalImage);
+            } else if (processChannels[0] && !processChannels[1] && !processChannels[2] && processChannels[3]) {
+                copyUnProcessedChannelsForChannels<PIX, srcNComps, dstNComps, true, false, false, true>(roi, originalImage);
+            } else if (processChannels[0] && !processChannels[1] && !processChannels[2] && !processChannels[3]) {
+                copyUnProcessedChannelsForChannels<PIX, srcNComps, dstNComps, true, false, false, false>(roi, originalImage);
+            } else if (!processChannels[0] && processChannels[1] && processChannels[2] && processChannels[3]) {
+                copyUnProcessedChannelsForChannels<PIX, srcNComps, dstNComps, false, true, true, true>(roi, originalImage);
+            } else if (!processChannels[0] && processChannels[1] && processChannels[2] && !processChannels[3]) {
+                copyUnProcessedChannelsForChannels<PIX, srcNComps, dstNComps, false, true, true, false>(roi, originalImage);
+            } else if (!processChannels[0] && processChannels[1] && !processChannels[2] && processChannels[3]) {
+                copyUnProcessedChannelsForChannels<PIX, srcNComps, dstNComps, false, true, false, true>(roi, originalImage);
+            } else if (!processChannels[0] && processChannels[1] && !processChannels[2] && !processChannels[3]) {
+                copyUnProcessedChannelsForChannels<PIX, srcNComps, dstNComps, false, true, false, false>(roi, originalImage);
+            } else if (!processChannels[0] && !processChannels[1] && processChannels[2] && processChannels[3]) {
+                copyUnProcessedChannelsForChannels<PIX, srcNComps, dstNComps, false, false, true, true>(roi, originalImage);
+            } else if (!processChannels[0] && !processChannels[1] && processChannels[2] && !processChannels[3]) {
+                copyUnProcessedChannelsForChannels<PIX, srcNComps, dstNComps, false, false, true, false>(roi, originalImage);
+            } else if (!processChannels[0] && !processChannels[1] && !processChannels[2] && processChannels[3]) {
+                copyUnProcessedChannelsForChannels<PIX, srcNComps, dstNComps, false, false, false, true>(roi, originalImage);
+            } else if (!processChannels[0] && !processChannels[1] && !processChannels[2] && !processChannels[3]) {
+                copyUnProcessedChannelsForChannels<PIX, srcNComps, dstNComps, false, false, false, false>(roi, originalImage);
+            }
+            break;
+        default:
+            assert(false);
+            break;
+    }
+}
+
+
+template <typename PIX>
+void
+Image::copyUnProcessedChannelsForDepth(const RectI& roi,const bool* processChannels,const ImagePtr& originalImage)
+{
+    int dstNComps = getComponents().getNumComponents();
+    int srcNComps = originalImage ? originalImage->getComponents().getNumComponents() : 0;
+    
+    switch (dstNComps) {
+        case 1:
+            switch (srcNComps) {
+                case 0:
+                    copyUnProcessedChannelsForComponents<PIX, 0, 1>(roi, processChannels, originalImage);
+                    break;
+                case 1:
+                    copyUnProcessedChannelsForComponents<PIX, 1, 1>(roi, processChannels, originalImage);
+                    break;
+                case 2:
+                    copyUnProcessedChannelsForComponents<PIX, 2, 1>(roi, processChannels, originalImage);
+                    break;
+                case 3:
+                    copyUnProcessedChannelsForComponents<PIX, 3, 1>(roi, processChannels, originalImage);
+                    break;
+                case 4:
+                    copyUnProcessedChannelsForComponents<PIX, 4, 1>(roi, processChannels, originalImage);
+                    break;
+                default:
+                    assert(false);
+                    break;
+            }
+            break;
+        case 2:
+            switch (srcNComps) {
+                case 0:
+                    copyUnProcessedChannelsForComponents<PIX, 0, 2>(roi, processChannels, originalImage);
+                    break;
+                case 1:
+                    copyUnProcessedChannelsForComponents<PIX, 1, 2>(roi, processChannels, originalImage);
+                    break;
+                case 2:
+                    copyUnProcessedChannelsForComponents<PIX, 2, 2>(roi, processChannels, originalImage);
+                    break;
+                case 3:
+                    copyUnProcessedChannelsForComponents<PIX, 3, 2>(roi, processChannels, originalImage);
+                    break;
+                case 4:
+                    copyUnProcessedChannelsForComponents<PIX, 4, 2>(roi, processChannels, originalImage);
+                    break;
+                default:
+                    assert(false);
+                    break;
+            }
+            break;
+        case 3:
+            switch (srcNComps) {
+                case 0:
+                    copyUnProcessedChannelsForComponents<PIX, 0, 3>(roi, processChannels, originalImage);
+                    break;
+                case 1:
+                    copyUnProcessedChannelsForComponents<PIX, 1, 3>(roi, processChannels, originalImage);
+                    break;
+                case 2:
+                    copyUnProcessedChannelsForComponents<PIX, 2, 3>(roi, processChannels, originalImage);
+                    break;
+                case 3:
+                    copyUnProcessedChannelsForComponents<PIX, 3, 3>(roi, processChannels, originalImage);
+                    break;
+                case 4:
+                    copyUnProcessedChannelsForComponents<PIX, 4, 3>(roi, processChannels, originalImage);
+                    break;
+                default:
+                    assert(false);
+                    break;
+            }
+            break;
+        case 4:
+            switch (srcNComps) {
+                case 0:
+                    copyUnProcessedChannelsForComponents<PIX, 0, 4>(roi, processChannels, originalImage);
+                    break;
+                case 1:
+                    copyUnProcessedChannelsForComponents<PIX, 1, 4>(roi, processChannels, originalImage);
+                    break;
+                case 2:
+                    copyUnProcessedChannelsForComponents<PIX, 2, 4>(roi, processChannels, originalImage);
+                    break;
+                case 3:
+                    copyUnProcessedChannelsForComponents<PIX, 3, 4>(roi, processChannels, originalImage);
+                    break;
+                case 4:
+                    copyUnProcessedChannelsForComponents<PIX, 4, 4>(roi, processChannels, originalImage);
+                    break;
+                default:
+                    assert(false);
+                    break;
+            }
+            break;
+
+        default:
+            assert(false);
+            break;
+    }
+}
+
+void
+Image::copyUnProcessedChannels(const RectI& roi,const bool* processChannels,const ImagePtr& originalImage)
+{
+    int numComp = getComponents().getNumComponents();
+    if (originalImage && getMipMapLevel() != originalImage->getMipMapLevel()) {
+        qDebug() << "WARNING: attempting to call copyUnProcessedChannels on images with different mipMapLevel";
+        return;
+    }
+    if (numComp == 0) {
+        return;
+    } else if (numComp == 1 && processChannels[0]) {
+        return;
+    } else if (numComp == 2 && processChannels[0] && processChannels[1]) {
+        return;
+    } else if (numComp == 3 && processChannels[0] && processChannels[1] && processChannels[2]) {
+        return;
+    } else if (numComp == 4 && processChannels[0] && processChannels[1] && processChannels[2] && processChannels[3]) {
+        return;
+    }
+    
+    bool channelsToCopy[4];
+    for (int i = 0; i < 4; ++i) {
+        channelsToCopy[i] = !processChannels[i];
+    }
+    
+    QWriteLocker k(&_entryLock);
+    assert(!originalImage || getBitDepth() == originalImage->getBitDepth());
+    
+    
+    RectI intersected;
+    roi.intersect(_bounds, &intersected);
+    
+    switch (getBitDepth()) {
+        case eImageBitDepthByte:
+            copyUnProcessedChannelsForDepth<unsigned char>(roi, channelsToCopy, originalImage);
+            break;
+        case eImageBitDepthShort:
+            copyUnProcessedChannelsForDepth<unsigned short>(roi, channelsToCopy, originalImage);
+            break;
+        case eImageBitDepthFloat:
+            copyUnProcessedChannelsForDepth<float>(roi, channelsToCopy, originalImage);
+            break;
+        default:
+            return;
+    }
+}

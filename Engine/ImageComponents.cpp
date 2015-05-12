@@ -10,14 +10,16 @@
  */
 
 #include "ImageComponents.h"
+#include "ofxNatron.h"
 
 using namespace Natron;
 
-static const char* rgbaComps[4] = {"r","g","b","a"};
-static const char* rgbComps[3] = {"r","g","b"};
-static const char* alphaComps[1] = {"alpha"};
-static const char* motionComps[2] = {"u","v"};
-static const char* disparityComps[2] = {"x","y"};
+static const char* rgbaComps[4] = {"R","G","B","A"};
+static const char* rgbComps[3] = {"R","G","B"};
+static const char* alphaComps[1] = {"Alpha"};
+static const char* motionComps[2] = {"U","V"};
+static const char* disparityComps[2] = {"X","Y"};
+static const char* xyComps[2] = {"X","Y"};
 
 ImageComponents::ImageComponents()
 : _layerName("none")
@@ -52,7 +54,7 @@ ImageComponents::ImageComponents(const std::string& layerName,
 {
     _componentNames.resize(count);
     for (int i = 0; i < count; ++i) {
-        _componentNames[i] = std::string(componentsName[i]);
+        _componentNames[i] = componentsName[i];
     }
 }
 
@@ -70,10 +72,12 @@ ImageComponents::isColorPlane() const
 bool
 ImageComponents::isConvertibleTo(const ImageComponents& other) const
 {
+    if (*this == other) {
+        return true;
+    }
     if (_layerName != other._layerName) {
         return false;
     }
-    
     if (_layerName == kNatronColorPlaneName && other._layerName == kNatronColorPlaneName) {
         return true;
     }
@@ -198,6 +202,13 @@ const ImageComponents&
 ImageComponents::getDisparityRightComponents()
 {
     static const ImageComponents comp(kNatronDisparityRightPlaneName,kNatronDisparityComponentsName,disparityComps,2);
+    return comp;
+}
+
+const ImageComponents&
+ImageComponents::getXYComponents()
+{
+    static const ImageComponents comp("XY","xy",xyComps,2);
     return comp;
 }
 

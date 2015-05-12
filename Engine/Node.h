@@ -147,7 +147,8 @@ public:
     
     void restoreUserKnobs(const NodeSerialization& serialization);
     
-
+    bool isNodeCreated() const;
+    
     /*@brief Quit all processing done by all render instances of this node
        This is called when the effect is about to be deleted pluginsly
      */
@@ -164,8 +165,6 @@ public:
     void setLiveInstance(const boost::shared_ptr<Natron::EffectInstance>& liveInstance);
 
     Natron::EffectInstance* getLiveInstance() const;
-
-    bool hasEffect() const;
 
     /**
      * @brief Returns true if the node is a multi-instance node, that is, holding several other nodes.
@@ -236,10 +235,10 @@ public:
     bool isOpenFXNode() const;
 
     /**
-     * @brief Returns true if the node is either a roto or rotopaint node
+     * @brief Returns true if the node is either a roto  node
      **/
     bool isRotoNode() const;
-
+    
     /**
      * @brief Returns true if this node is a tracker
      **/
@@ -278,16 +277,19 @@ public:
      * If inputNb equals -1 then this function will check the output components.
      **/
     Natron::ImageComponents findClosestSupportedComponents(int inputNb,const Natron::ImageComponents& comp) const;
+    static Natron::ImageComponents findClosestInList(const Natron::ImageComponents& comp,
+                                                     const std::list<Natron::ImageComponents> &components,
+                                                     bool multiPlanar);
 
     /**
-     * @brief Returns the index of the channel to use to produce the mask.
+     * @brief Returns the components and index of the channel to use to produce the mask.
      * None = -1
      * R = 0
      * G = 1
      * B = 2
      * A = 3
      **/
-    int getMaskChannel(int inputNb) const;
+    int getMaskChannel(int inputNb,Natron::ImageComponents* comps) const;
 
     /**
      * @brief Returns whether masking is enabled or not
@@ -349,6 +351,8 @@ public:
     bool hasOverlay() const;
     
     bool hasMandatoryInputDisconnected() const;
+    
+    bool hasAllInputsConnected() const;
     
     /**
      * @brief This is used by the auto-connection algorithm.
@@ -440,7 +444,7 @@ public:
     
     bool isSettingsPanelOpened() const;
     
-    bool shouldCacheOutput() const;
+    bool shouldCacheOutput(bool isFrameVaryingOrAnimated) const;
 
     /**
      * @brief If the session is a GUI session, then this function sets the position of the node on the nodegraph.
@@ -556,9 +560,8 @@ public:
     /**
      * @brief Called externally when the rendering is aborted. You should never
      * call this yourself.
-     * This function will also be called on all input nodes.
      **/
-    void setAborted(bool b);
+    void notifyRenderBeingAborted();
 
     bool makePreviewByDefault() const;
 
@@ -889,10 +892,24 @@ public:
     
     void setPluginIDAndVersionForGui(const std::string& pluginLabel,const std::string& pluginID,unsigned int version);
     
-    void setPluginPythonModule(const std::string& pythonModule);
+    void setPluginPythonModule(const std::string& pythonModule, unsigned int version);
     
     std::string getPluginPythonModule() const;
+    
+    unsigned int getPluginPythonModuleVersion() const;
   
+    void refreshChannelSelectors(bool setValues);
+    
+    bool getUserComponents(int inputNb,bool* processChannels,bool* isAll,Natron::ImageComponents *layer) const;
+    
+    void addUserComponents(const Natron::ImageComponents& comps);
+    
+    void getUserComponents(std::list<Natron::ImageComponents>* comps);
+    
+    bool hasAtLeastOneChannelToProcess() const;
+    
+    void removeParameterFromPython(const std::string& parameterName);
+
     
 private:
     

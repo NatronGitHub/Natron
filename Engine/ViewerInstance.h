@@ -149,6 +149,10 @@ public:
     int getViewerCurrentView() const;
 
     void onGainChanged(double exp);
+    
+    void onGammaChanged(double value);
+    
+    double getGamma() const WARN_UNUSED_RETURN;
 
     void onColorSpaceChanged(Natron::ViewerColorSpaceEnum colorspace);
 

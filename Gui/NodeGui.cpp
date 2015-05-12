@@ -23,7 +23,6 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QAction>
 #include <QtConcurrentRun>
 #include <QFontMetrics>
-#include <QMenu>
 #include <QTextDocument> // for Qt::convertFromPlainText
 #include <QTextBlockFormat>
 #include <QTextCursor>
@@ -291,10 +290,10 @@ NodeGui::initialize(NodeGraph* dag,
         assert(parentGui);
         if (parentGui->isSettingsPanelOpened()) {
             ensurePanelCreated();
+            boost::shared_ptr<MultiInstancePanel> panel = parentGui->getMultiInstancePanel();
+            assert(panel);
+            panel->onChildCreated(internalNode);
         }
-        boost::shared_ptr<MultiInstancePanel> panel = parentGui->getMultiInstancePanel();
-        assert(panel);
-        panel->onChildCreated(internalNode);
     }
     
     if (internalNode->getPluginID() == PLUGINID_OFX_MERGE) {
@@ -416,6 +415,12 @@ NodeGui::ensurePanelCreated()
         QObject::connect( _settingsPanel,SIGNAL( nameChanged(QString) ),this,SLOT( setName(QString) ) );
         QObject::connect( _settingsPanel,SIGNAL( closeChanged(bool) ), this, SLOT( onSettingsPanelClosed(bool) ) );
         QObject::connect( _settingsPanel,SIGNAL( colorChanged(QColor) ),this,SLOT( onSettingsPanelColorChanged(QColor) ) );
+        if (getNode()->isRotoNode()) {
+            _graph->getGui()->setRotoInterface(this);
+        }
+        if (getNode()->isTrackerNode()) {
+            _graph->getGui()->createNewTrackerInterface(this);
+        }
     }
     initializeKnobs();
     beginEditKnobs();
@@ -425,6 +430,13 @@ NodeGui::ensurePanelCreated()
     
     boost::shared_ptr<MultiInstancePanel> panel = getMultiInstancePanel();
     if (_mainInstancePanel && panel) {
+        panel->setRedrawOnSelectionChanged(false);
+        
+        /*
+         * If there are many children, each children may request for a redraw of the viewer which may 
+         * very well freeze the UI.
+         * We just do one redraw when all children are created
+         */
         NodeList children;
         getNode()->getChildrenMultiInstance(&children);
         for (NodeList::iterator it = children.begin() ; it != children.end(); ++it) {
@@ -435,6 +447,10 @@ NodeGui::ensurePanelCreated()
             gui->ensurePanelCreated();
             
             panel->onChildCreated(*it);
+        }
+        panel->setRedrawOnSelectionChanged(true);
+        if (!children.empty()) {
+            getDagGui()->getGui()->redrawAllViewers();
         }
     }
 }
@@ -1617,6 +1633,8 @@ NodeGui::hasEdgeNearbyRect(const QRectF & rect)
 
     for (InputEdges::const_iterator it = _inputEdges.begin(); it != _inputEdges.end(); ++it) {
         QLineF edgeLine = (*it)->line();
+        edgeLine.setP1((*it)->mapToScene(edgeLine.p1()));
+        edgeLine.setP2((*it)->mapToScene(edgeLine.p2()));
         for (int j = 0; j < 4; ++j) {
             if (edgeLine.intersect(rectEdges[j], &intersection) == QLineF::BoundedIntersection) {
                 if (!closest) {
@@ -1642,6 +1660,8 @@ NodeGui::hasEdgeNearbyRect(const QRectF & rect)
     if (_outputEdge) {
         if (_outputEdge->isVisible()) {
             QLineF edgeLine = _outputEdge->line();
+            edgeLine.setP1((_outputEdge)->mapToScene(edgeLine.p1()));
+            edgeLine.setP2((_outputEdge)->mapToScene(edgeLine.p2()));
             for (int j = 0; j < 4; ++j) {
                 if (edgeLine.intersect(rectEdges[j], &intersection) == QLineF::BoundedIntersection) {
                     return _outputEdge;
@@ -1659,7 +1679,7 @@ NodeGui::showGui()
     show();
     setActive(true);
     NodePtr node = getNode();
-    for (U32 i = 0; i < _inputEdges.size() ;++i) {
+    for (U32 i = 0; i < _inputEdges.size() ; ++i) {
         _graph->scene()->addItem(_inputEdges[i]);
         _inputEdges[i]->setParentItem( parentItem() );
         if ( !node->getLiveInstance()->isInputRotoBrush(i) ) {
@@ -1923,7 +1943,7 @@ NodeGui::paint(QPainter* /*painter*/,
     //nothing special
 }
 
-const std::map<boost::shared_ptr<KnobI>,KnobGui*> &
+const std::map<boost::weak_ptr<KnobI>,KnobGui*> &
 NodeGui::getKnobs() const
 {
     assert(_settingsPanel);
@@ -1941,10 +1961,10 @@ NodeGui::serialize(NodeGuiSerialization* serializationObject) const
 }
 
 void
-NodeGui::serializeInternal(std::list<boost::shared_ptr<NodeSerialization> >& internalSerialization,bool copyKnobs) const
+NodeGui::serializeInternal(std::list<boost::shared_ptr<NodeSerialization> >& internalSerialization) const
 {
     NodePtr node = getNode();
-    boost::shared_ptr<NodeSerialization> thisSerialization(new NodeSerialization(node,false,copyKnobs));
+    boost::shared_ptr<NodeSerialization> thisSerialization(new NodeSerialization(node,false));
     internalSerialization.push_back(thisSerialization);
     
     ///For multi-instancs, serialize children too
@@ -1956,7 +1976,7 @@ NodeGui::serializeInternal(std::list<boost::shared_ptr<NodeSerialization> >& int
         const std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> >& instances = panel->getInstances();
         for (std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> >::const_iterator it = instances.begin();
              it != instances.end(); ++it) {
-            boost::shared_ptr<NodeSerialization> childSerialization(new NodeSerialization(it->first.lock(),false,copyKnobs));
+            boost::shared_ptr<NodeSerialization> childSerialization(new NodeSerialization(it->first.lock(),false));
             internalSerialization.push_back(childSerialization);
         }
     }
@@ -2078,7 +2098,7 @@ NodeGui::setVisibleDetails(bool visible)
     if (_nameItem) {
         _nameItem->setVisible(visible);
     }
-    for (InputEdges::iterator it = _inputEdges.begin(); it!=_inputEdges.end(); ++it) {
+    for (InputEdges::iterator it = _inputEdges.begin(); it != _inputEdges.end(); ++it) {
         (*it)->setVisibleDetails(visible);
     }
 }

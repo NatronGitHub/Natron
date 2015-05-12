@@ -21,6 +21,10 @@
 #include <set>
 #include <map>
 
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#include <boost/enable_shared_from_this.hpp>
+#endif
+
 #include <QtCore/QReadWriteLock>
 #include <QtCore/QMutex>
 
@@ -39,7 +43,7 @@ class AppInstance;
 class KnobSerialization;
 class StringAnimationManager;
 namespace Transform {
-class Matrix3x3;
+struct Matrix3x3;
 }
 namespace Natron {
 class OfxParamOverlayInteract;
@@ -53,15 +57,15 @@ class KnobSignalSlotHandler
 {
     Q_OBJECT
     
-    boost::shared_ptr<KnobI> k;
+    boost::weak_ptr<KnobI> k;
     
 public:
     
-    KnobSignalSlotHandler(boost::shared_ptr<KnobI> knob);
+    KnobSignalSlotHandler(const boost::shared_ptr<KnobI> &knob);
     
     boost::shared_ptr<KnobI> getKnob() const
     {
-        return k;
+        return k.lock();
     }
     
     void s_animationLevelChanged(int dim,int level)
@@ -193,6 +197,11 @@ public:
         Q_EMIT hasModificationsChanged();
     }
     
+    void s_descriptionChanged()
+    {
+        Q_EMIT descriptionChanged();
+    }
+    
 public Q_SLOTS:
 
     /**
@@ -288,6 +297,8 @@ Q_SIGNALS:
     void expressionChanged(int dimension);
     
     void hasModificationsChanged();
+    
+    void descriptionChanged();
 };
 
 struct KnobChange
@@ -301,6 +312,7 @@ typedef std::list<KnobChange> ChangesList;
 
 class KnobI
     : public OverlaySupport
+    , public boost::enable_shared_from_this<KnobI>
 {
     
     friend class KnobHolder;
@@ -679,9 +691,10 @@ public:
 
     /**
      * @brief Get the knob description, that is the label next to the knob on the user interface.
-     * This function is MT-safe as the description NEVER changes throughout the program.
+     * This function is MT-safe as it the description can only be changed by the main thread.
      **/
     virtual const std::string & getDescription() const = 0;
+    virtual void setDescription(const std::string& description) = 0;
     
     /**
      * @brief Hide the description label on the GUI on the left of the knob. This is not dynamic
@@ -899,7 +912,7 @@ public:
      * @brief Adds a new listener to this knob. This is just a pure notification about the fact that the given knob
      * is listening to the values/keyframes of "this". It could be call addSlave but it will also be use for expressions.
      **/
-    virtual void addListener(bool isExpression,int fromExprDimension,KnobI* knob) = 0;
+    virtual void addListener(bool isExpression,int fromExprDimension,const boost::shared_ptr<KnobI>& knob) = 0;
     virtual void removeListener(KnobI* knob) = 0;
 
     virtual bool useNativeOverlayHandle() const { return false; }
@@ -946,7 +959,7 @@ public:
     /**
      * @brief Returns a list of all the knobs whose value depends upon this knob.
      **/
-    virtual void getListeners(std::list<KnobI*> & listeners) const = 0;
+    virtual void getListeners(std::list<boost::shared_ptr<KnobI> > & listeners) const = 0;
 
     /**
      * @brief Calls unSlave with a value changed reason of Natron::eValueChangedReasonUserEdited.
@@ -1125,6 +1138,7 @@ public:
     virtual void setAnimationEnabled(bool val) OVERRIDE FINAL;
     virtual bool isAnimationEnabled() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual const std::string & getDescription() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    void setDescription(const std::string& description) OVERRIDE FINAL;
     virtual void hideDescription()  OVERRIDE FINAL;
     virtual bool isDescriptionVisible() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual KnobHolder* getHolder() const OVERRIDE FINAL WARN_UNUSED_RETURN;
@@ -1209,10 +1223,10 @@ public:
      * @brief Adds a new listener to this knob. This is just a pure notification about the fact that the given knob
      * is listening to the values/keyframes of "this". It could be call addSlave but it will also be use for expressions.
      **/
-    virtual void addListener(bool isFromExpr,int fromExprDimension,KnobI* knob) OVERRIDE FINAL;
+    virtual void addListener(bool isFromExpr,int fromExprDimension,const boost::shared_ptr<KnobI>& knob) OVERRIDE FINAL;
     virtual void removeListener(KnobI* knob) OVERRIDE FINAL;
 
-    virtual void getListeners(std::list<KnobI*> & listeners) const OVERRIDE FINAL;
+    virtual void getListeners(std::list<boost::shared_ptr<KnobI> >& listeners) const OVERRIDE FINAL;
     
     virtual void clearExpressionsResults(int /*dimension*/) {}
     
@@ -1786,6 +1800,8 @@ public:
      * @brief When frozen is true all the knobs of this effect read-only so the user can't interact with it.
      **/
     void setKnobsFrozen(bool frozen);
+    
+    bool areKnobsFrozen() const;
 
     /**
      * @brief Can be overriden to prevent values to be set directly.
@@ -1995,7 +2011,7 @@ public:
     bool isSlave() const;
 
     ///Slave all the knobs of this holder to the other holder.
-    void slaveAllKnobs(KnobHolder* other);
+    void slaveAllKnobs(KnobHolder* other,bool restore);
 
     void unslaveAllKnobs();
     
