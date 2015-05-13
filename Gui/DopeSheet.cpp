@@ -363,6 +363,8 @@ DSNode::DSNode(DopeSheetEditor *dopeSheetEditor,
 
         connect(startingTimeKnob.get(), SIGNAL(valueChanged(int, int)),
                 this, SLOT(computeReaderRange()));
+
+        computeReaderRange();
     }
 
     // If it's another node
