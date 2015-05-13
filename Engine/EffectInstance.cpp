@@ -3345,7 +3345,7 @@ EffectInstance::renderRoIInternal(SequenceTime time,
     if (allowFullySafeFrame && safety == eRenderSafetyFullySafe) {
         int maxInput = getMaxInputCount();
         for (int i = 0; i < maxInput; ++i) {
-            if (isMaskEnabled(i) && getInput(i)) {
+            if (isInputMask(i) && isMaskEnabled(i) && getInput(i)) {
                 safety = eRenderSafetyFullySafeFrame;
                 break;
             }
