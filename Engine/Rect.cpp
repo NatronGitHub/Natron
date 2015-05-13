@@ -47,7 +47,6 @@ std::vector<RectI> RectI::splitIntoSmallerRects(int splitsCount) const
     } else {
         // the average rect area
         double avgArea = splitsCount ? std::max((double)MINAREA, area() / (double)splitsCount) : MINAREA;
-        splitsCount = area() / avgArea;
         int numCols = std::max(1, (int)(width() / std::sqrt(avgArea)));
         int numRows = std::max(1, (int)(area()/(MINAREA*numCols))); // integer division
         if (splitsCount && splitsCount > numCols) {
@@ -59,14 +58,14 @@ std::vector<RectI> RectI::splitIntoSmallerRects(int splitsCount) const
         }
         assert((splitsCount >= numRows * numCols) || !splitsCount);
         for (int i = 0; i < numRows; ++i) {
-            int y1 = bottom() + i     * height() / numRows;
-            int y2 = bottom() + (i+1) * height() / numRows;
+            int y1_ = bottom() + i     * height() / numRows;
+            int y2_ = bottom() + (i+1) * height() / numRows;
             for (int j = 0; j < numCols; ++j) {
-                int x1 = left() + j     * width() / numCols;
-                int x2 = left() + (j+1) * width() / numCols;
-                assert((x2-x1)*(y2-y1) >= MINAREA);
-                //printf("area is %d\n", (x2-x1)*(y2-y1));
-                ret.push_back( RectI(x1, y1, x2, y2) );
+                int x1_ = left() + j     * width() / numCols;
+                int x2_ = left() + (j+1) * width() / numCols;
+                //assert((x2_-x1_)*(y2_-y1_) >= MINAREA);
+                //printf("area is %d\n", (x2_-x1_)*(y2_-y1_));
+                ret.push_back( RectI(x1_, y1_, x2_, y2_) );
             }
         }
     }

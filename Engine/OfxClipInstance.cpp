@@ -692,7 +692,7 @@ OfxClipInstance::getImagePlane(OfxTime time, int view, const std::string& plane,
 #endif
     }
     assert( _lastActionData.hasLocalData() );
-    if ( isOutput() ) {
+    if (isOutput()) {
         
         ImageComponents natronPlane = ofxPlaneToNatronPlane(plane);
 
@@ -760,7 +760,7 @@ OfxClipInstance::getImagePlane(OfxTime time, int view, const std::string& plane,
         OfxImage* ret =  new OfxImage(outputImage,false,renderWindow,boost::shared_ptr<Transform::Matrix3x3>(), components, nComps, true, *this);
         args.imagesBeingRendered.push_back(ret);
         return ret;
-    }
+    } // if (isOutput())
     
     
     boost::shared_ptr<Transform::Matrix3x3> transform;

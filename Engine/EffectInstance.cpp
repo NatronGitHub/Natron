@@ -3270,6 +3270,7 @@ EffectInstance::renderRoIInternal(SequenceTime time,
     ///as it would lead to a deadlock when the project is loading.
     ///Just fall back to Fully_safe
     int nbThreads = appPTR->getCurrentSettings()->getNumberOfThreads();
+    bool allowFullySafeFrame = true;
     if (safety == eRenderSafetyFullySafeFrame) {
         ///If the plug-in is eRenderSafetyFullySafeFrame that means it wants the host to perform SMP aka slice up the RoI into chunks
         ///but if the effect doesn't support tiles it won't work.
@@ -3278,6 +3279,7 @@ EffectInstance::renderRoIInternal(SequenceTime time,
             ( (nbThreads == 0) && (appPTR->getHardwareIdealThreadCount() == 1) ) ||
             ( QThreadPool::globalInstance()->activeThreadCount() >= QThreadPool::globalInstance()->maxThreadCount() ) ) {
             safety = eRenderSafetyFullySafe;
+            allowFullySafeFrame = false;
         } else {
             if ( !getApp()->getProject()->tryLock() ) {
                 safety = eRenderSafetyFullySafe;
@@ -3290,7 +3292,7 @@ EffectInstance::renderRoIInternal(SequenceTime time,
      * If the effect has a mask enabled, force it to use host frame threading so that we can split the RoI in small chunks
      * to optimize chances that isIdentity(roi) returns true.
      */
-    if (safety == eRenderSafetyFullySafe) {
+    if (allowFullySafeFrame && safety == eRenderSafetyFullySafe) {
         int maxInput = getMaxInputCount();
         for (int i = 0; i < maxInput; ++i) {
             if (isMaskEnabled(i) && getInput(i)) {
@@ -3620,6 +3622,11 @@ EffectInstance::tiledRenderingFunctor(const ParallelRenderArgs& frameArgs,
         }
         
     }
+    
+    ///It might have been already rendered now
+    if (downscaledRectToRender.isNull()) {
+        return eRenderingFunctorRetOK;
+    }
 
     ///There cannot be the same thread running 2 concurrent instances of renderRoI on the same effect.
     assert(!_imp->renderArgs.hasLocalData() || !_imp->renderArgs.localData()._validArgs);
@@ -3836,7 +3843,8 @@ EffectInstance::renderHandler(RenderArgs & args,
         
     }
     
-    for (std::map<Natron::ImageComponents, PlaneToRender>::iterator it = planes.planes.begin(); it != planes.planes.end(); ++it) {
+    args._outputPlanes = planes.planes;
+    for (std::map<Natron::ImageComponents, PlaneToRender>::iterator it = args._outputPlanes.begin(); it != args._outputPlanes.end(); ++it) {
         /*
          * When using the cache, allocate a local temporary buffer onto which the plug-in will render, and then safely
          * copy this buffer to the shared (among threads) image.
@@ -3865,7 +3873,6 @@ EffectInstance::renderHandler(RenderArgs & args,
         }
         tmpPlanes.push_back(std::make_pair(it->second.renderMappedImage->getComponents(),it->second.tmpImage));
     }
-    args._outputPlanes = planes.planes;
     
     
 #if NATRON_ENABLE_TRIMAP
