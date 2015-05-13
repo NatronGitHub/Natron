@@ -66,6 +66,10 @@ namespace  {
         unsigned int mipMapLevel;
     };
     
+    struct IdentityResults {
+        int inputIdentityNb;
+        double inputIdentityTime;
+    };
     
     struct CompareActionsCacheKeys {
         bool operator() (const ActionKey& lhs,const ActionKey& rhs) const {
@@ -90,6 +94,7 @@ namespace  {
         }
     };
     
+    typedef std::map<ActionKey,IdentityResults,CompareActionsCacheKeys> IdentityCacheMap;
     typedef std::map<ActionKey,RectD,CompareActionsCacheKeys> RoDCacheMap;
     
     /**
@@ -110,6 +115,7 @@ namespace  {
         OfxRangeD _timeDomain;
         bool _timeDomainSet;
         
+        IdentityCacheMap _identityCache;
         RoDCacheMap _rodCache;
         
     public:
@@ -119,6 +125,7 @@ namespace  {
         , _cacheHash(0)
         , _timeDomain()
         , _timeDomainSet(false)
+        , _identityCache()
         , _rodCache()
         {
             
@@ -136,9 +143,51 @@ namespace  {
             QMutexLocker l(&_cacheMutex);
             _cacheHash = newHash;
             _rodCache.clear();
+             _identityCache.clear();
             _timeDomainSet = false;
         }
         
+        bool getIdentityResult(U64 hash,double time, int view, unsigned int mipMapLevel,int* inputNbIdentity,double* identityTime) {
+            QMutexLocker l(&_cacheMutex);
+            if (hash != _cacheHash)
+                return false;
+            
+            ActionKey key;
+            key.time = time;
+            key.view = view;
+            key.mipMapLevel = mipMapLevel;
+            
+            IdentityCacheMap::const_iterator found = _identityCache.find(key);
+            if ( found != _identityCache.end() ) {
+                *inputNbIdentity = found->second.inputIdentityNb;
+                *identityTime = found->second.inputIdentityTime;
+                return true;
+            }
+            return false;
+        }
+        
+        void setIdentityResult(double time, int view, unsigned int mipMapLevel,int inputNbIdentity,double identityTime)
+        {
+            QMutexLocker l(&_cacheMutex);
+            
+            
+            ActionKey key;
+            key.time = time;
+            key.view = view;
+            key.mipMapLevel = mipMapLevel;
+            
+            IdentityCacheMap::iterator found = _identityCache.find(key);
+            if ( found != _identityCache.end() ) {
+                found->second.inputIdentityNb = inputNbIdentity;
+                found->second.inputIdentityTime = identityTime;
+            } else {
+                IdentityResults v;
+                v.inputIdentityNb = inputNbIdentity;
+                v.inputIdentityTime = identityTime;
+                _identityCache.insert(std::make_pair(key, v));
+            }
+            
+        }
        
         bool getRoDResult(U64 hash,double time, int view,unsigned int mipMapLevel,RectD* rod) {
             QMutexLocker l(&_cacheMutex);
@@ -157,6 +206,7 @@ namespace  {
             }
             return false;
         }
+        
         
         void setRoDResult(double time, int view, unsigned int mipMapLevel,const RectD& rod)
         {
@@ -970,7 +1020,7 @@ EffectInstance::retrieveGetImageDataUponFailure(const int time,
     RectI pixelRod;
     rod.toPixelEnclosing(scale, getPreferredAspectRatio(), &pixelRod);
     try {
-        *isIdentity_p = isIdentity_public(time, scale, pixelRod, view, identityTime, identityInputNb_p);
+        *isIdentity_p = isIdentity_public(true, nodeHash,time, scale, pixelRod, view, identityTime, identityInputNb_p);
     } catch (...) {
         return false;
     }
@@ -2127,7 +2177,7 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
         assert( !( (supportsRS == eSupportsNo) && !(renderMappedScale.x == 1. && renderMappedScale.y == 1.) ) );
         bool identity;
         try {
-            identity = isIdentity_public(args.time, renderMappedScale, roi, args.view, &inputTimeIdentity, &inputNbIdentity);
+            identity = isIdentity_public(true, nodeHash, args.time, renderMappedScale, roi, args.view, &inputTimeIdentity, &inputNbIdentity);
         } catch (...) {
             return eRenderRoIRetCodeFailed;
         }
@@ -2867,14 +2917,14 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
 # ifdef DEBUG
 
             {
-                const std::list<RectI>& rectsToRender = planesToRender.rectsToRender;
+                /*const std::list<RectI>& rectsToRender = planesToRender.rectsToRender;
                 qDebug() <<'('<<QThread::currentThread()<<")--> "<< getNode()->getScriptName_mt_safe().c_str() << ": render view: " << args.view << ", time: " << args.time << " No. tiles: " << rectsToRender.size() << " rectangles";
                 for (std::list<RectI>::const_iterator it = rectsToRender.begin(); it != rectsToRender.end(); ++it) {
                     qDebug() << "rect: " << "x1= " <<  it->x1 << " , y1= " << it->y1 << " , x2= " << it->x2 << " , y2= " << it->y2;
                 }
                 for (std::map<Natron::ImageComponents, PlaneToRender> ::iterator it = planesToRender.planes.begin(); it != planesToRender.planes.end(); ++it) {
                     qDebug() << "plane: " << it->first.getLayerName().c_str();
-                }
+                }*/
                 
             }
 # endif
@@ -3805,7 +3855,7 @@ EffectInstance::renderHandler(RenderArgs & args,
     bool isIdentityProcessed = false;
     SequenceTime identityInputTime;
     int identityInputNb;
-    bool identity = isIdentity_public(time, actionArgs.mappedScale, downscaledRectToRender, view, &identityInputTime, &identityInputNb);
+    bool identity = isIdentity_public(false, 0, time, actionArgs.mappedScale, downscaledRectToRender, view, &identityInputTime, &identityInputNb);
     if (identity) {
         
         std::list<Natron::ImageComponents> comps;
@@ -4693,7 +4743,9 @@ EffectInstance::getTransform_public(SequenceTime time,
 }
 
 bool
-EffectInstance::isIdentity_public(SequenceTime time,
+EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true when calling for the whole image (not for a subrect)
+                                  U64 hash,
+                                  SequenceTime time,
                                   const RenderScale & scale,
                                   const RectI& renderWindow,
                                   int view,
@@ -4703,7 +4755,16 @@ EffectInstance::isIdentity_public(SequenceTime time,
     
     assert( !( (supportsRenderScaleMaybe() == eSupportsNo) && !(scale.x == 1. && scale.y == 1.) ) );
     
-    
+    unsigned int mipMapLevel = Image::getLevelFromScale(scale.x);
+
+    if (useIdentityCache) {
+        double timeF = 0.;
+        bool foundInCache = _imp->actionsCache.getIdentityResult(hash, time, view, mipMapLevel, inputNb, &timeF);
+        if (foundInCache) {
+            *inputTime = timeF;
+            return *inputNb >= 0 || *inputNb == -2;
+        }
+    }
     ///If this is running on a render thread, attempt to find the info in the thread local storage.
     if (QThread::currentThread() != qApp->thread() && _imp->renderArgs.hasLocalData()) {
         const RenderArgs& args = _imp->renderArgs.localData();
@@ -4751,6 +4812,10 @@ EffectInstance::isIdentity_public(SequenceTime time,
     if (!ret) {
         *inputNb = -1;
         *inputTime = time;
+    }
+    
+    if (useIdentityCache) {
+        _imp->actionsCache.setIdentityResult(time, view, mipMapLevel, *inputNb, *inputTime);
     }
     return ret;
     
@@ -5810,7 +5875,7 @@ EffectInstance::getNearestNonIdentity(int time)
     
     RectI pixelRoi;
     rod.toPixelEnclosing(scale, getPreferredAspectRatio(), &pixelRoi);
-    if ( !isIdentity_public(time, scale, pixelRoi, 0, &inputTimeIdentity, &inputNbIdentity) ) {
+    if ( !isIdentity_public(true, hash,time, scale, pixelRoi, 0, &inputTimeIdentity, &inputNbIdentity) ) {
         return this;
     } else {
         

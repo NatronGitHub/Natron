@@ -798,10 +798,13 @@ protected:
 
 public:
 
-    bool isIdentity_public(SequenceTime time,
+    bool isIdentity_public(bool useIdentityCache, // only set to true when calling for the whole image (not for a subrect) 
+                           U64 hash,
+                           SequenceTime time,
                            const RenderScale & scale,
                            const RectI & renderWindow,
-                           int view,SequenceTime* inputTime,
+                           int view,
+                           SequenceTime* inputTime,
                            int* inputNb) WARN_UNUSED_RETURN;
     enum RenderSafetyEnum
     {
