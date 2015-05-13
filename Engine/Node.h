@@ -60,6 +60,7 @@ class Double_Knob;
 class NodeGuiI;
 class RotoContext;
 class NodeCollection;
+class RotoStrokeItem;
 namespace Natron {
 class Plugin;
 class OutputEffectInstance;
@@ -466,6 +467,13 @@ public:
     
     std::string getInputChangedCallback() const;
 
+    /**
+     * @brief This is used exclusively by nodes in the underlying graph of the implementation of the RotoPaint. 
+     * Do not use that anywhere else.
+     **/
+    void attachStrokeItem(const boost::shared_ptr<RotoStrokeItem>& stroke);
+    boost::shared_ptr<RotoStrokeItem> getAttachedStrokeItem() const;
+    
 protected:
     
     void runInputChangedCallback(int index);

@@ -444,6 +444,8 @@ struct Node::Implementation
     
     mutable QMutex createdComponentsMutex;
     std::list<Natron::ImageComponents> createdComponents; // comps created by the user
+    
+    boost::weak_ptr<RotoStrokeItem> paintStroke;
 };
 
 /**
@@ -5686,7 +5688,18 @@ Node::restoreClipPreferencesRecursive(std::list<Natron::Node*>& markedNodes)
 }
 
 
+void
+Node::attachStrokeItem(const boost::shared_ptr<RotoStrokeItem>& stroke)
+{
+    assert(QThread::currentThread() == qApp->thread());
+    _imp->paintStroke = stroke;
+}
 
+boost::shared_ptr<RotoStrokeItem>
+Node::getAttachedStrokeItem() const
+{
+    return _imp->paintStroke.lock();
+}
 
 /**
  * @brief Given a fullyQualifiedName, e.g: app1.Group1.Blur1

@@ -10,6 +10,10 @@
 
 #include "RotoPaint.h"
 
+#include "Engine/Image.h"
+#include "Engine/Node.h"
+#include "Engine/RotoContext.h"
+
 using namespace Natron;
 
 struct RotoPaintPrivate
@@ -112,15 +116,34 @@ RotoPaint::getPreferredAspectRatio() const
     
 }
 
-void
-RotoPaint::getFrameRange(SequenceTime *first,SequenceTime *last)
-{
-    
-}
 
 
 Natron::StatusEnum
 RotoPaint::render(const RenderActionArgs& args)
 {
-    return Natron::eStatusFailed;
+    boost::shared_ptr<RotoContext> roto = getNode()->getRotoContext();
+    std::list<boost::shared_ptr<RotoDrawableItem> > items = roto->getCurvesByRenderOrder();
+    
+    std::list<ImageComponents> bgComps;
+    Natron::ImageBitDepthEnum bgDepth;
+    getPreferredDepthAndComponents(0, &bgComps, &bgDepth);
+    assert(!bgComps.empty());
+    RectI bgImgRoI;
+    ImagePtr bgImg = getImage(0, args.time, args.mappedScale, args.view, 0, bgComps.front(), bgDepth, getPreferredAspectRatio(), false, &bgImgRoI);
+    
+    for (std::list<std::pair<Natron::ImageComponents,boost::shared_ptr<Natron::Image> > >::const_iterator plane = args.outputPlanes.begin();
+         plane != args.outputPlanes.end(); ++plane) {
+        
+        if (items.empty()) {
+            if (bgImg) {
+                plane->second->pasteFrom(*bgImg, args.roi);
+            } else {
+                plane->second->fill(args.roi, 0., 0., 0., 0.);
+            }
+        } else {
+
+        }
+    }
+    
+    return Natron::eStatusOK;
 }

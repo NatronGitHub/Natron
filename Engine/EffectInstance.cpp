@@ -1094,7 +1094,11 @@ EffectInstance::getImage(int inputNb,
     boost::shared_ptr<RotoContext> roto = getNode()->getRotoContext();
     bool useRotoInput = false;
     if (roto) {
-        useRotoInput = isInputRotoBrush(inputNb);
+        if (!roto->isRotoPaint()) {
+            useRotoInput = isInputRotoBrush(inputNb);
+        } else {
+            useRotoInput = isMask;
+        }
     }
     
     if ((!roto || (roto && !useRotoInput)) && !n) {
@@ -1223,8 +1227,16 @@ EffectInstance::getImage(int inputNb,
         //the roto input can only output color plane
         assert(outputComps.size() == 1);
         
-        boost::shared_ptr<Natron::Image> mask =  roto->renderMask(pixelRoI, outputComps.front(), nodeHash,rotoAge,
-                                                                  rod, time, depth, view, mipMapLevel);
+        boost::shared_ptr<Natron::Image> mask;
+        
+        boost::shared_ptr<RotoStrokeItem> attachedStroke = getNode()->getAttachedStrokeItem();
+        if (attachedStroke) {
+            mask = roto->renderMask(attachedStroke, pixelRoI, outputComps.front(), nodeHash,rotoAge,
+                                    rod, time, depth, view, mipMapLevel);
+        } else {
+            mask = roto->renderMask(pixelRoI, outputComps.front(), nodeHash,rotoAge,
+                                    rod, time, depth, view, mipMapLevel);
+        }
         if (inputImagesThreadLocal.empty()) {
             ///If the effect is analysis (e.g: Tracker) there's no input images in the tread local storage, hence add it
             _imp->addInputImageTempPointer(inputNb,mask);
@@ -3285,17 +3297,17 @@ EffectInstance::renderRoIInternal(SequenceTime time,
     }
     
     RenderScale renderMappedScale;
-    unsigned int renderMappedMipMapLevel;
+    unsigned int renderMappedMipMapLevel = 0;
 
     for (std::map<ImageComponents,PlaneToRender>::iterator it = planesToRender.planes.begin(); it != planesToRender.planes.end(); ++it) {
         it->second.renderMappedImage = renderFullScaleThenDownscale ? it->second.fullscaleImage : it->second.downscaleImage;
         if (it == planesToRender.planes.begin()) {
             renderMappedMipMapLevel = it->second.renderMappedImage->getMipMapLevel();
-            renderMappedScale.x = Image::getScaleFromMipMapLevel(renderMappedMipMapLevel);
-            renderMappedScale.y = renderMappedScale.x;
-            
         }
     }
+    
+    renderMappedScale.x = Image::getScaleFromMipMapLevel(renderMappedMipMapLevel);
+    renderMappedScale.y = renderMappedScale.x;
     
     bool tilesSupported = supportsTiles();
 
@@ -3787,19 +3799,28 @@ EffectInstance::tiledRenderingFunctor(const ParallelRenderArgs& frameArgs,
 #     endif // DEBUG
     
     
-    return renderHandler(args,
-                         frameArgs,
-                         inputImages,
-                         renderFullScaleThenDownscale,
-                         renderUseScaleOneInputs,
-                         isSequentialRender,
-                         isRenderResponseToUserInteraction,
-                         downscaledRectToRender,
-                         outputClipPrefDepth,
-                         outputClipPrefsComps,
-                         processChannels,
-                         originalInputImage,
-                         planes);
+    RenderingFunctorRetEnum handlerRet =  renderHandler(args,
+                                                        frameArgs,
+                                                        inputImages,
+                                                        renderFullScaleThenDownscale,
+                                                        renderUseScaleOneInputs,
+                                                        isSequentialRender,
+                                                        isRenderResponseToUserInteraction,
+                                                        downscaledRectToRender,
+                                                        outputClipPrefDepth,
+                                                        outputClipPrefsComps,
+                                                        processChannels,
+                                                        originalInputImage,
+                                                        planes);
+    if (handlerRet == eRenderingFunctorRetOK) {
+        if (isBeingRenderedElseWhere) {
+            return eRenderingFunctorRetTakeImageLock;
+        } else {
+            return eRenderingFunctorRetOK;
+        }
+    } else {
+        return handlerRet;
+    }
 }
 
 EffectInstance::RenderingFunctorRetEnum
@@ -3842,9 +3863,8 @@ EffectInstance::renderHandler(RenderArgs & args,
     
     std::list<std::pair<ImageComponents,ImagePtr> > tmpPlanes;
     bool multiPlanar = isMultiPlanar();
-    bool isBeingRenderedElseWhere = false;
-    // Single threaded
-    actionArgs.roi = args._renderWindowPixel;
+
+    actionArgs.roi = downscaledRectToRender;
     
     assert(!outputClipPrefsComps.empty());
     
@@ -4149,7 +4169,7 @@ EffectInstance::renderHandler(RenderArgs & args,
         } // for (std::map<ImageComponents,PlaneToRender>::const_iterator it = outputPlanes.begin(); it != outputPlanes.end(); ++it) {
         
     }
-    return isBeingRenderedElseWhere ? eRenderingFunctorRetTakeImageLock : eRenderingFunctorRetOK;
+    return eRenderingFunctorRetOK;
 } // tiledRenderingFunctor
 
 ImagePtr

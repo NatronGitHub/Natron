@@ -343,10 +343,248 @@ struct RotoLayerPrivate
     }
 };
 
+/**
+ * @brief Returns the name of the merge oeprator as described in @openfx-supportext/ofxsMerging.h
+ * Keep this in sync with the Merge node's operators otherwise everything will fall apart.
+ **/
+inline std::string
+getNatronOperationString(Natron::MergingFunctionEnum operation)
+{
+    switch (operation) {
+        case Natron::eMergeATop:
+            
+            return "atop";
+        case Natron::eMergeAverage:
+            
+            return "average";
+        case Natron::eMergeColorBurn:
+            
+            return "color-burn";
+        case Natron::eMergeColorDodge:
+            
+            return "color-dodge";
+        case Natron::eMergeConjointOver:
+            
+            return "conjoint-over";
+        case Natron::eMergeCopy:
+            
+            return "copy";
+        case Natron::eMergeDifference:
+            
+            return "difference";
+        case Natron::eMergeDisjointOver:
+            
+            return "disjoint-over";
+        case Natron::eMergeDivide:
+            
+            return "divide";
+        case Natron::eMergeExclusion:
+            
+            return "exclusion";
+        case Natron::eMergeFreeze:
+            
+            return "freeze";
+        case Natron::eMergeFrom:
+            
+            return "from";
+        case Natron::eMergeGeometric:
+            
+            return "geometric";
+        case Natron::eMergeHardLight:
+            
+            return "hard-light";
+        case Natron::eMergeHypot:
+            
+            return "hypot";
+        case Natron::eMergeIn:
+            
+            return "in";
+        case Natron::eMergeInterpolated:
+            
+            return "interpolated";
+        case Natron::eMergeMask:
+            
+            return "mask";
+        case Natron::eMergeMatte:
+            
+            return "matte";
+        case Natron::eMergeLighten:
+            
+            return "max";
+        case Natron::eMergeDarken:
+            
+            return "min";
+        case Natron::eMergeMinus:
+            
+            return "minus";
+        case Natron::eMergeMultiply:
+            
+            return "multiply";
+        case Natron::eMergeOut:
+            
+            return "out";
+        case Natron::eMergeOver:
+            
+            return "over";
+        case Natron::eMergeOverlay:
+            
+            return "overlay";
+        case Natron::eMergePinLight:
+            
+            return "pinlight";
+        case Natron::eMergePlus:
+            
+            return "plus";
+        case Natron::eMergeReflect:
+            
+            return "reflect";
+        case Natron::eMergeScreen:
+            
+            return "screen";
+        case Natron::eMergeSoftLight:
+            
+            return "soft-light";
+        case Natron::eMergeStencil:
+            
+            return "stencil";
+        case Natron::eMergeUnder:
+            
+            return "under";
+        case Natron::eMergeXOR:
+            
+            return "xor";
+    } // switch
+    
+    return "unknown";
+} // getOperationString
+
+inline std::string
+getNatronOperationHelpString(Natron::MergingFunctionEnum operation)
+{
+    switch (operation) {
+        case Natron::eMergeATop:
+            
+            return "Ab + B(1 - a)";
+        case Natron::eMergeAverage:
+            
+            return "(A + B) / 2";
+        case Natron::eMergeColorBurn:
+            
+            return "darken B towards A";
+        case Natron::eMergeColorDodge:
+            
+            return "brighten B towards A";
+        case Natron::eMergeConjointOver:
+            
+            return "A + B(1-a)/b, A if a > b";
+        case Natron::eMergeCopy:
+            
+            return "A";
+        case Natron::eMergeDifference:
+            
+            return "abs(A-B)";
+        case Natron::eMergeDisjointOver:
+            
+            return "A+B(1-a)/b, A+B if a+b < 1";
+        case Natron::eMergeDivide:
+            
+            return "A/B, 0 if A < 0 and B < 0";
+        case Natron::eMergeExclusion:
+            
+            return "A+B-2AB";
+        case Natron::eMergeFreeze:
+            
+            return "1-sqrt(1-A)/B";
+        case Natron::eMergeFrom:
+            
+            return "B-A";
+        case Natron::eMergeGeometric:
+            
+            return "2AB/(A+B)";
+        case Natron::eMergeHardLight:
+            
+            return "multiply if A < 0.5, screen if A > 0.5";
+        case Natron::eMergeHypot:
+            
+            return "sqrt(A*A+B*B)";
+        case Natron::eMergeIn:
+            
+            return "Ab";
+        case Natron::eMergeInterpolated:
+            
+            return "(like average but better and slower)";
+        case Natron::eMergeMask:
+            
+            return "Ba";
+        case Natron::eMergeMatte:
+            
+            return "Aa + B(1-a) (unpremultiplied over)";
+        case Natron::eMergeLighten:
+            
+            return "max(A, B)";
+        case Natron::eMergeDarken:
+            
+            return "min(A, B)";
+        case Natron::eMergeMinus:
+            
+            return "A-B";
+        case Natron::eMergeMultiply:
+            
+            return "AB, 0 if A < 0 and B < 0";
+        case Natron::eMergeOut:
+            
+            return "A(1-b)";
+        case Natron::eMergeOver:
+            
+            return "A+B(1-a)";
+        case Natron::eMergeOverlay:
+            
+            return "multiply if B<0.5, screen if B>0.5";
+        case Natron::eMergePinLight:
+            
+            return "if B >= 0.5 then max(A, 2*B - 1), min(A, B * 2.0 ) else";
+        case Natron::eMergePlus:
+            
+            return "A+B";
+        case Natron::eMergeReflect:
+            
+            return "A*A / (1 - B)";
+        case Natron::eMergeScreen:
+            
+            return "A+B-AB";
+        case Natron::eMergeSoftLight:
+            
+            return "burn-in if A < 0.5, lighten if A > 0.5";
+        case Natron::eMergeStencil:
+            
+            return "B(1-a)";
+        case Natron::eMergeUnder:
+            
+            return "A(1-b)+B";
+        case Natron::eMergeXOR:
+            
+            return "A(1-b)+B(1-a)";
+    } // switch
+    
+    return "unknown";
+} // getOperationHelpString
+
+///Keep this in synch with the MergeOperatorEnum !
+inline void
+getNatronCompositingOperators(std::vector<std::string>* operators,
+                             std::vector<std::string>* toolTips)
+{
+    for (int i = 0; i <= (int)Natron::eMergeXOR; ++i) {
+        operators->push_back(getNatronOperationString((Natron::MergingFunctionEnum)i));
+        toolTips->push_back(getNatronOperationHelpString((Natron::MergingFunctionEnum)i));
+    }
+    
+}
+
 ///Keep this in synch with the cairo_operator_t enum !
 ///We are not going to create a similar enum just to represent the same thing
 inline void
-getCompositingOperators(std::vector<std::string>* operators,
+getCairoCompositingOperators(std::vector<std::string>* operators,
                         std::vector<std::string>* toolTips)
 {
     assert(operators->size() == CAIRO_OPERATOR_CLEAR);
@@ -487,36 +725,42 @@ struct RotoDrawableItemPrivate
     
     std::list<boost::shared_ptr<KnobI> > knobs; //< list for easy access to all knobs
 
-    RotoDrawableItemPrivate()
-        : opacity( new Double_Knob(NULL, kRotoOpacityParamLabel, 1, false) )
-          , feather( new Double_Knob(NULL, kRotoFeatherParamLabel, 1, false) )
-          , featherFallOff( new Double_Knob(NULL, kRotoFeatherFallOffParamLabel, 1, false) )
-          , activated( new Bool_Knob(NULL, kRotoActivatedParamLabel, 1, false) )
+    RotoDrawableItemPrivate(bool isPaintingNode)
+        : opacity()
+          , feather()
+          , featherFallOff()
+          , activated()
 #ifdef NATRON_ROTO_INVERTIBLE
-          , inverted( new Bool_Knob(NULL, kRotoInvertedParamLable, 1, false) )
+          , inverted()
 #endif
-          , color( new Color_Knob(NULL, kRotoColorParamLabel, 3, false) )
-          , compOperator( new Choice_Knob(NULL, kRotoCompOperatorParamLabel, 1, false) )
+          , color()
+          , compOperator()
           , knobs()
     {
+        opacity.reset(new Double_Knob(NULL, kRotoOpacityParamLabel, 1, false));
         opacity->setHintToolTip(kRotoOpacityHint);
         opacity->setName(kRotoOpacityParam);
         opacity->populate();
         opacity->setDefaultValue(ROTO_DEFAULT_OPACITY);
         knobs.push_back(opacity);
 
-        feather->setHintToolTip(kRotoFeatherHint);
-        feather->setName(kRotoFeatherParam);
-        feather->populate();
-        feather->setDefaultValue(ROTO_DEFAULT_FEATHER);
-        knobs.push_back(feather);
-
-        featherFallOff->setHintToolTip(kRotoFeatherFallOffHint);
-        featherFallOff->setName(kRotoFeatherFallOffParam);
-        featherFallOff->populate();
-        featherFallOff->setDefaultValue(ROTO_DEFAULT_FEATHERFALLOFF);
-        knobs.push_back(featherFallOff);
-
+        if (!isPaintingNode) {
+            feather.reset(new Double_Knob(NULL, kRotoFeatherParamLabel, 1, false));
+            feather->setHintToolTip(kRotoFeatherHint);
+            feather->setName(kRotoFeatherParam);
+            feather->populate();
+            feather->setDefaultValue(ROTO_DEFAULT_FEATHER);
+            knobs.push_back(feather);
+            
+            featherFallOff.reset(new Double_Knob(NULL, kRotoFeatherFallOffParamLabel, 1, false));
+            featherFallOff->setHintToolTip(kRotoFeatherFallOffHint);
+            featherFallOff->setName(kRotoFeatherFallOffParam);
+            featherFallOff->populate();
+            featherFallOff->setDefaultValue(ROTO_DEFAULT_FEATHERFALLOFF);
+            knobs.push_back(featherFallOff);
+        }
+        
+        activated.reset(new Bool_Knob(NULL, kRotoActivatedParamLabel, 1, false));
         activated->setHintToolTip(kRotoActivatedHint);
         activated->setName(kRotoActivatedParam);
         activated->populate();
@@ -524,6 +768,7 @@ struct RotoDrawableItemPrivate
         knobs.push_back(activated);
 
 #ifdef NATRON_ROTO_INVERTIBLE
+        inverted.reset(new Bool_Knob(NULL, kRotoInvertedParamLable, 1, false));
         inverted->setHintToolTip(kRotoInvertedHint);
         inverted->setName(kRotoInvertedParam);
         inverted->populate();
@@ -532,6 +777,7 @@ struct RotoDrawableItemPrivate
 #endif
         
 
+        color.reset(new Color_Knob(NULL, kRotoColorParamLabel, 3, false));
         color->setHintToolTip(kRotoColorHint);
         color->setName(kRotoColorParam);
         color->populate();
@@ -540,14 +786,10 @@ struct RotoDrawableItemPrivate
         color->setDefaultValue(ROTO_DEFAULT_COLOR_B, 2);
         knobs.push_back(color);
 
+        compOperator.reset(new Choice_Knob(NULL, kRotoCompOperatorParamLabel, 1, false));
         compOperator->setHintToolTip(kRotoCompOperatorHint);
         compOperator->setName(kRotoCompOperatorParam);
         compOperator->populate();
-        std::vector<std::string> operators;
-        std::vector<std::string> tooltips;
-        getCompositingOperators(&operators, &tooltips);
-        compOperator->populateChoices(operators,tooltips);
-        compOperator->setDefaultValue( (int)CAIRO_OPERATOR_OVER );
         knobs.push_back(compOperator);
 
         overlayColor[0] = 0.85164;

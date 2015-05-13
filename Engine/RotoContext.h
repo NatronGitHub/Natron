@@ -381,7 +381,8 @@ public:
 
     RotoDrawableItem(const boost::shared_ptr<RotoContext>& context,
                      const std::string & name,
-                     const boost::shared_ptr<RotoLayer>& parent);
+                     const boost::shared_ptr<RotoLayer>& parent,
+                     bool useCairoCompositingOperators);
 
     virtual ~RotoDrawableItem();
 
@@ -1110,6 +1111,13 @@ public:
 
     virtual ~RotoContext();
     
+    /**
+     * @brief We have chosen to disable rotopainting and roto shapes from the same RotoContext because the rendering techniques are
+     * very much differents. The rotopainting systems requires an entire compositing tree held inside whereas the rotoshapes
+     * are rendered and optimized by Cairo internally.
+     **/
+    bool isRotoPaint() const;
+    
     void createBaseLayer();
 
     /**
@@ -1197,6 +1205,8 @@ public:
                                    int view,
                                    RectD* rod) const; //!< rod in canonical coordinates
 
+    
+    
     /**
      * @brief Render the mask formed by all the shapes contained in the context within the roi.
      * The image will use the cache if byPassCache is set to true.
@@ -1210,6 +1220,37 @@ public:
                                                 Natron::ImageBitDepthEnum depth,
                                                 int view,
                                                 unsigned int mipmapLevel);
+    
+    /**
+     * @brief Same as renderMask(...) but does the render for a single stroke.
+     **/
+    boost::shared_ptr<Natron::Image> renderMask(const boost::shared_ptr<RotoStrokeItem>& stroke,
+                                                const RectI & roi,
+                                                const Natron::ImageComponents& components,
+                                                U64 nodeHash,
+                                                U64 ageToRender,
+                                                const RectD & nodeRoD,
+                                                SequenceTime time,
+                                                Natron::ImageBitDepthEnum depth,
+                                                int view,
+                                                unsigned int mipmapLevel);
+    
+private:
+    
+    boost::shared_ptr<Natron::Image> renderMaskInternal(const std::list<boost::shared_ptr<RotoDrawableItem> >& splines,
+                                                        const RectI & roi,
+                                                        const Natron::ImageComponents& components,
+                                                        U64 nodeHash,
+                                                        U64 ageToRender,
+                                                        const RectD & nodeRoD,
+                                                        SequenceTime time,
+                                                        Natron::ImageBitDepthEnum depth,
+                                                        int view,
+                                                        unsigned int mipmapLevel);
+    
+public:
+    
+
 
     /**
      * @brief To be called when a change was made to trigger a new render.

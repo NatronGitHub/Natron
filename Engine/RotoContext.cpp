@@ -47,120 +47,7 @@
 
 using namespace Natron;
 
-/**
- * @brief Returns the name of the merge oeprator as described in @openfx-supportext/ofxsMerging.h
- * Keep this in sync with the Merge node's operators otherwise everything will fall apart.
- **/
-inline std::string
-getOperationString(MergingFunctionEnum operation)
-{
-    switch (operation) {
-        case eMergeATop:
-            
-            return "atop";
-        case eMergeAverage:
-            
-            return "average";
-        case eMergeColorBurn:
-            
-            return "color-burn";
-        case eMergeColorDodge:
-            
-            return "color-dodge";
-        case eMergeConjointOver:
-            
-            return "conjoint-over";
-        case eMergeCopy:
-            
-            return "copy";
-        case eMergeDifference:
-            
-            return "difference";
-        case eMergeDisjointOver:
-            
-            return "disjoint-over";
-        case eMergeDivide:
-            
-            return "divide";
-        case eMergeExclusion:
-            
-            return "exclusion";
-        case eMergeFreeze:
-            
-            return "freeze";
-        case eMergeFrom:
-            
-            return "from";
-        case eMergeGeometric:
-            
-            return "geometric";
-        case eMergeHardLight:
-            
-            return "hard-light";
-        case eMergeHypot:
-            
-            return "hypot";
-        case eMergeIn:
-            
-            return "in";
-        case eMergeInterpolated:
-            
-            return "interpolated";
-        case eMergeMask:
-            
-            return "mask";
-        case eMergeMatte:
-            
-            return "matte";
-        case eMergeLighten:
-            
-            return "max";
-        case eMergeDarken:
-            
-            return "min";
-        case eMergeMinus:
-            
-            return "minus";
-        case eMergeMultiply:
-            
-            return "multiply";
-        case eMergeOut:
-            
-            return "out";
-        case eMergeOver:
-            
-            return "over";
-        case eMergeOverlay:
-            
-            return "overlay";
-        case eMergePinLight:
-            
-            return "pinlight";
-        case eMergePlus:
-            
-            return "plus";
-        case eMergeReflect:
-            
-            return "reflect";
-        case eMergeScreen:
-            
-            return "screen";
-        case eMergeSoftLight:
-            
-            return "soft-light";
-        case eMergeStencil:
-            
-            return "stencil";
-        case eMergeUnder:
-            
-            return "under";
-        case eMergeXOR:
-            
-            return "xor";
-    } // switch
-    
-    return "unknown";
-} // getOperationString
+
 
 static inline double
 lerp(double a,
@@ -1770,9 +1657,10 @@ RotoItem::getRotoNodeName() const
 
 RotoDrawableItem::RotoDrawableItem(const boost::shared_ptr<RotoContext>& context,
                                    const std::string & name,
-                                   const boost::shared_ptr<RotoLayer>& parent)
+                                   const boost::shared_ptr<RotoLayer>& parent,
+                                   bool useCairoCompositingOperators)
     : RotoItem(context,name,parent)
-      , _imp( new RotoDrawableItemPrivate() )
+      , _imp( new RotoDrawableItemPrivate(context->isRotoPaint()) )
 {
 #ifdef NATRON_ROTO_INVERTIBLE
     QObject::connect( _imp->inverted->getSignalSlotHandler().get(), SIGNAL( valueChanged(int,int) ), this, SIGNAL( invertedStateChanged() ) );
@@ -1781,6 +1669,20 @@ RotoDrawableItem::RotoDrawableItem(const boost::shared_ptr<RotoContext>& context
     QObject::connect( _imp->color->getSignalSlotHandler().get(), SIGNAL( valueChanged(int,int) ), this, SIGNAL( shapeColorChanged() ) );
     QObject::connect( _imp->compOperator->getSignalSlotHandler().get(), SIGNAL( valueChanged(int,int) ), this,
                       SIGNAL( compositingOperatorChanged(int,int) ) );
+    
+    std::vector<std::string> operators;
+    std::vector<std::string> tooltips;
+    if (useCairoCompositingOperators) {
+        getCairoCompositingOperators(&operators, &tooltips);
+    } else {
+        getNatronCompositingOperators(&operators, &tooltips);
+    }
+    _imp->compOperator->populateChoices(operators,tooltips);
+    if (useCairoCompositingOperators) {
+        _imp->compOperator->setDefaultValue( (int)CAIRO_OPERATOR_OVER );
+    } else {
+        _imp->compOperator->setDefaultValue( (int)eMergeOver);
+    }
 }
 
 RotoDrawableItem::~RotoDrawableItem()
@@ -2302,7 +2204,7 @@ enum SplineChangedReason
 Bezier::Bezier(const boost::shared_ptr<RotoContext>& ctx,
                const std::string & name,
                const boost::shared_ptr<RotoLayer>& parent)
-    : RotoDrawableItem(ctx,name,parent)
+    : RotoDrawableItem(ctx,name,parent,true)
       , _imp( new BezierPrivate() )
 {
 }
@@ -2310,7 +2212,7 @@ Bezier::Bezier(const boost::shared_ptr<RotoContext>& ctx,
 
 Bezier::Bezier(const Bezier & other,
                const boost::shared_ptr<RotoLayer>& parent)
-: RotoDrawableItem( other.getContext(), other.getScriptName(), other.getParentLayer() )
+: RotoDrawableItem( other.getContext(), other.getScriptName(), other.getParentLayer(), true )
 , _imp( new BezierPrivate() )
 {
     clone(&other);
@@ -2778,6 +2680,7 @@ Bezier::movePointByIndexInternal(int index,
     ///only called on the main-thread
     assert( QThread::currentThread() == qApp->thread() );
     
+    bool rippleEdit = getContext()->isRippleEditEnabled();
     bool autoKeying = getContext()->isAutoKeyingEnabled();
     bool keySet = false;
     {
@@ -2830,7 +2733,7 @@ Bezier::movePointByIndexInternal(int index,
             }
         }
         
-        if ( getContext()->isRippleEditEnabled() ) {
+        if (rippleEdit) {
             std::set<int> keyframes;
             _imp->getKeyframeTimes(&keyframes);
             for (std::set<int>::iterator it2 = keyframes.begin(); it2 != keyframes.end(); ++it2) {
@@ -4372,7 +4275,7 @@ RotoStrokeItem::RotoStrokeItem(Natron::RotoStrokeType type,
 #ifdef ROTO_STROKE_USE_FIT_CURVE
 : Bezier(context,name,parent)
 #else
-: RotoDrawableItem(context,name,parent)
+: RotoDrawableItem(context,name,parent,false)
 #endif
 , _imp(new RotoStrokeItemPrivate(type))
 {
@@ -4483,6 +4386,7 @@ RotoStrokeItem::onSourceColorTypeChanged(int,int)
 {
     refreshNodesConnections();
 }
+
 
 static RotoStrokeItem* findPreviousOfItemInLayer(RotoLayer* layer, RotoItem* item)
 {
@@ -4945,6 +4849,12 @@ RotoContext::RotoContext(const boost::shared_ptr<Natron::Node>& node)
    
 }
 
+bool
+RotoContext::isRotoPaint() const
+{
+    return _imp->isPaintNode;
+}
+
 ///Must be done here because at the time of the constructor, the shared_ptr doesn't exist yet but
 ///addLayer() needs it to get a shared ptr to this
 void
@@ -5238,6 +5148,17 @@ RotoContext::makeStroke(Natron::RotoStrokeType type,const std::string& baseName)
     if (parentLayer) {
         parentLayer->addItem(curve);
     }
+    
+    ///Attach this stroke to the underlying nodes used
+    boost::shared_ptr<Node> effectNode = curve->getEffectNode();
+    if (effectNode) {
+        effectNode->attachStrokeItem(curve);
+    }
+    boost::shared_ptr<Node> mergeNode = curve->getMergeNode();
+    if (mergeNode) {
+        mergeNode->attachStrokeItem(curve);
+    }
+    
     _imp->lastInsertedItem = curve;
     
     Q_EMIT itemInserted(RotoItem::eSelectionReasonOther);
@@ -6456,28 +6377,44 @@ convertCairoImageToNatronImage(cairo_surface_t* cairoImg,
 }
 
 boost::shared_ptr<Natron::Image>
-RotoContext::renderMask(const RectI & roi,
-                        const Natron::ImageComponents& components,
-                        U64 nodeHash,
-                        U64 ageToRender,
-                        const RectD & nodeRoD, //!< rod in canonical coordinates
-                        SequenceTime time,
-                        Natron::ImageBitDepthEnum depth,
-                        int view,
-                        unsigned int mipmapLevel)
+RotoContext::renderMask(const boost::shared_ptr<RotoStrokeItem>& stroke,
+                                            const RectI & roi,
+                                            const Natron::ImageComponents& components,
+                                            U64 nodeHash,
+                                            U64 ageToRender,
+                                            const RectD & nodeRoD,
+                                            SequenceTime time,
+                                            Natron::ImageBitDepthEnum depth,
+                                            int view,
+                                            unsigned int mipmapLevel)
 {
-    std::list< boost::shared_ptr<RotoDrawableItem> > splines = getCurvesByRenderOrder();
+    std::list<boost::shared_ptr<RotoDrawableItem> > items;
+    items.push_back(stroke);
+    return renderMaskInternal(items, roi, components, nodeHash, ageToRender, nodeRoD, time, depth, view, mipmapLevel);
+}
 
+boost::shared_ptr<Natron::Image>
+RotoContext::renderMaskInternal(const std::list<boost::shared_ptr<RotoDrawableItem> >& splines,
+                                                    const RectI & roi,
+                                                    const Natron::ImageComponents& components,
+                                                    U64 nodeHash,
+                                                    U64 ageToRender,
+                                                    const RectD & nodeRoD,
+                                                    SequenceTime time,
+                                                    Natron::ImageBitDepthEnum depth,
+                                                    int view,
+                                                    unsigned int mipmapLevel)
+{
     ///compute an enhanced hash different from the one of the node in order to differentiate within the cache
     ///the output image of the roto node and the mask image.
     Hash64 hash;
-
+    
     hash.append(nodeHash);
     hash.append(ageToRender);
     hash.computeHash();
-
+    
     Natron::ImageKey key = Natron::Image::makeKey(hash.value(), true ,time, view);
-
+    
     ///If the last rendered image  was with a different hash key (i.e a parameter changed or an input changed)
     ///just remove the old image from the cache to recycle memory.
     boost::shared_ptr<Image> lastRenderedImage;
@@ -6487,34 +6424,34 @@ RotoContext::renderMask(const RectI & roi,
         lastRenderHash = _imp->lastRenderHash;
         lastRenderedImage = _imp->lastRenderedImage;
     }
-
+    
     if ( lastRenderedImage &&
-         ( lastRenderHash != hash.value() ) ) {
+        ( lastRenderHash != hash.value() ) ) {
         
         appPTR->removeAllImagesFromCacheWithMatchingKey(lastRenderHash);
-
+        
         {
             QMutexLocker l(&_imp->lastRenderArgsMutex);
             _imp->lastRenderedImage.reset();
         }
     }
-
+    
     boost::shared_ptr<Node> node = getNode();
     
     boost::shared_ptr<Natron::ImageParams> params;
     ImagePtr image;
     
-//    if (!byPassCache) {
-//
-//        getNode()->getLiveInstance()->getImageFromCacheAndConvertIfNeeded(useCache, false,  key, mipmapLevel,
-//                                                                          roi,
-//                                                                          nodeRoD,
-//                                                                          depth, components,
-//                                                                           depth, components,inputImages,&image);
-//        if (image) {
-//            params = image->getParams();
-//        }
-//    }
+    //    if (!byPassCache) {
+    //
+    //        getNode()->getLiveInstance()->getImageFromCacheAndConvertIfNeeded(useCache, false,  key, mipmapLevel,
+    //                                                                          roi,
+    //                                                                          nodeRoD,
+    //                                                                          depth, components,
+    //                                                                           depth, components,inputImages,&image);
+    //        if (image) {
+    //            params = image->getParams();
+    //        }
+    //    }
     
     ///If there's only 1 shape to render and this shape is inverted, initialize the image
     ///with the invert instead of the default fill value to speed up rendering
@@ -6549,16 +6486,16 @@ RotoContext::renderMask(const RectI & roi,
          */
         
         image->ensureBounds(params->getBounds());
-    
+        
         
     }
-
+    
     
     ///////////////////////////////////Render internal
     RectI pixelRod = params->getBounds();
     RectI clippedRoI;
     roi.intersect(pixelRod, &clippedRoI);
-
+    
     cairo_format_t cairoImgFormat;
     
     int srcNComps;
@@ -6578,42 +6515,42 @@ RotoContext::renderMask(const RectI & roi,
         cairoImgFormat = CAIRO_FORMAT_A8;
         srcNComps = 1;
     }
-
+    
     ////Allocate the cairo temporary buffer
     cairo_surface_t* cairoImg = cairo_image_surface_create(cairoImgFormat, pixelRod.width(), pixelRod.height() );
     cairo_surface_set_device_offset(cairoImg, -pixelRod.x1, -pixelRod.y1);
     if (cairo_surface_status(cairoImg) != CAIRO_STATUS_SUCCESS) {
         appPTR->removeFromNodeCache(image);
-
+        
         return image;
     }
     cairo_t* cr = cairo_create(cairoImg);
     //cairo_set_fill_rule(cr, CAIRO_FILL_RULE_EVEN_ODD); // creates holes on self-overlapping shapes
     cairo_set_fill_rule(cr, CAIRO_FILL_RULE_WINDING);
-
+    
     ///We could also propose the user to render a mask to SVG
     _imp->renderInternal(cr, cairoImg, splines,mipmapLevel,time);
-
+    
     switch (depth) {
-    case Natron::eImageBitDepthFloat:
-        convertCairoImageToNatronImage<float, 1>(cairoImg, image.get(), pixelRod,srcNComps);
-        break;
-    case Natron::eImageBitDepthByte:
-        convertCairoImageToNatronImage<unsigned char, 255>(cairoImg, image.get(), pixelRod,srcNComps);
-        break;
-    case Natron::eImageBitDepthShort:
-        convertCairoImageToNatronImage<unsigned short, 65535>(cairoImg, image.get(), pixelRod,srcNComps);
-        break;
-    case Natron::eImageBitDepthNone:
-        assert(false);
-        break;
+        case Natron::eImageBitDepthFloat:
+            convertCairoImageToNatronImage<float, 1>(cairoImg, image.get(), pixelRod,srcNComps);
+            break;
+        case Natron::eImageBitDepthByte:
+            convertCairoImageToNatronImage<unsigned char, 255>(cairoImg, image.get(), pixelRod,srcNComps);
+            break;
+        case Natron::eImageBitDepthShort:
+            convertCairoImageToNatronImage<unsigned short, 65535>(cairoImg, image.get(), pixelRod,srcNComps);
+            break;
+        case Natron::eImageBitDepthNone:
+            assert(false);
+            break;
     }
-
+    
     cairo_destroy(cr);
     ////Free the buffer used by Cairo
     cairo_surface_destroy(cairoImg);
-
-
+    
+    
     ////////////////////////////////////
     if ( node->aborted() ) {
         //if render was aborted, remove the frame from the cache as it contains only garbage
@@ -6621,14 +6558,30 @@ RotoContext::renderMask(const RectI & roi,
     } else {
         image->markForRendered(clippedRoI);
     }
-
+    
     {
         QMutexLocker l(&_imp->lastRenderArgsMutex);
         _imp->lastRenderHash = hash.value();
         _imp->lastRenderedImage = image;
     }
-
+    
     return image;
+}
+
+boost::shared_ptr<Natron::Image>
+RotoContext::renderMask(const RectI & roi,
+                        const Natron::ImageComponents& components,
+                        U64 nodeHash,
+                        U64 ageToRender,
+                        const RectD & nodeRoD, //!< rod in canonical coordinates
+                        SequenceTime time,
+                        Natron::ImageBitDepthEnum depth,
+                        int view,
+                        unsigned int mipmapLevel)
+{
+    std::list< boost::shared_ptr<RotoDrawableItem> > splines = getCurvesByRenderOrder();
+    return renderMaskInternal(splines, roi, components, nodeHash, ageToRender, nodeRoD, time, depth, view, mipmapLevel);
+    
 } // renderMask
 
 void
