@@ -1034,13 +1034,15 @@ RotoGui::drawOverlays(double /*scaleX*/,
                 continue;
             }
             
-            if (_imp->selectedTool != eRotoToolSelectAll) {
-                continue;
-            }
+            
             
             Bezier* isBezier = dynamic_cast<Bezier*>(it->get());
             RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>(it->get());
             if (isStroke) {
+                
+                if (_imp->selectedTool != eRotoToolSelectAll) {
+                    continue;
+                }
                 
                 bool selected = false;
                 for (SelectedItems::const_iterator it2 = _imp->rotoData->selectedItems.begin(); it2!=_imp->rotoData->selectedItems.end(); ++it2) {
