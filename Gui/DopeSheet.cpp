@@ -1189,6 +1189,8 @@ DSNode *DopeSheetEditor::createDSNode(const boost::shared_ptr<NodeGui> &nodeGui)
     connect(dsNode, SIGNAL(clipRangeChanged()),
             this, SLOT(refreshDopeSheetView()));
 
+    _imp->hierarchyView->sortItems(0, Qt::DescendingOrder);
+
     return dsNode;
 }
 
