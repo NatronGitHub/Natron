@@ -16,6 +16,7 @@ CLANG_DIAG_ON(uninitialized)
 
 class DopeSheetView;
 class DSKnob;
+class QTreeWidgetItem;
 
 /**
  * @brief The DSSelectedKey struct
@@ -226,6 +227,26 @@ private:
     DSNode *_dsNodeGroup;
     double _dt;
     DopeSheetView *_view;
+};
+
+class DSChangeNodeLabel : public QUndoCommand
+{
+public:
+    DSChangeNodeLabel(DSNode *dsNode,
+                      const QString &oldLabel,
+                      const QString &newLabel,
+                      QUndoCommand *parent = 0);
+
+    void undo() OVERRIDE FINAL;
+    void redo() OVERRIDE FINAL;
+
+private:
+    void changeNodeLabel(const QString &label);
+
+private:
+    DSNode *_dsNode;
+    QString _oldLabel;
+    QString _newLabel;
 };
 
 

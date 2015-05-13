@@ -428,3 +428,34 @@ void DSMoveGroupCommand::moveGroupKeyframes(double dt)
 
     _view->redraw();
 }
+
+
+////////////////////////// DSChangeNodeLabel //////////////////////////
+
+DSChangeNodeLabel::DSChangeNodeLabel(DSNode *dsNode,
+                                     const QString &oldLabel,
+                                     const QString &newLabel,
+                                     QUndoCommand *parent) :
+    QUndoCommand(parent),
+    _dsNode(dsNode),
+    _oldLabel(oldLabel),
+    _newLabel(newLabel)
+{
+    setText(QObject::tr("Change node label"));
+}
+
+void DSChangeNodeLabel::undo()
+{
+    changeNodeLabel(_oldLabel);
+}
+
+void DSChangeNodeLabel::redo()
+{
+    changeNodeLabel(_newLabel);
+}
+
+void DSChangeNodeLabel::changeNodeLabel(const QString &label)
+{
+    _dsNode->getNodeGui()->getNode()->setLabel(label.toStdString());
+    _dsNode->getTreeItem()->setText(0, label);
+}

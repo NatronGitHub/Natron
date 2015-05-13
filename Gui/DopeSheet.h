@@ -180,19 +180,24 @@ class HierarchyView : public QTreeWidget
 public:
     friend class HierarchyViewItemDelegate;
 
-    explicit HierarchyView(DopeSheetEditor *editor, QWidget *parent = 0);
+    explicit HierarchyView(DopeSheetEditor *editor, Gui *gui, QWidget *parent = 0);
     ~HierarchyView();
 
 public Q_SLOTS:
-    void onCustomContextMenuRequested(const QPoint &point);
-    void startEditingNodeLabel();
-    void setNodeLabel(QTreeWidgetItem*item, int column);
+    void setItemLabel(QTreeWidgetItem *item, const QString &newLabel);
 
 protected:
     void drawRow(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const OVERRIDE FINAL;
 
+    void focusInEvent(QFocusEvent *e);
+
+private Q_SLOTS:
+    void onCustomContextMenuRequested(const QPoint &point);
+    void onEditNodeLabelActionTriggered();
+    void onItemChanged(QTreeWidgetItem *item, int column);
+
 private:
     boost::scoped_ptr<HierarchyViewPrivate> _imp;
-};
+    };
 
 #endif // DOPESHEET_H

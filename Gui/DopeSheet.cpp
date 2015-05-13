@@ -7,9 +7,11 @@
 #include <QStyledItemDelegate>
 #include <QtEvents>
 #include <QTreeWidget>
+#include <QUndoStack>
 
 #include "Gui/ActionShortcuts.h"
 #include "Gui/DockablePanel.h"
+#include "Gui/DopeSheetEditorUndoRedo.h"
 #include "Gui/DopeSheetView.h"
 #include "Gui/Gui.h"
 #include "Gui/GuiAppInstance.h"
@@ -554,6 +556,10 @@ void DSNode::setSelected(bool selected)
 */
 void DSNode::onNodeNameChanged(const QString &name)
 {
+    // ugly trick to avoid infinite loop
+    disconnect(_imp->dopeSheetEditor->getHierarchyView(), SIGNAL(itemChanged(QTreeWidgetItem*,int)),
+               _imp->dopeSheetEditor->getHierarchyView(), SLOT(onItemChanged(QTreeWidgetItem*,int)));
+
     _imp->nameItem->setText(0, name);
 }
 
@@ -733,6 +739,7 @@ public:
 
     /* functions */
     void createContextMenu();
+    void pushUndoCommand(QUndoCommand *cmd);
 
     /* attributes */
     HierarchyView *parent;
@@ -740,13 +747,20 @@ public:
     Natron::Menu *contextMenu;
 
     QTreeWidgetItem *lastClickedItem;
+    QString lastClickedItemText;
+
+    Gui *gui;
+    boost::scoped_ptr<QUndoStack> undoStack;
 };
 
 HierarchyViewPrivate::HierarchyViewPrivate(HierarchyView *qq) :
     parent(qq),
     dopeSheetEditor(0),
     contextMenu(new Natron::Menu(parent)),
-    lastClickedItem(0)
+    lastClickedItem(0),
+    lastClickedItemText(),
+    gui(0),
+    undoStack(new QUndoStack(parent))
 {}
 
 HierarchyViewPrivate::~HierarchyViewPrivate()
@@ -757,13 +771,19 @@ void HierarchyViewPrivate::createContextMenu()
     contextMenu->clear();
 
     // Create actions
-    QAction *renameNodeNameAction = new ActionWithShortcut(kShortcutGroupDopeSheetEditor,
-                                                           kShortcutIDActionDopeSheetEditorRenameNode,
-                                                           kShortcutDescActionDopeSheetEditorRenameNode,
-                                                           contextMenu);
-    QObject::connect(renameNodeNameAction, SIGNAL(triggered()),
-                     parent, SLOT(startEditingNodeLabel()));
-    contextMenu->addAction(renameNodeNameAction);
+    QAction *editNodeLabelAction = new ActionWithShortcut(kShortcutGroupDopeSheetEditor,
+                                                          kShortcutIDActionDopeSheetEditorRenameNode,
+                                                          kShortcutDescActionDopeSheetEditorRenameNode,
+                                                          contextMenu);
+    QObject::connect(editNodeLabelAction, SIGNAL(triggered()),
+                     parent, SLOT(onEditNodeLabelActionTriggered()));
+    contextMenu->addAction(editNodeLabelAction);
+}
+
+void HierarchyViewPrivate::pushUndoCommand(QUndoCommand *cmd)
+{
+    undoStack->setActive();
+    undoStack->push(cmd);
 }
 
 
@@ -778,18 +798,20 @@ void HierarchyViewPrivate::createContextMenu()
  *
  *
  */
-HierarchyView::HierarchyView(DopeSheetEditor *editor, QWidget *parent) :
+HierarchyView::HierarchyView(DopeSheetEditor *editor, Gui *gui, QWidget *parent) :
     QTreeWidget(parent),
     _imp(new HierarchyViewPrivate(this))
 {
     _imp->dopeSheetEditor = editor;
 
+    gui->registerNewUndoStack(_imp->undoStack.get());
+
+    header()->close();
+
     setSelectionMode(QAbstractItemView::ExtendedSelection);
     setContextMenuPolicy(Qt::CustomContextMenu);
     setEditTriggers(QAbstractItemView::NoEditTriggers);
     setColumnCount(1);
-
-    header()->close();
 
     setItemDelegate(new HierarchyViewItemDelegate(this));
 
@@ -797,35 +819,15 @@ HierarchyView::HierarchyView(DopeSheetEditor *editor, QWidget *parent) :
             this, SLOT(onCustomContextMenuRequested(QPoint)));
 
     connect(this, SIGNAL(itemChanged(QTreeWidgetItem*,int)),
-            this, SLOT(setNodeLabel(QTreeWidgetItem*,int)));
+            this, SLOT(onItemChanged(QTreeWidgetItem*,int)));
 }
 
 HierarchyView::~HierarchyView()
+{}
+
+void HierarchyView::setItemLabel(QTreeWidgetItem *item, const QString &newLabel)
 {
-
-}
-
-void HierarchyView::onCustomContextMenuRequested(const QPoint &point)
-{
-    _imp->lastClickedItem = itemAt(point);
-
-    if (!_imp->dopeSheetEditor->findDSNode(_imp->lastClickedItem)) {
-        return;
-    }
-
-    _imp->createContextMenu();
-
-    _imp->contextMenu->exec(mapToGlobal(point));
-}
-
-void HierarchyView::startEditingNodeLabel()
-{
-    editItem(_imp->lastClickedItem, 0);
-}
-
-void HierarchyView::setNodeLabel(QTreeWidgetItem *item, int column)
-{
-    if (column != 0) {
+    if (!item) {
         return;
     }
 
@@ -835,7 +837,14 @@ void HierarchyView::setNodeLabel(QTreeWidgetItem *item, int column)
         return;
     }
 
-    dsNode->getNodeGui()->getNode()->setLabel(item->text(0).toStdString());
+    if (_imp->lastClickedItemText == newLabel) {
+        return;
+    }
+
+    _imp->pushUndoCommand(new DSChangeNodeLabel(dsNode, _imp->lastClickedItemText, newLabel));
+
+    connect(this, SIGNAL(itemChanged(QTreeWidgetItem*,int)),
+            this, SLOT(onItemChanged(QTreeWidgetItem*,int)));
 }
 
 void HierarchyView::drawRow(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const
@@ -860,6 +869,41 @@ void HierarchyView::drawRow(QPainter *painter, const QStyleOptionViewItem &optio
                       rowRect.left() + 3, rowRect.top());
 
     QTreeWidget::drawRow(painter, option, index);
+}
+
+void HierarchyView::focusInEvent(QFocusEvent *e)
+{
+    QTreeWidget::focusInEvent(e);
+
+    _imp->undoStack->setActive();
+}
+
+void HierarchyView::onCustomContextMenuRequested(const QPoint &point)
+{
+    _imp->lastClickedItem = itemAt(point);
+    _imp->lastClickedItemText = _imp->lastClickedItem->text(0);
+
+    if (!_imp->dopeSheetEditor->findDSNode(_imp->lastClickedItem)) {
+        return;
+    }
+
+    _imp->createContextMenu();
+
+    _imp->contextMenu->exec(mapToGlobal(point));
+}
+
+void HierarchyView::onEditNodeLabelActionTriggered()
+{
+    editItem(_imp->lastClickedItem, 0);
+}
+
+void HierarchyView::onItemChanged(QTreeWidgetItem *item, int column)
+{
+    if (column != 0) {
+        return;
+    }
+
+    setItemLabel(item, item->text(0));
 }
 
 
@@ -924,7 +968,7 @@ DopeSheetEditor::DopeSheetEditor(Gui *gui, boost::shared_ptr<TimeLine> timeline,
 
     _imp->splitter = new QSplitter(Qt::Horizontal, this);
 
-    _imp->hierarchyView = new HierarchyView(this, _imp->splitter);
+    _imp->hierarchyView = new HierarchyView(this, gui, _imp->splitter);
 
     _imp->splitter->addWidget(_imp->hierarchyView);
     _imp->splitter->setStretchFactor(0, 1);
