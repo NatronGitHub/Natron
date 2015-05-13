@@ -322,8 +322,14 @@ FrameRange DopeSheetViewPrivate::projectKeyframeRange()
         }
     }
 
-    ret.first = *std::min_element(dimFirstKeys.begin(), dimFirstKeys.end());
-    ret.second = *std::max_element(dimLastKeys.begin(), dimLastKeys.end());
+    if (dimFirstKeys.empty() || dimLastKeys.empty()) {
+        ret.first = 0;
+        ret.second = 0;
+    }
+    else {
+        ret.first = *std::min_element(dimFirstKeys.begin(), dimFirstKeys.end());
+        ret.second = *std::max_element(dimLastKeys.begin(), dimLastKeys.end());
+    }
 
     return ret;
 }
@@ -1724,6 +1730,10 @@ void DopeSheetView::frame()
     else {
         range.first = _imp->selectedKeysBRect.left();
         range.second = _imp->selectedKeysBRect.right();
+    }
+
+    if (range.first == 0 && range.second == 0) {
+        return;
     }
 
     _imp->zoomContext.fill(range.first, range.second,
