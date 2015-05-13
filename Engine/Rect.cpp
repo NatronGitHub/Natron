@@ -45,25 +45,40 @@ std::vector<RectI> RectI::splitIntoSmallerRects(int splitsCount) const
     if (area() <= MINAREA) {
         ret.push_back(*this);
     } else {
+        // autocompute splitsCount
+        if (!splitsCount) {
+            splitsCount = area() / MINAREA;
+        }
+        //printf("splitsCount=%d\n", splitsCount);
         // the average rect area
-        double avgArea = splitsCount ? std::max((double)MINAREA, area() / (double)splitsCount) : MINAREA;
-        int numCols = std::max(1, (int)(width() / std::sqrt(avgArea)));
-        int numRows = std::max(1, (int)(area()/(MINAREA*numCols))); // integer division
-        if (splitsCount && splitsCount > numCols) {
-            numRows = std::min(splitsCount / numCols, numRows);
-        }
-        numCols = std::max(1, (int)(area()/(MINAREA*numRows)));
-        if (splitsCount && splitsCount > numRows) {
-            numCols = std::min(splitsCount / numRows, numCols);
-        }
-        assert((splitsCount >= numRows * numCols) || !splitsCount);
+        double avgArea = area() / (double)splitsCount;
+        //printf("avgArea=%g,sqrt=%g\n", avgArea, sqrt(avgArea));
+        bool landscape = width() > height();
+        int dim1 = landscape ? width() : height();
+        int dim2 = landscape ? height() : width();
+        //printf("dim1=%d\n", dim1);
+        //printf("dim2=%d\n", dim2);
+
+        int num1 = (int)(std::ceil(dim1 / std::sqrt(avgArea)));
+        assert(num1 > 0);
+        //printf("num1=%d\n", num1);
+        int num2 = std::max(1, std::min(splitsCount / num1, dim2/(MINAREA/(dim1/num1)))); // integer division
+        assert(num1 >= num2);
+        //printf("num2=%d\n", num2);
+        num1 = std::max(1, std::min(splitsCount / num2, dim1/(1+(MINAREA-1)/(dim2/num2))));
+        //printf("num1=%d\n", num1);
+        assert(splitsCount >= num1 * num2);
+        assert((dim1/num1)*(dim2/num2) >= MINAREA);
+        int numRows = landscape ? num2 : num1;
+        int numCols = landscape ? num1 : num2;
         for (int i = 0; i < numRows; ++i) {
             int y1_ = bottom() + i     * height() / numRows;
             int y2_ = bottom() + (i+1) * height() / numRows;
             for (int j = 0; j < numCols; ++j) {
                 int x1_ = left() + j     * width() / numCols;
                 int x2_ = left() + (j+1) * width() / numCols;
-                //assert((x2_-x1_)*(y2_-y1_) >= MINAREA);
+                //printf("x1_=%d,x2_=%d,y1_=%d,y2_=%d\n",x1_,x2_,y1_,y2_);
+                assert((x2_-x1_)*(y2_-y1_) >= MINAREA);
                 //printf("area is %d\n", (x2_-x1_)*(y2_-y1_));
                 ret.push_back( RectI(x1_, y1_, x2_, y2_) );
             }
