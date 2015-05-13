@@ -655,8 +655,14 @@ void DSNode::computeGroupRange()
         }
     }
 
-    _imp->clipRange.first = *std::min_element(dimFirstKeys.begin(), dimFirstKeys.end());
-    _imp->clipRange.second = *std::max_element(dimLastKeys.begin(), dimLastKeys.end());
+    if (dimFirstKeys.empty() || dimLastKeys.empty()) {
+        _imp->clipRange.first = 0;
+        _imp->clipRange.second = 0;
+    }
+    else {
+        _imp->clipRange.first = *std::min_element(dimFirstKeys.begin(), dimFirstKeys.end());
+        _imp->clipRange.second = *std::max_element(dimLastKeys.begin(), dimLastKeys.end());
+    }
 
     Q_EMIT clipRangeChanged();
 }

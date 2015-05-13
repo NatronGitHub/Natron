@@ -62,6 +62,9 @@ public:
 public Q_SLOTS:
     void computeSelectedKeysBRect();
     void clearKeyframeSelection();
+    void selectAllKeyframes();
+    void deleteSelectedKeyframes();
+    void frame();
 
 protected:
     void initializeGL() OVERRIDE FINAL;

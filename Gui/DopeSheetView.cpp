@@ -29,6 +29,7 @@
 #include "Gui/GuiMacros.h"
 #include "Gui/Histogram.h"
 #include "Gui/KnobGui.h"
+#include "Gui/Menu.h"
 #include "Gui/NodeGraph.h"
 #include "Gui/NodeGui.h"
 #include "Gui/TextRenderer.h"
@@ -161,13 +162,9 @@ public:
 
     void moveCurrentFrameIndicator(double toTime);
 
-    void deleteSelectedKeyframes();
-
-    void frame();
-
-    void selectAllKeyframes();
-
     void pushUndoCommand(QUndoCommand *cmd);
+
+    void createContextMenu();
 
     /* attributes */
     DopeSheetView *parent;
@@ -213,6 +210,9 @@ public:
     // others
     boost::scoped_ptr<QUndoStack> undoStack;
     bool hasOpenGLVAOSupport;
+
+    // UI
+    Natron::Menu *contextMenu;
 };
 
 DopeSheetViewPrivate::DopeSheetViewPrivate(DopeSheetView *qq) :
@@ -235,7 +235,8 @@ DopeSheetViewPrivate::DopeSheetViewPrivate(DopeSheetView *qq) :
     currentEditedReader(0),
     currentEditedGroup(0),
     undoStack(new QUndoStack(parent)),
-    hasOpenGLVAOSupport(true)
+    hasOpenGLVAOSupport(true),
+    contextMenu(new Natron::Menu(parent))
 {}
 
 DopeSheetViewPrivate::~DopeSheetViewPrivate()
@@ -1368,103 +1369,53 @@ void DopeSheetViewPrivate::moveCurrentFrameIndicator(double toTime)
     timeline->seekFrame(SequenceTime(toTime), false, 0, Natron::eTimelineChangeReasonDopeSheetEditorSeek);
 }
 
-void DopeSheetViewPrivate::deleteSelectedKeyframes()
-{
-    RUNNING_IN_MAIN_THREAD();
-
-    if (selectedKeyframes.empty()) {
-        return;
-    }
-
-    selectedKeysBRect = QRectF();
-
-    std::vector<DSSelectedKey> toRemove;
-    for (DSKeyPtrList::iterator it = selectedKeyframes.begin(); it != selectedKeyframes.end(); ++it) {
-        toRemove.push_back(DSSelectedKey(**it));
-    }
-
-    pushUndoCommand(new DSRemoveKeysCommand(toRemove, parent));
-
-    selectedKeyframes.clear();
-
-    parent->redraw();
-}
-
-void DopeSheetViewPrivate::frame()
-{
-    RUNNING_IN_MAIN_THREAD();
-
-    if (selectedKeyframes.size() == 1) {
-        return;
-    }
-
-    FrameRange range;
-
-    // frame on project bounds
-    if (selectedKeyframes.empty()) {
-        range = projectKeyframeRange();
-    }
-    // or frame on current selection
-    else {
-        range.first = selectedKeysBRect.left();
-        range.second = selectedKeysBRect.right();
-    }
-
-    zoomContext.fill(range.first, range.second,
-                     zoomContext.bottom(), zoomContext.top());
-
-    computeTimelinePositions();
-
-    if (selectedKeyframes.size() > 1) {
-        parent->computeSelectedKeysBRect();
-    }
-
-    parent->redraw();
-}
-
-void DopeSheetViewPrivate::selectAllKeyframes()
-{
-    TreeItemsAndDSNodes dsNodeItems = dopeSheetEditor->getTreeItemsAndDSNodes();
-
-    for (TreeItemsAndDSNodes::const_iterator it = dsNodeItems.begin(); it != dsNodeItems.end(); ++it) {
-        DSNode *dsNode = (*it).second;
-
-        TreeItemsAndDSKnobs dsKnobItems = dsNode->getTreeItemsAndDSKnobs();
-
-        for (TreeItemsAndDSKnobs::const_iterator itKnob = dsKnobItems.begin(); itKnob != dsKnobItems.end(); ++itKnob) {
-            DSKnob *dsKnob = (*itKnob).second;
-
-            for (int i = 0; i < dsKnob->getKnobGui()->getKnob()->getDimension(); ++i) {
-                KeyFrameSet keyframes = dsKnob->getKnobGui()->getCurve(i)->getKeyFrames_mt_safe();
-
-                for (KeyFrameSet::const_iterator it = keyframes.begin(); it != keyframes.end(); ++it) {
-                    KeyFrame kf = *it;
-
-                    DSSelectedKey key (dsKnob, kf, i);
-
-                    DSKeyPtrList::iterator isAlreadySelected = keyframeIsAlreadyInSelected(key);
-
-                    if (isAlreadySelected == selectedKeyframes.end()) {
-                        DSKeyPtr selected(new DSSelectedKey(key));
-
-                        selectedKeyframes.push_back(selected);
-                    }
-                }
-            }
-        }
-    }
-
-    if (selectedKeyframes.size() > 1) {
-        parent->computeSelectedKeysBRect();
-    }
-
-    parent->redraw();
-}
-
 void DopeSheetViewPrivate::pushUndoCommand(QUndoCommand *cmd)
 {
     undoStack->setActive();
     undoStack->push(cmd);
+}
+
+void DopeSheetViewPrivate::createContextMenu()
+{
+    RUNNING_IN_MAIN_THREAD();
+
+    contextMenu->clear();
+
+    // Create menues
+    Natron::Menu *editMenu = new Natron::Menu(contextMenu);
+    editMenu->setTitle(QObject::tr("Edit"));
+
+    contextMenu->addAction(editMenu->menuAction());
+
+    Natron::Menu *viewMenu = new Natron::Menu(contextMenu);
+    viewMenu->setTitle(QObject::tr("Menu"));
+
+    contextMenu->addAction(viewMenu->menuAction());
+
+    // Create actions
+    QAction *removeSelectedKeyframesAction = new ActionWithShortcut(kShortcutGroupDopeSheetEditor,
+                                                                    kShortcutIDActionDopeSheetEditorDeleteKeys,
+                                                                    kShortcutDescActionDopeSheetEditorDeleteKeys,
+                                                                    editMenu);
+    QObject::connect(removeSelectedKeyframesAction, SIGNAL(triggered()),
+                     parent, SLOT(deleteSelectedKeyframes()));
+    editMenu->addAction(removeSelectedKeyframesAction);
+
+    QAction *selectAllKeyframesAction = new ActionWithShortcut(kShortcutGroupDopeSheetEditor,
+                                                               kShortcutIDActionDopeSheetEditorSelectAllKeyframes,
+                                                               kShortcutDescActionDopeSheetEditorSelectAllKeyframes,
+                                                               editMenu);
+    QObject::connect(selectAllKeyframesAction, SIGNAL(triggered()),
+                     parent, SLOT(selectAllKeyframes()));
+    editMenu->addAction(selectAllKeyframesAction);
+
+    QAction *frameSelectionAction = new ActionWithShortcut(kShortcutGroupDopeSheetEditor,
+                                                           kShortcutIDActionDopeSheetEditorFrameSelection,
+                                                           kShortcutDescActionDopeSheetEditorFrameSelection,
+                                                           viewMenu);
+    QObject::connect(frameSelectionAction, SIGNAL(triggered()),
+                     parent, SLOT(frame()));
+    viewMenu->addAction(frameSelectionAction);
 }
 
 /**
@@ -1694,6 +1645,99 @@ void DopeSheetView::clearKeyframeSelection()
     computeSelectedKeysBRect();
 }
 
+void DopeSheetView::selectAllKeyframes()
+{
+    TreeItemsAndDSNodes dsNodeItems = _imp->dopeSheetEditor->getTreeItemsAndDSNodes();
+
+    for (TreeItemsAndDSNodes::const_iterator it = dsNodeItems.begin(); it != dsNodeItems.end(); ++it) {
+        DSNode *dsNode = (*it).second;
+
+        TreeItemsAndDSKnobs dsKnobItems = dsNode->getTreeItemsAndDSKnobs();
+
+        for (TreeItemsAndDSKnobs::const_iterator itKnob = dsKnobItems.begin(); itKnob != dsKnobItems.end(); ++itKnob) {
+            DSKnob *dsKnob = (*itKnob).second;
+
+            for (int i = 0; i < dsKnob->getKnobGui()->getKnob()->getDimension(); ++i) {
+                KeyFrameSet keyframes = dsKnob->getKnobGui()->getCurve(i)->getKeyFrames_mt_safe();
+
+                for (KeyFrameSet::const_iterator it = keyframes.begin(); it != keyframes.end(); ++it) {
+                    KeyFrame kf = *it;
+
+                    DSSelectedKey key (dsKnob, kf, i);
+
+                    DSKeyPtrList::iterator isAlreadySelected = _imp->keyframeIsAlreadyInSelected(key);
+
+                    if (isAlreadySelected == _imp->selectedKeyframes.end()) {
+                        DSKeyPtr selected(new DSSelectedKey(key));
+
+                        _imp->selectedKeyframes.push_back(selected);
+                    }
+                }
+            }
+        }
+    }
+
+    if (_imp->selectedKeyframes.size() > 1) {
+        computeSelectedKeysBRect();
+    }
+
+    redraw();
+}
+
+void DopeSheetView::deleteSelectedKeyframes()
+{
+    RUNNING_IN_MAIN_THREAD();
+
+    if (_imp->selectedKeyframes.empty()) {
+        return;
+    }
+
+    _imp->selectedKeysBRect = QRectF();
+
+    std::vector<DSSelectedKey> toRemove;
+    for (DSKeyPtrList::iterator it = _imp->selectedKeyframes.begin(); it != _imp->selectedKeyframes.end(); ++it) {
+        toRemove.push_back(DSSelectedKey(**it));
+    }
+
+    _imp->pushUndoCommand(new DSRemoveKeysCommand(toRemove, this));
+
+    _imp->selectedKeyframes.clear();
+
+    redraw();
+}
+
+void DopeSheetView::frame()
+{
+    RUNNING_IN_MAIN_THREAD();
+
+    if (_imp->selectedKeyframes.size() == 1) {
+        return;
+    }
+
+    FrameRange range;
+
+    // frame on project bounds
+    if (_imp->selectedKeyframes.empty()) {
+        range = _imp->projectKeyframeRange();
+    }
+    // or frame on current selection
+    else {
+        range.first = _imp->selectedKeysBRect.left();
+        range.second = _imp->selectedKeysBRect.right();
+    }
+
+    _imp->zoomContext.fill(range.first, range.second,
+                           _imp->zoomContext.bottom(), _imp->zoomContext.top());
+
+    _imp->computeTimelinePositions();
+
+    if (_imp->selectedKeyframes.size() > 1) {
+        computeSelectedKeysBRect();
+    }
+
+    redraw();
+}
+
 void DopeSheetView::onTimeLineFrameChanged(SequenceTime sTime, int reason)
 {
     Q_UNUSED(sTime);
@@ -1827,6 +1871,15 @@ void DopeSheetView::paintGL()
 void DopeSheetView::mousePressEvent(QMouseEvent *e)
 {
     RUNNING_IN_MAIN_THREAD();
+
+    if ( buttonDownIsRight(e) ) {
+        _imp->createContextMenu();
+        _imp->contextMenu->exec(mapToGlobal(e->pos()));
+
+        e->accept();
+
+        return;
+    }
 
     if (buttonDownIsMiddle(e)) {
         _imp->eventState = DopeSheetView::esDraggingView;
@@ -2150,14 +2203,14 @@ void DopeSheetView::keyPressEvent(QKeyEvent *e)
     Qt::KeyboardModifiers modifiers = e->modifiers();
     Qt::Key key = Qt::Key(e->key());
 
-    if (isKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionDopeSheetEditorDeleteKey, modifiers, key)) {
-        _imp->deleteSelectedKeyframes();
+    if (isKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionDopeSheetEditorDeleteKeys, modifiers, key)) {
+        deleteSelectedKeyframes();
     }
     else if (isKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionDopeSheetEditorFrameSelection, modifiers, key)) {
-        _imp->frame();
+        frame();
     }
     else if (isKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionDopeSheetEditorSelectAllKeyframes, modifiers, key)) {
-        _imp->selectAllKeyframes();
+        selectAllKeyframes();
     }
 }
 

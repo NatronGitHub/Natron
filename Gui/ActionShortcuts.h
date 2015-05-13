@@ -480,8 +480,8 @@ CLANG_DIAG_ON(uninitialized)
 #define kShortcutDescActionCurveEditorPaste "Paste Keyframes"
 
 // Dope Sheet Editor shortcuts
-#define kShortcutIDActionDopeSheetEditorDeleteKey "deleteKeys"
-#define kShortcutDescActionDopeSheetEditorDeleteKey "Delete selected keyframes"
+#define kShortcutIDActionDopeSheetEditorDeleteKeys "deleteKeys"
+#define kShortcutDescActionDopeSheetEditorDeleteKeys "Delete selected keyframes"
 
 #define kShortcutIDActionDopeSheetEditorFrameSelection "frameonselection"
 #define kShortcutDescActionDopeSheetEditorFrameSelection "Frame on selection"
