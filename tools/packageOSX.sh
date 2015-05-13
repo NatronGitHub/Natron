@@ -27,7 +27,7 @@ PORTS="boost qt4-mac boost glew cairo expat     jpeg openexr ffmpeg openjpeg15 l
 
 PORTSOK=yes
 for p in $PORTS; do
- if port list $p | fgrep $p > /dev/null; then
+ if port installed $p | fgrep "  $p @" > /dev/null; then
    #echo "port $p OK"
    true
  else
