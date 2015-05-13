@@ -86,7 +86,6 @@ public:
 
 private:
     void moveSelectedKeyframes(double dt);
-    void moveKey(DSKeyPtr selectedKey, double dt);
 
 private:
     DSKeyPtrList _keys;

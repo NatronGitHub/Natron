@@ -6,6 +6,7 @@
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h"
 #include "Engine/NoOp.h"
+#include <Engine/ViewerInstance.h>
 
 #include "Global/GlobalDefines.h"
 
@@ -60,24 +61,55 @@ void DSMoveKeysCommand::redo()
 
 void DSMoveKeysCommand::moveSelectedKeyframes(double dt)
 {
+    std::set<KnobHolder *> knobHolders;
+
     for (DSKeyPtrList::iterator it = _keys.begin(); it != _keys.end(); ++it) {
-        moveKey((*it), dt);
+        DSKeyPtr selectedKey = (*it);
+
+        KnobHolder *holder = selectedKey->dsKnob->getKnobGui()->getKnob()->getHolder();
+
+        knobHolders.insert(holder);
+    }
+
+    for (std::set<KnobHolder *>::iterator khIt = knobHolders.begin(); khIt != knobHolders.end(); ++khIt) {
+        Natron::EffectInstance *holder = dynamic_cast<Natron::EffectInstance *>(*khIt);
+
+        holder->beginChanges();
+    }
+
+    for (DSKeyPtrList::iterator it = _keys.begin(); it != _keys.end(); ++it) {
+        DSKeyPtr selectedKey = (*it);
+
+        boost::shared_ptr<KnobI> knob = selectedKey->dsKnob->getKnobGui()->getKnob();
+
+        knob->moveValueAtTime(selectedKey->key.getTime(),
+                              selectedKey->dimension,
+                              dt, 0, &selectedKey->key);
+    }
+
+    std::set<ViewerInstance *> toRender;
+
+    for (std::set<KnobHolder *>::iterator khIt = knobHolders.begin(); khIt != knobHolders.end(); ++khIt) {
+        Natron::EffectInstance *holder = dynamic_cast<Natron::EffectInstance *>(*khIt);
+
+        holder->endChanges(true);
+
+        std::list<ViewerInstance *> connectedViewers;
+
+        holder->getNode()->hasViewersConnected(&connectedViewers);
+
+        toRender.insert(connectedViewers.begin(), connectedViewers.end());
+    }
+
+    for (std::set<ViewerInstance *>::const_iterator viIt = toRender.begin(); viIt != toRender.end(); ++viIt) {
+        ViewerInstance *viewer = (*viIt);
+
+        viewer->renderCurrentFrame(true);
     }
 
     _view->computeSelectedKeysBRect();
 
     _view->redraw();
-}
-
-void DSMoveKeysCommand::moveKey(DSKeyPtr selectedKey, double dt)
-{
-    boost::shared_ptr<KnobI> knob = selectedKey->dsKnob->getKnobGui()->getKnob();
-
-    knob->beginChanges();
-    knob->moveValueAtTime(selectedKey->key.getTime(),
-                          selectedKey->dimension,
-                          dt, 0, &selectedKey->key);
-    knob->endChanges();
 }
 
 int DSMoveKeysCommand::id() const
@@ -109,6 +141,7 @@ bool DSMoveKeysCommand::mergeWith(const QUndoCommand *other)
 
     return true;
 }
+
 
 ////////////////////////// DSLeftTrimReaderCommand //////////////////////////
 
