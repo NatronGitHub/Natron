@@ -29,6 +29,7 @@ class DopeSheetEditor;
 class DSNodePrivate;
 class Gui;
 class HierarchyView;
+class HierarchyViewPrivate;
 class KnobI;
 class KnobGui;
 class NodeGroup;
@@ -174,16 +175,24 @@ private:
 
 class HierarchyView : public QTreeWidget
 {
+    Q_OBJECT
+
 public:
     friend class HierarchyViewItemDelegate;
 
     explicit HierarchyView(DopeSheetEditor *editor, QWidget *parent = 0);
+    ~HierarchyView();
+
+public Q_SLOTS:
+    void onCustomContextMenuRequested(const QPoint &point);
+    void startEditingNodeLabel();
+    void setNodeLabel(QTreeWidgetItem*item, int column);
 
 protected:
     void drawRow(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const OVERRIDE FINAL;
 
 private:
-    DopeSheetEditor *m_editor;
+    boost::scoped_ptr<HierarchyViewPrivate> _imp;
 };
 
 #endif // DOPESHEET_H

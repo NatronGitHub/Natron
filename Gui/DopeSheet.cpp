@@ -5,13 +5,16 @@
 #include <QHeaderView>
 #include <QSplitter>
 #include <QStyledItemDelegate>
+#include <QtEvents>
 #include <QTreeWidget>
 
+#include "Gui/ActionShortcuts.h"
 #include "Gui/DockablePanel.h"
 #include "Gui/DopeSheetView.h"
 #include "Gui/Gui.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/KnobGui.h"
+#include "Gui/Menu.h"
 #include "Gui/NodeGui.h"
 
 #include "Engine/Knob.h"
@@ -722,6 +725,47 @@ QSize HierarchyViewItemDelegate::sizeHint(const QStyleOptionViewItem &option, co
     return itemSize;
 }
 
+class HierarchyViewPrivate
+{
+public:
+    HierarchyViewPrivate(HierarchyView *qq);
+    ~HierarchyViewPrivate();
+
+    /* functions */
+    void createContextMenu();
+
+    /* attributes */
+    HierarchyView *parent;
+    DopeSheetEditor *dopeSheetEditor;
+    Natron::Menu *contextMenu;
+
+    QTreeWidgetItem *lastClickedItem;
+};
+
+HierarchyViewPrivate::HierarchyViewPrivate(HierarchyView *qq) :
+    parent(qq),
+    dopeSheetEditor(0),
+    contextMenu(new Natron::Menu(parent)),
+    lastClickedItem(0)
+{}
+
+HierarchyViewPrivate::~HierarchyViewPrivate()
+{}
+
+void HierarchyViewPrivate::createContextMenu()
+{
+    contextMenu->clear();
+
+    // Create actions
+    QAction *renameNodeNameAction = new ActionWithShortcut(kShortcutGroupDopeSheetEditor,
+                                                           kShortcutIDActionDopeSheetEditorRenameNode,
+                                                           kShortcutDescActionDopeSheetEditorRenameNode,
+                                                           contextMenu);
+    QObject::connect(renameNodeNameAction, SIGNAL(triggered()),
+                     parent, SLOT(startEditingNodeLabel()));
+    contextMenu->addAction(renameNodeNameAction);
+}
+
 
 /**
  * @brief The HierarchyView class
@@ -736,19 +780,68 @@ QSize HierarchyViewItemDelegate::sizeHint(const QStyleOptionViewItem &option, co
  */
 HierarchyView::HierarchyView(DopeSheetEditor *editor, QWidget *parent) :
     QTreeWidget(parent),
-    m_editor(editor)
+    _imp(new HierarchyViewPrivate(this))
 {
+    _imp->dopeSheetEditor = editor;
+
     setSelectionMode(QAbstractItemView::ExtendedSelection);
+    setContextMenuPolicy(Qt::CustomContextMenu);
+    setEditTriggers(QAbstractItemView::NoEditTriggers);
     setColumnCount(1);
+
     header()->close();
 
     setItemDelegate(new HierarchyViewItemDelegate(this));
+
+    connect(this, SIGNAL(customContextMenuRequested(QPoint)),
+            this, SLOT(onCustomContextMenuRequested(QPoint)));
+
+    connect(this, SIGNAL(itemChanged(QTreeWidgetItem*,int)),
+            this, SLOT(setNodeLabel(QTreeWidgetItem*,int)));
+}
+
+HierarchyView::~HierarchyView()
+{
+
+}
+
+void HierarchyView::onCustomContextMenuRequested(const QPoint &point)
+{
+    _imp->lastClickedItem = itemAt(point);
+
+    if (!_imp->dopeSheetEditor->findDSNode(_imp->lastClickedItem)) {
+        return;
+    }
+
+    _imp->createContextMenu();
+
+    _imp->contextMenu->exec(mapToGlobal(point));
+}
+
+void HierarchyView::startEditingNodeLabel()
+{
+    editItem(_imp->lastClickedItem, 0);
+}
+
+void HierarchyView::setNodeLabel(QTreeWidgetItem *item, int column)
+{
+    if (column != 0) {
+        return;
+    }
+
+    DSNode *dsNode = _imp->dopeSheetEditor->findDSNode(item);
+
+    if (!dsNode) {
+        return;
+    }
+
+    dsNode->getNodeGui()->getNode()->setLabel(item->text(0).toStdString());
 }
 
 void HierarchyView::drawRow(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const
 {
     QTreeWidgetItem *item = itemFromIndex(index);
-    DSNode *itemDSNode = m_editor->findParentDSNode(item);
+    DSNode *itemDSNode = _imp->dopeSheetEditor->findParentDSNode(item);
 
     double r, g, b;
     itemDSNode->getNodeGui()->getColor(&r, &g, &b);
@@ -1185,6 +1278,7 @@ DSNode *DopeSheetEditor::createDSNode(const boost::shared_ptr<NodeGui> &nodeGui)
     QTreeWidgetItem *nameItem = new QTreeWidgetItem(_imp->hierarchyView, nodeType);
     nameItem->setText(0, nodeGui->getNode()->getLabel().c_str());
     nameItem->setExpanded(true);
+    nameItem->setFlags(nameItem->flags() | Qt::ItemIsEditable);
 
     DSNode *dsNode = new DSNode(this, nameItem, nodeGui);
 

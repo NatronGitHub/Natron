@@ -489,6 +489,10 @@ CLANG_DIAG_ON(uninitialized)
 #define kShortcutIDActionDopeSheetEditorSelectAllKeyframes "selectallkeyframes"
 #define kShortcutDescActionDopeSheetEditorSelectAllKeyframes "Select all keyframes"
 
+#define kShortcutIDActionDopeSheetEditorRenameNode "renamenode"
+#define kShortcutDescActionDopeSheetEditorRenameNode "Rename node label"
+
+
 inline
 QKeySequence
 makeKeySequence(const Qt::KeyboardModifiers & modifiers,

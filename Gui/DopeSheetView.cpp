@@ -1381,7 +1381,7 @@ void DopeSheetViewPrivate::createContextMenu()
 
     contextMenu->clear();
 
-    // Create menues
+    // Create menus
     Natron::Menu *editMenu = new Natron::Menu(contextMenu);
     editMenu->setTitle(QObject::tr("Edit"));
 
