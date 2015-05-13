@@ -3905,10 +3905,18 @@ EffectInstance::renderHandler(RenderArgs & args,
                 ImageList::iterator idIt = identityPlanes.begin();
                 for (std::map<Natron::ImageComponents, PlaneToRender>::iterator it = planes.planes.begin(); it != planes.planes.end(); ++it,++idIt) {
                     it->second.renderMappedImage->pasteFrom(**idIt,downscaledRectToRender, false);
+                    it->second.renderMappedImage->markForRendered(downscaledRectToRender);
                 }
                 isIdentityProcessed = true;
                 return eRenderingFunctorRetOK;
             }
+        } else {
+            for (std::map<Natron::ImageComponents, PlaneToRender>::iterator it = planes.planes.begin(); it != planes.planes.end(); ++it) {
+                it->second.renderMappedImage->fill(downscaledRectToRender, 0., 0., 0., 0.);
+                it->second.renderMappedImage->markForRendered(downscaledRectToRender);
+            }
+            isIdentityProcessed = true;
+            return eRenderingFunctorRetOK;
         }
         
     }

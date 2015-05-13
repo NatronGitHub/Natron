@@ -131,17 +131,54 @@ RotoPaint::render(const RenderActionArgs& args)
     RectI bgImgRoI;
     ImagePtr bgImg = getImage(0, args.time, args.mappedScale, args.view, 0, bgComps.front(), bgDepth, getPreferredAspectRatio(), false, &bgImgRoI);
     
+    std::list<ImageComponents> neededComps;
     for (std::list<std::pair<Natron::ImageComponents,boost::shared_ptr<Natron::Image> > >::const_iterator plane = args.outputPlanes.begin();
          plane != args.outputPlanes.end(); ++plane) {
-        
-        if (items.empty()) {
+        neededComps.push_back(plane->first);
+    }
+    if (items.empty()) {
+        for (std::list<std::pair<Natron::ImageComponents,boost::shared_ptr<Natron::Image> > >::const_iterator plane = args.outputPlanes.begin();
+             plane != args.outputPlanes.end(); ++plane) {
+            
             if (bgImg) {
                 plane->second->pasteFrom(*bgImg, args.roi);
             } else {
                 plane->second->fill(args.roi, 0., 0., 0., 0.);
             }
-        } else {
-
+            
+        }
+    } else {
+        
+        const boost::shared_ptr<RotoDrawableItem>& firstStrokeItem = items.front();
+        RotoStrokeItem* firstStroke = dynamic_cast<RotoStrokeItem*>(firstStrokeItem.get());
+        assert(firstStroke);
+        boost::shared_ptr<Node> bottomMerge =  firstStroke->getMergeNode();
+        
+        
+        unsigned int mipMapLevel = Image::getLevelFromScale(args.mappedScale.x);
+        RenderRoIArgs rotoPaintArgs(args.time,
+                                    args.mappedScale,
+                                    mipMapLevel,
+                                    args.view,
+                                    false,
+                                    args.roi,
+                                    RectD(),
+                                    neededComps,
+                                    bgDepth);
+        ImageList rotoPaintImages;
+        RenderRoIRetCode code = bottomMerge->getLiveInstance()->renderRoI(rotoPaintArgs, &rotoPaintImages);
+        if (code == eRenderRoIRetCodeFailed) {
+            return Natron::eStatusFailed;
+        } else if (code == eRenderRoIRetCodeAborted) {
+            return Natron::eStatusOK;
+        }
+        
+        assert(rotoPaintImages.size() == args.outputPlanes.size());
+        
+        ImageList::iterator rotoImagesIt = rotoPaintImages.begin();
+        for (std::list<std::pair<Natron::ImageComponents,boost::shared_ptr<Natron::Image> > >::const_iterator plane = args.outputPlanes.begin();
+             plane != args.outputPlanes.end(); ++plane, ++rotoImagesIt) {
+            plane->second->pasteFrom(**rotoImagesIt, args.roi);
         }
     }
     

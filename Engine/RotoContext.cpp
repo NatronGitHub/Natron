@@ -6425,8 +6425,7 @@ RotoContext::renderMaskInternal(const std::list<boost::shared_ptr<RotoDrawableIt
         lastRenderedImage = _imp->lastRenderedImage;
     }
     
-    if ( lastRenderedImage &&
-        ( lastRenderHash != hash.value() ) ) {
+    if (lastRenderedImage) {
         
         appPTR->removeAllImagesFromCacheWithMatchingKey(lastRenderHash);
         

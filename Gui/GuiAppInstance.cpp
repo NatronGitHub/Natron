@@ -394,7 +394,7 @@ GuiAppInstance::createNodeGui(const boost::shared_ptr<Natron::Node> &node,
     }
 
     ///must be done after the viewer gui has been created
-    if ( node->isRotoNode() ) {
+    if ( node->isRotoNode() || node->isRotoPaintingNode() ) {
         _imp->_gui->createNewRotoInterface( nodegui.get() );
     }
 

@@ -70,6 +70,7 @@
 #include "Engine/NoOp.h"
 #include "Engine/Project.h"
 #include "Engine/BackDrop.h"
+#include "Engine/RotoPaint.h"
 
 
 
@@ -1591,7 +1592,25 @@ AppManager::loadBuiltinNodePlugins(std::map<std::string,std::vector< std::pair<s
         }
         registerPlugin(qgrouping, node->getPluginID().c_str(), node->getPluginLabel().c_str(), NATRON_IMAGES_PATH "diskcache_icon.png", "", false, false, binary, false, node->getMajorVersion(), node->getMinorVersion());
     }
-
+#ifdef ROTO_ENABLE_PAINT
+    {
+        boost::shared_ptr<EffectInstance> node( RotoPaint::BuildEffect( boost::shared_ptr<Natron::Node>() ) );
+        std::map<std::string,void*> functions;
+        functions.insert( std::make_pair("BuildEffect", (void*)&RotoPaint::BuildEffect) );
+        LibraryBinary *binary = new LibraryBinary(functions);
+        assert(binary);
+        
+        std::list<std::string> grouping;
+        node->getPluginGrouping(&grouping);
+        QStringList qgrouping;
+        
+        for (std::list<std::string>::iterator it = grouping.begin(); it != grouping.end(); ++it) {
+            qgrouping.push_back( it->c_str() );
+        }
+        registerPlugin(qgrouping, node->getPluginID().c_str(), node->getPluginLabel().c_str(),
+                       NATRON_IMAGES_PATH "GroupingIcons/Set3/paint_grouping_3.png", "", false, false, binary, false, node->getMajorVersion(), node->getMinorVersion());
+    }
+#endif
 }
 
 static void findAndRunScriptFile(const QString& path,const QStringList& files,const QString& script)
