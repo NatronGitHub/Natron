@@ -670,7 +670,6 @@ AppInstance::createNodeInternal(const QString & pluginID,
                                 const CreateNodeArgs::DefaultValuesList& paramValues,
                                 const boost::shared_ptr<NodeCollection>& group)
 {
-    assert(group);
     
     boost::shared_ptr<Node> node;
     Natron::Plugin* plugin = 0;

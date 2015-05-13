@@ -4996,13 +4996,32 @@ Node::getUserComponents(int inputNb,bool* processChannels, bool* isAll,Natron::I
     assert(!_imp->liveInstance->isMultiPlanar());
     
     std::map<int,ChannelSelector>::const_iterator foundSelector = _imp->channelsSelectors.find(inputNb);
-    if (foundSelector == _imp->channelsSelectors.end()) {
-        //Fetch in input what the user has set for the output
-        foundSelector = _imp->channelsSelectors.find(-1);
-    }
-    if (foundSelector == _imp->channelsSelectors.end()) {
-        processChannels[0] = processChannels[1] = processChannels[2] = processChannels[3] = true;
-        return false;
+    int chanIndex = getMaskChannel(inputNb,layer);
+    if (chanIndex != -1) {
+        
+        *isAll = false;
+        (void)chanIndex;
+        int numChans = layer->getNumComponents();
+        processChannels[0] = true;
+        if (numChans > 1) {
+            processChannels[1] = true;
+            if (numChans > 2) {
+                processChannels[2] = true;
+                if (numChans > 3) {
+                    processChannels[3] = true;
+                }
+            }
+        }
+        return true;
+    } else {
+        if (foundSelector == _imp->channelsSelectors.end()) {
+            //Fetch in input what the user has set for the output
+            foundSelector = _imp->channelsSelectors.find(-1);
+        }
+        if (foundSelector == _imp->channelsSelectors.end()) {
+            processChannels[0] = processChannels[1] = processChannels[2] = processChannels[3] = true;
+            return false;
+        }
     }
     
     *isAll = !_imp->getSelectedLayer(inputNb, foundSelector->second, layer);

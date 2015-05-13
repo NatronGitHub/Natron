@@ -5154,10 +5154,7 @@ EffectInstance::getComponentsAvailableRecursive(SequenceTime time, int view, Com
                 }
             }
  
-            if (!found) {
-                continue;
-            }
-            
+           
             ComponentsAvailableMap::iterator alreadyExisting = comps->end();
             
             if (it->isColorPlane()) {
@@ -5182,7 +5179,7 @@ EffectInstance::getComponentsAvailableRecursive(SequenceTime time, int view, Com
             
             //If the component already exists from above in the tree, do not add it
             if (alreadyExisting == comps->end()) {
-                comps->insert(std::make_pair(*it, node ));
+                comps->insert(std::make_pair(*it, found ? node : NodePtr() ));
             } else {
                 alreadyExisting->second = node ;
             }
