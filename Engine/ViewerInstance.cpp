@@ -751,7 +751,7 @@ ViewerInstance::renderViewer_internal(int view,
         
         boost::shared_ptr<Natron::FrameParams> cachedFrameParams =
         FrameEntry::makeParams(bounds,inArgs.key->getBitDepth(), inArgs.params->textureRect.w, inArgs.params->textureRect.h);
-        Natron::getTextureFromCacheOrCreate(*(inArgs.key), cachedFrameParams,
+        bool cached = Natron::getTextureFromCacheOrCreate(*(inArgs.key), cachedFrameParams,
                                                                    &inArgs.params->cachedFrame);
         if (!inArgs.params->cachedFrame) {
             std::stringstream ss;
@@ -777,7 +777,9 @@ ViewerInstance::renderViewer_internal(int view,
         }
         
         ///The entry has already been locked by the cache
-        inArgs.params->cachedFrame->allocateMemory();
+		if (!cached) {
+			inArgs.params->cachedFrame->allocateMemory();
+		}
         
     
         
