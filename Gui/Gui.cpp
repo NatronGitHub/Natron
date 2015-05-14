@@ -3924,7 +3924,9 @@ void
 Gui::removeUndoStack(QUndoStack* stack)
 {
     std::map<QUndoStack*, std::pair<QAction*, QAction*> >::iterator it = _imp->_undoStacksActions.find(stack);
-
+	if (it == _imp->_undoStacksActions.end()) {
+		return;
+	}
     if (_imp->_currentUndoAction == it->second.first) {
         _imp->menuEdit->removeAction(_imp->_currentUndoAction);
     }
