@@ -24,6 +24,7 @@ using namespace Natron;
 
 static Point getPointAt(const BezierCPs& cps, int time, double t)
 {
+    assert(cps.size());
     if (t < 0) {
         t += (int)cps.size();
     }
@@ -63,6 +64,7 @@ static Point getPointAt(const BezierCPs& cps, int time, double t)
 
 static Point getLeftPointAt(const BezierCPs& cps, int time, double t)
 {
+    assert(cps.size());
     if (t < 0) {
         t += (int)cps.size();
     }
@@ -116,6 +118,7 @@ static Point getLeftPointAt(const BezierCPs& cps, int time, double t)
 
 static Point getRightPointAt(const BezierCPs& cps, int time, double t)
 {
+    assert(cps.size());
     if (t < 0) {
         t += (int)cps.size();
     }
@@ -777,15 +780,7 @@ void Natron::regularize(const BezierCPs &patch, int time, std::list<BezierCPs> *
                 Bezier::point_line_intersection(*last_pt, *last_start, pointInside, &winding_number);
             }
         }
-        if (winding_number == 0) {
-            sign = 0;
-        } else if (winding_number < 0) {
-            sign = -1;
-        } else if (winding_number > 0) {
-            sign = 1;
-        } else {
-            sign = 0;
-        }
+        sign = (winding_number < 0) ? -1 : ((winding_number > 0) ? 1 : 0);
     }
     
     std::list<BezierCPs> splits;
