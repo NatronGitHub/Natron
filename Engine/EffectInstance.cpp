@@ -1800,12 +1800,22 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool useCache,
             ///Ensure the image is allocated
             (*image)->allocateMemory();
             
+            /*
+             * There might be a situation  where the RoD of the cached image is not the same as this RoD even though the hash is the same.
+             * This seems to happen with the Roto node. This hack just updates the image's RoD to prevent an assert from triggering
+             * in the call to ensureBounds() below.
+             */
+            RectD oldRod = (*image)->getRoD();
+            if (oldRod != rod) {
+                oldRod.merge(rod);
+                (*image)->setRoD(oldRod);
+            }
+            
             
             /*
              * Another thread might have allocated the same image in the cache but with another RoI, make sure
              * it is big enough for us, or resize it to our needs.
              */
-   
             (*image)->ensureBounds(bounds);
             assert((*image)->getBounds().contains(bounds));
 
@@ -3351,11 +3361,11 @@ EffectInstance::renderRoIInternal(SequenceTime time,
             safety = eRenderSafetyFullySafe;
             allowFullySafeFrame = false;
         } else {
-            if ( !getApp()->getProject()->tryLock() ) {
-                safety = eRenderSafetyFullySafe;
-            } else {
-                getApp()->getProject()->unlock();
-            }
+//            if ( !getApp()->getProject()->tryLock() ) {
+//                safety = eRenderSafetyFullySafe;
+//            } else {
+//                getApp()->getProject()->unlock();
+//            }
         }
     }
     /*

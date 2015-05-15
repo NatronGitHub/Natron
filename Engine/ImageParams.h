@@ -142,6 +142,10 @@ public:
     {
         return _rod;
     }
+    
+    void setRoD(const RectD& rod) {
+        _rod = rod;
+    }
 
     const RectI & getBounds() const
     {

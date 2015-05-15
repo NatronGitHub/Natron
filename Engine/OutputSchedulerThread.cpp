@@ -3040,7 +3040,12 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool canAbort)
             }
             functorArgs.request = request;
             
-            if (QThreadPool::globalInstance()->activeThreadCount() >= QThreadPool::globalInstance()->maxThreadCount()) {
+            /*
+             * Let at least 1 free thread in the thread-pool to allow the renderer to use the thread pool if we use the thread-pool
+             * with QtConcurrent::run
+             */
+            int maxThreads = QThreadPool::globalInstance()->maxThreadCount();
+            if (maxThreads == 1 || (QThreadPool::globalInstance()->activeThreadCount() >= maxThreads - 1)) {
                 _imp->backupThread.renderCurrentFrame(functorArgs);
             } else {
                 QtConcurrent::run(renderCurrentFrameFunctor,functorArgs);

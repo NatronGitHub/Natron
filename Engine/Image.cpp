@@ -743,6 +743,13 @@ Image::pasteFromForDepth(const Natron::Image & srcImg,
     }
 }
 
+void
+Image::setRoD(const RectD& rod)
+{
+    QWriteLocker k(&_entryLock);
+    _rod = rod;
+    _params->setRoD(rod);
+}
 
 void
 Image::ensureBounds(const RectI& newBounds)

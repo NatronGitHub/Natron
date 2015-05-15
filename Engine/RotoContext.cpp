@@ -2682,6 +2682,7 @@ Bezier::movePointByIndexInternal(int index,
     
     bool rippleEdit = getContext()->isRippleEditEnabled();
     bool autoKeying = getContext()->isAutoKeyingEnabled();
+    bool fLinkEnabled = (onlyFeather ? true : getContext()->isFeatherLinkEnabled());
     bool keySet = false;
     {
         QMutexLocker l(&itemMutex);
@@ -2710,7 +2711,6 @@ Bezier::movePointByIndexInternal(int index,
             fp->getRightBezierPointAtTime(time, &rightXF, &rightYF,true);
         }
         
-        bool fLinkEnabled = (onlyFeather ? true : getContext()->isFeatherLinkEnabled());
         bool moveFeather = (fLinkEnabled || (useFeather && fp && cp->equalsAtTime(time, *fp)));
         
         
