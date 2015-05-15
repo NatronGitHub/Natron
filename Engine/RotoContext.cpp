@@ -6807,7 +6807,7 @@ RotoContextPrivate::renderStroke(cairo_t* cr,const RotoStrokeItem* stroke, int t
     boost::shared_ptr<Double_Knob> brushHardnessKnob = stroke->getBrushHardnessKnob();
     double brushHardness = brushHardnessKnob->getValueAtTime(time);
     boost::shared_ptr<Double_Knob> brushEffectStrengthKnob = stroke->getBrushEffectKnob();
-    double effectStrength = brushEffectStrengthKnob->getValueAtTime(time);
+    //double effectStrength = brushEffectStrengthKnob->getValueAtTime(time);
     boost::shared_ptr<Double_Knob> visiblePortionKnob = stroke->getBrushVisiblePortionKnob();
     double writeOnStart = visiblePortionKnob->getValueAtTime(time, 0);
     double writeOnEnd = visiblePortionKnob->getValueAtTime(time, 1);
@@ -6862,7 +6862,7 @@ RotoContextPrivate::renderStroke(cairo_t* cr,const RotoStrokeItem* stroke, int t
         Point center;
         center.x = it->first.x;
         center.y = it->first.y;
-        double pressure = it->second;
+        //double pressure = it->second;
         for (int i = 0; i < 4; ++i) {
             renderDotPatch(mesh, i, center, internalDotRadius, externalDotRadius, shapeColor, opacity);
         }

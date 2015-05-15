@@ -2776,7 +2776,8 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
         }
         overlaysCaught = true;
     }
-
+    (void)overlaysCaught;
+    
     if (mustRedraw) {
         updateGL();
     }
