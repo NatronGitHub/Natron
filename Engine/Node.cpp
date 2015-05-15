@@ -481,7 +481,9 @@ Node::createRotoContextConditionnally()
     assert(_imp->liveInstance);
     ///Initialize the roto context if any
     if ( isRotoNode() || isRotoPaintingNode() ) {
+        _imp->liveInstance->beginChanges();
         _imp->rotoContext.reset( new RotoContext(shared_from_this()) );
+        _imp->liveInstance->endChanges(true);
         _imp->rotoContext->createBaseLayer();
     }
 }

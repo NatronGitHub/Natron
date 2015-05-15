@@ -993,7 +993,9 @@ NodeGui::refreshPosition(double x,
                 const std::list<Natron::Node* > & outputs = getNode()->getOutputs();
                 for (std::list<Natron::Node* >::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
                     boost::shared_ptr<NodeGuiI> node_gui_i = (*it)->getNodeGui();
-                    assert(node_gui_i);
+                    if (!node_gui_i) {
+                        continue;
+                    }
                     NodeGui* node = dynamic_cast<NodeGui*>(node_gui_i.get());
                     assert(node);
                     QSize outputSize = node->getSize();

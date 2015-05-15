@@ -3346,7 +3346,8 @@ EffectInstance::renderRoIInternal(SequenceTime time,
         ///Also check that the number of threads indicating by the settings are appropriate for this render mode.
         if ( !tilesSupported || (nbThreads == -1) || (nbThreads == 1) ||
             ( (nbThreads == 0) && (appPTR->getHardwareIdealThreadCount() == 1) ) ||
-            ( QThreadPool::globalInstance()->activeThreadCount() >= QThreadPool::globalInstance()->maxThreadCount() ) ) {
+            ( QThreadPool::globalInstance()->activeThreadCount() >= QThreadPool::globalInstance()->maxThreadCount() ) ||
+            isRotoPaintNode()) {
             safety = eRenderSafetyFullySafe;
             allowFullySafeFrame = false;
         } else {

@@ -112,10 +112,9 @@
 #define kRotoBrushSourceColor "sourceType"
 #define kRotoBrushSourceColorLabel "Source"
 #define kRotoBrushSourceColorHint "Source color used for painting the stroke:\n" \
-"- Color: a solid color chosen by the color parameter\n" \
 "- foreground: the painted result at this point in the hierarchy\n" \
 "- background: the original image unpainted connected to bg\n" \
-"- background1: the original image unpainted connected to bg1\n"
+"- backgroundN: the original image unpainted connected to bgN\n"
 
 #define kRotoBrushSizeParam "brushSize"
 #define kRotoBrushSizeParamLabel "Brush Size"
@@ -1049,7 +1048,7 @@ struct RotoContextPrivate
             
             boost::shared_ptr<Choice_Knob> sourceType = Natron::createKnob<Choice_Knob>(effect,kRotoBrushSourceColorLabel,1,false);
             sourceType->setName(kRotoBrushSourceColor);
-            sourceType->setHintToolTip(kRotoBrushSizeParamHint);
+            sourceType->setHintToolTip(kRotoBrushSourceColorHint);
             sourceType->setDefaultValue(1);
             {
                 std::vector<std::string> choices;
