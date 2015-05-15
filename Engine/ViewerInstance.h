@@ -36,6 +36,17 @@ class TimeLine;
 class OpenGLViewerI;
 struct TextureRect;
 
+struct ViewerArgs
+{
+    Natron::EffectInstance* activeInputToRender;
+    bool forceRender;
+    int activeInputIndex;
+    U64 activeInputHash;
+    boost::shared_ptr<Natron::FrameKey> key;
+    boost::shared_ptr<UpdateViewerParams> params;
+    boost::shared_ptr<RenderingFlagSetter> isRenderingFlag;
+};
+
 class ViewerInstance
 : public Natron::OutputEffectInstance
 {
@@ -60,16 +71,7 @@ public:
      **/
     void invalidateUiContext();
 
-    struct ViewerArgs
-    {
-        Natron::EffectInstance* activeInputToRender;
-        bool forceRender;
-        int activeInputIndex;
-        U64 activeInputHash;
-        boost::shared_ptr<Natron::FrameKey> key;
-        boost::shared_ptr<UpdateViewerParams> params;
-        boost::shared_ptr<RenderingFlagSetter> isRenderingFlag;
-    };
+    
     
     /**
      * @brief Look-up the cache and try to find a matching texture for the portion to render.
@@ -94,7 +96,7 @@ public:
     Natron::StatusEnum renderViewer(int view,bool singleThreaded,bool isSequentialRender,
                                 U64 viewerHash,
                                     bool canAbort,
-                                boost::shared_ptr<ViewerInstance::ViewerArgs> args[2]) WARN_UNUSED_RETURN;
+                                boost::shared_ptr<ViewerArgs> args[2]) WARN_UNUSED_RETURN;
 
 
     void updateViewer(boost::shared_ptr<UpdateViewerParams> & frame);

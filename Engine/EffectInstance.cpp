@@ -2188,8 +2188,11 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
         
         assert( !( (supportsRS == eSupportsNo) && !(renderMappedScale.x == 1. && renderMappedScale.y == 1.) ) );
         bool identity;
+        
+        RectI pixelRod;
+        rod.toPixelEnclosing(args.mipMapLevel, par, &pixelRod);
         try {
-            identity = isIdentity_public(true, nodeHash, args.time, renderMappedScale, roi, args.view, &inputTimeIdentity, &inputNbIdentity);
+            identity = isIdentity_public(true, nodeHash, args.time, renderMappedScale, pixelRod, args.view, &inputTimeIdentity, &inputNbIdentity);
         } catch (...) {
             return eRenderRoIRetCodeFailed;
         }
@@ -2229,32 +2232,37 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
             ///later on for us already.
             //args.roi.toCanonical(args.mipMapLevel, rod, &canonicalRoI);
             args.roi.toCanonical_noClipping(args.mipMapLevel, par,  &canonicalRoI);
-            RoIMap inputsRoI;
-            inputsRoI.insert( std::make_pair(getInput(inputNbIdentity), canonicalRoI) );
-            Implementation::ScopedRenderArgs scopedArgs(&_imp->renderArgs,
-                                                        inputsRoI,
-                                                        rod,
-                                                        args.roi,
-                                                        args.time,
-                                                        args.view,
-                                                        identity,
-                                                        inputTimeIdentity,
-                                                        inputNbIdentity,
-                                                        std::map<Natron::ImageComponents,PlaneToRender>(),
-                                                        firstFrame,
-                                                        lastFrame);
             Natron::EffectInstance* inputEffectIdentity = getInput(inputNbIdentity);
-            
             if (inputEffectIdentity) {
+                
+                RoIMap inputsRoI;
+                inputsRoI.insert( std::make_pair(inputEffectIdentity, canonicalRoI) );
+                Implementation::ScopedRenderArgs scopedArgs(&_imp->renderArgs,
+                                                            inputsRoI,
+                                                            rod,
+                                                            args.roi,
+                                                            args.time,
+                                                            args.view,
+                                                            identity,
+                                                            inputTimeIdentity,
+                                                            inputNbIdentity,
+                                                            std::map<Natron::ImageComponents,PlaneToRender>(),
+                                                            firstFrame,
+                                                            lastFrame);
+                
                 ///we don't need to call getRegionOfDefinition and getFramesNeeded if the effect is an identity
                 RenderRoIArgs inputArgs = args;
                 inputArgs.time = inputTimeIdentity;
                 
                 return inputEffectIdentity->renderRoI(inputArgs, outputPlanes);
-
+                
+            } else {
+                for (ImageList::iterator it = outputPlanes->begin(); it!=outputPlanes->end(); ++it) {
+                    (*it)->fill(args.roi, 0., 0., 0., 0.);
+                }
             }
             
-            return eRenderRoIRetCodeFailed;
+            return eRenderRoIRetCodeOk;
             
         } // if (identity)
     }

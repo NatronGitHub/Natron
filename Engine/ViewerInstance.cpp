@@ -293,7 +293,7 @@ ViewerInstance::renderViewer(int view,
                              bool isSequentialRender,
                              U64 viewerHash,
                              bool canAbort,
-                             boost::shared_ptr<ViewerInstance::ViewerArgs> args[2])
+                             boost::shared_ptr<ViewerArgs> args[2])
 {
     if (!_imp->uiContext) {
         return eStatusFailed;

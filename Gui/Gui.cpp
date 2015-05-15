@@ -2861,6 +2861,11 @@ Gui::openProject()
     std::string selectedFile =  popOpenFileDialog( false, filters, _imp->_lastLoadProjectOpenedDir.toStdString(), false );
 
     if ( !selectedFile.empty() ) {
+        
+        std::string patternCpy = selectedFile;
+        std::string path = SequenceParsing::removePath(patternCpy);
+        _imp->_lastLoadProjectOpenedDir = path.c_str();
+        
         openProjectInternal(selectedFile);
     }
 }
@@ -3000,6 +3005,8 @@ Gui::saveProjectAs()
         if (!_imp->checkProjectLockAndWarn(path.c_str(),outFile.c_str())) {
             return false;
         }
+        _imp->_lastSaveProjectOpenedDir = path.c_str();
+        
         _imp->_appInstance->getProject()->saveProject(path.c_str(), outFile.c_str(), false);
 
         QString filePath = QString( path.c_str() ) + QString( outFile.c_str() );
@@ -3111,7 +3118,13 @@ Gui::createReader()
     }
     std::string pattern = popOpenFileDialog( true, filters, _imp->_lastLoadSequenceOpenedDir.toStdString(), true );
     if ( !pattern.empty() ) {
+        
         QString qpattern( pattern.c_str() );
+        
+        std::string patternCpy = pattern;
+        std::string path = SequenceParsing::removePath(patternCpy);
+        _imp->_lastLoadSequenceOpenedDir = path.c_str();
+        
         std::string ext = Natron::removeFileExtension(qpattern).toLower().toStdString();
         std::map<std::string, std::string>::iterator found = readersForFormat.find(ext);
         if ( found == readersForFormat.end() ) {
@@ -3163,6 +3176,11 @@ Gui::createWriter()
     }
     std::string file = popSaveFileDialog( true, filters, _imp->_lastSaveSequenceOpenedDir.toStdString(), true );
     if ( !file.empty() ) {
+        
+        std::string patternCpy = file;
+        std::string path = SequenceParsing::removePath(patternCpy);
+        _imp->_lastSaveSequenceOpenedDir = path.c_str();
+        
         NodeGraph* graph = 0;
         if (_imp->_lastFocusedGraph) {
             graph = _imp->_lastFocusedGraph;
