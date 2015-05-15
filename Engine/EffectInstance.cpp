@@ -3935,7 +3935,7 @@ EffectInstance::renderHandler(RenderArgs & args,
                     it->second.renderMappedImage->pasteFrom(**idIt,downscaledRectToRender, false);
                     it->second.renderMappedImage->markForRendered(downscaledRectToRender);
                 }
-                isIdentityProcessed = true;
+                //isIdentityProcessed = true;
                 return eRenderingFunctorRetOK;
             }
         } else {
@@ -3943,7 +3943,7 @@ EffectInstance::renderHandler(RenderArgs & args,
                 it->second.renderMappedImage->fill(downscaledRectToRender, 0., 0., 0., 0.);
                 it->second.renderMappedImage->markForRendered(downscaledRectToRender);
             }
-            isIdentityProcessed = true;
+            //isIdentityProcessed = true;
             return eRenderingFunctorRetOK;
         }
         

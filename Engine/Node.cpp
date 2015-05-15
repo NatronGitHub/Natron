@@ -6156,7 +6156,6 @@ Node::refreshChannelSelectors(bool setValues)
             for (EffectInstance::ComponentsAvailableMap::iterator it2 = compsAvailable.begin(); it2!= compsAvailable.end(); ++it2) {
                 if (it2->first.isColorPlane()) {
                     int numComp = it2->first.getNumComponents();
-                    colorIndex = choices.size();
                     colorComp = it2->first;
                     
                     assert(choices.size() > 0);
