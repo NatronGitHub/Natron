@@ -1213,12 +1213,9 @@ public:
      **/
     boost::shared_ptr<Natron::Image> renderMask(const RectI & roi,
                                                 const Natron::ImageComponents& components,
-                                                U64 nodeHash,
-                                                U64 ageToRender,
                                                 const RectD & nodeRoD,
                                                 SequenceTime time,
                                                 Natron::ImageBitDepthEnum depth,
-                                                int view,
                                                 unsigned int mipmapLevel);
     
     /**
@@ -1227,12 +1224,9 @@ public:
     boost::shared_ptr<Natron::Image> renderMask(const boost::shared_ptr<RotoStrokeItem>& stroke,
                                                 const RectI & roi,
                                                 const Natron::ImageComponents& components,
-                                                U64 nodeHash,
-                                                U64 ageToRender,
                                                 const RectD & nodeRoD,
                                                 SequenceTime time,
                                                 Natron::ImageBitDepthEnum depth,
-                                                int view,
                                                 unsigned int mipmapLevel);
     
 private:
@@ -1240,12 +1234,9 @@ private:
     boost::shared_ptr<Natron::Image> renderMaskInternal(const std::list<boost::shared_ptr<RotoDrawableItem> >& splines,
                                                         const RectI & roi,
                                                         const Natron::ImageComponents& components,
-                                                        U64 nodeHash,
-                                                        U64 ageToRender,
                                                         const RectD & nodeRoD,
                                                         SequenceTime time,
                                                         Natron::ImageBitDepthEnum depth,
-                                                        int view,
                                                         unsigned int mipmapLevel);
     
 public:
@@ -1366,6 +1357,12 @@ public:
      * To be called whenever changes position in the hierarchy or when one gets removed/inserted
      **/
     void refreshRotoPaintTree();
+    
+    void onRotoPaintInputChanged(const boost::shared_ptr<Natron::Node>& node);
+    
+    boost::shared_ptr<Natron::Node> getRotoPaintTreeConstantInput() const;
+    
+    void getRotoPaintTreeNodes(std::list<boost::shared_ptr<Natron::Node> >* nodes) const;
     
 Q_SIGNALS:
 

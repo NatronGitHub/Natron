@@ -447,10 +447,17 @@ OfxClipInstance::getRegionOfDefinitionInternal(OfxTime time,int view, unsigned i
 {
     
     if ( (getName() == "Roto") && _nodeInstance->getNode()->isRotoNode() ) {
-        boost::shared_ptr<RotoContext> rotoCtx =  _nodeInstance->getNode()->getRotoContext();
-        assert(rotoCtx);
+        boost::shared_ptr<RotoContext> rotoCtx;
+        boost::shared_ptr<RotoStrokeItem> attachedStroke = _nodeInstance->getNode()->getAttachedStrokeItem();
         RectD rod;
-        rotoCtx->getMaskRegionOfDefinition(time, view, &rod);
+        if (attachedStroke) {
+            rod = attachedStroke->getBoundingBox(time);
+        } else {
+            rotoCtx = _nodeInstance->getNode()->getRotoContext();
+            assert(rotoCtx);
+            rotoCtx->getMaskRegionOfDefinition(time, view, &rod);
+        }
+        
         ret->x1 = rod.x1;
         ret->x2 = rod.x2;
         ret->y1 = rod.y1;

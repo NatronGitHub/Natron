@@ -3122,23 +3122,25 @@ ViewerCurrentFrameRequestRendererBackup::run()
         
         
         bool hasRequest = false;
-        CurrentFrameFunctorArgs firstRequest;
         {
-            QMutexLocker k(&_imp->requestsQueueMutex);
-            if (!_imp->requestsQueue.empty()) {
-                hasRequest = true;
-                firstRequest = _imp->requestsQueue.front();
-                _imp->requestsQueue.pop_front();
+            CurrentFrameFunctorArgs firstRequest;
+            {
+                QMutexLocker k(&_imp->requestsQueueMutex);
+                if (!_imp->requestsQueue.empty()) {
+                    hasRequest = true;
+                    firstRequest = _imp->requestsQueue.front();
+                    _imp->requestsQueue.pop_front();
+                }
             }
-        }
-        
-        if (_imp->checkForExit()) {
-            return;
-        }
-
-        
-        if (hasRequest) {
-            renderCurrentFrameFunctor(firstRequest);
+            
+            if (_imp->checkForExit()) {
+                return;
+            }
+            
+            
+            if (hasRequest) {
+                renderCurrentFrameFunctor(firstRequest);
+            }
         }
         
         {

@@ -108,6 +108,7 @@ public:
               const NodeSerialization & serialization,
               bool dontLoadName,
               bool userEdited,
+              bool isPartOfProject,
               const QString& fixedName,
               const std::list<boost::shared_ptr<KnobSerialization> >& paramValues);
 

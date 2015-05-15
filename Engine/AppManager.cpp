@@ -71,7 +71,7 @@
 #include "Engine/Project.h"
 #include "Engine/BackDrop.h"
 #include "Engine/RotoPaint.h"
-
+#include "Engine/RotoContext.h"
 
 
 BOOST_CLASS_EXPORT(Natron::FrameParams)

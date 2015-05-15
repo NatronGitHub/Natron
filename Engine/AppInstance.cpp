@@ -754,7 +754,7 @@ AppInstance::createNodeInternal(const QString & pluginID,
     }
     assert(node);
     try {
-        node->load(multiInstanceParentName, serialization,dontLoadName, userEdited,fixedName,paramValues);
+        node->load(multiInstanceParentName, serialization,dontLoadName, userEdited, addToProject, fixedName,paramValues);
     } catch (const std::exception & e) {
         group->removeNode(node);
         std::string title("Error while creating node");

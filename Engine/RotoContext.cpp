@@ -1744,17 +1744,11 @@ RotoDrawableItem::save(RotoItemSerialization *obj) const
     RotoDrawableItemSerialization* s = dynamic_cast<RotoDrawableItemSerialization*>(obj);
 
     assert(s);
-
+    for (std::list<boost::shared_ptr<KnobI> >::const_iterator it = _imp->knobs.begin(); it != _imp->knobs.end(); ++it) {
+        boost::shared_ptr<KnobSerialization> k(new KnobSerialization(*it));
+        s->_knobs.push_back(k);
+    }
     {
-        serializeRotoKnob(_imp->activated, &s->_activated);
-        serializeRotoKnob(_imp->feather, &s->_feather);
-        serializeRotoKnob(_imp->opacity, &s->_opacity);
-        serializeRotoKnob(_imp->featherFallOff, &s->_featherFallOff);
-#ifdef NATRON_ROTO_INVERTIBLE
-        serializeRotoKnob(_imp->inverted, &s->_inverted);
-#endif
-        serializeRotoKnob(_imp->color, &s->_color);
-        serializeRotoKnob(_imp->compOperator, &s->_compOp);
         
         QMutexLocker l(&itemMutex);
         memcpy(s->_overlayColor, _imp->overlayColor, sizeof(double) * 4);
@@ -1766,20 +1760,16 @@ void
 RotoDrawableItem::load(const RotoItemSerialization &obj)
 {
     const RotoDrawableItemSerialization & s = dynamic_cast<const RotoDrawableItemSerialization &>(obj);
-
-
-    {
-        _imp->activated->clone( s._activated.getKnob().get() );
-        _imp->opacity->clone( s._opacity.getKnob().get() );
-        _imp->feather->clone( s._feather.getKnob().get() );
-        _imp->featherFallOff->clone( s._featherFallOff.getKnob().get() );
-#ifdef NATRON_ROTO_INVERTIBLE
-        _imp->inverted->clone( s._inverted.getKnob().get() );
-#endif
-        if (s._hasColorAndCompOp) {
-            _imp->color->clone( s._color.getKnob().get() );
-            _imp->compOperator->clone( s._compOp.getKnob().get() );
+    for (std::list<boost::shared_ptr<KnobSerialization> >::const_iterator it = s._knobs.begin(); it!=s._knobs.end(); ++it) {
+        
+        for (std::list<boost::shared_ptr<KnobI> >::const_iterator it2 = _imp->knobs.begin(); it2 != _imp->knobs.end(); ++it2) {
+            if ((*it2)->getName() == (*it)->getName()) {
+                (*it2)->clone((*it)->getKnob().get());
+                break;
+            }
         }
+    }
+    {
         QMutexLocker l(&itemMutex);
         memcpy(_imp->overlayColor, s._overlayColor, sizeof(double) * 4);
     }
@@ -4321,8 +4311,9 @@ RotoStrokeItem::RotoStrokeItem(Natron::RotoStrokeType type,
             break;
     }
     
+    QString baseFixedName = fixedNamePrefix;
     if (!pluginId.isEmpty()) {
-        fixedNamePrefix.append(pluginId);
+        fixedNamePrefix.append("Effect");
         
         CreateNodeArgs args(pluginId, "",
                             -1,-1,
@@ -4339,7 +4330,8 @@ RotoStrokeItem::RotoStrokeItem(Natron::RotoStrokeType type,
         _imp->effectNode = app->createNode(args);
     }
     
-    
+    fixedNamePrefix = baseFixedName;
+    fixedNamePrefix.append("Merge");
     CreateNodeArgs args(PLUGINID_OFX_MERGE, "",
                         -1,-1,
                         false,
@@ -4348,7 +4340,7 @@ RotoStrokeItem::RotoStrokeItem(Natron::RotoStrokeType type,
                         false,
                         false,
                         false,
-                        fixedNamePrefix + "_merge",
+                        fixedNamePrefix,
                         CreateNodeArgs::DefaultValuesList(),
                         boost::shared_ptr<NodeCollection>());
     args.createGui = false;
@@ -4369,10 +4361,6 @@ RotoStrokeItem::RotoStrokeItem(Natron::RotoStrokeType type,
         }
     }
 
-    if (_imp->effectNode) {
-        ok = _imp->mergeNode->connectInput(_imp->effectNode, 1);
-        assert(ok);
-    }
     
 }
 
@@ -4450,7 +4438,9 @@ RotoStrokeItem*
 RotoStrokeItem::findPreviousStrokeInHierarchy() 
 {
     boost::shared_ptr<RotoLayer> layer = getParentLayer();
-    assert(layer);
+    if (!layer) {
+        return 0;
+    }
     return findPreviousOfItemInLayer(layer.get(), this);
 }
 
@@ -4472,6 +4462,10 @@ RotoStrokeItem::refreshNodesConnections()
 {
     RotoStrokeItem* previous = findPreviousStrokeInHierarchy();
     boost::shared_ptr<Node> rotoPaintInput =  getContext()->getNode()->getInput(0);
+    if (!rotoPaintInput) {
+        rotoPaintInput = getContext()->getRotoPaintTreeConstantInput();
+    }
+    assert(rotoPaintInput);
     boost::shared_ptr<Node> upstreamNode = previous ? previous->getMergeNode() : rotoPaintInput;
     
     boost::shared_ptr<KnobI> mergeOperatorKnob = _imp->mergeNode->getKnobByName(kMergeOFXParamOperation);
@@ -4484,31 +4478,47 @@ RotoStrokeItem::refreshNodesConnections()
         /*
          * This case handles: Stroke, Blur, Sharpen, Smear, Clone
          */
-        
-        _imp->mergeNode->connectInput(_imp->effectNode, 1); // A
+        if (_imp->mergeNode->getInput(1) != _imp->effectNode) {
+            _imp->mergeNode->disconnectInput(1);
+            _imp->mergeNode->connectInput(_imp->effectNode, 1); // A
+        }
         if (upstreamNode) {
-            _imp->mergeNode->connectInput(upstreamNode, 0); // B
+            if (_imp->mergeNode->getInput(0) != upstreamNode) {
+                _imp->mergeNode->disconnectInput(0);
+                _imp->mergeNode->connectInput(upstreamNode, 0); // B
+            }
         }
         
         int reveal_i = _imp->sourceColor->getValue();
         boost::shared_ptr<Node> revealInput;
         if (reveal_i > 0) {
             revealInput = getContext()->getNode()->getInput(reveal_i - 1);
-        } else {
+        }
+        if (!revealInput) {
             revealInput = upstreamNode;
         }
+        
         if (revealInput) {
-            _imp->effectNode->connectInput(revealInput, 0);
+            if (_imp->effectNode->getInput(0) != revealInput) {
+                _imp->effectNode->disconnectInput(0);
+                _imp->effectNode->connectInput(revealInput, 0);
+            }
         }
         mergeOp->setValue((int)eMergeOver, 0);
     } else {
         
         if (_imp->type == eRotoStrokeTypeEraser) {
             if (rotoPaintInput) {
-                _imp->mergeNode->connectInput(rotoPaintInput, 1); // A
+                if (_imp->mergeNode->getInput(1) != rotoPaintInput) {
+                    _imp->mergeNode->disconnectInput(1);
+                    _imp->mergeNode->connectInput(rotoPaintInput, 1); // A
+                }
             }
             if (upstreamNode) {
-                _imp->mergeNode->connectInput(upstreamNode, 0); // B
+                if (_imp->mergeNode->getInput(0) != upstreamNode) {
+                    _imp->mergeNode->disconnectInput(0);
+                    _imp->mergeNode->connectInput(upstreamNode, 0); // B
+                }
             }
             mergeOp->setValue((int)eMergeOver, 0);
         } else if (_imp->type == eRotoStrokeTypeReveal) {
@@ -4517,18 +4527,30 @@ RotoStrokeItem::refreshNodesConnections()
             
             boost::shared_ptr<Node> revealInput = getContext()->getNode()->getInput(reveal_i - 1);
             if (revealInput) {
-                _imp->mergeNode->connectInput(revealInput, 1); // A
+                if (_imp->mergeNode->getInput(1) != revealInput) {
+                    _imp->mergeNode->disconnectInput(1);
+                    _imp->mergeNode->connectInput(revealInput, 1); // A
+                }
             }
             if (upstreamNode) {
-                _imp->mergeNode->connectInput(upstreamNode, 0); // B
+                if (_imp->mergeNode->getInput(0) != upstreamNode) {
+                    _imp->mergeNode->disconnectInput(0);
+                    _imp->mergeNode->connectInput(upstreamNode, 0); // B
+                }
             }
             mergeOp->setValue((int)eMergeOver, 0);
         } else if (_imp->type == eRotoStrokeTypeDodge || _imp->type == eRotoStrokeTypeBurn) {
             if (upstreamNode) {
-                _imp->mergeNode->connectInput(upstreamNode, 1); // A
+                if (_imp->mergeNode->getInput(1) != upstreamNode) {
+                    _imp->mergeNode->disconnectInput(1);
+                    _imp->mergeNode->connectInput(upstreamNode, 1); // A
+                }
             }
             if (upstreamNode) {
-                _imp->mergeNode->connectInput(upstreamNode, 0); // B
+                if (_imp->mergeNode->getInput(0) != upstreamNode) {
+                    _imp->mergeNode->disconnectInput(0);
+                    _imp->mergeNode->connectInput(upstreamNode, 0); // B
+                }
             }
             mergeOp->setValue(_imp->type == eRotoStrokeTypeDodge ? (int)eMergeColorDodge : (int)eMergeColorBurn, 0);
         } else {
@@ -4846,13 +4868,59 @@ RotoStrokeItem::getBrushVisiblePortionKnob() const
 RotoContext::RotoContext(const boost::shared_ptr<Natron::Node>& node)
     : _imp( new RotoContextPrivate(node) )
 {
-   
+    if (_imp->isPaintNode) {
+        QString fixedNamePrefix(node->getScriptName_mt_safe().c_str());
+        fixedNamePrefix.append("_rotopaint_constant_input");
+        CreateNodeArgs args(PLUGINID_OFX_CONSTANT, "",
+                            -1,-1,
+                            false,
+                            INT_MIN,
+                            INT_MIN,
+                            false,
+                            false,
+                            false,
+                            fixedNamePrefix,
+                            CreateNodeArgs::DefaultValuesList(),
+                            boost::shared_ptr<NodeCollection>());
+        args.createGui = false;
+        _imp->rotoPaintConstantInput = node->getApp()->createNode(args);
+        assert(_imp->rotoPaintConstantInput);
+    }
+
 }
 
 bool
 RotoContext::isRotoPaint() const
 {
     return _imp->isPaintNode;
+}
+
+boost::shared_ptr<Natron::Node>
+RotoContext::getRotoPaintTreeConstantInput() const
+{
+    assert(_imp->isPaintNode);
+    return _imp->rotoPaintConstantInput;
+}
+
+void
+RotoContext::getRotoPaintTreeNodes(std::list<boost::shared_ptr<Natron::Node> >* nodes) const
+{
+    std::list<boost::shared_ptr<RotoDrawableItem> > items = getCurvesByRenderOrder();
+    for (std::list<boost::shared_ptr<RotoDrawableItem> >::iterator it = items.begin(); it != items.end(); ++it) {
+        RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>(it->get());
+        if (!isStroke) {
+            continue;
+        }
+        boost::shared_ptr<Natron::Node> effectNode = isStroke->getEffectNode();
+        boost::shared_ptr<Natron::Node> mergeNode = isStroke->getMergeNode();
+        if (effectNode) {
+            nodes->push_back(effectNode);
+        }
+        if (mergeNode) {
+            nodes->push_back(mergeNode);
+        }
+    }
+    nodes->push_back(getRotoPaintTreeConstantInput());
 }
 
 ///Must be done here because at the time of the constructor, the shared_ptr doesn't exist yet but
@@ -6380,121 +6448,45 @@ boost::shared_ptr<Natron::Image>
 RotoContext::renderMask(const boost::shared_ptr<RotoStrokeItem>& stroke,
                                             const RectI & roi,
                                             const Natron::ImageComponents& components,
-                                            U64 nodeHash,
-                                            U64 ageToRender,
                                             const RectD & nodeRoD,
                                             SequenceTime time,
                                             Natron::ImageBitDepthEnum depth,
-                                            int view,
                                             unsigned int mipmapLevel)
 {
     std::list<boost::shared_ptr<RotoDrawableItem> > items;
     items.push_back(stroke);
-    return renderMaskInternal(items, roi, components, nodeHash, ageToRender, nodeRoD, time, depth, view, mipmapLevel);
+    return renderMaskInternal(items, roi, components,nodeRoD, time, depth, mipmapLevel);
 }
+
+boost::shared_ptr<Natron::Image>
+RotoContext::renderMask(const RectI & roi,
+                        const Natron::ImageComponents& components,
+                        const RectD & nodeRoD, //!< rod in canonical coordinates
+                        SequenceTime time,
+                        Natron::ImageBitDepthEnum depth,
+                        unsigned int mipmapLevel)
+{
+    std::list< boost::shared_ptr<RotoDrawableItem> > splines = getCurvesByRenderOrder();
+    return renderMaskInternal(splines, roi, components, nodeRoD, time, depth, mipmapLevel);
+    
+} // renderMask
+
 
 boost::shared_ptr<Natron::Image>
 RotoContext::renderMaskInternal(const std::list<boost::shared_ptr<RotoDrawableItem> >& splines,
                                                     const RectI & roi,
                                                     const Natron::ImageComponents& components,
-                                                    U64 nodeHash,
-                                                    U64 ageToRender,
                                                     const RectD & nodeRoD,
                                                     SequenceTime time,
                                                     Natron::ImageBitDepthEnum depth,
-                                                    int view,
                                                     unsigned int mipmapLevel)
 {
-    ///compute an enhanced hash different from the one of the node in order to differentiate within the cache
-    ///the output image of the roto node and the mask image.
-    Hash64 hash;
-    
-    hash.append(nodeHash);
-    hash.append(ageToRender);
-    hash.computeHash();
-    
-    Natron::ImageKey key = Natron::Image::makeKey(hash.value(), true ,time, view);
-    
-    ///If the last rendered image  was with a different hash key (i.e a parameter changed or an input changed)
-    ///just remove the old image from the cache to recycle memory.
-    boost::shared_ptr<Image> lastRenderedImage;
-    U64 lastRenderHash;
-    {
-        QMutexLocker l(&_imp->lastRenderArgsMutex);
-        lastRenderHash = _imp->lastRenderHash;
-        lastRenderedImage = _imp->lastRenderedImage;
-    }
-    
-    if (lastRenderedImage) {
-        
-        appPTR->removeAllImagesFromCacheWithMatchingKey(lastRenderHash);
-        
-        {
-            QMutexLocker l(&_imp->lastRenderArgsMutex);
-            _imp->lastRenderedImage.reset();
-        }
-    }
+ 
     
     boost::shared_ptr<Node> node = getNode();
     
-    boost::shared_ptr<Natron::ImageParams> params;
-    ImagePtr image;
-    
-    //    if (!byPassCache) {
-    //
-    //        getNode()->getLiveInstance()->getImageFromCacheAndConvertIfNeeded(useCache, false,  key, mipmapLevel,
-    //                                                                          roi,
-    //                                                                          nodeRoD,
-    //                                                                          depth, components,
-    //                                                                           depth, components,inputImages,&image);
-    //        if (image) {
-    //            params = image->getParams();
-    //        }
-    //    }
-    
-    ///If there's only 1 shape to render and this shape is inverted, initialize the image
-    ///with the invert instead of the default fill value to speed up rendering
-    if (!image) {
-        
-        params = Natron::Image::makeParams( 0,
-                                           nodeRoD,
-                                           roi,
-                                           1., // par
-                                           mipmapLevel,
-                                           false,
-                                           components,
-                                           depth,
-                                           std::map<int,std::map<int, std::vector<RangeD> > >() );
-        
-        Natron::getImageFromCacheOrCreate(key, params, &image);
-        if (!image) {
-            std::stringstream ss;
-            ss << "Failed to allocate an image of ";
-            ss << printAsRAM( params->getElementsCount() * sizeof(Natron::Image::data_t) ).toStdString();
-            Natron::errorDialog( QObject::tr("Out of memory").toStdString(),ss.str() );
-            
-            return image;
-        }
-        
-        ///Does nothing if image is already alloc
-        image->allocateMemory();
-        
-        /*
-         * Another thread might have allocated the same image in the cache but with another RoI, make sure
-         * it is big enough for us, or resize it to our needs.
-         */
-        
-        image->ensureBounds(params->getBounds());
-        
-        
-    }
-    
-    
-    ///////////////////////////////////Render internal
-    RectI pixelRod = params->getBounds();
-    RectI clippedRoI;
-    roi.intersect(pixelRod, &clippedRoI);
-    
+    ImagePtr image(new Image(components, nodeRoD, roi, mipmapLevel, 1., depth));
+  
     cairo_format_t cairoImgFormat;
     
     int srcNComps;
@@ -6516,11 +6508,9 @@ RotoContext::renderMaskInternal(const std::list<boost::shared_ptr<RotoDrawableIt
     }
     
     ////Allocate the cairo temporary buffer
-    cairo_surface_t* cairoImg = cairo_image_surface_create(cairoImgFormat, pixelRod.width(), pixelRod.height() );
-    cairo_surface_set_device_offset(cairoImg, -pixelRod.x1, -pixelRod.y1);
+    cairo_surface_t* cairoImg = cairo_image_surface_create(cairoImgFormat, roi.width(), roi.height() );
+    cairo_surface_set_device_offset(cairoImg, -roi.x1, -roi.y1);
     if (cairo_surface_status(cairoImg) != CAIRO_STATUS_SUCCESS) {
-        appPTR->removeFromNodeCache(image);
-        
         return image;
     }
     cairo_t* cr = cairo_create(cairoImg);
@@ -6532,13 +6522,13 @@ RotoContext::renderMaskInternal(const std::list<boost::shared_ptr<RotoDrawableIt
     
     switch (depth) {
         case Natron::eImageBitDepthFloat:
-            convertCairoImageToNatronImage<float, 1>(cairoImg, image.get(), pixelRod,srcNComps);
+            convertCairoImageToNatronImage<float, 1>(cairoImg, image.get(), roi,srcNComps);
             break;
         case Natron::eImageBitDepthByte:
-            convertCairoImageToNatronImage<unsigned char, 255>(cairoImg, image.get(), pixelRod,srcNComps);
+            convertCairoImageToNatronImage<unsigned char, 255>(cairoImg, image.get(), roi,srcNComps);
             break;
         case Natron::eImageBitDepthShort:
-            convertCairoImageToNatronImage<unsigned short, 65535>(cairoImg, image.get(), pixelRod,srcNComps);
+            convertCairoImageToNatronImage<unsigned short, 65535>(cairoImg, image.get(), roi,srcNComps);
             break;
         case Natron::eImageBitDepthNone:
             assert(false);
@@ -6549,39 +6539,9 @@ RotoContext::renderMaskInternal(const std::list<boost::shared_ptr<RotoDrawableIt
     ////Free the buffer used by Cairo
     cairo_surface_destroy(cairoImg);
     
-    
-    ////////////////////////////////////
-    if ( node->aborted() ) {
-        //if render was aborted, remove the frame from the cache as it contains only garbage
-        appPTR->removeFromNodeCache(image);
-    } else {
-        image->markForRendered(clippedRoI);
-    }
-    
-    {
-        QMutexLocker l(&_imp->lastRenderArgsMutex);
-        _imp->lastRenderHash = hash.value();
-        _imp->lastRenderedImage = image;
-    }
-    
     return image;
 }
 
-boost::shared_ptr<Natron::Image>
-RotoContext::renderMask(const RectI & roi,
-                        const Natron::ImageComponents& components,
-                        U64 nodeHash,
-                        U64 ageToRender,
-                        const RectD & nodeRoD, //!< rod in canonical coordinates
-                        SequenceTime time,
-                        Natron::ImageBitDepthEnum depth,
-                        int view,
-                        unsigned int mipmapLevel)
-{
-    std::list< boost::shared_ptr<RotoDrawableItem> > splines = getCurvesByRenderOrder();
-    return renderMaskInternal(splines, roi, components, nodeHash, ageToRender, nodeRoD, time, depth, view, mipmapLevel);
-    
-} // renderMask
 
 void
 RotoContextPrivate::renderInternal(cairo_t* cr,
@@ -7697,6 +7657,17 @@ RotoContext::refreshRotoPaintTree()
     QMutexLocker k(&_imp->rotoContextMutex);
     assert(!_imp->layers.empty());
     refreshLayerRotoPaintTree(_imp->layers.front().get());
+}
+
+void
+RotoContext::onRotoPaintInputChanged(const boost::shared_ptr<Natron::Node>& node)
+{
+    assert(_imp->isPaintNode);
+    
+    if (node) {
+        
+    }
+    refreshRotoPaintTree();
 }
 
 void

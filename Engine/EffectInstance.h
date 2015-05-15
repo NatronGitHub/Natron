@@ -42,6 +42,7 @@
 #define PLUGINID_OFX_COLORCORRECT "net.sf.openfx.ColorCorrectPlugin"
 #define PLUGINID_OFX_BLURCIMG     "net.sf.cimg.CImgBlur"
 #define PLUGINID_OFX_CORNERPIN    "net.sf.openfx.CornerPinPlugin"
+#define PLUGINID_OFX_CONSTANT    "net.sf.openfx.ConstantPlugin"
 
 #define PLUGINID_NATRON_VIEWER    (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.Viewer")
 #define PLUGINID_NATRON_DISKCACHE (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.DiskCache")
@@ -54,6 +55,7 @@
 #define PLUGINID_NATRON_BACKDROP  (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.BackDrop")
 #define PLUGINID_NATRON_ROTOPAINT (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.RotoPaint")
 
+class QThread;
 class Hash64;
 class Format;
 class TimeLine;
@@ -96,9 +98,6 @@ struct ParallelRenderArgs
     ///The node hash as it was when starting the rendering of the frame
     U64 nodeHash;
     
-    ///The age of the roto as it was when starting the rendering of the frame
-    U64 rotoAge;
-    
     ///> 0 if the args were set for the current thread
     int validArgs;
     
@@ -129,7 +128,6 @@ struct ParallelRenderArgs
     , timeline(0)
     , view(0)
     , nodeHash(0)
-    , rotoAge(0)
     , validArgs(0)
     , isRenderResponseToUserInteraction(false)
     , isSequentialRender(false)
@@ -583,7 +581,6 @@ public:
                                   bool isSequential,
                                   bool canAbort,
                                   U64 nodeHash,
-                                  U64 rotoAge,
                                   U64 renderAge,
                                   Natron::OutputEffectInstance* renderRequested,
                                   int textureIndex,
@@ -1516,7 +1513,6 @@ private:
                                          const RenderScale& scale,
                                          const RectD* optionalBoundsParam,
                                          U64* nodeHash_p,
-                                         U64* rotoAge_p,
                                          bool* isIdentity_p,
                                          int* identityTime,
                                          int* identityInputNb_p,
@@ -1595,9 +1591,11 @@ private:
         ImagePlanesToRender planes;
     };
 
-    RenderingFunctorRetEnum tiledRenderingFunctor(TiledRenderingFunctorArgs& args,  const TiledThreadSpecificData& specificData);
+    RenderingFunctorRetEnum tiledRenderingFunctor(TiledRenderingFunctorArgs& args,  const TiledThreadSpecificData& specificData,
+                                                  const QThread* callingThread);
 
-    RenderingFunctorRetEnum tiledRenderingFunctor(const ParallelRenderArgs& frameArgs,
+    RenderingFunctorRetEnum tiledRenderingFunctor(const QThread* callingThread,
+                                                  const ParallelRenderArgs& frameArgs,
                                                   const InputImagesMap& inputImages,
                                                   const RoIMap& inputRois,
                                                   const std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs >& frameTls,

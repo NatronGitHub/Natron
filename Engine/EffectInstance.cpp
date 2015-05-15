@@ -732,7 +732,6 @@ EffectInstance::setParallelRenderArgsTLS(int time,
                                          bool isSequential,
                                          bool canAbort,
                                          U64 nodeHash,
-                                         U64 rotoAge,
                                          U64 renderAge,
                                          Natron::OutputEffectInstance* renderRequester,
                                          int textureIndex,
@@ -747,7 +746,6 @@ EffectInstance::setParallelRenderArgsTLS(int time,
     args.isSequentialRender = isSequential;
     
     args.nodeHash = nodeHash;
-    args.rotoAge = rotoAge;
     args.canAbort = canAbort;
     args.renderAge = renderAge;
     args.renderRequester = renderRequester;
@@ -954,7 +952,6 @@ EffectInstance::retrieveGetImageDataUponFailure(const int time,
                                                 const RenderScale& scale,
                                                 const RectD* optionalBoundsParam,
                                                 U64* nodeHash_p,
-                                                U64* rotoAge_p,
                                                 bool* isIdentity_p,
                                                 int* identityTime,
                                                 int* identityInputNb_p,
@@ -981,13 +978,7 @@ EffectInstance::retrieveGetImageDataUponFailure(const int time,
     
     *nodeHash_p = getHash();
     const U64& nodeHash = *nodeHash_p;
-    boost::shared_ptr<RotoContext> roto =  getNode()->getRotoContext();
-    if (roto) {
-        *rotoAge_p = roto->getAge();
-    } else {
-        *rotoAge_p = 0;
-    }
-    
+
     {
         RECURSIVE_ACTION();
         Natron::StatusEnum stat = getRegionOfDefinition(nodeHash, time, scale, view, rod_p);
@@ -1091,14 +1082,16 @@ EffectInstance::getImage(int inputNb,
     
     
     ///Is this node a roto node or not. If so, find out if this input is the roto-brush
-    boost::shared_ptr<RotoContext> roto = getNode()->getRotoContext();
+    boost::shared_ptr<RotoContext> roto;
+    boost::shared_ptr<RotoStrokeItem> attachedStroke = getNode()->getAttachedStrokeItem();
+    if (attachedStroke) {
+        roto = attachedStroke->getContext();
+    } else {
+        roto = getNode()->getRotoContext();
+    }
     bool useRotoInput = false;
     if (roto) {
-        if (!roto->isRotoPaint()) {
-            useRotoInput = isInputRotoBrush(inputNb);
-        } else {
-            useRotoInput = isMask;
-        }
+        useRotoInput = isMask || isInputRotoBrush(inputNb);
     }
     
     if ((!roto || (roto && !useRotoInput)) && !n) {
@@ -1122,7 +1115,6 @@ EffectInstance::getImage(int inputNb,
     int inputNbIdentity;
     int inputIdentityTime;
     U64 nodeHash;
-    U64 rotoAge;
     
     /// Never by-pass the cache here because we already computed the image in renderRoI and by-passing the cache again can lead to
     /// re-computing of the same image many many times
@@ -1138,7 +1130,7 @@ EffectInstance::getImage(int inputNb,
     
     if (!_imp->renderArgs.hasLocalData() || !_imp->frameRenderArgs.hasLocalData()) {
         
-        if ( !retrieveGetImageDataUponFailure(time, view, scale, optionalBoundsParam, &nodeHash, &rotoAge, &isIdentity, &inputIdentityTime, &inputNbIdentity, &rod, &inputsRoI, &optionalBounds) ) {
+        if ( !retrieveGetImageDataUponFailure(time, view, scale, optionalBoundsParam, &nodeHash, &isIdentity, &inputIdentityTime, &inputNbIdentity, &rod, &inputsRoI, &optionalBounds) ) {
             return ImagePtr();
         }
         
@@ -1148,7 +1140,7 @@ EffectInstance::getImage(int inputNb,
         ParallelRenderArgs& frameRenderArgs = _imp->frameRenderArgs.localData();
         
         if (!renderArgs._validArgs || !frameRenderArgs.validArgs) {
-            if ( !retrieveGetImageDataUponFailure(time, view, scale, optionalBoundsParam, &nodeHash, &rotoAge, &isIdentity, &inputIdentityTime, &inputNbIdentity, &rod, &inputsRoI, &optionalBounds) ) {
+            if ( !retrieveGetImageDataUponFailure(time, view, scale, optionalBoundsParam, &nodeHash, &isIdentity, &inputIdentityTime, &inputNbIdentity, &rod, &inputsRoI, &optionalBounds) ) {
                 return ImagePtr();
             }
             
@@ -1159,7 +1151,6 @@ EffectInstance::getImage(int inputNb,
             inputIdentityTime = renderArgs._identityTime;
             inputNbIdentity = renderArgs._identityInputNb;
             nodeHash = frameRenderArgs.nodeHash;
-            rotoAge = frameRenderArgs.rotoAge;
         }
         
         
@@ -1229,13 +1220,12 @@ EffectInstance::getImage(int inputNb,
         
         boost::shared_ptr<Natron::Image> mask;
         
-        boost::shared_ptr<RotoStrokeItem> attachedStroke = getNode()->getAttachedStrokeItem();
         if (attachedStroke) {
-            mask = roto->renderMask(attachedStroke, pixelRoI, outputComps.front(), nodeHash,rotoAge,
-                                    rod, time, depth, view, mipMapLevel);
+            mask = roto->renderMask(attachedStroke, pixelRoI, outputComps.front(),
+                                    rod, time, depth, mipMapLevel);
         } else {
-            mask = roto->renderMask(pixelRoI, outputComps.front(), nodeHash,rotoAge,
-                                    rod, time, depth, view, mipMapLevel);
+            mask = roto->renderMask(pixelRoI, outputComps.front(),
+                                    rod, time, depth, mipMapLevel);
         }
         if (inputImagesThreadLocal.empty()) {
             ///If the effect is analysis (e.g: Tracker) there's no input images in the tread local storage, hence add it
@@ -2074,12 +2064,6 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
         frameRenderArgs.view = args.view;
         frameRenderArgs.isSequentialRender = false;
         frameRenderArgs.isRenderResponseToUserInteraction = true;
-        boost::shared_ptr<RotoContext> roto = getNode()->getRotoContext();
-        if (roto) {
-            frameRenderArgs.rotoAge = roto->getAge();
-        } else {
-            frameRenderArgs.rotoAge = 0;
-        }
         frameRenderArgs.validArgs = true;
     }
     
@@ -3182,6 +3166,11 @@ EffectInstance::renderInputImagesForRoI(SequenceTime time,
         } else {
             inputEffect = getInput(it->first);
         }
+        
+        //Never pre-render the mask if we are rendering a node of the rotopaint tree
+        if (getNode()->getAttachedStrokeItem() && inputEffect->isRotoPaintNode()) {
+            continue;
+        }
 
         if (inputEffect) {
             
@@ -3389,7 +3378,22 @@ EffectInstance::renderRoIInternal(SequenceTime time,
          * Since we're about to start new threads potentially, copy all the thread local storage on all nodes (any node may be involved in
          * expressions, and we need to retrieve the exact local time of render).
          */
-        getApp()->getProject()->getParallelRenderArgs(tlsCopy);
+        
+        //If the node has an attached stroke, that means it belongs to the roto paint tree, hence it is not in the project.
+        boost::shared_ptr<RotoStrokeItem> attachedStroke = getNode()->getAttachedStrokeItem();
+        if (!attachedStroke) {
+            getApp()->getProject()->getParallelRenderArgs(tlsCopy);
+        } else {
+            NodeList rotoPaintNodes;
+            attachedStroke->getContext()->getRotoPaintTreeNodes(&rotoPaintNodes);
+            for (NodeList::iterator it = rotoPaintNodes.begin(); it != rotoPaintNodes.end(); ++it) {
+                ParallelRenderArgs args = (*it)->getLiveInstance()->getParallelRenderArgsTLS();
+                if (args.validArgs) {
+                    tlsCopy.insert(std::make_pair(*it, args));
+                }
+            }
+        }
+        
 
     }
     
@@ -3428,6 +3432,8 @@ EffectInstance::renderRoIInternal(SequenceTime time,
     
     assert(_imp->frameRenderArgs.hasLocalData());
     const ParallelRenderArgs& frameArgs = _imp->frameRenderArgs.localData();
+    
+    const QThread* currentThread = QThread::currentThread();
     
     if (renderStatus != eRenderingFunctorRetFailed) {
         
@@ -3470,7 +3476,8 @@ EffectInstance::renderRoIInternal(SequenceTime time,
             std::vector<EffectInstance::RenderingFunctorRetEnum> ret(tiledData.size());
             for (size_t i = 0; i < tiledData.size(); ++i) {
                 ret[i] = tiledRenderingFunctor(tiledArgs,
-                                               tiledData[i]);
+                                               tiledData[i],
+                                               currentThread);
             }
             std::vector<EffectInstance::RenderingFunctorRetEnum>::const_iterator it2;
 
@@ -3481,7 +3488,8 @@ EffectInstance::renderRoIInternal(SequenceTime time,
                                                                            boost::bind(&EffectInstance::tiledRenderingFunctor,
                                                                                        this,
                                                                                        tiledArgs,
-                                                                                       _1));
+                                                                                       _1,
+                                                                                       currentThread));
             ret.waitForFinished();
             QFuture<EffectInstance::RenderingFunctorRetEnum>::const_iterator it2;
 
@@ -3509,7 +3517,7 @@ EffectInstance::renderRoIInternal(SequenceTime time,
                 
                 
                 
-                RenderingFunctorRetEnum functorRet = tiledRenderingFunctor(frameArgs, *inputImgIt, *roiIT, tlsCopy, renderFullScaleThenDownscale, useScaleOneInputImages, isSequentialRender, isRenderMadeInResponseToUserInteraction, firstFrame, lastFrame, preferredInput, mipMapLevel, renderMappedMipMapLevel, rod, time, view, *it, par, outputClipPrefDepth, outputClipPrefsComps, processChannels, planesToRender);
+                RenderingFunctorRetEnum functorRet = tiledRenderingFunctor(currentThread, frameArgs, *inputImgIt, *roiIT, tlsCopy, renderFullScaleThenDownscale, useScaleOneInputImages, isSequentialRender, isRenderMadeInResponseToUserInteraction, firstFrame, lastFrame, preferredInput, mipMapLevel, renderMappedMipMapLevel, rod, time, view, *it, par, outputClipPrefDepth, outputClipPrefsComps, processChannels, planesToRender);
                 
                 if (functorRet == eRenderingFunctorRetFailed || functorRet == eRenderingFunctorRetAborted) {
                     break;
@@ -3544,9 +3552,10 @@ EffectInstance::renderRoIInternal(SequenceTime time,
 } // renderRoIInternal
 
 EffectInstance::RenderingFunctorRetEnum
-EffectInstance::tiledRenderingFunctor( TiledRenderingFunctorArgs& args, const TiledThreadSpecificData& specificData)
+EffectInstance::tiledRenderingFunctor( TiledRenderingFunctorArgs& args, const TiledThreadSpecificData& specificData, const QThread* callingThread)
 {
-   return tiledRenderingFunctor(args.frameArgs,
+   return tiledRenderingFunctor(callingThread,
+                                args.frameArgs,
                                 specificData.inputImages,
                                 specificData.inputRois,
                                 args.frameTLS,
@@ -3571,7 +3580,8 @@ EffectInstance::tiledRenderingFunctor( TiledRenderingFunctorArgs& args, const Ti
 }
 
 EffectInstance::RenderingFunctorRetEnum
-EffectInstance::tiledRenderingFunctor(const ParallelRenderArgs& frameArgs,
+EffectInstance::tiledRenderingFunctor(const QThread* callingThread,
+                                      const ParallelRenderArgs& frameArgs,
                                       const InputImagesMap& inputImages,
                                       const RoIMap& inputRois,
                                       const std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs >& frameTLS,
@@ -3599,7 +3609,7 @@ EffectInstance::tiledRenderingFunctor(const ParallelRenderArgs& frameArgs,
     
     ///Make the thread-storage live as long as the render action is called if we're in a newly launched thread in eRenderSafetyFullySafeFrame mode
     boost::shared_ptr<ParallelRenderArgsSetter> scopedFrameArgs;
-    if (!frameTLS.empty()) {
+    if (!frameTLS.empty() && callingThread != QThread::currentThread()) {
         scopedFrameArgs.reset( new ParallelRenderArgsSetter(frameTLS));
     }
     

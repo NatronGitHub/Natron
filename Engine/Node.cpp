@@ -181,6 +181,7 @@ struct Node::Implementation
     : _publicInterface(publicInterface)
     , group(collection)
     , app(app_)
+    , isPartOfProject(true)
     , knobsInitialized(false)
     , inputsInitialized(false)
     , outputsMutex()
@@ -307,6 +308,7 @@ struct Node::Implementation
     
     AppInstance* app; // pointer to the app: needed to access the application's default-project's format
     
+    bool isPartOfProject;
     bool knobsInitialized;
     bool inputsInitialized;
     mutable QMutex outputsMutex;
@@ -501,6 +503,7 @@ Node::load(const std::string & parentMultiInstanceName,
            const NodeSerialization & serialization,
            bool dontLoadName,
            bool userEdited,
+           bool isPartOfProject,
            const QString& fixedName,
            const CreateNodeArgs::DefaultValuesList& paramValues)
 {
@@ -509,6 +512,8 @@ Node::load(const std::string & parentMultiInstanceName,
     
     ///cannot load twice
     assert(!_imp->liveInstance);
+    
+    _imp->isPartOfProject = isPartOfProject;
     
     bool isMultiInstanceChild = false;
     if ( !parentMultiInstanceName.empty() ) {
@@ -616,10 +621,11 @@ Node::load(const std::string & parentMultiInstanceName,
         assert(nameSet);
         updateEffectLabelKnob(getScriptName().c_str());
     }
-    
-    declarePythonFields();
-    if  (getRotoContext()) {
-        declareRotoPythonField();
+    if (isPartOfProject) {
+        declarePythonFields();
+        if  (getRotoContext()) {
+            declareRotoPythonField();
+        }
     }
     
     boost::shared_ptr<NodeCollection> group = getGroup();
@@ -3067,7 +3073,7 @@ Node::disconnectInput(int inputNumber)
     
     {
         QMutexLocker l(&_imp->inputsMutex);
-        if ( (inputNumber < 0) || ( inputNumber > (int)_imp->inputs.size() ) || (_imp->inputs[inputNumber] == NULL) ) {
+        if ( (inputNumber < 0) || ( inputNumber > (int)_imp->inputs.size() ) || (!_imp->inputs[inputNumber]) ) {
             return -1;
         }
         
@@ -3220,7 +3226,6 @@ Node::deactivate(const std::list< Node* > & outputsToDisconnect,
     clearPersistentMessage(false);
     
     boost::shared_ptr<NodeCollection> parentCol = getGroup();
-    assert(parentCol);
     NodeGroup* isParentGroup = dynamic_cast<NodeGroup*>(parentCol.get());
     
     ///For all knobs that have listeners, kill expressions
@@ -5744,6 +5749,9 @@ Node::declareNodeVariableToPython(const std::string& nodeName)
 #ifdef NATRON_RUN_WITHOUT_PYTHON
 	return;
 #endif
+    if (!_imp->isPartOfProject) {
+        return;
+    }
     Natron::PythonGILLocker pgl;
     
     PyObject* mainModule = appPTR->getMainModule();
@@ -5774,7 +5782,9 @@ Node::declareNodeVariableToPython(const std::string& nodeName)
 void
 Node::setNodeVariableToPython(const std::string& oldName,const std::string& newName)
 {
-
+    if (!_imp->isPartOfProject) {
+        return;
+    }
     QString appID(getApp()->getAppIDString().c_str());
     QString str = QString(appID + ".%1 = " + appID + ".%2\ndel " + appID + ".%2\n").arg(newName.c_str()).arg(oldName.c_str());
     std::string script = str.toStdString();
@@ -5791,6 +5801,9 @@ Node::setNodeVariableToPython(const std::string& oldName,const std::string& newN
 void
 Node::deleteNodeVariableToPython(const std::string& nodeName)
 {
+    if (!_imp->isPartOfProject) {
+        return;
+    }
     if (getParentMultiInstance()) {
         return;
     }
@@ -5815,6 +5828,9 @@ Node::declarePythonFields()
 #ifdef NATRON_RUN_WITHOUT_PYTHON
 	return;
 #endif
+    if (!_imp->isPartOfProject) {
+        return;
+    }
     Natron::PythonGILLocker pgl;
     
     if (!getGroup()) {
@@ -5850,6 +5866,9 @@ Node::removeParameterFromPython(const std::string& parameterName)
 #ifdef NATRON_RUN_WITHOUT_PYTHON
     return;
 #endif
+    if (!_imp->isPartOfProject) {
+        return;
+    }
     Natron::PythonGILLocker pgl;
     std::string appID = getApp()->getAppIDString();
     std::string fullName = getFullyQualifiedName();

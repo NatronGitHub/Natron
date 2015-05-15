@@ -859,16 +859,10 @@ NodeCollection::setParallelRenderArgs(int time,
     NodeList nodes = getNodes();
     for (NodeList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
         assert(*it);
-        U64 rotoAge;
-        boost::shared_ptr<RotoContext> roto = (*it)->getRotoContext();
-        if (roto) {
-            rotoAge = roto->getAge();
-        } else {
-            rotoAge = 0;
-        }
+        
         Natron::EffectInstance* liveInstance = (*it)->getLiveInstance();
         assert(liveInstance);
-        liveInstance->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, (*it)->getHashValue(), rotoAge, renderAge,renderRequester,textureIndex, timeline, isAnalysis);
+        liveInstance->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, (*it)->getHashValue(), renderAge,renderRequester,textureIndex, timeline, isAnalysis);
         
         if ((*it)->isMultiInstance()) {
             
@@ -880,7 +874,7 @@ NodeCollection::setParallelRenderArgs(int time,
                 assert(*it2);
                 Natron::EffectInstance* childLiveInstance = (*it2)->getLiveInstance();
                 assert(childLiveInstance);
-                childLiveInstance->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, (*it2)->getHashValue(), rotoAge, renderAge,renderRequester, textureIndex, timeline, isAnalysis);
+                childLiveInstance->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, (*it2)->getHashValue(), renderAge,renderRequester, textureIndex, timeline, isAnalysis);
                 
             }
         }

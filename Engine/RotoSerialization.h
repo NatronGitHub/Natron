@@ -33,7 +33,8 @@
 
 #define ROTO_DRAWABLE_ITEM_INTRODUCES_COMPOSITING 2
 #define ROTO_DRAWABLE_ITEM_REMOVES_INVERTED 3
-#define ROTO_DRAWABLE_ITEM_VERSION ROTO_DRAWABLE_ITEM_REMOVES_INVERTED
+#define ROTO_DRAWABLE_ITEM_CHANGES_TO_LIST 4
+#define ROTO_DRAWABLE_ITEM_VERSION ROTO_DRAWABLE_ITEM_CHANGES_TO_LIST
 
 #define BEZIER_CP_INTRODUCES_OFFSET 2
 #define BEZIER_CP_FIX_BUG_CURVE_POINTER 3
@@ -226,7 +227,6 @@ public:
 
     RotoDrawableItemSerialization()
         : RotoItemSerialization()
-          , _hasColorAndCompOp(false)
     {
     }
 
@@ -247,15 +247,12 @@ private:
             static_cast<RotoItemSerialization *>(NULL)
             );
         ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(RotoItemSerialization);
-        ar & boost::serialization::make_nvp("Activated",_activated);
-        ar & boost::serialization::make_nvp("Opacity",_opacity);
-        ar & boost::serialization::make_nvp("Feather",_feather);
-        ar & boost::serialization::make_nvp("FallOff",_featherFallOff);
-#ifdef NATRON_ROTO_INVERTIBLE
-        ar & boost::serialization::make_nvp("Inverted",_inverted);
-#endif
-        ar & boost::serialization::make_nvp("Color",_color);
-        ar & boost::serialization::make_nvp("CompOP",_compOp);
+        int nKnobs = _knobs.size();
+        ar & boost::serialization::make_nvp("NbItems",nKnobs);
+        for (std::list<boost::shared_ptr<KnobSerialization> >::const_iterator it = _knobs.begin(); it!=_knobs.end(); ++it) {
+            ar & boost::serialization::make_nvp("Item",**it);
+        }
+        
         ar & boost::serialization::make_nvp("OC.r",_overlayColor[0]);
         ar & boost::serialization::make_nvp("OC.g",_overlayColor[1]);
         ar & boost::serialization::make_nvp("OC.b",_overlayColor[2]);
@@ -268,27 +265,45 @@ private:
     {
         (void)version;
         boost::serialization::void_cast_register<RotoDrawableItemSerialization,RotoItemSerialization>(
-            static_cast<RotoDrawableItemSerialization *>(NULL),
-            static_cast<RotoItemSerialization *>(NULL)
-            );
+                                                                                                      static_cast<RotoDrawableItemSerialization *>(NULL),
+                                                                                                      static_cast<RotoItemSerialization *>(NULL)
+                                                                                                      );
         ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(RotoItemSerialization);
-        ar & boost::serialization::make_nvp("Activated",_activated);
-        ar & boost::serialization::make_nvp("Opacity",_opacity);
-        ar & boost::serialization::make_nvp("Feather",_feather);
-        ar & boost::serialization::make_nvp("FallOff",_featherFallOff);
-        if (version < ROTO_DRAWABLE_ITEM_REMOVES_INVERTED) {
-            KnobSerialization invertedSerialization;
-            ar & boost::serialization::make_nvp("Inverted",invertedSerialization);
-#ifdef NATRON_ROTO_INVERTIBLE
-            _inverted = invertedSerialization;
-#endif
-        }
-        if (version >= ROTO_DRAWABLE_ITEM_INTRODUCES_COMPOSITING) {
-            _hasColorAndCompOp = true;
-            ar & boost::serialization::make_nvp("Color",_color);
-            ar & boost::serialization::make_nvp("CompOP",_compOp);
+        if (version < ROTO_DRAWABLE_ITEM_CHANGES_TO_LIST) {
+            
+            boost::shared_ptr<KnobSerialization> activated(new KnobSerialization);
+            ar & boost::serialization::make_nvp("Activated",*activated);
+            _knobs.push_back(activated);
+            boost::shared_ptr<KnobSerialization> opacity(new KnobSerialization);
+            ar & boost::serialization::make_nvp("Opacity",*opacity);
+            _knobs.push_back(opacity);
+            boost::shared_ptr<KnobSerialization> feather(new KnobSerialization);
+            ar & boost::serialization::make_nvp("Feather",*feather);
+            _knobs.push_back(feather);
+            boost::shared_ptr<KnobSerialization> falloff(new KnobSerialization);
+            ar & boost::serialization::make_nvp("FallOff",*falloff);
+            _knobs.push_back(falloff);
+            if (version < ROTO_DRAWABLE_ITEM_REMOVES_INVERTED) {
+                boost::shared_ptr<KnobSerialization> inverted(new KnobSerialization);
+                ar & boost::serialization::make_nvp("Inverted",*inverted);
+                _knobs.push_back(inverted);
+            }
+            if (version >= ROTO_DRAWABLE_ITEM_INTRODUCES_COMPOSITING) {
+                boost::shared_ptr<KnobSerialization> color(new KnobSerialization);
+                ar & boost::serialization::make_nvp("Color",*color);
+                _knobs.push_back(color);
+                boost::shared_ptr<KnobSerialization> comp(new KnobSerialization);
+                ar & boost::serialization::make_nvp("CompOP",*comp);
+                _knobs.push_back(comp);
+            }
         } else {
-            _hasColorAndCompOp = false;
+            int nKnobs;
+            ar & boost::serialization::make_nvp("NbItems",nKnobs);
+            for (int i = 0; i < nKnobs; ++i) {
+                boost::shared_ptr<KnobSerialization> k(new KnobSerialization);
+                ar & boost::serialization::make_nvp("Item",*k);
+                _knobs.push_back(k);
+            }
         }
         ar & boost::serialization::make_nvp("OC.r",_overlayColor[0]);
         ar & boost::serialization::make_nvp("OC.g",_overlayColor[1]);
@@ -298,17 +313,7 @@ private:
 
     BOOST_SERIALIZATION_SPLIT_MEMBER()
 
-    KnobSerialization _activated;
-    KnobSerialization _opacity;
-    KnobSerialization _feather;
-    KnobSerialization _featherFallOff;
-#ifdef NATRON_ROTO_INVERTIBLE
-    KnobSerialization _inverted;
-#endif
-
-    bool _hasColorAndCompOp;
-    KnobSerialization _color;
-    KnobSerialization _compOp;
+    std::list<boost::shared_ptr<KnobSerialization> > _knobs;
     double _overlayColor[4];
 };
 

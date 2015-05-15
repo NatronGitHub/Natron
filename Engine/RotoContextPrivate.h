@@ -945,9 +945,10 @@ struct RotoContextPrivate
     std::list<boost::shared_ptr<RotoItem> > selectedItems;
     boost::shared_ptr<RotoItem> lastInsertedItem;
     boost::shared_ptr<RotoItem> lastLockedItem;
-    QMutex lastRenderArgsMutex; //< protects lastRenderArgs & lastRenderedImage
-    U64 lastRenderHash;
-    boost::shared_ptr<Natron::Image> lastRenderedImage;
+    
+    ///This node is used when the rotopaint node does not have any input, so that the rotopaint tree
+    ///paints at least on a black and transparant region of the size of the project.
+    boost::shared_ptr<Natron::Node> rotoPaintConstantInput;
 
     RotoContextPrivate(const boost::shared_ptr<Natron::Node>& n )
     : rotoContextMutex()
@@ -958,7 +959,7 @@ struct RotoContextPrivate
     , featherLink(true)
     , node(n)
     , age(0)
-    , lastRenderHash(0)
+    , rotoPaintConstantInput()
     {
         assert( n && n->getLiveInstance() );
         Natron::EffectInstance* effect = n->getLiveInstance();
@@ -1007,8 +1008,7 @@ struct RotoContextPrivate
             shapePage->addKnob(featherFallOffKnob);
             knobs.push_back(featherFallOffKnob);
             featherFallOff = featherFallOffKnob;
-        }
-        
+        } 
         boost::shared_ptr<Bool_Knob> activatedKnob = Natron::createKnob<Bool_Knob>(effect, kRotoActivatedParamLabel, 1, false);
         activatedKnob->setHintToolTip(kRotoActivatedHint);
         activatedKnob->setName(kRotoActivatedParam);

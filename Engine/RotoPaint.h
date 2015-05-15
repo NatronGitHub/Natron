@@ -102,7 +102,12 @@ public:
 
     virtual double getPreferredAspectRatio() const OVERRIDE FINAL;
 
+    virtual void onInputChanged(int inputNb) OVERRIDE FINAL;
 private:
+
+    virtual Natron::StatusEnum
+    getRegionOfDefinition(U64 hash,SequenceTime time, const RenderScale & scale, int view, RectD* rod) OVERRIDE WARN_UNUSED_RETURN;
+
 
     virtual Natron::StatusEnum render(const RenderActionArgs& args) OVERRIDE WARN_UNUSED_RETURN;
 
