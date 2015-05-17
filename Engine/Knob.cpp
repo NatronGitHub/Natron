@@ -1279,9 +1279,7 @@ KnobHelper::evaluateValueChange(int dimension,
     if (!guiFrozen  && _signalSlotHandler) {
         computeHasModifications();
         _signalSlotHandler->s_valueChanged(dimension,(int)reason);
-        if (getHolder()) {
-            _signalSlotHandler->s_updateDependencies(dimension);
-        }
+        _signalSlotHandler->s_updateDependencies(dimension);
         checkAnimationLevel(dimension);
     }
 }

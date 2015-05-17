@@ -10,6 +10,8 @@
 
 #include "RotoPaint.h"
 
+#include <sstream>
+
 #include "Engine/AppInstance.h"
 #include "Engine/Image.h"
 #include "Engine/Node.h"
@@ -36,6 +38,7 @@ RotoPaint::getDescription() const
 RotoPaint::RotoPaint(boost::shared_ptr<Natron::Node> node)
 : EffectInstance(node)
 {
+    setSupportsRenderScaleMaybe(eSupportsYes);
 }
 
 
@@ -49,15 +52,11 @@ RotoPaint::getInputLabel (int inputNb) const
 {
     if (inputNb == 0) {
         return "Bg";
-    } else if (inputNb == 1) {
-        return "Bg1";
-    } else if (inputNb == 2) {
-        return "Bg2";
-    } else if (inputNb == 3) {
-        return "Bg3";
+    } else {
+        std::stringstream ss;
+        ss << "Bg" << inputNb + 1;
+        return ss.str();
     }
-    assert(false);
-    return "";
 }
 
 void
@@ -184,8 +183,7 @@ RotoPaint::render(const RenderActionArgs& args)
     Natron::ImageBitDepthEnum bgDepth;
     getPreferredDepthAndComponents(0, &bgComps, &bgDepth);
     assert(!bgComps.empty());
-    RectI bgImgRoI;
-    ImagePtr bgImg = getImage(0, args.time, args.mappedScale, args.view, 0, bgComps.front(), bgDepth, getPreferredAspectRatio(), false, &bgImgRoI);
+
     
     std::list<ImageComponents> neededComps;
     for (std::list<std::pair<Natron::ImageComponents,boost::shared_ptr<Natron::Image> > >::const_iterator plane = args.outputPlanes.begin();
@@ -193,6 +191,10 @@ RotoPaint::render(const RenderActionArgs& args)
         neededComps.push_back(plane->first);
     }
     if (items.empty()) {
+        
+        RectI bgImgRoI;
+        ImagePtr bgImg = getImage(0, args.time, args.mappedScale, args.view, 0, bgComps.front(), bgDepth, getPreferredAspectRatio(), false, &bgImgRoI);
+        
         for (std::list<std::pair<Natron::ImageComponents,boost::shared_ptr<Natron::Image> > >::const_iterator plane = args.outputPlanes.begin();
              plane != args.outputPlanes.end(); ++plane) {
             
@@ -215,14 +217,14 @@ RotoPaint::render(const RenderActionArgs& args)
                                               args.view,
                                               args.isRenderResponseToUserInteraction,
                                               args.isSequentialRender,
-                                              true,
+                                              false,
                                               0, //render Age
                                               0, // viewer requester
                                               0, //texture index
                                               getApp()->getTimeLine().get(),
                                               false);
         
-        const boost::shared_ptr<RotoDrawableItem>& firstStrokeItem = items.front();
+        const boost::shared_ptr<RotoDrawableItem>& firstStrokeItem = items.back();
         RotoStrokeItem* firstStroke = dynamic_cast<RotoStrokeItem*>(firstStrokeItem.get());
         assert(firstStroke);
         boost::shared_ptr<Node> bottomMerge =  firstStroke->getMergeNode();

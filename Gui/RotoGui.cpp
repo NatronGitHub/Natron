@@ -2154,8 +2154,59 @@ RotoGui::penDown(double /*scaleX*/,
             didSomething = true;
             break;
         }
-        case eRotoToolSolidBrush: {
-            _imp->rotoData->strokeBeingPaint = _imp->context->makeStroke(Natron::eRotoStrokeTypeSolid, kRotoPaintBrushBaseName);
+        case eRotoToolSolidBrush:
+        case eRotoToolEraserBrush:
+        case eRotoToolClone:
+        case eRotoToolReveal:
+        case eRotoToolBlur:
+        case eRotoToolSharpen:
+        case eRotoToolSmear:
+        case eRotoToolDodge:
+        case eRotoToolBurn: {
+            Natron::RotoStrokeType strokeType;
+            std::string itemName;
+            switch (_imp->selectedTool) {
+                case eRotoToolSolidBrush:
+                    strokeType = Natron::eRotoStrokeTypeSolid;
+                    itemName = kRotoPaintBrushBaseName;
+                    break;
+                case eRotoToolEraserBrush:
+                    strokeType = Natron::eRotoStrokeTypeEraser;
+                    itemName = kRotoPaintEraserBaseName;
+                    break;
+                case eRotoToolClone:
+                    strokeType = Natron::eRotoStrokeTypeClone;
+                    itemName = kRotoPaintCloneBaseName;
+                    break;
+                case eRotoToolReveal:
+                    strokeType = Natron::eRotoStrokeTypeReveal;
+                    itemName = kRotoPaintRevealBaseName;
+                    break;
+                case eRotoToolBlur:
+                    strokeType = Natron::eRotoStrokeTypeBlur;
+                    itemName = kRotoPaintBlurBaseName;
+                    break;
+                case eRotoToolSharpen:
+                    strokeType = Natron::eRotoStrokeTypeSharpen;
+                    itemName = kRotoPaintSharpenBaseName;
+                    break;
+                case eRotoToolSmear:
+                    strokeType = Natron::eRotoStrokeTypeSmear;
+                    itemName = kRotoPaintSmearBaseName;
+                    break;
+                case eRotoToolDodge:
+                    strokeType = Natron::eRotoStrokeTypeDodge;
+                    itemName = kRotoPaintDodgeBaseName;
+                    break;
+                case eRotoToolBurn:
+                    strokeType = Natron::eRotoStrokeTypeBurn;
+                    itemName = kRotoPaintBurnBaseName;
+                    break;
+                default:
+                    assert(false);
+                    return false;
+            }
+            _imp->rotoData->strokeBeingPaint = _imp->context->makeStroke(strokeType, itemName);
             Natron::Point p;
             p.x = pos.x();
             p.y = pos.y();
@@ -2163,30 +2214,6 @@ RotoGui::penDown(double /*scaleX*/,
             _imp->context->evaluateChange();
             _imp->state = eEventStateBuildingStroke;
             didSomething = true;
-            break;
-        }
-        case eRotoToolEraserBrush: {
-            break;
-        }
-        case eRotoToolClone: {
-            break;
-        }
-        case eRotoToolReveal: {
-            break;
-        }
-        case eRotoToolBlur: {
-            break;
-        }
-        case eRotoToolSharpen: {
-            break;
-        }
-        case eRotoToolSmear: {
-            break;
-        }
-        case eRotoToolDodge: {
-            break;
-        }
-        case eRotoToolBurn: {
             break;
         }
         default:

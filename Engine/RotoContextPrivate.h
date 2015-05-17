@@ -20,6 +20,7 @@
 #include <string>
 #include <vector>
 #include <limits>
+#include <sstream>
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
@@ -37,6 +38,7 @@
 #include "Engine/Curve.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/Node.h"
+#include "Engine/Image.h"
 #include "Engine/EffectInstance.h"
 #include "Engine/AppManager.h"
 #include "Engine/Rect.h"
@@ -831,6 +833,12 @@ struct RotoStrokeItemPrivate
     boost::shared_ptr<Natron::Node> effectNode;
     boost::shared_ptr<Natron::Node> mergeNode;
     
+    /**
+     * @brief Used while building up the stroke so that we only draw the last portion between the rendered image
+     * and where the pen actually is currently.
+     **/
+    std::map<int,boost::shared_ptr<Natron::Image> > strokeCache;
+    
     RotoStrokeItemPrivate(Natron::RotoStrokeType type)
     : type(type)
     , brushSize(new Double_Knob(NULL, kRotoBrushSizeParamLabel, 1, false))
@@ -841,6 +849,7 @@ struct RotoStrokeItemPrivate
     , sourceColor(new Choice_Knob(NULL, kRotoBrushSourceColorLabel, 1, false))
     , effectNode()
     , mergeNode()
+    , strokeCache()
     {
                 
         brushSize->setName(kRotoBrushSizeParam);
@@ -891,9 +900,11 @@ struct RotoStrokeItemPrivate
             std::vector<std::string> choices;
             choices.push_back("foreground");
             choices.push_back("background");
-            choices.push_back("background 1");
-            choices.push_back("background 2");
-            choices.push_back("background 3");
+            for (int i = 0; i < 9; ++i) {
+                std::stringstream ss;
+                ss << "background " << i + 1;
+                choices.push_back(ss.str());
+            }
             sourceColor->populateChoices(choices);
         }
         
@@ -1054,9 +1065,11 @@ struct RotoContextPrivate
                 std::vector<std::string> choices;
                 choices.push_back("foreground");
                 choices.push_back("background");
-                choices.push_back("background 1");
-                choices.push_back("background 2");
-                choices.push_back("background 3");
+                for (int i = 0; i < 9; ++i) {
+                    std::stringstream ss;
+                    ss << "background " << i + 1;
+                    choices.push_back(ss.str());
+                }
                 sourceType->populateChoices(choices);
             }
             sourceType->setAllDimensionsEnabled(false);
@@ -1147,9 +1160,10 @@ struct RotoContextPrivate
         ++age;
     }
 
-    void renderInternal(cairo_t* cr,cairo_surface_t* cairoImg,const std::list< boost::shared_ptr<RotoDrawableItem> > & splines,
+    void renderInternal(cairo_t* cr,const std::list< boost::shared_ptr<RotoDrawableItem> > & splines,
                         unsigned int mipmapLevel,int time);
     
+    void renderStroke(cairo_t* cr,int startingPointIndex,const std::list<std::pair<Natron::Point,double> >& points, const RotoStrokeItem* stroke, int time, unsigned int mipmapLevel);
     void renderStroke(cairo_t* cr,const RotoStrokeItem* stroke, int time, unsigned int mipmapLevel);
     
     void renderBezier(cairo_t* cr,const Bezier* bezier,int time, unsigned int mipmapLevel);

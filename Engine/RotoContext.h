@@ -1080,10 +1080,13 @@ public:
     boost::shared_ptr<Natron::Node> getMergeNode() const;
     
     void refreshNodesConnections();
+
+    boost::shared_ptr<Natron::Image> getMostRecentRenderedImage(int* nbPoints) const;
+    void addRenderedImage(int nbPoints,const boost::shared_ptr<Natron::Image>& image);
     
 public Q_SLOTS:
     
-    void onSourceColorTypeChanged(int,int);
+    void onRotoStrokeKnobChanged(int);
     
 private:
     RotoStrokeItem* findPreviousStrokeInHierarchy();
@@ -1231,7 +1234,8 @@ public:
     
 private:
     
-    boost::shared_ptr<Natron::Image> renderMaskInternal(const std::list<boost::shared_ptr<RotoDrawableItem> >& splines,
+    boost::shared_ptr<Natron::Image> renderMaskInternal(RotoStrokeItem* isSingleStroke,
+                                                        const std::list<boost::shared_ptr<RotoDrawableItem> >& splines,
                                                         const RectI & roi,
                                                         const Natron::ImageComponents& components,
                                                         const RectD & nodeRoD,

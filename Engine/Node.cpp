@@ -5542,14 +5542,16 @@ Node::shouldCacheOutput(bool isFrameVaryingOrAnimated) const
                 }
             }
             
-            
+            boost::shared_ptr<RotoStrokeItem> attachedStroke = _imp->paintStroke.lock();
             return !isFrameVaryingOrAnimated ||
             output->isSettingsPanelOpened() ||
             _imp->liveInstance->doesTemporalClipAccess() ||
             _imp->liveInstance->getRecursionLevel() > 0 ||
             isForceCachingEnabled() ||
             appPTR->isAggressiveCachingEnabled() ||
-            (isPreviewEnabled() && !appPTR->isBackground());
+            (isPreviewEnabled() && !appPTR->isBackground()) ||
+            (getRotoContext() && isSettingsPanelOpened()) ||
+            (attachedStroke && attachedStroke->getContext()->getNode()->isSettingsPanelOpened());
         } else {
             // outputs == 0, never cache, unless explicitly set
             return isForceCachingEnabled() || appPTR->isAggressiveCachingEnabled();

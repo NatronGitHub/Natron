@@ -4276,7 +4276,11 @@ RotoStrokeItem::RotoStrokeItem(Natron::RotoStrokeType type,
     addKnob(_imp->visiblePortion);
     addKnob(_imp->sourceColor);
     
-    QObject::connect(_imp->sourceColor->getSignalSlotHandler().get(), SIGNAL(valueChanged(int,int)), this, SLOT(onSourceColorTypeChanged(int, int)));
+    const std::list<boost::shared_ptr<KnobI> >& knobs = getKnobs();
+    for (std::list<boost::shared_ptr<KnobI> >::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+        QObject::connect((*it)->getSignalSlotHandler().get(), SIGNAL(updateDependencies(int)), this, SLOT(onRotoStrokeKnobChanged(int)));
+    }
+    
     
     AppInstance* app = context->getNode()->getApp();
     QString fixedNamePrefix(context->getNode()->getScriptName_mt_safe().c_str());
@@ -4350,17 +4354,20 @@ RotoStrokeItem::RotoStrokeItem(Natron::RotoStrokeType type,
     
     assert(_imp->mergeNode);
     
-    int maxInp = _imp->mergeNode->getMaxInputCount();
-    for (int i = 0; i < maxInp; ++i) {
-        if (_imp->mergeNode->getLiveInstance()->isInputMask(i)) {
-            
-            //Connect this rotopaint node as a mask
-            ok = _imp->mergeNode->connectInput(context->getNode(), i);
-            assert(ok);
-            break;
+    if (type != eRotoStrokeTypeSolid) {
+        int maxInp = _imp->mergeNode->getMaxInputCount();
+        for (int i = 0; i < maxInp; ++i) {
+            if (_imp->mergeNode->getLiveInstance()->isInputMask(i)) {
+                
+                //Connect this rotopaint node as a mask
+                ok = _imp->mergeNode->connectInput(context->getNode(), i);
+                assert(ok);
+                break;
+            }
         }
     }
-
+    
+    refreshNodesConnections();
     
 }
 
@@ -4370,9 +4377,25 @@ RotoStrokeItem::~RotoStrokeItem()
 }
 
 void
-RotoStrokeItem::onSourceColorTypeChanged(int,int)
+RotoStrokeItem::onRotoStrokeKnobChanged(int /*dimension*/)
 {
-    refreshNodesConnections();
+    KnobSignalSlotHandler* handler = qobject_cast<KnobSignalSlotHandler*>(sender());
+    if (!handler) {
+        return;
+    }
+    if (handler == _imp->sourceColor->getSignalSlotHandler().get()) {
+        refreshNodesConnections();
+    }
+    if (_imp->effectNode) {
+        _imp->effectNode->incrementKnobsAge();
+    }
+    if (_imp->mergeNode) {
+        _imp->mergeNode->incrementKnobsAge();
+    }
+    {
+        QMutexLocker k(&itemMutex);
+        _imp->strokeCache.clear();
+    }
 }
 
 
@@ -4412,6 +4435,23 @@ static RotoStrokeItem* findPreviousOfItemInLayer(RotoLayer* layer, RotoItem* ite
                 if (si) {
                     return si;
                 }
+            }
+        }
+        
+        // Re-iterate for the begin item
+        
+        //We found another stroke below at the same level
+        RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>(found->get());
+        if (isStroke) {
+            return isStroke;
+        }
+        
+        //Cycle through a layer that is at the same level
+        RotoLayer* isLayer = dynamic_cast<RotoLayer*>(found->get());
+        if (isLayer) {
+            RotoStrokeItem* si = findPreviousOfItemInLayer(isLayer, 0);
+            if (si) {
+                return si;
             }
         }
     }
@@ -4566,6 +4606,28 @@ RotoStrokeItem::getBrushType() const
     return _imp->type;
 }
 
+boost::shared_ptr<Natron::Image>
+RotoStrokeItem::getMostRecentRenderedImage(int* nbPoints) const
+{
+    QMutexLocker k(&itemMutex);
+    if (_imp->strokeCache.empty()) {
+        return boost::shared_ptr<Natron::Image>();
+    }
+    std::map<int,boost::shared_ptr<Natron::Image> >::const_reverse_iterator it = _imp->strokeCache.rbegin();
+    *nbPoints = it->first;
+    return it->second;
+}
+
+void
+RotoStrokeItem::addRenderedImage(int nbPoints,const boost::shared_ptr<Natron::Image>& image)
+{
+    QMutexLocker k(&itemMutex);
+    std::pair<std::map<int,boost::shared_ptr<Natron::Image> >::iterator,bool> ret = _imp->strokeCache.insert(std::make_pair(nbPoints, image));
+    if (!ret.second) {
+        ret.first->second = image;
+    }
+}
+
 void
 RotoStrokeItem::initialize(const std::list<std::pair<Natron::Point,double> >& rawPoints)
 {
@@ -4636,6 +4698,18 @@ RotoStrokeItem::initialize(const std::list<std::pair<Natron::Point,double> >& ra
         
     }
 #endif
+    if (_imp->effectNode) {
+        _imp->effectNode->incrementKnobsAge();
+    }
+    _imp->mergeNode->incrementKnobsAge();
+    
+    std::map<int,ImagePtr> newCache;
+    std::map<int,ImagePtr>::iterator it = _imp->strokeCache.upper_bound(rawPoints.size());
+    for (; it!=_imp->strokeCache.end();++it) {
+        newCache.insert(*it);
+    }
+    _imp->strokeCache = newCache;
+    
 }
 
 
@@ -6444,6 +6518,114 @@ convertCairoImageToNatronImage(cairo_surface_t* cairoImg,
     }
 }
 
+template <typename PIX,int maxValue,int dstNComps, int srcNComps>
+static void
+convertNatronImageToCairoImageForDstComponents(cairo_surface_t* cairoImg,
+                                               Natron::Image* image,
+                                               const RectI & pixelRod)
+{
+    
+    unsigned char* cdata = cairo_image_surface_get_data(cairoImg);
+    unsigned char* dstPix = cdata;
+    int stride = cairo_image_surface_get_stride(cairoImg);
+    int pixelSize = stride / pixelRod.width();
+    
+    Natron::Image::ReadAccess acc = image->getReadRights();
+    
+    for (int y = 0; y < pixelRod.height(); ++y, dstPix += stride) {
+        
+        const PIX* srcPix = (const PIX*)acc.pixelAt(pixelRod.x1, pixelRod.y1 + y);
+        assert(srcPix);
+        
+        for (int x = 0; x < pixelRod.width(); ++x) {
+            switch (dstNComps) {
+                case 4:
+                    assert(srcNComps == dstNComps);
+                    // cairo's format is ARGB (that is BGRA when interpreted as bytes)
+                    dstPix[x * pixelSize + 3] = (float)srcPix[x * dstNComps + 3] / maxValue * 255.f;
+                    dstPix[x * pixelSize + 2] = (float)srcPix[x * dstNComps + 0] / maxValue * 255.f;
+                    dstPix[x * pixelSize + 1] = (float)srcPix[x * dstNComps + 1] / maxValue * 255.f;
+                    dstPix[x * pixelSize + 0] = (float)srcPix[x * dstNComps + 2] / maxValue * 255.f;
+                    break;
+                case 1:
+                    assert(srcNComps == dstNComps);
+                    dstPix[x] = (float)srcPix[x] / maxValue * 255.f;
+                    break;
+                case 3:
+                    assert(srcNComps == dstNComps);
+                    dstPix[x * pixelSize + 0] = (float)srcPix[x * dstNComps + 2] / maxValue * 255.f;
+                    dstPix[x * pixelSize + 1] = (float)srcPix[x * dstNComps + 1] / maxValue * 255.f;
+                    dstPix[x * pixelSize + 2] = (float)srcPix[x * dstNComps + 0] / maxValue * 255.f;
+                    break;
+                case 2:
+                    assert(srcNComps == 3);
+                    dstPix[x * pixelSize + 0] = (float)srcPix[x * dstNComps + 2] / maxValue * 255.f;
+                    dstPix[x * pixelSize + 1] = (float)srcPix[x * dstNComps + 1] / maxValue * 255.f;
+                    break;
+                    
+                default:
+                    break;
+            }
+            
+            
+        }
+    }
+    
+}
+
+
+template <typename PIX,int maxValue,int dstNComps>
+static void
+convertNatronImageToCairoImageForSrcComponents(cairo_surface_t* cairoImg,
+                                               Natron::Image* image,
+                                               const RectI & pixelRod)
+{
+    int comps = (int)image->getComponentsCount();
+    switch (comps) {
+        case 1:
+            convertNatronImageToCairoImageForDstComponents<PIX,maxValue,dstNComps,1>(cairoImg,image,pixelRod);
+            break;
+        case 2:
+            convertNatronImageToCairoImageForDstComponents<PIX,maxValue,dstNComps,2>(cairoImg,image,pixelRod);
+            break;
+        case 3:
+            convertNatronImageToCairoImageForDstComponents<PIX,maxValue,dstNComps,3>(cairoImg,image,pixelRod);
+            break;
+        case 4:
+            convertNatronImageToCairoImageForDstComponents<PIX,maxValue,dstNComps,4>(cairoImg,image,pixelRod);
+            break;
+        default:
+            break;
+    }
+    
+}
+
+template <typename PIX,int maxValue>
+static void
+convertNatronImageToCairoImage(cairo_surface_t* cairoImg,
+                               Natron::Image* image,
+                               const RectI & pixelRod,
+                               int dstNComps)
+{
+    switch (dstNComps) {
+        case 1:
+            convertNatronImageToCairoImageForSrcComponents<PIX, maxValue, 1>(cairoImg, image, pixelRod);
+            break;
+        case 2:
+            convertNatronImageToCairoImageForSrcComponents<PIX, maxValue, 2>(cairoImg, image, pixelRod);
+            break;
+        case 3:
+            convertNatronImageToCairoImageForSrcComponents<PIX, maxValue, 3>(cairoImg, image, pixelRod);
+            break;
+        case 4:
+            convertNatronImageToCairoImageForSrcComponents<PIX, maxValue, 4>(cairoImg, image, pixelRod);
+            break;
+            
+        default:
+            break;
+    }
+}
+
 boost::shared_ptr<Natron::Image>
 RotoContext::renderMask(const boost::shared_ptr<RotoStrokeItem>& stroke,
                                             const RectI & roi,
@@ -6455,7 +6637,7 @@ RotoContext::renderMask(const boost::shared_ptr<RotoStrokeItem>& stroke,
 {
     std::list<boost::shared_ptr<RotoDrawableItem> > items;
     items.push_back(stroke);
-    return renderMaskInternal(items, roi, components,nodeRoD, time, depth, mipmapLevel);
+    return renderMaskInternal(stroke.get(), items, roi, components,nodeRoD, time, depth, mipmapLevel);
 }
 
 boost::shared_ptr<Natron::Image>
@@ -6467,25 +6649,42 @@ RotoContext::renderMask(const RectI & roi,
                         unsigned int mipmapLevel)
 {
     std::list< boost::shared_ptr<RotoDrawableItem> > splines = getCurvesByRenderOrder();
-    return renderMaskInternal(splines, roi, components, nodeRoD, time, depth, mipmapLevel);
+    return renderMaskInternal(0, splines, roi, components, nodeRoD, time, depth, mipmapLevel);
     
 } // renderMask
 
 
 boost::shared_ptr<Natron::Image>
-RotoContext::renderMaskInternal(const std::list<boost::shared_ptr<RotoDrawableItem> >& splines,
-                                                    const RectI & roi,
-                                                    const Natron::ImageComponents& components,
-                                                    const RectD & nodeRoD,
-                                                    SequenceTime time,
-                                                    Natron::ImageBitDepthEnum depth,
-                                                    unsigned int mipmapLevel)
+RotoContext::renderMaskInternal(RotoStrokeItem* isSingleStroke,
+                                const std::list<boost::shared_ptr<RotoDrawableItem> >& splines,
+                                const RectI & roi,
+                                const Natron::ImageComponents& components,
+                                const RectD & nodeRoD,
+                                SequenceTime time,
+                                Natron::ImageBitDepthEnum depth,
+                                unsigned int mipmapLevel)
 {
  
     
     boost::shared_ptr<Node> node = getNode();
     
-    ImagePtr image(new Image(components, nodeRoD, roi, mipmapLevel, 1., depth));
+    ImagePtr image;
+    int strokeStartingPoint = 0;
+    
+    bool copyFromImage = false;
+    if (isSingleStroke) {
+//        image = isSingleStroke->getMostRecentRenderedImage(&strokeStartingPoint);
+//        if (image) {
+//            RectD newRoD = image->getRoD();
+//            newRoD.merge(nodeRoD);
+//            image->setRoD(newRoD);
+//            image->ensureBounds(roi);
+//            copyFromImage = true;
+//        }
+    }
+    if (!image) {
+        image.reset(new Image(components, nodeRoD, roi, mipmapLevel, 1., depth));
+    }
   
     cairo_format_t cairoImgFormat;
     
@@ -6517,8 +6716,46 @@ RotoContext::renderMaskInternal(const std::list<boost::shared_ptr<RotoDrawableIt
     //cairo_set_fill_rule(cr, CAIRO_FILL_RULE_EVEN_ODD); // creates holes on self-overlapping shapes
     cairo_set_fill_rule(cr, CAIRO_FILL_RULE_WINDING);
     
-    ///We could also propose the user to render a mask to SVG
-    _imp->renderInternal(cr, cairoImg, splines,mipmapLevel,time);
+    // these Roto shapes must be rendered WITHOUT antialias, or the junction between the inner
+    // polygon and the feather zone will have artifacts. This is partly due to the fact that cairo
+    // meshes are not antialiased.
+    // Use a default feather distance of 1 pixel instead!
+    // UPDATE: unfortunately, this produces less artifacts, but there are still some remaining (use opacity=0.5 to test)
+    // maybe the inner polygon should be made of mesh patterns too?
+    cairo_set_antialias(cr, CAIRO_ANTIALIAS_NONE);
+    
+    if (copyFromImage) {
+        switch (depth) {
+            case Natron::eImageBitDepthFloat:
+                convertNatronImageToCairoImage<float, 1>(cairoImg, image.get(), roi,srcNComps);
+                break;
+            case Natron::eImageBitDepthByte:
+                convertNatronImageToCairoImage<unsigned char, 255>(cairoImg, image.get(), roi,srcNComps);
+                break;
+            case Natron::eImageBitDepthShort:
+                convertNatronImageToCairoImage<unsigned short, 65535>(cairoImg, image.get(), roi,srcNComps);
+                break;
+            case Natron::eImageBitDepthNone:
+                assert(false);
+                break;
+        }
+    }
+    
+    int nbPoints = 0;
+    if (isSingleStroke) {
+        std::list<std::pair<Point,double> > points;
+        isSingleStroke->evaluateStroke(mipmapLevel, &points);
+        nbPoints = points.size();
+        _imp->renderStroke(cr, strokeStartingPoint, points, isSingleStroke, time, mipmapLevel);
+    } else {
+        _imp->renderInternal(cr, splines,mipmapLevel,time);
+    }
+    
+    assert(cairo_surface_status(cairoImg) == CAIRO_STATUS_SUCCESS);
+    
+    ///A call to cairo_surface_flush() is required before accessing the pixel data
+    ///to ensure that all pending drawing operations are finished.
+    cairo_surface_flush(cairoImg);
     
     switch (depth) {
         case Natron::eImageBitDepthFloat:
@@ -6539,24 +6776,21 @@ RotoContext::renderMaskInternal(const std::list<boost::shared_ptr<RotoDrawableIt
     ////Free the buffer used by Cairo
     cairo_surface_destroy(cairoImg);
     
+    if (isSingleStroke) {
+        //isSingleStroke->addRenderedImage(nbPoints, image);
+    }
+    
     return image;
 }
 
 
 void
 RotoContextPrivate::renderInternal(cairo_t* cr,
-                                   cairo_surface_t* cairoImg,
                                    const std::list< boost::shared_ptr<RotoDrawableItem> > & splines,
                                    unsigned int mipmapLevel,
                                    int time)
 {
-    // these Roto shapes must be rendered WITHOUT antialias, or the junction between the inner
-    // polygon and the feather zone will have artifacts. This is partly due to the fact that cairo
-    // meshes are not antialiased.
-    // Use a default feather distance of 1 pixel instead!
-    // UPDATE: unfortunately, this produces less artifacts, but there are still some remaining (use opacity=0.5 to test)
-    // maybe the inner polygon should be made of mesh patterns too?
-    cairo_set_antialias(cr, CAIRO_ANTIALIAS_NONE);
+    
     for (std::list<boost::shared_ptr<RotoDrawableItem> >::const_iterator it2 = splines.begin(); it2 != splines.end(); ++it2) {
         
         Bezier* isBezier = dynamic_cast<Bezier*>(it2->get());
@@ -6569,11 +6803,7 @@ RotoContextPrivate::renderInternal(cairo_t* cr,
         
         
     } // foreach(splines)
-    assert(cairo_surface_status(cairoImg) == CAIRO_STATUS_SUCCESS);
-
-    ///A call to cairo_surface_flush() is required before accessing the pixel data
-    ///to ensure that all pending drawing operations are finished.
-    cairo_surface_flush(cairoImg);
+    
 } // renderInternal
 
 /**
@@ -6760,40 +6990,18 @@ static void renderDotPatch(cairo_pattern_t* mesh,
 
 }
 
-
 void
-RotoContextPrivate::renderStroke(cairo_t* cr,const RotoStrokeItem* stroke, int time, unsigned int mipmapLevel)
+RotoContextPrivate::renderStroke(cairo_t* cr,int startingPointIndex,const std::list<std::pair<Point,double> >& points, const RotoStrokeItem* stroke, int time, unsigned int mipmapLevel)
 {
-    std::list<std::pair<Point,double> > points;
-
-#ifdef ROTO_STROKE_USE_FIT_CURVE
-    BezierCPs cps = stroke->getControlPoints_mt_safe();
-    if (!stroke->isActivated(time) || cps.empty()) {
-        return;
-    }
-    
-    
-    
-    /**
-     To determine the number of line segments the curve should have once subdivided, we approximate the length of the bezier.
-     From http://antigrain.com/research/adaptive_bezier/ 
-     
-     Apparently, we need to calculate the step on the basis of the length of the curve.
-     To do that we need to calculate the actual length of the curve, but to calculate the length we need to calculate the curve itself.
-     It's a classical “catch 22” situation. A rather good estimation is the sum of the distances:
-     (p1,p2)+(p2,p3)+(p3,p4);
-     **/
-    stroke->evaluateAtTime_DeCasteljau_autoNbPoints(time, mipmapLevel, &points, 0);
-#else
-    stroke->evaluateStroke(mipmapLevel, &points);
-#endif
-    
     if (points.empty()) {
         return;
     }
     
+    if (!stroke->isActivated(time)) {
+        return;
+    }
+    
     double opacity = stroke->getOpacity(time);
-    int operatorIndex = stroke->getCompositingOperator();
     double shapeColor[3];
     stroke->getColor(time, shapeColor);
     boost::shared_ptr<Double_Knob> brushSizeKnob = stroke->getBrushSizeKnob();
@@ -6819,18 +7027,18 @@ RotoContextPrivate::renderStroke(cairo_t* cr,const RotoStrokeItem* stroke, int t
     int endPoint = (int)std::ceil((points.size() * writeOnEnd));
     assert(firstPoint >= 0 && firstPoint < (int)points.size() && endPoint > firstPoint && endPoint <= (int)points.size());
     
+    startingPointIndex -= firstPoint;
     
+    cairo_set_operator(cr, (cairo_operator_t)CAIRO_OPERATOR_OVER);
     
-    cairo_set_operator(cr, (cairo_operator_t)operatorIndex);
-
     
     ///The visible portion of the paint's stroke with points adjusted to pixel coordinates
     std::list<std::pair<Point,double> > visiblePortion;
-    std::list<std::pair<Point,double> >::iterator startingIt = points.begin();
-    std::list<std::pair<Point,double> >::iterator endingIt = points.begin();
+    std::list<std::pair<Point,double> >::const_iterator startingIt = points.begin();
+    std::list<std::pair<Point,double> >::const_iterator endingIt = points.begin();
     std::advance(startingIt, firstPoint);
     std::advance(endingIt, endPoint);
-    for (std::list<std::pair<Point,double> >::iterator it = startingIt; it!=endingIt; ++it) {
+    for (std::list<std::pair<Point,double> >::const_iterator it = startingIt; it!=endingIt; ++it) {
         visiblePortion.push_back(*it);
     }
     
@@ -6838,13 +7046,13 @@ RotoContextPrivate::renderStroke(cairo_t* cr,const RotoStrokeItem* stroke, int t
     if (mipmapLevel != 0) {
         brushSizePixel /= (1 << mipmapLevel);
     }
-
+    
     double internalDotRadius = std::max(brushSizePixel * brushHardness,1.) / 2.;
     double externalDotRadius = std::max(brushSizePixel, 1.) / 2.;
     double spacingPixel = externalDotRadius * 2. * brushSpacing;
     
-
-    for (std::list<std::pair<Point,double> >::iterator it = visiblePortion.begin(); it!=visiblePortion.end();) {
+    int curPointIdx = 0;
+    for (std::list<std::pair<Point,double> >::iterator it = visiblePortion.begin(); it!=visiblePortion.end();++curPointIdx) {
         //Render for each point a dot. Spacing is a percentage of brushSize:
         //Spacing at 1 means no dot is overlapping another (so the spacing is in fact brushSize)
         //Spacing at 0 we do not render the stroke
@@ -6853,18 +7061,24 @@ RotoContextPrivate::renderStroke(cairo_t* cr,const RotoStrokeItem* stroke, int t
         //0 means the feather expands to the center of the dot
         
         ////Define the feather edge pattern
-        cairo_pattern_t* mesh = cairo_pattern_create_mesh();
-        if (cairo_pattern_status(mesh) != CAIRO_STATUS_SUCCESS) {
-            cairo_pattern_destroy(mesh);
-            return;
+        cairo_pattern_t* mesh = 0;
+        
+        if (curPointIdx >= startingPointIndex) {
+            mesh = cairo_pattern_create_mesh();
+            if (cairo_pattern_status(mesh) != CAIRO_STATUS_SUCCESS) {
+                cairo_pattern_destroy(mesh);
+                return;
+            }
         }
         
-        Point center;
-        center.x = it->first.x;
-        center.y = it->first.y;
-        //double pressure = it->second;
-        for (int i = 0; i < 4; ++i) {
-            renderDotPatch(mesh, i, center, internalDotRadius, externalDotRadius, shapeColor, opacity);
+        if (curPointIdx >= startingPointIndex) {
+            Point center;
+            center.x = it->first.x;
+            center.y = it->first.y;
+            //double pressure = it->second;
+            for (int i = 0; i < 4; ++i) {
+                renderDotPatch(mesh, i, center, internalDotRadius, externalDotRadius, shapeColor, opacity);
+            }
         }
         
         //Find the next point that we should draw a dot on according to the spacing in pixel coordinates
@@ -6873,7 +7087,7 @@ RotoContextPrivate::renderStroke(cairo_t* cr,const RotoStrokeItem* stroke, int t
         double segmentDis = -1;
         for (; it2!=visiblePortion.end(); ++it2) {
             double dist = std::sqrt((it2->first.x - it->first.x) * (it2->first.x - it->first.x) + (it2->first.y - it->first.y) *
-                                (it2->first.y - it->first.y));
+                                    (it2->first.y - it->first.y));
             if (segmentDis == -1) {
                 segmentDis = dist;
             }
@@ -6883,11 +7097,43 @@ RotoContextPrivate::renderStroke(cairo_t* cr,const RotoStrokeItem* stroke, int t
         }
         it = it2;
         
-        applyAndDestroyMask(cr, mesh);
-
-       
+        if (curPointIdx >= startingPointIndex) {
+            applyAndDestroyMask(cr, mesh);
+        }
+        
+        
     }
     
+
+}
+
+void
+RotoContextPrivate::renderStroke(cairo_t* cr,const RotoStrokeItem* stroke, int time, unsigned int mipmapLevel)
+{
+    std::list<std::pair<Point,double> > points;
+
+#ifdef ROTO_STROKE_USE_FIT_CURVE
+    BezierCPs cps = stroke->getControlPoints_mt_safe();
+    if (cps.empty()) {
+        return;
+    }
+    
+    
+    
+    /**
+     To determine the number of line segments the curve should have once subdivided, we approximate the length of the bezier.
+     From http://antigrain.com/research/adaptive_bezier/ 
+     
+     Apparently, we need to calculate the step on the basis of the length of the curve.
+     To do that we need to calculate the actual length of the curve, but to calculate the length we need to calculate the curve itself.
+     It's a classical “catch 22” situation. A rather good estimation is the sum of the distances:
+     (p1,p2)+(p2,p3)+(p3,p4);
+     **/
+    stroke->evaluateAtTime_DeCasteljau_autoNbPoints(time, mipmapLevel, &points, 0);
+#else
+    stroke->evaluateStroke(mipmapLevel, &points);
+#endif
+    renderStroke(cr, 0, points, stroke, time, mipmapLevel);
 }
 
 void
