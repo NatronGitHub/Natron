@@ -4396,7 +4396,9 @@ Node::getMaskChannel(int inputNb,Natron::ImageComponents* comps) const
             
         }
     }
-    return -1;
+    //Default to alpha
+    *comps = ImageComponents::getAlphaComponents();
+    return 0;
     
 }
 

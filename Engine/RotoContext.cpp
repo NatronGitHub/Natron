@@ -4366,6 +4366,16 @@ RotoStrokeItem::RotoStrokeItem(Natron::RotoStrokeType type,
             }
         }
     }
+    if (type == eRotoStrokeTypeBlur) {
+        double strength = _imp->effectStrength->getValue();
+        boost::shared_ptr<KnobI> knob = _imp->effectNode->getKnobByName("size");
+        Double_Knob* isDbl = dynamic_cast<Double_Knob*>(knob.get());
+        if (isDbl) {
+            isDbl->setValues(strength, strength, Natron::eValueChangedReasonNatronInternalEdited);
+        }
+    } else if (type == eRotoStrokeTypeSharpen) {
+        //todo
+    }
     
     refreshNodesConnections();
     
@@ -4383,9 +4393,38 @@ RotoStrokeItem::onRotoStrokeKnobChanged(int /*dimension*/)
     if (!handler) {
         return;
     }
+    
+    boost::shared_ptr<Choice_Knob> compKnob = getOperatorKnob();
     if (handler == _imp->sourceColor->getSignalSlotHandler().get()) {
         refreshNodesConnections();
+    } else if (handler == _imp->effectStrength->getSignalSlotHandler().get()) {
+        
+        double strength = _imp->effectStrength->getValue();
+        switch (_imp->type) {
+            case Natron::eRotoStrokeTypeBlur: {
+                boost::shared_ptr<KnobI> knob = _imp->effectNode->getKnobByName("size");
+                Double_Knob* isDbl = dynamic_cast<Double_Knob*>(knob.get());
+                if (isDbl) {
+                    isDbl->setValues(strength, strength, Natron::eValueChangedReasonNatronInternalEdited);
+                }
+            }   break;
+            case Natron::eRotoStrokeTypeSharpen: {
+                //todo
+                break;
+            }
+            default:
+                //others don't have a control
+                break;
+        }
+    } else if (handler == compKnob->getSignalSlotHandler().get()) {
+        boost::shared_ptr<KnobI> opKnob = _imp->mergeNode->getKnobByName("operation");
+        Choice_Knob* operation = dynamic_cast<Choice_Knob*>(opKnob.get());
+        if (operation) {
+            operation->setValue(compKnob->getValue(), 0);
+        }
     }
+    
+    
     if (_imp->effectNode) {
         _imp->effectNode->incrementKnobsAge();
     }
@@ -4531,7 +4570,9 @@ RotoStrokeItem::refreshNodesConnections()
         
         int reveal_i = _imp->sourceColor->getValue();
         boost::shared_ptr<Node> revealInput;
-        if (reveal_i > 0) {
+        if ((_imp->type == eRotoStrokeTypeReveal ||
+            _imp->type == eRotoStrokeTypeClone ||
+            _imp->type == eRotoStrokeTypeEraser) && reveal_i > 0) {
             revealInput = getContext()->getNode()->getInput(reveal_i - 1);
         }
         if (!revealInput) {
@@ -6991,6 +7032,28 @@ static void renderDotPatch(cairo_pattern_t* mesh,
 }
 
 void
+RotoContextPrivate::renderDot(cairo_t* cr,
+                              const Point &center,
+                              double internalDotRadius,
+                              double externalDotRadius,
+                              double shapeColor[3],
+                              double opacity,
+                              double /*pressure*/)
+{
+    cairo_pattern_t* mesh = cairo_pattern_create_mesh();
+    if (cairo_pattern_status(mesh) != CAIRO_STATUS_SUCCESS) {
+        cairo_pattern_destroy(mesh);
+        return;
+    }
+    for (int i = 0; i < 4; ++i) {
+        renderDotPatch(mesh, i, center, internalDotRadius, externalDotRadius, shapeColor, opacity);
+    }
+    
+    applyAndDestroyMask(cr, mesh);
+
+}
+
+void
 RotoContextPrivate::renderStroke(cairo_t* cr,int startingPointIndex,const std::list<std::pair<Point,double> >& points, const RotoStrokeItem* stroke, int time, unsigned int mipmapLevel)
 {
     if (points.empty()) {
@@ -7014,8 +7077,6 @@ RotoContextPrivate::renderStroke(cairo_t* cr,int startingPointIndex,const std::l
     
     boost::shared_ptr<Double_Knob> brushHardnessKnob = stroke->getBrushHardnessKnob();
     double brushHardness = brushHardnessKnob->getValueAtTime(time);
-    boost::shared_ptr<Double_Knob> brushEffectStrengthKnob = stroke->getBrushEffectKnob();
-    //double effectStrength = brushEffectStrengthKnob->getValueAtTime(time);
     boost::shared_ptr<Double_Knob> visiblePortionKnob = stroke->getBrushVisiblePortionKnob();
     double writeOnStart = visiblePortionKnob->getValueAtTime(time, 0);
     double writeOnEnd = visiblePortionKnob->getValueAtTime(time, 1);
@@ -7041,6 +7102,9 @@ RotoContextPrivate::renderStroke(cairo_t* cr,int startingPointIndex,const std::l
     for (std::list<std::pair<Point,double> >::const_iterator it = startingIt; it!=endingIt; ++it) {
         visiblePortion.push_back(*it);
     }
+    if (visiblePortion.empty()) {
+        return;
+    }
     
     double brushSizePixel = brushSize;
     if (mipmapLevel != 0) {
@@ -7050,9 +7114,19 @@ RotoContextPrivate::renderStroke(cairo_t* cr,int startingPointIndex,const std::l
     double internalDotRadius = std::max(brushSizePixel * brushHardness,1.) / 2.;
     double externalDotRadius = std::max(brushSizePixel, 1.) / 2.;
     double spacingPixel = externalDotRadius * 2. * brushSpacing;
+    double maxDistPerSegment = spacingPixel  - 1;
     
-    int curPointIdx = 0;
-    for (std::list<std::pair<Point,double> >::iterator it = visiblePortion.begin(); it!=visiblePortion.end();++curPointIdx) {
+    std::pair<Point,double> cur = *visiblePortion.begin();
+    renderDot(cr, cur.first, internalDotRadius, externalDotRadius, shapeColor, opacity, cur.second);
+    
+    
+    std::list<std::pair<Point,double> >::iterator it = visiblePortion.begin();
+    std::list<std::pair<Point,double> >::iterator next = it;
+    ++next;
+    double distToNext = 0;
+    while (next!=visiblePortion.end()) {
+        
+        
         //Render for each point a dot. Spacing is a percentage of brushSize:
         //Spacing at 1 means no dot is overlapping another (so the spacing is in fact brushSize)
         //Spacing at 0 we do not render the stroke
@@ -7061,46 +7135,35 @@ RotoContextPrivate::renderStroke(cairo_t* cr,int startingPointIndex,const std::l
         //0 means the feather expands to the center of the dot
         
         ////Define the feather edge pattern
-        cairo_pattern_t* mesh = 0;
         
-        if (curPointIdx >= startingPointIndex) {
-            mesh = cairo_pattern_create_mesh();
-            if (cairo_pattern_status(mesh) != CAIRO_STATUS_SUCCESS) {
-                cairo_pattern_destroy(mesh);
-                return;
-            }
+
+        
+        double dist = std::sqrt((next->first.x - cur.first.x) * (next->first.x - cur.first.x) + (next->first.y - cur.first.y) * (next->first.y - cur.first.y));
+        
+        distToNext += dist;
+        if (distToNext < maxDistPerSegment || dist == 0) {
+            ++next;
+            ++it;
+            cur = *it;
+            continue;
         }
         
-        if (curPointIdx >= startingPointIndex) {
-            Point center;
-            center.x = it->first.x;
-            center.y = it->first.y;
-            //double pressure = it->second;
-            for (int i = 0; i < 4; ++i) {
-                renderDotPatch(mesh, i, center, internalDotRadius, externalDotRadius, shapeColor, opacity);
-            }
+        //Find next point
+        double a;
+        if (maxDistPerSegment >= dist) {
+            a = (distToNext - dist) == 0 ? (maxDistPerSegment - dist) / dist : (maxDistPerSegment - dist) / (distToNext - dist);
+        } else {
+            a = maxDistPerSegment / dist;
         }
-        
-        //Find the next point that we should draw a dot on according to the spacing in pixel coordinates
-        std::list<std::pair<Point,double> >::iterator it2 = it;
-        ++it2;
-        double segmentDis = -1;
-        for (; it2!=visiblePortion.end(); ++it2) {
-            double dist = std::sqrt((it2->first.x - it->first.x) * (it2->first.x - it->first.x) + (it2->first.y - it->first.y) *
-                                    (it2->first.y - it->first.y));
-            if (segmentDis == -1) {
-                segmentDis = dist;
-            }
-            if (dist > (spacingPixel - segmentDis - 1)) {
-                break;
-            }
-        }
-        it = it2;
-        
-        if (curPointIdx >= startingPointIndex) {
-            applyAndDestroyMask(cr, mesh);
-        }
-        
+        assert(a >= 0 && a <= 1);
+        Point center;
+        center.x = (next->first.x - cur.first.x) * a + cur.first.x;
+        center.y = (next->first.y - cur.first.y) * a + cur.first.y;
+        double pressure = (next->second - cur.second) * a + cur.second;
+        renderDot(cr, center, internalDotRadius, externalDotRadius, shapeColor, opacity, pressure);
+        cur.first = center;
+        cur.second = pressure;
+        distToNext = 0;
         
     }
     

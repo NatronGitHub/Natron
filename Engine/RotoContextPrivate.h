@@ -1163,6 +1163,16 @@ struct RotoContextPrivate
     void renderInternal(cairo_t* cr,const std::list< boost::shared_ptr<RotoDrawableItem> > & splines,
                         unsigned int mipmapLevel,int time);
     
+    
+    void renderDot(cairo_t* cr,
+                   const Natron::Point &center,
+                   double internalDotRadius,
+                   double externalDotRadius,
+                   double shapeColor[3],
+                   double opacity,
+                   double /*pressure*/);
+
+    
     void renderStroke(cairo_t* cr,int startingPointIndex,const std::list<std::pair<Natron::Point,double> >& points, const RotoStrokeItem* stroke, int time, unsigned int mipmapLevel);
     void renderStroke(cairo_t* cr,const RotoStrokeItem* stroke, int time, unsigned int mipmapLevel);
     

@@ -1065,6 +1065,19 @@ EffectInstance::getImage(int inputNb,
     ///If the input is a mask, this is the channel index in the layer of the mask channel
     int channelForMask = -1;
     
+    ///Is this node a roto node or not. If so, find out if this input is the roto-brush
+    boost::shared_ptr<RotoContext> roto;
+    boost::shared_ptr<RotoStrokeItem> attachedStroke = getNode()->getAttachedStrokeItem();
+    if (attachedStroke) {
+        roto = attachedStroke->getContext();
+    } else {
+        roto = getNode()->getRotoContext();
+    }
+    bool useRotoInput = false;
+    if (roto) {
+        useRotoInput = isMask || isInputRotoBrush(inputNb);
+    }
+    
     ///This is the actual layer that we are fetching in input, note that it is different than "comp" which is pointing to Alpha
     ImageComponents maskComps;
     if (isMask) {
@@ -1081,23 +1094,18 @@ EffectInstance::getImage(int inputNb,
     }
     
     
-    ///Is this node a roto node or not. If so, find out if this input is the roto-brush
-    boost::shared_ptr<RotoContext> roto;
-    boost::shared_ptr<RotoStrokeItem> attachedStroke = getNode()->getAttachedStrokeItem();
-    if (attachedStroke) {
-        roto = attachedStroke->getContext();
-    } else {
-        roto = getNode()->getRotoContext();
-    }
-    bool useRotoInput = false;
-    if (roto) {
-        useRotoInput = isMask || isInputRotoBrush(inputNb);
-    }
+ 
     
     if ((!roto || (roto && !useRotoInput)) && !n) {
         //Disconnected input
         return ImagePtr();
     }
+    
+    std::list<ImageComponents> outputClipPrefComps;
+    ImageBitDepthEnum outputDepth;
+    getPreferredDepthAndComponents(inputNb, &outputClipPrefComps, &outputDepth);
+    assert(outputClipPrefComps.size() >= 1);
+    const ImageComponents& prefComps = outputClipPrefComps.front();
     
     ///If optionalBounds have been set, use this for the RoI instead of the data int the TLS
     RectD optionalBounds;
@@ -1160,7 +1168,17 @@ EffectInstance::getImage(int inputNb,
     if (optionalBoundsParam) {
         roi = optionalBounds;
     } else {
-        RoIMap::iterator found = inputsRoI.find(useRotoInput ? this : n);
+        EffectInstance* inputToFind = 0;
+        if (useRotoInput) {
+            if (attachedStroke) {
+                inputToFind = attachedStroke->getContext()->getNode()->getLiveInstance();
+            } else {
+                inputToFind = this;
+            }
+        } else {
+            inputToFind = n;
+        }
+        RoIMap::iterator found = inputsRoI.find(inputToFind);
         if ( found != inputsRoI.end() ) {
             ///RoI is in canonical coordinates since the results of getRegionsOfInterest is in canonical coords.
             roi = found->second;
@@ -1207,41 +1225,28 @@ EffectInstance::getImage(int inputNb,
         inputImagesThreadLocal = _imp->inputImages.localData();
     }
     
+    ImagePtr inputImg;
     
     ///For the roto brush, we do things separatly and render the mask with the RotoContext.
     if (useRotoInput) {
         
-        std::list<Natron::ImageComponents> outputComps;
-        Natron::ImageBitDepthEnum outputDepth;
-        getPreferredDepthAndComponents(-1, &outputComps, &outputDepth);
-        
-        //the roto input can only output color plane
-        assert(outputComps.size() == 1);
-        
-        boost::shared_ptr<Natron::Image> mask;
-        
         if (attachedStroke) {
-            mask = roto->renderMask(attachedStroke, pixelRoI, outputComps.front(),
+            inputImg = roto->renderMask(attachedStroke, pixelRoI, prefComps,
                                     rod, time, depth, mipMapLevel);
         } else {
-            mask = roto->renderMask(pixelRoI, outputComps.front(),
+            inputImg = roto->renderMask(pixelRoI, prefComps,
                                     rod, time, depth, mipMapLevel);
-        }
-        if (inputImagesThreadLocal.empty()) {
-            ///If the effect is analysis (e.g: Tracker) there's no input images in the tread local storage, hence add it
-            _imp->addInputImageTempPointer(inputNb,mask);
         }
         if (roiPixel) {
             *roiPixel = pixelRoI;
         }
-        return mask;
+        if (inputImagesThreadLocal.empty()) {
+            ///If the effect is analysis (e.g: Tracker) there's no input images in the tread local storage, hence add it
+            _imp->addInputImageTempPointer(inputNb,inputImg);
+        }
+        return inputImg;
     }
     
-    /*
-     * From now on this is the generic part. We first call renderRoI and then convert to the appropriate scale/components if needed.
-     * Note that since the image has been pre-rendered before by the recursive nature of the algorithm, the call to renderRoI will be
-     * instantaneous thanks to the image cache.
-     */
     
     /// The node is connected.
     assert(n);
@@ -1250,22 +1255,30 @@ EffectInstance::getImage(int inputNb,
     requestedComps.push_back(isMask ? maskComps : comp);
     ImageList inputImages;
     RenderRoIRetCode retCode = n->renderRoI(RenderRoIArgs(time,
-                                                           scale,
-                                                           renderMappedMipMapLevel,
-                                                           view,
-                                                           byPassCache,
-                                                           pixelRoI,
-                                                           RectD(),
-                                                           requestedComps,
-                                                           depth,
-                                                           inputImagesThreadLocal), &inputImages);
+                                                          scale,
+                                                          renderMappedMipMapLevel,
+                                                          view,
+                                                          byPassCache,
+                                                          pixelRoI,
+                                                          RectD(),
+                                                          requestedComps,
+                                                          depth,
+                                                          inputImagesThreadLocal), &inputImages);
     
     if (inputImages.empty() || retCode != eRenderRoIRetCodeOk) {
         return ImagePtr();
     }
     assert(inputImages.size() == 1);
     
-    ImagePtr inputImg = inputImages.front();
+    inputImg = inputImages.front();
+    
+    
+    
+    /*
+     * From now on this is the generic part. We first call renderRoI and then convert to the appropriate scale/components if needed.
+     * Note that since the image has been pre-rendered before by the recursive nature of the algorithm, the call to renderRoI will be
+     * instantaneous thanks to the image cache.
+     */
     
     ///Check that the rendered image contains what we requested.
     assert((!isMask && inputImg->getComponents() == comp) || (isMask && inputImg->getComponents() == maskComps));
@@ -1301,23 +1314,22 @@ EffectInstance::getImage(int inputNb,
         
     }
     
-    std::list<ImageComponents> outputClipPrefComps;
-    ImageBitDepthEnum outputDepth;
-    getPreferredDepthAndComponents(inputNb, &outputClipPrefComps, &outputDepth);
-    assert(outputClipPrefComps.size() >= 1);
-    const ImageComponents& prefComps = outputClipPrefComps.front();
+
     
     if (prefComps.getNumComponents() != inputImg->getComponents().getNumComponents()) {
-        Image::ReadAccess acc = inputImg->getReadRights();
-        
-        ImagePtr remappedImg( new Image(prefComps, inputImg->getRoD(), inputImg->getBounds(), inputImg->getMipMapLevel(),inputImg->getPixelAspectRatio(), inputImg->getBitDepth(), false) );
-        
-        Natron::ViewerColorSpaceEnum colorspace = getApp()->getDefaultColorSpaceForBitDepth(inputImg->getBitDepth());
-        
-        bool unPremultIfNeeded = getOutputPremultiplication() == eImagePremultiplicationPremultiplied;
-        inputImg->convertToFormat(inputImg->getBounds(),
-                                  colorspace, colorspace,
-                                  channelForMask, false, false, unPremultIfNeeded, remappedImg.get());
+        ImagePtr remappedImg;
+        {
+            Image::ReadAccess acc = inputImg->getReadRights();
+            
+            remappedImg.reset( new Image(prefComps, inputImg->getRoD(), inputImg->getBounds(), inputImg->getMipMapLevel(),inputImg->getPixelAspectRatio(), inputImg->getBitDepth(), false) );
+            
+            Natron::ViewerColorSpaceEnum colorspace = getApp()->getDefaultColorSpaceForBitDepth(inputImg->getBitDepth());
+            
+            bool unPremultIfNeeded = getOutputPremultiplication() == eImagePremultiplicationPremultiplied;
+            inputImg->convertToFormat(inputImg->getBounds(),
+                                      colorspace, colorspace,
+                                      channelForMask, false, false, unPremultIfNeeded, remappedImg.get());
+        }
         inputImg = remappedImg;
     }
 
@@ -2672,12 +2684,12 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
      * Split all rects to render in smaller rects to render smaller tiles to increase the chances that isIdentity will work
      */
     if (tilesSupported) {
-        std::list<RectI> planesToRenderCpy = planesToRender.rectsToRender;
-        planesToRender.rectsToRender.clear();
-        for (std::list<RectI>::iterator it = planesToRenderCpy.begin(); it != planesToRenderCpy.end(); ++it) {
-            std::vector<RectI> splits = it->splitIntoSmallerRects(0);
-            planesToRender.rectsToRender.insert(planesToRender.rectsToRender.end(), splits.begin(), splits.end());
-        }
+//        std::list<RectI> planesToRenderCpy = planesToRender.rectsToRender;
+//        planesToRender.rectsToRender.clear();
+//        for (std::list<RectI>::iterator it = planesToRenderCpy.begin(); it != planesToRenderCpy.end(); ++it) {
+//            std::vector<RectI> splits = it->splitIntoSmallerRects(0);
+//            planesToRender.rectsToRender.insert(planesToRender.rectsToRender.end(), splits.begin(), splits.end());
+//        }
     }
     
 
@@ -3382,9 +3394,7 @@ EffectInstance::renderRoIInternal(SequenceTime time,
         
         //If the node has an attached stroke, that means it belongs to the roto paint tree, hence it is not in the project.
         boost::shared_ptr<RotoStrokeItem> attachedStroke = getNode()->getAttachedStrokeItem();
-        if (!attachedStroke) {
-            getApp()->getProject()->getParallelRenderArgs(tlsCopy);
-        } else {
+        if (attachedStroke) {
             NodeList rotoPaintNodes;
             attachedStroke->getContext()->getRotoPaintTreeNodes(&rotoPaintNodes);
             for (NodeList::iterator it = rotoPaintNodes.begin(); it != rotoPaintNodes.end(); ++it) {
@@ -3394,7 +3404,8 @@ EffectInstance::renderRoIInternal(SequenceTime time,
                 }
             }
         }
-        
+        getApp()->getProject()->getParallelRenderArgs(tlsCopy);
+
 
     }
     

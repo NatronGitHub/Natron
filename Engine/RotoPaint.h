@@ -81,7 +81,7 @@ public:
 
     virtual bool supportsTiles() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
-        return true;
+        return false;
     }
 
     virtual bool supportsMultiResolution() const OVERRIDE FINAL WARN_UNUSED_RETURN
