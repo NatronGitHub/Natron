@@ -18,6 +18,8 @@ class DopeSheetView;
 class DSKnob;
 class QTreeWidgetItem;
 
+class DSNode;
+
 /**
  * @brief The DSSelectedKey struct
  *
@@ -63,7 +65,6 @@ struct DSSelectedKey
 typedef boost::shared_ptr<DSSelectedKey> DSKeyPtr;
 typedef std::list<DSKeyPtr> DSKeyPtrList;
 
-class DSNode;
 
 /**
  * @brief The DSMoveKeysCommand class
@@ -228,10 +229,10 @@ private:
     DopeSheetView *_view;
 };
 
-class DSChangeNodeLabel : public QUndoCommand
+class DSChangeNodeLabelCommand : public QUndoCommand
 {
 public:
-    DSChangeNodeLabel(DSNode *dsNode,
+    DSChangeNodeLabelCommand(DSNode *dsNode,
                       const QString &oldLabel,
                       const QString &newLabel,
                       QUndoCommand *parent = 0);

@@ -21,11 +21,13 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/OverlaySupport.h"
 
-class DopeSheetEditor;
+class DopeSheet;
 class DopeSheetViewPrivate;
 class DSNode;
+class DSKnob;
 class Gui;
 class TimeLine;
+
 class DopeSheetView : public QGLWidget, public OverlaySupport
 {
     Q_OBJECT
@@ -47,7 +49,7 @@ public:
         esDraggingView
     };
 
-    explicit DopeSheetView(DopeSheetEditor *dopeSheetEditor, Gui *gui, boost::shared_ptr<TimeLine> timeline, QWidget *parent = 0);
+    explicit DopeSheetView(DopeSheet *model, Gui *gui, boost::shared_ptr<TimeLine> timeline, QWidget *parent = 0);
     ~DopeSheetView();
 
     void swapOpenGLBuffers() OVERRIDE FINAL;

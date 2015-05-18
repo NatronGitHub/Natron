@@ -56,7 +56,6 @@
 typedef std::set<double> TimeSet;
 typedef Knob<int> * KnobIntPtr;
 typedef std::vector<DSSelectedKey> DSSelectedKeys;
-typedef std::pair<double, double> FrameRange;
 
 const int KF_HEIGHT = 10;
 const int KF_X_OFFSET = 3;
@@ -112,11 +111,6 @@ public:
     QRectF rectToWidgetCoordinates(const QRectF &rect) const;
     QRectF nameItemRectToSectionRect(const QRectF &rect) const;
 
-    FrameRange projectKeyframeRange();
-
-    DSNode *getNodeUnderMouse(const QPointF &pos) const;
-    DSKnob *getKnobUnderMouse(const QPointF &pos, int *dimension = NULL) const;
-
     DSKeyPtrList::iterator keyframeIsAlreadyInSelected(const DSSelectedKey &key);
 
     Qt::CursorShape getCursorDuringHover(const QPointF &widgetCoords) const;
@@ -169,13 +163,12 @@ public:
     /* attributes */
     DopeSheetView *parent;
 
+    DopeSheet *model;
+
     Gui *gui;
 
     // necessary to retrieve some useful values for drawing
     boost::shared_ptr<TimeLine> timeline;
-
-    // useful to retrieve the "model"
-    DopeSheetEditor *dopeSheetEditor;
 
     // for rendering
     QFont *font;
@@ -217,9 +210,9 @@ public:
 
 DopeSheetViewPrivate::DopeSheetViewPrivate(DopeSheetView *qq) :
     parent(qq),
+    model(0),
     gui(0),
     timeline(),
-    dopeSheetEditor(0),
     font(new QFont(appFont,appFontSize)),
     textRenderer(),
     zoomContext(),
@@ -284,75 +277,6 @@ QRectF DopeSheetViewPrivate::nameItemRectToSectionRect(const QRectF &rect) const
                   QPointF(zoomContext.right(), sectionBottom));
 }
 
-FrameRange DopeSheetViewPrivate::projectKeyframeRange()
-{
-    FrameRange ret;
-
-    std::vector<double> dimFirstKeys;
-    std::vector<double> dimLastKeys;
-
-    TreeItemsAndDSNodes dsNodeItems = dopeSheetEditor->getTreeItemsAndDSNodes();
-
-    for (TreeItemsAndDSNodes::const_iterator it = dsNodeItems.begin(); it != dsNodeItems.end(); ++it) {
-        if ((*it).first->isHidden()) {
-            continue;
-        }
-
-        DSNode *dsNode = (*it).second;
-
-        TreeItemsAndDSKnobs dsKnobItems = dsNode->getTreeItemsAndDSKnobs();
-
-        for (TreeItemsAndDSKnobs::const_iterator itKnob = dsKnobItems.begin(); itKnob != dsKnobItems.end(); ++itKnob) {
-            if ((*itKnob).first->isHidden()) {
-                continue;
-            }
-
-            DSKnob *dsKnob = (*itKnob).second;
-
-            for (int i = 0; i < dsKnob->getKnobGui()->getKnob()->getDimension(); ++i) {
-                KeyFrameSet keyframes = dsKnob->getKnobGui()->getCurve(i)->getKeyFrames_mt_safe();
-
-                if (keyframes.empty()) {
-                    continue;
-                }
-
-                dimFirstKeys.push_back(keyframes.begin()->getTime());
-                dimLastKeys.push_back(keyframes.rbegin()->getTime());
-            }
-        }
-    }
-
-    if (dimFirstKeys.empty() || dimLastKeys.empty()) {
-        ret.first = 0;
-        ret.second = 0;
-    }
-    else {
-        ret.first = *std::min_element(dimFirstKeys.begin(), dimFirstKeys.end());
-        ret.second = *std::max_element(dimLastKeys.begin(), dimLastKeys.end());
-    }
-
-    return ret;
-}
-
-DSNode *DopeSheetViewPrivate::getNodeUnderMouse(const QPointF &pos) const
-{
-    QTreeWidgetItem *treeItem = dopeSheetEditor->getHierarchyView()->itemAt(0, pos.y());
-
-    if (!treeItem) {
-        return 0;
-    }
-
-    TreeItemsAndDSNodes dsNodeItems = dopeSheetEditor->getTreeItemsAndDSNodes();
-    DSNode *dsNode = dsNodeItems[treeItem];
-
-    return dsNode;
-}
-
-DSKnob *DopeSheetViewPrivate::getKnobUnderMouse(const QPointF &pos, int *dimension) const
-{
-    return dopeSheetEditor->findDSKnob(QPoint(pos.x(), pos.y()), dimension);
-}
-
 DSKeyPtrList::iterator DopeSheetViewPrivate::keyframeIsAlreadyInSelected(const DSSelectedKey &key)
 {
     for (DSKeyPtrList::iterator it = selectedKeyframes.begin(); it != selectedKeyframes.end(); ++it) {
@@ -383,24 +307,26 @@ Qt::CursorShape DopeSheetViewPrivate::getCursorDuringHover(const QPointF &widget
         ret = getCursorForEventState(DopeSheetView::esMoveCurrentFrameIndicator);
     }
     // Or does he hovering on a section's element ?
-    else if (QTreeWidgetItem *treeItem = dopeSheetEditor->getHierarchyView()->itemAt(0, widgetCoords.y())) {
-        TreeItemsAndDSNodes dsNodeItems = dopeSheetEditor->getTreeItemsAndDSNodes();
+    else if (QTreeWidgetItem *treeItem = model->getHierarchyView()->itemAt(0, widgetCoords.y())) {
+        TreeItemsAndDSNodes dsNodeItems = model->getData();
         TreeItemsAndDSNodes::const_iterator dsNodeIt = dsNodeItems.find(treeItem);
 
         if (dsNodeIt != dsNodeItems.end()) {
             DSNode *dsNode = (*dsNodeIt).second;
 
-            FrameRange range = dsNode->getClipRange();
+            std::pair<double, double> range = dsNode->getClipRange();
             QRectF treeItemRect = dsNode->getTreeItemRect();
             QRectF nodeClipRect = rectToZoomCoordinates(QRectF(QPointF(range.first, treeItemRect.top() + 1),
                                                                QPointF(range.second, treeItemRect.bottom() + 1)));
 
-            if (dsNode->isGroupNode()) {
+            DSNode::DSNodeType nodeType = dsNode->getDSNodeType();
+
+            if (nodeType == DSNode::GroupNodeType) {
                 if (nodeClipRect.contains(zoomCoords.x(), zoomCoords.y())) {
                     ret = getCursorForEventState(DopeSheetView::esGroupRepos);
                 }
             }
-            else if (dsNode->isReaderNode()) {
+            else if (nodeType == DSNode::ReaderNodeType) {
                 if (nodeClipRect.contains(zoomCoords.x(), zoomCoords.y())) {
                     if (isNearByClipRectLeft(zoomCoords.x(), nodeClipRect)) {
                         ret = getCursorForEventState(DopeSheetView::esReaderLeftTrim);
@@ -413,7 +339,7 @@ Qt::CursorShape DopeSheetViewPrivate::getCursorDuringHover(const QPointF &widget
                     }
                 }
             }
-            else if (dsNode->isCommonNode()) {
+            else if (nodeType == DSNode::CommonNodeType) {
                 DSSelectedKeys keysUnderMouse = isNearByKeyframe(dsNode, widgetCoords);
 
                 if (!keysUnderMouse.empty()) {
@@ -423,7 +349,8 @@ Qt::CursorShape DopeSheetViewPrivate::getCursorDuringHover(const QPointF &widget
         }
         else {
             int knobDim;
-            DSKnob *dsKnob = getKnobUnderMouse(zoomContext.toWidgetCoordinates(zoomCoords.x(), zoomCoords.y()), &knobDim);
+            QPointF widgetPos = zoomContext.toWidgetCoordinates(zoomCoords.x(), zoomCoords.y());
+            DSKnob *dsKnob =  model->findDSKnob(QPoint(widgetPos.x(), widgetPos.y()), &knobDim);
 
             DSSelectedKeys keysUnderMouse = isNearByKeyframe(dsKnob, widgetCoords, knobDim);
 
@@ -673,7 +600,7 @@ void DopeSheetViewPrivate::drawSections() const
 {
     RUNNING_IN_MAIN_THREAD_AND_CONTEXT(parent);
 
-    TreeItemsAndDSNodes treeItemsAndDSNodes = dopeSheetEditor->getTreeItemsAndDSNodes();
+    TreeItemsAndDSNodes treeItemsAndDSNodes = model->getData();
 
     // Perform drawing
     {
@@ -703,7 +630,9 @@ void DopeSheetViewPrivate::drawSections() const
                 drawKnobSection(dsKnob);
             }
 
-            if (dsNode->isReaderNode() || dsNode->isGroupNode()) {
+            DSNode::DSNodeType nodeType = dsNode->getDSNodeType();
+
+            if (nodeType == DSNode::ReaderNodeType || nodeType == DSNode::GroupNodeType) {
                 drawClip(dsNode);
             }
             else {
@@ -812,7 +741,7 @@ void DopeSheetViewPrivate::drawClip(DSNode *dsNode) const
     {
         ClipColors colors = getClipColors(dsNode->getDSNodeType());
 
-        FrameRange range = dsNode->getClipRange();
+        std::pair<double, double> range = dsNode->getClipRange();
         QRectF treeItemRect = dsNode->getTreeItemRect();
         QRectF clipRectZoomCoords = rectToZoomCoordinates(QRectF(QPointF(range.first, treeItemRect.top() + 1),
                                                                  QPointF(range.second, treeItemRect.bottom() + 1)));
@@ -844,7 +773,7 @@ void DopeSheetViewPrivate::drawClip(DSNode *dsNode) const
         glEnd();
 
         // If necessary, draw the original frame range line
-        if (dsNode->isReaderNode()) {
+        if (dsNode->getDSNodeType() == DSNode::ReaderNodeType) {
             KnobIntPtr originalFrameRangeKnob = dynamic_cast<KnobIntPtr>
                     (dsNode->getNodeGui()->getNode()->getKnobByName("originalFrameRange").get());
             KnobIntPtr firstFrameKnob = dynamic_cast<KnobIntPtr>
@@ -1309,7 +1238,7 @@ DSSelectedKeys DopeSheetViewPrivate::createSelectionFromRect(const QRectF& rect)
 {
     DSSelectedKeys ret;
 
-    TreeItemsAndDSNodes dsNodes = dopeSheetEditor->getTreeItemsAndDSNodes();
+    TreeItemsAndDSNodes dsNodes = model->getData();
 
     for (TreeItemsAndDSNodes::const_iterator it = dsNodes.begin(); it != dsNodes.end(); ++it) {
         DSNode *dsNode = (*it).second;
@@ -1435,11 +1364,11 @@ void DopeSheetViewPrivate::createContextMenu()
  *
  * Constructs a DopeSheetView object.
  */
-DopeSheetView::DopeSheetView(DopeSheetEditor *dopeSheetEditor, Gui *gui, boost::shared_ptr<TimeLine> timeline, QWidget *parent) :
+DopeSheetView::DopeSheetView(DopeSheet *model, Gui *gui, boost::shared_ptr<TimeLine> timeline, QWidget *parent) :
     QGLWidget(parent),
     _imp(new DopeSheetViewPrivate(this))
 {
-    _imp->dopeSheetEditor = dopeSheetEditor;
+    _imp->model = model;
 
     _imp->gui = gui;
     _imp->gui->registerNewUndoStack(_imp->undoStack.get());
@@ -1653,7 +1582,7 @@ void DopeSheetView::clearKeyframeSelection()
 
 void DopeSheetView::selectAllKeyframes()
 {
-    TreeItemsAndDSNodes dsNodeItems = _imp->dopeSheetEditor->getTreeItemsAndDSNodes();
+    TreeItemsAndDSNodes dsNodeItems = _imp->model->getData();
 
     for (TreeItemsAndDSNodes::const_iterator it = dsNodeItems.begin(); it != dsNodeItems.end(); ++it) {
         DSNode *dsNode = (*it).second;
@@ -1720,11 +1649,11 @@ void DopeSheetView::frame()
         return;
     }
 
-    FrameRange range;
+    std::pair<double, double> range;
 
     // frame on project bounds
     if (_imp->selectedKeyframes.empty()) {
-        range = _imp->projectKeyframeRange();
+        range = _imp->model->getKeyframeRange();
     }
     // or frame on current selection
     else {
@@ -1904,20 +1833,22 @@ void DopeSheetView::mousePressEvent(QMouseEvent *e)
         if (_imp->rectToZoomCoordinates(_imp->selectedKeysBRect).contains(clickZoomCoords)) {
             _imp->eventState = DopeSheetView::esMoveKeyframeSelection;
         }
-        else if (QTreeWidgetItem *treeItem = _imp->dopeSheetEditor->getHierarchyView()->itemAt(0, e->y())) {
-            TreeItemsAndDSNodes dsNodeItems = _imp->dopeSheetEditor->getTreeItemsAndDSNodes();
+        else if (QTreeWidgetItem *treeItem = _imp->model->getHierarchyView()->itemAt(0, e->y())) {
+            TreeItemsAndDSNodes dsNodeItems = _imp->model->getData();
             TreeItemsAndDSNodes::const_iterator dsNodeIt = dsNodeItems.find(treeItem);
 
             // The user clicked on a reader
             if (dsNodeIt != dsNodeItems.end()) {
                 DSNode *dsNode = (*dsNodeIt).second;
 
-                FrameRange range = dsNode->getClipRange();
+                std::pair<double, double> range = dsNode->getClipRange();
                 QRectF treeItemRect = dsNode->getTreeItemRect();
                 QRectF nodeClipRect = _imp->rectToZoomCoordinates(QRectF(QPointF(range.first, treeItemRect.top() + 1),
                                                                          QPointF(range.second, treeItemRect.bottom() + 1)));
 
-                if (dsNode->isGroupNode()) {
+                DSNode::DSNodeType nodeType = dsNode->getDSNodeType();
+
+                if (nodeType == DSNode::GroupNodeType) {
                     if (nodeClipRect.contains(clickZoomCoords.x(), clickZoomCoords.y())) {
                         _imp->currentEditedGroup = dsNode;
 
@@ -1926,7 +1857,7 @@ void DopeSheetView::mousePressEvent(QMouseEvent *e)
 
                     redraw();
                 }
-                else if (dsNode->isReaderNode()) {
+                else if (nodeType == DSNode::ReaderNodeType) {
                     if (nodeClipRect.contains(clickZoomCoords.x(), clickZoomCoords.y())) {
                         _imp->currentEditedReader = dsNode;
 
@@ -1948,7 +1879,7 @@ void DopeSheetView::mousePressEvent(QMouseEvent *e)
 
                     redraw();
                 }
-                else if (dsNode->isCommonNode()) {
+                else if (nodeType == DSNode::CommonNodeType) {
                     DSSelectedKeys keysUnderMouse = _imp->createSelectionFromCursor(dsNode, e->pos());
 
                     if (!keysUnderMouse.empty()) {
@@ -1965,7 +1896,7 @@ void DopeSheetView::mousePressEvent(QMouseEvent *e)
             // Or search for a keyframe
             else {
                 int knobDim;
-                DSKnob *dsKnob = _imp->getKnobUnderMouse(e->pos(), &knobDim);
+                DSKnob *dsKnob = _imp->model->findDSKnob(e->pos(), &knobDim);
 
                 if (dsKnob) {
                     DSSelectedKeys keysUnderMouse = _imp->createSelectionFromCursor(dsKnob, e->pos(), knobDim);
