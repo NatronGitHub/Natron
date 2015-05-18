@@ -727,26 +727,37 @@ HierarchyView::~HierarchyView()
 
 void HierarchyView::drawRow(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const
 {
+    QTreeWidget::drawRow(painter, option, index);
+
     QTreeWidgetItem *item = itemFromIndex(index);
-    DSNode *itemDSNode = _imp->model->findParentDSNode(item);
-
-    double r, g, b;
-    itemDSNode->getNodeGui()->getColor(&r, &g, &b);
-
-    const int verticalBarWitdh = 2;
 
     QRect rowRect = option.rect;
 
-    QPen pen;
-    pen.setCapStyle(Qt::RoundCap);
-    pen.setWidth(verticalBarWitdh);
-    pen.setColor(QColor::fromRgbF(r, g, b));
+    // Draw the plugin icon
+    {
+        DSNode *dsNode = _imp->model->findDSNode(item);
 
-    painter->setPen(pen);
-    painter->drawLine(rowRect.left() + 3, rowRect.bottom(),
-                      rowRect.left() + 3, rowRect.top());
+        if (dsNode) {
+            std::string iconFilePath = dsNode->getNodeGui()->getNode()->getPluginIconFilePath();
 
-    QTreeWidget::drawRow(painter, option, index);
+            if (!iconFilePath.empty()) {
+                QPixmap pix;
+
+                if (pix.load(iconFilePath.c_str())) {
+                    pix = pix.scaled(NATRON_MEDIUM_BUTTON_SIZE - 2, NATRON_MEDIUM_BUTTON_SIZE - 2,
+                                     Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+
+                    QRect pluginIconRect = rowRect;
+                    pluginIconRect.setSize(pix.size());
+                    pluginIconRect.moveRight(rowRect.right());
+                    pluginIconRect.moveCenter(QPoint(pluginIconRect.center().x(),
+                                                     rowRect.center().y()));
+
+                    painter->drawPixmap(pluginIconRect, pix);
+                }
+            }
+        }
+    }
 }
 
 ////////////////////////// DopeSheetEditor //////////////////////////
