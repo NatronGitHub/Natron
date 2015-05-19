@@ -9,6 +9,7 @@
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
+#include <QtGui/QTreeWidget>
 #include <QtOpenGL/QGLWidget>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
@@ -26,8 +27,16 @@ class DopeSheetViewPrivate;
 class DSNode;
 class DSKnob;
 class Gui;
+class HierarchyViewPrivate;
+class QModelIndex;
+class QStyleOptionViewItem;
 class TimeLine;
 
+/**
+ * @brief The DopeSheetView class
+ *
+ *
+ */
 class DopeSheetView : public QGLWidget, public OverlaySupport
 {
     Q_OBJECT
@@ -99,6 +108,28 @@ private: /* functions */
 
 private: /* attributes */
     boost::scoped_ptr<DopeSheetViewPrivate> _imp;
+};
+
+/**
+ * @brief The HierarchyView class
+ *
+ *
+ */
+class HierarchyView : public QTreeWidget
+{
+    Q_OBJECT
+
+public:
+    friend class HierarchyViewItemDelegate;
+
+    explicit HierarchyView(DopeSheet *model, QWidget *parent = 0);
+    ~HierarchyView();
+
+protected:
+    void drawRow(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const OVERRIDE FINAL;
+
+private:
+    boost::scoped_ptr<HierarchyViewPrivate> _imp;
 };
 
 #endif // DOPESHEETVIEW_H

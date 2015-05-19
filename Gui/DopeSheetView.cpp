@@ -4,10 +4,12 @@
 
 // Qt includes
 #include <QApplication>
+#include <QHeaderView>
 #include <QMouseEvent>
+#include <QStyledItemDelegate>
+#include <QStyleOption>
 #include <QThread>
 #include <QToolButton>
-#include <QTreeWidget>
 #include <QUndoStack>
 
 // Natron includes
@@ -2189,4 +2191,140 @@ void DopeSheetView::renderText(double x, double y,
     _imp->textRenderer.renderText(x, y, scalex, scaley, text, color, font);
 
     glCheckError();
+}
+
+
+////////////////////////// HierarchyView //////////////////////////
+
+/**
+ * @brief The HierarchyViewItemDelegate class
+ *
+ *
+ */
+
+class HierarchyViewItemDelegate : public QStyledItemDelegate
+{
+public:
+    explicit HierarchyViewItemDelegate(HierarchyView *hierarchyView);
+
+    QSize sizeHint(const QStyleOptionViewItem &option, const QModelIndex &index) const;
+
+private:
+    HierarchyView *m_hierarchyView;
+};
+
+
+/**
+ * @brief HierarchyViewItemDelegate::HierarchyViewItemDelegate
+ *
+ *
+ */
+HierarchyViewItemDelegate::HierarchyViewItemDelegate(HierarchyView *hierarchyView) :
+    QStyledItemDelegate(hierarchyView),
+    m_hierarchyView(hierarchyView)
+{}
+
+/**
+ * @brief HierarchyViewItemDelegate::sizeHint
+ *
+ *
+ */
+QSize HierarchyViewItemDelegate::sizeHint(const QStyleOptionViewItem &option, const QModelIndex &index) const
+{
+    Q_UNUSED(option);
+
+    QTreeWidgetItem *item = m_hierarchyView->itemFromIndex(index);
+
+    QSize itemSize = QStyledItemDelegate::sizeHint(option, index);
+
+    DSNode::DSNodeType nodeType = DSNode::DSNodeType(item->type());
+
+    if (nodeType == DSNode::ReaderNodeType || nodeType == DSNode::GroupNodeType) {
+        itemSize.rheight() += 10;
+    }
+
+    return itemSize;
+}
+
+class HierarchyViewPrivate
+{
+public:
+    HierarchyViewPrivate(HierarchyView *qq);
+    ~HierarchyViewPrivate();
+
+    /* attributes */
+    HierarchyView *parent;
+    DopeSheet *model;
+};
+
+HierarchyViewPrivate::HierarchyViewPrivate(HierarchyView *qq) :
+    parent(qq),
+    model(0)
+{}
+
+HierarchyViewPrivate::~HierarchyViewPrivate()
+{}
+
+
+/**
+ * @brief The HierarchyView class
+ *
+ *
+ */
+
+/**
+ * @brief HierarchyView::HierarchyView
+ *
+ *
+ */
+HierarchyView::HierarchyView(DopeSheet *model, QWidget *parent) :
+    QTreeWidget(parent),
+    _imp(new HierarchyViewPrivate(this))
+{
+    _imp->model = model;
+
+    header()->close();
+
+    setSelectionMode(QAbstractItemView::ExtendedSelection);
+    setColumnCount(1);
+
+    setItemDelegate(new HierarchyViewItemDelegate(this));
+}
+
+HierarchyView::~HierarchyView()
+{}
+
+void HierarchyView::drawRow(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const
+{
+    QTreeWidget::drawRow(painter, option, index);
+
+    QTreeWidgetItem *item = itemFromIndex(index);
+
+    QRect rowRect = option.rect;
+
+    // Draw the plugin icon
+    {
+        DSNode *dsNode = _imp->model->findDSNode(item);
+
+        if (dsNode) {
+            std::string iconFilePath = dsNode->getNodeGui()->getNode()->getPluginIconFilePath();
+
+            if (!iconFilePath.empty()) {
+                QPixmap pix;
+
+                if (pix.load(iconFilePath.c_str())) {
+                    pix = pix.scaled(NATRON_MEDIUM_BUTTON_SIZE - 2, NATRON_MEDIUM_BUTTON_SIZE - 2,
+                                     Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+
+                    QRect pluginIconRect = rowRect;
+                    pluginIconRect.setSize(pix.size());
+                    pluginIconRect.moveRight(rowRect.right());
+                    pluginIconRect.moveCenter(QPoint(pluginIconRect.center().x(),
+                                                     rowRect.center().y()));
+
+                    painter->drawPixmap(pluginIconRect, pix);
+                }
+            }
+        }
+    }
 }

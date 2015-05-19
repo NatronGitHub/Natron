@@ -16,11 +16,10 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
-#include "Global/GlobalDefines.h"
-#include "Global/Macros.h"
-
 #include "Engine/ScriptObject.h"
 
+#include "Global/GlobalDefines.h"
+#include "Global/Macros.h"
 
 class DopeSheetEditorPrivate;
 class DSKnobPrivate;
@@ -29,7 +28,6 @@ class DopeSheetPrivate;
 class DSNodePrivate;
 class Gui;
 class HierarchyView;
-class HierarchyViewPrivate;
 class KnobI;
 class KnobGui;
 class NodeGroup;
@@ -40,10 +38,8 @@ namespace Natron {
 class Node;
 }
 
-
-//
-class DSNode;
 class DSKnob;
+class DSNode;
 
 typedef std::map<QTreeWidgetItem *, DSNode *> TreeItemsAndDSNodes;
 typedef std::map<QTreeWidgetItem *, DSKnob *> TreeItemsAndDSKnobs;
@@ -186,23 +182,6 @@ public Q_SLOTS:
 
 private:
     boost::scoped_ptr<DopeSheetEditorPrivate> _imp;
-};
-
-class HierarchyView : public QTreeWidget
-{
-    Q_OBJECT
-
-public:
-    friend class HierarchyViewItemDelegate;
-
-    explicit HierarchyView(DopeSheet *model, QWidget *parent = 0);
-    ~HierarchyView();
-
-protected:
-    void drawRow(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const OVERRIDE FINAL;
-
-private:
-    boost::scoped_ptr<HierarchyViewPrivate> _imp;
 };
 
 #endif // DOPESHEET_H
