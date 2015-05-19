@@ -95,7 +95,7 @@ bool groupHasAnimation(NodeGroup *nodeGroup)
 }
 
 /**
- * @brief noChildIsVisible
+ * @brief itemHasNoChildVisible
  *
  * Returns true if all childs of 'item' are hidden, otherwise returns
  * false.
@@ -110,25 +110,375 @@ bool itemHasNoChildVisible(QTreeWidgetItem *item)
     return true;
 }
 
-/**
- * @brief recursiveSelect
- *
- * Performs a recursive selection on 'item' 's childs.
- */
-void recursiveSelect(QTreeWidgetItem *item)
-{
-    if (item->childCount() > 0 && !itemHasNoChildVisible(item)) {
-        for (int i = 0; i < item->childCount(); ++i) {
-            QTreeWidgetItem *childItem = item->child(i);
-            childItem->setSelected(true);
+} // anon namespace
 
-            // /!\ recursion
-            recursiveSelect(childItem);
+
+////////////////////////// DopeSheet //////////////////////////
+
+class DopeSheetPrivate
+{
+public:
+    DopeSheetPrivate();
+    ~DopeSheetPrivate();
+
+    /* functions */
+
+    /* attributes */
+    DSRowsNodeData treeItemsAndDSNodes;
+};
+
+DopeSheetPrivate::DopeSheetPrivate() :
+    treeItemsAndDSNodes()
+{
+
+}
+
+DopeSheetPrivate::~DopeSheetPrivate()
+{
+
+}
+
+
+DopeSheet::DopeSheet() :
+    _imp(new DopeSheetPrivate)
+{}
+
+DopeSheet::~DopeSheet()
+{
+    for (DSRowsNodeData::iterator it = _imp->treeItemsAndDSNodes.begin();
+         it != _imp->treeItemsAndDSNodes.end(); ++it) {
+        delete (*it).second;
+    }
+
+    _imp->treeItemsAndDSNodes.clear();
+}
+
+DSRowsNodeData DopeSheet::getRowsNodeData() const
+{
+    return _imp->treeItemsAndDSNodes;
+}
+
+std::pair<double, double> DopeSheet::getKeyframeRange() const
+{
+    std::pair<double, double> ret;
+
+    std::vector<double> dimFirstKeys;
+    std::vector<double> dimLastKeys;
+
+    DSRowsNodeData dsNodeItems = _imp->treeItemsAndDSNodes;
+
+    for (DSRowsNodeData::const_iterator it = dsNodeItems.begin(); it != dsNodeItems.end(); ++it) {
+        if ((*it).first->isHidden()) {
+            continue;
+        }
+
+        DSNode *dsNode = (*it).second;
+
+        DSRowsKnobData dsKnobItems = dsNode->getRowsKnobData();
+
+        for (DSRowsKnobData::const_iterator itKnob = dsKnobItems.begin(); itKnob != dsKnobItems.end(); ++itKnob) {
+            if ((*itKnob).first->isHidden()) {
+                continue;
+            }
+
+            DSKnob *dsKnob = (*itKnob).second;
+
+            for (int i = 0; i < dsKnob->getKnobGui()->getKnob()->getDimension(); ++i) {
+                KeyFrameSet keyframes = dsKnob->getKnobGui()->getCurve(i)->getKeyFrames_mt_safe();
+
+                if (keyframes.empty()) {
+                    continue;
+                }
+
+                dimFirstKeys.push_back(keyframes.begin()->getTime());
+                dimLastKeys.push_back(keyframes.rbegin()->getTime());
+            }
+        }
+    }
+
+    if (dimFirstKeys.empty() || dimLastKeys.empty()) {
+        ret.first = 0;
+        ret.second = 0;
+    }
+    else {
+        ret.first = *std::min_element(dimFirstKeys.begin(), dimFirstKeys.end());
+        ret.second = *std::max_element(dimLastKeys.begin(), dimLastKeys.end());
+    }
+
+    return ret;
+}
+
+void DopeSheet::addNode(boost::shared_ptr<NodeGui> nodeGui)
+{
+    nodeGui->ensurePanelCreated();
+
+    // Don't show the group nodes' input & output
+    if (dynamic_cast<GroupInput *>(nodeGui->getNode()->getLiveInstance()) ||
+            dynamic_cast<GroupOutput *>(nodeGui->getNode()->getLiveInstance())) {
+        return;
+    }
+
+    if (nodeGui->getNode()->getKnobs().empty()) {
+        return;
+    }
+
+    if (!nodeCanAnimate(nodeGui)) {
+        return;
+    }
+
+    // Create the name item
+    DSNode *dsNode = createDSNode(nodeGui);
+
+    _imp->treeItemsAndDSNodes.insert(TreeItemAndDSNode(dsNode->getTreeItem(), dsNode));
+
+    dsNode->checkVisibleState();
+
+    if (DSNode *parentGroupDSNode = getParentGroupDSNode(dsNode)) {
+        parentGroupDSNode->computeGroupRange();
+    }
+}
+
+void DopeSheet::removeNode(NodeGui *node)
+{
+    for (DSRowsNodeData::iterator it = _imp->treeItemsAndDSNodes.begin();
+         it != _imp->treeItemsAndDSNodes.end();
+         ++it)
+    {
+        DSNode *currentDSNode = (*it).second;
+
+        if (currentDSNode->getNodeGui().get() == node) {
+            if (DSNode *parentGroupDSNode = getParentGroupDSNode(currentDSNode)) {
+                parentGroupDSNode->computeGroupRange();
+            }
+
+            _imp->treeItemsAndDSNodes.erase(it);
+
+            delete (currentDSNode);
+
+            break;
         }
     }
 }
 
-} // anon namespace
+DSNode *DopeSheet::findDSNode(Natron::Node *node) const
+{
+    for (DSRowsNodeData::const_iterator it = _imp->treeItemsAndDSNodes.begin();
+         it != _imp->treeItemsAndDSNodes.end();
+         ++it) {
+        DSNode *dsNode = (*it).second;
+
+        if (dsNode->getNodeGui()->getNode().get() == node) {
+            return dsNode;
+        }
+    }
+
+    return 0;
+}
+
+DSNode *DopeSheet::findParentDSNode(QTreeWidgetItem *item) const
+{
+    DSRowsNodeData::const_iterator clickedDSNode = _imp->treeItemsAndDSNodes.find(item);
+
+    // Okay, the user not clicked on a top level item (which is associated with a DSNode)
+    if (clickedDSNode == _imp->treeItemsAndDSNodes.end()) {
+        // So we find this top level item
+        QTreeWidgetItem *itemRoot = item;
+
+        while (itemRoot->parent()) {
+            itemRoot = itemRoot->parent();
+        }
+
+        // And we find the node
+        clickedDSNode = _imp->treeItemsAndDSNodes.find(itemRoot);
+    }
+
+    return (*clickedDSNode).second;
+}
+
+DSNode *DopeSheet::findDSNode(QTreeWidgetItem *item) const
+{
+    DSRowsNodeData::const_iterator dsNodeIt = _imp->treeItemsAndDSNodes.find(item);
+
+    // Okay, the user not clicked on a top level item (which is associated with a DSNode)
+    if (dsNodeIt != _imp->treeItemsAndDSNodes.end()) {
+        return (*dsNodeIt).second;
+    }
+
+    return NULL;
+}
+
+DSKnob *DopeSheet::findDSKnob(QTreeWidgetItem *item, int *dimension) const
+{
+    DSKnob *ret = 0;
+
+    DSNode *dsNode = findParentDSNode(item);
+
+    DSRowsKnobData treeItemsAndKnobs = dsNode->getRowsKnobData();
+    DSRowsKnobData::const_iterator knobIt = treeItemsAndKnobs.find(item);
+
+    if (knobIt == treeItemsAndKnobs.end()) {
+        QTreeWidgetItem *knobTreeItem = item->parent();
+        knobIt = treeItemsAndKnobs.find(knobTreeItem);
+
+        if (knobIt != treeItemsAndKnobs.end()) {
+            ret = knobIt->second;
+        }
+
+        if (dimension) {
+            if (ret->isMultiDim()) {
+                *dimension = knobTreeItem->indexOfChild(item);
+            }
+        }
+    }
+    else {
+        ret = knobIt->second;
+
+        if (ret->getKnobGui()->getKnob()->getDimension() > 1) {
+            *dimension = -1;
+        }
+        else {
+            *dimension = 0;
+        }
+    }
+
+    return ret;
+}
+
+DSNode *DopeSheet::getParentGroupDSNode(DSNode *dsNode) const
+{
+    boost::shared_ptr<NodeGroup> parentGroup = boost::dynamic_pointer_cast<NodeGroup>(dsNode->getNodeGui()->getNode()->getGroup());
+
+    DSNode *parentGroupDSNode = 0;
+
+    if (parentGroup) {
+        parentGroupDSNode = findDSNode(parentGroup->getNode().get());
+    }
+
+    return parentGroupDSNode;
+}
+
+bool DopeSheet::groupSubNodesAreHidden(NodeGroup *group) const
+{
+    bool ret = true;
+
+    NodeList subNodes = group->getNodes();
+
+    for (NodeList::const_iterator it = subNodes.begin(); it != subNodes.end(); ++it) {
+        NodePtr node = (*it);
+
+        DSNode *dsNode = findDSNode(node.get());
+
+        if (!dsNode) {
+            continue;
+        }
+
+        if (!dsNode->getTreeItem()->isHidden()) {
+            ret = false;
+
+            break;
+        }
+    }
+
+    return ret;
+}
+
+void DopeSheet::onNodeNameChanged(const QString &name)
+{
+    Natron::Node *node = qobject_cast<Natron::Node *>(sender());
+    DSNode *dsNode = findDSNode(node);
+
+    dsNode->getTreeItem()->setText(0, name);
+}
+
+DSNode *DopeSheet::createDSNode(const boost::shared_ptr<NodeGui> &nodeGui)
+{
+    // Determinate the node type
+    // It will be useful to identify and sort tree items
+    DSNode::DSNodeType nodeType = DSNode::CommonNodeType;
+
+    if (nodeGui->getNode()->getPlugin()->isReader()) {
+        nodeType = DSNode::ReaderNodeType;
+    }
+    else {
+        NodeGroup *isGroup = dynamic_cast<NodeGroup *>(nodeGui->getNode()->getLiveInstance());
+        if (isGroup) {
+            nodeType = DSNode::GroupNodeType;
+        }
+    }
+
+    QTreeWidgetItem *nameItem = new QTreeWidgetItem(nodeType);
+    nameItem->setText(0, nodeGui->getNode()->getLabel().c_str());
+    nameItem->setExpanded(true);
+
+    DSNode *dsNode = new DSNode(this, nodeType, nameItem, nodeGui);
+
+    connect(dsNode, SIGNAL(clipRangeChanged()),
+            this, SIGNAL(modelChanged()));
+
+    connect(nodeGui->getNode().get(), SIGNAL(labelChanged(QString)),
+            this, SLOT(onNodeNameChanged(QString)));
+
+    Q_EMIT dsNodeCreated(dsNode);
+
+    return dsNode;
+}
+
+DSKnob *DopeSheet::createDSKnob(KnobGui *knobGui, DSNode *dsNode)
+{
+    DSKnob *dsKnob = 0;
+
+    boost::shared_ptr<KnobI> knob = knobGui->getKnob();
+
+    if (knob->getDimension() <= 1) {
+        QTreeWidgetItem * nameItem = new QTreeWidgetItem(dsNode->getTreeItem());
+        nameItem->setText(0, knob->getDescription().c_str());
+
+        dsKnob = new DSKnob(nameItem, knobGui);
+    }
+    else {
+        QTreeWidgetItem *multiDimRootNameItem = new QTreeWidgetItem(dsNode->getTreeItem());
+        multiDimRootNameItem->setText(0, knob->getDescription().c_str());
+
+        for (int i = 0; i < knob->getDimension(); ++i) {
+            QTreeWidgetItem *dimItem = new QTreeWidgetItem(multiDimRootNameItem);
+            dimItem->setText(0, knob->getDimensionName(i).c_str());
+        }
+
+        dsKnob = new DSKnob(multiDimRootNameItem, knobGui);
+    }
+
+    connect(knobGui, SIGNAL(keyFrameSet()),
+            dsKnob, SLOT(checkVisibleState()));
+
+    connect(knobGui, SIGNAL(keyFrameRemoved()),
+            dsKnob, SLOT(checkVisibleState()));
+
+    connect(knobGui, SIGNAL(keyFrameSet()),
+            this, SIGNAL(modelChanged()));
+
+    connect(knobGui, SIGNAL(keyFrameRemoved()),
+            this, SIGNAL(modelChanged()));
+
+    connect(dsKnob, SIGNAL(needNodesVisibleStateChecking()),
+            dsNode, SLOT(checkVisibleState()));
+
+    return dsKnob;
+}
+
+void DopeSheet::refreshClipRects()
+{
+    for (DSRowsNodeData::const_iterator it = _imp->treeItemsAndDSNodes.begin();
+         it != _imp->treeItemsAndDSNodes.end();
+         ++it) {
+        DSNode *dsNode = (*it).second;
+        if (dsNode->getDSNodeType() == DSNode::ReaderNodeType) {
+            dsNode->computeReaderRange();
+        }
+        else if (dsNode->getDSNodeType() == DSNode::GroupNodeType) {
+            dsNode->computeGroupRange();
+        }
+    }
+}
 
 
 ////////////////////////// DSKnob //////////////////////////
@@ -187,14 +537,9 @@ DSKnob::DSKnob(QTreeWidgetItem *nameItem,
 DSKnob::~DSKnob()
 {}
 
-QRectF DSKnob::getTreeItemRect() const
+QTreeWidgetItem *DSKnob::getTreeItem() const
 {
-    return _imp->nameItem->treeWidget()->visualItemRect(_imp->nameItem);
-}
-
-QRectF DSKnob::getTreeItemRectForDim(int dim) const
-{
-    return _imp->nameItem->treeWidget()->visualItemRect(_imp->nameItem->child(dim));
+    return _imp->nameItem;
 }
 
 /**
@@ -269,11 +614,6 @@ void DSKnob::checkVisibleState()
     Q_EMIT needNodesVisibleStateChecking();
 }
 
-QTreeWidgetItem *DSKnob::getTreeItem() const
-{
-    return _imp->nameItem;
-}
-
 
 ////////////////////////// DSNode //////////////////////////
 
@@ -292,7 +632,7 @@ public:
 
     QTreeWidgetItem *nameItem;
 
-    TreeItemsAndDSKnobs treeItemsAndDSKnobs;
+    DSRowsKnobData treeItemsAndDSKnobs;
 
     std::pair<double, double> clipRange;
 
@@ -461,7 +801,7 @@ DSNode::DSNode(DopeSheet *model,
  */
 DSNode::~DSNode()
 {
-    for (TreeItemsAndDSKnobs::iterator it = _imp->treeItemsAndDSKnobs.begin();
+    for (DSRowsKnobData::iterator it = _imp->treeItemsAndDSKnobs.begin();
          it != _imp->treeItemsAndDSKnobs.end();
          ++it) {
         delete (*it).second;
@@ -470,11 +810,6 @@ DSNode::~DSNode()
     delete _imp->nameItem;
 
     _imp->treeItemsAndDSKnobs.clear();
-}
-
-QRectF DSNode::getTreeItemRect() const
-{
-    return _imp->nameItem->treeWidget()->visualItemRect(_imp->nameItem);
 }
 
 /**
@@ -492,7 +827,7 @@ boost::shared_ptr<NodeGui> DSNode::getNodeGui() const
  *
  *
  */
-TreeItemsAndDSKnobs DSNode::getTreeItemsAndDSKnobs() const
+DSRowsKnobData DSNode::getRowsKnobData() const
 {
     return _imp->treeItemsAndDSKnobs;
 }
@@ -520,7 +855,6 @@ void DSNode::checkVisibleState()
     _imp->nodeGui->setVisibleSettingsPanel(true);
 
     bool showItem = _imp->nodeGui->isSettingsPanelVisible();
-    ;
 
     if (_imp->nodeType == DSNode::CommonNodeType) {
         showItem = nodeHasAnimation(_imp->nodeGui);
@@ -686,40 +1020,17 @@ DopeSheetEditor::DopeSheetEditor(Gui *gui, boost::shared_ptr<TimeLine> timeline,
 
     _imp->model = new DopeSheet;
 
-    _imp->hierarchyView = new HierarchyView(_imp->model, _imp->splitter);
-
-    _imp->model->setHierarchyView(_imp->hierarchyView);
+    _imp->hierarchyView = new HierarchyView(_imp->model, gui, _imp->splitter);
 
     _imp->splitter->addWidget(_imp->hierarchyView);
     _imp->splitter->setStretchFactor(0, 1);
 
-    _imp->dopeSheetView = new DopeSheetView(_imp->model, gui, timeline, _imp->splitter);
+    _imp->dopeSheetView = new DopeSheetView(_imp->model, _imp->hierarchyView, gui, timeline, _imp->splitter);
 
     _imp->splitter->addWidget(_imp->dopeSheetView);
     _imp->splitter->setStretchFactor(1, 5);
 
     _imp->mainLayout->addWidget(_imp->splitter);
-
-    connect(_imp->model, SIGNAL(modelChanged()),
-            _imp->dopeSheetView, SLOT(update()));
-
-    connect(_imp->hierarchyView, SIGNAL(itemSelectionChanged()),
-            this, SLOT(onItemSelectionChanged()));
-
-    connect(_imp->hierarchyView, SIGNAL(itemDoubleClicked(QTreeWidgetItem*,int)),
-            this, SLOT(onItemDoubleClicked(QTreeWidgetItem*,int)));
-
-    connect(_imp->hierarchyView, SIGNAL(itemExpanded(QTreeWidgetItem*)),
-            _imp->model, SLOT(refreshClipRects()));
-
-    connect(_imp->hierarchyView, SIGNAL(itemCollapsed(QTreeWidgetItem*)),
-            _imp->model, SLOT(refreshClipRects()));
-
-    connect(_imp->hierarchyView, SIGNAL(itemExpanded(QTreeWidgetItem*)),
-            _imp->dopeSheetView, SLOT(computeSelectedKeysBRect()));
-
-    connect(_imp->hierarchyView, SIGNAL(itemCollapsed(QTreeWidgetItem*)),
-            _imp->dopeSheetView, SLOT(computeSelectedKeysBRect()));
 }
 
 /**
@@ -752,451 +1063,4 @@ void DopeSheetEditor::addNode(boost::shared_ptr<NodeGui> nodeGui)
 void DopeSheetEditor::removeNode(NodeGui *node)
 {
     _imp->model->removeNode(node);
-}
-
-/**
- * @brief DopeSheetEditor::onItemSelectionChanged
- *
- * Selects recursively the current selected items of the hierarchy view.
- *
- * This slot is automatically called when this current selection has changed.
- */
-void DopeSheetEditor::onItemSelectionChanged()
-{
-    QList<QTreeWidgetItem *> selectedItems = _imp->hierarchyView->selectedItems();
-
-    Q_FOREACH (QTreeWidgetItem *item, selectedItems) {
-        recursiveSelect(item);
-    }
-}
-
-/**
- * @brief DopeSheetEditor::onItemDoubleClicked
- *
- * Ensures that the node panel associated with 'item' is the top-most displayed
- * in the Properties panel.
- *
- * This slot is automatically called when an item is double clicked in the
- * hierarchy view.
- */
-void DopeSheetEditor::onItemDoubleClicked(QTreeWidgetItem *item, int column)
-{
-    Q_UNUSED(column);
-
-    DSNode *itemDSNode = _imp->model->findParentDSNode(item);
-
-    boost::shared_ptr<NodeGui> nodeGui = itemDSNode->getNodeGui();
-
-    // Move the nodeGui's settings panel on top
-    DockablePanel *panel = 0;
-
-    if (nodeGui) {
-        nodeGui->ensurePanelCreated();
-    }
-
-    if (nodeGui && nodeGui->getParentMultiInstance()) {
-        panel = nodeGui->getParentMultiInstance()->getSettingPanel();
-    } else {
-        panel = nodeGui->getSettingPanel();
-    }
-
-    if (nodeGui && panel && nodeGui->isVisible()) {
-        if ( !nodeGui->isSettingsPanelVisible() ) {
-            nodeGui->setVisibleSettingsPanel(true);
-        }
-
-        if ( !nodeGui->wasBeginEditCalled() ) {
-            nodeGui->beginEditKnobs();
-        }
-
-        _imp->gui->putSettingsPanelFirst( nodeGui->getSettingPanel() );
-        _imp->gui->getApp()->redrawAllViewers();
-    }
-}
-
-
-////////////////////////// DopeSheetModel //////////////////////////
-
-class DopeSheetPrivate
-{
-public:
-    DopeSheetPrivate();
-    ~DopeSheetPrivate();
-
-    /* functions */
-
-    /* attributes */
-    HierarchyView *hierarchyView;
-    TreeItemsAndDSNodes treeItemsAndDSNodes;
-};
-
-DopeSheetPrivate::DopeSheetPrivate() :
-    hierarchyView(0),
-    treeItemsAndDSNodes()
-{
-
-}
-
-DopeSheetPrivate::~DopeSheetPrivate()
-{
-
-}
-
-
-DopeSheet::DopeSheet() :
-    _imp(new DopeSheetPrivate)
-{}
-
-DopeSheet::~DopeSheet()
-{
-    for (TreeItemsAndDSNodes::iterator it = _imp->treeItemsAndDSNodes.begin();
-         it != _imp->treeItemsAndDSNodes.end(); ++it) {
-        delete (*it).second;
-    }
-
-    _imp->treeItemsAndDSNodes.clear();
-}
-
-HierarchyView *DopeSheet::getHierarchyView() const
-{
-    return _imp->hierarchyView;
-}
-
-void DopeSheet::setHierarchyView(HierarchyView *hierarchyView)
-{
-    _imp->hierarchyView = hierarchyView;
-}
-
-TreeItemsAndDSNodes DopeSheet::getData() const
-{
-    return _imp->treeItemsAndDSNodes;
-}
-
-std::pair<double, double> DopeSheet::getKeyframeRange() const
-{
-    std::pair<double, double> ret;
-
-    std::vector<double> dimFirstKeys;
-    std::vector<double> dimLastKeys;
-
-    TreeItemsAndDSNodes dsNodeItems = _imp->treeItemsAndDSNodes;
-
-    for (TreeItemsAndDSNodes::const_iterator it = dsNodeItems.begin(); it != dsNodeItems.end(); ++it) {
-        if ((*it).first->isHidden()) {
-            continue;
-        }
-
-        DSNode *dsNode = (*it).second;
-
-        TreeItemsAndDSKnobs dsKnobItems = dsNode->getTreeItemsAndDSKnobs();
-
-        for (TreeItemsAndDSKnobs::const_iterator itKnob = dsKnobItems.begin(); itKnob != dsKnobItems.end(); ++itKnob) {
-            if ((*itKnob).first->isHidden()) {
-                continue;
-            }
-
-            DSKnob *dsKnob = (*itKnob).second;
-
-            for (int i = 0; i < dsKnob->getKnobGui()->getKnob()->getDimension(); ++i) {
-                KeyFrameSet keyframes = dsKnob->getKnobGui()->getCurve(i)->getKeyFrames_mt_safe();
-
-                if (keyframes.empty()) {
-                    continue;
-                }
-
-                dimFirstKeys.push_back(keyframes.begin()->getTime());
-                dimLastKeys.push_back(keyframes.rbegin()->getTime());
-            }
-        }
-    }
-
-    if (dimFirstKeys.empty() || dimLastKeys.empty()) {
-        ret.first = 0;
-        ret.second = 0;
-    }
-    else {
-        ret.first = *std::min_element(dimFirstKeys.begin(), dimFirstKeys.end());
-        ret.second = *std::max_element(dimLastKeys.begin(), dimLastKeys.end());
-    }
-
-    return ret;
-}
-
-void DopeSheet::addNode(boost::shared_ptr<NodeGui> nodeGui)
-{
-    nodeGui->ensurePanelCreated();
-
-    // Don't show the group nodes' input & output
-    if (dynamic_cast<GroupInput *>(nodeGui->getNode()->getLiveInstance()) ||
-            dynamic_cast<GroupOutput *>(nodeGui->getNode()->getLiveInstance())) {
-        return;
-    }
-
-    if (nodeGui->getNode()->getKnobs().empty()) {
-        return;
-    }
-
-    if (!nodeCanAnimate(nodeGui)) {
-        return;
-    }
-
-    // Create the name item
-    DSNode *dsNode = createDSNode(nodeGui);
-
-    _imp->treeItemsAndDSNodes.insert(TreeItemAndDSNode(dsNode->getTreeItem(), dsNode));
-
-    dsNode->checkVisibleState();
-
-    if (DSNode *parentGroupDSNode = getParentGroupDSNode(dsNode)) {
-        parentGroupDSNode->computeGroupRange();
-    }
-}
-
-void DopeSheet::removeNode(NodeGui *node)
-{
-    for (TreeItemsAndDSNodes::iterator it = _imp->treeItemsAndDSNodes.begin();
-         it != _imp->treeItemsAndDSNodes.end();
-         ++it)
-    {
-        DSNode *currentDSNode = (*it).second;
-
-        if (currentDSNode->getNodeGui().get() == node) {
-            if (DSNode *parentGroupDSNode = getParentGroupDSNode(currentDSNode)) {
-                parentGroupDSNode->computeGroupRange();
-            }
-
-            _imp->treeItemsAndDSNodes.erase(it);
-
-            delete (currentDSNode);
-
-            break;
-        }
-    }
-}
-
-DSNode *DopeSheet::findDSNode(Natron::Node *node) const
-{
-    for (TreeItemsAndDSNodes::const_iterator it = _imp->treeItemsAndDSNodes.begin();
-         it != _imp->treeItemsAndDSNodes.end();
-         ++it) {
-        DSNode *dsNode = (*it).second;
-
-        if (dsNode->getNodeGui()->getNode().get() == node) {
-            return dsNode;
-        }
-    }
-
-    return 0;
-}
-
-DSNode *DopeSheet::findParentDSNode(QTreeWidgetItem *item) const
-{
-    TreeItemsAndDSNodes::const_iterator clickedDSNode = _imp->treeItemsAndDSNodes.find(item);
-
-    // Okay, the user not clicked on a top level item (which is associated with a DSNode)
-    if (clickedDSNode == _imp->treeItemsAndDSNodes.end()) {
-        // So we find this top level item
-        QTreeWidgetItem *itemRoot = item;
-
-        while (itemRoot->parent()) {
-            itemRoot = itemRoot->parent();
-        }
-
-        // And we find the node
-        clickedDSNode = _imp->treeItemsAndDSNodes.find(itemRoot);
-    }
-
-    return (*clickedDSNode).second;
-}
-
-DSNode *DopeSheet::findDSNode(QTreeWidgetItem *item) const
-{
-    TreeItemsAndDSNodes::const_iterator dsNodeIt = _imp->treeItemsAndDSNodes.find(item);
-
-    // Okay, the user not clicked on a top level item (which is associated with a DSNode)
-    if (dsNodeIt != _imp->treeItemsAndDSNodes.end()) {
-        return (*dsNodeIt).second;
-    }
-
-    return NULL;
-}
-
-DSKnob *DopeSheet::findDSKnob(QTreeWidgetItem *item, int *dimension) const
-{
-    DSKnob *ret = 0;
-
-    DSNode *dsNode = findParentDSNode(item);
-
-    TreeItemsAndDSKnobs treeItemsAndKnobs = dsNode->getTreeItemsAndDSKnobs();
-    TreeItemsAndDSKnobs::const_iterator knobIt = treeItemsAndKnobs.find(item);
-
-    if (knobIt == treeItemsAndKnobs.end()) {
-        QTreeWidgetItem *knobTreeItem = item->parent();
-        knobIt = treeItemsAndKnobs.find(knobTreeItem);
-
-        if (knobIt != treeItemsAndKnobs.end()) {
-            ret = knobIt->second;
-        }
-
-        if (dimension) {
-            if (ret->isMultiDim()) {
-                *dimension = knobTreeItem->indexOfChild(item);
-            }
-        }
-    }
-    else {
-        ret = knobIt->second;
-
-        if (ret->getKnobGui()->getKnob()->getDimension() > 1) {
-            *dimension = -1;
-        }
-        else {
-            *dimension = 0;
-        }
-    }
-
-    return ret;
-}
-
-DSKnob *DopeSheet::findDSKnob(const QPoint &point, int *dimension) const
-{
-    QTreeWidgetItem *treeItemAt = _imp->hierarchyView->itemAt(0, point.y());
-
-    return findDSKnob(treeItemAt, dimension);
-}
-
-DSNode *DopeSheet::getParentGroupDSNode(DSNode *dsNode) const
-{
-    boost::shared_ptr<NodeGroup> parentGroup = boost::dynamic_pointer_cast<NodeGroup>(dsNode->getNodeGui()->getNode()->getGroup());
-
-    DSNode *parentGroupDSNode = 0;
-
-    if (parentGroup) {
-        parentGroupDSNode = findDSNode(parentGroup->getNode().get());
-    }
-
-    return parentGroupDSNode;
-}
-
-bool DopeSheet::groupSubNodesAreHidden(NodeGroup *group) const
-{
-    bool ret = true;
-
-    NodeList subNodes = group->getNodes();
-
-    for (NodeList::const_iterator it = subNodes.begin(); it != subNodes.end(); ++it) {
-        NodePtr node = (*it);
-
-        DSNode *dsNode = findDSNode(node.get());
-
-        if (!dsNode) {
-            continue;
-        }
-
-        if (!dsNode->getTreeItem()->isHidden()) {
-            ret = false;
-
-            break;
-        }
-    }
-
-    return ret;
-}
-
-void DopeSheet::onNodeNameChanged(const QString &name)
-{
-    Natron::Node *node = qobject_cast<Natron::Node *>(sender());
-    DSNode *dsNode = findDSNode(node);
-
-    dsNode->getTreeItem()->setText(0, name);
-}
-
-DSNode *DopeSheet::createDSNode(const boost::shared_ptr<NodeGui> &nodeGui)
-{
-    // Determinate the node type
-    // It will be useful to identify and sort tree items
-    DSNode::DSNodeType nodeType = DSNode::CommonNodeType;
-
-    if (nodeGui->getNode()->getPlugin()->isReader()) {
-        nodeType = DSNode::ReaderNodeType;
-    }
-    else {
-        NodeGroup *isGroup = dynamic_cast<NodeGroup *>(nodeGui->getNode()->getLiveInstance());
-        if (isGroup) {
-            nodeType = DSNode::GroupNodeType;
-        }
-    }
-
-    QTreeWidgetItem *nameItem = new QTreeWidgetItem(_imp->hierarchyView, nodeType);
-    nameItem->setText(0, nodeGui->getNode()->getLabel().c_str());
-    nameItem->setExpanded(true);
-
-    DSNode *dsNode = new DSNode(this, nodeType, nameItem, nodeGui);
-
-    connect(dsNode, SIGNAL(clipRangeChanged()),
-            this, SIGNAL(modelChanged()));
-
-    connect(nodeGui->getNode().get(), SIGNAL(labelChanged(QString)),
-            this, SLOT(onNodeNameChanged(QString)));
-
-    return dsNode;
-}
-
-DSKnob *DopeSheet::createDSKnob(KnobGui *knobGui, DSNode *dsNode)
-{
-    DSKnob *dsKnob = 0;
-
-    boost::shared_ptr<KnobI> knob = knobGui->getKnob();
-
-    if (knob->getDimension() <= 1) {
-        QTreeWidgetItem * nameItem = new QTreeWidgetItem(dsNode->getTreeItem());
-        nameItem->setExpanded(true);
-        nameItem->setText(0, knob->getDescription().c_str());
-
-        dsKnob = new DSKnob(nameItem, knobGui);
-    }
-    else {
-        QTreeWidgetItem *multiDimRootNameItem = new QTreeWidgetItem(dsNode->getTreeItem());
-        multiDimRootNameItem->setExpanded(true);
-        multiDimRootNameItem->setText(0, knob->getDescription().c_str());
-
-        for (int i = 0; i < knob->getDimension(); ++i) {
-            QTreeWidgetItem *dimItem = new QTreeWidgetItem(multiDimRootNameItem);
-            dimItem->setText(0, knob->getDimensionName(i).c_str());
-        }
-
-        dsKnob = new DSKnob(multiDimRootNameItem, knobGui);
-    }
-
-    connect(knobGui, SIGNAL(keyFrameSet()),
-            dsKnob, SLOT(checkVisibleState()));
-
-    connect(knobGui, SIGNAL(keyFrameRemoved()),
-            dsKnob, SLOT(checkVisibleState()));
-
-    connect(knobGui, SIGNAL(keyFrameSet()),
-            this, SIGNAL(modelChanged()));
-
-    connect(knobGui, SIGNAL(keyFrameRemoved()),
-            this, SIGNAL(modelChanged()));
-
-    connect(dsKnob, SIGNAL(needNodesVisibleStateChecking()),
-            dsNode, SLOT(checkVisibleState()));
-
-    return dsKnob;
-}
-
-void DopeSheet::refreshClipRects()
-{
-    for (TreeItemsAndDSNodes::const_iterator it = _imp->treeItemsAndDSNodes.begin();
-         it != _imp->treeItemsAndDSNodes.end();
-         ++it) {
-        DSNode *dsNode = (*it).second;
-        if (dsNode->getDSNodeType() == DSNode::ReaderNodeType) {
-            dsNode->computeReaderRange();
-        }
-        else if (dsNode->getDSNodeType() == DSNode::GroupNodeType) {
-            dsNode->computeGroupRange();
-        }
-    }
 }

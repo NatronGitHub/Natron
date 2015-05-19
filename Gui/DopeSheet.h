@@ -41,8 +41,8 @@ class Node;
 class DSKnob;
 class DSNode;
 
-typedef std::map<QTreeWidgetItem *, DSNode *> TreeItemsAndDSNodes;
-typedef std::map<QTreeWidgetItem *, DSKnob *> TreeItemsAndDSKnobs;
+typedef std::map<QTreeWidgetItem *, DSNode *> DSRowsNodeData;
+typedef std::map<QTreeWidgetItem *, DSKnob *> DSRowsKnobData;
 // typedefs
 
 
@@ -56,10 +56,7 @@ public:
     DopeSheet();
     ~DopeSheet();
 
-    HierarchyView *getHierarchyView() const;
-    void setHierarchyView(HierarchyView *hierarchyView);
-
-    TreeItemsAndDSNodes getData() const;
+    DSRowsNodeData getRowsNodeData() const;
 
     std::pair<double, double> getKeyframeRange() const;
 
@@ -71,7 +68,6 @@ public:
     DSNode *findDSNode(Natron::Node *node) const;
 
     DSKnob *findDSKnob(QTreeWidgetItem *item, int *dimension) const;
-    DSKnob *findDSKnob(const QPoint &point, int *dimension) const;
 
     DSNode *getParentGroupDSNode(DSNode *dsNode) const;
 
@@ -79,6 +75,7 @@ public:
 
 Q_SIGNALS:
     void modelChanged();
+    void dsNodeCreated(DSNode *dsNode);
 
 public Q_SLOTS:
     void onNodeNameChanged(const QString &name);
@@ -104,8 +101,6 @@ public:
     ~DSKnob();
 
     QTreeWidgetItem *getTreeItem() const;
-    QRectF getTreeItemRect() const;
-    QRectF getTreeItemRectForDim(int dim) const;
 
     KnobGui *getKnobGui() const;
 
@@ -141,11 +136,10 @@ public:
     ~DSNode();
 
     QTreeWidgetItem *getTreeItem() const;
-    QRectF getTreeItemRect() const;
 
     boost::shared_ptr<NodeGui> getNodeGui() const;
 
-    TreeItemsAndDSKnobs getTreeItemsAndDSKnobs() const;
+    DSRowsKnobData getRowsKnobData() const;
 
     DSNode::DSNodeType getDSNodeType() const;
 
@@ -168,17 +162,11 @@ class DopeSheetEditor : public QWidget, public ScriptObject
     Q_OBJECT
 
 public:
-    friend class DopeSheetView;
-
     DopeSheetEditor(Gui *gui, boost::shared_ptr<TimeLine> timeline, QWidget *parent = 0);
     ~DopeSheetEditor();
 
     void addNode(boost::shared_ptr<NodeGui> nodeGui);
     void removeNode(NodeGui *node);
-
-public Q_SLOTS:
-    void onItemSelectionChanged();
-    void onItemDoubleClicked(QTreeWidgetItem *item, int column);
 
 private:
     boost::scoped_ptr<DopeSheetEditorPrivate> _imp;

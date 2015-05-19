@@ -32,6 +32,43 @@ class QModelIndex;
 class QStyleOptionViewItem;
 class TimeLine;
 
+
+/**
+ * @brief The HierarchyView class
+ *
+ *
+ */
+class HierarchyView : public QTreeWidget
+{
+    Q_OBJECT
+
+public:
+    friend class HierarchyViewItemDelegate;
+
+    explicit HierarchyView(DopeSheet *model, Gui *gui, QWidget *parent = 0);
+    ~HierarchyView();
+
+    QRectF getItemRect(const DSNode *dsNode) const;
+
+    QRectF getItemRect(const DSKnob *dsKnob) const;
+    QRectF getItemRectForDim(const DSKnob *dsKnob, int dim) const;
+
+    DSKnob *getDSKnobAt(const QPoint &point, int *dimension) const;
+
+public Q_SLOTS:
+    void onDSNodeCreated(DSNode *dsNode);
+
+    void onItemSelectionChanged();
+    void onItemDoubleClicked(QTreeWidgetItem *item, int column);
+
+protected:
+    void drawRow(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const OVERRIDE FINAL;
+
+private:
+    boost::scoped_ptr<HierarchyViewPrivate> _imp;
+};
+
+
 /**
  * @brief The DopeSheetView class
  *
@@ -58,7 +95,10 @@ public:
         esDraggingView
     };
 
-    explicit DopeSheetView(DopeSheet *model, Gui *gui, boost::shared_ptr<TimeLine> timeline, QWidget *parent = 0);
+    explicit DopeSheetView(DopeSheet *model, HierarchyView *hierarchyView,
+                           Gui *gui,
+                           boost::shared_ptr<TimeLine> timeline,
+                           QWidget *parent = 0);
     ~DopeSheetView();
 
     void swapOpenGLBuffers() OVERRIDE FINAL;
@@ -108,28 +148,6 @@ private: /* functions */
 
 private: /* attributes */
     boost::scoped_ptr<DopeSheetViewPrivate> _imp;
-};
-
-/**
- * @brief The HierarchyView class
- *
- *
- */
-class HierarchyView : public QTreeWidget
-{
-    Q_OBJECT
-
-public:
-    friend class HierarchyViewItemDelegate;
-
-    explicit HierarchyView(DopeSheet *model, QWidget *parent = 0);
-    ~HierarchyView();
-
-protected:
-    void drawRow(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const OVERRIDE FINAL;
-
-private:
-    boost::scoped_ptr<HierarchyViewPrivate> _imp;
 };
 
 #endif // DOPESHEETVIEW_H
