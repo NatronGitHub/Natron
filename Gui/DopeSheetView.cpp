@@ -387,7 +387,7 @@ void HierarchyView::drawRow(QPainter *painter, const QStyleOptionViewItem &optio
 
                     QRect pluginIconRect = rowRect;
                     pluginIconRect.setSize(pix.size());
-                    pluginIconRect.moveRight(rowRect.right());
+                    pluginIconRect.moveRight(rowRect.right() - 2);
                     pluginIconRect.moveCenter(QPoint(pluginIconRect.center().x(),
                                                      rowRect.center().y()));
 
