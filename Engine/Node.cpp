@@ -3769,6 +3769,22 @@ Node::getRotoContext() const
     return _imp->rotoContext;
 }
 
+U64
+Node::getRotoAge() const
+{
+    if (_imp->rotoContext) {
+        return _imp->rotoContext->getAge();
+    }
+    
+    boost::shared_ptr<RotoStrokeItem> item = _imp->paintStroke.lock();
+    if (item) {
+        return item->getContext()->getAge();
+    }
+    return 0;
+    
+}
+
+
 const std::vector<boost::shared_ptr<KnobI> > &
 Node::getKnobs() const
 {
@@ -4395,10 +4411,11 @@ Node::getMaskChannel(int inputNb,Natron::ImageComponents* comps) const
             }
             
         }
+        //Default to alpha
+        *comps = ImageComponents::getAlphaComponents();
+        return 0;
     }
-    //Default to alpha
-    *comps = ImageComponents::getAlphaComponents();
-    return 0;
+    return -1;
     
 }
 
@@ -5012,17 +5029,11 @@ Node::getUserComponents(int inputNb,bool* processChannels, bool* isAll,Natron::I
         
         *isAll = false;
         (void)chanIndex;
-        int numChans = layer->getNumComponents();
         processChannels[0] = true;
-        if (numChans > 1) {
-            processChannels[1] = true;
-            if (numChans > 2) {
-                processChannels[2] = true;
-                if (numChans > 3) {
-                    processChannels[3] = true;
-                }
-            }
-        }
+        processChannels[1] = true;
+        processChannels[2] = true;
+        processChannels[3] = true;
+        
         return true;
     } else {
         if (foundSelector == _imp->channelsSelectors.end()) {

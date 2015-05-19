@@ -732,6 +732,7 @@ EffectInstance::setParallelRenderArgsTLS(int time,
                                          bool isSequential,
                                          bool canAbort,
                                          U64 nodeHash,
+                                         U64 rotoAge,
                                          U64 renderAge,
                                          Natron::OutputEffectInstance* renderRequester,
                                          int textureIndex,
@@ -746,6 +747,7 @@ EffectInstance::setParallelRenderArgsTLS(int time,
     args.isSequentialRender = isSequential;
     
     args.nodeHash = nodeHash;
+    args.rotoAge = rotoAge;
     args.canAbort = canAbort;
     args.renderAge = renderAge;
     args.renderRequester = renderRequester;
@@ -952,6 +954,7 @@ EffectInstance::retrieveGetImageDataUponFailure(const int time,
                                                 const RenderScale& scale,
                                                 const RectD* optionalBoundsParam,
                                                 U64* nodeHash_p,
+                                                U64* rotoAge_p,
                                                 bool* isIdentity_p,
                                                 int* identityTime,
                                                 int* identityInputNb_p,
@@ -977,6 +980,7 @@ EffectInstance::retrieveGetImageDataUponFailure(const int time,
     ///Try to compensate for the mistake
     
     *nodeHash_p = getHash();
+    *rotoAge_p = getNode()->getRotoAge();
     const U64& nodeHash = *nodeHash_p;
 
     {
@@ -1123,6 +1127,7 @@ EffectInstance::getImage(int inputNb,
     int inputNbIdentity;
     int inputIdentityTime;
     U64 nodeHash;
+    U64 rotoAge;
     
     /// Never by-pass the cache here because we already computed the image in renderRoI and by-passing the cache again can lead to
     /// re-computing of the same image many many times
@@ -1138,7 +1143,7 @@ EffectInstance::getImage(int inputNb,
     
     if (!_imp->renderArgs.hasLocalData() || !_imp->frameRenderArgs.hasLocalData()) {
         
-        if ( !retrieveGetImageDataUponFailure(time, view, scale, optionalBoundsParam, &nodeHash, &isIdentity, &inputIdentityTime, &inputNbIdentity, &rod, &inputsRoI, &optionalBounds) ) {
+        if ( !retrieveGetImageDataUponFailure(time, view, scale, optionalBoundsParam, &nodeHash, &rotoAge, &isIdentity, &inputIdentityTime, &inputNbIdentity, &rod, &inputsRoI, &optionalBounds) ) {
             return ImagePtr();
         }
         
@@ -1148,7 +1153,7 @@ EffectInstance::getImage(int inputNb,
         ParallelRenderArgs& frameRenderArgs = _imp->frameRenderArgs.localData();
         
         if (!renderArgs._validArgs || !frameRenderArgs.validArgs) {
-            if ( !retrieveGetImageDataUponFailure(time, view, scale, optionalBoundsParam, &nodeHash, &isIdentity, &inputIdentityTime, &inputNbIdentity, &rod, &inputsRoI, &optionalBounds) ) {
+            if ( !retrieveGetImageDataUponFailure(time, view, scale, optionalBoundsParam, &nodeHash, &rotoAge, &isIdentity, &inputIdentityTime, &inputNbIdentity, &rod, &inputsRoI, &optionalBounds) ) {
                 return ImagePtr();
             }
             
@@ -1159,6 +1164,7 @@ EffectInstance::getImage(int inputNb,
             inputIdentityTime = renderArgs._identityTime;
             inputNbIdentity = renderArgs._identityInputNb;
             nodeHash = frameRenderArgs.nodeHash;
+            rotoAge = frameRenderArgs.rotoAge;
         }
         
         
@@ -1231,8 +1237,8 @@ EffectInstance::getImage(int inputNb,
     if (useRotoInput) {
         
         if (attachedStroke) {
-            inputImg = roto->renderMask(attachedStroke, pixelRoI, prefComps,
-                                    rod, time, depth, mipMapLevel);
+            inputImg = roto->renderMaskFromStroke(attachedStroke, rotoAge, nodeHash, prefComps,
+                                     time, view, depth, mipMapLevel);
         } else {
             inputImg = roto->renderMask(pixelRoI, prefComps,
                                     rod, time, depth, mipMapLevel);
@@ -2684,12 +2690,12 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
      * Split all rects to render in smaller rects to render smaller tiles to increase the chances that isIdentity will work
      */
     if (tilesSupported) {
-//        std::list<RectI> planesToRenderCpy = planesToRender.rectsToRender;
-//        planesToRender.rectsToRender.clear();
-//        for (std::list<RectI>::iterator it = planesToRenderCpy.begin(); it != planesToRenderCpy.end(); ++it) {
-//            std::vector<RectI> splits = it->splitIntoSmallerRects(0);
-//            planesToRender.rectsToRender.insert(planesToRender.rectsToRender.end(), splits.begin(), splits.end());
-//        }
+        std::list<RectI> planesToRenderCpy = planesToRender.rectsToRender;
+        planesToRender.rectsToRender.clear();
+        for (std::list<RectI>::iterator it = planesToRenderCpy.begin(); it != planesToRenderCpy.end(); ++it) {
+            std::vector<RectI> splits = it->splitIntoSmallerRects(0);
+            planesToRender.rectsToRender.insert(planesToRender.rectsToRender.end(), splits.begin(), splits.end());
+        }
     }
     
 

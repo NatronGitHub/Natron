@@ -71,7 +71,6 @@ CLANG_DIAG_ON(uninitialized)
 #ifdef ROTO_STROKE_USE_FIT_CURVE
 #define DRAW_STROKE_FITTED_CURVE
 #endif
-//#define DEBUG_STOKE
 
 using namespace Natron;
 
@@ -146,11 +145,7 @@ struct RotoGuiSharedData
     SelectedCP featherBarBeingDragged,featherBarBeingHovered;
     bool displayFeather;
     boost::shared_ptr<RotoStrokeItem> strokeBeingPaint;
-    std::list<std::pair<Natron::Point,double> > strokeBeingPaintPoints;
-#ifdef DEBUG_STOKE
-    std::list<std::pair<Natron::Point,double> > strokeCopy;
-#endif
-    
+
     RotoGuiSharedData()
     : selectedItems()
     , selectedCps()
@@ -1055,9 +1050,6 @@ RotoGui::drawOverlays(double /*scaleX*/,
                 glEnd();
                 
 #ifdef DRAW_STROKE_FITTED_CURVE
-#ifdef DEBUG_STOKE
-                isStroke->initialize(_imp->rotoData->strokeCopy);
-#endif
                 const BezierCPs& cps = isStroke->getControlPoints();
                 for (BezierCPs::const_iterator it2 = cps.begin(); it2 !=cps.end(); ++it2) {
                     
@@ -1813,7 +1805,7 @@ RotoGui::RotoGuiPrivate::handleControlPointSelection(const std::pair<boost::shar
 }
 
 bool
-RotoGui::penDown(double /*scaleX*/,
+RotoGui::penDown(double scaleX,
                  double /*scaleY*/,
                  const QPointF & /*viewportPos*/,
                  const QPointF & pos,
@@ -2210,8 +2202,8 @@ RotoGui::penDown(double /*scaleX*/,
             Natron::Point p;
             p.x = pos.x();
             p.y = pos.y();
-            _imp->rotoData->strokeBeingPaintPoints.push_back(std::make_pair(p,1.));
-            _imp->context->evaluateChange();
+            unsigned int mipmapLevel = Image::getLevelFromScale(scaleX);
+            _imp->rotoData->strokeBeingPaint->appendPoint(std::make_pair(p,1.), mipmapLevel);
             _imp->state = eEventStateBuildingStroke;
             didSomething = true;
             break;
@@ -2270,7 +2262,7 @@ RotoGui::penDoubleClicked(double /*scaleX*/,
 }
 
 bool
-RotoGui::penMotion(double /*scaleX*/,
+RotoGui::penMotion(double scaleX,
                    double /*scaleY*/,
                    const QPointF & /*viewportPos*/,
                    const QPointF & pos,
@@ -2598,10 +2590,11 @@ RotoGui::penMotion(double /*scaleX*/,
             Natron::Point p;
             p.x = pos.x();
             p.y = pos.y();
-            _imp->rotoData->strokeBeingPaintPoints.push_back(std::make_pair(p,1.));
-            _imp->rotoData->strokeBeingPaint->initialize(_imp->rotoData->strokeBeingPaintPoints);
-            _imp->context->evaluateChange();
-            didSomething = true;
+            unsigned int mipMapLevel = Image::getLevelFromScale(scaleX);
+            if (_imp->rotoData->strokeBeingPaint->appendPoint(std::make_pair(p,1.),mipMapLevel)) {
+                _imp->context->evaluateChange();
+                didSomething = true;
+            }
         }
         break;
     }
@@ -2684,11 +2677,8 @@ RotoGui::penUp(double /*scaleX*/,
     
     if (_imp->state == eEventStateBuildingStroke) {
         assert(_imp->rotoData->strokeBeingPaint);
-        _imp->rotoData->strokeBeingPaint->initialize(_imp->rotoData->strokeBeingPaintPoints);
-#ifdef DEBUG_STOKE
-        _imp->rotoData->strokeCopy = _imp->rotoData->strokeBeingPaintPoints;
-#endif
-        _imp->rotoData->strokeBeingPaintPoints.clear();
+        _imp->rotoData->strokeBeingPaint->invalidateStrokeTimePreview();
+
         pushUndoCommand(new AddStrokeUndoCommand(this,_imp->rotoData->strokeBeingPaint));
         _imp->rotoData->strokeBeingPaint.reset();
     }
@@ -2787,9 +2777,13 @@ RotoGui::keyDown(double /*scaleX*/,
     } else if ( isKeybind(kShortcutGroupRoto, kShortcutIDActionRotoSelectionTool, modifiers, key) ) {
         _imp->selectTool->handleSelection();
     } else if ( isKeybind(kShortcutGroupRoto, kShortcutIDActionRotoEditTool, modifiers, key) ) {
-        _imp->bezierEditionTool->handleSelection();
+        if (_imp->bezierEditionTool) {
+            _imp->bezierEditionTool->handleSelection();
+        }
     } else if ( isKeybind(kShortcutGroupRoto, kShortcutIDActionRotoAddTool, modifiers, key) ) {
-        _imp->pointsEditionTool->handleSelection();
+        if (_imp->pointsEditionTool) {
+            _imp->pointsEditionTool->handleSelection();
+        }
     } else if ( isKeybind(kShortcutGroupRoto, kShortcutIDActionRotoNudgeRight, modifiers, key) ) {
         moveSelectedCpsWithKeyArrows(1,0);
         didSomething = true;

@@ -98,6 +98,9 @@ struct ParallelRenderArgs
     ///The node hash as it was when starting the rendering of the frame
     U64 nodeHash;
     
+    ///The age of the roto attached to this node
+    U64 rotoAge;
+    
     ///> 0 if the args were set for the current thread
     int validArgs;
     
@@ -128,6 +131,7 @@ struct ParallelRenderArgs
     , timeline(0)
     , view(0)
     , nodeHash(0)
+    , rotoAge(0)
     , validArgs(0)
     , isRenderResponseToUserInteraction(false)
     , isSequentialRender(false)
@@ -581,6 +585,7 @@ public:
                                   bool isSequential,
                                   bool canAbort,
                                   U64 nodeHash,
+                                  U64 rotoAge,
                                   U64 renderAge,
                                   Natron::OutputEffectInstance* renderRequested,
                                   int textureIndex,
@@ -1513,6 +1518,7 @@ private:
                                          const RenderScale& scale,
                                          const RectD* optionalBoundsParam,
                                          U64* nodeHash_p,
+                                         U64* rotoAge_p,
                                          bool* isIdentity_p,
                                          int* identityTime,
                                          int* identityInputNb_p,

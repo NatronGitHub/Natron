@@ -263,6 +263,8 @@ public:
      **/
     boost::shared_ptr<RotoContext> getRotoContext() const;
 
+    U64 getRotoAge() const;
+    
     /**
      * @brief Forwarded to the live effect instance
      **/

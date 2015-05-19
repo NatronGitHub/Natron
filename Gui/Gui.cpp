@@ -709,9 +709,8 @@ Gui::toggleFullScreen()
     QWidget* activeWin = qApp->activeWindow();
 
     if (!activeWin) {
-        Natron::errorDialog("Full Screen", tr("Please select a window first").toStdString(), false);
-
-        return;
+        qApp->setActiveWindow(this);
+        activeWin = this;
     }
 
     if ( activeWin->isFullScreen() ) {

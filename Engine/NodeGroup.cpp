@@ -862,7 +862,9 @@ NodeCollection::setParallelRenderArgs(int time,
         
         Natron::EffectInstance* liveInstance = (*it)->getLiveInstance();
         assert(liveInstance);
-        liveInstance->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, (*it)->getHashValue(), renderAge,renderRequester,textureIndex, timeline, isAnalysis);
+        U64 rotoAge = (*it)->getRotoAge();
+        liveInstance->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, (*it)->getHashValue(),
+                                               rotoAge,renderAge,renderRequester,textureIndex, timeline, isAnalysis);
         
         if ((*it)->isMultiInstance()) {
             
@@ -874,7 +876,7 @@ NodeCollection::setParallelRenderArgs(int time,
                 assert(*it2);
                 Natron::EffectInstance* childLiveInstance = (*it2)->getLiveInstance();
                 assert(childLiveInstance);
-                childLiveInstance->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, (*it2)->getHashValue(), renderAge,renderRequester, textureIndex, timeline, isAnalysis);
+                childLiveInstance->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, (*it2)->getHashValue(),0, renderAge,renderRequester, textureIndex, timeline, isAnalysis);
                 
             }
         }
@@ -966,7 +968,7 @@ ParallelRenderArgsSetter::ParallelRenderArgsSetter(NodeCollection* n,
 : collection(n)
 , argsMap()
 {
-    collection->setParallelRenderArgs(time,view,isRenderUserInteraction,isSequential,canAbort,renderAge,renderRequester,textureIndex,timeline,isAnalysis);
+    collection->setParallelRenderArgs(time,view,isRenderUserInteraction,isSequential,canAbort,renderAge, renderRequester,textureIndex,timeline,isAnalysis);
 }
 
 ParallelRenderArgsSetter::ParallelRenderArgsSetter(const std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs >& args)

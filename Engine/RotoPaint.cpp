@@ -161,7 +161,7 @@ public:
         for (NodeList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
             Natron::EffectInstance* liveInstance = (*it)->getLiveInstance();
             assert(liveInstance);
-            liveInstance->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, (*it)->getHashValue(), renderAge,renderRequester,textureIndex, timeline, isAnalysis);
+            liveInstance->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, (*it)->getHashValue(), (*it)->getRotoAge(), renderAge,renderRequester,textureIndex, timeline, isAnalysis);
         }
     }
     

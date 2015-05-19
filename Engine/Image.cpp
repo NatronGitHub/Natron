@@ -2175,15 +2175,11 @@ Image::convertToFormatInternal(const RectI & renderWindow,
                 } else {
                     
                     if (srcNComps == 1) {
-                        ///If we're converting from alpha, R G and B are 0.
-                        //assert(dstNComps == 3 || dstNComps == 4);
-                        for (int k = 0; k < std::min(3, dstNComps); ++k) {
-                            dstPixels[k] = invert ? dstMaxValue : 0;
+                        DSTPIX pix = convertPixelDepth<SRCPIX, DSTPIX>(srcPixels[0]);
+                        for (int k = 0; k < dstNComps; ++k) {
+                            dstPixels[k] = invert ? dstMaxValue - pix: pix;
                         }
-                        if (dstNComps == 4) {
-                            DSTPIX pix = convertPixelDepth<SRCPIX, DSTPIX>(srcPixels[0]);
-                            dstPixels[dstNComps - 1] = invert ? dstMaxValue - pix: pix;
-                        }
+       
                     } else {
                         ///In this case we've XY, RGB or RGBA input and outputs
                         assert(srcNComps != dstNComps);

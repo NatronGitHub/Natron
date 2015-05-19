@@ -42,7 +42,6 @@
 #include "Engine/EffectInstance.h"
 #include "Engine/AppManager.h"
 #include "Engine/Rect.h"
-#include "Engine/FitCurve.h"
 #include "Engine/RotoContext.h"
 #include "Global/GlobalDefines.h"
 
@@ -813,9 +812,7 @@ struct RotoStrokeItemPrivate
     boost::shared_ptr<Double_Knob> effectStrength;
     boost::shared_ptr<Double_Knob> visiblePortion; // [0,1] by default
     boost::shared_ptr<Choice_Knob> sourceColor;
-#ifndef ROTO_STROKE_USE_FIT_CURVE
     Curve xCurve,yCurve,pressureCurve;
-#endif
     
     /*
      * The effect node corresponds to the following given the selected tool:
@@ -837,7 +834,7 @@ struct RotoStrokeItemPrivate
      * @brief Used while building up the stroke so that we only draw the last portion between the rendered image
      * and where the pen actually is currently.
      **/
-    std::map<int,boost::shared_ptr<Natron::Image> > strokeCache;
+    boost::shared_ptr<Natron::Image>  strokeCache;
     
     RotoStrokeItemPrivate(Natron::RotoStrokeType type)
     : type(type)
@@ -959,6 +956,10 @@ struct RotoContextPrivate
     ///This node is used when the rotopaint node does not have any input, so that the rotopaint tree
     ///paints at least on a black and transparant region of the size of the project.
     boost::shared_ptr<Natron::Node> rotoPaintConstantInput;
+    
+    QMutex lastRenderedImageMutex;
+    U64 lastRenderedHash;
+    boost::shared_ptr<Natron::Image> lastRenderedImage;
 
     RotoContextPrivate(const boost::shared_ptr<Natron::Node>& n )
     : rotoContextMutex()
@@ -970,6 +971,9 @@ struct RotoContextPrivate
     , node(n)
     , age(0)
     , rotoPaintConstantInput()
+    , lastRenderedImageMutex()
+    , lastRenderedHash(0)
+    , lastRenderedImage()
     {
         assert( n && n->getLiveInstance() );
         Natron::EffectInstance* effect = n->getLiveInstance();
@@ -1169,11 +1173,11 @@ struct RotoContextPrivate
                    double internalDotRadius,
                    double externalDotRadius,
                    double shapeColor[3],
-                   double opacity,
+                   const std::vector<std::pair<double, double> >& opacityStops,
                    double /*pressure*/);
 
     
-    void renderStroke(cairo_t* cr,int startingPointIndex,const std::list<std::pair<Natron::Point,double> >& points, const RotoStrokeItem* stroke, int time, unsigned int mipmapLevel);
+    void renderStroke(cairo_t* cr,const std::list<std::pair<Natron::Point,double> >& points, const RotoStrokeItem* stroke, int time, unsigned int mipmapLevel);
     void renderStroke(cairo_t* cr,const RotoStrokeItem* stroke, int time, unsigned int mipmapLevel);
     
     void renderBezier(cairo_t* cr,const Bezier* bezier,int time, unsigned int mipmapLevel);
