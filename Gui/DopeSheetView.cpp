@@ -1871,8 +1871,11 @@ void DopeSheetView::computeSelectedKeysBRect()
 
         _imp->selectedKeysBRect.setBottom(bottom);
 
-        _imp->selectedKeysBRect.adjust(-SELECTED_KF_BBOX_BOUNDS_OFFSET, SELECTED_KF_BBOX_BOUNDS_OFFSET,
-                                       SELECTED_KF_BBOX_BOUNDS_OFFSET, -SELECTED_KF_BBOX_BOUNDS_OFFSET);
+        double xAdjustOffset = (_imp->zoomContext.toZoomCoordinates(rect.left(), 0).x() -
+                          _imp->zoomContext.toZoomCoordinates(rect.left() - KF_X_OFFSET, 0).x());
+
+        _imp->selectedKeysBRect.adjust(-xAdjustOffset, SELECTED_KF_BBOX_BOUNDS_OFFSET,
+                                       xAdjustOffset, -SELECTED_KF_BBOX_BOUNDS_OFFSET);
     }
 }
 
@@ -2420,6 +2423,8 @@ void DopeSheetView::wheelEvent(QWheelEvent *e)
     }
 
     _imp->zoomContext.zoomx(zoomCenter.x(), zoomCenter.y(), scaleFactor);
+
+    computeSelectedKeysBRect();
 
     redraw();
 }
