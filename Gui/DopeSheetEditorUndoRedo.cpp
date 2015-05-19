@@ -175,7 +175,8 @@ void DSLeftTrimReaderCommand::trimLeft(double time)
             (_dsNodeReader->getNodeGui()->getNode()->getKnobByName("firstFrame").get());
 
     firstFrameKnob->beginChanges();
-    firstFrameKnob->setValue(time, 0, Natron::eValueChangedReasonNatronGuiEdited, 0);
+    KnobHelper::ValueChangedReturnCodeEnum r = firstFrameKnob->setValue(time, 0, Natron::eValueChangedReasonNatronGuiEdited, 0);
+    Q_UNUSED(r);
     firstFrameKnob->endChanges();
 
     _view->redraw();
@@ -235,7 +236,8 @@ void DSRightTrimReaderCommand::trimRight(double time)
             (_dsNodeReader->getNodeGui()->getNode()->getKnobByName("lastFrame").get());
 
     lastFrameKnob->beginChanges();
-    lastFrameKnob->setValue(time, 0, Natron::eValueChangedReasonNatronGuiEdited, 0);
+    KnobHelper::ValueChangedReturnCodeEnum r = lastFrameKnob->setValue(time, 0, Natron::eValueChangedReasonNatronGuiEdited, 0);
+    Q_UNUSED(r);
     lastFrameKnob->endChanges();
 
     _view->redraw();
@@ -296,7 +298,8 @@ void DSMoveReaderCommand::moveClip(double time)
             (_dsNodeReader->getNodeGui()->getNode()->getKnobByName("timeOffset").get());
 
     timeOffsetKnob->beginChanges();
-    timeOffsetKnob->setValue(time, 0, Natron::eValueChangedReasonNatronGuiEdited, 0);
+    KnobHelper::ValueChangedReturnCodeEnum r = timeOffsetKnob->setValue(time, 0, Natron::eValueChangedReasonNatronGuiEdited, 0);
+    Q_UNUSED(r);
     timeOffsetKnob->endChanges();
 
     _view->redraw();
