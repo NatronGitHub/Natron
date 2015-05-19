@@ -2287,6 +2287,7 @@ HierarchyView::HierarchyView(DopeSheet *model, QWidget *parent) :
 
     setSelectionMode(QAbstractItemView::ExtendedSelection);
     setColumnCount(1);
+    setExpandsOnDoubleClick(false);
 
     setItemDelegate(new HierarchyViewItemDelegate(this));
 }
