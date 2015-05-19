@@ -1161,7 +1161,6 @@ void DopeSheetViewPrivate::drawKeyframes(DSNode *dsNode) const
         glEnable(GL_POINT_SMOOTH);
 
         DSRowsKnobData knobItems = dsNode->getRowsKnobData();
-        TimeSet nodeKeyframes;
 
         for (DSRowsKnobData::const_iterator it = knobItems.begin();
              it != knobItems.end();
@@ -1175,7 +1174,6 @@ void DopeSheetViewPrivate::drawKeyframes(DSNode *dsNode) const
             }
 
             KnobGui *knobGui = dsKnob->getKnobGui();
-            TimeSet multiDimKnobKeyframes;
 
             glColor3f(KF_COLOR.redF(), KF_COLOR.greenF(), KF_COLOR.blackF());
 
@@ -1202,101 +1200,69 @@ void DopeSheetViewPrivate::drawKeyframes(DSNode *dsNode) const
 
                     QRectF zoomKfRect = rectToZoomCoordinates(kfRect);
 
-                    DSKeyPtrList::const_iterator isSelected;
+                    DSKeyPtrList::const_iterator isSelected = selectedKeyframes.end();
+
+                    for (DSKeyPtrList::const_iterator it2 = selectedKeyframes.begin();
+                         it2 != selectedKeyframes.end(); it2++) {
+                        DSKeyPtr selectedKey = (*it2);
+
+                        if (selectedKey->dimension != dim) {
+                            continue;
+                        }
+
+                        if (selectedKey->dsKnob == dsKnob && selectedKey->key == kf) {
+                            isSelected = it2;
+                            glColor3f(SELECTED_KF_COLOR.redF(), SELECTED_KF_COLOR.greenF(), SELECTED_KF_COLOR.blueF());
+                            break;
+                        }
+                    }
 
                     // Draw keyframe in the knob dim section only if it's visible
                     bool drawInDimSection = dsNode->getTreeItem()->isExpanded() &&
                             ((dsKnob->isMultiDim()) ? dsKnob->getTreeItem()->isExpanded() : true);
 
                     if (drawInDimSection) {
-                        isSelected = selectedKeyframes.end();
-
-                        for (DSKeyPtrList::const_iterator it2 = selectedKeyframes.begin();
-                             it2 != selectedKeyframes.end(); it2++) {
-                            DSKeyPtr selectedKey = (*it2);
-
-                            if (selectedKey->dimension != dim) {
-                                continue;
-                            }
-
-                            if (selectedKey->dsKnob == dsKnob && selectedKey->key == kf) {
-                                isSelected = it2;
-                                glColor3f(SELECTED_KF_COLOR.redF(), SELECTED_KF_COLOR.greenF(), SELECTED_KF_COLOR.blueF());
-                                break;
-                            }
-                        }
-
                         glBegin(GL_QUADS);
                         glVertex2f(zoomKfRect.left(), zoomKfRect.top());
                         glVertex2f(zoomKfRect.left(), zoomKfRect.bottom());
                         glVertex2f(zoomKfRect.right(), zoomKfRect.bottom());
                         glVertex2f(zoomKfRect.right(), zoomKfRect.top());
                         glEnd();
-
-                        if (isSelected != selectedKeyframes.end()) {
-                            glColor3f(KF_COLOR.redF(), KF_COLOR.greenF(), KF_COLOR.blackF());
-                        }
                     }
 
                     // Draw keyframe in multidim root knob section too
-                    if (dsKnob->isMultiDim()) {
-                        TimeSet::const_iterator multiDimKnobKeysIt = multiDimKnobKeyframes.find(keyTime);
-
-                        if (multiDimKnobKeysIt == multiDimKnobKeyframes.end()) {
-                            p = zoomContext.toZoomCoordinates(keyTime,
-                                                              hierarchyView->getItemRect(dsKnob).center().y());
-
-                            kfRect.moveCenter(zoomContext.toWidgetCoordinates(p.x(), p.y()));
-                            zoomKfRect = rectToZoomCoordinates(kfRect);
-
-                            // Draw only if the section is visible
-                            if (dsNode->getTreeItem()->isExpanded()) {
-                                if (isSelected != selectedKeyframes.end()) {
-                                    glColor3f(SELECTED_KF_COLOR.redF(), SELECTED_KF_COLOR.greenF(), SELECTED_KF_COLOR.blueF());
-                                }
-
-                                glBegin(GL_QUADS);
-                                glVertex2f(zoomKfRect.left(), zoomKfRect.top());
-                                glVertex2f(zoomKfRect.left(), zoomKfRect.bottom());
-                                glVertex2f(zoomKfRect.right(), zoomKfRect.bottom());
-                                glVertex2f(zoomKfRect.right(), zoomKfRect.top());
-                                glEnd();
-
-                                if (isSelected != selectedKeyframes.end()) {
-                                    glColor3f(KF_COLOR.redF(), KF_COLOR.greenF(), KF_COLOR.blackF());
-                                }
-                            }
-
-                            multiDimKnobKeyframes.insert(keyTime);
-                        }
-                    }
-
-                    // Draw keyframe in node section
-                    TimeSet::iterator nodeKeysIt = nodeKeyframes.find(keyTime);
-
-                    if (nodeKeysIt == nodeKeyframes.end()) {
+                    bool drawInMultidimRootSection = (dsKnob->isMultiDim() && dsNode->getTreeItem()->isExpanded());
+                    if (drawInMultidimRootSection) {
                         p = zoomContext.toZoomCoordinates(keyTime,
-                                                          hierarchyView->getItemRect(dsNode).center().y());
+                                                          hierarchyView->getItemRect(dsKnob).center().y());
 
                         kfRect.moveCenter(zoomContext.toWidgetCoordinates(p.x(), p.y()));
                         zoomKfRect = rectToZoomCoordinates(kfRect);
 
-                        if (isSelected != selectedKeyframes.end()) {
-                            glColor3f(SELECTED_KF_COLOR.redF(), SELECTED_KF_COLOR.greenF(), SELECTED_KF_COLOR.blueF());
-                        }
-
                         glBegin(GL_QUADS);
                         glVertex2f(zoomKfRect.left(), zoomKfRect.top());
                         glVertex2f(zoomKfRect.left(), zoomKfRect.bottom());
                         glVertex2f(zoomKfRect.right(), zoomKfRect.bottom());
                         glVertex2f(zoomKfRect.right(), zoomKfRect.top());
                         glEnd();
+                    }
 
-                        if (isSelected != selectedKeyframes.end()) {
-                            glColor3f(KF_COLOR.redF(), KF_COLOR.greenF(), KF_COLOR.blackF());
-                        }
+                    // Draw keyframe in node section
+                    p = zoomContext.toZoomCoordinates(keyTime,
+                                                      hierarchyView->getItemRect(dsNode).center().y());
 
-                        nodeKeyframes.insert(keyTime);
+                    kfRect.moveCenter(zoomContext.toWidgetCoordinates(p.x(), p.y()));
+                    zoomKfRect = rectToZoomCoordinates(kfRect);
+
+                    glBegin(GL_QUADS);
+                    glVertex2f(zoomKfRect.left(), zoomKfRect.top());
+                    glVertex2f(zoomKfRect.left(), zoomKfRect.bottom());
+                    glVertex2f(zoomKfRect.right(), zoomKfRect.bottom());
+                    glVertex2f(zoomKfRect.right(), zoomKfRect.top());
+                    glEnd();
+
+                    if (isSelected != selectedKeyframes.end()) {
+                        glColor3f(KF_COLOR.redF(), KF_COLOR.greenF(), KF_COLOR.blackF());
                     }
                 }
             }
@@ -1840,15 +1806,31 @@ void DopeSheetView::computeSelectedKeysBRect()
         double x = selected->key.getTime();
         double y = 0;
 
-        if (!selected->dsKnob->getTreeItem()->isExpanded() || !selected->dsKnob->getTreeItem()->parent()->isExpanded()) {
-            y = selected->dsKnob->getTreeItem()->treeWidget()->visualItemRect(selected->dsKnob->getTreeItem()->parent()).center().y();
+        QTreeWidgetItem *knobTreeItem = selected->dsKnob->getTreeItem();
+        QTreeWidgetItem *selectedNodeTreeItem = knobTreeItem->parent();
+
+        if (!selectedNodeTreeItem->isExpanded()) {
+            y = _imp->hierarchyView->visualItemRect(selectedNodeTreeItem).center().y();
         }
         else {
-            y = (selected->dsKnob->isMultiDim()) ? _imp->hierarchyView->getItemRectForDim(selected->dsKnob, selected->dimension).center().y()
-                                                 : _imp->hierarchyView->getItemRect(selected->dsKnob).center().y();
-        }
+            if (selected->dsKnob->isMultiDim()) {
+                if (knobTreeItem->isExpanded()) {
+                    for (int i = knobTreeItem->childCount() - 1; i >= 0  ; --i) {
+                        if (!knobTreeItem->child(i)->isHidden()) {
+                            y = _imp->hierarchyView->visualItemRect(knobTreeItem->child(i)).center().y();
 
-        QTreeWidgetItem *selectedNodeTreeItem = selected->dsKnob->getTreeItem()->parent();
+                            break;
+                        }
+                    }
+                }
+                else {
+                    y = _imp->hierarchyView->visualItemRect(knobTreeItem).center().y();
+                }
+            }
+            else {
+                y = _imp->hierarchyView->visualItemRect(knobTreeItem).center().y();
+            }
+        }
 
         if (it != _imp->selectedKeyframes.begin()) {
             if (x < rect.left()) {
@@ -1863,8 +1845,8 @@ void DopeSheetView::computeSelectedKeysBRect()
                 rect.setTop(y);
             }
 
-            if (selectedNodeTreeItem->treeWidget()->visualItemRect(selectedNodeTreeItem).center().y()
-                    < topMostItem->treeWidget()->visualItemRect(topMostItem).center().y()) {
+            if (_imp->hierarchyView->visualItemRect(selectedNodeTreeItem).center().y()
+                    < _imp->hierarchyView->visualItemRect(topMostItem).center().y()) {
                 topMostItem = selectedNodeTreeItem;
             }
         }
@@ -1885,7 +1867,7 @@ void DopeSheetView::computeSelectedKeysBRect()
     _imp->selectedKeysBRect.setBottomRight(bottomRight);
 
     if (!_imp->selectedKeysBRect.isNull()) {
-        double bottom = topMostItem->treeWidget()->visualItemRect(topMostItem).center().y();
+        double bottom = _imp->hierarchyView->visualItemRect(topMostItem).center().y();
 
         _imp->selectedKeysBRect.setBottom(bottom);
 

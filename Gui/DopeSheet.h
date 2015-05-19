@@ -46,6 +46,11 @@ typedef std::map<QTreeWidgetItem *, DSKnob *> DSRowsKnobData;
 // typedefs
 
 
+/**
+ * @brief The DopeSheet class
+ *
+ *
+ */
 class DopeSheet: public QObject
 {
     Q_OBJECT
@@ -91,6 +96,12 @@ private:
     boost::scoped_ptr<DopeSheetPrivate> _imp;
 };
 
+
+/**
+ * @brief The DSKnob class
+ *
+ *
+ */
 class DSKnob : public QObject
 {
     Q_OBJECT
@@ -116,6 +127,11 @@ private:
     boost::scoped_ptr<DSKnobPrivate> _imp;
 };
 
+/**
+ * @brief The DSNode class
+ *
+ *
+ */
 class DSNode : public QObject
 {
     Q_OBJECT
@@ -157,6 +173,12 @@ private:
     boost::scoped_ptr<DSNodePrivate> _imp;
 };
 
+
+/**
+ * @brief The DopeSheetEditor class
+ *
+ *
+ */
 class DopeSheetEditor : public QWidget, public ScriptObject
 {
     Q_OBJECT
