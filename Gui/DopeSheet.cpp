@@ -232,7 +232,7 @@ void DopeSheet::addNode(boost::shared_ptr<NodeGui> nodeGui)
 
     dsNode->checkVisibleState();
 
-    if (DSNode *parentGroupDSNode = getParentGroupDSNode(dsNode)) {
+    if (DSNode *parentGroupDSNode = getGroupDSNode(dsNode)) {
         parentGroupDSNode->computeGroupRange();
     }
 }
@@ -246,7 +246,7 @@ void DopeSheet::removeNode(NodeGui *node)
         DSNode *currentDSNode = (*it).second;
 
         if (currentDSNode->getNodeGui().get() == node) {
-            if (DSNode *parentGroupDSNode = getParentGroupDSNode(currentDSNode)) {
+            if (DSNode *parentGroupDSNode = getGroupDSNode(currentDSNode)) {
                 parentGroupDSNode->computeGroupRange();
             }
 
@@ -274,14 +274,14 @@ DSNode *DopeSheet::findDSNode(Natron::Node *node) const
     return 0;
 }
 
-DSNode *DopeSheet::findParentDSNode(QTreeWidgetItem *item) const
+DSNode *DopeSheet::findParentDSNode(QTreeWidgetItem *knobTreeItem) const
 {
-    DSRowsNodeData::const_iterator clickedDSNode = _imp->treeItemsAndDSNodes.find(item);
+    DSRowsNodeData::const_iterator clickedDSNode = _imp->treeItemsAndDSNodes.find(knobTreeItem);
 
     // Okay, the user not clicked on a top level item (which is associated with a DSNode)
     if (clickedDSNode == _imp->treeItemsAndDSNodes.end()) {
         // So we find this top level item
-        QTreeWidgetItem *itemRoot = item;
+        QTreeWidgetItem *itemRoot = knobTreeItem;
 
         while (itemRoot->parent()) {
             itemRoot = itemRoot->parent();
@@ -294,9 +294,9 @@ DSNode *DopeSheet::findParentDSNode(QTreeWidgetItem *item) const
     return (*clickedDSNode).second;
 }
 
-DSNode *DopeSheet::findDSNode(QTreeWidgetItem *item) const
+DSNode *DopeSheet::findDSNode(QTreeWidgetItem *nodeTreeItem) const
 {
-    DSRowsNodeData::const_iterator dsNodeIt = _imp->treeItemsAndDSNodes.find(item);
+    DSRowsNodeData::const_iterator dsNodeIt = _imp->treeItemsAndDSNodes.find(nodeTreeItem);
 
     // Okay, the user not clicked on a top level item (which is associated with a DSNode)
     if (dsNodeIt != _imp->treeItemsAndDSNodes.end()) {
@@ -306,17 +306,17 @@ DSNode *DopeSheet::findDSNode(QTreeWidgetItem *item) const
     return NULL;
 }
 
-DSKnob *DopeSheet::findDSKnob(QTreeWidgetItem *item, int *dimension) const
+DSKnob *DopeSheet::findDSKnob(QTreeWidgetItem *knobTreeItem, int *dimension) const
 {
     DSKnob *ret = 0;
 
-    DSNode *dsNode = findParentDSNode(item);
+    DSNode *dsNode = findParentDSNode(knobTreeItem);
 
     DSRowsKnobData treeItemsAndKnobs = dsNode->getRowsKnobData();
-    DSRowsKnobData::const_iterator knobIt = treeItemsAndKnobs.find(item);
+    DSRowsKnobData::const_iterator knobIt = treeItemsAndKnobs.find(knobTreeItem);
 
     if (knobIt == treeItemsAndKnobs.end()) {
-        QTreeWidgetItem *knobTreeItem = item->parent();
+        QTreeWidgetItem *knobTreeItem = knobTreeItem->parent();
         knobIt = treeItemsAndKnobs.find(knobTreeItem);
 
         if (knobIt != treeItemsAndKnobs.end()) {
@@ -325,7 +325,7 @@ DSKnob *DopeSheet::findDSKnob(QTreeWidgetItem *item, int *dimension) const
 
         if (dimension) {
             if (ret->isMultiDim()) {
-                *dimension = knobTreeItem->indexOfChild(item);
+                *dimension = knobTreeItem->indexOfChild(knobTreeItem);
             }
         }
     }
@@ -343,7 +343,7 @@ DSKnob *DopeSheet::findDSKnob(QTreeWidgetItem *item, int *dimension) const
     return ret;
 }
 
-DSNode *DopeSheet::getParentGroupDSNode(DSNode *dsNode) const
+DSNode *DopeSheet::getGroupDSNode(DSNode *dsNode) const
 {
     boost::shared_ptr<NodeGroup> parentGroup = boost::dynamic_pointer_cast<NodeGroup>(dsNode->getNodeGui()->getNode()->getGroup());
 
@@ -667,7 +667,7 @@ void DSNodePrivate::createDSKnobs()
 {
     const KnobsAndGuis &knobs = nodeGui->getKnobs();
 
-    if (DSNode *parentGroupDSNode = dopeSheetModel->getParentGroupDSNode(parent)) {
+    if (DSNode *parentGroupDSNode = dopeSheetModel->getGroupDSNode(parent)) {
         QObject::connect(nodeGui->getSettingPanel(), SIGNAL(closeChanged(bool)),
                          parentGroupDSNode, SLOT(checkVisibleState()));
 
@@ -684,7 +684,7 @@ void DSNodePrivate::createDSKnobs()
             continue;
         }
 
-        if (DSNode *parentGroupDSNode = dopeSheetModel->getParentGroupDSNode(parent)) {
+        if (DSNode *parentGroupDSNode = dopeSheetModel->getGroupDSNode(parent)) {
             QObject::connect(knob->getSignalSlotHandler().get(), SIGNAL(keyFrameMoved(int,int,int)),
                              parentGroupDSNode, SLOT(computeGroupRange()));
 
@@ -700,7 +700,7 @@ void DSNodePrivate::createDSKnobs()
         treeItemsAndDSKnobs.insert(TreeItemAndDSKnob(dsKnob->getTreeItem(), dsKnob));
     }
 
-    if (DSNode *parentGroupDSNode = dopeSheetModel->getParentGroupDSNode(parent)) {
+    if (DSNode *parentGroupDSNode = dopeSheetModel->getGroupDSNode(parent)) {
         parentGroupDSNode->computeGroupRange();
     }
 }
@@ -874,7 +874,7 @@ void DSNode::checkVisibleState()
     _imp->nameItem->setHidden(!showItem);
 
     // Hide the parent group item if there's no subnodes displayed
-    if (DSNode *parentGroupDSNode = _imp->dopeSheetModel->getParentGroupDSNode(this)) {
+    if (DSNode *parentGroupDSNode = _imp->dopeSheetModel->getGroupDSNode(this)) {
         parentGroupDSNode->checkVisibleState();
     }
 }

@@ -69,13 +69,13 @@ public:
     void addNode(boost::shared_ptr<NodeGui> nodeGui);
     void removeNode(NodeGui *node);
 
-    DSNode *findParentDSNode(QTreeWidgetItem *item) const;
-    DSNode *findDSNode(QTreeWidgetItem *item) const;
+    DSNode *findParentDSNode(QTreeWidgetItem *knobTreeItem) const;
+    DSNode *findDSNode(QTreeWidgetItem *nodeTreeItem) const;
     DSNode *findDSNode(Natron::Node *node) const;
 
-    DSKnob *findDSKnob(QTreeWidgetItem *item, int *dimension) const;
+    DSKnob *findDSKnob(QTreeWidgetItem *knobTreeItem, int *dimension) const;
 
-    DSNode *getParentGroupDSNode(DSNode *dsNode) const;
+    DSNode *getGroupDSNode(DSNode *dsNode) const;
 
     bool groupSubNodesAreHidden(NodeGroup *group) const;
 
