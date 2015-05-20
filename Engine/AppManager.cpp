@@ -2020,7 +2020,6 @@ AppManager::getPluginBinary(const QString & pluginId,
 {
     PluginsMap::const_iterator foundID = _imp->_plugins.end();
     for (PluginsMap::const_iterator it = _imp->_plugins.begin(); it != _imp->_plugins.end(); ++it) {
-        QString realID;
         if (convertToLowerCase &&
             !pluginId.startsWith(NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.")) {
             
