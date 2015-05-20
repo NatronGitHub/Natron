@@ -6872,7 +6872,7 @@ RotoContext::renderMaskFromStroke(const boost::shared_ptr<RotoStrokeItem>& strok
             Natron::ViewerColorSpaceEnum dstColorspace = node->getApp()->getDefaultColorSpaceForBitDepth(depth);
             image->convertToFormat(bounds, colorspace, dstColorspace, 0, false, false, false, ret.get());
         } else {
-            ret->pasteFrom(*image, bounds);
+            ret->pasteFrom(*image, bounds, false);
         }
         return ret;
     }

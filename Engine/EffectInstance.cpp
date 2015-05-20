@@ -2126,11 +2126,12 @@ static void optimizeRectsToRender(Natron::EffectInstance* self,
         EffectInstance::RectToRender nonIdentityRect;
         nonIdentityRect.isIdentity = false;
         nonIdentityRect.identityInput = 0;
-        nonIdentityRect.rect.x1 = std::numeric_limits<int>::infinity();
-        nonIdentityRect.rect.x2 = -std::numeric_limits<int>::infinity();
-        nonIdentityRect.rect.y1 = std::numeric_limits<int>::infinity();
-        nonIdentityRect.rect.y2 = -std::numeric_limits<int>::infinity();
+        nonIdentityRect.rect.x1 = INT_MAX;
+        nonIdentityRect.rect.x2 = INT_MIN;
+        nonIdentityRect.rect.y1 = INT_MAX;
+        nonIdentityRect.rect.y2 = INT_MIN;
         
+        bool nonIdentityRectSet = false;
         for (std::size_t i = 0; i < splits.size(); ++i) {
             SequenceTime identityInputTime;
             int identityInputNb;
@@ -2164,13 +2165,16 @@ static void optimizeRectsToRender(Natron::EffectInstance* self,
                 finalRectsToRender->push_back(r);
                 
             } else {
+                nonIdentityRectSet = true;
                 nonIdentityRect.rect.x1 = std::min(splits[i].x1,nonIdentityRect.rect.x1);
                 nonIdentityRect.rect.x2 = std::max(splits[i].x2,nonIdentityRect.rect.x2);
                 nonIdentityRect.rect.y1 = std::min(splits[i].y1,nonIdentityRect.rect.y1);
                 nonIdentityRect.rect.y2 = std::max(splits[i].y2,nonIdentityRect.rect.y2);
             }
         }
-        finalRectsToRender->push_back(nonIdentityRect);
+        if (nonIdentityRectSet) {
+            finalRectsToRender->push_back(nonIdentityRect);
+        }
     }
 
 }
@@ -4094,7 +4098,13 @@ EffectInstance::renderHandler(RenderArgs & args,
                 return eRenderingFunctorRetAborted;
             } else if (renderOk == eRenderRoIRetCodeFailed) {
                 return eRenderingFunctorRetFailed;
+            } else if (identityPlanes.empty()) {
+                for (std::map<Natron::ImageComponents, PlaneToRender>::iterator it = planes.planes.begin(); it != planes.planes.end(); ++it) {
+                    it->second.renderMappedImage->fill(downscaledRectToRender, 0., 0., 0., 0.);
+                    it->second.renderMappedImage->markForRendered(downscaledRectToRender);
+                }
             } else {
+                
                 assert(identityPlanes.size() == planes.planes.size());
                 
                 ImageList::iterator idIt = identityPlanes.begin();

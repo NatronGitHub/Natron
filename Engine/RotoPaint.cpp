@@ -134,7 +134,11 @@ RotoPaint::getRegionOfDefinition(U64 hash,SequenceTime time, const RenderScale &
     
     RectD maskRod;
     getNode()->getRotoContext()->getMaskRegionOfDefinition(time, view, &maskRod);
-    *rod = maskRod;
+    if (rod->isNull()) {
+        *rod = maskRod;
+    } else {
+        rod->merge(maskRod);
+    }
     return Natron::eStatusOK;
 }
 
