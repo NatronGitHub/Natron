@@ -455,12 +455,12 @@ Settings::initializeKnobs()
     _dopeSheetEditorKnobSectionBackgroundColor->setSimplified(true);
     _dopeSheetEditorColors->addKnob(_dopeSheetEditorKnobSectionBackgroundColor);
 
-//    _dopeSheetEditorScaleColor = Natron::createKnob<Color_Knob>(this, "Sheet scale color", 3);
-//    _dopeSheetEditorScaleColor->setName("dopesheeteditorazeazeazeazeazelor");
-//    _dopeSheetEditorScaleColor->setAnimationEnabled(false);
-//    _dopeSheetEditorScaleColor->setSimplified(true);
-//    _dopeSheetEditorScaleColor->setAddNewLine(false);
-//    _dopeSheetEditorColors->addKnob(_dopeSheetEditorScaleColor);
+    _dopeSheetEditorScaleColor = Natron::createKnob<Color_Knob>(this, "Sheet scale color", 3);
+    _dopeSheetEditorScaleColor->setName("dopesheeteditorazeazeazeazeazelor");
+    _dopeSheetEditorScaleColor->setAnimationEnabled(false);
+    _dopeSheetEditorScaleColor->setSimplified(true);
+    _dopeSheetEditorScaleColor->setAddNewLine(false);
+    _dopeSheetEditorColors->addKnob(_dopeSheetEditorScaleColor);
 
     _dopeSheetEditorGridColor = Natron::createKnob<Color_Knob>(this, "Sheet grid color", 3);
     _dopeSheetEditorGridColor->setName("dopesheeteditorGridColor");
@@ -1237,9 +1237,9 @@ Settings::setDefaultValues()
     _dopeSheetEditorKnobSectionBackgroundColor->setDefaultValue(0.443, 2);
     _dopeSheetEditorKnobSectionBackgroundColor->setDefaultValue(0.2, 3);
 
-//    _dopeSheetEditorScaleColor->setDefaultValue(0.714, 0);
-//    _dopeSheetEditorScaleColor->setDefaultValue(0.718, 1);
-//    _dopeSheetEditorScaleColor->setDefaultValue(0.714, 2);
+    _dopeSheetEditorScaleColor->setDefaultValue(0.714, 0);
+    _dopeSheetEditorScaleColor->setDefaultValue(0.718, 1);
+    _dopeSheetEditorScaleColor->setDefaultValue(0.714, 2);
 
     _dopeSheetEditorGridColor->setDefaultValue(0.714, 0);
     _dopeSheetEditorGridColor->setDefaultValue(0.714, 1);
@@ -1690,7 +1690,7 @@ Settings::onKnobValueChanged(KnobI* k,
                 k == _dopeSheetEditorBackgroundColor.get() ||
                 k == _dopeSheetEditorRootSectionBackgroundColor.get() ||
                 k == _dopeSheetEditorKnobSectionBackgroundColor.get() ||
-//                k == _dopeSheetEditorScaleColor.get() ||
+                k == _dopeSheetEditorScaleColor.get() ||
                 k == _dopeSheetEditorGridColor.get())) {
         appPTR->reloadStylesheets();
     }
@@ -2862,9 +2862,9 @@ void Settings::getDopeSheetEditorKnobSectionBackgroundColor(double *r, double *g
 
 void Settings::getDopeSheetEditorScaleColor(double *r, double *g, double *b) const
 {
-//    *r = _dopeSheetEditorScaleColor->getValue(0);
-//    *g = _dopeSheetEditorScaleColor->getValue(1);
-//    *b = _dopeSheetEditorScaleColor->getValue(2);
+    *r = _dopeSheetEditorScaleColor->getValue(0);
+    *g = _dopeSheetEditorScaleColor->getValue(1);
+    *b = _dopeSheetEditorScaleColor->getValue(2);
 }
 
 void Settings::getDopeSheetEditorGridColor(double *r, double *g, double *b) const

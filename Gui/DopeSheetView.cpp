@@ -811,8 +811,7 @@ void DopeSheetViewPrivate::drawScale() const
     // Retrieve the appropriate settings for drawing
     boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
     double scaleR, scaleG, scaleB;
-    //FIXME Use getDopeSheetEditorScaleColor instead
-    settings->getDopeSheetEditorGridColor(&scaleR, &scaleG, &scaleB);
+    settings->getDopeSheetEditorScaleColor(&scaleR, &scaleG, &scaleB);
 
     QColor scaleColor;
     scaleColor.setRgbF(Natron::clamp(scaleR),
@@ -1872,7 +1871,7 @@ void DopeSheetView::computeSelectedKeysBRect()
         _imp->selectedKeysBRect.setBottom(bottom);
 
         double xAdjustOffset = (_imp->zoomContext.toZoomCoordinates(rect.left(), 0).x() -
-                          _imp->zoomContext.toZoomCoordinates(rect.left() - KF_X_OFFSET, 0).x());
+                                _imp->zoomContext.toZoomCoordinates(rect.left() - KF_X_OFFSET, 0).x());
 
         _imp->selectedKeysBRect.adjust(-xAdjustOffset, SELECTED_KF_BBOX_BOUNDS_OFFSET,
                                        xAdjustOffset, -SELECTED_KF_BBOX_BOUNDS_OFFSET);
