@@ -67,7 +67,12 @@ CLANG_DIAG_ON(unused-private-field)
 #include "Gui/ActionShortcuts.h"
 #include "Gui/Label.h"
 
+#ifndef M_LN2
+#define M_LN2       0.693147180559945309417232121458176568  /* loge(2)        */
+#endif
+
 #define NATRON_TRANSFORM_AFFECTS_OVERLAYS
+
 
 using namespace Natron;
 
@@ -179,8 +184,10 @@ struct ViewerTabPrivate
     ComboBox* secondInputImage;
 
     /*2nd row*/
+    Button* toggleGainButton;
     SpinBox* gainBox;
     ScaleSliderQWidget* gainSlider;
+    double lastFstopValue;
     ClickableLabel* autoConstrastLabel;
     QCheckBox* autoContrast;
     SpinBox* gammaBox;
@@ -291,8 +298,10 @@ struct ViewerTabPrivate
     , compositingOperator(NULL)
     , secondInputLabel(NULL)
     , secondInputImage(NULL)
+    , toggleGainButton(NULL)
     , gainBox(NULL)
     , gainSlider(NULL)
+    , lastFstopValue(0.)
     , autoConstrastLabel(NULL)
     , autoContrast(NULL)
     , gammaBox(NULL)
@@ -589,19 +598,34 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->secondRowLayout->setSpacing(0);
     _imp->secondRowLayout->setContentsMargins(0, 0, 0, 0);
     _imp->mainLayout->addWidget(_imp->secondSettingsRow);
-
+    
+    QPixmap gainEnabled,gainDisabled;
+    appPTR->getIcon(NATRON_PIXMAP_VIEWER_GAIN_ENABLED,&gainEnabled);
+    appPTR->getIcon(NATRON_PIXMAP_VIEWER_GAIN_DISABLED,&gainDisabled);
+    QIcon gainIc;
+    gainIc.addPixmap(gainEnabled,QIcon::Normal,QIcon::On);
+    gainIc.addPixmap(gainDisabled,QIcon::Normal,QIcon::Off);
+    _imp->toggleGainButton = new Button(gainIc,"",_imp->secondSettingsRow);
+    _imp->toggleGainButton->setCheckable(true);
+    _imp->toggleGainButton->setChecked(false);
+    _imp->toggleGainButton->setDown(false);
+    _imp->toggleGainButton->setFocusPolicy(Qt::NoFocus);
+    _imp->toggleGainButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
+    _imp->toggleGainButton->setToolTip(Qt::convertFromPlainText(tr("Switch between \"neutral\" 1.0 gain f-stop and the previous setting")));
+    _imp->secondRowLayout->addWidget(_imp->toggleGainButton);
+    QObject::connect(_imp->toggleGainButton, SIGNAL(clicked(bool)), this, SLOT(onGainToggled(bool)));
+    
     _imp->gainBox = new SpinBox(_imp->secondSettingsRow,SpinBox::eSpinBoxTypeDouble);
-    _imp->gainBox->setToolTip( "<p><b>" + tr("Gain") + ": \n</b></p>" + tr(
-                                    "Multiplies the image by \nthis amount before display.") );
+    QString gainTt =  "<p><b>" + tr("Gain") + ": \n</b></p>" + Qt::convertFromPlainText(tr(
+                                                                                           "Gain is shown as f-stops. The image is multipled by pow(2,value) before display."));
+    _imp->gainBox->setToolTip(gainTt);
     _imp->gainBox->setIncrement(0.1);
-    _imp->gainBox->setValue(1.0);
-    _imp->gainBox->setMinimum(0.0);
+    _imp->gainBox->setValue(0.0);
     _imp->secondRowLayout->addWidget(_imp->gainBox);
 
 
-    _imp->gainSlider = new ScaleSliderQWidget(0, 64,1.0,ScaleSliderQWidget::eDataTypeDouble,Natron::eScaleTypeLinear,_imp->secondSettingsRow);
-    _imp->gainSlider->setToolTip( "<p><b>" + tr("Gain") + ": \n</b></p>" + tr(
-                                       "Multiplies the image by \nthis amount before display.") );
+    _imp->gainSlider = new ScaleSliderQWidget(-6, 6, 0.0,ScaleSliderQWidget::eDataTypeDouble,Natron::eScaleTypeLinear,_imp->secondSettingsRow);
+    _imp->gainSlider->setToolTip(gainTt);
     _imp->secondRowLayout->addWidget(_imp->gainSlider);
 
     QString autoContrastToolTip( "<p><b>" + tr("Auto-contrast") + ": \n</b></p>" + tr(
@@ -1098,10 +1122,8 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
                       SLOT( onColorSpaceComboBoxChanged(int) ) );
     QObject::connect( _imp->zoomCombobox, SIGNAL( currentIndexChanged(QString) ),_imp->viewer, SLOT( zoomSlot(QString) ) );
     QObject::connect( _imp->viewer, SIGNAL( zoomChanged(int) ), this, SLOT( updateZoomComboBox(int) ) );
-    QObject::connect( _imp->gainBox, SIGNAL( valueChanged(double) ), this,SLOT( onGainSliderChanged(double) ) );
-    QObject::connect( _imp->gainSlider, SIGNAL( positionChanged(double) ), _imp->gainBox, SLOT( setValue(double) ) );
+    QObject::connect( _imp->gainBox, SIGNAL( valueChanged(double) ), this,SLOT( onGainSpinBoxValueChanged(double) ) );
     QObject::connect( _imp->gainSlider, SIGNAL( positionChanged(double) ), this, SLOT( onGainSliderChanged(double) ) );
-    QObject::connect( _imp->gainBox, SIGNAL( valueChanged(double) ), _imp->gainSlider, SLOT( seekScalePosition(double) ) );
     QObject::connect( _imp->currentFrameBox, SIGNAL( valueChanged(double) ), this, SLOT( onCurrentTimeSpinBoxChanged(double) ) );
 
     QObject::connect( _imp->play_Forward_Button,SIGNAL( clicked(bool) ),this,SLOT( startPause(bool) ) );
@@ -1616,12 +1638,6 @@ ViewerTab::keyPressEvent(QKeyEvent* e)
 } // keyPressEvent
 
 
-void
-ViewerTab::onGainSliderChanged(double v)
-{
-    _imp->viewer->setGain(v);
-    _imp->viewerNode->onGainChanged(v);
-}
 
 void
 ViewerTab::onViewerChannelsChanged(int i)
@@ -2524,6 +2540,10 @@ ViewerTab::setAutoContrastEnabled(bool b)
     _imp->autoContrast->setChecked(b);
     _imp->gainSlider->setEnabled(!b);
     _imp->gainBox->setEnabled(!b);
+    _imp->toggleGainButton->setEnabled(!b);
+    _imp->gammaSlider->setEnabled(!b);
+    _imp->gammaBox->setEnabled(!b);
+    _imp->toggleGammaButton->setEnabled(!b);
     _imp->viewerNode->onAutoContrastChanged(b,true);
 }
 
@@ -2549,18 +2569,42 @@ ViewerTab::setColorSpace(const std::string & colorSpaceName)
     }
 }
 
+
 void
 ViewerTab::setGain(double d)
 {
-    _imp->gainBox->setValue(d);
-    _imp->gainSlider->seekScalePosition(d);
+    double fstop = std::log(d) / M_LN2;
+    _imp->gainBox->setValue(fstop);
+    _imp->gainSlider->seekScalePosition(fstop);
+    _imp->viewer->setGain(d);
     _imp->viewerNode->onGainChanged(d);
+    _imp->toggleGainButton->setDown(d != 1.);
+    _imp->toggleGainButton->setChecked(d != 1.);
+    _imp->lastFstopValue = fstop;
 }
 
 double
 ViewerTab::getGain() const
 {
     return _imp->viewerNode->getGain();
+}
+
+void
+ViewerTab::setGamma(double gamma)
+{
+    _imp->gammaBox->setValue(gamma);
+    _imp->gammaSlider->seekScalePosition(gamma);
+    _imp->viewerNode->onGammaChanged(gamma);
+    _imp->viewer->setGamma(gamma);
+    _imp->toggleGammaButton->setDown(gamma != 1.);
+    _imp->toggleGammaButton->setChecked(gamma != 1.);
+    _imp->lastGammaValue = gamma;
+}
+
+double
+ViewerTab::getGamma() const
+{
+    return _imp->viewerNode->getGamma();
 }
 
 void
@@ -2685,12 +2729,13 @@ ViewerTab::onAutoContrastChanged(bool b)
 {
     _imp->gainSlider->setEnabled(!b);
     _imp->gainBox->setEnabled(!b);
+    _imp->toggleGainButton->setEnabled(!b);
     _imp->viewerNode->onAutoContrastChanged(b,b);
     _imp->gammaBox->setEnabled(!b);
     _imp->gammaSlider->setEnabled(!b);
     _imp->toggleGammaButton->setEnabled(!b);
     if (!b) {
-        _imp->viewerNode->onGainChanged( _imp->gainBox->value() );
+        _imp->viewerNode->onGainChanged( std::pow(2,_imp->gainBox->value()) );
         _imp->viewerNode->onGammaChanged(_imp->gammaBox->value());
     }
 }
@@ -4299,6 +4344,53 @@ ViewerTab::onLayerComboChanged(int index)
     _imp->viewerNode->setAlphaChannel(ImageComponents::getNoneComponents(), std::string(), false);
     _imp->viewerNode->setActiveLayer(ImageComponents::getNoneComponents(), true);
     
+}
+
+void
+ViewerTab::onGainToggled(bool clicked)
+{
+    double value;
+    if (clicked) {
+        value = _imp->lastFstopValue;
+    } else {
+        value = 0;
+    }
+    _imp->toggleGainButton->setDown(clicked);
+    _imp->gainBox->setValue(value);
+    _imp->gainSlider->seekScalePosition(value);
+    
+    double gain = std::pow(2,value);
+    _imp->viewer->setGain(gain);
+    _imp->viewerNode->onGainChanged(gain);
+}
+
+
+void
+ViewerTab::onGainSliderChanged(double v)
+{
+    if (!_imp->toggleGainButton->isChecked()) {
+        _imp->toggleGainButton->setChecked(true);
+        _imp->toggleGainButton->setDown(true);
+    }
+    _imp->gainBox->setValue(v);
+    double gain = std::pow(2,v);
+    _imp->viewer->setGain(gain);
+    _imp->viewerNode->onGainChanged(gain);
+    _imp->lastFstopValue = v;
+}
+
+void
+ViewerTab::onGainSpinBoxValueChanged(double v)
+{
+    if (!_imp->toggleGainButton->isChecked()) {
+        _imp->toggleGainButton->setChecked(true);
+        _imp->toggleGainButton->setDown(true);
+    }
+    _imp->gainSlider->seekScalePosition(v);
+    double gain = std::pow(2,v);
+    _imp->viewer->setGain(gain);
+    _imp->viewerNode->onGainChanged(gain);
+    _imp->lastFstopValue = v;
 }
 
 void

@@ -58,10 +58,19 @@ RectI minimalNonMarkedBbox_internal(const RectI& roi, const RectI& _bounds,const
                 *isBeingRenderedElsewhere = true; //< only flag if the whole row is not 0
             }
         } else {
-            if ( !memchr( buf, 0, _bounds.width() ) ) {
-                bbox.set_bottom(bbox.bottom() + 1);
-            } else {
+            
+            const char* lineEnd = buf + _bounds.width();
+            while (buf < lineEnd) {
+                if (!*buf || *buf == PIXEL_UNAVAILABLE) {
+                    buf = 0;
+                    break;
+                }
+                ++buf;
+            }
+            if (!buf) {
                 break;
+            } else {
+                bbox.set_bottom(bbox.bottom() + 1);
             }
         }
     }
@@ -90,10 +99,19 @@ RectI minimalNonMarkedBbox_internal(const RectI& roi, const RectI& _bounds,const
             }
             
         } else {
-            if ( !memchr( buf, 0, _bounds.width() ) ) {
-                bbox.set_top(bbox.top() - 1);
-            } else {
+            
+            const char* lineEnd = buf + _bounds.width();
+            while (buf < lineEnd) {
+                if (!*buf || *buf == PIXEL_UNAVAILABLE) {
+                    buf = 0;
+                    break;
+                }
+                ++buf;
+            }
+            if (!buf) {
                 break;
+            } else {
+                bbox.set_top(bbox.top() - 1);
             }
         }
     }
@@ -115,8 +133,13 @@ RectI minimalNonMarkedBbox_internal(const RectI& roi, const RectI& _bounds,const
                 break;
             }
             
-            else if (trimap && *pix == PIXEL_UNAVAILABLE) {
-                metUnavailablePixel = true;
+            else if (*pix == PIXEL_UNAVAILABLE) {
+                if (trimap) {
+                    metUnavailablePixel = true;
+                } else {
+                    pix = 0;
+                    break;
+                }
             }
             
         }
@@ -142,8 +165,13 @@ RectI minimalNonMarkedBbox_internal(const RectI& roi, const RectI& _bounds,const
                 break;
             }
 
-            else if (trimap && *pix == PIXEL_UNAVAILABLE) {
-                metUnavailablePixel = true;
+            else if (*pix == PIXEL_UNAVAILABLE) {
+                if (trimap) {
+                    metUnavailablePixel = true;
+                } else {
+                    pix = 0;
+                    break;
+                }
             }
 
         }
@@ -170,6 +198,7 @@ minimalNonMarkedRects_internal(const RectI & roi,const RectI& _bounds, const std
                                std::list<RectI>& ret,bool* isBeingRenderedElsewhere)
 {
     RectI bboxM = minimalNonMarkedBbox_internal<trimap>(roi, _bounds, _map, isBeingRenderedElsewhere);
+    assert(trimap && isBeingRenderedElsewhere || !trimap && !isBeingRenderedElsewhere);
     
     //#define NATRON_BITMAP_DISABLE_OPTIMIZATION
 #ifdef NATRON_BITMAP_DISABLE_OPTIMIZATION
@@ -218,7 +247,9 @@ minimalNonMarkedRects_internal(const RectI & roi,const RectI& _bounds, const std
                     break;
                 } else if (*buf == PIXEL_UNAVAILABLE) {
                     buf = 0;
-                    metUnavailablePixel = true;
+                    if (trimap) {
+                        metUnavailablePixel = true;
+                    }
                     break;
                 }
                 ++buf;
@@ -261,7 +292,9 @@ minimalNonMarkedRects_internal(const RectI & roi,const RectI& _bounds, const std
                     break;
                 } else if (*buf == PIXEL_UNAVAILABLE) {
                     buf = 0;
-                    metUnavailablePixel = true;
+                    if (trimap) {
+                        metUnavailablePixel = true;
+                    }
                     break;
                 }
                 ++buf;
@@ -710,6 +743,13 @@ Image::pasteFromForDepth(const Natron::Image & srcImg,
     }
 }
 
+void
+Image::setRoD(const RectD& rod)
+{
+    QWriteLocker k(&_entryLock);
+    _rod = rod;
+    _params->setRoD(rod);
+}
 
 void
 Image::ensureBounds(const RectI& newBounds)
@@ -2162,7 +2202,12 @@ Image::convertToFormatInternal(const RectI & renderWindow,
                         
                         for (int k = 0; k < dstNComps; ++k) {
                             if (k == 3) {
-                                ///For alpha channel, fill with 1, we reach here only if converting RGB-->RGBA
+                                // For alpha channel, fill with 0, we reach here only if converting RGB-->RGBA
+                                // Alpha is set to 0 and premult is set to Opaque.
+                                // That way, the Roto node can be conveniently used to draw a mask. This shouldn't
+                                // disturb anything else in the process, since Opaque premult means that alpha should
+                                // be considered as being 1 everywhere, whatever the actual alpha value is.
+                                // see GenericWriterPlugin::render, if (userPremult == OFX::eImageOpaque...
                                 DSTPIX pix = convertPixelDepth<float, DSTPIX>(0.f);
                                 dstPixels[k] = invert ? dstMaxValue - pix : pix;
 

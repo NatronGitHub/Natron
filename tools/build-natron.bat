@@ -56,9 +56,11 @@ if "%4" == "Debug" (
 if "%5" == "1" (
 	set BUILD_DIR=%CWD%\autobuild\build%BITS%
 	set DEPLOY_DIR=%CWD%\autobuild\deploy%BITS%
+	set LOGS_DIR=%CWD%\autobuild\Logs%BITS%
 ) else (
 	set BUILD_DIR=%CWD%\build%BITS%
 	set DEPLOY_DIR=%CWD%\build%BITS%\deploy%BITS%
+	set LOGS_DIR=%CWD%\build%BITS%\Logs%BITS%
 )
 
 
@@ -157,10 +159,19 @@ if "%CONFIGURATION%" == "Release" (
 		rmdir /S /Q %DEPLOY_DIR%
 	)
 	mkdir %DEPLOY_DIR%
+	mkdir %LOGS_DIR%
 	mkdir %DEPLOY_DIR%\bin
 	mkdir %DEPLOY_DIR%\Plugins
 	mkdir %DEPLOY_DIR%\Resources
 	mkdir %DEPLOY_DIR%\Resources\OpenColorIO-Configs
+	
+	::Copy build logs
+	copy /Y Engine\%PROJECT_OBJ_DIR%\.obj\Engine.log %LOGS_DIR%
+	copy /Y HostSupport\%PROJECT_OBJ_DIR%\.obj\HostSupport.log %LOGS_DIR%
+	copy /Y Gui\%PROJECT_OBJ_DIR%\.obj\Gui.log %LOGS_DIR%
+	copy /Y App\%PROJECT_OBJ_DIR%\.obj\Natron.log %LOGS_DIR%
+	copy /Y Renderer\%PROJECT_OBJ_DIR%\.obj\NatronRenderer.log %LOGS_DIR%
+	
 	echo R | xcopy  /Y /E Gui\Resources\OpenColorIO-Configs %DEPLOY_DIR%\Resources\OpenColorIO-Configs
 	del  %DEPLOY_DIR%\Resources\OpenColorIO-Configs\.git
 	copy /Y App\%PROJECT_OBJ_DIR%\Natron.exe %DEPLOY_DIR%\bin
@@ -170,15 +181,15 @@ if "%CONFIGURATION%" == "Release" (
 	copy /Y Gui\Resources\Images\natronProjectIcon_windows.ico %DEPLOY_DIR%\bin
 	
 	mkdir %DEPLOY_DIR%\bin\accessible
-	echo R | xcopy  /Y /E %QT_LIBRARIES_DIR%\plugins\accessible %DEPLOY_DIR%\bin\accessible
+	xcopy  /Y /E %QT_LIBRARIES_DIR%\plugins\accessible %DEPLOY_DIR%\bin\accessible
 	mkdir %DEPLOY_DIR%\bin\bearer
-	echo R | xcopy  /Y /E %QT_LIBRARIES_DIR%\plugins\bearer %DEPLOY_DIR%\bin\bearer
+	xcopy  /Y /E %QT_LIBRARIES_DIR%\plugins\bearer %DEPLOY_DIR%\bin\bearer
 	mkdir %DEPLOY_DIR%\bin\codecs
-	echo R | xcopy  /Y /E %QT_LIBRARIES_DIR%\plugins\codecs %DEPLOY_DIR%\bin\codecs
+	xcopy  /Y /E %QT_LIBRARIES_DIR%\plugins\codecs %DEPLOY_DIR%\bin\codecs
 	mkdir %DEPLOY_DIR%\bin\iconengines
-	echo R | xcopy  /Y /E %QT_LIBRARIES_DIR%\plugins\iconengines %DEPLOY_DIR%\bin\iconengines
+    xcopy  /Y /E %QT_LIBRARIES_DIR%\plugins\iconengines %DEPLOY_DIR%\bin\iconengines
 	mkdir %DEPLOY_DIR%\bin\imageformats
-	echo R | xcopy  /Y /E %QT_LIBRARIES_DIR%\plugins\imageformats %DEPLOY_DIR%\bin\imageformats
+	xcopy  /Y /E %QT_LIBRARIES_DIR%\plugins\imageformats %DEPLOY_DIR%\bin\imageformats
 	
 	copy /Y %QT_LIBRARIES_DIR%\bin\QtCore4.dll %DEPLOY_DIR%\bin
 	copy /Y %QT_LIBRARIES_DIR%\bin\QtGui4.dll %DEPLOY_DIR%\bin

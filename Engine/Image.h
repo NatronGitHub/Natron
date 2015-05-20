@@ -217,6 +217,12 @@ namespace Natron {
         {
             return _rod;
         };
+        
+        /**
+         * @brief Do not use this. This is used only to circumvent a situation where 2 images of the same hash could have a different RoD
+         * to prevent an assert from triggering.
+         **/
+        void setRoD(const RectD& rod);
 
         /**
      * @brief Returns the bounds where data is in the image.

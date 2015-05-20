@@ -61,6 +61,7 @@ SOURCES += \
     AppManager.cpp \
     BackDrop.cpp \
     BlockingBackgroundRender.cpp \
+    CoonsRegularization.cpp \
     Curve.cpp \
     CurveSerialization.cpp \
     DiskCacheNode.cpp \
@@ -114,6 +115,7 @@ SOURCES += \
     PySideCompat.cpp \
     Rect.cpp \
     RotoContext.cpp \
+    RotoPaint.cpp \
     RotoSerialization.cpp  \
     RotoWrapper.cpp \
     ScriptObject.cpp \
@@ -173,6 +175,7 @@ HEADERS += \
     BlockingBackgroundRender.h \
     Cache.h \
     CacheEntry.h \
+    CoonsRegularization.h \
     Curve.h \
     CurveSerialization.h \
     CurvePrivate.h \
@@ -245,6 +248,7 @@ HEADERS += \
     Rect.h \
     RotoContext.h \
     RotoContextPrivate.h \
+    RotoPaint.h \
     RotoSerialization.h \
     RotoWrapper.h \
     ScriptObject.h \

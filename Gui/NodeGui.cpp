@@ -995,7 +995,9 @@ NodeGui::refreshPosition(double x,
                 const std::list<Natron::Node* > & outputs = getNode()->getOutputs();
                 for (std::list<Natron::Node* >::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
                     boost::shared_ptr<NodeGuiI> node_gui_i = (*it)->getNodeGui();
-                    assert(node_gui_i);
+                    if (!node_gui_i) {
+                        continue;
+                    }
                     NodeGui* node = dynamic_cast<NodeGui*>(node_gui_i.get());
                     assert(node);
                     QSize outputSize = node->getSize();
@@ -1093,7 +1095,9 @@ NodeGui::refreshEdges()
         assert(_inputEdges[i]);
         if (nodeInputs[i]) {
             boost::shared_ptr<NodeGuiI> nodeInputGui_i = nodeInputs[i]->getNodeGui();
-            assert(nodeInputGui_i);
+            if (!nodeInputGui_i) {
+                continue;
+            }
             boost::shared_ptr<NodeGui> node = boost::dynamic_pointer_cast<NodeGui>(nodeInputGui_i);
             if (_inputEdges[i]->getSource() != node) {
                 _inputEdges[i]->setSource(node);
@@ -1444,7 +1448,9 @@ NodeGui::boundingRectWithEdges() const
 
     ret = mapToScene(bbox).boundingRect();
     for (InputEdges::const_iterator it = _inputEdges.begin(); it != _inputEdges.end(); ++it) {
-        ret = ret.united( (*it)->mapToScene( (*it)->boundingRect() ).boundingRect() );
+        if (!(*it)->hasSource()) {
+            ret = ret.united( (*it)->mapToScene( (*it)->boundingRect() ).boundingRect() );
+        }
     }
 
     return ret;

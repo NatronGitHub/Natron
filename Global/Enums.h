@@ -237,6 +237,8 @@ enum PixmapEnum
     NATRON_PIXMAP_VIEWER_ZEBRA_DISABLED,
     NATRON_PIXMAP_VIEWER_GAMMA_ENABLED,
     NATRON_PIXMAP_VIEWER_GAMMA_DISABLED,
+    NATRON_PIXMAP_VIEWER_GAIN_ENABLED,
+    NATRON_PIXMAP_VIEWER_GAIN_DISABLED,
     
     NATRON_PIXMAP_SCRIPT_CLEAR_OUTPUT,
     NATRON_PIXMAP_SCRIPT_EXEC_SCRIPT,
@@ -429,6 +431,45 @@ enum RotoStrokeType
     eRotoStrokeTypeSmear,
     eRotoStrokeTypeDodge,
     eRotoStrokeTypeBurn,
+};
+
+///Keep this in sync with @openfx-supportext/ofxsMerging.h
+enum MergingFunctionEnum
+{
+    eMergeATop = 0,
+    eMergeAverage,
+    eMergeColorBurn,
+    eMergeColorDodge,
+    eMergeConjointOver,
+    eMergeCopy,
+    eMergeDifference,
+    eMergeDisjointOver,
+    eMergeDivide,
+    eMergeExclusion,
+    eMergeFreeze,
+    eMergeFrom,
+    eMergeGeometric,
+    eMergeHardLight,
+    eMergeHypot,
+    eMergeIn,
+    eMergeInterpolated,
+    eMergeMask,
+    eMergeMatte,
+    eMergeLighten,
+    eMergeDarken,
+    eMergeMinus,
+    eMergeMultiply,
+    eMergeOut,
+    eMergeOver,
+    eMergeOverlay,
+    eMergePinLight,
+    eMergePlus,
+    eMergeReflect,
+    eMergeScreen,
+    eMergeSoftLight,
+    eMergeStencil,
+    eMergeUnder,
+    eMergeXOR
 };
     
 }

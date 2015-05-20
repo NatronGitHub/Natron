@@ -219,6 +219,7 @@ public:
                 _path = other._path;
             } else {
                 _backingFile->resize(other._buffer.size() * sizeof(DataType));
+				assert(_backingFile->data());
                 const char* src = (const char*)other._buffer.getData();
                 char* dst = (char*)_backingFile->data();
                 memcpy(dst,src,other._buffer.size() * sizeof(DataType));

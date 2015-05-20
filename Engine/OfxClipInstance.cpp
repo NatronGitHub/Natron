@@ -318,22 +318,11 @@ OfxClipInstance::getDimension(const std::string &name) const OFX_EXCEPTION_SPEC
 double
 OfxClipInstance::getAspectRatio() const
 {
-    assert(_nodeInstance);
-    if (isOutput()) {
-        return _aspectRatio;
-    }
-
     EffectInstance* input = getAssociatedNode();
-    if (!input || getName() == "Roto") {
-        Format f;
-        if (_nodeInstance) {
-            _nodeInstance->getRenderFormat(&f);
-        }
-        return f.getPixelAspectRatio();
-    } else if (_nodeInstance) {
+    if (input && input != _nodeInstance) {
         return input->getPreferredAspectRatio();
     }
-    return 0.; // invalid value
+    return _aspectRatio;
 }
 
 void
@@ -458,10 +447,17 @@ OfxClipInstance::getRegionOfDefinitionInternal(OfxTime time,int view, unsigned i
 {
     
     if ( (getName() == "Roto") && _nodeInstance->getNode()->isRotoNode() ) {
-        boost::shared_ptr<RotoContext> rotoCtx =  _nodeInstance->getNode()->getRotoContext();
-        assert(rotoCtx);
+        boost::shared_ptr<RotoContext> rotoCtx;
+        boost::shared_ptr<RotoStrokeItem> attachedStroke = _nodeInstance->getNode()->getAttachedStrokeItem();
         RectD rod;
-        rotoCtx->getMaskRegionOfDefinition(time, view, &rod);
+        if (attachedStroke) {
+            rod = attachedStroke->getBoundingBox(time);
+        } else {
+            rotoCtx = _nodeInstance->getNode()->getRotoContext();
+            assert(rotoCtx);
+            rotoCtx->getMaskRegionOfDefinition(time, view, &rod);
+        }
+        
         ret->x1 = rod.x1;
         ret->x2 = rod.x2;
         ret->y1 = rod.y1;
@@ -703,7 +699,7 @@ OfxClipInstance::getImagePlane(OfxTime time, int view, const std::string& plane,
 #endif
     }
     assert( _lastActionData.hasLocalData() );
-    if ( isOutput() ) {
+    if (isOutput()) {
         
         ImageComponents natronPlane = ofxPlaneToNatronPlane(plane);
 
@@ -771,7 +767,7 @@ OfxClipInstance::getImagePlane(OfxTime time, int view, const std::string& plane,
         OfxImage* ret =  new OfxImage(outputImage,false,renderWindow,boost::shared_ptr<Transform::Matrix3x3>(), components, nComps, true, *this);
         args.imagesBeingRendered.push_back(ret);
         return ret;
-    }
+    } // if (isOutput())
     
     
     boost::shared_ptr<Transform::Matrix3x3> transform;

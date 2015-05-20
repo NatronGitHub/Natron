@@ -1279,9 +1279,7 @@ KnobHelper::evaluateValueChange(int dimension,
     if (!guiFrozen  && _signalSlotHandler) {
         computeHasModifications();
         _signalSlotHandler->s_valueChanged(dimension,(int)reason);
-        if (getHolder()) {
-            _signalSlotHandler->s_updateDependencies(dimension);
-        }
+        _signalSlotHandler->s_updateDependencies(dimension);
         checkAnimationLevel(dimension);
     }
 }
@@ -1495,7 +1493,7 @@ static bool parseTokenFrom(int fromDim,
     //Find the start of the symbol
     int i = (int)*tokenStart - 2;
     while (i >= 0) {
-        if (!std::isalnum(str[i],loc) && str[i] != '.' && str[i] != '_') {
+        if (std::isspace(str[i],loc)) {
             break;
         }
         --i;

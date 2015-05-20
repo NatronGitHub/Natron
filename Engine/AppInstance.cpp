@@ -625,7 +625,8 @@ AppInstance::setGroupLabelIDAndVersion(const boost::shared_ptr<Natron::Node>& no
  **/
 static int isEntitledForInspector(Natron::Plugin* plugin,OFX::Host::ImageEffect::Descriptor* ofxDesc)  {
     
-    if (plugin->getPluginID() == PLUGINID_NATRON_VIEWER) {
+    if (plugin->getPluginID() == PLUGINID_NATRON_VIEWER ||
+        plugin->getPluginID() == PLUGINID_NATRON_ROTOPAINT) {
         return 10;
     }
     
@@ -665,11 +666,11 @@ AppInstance::createNodeInternal(const QString & pluginID,
                                 bool pushUndoRedoCommand,
                                 bool addToProject,
                                 bool userEdited,
+                                bool createGui,
                                 const QString& fixedName,
                                 const CreateNodeArgs::DefaultValuesList& paramValues,
                                 const boost::shared_ptr<NodeCollection>& group)
 {
-    assert(group);
     
     boost::shared_ptr<Node> node;
     Natron::Plugin* plugin = 0;
@@ -754,7 +755,7 @@ AppInstance::createNodeInternal(const QString & pluginID,
     }
     assert(node);
     try {
-        node->load(multiInstanceParentName, serialization,dontLoadName, userEdited,fixedName,paramValues);
+        node->load(multiInstanceParentName, serialization,dontLoadName, userEdited, addToProject, fixedName,paramValues);
     } catch (const std::exception & e) {
         group->removeNode(node);
         std::string title("Error while creating node");
@@ -774,15 +775,17 @@ AppInstance::createNodeInternal(const QString & pluginID,
     }
 
     boost::shared_ptr<Natron::Node> multiInstanceParent = node->getParentMultiInstance();
-
-    // createNodeGui also sets the filename parameter for reader or writers
-    createNodeGui(node,
-                  multiInstanceParent,
-                  requestedByLoad,
-                  autoConnect,
-                  xPosHint,
-                  yPosHint,
-                  pushUndoRedoCommand);
+    
+    if (createGui) {
+        // createNodeGui also sets the filename parameter for reader or writers
+        createNodeGui(node,
+                      multiInstanceParent,
+                      requestedByLoad,
+                      autoConnect,
+                      xPosHint,
+                      yPosHint,
+                      pushUndoRedoCommand);
+    }
     
     boost::shared_ptr<NodeGroup> isGrp = boost::dynamic_pointer_cast<NodeGroup>(node->getLiveInstance()->shared_from_this());
 
@@ -863,6 +866,7 @@ AppInstance::createNode(const CreateNodeArgs & args)
                               args.pushUndoRedoCommand,
                               args.addToProject,
                               args.userEdited,
+                              args.createGui,
                               args.fixedName,
                               args.paramValues,
                               args.group);
@@ -880,6 +884,7 @@ AppInstance::loadNode(const LoadNodeArgs & args)
                               false,
                               INT_MIN,INT_MIN,
                               false,
+                              true,
                               true,
                               true,
                               QString(),

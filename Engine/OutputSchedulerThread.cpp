@@ -2356,14 +2356,14 @@ private:
         int viewsCount = _viewer->getRenderViewsCount();
         int view = viewsCount > 0 ? _viewer->getViewerCurrentView() : 0;
         U64 viewerHash = _viewer->getHash();
-        boost::shared_ptr<ViewerInstance::ViewerArgs> args[2];
+        boost::shared_ptr<ViewerArgs> args[2];
         
         Natron::StatusEnum status[2] = {
             eStatusFailed, eStatusFailed
         };
         
         for (int i = 0; i < 2; ++i) {
-            args[i].reset(new ViewerInstance::ViewerArgs);
+            args[i].reset(new ViewerArgs);
             status[i] = _viewer->getRenderViewerArgsAndCheckCache(time, true, true, view, i, viewerHash, args[i].get());
         }
        
@@ -2678,6 +2678,11 @@ struct ViewerCurrentFrameRequestSchedulerPrivate
     int abortRequested;
     QMutex abortRequestedMutex;
 
+    /**
+     * Single thread used by the ViewerCurrentFrameRequestScheduler when the global thread pool has reached its maximum
+     * activity to keep the renders responsive even if the thread pool is choking.
+     **/
+    ViewerCurrentFrameRequestRendererBackup backupThread;
     
     ViewerCurrentFrameRequestSchedulerPrivate(ViewerInstance* viewer)
     : viewer(viewer)
@@ -2695,6 +2700,7 @@ struct ViewerCurrentFrameRequestSchedulerPrivate
     , mustQuitCond()
     , abortRequested(0)
     , abortRequestedMutex()
+    , backupThread()
     {
         
     }
@@ -2734,16 +2740,6 @@ struct ViewerCurrentFrameRequestSchedulerPrivate
 
 };
 
-struct CurrentFrameFunctorArgs
-{
-    int view;
-    ViewerInstance* viewer;
-    U64 viewerHash;
-    RequestedFrame* request;
-    ViewerCurrentFrameRequestSchedulerPrivate* scheduler;
-    bool canAbort;
-    boost::shared_ptr<ViewerInstance::ViewerArgs> args[2];
-};
 
 static void renderCurrentFrameFunctor(CurrentFrameFunctorArgs& args)
 {
@@ -2945,7 +2941,7 @@ ViewerCurrentFrameRequestScheduler::quitThread()
     }
     
     abortRendering();
-    
+    _imp->backupThread.quitThread();
     {
         QMutexLocker l2(&_imp->processMutex);
         _imp->processRunning = false;
@@ -2991,9 +2987,9 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool canAbort)
     if (!_imp->viewer->getUiContext() || _imp->viewer->getApp()->isCreatingNode()) {
         return;
     }
-    boost::shared_ptr<ViewerInstance::ViewerArgs> args[2];
+    boost::shared_ptr<ViewerArgs> args[2];
     for (int i = 0; i < 2; ++i) {
-        args[i].reset(new ViewerInstance::ViewerArgs);
+        args[i].reset(new ViewerArgs);
         status[i] = _imp->viewer->getRenderViewerArgsAndCheckCache(frame, false, canAbort, view, i, viewerHash, args[i].get());
     }
     
@@ -3026,6 +3022,7 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool canAbort)
         functorArgs.scheduler = _imp.get();
         functorArgs.request = 0;
         functorArgs.canAbort = canAbort;
+        
         if (appPTR->getCurrentSettings()->getNumberOfThreads() == -1) {
             renderCurrentFrameFunctor(functorArgs);
         } else {
@@ -3042,7 +3039,140 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool canAbort)
                 }
             }
             functorArgs.request = request;
-            QtConcurrent::run(renderCurrentFrameFunctor,functorArgs);
+            
+            /*
+             * Let at least 1 free thread in the thread-pool to allow the renderer to use the thread pool if we use the thread-pool
+             * with QtConcurrent::run
+             */
+            int maxThreads = QThreadPool::globalInstance()->maxThreadCount();
+            if (maxThreads == 1 || (QThreadPool::globalInstance()->activeThreadCount() >= maxThreads - 1)) {
+                _imp->backupThread.renderCurrentFrame(functorArgs);
+            } else {
+                QtConcurrent::run(renderCurrentFrameFunctor,functorArgs);
+            }
         }
     }
+}
+
+struct ViewerCurrentFrameRequestRendererBackupPrivate
+{
+    QMutex requestsQueueMutex;
+    std::list<CurrentFrameFunctorArgs> requestsQueue;
+    QWaitCondition requestsQueueNotEmpty;
+    
+    bool mustQuit;
+    mutable QMutex mustQuitMutex;
+    QWaitCondition mustQuitCond;
+    
+    ViewerCurrentFrameRequestRendererBackupPrivate()
+    : requestsQueueMutex()
+    , requestsQueue()
+    , requestsQueueNotEmpty()
+    , mustQuit(false)
+    , mustQuitMutex()
+    , mustQuitCond()
+    {
+        
+    }
+    
+    bool checkForExit()
+    {
+        QMutexLocker k(&mustQuitMutex);
+        if (mustQuit) {
+            mustQuit = false;
+            mustQuitCond.wakeAll();
+            return true;
+        }
+        return false;
+    }
+
+};
+
+ViewerCurrentFrameRequestRendererBackup::ViewerCurrentFrameRequestRendererBackup()
+: QThread()
+, _imp(new ViewerCurrentFrameRequestRendererBackupPrivate())
+{
+    setObjectName("ViewerCurrentFrameRequestRendererBackup");
+}
+
+ViewerCurrentFrameRequestRendererBackup::~ViewerCurrentFrameRequestRendererBackup()
+{
+    
+}
+
+void
+ViewerCurrentFrameRequestRendererBackup::renderCurrentFrame(const CurrentFrameFunctorArgs& args)
+{
+    {
+        QMutexLocker k(&_imp->requestsQueueMutex);
+        _imp->requestsQueue.push_back(args);
+        
+        if (isRunning()) {
+            _imp->requestsQueueNotEmpty.wakeOne();
+        } else {
+            start();
+        }
+    }
+}
+
+void
+ViewerCurrentFrameRequestRendererBackup::run()
+{
+    for (;;) {
+        
+        
+        bool hasRequest = false;
+        {
+            CurrentFrameFunctorArgs firstRequest;
+            {
+                QMutexLocker k(&_imp->requestsQueueMutex);
+                if (!_imp->requestsQueue.empty()) {
+                    hasRequest = true;
+                    firstRequest = _imp->requestsQueue.front();
+                    _imp->requestsQueue.pop_front();
+                }
+            }
+            
+            if (_imp->checkForExit()) {
+                return;
+            }
+            
+            
+            if (hasRequest) {
+                renderCurrentFrameFunctor(firstRequest);
+            }
+        }
+        
+        {
+            QMutexLocker k(&_imp->requestsQueueMutex);
+            while (_imp->requestsQueue.empty()) {
+                _imp->requestsQueueNotEmpty.wait(&_imp->requestsQueueMutex);
+            }
+        }
+    }
+}
+
+void
+ViewerCurrentFrameRequestRendererBackup::quitThread()
+{
+    if (!isRunning()) {
+        return;
+    }
+    
+    {
+        QMutexLocker k(&_imp->mustQuitMutex);
+        _imp->mustQuit = true;
+        
+        ///Push a fake request
+        {
+            QMutexLocker k(&_imp->requestsQueueMutex);
+            _imp->requestsQueue.push_back(CurrentFrameFunctorArgs());
+            _imp->requestsQueueNotEmpty.wakeOne();
+        }
+        
+        while (_imp->mustQuit) {
+            _imp->mustQuitCond.wait(&_imp->mustQuitMutex);
+        }
+    }
+    wait();
 }

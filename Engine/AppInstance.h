@@ -66,6 +66,7 @@ struct CreateNodeArgs
     bool pushUndoRedoCommand;
     bool userEdited;
     bool addToProject;
+    bool createGui;
     QString fixedName;
     
     typedef std::list< boost::shared_ptr<KnobSerialization> > DefaultValuesList;
@@ -96,6 +97,7 @@ struct CreateNodeArgs
     , pushUndoRedoCommand(pushUndoRedoCommand)
     , userEdited(userEdited)
     , addToProject(addToProject)
+    , createGui(true)
     , fixedName(fixedName)
     , paramValues(paramValues)
     , group(group)
@@ -421,6 +423,7 @@ private:
                                                        const NodeSerialization & serialization,bool dontLoadName,
                                                        bool autoConnect,double xPosHint,double yPosHint,
                                                        bool pushUndoRedoCommand,bool addToProject,bool userEdited,
+                                                       bool createGui,
                                                        const QString& fixedName,
                                                        const CreateNodeArgs::DefaultValuesList& paramValues,
                                                        const boost::shared_ptr<NodeCollection>& group);

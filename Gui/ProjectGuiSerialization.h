@@ -43,7 +43,8 @@ CLANG_DIAG_ON(unused-parameter)
 #define VIEWER_DATA_REMOVES_ASPECT_RATIO 7
 #define VIEWER_DATA_INTRODUCES_FPS_LOCK 8
 #define VIEWER_DATA_REMOVES_FRAME_RANGE_LOCK 9
-#define VIEWER_DATA_SERIALIZATION_VERSION VIEWER_DATA_REMOVES_FRAME_RANGE_LOCK
+#define VIEWER_DATA_INTRODUCES_GAMMA 10
+#define VIEWER_DATA_SERIALIZATION_VERSION VIEWER_DATA_INTRODUCES_GAMMA
 
 #define PROJECT_GUI_INTRODUCES_BACKDROPS 2
 #define PROJECT_GUI_REMOVES_ALL_NODE_PREVIEW_TOGGLED 3
@@ -87,6 +88,7 @@ struct ViewerData
     bool isClippedToProject;
     bool autoContrastEnabled;
     double gain;
+    double gamma;
     bool renderScaleActivated;
     int mipMapLevel;
     std::string colorSpace;
@@ -129,6 +131,11 @@ struct ViewerData
         ar & boost::serialization::make_nvp("ClippedToProject",isClippedToProject);
         ar & boost::serialization::make_nvp("AutoContrast",autoContrastEnabled);
         ar & boost::serialization::make_nvp("Gain",gain);
+        if (version >= VIEWER_DATA_INTRODUCES_GAMMA) {
+            ar & boost::serialization::make_nvp("Gain",gamma);
+        } else {
+            gamma = 1.;
+        }
         ar & boost::serialization::make_nvp("ColorSpace",colorSpace);
         ar & boost::serialization::make_nvp("Channels",channels);
         ar & boost::serialization::make_nvp("RenderScaleActivated",renderScaleActivated);

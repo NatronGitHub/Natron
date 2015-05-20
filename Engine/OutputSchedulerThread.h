@@ -544,6 +544,44 @@ private:
     
 };
 
+struct RequestedFrame;
+struct ViewerArgs;
+struct CurrentFrameFunctorArgs
+{
+    int view;
+    ViewerInstance* viewer;
+    U64 viewerHash;
+    RequestedFrame* request;
+    ViewerCurrentFrameRequestSchedulerPrivate* scheduler;
+    bool canAbort;
+    boost::shared_ptr<ViewerArgs> args[2];
+};
+
+
+/**
+ * @brief Single thread used by the ViewerCurrentFrameRequestScheduler when the global thread pool has reached its maximum
+ * activity to keep the renders responsive even if the thread pool is choking. 
+ **/
+struct ViewerCurrentFrameRequestRendererBackupPrivate;
+class ViewerCurrentFrameRequestRendererBackup : public QThread
+{
+public:
+    
+    ViewerCurrentFrameRequestRendererBackup();
+    
+    virtual ~ViewerCurrentFrameRequestRendererBackup();
+    
+    void renderCurrentFrame(const CurrentFrameFunctorArgs& args);
+    
+    void quitThread();
+    
+private:
+    
+    virtual void run() OVERRIDE FINAL;
+    
+    boost::scoped_ptr<ViewerCurrentFrameRequestRendererBackupPrivate> _imp;
+};
+
 
 /**
  * @brief This class manages multiple OutputThreadScheduler so that each render request gets processed as soon as possible.

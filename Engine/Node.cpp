@@ -54,7 +54,7 @@
 #include "Engine/BackDrop.h"
 ///The flickering of edges/nodes in the nodegraph will be refreshed
 ///at most every...
-#define NATRON_RENDER_GRAPHS_HINTS_REFRESH_RATE_SECONDS 0.5
+#define NATRON_RENDER_GRAPHS_HINTS_REFRESH_RATE_SECONDS 1
 
 using namespace Natron;
 using std::make_pair;
@@ -181,6 +181,7 @@ struct Node::Implementation
     : _publicInterface(publicInterface)
     , group(collection)
     , app(app_)
+    , isPartOfProject(true)
     , knobsInitialized(false)
     , inputsInitialized(false)
     , outputsMutex()
@@ -307,6 +308,7 @@ struct Node::Implementation
     
     AppInstance* app; // pointer to the app: needed to access the application's default-project's format
     
+    bool isPartOfProject;
     bool knobsInitialized;
     bool inputsInitialized;
     mutable QMutex outputsMutex;
@@ -444,6 +446,8 @@ struct Node::Implementation
     
     mutable QMutex createdComponentsMutex;
     std::list<Natron::ImageComponents> createdComponents; // comps created by the user
+    
+    boost::weak_ptr<RotoStrokeItem> paintStroke;
 };
 
 /**
@@ -476,8 +480,10 @@ Node::createRotoContextConditionnally()
     assert(!_imp->rotoContext);
     assert(_imp->liveInstance);
     ///Initialize the roto context if any
-    if ( isRotoNode() ) {
+    if ( isRotoNode() || isRotoPaintingNode() ) {
+        _imp->liveInstance->beginChanges();
         _imp->rotoContext.reset( new RotoContext(shared_from_this()) );
+        _imp->liveInstance->endChanges(true);
         _imp->rotoContext->createBaseLayer();
     }
 }
@@ -499,6 +505,7 @@ Node::load(const std::string & parentMultiInstanceName,
            const NodeSerialization & serialization,
            bool dontLoadName,
            bool userEdited,
+           bool isPartOfProject,
            const QString& fixedName,
            const CreateNodeArgs::DefaultValuesList& paramValues)
 {
@@ -507,6 +514,8 @@ Node::load(const std::string & parentMultiInstanceName,
     
     ///cannot load twice
     assert(!_imp->liveInstance);
+    
+    _imp->isPartOfProject = isPartOfProject;
     
     bool isMultiInstanceChild = false;
     if ( !parentMultiInstanceName.empty() ) {
@@ -614,10 +623,11 @@ Node::load(const std::string & parentMultiInstanceName,
         assert(nameSet);
         updateEffectLabelKnob(getScriptName().c_str());
     }
-    
-    declarePythonFields();
-    if  (getRotoContext()) {
-        declareRotoPythonField();
+    if (isPartOfProject) {
+        declarePythonFields();
+        if  (getRotoContext()) {
+            declareRotoPythonField();
+        }
     }
     
     boost::shared_ptr<NodeCollection> group = getGroup();
@@ -1956,8 +1966,8 @@ Node::initializeKnobs(int renderScaleSupportPref)
                     const ImageComponents& rgba = ImageComponents::getRGBAComponents();
                     const std::vector<std::string>& channels = rgba.getComponentsNames();
                     const std::string& layerName = rgba.getComponentsGlobalName();
-                    for (std::size_t i = 0; i < channels.size(); ++i) {
-                        choices.push_back(layerName + "." + channels[i]);
+                    for (std::size_t c = 0; c < channels.size(); ++c) {
+                        choices.push_back(layerName + "." + channels[c]);
                     }
 
                     channel->populateChoices(choices);
@@ -2329,12 +2339,6 @@ Node::getLiveInstance() const
 #pragma message WARN("We should fix it and return a shared_ptr instead, but this is a tedious work since it is used everywhere")
     ///Thread safe as it never changes
     return _imp->liveInstance.get();
-}
-
-bool
-Node::hasEffect() const
-{
-    return _imp->liveInstance != NULL;
 }
 
 void
@@ -3071,7 +3075,7 @@ Node::disconnectInput(int inputNumber)
     
     {
         QMutexLocker l(&_imp->inputsMutex);
-        if ( (inputNumber < 0) || ( inputNumber > (int)_imp->inputs.size() ) || (_imp->inputs[inputNumber] == NULL) ) {
+        if ( (inputNumber < 0) || ( inputNumber > (int)_imp->inputs.size() ) || (!_imp->inputs[inputNumber]) ) {
             return -1;
         }
         
@@ -3224,7 +3228,6 @@ Node::deactivate(const std::list< Node* > & outputsToDisconnect,
     clearPersistentMessage(false);
     
     boost::shared_ptr<NodeCollection> parentCol = getGroup();
-    assert(parentCol);
     NodeGroup* isParentGroup = dynamic_cast<NodeGroup*>(parentCol.get());
     
     ///For all knobs that have listeners, kill expressions
@@ -3757,10 +3760,7 @@ Node::isRotoNode() const
 bool
 Node::isRotoPaintingNode() const
 {
-    ///Runs only in the main thread (checked by getName())
-    QString name = getPluginID().c_str();
-    
-    return name.contains("rotopaint",Qt::CaseInsensitive);
+    return _imp->liveInstance ? _imp->liveInstance->isRotoPaintNode() : false;
 }
 
 boost::shared_ptr<RotoContext>
@@ -5005,13 +5005,32 @@ Node::getUserComponents(int inputNb,bool* processChannels, bool* isAll,Natron::I
     assert(!_imp->liveInstance->isMultiPlanar());
     
     std::map<int,ChannelSelector>::const_iterator foundSelector = _imp->channelsSelectors.find(inputNb);
-    if (foundSelector == _imp->channelsSelectors.end()) {
-        //Fetch in input what the user has set for the output
-        foundSelector = _imp->channelsSelectors.find(-1);
-    }
-    if (foundSelector == _imp->channelsSelectors.end()) {
-        processChannels[0] = processChannels[1] = processChannels[2] = processChannels[3] = true;
-        return false;
+    int chanIndex = getMaskChannel(inputNb,layer);
+    if (chanIndex != -1) {
+        
+        *isAll = false;
+        (void)chanIndex;
+        int numChans = layer->getNumComponents();
+        processChannels[0] = true;
+        if (numChans > 1) {
+            processChannels[1] = true;
+            if (numChans > 2) {
+                processChannels[2] = true;
+                if (numChans > 3) {
+                    processChannels[3] = true;
+                }
+            }
+        }
+        return true;
+    } else {
+        if (foundSelector == _imp->channelsSelectors.end()) {
+            //Fetch in input what the user has set for the output
+            foundSelector = _imp->channelsSelectors.find(-1);
+        }
+        if (foundSelector == _imp->channelsSelectors.end()) {
+            processChannels[0] = processChannels[1] = processChannels[2] = processChannels[3] = true;
+            return false;
+        }
     }
     
     *isAll = !_imp->getSelectedLayer(inputNb, foundSelector->second, layer);
@@ -5523,14 +5542,16 @@ Node::shouldCacheOutput(bool isFrameVaryingOrAnimated) const
                 }
             }
             
-            
+            boost::shared_ptr<RotoStrokeItem> attachedStroke = _imp->paintStroke.lock();
             return !isFrameVaryingOrAnimated ||
             output->isSettingsPanelOpened() ||
             _imp->liveInstance->doesTemporalClipAccess() ||
             _imp->liveInstance->getRecursionLevel() > 0 ||
             isForceCachingEnabled() ||
             appPTR->isAggressiveCachingEnabled() ||
-            (isPreviewEnabled() && !appPTR->isBackground());
+            (isPreviewEnabled() && !appPTR->isBackground()) ||
+            (getRotoContext() && isSettingsPanelOpened()) ||
+            (attachedStroke && attachedStroke->getContext()->getNode()->isSettingsPanelOpened());
         } else {
             // outputs == 0, never cache, unless explicitly set
             return isForceCachingEnabled() || appPTR->isAggressiveCachingEnabled();
@@ -5676,7 +5697,18 @@ Node::restoreClipPreferencesRecursive(std::list<Natron::Node*>& markedNodes)
 }
 
 
+void
+Node::attachStrokeItem(const boost::shared_ptr<RotoStrokeItem>& stroke)
+{
+    assert(QThread::currentThread() == qApp->thread());
+    _imp->paintStroke = stroke;
+}
 
+boost::shared_ptr<RotoStrokeItem>
+Node::getAttachedStrokeItem() const
+{
+    return _imp->paintStroke.lock();
+}
 
 /**
  * @brief Given a fullyQualifiedName, e.g: app1.Group1.Blur1
@@ -5721,6 +5753,9 @@ Node::declareNodeVariableToPython(const std::string& nodeName)
 #ifdef NATRON_RUN_WITHOUT_PYTHON
 	return;
 #endif
+    if (!_imp->isPartOfProject) {
+        return;
+    }
     Natron::PythonGILLocker pgl;
     
     PyObject* mainModule = appPTR->getMainModule();
@@ -5751,7 +5786,9 @@ Node::declareNodeVariableToPython(const std::string& nodeName)
 void
 Node::setNodeVariableToPython(const std::string& oldName,const std::string& newName)
 {
-
+    if (!_imp->isPartOfProject) {
+        return;
+    }
     QString appID(getApp()->getAppIDString().c_str());
     QString str = QString(appID + ".%1 = " + appID + ".%2\ndel " + appID + ".%2\n").arg(newName.c_str()).arg(oldName.c_str());
     std::string script = str.toStdString();
@@ -5768,6 +5805,9 @@ Node::setNodeVariableToPython(const std::string& oldName,const std::string& newN
 void
 Node::deleteNodeVariableToPython(const std::string& nodeName)
 {
+    if (!_imp->isPartOfProject) {
+        return;
+    }
     if (getParentMultiInstance()) {
         return;
     }
@@ -5792,6 +5832,9 @@ Node::declarePythonFields()
 #ifdef NATRON_RUN_WITHOUT_PYTHON
 	return;
 #endif
+    if (!_imp->isPartOfProject) {
+        return;
+    }
     Natron::PythonGILLocker pgl;
     
     if (!getGroup()) {
@@ -5827,6 +5870,9 @@ Node::removeParameterFromPython(const std::string& parameterName)
 #ifdef NATRON_RUN_WITHOUT_PYTHON
     return;
 #endif
+    if (!_imp->isPartOfProject) {
+        return;
+    }
     Natron::PythonGILLocker pgl;
     std::string appID = getApp()->getAppIDString();
     std::string fullName = getFullyQualifiedName();
@@ -6114,7 +6160,6 @@ Node::refreshChannelSelectors(bool setValues)
             for (EffectInstance::ComponentsAvailableMap::iterator it2 = compsAvailable.begin(); it2!= compsAvailable.end(); ++it2) {
                 if (it2->first.isColorPlane()) {
                     int numComp = it2->first.getNumComponents();
-                    colorIndex = choices.size();
                     colorComp = it2->first;
                     
                     assert(choices.size() > 0);
@@ -6234,11 +6279,11 @@ Node::refreshChannelSelectors(bool setValues)
             node->getLiveInstance()->getComponentsAvailable(getApp()->getTimeLine()->currentFrame(), &compsAvailable);
             
             std::vector<ImageComponents> compsOrdered;
-            for (EffectInstance::ComponentsAvailableMap::iterator it = compsAvailable.begin(); it != compsAvailable.end(); ++it) {
-                if (it->first.isColorPlane()) {
-                    compsOrdered.insert(compsOrdered.begin(), it->first);
+            for (EffectInstance::ComponentsAvailableMap::iterator comp = compsAvailable.begin(); comp != compsAvailable.end(); ++comp) {
+                if (comp->first.isColorPlane()) {
+                    compsOrdered.insert(compsOrdered.begin(), comp->first);
                 } else {
-                    compsOrdered.push_back(it->first);
+                    compsOrdered.push_back(comp->first);
                 }
             }
             {

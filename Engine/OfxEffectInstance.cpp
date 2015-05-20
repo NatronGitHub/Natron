@@ -1103,6 +1103,11 @@ clipPrefsProxy(OfxEffectInstance* self,
     
     
     std::string outputClipDepth = foundOutputPrefs->second.bitdepth;
+    
+    //Might be needed for bugged plugins
+    if (outputClipDepth.empty()) {
+        outputClipDepth = self->effectInstance()->bestSupportedDepth(kOfxBitDepthFloat);
+    }
     Natron::ImageBitDepthEnum outputClipDepthNatron = OfxClipInstance::ofxDepthToNatronDepth(outputClipDepth);
     
     ///Set a warning on the node if the bitdepth conversion from one of the input clip to the output clip is lossy
@@ -1800,8 +1805,7 @@ OfxEffectInstance::getFrameRange(SequenceTime *first,
 bool
 OfxEffectInstance::isIdentity(SequenceTime time,
                               const RenderScale & scale,
-                              const RectD & rod,
-                              const double par,
+                              const RectI & renderWindow,
                               int view,
                               SequenceTime* inputTime,
                               int* inputNb)
@@ -1854,14 +1858,11 @@ OfxEffectInstance::isIdentity(SequenceTime time,
                                             true,
                                             mipMapLevel);
         
-        // In Natron, we only consider isIdentity for whole images
-        RectI roi;
-        rod.toPixelEnclosing(scale, par, &roi);
         OfxRectI ofxRoI;
-        ofxRoI.x1 = roi.left();
-        ofxRoI.x2 = roi.right();
-        ofxRoI.y1 = roi.bottom();
-        ofxRoI.y2 = roi.top();
+        ofxRoI.x1 = renderWindow.left();
+        ofxRoI.x2 = renderWindow.right();
+        ofxRoI.y1 = renderWindow.bottom();
+        ofxRoI.y2 = renderWindow.top();
         
         {
             if (getRecursionLevel() > 1) {
@@ -1872,35 +1873,7 @@ OfxEffectInstance::isIdentity(SequenceTime time,
                 stat = _effect->isIdentityAction(inputTimeOfx, field, ofxRoI, scale, view, inputclip);
             }
         }
-        if ( !scaleIsOne && (supportsRS == eSupportsMaybe) ) {
-            if ( (stat == kOfxStatOK) || (stat == kOfxStatReplyDefault) ) {
-                // we got at least one success with RS != 1
-                setSupportsRenderScaleMaybe(eSupportsYes);
-            } else if (stat == kOfxStatFailed) {
-                // maybe the effect does not support renderscale
-                // try again with scale one
-                OfxPointD scaleOne;
-                scaleOne.x = scaleOne.y = 1.;
-                
-                rod.toPixelEnclosing(scaleOne, par, &roi);
-                ofxRoI.x1 = roi.left();
-                ofxRoI.x2 = roi.right();
-                ofxRoI.y1 = roi.bottom();
-                ofxRoI.y2 = roi.top();
-                
-                if (getRecursionLevel() > 1) {
-                    stat = _effect->isIdentityAction(inputTimeOfx, field, ofxRoI, scaleOne, view, inputclip);
-                } else {
-                    ///Take the preferences lock so that it cannot be modified throughout the action.
-                    QReadLocker preferencesLocker(_preferencesLock);
-                    stat = _effect->isIdentityAction(inputTimeOfx, field, ofxRoI, scaleOne, view, inputclip);
-                }
-                if ( (stat == kOfxStatOK) || (stat == kOfxStatReplyDefault) ) {
-                    // we got success with scale = 1, which means it doesn't support renderscale after all
-                    setSupportsRenderScaleMaybe(eSupportsNo);
-                }
-            }
-        }
+       
     }
 
     if (stat == kOfxStatOK) {
@@ -2960,6 +2933,7 @@ OfxEffectInstance::isPassThroughForNonRenderedPlanes() const
         case OFX::Host::ImageEffect::Base::ePassThroughLevelEnumRenderAllRequestedPlanes:
             return EffectInstance::ePassThroughRenderAllRequestedPlanes;
     }
+    return EffectInstance::ePassThroughBlockNonRenderedPlanes;
 }
 
 bool

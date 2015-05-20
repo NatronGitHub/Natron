@@ -54,6 +54,9 @@ CLANG_DIAG_ON(deprecated-declarations)
 #define kRotoPaintDodgeBaseName "Dodge"
 #define kRotoPaintBurnBaseName "Burn"
 
+//#define ROTO_ENABLE_PAINT
+//#define ROTO_STROKE_USE_FIT_CURVE
+
 namespace Natron {
 class Image;
 class ImageComponents;
@@ -378,7 +381,8 @@ public:
 
     RotoDrawableItem(const boost::shared_ptr<RotoContext>& context,
                      const std::string & name,
-                     const boost::shared_ptr<RotoLayer>& parent);
+                     const boost::shared_ptr<RotoLayer>& parent,
+                     bool useCairoCompositingOperators);
 
     virtual ~RotoDrawableItem();
 
@@ -453,9 +457,8 @@ public:
 
     const std::list<boost::shared_ptr<KnobI> >& getKnobs() const;
     
-public Q_SLOTS:
-    
-    void onFeatherDistanceChanged(int,int);
+    virtual RectD getBoundingBox(int time) const = 0;
+
     
 Q_SIGNALS:
 
@@ -472,7 +475,6 @@ Q_SIGNALS:
 
 protected:
     
-    virtual void invalidateFeatherPointsAtDistance() {}
     
     void addKnob(const boost::shared_ptr<KnobI>& knob);
 
@@ -537,6 +539,7 @@ public:
     ///MT-safe
     std::list< boost::shared_ptr<RotoItem> > getItems_mt_safe() const;
 
+    
 private:
 
     boost::scoped_ptr<RotoLayerPrivate> _imp;
@@ -568,6 +571,15 @@ public:
            const boost::shared_ptr<RotoLayer>& parent);
 
     virtual ~Bezier();
+    
+    static void
+    bezierPoint(const Natron::Point & p0,
+                const Natron::Point & p1,
+                const Natron::Point & p2,
+                const Natron::Point & p3,
+                double t,
+                Natron::Point *dest);
+
     
     /**
      * @brief Used to differentiate real shapes with feather of paint strokes which does not have a feather
@@ -775,6 +787,15 @@ public:
      **/
     int getKeyframesCount() const;
 
+    static void deCastelJau(const std::list<boost::shared_ptr<BezierCP> >& cps, int time, unsigned int mipMapLevel,
+                            bool finished,
+                            int nBPointsPerSegment, std::list<Natron::Point>* points, RectD* bbox);
+    
+    static void point_line_intersection(const Natron::Point &p1,
+                            const Natron::Point &p2,
+                            const Natron::Point &pos,
+                            int *winding);
+    
     /**
      * @brief Evaluates the spline at the given time and returns the list of all the points on the curve.
      * @param nbPointsPerSegment controls how many points are used to draw one Bezier segment
@@ -808,7 +829,7 @@ public:
      * @brief Returns the bounding box of the bezier. The last value computed by evaluateAtTime_DeCasteljau will be returned,
      * otherwise if it has never been called, evaluateAtTime_DeCasteljau will be called to compute the bounding box.
      **/
-    virtual RectD getBoundingBox(int time) const;
+    virtual RectD getBoundingBox(int time) const OVERRIDE;
 
     /**
      * @brief Returns a const ref to the control points of the bezier curve. This can only ever be called on the main thread.
@@ -830,7 +851,6 @@ public:
     const std::list< boost::shared_ptr<BezierCP> > & getFeatherPoints() const;
     std::list< boost::shared_ptr<BezierCP> > getFeatherPoints_mt_safe() const;
     
-    std::list< boost::shared_ptr<BezierCP> > getFeatherPointsAtDistance_mt_safe() const;
     
     enum ControlPointSelectionPrefEnum
     {
@@ -929,14 +949,10 @@ private:
     bool isFeatherPolygonClockwiseOrientedInternal(int time) const;
     
     void computePolygonOrientation(int time,bool isStatic) const;
-    
-    virtual void invalidateFeatherPointsAtDistance() OVERRIDE FINAL;
-    
+        
     
 public:
     
-    void updateFeatherPointsAtDistanceIfNeeded(int time) const;
-
 
     /**
      * @brief Must be implemented by the derived class to save the state into
@@ -998,8 +1014,14 @@ private:
  * @class Base class for all strokes
  **/
 struct RotoStrokeItemPrivate;
-class RotoStrokeItem : public Bezier
+class RotoStrokeItem :
+#ifdef ROTO_STROKE_USE_FIT_CURVE
+public Bezier
+#else
+public RotoDrawableItem
+#endif
 {
+    Q_OBJECT
     
 public:
     
@@ -1010,8 +1032,10 @@ public:
     
     virtual ~RotoStrokeItem();
     
+#ifdef ROTO_STROKE_USE_FIT_CURVE
     virtual bool useFeatherPoints() const OVERRIDE FINAL { return false; }
-        
+#endif
+    
     
     Natron::RotoStrokeType getBrushType() const;
     
@@ -1046,8 +1070,26 @@ public:
     boost::shared_ptr<Double_Knob> getBrushEffectKnob() const;
     boost::shared_ptr<Double_Knob> getBrushVisiblePortionKnob() const;
     
+#ifndef ROTO_STROKE_USE_FIT_CURVE
+    
+    void evaluateStroke(unsigned int mipMapLevel, std::list<std::pair<Natron::Point,double> >* points) const;
+    
+#endif
+    
+    boost::shared_ptr<Natron::Node> getEffectNode() const;
+    boost::shared_ptr<Natron::Node> getMergeNode() const;
+    
+    void refreshNodesConnections();
+
+    boost::shared_ptr<Natron::Image> getMostRecentRenderedImage(int* nbPoints) const;
+    void addRenderedImage(int nbPoints,const boost::shared_ptr<Natron::Image>& image);
+    
+public Q_SLOTS:
+    
+    void onRotoStrokeKnobChanged(int);
     
 private:
+    RotoStrokeItem* findPreviousStrokeInHierarchy();
     
     boost::scoped_ptr<RotoStrokeItemPrivate> _imp;
 };
@@ -1071,6 +1113,13 @@ public:
     RotoContext(const boost::shared_ptr<Natron::Node>& node);
 
     virtual ~RotoContext();
+    
+    /**
+     * @brief We have chosen to disable rotopainting and roto shapes from the same RotoContext because the rendering techniques are
+     * very much differents. The rotopainting systems requires an entire compositing tree held inside whereas the rotoshapes
+     * are rendered and optimized by Cairo internally.
+     **/
+    bool isRotoPaint() const;
     
     void createBaseLayer();
 
@@ -1159,19 +1208,44 @@ public:
                                    int view,
                                    RectD* rod) const; //!< rod in canonical coordinates
 
+    
+    
     /**
      * @brief Render the mask formed by all the shapes contained in the context within the roi.
      * The image will use the cache if byPassCache is set to true.
      **/
     boost::shared_ptr<Natron::Image> renderMask(const RectI & roi,
                                                 const Natron::ImageComponents& components,
-                                                U64 nodeHash,
-                                                U64 ageToRender,
                                                 const RectD & nodeRoD,
                                                 SequenceTime time,
                                                 Natron::ImageBitDepthEnum depth,
-                                                int view,
                                                 unsigned int mipmapLevel);
+    
+    /**
+     * @brief Same as renderMask(...) but does the render for a single stroke.
+     **/
+    boost::shared_ptr<Natron::Image> renderMask(const boost::shared_ptr<RotoStrokeItem>& stroke,
+                                                const RectI & roi,
+                                                const Natron::ImageComponents& components,
+                                                const RectD & nodeRoD,
+                                                SequenceTime time,
+                                                Natron::ImageBitDepthEnum depth,
+                                                unsigned int mipmapLevel);
+    
+private:
+    
+    boost::shared_ptr<Natron::Image> renderMaskInternal(RotoStrokeItem* isSingleStroke,
+                                                        const std::list<boost::shared_ptr<RotoDrawableItem> >& splines,
+                                                        const RectI & roi,
+                                                        const Natron::ImageComponents& components,
+                                                        const RectD & nodeRoD,
+                                                        SequenceTime time,
+                                                        Natron::ImageBitDepthEnum depth,
+                                                        unsigned int mipmapLevel);
+    
+public:
+    
+
 
     /**
      * @brief To be called when a change was made to trigger a new render.
@@ -1281,6 +1355,18 @@ public:
     
     void declareItemAsPythonField(const boost::shared_ptr<RotoItem>& item);
     void removeItemAsPythonField(const boost::shared_ptr<RotoItem>& item);
+    
+    /**
+     * @brief Rebuilds the connection between nodes used internally by the rotopaint tree
+     * To be called whenever changes position in the hierarchy or when one gets removed/inserted
+     **/
+    void refreshRotoPaintTree();
+    
+    void onRotoPaintInputChanged(const boost::shared_ptr<Natron::Node>& node);
+    
+    boost::shared_ptr<Natron::Node> getRotoPaintTreeConstantInput() const;
+    
+    void getRotoPaintTreeNodes(std::list<boost::shared_ptr<Natron::Node> >* nodes) const;
     
 Q_SIGNALS:
 

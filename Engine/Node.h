@@ -60,6 +60,7 @@ class Double_Knob;
 class NodeGuiI;
 class RotoContext;
 class NodeCollection;
+class RotoStrokeItem;
 namespace Natron {
 class Plugin;
 class OutputEffectInstance;
@@ -107,6 +108,7 @@ public:
               const NodeSerialization & serialization,
               bool dontLoadName,
               bool userEdited,
+              bool isPartOfProject,
               const QString& fixedName,
               const std::list<boost::shared_ptr<KnobSerialization> >& paramValues);
 
@@ -165,8 +167,6 @@ public:
     void setLiveInstance(const boost::shared_ptr<Natron::EffectInstance>& liveInstance);
 
     Natron::EffectInstance* getLiveInstance() const;
-
-    bool hasEffect() const;
 
     /**
      * @brief Returns true if the node is a multi-instance node, that is, holding several other nodes.
@@ -237,10 +237,10 @@ public:
     bool isOpenFXNode() const;
 
     /**
-     * @brief Returns true if the node is either a roto or rotopaint node
+     * @brief Returns true if the node is either a roto  node
      **/
     bool isRotoNode() const;
-
+    
     /**
      * @brief Returns true if this node is a tracker
      **/
@@ -468,6 +468,13 @@ public:
     
     std::string getInputChangedCallback() const;
 
+    /**
+     * @brief This is used exclusively by nodes in the underlying graph of the implementation of the RotoPaint. 
+     * Do not use that anywhere else.
+     **/
+    void attachStrokeItem(const boost::shared_ptr<RotoStrokeItem>& stroke);
+    boost::shared_ptr<RotoStrokeItem> getAttachedStrokeItem() const;
+    
 protected:
     
     void runInputChangedCallback(int index);

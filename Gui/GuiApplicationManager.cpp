@@ -93,7 +93,7 @@ GCC_DIAG_ON(unused-parameter)
 
 //Increment this when making change to default shortcuts or changes that would break expected default shortcuts
 //in a way. This way the user will get prompted to restore default shortcuts on next launch
-#define NATRON_SHORTCUTS_DEFAULT_VERSION 3
+#define NATRON_SHORTCUTS_DEFAULT_VERSION 4
 
 using namespace Natron;
 
@@ -703,6 +703,14 @@ GuiApplicationManager::getIcon(Natron::PixmapEnum e,
                 img.load(NATRON_IMAGES_PATH "gammaOFF.png");
                 *pix = QPixmap::fromImage(img);
                 break;
+            case NATRON_PIXMAP_VIEWER_GAIN_ENABLED:
+                img.load(NATRON_IMAGES_PATH "expoON.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_VIEWER_GAIN_DISABLED:
+                img.load(NATRON_IMAGES_PATH "expoOFF.png");
+                *pix = QPixmap::fromImage(img);
+                break;
             case NATRON_PIXMAP_ADD_TRACK:
                 img.load(NATRON_IMAGES_PATH "addTrack.png");
                 *pix = QPixmap::fromImage(img);
@@ -1021,6 +1029,8 @@ GuiApplicationManager::onPluginLoaded(Natron::Plugin* plugin)
         symbol = Qt::Key_T;
     } else if (pluginID == PLUGINID_OFX_ROTO) {
         symbol = Qt::Key_O;
+    } else if (pluginID == PLUGINID_NATRON_ROTOPAINT) {
+        symbol = Qt::Key_P;
     } else if (pluginID == PLUGINID_OFX_MERGE) {
         symbol = Qt::Key_M;
     } else if (pluginID == PLUGINID_OFX_GRADE) {
@@ -1702,7 +1712,7 @@ GuiApplicationManager::loadShortcuts()
         settingsVersion = settings.value("NATRON_SHORTCUTS_DEFAULT_VERSION").toInt();
     }
     
-    if (settingsExistd && settingsVersion != NATRON_SHORTCUTS_DEFAULT_VERSION) {
+    if (settingsExistd && settingsVersion < NATRON_SHORTCUTS_DEFAULT_VERSION) {
         _imp->_shortcutsChangedVersion = true;
     }
     
@@ -1919,7 +1929,7 @@ GuiApplicationManager::populateShortcuts()
     registerKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphClone, kShortcutDescActionGraphClone, Qt::AltModifier, Qt::Key_K);
     registerKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphDeclone, kShortcutDescActionGraphDeclone, Qt::AltModifier | Qt::ShiftModifier, Qt::Key_K);
     registerKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphDuplicate, kShortcutDescActionGraphDuplicate, Qt::AltModifier, Qt::Key_C);
-    registerKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphForcePreview, kShortcutDescActionGraphForcePreview, Qt::NoModifier, Qt::Key_P);
+    registerKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphForcePreview, kShortcutDescActionGraphForcePreview, Qt::ShiftModifier, Qt::Key_P);
     registerKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphTogglePreview, kShortcutDescActionGraphToggleAutoPreview, Qt::AltModifier, Qt::Key_P);
     registerKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphToggleAutoPreview, kShortcutDescActionGraphToggleAutoPreview, Qt::NoModifier, (Qt::Key)0);
     registerKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphToggleAutoTurbo, kShortcutDescActionGraphToggleAutoTurbo, Qt::NoModifier, (Qt::Key)0);
