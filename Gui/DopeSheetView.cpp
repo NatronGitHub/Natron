@@ -272,16 +272,18 @@ DSKnob *HierarchyView::getDSKnobAt(const QPoint &point, int *dimension) const
 
 void HierarchyView::onDSNodeCreated(DSNode *dsNode)
 {
+    QTreeWidgetItem *treeItem = dsNode->getTreeItem();
+
     // Add item to the tree
-    addTopLevelItem(dsNode->getTreeItem());
+    addTopLevelItem(treeItem);
 
-    dsNode->getTreeItem()->setExpanded(true);
+    treeItem->setExpanded(true);
 
-    // Expand all and hide if necessary
+    // Expand knob tree items and hide them if necessary
     DSRowsKnobData knobRows = dsNode->getRowsKnobData();
 
-    for (int i = 0; i < dsNode->getTreeItem()->childCount(); ++i) {
-        QTreeWidgetItem *knobItem = dsNode->getTreeItem()->child(i);
+    for (int i = 0; i < treeItem->childCount(); ++i) {
+        QTreeWidgetItem *knobItem = treeItem->child(i);
 
         // Expand if it's a multidim root item
         if (knobItem->childCount() > 0) {
