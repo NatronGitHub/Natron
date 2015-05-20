@@ -209,13 +209,6 @@ HierarchyViewPrivate::HierarchyViewPrivate(HierarchyView *qq) :
 HierarchyViewPrivate::~HierarchyViewPrivate()
 {}
 
-
-/**
- * @brief The HierarchyView class
- *
- *
- */
-
 /**
  * @brief HierarchyView::HierarchyView
  *
@@ -1625,12 +1618,6 @@ void DopeSheetViewPrivate::createContextMenu()
                      parent, SLOT(frame()));
     viewMenu->addAction(frameSelectionAction);
 }
-
-/**
- * @class DopeSheetView
- *
- *
- */
 
 /**
  * @brief DopeSheetView::DopeSheetView
