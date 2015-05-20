@@ -2844,7 +2844,7 @@ void Settings::getDopeSheetEditorBackgroundColor(double *r, double *g, double *b
     *b = _dopeSheetEditorBackgroundColor->getValue(2);
 }
 
-void Settings::getDopeSheetEditorRootSectionBackgroundColor(double *r, double *g, double *b, double *a) const
+void Settings::getDopeSheetEditorRootRowBackgroundColor(double *r, double *g, double *b, double *a) const
 {
     *r = _dopeSheetEditorRootSectionBackgroundColor->getValue(0);
     *g = _dopeSheetEditorRootSectionBackgroundColor->getValue(1);
@@ -2852,7 +2852,7 @@ void Settings::getDopeSheetEditorRootSectionBackgroundColor(double *r, double *g
     *a = _dopeSheetEditorRootSectionBackgroundColor->getValue(3);
 }
 
-void Settings::getDopeSheetEditorKnobSectionBackgroundColor(double *r, double *g, double *b, double *a) const
+void Settings::getDopeSheetEditorKnobRowBackgroundColor(double *r, double *g, double *b, double *a) const
 {
     *r = _dopeSheetEditorKnobSectionBackgroundColor->getValue(0);
     *g = _dopeSheetEditorKnobSectionBackgroundColor->getValue(1);

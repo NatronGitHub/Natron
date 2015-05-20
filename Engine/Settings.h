@@ -275,8 +275,8 @@ public:
     void getCurveEditorGridColor(double* r,double* g,double* b) const;
     void getCurveEditorScaleColor(double* r,double* g,double* b) const;
     void getDopeSheetEditorBackgroundColor(double* r,double* g,double* b) const;
-    void getDopeSheetEditorRootSectionBackgroundColor(double* r, double* g, double* b, double *a) const;
-    void getDopeSheetEditorKnobSectionBackgroundColor(double* r, double* g, double* b, double *a) const;
+    void getDopeSheetEditorRootRowBackgroundColor(double* r, double* g, double* b, double *a) const;
+    void getDopeSheetEditorKnobRowBackgroundColor(double* r, double* g, double* b, double *a) const;
     void getDopeSheetEditorScaleColor(double* r,double* g, double* b) const;
     void getDopeSheetEditorGridColor(double* r,double* g, double* b) const;
 

@@ -412,7 +412,7 @@ public:
     // Helpers
     QRectF rectToZoomCoordinates(const QRectF &rect) const;
     QRectF rectToWidgetCoordinates(const QRectF &rect) const;
-    QRectF nameItemRectToSectionRect(const QRectF &rect) const;
+    QRectF nameItemRectToRowRect(const QRectF &rect) const;
 
     DSKeyPtrList::iterator keyframeIsAlreadyInSelected(const DSSelectedKey &key);
 
@@ -429,10 +429,10 @@ public:
     // Drawing
     void drawScale() const;
 
-    void drawSections() const;
+    void drawRows() const;
 
-    void drawNodeSection(const DSNode *dsNode) const;
-    void drawKnobSection(const DSKnob *dsKnob) const;
+    void drawNodeRow(const DSNode *dsNode) const;
+    void drawKnobRow(const DSKnob *dsKnob) const;
 
     void drawClip(DSNode *dsNode) const;
     void drawKeyframes(DSNode *dsNode) const;
@@ -571,15 +571,15 @@ QRectF DopeSheetViewPrivate::rectToWidgetCoordinates(const QRectF &rect) const
     return QRectF(topLeft, bottomRight);
 }
 
-QRectF DopeSheetViewPrivate::nameItemRectToSectionRect(const QRectF &rect) const
+QRectF DopeSheetViewPrivate::nameItemRectToRowRect(const QRectF &rect) const
 {
     QRectF r = rectToZoomCoordinates(rect);
 
-    double sectionTop = r.topLeft().y();
-    double sectionBottom = r.bottomRight().y() - 1;
+    double rowTop = r.topLeft().y();
+    double rowBottom = r.bottomRight().y() - 1;
 
-    return QRectF(QPointF(zoomContext.left(), sectionTop),
-                  QPointF(zoomContext.right(), sectionBottom));
+    return QRectF(QPointF(zoomContext.left(), rowTop),
+                  QPointF(zoomContext.right(), rowBottom));
 }
 
 DSKeyPtrList::iterator DopeSheetViewPrivate::keyframeIsAlreadyInSelected(const DSSelectedKey &key)
@@ -611,7 +611,7 @@ Qt::CursorShape DopeSheetViewPrivate::getCursorDuringHover(const QPointF &widget
     else if (isNearByCurrentFrameIndicatorBottom(zoomCoords)) {
         ret = getCursorForEventState(DopeSheetView::esMoveCurrentFrameIndicator);
     }
-    // Or does he hovering on a section's element ?
+    // Or does he hovering on a row's element ?
     else if (QTreeWidgetItem *treeItem = hierarchyView->itemAt(0, widgetCoords.y())) {
         DSRowsNodeData dsNodeItems = model->getRowsNodeData();
         DSRowsNodeData::const_iterator dsNodeIt = dsNodeItems.find(treeItem);
@@ -894,13 +894,13 @@ void DopeSheetViewPrivate::drawScale() const
 }
 
 /**
- * @brief DopeSheetViewPrivate::drawSections
+ * @brief DopeSheetViewPrivate::drawRows
  *
  *
  *
  * These rows have the same height as an item from the hierarchy view.
  */
-void DopeSheetViewPrivate::drawSections() const
+void DopeSheetViewPrivate::drawRows() const
 {
     RUNNING_IN_MAIN_THREAD_AND_CONTEXT(parent);
 
@@ -922,7 +922,7 @@ void DopeSheetViewPrivate::drawSections() const
             glEnable(GL_BLEND);
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-            drawNodeSection(dsNode);
+            drawNodeRow(dsNode);
 
             DSRowsKnobData knobItems = dsNode->getRowsKnobData();
             for (DSRowsKnobData::const_iterator it2 = knobItems.begin();
@@ -931,7 +931,7 @@ void DopeSheetViewPrivate::drawSections() const
 
                 DSKnob *dsKnob = (*it2).second;
 
-                drawKnobSection(dsKnob);
+                drawKnobRow(dsKnob);
             }
 
             DSNode::DSNodeType nodeType = dsNode->getDSNodeType();
@@ -947,93 +947,93 @@ void DopeSheetViewPrivate::drawSections() const
 }
 
 /**
- * @brief DopeSheetViewPrivate::drawNodeSection
+ * @brief DopeSheetViewPrivate::drawNodeRow
  *
  *
  */
-void DopeSheetViewPrivate::drawNodeSection(const DSNode *dsNode) const
+void DopeSheetViewPrivate::drawNodeRow(const DSNode *dsNode) const
 {
     GLProtectAttrib a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT);
 
     QRectF nameItemRect = hierarchyView->getItemRect(dsNode);
 
-    QRectF sectionRect = nameItemRectToSectionRect(nameItemRect);
+    QRectF rowRect = nameItemRectToRowRect(nameItemRect);
 
     boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
     double rootR, rootG, rootB, rootA;
-    settings->getDopeSheetEditorRootSectionBackgroundColor(&rootR, &rootG, &rootB, &rootA);
+    settings->getDopeSheetEditorRootRowBackgroundColor(&rootR, &rootG, &rootB, &rootA);
 
     glColor4f(rootR, rootG, rootB, rootA);
 
     glBegin(GL_QUADS);
-    glVertex2f(sectionRect.topLeft().x(), sectionRect.topLeft().y());
-    glVertex2f(sectionRect.bottomLeft().x(), sectionRect.bottomLeft().y());
-    glVertex2f(sectionRect.bottomRight().x(), sectionRect.bottomRight().y());
-    glVertex2f(sectionRect.topRight().x(), sectionRect.topRight().y());
+    glVertex2f(rowRect.topLeft().x(), rowRect.topLeft().y());
+    glVertex2f(rowRect.bottomLeft().x(), rowRect.bottomLeft().y());
+    glVertex2f(rowRect.bottomRight().x(), rowRect.bottomRight().y());
+    glVertex2f(rowRect.topRight().x(), rowRect.topRight().y());
     glEnd();
 }
 
 /**
- * @brief DopeSheetViewPrivate::drawKnobSection
+ * @brief DopeSheetViewPrivate::drawKnobRow
  *
  *
  */
-void DopeSheetViewPrivate::drawKnobSection(const DSKnob *dsKnob) const
+void DopeSheetViewPrivate::drawKnobRow(const DSKnob *dsKnob) const
 {
     GLProtectAttrib a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT);
 
     boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
 
     if (dsKnob->isMultiDim()) {
-        // Draw root section
+        // Draw root row
         QRectF nameItemRect = hierarchyView->getItemRect(dsKnob);
-        QRectF sectionRect = nameItemRectToSectionRect(nameItemRect);
+        QRectF rowRect = nameItemRectToRowRect(nameItemRect);
 
         double rootR, rootG, rootB, rootA;
-        settings->getDopeSheetEditorRootSectionBackgroundColor(&rootR, &rootG, &rootB, &rootA);
+        settings->getDopeSheetEditorRootRowBackgroundColor(&rootR, &rootG, &rootB, &rootA);
 
         glColor4f(rootR, rootG, rootB, rootA);
 
         glBegin(GL_QUADS);
-        glVertex2f(sectionRect.topLeft().x(), sectionRect.topLeft().y());
-        glVertex2f(sectionRect.bottomLeft().x(), sectionRect.bottomLeft().y());
-        glVertex2f(sectionRect.bottomRight().x(), sectionRect.bottomRight().y());
-        glVertex2f(sectionRect.topRight().x(), sectionRect.topRight().y());
+        glVertex2f(rowRect.topLeft().x(), rowRect.topLeft().y());
+        glVertex2f(rowRect.bottomLeft().x(), rowRect.bottomLeft().y());
+        glVertex2f(rowRect.bottomRight().x(), rowRect.bottomRight().y());
+        glVertex2f(rowRect.topRight().x(), rowRect.topRight().y());
         glEnd();
 
-        // Draw child sections
+        // Draw child rows
         double knobR, knobG, knobB, knobA;
-        settings->getDopeSheetEditorKnobSectionBackgroundColor(&knobR, &knobG, &knobB, &knobA);
+        settings->getDopeSheetEditorKnobRowBackgroundColor(&knobR, &knobG, &knobB, &knobA);
 
         glColor4f(knobR, knobG, knobB, knobA);
 
         for (int i = 0; i < dsKnob->getKnobGui()->getKnob()->getDimension(); ++i) {
             QRectF nameChildItemRect = hierarchyView->getItemRectForDim(dsKnob, i);
-            QRectF childSectionRect = nameItemRectToSectionRect(nameChildItemRect);
+            QRectF childrowRect = nameItemRectToRowRect(nameChildItemRect);
 
-            // Draw child section
+            // Draw child row
             glBegin(GL_QUADS);
-            glVertex2f(childSectionRect.topLeft().x(), childSectionRect.topLeft().y());
-            glVertex2f(childSectionRect.bottomLeft().x(), childSectionRect.bottomLeft().y());
-            glVertex2f(childSectionRect.bottomRight().x(), childSectionRect.bottomRight().y());
-            glVertex2f(childSectionRect.topRight().x(), childSectionRect.topRight().y());
+            glVertex2f(childrowRect.topLeft().x(), childrowRect.topLeft().y());
+            glVertex2f(childrowRect.bottomLeft().x(), childrowRect.bottomLeft().y());
+            glVertex2f(childrowRect.bottomRight().x(), childrowRect.bottomRight().y());
+            glVertex2f(childrowRect.topRight().x(), childrowRect.topRight().y());
             glEnd();
         }
     }
     else {
         QRectF nameItemRect = hierarchyView->getItemRect(dsKnob);
-        QRectF sectionRect = nameItemRectToSectionRect(nameItemRect);
+        QRectF rowRect = nameItemRectToRowRect(nameItemRect);
 
         double knobR, knobG, knobB, knobA;
-        settings->getDopeSheetEditorKnobSectionBackgroundColor(&knobR, &knobG, &knobB, &knobA);
+        settings->getDopeSheetEditorKnobRowBackgroundColor(&knobR, &knobG, &knobB, &knobA);
 
         glColor4f(knobR, knobG, knobB, knobA);
 
         glBegin(GL_QUADS);
-        glVertex2f(sectionRect.topLeft().x(), sectionRect.topLeft().y());
-        glVertex2f(sectionRect.bottomLeft().x(), sectionRect.bottomLeft().y());
-        glVertex2f(sectionRect.bottomRight().x(), sectionRect.bottomRight().y());
-        glVertex2f(sectionRect.topRight().x(), sectionRect.topRight().y());
+        glVertex2f(rowRect.topLeft().x(), rowRect.topLeft().y());
+        glVertex2f(rowRect.bottomLeft().x(), rowRect.bottomLeft().y());
+        glVertex2f(rowRect.bottomRight().x(), rowRect.bottomRight().y());
+        glVertex2f(rowRect.topRight().x(), rowRect.topRight().y());
         glEnd();
 
     }
@@ -1216,11 +1216,11 @@ void DopeSheetViewPrivate::drawKeyframes(DSNode *dsNode) const
                         }
                     }
 
-                    // Draw keyframe in the knob dim section only if it's visible
-                    bool drawInDimSection = dsNode->getTreeItem()->isExpanded() &&
+                    // Draw keyframe in the knob dim row only if it's visible
+                    bool drawInDimRow = dsNode->getTreeItem()->isExpanded() &&
                             ((dsKnob->isMultiDim()) ? dsKnob->getTreeItem()->isExpanded() : true);
 
-                    if (drawInDimSection) {
+                    if (drawInDimRow) {
                         glBegin(GL_QUADS);
                         glVertex2f(zoomKfRect.left(), zoomKfRect.top());
                         glVertex2f(zoomKfRect.left(), zoomKfRect.bottom());
@@ -1229,9 +1229,9 @@ void DopeSheetViewPrivate::drawKeyframes(DSNode *dsNode) const
                         glEnd();
                     }
 
-                    // Draw keyframe in multidim root knob section too
-                    bool drawInMultidimRootSection = (dsKnob->isMultiDim() && dsNode->getTreeItem()->isExpanded());
-                    if (drawInMultidimRootSection) {
+                    // Draw keyframe in multidim root knob row too
+                    bool drawInMultidimRootRow = (dsKnob->isMultiDim() && dsNode->getTreeItem()->isExpanded());
+                    if (drawInMultidimRootRow) {
                         p = zoomContext.toZoomCoordinates(keyTime,
                                                           hierarchyView->getItemRect(dsKnob).center().y());
 
@@ -1246,7 +1246,7 @@ void DopeSheetViewPrivate::drawKeyframes(DSNode *dsNode) const
                         glEnd();
                     }
 
-                    // Draw keyframe in node section
+                    // Draw keyframe in node row
                     p = zoomContext.toZoomCoordinates(keyTime,
                                                       hierarchyView->getItemRect(dsNode).center().y());
 
@@ -1530,13 +1530,13 @@ DSSelectedKeys DopeSheetViewPrivate::createSelectionFromRect(const QRectF& rect)
                      ++kIt) {
                     KeyFrame kf = (*kIt);
 
-                    double sectionCenterY = (dsKnob->isMultiDim()) ? hierarchyView->getItemRectForDim(dsKnob, i).center().y()
+                    double rowCenterY = (dsKnob->isMultiDim()) ? hierarchyView->getItemRectForDim(dsKnob, i).center().y()
                                                                    : hierarchyView->getItemRect(dsKnob).center().y();
 
                     double x = kf.getTime();
 
                     if ((rect.left() <= x) && (rect.right() >= x)
-                            && (rect.top() >= sectionCenterY) && (rect.bottom() <= sectionCenterY)) {
+                            && (rect.top() >= rowCenterY) && (rect.bottom() <= rowCenterY)) {
                         ret.push_back(DSSelectedKey(dsKnob, kf, i));
                     }
                 }
@@ -2097,7 +2097,7 @@ void DopeSheetView::paintGL()
         glClear(GL_COLOR_BUFFER_BIT);
 
         _imp->drawScale();
-        _imp->drawSections();
+        _imp->drawRows();
 
         if (_imp->eventState == DopeSheetView::esSelectionByRect) {
             _imp->drawSelectionRect();
