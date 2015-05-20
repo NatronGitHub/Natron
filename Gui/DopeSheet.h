@@ -57,6 +57,7 @@ class DopeSheet: public QObject
 
 public:
     friend class DSNode;
+    friend class DSNodePrivate;
 
     DopeSheet();
     ~DopeSheet();
@@ -142,6 +143,7 @@ public:
     {
         CommonNodeType = 1001,
         ReaderNodeType,
+        RetimeNodeType,
         GroupNodeType
     };
 

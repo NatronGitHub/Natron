@@ -177,7 +177,9 @@ QSize HierarchyViewItemDelegate::sizeHint(const QStyleOptionViewItem &option, co
 
     DSNode::DSNodeType nodeType = DSNode::DSNodeType(item->type());
 
-    if (nodeType == DSNode::ReaderNodeType || nodeType == DSNode::GroupNodeType) {
+    if (nodeType == DSNode::ReaderNodeType ||
+            nodeType == DSNode::GroupNodeType ||
+            nodeType == DSNode::RetimeNodeType) {
         itemSize.rheight() += 10;
     }
 
@@ -931,10 +933,11 @@ void DopeSheetViewPrivate::drawRows() const
 
             DSNode::DSNodeType nodeType = dsNode->getDSNodeType();
 
-            if (nodeType == DSNode::ReaderNodeType || nodeType == DSNode::GroupNodeType) {
+            if (nodeType == DSNode::ReaderNodeType || nodeType == DSNode::GroupNodeType || nodeType == DSNode::RetimeNodeType) {
                 drawClip(dsNode);
             }
-            else {
+
+            if (nodeType != DSNode::GroupNodeType) {
                 drawKeyframes(dsNode);
             }
         }
@@ -1242,18 +1245,20 @@ void DopeSheetViewPrivate::drawKeyframes(DSNode *dsNode) const
                     }
 
                     // Draw keyframe in node row
-                    p = zoomContext.toZoomCoordinates(keyTime,
-                                                      hierarchyView->getItemRect(dsNode).center().y());
+                    if (dsNode->getDSNodeType() == DSNode::CommonNodeType) {
+                        p = zoomContext.toZoomCoordinates(keyTime,
+                                                          hierarchyView->getItemRect(dsNode).center().y());
 
-                    kfRect.moveCenter(zoomContext.toWidgetCoordinates(p.x(), p.y()));
-                    zoomKfRect = rectToZoomCoordinates(kfRect);
+                        kfRect.moveCenter(zoomContext.toWidgetCoordinates(p.x(), p.y()));
+                        zoomKfRect = rectToZoomCoordinates(kfRect);
 
-                    glBegin(GL_QUADS);
-                    glVertex2f(zoomKfRect.left(), zoomKfRect.top());
-                    glVertex2f(zoomKfRect.left(), zoomKfRect.bottom());
-                    glVertex2f(zoomKfRect.right(), zoomKfRect.bottom());
-                    glVertex2f(zoomKfRect.right(), zoomKfRect.top());
-                    glEnd();
+                        glBegin(GL_QUADS);
+                        glVertex2f(zoomKfRect.left(), zoomKfRect.top());
+                        glVertex2f(zoomKfRect.left(), zoomKfRect.bottom());
+                        glVertex2f(zoomKfRect.right(), zoomKfRect.bottom());
+                        glVertex2f(zoomKfRect.right(), zoomKfRect.top());
+                        glEnd();
+                    }
 
                     if (isSelected != selectedKeyframes.end()) {
                         glColor3f(KF_COLOR.redF(), KF_COLOR.greenF(), KF_COLOR.blackF());
@@ -1526,7 +1531,7 @@ DSSelectedKeys DopeSheetViewPrivate::createSelectionFromRect(const QRectF& rect)
                     KeyFrame kf = (*kIt);
 
                     double rowCenterY = (dsKnob->isMultiDim()) ? hierarchyView->getItemRectForDim(dsKnob, i).center().y()
-                                                                   : hierarchyView->getItemRect(dsKnob).center().y();
+                                                               : hierarchyView->getItemRect(dsKnob).center().y();
 
                     double x = kf.getTime();
 
