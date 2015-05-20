@@ -2152,12 +2152,12 @@ RotoLayer::removeItem(const boost::shared_ptr<RotoItem>& item)
                 l.unlock();
                 getContext()->removeItemAsPythonField(item);
                 l.relock();
-                item->setParentLayer(boost::shared_ptr<RotoLayer>());
                 _imp->items.erase(it);
                 break;
             }
         }
     }
+    item->setParentLayer(boost::shared_ptr<RotoLayer>());
     getContext()->refreshRotoPaintTree();
 }
 
@@ -4563,10 +4563,7 @@ RotoStrokeItem::refreshNodesConnections()
 {
     RotoStrokeItem* previous = findPreviousStrokeInHierarchy();
     boost::shared_ptr<Node> rotoPaintInput =  getContext()->getNode()->getInput(0);
-    if (!rotoPaintInput) {
-        rotoPaintInput = getContext()->getRotoPaintTreeConstantInput();
-    }
-    assert(rotoPaintInput);
+
     boost::shared_ptr<Node> upstreamNode = previous ? previous->getMergeNode() : rotoPaintInput;
     
     
@@ -4662,9 +4659,9 @@ RotoStrokeItem::getBrushType() const
 }
 
 static void
-evaluateStrokeInternal(const Curve& xCurve,
-                       const Curve& yCurve,
-                       const Curve& pCurve,
+evaluateStrokeInternal(const KeyFrameSet& xCurve,
+                       const KeyFrameSet& yCurve,
+                       const KeyFrameSet& pCurve,
                        unsigned int mipMapLevel,
                        std::list<std::pair<Natron::Point,double> >* points,
                        RectD* bbox)
@@ -4675,42 +4672,38 @@ evaluateStrokeInternal(const Curve& xCurve,
         bbox->y1 = std::numeric_limits<double>::infinity();
         bbox->y2 = -std::numeric_limits<double>::infinity();
     }
-    int nKfs = xCurve.getKeyFramesCount();
-    for (int i = 0; i < nKfs - 1; ++i) {
-        KeyFrame xK,yK,pK;
-        bool ok = xCurve.getKeyFrameWithIndex(i, &xK);
-        assert(ok);
-        ok = yCurve.getKeyFrameWithIndex(i, &yK);
-        assert(ok);
-        ok = pCurve.getKeyFrameWithIndex(i, &pK);
-        assert(ok);
-        
-        int nextIdx = (i + 1);
-        assert(nextIdx < nKfs);
-        
-        KeyFrame xNext,yNext,pNext;
-        ok = xCurve.getKeyFrameWithIndex(nextIdx, &xNext);
-        assert(ok);
-        ok = yCurve.getKeyFrameWithIndex(nextIdx, &yNext);
-        assert(ok);
-        ok = pCurve.getKeyFrameWithIndex(nextIdx, &pNext);
-        assert(ok);
+    if (xCurve.size() <= 1) {
+        return;
+    }
+    assert(xCurve.size() == yCurve.size() && xCurve.size() == pCurve.size());
+    
+    KeyFrameSet::const_iterator xIt = xCurve.begin();
+    KeyFrameSet::const_iterator yIt = yCurve.begin();
+    KeyFrameSet::const_iterator pIt = pCurve.begin();
+    KeyFrameSet::const_iterator xNext = xIt;
+    KeyFrameSet::const_iterator yNext = yIt;
+    KeyFrameSet::const_iterator pNext = pIt;
+    ++xNext;
+    ++yNext;
+    ++pNext;
+
+    for (;xNext != xCurve.end(); ++xIt,++yIt,++pIt) {
         
         double x1,y1,press1,x2,y2,press2;
         double x1pr,y1pr,x2pl,y2pl,press1pr,press2pl;
-        x1 = xK.getValue();
-        y1 = yK.getValue();
-        press1 = pK.getValue();
-        x2 = xNext.getValue();
-        y2 = yNext.getValue();
-        press2 = pNext.getValue();
+        x1 = xIt->getValue();
+        y1 = yIt->getValue();
+        press1 = pIt->getValue();
+        x2 = xNext->getValue();
+        y2 = yNext->getValue();
+        press2 = pNext->getValue();
         
-        x1pr = x1 + xK.getRightDerivative() / 3.;
-        y1pr = y1 + yK.getRightDerivative() / 3.;
-        press1pr = press1 + pK.getRightDerivative() / 3.;
-        x2pl = x2 - xNext.getLeftDerivative() / 3.;
-        y2pl = y2 - yNext.getLeftDerivative() / 3.;
-        press2pl = press2 - pNext.getLeftDerivative() / 3.;
+        x1pr = x1 + xIt->getRightDerivative() / 3.;
+        y1pr = y1 + yIt->getRightDerivative() / 3.;
+        press1pr = press1 + pIt->getRightDerivative() / 3.;
+        x2pl = x2 - xNext->getLeftDerivative() / 3.;
+        y2pl = y2 - yNext->getLeftDerivative() / 3.;
+        press2pl = press2 - pNext->getLeftDerivative() / 3.;
         
         /*
          * Approximate the necessary number of line segments, using http://antigrain.com/research/adaptive_bezier/
@@ -4748,6 +4741,16 @@ evaluateStrokeInternal(const Curve& xCurve,
             p.y /= pot;
             points->push_back(std::make_pair(p, pi));
         }
+        
+        if (xNext != xCurve.end()) {
+            ++xNext;
+        }
+        if (yNext != yCurve.end()) {
+            ++yNext;
+        }
+        if (pNext != pCurve.end()) {
+            ++pNext;
+        }
     }
     
 }
@@ -4767,6 +4770,12 @@ RotoStrokeItem::appendPoint(const std::pair<Natron::Point,double>& rawPoints,uns
     {
         QMutexLocker k(&itemMutex);
         
+        
+        _imp->bbox.x1 = std::min(_imp->bbox.x1, rawPoints.first.x);
+        _imp->bbox.x2 = std::max(_imp->bbox.x2, rawPoints.first.x);
+        _imp->bbox.y1 = std::min(_imp->bbox.y1, rawPoints.first.y);
+        _imp->bbox.y2 = std::max(_imp->bbox.y2, rawPoints.first.y);
+        bbox = _imp->bbox;
         
         Curve tmpX,tmpY,tmpP;
         {
@@ -4824,7 +4833,7 @@ RotoStrokeItem::appendPoint(const std::pair<Natron::Point,double>& rawPoints,uns
         }
         _imp->mergeNode->incrementKnobsAge();
         
-        evaluateStrokeInternal(tmpX, tmpY, tmpP, mipMapLevel, &points, &bbox);
+        evaluateStrokeInternal(tmpX.getKeyFrames_mt_safe(), tmpY.getKeyFrames_mt_safe(), tmpP.getKeyFrames_mt_safe(), mipMapLevel, &points, &bbox);
         
         double brushSize = _imp->brushSize->getValue() / 2.;
         
@@ -4873,6 +4882,7 @@ RotoStrokeItem::clone(const RotoItem* other)
         _imp->pressureCurve.clone(otherStroke->_imp->pressureCurve);
         _imp->type = otherStroke->_imp->type;
     }
+    refreshBoundingBox();
     RotoDrawableItem::clone(other);
 }
 
@@ -4917,20 +4927,19 @@ RotoStrokeItem::load(const RotoItemSerialization & obj)
     _imp->brushHardness->clone(s->_brushHardness.getKnob().get());
     _imp->effectStrength->clone(s->_brushEffectStrength.getKnob().get());
     _imp->visiblePortion->clone(s->_brushVisiblePortion.getKnob().get());
+    
+    refreshBoundingBox();
 }
 
-RectD
-RotoStrokeItem::getBoundingBox(int time) const
+void
+RotoStrokeItem::refreshBoundingBox()
 {
-
     QMutexLocker k(&itemMutex);
-    
-    (void)time;
-    RectD bbox;
-    bbox.x1 = std::numeric_limits<double>::infinity();
-    bbox.x2 = -std::numeric_limits<double>::infinity();
-    bbox.y1 = std::numeric_limits<double>::infinity();
-    bbox.y2 = -std::numeric_limits<double>::infinity();
+
+    _imp->bbox.x1 = std::numeric_limits<double>::infinity();
+    _imp->bbox.x2 = -std::numeric_limits<double>::infinity();
+    _imp->bbox.y1 = std::numeric_limits<double>::infinity();
+    _imp->bbox.y2 = -std::numeric_limits<double>::infinity();
     
     assert(_imp->xCurve.getKeyFramesCount() == _imp->yCurve.getKeyFramesCount());
     int nKfs = _imp->xCurve.getKeyFramesCount();
@@ -4940,12 +4949,21 @@ RotoStrokeItem::getBoundingBox(int time) const
         assert(ok);
         ok = _imp->yCurve.getKeyFrameWithIndex(i, &yK);
         assert(ok);
-        bbox.x1 = std::min(bbox.x1, xK.getValue());
-        bbox.x2 = std::max(bbox.x2, xK.getValue());
-        bbox.y1 = std::min(bbox.y1, yK.getValue());
-        bbox.y2 = std::max(bbox.y2, yK.getValue());
+        _imp->bbox.x1 = std::min(_imp->bbox.x1, xK.getValue());
+        _imp->bbox.x2 = std::max(_imp->bbox.x2, xK.getValue());
+        _imp->bbox.y1 = std::min(_imp->bbox.y1, yK.getValue());
+        _imp->bbox.y2 = std::max(_imp->bbox.y2, yK.getValue());
     }
-    double brushSize = _imp->brushSize->getValue() / 2.;
+
+}
+
+RectD
+RotoStrokeItem::getBoundingBox(int time) const
+{
+
+    QMutexLocker k(&itemMutex);
+    RectD bbox = _imp->bbox;
+    double brushSize = _imp->brushSize->getValueAtTime(time) / 2.;
     
     bbox.x1 -= brushSize;
     bbox.x2 += brushSize;
@@ -4958,11 +4976,14 @@ void
 RotoStrokeItem::evaluateStroke(unsigned int mipMapLevel, std::list<std::pair<Natron::Point,double> >* points,
                                RectD* bbox) const
 {
-    
+    KeyFrameSet xSet,ySet,pSet;
     {
         QMutexLocker k(&itemMutex);
-        evaluateStrokeInternal(_imp->xCurve,_imp->yCurve,_imp->pressureCurve,mipMapLevel,points,bbox);
+        xSet = _imp->xCurve.getKeyFrames_mt_safe();
+        ySet = _imp->yCurve.getKeyFrames_mt_safe();
+        pSet = _imp->pressureCurve.getKeyFrames_mt_safe();
     }
+    evaluateStrokeInternal(xSet,ySet,pSet,mipMapLevel,points,bbox);
     double brushSize = _imp->brushSize->getValue() / 2.;
     
     bbox->x1 -= brushSize;
@@ -5007,24 +5028,6 @@ RotoStrokeItem::getBrushVisiblePortionKnob() const
 RotoContext::RotoContext(const boost::shared_ptr<Natron::Node>& node)
     : _imp( new RotoContextPrivate(node) )
 {
-    if (_imp->isPaintNode) {
-        QString fixedNamePrefix(node->getScriptName_mt_safe().c_str());
-        fixedNamePrefix.append("_rotopaint_constant_input");
-        CreateNodeArgs args(PLUGINID_OFX_CONSTANT, "",
-                            -1,-1,
-                            false,
-                            INT_MIN,
-                            INT_MIN,
-                            false,
-                            false,
-                            false,
-                            fixedNamePrefix,
-                            CreateNodeArgs::DefaultValuesList(),
-                            boost::shared_ptr<NodeCollection>());
-        args.createGui = false;
-        _imp->rotoPaintConstantInput = node->getApp()->createNode(args);
-        assert(_imp->rotoPaintConstantInput);
-    }
 
 }
 
@@ -5032,13 +5035,6 @@ bool
 RotoContext::isRotoPaint() const
 {
     return _imp->isPaintNode;
-}
-
-boost::shared_ptr<Natron::Node>
-RotoContext::getRotoPaintTreeConstantInput() const
-{
-    assert(_imp->isPaintNode);
-    return _imp->rotoPaintConstantInput;
 }
 
 void
@@ -5059,7 +5055,6 @@ RotoContext::getRotoPaintTreeNodes(std::list<boost::shared_ptr<Natron::Node> >* 
             nodes->push_back(mergeNode);
         }
     }
-    nodes->push_back(getRotoPaintTreeConstantInput());
 }
 
 ///Must be done here because at the time of the constructor, the shared_ptr doesn't exist yet but
@@ -6613,11 +6608,13 @@ static void
 convertNatronImageToCairoImageForDstComponents(unsigned char* cairoImg,
                                                std::size_t stride,
                                                Natron::Image* image,
-                                               const RectI& roi)
+                                               const RectI& roi,
+                                               const RectI& dstBounds)
 {
     
     unsigned char* dstPix = cairoImg;
-    
+    dstPix += ((roi.y1 - dstBounds.y1) * dstNComps * stride + (roi.x1 - dstBounds.x1) * dstNComps);
+
     Natron::Image::ReadAccess acc = image->getReadRights();
     
     for (int y = 0; y < roi.height(); ++y, dstPix += stride) {
@@ -6667,21 +6664,22 @@ static void
 convertNatronImageToCairoImageForSrcComponents(unsigned char* cairoImg,
                                                std::size_t stride,
                                                Natron::Image* image,
-                                               const RectI& roi)
+                                               const RectI& roi,
+                                               const RectI& dstBounds)
 {
     int comps = (int)image->getComponentsCount();
     switch (comps) {
         case 1:
-            convertNatronImageToCairoImageForDstComponents<PIX,maxValue,dstNComps,1>(cairoImg,stride,image,roi);
+            convertNatronImageToCairoImageForDstComponents<PIX,maxValue,dstNComps,1>(cairoImg,stride,image,roi,dstBounds);
             break;
         case 2:
-            convertNatronImageToCairoImageForDstComponents<PIX,maxValue,dstNComps,2>(cairoImg,stride,image,roi);
+            convertNatronImageToCairoImageForDstComponents<PIX,maxValue,dstNComps,2>(cairoImg,stride,image,roi,dstBounds);
             break;
         case 3:
-            convertNatronImageToCairoImageForDstComponents<PIX,maxValue,dstNComps,3>(cairoImg,stride,image,roi);
+            convertNatronImageToCairoImageForDstComponents<PIX,maxValue,dstNComps,3>(cairoImg,stride,image,roi,dstBounds);
             break;
         case 4:
-            convertNatronImageToCairoImageForDstComponents<PIX,maxValue,dstNComps,4>(cairoImg,stride,image,roi);
+            convertNatronImageToCairoImageForDstComponents<PIX,maxValue,dstNComps,4>(cairoImg,stride,image,roi,dstBounds);
             break;
         default:
             break;
@@ -6695,20 +6693,21 @@ convertNatronImageToCairoImage(unsigned char* cairoImg,
                                std::size_t stride,
                                Natron::Image* image,
                                const RectI& roi,
+                               const RectI& dstBounds,
                                int dstNComps)
 {
     switch (dstNComps) {
         case 1:
-            convertNatronImageToCairoImageForSrcComponents<PIX, maxValue, 1>(cairoImg, stride,image, roi);
+            convertNatronImageToCairoImageForSrcComponents<PIX, maxValue, 1>(cairoImg, stride,image, roi,dstBounds);
             break;
         case 2:
-            convertNatronImageToCairoImageForSrcComponents<PIX, maxValue, 2>(cairoImg, stride,image, roi);
+            convertNatronImageToCairoImageForSrcComponents<PIX, maxValue, 2>(cairoImg, stride,image, roi,dstBounds);
             break;
         case 3:
-            convertNatronImageToCairoImageForSrcComponents<PIX, maxValue, 3>(cairoImg, stride,image, roi);
+            convertNatronImageToCairoImageForSrcComponents<PIX, maxValue, 3>(cairoImg, stride,image, roi,dstBounds);
             break;
         case 4:
-            convertNatronImageToCairoImageForSrcComponents<PIX, maxValue, 4>(cairoImg, stride,image, roi);
+            convertNatronImageToCairoImageForSrcComponents<PIX, maxValue, 4>(cairoImg, stride,image, roi,dstBounds);
             break;
             
         default:
@@ -6796,7 +6795,7 @@ RotoContext::renderSingleStroke(const boost::shared_ptr<RotoStrokeItem>& stroke,
         std::size_t memSize = stride * pixelRod.height();
         buf.resize(memSize);
         memset(buf.data(), 0, sizeof(unsigned char) * memSize);
-        convertNatronImageToCairoImage<float, 1>(buf.data(), stride, ret.get(), oldBounds,1);
+        convertNatronImageToCairoImage<float, 1>(buf.data(), stride, ret.get(), oldBounds, pixelRod, 1);
         cairoImg = cairo_image_surface_create_for_data(buf.data(), CAIRO_FORMAT_A8, pixelRod.width(), pixelRod.height(),
                                                        stride);
        
@@ -6846,6 +6845,7 @@ RotoContext::renderSingleStroke(const boost::shared_ptr<RotoStrokeItem>& stroke,
 
 boost::shared_ptr<Natron::Image>
 RotoContext::renderMaskFromStroke(const boost::shared_ptr<RotoStrokeItem>& stroke,
+                                  const RectI& roi,
                                   U64 rotoAge,
                                   U64 nodeHash,
                                   const Natron::ImageComponents& components,
@@ -6860,10 +6860,20 @@ RotoContext::renderMaskFromStroke(const boost::shared_ptr<RotoStrokeItem>& strok
     
     ImagePtr image = stroke->getStrokeTimePreview();
     if (image) {
-        ImagePtr ret(new Image(components, image->getRoD(), image->getBounds(), mipmapLevel, 1., depth));
-        Natron::ViewerColorSpaceEnum colorspace = node->getApp()->getDefaultColorSpaceForBitDepth(image->getBitDepth());
-        Natron::ViewerColorSpaceEnum dstColorspace = node->getApp()->getDefaultColorSpaceForBitDepth(depth);
-        image->convertToFormat(ret->getBounds(), colorspace, dstColorspace, 0, false, false, false, ret.get());
+        
+        //Todo handle different pixel scale if needed
+        
+        RectI bounds;
+        roi.intersect(image->getBounds(), &bounds);
+        
+        ImagePtr ret(new Image(components, image->getRoD(), bounds, mipmapLevel, 1., depth));
+        if (components != image->getComponents()) {
+            Natron::ViewerColorSpaceEnum colorspace = node->getApp()->getDefaultColorSpaceForBitDepth(image->getBitDepth());
+            Natron::ViewerColorSpaceEnum dstColorspace = node->getApp()->getDefaultColorSpaceForBitDepth(depth);
+            image->convertToFormat(bounds, colorspace, dstColorspace, 0, false, false, false, ret.get());
+        } else {
+            ret->pasteFrom(*image, bounds);
+        }
         return ret;
     }
     ///compute an enhanced hash different from the one of the node in order to differentiate within the cache

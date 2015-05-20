@@ -37,11 +37,11 @@ RectI minimalNonMarkedBbox_internal(const RectI& roi, const RectI& _bounds,const
     roi.intersect(_bounds, &bbox); // be safe
     //find bottom
     for (int i = bbox.bottom(); i < bbox.top(); ++i) {
-        const char* buf = BM_GET(i, _bounds.left());
+        const char* buf = BM_GET(i, bbox.left());
         
         if (trimap) {
             
-            const char* lineEnd = buf + _bounds.width();
+            const char* lineEnd = buf + bbox.width();
             bool metUnavailablePixel = false;
             while (buf < lineEnd) {
                 if (!*buf) {
@@ -59,7 +59,7 @@ RectI minimalNonMarkedBbox_internal(const RectI& roi, const RectI& _bounds,const
             }
         } else {
             
-            const char* lineEnd = buf + _bounds.width();
+            const char* lineEnd = buf + bbox.width();
             while (buf < lineEnd) {
                 if (!*buf || *buf == PIXEL_UNAVAILABLE) {
                     buf = 0;
@@ -77,11 +77,11 @@ RectI minimalNonMarkedBbox_internal(const RectI& roi, const RectI& _bounds,const
     
     //find top (will do zero iteration if the bbox is already empty)
     for (int i = bbox.top() - 1; i >= bbox.bottom(); --i) {
-        const char* buf = BM_GET(i, _bounds.left());
+        const char* buf = BM_GET(i, bbox.left());
         
         if (trimap) {
             
-            const char* lineEnd = buf + _bounds.width();
+            const char* lineEnd = buf + bbox.width();
             bool metUnavailablePixel = false;
             while (buf < lineEnd) {
                 if (!*buf) {
@@ -100,7 +100,7 @@ RectI minimalNonMarkedBbox_internal(const RectI& roi, const RectI& _bounds,const
             
         } else {
             
-            const char* lineEnd = buf + _bounds.width();
+            const char* lineEnd = buf + bbox.width();
             while (buf < lineEnd) {
                 if (!*buf || *buf == PIXEL_UNAVAILABLE) {
                     buf = 0;
@@ -581,6 +581,11 @@ Image::Image(const ImageComponents& components,
 #endif
     
     allocateMemory();
+}
+
+Image::~Image()
+{
+    deallocate();
 }
 
 void

@@ -335,9 +335,13 @@ static bool checkTreeCanRender_internal(Node* node, std::list<Node*>& marked)
     int maxInput = node->getMaxInputCount();
     for (int i = 0; i < maxInput; ++i) {
         NodePtr input = node->getInput(i);
-        if (!input && !node->getLiveInstance()->isInputOptional(i)) {
+        bool optional = node->getLiveInstance()->isInputOptional(i);
+        if (optional) {
+            continue;
+        }
+        if (!input) {
             return false;
-        } else if (input) {
+        } else {
             bool ret = checkTreeCanRender_internal(input.get(), marked);
             if (!ret) {
                 return false;

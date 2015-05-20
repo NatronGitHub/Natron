@@ -119,11 +119,9 @@ RotoPaint::getPreferredAspectRatio() const
 }
 
 void
-RotoPaint::onInputChanged(int inputNb)
+RotoPaint::onInputChanged(int /*inputNb*/)
 {
-    if (inputNb != 0) {
-        return;
-    }
+    
     boost::shared_ptr<Node> inputNode = getNode()->getInput(0);
     getNode()->getRotoContext()->onRotoPaintInputChanged(inputNode);
     
@@ -136,7 +134,7 @@ RotoPaint::getRegionOfDefinition(U64 hash,SequenceTime time, const RenderScale &
     
     RectD maskRod;
     getNode()->getRotoContext()->getMaskRegionOfDefinition(time, view, &maskRod);
-    rod->merge(maskRod);
+    *rod = maskRod;
     return Natron::eStatusOK;
 }
 
@@ -249,6 +247,13 @@ RotoPaint::render(const RenderActionArgs& args)
         } else if (code == eRenderRoIRetCodeAborted) {
             return Natron::eStatusOK;
         } else if (rotoPaintImages.empty()) {
+            for (std::list<std::pair<Natron::ImageComponents,boost::shared_ptr<Natron::Image> > >::const_iterator plane = args.outputPlanes.begin();
+                 plane != args.outputPlanes.end(); ++plane) {
+                
+                plane->second->fill(args.roi, 0., 0., 0., 0.);
+                
+                
+            }
             return Natron::eStatusOK;
         }
         

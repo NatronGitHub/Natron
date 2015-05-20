@@ -1084,6 +1084,8 @@ public Q_SLOTS:
 private:
     RotoStrokeItem* findPreviousStrokeInHierarchy();
     
+    void refreshBoundingBox();
+    
     boost::scoped_ptr<RotoStrokeItemPrivate> _imp;
 };
 
@@ -1218,6 +1220,7 @@ public:
      * @brief Same as renderMask(...) but does the render for a single stroke.
      **/
     boost::shared_ptr<Natron::Image> renderMaskFromStroke(const boost::shared_ptr<RotoStrokeItem>& stroke,
+                                                          const RectI& roi,
                                                           U64 rotoAge,
                                                           U64 nodeHash,
                                                           const Natron::ImageComponents& components,
@@ -1364,9 +1367,7 @@ public:
     void refreshRotoPaintTree();
     
     void onRotoPaintInputChanged(const boost::shared_ptr<Natron::Node>& node);
-    
-    boost::shared_ptr<Natron::Node> getRotoPaintTreeConstantInput() const;
-    
+        
     void getRotoPaintTreeNodes(std::list<boost::shared_ptr<Natron::Node> >* nodes) const;
     
 Q_SIGNALS:

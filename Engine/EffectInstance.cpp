@@ -110,140 +110,182 @@ namespace  {
         
         mutable QMutex _cacheMutex; //< protects everything in the cache
         
-        U64 _cacheHash; //< the effect hash at which the actions were computed
+        struct ActionsCacheInstance
+        {
+            U64 _hash;
+            OfxRangeD _timeDomain;
+            bool _timeDomainSet;
+            
+            IdentityCacheMap _identityCache;
+            RoDCacheMap _rodCache;
+            
+            ActionsCacheInstance()
+            : _timeDomain()
+            , _timeDomainSet(false)
+            , _identityCache()
+            , _rodCache()
+            {
+                
+            }
+
+        };
         
-        OfxRangeD _timeDomain;
-        bool _timeDomainSet;
-        
-        IdentityCacheMap _identityCache;
-        RoDCacheMap _rodCache;
+        std::list<ActionsCacheInstance> _instances;
+        std::size_t _maxInstances;
         
     public:
         
-        ActionsCache()
+        ActionsCache(int maxAvailableHashes)
         : _cacheMutex()
-        , _cacheHash(0)
-        , _timeDomain()
-        , _timeDomainSet(false)
-        , _identityCache()
-        , _rodCache()
+        , _instances()
+        , _maxInstances((std::size_t)maxAvailableHashes)
         {
             
         }
         
-        /**
-         * @brief Get the hash at which the actions are stored in the cache currently
-         **/
-        bool getCacheHash() const {
-            QMutexLocker l(&_cacheMutex);
-            return _cacheHash;
-        }
         
         void invalidateAll(U64 newHash) {
             QMutexLocker l(&_cacheMutex);
-            _cacheHash = newHash;
-            _rodCache.clear();
-             _identityCache.clear();
-            _timeDomainSet = false;
+            if (_instances.size() >= _maxInstances) {
+                _instances.pop_front();
+            }
+            ActionsCacheInstance cache;
+            cache._hash = newHash;
+            _instances.push_back(cache);
         }
         
         bool getIdentityResult(U64 hash,double time, int view, unsigned int mipMapLevel,int* inputNbIdentity,double* identityTime) {
             QMutexLocker l(&_cacheMutex);
-            if (hash != _cacheHash)
-                return false;
-            
-            ActionKey key;
-            key.time = time;
-            key.view = view;
-            key.mipMapLevel = mipMapLevel;
-            
-            IdentityCacheMap::const_iterator found = _identityCache.find(key);
-            if ( found != _identityCache.end() ) {
-                *inputNbIdentity = found->second.inputIdentityNb;
-                *identityTime = found->second.inputIdentityTime;
-                return true;
+            for (std::list<ActionsCacheInstance>::iterator it = _instances.begin(); it!=_instances.end(); ++it) {
+                if (it->_hash == hash) {
+                    ActionKey key;
+                    key.time = time;
+                    key.view = view;
+                    key.mipMapLevel = mipMapLevel;
+                    
+                    IdentityCacheMap::const_iterator found = it->_identityCache.find(key);
+                    if ( found != it->_identityCache.end() ) {
+                        *inputNbIdentity = found->second.inputIdentityNb;
+                        *identityTime = found->second.inputIdentityTime;
+                        return true;
+                    }
+                    return false;
+                }
             }
             return false;
+     
         }
         
-        void setIdentityResult(double time, int view, unsigned int mipMapLevel,int inputNbIdentity,double identityTime)
+        void setIdentityResult(U64 hash,double time, int view, unsigned int mipMapLevel,int inputNbIdentity,double identityTime)
         {
+            
+            
             QMutexLocker l(&_cacheMutex);
-            
-            
-            ActionKey key;
-            key.time = time;
-            key.view = view;
-            key.mipMapLevel = mipMapLevel;
-            
-            IdentityCacheMap::iterator found = _identityCache.find(key);
-            if ( found != _identityCache.end() ) {
-                found->second.inputIdentityNb = inputNbIdentity;
-                found->second.inputIdentityTime = identityTime;
-            } else {
-                IdentityResults v;
-                v.inputIdentityNb = inputNbIdentity;
-                v.inputIdentityTime = identityTime;
-                _identityCache.insert(std::make_pair(key, v));
+            for (std::list<ActionsCacheInstance>::iterator it = _instances.begin(); it!=_instances.end(); ++it) {
+                if (it->_hash == hash) {
+                    
+                    ActionKey key;
+                    key.time = time;
+                    key.view = view;
+                    key.mipMapLevel = mipMapLevel;
+                    IdentityCacheMap::iterator found = it->_identityCache.find(key);
+                    if ( found != it->_identityCache.end() ) {
+                        found->second.inputIdentityNb = inputNbIdentity;
+                        found->second.inputIdentityTime = identityTime;
+                    } else {
+                        IdentityResults v;
+                        v.inputIdentityNb = inputNbIdentity;
+                        v.inputIdentityTime = identityTime;
+                        it->_identityCache.insert(std::make_pair(key, v));
+                    }
+                    return;
+                }
             }
+            
+            //the cache for this hash did not exist
             
         }
        
         bool getRoDResult(U64 hash,double time, int view,unsigned int mipMapLevel,RectD* rod) {
+            
             QMutexLocker l(&_cacheMutex);
-            if (hash != _cacheHash)
-                return false;
-            
-            ActionKey key;
-            key.time = time;
-            key.view = view;
-            key.mipMapLevel = mipMapLevel;
-            
-            RoDCacheMap::const_iterator found = _rodCache.find(key);
-            if ( found != _rodCache.end() ) {
-                *rod = found->second;
-                return true;
+            for (std::list<ActionsCacheInstance>::iterator it = _instances.begin(); it!=_instances.end(); ++it) {
+                if (it->_hash == hash) {
+                    ActionKey key;
+                    key.time = time;
+                    key.view = view;
+                    key.mipMapLevel = mipMapLevel;
+                    
+                    RoDCacheMap::const_iterator found = it->_rodCache.find(key);
+                    if ( found != it->_rodCache.end() ) {
+                        *rod = found->second;
+                        return true;
+                    }
+
+                    return false;
+                }
             }
             return false;
         }
         
         
-        void setRoDResult(double time, int view, unsigned int mipMapLevel,const RectD& rod)
+        void setRoDResult(U64 hash,double time, int view, unsigned int mipMapLevel,const RectD& rod)
         {
+            
             QMutexLocker l(&_cacheMutex);
-            
-            
-            ActionKey key;
-            key.time = time;
-            key.view = view;
-            key.mipMapLevel = mipMapLevel;
-            
-            RoDCacheMap::iterator found = _rodCache.find(key);
-            if ( found != _rodCache.end() ) {
-                ///Already set, this is a bug
-                return;
-            } else {
-                _rodCache.insert(std::make_pair(key, rod));
+            for (std::list<ActionsCacheInstance>::iterator it = _instances.begin(); it!=_instances.end(); ++it) {
+                if (it->_hash == hash) {
+                    
+                    ActionKey key;
+                    key.time = time;
+                    key.view = view;
+                    key.mipMapLevel = mipMapLevel;
+                    
+                    RoDCacheMap::iterator found = it->_rodCache.find(key);
+                    if ( found != it->_rodCache.end() ) {
+                        ///Already set, this is a bug
+                        return;
+                    } else {
+                        it->_rodCache.insert(std::make_pair(key, rod));
+                    }
+                    return;
+                }
             }
             
+            //the cache for this hash did not exist
+
         }
         
         bool getTimeDomainResult(U64 hash,double *first,double* last) {
-            QMutexLocker l(&_cacheMutex);
-            if (hash != _cacheHash || !_timeDomainSet)
-                return false;
             
-            *first = _timeDomain.min;
-            *last = _timeDomain.max;
-            return true;
+            QMutexLocker l(&_cacheMutex);
+            for (std::list<ActionsCacheInstance>::iterator it = _instances.begin(); it!=_instances.end(); ++it) {
+                if (it->_hash == hash) {
+                    *first = it->_timeDomain.min;
+                    *last = it->_timeDomain.max;
+                    return false;
+                }
+            }
+            return false;
+         
         }
         
-        void setTimeDomainResult(double first,double last)
+        void setTimeDomainResult(U64 hash,double first,double last)
         {
+            
             QMutexLocker l(&_cacheMutex);
-            _timeDomainSet = true;
-            _timeDomain.min = first;
-            _timeDomain.max = last;
+            for (std::list<ActionsCacheInstance>::iterator it = _instances.begin(); it!=_instances.end(); ++it) {
+                if (it->_hash == hash) {
+                    
+                    it->_timeDomainSet = true;
+                    it->_timeDomain.min = first;
+                    it->_timeDomain.max = last;
+                    return;
+                }
+            }
+            
+            //the cache for this hash did not exist
+            
         }
         
     };
@@ -324,7 +366,7 @@ struct EffectInstance::Implementation
     , pluginMemoryChunksMutex()
     , pluginMemoryChunks()
     , supportsRenderScale(eSupportsMaybe)
-    , actionsCache()
+    , actionsCache(appPTR->getHardwareIdealThreadCount() * 2)
 #if NATRON_ENABLE_TRIMAP
     , imagesBeingRenderedMutex()
     , imagesBeingRendered()
@@ -1176,10 +1218,11 @@ EffectInstance::getImage(int inputNb,
     } else {
         EffectInstance* inputToFind = 0;
         if (useRotoInput) {
-            if (attachedStroke) {
-                inputToFind = attachedStroke->getContext()->getNode()->getLiveInstance();
+            if (getNode()->getRotoContext()) {
+                inputToFind = this; 
             } else {
-                inputToFind = this;
+                assert(attachedStroke);
+                inputToFind = attachedStroke->getContext()->getNode()->getLiveInstance();
             }
         } else {
             inputToFind = n;
@@ -1237,7 +1280,7 @@ EffectInstance::getImage(int inputNb,
     if (useRotoInput) {
         
         if (attachedStroke) {
-            inputImg = roto->renderMaskFromStroke(attachedStroke, rotoAge, nodeHash, prefComps,
+            inputImg = roto->renderMaskFromStroke(attachedStroke, pixelRoI, rotoAge, nodeHash, prefComps,
                                      time, view, depth, mipMapLevel);
         } else {
             inputImg = roto->renderMask(pixelRoI, prefComps,
@@ -1794,14 +1837,14 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool useCache,
                 
                 
 
-                imageToConvert->ensureBounds(bounds);
+                //imageToConvert->ensureBounds(bounds);
                 
 
 
             }
             
             *image = imageToConvert;
-            assert(imageToConvert->getBounds().contains(bounds));
+            //assert(imageToConvert->getBounds().contains(bounds));
             
         } else if (*image) { //  else if (imageToConvert && !*image)
             
@@ -1813,19 +1856,19 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool useCache,
              * This seems to happen with the Roto node. This hack just updates the image's RoD to prevent an assert from triggering
              * in the call to ensureBounds() below.
              */
-            RectD oldRod = (*image)->getRoD();
-            if (oldRod != rod) {
-                oldRod.merge(rod);
-                (*image)->setRoD(oldRod);
-            }
+//            RectD oldRod = (*image)->getRoD();
+//            if (oldRod != rod) {
+//                oldRod.merge(rod);
+//                (*image)->setRoD(oldRod);
+//            }
             
             
             /*
              * Another thread might have allocated the same image in the cache but with another RoI, make sure
              * it is big enough for us, or resize it to our needs.
              */
-            (*image)->ensureBounds(bounds);
-            assert((*image)->getBounds().contains(bounds));
+            //(*image)->ensureBounds(bounds);
+            //assert((*image)->getBounds().contains(bounds));
 
         }
         
@@ -2065,6 +2108,72 @@ EffectInstance::allocateImagePlane(const ImageKey& key,
 }
 
 
+/*
+ * @brief Split all rects to render in smaller rects and check if each one of them is identity.
+ * For identity rectangles, we just call renderRoI again on the identity input in the tiledRenderingFunctor.
+ * For non-identity rectangles, compute the bounding box of them and render it
+ */
+static void optimizeRectsToRender(Natron::EffectInstance* self,
+                                  const std::list<RectI>& rectsToRender,
+                                  const int time,
+                                  const int view,
+                                  const RenderScale& renderMappedScale,
+                                  std::list<EffectInstance::RectToRender>* finalRectsToRender)
+{
+    for (std::list<RectI>::const_iterator it = rectsToRender.begin(); it != rectsToRender.end(); ++it) {
+        
+        std::vector<RectI> splits = it->splitIntoSmallerRects(0);
+        EffectInstance::RectToRender nonIdentityRect;
+        nonIdentityRect.isIdentity = false;
+        nonIdentityRect.identityInput = 0;
+        nonIdentityRect.rect.x1 = std::numeric_limits<int>::infinity();
+        nonIdentityRect.rect.x2 = -std::numeric_limits<int>::infinity();
+        nonIdentityRect.rect.y1 = std::numeric_limits<int>::infinity();
+        nonIdentityRect.rect.y2 = -std::numeric_limits<int>::infinity();
+        
+        for (std::size_t i = 0; i < splits.size(); ++i) {
+            SequenceTime identityInputTime;
+            int identityInputNb;
+            bool identity = self->isIdentity_public(false, 0, time, renderMappedScale, splits[i], view, &identityInputTime, &identityInputNb);
+            
+            if (identity) {
+                EffectInstance::RectToRender r;
+                r.isIdentity = true;
+                
+                //Walk along the identity branch until we find the non identity input, or NULL in we case we will
+                //just render black and transparant
+                Natron::EffectInstance* identityInput = self->getInput(identityInputNb);
+                if (identityInput) {
+                    for(;;) {
+                        
+                        identity = identityInput->isIdentity_public(false, 0, time, renderMappedScale, splits[i], view, &identityInputTime, &identityInputNb);
+                        if (!identity) {
+                            break;
+                        }
+                        Natron::EffectInstance* subIdentityInput = identityInput->getInput(identityInputNb);
+                        if (!subIdentityInput || subIdentityInput == identityInput) {
+                            break;
+                        }
+                        
+                        identityInput = subIdentityInput;
+                    }
+                }
+                r.identityInput = identityInput;
+                r.identityTime = identityInputTime;
+                r.rect = splits[i];
+                finalRectsToRender->push_back(r);
+                
+            } else {
+                nonIdentityRect.rect.x1 = std::min(splits[i].x1,nonIdentityRect.rect.x1);
+                nonIdentityRect.rect.x2 = std::max(splits[i].x2,nonIdentityRect.rect.x2);
+                nonIdentityRect.rect.y1 = std::min(splits[i].y1,nonIdentityRect.rect.y1);
+                nonIdentityRect.rect.y2 = std::max(splits[i].y2,nonIdentityRect.rect.y2);
+            }
+        }
+        finalRectsToRender->push_back(nonIdentityRect);
+    }
+
+}
 
 EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs & args,ImageList* outputPlanes)
 {
@@ -2394,11 +2503,11 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     /////////////////////////////////End transform concatenations//////////////////////////////////////////////////////////
     
-    
-    
-    
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////// Compute RoI depending on render scale ///////////////////////////////////////////////////
+
     bool tilesSupported = supportsTiles();
-    
     
     RectI downscaledImageBounds,upscaledImageBounds;
     rod.toPixelEnclosing(args.mipMapLevel, par, &downscaledImageBounds);
@@ -2438,6 +2547,10 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
     } else {
         roi.toCanonical(args.mipMapLevel, par, rod, &canonicalRoI);
     }
+    
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////// End Compute RoI /////////////////////////////////////////////////////////////////////////
+    
     
     // eRenderSafetyInstanceSafe means that there is at most one render per instance
     // NOTE: the per-instance lock should probably be shared between
@@ -2616,36 +2729,33 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
         return eRenderRoIRetCodeFailed;
     }
     
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////// Determine rectangles left to render /////////////////////////////////////////////////////
+    
+    std::list<RectI> rectsLeftToRender;
     if (isPlaneCached) {
         ///We check what is left to render.
-//        for (std::map<ImageComponents, PlaneToRender>::iterator it = planesToRender.planes.begin(); it != planesToRender.planes.end(); ++it) {
-//            if (it->second.fullscaleImage) {
-//                bool renderedElsewhere = false;
-//                std::list<RectI> rects;
-#if NATRON_ENABLE_TRIMAP
-                if (!frameRenderArgs.canAbort && frameRenderArgs.isRenderResponseToUserInteraction) {
-                    isPlaneCached->getRestToRender_trimap(roi, planesToRender.rectsToRender, &planesToRender.isBeingRenderedElsewhere);
-                } else {
-                    isPlaneCached->getRestToRender(roi, planesToRender.rectsToRender);
-                }
-#else
-                isPlaneCached->getRestToRender(roi, rects);
-#endif
-//                if (it == planesToRender.planes.begin()) {
-//                    planesToRender.rectsToRender = rects;
-//                }
-//            }
-        //}
-
         
-        if (!planesToRender.rectsToRender.empty() && cacheAlmostFull) {
+#if NATRON_ENABLE_TRIMAP
+        if (!frameRenderArgs.canAbort && frameRenderArgs.isRenderResponseToUserInteraction) {
+            isPlaneCached->getRestToRender_trimap(roi, rectsLeftToRender, &planesToRender.isBeingRenderedElsewhere);
+        } else {
+            isPlaneCached->getRestToRender(roi, rectsLeftToRender);
+        }
+#else
+        isPlaneCached->getRestToRender(roi, rectsLeftToRender);
+#endif
+        
+        
+        
+        if (!rectsLeftToRender.empty() && cacheAlmostFull) {
             ///The node cache is almost full and we need to render  something in the image, if we hold a pointer to this image here
             ///we might recursively end-up in this same situation at each level of the render tree, ending with all images of each level
             ///being held in memory.
             ///Our strategy here is to clear the pointer, hence allowing the cache to remove the image, and ask the inputs to render the full RoI
             ///instead of the rest to render. This way, even if the image is cleared from the cache we already have rendered the full RoI anyway.
-            planesToRender.rectsToRender.clear();
-            planesToRender.rectsToRender.push_back(roi);
+            rectsLeftToRender.clear();
+            rectsLeftToRender.push_back(roi);
             for (std::map<ImageComponents, PlaneToRender>::iterator it2 = planesToRender.planes.begin(); it2 != planesToRender.planes.end(); ++it2) {
                 //Keep track of the original cached image for the re-lookup afterward, if the pointer doesn't match the first look-up, don't consider
                 //the image because the region to render might have changed and we might have to re-trigger a render on inputs again.
@@ -2664,55 +2774,92 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
         ///If the effect doesn't support tiles and it has something left to render, just render the bounds again
         ///Note that it should NEVER happen because if it doesn't support tiles in the first place, it would
         ///have rendered the rod already.
-        if (!tilesSupported && !planesToRender.rectsToRender.empty() && isPlaneCached) {
+        if (!tilesSupported && !rectsLeftToRender.empty() && isPlaneCached) {
             ///if the effect doesn't support tiles, just render the whole rod again even though
-            planesToRender.rectsToRender.clear();
-            planesToRender.rectsToRender.push_back(isPlaneCached->getBounds());
+            rectsLeftToRender.clear();
+            rectsLeftToRender.push_back(isPlaneCached->getBounds());
         }
     } else {
         if (tilesSupported) {
-            planesToRender.rectsToRender.push_back(roi);
+            rectsLeftToRender.push_back(roi);
         } else {
-            planesToRender.rectsToRender.push_back(useImageAsOutput ? upscaledImageBounds : downscaledImageBounds);
+            rectsLeftToRender.push_back(useImageAsOutput ? upscaledImageBounds : downscaledImageBounds);
         }
     }
-
-    
-    bool hasSomethingToRender = !planesToRender.rectsToRender.empty();
-    
-    ///For each rect to render a RoIMap
-    std::list<RoIMap> inputsRoi;
-    
-    ///For each rect to render, the input images
-    std::list<InputImagesMap> inputImages;
 
     /*
-     * Split all rects to render in smaller rects to render smaller tiles to increase the chances that isIdentity will work
+     * If the effect has a mask enabled and the mask is smaller than the rod, try to optimize the rectangles left to render
+     * using the isIdentity action.
      */
+    bool tryIdentityOptim = false;
     if (tilesSupported) {
-        std::list<RectI> planesToRenderCpy = planesToRender.rectsToRender;
-        planesToRender.rectsToRender.clear();
-        for (std::list<RectI>::iterator it = planesToRenderCpy.begin(); it != planesToRenderCpy.end(); ++it) {
-            std::vector<RectI> splits = it->splitIntoSmallerRects(0);
-            planesToRender.rectsToRender.insert(planesToRender.rectsToRender.end(), splits.begin(), splits.end());
+        int maxInput = getMaxInputCount();
+        for (int i = 0; i < maxInput; ++i) {
+            if (isInputMask(i) && isMaskEnabled(i)) {
+                
+                boost::shared_ptr<RotoStrokeItem> attachedStroke = getNode()->getAttachedStrokeItem();
+                RectD maskRod;
+                if (attachedStroke) {
+                    maskRod = attachedStroke->getBoundingBox(args.time);
+                } else {
+                    EffectInstance* maskInput = getInput(i);
+                    if (maskInput) {
+                        bool isMaskProjectFormat;
+                        ParallelRenderArgs maskArgs = maskInput->getParallelRenderArgsTLS();
+                        U64 maskHash = maskArgs.validArgs ? maskArgs.nodeHash : maskInput->getHash();
+                        Natron::StatusEnum stat = maskInput->getRegionOfDefinition_public(maskHash, args.time, args.scale, args.view, &maskRod, &isMaskProjectFormat);
+                        if (stat != eStatusOK && !maskRod.isNull()) {
+                            break;
+                        }
+                        
+                    }
+                }
+                
+                if (rod.contains(maskRod)) {
+                    tryIdentityOptim = true;
+                }
+                break;
+            }
+        }
+        
+    }
+    
+    if (tryIdentityOptim) {
+        optimizeRectsToRender(this, rectsLeftToRender, args.time, args.view, renderMappedScale, &planesToRender.rectsToRender);
+    } else {
+        for (std::list<RectI>::iterator it = rectsLeftToRender.begin(); it!=rectsLeftToRender.end(); ++it) {
+            RectToRender r;
+            r.rect = *it;
+            r.identityInput = 0;
+            r.isIdentity = false;
+            planesToRender.rectsToRender.push_back(r);
         }
     }
     
+    bool hasSomethingToRender = !planesToRender.rectsToRender.empty();
 
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////// End Determine rectangles left to render /////////////////////////////////////////////////
+    
+    
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////// Pre-render input images ////////////////////////////////////////////////////////////////
+    
     ///Pre-render input images before allocating the image if we need to render
 
-    for (std::list<RectI>::iterator it = planesToRender.rectsToRender.begin(); it != planesToRender.rectsToRender.end(); ++it) {
+    for (std::list<RectToRender>::iterator it = planesToRender.rectsToRender.begin(); it != planesToRender.rectsToRender.end(); ++it) {
         
+        if (it->isIdentity) {
+            continue;
+        }
         
         RectD canonicalRoI;
         if (useImageAsOutput) {
-            it->toCanonical(0, par, rod, &canonicalRoI);
+            it->rect.toCanonical(0, par, rod, &canonicalRoI);
         } else {
-            it->toCanonical(args.mipMapLevel, par, rod, &canonicalRoI);
+            it->rect.toCanonical(args.mipMapLevel, par, rod, &canonicalRoI);
         }
 
-        RoIMap roim;
-        InputImagesMap imgs;
         RenderRoIRetCode inputCode = renderInputImagesForRoI(args.time,
                                                              args.view,
                                                              par,
@@ -2726,15 +2873,21 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
                                                              byPassCache,
                                                              framesNeeded,
                                                              neededComps,
-                                                             &imgs,
-                                                             &roim);
+                                                             &it->imgs,
+                                                             &it->inputRois);
         //Render was aborted
         if (inputCode != eRenderRoIRetCodeOk) {
             return inputCode;
         }
-        inputsRoi.push_back(roim);
-        inputImages.push_back(imgs);
     }
+    
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////// End Pre-render input images ////////////////////////////////////////////////////////////
+
+    
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////// Redo - cache lookup if memory almost full //////////////////////////////////////////////
+
     
     if (redoCacheLookup) {
         
@@ -2784,39 +2937,40 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
         
         if (!isPlaneCached) {
             planesToRender.rectsToRender.clear();
+            rectsLeftToRender.clear();
             if (tilesSupported) {
-                planesToRender.rectsToRender.push_back(roi);
+                rectsLeftToRender.push_back(roi);
             } else {
-                planesToRender.rectsToRender.push_back(useImageAsOutput ? upscaledImageBounds : downscaledImageBounds);
+                rectsLeftToRender.push_back(useImageAsOutput ? upscaledImageBounds : downscaledImageBounds);
             }
-            inputImages.clear();
-            inputsRoi.clear();
             
-            /*
-             * Split all rects to render in smaller rects to render smaller tiles to increase the chances that isIdentity will work
-             */
-            if (tilesSupported) {
-                std::list<RectI> planesToRenderCpy = planesToRender.rectsToRender;
-                planesToRender.rectsToRender.clear();
-                for (std::list<RectI>::iterator it = planesToRenderCpy.begin(); it != planesToRenderCpy.end(); ++it) {
-                    std::vector<RectI> splits = it->splitIntoSmallerRects(0);
-                    planesToRender.rectsToRender.insert(planesToRender.rectsToRender.end(), splits.begin(), splits.end());
+
+            if (tryIdentityOptim) {
+                optimizeRectsToRender(this, rectsLeftToRender, args.time, args.view, renderMappedScale, &planesToRender.rectsToRender);
+            } else {
+                for (std::list<RectI>::iterator it = rectsLeftToRender.begin(); it!=rectsLeftToRender.end(); ++it) {
+                    RectToRender r;
+                    r.rect = *it;
+                    r.identityInput = 0;
+                    r.isIdentity = false;
+                    planesToRender.rectsToRender.push_back(r);
                 }
             }
             
             ///We must re-copute input images because we might not have rendered what's needed
-            for (std::list<RectI>::iterator it = planesToRender.rectsToRender.begin(); it != planesToRender.rectsToRender.end(); ++it) {
-                
+            for (std::list<RectToRender>::iterator it = planesToRender.rectsToRender.begin();
+                 it != planesToRender.rectsToRender.end(); ++it) {
+                if (it->isIdentity) {
+                    continue;
+                }
                 
                 RectD canonicalRoI;
                 if (useImageAsOutput) {
-                    it->toCanonical(0, par, rod, &canonicalRoI);
+                    it->rect.toCanonical(0, par, rod, &canonicalRoI);
                 } else {
-                    it->toCanonical(args.mipMapLevel, par, rod, &canonicalRoI);
+                    it->rect.toCanonical(args.mipMapLevel, par, rod, &canonicalRoI);
                 }
                 
-                RoIMap roim;
-                InputImagesMap imgs;
                 RenderRoIRetCode inputRetCode = renderInputImagesForRoI(args.time,
                                                                         args.view,
                                                                         par,
@@ -2830,19 +2984,21 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
                                                                         byPassCache,
                                                                         framesNeeded,
                                                                         neededComps,
-                                                                        &imgs,
-                                                                        &roim);
+                                                                        &it->imgs,
+                                                                        &it->inputRois);
                     //Render was aborted
                 if (inputRetCode != eRenderRoIRetCodeOk) {
                     return inputRetCode;
                 }
-                inputsRoi.push_back(roim);
-                inputImages.push_back(imgs);
             }
         }
         
     } // if (redoCacheLookup) {
-
+    
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////// End 2nd cache lookup ///////////////////////////////////////////////////////////////////
+    
+    
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////// Allocate planes in the cache ////////////////////////////////////////////////////////////
     
@@ -2869,8 +3025,28 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
         if (!it->second.fullscaleImage) {
             ///The image is not cached
             allocateImagePlane(key, rod, downscaledImageBounds, upscaledImageBounds, isProjectFormat, framesNeeded, *components, args.bitdepth, par, args.mipMapLevel, renderFullScaleThenDownscale, renderScaleOneUpstreamIfRenderScaleSupportDisabled, useDiskCacheNode, createInCache, &it->second.fullscaleImage, &it->second.downscaleImage);
-
+            
         } else {
+            
+            /*
+             * There might be a situation  where the RoD of the cached image
+             * is not the same as this RoD even though the hash is the same.
+             * This seems to happen with the Roto node. This hack just updates the
+             * image's RoD to prevent an assert from triggering in the call to ensureBounds() below.
+             */
+            RectD oldRod = it->second.fullscaleImage->getRoD();
+            if (oldRod != rod) {
+                oldRod.merge(rod);
+                it->second.fullscaleImage->setRoD(oldRod);
+            }
+            
+            
+            /*
+             * Another thread might have allocated the same image in the cache but with another RoI, make sure
+             * it is big enough for us, or resize it to our needs.
+             */
+            it->second.fullscaleImage->ensureBounds(useImageAsOutput ? upscaledImageBounds : downscaledImageBounds);
+            
             if (renderFullScaleThenDownscale && it->second.fullscaleImage->getMipMapLevel() == 0) {
                 //Allocate a downscale image that will be cheap to create
                 ///The upscaled image will be rendered using input images at lower def... which means really crappy results, don't cache this image!
@@ -2898,7 +3074,7 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
     assert(!planesToRender.planes.empty());
 
     ///If we reach here, it can be either because the planes are cached or not, either way
-    ///the planes are NOT an identity, and they may have some content left to render.
+    ///the planes are NOT a total identity, and they may have some content left to render.
     EffectInstance::RenderRoIStatusEnum renderRetCode = eRenderRoIStatusImageAlreadyRendered;
     
     bool renderAborted;
@@ -2925,6 +3101,11 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
                 ///We also do this if the mipmap level is different (e.g: the user is zooming in/out) because
                 ///anyway the ViewerCache will have the texture cached and it would be redundant to keep this image
                 ///in the cache since the ViewerCache already has it ready.
+                
+                
+                ///Note that if 2 threads concurrently are rendering the same frame with 2 different keys, this would not
+                ///interfere with the cache system for the other thread because if another thread uses this image, the
+                ///attempt to remove it from the cache will fail because of use_count > 1
                 ImageList lastRenderedPlanes;
                 U64 lastRenderHash;
                 {
@@ -2972,11 +3153,9 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
                                               nodeHash,
                                               renderFullScaleThenDownscale,
                                               renderScaleOneUpstreamIfRenderScaleSupportDisabled,
-                                              inputsRoi,
                                               outputDepth,
                                               outputClipPrefComps,
-                                              processChannels,
-                                              inputImages);
+                                              processChannels);
         }
         
         renderAborted = aborted();
@@ -2986,7 +3165,6 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
             ///Only use trimap system if the render cannot be aborted.
             ///If we were aborted after all (because the node got deleted) then return a NULL image and empty the cache
             ///of this image
-            
             for (std::map<ImageComponents, PlaneToRender>::iterator it = planesToRender.planes.begin(); it != planesToRender.planes.end(); ++it) {
                 if (!renderAborted) {
                     if (renderRetCode == eRenderRoIStatusRenderFailed || !planesToRender.isBeingRenderedElsewhere) {
@@ -3007,22 +3185,25 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
     }
     
     
-    if ( renderAborted && renderRetCode != eRenderRoIStatusImageAlreadyRendered) {
+    if (renderAborted && renderRetCode != eRenderRoIStatusImageAlreadyRendered) {
         
-        ///Return a NULL image if the render call was not issued by the result of a call of a plug-in to clipGetImage
-        //if (!args.calledFromGetImage) {
+        ///Return a NULL image
         return eRenderRoIRetCodeAborted;
-        //}
         
     } else if (renderRetCode == eRenderRoIStatusRenderFailed) {
+        
+        ///Throwing this exception will ensure the render stops.
+        ///This is slightly clumsy since we already have a render rect code indicating it, we should
+        ///use the ret code instead.
         throw std::runtime_error("Rendering Failed");
     }
     
     
-/*
- * Since the images are allocated only to the size of the RoI, the image's size might have grown now from another concurrent render.
- * Hence we may no longer check the bitmap because it might have changed.
- */
+    /*
+     * Since the images are allocated only to the size of the RoI, the image's size might have grown now from another concurrent render.
+     * Hence we may no longer check the bitmap because it might have changed.
+     * Do not activate this code, unless the image growing system is disabled.
+     */
 #if 0
     if (renderRetCode != eRenderRoIStatusRenderFailed && !renderAborted) {
         // Kindly check that everything we asked for is rendered!
@@ -3038,6 +3219,9 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
         }
     }
 #endif
+    
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////// Make sure all planes rendered have the requested mipmap level and format ///////////////////////////
     
     
     for (std::map<ImageComponents, PlaneToRender>::iterator it = planesToRender.planes.begin(); it != planesToRender.planes.end(); ++it) {
@@ -3075,8 +3259,11 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
 
     }
     
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////// End requested format convertion ////////////////////////////////////////////////////////////////////
+    
     {
-        ///flag that this is the last image we rendered
+        ///flag that this is the last planes we rendered
         QMutexLocker l(&_imp->lastRenderArgsMutex);
         _imp->lastRenderHash = nodeHash;
         _imp->lastPlanesRendered = *outputPlanes;
@@ -3295,11 +3482,9 @@ EffectInstance::renderRoIInternal(SequenceTime time,
                                   U64 nodeHash,
                                   bool renderFullScaleThenDownscale,
                                   bool useScaleOneInputImages,
-                                  const std::list<RoIMap>& inputsRoi,
                                   Natron::ImageBitDepthEnum outputClipPrefDepth,
                                   const std::list<Natron::ImageComponents>& outputClipPrefsComps,
-                                  bool* processChannels,
-                                  const std::list<InputImagesMap>& inputImages)
+                                  bool* processChannels)
 {
     EffectInstance::RenderRoIStatusEnum retCode;
     
@@ -3357,7 +3542,6 @@ EffectInstance::renderRoIInternal(SequenceTime time,
     ///as it would lead to a deadlock when the project is loading.
     ///Just fall back to Fully_safe
     int nbThreads = appPTR->getCurrentSettings()->getNumberOfThreads();
-    bool allowFullySafeFrame = true;
     if (safety == eRenderSafetyFullySafeFrame) {
         ///If the plug-in is eRenderSafetyFullySafeFrame that means it wants the host to perform SMP aka slice up the RoI into chunks
         ///but if the effect doesn't support tiles it won't work.
@@ -3367,7 +3551,6 @@ EffectInstance::renderRoIInternal(SequenceTime time,
             ( QThreadPool::globalInstance()->activeThreadCount() >= QThreadPool::globalInstance()->maxThreadCount() ) ||
             isRotoPaintNode()) {
             safety = eRenderSafetyFullySafe;
-            allowFullySafeFrame = false;
         } else {
 //            if ( !getApp()->getProject()->tryLock() ) {
 //                safety = eRenderSafetyFullySafe;
@@ -3376,20 +3559,7 @@ EffectInstance::renderRoIInternal(SequenceTime time,
 //            }
         }
     }
-    /*
-     * If the effect has a mask enabled, force it to use host frame threading so that we can split the RoI in small chunks
-     * to optimize chances that isIdentity(roi) returns true.
-     */
-    if (allowFullySafeFrame && safety == eRenderSafetyFullySafe) {
-        int maxInput = getMaxInputCount();
-        for (int i = 0; i < maxInput; ++i) {
-            if (isInputMask(i) && isMaskEnabled(i) && getInput(i)) {
-                safety = eRenderSafetyFullySafeFrame;
-                break;
-            }
-        }
-        
-    }
+   
     
     std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs > tlsCopy;
     if (safety == eRenderSafetyFullySafeFrame) {
@@ -3446,8 +3616,6 @@ EffectInstance::renderRoIInternal(SequenceTime time,
      */
     int preferredInput = getNode()->getPreferredInput();
     
-    assert(inputsRoi.size() == planesToRender.rectsToRender.size() && inputImages.size() == planesToRender.rectsToRender.size());
-    
     assert(_imp->frameRenderArgs.hasLocalData());
     const ParallelRenderArgs& frameArgs = _imp->frameRenderArgs.localData();
     
@@ -3476,25 +3644,13 @@ EffectInstance::renderRoIInternal(SequenceTime time,
             tiledArgs.processChannels = processChannels;
             tiledArgs.planes = planesToRender;
             
-            std::vector<TiledThreadSpecificData> tiledData;
-            
-            
-            std::list<RoIMap>::const_iterator roiIT = inputsRoi.begin();
-            std::list<InputImagesMap>::const_iterator inputImgIt = inputImages.begin();
-            for (std::list<RectI>::const_iterator it = planesToRender.rectsToRender.begin(); it != planesToRender.rectsToRender.end();
-                 ++it, ++roiIT, ++inputImgIt) {
-                TiledThreadSpecificData d;
-                d.inputRois = *roiIT;
-                d.inputImages = *inputImgIt;
-                d.downscaledRectToRender = *it;
-                tiledData.push_back(d);
-            }
             
 #ifdef NATRON_HOSTFRAMETHREADING_SEQUENTIAL
             std::vector<EffectInstance::RenderingFunctorRetEnum> ret(tiledData.size());
-            for (size_t i = 0; i < tiledData.size(); ++i) {
+            int i = 0;
+            for (std::list<RectToRender>::const_iterator it = planesToRender.rectsToRender.begin(); it!= planesToRender.rectsToRender.end(); ++it,++i) {
                 ret[i] = tiledRenderingFunctor(tiledArgs,
-                                               tiledData[i],
+                                               *it,
                                                currentThread);
             }
             std::vector<EffectInstance::RenderingFunctorRetEnum>::const_iterator it2;
@@ -3502,7 +3658,7 @@ EffectInstance::renderRoIInternal(SequenceTime time,
 #else
        
             
-            QFuture<RenderingFunctorRetEnum> ret = QtConcurrent::mapped(tiledData,
+            QFuture<RenderingFunctorRetEnum> ret = QtConcurrent::mapped(planesToRender.rectsToRender,
                                                                            boost::bind(&EffectInstance::tiledRenderingFunctor,
                                                                                        this,
                                                                                        tiledArgs,
@@ -3529,13 +3685,11 @@ EffectInstance::renderRoIInternal(SequenceTime time,
             }
    
         } else {
-            std::list<RoIMap>::const_iterator roiIT = inputsRoi.begin();
-            std::list<InputImagesMap>::const_iterator inputImgIt = inputImages.begin();
-            for (std::list<RectI>::const_iterator it = planesToRender.rectsToRender.begin(); it != planesToRender.rectsToRender.end(); ++it, ++roiIT, ++inputImgIt) {
+            for (std::list<RectToRender>::const_iterator it = planesToRender.rectsToRender.begin(); it != planesToRender.rectsToRender.end(); ++it) {
                 
                 
                 
-                RenderingFunctorRetEnum functorRet = tiledRenderingFunctor(currentThread, frameArgs, *inputImgIt, *roiIT, tlsCopy, renderFullScaleThenDownscale, useScaleOneInputImages, isSequentialRender, isRenderMadeInResponseToUserInteraction, firstFrame, lastFrame, preferredInput, mipMapLevel, renderMappedMipMapLevel, rod, time, view, *it, par, outputClipPrefDepth, outputClipPrefsComps, processChannels, planesToRender);
+                RenderingFunctorRetEnum functorRet = tiledRenderingFunctor(currentThread, frameArgs, *it, tlsCopy, renderFullScaleThenDownscale, useScaleOneInputImages, isSequentialRender, isRenderMadeInResponseToUserInteraction, firstFrame, lastFrame, preferredInput, mipMapLevel, renderMappedMipMapLevel, rod, time, view, par, outputClipPrefDepth, outputClipPrefsComps, processChannels, planesToRender);
                 
                 if (functorRet == eRenderingFunctorRetFailed || functorRet == eRenderingFunctorRetAborted) {
                     break;
@@ -3570,12 +3724,11 @@ EffectInstance::renderRoIInternal(SequenceTime time,
 } // renderRoIInternal
 
 EffectInstance::RenderingFunctorRetEnum
-EffectInstance::tiledRenderingFunctor( TiledRenderingFunctorArgs& args, const TiledThreadSpecificData& specificData, const QThread* callingThread)
+EffectInstance::tiledRenderingFunctor( TiledRenderingFunctorArgs& args, const RectToRender& specificData, const QThread* callingThread)
 {
    return tiledRenderingFunctor(callingThread,
                                 args.frameArgs,
-                                specificData.inputImages,
-                                specificData.inputRois,
+                                specificData,
                                 args.frameTLS,
                                 args.renderFullScaleThenDownscale,
                                 args.renderUseScaleOneInputs,
@@ -3589,7 +3742,6 @@ EffectInstance::tiledRenderingFunctor( TiledRenderingFunctorArgs& args, const Ti
                                 args.rod,
                                 args.time,
                                 args.view,
-                                specificData.downscaledRectToRender,
                                 args.par,
                                 args.outputClipPrefDepth,
                                 args.outputClipPrefsComps,
@@ -3600,8 +3752,7 @@ EffectInstance::tiledRenderingFunctor( TiledRenderingFunctorArgs& args, const Ti
 EffectInstance::RenderingFunctorRetEnum
 EffectInstance::tiledRenderingFunctor(const QThread* callingThread,
                                       const ParallelRenderArgs& frameArgs,
-                                      const InputImagesMap& inputImages,
-                                      const RoIMap& inputRois,
+                                      const RectToRender& rectToRender,
                                       const std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs >& frameTLS,
                                       bool renderFullScaleThenDownscale,
                                       bool renderUseScaleOneInputs,
@@ -3614,14 +3765,13 @@ EffectInstance::tiledRenderingFunctor(const QThread* callingThread,
                                       const RectD& rod,
                                       int time,
                                       int view,
-                                      const RectI & rectToRender,
                                       const double par,
                                       Natron::ImageBitDepthEnum outputClipPrefDepth,
                                       const std::list<Natron::ImageComponents>& outputClipPrefsComps,
                                       bool* processChannels,
                                       ImagePlanesToRender& planes) // when MT, planes is a copy so there's is no data race
 {
-    assert(!rectToRender.isNull());
+    assert(!rectToRender.rect.isNull());
     
     bool outputUseImage = renderFullScaleThenDownscale && renderUseScaleOneInputs;
     
@@ -3633,11 +3783,11 @@ EffectInstance::tiledRenderingFunctor(const QThread* callingThread,
     
     ///We hold our input images in thread-storage, so that the getImage function can find them afterwards, even if the node doesn't cache its output.
     boost::shared_ptr<InputImagesHolder_RAII> inputImagesHolder;
-    if (!inputImages.empty()) {
-        inputImagesHolder.reset(new InputImagesHolder_RAII(inputImages,&_imp->inputImages));
+    if (!rectToRender.imgs.empty()) {
+        inputImagesHolder.reset(new InputImagesHolder_RAII(rectToRender.imgs,&_imp->inputImages));
     }
     
-    RectI downscaledRectToRender = rectToRender;
+    RectI downscaledRectToRender = rectToRender.rect;
     ///Upscale the RoI to a region in the full scale image so it is in canonical coordinates
     RectD canonicalRectToRender;
     downscaledRectToRender.toCanonical(renderMappedMipMapLevel, par, rod, &canonicalRectToRender);
@@ -3764,12 +3914,12 @@ EffectInstance::tiledRenderingFunctor(const QThread* callingThread,
     ///whole time the render action is called, so they can be fetched in the
     ///getImage() call.
     /// @see EffectInstance::getImage
-    scopedArgs.setArgs_secondPass(inputRois,firstFrame,lastFrame);
+    scopedArgs.setArgs_secondPass(rectToRender.inputRois,firstFrame,lastFrame);
     RenderArgs & args = scopedArgs.getLocalData();
     
     ImagePtr originalInputImage;
-    InputImagesMap::const_iterator foundPrefInput = inputImages.find(preferredInput);
-    if (foundPrefInput != inputImages.end() && !foundPrefInput->second.empty()) {
+    InputImagesMap::const_iterator foundPrefInput = rectToRender.imgs.find(preferredInput);
+    if (foundPrefInput != rectToRender.imgs.end() && !foundPrefInput->second.empty()) {
         originalInputImage = foundPrefInput->second.front();
     }
     
@@ -3779,8 +3929,8 @@ EffectInstance::tiledRenderingFunctor(const QThread* callingThread,
     scale.y = scale.x;
     bool tilesSupported = supportsTiles();
     // check the dimensions of all input and output images
-    for (InputImagesMap::const_iterator it = inputImages.begin();
-         it != inputImages.end();
+    for (InputImagesMap::const_iterator it = rectToRender.imgs.begin();
+         it != rectToRender.imgs.end();
          ++it) {
         for (ImageList::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
             assert(outputUseImage || (*it2)->getMipMapLevel() == mipMapLevel);
@@ -3847,7 +3997,10 @@ EffectInstance::tiledRenderingFunctor(const QThread* callingThread,
     
     RenderingFunctorRetEnum handlerRet =  renderHandler(args,
                                                         frameArgs,
-                                                        inputImages,
+                                                        rectToRender.imgs,
+                                                        rectToRender.isIdentity,
+                                                        rectToRender.identityTime,
+                                                        rectToRender.identityInput,
                                                         renderFullScaleThenDownscale,
                                                         renderUseScaleOneInputs,
                                                         isSequentialRender,
@@ -3873,6 +4026,9 @@ EffectInstance::RenderingFunctorRetEnum
 EffectInstance::renderHandler(RenderArgs & args,
                               const ParallelRenderArgs& frameArgs,
                               const InputImagesMap& inputImages,
+                              bool identity,
+                              SequenceTime identityTime,
+                              Natron::EffectInstance* identityInput,
                               bool renderFullScaleThenDownscale,
                               bool renderUseScaleOneInputs,
                               bool isSequentialRender,
@@ -3914,14 +4070,8 @@ EffectInstance::renderHandler(RenderArgs & args,
     
     assert(!outputClipPrefsComps.empty());
     
-    /*
-     * Call again isIdentity but this time on the smaller tile which has greater chance to be identity on the input effect.
-     * If it is identity, we just copy the downscaledRectToRender
-     */
+
     bool isIdentityProcessed = false;
-    SequenceTime identityInputTime;
-    int identityInputNb;
-    bool identity = isIdentity_public(false, 0, time, actionArgs.mappedScale, downscaledRectToRender, view, &identityInputTime, &identityInputNb);
     if (identity) {
         
         std::list<Natron::ImageComponents> comps;
@@ -3929,7 +4079,7 @@ EffectInstance::renderHandler(RenderArgs & args,
             comps.push_back(it->first);
         }
         ImageList identityPlanes;
-        RenderRoIArgs renderArgs(identityInputTime,
+        RenderRoIArgs renderArgs(identityTime,
                                  actionArgs.originalScale,
                                  mipMapLevel,
                                  view,
@@ -3938,7 +4088,6 @@ EffectInstance::renderHandler(RenderArgs & args,
                                  RectD(),
                                  comps,
                                  outputClipPrefDepth);
-        EffectInstance* identityInput = getInput(identityInputNb);
         if (identityInput) {
             EffectInstance::RenderRoIRetCode renderOk = identityInput->renderRoI(renderArgs, &identityPlanes);
             if (renderOk == eRenderRoIRetCodeAborted) {
@@ -4889,7 +5038,7 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
     }
     
     if (useIdentityCache) {
-        _imp->actionsCache.setIdentityResult(time, view, mipMapLevel, *inputNb, *inputTime);
+        _imp->actionsCache.setIdentityResult(hash, time, view, mipMapLevel, *inputNb, *inputTime);
     }
     return ret;
     
@@ -4957,13 +5106,13 @@ EffectInstance::getRegionOfDefinition_public(U64 hash,
             if ( (ret != eStatusOK) && (ret != eStatusReplyDefault) ) {
                 // rod is not valid
                 _imp->actionsCache.invalidateAll(hash);
-                _imp->actionsCache.setRoDResult(time, view, mipMapLevel, RectD());
+                _imp->actionsCache.setRoDResult(hash, time, view, mipMapLevel, RectD());
                 return ret;
             }
             
             if (rod->isNull()) {
                 _imp->actionsCache.invalidateAll(hash);
-                _imp->actionsCache.setRoDResult(time, view, mipMapLevel, RectD());
+                _imp->actionsCache.setRoDResult(hash, time, view, mipMapLevel, RectD());
                 return eStatusFailed;
             }
             
@@ -4973,7 +5122,7 @@ EffectInstance::getRegionOfDefinition_public(U64 hash,
         *isProjectFormat = ifInfiniteApplyHeuristic(hash,time, scale, view, rod);
         assert(rod->x1 <= rod->x2 && rod->y1 <= rod->y2);
 
-        _imp->actionsCache.setRoDResult( time, view,  mipMapLevel, *rod);
+        _imp->actionsCache.setRoDResult(hash, time, view,  mipMapLevel, *rod);
         return ret;
     }
 }
@@ -5047,7 +5196,7 @@ EffectInstance::getFrameRange_public(U64 hash,
         
         NON_RECURSIVE_ACTION();
         getFrameRange(first, last);
-        _imp->actionsCache.setTimeDomainResult(*first, *last);
+        _imp->actionsCache.setTimeDomainResult(hash, *first, *last);
     }
 }
 
@@ -5932,8 +6081,20 @@ EffectInstance::getNearestNonDisabledPrevious(int* inputNb)
 Natron::EffectInstance*
 EffectInstance::getNearestNonIdentity(int time)
 {
+    U64 hash;
+    bool hashSet = false;
+    if (_imp->frameRenderArgs.hasLocalData()) {
+        const ParallelRenderArgs& args = _imp->frameRenderArgs.localData();
+        if (args.validArgs) {
+            hash = args.nodeHash;
+            hashSet = true;
+        }
+    }
     
-    U64 hash = getHash();
+    if (!hashSet) {
+         hash = getHash();
+    }
+
     RenderScale scale;
     scale.x = scale.y = 1.;
     

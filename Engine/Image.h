@@ -163,10 +163,7 @@ namespace Natron {
               const boost::shared_ptr<Natron::ImageParams>& params);
 
         
-        virtual ~Image()
-        {
-            deallocate();
-        }
+        virtual ~Image();
         
         bool usesBitMap() const { return _useBitmap; }
 

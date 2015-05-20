@@ -182,6 +182,7 @@ NodeGui::NodeGui(QGraphicsItem *parent)
 , _internalNode()
 , _selected(false)
 , _settingNameFromGui(false)
+, _panelOpenedBeforeDeactivate(false)
 , _pluginIcon(NULL)
 , _pluginIconFrame(NULL)
 , _mergeIcon(NULL)
@@ -1707,7 +1708,7 @@ NodeGui::showGui()
     if (viewer) {
         _graph->getGui()->activateViewerTab(viewer);
     } else {
-        if ( isSettingsPanelVisible() ) {
+        if (_panelOpenedBeforeDeactivate) {
             setVisibleSettingsPanel(true);
         }
         if ( node->isRotoNode() ) {
@@ -1749,7 +1750,7 @@ NodeGui::activate(bool triggerRender)
         }
     }
     _graph->restoreFromTrash(this);
-    _graph->getGui()->getCurveEditor()->addNode(shared_from_this());
+    //_graph->getGui()->getCurveEditor()->addNode(shared_from_this());
 
     if (!isMultiInstanceChild && triggerRender) {
         std::list<ViewerInstance* > viewers;
@@ -1797,7 +1798,8 @@ NodeGui::hideGui()
             _graph->getGui()->deactivateViewerTab(isViewer);
         }
     } else {
-        if ( isSettingsPanelVisible() ) {
+        _panelOpenedBeforeDeactivate = isSettingsPanelVisible();
+        if (_panelOpenedBeforeDeactivate) {
             setVisibleSettingsPanel(false);
         }
 

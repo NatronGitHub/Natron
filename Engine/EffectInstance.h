@@ -736,7 +736,7 @@ public:
         bool isSequentialRender;
         bool isRenderResponseToUserInteraction;
         std::list<std::pair<Natron::ImageComponents,boost::shared_ptr<Natron::Image> > > outputPlanes;
-        InputImagesMap inputImages;
+        EffectInstance::InputImagesMap inputImages;
     };
 
 protected:
@@ -1164,9 +1164,19 @@ public:
         }
     };
 
+    struct RectToRender
+    {
+        Natron::EffectInstance* identityInput;
+        RectI rect;
+        bool isIdentity;
+        SequenceTime identityTime;
+        RoIMap inputRois;
+        EffectInstance::InputImagesMap imgs;
+    };
+
     struct ImagePlanesToRender
     {
-        std::list<RectI> rectsToRender;
+        std::list<RectToRender> rectsToRender;
         std::map<Natron::ImageComponents, PlaneToRender> planes;
         bool isBeingRenderedElsewhere;
         
@@ -1476,11 +1486,9 @@ private:
                                           U64 nodeHash,
                                           bool renderFullScaleThenDownscale,
                                           bool useScaleOneInputImages,
-                                          const std::list<RoIMap>& inputRoisParam,
                                           Natron::ImageBitDepthEnum outputClipPrefDepth,
                                           const std::list<Natron::ImageComponents>& outputClipPrefsComps,
-                                          bool* processChannels,
-                                          const std::list<InputImagesMap>& inputImagesParam);
+                                          bool* processChannels);
 
 
     /// \returns false if rendering was aborted
@@ -1567,12 +1575,6 @@ private:
         eRenderingFunctorRetAborted // we were aborted
     };
 
-    struct TiledThreadSpecificData
-    {
-        RoIMap inputRois;
-        InputImagesMap inputImages;
-        RectI downscaledRectToRender;
-    };
 
     struct TiledRenderingFunctorArgs
     {
@@ -1597,13 +1599,12 @@ private:
         ImagePlanesToRender planes;
     };
 
-    RenderingFunctorRetEnum tiledRenderingFunctor(TiledRenderingFunctorArgs& args,  const TiledThreadSpecificData& specificData,
+    RenderingFunctorRetEnum tiledRenderingFunctor(TiledRenderingFunctorArgs& args,  const RectToRender& specificData,
                                                   const QThread* callingThread);
 
     RenderingFunctorRetEnum tiledRenderingFunctor(const QThread* callingThread,
                                                   const ParallelRenderArgs& frameArgs,
-                                                  const InputImagesMap& inputImages,
-                                                  const RoIMap& inputRois,
+                                                  const RectToRender& rectToRender,
                                                   const std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs >& frameTls,
                                                   bool renderFullScaleThenDownscale,
                                                   bool renderUseScaleOneInputs,
@@ -1616,7 +1617,6 @@ private:
                                                   const RectD& rod,
                                                   int time,
                                                   int view,
-                                                  const RectI & downscaledRectToRender,
                                                   const double par,
                                                   Natron::ImageBitDepthEnum outputClipPrefDepth,
                                                   const std::list<Natron::ImageComponents>& outputClipPrefsComps,
@@ -1648,6 +1648,9 @@ private:
     RenderingFunctorRetEnum renderHandler(RenderArgs & args,
                                           const ParallelRenderArgs& frameArgs,
                                           const InputImagesMap& inputImages,
+                                          bool identity,
+                                          SequenceTime identityTime,
+                                          Natron::EffectInstance* identityInput,
                                           bool renderFullScaleThenDownscale,
                                           bool renderUseScaleOneInputs,
                                           bool isSequentialRender,

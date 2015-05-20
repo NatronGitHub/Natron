@@ -372,8 +372,9 @@ QDockWidget {
 }
 
 QTabWidget::pane {
-    border:0px;
+    border:1px solid black;
 }
+
 
 QLineEdit {
     border: 1px solid;

@@ -813,6 +813,7 @@ struct RotoStrokeItemPrivate
     boost::shared_ptr<Double_Knob> visiblePortion; // [0,1] by default
     boost::shared_ptr<Choice_Knob> sourceColor;
     Curve xCurve,yCurve,pressureCurve;
+    RectD bbox;
     
     /*
      * The effect node corresponds to the following given the selected tool:
@@ -848,6 +849,11 @@ struct RotoStrokeItemPrivate
     , mergeNode()
     , strokeCache()
     {
+        
+        bbox.x1 = std::numeric_limits<double>::infinity();
+        bbox.x2 = -std::numeric_limits<double>::infinity();
+        bbox.y1 = std::numeric_limits<double>::infinity();
+        bbox.y2 = -std::numeric_limits<double>::infinity();
                 
         brushSize->setName(kRotoBrushSizeParam);
         brushSize->setHintToolTip(kRotoBrushSizeParamHint);
@@ -953,10 +959,6 @@ struct RotoContextPrivate
     boost::shared_ptr<RotoItem> lastInsertedItem;
     boost::shared_ptr<RotoItem> lastLockedItem;
     
-    ///This node is used when the rotopaint node does not have any input, so that the rotopaint tree
-    ///paints at least on a black and transparant region of the size of the project.
-    boost::shared_ptr<Natron::Node> rotoPaintConstantInput;
-    
     QMutex lastRenderedImageMutex;
     U64 lastRenderedHash;
     boost::shared_ptr<Natron::Image> lastRenderedImage;
@@ -970,7 +972,6 @@ struct RotoContextPrivate
     , featherLink(true)
     , node(n)
     , age(0)
-    , rotoPaintConstantInput()
     , lastRenderedImageMutex()
     , lastRenderedHash(0)
     , lastRenderedImage()
