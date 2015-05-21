@@ -1378,7 +1378,7 @@ EffectInstance::getImage(int inputNb,
             bool unPremultIfNeeded = getOutputPremultiplication() == eImagePremultiplicationPremultiplied;
             inputImg->convertToFormat(inputImg->getBounds(),
                                       colorspace, colorspace,
-                                      channelForMask, false, false, unPremultIfNeeded, remappedImg.get());
+                                      channelForMask, false, unPremultIfNeeded, remappedImg.get());
         }
         inputImg = remappedImg;
     }
@@ -2509,6 +2509,28 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
     /////////////////////////////////End transform concatenations//////////////////////////////////////////////////////////
     
 
+    
+    // eRenderSafetyInstanceSafe means that there is at most one render per instance
+    // NOTE: the per-instance lock should probably be shared between
+    // all clones of the same instance, because an InstanceSafe plugin may assume it is the sole owner of the output image,
+    // and read-write on it.
+    // It is probably safer to assume that several clones may write to the same output image only in the eRenderSafetyFullySafe case.
+    
+    // eRenderSafetyFullySafe means that there is only one render per FRAME : the lock is by image and handled in Node.cpp
+    ///locks belongs to an instance)
+    
+    boost::shared_ptr<QMutexLocker> locker;
+    Natron::RenderSafetyEnum safety = getNode()->getCurrentRenderThreadSafety();
+    if (safety == eRenderSafetyInstanceSafe) {
+        locker.reset(new QMutexLocker( &getNode()->getRenderInstancesSharedMutex()));
+    } else if (safety == eRenderSafetyUnsafe) {
+        const Natron::Plugin* p = getNode()->getPlugin();
+        assert(p);
+        locker.reset(new QMutexLocker(p->getPluginLock()));
+    }
+    ///For eRenderSafetyFullySafe, don't take any lock, the image already has a lock on itself so we're sure it can't be written to by 2 different threads.
+
+    
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////// Compute RoI depending on render scale ///////////////////////////////////////////////////
 
@@ -2557,26 +2579,6 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
     ////////////////////////////// End Compute RoI /////////////////////////////////////////////////////////////////////////
     
     
-    // eRenderSafetyInstanceSafe means that there is at most one render per instance
-    // NOTE: the per-instance lock should probably be shared between
-    // all clones of the same instance, because an InstanceSafe plugin may assume it is the sole owner of the output image,
-    // and read-write on it.
-    // It is probably safer to assume that several clones may write to the same output image only in the eRenderSafetyFullySafe case.
-    
-    // eRenderSafetyFullySafe means that there is only one render per FRAME : the lock is by image and handled in Node.cpp
-    ///locks belongs to an instance)
-    
-    boost::shared_ptr<QMutexLocker> locker;
-    EffectInstance::RenderSafetyEnum safety = renderThreadSafety();
-    if (safety == eRenderSafetyInstanceSafe) {
-        locker.reset(new QMutexLocker( &getNode()->getRenderInstancesSharedMutex()));
-    } else if (safety == eRenderSafetyUnsafe) {
-        const Natron::Plugin* p = getNode()->getPlugin();
-        assert(p);
-        locker.reset(new QMutexLocker(p->getPluginLock()));
-    }
-    ///For eRenderSafetyFullySafe, don't take any lock, the image already has a lock on itself so we're sure it can't be written to by 2 different threads.
-   
     
     bool isFrameVaryingOrAnimated = isFrameVaryingOrAnimated_Recursive();
     bool createInCache = shouldCacheOutput(isFrameVaryingOrAnimated);
@@ -3250,7 +3252,7 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
                 it->second.downscaleImage->convertToFormat(it->second.downscaleImage->getBounds(),
                                                            getApp()->getDefaultColorSpaceForBitDepth(it->second.downscaleImage->getBitDepth()),
                                                            getApp()->getDefaultColorSpaceForBitDepth(args.bitdepth),
-                                                           -1, false, false, unPremultIfNeeded, tmp.get());
+                                                           -1, false, unPremultIfNeeded, tmp.get());
             }
             it->second.downscaleImage = tmp;
         }
@@ -3472,7 +3474,7 @@ EffectInstance::renderInputImagesForRoI(SequenceTime time,
 
 EffectInstance::RenderRoIStatusEnum
 EffectInstance::renderRoIInternal(SequenceTime time,
-                                  EffectInstance::RenderSafetyEnum safety,
+                                  Natron::RenderSafetyEnum safety,
                                   unsigned int mipMapLevel,
                                   int view,
                                   const RectD & rod, //!< effect rod in canonical coords
@@ -4272,7 +4274,7 @@ EffectInstance::renderHandler(RenderArgs & args,
                         it->second.tmpImage->convertToFormat(it->second.tmpImage->getBounds(),
                                                         getApp()->getDefaultColorSpaceForBitDepth(it->second.tmpImage->getBitDepth()),
                                                         getApp()->getDefaultColorSpaceForBitDepth(it->second.renderMappedImage->getBitDepth()),
-                                                                   -1, false, false, unPremultIfNeeded, it->second.renderMappedImage.get());
+                                                                   -1, false, unPremultIfNeeded, it->second.renderMappedImage.get());
                     } else {
                         it->second.renderMappedImage->pasteFrom(*(it->second.tmpImage), it->second.tmpImage->getBounds(), false);
                     }
@@ -4306,7 +4308,7 @@ EffectInstance::renderHandler(RenderArgs & args,
                             it->second.tmpImage->convertToFormat(it->second.tmpImage->getBounds(),
                                                                  getApp()->getDefaultColorSpaceForBitDepth(it->second.tmpImage->getBitDepth()),
                                                                  getApp()->getDefaultColorSpaceForBitDepth(it->second.downscaleImage->getBitDepth()),
-                                                                 -1, false, false, unPremultIfNeeded, tmp.get());
+                                                                 -1, false, unPremultIfNeeded, tmp.get());
                             tmp->downscaleMipMap(it->second.tmpImage->getRoD(),
                                                  actionArgs.roi, 0, mipMapLevel, false,it->second.downscaleImage.get() );
                         } else {
@@ -4335,7 +4337,7 @@ EffectInstance::renderHandler(RenderArgs & args,
                                 it->second.tmpImage->convertToFormat(it->second.tmpImage->getBounds(),
                                                                      getApp()->getDefaultColorSpaceForBitDepth(it->second.tmpImage->getBitDepth()),
                                                                      getApp()->getDefaultColorSpaceForBitDepth(it->second.fullscaleImage->getBitDepth()),
-                                                                     -1, false, false, unPremultIfNeeded, it->second.fullscaleImage.get());
+                                                                     -1, false, unPremultIfNeeded, it->second.fullscaleImage.get());
                             } else {
                                 
                                 /*
@@ -4372,7 +4374,7 @@ EffectInstance::renderHandler(RenderArgs & args,
                             it->second.tmpImage->convertToFormat(it->second.tmpImage->getBounds(),
                                                                  getApp()->getDefaultColorSpaceForBitDepth(it->second.tmpImage->getBitDepth()),
                                                                  getApp()->getDefaultColorSpaceForBitDepth(it->second.downscaleImage->getBitDepth()),
-                                                                 -1, false, false, unPremultIfNeeded, it->second.downscaleImage.get());
+                                                                 -1, false, unPremultIfNeeded, it->second.downscaleImage.get());
                         } else {
                             
                             /*
@@ -5020,14 +5022,7 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
     ///EDIT: We now allow isIdentity to be called recursively.
     RECURSIVE_ACTION();
     
-    ///Lock actions for unsafe plug-ins
-    boost::shared_ptr<QMutexLocker> locker;
-    if (renderThreadSafety() == eRenderSafetyUnsafe) {
-        const Natron::Plugin* p = getNode()->getPlugin();
-        assert(p);
-        locker.reset(new QMutexLocker(p->getPluginLock()));
-    }
-    
+
     bool ret = false;
     
     if (appPTR->isBackground() && dynamic_cast<DiskCacheNode*>(this) != NULL) {
@@ -5112,13 +5107,6 @@ EffectInstance::getRegionOfDefinition_public(U64 hash,
         {
             RECURSIVE_ACTION();
             
-            ///Lock actions for unsafe plug-ins
-            boost::shared_ptr<QMutexLocker> locker;
-            if (renderThreadSafety() == eRenderSafetyUnsafe) {
-                const Natron::Plugin* p = getNode()->getPlugin();
-                assert(p);
-                locker.reset(new QMutexLocker(p->getPluginLock()));
-            }
             
             ret = getRegionOfDefinition(hash,time, supportsRenderScaleMaybe() == eSupportsNo ? scaleOne : scale, view, rod);
             
@@ -5158,13 +5146,7 @@ EffectInstance::getRegionsOfInterest_public(SequenceTime time,
     assert(outputRoD.x2 >= outputRoD.x1 && outputRoD.y2 >= outputRoD.y1);
     assert(renderWindow.x2 >= renderWindow.x1 && renderWindow.y2 >= renderWindow.y1);
     
-    ///Lock actions for unsafe plug-ins
-    boost::shared_ptr<QMutexLocker> locker;
-    if (renderThreadSafety() == eRenderSafetyUnsafe) {
-        const Natron::Plugin* p = getNode()->getPlugin();
-        assert(p);
-        locker.reset(new QMutexLocker(p->getPluginLock()));
-    }
+
     
     getRegionsOfInterest(time, scale, outputRoD, renderWindow, view,ret);
     
@@ -5175,14 +5157,6 @@ EffectInstance::getFramesNeeded_public(SequenceTime time,int view)
 {
     NON_RECURSIVE_ACTION();
     
-    ///Lock actions for unsafe plug-ins
-    boost::shared_ptr<QMutexLocker> locker;
-    if (renderThreadSafety() == eRenderSafetyUnsafe) {
-        const Natron::Plugin* p = getNode()->getPlugin();
-        assert(p);
-        locker.reset(new QMutexLocker(p->getPluginLock()));
-    }
-
     return getFramesNeeded(time, view);
 }
 

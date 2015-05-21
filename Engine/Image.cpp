@@ -870,6 +870,40 @@ Image::pasteFrom(const Natron::Image & src,
     }
 }
 
+template <typename PIX,int maxValue, int nComps>
+void
+Image::fillForDepthForComponents(const RectI & roi_,
+                                 float r,
+                                 float g,
+                                 float b,
+                                 float a)
+{
+    assert( (getBitDepth() == eImageBitDepthByte && sizeof(PIX) == 1) || (getBitDepth() == eImageBitDepthShort && sizeof(PIX) == 2) || (getBitDepth() == eImageBitDepthFloat && sizeof(PIX) == 4) );
+    
+    RectI roi = roi_;
+    bool doInteresect = roi.intersect(_bounds, &roi);
+    if (!doInteresect) {
+        // no intersection between roi and the bounds of the image
+        return;
+    }
+    
+    int rowElems = (int)getComponentsCount() * _bounds.width();
+    const float fillValue[4] = {
+        nComps == 1 ? a * maxValue : r * maxValue, g * maxValue, b * maxValue, a * maxValue
+    };
+    
+    
+    // now we're safe: the image contains the area in roi
+    PIX* dst = (PIX*)pixelAt(roi.x1, roi.y1);
+    for ( int i = 0; i < roi.height(); ++i, dst += (rowElems - roi.width() * nComps) ) {
+        for (int j = 0; j < roi.width(); ++j, dst += nComps) {
+            for (int k = 0; k < nComps; ++k) {
+                dst[k] = fillValue[k];
+            }
+        }
+    }
+}
+
 // code proofread and fixed by @devernay on 8/8/2014
 template <typename PIX, int maxValue>
 void
@@ -879,36 +913,30 @@ Image::fillForDepth(const RectI & roi_,
                     float b,
                     float a)
 {
-    assert( (getBitDepth() == eImageBitDepthByte && sizeof(PIX) == 1) || (getBitDepth() == eImageBitDepthShort && sizeof(PIX) == 2) || (getBitDepth() == eImageBitDepthFloat && sizeof(PIX) == 4) );
+    
 
     const ImageComponents& comps = getComponents();
     int nComps = comps.getNumComponents();
-    if (nComps == 0) {
-        return;
+    switch (nComps) {
+        case 0:
+            return;
+            break;
+        case 1:
+            fillForDepthForComponents<PIX, maxValue, 1>(roi_, r, g , b, a);
+            break;
+        case 2:
+            fillForDepthForComponents<PIX, maxValue, 2>(roi_, r, g, b, a);
+            break;
+        case 3:
+            fillForDepthForComponents<PIX, maxValue, 3>(roi_, r, g, b, a);
+            break;
+        case 4:
+            fillForDepthForComponents<PIX, maxValue, 4>(roi_, r, g, b, a);
+            break;
+        default:
+            break;
     }
-
-    RectI roi = roi_;
-    bool doInteresect = roi.intersect(_bounds, &roi);
-    if (!doInteresect) {
-        // no intersection between roi and the bounds of the image
-        return;
-    }
-
-    int rowElems = (int)getComponentsCount() * _bounds.width();
-    const float fillValue[4] = {
-        nComps == 1 ? a : r, g, b, a
-    };
-    
-
-    // now we're safe: the image contains the area in roi
-    PIX* dst = (PIX*)pixelAt(roi.x1, roi.y1);
-    for ( int i = 0; i < roi.height(); ++i, dst += (rowElems - roi.width() * nComps) ) {
-        for (int j = 0; j < roi.width(); ++j, dst += nComps) {
-            for (int k = 0; k < nComps; ++k) {
-                dst[k] = fillValue[k] * maxValue;
-            }
-        }
-    }
+   
 }
 
 // code proofread and fixed by @devernay on 8/8/2014
@@ -1994,7 +2022,6 @@ Image::convertToFormatInternal_sameComps(const RectI & renderWindow,
                                   Image & dstImg,
                                   Natron::ViewerColorSpaceEnum srcColorSpace,
                                   Natron::ViewerColorSpaceEnum dstColorSpace,
-                                  bool invert,
                                   bool copyBitmap)
 {
     const RectI & r = srcImg._bounds;
@@ -2037,7 +2064,7 @@ Image::convertToFormatInternal_sameComps(const RectI & renderWindow,
                 for (int k = 0; k < nComp; ++k) {
                     if ( k == 3 || (!srcLut && !dstLut) ) {
                         DSTPIX pix = convertPixelDepth<SRCPIX, DSTPIX>(srcPixels[k]);
-                        dstPixels[k] = invert ? dstMaxValue - pix : pix;
+                        dstPixels[k] =  pix;
 
                     } else {
                         float pixFloat;
@@ -2070,7 +2097,7 @@ Image::convertToFormatInternal_sameComps(const RectI & renderWindow,
                             }
                             pix = convertPixelDepth<float, DSTPIX>(pixFloat);
                         }
-                        dstPixels[k] = invert ? dstMaxValue - pix : pix;
+                        dstPixels[k] =  pix;
                     }
                 }
 
@@ -2094,6 +2121,242 @@ Image::convertToFormatInternal_sameComps(const RectI & renderWindow,
     }
 } // convertToFormatInternal_sameComps
 
+template <typename SRCPIX,typename DSTPIX,int srcMaxValue,int dstMaxValue,int srcNComps,int dstNComps,int channelForAlpha,
+bool requiresUnpremult, bool useColorspaces>
+void
+Image::convertToFormatInternalForColorSpace(const RectI & renderWindow,
+                                            const Image & srcImg,
+                                            Image & dstImg,
+                                            bool copyBitmap,
+                                            Natron::ViewerColorSpaceEnum srcColorSpace,
+                                            Natron::ViewerColorSpaceEnum dstColorSpace)
+{
+    int maxColorComps = std::min(dstNComps, 3);
+    
+
+    ///special case comp == alpha && channelForAlpha = -1 clear out the mask
+    if ( dstNComps == 1 && (channelForAlpha == -1) ) {
+        DSTPIX* dstPixels = (DSTPIX*)dstImg.pixelAt(renderWindow.x1, renderWindow.y1);
+        
+        int dstRowSize = dstImg._bounds.width() * dstNComps;
+        if (copyBitmap) {
+            dstImg.copyBitmapPortion(renderWindow, srcImg);
+        }
+        for ( int y = 0; y < renderWindow.height();
+             ++y, dstPixels += dstRowSize ) {
+            std::fill(dstPixels, dstPixels + renderWindow.width() * dstNComps, 0.);
+        }
+        
+        return;
+    }
+    
+    const Natron::Color::Lut* srcLut = useColorspaces ? lutFromColorspace((Natron::ViewerColorSpaceEnum)srcColorSpace) : 0;
+    const Natron::Color::Lut* dstLut = useColorspaces ? lutFromColorspace((Natron::ViewerColorSpaceEnum)dstColorSpace) : 0;
+    
+    for (int y = 0; y < renderWindow.height(); ++y) {
+        
+        ///Start of the line for error diffusion
+        // coverity[dont_call]
+        int start = rand() % renderWindow.width();
+        
+        const SRCPIX* srcPixels = (const SRCPIX*)srcImg.pixelAt(renderWindow.x1 + start, renderWindow.y1 + y);
+        
+        DSTPIX* dstPixels = (DSTPIX*)dstImg.pixelAt(renderWindow.x1 + start, renderWindow.y1 + y);
+        
+        const SRCPIX* srcStart = srcPixels;
+        DSTPIX* dstStart = dstPixels;
+        
+        for (int backward = 0; backward < 2; ++backward) {
+            
+            ///We do twice the loop, once from starting point to end and once from starting point - 1 to real start
+            int x = backward ? start - 1 : start;
+            
+            //End is pointing to the first pixel outside the line a la stl
+            int end = backward ? -1 : renderWindow.width();
+            unsigned error[3] = {
+                0x80,0x80,0x80
+            };
+            
+            while ( x != end && x >= 0 && x < renderWindow.width() ) {
+                if (dstNComps == 1) {
+                    ///If we're converting to alpha, we just have to handle pixel depth conversion
+                    DSTPIX pix;
+                    
+                    // convertPixelDepth is optimized when SRCPIX == DSTPIX
+                    
+                    switch (srcNComps) {
+                        case 4:
+                            pix = convertPixelDepth<SRCPIX, DSTPIX>(srcPixels[channelForAlpha]);
+                            break;
+                        case 3:
+                            // RGB is opaque but the channelForAlpha can be 0-2
+                            pix = convertPixelDepth<SRCPIX, DSTPIX>(channelForAlpha == -1 ? 0. : srcPixels[channelForAlpha]);
+                            break;
+                        case 2:
+                            // XY is opaque but the channelForAlpha can be 0-1
+                            pix = convertPixelDepth<SRCPIX, DSTPIX>(channelForAlpha == -1 ? 0. : srcPixels[channelForAlpha]);
+                            break;
+                        case 1:
+                            pix  = convertPixelDepth<SRCPIX, DSTPIX>(*srcPixels);
+                            break;
+                    }
+                    
+                    dstPixels[0] = pix;
+                    
+                } else { // if (dstNComps == 1) {
+                    
+                    if (srcNComps == 1) {
+                        DSTPIX pix = convertPixelDepth<SRCPIX, DSTPIX>(srcPixels[0]);
+                        for (int k = 0; k < dstNComps; ++k) {
+                            dstPixels[k] = pix;
+                        }
+                        
+                    } else {
+                        ///In this case we've XY, RGB or RGBA input and outputs
+                        assert(srcNComps != dstNComps);
+                        
+                        bool unpremultChannel = (srcNComps == 4 &&
+                                                 dstNComps == 3 &&
+                                                 requiresUnpremult);
+                        
+                        ///This is only set if unpremultChannel is true
+                        float alphaForUnPremult;
+                        if (unpremultChannel) {
+                            alphaForUnPremult = convertPixelDepth<SRCPIX, float>(srcPixels[srcNComps - 1]);
+                        } else {
+                            alphaForUnPremult = 0.;
+                        }
+                        
+                        for (int k = 0; k < maxColorComps; ++k) {
+                            if (!useColorspaces || (!srcLut && !dstLut)) {
+                                DSTPIX pix;
+                                if (dstMaxValue == 255) {
+                                    float pixFloat = convertPixelDepth<SRCPIX, float>(srcPixels[k]);
+                                    error[k] = (error[k] & 0xff) + ( dstLut ? dstLut->toColorSpaceUint8xxFromLinearFloatFast(pixFloat) :
+                                                                    Color::floatToInt<0xff01>(pixFloat) );
+                                    pix = error[k] >> 8;
+                                    
+                                } else {
+                                    pix = convertPixelDepth<SRCPIX, DSTPIX>(srcPixels[k]);
+                                }
+                                dstPixels[k] =  pix;
+                            } else {
+                                ///For RGB channels
+                                float pixFloat;
+                                
+                                ///Unpremult before doing colorspace conversion from linear to X
+                                if (unpremultChannel) {
+                                    pixFloat = convertPixelDepth<SRCPIX, float>(srcPixels[k]);
+                                    pixFloat = alphaForUnPremult == 0.f ? 0. : pixFloat / alphaForUnPremult;
+                                    if (srcLut) {
+                                        pixFloat = srcLut->fromColorSpaceFloatToLinearFloat(pixFloat);
+                                    }
+                                    
+                                } else if (srcLut) {
+                                    if (srcMaxValue == 255) {
+                                        pixFloat = srcLut->fromColorSpaceUint8ToLinearFloatFast(srcPixels[k]);
+                                    } else if (srcMaxValue == 65535) {
+                                        pixFloat = srcLut->fromColorSpaceUint16ToLinearFloatFast(srcPixels[k]);
+                                    } else {
+                                        pixFloat = srcLut->fromColorSpaceFloatToLinearFloat(srcPixels[k]);
+                                    }
+                                } else {
+                                    pixFloat = convertPixelDepth<SRCPIX, float>(srcPixels[k]);
+                                }
+                                
+                                ///Apply dst color-space
+                                DSTPIX pix;
+                                if (dstMaxValue == 255) {
+                                    error[k] = (error[k] & 0xff) + ( dstLut ? dstLut->toColorSpaceUint8xxFromLinearFloatFast(pixFloat) :
+                                                                    Color::floatToInt<0xff01>(pixFloat) );
+                                    pix = error[k] >> 8;
+                                    
+                                } else if (dstMaxValue == 65535) {
+                                    pix = dstLut ? dstLut->toColorSpaceUint16FromLinearFloatFast(pixFloat) :
+                                    convertPixelDepth<float, DSTPIX>(pixFloat);
+                                    
+                                } else {
+                                    if (dstLut) {
+                                        pixFloat = dstLut->toColorSpaceFloatFromLinearFloat(pixFloat);
+                                    }
+                                    pix = convertPixelDepth<float, DSTPIX>(pixFloat);
+                                }
+                                dstPixels[k] =  pix;
+                            } // if (!useColorspaces || (!srcLut && !dstLut)) {
+                        } // for (int k = 0; k < maxColorComps; ++k) {
+                        
+                        if (dstNComps == 4) {
+                            // For alpha channel, fill with 0, we reach here only if converting RGB-->RGBA or XY--->RGBA
+                            // Alpha is set to 0 and premult is set to Opaque.
+                            // That way, the Roto node can be conveniently used to draw a mask. This shouldn't
+                            // disturb anything else in the process, since Opaque premult means that alpha should
+                            // be considered as being 1 everywhere, whatever the actual alpha value is.
+                            // see GenericWriterPlugin::render, if (userPremult == OFX::eImageOpaque...
+                            dstPixels[3] =  convertPixelDepth<float, DSTPIX>(0.f);
+                        }
+                        
+                        
+                    } // if (srcNComps == 1) {
+                } // if (dstNComps == 1) {
+                if (backward) {
+                    --x;
+                    srcPixels -= srcNComps;
+                    dstPixels -= dstNComps;
+                } else {
+                    ++x;
+                    srcPixels += srcNComps;
+                    dstPixels += dstNComps;
+                }
+                
+            } // while ( x != end && x >= 0 && x < renderWindow.width() ) {
+            srcPixels = srcStart - srcNComps;
+            dstPixels = dstStart - dstNComps;
+        } // for (int backward = 0; backward < 2; ++backward) {
+    }  // for (int y = 0; y < renderWindow.height(); ++y) {
+    
+    if (copyBitmap) {
+        dstImg.copyBitmapPortion(renderWindow, srcImg);
+    }
+    
+}
+
+template <typename SRCPIX,typename DSTPIX,int srcMaxValue,int dstMaxValue,int srcNComps,int dstNComps,int channelForAlpha,
+bool requiresUnpremult>
+void
+Image::convertToFormatInternalForUnpremult(const RectI & renderWindow,
+                                            const Image & srcImg,
+                                            Image & dstImg,
+                                            Natron::ViewerColorSpaceEnum srcColorSpace,
+                                            Natron::ViewerColorSpaceEnum dstColorSpace,
+                                           bool copyBitmap)
+{
+    if (srcColorSpace == Natron::eViewerColorSpaceLinear && dstColorSpace == Natron::eViewerColorSpaceLinear) {
+        convertToFormatInternalForColorSpace<SRCPIX, DSTPIX, srcMaxValue, dstMaxValue, srcNComps, dstNComps, channelForAlpha, requiresUnpremult, false>(renderWindow, srcImg, dstImg, copyBitmap, srcColorSpace, dstColorSpace);
+    } else {
+        convertToFormatInternalForColorSpace<SRCPIX, DSTPIX, srcMaxValue, dstMaxValue, srcNComps, dstNComps, channelForAlpha, requiresUnpremult, true>(renderWindow, srcImg, dstImg, copyBitmap,  srcColorSpace, dstColorSpace);
+    }
+}
+
+template <typename SRCPIX,typename DSTPIX,int srcMaxValue,int dstMaxValue,int srcNComps,int dstNComps,int channelForAlpha>
+void
+Image::convertToFormatInternalForAlpha(const RectI & renderWindow,
+                                             const Image & srcImg,
+                                             Image & dstImg,
+                                             Natron::ViewerColorSpaceEnum srcColorSpace,
+                                             Natron::ViewerColorSpaceEnum dstColorSpace,
+                                             bool copyBitmap,
+                                             bool requiresUnpremult)
+{
+    if (requiresUnpremult) {
+        convertToFormatInternalForUnpremult<SRCPIX, DSTPIX, srcMaxValue, dstMaxValue, srcNComps, dstNComps, channelForAlpha, true>(renderWindow, srcImg, dstImg,srcColorSpace, dstColorSpace,copyBitmap);
+    } else {
+        convertToFormatInternalForUnpremult<SRCPIX, DSTPIX, srcMaxValue, dstMaxValue, srcNComps, dstNComps, channelForAlpha, false>(renderWindow, srcImg, dstImg,srcColorSpace, dstColorSpace,copyBitmap);
+
+    }
+}
+
+
+
 template <typename SRCPIX,typename DSTPIX,int srcMaxValue,int dstMaxValue,int srcNComps,int dstNComps>
 void
 Image::convertToFormatInternal(const RectI & renderWindow,
@@ -2102,18 +2365,12 @@ Image::convertToFormatInternal(const RectI & renderWindow,
                         Natron::ViewerColorSpaceEnum srcColorSpace,
                         Natron::ViewerColorSpaceEnum dstColorSpace,
                         int channelForAlpha,
-                        bool invert,
                         bool copyBitmap,
                         bool requiresUnpremult)
 {
-    const RectI & r = srcImg._bounds;
-    RectI intersection;
+    
 
-    if ( !renderWindow.intersect(r, &intersection) ) {
-        return;
-    }
-
-    assert(!intersection.isNull() && intersection.width() > 0 && intersection.height() > 0);
+    assert(!renderWindow.isNull() && renderWindow.width() > 0 && renderWindow.height() > 0);
 
     if (channelForAlpha != -1) {
         switch (srcNComps) {
@@ -2141,189 +2398,28 @@ Image::convertToFormatInternal(const RectI & renderWindow,
         }
 
     }
-
-    Natron::ImageBitDepthEnum dstDepth = dstImg.getBitDepth();
-    Natron::ImageBitDepthEnum srcDepth = dstDepth;
-
-    ///special case comp == alpha && channelForAlpha = -1 clear out the mask
-    if ( dstNComps == 1 && (channelForAlpha == -1) ) {
-        DSTPIX* dstPixels = (DSTPIX*)dstImg.pixelAt(intersection.x1, intersection.y1);
-
-        if (copyBitmap) {
-            dstImg.copyBitmapPortion(intersection, srcImg);
-        }
-        for ( int y = 0; y < intersection.height();
-              ++y, dstPixels += (r.width() * dstNComps) ) {
-            std::fill(dstPixels, dstPixels + intersection.width() * dstNComps, 0.);
-        }
-
-        return;
-    }
-
-    const Natron::Color::Lut* srcLut = lutFromColorspace(srcColorSpace);
-    const Natron::Color::Lut* dstLut = lutFromColorspace(dstColorSpace);
     
-    for (int y = 0; y < intersection.height(); ++y) {
-        
-        ///Start of the line for error diffusion
-        // coverity[dont_call]
-        int start = rand() % intersection.width();
-        
-        const SRCPIX* srcPixels = (const SRCPIX*)srcImg.pixelAt(intersection.x1 + start, intersection.y1 + y);
-        
-        DSTPIX* dstPixels = (DSTPIX*)dstImg.pixelAt(intersection.x1 + start, intersection.y1 + y);
-        
-        const SRCPIX* srcStart = srcPixels;
-        DSTPIX* dstStart = dstPixels;
-
-        for (int backward = 0; backward < 2; ++backward) {
-            
-            ///We do twice the loop, once from starting point to end and once from starting point - 1 to real start
-            int x = backward ? start - 1 : start;
-            
-            //End is pointing to the first pixel outside the line a la stl
-            int end = backward ? -1 : intersection.width();
-            unsigned error[3] = {
-                0x80,0x80,0x80
-            };
-
-            while ( x != end && x >= 0 && x < intersection.width() ) {
-                if (dstNComps == 1) {
-                    ///If we're converting to alpha, we just have to handle pixel depth conversion
-                    DSTPIX pix;
-
-                    // convertPixelDepth is optimized when SRCPIX == DSTPIX
-
-                    switch (srcNComps) {
-                        case 4:
-                            pix = convertPixelDepth<SRCPIX, DSTPIX>(srcPixels[channelForAlpha]);
-                            break;
-                        case 3:
-                            // RGB is opaque but the channelForAlpha can be 0-2
-                            pix = convertPixelDepth<SRCPIX, DSTPIX>(channelForAlpha == -1 ? 0. : srcPixels[channelForAlpha]);
-                            break;
-                        case 2:
-                            // XY is opaque but the channelForAlpha can be 0-1
-                            pix = convertPixelDepth<SRCPIX, DSTPIX>(channelForAlpha == -1 ? 0. : srcPixels[channelForAlpha]);
-                            break;
-                        case 1:
-                            pix  = convertPixelDepth<SRCPIX, DSTPIX>(*srcPixels);
-                            break;
-                    }
-
-                    dstPixels[0] = invert ? dstMaxValue - pix: pix;
-                } else {
-                    
-                    if (srcNComps == 1) {
-                        DSTPIX pix = convertPixelDepth<SRCPIX, DSTPIX>(srcPixels[0]);
-                        for (int k = 0; k < dstNComps; ++k) {
-                            dstPixels[k] = invert ? dstMaxValue - pix: pix;
-                        }
-       
-                    } else {
-                        ///In this case we've XY, RGB or RGBA input and outputs
-                        assert(srcNComps != dstNComps);
-                        
-                        bool unpremultChannel = (srcNComps == 4 &&
-                                                 dstNComps == 3 &&
-                                                 requiresUnpremult);
-                        
-                        ///This is only set if unpremultChannel is true
-                        float alphaForUnPremult;
-                        if (unpremultChannel) {
-                            alphaForUnPremult = convertPixelDepth<SRCPIX, float>(srcPixels[srcNComps - 1]);
-                        } else {
-                            alphaForUnPremult = 0.;
-                        }
-                        
-                        for (int k = 0; k < dstNComps; ++k) {
-                            if (k == 3) {
-                                // For alpha channel, fill with 0, we reach here only if converting RGB-->RGBA
-                                // Alpha is set to 0 and premult is set to Opaque.
-                                // That way, the Roto node can be conveniently used to draw a mask. This shouldn't
-                                // disturb anything else in the process, since Opaque premult means that alpha should
-                                // be considered as being 1 everywhere, whatever the actual alpha value is.
-                                // see GenericWriterPlugin::render, if (userPremult == OFX::eImageOpaque...
-                                DSTPIX pix = convertPixelDepth<float, DSTPIX>(0.f);
-                                dstPixels[k] = invert ? dstMaxValue - pix : pix;
-
-                            } else if (!srcLut && !dstLut) {
-                                DSTPIX pix;
-                                if (dstDepth == eImageBitDepthByte) {
-                                    float pixFloat = convertPixelDepth<SRCPIX, float>(srcPixels[k]);
-                                    error[k] = (error[k] & 0xff) + ( dstLut ? dstLut->toColorSpaceUint8xxFromLinearFloatFast(pixFloat) :
-                                                                    Color::floatToInt<0xff01>(pixFloat) );
-                                    pix = error[k] >> 8;
-
-                                } else {
-                                    pix = convertPixelDepth<SRCPIX, DSTPIX>(srcPixels[k]);
-                                }
-                                dstPixels[k] = invert ? dstMaxValue - pix : pix;
-                            } else {
-                                ///For RGB channels
-                                float pixFloat;
-                                
-                                ///Unpremult before doing colorspace conversion from linear to X
-                                if (unpremultChannel) {
-                                    pixFloat = convertPixelDepth<SRCPIX, float>(srcPixels[k]);
-                                    pixFloat = alphaForUnPremult == 0.f ? 0. : pixFloat / alphaForUnPremult;
-                                    if (srcLut) {
-                                        pixFloat = srcLut->fromColorSpaceFloatToLinearFloat(pixFloat);
-                                    }
-
-                                } else if (srcLut) {
-                                    if (srcDepth == eImageBitDepthByte) {
-                                        pixFloat = srcLut->fromColorSpaceUint8ToLinearFloatFast(srcPixels[k]);
-                                    } else if (srcDepth == eImageBitDepthShort) {
-                                        pixFloat = srcLut->fromColorSpaceUint16ToLinearFloatFast(srcPixels[k]);
-                                    } else {
-                                        pixFloat = srcLut->fromColorSpaceFloatToLinearFloat(srcPixels[k]);
-                                    }
-                                } else {
-                                    pixFloat = convertPixelDepth<SRCPIX, float>(srcPixels[k]);
-                                }
-
-                                ///Apply dst color-space
-                                DSTPIX pix;
-                                if (dstDepth == eImageBitDepthByte) {
-                                    error[k] = (error[k] & 0xff) + ( dstLut ? dstLut->toColorSpaceUint8xxFromLinearFloatFast(pixFloat) :
-                                                                    Color::floatToInt<0xff01>(pixFloat) );
-                                    pix = error[k] >> 8;
-
-                                } else if (dstDepth == eImageBitDepthShort) {
-                                    pix = dstLut ? dstLut->toColorSpaceUint16FromLinearFloatFast(pixFloat) :
-                                    convertPixelDepth<float, DSTPIX>(pixFloat);
-
-                                } else {
-                                    if (dstLut) {
-                                        pixFloat = dstLut->toColorSpaceFloatFromLinearFloat(pixFloat);
-                                    }
-                                    pix = convertPixelDepth<float, DSTPIX>(pixFloat);
-                                }
-                                dstPixels[k] = invert ? dstMaxValue - pix : pix;
-                            }
-                        }
-                    }
-                }
-
-                if (backward) {
-                    --x;
-                    srcPixels -= srcNComps;
-                    dstPixels -= dstNComps;
-                } else {
-                    ++x;
-                    srcPixels += srcNComps;
-                    dstPixels += dstNComps;
-                }
-            }
-            srcPixels = srcStart - srcNComps;
-            dstPixels = dstStart - dstNComps;
-        }
+    switch (channelForAlpha) {
+        case -1:
+            convertToFormatInternalForAlpha<SRCPIX, DSTPIX, srcMaxValue, dstMaxValue, srcNComps, dstNComps, -1>(renderWindow, srcImg, dstImg,srcColorSpace, dstColorSpace,copyBitmap,requiresUnpremult);
+            break;
+        case 0:
+            convertToFormatInternalForAlpha<SRCPIX, DSTPIX, srcMaxValue, dstMaxValue, srcNComps, dstNComps, 0>(renderWindow, srcImg, dstImg,srcColorSpace, dstColorSpace,copyBitmap,requiresUnpremult);
+            break;
+        case 1:
+            convertToFormatInternalForAlpha<SRCPIX, DSTPIX, srcMaxValue, dstMaxValue, srcNComps, dstNComps, 1>(renderWindow, srcImg, dstImg,srcColorSpace, dstColorSpace,copyBitmap,requiresUnpremult);
+            break;
+        case 2:
+            convertToFormatInternalForAlpha<SRCPIX, DSTPIX, srcMaxValue, dstMaxValue, srcNComps, dstNComps, 2>(renderWindow, srcImg, dstImg,srcColorSpace, dstColorSpace,copyBitmap,requiresUnpremult);
+            break;
+        case 3:
+            convertToFormatInternalForAlpha<SRCPIX, DSTPIX, srcMaxValue, dstMaxValue, srcNComps, dstNComps, 3>(renderWindow, srcImg, dstImg,srcColorSpace, dstColorSpace,copyBitmap,requiresUnpremult);
+            break;
+        default:
+            assert(false);
+            break;
     }
-    
-    if (copyBitmap) {
-        dstImg.copyBitmapPortion(intersection, srcImg);
-    }
+
 } // convertToFormatInternal
 
 
@@ -2336,7 +2432,6 @@ Image::convertToFormatInternalForDepth(const RectI & renderWindow,
                                 Natron::ViewerColorSpaceEnum srcColorSpace,
                                 Natron::ViewerColorSpaceEnum dstColorSpace,
                                 int channelForAlpha,
-                                bool invert,
                                 bool copyBitmap,
                                 bool requiresUnpremult)
 {
@@ -2351,21 +2446,21 @@ Image::convertToFormatInternalForDepth(const RectI & renderWindow,
                                                                                           srcColorSpace,
                                                                                           dstColorSpace,
                                                                                           channelForAlpha,
-                                                                                          invert,copyBitmap,requiresUnpremult);
+                                                                                          copyBitmap,requiresUnpremult);
                     break;
                 case 3:
                     convertToFormatInternal<SRCPIX, DSTPIX, srcMaxValue, dstMaxValue,1,3>(renderWindow,srcImg, dstImg,
                                                                                         srcColorSpace,
                                                                                         dstColorSpace,
                                                                                         channelForAlpha,
-                                                                                        invert,copyBitmap,requiresUnpremult);
+                                                                                        copyBitmap,requiresUnpremult);
                     break;
                 case 4:
                     convertToFormatInternal<SRCPIX, DSTPIX, srcMaxValue, dstMaxValue,1,4>(renderWindow,srcImg, dstImg,
                                                                                         srcColorSpace,
                                                                                         dstColorSpace,
                                                                                         channelForAlpha,
-                                                                                        invert,copyBitmap,requiresUnpremult);
+                                                                                        copyBitmap,requiresUnpremult);
                     break;
                 default:
                     assert(false);
@@ -2379,21 +2474,21 @@ Image::convertToFormatInternalForDepth(const RectI & renderWindow,
                                                                                           srcColorSpace,
                                                                                           dstColorSpace,
                                                                                           channelForAlpha,
-                                                                                          invert,copyBitmap,requiresUnpremult);
+                                                                                          copyBitmap,requiresUnpremult);
                     break;
                 case 3:
                     convertToFormatInternal<SRCPIX, DSTPIX, srcMaxValue, dstMaxValue,2,3>(renderWindow,srcImg, dstImg,
                                                                                           srcColorSpace,
                                                                                           dstColorSpace,
                                                                                           channelForAlpha,
-                                                                                          invert,copyBitmap,requiresUnpremult);
+                                                                                          copyBitmap,requiresUnpremult);
                     break;
                 case 4:
                     convertToFormatInternal<SRCPIX, DSTPIX, srcMaxValue, dstMaxValue,2,4>(renderWindow,srcImg, dstImg,
                                                                                           srcColorSpace,
                                                                                           dstColorSpace,
                                                                                           channelForAlpha,
-                                                                                          invert,copyBitmap,requiresUnpremult);
+                                                                                          copyBitmap,requiresUnpremult);
                     break;
                 default:
                     assert(false);
@@ -2407,21 +2502,21 @@ Image::convertToFormatInternalForDepth(const RectI & renderWindow,
                                                                                         srcColorSpace,
                                                                                         dstColorSpace,
                                                                                         channelForAlpha,
-                                                                                        invert,copyBitmap,requiresUnpremult);
+                                                                                        copyBitmap,requiresUnpremult);
                     break;
                 case 2:
                     convertToFormatInternal<SRCPIX, DSTPIX, srcMaxValue, dstMaxValue,3,2>(renderWindow,srcImg, dstImg,
                                                                                           srcColorSpace,
                                                                                           dstColorSpace,
                                                                                           channelForAlpha,
-                                                                                          invert,copyBitmap,requiresUnpremult);
+                                                                                          copyBitmap,requiresUnpremult);
                     break;
                 case 4:
                     convertToFormatInternal<SRCPIX, DSTPIX, srcMaxValue, dstMaxValue,3,4>(renderWindow,srcImg, dstImg,
                                                                                         srcColorSpace,
                                                                                         dstColorSpace,
                                                                                         channelForAlpha,
-                                                                                        invert,copyBitmap,requiresUnpremult);
+                                                                                        copyBitmap,requiresUnpremult);
                     break;
                 default:
                     assert(false);
@@ -2435,21 +2530,21 @@ Image::convertToFormatInternalForDepth(const RectI & renderWindow,
                                                                                         srcColorSpace,
                                                                                         dstColorSpace,
                                                                                         channelForAlpha,
-                                                                                        invert,copyBitmap,requiresUnpremult);
+                                                                                        copyBitmap,requiresUnpremult);
                     break;
                 case 2:
                     convertToFormatInternal<SRCPIX, DSTPIX, srcMaxValue, dstMaxValue,4,2>(renderWindow,srcImg, dstImg,
                                                                                           srcColorSpace,
                                                                                           dstColorSpace,
                                                                                           channelForAlpha,
-                                                                                          invert,copyBitmap,requiresUnpremult);
+                                                                                          copyBitmap,requiresUnpremult);
                     break;
                 case 3:
                     convertToFormatInternal<SRCPIX, DSTPIX, srcMaxValue, dstMaxValue,4,3>(renderWindow,srcImg, dstImg,
                                                                                         srcColorSpace,
                                                                                         dstColorSpace,
                                                                                         channelForAlpha,
-                                                                                        invert,copyBitmap,requiresUnpremult);
+                                                                                        copyBitmap,requiresUnpremult);
                     break;
                 default:
                     assert(false);
@@ -2467,7 +2562,6 @@ Image::convertToFormat(const RectI & renderWindow,
                        Natron::ViewerColorSpaceEnum srcColorSpace,
                        Natron::ViewerColorSpaceEnum dstColorSpace,
                        int channelForAlpha,
-                       bool invert,
                        bool copyBitmap,
                        bool requiresUnpremult,
                        Natron::Image* dstImg) const
@@ -2487,17 +2581,17 @@ Image::convertToFormat(const RectI & renderWindow,
                 ///Same as a copy
                 convertToFormatInternal_sameComps<unsigned char, unsigned char, 255, 255>(renderWindow,*this, *dstImg,
                                                                                           srcColorSpace,
-                                                                                          dstColorSpace,invert,copyBitmap);
+                                                                                          dstColorSpace,copyBitmap);
                 break;
             case eImageBitDepthShort:
                 convertToFormatInternal_sameComps<unsigned short, unsigned char, 65535, 255>(renderWindow,*this, *dstImg,
                                                                                              srcColorSpace,
-                                                                                             dstColorSpace,invert,copyBitmap);
+                                                                                             dstColorSpace,copyBitmap);
                 break;
             case eImageBitDepthFloat:
                 convertToFormatInternal_sameComps<float, unsigned char, 1, 255>(renderWindow,*this, *dstImg,
                                                                                 srcColorSpace,
-                                                                                dstColorSpace,invert,copyBitmap);
+                                                                                dstColorSpace,copyBitmap);
                 break;
             case eImageBitDepthNone:
                 break;
@@ -2510,18 +2604,18 @@ Image::convertToFormat(const RectI & renderWindow,
             case eImageBitDepthByte:
                 convertToFormatInternal_sameComps<unsigned char, unsigned short, 255, 65535>(renderWindow,*this, *dstImg,
                                                                                              srcColorSpace,
-                                                                                             dstColorSpace,invert,copyBitmap);
+                                                                                             dstColorSpace,copyBitmap);
                 break;
             case eImageBitDepthShort:
                 ///Same as a copy
                 convertToFormatInternal_sameComps<unsigned short, unsigned short, 65535, 65535>(renderWindow,*this, *dstImg,
                                                                                                 srcColorSpace,
-                                                                                                dstColorSpace,invert,copyBitmap);
+                                                                                                dstColorSpace,copyBitmap);
                 break;
             case eImageBitDepthFloat:
                 convertToFormatInternal_sameComps<float, unsigned short, 1, 65535>(renderWindow,*this, *dstImg,
                                                                                    srcColorSpace,
-                                                                                   dstColorSpace,invert,copyBitmap);
+                                                                                   dstColorSpace,copyBitmap);
                 break;
             case eImageBitDepthNone:
                 break;
@@ -2534,18 +2628,18 @@ Image::convertToFormat(const RectI & renderWindow,
             case eImageBitDepthByte:
                 convertToFormatInternal_sameComps<unsigned char, float, 255, 1>(renderWindow,*this, *dstImg,
                                                                                 srcColorSpace,
-                                                                                dstColorSpace,invert,copyBitmap);
+                                                                                dstColorSpace,copyBitmap);
                 break;
             case eImageBitDepthShort:
                 convertToFormatInternal_sameComps<unsigned short, float, 65535, 1>(renderWindow,*this, *dstImg,
                                                                                    srcColorSpace,
-                                                                                   dstColorSpace,invert,copyBitmap);
+                                                                                   dstColorSpace,copyBitmap);
                 break;
             case eImageBitDepthFloat:
                 ///Same as a copy
                 convertToFormatInternal_sameComps<float, float, 1, 1>(renderWindow,*this, *dstImg,
                                                                       srcColorSpace,
-                                                                      dstColorSpace,invert,copyBitmap);
+                                                                      dstColorSpace,copyBitmap);
                 break;
             case eImageBitDepthNone:
                 break;
@@ -2566,21 +2660,21 @@ Image::convertToFormat(const RectI & renderWindow,
                                                                                         srcColorSpace,
                                                                                         dstColorSpace,
                                                                                         channelForAlpha,
-                                                                                        invert,copyBitmap,requiresUnpremult);
+                                                                                        copyBitmap,requiresUnpremult);
                     break;
             case eImageBitDepthShort:
                     convertToFormatInternalForDepth<unsigned short, unsigned char, 65535, 255>(renderWindow,*this, *dstImg,
                                                                                            srcColorSpace,
                                                                                            dstColorSpace,
                                                                                            channelForAlpha,
-                                                                                           invert,copyBitmap,requiresUnpremult);
+                                                                                           copyBitmap,requiresUnpremult);
                     break;
             case eImageBitDepthFloat:
                     convertToFormatInternalForDepth<float, unsigned char, 1, 255>(renderWindow,*this, *dstImg,
                                                                               srcColorSpace,
                                                                               dstColorSpace,
                                                                               channelForAlpha,
-                                                                              invert,copyBitmap,requiresUnpremult);
+                                                                              copyBitmap,requiresUnpremult);
 
                         break;
             case eImageBitDepthNone:
@@ -2595,7 +2689,7 @@ Image::convertToFormat(const RectI & renderWindow,
                                                                                            srcColorSpace,
                                                                                            dstColorSpace,
                                                                                            channelForAlpha,
-                                                                                           invert,copyBitmap,requiresUnpremult);
+                                                                                           copyBitmap,requiresUnpremult);
 
                         break;
             case eImageBitDepthShort:
@@ -2603,7 +2697,7 @@ Image::convertToFormat(const RectI & renderWindow,
                                                                                               srcColorSpace,
                                                                                               dstColorSpace,
                                                                                               channelForAlpha,
-                                                                                              invert,copyBitmap,requiresUnpremult);
+                                                                                              copyBitmap,requiresUnpremult);
 
                 break;
             case eImageBitDepthFloat:
@@ -2611,7 +2705,7 @@ Image::convertToFormat(const RectI & renderWindow,
                                                                                  srcColorSpace,
                                                                                  dstColorSpace,
                                                                                  channelForAlpha,
-                                                                                 invert,copyBitmap,requiresUnpremult);
+                                                                                 copyBitmap,requiresUnpremult);
                         break;
             case eImageBitDepthNone:
                 break;
@@ -2625,14 +2719,14 @@ Image::convertToFormat(const RectI & renderWindow,
                                                                               srcColorSpace,
                                                                               dstColorSpace,
                                                                               channelForAlpha,
-                                                                              invert,copyBitmap,requiresUnpremult);
+                                                                              copyBitmap,requiresUnpremult);
                         break;
             case eImageBitDepthShort:
                     convertToFormatInternalForDepth<unsigned short, float, 65535, 1>(renderWindow,*this, *dstImg,
                                                                                  srcColorSpace,
                                                                                  dstColorSpace,
                                                                                  channelForAlpha,
-                                                                                 invert,copyBitmap,requiresUnpremult);
+                                                                                 copyBitmap,requiresUnpremult);
 
                         break;
             case eImageBitDepthFloat:
@@ -2640,7 +2734,7 @@ Image::convertToFormat(const RectI & renderWindow,
                                                                     srcColorSpace,
                                                                     dstColorSpace,
                                                                     channelForAlpha,
-                                                                    invert,copyBitmap,requiresUnpremult);
+                                                                    copyBitmap,requiresUnpremult);
                     break;
             case eImageBitDepthNone:
                 break;

@@ -269,7 +269,7 @@ private:
         return QString::number(inputNb + 1).toStdString();
     }
 
-    virtual Natron::EffectInstance::RenderSafetyEnum renderThreadSafety() const OVERRIDE FINAL
+    virtual Natron::RenderSafetyEnum renderThreadSafety() const OVERRIDE FINAL
     {
         return Natron::EffectInstance::eRenderSafetyFullySafe;
     }

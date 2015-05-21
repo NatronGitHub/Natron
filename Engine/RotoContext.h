@@ -1035,6 +1035,10 @@ public:
      * @returns True if the number of points is > 1
      **/
     bool appendPoint(const std::pair<Natron::Point,double>& rawPoints, unsigned int mipMapLevel);
+    
+    void setStrokeFinished();
+    
+    void resetNodesThreadSafety(); 
        
     virtual void clone(const RotoItem* other) OVERRIDE FINAL;
     

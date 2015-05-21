@@ -231,7 +231,7 @@ DiskCacheNode::render(const RenderActionArgs& args)
             
             
             srcImg->convertToFormat(args.roi, getApp()->getDefaultColorSpaceForBitDepth( srcImg->getBitDepth() ),
-                                    getApp()->getDefaultColorSpaceForBitDepth(output.second->getBitDepth()), 3, false, true, false, output.second.get());
+                                    getApp()->getDefaultColorSpaceForBitDepth(output.second->getBitDepth()), 3, true, false, output.second.get());
         } else {
             output.second->pasteFrom(*srcImg, args.roi, output.second->usesBitMap() && srcImg->usesBitMap());
         }

@@ -63,7 +63,7 @@ public:
     virtual void addSupportedBitDepth(std::list<Natron::ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
 
     ///Doesn't really matter here since it won't be used (this effect is always an identity)
-    virtual EffectInstance::RenderSafetyEnum renderThreadSafety() const OVERRIDE FINAL WARN_UNUSED_RETURN
+    virtual Natron::RenderSafetyEnum renderThreadSafety() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         return EffectInstance::eRenderSafetyFullySafeFrame;
     }

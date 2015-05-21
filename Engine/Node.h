@@ -61,6 +61,7 @@ class NodeGuiI;
 class RotoContext;
 class NodeCollection;
 class RotoStrokeItem;
+class RectD;
 namespace Natron {
 class Plugin;
 class OutputEffectInstance;
@@ -368,6 +369,16 @@ public:
      **/
     virtual int getPreferredInputForConnection()  const;
     virtual int getPreferredInput() const;
+    
+    void setRenderThreadSafety(Natron::RenderSafetyEnum safety);
+    Natron::RenderSafetyEnum getCurrentRenderThreadSafety() const;
+    void revertToPluginThreadSafety();
+    
+    void updateLastPaintStrokeBbox(const RectD& bbox);
+    void getLastPaintStrokeBboxAndClear(RectD* bbox);
+    
+    void setWhileCreatingPaintStroke(bool creating);
+    bool isDuringPaintStrokeCreation() const;
     
 private:
     

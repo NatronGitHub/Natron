@@ -2678,7 +2678,6 @@ RotoGui::penUp(double /*scaleX*/,
     if (_imp->state == eEventStateBuildingStroke) {
         assert(_imp->rotoData->strokeBeingPaint);
         _imp->rotoData->strokeBeingPaint->invalidateStrokeTimePreview();
-
         pushUndoCommand(new AddStrokeUndoCommand(this,_imp->rotoData->strokeBeingPaint));
         _imp->rotoData->strokeBeingPaint.reset();
     }

@@ -808,14 +808,7 @@ public:
                            int view,
                            SequenceTime* inputTime,
                            int* inputNb) WARN_UNUSED_RETURN;
-    enum RenderSafetyEnum
-    {
-        eRenderSafetyUnsafe = 0,
-        eRenderSafetyInstanceSafe = 1,
-        eRenderSafetyFullySafe = 2,
-        eRenderSafetyFullySafeFrame = 3,
-    };
-
+    
     /**
      * @brief Indicates how many simultaneous renders the plugin can deal with.
      * RenderSafetyEnum::eRenderSafetyUnsafe - indicating that only a single 'render' call can be made at any time amoung all instances,
@@ -823,7 +816,7 @@ public:
      * RenderSafetyEnum::eRenderSafetyFullySafe - indicating that any instance of a plugin can have multiple renders running simultaneously
      * RenderSafetyEnum::eRenderSafetyFullySafeFrame - Same as eRenderSafetyFullySafe but the plug-in also flagged  kOfxImageEffectPluginPropHostFrameThreading to true.
      **/
-    virtual RenderSafetyEnum renderThreadSafety() const WARN_UNUSED_RETURN = 0;
+    virtual Natron::RenderSafetyEnum renderThreadSafety() const WARN_UNUSED_RETURN = 0;
 
     /*@brief The derived class should query this to abort any long process
        in the engine function.*/
@@ -1475,7 +1468,7 @@ private:
      * @returns True if the render call succeeded, false otherwise.
      **/
     RenderRoIStatusEnum renderRoIInternal(SequenceTime time,
-                                          EffectInstance::RenderSafetyEnum safety,
+                                          Natron::RenderSafetyEnum safety,
                                           unsigned int mipMapLevel,
                                           int view,
                                           const RectD & rod, //!< rod in canonical coordinates

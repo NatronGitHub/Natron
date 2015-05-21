@@ -4342,6 +4342,9 @@ RotoStrokeItem::RotoStrokeItem(Natron::RotoStrokeType type,
                             boost::shared_ptr<NodeCollection>());
         args.createGui = false;
         _imp->effectNode = app->createNode(args);
+        assert(_imp->effectNode);
+        _imp->effectNode->setWhileCreatingPaintStroke(true);
+        _imp->effectNode->setRenderThreadSafety(Natron::eRenderSafetyInstanceSafe);
     }
     
     fixedNamePrefix = baseFixedName;
@@ -4363,7 +4366,8 @@ RotoStrokeItem::RotoStrokeItem(Natron::RotoStrokeType type,
     assert(ok);
     
     assert(_imp->mergeNode);
-    
+    _imp->mergeNode->setWhileCreatingPaintStroke(true);
+    _imp->mergeNode->setRenderThreadSafety(Natron::eRenderSafetyInstanceSafe);
     if (type != eRotoStrokeTypeSolid) {
         int maxInp = _imp->mergeNode->getMaxInputCount();
         for (int i = 0; i < maxInp; ++i) {
@@ -4591,7 +4595,10 @@ RotoStrokeItem::refreshNodesConnections()
             revealInput = getContext()->getNode()->getInput(reveal_i - 1);
         }
         if (!revealInput) {
-            revealInput = upstreamNode;
+            if (_imp->type != eRotoStrokeTypeSolid) {
+                revealInput = upstreamNode;
+            }
+            
         }
         
         if (revealInput) {
@@ -4755,6 +4762,27 @@ evaluateStrokeInternal(const KeyFrameSet& xCurve,
     
 }
 
+void
+RotoStrokeItem::setStrokeFinished()
+{
+    if (_imp->effectNode) {
+        _imp->effectNode->setWhileCreatingPaintStroke(false);
+    }
+    _imp->mergeNode->setWhileCreatingPaintStroke(false);
+    
+    //Might have to do this somewhere else if several viewers are active on the rotopaint node
+    resetNodesThreadSafety();
+}
+
+
+void
+RotoStrokeItem::resetNodesThreadSafety()
+{
+    if (_imp->effectNode) {
+        _imp->effectNode->revertToPluginThreadSafety();
+    }
+    _imp->mergeNode->revertToPluginThreadSafety();
+}
 
 bool
 RotoStrokeItem::appendPoint(const std::pair<Natron::Point,double>& rawPoints,unsigned int mipMapLevel)
@@ -4864,8 +4892,11 @@ void
 RotoStrokeItem::invalidateStrokeTimePreview()
 {
     assert(QThread::currentThread() == qApp->thread());
-    QMutexLocker k(&itemMutex);
-    _imp->strokeCache.reset();
+    {
+        QMutexLocker k(&itemMutex);
+        _imp->strokeCache.reset();
+    }
+    setStrokeFinished();
 }
 
 
@@ -4908,6 +4939,7 @@ RotoStrokeItem::save(RotoItemSerialization* obj) const
     
 }
 
+
 void
 RotoStrokeItem::load(const RotoItemSerialization & obj)
 {
@@ -4929,6 +4961,8 @@ RotoStrokeItem::load(const RotoItemSerialization & obj)
     _imp->visiblePortion->clone(s->_brushVisiblePortion.getKnob().get());
     
     refreshBoundingBox();
+    resetNodesThreadSafety();
+    setStrokeFinished();
 }
 
 void
@@ -6871,7 +6905,7 @@ RotoContext::renderMaskFromStroke(const boost::shared_ptr<RotoStrokeItem>& strok
         if (components != image->getComponents()) {
             Natron::ViewerColorSpaceEnum colorspace = node->getApp()->getDefaultColorSpaceForBitDepth(image->getBitDepth());
             Natron::ViewerColorSpaceEnum dstColorspace = node->getApp()->getDefaultColorSpaceForBitDepth(depth);
-            image->convertToFormat(bounds, colorspace, dstColorspace, 0, false, false, false, ret.get());
+            image->convertToFormat(bounds, colorspace, dstColorspace, 0, false, false, ret.get());
         } else {
             ret->pasteFrom(*image, bounds, false);
         }
@@ -7149,6 +7183,8 @@ RotoContextPrivate::renderStroke(cairo_t* cr,const std::list<std::pair<Point,dou
     if (brushSpacing == 0.) {
         return;
     }
+    
+    brushSpacing = std::max(brushSpacing, 0.05);
     
     boost::shared_ptr<Double_Knob> brushHardnessKnob = stroke->getBrushHardnessKnob();
     double brushHardness = brushHardnessKnob->getValueAtTime(time);

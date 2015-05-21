@@ -262,6 +262,12 @@ struct Node::Implementation
     , nodeCreated(false)
     , createdComponentsMutex()
     , createdComponents()
+    , paintStroke()
+    , pluginSafety(Natron::eRenderSafetyInstanceSafe)
+    , currentThreadSafety(Natron::eRenderSafetyInstanceSafe)
+    , duringPaintStrokeCreation(false)
+    , lastStrokeMovementMutex()
+    , lastStrokeMovement()
     {        
         ///Initialize timers
         gettimeofday(&lastRenderStartedSlotCallTime, 0);
@@ -448,6 +454,12 @@ struct Node::Implementation
     std::list<Natron::ImageComponents> createdComponents; // comps created by the user
     
     boost::weak_ptr<RotoStrokeItem> paintStroke;
+    
+    //protected by renderInstancesSharedMutex
+    Natron::RenderSafetyEnum pluginSafety,currentThreadSafety;
+    bool duringPaintStrokeCreation; // protected by lastStrokeMovementMutex
+    mutable QMutex lastStrokeMovementMutex;
+    RectD lastStrokeMovement;
 };
 
 /**
@@ -637,6 +649,10 @@ Node::load(const std::string & parentMultiInstanceName,
     
     computeHash();
     assert(_imp->liveInstance);
+    
+    _imp->pluginSafety = _imp->liveInstance->renderThreadSafety();
+    _imp->currentThreadSafety = _imp->pluginSafety;
+    
     _imp->nodeCreated = true;
     
     refreshChannelSelectors(serialization.isNull());
@@ -644,6 +660,62 @@ Node::load(const std::string & parentMultiInstanceName,
     _imp->runOnNodeCreatedCB(serialization.isNull());
     
 } // load
+
+void
+Node::setWhileCreatingPaintStroke(bool creating)
+{
+    {
+        QMutexLocker k(&_imp->lastStrokeMovementMutex);
+        _imp->duringPaintStrokeCreation = creating;
+    }
+}
+
+bool
+Node::isDuringPaintStrokeCreation() const
+{
+    QMutexLocker k(&_imp->lastStrokeMovementMutex);
+    return _imp->duringPaintStrokeCreation;
+}
+
+void
+Node::setRenderThreadSafety(Natron::RenderSafetyEnum safety)
+{
+    QMutexLocker k(&_imp->renderInstancesSharedMutex);
+    _imp->currentThreadSafety = safety;
+}
+
+Natron::RenderSafetyEnum
+Node::getCurrentRenderThreadSafety() const
+{
+    QMutexLocker k(&_imp->renderInstancesSharedMutex);
+    return _imp->currentThreadSafety;
+}
+
+void
+Node::revertToPluginThreadSafety()
+{
+    QMutexLocker k(&_imp->renderInstancesSharedMutex);
+    _imp->currentThreadSafety = _imp->pluginSafety;
+}
+
+void
+Node::updateLastPaintStrokeBbox(const RectD& bbox)
+{
+    QMutexLocker k(&_imp->lastStrokeMovementMutex);
+    if (_imp->lastStrokeMovement.isNull()) {
+        _imp->lastStrokeMovement = bbox;
+    } else {
+        _imp->lastStrokeMovement.merge(bbox);
+    }
+}
+
+void
+Node::getLastPaintStrokeBboxAndClear(RectD* bbox)
+{
+    QMutexLocker k(&_imp->lastStrokeMovementMutex);
+    *bbox = _imp->lastStrokeMovement;
+    _imp->lastStrokeMovement.clear();
+}
 
 bool
 Node::isNodeCreated() const

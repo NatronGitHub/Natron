@@ -442,7 +442,6 @@ namespace Natron {
                                           Image & dstImg,
                                           Natron::ViewerColorSpaceEnum srcColorSpace,
                                           Natron::ViewerColorSpaceEnum dstColorSpace,
-                                          bool invert,
                                           bool copyBitmap);
         
         template <typename SRCPIX,typename DSTPIX,int srcMaxValue,int dstMaxValue,int srcNComps,int dstNComps>
@@ -453,9 +452,39 @@ namespace Natron {
                                 Natron::ViewerColorSpaceEnum srcColorSpace,
                                 Natron::ViewerColorSpaceEnum dstColorSpace,
                                 int channelForAlpha,
-                                bool invert,
                                 bool copyBitmap,
                                 bool requiresUnpremult);
+        
+        template <typename SRCPIX,typename DSTPIX,int srcMaxValue,int dstMaxValue,int srcNComps,int dstNComps,int channelForAlpha>
+        static void convertToFormatInternalForAlpha(const RectI & renderWindow,
+                                const Image & srcImg,
+                                Image & dstImg,
+                                Natron::ViewerColorSpaceEnum srcColorSpace,
+                                Natron::ViewerColorSpaceEnum dstColorSpace,
+                                bool copyBitmap,
+                                bool requiresUnpremult);
+        
+        
+        template <typename SRCPIX,typename DSTPIX,int srcMaxValue,int dstMaxValue,int srcNComps,int dstNComps,int channelForAlpha,
+        bool requiresUnpremult>
+        static void convertToFormatInternalForUnpremult(const RectI & renderWindow,
+                                                     const Image & srcImg,
+                                                     Image & dstImg,
+                                                     Natron::ViewerColorSpaceEnum srcColorSpace,
+                                                     Natron::ViewerColorSpaceEnum dstColorSpace,
+                                                     bool copyBitmap);
+        
+        
+        template <typename SRCPIX,typename DSTPIX,int srcMaxValue,int dstMaxValue,int srcNComps,int dstNComps,int channelForAlpha,
+        bool requiresUnpremult, bool useColorspaces>
+        static void convertToFormatInternalForColorSpace(const RectI & renderWindow,
+                                                         const Image & srcImg,
+                                                         Image & dstImg,
+                                                         bool copyBitmap,
+                                                         Natron::ViewerColorSpaceEnum srcColorSpace,
+                                                         Natron::ViewerColorSpaceEnum dstColorSpace);
+        
+        
         
         
         template <typename SRCPIX,typename DSTPIX,int srcMaxValue,int dstMaxValue>
@@ -466,7 +495,6 @@ namespace Natron {
                                         Natron::ViewerColorSpaceEnum srcColorSpace,
                                         Natron::ViewerColorSpaceEnum dstColorSpace,
                                         int channelForAlpha,
-                                        bool invert,
                                         bool copyBitmap,
                                         bool requiresUnpremult);
     public:
@@ -641,8 +669,6 @@ namespace Natron {
          * @param channelForAlpha is used in cases 2) and 4) to determine from which channel we should
          * fill the alpha. If it is -1 it indicates you want to clear the mask.
          *
-         * @param invert If true the channels will be inverted when converting.
-         *
          * @param copyBitMap The bitmap will also be copied.
          *
          * @param requiresUnpremult If true, if a component conversion from RGBA to RGB happens
@@ -657,7 +683,6 @@ namespace Natron {
                              Natron::ViewerColorSpaceEnum srcColorSpace,
                              Natron::ViewerColorSpaceEnum dstColorSpace,
                              int channelForAlpha,
-                             bool invert,
                              bool copyBitMap,
                              bool requiresUnpremult,
                              Natron::Image* dstImg) const;
@@ -726,6 +751,9 @@ namespace Natron {
 
         template <typename PIX, int maxValue>
         void fillForDepth(const RectI & roi,float r,float g,float b,float a);
+        
+        template <typename PIX,int maxValue, int nComps>
+        void fillForDepthForComponents(const RectI & roi_,  float r,float g, float b, float a);
 
         template<typename PIX>
         void scaleBoxForDepth(const RectI & roi, Natron::Image* output) const;

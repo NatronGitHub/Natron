@@ -2095,7 +2095,7 @@ OfxEffectInstance::supportsMultipleClipsPAR() const
     return _effect->supportsMultipleClipPARs();
 }
 
-EffectInstance::RenderSafetyEnum
+Natron::RenderSafetyEnum
 OfxEffectInstance::renderThreadSafety() const
 {
     {
