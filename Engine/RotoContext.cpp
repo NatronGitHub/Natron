@@ -4984,12 +4984,13 @@ RotoStrokeItem::evaluateStroke(unsigned int mipMapLevel, std::list<std::pair<Nat
         pSet = _imp->pressureCurve.getKeyFrames_mt_safe();
     }
     evaluateStrokeInternal(xSet,ySet,pSet,mipMapLevel,points,bbox);
-    double brushSize = _imp->brushSize->getValue() / 2.;
-    
-    bbox->x1 -= brushSize;
-    bbox->x2 += brushSize;
-    bbox->y1 -= brushSize;
-    bbox->y2 += brushSize;
+    if (bbox) {
+        double brushSize = _imp->brushSize->getValue() / 2.;
+        bbox->x1 -= brushSize;
+        bbox->x2 += brushSize;
+        bbox->y1 -= brushSize;
+        bbox->y2 += brushSize;
+    }
 }
 
 boost::shared_ptr<Double_Knob>
