@@ -57,6 +57,7 @@ public:
 
 public Q_SLOTS:
     void onDSNodeCreated(DSNode *dsNode);
+    void onNodeAboutToBeRemoved(DSNode *dsNode);
 
     void onItemSelectionChanged();
     void onItemDoubleClicked(QTreeWidgetItem *item, int column);

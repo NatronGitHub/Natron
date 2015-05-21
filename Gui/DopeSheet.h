@@ -41,8 +41,8 @@ class Node;
 class DSKnob;
 class DSNode;
 
-typedef std::map<QTreeWidgetItem *, DSNode *> DSRowsNodeData;
-typedef std::map<QTreeWidgetItem *, DSKnob *> DSRowsKnobData;
+typedef std::map<QTreeWidgetItem *, DSNode *> DSNodesRowsData;
+typedef std::map<QTreeWidgetItem *, DSKnob *> DSKnobsRowsData;
 // typedefs
 
 
@@ -62,14 +62,14 @@ public:
     DopeSheet();
     ~DopeSheet();
 
-    DSRowsNodeData getRowsNodeData() const;
+    DSNodesRowsData getTopLevelData() const;
 
     std::pair<double, double> getKeyframeRange() const;
 
     void addNode(boost::shared_ptr<NodeGui> nodeGui);
     void removeNode(NodeGui *node);
 
-    DSNode *findParentDSNode(QTreeWidgetItem *knobTreeItem) const;
+    DSNode *findParentDSNode(QTreeWidgetItem *treeItem) const;
     DSNode *findDSNode(QTreeWidgetItem *nodeTreeItem) const;
     DSNode *findDSNode(Natron::Node *node) const;
 
@@ -79,9 +79,13 @@ public:
 
     bool groupSubNodesAreHidden(NodeGroup *group) const;
 
+    DSNode *getNearestRetimeFromOutputs(DSNode *dsNode) const;
+    std::vector<DSNode *> getInputsConnected(DSNode *dsNode) const;
+
 Q_SIGNALS:
     void modelChanged();
     void dsNodeCreated(DSNode *dsNode);
+    void nodeAboutToBeRemoved(DSNode *dsNode);
 
 public Q_SLOTS:
     void onNodeNameChanged(const QString &name);
@@ -138,7 +142,6 @@ class DSNode : public QObject
     Q_OBJECT
 
 public:
-
     enum DSNodeType
     {
         CommonNodeType = 1001,
@@ -157,7 +160,7 @@ public:
 
     boost::shared_ptr<NodeGui> getNodeGui() const;
 
-    DSRowsKnobData getRowsKnobData() const;
+    DSKnobsRowsData getChildData() const;
 
     DSNode::DSNodeType getDSNodeType() const;
 

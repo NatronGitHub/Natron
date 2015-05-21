@@ -195,21 +195,147 @@ public:
     HierarchyViewPrivate(HierarchyView *qq);
     ~HierarchyViewPrivate();
 
+    /* functions */
+    void insertNodeItem(DSNode *dsNode);
+    void expandAndCheckKnobItems(DSNode *dsNode);
+    void putChildrenNodesAtTopLevel(DSNode *dsNode);
+
+    QTreeWidgetItem *getParentItem(QTreeWidgetItem *item) const;
+    int indexInParent(QTreeWidgetItem *item) const;
+    void moveChildTo(DSNode *child, DSNode *newParent);
+
     /* attributes */
-    HierarchyView *parent;
+    HierarchyView *q_ptr;
     DopeSheet *model;
 
     Gui *gui;
 };
 
 HierarchyViewPrivate::HierarchyViewPrivate(HierarchyView *qq) :
-    parent(qq),
+    q_ptr(qq),
     model(0),
     gui(0)
 {}
 
 HierarchyViewPrivate::~HierarchyViewPrivate()
 {}
+
+void HierarchyViewPrivate::insertNodeItem(DSNode *dsNode)
+{
+    QTreeWidgetItem *treeItem = dsNode->getTreeItem();
+
+    if (DSNode *retimer = model->getNearestRetimeFromOutputs(dsNode)) {
+        retimer->getTreeItem()->addChild(treeItem);
+    }
+    else if (dsNode->getDSNodeType() == DSNode::RetimeNodeType) {
+        std::vector<DSNode *> inputs = model->getInputsConnected(dsNode);
+
+        bool hasNoInputs = true;
+
+        for (std::vector<DSNode *>::const_iterator it = inputs.begin(); it != inputs.end(); ++it) {
+            DSNode *input = (*it);
+
+            DSNode *nearestRetimer = 0;
+
+            if ( (nearestRetimer = model->getNearestRetimeFromOutputs(input)) ) {
+                QTreeWidgetItem *inputTreeItem = input->getTreeItem();
+                QTreeWidgetItem *inputParentItem = getParentItem(inputTreeItem);
+
+                inputTreeItem = inputParentItem->takeChild(indexInParent(inputTreeItem));
+
+                nearestRetimer->getTreeItem()->addChild(inputTreeItem);
+
+                hasNoInputs = false;
+            }
+
+            if (nearestRetimer) {
+                q_ptr->addTopLevelItem(nearestRetimer->getTreeItem());
+
+                input->getTreeItem()->setExpanded(true);
+                expandAndCheckKnobItems(input);
+            }
+        }
+
+        if (hasNoInputs) {
+            q_ptr->addTopLevelItem(dsNode->getTreeItem());
+
+            dsNode->getTreeItem()->setExpanded(true);
+            expandAndCheckKnobItems(dsNode);
+        }
+    }
+    else {
+        q_ptr->addTopLevelItem(treeItem);
+
+        treeItem->setExpanded(true);
+        expandAndCheckKnobItems(dsNode);
+    }
+}
+
+void HierarchyViewPrivate::expandAndCheckKnobItems(DSNode *dsNode)
+{
+    DSKnobsRowsData knobRows = dsNode->getChildData();
+
+    for (DSKnobsRowsData::const_iterator it = knobRows.begin(); it != knobRows.end(); ++it) {
+        DSKnob *dsKnob = (*it).second;
+        QTreeWidgetItem *knobItem = (*it).first;
+
+        // Expand if it's a multidim root item
+        if (knobItem->childCount() > 0) {
+            knobItem->setExpanded(true);
+        }
+
+        dsKnob->checkVisibleState();
+    }
+}
+
+void HierarchyViewPrivate::putChildrenNodesAtTopLevel(DSNode *dsNode)
+{
+    QTreeWidgetItem *treeItem = dsNode->getTreeItem();
+
+    if (treeItem->childCount()) {
+        QTreeWidgetItemIterator it(treeItem->child(0), QTreeWidgetItemIterator::NotHidden);
+
+        while (*it) {
+            if (DSNode *nodeToMove = model->findDSNode(*it)) {
+                QTreeWidgetItem *itemToMove = nodeToMove->getTreeItem();
+
+                treeItem->takeChild(indexInParent(itemToMove));
+
+                q_ptr->addTopLevelItem(itemToMove);
+
+                itemToMove->setExpanded(true);
+                expandAndCheckKnobItems(nodeToMove);
+            }
+
+            ++it;
+        }
+    }
+}
+
+QTreeWidgetItem *HierarchyViewPrivate::getParentItem(QTreeWidgetItem *item) const
+{
+    return (item->parent()) ? item->parent() : q_ptr->invisibleRootItem();
+}
+
+int HierarchyViewPrivate::indexInParent(QTreeWidgetItem *item) const
+{
+    QTreeWidgetItem *parentItem = getParentItem(item);
+
+    return parentItem->indexOfChild(item);
+}
+
+void HierarchyViewPrivate::moveChildTo(DSNode *child, DSNode *newParent)
+{
+    QTreeWidgetItem *currentParent = getParentItem(child->getTreeItem());
+    currentParent->takeChild(indexInParent(child->getTreeItem()));
+
+    if (newParent) {
+        newParent->getTreeItem()->addChild(child->getTreeItem());
+    }
+    else {
+        q_ptr->addTopLevelItem(child->getTreeItem());
+    }
+}
 
 /**
  * @brief HierarchyView::HierarchyView
@@ -222,6 +348,9 @@ HierarchyView::HierarchyView(DopeSheet *model, Gui *gui, QWidget *parent) :
 {
     connect(model, SIGNAL(dsNodeCreated(DSNode *)),
             this, SLOT(onDSNodeCreated(DSNode *)));
+
+    connect(model, SIGNAL(nodeAboutToBeRemoved(DSNode*)),
+            this, SLOT(onNodeAboutToBeRemoved(DSNode*)));
 
     connect(this, SIGNAL(itemSelectionChanged()),
             this, SLOT(onItemSelectionChanged()));
@@ -274,28 +403,23 @@ DSKnob *HierarchyView::getDSKnobAt(const QPoint &point, int *dimension) const
 
 void HierarchyView::onDSNodeCreated(DSNode *dsNode)
 {
+    _imp->insertNodeItem(dsNode);
+
+    dsNode->getTreeItem()->setExpanded(true);
+    dsNode->checkVisibleState();
+
+    if (!dsNode->getTreeItem()->isHidden()) {
+        _imp->expandAndCheckKnobItems(dsNode);
+    }
+}
+
+void HierarchyView::onNodeAboutToBeRemoved(DSNode *dsNode)
+{
     QTreeWidgetItem *treeItem = dsNode->getTreeItem();
+    bool isTopLevelItem = !treeItem->parent();
 
-    // Add item to the tree
-    addTopLevelItem(treeItem);
-
-    treeItem->setExpanded(true);
-
-    // Expand knob tree items and hide them if necessary
-    DSRowsKnobData knobRows = dsNode->getRowsKnobData();
-
-    for (int i = 0; i < treeItem->childCount(); ++i) {
-        QTreeWidgetItem *knobItem = treeItem->child(i);
-
-        // Expand if it's a multidim root item
-        if (knobItem->childCount() > 0) {
-            knobItem->setExpanded(true);
-        }
-
-        assert(knobRows.find(knobItem) != knobRows.end());
-
-        DSKnob *dsKnob = knobRows[knobItem];
-        dsKnob->checkVisibleState();
+    if (isTopLevelItem) {
+        _imp->putChildrenNodesAtTopLevel(dsNode);
     }
 }
 
@@ -461,7 +585,7 @@ public:
     void createContextMenu();
 
     /* attributes */
-    DopeSheetView *parent;
+    DopeSheetView *q_ptr;
 
     DopeSheet *model;
     HierarchyView *hierarchyView;
@@ -510,7 +634,7 @@ public:
 };
 
 DopeSheetViewPrivate::DopeSheetViewPrivate(DopeSheetView *qq) :
-    parent(qq),
+    q_ptr(qq),
     model(0),
     hierarchyView(0),
     gui(0),
@@ -529,9 +653,9 @@ DopeSheetViewPrivate::DopeSheetViewPrivate(DopeSheetView *qq) :
     eventState(DopeSheetView::esNoEditingState),
     currentEditedReader(0),
     currentEditedGroup(0),
-    undoStack(new QUndoStack(parent)),
+    undoStack(new QUndoStack(q_ptr)),
     hasOpenGLVAOSupport(true),
-    contextMenu(new Natron::Menu(parent))
+    contextMenu(new Natron::Menu(q_ptr))
 {}
 
 DopeSheetViewPrivate::~DopeSheetViewPrivate()
@@ -610,8 +734,8 @@ Qt::CursorShape DopeSheetViewPrivate::getCursorDuringHover(const QPointF &widget
     }
     // Or does he hovering on a row's element ?
     else if (QTreeWidgetItem *treeItem = hierarchyView->itemAt(0, widgetCoords.y())) {
-        DSRowsNodeData dsNodeItems = model->getRowsNodeData();
-        DSRowsNodeData::const_iterator dsNodeIt = dsNodeItems.find(treeItem);
+        DSNodesRowsData dsNodeItems = model->getTopLevelData();
+        DSNodesRowsData::const_iterator dsNodeIt = dsNodeItems.find(treeItem);
 
         if (dsNodeIt != dsNodeItems.end()) {
             DSNode *dsNode = (*dsNodeIt).second;
@@ -752,9 +876,9 @@ DSSelectedKeys DopeSheetViewPrivate::isNearByKeyframe(DSNode *dsNode, const QPoi
 {
     DSSelectedKeys ret;
 
-    DSRowsKnobData dsKnobs = dsNode->getRowsKnobData();
+    DSKnobsRowsData dsKnobs = dsNode->getChildData();
 
-    for (DSRowsKnobData::const_iterator it = dsKnobs.begin(); it != dsKnobs.end(); ++it) {
+    for (DSKnobsRowsData::const_iterator it = dsKnobs.begin(); it != dsKnobs.end(); ++it) {
         DSKnob *dsKnob = (*it).second;
         KnobGui *knobGui = dsKnob->getKnobGui();
 
@@ -786,13 +910,13 @@ DSSelectedKeys DopeSheetViewPrivate::isNearByKeyframe(DSNode *dsNode, const QPoi
  */
 void DopeSheetViewPrivate::drawScale() const
 {
-    RUNNING_IN_MAIN_THREAD_AND_CONTEXT(parent);
+    RUNNING_IN_MAIN_THREAD_AND_CONTEXT(q_ptr);
 
-    QPointF bottomLeft = zoomContext.toZoomCoordinates(0, parent->height() - 1);
-    QPointF topRight = zoomContext.toZoomCoordinates(parent->width() - 1, 0);
+    QPointF bottomLeft = zoomContext.toZoomCoordinates(0, q_ptr->height() - 1);
+    QPointF topRight = zoomContext.toZoomCoordinates(q_ptr->width() - 1, 0);
 
     // Don't attempt to draw a scale on a widget with an invalid height
-    if (parent->height() <= 1) {
+    if (q_ptr->height() <= 1) {
         return;
     }
 
@@ -822,7 +946,7 @@ void DopeSheetViewPrivate::drawScale() const
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-        const double rangePixel = parent->width();
+        const double rangePixel = q_ptr->width();
         const double range_min = bottomLeft.x();
         const double range_max = topRight.x();
         const double range = range_max - range_min;
@@ -880,7 +1004,7 @@ void DopeSheetViewPrivate::drawScale() const
                     QColor c = scaleColor;
                     c.setAlpha(255 * alphaText);
 
-                    parent->renderText(value, bottomLeft.y(), s, c, *font);
+                    q_ptr->renderText(value, bottomLeft.y(), s, c, *font);
 
                     // Uncomment the line below to draw the indicator on top too
                     // parent->renderText(value, topRight.y() - 20, s, c, *font);
@@ -899,15 +1023,15 @@ void DopeSheetViewPrivate::drawScale() const
  */
 void DopeSheetViewPrivate::drawRows() const
 {
-    RUNNING_IN_MAIN_THREAD_AND_CONTEXT(parent);
+    RUNNING_IN_MAIN_THREAD_AND_CONTEXT(q_ptr);
 
-    DSRowsNodeData treeItemsAndDSNodes = model->getRowsNodeData();
+    DSNodesRowsData treeItemsAndDSNodes = model->getTopLevelData();
 
     // Perform drawing
     {
         GLProtectAttrib a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT);
 
-        for (DSRowsNodeData::const_iterator it = treeItemsAndDSNodes.begin();
+        for (DSNodesRowsData::const_iterator it = treeItemsAndDSNodes.begin();
              it != treeItemsAndDSNodes.end();
              ++it) {
             DSNode *dsNode = (*it).second;
@@ -921,8 +1045,8 @@ void DopeSheetViewPrivate::drawRows() const
 
             drawNodeRow(dsNode);
 
-            DSRowsKnobData knobItems = dsNode->getRowsKnobData();
-            for (DSRowsKnobData::const_iterator it2 = knobItems.begin();
+            DSKnobsRowsData knobItems = dsNode->getChildData();
+            for (DSKnobsRowsData::const_iterator it2 = knobItems.begin();
                  it2 != knobItems.end();
                  ++it2) {
 
@@ -1146,7 +1270,7 @@ void DopeSheetViewPrivate::drawClip(DSNode *dsNode) const
  */
 void DopeSheetViewPrivate::drawKeyframes(DSNode *dsNode) const
 {
-    RUNNING_IN_MAIN_THREAD_AND_CONTEXT(parent);
+    RUNNING_IN_MAIN_THREAD_AND_CONTEXT(q_ptr);
 
     // Perform drawing
     {
@@ -1157,9 +1281,9 @@ void DopeSheetViewPrivate::drawKeyframes(DSNode *dsNode) const
 
         glEnable(GL_POINT_SMOOTH);
 
-        DSRowsKnobData knobItems = dsNode->getRowsKnobData();
+        DSKnobsRowsData knobItems = dsNode->getChildData();
 
-        for (DSRowsKnobData::const_iterator it = knobItems.begin();
+        for (DSKnobsRowsData::const_iterator it = knobItems.begin();
              it != knobItems.end();
              ++it) {
 
@@ -1271,10 +1395,10 @@ void DopeSheetViewPrivate::drawKeyframes(DSNode *dsNode) const
 
 void DopeSheetViewPrivate::drawProjectBounds() const
 {
-    RUNNING_IN_MAIN_THREAD_AND_CONTEXT(parent);
+    RUNNING_IN_MAIN_THREAD_AND_CONTEXT(q_ptr);
 
-    double bottom = zoomContext.toZoomCoordinates(0, parent->height() - 1).y();
-    double top = zoomContext.toZoomCoordinates(parent->width() - 1, 0).y();
+    double bottom = zoomContext.toZoomCoordinates(0, q_ptr->height() - 1).y();
+    double top = zoomContext.toZoomCoordinates(q_ptr->width() - 1, 0).y();
 
     int projectStart, projectEnd;
     gui->getApp()->getFrameRange(&projectStart, &projectEnd);
@@ -1306,13 +1430,13 @@ void DopeSheetViewPrivate::drawProjectBounds() const
  */
 void DopeSheetViewPrivate::drawCurrentFrameIndicator()
 {
-    RUNNING_IN_MAIN_THREAD_AND_CONTEXT(parent);
+    RUNNING_IN_MAIN_THREAD_AND_CONTEXT(q_ptr);
 
     computeTimelinePositions();
 
     int top = zoomContext.toZoomCoordinates(0, 0).y();
-    int bottom = zoomContext.toZoomCoordinates(parent->width() - 1,
-                                               parent->height() - 1).y();
+    int bottom = zoomContext.toZoomCoordinates(q_ptr->width() - 1,
+                                               q_ptr->height() - 1).y();
 
     int currentFrame = timeline->currentFrame();
 
@@ -1365,7 +1489,7 @@ void DopeSheetViewPrivate::drawCurrentFrameIndicator()
  */
 void DopeSheetViewPrivate::drawSelectionRect() const
 {
-    RUNNING_IN_MAIN_THREAD_AND_CONTEXT(parent);
+    RUNNING_IN_MAIN_THREAD_AND_CONTEXT(q_ptr);
 
     QPointF topLeft = selectionRect.topLeft();
     QPointF bottomRight = selectionRect.bottomRight();
@@ -1411,7 +1535,7 @@ void DopeSheetViewPrivate::drawSelectionRect() const
  */
 void DopeSheetViewPrivate::drawSelectedKeysBRect() const
 {
-    RUNNING_IN_MAIN_THREAD_AND_CONTEXT(parent);
+    RUNNING_IN_MAIN_THREAD_AND_CONTEXT(q_ptr);
 
     QRectF bRect = rectToZoomCoordinates(selectedKeysBRect);
 
@@ -1467,8 +1591,8 @@ void DopeSheetViewPrivate::computeTimelinePositions()
     double polyHalfWidth = 7.5;
     double polyHeight = 7.5;
 
-    int bottom = zoomContext.toZoomCoordinates(parent->width() - 1,
-                                               parent->height() - 1).y();
+    int bottom = zoomContext.toZoomCoordinates(q_ptr->width() - 1,
+                                               q_ptr->height() - 1).y();
 
     int currentFrame = timeline->currentFrame();
 
@@ -1511,14 +1635,14 @@ DSSelectedKeys DopeSheetViewPrivate::createSelectionFromRect(const QRectF& rect)
 {
     DSSelectedKeys ret;
 
-    DSRowsNodeData dsNodes = model->getRowsNodeData();
+    DSNodesRowsData dsNodes = model->getTopLevelData();
 
-    for (DSRowsNodeData::const_iterator it = dsNodes.begin(); it != dsNodes.end(); ++it) {
+    for (DSNodesRowsData::const_iterator it = dsNodes.begin(); it != dsNodes.end(); ++it) {
         DSNode *dsNode = (*it).second;
 
-        DSRowsKnobData dsKnobs = dsNode->getRowsKnobData();
+        DSKnobsRowsData dsKnobs = dsNode->getChildData();
 
-        for (DSRowsKnobData::const_iterator it2 = dsKnobs.begin(); it2 != dsKnobs.end(); ++it2) {
+        for (DSKnobsRowsData::const_iterator it2 = dsKnobs.begin(); it2 != dsKnobs.end(); ++it2) {
             DSKnob *dsKnob = (*it2).second;
             KnobGui *knobGui = dsKnob->getKnobGui();
 
@@ -1606,7 +1730,7 @@ void DopeSheetViewPrivate::createContextMenu()
                                                                     kShortcutDescActionDopeSheetEditorDeleteKeys,
                                                                     editMenu);
     QObject::connect(removeSelectedKeyframesAction, SIGNAL(triggered()),
-                     parent, SLOT(deleteSelectedKeyframes()));
+                     q_ptr, SLOT(deleteSelectedKeyframes()));
     editMenu->addAction(removeSelectedKeyframesAction);
 
     QAction *selectAllKeyframesAction = new ActionWithShortcut(kShortcutGroupDopeSheetEditor,
@@ -1614,7 +1738,7 @@ void DopeSheetViewPrivate::createContextMenu()
                                                                kShortcutDescActionDopeSheetEditorSelectAllKeyframes,
                                                                editMenu);
     QObject::connect(selectAllKeyframesAction, SIGNAL(triggered()),
-                     parent, SLOT(selectAllKeyframes()));
+                     q_ptr, SLOT(selectAllKeyframes()));
     editMenu->addAction(selectAllKeyframesAction);
 
     QAction *frameSelectionAction = new ActionWithShortcut(kShortcutGroupDopeSheetEditor,
@@ -1622,7 +1746,7 @@ void DopeSheetViewPrivate::createContextMenu()
                                                            kShortcutDescActionDopeSheetEditorFrameSelection,
                                                            viewMenu);
     QObject::connect(frameSelectionAction, SIGNAL(triggered()),
-                     parent, SLOT(frame()));
+                     q_ptr, SLOT(frame()));
     viewMenu->addAction(frameSelectionAction);
 }
 
@@ -1881,14 +2005,14 @@ void DopeSheetView::clearKeyframeSelection()
 
 void DopeSheetView::selectAllKeyframes()
 {
-    DSRowsNodeData dsNodeItems = _imp->model->getRowsNodeData();
+    DSNodesRowsData dsNodeItems = _imp->model->getTopLevelData();
 
-    for (DSRowsNodeData::const_iterator it = dsNodeItems.begin(); it != dsNodeItems.end(); ++it) {
+    for (DSNodesRowsData::const_iterator it = dsNodeItems.begin(); it != dsNodeItems.end(); ++it) {
         DSNode *dsNode = (*it).second;
 
-        DSRowsKnobData dsKnobItems = dsNode->getRowsKnobData();
+        DSKnobsRowsData dsKnobItems = dsNode->getChildData();
 
-        for (DSRowsKnobData::const_iterator itKnob = dsKnobItems.begin(); itKnob != dsKnobItems.end(); ++itKnob) {
+        for (DSKnobsRowsData::const_iterator itKnob = dsKnobItems.begin(); itKnob != dsKnobItems.end(); ++itKnob) {
             DSKnob *dsKnob = (*itKnob).second;
 
             for (int i = 0; i < dsKnob->getKnobGui()->getKnob()->getDimension(); ++i) {
@@ -2133,8 +2257,8 @@ void DopeSheetView::mousePressEvent(QMouseEvent *e)
             _imp->eventState = DopeSheetView::esMoveKeyframeSelection;
         }
         else if (QTreeWidgetItem *treeItem = _imp->hierarchyView->itemAt(0, e->y())) {
-            DSRowsNodeData dsNodeItems = _imp->model->getRowsNodeData();
-            DSRowsNodeData::const_iterator dsNodeIt = dsNodeItems.find(treeItem);
+            DSNodesRowsData dsNodeItems = _imp->model->getTopLevelData();
+            DSNodesRowsData::const_iterator dsNodeIt = dsNodeItems.find(treeItem);
 
             // The user clicked on a reader
             if (dsNodeIt != dsNodeItems.end()) {
