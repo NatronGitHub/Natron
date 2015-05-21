@@ -1175,6 +1175,7 @@ struct RotoContextPrivate
                    double externalDotRadius,
                    double shapeColor[3],
                    const std::vector<std::pair<double, double> >& opacityStops,
+                   double opacity,
                    double /*pressure*/);
 
     

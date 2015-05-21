@@ -7110,15 +7110,20 @@ RotoContextPrivate::renderDot(cairo_t* cr,
                               double externalDotRadius,
                               double shapeColor[3],
                               const std::vector<std::pair<double, double> >& opacityStops,
+                              double opacity,
                               double /*pressure*/)
 {
-    cairo_pattern_t* pattern = cairo_pattern_create_radial(center.x, center.y, internalDotRadius, center.x, center.y, externalDotRadius);
-  
-    for (std::size_t i = 0; i < opacityStops.size(); ++i) {
-        cairo_pattern_add_color_stop_rgba(pattern, opacityStops[i].first, shapeColor[0], shapeColor[1], shapeColor[2],opacityStops[i].second);
+    
+    if (!opacityStops.empty()) {
+        cairo_pattern_t* pattern = cairo_pattern_create_radial(center.x, center.y, internalDotRadius, center.x, center.y, externalDotRadius);
+        for (std::size_t i = 0; i < opacityStops.size(); ++i) {
+            cairo_pattern_add_color_stop_rgba(pattern, opacityStops[i].first, shapeColor[0], shapeColor[1], shapeColor[2],opacityStops[i].second);
+        }
+        
+        cairo_set_source(cr, pattern);
+    } else {
+        cairo_set_source_rgba(cr, shapeColor[0], shapeColor[1], shapeColor[2], opacity);
     }
- 
-    cairo_set_source(cr, pattern);
     cairo_arc(cr, center.x, center.y, externalDotRadius, 0, M_PI * 2);
     cairo_fill(cr);
 }
@@ -7187,19 +7192,22 @@ RotoContextPrivate::renderStroke(cairo_t* cr,const std::list<std::pair<Point,dou
     
     std::vector<std::pair<double,double> > opacityStops;
     {
-        double exp = 0.4 / (1.0 - brushHardness);
+        
+        double exp = brushHardness != 1.0 ?  0.4 / (1.0 - brushHardness) : 0.;
         const int maxStops = 8;
         double incr = 1. / maxStops;
         
-        for (double d = 0; d <= 1.; d += incr) {
-            double o = hardnessGaussLookup(std::pow(d, exp));
-            opacityStops.push_back(std::make_pair(d, o * alpha));
+        if (brushHardness != 1.) {
+            for (double d = 0; d <= 1.; d += incr) {
+                double o = hardnessGaussLookup(std::pow(d, exp));
+                opacityStops.push_back(std::make_pair(d, o * alpha));
+            }
         }
     }
-
+    
     
     std::pair<Point,double> cur = *visiblePortion.begin();
-    renderDot(cr, cur.first, internalDotRadius, externalDotRadius, shapeColor, opacityStops, cur.second);
+    renderDot(cr, cur.first, internalDotRadius, externalDotRadius, shapeColor, opacityStops, alpha, cur.second);
     
     
     std::list<std::pair<Point,double> >::iterator it = visiblePortion.begin();
@@ -7235,7 +7243,7 @@ RotoContextPrivate::renderStroke(cairo_t* cr,const std::list<std::pair<Point,dou
         center.x = (next->first.x - cur.first.x) * a + cur.first.x;
         center.y = (next->first.y - cur.first.y) * a + cur.first.y;
         double pressure = (next->second - cur.second) * a + cur.second;
-        renderDot(cr, center, internalDotRadius, externalDotRadius, shapeColor, opacityStops, pressure);
+        renderDot(cr, center, internalDotRadius, externalDotRadius, shapeColor, opacityStops, alpha, pressure);
         cur.first = center;
         cur.second = pressure;
         distToNext = 0;
