@@ -478,9 +478,14 @@ namespace Natron {
          * are already rendered in the image. It aims to return the minimal
          * area to render. Since this problem is quite hard to solve,the different portions
          * of image returned may contain already rendered pixels.
+         * 
+         * Note that if the RoI is larger than the bounds of the image, the out of bounds portions
+         * will be added to the resulting list of rectangles.
          **/
 #if NATRON_ENABLE_TRIMAP
-        void getRestToRender_trimap(const RectI & regionOfInterest,std::list<RectI>& ret,bool* isBeingRenderedElsewhere) const
+        void getRestToRender_trimap(const RectI & regionOfInterest,
+                                    std::list<RectI>& ret,
+                                    bool* isBeingRenderedElsewhere) const
         {
             if (!_useBitmap) {
                 return;

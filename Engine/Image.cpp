@@ -33,8 +33,9 @@ RectI minimalNonMarkedBbox_internal(const RectI& roi, const RectI& _bounds,const
                                     bool* isBeingRenderedElsewhere)
 {
     RectI bbox;
+    assert(_bounds.contains(roi));
+    bbox = roi;
     
-    roi.intersect(_bounds, &bbox); // be safe
     //find bottom
     for (int i = bbox.bottom(); i < bbox.top(); ++i) {
         const char* buf = BM_GET(i, bbox.left());
@@ -56,6 +57,9 @@ RectI minimalNonMarkedBbox_internal(const RectI& roi, const RectI& _bounds,const
                 break;
             } else if (metUnavailablePixel) {
                 *isBeingRenderedElsewhere = true; //< only flag if the whole row is not 0
+                ++bbox.y1;
+            } else {
+                ++bbox.y1;
             }
         } else {
             
@@ -70,7 +74,7 @@ RectI minimalNonMarkedBbox_internal(const RectI& roi, const RectI& _bounds,const
             if (!buf) {
                 break;
             } else {
-                bbox.set_bottom(bbox.bottom() + 1);
+                ++bbox.y1;
             }
         }
     }
@@ -96,6 +100,9 @@ RectI minimalNonMarkedBbox_internal(const RectI& roi, const RectI& _bounds,const
                 break;
             } else if (metUnavailablePixel) {
                 *isBeingRenderedElsewhere = true; //< only flag if the whole row is not 0
+                --bbox.y2;
+            } else {
+                --bbox.y2;
             }
             
         } else {
@@ -111,7 +118,7 @@ RectI minimalNonMarkedBbox_internal(const RectI& roi, const RectI& _bounds,const
             if (!buf) {
                 break;
             } else {
-                bbox.set_top(bbox.top() - 1);
+                --bbox.y2;
             }
         }
     }
@@ -144,7 +151,7 @@ RectI minimalNonMarkedBbox_internal(const RectI& roi, const RectI& _bounds,const
             
         }
         if (pix) {
-            bbox.set_left(bbox.left() + 1);
+            ++bbox.x1;
             if (trimap && metUnavailablePixel) {
                 *isBeingRenderedElsewhere = true; //< only flag is the whole column is not 0
             }
@@ -176,8 +183,7 @@ RectI minimalNonMarkedBbox_internal(const RectI& roi, const RectI& _bounds,const
 
         }
         if (pix) {
-            bbox.set_right(bbox.right() - 1);
-
+            --bbox.x2;
             if (trimap && metUnavailablePixel) {
                 *isBeingRenderedElsewhere = true; //< only flag is the whole column is not 0
             }
@@ -197,7 +203,40 @@ void
 minimalNonMarkedRects_internal(const RectI & roi,const RectI& _bounds, const std::vector<char>& _map,
                                std::list<RectI>& ret,bool* isBeingRenderedElsewhere)
 {
-    RectI bboxM = minimalNonMarkedBbox_internal<trimap>(roi, _bounds, _map, isBeingRenderedElsewhere);
+    ///Any out of bounds portion is pushed to the rectangles to render
+    RectI intersection;
+    roi.intersect(_bounds, &intersection);
+    if (roi != intersection) {
+        
+        if (_bounds.x1 > roi.x1 && _bounds.y2 > _bounds.y1) {
+            RectI left(roi.x1,_bounds.y1,_bounds.x1,_bounds.y2);
+            ret.push_back(left);
+        }
+        
+        
+        if (roi.x2 > roi.x1 && _bounds.y1 > roi.y1) {
+            RectI btm(roi.x1,roi.y1,roi.x2,_bounds.y1);
+            ret.push_back(btm);
+        }
+        
+        
+        if (roi.x2 > _bounds.x2 && _bounds.y2 > _bounds.y1) {
+            RectI right(_bounds.x2,_bounds.y1,roi.x2,_bounds.y2);
+            ret.push_back(right);
+        }
+        
+        
+        if (roi.x2 > roi.x1 && roi.y2 > _bounds.y2) {
+            RectI top(roi.x1,_bounds.y2,roi.x2,roi.y2);
+            ret.push_back(top);
+        }
+    }
+    
+    if (intersection.isNull()) {
+        return;
+    }
+    
+    RectI bboxM = minimalNonMarkedBbox_internal<trimap>(intersection, _bounds, _map, isBeingRenderedElsewhere);
     assert(trimap && isBeingRenderedElsewhere || !trimap && !isBeingRenderedElsewhere);
     
     //#define NATRON_BITMAP_DISABLE_OPTIMIZATION
@@ -245,18 +284,16 @@ minimalNonMarkedRects_internal(const RectI & roi,const RectI& _bounds, const std
                 if (*buf == 1) {
                     buf = 0;
                     break;
-                } else if (*buf == PIXEL_UNAVAILABLE) {
+                } else if (*buf == PIXEL_UNAVAILABLE && trimap) {
                     buf = 0;
-                    if (trimap) {
-                        metUnavailablePixel = true;
-                    }
+                    metUnavailablePixel = true;
                     break;
                 }
                 ++buf;
             }
             if (buf) {
-                bboxX.set_bottom(bboxX.bottom() + 1);
-                bboxA.set_top( bboxX.bottom() );
+                ++bboxX.y1;
+                bboxA.y2 = bboxX.y1;
             } else {
                 if (metUnavailablePixel) {
                     *isBeingRenderedElsewhere = true;
@@ -265,8 +302,8 @@ minimalNonMarkedRects_internal(const RectI & roi,const RectI& _bounds, const std
             }
         } else {
             if ( !memchr( buf, 1, bboxX.width() ) ) {
-                bboxX.set_bottom(bboxX.bottom() + 1);
-                bboxA.set_top( bboxX.bottom() );
+                ++bboxX.y1;
+                bboxA.y2 = bboxX.y1;
             } else {
                 break;
             }
@@ -290,18 +327,16 @@ minimalNonMarkedRects_internal(const RectI & roi,const RectI& _bounds, const std
                 if (*buf == 1) {
                     buf = 0;
                     break;
-                } else if (*buf == PIXEL_UNAVAILABLE) {
+                } else if (*buf == PIXEL_UNAVAILABLE && trimap) {
                     buf = 0;
-                    if (trimap) {
-                        metUnavailablePixel = true;
-                    }
+                    metUnavailablePixel = true;
                     break;
                 }
                 ++buf;
             }
             if (buf) {
-                bboxX.set_top(bboxX.top() - 1);
-                bboxB.set_bottom( bboxX.top() );
+                --bboxX.y2;
+                bboxB.y1 = bboxX.y2;
             } else {
                 if (metUnavailablePixel) {
                     *isBeingRenderedElsewhere = true;
@@ -310,8 +345,8 @@ minimalNonMarkedRects_internal(const RectI & roi,const RectI& _bounds, const std
             }
         } else {
             if ( !memchr( buf, 1, bboxX.width() ) ) {
-                bboxX.set_top(bboxX.top() - 1);
-                bboxB.set_bottom( bboxX.top() );
+                --bboxX.y2;
+                bboxB.y1 = bboxX.y2;
             } else {
                 break;
             }
@@ -342,8 +377,8 @@ minimalNonMarkedRects_internal(const RectI & roi,const RectI& _bounds, const std
 				}
 			}
 			if (pix) {
-				bboxX.set_left(bboxX.left() + 1);
-				bboxC.set_right( bboxX.left() );
+                ++bboxX.x1;
+                bboxC.x2 = bboxX.x1;
 			} else {
 				if (metUnavailablePixel) {
 					*isBeingRenderedElsewhere = true;
@@ -376,8 +411,8 @@ minimalNonMarkedRects_internal(const RectI & roi,const RectI& _bounds, const std
 				}
 			}
 			if (pix) {
-				bboxX.set_right(bboxX.right() - 1);
-				bboxD.set_left( bboxX.right() );
+                --bboxX.x2;
+                bboxD.x1 = bboxX.x2;
 			} else {
 				if (metUnavailablePixel) {
 					*isBeingRenderedElsewhere = true;

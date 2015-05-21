@@ -682,15 +682,16 @@ struct EffectInstance::Implementation
 class InputImagesHolder_RAII
 {
     ThreadStorage< EffectInstance::InputImagesMap > *storage;
-    
+    EffectInstance::InputImagesMap* localData;
 public:
     
     InputImagesHolder_RAII(const EffectInstance::InputImagesMap& imgs,ThreadStorage< EffectInstance::InputImagesMap>* storage)
     : storage(storage)
+    , localData(0)
     {
         if (!imgs.empty()) {
-            EffectInstance::InputImagesMap& data = storage->localData();
-            data.insert(imgs.begin(),imgs.end());
+            localData = &storage->localData();
+            localData->insert(imgs.begin(),imgs.end());
         } else {
             this->storage = 0;
         }
@@ -700,8 +701,8 @@ public:
     ~InputImagesHolder_RAII()
     {
         if (storage) {
-            assert(storage->hasLocalData());
-            storage->localData().clear();
+            assert(localData);
+            localData->clear();
         }
     }
 };
@@ -2796,7 +2797,7 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
      * using the isIdentity action.
      */
     bool tryIdentityOptim = false;
-    if (tilesSupported) {
+    if (tilesSupported && !rectsLeftToRender.empty()) {
         int maxInput = getMaxInputCount();
         for (int i = 0; i < maxInput; ++i) {
             if (isInputMask(i) && isMaskEnabled(i)) {
@@ -2949,7 +2950,7 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
             }
             
 
-            if (tryIdentityOptim) {
+            if (tryIdentityOptim && !rectsLeftToRender.empty()) {
                 optimizeRectsToRender(this, rectsLeftToRender, args.time, args.view, renderMappedScale, &planesToRender.rectsToRender);
             } else {
                 for (std::list<RectI>::iterator it = rectsLeftToRender.begin(); it!=rectsLeftToRender.end(); ++it) {
@@ -3203,12 +3204,8 @@ EffectInstance::RenderRoIRetCode EffectInstance::renderRoI(const RenderRoIArgs &
     }
     
     
-    /*
-     * Since the images are allocated only to the size of the RoI, the image's size might have grown now from another concurrent render.
-     * Hence we may no longer check the bitmap because it might have changed.
-     * Do not activate this code, unless the image growing system is disabled.
-     */
-#if 0
+
+#if DEBUG
     if (renderRetCode != eRenderRoIStatusRenderFailed && !renderAborted) {
         // Kindly check that everything we asked for is rendered!
         
@@ -4074,8 +4071,7 @@ EffectInstance::renderHandler(RenderArgs & args,
     
     assert(!outputClipPrefsComps.empty());
     
-
-    bool isIdentityProcessed = false;
+    bool identityProcessed = false;
     if (identity) {
         
         std::list<Natron::ImageComponents> comps;
@@ -4101,27 +4097,38 @@ EffectInstance::renderHandler(RenderArgs & args,
             } else if (identityPlanes.empty()) {
                 for (std::map<Natron::ImageComponents, PlaneToRender>::iterator it = planes.planes.begin(); it != planes.planes.end(); ++it) {
                     it->second.renderMappedImage->fill(downscaledRectToRender, 0., 0., 0., 0.);
-                    it->second.renderMappedImage->markForRendered(downscaledRectToRender);
                 }
+                identityProcessed = true;
             } else {
                 
                 assert(identityPlanes.size() == planes.planes.size());
                 
                 ImageList::iterator idIt = identityPlanes.begin();
                 for (std::map<Natron::ImageComponents, PlaneToRender>::iterator it = planes.planes.begin(); it != planes.planes.end(); ++it,++idIt) {
-                    it->second.renderMappedImage->pasteFrom(**idIt,downscaledRectToRender, false);
-                    it->second.renderMappedImage->markForRendered(downscaledRectToRender);
+                    
+                    if (renderFullScaleThenDownscale && renderUseScaleOneInputs && (*idIt)->getMipMapLevel() > it->second.fullscaleImage->getMipMapLevel()) {
+                        
+                        const RectD& rod = (*idIt)->getRoD();
+                        RectI bounds;
+                        rod.toPixelEnclosing(it->second.renderMappedImage->getMipMapLevel(), it->second.renderMappedImage->getPixelAspectRatio(), &bounds);
+                        ImagePtr  inputPlane(new Image(it->first,rod,bounds,it->second.renderMappedImage->getMipMapLevel(),
+                                                   it->second.renderMappedImage->getPixelAspectRatio(),it->second.renderMappedImage->getBitDepth(),false));
+                        (*idIt)->upscaleMipMap((*idIt)->getBounds(), (*idIt)->getMipMapLevel(), inputPlane->getMipMapLevel(), inputPlane.get());
+                        it->second.fullscaleImage->pasteFrom(*inputPlane,downscaledRectToRender, false);
+                        it->second.fullscaleImage->markForRendered(downscaledRectToRender);
+                    } else {
+                        it->second.downscaleImage->pasteFrom(**idIt,downscaledRectToRender, false);
+                        it->second.downscaleImage->markForRendered(downscaledRectToRender);
+                    }
+                    
                 }
-                //isIdentityProcessed = true;
                 return eRenderingFunctorRetOK;
             }
         } else {
             for (std::map<Natron::ImageComponents, PlaneToRender>::iterator it = planes.planes.begin(); it != planes.planes.end(); ++it) {
                 it->second.renderMappedImage->fill(downscaledRectToRender, 0., 0., 0., 0.);
-                it->second.renderMappedImage->markForRendered(downscaledRectToRender);
             }
-            //isIdentityProcessed = true;
-            return eRenderingFunctorRetOK;
+            identityProcessed = true;
         }
         
     }
@@ -4141,7 +4148,7 @@ EffectInstance::renderHandler(RenderArgs & args,
             
         }
         
-        if (!isIdentityProcessed && (it->second.renderMappedImage->usesBitMap() || prefComp != it->second.renderMappedImage->getComponents() ||
+        if (!identityProcessed && (it->second.renderMappedImage->usesBitMap() || prefComp != it->second.renderMappedImage->getComponents() ||
             outputClipPrefDepth != it->second.renderMappedImage->getBitDepth())) {
             it->second.tmpImage.reset(new Image(prefComp,
                                                 it->second.renderMappedImage->getRoD(),
@@ -4159,7 +4166,7 @@ EffectInstance::renderHandler(RenderArgs & args,
     
     
 #if NATRON_ENABLE_TRIMAP
-    if (!frameArgs.canAbort && frameArgs.isRenderResponseToUserInteraction) {
+    if (!identityProcessed && !frameArgs.canAbort && frameArgs.isRenderResponseToUserInteraction) {
         for (std::map<Natron::ImageComponents,PlaneToRender>::iterator it = args._outputPlanes.begin(); it != args._outputPlanes.end(); ++it) {
             if (renderFullScaleThenDownscale && renderUseScaleOneInputs) {
                 it->second.fullscaleImage->markForRendering(actionArgs.roi);
@@ -4202,8 +4209,10 @@ EffectInstance::renderHandler(RenderArgs & args,
         }
         actionArgs.outputPlanes = *it;
         
-        
-        Natron::StatusEnum st = render_public(actionArgs);
+        Natron::StatusEnum st = eStatusOK;
+        if (!identityProcessed) {
+            st = render_public(actionArgs);
+        }
         
         renderAborted = aborted();
         
@@ -4311,7 +4320,7 @@ EffectInstance::renderHandler(RenderArgs & args,
                         }
                         it->second.downscaleImage->copyUnProcessedChannels(actionArgs.roi, processChannels, originalInputImage);
                         it->second.downscaleImage->markForRendered(downscaledRectToRender);
-                    } else {
+                    } else { // if (mipMapLevel != 0 && !renderUseScaleOneInputs) {
                         
                         assert(it->second.renderMappedImage == it->second.fullscaleImage);
                         if (it->second.tmpImage != it->second.renderMappedImage) {
@@ -4345,8 +4354,9 @@ EffectInstance::renderHandler(RenderArgs & args,
                             
                         }
                         it->second.fullscaleImage->markForRendered(actionArgs.roi);
-                    } // if (mipMapLevel != 0 && !renderUseScaleOneInputs) {
-                } else {
+                    }
+                } else { // if (renderFullScaleThenDownscale) {
+                    
                     ///Copy the rectangle rendered in the downscaled image
                     if (it->second.tmpImage != it->second.downscaleImage) {
                         
@@ -4375,8 +4385,7 @@ EffectInstance::renderHandler(RenderArgs & args,
                     }
                     it->second.downscaleImage->copyUnProcessedChannels(actionArgs.roi, processChannels, originalInputImage);
                     it->second.downscaleImage->markForRendered(downscaledRectToRender);
-                    /*qDebug() << QThread::currentThread() << " " << it->first.getLayerName().c_str() << " rendering finished: x1 = " << actionArgs.roi.x1
-                    << " y1 = " << actionArgs.roi.y1 << " x2 = " << actionArgs.roi.x2 << " y2 = " << actionArgs.roi.y2;*/
+                
                 } // if (renderFullScaleThenDownscale) {
             } // if (it->second.isAllocatedOnTheFly) {
         } // for (std::map<ImageComponents,PlaneToRender>::const_iterator it = outputPlanes.begin(); it != outputPlanes.end(); ++it) {
