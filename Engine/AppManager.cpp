@@ -3667,7 +3667,10 @@ getGroupInfos(const std::string& modulePath,
     
     std::string err;
     if (!interpretPythonScript(toRun, &err, 0)) {
-        qDebug() << "Python group load failure:" << err.c_str();
+        QString logStr("Python group load failure: ");
+        logStr.append(err.c_str());
+        appPTR->writeToOfxLog_mt_safe(logStr);
+        qDebug() << logStr;
         return false;
     }
     
