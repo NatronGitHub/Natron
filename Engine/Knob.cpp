@@ -1492,8 +1492,18 @@ static bool parseTokenFrom(int fromDim,
     std::locale loc;
     //Find the start of the symbol
     int i = (int)*tokenStart - 2;
+    int nClosingParenthesisMet = 0;
     while (i >= 0) {
-        if (std::isspace(str[i],loc)) {
+        if (str[i] == ')') {
+            ++nClosingParenthesisMet;
+        }
+        if (std::isspace(str[i],loc) ||
+            str[i] == '+' ||
+            str[i] == '-' ||
+            str[i] == '*' ||
+            str[i] == '/' ||
+            str[i] == '%' ||
+            (str[i] == '(' && !nClosingParenthesisMet)) {
             break;
         }
         --i;
