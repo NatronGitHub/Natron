@@ -263,6 +263,10 @@ void DopeSheet::addNode(boost::shared_ptr<NodeGui> nodeGui)
         return;
     }
 
+    if (nodeGui->getNode()->isRotoNode() || nodeGui->getNode()->isRotoPaintingNode()) {
+        return;
+    }
+
     if (nodeGui->getNode()->getKnobs().empty()) {
         return;
     }
