@@ -177,9 +177,11 @@ QSize HierarchyViewItemDelegate::sizeHint(const QStyleOptionViewItem &option, co
 
     DSNode::DSNodeType nodeType = DSNode::DSNodeType(item->type());
 
-    if (nodeType == DSNode::ReaderNodeType ||
-            nodeType == DSNode::GroupNodeType ||
-            nodeType == DSNode::RetimeNodeType) {
+    if (nodeType == DSNode::ReaderNodeType
+            || nodeType == DSNode::GroupNodeType
+            || nodeType == DSNode::RetimeNodeType
+            || nodeType == DSNode::TimeOffsetNodeType
+            || nodeType == DSNode::FrameRangeNodeType) {
         itemSize.rheight() += 10;
     }
 
@@ -224,10 +226,12 @@ void HierarchyViewPrivate::insertNodeItem(DSNode *dsNode)
 {
     QTreeWidgetItem *treeItem = dsNode->getTreeItem();
 
-    if (DSNode *retimer = model->getNearestRetimeFromOutputs(dsNode)) {
-        retimer->getTreeItem()->addChild(treeItem);
+    if (DSNode *nearestTimeNode = model->getNearestTimeNodeFromOutputs(dsNode)) {
+        nearestTimeNode->getTreeItem()->insertChild(0, treeItem);
     }
-    else if (dsNode->getDSNodeType() == DSNode::RetimeNodeType) {
+    else if (dsNode->getDSNodeType() == DSNode::RetimeNodeType
+             || dsNode->getDSNodeType() == DSNode::TimeOffsetNodeType
+             || dsNode->getDSNodeType() == DSNode::FrameRangeNodeType) {
         std::vector<DSNode *> inputs = model->getInputsConnected(dsNode);
 
         bool hasNoInputs = true;
@@ -235,21 +239,21 @@ void HierarchyViewPrivate::insertNodeItem(DSNode *dsNode)
         for (std::vector<DSNode *>::const_iterator it = inputs.begin(); it != inputs.end(); ++it) {
             DSNode *input = (*it);
 
-            DSNode *nearestRetimer = 0;
+            DSNode *nearestTimeNode = 0;
 
-            if ( (nearestRetimer = model->getNearestRetimeFromOutputs(input)) ) {
+            if ( (nearestTimeNode = model->getNearestTimeNodeFromOutputs(input)) ) {
                 QTreeWidgetItem *inputTreeItem = input->getTreeItem();
                 QTreeWidgetItem *inputParentItem = getParentItem(inputTreeItem);
 
+                // Put the input in the time node's children
                 inputTreeItem = inputParentItem->takeChild(indexInParent(inputTreeItem));
 
-                nearestRetimer->getTreeItem()->addChild(inputTreeItem);
+                nearestTimeNode->getTreeItem()->insertChild(0, inputTreeItem);
 
                 hasNoInputs = false;
-            }
 
-            if (nearestRetimer) {
-                q_ptr->addTopLevelItem(nearestRetimer->getTreeItem());
+                // Add the time node as top level item
+                q_ptr->addTopLevelItem(nearestTimeNode->getTreeItem());
 
                 input->getTreeItem()->setExpanded(true);
                 expandAndCheckKnobItems(input);
@@ -292,22 +296,19 @@ void HierarchyViewPrivate::putChildrenNodesAtTopLevel(DSNode *dsNode)
 {
     QTreeWidgetItem *treeItem = dsNode->getTreeItem();
 
-    if (treeItem->childCount()) {
-        QTreeWidgetItemIterator it(treeItem->child(0), QTreeWidgetItemIterator::NotHidden);
+    for (int i = 0; i < treeItem->childCount(); ++i) {
+        if (DSNode *nodeToMove = model->findDSNode(treeItem->child(0))) {
+            QTreeWidgetItem *itemToMove = nodeToMove->getTreeItem();
 
-        while (*it) {
-            if (DSNode *nodeToMove = model->findDSNode(*it)) {
-                QTreeWidgetItem *itemToMove = nodeToMove->getTreeItem();
+            treeItem->takeChild(0);
 
-                treeItem->takeChild(indexInParent(itemToMove));
+            q_ptr->addTopLevelItem(itemToMove);
 
-                q_ptr->addTopLevelItem(itemToMove);
-
-                itemToMove->setExpanded(true);
-                expandAndCheckKnobItems(nodeToMove);
-            }
-
-            ++it;
+            itemToMove->setExpanded(true);
+            expandAndCheckKnobItems(nodeToMove);
+        }
+        else {
+            break;
         }
     }
 }
@@ -346,11 +347,14 @@ HierarchyView::HierarchyView(DopeSheet *model, Gui *gui, QWidget *parent) :
     QTreeWidget(parent),
     _imp(new HierarchyViewPrivate(this))
 {
-    connect(model, SIGNAL(dsNodeCreated(DSNode *)),
-            this, SLOT(onDSNodeCreated(DSNode *)));
+    connect(model, SIGNAL(nodeAdded(DSNode *)),
+            this, SLOT(onNodeAdded(DSNode *)));
 
     connect(model, SIGNAL(nodeAboutToBeRemoved(DSNode*)),
             this, SLOT(onNodeAboutToBeRemoved(DSNode*)));
+
+    connect(model, SIGNAL(nodeSettingsPanelOpened(DSNode*)),
+            this, SLOT(onNodeSettingsPanelOpened(DSNode*)));
 
     connect(this, SIGNAL(itemSelectionChanged()),
             this, SLOT(onItemSelectionChanged()));
@@ -401,7 +405,7 @@ DSKnob *HierarchyView::getDSKnobAt(const QPoint &point, int *dimension) const
     return _imp->model->findDSKnob(itemUnderPoint, dimension);
 }
 
-void HierarchyView::onDSNodeCreated(DSNode *dsNode)
+void HierarchyView::onNodeAdded(DSNode *dsNode)
 {
     _imp->insertNodeItem(dsNode);
 
@@ -421,6 +425,11 @@ void HierarchyView::onNodeAboutToBeRemoved(DSNode *dsNode)
     if (isTopLevelItem) {
         _imp->putChildrenNodesAtTopLevel(dsNode);
     }
+}
+
+void HierarchyView::onNodeSettingsPanelOpened(DSNode *dsNode)
+{
+    _imp->expandAndCheckKnobItems(dsNode);
 }
 
 /**
@@ -572,8 +581,6 @@ public:
     void computeGroupRect(DSNode *dsNode);
 
     // User interaction
-    DSSelectedKeys createSelectionFromCursor(DSKnob *dsKnob, const QPointF &widgetCoords, int dimension);
-    DSSelectedKeys createSelectionFromCursor(DSNode *dsNode, const QPointF &widgetCoords);
     DSSelectedKeys createSelectionFromRect(const QRectF &rect);
 
     void makeSelection(const DSSelectedKeys &keys, bool booleanOp);
@@ -1057,7 +1064,8 @@ void DopeSheetViewPrivate::drawRows() const
 
             DSNode::DSNodeType nodeType = dsNode->getDSNodeType();
 
-            if (nodeType == DSNode::ReaderNodeType || nodeType == DSNode::GroupNodeType || nodeType == DSNode::RetimeNodeType) {
+            if (nodeType == DSNode::ReaderNodeType || nodeType == DSNode::GroupNodeType || nodeType == DSNode::RetimeNodeType
+                    || nodeType == DSNode::TimeOffsetNodeType || nodeType == DSNode::FrameRangeNodeType) {
                 drawClip(dsNode);
             }
 
@@ -1619,16 +1627,6 @@ void DopeSheetViewPrivate::computeSelectionRect(const QPointF &origin, const QPo
 
     selectionRect.setTopLeft(QPointF(xmin, ymin));
     selectionRect.setBottomRight(QPointF(xmax, ymax));
-}
-
-DSSelectedKeys DopeSheetViewPrivate::createSelectionFromCursor(DSKnob *dsKnob, const QPointF &widgetCoords, int dimension)
-{
-    return isNearByKeyframe(dsKnob, widgetCoords, dimension);
-}
-
-DSSelectedKeys DopeSheetViewPrivate::createSelectionFromCursor(DSNode *dsNode, const QPointF &widgetCoords)
-{
-    return isNearByKeyframe(dsNode, widgetCoords);
 }
 
 DSSelectedKeys DopeSheetViewPrivate::createSelectionFromRect(const QRectF& rect)
@@ -2303,7 +2301,7 @@ void DopeSheetView::mousePressEvent(QMouseEvent *e)
                     redraw();
                 }
                 else if (nodeType == DSNode::CommonNodeType) {
-                    DSSelectedKeys keysUnderMouse = _imp->createSelectionFromCursor(dsNode, e->pos());
+                    DSSelectedKeys keysUnderMouse = _imp->isNearByKeyframe(dsNode, e->pos());
 
                     if (!keysUnderMouse.empty()) {
                         _imp->makeSelection(keysUnderMouse, modCASIsShift(e));
@@ -2322,7 +2320,7 @@ void DopeSheetView::mousePressEvent(QMouseEvent *e)
                 DSKnob *dsKnob = _imp->hierarchyView->getDSKnobAt(e->pos(), &knobDim);
 
                 if (dsKnob) {
-                    DSSelectedKeys keysUnderMouse = _imp->createSelectionFromCursor(dsKnob, e->pos(), knobDim);
+                    DSSelectedKeys keysUnderMouse = _imp->isNearByKeyframe(dsKnob, e->pos(), knobDim);
 
                     if (!keysUnderMouse.empty()) {
                         _imp->makeSelection(keysUnderMouse, modCASIsShift(e));

@@ -56,8 +56,9 @@ public:
     DSKnob *getDSKnobAt(const QPoint &point, int *dimension) const;
 
 public Q_SLOTS:
-    void onDSNodeCreated(DSNode *dsNode);
+    void onNodeAdded(DSNode *dsNode);
     void onNodeAboutToBeRemoved(DSNode *dsNode);
+    void onNodeSettingsPanelOpened(DSNode *dsNode);
 
     void onItemSelectionChanged();
     void onItemDoubleClicked(QTreeWidgetItem *item, int column);

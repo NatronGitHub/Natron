@@ -79,12 +79,13 @@ public:
 
     bool groupSubNodesAreHidden(NodeGroup *group) const;
 
-    DSNode *getNearestRetimeFromOutputs(DSNode *dsNode) const;
+    DSNode *getNearestTimeNodeFromOutputs(DSNode *dsNode) const;
     std::vector<DSNode *> getInputsConnected(DSNode *dsNode) const;
 
 Q_SIGNALS:
     void modelChanged();
-    void dsNodeCreated(DSNode *dsNode);
+    void nodeAdded(DSNode *dsNode);
+    void nodeSettingsPanelOpened(DSNode *dsNode);
     void nodeAboutToBeRemoved(DSNode *dsNode);
 
 public Q_SLOTS:
@@ -96,6 +97,7 @@ private: /* functions */
 
 private Q_SLOTS:
     void refreshClipRects();
+    void onSettingsPanelCloseChanged(bool closed);
 
 private:
     boost::scoped_ptr<DopeSheetPrivate> _imp;
@@ -147,6 +149,8 @@ public:
         CommonNodeType = 1001,
         ReaderNodeType,
         RetimeNodeType,
+        TimeOffsetNodeType,
+        FrameRangeNodeType,
         GroupNodeType
     };
 

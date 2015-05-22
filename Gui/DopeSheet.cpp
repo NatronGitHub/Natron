@@ -122,7 +122,7 @@ public:
     ~DopeSheetPrivate();
 
     /* functions */
-    Natron::Node *getNearestRetimeFromOutputs_recursive(Natron::Node *node) const;
+    Natron::Node *getNearestTimeFromOutputs_recursive(Natron::Node *node) const;
     void getInputsConnected_recursive(Natron::Node *node, std::vector<DSNode *> *result) const;
 
     /* attributes */
@@ -142,18 +142,20 @@ DopeSheetPrivate::~DopeSheetPrivate()
 
 }
 
-Natron::Node *DopeSheetPrivate::getNearestRetimeFromOutputs_recursive(Natron::Node *node) const
+Natron::Node *DopeSheetPrivate::getNearestTimeFromOutputs_recursive(Natron::Node *node) const
 {
     const std::list<Natron::Node *> &outputs = node->getOutputs();
 
     for (std::list<Natron::Node *>::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
         Natron::Node *output = (*it);
 
-        if (output->getPluginLabel() == "RetimeOFX") {
+        if (output->getPluginLabel() == "RetimeOFX"
+                || output->getPluginLabel() == "TimeOffsetOFX"
+                || output->getPluginLabel() == "FrameRangeOFX") {
             return output;
         }
         else {
-            return getNearestRetimeFromOutputs_recursive(output);
+            return getNearestTimeFromOutputs_recursive(output);
         }
     }
 
@@ -175,12 +177,9 @@ void DopeSheetPrivate::getInputsConnected_recursive(Natron::Node *node, std::vec
 
         if (dsNode) {
             result->push_back(dsNode);
+        }
 
-            return;
-        }
-        else {
-            getInputsConnected_recursive(input.get(), result);
-        }
+        getInputsConnected_recursive(input.get(), result);
     }
 }
 
@@ -276,7 +275,7 @@ void DopeSheet::addNode(boost::shared_ptr<NodeGui> nodeGui)
 
     _imp->nodesRows.insert(TreeItemAndDSNode(dsNode->getTreeItem(), dsNode));
 
-    Q_EMIT dsNodeCreated(dsNode);
+    Q_EMIT nodeAdded(dsNode);
 
     if (DSNode *parentGroupDSNode = getGroupDSNode(dsNode)) {
         parentGroupDSNode->computeGroupRange();
@@ -434,15 +433,17 @@ bool DopeSheet::groupSubNodesAreHidden(NodeGroup *group) const
  *
  * Returns the first Retime node connected in output with 'dsNode' in the node graph.
  */
-DSNode *DopeSheet::getNearestRetimeFromOutputs(DSNode *dsNode) const
+DSNode *DopeSheet::getNearestTimeNodeFromOutputs(DSNode *dsNode) const
 {
-    if (dsNode->getDSNodeType() == DSNode::RetimeNodeType) {
+    if (dsNode->getDSNodeType() == DSNode::RetimeNodeType
+            || dsNode->getDSNodeType() == DSNode::TimeOffsetNodeType
+            || dsNode->getDSNodeType() == DSNode::FrameRangeNodeType) {
         return NULL;
     }
 
-    Natron::Node *retimer = _imp->getNearestRetimeFromOutputs_recursive(dsNode->getNodeGui()->getNode().get());
+    Natron::Node *timeNode = _imp->getNearestTimeFromOutputs_recursive(dsNode->getNodeGui()->getNode().get());
 
-    return findDSNode(retimer);
+    return findDSNode(timeNode);
 }
 
 std::vector<DSNode *> DopeSheet::getInputsConnected(DSNode *dsNode) const
@@ -479,6 +480,12 @@ DSNode *DopeSheet::createDSNode(const boost::shared_ptr<NodeGui> &nodeGui)
     else if (node->getPluginLabel() == "RetimeOFX") {
         nodeType = DSNode::RetimeNodeType;
     }
+    else if (node->getPluginLabel() == "TimeOffsetOFX") {
+        nodeType = DSNode::TimeOffsetNodeType;
+    }
+    else if (node->getPluginLabel() == "FrameRangeOFX") {
+        nodeType = DSNode::FrameRangeNodeType;
+    }
 
     QTreeWidgetItem *nameItem = new QTreeWidgetItem(nodeType);
     nameItem->setText(0, node->getLabel().c_str());
@@ -489,6 +496,9 @@ DSNode *DopeSheet::createDSNode(const boost::shared_ptr<NodeGui> &nodeGui)
         connect(dsNode, SIGNAL(clipRangeChanged()),
                 this, SIGNAL(modelChanged()));
     }
+
+    connect(nodeGui->getSettingPanel(), SIGNAL(closeChanged(bool)),
+            this, SLOT(onSettingsPanelCloseChanged(bool)));
 
     connect(node.get(), SIGNAL(labelChanged(QString)),
             this, SLOT(onNodeNameChanged(QString)));
@@ -550,6 +560,17 @@ void DopeSheet::refreshClipRects()
         else if (dsNode->getDSNodeType() == DSNode::GroupNodeType) {
             dsNode->computeGroupRange();
         }
+    }
+}
+
+void DopeSheet::onSettingsPanelCloseChanged(bool closed)
+{
+    if (closed) {
+        return;
+    }
+
+    if (DSNode *dsNode = findDSNode(qobject_cast<Natron::Node *>(sender()))) {
+        Q_EMIT nodeSettingsPanelOpened(dsNode);
     }
 }
 
@@ -847,9 +868,6 @@ DSNode::DSNode(DopeSheet *model,
     _imp->nameItem = nameItem;
     _imp->nodeGui = nodeGui;
 
-    connect(nodeGui->getSettingPanel(), SIGNAL(closeChanged(bool)),
-            model, SIGNAL(modelChanged()));
-
     // Create the hierarchy
     if (_imp->nodeType == DSNode::CommonNodeType) {
         _imp->createDSKnobs();
@@ -859,6 +877,12 @@ DSNode::DSNode(DopeSheet *model,
         _imp->createDSKnobs();
     }
     else if (_imp->nodeType == DSNode::RetimeNodeType) {
+        _imp->createDSKnobs();
+    }
+    else if (_imp->nodeType == DSNode::TimeOffsetNodeType) {
+        _imp->createDSKnobs();
+    }
+    else if (_imp->nodeType == DSNode::FrameRangeNodeType) {
         _imp->createDSKnobs();
     }
     // If some subnodes are already in the dope sheet, the connections must be set to update
