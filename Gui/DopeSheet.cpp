@@ -381,7 +381,7 @@ DSKnob *DopeSheet::findDSKnob(QTreeWidgetItem *knobTreeItem, int *dimension) con
 
     if (ret->isMultiDim()) {
         if (itemIt != knobTreeItem) {
-            *dimension = knobTreeItem->indexOfChild(knobTreeItem);
+            *dimension = itemIt->indexOfChild(knobTreeItem);
         }
         else {
             *dimension = -1;
