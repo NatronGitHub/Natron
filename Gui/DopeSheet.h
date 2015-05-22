@@ -88,9 +88,6 @@ Q_SIGNALS:
     void nodeSettingsPanelOpened(DSNode *dsNode);
     void nodeAboutToBeRemoved(DSNode *dsNode);
 
-public Q_SLOTS:
-    void onNodeNameChanged(const QString &name);
-
 private: /* functions */
     DSNode *createDSNode(const boost::shared_ptr<NodeGui> &nodeGui);
     DSKnob *createDSKnob(KnobGui *knobGui, DSNode *dsNode);
@@ -98,6 +95,7 @@ private: /* functions */
 private Q_SLOTS:
     void refreshClipRects();
     void onSettingsPanelCloseChanged(bool closed);
+    void onNodeNameChanged(const QString &name);
 
 private:
     boost::scoped_ptr<DopeSheetPrivate> _imp;
@@ -124,11 +122,11 @@ public:
 
     bool isMultiDim() const;
 
-Q_SIGNALS:
-    void needNodesVisibleStateChecking();
-
 public Q_SLOTS:
     void checkVisibleState();
+
+Q_SIGNALS:
+    void needNodesVisibleStateChecking();
 
 private:
     boost::scoped_ptr<DSKnobPrivate> _imp;
@@ -170,13 +168,13 @@ public:
 
     std::pair<double, double> getClipRange() const;
 
-Q_SIGNALS:
-    void clipRangeChanged();
-
 public Q_SLOTS:
     void checkVisibleState();
     void computeReaderRange();
     void computeGroupRange();
+
+Q_SIGNALS:
+    void clipRangeChanged();
 
 private:
     boost::scoped_ptr<DSNodePrivate> _imp;

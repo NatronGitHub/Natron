@@ -459,14 +459,6 @@ std::vector<DSNode *> DopeSheet::getInputsConnected(DSNode *dsNode) const
     return ret;
 }
 
-void DopeSheet::onNodeNameChanged(const QString &name)
-{
-    Natron::Node *node = qobject_cast<Natron::Node *>(sender());
-    DSNode *dsNode = findDSNode(node);
-
-    dsNode->getTreeItem()->setText(0, name);
-}
-
 DSNode *DopeSheet::createDSNode(const boost::shared_ptr<NodeGui> &nodeGui)
 {
     // Determinate the node type
@@ -576,6 +568,14 @@ void DopeSheet::onSettingsPanelCloseChanged(bool closed)
     if (DSNode *dsNode = findDSNode(qobject_cast<Natron::Node *>(sender()))) {
         Q_EMIT nodeSettingsPanelOpened(dsNode);
     }
+}
+
+void DopeSheet::onNodeNameChanged(const QString &name)
+{
+    Natron::Node *node = qobject_cast<Natron::Node *>(sender());
+    DSNode *dsNode = findDSNode(node);
+
+    dsNode->getTreeItem()->setText(0, name);
 }
 
 
@@ -944,47 +944,6 @@ std::pair<double, double> DSNode::getClipRange() const
     return _imp->clipRange;
 }
 
-/**
- * @brief DSNode::checkVisibleState
- *
- * If the item and its set of keyframes must be hidden or not,
- * hides or shows them.
- *
- * This slot is automatically called when
- */
-void DSNode::checkVisibleState()
-{
-    _imp->nodeGui->setVisibleSettingsPanel(true);
-
-    bool showItem = _imp->nodeGui->isSettingsPanelVisible();
-
-    if (_imp->nodeType == DSNode::CommonNodeType) {
-        showItem = nodeHasAnimation(_imp->nodeGui);
-    }
-    else if (_imp->nodeType == DSNode::GroupNodeType) {
-        NodeGroup *group = dynamic_cast<NodeGroup *>(_imp->nodeGui->getNode()->getLiveInstance());
-
-        showItem = showItem && !_imp->dopeSheetModel->groupSubNodesAreHidden(group);
-    }
-
-    _imp->nameItem->setHidden(!showItem);
-
-    // Hide the parent group item if there's no subnodes displayed
-    if (DSNode *parentGroupDSNode = _imp->dopeSheetModel->getGroupDSNode(this)) {
-        parentGroupDSNode->checkVisibleState();
-    }
-}
-
-/**
- * @brief DSNode::getNameItem
- *
- * Returns the hierarchy view item associated with this node.
- */
-QTreeWidgetItem *DSNode::getTreeItem() const
-{
-    return _imp->nameItem;
-}
-
 void DSNode::computeReaderRange()
 {
     assert(_imp->nodeType == DSNode::ReaderNodeType);
@@ -1055,6 +1014,47 @@ void DSNode::computeGroupRange()
     }
 
     Q_EMIT clipRangeChanged();
+}
+
+/**
+ * @brief DSNode::checkVisibleState
+ *
+ * If the item and its set of keyframes must be hidden or not,
+ * hides or shows them.
+ *
+ * This slot is automatically called when
+ */
+void DSNode::checkVisibleState()
+{
+    _imp->nodeGui->setVisibleSettingsPanel(true);
+
+    bool showItem = _imp->nodeGui->isSettingsPanelVisible();
+
+    if (_imp->nodeType == DSNode::CommonNodeType) {
+        showItem = nodeHasAnimation(_imp->nodeGui);
+    }
+    else if (_imp->nodeType == DSNode::GroupNodeType) {
+        NodeGroup *group = dynamic_cast<NodeGroup *>(_imp->nodeGui->getNode()->getLiveInstance());
+
+        showItem = showItem && !_imp->dopeSheetModel->groupSubNodesAreHidden(group);
+    }
+
+    _imp->nameItem->setHidden(!showItem);
+
+    // Hide the parent group item if there's no subnodes displayed
+    if (DSNode *parentGroupDSNode = _imp->dopeSheetModel->getGroupDSNode(this)) {
+        parentGroupDSNode->checkVisibleState();
+    }
+}
+
+/**
+ * @brief DSNode::getNameItem
+ *
+ * Returns the hierarchy view item associated with this node.
+ */
+QTreeWidgetItem *DSNode::getTreeItem() const
+{
+    return _imp->nameItem;
 }
 
 

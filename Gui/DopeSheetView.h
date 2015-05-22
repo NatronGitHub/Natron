@@ -55,7 +55,7 @@ public:
 
     DSKnob *getDSKnobAt(const QPoint &point, int *dimension) const;
 
-public Q_SLOTS:
+private Q_SLOTS:
     void onNodeAdded(DSNode *dsNode);
     void onNodeAboutToBeRemoved(DSNode *dsNode);
     void onNodeSettingsPanelOpened(DSNode *dsNode);
@@ -112,7 +112,7 @@ public:
     void restoreOpenGLContext() OVERRIDE FINAL;
     unsigned int getCurrentRenderScale() const OVERRIDE FINAL;
 
-public Q_SLOTS:
+private Q_SLOTS:
     void computeSelectedKeysBRect();
     void clearKeyframeSelection();
     void selectAllKeyframes();
