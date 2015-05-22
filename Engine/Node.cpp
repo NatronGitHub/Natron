@@ -5433,8 +5433,10 @@ Node::setNodeIsRenderingInternal(std::list<Natron::Node*>& markedNodes)
     }
     
     ///Increment the node is rendering counter
-    QMutexLocker nrLocker(&_imp->nodeIsRenderingMutex);
-    ++_imp->nodeIsRendering;
+    {
+        QMutexLocker nrLocker(&_imp->nodeIsRenderingMutex);
+        ++_imp->nodeIsRendering;
+    }
     
     
     
