@@ -3912,8 +3912,8 @@ EffectInstance::renderHandler(RenderArgs & args,
             comps.push_back(it->first);
         }
         ImageList identityPlanes;
-        RenderRoIArgs renderArgs(identityInputTime,
 #pragma message WARN("BUG: actionArgs.originalScale is not initialized!!!!")
+        RenderRoIArgs renderArgs(identityInputTime,
                                  actionArgs.originalScale,
                                  mipMapLevel,
                                  view,
