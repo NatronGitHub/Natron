@@ -3168,7 +3168,7 @@ EffectInstance::renderInputImagesForRoI(SequenceTime time,
         }
         
         //Never pre-render the mask if we are rendering a node of the rotopaint tree
-        if (getNode()->getAttachedStrokeItem() && inputEffect->isRotoPaintNode()) {
+        if (getNode()->getAttachedStrokeItem() && inputEffect && inputEffect->isRotoPaintNode()) {
             continue;
         }
 
