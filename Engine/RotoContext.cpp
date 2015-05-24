@@ -6724,6 +6724,7 @@ RotoContext::renderMaskInternal(RotoStrokeItem* isSingleStroke,
     // maybe the inner polygon should be made of mesh patterns too?
     cairo_set_antialias(cr, CAIRO_ANTIALIAS_NONE);
     
+#pragma message WARN("BUG: copyImage is always false, thus this code is never executed")
     if (copyFromImage) {
         switch (depth) {
             case Natron::eImageBitDepthFloat:
