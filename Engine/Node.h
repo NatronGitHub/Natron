@@ -440,6 +440,11 @@ public:
      */
     virtual bool connectInput(const boost::shared_ptr<Node>& input,int inputNumber);
 
+    bool connectInputBase(const boost::shared_ptr<Node>& input,int inputNumber)
+    {
+        return Node::connectInput(input, inputNumber);
+    }
+    
     /** @brief Removes the node connected to the input inputNumber of the
      * node. Returns the inputNumber if it could remove it, otherwise returns
        -1.
@@ -1111,6 +1116,12 @@ public:
         return _maxInputs;
     }
 
+
+
+    /**
+     * @brief Same as connectInputBase but if another input is already connected to 'input' then
+     * it will disconnect it prior to connecting the input of the given number.
+     **/
     virtual bool connectInput(const boost::shared_ptr<Node>& input,int inputNumber) OVERRIDE;
 
     virtual int getPreferredInputForConnection() const OVERRIDE FINAL;

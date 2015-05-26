@@ -4387,10 +4387,13 @@ RotoStrokeItem::RotoStrokeItem(Natron::RotoStrokeType type,
     Choice_Knob* mergeOp = dynamic_cast<Choice_Knob*>(mergeOperatorKnob.get());
     assert(mergeOp);
 
+    boost::shared_ptr<Choice_Knob> compOp = getOperatorKnob();
     if (_imp->type == eRotoStrokeTypeDodge || _imp->type == eRotoStrokeTypeBurn) {
         mergeOp->setValue(_imp->type == eRotoStrokeTypeDodge ? (int)eMergeColorDodge : (int)eMergeColorBurn, 0);
+        compOp->setValue(_imp->type == eRotoStrokeTypeDodge ? (int)eMergeColorDodge : (int)eMergeColorBurn, 0);
     } else {
         mergeOp->setValue((int)eMergeOver, 0);
+        compOp->setValue((int)eMergeOver, 0);
     }
     
     if (type == eRotoStrokeTypeBlur) {
@@ -4581,12 +4584,12 @@ RotoStrokeItem::refreshNodesConnections()
          */
         if (_imp->mergeNode->getInput(1) != _imp->effectNode) {
             _imp->mergeNode->disconnectInput(1);
-            _imp->mergeNode->connectInput(_imp->effectNode, 1); // A
+            _imp->mergeNode->connectInputBase(_imp->effectNode, 1); // A
         }
         if (upstreamNode) {
             if (_imp->mergeNode->getInput(0) != upstreamNode) {
                 _imp->mergeNode->disconnectInput(0);
-                _imp->mergeNode->connectInput(upstreamNode, 0); // B
+                _imp->mergeNode->connectInputBase(upstreamNode, 0); // B
             }
         }
         
@@ -4607,7 +4610,7 @@ RotoStrokeItem::refreshNodesConnections()
         if (revealInput) {
             if (_imp->effectNode->getInput(0) != revealInput) {
                 _imp->effectNode->disconnectInput(0);
-                _imp->effectNode->connectInput(revealInput, 0);
+                _imp->effectNode->connectInputBase(revealInput, 0);
             }
         }
     } else {
@@ -4616,13 +4619,13 @@ RotoStrokeItem::refreshNodesConnections()
             if (rotoPaintInput) {
                 if (_imp->mergeNode->getInput(1) != rotoPaintInput) {
                     _imp->mergeNode->disconnectInput(1);
-                    _imp->mergeNode->connectInput(rotoPaintInput, 1); // A
+                    _imp->mergeNode->connectInputBase(rotoPaintInput, 1); // A
                 }
             }
             if (upstreamNode) {
                 if (_imp->mergeNode->getInput(0) != upstreamNode) {
                     _imp->mergeNode->disconnectInput(0);
-                    _imp->mergeNode->connectInput(upstreamNode, 0); // B
+                    _imp->mergeNode->connectInputBase(upstreamNode, 0); // B
                 }
             }
         } else if (_imp->type == eRotoStrokeTypeReveal) {
@@ -4633,26 +4636,26 @@ RotoStrokeItem::refreshNodesConnections()
             if (revealInput) {
                 if (_imp->mergeNode->getInput(1) != revealInput) {
                     _imp->mergeNode->disconnectInput(1);
-                    _imp->mergeNode->connectInput(revealInput, 1); // A
+                    _imp->mergeNode->connectInputBase(revealInput, 1); // A
                 }
             }
             if (upstreamNode) {
                 if (_imp->mergeNode->getInput(0) != upstreamNode) {
                     _imp->mergeNode->disconnectInput(0);
-                    _imp->mergeNode->connectInput(upstreamNode, 0); // B
+                    _imp->mergeNode->connectInputBase(upstreamNode, 0); // B
                 }
             }
         } else if (_imp->type == eRotoStrokeTypeDodge || _imp->type == eRotoStrokeTypeBurn) {
             if (upstreamNode) {
                 if (_imp->mergeNode->getInput(1) != upstreamNode) {
                     _imp->mergeNode->disconnectInput(1);
-                    _imp->mergeNode->connectInput(upstreamNode, 1); // A
+                    _imp->mergeNode->connectInputBase(upstreamNode, 1); // A
                 }
             }
             if (upstreamNode) {
                 if (_imp->mergeNode->getInput(0) != upstreamNode) {
                     _imp->mergeNode->disconnectInput(0);
-                    _imp->mergeNode->connectInput(upstreamNode, 0); // B
+                    _imp->mergeNode->connectInputBase(upstreamNode, 0); // B
                 }
             }
         } else {
